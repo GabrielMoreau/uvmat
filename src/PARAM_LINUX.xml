@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<UvmatParam>
+	<Civ_exe>/CIVX/bin/civ</Civ_exe>
+        <Civ1_exe>/CIVX/bin/civ1</Civ1_exe>
+        <Civ2_exe>/CIVX/bin/civ2</Civ2_exe>
+	<Fix_exe>/CIVX/bin/fix_flag</Fix_exe>
+	<Patch_exe>/CIVX/bin/patch_up</Patch_exe>
+	<PatchNew_exe>/CIVX/bin/interpolation</PatchNew_exe> 
+	<Todo_path>/CIVX/bin/job_folder/<!--directory for the waiting list of batch jobs--></Todo_path> 
+        <SGE>1<!--=0 or 1, indicates the use of 'Sun grid engine' for distributed computations--></SGE>
+        <GeometryCalib_exe>/CIVX/bin/calibration/ccal_fo<!--executable for Tsai calibration--></GeometryCalib_exe>
+	 <SchemaPath>/coriolis/bigone/PROJETS/00_DATA_MANAGEMENT/XML_SCHEMAS<!--directory of xml schemas--></SchemaPath>
+</UvmatParam>

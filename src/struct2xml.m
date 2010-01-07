@@ -1,0 +1,62 @@
+%'struct2xml': transform a matlab structure to a xml tree.
+%--------------------------------------------------------------
+% each field with char string or num vector is transformed into a corresponding  xml element
+% each field with a matrix containing n lines is transformed into a xml element repeated n times 
+% WARNING: PROBLEM WITH HIERARCHICAL structures
+%%%%%%%%%%%%%%%%%%%%%%%
+% OUTPUT:
+% t: xmltree reproducing the structure of Object
+% type 'save(t)' to visualize the xml text and save(filename,t) to save it in a file
+%
+% INPUT:
+%  Object: matlab structure, possibly hierarchical
+%  t: optional input xml tree in which a new branch needs to be appended
+%  root_uid: optional uid of the xml element under which the new subtree must be appended
+
+function t=struct2xml(Object,t,root_uid)
+get(t,root_uid)
+if ~exist('t','var')
+    t=xmltree;
+end
+if ~exist('root_uid','var')
+    root_uid=1;
+end
+fieldnames=fields(Object);
+for ilist=1:length(fieldnames)
+   eval(['val=Object.' fieldnames{ilist} ';'])
+   if isstruct(val)
+      [t,uid]=add(t,root_uid,'element',fieldnames{ilist});
+      fieldnames_sub=fields(val);
+      for ilist_sub=1:length(fieldnames_sub)
+          if isstruct(fieldnames_sub{ilist_sub})
+                t=struct2xml(fieldnames_sub{ilist_sub},t,uid);
+                save(t)
+          else
+              eval(['val_sub=val.' fieldnames_sub{ilist_sub} ';'])
+              t=add_element(t,uid,fieldnames_sub{ilist_sub},val_sub);
+          end
+      end
+   else
+       t=add_element(t,root_uid,fieldnames{ilist},val);
+   end
+end
+
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function t=add_element(t,uid,key,val)
+ if ischar(val)
+     [t,new_uid]=add(t,uid,'element',key);
+     [t]=add(t,new_uid,'chardata',val);
+ elseif isnumeric(val)
+       siz=size(val);
+       if length(siz)<=2 %do not translate matrices with more than 2 indices
+           for iline=1:siz(1)
+                val_str=num2str(val(iline,:),'%g\t');
+                [t,new_uid]=add(t,uid,'element',key);
+                if siz(1)>1
+                    t = attributes(t,'add',new_uid,'i',num2str(iline));
+                end
+                [t]=add(t,new_uid,'chardata',val_str);
+           end
+       end
+ end   

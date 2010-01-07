@@ -1,0 +1,232 @@
+%'phys': transforms image (px) to real world (phys) coordinates using geometric calibration parameters
+% OUTPUT: 
+% DataOut:   structure representing the modified field
+% DataOut_1: structure representing the second modified field
+
+%INPUT:
+% Data:  structure of input data 
+%       with fields .A (image or scalar matrix), AX, AY
+%       .X,.Y,.U,.V, .DjUi
+%       .ZIndex: index of plane in multilevel case 
+% Data.CoordType='phys' or 'px', The function ACTS ONLY IF .CoordType='px'
+% Calib: structure containing calibration parameters or a subtree Calib.GeometryCalib =calibration data (tsai parameters)
+
+function [DataOut,DataOut_1]=phys(varargin)
+% A FAIRE: 1- verifier si DataIn est une 'field structure'(.ListVarName'):
+% chercher ListVarAttribute, for each field (cell of variables):
+%   .CoordType: 'phys' or 'px'   (default==phys, no transform)
+%   .scale_factor: =dt (to transform displacement into velocity) default=1
+%   .covariance: 'scalar', 'coord', 'D_i': covariant (like velocity), 'D^i': contravariant (like gradient), 'D^jD_i' (like strain tensor)
+%   (default='coord' if .Role='coord_x,_y..., 
+%            'D_i' if '.Role='vector_x,...',
+%              'scalar', else (thenno change except scale factor)
+Calib{1}=[];
+if nargin==2||nargin==4 % nargin =nbre of input variables
+    Data=varargin{1};
+    DataOut=Data;%default
+    DataOut_1=[];%default
+    CalibData=varargin{2};
+    if isfield(CalibData,'GeometryCalib')
+        Calib{1}=CalibData.GeometryCalib;
+    end
+    Calib{2}=Calib{1};
+else
+    DataOut.Txt='wrong input: need two or four structures';
+end
+test_1=0;
+if nargin==4
+    test_1=1;
+    Data_1=varargin{3};
+    DataOut_1=Data_1;%default
+    CalibData_1=varargin{4};
+    if isfield(CalibData_1,'GeometryCalib')
+        Calib{2}=CalibData_1.GeometryCalib;
+    end
+end
+iscalar=0;
+if  ~isempty(Calib{1})
+    DataOut=phys_1(Data,Calib{1});
+    %case of images or scalar: in case of two input fields, we need to project the transform of on the same regular grid
+    if isfield(Data,'A') && isfield(Data,'AX') && ~isempty(Data.AX) && isfield(Data,'AY')&&...
+                                           ~isempty(Data.AY) && length(Data.A)>1
+        iscalar=1;
+        A{1}=Data.A;
+    end
+end
+%transform of X,Y coordinates for vector fields
+if isfield(Data,'ZIndex')&&~isempty(Data.ZIndex)
+    ZIndex=Data.ZIndex;
+else
+    ZIndex=0;
+end
+if test_1
+    DataOut_1=phys_1(Data_1,Calib{2});
+    if isfield(Data_1,'A')&&isfield(Data_1,'AX')&&~isempty(Data_1.AX) && isfield(Data_1,'AY')&&...
+                                       ~isempty(Data_1.AY)&&length(Data_1.A)>1
+          iscalar=iscalar+1;
+          Calib{iscalar}=Calib{2};
+          A{iscalar}=Data_1.A;
+          if isfield(Data_1,'ZIndex') && ~isequal(Data_1.ZIndex,ZIndex)
+              DataOut.Txt='inconsistent plane indexes in the two input fields';
+          end
+          if iscalar==1% case for which only the second field is a scalar
+               [A,AX,AY]=phys_Ima(A,Calib,ZIndex);
+               DataOut_1.A=A{1};
+               DataOut_1.AX=AX; 
+               DataOut_1.AY=AY;
+               return
+          end
+    end
+end
+if iscalar~=0
+    [A,AX,AY]=phys_Ima(A,Calib,ZIndex);%TODO : introduire interp2_uvmat ds phys_ima
+    DataOut.A=A{1};
+    DataOut.AX=AX; 
+    DataOut.AY=AY;
+    if iscalar==2
+        DataOut_1.A=A{2};
+        DataOut_1.AX=AX; 
+        DataOut_1.AY=AY;
+    end
+end
+
+%------------------------------------------------
+function DataOut=phys_1(Data,Calib)
+% for icell=1:length(Data)
+
+DataOut=Data;%default
+DataOut.CoordType='phys'; %put flag for physical coordinates
+% The transform ACTS ONLY IF .CoordType='px'and Calib defined
+if isfield(Data,'CoordType')&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
+    if isfield(Calib,'CoordUnit')
+        DataOut.CoordUnit=Calib.CoordUnit;
+    else
+        DataOut.CoordUnit='cm'; %default
+%     elseif isfield(DataOut,'CoordUnit')
+%         DataOut=rmfield(DataOut,'CoordUnit');
+    end
+    DataOut.TimeUnit='s';
+    %transform of X,Y coordinates for vector fields
+    if isfield(Data,'ZIndex') && ~isempty(Data.ZIndex)
+        Z=Data.ZIndex;
+    else
+        Z=0;
+    end
+    if isfield(Data,'X') &&isfield(Data,'Y')&&~isempty(Data.X) && ~isempty(Data.Y)
+        [DataOut.X,DataOut.Y,DataOut.Z]=phys_XYZ(Calib,Data.X,Data.Y,Z); 
+        if isfield(Data,'U')&&isfield(Data,'V')&&~isempty(Data.U) && ~isempty(Data.V)&& isfield(Data,'dt') 
+            if ~isempty(Data.dt)
+            [XOut_1,YOut_1]=phys_XYZ(Calib,Data.X-Data.U/2,Data.Y-Data.V/2,Z);
+            [XOut_2,YOut_2]=phys_XYZ(Calib,Data.X+Data.U/2,Data.Y+Data.V/2,Z);
+            DataOut.U=(XOut_2-XOut_1)/Data.dt;
+            DataOut.V=(YOut_2-YOut_1)/Data.dt;
+            end
+        end
+    end
+    %transform of an image or scalar: done in phys_ima
+      
+    %transform of spatial derivatives
+    if isfield(Data,'X') && ~isempty(Data.X) && isfield(Data,'DjUi') && ~isempty(Data.DjUi)...
+          && isfield(Data,'dt')    
+        if ~isempty(Data.dt)
+            % estimate the Jacobian matrix DXpx/DXphys 
+            for ip=1:length(Data.X) 
+                [Xp1,Yp1]=phys_XYZ(Calib,Data.X(ip)+0.5,Data.Y(ip),Z);
+                [Xm1,Ym1]=phys_XYZ(Calib,Data.X(ip)-0.5,Data.Y(ip),Z);
+                [Xp2,Yp2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)+0.5,Z);
+                [Xm2,Ym2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)-0.5,Z); 
+            %Jacobian matrix DXpphys/DXpx
+               DjXi(1,1)=(Xp1-Xm1);
+               DjXi(2,1)=(Yp1-Ym1);
+               DjXi(1,2)=(Xp2-Xm2);
+               DjXi(2,2)=(Yp2-Ym2);
+               DjUi(:,:)=Data.DjUi(ip,:,:);
+               DjUi=(DjXi*DjUi')/DjXi;% =J-1*M*J , curvature effects (derivatives of J) neglected
+               DataOut.DjUi(ip,:,:)=DjUi';
+            end
+            DataOut.DjUi =  DataOut.DjUi/Data.dt;   %     min(Data.DjUi(:,1,1))=DUDX                          
+        end
+    end
+end
+
+
+%%%%%%%%%%%%%%%%%%%%
+function [A_out,Rangx,Rangy]=phys_Ima(A,CalibIn,ZIndex)
+xcorner=[];
+ycorner=[];
+npx=[];
+npy=[];
+for icell=1:length(A)
+    siz=size(A{icell});
+    npx=[npx siz(2)];
+    npy=[npy siz(1)];
+    Calib=CalibIn{icell};
+    xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordiantes of corners
+    yima=[0.5 0.5 siz(1)-0.5 siz(1)-0.5];
+    [xcorner_new,ycorner_new]=phys_XYZ(Calib,xima,yima,ZIndex);%corresponding physical coordinates
+    xcorner=[xcorner xcorner_new];
+    ycorner=[ycorner ycorner_new];
+end
+Rangx(1)=min(xcorner);
+Rangx(2)=max(xcorner);
+Rangy(2)=min(ycorner);
+Rangy(1)=max(ycorner);
+test_multi=(max(npx)~=min(npx)) | (max(npy)~=min(npy)); 
+npx=max(npx);
+npy=max(npy);
+x=linspace(Rangx(1),Rangx(2),npx);
+y=linspace(Rangy(1),Rangy(2),npy);
+[X,Y]=meshgrid(x,y);%grid in physical coordiantes
+vec_B=[];
+A_out={};
+for icell=1:length(A) 
+    Calib=CalibIn{icell};
+    if (isfield(Calib,'R') && ~isequal(Calib.R(2,1),0) && ~isequal(Calib.R(1,2),0)) ||...
+        ((isfield(Calib,'kappa1')&& ~isequal(Calib.kappa1,0))) || test_multi || ~isequal(Calib,CalibIn{1})
+        zphys=0; %default
+        if isfield(Calib,'SliceCoord') %.Z= index of plane
+           SliceCoord=Calib.SliceCoord(ZIndex,:);
+           zphys=SliceCoord(3); %to generalize for non-parallel planes
+        end
+        [XIMA,YIMA]=px_XYZ(CalibIn{icell},X,Y,zphys);%corresponding image indices for each point in the real space grid
+        XIMA=reshape(round(XIMA),1,npx*npy);%indices reorganized in 'line'
+        YIMA=reshape(round(YIMA),1,npx*npy);
+        flagin=XIMA>=1 & XIMA<=npx & YIMA >=1 & YIMA<=npy;%flagin=1 inside the original image
+        testuint8=isa(A{icell},'uint8');
+        testuint16=isa(A{icell},'uint16');
+        if numel(siz)==2 %(B/W images)
+            vec_A=reshape(A{icell},1,npx*npy);%put the original image in line
+            ind_in=find(flagin);
+            ind_out=find(~flagin);
+            ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
+            ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
+            vec_B(ind_in)=vec_A(ICOMB);
+            vec_B(ind_out)=zeros(size(ind_out));
+            A_out{icell}=reshape(vec_B,npy,npx);%new image in real coordinates
+        elseif numel(siz)==3     
+            for icolor=1:siz(3)
+                vec_A=reshape(A{icell}(:,:,icolor),1,npx*npy);%put the original image in line
+                ind_in=find(flagin);
+                ind_out=find(~flagin);
+                ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
+                ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
+                vec_B(ind_in)=vec_A(ICOMB);
+                vec_B(ind_out)=zeros(size(ind_out));
+                A_out{icell}(:,:,icolor)=reshape(vec_B,npy,npx);%new image in real coordinates
+            end
+        end
+        if testuint8
+            A_out{icell}=uint8(A_out{icell});
+        end
+        if testuint16
+            A_out{icell}=uint16(A_out{icell});
+        end
+    else%
+        
+        A_out{icell}=A{icell};%no transform
+        Rangx=[0.5 npx-0.5];%image coordiantes of corners
+        Rangy=[npy-0.5 0.5];
+        [Rangx]=phys_XYZ(Calib,Rangx,[0.5 0.5],[ZIndex ZIndex]);%case of translations without rotation and quadratic deformation
+        [xx,Rangy]=phys_XYZ(Calib,[0.5 0.5],Rangy,[ZIndex ZIndex]);
+    end
+end
