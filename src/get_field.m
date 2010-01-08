@@ -21,7 +21,7 @@
 
 function varargout = get_field(varargin)
 
-% Last Modified by GUIDE v2.5 13-Nov-2009 22:14:18
+% Last Modified by GUIDE v2.5 08-Jan-2010 15:15:06
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1954,5 +1954,3 @@ function ExportField_Callback(hObject, eventdata, handles)
 % hObject    handle to ExportField (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-
