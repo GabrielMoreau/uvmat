@@ -99,7 +99,7 @@ icount=0;
         errormsg{icount}=[list_fct{i} ' not found'];% test for function not found
     else
        [pth,name,ext]=fileparts(dir_fct);
-       if ~isequal(pathuvmat,pth)
+       if ~isequal(pathuvmat,pth)&~isequal(fullfile(pathuvmat,'private'),pth)
            icount=icount+1;
            errormsg{icount}=[dir_fct ' overrides the package UVMAT'];% bad path for the function
        end
