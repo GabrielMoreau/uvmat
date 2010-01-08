@@ -55,7 +55,7 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 pathuvmat=fileparts(which('uvmat'));
-addpath(fullfile(pathuvmat,'FIELD_FCT'))
+% addpath(fullfile(pathuvmat,'FIELD_FCT'))
 set(handles.attributes,'enable','on')% TO BE SET BY GUIDE
 set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles})%set mouse click action function
 if exist('filename','var')& ischar(filename)
