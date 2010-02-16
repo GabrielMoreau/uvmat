@@ -11,7 +11,7 @@
 % ListVarName....)
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-%  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
+%  Copyright Joel Sommeria, Louis Gostiaux, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %     This open is part of the toolbox UVMAT.
 % 
@@ -102,7 +102,7 @@
 %                                                                    |
 %                                                                AxeData
 %
-%%%%%%%%%%%%%%    SCALARS: %%%%%%%%%%%%שש%%%
+%%%%%%%%%%%%%%    SCALARS: %%%%%%%%%%%%??%%%
 % scalars are displayed either as an image or countour plot, either as a color of
 % velocity vectors. The scalar values in the first case is represented by
 % UvData.Field.A, and by UvData.Field.C in the second case. The corresponding set of X
