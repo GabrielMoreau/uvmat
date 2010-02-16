@@ -84,6 +84,7 @@ list_fct={'calc_field';...% defines fields (velocity, vort, div...) from civx da
            'struct2nc';...% %write fields in netcdf files
            'uvmat';...% master function for file scanning and visualisation of 2D fields
            'uvmat.fig';...  %interface for uvmat  
+           'update_imadoc';...  %update the ImaDoc xml file 
            'update_obj';... update the object representation graph and its projection field, record it in the uvmat interface
            'update_waitbar';... update the waitbar display, used for ACTION functions in the GUI 'series'
            'warndlg_uvmat';...% display messages (error, warning, confirmation) , OBSOLETE, use msgbox_uvmat 
