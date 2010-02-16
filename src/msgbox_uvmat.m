@@ -141,7 +141,6 @@ elseif isequal(handles.output,'No')
     varargout{1}='No';
 else
     varargout{1}=get(handles.edit_box,'String');
-    isequal(varargout{1},'')
     if isempty(varargout{1}) || isequal(varargout{1},'')
         varargout{1}='Yes';
     end

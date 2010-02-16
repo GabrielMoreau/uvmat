@@ -1998,7 +1998,6 @@ for iview=1:nbview
                         if isequal(Series.FileExt{iview},'.nc') || isequal(Series.FileExt{iview},'.cdf')
                             % check the content  netcdf file
                             Data=nc2struct(file,'ListGlobalAttribute','patch2','fix2','civ2','patch','fix','absolut_time_T0','hart');
-                            lastfield='civ1'; %default
                             if ~isempty(Data.patch2) && isequal(Data.patch2,1) 
                                 lastfield='patch2';
                             elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
@@ -2011,23 +2010,7 @@ for iview=1:nbview
                                 lastfield='fix1';
                             elseif ~isempty(Data.absolut_time_T0) && ~isempty(Data.hart)
                                 lastfield='civ1'; 
-                            end   
-%                             Data=nc2struct(file,[]);       
-%                              lastfield='civ1'; %default
-%                             if isfield(Data,'patch2') & isequal(Data.patch2,1);
-%                                 lastfield='patch2';
-%                             elseif isfield(Data,'fix2') & isequal(Data.fix2,1);
-%                                 lastfield='fix2';
-%                             elseif isfield(Data,'civ2') & isequal(Data.civ2,1);
-%                                 lastfield='civ2';
-%                             elseif isfield(Data,'patch') & isequal(Data.patch,1);
-%                                 lastfield='patch1';
-%                             elseif isfield(Data,'fix') & isequal(Data.fix,1);
-%                                 lastfield='fix1';
-%                             elseif isfield(Data,'absolut_time_T0') & isfield(Data,'hart')
-%                                 lastfield='civ1'; 
-%                             end   
-                          
+                            end                          
                         end 
                     end
                     Tabchar(1,i_slice)={['slice #' num2str(i_slice)]};
@@ -2221,8 +2204,8 @@ if isequal(testfield,'on')
            get_field(filename);
            return
         end
-        hhget_field=guidata(hget_field);%handles of GUI elements in get_field
-        SubField=read_var_names(hhget_field); %read the names of the variables to plot in the get_field GUI
+        %hhget_field=guidata(hget_field);%handles of GUI elements in get_field
+        SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
     end
 end
 %detect whether the two files are 'images' or 'netcdf'
@@ -2565,6 +2548,7 @@ for i_slice=1:NbSlice
 end
 hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
 delete(hget_field)
+'TEST'
 uvmat(filemean)
 
 
@@ -3034,13 +3018,13 @@ VelType_val=get(hseries.VelTypeMenu,'Value');
 VelType=VelType_str{VelType_val}; %the same for all views
 if isequal(FieldName,'get_field...')
     hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
-    hhget_field=guidata(hget_field);%handles of GUI elements in get_field
-    SubField=get_field('read_var_names',hObject,eventdata,hhget_field); %read the names of the variables to plot in the get_field GUI
-    if isequal(get(hhget_field.menu_coord,'Visible'),'on')
-        list_transform=get(hhget_field.menu_coord,'String');
-        val_list=get(hhget_field.menu_coord,'Value');
-        transform=list_transform{val_list};
-    end
+   % hhget_field=guidata(hget_field);%handles of GUI elements in get_field
+    SubField=get_field('read_get_field',hObject,eventdata,hget_field); %read the names of the variables to plot in the get_field GUI
+%     if isequal(get(hhget_field.menu_coord,'Visible'),'on')
+%         list_transform=get(hhget_field.menu_coord,'String');
+%         val_list=get(hhget_field.menu_coord,'Value');
+%         transform=list_transform{val_list};
+%     end
 end
 %detect whether all the files are 'images' or 'netcdf'
 testima=0;
@@ -3302,12 +3286,12 @@ for icell=1:length(CellVarIndex)
         test_grid=1;%test for input data on regular grid (e.g. image)coordinates
     else
         if length(ivar_Y)~=1
-                msgbox_uvmat('ERROR','y coordinate missing in proj_field.m')
+                warndlg_uvmat('y coordinate missing in proj_field.m','ERROR')
                 return
         end
         test_grid=0;
     end
- %   DimIndices=Data{1}.VarDimIndex{VarIndex(1)};%indices of the dimensions of the first variable (common to all variables in the cell)
+%    DimIndices=Data{1}.VarDimIndex{VarIndex(1)};%indices of the dimensions of the first variable (common to all variables in the cell)
     %case of input fields with unstructured coordinates
     if ~test_grid
         for ivar=VarIndex
@@ -3318,7 +3302,7 @@ for icell=1:length(CellVarIndex)
         end
     %case of fields defined on a structured  grid 
     else  
-%         DimValue=MergeData.DimValue(DimIndices);%set of dimension values
+%        DimValue=MergeData.DimValue(DimIndices);%set of dimension values
         testFF=0;
         for iview=2:nbview
 %             if ~isequal(DimValue,Data{iview}.DimValue(DimIndices))
@@ -3659,7 +3643,8 @@ WaitbarPos=get(hseries.waitbar_frame,'Position'); %position of the waitbar frame
 test_object=get(hseries.GetObject,'Value');
 if test_object%isfield(Series,'sethandles')
     Series.ProjObject=read_set_object(Series.sethandles);
-    answeryes=questdlg({['field series projected on ' Series.ProjObject.Style]});
+    %answeryes=questdlg({['field series projected on ' Series.ProjObject.Style]});
+    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' Series.ProjObject.Style]);
     if ~isequal(answeryes,'Yes')
         return
     end
@@ -3697,18 +3682,20 @@ nbfield=size(num_i1{1},1)*size(num_i1{1},2); %number of fields in the time serie
 
 %Number of input series: this function  accepts only a single input file series 
 nbview=length(RootPath);
-if nbview>2  
-    RootPath=RootPath(1:2);
-    set(hseries.RootPath,'String',RootPath)
-    SubDir=SubDir(1:2);
-    set(hseries.SubDir,'String',SubDir)
-    RootFile=RootFile(1:2);
-    set(hseries.RootFile,'String',RootFile)
-    NomType=NomType(1:2);
-    %set(hseries.NomType,'String',NomType)
-    FileExt=FileExt(1:2);
-    set(hseries.FileExt,'String',FileExt)
-    nbview=2;
+if nbview==2
+    %TODO: choose between difference and two series
+elseif nbview>2  % TODO: make multiple series
+%     RootPath=RootPath(1:2);
+%     set(hseries.RootPath,'String',RootPath)
+%     SubDir=SubDir(1:2);
+%     set(hseries.SubDir,'String',SubDir)
+%     RootFile=RootFile(1:2);
+%     set(hseries.RootFile,'String',RootFile)
+%     NomType=NomType(1:2);
+%     %set(hseries.NomType,'String',NomType)
+%     FileExt=FileExt(1:2);
+%     set(hseries.FileExt,'String',FileExt)
+%     nbview=2;
 end
 hhh=which('mmreader');
 for iview=1:nbview
@@ -3721,7 +3708,6 @@ for iview=1:nbview
     end 
 end
 filebase{1}=fullfile(RootPath{1},RootFile{1});
-% FileDisplay=fullfile(RootPath{1},SubDir{1},RootFile{1});
 
 % number of slices
 NbSlice=str2num(get(hseries.NbSlice,'String'));
@@ -3738,22 +3724,27 @@ else
 end
 if isequal(FieldName,{'get_field...'})
     hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
-    if length(hget_field)>1
-        delete(hget_field(2:end))
+    if numel(hget_field)>1
+        delete(hget_field(2:end)) % delete multiple occurerence of the GUI get_fioeld
     elseif isempty(hget_field)
-       filename=...
-               name_generator(filebase{1},num_i1{1}(1),num_j1{1}(1),FileExt{1},NomType{1},1,num_i2{1}(1),num_j2{1}(1),SubDir{1}); 
+       filename=name_generator(filebase{1},num_i1{1}(1),num_j1{1}(1),FileExt{1},NomType{1},1,num_i2{1}(1),num_j2{1}(1),SubDir{1}); 
        idetect(iview)=exist(filename,'file');
        hget_field=get_field(filename);
        return
     end
-    hhget_field=guidata(hget_field);%handles of GUI elements in get_field
-    SubField=read_var_names(hhget_field); %read the names of the variables to plot in the get_field GUI
-    if isequal(get(hhget_field.menu_coord,'Visible'),'on')
-        list_transform=get(hhget_field.menu_coord,'String');
-        val_list=get(hhget_field.menu_coord,'Value');
-        transform=list_transform{val_list};
+    %hhget_field=guidata(hget_field);%handles of GUI elements in get_field
+    SubField=read_get_field(hget_field) %read the names of the variables to plot in the get_field GUI
+    if isempty(SubField)
+        delete(hget_field)
+       filename=name_generator(filebase{1},num_i1{1}(1),num_j1{1}(1),FileExt{1},NomType{1},1,num_i2{1}(1),num_j2{1}(1),SubDir{1});
+        hget_field=get_field(filename);
+        SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
     end
+%     if isequal(get(hhget_field.menu_coord,'Visible'),'on')
+%         list_transform=get(hhget_field.menu_coord,'String');
+%         val_list=get(hhget_field.menu_coord,'Value');
+%         transform=list_transform{val_list};
+%     end
 end
 
 %detect whether the two files are 'images' or 'netcdf'
@@ -3793,7 +3784,7 @@ else
     filebase_out=[filebasesub '_' NbSlice_name 'mtim'];
     increment=num_i1{1}(2)-num_i1{1}(1);
     if ~isequal(increment,1) % if an increment is set
-        answeryes=msgbox_uvmat('INPUT_Y-N',['will take time series in ' num2str(NbSlice) 'slices with increment = ' num2str(increment) '!']) 
+        answeryes=msgbox_uvmat('INPUT_Y-N',['will take time series in ' num2str(NbSlice) 'slices with increment = ' num2str(increment) '!']); 
     else    
         answeryes=msgbox_uvmat('INPUT_Y-N',{['will take time series in ' num2str(NbSlice) ' slices'];['results stored as files ' filebase_out ' ...']});
     end
@@ -3929,16 +3920,8 @@ for i_slice=1:NbSlice
                     npx=size(A,2);
                     nbcolor=size(A,3);
                     if nbcolor==3
-%                         Data{iview}.ListDimName={'coord_y','coord_x','rgb'};
-%                         Data{iview}.DimValue=[npy npx 3];
-%                         Data{iview}.VarDimIndex={[1 2 3]};
-                           Data{iview}.VarDimName={'coord_y','coord_x',{'coord_y','coord_x','rgb'}};
+                         Data{iview}.VarDimName={'coord_y','coord_x',{'coord_y','coord_x','rgb'}};
                     else
-%                         Data{iview}.ListDimName={'coord_y','coord_x'};  
-%                         Data{iview}.DimValue=[npy npx];
-%                         Data{iview}.VarDimIndex={[1 2]};
-%                         Data{iview}.VarAttribute{1}.Coord_1=[npy-0.5 0.5];
-%                         Data{iview}.VarAttribute{1}.Coord_2=[0.5 npx-0.5];
                          Data{iview}.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'}};
                     end  
                     Data{iview}.coord_y=[npy-0.5 0.5];
@@ -3979,6 +3962,7 @@ for i_slice=1:NbSlice
                 Field=Data{1};
             end
             if isfield(Series,'ProjObject')
+                Series.ProjObject
                 [Field,errormsg]=proj_field(Field,Series.ProjObject);
                 if ~isempty(errormsg)
                     msgbox_uvmat('ERROR',['error in time_series/proj_field:' errormsg])
@@ -4021,8 +4005,7 @@ for i_slice=1:NbSlice
                                 if ischar(DimCell)
                                     DimCell={DimCell};
                                 end
-                                if numel(DimCell)==1 && isequal(Field.ListVarName{ivar},DimCell)%TODO generalise with attribute
-                               % if length(Field.ListDimName)>=index & isequal(Field.ListVarName{ivar},Field.ListDimName{index})%detect dimension variables
+                                if numel(DimCell)==1 && isequal(Field.ListVarName{ivar},DimCell{1})%detect dimension variables
                                    testsum(ivar)=1;
                                 end
                             end
@@ -4033,7 +4016,6 @@ for i_slice=1:NbSlice
                             eval(['RecordData.' Field.ListVarName{ivar} '=[];'])
                         end
                     end
-                 %   RecordData.ListDimName=[{'Time'} RecordData.ListDimName];%name of dimension 
                     RecordData.ListVarName=[{'Time'} RecordData.ListVarName];
                 end
                 for ivar=1:length(Field.ListVarName)
@@ -4049,7 +4031,7 @@ for i_slice=1:NbSlice
                             VarVal=mean(VarVal,1);
                         end
                         VarVal=shiftdim(VarVal,-1); %shift dimension 
-                        eval(['RecordData.' VarName '=cat(1,RecordData.' VarName ',VarVal);']);%concanete the current field to the time series                     
+                        eval(['RecordData.' VarName '=cat(1,RecordData.' VarName ',VarVal);']);%concanete the current field to the time series    
                     elseif testsum(ivar)==1% variable representing fixed coordinates
                         eval(['VarInit=RecordData.' VarName ';']);
                         if ~isequal(VarVal,VarInit)
@@ -4116,10 +4098,6 @@ for i_slice=1:NbSlice
     %name of result file
     [filemean]=...
                name_generator(filebase_out,num_i1{1}(i_slice),num_j1{1}(i_slice),'.nc','_i1-i2_j1-j2',1,num_i2{end}(ifile),num_j2{end}(ifile),SubDir{1});
-    RecordData
-     RecordData.VarDimName{1}
-     RecordData.VarDimName{2}
-      RecordData.VarDimName{3}
     errormsg=struct2nc(filemean,RecordData); %save result file
     if isempty(errormsg)
         display([filemean ' written'])
@@ -4441,7 +4419,7 @@ for iview=1:length(NomType)
                         if isfield(Attrib,'absolut_time_T0')
                             time_first=Attrib.absolut_time_T0;
                         end
-                        if isfield(Attrib,'absolut_time_T0_2')&~(isequal(VelType,'civ1')|isequal(VelType,'interp1')|isequal(VelType,'filter1'))
+                        if isfield(Attrib,'absolut_time_T0_2')&&~(isequal(VelType,'civ1')||isequal(VelType,'interp1')||isequal(VelType,'filter1'))
                             time_first=Attrib.absolut_time_T0_2;
                         end
                     end 
@@ -4455,7 +4433,7 @@ for iview=1:length(NomType)
                         if isfield(Attrib,'absolut_time_T0')
                             time_last=Attrib.absolut_time_T0;
                         end
-                        if isfield(Attrib,'absolut_time_T0_2')&~(isequal(VelType,'civ1')|isequal(VelType,'interp1')|isequal(VelType,'filter1'))
+                        if isfield(Attrib,'absolut_time_T0_2')&&~(isequal(VelType,'civ1')||isequal(VelType,'interp1')||isequal(VelType,'filter1'))
                             time_last=Attrib.absolut_time_T0_2;
                         end
                     end 

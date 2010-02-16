@@ -21,7 +21,7 @@
 
 function varargout = get_field(varargin)
 
-% Last Modified by GUIDE v2.5 08-Jan-2010 15:15:06
+% Last Modified by GUIDE v2.5 06-Feb-2010 09:58:13
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -55,7 +55,7 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 pathuvmat=fileparts(which('uvmat'));
-% addpath(fullfile(pathuvmat,'FIELD_FCT'))
+addpath(fullfile(pathuvmat,'FIELD_FCT'))
 set(handles.attributes,'enable','on')% TO BE SET BY GUIDE
 set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles})%set mouse click action function
 if exist('filename','var')& ischar(filename)
@@ -112,10 +112,6 @@ if exist('Field','var') & isstruct(Field)
 end
 
 
-
-
-
-
 %-----------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = get_field_OutputFcn(hObject, eventdata, handles)
@@ -124,8 +120,6 @@ varargout{1} = handles.output;
 %-----------------------------------------------------------
 % --- Executes on button press in browse.
 function browse_Callback(hObject, eventdata, handles)
-
-
 
 
 %---------------------------------------------------------
@@ -767,7 +761,6 @@ else
     figure(hfig);
 end
 haxes=findobj(hfig,'Type','axes');
-
 plot_field(SubField,haxes) 
 end
 
@@ -1483,15 +1476,14 @@ ACTION= list_ACTION{index_ACTION}; % selected string
 path_get_field=which('get_field');%path to series.m
 list_path=get(handles.ACTION,'UserData');
 nb_builtin=0;
-list_path
 if iscell(list_path)
-for ilist=1:length(list_path)
-    if isequal(list_path{ilist},path_get_field)
-        nb_builtin=nb_builtin+1;
-    else
-        break
+    for ilist=1:length(list_path)
+        if isequal(list_path{ilist},path_get_field)
+            nb_builtin=nb_builtin+1;
+        else
+            break
+        end
     end
-end
 end
 if nb_builtin==0% the path to get_field has been changed, reinitialize
     get_field_OpeningFcn(hObject, eventdata, handles)
@@ -1651,19 +1643,19 @@ set(handles.path_action,'String',PathName); %show the path to the senlected func
 
 %default setting for the visibility of the GUI elements*
 if ~isequal(ACTION,'PLOT')
-    varargout=feval(ACTION);% input list asked by the selected function
+    varargout=feval(ACTION)% input list asked by the selected function
     test_1Dplot=[];
     test_scalar=[];
     test_vector=[];
-    for ilist=1:length(varargout)-1
-        switch varargout{ilist}
+    for ilist=1:length(varargout)
+        switch varargout{ilist,1}
                            %RootFile always visible
             case 'check_1Dplot'   
-                 test_1Dplot=isequal(lower(varargout{ilist+1}),'y');
+                 test_1Dplot=isequal(lower(varargout{ilist,2}),'y')
             case 'check_scalar'
-                 test_scalar=isequal(lower(varargout{ilist+1}),'y');    
+                 test_scalar=isequal(lower(varargout{ilist,2}),'y')    
             case 'check_vector'   
-                 test_vector=isequal(lower(varargout{ilist+1}),'y'); 
+                 test_vector=isequal(lower(varargout{ilist,2}),'y') 
         end
     end
     if test_1Dplot==0
@@ -1724,15 +1716,7 @@ end
 %     end   
 % end
 
-% --- Executes on selection change in menu_coord.
-function HELP_Callback(hObject, eventdata, handles)
-path_to_uvmat=which ('uvmat');% check the path of uvmat
-pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'UVMAT_DOC','uvmat_doc.html');
-if isempty(dir(helpfile)), errordlg('Please put the help file uvmat_doc.html in the directory UVMAT/UVMAT_DOC')
-else
-web([helpfile '#get_field'])    
-end
+
 
 %-----------------------------------------------------
 % --- browse existing figures
@@ -1882,7 +1866,7 @@ end
 fileinput=[PathName FileName];%complete file name 
 testblank=findstr(fileinput,' ');%look for blanks
 if ~isempty(testblank)
-    warndlg_uvmat(['The input file name ' fileinput ' contains blank character : This is not allowed. Please change name'],'ERROR')
+    msgbox_uvmat('ERROR',['The input file name ' fileinput ' contains blank character : This is not allowed. Please change name'])
     return
 end
 sizf=size(fileinput);
@@ -1916,41 +1900,48 @@ set(handles.MenuFile_5,'Label',MenuFile_5)
 
 % --------------------------------------------------------------------
 function MenuFile_1_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuFile_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+fileinput=get(handles.MenuFile_1,'Label');
+set(handles.inputfile,'String',fileinput)
+inputfile_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function MenuFile_2_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuFile_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+fileinput=get(handles.MenuFile_2,'Label');
+set(handles.inputfile,'String',fileinput)
+inputfile_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function MenuFile_3_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuFile_3 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+fileinput=get(handles.MenuFile_3,'Label');
+set(handles.inputfile,'String',fileinput)
+inputfile_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function MenuFile_4_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuFile_4 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+fileinput=get(handles.MenuFile_4,'Label');
+set(handles.inputfile,'String',fileinput)
+inputfile_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function MenuFile_5_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuFile_5 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+fileinput=get(handles.MenuFile_5,'Label');
+set(handles.inputfile,'String',fileinput)
+inputfile_Callback(hObject, eventdata, handles)
+
+% --------------------------------------------------------------------
+function MenuExportField_Callback(hObject, eventdata, handles)
 
 
 % --------------------------------------------------------------------
-function ExportField_Callback(hObject, eventdata, handles)
-% hObject    handle to ExportField (see GCBO)
+function MenuHelp_Callback(hObject, eventdata, handles)
+% hObject    handle to MenuHelp (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+path_to_uvmat=which ('uvmat');% check the path of uvmat
+pathelp=fileparts(path_to_uvmat);
+helpfile=fullfile(pathelp,'UVMAT_DOC','uvmat_doc.html');
+if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the directory UVMAT/UVMAT_DOC')
+else
+web([helpfile '#get_field'])    
+end
+

@@ -42,7 +42,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 28-Dec-2009 23:41:18
+% Last Modified by GUIDE v2.5 05-Jan-2010 23:22:04
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -70,7 +70,7 @@ end
 % PlotHandles: set of handles of the elements contolling the plotting
 % parameters on the uvmat interface (obtained by 'get_plot_handle.m')
 function geometry_calib_OpeningFcn(hObject, eventdata, handles, handles_uvmat,pos,inputfile)
-set(handles.Phi,'TooltipString','Phi: rotation angle of the physical point coordiantes (in degrees)')% TO PUT IN GUIDE
+
 % Choose default command line output for geometry_calib
 handles.output = hObject;
 
@@ -311,7 +311,7 @@ if exist(outputfile,'file');%=1 if the output file already exists, 0 else
         else %if GeometryCalib already exists, delete its content
             uid_child=children(t,uid_calib);
             t=delete(t,uid_child);
-            testappend=1;
+%             testappend=1;
         end
     end
 end
@@ -370,173 +370,169 @@ end
 % end
 GeometryCalib.SourceCalib.PointCoord=Object.Coord;
 
+
+%root PROJETS
+
 %open and read the dataview GUI
 h_dataview=findobj(allchild(0),'name','dataview');
-Device=[];%default
-if isempty(h_dataview)
-    h_dataview=dataview;
-    hhdataview=guidata(h_dataview);
-    drawnow
-    hGUI=get(handles.REPLICATE,'parent');%read the calibration image source on the interface userdata
-    CalibData=get(hGUI,'UserData');
-    if isfield(CalibData,'XmlInput')
-        XmlInput=fileparts(CalibData.XmlInput);
+if ~isempty(h_dataview)
+    delete(h_dataview)
+end
+CalibData=get(handles.figure1,'UserData');%read the calibration image source on the interface userdata
+% filename='PROJETS';%default
+% if isfield(CalibData,'XmlInput')
+%      [pp,filename]=fileparts(CalibData.XmlInput);
+% end
+% while ~isequal(filename,'PROJETS') && numel(filename)>1
+%     filename_1=filename;
+%     pp_1=pp;
+%     [pp,filename]=fileparts(pp)
+% end
+% projinput=fullfile(pp_1,filename_1)
+% dd=dataview(projinput)
+
+% 
+% Device=[];%default
+% 
+% h_dataview=dataview;
+% hhdataview=guidata(h_dataview);
+% drawnow
+
+if isfield(CalibData,'XmlInput')
+    XmlInput=fileparts(CalibData.XmlInput);
+    [XmlInput,filename,ext]=fileparts(XmlInput);
+end
+SubCampaignTest='n'; %default
+testinput=0;
+if isfield(CalibData,'Heading')
+    Heading=CalibData.Heading;
+    if isfield(Heading,'Record') && isequal([filename ext],Heading.Record)
         [XmlInput,filename,ext]=fileparts(XmlInput);
     end
-    if isfield(CalibData,'Heading')
-        Heading=CalibData.Heading;
-        if isfield(Heading,'Record') && isequal([filename ext],Heading.Record)
-            [XmlInput,filename,ext]=fileparts(XmlInput);
-        end
-        if isfield(Heading,'Device') && isequal([filename ext],Heading.Device)
-            [XmlInput,filename,ext]=fileparts(XmlInput);
-            Device=Heading.Device;
-        end
-        if isfield(Heading,'Experiment') && isequal([filename ext],Heading.Experiment)
-            [PP,filename,ext]=fileparts(XmlInput);
-        end
-        testinput=0;
-        if isfield(Heading,'SubCampaign') && isequal([filename ext],Heading.SubCampaign)
-            set(hhdataview.RootDirectory,'String',XmlInput)
-            set(hhdataview.SubCampaignTest,'Value',1)
-            testinput=1;
-        elseif isfield(Heading,'Campaign') && isequal([filename ext],Heading.Campaign)
-            set(hhdataview.RootDirectory,'String',XmlInput)
-            set(hhdataview.SubCampaignTest,'Value',0)
-            testinput=1;
-        end 
+    if isfield(Heading,'Device') && isequal([filename ext],Heading.Device)
+        [XmlInput,filename,ext]=fileparts(XmlInput);
+        Device=Heading.Device;
     end
-    if testinput
-        dataview('RootDirectory_Callback',hObject,eventdata,hhdataview)
-        ListDevices=get(hhdataview.ListDevices,'String');
-        for ilist=1:length(ListDevices)
-            if isequal(ListDevices{ilist},Device)
-                set(hhdataview.ListDevices,'Value',ilist)
-                dataview('ListDevices_Callback',hObject,eventdata,hhdataview)
-                break
-            end
-        end
+    if isfield(Heading,'Experiment') && isequal([filename ext],Heading.Experiment)
+        [PP,filename,ext]=fileparts(XmlInput);
     end
-    return
+    testinput=0;
+    if isfield(Heading,'SubCampaign') && isequal([filename ext],Heading.SubCampaign)
+%         set(hhdataview.RootDirectory,'String',XmlInput)
+%         set(hhdataview.SubCampaignTest,'Value',1)
+        SubCampaignTest='y';
+        testinput=1;
+    elseif isfield(Heading,'Campaign') && isequal([filename ext],Heading.Campaign)
+%         set(hhdataview.RootDirectory,'String',XmlInput)
+%         set(hhdataview.SubCampaignTest,'Value',0)
+        testinput=1;
+    end 
 end
-
-hhdataview=guidata(h_dataview);
-CurrentPath=get(hhdataview.RootDirectory,'String');
-ListExperiments=get(hhdataview.ListExperiments,'String');
-Value=get(hhdataview.ListExperiments,'Value');
-if ~isequal(Value,1)
-    ListExperiments=ListExperiments(Value);
-end
-ListDevices=get(hhdataview.ListDevices,'String');
-Value=get(hhdataview.ListDevices,'Value');
-if isequal(Value,1)
-    warndlg_uvmat('manually select in the GUI dataview the device being calibrated','ERROR')
-    return
-else 
-    ListDevices=ListDevices(Value);
-end
-ListRecords=get(hhdataview.ListRecords,'String');
-Value=get(hhdataview.ListRecords,'Value');
-if ~isequal(Value,1)
-    ListRecords=ListRecords(Value);
-end
-[ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices,ListRecords);
-ListXml=get(hhdataview.ListXml,'String');
-Value=get(hhdataview.ListXml,'Value');
-if isequal(Value,1)
-    warndlg_uvmat('you need to select in the GUI dataview the xml files to edit','ERROR')
-    return
-else
-    ListXml=ListXml(Value);
-end
-
-%update all the selected xml files
-answer=msgbox_uvmat('INPUT_Y-N',[num2str(length(Value)) ' xml files for device ' ListDevices{1} ' will be refreshed with ' calib_type ' calibration data']);
-if ~isequal(answer{1},'OK')
-    return
-end
-% 'TEST'
-% List
-% return
-for iexp=1:length(List.Experiment)
-    ExpName=List.Experiment{iexp}.name;
-    if isfield(List.Experiment{iexp},'Device')
-        for idevice=1:length(List.Experiment{iexp}.Device)
-            DeviceName=List.Experiment{iexp}.Device{idevice}.name;       
-            if isfield(List.Experiment{iexp}.Device{idevice},'xmlfile')
-                for ixml=1:length(List.Experiment{iexp}.Device{idevice}.xmlfile)
-                    FileName=List.Experiment{iexp}.Device{idevice}.xmlfile{ixml};
-                    for ilistxml=1:length(ListXml)
-                        if isequal(FileName,ListXml{ilistxml})
-                            set(hhdataview.ListXml,'Value',Value(ilistxml))
-                            drawnow
-                            xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,FileName);
-                            update_imadoc(GeometryCalib,xmlfullname)
-                            break
-                        end
-                    end
-                end
-             elseif isfield(List.Experiment{iexp}.Device{idevice},'Record')
-                for irecord=1:length(List.Experiment{iexp}.Device{idevice}.Record)
-                    RecordName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.name;
-                    if isfield(List.Experiment{iexp}.Device{idevice}.Record{irecord},'xmlfile')
-                        for ixml=1:length(List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile)
-                            FileName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile{ixml};
-                            for ilistxml=1:length(ListXml)
-                                if isequal(FileName,ListXml{ilistxml})
-                                    set(hhdataview.ListXml,'Value',Value(ilistxml))
-                                    drawnow
-                                    xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,RecordName,FileName);
-                                    update_imadoc(GeometryCalib,xmlfullname)
-                                    break
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
+if ~testinput
+    filename='PROJETS';%default
+    if isfield(CalibData,'XmlInput')
+         [pp,filename]=fileparts(CalibData.XmlInput);
     end
-end
-set(hhdataview.ListXml,'Value',Value)
-
-
-%-------------------------------------------------------------
-function update_imadoc(GeometryCalib,outputfile)
-testappend=0;
-if exist(outputfile,'file');%=1 if the output file already exists, 0 else  
-    t=xmltree(outputfile); %read the file
-    uid=find(t,'ImaDoc');
-    if isequal(uid,1)%if the xml file is  ImaDoc
-        uid_calib=find(t,'ImaDoc/GeometryCalib');
-        if ~isempty(uid) %if GeometryCalib already exists, delete its content
-            backupfile=outputfile;
-            testexist=2;
-            while testexist==2
-               backupfile=[backupfile '~'];
-               testexist=exist(backupfile,'file');
-            end
-            [success,message]=copyfile(outputfile,backupfile);%make backup
-            if isequal(success,1)
-                delete(outputfile)
-            else
-                return
-            end
-            uid_child=children(t,uid_calib);
-            t=delete(t,uid_child);
-            testappend=1;
-        end
+    while ~isequal(filename,'PROJETS') && numel(filename)>1
+        filename_1=filename;
+        pp_1=pp;
+        [pp,filename]=fileparts(pp);
     end
+    XmlInput=fullfile(pp_1,filename_1);
+    testinput=1;
 end
-if ~testappend
-    t=xmltree;
-    t=set(t,1,'name','ImaDoc');
-    [t,uid_calib]=add(t,1,'element','GeometryCalib');
-%     t=struct2xml(GeometryCalib,t,uid_calib);
+if testinput
+    outcome=dataview(XmlInput,SubCampaignTest,GeometryCalib)%,SubCampaignTest)
 end
+%     %A COMPLETER
+%     dataview('RootDirectory_Callback',hObject,eventdata,hhdataview)
+%     ListDevices=get(hhdataview.ListDevices,'String');
+%     for ilist=1:length(ListDevices)
+%         if isequal(ListDevices{ilist},Device)
+%             set(hhdataview.ListDevices,'Value',ilist)
+%             dataview('ListDevices_Callback',hObject,eventdata,hhdataview)
+%             break
+%         end
+%     end
 
-t=struct2xml(GeometryCalib,t,uid_calib); 
-save(t,outputfile);
+% % hhdataview=guidata(h_dataview);
+% CurrentPath=get(hhdataview.RootDirectory,'String');
+% ListExperiments=get(hhdataview.ListExperiments,'String');
+% Value=get(hhdataview.ListExperiments,'Value');
+% if ~isequal(Value,1)
+%     ListExperiments=ListExperiments(Value);
+% end
+% ListDevices=get(hhdataview.ListDevices,'String');
+% Value=get(hhdataview.ListDevices,'Value');
+% if isequal(Value,1)
+%     msgbox_uvmat('ERROR','manually select in the GUI dataview the device being calibrated')
+%     return
+% else 
+%     ListDevices=ListDevices(Value);
+% end
+% ListRecords=get(hhdataview.ListRecords,'String');
+% Value=get(hhdataview.ListRecords,'Value');
+% if ~isequal(Value,1)
+%     ListRecords=ListRecords(Value);
+% end
+% [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices,ListRecords);
+% ListXml=get(hhdataview.ListXml,'String');
+% Value=get(hhdataview.ListXml,'Value');
+% if isequal(Value,1)
+%     msgbox_uvmat('ERROR','you need to select in the GUI dataview the xml files to edit')
+%     return
+% else
+%     ListXml=ListXml(Value);
+% end
+% 
+% %update all the selected xml files
+% answer=msgbox_uvmat('INPUT_Y-N',[num2str(length(Value)) ' xml files for device ' ListDevices{1} ' will be refreshed with ' calib_type ' calibration data'])
+% if ~isequal(answer,'Yes')
+%     return
+% end
+% 'TESTcalib'
+% List=DataFiles.List
+% for iexp=1:length(List.Experiment)
+%     ExpName=List.Experiment{iexp}.name;
+%     if isfield(List.Experiment{iexp},'Device')
+%         for idevice=1:length(List.Experiment{iexp}.Device)
+%             DeviceName=List.Experiment{iexp}.Device{idevice}.name;       
+%             if isfield(List.Experiment{iexp}.Device{idevice},'xmlfile')
+%                 for ixml=1:length(List.Experiment{iexp}.Device{idevice}.xmlfile)
+%                     FileName=List.Experiment{iexp}.Device{idevice}.xmlfile{ixml};
+%                     for ilistxml=1:length(ListXml)
+%                         if isequal(FileName,ListXml{ilistxml})
+%                             set(hhdataview.ListXml,'Value',Value(ilistxml))
+%                             drawnow
+%                             xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,FileName);
+%                             update_imadoc(GeometryCalib,xmlfullname)
+%                             break
+%                         end
+%                     end
+%                 end
+%              elseif isfield(List.Experiment{iexp}.Device{idevice},'Record')
+%                 for irecord=1:length(List.Experiment{iexp}.Device{idevice}.Record)
+%                     RecordName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.name;
+%                     if isfield(List.Experiment{iexp}.Device{idevice}.Record{irecord},'xmlfile')
+%                         for ixml=1:length(List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile)
+%                             FileName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile{ixml};
+%                             for ilistxml=1:length(ListXml)
+%                                 if isequal(FileName,ListXml{ilistxml})
+%                                     set(hhdataview.ListXml,'Value',Value(ilistxml))
+%                                     drawnow
+%                                     xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,RecordName,FileName);
+%                                     update_imadoc(GeometryCalib,xmlfullname)
+%                                     break
+%                                 end
+%                             end
+%                         end
+%                     end
+%                 end
+%             end
+%         end
+%     end
+% end
+% set(hhdataview.ListXml,'Value',Value)
 
 
 %-----------------------------------------------------------------
@@ -840,37 +836,6 @@ if ~isempty(Phi)
 end
 rotation(handles,Phi)
 
-%-----------------------------------------------------
-%rotation
-function rotation(handles,Phi)
-O_x=str2num(get(handles.O_x,'String'));
-O_y=str2num(get(handles.O_y,'String'));
-if isempty(O_x)
-    O_x=0;%default
-end
-if isempty(O_y)
-    O_y=0;%default
-end
-Coord_cell=get(handles.ListCoord,'String');
-data=read_geometry_calib(Coord_cell);
-%data=read_geometry_calib(handles);
-r1=cos(pi*Phi/180);
-r2=-sin(pi*Phi/180);
-r3=sin(pi*Phi/180);
-r4=cos(pi*Phi/180);
-x=data.Coord(:,1);
-y=data.Coord(:,2);
-data.Coord(:,1)=r1*x+r2*y;
-data.Coord(:,2)=r3*x+r4*y;
-% data.Coord(:,[4 5])=data.Coord(:,[4 5]);
-for i=1:size(data.Coord,1)
-    for j=1:5
-          Coord{i,j}=num2str(data.Coord(i,j),4);%phys x,y,z
-   end
-end
-Tabchar=cell2tab(Coord,'    |    ');
-set(handles.ListCoord,'Value',1)
-set(handles.ListCoord,'String',Tabchar)
 
 
 function O_x_Callback(hObject, eventdata, handles)
@@ -1089,9 +1054,32 @@ end
 
 % --------------------------------------------------------------------
 function MenuCreateGrid_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuCreateGrid (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
+CalibData=get(hcalib,'UserData');
+Tinput=[];%default
+if isfield(CalibData,'grid')
+    Tinput=CalibData.grid;
+end
+T=create_grid(Tinput);%display translate_points GUI and get shift parameters 
+CalibData.grid=T;
+set(hcalib,'UserData',CalibData)
+
+%grid in phys space
+Coord_cell=get(handles.ListCoord,'String');
+data=read_geometry_calib(Coord_cell);
+data.Coord(:,1)=T(1)+data.Coord(:,1);
+data.Coord(:,2)=T(2)+data.Coord(:,2);
+data.Coord(:,3)=T(3)+data.Coord(:,3);
+data.Coord(:,[4 5])=data.Coord(:,[4 5]);
+for i=1:size(data.Coord,1)
+    for j=1:5
+          Coord{i,j}=num2str(data.Coord(i,j),4);%phys x,y,z
+   end
+end
+Tabchar=cell2tab(Coord,'    |    ');
+set(handles.ListCoord,'Value',1)
+set(handles.ListCoord,'String',Tabchar)
+
 
 
 % --------------------------------------------------------------------
@@ -1105,9 +1093,9 @@ end
 T=translate_points(Tinput);%display translate_points GUI and get shift parameters 
 CalibData.translate=T;
 set(hcalib,'UserData',CalibData)
+%translation
 Coord_cell=get(handles.ListCoord,'String');
 data=read_geometry_calib(Coord_cell);
-% data=read_geometry_calib(handles);
 data.Coord(:,1)=T(1)+data.Coord(:,1);
 data.Coord(:,2)=T(2)+data.Coord(:,2);
 data.Coord(:,3)=T(3)+data.Coord(:,3);
@@ -1124,189 +1112,44 @@ set(handles.ListCoord,'String',Tabchar)
 
 % --------------------------------------------------------------------
 function MenuRotatePoints_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuRotatePoints (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function Untitled_8_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_8 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-
-function edit27_Callback(hObject, eventdata, handles)
-
-
-function edit28_Callback(hObject, eventdata, handles)
-% hObject    handle to O_y (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of O_y as text
-%        str2double(get(hObject,'String')) returns contents of O_y as a double
-
-
-% --- Executes on button press in rotation_plus.
-function pushbutton16_Callback(hObject, eventdata, handles)
-% hObject    handle to rotation_plus (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --- Executes on button press in rotation_minus.
-function pushbutton17_Callback(hObject, eventdata, handles)
-% hObject    handle to rotation_minus (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-
-function edit30_Callback(hObject, eventdata, handles)
-% hObject    handle to Phi (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of Phi as text
-%        str2double(get(hObject,'String')) returns contents of Phi as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function O_y_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to O_y (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
+CalibData=get(hcalib,'UserData')
+Tinput=[];%default
+if isfield(CalibData,'rotate')
+    Tinput=CalibData.rotate;
 end
-
-
-% --- Executes during object creation, after setting all properties.
-function O_x_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to O_x (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+T=rotate_points(Tinput);%display translate_points GUI and get shift parameters 
+CalibData.rotate=T;
+set(hcalib,'UserData',CalibData)
+%-----------------------------------------------------
+%rotation
+Phi=T(1);
+O_x=0;%default
+O_y=0;%default
+if numel(T)>=2
+    O_x=T(2);%default
 end
-
-
-% --- Executes during object creation, after setting all properties.
-function T_x_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to T_x (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+if numel(T)>=3
+    O_y=T(3);%default
 end
-
-
-% --- Executes during object creation, after setting all properties.
-function T_y_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to T_y (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+Coord_cell=get(handles.ListCoord,'String');
+data=read_geometry_calib(Coord_cell);
+r1=cos(pi*Phi/180);
+r2=-sin(pi*Phi/180);
+r3=sin(pi*Phi/180);
+r4=cos(pi*Phi/180);
+x=data.Coord(:,1)-O_x;
+y=data.Coord(:,2)-O_y;
+data.Coord(:,1)=r1*x+r2*y;
+data.Coord(:,2)=r3*x+r4*y;
+% data.Coord(:,[4 5])=data.Coord(:,[4 5]);
+for i=1:size(data.Coord,1)
+    for j=1:5
+          Coord{i,j}=num2str(data.Coord(i,j),4);%phys x,y,z
+   end
 end
-
-
-% --- Executes during object creation, after setting all properties.
-function T_z_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to T_z (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function edit31_Callback(hObject, eventdata, handles)
-% hObject    handle to edit31 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit31 as text
-%        str2double(get(hObject,'String')) returns contents of edit31 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit31_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit31 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function edit32_Callback(hObject, eventdata, handles)
-% hObject    handle to edit32 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit32 as text
-%        str2double(get(hObject,'String')) returns contents of edit32 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit32_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit32 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function edit33_Callback(hObject, eventdata, handles)
-% hObject    handle to edit33 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit33 as text
-%        str2double(get(hObject,'String')) returns contents of edit33 as a double
-
-
-% --- Executes on button press in pushbutton18.
-function pushbutton18_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton18 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --- Executes on button press in pushbutton19.
-function pushbutton19_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton19 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
+Tabchar=cell2tab(Coord,'    |    ');
+set(handles.ListCoord,'Value',1)
+set(handles.ListCoord,'String',Tabchar)
 
 
