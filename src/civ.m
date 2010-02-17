@@ -3504,11 +3504,12 @@ for ifile=1:nbfield
 		textout=char(textcmx);
 % 		dlmwrite(filename_cmx,textout,'');
         
-        
+        filename_ima
+        filename_ima_1
      fid=fopen([filename_cmx],'w');
 fprintf(fid, ['##############   CMX file' '\n']);
- fprintf(fid,   ['FirstImage ' filename_ima '\n' ]);
- fprintf(fid,   ['LastImage  ' filename_ima_1 '\n' ]);
+ fprintf(fid,   ['FirstImage ' regexprep(filename_ima,'\\','\\\\') '\n' ]);
+ fprintf(fid,   ['LastImage  ' regexprep(filename_ima_1,'\\','\\\\') '\n' ]);
   fprintf(fid,  ['XX' '\n' ]);
   fprintf(fid,  ['Mask '  maskflag '\n' ]);
   fprintf(fid,  ['MaskName '  maskname '\n' ]);
