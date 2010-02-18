@@ -1566,7 +1566,7 @@ end
 PathName=list_path{index_ACTION};%current recorded path
 if ~isequal(path_get_field,PathName)
     CurrentPath=fileparts(which(ACTION));
-    if ~isequal(PathName,CurrentPath)
+    if ~isequal(CurrentPath,PathName)&&~isequal(CurrentPath,fullfile(PathName,'private'))
         addpath(PathName) 
         errormsg=check_functions;
         msgbox_uvmat('CONFIRMATION',[['path ' PathName ' added to the current Matlab pathes'];errormsg])

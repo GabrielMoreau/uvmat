@@ -108,13 +108,10 @@ set(handles.ListCoord,'KeyPressFcn',{@key_press_fcn,handles})%set keyboard actio
 %htable=uitable(10,5) 
 %set(htable,'ColumnNames',{'x','y','z','X(pixels)','Y(pixels)'})
 
+%------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = geometry_calib_OutputFcn(hObject, eventdata, handles)
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+%------------------------------------------------------------------------
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 varargout{2}=handles;
@@ -122,13 +119,10 @@ varargout{2}=handles;
 %------------
 function Phi_Callback(hObject, eventdata, handles)
 
-
-
-
-%--------------------------------------------------
+%------------------------------------------------------------------------
 %read input xml file and update the edit boxes
 function loadfile(handles,fileinput)
-
+%------------------------------------------------------------------------
 %read the input xml file
 t=xmltree(fileinput);
 s=convert(t);%convert to matlab structure
@@ -266,7 +260,7 @@ end
 unitlist=get(handles.CoordUnit,'String');
 unit=unitlist{get(handles.CoordUnit,'value')};
 GeometryCalib.CoordUnit=unit;
-
+GeometryCalib.SourceCalib.PointCoord=Object.Coord;
 huvmat=findobj(allchild(0),'Name','uvmat');
 hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
 RootPath='';
@@ -284,50 +278,51 @@ else
     answer=inputdlg(question,'save average in a new file',1,def,options);
     outputfile=answer{1};
 end
-testappend=0;
-if exist(outputfile,'file');%=1 if the output file already exists, 0 else 
-    t=xmltree(outputfile); %read the file
-    backupfile=outputfile;
-    testexist=2;
-    while testexist==2
-        backupfile=[backupfile '~'];% make a backup name by adding  ~ to the xml file name
-        testexist=exist(backupfile,'file');
-    end
-    [success,message]=copyfile(outputfile,backupfile);%make backup   
-    t=xmltree(outputfile); %read the file
-    uid=find(t,'ImaDoc');
-    if ~isequal(uid,1)%if the xml file is not ImaDoc, delete it (after backup)
-        if isequal(success,1)
-            delete(outputfile)
-        else
-            msgbox_uvmat('ERROR',['error in the backup of the existing xml file: ' message])
-            return
-        end
-    else
-        uid_calib=find(t,'ImaDoc/GeometryCalib');
-        testappend=1;
-        if isempty(uid_calib)
-            [t,uid_calib]=add(t,1,'element','GeometryCalib');
-        else %if GeometryCalib already exists, delete its content
-            uid_child=children(t,uid_calib);
-            t=delete(t,uid_child);
-%             testappend=1;
-        end
-    end
-end
-if ~testappend %create a new xml file for calibration data
-    t=xmltree;
-    t=set(t,1,'name','ImaDoc');
-    [t,uid_calib]=add(t,1,'element','GeometryCalib');
-end
-% hgrid=get(handles.REPLICATE,'parent');%read the calibration image source on the interface userdata
-% imagename=get(hgrid,'UserData');
-% if exist(imagename,'file')
-%     GeometryCalib.SourceCalib.ImageCalib=imagename;
+update_imadoc(GeometryCalib,outputfile)
+% testappend=0;
+% if exist(outputfile,'file');%=1 if the output file already exists, 0 else 
+%     t=xmltree(outputfile); %read the file
+%     backupfile=outputfile;
+%     testexist=2;
+%     while testexist==2
+%         backupfile=[backupfile '~'];% make a backup name by adding  ~ to the xml file name
+%         testexist=exist(backupfile,'file');
+%     end
+%     [success,message]=copyfile(outputfile,backupfile);%make backup   
+%     t=xmltree(outputfile); %read the file
+%     uid=find(t,'ImaDoc');
+%     if ~isequal(uid,1)%if the xml file is not ImaDoc, delete it (after backup)
+%         if isequal(success,1)
+%             delete(outputfile)
+%         else
+%             msgbox_uvmat('ERROR',['error in the backup of the existing xml file: ' message])
+%             return
+%         end
+%     else
+%         uid_calib=find(t,'ImaDoc/GeometryCalib');
+%         testappend=1;
+%         if isempty(uid_calib)
+%             [t,uid_calib]=add(t,1,'element','GeometryCalib');
+%         else %if GeometryCalib already exists, delete its content
+%             uid_child=children(t,uid_calib);
+%             t=delete(t,uid_child);
+% %             testappend=1;
+%         end
+%     end
 % end
-GeometryCalib.SourceCalib.PointCoord=Object.Coord;
-t=struct2xml(GeometryCalib,t,uid_calib); 
-save(t,outputfile);
+% if ~testappend %create a new xml file for calibration data
+%     t=xmltree;
+%     t=set(t,1,'name','ImaDoc');
+%     [t,uid_calib]=add(t,1,'element','GeometryCalib');
+% end
+% % hgrid=get(handles.REPLICATE,'parent');%read the calibration image source on the interface userdata
+% % imagename=get(hgrid,'UserData');
+% % if exist(imagename,'file')
+% %     GeometryCalib.SourceCalib.ImageCalib=imagename;
+% % end
+% GeometryCalib.SourceCalib.PointCoord=Object.Coord;
+% t=struct2xml(GeometryCalib,t,uid_calib); 
+% save(t,outputfile);
 msgbox_uvmat('CONFIRMATION',{[outputfile ' updated with calibration data'];...
     ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
     ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']})
@@ -363,15 +358,7 @@ elseif isequal(calib_type,'tsai')
     GeometryCalib=calib_tsai(Object.Coord);
 end
 % %record image source
-% hgrid=get(handles.REPLICATE,'parent');%read the calibration image source on the interface userdata
-% imagename=get(hgrid,'UserData');
-% if exist(imagename,'file')
-%     GeometryCalib.SourceCalib.ImageCalib=imagename;
-% end
 GeometryCalib.SourceCalib.PointCoord=Object.Coord;
-
-
-%root PROJETS
 
 %open and read the dataview GUI
 h_dataview=findobj(allchild(0),'name','dataview');
@@ -379,24 +366,6 @@ if ~isempty(h_dataview)
     delete(h_dataview)
 end
 CalibData=get(handles.figure1,'UserData');%read the calibration image source on the interface userdata
-% filename='PROJETS';%default
-% if isfield(CalibData,'XmlInput')
-%      [pp,filename]=fileparts(CalibData.XmlInput);
-% end
-% while ~isequal(filename,'PROJETS') && numel(filename)>1
-%     filename_1=filename;
-%     pp_1=pp;
-%     [pp,filename]=fileparts(pp)
-% end
-% projinput=fullfile(pp_1,filename_1)
-% dd=dataview(projinput)
-
-% 
-% Device=[];%default
-% 
-% h_dataview=dataview;
-% hhdataview=guidata(h_dataview);
-% drawnow
 
 if isfield(CalibData,'XmlInput')
     XmlInput=fileparts(CalibData.XmlInput);
@@ -442,7 +411,7 @@ if ~testinput
     testinput=1;
 end
 if testinput
-    outcome=dataview(XmlInput,SubCampaignTest,GeometryCalib)%,SubCampaignTest)
+    outcome=dataview(XmlInput,SubCampaignTest,GeometryCalib)
 end
 %     %A COMPLETER
 %     dataview('RootDirectory_Callback',hObject,eventdata,hhdataview)
@@ -954,7 +923,7 @@ if ismember(xx,[8 127])%backspace or delete
     set(handles.ListCoord,'Value',max(val,1))
     set(handles.ListCoord,'String',Tabchar)  
     ListCoord_Callback(hObject, eventdata, handles)
-    PLOT_Callback(hObject,eventdata,handles)
+    MenuPlot_Callback(hObject,eventdata,handles)
 end
 
 
@@ -1050,40 +1019,47 @@ else
    web([helpfile '#geometry_calib'])
 end
 
-
-
-% --------------------------------------------------------------------
+%------------------------------------------------------------------------
 function MenuCreateGrid_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
 CalibData=get(hcalib,'UserData');
 Tinput=[];%default
 if isfield(CalibData,'grid')
     Tinput=CalibData.grid;
 end
-T=create_grid(Tinput);%display translate_points GUI and get shift parameters 
+T=create_grid(Tinput)%display the GUI create_grid 
 CalibData.grid=T;
 set(hcalib,'UserData',CalibData)
 
 %grid in phys space
 Coord_cell=get(handles.ListCoord,'String');
-data=read_geometry_calib(Coord_cell);
-data.Coord(:,1)=T(1)+data.Coord(:,1);
-data.Coord(:,2)=T(2)+data.Coord(:,2);
-data.Coord(:,3)=T(3)+data.Coord(:,3);
-data.Coord(:,[4 5])=data.Coord(:,[4 5]);
-for i=1:size(data.Coord,1)
-    for j=1:5
-          Coord{i,j}=num2str(data.Coord(i,j),4);%phys x,y,z
+data=read_geometry_calib(Coord_cell)
+nbpoints=size(data.Coord,1); %nbre of calibration points
+data.Coord(1:size(T,1),1:3)=T;
+for i=1:nbpoints
+   for j=1:5
+          Coord{i,j}=num2str(data.Coord(i,j),4);%display coordiantes with 4 digits
    end
 end
+for i=nbpoints+1:size(data.Coord,1)
+    for j=1:3
+          Coord{i,j}=num2str(data.Coord(i,j),4);%display coordiantes with 4 digits
+    end
+    for j=4:5
+          Coord{i,j}='';%display coordiantes with 4 digi
+    end
+end
+
+
+%size(data.Coord,1)
 Tabchar=cell2tab(Coord,'    |    ');
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
 
-
-
-% --------------------------------------------------------------------
+%-----------------------------------------------------------------------
 function MenuTranslatePoints_Callback(hObject, eventdata, handles)
+%-----------------------------------------------------------------------
 hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
 CalibData=get(hcalib,'UserData')
 Tinput=[];%default

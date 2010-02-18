@@ -3,9 +3,9 @@
 % function varargout = series(varargin)
 % associated with the GUI dataview.fig
 %
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %     This file is part of the toolbox UVMAT.
 % 
 %     UVMAT is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function varargout = dataview(varargin)
 
@@ -42,10 +42,10 @@ else
 end
 % End initialization code - DO NOT EDIT
 
-
+%------------------------------------------------------------------------
 % --- Executes just before dataview is made visible.
 function dataview_OpeningFcn(hObject, eventdata, handles, RootDir, SubCampaignTst,GeometryCalib)
-
+%------------------------------------------------------------------------
 % Choose default command line output for dataview
 handles.output = 'Cancel';
 
@@ -106,8 +106,6 @@ if exist('RootDir','var')
    uiwait(handles.figure);
 end
 
-
-
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = dataview_OutputFcn(hObject, eventdata, handles)
@@ -116,7 +114,6 @@ function varargout = dataview_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 delete(handles.figure)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
 % --- Executes on button press in browser.
 function browser_Callback(hObject, eventdata, handles)
@@ -135,7 +132,6 @@ CurrentFile='/coriolis/bigone/PROJETS';%get(handles.RootDirectory,'String');
 set(handles.SubCampaignTest,'Value',1)
 CampaignDir=uigetdir(CurrentFile,'Open the Campaign directory'); %file browser
 set(handles.RootDirectory,'String',CampaignDir)
-
 RootDirectory_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------

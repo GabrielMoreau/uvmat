@@ -10,6 +10,13 @@ function update_imadoc(GeometryCalib,outputfile)
 testappend=0;
 if exist(outputfile,'file');%=1 if the output file already exists, 0 else  
     t=xmltree(outputfile); %read the file
+    backupfile=outputfile;
+    testexist=2;
+    while testexist==2
+       backupfile=[backupfile '~'];
+       testexist=exist(backupfile,'file');
+    end
+    [success,message]=copyfile(outputfile,backupfile);%make backup
     uid=find(t,'ImaDoc');
     if ~isequal(uid,1)
         return
@@ -20,13 +27,13 @@ if exist(outputfile,'file');%=1 if the output file already exists, 0 else
     if isempty(uid_calib)  %if GeometryCalib does not already exists, create it
         [t,uid_calib]=add(t,1,'element','GeometryCalib');
     else %if GeometryCalib already exists, delete its content
-        backupfile=outputfile;
-        testexist=2;
-        while testexist==2
-           backupfile=[backupfile '~'];
-           testexist=exist(backupfile,'file');
-        end
-        [success,message]=copyfile(outputfile,backupfile);%make backup
+%         backupfile=outputfile;
+%         testexist=2;
+%         while testexist==2
+%            backupfile=[backupfile '~'];
+%            testexist=exist(backupfile,'file');
+%         end
+%         [success,message]=copyfile(outputfile,backupfile);%make backup
         if isequal(success,1)
             delete(outputfile)
         else

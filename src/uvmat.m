@@ -3994,7 +3994,7 @@ end
 %check the current path to the selected function
 PathName=list_path{ind_coord};
 CurrentPath=fileparts(which(coord_option));
-if ~isequal(PathName,CurrentPath)
+if ~isequal(PathName,CurrentPath)&&~isequal(CurrentPath,fullfile(PathName,'private'))
     addpath(PathName) 
     errormsg=check_functions;
     msgbox_uvmat('WARNING',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
