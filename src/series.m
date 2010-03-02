@@ -4398,8 +4398,7 @@ for iview=1:length(NomType)
             last_j1 =last_j +ind_shift(1);
             last_j2 =last_j +ind_shift(2);
             siz=size(SeriesData.Time{1});
-            if first_i1>=1 && first_j1
-                >=1 && siz(1)>=last_i2 && siz(2)>=last_j2
+            if first_i1>=1 && first_j1>=1 && siz(1)>=last_i2 && siz(2)>=last_j2
                 time_first=(time(first_i1,first_j1)+time(first_i2,first_j2))/2;
                 time_last=(time(last_i1,last_j1)+time(last_i2,last_j2))/2;
             else%read the time in the nc files
