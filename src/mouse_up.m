@@ -193,7 +193,6 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
                     set(hfig2,'WindowButtonUpFcn',{@mouse_up,handles})  
                     set(hfig2,'DeleteFcn',{@close_fig,AxeData.CurrentRectZoom,'zoom'})
                     set(hfig2,'UserData',AxeData.CurrentRectZoom)% record the parent object (zoom rectangle) in the new fig
-                    %UvData.Plane2.Axes=copyobj(currentaxes,hfig2); %copy the current graph axes to the zoom figure  
                     AxeData.ZoomAxes=copyobj(currentaxes,hfig2); %copy the current graph axes to the zoom figure 
                     figure(hfig2)
                     set(AxeData.ZoomAxes,'Position',[0.1300    0.1100    0.7750    0.8150])% standard axes position on a figure
