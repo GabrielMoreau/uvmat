@@ -17,7 +17,6 @@ data_ZObject=[];
 % end
 nb_defining_points=length(Coord_cell);
 iline=0;
-data.Coord=[];%default
 for i=1:nb_defining_points
     coord_str=Coord_cell{i};%character string of line number i
     k=findstr('|',coord_str);%find separators '|'

@@ -1,21 +1,5 @@
 %'ListDir': scan the structure of the directory tree (for dataview.m)
 %------------------------------------------------------------------------
-% function [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in)
-%
-% 
-% OUTPUT:
-% ListDevices: list of Devices 
-% ListRecords: list of records
-% ListXml: list of xml file names
-% List: structure representing the tree structure
-%
-%INPUT
-% CurrentPath: full name (including path) to the input campaign (or subcampaign), we assume that
-%          data are organised as (sub)campaign/Experiment/Device/(Record/)/file .xml
-% ListExperiments: list of experiments to scan (cell of names)
-% ListDevices_in: list of devices to scan (cell of names)
-% ListRecords_in: list of records to scan (cell of names)
-
 function [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in)
 
 ListRecords={};
@@ -88,12 +72,8 @@ for iexp=1:length(ListExperiments)
     end
 end
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% ListDevices: list of devices already scanned
-% ListDevices_in: list of input devices to scan
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [testnew,testselect]=test_select(name,ListDevices,ListDevices_in)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if ~isempty(ListDevices_in)
     testnew=0;
     testselect=0;
