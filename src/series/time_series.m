@@ -1,0 +1,720 @@
+function GUI_input=time_series(num_i1,num_i2,num_j1,num_j2,Series) 
+%----------------------------------------------------------------------
+% --- make a time series analysis
+%----------------------------------------------------------------------
+%INPUT: 
+%num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
+%num_i2: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
+%num_j1: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
+%num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
+%OTHER INPUTS given by the structure Series
+
+%requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
+if ~exist('num_i1','var')
+    GUI_input={'RootPath';'two';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
+        'SubDir';'on';... % subdirectory of derived files (PIV fields), ('on' by default)
+        'RootFile';'on';... %root input file name ('on' by default)
+        'FileExt';'on';... %input file extension ('on' by default)
+        'NomType';'on';...%type of file indexing ('on' by default)
+        'NbSlice';'on'; ...%nbre of slices ('off' by default)
+        'VelTypeMenu';'two';...% menu for selecting the velocity type (civ1,..) options 'off'/'one'/'two', 'off' by default)
+        'FieldMenu';'two';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+        'CoordType';'on';...%can use a transform function 'off' by default
+        'GetObject';'on';...%can use projection object ,'off' by default
+        %'GetMask';'on'...%can use mask option   ,'off' by default
+        %'PARAMETER'; options: name of the user defined parameter',repeat a line for each parameter 
+               ''};
+    return %exit the function 
+end
+
+%------------------------------------------------------
+hseries=guidata(Series.hseries);%handles in the GUI series
+WaitbarPos=get(hseries.waitbar_frame,'Position'); %position of the waitbar frame
+
+%projection object
+test_object=get(hseries.GetObject,'Value');
+if test_object%isfield(Series,'sethandles')
+    Series.ProjObject=read_set_object(Series.sethandles);
+    %answeryes=questdlg({['field series projected on ' Series.ProjObject.Style]});
+    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' Series.ProjObject.Style]);
+    if ~isequal(answeryes,'Yes')
+        return
+    end
+else
+    msgbox_uvmat('ERROR','a projection object is needed');
+    return
+end
+
+% root names
+if iscell(Series.RootPath)
+    RootPath=Series.RootPath;
+    RootFile=Series.RootFile;
+    SubDir=Series.SubDir;
+    FileExt=Series.FileExt;
+    NomType=Series.NomType;
+else
+    RootPath={Series.RootPath};
+    RootFile={Series.RootFile};
+    SubDir={Series.SubDir};
+    FileExt={Series.FileExt};
+    NomType={Series.NomType};
+    num_i1={num_i1};
+    num_i2={num_i2};
+    num_j1={num_j1};
+    num_j2={num_j2};
+end
+ext=FileExt{1};
+form=imformats(ext([2:end]));%test valid Matlab image formats
+testima=0;
+if ~isempty(form)||isequal(lower(ext),'.avi')
+    testima=1;
+end
+nbview=length(RootPath);%number of series (1 or 2)
+nbfield=size(num_i1{1},1)*size(num_i1{1},2); %number of fields in the time series
+
+%Number of input series: this function  accepts only a single input file series 
+nbview=length(RootPath);
+if nbview==2
+    %TODO: choose between difference and two series
+elseif nbview>2  % TODO: make multiple series
+%     RootPath=RootPath(1:2);
+%     set(hseries.RootPath,'String',RootPath)
+%     SubDir=SubDir(1:2);
+%     set(hseries.SubDir,'String',SubDir)
+%     RootFile=RootFile(1:2);
+%     set(hseries.RootFile,'String',RootFile)
+%     NomType=NomType(1:2);
+%     %set(hseries.NomType,'String',NomType)
+%     FileExt=FileExt(1:2);
+%     set(hseries.FileExt,'String',FileExt)
+%     nbview=2;
+end
+hhh=which('mmreader');
+for iview=1:nbview
+    test_movie(iview)=0;
+    if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
+        if isequal(lower(FileExt{iview}),'.avi')
+            MovieObject{iview}=mmreader(fullfile(RootPath{iview},[RootFile{iview} FileExt{iview}]));
+            test_movie(iview)=1;
+        end
+    end 
+end
+filebase{1}=fullfile(RootPath{1},RootFile{1});
+
+% number of slices
+NbSlice=str2num(get(hseries.NbSlice,'String'));
+if isempty(NbSlice)
+    NbSlice=1;
+end
+NbSlice_name=num2str(NbSlice);
+
+% Field and velocity type (the same for the two views)
+if isfield(Series,'Field')
+    FieldName=Series.Field;%the same set of fields for all views
+else
+    FieldName={''};
+end
+if isequal(FieldName,{'get_field...'})
+    hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
+    if numel(hget_field)>1
+        delete(hget_field(2:end)) % delete multiple occurerence of the GUI get_fioeld
+    elseif isempty(hget_field)
+       filename=name_generator(filebase{1},num_i1{1}(1),num_j1{1}(1),FileExt{1},NomType{1},1,num_i2{1}(1),num_j2{1}(1),SubDir{1}); 
+       idetect(iview)=exist(filename,'file');
+       hget_field=get_field(filename);
+       return
+    end
+    %hhget_field=guidata(hget_field);%handles of GUI elements in get_field
+    SubField=read_get_field(hget_field) %read the names of the variables to plot in the get_field GUI
+    if isempty(SubField)
+        delete(hget_field)
+       filename=name_generator(filebase{1},num_i1{1}(1),num_j1{1}(1),FileExt{1},NomType{1},1,num_i2{1}(1),num_j2{1}(1),SubDir{1});
+        hget_field=get_field(filename);
+        SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
+    end
+%     if isequal(get(hhget_field.menu_coord,'Visible'),'on')
+%         list_transform=get(hhget_field.menu_coord,'String');
+%         val_list=get(hhget_field.menu_coord,'Value');
+%         transform=list_transform{val_list};
+%     end
+end
+
+%detect whether the two files are 'images' or 'netcdf'
+testima=0;
+testvol=0;
+testcivx=0;
+testnc=0;
+FileExt=get(hseries.FileExt,'String');
+for iview=1:nbview
+     ext=FileExt{iview};
+     form=imformats(ext([2:end]));
+     if isequal(lower(ext),'.vol')
+         testvol=testvol+1;
+     elseif ~isempty(form)||isequal(lower(ext),'.avi')% if the extension corresponds to an image format recognized by Matlab
+         testima=testima+1;
+     elseif isequal(ext,'.nc')
+         testnc=testnc+1;
+     end
+end
+if testvol
+    msgbox_uvmat('ERROR','volume images not implemented yet')
+    return
+end
+if testnc~=nbview && testima~=nbview && testvol~=nbview
+    msgbox_uvmat('need a set of images or a set of netcdf files with the same fields as input','ERROR')
+    return
+end
+if ~isequal(FieldName,{'get_field...'})
+    testcivx=testnc;
+end
+
+% Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
+filebasesub=fullfile(RootPath{1},RootFile{1});
+if NbSlice==1
+    filebase_out=[filebasesub '_time'];
+else
+    filebase_out=[filebasesub '_' NbSlice_name 'mtim'];
+    increment=num_i1{1}(2)-num_i1{1}(1);
+    if ~isequal(increment,1) % if an increment is set
+        answeryes=msgbox_uvmat('INPUT_Y-N',['will take time series in ' num2str(NbSlice) 'slices with increment = ' num2str(increment) '!']); 
+    else    
+        answeryes=msgbox_uvmat('INPUT_Y-N',{['will take time series in ' num2str(NbSlice) ' slices'];['results stored as files ' filebase_out ' ...']});
+    end
+    if ~isequal(answeryes,'Yes')
+        return
+    end
+end
+VelType_str=get(hseries.VelTypeMenu,'String');
+VelType_val=get(hseries.VelTypeMenu,'Value');
+VelType{1}=VelType_str{VelType_val};
+if nbview==2
+    VelType_str=get(hseries.VelTypeMenu_1,'String');
+    VelType_val=get(hseries.VelTypeMenu_1,'Value');
+    VelType{2}=VelType_str{VelType_val};
+end
+
+%Calibration data and timing: read the ImaDoc files
+mode=''; %default
+timecell={};
+XmlData={};
+itime=0;
+NbSlice_calib={};
+for iview=1:nbview%Loop on views
+    XmlData{iview}=[];%default
+    filebase{iview}=fullfile(RootPath{iview},RootFile{iview});
+    if exist([filebase{iview} '.xml'],'file')
+        [XmlData{iview},error]=imadoc2struct([filebase{iview} '.xml']); 
+        if isfield(XmlData{iview},'Time')
+            itime=itime+1;
+            timecell{itime}=XmlData{iview}.Time;
+        end
+        if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
+            NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
+            if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
+                msgbox_uvmat('WARNING','inconsistent number of Z indices for the field series');
+            end
+        end 
+    elseif exist([filebase{iview} '.civ'],'file')
+        [error,time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext([filebase{iview} '.civ']);
+        itime=itime+1;
+        timecell{itime}=time;
+        XmlData{iview}.Time=time;
+        GeometryCalib.R=[pxcmx 0 0; 0 pxcmy 0;0 0 0];
+        GeometryCalib.Tx=0;
+        GeometryCalib.Ty=0;
+        GeometryCalib.Tz=1;
+        GeometryCalib.dpx=1;
+        GeometryCalib.dpy=1;
+        GeometryCalib.sx=1;
+        GeometryCalib.Cx=0;
+        GeometryCalib.Cy=0;
+        GeometryCalib.f=1;
+        GeometryCalib.kappa1=0;
+        GeometryCalib.CoordUnit='cm';
+        XmlData{iview}.GeometryCalib=GeometryCalib;
+        if error==1
+            msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
+        end
+    end
+end
+
+%check coincidence in time
+multitime=0;
+if length(timecell)==0
+    time=[];
+elseif length(timecell)==1
+    time=timecell{1};
+elseif length(timecell)>1
+    multitime=1;
+    for icell=1:length(timecell)
+        if ~isequal(size(timecell{icell}),size(timecell{1}))
+            warndlg_uvmat('inconsistent time array dimensions in ImaDoc fields, the time for the first series is used','WARNING')
+            time=timecell{1};
+            multitime=0;
+            break
+        end
+    end
+end
+if multitime
+    for icell=1:length(timecell)
+        time(icell,:,:)=timecell{icell};
+    end
+    diff_time=max(max(diff(time)));
+    if diff_time>0
+        warndlg_uvmat(['times of series differ by more than ' num2str(diff_time)],'WARNING')
+    end   
+end
+if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array absent or too short in ImaDoc xml file' 
+    time=[];
+end
+
+% image or scalar processing programme set by user
+Coord_menu=get(hseries.CoordType,'String');
+menu_val=get(hseries.CoordType,'Value');
+usrfct=Coord_menu{menu_val};
+testfct=~isequal(usrfct,'');
+
+% to update:
+VelType_str=get(hseries.VelTypeMenu,'String');
+VelType_val=get(hseries.VelTypeMenu,'Value');
+VelType{1}=VelType_str{VelType_val};
+if nbview==2
+    VelType_str=get(hseries.VelTypeMenu_1,'String');
+    VelType_val=get(hseries.VelTypeMenu_1,'Value');
+    VelType{2}=VelType_str{VelType_val};
+end
+
+%LOOP ON SLICES
+for i_slice=1:NbSlice
+     dt=[];
+     nbmissing=0; %number of undetected files
+     nbfiles=0;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%LOOP ON FIELDS IN  A SLICE
+    for ifile=i_slice:NbSlice:nbfield  
+        stopstate=get(hseries.RUN,'BusyAction');
+        if isequal(stopstate,'queue')% enable STOP command
+             update_waitbar(hseries.waitbar,WaitbarPos,ifile/nbfield) 
+             for iview=1:nbview
+                filename=...
+                           name_generator(filebase{iview},num_i1{iview}(ifile),num_j1{iview}(ifile),FileExt{iview},NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile),SubDir{iview}); 
+                idetect(iview)=exist(filename,'file');
+                Data{iview}=[]; %default      
+                if testima                  
+                    Data{iview}.ListVarName={'A'};
+                    Data{iview}.AName='image';
+                    if test_movie(iview)
+                        A=read(MovieObject{iview},num_i1{iview}(ifile));
+                    else
+                        A=double(read_image(filename,NomType{iview},num_i1{iview}(ifile)));% read the image, num2 is the counter for avi files 
+                    end
+                    Data{iview}.ListVarName={'coord_y','coord_x','A'}; % 
+                    npy=size(A,1);
+                    npx=size(A,2);
+                    nbcolor=size(A,3);
+                    if nbcolor==3
+                         Data{iview}.VarDimName={'coord_y','coord_x',{'coord_y','coord_x','rgb'}};
+                    else
+                         Data{iview}.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'}};
+                    end  
+                    Data{iview}.coord_y=[npy-0.5 0.5];
+                    Data{iview}.coord_x=[0.5 npx-0.5];
+                    Data{iview}.A=A;
+                    Data{iview}.CoordType='px';
+                elseif testcivx
+                    [Data{iview},VelTypeOut]=read_civxdata(filename,FieldName,VelType);
+                else
+                    [Data{iview},var_detect]=nc2struct(filename,SubField.ListVarName); %read the corresponding input data                
+                    Data{iview}.VarAttribute=SubField.VarAttribute;
+                end
+                if ~isempty(NbSlice_calib)  % z index
+                    Data{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;
+                end
+             end
+            % geometry transform or other user defined transform
+            if ~isequal(Series.CoordType,'')           
+                if nbview==2
+                    [Data{1},Data{2}]=feval(Series.CoordType,Data{1},XmlData{1},Data{2},XmlData{2});
+                    if isempty(Data{2})
+                        Data(2)=[];
+                    end
+                else
+                    Data{1}=feval(Series.CoordType,Data{1},XmlData{1});
+                end
+            end
+            if testcivx
+                    Data{iview}=calc_field(FieldName,Data{iview});%calculate field (vort..)
+            end
+            if length(Data)==2
+                [Field,errormsg]=sub_field(Data{1},Data{2}); %substract the two fields
+                if ~isempty(errormsg)
+                    msgbox_uvmat('ERROR',['error in time_series/sub_field:' errormsg])
+                    return
+                end
+            else
+                Field=Data{1};
+            end
+            if isfield(Series,'ProjObject')
+                Series.ProjObject
+                [Field,errormsg]=proj_field(Field,Series.ProjObject);
+                if ~isempty(errormsg)
+                    msgbox_uvmat('ERROR',['error in time_series/proj_field:' errormsg])
+                    return
+                end
+            end
+            if min(idetect)>=1% the input file(s) have been detected          
+                nbfiles=nbfiles+1;
+                if nbfiles==1 %first field: initiate the time series
+                    RecordData=Field;%default
+                    RecordData.NbDim=Field.NbDim+1; %add the time dimension for plots         
+                    nbvar=length(Field.ListVarName);
+                    if nbvar==0
+                        msgbox_uvmat('ERROR','no input variable selected in get_field')
+                        return
+                    end
+                    testsum=2*ones(1,nbvar);%initiate flag for action on each variable
+                    indexfalse=0;
+                    CoordName={};
+                    indexremove=[];
+                    if isfield(Field,'VarAttribute') % look for coordinate and flag variables    
+                        for ivar=1:nbvar
+                            if length(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'Role')
+                                var_role=Field.VarAttribute{ivar}.Role;%'role' of the variable
+                                if isequal(var_role,'errorflag')
+                                    msgbox_uvmat('ERROR','do not handle error flags in time series')
+                                    return                                               
+                                end
+                                if isequal(var_role,'warnflag')                        
+                                    testsum(ivar)=0;  % not recorded variable 
+                                    eval(['RecordData=rmfield(RecordData,''' Field.ListVarName{ivar} ''');']);%remove variable
+                                end                  
+                                if isequal(var_role,'coord_x')| isequal(var_role,'coord_y')|...
+                                    isequal(var_role,'coord_z')|isequal(var_role,'coord')
+                                    testsum(ivar)=1; %constant coordinates, record without time evolution
+                                end
+                                % check whether the variable ivar is a dimension variable
+                                %index=Field.VarDimIndex{ivar};%dimension indices of the variable #ivar
+                                DimCell=Field.VarDimName{ivar};
+                                if ischar(DimCell)
+                                    DimCell={DimCell};
+                                end
+                                if numel(DimCell)==1 && isequal(Field.ListVarName{ivar},DimCell{1})%detect dimension variables
+                                   testsum(ivar)=1;
+                                end
+                            end
+                        end
+                    end
+                    for ivar=1:nbvar
+                        if testsum(ivar)==2                     
+                            eval(['RecordData.' Field.ListVarName{ivar} '=[];'])
+                        end
+                    end
+                    RecordData.ListVarName=[{'Time'} RecordData.ListVarName];
+                end
+                for ivar=1:length(Field.ListVarName)
+                    VarName=Field.ListVarName{ivar};
+                    eval(['VarVal=Field.' VarName ';']);
+                    if testsum(ivar)==2% test for recorded variable 
+                        eval(['VarVal=Field.' VarName ';']);
+                        if isequal(Series.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
+                            if isempty(VarVal)
+                                msgbox_uvmat('ERROR',['empty result at frame index ' num2str(num_i1{iview}(ifile))])
+                                return                             
+                            end
+                            VarVal=mean(VarVal,1);
+                        end
+                        VarVal=shiftdim(VarVal,-1); %shift dimension 
+                        eval(['RecordData.' VarName '=cat(1,RecordData.' VarName ',VarVal);']);%concanete the current field to the time series    
+                    elseif testsum(ivar)==1% variable representing fixed coordinates
+                        eval(['VarInit=RecordData.' VarName ';']);
+                        if ~isequal(VarVal,VarInit)
+                            msgbox_uvmat('ERROR',['time series requires constant coordinates ' VarName])
+                            return
+                        end
+                    end                 
+                end
+                % time:
+                if isempty(time)% time read in ncfiles
+                   if isfield(Field,'Time')
+                       RecordData.Time(nbfiles,1)=Field.Time;
+                   else
+                       RecordData.Time(nbfiles,1)=nbfiles;%default
+                   end
+                else % time from ImaDoc prevails
+                    RecordData.Time(nbfiles,1)=(time(1,num_i1{1}(ifile),num_j1{1}(ifile))+time(end,num_i2{end}(ifile),num_j2{end}(ifile)))/2;
+                end
+            else
+                nbmissing=nbmissing+1;
+            end
+        end
+    end
+    %remove time for global attributes if exists
+    for iattr=1:numel(RecordData.ListGlobalAttribute) 
+        if strcmp(RecordData.ListGlobalAttribute{iattr},'Time')
+            RecordData.ListGlobalAttribute(iattr)=[];
+            break
+        end
+    end
+    for ivar=1:numel(RecordData.ListVarName)
+        VarName=RecordData.ListVarName{ivar};
+        eval(['RecordData.' VarName '=squeeze(RecordData.' VarName ');']) %remove singletons
+    end
+        % add time dimension and update VarDimIndex:
+   %if ~isequal(Series.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
+        for ivar=1:length(Field.ListVarName)
+%              vardimindex=Field.VarDimIndex{ivar};% array of dimension indices for variable VarIndex(ivar)
+             DimCell=Field.VarDimName(ivar);
+             if testsum(ivar)==2%variable used as time series
+%                  RecordData.VarDimIndex{ivar}=[1 vardimindex+1];
+                  RecordData.VarDimName{ivar}=[{'Time'} DimCell];
+             elseif testsum(ivar)==1
+%                  RecordData.VarDimIndex{ivar}=[vardimindex+1];
+                 RecordData.VarDimName{ivar}=DimCell;
+             end
+        end
+   % end
+    indexremove=find(~testsum);
+    if ~isempty(indexremove)
+        RecordData.ListVarName(1+indexremove)=[];
+        RecordData.VarDimName(indexremove)=[];
+        if isfield(RecordData,'Role')&~isempty(RecordData.Role{1})%generaliser aus autres attributs
+            RecordData.Role(1+indexremove)=[];
+        end
+    end
+    %RecordData.VarDimIndex=[{[1]} RecordData.VarDimIndex]; %time dimension
+    %shift variable attributes
+    if isfield(RecordData,'VarAttribute')
+        RecordData.VarAttribute=[{[]} RecordData.VarAttribute];
+    end 
+    RecordData.VarDimName=[{'Time'} RecordData.VarDimName];
+    RecordData.Action=Series.Action;%name of the processing programme
+    %name of result file
+    [filemean]=...
+               name_generator(filebase_out,num_i1{1}(i_slice),num_j1{1}(i_slice),'.nc','_i1-i2_j1-j2',1,num_i2{end}(ifile),num_j2{end}(ifile),SubDir{1});
+    errormsg=struct2nc(filemean,RecordData); %save result file
+    if isempty(errormsg)
+        display([filemean ' written'])
+    else
+        msgbox_uvmat('ERROR',['error in Series/struct2nc' errormsg])
+    end
+end
+figure
+haxes=axes;
+
+plot_field(RecordData,haxes)
+hget_field=findobj(allchild(0),'name','get_field');
+if ~isempty(hget_field)
+    delete(hget_field)
+end
+get_field(filemean,RecordData)
+    
+%-----------------------------------------------------------------------
+% --- Executes on selection change in CoordType.
+function CoordType_Callback(hObject, eventdata, handles)
+menu_str=get(handles.CoordType,'String');
+ind_coord=get(handles.CoordType,'Value');
+coord_option=menu_str{ind_coord};
+if isequal(coord_option,'more...'); 
+    fct_name='';
+    if exist('./TMP/current_usr_fct.mat','file')% if a file is found
+        h=load('./TMP/current_usr_fct.mat');
+        if isfield(h,'fct_name'); 
+            fct_name=h.fct_name;
+        end
+    end
+    prompt = {'Enter the name of the transform function'};
+    dlg_title = 'user defined transform';
+    num_lines= 1;
+    [FileName, PathName, filterindex] = uigetfile( ...
+       {'*.m', ' (*.m)';
+        '*.m',  '.m files '; ...
+        '*.*', 'All Files (*.*)'}, ...
+        'Pick a file', fct_name);
+    fct_name=fullfile(PathName,FileName);
+    addpath(PathName);%add the path to the selected fct
+    [errormsg,date_str]=check_functions;%check whether new functions can oversed the uvmat package A UTILISER
+    if ~exist(fct_name,'file')
+           warndlg(['image procesing fct ' fct_name ' not found'])
+    else
+        transform=FileName(1:end-2);% 
+        update_menu(handles.CoordType,transform)%add the selected fct to the menu
+  %      set(handles.mouse_coord,'String',menu([1:end-1])')%update the mouse coord menu 
+      %save ('./TMP/current_usr_fct.mat','fct_name');
+    end   
+end
+ind_coord=get(handles.CoordType,'Value');   
+
+%---------------------------------------------------------------------
+% --- Executes on selection change in ProjObject.
+function ProjObject_Callback(hObject, eventdata, handles)
+
+list_object=get(handles.ProjObject,'String');
+index=get(handles.ProjObject,'Value');
+hseries=get(handles.ProjObject,'Parent');
+SeriesData=get(hseries,'UserData');
+Obj=SeriesData.ProjObject{index};
+[SeriesData.hset_object,SeriesData.sethandles]=set_object(SeriesData.ProjObject{index});
+set(hseries,'UserData',SeriesData);
+
+%-------------------------------------------------------------
+%generates a series of file names with reference numbers between range1 and
+%range2 with increment incr. The reference number num_ref is the image number at the middle of the
+%image pair. The set of first numbers num1 of the image pairs is also
+%given as output
+%------------------------------------------------------
+function [num_i1,num_i2,num_j1,num_j2,nbmissing]=netseries_generator(filebase,subdir,mode,first_i,incr_i,last_i,first_j,incr_j,last_j)
+[Path,Name]=fileparts(filebase);
+filebasesub=fullfile(Path,subdir,Name);
+filecell={};%default
+num_i1=[];
+num_i2=[];
+num_j1=[];
+num_j2=[];
+ind0_i=first_i:incr_i:last_i;
+nbcolumn=length(ind0_i);
+ind0_j=first_j:incr_j:last_j;
+nbline=length(ind0_j);
+if isequal(mode,'#_ab')
+    dirpair=dir([filebasesub '*_*.nc']);
+elseif isequal(mode,'bursts')|isequal(mode,'series(Dj)')  
+    dirpair=dir([filebasesub '_*_*-*.nc']);
+elseif isequal(mode,'series(Di)')
+    dirpair=dir([filebasesub '_*-*_*.nc']);
+else
+    errordlg('option *|* not yet implemented')
+    return
+end
+if isempty(dirpair)
+        errordlg('no pair detected in the selected range')
+        return
+end
+    %ind0_i=first_i:incr_i:last_i;
+    %nbcolumn=length(ind0_i);
+    %dirpair=dir([filebasesub '_*_*-*.nc']);
+if isequal(mode,'bursts')|isequal(mode,'#_ab')
+    icount=0;
+    for ifile=1:length(dirpair)
+        [RootPath,RootFile,str_1,str_2,str_a,str_b,ext,nom_type]=name2display(dirpair(ifile).name);
+        
+%         if isempty(str2num(str_1))
+%             dirpair(ifile).name
+%         end
+        num1_r=str2num(str_1);
+        if isequal(RootFile,Name) & ~isempty(num1_r)   
+            num_i1(ifile)=num1_r;
+            num_a(ifile)=stra2num(str_a);
+            num_b(ifile)=stra2num(str_b);
+%             icount=icount+1;
+        end      
+    end
+    length(dirpair)
+%     num_j=floor((num_a+num_b)/2); %list of reference indices of the detected files
+    test_range= (num_i1 >=first_i)&(num_i1<= last_i);% =1 when both numbers are in the range
+    ind_i=((num_i1-first_i)/incr_i)+1;%indices i in the list of prescribed file indices 
+    select=find(test_range &(floor(ind_i)==ind_i));%selected indices of num_i1 in the file directory
+    ind_i=ind_i(select);%set of selected indices ind_i
+    [ind_i,indsort]=sort(ind_i);%sorted list of ind_i
+    select=select(indsort);
+    num_i1=num_i1(select);
+    num_a=num_a(select);
+    num_b=num_b(select);
+    dirpair=dirpair(select);
+    [ind_remove]=find_pairs(dirpair,ind_i,nbcolumn); 
+    ind_i(ind_remove)=[];
+    num_a(ind_remove)=[];
+    num_b(ind_remove)=[];
+    num_j1=zeros(1,nbcolumn);%default
+    num_j2=num_j1;
+    num_j1(ind_i)=num_a;
+    num_j2(ind_i)=num_b;
+    num_i1=first_i:incr_i:last_i;
+    num_i2=num_i1;
+    nbmissing=nbcolumn-length(ind_i);
+
+elseif isequal(mode,'series(Di)') 
+    %ind0_i=first_i:incr_i:last_i;
+    %nbcolumn=length(ind0_i);
+    %ind0_j=first_j:incr_j:last_j;
+    %nbline=length(ind0_j);
+    %dirpair=dir([filebasesub '_*-*_*.nc']);
+    for ifile=1:length(dirpair)
+        [RootPath,RootFile,str_1,str_2,str_a,str_b,ext,nom_type]=name2display(dirpair(ifile).name);
+        num_i1_r(ifile)=str2num(str_1);
+        num_i2_r(ifile)=str2num(str_2);
+        num_j(ifile)=str2num(str_a);
+    end
+    num_i=floor((num_i1_r+num_i2_r)/2); %list of reference indices of the detected files
+    test_range= (num_i >=first_i)&(num_i<= last_i)&(num_j >=first_j)&(num_j<= last_j);% =1 when both numbers are in the range
+    ind_i=((num_i-first_i)/incr_i)+1;%indices i and j in the list of prescribed file indices 
+    ind_j=((num_j-first_j)/incr_j)+1;
+    ind_ij=ind_j+nbline*(ind_i-1);%indices in the reshhaped series of prescribed file indices
+    select=find(test_range &(floor(ind_i)==ind_i)&(floor(ind_j)==ind_j));%selected indices in the file directory
+    ind_ij=ind_ij(select);%set of selected indices ind_ij
+    [ind_ij,indsort]=sort(ind_ij);%sorted list of ind_ij 
+    select=select(indsort);
+    num_i1_r=num_i1_r(select);
+    num_i2_r=num_i2_r(select);
+%     num_j=num_j(select);
+    dirpair=dirpair(select);
+    [ind_remove]=find_pairs(dirpair,ind_ij,nbcolumn*nbline) ;
+    ind_ij(ind_remove)=[];
+    num_i1_r(ind_remove)=[];
+    num_i2_r(ind_remove)=[];
+    num_i1=zeros(1,nbline*nbcolumn);%default
+    num_i2=num_i1;
+    num_i1(ind_ij)=num_i1_r;
+    num_j2(ind_ij)=num_i2_r;
+    num_i1=reshape(num_i1,nbline,nbcolumn);
+    num_i2=reshape(num_i2,nbline,nbcolumn);
+    num_j1=meshgrid(ind0_i,ind0_j);
+    num_j2=num_j1;
+    nbmissing=nbline*nbcolumn-length(ind_ij);
+elseif isequal(mode,'series(Dj)')
+ %   ind0_i=first_i:incr_i:last_i;
+ %   nbcolumn=length(ind0_i);
+ %   ind0_j=first_j:incr_j:last_j;
+  %  nbline=length(ind0_j);
+  %  dirpair=dir([filebasesub '_*_*-*.nc']);
+    for ifile=1:length(dirpair)
+        [RootPath,RootFile,str_1,str_2,str_a,str_b,ext,nom_type]=name2display(dirpair(ifile).name);
+        num_i(ifile)=str2num(str_1);
+        num_a(ifile)=str2num(str_a);
+        num_b(ifile)=str2num(str_b);
+    end
+    num_j=floor((num_a+num_b)/2); %list of reference indices of the detected files
+    test_range= (num_i >=first_i)&(num_i<= last_i)&(num_j >=first_j)&(num_j<= last_j);% =1 when both numbers are in the range
+    ind_i=((num_i-first_i)/incr_i)+1;%indices i and j in the list of prescribed file indices 
+    ind_j=((num_j-first_j)/incr_j)+1;
+    ind_ij=ind_j+nbline*(ind_i-1);%indices in the reshhaped series of prescribed file indices
+    select=find(test_range &(floor(ind_i)==ind_i)&(floor(ind_j)==ind_j));%selected indices in the file directory
+    ind_ij=ind_ij(select);%set of selected indices ind_ij
+    [ind_ij,indsort]=sort(ind_ij);%sorted list of ind_ij 
+    select=select(indsort);
+    num_i=num_i(select);
+    num_a=num_a(select);
+    num_b=num_b(select);
+    dirpair=dirpair(select);
+    [ind_remove]=find_pairs(dirpair,ind_ij,nbcolumn*nbline) ;
+    ind_ij(ind_remove)=[];
+    num_a(ind_remove)=[];
+    num_b(ind_remove)=[];
+    num_j1=zeros(1,nbline*nbcolumn);%default
+    num_j2=num_j1;
+    num_j1(ind_ij)=num_a;
+    num_j2(ind_ij)=num_b;
+    num_j1=reshape(num_j1,nbline,nbcolumn);
+    num_j2=reshape(num_j2,nbline,nbcolumn);
+    num_i1=meshgrid(ind0_i,ind0_j);
+    num_i2=num_i1;
+    nbmissing=nbline*nbcolumn-length(ind_ij);
+%     for i=1:length(indsel);%A SUPPRIMER ULTERIEUREMENT
+%         if indsel(i)==0
+%             filecell{i}='';
+%         else
+%             Name=dirpair(indsel(i)).name;
+%             filecell{i}=fullfile(Path,subdir,Name);
+%         end
+%     end
+%else
+%    errordlg('option *|* not yet implemented')
+%    return
+end
