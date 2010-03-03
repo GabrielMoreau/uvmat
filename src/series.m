@@ -134,15 +134,14 @@ NomType_Callback(hObject, eventdata, handles)
 %loads the information stored in prefdir to initiate the browser and the list of functions
 menu_str={'check_files';'aver_stat';'time_series';'merge_proj';'clean_civ_cmx'};
 nb_builtin=numel(menu_str); %number of functions
- 
-%remove from the list the last option 'more...'
 [path_series,name,ext]=fileparts(which('series'));
-path_series=fullfile(path_series,'/series');%path of the function 'series'
+path_series=fullfile(path_series,'series');%path of the function 'series'
 
 for ilist=1:length(menu_str)
     fct_path{ilist,1}=path_series;%paths of the fuctions buil-in in 'series.m'
 end
-dir_perso=prefdir;
+% read the list of functions stored in the personal file 'uvmat_perso.mat' in prefdir
+dir_perso=prefdir; 
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
 if exist(profil_perso,'file')
     h=load (profil_perso);

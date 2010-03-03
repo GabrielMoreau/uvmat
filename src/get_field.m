@@ -42,11 +42,11 @@ else
 end
 % End initialization code - DO NOT EDIT
 
-
+%------------------------------------------------------------------------
 % --- Executes just before get_field is made visible.
 function get_field_OpeningFcn(hObject, eventdata, handles,filename,Field,haxes)
-
-set(handles.dimensions,'enable','on')% should be put by guide
+%------------------------------------------------------------------------
+global nb_builtin
 browse_fig(handles.list_fig)
 
 % Choose default command line output for get_field
@@ -54,55 +54,40 @@ handles.output = hObject;
 
 % Update handles structure
 guidata(hObject, handles);
-pathuvmat=fileparts(which('uvmat'));
-addpath(fullfile(pathuvmat,'FIELD_FCT'))
-set(handles.attributes,'enable','on')% TO BE SET BY GUIDE
+%pathuvmat=fileparts(which('uvmat'));
+%addpath(fullfile(pathuvmat,'FIELD_FCT'))
+%loads the information stored in prefdir to initiate the browser and the list of functions
+menu_str={'PLOT';'FFT';'filter_band';'histogram'}; %list of functions included in 'get_field.m'
+nb_builtin=numel(menu_str)-1;
+%menu_str(end)=[];%remove from the list the last option 'more...'
+path_get_field=fileparts(which('get_field'));%path of the function 'get_field'
+for ilist=1:length(menu_str)
+    fct_path{ilist,1}=fullfile(path_get_field,'get_field');%paths of the fuctions buil-in in 'get_field.m'
+end
+dir_perso=prefdir;
+profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+if exist(profil_perso,'file')
+    % menu={'RUN';'raw2phys';'histogram';'FFT';'peaklocking'};
+      h=load (profil_perso);
+     if isfield(h,'get_field_fct') && iscell(h.get_field_fct)
+         for ilist=1:length(h.get_field_fct)
+            [path,file]=fileparts(h.get_field_fct{ilist});
+            fct_path=[fct_path; {path}];%concatene the list of paths
+            menu_str=[menu_str; {file}];
+         end
+     end
+end
+menu_str=[menu_str;{'more...'}];
+set(handles.ACTION,'String',menu_str)
+set(handles.ACTION,'UserData',fct_path)% store the list of path in UserData of ACTION  
+ACTION_Callback(hObject, eventdata, handles) 
 set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles})%set mouse click action function
 if exist('filename','var')& ischar(filename)
     set(handles.inputfile,'String',filename)
     inputfile_Callback(hObject, eventdata, handles)
 else
-    set(handles.inputfile,'String','')
-    %loads the information stored in prefdir to initiate the browser and the list of functions
-    menu_str={'PLOT'};%list of functions included in 'get_field.m'
-    %menu_str(end)=[];%remove from the list the last option 'more...'
-    path_get_field=which('get_field');%path of the function 'get_field'
-    for ilist=1:length(menu_str)
-        fct_path{ilist,1}=path_get_field;%paths of the fuctions buil-in in 'get_field.m'
-    end
-     dir_perso=prefdir;
-     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-     if exist(profil_perso,'file')
-        % menu={'RUN';'raw2phys';'histogram';'FFT';'peaklocking'};
-          h=load (profil_perso);
-         if isfield(h,'get_field_fct') && iscell(h.get_field_fct)
-             for ilist=1:length(h.get_field_fct)
-                [path,file]=fileparts(h.get_field_fct{ilist});
-                fct_path=[fct_path; {path}];%concatene the list of paths
-                menu_str=[menu_str; {file}];
-             end
-             
-         end
-     end
-     menu_str=[menu_str;{'more...'}];
-     set(handles.ACTION,'String',menu_str)
-     set(handles.ACTION,'UserData',fct_path)% store the list of path in UserData of ACTION  
-     % display the GUI for the default action 'check_files'
-     ACTION_Callback(hObject, eventdata, handles) 
+    set(handles.inputfile,'String','')   
 end
-%                  menu=[menu;h.fct_get_field];
-%                  menu=[menu;{'more...'}];
-%                  fct_path=h.fct_path_get_field;
-%                  set(handles.ACTION,'String',menu)
-%                  set(handles.ACTION,'UserData',fct_path)
-%                  for ipath=1:length(fct_path)
-%                      if exist(fct_path{ipath},'dir')
-%                         addpath(fct_path{ipath})
-%                      end
-%                  end
-%          end
-%      end
-% end
 if exist('Field','var') & isstruct(Field)
         Field_input(eventdata,handles,Field)
         if exist('haxes','var')
@@ -111,29 +96,51 @@ if exist('Field','var') & isstruct(Field)
     set(hObject,'UserData',Field);
 end
 
+%load the list of previously browsed files in menus Open 
+ dir_perso=prefdir;
+ profil_perso=fullfile(dir_perso,'uvmat_perso.mat');%
+ if exist(profil_perso,'file')
+      h=load (profil_perso);
+      if isfield(h,'MenuFile_1')
+          set(handles.MenuFile_1,'Label',h.MenuFile_1);
+      end
+      if isfield(h,'MenuFile_1')
+          set(handles.MenuFile_2,'Label',h.MenuFile_2);
+      end
+      if isfield(h,'MenuFile_1')
+          set(handles.MenuFile_3,'Label',h.MenuFile_3);
+      end
+      if isfield(h,'MenuFile_1')
+          set(handles.MenuFile_4,'Label',h.MenuFile_4);
+      end
+      if isfield(h,'MenuFile_1')
+          set(handles.MenuFile_5,'Label',h.MenuFile_5);
+     end
+ end
 
-%-----------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = get_field_OutputFcn(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 varargout{1} = handles.output;
 
-%-----------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in browse.
 function browse_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 
-
-%---------------------------------------------------------
+%------------------------------------------------------------------------
 function inputfile_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 inputfile=get(handles.inputfile,'String');
 Field=nc2struct(inputfile,[]);% reads only the lists of fields, dimensions and attributes
 hfig=get(handles.inputfile,'parent');
 set(hfig,'UserData',Field);
 Field_input(eventdata,handles,Field);
 
-
-%---------------------------------------------------------
+%------------------------------------------------------------------------
 function Field_input(eventdata,handles,Field)
-
+%------------------------------------------------------------------------
 if isfield(Field,'ListDimName')&&~isempty(Field.ListDimName)
     Tabcell(:,1)=Field.ListDimName;
     for iline=1:length(Field.ListDimName)
@@ -202,9 +209,9 @@ if maxdim>=2
     check_vector_Callback(handles.check_vector, eventdata, handles)
 end
 
-
-%----------------------------------------------------------
+%------------------------------------------------------------------------
 function ordinate_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 %update_field(hObject, eventdata, handles)
 % A REVOIR
 hselect_field=get(handles.inputfile,'parent');
@@ -235,9 +242,10 @@ set(handles.abscissa,'String',[{''}; (Field.ListVarName(coord_x_index))'; (Field
 % set(hselect_field,'UserData',Field);
 %update_UserData(handles)
 
-%----------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in abscissa.
 function abscissa_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
  hselect_field=get(handles.inputfile,'parent');
  Field=get(hselect_field,'UserData');%current input field
  xdispindex=get(handles.abscissa,'Value');%index in the list of abscissa
@@ -378,7 +386,6 @@ update_field(hObject, eventdata, handles,VarName)
 %---------------------------------
 function update_field(hObject, eventdata, handles,VarName)
 % VarName= input variable name for scalar or vector plots
-%if ischar(VarName)
 hselect_field=get(handles.inputfile,'parent');
 Field=get(hselect_field,'UserData');
 index=name2index(VarName,Field.ListVarName);
@@ -729,378 +736,29 @@ set(hselect_field,'UserData',Field)
 % --- Executes on button press in RUN.
 function RUN_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
+path_get_field=fileparts(which('get_field'));
 list=get(handles.ACTION,'String');
 index=get(handles.ACTION,'Value');
 ACTION=list{index};
-hselect_field=get(handles.inputfile,'parent');%handle of the get_field interface
-feval(ACTION,hselect_field);
+list_path=get(handles.ACTION,'UserData');
+%hselect_field=get(handles.inputfile,'parent');%handle of the get_field interface
+fct_path=list_path{index}; %path stored for the function ACTION
+if ~isequal(fct_path,path_get_field)
+%     eval(['spath=which(''' action ''');']) %spath = current path of the selected function ACTION
+%     if ~isequal(spath,fct_path)& exist(fct_path,'dir')
+        addpath(fct_path)% add the prescribed path if not the current one
+%     end
+end
+% fct_path
+eval(['h_fun=@' ACTION ';'])
+if ~isequal(fct_path,path_get_field)
+        rmpath(fct_path)% add the prescribed path if not the current one    
+end
+
+set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
+drawnow
+h_fun(handles.figure1);%handles.figure1 =handles of the GUI get_field
 browse_fig(handles.list_fig); %update the list of new existing figures
-
-%---------------------------------------------------------
-% --- Executes on button press in RUN.
-function PLOT(hget_field)
-%---------------------------------------------------------
-[SubField,errormsg]=read_get_field(hget_field);
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['error in get_field/PLOT input:' errormsg])
-    return
-end
-handles=guidata(hget_field);
-list_fig=get(handles.list_fig,'String');
-val=get(handles.list_fig,'Value');
-if strcmp(list_fig{val},'uvmat')
-    uvmat(SubField)
-else
-hfig=str2num(list_fig{val});% chosen figure number from tyhe GUI
-if isempty(hfig)
-    hfig=figure;
-    list_fig=[list_fig;num2str(hfig)];
-    set(handles.list_fig,'String',list_fig);
-    haxes=axes;
-else
-    figure(hfig);
-end
-haxes=findobj(hfig,'Type','axes');
-plot_field(SubField,haxes) 
-end
-
-
-% 
-% return
-%  testuvmat=0;
-%     if test_scalar|test_vector
-%          [DimVarIndex,CellVarIndex,NbDim]=find_field_indices(SubField);
-%          NbDim=max(NbDim);
-%          if NbDim==3
-%            testuvmat=1; %uvmat interface needed for 3D plots
-%          end
-%     end
-%     if iscell(list_fig)
-%         RUN_fig=list_fig{fig_index}; 
-%     else
-%         RUN_fig='new fig...';%new plotting axes must be created
-%     end
-%     if isequal(RUN_fig,'new fig...') &  (test_scalar|test_vector)
-%         RUN_fig='uvmat';%use uvmat for a new fig
-%     end
-%     if testuvmat
-%         RUN_fig='uvmat';
-%     end
-%     if isequal(RUN_fig,'uvmat')
-%         
-%         huvmat=uvmat(SubField);
-%         menu=update_menu(handles.list_fig,'uvmat');%add the selected fct to the menu
-%     else
-%         test_new=1;
-%         if ~isequal(RUN_fig,'new fig...')
-%             sep=regexp(RUN_fig,'_')%look for subaxes in a fig
-%             if isempty(sep)
-%                 axe_index=1;
-%             else
-%                 axe_index=str2num(RUN_fig(sep+1:end))
-%                 RUN_fig=RUN_fig([1:sep-1])             
-%             end
-%             if ishandle(str2num(RUN_fig))
-%                 haxes=findobj(str2num(RUN_fig),'Type','axes')
-%                 for iaxe=1:length(haxes)
-%                     Tag=get(haxes(iaxe),'Tag');
-%                     if isequal(Tag,'Colorbar')|isequal(Tag,'legend')
-%                        iselect(iaxe)=0;
-%                     else
-%                        iselect(iaxe)=1; 
-%                     end
-%                 end
-%                 haxes=haxes(find(iselect));   
-%                 if length(haxes)>=axe_index
-%                     test_new=0
-%                     haxes=haxes(axe_index);
-%                     set(haxes,'NextPlot','add')
-%                 end
-%             end
-%         end
-%         if test_new
-%             hfig=figure;
-%             haxes=axes;
-%             menu=update_menu(handles.list_fig,num2str(hfig));%add the selected fct to the menu
-%         end  
-%         RUN_field(SubField,haxes)       
-%     end
-% end
-% 
-% 
-% 
-% 
-%  w components
-% end
-% 
-% 
-% % select the variable  index (or indices) for z coordinates
-% test_grid=0;
-% if test_scalar | test_vector
-%     nbdim=length(DimIndex);
-%     if nbdim > 3
-%         warndlg_uvmat('array with more than three dimensions, not supported','ERROR')
-%         return
-%     else
-%         perm_ind=[1:nbdim];
-%     end
-%     if nbdim==3
-%         zstring=get(handles.coord_z_vectors_scalar,'String');
-%         zindex=get(handles.coord_z_vectors_scalar,'Value'); %selected indices in the ordinate listbox
-%         list_var=zstring(zindex);
-%         VarIndex_z=name2index(list_var,Field.ListVarName);%index of the selected variable 
-%         if isequal(VarIndex.A,VarIndex_z)|isequal(VarIndex.u,VarIndex_z)|isequal(VarIndex.v,VarIndex_z)|isequal(VarIndex.w,VarIndex_z)
-%             if zindex ~= 1
-%                 set(handles.coord_z_vectors_scalar,'Value',1)%ordinate cannot be the same as scalar or vector components
-%                 return
-%             end
-%         else 
-%             VarIndex_tot=[VarIndex_tot VarIndex_z];
-%             DimIndex_z=Field.VarDimIndex{VarIndex_z};
-%             DimValue=Field.DimValue(DimIndex_z);
-%             ind=find(DimValue==1);          
-%             DimIndex_z(ind)=[];%Mremove singleton
-%             if isequal(DimIndex_z,DimIndex)
-%                 VarAttribute{VarIndex_z}.Role='coord_z';%unstructured coordinates
-%             elseif length(DimIndex_z)==1
-%                 VarAttribute{VarIndex_z}.Role=Field.ListDimName{DimIndex_z};  %dimension variable
-%                 ind_z=find(DimIndex==DimIndex_z(1));
-%                 perm_ind(ind_z)=1;
-%                 test_grid=1;
-%             else
-%                 warndlg_uvmat('multiple dimensions for the z coordinate','ERROR')
-%                 return
-%             end
-%         end
-% %         if ~isempty(VarIndex_z)
-% %             DimIndex_z=Field.VarDimIndex{VarIndex_z};%dimension indices of the variable    
-% %             if length(DimIndex_z)==1 & nbdim==3 %dimension variable
-% %                 VarAttribute{VarIndex_z}.Role=Field.ListDimName{DimIndex_z};
-% %                 ind_z=find(DimIndex==DimIndex_z(1));
-% %                 perm_ind(ind_z)=1;
-% %                 test_grid=1;
-% %             end
-% %         end
-%     end
-% end
-% 
-% % select the variable  index (or indices) for ordinate
-% ystring=get(handles.ordinate,'String');
-% yindex=get(handles.ordinate,'Value'); %selected indices in the ordinate listbox
-% list_var=ystring(yindex);
-% VarIndex.y=name2index(list_var,Field.ListVarName);
-% if isequal(VarIndex.A,VarIndex.y)|isequal(VarIndex.u,VarIndex.y)|isequal(VarIndex.v,VarIndex.y)|isequal(VarIndex.w,VarIndex.y)
-%    set(handles.ordinate,'Value',1)%ordinate cannot be the same as scalar or vector components
-% else
-%     for ivar=1:length(VarIndex.y)
-%         VarAttribute{VarIndex.y(ivar)}.Role='coord_y';
-%     end
-%     VarIndex_tot=[VarIndex_tot VarIndex.y];
-% end
-% if (test_scalar | test_vector) &  ~isempty(VarIndex.y)
-%     DimIndex_y=Field.VarDimIndex{VarIndex.y};%dimension indices of the variable
-%     if length(DimIndex_y)==1 
-%         ind_y=find(DimIndex==DimIndex_y(1));
-%         test_grid=1;
-%         if nbdim==3
-%             VarAttribute{VarIndex.y}.Role=Field.ListDimName{DimIndex_y};
-%             perm_ind(ind_y)=2;
-%         elseif nbdim==2
-%             VarAttribute{VarIndex.y}.Role=Field.ListDimName{DimIndex_y};
-%              perm_ind(ind_y)=1;
-%         end
-%     elseif test_grid
-%         warndlg_uvmat('the dimension of the y coordinate variable should be 1','ERROR')   
-%     end
-% end
-% 
-% %select the variable index for the abscissa
-% xstring=get(handles.abscissa,'String');
-% xindex=get(handles.abscissa,'Value');
-% list_var=xstring(xindex);
-% VarIndex.x=name2index(list_var,Field.ListVarName);%var index corresponding to var name list_var
-% if length(VarIndex.x)==1    
-%     DimIndex_x=Field.VarDimIndex{VarIndex.x};
-%     DimValue=Field.DimValue(DimIndex_x);
-%     ind=find(DimValue==1);          
-%     DimIndex_x(ind)=[];%Mremove singleton                      
-%     VarAttribute{VarIndex.x}.Role=Field.ListDimName{DimIndex_x};  %dimension variable           
-% %     VarAttribute{VarIndex.x}.Role='coord_x';%default (may be modified)
-%     index_detect=find(VarIndex_tot==VarIndex.x);
-% else
-%     index_detect=[];%coord x variable not already used
-% end
-% if isempty(index_detect)
-%     VarIndex_tot=[VarIndex_tot VarIndex.x]; 
-% else
-%     VarIndex.x=[];
-%     set(handles.abscissa,'Value',1)%vchosen abscissa already chosen, suppres it as abscissa
-% end
-% 
-% if (test_scalar | test_vector) &  ~isempty(VarIndex.x)
-%     DimIndex_x=Field.VarDimIndex{VarIndex.x};%dimension indices of the variable
-%     if length(DimIndex_x)==1 
-%         ind_x=find(DimIndex==DimIndex_x(1)); 
-%         if nbdim==3
-%             %VarAttribute{VarIndex.x}.Role=Field.ListDimName{DimIndex_x};
-%             perm_ind(ind_x)=3;
-%         elseif nbdim==2
-%             %VarAttribute{VarIndex.x}.Role=Field.ListDimName{DimIndex_x};
-%              perm_ind(ind_x)=2;
-%         end
-%         if isequal(perm_ind,[1:nbdim])
-%             test_grid=0;
-%         end
-%         DimIndex=DimIndex(perm_ind);
-%     elseif test_grid
-%         warndlg_uvmat('the dimension of the x coordinate variable should be 1','ERROR')   
-%     end
-%     if isequal(DimIndex_x,DimIndex)
-%                 VarAttribute{VarIndex.x}.Role='coord_x';%unstructured coordinates
-%     end
-% end
-% 
-% %defined the selected sub-field SubField
-% SubField.ListGlobalAttribute{1}='InputFile';
-% SubField.InputFile=get(handles.inputfile,'String');
-% SubField.ListVarName=Field.ListVarName(VarIndex_tot);
-% VarDimIndex=Field.VarDimIndex;
-% 
-% for ivar=VarIndex.u
-%     VarAttribute{ivar}.Role='vector_x';
-%     if test_grid
-%         VarDimIndex{ivar}=DimIndex; %permute dimensions
-%     end
-% end
-% for ivar=VarIndex.v
-%     VarAttribute{ivar}.Role='vector_y';
-%      if test_grid
-%         VarDimIndex{ivar}=DimIndex;%permute dimensions
-%     end
-% end
-% for ivar=VarIndex.A
-%     if test_grid
-%         VarDimIndex{ivar}=DimIndex;%permute dimensions
-%     end
-%     if isempty(iuA)
-%         VarAttribute{ivar}.Role='scalar';%Role =scalar
-%     else
-%        VarAttribute=[VarAttribute VarAttribute{ivar}]; %duplicate the attribute for a new variable
-%        nbattr=length(VarAttribute);
-%        VarAttribute{nbattr}.Role='scalar';
-%     end
-% end
-% SubField.VarDimIndex=VarDimIndex(VarIndex_tot);
-% SubField.VarAttribute=VarAttribute(VarIndex_tot);
-% % Field.SubListVarName=SubField.ListVarName;
-% % Field.SubVarDimIndex=SubField.VarDimIndex;
-% % Field.SubVarAttribute=SubField.VarAttribute;
-% set(hselect_field,'UserData',Field);
-% % copy variables on SubField
-% for ivar=1:length(VarIndex_tot)
-%     VarName=Field.ListVarName{VarIndex_tot(ivar)};
-%     eval(['SubField.' VarName '=Field.' VarName ';'])
-% end
-% if test_grid
-%     for ivar=1:length(VarIndex.u)
-%          VarName=Field.ListVarName{VarIndex.u(ivar)};
-%         eval(['SubField.' VarName '=permute(SubField.' VarName ',perm_ind);'])
-%     end 
-% 
-%     for ivar=1:length(VarIndex.v)
-%          VarName=Field.ListVarName{VarIndex.v(ivar)};
-%         eval(['SubField.' VarName '=permute(SubField.' VarName ',perm_ind);'])
-%     end 
-%     for ivar=1:length(VarIndex.A)
-%          VarName=Field.ListVarName{VarIndex.A(ivar)};
-%         eval(['SubField.' VarName '=permute(SubField.' VarName ',perm_ind);'])
-%     end   
-% end    
-% if ~isempty(iuA)
-%     VarName= ['A' Field.ListVarName{iuA}]; %create the new variable to distinguish the scaler form the velocity component
-%     SubField.ListVarName=[SubField.ListVarName VarName];
-%     SubField.VarDimIndex=[SubField.VarDimIndex Field.VarDimIndex(iuA)];
-%     eval(['SubField.' VarName '=Field.'  Field.ListVarName{iuA} ';'])
-% end 
-% % dimension of SubField
-% if test_scalar|test_vector
-%    % SubField.NbDim=2;
-%     SubField.InputFile=get(handles.inputfile,'String');
-%     SubField.get_field_handle=hselect_field;
-% else
-%     SubField.NbDim=1;
-% end
-% 
-% list_fig=get(handles.list_fig,'String');
-% fig_index=get(handles.list_fig,'Value');
-% %ACTION on SubField
-% index=get(handles.ACTION,'Value');
-
-%  
-% %     if (test_scalar|test_vector) 
-% %         RUN_fig='uvmat';
-% %     elseif iscell(list_fig)
-%     testuvmat=0;
-%     if test_scalar|test_vector
-%          [DimVarIndex,CellVarIndex,NbDim]=find_field_indices(SubField);
-%          NbDim=max(NbDim);
-%          if NbDim==3
-%            testuvmat=1; %uvmat interface needed for 3D plots
-%          end
-%     end
-%     if iscell(list_fig)
-%         RUN_fig=list_fig{fig_index}; 
-%     else
-%         RUN_fig='new fig...';%new plotting axes must be created
-%     end
-%     if isequal(RUN_fig,'new fig...') &  (test_scalar|test_vector)
-%         RUN_fig='uvmat';%use uvmat for a new fig
-%     end
-%     if testuvmat
-%         RUN_fig='uvmat';
-%     end
-%     if isequal(RUN_fig,'uvmat')
-%         
-%         huvmat=uvmat(SubField);
-%         menu=update_menu(handles.list_fig,'uvmat');%add the selected fct to the menu
-%     else
-%         test_new=1;
-%         if ~isequal(RUN_fig,'new fig...')
-%             sep=regexp(RUN_fig,'_')%look for subaxes in a fig
-%             if isempty(sep)
-%                 axe_index=1;
-%             else
-%                 axe_index=str2num(RUN_fig(sep+1:end))
-%                 RUN_fig=RUN_fig([1:sep-1])             
-%             end
-%             if ishandle(str2num(RUN_fig))
-%                 haxes=findobj(str2num(RUN_fig),'Type','axes')
-%                 for iaxe=1:length(haxes)
-%                     Tag=get(haxes(iaxe),'Tag');
-%                     if isequal(Tag,'Colorbar')|isequal(Tag,'legend')
-%                        iselect(iaxe)=0;
-%                     else
-%                        iselect(iaxe)=1; 
-%                     end
-%                 end
-%                 haxes=haxes(find(iselect));   
-%                 if length(haxes)>=axe_index
-%                     test_new=0
-%                     haxes=haxes(axe_index);
-%                     set(haxes,'NextPlot','add')
-%                 end
-%             end
-%         end
-%         if test_new
-%             hfig=figure;
-%             haxes=axes;
-%             menu=update_menu(handles.list_fig,num2str(hfig));%add the selected fct to the menu
-%         end  
-%         RUN_field(SubField,haxes)       
-%     end
-% end
-% %Field.VarIndex=VarIndex; %save for use in uvmat
-% % set(hselect_field,'UserData',Field)
 
 
 %------------------------------------------------
@@ -1186,50 +844,6 @@ legend(leg);
 % answer = inputdlg(prompt,dlg_title,num_lines,def)
 % saveas(2,answer{1})
  
-% 
-% % --- Executes on selection change in spectrum.
-% function Field=FFT(Field)
-% 'TESTFFT'
-% Field
-% nbfield=length(Field.ListVarName);
-% if nbfield==0
-%     warndlg_uvmat('no field selected for FFT','ERROR')
-% elseif nbfield>2
-%     warndlg_uvmat('select only one field for FFT','ERROR')
-% end
-% if nbfield==2
-% % list_fields=get(handles.spectrum,'String');% list menu fields
-% % index_fields=get(handles.spectrum,'Value');% selected string index
-% % fields= list_fields{index_fields(1)}; % selected action
-% % func=eval(fields);
-%     dtmin=min(diff(time));%time step
-%     time1=time(1);timend=time(end);
-%     timeq=[time1:dtmin:timend];%equal time spacing
-%     funcinterp=interp1(time,func,timeq); %interpolated func
-% else
-%     varname=Field.ListVarName{1};
-%     eval(['funcinterp=Field.' varname ';'])
-% end
-% np=length(funcinterp);
-% funcinterp=funcinterp-sum(funcinterp)/np; %substract mean
-% fourier=fft(funcinterp);%take fft (complex)
-% spec=abs(fourier).*abs(fourier);% take sqare of the modulus
-% spec=spec([1:floor(np/2)]);%keep only the first half (the other is symmetric)
-% eval(['Field.' varname '=spec;'])
-% Field
-% % dfreq=1/(time(end)-time(1));%frequency interval
-% % freq=[0:dfreq:(floor(np/2)-1)*dfreq];
-% % figure(1)
-% % hold on
-% % RUN(freq,spec)
-% % xlabel('frequency (Hz)')
-% % ylabel('spectral intensity')
-% % title(['spectrum of' fields]);
-% % grid on
-
-
-
-
 
 %%-------------------------------------------------------
 % --- Executes on button press in peaklocking.
@@ -1470,25 +1084,27 @@ end
 %---------------------------------------------
 % --- Executes on selection change in ACTION.
 function ACTION_Callback(hObject, eventdata, handles)
+global nb_builtin
 list_ACTION=get(handles.ACTION,'String');% list menu fields
 index_ACTION=get(handles.ACTION,'Value');% selected string index
 ACTION= list_ACTION{index_ACTION}; % selected string
 path_get_field=which('get_field');%path to series.m
 list_path=get(handles.ACTION,'UserData');
-nb_builtin=0;
-if iscell(list_path)
-    for ilist=1:length(list_path)
-        if isequal(list_path{ilist},path_get_field)
-            nb_builtin=nb_builtin+1;
-        else
-            break
-        end
-    end
-end
-if nb_builtin==0% the path to get_field has been changed, reinitialize
-    get_field_OpeningFcn(hObject, eventdata, handles)
-    return
-end
+
+% nb_builtin=0;
+% if iscell(list_path)
+%     for ilist=1:length(list_path)
+%         if isequal(list_path{ilist},path_get_field)
+%             nb_builtin=nb_builtin+1;
+%         else
+%             break
+%         end
+%     end
+% end
+% if nb_builtin==0% the path to get_field has been changed, reinitialize
+%     get_field_OpeningFcn(hObject, eventdata, handles)
+%     return
+% end
 
 % add a new function to the menu
 if isequal(ACTION,'more...')
@@ -1497,20 +1113,6 @@ if isequal(ACTION,'more...')
     if length(list_path)>nb_builtin
         browse_name=list_path{end};% initialize browser with  the path of the last introduced function
     end
-%     fct_name='';
-%     dir_perso=prefdir;
-%     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-%     display(profil_perso)
-%     if exist(profil_perso,'file')
-%           h=load (profil_perso);
-%           if isfield(h,'get_field_fct')
-%             fct_name=h.get_field_fct;
-%           end
-%     else
-%         path_to_uvmat=which ('uvmat');% check the path of uvmat
-%         pathfct=fileparts(path_to_uvmat);
-%         fct_name=fullfile(pathfct,'USR_FCT');%go to UVMAT/USR_FCT by default
-%     end
     [FileName, PathName] = uigetfile( ...
        {'*.m', ' (*.m)';
         '*.m',  '.m files '; ...
@@ -1519,13 +1121,12 @@ if isequal(ACTION,'more...')
     if length(FileName)<2
         return
     end
-    ext_fct=FileName(end-1:end);
+    [pp,ACTION,ext_fct]=fileparts(FileName);
     if ~isequal(ext_fct,'.m')
         msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
         return
     end
-    ACTION=FileName(1:end-2);% ACTION choice updated by the selected item
-    
+%     ACTION=FileName(1:end-2);% ACTION choice updated by the selected item  
     % insert the choice in the action menu
    menu_str=update_menu(handles.ACTION,ACTION);%new action menu in which the new item has been appended if needed
    index_ACTION=get(handles.ACTION,'Value');% currently selected index in the list
@@ -1564,14 +1165,14 @@ end
 
    %check the current path to the selected function
 PathName=list_path{index_ACTION};%current recorded path
-if ~isequal(path_get_field,PathName)
-    CurrentPath=fileparts(which(ACTION));
-    if ~isequal(CurrentPath,PathName)&&~isequal(CurrentPath,fullfile(PathName,'private'))
-        addpath(PathName) 
-        errormsg=check_functions;
-        msgbox_uvmat('CONFIRMATION',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
-    end
-end
+% if ~isequal(path_get_field,PathName)
+%     CurrentPath=fileparts(which(ACTION));
+%     if ~isequal(CurrentPath,PathName)%&&~isequal(CurrentPath,fullfile(PathName,'private'))
+%         addpath(PathName) 
+%         errormsg=check_functions;
+%         msgbox_uvmat('CONFIRMATION',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
+%     end
+% end
 set(handles.path_action,'String',PathName); %show the path to the senlected function 
     
     
@@ -1886,7 +1487,20 @@ set(handles.MenuFile_2,'Label',MenuFile_2)
 set(handles.MenuFile_3,'Label',MenuFile_3)
 set(handles.MenuFile_4,'Label',MenuFile_4)
 set(handles.MenuFile_5,'Label',MenuFile_5)
-
+dir_perso=prefdir;
+profil_perso=fullfile(dir_perso,'uvmat_perso.mat')
+if exist(profil_perso,'file')
+    save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-append'); %store the file names for future opening of uvmat
+else
+    txt=ver;
+    Release=txt(1).Release;
+    relnumb=str2double(Release(3:4));
+    if relnumb >= 14
+        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-V6'); %store the file names for future opening of uvmat
+    else
+        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5'); %store the file names for future opening of uvmat
+    end
+end
 
 % %store input file in personal file uvmat_perso.mat
 % dir_perso=prefdir;

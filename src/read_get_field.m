@@ -30,17 +30,17 @@ test_vector=get(handles.check_vector,'Value');
 nbvar=0;
 empty_coord_x=0;
 empty_coord_y=0;
-dimname_y={};
+%dimname_y={};
 ListVarName={};
 VarDimName={};
 SubVarAttribute={};
-dim_x=0;
-dim_y=0;
+%dim_x=0;
+%dim_y=0;
 dim_z=0;
-dim_vec_x=0;
-dim_vec_y=0;
-dim_vec_z=0;
-c_index=[];
+%dim_vec_x=0;
+%dim_vec_y=0;
+%dim_vec_z=0;
+%c_index=[];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  ordinary (1D) plot
@@ -49,6 +49,10 @@ if test_1Dplot
     inputlist=get(handles.ordinate,'String'); 
     val=get(handles.ordinate,'Value');% selection(s) for ordinate
     VarNameCell=inputlist(val); %names of the variable(s) in the list
+    VarIndex_y=[];
+    dim_ordinate={};
+    testpermute=[];
+    subvarindex=[];
     for ilist=1:length(VarNameCell)
         VarIndex_y(ilist)=name2index(VarNameCell{ilist},Field.ListVarName);%index of the variable in ListVarName
         dim_ordinate{ilist}=Field.VarDimName{VarIndex_y(ilist)};% name of the corresponding dimension
@@ -210,7 +214,7 @@ if test_scalar
         VarIndex=name2index(VarName,Field.ListVarName);%index of the variable in ListVarName
         if isempty(VarIndex)% default abscissa = matrix index
 %             coord_z_name=dimname_A{1};% name of the x coordinate = dimension of the plotted quantity
-            empty_coord_z=1;
+%            empty_coord_z=1;
         else
             dimname_z=Field.VarDimName{VarIndex};
              %check consistency of dimensions
@@ -243,9 +247,9 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % vectors
-test_vec_x_dimvar=0;%default
-test_vec_y_dimvar=0;%default
-test_vec_z_dimvar=0;%defaul
+% test_vec_x_dimvar=0;%default
+% test_vec_y_dimvar=0;%default
+% test_vec_z_dimvar=0;%defaul
 dimname_vec_x=[];
 dimname_vec_y=[];
 dimname_vec_z=[];
@@ -316,7 +320,7 @@ if test_vector
                     return
                 end
             end
-            test_vec_x_dimvar=1;
+%             test_vec_x_dimvar=1;
             SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
         else
             SubVarAttribute{nbvar}.Role='coord_x';%abcissa with unstructured coordinates
@@ -349,7 +353,7 @@ if test_vector
                     return
                 end
             end
-            test_vec_y_dimvar=1;
+%             test_vec_y_dimvar=1;
             SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
         else
             SubVarAttribute{nbvar}.Role='coord_y';%abcissa with unstructured coordinates
@@ -364,7 +368,7 @@ if test_vector
         VarIndex=name2index(VarName,Field.ListVarName);%index of the variable in ListVarName
         if isempty(VarIndex)% default abscissa = matrix indexTODO like scalar
     %         coord_x_name=dimname_u{2};% name of the x coordinate = dimension of the plotted quantity
-            empty_coord_vec_z=1;
+%             empty_coord_vec_z=1;
         else
             dimname_vec_z=Field.VarDimName{VarIndex};
             nbvar=nbvar+1;
@@ -383,7 +387,7 @@ if test_vector
                         return
                     end
                 end
-                test_vec_z_dimvar=1;
+%                 test_vec_z_dimvar=1;
                 SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
             else
                 SubVarAttribute{nbvar}.Role='coord_z';%abcissa with unstructured coordinates
@@ -404,7 +408,7 @@ if test_vector
             return
         end
         nbvar=nbvar+1;
-        w_index=nbvar;
+%         w_index=nbvar;
         ListVarName{nbvar}=Field.ListVarName{VarIndex};
         VarDimName{nbvar}=dimname_u;
         if numel(VarAttribute)>=VarIndex
@@ -425,7 +429,7 @@ if test_vector
             return
         end
         nbvar=nbvar+1;
-        c_index=nbvar;
+%         c_index=nbvar;
         ListVarName{nbvar}=Field.ListVarName{VarIndex};
         VarDimName{nbvar}=Field.VarDimName{VarIndex};
         if numel(VarAttribute)>=VarIndex
@@ -527,8 +531,8 @@ if test_scalar
     %old convention; use of coord_1 and Coord_2
         if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=field_var_index
             if isfield(Field.VarAttribute{field_var_index},'Coord_2')&& isfield(Field.VarAttribute{field_var_index},'Coord_1')
-                Coord_2=Field.VarAttribute{field_var_index}.Coord_2;
-                Coord_1=Field.VarAttribute{field_var_index}.Coord_1;
+%                 Coord_2=Field.VarAttribute{field_var_index}.Coord_2;
+%                 Coord_1=Field.VarAttribute{field_var_index}.Coord_1;
                 testold=1;
             end
         end
@@ -570,16 +574,18 @@ end
 
 %permute indices if coord_y is not the first matrix index: vector case
 if test_vector
-    VarNameU=Field.ListVarName{VarIndexU};
-    DimCellU=Field.VarDimName{VarIndexU} % list of dimensions for u component  
+    VarNameU=Field.ListVarName{VarIndexU}; % name of u component variable
+    DimCellU=Field.VarDimName{VarIndexU}; % list of dimensions for u component  
     eval(['npxy=size(SubField.' VarNameU ')']) % npxy= dimension values for the u component
     SingleCellU={};
     if numel(npxy) < numel(DimCellU)
         SingleCellU=DimCellU(1:end-numel(npxy));
         DimCellU=DimCellU(end-numel(npxy)+1:end); %suppress the first singletons) dimensions
     end
-    ind_single=find(npxy==1);
-    SingleCellU=[SingleCellU DimCellU(ind_single)];
+    ind_single=find(npxy==1);%indices of singleton dimensions
+    if ind_single<=numel(DimCellU)
+        SingleCellU=[SingleCellU DimCellU(ind_single)];
+    end
     ind_select=find(npxy~=1);%look for non singleton dimensions
     DimCellU=DimCellU(ind_select);
     npxy=npxy(ind_select);
@@ -626,14 +632,15 @@ if test_vector
              end
         end
     end
-    dimextra=(1:numel(DimCellU));
-    dimextra(dimU)=[]; %list of unselected dimension indices
-    DimCellU=DimCellU([dimU dimextra]);
-    eval(['SubField.' VarNameU '=permute(squeeze(SubField.' VarNameU '),[dimU dimextra]);'])
-    eval(['SubField.' VarNameV '=permute(squeeze(SubField.' VarNameV '),[dimU dimextra]);'])
-    SubField.VarDimName{VarSubIndexU}=DimCellU;
-    SubField.VarDimName{VarSubIndexV}=DimCellU;
-    
+    if numel(DimCellU)>1
+        dimextra=(1:numel(DimCellU));
+        dimextra(dimU)=[]; %list of unselected dimension indices
+        DimCellU=DimCellU([dimU dimextra]);
+        eval(['SubField.' VarNameU '=permute(squeeze(SubField.' VarNameU '),[dimU dimextra]);'])
+        eval(['SubField.' VarNameV '=permute(squeeze(SubField.' VarNameV '),[dimU dimextra]);'])
+        SubField.VarDimName{VarSubIndexU}=DimCellU;
+        SubField.VarDimName{VarSubIndexV}=DimCellU;
+    end
     %add default coord_x and/or coord_y if empty
     if empty_coord_vec_x || empty_coord_vec_y
         VarName=Field.ListVarName{field_var_index};
@@ -649,8 +656,8 @@ if test_vector
     %old convention; use of coord_1 and Coord_2
         if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=field_var_index
             if isfield(Field.VarAttribute{field_var_index},'Coord_2')&& isfield(Field.VarAttribute{field_var_index},'Coord_1')
-                Coord_2=Field.VarAttribute{field_var_index}.Coord_2;
-                Coord_1=Field.VarAttribute{field_var_index}.Coord_1;
+%                 Coord_2=Field.VarAttribute{field_var_index}.Coord_2;
+%                 Coord_1=Field.VarAttribute{field_var_index}.Coord_1;
                 testold=1;
             end
         end
@@ -710,14 +717,14 @@ if test_1Dplot
         DimCell=Field.VarDimName{VarIndex_y(1)};    
         eval(['npxy=size(SubField.' VarName ')'])
         if numel(npxy) < numel(DimCell)
-            DimCell=DimCell(end-numel(npxy)+1:end); %suppress the first singletons) dimensions 
+%             DimCell=DimCell(end-numel(npxy)+1:end); %suppress the first singletons) dimensions 
         end
-        ind_select=find(npxy~=1) ;%look for non singleton dimensions
-        DimCell=DimCell(ind_select);
-        npxy=npxy(ind_select);
+%         ind_select=find(npxy~=1) ;%look for non singleton dimensions
+%         DimCell=DimCell(ind_select);
+%         npxy=npxy(ind_select);
         if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=VarIndex_y(1) ...
                              && isfield(Field.VarAttribute{VarIndex_y(1)},'Coord_1')
-             Coord_1=Field.VarAttribute{VarIndex_y(1)}.Coord_1;%old convention; use of coord_1 
+%              Coord_1=Field.VarAttribute{VarIndex_y(1)}.Coord_1;%old convention; use of coord_1 
              eval(['SubField.' coord_x_name '_index=linspace(Coord_1(1),Coord_1(end),npxy(1));']) 
         else
             eval(['SubField.' coord_x_name '_index=linspace(0.5,npxy(1)-0.5,npxy(1));']) 
