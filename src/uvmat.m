@@ -330,7 +330,7 @@ else
         set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG';'GNU General Public License'; path_to_uvmat; ['at revision ' a{1}{1}]};a{3}{1};errormsg]);
         fclose(fid);
        else
-           set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG';'GNU General Public License'; path_to_uvmat; 'version 2.2.beta';date_str};errormsg]);
+           set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG';'GNU General Public License'; path_to_uvmat;date_str};errormsg]);
        end
    end
 end
