@@ -1,4 +1,12 @@
-%'read_get_field': read the list of selected variables from the GUI get_field (SAME AS THE FIRST
+%'read_get_field': read the list of selected variables from the GUI get_field 
+
+% OUTPUT:
+% SubField: structure with fields 
+   %  .ListVarName: list of selected variables
+   %  .VarDimName: cells with the  corresponding dimension names
+   %  .Field1, 2...: if an input file has been opened by get_field
+% errormsg: error message (=[] when no error)
+
 % INPUT: 
 % hget_field: handles of the GUI get_field
 
@@ -33,17 +41,17 @@ dim_vec_x=0;
 dim_vec_y=0;
 dim_vec_z=0;
 c_index=[];
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  ordinary (1D) plot
 if test_1Dplot
-     % select ordinate variable(s)
+    % select ordinate variable(s)
     inputlist=get(handles.ordinate,'String'); 
     val=get(handles.ordinate,'Value');% selection(s) for ordinate
     VarNameCell=inputlist(val); %names of the variable(s) in the list
     for ilist=1:length(VarNameCell)
         VarIndex_y(ilist)=name2index(VarNameCell{ilist},Field.ListVarName);%index of the variable in ListVarName
         dim_ordinate{ilist}=Field.VarDimName{VarIndex_y(ilist)};% name of the corresponding dimension
-%         if iscell(dim_ordinate{ilist})
-%             dim_ordinate{ilist}=dim_ordinate{ilist}{1};%take the first dimension name (char chain) in case of a matrix
-%         end
         testpermute(ilist)=0;%default
         nbvar=nbvar+1;
         ListVarName{nbvar}=Field.ListVarName{VarIndex_y(ilist)};
@@ -55,7 +63,7 @@ if test_1Dplot
         SubVarAttribute{nbvar}.Role='scalar';           
     end
     
-        % select abscissa variable
+    % select abscissa variable
     inputlist=get(handles.abscissa,'String'); 
     val=get(handles.abscissa,'Value');% a single selection is expected for abscissa
     VarName=inputlist{val}; %name of the variable in the list
@@ -94,11 +102,11 @@ if test_1Dplot
         end
     end
 end
-
 test3D=strcmp(get(handles.coord_z_scalar,'Visible'),'on')||strcmp(get(handles.coord_z_vectors,'Visible'),'on');
 VarSubIndexA=[];
 
-%scalar variable
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%scalar field
 test_xdimvar=0;%default
 test_ydimvar=0;%default
 test_zdimvar=0;%defaul
@@ -232,6 +240,9 @@ if test_scalar
         end
    end
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% vectors
 test_vec_x_dimvar=0;%default
 test_vec_y_dimvar=0;%default
 test_vec_z_dimvar=0;%defaul
@@ -277,16 +288,14 @@ if test_vector
     if numel(VarAttribute)>=VarIndexV
         SubVarAttribute{nbvar}=VarAttribute{VarIndexV};
     end
-    SubVarAttribute{nbvar}.Role='vector_y';
-    
+    SubVarAttribute{nbvar}.Role='vector_y';    
  
-     % select x variable for vector
+    % select x variable for vector
     inputlist=get(handles.coord_x_vectors,'String'); 
     val=get(handles.coord_x_vectors,'Value');% a single selection is expected for abscissa
     VarName=inputlist{val}; %name of the variable in the list
     VarIndex=name2index(VarName,Field.ListVarName);%index of the variable in ListVarName
     if isempty(VarIndex)% default abscissa = matrix indexTODO like scalar
-%         coord_x_name=dimname_u{2};% name of the x coordinate = dimension of the plotted quantity
         empty_coord_vec_x=1;
     else
         empty_coord_vec_x=0;
@@ -314,13 +323,12 @@ if test_vector
         end
     end
         
-         % select y variable for vector
+     % select y variable for vector
     inputlist=get(handles.coord_y_vectors,'String'); 
     val=get(handles.coord_y_vectors,'Value');% a single selection is expected for abscissa
     VarName=inputlist{val}; %name of the variable in the list
     VarIndex=name2index(VarName,Field.ListVarName);%index of the variable in ListVarName
     if isempty(VarIndex)% default abscissa = matrix indexTODO like scalar
-%         coord_x_name=dimname_u{2};% name of the x coordinate = dimension of the plotted quantity
         empty_coord_vec_y=1;
     else
         empty_coord_vec_y=0;
@@ -382,9 +390,8 @@ if test_vector
             end
         end        
     end   
-        
-      
-     if test3D %  (a revoir)  
+            
+    if test3D %  (a revoir)  
          %scalar w variable
         inputlist=get(handles.vector_z,'String');
         val=get(handles.vector_z,'Value');%selected indices in the ordinate listbox
@@ -427,12 +434,14 @@ if test_vector
         SubVarAttribute{nbvar}.Role='scalar';
     end
 end 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % get the input field
 inputfield=get(handles.inputfile,'String');
 if exist(inputfield,'file')% read the input data corresponding to the list of selected varaibles
     SubField=nc2struct(inputfield,ListVarName);
 else  % subfield stored in memory
+    SubField.ListGlobalAttribute={};
     SubField.ListVarName=ListVarName;
     SubField.VarDimName=VarDimName;
 end
@@ -440,7 +449,7 @@ SubField.ListGlobalAttribute=['InputFile' SubField.ListGlobalAttribute];
 SubField.InputFile=get(handles.inputfile,'String');
 SubField.VarAttribute=SubVarAttribute;
 
-%permute indices if coord_y is not the first matrix index
+%permute indices if coord_y is not the first matrix index: scalar case
 if test_scalar
     VarNameA=Field.ListVarName{VarIndexA};
     DimCellA=Field.VarDimName{VarIndexA};   
@@ -559,11 +568,11 @@ if test_scalar
     end
 end
 
-%permute indices if coord_y is not the first matrix index
+%permute indices if coord_y is not the first matrix index: vector case
 if test_vector
     VarNameU=Field.ListVarName{VarIndexU};
-    DimCellU=Field.VarDimName{VarIndexU};   
-    eval(['npxy=size(SubField.' VarNameU ')'])
+    DimCellU=Field.VarDimName{VarIndexU} % list of dimensions for u component  
+    eval(['npxy=size(SubField.' VarNameU ')']) % npxy= dimension values for the u component
     SingleCellU={};
     if numel(npxy) < numel(DimCellU)
         SingleCellU=DimCellU(1:end-numel(npxy));

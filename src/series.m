@@ -613,8 +613,6 @@ elseif exist([FileBase '.civ'],'file')
     ext_imadoc='.civ';
 end
       %read the ImaDoc file
-% mode=''; %default
-% testheading=0;  
 XmlData=[];
 NbSlice_calib={};
 if isequal(ext_imadoc,'.xml')
@@ -659,14 +657,6 @@ elseif isequal(ext_imadoc,'.civ')
     if error==2, warntext=['no file ' FileBase '.civ'];
     elseif error==1, warntext='inconsistent number of fields in the .civ file';
     end  
-%     set(handles.npx,'String',num2str(npx));%fills nbre of pixels x box
-%     set(handles.npy,'String',num2str(npy));%fills nbre of pixels y box
-%     set(handles.pxcm,'String',num2str(pxcmx));%fills scale x (pixel/cm) box
-%     set(handles.pycm,'String',num2str(pxcmy));%fills scale y (pixel/cm) box
-%     set(handles.pxcm,'Visible','on');%fills scale x (pixel/cm) box 
-%     set(handles.pycm,'Visible','on');%fills scale y (pixel/cm) box 
-%     set(handles.view_xml,'Visible','on')
-%     set(handles.view_xml,'String','view .civ')
 end  
 if addtest
     SeriesData.Time=[{time} SeriesData.Time];
@@ -916,24 +906,7 @@ else
     enable_i(handles,'On')
     enable_j(handles,'Off') 
 end    
-    
-    
-% elseif isequal(mode,'series(Dj)')       
-%     enable_j(handles,'On')     
-%     if nbfield==1
-%         enable_i(handles,'Off') 
-%     else
-%         enable_i(handles,'On')
-%     end
-% elseif isequal(mode,'series(Di)') 
-%     if nbfield2 > 1
-%          enable_j(handles,'On')
-%     else
-%          enable_j(handles,'Off')
-%     end
-% end  
 set(handles.list_pair_civ,'Value',indchosen);%set the default choice of image pairs for civ1
-% SetSeries.displ_num=displ_num;
 set(hseries,'UserData',SeriesData)
 
 %list pairs if relevant
@@ -1666,18 +1639,9 @@ end
 
 %check the current path to the selected function
 PathName=list_path{index_ACTION};%current recorded path
-% if ~isequal(path_series,PathName)
-%     CurrentPath=fileparts(which(ACTION));
-%     if ~isequal(CurrentPath,PathName)
-%         addpath(PathName) 
-%         errormsg=check_functions;
-%         msgbox_uvmat('CONFIRMATION',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
-%     end
-% end
 set(handles.path,'String',PathName); %show the path to the senlected function
 
 %default setting for the visibility of the GUI elements
-%set( handles.Field,'Visible','off')%default
 set(handles.RootPath,'UserData','many')
 set(handles.SubDir,'Visible','on')
 set(handles.RootFile,'Visible','on')
@@ -1980,201 +1944,6 @@ if isequal(get(ggg,'SelectionType'),'alt')
    % plot_text(CurData)
 end
 
-
-
-% %----------------------------------------------------------------------
-% % --- display image movie and display time average
-% %OBSOLETE: A SUPPRIMER
-% %----------------------------------------------------------------------
-% function movie_ima(handles,filecell,filecell_1,num1,num_a,field)
-% 
-% global hfig1 hfig2 hfig3 poscolbar
-% global A val HIST
-% 
-% A=[];aviobj=[];
-% % set(hfig1,'UserData','ima')% set the current field state to 'image'
-% set(handles.zoom,'Value',1); %put zoom on
-% nom_type=get(handles.file_input,'UserData');
-% % field=get(handles.civ1,'UserData');
-% % fields=field(1).fields;
-% set(handles.speed,'Visible','On')%show slider to set movie speed
-% set(handles.mo_speed_txt,'Visible','On')
-% 
-% if ~isempty(filecell_1)
-%    file1=get(handles.file1_input,'UserData');
-%    field1=file1.field;
-%    scal_type1=field1.fields;
-%    vel_type1=field1.vel_type;
-%    filename_1=filecell_1(1);% first file name in the series
-% else
-%    filename_1=[];
-% end 
-% scal_type{1}=field(1).fields;
-% vel_type{1}=field(1).vel_type;
-% % display the first field
-% [A,time,dt,rangx0,rangy0]=view_ima(handles,cell2mat(filecell(1)),filename_1,num1(1),num_a(1));
-% 
-% % calculate the histogram of the first image
-% nxy=size(A);
-% ndim=length(nxy);
-% if ndim==2 % case of B/W images
-%     nxy(3)=1;
-% end
-% C=reshape(A,nxy(1)*nxy(2),nxy(3));
-% Amaxmax=double(max(max(max(A))));
-% Aminmin=double(min(min(min(A))));
-% if isa(C,'uint8')|isa(C,'uint16')
-%     C=double(C);
-%     dC=1;
-% else
-%     dC=(Amaxmax-Aminmin)/100;
-% end
-% val=[Aminmin:dC:Amaxmax];% define bins for histogram 
-% HIST=hist(C,val);% initiate the global histogram 
-% if ndim==2, HIST=HIST'; end; 
-% 
-% auto_scale=get(handles.auto_scale,'Value');
-% min_input=str2num(get(handles.min_input,'String'));% select the minimum
-% max_input=str2num(get(handles.scale_input,'String'));% select the max
-% zoomstate=get(handles.zoom,'Value');
-% 
-% if isequal(get(handles.window_input,'String'),'avi'),
-%     basename=get(handles.file_input,'String');
-%     prompt = {'file name';'frames per second';'frame resolution ([nbpixels x y])';'axis position relative to the frame'};
-%     dlg_title = 'select properties of the output avi movie';
-%     num_lines= 1;
-%     def     = {[basename '_out.avi'];'5';'[1024 768]';'[0.05 0.07 0.87 0.88]'};
-%     answer = inputdlg(prompt,dlg_title,num_lines,def);
-%     aviname=answer{1};
-%     fps=str2num(answer{2});
-%     if exist(aviname,'file')==2
-%         delete(aviname);
-%     end;
-%     aviobj=avifile(aviname,'Compression','None','fps',fps);
-%     
-%     %display first view for tests
-%     figure(2);
-%     hh=get(gcf,'CurrentAxes');
-%     if isempty(hh),
-%         hfig1=axes;
-%     else
-%         hfig1=hh;
-%     end;
-%     if isequal(filecell_1,{}) 
-%         filename_1=[];
-%     else
-%         filename_1=cell2mat(filecell_1(1));
-%     end
-%     poscolbar=[0.93 0.15 0.02 0.7];
-%     view_ima(handles,cell2mat(filecell(1)),filename_1,num1(1),num_a(1));% show the first field
-%     nbpix=eval(answer{3});
-%     set(gcf,'Position',[1 1 nbpix])% resolution XVGA 
-%     set(hfig1,'Position',eval(answer{4}));
-%     
-%     msgbox({'adjust figure 2 with its matlab edit menu ' ;...
-%             'then type any keyboard key to get the avi movie as a copy of figure 2 display'})
-%     pause;
-%     hh=colorbar;
-%     poscolbar=get(hh,'Position');
-% end
-% 
-% %%%%%%%%%%%%%%%%
-% %mask and usrdfct
-% maskname=[]; %default
-% if isequal(get(handles.mask_test,'Value'),1)
-%     maskbase=get(handles.mask_test,'UserData');
-% end
-% % image or scalar processing programme set by user
-% % if (get(handles.usr_fct,'Value')==1)
-% %      usrfct=get(handles.usr_fct,'UserData');
-% % else
-% %      usrfct='';
-% % end
-% nburst=1; % nburst(1) =nbre of names in filename= nbre of bursts
-% set(handles.text_display_1,'String',['image movie'])
-% nbfield=length(filecell);
-% if nbfield >1
-% for ifile=2:nbfield
-%     stopstate=get(handles.run0,'BusyAction');
-%     if isequal(stopstate,'queue')% enable STOP command
-%        pausetime=1.02-get(handles.speed,'Value');
-%          pause(pausetime)
-%          if isequal(get(handles.mask_test,'Value'),1)
-%                 maskname=name_generator(maskbase,num1(ifile),1,'.png','png_series');
-%             end
-%             if isequal(AName{1},'image')
-%                 A=read_image(cell2mat(filecell(ifile)),num1(ifile),maskname);% read the first image, num2 is the counter for avi files
-%             else % read the first field from the netcdf file, imposing the pixel positions in the selected domain
-%                  [A,time(ifile),dtr,rgx,rgy,vt_out,erread]=read_scalar(filecell{ifile},vel_type,scal_type,rangx0,rangy0,nxy,maskname);
-%                 if erread==1;
-%                     errordlg({['no spatial derivative in ' filecell{ifile}]; 'run patch first'}); return
-%                 elseif erread==2;
-%                     errordlg(['no field ' vel_type{1} ' in ' filecell{ifile}]); return
-%                 elseif erread==3;
-%                     errordlg(['scalar ' scal_type{1} ' not found in' filecell{ifile}]); return
-%                 elseif erread==4;
-%                     errordlg(['all points aligned in' filecell{ifile}]); return
-%                 end
-%             end
-%           
-%             % read the second image
-%             if ~isempty(filecell_1)
-%                 if isequal(scal_type{1},'image')
-%                     A1=read_image(cell2mat(filecell_1(ifile)),num1(ifile),maskname);% read the second image, num2 is the counter for avi files
-%                     Avalue_1=double(A1(indy,indx,:));
-%                 else % read the second field from the netcdf file, imposing the pixel positions in the selected domain
-%                     [Avalue_1,time1(ifile),dtr,rgx,rgy,vt_out,erread]=read_scalar(filecell_1{ifile},{vel_type1},{scal_type1},rangx0,rangy0,npxy,maskname,usrfct); 
-%                     if erread==1;
-%                         errordlg({['no spatial derivative in ' filecell_1{ifile}]; 'run patch first'}); return
-%                     elseif erread==2;
-%                         errordlg(['no field ' vel_type1 ' in ' filecell_1{ifile}]); return
-%                     elseif erread==3;
-%                         errordlg(['scalar ' scal_type1 ' not found in' filecell_1{ifile}]); return
-%                     elseif erread==4;
-%                         errordlg(['all points aligned in' filecell_1{ifile}]); return
-%                     end
-%                 end
-%                 time(ifile)=(time(ifile)+time1(ifile))/2;
-%                 Avalue=Avalue-Avalue_1;
-%             end
-%         set(handles.abs_time,'String',time);
-%         set(handles.field_counter,'String',num2str(num1(ifile)));
-%         set(handles.a_input,'String',num2stra(num_a(ifile),nom_type));
-%         C=reshape(A,nxy(1)*nxy(2),nxy(3));% reshape in a vector
-%         [val,HIST]=hist_update(val,HIST,C,dC);
-%         [h,Amin,Amax]=plot_image(hfig1,rangx0,rangy0,1,scal_type{1},auto_scale,min_input,max_input,poscolbar,A);
-%         set(handles.min_input,'String',num2str(Amin));% select the minimum
-%         set(handles.scale_input,'String',num2str(Amax));% select the minimum
-%          if ~isequal(aviobj,[]),
-% %              mov=getframe(hfig1);
-%               mov=getframe(gcf);
-%              aviobj=addframe(aviobj,mov);end
-%          if (get(handles.zoom,'Value') == get(handles.zoom,'Max')),zoom on,end
-%          set(handles.field_counter,'String',num2str(num1(ifile)))
-% %     end
-% end
-% end
-% end
-% aviobj=close(aviobj);
-% 
-% %plot global image histogram
-%         HIST=HIST/(nbfield*nxy(1)*nxy(2));% normalized by the number of points
-%         axes(hfig2) %in main window
-%         if ndim==2
-%             plot(val,HIST)
-%         else
-%             plot(val,HIST(:,1),'r',val,HIST(:,2),'g',val,HIST(:,3),'b')
-%         end
-%         residu=1-sum(HIST,1);
-%         title(['histo, residu ' num2str(residu)])
-%         grid on
-%         axes(hfig3)
-%         cla %clear the second histogram window
-%         
-
-
-
-
 %%%%%%%%%%%%%
 function [ind_remove]=find_pairs(dirpair,ind_i,last_i)
 
@@ -2200,7 +1969,44 @@ function [ind_remove]=find_pairs(dirpair,ind_i,last_i)
             end
         end
 
-%--------------------------------------------------------
+%----------------------------------------------------
+%  determine the list of index pairs of processing file 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [num_i1,num_i2,num_j1,num_j2,num_i_out,num_j_out]=find_file_indices(num_i,num_j,ind_shift,NomType,mode)
+num_i1=num_i;% set of first image numbers by default
+num_i2=num_i;
+num_j1=num_j;
+num_j2=num_j;
+num_i_out=num_i;
+num_j_out=num_j;
+if isequal (NomType,'_i1-i2_j') |isequal (NomType,'_i1-i2')
+    num_i1_line=num_i+ind_shift(3);% set of first image numbers
+    num_i2_line=num_i+ind_shift(4);
+    % adjust the first and last field number
+        indsel=find(num_i1_line >= 1);
+    num_i_out=num_i(indsel);
+    num_i1_line=num_i1_line(indsel);
+    num_i2_line=num_i2_line(indsel);
+    num_j1=meshgrid(num_j,ones(size(num_i1_line)));
+    num_j2=meshgrid(num_j,ones(size(num_i1_line)));
+    [xx,num_i1]=meshgrid(num_j,num_i1_line);
+    [xx,num_i2]=meshgrid(num_j,num_i2_line);
+elseif isequal (NomType,'_i_j1-j2') || isequal (NomType,'#_ab')
+    if isequal(mode,'bursts') %case of bursts (png_old or png_2D)
+        num_j1=ind_shift(1)*ones(size(num_i));
+        num_j2=ind_shift(2)*ones(size(num_i));
+    else
+        num_j1_col=num_j+ind_shift(1);% set of first image numbers
+        num_j2_col=num_j+ind_shift(2);
+        % adjust the first field number
+        indsel=find((num_j1_col >= 1));   
+        num_j_out=num_j(indsel);
+        num_j1_col=num_j1_col(indsel);
+        num_j2_col=num_j2_col(indsel);
+        [num_i1,num_j1]=meshgrid(num_i,num_j1_col);
+        [num_i2,num_j2]=meshgrid(num_i,num_j2_col);
+    end    
+end
 
  
 %-----------------------------------------------------------
