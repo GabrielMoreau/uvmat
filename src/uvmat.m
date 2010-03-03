@@ -324,7 +324,14 @@ if exist('input','var')
     end
 else
    if ishandle(handles.UVMAT_title)
-        set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG';'GNU General Public License'; path_to_uvmat; 'version 2.2.beta';date_str};errormsg]);
+       fid=fopen('revision.log')
+       if fid
+        a=textscan(fid,'%s%s%s',1,'HeaderLines',1,'Delimiter','|');
+        set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG';'GNU General Public License'; path_to_uvmat; ['at revision ' a{1}{1}]};a{3}{1};errormsg]);
+        fclose(fid);
+       else
+           set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG';'GNU General Public License'; path_to_uvmat; 'version 2.2.beta';date_str};errormsg]);
+       end
    end
 end
 UvData.NewSeries=1;
