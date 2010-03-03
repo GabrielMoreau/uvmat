@@ -29,10 +29,10 @@
 % Dti: ~=0 if i index pairs are used
 % Dtj: ~=0 if i index pairs are used
 
-function [nom_type_pair]=nomtype2pair(nom_type,Dti,Dtj);
+function [nom_type_pair]=nomtype2pair(nom_type,Dti,Dtj)
 
 %determine nom_type_nc:
-nom_type_nc=[];%default
+nom_type_pair=[];%default
 switch nom_type
     case {'_i_j'}
         if Dtj>0 || Dtj<0

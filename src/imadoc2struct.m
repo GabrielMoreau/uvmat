@@ -20,18 +20,18 @@ s.Heading=[];%default
 s.Time=[]; %default
 s.TimeUnit=[]; %default
 s.GeometryCalib=[];
-nom_type_ima=[];%default
-ext_ima=[];%default
+% nom_type_ima=[];%default
+% ext_ima=[];%default
 % abs_time=[];%initiation
 % GeometryCalib.CoordUnit='cm';%default
-mode=[]; %default
-NbSlice=1;%default
-npx=[];%default
-npy=[];%default
+% mode=[]; %default
+% NbSlice=1;%default
+% npx=[];%default
+% npy=[];%default
 % GeometryCalib.Pxcmx=1;
 % GeometryCalib.Pxcmy=1;
 % GeometryCalib=[];
-NbDtj=1;
+% NbDtj=1;
 tsai=[];%default
 % if ~exist('testime','var')
 %     testime=1;%default
@@ -63,10 +63,10 @@ if ~isempty(uid_Heading),
         s.Heading.Record=get(t,children(t,uid_Record),'value');
     end
     s.Heading.ImageName=get(t,children(t,uid_FirstImage),'value');
-    FirstImage=s.Heading.ImageName;
-    if ~isempty(FirstImage)
-        [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type_ima]=name2display(FirstImage);
-    end
+%     FirstImage=s.Heading.ImageName;
+%     if ~isempty(FirstImage)
+%         [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type_ima]=name2display(FirstImage);
+%     end
 end
 
 %Camera   
@@ -77,15 +77,15 @@ if ~isempty(uid_Camera)
         ImageSize=get(t,children(t,uid_ImageSize),'value');
         xindex=findstr(ImageSize,'x');
         if length(xindex)>=2
-            npx=str2num(ImageSize(1:xindex(1)-1));
-            npy=str2num(ImageSize(xindex(1)+1:xindex(2)-1));
+%             npx=str2num(ImageSize(1:xindex(1)-1));
+%             npy=str2num(ImageSize(xindex(1)+1:xindex(2)-1));
         end
     end
-    uid_NbSlice=find(t,'/ImaDoc/Camera/NbSlice');
-    if ~isempty(uid_NbSlice)
-        NbSlice=str2num(get(t,children(t,uid_NbSlice),'value'));
-        if isempty(NbSlice),NbSlice=1;end; %default
-    end
+%     uid_NbSlice=find(t,'/ImaDoc/Camera/NbSlice');
+%     if ~isempty(uid_NbSlice)
+%         NbSlice=str2num(get(t,children(t,uid_NbSlice),'value'));
+% %         if isempty(NbSlice),NbSlice=1;end; %default
+%     end
     uid_TimeUnit=find(t,'/ImaDoc/Camera/TimeUnit');
     if ~isempty(uid_TimeUnit)
         s.TimeUnit=get(t,children(t,uid_TimeUnit),'value');
@@ -93,8 +93,8 @@ if ~isempty(uid_Camera)
     uid_BurstTiming=find(t,'/ImaDoc/Camera/BurstTiming');
     if ~isempty(uid_BurstTiming)
         for k=1:length(uid_BurstTiming)
-            Dtj=[];%default
-            NbDtj=1;%default
+%             Dtj=[];%default
+%             NbDtj=1;%default
             subt=branch(t,uid_BurstTiming(k));%subtree under BurstTiming
              % reading Dtk
             Frequency=get_value(subt,'/BurstTiming/FrameFrequency',1);
@@ -120,7 +120,7 @@ if ~isempty(uid_Camera)
             end
             % reading Dtk
             Dtk=get_value(subt,'/BurstTiming/Dtk',[]);
-            NbDtk=get_value(subt,'/BurstTiming/NbDtk',1)
+            NbDtk=get_value(subt,'/BurstTiming/NbDtk',1);
             if isempty(Dtk)
                 s.Time=[s.Time;Time_val];
             else
@@ -140,7 +140,7 @@ end
 uid_GeometryCalib=find(t,'/ImaDoc/GeometryCalib');
 if ~isempty(uid_GeometryCalib)
     if length(uid_GeometryCalib)>1
-        error=['More than one GeometryCalib in ' filecivxml];
+        errormsg=['More than one GeometryCalib in ' filecivxml];
         return
     end
     subt=branch(t,uid_GeometryCalib);%subtree under GeometryCalib
@@ -148,7 +148,7 @@ if ~isempty(uid_GeometryCalib)
     if ~isempty(cont)
         uid_pixcmx=find(subt,'/GeometryCalib/Pxcmx');
         uid_pixcmy=find(subt,'/GeometryCalib/Pxcmy');
-        if ~isempty(uid_pixcmx) & ~isempty(uid_pixcmy)%NON UTILISE 
+        if ~isempty(uid_pixcmx) && ~isempty(uid_pixcmy)%NON UTILISE 
            pixcmx=str2num(get(subt,children(subt,uid_pixcmx),'value'));
             if isempty(pixcmx),pixcmx=1;end; %default
             pixcmy=str2num(get(subt,children(subt,uid_pixcmy),'value'));
@@ -179,7 +179,7 @@ if ~isempty(uid_GeometryCalib)
         uid_kappa1=find(subt,'/GeometryCalib/kappa1');
         uid_Tx_Ty_Tz=find(subt,'/GeometryCalib/Tx_Ty_Tz');
         uid_R=find(subt,'/GeometryCalib/R');
-        if ~isempty(uid_focal) & ~isempty(uid_dpx_dpy) & ~isempty(uid_Cx_Cy)
+        if ~isempty(uid_focal) && ~isempty(uid_dpx_dpy) && ~isempty(uid_Cx_Cy)
             tsai.f=str2num(get(subt,children(subt,uid_focal),'value'));
             dpx_dpy=str2num(get(subt,children(subt,uid_dpx_dpy),'value'));
             tsai.dpx=dpx_dpy(1);

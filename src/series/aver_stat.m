@@ -31,7 +31,6 @@ end
 hseries=guidata(Series.hseries);%handles of the GUI series
 WaitbarPos=get(hseries.waitbar_frame,'Position');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %root input file and type
 if ~iscell(Series.RootPath)% case of a single input field series
     num_i1={num_i1};num_j1={num_j1};num_i2={num_i2};num_j2={num_j2};
@@ -234,36 +233,37 @@ if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array abs
 end
 
 % Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
-filebasesub=fullfile(RootPath{1},SubDir{1},RootFile{1});
-if isempty(SubDir{1}) % create a subdirectory '/mean'
-    subdir_result='mean';
+subdir_result='aver_stat';
+% filebasesub=fullfile(RootPath{1},subdir_result,RootFile{1});
+% if isempty(SubDir{1}) % create a subdirectory '/aver_stat'
+%     subdir_result='aver_stat';
 %     filebasemean=fullfile(RootPath{1},subdir_result);
-    if ~exist(fullfile(RootPath{1},subdir_result),'dir')
-        dircur=pwd; %record current working directory
-        cd(RootPath{1})% goes to the iamge directory
-        [m1,m2,m3]=mkdir(subdir_result);
-        if ~isequal(m2,'')
-             msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
-        end
-        cd(dircur) %back to the initial working directory
+if ~exist(fullfile(RootPath{1},subdir_result),'dir')
+    dircur=pwd; %record current working directory
+    cd(RootPath{1})% goes to the iamge directory
+    [m1,m2,m3]=mkdir(subdir_result);
+    if ~isequal(m2,'')
+         msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
     end
-    filebase_out=filebase{1}; 
-else
-   subdir_result=SubDir{1};
-   filebase_out=[filebase{1} '_mean'];% output root name obtained by adding the suffix _mean to the input
+    cd(dircur) %back to the initial working directory
 end
+filebase_out=filebase{1}; 
+% else
+%    subdir_result=SubDir{1};
+%    filebase_out=[filebase{1} '_mean'];% output root name obtained by adding the suffix _mean to the input
+% end
 %output nomtype (to generalise)
 NomTypeOut=nomtype2pair(NomType{1},num_i2{end}(end)-num_i1{1}(1),num_j2{end}(end)-num_j1{1}(1));
     
-if NbSlice==1  
-    filebase_out=[filebasesub '_mean'];
-else
-    filebase_out=[filebasesub '_' NbSlice_name 'mean'];
-    answeryes=questdlg({['will make average in ' num2str(NbSlice) ' slices'];['results stored as files ' filebase_out ' ...']});
-    if ~isequal(answeryes,'Yes')
-        return
-    end
-end
+% if NbSlice==1  
+%     filebase_out=[filebasesub '_mean'];
+% else
+%     filebase_out=[filebasesub '_' NbSlice_name 'mean'];
+%     answeryes=questdlg({['will make average in ' num2str(NbSlice) ' slices'];['results stored as files ' filebase_out ' ...']});
+%     if ~isequal(answeryes,'Yes')
+%         return
+%     end
+% end
 
 % coordinate transform or other user defined transform
 Coord_menu=get(hseries.CoordType,'String');
@@ -393,11 +393,11 @@ for i_slice=1:NbSlice
     
     %writing the result file
    if testima   
-       if NbSlice==1
-        [filemean]=name_generator(filebase_out,num_i1{1}(1),num_j1{1}(1),'.png',NomTypeOut,1,num_i2{end}(end),num_j2{end}(end));
-       else % label the file number by the slice # for simplicity
-          [filemean]=name_generator(filebase_out,i_slice,1,'.png','_i');
-       end
+%        if NbSlice==1
+        [filemean]=name_generator(filebase_out,num_i1{1}(1),num_j1{1}(1),'.png',NomTypeOut,1,num_i2{end}(end),num_j2{end}(end),subdir_result);
+%        else % label the file number by the slice # for simplicity
+%           [filemean]=name_generator(filebase_out,i_slice,1,'.png','_i');
+%        end
         if exist(filemean,'file')
             backupfile=filemean;
             testexist=2;
@@ -428,11 +428,11 @@ for i_slice=1:NbSlice
         if isfield(DataMean,'Time')
             DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {'Time','Time_end'}];
         end  
-        if NbSlice==1
-          filemean=name_generator(filebase_out,num_i1{1}(1),num_j1{1}(1),'.nc',NomTypeOut,1,num_i2{end}(end),num_j2{end}(end));
-        else % label the file number by the slice # for simplicity
-          [filemean]=name_generator(filebase_out,i_slice,1,'.nc','_i');
-        end
+%         if NbSlice==1
+          filemean=name_generator(filebase_out,num_i1{1}(1),num_j1{1}(1),'.nc',NomTypeOut,1,num_i2{end}(end),num_j2{end}(end),subdir_result);
+%         else % label the file number by the slice # for simplicity
+%           [filemean]=name_generator(filebase_out,i_slice,1,'.nc','_i');
+%         end
         if exist(filemean,'file')
             backupfile=filemean;
             testexist=2;
@@ -458,5 +458,4 @@ for i_slice=1:NbSlice
 end
 hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
 delete(hget_field)
-'TEST'
 uvmat(filemean)

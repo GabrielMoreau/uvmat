@@ -469,29 +469,36 @@ display_file_name(hObject, eventdata, handles,fileinput)
 % fills the edit boxes RootPath, RootFile,NomType...from an input file name 'fileinput'
 %----------------------------------------------------------------
 function display_file_name(hObject, eventdata, handles,fileinput)
+if ~exist(fileinput,'file')
+    msgbox_uvmat('ERROR',['input file ' fileinput  ' does not exist'])
+    return
+end
 [RootPath,RootFile,i1,i2,str_a,str_b,ext,NomType,SubDir]=name2display(fileinput);
-form=imformats(ext(2:end));%test valid Matlab image formats
-if ~isempty(form)
-    ext_test='.image';
-    imainfo=imfinfo(fileinput);  
-    if length(imainfo) >1 %case of image with multiple frames
+ext_test=''; %default
+if ~isempty(ext) 
+    form=imformats(ext(2:end));%test valid Matlab image formats
+    if ~isempty(form)
+        ext_test='.image';
+        imainfo=imfinfo(fileinput);  
+        if length(imainfo) >1 %case of image with multiple frames
+            i1='1'; % set the frame counter to 1 by default
+            i2='';
+            str_a='';
+            str_b='';
+            NomType='*'; %indicate a set of indexed frames within a single file
+            [RootPath,RootFile]=fileparts(fileinput); %include the indices in the root file
+        end
+    elseif isequal(lower(ext),'.avi')
+        ext_test='.image';
         i1='1'; % set the frame counter to 1 by default
         i2='';
         str_a='';
         str_b='';
         NomType='*'; %indicate a set of indexed frames within a single file
         [RootPath,RootFile]=fileparts(fileinput); %include the indices in the root file
+    else
+        ext_test=lower(ext);
     end
-elseif isequal(lower(ext),'.avi')
-    ext_test='.image';
-    i1='1'; % set the frame counter to 1 by default
-    i2='';
-    str_a='';
-    str_b='';
-    NomType='*'; %indicate a set of indexed frames within a single file
-    [RootPath,RootFile]=fileparts(fileinput); %include the indices in the root file
-else
-    ext_test=lower(ext);
 end
 switch ext_test
     case {'.civ','.log','.cmx','.cmx2','.txt'}  %display text file

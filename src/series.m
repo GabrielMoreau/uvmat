@@ -54,7 +54,7 @@ end
 % --- Executes just before series is made visible.
 %--------------------------------------------------------------------------
 function series_OpeningFcn(hObject, eventdata, handles,param)
-
+global nb_builtin
 % Choose default command line output for series
 handles.output = hObject;
 % Update handles structure
@@ -128,16 +128,13 @@ if isfield(param,'civ1')&& islogical(param.civ1) && isfield(param,'civ2')&& islo
     set(handles.filter1,'Value',param.filter1);
     set(handles.filter2,'Value',param.filter2);
 end
-%set(hObject,'UserData', SeriesData)
 set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles}) 
 NomType_Callback(hObject, eventdata, handles)
-%mode_Callback(hObject, eventdata, handles)
 
 %loads the information stored in prefdir to initiate the browser and the list of functions
 menu_str={'check_files';'aver_stat';'time_series';'merge_proj';'clean_civ_cmx'};
+nb_builtin=numel(menu_str); %number of functions
  
-% menu_str=get(handles.ACTION,'String');%list of functions included in 'series.m'
-
 %remove from the list the last option 'more...'
 [path_series,name,ext]=fileparts(which('series'));
 path_series=fullfile(path_series,'/series');%path of the function 'series'
@@ -291,9 +288,7 @@ update_file(hObject, eventdata, handles,fileinput,0)
 % --------------------------------------------------------------------
 function MenuBrowse_insert_Callback(hObject, eventdata, handles)
 
-%hseries=get(handles.browse_root,'parent');
-RootPathCell=get(handles.RootPath,'String');
-% SubDirCell=get(handles.SubDir,'String');  
+RootPathCell=get(handles.RootPath,'String'); 
 RootFileCell=get(handles.RootFile,'String');
 oldfile=''; %default
 if isempty(RootPathCell)|isequal(RootPathCell,{''})%loads the previously stored file name and set it as default in the file_input box
@@ -397,16 +392,23 @@ update_file(hObject, eventdata, handles,fileinput,1)
 % --------------------------------------------------------------------
 % refresh the GUI data after introduction of a new file series
 function update_file(hObject, eventdata, handles,fileinput,addtest)
-hseries=get(handles.RootPath,'parent');  
+%hseries=get(handles.RootPath,'parent');  
+if ~exist(fileinput,'file')
+    msgbox_uvmat('ERROR',['input file ' fileinput  ' does not exist'])
+    return
+end
+hseries=handles.figure1;
 % refresh input root name, indices, file extension and nomenclature
 [RootPath,RootFile,field_count,str2,str_a,str_b,FileExt,NomType,SubDir]=name2display(fileinput);
 %check for movie image files
+if ~isempty(FileExt)
 if ~isempty(imformats(FileExt(2:end)))
     imainfo=imfinfo(fileinput);     
     if length(imainfo) >1 %case of image with multiple frames
         NomType='*';
         [RootPath,RootFile]=fileparts(fileinput);
     end
+end
 end
 NcType='none';%default
 if isequal(FileExt,'.nc')
@@ -491,24 +493,14 @@ set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red
 set(handles.RootPath,'BackgroundColor',[1 1 0]) % set RootPath edit box  to yellow
 drawnow
 
-% hseries=get(handles.RootFile,'parent');
-% SeriesData=get(hseries,'UserData');%read information set by the browser
-% ext_ima_read=[];
-% field_count=1;%default
-% pxcmx=1;
-% pxcmy=1;
 TimeUnit=''; %default
-% CoordUnit='';%default
 time=[];%default
 GeometryCalib=[];%default
 nb_field=[];%default
 nb_field2=[];%default
-% Heading=[];
-% [PD,Device]=fileparts(RootPathCell{1});
 SeriesData.PathCampaign=get(handles.PathCampaign,'String');
 
 % read timing and total frame number from the current file (movie files) !! may be overrid by xml file
-%icell=length(RootPathCell);
 FileBase=fullfile(RootPath,RootFile);
 
 % nb_field{icell,1}='?';%default 
@@ -889,7 +881,8 @@ set(handles.nb_field2,'Visible',state_j)
 % --- Executes on button press in mode.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mode_Callback(hObject, eventdata, handles)
-hseries=get(handles.mode,'parent');
+%hseries=get(handles.mode,'parent');
+hseries=handles.figure1;
 SeriesData=get(hseries,'UserData');
 mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
@@ -990,8 +983,8 @@ set(handles.TRANSFORM_title,'Visible',state)
 % the field series set by first_i, incr, last_i
 %----------------------------------------------------------------
 function find_netcpair_civ(hObject, eventdata, handles,Val)
-hseries=get(handles.list_pair_civ,'parent');
-SeriesData=get(hseries,'UserData'); 
+%hseries=get(handles.list_pair_civ,'parent');
+SeriesData=get(handles.figure1,'UserData'); 
 % NomTypeCell=get(handles.NomType,'String');
 NomTypeCell=SeriesData.NomType;
 NomType=NomTypeCell{Val};
@@ -1172,7 +1165,7 @@ end
 iview=get(handles.NomType,'Value');
 SeriesData.displ_num(iview,:)=(displ_num(:,val))';
 SeriesData.ref_time=ref_time;
-set(hseries,'UserData',SeriesData)
+set(handles.figure1,'UserData',SeriesData)
 list_pair_civ_Callback(hObject, eventdata, handles)
 
 %-------------------------------------------------------------
@@ -1184,8 +1177,8 @@ function list_pair_civ_Callback(hObject, eventdata, handles)
 testupdate=0;
 Val=get(handles.RootPath,'Value');
 IndexCell=get(handles.NomType,'String');
-hseries=get(handles.list_pair_civ,'parent');
-SeriesData=get(hseries,'UserData');
+%hseries=get(handles.list_pair_civ,'parent');
+SeriesData=get(handles.figure1,'UserData');
 NomType=SeriesData.NomType{Val};
 list_pair=get(handles.list_pair_civ,'String');%get the menu of image pairs
 index_pair=get(handles.list_pair_civ,'Value');
@@ -1246,7 +1239,7 @@ if ~isempty(ind_sep)&& ~strcmp(str_pair(ind_sep-1),'*')% if there is a pair sepa
 end
 set(handles.NomType,'String',IndexCell)
 SeriesData.displ_num(Val,:)=displ_num;
-set(hseries,'UserData',SeriesData)
+set(handles.figure1,'UserData',SeriesData)
 % set(handles.NomType,'Value',Val)
 
 if ~isequal(str_pair,'Dj=*|*')&~isequal(str_pair,'Di=*|*')
@@ -1295,15 +1288,15 @@ function RUN_Callback(hObject, eventdata, handles)
 
 %read root name and field type
 set(handles.RUN,'BusyAction','queue');
-hseries=get(handles.RUN,'parent');
-set(0,'CurrentFigure',hseries)
+%hseries=get(handles.RUN,'parent');
+set(0,'CurrentFigure',handles.figure1)
 if isequal(get(handles.GetObject,'Value'),1) 
     Series.GetObject=1;
     GetObject_Callback(hObject, eventdata, handles)
 else
     Series.GetObject=0;
 end
-SeriesData=get(hseries,'UserData');
+SeriesData=get(handles.figure1,'UserData');
 if isfield(SeriesData,'sethandles')
     if iscell(SeriesData.sethandles)
         Series.sethandles=SeriesData.sethandles{1};
@@ -1487,7 +1480,7 @@ if ~isequal(fct_path,path_series)
     end
 end
 % fct_path
-        eval(['h_fun=@' action])
+eval(['h_fun=@' action ';'])
 if ~isequal(fct_path,path_series)
         rmpath(fct_path)% add the prescribed path if not the current one    
 end
@@ -1531,13 +1524,13 @@ last_i_Callback(hObject, eventdata, handles)
 
 %----------------------------------------------
 function last_i_Callback(hObject, eventdata, handles)
-    hseries=get(handles.last_i,'parent');
+%     hseries=get(handles.last_i,'parent');
 first_i=str2num(get(handles.first_i,'String'));
 last_i=str2num(get(handles.last_i,'String'));
 ref_i=ceil((first_i+last_i)/2);
 set(handles.ref_i,'String', num2str(ref_i))
 ref_i_Callback(hObject, eventdata, handles)
-SeriesData=get(hseries,'UserData');
+SeriesData=get(handles.figure1,'UserData');
 if ~isfield(SeriesData,'Time')
     SeriesData.Time{1}=[];
 end
@@ -1549,14 +1542,14 @@ function first_j_Callback(hObject, eventdata, handles)
 
 %-------------------------------------------------------
 function last_j_Callback(hObject, eventdata, handles)
-    hseries=get(handles.last_i,'parent');
+   % hseries=get(handles.last_i,'parent');
 first_j=str2num(get(handles.first_j,'String'));
 last_j=str2num(get(handles.last_j,'String'));
 ref_j=ceil((first_j+last_j)/2);
 set(handles.ref_j,'String', num2str(ref_j))
 
 ref_j_Callback(hObject, eventdata, handles)
-SeriesData=get(hseries,'UserData');
+SeriesData=get(handles.figure1,'UserData');
 if ~isfield(SeriesData,'Time')
     SeriesData.Time{1}=[];
 end
@@ -1570,8 +1563,8 @@ function ref_i_Callback(hObject, eventdata, handles)
 mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
-hseries=get(handles.ref_i,'parent');
-SeriesData=get(hseries,'UserData');
+%hseries=get(handles.ref_i,'parent');
+SeriesData=get(handles.figure1,'UserData');
 %NomTypeCell=get(handles.NomType,'String');
 NomTypeCell=SeriesData.NomType;
 if ~isempty(NomTypeCell)
@@ -1591,18 +1584,15 @@ function ref_j_Callback(hObject, eventdata, handles)
 mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
-hseries=get(handles.ref_i,'parent');
-SeriesData=get(hseries,'UserData');
-%NomTypeCell=get(handles.NomType,'String');
+%hseries=get(handles.ref_i,'parent');
+SeriesData=get(handles.figure1,'UserData');
 NomTypeCell=SeriesData.NomType;
 if ~isempty(NomTypeCell)
-Val=get(handles.NomType,'Value');
-NomType=NomTypeCell{Val};
-% NomType=get(handles.NomType,'String');
+    Val=get(handles.NomType,'Value');
+    NomType=NomTypeCell{Val};
     if isequal(NomType,'_i_j1-j2')|| isequal(NomType,'_i1-i2_j')|| isequal(NomType,'_i1-i2')
         if isequal(mode,'series(Dj)') 
             find_netcpair_civ(hObject, eventdata, handles,Val);% update the menu of pairs depending on the available netcdf files
-%             break
         end
     end
 end
@@ -1610,61 +1600,39 @@ end
 %----------------------------------------------------
 % --- Executes on selection change in ACTION.
 function ACTION_Callback(hObject, eventdata, handles)
+global nb_builtin
 list_ACTION=get(handles.ACTION,'String');% list menu fields
 index_ACTION=get(handles.ACTION,'Value');% selected string index
 ACTION= list_ACTION{index_ACTION}; % selected function name
 path_series=which('series');%path to series.m
 list_path=get(handles.ACTION,'UserData');%list of recorded paths to functions of the list ACTION
-nb_builtin=0;
-for ilist=1:length(list_path)
-    if isequal(list_path{ilist},path_series)
-        nb_builtin=nb_builtin+1;
-    else
-        break
-    end
-end
-if nb_builtin==0% the path of series has been changed, reinitialize
-%     series_OpeningFcn(hObject, eventdata, handles)
-    return
-end
 
-% add a new function to the menu
+% add a new function to the menu if the selected item is 'more...'
 if isequal(ACTION,'more...')
     pathfct=fileparts(path_series);
-    browse_name=fullfile(path_series,'series');%go to UVMAT/SERIES_FCT by default
-    if length(list_path)>nb_builtin
-        browse_name=list_path{end};% initialize browser with  the path of the last introduced function
-     end 
+%     browse_name=fullfile(path_series,'series');%go to UVMAT/series by default
+%     if length(list_path)>nb_builtin
+%         browse_name=list_path{end};% initialize browser with  the path of the last introduced function
+%      end 
     [FileName, PathName, filterindex] = uigetfile( ...
        {'*.m', ' (*.m)';
         '*.m',  '.m files '; ...
         '*.*', 'All Files (*.*)'}, ...
-        'Pick a file',browse_name);
+        'Pick a file',list_path{end});
     if length(FileName)<2
         return
-    end
-    
-    
-    
-    ext_fct=FileName(end-1:end);% to be replaced by fileparts
+    end 
+    [pp,ACTION,ext_fct]=fileparts(FileName);%(end-1:end);
     if ~isequal(ext_fct,'.m')
         msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
         return
     end
-    ACTION=FileName(1:end-2);% ACTION choice updated by the selected item
-    
-    addpath(PathName)
-    eval(['h_function=@' ACTION]);
-    if ~isequal(path_series,PathName)
-    rmpath(PathName)
-    end
-    functions(h_function)
     
    % insert the choice in the action menu
    menu_str=update_menu(handles.ACTION,ACTION);%new action menu in which the new item has been appended if needed
    index_ACTION=get(handles.ACTION,'Value');% currently selected index in the list
    list_path{index_ACTION}=PathName;
-   if length(menu_str)>nb_builtin+5;
+   if length(menu_str)>nb_builtin+5; %nb_builtin=nbre of functions always remaining in the initial menu
        nbremove=length(menu_str)-nb_builtin-5;
        menu_str(nb_builtin+1:end-5)=[];
        list_path(nb_builtin+1:end-4)=[];
@@ -1698,14 +1666,14 @@ end
 
 %check the current path to the selected function
 PathName=list_path{index_ACTION};%current recorded path
-if ~isequal(path_series,PathName)
-    CurrentPath=fileparts(which(ACTION));
-    if ~isequal(CurrentPath,PathName)&&~isequal(CurrentPath,fullfile(PathName,'private'))
-        addpath(PathName) 
-        errormsg=check_functions;
-        msgbox_uvmat('CONFIRMATION',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
-    end
-end
+% if ~isequal(path_series,PathName)
+%     CurrentPath=fileparts(which(ACTION));
+%     if ~isequal(CurrentPath,PathName)
+%         addpath(PathName) 
+%         errormsg=check_functions;
+%         msgbox_uvmat('CONFIRMATION',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
+%     end
+% end
 set(handles.path,'String',PathName); %show the path to the senlected function
 
 %default setting for the visibility of the GUI elements
@@ -1742,7 +1710,16 @@ set(handles.VelTypeMenu_1,'Enable','off')
 set(handles.CoordType,'Enable','off')
 %set the displayed GUI item needed for input parameters
 %list_input=feval(ACTION);% input list asked by the selected function
-varargout=feval(ACTION);% input list asked by the selected function
+if ~isequal(path_series,PathName)
+    addpath(PathName)
+end
+eval(['h_function=@' ACTION ';']);
+if ~isequal(path_series,PathName)
+    rmpath(PathName)
+end
+
+varargout=h_function();
+%varargout=feval(ACTION);% input list asked by the selected function
 Param_list={};
 % RootPath=get(handles.RootPath,'String');
 % RootFile=get(handles.RootFile,'String');
@@ -1874,8 +1851,8 @@ if isequal(field,'get_field...')
      if ~isempty(hget_field)
          delete(hget_field)%delete opened versions of get_field
      end
-     hseries=get(handles.FieldMenu,'parent');
-     SeriesData=get(hseries,'UserData');
+     %hseries=get(handles.FieldMenu,'parent');
+     SeriesData=get(handles.figure1,'UserData');
      filename=SeriesData.CurrentInputFile;
      if exist(filename,'file')
         get_field(filename)
@@ -1902,8 +1879,8 @@ if isequal(field,'get_field...')
      if ~isempty(hget_field)
          delete(hget_field)
      end
-     hseries=get(handles.FieldMenu,'parent');
-     SeriesData=get(hseries,'UserData');
+     %hseries=get(handles.FieldMenu,'parent');
+     SeriesData=get(handles.figure1,'UserData');
      filename=SeriesData.CurrentInputFile_1;
      if exist(filename,'file')
         hget_field=get_field(filename);
@@ -1918,791 +1895,78 @@ elseif isequal(field,'more...')
      scalar=cell2mat(str(ind_answer));
      update_menu(handles.FieldMenu_1,scalar)
 end   
-% %----------------------------------------------------------------------
-% % --makes a time averaged velocity field 
-% %----------------------------------------------------------------------
-% function aver_vel(num_i1,num_i2,num_j1,num_j2,Series)
-%                           %handles of the GUI series
-%   
-% hseries=guidata(Series.hseries);%handles of the GUI series
-% WaitbarPos=get(hseries.waitbar_frame,'Position');
-% Field_list=get(hseries.FieldMenu,'String');
-% val=get(hseries.FieldMenu,'Value');
-% FieldName=Field_list{val(1)};
-% set(hseries.FieldMenu,'Value',val(1))% select only one input field
-% if isequal(FieldName,'get_field...')
-%     hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
-% end
-% %root input file and type
-% RootPath=get(hseries.RootPath,'String');
-% SubDir=get(hseries.SubDir,'String');
-% RootFile=get(hseries.RootFile,'String');
-% %NomType=get(hseries.NomType,'String');
-% NomType=Series.NomType;
-% FileExt=get(hseries.FileExt,'String');
-% ext=FileExt{1};     
-% VelType_str=get(hseries.VelTypeMenu,'String');
-% VelType_val=get(hseries.VelTypeMenu,'Value');
-% VelType{1}=VelType_str{VelType_val};
-% 
-% time=0; %default
-% % number of slices
-% NbSlice=str2num(get(hseries.NbSlice,'String'));
-% if isempty(NbSlice)
-%     NbSlice=1;
-% end
-% NbSlice_name=num2str(NbSlice);
-% filebase=fullfile(RootPath{1},RootFile{1});
-% Calib=[];
-% if exist([filebase '.xml'],'file')
-%     %[error,Heading,nom_type_read,ext_ima_read,time_imadoc,TimeUnit,mode,NbSlice,npx,npy,Calib]=read_imadoc([filebase '.xml']);
-%     [XmlData,warntext]=imadoc2struct([filebase '.xml']);
-% end
-% if NbSlice==1
-%    filebase_mean=[filebase '_mean']; %root name for the result
-% else
-%    filebase_mean=[filebase '_' NbSlice_name 'mean']; %root name for the results
-%    answeryes=questdlg({['will make average in ' num2str(NbSlice) ' slices'];['results stored as files ' filebase_mean ' ...']});
-%     if ~isequal(answeryes,'Yes')
-%     return
+
+
+% %group the variables (fields of 'FieldData') in cells of variables with the same dimensions
+% %%%%%%%%%%%%%%%%%%%%%%% Function independante maintenant
+% %-----------------------------------------------------------------
+% [CellVarIndex,NbDim,VarTypeCell]=find_field_indices(Data{1});
+% %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
+% % CellVarIndex=cells of variable index arrays
+% ivar_new=0; % index of the current variable in the projected field
+% icoord=0;
+% for icell=1:length(CellVarIndex)
+%     if NbDim(icell)==1
+%         continue
 %     end
-% end
-% siz=size(num_i1);
-% nbfield2=siz(1); %nb of consecutive fields at each level(burst)
-% lengthtot=siz(1)*siz(2);
-% nbfield=floor(lengthtot/(nbfield2*NbSlice));%total number of i indexes (adjusted to an integer number of slices)
-% nbfield_slice=nbfield*nbfield2;% number of fields per slice
-% %projection object
-% GridX=[];
-% GridY=[];
-% if isfield(Series,'sethandles')
-%         Series.ProjObject=read_set_object(Series.sethandles);
-%         if isfield(Series.ProjObject,'Style')
-%             answeryes=questdlg({['statistics on field series projected on ' Series.ProjObject.Style]});
-%             if ~isequal(answeryes,'Yes')
+%     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list FieldData.ListVarName
+%     VarType=VarTypeCell{icell};
+%     ivar_X=VarType.coord_x;
+%     ivar_Y=VarType.coord_y;
+%     ivar_FF=VarType.errorflag;
+%     if isempty(ivar_X)
+%         test_grid=1;%test for input data on regular grid (e.g. image)coordinates
+%     else
+%         if length(ivar_Y)~=1
+%                 warndlg_uvmat('y coordinate missing in proj_field.m','ERROR')
 %                 return
+%         end
+%         test_grid=0;
+%     end
+% %    DimIndices=Data{1}.VarDimIndex{VarIndex(1)};%indices of the dimensions of the first variable (common to all variables in the cell)
+%     %case of input fields with unstructured coordinates
+%     if ~test_grid
+%         for ivar=VarIndex
+%             VarName=MergeData.ListVarName{ivar};
+%             for iview=1:nbview
+%                 eval(['MergeData.' VarName '=[MergeData.' VarName '; Data{iview}.' VarName ';'])
 %             end
 %         end
-% end
-% 
-% %LOOP ON SLICES
-% for i_slice=1:NbSlice
-%     %select the series of image indices at the level islice
-%     for ifield=1:nbfield
-%         indselect(:,ifield)=((ifield-1)*NbSlice+(i_slice-1))*nbfield2+[1:nbfield2]';%selected indices on the list of files of a slice
-%     end  
-%     %name of result file
-%     [filemean,idetect]=...
-%                name_generator(filebase_mean,num_i1(i_slice),num_j1(1),Series.FileExt{1},'_i1-i2_j1-j2',1,num_i2(i_slice+nbfield_slice*NbSlice-1),num_j2(end),Series.SubDir{1});
-% 
-%     % field=get(handles.civ1,'UserData');%read current selected field type (civ1,civ2...)
-%     itime=0;
-%      dt=[];
-%      %LOOP ON FIELDS IN  A SLICE
-%      test_interpolate=0;%default
-%     for index=1:nbfield*nbfield2
-%             ifile=indselect(index);
-%         stopstate=get(hseries.RUN,'BusyAction');
-%         if isequal(stopstate,'queue')% enable STOP command
-%             update_waitbar(hseries.waitbar,WaitbarPos,ifile/(nbfield*nbfield2))
-%             %name of the current file
-%             [filename,idetect]=name_generator(filebase,num_i1(ifile),num_j1(ifile),Series.FileExt{1},Series.NomType{1},1,num_i2(ifile),num_j2(ifile),Series.SubDir{1});
-%             %read input file
-%             itime=itime+1;
-%             if isequal(FieldName,'get_field...')
-%                 hhget_field=guidata(hget_field);%handles of GUI elements in get_field
-%                 hObject=0;
-%                 eventdata=0;
-%                 SubField=get_field('read_var_names',hObject,eventdata,hhget_field); %read the names of the variables to plot in the get_field GUI 
-%                 [Data,var_detect]=nc2struct(filename,SubField.ListVarName); %read input data   
-%                 time(itime)=itime;
-%                 dt=1; 
-%                 Calib_read=[];
-%             else
-%                 [nb_coord,nb_dim,Civ,CivStage,timeread,Data,VelTypeOut,Calib_read]=read_ncfield(filename,VelType{1});%reading the first file
-%                  time(itime)=timeread;
-%                 if isequal(Civ,1)
-%                     Data.CoordType='px';%test for pixel coordinates
-%                     if isequal(itime,1)
-%                         dt=Data.dt;
-%                     elseif ~isequal(Data.dt,dt)
-%                         warndlg_uvmat('series with non constant dt, need phys coordinates','ERROR')
-%                         return
-%                     end
-%                 end 
-%             end
-%             %increment the detected fields, skip the others
-%             if idetect==0
-%                 warndlg_uvmat(['input file ' filename ' not found'],'ERROR')
-%                 %A FAIRE STOCKER LE RESULT ACTUEL S'IL EXISTE
-%             end
-% %             itime=itime+1;
-% %             time(itime)=timeread;
-%        
-%             %coordinate transform
-%             if isempty(Calib)
-%                 Calib=Calib_read;%use Calib from xml file in priority, then Calib from the current file
-%             end
-%             if ~isequal(Series.CoordType,'')
-%                 Data=feval(Series.CoordType,Data,Calib);
-%             end
-%             %projection on object if defined
-%             if isfield(Series,'ProjObject');
-%                 Data=proj_field(Data,Series.ProjObject);
-%                 if isequal(itime,1)%use the positions on the first field for the whole series, ou utiliser grille
-%                     if isfield(Data,'Txt')%display error message
-%                         warndlg(Data.Txt,'ERROR')
-%                         return
+%     %case of fields defined on a structured  grid 
+%     else  
+% %        DimValue=MergeData.DimValue(DimIndices);%set of dimension values
+%         testFF=0;
+%         for iview=2:nbview
+% %             if ~isequal(DimValue,Data{iview}.DimValue(DimIndices))
+% %                 MergeData.Txt='ERROR: attempt at merging structured fields with different sizes';
+% %                 return
+% %             end
+%             for ivar=VarIndex
+%                 VarName=MergeData.ListVarName{ivar};
+%                 if isfield(MergeData,'VarAttribute')
+%                     if length(MergeData.VarAttribute)>=ivar && isfield(MergeData.VarAttribute{ivar},'Role') && isequal(MergeData.VarAttribute{ivar}.Role,'errorflag')
+%                         testFF=1;
 %                     end
 %                 end
-%             else%remove false vectors and interpolate on the positions of the first field
-%                 Data=document_field(Data);
-%                 Data.Style='plane';
+%                 eval(['MergeData.' VarName '=MergeData.' VarName '+ Data{iview}.' VarName ';'])
+%             end
+%         end
+%         if testFF
+%             nbaver=nbview-MergeData.FF;
+%             indgood=find(nbaver>0);
+%             for ivar=VarIndex
+%                 VarName=MergeData.ListVarName{ivar};
+%                 eval(['MergeData.' VarName '(indgood)=double(MergeData.' VarName '(indgood))./nbaver(indgood);'])
 %             end 
-%     %%%%%%%%% initiate the average at the first iteration: check list and structure of variables
-%             if ifile==i_slice%first field in the slice
-%                 testfalse=0;
-%                 ListIndex={};
-%                 testnewcell=1;
-%                 %group the variables (fields of 'Data') in cells of variables with the same dimensions
-%                 [DimVarIndex,CellVarIndex]=find_field_indices(Data);
-%                 VarIndex=CellVarIndex{1}; % ONLY THE FIRST VAR GROUP IS AVERAGED
-%                 DimIndex=Data.VarDimIndex{VarIndex(1)};%indices of the dimensions of the first variable (common to all variables in the cell)         
-%                 MeanData=Data;%transfer heading
-%                 MeanData.Time=[time(1) time(end)];
-%                 MeanData.Action=Series.Action;%name of the processing programme
-%                 MeanData.ListDimName=Data.ListDimName(DimIndex);%name of dimension 
-%                 MeanData.DimValue=Data.DimValue(DimIndex);%values of dimension (nbre of vectors)
-%                 MeanData.ListVarName=Data.ListVarName;
-%                 MeanData.VarDimIndex=Data.VarDimIndex;
-%                 MeanData.ListVarAttribute={'Role'};%list of variable attribute names A FAIRE: transferer les autres attributs
-%                 testsum=ones(size(VarIndex));
-%                 indexfalse=0;
-%                 CoordName={};
-%                 indexremove=[];
-%                 if isfield(Data,'Role') % look for coordinate and flag variables    
-%                     for ivar=1:length(VarIndex)
-%                         VarName=Data.ListVarName{VarIndex(ivar)};
-%                         var_role=Data.Role{VarIndex(ivar)};%'role' of the variable
-%                         MeanData.Role{ivar}=var_role; 
-%                         if isequal(var_role,'falseflag')
-%                             indexfalse=ivar; %test for false flag 
-%                             indexremove=ivar;
-%                             FFName=VarName;
-%                             testsum(ivar)=0;
-%                             eval(['MeanData=rmfield(MeanData,''' VarName ''');']);%remove variable                      
-%                         end
-%                         if isequal(var_role,'warnflag')                        
-%                             testsum(ivar)=0; %do not sum warn flag 
-%                             eval(['MeanData=rmfield(MeanData,''' VarName ''');']);%remove variable
-%                             indexremove=[indexremove ivar];
-%                         end                  
-%                         if isequal(var_role,'coord_x')| isequal(var_role,'coord_y')|isequal(var_role,'coord_z')
-%                             eval(['MeanData.' VarName '=Data.' VarName ';']);
-%                             testsum(ivar)=0;
-%                             eval(['CoordName=[CoordName ''' VarName '''];']);
-%                         end
-%                         if testsum(ivar)~=0
-%                            eval(['MeanData.' VarName '=zeros(size(Data.' VarName '));']);%initialise sum
-%                         end
-%                     end
-%                 end
-%                 findsum=find(testsum);
-%                 VarIndexSum=VarIndex(findsum);%indices of variables to sum (not coordinates nor flags)
-%                 if length(CoordName)==0 
-%                     if isempty(DimVarIndex)|isequal(DimVarIndex,0)% no coordinate variable for structured coordinates, prepare histograms
-%                          for ilist=1:length(VarIndexSum)
-%                             VarName=Data.ListVarName{VarIndexSum(ilist)};
-%                             eval(['MeanData=rmfield(MeanData,''' VarName ''');']);%remove variable
-%                             indexremove=[indexremove ilist];
-%                             eval(['[MeanData.' VarName 'hist,MeanData.' VarName 'val]=hist(Data.' VarName ',100);']);%make histo
-%                             eval(['sizhist=size(MeanData.' VarName 'hist);'])
-%                             if sizhist(1)==1
-%                                 eval(['MeanData.' VarName 'hist=MeanData.' VarName 'hist'';'])
-%                             end
-%                             eval(['maxval=max(MeanData.' VarName 'val);']);
-%                             eval(['minval=min(MeanData.' VarName 'val);']);
-%                             dC(ilist)=(maxval-minval)/100;%size of the histogram bin    
-%                          end
-%                     else
-% %                         icoord=0;
-% %                         for ilist=1:length(DimVarIndex)  
-% %                             VarDim=Data.ListVarName{DimVarIndex(ilist)};
-% %                             icoord=icoord+1;
-% %                             % eval(['Coord{' num2str(icord) '}=[' CoordName ''' VarName ''']']);
-% %                              %eval(['Data.' CoordName{icoord} '=Data.' CoordName{icoord} '(indsel);']);
-% %                         end
-%                     end
-%                 end
-%                 if ~isempty(indexremove)
-%                     MeanData.ListVarName(VarIndex(indexremove))=[];
-%                     MeanData.VarDimIndex(VarIndex(indexremove))=[];
-%                     if isfield(MeanData,'Role')%generaliser aus autres attributs
-%                         MeanData.Role(VarIndex(indexremove))=[];
-%                     end
-%                 end
-%                % END OF INITIALISATION
-% 
-%             end
-%        
-%          % A FAIRE: regular grid if coord_x undefined
-%             if indexfalse~=0 %suppress false data
-%                  eval(['testexist=isfield(Data,''' FFName ''');'])
-%                 if testexist
-%                     eval(['indsel=find(Data.' FFName '==0);']);
-%                     for icoord=1:length(CoordName)
-%                         eval(['Data.' CoordName{icoord} '=Data.' CoordName{icoord} '(indsel);']);
-%                     end
-%                 end
-%             end
-%             for ilist=1:length(VarIndexSum)
-%                 VarName=Data.ListVarName{VarIndexSum(ilist)};
-%                 if indexfalse~=0 & testexist
-%                     eval(['Data.' VarName '=Data.' VarName '(indsel);']);
-%                 end
-%                 if length(CoordName)==0%no variable use dfor unstructured coordinates
-%                     if isempty(DimVarIndex)|isequal(DimVarIndex,0)% no coordinate variable for structured coordinates
-% %                         %update histogram with the current field #ifile
-%                         str_left=['[MeanData.' VarName 'val,MeanData.' VarName 'hist]='];
-%                         str_right=['hist_update(MeanData.' VarName 'val,MeanData.' VarName 'hist,Data.' VarName ',dC(ilist));']; 
-%                         eval([str_left str_right]);%update global histo
-%                     else
-%                        %INTERPOLER
-%                             
-%                         eval(['MeanData.' VarName '=MeanData.' VarName '+Data.' VarName ';']);%increment sum%CAS x,y change
-%                     end
-%                 else   
-%                     if length(CoordName)==2
-%                         eval(['test_interp= ~isequal(Data.' CoordName{1} ',MeanData.' CoordName{1} ...
-%                             ')|~isequal(Data.' CoordName{2} ',MeanData.' CoordName{2} ');'])
-%                         if test_interp
-%                             eval(['Data.' VarName '=griddata_uvmat(Data.' CoordName{1} ',Data.' CoordName{2}...
-%                                 ',Data.' VarName ',MeanData.' CoordName{1} ',MeanData.' CoordName{2} ');']);
-%                             test_interpolate=1;
-%                         end
-%                     end 
-%                     eval(['MeanData.' VarName '=MeanData.' VarName '+Data.' VarName ';']);%increment sum
-%                 end
-%             end
+%         else
+%             for ivar=VarIndex
+%                 VarName=MergeData.ListVarName{ivar};
+%                 eval(['MergeData.' VarName '=double(MergeData.' VarName ')./nbview;'])
+%             end    
 %         end
-%     end
-%     if length(CoordName)~=0 | ~isequal(DimVarIndex,0)% no coordinate variable for structured coordinates
-%         for ilist=1:length(VarIndexSum)  
-%             VarName=Data.ListVarName{VarIndexSum(ilist)};
-%             eval(['MeanData.' VarName '=MeanData.' VarName '/itime;']);%normalize sum by the number of fields
-%         end
-%     else
-%         MeanData.NbDim=1;
-%         MeanData.ListDimName={};
-%         MeanData.DimValue=[];
-%         for ilist=1:length(VarIndexSum)  
-%             VarName=Data.ListVarName{VarIndexSum(ilist)};
-%             MeanData.ListVarName=[MeanData.ListVarName {[VarName 'val']} {[VarName 'hist']}];
-%             MeanData.VarDimIndex=[MeanData.VarDimIndex {[ilist]} {[ilist]}];
-%             MeanData.ListDimName=[MeanData.ListDimName {[VarName 'val']}];
-%             eval(['MeanData.DimValue=[MeanData.DimValue length(MeanData.' VarName 'val)];']);
-%         end   
-%     end
-%     figure
-%     haxes=axes;
-%     plot_field(MeanData,haxes)%plot the resulting average
-%     % change variable names for consitency with civ1 data (need to generalize these programs)
-%     if length(MeanData.ListVarName) >= 4 & isequal(MeanData.ListVarName(1:4), {'X'  'Y'  'U'  'V'})
-%        MeanData.ListGlobalAttribute={'nb_coord','nb_dim','dt','absolut_time_T0','pixcmx','pixcmy','hart','civ','fix'};
-%        MeanData.nb_coord=2;
-%        MeanData.nb_dim=2;
-%        MeanData.dt=1;
-%        MeanData.absolut_time_T0=0;
-%        MeanData.pixcmx=1; %pix per cm (1 by default)
-%        MeanData.pixcmy=1; %pix per cm (1 by default)
-%        MeanData.hart=0;
-%        if isequal(Data.CoordType,'px')
-%          MeanData.civ=1;
-%       else
-%          MeanData.civ=0;
-%        end
-%       MeanData.fix=0;
-%         MeanData.ListVarName(1:4)={'vec_X'  'vec_Y'  'vec_U'  'vec_V'};
-%         MeanData.vec_X=MeanData.X;
-%         MeanData.vec_Y=MeanData.Y;
-%         MeanData.vec_U=MeanData.U;
-%         MeanData.vec_V=MeanData.V;
-%     end
-%     error=struct2nc(filemean,MeanData); %save result file
-%     if isequal(error,0)
-%         if test_interpolate
-%             'fields interpolated to the positions of the first one'
-%         end
-%         [filemean ' written']
-%     else
-%         warndlg_uvmat(error,'ERROR')
 %     end
 % end
-
-%----------------------------------------------------------------------
-% --project fields on a projection object (e. g. a regular grid), possibly
-% merge several fields
-%----------------------------------------------------------------------
-%INPUT: 
-%num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_i2: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_j1: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
-%num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
-%OTHER INPUTS given by the structure Series
-function GUI_input=merge_proj(num_i1,num_i2,num_j1,num_j2,Series);
-
-%requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
-if ~exist('num_i1','var')
-    GUI_input={'RootPath';'two';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
-        'SubDir';'on';... % subdirectory of derived files (PIV fields), ('on' by default)
-        'RootFile';'on';... %root input file name ('on' by default)
-        'FileExt';'on';... %input file extension ('on' by default)
-        'NomType';'on';...%type of file indexing ('on' by default)
-        'NbSlice';'on'; ...%nbre of slices ('off' by default)
-        'VelTypeMenu';'one';...% menu for selecting the velocity type (civ1,..) options 'off'/'one'/'two', 'off' by default)
-        'FieldMenu';'one';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-        'CoordType';'on';...%can use a transform function 'off' by default
-        'GetObject';'on';...%can use projection object ,'off' by default
-        %'GetMask';'on'...%can use mask option   ,'off' by default
-        %'PARAMETER'; options: name of the user defined parameter',repeat a line for each parameter 
-               ''};
-    return %exit the function 
-end
-
-%-------------------------------------------------
-hseries=guidata(Series.hseries);%handles of the GUI series
-WaitbarPos=get(hseries.waitbar_frame,'Position'); %positiopn of waitbar frame
-%-------------------------------------------------
-
-%numbers of view fields (nbre of inputs in RootPath)
-testcell=iscell(Series.RootFile);
-if ~testcell
-    Series.RootPath={Series.RootPath};
-    Series.RootFile={Series.RootFile};
-    Series.SubDir={Series.SubDir};
-    Series.FileExt={Series.FileExt};
-    Series.NomType={Series.NomType};
-    num_i1={num_i1};
-    num_i2={num_i2};
-    num_j1={num_j1};
-    num_j2={num_j2};
-end 
-nbview=length(Series.RootFile);%number of views (file series to merge)
-nbfield=size(num_i1{1},1)*size(num_i1{1},2);%number of fields in the time series
-transform=Series.CoordType; %  field transform function
-hhh=which('mmreader');
-for iview=1:nbview
-    test_movie(iview)=0;
-    if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
-        if isequal(lower(FileExt{iview}),'.avi')
-            MovieObject{iview}=mmreader(fullfile(RootPath{iview},[RootFile{iview} FileExt{iview}]));
-            test_movie(iview)=1;
-        end
-    end 
-end
-
-%Calibration data and timing: read the ImaDoc files
-mode=''; %default
-timecell={};
-itime=0;
-NbSlice_calib={}; %test for z index 
-for iview=1:nbview%Loop on views
-    XmlData{iview}=[];%default
-    filebase{iview}=fullfile(Series.RootPath{iview},Series.RootFile{iview});
-    if exist([filebase{iview} '.xml'],'file')
-        [XmlData{iview},error]=imadoc2struct([filebase{iview} '.xml']); 
-        if isfield(XmlData{iview},'Time')
-            itime=itime+1;
-            timecell{itime}=XmlData{iview}.Time;
-        end
-        if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
-            NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);
-            if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
-                msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
-            end
-        end    
-    elseif exist([filebase{iview} '.civ'],'file')
-        [error,time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext([filebase{iview} '.civ']);
-        itime=itime+1;
-        timecell{itime}=time;
-        XmlData{iview}.Time=time;
-        GeometryCalib.R=[pxcmx 0 0; 0 pxcmy 0;0 0 0];
-        GeometryCalib.Tx=0;
-        GeometryCalib.Ty=0;
-        GeometryCalib.Tz=1;
-        GeometryCalib.dpx=1;
-        GeometryCalib.dpy=1;
-        GeometryCalib.sx=1;
-        GeometryCalib.Cx=0;
-        GeometryCalib.Cy=0;
-        GeometryCalib.f=1;
-        GeometryCalib.kappa1=0;
-        GeometryCalib.CoordUnit='cm';
-        XmlData{iview}.GeometryCalib=GeometryCalib;
-        if error==1
-            msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
-        end
-    end
-end
-
-%check coincidence in time
-multitime=0;
-if length(timecell)==0
-    time=[];
-elseif length(timecell)==1
-    time=timecell{1};
-elseif length(timecell)>1
-    multitime=1;
-    for icell=1:length(timecell)
-        if ~isequal(size(timecell{icell}),size(timecell{1}))
-            msgbox_uvmat('WARNING','inconsistent time array dimensions in ImaDoc fields, the time for the first series is used')
-            time=timecell{1};
-            multitime=0;
-            break
-        end
-    end
-end
-if multitime
-    for icell=1:length(timecell)
-        time(icell,:,:)=timecell{icell};
-    end
-    diff_time=max(max(diff(time)));
-    if diff_time>0
-        msgbox_uvmat('WARNING',['times of series differ by more than ' num2str(diff_time)])
-    end   
-end
-if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array absent or too short in ImaDoc xml file' 
-    time=[];
-end
-
-% Field and velocity type (the same for all views)
-Field_str=get(hseries.FieldMenu,'String');
-val=get(hseries.FieldMenu,'Value');
-FieldName=Field_str(val);%the same set of fields for all views
-VelType_str=get(hseries.VelTypeMenu,'String');
-VelType_val=get(hseries.VelTypeMenu,'Value');
-VelType=VelType_str{VelType_val}; %the same for all views
-if isequal(FieldName,'get_field...')
-    hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
-   % hhget_field=guidata(hget_field);%handles of GUI elements in get_field
-    SubField=get_field('read_get_field',hObject,eventdata,hget_field); %read the names of the variables to plot in the get_field GUI
-%     if isequal(get(hhget_field.menu_coord,'Visible'),'on')
-%         list_transform=get(hhget_field.menu_coord,'String');
-%         val_list=get(hhget_field.menu_coord,'Value');
-%         transform=list_transform{val_list};
-%     end
-end
-%detect whether all the files are 'images' or 'netcdf'
-testima=0;
-testvol=0;
-testcivx=0;
-testnc=0;
-FileExt=get(hseries.FileExt,'String');
-for iview=1:nbview
-     ext=FileExt{iview};
-     form=imformats(ext([2:end]));
-     if isequal(lower(ext),'.vol')
-         testvol=testvol+1;
-     elseif ~isempty(form)||isequal(lower(ext),'.avi')% if the extension corresponds to an image format recognized by Matlab
-         testima=testima+1;
-     elseif isequal(ext,'.nc')
-         testnc=testnc+1;
-     end
-end
-if testvol
-    msgbox_uvmat('ERROR','volume images not implemented yet')
-    return
-end
-if testnc~=nbview && testima~=nbview && testvol~=nbview
-    msgbox_uvmat('ERROR','need a set of images or a set of netcdf files with the same fields as input')
-    return
-end
-if ~isequal(FieldName,'get_field...')
-    testcivx=testnc;
-end
-%name of output files and directory:
-% res_subdir=fullfile(Series.RootPath{1},[Series.SubDir{1} '_STAT']);
-ProjectDir=fileparts(fileparts(Series.RootPath{1}));% preoject directory (GERK)
-prompt={['result directory (in' ProjectDir ')']};
-RootPath=get(hseries.RootPath,'String');
-SubDir=get(hseries.SubDir,'String');
-if isequal(length(RootPath),1)
-    fulldir=RootPath{1};
-    subdir='GRID';
-    res_subdir=fullfile(fulldir,subdir);
-else
-    def={fullfile(ProjectDir,'0_RESULTS')};
-    dlgTitle='result directory';
-    lineNo=1;
-    answer=msgbox_uvmat('INPUT_TXT',dlgTitle,def);
-    fulldir=answer{1};
-    subdir=[];
-    dirlist=sort(Series.RootFile);
-    for iview=1:nbview
-        if ~isempty(subdir)
-            subdir=[subdir '-'];
-        end
-        subdir=[subdir dirlist{iview}];
-    end  
-    res_subdir=fullfile(fulldir,subdir);
-end
-ext=FileExt{1};
-if ~exist(fulldir,'dir')
-    msgbox_uvmat('ERROR',['directory ' fulldir ' needs to be created'])
-    return
-end
-if ~exist(res_subdir,'dir')
-    dircur=pwd;
-    cd(fulldir)
-    error=mkdir(subdir);
-    cd(dircur)
-end
-filebasesub=fullfile(res_subdir,Series.RootFile{1});
-filebase_merge=fullfile(res_subdir,'merged');%root name for the merged files
-
-%projection object
-if isfield(Series,'sethandles')
-    if ishandle(Series.sethandles.set_object)
-        Series.ProjObject=read_set_object(Series.sethandles);
-        if ~isfield(Series.ProjObject,'Style')
-            msgbox_uvmat('ERROR','Undefined projection object style')
-            return
-        end
-        if ~isequal(Series.ProjObject.Style,'plane')
-            msgbox_uvmat('ERROR','The projection object must be a plane')
-            return
-        end
-    end
-end
-
-    %MAIN LOOP
-for ifile=1:nbfield                
-    stopstate=get(hseries.RUN,'BusyAction');
-    if isequal(stopstate,'queue')% enable STOP command from the 'series' interface
-         update_waitbar(hseries.waitbar,WaitbarPos,ifile/nbfield)
-         Amerge=0;
-         
-         %----------LOOP ON VIEWS----------------------
-        nbtime=0;
-        for iview=1:nbview
-            %name of the current file
-            filename=name_generator(filebase{iview},num_i1{iview}(ifile),num_j1{iview}(ifile),Series.FileExt{iview},Series.NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile),SubDir{iview});
-            if ~exist(filename,'file')
-                msgbox_uvmat('ERROR',['missing input file' filename])
-                break
-            end
-
-            %reading the current file
-            if testima
-                if test_movie(iview)
-                    Field{iview}.A=read(MovieObject{iview},num_i1{iview}(ifile));
-                else
-                    Field{iview}.A=read_image(filename,Series.NomType{iview},num_i1{iview}(ifile)); 
-                end % TODO: introduce ListVarName
-                npxy=size(Field{iview}.A);
-                Field{iview}.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
-                Field{iview}.AY=[npxy(1)-0.5 0.5];
-                Field{iview}.CoordType='px'; 
-                Field{iview}.AName='image';
-            else
-                if testcivx
-                    [Field{iview},VelTypeOut]=read_civxdata(filename,FieldName,VelType);
-                else
-                    [Field{iview},var_detect]=nc2struct(filename,SubField.ListVarName); %read the corresponding input data                
-                    Field{iview}.VarAttribute=SubField.VarAttribute;
-                end
-                if isfield(Field{iview},'Time')
-                    timeread(iview)=Field{iview}.Time;
-                    nbtime=nbtime+1;
-                end
-            end
-            % coord transform
-            % z index
-            if ~isempty(NbSlice_calib)
-                Field{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;
-            end
-            if ~isequal(transform,'')
-                Field{iview}=feval(Series.CoordType,Field{iview},XmlData{iview});%transform to phys if requested
-            end
-            if testcivx
-                    Field{iview}=calc_field(FieldName,Field{iview});
-            end
-
-            %projection on object (gridded plane)
-            if isfield(Series,'ProjObject')
-                Field{iview}=proj_field(Field{iview},Series.ProjObject);
-            end
-        end    
-        
-         %----------END LOOP ON VIEWS----------------------
-         
-        %merge the nbview fields
-        MergeData=merge_field(Field);
-        if isfield(MergeData,'Txt')
-            msgbox_uvmat('ERROR',MergeData.Txt)
-            return
-        end
-        
-        % generating the name of the merged field
-        mergename=name_generator(filebase_merge,num_i1{iview}(ifile),num_j1{iview}(ifile),Series.FileExt{iview},Series.NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile));
-        
-        % time:
-        time_i=0;%default
-        if isempty(time)% time from ImaDoc prevails
-            time_i=sum(timeread)/nbtime;
-        else
-            time_i=(time(iview,num_i1{iview}(ifile),num_j1{iview}(ifile))+time(iview,num_i2{iview}(ifile),num_j2{iview}(ifile)))/2;
-        end
-        
-        % recording the merged field
-        if testima    %in case of input images an image is produced   
-            if isa(MergeData.A,'uint8')
-                bitdepth=8;
-            elseif isa(MergeData.A,'uint16')
-                bitdepth=16;
-            end
-            imwrite(MergeData.A,mergename,'BitDepth',bitdepth); 
-            %write xml calibration file
-            siz=size(MergeData.A);
-            npy=siz(1);
-            npx=siz(2);
-            if isfield(MergeData,'VarAttribute')&&isfield(MergeData.VarAttribute{1},'Coord_2')&&isfield(MergeData.VarAttribute{1},'Coord_1')
-                Rangx=MergeData.VarAttribute{1}.Coord_2;
-                Rangy=MergeData.VarAttribute{1}.Coord_1;
-            elseif isfield(MergeData,'AX')&& isfield(MergeData,'AY')
-                Rangx=[MergeData.AX(1) MergeData.AX(end)];
-                Rangy=[MergeData.AY(1) MergeData.AY(end)];
-            else
-                Rangx=[0.5 npx-0.5];
-                Rangy=[npy-0.5 0.5];%default
-            end
-            pxcmx=(npx-1)/(Rangx(2)-Rangx(1));
-            pxcmy=(npy-1)/(Rangy(1)-Rangy(2));
-            T_x=-pxcmx*Rangx(1)+0.5;
-            T_y=-pxcmy*Rangy(2)+0.5;
-            GeometryCal.focal=1;
-            GeometryCal.R=[pxcmx,0,0;0,pxcmy,0;0,0,1];
-            GeometryCal.Tx_Ty_Tz=[T_x T_y 1];
-            ImaDoc.GeometryCalib=GeometryCal;
-            t=struct2xml(ImaDoc);
-            t=set(t,1,'name','ImaDoc');
-            save(t,[filebase_merge '.xml'])     
-            display([filebase_merge '.xml saved'])
-        else
-            MergeData.ListGlobalAttribute={'Project','InputFile_1','InputFile_end','nb_coord','nb_dim','dt','Time','civ'};        
-            MergeData.nb_coord=2;
-            MergeData.nb_dim=2;
-            MergeData.dt=1;
-            MergeData.Time=time_i;
-            error=struct2nc(mergename,MergeData); %save result file
-            if isempty(error)
-                display(['output file ' mergename ' written'])
-            else
-                display(error)
-            end
-        end
-    end
-end
-
-%--------------------------------------------------------------------------   
-function MergeData=merge_field(Data)
-% initiate Matlab  structure for physical field
-if isempty(Data)||~iscell(Data)
-    MergeData=[];
-    return
-end
-MergeData=Data{1};%default
-error=0;
-nbview=length(Data);
-if nbview==1
-    return
-end
-for iview=1:nbview
-    if ~isequal(MergeData.ListDimName,Data{iview}.ListDimName)
-        error=1;
-    end
-    if ~isequal(MergeData.ListVarName,Data{iview}.ListVarName)
-        error=1;
-    end
-%      if ~isequal(MergeData.VarDimIndex,Data{iview}.VarDimIndex)
-%         error=1;
-%      end
-end
-if error
-    MergeData.Txt='ERROR: attempt at merging fields of incompatible type';
-    return
-end
-%group the variables (fields of 'FieldData') in cells of variables with the same dimensions
-%-----------------------------------------------------------------
-[CellVarIndex,NbDim,VarTypeCell]=find_field_indices(Data{1});
-%LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
-% CellVarIndex=cells of variable index arrays
-ivar_new=0; % index of the current variable in the projected field
-icoord=0;
-for icell=1:length(CellVarIndex)
-    if NbDim(icell)==1
-        continue
-    end
-    VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list FieldData.ListVarName
-    VarType=VarTypeCell{icell};
-    ivar_X=VarType.coord_x;
-    ivar_Y=VarType.coord_y;
-    ivar_FF=VarType.errorflag;
-    if isempty(ivar_X)
-        test_grid=1;%test for input data on regular grid (e.g. image)coordinates
-    else
-        if length(ivar_Y)~=1
-                warndlg_uvmat('y coordinate missing in proj_field.m','ERROR')
-                return
-        end
-        test_grid=0;
-    end
-%    DimIndices=Data{1}.VarDimIndex{VarIndex(1)};%indices of the dimensions of the first variable (common to all variables in the cell)
-    %case of input fields with unstructured coordinates
-    if ~test_grid
-        for ivar=VarIndex
-            VarName=MergeData.ListVarName{ivar};
-            for iview=1:nbview
-                eval(['MergeData.' VarName '=[MergeData.' VarName '; Data{iview}.' VarName ';'])
-            end
-        end
-    %case of fields defined on a structured  grid 
-    else  
-%        DimValue=MergeData.DimValue(DimIndices);%set of dimension values
-        testFF=0;
-        for iview=2:nbview
-%             if ~isequal(DimValue,Data{iview}.DimValue(DimIndices))
-%                 MergeData.Txt='ERROR: attempt at merging structured fields with different sizes';
-%                 return
-%             end
-            for ivar=VarIndex
-                VarName=MergeData.ListVarName{ivar};
-                if isfield(MergeData,'VarAttribute')
-                    if length(MergeData.VarAttribute)>=ivar && isfield(MergeData.VarAttribute{ivar},'Role') && isequal(MergeData.VarAttribute{ivar}.Role,'errorflag')
-                        testFF=1;
-                    end
-                end
-                eval(['MergeData.' VarName '=MergeData.' VarName '+ Data{iview}.' VarName ';'])
-            end
-        end
-        if testFF
-            nbaver=nbview-MergeData.FF;
-            indgood=find(nbaver>0);
-            for ivar=VarIndex
-                VarName=MergeData.ListVarName{ivar};
-                eval(['MergeData.' VarName '(indgood)=double(MergeData.' VarName '(indgood))./nbaver(indgood);'])
-            end 
-        else
-            for ivar=VarIndex
-                VarName=MergeData.ListVarName{ivar};
-                eval(['MergeData.' VarName '=double(MergeData.' VarName ')./nbview;'])
-            end    
-        end
-    end
-end
-    
-    
-
+%     
 
 %-----------------------------
 function mouse_up_gui(ggg,eventdata,handles)
