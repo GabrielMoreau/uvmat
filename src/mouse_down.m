@@ -275,69 +275,59 @@ elseif ~isempty(huvmat)
     % edit vectors
     if test_edit_vect & ~isempty(ivec) 
     %     FF_100=FF-100*double(uint(abs(FF)/100); %value of FF without units and dizaines
-        if ~isfield(AxeData,'FF')
+        if ~(isfield(AxeData,'FF')&& ~isempty(AxeData.FF))
             AxeData.FF=zeros(size(AxeData.X));
         end
         if isequal(AxeData.FF(ivec),0)
-
             AxeData.FF(ivec)=100; %mark vector #ivec as false
-
         else
             AxeData.FF(ivec)=0;
         end
-        set(haxes,'UserData',AxeData)
-        update_plot
+        PlotParam=read_plot_param(hhuvmat);
+        [PlotType,ScalOut]= plot_field(AxeData,haxes,PlotParam,1);
     end   
 end
 set(haxes,'UserData',AxeData);
 
 %------------------------------------------------------
-function update_plot
+function update_plot(AxeData,haxes)
 %--------------------------------------------
-huvmat=gcbf;
-UvData=get(gcbf,'UserData');
-%determine the axes of action of the set_edit interface
-% list_axes=get(handles.MenuAxes,'String');% list menu fields
-% index_axes=get(handles.MenuAxes,'Value');% selected string index
-% current_axes= list_axes{index_axes(1)} % selected string
-% eval(['haxes=UvData.' current_axes '.Axes']);
-% if isempty(haxes)|~ishandle(haxes)| ~isequal(get(haxes,'Type'),'axes')
-     haxes= findobj(huvmat,'Tag','axes3'); %main plotting axes as default
-%      set(handles.MenuAxes,'Value',1)
-% end
-AxeData=get(haxes,'UserData');
-%For vector field representation
-%NEW
-PlotHandles.VecScale=findobj(huvmat,'Tag','VecScale');
-PlotHandles.AutoVec=findobj(huvmat,'Tag','AutoVec');
-PlotHandles.checkyellow=findobj(huvmat,'Tag','checkyellow');
-PlotHandles.checkblack=findobj(huvmat,'Tag','checkblack');
-PlotHandles.col_vec=findobj(huvmat,'Tag','col_vec');
-PlotHandles.colcode1=findobj(huvmat,'Tag','colcode1');
-PlotHandles.colcode2=findobj(huvmat,'Tag','colcode2');
-PlotHandles.vec_col_bar=findobj(huvmat,'Tag','vec_col_bar');
-PlotHandles.slider1=findobj(huvmat,'Tag','slider1');
-PlotHandles.slider2=findobj(huvmat,'Tag','slider2');
-PlotHandles.max_vec=findobj(huvmat,'Tag','max_vec');
-PlotHandles.min_vec=findobj(huvmat,'Tag','min_vec');
-PlotHandles.AutoVecColor=findobj(huvmat,'Tag','AutoVecColor');
-PlotHandles.decimate4=findobj(huvmat,'Tag','decimate4');
 
-%vectors
-Vectors.VecScale=str2num(get(PlotHandles.VecScale,'String'));
-Vectors.AutoVec=get(PlotHandles.AutoVec,'Value');%automatic vector length
-Vectors.checkyellow=get(PlotHandles.checkyellow,'Value');
-Vectors.checkblack=get(PlotHandles.checkblack,'Value');
-Vectors.decimate4=get(PlotHandles.decimate4,'Value');% =1; for reducing the nbre of vectors
-menu_col=get(PlotHandles.col_vec,'String');
-menu_val=get(PlotHandles.col_vec,'Value');
-Vectors.CName=menu_col{menu_val}; %'ima_cor','black','white',...
-Vectors.colcode1=str2num(get(PlotHandles.colcode1,'String'));% first threshold for rgb, first value for'continuous' 
-Vectors.colcode2=str2num(get(PlotHandles.colcode2,'String'));% second threshold for rgb, last value (saturation) for 'continuous' 
-Vectors.option=get(PlotHandles.vec_col_bar,'Value'); % =1 (64 colors), =0 (3 colors)
-Vectors.min=get(PlotHandles.slider1,'Min');
-Vectors.max=get(PlotHandles.slider1,'Max');
-Vectors.auto=get(PlotHandles.AutoVecColor,'Value');% =1; thresholds scaling relative to min and max, =0 fixed thresholds
-PlotParam.Vectors=Vectors;
 
-[PlotType,ScalOut]= plot_field(AxeData,haxes,PlotParam,1);
+% %determine the axes of action of the set_edit interface
+% % haxes= findobj(huvmat,'Tag','axes3'); %main plotting axes as default
+% % AxeData=get(haxes,'UserData')
+% %For vector field representation
+% PlotHandles.auto_xy=findobj(huvmat,'Tag','auto_xy');
+% PlotHandles.VecScale=findobj(huvmat,'Tag','VecScale');
+% PlotHandles.AutoVec=findobj(huvmat,'Tag','AutoVec');
+% PlotHandles.checkyellow=findobj(huvmat,'Tag','checkyellow');
+% PlotHandles.checkblack=findobj(huvmat,'Tag','checkblack');
+% PlotHandles.col_vec=findobj(huvmat,'Tag','col_vec');
+% PlotHandles.colcode1=findobj(huvmat,'Tag','colcode1');
+% PlotHandles.colcode2=findobj(huvmat,'Tag','colcode2');
+% PlotHandles.vec_col_bar=findobj(huvmat,'Tag','vec_col_bar');
+% PlotHandles.slider1=findobj(huvmat,'Tag','slider1');
+% PlotHandles.slider2=findobj(huvmat,'Tag','slider2');
+% PlotHandles.max_vec=findobj(huvmat,'Tag','max_vec');
+% PlotHandles.min_vec=findobj(huvmat,'Tag','min_vec');
+% PlotHandles.AutoVecColor=findobj(huvmat,'Tag','AutoVecColor');
+% PlotHandles.decimate4=findobj(huvmat,'Tag','decimate4');
+% 
+% %vectors
+% Vectors.VecScale=str2num(get(PlotHandles.VecScale,'String'));
+% Vectors.AutoVec=get(PlotHandles.AutoVec,'Value');%automatic vector length
+% Vectors.checkyellow=get(PlotHandles.checkyellow,'Value');
+% Vectors.checkblack=get(PlotHandles.checkblack,'Value');
+% Vectors.decimate4=get(PlotHandles.decimate4,'Value');% =1; for reducing the nbre of vectors
+% menu_col=get(PlotHandles.col_vec,'String');
+% menu_val=get(PlotHandles.col_vec,'Value');
+% Vectors.CName=menu_col{menu_val}; %'ima_cor','black','white',...
+% Vectors.colcode1=str2num(get(PlotHandles.colcode1,'String'));% first threshold for rgb, first value for'continuous' 
+% Vectors.colcode2=str2num(get(PlotHandles.colcode2,'String'));% second threshold for rgb, last value (saturation) for 'continuous' 
+% Vectors.option=get(PlotHandles.vec_col_bar,'Value'); % =1 (64 colors), =0 (3 colors)
+% Vectors.min=get(PlotHandles.slider1,'Min');
+% Vectors.max=get(PlotHandles.slider1,'Max');
+% Vectors.auto=get(PlotHandles.AutoVecColor,'Value');% =1; thresholds scaling relative to min and max, =0 fixed thresholds
+% PlotParam.Vectors=Vectors;
+
