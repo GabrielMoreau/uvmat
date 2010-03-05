@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ListDir</title>
+  <meta name="keywords" content="ListDir">
+  <meta name="description" content="'ListDir': scan the structure of the directory tree (for dataview.m)">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; ListDir.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>ListDir
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'ListDir': scan the structure of the directory tree (for dataview.m)</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'ListDir': scan the structure of the directory tree (for dataview.m)
+------------------------------------------------------------------------</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dataview.html" class="code" title="function varargout = dataview(varargin)">dataview</a>	TEST 'dataview': function for scanning directories in a campaign (TEST)</li><li><a href="editxml.html" class="code" title="function varargout = editxml(varargin)">editxml</a>	'editxml': function for editing xml files using a xml schema (associated with the GUI editxml.fig)</li><li><a href="geometry_calib.html" class="code" title="function varargout = geometry_calib(varargin)">geometry_calib</a>	'geometry_calib': performs geometric calibration from a set of reference points</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [testnew,testselect]=test_select(name,ListDevices,ListDevices_in)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'ListDir': scan the structure of the directory tree (for dataview.m)</span>
+0002 <span class="comment">%------------------------------------------------------------------------</span>
+0003 <a name="_sub0" href="#_subfunctions" class="code">function [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in)</a>
+0004 
+0005 ListRecords={};
+0006 ListDevices={};
+0007 ListXml={};
+0008 irecord_tot=0;
+0009 idevice_tot=0;
+0010 ixml_tot=0;
+0011 <span class="keyword">for</span> iexp=1:length(ListExperiments) 
+0012     List.Experiment{iexp}.name=ListExperiments{iexp};
+0013     hdir=dir(fullfile(CurrentPath,ListExperiments{iexp}));
+0014     idevice=0;
+0015     <span class="keyword">for</span> isub=1:length(hdir)<span class="comment">% scan the sub-directories  of the current experiment</span>
+0016         <span class="keyword">if</span> hdir(isub).isdir
+0017             name=hdir(isub).name;<span class="comment">%name of the current device</span>
+0018             <span class="keyword">if</span> ~isequal(name(1),<span class="string">'.'</span>)<span class="comment">% subdirectory of the current experiment</span>
+0019                 [testnew,testselect]=<a href="#_sub1" class="code" title="subfunction [testnew,testselect]=test_select(name,ListDevices,ListDevices_in)">test_select</a>(name,ListDevices,ListDevices_in);
+0020                 <span class="keyword">if</span> testselect
+0021                     idevice=idevice+1;
+0022                     List.Experiment{iexp}.Device{idevice}.name=name;             
+0023                     <span class="keyword">if</span> testnew
+0024                          idevice_tot=idevice_tot+1;
+0025                          ListDevices{idevice_tot}=name;
+0026                     <span class="keyword">end</span>
+0027                     CurrentDevice=fullfile(CurrentPath,ListExperiments{iexp},name);
+0028                     hsubxml=dir(fullfile(CurrentDevice,<span class="string">'*.xml'</span>));<span class="comment">%look at xml files in the subdirectory of the current device</span>
+0029                     <span class="keyword">if</span> isempty(hsubxml) <span class="comment">% the subdirectory of the current device contains directories 'Record''</span>
+0030                         hsubdir=dir(fullfile(CurrentPath,ListExperiments{iexp},name));<span class="comment">%list what is inside the directory 'Device'</span>
+0031                         irecord=0;
+0032                         <span class="keyword">for</span> isubsub=1:length(hsubdir)<span class="comment">% subdirectories of the current device</span>
+0033                             <span class="keyword">if</span> hsubdir(isubsub).isdir                       
+0034                                 RecordName=hsubdir(isubsub).name;  
+0035                                 <span class="keyword">if</span> ~isequal(RecordName(1),<span class="string">'.'</span>)
+0036                                     [testnew,testselect]=<a href="#_sub1" class="code" title="subfunction [testnew,testselect]=test_select(name,ListDevices,ListDevices_in)">test_select</a>(RecordName,ListRecords,ListRecords_in);
+0037                                     <span class="keyword">if</span> testselect
+0038                                         <span class="keyword">if</span> testnew
+0039                                             irecord_tot=irecord_tot+1;
+0040                                             ListRecords{irecord_tot}=RecordName;
+0041                                         <span class="keyword">end</span>
+0042                                         irecord=irecord+1;
+0043                                         List.Experiment{iexp}.Device{idevice}.Record{irecord}.name=RecordName;
+0044                                         hsubsubxml=dir(fullfile(CurrentDevice,RecordName,<span class="string">'*.xml'</span>));<span class="comment">%</span>
+0045                                         <span class="keyword">for</span> ixml=1:length(hsubsubxml)
+0046                                             XmlName=hsubsubxml(ixml).name;
+0047                                             List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile{ixml}=XmlName;
+0048                                             testnew=<a href="#_sub1" class="code" title="subfunction [testnew,testselect]=test_select(name,ListDevices,ListDevices_in)">test_select</a>(XmlName,ListXml,{});
+0049                                             <span class="keyword">if</span> testnew
+0050                                                 ixml_tot=ixml_tot+1;
+0051                                                 ListXml{ixml_tot}=XmlName;
+0052                                             <span class="keyword">end</span>
+0053                                         <span class="keyword">end</span> 
+0054                                     <span class="keyword">end</span>              
+0055                                 <span class="keyword">end</span>
+0056                             <span class="keyword">end</span>
+0057                         <span class="keyword">end</span>
+0058                     <span class="keyword">else</span>
+0059                         <span class="keyword">for</span> ixml=1:length(hsubxml)
+0060                             XmlName=hsubxml(ixml).name;
+0061                             List.Experiment{iexp}.Device{idevice}.xmlfile{ixml}=XmlName;
+0062                             testnew=<a href="#_sub1" class="code" title="subfunction [testnew,testselect]=test_select(name,ListDevices,ListDevices_in)">test_select</a>(XmlName,ListXml,{});
+0063                             <span class="keyword">if</span> testnew
+0064                                 ixml_tot=ixml_tot+1;
+0065                                 ListXml{ixml_tot}=XmlName;
+0066                             <span class="keyword">end</span>
+0067                         <span class="keyword">end</span>
+0068                     <span class="keyword">end</span>
+0069                 <span class="keyword">end</span>
+0070             <span class="keyword">end</span>
+0071         <span class="keyword">end</span>
+0072     <span class="keyword">end</span>
+0073 <span class="keyword">end</span>
+0074 
+0075 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0076 <a name="_sub1" href="#_subfunctions" class="code">function [testnew,testselect]=test_select(name,ListDevices,ListDevices_in)</a>
+0077 <span class="keyword">if</span> ~isempty(ListDevices_in)
+0078     testnew=0;
+0079     testselect=0;
+0080     <span class="keyword">for</span> ilist=1:length(ListDevices_in)
+0081         <span class="keyword">if</span> isequal(name,ListDevices_in{ilist})
+0082             testnew=1;
+0083             testselect=1; 
+0084             <span class="keyword">break</span>
+0085         <span class="keyword">end</span>
+0086     <span class="keyword">end</span>
+0087 <span class="keyword">else</span>
+0088     testnew=1; 
+0089     testselect=1;
+0090 <span class="keyword">end</span>
+0091 <span class="keyword">if</span> testnew
+0092     <span class="keyword">for</span> ilist=1:length(ListDevices)
+0093          <span class="keyword">if</span> isequal(name,ListDevices{ilist})
+0094               testnew=0;
+0095               <span class="keyword">break</span>
+0096          <span class="keyword">end</span>
+0097     <span class="keyword">end</span>
+0098 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

@@ -1,0 +1,945 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of probe_calib</title>
+  <meta name="keywords" content="probe_calib">
+  <meta name="description" content="'probe_calib': performs geometric calibration from a set of reference points">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; probe_calib.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>probe_calib
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'probe_calib': performs geometric calibration from a set of reference points</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function varargout = probe_calib(varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'probe_calib': performs geometric calibration from a set of reference points
+ PROBE_CALIB M-file for probe_calib.fig
+      PROBE_CALIB, by itself, creates a MenuCoord PROBE_CALIB or raises the existing
+      singleton*.
+
+      H = PROBE_CALIB returns the handle to a MenuCoord PROBE_CALIB or the handle to
+      the existing singleton*.
+
+      PROBE_CALIB('CALLBACK',hObject,eventData,handles,...) calls the local
+      function named CALLBACK in PROBE_CALIB.M with the given input arguments.
+
+      PROBE_CALIB('Property','Value',...) creates a MenuCoord PROBE_CALIB or raises the
+      existing singleton*.  Starting from the left, property value pairs are
+      applied to the GUI before probe_calib_OpeningFunction gets called.  An
+      unrecognized property name or invalid value makes property application
+      stop.  All inputs are passed to probe_calib_OpeningFcn via varargin.
+
+      *See GUI Options on GUIDE's Tools menu.  Choose &quot;GUI allows only one
+      instance to run (singleton)&quot;.
+
+ See also: GUIDE, GUIDATA, GUIHANDLES</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="cell2tab.html" class="code" title="function Tabchar=cell2tab(Tabcell,separator)">cell2tab</a>	'cell2tab': transform a Matlab cell in a character array suitable for display in a table</li><li><a href="delete_object.html" class="code" title="function delete_object(hObject)">delete_object</a>	'delete_object': delete a projection object, defined by its index in the Uvmat list or by its graphic handle</li><li><a href="name2display.html" class="code" title="function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)">name2display</a>	'name2display': extracts the root name and field numbers from an input filename</li><li><a href="plot_field.html" class="code" title="function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)">plot_field</a>	'plot_field': plot any field with the structure defined in the uvmat package</li><li><a href="plot_object.html" class="code" title="function [hh]=plot_object(ObjectDataIn,ProjObject,hplot,col)">plot_object</a>	'plot_object': draws a projection object (points, line, plane...)</li><li><a href="px.html" class="code" title="function [DataOut,DataOut_1]=px(Data,CalibData,Data_1,CalibData_1)%DataIn,Calib)">px</a>	'px': transform fields from physical coordinates (phys) to image (px) coordinates</li><li><a href="px_XYZ.html" class="code" title="function [X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)">px_XYZ</a>	'px_XYZ': transform phys coordinates to image coordinates (px)</li><li><a href="struct2xml.html" class="code" title="function t=struct2xml(Object,t,root_uid)">struct2xml</a>	'struct2xml': transform a matlab structure to a xml tree.</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li><li><a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>	'warndlg_uvmat': display warning message (error, warning, confirmation) in a given figure</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function probe_calib_OpeningFcn(hObject, eventdata, handles, data,pos,inputfile)</a></li><li><a href="#_sub2" class="code">function varargout = probe_calib_OutputFcn(hObject, eventdata, handles)</a></li><li><a href="#_sub3" class="code">function Phi_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub4" class="code">function import_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub5" class="code">function loadfile(handles,fileinput)</a></li><li><a href="#_sub6" class="code">function closefcn(gcbo,eventdata)</a></li><li><a href="#_sub7" class="code">function edit_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub8" class="code">function MenuCoord_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub9" class="code">function delete_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub10" class="code">function calib_offset_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub11" class="code">function calib_lin_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub12" class="code">function translation_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub13" class="code">function T_x_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub14" class="code">function T_y_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub15" class="code">function T_z_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub16" class="code">function rotation_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub17" class="code">function XImage_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub18" class="code">function YImage_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub19" class="code">function XObject_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub20" class="code">function YObject_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub21" class="code">function ZObject_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub22" class="code">function update_list(hObject, eventdata, handles)</a></li><li><a href="#_sub23" class="code">function data=read_probe_calib(handles)</a></li><li><a href="#_sub24" class="code">function ListCoord_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub25" class="code">function translation_plus_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub26" class="code">function translation_minus_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub27" class="code">function translation(handles,T)</a></li><li><a href="#_sub28" class="code">function rotation_plus_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub29" class="code">function rotation_minus_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub30" class="code">function rotation(handles,Phi)</a></li><li><a href="#_sub31" class="code">function O_x_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub32" class="code">function O_y_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub33" class="code">function O_z_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub34" class="code">function edit_append_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub35" class="code">function NEW_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub36" class="code">function HELP_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub37" class="code">function key_press_fcn(hObject,eventdata,handles)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'probe_calib': performs geometric calibration from a set of reference points</span>
+0002 <a name="_sub0" href="#_subfunctions" class="code">function varargout = probe_calib(varargin)</a>
+0003 <span class="comment">% PROBE_CALIB M-file for probe_calib.fig</span>
+0004 <span class="comment">%      PROBE_CALIB, by itself, creates a MenuCoord PROBE_CALIB or raises the existing</span>
+0005 <span class="comment">%      singleton*.</span>
+0006 <span class="comment">%</span>
+0007 <span class="comment">%      H = PROBE_CALIB returns the handle to a MenuCoord PROBE_CALIB or the handle to</span>
+0008 <span class="comment">%      the existing singleton*.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">%      PROBE_CALIB('CALLBACK',hObject,eventData,handles,...) calls the local</span>
+0011 <span class="comment">%      function named CALLBACK in PROBE_CALIB.M with the given input arguments.</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">%      PROBE_CALIB('Property','Value',...) creates a MenuCoord PROBE_CALIB or raises the</span>
+0014 <span class="comment">%      existing singleton*.  Starting from the left, property value pairs are</span>
+0015 <span class="comment">%      applied to the GUI before probe_calib_OpeningFunction gets called.  An</span>
+0016 <span class="comment">%      unrecognized property name or invalid value makes property application</span>
+0017 <span class="comment">%      stop.  All inputs are passed to probe_calib_OpeningFcn via varargin.</span>
+0018 <span class="comment">%</span>
+0019 <span class="comment">%      *See GUI Options on GUIDE's Tools menu.  Choose &quot;GUI allows only one</span>
+0020 <span class="comment">%      instance to run (singleton)&quot;.</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">% See also: GUIDE, GUIDATA, GUIHANDLES</span>
+0023 
+0024 <span class="comment">% Edit the above text to modify the response to help probe_calib</span>
+0025 
+0026 <span class="comment">% Last Modified by GUIDE v2.5 04-Feb-2008 15:46:42</span>
+0027 
+0028 <span class="comment">% Begin initialization code - DO NOT EDIT</span>
+0029 gui_Singleton = 1;
+0030 gui_State = struct(<span class="string">'gui_Name'</span>,       mfilename, <span class="keyword">...</span>
+0031                    <span class="string">'gui_Singleton'</span>,  gui_Singleton, <span class="keyword">...</span>
+0032                    <span class="string">'gui_OpeningFcn'</span>, @<a href="#_sub1" class="code" title="subfunction probe_calib_OpeningFcn(hObject, eventdata, handles, data,pos,inputfile)">probe_calib_OpeningFcn</a>, <span class="keyword">...</span>
+0033                    <span class="string">'gui_OutputFcn'</span>,  @<a href="#_sub2" class="code" title="subfunction varargout = probe_calib_OutputFcn(hObject, eventdata, handles)">probe_calib_OutputFcn</a>, <span class="keyword">...</span>
+0034                    <span class="string">'gui_LayoutFcn'</span>,  [] , <span class="keyword">...</span>
+0035                    <span class="string">'gui_Callback'</span>,   []);
+0036 <span class="keyword">if</span> nargin &amp; isstr(varargin{1})
+0037     gui_State.gui_Callback = str2func(varargin{1});
+0038 <span class="keyword">end</span>
+0039 
+0040 <span class="keyword">if</span> nargout
+0041     [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+0042 <span class="keyword">else</span>
+0043     gui_mainfcn(gui_State, varargin{:});
+0044 <span class="keyword">end</span>
+0045 <span class="comment">% End initialization code - DO NOT EDIT</span>
+0046 
+0047 
+0048 <span class="comment">% --- Executes just before probe_calib is made visible.</span>
+0049 <span class="comment">%INPUT:</span>
+0050 <span class="comment">%handles: handles of the probe_calib interface elements</span>
+0051 <span class="comment">% PlotHandles: set of handles of the elements contolling the plotting</span>
+0052 <span class="comment">% parameters on the uvmat interface (obtained by 'get_plot_handle.m')</span>
+0053 <a name="_sub1" href="#_subfunctions" class="code">function probe_calib_OpeningFcn(hObject, eventdata, handles, data,pos,inputfile)</a>
+0054 
+0055 <span class="comment">% Choose default command line output for probe_calib</span>
+0056 handles.output = hObject;
+0057 
+0058 <span class="comment">% Update handles structure</span>
+0059 guidata(hObject, handles);
+0060 
+0061 <span class="comment">%default</span>
+0062 <span class="comment">% set(hObject,'Unit','Normalized')% set the unit normalized to the screen size</span>
+0063 <span class="comment">% set(hObject,'Position',[0.7 0.1 0.25 0.5])%set the position of the probe_calib interface</span>
+0064 set(hObject,<span class="string">'DeleteFcn'</span>,@<a href="#_sub6" class="code" title="subfunction closefcn(gcbo,eventdata)">closefcn</a>)
+0065 
+0066 <span class="comment">%set the position of the interface</span>
+0067 <span class="keyword">if</span> exist(<span class="string">'pos'</span>,<span class="string">'var'</span>)&amp; length(pos)&gt;2
+0068     pos_gui=get(hObject,<span class="string">'Position'</span>);
+0069     pos_gui(1)=pos(1);
+0070     pos_gui(2)=pos(2);
+0071     set(hObject,<span class="string">'Position'</span>,pos_gui);
+0072 <span class="keyword">end</span>
+0073 <span class="comment">% set(handles.XImage,'String','')</span>
+0074 <span class="comment">% set(handles.YImage,'String','')</span>
+0075 <span class="comment">% set(handles.XObject,'String','')</span>
+0076 <span class="comment">% set(handles.YObject,'String','')</span>
+0077 <span class="comment">% set(handles.ZObject,'String','')</span>
+0078 inputxml=<span class="string">''</span>;
+0079 <span class="keyword">if</span> exist(<span class="string">'inputfile'</span>,<span class="string">'var'</span>)&amp; ~isempty(inputfile)
+0080     [Path,Name,ext]=fileparts(inputfile);
+0081     <span class="keyword">if</span> isequal(ext,<span class="string">'.png'</span>)
+0082         set(hObject,<span class="string">'UserData'</span>,inputfile)
+0083         [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=<a href="name2display.html" class="code" title="function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)">name2display</a>(inputfile);
+0084         inputxml=[fullfile(Pathsub,RootFile) <span class="string">'.xml'</span>];
+0085     <span class="keyword">end</span>   
+0086 <span class="keyword">end</span>
+0087 <span class="keyword">if</span> exist(inputxml,<span class="string">'file'</span>)
+0088     <a href="#_sub5" class="code" title="subfunction loadfile(handles,fileinput)">loadfile</a>(handles,inputxml)
+0089 <span class="keyword">end</span>
+0090 set(handles.ListCoord,<span class="string">'KeyPressFcn'</span>,{@<a href="#_sub37" class="code" title="subfunction key_press_fcn(hObject,eventdata,handles)">key_press_fcn</a>,handles})<span class="comment">%set keyboard action function</span>
+0091 
+0092 
+0093 <span class="comment">% --- Outputs from this function are returned to the command line.</span>
+0094 <a name="_sub2" href="#_subfunctions" class="code">function varargout = probe_calib_OutputFcn(hObject, eventdata, handles)</a>
+0095 <span class="comment">% varargout  cell array for returning output args (see VARARGOUT);</span>
+0096 <span class="comment">% hObject    handle to figure</span>
+0097 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0098 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0099 
+0100 <span class="comment">% Get default command line output from handles structure</span>
+0101 varargout{1} = handles.output;
+0102 varargout{2}=handles;
+0103 
+0104 <span class="comment">%------------</span>
+0105 <a name="_sub3" href="#_subfunctions" class="code">function Phi_Callback(hObject, eventdata, handles)</a>
+0106 
+0107 
+0108 <span class="comment">%-----------------------------------------------------</span>
+0109 <span class="comment">% --- Executes on button press in import.</span>
+0110 <a name="_sub4" href="#_subfunctions" class="code">function import_Callback(hObject, eventdata, handles)</a>
+0111 <span class="comment">%get the object file</span>
+0112 huvmat=findobj(<span class="string">'Tag'</span>,<span class="string">'uvmat'</span>);
+0113 UvData=get(huvmat,<span class="string">'UserData'</span>);
+0114 hchild=get(huvmat,<span class="string">'Children'</span>);
+0115 hrootpath=findobj(hchild,<span class="string">'Tag'</span>,<span class="string">'RootPath'</span>);
+0116 oldfile=get(hrootpath,<span class="string">'String'</span>);
+0117 <span class="keyword">if</span> isempty(oldfile)
+0118     oldfile=<span class="string">''</span>;
+0119 <span class="keyword">end</span>
+0120 <span class="comment">%[FileName,PathName] = uigetfile('*.civ','Select a .civ file',oldfile)</span>
+0121 [FileName, PathName, filterindex] = uigetfile( <span class="keyword">...</span>
+0122        {<span class="string">'*.xml;*.mat'</span>, <span class="string">' (*.xml,*.mat)'</span>;
+0123        <span class="string">'*.xml'</span>,  <span class="string">'.xml files '</span>; <span class="keyword">...</span>
+0124         <span class="string">'*.mat'</span>,  <span class="string">'.mat matlab files '</span>}, <span class="keyword">...</span>
+0125         <span class="string">'Pick a file'</span>,oldfile);
+0126 fileinput=[PathName FileName];<span class="comment">%complete file name</span>
+0127 testblank=findstr(fileinput,<span class="string">' '</span>);<span class="comment">%look for blanks</span>
+0128 <span class="keyword">if</span> ~isempty(testblank)
+0129     <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'forbidden input file name or path: no blank character allowed'</span>,<span class="string">'ERROR'</span>)
+0130     <span class="keyword">return</span>
+0131 <span class="keyword">end</span>
+0132 sizf=size(fileinput);
+0133 <span class="keyword">if</span> (~ischar(fileinput)|~isequal(sizf(1),1)),<span class="keyword">return</span>;<span class="keyword">end</span>
+0134 <a href="#_sub5" class="code" title="subfunction loadfile(handles,fileinput)">loadfile</a>(handles,fileinput)
+0135 
+0136 <span class="comment">%--------------------------------------------------</span>
+0137 <span class="comment">%read input xml file and update the edit boxes</span>
+0138 <a name="_sub5" href="#_subfunctions" class="code">function loadfile(handles,fileinput)</a>
+0139 
+0140 <span class="comment">%read the input xml file</span>
+0141 t=xmltree(fileinput);
+0142 s=convert(t);<span class="comment">%convert to matlab structure</span>
+0143 
+0144 <span class="comment">%read data currently displayed on the interface</span>
+0145 PointCoord=[];
+0146 data=<a href="#_sub23" class="code" title="subfunction data=read_probe_calib(handles)">read_probe_calib</a>(handles);
+0147 Coord=[]; <span class="comment">%default</span>
+0148 <span class="keyword">if</span> isfield(data,<span class="string">'Coord'</span>)
+0149     Coord=data.Coord;
+0150 <span class="keyword">end</span>
+0151 TabChar_0=get(handles.ListCoord,<span class="string">'String'</span>);
+0152 nbcoord_0=size(TabChar_0,1);
+0153 <span class="keyword">if</span> isequal(get(handles.edit_append,<span class="string">'Value'</span>),1) <span class="comment">%edit mode</span>
+0154     val=get(handles.ListCoord,<span class="string">'Value'</span>)-1;
+0155 <span class="keyword">else</span>
+0156    val=length(TabChar_0); 
+0157 <span class="keyword">end</span>
+0158 nbcoord=0;
+0159 
+0160 <span class="comment">%case of calibration (ImaDoc) input file</span>
+0161 <span class="keyword">if</span> isfield(s,<span class="string">'GeometryCalib'</span>)
+0162     Calib=s.GeometryCalib;
+0163     <span class="keyword">if</span> isfield(Calib,<span class="string">'SourceCalib'</span>)
+0164         <span class="keyword">if</span> isfield(Calib.SourceCalib,<span class="string">'PointCoord'</span>)
+0165             PointCoord=Calib.SourceCalib.PointCoord;
+0166         <span class="keyword">end</span>
+0167         <span class="keyword">if</span> isfield(Calib.SourceCalib,<span class="string">'ImageCalib'</span>)
+0168             hcalib=get(handles.import,<span class="string">'parent'</span>);
+0169             set(hcalib,<span class="string">'UserData'</span>,Calib.SourceCalib.ImageCalib);<span class="comment">%store the source image name in the interface 'UserData'</span>
+0170         <span class="keyword">end</span>
+0171     <span class="keyword">end</span>
+0172     nbcoord=length(PointCoord);
+0173     <span class="keyword">if</span> ~isfield(Calib,<span class="string">'ErrorRms'</span>)&amp;~isfield(Calib,<span class="string">'ErrorMax'</span>) <span class="comment">%old convention of Gauthier (cord in mm)</span>
+0174         <span class="keyword">for</span> i=1:length(PointCoord)
+0175           line=str2num(PointCoord{i});
+0176           Coord(i+val,4:5)=line(4:5);<span class="comment">%px x</span>
+0177           Coord(i+val,1:3)=line(1:3)/10;<span class="comment">%phys x</span>
+0178         <span class="keyword">end</span>
+0179     <span class="keyword">else</span>
+0180         <span class="keyword">for</span> i=1:length(PointCoord)
+0181           line=str2num(PointCoord{i});
+0182           Coord(i,4:5)=line(4:5);<span class="comment">%px x</span>
+0183           Coord(i,1:3)=line(1:3);<span class="comment">%phys x</span>
+0184        <span class="keyword">end</span>
+0185     <span class="keyword">end</span>
+0186 <span class="keyword">end</span>
+0187 
+0188 <span class="comment">%case of xml files of points</span>
+0189 <span class="keyword">if</span> isfield(s,<span class="string">'Coord'</span>)
+0190     PointCoord=s.Coord;
+0191     nbcoord=length(PointCoord);
+0192      <span class="comment">%case of image coordinates</span>
+0193     <span class="keyword">if</span> isfield(s,<span class="string">'CoordType'</span>)&amp; isequal(s.CoordType,<span class="string">'px'</span>)
+0194         <span class="keyword">for</span> i=1:nbcoord
+0195            line=str2num(PointCoord{i});
+0196            Coord(i+val,4:5)=line(1:2);
+0197         <span class="keyword">end</span>
+0198      <span class="comment">%case of  physical coordinates</span>
+0199     <span class="keyword">else</span>
+0200         <span class="keyword">for</span> i=1:nbcoord
+0201            line=str2num(PointCoord{i})
+0202            Coord(i+val,1:3)=line(1:3);
+0203            nbcolumn=size(Coord,2);
+0204            <span class="keyword">if</span> nbcolumn&lt;5
+0205                Coord(i+val,nbcolumn+1:5)=zeros(1,5-nbcolumn);
+0206            <span class="keyword">end</span>
+0207         <span class="keyword">end</span>
+0208      <span class="keyword">end</span>
+0209 <span class="keyword">end</span>
+0210 CoordCell={};
+0211 <span class="keyword">for</span> iline=1:size(Coord,1)
+0212     <span class="keyword">for</span> j=1:5
+0213         CoordCell{iline,j}=num2str(Coord(iline,j));
+0214     <span class="keyword">end</span>
+0215 <span class="keyword">end</span>
+0216         
+0217 Tabchar=<a href="cell2tab.html" class="code" title="function Tabchar=cell2tab(Tabcell,separator)">cell2tab</a>(CoordCell,<span class="string">'    |    '</span>);<span class="comment">%transform cells into table ready for display</span>
+0218 set(handles.ListCoord,<span class="string">'Value'</span>,1)
+0219 set(handles.ListCoord,<span class="string">'String'</span>,Tabchar)
+0220 
+0221 
+0222 <span class="comment">%----------------------------------------------------</span>
+0223 <span class="comment">% executed when closing: set the parent interface button to value 0</span>
+0224 <a name="_sub6" href="#_subfunctions" class="code">function closefcn(gcbo,eventdata)</a>
+0225 SetData=get(gcbf,<span class="string">'UserData'</span>);
+0226 <span class="keyword">if</span> isfield(SetData,<span class="string">'ParentButton'</span>) &amp; ishandle(SetData.ParentButton)
+0227     set(SetData.ParentButton, <span class="string">'Value'</span>,0)
+0228 <span class="keyword">end</span>
+0229 
+0230 <span class="comment">%-----------------------------------------------------------------------</span>
+0231 <span class="comment">% --- Executes on button press in edit: PLOT the defined object and its projected field</span>
+0232 <a name="_sub7" href="#_subfunctions" class="code">function edit_Callback(hObject, eventdata, handles)</a>
+0233 <span class="comment">%hsetobject=get(hObject,'parent');</span>
+0234 <span class="comment">%SetData=get(hsetobject,'UserData');%get the hidden interface data</span>
+0235 <span class="comment">%IndexObj=SetData.IndexObj;%index of the current projection object in the list of projection objects (UvData.ProjObject)</span>
+0236 huvmat=findobj(allchild(0),<span class="string">'name'</span>,<span class="string">'uvmat'</span>);<span class="comment">%find the current uvmat interface handle</span>
+0237 UvData=get(huvmat,<span class="string">'UserData'</span>);<span class="comment">%Data associated to the current uvmat interface</span>
+0238 hplot=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'axes3'</span>);
+0239 h_menu_coord=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'menu_coord'</span>);
+0240 menu=get(h_menu_coord,<span class="string">'String'</span>);
+0241 choice=get(h_menu_coord,<span class="string">'Value'</span>);
+0242 <span class="keyword">if</span> iscell(menu)
+0243     option=menu{choice};
+0244 <span class="keyword">else</span>
+0245     option=<span class="string">'px'</span>; <span class="comment">%default</span>
+0246 <span class="keyword">end</span>
+0247 <span class="comment">%get axis</span>
+0248 <span class="comment">%get CoordType</span>
+0249 ObjectData=<a href="#_sub23" class="code" title="subfunction data=read_probe_calib(handles)">read_probe_calib</a>(handles);<span class="comment">%read the interface input parameters defining the object</span>
+0250 <span class="keyword">if</span> isequal(option,<span class="string">'phys'</span>)
+0251     ObjectData.Coord=ObjectData.Coord(:,[1:3]);
+0252 <span class="keyword">elseif</span> isequal(option,<span class="string">'px'</span>)
+0253     ObjectData.Coord=ObjectData.Coord(:,[4:5]);
+0254 <span class="keyword">else</span>
+0255     errordlg(<span class="string">'the choice in coord_coord must be px or phys '</span>)
+0256 <span class="keyword">end</span>
+0257 <span class="comment">% [UvData,IndexObj]=update_obj(UvData,IndexObj,ObjectData,SetData.PlotHandles);</span>
+0258 <span class="comment">% SetData.IndexObj=IndexObj;</span>
+0259 <span class="comment">% set(gcbf,'UserData',SetData)%update object index in the probe_calib interface</span>
+0260 <span class="comment">% set(huvmat,'UserData',UvData)%update the data in the uvmat interface</span>
+0261 ObjectData.ProjMode=<span class="string">'none'</span>;
+0262 <a href="plot_object.html" class="code" title="function [hh]=plot_object(ObjectDataIn,ProjObject,hplot,col)">plot_object</a>(ObjectData,[],hplot,<span class="string">'b'</span>);
+0263 
+0264 
+0265 <span class="comment">% --- Executes on button press in MenuCoord.</span>
+0266 <a name="_sub8" href="#_subfunctions" class="code">function MenuCoord_Callback(hObject, eventdata, handles)</a>
+0267 
+0268 
+0269 <span class="comment">% --- Executes on button press in delete.</span>
+0270 <a name="_sub9" href="#_subfunctions" class="code">function delete_Callback(hObject, eventdata, handles)</a>
+0271 SetData=get(gcbf,<span class="string">'UserData'</span>);<span class="comment">%get the interface data</span>
+0272 IndexObj=SetData.IndexObj;
+0273 <a href="delete_object.html" class="code" title="function delete_object(hObject)">delete_object</a>(IndexObj);
+0274 
+0275 <span class="comment">% --- Executes on button press in calibrate_lin.</span>
+0276 <a name="_sub10" href="#_subfunctions" class="code">function calib_offset_Callback(hObject, eventdata, handles)</a>
+0277 Object=<a href="#_sub23" class="code" title="subfunction data=read_probe_calib(handles)">read_probe_calib</a>(handles);
+0278 
+0279 <span class="comment">%make linear calibration</span>
+0280 <span class="comment">% 'calibration_lin' provides a linear transform on coordinates,</span>
+0281 X=Object.Coord(:,1);
+0282 Y=Object.Coord(:,2);
+0283 x_ima=Object.Coord(:,4);
+0284 y_ima=Object.Coord(:,5);
+0285 [<a href="px.html" class="code" title="function [DataOut,DataOut_1]=px(Data,CalibData,Data_1,CalibData_1)%DataIn,Calib)">px</a>,sx]=polyfit(X,x_ima,1);
+0286 [py,sy]=polyfit(Y,y_ima,1);
+0287 <span class="comment">%err_X1=max(abs(x1-x_ima));%error</span>
+0288 <span class="comment">%err_Y1=max(abs(y1-y_ima));%error</span>
+0289 T_x=<a href="px.html" class="code" title="function [DataOut,DataOut_1]=px(Data,CalibData,Data_1,CalibData_1)%DataIn,Calib)">px</a>(2);
+0290 T_y=py(2);
+0291 GeometryCalib.focal=1;
+0292 GeometryCalib.Tx_Ty_Tz=[T_x T_y 1];
+0293 GeometryCalib.R=[<a href="px.html" class="code" title="function [DataOut,DataOut_1]=px(Data,CalibData,Data_1,CalibData_1)%DataIn,Calib)">px</a>(1),0,0;0,py(1),0;0,0,1];
+0294 <span class="comment">%check error</span>
+0295 Calib.dpx=1;
+0296 Calib.dpy=1;
+0297 Calib.sx=1;
+0298 Calib.Cx=0;
+0299 Calib.Cy=0;
+0300 Calib.Tz=1;
+0301 Calib.kappa1=0;
+0302 Calib.f=GeometryCalib.focal;
+0303 Calib.Tx=T_x;
+0304 Calib.Ty=T_y;
+0305 Calib.R=GeometryCalib.R;
+0306 [Xpoints,Ypoints]=<a href="px_XYZ.html" class="code" title="function [X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)">px_XYZ</a>(Calib,X,Y,0);
+0307 GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
+0308 GeometryCalib.ErrorMax(1)=max(abs(Xpoints-x_ima));
+0309 GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
+0310 GeometryCalib.ErrorMax(2)=max(abs(Ypoints-y_ima))
+0311 <span class="comment">%calibrate_lin calibration results and point coordinates</span>
+0312 huvmat=findobj(<span class="string">'Tag'</span>,<span class="string">'uvmat'</span>);
+0313 hchild=get(huvmat,<span class="string">'Children'</span>);
+0314 hrootpath=findobj(hchild,<span class="string">'Tag'</span>,<span class="string">'RootPath'</span>);
+0315 hrootfile=findobj(hchild,<span class="string">'Tag'</span>,<span class="string">'RootFile'</span>);
+0316 RootPath=<span class="string">''</span>;
+0317 RootFile=<span class="string">''</span>;
+0318 <span class="keyword">if</span> ~isempty(hrootpath)&amp; ~isempty(hrootfile)
+0319     testhandle=1;
+0320     RootPath=get(hrootpath,<span class="string">'String'</span>);
+0321     RootFile=get(hrootfile,<span class="string">'String'</span>);
+0322     filebase=fullfile(RootPath,RootFile);
+0323     outputfile=[filebase <span class="string">'.xml'</span>] 
+0324 <span class="keyword">else</span>
+0325     question={<span class="string">'save the calibration data and point coordinates in'</span>};
+0326     def={fullfile(RootPath,[<span class="string">'ObjectCalib.xml'</span>])};
+0327     options.Resize=<span class="string">'on'</span>;
+0328     answer=inputdlg(question,<span class="string">'save average in a new file'</span>,1,def,options);
+0329     outputfile=answer{1};
+0330 <span class="keyword">end</span>
+0331 testappend=0;
+0332 <span class="keyword">if</span> exist(outputfile,<span class="string">'file'</span>);<span class="comment">%=1 if the output file already exists, 0 else</span>
+0333     t=xmltree(outputfile); <span class="comment">%read the file</span>
+0334     uid=find(t,<span class="string">'ImaDoc'</span>);
+0335     <span class="keyword">if</span> ~isequal(uid,1)<span class="comment">%if the xml file is not ImaDoc, delete it (after backup)</span>
+0336         backupfile=outputfile;
+0337         testexist=2;
+0338         <span class="keyword">while</span> testexist==2
+0339             backupfile=[backupfile <span class="string">'~'</span>];
+0340             testexist=exist(backupfile,<span class="string">'file'</span>);       
+0341         <span class="keyword">end</span>
+0342         [success,message]=copyfile(outputfile,backupfile);<span class="comment">%make backup</span>
+0343         <span class="keyword">if</span> isequal(success,1)
+0344             delete(outputfile)
+0345         <span class="keyword">else</span>
+0346             <span class="keyword">return</span>
+0347         <span class="keyword">end</span>
+0348     <span class="keyword">else</span>
+0349         uid_calib=find(t,<span class="string">'ImaDoc/GeometryCalib'</span>);
+0350         <span class="keyword">if</span> ~isempty(uid) <span class="comment">%if GeometryCalib already exists, delete its content</span>
+0351             backupfile=outputfile;
+0352             testexist=2;
+0353             <span class="keyword">while</span> testexist==2
+0354                 backupfile=[backupfile <span class="string">'~'</span>];
+0355                 testexist=exist(backupfile,<span class="string">'file'</span>);      
+0356             <span class="keyword">end</span>
+0357             [success,message]=copyfile(outputfile,backupfile)<span class="comment">%make backup</span>
+0358             <span class="keyword">if</span> isequal(success,1)
+0359                 delete(outputfile)
+0360             <span class="keyword">else</span>
+0361                 <span class="keyword">return</span>
+0362             <span class="keyword">end</span>
+0363             uid_child=children(t,uid_calib);
+0364             t=delete(t,uid_child);
+0365             testappend=1;
+0366         <span class="keyword">end</span>
+0367     <span class="keyword">end</span>
+0368 <span class="keyword">end</span>
+0369 <span class="keyword">if</span> ~testappend
+0370     t=xmltree;
+0371     t=set(t,1,<span class="string">'name'</span>,<span class="string">'ImaDoc'</span>);
+0372     [t,uid_calib]=add(t,1,<span class="string">'element'</span>,<span class="string">'GeometryCalib'</span>);
+0373 <span class="comment">%     t=struct2xml(GeometryCalib,t,uid_calib);</span>
+0374 <span class="keyword">end</span>
+0375 Object.Coord(:,[1:3])=Object.Coord(:,[1:3])*10; <span class="comment">%transform in</span>
+0376 GeometryCalib.SourceCalib.PointCoord=Object.Coord;
+0377 t=<a href="struct2xml.html" class="code" title="function t=struct2xml(Object,t,root_uid)">struct2xml</a>(GeometryCalib,t,uid_calib); 
+0378 save(t,outputfile)
+0379 
+0380 <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([outputfile <span class="string">'updated with linear calibration data'</span>],<span class="string">'CONFIRMATION'</span>)
+0381 
+0382 <span class="comment">%display image with new calibration in the currently opened uvmat interface</span>
+0383 Indices=get(findobj(hchild,<span class="string">'Tag'</span>,<span class="string">'FileIndex'</span>),<span class="string">'String'</span>);
+0384 Ext=get(findobj(hchild,<span class="string">'Tag'</span>,<span class="string">'FileExt'</span>),<span class="string">'String'</span>);
+0385 imagename=[fullfile(RootPath,RootFile) Indices Ext];
+0386 <span class="comment">% input.menu_coord=1;</span>
+0387 huvmat=<a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>(imagename,1);<span class="comment">%open uvmat, set phys coord (Value 1)</span>
+0388 
+0389 
+0390 
+0391 <span class="comment">% --- Executes on button press in calibrate_lin.</span>
+0392 <a name="_sub11" href="#_subfunctions" class="code">function calib_lin_Callback(hObject, eventdata, handles)</a>
+0393 Object=<a href="#_sub23" class="code" title="subfunction data=read_probe_calib(handles)">read_probe_calib</a>(handles);
+0394 
+0395 <span class="comment">%make linear calibration</span>
+0396 <span class="comment">% 'calibration_lin' provides a linear transform on coordinates,</span>
+0397 X=Object.Coord(:,1);
+0398 Y=Object.Coord(:,2);
+0399 x_ima=Object.Coord(:,4);
+0400 y_ima=Object.Coord(:,5);
+0401 XY_mat=[ones(size(X)) X Y];
+0402 a_X1=XY_mat\x_ima; <span class="comment">%transformation matrix for X</span>
+0403 x1=XY_mat*a_X1;<span class="comment">%reconstruction</span>
+0404 err_X1=max(abs(x1-x_ima));<span class="comment">%error</span>
+0405 a_Y1=XY_mat\y_ima;<span class="comment">%transformation matrix for X</span>
+0406 y1=XY_mat*a_Y1;
+0407 err_Y1=max(abs(y1-y_ima));<span class="comment">%error</span>
+0408 T_x=a_X1(1);
+0409 T_y=a_Y1(1);
+0410 GeometryCalib.focal=1;
+0411 GeometryCalib.Tx_Ty_Tz=[T_x T_y 1];
+0412 GeometryCalib.R=[a_X1(2),a_X1(3),0;a_Y1(2),a_Y1(3),0;0,0,1];
+0413 
+0414 <span class="comment">%check error</span>
+0415 GeometryCalib.ErrorRms(1)=sqrt(mean((x1-x_ima).*(x1-x_ima)));
+0416 GeometryCalib.ErrorMax(1)=max(abs(x1-x_ima));
+0417 GeometryCalib.ErrorRms(2)=sqrt(mean((y1-y_ima).*(y1-y_ima)));
+0418 GeometryCalib.ErrorMax(2)=max(abs(y1-y_ima))
+0419 
+0420 <span class="comment">%calibrate_lin calibration results and point coordinates</span>
+0421 huvmat=findobj(<span class="string">'Tag'</span>,<span class="string">'uvmat'</span>);
+0422 hchild=get(huvmat,<span class="string">'Children'</span>);
+0423 hrootpath=findobj(hchild,<span class="string">'Tag'</span>,<span class="string">'RootPath'</span>);
+0424 hrootfile=findobj(hchild,<span class="string">'Tag'</span>,<span class="string">'RootFile'</span>);
+0425 RootPath=<span class="string">''</span>;
+0426 RootFile=<span class="string">''</span>;
+0427 <span class="keyword">if</span> ~isempty(hrootpath)&amp; ~isempty(hrootfile)
+0428     testhandle=1;
+0429     RootPath=get(hrootpath,<span class="string">'String'</span>);
+0430     RootFile=get(hrootfile,<span class="string">'String'</span>);
+0431     filebase=fullfile(RootPath,RootFile);
+0432     outputfile=[filebase <span class="string">'.xml'</span>]; 
+0433 <span class="keyword">else</span>
+0434     question={<span class="string">'save the calibration data and point coordinates in'</span>};
+0435     def={fullfile(RootPath,[<span class="string">'ObjectCalib.xml'</span>])};
+0436     options.Resize=<span class="string">'on'</span>;
+0437     answer=inputdlg(question,<span class="string">'save average in a new file'</span>,1,def,options);
+0438     outputfile=answer{1};
+0439 <span class="keyword">end</span>
+0440 testappend=0;
+0441 <span class="keyword">if</span> exist(outputfile,<span class="string">'file'</span>);<span class="comment">%=1 if the output file already exists, 0 else</span>
+0442     t=xmltree(outputfile); <span class="comment">%read the file</span>
+0443     uid=find(t,<span class="string">'ImaDoc'</span>);
+0444     <span class="keyword">if</span> ~isequal(uid,1)<span class="comment">%if the xml file is not ImaDoc, delete it (after backup)</span>
+0445         backupfile=outputfile;
+0446         testexist=2;
+0447         <span class="keyword">while</span> testexist==2
+0448             backupfile=[backupfile <span class="string">'~'</span>];
+0449             testexist=exist(backupfile,<span class="string">'file'</span>);       
+0450         <span class="keyword">end</span>
+0451         [success,message]=copyfile(outputfile,backupfile)<span class="comment">%make backup</span>
+0452         <span class="keyword">if</span> isequal(success,1);
+0453             delete(outputfile)
+0454         <span class="keyword">else</span>
+0455             <span class="keyword">return</span>
+0456         <span class="keyword">end</span>
+0457     <span class="keyword">else</span>
+0458         uid_calib=find(t,<span class="string">'ImaDoc/GeometryCalib'</span>);
+0459         <span class="keyword">if</span> ~isempty(uid) <span class="comment">%if GeometryCalib already exists, delete its content</span>
+0460             backupfile=outputfile;
+0461             testexist=2;
+0462             <span class="keyword">while</span> testexist==2
+0463                 backupfile=[backupfile <span class="string">'~'</span>];
+0464                 testexist=exist(backupfile,<span class="string">'file'</span>);      
+0465             <span class="keyword">end</span>
+0466             [success,message]=copyfile(outputfile,backupfile)<span class="comment">%make backup</span>
+0467             <span class="keyword">if</span> isequal(success,1)
+0468                 delete(outputfile)
+0469             <span class="keyword">else</span>
+0470                 <span class="keyword">return</span>
+0471             <span class="keyword">end</span>
+0472             uid_child=children(t,uid_calib);
+0473             t=delete(t,uid_child);
+0474             testappend=1;
+0475         <span class="keyword">end</span>
+0476     <span class="keyword">end</span>
+0477 <span class="keyword">end</span>
+0478 <span class="keyword">if</span> ~testappend
+0479     t=xmltree;
+0480     t=set(t,1,<span class="string">'name'</span>,<span class="string">'ImaDoc'</span>);
+0481     [t,uid_calib]=add(t,1,<span class="string">'element'</span>,<span class="string">'GeometryCalib'</span>);
+0482 <span class="comment">%     t=struct2xml(GeometryCalib,t,uid_calib);</span>
+0483 <span class="keyword">end</span>
+0484 <span class="comment">% Object.Coord(:,[1:3])=Object.Coord(:,[1:3]); %transform in</span>
+0485 GeometryCalib.SourceCalib.PointCoord=Object.Coord;
+0486 t=<a href="struct2xml.html" class="code" title="function t=struct2xml(Object,t,root_uid)">struct2xml</a>(GeometryCalib,t,uid_calib); 
+0487 save(t,outputfile)
+0488 
+0489 <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([outputfile <span class="string">'updated with linear calibration data'</span>],<span class="string">'CONFIRMATION'</span>)
+0490 
+0491 <span class="comment">%display image with new calibration in the currently opened uvmat interface</span>
+0492 Indices=get(findobj(hchild,<span class="string">'Tag'</span>,<span class="string">'FileIndex'</span>),<span class="string">'String'</span>);
+0493 Ext=get(findobj(hchild,<span class="string">'Tag'</span>,<span class="string">'FileExt'</span>),<span class="string">'String'</span>);
+0494 imagename=[fullfile(RootPath,RootFile) Indices Ext];
+0495 <span class="comment">% input.menu_coord=1;</span>
+0496 <span class="keyword">if</span> exist(imagename,<span class="string">'file'</span>)
+0497     huvmat=<a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>(imagename,1);<span class="comment">%open uvmat, set phys coord (Value 1)</span>
+0498 <span class="keyword">else</span>
+0499     huvmat=<a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>;
+0500 <span class="keyword">end</span>
+0501 
+0502 
+0503 <span class="comment">% --- Executes on button press in translation.</span>
+0504 <a name="_sub12" href="#_subfunctions" class="code">function translation_Callback(hObject, eventdata, handles)</a>
+0505 
+0506 
+0507 <a name="_sub13" href="#_subfunctions" class="code">function T_x_Callback(hObject, eventdata, handles)</a>
+0508 <span class="comment">% hObject    handle to T_x (see GCBO)</span>
+0509 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0510 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0511 
+0512 <span class="comment">% Hints: get(hObject,'String') returns contents of T_x as text</span>
+0513 <span class="comment">%        str2double(get(hObject,'String')) returns contents of T_x as a double</span>
+0514 
+0515 
+0516 
+0517 
+0518 
+0519 <a name="_sub14" href="#_subfunctions" class="code">function T_y_Callback(hObject, eventdata, handles)</a>
+0520 <span class="comment">% hObject    handle to T_y (see GCBO)</span>
+0521 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0522 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0523 
+0524 <span class="comment">% Hints: get(hObject,'String') returns contents of T_y as text</span>
+0525 <span class="comment">%        str2double(get(hObject,'String')) returns contents of T_y as a double</span>
+0526 
+0527 
+0528 <a name="_sub15" href="#_subfunctions" class="code">function T_z_Callback(hObject, eventdata, handles)</a>
+0529 <span class="comment">% hObject    handle to T_z (see GCBO)</span>
+0530 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0531 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0532 
+0533 <span class="comment">% Hints: get(hObject,'String') returns contents of T_z as text</span>
+0534 <span class="comment">%        str2double(get(hObject,'String')) returns contents of T_z as a double</span>
+0535 
+0536 
+0537 <span class="comment">% --- Executes on button press in rotation.</span>
+0538 <a name="_sub16" href="#_subfunctions" class="code">function rotation_Callback(hObject, eventdata, handles)</a>
+0539 angle_rot=(pi/180)*str2num(get(handles.Phi,<span class="string">'String'</span>))
+0540 data=<a href="#_sub23" class="code" title="subfunction data=read_probe_calib(handles)">read_probe_calib</a>(handles)
+0541 data.Coord(:,1)=cos(angle_rot)*data.Coord(:,1)+sin(angle_rot)*data.Coord(:,2);
+0542 data.Coord(:,1)=-sin(angle_rot)*data.Coord(:,1)+cos(angle_rot)*data.Coord(:,2);
+0543 set(handles.XObject,<span class="string">'String'</span>,num2str(data.Coord(:,1)));
+0544 set(handles.YObject,<span class="string">'String'</span>,num2str(data.Coord(:,2)));
+0545 
+0546 
+0547 <a name="_sub17" href="#_subfunctions" class="code">function XImage_Callback(hObject, eventdata, handles)</a>
+0548 <a href="#_sub22" class="code" title="subfunction update_list(hObject, eventdata, handles)">update_list</a>(hObject, eventdata,handles)
+0549 
+0550 <a name="_sub18" href="#_subfunctions" class="code">function YImage_Callback(hObject, eventdata, handles)</a>
+0551 <a href="#_sub22" class="code" title="subfunction update_list(hObject, eventdata, handles)">update_list</a>(hObject, eventdata,handles)
+0552 
+0553 <a name="_sub19" href="#_subfunctions" class="code">function XObject_Callback(hObject, eventdata, handles)</a>
+0554 <a href="#_sub22" class="code" title="subfunction update_list(hObject, eventdata, handles)">update_list</a>(hObject, eventdata,handles)
+0555 
+0556 <a name="_sub20" href="#_subfunctions" class="code">function YObject_Callback(hObject, eventdata, handles)</a>
+0557 <a href="#_sub22" class="code" title="subfunction update_list(hObject, eventdata, handles)">update_list</a>(hObject, eventdata,handles)
+0558 
+0559 <a name="_sub21" href="#_subfunctions" class="code">function ZObject_Callback(hObject, eventdata, handles)</a>
+0560 <a href="#_sub22" class="code" title="subfunction update_list(hObject, eventdata, handles)">update_list</a>(hObject, eventdata,handles)
+0561 
+0562 <a name="_sub22" href="#_subfunctions" class="code">function update_list(hObject, eventdata, handles)</a>
+0563 str4=get(handles.XImage,<span class="string">'String'</span>);
+0564 str5=get(handles.YImage,<span class="string">'String'</span>);
+0565 str1=get(handles.XObject,<span class="string">'String'</span>);
+0566 tt=double(str1);
+0567 str2=get(handles.YObject,<span class="string">'String'</span>);
+0568 str3=get(handles.ZObject,<span class="string">'String'</span>);
+0569 <span class="keyword">if</span> ~isempty(str1) &amp; ~isequal(double(str1),32) &amp; (isempty(str3)|isequal(double(str3),32))
+0570     str3=<span class="string">'0'</span>;<span class="comment">%put z to 0 by default</span>
+0571 <span class="keyword">end</span>
+0572 strline=[str1 <span class="string">'    |    '</span> str2 <span class="string">'    |    '</span> str3 <span class="string">'    |    '</span> str4 <span class="string">'    |    '</span> str5];
+0573 Coord=get(handles.ListCoord,<span class="string">'String'</span>);
+0574 testappend=get(handles.edit_append,<span class="string">'Value'</span>);
+0575 <span class="keyword">if</span> isequal(testappend,1); <span class="comment">%edit mode</span>
+0576     val=get(handles.ListCoord,<span class="string">'Value'</span>);
+0577     Coord{val}=strline;
+0578 <span class="keyword">else</span>
+0579     val=length(get(handles.ListCoord,<span class="string">'String'</span>));
+0580     Coord{val+1}=strline;
+0581     set(handles.ListCoord,<span class="string">'Value'</span>,val+1)
+0582 <span class="comment">% if val+1&lt;=length(Coord)</span>
+0583 <span class="comment">%     set(handles.ListCoord,'Value',val+1)</span>
+0584 <span class="comment">%     ListCoord_Callback(hObject, eventdata, handles)</span>
+0585 <span class="keyword">end</span>
+0586 set(handles.ListCoord,<span class="string">'String'</span>,Coord)
+0587 <span class="comment">%set(handles.ListCoord,'Value',val+1)</span>
+0588 
+0589 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0590 <a name="_sub23" href="#_subfunctions" class="code">function data=read_probe_calib(handles)</a>
+0591 data_XIma=[];
+0592 data_YIma=[];
+0593 data_XObject=[];
+0594 data_YObject=[];
+0595 data_ZObject=[];
+0596 Coord=get(handles.ListCoord,<span class="string">'String'</span>);
+0597 <span class="comment">% XImage=get(handles.XImage,'String');</span>
+0598 <span class="comment">% YImage=get(handles.YImage,'String');</span>
+0599 <span class="comment">% XObject=get(handles.XObject,'String');</span>
+0600 <span class="comment">% YObject=get(handles.YObject,'String');</span>
+0601 <span class="comment">% ZObject=get(handles.ZObject,'String');</span>
+0602 <span class="comment">% if ischar(Xcolumn)</span>
+0603 <span class="comment">%     Xcolumn={Xcolumn};</span>
+0604 <span class="comment">% end</span>
+0605 nb_defining_points=length(Coord);
+0606 iline=0;
+0607 <span class="keyword">for</span> i=1:nb_defining_points
+0608     coord_str=Coord{i};<span class="comment">%character string of line number i</span>
+0609     k=findstr(<span class="string">'|'</span>,coord_str);<span class="comment">%find separators '|'</span>
+0610     data1=str2num(coord_str(1:k(1)-5));
+0611     data2=str2num(coord_str(k(1)+5:k(2)-5));
+0612     data3=str2num(coord_str(k(2)+5:k(3)-5));
+0613     data4=str2num(coord_str(k(3)+5:k(4)-5));
+0614     data5=str2num(coord_str(k(4)+5:end));
+0615     <span class="keyword">if</span> ~isempty(data1)|~isempty(data2)|~isempty(data3)|~isempty(data4)|~isempty(data5)
+0616         iline=iline+1;
+0617         <span class="keyword">if</span> ~isempty(data1)
+0618             data.Coord(iline,1)=data1;
+0619         <span class="keyword">end</span>    
+0620         <span class="keyword">if</span> ~isempty(data2)
+0621             data.Coord(iline,2)=data2;
+0622         <span class="keyword">end</span>
+0623         <span class="keyword">if</span> ~isempty(data3)
+0624             data.Coord(iline,3)=data3;
+0625         <span class="keyword">end</span>
+0626         <span class="keyword">if</span> ~isempty(data4)
+0627             data.Coord(iline,4)=data4;
+0628         <span class="keyword">end</span>
+0629         <span class="keyword">if</span> isempty(data5)
+0630             data.Coord(iline,5)=0;
+0631         <span class="keyword">else</span>
+0632             data.Coord(iline,5)=data5;
+0633         <span class="keyword">end</span>
+0634     <span class="keyword">end</span>
+0635 <span class="keyword">end</span>
+0636 data.Style=<span class="string">'points'</span>;
+0637 
+0638 
+0639 <span class="comment">% --- Executes on selection change in ListCoord.</span>
+0640 <a name="_sub24" href="#_subfunctions" class="code">function ListCoord_Callback(hObject, eventdata, handles)</a>
+0641 <span class="comment">% hObject    handle to ListCoord (see GCBO)</span>
+0642 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0643 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0644 
+0645 <span class="comment">% Hints: contents = get(hObject,'String') returns ListCoord contents as cell array</span>
+0646 <span class="comment">%        contents{get(hObject,'Value')} returns selected item from ListCoord</span>
+0647 set(handles.edit_append,<span class="string">'Value'</span>,1); <span class="comment">%set to edit mode</span>
+0648 Coord=get(handles.ListCoord,<span class="string">'String'</span>);
+0649 val=get(handles.ListCoord,<span class="string">'Value'</span>);
+0650 <span class="keyword">if</span> length(Coord)&gt;0
+0651 coord_str=Coord{val};
+0652 k=findstr(<span class="string">'|'</span>,coord_str);
+0653 set(handles.XObject,<span class="string">'String'</span>,coord_str(1:k(1)-5))
+0654 set(handles.YObject,<span class="string">'String'</span>,coord_str(k(1)+5:k(2)-5))
+0655 set(handles.ZObject,<span class="string">'String'</span>,coord_str(k(2)+5:k(3)-5))
+0656 set(handles.XImage,<span class="string">'String'</span>,coord_str(k(3)+5:k(4)-5))
+0657 set(handles.YImage,<span class="string">'String'</span>,coord_str(k(4)+5:end))
+0658 <span class="keyword">end</span>
+0659 
+0660 <span class="comment">%------------------------------------------------------</span>
+0661 <span class="comment">% --- Executes on button press in translation_plus.</span>
+0662 <a name="_sub25" href="#_subfunctions" class="code">function translation_plus_Callback(hObject, eventdata, handles)</a>
+0663 
+0664 T=[0 0 0];
+0665 T_x=get(handles.T_x,<span class="string">'String'</span>)
+0666 T_y=get(handles.T_y,<span class="string">'String'</span>)
+0667 T_z=get(handles.T_z,<span class="string">'String'</span>)
+0668 <span class="keyword">if</span> ~isempty(T_x)
+0669     T(1)=str2num(T_x);
+0670 <span class="keyword">end</span>
+0671 <span class="keyword">if</span> ~isempty(T_y)
+0672     T(2)=str2num(T_y);
+0673 <span class="keyword">end</span>
+0674 <span class="keyword">if</span> ~isempty(T_z)
+0675     T(3)=str2num(T_z);
+0676 <span class="keyword">end</span>
+0677 <a href="#_sub27" class="code" title="subfunction translation(handles,T)">translation</a>(handles,T)
+0678 
+0679 
+0680 
+0681 <span class="comment">% --- Executes on button press in translation_minus.</span>
+0682 <a name="_sub26" href="#_subfunctions" class="code">function translation_minus_Callback(hObject, eventdata, handles)</a>
+0683 
+0684 T=[0 0 0];
+0685 T_x=get(handles.T_x,<span class="string">'String'</span>)
+0686 T_y=get(handles.T_y,<span class="string">'String'</span>)
+0687 T_z=get(handles.T_z,<span class="string">'String'</span>)
+0688 <span class="keyword">if</span> ~isempty(T_x)
+0689     T(1)=-str2num(T_x);
+0690 <span class="keyword">end</span>
+0691 <span class="keyword">if</span> ~isempty(T_y)
+0692     T(2)=-str2num(T_y);
+0693 <span class="keyword">end</span>
+0694 <span class="keyword">if</span> ~isempty(T_z)
+0695     T(3)=-str2num(T_z);
+0696 <span class="keyword">end</span>
+0697 <a href="#_sub27" class="code" title="subfunction translation(handles,T)">translation</a>(handles,T)
+0698 
+0699 
+0700 <span class="comment">%%%--------------------------------------</span>
+0701 <a name="_sub27" href="#_subfunctions" class="code">function translation(handles,T)</a>
+0702 data=<a href="#_sub23" class="code" title="subfunction data=read_probe_calib(handles)">read_probe_calib</a>(handles);
+0703 data.Coord(:,1)=T(1)+data.Coord(:,1);
+0704 data.Coord(:,2)=T(2)+data.Coord(:,2);
+0705 data.Coord(:,3)=T(3)+data.Coord(:,3);
+0706 data.Coord(:,[4 5])=data.Coord(:,[4 5]);
+0707 <span class="keyword">for</span> i=1:size(data.Coord,1)
+0708     <span class="keyword">for</span> j=1:5
+0709           Coord{i,j}=num2str(data.Coord(i,j));<span class="comment">%phys x,y,z</span>
+0710    <span class="keyword">end</span>
+0711 <span class="keyword">end</span>
+0712 Tabchar=<a href="cell2tab.html" class="code" title="function Tabchar=cell2tab(Tabcell,separator)">cell2tab</a>(Coord,<span class="string">'    |    '</span>);
+0713 set(handles.ListCoord,<span class="string">'String'</span>,Tabchar)
+0714 
+0715 <span class="comment">%----------------------------------------------------</span>
+0716 <span class="comment">% --- Executes on button press in rotation_plus.</span>
+0717 <a name="_sub28" href="#_subfunctions" class="code">function rotation_plus_Callback(hObject, eventdata, handles)</a>
+0718 Phi=0;
+0719 Phi=get(handles.Phi,<span class="string">'String'</span>)
+0720 <span class="keyword">if</span> ~isempty(Phi)
+0721     Phi=str2num(Phi);
+0722 <span class="keyword">end</span>
+0723 <a href="#_sub30" class="code" title="subfunction rotation(handles,Phi)">rotation</a>(handles,Phi)
+0724 
+0725 <span class="comment">%-------------------------------------------------</span>
+0726 <span class="comment">% --- Executes on button press in rotation_minus.</span>
+0727 <a name="_sub29" href="#_subfunctions" class="code">function rotation_minus_Callback(hObject, eventdata, handles)</a>
+0728 Phi=0;
+0729 Phi=get(handles.Phi,<span class="string">'String'</span>)
+0730 <span class="keyword">if</span> ~isempty(Phi)
+0731     Phi=-str2num(Phi);
+0732 <span class="keyword">end</span>
+0733 <a href="#_sub30" class="code" title="subfunction rotation(handles,Phi)">rotation</a>(handles,Phi)
+0734 
+0735 <span class="comment">%-----------------------------------------------------</span>
+0736 <span class="comment">%rotation</span>
+0737 <a name="_sub30" href="#_subfunctions" class="code">function rotation(handles,Phi)</a>
+0738 O_x=str2num(get(handles.O_x,<span class="string">'String'</span>));
+0739 O_y=str2num(get(handles.O_y,<span class="string">'String'</span>));
+0740 <span class="keyword">if</span> isempty(O_x)
+0741     O_x=0;<span class="comment">%default</span>
+0742 <span class="keyword">end</span>
+0743 <span class="keyword">if</span> isempty(O_y)
+0744     O_y=0;<span class="comment">%default</span>
+0745 <span class="keyword">end</span>
+0746 data=<a href="#_sub23" class="code" title="subfunction data=read_probe_calib(handles)">read_probe_calib</a>(handles);
+0747 r1=cos(pi*Phi/180);
+0748 r2=-sin(pi*Phi/180);
+0749 r3=sin(pi*Phi/180);
+0750 r4=cos(pi*Phi/180);
+0751 data.Coord(:,1)=r1*data.Coord(:,1)+r2*data.Coord(:,2);
+0752 data.Coord(:,2)=r3*data.Coord(:,1)+r4*data.Coord(:,2);
+0753 <span class="comment">% data.Coord(:,[4 5])=data.Coord(:,[4 5]);</span>
+0754 <span class="keyword">for</span> i=1:size(data.Coord,1)
+0755     <span class="keyword">for</span> j=1:5
+0756           Coord{i,j}=num2str(data.Coord(i,j));<span class="comment">%phys x,y,z</span>
+0757    <span class="keyword">end</span>
+0758 <span class="keyword">end</span>
+0759 Tabchar=<a href="cell2tab.html" class="code" title="function Tabchar=cell2tab(Tabcell,separator)">cell2tab</a>(Coord,<span class="string">'    |    '</span>);
+0760 set(handles.ListCoord,<span class="string">'String'</span>,Tabchar)
+0761 
+0762 <a name="_sub31" href="#_subfunctions" class="code">function O_x_Callback(hObject, eventdata, handles)</a>
+0763 <span class="comment">% hObject    handle to O_x (see GCBO)</span>
+0764 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0765 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0766 
+0767 <span class="comment">% Hints: get(hObject,'String') returns contents of O_x as text</span>
+0768 <span class="comment">%        str2double(get(hObject,'String')) returns contents of O_x as a double</span>
+0769 
+0770 
+0771 
+0772 <a name="_sub32" href="#_subfunctions" class="code">function O_y_Callback(hObject, eventdata, handles)</a>
+0773 <span class="comment">% hObject    handle to O_y (see GCBO)</span>
+0774 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0775 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0776 
+0777 <span class="comment">% Hints: get(hObject,'String') returns contents of O_y as text</span>
+0778 <span class="comment">%        str2double(get(hObject,'String')) returns contents of O_y as a double</span>
+0779 
+0780 
+0781 <a name="_sub33" href="#_subfunctions" class="code">function O_z_Callback(hObject, eventdata, handles)</a>
+0782 <span class="comment">% hObject    handle to O_z (see GCBO)</span>
+0783 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0784 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0785 
+0786 <span class="comment">% Hints: get(hObject,'String') returns contents of O_z as text</span>
+0787 <span class="comment">%        str2double(get(hObject,'String')) returns contents of O_z as a double</span>
+0788 
+0789 
+0790 
+0791 
+0792 
+0793 
+0794 
+0795 <span class="comment">% --- Executes on selection change in edit_append.</span>
+0796 <a name="_sub34" href="#_subfunctions" class="code">function edit_append_Callback(hObject, eventdata, handles)</a>
+0797 val=get(handles.edit_append,<span class="string">'Value'</span>);
+0798 <span class="keyword">if</span> isequal(val,2); <span class="comment">%append mode</span>
+0799     <span class="comment">%appeler mouse</span>
+0800 <span class="keyword">end</span>
+0801 
+0802 
+0803 <a name="_sub35" href="#_subfunctions" class="code">function NEW_Callback(hObject, eventdata, handles)</a>
+0804 <span class="comment">%A METTRE SOUS UN BOUTON</span>
+0805 huvmat=findobj(<span class="string">'name'</span>,<span class="string">'uvmat'</span>);
+0806 hchild=get(huvmat,<span class="string">'children'</span>);
+0807 hcoord=findobj(hchild,<span class="string">'Tag'</span>,<span class="string">'menu_coord'</span>)
+0808 coordtype=get(hcoord,<span class="string">'Value'</span>)
+0809 haxes=findobj(hchild,<span class="string">'Tag'</span>,<span class="string">'axes3'</span>);
+0810 AxeData=get(haxes,<span class="string">'UserData'</span>);
+0811 <span class="keyword">if</span> ~isequal(hcoord,2)
+0812     set(hcoord,<span class="string">'Value'</span>,2)
+0813     huvmat=<a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>(AxeData)
+0814     <span class="string">'relancer uvmat'</span>
+0815 <span class="keyword">end</span>
+0816 <span class="keyword">if</span> ~isfield(AxeData,<span class="string">'ZoomAxes'</span>)
+0817     <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'first draw a window around a grid marker'</span>,<span class="string">'ERRROR'</span>)
+0818     <span class="keyword">return</span>
+0819 <span class="keyword">end</span> 
+0820 XLim=get(AxeData.ZoomAxes,<span class="string">'XLim'</span>);
+0821 YLim=get(AxeData.ZoomAxes,<span class="string">'YLim'</span>);
+0822 np=size(AxeData.A);
+0823 ind_sub_x=round(XLim)
+0824 ind_sub_y=np(1)-round(YLim)
+0825 Mfiltre=AxeData.A([ind_sub_y(2):ind_sub_y(1)] ,ind_sub_x,:);
+0826 Mfiltre_norm=double(Mfiltre);
+0827 Mfiltre_norm=Mfiltre_norm/sum(sum(Mfiltre_norm));
+0828 Mfiltre_norm=100*(Mfiltre_norm-mean(mean(Mfiltre_norm)));
+0829 Atype=class(AxeData.A)
+0830 Data.NbDim=2;
+0831 Data.A=filter2(Mfiltre_norm,double(AxeData.A)); 
+0832 Data.A=feval(Atype,Data.A);
+0833 Data.AName=<span class="string">'image'</span>;
+0834 Data.AX=AxeData.AX;
+0835 Data.AY=AxeData.AY;
+0836 Data.CoordType=<span class="string">'px'</span>;
+0837 <a href="plot_field.html" class="code" title="function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)">plot_field</a>(Data)
+0838  
+0839 
+0840 <span class="comment">% --- Executes on button press in HELP.</span>
+0841 <a name="_sub36" href="#_subfunctions" class="code">function HELP_Callback(hObject, eventdata, handles)</a>
+0842 <span class="comment">% hObject    handle to HELP (see GCBO)</span>
+0843 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0844 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0845 path_to_uvmat=which (<span class="string">'uvmat'</span>);<span class="comment">% check the path of uvmat</span>
+0846 pathelp=fileparts(path_to_uvmat);
+0847 helpfile=fullfile(pathelp,<span class="string">'UVMAT_DOC'</span>,<span class="string">'uvmat_doc.html'</span>);
+0848 <span class="keyword">if</span> isempty(dir(helpfile)), errordlg(<span class="string">'Please put the help file uvmat_doc.html in the directory UVMAT/UVMAT_DOC'</span>)
+0849 <span class="keyword">else</span>
+0850    web([helpfile <span class="string">'#probe_calib'</span>])
+0851 <span class="keyword">end</span>
+0852 
+0853 <span class="comment">%'move_key:' function activated when a key is pressed on the keyboard</span>
+0854 <span class="comment">%-----------------------------------</span>
+0855 <a name="_sub37" href="#_subfunctions" class="code">function key_press_fcn(hObject,eventdata,handles)</a>
+0856 hh=get(hObject,<span class="string">'parent'</span>)
+0857 xx=double(get(hh,<span class="string">'CurrentCharacter'</span>)) <span class="comment">%get the keyboard character</span>
+0858 
+0859 <span class="keyword">if</span> isequal(xx,8)<span class="comment">%move arrow right</span>
+0860    data=<a href="#_sub23" class="code" title="subfunction data=read_probe_calib(handles)">read_probe_calib</a>(handles);
+0861     Coord=[]; <span class="comment">%default</span>
+0862     <span class="keyword">if</span> isfield(data,<span class="string">'Coord'</span>)
+0863         Coord=data.Coord
+0864     <span class="keyword">end</span>
+0865     val=get(handles.ListCoord,<span class="string">'Value'</span>);
+0866     Coord(val,:)=[];
+0867     CoordCell={};
+0868     <span class="keyword">for</span> iline=1:size(Coord,1)
+0869         <span class="keyword">for</span> j=1:5
+0870             CoordCell{iline,j}=num2str(Coord(iline,j));
+0871         <span class="keyword">end</span>
+0872     <span class="keyword">end</span>
+0873     Tabchar=<a href="cell2tab.html" class="code" title="function Tabchar=cell2tab(Tabcell,separator)">cell2tab</a>(CoordCell,<span class="string">'    |    '</span>);<span class="comment">%transform cells into table ready for display</span>
+0874     val=min(size(Coord,1),val);
+0875     set(handles.ListCoord,<span class="string">'Value'</span>,max(val,1))
+0876     set(handles.ListCoord,<span class="string">'String'</span>,Tabchar)  
+0877 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

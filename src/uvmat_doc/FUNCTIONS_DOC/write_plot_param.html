@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of write_plot_param</title>
+  <meta name="keywords" content="write_plot_param">
+  <meta name="description" content="'write_plot_param': update the plotting parameters on the uvmat interface after a plotting operation">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; write_plot_param.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>write_plot_param
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'write_plot_param': update the plotting parameters on the uvmat interface after a plotting operation</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function write_plot_param(handles,PlotParam) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'write_plot_param': update the plotting parameters on the uvmat interface after a plotting operation</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="mouse_up.html" class="code" title="function mouse_up(ggg,eventdata,handles)">mouse_up</a>	'mouse_up': function  activated when the mouse button is released</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function set_scal_display(handles,state)</a></li><li><a href="#_sub2" class="code">function set_vect_display(handles,state)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'write_plot_param': update the plotting parameters on the uvmat interface after a plotting operation</span>
+0002 <a name="_sub0" href="#_subfunctions" class="code">function write_plot_param(handles,PlotParam)</a>
+0003 
+0004 <span class="comment">%scalar or image parameters</span>
+0005 <span class="keyword">if</span> isfield(PlotParam,<span class="string">'Scalar'</span>)
+0006     <a href="#_sub1" class="code" title="subfunction set_scal_display(handles,state)">set_scal_display</a>(handles,<span class="string">'on'</span>)
+0007     <span class="keyword">if</span> isfield(PlotParam.Scalar,<span class="string">'MaxA'</span>)
+0008         set(handles.MaxA,<span class="string">'String'</span>,num2str(PlotParam.Scalar.MaxA,3));
+0009     <span class="keyword">end</span>
+0010     <span class="keyword">if</span> isfield(PlotParam.Scalar,<span class="string">'MinA'</span>)
+0011         set(handles.MinA,<span class="string">'String'</span>,num2str(PlotParam.Scalar.MinA,3));
+0012     <span class="keyword">end</span>
+0013 
+0014     <span class="keyword">if</span> isfield(PlotParam.Scalar,<span class="string">'IncrA'</span>)
+0015         set(handles.IncrA,<span class="string">'String'</span>,num2str(PlotParam.Scalar.IncrA,3))
+0016     <span class="keyword">end</span>
+0017 <span class="keyword">else</span>
+0018     <a href="#_sub1" class="code" title="subfunction set_scal_display(handles,state)">set_scal_display</a>(handles,<span class="string">'off'</span>)
+0019 <span class="keyword">end</span>
+0020 
+0021 <span class="comment">% parameter for vector field</span>
+0022 <span class="keyword">if</span> isfield(PlotParam,<span class="string">'Vectors'</span>)
+0023     <a href="#_sub2" class="code" title="subfunction set_vect_display(handles,state)">set_vect_display</a>(handles,<span class="string">'on'</span>)
+0024     <span class="keyword">if</span> isfield(PlotParam.Vectors,<span class="string">'VecScale'</span>)
+0025         set(handles.VecScale,<span class="string">'String'</span>,num2str(PlotParam.Vectors.VecScale,3))
+0026     <span class="keyword">end</span>
+0027     <span class="keyword">if</span> isfield(PlotParam.Vectors,<span class="string">'MinC'</span>)&amp;&amp; isfield(PlotParam.Vectors,<span class="string">'MaxC'</span>)
+0028         MinC=PlotParam.Vectors.MinC;
+0029         MaxC=PlotParam.Vectors.MaxC;
+0030         set(handles.min_vec,<span class="string">'String'</span>, num2str(MinC,3));
+0031         set(handles.max_vec,<span class="string">'String'</span>,num2str(MaxC,3));
+0032         list=get(handles.color_code,<span class="string">'String'</span>);
+0033         ichoice=get(handles.color_code,<span class="string">'Value'</span>);
+0034         color_option=list{ichoice};
+0035         test3color=strcmp(color_option,<span class="string">'rgb'</span>)||strcmp(color_option,<span class="string">'bgr'</span>);
+0036         <span class="keyword">if</span> test3color<span class="comment">% need to update color thresholds</span>
+0037             set(handles.colcode1,<span class="string">'Visible'</span>,<span class="string">'on'</span>)
+0038             set(handles.colcode2,<span class="string">'Visible'</span>,<span class="string">'on'</span>)
+0039             set(handles.slider1,<span class="string">'Visible'</span>,<span class="string">'on'</span>)
+0040             set(handles.slider2,<span class="string">'Visible'</span>,<span class="string">'on'</span>)
+0041 <span class="comment">%             slider1=get(handles.slider1,'Value');</span>
+0042 <span class="comment">%             slider2=get(handles.slider2,'Value');</span>
+0043              colcode1=MinC+(MaxC-MinC)*PlotParam.Vectors.colcode1;
+0044              colcode2=MinC+(MaxC-MinC)*PlotParam.Vectors.colcode2;
+0045             set(handles.colcode1,<span class="string">'String'</span>,num2str(colcode1,3))
+0046             set(handles.colcode2,<span class="string">'String'</span>,num2str(colcode2,3))
+0047             set(handles.slider1,<span class="string">'Value'</span>,PlotParam.Vectors.colcode1)
+0048             set(handles.slider2,<span class="string">'Value'</span>,PlotParam.Vectors.colcode2)
+0049         <span class="keyword">else</span>
+0050             set(handles.colcode1,<span class="string">'Visible'</span>,<span class="string">'off'</span>)
+0051             set(handles.colcode2,<span class="string">'Visible'</span>,<span class="string">'off'</span>)
+0052             set(handles.slider1,<span class="string">'Visible'</span>,<span class="string">'off'</span>)
+0053             set(handles.slider2,<span class="string">'Visible'</span>,<span class="string">'off'</span>)
+0054         <span class="keyword">end</span>
+0055     <span class="keyword">end</span>
+0056 <span class="keyword">else</span>
+0057     <a href="#_sub2" class="code" title="subfunction set_vect_display(handles,state)">set_vect_display</a>(handles,<span class="string">'off'</span>)
+0058     set(handles.edit_vect,<span class="string">'Visible'</span>,<span class="string">'off'</span>)
+0059 <span class="keyword">end</span>
+0060 
+0061 <span class="comment">%------------------------------------------------------------------</span>
+0062 <span class="comment">%prepare interface for scalar display: state ='on' or 'off'</span>
+0063 <a name="_sub1" href="#_subfunctions" class="code">function set_scal_display(handles,state)</a>
+0064 <span class="comment">%------------------------------------------------------------------</span>
+0065 set(handles.SCALAR_title,<span class="string">'Visible'</span>,state)
+0066 set(handles.MaxA,<span class="string">'Visible'</span>,state)
+0067 set(handles.MinA,<span class="string">'Visible'</span>,state)
+0068 <span class="comment">%set(handles.IncrA,'Visible',state)</span>
+0069 set(handles.AutoScal,<span class="string">'Visible'</span>,state)
+0070 set(handles.BW,<span class="string">'Visible'</span>,state)
+0071 set(handles.Contours,<span class="string">'Visible'</span>,state)
+0072 set(handles.SCALAR_title,<span class="string">'Visible'</span>,state)
+0073 set(handles.min_title,<span class="string">'Visible'</span>,state)
+0074 set(handles.max_title,<span class="string">'Visible'</span>,state)
+0075 set(handles.frame_scal,<span class="string">'Visible'</span>,state)
+0076 set(handles.npx,<span class="string">'Visible'</span>,state)
+0077 set(handles.npy,<span class="string">'Visible'</span>,state)
+0078 set(handles.npx_title,<span class="string">'Visible'</span>,state)
+0079 set(handles.npy_title,<span class="string">'Visible'</span>,state)
+0080 <span class="comment">%set(handles.makemask,'Visible',state)</span>
+0081 
+0082 <span class="comment">%---------------------------------------------</span>
+0083 <span class="comment">%prepare interface for vector display: state ='on' or 'off'</span>
+0084 <a name="_sub2" href="#_subfunctions" class="code">function set_vect_display(handles,state)</a>
+0085 <span class="comment">%------------------------------------------------------------------</span>
+0086 set(handles.frame_vect,<span class="string">'Visible'</span>,state)
+0087 set(handles.VECT_title,<span class="string">'Visible'</span>,state)
+0088 set(handles.VecScale,<span class="string">'Visible'</span>,state)
+0089 set(handles.AutoVec,<span class="string">'Visible'</span>,state)
+0090 set(handles.HideFalse,<span class="string">'Visible'</span>,state)
+0091 set(handles.HideWarning,<span class="string">'Visible'</span>,state)
+0092 set(handles.record,<span class="string">'Visible'</span>,state)
+0093 set(handles.colcode1,<span class="string">'Visible'</span>,state)
+0094 set(handles.colcode2,<span class="string">'Visible'</span>,state)
+0095 set(handles.min_vec,<span class="string">'Visible'</span>,state)
+0096 set(handles.max_vec,<span class="string">'Visible'</span>,state)
+0097 set(handles.scale_title,<span class="string">'Visible'</span>,state)
+0098 set(handles.slider1,<span class="string">'Visible'</span>,state)
+0099 set(handles.slider2,<span class="string">'Visible'</span>,state)
+0100 set(handles.col_vec,<span class="string">'Visible'</span>,state)
+0101 set(handles.Color_title,<span class="string">'Visible'</span>,state)
+0102 set(handles.color_code,<span class="string">'Visible'</span>,state)
+0103 set(handles.vec_col_bar,<span class="string">'Visible'</span>,state)
+0104 set(handles.record,<span class="string">'Visible'</span>,state)
+0105 set(handles.AutoVecColor,<span class="string">'Visible'</span>,state)
+0106 set(handles.decimate4,<span class="string">'Visible'</span>,state)
+0107 set(handles.min_C_title,<span class="string">'Visible'</span>,state)
+0108 set(handles.max_C_title,<span class="string">'Visible'</span>,state)
+0109 set(handles.MenuEditVectors,<span class="string">'Enable'</span>,state)</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of read_image</title>
+  <meta name="keywords" content="read_image">
+  <meta name="description" content="'read_image': reads an image from a single file or a movie file">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; read_image.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>read_image
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'read_image': reads an image from a single file or a movie file</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [A,error]=read_image(filename,NomType,num); </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'read_image': reads an image from a single file or a movie file
+read  images in different formats.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="civ.html" class="code" title="function varargout = civ(varargin)">civ</a>	'civ': function associated with the interface 'civ.fig' for PIV, spline interpolation and stereo PIV (patch)</li><li><a href="civ_3D.html" class="code" title="function varargout = civ_3D(varargin)">civ_3D</a>	'civ_3D': function associated with the interface 'civ_3D.fig' for PIV in volume</li><li><a href="series.html" class="code" title="function varargout = series(varargin)">series</a>	'series': master function associated to the GUI series.m for analysis field series</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'read_image': reads an image from a single file or a movie file</span>
+0002 <a name="_sub0" href="#_subfunctions" class="code">function [A,error]=read_image(filename,NomType,num);</a>
+0003  <span class="comment">%read  images in different formats.</span>
+0004 A=[]; <span class="comment">%default</span>
+0005 error=0; <span class="comment">%default</span>
+0006 <span class="keyword">if</span> ~exist(filename,<span class="string">'file'</span>)
+0007     error=<span class="string">'input file not found in read_image'</span>
+0008     <span class="keyword">return</span>
+0009 <span class="keyword">end</span>
+0010 testframe=0;
+0011 <span class="keyword">if</span> ~exist(<span class="string">'NomType'</span>,<span class="string">'var'</span>)
+0012     NomType=[];
+0013 <span class="keyword">end</span>
+0014 <span class="keyword">if</span> ~exist(<span class="string">'num'</span>,<span class="string">'var'</span>)
+0015     num=1;
+0016 <span class="keyword">end</span>
+0017 [pth,fl,ext]=fileparts(filename);
+0018 <span class="keyword">if</span> isequal(lower(ext),<span class="string">'.avi'</span>)
+0019     mov=aviread(filename,num);
+0020     A=frame2im(mov(1));
+0021 <span class="keyword">elseif</span> isequal(lower(ext),<span class="string">'.vol'</span>)
+0022      A=imread(filename);
+0023 <span class="keyword">else</span>
+0024      form=imformats(ext([2:end]));
+0025      <span class="keyword">if</span> ~isempty(form)<span class="comment">% if the extension corresponds to an image format recognized by Matlab</span>
+0026          <span class="keyword">if</span> isequal(NomType,<span class="string">'*'</span>);
+0027             A=imread(filename,num);
+0028          <span class="keyword">else</span> 
+0029            A=imread(filename);  
+0030          <span class="keyword">end</span>
+0031      <span class="keyword">else</span>
+0032          error=[<span class="string">'ERROR in read_image: file extension not recognized by matlab as image'</span>];
+0033          <span class="keyword">return</span>
+0034      <span class="keyword">end</span>
+0035 <span class="keyword">end</span>
+0036</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

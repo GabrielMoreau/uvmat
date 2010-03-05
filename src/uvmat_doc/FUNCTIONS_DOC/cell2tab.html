@@ -1,0 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of cell2tab</title>
+  <meta name="keywords" content="cell2tab">
+  <meta name="description" content="'cell2tab': transform a Matlab cell in a character array suitable for display in a table">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; cell2tab.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>cell2tab
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'cell2tab': transform a Matlab cell in a character array suitable for display in a table</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function Tabchar=cell2tab(Tabcell,separator) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'cell2tab': transform a Matlab cell in a character array suitable for display in a table
+ INPUT:
+ Tabcell: (nx,ny) cell table, for nx lines
+ separator: character used for separating displayed columns</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="editxml.html" class="code" title="function varargout = editxml(varargin)">editxml</a>	'editxml': function for editing xml files using a xml schema (associated with the GUI editxml.fig)</li><li><a href="geometry_calib.html" class="code" title="function varargout = geometry_calib(varargin)">geometry_calib</a>	'geometry_calib': performs geometric calibration from a set of reference points</li><li><a href="get_field.html" class="code" title="function varargout = get_field(varargin)">get_field</a>	'get_field': display variables and attributes from a Netcdf file, and plot selected fields</li><li><a href="plot_text.html" class="code" title="function hdisplay=plot_text(FieldData,hdisplay_in)">plot_text</a>	'plot_text': function for displaying the content of a Matlab structure in a figure</li><li><a href="probe_calib.html" class="code" title="function varargout = probe_calib(varargin)">probe_calib</a>	'probe_calib': performs geometric calibration from a set of reference points</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'cell2tab': transform a Matlab cell in a character array suitable for display in a table</span>
+0002 <span class="comment">% INPUT:</span>
+0003 <span class="comment">% Tabcell: (nx,ny) cell table, for nx lines</span>
+0004 <span class="comment">% separator: character used for separating displayed columns</span>
+0005 <a name="_sub0" href="#_subfunctions" class="code">function Tabchar=cell2tab(Tabcell,separator) </a>
+0006 Tabchar={};<span class="comment">%default</span>
+0007 [nx,ny]=size(Tabcell);
+0008 <span class="comment">%determine width withcolumn(jtab) of each column</span>
+0009 <span class="keyword">for</span> jtab=1:ny 
+0010     widthcolumn(jtab)=0;<span class="comment">%default</span>
+0011     <span class="keyword">for</span> itab=1:nx<span class="comment">% read line</span>
+0012         <span class="keyword">if</span> widthcolumn(jtab)&lt;length(Tabcell{itab,jtab})
+0013             widthcolumn(jtab)=length(Tabcell{itab,jtab});
+0014         <span class="keyword">end</span>
+0015     <span class="keyword">end</span>
+0016 <span class="keyword">end</span>
+0017 <span class="comment">%justify table</span>
+0018 <span class="keyword">for</span> itab=1:nx    
+0019     charchain=[];         
+0020     <span class="keyword">for</span> jtab=1:ny<span class="comment">% read line</span>
+0021         textlu=Tabcell{itab,jtab};
+0022         <span class="keyword">if</span> widthcolumn(jtab)&gt;length(textlu)
+0023             blankstr=char(32*ones(1,widthcolumn(jtab)-length(textlu)));
+0024             textlu=[textlu blankstr];
+0025         <span class="keyword">end</span>
+0026         <span class="keyword">if</span> ~isempty(charchain)
+0027             textlu=[separator textlu];
+0028         <span class="keyword">end</span>
+0029         charchain=[charchain textlu];
+0030     <span class="keyword">end</span>
+0031     <span class="comment">%Tabchar(itab)={charchain};</span>
+0032     Tabchar(itab,1)={charchain};
+0033 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

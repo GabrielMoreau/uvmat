@@ -1,0 +1,1865 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of proj_field</title>
+  <meta name="keywords" content="proj_field">
+  <meta name="description" content="'proj_field': projects the field on a projection object">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; proj_field.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>proj_field
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'proj_field': projects the field on a projection object</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [ProjData,errormsg]=proj_field(FieldData,ObjectData,IndexObj) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'proj_field': projects the field on a projection object
+--------------------------------------------------------------------------
+  function [ProjData,errormsg]=proj_field(FieldData,ObjectData,IndexObj)
+
+ OUTPUT:
+ ProjData structure containing the fields of the input field FieldData,
+ transmitted or projected on the object, plus the additional fields
+    .UMax, .UMin, .VMax, .VMin: min and max of velocity components in a domain
+    .UMean,VMean: mean of the velocity components in a domain
+    .AMin, AMax: min and max of a scalar
+    .AMean: mean of a scalar in a domain  
+  .NbPix;
+  .DimName=  names of the matrix dimensions (matlab cell)
+  .DimValue= values of the matricx dimensions (matlab vector, same length as .DimName);
+  .VarName= names of the variables [ProjData.VarName {'A','AMean','AMin','AMax'}];
+  .VarDimNameIndex= dimensions of the variables, indicated by indices in the list .DimName;
+
+INPUT
+ ObjectData: structure characterizing the projection object
+    .Style : style of projection object
+    .ProjMode=type of projection ;
+    .CoordType: 'px' or 'phys' type of coordinates defining the object position
+    .Phi  angle of rotation (=0 by default)
+    .ProjAngle=angle of projection;
+    .DX,.DY,.DZ=increments along each coordinate
+    .Coord(nbpoints,3): set of coordinates defining the object position;</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="find_field_indices.html" class="code" title="function [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data)">find_field_indices</a>	'find_file_indices': group the variables of a nc-formated Matlab structure into 'fields' with common dimensions</li><li><a href="griddata_uvmat.html" class="code" title="function ZI = griddata_uvmat(X,Y,Z,XI,YI)">griddata_uvmat</a>	'griddata_uvmat': function griddata_uvmat(vec2_X,vec2_Y,vec2_U,vec_X,vec_Y,'linear')</li><li><a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>	'warndlg_uvmat': display warning message (error, warning, confirmation) in a given figure</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="series.html" class="code" title="function varargout = series(varargin)">series</a>	'series': master function associated to the GUI series.m for analysis field series</li><li><a href="update_obj.html" class="code" title="function Object_out=update_obj(UvData,IndexObj,ObjectData,PlotHandles)">update_obj</a>	'update_obj': update the object graph representation and its projection field, record it in the uvmat interface</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function  [ProjData,errormsg]=proj_points(FieldData,ObjectData)</a></li><li><a href="#_sub2" class="code">function  [ProjData,errormsg]=proj_patch(FieldData,ObjectData)</a></li><li><a href="#_sub3" class="code">function  [ProjData,errormsg] = proj_line(FieldData, ObjectData)</a></li><li><a href="#_sub4" class="code">function  [ProjData,errormsg] = proj_plane(FieldData, ObjectData)</a></li><li><a href="#_sub5" class="code">function [ProjData,errormsg]=proj_heading(FieldData,ObjectData)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'proj_field': projects the field on a projection object</span>
+0002 <span class="comment">%--------------------------------------------------------------------------</span>
+0003 <span class="comment">%  function [ProjData,errormsg]=proj_field(FieldData,ObjectData,IndexObj)</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% OUTPUT:</span>
+0006 <span class="comment">% ProjData structure containing the fields of the input field FieldData,</span>
+0007 <span class="comment">% transmitted or projected on the object, plus the additional fields</span>
+0008 <span class="comment">%    .UMax, .UMin, .VMax, .VMin: min and max of velocity components in a domain</span>
+0009 <span class="comment">%    .UMean,VMean: mean of the velocity components in a domain</span>
+0010 <span class="comment">%    .AMin, AMax: min and max of a scalar</span>
+0011 <span class="comment">%    .AMean: mean of a scalar in a domain</span>
+0012 <span class="comment">%  .NbPix;</span>
+0013 <span class="comment">%  .DimName=  names of the matrix dimensions (matlab cell)</span>
+0014 <span class="comment">%  .DimValue= values of the matricx dimensions (matlab vector, same length as .DimName);</span>
+0015 <span class="comment">%  .VarName= names of the variables [ProjData.VarName {'A','AMean','AMin','AMax'}];</span>
+0016 <span class="comment">%  .VarDimNameIndex= dimensions of the variables, indicated by indices in the list .DimName;</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">%INPUT</span>
+0019 <span class="comment">% ObjectData: structure characterizing the projection object</span>
+0020 <span class="comment">%    .Style : style of projection object</span>
+0021 <span class="comment">%    .ProjMode=type of projection ;</span>
+0022 <span class="comment">%    .CoordType: 'px' or 'phys' type of coordinates defining the object position</span>
+0023 <span class="comment">%    .Phi  angle of rotation (=0 by default)</span>
+0024 <span class="comment">%    .ProjAngle=angle of projection;</span>
+0025 <span class="comment">%    .DX,.DY,.DZ=increments along each coordinate</span>
+0026 <span class="comment">%    .Coord(nbpoints,3): set of coordinates defining the object position;</span>
+0027 
+0028 <span class="comment">%FieldData: data of the field to be projected on the projection object, with optional fields</span>
+0029 <span class="comment">%    .Txt: error message, transmitted to the projection</span>
+0030 <span class="comment">%    .CoordType: 'px' or 'phys' type of coordinates of the field, must be the same as for the projection object, transmitted</span>
+0031 <span class="comment">%    .Mesh: typical distance between data points (used for mouse action or display), transmitted</span>
+0032 <span class="comment">%    .CoordUnit, .TimeUnit, .dt: transmitted</span>
+0033 <span class="comment">% standardised description of fields, nc-formated Matlab structure with fields:</span>
+0034 <span class="comment">%         .ListGlobalAttribute: cell listing the names of the global attributes</span>
+0035 <span class="comment">%        .Att_1,Att_2... : values of the global attributes</span>
+0036 <span class="comment">%            .ListDimName: cell listing the names of the array dimensions</span>
+0037 <span class="comment">%               .DimValue: array dimension values (Matlab vector with the same length as .ListDimName</span>
+0038 <span class="comment">%            .ListVarName: cell listing the names of the variables</span>
+0039 <span class="comment">%            .VarDimIndex: cell containing the set of dimension indices (in list .ListDimName) for each variable of .ListVarName</span>
+0040 <span class="comment">%           .VarAttribute: cell of structures s containing names and values of variable attributes (s.name=value) for each variable of .ListVarName</span>
+0041 <span class="comment">%        .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName</span>
+0042 <span class="comment">% The variables are grouped in 'fields', made of a set of variables with common dimensions (using the function find_field_indices)</span>
+0043 <span class="comment">% The variable attribute 'Role' is used to define the role for plotting:</span>
+0044 <span class="comment">%       Role = 'scalar':  (default) represents a scalar field</span>
+0045 <span class="comment">%            = 'coord':  represents a set of unstructured coordinates, whose</span>
+0046 <span class="comment">%                     space dimension is given by the last array dimension (called 'nb_dim').</span>
+0047 <span class="comment">%            = 'coord_x', 'coord_y',  'coord_z': represents a separate set of</span>
+0048 <span class="comment">%                        unstructured coordinate x, y  or z</span>
+0049 <span class="comment">%            = 'vector': represents a vector field whose number of components</span>
+0050 <span class="comment">%                is given by the last dimension (called 'nb_dim')</span>
+0051 <span class="comment">%            = 'vector_x', 'vector_y', 'vector_z'  :represents the x, y or z  component of a vector</span>
+0052 <span class="comment">%            = 'warnflag' : provides a warning flag about the quality of data in a 'Field', default=0, no warning</span>
+0053 <span class="comment">%            = 'errorflag': provides an error flag marking false data,</span>
+0054 <span class="comment">%                   default=0, no error. Different non zero values can represent different criteria of elimination.</span>
+0055 <span class="comment">%</span>
+0056 <span class="comment">% Default role of variables (by name)</span>
+0057 <span class="comment">%  vector field:</span>
+0058 <span class="comment">%    .X,.Y: position of the velocity vectors, projected on the object</span>
+0059 <span class="comment">%    .U, .V, .W: velocity components, projected on the object</span>
+0060 <span class="comment">%    .C, .CName: scalar associated to the vector</span>
+0061 <span class="comment">%    .F : equivalent to 'warnflag'</span>
+0062 <span class="comment">%    .FF: equivalent to 'errorflag'</span>
+0063 <span class="comment">%  scalar field or image:</span>
+0064 <span class="comment">%    .AName: name of a scalar (to be calculated from velocity fields after projection), transmitted</span>
+0065 <span class="comment">%    .A: scalar, projected on the object</span>
+0066 <span class="comment">%    .AX, .AY: positions for the scalar</span>
+0067 <span class="comment">%     case of a structured grid: A is a dim 2 matrix and .AX=[first last] (length 2 vector) represents the first and last abscissa of the grid</span>
+0068 <span class="comment">%     case of an unstructured scalar: A is a vector, AX and AY the corresponding coordinates</span>
+0069 <span class="comment">%</span>
+0070 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0071 <span class="comment">%  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.</span>
+0072 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0073 <span class="comment">%     This file is part of the toolbox UVMAT.</span>
+0074 <span class="comment">%</span>
+0075 <span class="comment">%     UVMAT is free software; you can redistribute it and/or modify</span>
+0076 <span class="comment">%     it under the terms of the GNU General Public License as published by</span>
+0077 <span class="comment">%     the Free Software Foundation; either version 2 of the License, or</span>
+0078 <span class="comment">%     (at your option) any later version.</span>
+0079 <span class="comment">%</span>
+0080 <span class="comment">%     UVMAT is distributed in the hope that it will be useful,</span>
+0081 <span class="comment">%     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+0082 <span class="comment">%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+0083 <span class="comment">%     GNU General Public License (file UVMAT/COPYING.txt) for more details.</span>
+0084 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0085 
+0086 <a name="_sub0" href="#_subfunctions" class="code">function [ProjData,errormsg]=proj_field(FieldData,ObjectData,IndexObj)</a>
+0087 
+0088 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'ProjMode'</span>) &amp;&amp; (isequal(ObjectData.ProjMode,<span class="string">'none'</span>)||isequal(ObjectData.ProjMode,<span class="string">'mask_inside'</span>)||isequal(ObjectData.ProjMode,<span class="string">'mask_outside'</span>))
+0089     ProjData=[];
+0090     <span class="keyword">return</span>
+0091 <span class="keyword">end</span>
+0092 <span class="comment">%introduce default field properties (reading old standards)</span>
+0093 <span class="keyword">if</span> ~isfield(ObjectData,<span class="string">'Style'</span>)||~isfield(ObjectData,<span class="string">'Coord'</span>)||~isfield(ObjectData,<span class="string">'ProjMode'</span>)
+0094     ProjData=FieldData;
+0095     <span class="keyword">return</span>
+0096 <span class="keyword">end</span>
+0097 
+0098 <span class="comment">% OBSOLETE</span>
+0099 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'XMax'</span>) &amp;&amp; ~isempty(ObjectData.XMax)
+0100     ObjectData.RangeX(1)=ObjectData.XMax;
+0101 <span class="keyword">end</span>
+0102 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'XMin'</span>) &amp;&amp; ~isempty(ObjectData.XMin)
+0103     ObjectData.RangeX(2)=ObjectData.XMin;
+0104 <span class="keyword">end</span>
+0105 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'YMax'</span>) &amp;&amp; ~isempty(ObjectData.YMax)
+0106     ObjectData.RangeY(1)=ObjectData.YMax;
+0107 <span class="keyword">end</span>
+0108 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'YMin'</span>) &amp;&amp; ~isempty(ObjectData.YMin)
+0109     ObjectData.RangeY(2)=ObjectData.YMin;
+0110 <span class="keyword">end</span>
+0111 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'ZMax'</span>) &amp;&amp; ~isempty(ObjectData.ZMax)
+0112     ObjectData.RangeZ(1)=ObjectData.ZMax;
+0113 <span class="keyword">end</span>
+0114 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'ZMin'</span>) &amp;&amp; ~isempty(ObjectData.ZMin)
+0115     ObjectData.RangeZ(2)=ObjectData.ZMin;
+0116 <span class="keyword">end</span>
+0117 <span class="comment">%%%%%%%%%%</span>
+0118 
+0119 <span class="comment">% FieldData=document_field(FieldData);%transform FieldData to the standard format</span>
+0120 <span class="comment">% if ~isfield(FieldData,'VarAttribute')</span>
+0121 <span class="comment">%     FieldData.VarAttribute={};</span>
+0122 <span class="comment">% end</span>
+0123 
+0124 <span class="keyword">if</span> isequal(ObjectData.Style,<span class="string">'points'</span>)
+0125     [ProjData,errormsg]=<a href="#_sub1" class="code" title="subfunction  [ProjData,errormsg]=proj_points(FieldData,ObjectData)">proj_points</a>(FieldData,ObjectData);
+0126 <span class="keyword">elseif</span> isequal(ObjectData.Style,<span class="string">'line'</span>)|isequal(ObjectData.Style,<span class="string">'polyline'</span>)
+0127      [ProjData,errormsg] = <a href="#_sub3" class="code" title="subfunction  [ProjData,errormsg] = proj_line(FieldData, ObjectData)">proj_line</a>(FieldData,ObjectData);
+0128 <span class="keyword">elseif</span> isequal(ObjectData.Style,<span class="string">'polygon'</span>)|isequal(ObjectData.Style,<span class="string">'rectangle'</span>)|isequal(ObjectData.Style,<span class="string">'ellipse'</span>)
+0129     <span class="keyword">if</span> isequal(ObjectData.ProjMode,<span class="string">'inside'</span>)|isequal(ObjectData.ProjMode,<span class="string">'outside'</span>)
+0130         [ProjData,errormsg] = <a href="#_sub2" class="code" title="subfunction  [ProjData,errormsg]=proj_patch(FieldData,ObjectData)">proj_patch</a>(FieldData,ObjectData);
+0131     <span class="keyword">else</span>
+0132         [ProjData,errormsg] = <a href="#_sub3" class="code" title="subfunction  [ProjData,errormsg] = proj_line(FieldData, ObjectData)">proj_line</a>(FieldData,ObjectData);
+0133     <span class="keyword">end</span>
+0134      <span class="comment">%A FAIRE : GERER MASK</span>
+0135 <span class="keyword">elseif</span> isequal(ObjectData.Style,<span class="string">'plane'</span>)
+0136 <span class="comment">%         if isfield(FieldData,'NbDim') &amp; isequal(FieldData.NbDim,3)</span>
+0137 <span class="comment">%             ProjData= proj_plane3D(FieldData,ObjectData);%</span>
+0138 <span class="comment">%         else</span>
+0139             [ProjData,errormsg] = <a href="#_sub4" class="code" title="subfunction  [ProjData,errormsg] = proj_plane(FieldData, ObjectData)">proj_plane</a>(FieldData,ObjectData);
+0140 <span class="comment">%         end</span>
+0141 <span class="keyword">end</span>
+0142 <span class="keyword">if</span> exist(<span class="string">'IndexObj'</span>,<span class="string">'var'</span>)
+0143     ProjData.IndexObj=IndexObj;<span class="comment">%transfer object index</span>
+0144 <span class="keyword">end</span>
+0145 
+0146 <span class="comment">%-----------------------------------------------------------------</span>
+0147 <span class="comment">%project on a set of points</span>
+0148 <a name="_sub1" href="#_subfunctions" class="code">function  [ProjData,errormsg]=proj_points(FieldData,ObjectData)</a><span class="comment">%%</span>
+0149 <span class="comment">%-------------------------------------------------------------------</span>
+0150 
+0151 siz=size(ObjectData.Coord);
+0152 width=0;
+0153 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'Range'</span>)
+0154     width=ObjectData.Range(1,2);
+0155 <span class="keyword">end</span>
+0156 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'RangeX'</span>)&amp;~isempty(ObjectData.RangeX)
+0157     width=max(ObjectData.RangeX);
+0158 <span class="keyword">end</span>
+0159 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'RangeY'</span>)&amp;~isempty(ObjectData.RangeY)
+0160     width=max(width,max(ObjectData.RangeY));
+0161 <span class="keyword">end</span>
+0162 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'RangeZ'</span>)&amp;~isempty(ObjectData.RangeZ)
+0163     width=max(width,max(ObjectData.RangeZ));
+0164 <span class="keyword">end</span>
+0165 <span class="keyword">if</span> isequal(ObjectData.ProjMode,<span class="string">'projection'</span>) 
+0166     <span class="keyword">if</span> width==0
+0167         errormsg=<span class="string">'projection range around points needed'</span>;
+0168         <span class="keyword">return</span>
+0169     <span class="keyword">end</span>
+0170 <span class="keyword">elseif</span>  ~isequal(ObjectData.ProjMode,<span class="string">'interp'</span>)
+0171     errormsg=([<span class="string">'ProjMode option '</span> ObjectData.ProjMode <span class="string">' not available in proj_field'</span>]);
+0172         <span class="keyword">return</span>
+0173 <span class="keyword">end</span>
+0174 ProjData=<a href="#_sub5" class="code" title="subfunction [ProjData,errormsg]=proj_heading(FieldData,ObjectData)">proj_heading</a>(FieldData,ObjectData);
+0175 ProjData.NbDim=0;
+0176 ProjData.ListDimName= {<span class="string">'nb_points'</span>};
+0177 ProjData.DimValue=siz(1);  <span class="comment">%nbre of projection points</span>
+0178 
+0179 
+0180 <span class="comment">% idimvar=0;</span>
+0181 [CellVarIndex,NbDim,VarTypeCell,errormsg]=<a href="find_field_indices.html" class="code" title="function [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data)">find_field_indices</a>(FieldData);
+0182 <span class="keyword">if</span> ~isempty(errormsg)
+0183     errormsg=[<span class="string">'error in proj_field/proj_points:'</span> errormsg];
+0184     <span class="keyword">return</span>
+0185 <span class="keyword">end</span>
+0186 <span class="comment">%LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS</span>
+0187 <span class="comment">% CellVarIndex=cells of variable index arrays</span>
+0188 <span class="comment">% ivar_new=0; % index of the current variable in the projected field</span>
+0189 <span class="comment">% icoord=0;</span>
+0190 <span class="keyword">for</span> icell=1:length(CellVarIndex)
+0191     <span class="keyword">if</span> NbDim(icell)==1
+0192         <span class="keyword">continue</span>
+0193     <span class="keyword">end</span>
+0194     VarIndex=CellVarIndex{icell};<span class="comment">%  indices of the selected variables in the list FieldData.ListVarName</span>
+0195     VarType=VarTypeCell{icell};
+0196     ivar_X=VarType.coord_x;
+0197     ivar_Y=VarType.coord_y;
+0198     ivar_Z=VarType.coord_z;
+0199 <span class="comment">%     ivar_U=VarType.vector_x;</span>
+0200 <span class="comment">%     ivar_V=VarType.vector_y;</span>
+0201 <span class="comment">%     ivar_W=VarType.vector_z;</span>
+0202 <span class="comment">%     ivar_C=VarType.scalar ;</span>
+0203     ivar_Anc=VarType.ancillary;
+0204 <span class="comment">%     test_anc=zeros(size(VarIndex));</span>
+0205     test_anc(ivar_Anc)=ones(size(ivar_Anc));
+0206     ivar_F=VarType.warnflag;
+0207     ivar_FF=VarType.errorflag;
+0208     VarIndex([ivar_X ivar_Y ivar_Z ivar_Anc ivar_F ivar_FF])=[];<span class="comment">% not projected variables removed frlom list</span>
+0209     <span class="keyword">if</span> isempty(ivar_X)
+0210         test_grid=1;<span class="comment">%test for input data on regular grid (e.g. image)coordinates</span>
+0211       
+0212     <span class="keyword">else</span>
+0213         <span class="keyword">if</span> length(ivar_X)&gt;1 | length(ivar_Y)&gt;1 | length(ivar_Z)&gt;1
+0214                  <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'multiple coordinate input in proj_field.m'</span>,<span class="string">'ERROR'</span>)
+0215                     <span class="keyword">return</span>
+0216         <span class="keyword">end</span>
+0217         <span class="keyword">if</span> length(ivar_Y)~=1
+0218                 <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'y coordinate not defined in proj_field.m'</span>,<span class="string">'ERROR'</span>)
+0219                 <span class="keyword">return</span>
+0220         <span class="keyword">end</span>
+0221         test_grid=0;
+0222     <span class="keyword">end</span>
+0223     ProjData.ListVarName={<span class="string">'Y'</span>,<span class="string">'X'</span>,<span class="string">'NbVal'</span>};
+0224     ProjData.VarDimIndex={[1],[1],[1]}; 
+0225     ProjData.VarAttribute{1}.Role=<span class="string">'ancillary'</span>;
+0226     ProjData.VarAttribute{2}.Role=<span class="string">'ancillary'</span>;
+0227     ProjData.VarAttribute{3}.Role=<span class="string">'ancillary'</span>;
+0228     <span class="keyword">for</span> ivar=VarIndex        
+0229         VarName=FieldData.ListVarName{ivar};
+0230         ProjData.ListVarName=[ProjData.ListVarName {VarName}];
+0231         ProjData.VarDimIndex=[ProjData.VarDimIndex {[1]}];
+0232     <span class="keyword">end</span>
+0233     <span class="keyword">if</span> ~test_grid
+0234         eval([<span class="string">'coord_x=FieldData.'</span> FieldData.ListVarName{ivar_X} <span class="string">';'</span>])
+0235         eval([<span class="string">'coord_y=FieldData.'</span> FieldData.ListVarName{ivar_Y} <span class="string">';'</span>])
+0236         test3D=0;<span class="comment">% TEST 3D CASE : NOT COMPLETED ,  3D CASE : NOT COMPLETED</span>
+0237         <span class="keyword">if</span> length(ivar_Z)==1
+0238             eval([<span class="string">'coord_z=FieldData.'</span> FieldData.ListVarName{ivar_Z} <span class="string">';'</span>])
+0239             test3D=1;
+0240         <span class="keyword">end</span>
+0241 <span class="comment">%         if length(ivar_U)&gt;1 | length(ivar_V)&gt;1 | length(ivar_W)&gt;1</span>
+0242 <span class="comment">%                  warndlg_uvmat('multiple vector input in proj_field.m','ERROR')</span>
+0243 <span class="comment">%                     return</span>
+0244 <span class="comment">%         end</span>
+0245         <span class="keyword">if</span> length(ivar_F)&gt;1 | length(ivar_FF)&gt;1 
+0246                  <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'multiple flag input in proj_field.m'</span>,<span class="string">'ERROR'</span>)
+0247                     <span class="keyword">return</span>
+0248         <span class="keyword">end</span>
+0249        
+0250         <span class="keyword">for</span> ipoint=1:siz(1)
+0251            Xpoint=ObjectData.Coord(ipoint,:);
+0252            distX=coord_x-Xpoint(1);
+0253            distY=coord_y-Xpoint(2);          
+0254            dist=distX.*distX+distY.*distY;
+0255            indsel=find(dist&lt;width*width);
+0256            ProjData.X(ipoint,1)=Xpoint(1);
+0257            ProjData.Y(ipoint,1)=Xpoint(2);
+0258            <span class="keyword">if</span> isequal(length(ivar_FF),1)
+0259                FFName=FieldData.ListVarName{ivar_FF};
+0260                eval([<span class="string">'FF=FieldData.'</span> FFName <span class="string">'(indsel);'</span>])
+0261                ind_indsel=find(~FF);
+0262                indsel=indsel(ind_indsel);
+0263            <span class="keyword">end</span>
+0264            ProjData.NbVal(ipoint,1)=length(indsel);
+0265             <span class="keyword">for</span> ivar=VarIndex 
+0266                VarName=FieldData.ListVarName{ivar};
+0267                <span class="keyword">if</span> isempty(indsel)
+0268                     eval([<span class="string">'ProjData.'</span> VarName <span class="string">'(ipoint,1)=NaN;'</span>])
+0269                <span class="keyword">else</span>
+0270                     eval([<span class="string">'Var=FieldData.'</span> VarName <span class="string">'(indsel);'</span>])
+0271                     eval([<span class="string">'ProjData.'</span> VarName <span class="string">'(ipoint,1)=mean(Var);'</span>])
+0272                     <span class="keyword">if</span> isequal(ObjectData.ProjMode,<span class="string">'interp'</span>)
+0273                          eval([<span class="string">'ProjData.'</span> VarName <span class="string">'(ipoint,1)=griddata_uvmat(coord_x(indsel),coord_y(indsel),Var,Xpoint(1),Xpoint(2)))'</span>;])
+0274                     <span class="keyword">end</span>
+0275                <span class="keyword">end</span>
+0276             <span class="keyword">end</span>
+0277         <span class="keyword">end</span>
+0278     <span class="keyword">else</span> 
+0279         DimIndices=FieldData.VarDimIndex{VarIndex(1)};<span class="comment">%indices of the dimensions of the first variable (common to all variables in the cell)</span>
+0280      <span class="comment">%input field on a structured  grid  A REVOIR  A REVOIR  A REVOIR</span>
+0281         <span class="keyword">if</span> ~isempty(find(DimIndices))
+0282             DimValue=FieldData.DimValue(DimIndices);<span class="comment">%set of dimension values</span>
+0283             ListDimName=FieldData.ListDimName(DimIndices);
+0284 <span class="comment">%             nbcolor=1; %default</span>
+0285             <span class="keyword">for</span> idim=1:length(ListDimName)
+0286                 DimName=ListDimName{idim};
+0287                 <span class="keyword">if</span> isequal(DimName,<span class="string">'rgb'</span>)|isequal(DimName,<span class="string">'nb_coord'</span>)|isequal(DimName,<span class="string">'nb_coord_i'</span>)
+0288                    nbcolor=DimValue(idim);
+0289                    DimIndices(idim)=[];
+0290                    DimValue(idim)=[];
+0291                 <span class="keyword">end</span>
+0292                 <span class="keyword">if</span> isequal(DimName,<span class="string">'nb_coord_j'</span>)<span class="comment">% NOTE: CASE OF TENSOR NOT TREATED</span>
+0293                     DimIndices(idim)=[];
+0294                     DimValue(idim)=[];
+0295                 <span class="keyword">end</span>
+0296             <span class="keyword">end</span>  
+0297             ind_1=find(DimValue==1);
+0298             DimIndices(ind_1)=[]; <span class="comment">%suppress singleton dimensions</span>
+0299             indxy=find(DimVarIndex(DimIndices));<span class="comment">%select dimension variables (DimIndices non zero)</span>
+0300             nb_dim=length(DimIndices);<span class="comment">%number of space dimensions</span>
+0301             Coord_z=[];
+0302             Coord_y=[];
+0303             Coord_x=[];   
+0304             <span class="keyword">for</span> idim=1:nb_dim <span class="comment">%loop on space dimensions</span>
+0305                 test_interp(idim)=0;<span class="comment">%test for coordiate interpolation (non regular grid), =0 by default</span>
+0306                 test_coord(idim)=0;<span class="comment">%test for defined coordinates, =0 by default</span>
+0307                 ivar=DimVarIndex(DimIndices(idim));<span class="comment">% index of the variable corresponding to the current dimension</span>
+0308                 <span class="keyword">if</span> ~isequal(ivar,0)<span class="comment">%  a variable corresponds to the current dimension</span>
+0309                     eval([<span class="string">'Coord{idim}=FieldData.'</span> FieldData.ListVarName{ivar} <span class="string">';'</span>]) ;<span class="comment">% position for the first index</span>
+0310                     DCoord=diff(Coord{idim});
+0311                     DCoord_min(idim)=min(DCoord);
+0312                     DCoord_max=max(DCoord);
+0313                     test_direct(idim)=DCoord_max&gt;0;<span class="comment">% =1 for increasing values, 0 otherwise</span>
+0314                     test_direct_min=DCoord_min(idim)&gt;0;<span class="comment">% =1 for increasing values, 0 otherwise</span>
+0315                     <span class="keyword">if</span> ~isequal(test_direct(idim),test_direct_min)
+0316                          <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([<span class="string">'non monotonic dimension variable # '</span> num2str(idim)  <span class="string">' in proj_field.m'</span>],<span class="string">'ERROR'</span>)
+0317                                     <span class="keyword">return</span>
+0318                     <span class="keyword">end</span>               
+0319                     test_interp(idim)=(DCoord_max-DCoord_min(idim))&gt; 0.0001*abs(DCoord_max);<span class="comment">% test grid regularity</span>
+0320                     test_coord(idim)=1;
+0321 
+0322                 <span class="keyword">else</span>  <span class="comment">% no variable associated with the first dimension, look fo variable  attributes Coord_1, _2 or _3</span>
+0323                     Coord_i_str=[<span class="string">'Coord_'</span> num2str(idim)];
+0324                     DCoord_min(idim)=1;<span class="comment">%default</span>
+0325                     Coord{idim}=[0.5 DimValue(idim)];
+0326                     test_direct(idim)=1;
+0327 <span class="comment">%                     for ivar=VarIndex</span>
+0328 <span class="comment">%                         if  length(FieldData.VarAttribute)&gt;=ivar &amp;&amp; isfield(FieldData.VarAttribute{ivar},Coord_i_str)% if there is a variable  attribute named Coord_1, _2 or _3</span>
+0329 <span class="comment">%                             eval(['Coord_i=FieldData.VarAttribute{ivar}.' Coord_i_str ';']);%'range x</span>
+0330 <span class="comment">%                             if isnumeric(Coord_i)</span>
+0331 <span class="comment">%                                  if length(Coord_i)&gt;=2</span>
+0332 <span class="comment">%                                     Coord{idim}=[Coord_i(1) Coord_i(end)];</span>
+0333 <span class="comment">%                                     %test_direct(idim)=(Coord{idim}(2)&gt;Coord{idim}(1));</span>
+0334 <span class="comment">%                                  else</span>
+0335 <span class="comment">%                                     warndlg_uvmat(['two values needed for ' Coord_i_str 'in proj_field.m'],'ERROR')</span>
+0336 <span class="comment">%                                     return</span>
+0337 <span class="comment">%                                  end</span>
+0338 <span class="comment">%                              else</span>
+0339 <span class="comment">%                                 warndlg_uvmat(['non numerical coordinate attributes' Coord_i_str 'in proj_field.m'],'ERROR')</span>
+0340 <span class="comment">%                                 return</span>
+0341 <span class="comment">%                              end</span>
+0342 <span class="comment">%                              %test_coord(idim)=1;</span>
+0343 <span class="comment">%                              DCoord_min(idim)=(Coord{idim}(end)-Coord{idim}(1))/(DimValue(idim)-1);</span>
+0344 <span class="comment">%                         end</span>
+0345 <span class="comment">%                     end</span>
+0346                 <span class="keyword">end</span>
+0347             <span class="keyword">end</span>
+0348             DX=DCoord_min(2);
+0349             DY=DCoord_min(1);
+0350             <span class="keyword">for</span> ipoint=1:siz(1)
+0351                 xwidth=width/(abs(DX));
+0352                 ywidth=width/(abs(DY));
+0353                 i_min=round((ObjectData.Coord(ipoint,1)-Coord{2}(1))/DX+0.5-xwidth); <span class="comment">%minimum index of the selected region</span>
+0354                 i_min=max(1,i_min);<span class="comment">%restrict to field limit</span>
+0355                 i_plus=round((ObjectData.Coord(ipoint,1)-Coord{2}(1))/DX+0.5+xwidth);
+0356                 i_plus=min(DimValue(2),i_plus); <span class="comment">%restrict to field limit</span>
+0357                 j_min=round((ObjectData.Coord(ipoint,2)-Coord{1}(1))/DY-ywidth+0.5);
+0358                 j_min=max(1,j_min);
+0359                 j_plus=round((ObjectData.Coord(ipoint,2)-Coord{1}(1))/DY+ywidth+0.5);
+0360                 j_plus=min(DimValue(1),j_plus);
+0361                 ProjData.X(ipoint,1)=ObjectData.Coord(ipoint,1);
+0362                 ProjData.Y(ipoint,1)=ObjectData.Coord(ipoint,2);
+0363                 i_int=[i_min:i_plus];
+0364                 j_int=[j_min:j_plus];
+0365                 ProjData.NbVal(ipoint,1)=length(j_int)*length(i_int);
+0366                 <span class="keyword">if</span> isempty(i_int) | isempty(j_int)
+0367                    <span class="keyword">for</span> ivar=VarIndex   
+0368                         eval([<span class="string">'ProjData.'</span> FieldData.ListVarName{ivar} <span class="string">'(ipoint,:)=NaN;'</span>]);
+0369                    <span class="keyword">end</span>
+0370                    errormsg=[<span class="string">'no data points in the selected projection range '</span> num2str(width) ];
+0371                 <span class="keyword">else</span>
+0372                     <span class="comment">%TODO: introduce circle in the selected subregion</span>
+0373                     <span class="comment">%[I,J]=meshgrid([1:j_int],[1:i_int]);</span>
+0374                     <span class="keyword">for</span> ivar=VarIndex   
+0375                         eval([<span class="string">'Avalue=FieldData.'</span> FieldData.ListVarName{ivar} <span class="string">'(j_int,i_int,:);'</span>]);
+0376                         eval([<span class="string">'ProjData.'</span> FieldData.ListVarName{ivar} <span class="string">'(ipoint,:)=mean(mean(Avalue));'</span>]);
+0377                     <span class="keyword">end</span>
+0378                 <span class="keyword">end</span>
+0379             <span class="keyword">end</span>
+0380         <span class="keyword">end</span>
+0381    <span class="keyword">end</span>
+0382 <span class="keyword">end</span>
+0383 <span class="comment">% if isfield(FieldData,'U')&amp; isfield(FieldData,'V')&amp; ~isempty(FieldData.U)&amp; ~isempty(FieldData.V)</span>
+0384 <span class="comment">%     ProjData.ListVarName={'Y','X','U','V','NbVec'};</span>
+0385 <span class="comment">%     ProjData.VarDimIndex={[1],[1],[1],[1],[1]};</span>
+0386 <span class="comment">%     Role={'coord_y','coord_x','vector_x','vector_y','ancillary'};</span>
+0387 <span class="comment">%     for ivar=1:5</span>
+0388 <span class="comment">%         ProjData.VarAttribute{ivar}.Role=Role{ivar};</span>
+0389 <span class="comment">%     end</span>
+0390 <span class="comment">%     if isfield(FieldData,'FF')</span>
+0391 <span class="comment">%         indsel=find(FieldData.FF==0);</span>
+0392 <span class="comment">%         if isempty(indsel)</span>
+0393 <span class="comment">%             FieldData.U=[];</span>
+0394 <span class="comment">%             FieldData.V=[];</span>
+0395 <span class="comment">%             FieldData.X=[];</span>
+0396 <span class="comment">%             FieldData.Y=[];</span>
+0397 <span class="comment">%         else</span>
+0398 <span class="comment">%             FieldData.U=FieldData.U(indsel);</span>
+0399 <span class="comment">%             FieldData.V=FieldData.V(indsel);</span>
+0400 <span class="comment">%             FieldData.X=FieldData.X(indsel);</span>
+0401 <span class="comment">%             FieldData.Y=FieldData.Y(indsel);</span>
+0402 <span class="comment">%         end</span>
+0403 <span class="comment">%     end</span>
+0404 <span class="comment">%     if isequal(ObjectData.ProjMode,'projection')</span>
+0405 <span class="comment">%         if ~isfield(ObjectData,'Range') &amp; ~isfield(ObjectData,'RangeX')&amp; ~isfield(ObjectData,'RangeY')</span>
+0406 <span class="comment">%             errormsg='projection range needed';</span>
+0407 <span class="comment">%             return</span>
+0408 <span class="comment">%         end</span>
+0409 <span class="comment">%</span>
+0410 <span class="comment">%        for ipoint=1:siz(1)</span>
+0411 <span class="comment">%            Xpoint=ObjectData.Coord(ipoint,:);</span>
+0412 <span class="comment">% %            Ypoint=ObjectData.YObject(ipoint);</span>
+0413 <span class="comment">%            distX=FieldData.X-Xpoint(1);</span>
+0414 <span class="comment">%            distY=FieldData.Y-Xpoint(2);</span>
+0415 <span class="comment">%            dist=distX.*distX+distY.*distY;</span>
+0416 <span class="comment">% %            indsel=find(dist&lt;ObjectData.YMax*ObjectData.YMax);</span>
+0417 <span class="comment">%            indsel=find(dist&lt;width*width);</span>
+0418 <span class="comment">%            ProjData.X(ipoint,1)=Xpoint(1);</span>
+0419 <span class="comment">%            ProjData.Y(ipoint,1)=Xpoint(2);</span>
+0420 <span class="comment">%            ProjData.U(ipoint,1)=NaN;</span>
+0421 <span class="comment">%            ProjData.V(ipoint,1)=NaN;</span>
+0422 <span class="comment">%            ProjData.NbVec(ipoint,1)=length(indsel);</span>
+0423 <span class="comment">%            if ~isempty(indsel)</span>
+0424 <span class="comment">%               vector_x=FieldData.U(indsel);</span>
+0425 <span class="comment">%               vector_y=FieldData.V(indsel);</span>
+0426 <span class="comment">%               ProjData.U(ipoint,1)=sum(vector_x)/ProjData.NbVec(ipoint,1);</span>
+0427 <span class="comment">%               ProjData.V(ipoint,1)=sum(vector_y)/ProjData.NbVec(ipoint,1);</span>
+0428 <span class="comment">% %               ProjData.UMax(ipoint)=max(vector_x);</span>
+0429 <span class="comment">% %               ProjData.UMin(ipoint)=min(vector_x);</span>
+0430 <span class="comment">% %               ProjData.VMax(ipoint)=max(vector_y);</span>
+0431 <span class="comment">% %               ProjData.VMin(ipoint)=min(vector_y);</span>
+0432 <span class="comment">%            end</span>
+0433 <span class="comment">%        end</span>
+0434 <span class="comment">%     elseif isequal(ObjectData.ProjMode,'interp')</span>
+0435 <span class="comment">%        ProjData.U=(griddata_uvmat(FieldData.X,FieldData.Y,FieldData.U,ProjData.Coord(:,1),ProjData.Coord(:,2)))';</span>
+0436 <span class="comment">%        ProjData.V=(griddata_uvmat(FieldData.X,FieldData.Y,FieldData.V,ProjData.Coord(:,1),ProjData.Coord(:,2)))';</span>
+0437 <span class="comment">%     else</span>
+0438 <span class="comment">%         errormsg=(['ProjMode option ' ObjectData.ProjMode ' not available in proj_field'])</span>
+0439 <span class="comment">%         return</span>
+0440 <span class="comment">%     end</span>
+0441 <span class="comment">% end</span>
+0442 <span class="comment">% if isfield(FieldData,'AName')</span>
+0443 <span class="comment">%     ProjData.ListVarName={'AY','AX','A'};</span>
+0444 <span class="comment">%     ProjData.VarDimIndex={[1],[1],[1]};</span>
+0445 <span class="comment">% %     ProjData.ListVarAttribute={'Role'};</span>
+0446 <span class="comment">% %     ProjData.Role={'coord_y','coord_x',[]};</span>
+0447 <span class="comment">% %     ProjData.VarAttribute{1}.Role='coord_y';</span>
+0448 <span class="comment">% %     ProjData.VarAttribute{2}.Role='coord_x';</span>
+0449 <span class="comment">%</span>
+0450 <span class="comment">% %     if ~isfield(FieldData,'A')</span>
+0451 <span class="comment">% %         ProjData.A=calc_scal(FieldData.AName,ProjData);</span>
+0452 <span class="comment">% %         ProjData.AName=FieldData.AName;</span>
+0453 <span class="comment">% %     else</span>
+0454 <span class="comment">%     siz=size(ObjectData.Coord);</span>
+0455 <span class="comment">%     if isequal(size(FieldData.A),size(FieldData.AX))%case of unstructured field at points (AX,AY)</span>
+0456 <span class="comment">%         for ipoint=1:siz(1)</span>
+0457 <span class="comment">%            Xpoint=ObjectData.Coord(ipoint,1);</span>
+0458 <span class="comment">%            Ypoint=ObjectData.Coord(ipoint,2);</span>
+0459 <span class="comment">%            distX=FieldData.AX-Xpoint;</span>
+0460 <span class="comment">%            distY=FieldData.AY-Ypoint;</span>
+0461 <span class="comment">%            dist=distX.*distX+distY.*distY;</span>
+0462 <span class="comment">% %                indsel=find(dist&lt;ObjectData.YMax*ObjectData.YMax);</span>
+0463 <span class="comment">%            indsel=find(dist&lt;width*width);</span>
+0464 <span class="comment">%            ProjData.NbScal=length(indsel);</span>
+0465 <span class="comment">%            A=FieldData.A(indsel);</span>
+0466 <span class="comment">%            ProjData.A(ipoint)=sum(A)/ProjData.NbScal;</span>
+0467 <span class="comment">%         end</span>
+0468 <span class="comment">%     elseif length(size(FieldData.A))&gt;=2% A is already a matrix</span>
+0469 <span class="comment">%         siz_A=size(FieldData.A);</span>
+0470 <span class="comment">%         npx=siz_A(2);</span>
+0471 <span class="comment">%         npy=siz_A(1);</span>
+0472 <span class="comment">%         if length(siz_A)==3</span>
+0473 <span class="comment">%             npcolor=siz_A(3);</span>
+0474 <span class="comment">%             ProjData.ListDimName=[ProjData.ListDimName {'rgb'} ];</span>
+0475 <span class="comment">%             ProjData.VarDimIndex{3}=[1 2];</span>
+0476 <span class="comment">%             ProjData.DimValue=[siz(1) 3];</span>
+0477 <span class="comment">%         else</span>
+0478 <span class="comment">%             npcolor=1;</span>
+0479 <span class="comment">%         end</span>
+0480 <span class="comment">%         DX=abs(FieldData.AX(end)-FieldData.AX(1))/(npx-1);</span>
+0481 <span class="comment">%         DY=abs(FieldData.AY(end)-FieldData.AY(1))/(npy-1);</span>
+0482 <span class="comment">%         for ipoint=1:siz(1)</span>
+0483 <span class="comment">%             i_min=round((ObjectData.Coord(ipoint,1)-FieldData.AX(1)-width)/DX+0.5);</span>
+0484 <span class="comment">%             i_min=max(1,i_min);</span>
+0485 <span class="comment">%             i_plus=round((ObjectData.Coord(ipoint,1)-FieldData.AX(1)+width)/DX+0.5);</span>
+0486 <span class="comment">%             i_plus=min(npx,i_plus);</span>
+0487 <span class="comment">%             j_min=-round((ObjectData.Coord(ipoint,2)-FieldData.AY(1)+width)/DY+0.5);</span>
+0488 <span class="comment">%             j_min=max(1,j_min);</span>
+0489 <span class="comment">%             j_plus=-round((ObjectData.Coord(ipoint,2)-FieldData.AY(1)-width)/DY+0.5);</span>
+0490 <span class="comment">%             j_plus=min(npy,j_plus);</span>
+0491 <span class="comment">%             ProjData.AX(ipoint,1)=ObjectData.Coord(ipoint,1);</span>
+0492 <span class="comment">%             ProjData.AY(ipoint,1)=ObjectData.Coord(ipoint,2);</span>
+0493 <span class="comment">%             i_int=[i_min:i_plus];</span>
+0494 <span class="comment">%             j_int=[j_min:j_plus];</span>
+0495 <span class="comment">%             if ~isempty(i_int) &amp; ~isempty(j_int)</span>
+0496 <span class="comment">%                 Avalue=FieldData.A(j_int,i_int,:);</span>
+0497 <span class="comment">%                 ProjData.A(ipoint,:)=mean(mean(Avalue));</span>
+0498 <span class="comment">%             else</span>
+0499 <span class="comment">%                ProjData.A(ipoint,:)=NaN;</span>
+0500 <span class="comment">%             end</span>
+0501 <span class="comment">%         end</span>
+0502 <span class="comment">%     end</span>
+0503 <span class="comment">% end</span>
+0504 
+0505 <span class="comment">%-----------------------------------------------------------------</span>
+0506 <span class="comment">%project in a patch</span>
+0507 <a name="_sub2" href="#_subfunctions" class="code">function  [ProjData,errormsg]=proj_patch(FieldData,ObjectData)</a><span class="comment">%%</span>
+0508 <span class="comment">%-------------------------------------------------------------------</span>
+0509 ProjData=<a href="#_sub5" class="code" title="subfunction [ProjData,errormsg]=proj_heading(FieldData,ObjectData)">proj_heading</a>(FieldData,ObjectData);
+0510 
+0511 objectfield=fieldnames(ObjectData);
+0512 widthx=0;
+0513 widthy=0;
+0514 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'RangeX'</span>)&amp;~isempty(ObjectData.RangeX)
+0515     widthx=max(ObjectData.RangeX);
+0516 <span class="keyword">end</span>
+0517 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'RangeY'</span>)&amp;~isempty(ObjectData.RangeY)
+0518     widthy=max(ObjectData.RangeY);
+0519 <span class="keyword">end</span>
+0520 
+0521 <span class="comment">%A REVOIR, GENERALISER: UTILISER proj_line</span>
+0522 ProjData.NbDim=0;
+0523 ProjData.ListDimName={};<span class="comment">%name of dimension</span>
+0524 ProjData.DimValue=[];<span class="comment">%values of dimension (nbre of vectors)</span>
+0525 ProjData.ListVarName={};
+0526 <span class="comment">%ProjData.VarDimIndex={};</span>
+0527 ProjData.VarDimName={};
+0528 <span class="keyword">if</span> isfield (FieldData,<span class="string">'ListVarAttribute'</span>)
+0529     ProjData.ListVarAttribute=FieldData.ListVarAttribute;<span class="comment">%list of variable attribute names</span>
+0530     <span class="keyword">for</span> iattr=1:length(ProjData.ListVarAttribute)<span class="comment">%initialization of variable attribute values</span>
+0531         AttrName=ProjData.ListVarAttribute{iattr};
+0532         eval([<span class="string">'ProjData.'</span> AttrName <span class="string">'={};'</span>])
+0533     <span class="keyword">end</span>;
+0534 <span class="keyword">end</span>
+0535 
+0536 <span class="comment">%group the variables (fields of 'FieldData') in cells of variables with the same dimensions</span>
+0537 testfalse=0;
+0538 ListIndex={};
+0539 <span class="comment">% DimVarIndex=0;%initilise list of indices for dimension variables</span>
+0540 idimvar=0;
+0541 [CellVarIndex,NbDim,VarTypeCell,errormsg]=<a href="find_field_indices.html" class="code" title="function [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data)">find_field_indices</a>(FieldData);
+0542 <span class="keyword">if</span> ~isempty(errormsg)
+0543     errormsg=[<span class="string">'error in proj_field/proj_patch:'</span> errormsg];
+0544     <span class="keyword">return</span>
+0545 <span class="keyword">end</span>
+0546 
+0547 <span class="comment">%LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS</span>
+0548 dimcounter=0;
+0549 <span class="keyword">for</span> icell=1:length(CellVarIndex)
+0550     testX=0;
+0551     testY=0;
+0552     test_Amat=0;
+0553     testfalse=0;
+0554     VarIndex=CellVarIndex{icell};<span class="comment">%  indices of the selected variables in the list FieldData.ListVarName</span>
+0555     VarType=VarTypeCell{icell};
+0556     DimIndices=FieldData.VarDimIndex{VarIndex(1)};<span class="comment">%indices of the dimensions of the first variable (common to all variables in the cell)</span>
+0557     <span class="keyword">if</span> NbDim(icell)~=2<span class="comment">% proj_patch acts only on fields of space dimension 2</span>
+0558         <span class="keyword">continue</span>
+0559     <span class="keyword">end</span>
+0560     testX=~isempty(VarType.coord_x) &amp;&amp; ~isempty(VarType.coord_y);
+0561     testfalse=~isempty(VarType.errorflag);
+0562     testproj(VarIndex)=zeros(size(VarIndex));<span class="comment">%default</span>
+0563     testproj(VarType.scalar)=1;
+0564     testproj(VarType.vector_x)=1;
+0565     testproj(VarType.vector_y)=1;
+0566     testproj(VarType.vector_z)=1;
+0567     testproj(VarType.image)=1;
+0568     testproj(VarType.color)=1;
+0569     VarIndex=VarIndex(find(testproj(VarIndex)));<span class="comment">%select only the projected variables</span>
+0570     <span class="keyword">if</span> testX <span class="comment">%case of unstructured coordinates</span>
+0571          eval([<span class="string">'nbpoint=numel(FieldData.'</span> FieldData.ListVarName{VarIndex(1)} <span class="string">');'</span>])
+0572          <span class="keyword">for</span> ivar=[VarIndex VarType.coord_x VarType.coord_y VarType.errorflag]
+0573                VarName=FieldData.ListVarName{ivar};
+0574             eval([<span class="string">'FieldData.'</span> VarName <span class="string">'=reshape(FieldData.'</span> VarName <span class="string">',nbpoint,1);'</span>])
+0575          <span class="keyword">end</span>
+0576          XName=FieldData.ListVarName{VarType.coord_x};
+0577          YName=FieldData.ListVarName{VarType.coord_y};
+0578          eval([<span class="string">'coord_x=FieldData.'</span> XName <span class="string">';'</span>])
+0579          eval([<span class="string">'coord_y=FieldData.'</span> YName <span class="string">';'</span>])
+0580     <span class="keyword">end</span>
+0581     <span class="keyword">if</span> testfalse
+0582         FFName=FieldData.ListVarName{VarType.errorflag};
+0583         eval([<span class="string">'errorflag=FieldData.'</span> FFName <span class="string">';'</span>])
+0584     <span class="keyword">end</span>
+0585     <span class="comment">% image or 2D matrix</span>
+0586     <span class="keyword">if</span> numel(VarType.coord)&gt;=2 &amp; VarType.coord(1:2) &gt; 0;
+0587         test_Amat=1;<span class="comment">%image or 2D matrix</span>
+0588         AYName=FieldData.ListVarName{VarType.coord(1)};
+0589         AXName=FieldData.ListVarName{VarType.coord(2)};
+0590         eval([<span class="string">'AX=FieldData.'</span> AXName <span class="string">';'</span>])
+0591         eval([<span class="string">'AY=FieldData.'</span> AYName <span class="string">';'</span>])
+0592         VarName=FieldData.ListVarName{VarIndex(1)};
+0593         eval([<span class="string">'DimValue=size(FieldData.'</span> VarName <span class="string">');'</span>])
+0594         testcolor=find(numel(DimValue)==3);
+0595 <span class="comment">%                     errormsg='multicomponent field not projected';</span>
+0596 
+0597         <span class="keyword">for</span> idim=1:length(DimIndices)        
+0598             Coord_i_str=[<span class="string">'Coord_'</span> num2str(idim)];
+0599             DCoord_min(idim)=1;<span class="comment">%default</span>
+0600             Coord{idim}=[0.5 DimValue(idim)];
+0601             test_direct(idim)=1;
+0602             <span class="keyword">if</span> isfield(FieldData,<span class="string">'VarAttribute'</span>)
+0603                 <span class="keyword">for</span> ivar=VarIndex
+0604                     <span class="keyword">if</span> length(FieldData.VarAttribute)&gt;=ivar &amp; isfield(FieldData.VarAttribute{ivar},Coord_i_str)<span class="comment">% if there is a variable  attribute named Coord_1, _2 or _3</span>
+0605                         eval([<span class="string">'Coord_i=FieldData.VarAttribute{ivar}.'</span> Coord_i_str <span class="string">';'</span>]);<span class="comment">%'range x</span>
+0606                         <span class="keyword">if</span> isnumeric(Coord_i)
+0607                              <span class="keyword">if</span> length(Coord_i)&gt;=2
+0608                                 Coord{idim}=[Coord_i(1) Coord_i(end)];
+0609                                 <span class="comment">%test_direct(idim)=(Coord{idim}(2)&gt;Coord{idim}(1));</span>
+0610                              <span class="keyword">else</span> 
+0611                                 <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([<span class="string">'two values needed for '</span> Coord_i_str <span class="string">'in proj_field.m'</span>],<span class="string">'ERROR'</span>)
+0612                                 <span class="keyword">return</span>
+0613                              <span class="keyword">end</span>
+0614                          <span class="keyword">else</span>
+0615                             <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([<span class="string">'non numerical coordinate attributes'</span> Coord_i_str <span class="string">'in proj_field.m'</span>],<span class="string">'ERROR'</span>)
+0616                             <span class="keyword">return</span>
+0617                          <span class="keyword">end</span>
+0618                          <span class="comment">%test_coord(idim)=1;</span>
+0619                          DCoord_min(idim)=(Coord{idim}(end)-Coord{idim}(1))/(DimValue(idim)-1);
+0620                     <span class="keyword">end</span>
+0621                 <span class="keyword">end</span>
+0622             <span class="keyword">end</span>
+0623         <span class="keyword">end</span>
+0624         AX=linspace(Coord{2}(1),Coord{2}(2),DimValue(2));
+0625         AY=linspace(Coord{1}(1),Coord{1}(2),DimValue(1));  <span class="comment">%TODO : 3D case</span>
+0626         <span class="keyword">if</span> length(DimValue)==3
+0627             testcolor=1;
+0628             npxy(3)=3;
+0629         <span class="keyword">else</span>
+0630             testcolor=0;
+0631         <span class="keyword">end</span>
+0632         [Xi,Yi]=meshgrid(AX,AY);
+0633         npxy(1)=length(AY);
+0634         npxy(2)=length(AX);
+0635         Xi=reshape(Xi,npxy(1)*npxy(2),1);
+0636         Yi=reshape(Yi,npxy(1)*npxy(2),1);
+0637         <span class="keyword">for</span> ivar=1:length(VarIndex)
+0638             VarName=FieldData.ListVarName{VarIndex(ivar)};
+0639             eval([<span class="string">'FieldData.'</span> VarName <span class="string">'=reshape(FieldData.'</span> VarName <span class="string">',npxy(1)*npxy(2),npxy(3));'</span>]); <span class="comment">% keep only non false vectors</span>
+0640         <span class="keyword">end</span>
+0641     <span class="keyword">end</span>
+0642 <span class="comment">%select the indices in the range of action</span>
+0643     testin=[];<span class="comment">%default</span>
+0644     <span class="keyword">if</span> isequal(ObjectData.Style,<span class="string">'rectangle'</span>)
+0645 <span class="comment">%            if ~isfield(ObjectData,'RangeX')|~isfield(ObjectData,'RangeY')</span>
+0646 <span class="comment">%                 errormsg='rectangle half sides RangeX and RangeY needed'</span>
+0647 <span class="comment">%                 return</span>
+0648 <span class="comment">%            end</span>
+0649        <span class="keyword">if</span> testX
+0650             distX=abs(coord_x-ObjectData.Coord(1,1));
+0651             distY=abs(coord_y-ObjectData.Coord(1,2));
+0652             testin=distX&lt;widthx &amp; distY&lt;widthy;
+0653        <span class="keyword">elseif</span> test_Amat
+0654            distX=abs(Xi-ObjectData.Coord(1,1));
+0655            distY=abs(Yi-ObjectData.Coord(1,2));
+0656            testin=distX&lt;widthx &amp; distY&lt;widthy;
+0657        <span class="keyword">end</span>
+0658     <span class="keyword">elseif</span> isequal(ObjectData.Style,<span class="string">'polygon'</span>)
+0659         <span class="keyword">if</span> testX
+0660             testin=inpolygon(coord_x,coord_y,ObjectData.Coord(:,1),ObjectData.Coord(:,2));
+0661         <span class="keyword">elseif</span> test_Amat
+0662            testin=inpolygon(Xi,Yi,ObjectData.Coord(:,1),ObjectData.Coord(:,2));
+0663        <span class="keyword">else</span><span class="comment">%calculate the scalar</span>
+0664            testin=[]; <span class="comment">%A REVOIR</span>
+0665        <span class="keyword">end</span>
+0666     <span class="keyword">elseif</span> isequal(ObjectData.Style,<span class="string">'ellipse'</span>)
+0667        X2Max=widthx*widthx;
+0668        Y2Max=(widthy)*(widthy);
+0669        <span class="keyword">if</span> testX
+0670             distX=(coord_x-ObjectData.Coord(1,1));
+0671             distY=(coord_y-ObjectData.Coord(1,2));
+0672             testin=(distX.*distX/X2Max+distY.*distY/Y2Max)&lt;1;
+0673        <span class="keyword">elseif</span> test_Amat <span class="comment">%case of usual 2x2 matrix</span>
+0674            distX=(Xi-ObjectData.Coord(1,1));
+0675            distY=(Yi-ObjectData.Coord(1,2));
+0676            testin=(distX.*distX/X2Max+distY.*distY/Y2Max)&lt;1;
+0677        <span class="keyword">end</span>
+0678     <span class="keyword">end</span>
+0679     <span class="comment">%selected indices</span>
+0680     <span class="keyword">if</span> isequal(ObjectData.ProjMode,<span class="string">'outside'</span>)
+0681             testin=~testin;
+0682     <span class="keyword">end</span>
+0683     <span class="keyword">if</span> testfalse
+0684         testin=testin &amp; (errorflag==0); <span class="comment">% keep only non false vectors</span>
+0685     <span class="keyword">end</span>
+0686     indsel=find(testin);
+0687     <span class="keyword">if</span> length(DimIndices)==1
+0688         ProjDimName=FieldData.ListDimName(DimIndices);<span class="comment">% reproduce the previous dim name</span>
+0689     <span class="keyword">elseif</span> dimcounter==0
+0690         ProjDimName={<span class="string">'nb_point'</span>};
+0691         dimcounter=dimcounter+1;
+0692     <span class="keyword">else</span>
+0693         ProjDimName={[<span class="string">'nb_point_'</span> num2str(dimcounter)]};
+0694     <span class="keyword">end</span>
+0695    <span class="comment">% ProjData.ListDimName=[ProjData.ListDimName ProjDimName];</span>
+0696     <span class="comment">%ProjData.DimValue=[ProjData.DimValue length(indsel)];</span>
+0697     <span class="keyword">for</span> ivar=VarIndex
+0698         <span class="keyword">if</span> testproj(ivar)
+0699             VarName=FieldData.ListVarName{ivar};
+0700             eval([<span class="string">'ProjData.'</span> VarName <span class="string">'=FieldData.'</span> VarName <span class="string">'(indsel,:);'</span>]); <span class="comment">% keep only non false vectors</span>
+0701             ProjData.ListVarName=[ProjData.ListVarName {VarName}];
+0702            <span class="comment">% ProjData.VarDimIndex=[ProjData.VarDimIndex {length(ProjData.DimValue)}];</span>
+0703            ProjData.VarDimName=[ProjData.VarDimName ProjDimName];
+0704         <span class="keyword">end</span>
+0705     <span class="keyword">end</span> 
+0706     <span class="keyword">if</span> test_Amat &amp; testcolor
+0707        <span class="comment">%ProjData.ListDimName=[ProjData.ListDimName {'rgb'}];</span>
+0708       <span class="comment">% ProjData.DimValue=[ProjData.DimValue 3];</span>
+0709       <span class="comment">% ProjData.VarDimIndex={[1 2]};</span>
+0710        ProjData.VarDimName={{<span class="string">'nb_point'</span>,<span class="string">'rgb'</span>}};
+0711     <span class="keyword">end</span>
+0712 <span class="keyword">end</span>
+0713 
+0714 
+0715 
+0716 <span class="comment">%-----------------------------------------------------------------</span>
+0717 <span class="comment">%project on a line</span>
+0718 <span class="comment">% AJOUTER flux,circul,error</span>
+0719 <a name="_sub3" href="#_subfunctions" class="code">function  [ProjData,errormsg] = proj_line(FieldData, ObjectData)</a>
+0720 <span class="comment">%-----------------------------------------------------------------</span>
+0721 ProjData=<a href="#_sub5" class="code" title="subfunction [ProjData,errormsg]=proj_heading(FieldData,ObjectData)">proj_heading</a>(FieldData,ObjectData);<span class="comment">%transfer global attributes</span>
+0722 ProjData.NbDim=1;
+0723 
+0724 <span class="comment">%initialisation of the input parameters</span>
+0725 ProjMode=<span class="string">'projection'</span>;<span class="comment">%direct projection on the line by default</span>
+0726 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'ProjMode'</span>),ProjMode=ObjectData.ProjMode; <span class="keyword">end</span>; 
+0727 ProjAngle=90; <span class="comment">%90 degrees projection by default</span>
+0728 <span class="keyword">if</span> isfield(FieldData,<span class="string">'ProjAngle'</span>),ProjAngle=ObjectData.ProjAngle; <span class="keyword">end</span>; 
+0729 width=0;<span class="comment">%default width of the projection band</span>
+0730 
+0731 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'Range'</span>)&amp;size(ObjectData.Range,2)&gt;=2
+0732     width=abs(ObjectData.Range(1,2));
+0733 <span class="keyword">end</span>
+0734 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'RangeY'</span>)
+0735     width=max(ObjectData.RangeY);
+0736 <span class="keyword">end</span>
+0737 error=0;<span class="comment">%default</span>
+0738 Xline=[];
+0739 
+0740 flux=0;
+0741 circul=0;
+0742 liny=ObjectData.Coord(:,2);
+0743 siz_line=size(ObjectData.Coord);
+0744 <span class="keyword">if</span> siz_line(1)&lt;2
+0745     <span class="keyword">return</span><span class="comment">% line needs at least 2 points to be defined</span>
+0746 <span class="keyword">end</span>
+0747 testfalse=0;
+0748 ListIndex={};
+0749 
+0750 <span class="comment">%angles of the polyline and boundaries of action</span>
+0751 dlinx=diff(ObjectData.Coord(:,1));
+0752 dliny=diff(ObjectData.Coord(:,2));
+0753 theta=angle(dlinx+i*dliny);<span class="comment">%angle of each segment</span>
+0754 theta(siz_line(1))=theta(siz_line(1)-1);
+0755 <span class="comment">% determine a rectangles at +-width from the line (only used for the ProjMode='projection or 'filter')</span>
+0756 <span class="keyword">if</span> isequal(ProjMode,<span class="string">'projection'</span>) || isequal(ProjMode,<span class="string">'filter'</span>)
+0757     xsup(1)=ObjectData.Coord(1,1)-width*sin(theta(1));
+0758     xinf(1)=ObjectData.Coord(1,1)+width*sin(theta(1));
+0759     ysup(1)=ObjectData.Coord(1,2)+width*cos(theta(1));
+0760     yinf(1)=ObjectData.Coord(1,2)-width*cos(theta(1));
+0761     <span class="keyword">for</span> ip=2:siz_line(1)
+0762         xsup(ip)=ObjectData.Coord(ip,1)-width*sin((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
+0763         xinf(ip)=ObjectData.Coord(ip,1)+width*sin((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
+0764         ysup(ip)=ObjectData.Coord(ip,2)+width*cos((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
+0765         yinf(ip)=ObjectData.Coord(ip,2)-width*cos((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
+0766     <span class="keyword">end</span>
+0767 <span class="keyword">end</span>
+0768 
+0769 <span class="comment">%group the variables (fields of 'FieldData') in cells of variables with the same dimensions</span>
+0770 [CellVarIndex,NbDim,VarTypeCell,errormsg]=<a href="find_field_indices.html" class="code" title="function [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data)">find_field_indices</a>(FieldData);
+0771 <span class="keyword">if</span> ~isempty(errormsg)
+0772     errormsg=[<span class="string">'error in proj_field/proj_line:'</span> errormsg];
+0773     <span class="keyword">return</span>
+0774 <span class="keyword">end</span>
+0775 
+0776 ProjData.ListVarName={};
+0777 ProjData.VarDimName={};
+0778 <span class="keyword">for</span> icell=1:length(CellVarIndex)
+0779     VarIndex=CellVarIndex{icell};<span class="comment">%  indices of the selected variables in the list FieldData.ListVarName</span>
+0780     VarType=VarTypeCell{icell};
+0781     <span class="comment">%DimCell=FieldData.VarDimName{VarIndex(1)}; % list of dimension names fore the cell</span>
+0782     <span class="keyword">if</span> NbDim(icell)~=2<span class="comment">% proj_line acts only on fields of space dimension 2, TODO: check 3D case</span>
+0783         <span class="keyword">continue</span>
+0784     <span class="keyword">end</span>
+0785     testX=~isempty(VarType.coord_x) &amp;&amp; ~isempty(VarType.coord_y);
+0786     testU=~isempty(VarType.vector_x) &amp;&amp; ~isempty(VarType.vector_y);
+0787     testfalse=~isempty(VarType.errorflag);
+0788     testproj(VarIndex)=zeros(size(VarIndex));<span class="comment">%default</span>
+0789     testproj(VarType.scalar)=1;
+0790 <span class="comment">%     testproj(VarType.vector_x)=1;</span>
+0791 <span class="comment">%     testproj(VarType.vector_y)=1;</span>
+0792     testproj(VarType.vector_z)=1;
+0793     testproj(VarType.image)=1;
+0794     testproj(VarType.color)=1;
+0795     VarIndex=VarIndex(find(testproj(VarIndex)));<span class="comment">%select only the projected variables</span>
+0796     <span class="keyword">if</span> testU
+0797          VarIndex=[VarIndex VarType.vector_x VarType.vector_y];<span class="comment">%put u and v at the end of the list of variables</span>
+0798     <span class="keyword">end</span>
+0799     <span class="comment">%identify vector components</span>
+0800     <span class="keyword">if</span> testU
+0801         UName=FieldData.ListVarName{VarType.vector_x};
+0802         VName=FieldData.ListVarName{VarType.vector_y};
+0803         eval([<span class="string">'vector_x=FieldData.'</span> UName <span class="string">';'</span>])
+0804         eval([<span class="string">'vector_y=FieldData.'</span> VName <span class="string">';'</span>])
+0805     <span class="keyword">end</span>  
+0806 
+0807     <span class="comment">%identify error flag</span>
+0808     <span class="keyword">if</span> testfalse
+0809         FFName=FieldData.ListVarName{VarType.errorflag};
+0810         eval([<span class="string">'errorflag=FieldData.'</span> FFName <span class="string">';'</span>])
+0811     <span class="keyword">end</span>
+0812 
+0813     <span class="comment">%identify coordinates</span>
+0814 <span class="comment">%     ivar_x=VarType.coord_x % .ccord_x and .coord_y exist if NbDim(icell)&gt;=2</span>
+0815 <span class="comment">%     DimCell_x=FieldData.VarDimName{ivar_x};</span>
+0816 <span class="comment">%     if ischar(DimCell_x)</span>
+0817 <span class="comment">%         DimCell_x={DimCell_x};</span>
+0818 <span class="comment">%     end</span>
+0819 
+0820     <span class="comment">% case of unstructured positions (position given by the variables with role coord_x, coord_y</span>
+0821     <span class="keyword">if</span> testX
+0822         <span class="keyword">if</span>  ~isequal(ProjMode,<span class="string">'interp'</span>)
+0823             <span class="keyword">if</span> width==0
+0824                 errormsg=<span class="string">'range of the projection object is missing'</span>;
+0825                 <span class="keyword">return</span>      
+0826             <span class="keyword">else</span>
+0827                 lambda=2/(width*width); <span class="comment">%smoothing factor used for filter: weight exp(-2) at distance width from the line</span>
+0828             <span class="keyword">end</span>
+0829         <span class="keyword">end</span>
+0830         <span class="keyword">if</span> ~isequal(ProjMode,<span class="string">'projection'</span>)
+0831             <span class="keyword">if</span> isfield(ObjectData,<span class="string">'DX'</span>)&amp;~isempty(ObjectData.DX)
+0832                 DX=abs(ObjectData.DX);<span class="comment">%mesh of interpolation points along the line</span>
+0833             <span class="keyword">else</span>
+0834                 errormsg=<span class="string">'DX missing'</span>;
+0835                 <span class="keyword">return</span>
+0836             <span class="keyword">end</span>
+0837         <span class="keyword">end</span>
+0838         XName= FieldData.ListVarName{VarType.coord_x};
+0839         YName= FieldData.ListVarName{VarType.coord_y};
+0840         eval([<span class="string">'coord_x=FieldData.'</span> XName <span class="string">';'</span>])    
+0841         eval([<span class="string">'coord_y=FieldData.'</span> YName <span class="string">';'</span>])
+0842     <span class="keyword">end</span>   
+0843 
+0844     <span class="comment">%initiate projection</span>
+0845     <span class="keyword">for</span> ivar=1:length(VarIndex)
+0846         ProjLine{ivar}=[];
+0847     <span class="keyword">end</span>
+0848     XLine=[];
+0849     linelengthtot=0;
+0850 
+0851 <span class="comment">%         circul=0;</span>
+0852 <span class="comment">%         flux=0;</span>
+0853   <span class="comment">%%%%%%%  % A FAIRE CALCULER MEAN DES QUANTITES    %%%%%%</span>
+0854    <span class="comment">%case of unstructured coordinates</span>
+0855     <span class="keyword">if</span> testX   
+0856         <span class="keyword">for</span> ip=1:siz_line(1)-1     <span class="comment">%Loop on the segments of the polyline</span>
+0857             linelength=sqrt(dlinx(ip)*dlinx(ip)+dliny(ip)*dliny(ip));  
+0858             <span class="comment">%select the vector indices in the range of action</span>
+0859             <span class="keyword">if</span> testfalse
+0860                 flagsel=(errorflag==0); <span class="comment">% keep only non false vectors</span>
+0861             <span class="keyword">else</span>
+0862                 flagsel=ones(size(coord_x));
+0863             <span class="keyword">end</span>
+0864             <span class="keyword">if</span> isequal(ProjMode,<span class="string">'projection'</span>) | isequal(ProjMode,<span class="string">'filter'</span>)
+0865                 flagsel=flagsel &amp; ((coord_y -yinf(ip))*(xinf(ip+1)-xinf(ip))&gt;(coord_x-xinf(ip))*(yinf(ip+1)-yinf(ip))) <span class="keyword">...</span>
+0866                 &amp; ((coord_y -ysup(ip))*(xsup(ip+1)-xsup(ip))&lt;(coord_x-xsup(ip))*(ysup(ip+1)-ysup(ip))) <span class="keyword">...</span>
+0867                 &amp; ((coord_y -yinf(ip+1))*(xsup(ip+1)-xinf(ip+1))&gt;(coord_x-xinf(ip+1))*(ysup(ip+1)-yinf(ip+1))) <span class="keyword">...</span>
+0868                 &amp; ((coord_y -yinf(ip))*(xsup(ip)-xinf(ip))&lt;(coord_x-xinf(ip))*(ysup(ip)-yinf(ip)));
+0869             <span class="keyword">end</span>
+0870             indsel=find(flagsel);<span class="comment">%indsel =indices of good vectors</span>
+0871             X_sel=coord_x(indsel);
+0872             Y_sel=coord_y(indsel);
+0873             nbvar=0;
+0874             <span class="keyword">for</span> iselect=1:numel(VarIndex)-2*testU
+0875                 VarName=FieldData.ListVarName{VarIndex(iselect)};
+0876                 eval([<span class="string">'ProjVar{iselect}=FieldData.'</span> VarName <span class="string">'(indsel);'</span>]);<span class="comment">%scalar value</span>
+0877             <span class="keyword">end</span>   
+0878             <span class="keyword">if</span> testU
+0879                 ProjVar{numel(VarIndex)-1}=cos(theta(ip))*vector_x(indsel)+sin(theta(ip))*vector_y(indsel);<span class="comment">% longitudinal component</span>
+0880                 ProjVar{numel(VarIndex)}=-sin(theta(ip))*vector_x(indsel)+cos(theta(ip))*vector_y(indsel);<span class="comment">%transverse component</span>
+0881             <span class="keyword">end</span>
+0882             <span class="keyword">if</span> isequal(ProjMode,<span class="string">'projection'</span>)
+0883                 sintheta=sin(theta(ip));
+0884                 costheta=cos(theta(ip));
+0885                 Xproj=(X_sel-ObjectData.Coord(ip,1))*costheta + (Y_sel-ObjectData.Coord(ip,2))*sintheta; <span class="comment">%projection on the line</span>
+0886                 [Xproj,indsort]=sort(Xproj);
+0887                 <span class="keyword">for</span> ivar=1:numel(ProjVar)
+0888                     <span class="keyword">if</span> ~isempty(ProjVar{ivar})
+0889                         ProjVar{ivar}=ProjVar{ivar}(indsort);
+0890                      <span class="keyword">end</span>
+0891                 <span class="keyword">end</span>
+0892             <span class="keyword">elseif</span> isequal(ProjMode,<span class="string">'interp'</span>) <span class="comment">%linear interpolation:</span>
+0893                 npoint=floor(linelength/DX)+1;<span class="comment">% nbre of points in the profile (interval DX)</span>
+0894                 Xproj=[linelength/(2*npoint):linelength/npoint:linelength-linelength/(2*npoint)];
+0895                 xreg=cos(theta(ip))*Xproj+ObjectData.Coord(ip,1);
+0896                 yreg=sin(theta(ip))*Xproj+ObjectData.Coord(ip,2);
+0897                 <span class="keyword">for</span> ivar=1:numel(ProjVar)
+0898                      <span class="keyword">if</span> ~isempty(ProjVar{ivar})
+0899                         ProjVar{ivar}=<a href="griddata_uvmat.html" class="code" title="function ZI = griddata_uvmat(X,Y,Z,XI,YI)">griddata_uvmat</a>(X_sel,Y_sel,ProjVar{ivar},xreg,yreg);
+0900                      <span class="keyword">end</span>
+0901                 <span class="keyword">end</span>
+0902             <span class="keyword">elseif</span> isequal(ProjMode,<span class="string">'filter'</span>) <span class="comment">%filtering</span>
+0903                 npoint=floor(linelength/DX)+1;<span class="comment">% nbre of points in the profile (interval DX)</span>
+0904                 Xproj=[linelength/(2*npoint):linelength/npoint:linelength-linelength/(2*npoint)];
+0905                 siz=size(X_sel);
+0906                 xregij=cos(theta(ip))*Xproj'*ones(1,siz(2))+ObjectData.Coord(ip,1);
+0907                 yregij=sin(theta(ip))*Xproj'*ones(1,siz(2))+ObjectData.Coord(ip,2);
+0908                 xij=ones(npoint,1)*X_sel;
+0909                 yij=ones(npoint,1)*Y_sel;
+0910                 Aij=exp(-lambda*((xij-xregij).*(xij-xregij)+(yij-yregij).*(yij-yregij)));
+0911                 norm=ones(1,siz(2))*Aij';
+0912                 <span class="keyword">for</span> ivar=1:numel(ProjVar)
+0913                      <span class="keyword">if</span> ~isempty(ProjVar{ivar})
+0914                         ProjVar{ivar}=ProjVar{ivar}*Aij'./norm;
+0915                      <span class="keyword">end</span>
+0916                 <span class="keyword">end</span>              
+0917             <span class="keyword">end</span>
+0918             <span class="comment">%prolongate the total record</span>
+0919             <span class="keyword">for</span> ivar=1:numel(ProjVar)
+0920                   <span class="keyword">if</span> ~isempty(ProjVar{ivar})
+0921                      ProjLine{ivar}=[ProjLine{ivar}; ProjVar{ivar}];
+0922                   <span class="keyword">end</span>
+0923             <span class="keyword">end</span>
+0924             XLine=[XLine ;(Xproj+linelengthtot)];<span class="comment">%along line abscissa</span>
+0925             linelengthtot=linelengthtot+linelength;
+0926             <span class="comment">%     circul=circul+(sum(U_sel))*linelength/npoint;</span>
+0927             <span class="comment">%     flux=flux+(sum(V_sel))*linelength/npoint;</span>
+0928         <span class="keyword">end</span>
+0929         ProjData.X=XLine';
+0930 <span class="comment">%         eval(['ProjData.' XName '=XLine'';']); % x coordinate</span>
+0931         <span class="comment">%ProjData.ListDimName={XName};</span>
+0932         <span class="comment">%ProjData.DimValue=[length(XLine)];%values of dimension (nbre of vectors)</span>
+0933         cur_index=1;
+0934         ProjData.ListVarName=[ProjData.ListVarName {XName}];
+0935         ProjData.VarDimName=[ProjData.VarDimName {XName}];
+0936         <span class="comment">%ProjData.VarDimIndex{1}=[1];</span>
+0937         ProjData.VarAttribute{1}.long_name=<span class="string">'abscissa along line'</span>;
+0938 
+0939         <span class="comment">%ProjData.VarAttribute{1}.Role='coord_x';</span>
+0940         <span class="keyword">for</span> iselect=1:numel(VarIndex)
+0941             VarName=FieldData.ListVarName{VarIndex(iselect)};
+0942             eval([<span class="string">'ProjData.'</span> VarName <span class="string">'=ProjLine{iselect};'</span>])
+0943             ProjData.ListVarName=[ProjData.ListVarName {VarName}];
+0944             ProjData.VarDimName=[ProjData.VarDimName {XName}];
+0945             <span class="comment">%ProjData.VarDimIndex=[ProjData.VarDimIndex {[1]}];</span>
+0946             ProjData.VarAttribute{iselect}=FieldData.VarAttribute{VarIndex(iselect)};
+0947         <span class="keyword">end</span>
+0948     
+0949     <span class="comment">%case of structured coordinates</span>
+0950     <span class="keyword">elseif</span>  numel(VarType.coord)&gt;=2 &amp; VarType.coord(1:2) &gt; 0;
+0951         <span class="keyword">if</span> ~isequal(ObjectData.Style,<span class="string">'line'</span>)<span class="comment">% exclude polyline</span>
+0952             errormsg=[<span class="string">'no  projection available on '</span> ObjectData.Style <span class="string">'for structured coordinates'</span>]; <span class="comment">%</span>
+0953         <span class="keyword">else</span>
+0954             test_Amat=1;<span class="comment">%image or 2D matrix</span>
+0955             test_interp2=0;<span class="comment">%default</span>
+0956 <span class="comment">%             if ~isempty(VarType.coord_y)</span>
+0957             AYName=FieldData.ListVarName{VarType.coord(1)};
+0958             AXName=FieldData.ListVarName{VarType.coord(2)};
+0959             eval([<span class="string">'AX=FieldData.'</span> AXName <span class="string">';'</span>]);<span class="comment">% set of x positions</span>
+0960             eval([<span class="string">'AY=FieldData.'</span> AYName <span class="string">';'</span>]);<span class="comment">% set of y positions</span>
+0961             AName=FieldData.ListVarName{VarType.scalar};
+0962             eval([<span class="string">'A=FieldData.'</span> AName <span class="string">';'</span>]);<span class="comment">% scalar</span>
+0963             npxy=size(A);
+0964             npx=npxy(2);
+0965             npy=npxy(1); 
+0966             <span class="keyword">if</span> numel(AX)==2
+0967                 DX=(AX(2)-AX(1))/(npx-1);
+0968             <span class="keyword">else</span>
+0969                 DX_vec=diff(AX);
+0970                 DX=max(DX_vec);
+0971                 DX_min=min(DX_vec);
+0972                 <span class="keyword">if</span> (DX-DX_min)&gt;0.0001*abs(DX) 
+0973                     test_interp2=1;
+0974                     DX=DX_min;
+0975                 <span class="keyword">end</span>    
+0976             <span class="keyword">end</span>
+0977             <span class="keyword">if</span> numel(AY)==2
+0978                 DY=(AY(2)-AY(1))/(npy-1);
+0979             <span class="keyword">else</span>
+0980                 DY_vec=diff(AY);
+0981                 DY=max(DY_vec);
+0982                 DY_min=min(DY_vec);
+0983                 <span class="keyword">if</span> (DY-DY_min)&gt;0.0001*abs(DY)
+0984                    test_interp2=1;
+0985                     DY=DY_min;
+0986                 <span class="keyword">end</span>     
+0987             <span class="keyword">end</span>              
+0988             AXI=linspace(AX(1),AX(end), npx);<span class="comment">%set of  x  positions for the interpolated input data</span>
+0989             AYI=linspace(AY(1),AY(end), npy);<span class="comment">%set of  x  positions for the interpolated input data</span>
+0990 <span class="comment">%             else   % coordinates defined by first and last values (regular grids)</span>
+0991 <span class="comment">%                 if isempty(Coord_x)</span>
+0992 <span class="comment">%                     Coord_x=[0.5 npx-0.5];% default coordinate equal to index</span>
+0993 <span class="comment">%                 end</span>
+0994 <span class="comment">%                 if isempty(Coord_y)</span>
+0995 <span class="comment">%                     Coord_y=[npy-0.5 0.5];% default coordinate equal to reversed index (image convention)</span>
+0996 <span class="comment">%                 end</span>
+0997 <span class="comment">%                 AXI=linspace(Coord_x(1),Coord_x(2), npx);%set of  y positions in the input data</span>
+0998 <span class="comment">%                 DX=(Coord_x(2)-Coord_x(1))/(npx-1);%grid mesh</span>
+0999 <span class="comment">%                 AYI=linspace(Coord_y(1),Coord_y(2), npy);%set of  y positions in the input data</span>
+1000 <span class="comment">%                 DY=(Coord_y(2)-Coord_y(1))/(npy-1);%grid mesh</span>
+1001 <span class="comment">%                % indcolor([1 2])=[]; %indices of non-coordinate dimensions (e.g; color component)</span>
+1002 <span class="comment">%             end</span>
+1003             <span class="keyword">if</span> isfield(ObjectData,<span class="string">'DX'</span>)
+1004                 DXY_line=ObjectData.DX;<span class="comment">%mesh on the projection line</span>
+1005             <span class="keyword">else</span>
+1006                 DXY_line=sqrt(abs(DX*DY));<span class="comment">% mesh on the projection line</span>
+1007             <span class="keyword">end</span>
+1008             dlinx=ObjectData.Coord(2,1)-ObjectData.Coord(1,1);
+1009             dliny=ObjectData.Coord(2,2)-ObjectData.Coord(1,2);
+1010             linelength=sqrt(dlinx*dlinx+dliny*dliny);
+1011             theta=angle(dlinx+i*dliny);<span class="comment">%angle of the line</span>
+1012             <span class="keyword">if</span> isfield(FieldData,<span class="string">'RangeX'</span>)
+1013                 XMin=min(FieldData.RangeX);<span class="comment">%shift of the origin on the line</span>
+1014             <span class="keyword">else</span>
+1015                 XMin=0;
+1016             <span class="keyword">end</span>
+1017             ProjData.AX=linspace(XMin,XMin+linelength,linelength/DXY_line+1);<span class="comment">%abscissa of the new pixels along the line</span>
+1018             y=linspace(-width,width,2*width/DXY_line+1);<span class="comment">%ordintes of the new pixels (coordinate across the line)</span>
+1019             npX=length(ProjData.AX);
+1020             npY=length(y); <span class="comment">%TODO: utiliser proj_grid</span>
+1021             [X,Y]=meshgrid(ProjData.AX,y);<span class="comment">%grid in the line coordinates</span>
+1022             XIMA=ObjectData.Coord(1,1)+(X-XMin)*cos(theta)-Y*sin(theta);
+1023             YIMA=ObjectData.Coord(1,2)+(X-XMin)*sin(theta)+Y*cos(theta);
+1024             XIMA=(XIMA-AX(1))/DX+1;<span class="comment">%  index of the original image along x</span>
+1025             YIMA=(YIMA-AY(1))/DY+1;<span class="comment">% index of the original image along y</span>
+1026             XIMA=reshape(round(XIMA),1,npX*npY);<span class="comment">%indices reorganized in 'line'</span>
+1027             YIMA=reshape(round(YIMA),1,npX*npY);
+1028             flagin=XIMA&gt;=1 &amp; XIMA&lt;=npx &amp; YIMA &gt;=1 &amp; YIMA&lt;=npy;<span class="comment">%flagin=1 inside the original image</span>
+1029             ind_in=find(flagin);
+1030             ind_out=find(~flagin);
+1031             ICOMB=(XIMA-1)*npy+YIMA;
+1032             ICOMB=ICOMB(flagin);<span class="comment">%index corresponding to XIMA and YIMA in the aligned original image vec_A</span>
+1033             nbcolor=1; <span class="comment">%color images</span>
+1034             <span class="keyword">if</span> numel(npxy)==2
+1035                 nbcolor=1;
+1036             <span class="keyword">elseif</span> length(npxy)==3
+1037                 nbcolor=npxy(3);
+1038             <span class="keyword">else</span>
+1039                 errormsg=<span class="string">'multicomponent field not projected'</span>;
+1040                 display(errormsg)
+1041                 <span class="keyword">return</span>
+1042             <span class="keyword">end</span> 
+1043             nbvar=length(ProjData.ListVarName);<span class="comment">% number of var from previous cells</span>
+1044           <span class="comment">%  nbdim=length(ProjData.ListDimName);%number of dim from previous cells</span>
+1045             ProjData.ListVarName=[ProjData.ListVarName {AXName}];
+1046             ProjData.VarDimName=[ProjData.VarDimName {AXName}];
+1047             <span class="keyword">for</span> ivar=VarIndex
+1048                 VarName{ivar}=FieldData.ListVarName{ivar};
+1049                 <span class="keyword">if</span> test_interp2<span class="comment">% interpolate on new grid</span>
+1050                     eval([<span class="string">'FieldData.'</span> VarName{ivar} <span class="string">'=interp2(FieldData.'</span> AXName <span class="string">',FieldData.'</span> AYName <span class="string">',FieldData.'</span> VarName{ivar} <span class="string">',AXI,AYI'');'</span>]) <span class="comment">%TO TEST</span>
+1051                 <span class="keyword">end</span>
+1052                 eval([<span class="string">'vec_A=reshape(squeeze(FieldData.'</span> VarName{ivar} <span class="string">'),npx*npy,nbcolor);'</span>]) <span class="comment">%put the original image in colum</span>
+1053                 <span class="keyword">if</span> nbcolor==1
+1054                     vec_B(ind_in)=vec_A(ICOMB);
+1055                     vec_B(ind_out)=zeros(size(ind_out));
+1056                     A_out=reshape(vec_B,npY,npX);
+1057                     eval([<span class="string">'ProjData.'</span> VarName{ivar} <span class="string">'=((sum(A_out,1)/npY))'';'</span>]);
+1058                 <span class="keyword">elseif</span> nbcolor==3
+1059                     vec_B(ind_in,[1:3])=vec_A(ICOMB,:);
+1060                     vec_B(ind_out,1)=zeros(size(ind_out));
+1061                     vec_B(ind_out,2)=zeros(size(ind_out));
+1062                     vec_B(ind_out,3)=zeros(size(ind_out));
+1063                     A_out=reshape(vec_B,npY,npX,nbcolor);
+1064                     eval([<span class="string">'ProjData.'</span> VarName{ivar} <span class="string">'=squeeze(sum(A_out,1)/npY);'</span>]);
+1065                 <span class="keyword">end</span>  
+1066                 ProjData.ListVarName=[ProjData.ListVarName VarName{ivar} ];
+1067                 ProjData.VarDimName=[ProjData.VarDimName {AXName}];<span class="comment">%to generalize with the initial name of the x coordinate</span>
+1068                 <span class="comment">%ProjData.VarDimIndex=[ProjData.VarDimIndex nbdim+1];</span>
+1069             <span class="keyword">end</span>
+1070             <span class="keyword">if</span> testU
+1071                  eval([<span class="string">'vector_x =ProjData.'</span> VarName{ivar_u} <span class="string">';'</span>])
+1072                  eval([<span class="string">'vector_y =ProjData.'</span> VarName{ivar_v} <span class="string">';'</span>])
+1073                  eval([<span class="string">'ProjData.'</span> VarName{ivar_u} <span class="string">'=cos(theta)*vector_x+sin(theta)*vector_y;'</span>])
+1074                  eval([<span class="string">'ProjData.'</span> VarName{ivar_v} <span class="string">'=-sin(theta)*vector_x+cos(theta)*vector_y;'</span>])
+1075             <span class="keyword">end</span>
+1076            <span class="comment">% ProjData.AX=(AXI)';</span>
+1077             <span class="comment">%ProjData.ListDimName=[ProjData.ListDimName 'AX'];</span>
+1078             <span class="comment">%ProjData.DimValue=[ProjData.DimValue length(ProjData.AX)];%values of dimension (nbre of vectors)</span>
+1079             <span class="comment">%ProjData.VarDimIndex=[ProjData.VarDimIndex length(ProjData.ListDimName)];</span>
+1080             ProjData.VarAttribute{nbvar+1}.long_name=<span class="string">'abscissa along line'</span>;
+1081             <span class="comment">%ProjData.VarAttribute{nbvar+1}.Role='coord_x';</span>
+1082             <span class="keyword">if</span> nbcolor==3
+1083                 <span class="comment">%ProjData.ListDimName=[ProjData.ListDimName 'rgb'];%GENERALIZE TO OTHER COMPONENT DIMENSIONS</span>
+1084                 <span class="comment">%ProjData.DimValue=[ProjData.DimValue 3];%values of dimension</span>
+1085                 <span class="comment">%ProjData.VarDimIndex{end}=[length(ProjData.ListDimName)-1 length(ProjData.ListDimName)];</span>
+1086                 ProjData.VarDimName{end}={XName,<span class="string">'rgb'</span>};
+1087             <span class="keyword">end</span>
+1088         <span class="keyword">end</span>      
+1089     <span class="keyword">end</span>
+1090 <span class="keyword">end</span>
+1091 
+1092 <span class="comment">% %shorter case for horizontal or vertical line (A FAIRE</span>
+1093 <span class="comment">% %     Rangx=[0.5 npx-0.5];%image coordiantes of corners</span>
+1094 <span class="comment">% %     Rangy=[npy-0.5 0.5];</span>
+1095 <span class="comment">% %     if isfield(Calib,'Pxcmx')&amp;isfield(Calib,'Pxcmy')%old calib</span>
+1096 <span class="comment">% %         Rangx=Rangx/Calib.Pxcmx;</span>
+1097 <span class="comment">% %         Rangy=Rangy/Calib.Pxcmy;</span>
+1098 <span class="comment">% %     else</span>
+1099 <span class="comment">% %         [Rangx]=phys_XYZ(Calib,Rangx,[0.5 0.5],[0 0]);%case of translations without rotation and quadratic deformation</span>
+1100 <span class="comment">% %         [xx,Rangy]=phys_XYZ(Calib,[0.5 0.5],Rangy,[0 0]);</span>
+1101 <span class="comment">% %     end</span>
+1102 <span class="comment">%</span>
+1103 <span class="comment">% %     test_scal=0;%default% 3- 'UserData':(get(handles.Tag,'UserData')</span>
+1104 
+1105 
+1106 <span class="comment">%-----------------------------------------------------------------</span>
+1107 <span class="comment">%project on a plane</span>
+1108 <span class="comment">% AJOUTER flux,circul,error</span>
+1109  <span class="keyword">function</span>  [ProjData,errormsg] = <a href="#_sub4" class="code" title="subfunction  [ProjData,errormsg] = proj_plane(FieldData, ObjectData)">proj_plane</a>(FieldData, ObjectData)
+1110 <span class="comment">%-----------------------------------------------------------------</span>
+1111 
+1112 <span class="comment">%initialisation of the input parameters of the projection plane</span>
+1113 <span class="comment">%-----------------------------------------------------------------</span>
+1114 ProjMode=<span class="string">'projection'</span>;<span class="comment">%direct projection by default</span>
+1115 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'ProjMode'</span>),ProjMode=ObjectData.ProjMode; <span class="keyword">end</span>;
+1116 
+1117 <span class="comment">%axis origin</span>
+1118 <span class="keyword">if</span> isempty(ObjectData.Coord)
+1119     ObjectData.Coord(1,1)=0;<span class="comment">%origin of the plane set to [0 0] by default</span>
+1120     ObjectData.Coord(1,2)=0;
+1121     ObjectData.Coord(1,3)=0;
+1122 <span class="keyword">end</span>
+1123 
+1124 <span class="comment">%rotation angles</span>
+1125 Phi=0;<span class="comment">%default</span>
+1126 Theta=0;
+1127 Psi=0;
+1128 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'Phi'</span>)&amp;&amp; ~isempty(ObjectData.Phi)
+1129     Phi=(pi/180)*ObjectData.Phi;<span class="comment">%first Euler angle in radian</span>
+1130 <span class="keyword">end</span>
+1131 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'Theta'</span>)&amp;&amp; ~isempty(ObjectData.Theta)
+1132     Theta=(pi/180)*ObjectData.Theta;<span class="comment">%second Euler angle in radian</span>
+1133 <span class="keyword">end</span>
+1134 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'Psi'</span>)&amp;&amp; ~isempty(ObjectData.Psi)
+1135     Psi=(pi/180)*ObjectData.Psi;<span class="comment">%third Euler angle in radian</span>
+1136 <span class="keyword">end</span>
+1137 
+1138 <span class="comment">%components of the unity vector normal to the projection plane</span>
+1139 NormVec_X=-sin(Phi)*sin(Theta);
+1140 NormVec_Y=cos(Phi)*sin(Theta);
+1141 NormVec_Z=cos(Theta);
+1142 
+1143 <span class="comment">% test for 3D fields</span>
+1144 test3D=0;
+1145 <span class="keyword">if</span> isfield(FieldData,<span class="string">'NbDim'</span>)
+1146     test3D=isequal(FieldData.NbDim,3);
+1147 <span class="keyword">end</span>
+1148 test3C=test3D; <span class="comment">%default 3 vel components</span>
+1149 
+1150 <span class="comment">%mesh sizes DX and DY</span>
+1151 DX=0;
+1152 DY=0; <span class="comment">%default</span>
+1153 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'DX'</span>)&amp;~isempty(ObjectData.DX)
+1154      DX=abs(ObjectData.DX);<span class="comment">%mesh of interpolation points</span>
+1155 <span class="keyword">end</span>
+1156 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'DY'</span>)&amp;~isempty(ObjectData.DY)
+1157      DY=abs(ObjectData.DY);<span class="comment">%mesh of interpolation points</span>
+1158 <span class="keyword">end</span>
+1159 <span class="keyword">if</span>  ~isequal(ProjMode,<span class="string">'projection'</span>) &amp; (DX==0|DY==0)
+1160         errormsg=<span class="string">'DX or DY missing'</span>;
+1161         display(errormsg)
+1162         <span class="keyword">return</span>
+1163 <span class="keyword">end</span>
+1164 
+1165 <span class="comment">%extrema along each axis</span>
+1166 testXMin=0;
+1167 testXMax=0;
+1168 testYMin=0;
+1169 testYMax=0;
+1170 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'RangeX'</span>)
+1171         XMin=min(ObjectData.RangeX);
+1172         XMax=max(ObjectData.RangeX);
+1173         testXMin=XMax&gt;XMin;
+1174         testXMax=1;
+1175 <span class="keyword">end</span>
+1176 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'RangeY'</span>)
+1177         YMin=min(ObjectData.RangeY);
+1178         YMax=max(ObjectData.RangeY);
+1179         testYMin=YMax&gt;YMin;
+1180         testYMax=1;
+1181 <span class="keyword">end</span>
+1182 width=0;<span class="comment">%default width of the projection band</span>
+1183 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'RangeZ'</span>)
+1184         width=max(ObjectData.RangeZ);
+1185 <span class="keyword">end</span>
+1186 
+1187 <span class="comment">% initiate Matlab  structure for physical field</span>
+1188 ProjData=<a href="#_sub5" class="code" title="subfunction [ProjData,errormsg]=proj_heading(FieldData,ObjectData)">proj_heading</a>(FieldData,ObjectData);
+1189 ProjData.NbDim=2;
+1190 ProjData.ListDimName={};<span class="comment">%name of dimension</span>
+1191 ProjData.DimValue=[];<span class="comment">%values of dimension (nbre of vectors)</span>
+1192 ProjData.ListVarName={};
+1193 ProjData.VarDimIndex={};
+1194 
+1195 error=0;<span class="comment">%default</span>
+1196 flux=0;
+1197 testfalse=0;
+1198 ListIndex={};
+1199 
+1200 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+1201 <span class="comment">%group the variables (fields of 'FieldData') in cells of variables with the same dimensions</span>
+1202 <span class="comment">%-----------------------------------------------------------------</span>
+1203 idimvar=0;
+1204 [CellVarIndex,NbDim,VarTypeCell,errormsg]=<a href="find_field_indices.html" class="code" title="function [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data)">find_field_indices</a>(FieldData);
+1205 <span class="keyword">if</span> ~isempty(errormsg)
+1206     errormsg=[<span class="string">'error in proj_field/proj_plane:'</span> errormsg];
+1207     <span class="keyword">return</span>
+1208 <span class="keyword">end</span>
+1209 <span class="comment">%LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS</span>
+1210 <span class="comment">% CellVarIndex=cells of variable index arrays</span>
+1211 ivar_new=0; <span class="comment">% index of the current variable in the projected field</span>
+1212 icoord=0;
+1213 <span class="keyword">for</span> icell=1:length(CellVarIndex)
+1214     <span class="keyword">if</span> NbDim(icell)==1
+1215         <span class="keyword">continue</span>
+1216     <span class="keyword">end</span>
+1217     VarIndex=CellVarIndex{icell};<span class="comment">%  indices of the selected variables in the list FieldData.ListVarName</span>
+1218     VarType=VarTypeCell{icell};
+1219     ivar_X=VarType.coord_x;
+1220     ivar_Y=VarType.coord_y;
+1221     ivar_Z=VarType.coord_z;
+1222     ivar_U=VarType.vector_x;
+1223     ivar_V=VarType.vector_y;
+1224     ivar_W=VarType.vector_z;
+1225     ivar_C=VarType.scalar ;
+1226     ivar_Anc=VarType.ancillary;
+1227     test_anc=zeros(size(VarIndex));
+1228     test_anc(ivar_Anc)=ones(size(ivar_Anc));
+1229     ivar_F=VarType.warnflag;
+1230     ivar_FF=VarType.errorflag;
+1231     <span class="keyword">if</span> isempty(ivar_X)
+1232         test_grid=1;<span class="comment">%test for input data on regular grid (e.g. image)coordinates</span>
+1233     <span class="keyword">else</span>
+1234         <span class="keyword">if</span> length(ivar_Y)~=1
+1235                 <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'y coordinate missing in proj_field.m'</span>,<span class="string">'ERROR'</span>)
+1236                 <span class="keyword">return</span>
+1237         <span class="keyword">end</span>
+1238         test_grid=0;
+1239     <span class="keyword">end</span>
+1240     DimIndices=FieldData.VarDimIndex{VarIndex(1)};<span class="comment">%indices of the dimensions of the first variable (common to all variables in the cell)</span>
+1241    
+1242 <span class="comment">%case of input fields with unstructured coordinates</span>
+1243     <span class="keyword">if</span> ~test_grid
+1244         <span class="keyword">if</span> length(ivar_X)==1
+1245             eval([<span class="string">'coord_x=FieldData.'</span> FieldData.ListVarName{ivar_X} <span class="string">';'</span>])
+1246         <span class="keyword">end</span>
+1247         <span class="keyword">if</span> length(ivar_Y)==1
+1248             eval([<span class="string">'coord_y=FieldData.'</span> FieldData.ListVarName{ivar_Y} <span class="string">';'</span>])
+1249         <span class="keyword">end</span>
+1250         <span class="keyword">if</span> length(ivar_Z)==1
+1251             eval([<span class="string">'coord_z=FieldData.'</span> FieldData.ListVarName{ivar_Z} <span class="string">';'</span>])
+1252         <span class="keyword">end</span>
+1253         <span class="keyword">if</span> length(ivar_U)&gt;1 | length(ivar_V)&gt;1 | length(ivar_W)&gt;1
+1254                  <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'multiple vector input in proj_field.m'</span>,<span class="string">'ERROR'</span>)
+1255                     <span class="keyword">return</span>
+1256         <span class="keyword">end</span>
+1257         <span class="keyword">if</span> length(ivar_X)&gt;1 | length(ivar_Y)&gt;1 | length(ivar_Z)&gt;1
+1258                  <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'multiple coordinate input in proj_field.m'</span>,<span class="string">'ERROR'</span>)
+1259                     <span class="keyword">return</span>
+1260         <span class="keyword">end</span>
+1261         <span class="keyword">if</span> length(ivar_F)&gt;1 | length(ivar_FF)&gt;1 
+1262                  <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'multiple flag input in proj_field.m'</span>,<span class="string">'ERROR'</span>)
+1263                     <span class="keyword">return</span>
+1264         <span class="keyword">end</span>
+1265         <span class="keyword">if</span> length(ivar_Y)~=1
+1266             <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'y coordinate missing in proj_field.m'</span>,<span class="string">'ERROR'</span>)
+1267             <span class="keyword">return</span>
+1268         <span class="keyword">end</span>
+1269         <span class="comment">% translate  initial coordinates</span>
+1270         coord_x=coord_x-ObjectData.Coord(1,1);
+1271         coord_y=coord_y-ObjectData.Coord(1,2);
+1272         <span class="keyword">if</span> ~isempty(ivar_Z)
+1273             coord_z=coord_z-ObjectData.Coord(1,3);
+1274         <span class="keyword">end</span>
+1275         <span class="comment">% selection of the vectors in the projection range (3D case)</span>
+1276         <span class="keyword">if</span> length(ivar_Z)==1 &amp;  width &gt; 0
+1277             <span class="comment">%components of the unitiy vector normal to the projection plane</span>
+1278             fieldZ=NormVec_X*coord_x + NormVec_Y*coord_y+ NormVec_Z*coord_z;<span class="comment">% distance to the plane</span>
+1279             indcut=find(abs(fieldZ) &lt;= width);
+1280             <span class="keyword">for</span> ivar=VarIndex
+1281                 VarName=FieldData.ListVarName{ivar};
+1282                 eval([<span class="string">'FieldData.'</span> VarName <span class="string">'=FieldData.'</span> VarName <span class="string">'(indcut);'</span>])
+1283 <span class="comment">%                 end</span>
+1284                     <span class="comment">% A VOIR : CAS DE VAR STRUCTUREE MAIS PAS GRILLE REGULIERE : INTERPOLER SUR GRILLE REGULIERE</span>
+1285             <span class="keyword">end</span>
+1286             coord_x=coord_x(indcut);
+1287             coord_y=coord_y(indcut);
+1288             coord_z=coord_z(indcut);
+1289         <span class="keyword">end</span>
+1290 
+1291        <span class="comment">%rotate coordinates if needed</span>
+1292         <span class="keyword">if</span> isequal(Phi,0)
+1293             coord_X=coord_x;
+1294             coord_Y=coord_y;
+1295             <span class="keyword">if</span> ~isequal(Theta,0)
+1296                 coord_Y=coord_Y *cos(Theta);
+1297             <span class="keyword">end</span>
+1298         <span class="keyword">else</span>
+1299             coord_X=(coord_x *cos(Phi) + coord_y* sin(Phi));
+1300             coord_Y=(-coord_x *sin(Phi) + coord_y *cos(Phi))*cos(Theta);
+1301         <span class="keyword">end</span>
+1302         <span class="keyword">if</span> ~isempty(ivar_Z)
+1303             coord_Y=coord_Y+coord_z *sin(Theta);
+1304         <span class="keyword">end</span>
+1305         <span class="keyword">if</span> ~isequal(Psi,0)
+1306                 coord_X=(coord_X *cos(Psi) - coord_Y* sin(Psi));<span class="comment">%A VERIFIER</span>
+1307                 coord_Y=(coord_X *sin(Psi) + coord_Y* cos(Psi));
+1308         <span class="keyword">end</span>
+1309         
+1310         <span class="comment">%restriction to the range of x and y if imposed</span>
+1311         testin=ones(size(coord_X)); <span class="comment">%default</span>
+1312         testbound=0;
+1313         <span class="keyword">if</span> testXMin
+1314             testin=testin &amp; (coord_X &gt;= XMin);
+1315             testbound=1;
+1316         <span class="keyword">end</span>
+1317         <span class="keyword">if</span> testXMax
+1318             testin=testin &amp; (coord_X &lt;= XMax);
+1319             testbound=1;
+1320         <span class="keyword">end</span>
+1321         <span class="keyword">if</span> testYMin
+1322             testin=testin &amp; (coord_Y &gt;= YMin);
+1323             testbound=1;
+1324         <span class="keyword">end</span>
+1325         <span class="keyword">if</span> testYMin
+1326             testin=testin &amp; (coord_Y &lt;= YMax);
+1327             testbound=1;
+1328         <span class="keyword">end</span>
+1329         <span class="keyword">if</span> testbound
+1330             indcut=find(testin);
+1331             <span class="keyword">for</span> ivar=VarIndex
+1332                 VarName=FieldData.ListVarName{ivar};
+1333                 eval([<span class="string">'FieldData.'</span> VarName <span class="string">'=FieldData.'</span> VarName <span class="string">'(indcut);'</span>])            
+1334             <span class="keyword">end</span>
+1335             coord_X=coord_X(indcut);
+1336             coord_Y=coord_Y(indcut);
+1337             <span class="keyword">if</span> length(ivar_Z)==1
+1338                 coord_Z=coord_Z(indcut);
+1339             <span class="keyword">end</span>
+1340         <span class="keyword">end</span>
+1341         <span class="comment">% different cases of projection</span>
+1342         <span class="keyword">if</span> isequal(ObjectData.ProjMode,<span class="string">'projection'</span>)
+1343             ProjData.ListDimName=[ProjData.ListDimName FieldData.ListDimName(DimIndices(1))];<span class="comment">%add the point index to the list of dimensions</span>
+1344             ProjData.DimValue=[ProjData.DimValue length(coord_X)];
+1345             nbvar=0;
+1346             <span class="keyword">for</span> ivar=VarIndex <span class="comment">%transfer variables to the projection plane</span>
+1347                 VarName=FieldData.ListVarName{ivar};
+1348                 <span class="keyword">if</span> ivar==ivar_X <span class="comment">%x coordinate</span>
+1349                     eval([<span class="string">'ProjData.'</span> VarName <span class="string">'=coord_X;'</span>])
+1350                 <span class="keyword">elseif</span> ivar==ivar_Y <span class="comment">% y coordinate</span>
+1351                     eval([<span class="string">'ProjData.'</span> VarName <span class="string">'=coord_Y;'</span>])
+1352                 <span class="keyword">elseif</span> isempty(ivar_Z) || ivar~=ivar_Z <span class="comment">% other variables (except Z coordinate wyhich is not reproduced)</span>
+1353                     eval([<span class="string">'ProjData.'</span> VarName <span class="string">'=FieldData.'</span> VarName <span class="string">';'</span>])
+1354                 <span class="keyword">end</span>
+1355                 <span class="keyword">if</span> isempty(ivar_Z) || ivar~=ivar_Z 
+1356                     ProjData.ListVarName=[ProjData.ListVarName VarName];
+1357                     ProjData.VarDimIndex=[ProjData.VarDimIndex DimIndices(1)];
+1358                     nbvar=nbvar+1;
+1359                     <span class="keyword">if</span> isfield(FieldData,<span class="string">'VarAttribute'</span>) &amp; length(FieldData.VarAttribute) &gt;=ivar
+1360                         ProjData.VarAttribute{nbvar}=FieldData.VarAttribute{ivar};
+1361                     <span class="keyword">end</span>
+1362                 <span class="keyword">end</span>
+1363             <span class="keyword">end</span>  
+1364         <span class="keyword">elseif</span> isequal(ObjectData.ProjMode,<span class="string">'interp'</span>)||isequal(ObjectData.ProjMode,<span class="string">'filter'</span>)<span class="comment">%interpolate data on a regular grid</span>
+1365             coord_x_proj=[XMin:DX:XMax];
+1366             coord_y_proj=[YMin:DY:YMax];
+1367             ProjData.ListDimName={<span class="string">'coord_y'</span>,<span class="string">'coord_x'</span>};
+1368             ProjData.DimValue=[length(coord_y_proj) length(coord_x_proj)];
+1369             ProjData.ListVarName={};
+1370             ProjData.VarDimIndex={};   
+1371             <span class="keyword">if</span> isempty(ivar_X), ivar_X=0; <span class="keyword">end</span>;
+1372             <span class="keyword">if</span> isempty(ivar_Y), ivar_Y=0; <span class="keyword">end</span>;
+1373             <span class="keyword">if</span> isempty(ivar_Z), ivar_Z=0; <span class="keyword">end</span>;
+1374             <span class="keyword">if</span> isempty(ivar_U), ivar_U=0; <span class="keyword">end</span>;
+1375             <span class="keyword">if</span> isempty(ivar_V), ivar_V=0; <span class="keyword">end</span>;
+1376             <span class="keyword">if</span> isempty(ivar_W), ivar_W=0; <span class="keyword">end</span>;
+1377             <span class="keyword">if</span> isempty(ivar_F), ivar_F=0; <span class="keyword">end</span>;
+1378             <span class="keyword">if</span> isempty(ivar_FF), ivar_FF=0; <span class="keyword">end</span>;
+1379             <span class="keyword">if</span> ~isequal(ivar_FF,0)
+1380                 VarName_FF=FieldData.ListVarName{ivar_FF};
+1381                 eval([<span class="string">'indsel=find(FieldData.'</span> VarName_FF <span class="string">'==0);'</span>])
+1382                 coord_X=coord_X(indsel);
+1383                 coord_Y=coord_Y(indsel);
+1384             <span class="keyword">end</span>
+1385             FF=zeros(1,length(coord_y_proj)*length(coord_x_proj));
+1386             testFF=0;
+1387             <span class="keyword">for</span> ivar=VarIndex
+1388                 VarName=FieldData.ListVarName{ivar}; 
+1389                 <span class="keyword">if</span> ~( ivar==ivar_X | ivar==ivar_Y | ivar==ivar_Z | ivar==ivar_F | ivar==ivar_FF | test_anc(ivar)==1)                 
+1390                     ivar_new=ivar_new+1;
+1391                     ProjData.ListVarName=[ProjData.ListVarName {VarName}];
+1392                     ProjData.VarDimIndex=[ProjData.VarDimIndex {[1 2]}];
+1393                     <span class="keyword">if</span> isfield(FieldData,<span class="string">'VarAttribute'</span>) &amp; length(FieldData.VarAttribute) &gt;=ivar
+1394                         ProjData.VarAttribute{ivar_new}=FieldData.VarAttribute{ivar};
+1395                     <span class="keyword">end</span>
+1396                     ProjData.VarAttribute{ivar_new}.Coord_2=[XMin XMax];
+1397                     ProjData.VarAttribute{ivar_new}.Coord_1=[YMin YMax];
+1398                     <span class="keyword">if</span>  ~isequal(ivar_FF,0)
+1399                         eval([<span class="string">'FieldData.'</span> VarName <span class="string">'=FieldData.'</span> VarName <span class="string">'(indsel);'</span>])
+1400                     <span class="keyword">end</span>
+1401                     eval([<span class="string">'ProjData.'</span> VarName <span class="string">'=griddata_uvmat(coord_X,coord_Y,FieldData.'</span> VarName <span class="string">',coord_x_proj,coord_y_proj'');'</span>])
+1402                     eval([<span class="string">'varline=reshape(ProjData.'</span> VarName <span class="string">',1,length(coord_y_proj)*length(coord_x_proj));'</span>])
+1403                     FFlag= isnan(varline); <span class="comment">%detect undefined values NaN</span>
+1404                     indnan=find(FFlag);
+1405                     <span class="keyword">if</span>~isempty(indnan)
+1406                         varline(indnan)=zeros(size(indnan));
+1407                         eval([<span class="string">'ProjData.'</span> VarName <span class="string">'=reshape(varline,length(coord_y_proj),length(coord_x_proj));'</span>])
+1408                         FF(indnan)=ones(size(indnan));
+1409 <span class="comment">%                         eval(['ProjData.' VarName '(indnan)=zeros(size(indnan));'])%put NaN to 0</span>
+1410 <span class="comment">%                         FF=FF|FFlag;</span>
+1411                         testFF=1;
+1412                     <span class="keyword">end</span>
+1413                     <span class="keyword">if</span> ivar==ivar_U
+1414                         ivar_U=ivar_new;
+1415                     <span class="keyword">end</span>
+1416                     <span class="keyword">if</span> ivar==ivar_V
+1417                         ivar_V=ivar_new;
+1418                     <span class="keyword">end</span>
+1419                     <span class="keyword">if</span> ivar==ivar_W
+1420                         ivar_W=ivar_new;
+1421                     <span class="keyword">end</span>
+1422                 <span class="keyword">end</span>
+1423             <span class="keyword">end</span>
+1424             <span class="keyword">if</span> testFF
+1425                 ProjData.FF=reshape(FF,length(coord_y_proj),length(coord_x_proj));
+1426                 ProjData.ListVarName=[ProjData.ListVarName {<span class="string">'FF'</span>}];
+1427                 ProjData.VarDimIndex=[ProjData.VarDimIndex {[1 2]}];
+1428                 ProjData.VarAttribute{ivar_new+1}.Role=<span class="string">'errorflag'</span>;
+1429             <span class="keyword">end</span>
+1430         <span class="keyword">end</span>
+1431 <span class="comment">%case of fields defined on a structured  grid</span>
+1432     <span class="keyword">else</span>  
+1433         DimValue=FieldData.DimValue(DimIndices);<span class="comment">%set of dimension values</span>
+1434         ListDimName=FieldData.ListDimName(DimIndices);
+1435         nbcolor=1; <span class="comment">%default</span>
+1436         <span class="keyword">for</span> idim=1:length(ListDimName)
+1437             DimName=ListDimName{idim};
+1438             <span class="keyword">if</span> isequal(DimName,<span class="string">'rgb'</span>)|isequal(DimName,<span class="string">'nb_coord'</span>)|isequal(DimName,<span class="string">'nb_coord_i'</span>)
+1439                nbcolor=DimValue(idim);
+1440                DimIndices(idim)=[];
+1441                DimValue(idim)=[];
+1442             <span class="keyword">end</span>
+1443             <span class="keyword">if</span> isequal(DimName,<span class="string">'nb_coord_j'</span>)<span class="comment">% NOTE: CASE OF TENSOR NOT TREATED</span>
+1444                 DimIndices(idim)=[];
+1445                 DimValue(idim)=[];
+1446             <span class="keyword">end</span>
+1447         <span class="keyword">end</span>  
+1448         ind_1=find(DimValue==1);
+1449         DimIndices(ind_1)=[]; <span class="comment">%suppress singleton dimensions</span>
+1450         indxy=find(DimVarIndex(DimIndices));<span class="comment">%select dimension variables (DimIndices non zero)</span>
+1451         nb_dim=length(DimIndices);<span class="comment">%number of space dimensions</span>
+1452         Coord_z=[];
+1453         Coord_y=[];
+1454         Coord_x=[];   
+1455     
+1456         <span class="keyword">for</span> idim=1:nb_dim <span class="comment">%loop on space dimensions</span>
+1457             test_interp(idim)=0;<span class="comment">%test for coordiate interpolation (non regular grid), =0 by default</span>
+1458             test_coord(idim)=0;<span class="comment">%test for defined coordinates, =0 by default</span>
+1459             ivar=DimVarIndex(DimIndices(idim));<span class="comment">% index of the variable corresponding to the current dimension</span>
+1460             <span class="keyword">if</span> ~isequal(ivar,0)<span class="comment">%  a variable corresponds to the current dimension</span>
+1461                 eval([<span class="string">'Coord{idim}=FieldData.'</span> FieldData.ListVarName{ivar} <span class="string">';'</span>]) ;<span class="comment">% position for the first index</span>
+1462                 DCoord=diff(Coord{idim});
+1463                 DCoord_min(idim)=min(DCoord);
+1464                 DCoord_max=max(DCoord);
+1465                 test_direct(idim)=DCoord_max&gt;0;<span class="comment">% =1 for increasing values, 0 otherwise</span>
+1466                 test_direct_min=DCoord_min(idim)&gt;0;<span class="comment">% =1 for increasing values, 0 otherwise</span>
+1467                 <span class="keyword">if</span> ~isequal(test_direct(idim),test_direct_min)
+1468                      <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([<span class="string">'non monotonic dimension variable # '</span> num2str(idim)  <span class="string">' in proj_field.m'</span>],<span class="string">'ERROR'</span>)
+1469                                 <span class="keyword">return</span>
+1470                 <span class="keyword">end</span>               
+1471                 test_interp(idim)=(DCoord_max-DCoord_min(idim))&gt; 0.0001*abs(DCoord_max);<span class="comment">% test grid regularity</span>
+1472                 test_coord(idim)=1;
+1473 
+1474             <span class="keyword">else</span>  <span class="comment">% no variable associated with the first dimension, look for variable  attributes Coord_1, _2 or _3</span>
+1475                 Coord_i_str=[<span class="string">'Coord_'</span> num2str(idim)];
+1476                 DCoord_min(idim)=1;<span class="comment">%default</span>
+1477                 Coord{idim}=[0.5 DimValue(idim)-0.5];
+1478                 test_direct(idim)=1;
+1479                 <span class="keyword">for</span> ivar=VarIndex
+1480                     <span class="keyword">if</span>  isfield(FieldData.VarAttribute{ivar},Coord_i_str)<span class="comment">% if there is a variable  attribute named Coord_1, _2 or _3</span>
+1481                          eval([<span class="string">'Coord{idim}=FieldData.VarAttribute{ivar}.'</span> Coord_i_str <span class="string">';'</span>]);<span class="comment">%'range x</span>
+1482                          <span class="keyword">if</span> isnumeric(Coord{idim})
+1483                              <span class="keyword">if</span> length(Coord{idim})&gt;=2
+1484                                 test_direct(idim)=(Coord{idim}(2)&gt;Coord{idim}(1));
+1485                              <span class="keyword">else</span> 
+1486                                 <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([<span class="string">'two values needed for '</span> Coord_i_str <span class="string">'in proj_field.m'</span>],<span class="string">'ERROR'</span>)
+1487                                 <span class="keyword">return</span>
+1488                              <span class="keyword">end</span>
+1489                          <span class="keyword">else</span>
+1490                             <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([<span class="string">'non numerical coordinate attributes'</span> Coord_i_str <span class="string">'in proj_field.m'</span>],<span class="string">'ERROR'</span>)
+1491                             <span class="keyword">return</span>
+1492                          <span class="keyword">end</span>
+1493                          DCoord_min(idim)=(Coord{idim}(end)-Coord{idim}(1))/(DimValue(idim)-1);
+1494                     <span class="keyword">end</span>
+1495                 <span class="keyword">end</span>
+1496             <span class="keyword">end</span>
+1497         <span class="keyword">end</span>
+1498         <span class="keyword">if</span> nb_dim==2
+1499             <span class="keyword">if</span> DY==0
+1500                 DY=abs(DCoord_min(1));
+1501             <span class="keyword">end</span>
+1502             npY=1+round(abs(Coord{1}(end)-Coord{1}(1))/DY);<span class="comment">%nbre of points after interpolation</span>
+1503             npy=1+round(abs(Coord{1}(end)-Coord{1}(1))/abs(DCoord_min(1)));<span class="comment">%nbre of points after possible interpolation on a regular grid</span>
+1504             <span class="keyword">if</span> DX==0
+1505                 DX=abs(DCoord_min(2));
+1506             <span class="keyword">end</span>
+1507             npX=1+round(abs(Coord{2}(end)-Coord{2}(1))/DX);<span class="comment">%nbre of points after interpol</span>
+1508             npx=1+round(abs(Coord{2}(end)-Coord{2}(1))/abs(DCoord_min(2)));<span class="comment">%nbre of points after possible interpolation on a regular grid</span>
+1509             Coord_y=linspace(Coord{1}(1),Coord{1}(end),npY);
+1510             test_direct_y=test_direct(1);
+1511             Coord_x=linspace(Coord{2}(1),Coord{2}(end),npX);
+1512             test_direct_x=test_direct(2);
+1513             DAX=DCoord_min(2);
+1514             DAY=DCoord_min(1);
+1515         <span class="keyword">elseif</span> nb_dim==3
+1516             DZ=abs(DCoord_min(1));
+1517             npz=1+round(abs(Coord{1}(end)-Coord{1}(1))/DZ);<span class="comment">%nbre of points after interpolation</span>
+1518             <span class="keyword">if</span> DY==0
+1519                 DY=abs(DCoord_min(2));
+1520             <span class="keyword">end</span>
+1521             npY=1+round(abs(Coord{2}(end)-Coord{2}(1))/DY);<span class="comment">%nbre of points after interpol</span>
+1522             npy=1+round(abs(Coord{2}(end)-Coord{2}(1))/abs(DCoord_min(2)));<span class="comment">%nbre of points before interpol</span>
+1523             <span class="keyword">if</span> DX==0
+1524                 DX=abs(DCoord_min(3));
+1525             <span class="keyword">end</span>
+1526             npX=1+round(abs(Coord{3}(end)-Coord{3}(1))/DX);<span class="comment">%nbre of points after interpol</span>
+1527             npx=1+round(abs(Coord{3}(end)-Coord{3}(1))/abs(DCoord_min(3)));<span class="comment">%nbre of points before interpol</span>
+1528             Coord_z=linspace(Coord{1}(1),Coord{1}(end),npz);
+1529             test_direct_z=test_direct(1);
+1530             Coord_y=linspace(Coord{2}(1),Coord{2}(end),npY);
+1531             test_direct_y=test_direct(2);
+1532             Coord_x=linspace(Coord{3}(1),Coord{3}(end),npX);
+1533             test_direct_x=test_direct(3);
+1534         <span class="keyword">end</span>  
+1535         minAX=min(Coord_x);
+1536         maxAX=max(Coord_x);
+1537         minAY=min(Coord_y);
+1538         maxAY=max(Coord_y);
+1539         xcorner=[minAX maxAX minAX maxAX]-ObjectData.Coord(1,1);
+1540         ycorner=[maxAY maxAY minAY minAY]-ObjectData.Coord(1,2);
+1541         xcor_new=xcorner*cos(Phi)+ycorner*sin(Phi);<span class="comment">%coord new frame</span>
+1542         ycor_new=-xcorner*sin(Phi)+ycorner*cos(Phi);
+1543         <span class="keyword">if</span> ~testXMax
+1544             XMax=max(xcor_new);
+1545         <span class="keyword">end</span>
+1546         <span class="keyword">if</span> ~testXMin
+1547             XMin=min(xcor_new);
+1548         <span class="keyword">end</span>
+1549         <span class="keyword">if</span> ~testYMax
+1550             YMax=max(ycor_new);
+1551         <span class="keyword">end</span>
+1552         <span class="keyword">if</span> ~testYMin
+1553             YMin=min(ycor_new);
+1554         <span class="keyword">end</span>
+1555         DXinit=(maxAX-minAX)/(npx-1);
+1556         DYinit=(maxAY-minAY)/(npy-1);
+1557         <span class="keyword">if</span> DX==0
+1558             DX=DXinit;
+1559         <span class="keyword">end</span>
+1560         <span class="keyword">if</span> DY==0
+1561             DY=DYinit;
+1562         <span class="keyword">end</span>
+1563         npX=floor((XMax-XMin)/DX+1);
+1564         npY=floor((YMax-YMin)/DY+1);    
+1565         <span class="keyword">if</span> test_direct_y
+1566             coord_y_proj=linspace(YMin,YMax,npY);<span class="comment">%abscissa of the new pixels along the line</span>
+1567         <span class="keyword">else</span>
+1568             coord_y_proj=linspace(YMax,YMin,npY);<span class="comment">%abscissa of the new pixels along the line</span>
+1569         <span class="keyword">end</span>
+1570         <span class="keyword">if</span> test_direct_x
+1571             coord_x_proj=linspace(XMin,XMax,npX);<span class="comment">%abscissa of the new pixels along the line</span>
+1572         <span class="keyword">else</span>
+1573             coord_x_proj=linspace(XMax,XMin,npX);<span class="comment">%abscissa of the new pixels along the line</span>
+1574         <span class="keyword">end</span> 
+1575         
+1576         <span class="comment">% case with no rotation and interpolation</span>
+1577         <span class="keyword">if</span> isequal(ProjMode,<span class="string">'projection'</span>) &amp;&amp; isequal(Phi,0) &amp;&amp; isequal(Theta,0) &amp;&amp; isequal(Psi,0)
+1578             <span class="keyword">if</span> test_direct(1)
+1579                 min_ind1=ceil((YMin-Coord{1}(1))/DYinit)+1;
+1580                 max_ind1=floor((YMax-Coord{1}(1))/DYinit)+1;
+1581                 Ybound(1)=Coord{1}(1)+DYinit*(min_ind1-1);
+1582                 Ybound(2)=Coord{1}(1)+DYinit*(max_ind1-1);
+1583             <span class="keyword">else</span>
+1584                 min_ind1=ceil((Coord{1}(1)-YMax)/DYinit)+1;
+1585                 max_ind1=floor((Coord{1}(1)-YMin)/DYinit)+1;
+1586                 Ybound(2)=Coord{1}(1)-DYinit*(max_ind1-1);
+1587                 Ybound(1)=Coord{1}(1)-DYinit*(min_ind1-1);
+1588             <span class="keyword">end</span>              
+1589             <span class="keyword">if</span> test_direct(2)==1
+1590                 min_ind2=ceil((XMin-Coord{2}(1))/DXinit)+1;
+1591                 max_ind2=floor((XMax-Coord{2}(1))/DXinit)+1;
+1592                 Xbound(1)=Coord{2}(1)+DXinit*(min_ind2-1);
+1593                 Xbound(2)=Coord{2}(1)+DXinit*(max_ind2-1);
+1594             <span class="keyword">else</span>
+1595                 min_ind2=ceil((Coord{2}(1)-XMax)/DXinit)+1;
+1596                 max_ind2=floor((Coord{2}(1)-XMin)/DXinit)+1;
+1597                 Xbound(2)=Coord{2}(1)+DXinit*(max_ind2-1);
+1598                 Xbound(1)=Coord{2}(1)+DXinit*(min_ind2-1);
+1599             <span class="keyword">end</span> 
+1600             min_ind1=max(min_ind1,1);<span class="comment">% deals with margin (bound lower than the first index)</span>
+1601             min_ind2=max(min_ind2,1);
+1602             max_ind1=min(max_ind1,npy);
+1603             max_ind2=min(max_ind2,npx);
+1604             <span class="keyword">for</span> ivar=VarIndex
+1605                 VarName=FieldData.ListVarName{ivar}; 
+1606                 <span class="keyword">if</span> isequal(ObjectData.ProjMode,<span class="string">'interp'</span>)||isequal(ObjectData.ProjMode,<span class="string">'filter'</span>)<span class="comment">% coordinates common to all fields</span>
+1607                     ProjData.ListDimName={<span class="string">'coord_y'</span>,<span class="string">'coord_x'</span>};
+1608                     ProjData.DimValue=[length(coord_y_proj) length(coord_x_proj)];
+1609                 <span class="keyword">else</span>
+1610                     icoord=icoord+1;
+1611                     ProjData.ListDimName=[ProjData.ListDimName {[<span class="string">'coord_y_'</span> num2str(icoord)],[<span class="string">'coord_x_'</span> num2str(icoord)]}];
+1612                     ProjData.DimValue=[ProjData.DimValue length(coord_y_proj) length(coord_x_proj)];
+1613                 <span class="keyword">end</span>
+1614                 ProjData.ListVarName=[ProjData.ListVarName VarName];
+1615                 ProjData.VarDimIndex=[ProjData.VarDimIndex [nb_dim-1 nb_dim]];
+1616                 <span class="keyword">if</span> length(FieldData.VarAttribute)&gt;=ivar
+1617                     ProjData.VarAttribute{length(ProjData.ListVarName)}=FieldData.VarAttribute{ivar};
+1618                 <span class="keyword">end</span>
+1619                 ProjData.VarAttribute{length(ProjData.ListVarName)}.Coord_2=Xbound;
+1620                 ProjData.VarAttribute{length(ProjData.ListVarName)}.Coord_1=Ybound;
+1621                 eval([<span class="string">'ProjData.'</span> VarName <span class="string">'=FieldData.'</span> VarName <span class="string">'(min_ind1:max_ind1,min_ind2:max_ind2) ;'</span>]);
+1622             <span class="keyword">end</span>         
+1623         <span class="keyword">else</span>
+1624         <span class="comment">% case with rotation and/or interpolation</span>
+1625             <span class="keyword">if</span> isempty(Coord_z) <span class="comment">%2D case</span>
+1626                 [X,Y]=meshgrid(coord_x_proj,coord_y_proj);<span class="comment">%grid in the new coordinates</span>
+1627                 XIMA=ObjectData.Coord(1,1)+(X)*cos(Phi)-Y*sin(Phi);<span class="comment">%corresponding coordinates in the original image</span>
+1628                 YIMA=ObjectData.Coord(1,2)+(X)*sin(Phi)+Y*cos(Phi);
+1629                 XIMA=(XIMA-minAX)/DXinit+1;<span class="comment">% image index along x</span>
+1630                 YIMA=(-YIMA+maxAY)/DYinit+1;<span class="comment">% image index along y</span>
+1631                 XIMA=reshape(round(XIMA),1,npX*npY);<span class="comment">%indices reorganized in 'line'</span>
+1632                 YIMA=reshape(round(YIMA),1,npX*npY);
+1633                 flagin=XIMA&gt;=1 &amp; XIMA&lt;=npx &amp; YIMA &gt;=1 &amp; YIMA&lt;=npy;<span class="comment">%flagin=1 inside the original image</span>
+1634                 <span class="keyword">if</span> isequal(ObjectData.ProjMode,<span class="string">'filter'</span>)
+1635                     npx_filter=ceil(abs(DX/DAX));
+1636                     npy_filter=ceil(abs(DY/DAY));
+1637                     Mfilter=ones(npy_filter,npx_filter)/(npx_filter*npy_filter);
+1638                     test_filter=1;
+1639                 <span class="keyword">else</span>
+1640                     test_filter=0;
+1641                 <span class="keyword">end</span>
+1642                 <span class="keyword">for</span> ivar=VarIndex
+1643                     VarName=FieldData.ListVarName{ivar} ; 
+1644                     <span class="keyword">if</span> test_interp(1) | test_interp(2)<span class="comment">%interpolate on a regular grid</span>
+1645                           eval([<span class="string">'FieldData.'</span> VarName <span class="string">'=interp2(Coord{2},Coord{1},FieldData.'</span> VarName <span class="string">',Coord_x,Coord_y'');'</span>]) <span class="comment">%TO TEST</span>
+1646                     <span class="keyword">end</span>
+1647                     <span class="comment">%filter the field (image) if option 'filter' is used</span>
+1648                     <span class="keyword">if</span> test_filter  
+1649                          Aclass=class(FieldData.A);
+1650                          eval([<span class="string">'FieldData.'</span> VarName <span class="string">'=filter2(Mfilter,FieldData.'</span> VarName <span class="string">',''valid'');'</span>])
+1651                          <span class="keyword">if</span> ~isequal(Aclass,<span class="string">'double'</span>)
+1652                              eval([<span class="string">'FieldData.'</span> VarName <span class="string">'='</span> Aclass <span class="string">'(FieldData.'</span> VarName <span class="string">');'</span>])<span class="comment">%revert to integer values</span>
+1653                          <span class="keyword">end</span>
+1654                     <span class="keyword">end</span>
+1655                     eval([<span class="string">'vec_A=reshape(FieldData.'</span> VarName <span class="string">',npx*npy,nbcolor);'</span>])<span class="comment">%put the original image in line</span>
+1656                     ind_in=find(flagin);
+1657                     ind_out=find(~flagin);
+1658                     ICOMB=(XIMA-1)*npy+YIMA;
+1659                     ICOMB=ICOMB(flagin);<span class="comment">%index corresponding to XIMA and YIMA in the aligned original image vec_A</span>
+1660                     vec_B(ind_in,[1:nbcolor])=vec_A(ICOMB,:); 
+1661                     <span class="keyword">for</span> icolor=1:nbcolor
+1662                         vec_B(ind_out,icolor)=zeros(size(ind_out));
+1663                     <span class="keyword">end</span>
+1664                     <span class="keyword">if</span> isequal(ObjectData.ProjMode,<span class="string">'interp'</span>) || isequal(ObjectData.ProjMode,<span class="string">'filter'</span>)<span class="comment">% coordinates common to all fields</span>
+1665                         ProjData.ListDimName={<span class="string">'coord_y'</span>,<span class="string">'coord_x'</span>};
+1666                         ProjData.DimValue=[length(coord_y_proj) length(coord_x_proj)];
+1667                     <span class="keyword">else</span>
+1668                         icoord=icoord+1;
+1669                         ProjData.ListDimName=[ProjData.ListDimName {[<span class="string">'coord_y_'</span> num2str(icoord)],[<span class="string">'coord_x_'</span> num2str(icoord)]}];
+1670                         ProjData.DimValue=[ProjData.DimValue length(coord_y_proj) length(coord_x_proj)];
+1671                     <span class="keyword">end</span>
+1672                     ProjData.ListVarName=[ProjData.ListVarName VarName];                 
+1673                     ProjData.VarDimIndex=[ProjData.VarDimIndex [nb_dim-1 nb_dim]];
+1674                     <span class="keyword">if</span> length(FieldData.VarAttribute)&gt;=ivar
+1675                         ProjData.VarAttribute{length(ProjData.ListVarName)}=FieldData.VarAttribute{ivar};
+1676                     <span class="keyword">end</span>
+1677                     <span class="keyword">if</span> test_direct(2)==1
+1678                         ProjData.VarAttribute{length(ProjData.ListVarName)}.Coord_2=[XMin XMax];
+1679                     <span class="keyword">else</span>
+1680                         ProjData.VarAttribute{length(ProjData.ListVarName)}.Coord_2=[XMax XMin];
+1681                     <span class="keyword">end</span>
+1682                     <span class="keyword">if</span> test_direct(1)==1
+1683                         ProjData.VarAttribute{length(ProjData.ListVarName)}.Coord_1=[YMin YMax];
+1684                     <span class="keyword">else</span>
+1685                         ProjData.VarAttribute{length(ProjData.ListVarName)}.Coord_1=[YMax YMin];
+1686                     <span class="keyword">end</span>      
+1687                     eval([<span class="string">'ProjData.'</span> VarName <span class="string">'=reshape(vec_B,npY,npX,nbcolor);'</span>]);
+1688                 <span class="keyword">end</span>
+1689                 ProjData.FF=reshape(~flagin,npY,npX);<span class="comment">%false flag A FAIRE: tenir compte d'un flga antérieur</span>
+1690                 ProjData.ListVarName=[ProjData.ListVarName <span class="string">'FF'</span>];
+1691                 ProjData.VarDimIndex=[ProjData.VarDimIndex [nb_dim-1 nb_dim]];
+1692                 ProjData.VarAttribute{length(ProjData.ListVarName)}.Role=<span class="string">'errorflag'</span>;
+1693             <span class="keyword">else</span> <span class="comment">%3D case</span>
+1694                 <span class="keyword">if</span> isequal(Theta,0) &amp; isequal(Phi,0)       
+1695                     test_sup=(Coord{1}&gt;=ObjectData.Coord(1,3));
+1696                     iz_sup=find(test_sup);
+1697                     iz=iz_sup(1);
+1698                     <span class="keyword">if</span> iz&gt;=1 &amp; iz&lt;=npz
+1699                         ProjData.ListDimName=[ProjData.ListDimName ListDimName(2:end)];
+1700                         ProjData.DimValue=[ProjData.DimValue npY npX];
+1701                         <span class="keyword">for</span> ivar=VarIndex
+1702                             VarName=FieldData.ListVarName{ivar}; 
+1703                             ProjData.ListVarName=[ProjData.ListVarName VarName];
+1704                             ProjData.VarDimIndex=[ProjData.VarDimIndex [nb_dim-2 nb_dim-1]];
+1705                             ProjData.VarAttribute{length(ProjData.ListVarName)}=FieldData.VarAttribute{ivar}; <span class="comment">%reproduce the variable attributes</span>
+1706                             <span class="keyword">if</span> test_direct_x==1
+1707                                 ProjData.VarAttribute{length(ProjData.ListVarName)}.Coord_2=[XMin XMax];
+1708                             <span class="keyword">else</span>
+1709                                 ProjData.VarAttribute{length(ProjData.ListVarName)}.Coord_2=[XMax XMin];
+1710                             <span class="keyword">end</span>
+1711                             <span class="keyword">if</span> test_direct_y==1
+1712                                 ProjData.VarAttribute{length(ProjData.ListVarName)}.Coord_1=[YMin YMax];
+1713                             <span class="keyword">else</span>
+1714                                 ProjData.VarAttribute{length(ProjData.ListVarName)}.Coord_1=[YMax YMin];
+1715                             <span class="keyword">end</span>      
+1716                             eval([<span class="string">'ProjData.'</span> VarName <span class="string">'=squeeze(FieldData.'</span> VarName <span class="string">'(iz,:,:));'</span>])<span class="comment">% select the z index iz</span>
+1717                             <span class="comment">%TODO : do a vertical average for a thick plane</span>
+1718                             <span class="keyword">if</span> test_interp(2) | test_interp(3)
+1719                                 eval([<span class="string">'ProjData.'</span> VarName <span class="string">'=interp2(Coord{3},Coord{2},ProjData.'</span> VarName <span class="string">',Coord_x,Coord_y'');'</span>]) 
+1720                             <span class="keyword">end</span>
+1721                         <span class="keyword">end</span>
+1722                     <span class="keyword">end</span>
+1723                 <span class="keyword">else</span>
+1724                     <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'projection of structured coordinates on oblique plane not yet implemented'</span>,<span class="string">'ERROR'</span>)
+1725                     <span class="comment">%TODO: use interp3</span>
+1726                     <span class="keyword">return</span>
+1727                 <span class="keyword">end</span>
+1728             <span class="keyword">end</span>
+1729         <span class="keyword">end</span>
+1730     <span class="keyword">end</span>
+1731     <span class="comment">%projection of  velocity components in the rotated coordinates</span>
+1732     <span class="keyword">if</span> ~isequal(Phi,0) &amp; length(ivar_U)==1
+1733         <span class="keyword">if</span> isempty(ivar_V)
+1734             <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'v velocity component missing in proj_field.m'</span>,<span class="string">'ERROR'</span>)
+1735             <span class="keyword">return</span>
+1736         <span class="keyword">end</span>
+1737         UName=FieldData.ListVarName{ivar_U};
+1738         VName=FieldData.ListVarName{ivar_V};    
+1739         eval([<span class="string">'ProjData.'</span> UName  <span class="string">'=cos(Phi)*ProjData.'</span> UName <span class="string">'+ sin(Phi)*ProjData.'</span> VName <span class="string">';'</span>])
+1740         eval([<span class="string">'ProjData.'</span> VName  <span class="string">'=cos(Theta)*(-sin(Phi)*ProjData.'</span> UName <span class="string">'+ cos(Phi)*ProjData.'</span> VName <span class="string">');'</span>])
+1741         <span class="keyword">if</span> ~isempty(ivar_W)
+1742             WName=FieldData.ListVarName{ivar_W};
+1743             eval([<span class="string">'ProjData.'</span> VName <span class="string">'=ProjData.'</span> VName <span class="string">'+ ProjData.'</span> WName <span class="string">'*sin(Theta);'</span>])<span class="comment">%</span>
+1744             eval([<span class="string">'ProjData.'</span> WName <span class="string">'=NormVec_X*ProjData.'</span> UName <span class="string">'+ NormVec_Y*ProjData.'</span> VName <span class="string">'+ NormVec_Z* ProjData.'</span> WName <span class="string">';'</span>]);
+1745         <span class="keyword">end</span>
+1746         <span class="keyword">if</span> ~isequal(Psi,0)
+1747             eval([<span class="string">'ProjData.'</span> UName <span class="string">'=cos(Psi)* ProjData.'</span> UName <span class="string">'- sin(Psi)*ProjData.'</span> VName <span class="string">';'</span>]);
+1748             eval([<span class="string">'ProjData.'</span> VName <span class="string">'=sin(Psi)* ProjData.'</span> UName <span class="string">'+ cos(Psi)*ProjData.'</span> VName <span class="string">';'</span>]);
+1749         <span class="keyword">end</span>
+1750     <span class="keyword">end</span>
+1751 <span class="keyword">end</span>
+1752 
+1753 <span class="comment">%-----------------------------------------------------------------</span>
+1754 <span class="comment">%transmit the global attributes</span>
+1755 <a name="_sub4" href="#_subfunctions" class="code">function [ProjData,errormsg]=proj_heading(FieldData,ObjectData)</a>
+1756 <span class="comment">%-----------------------------------------------------------------</span>
+1757 <span class="comment">% ProjData=FieldData;</span>
+1758 ProjData=[];<span class="comment">%default</span>
+1759 <span class="keyword">if</span> ~isfield(FieldData,<span class="string">'ListGlobalAttribute'</span>)
+1760     ProjData.ListGlobalAttribute={};
+1761 <span class="keyword">else</span>
+1762     ProjData.ListGlobalAttribute=FieldData.ListGlobalAttribute;
+1763 <span class="keyword">end</span>
+1764 <span class="keyword">if</span> isfield(FieldData,<span class="string">'Txt'</span>)
+1765     errormsg=FieldData.Txt; <span class="comment">%transmit erreur message</span>
+1766     <span class="keyword">return</span>;
+1767 <span class="keyword">end</span>
+1768 <span class="keyword">for</span> iattr=1:length(ProjData.ListGlobalAttribute)
+1769     AttrName=ProjData.ListGlobalAttribute{iattr};
+1770     <span class="keyword">if</span> isfield(FieldData,AttrName)
+1771         eval([<span class="string">'ProjData.'</span> AttrName <span class="string">'=FieldData.'</span> AttrName <span class="string">';'</span>]);
+1772     <span class="keyword">end</span>
+1773 <span class="keyword">end</span>
+1774 <span class="keyword">if</span> isfield(FieldData,<span class="string">'CoordType'</span>)
+1775     <span class="keyword">if</span> isfield(ObjectData,<span class="string">'CoordType'</span>)&amp;~isequal(FieldData.CoordType,ObjectData.CoordType)
+1776         errormsg=[ObjectData.Style <span class="string">' in '</span> ObjectData.CoordType <span class="string">' coordinates, while field in '</span> FieldData.CoordType <span class="string">' coordinates'</span>];
+1777         <span class="keyword">return</span>
+1778     <span class="keyword">else</span>
+1779          ProjData.CoordType=FieldData.CoordType;
+1780     <span class="keyword">end</span>
+1781 <span class="keyword">end</span>
+1782 
+1783 ListObject={<span class="string">'Style'</span>,<span class="string">'ProjMode'</span>,<span class="string">'RangeX'</span>,<span class="string">'RangeY'</span>,<span class="string">'RangeZ'</span>,<span class="string">'Phi'</span>,<span class="string">'Theta'</span>,<span class="string">'Psi'</span>,<span class="string">'Coord'</span>};
+1784 <span class="keyword">for</span> ilist=1:length(ListObject)
+1785     <span class="keyword">if</span> isfield(ObjectData,ListObject{ilist})
+1786         eval([<span class="string">'val=ObjectData.'</span> ListObject{ilist} <span class="string">';'</span>])
+1787         <span class="keyword">if</span> ~isempty(val)
+1788             eval([<span class="string">'ProjData.Object'</span> ListObject{ilist} <span class="string">'=val;'</span>]);
+1789             ProjData.ListGlobalAttribute=[ProjData.ListGlobalAttribute {[<span class="string">'Object'</span> ListObject{ilist}]}];
+1790         <span class="keyword">end</span>
+1791     <span class="keyword">end</span>   
+1792 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

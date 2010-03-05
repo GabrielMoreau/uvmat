@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of read_vel</title>
+  <meta name="keywords" content="read_vel">
+  <meta name="description" content="'read_vel': reads one or two velocity fields and associated parameters from a file or a pair of files.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../../../index.html">Home</a> &gt;  <a href="#">coriolis</a> &gt; <a href="#">bigone</a> &gt; <a href="#">PROJETS</a> &gt; <a href="#">UVMAT.new</a> &gt; read_vel.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../../../index.html"><img alt="<" border="0" src="../../../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for /coriolis/bigone/PROJETS/UVMAT.new&nbsp;<img alt=">" border="0" src="../../../../right.png"></a></td></tr></table>-->
+
+<h1>read_vel
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../../../up.png"></a></h2>
+<div class="box"><strong>'read_vel': reads one or two velocity fields and associated parameters from a file or a pair of files.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../../../up.png"></a></h2>
+<div class="box"><strong>function [dt,time,pixcmx,pixcmy,vec_X,vec_Y,vec_Z,vec_U,vec_V,vec_W,vec_C,vec_F,fixflag,vel_type_out,error,nb_coord,nb_dim,Civ,CivStage]=read_vel(filename,vel_type,scal_type,vec_X_in,vec_Y_in,vec_Z_in); </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../../../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'read_vel': reads one or two velocity fields and associated parameters from a file or a pair of files. 
+ In the case of two velocity fields, the difference of the two fields (linearly interpolated to the positions of 
+ the first field) is given as the default output. Any other operation on the two
+ fields can be introduced by an external function 'usrtransform'.
+ OBSOLETE: REPLACED BY read_ncfield
+------------------------------------------------------------------
+ [dt,time,pixcmx,pixcmy,vec_X,vec_Y,vec_Z,vec_U,vec_V,vec_W,vec_C,vec_F,fixflag,vel_type_out,error,nb_coord,nb_dim,Ima,CivStage]...
+ =read_vel(filename,vel_type,scal_type,vec_X_in,vec_Y_in,vec_Z_in);
+ OUTPUT:
+ dt:time interval of the image pair red from a single file, or vector with
+ two values for a pair of files
+ time: absolute time of the first file
+ pixcmx,pixcmy: scaling factors (from the first file)
+ vec_X,vec_Y,vec_Z: matlab vectors, representing the set of coordinates for
+ the velocity vectors, vec_Z=zeros(size(vec_X)) for a 2D planar field
+ vec_U,vec_V,vec_W: matlab vectors, representing the set of velocity components for
+ the velocity vectors, vec_W=zeros(size(vec_X)) for a 2 component field
+ vec_C: matlab vector, representing the set of image correlations, or any scalar set by the input 'scal_type'.
+ vec_F: matlab vector, representing the set of vector flags vec_F for quality warning.
+ fixflag: matlab vector, representing the set of vector flags for removal.
+ RMQ: when two fields are read, the flags and vec_C correspond
+ to the first field. By default vec_C=1,vec_F=1,fixflag=0 if
+ it is not defined. (faulse vectors of the second field  are removed before interpolation)
+ vel_type_out: string representing the selected velocity type (civ1,civ2,filter1...)
+ error: error flag
+ error=0; OK
+ error=1; first field of file 1 not detected
+ error=2; second field of file 1 not detected
+ error=3; first field of file 2 not detected
+ error=4; second field of file 2 not detected
+ error=5; the scalar cannot be obtained
+
+ INPUT:
+ filename: cell of names (length 1 or 2) representing the file names.
+ vel_type: cell of imposed velocity types 'civ1','filter1'...if
+ vel_type={} or vel_type{1}=[], the best choice is made (first civ2, then civ1)
+ scal_type: string of a scalar name. If defined vec_C represents the value of this scalar
+ vec_X_in,vec_Y_in,vec_Z_in: optional imposed set of positions on which data are linearly interpolated (not yet implemented)
+ transform: transform.vel: name of an optional user defined function 
+ [vec_U,vec_V,vec_W,vec_X,vec_Y,vec_Z]=usrtransform(vec_U,vec_V,vec_W,vec2_U,vec2_V,vec2_W,vec_X,vec_Y,vec_Z)
+ transform.scal: name of a transform function for a scalar (used if vec_C is a scalar)
+
+ FUNCTIONS called: 
+ 'varname_generator.m':, sets the names in the netcdf file from 'vel_type'
+ 'read_netcdf.m': reads the netcdf file with a given set of variable names
+ 'calc_scal.m': calculates the scalar (used for arrow colors)</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../../../matlabicon.gif)">
+<li><a href="calc_scal.html" class="code" title="function [Scal]=calc_scal(ScalName,DataIn)">calc_scal</a>	'calc_scal': defines scalars and calculate them from stored fields. OBSOLETE to replace by calc_field</li><li><a href="griddata_uvmat.html" class="code" title="function ZI = griddata_uvmat(X,Y,Z,XI,YI)">griddata_uvmat</a>	'griddata_uvmat': function griddata_uvmat(vec2_X,vec2_Y,vec2_U,vec_X,vec_Y,'linear')</li><li><a href="read_netcdf.html" class="code" title="function [cte_detect,var_detect,cte_read,var_read,choice,cte2_detect,var2_detect,cte2_read,var2_read]=read_netcdf(filename,cte1,nb1,var1,cte2,nb2,var2,option)">read_netcdf</a>	'read_netcdf': reads a list of fields and constants in a netcdf file</li><li><a href="varname_generator.html" class="code" title="function [cte,nb,var,vel_type_out]=varname_generator(vel_type,display,scal_name,scal_2,scal_3)">varname_generator</a>	'varname_generator': defines the names of constants and variable fields to read in the netcdf files</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../../../matlabicon.gif)">
+<li><a href="RUN_STLIN.html" class="code" title="function RUN_STLIN(filecell_ncA,filecell_ncB,vel_type,file_st,nx_patch,ny_patch,thresh_patch,fileAxml,fileBxml)">RUN_STLIN</a>	'RUN_STLIN': combine velocity fields for stereo PIV</li></ul>
+<!-- crossreference -->
+
+
+
+<hr><address>Generated on Tue 14-Apr-2009 22:21:41 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

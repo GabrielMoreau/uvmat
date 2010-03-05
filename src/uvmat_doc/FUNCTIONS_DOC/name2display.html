@@ -1,0 +1,277 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of name2display</title>
+  <meta name="keywords" content="name2display">
+  <meta name="description" content="'name2display': extracts the root name and field numbers from an input filename">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; name2display.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>name2display
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'name2display': extracts the root name and field numbers from an input filename</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'name2display': extracts the root name and field numbers from an input filename 
+--------------------------------------------------------------------
+[RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)
+
+OUTPUT:
+filebasesub: filename without appendix
+field_count: string for the first number i
+str2: string for the second number i (only for .nc files)
+str_a: string for the first number j
+str_b:string for the second number j (only for .nc files)
+ext: file extension
+nom_type: char chain characterizing the file nomenclature: with values
+   nom_type='': constant name [filebase ext] (default output if 'nom_type' is undefined)
+   nom_type='*':constant name for a file representing a series (e.g. avi movie)
+   nom_type='_i': series of files with a single index i preceded by '_'(e.g. 'aa_45.png').
+   nom_type='#', series of indexed images wich is not series_i [filebase index ext], e.g. 'aa045.jpg' or 'aa45.tif'
+   nom_type='_i_j': matrix of files with two indices i and j separated by '_'(e.g. 'aa_45_2.png')
+   nom_type='_i1-i2': from pairs from a single index (e.g. 'aa_45-47.nc') 
+   nom_type='_i_j1-j2': pairs of j indices (e.g. 'aa_45_2-3.nc')
+   nom_type='_i1-i2_j': pairs of i indices (e.g. 'aa_45-46_2.nc')
+   nom_type='#a','#A&quot;, with a numerical index and an index letter(e.g.'aa045b.png') (lower or upper case)
+   nom_type='raw_SMD', same as '#' but with no extension ext='', OBSOLETE
+   nom_type='#_ab', from pairs of '#' images (e.g. 'aa045bc.nc'), ext='.nc', OBSOLETE (replaced by '_i_j1-j2')
+subdir: name of the subdirectory for netcdf files
+
+INPUT:
+fileinput: complete name of the file, including path</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="civ.html" class="code" title="function varargout = civ(varargin)">civ</a>	'civ': function associated with the interface 'civ.fig' for PIV, spline interpolation and stereo PIV (patch)</li><li><a href="civ_3D.html" class="code" title="function varargout = civ_3D(varargin)">civ_3D</a>	'civ_3D': function associated with the interface 'civ_3D.fig' for PIV in volume</li><li><a href="geometry_calib.html" class="code" title="function varargout = geometry_calib(varargin)">geometry_calib</a>	'geometry_calib': performs geometric calibration from a set of reference points</li><li><a href="name_generator.html" class="code" title="function [filename,idetect,num_i1_out,num_j1_out,num_i2_out,num_j2_out,subdir_out]=name_generator(filebase,num_i1,num_j1,ext,nom_type,comp_input,num_i2,num_j2,subdir);">name_generator</a>	'name_generator': creates a file name from a root name and indices.</li><li><a href="probe_calib.html" class="code" title="function varargout = probe_calib(varargin)">probe_calib</a>	'probe_calib': performs geometric calibration from a set of reference points</li><li><a href="read_xls.html" class="code" title="function [hfig_xls]=read_xls(fileinput,hfig)">read_xls</a>	'read_xls': function for reading and displaying Excel files</li><li><a href="series.html" class="code" title="function varargout = series(varargin)">series</a>	'series': master function associated to the GUI series.m for analysis field series</li><li><a href="set_grid.html" class="code" title="function varargout = set_grid(varargin)">set_grid</a>	'set_grid':produce grid for PIV with one or two images (stereo case)</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'name2display': extracts the root name and field numbers from an input filename</span>
+0002 <span class="comment">%--------------------------------------------------------------------</span>
+0003 <span class="comment">%[RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">%OUTPUT:</span>
+0006 <span class="comment">%filebasesub: filename without appendix</span>
+0007 <span class="comment">%field_count: string for the first number i</span>
+0008 <span class="comment">%str2: string for the second number i (only for .nc files)</span>
+0009 <span class="comment">%str_a: string for the first number j</span>
+0010 <span class="comment">%str_b:string for the second number j (only for .nc files)</span>
+0011 <span class="comment">%ext: file extension</span>
+0012 <span class="comment">%nom_type: char chain characterizing the file nomenclature: with values</span>
+0013 <span class="comment">%   nom_type='': constant name [filebase ext] (default output if 'nom_type' is undefined)</span>
+0014 <span class="comment">%   nom_type='*':constant name for a file representing a series (e.g. avi movie)</span>
+0015 <span class="comment">%   nom_type='_i': series of files with a single index i preceded by '_'(e.g. 'aa_45.png').</span>
+0016 <span class="comment">%   nom_type='#', series of indexed images wich is not series_i [filebase index ext], e.g. 'aa045.jpg' or 'aa45.tif'</span>
+0017 <span class="comment">%   nom_type='_i_j': matrix of files with two indices i and j separated by '_'(e.g. 'aa_45_2.png')</span>
+0018 <span class="comment">%   nom_type='_i1-i2': from pairs from a single index (e.g. 'aa_45-47.nc')</span>
+0019 <span class="comment">%   nom_type='_i_j1-j2': pairs of j indices (e.g. 'aa_45_2-3.nc')</span>
+0020 <span class="comment">%   nom_type='_i1-i2_j': pairs of i indices (e.g. 'aa_45-46_2.nc')</span>
+0021 <span class="comment">%   nom_type='#a','#A&quot;, with a numerical index and an index letter(e.g.'aa045b.png') (lower or upper case)</span>
+0022 <span class="comment">%   nom_type='raw_SMD', same as '#' but with no extension ext='', OBSOLETE</span>
+0023 <span class="comment">%   nom_type='#_ab', from pairs of '#' images (e.g. 'aa045bc.nc'), ext='.nc', OBSOLETE (replaced by '_i_j1-j2')</span>
+0024 <span class="comment">%subdir: name of the subdirectory for netcdf files</span>
+0025 <span class="comment">%</span>
+0026 <span class="comment">%INPUT:</span>
+0027 <span class="comment">%fileinput: complete name of the file, including path</span>
+0028 
+0029 <a name="_sub0" href="#_subfunctions" class="code">function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)</a>
+0030 <span class="comment">% siz=length(fileinput);</span>
+0031 <span class="comment">% indcur=siz;</span>
+0032 <span class="comment">% default values:</span>
+0033 <span class="comment">% test_=0;</span>
+0034 field_count=<span class="string">''</span>;<span class="comment">%character string</span>
+0035 str2=<span class="string">''</span>;
+0036 str_a=<span class="string">''</span>;
+0037 str_b=<span class="string">''</span>;
+0038 <span class="comment">% ext='';</span>
+0039 nom_type=<span class="string">''</span>;
+0040 subdir=<span class="string">''</span>;
+0041         <span class="comment">%select file extension</span>
+0042 [RootPath,RootFile,ext]=fileparts(fileinput);
+0043 indcur=length(RootFile);<span class="comment">% nbre of characters in fileraw</span>
+0044 
+0045         <span class="comment">%recognize the name form</span>
+0046 filerawascii=double(RootFile);<span class="comment">%ascci code</span>
+0047 val=(48&gt;filerawascii)|(filerawascii&gt;57); <span class="comment">% test for the non-numerical characters</span>
+0048 indsel=find(val);<span class="comment">% character indices of non numerical characters</span>
+0049 filelit=RootFile(indsel);<span class="comment">% fileraw name with numbers removed</span>
+0050 nbchar=length(indsel);
+0051 <span class="keyword">if</span> nbchar&lt;4<span class="comment">% put '*' before the name (remove at the end)</span>
+0052    prefilelit(1:4-nbchar)=<span class="string">'*'</span>;<span class="comment">%insert 3_nbchar '*' in the file name</span>
+0053    filelit=[prefilelit filelit];
+0054    indsel=[1:4-nbchar indsel+4-nbchar];
+0055    RootFile=[prefilelit RootFile];
+0056    indcur=indcur+4-nbchar;
+0057 <span class="keyword">end</span>
+0058 separ3=indsel(end);<span class="comment">% index of last non numerical character in fileraw</span>
+0059 separ2=indsel(end-1);<span class="comment">% index of previous non numerical character</span>
+0060 separ1=indsel(end-2);
+0061 separ0=indsel(end-3);
+0062 num1=<span class="string">''</span>;num2=<span class="string">''</span>;num3=<span class="string">''</span>;
+0063 <span class="keyword">if</span> separ1&gt;=separ0+1,num0=RootFile(separ0+1:separ1-1);<span class="keyword">end</span>
+0064 <span class="keyword">if</span> separ2&gt;=separ1+1,num1=RootFile(separ1+1:separ2-1);<span class="keyword">end</span>
+0065 <span class="keyword">if</span> separ3&gt;=separ2+1,num2=RootFile(separ2+1:separ3-1);<span class="keyword">end</span>
+0066 <span class="keyword">if</span> indcur&gt;=separ3+1,num3=RootFile(separ3+1:indcur);<span class="keyword">end</span>
+0067 last_str=RootFile(indcur);<span class="comment">%last character in fileraw</span>
+0068 last=double(last_str);<span class="comment">%corresponding ascii code</span>
+0069 penult=double(RootFile(indcur-1));<span class="comment">%ascii code of the penultimate character</span>
+0070 testsub=0; <span class="comment">%default</span>
+0071 <span class="keyword">if</span> strcmpi(ext,<span class="string">'.avi'</span>)
+0072      nom_type=<span class="string">'*'</span>;
+0073       <span class="comment">%case of old image nomenclature</span>
+0074 <span class="keyword">elseif</span> (strcmp(ext,<span class="string">'.png'</span>) || strcmp(ext,<span class="string">''</span>)) &amp;&amp;  penult &gt;= 48 &amp;&amp; penult &lt;= 57 &amp;&amp; (last &lt; 48 || last &gt; 57)
+0075     <span class="comment">% if the penultimate character is a number and the last a letter</span>
+0076     <span class="comment">% search the appendix a,b,c,</span>
+0077     str_a=last_str; <span class="comment">%put appendix a,b,c....</span>
+0078     indcur=indcur-1;
+0079     <span class="keyword">if</span> strcmp(ext,<span class="string">'.png'</span>), nom_type=<span class="string">'#a'</span>; <span class="keyword">end</span>
+0080     <span class="keyword">if</span> strcmp(ext,<span class="string">''</span>), nom_type=<span class="string">'raw_SMD'</span>; <span class="keyword">end</span>      
+0081     num=1;count=0; <span class="comment">% extract the numerical appendix</span>
+0082     <span class="keyword">while</span> num==1;
+0083         filascii=double(RootFile(indcur));
+0084         <span class="keyword">if</span> (48&gt;filascii)||(filascii&gt;57); <span class="comment">% select the non-numerical characters</span>
+0085             num=0; 
+0086         <span class="keyword">else</span>
+0087             indcur=indcur-1; count=count+1;
+0088         <span class="keyword">end</span>
+0089     <span class="keyword">end</span>
+0090     <span class="keyword">if</span> count~=0             
+0091             field_count=RootFile(indcur+1:indcur+count);<span class="comment">% set the selected field number</span>
+0092     <span class="keyword">end</span>
+0093 <span class="keyword">elseif</span>  penult &gt;= 48 &amp;&amp; penult &lt;= 57  &amp;&amp; (last &lt;= 66 &amp;&amp; last &gt;= 65)<span class="comment">% PCO camera Toulouse, end with A or B (NEW)</span>
+0094     <span class="comment">% if the penultimate character is a number and the last a letter</span>
+0095     <span class="comment">% search the appendix a,b,c,</span>
+0096     str_a=last_str; <span class="comment">%put appendix a,b,c....</span>
+0097     indcur=indcur-1;
+0098     nom_type=<span class="string">'#A'</span>;   
+0099     num=1;count=0; <span class="comment">% extract the numerical appendix</span>
+0100     <span class="keyword">while</span> num==1;
+0101         filascii=double(RootFile(indcur));
+0102         <span class="keyword">if</span> (48&gt;filascii)||(filascii&gt;57); <span class="comment">% select the non-numerical characters</span>
+0103             num=0; 
+0104         <span class="keyword">else</span>
+0105             indcur=indcur-1; count=count+1;
+0106         <span class="keyword">end</span>
+0107     <span class="keyword">end</span>
+0108     <span class="keyword">if</span> count~=0             
+0109             field_count=RootFile(indcur+1:indcur+count);<span class="comment">% set the selected field number</span>
+0110     <span class="keyword">end</span>   
+0111     indcur=indcur-1;
+0112 <span class="keyword">elseif</span> strcmp(filelit(end-2:end),<span class="string">'-_-_'</span>)<span class="comment">%new  nomenclature appendix num1-num2_num_a-num_b</span>
+0113     field_count=num0;
+0114     str2=num1;
+0115     str_a=num2;
+0116     str_b=num3;
+0117     nom_type=<span class="string">'_i1-i2_j1-j2'</span>;
+0118     testsub=1;
+0119     indcur=separ0-1;
+0120 <span class="keyword">elseif</span> strcmp(filelit(end-2:end),<span class="string">'_-_'</span>)<span class="comment">%new  nomenclature appendix num1-num2_num_a</span>
+0121     field_count=num1;
+0122     str2=num2;
+0123     str_a=num3;
+0124     nom_type=<span class="string">'_i1-i2_j'</span>;
+0125     testsub=1;
+0126     indcur=separ1-1;
+0127 <span class="keyword">elseif</span> strcmp(filelit(end-2:end),<span class="string">'__-'</span>)<span class="comment">%new  nomenclature appendix num1_num2-num2</span>
+0128     indcur=separ1-1;
+0129     field_count=num1;
+0130     str_a=num2;
+0131     str_b=num3;
+0132     nom_type=<span class="string">'_i_j1-j2'</span>;
+0133     testsub=1;
+0134 <span class="keyword">elseif</span> strcmp(filelit(end-1:end),<span class="string">'_-'</span>)
+0135     indcur=separ2-1;
+0136     field_count=num2;
+0137     str2=num3;
+0138     str_a=<span class="string">''</span>;
+0139     nom_type=<span class="string">'_i1-i2'</span>;
+0140     testsub=1;
+0141 <span class="keyword">elseif</span> strcmp(filelit(end-1:end),<span class="string">'__'</span>)
+0142     indcur=separ2-1;
+0143     field_count=num2;
+0144     str2=<span class="string">''</span>;
+0145     str_a=num3;
+0146     nom_type=<span class="string">'_i_j'</span>;
+0147 <span class="keyword">elseif</span> strcmp(filelit(end),<span class="string">'_'</span>)
+0148     indcur=separ3-1;
+0149 <span class="comment">%     field_count=num3;</span>
+0150     str2=<span class="string">''</span>;
+0151     str_a=<span class="string">''</span>;
+0152     <span class="comment">%detect zeros before the number</span>
+0153 <span class="comment">%     count=0; % extract the numerical appendix</span>
+0154     <span class="keyword">if</span> strcmp(<span class="string">'0'</span>,RootFile(separ3+1)); <span class="comment">% select the non-numerical characters</span>
+0155         nom_type=[<span class="string">'_%0'</span> num2str(length(RootFile(separ3+1:end))) <span class="string">'d'</span>];
+0156     <span class="keyword">else</span>
+0157         nom_type=<span class="string">'_i'</span>;
+0158     <span class="keyword">end</span>  
+0159     field_count=RootFile(separ3+1:end);<span class="comment">% set the selected field number'%03d'</span>
+0160 <span class="keyword">elseif</span> RootFile(indcur-2)==<span class="string">'_'</span><span class="comment">% search appendix a,b,c,d</span>
+0161     last=RootFile(indcur-1:indcur);
+0162     <span class="keyword">if</span> isequal(length(last),2) &amp;&amp; double(last(1)) &gt;= 97 &amp;&amp; double(last(1)) &lt;= 122 <span class="keyword">...</span><span class="comment">% = 1 for letters</span>
+0163             &amp;&amp; double(last(2)) &gt;= 97 &amp;&amp; double(last(2)) &lt;= 122
+0164           str_a=last(1);<span class="comment">%put appendix a,b,c, ou d</span>
+0165           str_b=last(2);<span class="comment">%put appendix a,b,c, ou d</span>
+0166 <span class="comment">%           indcur=indcur-3;</span>
+0167           separ0=indsel(end-3);
+0168         num0=RootFile(separ0+1:separ1-1);
+0169         field_count=num0;
+0170         indcur=separ0;
+0171         nom_type=<span class="string">'#_ab'</span>;
+0172         testsub=1;
+0173     <span class="keyword">end</span>
+0174 <span class="comment">%search for other names with counter</span>
+0175 <span class="keyword">else</span>
+0176     <span class="keyword">if</span> length(ext)&gt;1     
+0177             num=1;count=0; <span class="comment">% extract the numerical appendix</span>
+0178             <span class="keyword">while</span> num==1;
+0179                 filascii=double(RootFile(indcur));
+0180                 <span class="keyword">if</span> (48&gt;filascii)||(filascii&gt;57); <span class="comment">% select the non-numerical characters</span>
+0181                     num=0; 
+0182                 <span class="keyword">else</span>
+0183                     indcur=indcur-1; count=count+1;
+0184                 <span class="keyword">end</span>
+0185             <span class="keyword">end</span>
+0186             <span class="keyword">if</span> count~=0   
+0187                 field_count=RootFile(indcur+1:indcur+count);<span class="comment">% set the selected field number'%03d'</span>
+0188                 <span class="keyword">if</span> isequal(field_count(1),<span class="string">'0'</span>)
+0189                     nbfigures=length(field_count);
+0190                     nom_type=[<span class="string">'%0'</span> num2str(nbfigures) <span class="string">'d'</span>];
+0191                 <span class="keyword">else</span>
+0192                     nom_type=<span class="string">'#'</span>;
+0193                 <span class="keyword">end</span>
+0194             <span class="keyword">end</span>
+0195     <span class="keyword">end</span>
+0196 <span class="keyword">end</span>
+0197             <span class="comment">%select the root name in the file_input window</span>
+0198 RootFile=RootFile(1:indcur);
+0199 <span class="keyword">if</span> nbchar&lt;4<span class="comment">% put '*' before the name (remove at the end)</span>
+0200    RootFile(1:4-nbchar)=[];
+0201 <span class="keyword">end</span>
+0202 <span class="keyword">if</span> testsub
+0203     [RootPath,subdir,extdir]=fileparts(RootPath);
+0204     subdir=[subdir extdir];
+0205 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

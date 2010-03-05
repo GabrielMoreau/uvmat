@@ -1,0 +1,59 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of griddata_uvmat</title>
+  <meta name="keywords" content="griddata_uvmat">
+  <meta name="description" content="'griddata_uvmat': function griddata_uvmat(vec2_X,vec2_Y,vec2_U,vec_X,vec_Y,'linear')">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; griddata_uvmat.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>griddata_uvmat
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'griddata_uvmat': function griddata_uvmat(vec2_X,vec2_Y,vec2_U,vec_X,vec_Y,'linear')</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function ZI = griddata_uvmat(X,Y,Z,XI,YI) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'griddata_uvmat': function griddata_uvmat(vec2_X,vec2_Y,vec2_U,vec_X,vec_Y,'linear')
+adapt the input of the matlab function griddata to the appropriate version of Matlab</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="RUN_FIX.html" class="code" title="function error=RUN_FIX(filename,field,flagindex,iter,thresh_vecC,flag_mask,maskname,thresh_vel,inf_sup,fileref,fieldref)">RUN_FIX</a>	'RUN_FIX': function for fixing velocity fields:</li><li><a href="RUN_STLIN.html" class="code" title="function RUN_STLIN(file_A,file_B,vel_type,file_st,nx_patch,ny_patch,thresh_patch,fileAxml,fileBxml)">RUN_STLIN</a>	'RUN_STLIN': combine velocity fields for stereo PIV</li><li><a href="proj_field.html" class="code" title="function [ProjData,errormsg]=proj_field(FieldData,ObjectData,IndexObj)">proj_field</a>	'proj_field': projects the field on a projection object</li><li><a href="proj_grid.html" class="code" title="function [A,rangx,rangy]=proj_grid(vec_X,vec_Y,vec_A,rgx_in,rgy_in,npxy_in)">proj_grid</a>	'proj_grid': project  fields with unstructured coordinantes on a regular grid</li><li><a href="sub_field.html" class="code" title="function SubData=sub_field(UvData,Field);">sub_field</a>	'sub_field': combines two input fields + mask for uvmat</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'griddata_uvmat': function griddata_uvmat(vec2_X,vec2_Y,vec2_U,vec_X,vec_Y,'linear')</span>
+0002 <span class="comment">%adapt the input of the matlab function griddata to the appropriate version of Matlab</span>
+0003 <a name="_sub0" href="#_subfunctions" class="code">function ZI = griddata_uvmat(X,Y,Z,XI,YI)</a>
+0004 txt=ver;
+0005 Release=txt(1).Release;
+0006 relnumb=str2num(Release(3:4));
+0007 <span class="keyword">if</span> relnumb &gt;= 14
+0008     ZI=griddata(X,Y,Z,XI,YI,<span class="string">'linear'</span>,{<span class="string">'QJ'</span>});
+0009 <span class="keyword">else</span>
+0010     ZI=griddata(X,Y,Z,XI,YI,<span class="string">'linear'</span>);
+0011 <span class="keyword">end</span>
+0012</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

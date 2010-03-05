@@ -1,0 +1,225 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of RUN_FIX</title>
+  <meta name="keywords" content="RUN_FIX">
+  <meta name="description" content="'RUN_FIX': function for fixing velocity fields:">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; RUN_FIX.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>RUN_FIX
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'RUN_FIX': function for fixing velocity fields:</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function error=RUN_FIX(filename,field,flagindex,iter,thresh_vecC,flag_mask,maskname,thresh_vel,inf_sup,fileref,fieldref) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'RUN_FIX': function for fixing velocity fields:
+-----------------------------------------------
+ RUN_FIX(filename,field,flagindex,thresh_vecC,thresh_vel,iter,flag_mask,maskname,fileref,fieldref)
+
+filename: name of the netcdf file (used as input and output)
+field: structure specifying the field to fix (field.vel_type='civ1' or 'civ2')
+flagindex: flag specifying which values of vec_f are removed: 
+ if flagindex(1)=1: vec_f=-2 vectors are removed
+ if flagindex(2)=1: vec_f=3 vectors are removed
+ if flagindex(3)=1: vec_f=2 vectors are removed (if iter=1) or vec_f=4 vectors are removed (if iter=2)
+iter=1 for civ1 fields and iter=2 for civ2 fields
+thresh_vecC: threshold in the image correlation vec_C
+flag_mask: =1 mask used to remove vectors (0 else)
+maskname: name of the mask image file for fix
+thresh_vel: threshold on velocity, or on the difference with the reference file fileref if exists
+inf_sup=1: remove values smaller than threshold thresh_vel, =2, larger than threshold
+fileref: .nc file name for a reference velocity (='': refrence 0 used)
+fieldref: 'civ1','filter1'...feld used in fileref</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="griddata_uvmat.html" class="code" title="function ZI = griddata_uvmat(X,Y,Z,XI,YI)">griddata_uvmat</a>	'griddata_uvmat': function griddata_uvmat(vec2_X,vec2_Y,vec2_U,vec_X,vec_Y,'linear')</li><li><a href="read_civxdata.html" class="code" title="function [Field,VelTypeOut]=read_civxdata(filename,FieldNames,VelType)">read_civxdata</a>	'read_civxdata': reads civx data from netcdf files</li><li><a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>	'warndlg_uvmat': display warning message (error, warning, confirmation) in a given figure</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="civ.html" class="code" title="function varargout = civ(varargin)">civ</a>	'civ': function associated with the interface 'civ.fig' for PIV, spline interpolation and stereo PIV (patch)</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'RUN_FIX': function for fixing velocity fields:</span>
+0002 <span class="comment">%-----------------------------------------------</span>
+0003 <span class="comment">% RUN_FIX(filename,field,flagindex,thresh_vecC,thresh_vel,iter,flag_mask,maskname,fileref,fieldref)</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">%filename: name of the netcdf file (used as input and output)</span>
+0006 <span class="comment">%field: structure specifying the field to fix (field.vel_type='civ1' or 'civ2')</span>
+0007 <span class="comment">%flagindex: flag specifying which values of vec_f are removed:</span>
+0008         <span class="comment">% if flagindex(1)=1: vec_f=-2 vectors are removed</span>
+0009         <span class="comment">% if flagindex(2)=1: vec_f=3 vectors are removed</span>
+0010         <span class="comment">% if flagindex(3)=1: vec_f=2 vectors are removed (if iter=1) or vec_f=4 vectors are removed (if iter=2)</span>
+0011 <span class="comment">%iter=1 for civ1 fields and iter=2 for civ2 fields</span>
+0012 <span class="comment">%thresh_vecC: threshold in the image correlation vec_C</span>
+0013 <span class="comment">%flag_mask: =1 mask used to remove vectors (0 else)</span>
+0014 <span class="comment">%maskname: name of the mask image file for fix</span>
+0015 <span class="comment">%thresh_vel: threshold on velocity, or on the difference with the reference file fileref if exists</span>
+0016 <span class="comment">%inf_sup=1: remove values smaller than threshold thresh_vel, =2, larger than threshold</span>
+0017 <span class="comment">%fileref: .nc file name for a reference velocity (='': refrence 0 used)</span>
+0018 <span class="comment">%fieldref: 'civ1','filter1'...feld used in fileref</span>
+0019 
+0020 <a name="_sub0" href="#_subfunctions" class="code">function error=RUN_FIX(filename,field,flagindex,iter,thresh_vecC,flag_mask,maskname,thresh_vel,inf_sup,fileref,fieldref)</a>
+0021 error=[]; <span class="comment">%default</span>
+0022 vel_type{1}=field.vel_type;
+0023 <span class="comment">%[nbc,nbd,Civ,CivStage,tt,Field]=read_ncfield(filename,field.vel_type,'vec_color','ima_cor');</span>
+0024 Field=<a href="read_civxdata.html" class="code" title="function [Field,VelTypeOut]=read_civxdata(filename,FieldNames,VelType)">read_civxdata</a>(filename,[],field.vel_type);
+0025 <span class="keyword">if</span> isfield(Field,<span class="string">'Txt'</span>)
+0026     error=Field.Txt; <span class="comment">%error in reading</span>
+0027     <span class="keyword">return</span>
+0028 <span class="keyword">end</span>
+0029 
+0030 <span class="keyword">if</span> ~isfield(Field,<span class="string">'X'</span>) || ~isfield(Field,<span class="string">'Y'</span>) || ~isfield(Field,<span class="string">'U'</span>) || ~isfield(Field,<span class="string">'V'</span>)
+0031     error=[<span class="string">'input file '</span> filename <span class="string">' does not contain vectors in RUN_FIX.m'</span>]; <span class="comment">%bad input file</span>
+0032     <span class="keyword">return</span>
+0033 <span class="keyword">end</span>
+0034 <span class="keyword">if</span> ~isfield(Field,<span class="string">'C'</span>)
+0035     Field.C=ones(size(Field.X));<span class="comment">%correlation=1 by default</span>
+0036 <span class="keyword">end</span>
+0037 <span class="keyword">if</span> ~isfield(Field,<span class="string">'F'</span>)
+0038     Field.F=ones(size(Field.X));<span class="comment">%warning flag=1 by default</span>
+0039 <span class="keyword">end</span>
+0040 <span class="keyword">if</span> ~isfield(Field,<span class="string">'FF'</span>)
+0041     Field.FF=zeros(size(Field.X));<span class="comment">%fixflag=0 by default</span>
+0042 <span class="keyword">end</span>
+0043 
+0044 vec_f_unit=abs(Field.F)-10*double(uint16(abs(Field.F)/10)); <span class="comment">%unityterm of vec_F in abs value</span>
+0045 vec_f_sign=sign(Field.F).*vec_f_unit;<span class="comment">% gives the unity digit of vec_f with correct sign</span>
+0046 flag1=(flagindex(1)==1)&amp;(vec_f_sign==-2);<span class="comment">%removed vectors vec_f=-2</span>
+0047 flag2=(flagindex(2)==1)&amp;(vec_f_sign==3);<span class="comment">%removed vectors vec_f=3</span>
+0048 <span class="keyword">if</span> iter==1
+0049         flag3=(flagindex(3)==1)&amp;(vec_f_sign==2); <span class="comment">% Hart vectors</span>
+0050 <span class="keyword">elseif</span> iter==2
+0051         flag3=(flagindex(3)==1)&amp;(vec_f_sign==4); <span class="comment">%</span>
+0052 <span class="keyword">end</span>
+0053             <span class="comment">%  flag4=(vec_Fmin2_2_Fmin2_2_c &lt;</span>
+0054             <span class="comment">%  colvec1)&amp;(vec_Fmin2_2_Fmin2_2_f_sign~=2)&amp;(vec_Fmin2_2_Fmin2_</span>
+0055             <span class="comment">%  2_f~=0); % =1 for red vectors not flaged</span>
+0056 
+0057 flag4=(Field.C &lt; thresh_vecC)&amp;(flag1~=1)&amp;(flag2~=1)&amp;(flag3~=1); <span class="comment">% =1 for low vec_C vectors not previously removed</span>
+0058 
+0059 <span class="comment">% criterium on velocity values</span>
+0060 delta_u=Field.U;<span class="comment">%default without ref file</span>
+0061 delta_v=Field.V;
+0062 <span class="keyword">if</span> exist(<span class="string">'fileref'</span>,<span class="string">'var'</span>) &amp;&amp; ~isempty(fileref)
+0063     <span class="keyword">if</span> ~exist(fileref,<span class="string">'file'</span>)
+0064         error=<span class="string">'reference file not found in RUN_FIX.m'</span>;
+0065         display(error);
+0066         <span class="keyword">return</span>
+0067     <span class="keyword">end</span>
+0068     
+0069 <span class="comment">%     [nbc,nbd,Civ,CivStage,tt,FieldRef]=read_ncfield(fileref,fieldref);</span>
+0070     FieldRef=<a href="read_civxdata.html" class="code" title="function [Field,VelTypeOut]=read_civxdata(filename,FieldNames,VelType)">read_civxdata</a>(fileref,[],fieldref);
+0071     
+0072     <span class="keyword">if</span> isfield(FieldRef,<span class="string">'FF'</span>)
+0073         index_true=find(FieldRef.FF==0);
+0074         FieldRef.X=FieldRef.X(index_true);
+0075         FieldRef.Y=FieldRef.Y(index_true);
+0076         FieldRef.U=FieldRef.U(index_true);
+0077         FieldRef.V=FieldRef.V(index_true);
+0078     <span class="keyword">end</span>
+0079     <span class="keyword">if</span> ~isfield(FieldRef,<span class="string">'X'</span>) || ~isfield(FieldRef,<span class="string">'Y'</span>) || ~isfield(FieldRef,<span class="string">'U'</span>) || ~isfield(FieldRef,<span class="string">'V'</span>)
+0080         error=<span class="string">'reference file is not a velocity field in RUN_FIX.m '</span>; <span class="comment">%bad input file</span>
+0081         <span class="keyword">return</span>
+0082     <span class="keyword">end</span>
+0083     <span class="keyword">if</span> length(FieldRef.X)&lt;=1
+0084         errordlg(<span class="string">'reference field with one vector or less in RUN_FIX.m'</span>)
+0085         <span class="keyword">return</span>
+0086     <span class="keyword">end</span>
+0087     vec_U_ref=<a href="griddata_uvmat.html" class="code" title="function ZI = griddata_uvmat(X,Y,Z,XI,YI)">griddata_uvmat</a>(FieldRef.X,FieldRef.Y,FieldRef.U,Field.X,Field.Y);  <span class="comment">%interpolate vectors in the ref field</span>
+0088     vec_V_ref=<a href="griddata_uvmat.html" class="code" title="function ZI = griddata_uvmat(X,Y,Z,XI,YI)">griddata_uvmat</a>(FieldRef.X,FieldRef.Y,FieldRef.V,Field.X,Field.Y);  <span class="comment">%interpolate vectors in the ref field to the positions  of the main field</span>
+0089     delta_u=Field.U-vec_U_ref;<span class="comment">%take the difference with the interpolated ref field</span>
+0090     delta_v=Field.V-vec_V_ref;
+0091 <span class="keyword">end</span>
+0092 
+0093 thresh_vel_x=thresh_vel; 
+0094 thresh_vel_y=thresh_vel; 
+0095 <span class="keyword">if</span> isequal(inf_sup,1)
+0096     flag5=abs(delta_u)&lt;thresh_vel_x &amp; abs(delta_v)&lt;thresh_vel_y &amp;(flag1~=1)&amp;(flag2~=1)&amp;(flag3~=1)&amp;(flag4~=1);
+0097 <span class="keyword">elseif</span> isequal(inf_sup,2)
+0098     flag5=(abs(delta_u)&gt;thresh_vel_x | abs(delta_v)&gt;thresh_vel_y) &amp;(flag1~=1)&amp;(flag2~=1)&amp;(flag3~=1)&amp;(flag4~=1);
+0099 <span class="keyword">end</span>
+0100 
+0101             <span class="comment">% flag7 introduce a grey mask, matrix M</span>
+0102 <span class="keyword">if</span> isequal (flag_mask,1)
+0103    M=imread(maskname);
+0104    nxy=size(M);
+0105    M=reshape(M,1,nxy(1)*nxy(2));
+0106    rangx0=[0.5 nxy(2)-0.5];
+0107    rangy0=[0.5 nxy(1)-0.5];
+0108    vec_x1=Field.X-Field.U/2;<span class="comment">%beginning points</span>
+0109    vec_x2=Field.X+Field.U/2;<span class="comment">%end points of vectors</span>
+0110    vec_y1=Field.Y-Field.V/2;<span class="comment">%beginning points</span>
+0111    vec_y2=Field.Y+Field.V/2;<span class="comment">%end points of vectors</span>
+0112    indx=1+round((nxy(2)-1)*(vec_x1-rangx0(1))/(rangx0(2)-rangx0(1)));<span class="comment">% image index x at abcissa vec_x</span>
+0113    indy=1+round((nxy(1)-1)*(vec_y1-rangy0(1))/(rangy0(2)-rangy0(1)));<span class="comment">% image index y at ordinate vec_y</span>
+0114    test_in=~(indx &lt; 1 |indy &lt; 1 | indx &gt; nxy(2) |indy &gt; nxy(1)); <span class="comment">%=0 out of the mask image, 1 inside</span>
+0115    indx=indx.*test_in+(1-test_in); <span class="comment">%replace indx by 1 out of the mask range</span>
+0116    indy=indy.*test_in+(1-test_in); <span class="comment">%replace indy by 1 out of the mask range</span>
+0117    ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));<span class="comment">%determine the indices in the image reshaped in a Matlab vector</span>
+0118    Mvalues=M(ICOMB);
+0119 <span class="comment">%    size(indx)</span>
+0120 <span class="comment">%     size(indy)</span>
+0121 <span class="comment">%    Ma=M(indy,indx);% relevant mask values</span>
+0122 <span class="comment">%    Mvalues=(diag(Ma,0))'; % mask values for vector indices, flag7=1 for masked vectors</span>
+0123    flag7b=((20 &lt; Mvalues) &amp; (Mvalues &lt; 200))| ~test_in';
+0124    indx=1+round((nxy(2)-1)*(vec_x2-rangx0(1))/(rangx0(2)-rangx0(1)));<span class="comment">% image index x at abcissa Field.X</span>
+0125    indy=1+round((nxy(1)-1)*(vec_y2-rangy0(1))/(rangy0(2)-rangy0(1)));<span class="comment">% image index y at ordinate vec_y</span>
+0126    test_in=~(indx &lt; 1 |indy &lt; 1 | indx &gt; nxy(2) |indy &gt; nxy(1)); <span class="comment">%=0 out of the mask image, 1 inside</span>
+0127    indx=indx.*test_in+(1-test_in); <span class="comment">%replace indx by 1 out of the mask range</span>
+0128    indy=indy.*test_in+(1-test_in); <span class="comment">%replace indy by 1 out of the mask range</span>
+0129    ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));<span class="comment">%determine the indices in the image reshaped in a Matlab vector</span>
+0130    Mvalues=M(ICOMB);
+0131 <span class="comment">%    Ma=M(indy,indx);% relevant mask values</span>
+0132 <span class="comment">%    Mvalues=(diag(Ma,0))'; % mask values for vector indices, flag7=1 for masked vectors</span>
+0133    flag7e=((Mvalues &gt; 20) &amp; (Mvalues &lt; 200))| ~test_in';
+0134    flag7=(flag7b|flag7e)';
+0135 <span class="keyword">else</span>
+0136    flag7=0;
+0137 <span class="keyword">end</span>   
+0138 <span class="comment">% flagmagenta=flag1|flag2|flag3|flag4|flag7;</span>
+0139 flagmagenta=flag1|flag2|flag3|flag4|flag5|flag7;
+0140 <span class="comment">%write fix flags</span>
+0141 
+0142 [errorread,message]=fileattrib(filename);
+0143 
+0144 <span class="keyword">if</span> ~isempty(message) &amp; ~isequal(message.UserWrite,1)
+0145      <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([<span class="string">'no writting access to '</span> filename <span class="string">' (RUN_FIX.m)'</span>],<span class="string">'ERROR'</span>);
+0146     <span class="keyword">return</span>
+0147 <span class="keyword">end</span>
+0148 nc=netcdf(filename,<span class="string">'write'</span>); <span class="comment">%open netcdf file for writing</span>
+0149 result=redef(nc);
+0150 <span class="keyword">if</span> isempty(result), errordlg(<span class="string">'##Bad redef operation.'</span>),<span class="keyword">end</span>  
+0151 <span class="keyword">if</span> iter==1
+0152     nc.fix=1;
+0153 <span class="keyword">elseif</span> iter==2
+0154     nc.fix2=1;
+0155 <span class="keyword">end</span>
+0156 theDim=nc(field.nb) ;<span class="comment">% get the number of velocity vectors</span>
+0157 <span class="comment">% nb_vectors=size(theDim);</span>
+0158 <span class="comment">% nb_vectors=nb_vectors(1);</span>
+0159 nc{field.fixflag}=ncfloat(field.nb);
+0160 fixflag_unit=Field.FF-10*floor(Field.FF/10); <span class="comment">%unity term of fix_flag</span>
+0161 nc{field.fixflag}(:)=fixflag_unit+10*flagmagenta;
+0162 close(nc);</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of px</title>
+  <meta name="keywords" content="px">
+  <meta name="description" content="'px': transform fields from physical coordinates (phys) to image (px) coordinates">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; px.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>px
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'px': transform fields from physical coordinates (phys) to image (px) coordinates</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [DataOut,DataOut_1]=px(Data,CalibData,Data_1,CalibData_1)%DataIn,Calib) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'px': transform fields from physical coordinates (phys) to image (px) coordinates</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="px_XYZ.html" class="code" title="function [X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)">px_XYZ</a>	'px_XYZ': transform phys coordinates to image coordinates (px)</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="geometry_calib.html" class="code" title="function varargout = geometry_calib(varargin)">geometry_calib</a>	'geometry_calib': performs geometric calibration from a set of reference points</li><li><a href="probe_calib.html" class="code" title="function varargout = probe_calib(varargin)">probe_calib</a>	'probe_calib': performs geometric calibration from a set of reference points</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function DataOut=px_1(Data,Calib)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'px': transform fields from physical coordinates (phys) to image (px) coordinates</span>
+0002 
+0003 <span class="comment">% OUTPUT:</span>
+0004 <span class="comment">% DataOut:   structure of modified data (transforms DataIn)</span>
+0005 <span class="comment">%       DataOut.CoordType='px': labels image coordinates</span>
+0006 <span class="comment">%       DataOut.CoordUnit= 'px' : units of output coordinates</span>
+0007 <span class="comment">%       DataOut.X and .Y arrays of image coordinates X, Y</span>
+0008 <span class="comment">%       DataOut.U, .V velocity in pixel displacement on the image (unit=px), if velocity exists as input</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">%INPUT:</span>
+0011 <span class="comment">% DataIn:  structure of possible input data (like UvData) or cell of structures (several fields):</span>
+0012 <span class="comment">%      DataIn.CoordType='phys': allows transform to px, else no transform   (DataOut=DataIn)</span>
+0013 <span class="comment">%      DataIn.X and .Y arrays of physical coordinates X, Y</span>
+0014 <span class="comment">%      DataIn.Z corresponding array of Z coordinates (=0 by default)</span>
+0015 <span class="comment">%      DataIn.U, V corresponding array of velocity components</span>
+0016 <span class="comment">%      DataIn.W corresponding array of the third velocity component in 3D case</span>
+0017 <span class="comment">%      DataIn.dt: time interval of the image pair used for velocity measurement (NEEDED TO GET OUTPUT RESULT))</span>
+0018 <span class="comment">%      DataIn.A, AX, AY : image or scalar input -&gt; EMPTY  CORRESPONDING OUTPUT (A REVOIR)</span>
+0019 <span class="comment">%      Other fields in DataIn: copied to DataOut without modification</span>
+0020 <span class="comment">% Calib: structure containing the calibration parameters (Tsai) or containing a subtree Calib.GeometryCalib with these parameters</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">% call the functions phys_XYZ or px_XYZ (case of images) for pointwise coordinate transforms</span>
+0023 
+0024 <a name="_sub0" href="#_subfunctions" class="code">function [DataOut,DataOut_1]=px(Data,CalibData,Data_1,CalibData_1)</a><span class="comment">%DataIn,Calib)</span>
+0025 <span class="comment">% A FAIRE: 1- verifier si DataIn est une 'field structure'(.ListVarName'):</span>
+0026 <span class="comment">% chercher ListVarAttribute, for each field (cell of variables):</span>
+0027 <span class="comment">%   .CoordType: 'phys' or 'px'   (default==px, no transform)</span>
+0028 <span class="comment">%   .scale_factor: =dt (to transform displacement into velocity) default=1</span>
+0029 <span class="comment">%   .covariance: 'scalar', 'coord', 'D_i': covariant (like velocity), 'D^i': contravariant (like gradient), 'D^jD_i' (like strain tensor)</span>
+0030 <span class="comment">%   (default='coord' if .Role='coord_x,_y...,</span>
+0031 <span class="comment">%            'D_i' if '.Role='vector_x,...',</span>
+0032 <span class="comment">%              'scalar', else (thenno change except scale factor)</span>
+0033 <span class="keyword">if</span>  ~(exist(<span class="string">'CalibData'</span>,<span class="string">'var'</span>) &amp;&amp; isfield(CalibData,<span class="string">'GeometryCalib'</span>))
+0034     DataOut=Data;
+0035 <span class="keyword">else</span>
+0036     DataOut=<a href="#_sub1" class="code" title="subfunction DataOut=px_1(Data,Calib)">px_1</a>(Data,CalibData.GeometryCalib);
+0037 <span class="keyword">end</span>
+0038 <span class="keyword">if</span> exist(<span class="string">'Data_1'</span>,<span class="string">'var'</span>)
+0039     <span class="keyword">if</span> ~(exist(<span class="string">'CalibData_1'</span>,<span class="string">'var'</span>) &amp;&amp; isfield(CalibData_1,<span class="string">'GeometryCalib'</span>))
+0040         DataOut_1=Data_1;
+0041     <span class="keyword">else</span>
+0042         DataOut_1=<a href="#_sub1" class="code" title="subfunction DataOut=px_1(Data,Calib)">px_1</a>(Data_1,CalibData_1.GeometryCalib);
+0043     <span class="keyword">end</span>
+0044 <span class="keyword">else</span>
+0045     DataOut_1=[];
+0046 <span class="keyword">end</span>
+0047 
+0048 
+0049 <span class="comment">%------------------------------------------------</span>
+0050 <a name="_sub1" href="#_subfunctions" class="code">function DataOut=px_1(Data,Calib)</a>
+0051 DataOut=Data;<span class="comment">%default</span>
+0052 
+0053 <span class="comment">%Act only if .CoordType=phys, and Calib defined</span>
+0054 <span class="keyword">if</span> isfield(Data,<span class="string">'CoordType'</span>)&amp; isequal(Data.CoordType,<span class="string">'phys'</span>)&amp; ~isempty(Calib)
+0055     DataOut.CoordType=<span class="string">'px'</span>; <span class="comment">%put flag for pixel coordinates</span>
+0056     DataOut.CoordUnit=<span class="string">'px'</span>;
+0057     <span class="comment">%transform of X,Y coordinates</span>
+0058     <span class="keyword">if</span> isfield(Data,<span class="string">'Z'</span>)&amp;~isempty(Data.Z)
+0059         Z=Data.Z;
+0060     <span class="keyword">else</span>
+0061         Z=0;
+0062     <span class="keyword">end</span>
+0063     <span class="keyword">if</span> isfield(Data,<span class="string">'X'</span>) &amp; isfield(Data,<span class="string">'Y'</span>)
+0064         [DataOut.X,DataOut.Y]=<a href="px_XYZ.html" class="code" title="function [X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)">px_XYZ</a>(Calib,Data.X,Data.Y,Z);
+0065         <span class="keyword">if</span> isfield(Data,<span class="string">'U'</span>)&amp;isfield(Data,<span class="string">'V'</span>)&amp; isfield(Data,<span class="string">'dt'</span>)&amp; ~isequal(Data.dt,0)
+0066             Data.U=Data.U*Data.dt;
+0067             Data.V=Data.V*Data.dt;
+0068             <span class="keyword">if</span> isfield(Data,<span class="string">'W'</span>)
+0069                 W=Data.W*Data.dt;
+0070             <span class="keyword">else</span>
+0071                 W=0;
+0072             <span class="keyword">end</span>
+0073             [XOut_1,YOut_1]=<a href="px_XYZ.html" class="code" title="function [X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)">px_XYZ</a>(Calib,Data.X-Data.U/2,Data.Y-Data.V/2,Z-W/2);
+0074             [XOut_2,YOut_2]=<a href="px_XYZ.html" class="code" title="function [X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)">px_XYZ</a>(Calib,Data.X+Data.U/2,Data.Y+Data.V/2,Z+W/2);
+0075             DataOut.U=XOut_2-XOut_1;
+0076             DataOut.V=YOut_2-YOut_1;
+0077         <span class="keyword">end</span>
+0078     <span class="keyword">end</span>
+0079     <span class="comment">%transform of an image</span>
+0080     <span class="keyword">if</span> isfield(Data,<span class="string">'A'</span>)&amp;isfield(Data,<span class="string">'AX'</span>)&amp;~isempty(Data.AX) &amp; isfield(Data,<span class="string">'AY'</span>)&amp;<span class="keyword">...</span>
+0081                                    isfield(Data,<span class="string">'AY'</span>)&amp;~isempty(Data.AY)&amp;length(Data.A)&gt;1
+0082 <span class="comment">%         if isfield(Data,'Field')&amp;isequal(Data.Field,'images')</span>
+0083           <span class="comment">%NO TRANSFORM FROM phys to px for images</span>
+0084             DataOut.A=[];<span class="comment">%</span>
+0085     <span class="keyword">end</span>
+0086 <span class="keyword">end</span>
+0087</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

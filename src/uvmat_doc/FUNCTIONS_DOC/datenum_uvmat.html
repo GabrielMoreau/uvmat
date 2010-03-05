@@ -1,0 +1,717 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of datenum_uvmat</title>
+  <meta name="keywords" content="datenum_uvmat">
+  <meta name="description" content="'datenum_uvmat': like the Matlab function datenum.m but gives empty output instead of stopping for input error">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; datenum_uvmat.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>datenum_uvmat
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'datenum_uvmat': like the Matlab function datenum.m but gives empty output instead of stopping for input error</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function n = datenum_uvmat(arg1,arg2,arg3,h,min,s) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'datenum_uvmat': like the Matlab function datenum.m but gives empty output instead of stopping for input error
+--------------------------------------------------------------------------
+DATENUM Serial date number.
+    N = DATENUM(V) converts one or more date vectors V into serial date 
+    numbers N. Input V can be an M-by-6 or M-by-3 matrix containing M full 
+    or partial date vectors respectively.  DATENUM returns a column vector
+    of M date numbers.
+
+    A date vector contains six elements, specifying year, month, day, hour, 
+    minute, and second. A partial date vector has three elements, specifying 
+    year, month, and day.  Each element of V must be a positive double 
+    precision number.  A serial date number of 1 corresponds to Jan-1-0000.  
+    The year 0000 is merely a reference point and is not intended to be 
+    interpreted as a real year.
+
+    N = DATENUM(S,F) converts one or more date strings S to serial date 
+    numbers N using format string F. S can be a character array where each
+    row corresponds to one date string, or one dimensional cell array of 
+    strings.  DATENUM returns a column vector of M date numbers, where M is 
+    the number of strings in S. 
+
+    All of the date strings in S must have the same format F, which must be
+    composed of date format symbols according to Table 2 in DATESTR help.
+    Formats with 'Q' are not accepted by DATENUM.  
+
+    Certain formats may not contain enough information to compute a date
+    number.  In those cases, hours, minutes, and seconds default to 0, days
+    default to 1, months default to January, and years default to the
+    current year. Date strings with two character years are interpreted to
+    be within the 100 years centered around the current year.
+
+    N = DATENUM(S,F,P) or N = DATENUM(S,P,F) uses the specified format F
+    and the pivot year P to determine the date number N, given the date
+    string S.  The pivot year is the starting year of the 100-year range in 
+    which a two-character year resides.  The default pivot year is the 
+    current year minus 50 years.
+
+    N = DATENUM(Y,MO,D) and N = DATENUM([Y,MO,D]) return the serial date
+    numbers for corresponding elements of the Y,MO,D (year,month,day)
+    arrays. Y, MO, and D must be arrays of the same size (or any can be a
+    scalar).
+
+    N = DATENUM(Y,MO,D,H,MI,S) and N = DATENUM([Y,MO,D,H,MI,S]) return the
+    serial date numbers for corresponding elements of the Y,MO,D,H,MI,S
+    (year,month,day,hour,minute,second) arrays.  The six arguments must be
+    arrays of the same size (or any can be a scalar).
+
+    N = DATENUM(S) converts the string or date vector (as defined by 
+    DATEVEC) S into a serial date number.  If S is a string, it must be in 
+    one of the date formats 0,1,2,6,13,14,15,16,23 as defined by DATESTR.
+    This calling syntax is provided for backward compatibility, and is
+    significantly slower than the syntax which specifies the format string.
+    If the format is known, the N = DATENUM(S,F) syntax should be used.
+
+    N = DATENUM(S,P) converts the date string S, using pivot year P. If the 
+    format is known, the N = DATENUM(S,F,P) or N = DATENUM(S,P,F) syntax 
+    should be used.
+
+    Note:  The vectorized calling syntax can offer significant performance
+    improvement for large arrays.
+
+    Examples:
+        n = datenum('19-May-2000') returns n = 730625. 
+        n = datenum(2001,12,19) returns n = 731204. 
+        n = datenum(2001,12,19,18,0,0) returns n = 731204.75. 
+        n = datenum('19.05.2000','dd.mm.yyyy') returns n = 730625.
+
+    See also NOW, DATESTR, DATEVEC, DATETICK.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [y,mo,d,h,mi,s] = datevec(t,varargin)</a></li><li><a href="#_sub2" class="code">function [format] = getformat(str)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'datenum_uvmat': like the Matlab function datenum.m but gives empty output instead of stopping for input error</span>
+0002 <span class="comment">%--------------------------------------------------------------------------</span>
+0003 <a name="_sub0" href="#_subfunctions" class="code">function n = datenum_uvmat(arg1,arg2,arg3,h,min,s)</a>
+0004 <span class="comment">%DATENUM Serial date number.</span>
+0005 <span class="comment">%    N = DATENUM(V) converts one or more date vectors V into serial date</span>
+0006 <span class="comment">%    numbers N. Input V can be an M-by-6 or M-by-3 matrix containing M full</span>
+0007 <span class="comment">%    or partial date vectors respectively.  DATENUM returns a column vector</span>
+0008 <span class="comment">%    of M date numbers.</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">%    A date vector contains six elements, specifying year, month, day, hour,</span>
+0011 <span class="comment">%    minute, and second. A partial date vector has three elements, specifying</span>
+0012 <span class="comment">%    year, month, and day.  Each element of V must be a positive double</span>
+0013 <span class="comment">%    precision number.  A serial date number of 1 corresponds to Jan-1-0000.</span>
+0014 <span class="comment">%    The year 0000 is merely a reference point and is not intended to be</span>
+0015 <span class="comment">%    interpreted as a real year.</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">%    N = DATENUM(S,F) converts one or more date strings S to serial date</span>
+0018 <span class="comment">%    numbers N using format string F. S can be a character array where each</span>
+0019 <span class="comment">%    row corresponds to one date string, or one dimensional cell array of</span>
+0020 <span class="comment">%    strings.  DATENUM returns a column vector of M date numbers, where M is</span>
+0021 <span class="comment">%    the number of strings in S.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">%    All of the date strings in S must have the same format F, which must be</span>
+0024 <span class="comment">%    composed of date format symbols according to Table 2 in DATESTR help.</span>
+0025 <span class="comment">%    Formats with 'Q' are not accepted by DATENUM.</span>
+0026 <span class="comment">%</span>
+0027 <span class="comment">%    Certain formats may not contain enough information to compute a date</span>
+0028 <span class="comment">%    number.  In those cases, hours, minutes, and seconds default to 0, days</span>
+0029 <span class="comment">%    default to 1, months default to January, and years default to the</span>
+0030 <span class="comment">%    current year. Date strings with two character years are interpreted to</span>
+0031 <span class="comment">%    be within the 100 years centered around the current year.</span>
+0032 <span class="comment">%</span>
+0033 <span class="comment">%    N = DATENUM(S,F,P) or N = DATENUM(S,P,F) uses the specified format F</span>
+0034 <span class="comment">%    and the pivot year P to determine the date number N, given the date</span>
+0035 <span class="comment">%    string S.  The pivot year is the starting year of the 100-year range in</span>
+0036 <span class="comment">%    which a two-character year resides.  The default pivot year is the</span>
+0037 <span class="comment">%    current year minus 50 years.</span>
+0038 <span class="comment">%</span>
+0039 <span class="comment">%    N = DATENUM(Y,MO,D) and N = DATENUM([Y,MO,D]) return the serial date</span>
+0040 <span class="comment">%    numbers for corresponding elements of the Y,MO,D (year,month,day)</span>
+0041 <span class="comment">%    arrays. Y, MO, and D must be arrays of the same size (or any can be a</span>
+0042 <span class="comment">%    scalar).</span>
+0043 <span class="comment">%</span>
+0044 <span class="comment">%    N = DATENUM(Y,MO,D,H,MI,S) and N = DATENUM([Y,MO,D,H,MI,S]) return the</span>
+0045 <span class="comment">%    serial date numbers for corresponding elements of the Y,MO,D,H,MI,S</span>
+0046 <span class="comment">%    (year,month,day,hour,minute,second) arrays.  The six arguments must be</span>
+0047 <span class="comment">%    arrays of the same size (or any can be a scalar).</span>
+0048 <span class="comment">%</span>
+0049 <span class="comment">%    N = DATENUM(S) converts the string or date vector (as defined by</span>
+0050 <span class="comment">%    DATEVEC) S into a serial date number.  If S is a string, it must be in</span>
+0051 <span class="comment">%    one of the date formats 0,1,2,6,13,14,15,16,23 as defined by DATESTR.</span>
+0052 <span class="comment">%    This calling syntax is provided for backward compatibility, and is</span>
+0053 <span class="comment">%    significantly slower than the syntax which specifies the format string.</span>
+0054 <span class="comment">%    If the format is known, the N = DATENUM(S,F) syntax should be used.</span>
+0055 <span class="comment">%</span>
+0056 <span class="comment">%    N = DATENUM(S,P) converts the date string S, using pivot year P. If the</span>
+0057 <span class="comment">%    format is known, the N = DATENUM(S,F,P) or N = DATENUM(S,P,F) syntax</span>
+0058 <span class="comment">%    should be used.</span>
+0059 <span class="comment">%</span>
+0060 <span class="comment">%    Note:  The vectorized calling syntax can offer significant performance</span>
+0061 <span class="comment">%    improvement for large arrays.</span>
+0062 <span class="comment">%</span>
+0063 <span class="comment">%    Examples:</span>
+0064 <span class="comment">%        n = datenum('19-May-2000') returns n = 730625.</span>
+0065 <span class="comment">%        n = datenum(2001,12,19) returns n = 731204.</span>
+0066 <span class="comment">%        n = datenum(2001,12,19,18,0,0) returns n = 731204.75.</span>
+0067 <span class="comment">%        n = datenum('19.05.2000','dd.mm.yyyy') returns n = 730625.</span>
+0068 <span class="comment">%</span>
+0069 <span class="comment">%    See also NOW, DATESTR, DATEVEC, DATETICK.</span>
+0070 
+0071 <span class="comment">%   Copyright 1984-2004 The MathWorks, Inc.</span>
+0072 <span class="comment">%   $Revision: 1.24.4.7 $  $Date: 2004/10/27 23:53:57 $</span>
+0073 
+0074 <span class="keyword">if</span> (nargin&lt;1) || (nargin&gt;6)
+0075     error(<span class="string">'MATLAB:datenumr:Nargin'</span>,nargchk(1,6,nargin));
+0076 <span class="keyword">end</span>
+0077 
+0078 <span class="comment">% parse input arguments</span>
+0079 isdatestr = ~isnumeric(arg1);
+0080 isdateformat = false;
+0081 <span class="keyword">if</span> nargin == 2
+0082     isdateformat = ischar(arg2);
+0083 <span class="keyword">elseif</span> nargin == 3
+0084     isdateformat = [ischar(arg2),ischar(arg3)];
+0085 <span class="keyword">end</span>
+0086 <span class="comment">% try to convert date string or date vector to a date number</span>
+0087 <span class="keyword">try</span>
+0088     <span class="keyword">switch</span> nargin
+0089         <span class="keyword">case</span> 1 
+0090             <span class="keyword">if</span> isdatestr
+0091                 n = datenummx(<a href="#_sub1" class="code" title="subfunction [y,mo,d,h,mi,s] = datevec(t,varargin)">datevec</a>(arg1));
+0092             <span class="keyword">elseif</span> (size(arg1,2)==3) || (size(arg1,2)==6)
+0093                 n = datenummx(arg1);
+0094             <span class="keyword">else</span>
+0095                 n = arg1;
+0096             <span class="keyword">end</span>
+0097         <span class="keyword">case</span> 2
+0098             <span class="keyword">if</span> isdateformat
+0099                 <span class="keyword">if</span> ischar(arg1)
+0100                     arg1 = cellstr(arg1);
+0101                 <span class="keyword">end</span>
+0102                 n = dtstr2dtnummx(arg1,cnv2icudf(arg2));
+0103             <span class="keyword">else</span>
+0104                 n = datenummx(<a href="#_sub1" class="code" title="subfunction [y,mo,d,h,mi,s] = datevec(t,varargin)">datevec</a>(arg1,arg2));
+0105             <span class="keyword">end</span>
+0106         <span class="keyword">case</span> 3
+0107             <span class="keyword">if</span> any(isdateformat)
+0108                 <span class="keyword">if</span> isdateformat(1) 
+0109                     format = arg2;
+0110                     pivot = arg3;
+0111                 <span class="keyword">elseif</span> isdateformat(2)
+0112                     format = arg3;
+0113                     pivot = arg2;
+0114                 <span class="keyword">end</span>
+0115                 <span class="keyword">if</span> ischar(arg1)
+0116                     arg1 = cellstr(arg1);
+0117                 <span class="keyword">end</span>
+0118                 icu_dtformat = cnv2icudf(format);
+0119                 showyr =  strfind(icu_dtformat,<span class="string">'y'</span>); 
+0120                 <span class="keyword">if</span> ~isempty(showyr)
+0121                     wrtYr =  numel(showyr);
+0122                     checkYr = diff(showyr);
+0123                     <span class="keyword">if</span> any(checkYr~=1)
+0124                         error(<span class="string">'MATLAB:datenum:YearFormat'</span>,<span class="string">'Unrecognized year format'</span>);
+0125                     <span class="keyword">end</span>
+0126                     <span class="keyword">switch</span> wrtYr
+0127                         <span class="keyword">case</span> 4,
+0128                             icu_dtformat = strrep(icu_dtformat,<span class="string">'yyyy'</span>,<span class="string">'yy'</span>);
+0129                         <span class="keyword">case</span> 3,
+0130                             icu_dtformat = strrep(icu_dtformat,<span class="string">'yyy'</span>,<span class="string">'yy'</span>);
+0131                     <span class="keyword">end</span>
+0132                 <span class="keyword">end</span>
+0133                 n = dtstr2dtnummx(arg1,icu_dtformat,pivot);
+0134             <span class="keyword">else</span>
+0135                 n = datenummx(arg1,arg2,arg3);
+0136             <span class="keyword">end</span>
+0137         <span class="keyword">case</span> 6, n = datenummx(arg1,arg2,arg3,h,min,s);
+0138         <span class="keyword">otherwise</span>, error(<span class="string">'MATLAB:datenum:Nargin'</span>,<span class="keyword">...</span>
+0139                          <span class="string">'Incorrect number of arguments'</span>);
+0140     <span class="keyword">end</span>
+0141 <span class="keyword">catch</span>
+0142     err = lasterror;
+0143     err.message = sprintf(<span class="string">'DATENUM failed.\n%s'</span>,err.message);
+0144     
+0145     <span class="keyword">if</span> (nargin == 1 &amp;&amp; ~isdatestr)
+0146         err.identifier = <span class="string">'MATLAB:datenum:ConvertDateNumber'</span>;
+0147     <span class="keyword">elseif</span> (nargin == 1 &amp;&amp; isdatestr) || (isdatestr &amp;&amp; any(isdateformat))
+0148         err.identifier = <span class="string">'MATLAB:datenum:ConvertDateString'</span>;
+0149     <span class="keyword">elseif</span> (nargin &gt; 1) &amp;&amp; ~isdatestr &amp;&amp; ~any(isdateformat)
+0150         err.identifier = <span class="string">'MATLAB:datenum:ConvertDateVector'</span>;
+0151     <span class="keyword">end</span>
+0152  
+0153     rethrow(err);
+0154 <span class="keyword">end</span>
+0155 <span class="keyword">end</span>
+0156 
+0157 <a name="_sub1" href="#_subfunctions" class="code">function [y,mo,d,h,mi,s] = datevec(t,varargin)</a>
+0158 <span class="comment">%DATEVEC Date components.</span>
+0159 <span class="comment">%    V = DATEVEC(N) converts one or more date numbers N to date vectors V. N</span>
+0160 <span class="comment">%    can be a scalar, vector, or multidimensional array of positive date</span>
+0161 <span class="comment">%    numbers. DATEVEC returns an M-by-6 matrix containing M date vectors,</span>
+0162 <span class="comment">%    where M is the total number of date numbers in N.</span>
+0163 <span class="comment">%</span>
+0164 <span class="comment">%    V = DATEVEC(S,F) converts one or more date strings S to date vectors</span>
+0165 <span class="comment">%    V using format string F to interpret the date strings in S. S can be a</span>
+0166 <span class="comment">%    cell array of strings or a character array where each row corresponds</span>
+0167 <span class="comment">%    to one date string. All of the date strings in S must have the same</span>
+0168 <span class="comment">%    format which must be composed of date format symbols according to</span>
+0169 <span class="comment">%    Table 2 in DATESTR help. Formats with 'Q' are not accepted by DATEVEC.</span>
+0170 <span class="comment">%    DATEVEC returns an M-by-6 matrix of date vectors, where M is the number</span>
+0171 <span class="comment">%    of date strings in S.</span>
+0172 <span class="comment">%</span>
+0173 <span class="comment">%    Certain formats may not contain enough information to compute a date</span>
+0174 <span class="comment">%    vector.  In those cases, hours, minutes, and seconds default to 0, days</span>
+0175 <span class="comment">%    default to 1, months default to January, and years default to the</span>
+0176 <span class="comment">%    current year. Date strings with two character years are interpreted to</span>
+0177 <span class="comment">%    be within the 100 years centered around the current year.</span>
+0178 <span class="comment">%</span>
+0179 <span class="comment">%    V = DATEVEC(S,F,P) or V = DATEVEC(S,P,F) converts the date string S to</span>
+0180 <span class="comment">%    a date vector V, using the pivot year P and the date format F.  The</span>
+0181 <span class="comment">%    pivot year is the starting year of the 100-year range in which a</span>
+0182 <span class="comment">%    two-character year resides.  The default pivot year is the current year</span>
+0183 <span class="comment">%    minus 50 years.</span>
+0184 <span class="comment">%</span>
+0185 <span class="comment">%    [Y,MO,D,H,MI,S] = DATEVEC(...) takes any of the two syntaxes shown</span>
+0186 <span class="comment">%    above and returns the components of the date vector as individual</span>
+0187 <span class="comment">%    variables.</span>
+0188 <span class="comment">%</span>
+0189 <span class="comment">%    V = DATEVEC(S) converts date string S to date vector V. S must be in</span>
+0190 <span class="comment">%    one of the date formats 0,1,2,6,13,14,15,16,23 as defined by DATESTR.</span>
+0191 <span class="comment">%    This calling syntax is provided for backward compatibility, and is</span>
+0192 <span class="comment">%    significantly slower than the syntax which specifies the format string.</span>
+0193 <span class="comment">%    If the format is known, the V = DATEVEC(S,F) syntax should be used.</span>
+0194 <span class="comment">%</span>
+0195 <span class="comment">%    V = DAVEVEC(S,P) converts the date string S using pivot year P.</span>
+0196 <span class="comment">%    If the format is known, the V = DATEVEC(S,F,P) or V = DATEVEC(S,P,F)</span>
+0197 <span class="comment">%    syntax should be used.</span>
+0198 <span class="comment">%</span>
+0199 <span class="comment">%    Note 1:  If more than one input argument is used, the first argument</span>
+0200 <span class="comment">%    must be a date string or array of date strings.</span>
+0201 <span class="comment">%</span>
+0202 <span class="comment">%    Note 2:  The vectorized calling syntax can offer significant performance</span>
+0203 <span class="comment">%    improvement for large arrays.</span>
+0204 <span class="comment">%</span>
+0205 <span class="comment">%    Examples</span>
+0206 <span class="comment">%        d = '12/24/1984';</span>
+0207 <span class="comment">%        t = 725000.00;</span>
+0208 <span class="comment">%        c = datevec(d) or c = datevec(t) produce c = [1984 12 24 0 0 0].</span>
+0209 <span class="comment">%        [y,m,d,h,mi,s] = datevec(d) returns y=1984, m=12, d=24, h=0, mi=0, s=0.</span>
+0210 <span class="comment">%        c = datevec('5/6/03') produces c = [2003 5 6 0 0 0] until 2054.</span>
+0211 <span class="comment">%        c = datevec('5/6/03',1900) produces c = [1903 5 6 0 0 0].</span>
+0212 <span class="comment">%        c = datevec('19.05.2000','dd.mm.yyyy') produces c = [2000 5 19 0 0 0].</span>
+0213 <span class="comment">%</span>
+0214 <span class="comment">%    See also DATENUM, DATESTR, CLOCK, DATETICK.</span>
+0215 
+0216 <span class="comment">%    Copyright 1984-2004 The MathWorks, Inc.</span>
+0217 <span class="comment">%    $Revision: 1.28.4.11 $  $Date: 2004/10/27 23:53:59 $</span>
+0218 
+0219 <span class="keyword">if</span> (nargin&lt;1) || (nargin&gt;3)
+0220 <span class="comment">%     error('MATLAB:datevec:Nargin',nargchk(1,3,nargin));</span>
+0221     <span class="keyword">return</span>
+0222 <span class="keyword">end</span>
+0223 
+0224 <span class="comment">% parse input arguments</span>
+0225 isdatestr = ~isnumeric(t);
+0226 isdateformat = false;
+0227 <span class="keyword">if</span> ~isdatestr &amp;&amp; nargin &gt; 1
+0228     warning(<span class="string">'MATLAB:datevec:Inputs'</span>, <span class="keyword">...</span>
+0229         <span class="string">'Unless the first input argument is a date string, all subsequent\narguments will be ignored.'</span>);
+0230 <span class="keyword">elseif</span> nargin &gt; 1
+0231     isdateformat = cellfun(<span class="string">'isclass'</span>,varargin,<span class="string">'char'</span>);
+0232     <span class="keyword">if</span> (nargin == 3)
+0233         <span class="keyword">if</span> ~isdateformat(1)
+0234             pivotyear = varargin{1};
+0235         <span class="keyword">elseif</span> ~isdateformat(2)
+0236             pivotyear = varargin{2};
+0237         <span class="keyword">elseif</span> isdateformat(1) &amp;&amp; isdateformat(2)
+0238 <span class="comment">%             error('MATLAB:datevec:DateFormat',...</span>
+0239 <span class="comment">%                 'You specified two date format strings.\nThere can only be one.');</span>
+0240            <span class="keyword">return</span>
+0241         <span class="keyword">end</span> 
+0242     <span class="keyword">elseif</span> (nargin == 2) &amp;&amp; ~isdateformat
+0243         pivotyear = varargin{1};
+0244     <span class="keyword">end</span>
+0245 <span class="keyword">end</span>
+0246 
+0247 <span class="keyword">if</span> isdatestr &amp;&amp; isempty(t)
+0248     <span class="keyword">if</span> nargout &lt;= 1
+0249         y = zeros(0,6);
+0250     <span class="keyword">else</span>
+0251         [y,mo,d,h,mi,s] = deal(zeros(0,0));
+0252     <span class="keyword">end</span>;
+0253     warning(<span class="string">'MATLAB:datevec:EmptyDate'</span>,<span class="keyword">...</span>
+0254         <span class="string">'Usage of DATEVEC with empty date strings is not supported.\nResults may change in future versions.'</span>);
+0255     <span class="keyword">return</span>;
+0256 <span class="keyword">end</span>
+0257 
+0258 <span class="comment">% branch to appropriate date string parser</span>
+0259 <span class="keyword">if</span>  isdatestr
+0260     <span class="comment">% a date format string was specified</span>
+0261     <span class="comment">% map date format to ICU date format tokens</span>
+0262     <span class="keyword">if</span> ischar(t)
+0263         <span class="comment">% convert to cellstring.</span>
+0264         t = cellstr(t);
+0265     <span class="keyword">end</span>
+0266     icu_dtformat = {};
+0267     <span class="keyword">if</span> ~any(isdateformat)
+0268         format = <a href="#_sub2" class="code" title="subfunction [format] = getformat(str)">getformat</a>(t);
+0269         <span class="keyword">if</span> ~isempty(format)
+0270             icu_dtformat = cnv2icudf(format);
+0271         <span class="keyword">end</span>
+0272     <span class="keyword">else</span>
+0273         icu_dtformat = cnv2icudf(varargin{isdateformat});
+0274     <span class="keyword">end</span>
+0275     <span class="keyword">if</span> ~isempty(icu_dtformat) 
+0276         <span class="comment">% call ICU MEX function to parse date string to date vector</span>
+0277         <span class="keyword">try</span>
+0278             <span class="keyword">if</span> nargin &lt; 2 || (nargin == 2 &amp;&amp; any(isdateformat))
+0279                 y = dtstr2dtvecmx(t,icu_dtformat);
+0280             <span class="keyword">else</span>
+0281                 showyr =  findstr(icu_dtformat,<span class="string">'y'</span>); 
+0282                 <span class="keyword">if</span> ~isempty(showyr)
+0283                     wrtYr =  numel(showyr);
+0284                     <span class="keyword">if</span> showyr(end) - showyr(1) &gt;= wrtYr
+0285 <span class="comment">%                         error('MATLAB:datevec:YearFormat','Unrecognized year format');</span>
+0286                         <span class="keyword">return</span>
+0287                     <span class="keyword">end</span>
+0288                     <span class="keyword">switch</span> wrtYr
+0289                         <span class="keyword">case</span> 4,
+0290                             icu_dtformat = strrep(icu_dtformat,<span class="string">'yyyy'</span>,<span class="string">'yy'</span>);
+0291                         <span class="keyword">case</span> 3,
+0292                             icu_dtformat = strrep(icu_dtformat,<span class="string">'yyy'</span>,<span class="string">'yy'</span>);
+0293                     <span class="keyword">end</span>
+0294                 <span class="keyword">end</span>
+0295                 y = dtstr2dtvecmx(t,icu_dtformat,pivotyear);
+0296             <span class="keyword">end</span>
+0297             <span class="keyword">if</span> nargout &gt; 1
+0298                 mo = y(:,2);
+0299                 d  = y(:,3);
+0300                 h  = y(:,4);
+0301                 mi = y(:,5);
+0302                 s  = y(:,6);
+0303                 y  = y(:,1);
+0304             <span class="keyword">end</span>
+0305         <span class="keyword">catch</span>
+0306             err = lasterror;
+0307             err.identifier = <span class="string">'MATLAB:datevec:dtstr2dtvecmx'</span>;
+0308             err.message = sprintf([<span class="string">'DATEVEC failed, calling DTSTR2DTVECMX.\n'</span><span class="keyword">...</span><span class="comment"> </span>
+0309                     <span class="string">'%s'</span>],err.message);
+0310             rethrow(err);
+0311         <span class="keyword">end</span> 
+0312     <span class="keyword">else</span>
+0313         <span class="comment">%last resort!!!</span>
+0314        <span class="keyword">if</span> ischar(t)
+0315           m = size(t,1);
+0316        <span class="keyword">else</span>
+0317           m = length(t);
+0318        <span class="keyword">end</span>
+0319        y = zeros(m,6);
+0320        t = lower(t);
+0321 <span class="comment">%        ampmtokens = lower(getampmtokensmx);</span>
+0322         amtok = <span class="string">'am'</span>; <span class="comment">%ampmtokens{1};</span>
+0323        amtok0 = <span class="string">'am'</span>;
+0324         pmtok = <span class="string">'pm'</span>;<span class="comment">%ampmtokens{2};</span>
+0325        pmtok0 = <span class="string">'pm'</span>;
+0326        M={<span class="string">'jan'</span>;<span class="string">'feb'</span>;<span class="string">'mar'</span>;<span class="string">'apr'</span>;<span class="string">'may'</span>;<span class="string">'jun'</span>;<span class="string">'jul'</span>;<span class="string">'aug'</span>;<span class="string">'sept'</span>;<span class="string">'oct'</span>;<span class="string">'nov'</span>;<span class="string">'dec'</span>};
+0327        M0=M;
+0328 <span class="comment">%        M = lower(getmonthnames);</span>
+0329 <span class="comment">%        M0 = lower(getmonthnames(0)); % fall-back list of English short month names.</span>
+0330        <span class="keyword">try</span>
+0331            <span class="keyword">for</span> i = 1:m
+0332                <span class="comment">% Convert date input to date vector</span>
+0333                <span class="comment">% Initially, the six fields are all unknown.</span>
+0334                c(1,1:6) = NaN;
+0335                pm = -1; <span class="comment">% means am or pm is not in datestr</span>
+0336                <span class="keyword">if</span> ischar(t)
+0337                    str = t(i,:);
+0338                <span class="keyword">else</span>
+0339                    str = t{i};
+0340                <span class="keyword">end</span>
+0341                d = [<span class="string">' '</span> str <span class="string">' '</span>];
+0342 
+0343                <span class="comment">% Replace 'a ' or 'am', 'p ' or 'pm' with ': '.</span>
+0344                p = max(find(d == amtok(1) | d == pmtok(1) | <span class="keyword">...</span>
+0345                             d == amtok0(1)| d == pmtok0(1)));
+0346                <span class="keyword">if</span> ~isempty(p)
+0347                    <span class="keyword">if</span> (d(p+1) == amtok(2) | <span class="keyword">...</span>
+0348                        d(p+1) == amtok0(2)| isspace(d(p+1))) &amp; <span class="keyword">...</span>
+0349                        d(p-1) ~= lower(<span class="string">'e'</span>)
+0350                        pm = (d(p) == pmtok(1) | d(p) == pmtok0(1));
+0351                        <span class="keyword">if</span> d(p-1) == <span class="string">' '</span>
+0352                            d(p-1:p+1) = <span class="string">':  '</span>;
+0353                        <span class="keyword">else</span>
+0354                            d(p:p+1) = <span class="string">': '</span>;
+0355                        <span class="keyword">end</span>
+0356                    <span class="keyword">end</span>
+0357                <span class="keyword">end</span>
+0358 
+0359                <span class="comment">% Any remaining letters must be in the month field</span>
+0360                p = find(isletter(d));
+0361 
+0362                <span class="comment">% Test length of string to catch a bogus date string.</span>
+0363                <span class="comment">% Get index of month in list of months of year</span>
+0364                <span class="comment">% replace with spaces, month name in date string.</span>
+0365                <span class="comment">% If native month name lookup fails, fall back on</span>
+0366                <span class="comment">% list of English month names.</span>
+0367                <span class="keyword">if</span> ~isempty(p) &amp;&amp; numel(d)&gt;4
+0368                    k = min(p);
+0369                    <span class="keyword">if</span> d(k+3) == <span class="string">'.'</span>, d(k+3) = <span class="string">' '</span>; <span class="keyword">end</span>
+0370                    monthidx = ~cellfun(<span class="string">'isempty'</span>,strfind(M,d(k:k+2)));
+0371                    <span class="keyword">if</span> ~any(monthidx)
+0372                        monthidx = ~cellfun(<span class="string">'isempty'</span>,strfind(M0,d(k:k+2)));
+0373                        <span class="keyword">if</span> ~any(monthidx)
+0374 <span class="comment">%                            error('MATLAB:datevec:MonthOfYear',...</span>
+0375 <span class="comment">%                                'Failed to lookup month of year.');</span>
+0376                           <span class="keyword">return</span>
+0377                        <span class="keyword">end</span>
+0378                    <span class="keyword">end</span>
+0379                    c(2) = find(monthidx);
+0380                    d(p) = char(<span class="string">' '</span>*ones(size(p)));
+0381                <span class="keyword">end</span>
+0382 
+0383                <span class="comment">% Find all nonnumbers.</span>
+0384                p = find((d &lt; <span class="string">'0'</span> | d &gt; <span class="string">'9'</span>) &amp; (d ~= <span class="string">'.'</span>));
+0385 
+0386                <span class="comment">% Pick off and classify numeric fields, one by one.</span>
+0387                <span class="comment">% Colons delinate hour, minutes and seconds.</span>
+0388 
+0389                k = 1;
+0390                <span class="keyword">while</span> k &lt; length(p)
+0391                    <span class="keyword">if</span> d(p(k)) ~= <span class="string">' '</span> &amp;&amp; d(p(k)+1) == <span class="string">'-'</span>
+0392                        f = str2double(d(p(k)+1:p(k+2)-1));
+0393                        k = k+1;
+0394                    <span class="keyword">else</span>
+0395                        f = str2double(d(p(k)+1:p(k+1)-1));
+0396                    <span class="keyword">end</span>
+0397                    <span class="keyword">if</span> ~isnan(f)
+0398                        <span class="keyword">if</span> d(p(k))==<span class="string">':'</span> || d(p(k+1))==<span class="string">':'</span>
+0399                            <span class="keyword">if</span> isnan(c(4))
+0400                                c(4) = f;             <span class="comment">% hour</span>
+0401                                <span class="comment">% Add 12 if pm specified and hour isn't 12</span>
+0402                                <span class="keyword">if</span> pm == 1 &amp;&amp; f ~= 12 
+0403                                    c(4) = f+12;
+0404                                <span class="keyword">elseif</span> pm == 0 &amp;&amp; f == 12
+0405                                    c(4) = 0;
+0406                                <span class="keyword">end</span>
+0407                            <span class="keyword">elseif</span> isnan(c(5))
+0408                                c(5) = f;             <span class="comment">% minutes</span>
+0409                            <span class="keyword">elseif</span> isnan(c(6)) 
+0410                                c(6) = f;             <span class="comment">% seconds</span>
+0411                            <span class="keyword">else</span>
+0412 <span class="comment">%                                error('MATLAB:datevec:NumberOfTimeFields',...</span>
+0413 <span class="comment">%                                    'Too many time fields in %s', str);</span>
+0414                                 <span class="keyword">return</span>
+0415                            <span class="keyword">end</span>
+0416                        <span class="keyword">elseif</span> isnan(c(2))
+0417                            <span class="keyword">if</span> f &gt; 12
+0418 <span class="comment">%                                error('MATLAB:datevec:IllegalDateField',...</span>
+0419 <span class="comment">%                                    '%s is too large to be a month.',num2str(f));</span>
+0420                                 <span class="keyword">return</span>
+0421                            <span class="keyword">end</span>
+0422                            c(2) = f;                <span class="comment">% month</span>
+0423                        <span class="keyword">elseif</span> isnan(c(3))
+0424                            c(3) = f;                <span class="comment">% date</span>
+0425                        <span class="keyword">elseif</span> isnan(c(1))
+0426                            <span class="keyword">if</span> (f &gt;= 0) &amp; (p(k+1)-p(k) == 3) <span class="comment">% two char year</span>
+0427                                <span class="keyword">if</span> nargin &lt; 2
+0428                                    clk = clock;
+0429                                    pivotyear = clk(1)-50;  <span class="comment">%(current year-50 years)</span>
+0430                                <span class="keyword">end</span>
+0431                                <span class="comment">% Moving 100 year window centered around current year</span>
+0432                                c(1) = pivotyear+rem(f+100-rem(pivotyear,100),100);
+0433                            <span class="keyword">else</span>
+0434                                c(1) = f;             <span class="comment">% year</span>
+0435                            <span class="keyword">end</span>
+0436                        <span class="keyword">else</span>
+0437 <span class="comment">%                            error('MATLAB:datevec:NumberOfDateFields',...</span>
+0438 <span class="comment">%                                'Too many date fields in %s', str);</span>
+0439                             <span class="keyword">return</span>
+0440                        <span class="keyword">end</span>
+0441                    <span class="keyword">end</span>
+0442                    k = k+1;
+0443                <span class="keyword">end</span>
+0444 
+0445                <span class="keyword">if</span> sum(isnan(c)) &gt;= 5
+0446 <span class="comment">%                    error('MATLAB:datevec:ParseDateString',...</span>
+0447 <span class="comment">%                        'Cannot parse date %s', str);</span>
+0448                     <span class="keyword">return</span>
+0449                <span class="keyword">end</span>
+0450               <span class="comment">% If any field has not been specified</span>
+0451                <span class="keyword">if</span> isnan(c(1)), clk = clock; c(1) = clk(1); <span class="keyword">end</span>
+0452                <span class="keyword">if</span> isnan(c(2)), c(2) = 1; <span class="keyword">end</span>;
+0453                <span class="keyword">if</span> isnan(c(3)), c(3) = 1; <span class="keyword">end</span>;
+0454                <span class="keyword">if</span> isnan(c(4)), c(4) = 0; <span class="keyword">end</span>;               
+0455                <span class="keyword">if</span> isnan(c(5)), c(5) = 0; <span class="keyword">end</span>;                   
+0456                <span class="keyword">if</span> isnan(c(6)), c(6) = 0; <span class="keyword">end</span>;
+0457 
+0458                <span class="comment">% Normalize components to correct ranges.</span>
+0459                y(i,:) = datevecmx(datenummx(c));
+0460            <span class="keyword">end</span>
+0461        <span class="keyword">catch</span>
+0462            err = lasterror;
+0463            err.message = sprintf(<span class="string">'Failed to parse date string.\n%s'</span>,<span class="keyword">...</span>
+0464                                  err.message);
+0465            rethrow(err);
+0466        <span class="keyword">end</span> 
+0467        <span class="keyword">if</span> nargout &gt; 1
+0468            mo = y(:,2);
+0469            d  = y(:,3);
+0470            h  = y(:,4);
+0471            mi = y(:,5);
+0472            s  = y(:,6);
+0473            y  = y(:,1);
+0474        <span class="keyword">end</span>
+0475     <span class="keyword">end</span>
+0476 <span class="keyword">elseif</span> nargout &lt;= 1
+0477    <span class="comment">% date number was specified</span>
+0478    y = datevecmx(t);
+0479 <span class="keyword">elseif</span> nargout == 3
+0480     <span class="comment">% date number was specified and first three date fields for output</span>
+0481    [y,mo,d] = datevecmx(t);
+0482 <span class="keyword">else</span>
+0483    <span class="comment">% date number was specified and all six date fields for output</span>
+0484    [y,mo,d,h,mi,s] = datevecmx(t);
+0485 <span class="keyword">end</span>
+0486 <span class="keyword">end</span>
+0487 <span class="comment">%--------------------------------------------------------------------------</span>
+0488 <span class="comment">%--</span>
+0489 <a name="_sub2" href="#_subfunctions" class="code">function [format] = getformat(str)</a>
+0490   format = <span class="string">''</span>;
+0491   formatstr = cell(11,1);
+0492   formatstr(1) = {<span class="string">'dd-mmm-yyyy HH:MM:SS'</span>};
+0493   formatstr(2) = {<span class="string">'dd-mmm-yyyy'</span>};
+0494   formatstr(3) = {<span class="string">'mm/dd/yy'</span>};
+0495   formatstr(4) = {<span class="string">'mm/dd'</span>};
+0496   formatstr(5) = {<span class="string">'HH:MM:SS'</span>};
+0497   formatstr(6) = {<span class="string">'HH:MM:SS PM'</span>};
+0498   formatstr(7) = {<span class="string">'HH:MM'</span>};
+0499   formatstr(8) = {<span class="string">'HH:MM PM'</span>};
+0500   formatstr(9) = {<span class="string">'mm/dd/yyyy'</span>};
+0501   formatstr(10) = {<span class="string">'dd-mmm-yyyy HH:MM'</span>};  <span class="comment">%used by finance</span>
+0502   formatstr(11) = {<span class="string">'dd-mmm-yy'</span>};  <span class="comment">%used by finance</span>
+0503   
+0504   AlphaFormats = [1 1 0 0 0 1 0 1 0 1 1];
+0505   <span class="comment">%[1 2 6 8 10 11];</span>
+0506   SlashFormats = [ 0 0 1 1 0 0 0 0 1 0 0];
+0507   <span class="comment">%[3 4 9];</span>
+0508   TwoSlashFormats = [ 0 0 1 0 0 0 0 0 1 0 0];
+0509   <span class="comment">%[3 9];</span>
+0510   DashFormats = [ 1 1 0 0 0 0 0 0 0 1 1];
+0511   <span class="comment">%[1 2 10 11];</span>
+0512   ColonFormats = [1 0 0 0 1 1 1 1 0 1 0];
+0513   <span class="comment">%[1 5 6 7 8 10];</span>
+0514   TwoColonFormats = [1 0 0 0 1 1 0 0 0 0 0];
+0515   <span class="comment">%[1 5 6];</span>
+0516   SpaceFormats = [1 0 0 0 0 1 0 1 0 1 0];
+0517   <span class="comment">%[1 6 8 10];</span>
+0518   
+0519   bMask = [ 1 1 1 1 1 1 1 1 1 1 1];
+0520   
+0521   <span class="keyword">if</span> length(str) &gt; 1
+0522       str = str(1,1);
+0523   <span class="keyword">end</span>
+0524   str = strtrim(char(str));
+0525   slashes = strfind(str, <span class="string">'/'</span>);
+0526   <span class="keyword">if</span> ~isempty(slashes)
+0527       bMask = bMask &amp; SlashFormats;
+0528       <span class="keyword">if</span> (length(slashes) &gt; 0 &amp;&amp; slashes(1) == 2)
+0529           <span class="keyword">if</span> (length(slashes) &gt; 1 &amp;&amp; slashes(2) == 4)
+0530               str = [<span class="string">'0'</span> str(1:slashes(1)) <span class="string">'0'</span> str(slashes(1)+1:end)];
+0531           <span class="keyword">else</span>
+0532               str = [<span class="string">'0'</span> str];
+0533           <span class="keyword">end</span>
+0534       <span class="keyword">elseif</span> (length(slashes) &gt; 1 &amp;&amp; slashes(2) - slashes(1) == 2)
+0535           str = [str(1:slashes(1)) <span class="string">'0'</span> str(slashes(1)+1:end)];
+0536       <span class="keyword">end</span>
+0537       <span class="keyword">if</span> length(slashes) &gt; 1
+0538           bMask = bMask &amp; TwoSlashFormats;
+0539       <span class="keyword">else</span>
+0540           bMask = bMask &amp; ~TwoSlashFormats;
+0541       <span class="keyword">end</span>
+0542   <span class="keyword">else</span>
+0543       bMask = bMask &amp; ~SlashFormats;
+0544   <span class="keyword">end</span>
+0545   
+0546   dashes = strfind(str,<span class="string">'-'</span>);
+0547   <span class="keyword">if</span> ~isempty(dashes)
+0548       bMask = bMask &amp; DashFormats;
+0549       <span class="keyword">if</span> (length(dashes) &gt; 0 &amp;&amp; dashes(1) == 2)
+0550         str = [<span class="string">'0'</span> str];
+0551       <span class="keyword">end</span>
+0552   <span class="keyword">else</span>
+0553       bMask = bMask &amp; ~DashFormats;      
+0554   <span class="keyword">end</span>
+0555   
+0556   colons = strfind(str,<span class="string">':'</span>);
+0557   <span class="keyword">if</span> ~isempty(colons)
+0558       bMask = bMask &amp; ColonFormats;
+0559       <span class="keyword">if</span> (length(colons) &gt; 0) &amp;&amp; (colons(1) == 2) &amp;&amp; (length(str) - colons(end) &gt; 3)
+0560         str = [<span class="string">'0'</span> str];
+0561       <span class="keyword">end</span>
+0562       <span class="keyword">if</span> length(colons) &gt; 1
+0563           bMask = bMask &amp; TwoColonFormats;
+0564       <span class="keyword">else</span>
+0565           bMask = bMask &amp; ~TwoColonFormats;
+0566       <span class="keyword">end</span>      
+0567   <span class="keyword">else</span>
+0568       bMask = bMask &amp; ~ColonFormats;
+0569   <span class="keyword">end</span>      
+0570   
+0571   spaces = strfind(str,<span class="string">' '</span>);
+0572   <span class="keyword">if</span> ~isempty(spaces)
+0573       bMask = bMask &amp; SpaceFormats;
+0574   <span class="keyword">else</span>
+0575       bMask = bMask &amp; ~SpaceFormats;
+0576   <span class="keyword">end</span>
+0577   
+0578   <span class="keyword">for</span> i = 1:11
+0579       <span class="keyword">if</span> bMask(i)
+0580           <span class="keyword">try</span>
+0581               str1 = dateformverify(str,char(formatstr(i)));
+0582             <span class="keyword">if</span> (strcmpi(str, strtrim(str1)) == 1)
+0583                 format = char(formatstr(i));
+0584                 <span class="keyword">break</span>;
+0585             <span class="keyword">end</span>
+0586           <span class="keyword">catch</span>
+0587                lasterr(<span class="string">''</span>);
+0588           <span class="keyword">end</span>
+0589           <span class="keyword">if</span> AlphaFormats(i)
+0590               <span class="keyword">try</span>
+0591                 str1 = dateformverify(str,char(formatstr(i)),<span class="string">'local'</span>);
+0592                 <span class="keyword">if</span> (strcmpi(str, strtrim(str1)) == 1)
+0593                     format = char(formatstr(i));
+0594                     <span class="keyword">break</span>;
+0595                 <span class="keyword">end</span>
+0596               <span class="keyword">catch</span>
+0597                 lasterr(<span class="string">''</span>);
+0598               <span class="keyword">end</span>       
+0599           <span class="keyword">end</span>
+0600       <span class="keyword">end</span>
+0601   <span class="keyword">end</span>
+0602  <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

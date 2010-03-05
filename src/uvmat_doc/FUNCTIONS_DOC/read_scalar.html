@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of read_scalar</title>
+  <meta name="keywords" content="read_scalar">
+  <meta name="description" content="'read_scalar': reads and calculates the vort div or any scalar from a file">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../../../../index.html">Home</a> &gt;  <a href="#">coriolis</a> &gt; <a href="#">bigone</a> &gt; <a href="#">PROJETS</a> &gt; <a href="#">UVMAT.new</a> &gt; read_scalar.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../../../../index.html"><img alt="<" border="0" src="../../../../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for /coriolis/bigone/PROJETS/UVMAT.new&nbsp;<img alt=">" border="0" src="../../../../right.png"></a></td></tr></table>-->
+
+<h1>read_scalar
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../../../up.png"></a></h2>
+<div class="box"><strong>'read_scalar': reads and calculates the vort div or any scalar from a file</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../../../up.png"></a></h2>
+<div class="box"><strong>function [A,time,dt,rangx,rangy,vel_type_out,error,pixcmx,pixcmy]=read_scalar(filename,vel_type,scal_type,rgx_in,rgy_in,npxy_in,maskname,transform); </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../../../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'read_scalar': reads and calculates the vort div or any scalar from a file
+ % OBSOLETE: REPLACED BY read_ncfield
+------------------------------------------------------------------
+[A,time,dt,rangx,rangy,vel_type_out,error,pixcmx,pixcmy]=...
+ read_scalar(filename,vel_type,scal_type,rgx_in,rgy_in,npxy_in,maskname,usrtransform);
+
+ OUTPUT:
+ A=double m x n matrix representing the scalar field on a regular mesh
+ time: absolute time read in the file 
+ dt: time interval of the image pair (read in the file)
+ rangx,rangy: length 2 vectors representing in each direction the coordinates of the first and
+ last point of the field, thus describes the whole grid of scalar positions
+ vel_type_out: string representing the type of velocity selected (filter2,filter1...)
+ error: error flag = 0 when  OK
+ error=1: no spatial derivative in the filename;'run patch first'})
+ error=2: no field  vel_type in  filename
+ error=3: scalar cannot be obtained
+ error=4: all points aligned
+ pixcmx,pixcmy: pixels per cm in the images (useful when using a mask)
+
+ INPUT:
+ filename: string representing the name of the input file
+ vel_type: character string or cell (only vel_type{1} is used presently), indicates the types of velocity fields to read ('civ1','civ2'...)
+            if vel_type{1}=[], the types are automaticaly set depending on scal_type
+ scal_type: character string, indicates the types of scalar to get ('vort','div'...)
+ rgx_in,rgy_in: like rangx, rangy but set as input:
+ if 'rgx_in' not defined or rgx_in=[], it is set to min max of 'vec_X' in the field
+ npxy_in: in general vector with two elements setting the number of grid points in each direction,
+ in association with rgx_in,rgy_in, it sets the whole grid
+ on which the scalar is linearly interpolated
+ if rgx_in=[] and npxy_in='np&gt;256' we interpolate the field to get a resolution &gt; 256 pts
+ maskname: name of a mask image file, the scalar is set to 'NaN' at masked points
+ transform: names of a user defined transforms
+ transform.scal: for the scalar
+ transform.ima: for a geometric transform on mask images if a mask is used</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../../../matlabicon.gif)">
+<li><a href="calc_scal.html" class="code" title="function [Scal]=calc_scal(ScalName,DataIn)">calc_scal</a>	'calc_scal': defines scalars and calculate them from stored fields. OBSOLETE to replace by calc_field</li><li><a href="griddata_uvmat.html" class="code" title="function ZI = griddata_uvmat(X,Y,Z,XI,YI)">griddata_uvmat</a>	'griddata_uvmat': function griddata_uvmat(vec2_X,vec2_Y,vec2_U,vec_X,vec_Y,'linear')</li><li><a href="read_netcdf.html" class="code" title="function [cte_detect,var_detect,cte_read,var_read,choice,cte2_detect,var2_detect,cte2_read,var2_read]=read_netcdf(filename,cte1,nb1,var1,cte2,nb2,var2,option)">read_netcdf</a>	'read_netcdf': reads a list of fields and constants in a netcdf file</li><li><a href="varname_generator.html" class="code" title="function [cte,nb,var,vel_type_out]=varname_generator(vel_type,display,scal_name,scal_2,scal_3)">varname_generator</a>	'varname_generator': defines the names of constants and variable fields to read in the netcdf files</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../../../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<hr><address>Generated on Tue 14-Apr-2009 22:21:41 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

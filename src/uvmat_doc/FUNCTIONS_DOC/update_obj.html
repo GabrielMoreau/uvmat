@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of update_obj</title>
+  <meta name="keywords" content="update_obj">
+  <meta name="description" content="'update_obj': update the object graph representation and its projection field, record it in the uvmat interface">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; update_obj.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>update_obj
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'update_obj': update the object graph representation and its projection field, record it in the uvmat interface</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function Object_out=update_obj(UvData,IndexObj,ObjectData,PlotHandles) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'update_obj': update the object graph representation and its projection field, record it in the uvmat interface
+-------------------------------------------------------------------
+Object=update_obj(UvData,IndexObj,ObjectData,PlotHandles);
+
+OUTPUT:
+UvData: data to be stored as 'Userdata' on the uvmat interface
+IndexObj: object index for a new object added to the list in UvData
+   the function updates UvData.Object{IndexObj}, and possibly adds a new plot (UvData.Plane or Line) in the list atached to the interface
+
+INPUT:
+UvIn: structure stored as 'Userdata' on the uvmat interface
+IndexObjIn: object index for an existing objects stored in UvData
+ObjectData: structure containing the input object properties
+PlotHandles: structure containing the handles of the plotting parameter buttons on the uvmat interface (obtained by get_plot_handles.m)
+-------------------------------------</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="plot_field.html" class="code" title="function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)">plot_field</a>	'plot_field': plot any field with the structure defined in the uvmat package</li><li><a href="plot_object.html" class="code" title="function [hh]=plot_object(ObjectDataIn,ProjObject,hplot,col)">plot_object</a>	'plot_object': draws a projection object (points, line, plane...)</li><li><a href="proj_field.html" class="code" title="function [ProjData,errormsg]=proj_field(FieldData,ObjectData,IndexObj)">proj_field</a>	'proj_field': projects the field on a projection object</li><li><a href="set_title.html" class="code" title="function TITLE=set_title(Style,ProjMode)">set_title</a>	'set_title': defines the 'TITLE' of a projection object</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="mouse_up.html" class="code" title="function mouse_up(ggg,eventdata,handles)">mouse_up</a>	'mouse_up': function  activated when the mouse button is released</li><li><a href="set_grid.html" class="code" title="function varargout = set_grid(varargin)">set_grid</a>	'set_grid':produce grid for PIV with one or two images (stereo case)</li><li><a href="set_object.html" class="code" title="function varargout = set_object(varargin)">set_object</a>	'set_object': GUI to edit a projection object</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'update_obj': update the object graph representation and its projection field, record it in the uvmat interface</span>
+0002 <span class="comment">%-------------------------------------------------------------------</span>
+0003 <span class="comment">%Object=update_obj(UvData,IndexObj,ObjectData,PlotHandles);</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">%OUTPUT:</span>
+0006 <span class="comment">%UvData: data to be stored as 'Userdata' on the uvmat interface</span>
+0007 <span class="comment">%IndexObj: object index for a new object added to the list in UvData</span>
+0008 <span class="comment">%   the function updates UvData.Object{IndexObj}, and possibly adds a new plot (UvData.Plane or Line) in the list atached to the interface</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">%INPUT:</span>
+0011 <span class="comment">%UvIn: structure stored as 'Userdata' on the uvmat interface</span>
+0012 <span class="comment">%IndexObjIn: object index for an existing objects stored in UvData</span>
+0013 <span class="comment">%ObjectData: structure containing the input object properties</span>
+0014 <span class="comment">%PlotHandles: structure containing the handles of the plotting parameter buttons on the uvmat interface (obtained by get_plot_handles.m)</span>
+0015 <span class="comment">%-------------------------------------</span>
+0016 
+0017 <a name="_sub0" href="#_subfunctions" class="code">function Object_out=update_obj(UvData,IndexObj,ObjectData,PlotHandles)</a>
+0018 
+0019 <span class="comment">%default input and output</span>
+0020 Object_out=ObjectData;<span class="comment">%default</span>
+0021 <span class="keyword">if</span>  isfield(UvData,<span class="string">'Object'</span>) 
+0022     Object_set=UvData.Object;
+0023 <span class="keyword">else</span>
+0024     Object_set={};<span class="comment">%create the object</span>
+0025 <span class="keyword">end</span>
+0026 
+0027 <span class="comment">% object representation in the different projected field plots</span>
+0028 <span class="keyword">for</span> iview=1:length(Object_set) <span class="comment">%loop on projection planes iview</span>
+0029       <span class="keyword">if</span> isfield(Object_set{iview},<span class="string">'plotaxes'</span>)
+0030          haxes=Object_set{iview}.plotaxes;<span class="comment">% axes for the field plot</span>
+0031          <span class="keyword">if</span> ishandle(haxes) &amp; isequal(get(haxes,<span class="string">'Type'</span>),<span class="string">'axes'</span>)<span class="comment">% update the representation of the object IndexObj on this axes if it exists</span>
+0032              testupdate=0;
+0033              HandlesDisplay=[];<span class="comment">%default</span>
+0034              <span class="keyword">if</span> length(Object_set)&gt;= IndexObj &amp;&amp; isfield(Object_set{IndexObj},<span class="string">'HandlesDisplay'</span>)
+0035                  HandlesDisplay=Object_set{IndexObj}.HandlesDisplay;<span class="comment">%list of handles of object representations</span>
+0036              <span class="keyword">end</span>
+0037              hplot_list=findobj(haxes,<span class="string">'Tag'</span>,<span class="string">'proj_object'</span>);
+0038              <span class="keyword">for</span> ih=1:length(HandlesDisplay)
+0039                  plot_detect=find(hplot_list==HandlesDisplay(ih));
+0040                  <span class="keyword">if</span> ~isempty(plot_detect)
+0041                      Object_out.HandlesDisplay(ih)=<a href="plot_object.html" class="code" title="function [hh]=plot_object(ObjectDataIn,ProjObject,hplot,col)">plot_object</a>(ObjectData,Object_set{iview},HandlesDisplay(ih),<span class="string">'m'</span>);<span class="comment">%update the the object representation</span>
+0042                      testupdate=1;
+0043                      <span class="keyword">break</span>
+0044                  <span class="keyword">end</span>
+0045              <span class="keyword">end</span>
+0046              <span class="keyword">if</span> ~testupdate<span class="comment">% draw new object plot</span>
+0047                 hh=<a href="plot_object.html" class="code" title="function [hh]=plot_object(ObjectDataIn,ProjObject,hplot,col)">plot_object</a>(ObjectData,Object_set{iview},haxes,<span class="string">'m'</span>);<span class="comment">%draw the object with the new object data</span>
+0048                 Object_out.HandlesDisplay=[Object_out.HandlesDisplay hh];
+0049                 PlotData=get(hh,<span class="string">'UserData'</span>);
+0050                 PlotData.IndexObj=IndexObj;
+0051                 set(hh,<span class="string">'UserData'</span>,PlotData); <span class="comment">%record the object index in the graph</span>
+0052              <span class="keyword">end</span>
+0053          <span class="keyword">end</span>
+0054       <span class="keyword">end</span>
+0055 <span class="keyword">end</span>
+0056 
+0057 <span class="comment">% plot the field projected on the object</span>
+0058 <span class="keyword">if</span> ~isempty(PlotHandles) <span class="comment">%&amp;&amp; ~testmask</span>
+0059     ProjData= <a href="proj_field.html" class="code" title="function [ProjData,errormsg]=proj_field(FieldData,ObjectData,IndexObj)">proj_field</a>(UvData.Field,ObjectData,IndexObj);<span class="comment">%project the current interface field on ObjectData</span>
+0060     <span class="keyword">if</span> ~isempty(ProjData)   
+0061         plotaxes=[];<span class="comment">%default</span>
+0062         <span class="keyword">if</span> length(Object_set)&gt;= IndexObj &amp;&amp; isfield(Object_set{IndexObj},<span class="string">'plotaxes'</span>)
+0063             plotaxes=Object_set{IndexObj}.plotaxes;
+0064         <span class="keyword">end</span>
+0065         [PlotType,Object_out.PlotParam,plotaxes]=<a href="plot_field.html" class="code" title="function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)">plot_field</a>(ProjData,plotaxes,PlotHandles);
+0066         Object_out.plotaxes=plotaxes;
+0067         plotfig=get(plotaxes,<span class="string">'parent'</span>);
+0068         name_str=get(plotfig,<span class="string">'Name'</span>);
+0069         <span class="keyword">if</span> ~isequal(name_str,<span class="string">'uvmat'</span>)
+0070             set(plotfig,<span class="string">'Name'</span>,[<span class="string">'Projection on'</span> num2str(IndexObj) <span class="string">'-'</span> <a href="set_title.html" class="code" title="function TITLE=set_title(Style,ProjMode)">set_title</a>(ObjectData.Style,ObjectData.ProjMode)]);
+0071         <span class="keyword">end</span>
+0072     <span class="keyword">end</span>
+0073 <span class="keyword">end</span>
+0074 
+0075</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of sub_field</title>
+  <meta name="keywords" content="sub_field">
+  <meta name="description" content="'sub_field': combines two input fields + mask for uvmat">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; sub_field.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>sub_field
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'sub_field': combines two input fields + mask for uvmat</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function SubData=sub_field(UvData,Field); </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'sub_field': combines two input fields + mask for uvmat
+-----------------------------------------------------------------------
+ function SubData=sub_field(UvData,Field)
+
+ OUPUT: 
+ SubData: structure representing the resulting field
+
+ INPUT: 
+ UvData: main structure UvData associated to the uvmat GUI as 'UserData'
+ Field: cell of Matlab structures representing the input fields
+ 
+    -- TODO: need to be rationalized --</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="calc_field.html" class="code" title="function [DataOut,errormsg]=calc_field(FieldName,DataIn)">calc_field</a>	'calc_field': defines fields (velocity, vort, div...) from civx data and calculate them</li><li><a href="griddata_uvmat.html" class="code" title="function ZI = griddata_uvmat(X,Y,Z,XI,YI)">griddata_uvmat</a>	'griddata_uvmat': function griddata_uvmat(vec2_X,vec2_Y,vec2_U,vec_X,vec_Y,'linear')</li><li><a href="proj_grid.html" class="code" title="function [A,rangx,rangy]=proj_grid(vec_X,vec_Y,vec_A,rgx_in,rgy_in,npxy_in)">proj_grid</a>	'proj_grid': project  fields with unstructured coordinantes on a regular grid</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'sub_field': combines two input fields + mask for uvmat</span>
+0002 <span class="comment">%-----------------------------------------------------------------------</span>
+0003 <span class="comment">% function SubData=sub_field(UvData,Field)</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% OUPUT:</span>
+0006 <span class="comment">% SubData: structure representing the resulting field</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% INPUT:</span>
+0009 <span class="comment">% UvData: main structure UvData associated to the uvmat GUI as 'UserData'</span>
+0010 <span class="comment">% Field: cell of Matlab structures representing the input fields</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">%    -- TODO: need to be rationalized --</span>
+0013 
+0014 <a name="_sub0" href="#_subfunctions" class="code">function SubData=sub_field(UvData,Field);</a>
+0015 
+0016 SubData=UvData;<span class="comment">%default</span>
+0017 <span class="keyword">if</span> isfield(SubData,<span class="string">'ListVarName'</span>)
+0018     SubData=rmfield(SubData,<span class="string">'ListVarName'</span>);
+0019 <span class="keyword">end</span>
+0020 <span class="keyword">if</span> ~exist(<span class="string">'Field'</span>,<span class="string">'var'</span>) 
+0021     <span class="keyword">return</span>
+0022 <span class="keyword">end</span>
+0023 <span class="keyword">if</span> ~iscell(Field)
+0024     <span class="keyword">return</span>
+0025 <span class="keyword">end</span>
+0026 nbfield=length(Field);
+0027 <span class="keyword">if</span> nbfield==1 &amp; isfield(Field{1},<span class="string">'ListVarName'</span>)
+0028     SubData=Field{1};
+0029     <span class="keyword">if</span> isfield(UvData,<span class="string">'Object'</span>)
+0030         SubData.Object=UvData.Object;
+0031     <span class="keyword">end</span>
+0032     <span class="keyword">if</span> isfield(UvData,<span class="string">'XmlData'</span>)
+0033         SubData.XmlData=UvData.XmlData;
+0034     <span class="keyword">end</span>
+0035     <span class="keyword">return</span>
+0036 <span class="keyword">end</span>
+0037 
+0038 <span class="comment">%transfer error messages</span>
+0039 testerror=0;
+0040 <span class="keyword">if</span> ~isfield(SubData,<span class="string">'Txt'</span>)
+0041     <span class="keyword">for</span> ifield=1:nbfield
+0042         <span class="keyword">if</span> isfield(Field{ifield},<span class="string">'Txt'</span>)
+0043             SubData.Txt=Field{ifield}.Txt;
+0044             testerror=1;
+0045         <span class="keyword">end</span>
+0046     <span class="keyword">end</span>
+0047 <span class="keyword">end</span>
+0048 
+0049 <span class="comment">%fields</span>
+0050 <span class="keyword">if</span> nbfield &gt;=1
+0051    <span class="keyword">if</span> isfield(Field{1},<span class="string">'dt'</span>)
+0052        SubData.dt=Field{1}.dt;
+0053    <span class="keyword">elseif</span> isfield(SubData,<span class="string">'dt'</span>)
+0054        SubData=rmfield(SubData,<span class="string">'dt'</span>);
+0055    <span class="keyword">end</span>
+0056    <span class="keyword">if</span> isfield(Field{1},<span class="string">'CoordType'</span>)
+0057        SubData.CoordType=Field{1}.CoordType;
+0058        <span class="comment">%A FAIRE: Case of Field{2}.CoordType different</span>
+0059    <span class="keyword">end</span>
+0060     <span class="comment">%background scalar</span>
+0061     <span class="keyword">if</span> isfield(Field{1},<span class="string">'AName'</span>)
+0062         SubData.AName=Field{1}.AName;
+0063         <span class="keyword">if</span> nbfield &gt;=2 &amp; isfield(Field{2},<span class="string">'AName'</span>)&amp; ~isfield(Field{2},<span class="string">'A'</span>)
+0064             SubData.Txt=<span class="string">'ERROR: no substraction of background scalar'</span>;
+0065         <span class="keyword">end</span>
+0066     <span class="keyword">elseif</span> nbfield&gt;=2 &amp; isfield(Field{2},<span class="string">'AName'</span>)
+0067         SubData.AName=Field{2}.AName;<span class="comment">%transfer the second scalar or image field</span>
+0068     <span class="keyword">elseif</span> isfield(SubData,<span class="string">'AName'</span>)
+0069         SubData=rmfield(SubData,<span class="string">'AName'</span>);
+0070     <span class="keyword">end</span> 
+0071     testA=0;
+0072     <span class="keyword">if</span> isfield(Field{1},<span class="string">'A'</span>)&amp; isfield(Field{1},<span class="string">'AX'</span>) &amp; isfield(Field{1},<span class="string">'AY'</span>)
+0073         SubData.A=Field{1}.A;
+0074         SubData.AX=Field{1}.AX;
+0075         SubData.AY=Field{1}.AY;
+0076         <span class="keyword">if</span> nbfield &gt;=2 &amp; isfield(Field{2},<span class="string">'A'</span>)&amp; isfield(Field{2},<span class="string">'AX'</span>) &amp; isfield(Field{2},<span class="string">'AY'</span>)
+0077             <span class="keyword">if</span> isequal(Field{2}.AX,Field{1}.AX) &amp; isequal(Field{2}.AY,Field{1}.AY) &amp;<span class="keyword">...</span>
+0078                               isequal(size(Field{2}.A),size(Field{1}.A))
+0079                 SubData.A=double(Field{1}.A)-double(Field{2}.A);    
+0080                 <span class="keyword">if</span> isa(Field{1}.A,<span class="string">'uint8'</span>)
+0081                     SubData.A=int8(SubData.A);
+0082                 <span class="keyword">elseif</span> isa(Field{1}.A,<span class="string">'uint16'</span>)
+0083                     SubData.A=int16(SubData.A);<span class="comment">%signed integer</span>
+0084                 <span class="keyword">end</span>
+0085             <span class="keyword">else</span>
+0086                 SubData.Txt=<span class="string">'ERROR in image substraction: unequal image sizes'</span>;
+0087             <span class="keyword">end</span>
+0088         <span class="keyword">end</span>
+0089         testA=1;
+0090     <span class="keyword">elseif</span> nbfield&gt;=2 &amp; isfield(Field{2},<span class="string">'A'</span>)&amp; isfield(Field{2},<span class="string">'AX'</span>) &amp; isfield(Field{2},<span class="string">'AY'</span>)
+0091         SubData.A=Field{2}.A;<span class="comment">%transfer the second scalar or image field</span>
+0092         SubData.AX=Field{2}.AX;
+0093         SubData.AY=Field{2}.AY;
+0094         testA=1;
+0095     <span class="keyword">end</span> 
+0096     <span class="keyword">if</span> ~isfield(SubData,<span class="string">'NbDim'</span>)
+0097         SubData.NbDim=2;<span class="comment">%nbdim=2 by default</span>
+0098     <span class="keyword">end</span>
+0099 <span class="comment">%          if ~testA</span>
+0100         <span class="comment">%coordinates</span>
+0101         ivel=1;
+0102         <span class="keyword">if</span> isfield(Field{1},<span class="string">'X'</span>)
+0103             SubData.X=Field{1}.X;
+0104         <span class="keyword">elseif</span> nbfield&gt;=2 &amp; isfield(Field{2},<span class="string">'X'</span>)
+0105             SubData.X=Field{2}.X;
+0106             ivel=2;
+0107         <span class="keyword">elseif</span> isfield(SubData,<span class="string">'X'</span>)
+0108             SubData=rmfield(SubData,<span class="string">'X'</span>);
+0109         <span class="keyword">end</span>
+0110         <span class="keyword">if</span> isfield(Field{ivel},<span class="string">'Y'</span>)
+0111             SubData.Y=Field{ivel}.Y;
+0112         <span class="keyword">elseif</span> isfield(SubData,<span class="string">'Y'</span>)
+0113             SubData=rmfield(SubData,<span class="string">'Y'</span>);
+0114         <span class="keyword">end</span>
+0115         <span class="keyword">if</span> isfield(Field{ivel},<span class="string">'Z'</span>)
+0116             SubData.Z=Field{ivel}.Z;
+0117             <span class="comment">%don't remove Z (set by uvmat)</span>
+0118         <span class="keyword">end</span>
+0119 
+0120         <span class="comment">%velocity components and derived scalar</span>
+0121         <span class="keyword">if</span> isfield(Field{ivel},<span class="string">'U'</span>)
+0122             SubData.U=Field{ivel}.U;
+0123         <span class="keyword">elseif</span> isfield(SubData,<span class="string">'U'</span>)
+0124             SubData=rmfield(SubData,<span class="string">'U'</span>);
+0125         <span class="keyword">end</span>
+0126         <span class="keyword">if</span> isfield(Field{ivel},<span class="string">'V'</span>)
+0127             SubData.V=Field{ivel}.V;
+0128         <span class="keyword">elseif</span> isfield(SubData,<span class="string">'V'</span>)
+0129             SubData=rmfield(SubData,<span class="string">'V'</span>);
+0130         <span class="keyword">end</span>
+0131         <span class="keyword">if</span> isfield(Field{ivel},<span class="string">'W'</span>)
+0132             SubData.W=Field{ivel}.W;
+0133         <span class="keyword">elseif</span> isfield(SubData,<span class="string">'W'</span>)
+0134             SubData=rmfield(SubData,<span class="string">'W'</span>);
+0135         <span class="keyword">end</span>
+0136 <span class="comment">%          else</span>
+0137 <span class="comment">%              ivel=1;</span>
+0138 <span class="comment">%         end</span>
+0139     <span class="keyword">if</span> nbfield&gt;=2 &amp; isfield(Field{2},<span class="string">'X'</span>) &amp; ivel==1 <span class="comment">%two velocity fields exist</span>
+0140         test_A=0;
+0141         <span class="keyword">if</span> isfield(Field{1},<span class="string">'A'</span>) ||(isfield(Field{1},<span class="string">'AName'</span>) &amp;&amp; ~isempty(Field{1}.AName)) <span class="comment">%if the first field is for a scalar</span>
+0142             <span class="keyword">if</span> ~isfield(Field{1},<span class="string">'A'</span>)
+0143                 test_A=1;
+0144                 SubData.A=<a href="calc_field.html" class="code" title="function [DataOut,errormsg]=calc_field(FieldName,DataIn)">calc_field</a>(Field{1}.AName,Field{1});
+0145                 SubData.AX=Field{1}.X;
+0146                 SubData.AY=Field{1}.Y;
+0147                 SubData.AName=Field{1}.AName;
+0148                 <span class="comment">%remove false vectors</span>
+0149                 <span class="keyword">if</span> isfield(Field{1},<span class="string">'FF'</span>)
+0150                     ind_sel=find(Field{1}.FF==0);<span class="comment">%good indices</span>
+0151                     SubData.A=SubData.A(ind_sel);
+0152                     SubData.AX=SubData.AX(ind_sel);
+0153                     SubData.AY=SubData.AY(ind_sel);
+0154                 <span class="keyword">end</span>
+0155                 [SubData.A,SubData.AX,SubData.AY]=<span class="keyword">...</span>
+0156                 <a href="proj_grid.html" class="code" title="function [A,rangx,rangy]=proj_grid(vec_X,vec_Y,vec_A,rgx_in,rgy_in,npxy_in)">proj_grid</a>(SubData.AX,SubData.AY,SubData.A,[],[],<span class="string">'np&gt;256'</span>);
+0157             <span class="keyword">end</span>
+0158         <span class="keyword">end</span>
+0159         <span class="keyword">if</span> isfield(Field{2},<span class="string">'A'</span>)||(isfield(Field{2},<span class="string">'AName'</span>) &amp;&amp; ~isempty(Field{2}.AName) )<span class="comment">%if the second field is for a scalar</span>
+0160             testA=1;        
+0161             <span class="keyword">if</span> ~isfield(Field{2},<span class="string">'A'</span>) 
+0162                 A=<a href="calc_field.html" class="code" title="function [DataOut,errormsg]=calc_field(FieldName,DataIn)">calc_field</a>(Field{2}.AName,Field{2});
+0163                 AX=Field{2}.X;
+0164                 AY=Field{2}.Y;
+0165                 AName=Field{2}.AName;
+0166                 <span class="comment">%remove false vectors</span>
+0167                 <span class="keyword">if</span> isfield(Field{2},<span class="string">'FF'</span>)
+0168                     ind_sel=find(Field{2}.FF==0);<span class="comment">%good indices</span>
+0169                     A=A(ind_sel);
+0170                     AX=AX(ind_sel);
+0171                     AY=AY(ind_sel);
+0172                 <span class="keyword">end</span>
+0173                 <span class="keyword">if</span> test_A==1;<span class="comment">%substract the two scalars</span>
+0174                     <span class="keyword">if</span> SubData.NbDim==3
+0175                         SubData.Txt=<span class="string">'ERROR: no substraction of 3D fields'</span>;
+0176                     <span class="keyword">elseif</span> isequal(AName,SubData.AName)
+0177                         [A,AX,AY]=<a href="proj_grid.html" class="code" title="function [A,rangx,rangy]=proj_grid(vec_X,vec_Y,vec_A,rgx_in,rgy_in,npxy_in)">proj_grid</a>(AX,AY,A,SubData.AX,SubData.AY,size(SubData.A));
+0178                         SubData.A=SubData.A-A;
+0179                     <span class="keyword">else</span>
+0180                         SubData.Txt=<span class="string">'ERROR: attempt to substract two scalars of different kind'</span>;
+0181                     <span class="keyword">end</span>
+0182                 <span class="keyword">else</span>
+0183                     [SubData.A,SubData.AX,SubData.AY]=<a href="proj_grid.html" class="code" title="function [A,rangx,rangy]=proj_grid(vec_X,vec_Y,vec_A,rgx_in,rgy_in,npxy_in)">proj_grid</a>(AX,AY,A,[],[],<span class="string">'np&gt;256'</span>);
+0184                     SubData.AName=AName;
+0185                     test_A=1;
+0186                 <span class="keyword">end</span>
+0187              <span class="keyword">end</span>
+0188          <span class="keyword">end</span>
+0189          <span class="keyword">if</span> test_A==0<span class="comment">% substract the velocity fields</span>
+0190             <span class="comment">%A REVOIR cas 3 composantes 2D</span>
+0191             <span class="keyword">if</span> isfield(Field{2},<span class="string">'FF'</span>)&amp; ~isempty(Field{2}.FF)
+0192                 index2=find(Field{2}.FF==0);
+0193                 Field{2}.X=Field{2}.X(index2);
+0194                 Field{2}.Y=Field{2}.Y(index2);
+0195                 Field{2}.U=Field{2}.U(index2);
+0196                 Field{2}.V=Field{2}.V(index2);
+0197             <span class="keyword">end</span>
+0198             <span class="keyword">if</span>  ~isequal(Field{1}.X,Field{2}.X) | ~isequal(Field{1}.Y,Field{2}.Y); <span class="comment">% if the vector positions are not the same</span>
+0199                 Field{2}.U=<a href="griddata_uvmat.html" class="code" title="function ZI = griddata_uvmat(X,Y,Z,XI,YI)">griddata_uvmat</a>(Field{2}.X,Field{2}.Y,Field{2}.U,Field{1}.X,Field{1}.Y);  <span class="comment">%interpolate vectors in the second field</span>
+0200                 Field{2}.V=<a href="griddata_uvmat.html" class="code" title="function ZI = griddata_uvmat(X,Y,Z,XI,YI)">griddata_uvmat</a>(Field{2}.X,Field{2}.Y,Field{2}.V,Field{1}.X,Field{1}.Y); <span class="comment">%  to the positions  of the first field</span>
+0201             <span class="keyword">end</span> 
+0202             SubData.U=Field{1}.U-Field{2}.U;<span class="comment">% take the interpolated first field - the second field</span>
+0203             SubData.V=Field{1}.V-Field{2}.V;
+0204         <span class="keyword">end</span>
+0205     <span class="keyword">end</span>
+0206     <span class="comment">%remove scalar data if no AName</span>
+0207     <span class="keyword">if</span> ~testA<span class="comment">%~isfield(SubData,'AName')</span>
+0208         <span class="keyword">if</span> isfield(SubData,<span class="string">'A'</span>)
+0209             SubData=rmfield(SubData,<span class="string">'A'</span>);
+0210         <span class="keyword">end</span>
+0211         <span class="keyword">if</span> isfield(SubData,<span class="string">'AX'</span>)
+0212             SubData=rmfield(SubData,<span class="string">'AX'</span>);
+0213         <span class="keyword">end</span>
+0214         <span class="keyword">if</span> isfield(SubData,<span class="string">'AY'</span>)
+0215             SubData=rmfield(SubData,<span class="string">'AY'</span>);
+0216         <span class="keyword">end</span>
+0217     <span class="keyword">end</span>
+0218     <span class="keyword">if</span> isfield(Field{ivel},<span class="string">'C'</span>)
+0219         SubData.C=Field{ivel}.C;
+0220     <span class="keyword">elseif</span> isfield(SubData,<span class="string">'C'</span>)
+0221         SubData=rmfield(SubData,<span class="string">'C'</span>);
+0222     <span class="keyword">end</span> 
+0223     <span class="keyword">if</span> isfield(Field{ivel},<span class="string">'F'</span>)
+0224         SubData.F=Field{ivel}.F;
+0225     <span class="keyword">elseif</span> isfield(SubData,<span class="string">'F'</span>)
+0226         SubData=rmfield(SubData,<span class="string">'F'</span>);
+0227     <span class="keyword">end</span>  
+0228     <span class="keyword">if</span> isfield(Field{ivel},<span class="string">'FF'</span>)
+0229         SubData.FF=Field{ivel}.FF;
+0230     <span class="keyword">elseif</span> isfield(SubData,<span class="string">'FF'</span>)
+0231         SubData=rmfield(SubData,<span class="string">'FF'</span>);
+0232     <span class="keyword">end</span>
+0233     <span class="comment">%velocity derivatives</span>
+0234     <span class="keyword">if</span> isfield(Field{ivel},<span class="string">'DjUi'</span>)
+0235         SubData.DjUi=Field{ivel}.DjUi;
+0236     <span class="keyword">elseif</span> isfield(SubData,<span class="string">'DjUi'</span>)  
+0237         SubData=rmfield(SubData,<span class="string">'DjUi'</span>);
+0238     <span class="keyword">end</span>       
+0239 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

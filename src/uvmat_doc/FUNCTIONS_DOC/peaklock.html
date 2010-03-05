@@ -1,0 +1,263 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of peaklock</title>
+  <meta name="keywords" content="peaklock">
+  <meta name="description" content="'peaklock': determines peacklocking errors from velocity histograms.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; peaklock.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>peaklock
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'peaklock': determines peacklocking errors from velocity histograms.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [histinter,x,error]=peaklock(nbb,minim,maxim,histu) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'peaklock': determines peacklocking errors from velocity histograms.
+-------------------------------------------------------
+first smooth the input histogram 'histu' in such a way that the integral over
+n-n+1 is preserved, then deduce the peaklocking 'error' function of the pixcel displacement 'x'.
+
+ [histinter,x,error]=peaklock(nbb,minim,maxim,histu)
+OUTPUT:
+histinter: smoothed interpolated histogram
+ x: vector of displacement values.
+ error: vector of estimated errors corresponding to x
+INPUT:
+histu=vector representing the values of histogram  of measured velocity ;
+minim, maxim: extremal values of the measured velocity (absica for histu)
+nbb: number of bins inside each integer interval for the histograms
+SUBROUTINES INCLUDED:
+spline4.m% spline interpolation at 4th order
+splinhist.m: give spline coeff cc for a smooth histo (call spline4)
+histsmooth.m(x,cc): calculate the smooth histo for any value x
+histder.m(x,cc): calculate the derivative of the smooth histo</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="get_field.html" class="code" title="function varargout = get_field(varargin)">get_field</a>	'get_field': display variables and attributes from a Netcdf file, and plot selected fields</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [histsmooth,cc]= splinhist(Integ,mini,nbb)</a></li><li><a href="#_sub2" class="code">function [histsmooth,bb]= spline4(aa,mini,n)</a></li><li><a href="#_sub3" class="code">function histx= histsmooth(chi,cc)</a></li><li><a href="#_sub4" class="code">function histder= histder(chi,cc)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'peaklock': determines peacklocking errors from velocity histograms.</span>
+0002 <span class="comment">%-------------------------------------------------------</span>
+0003 <span class="comment">%first smooth the input histogram 'histu' in such a way that the integral over</span>
+0004 <span class="comment">%n-n+1 is preserved, then deduce the peaklocking 'error' function of the pixcel displacement 'x'.</span>
+0005 <span class="comment">%</span>
+0006 <span class="comment">% [histinter,x,error]=peaklock(nbb,minim,maxim,histu)</span>
+0007 <span class="comment">%OUTPUT:</span>
+0008 <span class="comment">%histinter: smoothed interpolated histogram</span>
+0009 <span class="comment">% x: vector of displacement values.</span>
+0010 <span class="comment">% error: vector of estimated errors corresponding to x</span>
+0011 <span class="comment">%INPUT:</span>
+0012 <span class="comment">%histu=vector representing the values of histogram  of measured velocity ;</span>
+0013 <span class="comment">%minim, maxim: extremal values of the measured velocity (absica for histu)</span>
+0014 <span class="comment">%nbb: number of bins inside each integer interval for the histograms</span>
+0015 <span class="comment">%SUBROUTINES INCLUDED:</span>
+0016 <span class="comment">%spline4.m% spline interpolation at 4th order</span>
+0017 <span class="comment">%splinhist.m: give spline coeff cc for a smooth histo (call spline4)</span>
+0018 <span class="comment">%histsmooth.m(x,cc): calculate the smooth histo for any value x</span>
+0019 <span class="comment">%histder.m(x,cc): calculate the derivative of the smooth histo</span>
+0020 <a name="_sub0" href="#_subfunctions" class="code">function [histinter,x,error]=peaklock(nbb,minim,maxim,histu)</a>
+0021 
+0022 nint=maxim-minim+1
+0023 xfin=[minim-0.5+1/(2*nbb):(1/nbb):maxim+0.5-(1/(2*nbb))];
+0024 histo=(reshape(histu,nbb,nint));<span class="comment">%extract values with x between integer -1/2 integer +1/2</span>
+0025 Integ=sum(histo)/nbb; <span class="comment">%integral of the pdf on each integer bin</span>
+0026 [histinter,cc]=<a href="#_sub1" class="code" title="subfunction [histsmooth,cc]= splinhist(Integ,mini,nbb)">splinhist</a>(Integ,minim,nbb);
+0027 histx=reshape(histinter,nbb,nint);
+0028 xint=[minim:1:maxim];
+0029 x=zeros(nbb,nint);
+0030 <span class="comment">%determination of the displacement x(j,:)</span>
+0031 <span class="comment">%j=1</span>
+0032 delx=histo(1,:)./<a href="#_sub3" class="code" title="subfunction histx= histsmooth(chi,cc)">histsmooth</a>(-0.5*ones(1,nint),cc)/nbb;
+0033 <span class="comment">%del(1,:)=delx;</span>
+0034 x(1,:)=-0.5+delx-(delx.*delx/2).*<a href="#_sub4" class="code" title="subfunction histder= histder(chi,cc)">histder</a>(-0.5*ones(1,nint),cc);
+0035 <span class="comment">%histx(1,:)=histsmooth(x(j-1,:),cc);</span>
+0036 <span class="keyword">for</span> j=2:nbb
+0037     delx=histo(j,:)./<a href="#_sub3" class="code" title="subfunction histx= histsmooth(chi,cc)">histsmooth</a>(x(j-1,:),cc)/nbb;
+0038     <span class="comment">%delx=delx.*(delx&lt;3*ones(1,nint)/nbb)+3*ones(1,nint)/nbb.*~(delx &lt;3*ones(1,nint)/nbb)</span>
+0039     x(j,:)=x(j-1,:)+delx-(delx.*delx/2).*<a href="#_sub4" class="code" title="subfunction histder= histder(chi,cc)">histder</a>(x(j-1,:),cc);
+0040 <span class="keyword">end</span>
+0041 <span class="comment">%reshape</span>
+0042 xint=ones(nbb,1)*xint;
+0043 x=x+xint;
+0044 x=reshape(x,1,nbb*nint);
+0045 error=xfin+1/(2*nbb)-x;
+0046 
+0047 <span class="comment">%-------------------------------------------------------</span>
+0048 <span class="comment">% --- determine the spline coefficients cc for the interpolated histogram.</span>
+0049 <span class="comment">%-------------------------------------------------</span>
+0050 <a name="_sub1" href="#_subfunctions" class="code">function [histsmooth,cc]= splinhist(Integ,mini,nbb)</a>
+0051 <span class="comment">% provides a smooth histogramm histmooth, which remains always positive,</span>
+0052 <span class="comment">% and is such that its sum over each integer bin [i-1/2 i+1/2] is equal to</span>
+0053 <span class="comment">% Integ(i). The function determines histmooth as the exponential of a 4th</span>
+0054 <span class="comment">% order spline function and adjust the cefficients by a Newton method to</span>
+0055 <span class="comment">% fit the integral conditions Integ</span>
+0056 <span class="comment">% histmooth is determined at the abscissa</span>
+0057 <span class="comment">% xfin=[mini-0.5+1/(2*n):(1/n):maxi+0.5-(1/(2*n))] (maxi=mini+size(aa)-1)</span>
+0058 <span class="comment">%cc(1-5,i) provides the spline coefficients</span>
+0059 
+0060 <span class="comment">% order 0</span>
+0061 siz=size(Integ);
+0062 nint=siz(2);
+0063 izero=find(Integ==0); <span class="comment">%indices of zero elements</span>
+0064 inonzero=find(Integ);
+0065 Integ(izero)=min(Integ(inonzero));
+0066 aa=log(Integ);<span class="comment">%initial guess for a coeff</span>
+0067 spli=<a href="#_sub2" class="code" title="subfunction [histsmooth,bb]= spline4(aa,mini,n)">spline4</a>(aa,mini,nbb);  <span class="comment">%appel à la fonction spline4</span>
+0068 <a href="#_sub3" class="code" title="subfunction histx= histsmooth(chi,cc)">histsmooth</a>=exp(spli);
+0069 
+0070 S=(sum(reshape(<a href="#_sub3" class="code" title="subfunction histx= histsmooth(chi,cc)">histsmooth</a>,nbb,nint)))/nbb;<span class="comment">% integral of the fit histsmooth on ]i-1/2 i+1/2[</span>
+0071 epsilon=max(abs(Integ-S));
+0072 iter=0;
+0073 <span class="keyword">while</span> epsilon &gt; 0.000001 &amp; iter&lt;10
+0074 ident=eye(nint);
+0075 dSda=ones(nint);
+0076 <span class="keyword">for</span> j=1:nint<span class="comment">% determination of the jacobian matrix dSda</span>
+0077 dhistda=<a href="#_sub2" class="code" title="subfunction [histsmooth,bb]= spline4(aa,mini,n)">spline4</a>(ident(j,:),mini,nbb);
+0078 expdhistda=dhistda.*<a href="#_sub3" class="code" title="subfunction histx= histsmooth(chi,cc)">histsmooth</a>;
+0079 dSda(j,:)=(sum(reshape(expdhistda,nbb,nint)))/nbb;
+0080 <span class="keyword">end</span>
+0081 aa=aa+(Integ-S)*inv(dSda);<span class="comment">%new estimate of coefficients aa by linear interpolation</span>
+0082 [spli,bb]=<a href="#_sub2" class="code" title="subfunction [histsmooth,bb]= spline4(aa,mini,n)">spline4</a>(aa,mini,nbb);<span class="comment">% new fit histsmooth</span>
+0083 <a href="#_sub3" class="code" title="subfunction histx= histsmooth(chi,cc)">histsmooth</a>=exp(spli);
+0084 S=(sum(reshape(<a href="#_sub3" class="code" title="subfunction histx= histsmooth(chi,cc)">histsmooth</a>,nbb,nint)))/nbb;<span class="comment">% integral of the fit histsmooth on ]i-1/2 i+1/2[</span>
+0085 epsilon=max(abs(Integ-S));
+0086 iter=iter+1;
+0087 <span class="keyword">end</span>
+0088 <span class="keyword">if</span> iter==10, errordlg(<span class="string">'splinhist did not converge after 10 iterations'</span>),<span class="keyword">end</span>
+0089 cc(1,:)=aa;
+0090 cc(2,:)=bb(1,:);
+0091 cc(3,:)=bb(2,:);
+0092 cc(4,:)=bb(3,:);
+0093 cc(5,:)=bb(4,:);
+0094 
+0095 <span class="comment">%-------------------------------------------------------</span>
+0096 <span class="comment">% --- determine the 4th order spline coefficients from the function values aa.</span>
+0097 <span class="comment">%-------------------------------------------------</span>
+0098 <a name="_sub2" href="#_subfunctions" class="code">function [histsmooth,bb]= spline4(aa,mini,n)</a>
+0099 <span class="comment">% spline interpolation at 4th order</span>
+0100 <span class="comment">%aa=vector of values of a function at integer abscissa, starting at mini</span>
+0101 <span class="comment">%n=number of subdivisions for the interpolated function</span>
+0102 <span class="comment">% histmooth =interpolated values at absissa</span>
+0103 <span class="comment">% xfin=[mini-0.5+1/(2*n):(1/n):maxi+0.5-(1/(2*n))] (maxi=mini+size(aa)-1)</span>
+0104 <span class="comment">%bb=[b(i);c(i);d(i); e(i)] matrix of spline coeff</span>
+0105 L1=[1/2 1/4 1/8 1/16;1 1 3/4 1/2;0 2 3 3;0 0 6 12];
+0106 L2=[-1/2 1/4 -1/8 1/16;1 -1 3/4 -1/2;0 2 -3 3;0 0 6 -12];
+0107 M=inv(L2)*L1;
+0108 [V,D]=eig(M);
+0109 F=-inv(V)*inv(L2)*[1 ;0 ;0;0];
+0110 a1rev=[1 -1/D(1,1)];
+0111 b1rev=[F(1)/D(1,1)];
+0112 a2rev=[1 -1/D(2,2)];
+0113 b2rev=[F(2)/D(2,2)];
+0114 a3=[1 -D(3,3)];
+0115 b3=[F(3)];
+0116 a4=[1 -D(4,4)];
+0117 b4=[F(4)];
+0118 
+0119 <span class="comment">%data</span>
+0120 <span class="comment">% n=10;% résolution de la pdf: nbre de points par unite de u</span>
+0121 <span class="comment">% mini=-10.0;%general mini=uint16(min(values)-1 CHOOSE maxi-mini+1 EVEN</span>
+0122 <span class="comment">% maxi=9.0; % general maxi=uint16(max(values))+1</span>
+0123 <span class="comment">%nint=double(maxi-mini+1); % nombre d'intervals entiers EVEN!</span>
+0124 siz=size(aa);
+0125 nint=siz(2);
+0126 maxi=mini+nint-1;
+0127 npdf=nint*n;<span class="comment">% nbre total d'intervals à introduire dans la pdf: hist(u,npdf)</span>
+0128 <span class="comment">%simulation de pdf</span>
+0129 xfin=[mini-0.5+1/(2*n):(1/n):maxi+0.5-(1/(2*n))];<span class="comment">% valeurs d'interpolation: we take n values in each integer interval</span>
+0130 <span class="comment">%histolin=exp(-(xfin-1).*(xfin-1)).*(2+cos(10*(xfin-1)));% simulation d'une pdf</span>
+0131 <span class="comment">%histo=log(histolin);</span>
+0132 <span class="comment">%histo=sin(2*pi*xfin);</span>
+0133 <span class="comment">%histextract=(reshape(histo,n,nint));</span>
+0134 <span class="comment">%aa=sum(histextract)/n %integral of the pdf on each integer bin</span>
+0135 IP=[0 diff(aa)];
+0136 Irev=zeros(size(aa));
+0137 <span class="keyword">for</span> i=1:nint
+0138     Irev(i)=aa(end-i+1);
+0139 <span class="keyword">end</span>
+0140 IPrev=[0 diff(Irev)];
+0141 
+0142 <span class="comment">%get the spline coelfficients a_d, using filter on the eigen vectors A,B,C</span>
+0143 Arev=filter(b1rev,a1rev,IPrev);
+0144 Brev=filter(b2rev,a2rev,IPrev);
+0145 C=filter(b3,a3,IP);
+0146 D=filter(b4,a4,IP);
+0147 A=zeros(size(Arev));
+0148 B=zeros(size(Brev));
+0149 <span class="keyword">for</span> i=1:nint
+0150     A(i)=Arev(end-i+1);
+0151     B(i)=Brev(end-i+1);
+0152 <span class="keyword">end</span>
+0153 <span class="comment">%Matr=V*[A;B;C;D];</span>
+0154 bb=V*[A;B;C;D];
+0155 <span class="comment">%b=Matr(1,:);</span>
+0156 <span class="comment">%c=Matr(2,:);</span>
+0157 <span class="comment">%d=Matr(3,:);</span>
+0158 <span class="comment">%e=Matr(4,:);</span>
+0159 <span class="comment">%a=aa;</span>
+0160 
+0161 <span class="comment">%calculate the interpolation using the spline coefficients a-d</span>
+0162 <span class="comment">%xextract=(reshape(xfin,n,nint));%</span>
+0163 chi=xfin+1/(2*n)-min(xfin)-double(int16(xfin+(1/(2*n))-min(xfin)))-0.5;<span class="comment">% decimal part</span>
+0164 chi2=chi.*chi;
+0165 chi3=chi2.*chi;
+0166 chi4=chi3.*chi;
+0167 avec=reshape(ones(n,1)*aa,1,n*nint);
+0168 bvec=reshape(ones(n,1)*bb(1,:),1,n*nint);
+0169 cvec=reshape(ones(n,1)*bb(2,:),1,n*nint);
+0170 dvec=reshape(ones(n,1)*bb(3,:),1,n*nint);
+0171 evec=reshape(ones(n,1)*bb(4,:),1,n*nint);
+0172 <a href="#_sub3" class="code" title="subfunction histx= histsmooth(chi,cc)">histsmooth</a>=avec+bvec.*chi+cvec.*chi2+dvec.*chi3+evec.*chi4;
+0173 
+0174 <span class="comment">%-------------------------------------------------------</span>
+0175 <span class="comment">% --- determine the interpolated histogram at points chi from the spline ceff cc.</span>
+0176 <span class="comment">%-------------------------------------------------</span>
+0177 <a name="_sub3" href="#_subfunctions" class="code">function histx= histsmooth(chi,cc)</a>
+0178 <span class="comment">% provides the value of the interpolated histogram at values chi=x-i</span>
+0179 <span class="comment">%(difference with the mnearest integer)</span>
+0180 <span class="comment">% cc(5,size(chi)) is the set of spline coefficients obtained by splinhist</span>
+0181 chi2=chi.*chi;
+0182 chi3=chi2.*chi;
+0183 chi4=chi3.*chi;
+0184 histx=exp(cc(1,:)+cc(2,:).*chi+cc(3,:).*chi2+cc(4,:).*chi3+cc(5,:).*chi4);
+0185 
+0186 <span class="comment">%-------------------------------------------------------</span>
+0187 <span class="comment">% --- determine the derivative p'/p of the interpolated histogram at points chi from the spline ceff cc.</span>
+0188 <span class="comment">%-------------------------------------------------</span>
+0189 <a name="_sub4" href="#_subfunctions" class="code">function histder= histder(chi,cc)</a>
+0190 <span class="comment">% provides the logarithmique derivative p'/p of the interpolated histogram</span>
+0191 <span class="comment">%at values chi=x-i</span>
+0192 <span class="comment">%(difference with the nearest integer)</span>
+0193 <span class="comment">% cc(5,size(chi)) is the set of spline coefficients obtained by splinhist</span>
+0194 chi2=chi.*chi;
+0195 chi3=chi2.*chi;
+0196 chi4=chi3.*chi;
+0197 <a href="#_sub4" class="code" title="subfunction histder= histder(chi,cc)">histder</a>=cc(2,:)+2*cc(3,:).*chi+3*cc(4,:).*chi2+4*cc(5,:).*chi3;</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

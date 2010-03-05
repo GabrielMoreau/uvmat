@@ -1,0 +1,73 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of interp2_uvmat</title>
+  <meta name="keywords" content="interp2_uvmat">
+  <meta name="description" content="A matrix (npy,npx) to interpolate">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; interp2_uvmat.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>interp2_uvmat
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>A matrix (npy,npx) to interpolate</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function A_out=interp2_uvmat(A,XIMA,YIMA) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> A matrix (npy,npx) to interpolate
+XIMA: matrix of non-integer x index values (npY,npX)
+YIMA: matrix of non-integer y index values (npY,npX), (with the same size as XIMA)</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">% A matrix (npy,npx) to interpolate</span>
+0002 <span class="comment">%XIMA: matrix of non-integer x index values (npY,npX)</span>
+0003 <span class="comment">%YIMA: matrix of non-integer y index values (npY,npX), (with the same size as XIMA)</span>
+0004 <a name="_sub0" href="#_subfunctions" class="code">function A_out=interp2_uvmat(A,XIMA,YIMA)</a>
+0005 npx=size(A,2);
+0006 npy=size(A,1);
+0007 npX=size(XIMA,2);
+0008 npY=size(XIMA,1)
+0009 XIMA=reshape(XIMA,1,npX*npY)+0.5;<span class="comment">%indices corresponding to XIMA, reshaped in a matlab vector</span>
+0010 YIMA=reshape(YIMA,1,npX*npY)+0.5;<span class="comment">%indices corresponding to XIMA, reshaped in a matlab vector</span>
+0011 X_delta=XIMA-floor(XIMA);<span class="comment">%distance to the closest integer value</span>
+0012 XIMA=floor(XIMA);<span class="comment">%integer x index on the image</span>
+0013 Y_delta=YIMA-floor(YIMA);<span class="comment">%distance to the closest integer value</span>
+0014 YIMA=floor(YIMA);<span class="comment">%integer x index on the image</span>
+0015 flagin=(XIMA&gt;=1 &amp; XIMA&lt;=npx-1 &amp; YIMA &gt;=1 &amp; YIMA&lt;=npy-1);<span class="comment">%flagin=1 inside the original image</span>
+0016 ind_in=find(flagin);<span class="comment">%list of indices of XIndex for valid values of image indices (inside the original image)</span>
+0017 ind_out=find(~flagin);      
+0018 vec_A=double(reshape(A(:,:,1),1,npx*npy));<span class="comment">%reshape the original image as a Matlab image vector</span>
+0019 ICOMB=((XIMA-1)*npy+(npy+1-YIMA));<span class="comment">%determine the indices in the image Matlab vector corresponding to XIMA and YIMA</span>
+0020 ICOMB=ICOMB(flagin);<span class="comment">%selection of the valid indices</span>
+0021 X_delta=X_delta(ind_in);
+0022 Y_delta=Y_delta(ind_in);
+0023 A_out(ind_in)=(1-Y_delta).*(1-X_delta).*vec_A(ICOMB)+Y_delta.*(1-X_delta).*vec_A(ICOMB-1)+X_delta.*(1-Y_delta).*vec_A(ICOMB+npy)+X_delta.*Y_delta.*vec_A(ICOMB+npy-1);
+0024 A_out(ind_out)=zeros(size(ind_out));
+0025 A_out=reshape(A_out,npY,npX);<span class="comment">%interpolated image</span></pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

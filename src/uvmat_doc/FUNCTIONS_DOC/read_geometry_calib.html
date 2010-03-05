@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of read_geometry_calib</title>
+  <meta name="keywords" content="read_geometry_calib">
+  <meta name="description" content="'read_geometry_calib': read data on the GUI geometry_calib">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; read_geometry_calib.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>read_geometry_calib
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'read_geometry_calib': read data on the GUI geometry_calib</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function data=read_geometry_calib(Coord_cell) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'read_geometry_calib': read data on the GUI geometry_calib
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="geometry_calib.html" class="code" title="function varargout = geometry_calib(varargin)">geometry_calib</a>	'geometry_calib': performs geometric calibration from a set of reference points</li><li><a href="mouse_down.html" class="code" title="function xy=mouse_down(hObject,eventdata)">mouse_down</a>	'mouse_down': function activated when the mouse button is pressed on a figure (callback for 'WindowButtonDownFcn'</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'read_geometry_calib': read data on the GUI geometry_calib</span>
+0002 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0003 <a name="_sub0" href="#_subfunctions" class="code">function data=read_geometry_calib(Coord_cell)</a>
+0004 data_XIma=[];
+0005 data_YIma=[];
+0006 data_XObject=[];
+0007 data_YObject=[];
+0008 data_ZObject=[];
+0009 <span class="comment">%Coord=get(handles.ListCoord,'String');</span>
+0010 <span class="comment">% XImage=get(handles.XImage,'String');</span>
+0011 <span class="comment">% YImage=get(handles.YImage,'String');</span>
+0012 <span class="comment">% XObject=get(handles.XObject,'String');</span>
+0013 <span class="comment">% YObject=get(handles.YObject,'String');</span>
+0014 <span class="comment">% ZObject=get(handles.ZObject,'String');</span>
+0015 <span class="comment">% if ischar(Xcolumn)</span>
+0016 <span class="comment">%     Xcolumn={Xcolumn};</span>
+0017 <span class="comment">% end</span>
+0018 nb_defining_points=length(Coord_cell);
+0019 iline=0;
+0020 <span class="keyword">for</span> i=1:nb_defining_points
+0021     coord_str=Coord_cell{i};<span class="comment">%character string of line number i</span>
+0022     k=findstr(<span class="string">'|'</span>,coord_str);<span class="comment">%find separators '|'</span>
+0023     <span class="keyword">if</span> length(k)&gt;=4 <span class="comment">% test for separators '|'</span>
+0024         data1=str2num(coord_str(1:k(1)-5));
+0025         data2=str2num(coord_str(k(1)+5:k(2)-5));
+0026         data3=str2num(coord_str(k(2)+5:k(3)-5));
+0027         data4=str2num(coord_str(k(3)+5:k(4)-5));
+0028         data5=str2num(coord_str(k(4)+5:end));
+0029         <span class="keyword">if</span> ~isempty(data1)|~isempty(data2)|~isempty(data3)|~isempty(data4)|~isempty(data5)
+0030             iline=iline+1;
+0031             <span class="keyword">if</span> ~isempty(data1)
+0032                 data.Coord(iline,1)=data1;
+0033             <span class="keyword">end</span>    
+0034             <span class="keyword">if</span> ~isempty(data2)
+0035                 data.Coord(iline,2)=data2;
+0036             <span class="keyword">end</span>
+0037             <span class="keyword">if</span> ~isempty(data3)
+0038                 data.Coord(iline,3)=data3;
+0039             <span class="keyword">end</span>
+0040             <span class="keyword">if</span> ~isempty(data4)
+0041                 data.Coord(iline,4)=data4;
+0042             <span class="keyword">end</span>
+0043             <span class="keyword">if</span> isempty(data5)
+0044                 data.Coord(iline,5)=0;
+0045             <span class="keyword">else</span>
+0046                 data.Coord(iline,5)=data5;
+0047             <span class="keyword">end</span>
+0048         <span class="keyword">end</span>
+0049     <span class="keyword">end</span>
+0050 <span class="keyword">end</span>
+0051 data.Style=<span class="string">'points'</span>;</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

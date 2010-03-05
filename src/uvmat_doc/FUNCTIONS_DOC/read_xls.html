@@ -1,0 +1,401 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of read_xls</title>
+  <meta name="keywords" content="read_xls">
+  <meta name="description" content="'read_xls': function for reading and displaying Excel files">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; read_xls.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>read_xls
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'read_xls': function for reading and displaying Excel files</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [hfig_xls]=read_xls(fileinput,hfig) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'read_xls': function for reading and displaying Excel files  
+------------------------------------------------------------------------
+ function [hfig_xls]=read_xls(fileinput,hfig)
+ 
+ OUTPUT:
+  hfig_xls: figure handle for display
+
+ INPUT:
+ fileinput: name of the input file (char string)
+ hfig: handle of the display figure (a new display figure hfig_xls is created if hfig undefined)
+
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     This file is part of the toolbox UVMAT.
+ 
+     UVMAT is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation; either version 2 of the License, or
+     (at your option) any later version.
+ 
+     UVMAT is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License (file UVMAT/COPYING.txt) for more details.
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="editxml.html" class="code" title="function varargout = editxml(varargin)">editxml</a>	'editxml': function for editing xml files using a xml schema (associated with the GUI editxml.fig)</li><li><a href="name2display.html" class="code" title="function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)">name2display</a>	'name2display': extracts the root name and field numbers from an input filename</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="editxml.html" class="code" title="function varargout = editxml(varargin)">editxml</a>	'editxml': function for editing xml files using a xml schema (associated with the GUI editxml.fig)</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function link2file(obj,event,fileinput)</a></li><li><a href="#_sub2" class="code">function project_update(obj,event,fileinput)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'read_xls': function for reading and displaying Excel files</span>
+0002 <span class="comment">%------------------------------------------------------------------------</span>
+0003 <span class="comment">% function [hfig_xls]=read_xls(fileinput,hfig)</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% OUTPUT:</span>
+0006 <span class="comment">%  hfig_xls: figure handle for display</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% INPUT:</span>
+0009 <span class="comment">% fileinput: name of the input file (char string)</span>
+0010 <span class="comment">% hfig: handle of the display figure (a new display figure hfig_xls is created if hfig undefined)</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0013 <span class="comment">%  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.</span>
+0014 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0015 <span class="comment">%     This file is part of the toolbox UVMAT.</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">%     UVMAT is free software; you can redistribute it and/or modify</span>
+0018 <span class="comment">%     it under the terms of the GNU General Public License as published by</span>
+0019 <span class="comment">%     the Free Software Foundation; either version 2 of the License, or</span>
+0020 <span class="comment">%     (at your option) any later version.</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">%     UVMAT is distributed in the hope that it will be useful,</span>
+0023 <span class="comment">%     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+0024 <span class="comment">%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+0025 <span class="comment">%     GNU General Public License (file UVMAT/COPYING.txt) for more details.</span>
+0026 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0027 
+0028 <a name="_sub0" href="#_subfunctions" class="code">function [hfig_xls]=read_xls(fileinput,hfig)</a>
+0029 [Tabnum,Tabtext]=xlsread(fileinput);
+0030     [textnx,textny]=size(Tabtext);
+0031     [numnx,numny]=size(Tabnum);
+0032     ilastxt=textnx-numnx;<span class="comment">%index of last text row</span>
+0033     jlastxt=textny-numny;<span class="comment">%index of last text column</span>
+0034     <span class="keyword">for</span> jtab=1:textny<span class="comment">%read line</span>
+0035         <span class="keyword">for</span> itab=1:textnx<span class="comment">% read column</span>
+0036             textlu=cell2mat(Tabtext(itab,jtab));
+0037             <span class="keyword">if</span> isequal(textlu,[])&amp; itab &gt; ilastxt &amp; jtab &gt; jlastxt <span class="comment">%replace txt by number</span>
+0038                 textlu=num2str(Tabnum(itab-ilastxt,jtab-jlastxt));
+0039             <span class="keyword">end</span>
+0040             Tabdisplay(itab,jtab)={textlu};
+0041             lengthtext(itab)=length(textlu);
+0042         <span class="keyword">end</span>
+0043         widthcolumn(jtab)=max(lengthtext);
+0044     <span class="keyword">end</span>
+0045     Tabchar={};<span class="comment">%default</span>
+0046     <span class="keyword">for</span> itab=1:textnx    <span class="comment">%justify table</span>
+0047         charchain=[];         
+0048         <span class="keyword">for</span> jtab=1:textny<span class="comment">% read line</span>
+0049             textlu=Tabdisplay{itab,jtab};
+0050             <span class="keyword">if</span> widthcolumn(jtab)&gt;length(textlu)
+0051                 blankstr=char(46*ones(1,widthcolumn(jtab)-length(textlu)));
+0052                 textlu=[textlu blankstr ];
+0053             <span class="keyword">end</span>
+0054             charchain=[charchain textlu char(9) <span class="string">' | '</span>];
+0055         <span class="keyword">end</span>
+0056         Tabchar(itab)={charchain};
+0057     <span class="keyword">end</span> 
+0058     <span class="keyword">if</span> exist(<span class="string">'hfig'</span>,<span class="string">'var'</span>) &amp; ishandle(hfig)
+0059         figure(hfig);
+0060         hfig_xls=hfig;
+0061     <span class="keyword">else</span>
+0062         hfig_xls=figure;
+0063     <span class="keyword">end</span>
+0064     set(hfig_xls,<span class="string">'Name'</span>,fileinput)
+0065     set(hfig_xls,<span class="string">'MenuBar'</span>,<span class="string">'none'</span>)
+0066     hpos=get(hfig_xls,<span class="string">'Pos'</span>);
+0067     ExpName.cell=Tabtext([2:textnx],1);<span class="comment">%first column (dir name)</span>
+0068     ExpName.Num=Tabnum;
+0069 <span class="comment">%     ExpName.Units=Tabtext(2,[2:textny]);%look for the units line (needs to be the second line)</span>
+0070     iparam=0;
+0071     <span class="keyword">for</span> icol=2:textny
+0072 <span class="comment">%         Tabtext(2,icol)</span>
+0073         <span class="keyword">if</span> ~isempty(Tabtext{2,icol})&amp;~isequal(Tabtext{2,icol},<span class="string">''</span>)
+0074             iparam=iparam+1;
+0075             ExpName.Param{iparam}=Tabtext{1,icol};
+0076             ExpName.Units{iparam}=Tabtext{2,icol};
+0077             ExpName.Column(iparam)=icol;
+0078         <span class="keyword">end</span>
+0079     <span class="keyword">end</span>
+0080  
+0081     ExpName.path=fileparts(fileinput);
+0082     h=uicontrol(<span class="string">'Style'</span>,<span class="string">'listbox'</span>, <span class="string">'Position'</span>, [5 5 0.9*hpos(3) 0.9*hpos(4)], <span class="string">'String'</span>, Tabchar, <span class="keyword">...</span>
+0083         <span class="string">'FontName'</span>,<span class="string">'Monospaced'</span>,<span class="string">'Callback'</span>,@<a href="#_sub1" class="code" title="subfunction link2file(obj,event,fileinput)">link2file</a>,<span class="string">'UserData'</span>,ExpName,<span class="string">'Tag'</span>,<span class="string">'listbox'</span>);  
+0084 <span class="comment">%     hh=uicontrol('Style','Pushbutton', 'Position', [0.93*hpos(1) 0.93*hpos(2) 0.05*hpos(3) 0.05*hpos(4)], 'String', 'Update','Callback',@project_update);</span>
+0085 <span class="comment">%      set(h,'HorizontalAlignment','left')</span>
+0086 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0087 <span class="comment">%called by xlsdisplay to navigate from  a .xls file or create the</span>
+0088 <span class="comment">% the experiment directories</span>
+0089 <a name="_sub1" href="#_subfunctions" class="code">function link2file(obj,event,fileinput)</a>
+0090 <span class="keyword">global</span> t
+0091 bla=get(gcbo,<span class="string">'String'</span>);
+0092 ind=get(gcbo,<span class="string">'Value'</span>)
+0093 <span class="keyword">if</span> (ind==1|ind==2),<span class="keyword">return</span>,<span class="keyword">end</span>; <span class="comment">%no action on the first line</span>
+0094 ExpNameStruct=get(gcbo,<span class="string">'UserData'</span>)
+0095 ExpName=ExpNameStruct.cell{ind-1}
+0096 ProjectFullName=ExpNameStruct.path;<span class="comment">%full name of the project (including path)</span>
+0097 [Pth,ProjectName]=fileparts(ProjectFullName);
+0098 ExpPath=fullfile(ProjectFullName,ExpName);<span class="comment">% full name of the experiment directory</span>
+0099 ExpDocName=fullfile(ExpPath,[ExpName <span class="string">'.xml'</span>]);<span class="comment">% full name of the .xml file ExpDoc</span>
+0100 <span class="keyword">if</span> exist(ExpDocName,<span class="string">'file'</span>)
+0101     hh=<a href="editxml.html" class="code" title="function varargout = editxml(varargin)">editxml</a>({ExpDocName})   
+0102 <span class="comment">%     [FileName, PathName, filterindex] = uigetfile( ...</span>
+0103 <span class="comment">%        {'*.xml','(*.xml)';</span>
+0104 <span class="comment">%        '*.xml',  '.xml files ';</span>
+0105 <span class="comment">%         '*.*',  'All Files (*.*)'}, ...</span>
+0106 <span class="comment">%         'Pick a file',ExpDocName);</span>
+0107 <span class="comment">%      fileinput=[PathName FileName];%complete file name</span>
+0108 <span class="comment">%      sizf=size(fileinput);</span>
+0109 <span class="comment">%     if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end</span>
+0110 <span class="comment">%         [path,name,ext]=fileparts(fileinput);</span>
+0111 <span class="comment">%     if isequal(ext,'.civ') | isequal(ext,'.log') | isequal(ext,'.cmx') isequal(ext,'.txt')</span>
+0112 <span class="comment">%         edit(fileinput)</span>
+0113 <span class="comment">%     elseif isequal(ext,'.xml')</span>
+0114 <span class="comment">%         varargin{1}=fileinput;</span>
+0115 <span class="comment">%         editxml(varargin)</span>
+0116 <span class="comment">%     elseif isequal(ext,'.fig')</span>
+0117 <span class="comment">%         open(fileinput)</span>
+0118 <span class="comment">%     elseif isequal(ext,'.xls')</span>
+0119 <span class="comment">%         xlsdisplay(fileinput)</span>
+0120 <span class="comment">%     else</span>
+0121 <span class="comment">%         uvmat({fileinput})</span>
+0122 <span class="comment">%     end</span>
+0123 <span class="keyword">else</span>
+0124     answer=questdlg({[<span class="string">'ExpDoc file '</span> ExpDocName <span class="string">' does not exist, create the experiment?'</span>];<span class="string">''</span>})
+0125     <span class="keyword">if</span> isequal(answer,<span class="string">'Yes'</span>)
+0126         <span class="keyword">if</span> exist(ExpPath,<span class="string">'dir'</span>)~=7 <span class="comment">%create a directory if it does not exist</span>
+0127             dircur=pwd; <span class="comment">%current working directory</span>
+0128             cd(ProjectFullName);
+0129             [m1,m2,m3]=mkdir(ExpName);
+0130             cd(pwd);<span class="comment">%come back to the initial working dir</span>
+0131         <span class="keyword">end</span>
+0132 <span class="comment">%         %copy exp parameters</span>
+0133         ParamNames=ExpNameStruct.Param;
+0134         ParamValues=ExpNameStruct.Num(ind-1,ExpNameStruct.Column-1);
+0135         ParamUnits=ExpNameStruct.Units;
+0136         t=xmltree;<span class="comment">%new xmltree</span>
+0137         t=set(t,1,<span class="string">'name'</span>,<span class="string">'ExpDoc'</span>);
+0138         t=attributes(t,<span class="string">'add'</span>,1,<span class="string">'xmlns:xsi'</span>,<span class="string">'none'</span>);
+0139         [t,ExpElement]=add(t,1,<span class="string">'element'</span>,<span class="string">'Exp'</span>);
+0140         [t]=add(t,ExpElement,<span class="string">'chardata'</span>,ExpName);
+0141         <span class="keyword">for</span> iparam=1:length(ParamNames)
+0142             [t,ParamElement]=add(t,1,<span class="string">'element'</span>,ParamNames{iparam});
+0143             t=add(t,ParamElement,<span class="string">'chardata'</span>,num2str(ParamValues(iparam)));
+0144             t=attributes(t,<span class="string">'add'</span>,ParamElement,<span class="string">'unit'</span>,ParamUnits{iparam}); <span class="comment">%ADD UNIT ATTRIBUTE</span>
+0145         <span class="keyword">end</span>
+0146         list_dir=dir(ExpPath);<span class="comment">%list of the Exp directory,  detect sub-directories,.xml and image files</span>
+0147         nbdir_exp=0;
+0148         <span class="comment">%scan the Exp directory</span>
+0149         <span class="keyword">for</span> idir_exp=3:length(list_dir)
+0150             <span class="comment">%detect subdirectories</span>
+0151             <span class="keyword">if</span> list_dir(idir_exp).isdir<span class="comment">% 'device' subdirectories</span>
+0152                 nbdir_exp=nbdir_exp+1;
+0153                 ExpData.Device{nbdir_exp}=list_dir(idir_exp).name;
+0154                 [t,DeviceElement]=add(t,1,<span class="string">'element'</span>,list_dir(idir_exp).name);
+0155                 t=attributes(t,<span class="string">'add'</span>,DeviceElement,<span class="string">'type'</span>,<span class="string">'DEVICE_DIR'</span>);
+0156                 t=attributes(t,<span class="string">'add'</span>,DeviceElement,<span class="string">'source'</span>,<span class="string">'dir'</span>);
+0157                 list_subdir=dir(fullfile(ExpPath,list_dir(idir_exp).name));
+0158                 nbsubdir=0;
+0159                 testrecord=1;
+0160                 RootIma=<span class="string">''</span>;
+0161                 RootNc=<span class="string">''</span>;
+0162                 nbfile=0;
+0163 <span class="comment">%                 nbfile={};</span>
+0164                 <span class="comment">%scan the Device subdirectory</span>
+0165                 <span class="keyword">for</span> isubdir=3:length(list_subdir)
+0166                     <span class="keyword">if</span> list_subdir(isubdir).isdir
+0167                         nbsubdir=nbsubdir+1;
+0168                         Device.Record{nbsubdir}=list_subdir(isubdir).name;
+0169                     <span class="keyword">else</span>
+0170                         nbfile=nbfile+1;
+0171                         fname{nbfile}=list_subdir(isubdir).name;
+0172                     <span class="keyword">end</span>
+0173                 <span class="keyword">end</span>
+0174                 <span class="keyword">if</span> isunix<span class="comment">%sort by root names and indices , change the separator '_' so that 1_1 come as the first name</span>
+0175                     fname_mod=regexprep(fname,<span class="string">'_'</span>,<span class="string">'/'</span>);
+0176                     fname_mod=sort(fname_mod);     <span class="comment">%sort by name</span>
+0177                     fname=regexprep(fname_mod,<span class="string">'/'</span>,<span class="string">'_'</span>);
+0178                 <span class="keyword">end</span>
+0179                 <span class="keyword">for</span> ifile=1:nbfile;
+0180                     [Path,Name,Ext]=fileparts(fname{ifile});
+0181                     <span class="keyword">if</span> isequal(Ext,<span class="string">'.xml'</span>)
+0182                        [t,ImaDocElement]=add(t,DeviceElement,<span class="string">'element'</span>,<span class="string">'ImaDoc'</span>);
+0183                        t=add(t,ImaDocElement,<span class="string">'chardata'</span>,fname{ifile});
+0184                        t=attributes(t,<span class="string">'add'</span>,ImaDocElement,<span class="string">'source'</span>,<span class="string">'file'</span>);
+0185                        testrecord=0;<span class="comment">%we have an image series without 'record' subdir</span>
+0186                     <span class="keyword">elseif</span> isequal(Ext,<span class="string">'.png'</span>)
+0187                        [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=<a href="name2display.html" class="code" title="function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)">name2display</a>(fname{ifile});
+0188                        <span class="keyword">if</span> ~isequal(Root,RootIma)<span class="comment">%only one image recorded for each root name</span>
+0189                            [t,ImaDocElement]=add(t,DeviceElement,<span class="string">'element'</span>,<span class="string">'Image'</span>);
+0190                            t=add(t,ImaDocElement,<span class="string">'chardata'</span>,fname{ifile});
+0191                            t=attributes(t,<span class="string">'add'</span>,ImaDocElement,<span class="string">'source'</span>,<span class="string">'file'</span>);
+0192                            RootIma=Root;
+0193                        <span class="keyword">end</span>
+0194                        testrecord=0;<span class="comment">%we have an image series without 'record' subdir</span>
+0195                     <span class="keyword">elseif</span> isequal(Ext,<span class="string">'.nc'</span>)
+0196                        [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=<a href="name2display.html" class="code" title="function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)">name2display</a>(fname{ifile});
+0197                        <span class="keyword">if</span> ~isequal(Root,RootNc)<span class="comment">%only one image recorded for each root name</span>
+0198                            [t,ImaDocElement]=add(t,DeviceElement,<span class="string">'element'</span>,<span class="string">'Ncdata'</span>);
+0199                            t=add(t,ImaDocElement,<span class="string">'chardata'</span>,fname{ifile});
+0200                            t=attributes(t,<span class="string">'add'</span>,ImaDocElement,<span class="string">'source'</span>,<span class="string">'file'</span>);
+0201                            RootNc=Root;
+0202                        <span class="keyword">end</span>
+0203                        testrecord=0;<span class="comment">%we have an image series without 'record' subdir</span>
+0204                     <span class="keyword">end</span>
+0205                 <span class="keyword">end</span>
+0206                 <span class="keyword">if</span> testrecord
+0207                     <span class="comment">%the subdevice directory is 'record' (no images detected at this level)</span>
+0208                     <span class="keyword">for</span> idir_s=1:nbsubdir
+0209                         [t,RecordElement]=add(t,DeviceElement,<span class="string">'element'</span>,Device.Record{idir_s});
+0210                         t=attributes(t,<span class="string">'add'</span>,RecordElement,<span class="string">'type'</span>,<span class="string">'RECORD_DIR'</span>);
+0211                         t=attributes(t,<span class="string">'add'</span>,RecordElement,<span class="string">'source'</span>,<span class="string">'dir'</span>);
+0212                         list_subdir=dir(fullfile(ExpPath,list_dir(idir_exp).name,Device.Record{idir_s}));
+0213                         nbsubdir=0;
+0214                         RootIma=<span class="string">''</span>;
+0215                         RootNc=<span class="string">''</span>;
+0216                         nbfile=0;
+0217                         fname={};
+0218                         <span class="keyword">for</span> isubdir=3:length(list_subdir)
+0219                             <span class="keyword">if</span> list_subdir(isubdir).isdir
+0220                                 nbsubdir=nbsubdir+1;
+0221                                 [t,RecordElement]=add(t,DeviceElement,<span class="string">'element'</span>,Device.Record{idir_exp});
+0222                                 t=attributes(t,<span class="string">'add'</span>,RecordElement,<span class="string">'type'</span>,<span class="string">'RECORD_DIR'</span>);
+0223                                 t=attributes(t,<span class="string">'add'</span>,RecordElement,<span class="string">'source'</span>,<span class="string">'dir'</span>);
+0224                                 <span class="comment">%VOIR les .netcdf a l'interieur</span>
+0225                             <span class="keyword">else</span>
+0226                                 nbfile=nbfile+1;
+0227                                 fname{nbfile}=list_subdir(isubdir).name;
+0228                             <span class="keyword">end</span>
+0229                         <span class="keyword">end</span>
+0230                         <span class="keyword">if</span> isunix
+0231                             fname_mod=regexprep(fname,<span class="string">'_'</span>,<span class="string">'/'</span>);
+0232                             fname_mod=sort(fname_mod);     <span class="comment">%sort by name</span>
+0233                             fname=regexprep(fname_mod,<span class="string">'/'</span>,<span class="string">'_'</span>);
+0234                         <span class="keyword">end</span>
+0235                         <span class="keyword">for</span> ifile=1:nbfile;           
+0236                             [Path,Name,Ext]=fileparts(fname{ifile});
+0237                             <span class="keyword">if</span> isequal(Ext,<span class="string">'.xml'</span>)
+0238                                [t,ImaDocElement]=add(t,DeviceElement,<span class="string">'element'</span>,<span class="string">'ImaDoc'</span>);
+0239                                t=add(t,ImaDocElement,<span class="string">'chardata'</span>,fname{ifile});
+0240                                t=attributes(t,<span class="string">'add'</span>,ImaDocElement,<span class="string">'source'</span>,<span class="string">'file'</span>);
+0241                             <span class="keyword">elseif</span> isequal(Ext,<span class="string">'.png'</span>)
+0242                                [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=<a href="name2display.html" class="code" title="function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)">name2display</a>(fname{ifile});
+0243                                <span class="keyword">if</span> ~isequal(Root,RootIma)
+0244                                    [t,ImaDocElement]=add(t,DeviceElement,<span class="string">'element'</span>,<span class="string">'Image'</span>);
+0245                                    t=add(t,ImaDocElement,<span class="string">'chardata'</span>,fname{ifile});
+0246                                    t=attributes(t,<span class="string">'add'</span>,ImaDocElement,<span class="string">'source'</span>,<span class="string">'file'</span>);
+0247                                    RootIma=Root;
+0248                                <span class="keyword">end</span>
+0249                             <span class="keyword">elseif</span> isequal(Ext,<span class="string">'.nc'</span>)
+0250                                [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=<a href="name2display.html" class="code" title="function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)">name2display</a>(fname{ifile});
+0251                                <span class="keyword">if</span> ~isequal(Root,RootNc)<span class="comment">%only one image recorded for each root name</span>
+0252                                   [t,ImaDocElement]=add(t,DeviceElement,<span class="string">'element'</span>,<span class="string">'Ncdata'</span>);
+0253                                   t=add(t,ImaDocElement,<span class="string">'chardata'</span>,fname{ifile});
+0254                                   t=attributes(t,<span class="string">'add'</span>,ImaDocElement,<span class="string">'source'</span>,<span class="string">'file'</span>);
+0255                                   RootNc=Root;
+0256                                <span class="keyword">end</span>
+0257                             <span class="keyword">end</span>
+0258                         <span class="keyword">end</span>
+0259                     <span class="keyword">end</span>
+0260                 <span class="keyword">else</span><span class="comment">%the subdevice directory is a civ directory (coexist with images)</span>
+0261                      <span class="keyword">for</span> idir_s=1:nbsubdir
+0262                         [t,RecordElement]=add(t,DeviceElement,<span class="string">'element'</span>,Device.Record{idir_s});
+0263                         t=attributes(t,<span class="string">'add'</span>,RecordElement,<span class="string">'type'</span>,<span class="string">'CIV_DIR'</span>);
+0264                         t=attributes(t,<span class="string">'add'</span>,RecordElement,<span class="string">'source'</span>,<span class="string">'dir'</span>);
+0265                         <span class="comment">%list files under the civ directory</span>
+0266                         list_subdir=dir(fullfile(ExpPath,list_dir(idir_exp).name,Device.Record{idir_s}));
+0267                                         
+0268                         nbsubdir=0;
+0269                         nbfile=0;
+0270                         RootXml=<span class="string">''</span>;
+0271                         RootNc=<span class="string">''</span>;       
+0272                         fname={};
+0273                         <span class="keyword">for</span> isubdir=3:length(list_subdir)
+0274                             <span class="keyword">if</span> list_subdir(isubdir).isdir
+0275                                 nbsubdir=nbsubdir+1;
+0276                                 [t,SubElement]=add(t,RecordElement,<span class="string">'element'</span>,list_subdir(isubdir).name);
+0277                                 t=attributes(t,<span class="string">'add'</span>,SubElement,<span class="string">'type'</span>,<span class="string">'UNKNOWN_DIR'</span>);
+0278                                 t=attributes(t,<span class="string">'add'</span>,SubElement,<span class="string">'source'</span>,<span class="string">'dir'</span>);
+0279                             <span class="keyword">else</span>
+0280                                 nbfile=nbfile+1;
+0281                                 fname{nbfile}=list_subdir(isubdir).name;
+0282                             <span class="keyword">end</span>
+0283                         <span class="keyword">end</span>
+0284                         <span class="keyword">if</span> isunix
+0285                             fname_mod=regexprep(fname,<span class="string">'_'</span>,<span class="string">'/'</span>);
+0286                             fname_mod=sort(fname_mod);     <span class="comment">%sort by name</span>
+0287                             fname=regexprep(fname_mod,<span class="string">'/'</span>,<span class="string">'_'</span>);
+0288                         <span class="keyword">end</span>
+0289                         <span class="keyword">for</span> ifile=1:nbfile;
+0290                             [Path,Name,Ext]=fileparts(fname{ifile});
+0291                             <span class="keyword">if</span> isequal(Ext,<span class="string">'.xml'</span>)
+0292                                [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=<a href="name2display.html" class="code" title="function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)">name2display</a>(fname{ifile});
+0293                                <span class="keyword">if</span> ~isequal(Root,RootXml)<span class="comment">%only one image recorded for each root name</span>
+0294                                    [t,ImaDocElement]=add(t,RecordElement,<span class="string">'element'</span>,<span class="string">'CivDoc'</span>);
+0295                                    t=add(t,ImaDocElement,<span class="string">'chardata'</span>,fname{ifile});
+0296                                    t=attributes(t,<span class="string">'add'</span>,ImaDocElement,<span class="string">'source'</span>,<span class="string">'file'</span>);
+0297                                    RootXml=Root;
+0298                                <span class="keyword">end</span>
+0299                             <span class="keyword">elseif</span> isequal(Ext,<span class="string">'.nc'</span>)
+0300                                [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=<a href="name2display.html" class="code" title="function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)">name2display</a>(fname{ifile});
+0301                                <span class="keyword">if</span> ~isequal(Root,RootNc)<span class="comment">%only one image recorded for each root name</span>
+0302                                   [t,ImaDocElement]=add(t,RecordElement,<span class="string">'element'</span>,<span class="string">'Ncdata'</span>);
+0303                                   t=add(t,ImaDocElement,<span class="string">'chardata'</span>,fname{ifile});
+0304                                   t=attributes(t,<span class="string">'add'</span>,ImaDocElement,<span class="string">'source'</span>,<span class="string">'file'</span>);
+0305                                   RootNc=Root;
+0306                                <span class="keyword">end</span>
+0307                             <span class="keyword">end</span>
+0308                         <span class="keyword">end</span>
+0309                     <span class="keyword">end</span>
+0310                 <span class="keyword">end</span>
+0311             <span class="keyword">end</span>
+0312         <span class="keyword">end</span>
+0313         save(t);<span class="comment">%display xml file on the screen</span>
+0314         save(t,ExpDocName);
+0315     <span class="keyword">end</span>
+0316 <span class="keyword">end</span>
+0317 <span class="comment">% [erread,message]=fileattrib('./DATA');</span>
+0318 <span class="comment">% if ~isempty(message) &amp; ~isequal(message.UserWrite,1)</span>
+0319 <span class="comment">%      errordlg(['Need writting access to ' message.Name])</span>
+0320 <span class="comment">%      return</span>
+0321 <span class="comment">% end</span>
+0322 
+0323 
+0324     <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0325     <span class="keyword">function</span> <a href="#_sub2" class="code" title="subfunction project_update(obj,event,fileinput)">project_update</a>(obj,event,fileinput)
+0326     hchild=get(gcbf,<span class="string">'children'</span>);
+0327     h=findobj(gcbf,<span class="string">'Tag'</span>,<span class="string">'listbox'</span>)
+0328</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of set_col_vec</title>
+  <meta name="keywords" content="set_col_vec">
+  <meta name="description" content="'set_col_vec': sets the color code for vectors depending on a scalar vec_C and parameters given by the struct colcode">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; set_col_vec.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>set_col_vec
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'set_col_vec': sets the color code for vectors depending on a scalar vec_C and parameters given by the struct colcode</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [colorlist,col_vec,colcode_out]=set_col_vec(colcode,vec_C) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'set_col_vec': sets the color code for vectors depending on a scalar vec_C and parameters given by the struct colcode
+function [colorlist,col_vec,minC,colcode1,colcode2,maxC]=colvec(colcode,vec_C)
+OUTPUT
+colorlist(nb,3); %list of nb colors
+col_vec, size=[length(vec_C),3)];%list of color indices corresponding to vec_C
+minC, maxC: min and max of vec_C
+colcode1, colcode2: absolute threshold in vec_C corresponding to colcode.colcode1 and colcode.colcode2
+INPUT
+ colcode: struture setting the colorcode for vectors
+ colcode.CName: 'ima_cor','black','white',...
+ colcode.ColorCode ='black', 'white', 'rgb','brg', '64 colors'
+ colcode.FixedCbounds =0; thresholds scaling relative to min and max, =1 fixed thresholds
+ colcode.MinC; min 
+ colcode.MaxC; max
+ colcode.colcode1: first threshold for rgb, relative to min (0) and max (1)
+ colcode.colcode2: second threshold for rgb, relative to min (0) and max (1), 
+ rmq: we need min &lt;= colcode1 &lt;= colcode2 &lt;= max, otherwise
+ colcode1 and colcode2 are adjusted to the bounds
+ vec_C: matlab vector representing the scalar setting the color</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="plot_field.html" class="code" title="function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)">plot_field</a>	'plot_field': plot any field with the structure defined in the uvmat package</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'set_col_vec': sets the color code for vectors depending on a scalar vec_C and parameters given by the struct colcode</span>
+0002 <span class="comment">%function [colorlist,col_vec,minC,colcode1,colcode2,maxC]=colvec(colcode,vec_C)</span>
+0003 <span class="comment">%OUTPUT</span>
+0004 <span class="comment">%colorlist(nb,3); %list of nb colors</span>
+0005 <span class="comment">%col_vec, size=[length(vec_C),3)];%list of color indices corresponding to vec_C</span>
+0006 <span class="comment">%minC, maxC: min and max of vec_C</span>
+0007 <span class="comment">%colcode1, colcode2: absolute threshold in vec_C corresponding to colcode.colcode1 and colcode.colcode2</span>
+0008 <span class="comment">%INPUT</span>
+0009 <span class="comment">% colcode: struture setting the colorcode for vectors</span>
+0010             <span class="comment">% colcode.CName: 'ima_cor','black','white',...</span>
+0011             <span class="comment">% colcode.ColorCode ='black', 'white', 'rgb','brg', '64 colors'</span>
+0012             <span class="comment">% colcode.FixedCbounds =0; thresholds scaling relative to min and max, =1 fixed thresholds</span>
+0013             <span class="comment">% colcode.MinC; min</span>
+0014             <span class="comment">% colcode.MaxC; max</span>
+0015             <span class="comment">% colcode.colcode1: first threshold for rgb, relative to min (0) and max (1)</span>
+0016             <span class="comment">% colcode.colcode2: second threshold for rgb, relative to min (0) and max (1),</span>
+0017             <span class="comment">% rmq: we need min &lt;= colcode1 &lt;= colcode2 &lt;= max, otherwise</span>
+0018             <span class="comment">% colcode1 and colcode2 are adjusted to the bounds</span>
+0019 <span class="comment">% vec_C: matlab vector representing the scalar setting the color</span>
+0020 <a name="_sub0" href="#_subfunctions" class="code">function [colorlist,col_vec,colcode_out]=set_col_vec(colcode,vec_C)</a>
+0021 
+0022 col_vec=[]; 
+0023 colcode_out=colcode;<span class="comment">%default</span>
+0024 <span class="keyword">if</span> isempty(vec_C) || ~isnumeric(vec_C)
+0025     colorlist=[0 0 1]; <span class="comment">%blue</span>
+0026     <span class="keyword">return</span>
+0027 <span class="keyword">end</span>
+0028 <span class="keyword">if</span> (isfield(colcode,<span class="string">'FixedCbounds'</span>) &amp;&amp; isequal(colcode.FixedCbounds,1))
+0029     minC=colcode.MinC;
+0030     maxC=colcode.MaxC;
+0031 <span class="keyword">else</span>
+0032     minC=min(vec_C);
+0033     maxC=max(vec_C);
+0034 <span class="keyword">end</span>
+0035 
+0036 <span class="comment">%default input parameters</span>
+0037 <span class="keyword">if</span> ~isstruct(colcode),colcode=[];<span class="keyword">end</span>;
+0038 <span class="keyword">if</span> ~isfield(colcode,<span class="string">'ColorCode'</span>) || isempty(colcode.ColorCode)
+0039     colorlist=[0 0 1]; <span class="comment">%blue</span>
+0040     <span class="keyword">return</span>
+0041 <span class="keyword">end</span>
+0042 <span class="keyword">if</span>  isfield(colcode,<span class="string">'colcode1'</span>)
+0043     colcode1=minC+colcode.colcode1*(maxC-minC);
+0044 <span class="keyword">else</span>
+0045     colcode1=minC+(maxC-minC)/3;<span class="comment">%default</span>
+0046 <span class="keyword">end</span>
+0047 <span class="keyword">if</span> isfield(colcode,<span class="string">'colcode2'</span>)
+0048     colcode2=minC+colcode.colcode2*(maxC-minC);
+0049 <span class="keyword">else</span>
+0050     colcode2=minC+2*(maxC-minC)/3;<span class="comment">%default</span>
+0051 <span class="keyword">end</span>
+0052 colcode_out.MinC=minC;
+0053 colcode_out.MaxC=maxC;
+0054 
+0055 <span class="keyword">if</span> strcmp(colcode.ColorCode,<span class="string">'black'</span>)
+0056     colorlist(1,:)=[0 0 0];<span class="comment">%black</span>
+0057     col_vec=ones(size(vec_C));<span class="comment">%all vectors at color#1</span>
+0058 <span class="keyword">elseif</span> strcmp(colcode.ColorCode,<span class="string">'white'</span>)
+0059     colorlist(1,:)=[1 1 1];<span class="comment">%white</span>
+0060     col_vec=ones(size(vec_C));<span class="comment">%all vectors at color#1</span>
+0061 <span class="keyword">elseif</span> strcmp(colcode.ColorCode,<span class="string">'rgb'</span>)|| strcmp(colcode.ColorCode,<span class="string">'bgr'</span>)<span class="comment">% 3 color representation</span>
+0062     ind1=find(vec_C &lt; colcode1); <span class="comment">% =1 for red vectors</span>
+0063     ind_green=find((vec_C &gt;= colcode1) &amp; (vec_C &lt; colcode2));<span class="comment">% =1 for green vectors</span>
+0064     ind3=find(vec_C &gt;= colcode2);<span class="comment">% =1 for blue vectors</span>
+0065     colorlist(2,:)=[0 1 0];<span class="comment">%green</span>
+0066     col_vec(ind1)=1;
+0067     col_vec(ind_green)=2;
+0068     col_vec(ind3)=3;
+0069     <span class="keyword">if</span> strcmp(colcode.ColorCode,<span class="string">'rgb'</span>)
+0070         colorlist(1,:)=[1 0 0];<span class="comment">%red</span>
+0071         colorlist(3,:)=[0 0 1];<span class="comment">%blue</span>
+0072     <span class="keyword">else</span>
+0073         colorlist(1,:)=[0 0 1];<span class="comment">%blue</span>
+0074         colorlist(3,:)=[1 0 0];<span class="comment">%red</span>
+0075     <span class="keyword">end</span>
+0076 <span class="keyword">else</span>
+0077     colorjet=jet;<span class="comment">% ususal colormap from blue to red</span>
+0078     sizlist=size(colorjet);
+0079     indsel=ceil((sizlist(1)/64)*(1:64));
+0080     colorlist(:,1)=colorjet(indsel,1);
+0081     colorlist(:,2)=colorjet(indsel,2);
+0082     colorlist(:,3)=colorjet(indsel,3);
+0083     sizlist=size(colorlist);
+0084     nblevel=sizlist(1);
+0085     col2_1=maxC-minC;
+0086     col_vec=1+floor(nblevel*(vec_C-minC)/col2_1);
+0087     col_vec=col_vec.*(col_vec&lt;= nblevel)+nblevel*(col_vec &gt;nblevel);<span class="comment">% take color #nblevel at saturation</span>
+0088     col_vec=col_vec.*(col_vec&gt;= 1)+  (col_vec &lt;1);<span class="comment">% take color #1 for values below 1</span>
+0089 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

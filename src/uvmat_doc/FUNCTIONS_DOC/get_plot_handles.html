@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of get_plot_handles</title>
+  <meta name="keywords" content="get_plot_handles">
+  <meta name="description" content="'get_plot_handles': list the  handles of elements setting the plotting parameters in the uvmat interface">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; get_plot_handles.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>get_plot_handles
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'get_plot_handles': list the  handles of elements setting the plotting parameters in the uvmat interface</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function PlotHandles=get_plot_handles(handles) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'get_plot_handles': list the  handles of elements setting the plotting parameters in the uvmat interface
+--------------------------------------------------------
+function [PlotHandles]=get_plot_handles(handles)
+
+ OUTPUT:
+ PlotHandles: structure containing the  used to set plotting parameters
+ INPUT:
+ handles: structure of the handles of the graphic elements in the uvmat interface
+            -- TODO: needs to be replaced by a cell listing the element tags --</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="mouse_up.html" class="code" title="function mouse_up(ggg,eventdata,handles)">mouse_up</a>	'mouse_up': function  activated when the mouse button is released</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'get_plot_handles': list the  handles of elements setting the plotting parameters in the uvmat interface</span>
+0002 <span class="comment">%--------------------------------------------------------</span>
+0003 <span class="comment">%function [PlotHandles]=get_plot_handles(handles)</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% OUTPUT:</span>
+0006 <span class="comment">% PlotHandles: structure containing the  used to set plotting parameters</span>
+0007 <span class="comment">% INPUT:</span>
+0008 <span class="comment">% handles: structure of the handles of the graphic elements in the uvmat interface</span>
+0009 <span class="comment">%            -- TODO: needs to be replaced by a cell listing the element tags --</span>
+0010 
+0011 <a name="_sub0" href="#_subfunctions" class="code">function PlotHandles=get_plot_handles(handles)</a>
+0012 PlotHandles.auto_xy=handles.auto_xy;
+0013 <span class="comment">%For scalar field representation</span>
+0014 PlotHandles.MaxA=handles.MaxA;
+0015 PlotHandles.MinA=handles.MinA;
+0016 PlotHandles.AutoScal=handles.AutoScal;
+0017 PlotHandles.BW=handles.BW;
+0018 PlotHandles.Contours=handles.Contours;
+0019 PlotHandles.IncrA=handles.IncrA;
+0020 PlotHandles.SCALAR_title=handles.SCALAR_title;
+0021 PlotHandles.min_title=handles.min_title;
+0022 PlotHandles.max_title=handles.max_title;
+0023 PlotHandles.frame_scal=handles.frame_scal;
+0024 PlotHandles.npx=handles.npx;
+0025 PlotHandles.npy=handles.npy;
+0026 PlotHandles.npx_title=handles.npx_title;
+0027 PlotHandles.npy_title=handles.npy_title;
+0028 
+0029 <span class="comment">%For vector field representation</span>
+0030 PlotHandles.frame_vect=handles.frame_vect;
+0031 PlotHandles.VECT_title=handles.VECT_title;
+0032 PlotHandles.VecScale=handles.VecScale;
+0033 PlotHandles.AutoVec=handles.AutoVec;
+0034 PlotHandles.HideFalse=handles.HideFalse;
+0035 PlotHandles.HideWarning=handles.HideWarning;
+0036 PlotHandles.record=handles.record;
+0037 PlotHandles.col_vec=handles.col_vec;
+0038 PlotHandles.Color_title=handles.Color_title;
+0039 PlotHandles.color_code=handles.color_code;
+0040 PlotHandles.colcode1=handles.colcode1;
+0041 PlotHandles.colcode2=handles.colcode2;
+0042 PlotHandles.vec_col_bar=handles.vec_col_bar;
+0043 PlotHandles.slider1=handles.slider1;
+0044 PlotHandles.slider2=handles.slider2;
+0045 PlotHandles.max_vec=handles.max_vec;
+0046 PlotHandles.min_vec=handles.min_vec;
+0047 PlotHandles.scale_title=handles.scale_title;
+0048 PlotHandles.AutoVecColor=handles.AutoVecColor;
+0049 PlotHandles.decimate4=handles.decimate4;
+0050 PlotHandles.min_C_title=handles.min_C_title;
+0051 PlotHandles.max_C_title=handles.max_C_title;
+0052 PlotHandles.MenuVectors=handles.MenuVectors;
+0053 PlotHandles.MenuEditVectors=handles.MenuEditVectors;
+0054 PlotHandles.edit_vect=handles.edit_vect;
+0055 <span class="comment">%menu for the choice of the current plotting axes</span>
+0056 <span class="comment">%PlotHandles.MenuAxes=handles.MenuAxes;</span>
+0057 
+0058 <span class="comment">%handles for move_mouse</span>
+0059 PlotHandles.mouse_coord=handles.mouse_coord;
+0060 <span class="comment">% PlotHandles.POINTS=handles.POINTS;</span>
+0061 <span class="comment">% PlotHandles.LINE=handles.LINE;</span>
+0062 <span class="comment">% PlotHandles.PLANE=handles.PLANE;</span>
+0063 <span class="comment">% PlotHandles.PATCH=handles.PATCH;</span>
+0064 PlotHandles.cal=handles.cal;
+0065 <span class="comment">%PlotHandles.makemask=handles.makemask;</span>
+0066 PlotHandles.edit=handles.edit;
+0067 PlotHandles.text_display_1=handles.text_display_1;
+0068 PlotHandles.text_display_2=handles.text_display_2;
+0069 PlotHandles.text_display_3=handles.text_display_3;
+0070 PlotHandles.text_display_4=handles.text_display_4;
+0071 
+0072 <span class="comment">%handles for mouse_up</span>
+0073 PlotHandles.zoom=handles.zoom;</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

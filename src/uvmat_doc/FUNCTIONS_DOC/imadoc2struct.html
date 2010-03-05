@@ -1,0 +1,234 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of imadoc2struct</title>
+  <meta name="keywords" content="imadoc2struct">
+  <meta name="description" content="'imadoc2struct': reads the xml file for image documentation">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; imadoc2struct.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>imadoc2struct
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'imadoc2struct': reads the xml file for image documentation</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [s,errormsg]=imadoc2struct(ImaDoc) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'imadoc2struct': reads the xml file for image documentation 
+
+function [s,errormsg]=imadoc2struct(ImaDoc) 
+--------------------------------------------------------
+ OUTPUT:
+ s: structutre representing ImaDoc
+ errormsg: error message
+
+ INPUT:
+ ImaDoc: full name of the xml input file with head key ImaDoc</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="RUN_STLIN.html" class="code" title="function RUN_STLIN(file_A,file_B,vel_type,file_st,nx_patch,ny_patch,thresh_patch,fileAxml,fileBxml)">RUN_STLIN</a>	'RUN_STLIN': combine velocity fields for stereo PIV</li><li><a href="civ.html" class="code" title="function varargout = civ(varargin)">civ</a>	'civ': function associated with the interface 'civ.fig' for PIV, spline interpolation and stereo PIV (patch)</li><li><a href="civ_3D.html" class="code" title="function varargout = civ_3D(varargin)">civ_3D</a>	'civ_3D': function associated with the interface 'civ_3D.fig' for PIV in volume</li><li><a href="series.html" class="code" title="function varargout = series(varargin)">series</a>	'series': master function associated to the GUI series.m for analysis field series</li><li><a href="set_grid.html" class="code" title="function varargout = set_grid(varargin)">set_grid</a>	'set_grid':produce grid for PIV with one or two images (stereo case)</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function abs_time=get_time(BurstTiming)</a></li><li><a href="#_sub2" class="code">function tsai=get_GeometryCalib(s)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'imadoc2struct': reads the xml file for image documentation</span>
+0002 <span class="comment">%</span>
+0003 <span class="comment">%function [s,errormsg]=imadoc2struct(ImaDoc)</span>
+0004 <span class="comment">%--------------------------------------------------------</span>
+0005 <span class="comment">% OUTPUT:</span>
+0006 <span class="comment">% s: structutre representing ImaDoc</span>
+0007 <span class="comment">% errormsg: error message</span>
+0008 <span class="comment">%</span>
+0009 <span class="comment">% INPUT:</span>
+0010 <span class="comment">% ImaDoc: full name of the xml input file with head key ImaDoc</span>
+0011 
+0012 <a name="_sub0" href="#_subfunctions" class="code">function [s,errormsg]=imadoc2struct(ImaDoc) </a>
+0013 s=[];
+0014 errormsg=[];<span class="comment">%default</span>
+0015 <span class="keyword">try</span>
+0016     t=xmltree(ImaDoc);
+0017 <span class="keyword">catch</span>
+0018     errormsg={[ImaDoc <span class="string">' is not a valid xml file'</span>]; lasterr};
+0019     display(errormsg);
+0020     <span class="keyword">return</span>
+0021 <span class="keyword">end</span>
+0022 RootKey=get(t,1,<span class="string">'name'</span>);
+0023 <span class="keyword">if</span> ~isequal(RootKey,<span class="string">'ImaDoc'</span>)
+0024     errormsg=[ImaDoc <span class="string">' is not an image documentation file'</span>];
+0025     <span class="keyword">return</span>
+0026 <span class="keyword">end</span>      
+0027 s=convert(t);
+0028 s.Time=[];<span class="comment">%default</span>
+0029 <span class="keyword">if</span> isfield(s,<span class="string">'Camera'</span>)
+0030     <span class="keyword">if</span> isfield(s.Camera,<span class="string">'BurstTiming'</span>)
+0031         s.Time=<a href="#_sub1" class="code" title="subfunction abs_time=get_time(BurstTiming)">get_time</a>(s.Camera.BurstTiming);
+0032         s.Camera=rmfield(s.Camera,<span class="string">'BurstTiming'</span>);
+0033     <span class="keyword">end</span>
+0034 <span class="keyword">end</span>
+0035 <span class="keyword">if</span> isfield(s,<span class="string">'GeometryCalib'</span>)
+0036     s.GeometryCalib=<a href="#_sub2" class="code" title="subfunction tsai=get_GeometryCalib(s)">get_GeometryCalib</a>(s.GeometryCalib);
+0037 <span class="keyword">end</span> 
+0038 
+0039 <span class="comment">%----------------------------------------</span>
+0040 <a name="_sub1" href="#_subfunctions" class="code">function abs_time=get_time(BurstTiming)</a>
+0041 abs_time=[];
+0042 <span class="keyword">for</span> k=1:length(BurstTiming)
+0043      
+0044     Frequency=1;<span class="comment">%default</span>
+0045     <span class="keyword">if</span> isfield(BurstTiming,<span class="string">'FrameFrequency'</span>)&amp;&amp;~isempty(BurstTiming.FrameFrequency)
+0046         Frequency=str2double(BurstTiming.FrameFrequency);
+0047     <span class="keyword">end</span>
+0048     
+0049     Dtj=[];<span class="comment">%default</span>
+0050     <span class="keyword">if</span> isfield(BurstTiming,<span class="string">'Dtj'</span>)
+0051        Dtj=str2num(BurstTiming.Dtj);
+0052     <span class="keyword">end</span>
+0053     
+0054     NbDtj=1;<span class="comment">%default</span>
+0055     <span class="keyword">if</span> isfield(BurstTiming,<span class="string">'NbDtj'</span>)&amp;&amp;~isempty(BurstTiming.NbDtj)
+0056         NbDtj=str2double(BurstTiming.NbDtj);
+0057     <span class="keyword">end</span>
+0058     Dti=[]; <span class="comment">%default</span>
+0059     <span class="keyword">if</span> isfield(BurstTiming,<span class="string">'Dti'</span>)  
+0060         Dti=str2num(BurstTiming.Dti);
+0061     <span class="keyword">end</span>
+0062     
+0063     NbDti=1;<span class="comment">%default</span>
+0064     <span class="keyword">if</span> isfield(BurstTiming,<span class="string">'NbDti'</span>)&amp;&amp;~isempty(BurstTiming.NbDti)  
+0065        NbDti=str2double(BurstTiming.NbDti);
+0066     <span class="keyword">end</span>   
+0067     <span class="keyword">if</span> ~isempty(Dtj)
+0068         Dtj=reshape(Dtj'*ones(1,NbDtj),1,length(Dtj)*NbDtj);
+0069     <span class="keyword">end</span>
+0070     Dtj=[0 Dtj];
+0071     dtunit=Dtj/Frequency;   
+0072     Time=[];<span class="comment">%default</span>
+0073     <span class="keyword">if</span> isfield(BurstTiming,<span class="string">'Time'</span>) &amp;&amp; ~isempty(BurstTiming.Time)
+0074         <span class="comment">%nbfield=length(BurstTiming.Time)</span>
+0075         <span class="keyword">if</span> ischar(BurstTiming.Time)
+0076              Time(1,1)=str2num(BurstTiming.Time);
+0077              nbfield=1;
+0078         <span class="keyword">else</span>
+0079             nbfield=length(BurstTiming.Time);
+0080              <span class="keyword">for</span> itime=1:nbfield   
+0081                  Time(itime,1)=str2num(BurstTiming.Time{itime});
+0082              <span class="keyword">end</span>
+0083         <span class="keyword">end</span>
+0084         abstime_read=Time*ones(1,length(Dtj))+ones(nbfield,1)*cumsum(dtunit);
+0085         abs_time=[abs_time;abstime_read];
+0086         <span class="keyword">if</span> ~isempty(Dti) &amp;&amp; size(abs_time,1)==1
+0087            abs_time=ones(NbDti+1,1)*abs_time+(Dti/Frequency)*(0:NbDti)'*ones(size(abs_time));
+0088         <span class="keyword">end</span>
+0089     <span class="keyword">end</span>
+0090 <span class="keyword">end</span>
+0091 
+0092 <span class="comment">%----------------------------------------------------------------</span>
+0093 <a name="_sub2" href="#_subfunctions" class="code">function tsai=get_GeometryCalib(s)</a>
+0094 <span class="comment">%default values:</span>
+0095 tsai.f=1;
+0096 tsai.dpx=1;
+0097 tsai.dpy=1;
+0098 tsai.sx=1;
+0099 tsai.Cx=0;
+0100 tsai.Cy=0;
+0101 tsai.Tx=0;
+0102 tsai.Ty=0;
+0103 tsai.Tz=1;
+0104 tsai.R=[1 0 0; 0 1 0; 0 0 0];
+0105 tsai.kappa1=0;
+0106 <span class="keyword">if</span> isfield(s,<span class="string">'focal'</span>)
+0107     tsai.f=str2double(s.focal);
+0108 <span class="keyword">end</span>
+0109 <span class="keyword">if</span> isfield(s,<span class="string">'dpx_dpy'</span>)
+0110     dpx_dpy=str2num(s.dpx_dpy);
+0111     tsai.dpx=dpx_dpy(1);
+0112     tsai.dpy=dpx_dpy(2);
+0113 <span class="keyword">end</span>
+0114 <span class="keyword">if</span> isfield(s,<span class="string">'sx'</span>)
+0115     tsai.sx=str2double(s.sx);
+0116 <span class="keyword">end</span>
+0117 <span class="keyword">if</span> isfield(s,<span class="string">'Cx_Cy'</span>)
+0118     Cx_Cy=str2num(s.Cx_Cy);
+0119     tsai.Cx=Cx_Cy(1);
+0120     tsai.Cy=Cx_Cy(2);
+0121 <span class="keyword">end</span>
+0122 <span class="keyword">if</span> isfield(s,<span class="string">'Tx_Ty_Tz'</span>)
+0123     Tx_Ty_Tz=str2num(s.Tx_Ty_Tz);
+0124     tsai.Tx=Tx_Ty_Tz(1);
+0125     tsai.Ty=Tx_Ty_Tz(2);
+0126     tsai.Tz=Tx_Ty_Tz(3);
+0127 <span class="keyword">end</span>
+0128 <span class="keyword">if</span> isfield(s,<span class="string">'R'</span>)
+0129     tsai.R=[str2num(s.R{1});str2num(s.R{2});str2num(s.R{3})];
+0130 <span class="keyword">end</span>
+0131 <span class="keyword">if</span> isfield(s,<span class="string">'kappa1'</span>)
+0132     tsai.kappa1=str2double(s.kappa1);
+0133 <span class="keyword">end</span>
+0134 <span class="keyword">if</span> isfield(s,<span class="string">'SliceOrigin'</span>)
+0135     <span class="keyword">if</span> ischar(s.SliceOrigin)
+0136         tsai.SliceOrigin=str2num(s.SliceOrigin);
+0137     <span class="keyword">end</span>
+0138 <span class="keyword">end</span>
+0139 <span class="keyword">if</span> isfield(s,<span class="string">'SliceDZ'</span>)
+0140 <span class="comment">%     SliceOrigin=0;</span>
+0141 <span class="comment">%     SliceOZ=1;%default</span>
+0142     NbSlice=1;<span class="comment">%default</span>
+0143     <span class="keyword">if</span> ischar(s.NbSlice)
+0144         NbSlice=str2double(s.NbSlice);
+0145     <span class="keyword">end</span>
+0146     <span class="keyword">if</span> ischar(s.SliceOrigin)
+0147         SliceOrigin=str2num(s.SliceOrigin);
+0148         <span class="keyword">if</span> length(SliceOrigin)==3
+0149             tsai.SliceCoord(1,:)=SliceOrigin;<span class="comment">%to generalize for angles</span>
+0150         <span class="keyword">end</span>
+0151     <span class="keyword">end</span>
+0152     <span class="keyword">if</span> ischar(s.SliceDZ)
+0153         SliceOZ=str2double(s.SliceDZ); 
+0154         tsai.SliceCoord=tsai.SliceZ+SliceOZ*(0:NbSlice-1);
+0155     <span class="keyword">end</span>
+0156     <span class="keyword">if</span> iscell(s.SliceDZ)
+0157         <span class="keyword">for</span> j=1:length(s.SliceDZ)
+0158             tsai.SliceCoord(j,:)=tsai.SliceZ(j-1,:)+str2num(s.SliceDZ{j});
+0159         <span class="keyword">end</span>
+0160     <span class="keyword">end</span>
+0161 <span class="keyword">end</span>
+0162 <span class="keyword">if</span> isfield(s,<span class="string">'PlanePos'</span>)<span class="comment">%Obsolete</span>
+0163     <span class="keyword">if</span> ischar(s.PlanePos)
+0164         tsai.SliceCoord(1,:)=str2num(s.PlanePos);
+0165     <span class="keyword">else</span>
+0166         <span class="keyword">for</span> j=1:length(s.PlanePos)
+0167             PlanePos=str2num(s.PlanePos{j});
+0168             tsai.SliceCoord(j,:)=PlanePos;
+0169         <span class="keyword">end</span>
+0170     <span class="keyword">end</span>
+0171 <span class="keyword">end</span>
+0172 
+0173 <span class="comment">%look for laser plane definitions</span>
+0174 
+0175 
+0176 
+0177</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

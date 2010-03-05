@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of struct2nc_toolbox</title>
+  <meta name="keywords" content="struct2nc_toolbox">
+  <meta name="description" content="'struct2nc_toolbox': create a netcdf file from a Matlab structure: use of netcdf toolbox">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; struct2nc_toolbox.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>struct2nc_toolbox
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'struct2nc_toolbox': create a netcdf file from a Matlab structure: use of netcdf toolbox</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function errormsg=struct2nc_toolbox(flname,Data) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'struct2nc_toolbox': create a netcdf file from a Matlab structure: use of netcdf toolbox
+---------------------------------------------------------------------
+ errormsg=struct2nc_toolbox(flname,Data)
+
+OUPUT:
+errormsg=error message, =0: default, no error
+INPUT:
+flname: name of the netcdf file to create (must end with the extension '.nc')
+  Data: structure containing all the information of the netcdf file (or netcdf object)
+           with fields:
+    .ListGlobalAttribute: cell listing the names of the global attributes (note that a global atribute with the same name as a variable is excluded)
+        .Att_1,Att_2... : values of the global attributes
+            .ListDimName: cell listing the names of the array dimensions
+               .DimValue: array dimension values (Matlab vector with the same length as .ListDimName
+            .ListVarName: cell listing the names of the variables
+            .VarDimIndex: cell containing the set of dimension indices (in list .ListDimName) for each variable of .ListVarName
+           .VarAttribute: cell of structures s containing names and values of variable attributes (s.name=value) for each variable of .ListVarName
+        .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
+
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     This file is part of the toolbox UVMAT.
+ 
+     UVMAT is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation; either version 2 of the License, or
+     (at your option) any later version.
+ 
+     UVMAT is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License (file UVMAT/COPYING.txt) for more details.
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="check_field_structure.html" class="code" title="function [DataOut,errormsg]=check_field_structure(Data)">check_field_structure</a>	'check_field_structure': check the representation of fields by a Matlab structure</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="struct2nc.html" class="code" title="function errormsg=struct2nc(flname,Data)">struct2nc</a>	'struct2nc': create a netcdf file from a Matlab structure</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'struct2nc_toolbox': create a netcdf file from a Matlab structure: use of netcdf toolbox</span>
+0002 <span class="comment">%---------------------------------------------------------------------</span>
+0003 <span class="comment">% errormsg=struct2nc_toolbox(flname,Data)</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">%OUPUT:</span>
+0006 <span class="comment">%errormsg=error message, =0: default, no error</span>
+0007 <span class="comment">%INPUT:</span>
+0008 <span class="comment">%flname: name of the netcdf file to create (must end with the extension '.nc')</span>
+0009 <span class="comment">%  Data: structure containing all the information of the netcdf file (or netcdf object)</span>
+0010 <span class="comment">%           with fields:</span>
+0011 <span class="comment">%    .ListGlobalAttribute: cell listing the names of the global attributes (note that a global atribute with the same name as a variable is excluded)</span>
+0012 <span class="comment">%        .Att_1,Att_2... : values of the global attributes</span>
+0013 <span class="comment">%            .ListDimName: cell listing the names of the array dimensions</span>
+0014 <span class="comment">%               .DimValue: array dimension values (Matlab vector with the same length as .ListDimName</span>
+0015 <span class="comment">%            .ListVarName: cell listing the names of the variables</span>
+0016 <span class="comment">%            .VarDimIndex: cell containing the set of dimension indices (in list .ListDimName) for each variable of .ListVarName</span>
+0017 <span class="comment">%           .VarAttribute: cell of structures s containing names and values of variable attributes (s.name=value) for each variable of .ListVarName</span>
+0018 <span class="comment">%        .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName</span>
+0019 <span class="comment">%</span>
+0020 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0021 <span class="comment">%  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.</span>
+0022 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0023 <span class="comment">%     This file is part of the toolbox UVMAT.</span>
+0024 <span class="comment">%</span>
+0025 <span class="comment">%     UVMAT is free software; you can redistribute it and/or modify</span>
+0026 <span class="comment">%     it under the terms of the GNU General Public License as published by</span>
+0027 <span class="comment">%     the Free Software Foundation; either version 2 of the License, or</span>
+0028 <span class="comment">%     (at your option) any later version.</span>
+0029 <span class="comment">%</span>
+0030 <span class="comment">%     UVMAT is distributed in the hope that it will be useful,</span>
+0031 <span class="comment">%     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+0032 <span class="comment">%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+0033 <span class="comment">%     GNU General Public License (file UVMAT/COPYING.txt) for more details.</span>
+0034 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0035 
+0036 <a name="_sub0" href="#_subfunctions" class="code">function errormsg=struct2nc_toolbox(flname,Data)</a>
+0037 
+0038 FilePath=fileparts(flname);
+0039 <span class="keyword">if</span> ~exist(FilePath,<span class="string">'dir'</span>)
+0040     errormsg=[<span class="string">'directory '</span> FilePath <span class="string">' needs to be created'</span>];
+0041     <span class="keyword">return</span>
+0042 <span class="keyword">end</span>
+0043 [Data,errormsg]=<a href="check_field_structure.html" class="code" title="function [DataOut,errormsg]=check_field_structure(Data)">check_field_structure</a>(Data);
+0044 <span class="keyword">if</span> ~isempty(errormsg)
+0045     <span class="keyword">return</span>
+0046 <span class="keyword">end</span>
+0047 ListVarName=Data.ListVarName;
+0048 nc=netcdf(flname,<span class="string">'clobber'</span>); <span class="comment">%create the netcdf file with name flname</span>
+0049 <span class="comment">%write global constants</span>
+0050 <span class="keyword">if</span> isfield(Data,<span class="string">'ListGlobalAttribute'</span>)
+0051     keys=Data.ListGlobalAttribute;
+0052     <span class="keyword">for</span> iattr=1:length(keys)
+0053         <span class="keyword">if</span> isfield(Data,keys{iattr})
+0054              testvar=0;
+0055             <span class="keyword">for</span> ivar=1:length(ListVarName)<span class="comment">% eliminate possible global attributes with the same name as a variable</span>
+0056                 <span class="keyword">if</span> isequal(ListVarName{ivar}, keys{iattr})
+0057                     testvar=1;
+0058                     <span class="keyword">break</span>
+0059                 <span class="keyword">end</span>
+0060             <span class="keyword">end</span>
+0061             <span class="keyword">if</span> ~testvar               
+0062                 eval([<span class="string">'cte=Data.'</span> keys{iattr} <span class="string">';'</span>])
+0063                 <span class="keyword">if</span> ischar(cte) &amp;&amp; ~isequal(cte,<span class="string">''</span>)
+0064                     eval([<span class="string">'nc.'</span> keys{iattr} <span class="string">'='''</span> cte <span class="string">''';'</span>]);
+0065                 <span class="keyword">elseif</span> isnumeric(cte)&amp;&amp; ~isempty(cte)
+0066                     eval([<span class="string">'nc.'</span> keys{iattr} <span class="string">'= cte; '</span>]);
+0067                 <span class="keyword">else</span>
+0068                     errormsg=<span class="string">'global attributes must be characters or numbers'</span>;
+0069                     <span class="keyword">return</span>
+0070                 <span class="keyword">end</span>
+0071             <span class="keyword">end</span>
+0072         <span class="keyword">end</span>
+0073     <span class="keyword">end</span>
+0074 <span class="keyword">end</span>
+0075 <span class="keyword">for</span> idim=1:length(Data.ListDimName)
+0076     nc(Data.ListDimName{idim})=Data.DimValue(idim);<span class="comment">%create dimensions</span>
+0077 <span class="keyword">end</span>
+0078 
+0079 VarAttribute={}; <span class="comment">%default</span>
+0080 testattr=0;
+0081 <span class="keyword">if</span> isfield(Data,<span class="string">'VarAttribute'</span>)
+0082     VarAttribute=Data.VarAttribute;
+0083     testattr=1;
+0084 <span class="keyword">end</span>
+0085 <span class="keyword">for</span> ivar=1:length(ListVarName)
+0086     <span class="keyword">if</span> isfield(Data,ListVarName{ivar})
+0087         eval([<span class="string">'VarVal=Data.'</span> ListVarName{ivar} <span class="string">';'</span>])<span class="comment">%varval=values of the current variable</span>
+0088         siz=size(VarVal);
+0089         VarDimIndex=Data.VarDimIndex{ivar}; <span class="comment">%indices of the variable dimensions in the list of dimensions</span>
+0090         VarDimName=Data.VarDimName{ivar};<span class="comment">%NEW</span>
+0091         <span class="keyword">if</span> ischar(VarDimName)<span class="comment">%NEW</span>
+0092             VarDimName={VarDimName};<span class="comment">%NEW</span>
+0093         <span class="keyword">end</span><span class="comment">%NEW</span>
+0094         testrange=(numel(VarDimName)==1 &amp;&amp; strcmp(VarDimName{1},ListVarName{ivar}) &amp;&amp; numel(VarVal)==2); <span class="comment">%NEW</span>
+0095         testline=isequal(length(siz),2) &amp; isequal(siz(1),1)&amp; isequal(siz(2), Data.DimValue(VarDimIndex));
+0096         testcolumn=isequal(length(siz),2) &amp; isequal(siz(1), Data.DimValue(VarDimIndex))&amp; isequal(siz(2),1);
+0097         <span class="keyword">if</span> ~testrange &amp;&amp; ~testline &amp;&amp; ~testcolumn &amp;&amp; ~isequal(siz,Data.DimValue(VarDimIndex))
+0098             errormsg=[<span class="string">'wrong dimensions declared for '</span> ListVarName{ivar} <span class="string">' in struct2nc.m'</span>];
+0099             <span class="keyword">break</span>
+0100         <span class="keyword">end</span> 
+0101         <span class="keyword">if</span> testline || testrange<span class="comment">%NEW</span>
+0102            dimname=Data.ListDimName{VarDimIndex};
+0103            <span class="keyword">if</span> testrange<span class="comment">%NEW</span>
+0104                VarVal=linspace(VarVal(1),VarVal(2),Data.DimValue(VarDimIndex));<span class="comment">%NEW</span>
+0105            <span class="keyword">end</span><span class="comment">%NEW</span>
+0106            nc{ListVarName{ivar}}=ncfloat(dimname);<span class="comment">%vector of x coordinates</span>
+0107            nc{ListVarName{ivar}}(:) = VarVal';  
+0108         <span class="keyword">else</span>
+0109             nc{ListVarName{ivar}}=ncfloat(Data.ListDimName(VarDimIndex));<span class="comment">%vector of x coordinates</span>
+0110             nc{ListVarName{ivar}}(:) = VarVal;
+0111         <span class="keyword">end</span>
+0112         <span class="comment">%write variable attributes</span>
+0113         <span class="keyword">if</span> testattr
+0114             <span class="keyword">for</span> ivar=1:length(VarAttribute)  
+0115                 <span class="keyword">if</span> isstruct(VarAttribute{ivar})
+0116                     attr_names=fields(VarAttribute{ivar});
+0117                     <span class="keyword">for</span> iattr=1:length(attr_names)
+0118                         eval([<span class="string">'attr_val=VarAttribute{ivar}.'</span> attr_names{iattr} <span class="string">';'</span>]);
+0119                         <span class="keyword">if</span> ischar(attr_val) &amp;&amp; ~isequal(attr_val,<span class="string">''</span>)
+0120                             eval([<span class="string">'nc{'''</span> ListVarName{ivar} <span class="string">'''}.'</span> attr_names{iattr} <span class="string">'='''</span> attr_val <span class="string">''';'</span>])
+0121                         <span class="keyword">elseif</span> isnumeric(attr_val)&amp;&amp; ~isempty(attr_val)
+0122                              eval([<span class="string">'nc{'''</span> ListVarName{ivar} <span class="string">'''}.'</span> attr_names{iattr} <span class="string">'=attr_val ;'</span>])
+0123                         <span class="keyword">end</span>
+0124                     <span class="keyword">end</span>
+0125                 <span class="keyword">end</span>
+0126             <span class="keyword">end</span>
+0127          <span class="keyword">end</span>
+0128     <span class="keyword">end</span>
+0129 <span class="keyword">end</span>
+0130 
+0131 close(nc);</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

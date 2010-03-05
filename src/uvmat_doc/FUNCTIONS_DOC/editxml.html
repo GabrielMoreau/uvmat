@@ -1,0 +1,1626 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of editxml</title>
+  <meta name="keywords" content="editxml">
+  <meta name="description" content="'editxml': function for editing xml files using a xml schema (associated with the GUI editxml.fig)">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; editxml.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>editxml
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'editxml': function for editing xml files using a xml schema (associated with the GUI editxml.fig)</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function varargout = editxml(varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'editxml': function for editing xml files using a xml schema (associated with the GUI editxml.fig)
+------------------------------------------------------------------------
+ function heditxml=editxml(inputfile)
+
+OUTPUT: heditxml: graphic handle of the GUI 
+
+INPUT: inputfile:  name of an xml file
+
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     This file is part of the toolbox UVMAT.
+ 
+     UVMAT is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation; either version 2 of the License, or
+     (at your option) any later version.
+ 
+     UVMAT is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License (file UVMAT/COPYING.txt) for more details.
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="ListDir.html" class="code" title="function [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in)">ListDir</a>	'ListDir': scan the structure of the directory tree (for dataview.m)</li><li><a href="cell2tab.html" class="code" title="function Tabchar=cell2tab(Tabcell,separator)">cell2tab</a>	'cell2tab': transform a Matlab cell in a character array suitable for display in a table</li><li><a href="dataview.html" class="code" title="function varargout = dataview(varargin)">dataview</a>	TEST 'dataview': function for scanning directories in a campaign (TEST)</li><li><a href="read_xls.html" class="code" title="function [hfig_xls]=read_xls(fileinput,hfig)">read_xls</a>	'read_xls': function for reading and displaying Excel files</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li><li><a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>	'warndlg_uvmat': display warning message (error, warning, confirmation) in a given figure</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="civ.html" class="code" title="function varargout = civ(varargin)">civ</a>	'civ': function associated with the interface 'civ.fig' for PIV, spline interpolation and stereo PIV (patch)</li><li><a href="civ_3D.html" class="code" title="function varargout = civ_3D(varargin)">civ_3D</a>	'civ_3D': function associated with the interface 'civ_3D.fig' for PIV in volume</li><li><a href="dataview.html" class="code" title="function varargout = dataview(varargin)">dataview</a>	TEST 'dataview': function for scanning directories in a campaign (TEST)</li><li><a href="read_xls.html" class="code" title="function [hfig_xls]=read_xls(fileinput,hfig)">read_xls</a>	'read_xls': function for reading and displaying Excel files</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function editxml_OpeningFcn(hObject, eventdata, handles, varargin)</a></li><li><a href="#_sub2" class="code">function varargout = editxml_OutputFcn(hObject, eventdata, handles)</a></li><li><a href="#_sub3" class="code">function list_element_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub4" class="code">function move_up_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub5" class="code">function element_value_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub6" class="code">function browser_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub7" class="code">function CurrentFile_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub8" class="code">function [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,nodeinput)</a></li><li><a href="#_sub9" class="code">function [element,subelem]=get_xml(t,path,xs_element,node,xs_subelem)</a></li><li><a href="#_sub10" class="code">function update_list(handles,path,xs_element,element,node,xs_subelem,subelem)</a></li><li><a href="#_sub11" class="code">function SAVE_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub12" class="code">function t=set_element(t,RootUid,node,key,value)</a></li><li><a href="#_sub13" class="code">function element_attr_val_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub14" class="code">function ADD_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub15" class="code">function [Data,testsimple]=displ_xml(handles,t,root_uid,DataIn,heditxml)</a></li><li><a href="#_sub16" class="code">function update_ref_list(hh,xs_element,element,node,xs_subelem,subelem)</a></li><li><a href="#_sub17" class="code">function replicate_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub18" class="code">function HELP_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub19" class="code">function Export_Callback(hObject, eventdata, handles)</a></li><li><a href="#_sub20" class="code">function pushbutton9_Callback(hObject, eventdata, handles)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'editxml': function for editing xml files using a xml schema (associated with the GUI editxml.fig)</span>
+0002 <span class="comment">%------------------------------------------------------------------------</span>
+0003 <span class="comment">% function heditxml=editxml(inputfile)</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">%OUTPUT: heditxml: graphic handle of the GUI</span>
+0006 <span class="comment">%</span>
+0007 <span class="comment">%INPUT: inputfile:  name of an xml file</span>
+0008 <span class="comment">%</span>
+0009 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0010 <span class="comment">%  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.</span>
+0011 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0012 <span class="comment">%     This file is part of the toolbox UVMAT.</span>
+0013 <span class="comment">%</span>
+0014 <span class="comment">%     UVMAT is free software; you can redistribute it and/or modify</span>
+0015 <span class="comment">%     it under the terms of the GNU General Public License as published by</span>
+0016 <span class="comment">%     the Free Software Foundation; either version 2 of the License, or</span>
+0017 <span class="comment">%     (at your option) any later version.</span>
+0018 <span class="comment">%</span>
+0019 <span class="comment">%     UVMAT is distributed in the hope that it will be useful,</span>
+0020 <span class="comment">%     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+0021 <span class="comment">%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+0022 <span class="comment">%     GNU General Public License (file UVMAT/COPYING.txt) for more details.</span>
+0023 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0024 
+0025 <a name="_sub0" href="#_subfunctions" class="code">function varargout = editxml(varargin)</a>
+0026 
+0027 <span class="comment">% Begin initialization code - DO NOT EDIT</span>
+0028 gui_Singleton = 1;
+0029 gui_State = struct(<span class="string">'gui_Name'</span>,       mfilename, <span class="keyword">...</span>
+0030                    <span class="string">'gui_Singleton'</span>,  gui_Singleton, <span class="keyword">...</span>
+0031                    <span class="string">'gui_OpeningFcn'</span>, @<a href="#_sub1" class="code" title="subfunction editxml_OpeningFcn(hObject, eventdata, handles, varargin)">editxml_OpeningFcn</a>, <span class="keyword">...</span>
+0032                    <span class="string">'gui_OutputFcn'</span>,  @<a href="#_sub2" class="code" title="subfunction varargout = editxml_OutputFcn(hObject, eventdata, handles)">editxml_OutputFcn</a>, <span class="keyword">...</span>
+0033                    <span class="string">'gui_LayoutFcn'</span>,  [] , <span class="keyword">...</span>
+0034                    <span class="string">'gui_Callback'</span>,   []);
+0035 <span class="keyword">if</span> nargin &amp; isstr(varargin{1})
+0036     gui_State.gui_Callback = str2func(varargin{1});
+0037 <span class="keyword">end</span>
+0038 
+0039 <span class="keyword">if</span> nargout
+0040     [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+0041 <span class="keyword">else</span>
+0042     gui_mainfcn(gui_State, varargin{:});
+0043 <span class="keyword">end</span>
+0044 <span class="comment">% End initialization code - DO NOT EDIT</span>
+0045 
+0046 
+0047 <span class="comment">% --- Executes just before editxml is made visible.</span>
+0048 <a name="_sub1" href="#_subfunctions" class="code">function editxml_OpeningFcn(hObject, eventdata, handles, varargin)</a>
+0049 <span class="comment">% This function has no output args, see OutputFcn.</span>
+0050 <span class="comment">% hObject    handle to figure</span>
+0051 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0052 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0053 <span class="comment">% varargin   command line arguments to editxml (see VARARGIN)</span>
+0054 
+0055 <span class="comment">% set(handles.replicate,'String',['copy';'&lt;---'])</span>
+0056 <span class="keyword">if</span> nargin
+0057     CurrentFile=varargin{1}
+0058 <span class="keyword">else</span>
+0059     CurrentFile=[];
+0060 <span class="keyword">end</span>
+0061 <span class="comment">% if exist('varargin') &amp; length(varargin)&gt;=1</span>
+0062 <span class="comment">%     CurrentFile=cell2mat(varargin{1});</span>
+0063 <span class="comment">% else</span>
+0064 <span class="comment">%     CurrentFile=[];</span>
+0065 <span class="comment">% end</span>
+0066 <span class="comment">% Choose default command line output for editxml</span>
+0067 handles.output = hObject;
+0068 <span class="comment">% set(hObject,'Units','pixel')</span>
+0069 <span class="keyword">if</span> exist(CurrentFile,<span class="string">'file'</span>)
+0070     [PathName,Nme,FileExt]=fileparts(CurrentFile);
+0071     <span class="keyword">if</span> isequal(FileExt,<span class="string">'.xls'</span>)
+0072         DataIn.hfig_xls=<a href="read_xls.html" class="code" title="function [hfig_xls]=read_xls(fileinput,hfig)">read_xls</a>(CurrentFile);<span class="comment">% DataIn.hfig_xls=handle of the Excel display figure</span>
+0073         DataIn.CurrentUid=1;
+0074         figpos=get(hObject,<span class="string">'Position'</span>);<span class="comment">%position of the editxml interface</span>
+0075         figposunit=get(hObject,<span class="string">'Units'</span>);<span class="comment">%unity used to indicate position</span>
+0076         newfigpos=[figpos(1)-0.5*figpos(3) figpos(2) figpos(3) figpos(4)];
+0077         set(DataIn.hfig_xls,<span class="string">'Units'</span>,figposunit)
+0078         set(DataIn.hfig_xls,<span class="string">'Position'</span>,newfigpos); <span class="comment">%set position of the Excel display figure</span>
+0079         set(hObject,<span class="string">'UserData'</span>,DataIn)
+0080     <span class="keyword">else</span>
+0081         set(handles.CurrentFile,<span class="string">'String'</span>,CurrentFile)
+0082         <a href="#_sub7" class="code" title="subfunction CurrentFile_Callback(hObject, eventdata, handles)">CurrentFile_Callback</a>(hObject, eventdata, handles)
+0083     <span class="keyword">end</span>
+0084 <span class="keyword">end</span>
+0085 <span class="comment">% Update handles structure</span>
+0086 guidata(hObject, handles);
+0087 
+0088 <span class="comment">%----------------------------------------------------------------</span>
+0089 <span class="comment">% --- Outputs from this function are returned to the command line.</span>
+0090 <a name="_sub2" href="#_subfunctions" class="code">function varargout = editxml_OutputFcn(hObject, eventdata, handles)</a>
+0091 <span class="comment">% varargout  cell array for returning output args (see VARARGOUT);</span>
+0092 <span class="comment">% hObject    handle to figure</span>
+0093 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0094 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0095 
+0096 <span class="comment">% Get default command line output from handles structure</span>
+0097 varargout{1} = handles.output;
+0098 
+0099 
+0100 <span class="comment">% --- Executes on selection change in list_element.</span>
+0101 <a name="_sub3" href="#_subfunctions" class="code">function list_element_Callback(hObject, eventdata, handles)</a>
+0102 <span class="keyword">global</span> t xs t_ref
+0103 CurrentFile=get(handles.CurrentFile,<span class="string">'String'</span>);
+0104 bla=get(hObject,<span class="string">'String'</span>);
+0105 ind=get(hObject,<span class="string">'Value'</span>);
+0106 list=get(hObject,<span class="string">'UserData'</span>);
+0107 NewRootUid=list.uid(ind);
+0108 heditxml=get(hObject,<span class="string">'Parent'</span>);
+0109 DataIn=get(heditxml,<span class="string">'UserData'</span>);
+0110 <span class="keyword">if</span> ~isempty(xs)
+0111     xs_node=list.xs_uid(ind);<span class="comment">%xs_node of the subelement #ind</span>
+0112     [nodeup,path,xs_element,xs_subelem]=<a href="#_sub8" class="code" title="subfunction [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,nodeinput)">scan_schema</a>(xs,xs_node);
+0113     [element,subelem]=<a href="#_sub9" class="code" title="subfunction [element,subelem]=get_xml(t,path,xs_element,node,xs_subelem)">get_xml</a>(t,path,xs_element,NewRootUid,xs_subelem);
+0114     <a href="#_sub10" class="code" title="subfunction update_list(handles,path,xs_element,element,node,xs_subelem,subelem)">update_list</a>(handles,path,xs_element,element,NewRootUid,xs_subelem,subelem);
+0115     <span class="keyword">if</span> xs_element.subtest     
+0116         DataIn.CurrentUid=[DataIn.CurrentUid NewRootUid];<span class="comment">%record new current uid</span>
+0117         DataIn.xs_CurrentUid=[DataIn.xs_CurrentUid xs_node];<span class="comment">%record the new curent schema uid</span>
+0118     <span class="keyword">end</span>
+0119     
+0120 <span class="comment">%     %update the import file display</span>
+0121 <span class="comment">%     if isfield(DataIn,'h_ref')&amp;ishandle(DataIn.h_ref)</span>
+0122 <span class="comment">%         tag0_ref=find(t_ref,['/' path '/' xs_element.key]);</span>
+0123 <span class="comment">%         node_ref=list.index(ind);</span>
+0124 <span class="comment">%         if length(tag0_ref)&lt;node_ref</span>
+0125 <span class="comment">%             node_ref=length(tag0_ref);</span>
+0126 <span class="comment">%         end</span>
+0127 <span class="comment">%         [ref_element,ref_subelem]=get_xml(t_ref,path,xs_element,node_ref,xs_subelem);</span>
+0128 <span class="comment">%         update_ref_list(DataIn.h_ref,xs_element,ref_element,node_ref,xs_subelem,ref_subelem);</span>
+0129 <span class="comment">%     end</span>
+0130 set(get(hObject,<span class="string">'Parent'</span>),<span class="string">'UserData'</span>,DataIn);
+0131 <span class="keyword">else</span><span class="comment">%no schema</span>
+0132     [DataIn,testsimple]=<a href="#_sub15" class="code" title="subfunction [Data,testsimple]=displ_xml(handles,t,root_uid,DataIn,heditxml)">displ_xml</a>(handles,t,NewRootUid,DataIn,get(hObject,<span class="string">'parent'</span>));
+0133     <span class="keyword">if</span> ~testsimple
+0134         DataIn.CurrentUid=[DataIn.CurrentUid NewRootUid];<span class="comment">%record new current uid</span>
+0135         set(get(hObject,<span class="string">'Parent'</span>),<span class="string">'UserData'</span>,DataIn);
+0136     <span class="keyword">end</span>
+0137 <span class="keyword">end</span>
+0138 
+0139 <span class="comment">%-------------------------------------------------</span>
+0140 <span class="comment">% --- Executes on button press in move_up.</span>
+0141 <a name="_sub4" href="#_subfunctions" class="code">function move_up_Callback(hObject, eventdata, handles)</a>
+0142 <span class="keyword">global</span> t xs t_ref
+0143 set(handles.export_list,<span class="string">'Value'</span>,1);<span class="comment">%</span>
+0144 set(handles.export_list,<span class="string">'String'</span>,<span class="string">''</span>);<span class="comment">% empty the export list</span>
+0145 CurrentFile=get(handles.CurrentFile,<span class="string">'String'</span>);
+0146 CurrentElement=get(handles.CurrentElement,<span class="string">'String'</span>);
+0147 heditxml=get(handles.move_up,<span class="string">'parent'</span>);
+0148 test_root=0;
+0149 DataIn=get(heditxml,<span class="string">'UserData'</span>);
+0150 <span class="keyword">if</span> isfield(DataIn,<span class="string">'CurrentUid'</span>)&amp;length(DataIn.CurrentUid)&gt;1
+0151     nodeup=DataIn.CurrentUid(end-1);
+0152     DataIn.CurrentUid(end)=[];
+0153 <span class="keyword">else</span>
+0154     nodeup=[]; 
+0155 <span class="keyword">end</span>
+0156 <span class="keyword">if</span> isempty(xs)   
+0157     <span class="keyword">if</span> isempty(nodeup)
+0158         test_root=1;
+0159     <span class="keyword">else</span>
+0160         DataIn=<a href="#_sub15" class="code" title="subfunction [Data,testsimple]=displ_xml(handles,t,root_uid,DataIn,heditxml)">displ_xml</a>(handles,t,nodeup,DataIn,heditxml);
+0161     <span class="keyword">end</span>
+0162 <span class="keyword">else</span>
+0163     xs_nodeup=[];
+0164 <span class="comment">%     if isfield(DataIn,'xs_UpUid')</span>
+0165     <span class="keyword">if</span> isfield(DataIn,<span class="string">'xs_CurrentUid'</span>)&amp;length(DataIn.xs_CurrentUid)&gt;1
+0166 <span class="comment">%         xs_nodeup=DataIn.xs_UpUid</span>
+0167         xs_nodeup=DataIn.xs_CurrentUid(end-1);
+0168         DataIn.xs_CurrentUid(end)=[];<span class="comment">%uid of the root element in the schema</span>
+0169     <span class="keyword">end</span>
+0170     <span class="keyword">if</span> isempty(xs_nodeup)
+0171         test_root=1;
+0172     <span class="keyword">else</span>
+0173         [xs_nodeup,path,xs_element,xs_subelem]=<a href="#_sub8" class="code" title="subfunction [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,nodeinput)">scan_schema</a>(xs,xs_nodeup);
+0174         [element,subelem]=<a href="#_sub9" class="code" title="subfunction [element,subelem]=get_xml(t,path,xs_element,node,xs_subelem)">get_xml</a>(t,path,xs_element,nodeup,xs_subelem);
+0175         <a href="#_sub10" class="code" title="subfunction update_list(handles,path,xs_element,element,node,xs_subelem,subelem)">update_list</a>(handles,path,xs_element,element,nodeup,xs_subelem,subelem);
+0176         <span class="comment">%update the import file display</span>
+0177         <span class="keyword">if</span> isfield(DataIn,<span class="string">'h_ref'</span>)&amp;ishandle(DataIn.h_ref)
+0178             [ref_element,ref_subelem]=<a href="#_sub9" class="code" title="subfunction [element,subelem]=get_xml(t,path,xs_element,node,xs_subelem)">get_xml</a>(t_ref,path,xs_element,nodeup,xs_subelem);
+0179             <a href="#_sub16" class="code" title="subfunction update_ref_list(hh,xs_element,element,node,xs_subelem,subelem)">update_ref_list</a>(DataIn.h_ref,xs_element,ref_element,nodeup,xs_subelem,ref_subelem);
+0180         <span class="keyword">end</span>
+0181     <span class="keyword">end</span>
+0182     set(get(hObject,<span class="string">'parent'</span>),<span class="string">'UserData'</span>,DataIn);
+0183 <span class="keyword">end</span>
+0184 <span class="keyword">if</span> test_root<span class="comment">% we are a the root,</span>
+0185     testupfile=0;
+0186     DataIn=get(get(hObject,<span class="string">'parent'</span>),<span class="string">'UserData'</span>);
+0187     <span class="keyword">if</span> isfield(DataIn,<span class="string">'UpFile'</span>)&amp;~isempty(DataIn.UpFile)
+0188         [UpPath,UpName,UpExt]=fileparts(DataIn.UpFile{1});
+0189         <span class="keyword">if</span> isequal(UpExt,<span class="string">'.xml'</span>)
+0190             set(handles.CurrentFile,<span class="string">'String'</span>,DataIn.UpFile{1})
+0191             <a href="#_sub7" class="code" title="subfunction CurrentFile_Callback(hObject, eventdata, handles)">CurrentFile_Callback</a>(handles.CurrentFile,[],handles)
+0192             testupfile=1;
+0193             DataIn.UpFile{1}={};
+0194         <span class="keyword">end</span>
+0195     <span class="keyword">end</span>
+0196     <span class="keyword">if</span> ~testupfile  <span class="comment">%open the browser</span>
+0197         RootPath=fileparts(CurrentFile);
+0198             [FileName, PathName]=uigetfile( <span class="keyword">...</span>
+0199                {<span class="string">'*.xml'</span>, <span class="string">'(*.xml)'</span>;
+0200                 <span class="string">'*.xml'</span>,  <span class="string">'.xml files '</span>; <span class="keyword">...</span>
+0201                 <span class="string">'*.*'</span>,  <span class="string">'All Files (*.*)'</span>}, <span class="keyword">...</span>
+0202                 <span class="string">'Pick a file'</span>,RootPath); <span class="comment">%file browser</span>
+0203             fileinput_new=fullfile(PathName,FileName);
+0204             set(handles.CurrentFile,<span class="string">'String'</span>,fileinput_new)
+0205             <a href="#_sub7" class="code" title="subfunction CurrentFile_Callback(hObject, eventdata, handles)">CurrentFile_Callback</a>(handles.CurrentFile,[],handles)
+0206      <span class="keyword">end</span>
+0207 <span class="keyword">end</span>
+0208 set(heditxml,<span class="string">'UserData'</span>,DataIn);
+0209 <span class="comment">%---------------------------------------------------------</span>
+0210 <span class="comment">%edit element value</span>
+0211 <a name="_sub5" href="#_subfunctions" class="code">function element_value_Callback(hObject, eventdata, handles)</a>
+0212 <span class="comment">%----------------------------------------------------------</span>
+0213 <span class="keyword">global</span> t xs
+0214 <span class="keyword">if</span> isequal(get(handles.element_value,<span class="string">'ForegroundColor'</span>),[0.7 0.7 0.7])
+0215     <span class="keyword">return</span><span class="comment">% edit element desactivated (grey display)</span>
+0216 <span class="keyword">end</span>
+0217 list_enum=get(handles.element_value,<span class="string">'String'</span>);
+0218 list_index=get(handles.element_value,<span class="string">'Value'</span>);
+0219 <span class="keyword">if</span> iscell(list_enum)
+0220     value=list_enum{list_index};
+0221 <span class="keyword">else</span>
+0222     value=list_enum;
+0223 <span class="keyword">end</span>
+0224 heditxml=get(handles.element_value,<span class="string">'Parent'</span>);
+0225 DataIn=get(heditxml,<span class="string">'UserData'</span>);
+0226 <span class="comment">%create the current root element if needed</span>
+0227 LengthElement=length(DataIn.CurrentUid);
+0228 FilledUid=find(DataIn.CurrentUid~=0);
+0229 LengthFilled=FilledUid(end);
+0230 <span class="keyword">for</span> irank=LengthFilled+1:LengthElement
+0231     attrib=attributes(xs,<span class="string">'get'</span>,DataIn.xs_CurrentUid(irank),1);
+0232     [t,DataIn.CurrentUid(irank)]=add(t,DataIn.CurrentUid(irank-1),<span class="string">'element'</span>,attrib.val);
+0233 <span class="keyword">end</span>
+0234 node_element=get(handles.element_value,<span class="string">'UserData'</span>);
+0235 element_key=get(handles.element_key,<span class="string">'String'</span>);
+0236 t=<a href="#_sub12" class="code" title="subfunction t=set_element(t,RootUid,node,key,value)">set_element</a>(t,DataIn.CurrentUid(end),node_element,element_key,value);
+0237  
+0238 set(heditxml,<span class="string">'UserData'</span>,DataIn)
+0239 <span class="comment">%update the current listing</span>
+0240 [nodeup,path,xs_element,xs_subelem]=<a href="#_sub8" class="code" title="subfunction [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,nodeinput)">scan_schema</a>(xs,DataIn.xs_CurrentUid(end));
+0241 [element,subelem]=<a href="#_sub9" class="code" title="subfunction [element,subelem]=get_xml(t,path,xs_element,node,xs_subelem)">get_xml</a>(t,path,xs_element,DataIn.CurrentUid(end),xs_subelem);
+0242 element_index=get(handles.list_element,<span class="string">'Value'</span>);
+0243 <a href="#_sub10" class="code" title="subfunction update_list(handles,path,xs_element,element,node,xs_subelem,subelem)">update_list</a>(handles,path,xs_element,element,DataIn.CurrentUid(end),xs_subelem,subelem);
+0244 set(handles.list_element,<span class="string">'Value'</span>,element_index);
+0245 
+0246 <span class="comment">%</span>
+0247 <span class="comment">% % --- Executes on button press in inport_file.</span>
+0248 <span class="comment">% function inport_file_Callback(hObject, eventdata, handles)</span>
+0249 <span class="comment">% CurrentFile=get(handles.RefFile,'String');</span>
+0250 <span class="comment">% if isempty(CurrentFile)|isequal(CurrentFile,'')</span>
+0251 <span class="comment">%     CurrentFile=get(handles.CurrentFile,'String')</span>
+0252 <span class="comment">% end</span>
+0253 <span class="comment">% [FileName, PathName]=uigetfile( ...</span>
+0254 <span class="comment">%        {'*.xml', '(*.xml)';</span>
+0255 <span class="comment">%         '*.xml',  '.xml files '; ...</span>
+0256 <span class="comment">%         '*.*',  'All Files (*.*)'}, ...</span>
+0257 <span class="comment">%         'Pick a file',CurrentFile); %file browser</span>
+0258 <span class="comment">% fileinput=fullfile(PathName,FileName);</span>
+0259 <span class="comment">% sizf=size(fileinput);</span>
+0260 <span class="comment">% if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end% keep only character strings as input file name</span>
+0261 <span class="comment">% if exist(fileinput,'file')</span>
+0262 <span class="comment">%    set(handles.RefFile,'Visible','on')</span>
+0263 <span class="comment">%    set(handles.replicate,'Visible','on')</span>
+0264 <span class="comment">%    set(handles.RefFile,'String',fileinput)</span>
+0265 <span class="comment">%    RefFile_Callback(handles.RefFile, eventdata, handles)</span>
+0266 <span class="comment">% end</span>
+0267 
+0268 
+0269 <span class="comment">%------------------------------------------------------</span>
+0270 <span class="comment">% --- Executes on button press in browser.</span>
+0271 <a name="_sub6" href="#_subfunctions" class="code">function browser_Callback(hObject, eventdata, handles)</a>
+0272 <span class="comment">%-------------------------------------------------------</span>
+0273 heditxml=get(hObject,<span class="string">'parent'</span>);<span class="comment">%handle of the interface figure</span>
+0274 DataIn=get(heditxml,<span class="string">'UserData'</span>);<span class="comment">%get the current input xml file</span>
+0275 CurrentFile=get(handles.CurrentFile,<span class="string">'String'</span>);
+0276 DataIn.Schema=[];<span class="comment">%schema input file put to [] by default</span>
+0277 [FileName, PathName]=uigetfile( <span class="keyword">...</span>
+0278        {<span class="string">'*.xml;*.xls'</span>,<span class="string">'(*.xml,*.xls)'</span>;
+0279         <span class="string">'*.xml'</span>,  <span class="string">'.xml files '</span>; <span class="keyword">...</span>
+0280         <span class="string">'*.xls'</span>,  <span class="string">'.xls files '</span>; <span class="keyword">...</span>
+0281         <span class="string">'*.*'</span>,  <span class="string">'All Files (*.*)'</span>}, <span class="keyword">...</span>
+0282         <span class="string">'Pick a file'</span>,CurrentFile); <span class="comment">%file browser</span>
+0283 CurrentFile=fullfile(PathName,FileName);
+0284 sizf=size(CurrentFile);
+0285 <span class="keyword">if</span> (~ischar(CurrentFile)|~isequal(sizf(1),1)),<span class="keyword">return</span>;<span class="keyword">end</span><span class="comment">% keep only character strings as input file name</span>
+0286 <span class="keyword">if</span> exist(CurrentFile,<span class="string">'file'</span>)
+0287 <span class="comment">%     set(handles.CurrentAttributes,'UserDataIn',PathName); %store the path to the xml file</span>
+0288     [CurPath,CurName,CurExt]=fileparts(CurrentFile);
+0289     <span class="keyword">if</span> isequal(CurExt,<span class="string">'.xls'</span>)    
+0290         <span class="keyword">if</span> isfield(DataIn,<span class="string">'hfig_xls'</span>)&amp;ishandle(DataIn.hfig_xls)
+0291             [hfig_xls]=<a href="read_xls.html" class="code" title="function [hfig_xls]=read_xls(fileinput,hfig)">read_xls</a>(CurrentFile,DataIn.hfig_xls);
+0292         <span class="keyword">else</span>
+0293             [hfig_xls]=<a href="read_xls.html" class="code" title="function [hfig_xls]=read_xls(fileinput,hfig)">read_xls</a>(CurrentFile);
+0294         <span class="keyword">end</span>
+0295         figpos=get(heditxml,<span class="string">'Position'</span>);
+0296         newfigpos=[figpos(1)-0.25*figpos(3) figpos(2) 0.5*figpos(3) 0.5*figpos(4)];
+0297         set(hfig_xls,<span class="string">'Position'</span>,newfigpos)
+0298     <span class="keyword">else</span>
+0299         set(handles.CurrentFile,<span class="string">'String'</span>,CurrentFile)
+0300         <a href="#_sub7" class="code" title="subfunction CurrentFile_Callback(hObject, eventdata, handles)">CurrentFile_Callback</a>(hObject, eventdata, handles)
+0301      <span class="keyword">end</span>
+0302 <span class="keyword">end</span>
+0303 
+0304 <span class="comment">%------------------------------------</span>
+0305 <a name="_sub7" href="#_subfunctions" class="code">function CurrentFile_Callback(hObject, eventdata, handles)</a>
+0306 <span class="keyword">global</span> t xs
+0307 CurrentFile=get(handles.CurrentFile,<span class="string">'String'</span>);
+0308 heditxml=get(handles.CurrentFile,<span class="string">'parent'</span>);<span class="comment">%handles of the inteface</span>
+0309 DataIn=get(heditxml,<span class="string">'UserData'</span>);
+0310 t=xmltree(CurrentFile);<span class="comment">%open the xml file</span>
+0311 head_element=get(t,1);
+0312 <span class="keyword">if</span> ~isfield(head_element,<span class="string">'name'</span>) | ~isfield(head_element,<span class="string">'attributes'</span>)
+0313     <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'root element of the .xml file not in correct format'</span>,<span class="string">'ERROR'</span>)
+0314 <span class="keyword">end</span>
+0315 head_name=head_element.name;
+0316 head_attr=head_element.attributes;<span class="comment">% attribute of root gives the name of the associated schema</span>
+0317 xstest=0;
+0318 <span class="keyword">for</span> iattr=1:length(head_attr)
+0319     <span class="keyword">if</span> isequal(head_attr{iattr}.key,<span class="string">'xmlns:xsi'</span>)&amp; isequal(head_attr{iattr}.val,<span class="string">'none'</span>)<span class="comment">%no schema to read</span>
+0320          xs=[];
+0321 <span class="comment">%          xstest=1;</span>
+0322     <span class="keyword">end</span>
+0323     <span class="keyword">if</span> isequal(head_attr{iattr}.key,<span class="string">'xsi:noNamespaceSchemaLocation'</span>) &amp; exist(head_attr{iattr}.val,<span class="string">'file'</span>)
+0324         DataIn.Schema=head_attr{iattr}.val;
+0325         xs=xmltree(DataIn.Schema);<span class="comment">%open the associated schema file</span>
+0326         xstest=1;
+0327     <span class="keyword">end</span>
+0328 <span class="keyword">end</span>
+0329 <span class="keyword">if</span> xstest==0  <span class="comment">%look for the corresponding schema in the directory PARAM_LINUX.xml or PARAM_WIN.xml</span>
+0330     head_name=get(t,1,<span class="string">'name'</span>);
+0331     <span class="comment">%Path to shemas:</span>
+0332     path_uvmat=which(<span class="string">'editxml'</span>);<span class="comment">% check the path detected for source file uvmat</span>
+0333     path_UVMAT=fileparts(path_uvmat); <span class="comment">%path to UVMAT</span>
+0334     <span class="keyword">if</span> isunix
+0335         xmlparam=fullfile(path_UVMAT,<span class="string">'PARAM_LINUX.xml'</span>)
+0336         <span class="keyword">if</span> exist(xmlparam,<span class="string">'file'</span>)
+0337             tparam=xmltree(xmlparam);
+0338             sparam=convert(tparam);
+0339             <span class="keyword">if</span> isfield(sparam,<span class="string">'SchemaPath'</span>)
+0340                 schemapath=[fullfile(sparam.SchemaPath,head_name) <span class="string">'.xsd'</span>]
+0341             <span class="keyword">end</span>
+0342         <span class="keyword">end</span>      
+0343 <span class="comment">%         schemapath=['/coriolis/papillon/data/civbin/XML_SCHEMAS/' head_name '.xsd']%current dir for schema</span>
+0344     <span class="keyword">else</span>
+0345         xmlparam=fullfile(path_UVMAT,<span class="string">'PARAM_WIN.xml'</span>)
+0346         <span class="keyword">if</span> exist(xmlparam,<span class="string">'file'</span>)
+0347             tparam=xmltree(xmlparam);
+0348             sparam=convert(tparam)
+0349             <span class="keyword">if</span> isfield(sparam,<span class="string">'SchemaPath'</span>)
+0350                 schemapath=[fullfile(sparam.SchemaPath,head_name) <span class="string">'.xsd'</span>]
+0351             <span class="keyword">end</span>
+0352         <span class="keyword">end</span> 
+0353 <span class="comment">%         schemapath=['\\Papillon\data\civbin\XML_SCHEMAS\' head_name '.xsd']%current dir for schemas</span>
+0354     <span class="keyword">end</span>
+0355     <span class="keyword">if</span> exist(schemapath,<span class="string">'file'</span>)
+0356         xs=xmltree(schemapath);
+0357     <span class="keyword">else</span>
+0358         <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([<span class="string">'The xml schema for '</span> CurrentFile <span class="string">' is unknown, check the schema path set in the xml file PARAM'</span>],<span class="string">'ERROR'</span>)
+0359         [FileName, PathName]=uigetfile( <span class="keyword">...</span>
+0360        {<span class="string">'*.xsd'</span>, <span class="string">'(*.xsd)'</span>;
+0361         <span class="string">'*.xsd'</span>,  <span class="string">'.xsd files '</span>; <span class="keyword">...</span>
+0362         <span class="string">'*.*'</span>,  <span class="string">'All Files (*.*)'</span>}, <span class="keyword">...</span>
+0363         [<span class="string">'Pick a .xsd schema'</span>] ,schemapath); <span class="comment">%file browser</span>
+0364         <span class="keyword">if</span> ischar(PathName)&amp;ischar(FileName)&amp; exist(fullfile(PathName,FileName),<span class="string">'file'</span>)
+0365             DataIn.Schema=fullfile(PathName,FileName);
+0366             xs=xmltree(DataIn.Schema);<span class="comment">%open the associated schema file</span>
+0367         <span class="keyword">else</span>
+0368             xs=[];
+0369         <span class="keyword">end</span>
+0370     <span class="keyword">end</span>
+0371 <span class="keyword">end</span>
+0372 DataIn.CurrentUid=1;
+0373 <span class="keyword">if</span> isempty(xs)
+0374     <a href="#_sub15" class="code" title="subfunction [Data,testsimple]=displ_xml(handles,t,root_uid,DataIn,heditxml)">displ_xml</a>(handles,t,1,DataIn,get(hObject,<span class="string">'parent'</span>));<span class="comment">%no associated schema, default  display of the xml file</span>
+0375 <span class="comment">%    set(handles.inport_file,'Visible','off')</span>
+0376 <span class="comment">%    set(handles.RefFile,'Visible','off')</span>
+0377 <span class="keyword">else</span>
+0378     DataIn.xs_CurrentUid=find(xs,<span class="string">'/xs:schema/xs:element'</span>);<span class="comment">%uid of the root element in the schema</span>
+0379     [nodeup,path,xs_element,xs_subelem]=<a href="#_sub8" class="code" title="subfunction [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,nodeinput)">scan_schema</a>(xs,DataIn.xs_CurrentUid);<span class="comment">%scan the schema at the root level</span>
+0380     [element,subelem]=<a href="#_sub9" class="code" title="subfunction [element,subelem]=get_xml(t,path,xs_element,node,xs_subelem)">get_xml</a>(t,path,xs_element,1,xs_subelem);<span class="comment">% read the corresponding xml data</span>
+0381     <a href="#_sub10" class="code" title="subfunction update_list(handles,path,xs_element,element,node,xs_subelem,subelem)">update_list</a>(handles,path,xs_element,element,1,xs_subelem,subelem);<span class="comment">%update the display of information on the interface</span>
+0382    <span class="comment">% set(handles.inport_file,'Visible','on')</span>
+0383    <span class="comment">% set(handles.RefFile,'Visible','on')</span>
+0384 <span class="keyword">end</span>
+0385 set(heditxml,<span class="string">'UserData'</span>,DataIn);<span class="comment">%store the new input xml file name</span>
+0386 
+0387 <span class="comment">%-------------------------------------------------------</span>
+0388 <span class="comment">%  function scan_schema: read the xml schema xs</span>
+0389 <span class="comment">%--------------------------------------------------------</span>
+0390 <span class="comment">%OUTPUT:</span>
+0391 <span class="comment">%nodeup: parent node of nodeinput</span>
+0392 <span class="comment">%path: path to nodeinput in the tree</span>
+0393 <span class="comment">%xs_element: element corresponding to nodeinput</span>
+0394     <span class="comment">%xs_element.uid, =tag of the element in the schema (=nodeinput)</span>
+0395     <span class="comment">%xs_element.key: key label of nodeinput</span>
+0396     <span class="comment">%xs_element.type: type of data contained in the element</span>
+0397     <span class="comment">%xs_element.annot: annotation of nodeinput</span>
+0398     <span class="comment">%xs_element.attrib: list of accepted attributes keys for xs_element</span>
+0399     <span class="comment">%xs_element.enum: enumeration, list of accepted values for nodeinput</span>
+0400     <span class="comment">%xs_element.subtest: =1 if the element contains subelements in the schema, 0 else</span>
+0401   
+0402 <span class="comment">%xs_subelement(k): subelement #k of xs_element</span>
+0403     <span class="comment">%xs_subelem(k).node: node number in the schema</span>
+0404     <span class="comment">%xs_subelem(k).key: key name of the element</span>
+0405     <span class="comment">%xs_subelem(k).testsub: =1 if element contains subelements, 0 else</span>
+0406     <span class="comment">%xs_subelem(k).minOccurs: =0 for a non mandatory element, =1 else</span>
+0407     <span class="comment">%xs_subelem(k).maxOccurs</span>
+0408 <span class="comment">%</span>
+0409 <span class="comment">%INPUT:</span>
+0410 <span class="comment">%xs: schema xml tree</span>
+0411 <span class="comment">%nodeinput: tag of the current root element in the schema</span>
+0412 <a name="_sub8" href="#_subfunctions" class="code">function [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,nodeinput)</a>
+0413 nodeup=[];
+0414 path=[];
+0415 xs_element.key=[];
+0416 xs_element.type=[];
+0417 xs_element.annot=[];
+0418 xs_element.attrib=[];
+0419 xs_element.subtest=0;
+0420 xs_element.enum={};
+0421 xs_subelem=[];<span class="comment">%default</span>
+0422 <span class="comment">% get default nodeinput (root of the file) if not defined</span>
+0423 <span class="keyword">if</span> ~exist(<span class="string">'nodeinput'</span>) | isempty(nodeinput)<span class="comment">% we start at the root</span>
+0424     node=find(xs,<span class="string">'/xs:schema/xs:element'</span>);<span class="comment">%description of the root element</span>
+0425 <span class="keyword">else</span>
+0426     node=nodeinput;
+0427 <span class="keyword">end</span>
+0428 xs_element.uid=node;
+0429 <span class="comment">%get the key name and element_type of the element</span>
+0430 node_content=get(xs,node);
+0431 <span class="keyword">if</span> isempty(node_content),<span class="keyword">return</span>,<span class="keyword">end</span>;
+0432 <span class="keyword">if</span> ~isempty(node_content) &amp; isfield(node_content,<span class="string">'attributes'</span>)
+0433     attrib=node_content.attributes;
+0434     <span class="keyword">for</span> iattr=1:length(attrib)
+0435         struct=attrib{iattr};
+0436         <span class="keyword">if</span> isequal(struct.key,<span class="string">'name'</span>)
+0437             xs_element.key=struct.val; <span class="comment">% read element key name</span>
+0438         <span class="keyword">elseif</span> isequal(struct.key,<span class="string">'type'</span>)
+0439             xs_element.type=struct.val; <span class="comment">% read element key name</span>
+0440         <span class="keyword">end</span>
+0441     <span class="keyword">end</span>
+0442 <span class="keyword">end</span>
+0443 
+0444 <span class="comment">%get the parent node of nodeinput</span>
+0445 <span class="keyword">if</span> ~isempty(node_content)
+0446     nodeup=get(xs,node,<span class="string">'parent'</span>);<span class="comment">%move up to the parent in the tree</span>
+0447     <span class="keyword">if</span> ~isempty(nodeup)
+0448         nodeup=get(xs,nodeup(1),<span class="string">'parent'</span>);<span class="comment">%move up to the parent in the tree</span>
+0449         <span class="keyword">if</span> isequal(nodeup,[])
+0450             <span class="comment">%OUVRIR FICHIER AMONT</span>
+0451             up=0;
+0452         <span class="keyword">else</span>
+0453             nodeup=get(xs,nodeup(1),<span class="string">'parent'</span>);<span class="comment">%move up to the parent in the tree</span>
+0454         <span class="keyword">end</span>
+0455     <span class="keyword">end</span>
+0456 <span class="keyword">end</span>
+0457 <span class="comment">%get the path to 'nodeinput' in the schema</span>
+0458 up=1;
+0459 path=[];
+0460 <span class="keyword">if</span> ~isempty(nodeup)
+0461     attrib=attributes(xs,<span class="string">'get'</span>,nodeup,1);
+0462     path=attrib.val;
+0463     nodeup2=nodeup;
+0464     <span class="keyword">while</span> up==1;
+0465         nodeup2=get(xs,nodeup2(1),<span class="string">'parent'</span>);<span class="comment">%move up to the parent in the tree</span>
+0466         nodeup2=get(xs,nodeup2(1),<span class="string">'parent'</span>);<span class="comment">%move up to the parent in the tree</span>
+0467         <span class="keyword">if</span> isempty(nodeup2)
+0468             up=0;
+0469         <span class="keyword">else</span>
+0470             nodeup2=get(xs,nodeup2(1),<span class="string">'parent'</span>);<span class="comment">%move up to the parent in the tree</span>
+0471             <span class="keyword">if</span> isempty(nodeup2)
+0472                 up=0;
+0473             <span class="keyword">else</span>
+0474                 attrib=attributes(xs,<span class="string">'get'</span>,nodeup2,1);
+0475                 path=[attrib.val <span class="string">'/'</span> path];
+0476             <span class="keyword">end</span>
+0477         <span class="keyword">end</span>
+0478     <span class="keyword">end</span>
+0479 <span class="keyword">end</span>   
+0480 
+0481 <span class="comment">%explore the subtree in the schema file</span>
+0482 node1=children(xs,node); <span class="comment">%find the children of the root element</span>
+0483 test_sub=0; <span class="comment">%no subtree in the .xml file by default</span>
+0484 comment=<span class="string">''</span>;
+0485 element={};
+0486 minOccurs={};
+0487 maxOccurs={};
+0488 testsub={};
+0489 list_menu={};
+0490 text={};
+0491 <span class="keyword">if</span> ~isempty(node1)  
+0492   <span class="keyword">for</span> i=1:length(node1)
+0493     nodename1=get(xs,node1(i),<span class="string">'name'</span>);
+0494     node2=children(xs,node1(i));
+0495     <span class="keyword">if</span> isequal(nodename1,<span class="string">'xs:annotation'</span>)
+0496          <span class="keyword">for</span> j=1:length(node2)
+0497             nodename2=get(xs,node2(j),<span class="string">'name'</span>);
+0498             <span class="keyword">if</span> isequal(nodename2,<span class="string">'xs:documentation'</span>)
+0499                 node3=children(xs,node2(j));
+0500                 xs_element.annot=get(xs,node3,<span class="string">'value'</span>);<span class="comment">%read annotation</span>
+0501             <span class="keyword">end</span>
+0502         <span class="keyword">end</span>
+0503     <span class="comment">% pour les elements</span>
+0504     <span class="keyword">elseif</span> isequal(nodename1,<span class="string">'xs:simpleType'</span>)
+0505         <span class="keyword">for</span> j=1:length(node2)
+0506             nodename2=get(xs,node2(j),<span class="string">'name'</span>);
+0507             <span class="keyword">if</span> isequal(nodename2,<span class="string">'xs:restriction'</span>)
+0508                 node3=children(xs,node2(j));
+0509                 <span class="keyword">for</span> k=1:length(node3)
+0510                     nodename3=get(xs,node3(k),<span class="string">'name'</span>);
+0511                     <span class="keyword">if</span> isequal(nodename3,<span class="string">'xs:enumeration'</span>)
+0512                         node3_content=get(xs,node3(k));
+0513                         attr=node3_content.attributes;
+0514                         <span class="keyword">for</span> m=1:length(attr)
+0515                             struct=attr{m};
+0516                             <span class="keyword">if</span> isequal(struct.key,<span class="string">'value'</span>)
+0517                                 xs_element.enum{k}=struct.val; <span class="comment">% read enumeration</span>
+0518                             <span class="keyword">end</span>
+0519                         <span class="keyword">end</span>   
+0520                    <span class="keyword">end</span>
+0521                <span class="keyword">end</span>
+0522             <span class="keyword">end</span>
+0523         <span class="keyword">end</span>
+0524      <span class="keyword">elseif</span> isequal(nodename1,<span class="string">'xs:complexType'</span>)
+0525          <span class="keyword">for</span> j=1:length(node2)
+0526              nodename2=get(xs,node2(j),<span class="string">'name'</span>);
+0527              <span class="keyword">if</span> isequal(nodename2,<span class="string">'xs:attribute'</span>)
+0528                  node_content=get(xs,node2(j));
+0529                  attr=node_content.attributes;
+0530                  <span class="keyword">for</span> k=1:length(attr)
+0531                     struct=attr{k};<span class="comment">%read attributes</span>
+0532                     <span class="keyword">if</span> isequal(struct.key,<span class="string">'name'</span>)
+0533                         xs_element.attrib=struct.val; <span class="comment">%read attributes of main node</span>
+0534                     <span class="keyword">end</span>
+0535                  <span class="keyword">end</span>   
+0536              <span class="keyword">elseif</span> isequal(nodename2,<span class="string">'xs:sequence'</span>)
+0537                  xs_element.subtest=1;
+0538                  node3=children(xs,node2(j));<span class="comment">%nodes of the sequence</span>
+0539                  <span class="keyword">for</span> k=1:length(node3)
+0540                      xs_subelem(k).node=node3(k);
+0541                      xs_subelem(k).testsub=0;<span class="comment">%default</span>
+0542                      node_content=get(xs,node3(k));
+0543                      xs_subelem(k).minOccurs=1; <span class="comment">%default</span>
+0544                      xs_subelem(k).maxOccurs=1; <span class="comment">%default</span>
+0545 <span class="comment">%                      pref{k}=[]; %default</span>
+0546                      <span class="keyword">if</span> isequal(node_content.name,<span class="string">'xs:element'</span>)
+0547                         attr=node_content.attributes;
+0548 <span class="comment">%                         attr{:}.key</span>
+0549                         <span class="keyword">for</span> l=1:length(attr)
+0550                             <span class="keyword">if</span> isequal(attr{l}.key,<span class="string">'name'</span>)
+0551                                 xs_subelem(k).key=attr{l}.val;<span class="comment">%name of the element</span>
+0552                             <span class="keyword">elseif</span> isequal(attr{l}.key, <span class="string">'minOccurs'</span>)
+0553                                 xs_subelem(k).minOccurs=attr{l}.val;
+0554                             <span class="keyword">elseif</span> isequal(attr{l}.key, <span class="string">'maxOccurs'</span>)
+0555                                 xs_subelem(k).maxOccurs=attr{l}.val;
+0556                             <span class="keyword">end</span>
+0557                         <span class="keyword">end</span>
+0558                      <span class="keyword">end</span>
+0559                      node4=children(xs,node3(k));
+0560                      <span class="keyword">for</span> l=1:length(node4)
+0561                         res=get(xs,node4(l),<span class="string">'name'</span>);
+0562                         <span class="keyword">if</span> isequal(res,<span class="string">'xs:complexType'</span>)<span class="comment">%look whether the element k contains a subtree</span>
+0563                            node5=children(xs,node4(l));
+0564                            <span class="keyword">for</span> m=1:length(node5)
+0565                                res2=get(xs,node5(m),<span class="string">'name'</span>);
+0566                                <span class="keyword">if</span> isequal(res2,<span class="string">'xs:sequence'</span>)
+0567                                     xs_subelem(k).testsub=1; <span class="comment">%flag for the existence of a subtree</span>
+0568                                <span class="keyword">end</span>
+0569                            <span class="keyword">end</span>
+0570                         <span class="keyword">end</span>
+0571                      <span class="keyword">end</span>
+0572                  <span class="keyword">end</span>            
+0573 
+0574              <span class="keyword">end</span>
+0575          <span class="keyword">end</span>     
+0576      <span class="keyword">end</span>   
+0577   <span class="keyword">end</span>
+0578 <span class="keyword">end</span>
+0579 <span class="comment">% look for predefined types</span>
+0580 <span class="keyword">if</span> length(xs_element.type)&gt;=3 &amp; (xs_element.type([1:3])~=<span class="string">'xs:'</span>)
+0581     node_type=find(xs,<span class="string">'/xs:schema/xs:simpleType'</span>)
+0582     <span class="keyword">for</span> i=1:length(node_type)
+0583         content=get(xs,node_type(i));
+0584         nodeattr=content.attributes;
+0585         <span class="keyword">if</span> ~isempty(nodeattr) &amp; isequal(nodeattr{1}.key,<span class="string">'name'</span>) &amp; isequal(nodeattr{1}.val,xs_element.type)
+0586             node1=children(xs,node_type(i));
+0587             node2=find(xs,node1,<span class="string">'name'</span>,<span class="string">'xs:restriction'</span>);
+0588 <span class="comment">%             nodename1=find(xs,</span>
+0589             node3=children(xs,node2);
+0590             node4=find(xs,node3,<span class="string">'name'</span>,<span class="string">'xs:enumeration'</span>);
+0591             <span class="keyword">for</span> ienum=1:length(node4)
+0592                 struct2=get(xs,node4(ienum));
+0593                 enumval=struct2.attributes;
+0594                 xs_element.enum{ienum}=enumval{1}.val;
+0595             <span class="keyword">end</span>
+0596         <span class="keyword">end</span>       
+0597      <span class="keyword">end</span>
+0598 <span class="keyword">end</span>
+0599 
+0600 <span class="comment">%--------------------------------------------------------</span>
+0601 <span class="comment">%OUTPUT:</span>
+0602 <span class="comment">%element.val: value of the current element, =[] in the absence of chardata value</span>
+0603 <span class="comment">%node: node (iud) of the element in t</span>
+0604 <span class="comment">%element.attr_key{iattr}: attribute key #iattr of the current element</span>
+0605 <span class="comment">%element.attr_val{iattr}: attribute value #iattr of the current element</span>
+0606 <span class="comment">%element.attrup: %structure containing the attributes of the element, including the ones unheritated from parent nodes</span>
+0607 <span class="comment">%subelem(iline).val : value of subelement # iline, concatenated with corresponding attributes</span>
+0608 <span class="comment">%subelem(iline).xsindex: index k of the subelement #iline in the list xs_subelem of the schema</span>
+0609 <span class="comment">%subelem(iline).index: index of the subelement #iline inside its xs_subelement, =0 when the xs_subelement is absent in t</span>
+0610 
+0611 <span class="comment">%INPUT:</span>
+0612 <span class="comment">%t: xml tree</span>
+0613 <span class="comment">%path: path to the current element in the schema</span>
+0614 <span class="comment">%xs_element: current element in the schema</span>
+0615     <span class="comment">%xs_element.key: key label</span>
+0616     <span class="comment">%xs_element.type: type of data contained in the element</span>
+0617     <span class="comment">%xs_element.annot: annotation of nodeinput</span>
+0618     <span class="comment">%xs_element.attrib: list of accepted attributes keys for xs_element</span>
+0619     <span class="comment">%xs_element.enum: enumeration, list of accepted values</span>
+0620     <span class="comment">%xs_element.subtest: =1 if the element contains subelements in the schema, 0 else</span>
+0621 <span class="comment">%index: index of the element, =1 in case of single occurence in xs_element,=0 in case of missing element</span>
+0622 <span class="comment">%xs_subelem(k): subelement #k of the current element in the schema</span>
+0623     <span class="comment">%xs_subelem(k).node: node iud of the</span>
+0624     <span class="comment">%xs_subelem(k).key: key name of the subelement #k in the schema</span>
+0625     <span class="comment">%xs_subelem(k).testsub: =1 if element contains subelements, 0 else</span>
+0626     <span class="comment">%xs_subelem(k).minOccurs</span>
+0627     <span class="comment">%xs_subelem(k).maxOccurs</span>
+0628 
+0629 <a name="_sub9" href="#_subfunctions" class="code">function [element,subelem]=get_xml(t,path,xs_element,node,xs_subelem)</a>
+0630 element.attr_key=<span class="string">''</span>;<span class="comment">%default</span>
+0631 element.attr_val=<span class="string">''</span>;<span class="comment">%default</span>
+0632 element.val=<span class="string">''</span>;
+0633 <span class="comment">% element.type='';</span>
+0634 <span class="comment">% element.testmanual=testmanual %inheritates the input manual editing flag by default</span>
+0635 subelem=[]; <span class="comment">%default</span>
+0636 attrup=[];
+0637 <span class="comment">% node=[];</span>
+0638 
+0639 <span class="comment">% %find the element properties in the xml file</span>
+0640 <span class="keyword">if</span> node &gt;= 1
+0641     elem_struct=get(t,node);
+0642     <span class="keyword">if</span> ~xs_element.subtest
+0643         elem_contents=get(t,elem_struct.contents);
+0644         <span class="keyword">if</span> isempty(elem_contents)
+0645             element.val=[];
+0646         <span class="keyword">else</span>
+0647             element.val=elem_contents.value
+0648         <span class="keyword">end</span>
+0649     <span class="keyword">end</span>
+0650     <span class="keyword">if</span> isfield(elem_struct,<span class="string">'attributes'</span>)
+0651         elem_attr=elem_struct.attributes;
+0652         <span class="keyword">for</span> iattr=1:length(elem_attr)
+0653             element.attr_key{iattr}=elem_attr{iattr}.key ;
+0654             element.attr_val{iattr}=elem_attr{iattr}.val;
+0655 <span class="comment">%             attrup=setfield(attrup,elem_attr{iattr}.key,elem_attr{iattr}.val);</span>
+0656            breakdetect=find(elem_attr{iattr}.key==<span class="string">'/'</span>| elem_attr{iattr}.key==<span class="string">':'</span>| elem_attr{iattr}.key==<span class="string">'.'</span>);<span class="comment">% find '/'</span>
+0657            <span class="keyword">if</span> isempty(breakdetect)
+0658 <span class="comment">%                 comline=['attrup.' elem_attr{iattr}.key '=' elem_attr{iattr}.val ';']</span>
+0659                 eval([<span class="string">'attrup.'</span> elem_attr{iattr}.key <span class="string">'='''</span> elem_attr{iattr}.val <span class="string">''';'</span>])
+0660            <span class="keyword">end</span>
+0661         <span class="keyword">end</span>
+0662     <span class="keyword">end</span>
+0663 <span class="keyword">end</span>
+0664 <span class="comment">%get the parent node attributes</span>
+0665 up=1;
+0666 <span class="keyword">if</span> node&gt;0
+0667     nodeup=node;
+0668     <span class="keyword">while</span> up==1; 
+0669         nodeup=get(t,nodeup,<span class="string">'parent'</span>);<span class="comment">%move up to the parent in the tree</span>
+0670         <span class="keyword">if</span> isempty(nodeup)
+0671             up=0;
+0672         <span class="keyword">else</span>
+0673             nodeup_content=get(t,nodeup);
+0674             attrib=nodeup_content.attributes;
+0675             <span class="keyword">for</span> iattr=1:length(attrib)
+0676                 key=attrib{iattr}.key;
+0677                 breakdetect=find(key==<span class="string">'/'</span>| key==<span class="string">':'</span>| key==<span class="string">'.'</span>);<span class="comment">% find '/'</span>
+0678                 <span class="keyword">if</span> ~isfield(attrup,key) &amp; isempty(breakdetect)
+0679                    eval([<span class="string">'attrup.'</span> key <span class="string">'='''</span> attrib{iattr}.val <span class="string">''';'</span>])
+0680                 <span class="keyword">end</span>
+0681             <span class="keyword">end</span>
+0682         <span class="keyword">end</span>
+0683     <span class="keyword">end</span>
+0684     element.attrup=attrup;
+0685 <span class="keyword">end</span>
+0686 <span class="comment">%find the subelement properties in the xml file</span>
+0687 <span class="keyword">if</span> xs_element.subtest
+0688    iline=0;
+0689    <span class="keyword">for</span> k=1:length(xs_subelem)<span class="comment">%node2: list of subelements in the sub-sequence</span>
+0690 <span class="comment">%     attr=attributes(xs,'get',node2(i),1);%</span>
+0691 <span class="comment">%     element=attr.val;%name of the element</span>
+0692      tag=find(t,[<span class="string">'/'</span> path <span class="string">'/'</span> xs_element.key <span class="string">'/'</span> xs_subelem(k).key]);<span class="comment">%look for the corresponding element node in the .xml tree</span>
+0693      struct_element=get(t,tag);<span class="comment">%get the content of the element</span>
+0694      <span class="keyword">if</span> isempty(struct_element) 
+0695          iline=iline+1;
+0696          subelem(iline).uid=0;
+0697          subelem(iline).xsindex=k;
+0698          subelem(iline).index=0;
+0699 <span class="comment">%          subelem(iline).testmanual=element.testmanual;% inheritates the manual editing flag by default</span>
+0700          <span class="keyword">if</span> isequal(xs_subelem(k).minOccurs,<span class="string">'0'</span>)
+0701              subelem(iline).val=<span class="string">'[]'</span>;<span class="comment">%element value not mandatory in the schema</span>
+0702          <span class="keyword">else</span>
+0703              subelem(iline).val=<span class="string">'[MISSING]'</span>;<span class="comment">%element value mandatory in the schema</span>
+0704          <span class="keyword">end</span>
+0705 <span class="comment">%          subelem(iline).attrup=attrup; %inheritated attributes</span>
+0706      <span class="keyword">elseif</span> isequal(length(struct_element),1)
+0707          contents=get(t,struct_element.contents);
+0708          iline=iline+1;
+0709          subelem(iline).uid=tag;
+0710          subelem(iline).xsindex=k;
+0711          subelem(iline).index=1;
+0712 <span class="comment">%          subelem(iline).testmanual=element.testmanual;%</span>
+0713          <span class="keyword">if</span> isfield(contents,<span class="string">'value'</span>) &amp; ~isempty(contents.value)
+0714              subelem(iline).val=contents.value;
+0715          <span class="keyword">elseif</span> xs_subelem(k).testsub
+0716              subelem(iline).val=<span class="string">''</span>;
+0717          <span class="keyword">elseif</span> isequal(xs_subelem(k).minOccurs,0) 
+0718              subelem(iline).val=<span class="string">'[]'</span>;<span class="comment">%element value not mandatory in the schema</span>
+0719          <span class="keyword">else</span>
+0720              subelem(iline).val=<span class="string">'[MISSING]'</span>;<span class="comment">%element value mandatory in the schema</span>
+0721          <span class="keyword">end</span>
+0722 <span class="comment">%          subelem(iline).attrup=attrup; %inheritated attributes</span>
+0723          <span class="keyword">if</span> isfield(struct_element,<span class="string">'attributes'</span>)
+0724             element_attr=struct_element.attributes;
+0725             attr_display=[];
+0726             <span class="keyword">for</span> iattr=1:length(element_attr)
+0727 <span class="comment">%                 attr_display{iline}=[attr_display ' , ' element_attr{iattr}.key '  =  ' element_attr{iattr}.val];</span>
+0728                 subelem(iline).val=[subelem(iline).val attr_display <span class="string">' , '</span> element_attr{iattr}.key <span class="string">'  =  '</span> element_attr{iattr}.val];
+0729 <span class="comment">%                 subelem(iline).attrup=setfield(subelem(iline).attrup,element_attr{iattr}.key,element_attr{iattr}.val);</span>
+0730             <span class="keyword">end</span>
+0731          <span class="keyword">end</span>
+0732      <span class="keyword">else</span><span class="comment">%case of a multiple element</span>
+0733          <span class="keyword">for</span> subindex=1:length(struct_element)
+0734              contents=get(t,struct_element{subindex}.contents);
+0735              iline=iline+1;
+0736              subelem(iline).index=subindex;<span class="comment">%index of the element</span>
+0737              subelem(iline).xsindex=k;
+0738 <span class="comment">%              subelem(iline).testmanual=element.testmanual;%</span>
+0739              <span class="keyword">if</span> isfield(contents,<span class="string">'value'</span>)&amp; ~isempty(contents.value)
+0740                  subelem(iline).val=contents.value;
+0741              <span class="keyword">elseif</span> xs_subelem(k).testsub
+0742                  subelem(iline).val=<span class="string">''</span>;
+0743              <span class="keyword">else</span>
+0744                  subelem(iline).val=<span class="string">'[]'</span>;
+0745              <span class="keyword">end</span>
+0746 <span class="comment">%              subelem(iline).attrup=attrup; %inheritated attributes</span>
+0747              <span class="keyword">if</span> isfield(struct_element{subindex},<span class="string">'attributes'</span>)
+0748                 element_attr=struct_element{subindex}.attributes;
+0749                 attr_display=[];
+0750                 <span class="keyword">for</span> iattr=1:length(element_attr)
+0751 <span class="comment">%                     attr_display{iline}=[attr_display ' , ' element_attr{iattr}.key '  =  ' element_attr{iattr}.val];</span>
+0752                     subelem(iline).val=[subelem(iline).val attr_display <span class="string">' , '</span> element_attr{iattr}.key <span class="string">'  =  '</span> element_attr{iattr}.val];
+0753 <span class="comment">%                     subelem(iline).attrup=setfield(subelem(iline).attrup,element_attr{iattr}.key,element_attr{iattr}.val);</span>
+0754                 <span class="keyword">end</span>
+0755             <span class="keyword">end</span>
+0756         <span class="keyword">end</span>
+0757      <span class="keyword">end</span>
+0758   <span class="keyword">end</span>
+0759 <span class="keyword">end</span>
+0760 
+0761 <span class="comment">%-------------------------------------</span>
+0762 <span class="comment">%updates the interface</span>
+0763 <a name="_sub10" href="#_subfunctions" class="code">function update_list(handles,path,xs_element,element,node,xs_subelem,subelem)</a>
+0764 <span class="comment">%-----------------------------</span>
+0765 <span class="keyword">if</span> xs_element.subtest<span class="comment">% we list the sub-elements of root</span>
+0766     set(handles.export_list,<span class="string">'Value'</span>,1)
+0767     set(handles.export_list,<span class="string">'String'</span>,<span class="string">''</span>)<span class="comment">%flush the export list</span>
+0768     set(handles.CurrentElement,<span class="string">'String'</span>,[path <span class="string">'/'</span> xs_element.key])
+0769 <span class="comment">%     title_element.key=[path '/' xs_element.key];</span>
+0770 <span class="comment">%     if ~isempty(path)</span>
+0771 <span class="comment">%         xsnode_index=get(handles.list_element,'UserDataIn');</span>
+0772 <span class="comment">%         ind=get(handles.list_element,'Value');</span>
+0773 <span class="comment">%         title_element.index=xsnode_index(2,ind);</span>
+0774 <span class="comment">%     else</span>
+0775 <span class="comment">%         title_element.index=1;</span>
+0776 <span class="comment">%     end</span>
+0777 <span class="comment">%     title_element.xsnode=xs_element.uid;</span>
+0778 <span class="comment">%     title_element.node=node;</span>
+0779 <span class="comment">%     set(handles.CurrentFile,'UserDataIn',title_element)%element corresponding to the title</span>
+0780     set(handles.CurrentAnnotation,<span class="string">'String'</span>,xs_element.annot)
+0781     attr_col=[];
+0782     testedit=0;<span class="comment">% cannot edit elements by default</span>
+0783     <span class="keyword">for</span> iattr=1:length(element.attr_key)
+0784 <span class="comment">%          if isequal(element.attr_key{iattr},'source') &amp; isequal(element.attr_val{iattr},'manual')</span>
+0785 <span class="comment">%             testedit=1;</span>
+0786 <span class="comment">%         end</span>
+0787         attr_col=strvcat(attr_col,[element.attr_key{iattr} <span class="string">' = '</span> element.attr_val{iattr}]);
+0788     <span class="keyword">end</span>
+0789     set(handles.CurrentAttributes,<span class="string">'String'</span>,attr_col)
+0790     pref_col=<span class="string">''</span>;
+0791     key_col=<span class="string">''</span>;
+0792     equal_sign=<span class="string">''</span>;
+0793     val_col=<span class="string">''</span>;
+0794     <span class="keyword">for</span> iline=1:length(subelem)
+0795         xsindex=subelem(iline).xsindex;
+0796         index(iline)=subelem(iline).index;
+0797         subuid=subelem(iline).uid;
+0798         <span class="keyword">if</span> isempty(subuid)
+0799             list.uid(iline)=0;
+0800         <span class="keyword">else</span>
+0801             list.uid(iline)=subuid;
+0802         <span class="keyword">end</span>
+0803         node(iline)=xs_subelem(xsindex).node;
+0804 <span class="comment">%         testmanual(iline)=subelem(iline).testmanual;</span>
+0805         ikey=xs_subelem(xsindex).key;
+0806         <span class="keyword">if</span> xs_subelem(xsindex).testsub
+0807             ival=[<span class="string">' + '</span> subelem(iline).val];
+0808         <span class="keyword">else</span>
+0809             ival=[<span class="string">' = '</span> subelem(iline).val];
+0810         <span class="keyword">end</span>
+0811         key_col=strvcat(key_col,ikey);
+0812         val_col=strvcat(val_col,ival);
+0813     <span class="keyword">end</span>
+0814     list_element=[key_col val_col];
+0815     set(handles.list_element,<span class="string">'String'</span>,list_element)
+0816     set(handles.list_element,<span class="string">'Value'</span>,1)
+0817     list.xs_uid=node;
+0818     list.index=index;
+0819     set(handles.list_element,<span class="string">'UserData'</span>,list)
+0820     set(handles.element_attrib,<span class="string">'Visible'</span>,<span class="string">'off'</span>)
+0821     set(handles.element_key,<span class="string">'Visible'</span>,<span class="string">'off'</span>)
+0822     set(handles.element_value,<span class="string">'Visible'</span>,<span class="string">'off'</span>)
+0823 <span class="keyword">else</span> <span class="comment">% we edit an element</span>
+0824 
+0825     export_list=get(handles.export_list,<span class="string">'String'</span>);<span class="comment">%export list</span>
+0826     testadd=1;
+0827     <span class="keyword">for</span> ilist=1:length(export_list) 
+0828         <span class="keyword">if</span> isequal(xs_element.key,export_list{ilist})
+0829             testadd=0;        
+0830             <span class="keyword">break</span>
+0831         <span class="keyword">end</span>
+0832     <span class="keyword">end</span>
+0833     <span class="keyword">if</span> testadd
+0834         export_list=[export_list;{xs_element.key}];
+0835         ilist=length(export_list);
+0836     <span class="keyword">end</span>
+0837     set(handles.export_list,<span class="string">'String'</span>,export_list)
+0838     <span class="keyword">if</span> iscell(element.val)
+0839         element_val=element.val{1};
+0840     <span class="keyword">else</span>
+0841         element_val=element.val;
+0842     <span class="keyword">end</span>
+0843     set(handles.element_value,<span class="string">'String'</span>,element_val)
+0844     export_val=get(handles.export_list,<span class="string">'UserData'</span>);
+0845     export_val{ilist}=element_val;
+0846     set(handles.export_list,<span class="string">'UserData'</span>,export_val);
+0847     set(handles.element_annot,<span class="string">'String'</span>,xs_element.annot)
+0848     set(handles.element_type,<span class="string">'String'</span>,[<span class="string">'type:  '</span> xs_element.type])
+0849     attr_col=[];
+0850     testedit=0;<span class="comment">% cannot edit element by default</span>
+0851     <span class="keyword">for</span> iattr=1:length(element.attr_key)
+0852 <span class="comment">%         if isequal(element.attr_key{iattr},'source') &amp; isequal(element.attr_val{iattr},'manual')</span>
+0853 <span class="comment">%             testedit=1;</span>
+0854 <span class="comment">%         end</span>
+0855         attr_col=strvcat(attr_col,[element.attr_key{iattr} <span class="string">' = '</span> element.attr_val{iattr}]);
+0856     <span class="keyword">end</span>
+0857     set(handles.element_attrib,<span class="string">'String'</span>,attr_col)
+0858     set(handles.element_key,<span class="string">'String'</span>,xs_element.key)
+0859 
+0860  
+0861     <span class="keyword">if</span> isempty(xs_element.enum)
+0862         set(handles.element_value,<span class="string">'Value'</span>,1)
+0863         set(handles.element_value,<span class="string">'Style'</span>,<span class="string">'edit'</span>)
+0864     <span class="keyword">else</span> <span class="comment">% case of an enumeration of possible values</span>
+0865          list_enum=[];
+0866          list_val=[];
+0867          <span class="keyword">for</span> ienum=1:length(xs_element.enum)
+0868              list_enum{ienum,1}=xs_element.enum{ienum};
+0869              <span class="keyword">if</span> isequal(xs_element.enum{ienum},element_val)
+0870                  list_val=ienum;
+0871              <span class="keyword">end</span>
+0872          <span class="keyword">end</span> 
+0873          <span class="keyword">if</span> isempty(list_val) 
+0874              list_enum{length(xs_element.enum)+1,1}=[<span class="string">'['</span> element_val <span class="string">']'</span>];<span class="comment">%show the non-valid element between brackets</span>
+0875              list_val=length(xs_element.enum)+1;
+0876          <span class="keyword">end</span>
+0877          set(handles.element_value,<span class="string">'Style'</span>,<span class="string">'popupmenu'</span>)
+0878          set(handles.element_value,<span class="string">'String'</span>,list_enum)
+0879          set(handles.element_value,<span class="string">'Value'</span>,list_val)
+0880      <span class="keyword">end</span>
+0881      <span class="keyword">if</span> isempty(element.val)
+0882          testedit=1;<span class="comment">%allow element editing if value is missing</span>
+0883      <span class="keyword">end</span>     
+0884      set(handles.element_attrib,<span class="string">'Visible'</span>,<span class="string">'On'</span>)
+0885      set(handles.element_key,<span class="string">'Visible'</span>,<span class="string">'On'</span>)
+0886      set(handles.element_value,<span class="string">'Visible'</span>,<span class="string">'On'</span>)
+0887 <span class="keyword">end</span>
+0888 set(handles.element_value,<span class="string">'UserData'</span>,node)
+0889 <span class="keyword">if</span> ~testedit &amp;&amp; isfield(element,<span class="string">'attrup'</span>) &amp; isfield(element.attrup,<span class="string">'source'</span>)&amp;&amp; ~isequal(element.attrup.source,<span class="string">'manual'</span>)
+0890      set(handles.element_value,<span class="string">'Enable'</span>,<span class="string">'inactive'</span>)
+0891 <span class="keyword">else</span>
+0892     set(handles.element_value,<span class="string">'Enable'</span>,<span class="string">'on'</span>)
+0893 <span class="keyword">end</span>
+0894 
+0895 
+0896 <span class="comment">% --- Executes on button press in SAVE.</span>
+0897 <a name="_sub11" href="#_subfunctions" class="code">function SAVE_Callback(hObject, eventdata, handles)</a>
+0898 <span class="keyword">global</span> t
+0899 DataIn=get(get(handles.SAVE,<span class="string">'parent'</span>),<span class="string">'UserData'</span>);
+0900 CurrentFile=get(handles.CurrentFile,<span class="string">'String'</span>);
+0901 <span class="keyword">if</span> isfield(DataIn,<span class="string">'Schema'</span>)
+0902 <span class="keyword">if</span> ~isempty(DataIn.Schema)<span class="comment">% update ref to schema</span>
+0903     attrxsd=attributes(t,<span class="string">'get'</span>,1);
+0904     setest=0;
+0905     <span class="keyword">for</span> iattr=1:length(attrxsd)
+0906         <span class="keyword">if</span> isequal(attrxsd{iattr}.key,<span class="string">'xsi:noNamespaceSchemaLocation'</span>)
+0907             t= attributes(t,<span class="string">'set'</span>,1,iattr,<span class="string">'xsi:noNamespaceSchemaLocation'</span>,DataIn.Schema);
+0908             setest=1;
+0909         <span class="keyword">end</span>
+0910     <span class="keyword">end</span>
+0911     <span class="keyword">if</span> setest==0;
+0912         t=attributes(t,<span class="string">'add'</span>,1,<span class="string">'xmlns:xsi'</span>,<span class="string">'http://www.w3.org/2001/XMLSchema-instance'</span>); 
+0913         t= attributes(t,<span class="string">'add'</span>,1,<span class="string">'xsi:noNamespaceSchemaLocation'</span>,DataIn.Schema);
+0914     <span class="keyword">end</span>
+0915 <span class="keyword">end</span>
+0916 <span class="keyword">end</span>
+0917 copyfile(CurrentFile,[CurrentFile <span class="string">'.bak'</span>]);
+0918 save(t,CurrentFile);
+0919 
+0920 <span class="comment">%-------------------------------------</span>
+0921 <span class="comment">% creates and/or set values to an element in t</span>
+0922 <span class="comment">%t: xml tree</span>
+0923 <span class="comment">%RootUid: uid of t under which we introduce an element</span>
+0924 <span class="comment">%node: uid of the element that we correct, if =0, a new element is created</span>
+0925 <span class="comment">%key: key name of the element</span>
+0926 <span class="comment">%value: new value of the element</span>
+0927 <a name="_sub12" href="#_subfunctions" class="code">function t=set_element(t,RootUid,node,key,value)</a>
+0928 <span class="comment">%create the subelement if needed</span>
+0929 <span class="keyword">if</span> isequal(node,0)    
+0930    [t,node]= add(t,RootUid,<span class="string">'element'</span>,key);
+0931 <span class="keyword">end</span>
+0932 node_chardata=children(t,node); <span class="comment">%corresponding data node</span>
+0933 <span class="keyword">if</span> isempty(node_chardata)<span class="comment">%if the data does not exist in t, create it</span>
+0934     t=add(t,node,<span class="string">'chardata'</span>,value);
+0935 <span class="keyword">elseif</span> isequal(length(node_chardata),1)&amp;isequal(get(t,node_chardata,<span class="string">'type'</span>),<span class="string">'chardata'</span>)<span class="comment">% update only a simple element with 'chardata'</span>
+0936     t=set(t,node_chardata,<span class="string">'value'</span>,value);<span class="comment">%modify existing data</span>
+0937 <span class="keyword">end</span> 
+0938 attr=attributes(t,<span class="string">'get'</span>,node);
+0939 <span class="keyword">if</span> isempty(attr)
+0940     t=attributes(t,<span class="string">'add'</span>,node,<span class="string">'source'</span>,<span class="string">'manual'</span>);<span class="comment">%indicate a manual eidting</span>
+0941 <span class="keyword">end</span>
+0942 
+0943 <span class="comment">% --- Executes on selection change in element_attr_val.</span>
+0944 <a name="_sub13" href="#_subfunctions" class="code">function element_attr_val_Callback(hObject, eventdata, handles)</a>
+0945 <span class="comment">% hObject    handle to element_attr_val (see GCBO)</span>
+0946 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0947 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0948 
+0949 <span class="comment">% Hints: contents = get(hObject,'String') returns element_attr_val contents as cell array</span>
+0950 <span class="comment">%        contents{get(hObject,'Value')} returns selected item from element_attr_val</span>
+0951 
+0952 
+0953 <span class="comment">% --- Executes on button press in ADD.</span>
+0954 <a name="_sub14" href="#_subfunctions" class="code">function ADD_Callback(hObject, eventdata, handles)</a>
+0955 <span class="comment">% hObject    handle to ADD (see GCBO)</span>
+0956 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+0957 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+0958 
+0959 <span class="comment">%----------------------------------------</span>
+0960 <span class="comment">%read an xml file without schema</span>
+0961 <a name="_sub15" href="#_subfunctions" class="code">function [Data,testsimple]=displ_xml(handles,t,root_uid,DataIn,heditxml)</a>
+0962 Data=DataIn;<span class="comment">%default</span>
+0963 <span class="keyword">if</span> ~isfield(Data,<span class="string">'CurrentUid'</span>)
+0964     Data.CurrentUid=[];
+0965 <span class="keyword">end</span>
+0966 CurrentFile=get(handles.CurrentFile,<span class="string">'String'</span>);
+0967 
+0968 <span class="comment">%display the current element</span>
+0969 root_element=get(t,root_uid);
+0970 uidparent=root_uid;
+0971 <span class="keyword">if</span> isfield(root_element,<span class="string">'name'</span>)
+0972     CurrentElement=root_element.name;
+0973     <span class="keyword">while</span> ~isequal(uidparent,1)<span class="comment">%while the first level has not been reached</span>
+0974         uidparent=parent(t,uidparent);
+0975         dirdat=get(t,uidparent);
+0976         <span class="keyword">if</span> isfield(dirdat,<span class="string">'name'</span>)                        
+0977             CurrentElement=[dirdat.name <span class="string">'/'</span> CurrentElement];
+0978         <span class="keyword">end</span>
+0979     <span class="keyword">end</span>
+0980     set(handles.CurrentElement,<span class="string">'String'</span>,CurrentElement)
+0981 <span class="keyword">end</span>
+0982 list_uid=children(t,root_uid);
+0983 <span class="comment">%case of a single element</span>
+0984 testsimple=0;
+0985 filedat=[];
+0986 <span class="keyword">if</span> ~isempty(list_uid)
+0987     filedat=get(t,list_uid(1))
+0988     <span class="keyword">if</span> isfield(filedat,<span class="string">'type'</span>) &amp; isequal(filedat.type,<span class="string">'chardata'</span>) &amp;isfield(filedat,<span class="string">'value'</span>)
+0989         testsimple=1;<span class="comment">%simple element</span>
+0990     <span class="keyword">end</span>
+0991 <span class="keyword">end</span>
+0992 
+0993 <span class="comment">%attributes of the current element</span>
+0994 nbattrib= attributes(t,<span class="string">'length'</span>,root_uid);
+0995 testopen=0;
+0996 attr_col=[];
+0997 <span class="keyword">for</span> iattr=1:nbattrib
+0998     attr= attributes(t,<span class="string">'get'</span>,root_uid,iattr);
+0999     <span class="keyword">if</span> isequal(attr.key,<span class="string">'source'</span>)<span class="comment">% look for 'source' attribute</span>
+1000         <span class="keyword">if</span> isequal(attr.val,<span class="string">'file'</span>)<span class="comment">%if the source is 'file', look for the path and open it</span>
+1001            <span class="keyword">if</span> isfield(filedat,<span class="string">'type'</span>) &amp; isequal(filedat.type,<span class="string">'chardata'</span>) &amp;isfield(filedat,<span class="string">'value'</span>)
+1002                cur_file=filedat.value;
+1003                uidparent=root_uid;<span class="comment">%initialization</span>
+1004                <span class="keyword">while</span> ~isequal(uidparent,1)<span class="comment">%while the first level has not been reached</span>
+1005                     uidparent=parent(t,uidparent);
+1006                     dirdat=get(t,uidparent);
+1007                     <span class="keyword">if</span> isfield(dirdat,<span class="string">'type'</span>) &amp; isequal(dirdat.type,<span class="string">'element'</span>) &amp; isfield(dirdat,<span class="string">'name'</span>)
+1008                         nbattrib_up= attributes(t,<span class="string">'length'</span>,uidparent);
+1009                         <span class="keyword">for</span> iattr_up=1:nbattrib_up
+1010                             attr= attributes(t,<span class="string">'get'</span>,uidparent,iattr_up);
+1011 <span class="comment">%                             if isequal(attr.key,'source')&amp;isequal(attr.val,'directory')% look for 'source' attribute</span>
+1012                               <span class="keyword">if</span> isequal(attr.key,<span class="string">'DirName'</span>)
+1013                                  cur_file=fullfile(attr.val,cur_file);
+1014                              <span class="keyword">end</span>
+1015                         <span class="keyword">end</span>
+1016                     <span class="keyword">end</span>
+1017                <span class="keyword">end</span>
+1018                RootPath=fileparts(CurrentFile);<span class="comment">%path to the current .xml file</span>
+1019                cur_file=fullfile(RootPath,cur_file)
+1020                set(handles.CurrentAttributes,<span class="string">'UserData'</span>,cur_file)<span class="comment">%will be searched by uvmat</span>
+1021                [path,fil,ext]=fileparts(cur_file);
+1022                <span class="keyword">if</span> ~exist(cur_file,<span class="string">'file'</span>)
+1023                    <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([<span class="string">'non-existent link file'</span> cur_file],<span class="string">'ERROR'</span>) <span class="comment">% A FAIRE: propose to updtate the .xml file</span>
+1024                    <span class="keyword">return</span>
+1025                <span class="keyword">elseif</span> isequal(ext,<span class="string">'.xml'</span>)
+1026                    <span class="keyword">if</span> ~isfield(Data,<span class="string">'UpFile'</span>)
+1027                        Data.UpFile={CurrentFile};
+1028                    <span class="keyword">else</span>
+1029                        Data.UpFile=[{CurrentFile};Data.UpFile];
+1030                    <span class="keyword">end</span>
+1031                    set(heditxml,<span class="string">'UserData'</span>,Data)
+1032                    set(handles.CurrentFile,<span class="string">'String'</span>,cur_file)
+1033                    <a href="#_sub7" class="code" title="subfunction CurrentFile_Callback(hObject, eventdata, handles)">CurrentFile_Callback</a>(handles.CurrentFile, [], handles)
+1034                <span class="keyword">else</span>
+1035                    <span class="keyword">if</span> isequal(get(heditxml,<span class="string">'Tag'</span>),<span class="string">'browser'</span>); <span class="comment">%if editxml has been called as a browser</span>
+1036                        set(heditxml,<span class="string">'Tag'</span>,<span class="string">'idle'</span>)<span class="comment">% signal for uvmat browser</span>
+1037                    <span class="keyword">else</span>
+1038                        <a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>({cur_file}); <span class="comment">%open the link fiel with uvmat</span>
+1039                    <span class="keyword">end</span>
+1040                    <span class="keyword">return</span>
+1041                <span class="keyword">end</span>
+1042            <span class="keyword">end</span>
+1043        <span class="comment">%elseif isequal(attr.val,'dir') A FAIRE : check directory</span>
+1044        <span class="comment">%else A FAIRE: edit the element</span>
+1045         <span class="keyword">end</span> 
+1046     <span class="keyword">end</span>
+1047     attr_col=strvcat(attr_col,[attr.key <span class="string">' = '</span> attr.val]);
+1048 <span class="keyword">end</span>
+1049 set(handles.CurrentAttributes,<span class="string">'String'</span>,attr_col)
+1050 
+1051 <span class="comment">%list subtree</span>
+1052 <span class="keyword">if</span> ~testsimple
+1053     list_element=[];
+1054 <span class="comment">%      Data.CurrentUid=[Data.CurrentUid root_uid]%record new current uid</span>
+1055     <span class="keyword">for</span> iline=1:length(list_uid)
+1056         element=get(t,list_uid(iline));
+1057         <span class="keyword">if</span> isfield(element,<span class="string">'type'</span>)&amp;isequal(element.type,<span class="string">'element'</span>)
+1058              list_element{iline,2}=element.name;
+1059              child_uid=children(t,list_uid(iline));
+1060              subelem=get(t,child_uid);
+1061              <span class="keyword">if</span> isfield(subelem,<span class="string">'type'</span>)&amp; isfield(subelem,<span class="string">'value'</span>) &amp; isequal(subelem.type,<span class="string">'chardata'</span>)
+1062                 data_read=subelem.value;
+1063                 list_element{iline,3}=[<span class="string">'= '</span> data_read];
+1064             <span class="keyword">end</span>
+1065             <span class="keyword">if</span> iscell(subelem)|(isfield(subelem,<span class="string">'type'</span>)&amp;isequal(subelem.type,<span class="string">'element'</span>))
+1066                 list_element{iline,1}=<span class="string">'+ '</span>;<span class="comment">%sign for subtree existence</span>
+1067             <span class="keyword">else</span>
+1068                 list_element{iline,1}=<span class="string">'  '</span>;
+1069             <span class="keyword">end</span>
+1070             nbattr=attributes(t,<span class="string">'length'</span>,list_uid(iline));
+1071             <span class="keyword">if</span> nbattr==1
+1072                 attr=attributes(t,<span class="string">'get'</span>,list_uid(iline));
+1073                 list_element{iline,4}=[attr.key <span class="string">'='</span>];
+1074                 list_element{iline,5}=attr.val;
+1075             <span class="keyword">elseif</span> nbattr&gt;1
+1076                 <span class="keyword">for</span> iattr=1:nbattr
+1077                     attr=attributes(t,<span class="string">'get'</span>,list_uid(iline),iattr);
+1078                     list_element{iline,2+2*iattr}=[attr.key <span class="string">'='</span>];
+1079                     list_element{iline,3+2*iattr}=attr.val;
+1080                 <span class="keyword">end</span>
+1081             <span class="keyword">end</span>
+1082         <span class="keyword">end</span>
+1083     <span class="keyword">end</span>
+1084     set(handles.list_element,<span class="string">'Value'</span>,1)<span class="comment">%select the first line of list_element by default</span>
+1085     set(handles.list_element,<span class="string">'String'</span>,<a href="cell2tab.html" class="code" title="function Tabchar=cell2tab(Tabcell,separator)">cell2tab</a>(list_element,<span class="string">' '</span>) )
+1086     list.uid=list_uid;
+1087     set(handles.list_element,<span class="string">'UserData'</span>,list)
+1088 <span class="keyword">end</span>
+1089 <span class="comment">%---------------------------------------------------------</span>
+1090 <span class="comment">%-------------------------------------</span>
+1091 <span class="comment">%updates the interface</span>
+1092 <a name="_sub16" href="#_subfunctions" class="code">function update_ref_list(hh,xs_element,element,node,xs_subelem,subelem)</a>
+1093 <span class="comment">%-----------------------------</span>
+1094 pref_col=<span class="string">''</span>;
+1095 key_col=<span class="string">''</span>;
+1096 equal_sign=<span class="string">''</span>;
+1097 val_col=<span class="string">''</span>;
+1098 <span class="keyword">for</span> iline=1:length(subelem)
+1099     xsindex=subelem(iline).xsindex;
+1100     indexcur=subelem(iline).index;
+1101     subuid=subelem(iline).uid;
+1102         <span class="keyword">if</span> isempty(subuid)
+1103              RefDataIn.uid(iline)=0;
+1104         <span class="keyword">else</span>
+1105              RefDataIn.uid(iline)=subuid;
+1106         <span class="keyword">end</span>
+1107     index(iline)=indexcur;
+1108     node(iline)=xs_subelem(xsindex).node;
+1109 <span class="comment">%         testmanual(iline)=subelem(iline).testmanual;</span>
+1110     ikey=xs_subelem(xsindex).key;
+1111     <span class="keyword">if</span> xs_subelem(xsindex).testsub
+1112         ival=[<span class="string">' + '</span> subelem(iline).val];
+1113     <span class="keyword">else</span>
+1114         ival=[<span class="string">' = '</span> subelem(iline).val];
+1115     <span class="keyword">end</span>
+1116     key_col=strvcat(key_col,ikey);
+1117     val_col=strvcat(val_col,ival);
+1118 <span class="keyword">end</span>
+1119 RefDataIn.xs_uid=node;
+1120 list_element=[key_col val_col];
+1121 siztext=size(list_element);
+1122 set(hh,<span class="string">'Value'</span>,[1:siztext(1)])
+1123 set(hh,<span class="string">'String'</span>,list_element)
+1124 set(hh,<span class="string">'UserData'</span>,RefDataIn)
+1125 
+1126 <span class="comment">%</span>
+1127 <span class="comment">% function RefFile_Callback(hObject, eventdata, handles)</span>
+1128 <span class="comment">% global t_ref xs</span>
+1129 <span class="comment">% t_ref=xmltree(get(hObject,'String'));%open the xml file fileinput</span>
+1130 <span class="comment">% heditxml=get(hObject,'parent');</span>
+1131 <span class="comment">% DataIn=get(get(hObject,'parent'),'UserData');</span>
+1132 <span class="comment">% % set(heditxml,'Units','pixel')</span>
+1133 <span class="comment">% figpos=get(heditxml,'Position')</span>
+1134 <span class="comment">% % title_element=get(handles.element_cur,'UserDataIn');</span>
+1135 <span class="comment">% % xs_node=xsnode_index(1,ind);</span>
+1136 <span class="comment">% % index_chosen=xsnode_index(2,ind);</span>
+1137 <span class="comment">% if isfield(DataIn,'fig_ref')&amp;ishandle(DataIn.fig_ref)</span>
+1138 <span class="comment">%     figure(DataIn.fig_ref);</span>
+1139 <span class="comment">% else</span>
+1140 <span class="comment">%     DataIn.fig_ref=figure;</span>
+1141 <span class="comment">% end</span>
+1142 <span class="comment">% set(DataIn.fig_ref,'Name',get(hObject,'String'))</span>
+1143 <span class="comment">% set(DataIn.fig_ref,'MenuBar','none')</span>
+1144 <span class="comment">% newfigpos=[figpos(1)+figpos(3) figpos(2)+0.4*figpos(4) 0.5*figpos(3) 0.3*figpos(4)];</span>
+1145 <span class="comment">% set(DataIn.fig_ref,'Units','normalized')</span>
+1146 <span class="comment">% set(DataIn.fig_ref,'Position',newfigpos)</span>
+1147 <span class="comment">% DataIn.h_ref=uicontrol('Style','listbox', 'Max',2,'Units','pixel','Position', [0 0 newfigpos(3) newfigpos(4)], ...</span>
+1148 <span class="comment">%         'FontName','FixedWidth','Tag','listbox');</span>
+1149 <span class="comment">% if isfield(DataIn,'xs_CurrentUid');</span>
+1150 <span class="comment">%     xs_CurrentUid=DataIn.xs_CurrentUid(end);</span>
+1151 <span class="comment">% else</span>
+1152 <span class="comment">%     DataIn.xs_CurrentUid=find(xs,'/xs:schema/xs:element');%uid of the root element in the schema</span>
+1153 <span class="comment">% end</span>
+1154 <span class="comment">% [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,xs_CurrentUid(end));</span>
+1155 <span class="comment">% xs_element.key</span>
+1156 <span class="comment">% tag0=find(t_ref,['/' path '/' xs_element.key]);</span>
+1157 <span class="comment">% if length(tag0)&gt;=1</span>
+1158 <span class="comment">%     CurrentRefNode=tag0(1);%chose the first occurence of the element</span>
+1159 <span class="comment">% else</span>
+1160 <span class="comment">%     CurrentRefNode=0;</span>
+1161 <span class="comment">% end</span>
+1162 <span class="comment">% [ref_element,ref_subelem]=get_xml(t_ref,path,xs_element,CurrentRefNode,xs_subelem);</span>
+1163 <span class="comment">% update_ref_list(DataIn.h_ref,xs_element,ref_element,CurrentRefNode,xs_subelem,ref_subelem);</span>
+1164 <span class="comment">% siztext=size(get(DataIn.h_ref,'String'));</span>
+1165 <span class="comment">% set(DataIn.h_ref,'Value',[1:siztext(1)]); %select the whole list by default</span>
+1166 <span class="comment">% set(heditxml,'UserData',DataIn)</span>
+1167 <span class="comment">% set(handles.ref_data,'Value',siztext(1)); %select the whole list by default</span>
+1168 <span class="comment">% 'TESTimport'</span>
+1169 <span class="comment">% title_element=get(handles.element_cur,'UserDataIn')</span>
+1170 <span class="comment">% xs_node=title_element.xsnode;%uid of the element in the schema</span>
+1171 <span class="comment">% node=title_element.node;</span>
+1172 <span class="comment">% t=flush(t,node);%removes the corresponding subtree in t</span>
+1173 <span class="comment">% [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,xs_node);%scan the schema</span>
+1174 <span class="comment">% tag0=find(t_import,['/' path '/' xs_element.key])</span>
+1175 <span class="comment">% if isempty(tag)</span>
+1176 <span class="comment">%     errordlg(['element /' path '/' xs_element.key ' not found in' fileinput])</span>
+1177 <span class="comment">%     return</span>
+1178 <span class="comment">% end</span>
+1179 <span class="comment">% % [element_import,node_import]=get_xml(t_import,path,xs_element,1,xs_subelem);% read the corresponding xml data</span>
+1180 <span class="comment">% node2_import=children(t_import,tag0);</span>
+1181 <span class="comment">% % t_import=branch(t_import,node_import);% extract branch of the new file</span>
+1182 <span class="comment">% % %removes the corresponding subtree in t</span>
+1183 <span class="comment">% for inode=1:length(node2_import)</span>
+1184 <span class="comment">%     struct=get(t_import,node2_import(inode))</span>
+1185 <span class="comment">%     if isfield(struct,'type') &amp; isfield(struct,'name')%if the node is an elmeent type</span>
+1186 <span class="comment">%         node3_import=children(t_import,node2_import(inode))</span>
+1187 <span class="comment">%        [t,newuid]=add(t,node,struct.type,struct.name);</span>
+1188 <span class="comment">%        for inode2=1:length(node3_import)</span>
+1189 <span class="comment">%            struct2=get(t_import,node3_import(inode2))</span>
+1190 <span class="comment">%            if isequal(struct2.type,'chardata')</span>
+1191 <span class="comment">%                 t=add(t,newuid,'chardata',struct2.value);</span>
+1192 <span class="comment">%             end</span>
+1193 <span class="comment">%         end</span>
+1194 <span class="comment">%     end</span>
+1195 <span class="comment">% end</span>
+1196 <span class="comment">% --- Executes on button press in replicate.</span>
+1197 <a name="_sub17" href="#_subfunctions" class="code">function replicate_Callback(hObject, eventdata, handles)</a>
+1198 <span class="keyword">global</span> xs  t
+1199 
+1200 export_list=get(handles.export_list,<span class="string">'String'</span>);
+1201 export_val=get(handles.export_list,<span class="string">'UserData'</span>);
+1202 heditxml=get(handles.replicate,<span class="string">'parent'</span>);
+1203 Data=get(heditxml,<span class="string">'UserData'</span>)
+1204 
+1205 hdataview=findobj(allchild(0),<span class="string">'Name'</span>,<span class="string">'dataview'</span>)
+1206 <span class="keyword">if</span> isempty(hdataview)
+1207     hdataview=<a href="dataview.html" class="code" title="function varargout = dataview(varargin)">dataview</a>;
+1208     <span class="keyword">return</span>
+1209 <span class="keyword">end</span>
+1210 hhdataview=guidata(hdataview);
+1211 CurrentPath=get(hhdataview.CurrentFile,<span class="string">'String'</span>);
+1212 ListExperiments=get(hhdataview.ListExperiments,<span class="string">'String'</span>);
+1213 Value=get(hhdataview.ListExperiments,<span class="string">'Value'</span>);
+1214 <span class="keyword">if</span> ~isequal(Value,1)
+1215     ListExperiments=ListExperiments(Value);
+1216 <span class="keyword">end</span>
+1217 ListDevices=get(hhdataview.ListDevices,<span class="string">'String'</span>);
+1218 Value=get(hhdataview.ListDevices,<span class="string">'Value'</span>);
+1219 <span class="keyword">if</span> ~isequal(Value,1)
+1220     ListDevices=ListDevices(Value);
+1221 <span class="keyword">end</span>
+1222 ListRecords=get(hhdataview.ListRecords,<span class="string">'String'</span>);
+1223 Value=get(hhdataview.ListRecords,<span class="string">'Value'</span>);
+1224 <span class="keyword">if</span> ~isequal(Value,1)
+1225     ListRecords=ListRecords(Value);
+1226 <span class="keyword">end</span>
+1227 <span class="comment">% uvmat('runplus_Callback',hObject,eventdata,handleshaxes)</span>
+1228 [ListDevices,ListRecords,ListXml,List]=<a href="ListDir.html" class="code" title="function [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in)">ListDir</a>(CurrentPath,ListExperiments,ListDevices,ListRecords);
+1229 ListXml=get(hhdataview.ListXml,<span class="string">'String'</span>);
+1230 Value=get(hhdataview.ListXml,<span class="string">'Value'</span>);
+1231 <span class="keyword">if</span> isequal(Value,1)
+1232     <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>(<span class="string">'you need to select the xml files to edit'</span>,<span class="string">'ERROR'</span>)
+1233     <span class="keyword">return</span>
+1234 <span class="keyword">end</span>
+1235 ListXml=ListXml(Value);<span class="comment">%list of</span>
+1236 <span class="keyword">for</span> iexp=1:length(List.Experiment)
+1237     ExpName=List.Experiment{iexp}.name;
+1238     <span class="keyword">if</span> isfield(List.Experiment{iexp},<span class="string">'Device'</span>)
+1239         <span class="keyword">for</span> idevice=1:length(List.Experiment{iexp}.Device)
+1240             DeviceName=List.Experiment{iexp}.Device{idevice}.name;       
+1241             <span class="keyword">if</span> isfield(List.Experiment{iexp}.Device{idevice},<span class="string">'xmlfile'</span>)
+1242                 <span class="keyword">for</span> ixml=1:length(List.Experiment{iexp}.Device{idevice}.xmlfile)
+1243                     FileName=List.Experiment{iexp}.Device{idevice}.xmlfile{ixml};
+1244                     <span class="keyword">for</span> ilistxml=1:length(ListXml)
+1245                         <span class="keyword">if</span> isequal(FileName,ListXml{ilistxml})
+1246                             xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,FileName);
+1247                             t_export=xmltree(xmlfullname);
+1248                             rootelement=get(t_export,1,<span class="string">'name'</span>);
+1249                             uidlist=Data.CurrentUid;
+1250                             <span class="keyword">if</span> isequal(rootelement,get(t,1,<span class="string">'name'</span>))
+1251                                 backupfile=xmlfullname;
+1252                                 testexist=2;
+1253                                 <span class="keyword">while</span> testexist==2
+1254                                    backupfile=[backupfile <span class="string">'~'</span>];
+1255                                    testexist=exist(backupfile,<span class="string">'file'</span>);
+1256                                 <span class="keyword">end</span>
+1257                                 [success,message]=copyfile(xmlfullname,backupfile);<span class="comment">%make backup</span>
+1258                                 <span class="keyword">if</span> ~isequal(success,1)
+1259                                     <a href="warndlg_uvmat.html" class="code" title="function hwarn=warndlg_uvmat(warntext,title)">warndlg_uvmat</a>([<span class="string">'Error in the backup of '</span> xmlfullname],<span class="string">'ERROR'</span>)
+1260                                     <span class="keyword">return</span>
+1261                                 <span class="keyword">end</span>
+1262                                 findstr=[<span class="string">'/'</span> rootelement];
+1263                                 uid_export(1)=1;
+1264                                 <span class="comment">% fill the root elements if absent</span>
+1265                                 <span class="keyword">for</span> index=2:length(uidlist)
+1266                                     name_t=get(t,uidlist(index),<span class="string">'name'</span>)
+1267                                     findstr=[findstr <span class="string">'/'</span> name_t]
+1268                                     uid=find(t_export,findstr)
+1269                                     <span class="keyword">if</span> isempty(uid)
+1270                                         [t_export,uid_export(index)]=add(t_export,uid_export(index-1),<span class="string">'element'</span>,name_t);
+1271                                     <span class="keyword">else</span>
+1272                                         uid_export(index)=uid;
+1273                                     <span class="keyword">end</span>                           
+1274                                 <span class="keyword">end</span>
+1275                                 <span class="comment">% chardata......</span>
+1276                             <span class="keyword">end</span>
+1277                             <span class="keyword">break</span>
+1278                         <span class="keyword">end</span>
+1279                     <span class="keyword">end</span>
+1280 <span class="comment">%                     [Title,test]=check_heading(Currentpath,Campaign,ExpName,DeviceName,[],FileName,SubCampaignTest);</span>
+1281 <span class="comment">%                     if test</span>
+1282 <span class="comment">%                         [List.Experiment{iexp}.Device{idevice}.xmlfile{ixml} ' , Heading updated']</span>
+1283 <span class="comment">%                     end</span>
+1284                 <span class="keyword">end</span>
+1285              <span class="keyword">elseif</span> isfield(List.Experiment{iexp}.Device{idevice},<span class="string">'Record'</span>)
+1286                 <span class="keyword">for</span> irecord=1:length(List.Experiment{iexp}.Device{idevice}.Record)
+1287                     RecordName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.name;
+1288                     <span class="keyword">if</span> isfield(List.Experiment{iexp}.Device{idevice}.Record{irecord},<span class="string">'xmlfile'</span>)
+1289                         <span class="keyword">for</span> ixml=1:length(List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile)
+1290                             FileName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile{ixml};
+1291                             <span class="keyword">for</span> ilistxml=1:length(ListXml)
+1292                                 <span class="keyword">if</span> isequal(FileName,ListXml{ilistxml})
+1293                                     xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,RecordName,FileName)
+1294                                     <span class="keyword">break</span>
+1295                                 <span class="keyword">end</span>
+1296                             <span class="keyword">end</span>
+1297 <span class="comment">%                             [Title,test]=check_heading(Currentpath,Campaign,ExpName,DeviceName,RecordName,FileName,SubCampaignTest);</span>
+1298 <span class="comment">%                             if test</span>
+1299 <span class="comment">%                                 [FileName ' , Heading updated']</span>
+1300 <span class="comment">%                             end</span>
+1301                         <span class="keyword">end</span>
+1302                     <span class="keyword">end</span>
+1303                 <span class="keyword">end</span>
+1304             <span class="keyword">end</span>
+1305         <span class="keyword">end</span>
+1306     <span class="keyword">end</span>
+1307 <span class="keyword">end</span>
+1308 <span class="keyword">return</span>
+1309 <span class="comment">%%%%%%%%%%% A REVOIR</span>
+1310 <span class="comment">% Copier la liste des elements selectionnés dans dataview</span>
+1311 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+1312 <span class="comment">%ANCIEN:</span>
+1313 heditxml=get(hObject,<span class="string">'parent'</span>);
+1314 DataIn=get(heditxml,<span class="string">'UserData'</span>);
+1315 <span class="keyword">if</span> ~isfield(DataIn,<span class="string">'h_ref'</span>)
+1316     DataIn.h_ref=[];
+1317 <span class="keyword">end</span>
+1318 <span class="keyword">if</span> ~ishandle(DataIn.h_ref)
+1319     errordlg(<span class="string">'no source file opened for import'</span>)
+1320     <span class="keyword">return</span>
+1321 <span class="keyword">end</span>
+1322 <span class="comment">%create the current root element if needed</span>
+1323 LengthElement=length(DataIn.CurrentUid);
+1324 FilledUid=find(DataIn.CurrentUid~=0);
+1325 LengthFilled=FilledUid(end);
+1326 <span class="keyword">for</span> irank=LengthFilled+1:LengthElement
+1327     attrib=attributes(xs,<span class="string">'get'</span>,DataIn.xs_CurrentUid(irank),1);
+1328     [t,DataIn.CurrentUid(irank)]=add(t,DataIn.CurrentUid(irank-1),<span class="string">'element'</span>,attrib.val);
+1329 <span class="keyword">end</span>
+1330 
+1331 <span class="comment">%copy list of subelements</span>
+1332 RefDataIn=get(DataIn.h_ref,<span class="string">'UserData'</span>);
+1333 list=get(handles.list_element,<span class="string">'UserData'</span>);<span class="comment">%=,[node;index]</span>
+1334 <span class="keyword">for</span> ilist=get(DataIn.h_ref,<span class="string">'Value'</span>)
+1335     node_content=get(xs,RefDataIn.xs_uid(ilist));
+1336     <span class="keyword">if</span> ~isempty(node_content) &amp; isfield(node_content,<span class="string">'attributes'</span>)
+1337         attrib=node_content.attributes;
+1338         <span class="keyword">for</span> iattr=1:length(attrib)
+1339             struct=attrib{iattr};
+1340             <span class="keyword">if</span> isequal(struct.key,<span class="string">'name'</span>)
+1341                 key=struct.val; <span class="comment">% read element key name</span>
+1342             <span class="keyword">end</span>
+1343         <span class="keyword">end</span>
+1344     <span class="keyword">end</span>
+1345     value=<span class="string">''</span>;
+1346     <span class="keyword">if</span> ~isequal(RefDataIn.uid(ilist),0)
+1347         child_uid=children(t_ref,RefDataIn.uid(ilist));     
+1348         <span class="keyword">if</span> isequal(length(child_uid),1)
+1349             content=get(t_ref,child_uid);
+1350             <span class="keyword">if</span> isfield(content,<span class="string">'type'</span>) &amp;isfield(content,<span class="string">'value'</span>)&amp; isequal(content.type,<span class="string">'chardata'</span>)
+1351                 value=content.value;
+1352             <span class="keyword">end</span>
+1353         <span class="keyword">end</span>
+1354     <span class="keyword">end</span>
+1355     t=<a href="#_sub12" class="code" title="subfunction t=set_element(t,RootUid,node,key,value)">set_element</a>(t,DataIn.CurrentUid(end),list.uid(ilist),key,value);
+1356 <span class="keyword">end</span>
+1357 set(heditxml,<span class="string">'UserData'</span>,DataIn)
+1358 <span class="comment">%update the current listing</span>
+1359 [nodeup,path,xs_element,xs_subelem]=<a href="#_sub8" class="code" title="subfunction [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,nodeinput)">scan_schema</a>(xs,DataIn.xs_CurrentUid(end));
+1360 [element,subelem]=<a href="#_sub9" class="code" title="subfunction [element,subelem]=get_xml(t,path,xs_element,node,xs_subelem)">get_xml</a>(t,path,xs_element,DataIn.CurrentUid(end),xs_subelem);
+1361 <a href="#_sub10" class="code" title="subfunction update_list(handles,path,xs_element,element,node,xs_subelem,subelem)">update_list</a>(handles,path,xs_element,element,DataIn.CurrentUid(end),xs_subelem,subelem);
+1362 <span class="comment">% t=set_xml(t,xs_DataIn,subelem)</span>
+1363 <span class="comment">%edit list of subelments:</span>
+1364 
+1365 <span class="comment">%A REVOIR</span>
+1366 <span class="comment">% xsnode_index=get(handles.list_element,'UserDataIn')</span>
+1367 <span class="comment">% xs_node=xsnode_index(1,ind);</span>
+1368 <span class="comment">% RefDataIn=get(handles.ref_data,'UserDataIn');</span>
+1369 <span class="comment">% subelem=RefDataIn.subelem;</span>
+1370 <span class="comment">% xsnode_index=get(handles.list_element,'UserDataIn');%data on the xs_nodes of the subelements</span>
+1371 <span class="comment">% ref_list=get(handles.ref_data,'Value');%selected indices in the list of reference subelements</span>
+1372 <span class="comment">% xs_node=xsnode_index(1,ref_list);%xs_nodes of the selected subelements</span>
+1373 <span class="comment">% % index_chosen=xsnode_index(2,ref_list);% indices in the list of occurence for a subelement</span>
+1374 <span class="comment">% % for ilist=ref_list</span>
+1375 <span class="comment">% ilist=1;</span>
+1376 <span class="comment">% while icontinue</span>
+1377 <span class="comment">%     'TESTCOPY'</span>
+1378 <span class="comment">%     [nodeup,path,xs_element,xs_subelem]=scan_schema(xs,xs_node(ilist))</span>
+1379 <span class="comment">%     xs_subelem.key</span>
+1380 <span class="comment">%     tsub=subelem(ilist).tsub</span>
+1381 <span class="comment">%     xsnode_index(2,ilist)</span>
+1382 <span class="comment">%     [ref_elem,ref_node,ref_subelem]=get_xml(tsub,'',xs_element,1,xs_subelem)</span>
+1383 <span class="comment">%     ref_subelem.val</span>
+1384 <span class="comment">%     testedit= ~isfield(element.attrup,'source') | isequal(element.attrup.source,'manual') %| element vide</span>
+1385 <span class="comment">%</span>
+1386 <span class="comment">%</span>
+1387 <span class="comment">%     icontinue=0</span>
+1388 <span class="comment">% end</span>
+1389 <span class="comment">% function [element,node,subelem]=get_xml(t,path,xs_element,node,xs_subelem)</span>
+1390 <span class="comment">% element.attr_key='';%default</span>
+1391 <span class="comment">% element.attr_val='';%default</span>
+1392 <span class="comment">% element.val='';</span>
+1393 <span class="comment">% % element.type='';</span>
+1394 <span class="comment">% % element.testmanual=testmanual %inheritates the input manual editing flag by default</span>
+1395 <span class="comment">% subelem=[]; %default</span>
+1396 <span class="comment">% attrup=[];</span>
+1397 <span class="comment">% % node=[];</span>
+1398 <span class="comment">%</span>
+1399 <span class="comment">% % %find the element properties in the xml file</span>
+1400 <span class="comment">% if node &gt;= 1</span>
+1401 <span class="comment">%     elem_struct=get(t,node);</span>
+1402 <span class="comment">%     if ~xs_element.subtest</span>
+1403 <span class="comment">%         elem_contents=get(t,elem_struct.contents);</span>
+1404 <span class="comment">%         if isempty(elem_contents)</span>
+1405 <span class="comment">%             element.val=[];</span>
+1406 <span class="comment">%         else</span>
+1407 <span class="comment">%             element.val=elem_contents.value</span>
+1408 <span class="comment">%         end</span>
+1409 <span class="comment">%     end</span>
+1410 <span class="comment">%     if isfield(elem_struct,'attributes')</span>
+1411 <span class="comment">%         elem_attr=elem_struct.attributes;</span>
+1412 <span class="comment">%         for iattr=1:length(elem_attr)</span>
+1413 <span class="comment">%             element.attr_key{iattr}=elem_attr{iattr}.key ;</span>
+1414 <span class="comment">%             element.attr_val{iattr}=elem_attr{iattr}.val;</span>
+1415 <span class="comment">% %             attrup=setfield(attrup,elem_attr{iattr}.key,elem_attr{iattr}.val);</span>
+1416 <span class="comment">%            breakdetect=find(elem_attr{iattr}.key=='/'| elem_attr{iattr}.key==':'| elem_attr{iattr}.key=='.');% find '/'</span>
+1417 <span class="comment">%            if isempty(breakdetect)</span>
+1418 <span class="comment">% %                 comline=['attrup.' elem_attr{iattr}.key '=' elem_attr{iattr}.val ';']</span>
+1419 <span class="comment">%                 eval(['attrup.' elem_attr{iattr}.key '=''' elem_attr{iattr}.val ''';'])</span>
+1420 <span class="comment">%            end</span>
+1421 <span class="comment">%         end</span>
+1422 <span class="comment">%     end</span>
+1423 <span class="comment">% end</span>
+1424 <span class="comment">% %get the parent node attributes</span>
+1425 <span class="comment">% up=1</span>
+1426 <span class="comment">% if node&gt;0</span>
+1427 <span class="comment">%     nodeup=node;</span>
+1428 <span class="comment">%     while up==1;</span>
+1429 <span class="comment">%         nodeup=get(t,nodeup,'parent');%move up to the parent in the tree</span>
+1430 <span class="comment">%         if isempty(nodeup)</span>
+1431 <span class="comment">%             up=0;</span>
+1432 <span class="comment">%         else</span>
+1433 <span class="comment">%             nodeup_content=get(t,nodeup);</span>
+1434 <span class="comment">%             attrib=nodeup_content.attributes;</span>
+1435 <span class="comment">%             for iattr=1:length(attrib)</span>
+1436 <span class="comment">%                 key=attrib{iattr}.key;</span>
+1437 <span class="comment">%                 breakdetect=find(key=='/'| key==':'| key=='.');% find '/'</span>
+1438 <span class="comment">%                 if ~isfield(attrup,key) &amp; isempty(breakdetect)</span>
+1439 <span class="comment">%                    eval(['attrup.' key '=''' attrib{iattr}.val ''';'])</span>
+1440 <span class="comment">%                 end</span>
+1441 <span class="comment">%             end</span>
+1442 <span class="comment">%         end</span>
+1443 <span class="comment">%     end</span>
+1444 <span class="comment">%     element.attrup=attrup;</span>
+1445 <span class="comment">% end</span>
+1446 <span class="comment">% %find the subelement properties in the xml file</span>
+1447 <span class="comment">% if xs_element.subtest</span>
+1448 <span class="comment">%    iline=0;</span>
+1449 <span class="comment">%    for k=1:length(xs_subelem)%node2: list of subelements in the sub-sequence</span>
+1450 <span class="comment">% %     attr=attributes(xs,'get',node2(i),1);%</span>
+1451 <span class="comment">% %     element=attr.val;%name of the element</span>
+1452 <span class="comment">%      tag=find(t,['/' path '/' xs_element.key '/' xs_subelem(k).key]);%look for the corresponding element node in the .xml tree</span>
+1453 <span class="comment">%      struct_element=get(t,tag);%get the content of the element</span>
+1454 <span class="comment">%      if isempty(struct_element)</span>
+1455 <span class="comment">%          iline=iline+1;</span>
+1456 <span class="comment">%          subelem(iline).xsindex=k;</span>
+1457 <span class="comment">%          subelem(iline).index=0;</span>
+1458 <span class="comment">% %          subelem(iline).testmanual=element.testmanual;% inheritates the manual editing flag by default</span>
+1459 <span class="comment">%          if isequal(xs_subelem(k).minOccurs,0)</span>
+1460 <span class="comment">%              subelem(iline).val='[]';%element value not mandatory in the schema</span>
+1461 <span class="comment">%          else</span>
+1462 <span class="comment">%              subelem(iline).val='[MISSING]';%element value mandatory in the schema</span>
+1463 <span class="comment">%          end</span>
+1464 <span class="comment">% %          subelem(iline).attrup=attrup; %inheritated attributes</span>
+1465 <span class="comment">%      elseif isequal(length(struct_element),1)</span>
+1466 <span class="comment">%          contents=get(t,struct_element.contents);</span>
+1467 <span class="comment">%          iline=iline+1;</span>
+1468 <span class="comment">%          subelem(iline).xsindex=k;</span>
+1469 <span class="comment">%          subelem(iline).index=1;</span>
+1470 <span class="comment">% %          subelem(iline).testmanual=element.testmanual;%</span>
+1471 <span class="comment">%          if isfield(contents,'value') &amp; ~isempty(contents.value)</span>
+1472 <span class="comment">%              subelem(iline).val=contents.value;</span>
+1473 <span class="comment">%          elseif xs_subelem(k).testsub</span>
+1474 <span class="comment">%              subelem(iline).val='';</span>
+1475 <span class="comment">%          elseif isequal(xs_subelem(k).minOccurs,0)</span>
+1476 <span class="comment">%              subelem(iline).val='[]';%element value not mandatory in the schema</span>
+1477 <span class="comment">%          else</span>
+1478 <span class="comment">%              subelem(iline).val='[MISSING]';%element value mandatory in the schema</span>
+1479 <span class="comment">%          end</span>
+1480 <span class="comment">% %          subelem(iline).attrup=attrup; %inheritated attributes</span>
+1481 <span class="comment">%          if isfield(struct_element,'attributes')</span>
+1482 <span class="comment">%             element_attr=struct_element.attributes;</span>
+1483 <span class="comment">%             attr_display=[];</span>
+1484 <span class="comment">%             for iattr=1:length(element_attr)</span>
+1485 <span class="comment">% %                 attr_display{iline}=[attr_display ' , ' element_attr{iattr}.key '  =  ' element_attr{iattr}.val];</span>
+1486 <span class="comment">%                 subelem(iline).val=[subelem(iline).val attr_display ' , ' element_attr{iattr}.key '  =  ' element_attr{iattr}.val];</span>
+1487 <span class="comment">% %                 subelem(iline).attrup=setfield(subelem(iline).attrup,element_attr{iattr}.key,element_attr{iattr}.val);</span>
+1488 <span class="comment">%             end</span>
+1489 <span class="comment">%          end</span>
+1490 <span class="comment">%      else%case of a multiple element</span>
+1491 <span class="comment">%          for subindex=1:length(struct_element)</span>
+1492 <span class="comment">%              contents=get(t,struct_element{subindex}.contents);</span>
+1493 <span class="comment">%              iline=iline+1;</span>
+1494 <span class="comment">%              subelem(iline).index=subindex;%index of the element</span>
+1495 <span class="comment">%              subelem(iline).xsindex=k;</span>
+1496 <span class="comment">% %              subelem(iline).testmanual=element.testmanual;%</span>
+1497 <span class="comment">%              if isfield(contents,'value')&amp; ~isempty(contents.value)</span>
+1498 <span class="comment">%                  subelem(iline).val=contents.value;</span>
+1499 <span class="comment">%              elseif xs_subelem(k).testsub</span>
+1500 <span class="comment">%                  subelem(iline).val='';</span>
+1501 <span class="comment">%              else</span>
+1502 <span class="comment">%                  subelem(iline).val='[]';</span>
+1503 <span class="comment">%              end</span>
+1504 <span class="comment">% %              subelem(iline).attrup=attrup; %inheritated attributes</span>
+1505 <span class="comment">%              if isfield(struct_element{subindex},'attributes')</span>
+1506 <span class="comment">%                 element_attr=struct_element{subindex}.attributes;</span>
+1507 <span class="comment">%                 attr_display=[];</span>
+1508 <span class="comment">%                 for iattr=1:length(element_attr)</span>
+1509 <span class="comment">% %                     attr_display{iline}=[attr_display ' , ' element_attr{iattr}.key '  =  ' element_attr{iattr}.val];</span>
+1510 <span class="comment">%                     subelem(iline).val=[subelem(iline).val attr_display ' , ' element_attr{iattr}.key '  =  ' element_attr{iattr}.val];</span>
+1511 <span class="comment">% %                     subelem(iline).attrup=setfield(subelem(iline).attrup,element_attr{iattr}.key,element_attr{iattr}.val);</span>
+1512 <span class="comment">%                 end</span>
+1513 <span class="comment">%             end</span>
+1514 <span class="comment">%         end</span>
+1515 <span class="comment">%      end</span>
+1516 <span class="comment">%   end</span>
+1517 <span class="comment">% end</span>
+1518 
+1519 
+1520 <span class="comment">% --- Executes on button press in HELP.</span>
+1521 <a name="_sub18" href="#_subfunctions" class="code">function HELP_Callback(hObject, eventdata, handles)</a>
+1522 path_to_uvmat=which (<span class="string">'uvmat'</span>)<span class="comment">% check the path of uvmat</span>
+1523 pathelp=fileparts(path_to_uvmat);
+1524 helpfile=fullfile(pathelp,<span class="string">'UVMAT_DOC'</span>,<span class="string">'uvmat_doc.html'</span>);
+1525 <span class="keyword">if</span> isempty(dir(helpfile)), errordlg(<span class="string">'Please put the help file uvmat_doc.html in the directory UVMAT/UVMAT_DOC'</span>)
+1526 <span class="keyword">else</span>
+1527 web([helpfile <span class="string">'#editxml'</span>])    
+1528 <span class="keyword">end</span>
+1529 
+1530 
+1531 <span class="comment">% --- Executes on button press in Export.</span>
+1532 <a name="_sub19" href="#_subfunctions" class="code">function Export_Callback(hObject, eventdata, handles)</a>
+1533 val=get(handles.Export,<span class="string">'Value'</span>);
+1534 <span class="keyword">if</span> val
+1535     set(handles.Export,<span class="string">'BackgroundColor'</span>,[0 1 0])
+1536     set(handles.export_list,<span class="string">'Visible'</span>,<span class="string">'on'</span>)
+1537     set(handles.replicate,<span class="string">'Visible'</span>,<span class="string">'on'</span>)
+1538     h_dataview=findobj(allchild(0),<span class="string">'name'</span>,<a href="dataview.html" class="code" title="function varargout = dataview(varargin)">dataview</a>');
+1539     <span class="keyword">if</span> isempty(h_dataview)
+1540        <span class="comment">% CurrentFile=get(handles.CurrentFile,'String');</span>
+1541         <a href="dataview.html" class="code" title="function varargout = dataview(varargin)">dataview</a>;
+1542     <span class="keyword">end</span>
+1543 <span class="keyword">else</span>
+1544      set(handles.Export,<span class="string">'BackgroundColor'</span>,[0.7 0.7 0.7])
+1545     set(handles.export_list,<span class="string">'Visible'</span>,<span class="string">'off'</span>)
+1546     set(handles.replicate,<span class="string">'Visible'</span>,<span class="string">'off'</span>)
+1547 <span class="keyword">end</span>
+1548 
+1549 
+1550 <span class="comment">% --- Executes on button press in pushbutton9.</span>
+1551 <a name="_sub20" href="#_subfunctions" class="code">function pushbutton9_Callback(hObject, eventdata, handles)</a>
+1552 <span class="comment">% hObject    handle to pushbutton9 (see GCBO)</span>
+1553 <span class="comment">% eventdata  reserved - to be defined in a future version of MATLAB</span>
+1554 <span class="comment">% handles    structure with handles and user data (see GUIDATA)</span>
+1555 
+1556</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

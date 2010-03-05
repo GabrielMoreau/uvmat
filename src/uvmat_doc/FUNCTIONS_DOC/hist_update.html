@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of hist_update</title>
+  <meta name="keywords" content="hist_update">
+  <meta name="description" content="'hist_update': update of a current global histogram by inclusion of a new field">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; hist_update.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>hist_update
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'hist_update': update of a current global histogram by inclusion of a new field</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [val,HIST]=hist_update(val,HIST,C,dC) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'hist_update': update of a current global histogram by inclusion of a new field
+------------------------------------------------------------------------
+[val,HIST]=hist_update(val,HIST,C,dC)
+
+ OUTPUT:
+ val: vector of field values at which the histogram is determined (middle of bins)
+ HIST(:,icolor): nbre of occurence of the field value in the bins whose middle is given by val
+           can be a column vector, same size as val, or a matrix with three columns, for color images
+
+ INPUT:
+ val: existing field values from the current histogram, =[] if there is no current histogram
+ HIST(:,icolor): current histogram,  =[] if there is none
+       can be a column vector (icolor=1), same size as val, or a matrix with three columns, for color images      
+ C(:,icolor): vector representing the current field values
+       can be a column vector (icolor=1), or a matrix with three columns, for color images 
+ dC: width of the new bins extending val to account for the new field.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'hist_update': update of a current global histogram by inclusion of a new field</span>
+0002 <span class="comment">%------------------------------------------------------------------------</span>
+0003 <span class="comment">%[val,HIST]=hist_update(val,HIST,C,dC)</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% OUTPUT:</span>
+0006 <span class="comment">% val: vector of field values at which the histogram is determined (middle of bins)</span>
+0007 <span class="comment">% HIST(:,icolor): nbre of occurence of the field value in the bins whose middle is given by val</span>
+0008 <span class="comment">%           can be a column vector, same size as val, or a matrix with three columns, for color images</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% INPUT:</span>
+0011 <span class="comment">% val: existing field values from the current histogram, =[] if there is no current histogram</span>
+0012 <span class="comment">% HIST(:,icolor): current histogram,  =[] if there is none</span>
+0013 <span class="comment">%       can be a column vector (icolor=1), same size as val, or a matrix with three columns, for color images</span>
+0014 <span class="comment">% C(:,icolor): vector representing the current field values</span>
+0015 <span class="comment">%       can be a column vector (icolor=1), or a matrix with three columns, for color images</span>
+0016 <span class="comment">% dC: width of the new bins extending val to account for the new field.</span>
+0017 
+0018 <a name="_sub0" href="#_subfunctions" class="code">function [val,HIST]=hist_update(val,HIST,C,dC)</a>
+0019 
+0020 valplus=[];valminus=[];
+0021 HISTplus=[];HISTminus=[];
+0022 <span class="keyword">if</span> isempty(HIST)
+0023     HIST=0;
+0024 <span class="keyword">end</span>
+0025 siz=size(C);nbfields=siz(2);
+0026 C=double(C);
+0027 valmin=min(val); 
+0028 valmax=max(val);
+0029 Cmin=min(min(C)); Cmax=max(max(C));
+0030 <span class="keyword">if</span> isempty(val)<span class="comment">%no current histogram</span>
+0031     val=[Cmin-dC/2:dC:Cmax+dC/2];
+0032 <span class="keyword">else</span> <span class="comment">%extending the current histogram beyond its maximum value</span>
+0033     <span class="keyword">if</span> Cmax&gt;=valmax+dC/2;
+0034         valplus=[valmax+dC:dC:Cmax+dC/2];<span class="comment">% we extend the values val</span>
+0035         HISTplus=zeros(length(valplus),nbfields);<span class="comment">% we put histogram to zero at these values</span>
+0036     <span class="keyword">end</span>
+0037     <span class="comment">%extending the current histogram below its minimum value</span>
+0038     <span class="keyword">if</span> Cmin&lt;=valmin-dC/2;
+0039         valminus=[valmin-dC:-dC:Cmin-dC/2];<span class="comment">% we extend the values val</span>
+0040         valminus=sort(valminus);<span class="comment">% we reverse the order</span>
+0041         HISTminus=zeros(length(valminus),nbfields);<span class="comment">% we put histogram to zero at these values</span>
+0042     <span class="keyword">end</span>
+0043     val=[valminus val valplus];
+0044 <span class="keyword">end</span>
+0045 HIST=[HISTminus;HIST;HISTplus];
+0046 <span class="keyword">if</span> nbfields==1
+0047     histC=(hist(C,val))';<span class="comment">% initiate the global histogram</span>
+0048 <span class="keyword">elseif</span> nbfields==3
+0049     HIST1=(hist(C(:,1),val))';
+0050     HIST2=(hist(C(:,2),val))';
+0051     HIST3=(hist(C(:,3),val))';
+0052     histC=[HIST1 HIST2 HIST3];
+0053 <span class="keyword">end</span>
+0054 HIST=HIST+histC;</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

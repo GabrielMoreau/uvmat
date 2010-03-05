@@ -1,0 +1,412 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of mouse_down</title>
+  <meta name="keywords" content="mouse_down">
+  <meta name="description" content="'mouse_down': function activated when the mouse button is pressed on a figure (callback for 'WindowButtonDownFcn'">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; mouse_down.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>mouse_down
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'mouse_down': function activated when the mouse button is pressed on a figure (callback for 'WindowButtonDownFcn'</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function xy=mouse_down(hObject,eventdata) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'mouse_down': function activated when the mouse button is pressed on a figure (callback for 'WindowButtonDownFcn'
+-------------------------------------------------------------- 
+ xy=mouse_down(hObject,eventdata) 
+ activated by the command:
+ set(hObject,'WindowButtonDownFcn',{'mouse_down'}), 
+ where hObject is the handle of the figure
+
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     This file is part of the toolbox UVMAT.
+ 
+     UVMAT is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation; either version 2 of the License, or
+     (at your option) any later version.
+ 
+     UVMAT is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License (file UVMAT/COPYING.txt) for more details.
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="geometry_calib.html" class="code" title="function varargout = geometry_calib(varargin)">geometry_calib</a>	'geometry_calib': performs geometric calibration from a set of reference points</li><li><a href="plot_field.html" class="code" title="function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)">plot_field</a>	'plot_field': plot any field with the structure defined in the uvmat package</li><li><a href="plot_object.html" class="code" title="function [hh]=plot_object(ObjectDataIn,ProjObject,hplot,col)">plot_object</a>	'plot_object': draws a projection object (points, line, plane...)</li><li><a href="read_geometry_calib.html" class="code" title="function data=read_geometry_calib(Coord_cell)">read_geometry_calib</a>	'read_geometry_calib': read data on the GUI geometry_calib</li><li><a href="read_set_object.html" class="code" title="function data=read_set_object(handles)">read_set_object</a>	'read_set_object': read the data on the 'set_object' interface</li><li><a href="set_title.html" class="code" title="function TITLE=set_title(Style,ProjMode)">set_title</a>	'set_title': defines the 'TITLE' of a projection object</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="mouse_up.html" class="code" title="function mouse_up(ggg,eventdata,handles)">mouse_up</a>	'mouse_up': function  activated when the mouse button is released</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function update_plot</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%'mouse_down': function activated when the mouse button is pressed on a figure (callback for 'WindowButtonDownFcn'</span>
+0002 <span class="comment">%--------------------------------------------------------------</span>
+0003 <span class="comment">% xy=mouse_down(hObject,eventdata)</span>
+0004 <span class="comment">% activated by the command:</span>
+0005 <span class="comment">% set(hObject,'WindowButtonDownFcn',{'mouse_down'}),</span>
+0006 <span class="comment">% where hObject is the handle of the figure</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0009 <span class="comment">%  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.</span>
+0010 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0011 <span class="comment">%     This file is part of the toolbox UVMAT.</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">%     UVMAT is free software; you can redistribute it and/or modify</span>
+0014 <span class="comment">%     it under the terms of the GNU General Public License as published by</span>
+0015 <span class="comment">%     the Free Software Foundation; either version 2 of the License, or</span>
+0016 <span class="comment">%     (at your option) any later version.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">%     UVMAT is distributed in the hope that it will be useful,</span>
+0019 <span class="comment">%     but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+0020 <span class="comment">%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+0021 <span class="comment">%     GNU General Public License (file UVMAT/COPYING.txt) for more details.</span>
+0022 <span class="comment">%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+0023 
+0024 <a name="_sub0" href="#_subfunctions" class="code">function xy=mouse_down(hObject,eventdata)</a>
+0025 testzoom=0;<span class="comment">%default</span>
+0026 MouseAction=<span class="string">'none'</span>; <span class="comment">%default</span>
+0027 huvmat=findobj(allchild(0),<span class="string">'Name'</span>,<span class="string">'uvmat'</span>);<span class="comment">%find the uvmat interface handle which controls theoption of  mouse action</span>
+0028 <span class="keyword">if</span> ~isempty(huvmat)
+0029     hhuvmat=guidata(huvmat);<span class="comment">%handles of elements in uvmat</span>
+0030     UvData=get(huvmat,<span class="string">'UserData'</span>);
+0031     testzoom=get(hhuvmat.zoom,<span class="string">'Value'</span>);<span class="comment">% get the mouse action from the uvmat GUI: options:</span>
+0032     <span class="keyword">if</span> isfield(UvData,<span class="string">'MouseAction'</span>)
+0033         MouseAction=UvData.MouseAction;<span class="comment">% get the mouse action from the uvmat GUI: options:</span>
+0034     <span class="keyword">end</span>
+0035 <span class="keyword">end</span>
+0036 test_create=~testzoom &amp;&amp; (isequal(MouseAction,<span class="string">'create_object'</span>) || isequal(MouseAction,<span class="string">'create_mask'</span>));
+0037 <span class="comment">%test_cal=get(handles.cal,'Value');</span>
+0038 test_cal=isequal(MouseAction,<span class="string">'calib'</span>);
+0039 handles_coord=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'menu_coord'</span>);
+0040 menu_coord=get(handles_coord,<span class="string">'String'</span>);
+0041 coord_choice=get(handles_coord,<span class="string">'Value'</span>);
+0042 coord_type=menu_coord{coord_choice};
+0043 test_edit=isequal(MouseAction,<span class="string">'edit_object'</span>);
+0044 test_edit_vect=isequal(MouseAction,<span class="string">'edit_vect'</span>);
+0045 xdisplay=[];<span class="comment">%default</span>
+0046 ydisplay=[];<span class="comment">%default</span>
+0047 haxes=[];
+0048 AxeData=[];<span class="comment">%default</span>
+0049 
+0050 <span class="comment">%edit an existing point or line if found</span>
+0051 hcurrentobject=gco;<span class="comment">% current object handle (selected by the mouse)</span>
+0052 hcurrentfig=gcbo;<span class="comment">% current figure handle</span>
+0053 tag_obj=get(gco,<span class="string">'Tag'</span>);
+0054 xy=[];<span class="comment">%default</span>
+0055 xy_fig=get(hcurrentfig,<span class="string">'CurrentPoint'</span>);<span class="comment">% current point of the current figure (gcbo)</span>
+0056 hchild=get(hcurrentfig,<span class="string">'Children'</span>);<span class="comment">%handles of all objects in the current figure</span>
+0057 <span class="comment">% loop on all the objects in the current figure (selected by the last mouse click)</span>
+0058 <span class="keyword">for</span> ichild=1:length(hchild)
+0059     obj_pos=get(hchild(ichild),<span class="string">'Position'</span>);<span class="comment">%position of the object</span>
+0060     <span class="keyword">if</span> xy_fig(1) &gt;=obj_pos(1) &amp; xy_fig(2) &gt;= obj_pos(2)&amp; xy_fig(1) &lt;=obj_pos(1)+obj_pos(3) &amp; xy_fig(2) &lt;= obj_pos(2)+obj_pos(4);
+0061         htype=get(hchild(ichild),<span class="string">'Type'</span>);<span class="comment">%type of object child of the current figure</span>
+0062         <span class="comment">%if the mouse is over an axis, look at the data</span>
+0063         <span class="keyword">if</span> isequal(htype,<span class="string">'axes'</span>)
+0064             haxes=hchild(ichild);
+0065             xy=get(haxes,<span class="string">'CurrentPoint'</span>);<span class="comment">%xy(1,1),xy(1,2): current x,y positions in axes coordinates</span>
+0066             AxeData=get(haxes,<span class="string">'UserData'</span>);<span class="comment">% data attached to the axis</span>
+0067             AxeData.CurrentOrigin=[xy(1,1) xy(1,2)];<span class="comment">% The current point set by the mouse becomes the current origin</span>
+0068             <span class="keyword">if</span> ~isequal(tag_obj,<span class="string">'proj_object'</span>) &amp; ~test_create
+0069                 x_mouse=xy(1,1);<span class="comment">%default</span>
+0070                 y_mouse=xy(1,2);<span class="comment">%default</span>
+0071                 u_mouse=[];
+0072                 v_mouse=[];
+0073                 w_mouse=[];
+0074                 A_mouse=[];
+0075                 c_text=[];
+0076                 f_text=[];
+0077                 ff_text=[];     
+0078                 ivec=[];   
+0079                 <span class="keyword">if</span> isfield(AxeData,<span class="string">'X'</span>) &amp; isfield(AxeData,<span class="string">'Y'</span>) &amp; isfield(AxeData,<span class="string">'Mesh'</span>)<span class="comment">% test on the existence of a vector field in the current axis</span>
+0080                     flag_vec=(AxeData.X&lt;(xy(1,1)+AxeData.Mesh/4) &amp; AxeData.X&gt;(xy(1,1)-AxeData.Mesh/4)) &amp; <span class="keyword">...</span><span class="comment">%flagx=1 for the vectors with x position selected by the mouse</span>
+0081                       (AxeData.Y&lt;(xy(1,2)+AxeData.Mesh/4) &amp; AxeData.Y&gt;(xy(1,2)-AxeData.Mesh/4));<span class="comment">%f</span>
+0082                     ivec=find(flag_vec);<span class="comment">% search the selected vector index ivec</span>
+0083                     <span class="keyword">if</span> length(ivec)&gt;0
+0084                         ivec=ivec(1);<span class="comment">%choice the first selected vector if several are selected</span>
+0085                     <span class="keyword">end</span>
+0086                 <span class="keyword">end</span>
+0087             <span class="keyword">end</span>
+0088         <span class="keyword">elseif</span> isequal(get(hchild(ichild),<span class="string">'Visible'</span>),<span class="string">'on'</span>)&amp; ~isequal(get(hchild(ichild),<span class="string">'Style'</span>),<span class="string">'frame'</span>)
+0089            <span class="comment">%FAIRE UNE OPTION D'AIDE AVEC BOUTON SOURIS DROIT (ALT)??</span>
+0090         <span class="keyword">end</span>
+0091     <span class="keyword">end</span>
+0092 <span class="keyword">end</span>
+0093 test2D=0;
+0094 <span class="keyword">if</span> isfield(AxeData,<span class="string">'NbDim'</span>)
+0095     <span class="keyword">if</span> isequal(AxeData.NbDim,2)
+0096         test2D=1;
+0097     <span class="keyword">end</span>
+0098 <span class="keyword">end</span>
+0099 <span class="keyword">if</span> ~test2D     <span class="comment">%desable  object creation and vector editing if NbDim different from 2</span>
+0100     test_create=0;
+0101     test_edit_vect=0;
+0102 <span class="keyword">end</span>
+0103 <span class="comment">%delete the current zoom rectangle</span>
+0104 <span class="keyword">if</span> isfield(AxeData,<span class="string">'CurrentRectZoom'</span>) &amp; ishandle(AxeData.CurrentRectZoom)
+0105     delete(AxeData.CurrentRectZoom)
+0106     AxeData.CurrentRectZoom=[];
+0107 <span class="keyword">end</span>    
+0108 
+0109 <span class="keyword">if</span> testzoom <span class="comment">%&amp;&amp; ~test_create &amp;&amp; ~test_edit &amp;&amp; ~test_edit_vect &amp;&amp; exist('xy','var')</span>
+0110      AxeData.Drawing=<span class="string">'zoom'</span>; <span class="comment">%initiate drawing mode</span>
+0111      AxeData.CurrentObject=[];<span class="comment">%unselect objects</span>
+0112 <span class="keyword">elseif</span> ~isempty(huvmat)
+0113     <span class="comment">%selection of an existing projection object</span>
+0114     <span class="keyword">if</span>  test_edit &amp;&amp; (isequal(tag_obj,<span class="string">'proj_object'</span>)||isequal(tag_obj,<span class="string">'DeformPoint'</span>))
+0115         <span class="keyword">if</span> ~(isfield(AxeData,<span class="string">'Drawing'</span>) &amp;&amp; isequal(AxeData.Drawing,<span class="string">'create'</span>))
+0116             userdata=get(hcurrentobject,<span class="string">'UserData'</span>);
+0117             <span class="keyword">if</span> ishandle(userdata)<span class="comment">%the selected line depends on a parent line</span>
+0118                 AxeData.CurrentObject=userdata;<span class="comment">% the parent object becomes the current one</span>
+0119             <span class="keyword">else</span>
+0120                 AxeData.CurrentObject=hcurrentobject;<span class="comment">% the selected object becomes the current one</span>
+0121             <span class="keyword">end</span>
+0122             ObjectData=get(AxeData.CurrentObject,<span class="string">'UserData'</span>);
+0123             <span class="keyword">if</span> test_edit &amp; isfield(ObjectData,<span class="string">'IndexObj'</span>)
+0124                 hother=findobj(<span class="string">'Tag'</span>,<span class="string">'proj_object'</span>,<span class="string">'Type'</span>,<span class="string">'line'</span>);<span class="comment">%find all the proj objects</span>
+0125                 set(hother,<span class="string">'Color'</span>,<span class="string">'b'</span>);<span class="comment">%reset all the proj objects in 'blue' by default</span>
+0126                 set(hother,<span class="string">'Selected'</span>,<span class="string">'off'</span>)
+0127                 hother=findobj(<span class="string">'Tag'</span>,<span class="string">'proj_object'</span>,<span class="string">'Type'</span>,<span class="string">'rectangle'</span>);
+0128                 set(hother,<span class="string">'EdgeColor'</span>,<span class="string">'b'</span>);
+0129                 set(hother,<span class="string">'Selected'</span>,<span class="string">'off'</span>);
+0130                 hother=findobj(<span class="string">'Tag'</span>,<span class="string">'proj_object'</span>,<span class="string">'Type'</span>,<span class="string">'image'</span>);
+0131                 <span class="keyword">for</span> iobj=1:length(hother)
+0132                        Acolor=get(hother(iobj),<span class="string">'CData'</span>);
+0133                        Acolor(:,:,1)=zeros(size(Acolor,1),size(Acolor,2));
+0134                        set(hother(iobj),<span class="string">'CData'</span>,Acolor);
+0135                 <span class="keyword">end</span>
+0136                 hother=findobj(<span class="string">'Tag'</span>,<span class="string">'DeformPoint'</span>);
+0137                 set(hother,<span class="string">'Color'</span>,<span class="string">'b'</span>);
+0138                 set(hother,<span class="string">'Selected'</span>,<span class="string">'off'</span>)    
+0139                 <span class="keyword">if</span> isequal(get(AxeData.CurrentObject,<span class="string">'Type'</span>),<span class="string">'line'</span>)
+0140                     set(AxeData.CurrentObject,<span class="string">'Color'</span>,<span class="string">'m'</span>); <span class="comment">%set the selected object to magenta color</span>
+0141                 <span class="keyword">elseif</span> isequal(get(AxeData.CurrentObject,<span class="string">'Type'</span>),<span class="string">'rectangle'</span>)
+0142                      set(AxeData.CurrentObject,<span class="string">'EdgeColor'</span>,<span class="string">'m'</span>); <span class="comment">%set the selected object to magenta color</span>
+0143                 <span class="keyword">end</span>
+0144                 <span class="keyword">if</span> isfield(ObjectData,<span class="string">'SubObject'</span>)&amp; ishandle(ObjectData.SubObject)
+0145                     <span class="keyword">for</span> iobj=1:length(ObjectData.SubObject)
+0146                         hsub=ObjectData.SubObject(iobj);
+0147                         <span class="keyword">if</span> isequal(get(hsub,<span class="string">'Type'</span>),<span class="string">'rectangle'</span>)
+0148                             set(hsub,<span class="string">'EdgeColor'</span>,<span class="string">'m'</span>); <span class="comment">%set the selected object to magenta color</span>
+0149                         <span class="keyword">elseif</span> isequal(get(hsub,<span class="string">'Type'</span>),<span class="string">'image'</span>)
+0150                            Acolor=get(hsub,<span class="string">'CData'</span>);
+0151                            Acolor(:,:,1)=Acolor(:,:,3);
+0152                            set(hsub,<span class="string">'CData'</span>,Acolor);
+0153                         <span class="keyword">else</span>
+0154                             set(hsub,<span class="string">'Color'</span>,<span class="string">'m'</span>)
+0155                         <span class="keyword">end</span>
+0156                     <span class="keyword">end</span>
+0157                 <span class="keyword">end</span>
+0158                 <span class="keyword">if</span> isequal(tag_obj,<span class="string">'DeformPoint'</span>)
+0159                      set(hcurrentobject,<span class="string">'Color'</span>,<span class="string">'m'</span>); <span class="comment">%set the selected DeformPoint to magenta color</span>
+0160                 <span class="keyword">end</span>
+0161                 IndexObj=ObjectData.IndexObj;
+0162                 hlist_object=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'list_object'</span>);
+0163                 set(hlist_object,<span class="string">'Value'</span>,IndexObj);
+0164                 testdeform=0;
+0165                 set(gcbo,<span class="string">'Pointer'</span>,<span class="string">'circle'</span>); 
+0166                 AxeData.Drawing=<span class="string">'deform'</span>;
+0167                 <span class="keyword">if</span> isequal(tag_obj,<span class="string">'DeformPoint'</span>)       
+0168                    <span class="keyword">if</span> isfield(ObjectData,<span class="string">'DeformPoint'</span>)
+0169                        set(hcurrentobject,<span class="string">'Selected'</span>,<span class="string">'on'</span>)
+0170                        <span class="keyword">for</span> ipt=1:length(ObjectData.DeformPoint)
+0171                            <span class="keyword">if</span> isequal(ObjectData.DeformPoint(ipt),hcurrentobject)
+0172                                 AxeData.CurrentIndex=ipt;
+0173                                 testdeform=1;
+0174                            <span class="keyword">end</span>
+0175                        <span class="keyword">end</span>
+0176                    <span class="keyword">end</span>
+0177                 <span class="keyword">end</span>
+0178                 <span class="keyword">if</span> testdeform==0
+0179                     AxeData.Drawing=<span class="string">'translate'</span>;
+0180                     set(AxeData.CurrentObject,<span class="string">'Selected'</span>,<span class="string">'on'</span>)
+0181                     set(gcbo,<span class="string">'Pointer'</span>,<span class="string">'fleur'</span>);
+0182                 <span class="keyword">end</span>
+0183             <span class="keyword">end</span>
+0184         <span class="keyword">end</span>
+0185     <span class="keyword">end</span>
+0186     <span class="comment">%  create new projection  object</span>
+0187     <span class="keyword">if</span>  test_create &amp;&amp; ~isempty(xy) &amp;&amp; ~(isfield(AxeData,<span class="string">'Drawing'</span>)&amp;&amp; isequal(AxeData.Drawing,<span class="string">'create'</span>))
+0188             ObjectData=<a href="read_set_object.html" class="code" title="function data=read_set_object(handles)">read_set_object</a>(UvData.sethandles); 
+0189             ObjectData.Coord=[]; <span class="comment">%reset previous object coordinates</span>
+0190             ObjectData.Coord(1,1)=xy(1,1);
+0191             ObjectData.Coord(1,2)=xy(1,2);
+0192             ObjectData.Coord(1,3)=0;
+0193             <span class="keyword">if</span> isfield(AxeData,<span class="string">'ObjectCoord'</span>) &amp; size(AxeData.ObjectCoord,2)==3
+0194                  ObjectData.Coord(1,3)=AxeData.ObjectCoord(1,3); <span class="comment">%generaliser au cas avec angle</span>
+0195             <span class="keyword">end</span>
+0196             AxeData.CurrentObject=<a href="plot_object.html" class="code" title="function [hh]=plot_object(ObjectDataIn,ProjObject,hplot,col)">plot_object</a>(ObjectData,[],haxes,<span class="string">'m'</span>);<span class="comment">%draw the object and its handle becomes AxeData.CurrentObject</span>
+0197             <span class="keyword">if</span> isfield(UvData,<span class="string">'Object'</span>)
+0198                 IndexObj=length(UvData.Object)+1;<span class="comment">% add the object as index IndexObj on the list of the interface</span>
+0199             <span class="keyword">else</span>
+0200                 IndexObj=2;
+0201             <span class="keyword">end</span>  
+0202             UvData.Object{IndexObj}=ObjectData;
+0203             UvData.Object{IndexObj}.HandlesDisplay(1)=AxeData.CurrentObject;
+0204             set(huvmat,<span class="string">'UserData'</span>,UvData)
+0205             list_str=get(hhuvmat.list_object,<span class="string">'String'</span>);
+0206             list_str{IndexObj}=[num2str(IndexObj) <span class="string">'-'</span> <a href="set_title.html" class="code" title="function TITLE=set_title(Style,ProjMode)">set_title</a>(ObjectData.Style,ObjectData.ProjMode)];
+0207             <span class="keyword">if</span> ~isequal(list_str{end},<span class="string">'...'</span>)
+0208                  list_str{end+1}=<span class="string">'...'</span>;
+0209             <span class="keyword">end</span>
+0210             set(hhuvmat.list_object,<span class="string">'String'</span>,list_str)
+0211             set(hhuvmat.list_object,<span class="string">'Value'</span>,IndexObj)
+0212             PlotData=get(AxeData.CurrentObject,<span class="string">'UserData'</span>);
+0213             PlotData.IndexObj=IndexObj;
+0214             set(AxeData.CurrentObject,<span class="string">'UserData'</span>,PlotData); <span class="comment">%record the object index in the graph</span>
+0215             AxeData.Drawing=<span class="string">'create'</span>;
+0216     <span class="keyword">end</span>
+0217 
+0218     <span class="comment">% create calibration points if the GUI geometry_calib is opened</span>
+0219     <span class="keyword">if</span> test_cal &amp; ~isempty(xy)
+0220         h_geometry_calib=findobj(allchild(0),<span class="string">'Name'</span>,<span class="string">'geometry_calib'</span>); <span class="comment">%find the geomterty_calib GUI</span>
+0221         hh_geometry_calib=guidata(h_geometry_calib);
+0222         h_ListCoord=hh_geometry_calib.ListCoord; <span class="comment">%findobj(h_geometry_calib,'Tag','ListCoord');</span>
+0223         h_edit_append=hh_geometry_calib.edit_append;<span class="comment">%findobj(h_geometry_calib,'Tag','edit_append');</span>
+0224         <span class="keyword">if</span> isequal(get(h_edit_append,<span class="string">'Value'</span>),1) 
+0225             <span class="keyword">if</span> ~isequal(coord_type,<span class="string">''</span>)
+0226                 set(handles_coord,<span class="string">'Value'</span>,1)
+0227                 coord_type=<span class="string">''</span>;
+0228                 set(hhuvmat.FixedLimits,<span class="string">'Value'</span>,0)<span class="comment">% put FixedLimits option to 'off'</span>
+0229                 set(hhuvmat.FixedLimits,<span class="string">'BackgroundColor'</span>,[0.7 0.7 0.7])
+0230                 <a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>(<span class="string">'run0_Callback'</span>,hObject,eventdata,hhuvmat); <span class="comment">%file input with xml reading  in uvmat</span>
+0231             <span class="keyword">end</span>
+0232 <span class="comment">%             if isequal(coord_type,'px')|isequal(coord_type,'');%px cordinates</span>
+0233                 strline=[ <span class="string">'    |    '</span>  <span class="string">'    |    '</span>  <span class="string">'    |    '</span> num2str(xy(1,1),4) <span class="string">'    |    '</span> num2str(xy(1,2),4)];
+0234 <span class="comment">%             else %phys cordinates</span>
+0235 <span class="comment">%                 strline=[ num2str(xy(1,1),4) '    |    '  num2str(xy(1,2),4) '    |    0      |    '  '    |    ' ];</span>
+0236 <span class="comment">%             end</span>
+0237             Coord=get(h_ListCoord,<span class="string">'String'</span>);
+0238             val=get(h_ListCoord,<span class="string">'Value'</span>);
+0239             <span class="keyword">if</span> isequal(Coord,{<span class="string">''</span>})
+0240                 val=0;
+0241             <span class="keyword">end</span>
+0242             <span class="keyword">if</span> length(Coord)&gt;val
+0243                 Coord(val+2:length(Coord)+1)=Coord(val+1:length(Coord));<span class="comment">% push the list forward beyond the current point</span>
+0244             <span class="keyword">end</span>
+0245             Coord{val+1}=strline;
+0246             set(h_ListCoord,<span class="string">'String'</span>,Coord)
+0247             set(h_ListCoord,<span class="string">'Value'</span>,val+1)
+0248             <a href="geometry_calib.html" class="code" title="function varargout = geometry_calib(varargin)">geometry_calib</a>(<span class="string">'ListCoord_Callback'</span>,hObject,eventdata,hh_geometry_calib)
+0249             data=<a href="read_geometry_calib.html" class="code" title="function data=read_geometry_calib(Coord_cell)">read_geometry_calib</a>(Coord);
+0250             <span class="keyword">if</span> isequal(coord_type,<span class="string">'px'</span>)|isequal(coord_type,<span class="string">''</span>);<span class="comment">%px cordinates</span>
+0251                 XCoord=data.Coord(:,4);
+0252                 YCoord=data.Coord(:,5);
+0253             <span class="keyword">else</span> <span class="comment">%phys cordinates</span>
+0254                 XCoord=data.Coord(:,1);
+0255                 YCoord=data.Coord(:,2);
+0256             <span class="keyword">end</span>
+0257             hh=findobj(<span class="string">'Tag'</span>,<span class="string">'calib_points'</span>)           
+0258             <span class="keyword">if</span> isempty(hh)
+0259                 line(XCoord,YCoord,<span class="string">'Color'</span>,<span class="string">'m'</span>,<span class="string">'Tag'</span>,<span class="string">'calib_points'</span>,<span class="string">'LineStyle'</span>,<span class="string">'.'</span>,<span class="string">'Marker'</span>,<span class="string">'+'</span>);
+0260             <span class="keyword">else</span>
+0261                 set(hh,<span class="string">'XData'</span>,XCoord)
+0262                 set(hh,<span class="string">'YData'</span>,YCoord)
+0263             <span class="keyword">end</span>
+0264             hhh=findobj(<span class="string">'Tag'</span>,<span class="string">'calib_marker'</span>);
+0265             <span class="keyword">if</span> ~isempty(hhh)
+0266                 set(hhh,<span class="string">'XData'</span>,xy(1,1))
+0267                 set(hhh,<span class="string">'YData'</span>,xy(1,2))
+0268             <span class="keyword">else</span>
+0269                 line(xy(1,1),xy(1,2),<span class="string">'Color'</span>,<span class="string">'m'</span>,<span class="string">'Tag'</span>,<span class="string">'calib_marker'</span>,<span class="string">'LineStyle'</span>,<span class="string">'.'</span>,<span class="string">'Marker'</span>,<span class="string">'o'</span>,<span class="string">'MarkerSize'</span>,20);
+0270             <span class="keyword">end</span>
+0271             <span class="comment">%uistack(h_geometry_calib,'top')</span>
+0272         <span class="keyword">end</span>
+0273     <span class="keyword">end</span>
+0274 
+0275     <span class="comment">% edit vectors</span>
+0276     <span class="keyword">if</span> test_edit_vect &amp; ~isempty(ivec) 
+0277     <span class="comment">%     FF_100=FF-100*double(uint(abs(FF)/100); %value of FF without units and dizaines</span>
+0278         <span class="keyword">if</span> ~isfield(AxeData,<span class="string">'FF'</span>)
+0279             AxeData.FF=zeros(size(AxeData.X));
+0280         <span class="keyword">end</span>
+0281         <span class="keyword">if</span> isequal(AxeData.FF(ivec),0)
+0282 
+0283             AxeData.FF(ivec)=100; <span class="comment">%mark vector #ivec as false</span>
+0284 
+0285         <span class="keyword">else</span>
+0286             AxeData.FF(ivec)=0;
+0287         <span class="keyword">end</span>
+0288         set(haxes,<span class="string">'UserData'</span>,AxeData)
+0289         <a href="#_sub1" class="code" title="subfunction update_plot">update_plot</a>
+0290     <span class="keyword">end</span>   
+0291 <span class="keyword">end</span>
+0292 set(haxes,<span class="string">'UserData'</span>,AxeData);
+0293 
+0294 <span class="comment">%------------------------------------------------------</span>
+0295 <a name="_sub1" href="#_subfunctions" class="code">function update_plot</a>
+0296 <span class="comment">%--------------------------------------------</span>
+0297 huvmat=gcbf;
+0298 UvData=get(gcbf,<span class="string">'UserData'</span>);
+0299 <span class="comment">%determine the axes of action of the set_edit interface</span>
+0300 <span class="comment">% list_axes=get(handles.MenuAxes,'String');% list menu fields</span>
+0301 <span class="comment">% index_axes=get(handles.MenuAxes,'Value');% selected string index</span>
+0302 <span class="comment">% current_axes= list_axes{index_axes(1)} % selected string</span>
+0303 <span class="comment">% eval(['haxes=UvData.' current_axes '.Axes']);</span>
+0304 <span class="comment">% if isempty(haxes)|~ishandle(haxes)| ~isequal(get(haxes,'Type'),'axes')</span>
+0305      haxes= findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'axes3'</span>); <span class="comment">%main plotting axes as default</span>
+0306 <span class="comment">%      set(handles.MenuAxes,'Value',1)</span>
+0307 <span class="comment">% end</span>
+0308 AxeData=get(haxes,<span class="string">'UserData'</span>);
+0309 <span class="comment">%For vector field representation</span>
+0310 <span class="comment">%NEW</span>
+0311 PlotHandles.VecScale=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'VecScale'</span>);
+0312 PlotHandles.AutoVec=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'AutoVec'</span>);
+0313 PlotHandles.checkyellow=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'checkyellow'</span>);
+0314 PlotHandles.checkblack=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'checkblack'</span>);
+0315 PlotHandles.col_vec=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'col_vec'</span>);
+0316 PlotHandles.colcode1=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'colcode1'</span>);
+0317 PlotHandles.colcode2=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'colcode2'</span>);
+0318 PlotHandles.vec_col_bar=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'vec_col_bar'</span>);
+0319 PlotHandles.slider1=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'slider1'</span>);
+0320 PlotHandles.slider2=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'slider2'</span>);
+0321 PlotHandles.max_vec=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'max_vec'</span>);
+0322 PlotHandles.min_vec=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'min_vec'</span>);
+0323 PlotHandles.AutoVecColor=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'AutoVecColor'</span>);
+0324 PlotHandles.decimate4=findobj(huvmat,<span class="string">'Tag'</span>,<span class="string">'decimate4'</span>);
+0325 
+0326 <span class="comment">%vectors</span>
+0327 Vectors.VecScale=str2num(get(PlotHandles.VecScale,<span class="string">'String'</span>));
+0328 Vectors.AutoVec=get(PlotHandles.AutoVec,<span class="string">'Value'</span>);<span class="comment">%automatic vector length</span>
+0329 Vectors.checkyellow=get(PlotHandles.checkyellow,<span class="string">'Value'</span>);
+0330 Vectors.checkblack=get(PlotHandles.checkblack,<span class="string">'Value'</span>);
+0331 Vectors.decimate4=get(PlotHandles.decimate4,<span class="string">'Value'</span>);<span class="comment">% =1; for reducing the nbre of vectors</span>
+0332 menu_col=get(PlotHandles.col_vec,<span class="string">'String'</span>);
+0333 menu_val=get(PlotHandles.col_vec,<span class="string">'Value'</span>);
+0334 Vectors.CName=menu_col{menu_val}; <span class="comment">%'ima_cor','black','white',...</span>
+0335 Vectors.colcode1=str2num(get(PlotHandles.colcode1,<span class="string">'String'</span>));<span class="comment">% first threshold for rgb, first value for'continuous'</span>
+0336 Vectors.colcode2=str2num(get(PlotHandles.colcode2,<span class="string">'String'</span>));<span class="comment">% second threshold for rgb, last value (saturation) for 'continuous'</span>
+0337 Vectors.option=get(PlotHandles.vec_col_bar,<span class="string">'Value'</span>); <span class="comment">% =1 (64 colors), =0 (3 colors)</span>
+0338 Vectors.min=get(PlotHandles.slider1,<span class="string">'Min'</span>);
+0339 Vectors.max=get(PlotHandles.slider1,<span class="string">'Max'</span>);
+0340 Vectors.auto=get(PlotHandles.AutoVecColor,<span class="string">'Value'</span>);<span class="comment">% =1; thresholds scaling relative to min and max, =0 fixed thresholds</span>
+0341 PlotParam.Vectors=Vectors;
+0342 
+0343 [PlotType,ScalOut]= <a href="plot_field.html" class="code" title="function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)">plot_field</a>(AxeData,haxes,PlotParam,1);</pre></div>
+<hr><address>Generated on Fri 13-Nov-2009 11:17:03 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>
