@@ -4507,9 +4507,10 @@ function MenuHelp_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 path_to_uvmat=which ('uvmat');% check the path of uvmat
 pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'UVMAT_DOC','uvmat_doc.html');
-if isempty(dir(helpfile)), errordlg('Please put the help file uvmat_doc.html in the directory UVMAT/UVMAT_DOC')
+helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
+if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
 else
+    addpath (fullfile(pathelp,'uvmat_doc'))
     web(helpfile);
 end
 

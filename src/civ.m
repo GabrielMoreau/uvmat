@@ -1314,23 +1314,23 @@ set(gcf,'Pointer','arrow')
 function [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2]=...
     find_pair_indices(handles,mode)
 %------------------------------------------------------------------------
-first_i=str2num(get(handles.first_i,'String'));
-last_i=str2num(get(handles.last_i,'String'));
-incr=str2num(get(handles.incr_i,'String'));
-num1=[first_i:incr:last_i];
+first_i=str2num(get(handles.first_i,'String'));%first index i 
+last_i=str2num(get(handles.last_i,'String'));%last index i 
+incr=str2num(get(handles.incr_i,'String'));% increment
+num1=[first_i:incr:last_i];% list of i indices (reference values for each pair)
 if isequal(get(handles.first_j,'Visible'),'on')
-    first_j=str2num(get(handles.first_j,'String'));
-    last_j=str2num(get(handles.last_j,'String'));
-    incr_j=str2num(get(handles.incr_j,'String'));
+    first_j=str2num(get(handles.first_j,'String'));%first index j
+    last_j=str2num(get(handles.last_j,'String'));%last index j 
+    incr_j=str2num(get(handles.incr_j,'String'));% increment
 else
     first_j=1;
     last_j=1;
     incr_j=1;
 end
-num_j=[first_j:incr_j:last_j];
+num_j=[first_j:incr_j:last_j];% list of j indices (reference values for each pair)
 list_civ1=get(handles.list_pair_civ1,'String');
 index_civ1=get(handles.list_pair_civ1,'Value');
-str_civ1=list_civ1{index_civ1};
+str_civ1=list_civ1{index_civ1};%string defining the image pairs for civ1
 if isempty(str_civ1)||isequal(str_civ1,'')
     msgbox_uvmat('ERROR','no image pair selected for civ1')
     return
@@ -1341,16 +1341,16 @@ if index_civ2>length(list_civ2)
     list_civ2=list_civ1;
     index_civ2=index_civ1;
 end
-str_civ2=list_civ2{index_civ2};
-if isequal(first_i,[])|isequal(first_j,[]), errordlg('first field number not defined'),...
-    set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
-if isequal(last_i,[])| isequal(last_j,[]),errordlg('last field number not defined'),...
-    set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
-if isequal(incr,[])| isequal(incr_j,[]),errordlg('increment in field number not defined'),...
-    set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
-if last_i < first_i | last_j < first_j , errordlg('last field number must be larger than the first one'),...
-    set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
-if isequal (mode,'series(Di)')% |isequal(mode,'st_series(Di)')    
+str_civ2=list_civ2{index_civ2};%string defining the image pairs for civ2
+if isempty(first_i)||isempty(first_j), msgbox_uvmat('ERROR','first field number not defined'),...
+    return,end;
+if isequal(last_i,[])| isequal(last_j,[]),msgbox_uvmat('ERROR','last field number not defined'),...
+    return,end;
+if isequal(incr,[])| isequal(incr_j,[]),msgbox_uvmat('ERROR','increment in field number not defined'),...
+    return,end;
+if last_i < first_i | last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
+    return,end;
+if isequal (mode,'series(Di)') 
      %recognize the pair civ1 from the display
 	indsel=find((double(str_civ1)<48)|(double(str_civ1)>57));% character indices of non numerical characters
     str_raw=str_civ1(indsel);
@@ -1407,7 +1407,7 @@ if isequal (mode,'series(Di)')% |isequal(mode,'st_series(Di)')
         num2_civ1=num2_civ1(indsel);
         num2_civ2=num2_civ2(indsel);
     end
-elseif isequal (mode,'series(Dj)')%|isequal (mode,'st_series(Dj)')
+elseif isequal (mode,'series(Dj)')
     lastfield_j=str2num(get(handles.nb_field2,'String'));
     num1_civ1=num1;% set of first image numbers
     num2_civ1=num1;
@@ -1434,7 +1434,7 @@ elseif isequal (mode,'series(Dj)')%|isequal (mode,'st_series(Dj)')
         num_b_civ1=num_b_civ1(indsel);
         num_b_civ2=num_b_civ2(indsel);
     end
-elseif isequal(mode,'pair j1-j2')% | isequal(mode,'st_pair j1-j2') %case of bursts (png_old or png_2D)
+elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)
     num1_civ1=num1;
     num1_civ2=num1;
     displ_num=get(handles.list_pair_civ1,'UserData');
@@ -1454,6 +1454,11 @@ elseif isequal(mode,'displacement')
     num_a_civ2=num_j;
     num_b_civ2=num_j;
 end
+'TESTfind'
+num1_civ1
+num2_civ1
+num_a_civ1
+num_b_civ1
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in list_pair_civ1.
@@ -1658,6 +1663,10 @@ drawnow
 display('checking the files...')
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
        set_civ_filenames(handles,compare,box_test);
+   'TESTnbre_RUN'
+nbfield=size(num1_civ1,2)
+nbslice=size(num1_civ1,1)
+
 if isempty(filecell)
    set(handles.RUN, 'Enable','On')
     set(handles.RUN,'BackgroundColor',[1 0 0])
@@ -2175,8 +2184,9 @@ display('checking the files...')
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
        set_civ_filenames(handles,compare,box_test);
 display('files OK, processing...')  
-nbfield=size(num1_civ1,2);
-nbslice=size(num1_civ1,1);
+'TESTnbre'
+nbfield=size(num1_civ1,2)
+nbslice=size(num1_civ1,1)
 
 %GET PARAMETERS:
   %get civ parameters
@@ -3503,9 +3513,6 @@ for ifile=1:nbfield
 		'ImageUsedBefore null null'};
 		textout=char(textcmx);
 % 		dlmwrite(filename_cmx,textout,'');
-        
-        filename_ima
-        filename_ima_1
      fid=fopen([filename_cmx],'w');
 fprintf(fid, ['##############   CMX file' '\n']);
  fprintf(fid,   ['FirstImage ' regexprep(filename_ima,'\\','\\\\') '\n' ]);
@@ -4955,10 +4962,11 @@ function HELP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 path_to_uvmat=which ('uvmat');% check the path of uvmat
 pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'UVMAT_DOC','uvmat_doc.html');
-if isempty(dir(helpfile)), errordlg('Please put the help file uvmat_doc.html in the directory UVMAT/UVMAT_DOC')
+helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
+if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
 else
-web([helpfile '#civ'])    
+    addpath (fullfile(pathelp,'uvmat_doc'))
+    web([helpfile '#civ'])    
 end
 
 %------------------------------------------------------------------------

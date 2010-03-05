@@ -145,14 +145,14 @@ end
 nbcoord=0;
 
 %case of calibration (ImaDoc) input file
-hcalib=get(handles.calib_type,'parent');
-CalibData=get(hcalib,'UserData');
+% hcalib=get(handles.calib_type,'parent');
+CalibData=get(handles.figure1,'UserData');
 CalibData.XmlInput=fileinput;
 if isfield(s,'Heading')
     CalibData.Heading=s.Heading;
 end
 
-set(hcalib,'UserData',CalibData);%store the heading in the interface 'UserData'
+set(handles.figure1,'UserData',CalibData);%store the heading in the interface 'UserData'
 if isfield(s,'GeometryCalib')
     Calib=s.GeometryCalib;
     if isfield(Calib,'CalibrationType')
@@ -411,7 +411,7 @@ if ~testinput
     testinput=1;
 end
 if testinput
-    outcome=dataview(XmlInput,SubCampaignTest,GeometryCalib)
+    outcome=dataview(XmlInput,SubCampaignTest,GeometryCalib);
 end
 %     %A COMPLETER
 %     dataview('RootDirectory_Callback',hObject,eventdata,hhdataview)
@@ -1013,30 +1013,31 @@ end
 function MenuHelp_Callback(hObject, eventdata, handles)
 path_to_uvmat=which ('uvmat');% check the path of uvmat
 pathelp=fileparts(path_to_uvmat);
-    helpfile=fullfile(pathelp,'UVMAT_DOC','uvmat_doc.html');
-if isempty(dir(helpfile)), warndlg_uvmat('The help file uvmat_doc.html needs to be put in the directory UVMAT/UVMAT_DOC','ERROR')
+    helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
+if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
 else
+   addpath (fullfile(pathelp,'uvmat_doc'))
    web([helpfile '#geometry_calib'])
 end
 
 %------------------------------------------------------------------------
 function MenuCreateGrid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
-CalibData=get(hcalib,'UserData');
+%hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
+CalibData=get(handles.figure1,'UserData');
 Tinput=[];%default
 if isfield(CalibData,'grid')
     Tinput=CalibData.grid;
 end
-T=create_grid(Tinput)%display the GUI create_grid 
+T=create_grid(Tinput);%display the GUI create_grid 
 CalibData.grid=T;
-set(hcalib,'UserData',CalibData)
+set(handles.figure1,'UserData',CalibData)
 
 %grid in phys space
 Coord_cell=get(handles.ListCoord,'String');
-data=read_geometry_calib(Coord_cell)
+data=read_geometry_calib(Coord_cell);
 nbpoints=size(data.Coord,1); %nbre of calibration points
-data.Coord(1:size(T,1),1:3)=T;
+data.Coord(1:size(T,1),1:3)=T;%update the existing list of phys coordinates from the GUI create_grid
 for i=1:nbpoints
    for j=1:5
           Coord{i,j}=num2str(data.Coord(i,j),4);%display coordiantes with 4 digits
@@ -1060,15 +1061,15 @@ set(handles.ListCoord,'String',Tabchar)
 %-----------------------------------------------------------------------
 function MenuTranslatePoints_Callback(hObject, eventdata, handles)
 %-----------------------------------------------------------------------
-hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
-CalibData=get(hcalib,'UserData')
+%hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
+CalibData=get(handles.figure1,'UserData');
 Tinput=[];%default
 if isfield(CalibData,'translate')
     Tinput=CalibData.translate;
 end
 T=translate_points(Tinput);%display translate_points GUI and get shift parameters 
 CalibData.translate=T;
-set(hcalib,'UserData',CalibData)
+set(handles.figure1,'UserData',CalibData)
 %translation
 Coord_cell=get(handles.ListCoord,'String');
 data=read_geometry_calib(Coord_cell);
@@ -1088,15 +1089,15 @@ set(handles.ListCoord,'String',Tabchar)
 
 % --------------------------------------------------------------------
 function MenuRotatePoints_Callback(hObject, eventdata, handles)
-hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
-CalibData=get(hcalib,'UserData')
+%hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
+CalibData=get(handles.figure1,'UserData');
 Tinput=[];%default
 if isfield(CalibData,'rotate')
     Tinput=CalibData.rotate;
 end
 T=rotate_points(Tinput);%display translate_points GUI and get shift parameters 
 CalibData.rotate=T;
-set(hcalib,'UserData',CalibData)
+set(handles.figure1,'UserData',CalibData)
 %-----------------------------------------------------
 %rotation
 Phi=T(1);

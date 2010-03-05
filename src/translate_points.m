@@ -36,6 +36,7 @@ else
 end
 % End initialization code - DO NOT EDIT
 
+
 % --- Executes just before translate_points is made visible.
 function translate_points_OpeningFcn(hObject, eventdata, handles,input_shift)
 % This function has no output args, see OutputFcn.
@@ -128,10 +129,7 @@ uiresume(handles.figure1);
 % --- Executes on button press in Cancel.
 function Cancel_Callback(hObject, eventdata, handles)
 handles.output = get(hObject,'String');
-%handles.output = 'Cancel'
 guidata(hObject, handles); % Update handles structure
-% Use UIRESUME instead of delete because the OutputFcn needs
-% to get the updated handles structure.
 uiresume(handles.figure1);
 
 % --- Executes when user attempts to close figure1.
@@ -160,43 +158,5 @@ if isequal(get(hObject,'CurrentKey'),'return')
     uiresume(handles.figure1);
 end    
 
-
-
-function edit5_Callback(hObject, eventdata, handles)
-% hObject    handle to edit5 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit5 as text
-%        str2double(get(hObject,'String')) returns contents of edit5 as a double
-
-
-
-function edit6_Callback(hObject, eventdata, handles)
-% hObject    handle to edit6 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit6 as text
-%        str2double(get(hObject,'String')) returns contents of edit6 as a
-%        double
-
-
-function edit7_Callback(hObject, eventdata, handles)
-% hObject    handle to edit7 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit7 as text
-%        str2double(get(hObject,'String')) returns contents of edit7 as a double
-
-
-function edit8_Callback(hObject, eventdata, handles)
-% hObject    handle to edit8 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit8 as text
-%        str2double(get(hObject,'String')) returns contents of edit8 as a double
 
 
