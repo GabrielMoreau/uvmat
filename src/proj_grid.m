@@ -5,12 +5,12 @@
 
 function [A,rangx,rangy]=proj_grid(vec_X,vec_Y,vec_A,rgx_in,rgy_in,npxy_in)
     if length(vec_Y)<2
-        warndlg_uvmat('less than 2 points in proj_grid.m','ERROR');
+        msgbox_uvmat('ERROR','less than 2 points in proj_grid.m');
         return; 
     end
     diffy=diff(vec_Y); %difference dy=vec_Y(i+1)-vec_Y(i)
     index=find(diffy);% find the indices of vec_Y after wich a change of horizontal line occurs(diffy non zero)
-    if isempty(index); warndlg_uvmat('points aligned along abscissa in proj_grid.m','ERROR'); return; end;%points aligned% A FAIRE: switch to line plot.
+    if isempty(index); msgbox_uvmat('ERROR','points aligned along abscissa in proj_grid.m'); return; end;%points aligned% A FAIRE: switch to line plot.
     diff2=diff(diffy(index));% diff2 = fluctuations of the detected vertical grid mesh dy 
     if max(abs(diff2))>0.001*abs(diffy(index(1))) % if max(diff2) is larger than 1/1000 of the first mesh dy
         % the data are not regularly spaced and must be interpolated  on a regular grid

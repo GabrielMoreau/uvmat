@@ -248,7 +248,7 @@ elseif length(timecell)>1
     multitime=1;
     for icell=1:length(timecell)
         if ~isequal(size(timecell{icell}),size(timecell{1}))
-            warndlg_uvmat('inconsistent time array dimensions in ImaDoc fields, the time for the first series is used','WARNING')
+            msgbox_uvmat('WARNING','inconsistent time array dimensions in ImaDoc fields, the time for the first series is used')
             time=timecell{1};
             multitime=0;
             break
@@ -261,7 +261,7 @@ if multitime
     end
     diff_time=max(max(diff(time)));
     if diff_time>0
-        warndlg_uvmat(['times of series differ by more than ' num2str(diff_time)],'WARNING')
+        msgbox_uvmat('WARNING',['times of series differ by more than ' num2str(diff_time)])
     end   
 end
 if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array absent or too short in ImaDoc xml file' 

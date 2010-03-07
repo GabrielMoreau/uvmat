@@ -357,7 +357,7 @@ for i_slice=1:NbSlice
                         eval(['sizmean=size(DataMean.' VarName ');']);
                         eval(['siz=size(Field.' VarName ');']);
                         if ~isequal(siz,sizmean)
-                            warndlg_uvmat(['unequal size of input field ' VarName ', need to interpolate on a grid'],'WARNING') 
+                            msgbox_uvmat('WARNING',['unequal size of input field ' VarName ', need to interpolate on a grid']) 
                             nbmissing=nbmissing+1;
                             break
                         else

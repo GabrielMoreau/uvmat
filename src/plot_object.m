@@ -48,11 +48,11 @@ else
     return % no object representation yet available
 end
 if ~isfield(ObjectData,'Style')|isempty(ObjectData.Style)|~ischar(ObjectData.Style)
-    warndlg_uvmat('undefined ObjectData.Style in plot_object.m','ERROR')
+    msgbox_uvmat('ERROR','undefined ObjectData.Style in plot_object.m')
     return
 end
 if ~isfield(ObjectData,'Style')|isempty(ObjectData.Style)|~ischar(ObjectData.Style)
-    warndlg_uvmat('undefined ObjectData.Style in plot_object.m','ERROR')
+    msgbox_uvmat('ERROR','undefined ObjectData.Style in plot_object.m')
     return
 end
 XMin=0;%default
@@ -376,19 +376,10 @@ if test_newobj
     elseif isequal(ObjectData.Style,'ellipse')
         hh=rectangle('Curvature',[1 1],'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax],'EdgeColor',col);
     else
-        warndlg_uvmat('unknown ObjectData.Style in plot_object.m','ERROR')
+        msgbox_uvmat('ERROR','unknown ObjectData.Style in plot_object.m')
         return
     end
     set(hh,'Tag','proj_object')
-    %set(hh,'UserData',ObjectData)%
-%         hh=hplot;
-%     set(hh,'DeleteFcn',@deletefcn)
-%     if isequal(ObjectData.ProjMode,'inside')
-%          if isequal(ObjectData.Style,'ellipse')|isequal(ObjectData.Style,'rectangle')
-%             set(hh,'FaceColor',col)
-%             set(hh,'EdgeColor',col)
-%          end
-%     end
     if test_patch
         hold on
         hhh=image([xlim(1)+dx/2 xlim(2)-dx/2],[ylim(1)+dy/2 ylim(2)-dy/2],imflag,'Tag','proj_object','HitTest','off');

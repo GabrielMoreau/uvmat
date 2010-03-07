@@ -27,14 +27,18 @@ function [errormsg,date_str]=check_functions
 errormsg={};%default
 list_fct={'calc_field';...% defines fields (velocity, vort, div...) from civx data and calculate them  
           'cell2tab';... %transform a Matlab cell in a character array suitable for display in a table
+          'check_field_structure';...% check the validity of the field struture representation consistant with the netcdf format
           'check_functions';...  
           'civ';...   %function associated with the interface 'civ.fig' for PIV and spline interpolation
           'civ.fig';...
           'civ_3D';... function associated with the interface 'civ_3D.fig' for PIV in volume (in progress) 
           'civ_3D.fig';...
           'close_fig';...% function  activated when a figure is closed
-          'copyfields';...%copy fields between two matlab structures
-          'delete_object';...%delete a projection object, defined by its index in the Uvmat list or by its graphic handle
+          'copyfields';...% copy fields between two matlab structures
+          'create_grid';...% called by the GUI geometry_calib to create a physical grid
+          'create_grid.fig';...% GUI corresponding to create_grid.m
+          'dataview';...% function for scanning directories in a campaign
+          'delete_object';...%delete a projection object, defined by its index in the Uvmat list or by its graphic handle  
           'editxml';...%display and edit xml files using a xls schema
           'editxml.fig';...%interface for editxml
           'find_field_indices';...% group the variables of a nc-formated Matlab structure into 'fields' with common dimensions
@@ -57,11 +61,6 @@ list_fct={'calc_field';...% defines fields (velocity, vort, div...) from civx da
           'name_generator';...%creates a file name from a root name and indices. 
           'nc2struct';...% transform a netcdf file in a corresponding matlab structure
           'peaklock';...%
-          'phys';...% transforms fields from image (px) to real world (phys) coordinates using geometric calibration parameters
-          'phys_polar';... transform image coordinates (px) to physical ploar coordinates
-          'phys_XYZ';...%transforms image (px) to real world (phys) coordinates using geometric calibration parameters
-          'px';...% transform fields from physical to px coordinates using geometrical calibration parameters
-          'px_XYZ';...% ransform physical to px coordinates using geometrical calibration parameters
           'plot_field';...%displays a vector field and/or scalar or images
           'plot_object';...%draws a projection object (points, line, plane...)
           'proj_field';...%project a field on a projection object (plane, line,...)
@@ -87,7 +86,6 @@ list_fct={'calc_field';...% defines fields (velocity, vort, div...) from civx da
            'update_imadoc';...  %update the ImaDoc xml file 
            'update_obj';... update the object representation graph and its projection field, record it in the uvmat interface
            'update_waitbar';... update the waitbar display, used for ACTION functions in the GUI 'series'
-           'warndlg_uvmat';...% display messages (error, warning, confirmation) , OBSOLETE, use msgbox_uvmat 
             'write_plot_param'};%update plotting parameters after plot 
  dir_fct=which('uvmat');% path to uvmat
 [pathuvmat,name,ext]=fileparts(dir_fct);

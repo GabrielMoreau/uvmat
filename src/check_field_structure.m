@@ -1,4 +1,4 @@
-%'check_field_structure': check the validity of the field struture representation consitant with the netcdf format
+%'check_field_structure': check the validity of the field struture representation consistant with the netcdf format
 %----------------------------------------------------------------------
 % function [DataOut,errormsg]=check_field_structure(Data)
 %

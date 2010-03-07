@@ -477,7 +477,7 @@ imageB=get(handles.image_2,'String');
 testB=1;
 if isempty(imageA) | isequal(imageA,'')
     if isempty(imageB) | isequal(imageB,'')
-        warndlg_uvmat('at least one image file name must be introduced','ERROR')
+        msgbox_uvmat('ERROR','at least one image file name must be introduced')
     else
         imageA=imageB;
         testB=0;
@@ -517,13 +517,13 @@ flagA=grid_imaA(:,1)>0 & grid_imaA(:,1)<npxA & grid_imaA(:,2)>0 & grid_imaA(:,2)
 if testB
     testexist=exist(imageB,'file');
     if isequal(testexist,0)
-        warndlg_uvmat(['input image file' imageB 'does not exist'],'ERROR')
+        msgbox_uvmat('ERROR',['input image file' imageB 'does not exist'])
         return
     end
     [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(imageB);
     form=imformats(ext([2:end]));
     if isempty(form)% if the extension corresponds to an image format recognized by Matlab
-         warndlg_uvmat(['error in read_image.m: ' imageB ' is not an image name recognized by Matlab '],'ERROR')
+         msgbox_uvmat('ERROR',['error in read_image.m: ' imageB ' is not an image name recognized by Matlab '])
          return
     end
     fileBxml=[fullfile(Pathsub,RootFile) '.xml'];
@@ -531,7 +531,7 @@ if testB
     if isfield(XmlDataB,'GeometryCalib')
      tsaiB=XmlDataB.GeometryCalib;
     else
-     warndlg_uvmat('no geometric calibration available for image B','WARNING')
+     msgbox_uvmat('WARNING','no geometric calibration available for image B')
      tsaiB=[];
  end
     %[error,Heading,nom_type_read,ext_ima_read,time,TimeUnit,mode,NbSlice,...

@@ -117,7 +117,7 @@ else
         nbslice_i=1;
     end
     if ~isequal(floor(nbslice_i),nbslice_i)
-        warndlg_uvmat('the number of slices must be a multiple of the i increment','ERROR')
+        msgbox_uvmat('ERROR','the number of slices must be a multiple of the i increment')
         return
     end
 end

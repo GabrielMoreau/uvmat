@@ -240,15 +240,10 @@ for icell=1:length(CellVarIndex)
             eval(['coord_z=FieldData.' FieldData.ListVarName{ivar_Z} ';'])
             test3D=1;
         end
-%         if length(ivar_U)>1 | length(ivar_V)>1 | length(ivar_W)>1
-%                  warndlg_uvmat('multiple vector input in proj_field.m','ERROR')
-%                     return
-%         end
         if length(ivar_F)>1 | length(ivar_FF)>1 
-                 warndlg_uvmat('multiple flag input in proj_field.m','ERROR')
+                 msgbox_uvmat('ERROR','multiple flag input in proj_field.m')
                     return
-        end
-       
+        end      
         for ipoint=1:siz(1)
            Xpoint=ObjectData.Coord(ipoint,:);
            distX=coord_x-Xpoint(1);
@@ -472,27 +467,6 @@ for icell=1:length(CellVarIndex)
             DCoord_min(idim)=1;%default
             Coord{idim}=[0.5 DimValue(idim)];
             test_direct(idim)=1;
-%             if isfield(FieldData,'VarAttribute')
-%                 for ivar=VarIndex
-%                     if length(FieldData.VarAttribute)>=ivar & isfield(FieldData.VarAttribute{ivar},Coord_i_str)% if there is a variable  attribute named Coord_1, _2 or _3
-%                         eval(['Coord_i=FieldData.VarAttribute{ivar}.' Coord_i_str ';']);%'range x 
-%                         if isnumeric(Coord_i)
-%                              if length(Coord_i)>=2
-%                                 Coord{idim}=[Coord_i(1) Coord_i(end)];
-%                                 %test_direct(idim)=(Coord{idim}(2)>Coord{idim}(1));
-%                              else 
-%                                 warndlg_uvmat(['two values needed for ' Coord_i_str 'in proj_field.m'],'ERROR')
-%                                 return
-%                              end
-%                          else
-%                             warndlg_uvmat(['non numerical coordinate attributes' Coord_i_str 'in proj_field.m'],'ERROR')
-%                             return
-%                          end
-%                          %test_coord(idim)=1;
-%                          DCoord_min(idim)=(Coord{idim}(end)-Coord{idim}(1))/(DimValue(idim)-1);
-%                     end
-%                 end
-%             end
         end
         AX=linspace(Coord{2}(1),Coord{2}(2),DimValue(2));
         AY=linspace(Coord{1}(1),Coord{1}(2),DimValue(1));  %TODO : 3D case 
@@ -1287,7 +1261,7 @@ for icell=1:length(CellVarIndex)
                 test_direct(idim)=DCoord_max>0;% =1 for increasing values, 0 otherwise
                 test_direct_min=DCoord_min(idim)>0;% =1 for increasing values, 0 otherwise
                 if ~isequal(test_direct(idim),test_direct_min)
-                     warndlg_uvmat(['non monotonic dimension variable # ' num2str(idim)  ' in proj_field.m'],'ERROR')
+                     msgbox_uvmat('ERROR',['non monotonic dimension variable # ' num2str(idim)  ' in proj_field.m'])
                                 return
                 end               
                 test_interp(idim)=(DCoord_max-DCoord_min(idim))> 0.0001*abs(DCoord_max);% test grid regularity
@@ -1298,23 +1272,6 @@ for icell=1:length(CellVarIndex)
                 DCoord_min(idim)=1;%default
                 Coord{idim}=[0.5 DimValue(idim)-0.5];
                 test_direct(idim)=1;
-%                 for ivar=VarIndex
-%                     if  isfield(FieldData.VarAttribute{ivar},Coord_i_str)% if there is a variable  attribute named Coord_1, _2 or _3
-%                          eval(['Coord{idim}=FieldData.VarAttribute{ivar}.' Coord_i_str ';']);%'range x 
-%                          if isnumeric(Coord{idim})
-%                              if length(Coord{idim})>=2
-%                                 test_direct(idim)=(Coord{idim}(2)>Coord{idim}(1));
-%                              else 
-%                                 warndlg_uvmat(['two values needed for ' Coord_i_str 'in proj_field.m'],'ERROR')
-%                                 return
-%                              end
-%                          else
-%                             warndlg_uvmat(['non numerical coordinate attributes' Coord_i_str 'in proj_field.m'],'ERROR')
-%                             return
-%                          end
-%                          DCoord_min(idim)=(Coord{idim}(end)-Coord{idim}(1))/(DimValue(idim)-1);
-%                     end
-%                 end
             end
         end
         if nb_dim==2
@@ -1556,7 +1513,7 @@ for icell=1:length(CellVarIndex)
     %projection of  velocity components in the rotated coordinates
     if ~isequal(Phi,0) & length(ivar_U)==1
         if isempty(ivar_V)
-            warndlg_uvmat('v velocity component missing in proj_field.m','ERROR')
+            msgbox_uvmat('ERROR','v velocity component missing in proj_field.m')
             return
         end
         UName=FieldData.ListVarName{ivar_U};

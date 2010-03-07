@@ -54,7 +54,7 @@ end
 % --- Executes just before series is made visible.
 %--------------------------------------------------------------------------
 function series_OpeningFcn(hObject, eventdata, handles,param)
-global nb_builtin
+global nb_builtin nb_transform
 % Choose default command line output for series
 handles.output = hObject;
 % Update handles structure
@@ -132,13 +132,18 @@ set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles})
 NomType_Callback(hObject, eventdata, handles)
 
 %loads the information stored in prefdir to initiate the browser and the list of functions
-menu_str={'check_files';'aver_stat';'time_series';'merge_proj';'clean_civ_cmx'};
-nb_builtin=numel(menu_str); %number of functions
+fct_menu={'check_files';'aver_stat';'time_series';'merge_proj';'clean_civ_cmx'};
+transform_menu={'';'phys';'px';'phys_polar'};
+nb_builtin=numel(fct_menu); %number of functions
+nb_transform=numel(transform_menu);
 [path_series,name,ext]=fileparts(which('series'));
 path_series=fullfile(path_series,'series');%path of the function 'series'
-
-for ilist=1:length(menu_str)
+path_transform=fullfile(path_series,'transform_field');%path of the function 'series'
+for ilist=1:length(fct_menu)
     fct_path{ilist,1}=path_series;%paths of the fuctions buil-in in 'series.m'
+end
+for ilist=1:length(transform_menu)
+    transform_path{ilist,1}=path_transform;
 end
 % read the list of functions stored in the personal file 'uvmat_perso.mat' in prefdir
 dir_perso=prefdir; 
@@ -149,14 +154,23 @@ if exist(profil_perso,'file')
          for ilist=1:length(h.series_fct)
              [path,file]=fileparts(h.series_fct{ilist});
              fct_path=[fct_path; {path}];%concatene the list of paths
-             menu_str=[menu_str; {file}];
+             transform_menu=[transform_menu; {file}];
+         end
+    end
+    if isfield(h,'transform_fct') && iscell(h.transform_fct)
+         for ilist=1:length(h.transform_fct)
+             [path,file]=fileparts(h.transform_fct{ilist});
+             transform_path=[transform_path; {path}];%concatene the list of paths
+             transform_menu=[transform_menu;{file}];
          end
     end
 end
-
-menu_str=[menu_str;{'more...'}];
-set(handles.ACTION,'String',menu_str)
+fct_menu=[fct_menu;{'more...'}];
+set(handles.ACTION,'String',fct_menu)
 set(handles.ACTION,'UserData',fct_path)% store the list of path in UserData of ACTION
+transform_menu=[transform_menu;{'more...'}];
+set(handles.CoordType,'String',transform_menu)
+set(handles.CoordType,'UserData',transform_path)% store the list of path in UserData of ACTION
 
 % display the GUI for the default action 'check_files'
 ACTION_Callback(hObject, eventdata, handles) 

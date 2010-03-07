@@ -11,7 +11,7 @@
 % ListVarName....)
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-%  Copyright Joel Sommeria, Louis Gostiaux, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
+%  Copyright Joel Sommeria,  2008, LEGI / CNRS-UJF-INPG, joel.sommeria@legi.grenoble-inp.fr.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %     This open is part of the toolbox UVMAT.
 % 
@@ -198,16 +198,6 @@ global dircur dir_opening
 % Choose default command menuline output for uvmat
 handles.output = hObject;
 
-% %group handles for input file in a structure handles.InputFile
-% handlesInputFile={handles.RootPath,handles.SubDir,handles.RootFile,handles.FileIndex,handles.FileExt};
-% TagsInputFile={'RootPath','SubDir','RootFile','FileIndex','FileExt'};
-% handles.InputFile=cell2struct(handlesInputFile,TagsInputFile,2);
-% 
-% %group handles for the second input file in a structure handles.InputFile_1
-% handlesInputFile={handles.RootPath_1,handles.SubDir_1,handles.RootFile_1,handles.FileIndex_1,handles.FileExt_1};
-% TagsInputFile={'RootPath','SubDir','RootFile','FileIndex','FileExt'};
-% handles.InputFile_1=cell2struct(handlesInputFile,TagsInputFile,2);
-
 % Update handles structure
 guidata(hObject, handles);
 
@@ -270,11 +260,11 @@ path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
 
 %check the path of menu_coord transform
 %set(handles.menu_coord,'String',{'';'phys';'px';'more...'})
-path_fct{1}='';
-path_fct{2}=fileparts(path_to_uvmat);
-path_fct{3}=fileparts(path_to_uvmat);
-path_fct{4}=fileparts(path_to_uvmat);
-set(handles.menu_coord,'UserData',path_fct)
+% path_fct{1}='';
+% path_fct{2}=fileparts(path_to_uvmat);
+% path_fct{3}=fileparts(path_to_uvmat);
+% path_fct{4}=fileparts(path_to_uvmat);
+% set(handles.menu_coord,'UserData',path_fct)
 
 %case of an input argument for uvmat
 testinputfield=0;
@@ -282,7 +272,7 @@ inputfile=[];
 Field=[];
 if exist('input','var')
     if ~isempty(errormsg)
-        warndlg_uvmat(errormsg,'WARNING')
+        msgbox_uvmat('WARNING',errormsg)
     end
     if ishandle(handles.UVMAT_title)
         delete(handles.UVMAT_title)
@@ -297,7 +287,7 @@ if exist('input','var')
     elseif isnumeric(input)
         sizinput=size(input);
         if sizinput(1)<=1 || sizinput(2)<=1
-            warndlg_uvmat('bad input for uvmat: file name, structure or numerical matrix accepted','ERROR')
+            msgbox_uvmat('ERROR','bad input for uvmat: file name, structure or numerical matrix accepted')
             return
         end
         Field.A=input;
@@ -353,6 +343,53 @@ if testinputfield
         update_rootinfo(hObject,eventdata,handles);
     end
 end
+
+%TRANSFORM menu: loads the information stored in prefdir to initiate the browser and the list of functions
+menu_str={'';'phys';'px';'phys_polar'};
+nb_builtin=numel(menu_str); %number of functions
+[path_uvmat,name,ext]=fileparts(which('uvmat'));
+addpath(fullfile(path_uvmat,'transform_field'))
+fct_handle{1,1}=[];
+testexist(1)=1;
+for ilist=2:length(menu_str)
+    if exist(menu_str{ilist},'file')
+        fct_handle{ilist,1}=str2func(menu_str{ilist});
+        testexist(ilist)=1;
+    else
+        testexist(ilist)=0;
+    end
+%     fct_handle{ilist,1}=fullfile(path_uvmat,'transform_field');%path to  the transform functions path_transform;
+end
+rmpath(fullfile(path_uvmat,'transform_field'))
+% read the list of functions stored in the personal file 'uvmat_perso.mat' in prefdir
+dir_perso=prefdir; 
+profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+if exist(profil_perso,'file')
+    h=load (profil_perso);
+    if isfield(h,'transform_fct') && iscell(h.transform_fct)
+         for ilist=1:length(h.transform_fct)
+             [path,file]=fileparts(h.transform{ilist});
+             addpath(path)
+             if exist(file,'file')
+                h_func=str2func(path);
+                testexist=[testexist 1];
+             else
+                h_func=[];
+                testexist=[testexist 0]; 
+             end
+             fct_handle=[fct_handle; {h_func}];%concatene the list of paths
+             rmpath(path)
+            % fct_path=[fct_path; {path}];%concatene the list of paths
+             menu_str=[menu_str; {file}];
+         end
+    end
+end
+menu_str=menu_str(find(testexist));
+fct_handle=fct_handle(find(testexist));
+menu_str=[menu_str;{'more...'}];
+set(handles.menu_coord,'String',menu_str)
+set(handles.menu_coord,'UserData',fct_handle)% store the list of path in UserData of ACTION
+
 set_vec_col_bar(handles)
 
 %-------------------------------------------------------------------
@@ -407,7 +444,7 @@ end
 fileinput=[PathName FileName];%complete file name 
 testblank=findstr(fileinput,' ');%look for blanks
 if ~isempty(testblank)
-    warndlg_uvmat(['The input file name ' fileinput ' contains blank character : This is not allowed. Please change name'],'ERROR')
+    msgbox_uvmat('ERROR',['The input file name ' fileinput ' contains blank character : This is not allowed. Please change name'])
     return
 end
 sizf=size(fileinput);
@@ -905,7 +942,7 @@ RootPath=get(handles.RootPath,'String');
 fileinput_1=[PathName FileName];%complete file name 
 testblank=findstr(fileinput_1,' ');%look for blanks
 if ~isempty(testblank)
-    warndlg_uvmat(['The input file name ' fileinput_1 ' contains blank character : This is not allowed. Please change name'],'ERROR')
+    msgbox_uvmat('ERROR',['The input file name ' fileinput_1 ' contains blank character : This is not allowed. Please change name'])
     return
 end
 sizf=size(fileinput_1);
@@ -1007,14 +1044,14 @@ switch ext_test
     case {'.image','.nc','.cdf'}
 %         set(handles.FileIndex,'UserData',NomType_1);
     otherwise
-        warndlg_uvmat(['invalid input file extension ' FileExt_1 ' for uvmat'],'ERROR')
+        msgbox_uvmat(['invalid input file extension ' FileExt_1 ' for uvmat'],'ERROR')
         return
 end
 
 % test for image series in a single file and synchronise file indices of the two series
 if nbfield_1 >1 %case of image with multiple frames
     if nbfield_1 < num_i1
-        warndlg_uvmat('current frame index beyond the input movie length','ERROR')
+        msgbox_uvmat('ERROR','current frame index beyond the input movie length')
         return
     else
         NomType_1='*'; %indicate a set of indexed frames within a single file
@@ -1036,7 +1073,7 @@ else  % cases of data files
            name_generator(FileBase_1,num_i1,num_j1,FileExt_1,NomType_1,1,num_i2,num_j2,SubDir_1);%create name with indices synchronised with the first file
         indices=''; %default
         if ~idetect
-            warndlg_uvmat('second input file with indices corresponding to the first one does not exist','ERROR')
+            msgbox_uvmat('ERROR','second input file with indices corresponding to the first one does not exist')
             return
         end 
     end
@@ -1194,7 +1231,7 @@ elseif exist(fileciv,'file')% if .civ file found
     set(handles.pycm,'Visible','on');%fills scale y (pixel/cm) box 
 end   
 if ~isempty(TimeUnit_1) && ~isequal(TimeUnit_1,TimeUnit)
-        warndlg_uvmat('the time units for the second series differs from the first one','WARNING')
+        msgbox_uvmat('WARNING','the time units for the second series differs from the first one')
 end
         
 % store last index in handles.lat_i and .last_j
@@ -1217,7 +1254,7 @@ else
 end
 set(handles.last_j,'String',last_j_cell);
 if ~isequal(last_i_cell{1},last_i_cell{2}) || ~isequal(last_j_cell{1},last_j_cell{2})
-        warndlg_uvmat('the numbers of input file of the second series differs from the first one','WARNING')
+        msgbox_uvmat('WARNING','the numbers of input file of the second series differs from the first one')
 end
 
 % store calibration data
@@ -1243,7 +1280,7 @@ UvData.XmlData_1=XmlData;
 set(huvmat,'UserData',UvData)%update the data attached to the uvmat interface
 
 if ~isequal(warntext,'')
-    warndlg_uvmat(warntext,'WARNING')
+    msgbox_uvmat('WARNING',warntext)
 end
 
 set(handles.RootPath_1,'BackgroundColor',[1 1 1])% signa the end the input operation
@@ -1478,13 +1515,15 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
            Mask.ZIndex=mod(num_i1-1,NbSlice)+1;
         end
         %px to phys or other transform on field
-        menu_transform=get(handles.menu_coord,'String');
+         menu_transform=get(handles.menu_coord,'String');
         choice_value=get(handles.menu_coord,'Value');
-        transform=menu_transform{choice_value};%name of the transform fct  given by the menu 'menu_coord'
-        if  ~isequal(transform,'') && ~isequal(transform,'px')
+        transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'menu_coord'
+        transform_list=get(handles.menu_coord,'UserData');
+        transform=transform_list{choice_value};
+        if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
             if isfield(UvData,'XmlData') && isfield(UvData.XmlData,'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
                 Calib=UvData.XmlData.GeometryCalib;
-                Mask=feval(transform,Mask,UvData.XmlData);
+                Mask=transform(Mask,UvData.XmlData);
             end
         end
         flagmask=Mask.A < 200;
@@ -1674,7 +1713,7 @@ if isequal(FieldName,'image')
     run0_Callback(hObject, eventdata, handles)%display the first image
     UvData=get(huvmat,'UserData');
 else
-    warndlg_uvmat('an image or movie must be first introduced as input','ERROR')
+    msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
     return
 end
 [ff,rr,filebase,xx,Ext,SubDir]=read_file_boxes(handles);
@@ -1685,7 +1724,7 @@ if ~isempty(num_j2)
     num_i1=str2num(get(handles.i1,'String'));
     [imaname_1,idetect]=name_generator(filebase,num_i1,num_j2,Ext,NomType);
     if idetect==0
-        warndlg_uvmat(['second input open (-)  ' imaname_1 ' not found'],'ERROR');
+        msgbox_uvmat('ERROR',['second input open (-)  ' imaname_1 ' not found']);
         return
     end
     set(handles.i2,'String',''); % indicates that the second index i2 is not used
@@ -1693,19 +1732,16 @@ elseif ~isempty(num_i2)
     num_j1=str2num(get(handles.j1,'String'));
     [imaname_1,idetect]=name_generator(filebase,num_i2,num_j1,Ext,NomType);
     if idetect==0
-        warndlg_uvmat(['second input open (-)  ' imaname_1 ' not found'],'ERROR');
+        msgbox_uvmat('ERROR',['second input open (-)  ' imaname_1 ' not found']);
         return
     end
 else   
-    warndlg_uvmat('a second image index i2 or j2 is needed to show the pair as a movie','ERROR')
+    msgbox_uvmat('ERROR', 'a second image index i2 or j2 is needed to show the pair as a movie')
     return
 end 
 
 %read the second image
 Field.AName='image';
-% Field.ListDimName={'AY','AX'}; %A FAIRE
-% Field.DimValue=[];
-% Field.ListVarName={'A'};
 Field.AX=UvData.Field.AX;
 Field.AY=UvData.Field.AY;
 Field.CoordType='px';
@@ -1715,10 +1751,12 @@ Field.CoordType='px';
 %px to phys or other transform on field
 menu_transform=get(handles.menu_coord,'String');
 choice_value=get(handles.menu_coord,'Value');
-transform=menu_transform{choice_value};%name of the transform fct  given by the menu 'menu_coord'
-if  ~isequal(transform,'') && ~isequal(transform,'px')
+transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'menu_coord'
+transform_list=get(handles.menu_coord,'UserData');
+transform=transform_list{choice_value};
+if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
     if isfield(UvData,'XmlData') && isfield(UvData.XmlData,'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
-        Field=feval(transform,Field,UvData.XmlData);
+        Field=transform(Field,UvData.XmlData);
     end
 end
 
@@ -1995,14 +2033,14 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&~testima) || (~isempty(filenam
             SubField=get_field('read_var_names',hObject,eventdata,hhget_field); %read the names of the variables to plot in the get_field GUI 
             [Field{2},var_detect]=nc2struct(filename_1,SubField.ListVarName); %read the corresponding input data                
             Field{2}.VarAttribute=SubField.VarAttribute;
-            if isequal(get(hhget_field.menu_coord,'Visible'),'on')
-                list_transform=get(hhget_field.menu_coord,'String');
-                val_list=get(hhget_field.menu_coord,'Value');
-                transf=list_transform{val_list};
-                if ~isempty(transf)
-                    Field{2}=feval(transf,Field{2});
-                end
-            end
+%             if isequal(get(hhget_field.menu_coord,'Visible'),'on')
+%                 list_transform=get(hhget_field.menu_coord,'String');
+%                 val_list=get(hhget_field.menu_coord,'Value');
+%                 transf=list_transform{val_list};
+%                 if ~isempty(transf)
+%                     Field{2}=feval(transf,Field{2});
+%                 end
+%             end
 
             %update the display on get_field
             set(hhget_field.inputfile,'String',filename_1)
@@ -2134,22 +2172,26 @@ if isfield(UvData,'XmlData_1')
 end
 menu_transform=get(handles.menu_coord,'String');
 choice_value=get(handles.menu_coord,'Value');
-transform=menu_transform{choice_value};%name of the transform fct  given by the menu 'menu_coord'
+%transform=menu_transform{choice_value};%name of the transform fct  given by the menu 'menu_coord'
+transform_list=get(handles.menu_coord,'UserData')
+transform=transform_list{choice_value}%selected function handles
 
 % z index
 if TestInputFile
     Field{1}.ZIndex=mod(num_i1-1,nbslice)+1;
 end
 %px to phys or other transform on field
-if  ~isequal(transform,'') 
+if  ~isempty(transform) 
     if length(Field)>=2
         Field{2}.ZIndex=mod(num_i1-1,nbslice)+1;
-        [Field{1},Field{2}]=feval(transform,Field{1},XmlData,Field{2},XmlData_1);
+        [Field{1},Field{2}]=transform(Field{1},XmlData,Field{2},XmlData_1);
         if isempty(Field{2})
             Field(2)=[];
         end
     else
-        Field{1}=feval(transform,Field{1},XmlData);
+        'TESTrun'
+        Field{1}=transform(Field{1},XmlData);
+         Field{1}
     end
 end 
 
@@ -2611,7 +2653,7 @@ if ~isempty(message) & ~isequal(message.UserWrite,1)
 end
 nc=netcdf(filename,'write'); %open netcdf file
 result=redef(nc);
-if isempty(result), warndlg_uvmat('##Bad redef operation.','ERROR'),end
+if isempty(result), msgbox_uvmat('ERROR','##Bad redef operation.'),end
 test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
 if ~test_civ2
     test_civ1=isequal(get(handles.civ1,'BackgroundColor'),[1 1 0]);
@@ -3707,7 +3749,7 @@ mask_name=name_generator([filebase '_' masknumber 'mask'],maskindex,1,'.png','_i
 imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
 imflag=flipdim(imflag,1);
 % imflag=uint8(255*flag);% =0 for flag=0 (vectors=0 when 20<imflag<200)
-warndlg_uvmat([mask_name ' saved'],'CONFIRMATION')
+msgbox_uvmat('CONFIRMATION',[mask_name ' saved'])
 imwrite(imflag,mask_name,'BitDepth',8); 
 
 %display the mask
@@ -3967,7 +4009,7 @@ huvmat=get(handles.menu_coord,'parent');
 menu=get(handles.menu_coord,'String');
 ind_coord=get(handles.menu_coord,'Value');
 coord_option=menu{ind_coord};
-list_path=get(handles.menu_coord,'UserData');
+list_transform=get(handles.menu_coord,'UserData');
     
 if isequal(coord_option,'more...'); 
     coord_fct='';
@@ -3994,11 +4036,13 @@ if isequal(coord_option,'more...');
     if ~exist(coord_fct,'file')
            msgbox_uvmat('ERROR',['image procesing fct ' coord_fct ' not found'])
     else
-       transform=FileName(1:end-2);% 
+       [ppp,transform]=fileparts(FileName);% removes extension .m
        menu=update_menu(handles.menu_coord,transform);%add the selected fct to the menu
        ind_coord=get(handles.menu_coord,'Value');
-       list_path{ind_coord}=PathName;
-       set(handles.menu_coord,'UserData',list_path)
+       addpath(PathName)
+       list_transform{ind_coord}=str2func(transform);% create the function handle corresponding to the newly seleced function
+       set(handles.menu_coord,'UserData',list_transform)
+       rmpath(PathName)
        if exist(profil_perso,'file')
             save (profil_perso,'coord_fct','-append'); %store the root name for future opening of uvmat
         end
@@ -4006,14 +4050,15 @@ if isequal(coord_option,'more...');
 end
 
 %check the current path to the selected function
-PathName=list_path{ind_coord};
-CurrentPath=fileparts(which(coord_option));
-if ~isequal(PathName,CurrentPath)&&~isequal(CurrentPath,fullfile(PathName,'private'))
-    addpath(PathName) 
-    errormsg=check_functions;
-    msgbox_uvmat('WARNING',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
-end
-set(handles.path_transform,'String',fullfile(PathName,' ')); %show the path to the senlected function
+func=functions(list_transform{ind_coord})
+set(handles.path_transform,'String',fileparts(func.file)); %show the path to the senlected function
+%CurrentPath=fileparts(which(coord_option));
+% if ~isequal(PathName,CurrentPath)
+%     addpath(PathName) 
+%     errormsg=check_functions;
+%     msgbox_uvmat('WARNING',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
+% end
+%set(handles.path_transform,'String',fullfile(PathName,' ')); %show the path to the senlected function
 set(handles.FixedLimits,'Value',0)
 set(handles.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
 

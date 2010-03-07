@@ -542,11 +542,11 @@ if test_vector
     ind=find(DimValue==1);
     DimIndex_v(ind)=[];%Mremove singleton
     if ~isequal(DimIndex_u,DimIndex_v)
-        warndlg_uvmat('inconsistent dimensions for u and v','ERROR')
+        msgbox_uvmat('ERROR','inconsistent dimensions for u and v')
         set(handles.vector_y,'Value',1); 
         return
     elseif  test_scalar & ~isequal(DimIndex_u,DimIndex)
-         warndlg_uvmat('inconsistent dimensions for vector and scalar represented as vector color','ERROR')
+         msgbox_uvmat('ERROR','inconsistent dimensions for vector and scalar represented as vector color')
          set(handles.scalar,'Value',1); 
          return
     end
@@ -560,7 +560,7 @@ test_grid=0;
 if test_scalar | test_vector
     nbdim=length(DimIndex);
     if nbdim > 3
-        warndlg_uvmat('array with more than three dimensions, not supported','ERROR')
+        msgbox_uvmat('ERROR','array with more than three dimensions, not supported')
         return
     else
         perm_ind=[1:nbdim];
@@ -589,7 +589,7 @@ if test_scalar | test_vector
                 perm_ind(ind_z)=1;
                 test_grid=1;
             else
-                warndlg_uvmat('multiple dimensions for the z coordinate','ERROR')
+                msgbox_uvmat('ERROR','multiple dimensions for the z coordinate')
                 return
             end
         end
@@ -633,7 +633,7 @@ if (test_scalar | test_vector) &  ~isempty(VarIndex.y)
              perm_ind(ind_y)=1;
         end
     elseif test_grid
-        warndlg_uvmat('the dimension of the y coordinate variable should be 1','ERROR')   
+        msgbox_uvmat('ERROR','the dimension of the y coordinate variable should be 1')   
     end
 end
 
@@ -676,7 +676,7 @@ if (test_scalar | test_vector) &  ~isempty(VarIndex.x)
         end
         DimIndex=DimIndex(perm_ind);
     elseif test_grid
-        warndlg_uvmat('the dimension of the x coordinate variable should be 1','ERROR')   
+        msgbox_uvmat('ERROR','the dimension of the x coordinate variable should be 1')   
     end
     if isequal(DimIndex_x,DimIndex)
                 VarAttribute{VarIndex.x}.Role='coord_x';%unstructured coordinates
@@ -1281,43 +1281,6 @@ if ~isequal(ACTION,'PLOT')
     check_scalar_Callback(hObject, eventdata, handles)
     check_vector_Callback(hObject, eventdata, handles)
 end
-% 
-% % --- Executes on selection change in menu_coord.
-% function menu_coord_Callback(hObject, eventdata, handles)
-% hget_field=get(handles.menu_coord,'parent');
-% menu=get(handles.menu_coord,'String');
-% ind_coord=get(handles.menu_coord,'Value');
-% coord_option=menu{ind_coord};
-% if isequal(coord_option,'more...'); 
-%     fct_name='';
-%     if exist('./TMP/current_usr_fct.mat','file')% if a file is found
-%         h=load('./TMP/current_usr_fct.mat');
-%         if isfield(h,'fct_name'); 
-%             fct_name=h.fct_name;
-%         end
-%     end
-%     prompt = {'Enter the name of the transform function'};
-%     dlg_title = 'user defined transform';
-%     num_lines= 1;
-%     [FileName, PathName, filterindex] = uigetfile( ...
-%        {'*.m', ' (*.m)';
-%         '*.m',  '.m files '; ...
-%         '*.*', 'All Files (*.*)'}, ...
-%         'Pick a file', fct_name);
-%     fct_name=fullfile(PathName,FileName);
-%     addpath(PathName);%add the path to the selected fct
-%     [errormsg,date_str]=check_functions;%check whether new functions can oversed the uvmat package A UTILISER
-%     if ~exist(fct_name,'file')
-%            warndlg_uvmat(['image procesing fct ' fct_name ' not found'],'WARNING')
-%     else
-%         transform=FileName(1:end-2);% 
-%         menu=update_menu(handles.menu_coord,transform);%add the selected fct to the menu
-% %         set(handles.mouse_coord,'String',menu([1:end-1])')%update the mouse coord menu 
-%       save ('./TMP/current_usr_fct.mat','fct_name');
-%     end   
-% end
-
-
 
 %-----------------------------------------------------
 % --- browse existing figures
@@ -1329,9 +1292,6 @@ list={};
 for ifig=1:length(hh)  %look for all existing figures
     name=get(hh(ifig),'Name');
      if ~isequal(name,'uvmat')%case of uvmat GUI
-%         ilist=ilist+1;
-%         list{ilist,1}='uvmat';
-%     else        %other figures
         hchild=get(hh(ifig),'children');% look for axes contained in each figure
         nbaxe=0;
         for ichild=1:length(hchild)           

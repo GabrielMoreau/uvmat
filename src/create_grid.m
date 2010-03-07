@@ -1,17 +1,12 @@
-%'create_grid': associated with GUI create_grid.fig to display message boxes, for error, warning or input calls
-% create_grid(title,display)
+%'create_grid': called by the GUI geometry_calib to create a physical grid 
+% coord=create_grid(input_grid)
 %
 % OUTPUT:
-% answer  (text string)= 'yes', 'No', 'cancel', or the text string introduced as input
+% coord: matrix (nbpoint, 3) of coordinates for grid points, with columns x,y,z
 %
 %INPUT:
-% title: string indicating the type of message box:
-%          title= 'INPUT_TXT','CONFIMATION' ,'ERROR', 'WARNING', 'INPUT_Y-N', default = 'INPUT_TXT' (the title is displayed in the upper bar of the fig). 
-%          if title='INPUT_TXT', input data is asked in an edit box
-%          if title='CONFIMATION'', 'ERROR', 'WARNING', the figure remains  opened until a button 'OK' is pressed
-%          if title='INPUT_Y-N', an answer Yes/No is requested
-% display, displayed text
-% default_answer: default answer in the edit box (only used with title='INPUT_TXT')
+% input_grid (optional): structure to initiate the GUI with fields .x_0,.Dx,.x_1
+% (defining x coordinates), .y_0,.Dy,.y_1 (defining y coordinates)
 
 function varargout = create_grid(varargin)
 
