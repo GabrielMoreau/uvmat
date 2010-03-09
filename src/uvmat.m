@@ -194,7 +194,7 @@ end
 function uvmat_OpeningFcn(hObject, eventdata, handles, input )
 %-------------------------------------------------------------------
 %WARNING: avoid the second input parameter, leads to erros
-global dircur dir_opening
+global dircur dir_opening nb_builtin
 % Choose default command menuline output for uvmat
 handles.output = hObject;
 
@@ -220,7 +220,24 @@ set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action fun
 set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles})%set mouse action functio
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
-%set(hObject,'ResizeFcn',{@resize_uvmat})
+
+%TRANSFORM menu: loads the information stored in prefdir to initiate the browser and the list of functions
+menu_str={'';'phys';'px';'phys_polar'};
+nb_builtin=numel(menu_str); %number of functions
+[path_uvmat,name,ext]=fileparts(which('uvmat'));
+addpath(fullfile(path_uvmat,'transform_field'))
+fct_handle{1,1}=[];
+testexist(1)=1;
+for ilist=2:length(menu_str)
+    if exist(menu_str{ilist},'file')
+        fct_handle{ilist,1}=str2func(menu_str{ilist});
+        testexist(ilist)=1;
+    else
+        testexist(ilist)=0;
+    end
+%     fct_handle{ilist,1}=fullfile(path_uvmat,'transform_field');%path to  the transform functions path_transform;
+end
+rmpath(fullfile(path_uvmat,'transform_field'))
 
 %load the list of previously browsed files in menus Open and Open_1
  dir_perso=prefdir;
@@ -246,8 +263,29 @@ set(hObject,'WindowButtonUpFcn',{'mouse_up',handles})
       if isfield(h,'MenuFile_1')
           set(handles.MenuFile_5,'Label',h.MenuFile_5);
           set(handles.MenuFile_5_1,'Label',h.MenuFile_5);
-     end
+      end
+      if isfield(h,'transform_fct') && iscell(h.transform_fct)
+         for ilist=1:length(h.transform_fct);
+             [path,file]=fileparts(h.transform_fct{ilist});
+             addpath(path)
+             if exist(file,'file')
+                h_func=str2func(file);
+                testexist=[testexist 1];
+             else
+                h_func=[];
+                testexist=[testexist 0]; 
+             end
+             fct_handle=[fct_handle; {h_func}];%concatene the list of paths
+             rmpath(path)
+             menu_str=[menu_str; {file}];
+         end
+      end
  end
+menu_str=menu_str(find(testexist));
+fct_handle=fct_handle(find(testexist));
+menu_str=[menu_str;{'more...'}];
+set(handles.transform_fct,'String',menu_str)
+set(handles.transform_fct,'UserData',fct_handle)% store the list of path in UserData of ACTION
  
 %initiates menu of vector colors 
 list_menu=calc_field;
@@ -258,13 +296,13 @@ set(handles.col_vec,'String',list_menu)
 path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
 [errormsg,date_str]=check_functions;%check the path of the functions called by uvmat.m
 
-%check the path of menu_coord transform
-%set(handles.menu_coord,'String',{'';'phys';'px';'more...'})
+%check the path of transform_fct transform
+%set(handles.transform_fct,'String',{'';'phys';'px';'more...'})
 % path_fct{1}='';
 % path_fct{2}=fileparts(path_to_uvmat);
 % path_fct{3}=fileparts(path_to_uvmat);
 % path_fct{4}=fileparts(path_to_uvmat);
-% set(handles.menu_coord,'UserData',path_fct)
+% set(handles.transform_fct,'UserData',path_fct)
 
 %case of an input argument for uvmat
 testinputfield=0;
@@ -302,8 +340,7 @@ if exist('input','var')
     end
     if ~isempty(Field)
         set(handles.Fields,'Value',1)
-        set(handles.Fields,'String',{'get_field...'})
-%         set(handles.Fields,'Value',2)% option 'get_field...'     
+        set(handles.Fields,'String',{'get_field...'})    
         set(handles.Fields,'UserData',Field)
         testinputfield=1;
         
@@ -343,52 +380,6 @@ if testinputfield
         update_rootinfo(hObject,eventdata,handles);
     end
 end
-
-%TRANSFORM menu: loads the information stored in prefdir to initiate the browser and the list of functions
-menu_str={'';'phys';'px';'phys_polar'};
-nb_builtin=numel(menu_str); %number of functions
-[path_uvmat,name,ext]=fileparts(which('uvmat'));
-addpath(fullfile(path_uvmat,'transform_field'))
-fct_handle{1,1}=[];
-testexist(1)=1;
-for ilist=2:length(menu_str)
-    if exist(menu_str{ilist},'file')
-        fct_handle{ilist,1}=str2func(menu_str{ilist});
-        testexist(ilist)=1;
-    else
-        testexist(ilist)=0;
-    end
-%     fct_handle{ilist,1}=fullfile(path_uvmat,'transform_field');%path to  the transform functions path_transform;
-end
-rmpath(fullfile(path_uvmat,'transform_field'))
-% read the list of functions stored in the personal file 'uvmat_perso.mat' in prefdir
-dir_perso=prefdir; 
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-if exist(profil_perso,'file')
-    h=load (profil_perso);
-    if isfield(h,'transform_fct') && iscell(h.transform_fct)
-         for ilist=1:length(h.transform_fct)
-             [path,file]=fileparts(h.transform{ilist});
-             addpath(path)
-             if exist(file,'file')
-                h_func=str2func(path);
-                testexist=[testexist 1];
-             else
-                h_func=[];
-                testexist=[testexist 0]; 
-             end
-             fct_handle=[fct_handle; {h_func}];%concatene the list of paths
-             rmpath(path)
-            % fct_path=[fct_path; {path}];%concatene the list of paths
-             menu_str=[menu_str; {file}];
-         end
-    end
-end
-menu_str=menu_str(find(testexist));
-fct_handle=fct_handle(find(testexist));
-menu_str=[menu_str;{'more...'}];
-set(handles.menu_coord,'String',menu_str)
-set(handles.menu_coord,'UserData',fct_handle)% store the list of path in UserData of ACTION
 
 set_vec_col_bar(handles)
 
@@ -789,7 +780,7 @@ if isfield(XmlData,'GeometryCalib')
     if isempty(GeometryCalib)
         set(handles.pxcm,'String','')
         set(handles.pycm,'String','')
-        set(handles.menu_coord,'Value',1); %  no transform by default
+        set(handles.transform_fct,'Value',1); %  no transform by default
     else
         if (isfield(GeometryCalib,'R')& ~isequal(GeometryCalib.R(2,1),0) & ~isequal(GeometryCalib.R(1,2),0)) |...
             (isfield(GeometryCalib,'kappa1')& ~isequal(GeometryCalib.kappa1,0))
@@ -801,7 +792,7 @@ if isfield(XmlData,'GeometryCalib')
             set(handles.pxcm,'String',num2str(pixcmx))
             set(handles.pycm,'String',num2str(pixcmy))
         end
-        set(handles.menu_coord,'Value',2); % phys transform by default
+        set(handles.transform_fct,'Value',2); % phys transform by default
         if isfield(GeometryCalib,'SliceCoord')
            siz=size(GeometryCalib.SliceCoord);
            if siz(1)>1
@@ -1515,10 +1506,10 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
            Mask.ZIndex=mod(num_i1-1,NbSlice)+1;
         end
         %px to phys or other transform on field
-         menu_transform=get(handles.menu_coord,'String');
-        choice_value=get(handles.menu_coord,'Value');
-        transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'menu_coord'
-        transform_list=get(handles.menu_coord,'UserData');
+         menu_transform=get(handles.transform_fct,'String');
+        choice_value=get(handles.transform_fct,'Value');
+        transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
+        transform_list=get(handles.transform_fct,'UserData');
         transform=transform_list{choice_value};
         if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
             if isfield(UvData,'XmlData') && isfield(UvData.XmlData,'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
@@ -1749,10 +1740,10 @@ Field.CoordType='px';
 
 
 %px to phys or other transform on field
-menu_transform=get(handles.menu_coord,'String');
-choice_value=get(handles.menu_coord,'Value');
-transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'menu_coord'
-transform_list=get(handles.menu_coord,'UserData');
+menu_transform=get(handles.transform_fct,'String');
+choice_value=get(handles.transform_fct,'Value');
+transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
+transform_list=get(handles.transform_fct,'UserData');
 transform=transform_list{choice_value};
 if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
     if isfield(UvData,'XmlData') && isfield(UvData.XmlData,'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
@@ -2033,9 +2024,9 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&~testima) || (~isempty(filenam
             SubField=get_field('read_var_names',hObject,eventdata,hhget_field); %read the names of the variables to plot in the get_field GUI 
             [Field{2},var_detect]=nc2struct(filename_1,SubField.ListVarName); %read the corresponding input data                
             Field{2}.VarAttribute=SubField.VarAttribute;
-%             if isequal(get(hhget_field.menu_coord,'Visible'),'on')
-%                 list_transform=get(hhget_field.menu_coord,'String');
-%                 val_list=get(hhget_field.menu_coord,'Value');
+%             if isequal(get(hhget_field.transform_fct,'Visible'),'on')
+%                 list_transform=get(hhget_field.transform_fct,'String');
+%                 val_list=get(hhget_field.transform_fct,'Value');
 %                 transf=list_transform{val_list};
 %                 if ~isempty(transf)
 %                     Field{2}=feval(transf,Field{2});
@@ -2170,11 +2161,11 @@ XmlData_1=[];%default
 if isfield(UvData,'XmlData_1')
    XmlData_1=UvData.XmlData_1;
 end
-menu_transform=get(handles.menu_coord,'String');
-choice_value=get(handles.menu_coord,'Value');
-%transform=menu_transform{choice_value};%name of the transform fct  given by the menu 'menu_coord'
-transform_list=get(handles.menu_coord,'UserData')
-transform=transform_list{choice_value}%selected function handles
+menu_transform=get(handles.transform_fct,'String');
+choice_value=get(handles.transform_fct,'Value');
+%transform=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
+transform_list=get(handles.transform_fct,'UserData');
+transform=transform_list{choice_value};%selected function handles
 
 % z index
 if TestInputFile
@@ -2189,9 +2180,7 @@ if  ~isempty(transform)
             Field(2)=[];
         end
     else
-        'TESTrun'
         Field{1}=transform(Field{1},XmlData);
-         Field{1}
     end
 end 
 
@@ -4002,25 +3991,26 @@ end
 set(huvmat,'UserData',UvData);
 
 %-------------------------------------------------------------
-% --- Executes on selection change in menu_coord.
-function menu_coord_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in transform_fct.
+function transform_fct_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------
-huvmat=get(handles.menu_coord,'parent');
-menu=get(handles.menu_coord,'String');
-ind_coord=get(handles.menu_coord,'Value');
+global nb_builtin
+
+huvmat=get(handles.transform_fct,'parent');
+menu=get(handles.transform_fct,'String');
+ind_coord=get(handles.transform_fct,'Value');
 coord_option=menu{ind_coord};
-list_transform=get(handles.menu_coord,'UserData');
-    
+list_transform=get(handles.transform_fct,'UserData');
+ff=functions(list_transform{end})  
 if isequal(coord_option,'more...'); 
     coord_fct='';
-    dir_perso=prefdir;
-    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-    if exist(profil_perso,'file')
-          h=load (profil_perso);
-         if isfield(h,'coord_fct')
-                coord_fct=h.coord_fct;
-         end
-    end
+
+%     if exist(profil_perso,'file')
+%           h=load (profil_perso);
+%          if isfield(h,'transform_fct')
+%                 transform_fct=h.transform_fct;
+%          end
+%     end
     prompt = {'Enter the name of the transform function'};
     dlg_title = 'user defined transform';
     num_lines= 1;
@@ -4028,29 +4018,40 @@ if isequal(coord_option,'more...');
        {'*.m', ' (*.m)';
         '*.m',  '.m files '; ...
         '*.*', 'All Files (*.*)'}, ...
-        'Pick a file', coord_fct);
+        'Pick a file', ff.file);
     if isequal(PathName(end),'/')||isequal(PathName(end),'\')
         PathName(end)=[];
     end
-    coord_fct=fullfile(PathName,FileName);
-    if ~exist(coord_fct,'file')
-           msgbox_uvmat('ERROR',['image procesing fct ' coord_fct ' not found'])
-    else
-       [ppp,transform]=fileparts(FileName);% removes extension .m
-       menu=update_menu(handles.menu_coord,transform);%add the selected fct to the menu
-       ind_coord=get(handles.menu_coord,'Value');
-       addpath(PathName)
-       list_transform{ind_coord}=str2func(transform);% create the function handle corresponding to the newly seleced function
-       set(handles.menu_coord,'UserData',list_transform)
-       rmpath(PathName)
-       if exist(profil_perso,'file')
-            save (profil_perso,'coord_fct','-append'); %store the root name for future opening of uvmat
-        end
-    end   
+    transform_selected =fullfile(PathName,FileName);
+    if ~exist(transform_selected,'file')
+%            msgbox_uvmat('ERROR',['procesing fct ' transform_selected ' not found'])
+           return
+    end
+   [ppp,transform,ext_fct]=fileparts(FileName);% removes extension .m
+   if ~isequal(ext_fct,'.m')
+        msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
+        return
+   end
+   menu=update_menu(handles.transform_fct,transform);%add the selected fct to the menu
+   ind_coord=get(handles.transform_fct,'Value');
+   addpath(PathName)
+   list_transform{ind_coord}=str2func(transform);% create the function handle corresponding to the newly seleced function
+   set(handles.transform_fct,'UserData',list_transform)
+   rmpath(PathName)
+   % save the new menu in the personal file 'uvmat_perso.mat' 
+   dir_perso=prefdir;%personal Matalb directory
+   profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+   if exist(profil_perso,'file')
+       for ilist=nb_builtin+1:numel(list_transform)
+           ff=functions(list_transform{ilist});
+           transform_fct{ilist-nb_builtin}=ff.file;
+       end 
+        save (profil_perso,'transform_fct','-append'); %store the root name for future opening of uvmat
+   end   
 end
 
 %check the current path to the selected function
-func=functions(list_transform{ind_coord})
+func=functions(list_transform{ind_coord});
 set(handles.path_transform,'String',fileparts(func.file)); %show the path to the senlected function
 %CurrentPath=fileparts(which(coord_option));
 % if ~isequal(PathName,CurrentPath)
@@ -4807,8 +4808,8 @@ param.interp1=get(handles.interp1,'Value');
 param.interp2=get(handles.interp2,'Value');
 param.filter1=get(handles.filter1,'Value');
 param.filter2=get(handles.filter2,'Value');
-param.menu_coord_str=get(handles.menu_coord,'String');
-param.menu_coord_val=get(handles.menu_coord,'Value');
+param.menu_coord_str=get(handles.transform_fct,'String');
+param.menu_coord_val=get(handles.transform_fct,'Value');
 
 series(param); %run the series interface
 
@@ -4861,9 +4862,9 @@ function MenuEdit_Callback(hObject, eventdata, handles)
 
 %--------------------------------------------------------------------------
 function enable_transform(handles,state)
-set(handles.menu_coord,'Visible',state)
+set(handles.transform_fct,'Visible',state)
 set(handles.TRANSFORM_txt,'Visible',state)    
-set(handles.menu_coord,'Visible',state)  
+set(handles.transform_fct,'Visible',state)  
 set(handles.path_transform,'Visible',state)
 set(handles.pxcmx_txt,'Visible',state)
 set(handles.pxcmy_txt,'Visible',state)

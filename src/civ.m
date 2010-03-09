@@ -90,8 +90,8 @@ else
     ind_opening=1; % proposed operation number (1=civ1,2=fix1,3=patch1,4=civ2,5=fix2,6=patch2)  
 end
 
-if exist('ext','var') && length(ext)>1 && (~isempty(imformats(ext([2:end])))|...
-                       isequal(ext,'.avi')||isequal(ext,'.AVI'));%if an image file has been opened by uvmat
+if exist('ext','var') && length(ext)>1 && (~isempty(imformats(ext(2:end)))||...
+                       isequal(lower(ext),'.avi'));%if an image file has been opened by uvmat
         set(handles.ext_ima,'String',ext)
         if exist('nom_type_read','var')
             browse.nom_type_ima=nom_type_read; % the image nomenclature is stored
@@ -258,7 +258,7 @@ function browse_root_Callback(hObject, eventdata, handles)
 %get the input file properties
 filebase=get(handles.displ_filebase,'String');
 oldfile=''; %default
-if isempty(filebase)|isequal(filebase,'')%loads the previously stored file name and set it as default in the file_input box
+if isempty(filebase)|| isequal(filebase,'')%loads the previously stored file name and set it as default in the file_input box
      dir_perso=prefdir;
      profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
      display(profil_perso)
@@ -447,8 +447,8 @@ ext_ima=get(handles.ext_ima,'String');
 nom_type_ima=[];%default
 field_count=1;%default
 nom_type_nc=[];
-npx=[];%default 
-npy=[];
+% npx=[];%default 
+% npy=[];
 time=[];
 TimeUnit=[]; %default
 CoordUnit=[];%default
@@ -477,19 +477,19 @@ if isempty(last_i)|| last_i < first_i
     last_i=first_i;  %default last_i
 end
 first_j=str2num(get(handles.first_j,'String'));
-if isempty(first_j)| first_j < 1
+if isempty(first_j)|| first_j < 1
     first_j=1; %default first_j
 end
 last_j=str2num(get(handles.last_j,'String'));
-if isempty(last_j)| last_j < first_j
+if isempty(last_j)|| last_j < first_j
     last_j=first_j; %default last_j
 end
 incr_i=str2num(get(handles.incr_i,'String'));
-if isempty(incr_i) | incr_i < 1;
+if isempty(incr_i) || incr_i < 1;
     set(handles.incr_i,'String','1') %default incr_i
 end
 incr_j=str2num(get(handles.incr_j,'String'));
-if isempty(incr_j) | incr_j < 1;
+if isempty(incr_j) || incr_j < 1;
     set(handles.incr_j,'String','1') %default incr_j
 end
 dt=[];%default
@@ -553,7 +553,7 @@ elseif isequal(ext,'.xml')
     nom_type_read=[];
     if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
         [PP,FF,fc,str2,str_a,str_b,ext_ima_read,nom_type_read]=name2display(XmlData.Heading.ImageName);
-        fullname=fullfile(fileparts(filebase),XmlData.Heading.ImageName) %full name (including path) of the first image defined by the xmle file, 
+        fullname=fullfile(fileparts(filebase),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file, 
         if exist(fullname,'file')
             testima_xml=1;
         else
@@ -1317,7 +1317,7 @@ function [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_ci
 first_i=str2num(get(handles.first_i,'String'));%first index i 
 last_i=str2num(get(handles.last_i,'String'));%last index i 
 incr=str2num(get(handles.incr_i,'String'));% increment
-num1=[first_i:incr:last_i];% list of i indices (reference values for each pair)
+num_i=[first_i:incr:last_i];% list of i indices (reference values for each pair)
 if isequal(get(handles.first_j,'Visible'),'on')
     first_j=str2num(get(handles.first_j,'String'));%first index j
     last_j=str2num(get(handles.last_j,'String'));%last index j 
@@ -1330,6 +1330,7 @@ end
 num_j=[first_j:incr_j:last_j];% list of j indices (reference values for each pair)
 list_civ1=get(handles.list_pair_civ1,'String');
 index_civ1=get(handles.list_pair_civ1,'Value');
+[num_i,num_j]=meshgrid(num_i,num_j);
 str_civ1=list_civ1{index_civ1};%string defining the image pairs for civ1
 if isempty(str_civ1)||isequal(str_civ1,'')
     msgbox_uvmat('ERROR','no image pair selected for civ1')
@@ -1344,11 +1345,11 @@ end
 str_civ2=list_civ2{index_civ2};%string defining the image pairs for civ2
 if isempty(first_i)||isempty(first_j), msgbox_uvmat('ERROR','first field number not defined'),...
     return,end;
-if isequal(last_i,[])| isequal(last_j,[]),msgbox_uvmat('ERROR','last field number not defined'),...
+if isequal(last_i,[])|| isequal(last_j,[]),msgbox_uvmat('ERROR','last field number not defined'),...
     return,end;
-if isequal(incr,[])| isequal(incr_j,[]),msgbox_uvmat('ERROR','increment in field number not defined'),...
+if isequal(incr,[])|| isequal(incr_j,[]),msgbox_uvmat('ERROR','increment in field number not defined'),...
     return,end;
-if last_i < first_i | last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
+if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
     return,end;
 if isequal (mode,'series(Di)') 
      %recognize the pair civ1 from the display
@@ -1361,8 +1362,8 @@ if isequal (mode,'series(Di)')
     else
         d2=str2num(str_civ1([indsel(indsepar)+1:indsel(indsepar+1)-1]));
     end   
-    num1_civ1=num1-d1;% set of first image numbers
-    num2_civ1=num1+d2;
+    num1_civ1=num_i-d1;% set of first image numbers
+    num2_civ1=num_i+d2;
     num_a_civ1=num_j;
     num_b_civ1=num_j;
     
@@ -1377,14 +1378,14 @@ if isequal (mode,'series(Di)')
         d2=str2num(str_civ2([indsel(indsepar)+1:indsel(indsepar+1)-1]));
     end   
     if isempty(d1)
-        num1_civ2=num1;
+        num1_civ2=num_i;
     else
-        num1_civ2=num1-d1;% set of first image numbers
+        num1_civ2=num_i-d1;% set of first image numbers
     end
     if isempty(d2)
-        num2_civ2=num1;
+        num2_civ2=num_i;
     else
-        num2_civ2=num1+d2;
+        num2_civ2=num_i+d2;
     end
     num_a_civ2=num_j;
     num_b_civ2=num_j;
@@ -1399,9 +1400,9 @@ if isequal (mode,'series(Di)')
     if length(indsel)>=1
         firstind=indsel(1);
         lastind=indsel(end);
-        set(handles.first_i,'String',num2str(num1(firstind)))%update the display of first and last fields
-        set(handles.last_i,'String',num2str(num1(lastind)))
-        num1=num1(indsel);
+        set(handles.first_i,'String',num2str(num_i(firstind)))%update the display of first and last fields
+        set(handles.last_i,'String',num2str(num_i(lastind)))
+        num_i=num_i(indsel);
         num1_civ1=num1_civ1(indsel);
         num1_civ2=num1_civ2(indsel);
         num2_civ1=num2_civ1(indsel);
@@ -1409,12 +1410,12 @@ if isequal (mode,'series(Di)')
     end
 elseif isequal (mode,'series(Dj)')
     lastfield_j=str2num(get(handles.nb_field2,'String'));
-    num1_civ1=num1;% set of first image numbers
-    num2_civ1=num1;
+    num1_civ1=num_i;% set of first image numbers
+    num2_civ1=num_i;
     num_a_civ1=num_j-floor(index_civ1/2)*ones(size(num_j));
     num_b_civ1=num_j+ceil(index_civ1/2)*ones(size(num_j));
-    num1_civ2=num1;
-    num2_civ2=num1;
+    num1_civ2=num_i;
+    num2_civ2=num_i;
     num_a_civ2=num_j-floor(index_civ2/2)*ones(size(num_j));
     num_b_civ2=num_j+ceil(index_civ2/2)*ones(size(num_j));
     % adjust the first and last field number
@@ -1435,30 +1436,25 @@ elseif isequal (mode,'series(Dj)')
         num_b_civ2=num_b_civ2(indsel);
     end
 elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)
-    num1_civ1=num1;
-    num1_civ2=num1;
+    num1_civ1=num_i;
+    num1_civ2=num_i;
     displ_num=get(handles.list_pair_civ1,'UserData');
-    num2_civ1=num1;
+    num2_civ1=num_i;
     num_a_civ1=displ_num(1,index_civ1);
     num_b_civ1=displ_num(2,index_civ1);
-    num2_civ2=num1;
+    num2_civ2=num_i;
     num_a_civ2=displ_num(1,index_civ2);
     num_b_civ2=displ_num(2,index_civ2);
 elseif isequal(mode,'displacement')
-    num1_civ1=num1;
-    num2_civ1=num1;
+    num1_civ1=num_i;
+    num2_civ1=num_i;
     num_a_civ1=num_j;
     num_b_civ1=num_j;
-    num1_civ2=num1;
-    num2_civ2=num1;
+    num1_civ2=num_i;
+    num2_civ2=num_i;
     num_a_civ2=num_j;
     num_b_civ2=num_j;
 end
-'TESTfind'
-num1_civ1
-num2_civ1
-num_a_civ1
-num_b_civ1
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in list_pair_civ1.
@@ -1663,9 +1659,8 @@ drawnow
 display('checking the files...')
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
        set_civ_filenames(handles,compare,box_test);
-   'TESTnbre_RUN'
-nbfield=size(num1_civ1,2)
-nbslice=size(num1_civ1,1)
+nbfield=size(num1_civ1,2);
+nbslice=size(num1_civ1,1);
 
 if isempty(filecell)
    set(handles.RUN, 'Enable','On')
@@ -2184,9 +2179,8 @@ display('checking the files...')
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
        set_civ_filenames(handles,compare,box_test);
 display('files OK, processing...')  
-'TESTnbre'
-nbfield=size(num1_civ1,2)
-nbslice=size(num1_civ1,1)
+nbfield=size(num1_civ1,2);
+nbslice=size(num1_civ1,1);
 
 %GET PARAMETERS:
   %get civ parameters
@@ -2677,7 +2671,6 @@ for ifile=1:nbfield
             save(civAllxml,[filename_cmx([1:end-4]) '.xml']);
             cmd=char({cmd;[Civ_exe ' -f ' [filename_cmx([1:end-4]) '.xml'] ' ' civAllCmd]});
         end
-
       % create the .bat file:
         if sge
                 [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
@@ -2687,8 +2680,8 @@ for ifile=1:nbfield
         end
         filename_bat(end-2:end)='bat';
         fid=fopen(filename_bat,'w');
-        fprintf(fid,cmd)
-        fclose(fid)
+        fprintf(fid,cmd);
+        fclose(fid);
         %dlmwrite(filename_bat,cmd,'');%write commands in filename_bat
         if sge
             pvalue=num2str((1-ind_answer)*500);
@@ -2771,7 +2764,6 @@ if isequal(nom_type_ima2,[]),nom_type_ima2='ima_num';end; %default
 if isequal(nom_type_nc,[]),nom_type_nc='_i1-i2';end; %default
 [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2]=...
     find_pair_indices(handles,mode);
-
 %determine the new filebase for 'displacement' mode (comparison of two series)
 filebase_B=filebase;% root name of the second field series for stereo
 if strcmp(compare,'displacement') || strcmp(compare,'stereo PIV')
@@ -3457,7 +3449,7 @@ for ifile=1:nbfield
         term_a=num2stra(num_a(j),nom_type_nc);%UTILITE?
         term_b=num2stra(num_b(j),nom_type_nc);%
         if test_grid && ~isempty(nbslice_grid)        
-             num1_grid=mod(num1(ifile)-1,nbslice_grid)+1
+             num1_grid=mod(num1(ifile)-1,nbslice_grid)+1;
             gridname=[filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
             if ~exist(gridname,'file')
                 msgbox_uvmat('ERROR',['missing grid file ' gridname])
@@ -3651,7 +3643,7 @@ for ifile=1:nbfield
         filename_nc1=cell2mat(filecell_nc1(ifile,j));
         filename_nc1([end-2:end])=[]; % remove '.nc'     
         if test_grid && ~isempty(nbslice_grid)        
-            num1_grid=mod(num1(ifile)-1,nbslice_grid)+1
+            num1_grid=mod(num1(ifile)-1,nbslice_grid)+1;
             gridname=[filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
             if ~exist(gridname,'file')
                 msgbox_uvmat('ERROR',['missing grid file ' gridname])
@@ -4213,7 +4205,7 @@ value=get(handles.browse_gridciv1,'Value');
 testgrid=0;
 if value
 	filebase=get(handles.displ_filebase,'String');
-    [nbslice, flag_grid]=get_grid(filebase,handles)
+    [nbslice, flag_grid]=get_grid(filebase,handles);
     if isequal(flag_grid,1)
        filegrid=[num2str(nbslice) 'grid'];
        testgrid=1;
@@ -4263,7 +4255,7 @@ function browse_gridciv2_Callback(hObject, eventdata, handles)
 value=get(handles.browse_gridciv2,'Value');
 if value
 	filebase=get(handles.displ_filebase,'String');
-    [nbslice, flag_grid]=get_grid(filebase,handles)
+    [nbslice, flag_grid]=get_grid(filebase,handles);
     if isequal(flag_grid,1)
         mask_displ=[num2str(nbslice) 'grid'];
         set(handles.grid_civ2,'String',mask_displ)

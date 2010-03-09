@@ -5,8 +5,8 @@
 %
 %INPUT
 % param: structure with input parameters (link with the GUI uvmat)
-%      .menu_coord_str: string for the CoordType (menu for coordinate transforms)
-%      .menu_coord_val: value for CoordType (menu for coordinate transforms)
+%      .menu_coord_str: string for the transform_fct (menu for coordinate transforms)
+%      .menu_coord_val: value for transform_fct (menu for coordinate transforms)
 %      .FileName: input file name
 %      .FileName_1: second input file name
 %      .list_field: menu of input fields
@@ -95,12 +95,12 @@ end
 
 %file name and browser initialisation
 if isfield(param,'menu_coord_str')
-    set(handles.CoordType,'String',param.menu_coord_str)
+    set(handles.transform_fct,'String',param.menu_coord_str)
 end
 if isfield(param,'menu_coord_val')
-    set(handles.CoordType,'Value',param.menu_coord_val);
+    set(handles.transform_fct,'Value',param.menu_coord_val);
 else
-     set(handles.CoordType,'Value',1);%default
+     set(handles.transform_fct,'Value',1);%default
 end
 
 if isfield(param,'FileName')
@@ -131,20 +131,35 @@ end
 set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles}) 
 NomType_Callback(hObject, eventdata, handles)
 
-%loads the information stored in prefdir to initiate the browser and the list of functions
+%loads the information stored in prefdir to initiate  the list of ACTION functions
 fct_menu={'check_files';'aver_stat';'time_series';'merge_proj';'clean_civ_cmx'};
 transform_menu={'';'phys';'px';'phys_polar'};
 nb_builtin=numel(fct_menu); %number of functions
 nb_transform=numel(transform_menu);
 [path_series,name,ext]=fileparts(which('series'));
 path_series=fullfile(path_series,'series');%path of the function 'series'
-path_transform=fullfile(path_series,'transform_field');%path of the function 'series'
+path_transform=fullfile(path_series,'transform_field');%path of the field transform functions 
 for ilist=1:length(fct_menu)
     fct_path{ilist,1}=path_series;%paths of the fuctions buil-in in 'series.m'
 end
-for ilist=1:length(transform_menu)
-    transform_path{ilist,1}=path_transform;
+
+%TRANSFORM menu: loads the information stored in prefdir to initiate  the list of field transform functions
+menu_str={'';'phys';'px';'phys_polar'};
+nb_builtin=numel(menu_str); %number of functions
+[path_uvmat,name,ext]=fileparts(which('uvmat'));
+addpath(fullfile(path_uvmat,'transform_field'))
+fct_handle{1,1}=[];
+testexist(1)=1;
+for ilist=2:length(menu_str)
+    if exist(menu_str{ilist},'file')
+        fct_handle{ilist,1}=str2func(menu_str{ilist});
+        testexist(ilist)=1;
+    else
+        testexist(ilist)=0;
+    end
 end
+rmpath(fullfile(path_uvmat,'transform_field'))
+
 % read the list of functions stored in the personal file 'uvmat_perso.mat' in prefdir
 dir_perso=prefdir; 
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
@@ -158,19 +173,31 @@ if exist(profil_perso,'file')
          end
     end
     if isfield(h,'transform_fct') && iscell(h.transform_fct)
-         for ilist=1:length(h.transform_fct)
+        for ilist=1:length(h.transform_fct);
              [path,file]=fileparts(h.transform_fct{ilist});
-             transform_path=[transform_path; {path}];%concatene the list of paths
-             transform_menu=[transform_menu;{file}];
-         end
+             addpath(path)
+             if exist(file,'file')
+                h_func=str2func(file);
+                testexist=[testexist 1];
+             else
+                h_func=[];
+                testexist=[testexist 0]; 
+             end
+             fct_handle=[fct_handle; {h_func}];%concatene the list of paths
+             rmpath(path)
+             menu_str=[menu_str; {file}];
+        end
     end
 end
 fct_menu=[fct_menu;{'more...'}];
 set(handles.ACTION,'String',fct_menu)
 set(handles.ACTION,'UserData',fct_path)% store the list of path in UserData of ACTION
-transform_menu=[transform_menu;{'more...'}];
-set(handles.CoordType,'String',transform_menu)
-set(handles.CoordType,'UserData',transform_path)% store the list of path in UserData of ACTION
+
+menu_str=menu_str(find(testexist));
+fct_handle=fct_handle(find(testexist));
+menu_str=[menu_str;{'more...'}];
+set(handles.transform_fct,'String',menu_str)
+set(handles.transform_fct,'UserData',fct_handle)% store the list of path in UserData of ACTION
 
 % display the GUI for the default action 'check_files'
 ACTION_Callback(hObject, eventdata, handles) 
@@ -543,7 +570,7 @@ testfield=isequal(get(handles.FieldMenu,'enable'),'on');
 testfield_1=isequal(get(handles.FieldMenu_1,'enable'),'on');
 testveltype=isequal(get(handles.VelTypeMenu,'enable'),'on');
 testveltype_1=isequal(get(handles.VelTypeMenu_1,'enable'),'on');
-testtransform=isequal(get(handles.CoordType,'Enable'),'on');
+testtransform=isequal(get(handles.transform_fct,'Enable'),'on');
 testnc=0;
 testnc_1=0;
 testcivx=0;
@@ -961,7 +988,7 @@ set(handles.Field_text_1,'Visible',state)
 %-----------------------------------
 function view_TRANSFORM(handles,state)
 set(handles.TRANSFORM_frame,'Visible',state)
-set(handles.CoordType,'Visible',state);
+set(handles.transform_fct,'Visible',state);
 set(handles.TRANSFORM_title,'Visible',state)
 
 %--------------------------------------------------------------
@@ -1327,11 +1354,11 @@ if isequal(get(handles.FieldMenu,'Visible'),'on')
     FieldValue=get(handles.FieldMenu,'Value');
     Series.Field=FieldMenu(FieldValue);
 end
-menu_coord_state=get(handles.CoordType,'Visible');
+menu_coord_state=get(handles.transform_fct,'Visible');
 Series.CoordType='';%default
 if isequal(menu_coord_state,'on')
-    menu_coord=get(handles.CoordType,'String');
-    menu_index=get(handles.CoordType,'Value');
+    menu_coord=get(handles.transform_fct,'String');
+    menu_index=get(handles.transform_fct,'Value');
     Series.CoordType=menu_coord{menu_index};
 end
 Series.hseries=get(hObject,'Parent');
@@ -1592,19 +1619,15 @@ index_ACTION=get(handles.ACTION,'Value');% selected string index
 ACTION= list_ACTION{index_ACTION}; % selected function name
 path_series=which('series');%path to series.m
 list_path=get(handles.ACTION,'UserData');%list of recorded paths to functions of the list ACTION
-
+default_file=fullfile(list_path{end},ACTION);
 % add a new function to the menu if the selected item is 'more...'
 if isequal(ACTION,'more...')
     pathfct=fileparts(path_series);
-%     browse_name=fullfile(path_series,'series');%go to UVMAT/series by default
-%     if length(list_path)>nb_builtin
-%         browse_name=list_path{end};% initialize browser with  the path of the last introduced function
-%      end 
     [FileName, PathName, filterindex] = uigetfile( ...
        {'*.m', ' (*.m)';
         '*.m',  '.m files '; ...
         '*.*', 'All Files (*.*)'}, ...
-        'Pick a file',list_path{end});
+        'Pick a file',default_file);
     if length(FileName)<2
         return
     end 
@@ -1684,7 +1707,7 @@ set(handles.FieldMenu,'Enable','off')
 set(handles.VelTypeMenu,'Enable','off')
 set(handles.FieldMenu_1,'Enable','off')
 set(handles.VelTypeMenu_1,'Enable','off')
-set(handles.CoordType,'Enable','off')
+set(handles.transform_fct,'Enable','off')
 %set the displayed GUI item needed for input parameters
 %list_input=feval(ACTION);% input list asked by the selected function
 if ~isequal(path_series,PathName)
@@ -1788,7 +1811,7 @@ for ilist=1:length(varargout)-1
             end
         case 'CoordType'   %hidden by default
             if isequal(lower(varargout{ilist+1}),'on') 
-                set(handles.CoordType,'Enable','on')
+                set(handles.transform_fct,'Enable','on')
                 view_TRANSFORM(handles,'on')
             end
         case 'GetObject'   %hidden by default
@@ -2109,7 +2132,7 @@ for iview=1:length(NomType)
         end
     else
         siz=size(times);
-        if siz(1)>=last_i & siz(2)>=last_j
+        if siz(1)>=last_i && siz(2)>=last_j && first_i>=1 && first_j>=1
             time_first=times(first_i,first_j);
             time_last=times(last_i,last_j); 
         end
@@ -2187,7 +2210,82 @@ else
 end
 
 
+% --- Executes on selection change in transform_fct.
+function transform_fct_Callback(hObject, eventdata, handles)
+
+global nb_transform
+
+% huvmat=get(handles.transform_fct,'parent');
+menu=get(handles.transform_fct,'String');
+ind_coord=get(handles.transform_fct,'Value');
+coord_option=menu{ind_coord};
+list_transform=get(handles.transform_fct,'UserData')
+ff=functions(list_transform{end});
+if isequal(coord_option,'more...'); 
+    coord_fct='';
+    prompt = {'Enter the name of the transform function'};
+    dlg_title = 'user defined transform';
+    num_lines= 1;
+    [FileName, PathName, filterindex] = uigetfile( ...
+       {'*.m', ' (*.m)';
+        '*.m',  '.m files '; ...
+        '*.*', 'All Files (*.*)'}, ...
+        'Pick a file', ff.file);
+    if isequal(PathName(end),'/')||isequal(PathName(end),'\')
+        PathName(end)=[];
+    end
+    transform_selected =fullfile(PathName,FileName);
+    if ~exist(transform_selected,'file')
+          return
+    end
+    [ppp,transform,xt_fct]=fileparts(FileName);% removes extension .m
+    if ~isequal(ext_fct,'.m')
+        msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
+        return
+    end
+   menu=update_menu(handles.transform_fct,transform);%add the selected fct to the menu
+   ind_coord=get(handles.transform_fct,'Value');
+   addpath(PathName)
+   list_transform{ind_coord}=str2func(transform);% create the function handle corresponding to the newly seleced function
+   set(handles.transform_fct,'UserData',list_transform)
+   rmpath(PathName)
+   % save the new menu in the personal file 'uvmat_perso.mat' 
+   dir_perso=prefdir;%personal Matalb directory
+   profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+   if exist(profil_perso,'file')
+       for ilist=nb_transform+1:numel(list_transform)
+           ff=functions(list_transform{ilist})
+           transform_fct{ilist-nb_transform}=ff.file;
+       end 
+        save (profil_perso,'transform_fct','-append'); %store the root name for future opening of uvmat
+   end 
+end
+
+%check the current path to the selected function
+func=functions(list_transform{ind_coord});
+set(handles.path_transform,'String',fileparts(func.file)); %show the path to the senlected function
 
 
+
+function path_transform_Callback(hObject, eventdata, handles)
+% hObject    handle to path_transform (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of path_transform as text
+%        str2double(get(hObject,'String')) returns contents of path_transform as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function path_transform_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to path_transform (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
 
 
