@@ -26,7 +26,7 @@ if ismember(xx,[8 127]) %if the delete or suppr key is pressed, delete the curre
     huvmat=findobj(allchild(0),'Name','uvmat');
 %     UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
     hlist_object=findobj(huvmat,'Tag','list_object');
-    ObjIndex=get(hlist_object,'Value');
+    ObjIndex=get(hlist_object,'Value')
     if ObjIndex>1
         delete_object(ObjIndex)
     end

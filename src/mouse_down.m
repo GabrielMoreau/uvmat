@@ -36,9 +36,8 @@ end
 test_create=~testzoom && (isequal(MouseAction,'create_object') || isequal(MouseAction,'create_mask'));
 %test_cal=get(handles.cal,'Value');
 test_cal=isequal(MouseAction,'calib');
-handles_coord=findobj(huvmat,'Tag','menu_coord');
-menu_coord=get(handles_coord,'String');
-coord_choice=get(handles_coord,'Value');
+menu_coord=get(hhuvmat.transform_fct,'String');
+coord_choice=get(hhuvmat.transform_fct,'Value');
 coord_type=menu_coord{coord_choice};
 test_edit=isequal(MouseAction,'edit_object');
 test_edit_vect=isequal(MouseAction,'edit_vect');
@@ -254,7 +253,7 @@ elseif ~isempty(huvmat)
                 XCoord=data.Coord(:,1);
                 YCoord=data.Coord(:,2);
             end
-            hh=findobj('Tag','calib_points')           
+            hh=findobj('Tag','calib_points');           
             if isempty(hh)
                 line(XCoord,YCoord,'Color','m','Tag','calib_points','LineStyle','.','Marker','+');
             else

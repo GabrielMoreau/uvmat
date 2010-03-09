@@ -513,9 +513,6 @@ function OPEN_Callback(hObject, eventdata, handles)
 %get the object file 
 oldfile=' ';
 huvmat=findobj('Tag','uvmat');
-% if isempty(huvmat)
-%     huvmat=findobj(allchild(0),'Name','series');
-% end
 hchild=get(huvmat,'Children');
 hrootpath=findobj(hchild,'Tag','RootPath');
 if ~isempty(hrootpath)
@@ -524,7 +521,6 @@ if ~isempty(hrootpath)
         oldfile=oldfile{1};
     end
 end
-%[FileName,PathName] = uigetfile('*.civ','Select a .civ file',oldfile)
 [FileName, PathName, filterindex] = uigetfile( ...
        {'*.xml;*.mat', ' (*.xml,*.mat)';
        '*.xml',  '.xml files '; ...
@@ -533,11 +529,11 @@ end
 fileinput=[PathName FileName];%complete file name 
 testblank=findstr(fileinput,' ');%look for blanks
 if ~isempty(testblank)
-    errordlg('forbidden input file name: contain blanks')
+    msgbox_uvmat('ERROR','forbidden input file name: contain blanks')
     return
 end
 sizf=size(fileinput);
-if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
+if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
 %read the file
  t=xmltree(fileinput);
@@ -552,20 +548,6 @@ if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
 title=set_title(s.Style,s.ProjMode);%update the title
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
-%     set(hhuvmat.POINTS,'Value',0)
-%     set(hhuvmat.POINTS,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.LINE,'Value',0)
-%     set(hhuvmat.LINE,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.PATCH,'Value',0)
-%     set(hhuvmat.PATCH,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.PLANE,'Value',0)
-%     set(hhuvmat.PLANE,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.VOLUME,'Value',0)
-%     set(hhuvmat.VOLUME,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     if ~isequal(title,'MASK')
-%         eval(['set(hhuvmat.' title ',''Value'',1)'])
-%         eval(['set(hhuvmat.' title ',''BackgroundColor'',[1 1 0])'])
-%     end
 end
 menu=get(handles.TITLE,'String');
 for iline=1:length(menu)

@@ -49,7 +49,7 @@ PlotHandles.AutoVecColor=handles.AutoVecColor;
 PlotHandles.decimate4=handles.decimate4;
 PlotHandles.min_C_title=handles.min_C_title;
 PlotHandles.max_C_title=handles.max_C_title;
-PlotHandles.MenuVectors=handles.MenuVectors;
+%PlotHandles.MenuVectors=handles.MenuVectors;
 PlotHandles.MenuEditVectors=handles.MenuEditVectors;
 PlotHandles.edit_vect=handles.edit_vect;
 %menu for the choice of the current plotting axes
