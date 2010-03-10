@@ -105,10 +105,10 @@ icount=0;
        datfile=dir(dir_fct);
        date_str=datfile.date;%string of the date of last modification
        datnum(i)=0;%default
-       char_code=double(date_str);% code of the date characters
-       special_char=(char_code>127); %non standard Ascii character (e.g. date in french)
-       if isempty(find(special_char))% standard Ascii character 
-          datnum(i)=datenum(date_str);
+       try 
+           datnum(i)=datenum(date_str);
+       catch
+           datnum(i)=0;%in case of error with datenum (e.g. date in french)
        end
    end
 end

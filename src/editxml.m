@@ -310,7 +310,7 @@ DataIn=get(heditxml,'UserData');
 t=xmltree(CurrentFile);%open the xml file 
 head_element=get(t,1);
 if ~isfield(head_element,'name') | ~isfield(head_element,'attributes')
-    warndlg_uvmat('root element of the .xml file not in correct format','ERROR')
+    msgbox_uvmat('ERROR','root element of the .xml file not in correct format')
 end
 head_name=head_element.name;
 head_attr=head_element.attributes;% attribute of root gives the name of the associated schema
@@ -355,7 +355,7 @@ if xstest==0  %look for the corresponding schema in the directory PARAM_LINUX.xm
     if exist(schemapath,'file')
         xs=xmltree(schemapath);
     else
-        warndlg_uvmat(['The xml schema for ' CurrentFile ' is unknown, check the schema path set in the xml file PARAM'],'ERROR')
+        msgbox_uvmat('ERROR',['The xml schema for ' CurrentFile ' is unknown, check the schema path set in the xml file PARAM'])
         [FileName, PathName]=uigetfile( ...
        {'*.xsd', '(*.xsd)';
         '*.xsd',  '.xsd files '; ...
@@ -1020,7 +1020,7 @@ for iattr=1:nbattrib
                set(handles.CurrentAttributes,'UserData',cur_file)%will be searched by uvmat
                [path,fil,ext]=fileparts(cur_file);
                if ~exist(cur_file,'file')
-                   warndlg_uvmat(['non-existent link file' cur_file],'ERROR') % A FAIRE: propose to updtate the .xml file
+                   msgbox_uvmat('ERROR',['non-existent link file' cur_file]) % A FAIRE: propose to updtate the .xml file
                    return
                elseif isequal(ext,'.xml')
                    if ~isfield(Data,'UpFile')
@@ -1229,7 +1229,7 @@ end
 ListXml=get(hhdataview.ListXml,'String');
 Value=get(hhdataview.ListXml,'Value');
 if isequal(Value,1)
-    warndlg_uvmat('you need to select the xml files to edit','ERROR')
+    msgbox_uvmat('ERROR','you need to select the xml files to edit')
     return
 end
 ListXml=ListXml(Value);%list of 
@@ -1256,7 +1256,7 @@ for iexp=1:length(List.Experiment)
                                 end
                                 [success,message]=copyfile(xmlfullname,backupfile);%make backup
                                 if ~isequal(success,1)
-                                    warndlg_uvmat(['Error in the backup of ' xmlfullname],'ERROR')
+                                    msgbox_uvmat('ERROR',['Error in the backup of ' xmlfullname])
                                     return
                                 end
                                 findstr=['/' rootelement];

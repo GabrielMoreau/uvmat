@@ -157,7 +157,7 @@ if isequal(todo_path,'') |isequal(todo_path,[])
     test_batch=0;
 end
 if exist(name_todo,'file')~=2 
-    hwarn=warndlg(['no batch distributed processing available, queue file ' name_todo ' absent']);
+    msgbox_uvmat('ERROR',['no batch distributed processing available, queue file ' name_todo ' absent']);
   %  test_batch=0;  % Problems to detect file on linux/nfs filesystems
 end
 end
@@ -570,7 +570,7 @@ if isequal(ext,'.xml')
         end
         if isempty(nom_type_read)
                 nom_type_ima='_i_j';
-                warndlg_uvmat('no ImageName defined in ImaDoc/Heading, take _i_j indexing by default','WARNING')
+                msgbox_uvmat('WARNING','no ImageName defined in ImaDoc/Heading, take _i_j indexing by default')
         else
                 nom_type_ima=nom_type_read;
         end
@@ -602,7 +602,8 @@ elseif ~isequal(ext,'.nc')
         while idetect==1 %look for the maximum file number in the series
                 field_i=field_i+1;
 %                 imagename_last=imagename;
-                [imagename,idetect]=name_generator(filebase,field_i,1,ext_ima,nom_type_ima);
+                imagename=name_generator(filebase,field_i,1,ext_ima,nom_type_ima);
+                idetect=exist(imagename,'file');
                 if isequal(nom_type_ima,'none')
                    idetect=0; %stop if the same image is repeated (if nom_type='none')
                    nbdetect=1;
@@ -616,7 +617,8 @@ elseif ~isequal(ext,'.nc')
         idetect=1;
         while idetect==1 
                     field_i=field_i-1;
-                    [imagename,idetect]=name_generator(filebase,field_i,1,ext_ima,nom_type_ima);
+                    imagename=name_generator(filebase,field_i,1,ext_ima,nom_type_ima);
+                    idetect=exist(imagename,'file');
                     if isequal(nom_type_ima,'none')
                         idetect=0; %stop if the same image is repeted (if nom_type='none')
                         nbdetect=1;
@@ -973,13 +975,14 @@ testpair=0;
 if get(handles.CIV1,'Value')==0 %
     dirname=fullfile(filepath,subdir_civ1,ext_dir);
     if ~exist(fullfile(filepath,subdir_civ1,ext_dir),'dir') 
-         hwarn=warndlg_uvmat(['no civ1 file available: subdirectory ' subdir_civ1 ' does not exist'],'ERROR');
+         msgbox_uvmat('ERROR',['no civ1 file available: subdirectory ' subdir_civ1 ' does not exist']);
          set(handles.list_pair_civ1,'String',{});
          return
     end
     for ipair=1:nbpair   
-        [filename,select(ipair)]=name_generator(filebase,ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair),'.nc',nom_type_nc,1,...
+        filename=name_generator(filebase,ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair),'.nc',nom_type_nc,1,...
         ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair),subdir_civ1);
+        select(ipair)=exist(filename,'file');
     end
     if ~exist('select','var') | isequal(select,zeros(size(1:nbpair)))
         if isfield(browse,'incr_pair') 
@@ -987,15 +990,14 @@ if get(handles.CIV1,'Value')==0 %
             num_i2=ref_i+ceil(browse.incr_pair(1)/2);
             num_j1=ref_j-floor(browse.incr_pair(2)/2);
             num_j2=ref_j+ceil(browse.incr_pair(2)/2);
-            [filename,select(1)]=name_generator(filebase,num_i1,num_j1,'.nc',nom_type_nc,1,num_i2,num_j2,subdir_civ1);
+            [filename]=name_generator(filebase,num_i1,num_j1,'.nc',nom_type_nc,1,num_i2,num_j2,subdir_civ1);
+            select(1)=exist(filename,'file');
             testpair=1;
         else
             if  isequal(mode,'series(Dj)') | isequal(mode,'st_series(Dj)') 
-                hwarn=warndlg_uvmat(['no civ1 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ1],'ERROR');
-                set(hwarn,'WindowStyle','modal');
+                msgbox_uvmat('ERROR',['no civ1 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ1]);
             else
-                hwarn=warndlg_uvmat(['no civ1 file available for the selected reference index i=' num2str(ref_i) ' and subdirectory ' subdir_civ1],'ERROR');
-                set(hwarn,'WindowStyle','modal');
+                msgbox_uvmat('ERROR',['no civ1 file available for the selected reference index i=' num2str(ref_i) ' and subdirectory ' subdir_civ1]);
             end
              set(handles.list_pair_civ1,'String',{''});
              %COMPLETER CAS STEREO
@@ -1158,8 +1160,9 @@ if get(handles.CIV2,'Value')==0 & get(handles.CIV1,'Value')==0 & get(handles.FIX
          return
     end
     for ipair=1:nbpair       
-        [filename,select(ipair)]=name_generator(filebase,ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair),'.nc',nom_type_nc,1,...
+        [filename]=name_generator(filebase,ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair),'.nc',nom_type_nc,1,...
         ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair),subdir_civ1);
+        select(ipair)=exist(filename,'file');
     end
     if  isequal(select,zeros(size(1:nbpair)))
         if isfield(browse,'incr_pair') 
@@ -1167,12 +1170,13 @@ if get(handles.CIV2,'Value')==0 & get(handles.CIV1,'Value')==0 & get(handles.FIX
             num_i2=ref_i+floor((browse.incr_pair(1)+1)/2);
             num_j1=ref_j-floor(browse.incr_pair(2)/2);
             num_j2=ref_j+floor((browse.incr_pair(2)+1)/2);
-            [filename,select(1)]=name_generator(filebase,num_i1,num_j1,'.nc',nom_type_nc,1,num_i2,num_j2,subdir_civ2);
+            filename=name_generator(filebase,num_i1,num_j1,'.nc',nom_type_nc,1,num_i2,num_j2,subdir_civ2);
+            select(1)=exist(filename,'file');
         else
             if  isequal(mode,'series(Dj)') | isequal(mode,'st_series(Dj)') 
-                errordlg(['no civ2 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ2])
+                msgbox_uvmat('ERROR',['no civ2 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ2])
             else
-                errordlg(['no civ2 file available for the selected reference index i=' num2str(ref_i) ' and subdirectory ' subdir_civ2])
+                msgbox_uvmat('ERROR',['no civ2 file available for the selected reference index i=' num2str(ref_i) ' and subdirectory ' subdir_civ2])
             end
              set(handles.list_pair_civ2,'String',{});
             return
@@ -1539,7 +1543,7 @@ if sge
            return % a better way should be create
         end
     else
-        warndlg_uvmat('batch system not available','ERROR')
+        msgbox_uvmat('ERROR','batch system not available')
         return
     end
 end
@@ -1569,7 +1573,7 @@ if ~isunix & isequal(todo_path(1:2),'\\') & isequal(filebase(2:3),':\')
             set(handles.displ_filebase,'String',filebase);
         end
     else
-         warndlg_uvmat('for BATCH option, UBC file names, beginning by \\, are needed','ERROR');
+         msgbox_uvmat('ERROR','for BATCH option, UBC file names, beginning by \\, are needed');
          set(handles.BATCH, 'Enable','On')
          set(handles.BATCH,'BackgroundColor',[1 0 0])
          return
@@ -1598,7 +1602,7 @@ if isequal(subdir_civ2,''),subdir_civ2=subdir_civ1; end% put default subdir
 currentdir=pwd;%store the current working directory
 [Path_ima,Name]=fileparts(filebase);%Path of the image files (.civ_3D)
 if ~exist(Path_ima,'dir')
-    warndlg_uvmat(['path to images ' Path_ima ' not found'],'ERROR')
+    msgbox_uvmat('ERROR',['path to images ' Path_ima ' not found'])
     return
 end
 cd(Path_ima);%move to the directory of the images
@@ -1629,15 +1633,16 @@ detect=1;
 while detect==1 %name a new subdir if one of the netcdf files already exists
       for ifile=1:nbfield
 %           for j=1:nbslice
-              [filename,detect]=name_generator(filebase,num1_civ1(ifile),[],'.nc',...
+              filename=name_generator(filebase,num1_civ1(ifile),[],'.nc',...
                 nom_type_nc,1,num2_civ1(ifile),[],subdir_civ1);%
-              if detect==1% if a netcdf file already exists
+            detect=exist(filename,'file')
+              if detect% if a netcdf file already exists
                  subdir_civ1=[subdir_civ1 '.0'];
                  subdir_civ2=subdir_civ1;
                  break
               end
               filecell_nc1(ifile)={filename};
-          if detect==1% if a netcdf file already exists
+          if detect% if a netcdf file already exists
               break
           end
       end
@@ -1651,17 +1656,17 @@ while detect==1 %name a new subdir if one of the netcdf files already exists
 end
 %get image names
 for ifile=1:nbfield
-    [filecell_ima1_civ1{ifile},idetect]=name_generator(filebase, num1_civ1(ifile),[],ext_ima,nom_type_ima);%first image
-    [filecell_ima2_civ1{ifile},idetect_1]=name_generator(filebase, num2_civ1(ifile),[],ext_ima,nom_type_ima); %second image
-     if idetect==0
-            warndlg_uvmat([filecell_ima1_civ1{ifile} ' not found'],'ERROR')
+    filecell_ima1_civ1{ifile}=name_generator(filebase, num1_civ1(ifile),[],ext_ima,nom_type_ima);%first image
+    filecell_ima2_civ1{ifile}=name_generator(filebase, num2_civ1(ifile),[],ext_ima,nom_type_ima); %second image
+     if ~exist(filecell_ima1_civ1{ifile},'file')
+            msgbox_uvmat('ERROR',[filecell_ima1_civ1{ifile} ' not found'])
             set(handles.BATCH, 'Enable','On')
             set(handles.BATCH,'BackgroundColor',[1 0 0])
             cd(currentdir)
             return
-     end
-     if idetect_1==0,
-            errordlg([filecell_ima2_civ1{ifile} ' not found'])
+     end     
+     if ~exist(filecell_ima2_civ1{ifile},'file')
+            msgbox_uvmat('ERROR',[filecell_ima2_civ1{ifile} ' not found'])
             set(handles.BATCH, 'Enable','On')
             set(handles.BATCH,'BackgroundColor',[1 0 0])
             cd(currentdir)
@@ -1691,7 +1696,8 @@ if ~isequal(ext_ima,'.vol')
        for ifile=1:nbfield
             waitbar(ifile/nbfield);
             Atot=[];
-            [filename_A,idetect_cur]=name_generator(filebase,num1_civ1(ifile),1,'.png','_i');%A VOIR
+            filename_A=name_generator(filebase,num1_civ1(ifile),1,'.png','_i');%A VOIR
+            idetect_cur=exist(filename_A,'file');
             for j=1:nbslice
                     if idetect_cur==0
                         A=read_image(cell2mat(filecell_ima1_civ1(ifile,j)),nom_type_ima2,npx,npy,num1_civ1(ifile));
@@ -1702,7 +1708,8 @@ if ~isequal(ext_ima,'.vol')
             imwrite(Atot,filename_A,'BitDepth',16);
                     %filecell_ima1_civ1(ifile,j)={filename};
             Atot=[];
-            [filename_B,idetect_cur]=name_generator(filebase, num2_civ1(ifile),1,'.png','_i');
+            filename_B=name_generator(filebase, num2_civ1(ifile),1,'.png','_i');
+            idetect_cur=exist(filename_B,'file');
             for j=1:nbslice
                     if idetect_cur==0
                         A=read_image(cell2mat(filecell_ima2_civ1(ifile,j)),nom_type_ima2,npx,npy,num2_civ1(ifile));
@@ -1741,7 +1748,8 @@ if ~sge
         return;
     end
 end
-
+'TESTciv3D'
+nbfield
 for ifile=1:nbfield
     i_cmd=0; 
     cmd='';
@@ -2175,11 +2183,11 @@ cd(currentdir);%come back to the current working directory
 if isempty(maskfiles)
     browse=get(handles.browse_root,'UserData');
      varargin{1}='';
-    [image_name,idetect]=name_generator(filebase,1,1,browse.ext_ima,browse.nom_type_ima);%name of an image
-    if idetect==1
+    image_name=name_generator(filebase,1,1,browse.ext_ima,browse.nom_type_ima);%name of an image
+    if exist(image_name,'file')
          varargin{1}=image_name;
     end
-    warndlg_uvmat('no mask available, use TOOL menu in the uvmat interface to create it','ERROR')
+    msgbox_uvmat('ERROR','no mask available, use TOOL menu in the uvmat interface to create it')
 %     makemask(varargin); %open the makemask interface
 else
     maskname=maskfiles(1).name;% take the first mask file in the list

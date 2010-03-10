@@ -1015,8 +1015,9 @@ end
 if ~(exist('KeepLim','var') && isequal(KeepLim,1))  %adjust the graph limits*
         test_lim=0;
         if test_vec
-            Xlim=[min(vec_X) max(vec_X)];
-            Ylim=[min(vec_Y) max(vec_Y)];
+            'TESTplot'
+            Xlim=[min(vec_X) max(vec_X)]
+            Ylim=[min(vec_Y) max(vec_Y)]
             test_lim=1;
             if test_ima%both background image and vectors coexist, take the wider bound
                 Xlim(1)=min(AX(1),Xlim(1));

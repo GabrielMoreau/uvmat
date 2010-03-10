@@ -1123,7 +1123,10 @@ for icell=1:length(CellVarIndex)
         end
         % different cases of projection
         if isequal(ObjectData.ProjMode,'projection')
-            ProjData.ListDimName=[ProjData.ListDimName FieldData.ListDimName(DimIndices(1))];%add the point index to the list of dimensions
+            %ProjData.ListDimName=[ProjData.ListDimName
+            %FieldData.ListDimName(DimIndices(1))];%add the point index to
+            %the list of dimension
+            ProjData.ListDimName=[ProjData.ListDimName FieldData.VarDimName(VarIndex(1))];%add the point index to the list of dimensions
             ProjData.DimValue=[ProjData.DimValue length(coord_X)];
             nbvar=0;
             for ivar=VarIndex %transfer variables to the projection plane
@@ -1137,7 +1140,7 @@ for icell=1:length(CellVarIndex)
                 end
                 if isempty(ivar_Z) || ivar~=ivar_Z 
                     ProjData.ListVarName=[ProjData.ListVarName VarName];
-                    ProjData.VarDimIndex=[ProjData.VarDimIndex DimIndices(1)];
+                    ProjData.VarDimName=[ProjData.VarDimName DimCell];
                     nbvar=nbvar+1;
                     if isfield(FieldData,'VarAttribute') & length(FieldData.VarAttribute) >=ivar
                         ProjData.VarAttribute{nbvar}=FieldData.VarAttribute{ivar};
@@ -1225,7 +1228,9 @@ for icell=1:length(CellVarIndex)
         eval(['AY=FieldData.' AYName ';'])
         VarName=FieldData.ListVarName{VarIndex(1)};
         eval(['DimValue=size(FieldData.' VarName ');'])
-        ListDimName=FieldData.ListDimName(DimIndices);
+        
+        %ListDimName=FieldData.ListDimName(DimIndices);
+        ListDimName=FieldData.VarDimName{VarIndex(1)};
         ProjData.ListVarName=[{AYName} {AXName} ProjData.ListVarName]; %TODO: check if it already exists in Projdata (several cells)
         ProjData.VarDimName=[{AYName} {AXName} ProjData.VarDimName];
         nbcolor=1; %default

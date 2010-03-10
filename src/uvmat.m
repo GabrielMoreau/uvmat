@@ -2233,7 +2233,7 @@ if test_x
     eval(['nbvec=length(UvData.Field.' XName ');'])
     if NbDim==3%
         if ~isempty(CellVarIndex) & ~isempty(VarType{imax}.coord_z)%unstructured coordinate z
-            ZName=UvData.ListVarName{VarType{imax}.coord_z};
+            ZName=UvData.Field.ListVarName{VarType{imax}.coord_z};
             eval(['UvData.ZMax=max(UvData.Field.' ZName ');'])
             eval(['UvData.ZMin=min(UvData.Field.' ZName ');'])
             test_z=1;   

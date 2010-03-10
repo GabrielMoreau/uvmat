@@ -14,7 +14,7 @@
 %  root_uid: optional uid of the xml element under which the new subtree must be appended
 
 function t=struct2xml(Object,t,root_uid)
-get(t,root_uid)
+
 if ~exist('t','var')
     t=xmltree;
 end

@@ -335,7 +335,7 @@ ListXml=get(handles.ListXml,'String');
 Value=get(handles.ListXml,'Value');
 set(handles.ListXml,'Value',Value(1));
 if isequal(Value(1),1)
-    warndlg_uvmat('an xml file needs to be selected','ERROR')
+    msgbox_uvmat('ERROR','an xml file needs to be selected')
    return
 else
     XmlName=ListXml{Value(1)};

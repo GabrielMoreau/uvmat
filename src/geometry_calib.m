@@ -597,12 +597,12 @@ else
     end
 end 
 if ~isfield(sparam,'GeometryCalib_exe')
-    warndlg_uvmat(['calibration program <GeometryCalib_exe> undefined in parameter file ' xmlfile],'ERROR')
+    msgbox_uvmat('ERROR',['calibration program <GeometryCalib_exe> undefined in parameter file ' xmlfile])
     return
 end
 Tsai_exe=sparam.GeometryCalib_exe;
 if ~exist(Tsai_exe,'file')
-    warndlg_uvmat(['calibration program ' Tsai_exe ' does not exist'],'ERROR')
+    msgbox_uvmat('ERROR',['calibration program ' Tsai_exe ' does not exist'])
     return
 end
 
@@ -611,7 +611,7 @@ dlmwrite('t.txt',textcoord,'');
 % ['!' Tsai_exe ' -f1 0 -f2 t.txt']
     eval(['!' Tsai_exe ' -f t.txt > tsaicalib.log']);
 if ~exist('calib.dat','file')
-    warndlg_uvmat('no output from calibration program Tsai_exe: possibly too few points','ERROR')
+    msgbox_uvmat('ERROR','no output from calibration program Tsai_exe: possibly too few points')
 end
 calibdat=dlmread('calib.dat');
 GeometryCalib.CalibrationType='tsai';
@@ -770,7 +770,7 @@ if length(Coord_cell)>0
         XCoord=str2num(coord_str(k(3)+5:k(4)-5));
         YCoord=str2num(coord_str(k(4)+5:end));
     else
-        warndlg_uvmat('the choice in menu_coord of uvmat must be px or phys ','ERROR')
+        msgbox_uvmat('ERROR','the choice in menu_coord of uvmat must be px or phys ')
     end
     huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
     hplot=findobj(huvmat,'Tag','axes3');%main plotting axis of uvmat
@@ -873,7 +873,7 @@ if ~isequal(hcoord,2)
     'relancer uvmat';
 end
 if ~isfield(AxeData,'ZoomAxes')
-    warndlg_uvmat('first draw a window around a grid marker','ERRROR')
+    msgbox_uvmat('ERROR','first draw a window around a grid marker')
     return
 end 
 XLim=get(AxeData.ZoomAxes,'XLim');
