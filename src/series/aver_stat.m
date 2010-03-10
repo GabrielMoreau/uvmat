@@ -31,6 +31,19 @@ end
 hseries=guidata(Series.hseries);%handles of the GUI series
 WaitbarPos=get(hseries.waitbar_frame,'Position');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%projection object
+test_object=get(hseries.GetObject,'Value');
+if test_object%isfield(Series,'sethandles')
+    hset_object=findobj(allchild(0),'Name','set_object');
+    ProjObject=read_set_object(guidata(hset_object));
+    %answeryes=questdlg({['field series projected on ' Series.ProjObject.Style]});
+    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Style ' before averaging']);
+    if ~isequal(answeryes,'Yes')
+        return
+    end
+end
+
 %root input file and type
 if ~iscell(Series.RootPath)% case of a single input field series
     num_i1={num_i1};num_j1={num_j1};num_i2={num_i2};num_j2={num_j2};
@@ -144,6 +157,10 @@ if testnc~=nbview && testima~=nbview && testvol~=nbview
     return
 end
 if ~isequal(FieldName,{'get_field...'})
+    if isequal(FieldName,{''}) && ~testima
+        msgbox_uvmat('ERROR','an input field needs to be selected')
+        return
+    end
     testcivx=testnc;
 end
 
@@ -234,10 +251,6 @@ end
 
 % Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
 subdir_result='aver_stat';
-% filebasesub=fullfile(RootPath{1},subdir_result,RootFile{1});
-% if isempty(SubDir{1}) % create a subdirectory '/aver_stat'
-%     subdir_result='aver_stat';
-%     filebasemean=fullfile(RootPath{1},subdir_result);
 if ~exist(fullfile(RootPath{1},subdir_result),'dir')
     dircur=pwd; %record current working directory
     cd(RootPath{1})% goes to the iamge directory
@@ -248,28 +261,13 @@ if ~exist(fullfile(RootPath{1},subdir_result),'dir')
     cd(dircur) %back to the initial working directory
 end
 filebase_out=filebase{1}; 
-% else
-%    subdir_result=SubDir{1};
-%    filebase_out=[filebase{1} '_mean'];% output root name obtained by adding the suffix _mean to the input
-% end
-%output nomtype (to generalise)
 NomTypeOut=nomtype2pair(NomType{1},num_i2{end}(end)-num_i1{1}(1),num_j2{end}(end)-num_j1{1}(1));
-    
-% if NbSlice==1  
-%     filebase_out=[filebasesub '_mean'];
-% else
-%     filebase_out=[filebasesub '_' NbSlice_name 'mean'];
-%     answeryes=questdlg({['will make average in ' num2str(NbSlice) ' slices'];['results stored as files ' filebase_out ' ...']});
-%     if ~isequal(answeryes,'Yes')
-%         return
-%     end
-% end
 
 % coordinate transform or other user defined transform
-Coord_menu=get(hseries.CoordType,'String');
-menu_val=get(hseries.CoordType,'Value');
-usrfct=Coord_menu{menu_val};
-testfct=~isequal(usrfct,'');
+transform_fct=[];%default
+if isfield(Series,'transform_fct')
+    transform_fct=Series.transform_fct;
+end
 
 %slice loop
 siz=size(num_i1{1});
@@ -311,18 +309,18 @@ for i_slice=1:NbSlice
                 end
              end   
              % coordinate transform (or other user defined transform)
-             if ~isequal(Series.CoordType,'')
+             if ~isempty(transform_fct)
                  % z index
                 if ~isempty(NbSlice_calib)
                     Data{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;%Zindex for phys transform
                 end
                 if nbview==2
-                    [Data{1},Data{2}]=feval(Series.CoordType,Data{1},XmlData{1},Data{2},XmlData{2});
+                    [Data{1},Data{2}]=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
                     if isempty(Data{2})
                         Data(2)=[];
                     end
                 else
-                    Data{1}=feval(Series.CoordType,Data{1},XmlData);
+                    Data{1}=transform_fct(Data{1},XmlData);
                 end
              end     
             if testcivx
@@ -337,8 +335,8 @@ for i_slice=1:NbSlice
             else
                 Field=Data{1};
             end
-            if isfield(Series,'ProjObject')
-                [Field,errormsg]=proj_field(Field,Series.ProjObject);
+            if test_object
+                [Field,errormsg]=proj_field(Field,ProjObject);
                  if ~isempty(errormsg)
                     msgbox_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg])
                     return

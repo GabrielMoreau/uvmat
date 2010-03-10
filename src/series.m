@@ -1294,11 +1294,11 @@ if ~isequal(str_pair,'Dj=*|*')&~isequal(str_pair,'Di=*|*')
         end
 	end
 end
-%---------------------------------------------------
-% --- Executes on button press in RUN.
-%------------------------------------------------------
-function RUN_Callback(hObject, eventdata, handles)
 
+%------------------------------------------------------------------------
+% --- Executes on button press in RUN.
+function RUN_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 %read root name and field type
 set(handles.RUN,'BusyAction','queue');
 %hseries=get(handles.RUN,'parent');
@@ -1310,13 +1310,13 @@ else
     Series.GetObject=0;
 end
 SeriesData=get(handles.figure1,'UserData');
-if isfield(SeriesData,'sethandles')
-    if iscell(SeriesData.sethandles)
-        Series.sethandles=SeriesData.sethandles{1};
-    else
-        Series.sethandles=SeriesData.sethandles;%retrieve the handles of the set_object interface (to define projection objects)
-    end
-end
+% if isfield(SeriesData,'sethandles')
+%     if iscell(SeriesData.sethandles)
+%         Series.sethandles=SeriesData.sethandles{1};
+%     else
+%         Series.sethandles=SeriesData.sethandles;%retrieve the handles of the set_object interface (to define projection objects)
+%     end
+% end
 
 %reinitiate waitbar position
 Series.WaitbarPos=get(handles.waitbar_frame,'Position');%TO SUPPRESS
@@ -1357,25 +1357,26 @@ end
 menu_coord_state=get(handles.transform_fct,'Visible');
 Series.CoordType='';%default
 if isequal(menu_coord_state,'on')
-    menu_coord=get(handles.transform_fct,'String');
+%     menu_coord=get(handles.transform_fct,'String');
     menu_index=get(handles.transform_fct,'Value');
-    Series.CoordType=menu_coord{menu_index};
+    transform_list=get(handles.transform_fct,'UserData');
+    Series.transform_fct=transform_list{menu_index};% transform function handles
 end
-Series.hseries=get(hObject,'Parent');
-if isequal(get(handles.ParamVal,'Visible'),'on')
-    ParamKey=get(handles.ParamKey,'String');
-    if ischar(ParamKey)
-        ParamKey{1}=ParamKey;
-    end
-    ParamString=get(handles.ParamVal,'String');
-    if ischar(ParamString)
-        for ilist=1:size(ParamString,1)
-            ParamVal{ilist}=ParamString(ilist,:);
-        end
-    else
-        ParamVal=ParamString;
-    end   
-end
+Series.hseries=handles.figure1; % handles to the series GUI
+% if isequal(get(handles.ParamVal,'Visible'),'on')
+%     ParamKey=get(handles.ParamKey,'String');
+%     if ischar(ParamKey)
+%         ParamKey{1}=ParamKey;
+%     end
+%     ParamString=get(handles.ParamVal,'String');
+%     if ischar(ParamString)
+%         for ilist=1:size(ParamString,1)
+%             ParamVal{ilist}=ParamString(ilist,:);
+%         end
+%     else
+%         ParamVal=ParamString;
+%     end   
+% end
 
 %read the set of field numbers
 first_i=str2num(get(handles.first_i,'String'));
@@ -1481,32 +1482,34 @@ for iview=1:length(RootPath)
     end
 end
 
-% RUN RUN'
+% defining the ACTION function handle
 path_series=which('series');
 list_path=get(handles.ACTION,'UserData');
 index=get(handles.ACTION,'Value');
 fct_path=list_path{index}; %path stored for the function ACTION
 if ~isequal(fct_path,path_series)
     eval(['spath=which(''' action ''');']) %spath = current path of the selected function ACTION
-    if ~isequal(spath,fct_path)& exist(fct_path,'dir')
+    if ~exist(fct_path,'dir')
+        msgbox_uvmat('ERROR',['The prescibed function path ' fct_path ' does not exist'])
+        return
+    end
+    if ~isequal(spath,fct_path)
         addpath(fct_path)% add the prescribed path if not the current one
     end
 end
-% fct_path
-eval(['h_fun=@' action ';'])
+eval(['h_fun=@' action ';'])%create a function handle for ACTION
 if ~isequal(fct_path,path_series)
         rmpath(fct_path)% add the prescribed path if not the current one    
 end
 
+% RUN ACTION
 Series.Action=action;%name of the processing programme
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
 drawnow
 if length(RootPath)>1
-%    feval(action,num_i1_cell,num_i2_cell,num_j1_cell,num_j2_cell,Series);
     h_fun(num_i1_cell,num_i2_cell,num_j1_cell,num_j2_cell,Series);
 else
     h_fun(num_i1,num_i2,num_j1,num_j2,Series);
-%     feval(action,num_i1,num_i2,num_j1,num_j2,Series);
 end
 set(handles.RUN,'BackgroundColor',[1 0 0])
 
@@ -1524,19 +1527,21 @@ set(handles.RUN,'BackgroundColor',[1 0 0])
 % end
 % saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
 
-%----------------------------------------------------
+%------------------------------------------------------------------------
 function STOP_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 set(handles.RUN, 'BusyAction','cancel')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 
-%----------------------------------------------
 
-%----------------------------------------------------
+%------------------------------------------------------------------------
 function first_i_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 last_i_Callback(hObject, eventdata, handles)
 
-%----------------------------------------------
+%------------------------------------------------------------------------
 function last_i_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 %     hseries=get(handles.last_i,'parent');
 first_i=str2num(get(handles.first_i,'String'));
 last_i=str2num(get(handles.last_i,'String'));
@@ -1549,18 +1554,18 @@ if ~isfield(SeriesData,'Time')
 end
 displ_time(handles,SeriesData.Time{1});
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 function first_j_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
  last_j_Callback(hObject, eventdata, handles)
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 function last_j_Callback(hObject, eventdata, handles)
-   % hseries=get(handles.last_i,'parent');
+%------------------------------------------------------------------------
 first_j=str2num(get(handles.first_j,'String'));
 last_j=str2num(get(handles.last_j,'String'));
 ref_j=ceil((first_j+last_j)/2);
 set(handles.ref_j,'String', num2str(ref_j))
-
 ref_j_Callback(hObject, eventdata, handles)
 SeriesData=get(handles.figure1,'UserData');
 if ~isfield(SeriesData,'Time')
@@ -1569,10 +1574,9 @@ end
 displ_time(handles,SeriesData.Time{1});
 
 
-
-
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 function ref_i_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
@@ -1592,8 +1596,9 @@ NomType=NomTypeCell{Val};
     end
 end
 
-%----------------------------------------------------
+%------------------------------------------------------------------------
 function ref_j_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
@@ -1610,9 +1615,10 @@ if ~isempty(NomTypeCell)
     end
 end
 
-%----------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in ACTION.
 function ACTION_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 global nb_builtin
 list_ACTION=get(handles.ACTION,'String');% list menu fields
 index_ACTION=get(handles.ACTION,'Value');% selected string index
@@ -1709,7 +1715,6 @@ set(handles.FieldMenu_1,'Enable','off')
 set(handles.VelTypeMenu_1,'Enable','off')
 set(handles.transform_fct,'Enable','off')
 %set the displayed GUI item needed for input parameters
-%list_input=feval(ACTION);% input list asked by the selected function
 if ~isequal(path_series,PathName)
     addpath(PathName)
 end
@@ -1719,10 +1724,7 @@ if ~isequal(path_series,PathName)
 end
 
 varargout=h_function();
-%varargout=feval(ACTION);% input list asked by the selected function
 Param_list={};
-% RootPath=get(handles.RootPath,'String');
-% RootFile=get(handles.RootFile,'String');
 
 %nb_series=length(RootFile);
 FileExt=get(handles.FileExt,'String');
@@ -1838,11 +1840,10 @@ if ~isempty(Param_list)
     set(handles.ParamVal,'Visible','on')
 end
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in FieldMenu.
-%-------------------------------------------------------------------
 function FieldMenu_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 field_str=get(handles.FieldMenu,'String');
 field_index=get(handles.FieldMenu,'Value');
 field=field_str{field_index(1)};
@@ -1867,10 +1868,10 @@ elseif isequal(field,'more...')
      update_menu(handles.FieldMenu,scalar)
 end
 
-%------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in FieldMenu_1.
-%-----------------------------------------------------
 function FieldMenu_1_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 field_str=get(handles.FieldMenu_1,'String');
 field_index=get(handles.FieldMenu_1,'Value');
 field=field_str{field_index};
@@ -1895,78 +1896,6 @@ elseif isequal(field,'more...')
      scalar=cell2mat(str(ind_answer));
      update_menu(handles.FieldMenu_1,scalar)
 end   
-
-
-% %group the variables (fields of 'FieldData') in cells of variables with the same dimensions
-% %%%%%%%%%%%%%%%%%%%%%%% Function independante maintenant
-% %-----------------------------------------------------------------
-% [CellVarIndex,NbDim,VarTypeCell]=find_field_indices(Data{1});
-% %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
-% % CellVarIndex=cells of variable index arrays
-% ivar_new=0; % index of the current variable in the projected field
-% icoord=0;
-% for icell=1:length(CellVarIndex)
-%     if NbDim(icell)==1
-%         continue
-%     end
-%     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list FieldData.ListVarName
-%     VarType=VarTypeCell{icell};
-%     ivar_X=VarType.coord_x;
-%     ivar_Y=VarType.coord_y;
-%     ivar_FF=VarType.errorflag;
-%     if isempty(ivar_X)
-%         test_grid=1;%test for input data on regular grid (e.g. image)coordinates
-%     else
-%         if length(ivar_Y)~=1
-%                 warndlg_uvmat('y coordinate missing in proj_field.m','ERROR')
-%                 return
-%         end
-%         test_grid=0;
-%     end
-% %    DimIndices=Data{1}.VarDimIndex{VarIndex(1)};%indices of the dimensions of the first variable (common to all variables in the cell)
-%     %case of input fields with unstructured coordinates
-%     if ~test_grid
-%         for ivar=VarIndex
-%             VarName=MergeData.ListVarName{ivar};
-%             for iview=1:nbview
-%                 eval(['MergeData.' VarName '=[MergeData.' VarName '; Data{iview}.' VarName ';'])
-%             end
-%         end
-%     %case of fields defined on a structured  grid 
-%     else  
-% %        DimValue=MergeData.DimValue(DimIndices);%set of dimension values
-%         testFF=0;
-%         for iview=2:nbview
-% %             if ~isequal(DimValue,Data{iview}.DimValue(DimIndices))
-% %                 MergeData.Txt='ERROR: attempt at merging structured fields with different sizes';
-% %                 return
-% %             end
-%             for ivar=VarIndex
-%                 VarName=MergeData.ListVarName{ivar};
-%                 if isfield(MergeData,'VarAttribute')
-%                     if length(MergeData.VarAttribute)>=ivar && isfield(MergeData.VarAttribute{ivar},'Role') && isequal(MergeData.VarAttribute{ivar}.Role,'errorflag')
-%                         testFF=1;
-%                     end
-%                 end
-%                 eval(['MergeData.' VarName '=MergeData.' VarName '+ Data{iview}.' VarName ';'])
-%             end
-%         end
-%         if testFF
-%             nbaver=nbview-MergeData.FF;
-%             indgood=find(nbaver>0);
-%             for ivar=VarIndex
-%                 VarName=MergeData.ListVarName{ivar};
-%                 eval(['MergeData.' VarName '(indgood)=double(MergeData.' VarName '(indgood))./nbaver(indgood);'])
-%             end 
-%         else
-%             for ivar=VarIndex
-%                 VarName=MergeData.ListVarName{ivar};
-%                 eval(['MergeData.' VarName '=double(MergeData.' VarName ')./nbview;'])
-%             end    
-%         end
-%     end
-% end
-%     
 
 %-----------------------------
 function mouse_up_gui(ggg,eventdata,handles)
@@ -2044,11 +1973,10 @@ elseif isequal (NomType,'_i_j1-j2') || isequal (NomType,'#_ab')
     end    
 end
 
- 
-%-----------------------------------------------------------
-% find the times corresponding to the first and last indices of a series
-%
+%------------------------------------------------------------------------
+% ---- find the times corresponding to the first and last indices of a series
 function displ_time(handles,times)
+%------------------------------------------------------------------------
 hseries=get(handles.last_i,'parent');
 SeriesData=get(hseries,'UserData');%
 first_i=str2num(get(handles.first_i,'String'));
@@ -2145,19 +2073,10 @@ set(handles.time_last,'Value',1)
 set(handles.time_first,'String',time_first_cell);
 set(handles.time_last,'String',time_last_cell);
 
-%-------------------------------------------------------------------- 
-% --- Executes on selection change in VelTypeMenu.
-function VelTypeMenu_Callback(hObject, eventdata, handles)
-% VelTypeList=get(handles.VelTypeMenu,'String');
-% VelTypeIndex=get(handles.VelTypeMenu,'Value');
-% VelTypeCell=get(handles.VelType,'String');
-% VelTypeCell{1}=VelTypeList{VelTypeIndex};
-% set(handles.VelType,'String',VelTypeCell)
-
-
-%--------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in GetObject.
 function GetObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 hseries=get(handles.GetObject,'parent');
 SeriesData=get(hseries,'UserData');
 value=get(handles.GetObject,'Value');
@@ -2168,14 +2087,45 @@ if value
      if ishandle(hset_object)
          [SeriesData.hset_object,SeriesData.sethandles]=set_object(DataInit); %open the set_object interface
      else
-         DataInit.TITLE='POINTS';%default option
-         [SeriesData.hset_object,SeriesData.sethandles]=set_object(DataInit); %open the set_object interface
+         %get the object file 
+         defaultname=get(handles.RootPath,'String');
+        [FileName, PathName, filterindex] = uigetfile( ...
+       {'*.xml;*.mat', ' (*.xml,*.mat)';
+       '*.xml',  '.xml files '; ...
+        '*.mat',  '.mat matlab files '}, ...
+        'Pick a file',defaultname{1});
+        fileinput=[PathName FileName];%complete file name 
+        testblank=findstr(fileinput,' ');%look for blanks
+        if ~isempty(testblank)
+            msgbox_uvmat('ERROR','forbidden input file name: contain blanks')
+            return
+        end
+        sizf=size(fileinput);
+        if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
+        %read the file
+        t=xmltree(fileinput);
+        data=convert(t);
+        if ~isfield(data,'Style')
+             data.Style='points';
+        end
+        if ~isfield(data,'ProjMode')
+             data.ProjMode='projection';
+        end
+        transform_menu=get(handles.transform_fct,'String');
+        ichoice=get(handles.transform_fct,'Value');
+        if isequal(transform_menu{ichoice},'px');
+            data.CoordType='px';
+        else
+            data.CoordType='phys';
+        end
+        data.desable_plot=1;
+        [SeriesData.hset_object,SeriesData.sethandles]=set_object(data);% call the set_object interface
      end 
 else
     set(handles.GetObject,'BackgroundColor',[0 1 0])%put activated buttons to green
-    if isfield(SeriesData,'hset_object')&& ishandle(SeriesData.hset_object)
-        close(SeriesData.hset_object)
-    end
+%     if isfield(SeriesData,'hset_object')&& ishandle(SeriesData.hset_object)
+%         close(SeriesData.hset_object)
+%     end
 end
 set(hseries,'UserData',SeriesData)
 
@@ -2183,13 +2133,14 @@ set(hseries,'UserData',SeriesData)
 function GetMask_Callback(hObject, eventdata, handles)
 value=get(handles.GetMask,'Value');
 if value
-    errordlg('not implemented yet')
+    msgbox_uvmat('ERROR','not implemented yet')
 end
 %--------------------------------------------------------------
 
-%--------------------------------------------------------------------------
+%-------------------------------------------------------------------
 %'uv_ncbrowser': interactively calls the netcdf file browser 'get_field.m'
 function ncbrowser_uvmat(hObject, eventdata)
+%-------------------------------------------------------------------
      bla=get(gcbo,'String');
      ind=get(gcbo,'Value');
      filename=cell2mat(bla(ind));
@@ -2197,9 +2148,9 @@ function ncbrowser_uvmat(hObject, eventdata)
       filename=filename(1:blank-1);
      get_field(filename)
 
-% --------------------------------------------------------------------
+% ------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
-
+%-------------------------------------------------------------------
 path_to_uvmat=which ('uvmat');% check the path of uvmat
 pathelp=fileparts(path_to_uvmat);
 helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
@@ -2209,10 +2160,10 @@ else
     web([helpfile '#series'])
 end
 
-
+%-------------------------------------------------------------------
 % --- Executes on selection change in transform_fct.
 function transform_fct_Callback(hObject, eventdata, handles)
-
+%-------------------------------------------------------------------
 global nb_transform
 
 % huvmat=get(handles.transform_fct,'parent');

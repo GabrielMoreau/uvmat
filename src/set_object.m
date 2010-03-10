@@ -66,7 +66,7 @@ end
 %  if =[] or absent, no plot (mask mode in uvmat)
 % parameters on the uvmat interface (obtained by 'get_plot_handle.m')
 function set_object_OpeningFcn(hObject, eventdata, handles, data, PlotHandles,ZBounds)
-
+%-------------------------------------------------------------------
 % Choose default command line output for set_object
 handles.output = hObject;
 
@@ -93,9 +93,9 @@ set(hObject,'UserData',SetData)
 
 % fill the interface as set in the input data:
 if exist('data','var') 
-    if isfield(data,'desable_open')
-        desable_open=data.desable_open;%test to desable button OPEN (edit or display mode)
-    end
+%     if isfield(data,'desable_open')
+%         desable_open=data.desable_open;%test to desable button OPEN (edit or display mode)
+%     end
     if isfield(data,'desable_plot')
         desable_plot=data.desable_plot;%test to desable button PLOT (display mode)
     end
@@ -109,23 +109,23 @@ if exist('data','var')
             set(handles.ZObject,'String',num2str(data.Coord(1,3),4))
         end
     end
-    if isfield(data,'ProjMode') && isfield(data,'Style')
-        data.TITLE=set_title(data.Style,data.ProjMode);% define TITLE in set_object (POINTS, LINE, PATCH,...)
-    end
-    if isfield(data,'TITLE')
-        menutitle=get(handles.TITLE,'String');
-        for iline=1:length(menutitle)
-            strmenu=menutitle{iline};
-            if isequal(data.TITLE,strmenu)
-                set(handles.TITLE,'Value',iline)
-                break
-            end
-        end
-        TITLE_Callback(hObject, eventdata, handles)% enable edit boxes depending on TITLE
-    end
-    if isfield(data,'fixedtitle')&isequal(data.fixedtitle,1)
-        set(handles.TITLE,'enable','off')
-    end
+%     if isfield(data,'ProjMode') && isfield(data,'Style')
+%         data.TITLE=set_title(data.Style,data.ProjMode);% define TITLE in set_object (POINTS, LINE, PATCH,...)
+%     end
+%     if isfield(data,'TITLE')
+%         menutitle=get(handles.TITLE,'String');
+%         for iline=1:length(menutitle)
+%             strmenu=menutitle{iline};
+%             if isequal(data.TITLE,strmenu)
+%                 set(handles.TITLE,'Value',iline)
+%                 break
+%             end
+%         end
+%         TITLE_Callback(hObject, eventdata, handles)% enable edit boxes depending on TITLE
+%     end
+%     if isfield(data,'fixedtitle')&isequal(data.fixedtitle,1)
+%         set(handles.TITLE,'enable','off')
+%     end
     if isfield(data,'Style')
         menu=get(handles.ObjectStyle,'String');
         for iline=1:length(menu)
@@ -135,6 +135,7 @@ if exist('data','var')
             end
         end
     end
+    ObjectStyle_Callback(hObject, eventdata, handles)
     if isfield(data,'ProjMode')
         menu=get(handles.ProjMode,'String');
         for iline=1:length(menu)
@@ -144,6 +145,7 @@ if exist('data','var')
             end
         end
     end
+    ProjMode_Callback(hObject, eventdata, handles)
     if isfield(data,'Coord') & size(data.Coord,2)>=2
         sizcoord=size(data.Coord);
         for i=1:sizcoord(1)
@@ -225,11 +227,11 @@ if exist('data','var')
         end
     end
 end
-if desable_open
-    set(handles.OPEN,'Visible','off')
-else
-    set(handles.OPEN,'Visible','on')
-end
+% if desable_open
+%     set(handles.OPEN,'Visible','off')
+% else
+%     set(handles.OPEN,'Visible','on')
+% end
 if desable_plot
    set(handles.PLOT,'Visible','off')
 else
@@ -251,9 +253,10 @@ varargout{2}=handles;
 %-----------------------------------------------
 % --- Executes on selection change in ObjectStyle.
 function ObjectStyle_Callback(hObject, eventdata, handles)
-style_prev=get(handles.ObjectStyle,'UserData');
+style_prev=get(handles.ObjectStyle,'UserData');%previous object style
 str=get(handles.ObjectStyle,'String');
 val=get(handles.ObjectStyle,'Value');
+style=str{val};
 % make correspondance between different object styles
 % if ~isequal(str{val},style_prev)
 Xcolumn=get(handles.XObject,'String');
@@ -286,7 +289,7 @@ y_new{1}=Ycolumn{1};
 if ~isempty(Zcolumn)
     z_new{1}=Zcolumn{1};
 end
-if isequal(str{val},'line')
+if isequal(style,'line')
     if isequal(style_prev,'rectangle')|isequal(style_prev,'ellipse')
         XMax=get(handles.XMax,'String');
         YMax=get(handles.YMax,'String');
@@ -296,21 +299,31 @@ if isequal(str{val},'line')
         set(handles.YObject,'String',y_new)
         set(handles.ZObject,'String',z_new)
     end
-elseif isequal(str{val},'polyline')
-elseif isequal(str{val},'rectangle')| isequal(str{val},'ellipse')
+elseif isequal(style,'polyline')
+elseif isequal(style,'rectangle')| isequal(style,'ellipse')
      set(handles.XObject,'String',x_new)
      set(handles.YObject,'String',y_new)
      set(handles.ZObject,'String',z_new)
 end
 % end
-            
-            
-
+switch style
+    case {'points','line','polyline','plane'}
+        menu_proj={'projection';'interp';'filter';'none'}; 
+    case {'polygon','rectangle','ellipse'}
+        menu_proj={'inside';'outside';'mask_inside';'mask_outside'};
+    case 'volume'
+        menu_proj={'none'};
+end   
+proj_index=get(handles.ProjMode,'Value');
+if proj_index<numel(menu_proj)
+    set(handles.ProjMode,'Value',1);% value index must not exceed the menu length
+end
+set(handles.ProjMode,'String',menu_proj)
 ProjMode_Callback(hObject, eventdata, handles)
 %store the current option
 str=get(handles.ObjectStyle,'String');
 val=get(handles.ObjectStyle,'Value');
-set(handles.ObjectStyle,'UserData',str{val})
+set(handles.ObjectStyle,'UserData',style)
 
 %----------------------------------------------
 function xObject_Callback(hObject, eventdata, handles)
@@ -333,143 +346,127 @@ menu=get(handles.ObjectStyle,'String');
 value=get(handles.ObjectStyle,'Value');
 ObjectStyle=menu{value};
 test3D=isequal(get(handles.ZObject,'Visible'),'on');%3D case
-if isequal(ObjectStyle,'plane')|isequal(ObjectStyle,'volume')
-    set(handles.Phi,'Visible','on')
-    if test3D%3D case
-        set(handles.Theta,'Visible','on')
-        set(handles.Psi,'Visible','on')
-    end
-    set(handles.XMin,'Visible','on')
-    set(handles.XMax,'Visible','on')
-    set(handles.YMin,'Visible','on')
-    set(handles.YMax,'Visible','on')
-    if test3D
-        set(handles.Theta,'Visible','on')
-        set(handles.Psi,'Visible','on')
-        set(handles.ZMin,'Visible','on')
-        set(handles.ZMax,'Visible','on')
-    end
-else
-    set(handles.Phi,'Visible','off')
-    set(handles.Theta,'Visible','off')
-    set(handles.Psi,'Visible','off')
-    set(handles.XMin,'Visible','off')
-    set(handles.XMax,'Visible','off')
-    set(handles.YMin,'Visible','off')
-    if isequal(ProjMode,'interp')
-        set(handles.YMax,'Visible','off')
-    else
-        set(handles.YMax,'Visible','on')
-    end
-    if isequal(ObjectStyle,'rectangle')|isequal(ObjectStyle,'ellipse')
-        set(handles.XMax,'Visible','on')
-    else
-       set(handles.XMax,'Visible','off')
-    end
-    set(handles.ZMin,'Visible','off')
-    set(handles.ZMax,'Visible','off')
-end
-TITLE_list=get(handles.TITLE,'String');
-val=get(handles.TITLE,'Value');
-TITLE=TITLE_list{val};
-switch TITLE
-    case {'POINTS','PATCH','MASK'}
-        set(handles.DX,'Visible','off')
-        set(handles.DY,'Visible','off')
-        set(handles.DZ,'Visible','off')
-    case {'LINE'}
-        if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
-            set(handles.DX,'Visible','on')
-        else
-            set(handles.DX,'Visible','off')
-        end
-    case {'PLANE'}  
-        if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
-            set(handles.DX,'Visible','on')
-            set(handles.DY,'Visible','on')
-        else
-            set(handles.DX,'Visible','off')
-            set(handles.DY,'Visible','off')
-        end
-    case {'VOLUME'} 
-        if isequal(ProjMode,'interp')
-            set(handles.DX,'Visible','on')
-            set(handles.DY,'Visible','on')
-            set(handles.DZ,'Visible','on')
-        else
-            set(handles.DX,'Visible','off')
-            set(handles.DY,'Visible','off')
-            set(handles.DZ,'Visible','off')   
-        end
-end
 
-%---------------------------------------------
-% --- Executes on selection change in TITLE.
-function TITLE_Callback(hObject, eventdata, handles)
-%---------------------------------------------
-hsetobject=get(handles.TITLE,'parent');
-SetData=get(hsetobject,'UserData');%get the hidden interface data
-%      function named CALLBACK in UNTITLED.M with the given input arguments.
-menu=get(handles.TITLE,'String');
-value=get(handles.TITLE,'Value');
-titl=menu{value};
-if isequal(titl,'POINTS');
-     menu_style={'points'};
-     menu_proj={'projection';'interp';'filter';'none'};
-elseif isequal(titl,'LINE')
-     menu_style={'line';'polyline';'rectangle';'polygon';'ellipse'};%'line' =default
-     menu_proj={'projection';'interp';'filter';'none'};
-elseif isequal(titl,'PATCH')
-     menu_style={'rectangle';'polygon';'ellipse'};%'line' =default
-     menu_proj={'inside';'outside'};
-elseif isequal(titl,'MASK')
-     menu_style={'polygon'};%'line' =default
-     menu_proj={'mask_inside';'mask_outside'};
-elseif isequal(titl,'PLANE')
-     menu_style={'plane'};
-     menu_proj={'projection';'interp';'filter';'none'};
-elseif isequal(titl,'VOLUME')
-     menu_style={'volume'};
-     menu_proj={'none'};
-  
+%default setting
+set(handles.Phi,'Visible','off')
+set(handles.Theta,'Visible','off')
+set(handles.Psi,'Visible','off')
+set(handles.XMin,'Visible','off')
+set(handles.XMax,'Visible','off')
+set(handles.YMin,'Visible','off')
+if isequal(ProjMode,'interp')
+    set(handles.YMax,'Visible','off')
+else
+    set(handles.YMax,'Visible','on')
 end
-old_menu=get(handles.ObjectStyle,'String');
-value=get(handles.ObjectStyle,'Value');
-old_style=old_menu{value};
-teststyle=0;
-for iline=1:length(menu_style)
-    if isequal(menu_style{iline},old_style)
-        styleval=iline;
-        teststyle=1;
-        break
-    end
+if isequal(ObjectStyle,'rectangle')|isequal(ObjectStyle,'ellipse')
+    set(handles.XMax,'Visible','on')
+else
+   set(handles.XMax,'Visible','off')
 end
-if ~teststyle
-    new_style=[];%default
-    switch old_style
-        case 'polyline'
-            new_style='polygon';
-        case 'polygon'
-            new_style='polyline';
-    end
-    if ~isempty(new_style)
-        for iline=1:length(menu_style)
-            if isequal(menu_style{iline},new_style)
-                styleval=iline;
-                teststyle=1;
-                break
-            end
+set(handles.ZMin,'Visible','off')
+set(handles.ZMax,'Visible','off')
+set(handles.DX,'Visible','off')
+set(handles.DY,'Visible','off')
+set(handles.DZ,'Visible','off')
+
+switch ObjectStyle
+    case 'points'
+        set(handles.YMax,'TooltipString','YMax: range of averaging around each point') 
+        set(handles.XObject,'TooltipString','XObject: set of x coordinates of the points')
+        set(handles.YObject,'TooltipString','YObject: set of y coordinates of the points')
+        set(handles.ZObject,'TooltipString','ZObject: set of z coordinates of the points')
+    case {'line','polyline','polygon'}
+        set(handles.YMax,'TooltipString','YMax: range of averaging around the line')
+        set(handles.XObject,'TooltipString','XObject: set of x coordinates defining the line')
+        set(handles.YObject,'TooltipString','YObject: set of y coordinates defining the line')
+        set(handles.ZObject,'TooltipString','ZObject: set of z coordinates defining the line')
+        if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
+            set(handles.DX,'Visible','on')
+            set(handles.DX,'TooltipString','DX: mesh for the interpolated field along the line')
+        end       
+    case {'rectangle','ellipse'}
+        set(handles.XMax,'TooltipString',['XMax: half length of the ' ObjectStyle])
+        set(handles.YMax,'TooltipString',['YMax: half width of the ' ObjectStyle])
+        set(handles.XObject,'TooltipString',['XObject:  x coordinate of the ' ObjectStyle ' centre'])
+        set(handles.YObject,'TooltipString',['YObject:  y coordinate of the ' ObjectStyle ' centre'])
+    case {'plane','volume'}  
+        set(handles.Phi,'Visible','on')
+        set(handles.XMin,'Visible','on')
+        set(handles.XMax,'Visible','on')
+        set(handles.YMin,'Visible','on')
+        set(handles.YMax,'Visible','on')
+        set(handles.XObject,'TooltipString',['XObject:  x coordinate of the axis origin for the ' ObjectStyle])
+        set(handles.YObject,'TooltipString',['YObject:  y coordinate of the axis origin for the ' ObjectStyle])
+        if test3D
+            set(handles.Theta,'Visible','on')
+            set(handles.Psi,'Visible','on')
+            set(handles.ZMin,'Visible','on')
+            set(handles.ZMax,'Visible','on')
         end
-    end
+        if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
+            set(handles.DX,'Visible','on')
+            set(handles.DY,'Visible','on')
+        else
+            set(handles.DX,'Visible','off')
+            set(handles.DY,'Visible','off')
+        end
+        if isequal(ObjectStyle,'volume') && isequal(ProjMode,'interp')
+            set(handles.DZ,'Visible','on')  
+        end
 end
-if ~teststyle
-    styleval=1;
-end
-set(handles.ObjectStyle,'String',menu_style)
-set(handles.ObjectStyle,'Value',styleval)
-set(handles.ProjMode,'String',menu_proj)
-set(handles.ProjMode,'Value',1)
-ObjectStyle_Callback(hObject, eventdata, handles)  
+% 
+% %---------------------------------------------
+% % --- Executes on selection change in TITLE.
+% function TITLE_Callback(style, handles)
+% %---------------------------------------------
+% switch style
+%     case {'points','line','polyline','plane'}
+%         menu_proj={'projection';'interp';'filter';'none'}; 
+%     case {'polygon','rectangle','ellipse'}
+%         menu_proj={'inside';'outside';'mask_inside';'mask_outside'};
+%     case 'volume'
+%         menu_proj={'none'};
+% end
+% 
+% 
+% old_menu=get(handles.ObjectStyle,'String');
+% value=get(handles.ObjectStyle,'Value');
+% old_style=old_menu{value};
+% teststyle=0;
+% for iline=1:length(menu_style)
+%     if isequal(menu_style{iline},old_style)
+%         styleval=iline;
+%         teststyle=1;
+%         break
+%     end
+% end
+% if ~teststyle
+%     new_style=[];%default
+%     switch old_style
+%         case 'polyline'
+%             new_style='polygon';
+%         case 'polygon'
+%             new_style='polyline';
+%     end
+%     if ~isempty(new_style)
+%         for iline=1:length(menu_style)
+%             if isequal(menu_style{iline},new_style)
+%                 styleval=iline;
+%                 teststyle=1;
+%                 break
+%             end
+%         end
+%     end
+% end
+% if ~teststyle
+%     styleval=1;
+% end
+% set(handles.ObjectStyle,'String',menu_style)
+% set(handles.ObjectStyle,'Value',styleval)
+% set(handles.ProjMode,'String',menu_proj)
+% set(handles.ProjMode,'Value',1)
+% ObjectStyle_Callback(hObject, eventdata, handles)  
 
 %---------------------------------------------
 function Phi_Callback(hObject, eventdata, handles)
@@ -545,20 +542,29 @@ if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
      s.ProjMode='none';
  end
 %Display title
-title=set_title(s.Style,s.ProjMode);%update the title
-if ~isempty(huvmat)
-    hhuvmat=guidata(huvmat);
-end
-menu=get(handles.TITLE,'String');
-for iline=1:length(menu)
-     if isequal(menu{iline},title)
-         set(handles.TITLE,'Value',iline)
-         break
-     end
-end
-TITLE_Callback(hObject, eventdata, handles)
+% title=set_title(s.Style,s.ProjMode);%update the title
+% if ~isempty(huvmat)
+%     hhuvmat=guidata(huvmat);
+% end
+% menu=get(handles.TITLE,'String');
+% for iline=1:length(menu)
+%      if isequal(menu{iline},title)
+%          set(handles.TITLE,'Value',iline)
+%          break
+%      end
+% end
+%TITLE_Callback(hObject, eventdata, handles)
 teststyle=0;
-% if isfield(s,'Style')
+
+switch s.Style
+    case {'points','line','polyline','plane'}
+        menu_proj={'projection';'interp';'filter';'none'}; 
+    case {'polygon','rectangle','ellipse'}
+        menu_proj={'inside';'outside';'mask_inside';'mask_outside'};
+    case 'volume'
+        menu_proj={'none'};
+end
+set(handles.ObjectStyle,'String',menu_proj)
 menu=get(handles.ObjectStyle,'String');
 for iline=1:length(menu)
     if isequal(menu{iline},s.Style)
@@ -568,9 +574,9 @@ for iline=1:length(menu)
     end
 end
 testmode=0;
-menu=get(handles.ProjMode,'String');
-for iline=1:length(menu)
-    if isequal(menu{iline},s.ProjMode)
+%menu=get(handles.ProjMode,'String');
+for iline=1:length(menu_proj)
+    if isequal(menu_proj{iline},s.ProjMode)
         set(handles.ProjMode,'Value',iline)
         testmode=1;
         break
@@ -753,8 +759,9 @@ UvData.Object{IndexObj}=update_obj(UvData,IndexObj,ObjectData,SetData.PlotHandle
 
 set(huvmat,'UserData',UvData)%update the data in the uvmat interface
 list_str=get(hlist_object,'String');
-TITLE=set_title(ObjectData.Style,ObjectData.ProjMode);
-list_str{IndexObj}=[num2str(IndexObj) '-' TITLE];
+% TITLE=set_title(ObjectData.Style,ObjectData.ProjMode);
+% list_str{IndexObj}=[num2str(IndexObj) '-' TITLE];
+list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style];
 if isequal(length(list_str),IndexObj)
     list_str{IndexObj+1}='more...';
 end
@@ -848,6 +855,7 @@ if ~isempty(answer)
     save(t,answer{1})
 end
 msgbox_uvmat('CONFIRMATION',[answer{1}  ' saved'])
+
 %---------------------------------------------------------
 % --- Executes on slider movement.
 function z_slider_Callback(hObject, eventdata, handles)
@@ -871,28 +879,16 @@ set(handles.ZObject,'String',num2str(NormVec_Z*Z_value,4))
 PLOT_Callback(hObject, eventdata, handles)
 
 
-
-function XObject_Callback(hObject, eventdata, handles)
-
-
-function YObject_Callback(hObject, eventdata, handles)
-
-
-
-
-function ZObject_Callback(hObject, eventdata, handles)
-
-
 % --- Executes on button press in HELP.
 function HELP_Callback(hObject, eventdata, handles)
 path_to_uvmat=which ('uvmat');% check the path of uvmat
 pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'UVMAT_DOC','uvmat_doc.html');
-if isempty(dir(helpfile)), errordlg('Please put the help file uvmat_doc.html in the directory UVMAT/UVMAT_DOC')
+helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
+if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
 else
-    web([helpfile '#set_object'])    
+    addpath (fullfile(pathelp,'uvmat_doc'))
+    web([helpfile '#set_object']) 
 end
-
 
 
 

@@ -201,7 +201,7 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
-dircur=pwd %current working directory
+dircur=pwd; %current working directory
 dir_opening=dircur;
 
 % set the position of colorbar and ancillary GUIs:

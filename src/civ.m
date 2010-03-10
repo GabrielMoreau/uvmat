@@ -720,10 +720,10 @@ browse.nom_type_ima=nom_type_ima;
 set(handles.browse_root,'UserData',browse)% store the nomenclature type
 
         %%%%%%%%%%%  set the menus of image pairs and default selection for civ   %%%%%%%%%%%%%%%%%%%
-if isequal(nom_type_ima,'_i')| isequal(nom_type_nc,'_i1-i2')|~exist('nbfield2','var')|(nbfield2==1)
+if isequal(nom_type_ima,'_i')|| isequal(nom_type_nc,'_i1-i2')||~(exist('nbfield2','var')&&(nbfield2~=1))
     set(handles.mode,'String',{'series(Di)'})
     set(handles.mode,'Value',1)
-elseif isequal(nom_type_ima,'png_old')|isequal(nom_type_nc,'netc_old')
+elseif isequal(nom_type_ima,'png_old')||isequal(nom_type_nc,'netc_old')
     set(handles.mode,'String',{'pair j1-j2'})
     set(handles.mode,'Value',1)
 elseif (nbfield==1)% simple series in j
@@ -731,13 +731,17 @@ elseif (nbfield==1)% simple series in j
     set(handles.mode,'Value',1)
 else
     set(handles.mode,'String',{'pair j1-j2';'series(Dj)';'series(Di)'})%multiple choice
-    if isequal(mode,'volume')
-        set(handles.mode,'Value',3)
-    elseif nbfield2 <= 5
-        set(handles.mode,'Value',1)% advice 'pair j1-j2' for small bursts
-    else
-        set(handles.mode,'Value',2)% advice series Dj for long bursts, not volume
+    if nbfield2 <= 5
+         set(handles.mode,'Value',1)% advice 'pair j1-j2' for small burst
     end
+%     else
+%     if isequal(mode,'volume')
+%         set(handles.mode,'Value',3)
+%     elseif nbfield2 <= 5
+%         set(handles.mode,'Value',1)% advice 'pair j1-j2' for small bursts
+%     else
+%         set(handles.mode,'Value',2)% advice series Dj for long bursts, not volume
+%     end
 end
 
 %update the subdir 
@@ -1330,7 +1334,6 @@ end
 num_j=[first_j:incr_j:last_j];% list of j indices (reference values for each pair)
 list_civ1=get(handles.list_pair_civ1,'String');
 index_civ1=get(handles.list_pair_civ1,'Value');
-[num_i,num_j]=meshgrid(num_i,num_j);
 str_civ1=list_civ1{index_civ1};%string defining the image pairs for civ1
 if isempty(str_civ1)||isequal(str_civ1,'')
     msgbox_uvmat('ERROR','no image pair selected for civ1')
@@ -1455,6 +1458,7 @@ elseif isequal(mode,'displacement')
     num_a_civ2=num_j;
     num_b_civ2=num_j;
 end
+
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in list_pair_civ1.
@@ -1659,8 +1663,8 @@ drawnow
 display('checking the files...')
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
        set_civ_filenames(handles,compare,box_test);
-nbfield=size(num1_civ1,2);
-nbslice=size(num1_civ1,1);
+nbfield=numel(num1_civ1);
+nbslice=size(num_a_civ1);
 
 if isempty(filecell)
    set(handles.RUN, 'Enable','On')
@@ -2178,9 +2182,10 @@ end
 display('checking the files...')
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
        set_civ_filenames(handles,compare,box_test);
+ 
 display('files OK, processing...')  
-nbfield=size(num1_civ1,2);
-nbslice=size(num1_civ1,1);
+nbfield=numel(num1_civ1);
+nbslice=numel(num_a_civ1);
 
 %GET PARAMETERS:
   %get civ parameters
@@ -2313,6 +2318,10 @@ end
 p1text=[];%initiate command text
 time=get(handles.displ_filebase,'UserData'); %get the set of times
 civAll=get(handles.Experimental,'Value'); % Boolean for new civ excution method 
+'TESTbatch'
+size(filecell.nc.civ1)
+nbslice
+nbfield
 for ifile=1:nbfield
     for j=1:nbslice
         i_cmd=0; 
@@ -2329,15 +2338,15 @@ for ifile=1:nbfield
             civAllxml=set(civAllxml,1,'name','CivDoc');
         end
 %         filecell.nc.civ1
-        filename_cmx=cell2mat(filecell.nc.civ1(ifile,j));%output netcdf file
-        filename_cmx([end-1:end])='cm';%name of cmx file
+        filename_cmx=filecell.nc.civ1{ifile,j}%output netcdf file
+        filename_cmx(end-1:end)='cm';%name of cmx file
         filename_cmx=[filename_cmx 'x'];
         
    %CIV1
         if box_test(1)==1
-            par_civ1.filename_ima_a=cell2mat(filecell.ima1.civ1(ifile,j));
+            par_civ1.filename_ima_a=filecell.ima1.civ1{ifile,j};
            % par_civ1.filename_ima_a([end-3:end])=[];%remove .png extension
-            par_civ1.filename_ima_b=cell2mat(filecell.ima2.civ1(ifile,j));
+            par_civ1.filename_ima_b=filecell.ima2.civ1{ifile,j};
            % par_civ1.filename_ima_b([end-3:end])=[];%remove .png extension
          
             namelog=[filename_cmx([1:end-3]) 'log'];
@@ -2740,6 +2749,12 @@ saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN
 %         .nc.civ1{i,j}, .nc.civ2{i,j}; set of nc files for PIV results
 %         .ncA.civ1{i,j}, .ncA.civ2{i,j}; set of nc files for PIV results with camA (then .nc corresponds to camB)
 %         .st{i,j};   set of nc files for the combined stereo fields
+% num1_civ1(i),num2_civ1(i): lists of first and last i indices for civ1
+% num_a_civ1(j),num_b_civ1(j): lists of first and last j indices for civ1
+% num1_civ2(i),num2_civ2(i): lists of first and last i indices for civ2
+% num_a_civ2(j),num_b_civ2(j): lists of first and last j indices for civ2
+% nom_type_nc: nomenclature type for velocity files 
+% file_ref_fix1,file_ref_fix2: reference files possibly used by Fix1 and 2
 function [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
     set_civ_filenames(handles,compare,box_test)
 %------------------------------------------------------------------------

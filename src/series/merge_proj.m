@@ -23,6 +23,26 @@ hseries=guidata(Series.hseries);%handles of the GUI series
 WaitbarPos=get(hseries.waitbar_frame,'Position'); %positiopn of waitbar frame
 %-------------------------------------------------
 
+%projection object
+test_object=get(hseries.GetObject,'Value');
+if test_object
+    hset_object=findobj(allchild(0),'Name','set_object');
+    ProjObject=read_set_object(guidata(hset_object));
+    if ~isfield(ProjObject,'Style')
+            msgbox_uvmat('ERROR','Undefined projection object style')
+            return
+    end
+    if ~isequal(ProjObject.Style,'plane')
+            msgbox_uvmat('ERROR','The projection object must be a plane')
+            return
+    end
+    %answeryes=questdlg({['field series projected on ' Series.ProjObject.Style]});
+    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Style]);
+    if ~isequal(answeryes,'Yes')
+        return
+    end
+end
+
 %numbers of view fields (nbre of inputs in RootPath)
 testcell=iscell(Series.RootFile);
 if ~testcell
@@ -124,6 +144,12 @@ if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array abs
     time=[];
 end
 
+% coordinate transform or other user defined transform
+transform_fct=[];%default
+if isfield(Series,'transform_fct')
+    transform_fct=Series.transform_fct;
+end
+
 % Field and velocity type (the same for all views)
 Field_str=get(hseries.FieldMenu,'String');
 val=get(hseries.FieldMenu,'Value');
@@ -169,6 +195,7 @@ end
 if ~isequal(FieldName,'get_field...')
     testcivx=testnc;
 end
+
 %name of output files and directory:
 % res_subdir=fullfile(Series.RootPath{1},[Series.SubDir{1} '_STAT']);
 ProjectDir=fileparts(fileparts(Series.RootPath{1}));% preoject directory (GERK)
@@ -177,7 +204,7 @@ RootPath=get(hseries.RootPath,'String');
 SubDir=get(hseries.SubDir,'String');
 if isequal(length(RootPath),1)
     fulldir=RootPath{1};
-    subdir='GRID';
+    subdir='merge_proj';
     res_subdir=fullfile(fulldir,subdir);
 else
     def={fullfile(ProjectDir,'0_RESULTS')};
@@ -208,21 +235,6 @@ if ~exist(res_subdir,'dir')
 end
 filebasesub=fullfile(res_subdir,Series.RootFile{1});
 filebase_merge=fullfile(res_subdir,'merged');%root name for the merged files
-
-%projection object
-if isfield(Series,'sethandles')
-    if ishandle(Series.sethandles.set_object)
-        Series.ProjObject=read_set_object(Series.sethandles);
-        if ~isfield(Series.ProjObject,'Style')
-            msgbox_uvmat('ERROR','Undefined projection object style')
-            return
-        end
-        if ~isequal(Series.ProjObject.Style,'plane')
-            msgbox_uvmat('ERROR','The projection object must be a plane')
-            return
-        end
-    end
-end
 
     %MAIN LOOP
 for ifile=1:nbfield                
@@ -270,16 +282,16 @@ for ifile=1:nbfield
             if ~isempty(NbSlice_calib)
                 Field{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;
             end
-            if ~isequal(transform,'')
-                Field{iview}=feval(Series.CoordType,Field{iview},XmlData{iview});%transform to phys if requested
+            if ~isempty(transform_fct)
+                Field{iview}=transform_fct(Field{iview},XmlData{iview});%transform to phys if requested
             end
             if testcivx
                     Field{iview}=calc_field(FieldName,Field{iview});
             end
 
             %projection on object (gridded plane)
-            if isfield(Series,'ProjObject')
-                Field{iview}=proj_field(Field{iview},Series.ProjObject);
+            if test_object
+                Field{iview}=proj_field(Field{iview},ProjObject);
             end
         end    
         

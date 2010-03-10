@@ -33,10 +33,11 @@ WaitbarPos=get(hseries.waitbar_frame,'Position'); %position of the waitbar frame
 
 %projection object
 test_object=get(hseries.GetObject,'Value');
-if test_object%isfield(Series,'sethandles')
-    Series.ProjObject=read_set_object(Series.sethandles);
+if test_object
+    hset_object=findobj(allchild(0),'Name','set_object');
+    ProjObject=read_set_object(guidata(hset_object));
     %answeryes=questdlg({['field series projected on ' Series.ProjObject.Style]});
-    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' Series.ProjObject.Style]);
+    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Style]);
     if ~isequal(answeryes,'Yes')
         return
     end
@@ -169,21 +170,21 @@ if ~isequal(FieldName,{'get_field...'})
 end
 
 % Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
-filebasesub=fullfile(RootPath{1},RootFile{1});
-if NbSlice==1
-    filebase_out=[filebasesub '_time'];
-else
-    filebase_out=[filebasesub '_' NbSlice_name 'mtim'];
-    increment=num_i1{1}(2)-num_i1{1}(1);
-    if ~isequal(increment,1) % if an increment is set
-        answeryes=msgbox_uvmat('INPUT_Y-N',['will take time series in ' num2str(NbSlice) 'slices with increment = ' num2str(increment) '!']); 
-    else    
-        answeryes=msgbox_uvmat('INPUT_Y-N',{['will take time series in ' num2str(NbSlice) ' slices'];['results stored as files ' filebase_out ' ...']});
-    end
-    if ~isequal(answeryes,'Yes')
-        return
-    end
-end
+% filebasesub=fullfile(RootPath{1},RootFile{1});
+% if NbSlice==1
+%     filebase_out=[filebasesub '_time'];
+% else
+%     filebase_out=[filebasesub '_' NbSlice_name 'mtim'];
+%     increment=num_i1{1}(2)-num_i1{1}(1);
+%     if ~isequal(increment,1) % if an increment is set
+%         answeryes=msgbox_uvmat('INPUT_Y-N',['will take time series in ' num2str(NbSlice) 'slices with increment = ' num2str(increment) '!']); 
+%     else    
+%         answeryes=msgbox_uvmat('INPUT_Y-N',{['will take time series in ' num2str(NbSlice) ' slices'];['results stored as files ' filebase_out ' ...']});
+%     end
+%     if ~isequal(answeryes,'Yes')
+%         return
+%     end
+% end
 VelType_str=get(hseries.VelTypeMenu,'String');
 VelType_val=get(hseries.VelTypeMenu,'Value');
 VelType{1}=VelType_str{VelType_val};
@@ -268,11 +269,29 @@ if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array abs
     time=[];
 end
 
-% image or scalar processing programme set by user
-Coord_menu=get(hseries.CoordType,'String');
-menu_val=get(hseries.CoordType,'Value');
-usrfct=Coord_menu{menu_val};
-testfct=~isequal(usrfct,'');
+% Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
+subdir_result='time_series';
+% filebasesub=fullfile(RootPath{1},subdir_result,RootFile{1});
+% if isempty(SubDir{1}) % create a subdirectory '/aver_stat'
+%     subdir_result='aver_stat';
+%     filebasemean=fullfile(RootPath{1},subdir_result);
+if ~exist(fullfile(RootPath{1},subdir_result),'dir')
+    dircur=pwd; %record current working directory
+    cd(RootPath{1})% goes to the iamge directory
+    [m1,m2,m3]=mkdir(subdir_result);
+    if ~isequal(m2,'')
+         msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
+    end
+    cd(dircur) %back to the initial working directory
+end
+filebase_out=filebase{1}; 
+NomTypeOut=nomtype2pair(NomType{1},num_i2{end}(end)-num_i1{1}(1),num_j2{end}(end)-num_j1{1}(1));
+
+% coordinate transform or other user defined transform
+transform_fct=[];%default
+if isfield(Series,'transform_fct')
+    transform_fct=Series.transform_fct;
+end
 
 % to update:
 VelType_str=get(hseries.VelTypeMenu,'String');
@@ -330,17 +349,22 @@ for i_slice=1:NbSlice
                     Data{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;
                 end
              end
-            % geometry transform or other user defined transform
-            if ~isequal(Series.CoordType,'')           
+             
+             % coordinate transform (or other user defined transform)
+            if ~isempty(transform_fct)
+                 % z index
+                if ~isempty(NbSlice_calib)
+                    Data{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;%Zindex for phys transform
+                end
                 if nbview==2
-                    [Data{1},Data{2}]=feval(Series.CoordType,Data{1},XmlData{1},Data{2},XmlData{2});
+                    [Data{1},Data{2}]=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
                     if isempty(Data{2})
                         Data(2)=[];
                     end
                 else
-                    Data{1}=feval(Series.CoordType,Data{1},XmlData{1});
+                    Data{1}=transform_fct(Data{1},XmlData);
                 end
-            end
+            end     
             if testcivx
                     Data{iview}=calc_field(FieldName,Data{iview});%calculate field (vort..)
             end
@@ -353,9 +377,8 @@ for i_slice=1:NbSlice
             else
                 Field=Data{1};
             end
-            if isfield(Series,'ProjObject')
-                Series.ProjObject
-                [Field,errormsg]=proj_field(Field,Series.ProjObject);
+            if test_object
+                [Field,errormsg]=proj_field(Field,ProjObject);
                 if ~isempty(errormsg)
                     msgbox_uvmat('ERROR',['error in time_series/proj_field:' errormsg])
                     return
@@ -392,7 +415,6 @@ for i_slice=1:NbSlice
                                     testsum(ivar)=1; %constant coordinates, record without time evolution
                                 end
                                 % check whether the variable ivar is a dimension variable
-                                %index=Field.VarDimIndex{ivar};%dimension indices of the variable #ivar
                                 DimCell=Field.VarDimName{ivar};
                                 if ischar(DimCell)
                                     DimCell={DimCell};
@@ -415,7 +437,7 @@ for i_slice=1:NbSlice
                     eval(['VarVal=Field.' VarName ';']);
                     if testsum(ivar)==2% test for recorded variable 
                         eval(['VarVal=Field.' VarName ';']);
-                        if isequal(Series.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
+                        if isequal(ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
                             if isempty(VarVal)
                                 msgbox_uvmat('ERROR',['empty result at frame index ' num2str(num_i1{iview}(ifile))])
                                 return                             

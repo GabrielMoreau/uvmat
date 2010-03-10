@@ -1,6 +1,6 @@
 % relabel_i_j: relabel an image series with two indices, according to the time matrix given by ImaDoc
 %----------------------------------------------------------------------
-function GUI_input=relabel_i_j(num_i1,num_i2,num_j1,num_j2,Series)
+function GUI_input=ima2vol(num_i1,num_i2,num_j1,num_j2,Series)
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
 if ~exist('num_i1','var')
     GUI_input={};
@@ -69,19 +69,22 @@ if exist([basename '.xml'],'file')
 end
 
 %main loop
+ vol=[];
 for ifile=1:nbfield1*nbfield2
     update_waitbar(hseries.waitbar,WaitbarPos,ifile/(nbfield1*nbfield2))
     filename=name_generator(basename,ifile-1,1,Series.FileExt,Series.NomType);
     num_j=mod(ifile-1,nbfield2)+1;
     num_i=floor((ifile-1)/nbfield2)+1;
-    filename_new=name_generator(basename_new,num_i,num_j,'.png','_i_j');
+    A=imread(filename);
     if test_level
-        A=imread(filename);
-        C=levels(A);
-        imwrite(C,filename_new)
-    else 
-        copyfile(filename,filename_new);
-    end   
+         A=levels(A);
+    end 
+    vol=[vol;A];%concacene along y
+    if num_j==nbfield2
+         filename_new=name_generator(basename_new,num_i,1,'.vol','_i');
+         imwrite(vol,filename_new,'png')
+         vol=[];
+    end      
 end
 
 
