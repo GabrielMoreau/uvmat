@@ -101,7 +101,9 @@ if ~isequal(hhh,'')
                 attr_names=fields(VarAttribute{ivar});
                 for iattr=1:length(attr_names)
                     eval(['attr_val=VarAttribute{ivar}.' attr_names{iattr} ';']);
-                    netcdf.putAtt(nc,varid(ivar),attr_names{iattr},attr_val);
+                    if ~isempty(attr_names{iattr})&& ~isempty(attr_val)
+                        netcdf.putAtt(nc,varid(ivar),attr_names{iattr},attr_val);
+                    end
                 end
             end
         end

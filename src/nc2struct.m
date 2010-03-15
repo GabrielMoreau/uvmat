@@ -74,7 +74,11 @@ if ~isequal(hhh,'')
     % short reading of global attributes
     if isequal(List{1},'ListGlobalAttribute')
         for ilist=2:numel(List)
+            try
             valuestr = netcdf.getAtt(nc,netcdf.getConstant('NC_GLOBAL'),List{ilist});
+            catch
+                valuestr=[];
+            end
             eval(['Data.' List{ilist} '=valuestr;'])
         end
         netcdf.close(nc)

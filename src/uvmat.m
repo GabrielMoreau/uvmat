@@ -4,6 +4,7 @@
 %
 %OUTPUT
 % huvmat=current handles of the GUI uvmat.fig
+%%
 %
 %INPUT:
 % input: input file name (if character chain), or input image matrix to
@@ -79,7 +80,7 @@
 %
 %               Main input open   second input open(_1)        second image (pair animation) 
 % read_ncfield.m         |                 |                             
-% read_image.m           |                 |                                                
+% read image.m           |                 |                                                
 %                     Field{1}         Field{2}               
 %                                                                         |
 % coord transform (phys.m) or other user defined  fct acting on Field{i}  |
@@ -224,9 +225,10 @@ set(hObject,'WindowButtonUpFcn',{'mouse_up',handles})
 %TRANSFORM menu: loads the information stored in prefdir to initiate the browser and the list of functions
 menu_str={'';'phys';'px';'phys_polar'};
 nb_builtin=numel(menu_str); %number of functions
-[path_uvmat,name,ext]=fileparts(which('uvmat'));
+path_uvmat=fileparts(which('uvmat'));
 addpath(fullfile(path_uvmat,'transform_field'))
 fct_handle{1,1}=[];
+testexist=zeros(size(menu_str));%default
 testexist(1)=1;
 for ilist=2:length(menu_str)
     if exist(menu_str{ilist},'file')
@@ -269,19 +271,19 @@ rmpath(fullfile(path_uvmat,'transform_field'))
              addpath(path)
              if exist(file,'file')
                 h_func=str2func(file);
-                testexist=[testexist 1];
+                testexist=[testexist 1]; %#ok<AGROW>
              else
                 h_func=[];
-                testexist=[testexist 0]; 
+                testexist=[testexist 0];  %#ok<AGROW>
              end
-             fct_handle=[fct_handle; {h_func}];%concatene the list of paths
+             fct_handle=[fct_handle; {h_func}];%#ok<AGROW> %concatene the list of paths
              rmpath(path)
-             menu_str=[menu_str; {file}];
+             menu_str=[menu_str; {file}]; %#ok<AGROW>
          end
       end
  end
-menu_str=menu_str(find(testexist));
-fct_handle=fct_handle(find(testexist));
+menu_str=menu_str(testexist==1);%=menu_str(testexist~=0)
+fct_handle=fct_handle(testexist==1);
 menu_str=[menu_str;{'more...'}];
 set(handles.transform_fct,'String',menu_str)
 set(handles.transform_fct,'UserData',fct_handle)% store the list of path in UserData of ACTION
@@ -294,7 +296,7 @@ set(handles.col_vec,'String',list_menu)
 %check the path and date of modification of all functions in uvmat
 path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
 [errormsg,date_str]=check_functions;%check the path of the functions called by uvmat.m
-
+date_str=['last modification: ' date_str];
 %case of an input argument for uvmat
 testinputfield=0;
 inputfile=[];
@@ -345,7 +347,7 @@ else
        fid=fopen('revision.log');
        if fid~=-1
         a=textscan(fid,'%s%s%s',1,'HeaderLines',1,'Delimiter','|');
-        set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG';'GNU General Public License'; path_to_uvmat; ['at revision ' a{1}{1}]};a{3}{1};errormsg]);
+        set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG';'GNU General Public License'; path_to_uvmat; ['at revision ' a{1}{1}]};a{3}{1};date_str;errormsg]);
         fclose(fid);
        else
            set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG';'GNU General Public License'; path_to_uvmat;date_str};errormsg]);
@@ -818,14 +820,14 @@ end
 if testima
    set(handles.Fields,'Value',1) % set menu to 'image'
    set(handles.Fields,'String',{'image';'get_field...';'velocity';'vort';'div';'more...'})
-elseif isequal(FileExt,'.nc')|isequal(FileExt,'.cdf')
+elseif isequal(FileExt,'.nc')||isequal(FileExt,'.cdf')
    Data=nc2struct(FileName,[]);
    col_vec=get(handles.col_vec,'String');
-   if isfield(Data,'absolut_time_T0')&& (isfield(Data,'civ1')||isfield(Data,'civ'))
+   if isfield(Data,'absolut_time_T0')%&& (isfield(Data,'civ1')||isfield(Data,'civ'))
        set(handles.Fields,'String',{'image';'get_field...';'velocity';'vort';'div';'more...'})
        set(handles.Fields,'Value',3) % set menu to 'velocity'
        col_vec{1}='ima_cor';
-   else
+   else %general netcdf file (not civx)
        set(handles.Fields,'Value',1) % set menu to 'get_field...
        set(handles.Fields,'String',{'get_field...'})
        col_vec{1}='get_field...';
@@ -1269,7 +1271,6 @@ drawnow
 
 set_scan_options(hObject, eventdata, handles)
 
-
 %---------------------------------------------------
 % switch file index scanning options scan_i and scan_j in an exclusive way
 function scan_i_Callback(hObject, eventdata, handles)
@@ -1283,11 +1284,10 @@ else
     set(handles.scan_j,'Value',1)
     set(handles.scan_j,'BackgroundColor',[1 1 0])
 end
+
 %-------------------------------------------------------------------
-%---------------------------------------------------
 % switch file index scanning options scan_i and scan_j in an exclusive way
 function scan_j_Callback(hObject, eventdata, handles)
-%---------------------------------------------------
 %-------------------------------------------------------------------
 if get(handles.scan_j,'Value')==1
     set(handles.scan_j,'BackgroundColor',[1 1 0])
@@ -1303,7 +1303,7 @@ end
 function i1_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 % [filebase,num1,num_a,num2,num_b,ext,NomType,subdir]=read_input_file(handles);
-[FileName,RootPath,filebase,xx,FileExt]=read_file_boxes(handles);
+%[FileName,RootPath,filebase,xx,FileExt]=read_file_boxes(handles);
 NomType=get(handles.FileIndex,'UserData');
 num1=stra2num(get(handles.i1,'String'));
 num2=stra2num(get(handles.i2,'String'));
@@ -1689,10 +1689,10 @@ drawnow
 list_fields=get(handles.Fields,'String');% list menu fields
 index_fields=get(handles.Fields,'Value');% selected string index
 FieldName=list_fields{index_fields}; % selected field
-huvmat=get(handles.movie_pair,'parent');
+%huvmat=get(handles.movie_pair,'parent');
 if isequal(FieldName,'image')
     run0_Callback(hObject, eventdata, handles)%display the first image
-    UvData=get(huvmat,'UserData');
+    UvData=get(handles.uvmat,'UserData');
 else
     msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
     return
@@ -1726,8 +1726,36 @@ Field.AName='image';
 Field.AX=UvData.Field.AX;
 Field.AY=UvData.Field.AY;
 Field.CoordType='px';
-[Field.A,error]=read_image(imaname_1,NomType,num_i2);
-
+%determine the input file type
+if isfield(UvData,'MovieObject')
+    FileType='movie';
+elseif isequal(lower(Ext),'.avi')
+    FileType='avi';
+elseif isequal(lower(Ext),'.vol')
+    FileType='vol';
+else 
+   form=imformats(Ext([2:end]));
+   if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+       if isequal(NomType,'*');
+           FileType='multimage';
+       else
+           FileType='image';
+       end
+   end
+end
+switch FileType
+        case 'movie'
+            Field.A=read(UvData.MovieObject,num_i2);
+        case 'avi'
+            mov=aviread(imaname_1,num_i2);
+            Field.A=frame2im(mov(1));
+        case 'vol'
+            Field.A=imread(imaname_1);
+        case 'multimage'
+            Field.A=imread(imaname_1,num_i2);
+        case 'image'
+            Field.A=imread(imaname_1);
+end 
 
 %px to phys or other transform on field
 menu_transform=get(handles.transform_fct,'String');
@@ -1746,7 +1774,7 @@ hima=findobj(handles.axes3,'Tag','ima');% %handles.axes3 =main plotting window (
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
-while get(handles.speed,'Value')~=0 & isequal(get(handles.run0,'BusyAction'),'queue'); % enable STOP command
+while get(handles.speed,'Value')~=0 && isequal(get(handles.run0,'BusyAction'),'queue'); % enable STOP command
     % read and plot the series of images in non erase mode
     set(hima,'CData',Field.A); 
     pause(1.02-get(handles.speed,'Value'));% wait for next image
@@ -1754,8 +1782,6 @@ while get(handles.speed,'Value')~=0 & isequal(get(handles.run0,'BusyAction'),'qu
     pause(1.02-get(handles.speed,'Value'));% wait for next image
 end
 set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
-
-%run0_Callback(hObject, eventdata, handles)
 
 %-------------------------------------------------------
 % --- Executes on button press in run0.
@@ -1768,10 +1794,10 @@ drawnow
 abstime=[];
 abstime_1=[];
 dt=[];
-CalibCell={};%default 
+% CalibCell={};%default 
 Field={};
-huvmat=get(handles.run0,'parent');
-UvData=get(huvmat,'UserData');
+%huvmat=get(handles.run0,'parent');
+UvData=get(handles.uvmat,'UserData');
 if isfield(UvData,'Txt')
     UvData=rmfield(UvData,'Txt');%erase previous error message
 end
@@ -1786,8 +1812,9 @@ if isfield(UvData,'TestInputFile')&& isequal(UvData.TestInputFile,0),
     TestInputFile=0;
 end
 num_i1=[];%default
+FileType=[];%default
 if TestInputFile
-    [filename,RootPath,filebase,xx,Ext,SubDir]=read_file_boxes(handles);
+    [filename,RootPath,filebase,xx,Ext]=read_file_boxes(handles);
     if ~exist(filename,'file')
         msgbox_uvmat('ERROR',['input file ' filename ' does not exist'])
         return
@@ -1801,8 +1828,8 @@ if TestInputFile
 %     if isequal(get(handles.nb_slice,'String'),'vol.')%case of volume
 %         set(handles.z_index,'String',get(handles.j1,'String'));
 %     else
-    nbslice=str2num(get(handles.nb_slice,'String'));
-    z_index=mod(num_i1-1,nbslice)+1;
+    nbslice=str2double(get(handles.nb_slice,'String'));
+%     z_index=mod(num_i1-1,nbslice)+1;
     if ~isempty(nbslice)
         z_index=mod(num_i1-1,nbslice)+1;
         set(handles.z_index,'String',num2str(z_index))
@@ -1812,27 +1839,36 @@ if TestInputFile
             set(handles.masklevel,'Value',z_index)
         end
     end
-%     end
-    % choose the main field 
-    testima=0;
-    if isequal(lower(Ext),'.avi')||isequal(lower(Ext),'.vol')
-       testima=1; 
-       FieldName='image';
+    % determine the input file type
+    if isequal(Ext,'.nc')||isequal(Ext,'.cdf')
+        FileType='netcdf';
+    elseif isfield(UvData,'MovieObject')
+        FileType='movie';
+        FieldName='image';
+    elseif isequal(lower(Ext),'.avi')
+        FileType='avi';
+        FieldName='image';
+    elseif isequal(lower(Ext),'.vol')
+        FileType='vol';
+        FieldName='image';
     else 
        form=imformats(Ext([2:end]));
        if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-           testima=1;
+           if isequal(NomType,'*');
+               FileType='multimage';
+           else
+               FileType='image';
+           end
            FieldName='image';
        end
     end
 else
     filename=[];
+    FileType='netcdf';
     FieldName='get_field...';
-    testima=0;
 end
 VelType=[];%default
-
-if ~testima
+if isequal(FileType,'netcdf')
     list_fields=get(handles.Fields,'String');% list menu fields
     index_fields=get(handles.Fields,'Value');% selected string index
     FieldName= list_fields{index_fields}; % selected field
@@ -1841,19 +1877,18 @@ if ~testima
         Field{1}=get(handles.Fields,'UserData');
     else
        VelType=setfield(handles);
-       %enable_transform(handles,'on')% no field transform (possible transform in the GUI get_field)
     end
 end
 
 % choose a second field if Subfield option is 'on'
 filename_1=[];
-VelType_1=[];%default
 FieldName_1=[];
 scal_color=[];
-testvel=0;
-testX=0;%default
+% testvel=0;
+% testX=0;%default
 VelType_1=setfield_1(handles);
 sub_value=get(handles.SubField,'Value');
+FileType_1='none';%default
 if sub_value==1
     filename_1=read_file_boxes_1(handles);
     if ~exist(filename_1,'file')
@@ -1861,16 +1896,42 @@ if sub_value==1
         return
     end
     NomType_1=get(handles.FileIndex_1,'UserData');
-    list_fields=get(handles.Fields_1,'String');% list menu fields
-    index_fields=get(handles.Fields_1,'Value');% selected string index
-    FieldName_1= list_fields{index_fields}; % selected field
-    if isequal(VelType_1,'*')% free veltype choice
-        VelType_1=[];
-    elseif isequal(VelType_1,'"')% veltype the same as for the first field
-        if isempty(VelType)
+    Ext_1=get(handles.FileExt_1,'String');
+    % determine the input file type
+    if isequal(Ext_1,'.nc')||isequal(Ext_1,'.cdf')
+        FileType_1='netcdf';
+    elseif isfield(UvData,'MovieObject_1')
+        FileType_1='movie';
+        FieldName_1='image';
+    elseif isequal(lower(Ext_1),'.avi')
+        FileType='avi';
+        FieldName_1='image';
+    elseif isequal(lower(Ext_1),'.vol')
+        FileType_1='vol';
+        FieldName_1='image';
+    else 
+       form=imformats(Ext([2:end]));
+       if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+           if isequal(NomType_1,'*');
+               FileType_1='multimage';
+           else
+               FileType_1='image';
+           end
+           FieldName_1='image';
+       end
+    end
+    if ~isequal(FieldName_1,'image')
+        list_fields=get(handles.Fields_1,'String');% list menu fields
+        index_fields=get(handles.Fields_1,'Value');% selected string index
+        FieldName_1= list_fields{index_fields}; % selected field
+        if isequal(VelType_1,'*')% free veltype choice
             VelType_1=[];
-        else
-            VelType_1=VelType;
+        elseif isequal(VelType_1,'"')% veltype the same as for the first field
+            if isempty(VelType)
+                VelType_1=[];
+            else
+                VelType_1=VelType;
+            end
         end
     end
 end
@@ -1880,37 +1941,37 @@ test_keepdata_1=0;%defautl
 test_keepdata=0;
 if sub_value>=2
     if ~isequal(NomType_1,'*')%in cas of a series of files (not avi movie)
-        if isfield(UvData,'filename_1')& isfield(UvData,'VelType_1') & isfield(UvData,'FieldName_1')
-            test_keepdata_1= isequal(filename_1,UvData.filename_1)&...
-                isequal(VelType_1,UvData.filename_1) & isequal(FieldName_1,UvData.FieldName_1);
+        if isfield(UvData,'filename_1')&& isfield(UvData,'VelType_1') && isfield(UvData,'FieldName_1')
+            test_keepdata_1= isequal(filename_1,UvData.filename_1)&&...
+                isequal(VelType_1,UvData.filename_1) && isequal(FieldName_1,UvData.FieldName_1);
 
         end
     end
 end
 
 %read the input field(s)
-testima_1=isequal(FieldName_1,'image');
+% testima_1=isequal(FieldName_1,'image');
+
 %read images
-if  ~isempty(filename) && testima
-    if isfield(UvData,'MovieObject')
-        A=read(UvData.MovieObject,num_i1);
-    else
-        [A,error]=read_image(filename,NomType,num_i1);
-        if ~isequal(error,0)
-            msgbox_uvmat('ERROR',error)
-            return
-        end
+if ~isempty(filename) && isequal(FieldName,'image')
+     switch FileType
+        case 'movie'
+            A=read(UvData.MovieObject,num_i1);
+        case 'avi'
+            mov=aviread(filename,num_i1);
+            A=frame2im(mov(1));
+        case 'vol'
+            A=imread(filename);
+        case 'multimage'
+            A=imread(filename,num_i1);
+        case 'image'
+            A=imread(filename);
     end 
     npxy=size(A);
     set(handles.npx,'String',num2str(npxy(2)));% display image size on the interface
     set(handles.npy,'String',num2str(npxy(1)));
     Rangx=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
     Rangy=[npxy(1)-0.5 0.5]; %
-    npx=str2num(get(handles.npx,'String'));
-    npy=str2num(get(handles.npy,'String'));
-    if isfield(UvData.XmlData,'Time')
-        abs_time=UvData.XmlData.Time;
-    end
     Field{1}.AName='image';
     Field{1}.ListVarName={'AY','AX','A'}; % 
     if size(A,3)==3;%color
@@ -1924,22 +1985,30 @@ if  ~isempty(filename) && testima
     Field{1}.CoordType='px'; %used for mouse_motion
     Field{1}.CoordUnit='pixel'; %used for mouse_motion
 end
-if ~isfield(UvData,'Txt')& ~isempty(filename_1) & testima_1
-    [A,error]=read_image(filename_1,NomType_1,num_i1);
-    if ~isequal(error,0)
-        msgbox_uvmat('ERROR',error)
-        return
-    end
+if ~isfield(UvData,'Txt')&& ~isempty(filename_1) && isequal(FieldName_1,'image')
+    switch FileType_1
+        case 'movie'
+            A=read(UvData.MovieObject_1,num_i1);
+        case 'avi'
+            mov=aviread(filename,num_i1);
+            A=frame2im(mov(1));
+        case 'vol'
+            A=imread(filename);
+        case 'multimage'
+            A=imread(filename,num_i1);
+        case 'image'
+            A=imread(filename);
+    end 
     npxy=size(A);
     set(handles.npx,'String',num2str(npxy(2)));% display image size on the interface
     set(handles.npy,'String',num2str(npxy(1)));
     Rangx=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
     Rangy=[npxy(1)-0.5 0.5]; %
-    npx=str2num(get(handles.npx,'String'));
-    npy=str2num(get(handles.npy,'String'));
-    if isfield(UvData,'XmlData_1') && isfield(UvData.XmlData_1,'Time')
-        abs_time=UvData.XmlData_1.Time;
-    end
+%     npx=str2num(get(handles.npx,'String'));
+%     npy=str2num(get(handles.npy,'String'));
+%     if isfield(UvData,'XmlData_1') && isfield(UvData.XmlData_1,'Time')
+%         abs_time=UvData.XmlData_1.Time;
+%     end
     Field{2}.AName='image';
     Field{2}.ListVarName={'AY','AX','A'}; % 
     if size(A,3)==3;%color
@@ -1959,7 +2028,7 @@ CivStage_1=0;%default
 VelType_out_1=[];
 InputField={FieldName};
 InputField_1={FieldName_1};
-if ~isfield(UvData,'Txt') && ((~isempty(filename)&~testima) || (~isempty(filename_1)&~testima_1)) ;
+if ~isfield(UvData,'Txt') && ((~isempty(filename)&& isequal(FileType,'netcdf')) || (~isempty(filename_1)&& isequal(FileType,'netcdf'))) ;
     %read the velocity field(s) from netcdf rootfile(s)
     list_code=get(handles.col_vec,'String');% list menu fields
     index_code=get(handles.col_vec,'Value');% selected string index
@@ -1970,15 +2039,15 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&~testima) || (~isempty(filenam
     if isequal(FieldName_1,'velocity') && ~isequal(scal_color,'black') && ~isequal(scal_color,'white')
         InputField_1=[InputField_1 scal_color];
     end
-    if ~testima  %read the first nc field
+    if isequal(FileType,'netcdf')  %read the first nc field
         if isequal(FieldName,'get_field...')% read the field names on the interface get_field.
-            test_detect=0;%default
+%             test_detect=0;%default
             VelType=get(handles.Fields,'UserData');
             hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
             if isempty(hget_field)
                 hget_field= get_field(filename);%open the get_field GUI    
             end
-            test_detect=1;
+%             test_detect=1;
             hhget_field=guidata(hget_field);
             set(hhget_field.inputfile,'String',filename)% update the list of input fields in get_field
             set(hhget_field.ACTION,'Value',1)% PLOT option selected
@@ -2000,16 +2069,16 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&~testima) || (~isempty(filenam
             UvData.NbDim=Field{1}.nb_dim;
         end
     end
-    if ~isempty(filename_1) && ~testima_1 %read the second file
+    if ~isempty(filename_1) && isequal(FileType_1,'netcdf') %read the second file
         if isequal(FieldName_1,'get_field...')% read the field names on the interface get_field.
-            test_detect=0;%default
+%             test_detect=0;%default
             hget_field=findobj(allchild(0),'Name','get_field_1');%find the get_field... GUI
              if isempty(hget_field)
                  hget_field= get_field(filename_1);%open the get_field GUI
                  set(hget_field,'name','get_field_1')
 %                 enable_transform(handles,'off')% no field transform (possible transform in the GUI get_field)
              end
-            test_detect=1;
+%             test_detect=1;
             hhget_field=guidata(hget_field);%handles of GUI elements in get_field
             SubField=get_field('read_var_names',hObject,eventdata,hhget_field); %read the names of the variables to plot in the get_field GUI 
             [Field{2},var_detect]=nc2struct(filename_1,SubField.ListVarName); %read the corresponding input data                
@@ -2022,7 +2091,6 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&~testima) || (~isempty(filenam
 %                     Field{2}=feval(transf,Field{2});
 %                 end
 %             end
-
             %update the display on get_field
             set(hhget_field.inputfile,'String',filename_1)
             set(hhget_field.variables,'Value',1)
@@ -2050,7 +2118,7 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&~testima) || (~isempty(filenam
             [Field{2},VelType_out_1]=read_civxdata(filename_1,[],VelType_1);
             CivStage_1=Field{2}.CivStage;
         end
-        if testima
+        if ~isequal(FileType,'netcdf')
             VelType_out=VelType_out_1;
         end
     end
@@ -2058,7 +2126,7 @@ end
 
 %update the display buttons for the first velocity type (first menuline)
 veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
-if testima
+if ~isequal(FileType,'netcdf')
     reset_vel_type(veltype_handles)
 elseif isempty(VelType)
     set_veltype_display(veltype_handles,CivStage)%update the display of available velocity types for the first field
@@ -2072,7 +2140,7 @@ end
 
 %update the display buttons for the second velocity type (second menuline)
 veltype_handles_1=[handles.civ1_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
-if testima_1
+if ~isequal(FileType_1,'netcdf')
     reset_vel_type(veltype_handles_1)
 elseif isempty(VelType_1)
     set_veltype_display(veltype_handles_1,CivStage_1)%update the display of available velocity types for the first field
@@ -2089,10 +2157,10 @@ if ~isfield(UvData,'NewSeries')
     UvData.NewSeries=1;
 end
 %put W as background image by default if NbDim=2:
-if ~isfield(UvData,'NbDim')|isempty(UvData.NbDim)|~isequal(UvData.NbDim,3)
+if ~isfield(UvData,'NbDim')||isempty(UvData.NbDim)||~isequal(UvData.NbDim,3)
     if UvData.NewSeries && isequal(get(handles.SubField,'Value'),0) && isfield(Field{1},'W') && ~isempty(Field{1}.W);
         set(handles.SubField,'Value',1);
-        menu=update_menu(handles.Fields_1,'w');%update the menu for the background scalar nd set the choice to 'w'
+        %menu=update_menu(handles.Fields_1,'w');%update the menu for the background scalar nd set the choice to 'w'
         set(handles.RootPath_1,'String','"')
         set(handles.RootFile_1,'String','"')
         set(handles.SubDir_1,'String','"');
@@ -2175,16 +2243,16 @@ if  ~isempty(transform)
 end 
 
 %calculate scalar
-if ~testima && ~isequal(FieldName,'get_field...')%
+if isequal(FileType,'netcdf') && ~isequal(FieldName,'get_field...')%
     Field{1}=calc_field(InputField,Field{1});
 end
-if length(Field)==2 && ~testima_1 && ~isequal(FieldName,'get_field...')
+if length(Field)==2 && isequal(FileType_1,'netcdf') && ~isequal(FieldName_1,'get_field...')
     Field{2}=calc_field(InputField_1,Field{2});
 end
 
 % combine the two input fields (e.g. substract velocity fields)
 if numel(Field)==2
-    if ~(isequal(get(handles.movie_pair,'Value'),1) & isequal(FieldName,'image') & isequal(FieldName_1,'image')) %combine fields if not viewing image pairs
+    if ~(isequal(get(handles.movie_pair,'Value'),1) && isequal(FieldName,'image') && isequal(FieldName_1,'image')) %combine fields if not viewing image pairs
         UvData.Field=sub_field(Field{1},Field{2}); %TO UPDATE FOR MORE GENERAL INPUT
     end
 else
@@ -2205,22 +2273,22 @@ end
 [CellVarIndex,NbDim,VarType]=find_field_indices(UvData.Field);
 [NbDim,imax]=max(NbDim);
 if isempty(imax)
-   DimVarIndex=0;    
+%    DimVarIndex=0;    
     coord_x=[];
 else
-    VarIndex=CellVarIndex{imax};
+%     VarIndex=CellVarIndex{imax};
     coord_x=VarType{imax}.coord_x;
 end
-if isfield(UvData,'NbDim') & ~isempty(UvData.NbDim)
+if isfield(UvData,'NbDim') && ~isempty(UvData.NbDim)
     NbDim=UvData.NbDim;
 else  
     UvData.NbDim=NbDim;
 end
-if ~isempty(CellVarIndex) & ~isempty(VarType{imax}.coord_x)  & ~isempty(VarType{imax}.coord_y)    %unstructured coordinate z
+if ~isempty(CellVarIndex) && ~isempty(VarType{imax}.coord_x)  && ~isempty(VarType{imax}.coord_y)    %unstructured coordinate z
     XName=UvData.Field.ListVarName{VarType{imax}.coord_x};
     YName=UvData.Field.ListVarName{VarType{imax}.coord_y};
     test_x=1;
-elseif isfield(UvData.Field,'X')&isfield(UvData.Field,'Y')
+elseif isfield(UvData.Field,'X') && isfield(UvData.Field,'Y')
     XName='X';
     YName='Y';
     test_x=1;
@@ -2232,7 +2300,7 @@ if test_x
     eval(['UvData.YMin=min(UvData.Field.' YName ');'])
     eval(['nbvec=length(UvData.Field.' XName ');'])
     if NbDim==3%
-        if ~isempty(CellVarIndex) & ~isempty(VarType{imax}.coord_z)%unstructured coordinate z
+        if ~isempty(CellVarIndex) && ~isempty(VarType{imax}.coord_z)%unstructured coordinate z
             ZName=UvData.Field.ListVarName{VarType{imax}.coord_z};
             eval(['UvData.ZMax=max(UvData.Field.' ZName ');'])
             eval(['UvData.ZMin=min(UvData.Field.' ZName ');'])
@@ -2455,7 +2523,7 @@ end
 
 %display the updated plotting parameters for the base menuplane
 write_plot_param(handles,UvData.Object{1}.PlotParam);% update the display of the plotting parameters
-set(huvmat,'UserData',UvData)
+set(handles.uvmat,'UserData',UvData)
 
 %update the mask
 if isequal(get(handles.mask_test,'Value'),1)%if the mask option is on
@@ -2605,8 +2673,8 @@ end
 % --- Executes on button press in 'zoom'.
 %-------------------------------------------------------------------
 function zoom_Callback(hObject, eventdata, handles)
-huvmat=get(handles.zoom,'parent');%general input
-UvData=get(huvmat,'UserData');
+%huvmat=get(handles.zoom,'parent');%general input
+UvData=get(handles.uvmat,'UserData');
 if (get(handles.zoom,'Value') == 1); 
     set(handles.zoom,'BackgroundColor',[1 1 0])
     set(handles.FixedLimits,'Value',1)% propose by default fixed limits for the plotting axes
@@ -2616,7 +2684,7 @@ else
     set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
     %UvData.ZoomOn=0;  %test for mouse action
 end
-set(huvmat,'UserData',UvData);
+set(handles.uvmat,'UserData',UvData);
 
 %-------------------------------------------------------------------
 %----Executes on button press in 'record': records the current flags of manual correction.
@@ -2844,12 +2912,12 @@ if isequal(field,'image')
     % transform netc type to the corresponding image type
     if isequal(NomType,'_i1-i2_j')||isequal(NomType,'_i_j1-j2')|| isequal(NomType,'#_ab')|| isequal(NomType,'_i1-i2')
         UvData.SubDir=get(handles.SubDir,'String'); %preserve the subdir in memory
-        if ~isempty(UvData.SubDir) && (isequal(UvData.SubDir(1),'/')|isequal(UvData.SubDir(1),'/'))
+        if ~isempty(UvData.SubDir) && (isequal(UvData.SubDir(1),'/')||isequal(UvData.SubDir(1),'/'))
             UvData.SubDir(1)=[];
         end
         set(handles.SubDir,'String','')
         set(handles.FileExt,'String','.png');
-        if isequal(NomType,'_i1-i2_j')|isequal(NomType,'_i_j1-j2')
+        if isequal(NomType,'_i1-i2_j')||isequal(NomType,'_i_j1-j2')
             NomTypeNew='_i_j';
         elseif isequal(NomType,'#_ab')
             NomTypeNew='#a';
@@ -2873,7 +2941,7 @@ else
         set(handles.civ1,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
         set(handles.civ2,'BackgroundColor',[0.702 0.702 0.702])
         str=calc_field;%get the list of available scalars by the function calc_scal
-        [ind_answer,v] = listdlg('PromptString','Select a file:',...
+        [ind_answer] = listdlg('PromptString','Select a file:',...
                 'SelectionMode','single',...
                 'ListString',str);
        % edit the choice in the field and action menu
@@ -2883,11 +2951,11 @@ else
         set(handles.Fields_1,'String',menu);% store the selected scalar type
     end
 end
-indices=name_generator('',str2num(str1),str2num(str_a),'',NomTypeNew,1,str2num(str2),str2num(str_b),'');
+indices=name_generator('',str2double(str1),str2double(str_a),'',NomTypeNew,1,str2double(str2),str2double(str_b),'');
 set(handles.FileIndex,'String',indices)
 set(handles.FileIndex,'UserData',NomTypeNew)
 %common to Fields_1_Callback
-if isequal(field,'image')|isequal(field_1,'image')
+if isequal(field,'image')||isequal(field_1,'image')
     set(handles.npx_title,'Visible','on')% visible npx,pxcm... buttons
     set(handles.npy_title,'Visible','on')
     set(handles.npx,'Visible','on')
@@ -2900,19 +2968,19 @@ else
     set(handles.npy,'Visible','off')
     set(handles.fix_pair,'Value',1)
 end
-if isequal(field,'velocity')|isequal(field_1,'velocity');
-    state_vect='on';
-else
-    state_vect='off';
-end 
-if ~isequal(field,'velocity')|(~isequal(field_1,'velocity'));
-    state_scal='on';
-else
-    state_scal='off';
-end 
+% if isequal(field,'velocity')|isequal(field_1,'velocity');
+%     state_vect='on';
+% else
+%     state_vect='off';
+% end 
+% if ~isequal(field,'velocity')|(~isequal(field_1,'velocity'));
+%     state_scal='on';
+% else
+%     state_scal='off';
+% end 
 setfield(handles);% update the field structure ('civ1'....)
 
-if ~isfield(UvData,'NewSeries')|isequal(UvData.NewSeries,0)
+if ~isfield(UvData,'NewSeries')||isequal(UvData.NewSeries,0)
     run0_Callback(hObject, eventdata, handles)
 end
 
@@ -4750,11 +4818,10 @@ series(param); %run the series interface
 function MenuPIV_Callback(hObject, eventdata, handles)
  
 [FileName,RootPath,filebase,FileIndices,ext,SubDir]=read_file_boxes(handles);
-[P,F,str1,str2,str_a,str_b]=name2display(FileName);
-num1=stra2num(str1);
-num2=stra2num(str2);
-num_a=stra2num(str_a);
-num_b=stra2num(str_b);
+num1=stra2num(get(handles.i1,'String'));
+num2=stra2num(get(handles.i2,'String'));
+num_a=stra2num(get(handles.j1,'String'));
+num_b=stra2num(get(handles.j2,'String'));
 NomType=get(handles.FileIndex,'UserData');
 ind_opening=1; % default (images): will advice civ1 option by default in the civ interface
 if isequal(ext,'.nc') ||  isequal(ext,'.cdf')% netcdf files
@@ -4839,9 +4906,13 @@ create_object(data,handles.uvmat,PlotHandles)
 
 % ------------------------------------------------------------------
 function Menupolygon_Callback(hObject, eventdata, handles)
-set(handles.create,'Visible','on')
-set(handles.create,'Value',1)
-PATCH_Callback(hObject,eventdata,handles)
+% set(handles.create,'Visible','on')
+% set(handles.create,'Value',1)
+% PATCH_Callback(hObject,eventdata,handles)
+data.Style='polygon';
+data.ProjMode='inside';%default
+PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
+create_object(data,handles.uvmat,PlotHandles)
 
 %------------------------------------------------------------------------
 function Menurectangle_Callback(hObject, eventdata, handles)

@@ -64,7 +64,7 @@ guidata(hObject, handles);
 
 %default initial parameters
 filebase=''; % root file name ('filebase'.civ)
-nom_type=[]; % nomenclature type
+%nom_type=[]; % nomenclature type
 ext=[];
 testall=0; 
 browse=[];
@@ -110,24 +110,38 @@ set(handles.ImaDoc,'String',ext)
 %read names of the .exe file
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
+errormsg=[];%default error message
 if isunix
     syst='LINUX';
-    %fid = fopen(fullfile(path_UVMAT,'PARAM_LINUX.txt'),'r');%open the file with civ binary names
     xmlfile=fullfile(path_UVMAT,'PARAM_LINUX.xml');
-    display(xmlfile)
     if exist(xmlfile,'file')
+        try
         t=xmltree(xmlfile);
         sparam=convert(t);
+        catch
+             errormsg={[' Problem for reading ' xmlfile]; lasterr};   
+        end
+    else
+        erromsg=[xmlfile ' not found: path to civx binaries undefined'];
     end
 else
     syst='WIN';
     xmlfile=fullfile(path_UVMAT,'PARAM_WIN.xml');
     if exist(xmlfile,'file')
+        try
         t=xmltree(xmlfile);
         sparam=convert(t);
+        catch
+             errormsg={[' Problem for reading ' xmlfile]; lasterr};
+        end
+    else
+        erromsg=[xmlfile ' not found: path to civx binaries undefined'];
     end
 end
-display(syst)  
+display(syst)
+if ~isempty(errormsg)
+       msgbox_uvmat('ERROR',errormsg);
+end
 patch_new_exe='';
 % todo_patch='';
 sge=0;
@@ -142,7 +156,6 @@ if isfield(sparam,'SGE')
     sge=str2num(sparam.SGE);
 end   
 name_todo=fullfile(todo_path,'TODO.txt');
-display(name_todo)
 test_batch=1;
 if ~sge
     if isequal(todo_path,'') || isequal(todo_path,[])
@@ -295,11 +308,11 @@ if isequal(ext,'.xml')
     testeditxml=1;
     t_browse=xmltree(fileinput);
     head_element=get(t_browse,1);
-    if isfield(head_element,'name')& isequal(head_element.name,'ImaDoc')
+    if isfield(head_element,'name')&& isequal(head_element.name,'ImaDoc')
         testeditxml=0;
     end
 end
-if testeditxml==1 | isequal(ext,'.xls')
+if testeditxml==1 || isequal(ext,'.xls')
    heditxml=editxml({fileinput});
    set(heditxml,'Tag','browser')
    waitfor(heditxml,'Tag','idle')
@@ -313,21 +326,29 @@ if testeditxml==1 | isequal(ext,'.xls')
        return
    end
 end
-[RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput);
+[RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)
 filebase=fullfile(RootPath,RootFile);
+if isequal(nom_type,'*')% all fields in a single file ( movie files)
+    num_i1=1;num_i2=1;num_j1=1;num_j2=1;
+else
+    num_i1=str2double(str1);
+    num_i2=str2double(str2);
+    num_j1=str2double(str_a);
+    num_j2=str2double(str_b);
+end
 if isequal(get(handles.compare,'Value'),1)
     browse=[];%initialisation
 else
     browse=get(handles.browse_root,'UserData');
 end
-if length(ext)>1 & (~isempty(imformats(ext([2:end])))|...
-                       isequal(ext,'.avi')|isequal(ext,'.AVI'));%if an image file has been opened by uvmat
+if length(ext)>1 && (~isempty(imformats(ext([2:end])))||...
+                       isequal(ext,'.avi')||isequal(ext,'.AVI'));%if an image file has been opened by uvmat
     set(handles.ext_ima,'String',ext)
     browse.nom_type_ima=nom_type;
-    browse.field_count=str2num(field_count);
-    A=imread(fileinput);
-    npxy=size(A);
-    set(handles.ext_ima,'UserData',npxy)
+    browse.field_count=num_i1;
+%     A=imread(fileinput);
+%     npxy=size(A);
+%     set(handles.ext_ima,'UserData',npxy)
 end
 set(handles.ImaDoc,'String',ext);
 
@@ -361,24 +382,24 @@ if isequal(ext,'.nc')
 end
 set(handles.displ_filebase,'String',filebase);
 set(handles.ImaDoc,'String',ext);
-if ~isempty(str2num(field_count))
-    ref_i=str2num(field_count);
-    if ~isempty(str2num(str2))
-        ref_i=floor((ref_i+str2num(str2))/2);% reference image number corresponding to the file
-        browse.incr_pair(1)=str2num(str2)-str2num(field_count);
+if ~isempty(num_i1)
+    ref_i=num_i1;
+    if ~isempty(num_i2)
+        ref_i=floor((ref_i+num_i2)/2);% reference image number corresponding to the file
+        browse.incr_pair(1)=num_i2-num_i1;
         browse.incr_pair(2)=0;
     end
     set(handles.first_i,'String',num2str(ref_i));
     set(handles.last_i,'String',num2str(ref_i));
     set(handles.ref_i,'String',num2str(ref_i)); 
 end
-if isempty(str2num(str_a))
+if isempty(num_j1)
     set(handles.ref_j,'String','1');
 else
-    ref_j=str2num(str_a);
-    if ~isempty(str2num(str_b))
-        ref_j=floor((str2num(str_a)+str2num(str_b))/2);
-        browse.incr_pair(2)=str2num(str_b)-str2num(str_a); 
+    ref_j=num_j1;
+    if ~isempty(num_j2)
+        ref_j=floor((num_j1+num_j2)/2);
+        browse.incr_pair(2)=num_j2-num_j1; 
     end
     set(handles.first_j,'String',num2str(ref_j));
     set(handles.last_j,'String',num2str(ref_j));
@@ -447,8 +468,6 @@ ext_ima=get(handles.ext_ima,'String');
 nom_type_ima=[];%default
 field_count=1;%default
 nom_type_nc=[];
-% npx=[];%default 
-% npy=[];
 time=[];
 TimeUnit=[]; %default
 CoordUnit=[];%default
@@ -554,9 +573,9 @@ elseif isequal(ext,'.xml')
     if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
         [PP,FF,fc,str2,str_a,str_b,ext_ima_read,nom_type_read]=name2display(XmlData.Heading.ImageName);
         fullname=fullfile(fileparts(filebase),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file, 
-        if exist(fullname,'file')
-            testima_xml=1;
-        else
+        if ~exist(fullname,'file')
+%             testima_xml=1;
+%         else
             msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
         end
     end
@@ -568,10 +587,10 @@ elseif isequal(ext,'.xml')
            ImageSize=XmlData.Camera.ImageSize;
            if ~isempty(ImageSize)&& ~isempty(ImageSize)
                xindex=findstr(ImageSize,'x');
-               if length(xindex)>=2
-                    npx=str2num(ImageSize(1:xindex(1)-1));
-                    npy=str2num(ImageSize(xindex(1)+1:xindex(2)-1));
-               end
+%                if length(xindex)>=2
+%                     npx=str2num(ImageSize(1:xindex(1)-1));
+%                     npy=str2num(ImageSize(xindex(1)+1:xindex(2)-1));
+%                end
            end
        end
     end
@@ -993,25 +1012,25 @@ set(handles.browse_root,'UserData',browse)
 
 %reads .nc subdirectoy and image numbers from the interface
 subdir_civ1=get(handles.subdir_civ1,'String');%subdirectory subdir_civ1 for the netcdf data
-first_i=str2num(get(handles.first_i,'String'));
-last_i=str2num(get(handles.last_i,'String'));
-incr=str2num(get(handles.incr_i,'String'));
-num1=first_i:incr:last_i;
-if isempty(num1)
-    set(handles.list_pair_civ1,'String',{''});
-    return
-end
-ref_i=str2num(get(handles.ref_i,'String'));
+% first_i=str2num(get(handles.first_i,'String'));
+% last_i=str2num(get(handles.last_i,'String'));
+% incr=str2num(get(handles.incr_i,'String'));
+% num1=first_i:incr:last_i;
+% if isempty(num1)
+%     set(handles.list_pair_civ1,'String',{''});
+%     return
+% end
+ref_i=str2double(get(handles.ref_i,'String'));
 if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
     ref_j=0;
 else
-    ref_j=str2num(get(handles.ref_j,'String'));
+    ref_j=str2double(get(handles.ref_j,'String'));
 end
 time=get(handles.displ_filebase,'UserData');%get the set of times
 if isempty(time)
     time=[0 1];
 end 
-dt_unit=str2num(get(handles.dt,'String'));% used when there is no image documentation file
+dt_unit=str2double(get(handles.dt,'String'));% used when there is no image documentation file
 displ_num=get(handles.list_pair_civ1,'UserData');
 
 %eliminate the first pairs inconsistent with the position 
@@ -1033,7 +1052,6 @@ displ_pair={''};
 select=ones(size(1:nbpair));%default =1 for numbers of displayed pairs
 testpair=0;
 if get(handles.CIV1,'Value')==0 %
-    dirname=fullfile(filepath,subdir_civ1,ext_dir);
     if ~exist(fullfile(filepath,subdir_civ1,ext_dir),'dir') 
          msgbox_uvmat('ERROR',['no civ1 file available: subdirectory ' subdir_civ1 ' does not exist']);
          set(handles.list_pair_civ1,'String',{});
@@ -1120,11 +1138,15 @@ elseif isequal(mode,'displacement')
 end   
 set(handles.list_pair_civ1,'String',displ_pair');
 ichoice=min(find(select));
-if (isempty(ichoice) | ichoice < 1); ichoice=1; end;
-initial=get(handles.list_pair_civ1,'Value');
-if initial>nbpair |~isequal(select(initial),1)
+if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
+initial=get(handles.list_pair_civ1,'Value');%initial choice of pair
+if initial>nbpair 
+     set(handles.list_pair_civ1,'Value',ichoice);% first valid pair proposed by default in the menu
+end
+if numel(select)>=initial && ~isequal(select(initial),1)
     set(handles.list_pair_civ1,'Value',ichoice);% first valid pair proposed by default in the menu
 end
+
 %set(handles.list_pair_civ2,'String',displ_pair');
 initial=get(handles.list_pair_civ2,'Value');
 if initial>length(displ_pair')%|~isequal(select(initial),1)
@@ -1186,15 +1208,15 @@ set(handles.browse_root,'UserData',browse)
 %reads .nc subdirectory and image numbers from the interface
 subdir_civ1=get(handles.subdir_civ1,'String');%subdirectory subdir_civ1 for the netcdf data
 subdir_civ2=get(handles.subdir_civ2,'String');%subdirectory subdir_civ2 for the netcdf data
-first_i=str2num(get(handles.first_i,'String'));
-last_i=str2num(get(handles.last_i,'String'));
-incr=str2num(get(handles.incr_i,'String'));
-num1=first_i:incr:last_i;
-if isempty(num1)
-    set(handles.list_pair_civ2,'Value',1);
-    set(handles.list_pair_civ2,'String',{''});
-    return
-end
+% first_i=str2num(get(handles.first_i,'String'));
+% last_i=str2num(get(handles.last_i,'String'));
+% incr=str2num(get(handles.incr_i,'String'));
+% num1=first_i:incr:last_i;
+% if isempty(num1)
+%     set(handles.list_pair_civ2,'Value',1);
+%     set(handles.list_pair_civ2,'String',{''});
+%     return
+% end
 ref_i=str2num(get(handles.ref_i,'String'));
 if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
     ref_j=0;
@@ -1318,14 +1340,14 @@ set(gcf,'Pointer','arrow')
 function [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2]=...
     find_pair_indices(handles,mode)
 %------------------------------------------------------------------------
-first_i=str2num(get(handles.first_i,'String'));%first index i 
-last_i=str2num(get(handles.last_i,'String'));%last index i 
-incr=str2num(get(handles.incr_i,'String'));% increment
+first_i=str2double(get(handles.first_i,'String'));%first index i 
+last_i=str2double(get(handles.last_i,'String'));%last index i 
+incr=str2double(get(handles.incr_i,'String'));% increment
 num_i=[first_i:incr:last_i];% list of i indices (reference values for each pair)
 if isequal(get(handles.first_j,'Visible'),'on')
-    first_j=str2num(get(handles.first_j,'String'));%first index j
-    last_j=str2num(get(handles.last_j,'String'));%last index j 
-    incr_j=str2num(get(handles.incr_j,'String'));% increment
+    first_j=str2double(get(handles.first_j,'String'));%first index j
+    last_j=str2double(get(handles.last_j,'String'));%last index j 
+    incr_j=str2double(get(handles.incr_j,'String'));% increment
 else
     first_j=1;
     last_j=1;
@@ -1359,11 +1381,11 @@ if isequal (mode,'series(Di)')
 	indsel=find((double(str_civ1)<48)|(double(str_civ1)>57));% character indices of non numerical characters
     str_raw=str_civ1(indsel);
     indsepar=find(str_raw=='|'); %character index of the separator
-    d1=str2num(str_civ1([indsel(indsepar-1)+1:indsel(indsepar)-1]));
+    d1=str2double(str_civ1([indsel(indsepar-1)+1:indsel(indsepar)-1]));
     if indsepar==length(str_raw)
-        d2=str2num(str_civ1([indsel(indsepar)+1:end]));
+        d2=str2double(str_civ1([indsel(indsepar)+1:end]));
     else
-        d2=str2num(str_civ1([indsel(indsepar)+1:indsel(indsepar+1)-1]));
+        d2=str2double(str_civ1([indsel(indsepar)+1:indsel(indsepar+1)-1]));
     end   
     num1_civ1=num_i-d1;% set of first image numbers
     num2_civ1=num_i+d2;
@@ -1608,7 +1630,7 @@ if isequal(get(handles.get_mask_fix2,'Value'),1)
 end
 
 %read names of the .exe file 
-if box_test(1)==1 | box_test(3)==1 | box_test(4)==1 | box_test(6)==1 
+if box_test(1)==1 || box_test(3)==1 || box_test(4)==1 || box_test(6)==1 
     path_uvmat=which('uvmat');% check the path detected for source file uvmat
     path_UVMAT=fileparts(path_uvmat); %path to UVMAT
     if isunix
@@ -1628,18 +1650,27 @@ if box_test(1)==1 | box_test(3)==1 | box_test(4)==1 | box_test(6)==1
     end 
     if isfield(sparam,'Civ1_exe')
         civ1_exe=sparam.Civ1_exe;
+        if isequal(civ1_exe(1:4),'civx')%the binary is defined in /civx, default setting
+            civ1_exe=fullfile(path_UVMAT,civ1_exe);
+        end
     end
     if isfield(sparam,'Civ2_exe')
         civ2_exe=sparam.Civ2_exe;
+        if isequal(civ2_exe(1:4),'civx')%the binary is defined in /civx, default setting
+            civ2_exe=fullfile(path_UVMAT,civ2_exe);
+        end
     end
     if isfield(sparam,'Patch_exe')
         patch_exe=sparam.Patch_exe;
+        if isequal(patch_exe(1:4),'civx')%the binary is defined in /civx, default setting
+            patch_exe=fullfile(path_UVMAT,patch_exe);
+        end
     end
     if isfield(sparam,'Stinterp_exe')
         stinterp_exe=sparam.Stinterp_exe;
     end
     if isfield(sparam,'SGE')
-        sge=str2num(sparam.SGE);
+        sge=str2double(sparam.SGE);
     end 
     if ~isunix % for windows system, check whether the Matlab working dir is a UBC name
         dircur=pwd;
@@ -1691,16 +1722,16 @@ if box_test(2)==1
     %names of the civ1 fields
     field1.vel_type='civ1';
     field1.nb='nb_vectors';
-    field1.X='vec_X';
-    field1.Y='vec_Y';
-    field1.U='vec_U';
-    field1.V='vec_V';
+%     field1.X='vec_X';
+%     field1.Y='vec_Y';
+%     field1.U='vec_U';
+%     field1.V='vec_V';
     field1.fixflag='vec_FixFlag';
     flagindex(1)=get(handles.vec_Fmin2, 'Value');
     flagindex(2)=get(handles.vec_F3, 'Value');
     flagindex(3)=get(handles.vec_F2, 'Value');
-    thresh_vecC=str2num(get(handles.thresh_vecC,'String'));%threshold on image correlation vec_C
-    thresh_vel=str2num(get(handles.thresh_vel,'String'));%threshold on velocity modulus
+    thresh_vecC=str2double(get(handles.thresh_vecC,'String'));%threshold on image correlation vec_C
+    thresh_vel=str2double(get(handles.thresh_vel,'String'));%threshold on velocity modulus
     inf_sup=get(handles.inf_sup1,'Value');
     menu=get(handles.field_ref1,'String');
     index=get(handles.field_ref1,'Value');
@@ -1709,7 +1740,7 @@ if box_test(2)==1
     else
         fieldchoice=menu{index};
     end   
-    h = waitbar(0,['removing velocity vectors, fix1']);% display a wait bar 
+    h = waitbar(0,'removing velocity vectors, fix1');% display a wait bar 
     test_mask=get(handles.get_mask_fix1,'Value');    
     if test_mask
         maskdispl=get(handles.mask_fix1,'String');
@@ -1727,7 +1758,7 @@ if box_test(2)==1
                 maskname='noFile use default';
                 maskflag=0;
             elseif test_mask==1
-                nbslice_mask=str2num(maskdispl(1:end-4)); % 
+                nbslice_mask=str2double(maskdispl(1:end-4)); % 
                 num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
                 maskname=name_generator(maskbase,num1_mask,1,'.png','_i');% mask corresponding to the first image of the pair
                 maskflag= exist(maskname,'file')==2;
@@ -3290,17 +3321,58 @@ set(handles.browse_root,'UserData',browse); %update the nomenclature type for uv
 
 
 %COPY IMAGES TO THE FORMAT .png IF NEEDED
-if isequal(nom_type_ima1,'*')
-    nom_type_imanew='_i';
+if isequal(nom_type_ima1,'*')%case of movie files
+    nom_type_imanew1='_i';
 else
     nom_type_imanew1=nom_type_ima1;
 end
-if isequal(nom_type_ima2,'*')
-    nom_type_imanew='_i';
+if isequal(nom_type_ima2,'*')%case of movie files
+    nom_type_imanew2='_i';
 else
     nom_type_imanew2=nom_type_ima2;
 end
 if ~isequal(ext_ima,'.png')
+    %%type of image file
+    type_ima1='none';%default
+    movieobject1=[];%default
+    if isequal(lower(ext_ima),'.avi')
+        hhh=which('mmreader');
+        if ~isequal(hhh,'')&& mmreader.isPlatformSupported()% if the mmreader function is found (recent version of matlab)
+            type_ima1='movie';
+            movieobject1=mmreader([filebase_ima2 ext_ima]);
+        else
+            type_ima1='avi';
+        end
+    else 
+       form=imformats(ext_ima(2:end));
+       if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+           if isequal(nom_type_ima1,'*');
+               type_ima1='multimage';%image series in a single image file
+           else
+               type_ima1='image';
+           end
+       end
+    end
+    type_ima2='none';%default
+    movieobject2=[];
+    if isequal(lower(ext_ima),'.avi')
+        hhh=which('mmreader');
+        if ~isequal(hhh,'')&& mmreader.isPlatformSupported()% if the mmreader function is found (recent version of matlab)
+            type_ima2='movie';
+            movieobject2=mmreader([filebase_ima2 ext_ima]);
+        else
+            type_ima2='avi';
+        end
+    else 
+       form=imformats(ext_ima(2:end));
+       if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+           if isequal(nom_type_ima1,'*');
+               type_ima2='multimage';%image series in a single image file
+           else
+               type_ima2='image';
+           end
+       end
+    end
     %npxy=get(handles.ext_ima,'UserData');
 % %     if numel(npxy)<2
 %     
@@ -3317,13 +3389,13 @@ if ~isequal(ext_ima,'.png')
             for j=1:nbslice
                     filename=name_generator(filebase_ima1,num1_civ1(ifile),num_a_civ1(j),'.png',nom_type_imanew1);
                     if ~exist(filename,'file')
-                        A=read_image(filecell.ima1.civ1{ifile,j},nom_type_ima2,num1_civ1(ifile));
+                        A=read_image(filecell.ima1.civ1{ifile,j},type_ima1,num1_civ1(ifile),movieobject1);
                         imwrite(A,filename,'BitDepth',16); 
                     end
                     filecell.ima1.civ1(ifile,j)={filename};
                     filename=name_generator(filebase_ima2, num2_civ1(ifile),num_b_civ1(j),'.png',nom_type_imanew2);
                     if ~exist(filename,'file')
-                        A=read_image(filecell.ima2.civ1{ifile,j},nom_type_ima2,num2_civ1(ifile));
+                        A=read_image(filecell.ima2.civ1{ifile,j},type_ima2,num2_civ1(ifile),movieobject2);
                         imwrite(A,filename,'BitDepth',16);
                     end
                     filecell.ima2.civ1(ifile,j)={filename};
@@ -4969,7 +5041,7 @@ function HELP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 path_to_uvmat=which ('uvmat');% check the path of uvmat
 pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
+helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html')
 if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
 else
     addpath (fullfile(pathelp,'uvmat_doc'))
@@ -4978,53 +5050,25 @@ end
 
 %------------------------------------------------------------------------
 %--read images and convert them to the uint16 format used for PIV
-function A=read_image(filename,nom_type,npx,npy,num);
+function A=read_image(filename,type_ima,num,movieobject)
 %------------------------------------------------------------------------
-%npx, npy are the dimensions needed for the raw SMD images
 %num is the view number needed for an avi movie
-if isequal(nom_type,'avi')
-    mov=aviread(filename,num);
-    A=frame2im(mov(1));
+switch type_ima
+    case 'movie'
+        A=read(movieobject,num);
+    case 'avi'
+        mov=aviread(filename,num);
+        A=frame2im(mov(1));
+    case 'multimage'
+        A=imread(filename,num);
+    case 'image'    
+        A=imread(filename);
+end
+siz=size(A);
+if length(siz)==3;%color images
     A=sum(double(A),3);
     A=uint16(A);
-elseif isequal(nom_type,'raw_SMD')
-    [fid,message]=fopen(filename,'r');    
-    B=fread(fid,Inf,'int16',0,'ieee-le');%read 16 bit binary file
-    A=(reshape(B,npx,npy))'; %remplissage ligne par ligne avec une matrice colonne ? transposer(uB) pour avoir une matrice ligne
-    A=uint16(A);
-    fclose(fid);
-else
-    A=imread(filename);
-    siz=size(A);
-    if length(siz)==3;%color images
-        A=sum(double(A),3);
-    end
-    A=uint16(A);
 end
-
-% %----------------------------------------------------------------
-% %Executes on carriage return on the time interval dt
-% %----------------------------------------------------------------
-% function dt_Callback(hObject, eventdata, handles)
-% %determine the set of times and possible intervals for CIV
-% %                 answer=inputdlg('time interval between images?');
-%                 dt=(1/1000)*str2num(get(handles.dt,'String'));
-%                 nbfield=str2num(get(handles.nb_field,'String')); %last image number selected in the processing series
-%                 time=(dt*[0:nbfield-1])';
-% %                 set(handles.incr_i,'UserData',dt);%store the time interval between successive images
-%                 set(handles.displ_filebase,'UserData',time); %store the set of times
-%                 for index=1:min(nbfield-1,200)
-%                     displ_num(1,index)=1;
-%                     displ_num(2,index)=1;
-%                     displ_num(3,index)=-floor(index/2);
-%                     displ_num(4,index)=ceil(index/2);
-%                 end
-% set(handles.list_pair_civ1,'Value',1);
-% set(handles.list_pair_civ1,'UserData',displ_num);
-% set(handles.list_pair_civ2,'Value',1);
-% %update the list of time intervals
-% find_netcpair_civ1(hObject, eventdata, handles)
-% find_netcpair_civ2(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 function ref_i_Callback(hObject, eventdata, handles)
@@ -5032,11 +5076,9 @@ function ref_i_Callback(hObject, eventdata, handles)
 mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
-%if isequal(get(handles.CIV1,'Value'),0)|| isequal(mode,'series(Di)') 
-    find_netcpair_civ1(hObject, eventdata, handles);% update the menu of pairs depending on the available netcdf files
-%end
+find_netcpair_civ1(hObject, eventdata, handles);% update the menu of pairs depending on the available netcdf files
 if isequal(mode,'series(Di)') || ...% we do patch2 only
-   (get(handles.CIV2,'Value')==0 & get(handles.CIV1,'Value')==0 & get(handles.FIX1,'Value')==0 & get(handles.PATCH1,'Value')==0)
+   (get(handles.CIV2,'Value')==0 && get(handles.CIV1,'Value')==0 && get(handles.FIX1,'Value')==0 && get(handles.PATCH1,'Value')==0)
     find_netcpair_civ2(hObject, eventdata, handles);
 end
 
@@ -5046,11 +5088,11 @@ function ref_j_Callback(hObject, eventdata, handles)
 mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
-if isequal(get(handles.CIV1,'Value'),0)| isequal(mode,'series(Dj)') 
+if isequal(get(handles.CIV1,'Value'),0)|| isequal(mode,'series(Dj)') 
     find_netcpair_civ1(hObject, eventdata, handles);% update the menu of pairs depending on the available netcdf files
 end
-if isequal(mode,'series(Dj)') | ...
-   (get(handles.CIV2,'Value')==0 & get(handles.CIV1,'Value')==0 & get(handles.FIX1,'Value')==0 & get(handles.PATCH1,'Value')==0)
+if isequal(mode,'series(Dj)') || ...
+   (get(handles.CIV2,'Value')==0 && get(handles.CIV1,'Value')==0 && get(handles.FIX1,'Value')==0 && get(handles.PATCH1,'Value')==0)
     find_netcpair_civ2(hObject, eventdata, handles);
 end
 
@@ -5152,13 +5194,13 @@ set(handles.ref_fix1,'String',[fullfile(ref.subdir,File) '....nc']);
 set(handles.ref_fix1,'UserData',ref)
 menu_field{1}='civ1';
 Data=nc2struct(fileinput,[]);
-if isfield(Data,'patch') & isequal(Data.patch,1)
+if isfield(Data,'patch') && isequal(Data.patch,1)
     menu_field{2}='filter1';
 end
-if isfield(Data,'civ2') & isequal(Data.civ2,1)
+if isfield(Data,'civ2') && isequal(Data.civ2,1)
     menu_field{3}='civ2';
 end
-if isfield(Data,'patch2') & isequal(Data.patch2,1)
+if isfield(Data,'patch2') && isequal(Data.patch2,1)
     menu_field{4}='filter2';
 end
 set(handles.field_ref1,'String',menu_field);
@@ -5180,7 +5222,7 @@ if isequal(get(handles.get_ref_fix2,'Value'),1)
             'Pick a file',filebase);
     fileinput=[PathName FileName];
     sizf=size(fileinput);
-    if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
+    if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
     [Path,File,field_count,str2,str_a,str_b,ref.ext,ref.nom_type,ref.subdir]=name2display(fileinput);
     ref.filebase=fullfile(Path,File);
     ref.num_a=stra2num(str_a);
