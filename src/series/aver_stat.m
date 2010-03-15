@@ -91,15 +91,31 @@ if nbview>2
     set(hseries.FileExt,'String',FileExt)
     nbview=2;
 end
+
+%determine image type
 hhh=which('mmreader');
 for iview=1:nbview
-    test_movie(iview)=0;
-    if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
-        if isequal(lower(FileExt{iview}),'.avi')
+    if isequal(FileExt{iview},'.nc')||isequal(FileExt{iview},'.cdf')
+        FileType{iview}='netcdf';
+    elseif isequal(lower(FileExt{iview}),'.avi')
+        if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
             MovieObject{iview}=mmreader(fullfile(RootPath{iview},[RootFile{iview} FileExt{iview}]));
-            test_movie(iview)=1;
+            FileType{iview}='movie';
+        else
+            FileType{iview}='avi';
         end
-    end 
+    elseif isequal(lower(FileExt{iview}),'.vol')
+        FileType{iview}='vol';
+    else 
+       form=imformats(FileExt{iview}(2:end));
+       if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+           if isequal(NomType{iview},'*');
+               FileType{iview}='multimage';
+           else
+               FileType{iview}='image';
+           end
+       end
+    end
 end
 
 % number of slices
@@ -131,38 +147,41 @@ if isequal(testfield,'on')
     end
 end
 %detect whether the two files are 'images' or 'netcdf'
-testima=0;
-testvol=0;
+% testima=0;
+% testvol=0;
 testcivx=0;
-testnc=0;
+% testnc=0;
 FileExt=get(hseries.FileExt,'String');
 % test_movie=0;
-for iview=1:nbview
-     ext=FileExt{iview};
-     form=imformats(ext([2:end]));
-     if isequal(lower(ext),'.vol')
-         testvol=testvol+1;
-     elseif ~isempty(form)||isequal(lower(ext),'.avi')% if the extension corresponds to an image format recognized by Matlab
-         testima=testima+1;
-     elseif isequal(ext,'.nc')
-         testnc=testnc+1;
-     end
-end
-if testvol
-    msgbox_uvmat('ERROR','volume images not implemented yet')
-    return
-end
-if testnc~=nbview && testima~=nbview && testvol~=nbview
-    msgbox_uvmat('ERROR','compare two image series or two netcdf files with the same fields as input')
-    return
-end
+% for iview=1:nbview
+%      ext=FileExt{iview};
+%      form=imformats(ext([2:end]));
+%      if isequal(lower(ext),'.vol')
+%          testvol=testvol+1;
+%      elseif ~isempty(form)||isequal(lower(ext),'.avi')% if the extension corresponds to an image format recognized by Matlab
+%          testima=testima+1;
+%      elseif isequal(ext,'.nc')
+%          testnc=testnc+1;
+%      end
+% end
+% if testvol
+%     msgbox_uvmat('ERROR','volume images not implemented yet')
+%     return
+% end
+% if testnc~=nbview && testima~=nbview && testvol~=nbview
+%     msgbox_uvmat('ERROR','compare two image series or two netcdf files with the same fields as input')
+%     return
+% end
 if ~isequal(FieldName,{'get_field...'})
-    if isequal(FieldName,{''}) && ~testima
-        msgbox_uvmat('ERROR','an input field needs to be selected')
-        return
-    end
-    testcivx=testnc;
+    testcivx=isequal(FileType{1},'netcdf');
 end
+% if ~isequal(FieldName,{'get_field...'})
+%     if isequal(FieldName,{''}) && ~testima
+%         msgbox_uvmat('ERROR','an input field needs to be selected')
+%         return
+%     end
+%     testcivx=testnc;
+% end
 
 if testcivx
     VelType_str=get(hseries.VelTypeMenu,'String');
@@ -287,16 +306,36 @@ for i_slice=1:NbSlice
              for iview=1:nbview
                 [filename]=...
                            name_generator(filebase{iview},num_i1{iview}(ifile),num_j1{iview}(ifile),FileExt{iview},NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile),SubDir{iview});
-                if testima
+                if ~isequal(FileType{iview},'netcdf')                
                     Data{iview}.ListVarName={'A'};
                     Data{iview}.AName='image';
-                    if test_movie(iview)
-                        Data{iview}.A=read(MovieObject{iview},num_i1{iview}(ifile));
+                    switch FileType{iview}
+                        case 'movie'
+                            A=read(MovieObject{iview},num_i1{iview}(ifile));
+                        case 'avi'
+                            mov=aviread(filename,num_i1{iview}(ifile));
+                            A=frame2im(mov(1));
+                        case 'vol'
+                            A=imread(filename);
+                        case 'multimage'
+                            A=imread(filename,num_i1{iview}(ifile));
+                        case 'image'
+                            A=imread(filename);
+                    end 
+                    Data{iview}.ListVarName={'coord_y','coord_x','A'}; % 
+                    Atype{iview}=class(A);
+                    npy=size(A,1);
+                    npx=size(A,2);
+                    nbcolor=size(A,3);
+                    if nbcolor==3
+                         Data{iview}.VarDimName={'coord_y','coord_x',{'coord_y','coord_x','rgb'}};
                     else
-                        Data{iview}.A=read_image(filename,NomType{iview},num_i1{iview}(ifile));% read the image, num2 is the counter for avi files 
-                    end
-                    Atype{iview}=class(Data{iview}.A);
-                    Data{iview}.A=double(Data{iview}.A);
+                         Data{iview}.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'}};
+                    end  
+                    Data{iview}.coord_y=[npy-0.5 0.5];
+                    Data{iview}.coord_x=[0.5 npx-0.5];
+                    Data{iview}.A=double(A);
+                    Data{iview}.CoordType='px';
                 elseif testcivx
                     [Data{iview},VelTypeOut]=read_civxdata(filename,FieldName,VelType);
                 else
@@ -355,9 +394,8 @@ for i_slice=1:NbSlice
                         eval(['sizmean=size(DataMean.' VarName ');']);
                         eval(['siz=size(Field.' VarName ');']);
                         if ~isequal(siz,sizmean)
-                            msgbox_uvmat('WARNING',['unequal size of input field ' VarName ', need to interpolate on a grid']) 
-                            nbmissing=nbmissing+1;
-                            break
+                           msgbox_uvmat('ERROR',['unequal size of input field ' VarName ', need to interpolate on a grid']) 
+                           return
                         else
                             eval(['DataMean.' VarName '=DataMean.' VarName '+ Field.' VarName ';']); % update the sum 
                         end
