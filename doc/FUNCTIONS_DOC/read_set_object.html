@@ -1,0 +1,60 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of read_set_object</title>
+  <meta name="keywords" content="read_set_object">
+  <meta name="description" content="'read_set_object': read the data on the 'set_object' interface">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; read_set_object.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>read_set_object
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'read_set_object': read the data on the 'set_object' interface</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function data=read_set_object(handles) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'read_set_object': read the data on the 'set_object' interface
+--------------------------------------------------------
+ data=read_set_object(handles)
+--------------------------------------------------------
+OUTPUT
+data: structure of data read on the set_object interface
+    .Style : style of projection object
+    .Coord(nbpos,3): set of coordinates defining the object position;
+    .ProjMode=type of projection ;
+    .Phi=angle of projection;
+    .DX,.DY,.DZ=increments;
+    .YMax,YMin: min and max Y
+INPUT:
+ handles: structure describing the tags of the edit boxes and menus
+menus</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="mouse_down.html" class="code" title="function xy=mouse_down(hObject,eventdata)">mouse_down</a>	'mouse_down': function activated when the mouse button is pressed on a figure (callback for 'WindowButtonDownFcn'</li><li><a href="set_grid.html" class="code" title="function varargout = set_grid(varargin)">set_grid</a>	'set_grid':produce grid for PIV with one or two images (stereo case)</li><li><a href="set_object.html" class="code" title="function varargout = set_object(varargin)">set_object</a>	'set_object': GUI to edit a projection object</li></ul>
+<!-- crossreference -->
+
+
+
+<hr><address>Generated on Wed 10-Mar-2010 20:42:36 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

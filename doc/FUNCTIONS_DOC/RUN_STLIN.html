@@ -1,0 +1,48 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of RUN_STLIN</title>
+  <meta name="keywords" content="RUN_STLIN">
+  <meta name="description" content="'RUN_STLIN': combine velocity fields for stereo PIV">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; RUN_STLIN.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>RUN_STLIN
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'RUN_STLIN': combine velocity fields for stereo PIV</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function RUN_STLIN(file_A,file_B,vel_type,file_st,nx_patch,ny_patch,thresh_patch,fileAxml,fileBxml) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'RUN_STLIN': combine velocity fields for stereo PIV
+ file_A,file_B: input velocity files
+vel_type: string ='civ1' or 'civ2'</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="griddata_uvmat.html" class="code" title="function ZI = griddata_uvmat(X,Y,Z,XI,YI)">griddata_uvmat</a>	'griddata_uvmat': function griddata_uvmat(vec2_X,vec2_Y,vec2_U,vec_X,vec_Y,'linear')</li><li><a href="imadoc2struct.html" class="code" title="function [s,errormsg]=imadoc2struct(ImaDoc)">imadoc2struct</a>	'imadoc2struct': reads the xml file for image documentation</li><li><a href="msgbox_uvmat.html" class="code" title="function varargout = msgbox_uvmat(varargin)">msgbox_uvmat</a>	'msgbox_uvmat': associated with GUI msgbox_uvmat.fig to display message boxes, for error, warning or input calls</li><li><a href="px_XYZ.html" class="code" title="function [X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)">px_XYZ</a>	</li><li><a href="read_civxdata.html" class="code" title="function [Field,VelTypeOut]=read_civxdata(filename,FieldNames,VelType)">read_civxdata</a>	'read_civxdata': reads civx data from netcdf files</li><li><a href="struct2nc.html" class="code" title="function errormsg=struct2nc(flname,Data)">struct2nc</a>	'struct2nc': create a netcdf file from a Matlab structure</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="civ.html" class="code" title="function varargout = civ(varargin)">civ</a>	'civ': function associated with the interface 'civ.fig' for PIV, spline interpolation and stereo PIV (patch)</li></ul>
+<!-- crossreference -->
+
+
+
+<hr><address>Generated on Wed 10-Mar-2010 20:42:36 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of check_field_structure</title>
+  <meta name="keywords" content="check_field_structure">
+  <meta name="description" content="'check_field_structure': check the validity of the field struture representation consistant with the netcdf format">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; check_field_structure.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>check_field_structure
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'check_field_structure': check the validity of the field struture representation consistant with the netcdf format</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [DataOut,errormsg]=check_field_structure(Data) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'check_field_structure': check the validity of the field struture representation consistant with the netcdf format
+----------------------------------------------------------------------
+ function [DataOut,errormsg]=check_field_structure(Data)
+
+ OUTPUT:
+  Data: structure reproducing the input structure Data, with the additional elements:
+           with fields:
+
+            .ListDimName: cell listing the names of the array dimensions
+             .DimValue: array dimension values (Matlab vector with the same length as .ListDimName
+            .VarDimIndex: cell containing the set of dimension indices (in list .ListDimName) for each variable of .ListVarName
+            .VarDimName: cell containing a cell of dimension names (in list .ListDimName) for each variable of .ListVarName
+ errormsg: error message which is not empty when the input structure does not have the right form
+
+INPUT:
+ Data:   structure containing 
+         (optional) .ListGlobalAttribute: cell listing the names of the global attributes
+                    .Att_1,Att_2... : values of the global attributes
+         (requested)  .ListVarName: list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
+         (requested)  .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)                         
+         (requested) .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="plot_field.html" class="code" title="function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)">plot_field</a>	'plot_field': plot any field with the structure defined in the uvmat package</li><li><a href="struct2nc.html" class="code" title="function errormsg=struct2nc(flname,Data)">struct2nc</a>	'struct2nc': create a netcdf file from a Matlab structure</li><li><a href="struct2nc_toolbox.html" class="code" title="function errormsg=struct2nc_toolbox(flname,Data)">struct2nc_toolbox</a>	'struct2nc_toolbox': create a netcdf file from a Matlab structure: use of netcdf toolbox</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+
+
+<hr><address>Generated on Wed 10-Mar-2010 20:42:36 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

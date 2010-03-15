@@ -1,0 +1,60 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of imadoc2struct</title>
+  <meta name="keywords" content="imadoc2struct">
+  <meta name="description" content="'imadoc2struct': reads the xml file for image documentation">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; imadoc2struct.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>imadoc2struct
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'imadoc2struct': reads the xml file for image documentation</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [s,errormsg]=imadoc2struct(ImaDoc) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'imadoc2struct': reads the xml file for image documentation 
+
+function [s,errormsg]=imadoc2struct(ImaDoc) 
+--------------------------------------------------------
+ OUTPUT:
+ s: structure representing ImaDoc
+   s.Heading: information about the data hierarchical structure
+   s.Time: matrix of times
+   s.TimeUnit
+  s.GeometryCalib: substructure containing the parameters for geometric calibration
+ errormsg: error message
+
+ INPUT:
+ ImaDoc: full name of the xml input file with head key ImaDoc
+function [s,error,Heading,nom_type_ima,ext_ima,abs_time,TimeUnit,mode,NbSlice]=imadoc2struct(ImaDoc)</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="RUN_STLIN.html" class="code" title="function RUN_STLIN(file_A,file_B,vel_type,file_st,nx_patch,ny_patch,thresh_patch,fileAxml,fileBxml)">RUN_STLIN</a>	'RUN_STLIN': combine velocity fields for stereo PIV</li><li><a href="civ.html" class="code" title="function varargout = civ(varargin)">civ</a>	'civ': function associated with the interface 'civ.fig' for PIV, spline interpolation and stereo PIV (patch)</li><li><a href="civ_3D.html" class="code" title="function varargout = civ_3D(varargin)">civ_3D</a>	'civ_3D': function associated with the interface 'civ_3D.fig' for PIV in volume</li><li><a href="series.html" class="code" title="function varargout = series(varargin)">series</a>	'series': master function associated to the GUI series.m for analysis field series</li><li><a href="set_grid.html" class="code" title="function varargout = set_grid(varargin)">set_grid</a>	'set_grid':produce grid for PIV with one or two images (stereo case)</li><li><a href="uvmat.html" class="code" title="function varargout = uvmat(varargin)">uvmat</a>	'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</li></ul>
+<!-- crossreference -->
+
+
+
+<hr><address>Generated on Wed 10-Mar-2010 20:42:36 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of uvmat</title>
+  <meta name="keywords" content="uvmat">
+  <meta name="description" content="'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; uvmat.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>uvmat
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function varargout = uvmat(varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'uvmat': function associated with the GUI 'uvmat.fig' for images and data field visualization 
+------------------------------------------------------------------------
+ function huvmat=uvmat(input)
+
+OUTPUT
+ huvmat=current handles of the GUI uvmat.fig
+
+INPUT:
+ input: input file name (if character chain), or input image matrix to
+ visualize, or Matlab structure representing  netcdf fields (with fields
+ ListVarName....)
+
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  Copyright Joel Sommeria,  2008, LEGI / CNRS-UJF-INPG, joel.sommeria@legi.grenoble-inp.fr.
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+     This open is part of the toolbox UVMAT.
+ 
+     UVMAT is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation; either version 2 of the License, or
+     (at your option) any later version.
+ 
+     UVMAT is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License (open UVMAT/COPYING.txt) for more details.
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+ Information stored on the interface:
+    'Strings' of all edit boxes and menus: get(handles.Tag,'String')
+    'Values' of all menus and toggle buttons: get(handles.Tag,'Value')
+     Matlab structure stored as 'UserData' of the figure uvmat.fig,(can be obtained by right mouse click on the interface).
+          It contains the following fields:
+     - Fixed specifiacation of plotting figures and axes (defined bu uvmat_OpeningFcn) 
+          .PosColorbar: [0.8210 0.4710 0.0190 0.4450]; specified position of the colorbar on figures
+     - Information read in the documentation open of a series (activated by RootPath_Callback) :
+          .XmlData, with fields:
+               .Time: matrix of times of the images with index i and j
+               .GeometryCalib: [1x1 struct]
+     - Information defined from the interface:
+           .NewSeries: =1 when the first view of a new field series is displayed, else 0
+           .filename:(char string)
+           .VelType:(char string) type of velocity field selected
+           .VelType_1:(char string)  REMPLACER LE CELL ACTUEL
+           .FieldName: (char string) main field selected('image', 'velocity'...)
+           .FieldName_1:(char string) second field selected('image', 'velocity'...)
+           .CName: (char string)name of the scalar used for vector colors
+           .CoordType: (char string) coordinate transform: e.g. 'phys' or 'px'
+           .MouseAction: store the current effect of mouse button (create or edit objects)
+     - Information on  projection objects
+           .Object: {[1x1 struct]}
+           .CurrentObjectIndex: index of the projection object .Object currently selected for editing
+     -Information on the current field (Field{i})
+            .Txt : text information to display (e.g. error message)
+            .NbDim: number of dimensions (=0 by default)
+            .NbCoord: number of vector components
+            .CoordType: expresses the type of coordinate ('px' for image, 'sig' for instruments, or 'phys')
+            .dt: time interval for the corresponding image pair
+            .Mesh: estimated typical distance between vectors
+            .ZMax:
+            .ZMin: 
+            .X, .Y, .Z: set of vector coordinates 
+            .U,.V,.W: corresponding set of vector components
+            .F: corresponding set of warning flags
+            .FF: corresponding set of false flags, =0 for good vectors
+            .C: corresponding values of the scalar used for vector color
+             (.X, .Y, .Z,.U,.V,.W,.F,.FF,.C are matlab vectors of the same length,
+                     equal to the number of vectors stored in the input open)
+            .CName: name of the scalar .C
+            .CType: type of the scalar .C, setting how the scalar is obtained (see 'Scalars' below)
+            .A image or scalar 
+            .AX: vector of dimension 2 representing the first and last values
+              of the X coordinates for the image or scalar known on a regular grid,
+              or vector of dimension .A for a scaler defined on irregular grid.
+            .AY: same as .AX along the Y direction
+            .AName: name of the scalar, ='image' for an image</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="calc_field.html" class="code" title="function [DataOut,errormsg]=calc_field(FieldName,DataIn)">calc_field</a>	'calc_field': defines fields (velocity, vort, div...) from civx data and calculate them</li><li><a href="cell2tab.html" class="code" title="function Tabchar=cell2tab(Tabcell,separator)">cell2tab</a>	'cell2tab': transform a Matlab cell in a character array suitable for display in a table</li><li><a href="check_field_structure.html" class="code" title="function [DataOut,errormsg]=check_field_structure(Data)">check_field_structure</a>	'check_field_structure': check the validity of the field struture representation consistant with the netcdf format</li><li><a href="check_functions.html" class="code" title="function [errormsg,date_str]=check_functions">check_functions</a>	'check_functions': check the path and modification date for all the</li><li><a href="civ.html" class="code" title="function varargout = civ(varargin)">civ</a>	'civ': function associated with the interface 'civ.fig' for PIV, spline interpolation and stereo PIV (patch)</li><li><a href="delete_object.html" class="code" title="function delete_object(hObject)">delete_object</a>	'delete_object': delete a projection object, defined by its index in the Uvmat list or by its graphic handle</li><li><a href="editxml.html" class="code" title="function varargout = editxml(varargin)">editxml</a>	'editxml': function for editing xml files using a xml schema (associated with the GUI editxml.fig)</li><li><a href="find_field_indices.html" class="code" title="function [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data)">find_field_indices</a>	'find_file_indices': test field structure for input in proj_field and plot_field</li><li><a href="geometry_calib.html" class="code" title="function varargout = geometry_calib(varargin)">geometry_calib</a>	'geometry_calib': performs geometric calibration from a set of reference points</li><li><a href="get_field.html" class="code" title="function varargout = get_field(varargin)">get_field</a>	'get_field': display variables and attributes from a Netcdf file, and RUN selected fields</li><li><a href="get_plot_handles.html" class="code" title="function PlotHandles=get_plot_handles(handles)">get_plot_handles</a>	'get_plot_handles': list the  handles of elements setting the plotting parameters in the uvmat interface</li><li><a href="imadoc2struct.html" class="code" title="function [s,errormsg]=imadoc2struct(ImaDoc)">imadoc2struct</a>	'imadoc2struct': reads the xml file for image documentation</li><li><a href="msgbox_uvmat.html" class="code" title="function varargout = msgbox_uvmat(varargin)">msgbox_uvmat</a>	'msgbox_uvmat': associated with GUI msgbox_uvmat.fig to display message boxes, for error, warning or input calls</li><li><a href="name2display.html" class="code" title="function [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)">name2display</a>	'name2display': extracts the root name and field numbers from an input filename</li><li><a href="name_generator.html" class="code" title="function [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out,subdir_out]=name_generator(filebase,num_i1,num_j1,ext,nom_type,comp_input,num_i2,num_j2,subdir);">name_generator</a>	'name_generator': creates a file name from a root name and indices.</li><li><a href="nc2struct.html" class="code" title="function [Data,var_detect,ichoice]=nc2struct(nc,varargin)">nc2struct</a>	'nc2struct': transform a netcdf file in a corresponding matlab structure</li><li><a href="num2stra.html" class="code" title="function str=num2stra(num,nom_type,index);">num2stra</a>	'num2stra': transform number to the corresponding character string depending on the nomenclature</li><li><a href="plot_field.html" class="code" title="function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)">plot_field</a>	'plot_field': plot any field with the structure defined in the uvmat package</li><li><a href="plot_object.html" class="code" title="function [hh]=plot_object(ObjectDataIn,ProjObject,hplot,col)">plot_object</a>	'plot_object': draws a projection object (points, line, plane...)</li><li><a href="proj_field.html" class="code" title="function [ProjData,errormsg]=proj_field(FieldData,ObjectData,IndexObj)">proj_field</a>	'proj_field': projects the field on a projection object</li><li><a href="px_XYZ.html" class="code" title="function [X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)">px_XYZ</a>	</li><li><a href="read_civxdata.html" class="code" title="function [Field,VelTypeOut]=read_civxdata(filename,FieldNames,VelType)">read_civxdata</a>	'read_civxdata': reads civx data from netcdf files</li><li><a href="read_get_field.html" class="code" title="function [SubField,errormsg]=read_get_field(hget_field)">read_get_field</a>	'read_get_field': read the list of selected variables from the GUI get_field</li><li><a href="read_image.html" class="code" title="function [A,error]=read_image(filename,NomType,num);">read_image</a>	'read_image': reads an image from a single file or a movie file</li><li><a href="read_imatext.html" class="code" title="function [error,time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext(fileinput);">read_imatext</a>	'read_imatext': reads the .civ file for image documentation (obsolete)</li><li><a href="read_plot_param.html" class="code" title="function PlotParam=read_plot_param(handles)">read_plot_param</a>	'read_plot_param':  read plotting parameters from the interface uvmat</li><li><a href="series.html" class="code" title="function varargout = series(varargin)">series</a>	'series': master function associated to the GUI series.m for analysis field series</li><li><a href="set_col_vec.html" class="code" title="function [colorlist,col_vec,colcode_out]=set_col_vec(colcode,vec_C)">set_col_vec</a>	'set_col_vec': sets the color code for vectors depending on a scalar vec_C and parameters given by the struct colcode</li><li><a href="set_grid.html" class="code" title="function varargout = set_grid(varargin)">set_grid</a>	'set_grid':produce grid for PIV with one or two images (stereo case)</li><li><a href="set_object.html" class="code" title="function varargout = set_object(varargin)">set_object</a>	'set_object': GUI to edit a projection object</li><li><a href="stra2num.html" class="code" title="function numres=stra2num(str)">stra2num</a>	'stra2num': transform letters (a, b, c) or numerical strings ('1','2'..) to the corresponding numbers</li><li><a href="sub_field.html" class="code" title="function [SubData,errormsg]=sub_field(Field,Field_1)">sub_field</a>	'sub_field': combines two input fields</li><li><a href="update_menu.html" class="code" title="function menu_str=update_menu(handle,strinput)">update_menu</a>	'update_menu': find an input string in a menu, add it to the menu at the penultimate position if it does not exist</li><li><a href="write_plot_param.html" class="code" title="function write_plot_param(handles,PlotParam)">write_plot_param</a>	'write_plot_param': update the plotting parameters on the uvmat interface after a plotting operation</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="editxml.html" class="code" title="function varargout = editxml(varargin)">editxml</a>	'editxml': function for editing xml files using a xml schema (associated with the GUI editxml.fig)</li><li><a href="geometry_calib.html" class="code" title="function varargout = geometry_calib(varargin)">geometry_calib</a>	'geometry_calib': performs geometric calibration from a set of reference points</li><li><a href="keyboard_callback.html" class="code" title="function keyboard_callback(hObject,eventdata,handleshaxes)">keyboard_callback</a>	'keyboard_callback:' function activated when a key is pressed on the keyboard</li><li><a href="mouse_down.html" class="code" title="function xy=mouse_down(hObject,eventdata)">mouse_down</a>	'mouse_down': function activated when the mouse button is pressed on a figure (callback for 'WindowButtonDownFcn'</li><li><a href="set_grid.html" class="code" title="function varargout = set_grid(varargin)">set_grid</a>	'set_grid':produce grid for PIV with one or two images (stereo case)</li></ul>
+<!-- crossreference -->
+
+
+
+<hr><address>Generated on Wed 10-Mar-2010 20:42:36 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

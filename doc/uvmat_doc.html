@@ -1,0 +1,5119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+
+
+
+
+  
+  
+  
+  <meta http-equiv="CONTENT-TYPE" content="text/html; charset=windows-1252">
+
+
+
+  
+
+
+  
+  
+  
+  
+  
+  <title>UVMAT HELP</title>
+  <meta name="GENERATOR" content="OpenOffice.org 2.0 (Win32)">
+
+
+
+
+  
+  
+  
+  <meta name="CREATED" content="20061204;18592299">
+
+
+
+
+  
+  
+  
+  <meta name="CHANGED" content="20061204;19435588">
+
+
+
+
+  
+  
+  
+  <meta name="DESCRIPTION" content="UVMAT HELP">
+
+
+
+
+  
+  
+  
+  <meta name="KEYWORDS" content="uvmat_doc">
+
+
+
+
+  
+  
+  
+  <meta name="resource-type" content="document">
+
+
+
+
+  
+  
+  
+  <meta name="distribution" content="global">
+
+
+
+
+  
+  
+  
+  <meta http-equiv="Content-Style-Type" content="text/css">
+<!--Converted with LaTeX2HTML 2002 (1.62) original version by: Nikos Drakos, CBLU, University of Leeds * revised and updated by: Marcus Hennecke, Ross Moore, Herb Swan * with significant contributions from: Jens Lippmann, Marek Rouchal, Martin Wilck and others --><!--Navigation Panel-->
+</head>
+
+
+<body style="direction: ltr; width: 720px;" lang="en-US">
+
+
+
+
+<p><br>
+
+
+
+
+&nbsp;</p>
+
+
+
+
+<div style="text-align: center;"><a class="mozTocDIV" name="mozTocId399691"></a><big><big><big><b>UVMAT
+ON LINE HELP</b></big></big></big><a class="mozTocH1" name="top"></a></div>
+
+
+
+
+<p align="center"><b><i>Jo&euml;l
+Sommeria, revised March 2008</i></b></p>
+
+
+
+
+<ul id="mozToc">
+
+
+
+<!--mozToc h1 1 h2 2 h3 3--><li><a href="#mozTocId965242">1-Generalities:</a>
+    
+    
+    
+    <ul>
+
+
+
+      <li><a href="#mozTocId812052">1.1
+Aim:</a></li>
+
+
+
+      <li><a href="#mozTocId216298">1.2
+The package:</a></li>
+
+
+
+      <li><a href="#mozTocId428776">1.3
+Overview of the GUI uvmat.fig:</a></li>
+
+
+
+      <li><a href="#mozTocId783870">1.4
+General tools:</a></li>
+
+
+
+    
+    
+    
+    </ul>
+
+
+
+  </li>
+
+
+
+  <li><a href="#mozTocId805645">2
+Input files and navigation with uvmat:</a>
+    
+    
+    
+    <ul>
+
+
+
+      <li><a href="#mozTocId260505">2.1
+Input file naming and
+indexing:</a></li>
+
+
+
+      <li><a href="#mozTocId596391">2.2
+Comparing two fields:</a></li>
+
+
+
+      <li><a href="#mozTocId383799">2.3
+Documentation files (.xml):</a></li>
+
+
+
+      <li><a href="#mozTocId962678">2.4
+Navigation among file
+indices:</a></li>
+
+
+
+      <li><a href="#mozTocId130904">2.5
+Ancillary input files:</a></li>
+
+
+
+    
+    
+    
+    </ul>
+
+
+
+  </li>
+
+
+
+  <li><a href="#mozTocId314695">3
+Field representation (uvmat):&nbsp;</a>
+    
+    
+    
+    <ul>
+
+
+
+      <li><a href="#mozTocId187440">3.1
+Images and scalars:</a></li>
+
+
+
+      <li><a href="#mozTocId794224">3.2
+Vectors:</a></li>
+
+
+
+      <li><a href="#mozTocId356208">3.3
+Selecting fields from CIVx files:</a></li>
+
+
+
+      <li><a href="#mozTocId271098">3.4 Succession of operations:</a></li>
+
+
+
+      <li><a href="#mozTocId901896">3.5
+Histograms</a></li>
+
+
+
+      <li><a href="#mozTocId472013">3.6
+Viewing volume fields:**</a></li>
+
+
+
+    
+    
+    
+    </ul>
+
+
+
+  </li>
+
+
+
+  <li><a href="#mozTocId71913">4 The
+GUI get_field.fig:</a>
+    
+    
+    
+    <ul>
+
+
+
+      <li><a href="#mozTocId539613">4.1
+Overview:</a></li>
+
+
+
+      <li><a href="#mozTocId665737">4.2
+2D and 3D plots: </a></li>
+
+
+
+    
+    
+    
+    </ul>
+
+
+
+  </li>
+
+
+
+  <li><a href="#mozTocId71913">5
+Projection objects:</a>
+    
+    
+    
+    <ul>
+
+
+
+      <li><a href="#mozTocId113693">5-1
+Definition and editing with the uvmat interface:</a></li>
+
+
+
+      <li><a href="#mozTocId624817">5-2
+Object properties:</a></li>
+
+
+
+      <li><a href="#mozTocId680179">5-3
+Object plotting:</a></li>
+
+
+
+    
+    
+    
+    </ul>
+
+
+
+  </li>
+
+
+
+  <li><a href="#mozTocId529788">6
+Geometric
+calibration:</a>
+    
+    
+    
+    <ul>
+
+
+
+      <li><a href="#mozTocId348355">6-1 Generalities:</a></li>
+
+
+
+      <li><a href="#mozTocId348355">6-2
+The GUI geometry_calib.fig:</a></li>
+
+
+
+    
+    
+    
+    </ul>
+
+
+
+  </li>
+
+
+
+  <li><a href="#mozTocId574740">7
+Masks and grids:</a>
+    
+    
+    
+    <ul>
+
+
+
+      <li><a href="#mozTocId348355">7-1
+Masks:</a></li>
+
+
+
+      <li><a href="#mozTocId502619">7-2
+Grids:</a></li>
+
+
+
+    
+    
+    
+    </ul>
+
+
+
+  </li>
+
+
+
+  <li><a href="#mozTocId479237">8
+Operations on field series:</a>
+    
+    
+    
+    <ul>
+
+
+
+      <li><a href="#mozTocId856905">8-1
+The GUI series.fig:</a></li>
+
+
+
+      <li><a href="#mozTocId483256">8-2
+check_files:</a></li>
+
+
+
+      <li><a href="#mozTocId310092">8-3
+aver_stat:</a></li>
+
+
+
+      <li><a href="#mozTocId887562">8-4
+time_series:</a></li>
+
+
+
+      <li><a href="#mozTocId109414">8-5
+merge_proj:&nbsp;</a></li>
+
+
+
+      <li><a href="#mozTocId736727">8-6 more...:</a></li>
+
+
+
+      <li><a href="#mozTocId360245">Peaklocking
+errors:(to update
+**)</a></li>
+
+
+
+    
+    
+    
+    </ul>
+
+
+
+  </li>
+
+
+
+  <li><a href="#mozTocId280008">9
+The GUI editxml.fig:</a></li>
+
+
+
+  <li><a href="#mozTocId609725">10
+Particle Imaging Velocimetry (PIV)</a>
+    
+    
+    
+    <ul>
+
+
+
+      <li><a href="#mozTocId109414">10-1
+Civ operations:</a></li>
+
+
+
+      <li><a href="#mozTocId178080">10-2
+Codes for vector flags:</a></li>
+
+
+
+      <li><a href="#mozTocId109414">10-3
+RUN and BATCH:&nbsp;</a></li>
+
+
+
+      <li><a href="#mozTocId491591">10-4 Displacement between two
+image series: &nbsp;</a></li>
+
+
+
+      <li><a href="#mozTocId118098">10-5 Stereoscopic PIV: </a></li>
+
+
+
+      <li><a href="#mozTocId691001">10-6 3D PIV in a volume:(to be
+implemented**)</a></li>
+
+
+
+    
+    
+    
+    </ul>
+
+
+
+  </li>
+
+
+
+  <li><a href="#mozTocId280008">11
+LIF:(to update **)</a></li>
+
+
+
+  <li><a href="#mozTocId67078">About this
+document
+...</a></li>
+
+
+
+</ul>
+
+
+
+
+<br>
+
+
+
+
+<span style="text-decoration: underline;"></span><span style="text-decoration: underline;"></span>
+<h1><a class="mozTocH1" name="mozTocId965242"></a><a name="generalities2"></a><a name="generalities1"></a>1-Generalities:</h1>
+
+
+
+
+<h2><a class="mozTocH2" name="mozTocId812052"></a><a name="netcdf"></a><a name="aim"></a>1.1
+Aim:</h2>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+This Matlab toolbox is a set of
+Graphic User Interfaces (GUI) and related functions, designed to scan
+and
+analyse images, vector and scalar fields, in two or three dimensions.
+It can be used with a wide variety of input data:&nbsp;all image
+formats recognised by
+Matlab (function <span style="text-decoration: underline;">imread.m</span>),
+.avi movies
+(after installation of the appropriate codex), binary files with the
+format NetCDF. &nbsp;The&nbsp;package is
+however particularly designed for laboratory data obtained
+&nbsp;from
+imaging systems: it includes a GUI to run the Particle
+Image Velocimetry&nbsp;
+software CIVx of civproject, see <a href="http://www.civproject.org/documentation">http://www.civproject.org</a>,
+as well as tools for geometric calibration, masks, grid generation and
+image pre-processing (background removal), and editing of xml
+documentation files. Stereoscopic PIV, PIV-LIF
+and 3D PIV in a volume (still under development) are handled.&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+This package can be used
+without&nbsp;knowledge of
+the Matlab language, but it is&nbsp;designed to be complemented by
+user
+defined Matlab functions, providing flexibility for further data
+analysis. It provides&nbsp;convenient tools to manage a set of
+processing function with a standardized input-output system.</p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId216298"></a><a name="netcdf1"></a><a name="paquage"></a>1.2
+The package:</h2>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+&nbsp; The master program
+is a Matlab GUI, made of a
+Matlab figure <a href="FUNCTIONS_DOC/uvmat.html"><span style="text-decoration: underline;">uvmat.fig</span></a>
+and an associated set of functions in
+the file <span style="text-decoration: underline;">uvmat.m</span>. The menu bar at the top of the GUI, push
+buttons and editing box in the
+<span style="text-decoration: underline;">uvmat.fig</span>
+start the Matlab functions in <span style="text-decoration: underline;">uvmat.m</span>
+(Callback
+functions). The directory <span style="text-decoration: underline;">UVMAT</span>
+also contains the following set of GUI, which can be called by push
+buttons in
+<span style="text-decoration: underline;">uvmat.fig</span><strong style="font-weight: normal;"></strong>,
+or
+opened directly from the Matlab prompt.&nbsp;</p>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li> <strong><a href="FUNCTIONS_DOC/civ.html"><span style="text-decoration: underline; font-weight: normal;">civ.fig</span></a>:</strong>&nbsp;run
+the software for Particle Imaging Velocimetry&nbsp;CIVx </li>
+
+
+
+
+  <li><a href="FUNCTIONS_DOC/editxml.html"><span style="text-decoration: underline;">editxml.fig</span></a>:&nbsp;
+display and edit xml files according to xml schema</li>
+
+
+
+
+  <li><a href="FUNCTIONS_DOC/geometry_calib.html"><span style="text-decoration: underline;">geometry_calib.fig</span></a>:
+determines geometric calibration parameters for relating image to
+physical coordinates</li>
+
+
+
+
+  <li><a href="FUNCTIONS_DOC/get_field.html"><span style="text-decoration: underline;">get_field.fig</span></a><span style="font-weight: bold;">:</span> select coordinates
+and field in a general NetCDF file&nbsp;</li>
+
+
+
+
+  <li><a href="FUNCTIONS_DOC/series.html"><span style="text-decoration: underline;">series.fig</span></a><span style="font-weight: bold;">:</span> apply various
+processing functions to series of fields</li>
+
+
+
+
+  <li><a href="FUNCTIONS_DOC/set_grid.html"><span style="text-decoration: underline;">set_grid.fig</span></a><span style="font-weight: bold;">:</span> creates grids for
+PIV</li>
+
+
+
+
+  <li><a href="FUNCTIONS_DOC/set_object.html"><span style="text-decoration: underline;">set_object.fig</span></a><span style="font-weight: bold;">:</span> creates and edits
+geometric objects used to project data: points, lines, planes...</li>
+
+
+
+
+</ul>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId277137"></a>&nbsp;&nbsp;&nbsp;
+Functions in the UVMAT
+directory are called by these GUIs.
+These are used to generate file names, read files and plot data, and
+perform various ancillary tasks. Type 'help fct_name' to get detail
+information on the function named fct_name, or open it with an editor. <br>
+
+
+
+
+<br>
+
+
+
+
+&nbsp;<span style="font-weight: bold; font-style: italic;">Help
+and
+documentation:</span> &nbsp; <br>
+
+
+
+
+&nbsp; &nbsp;&nbsp; To install the
+package, uncompress&nbsp; the whole directory UVMAT and read
+the instructions in the file&nbsp;<a href="README_INSTALL.txt"><span style="text-decoration: underline;">README_INSTALL.txt</span></a>
+contained in the sub-directory UVMAT_DOC.&nbsp;This directory also
+contains the current help file <span style="text-decoration: underline;">uvmat_doc.html</span>
+and a sub-directory <a href="FUNCTIONS_DOC/index.html">FUNCTIONS_DOC</a>
+with detail documention for all functions. Finally a tutorial <span style="text-decoration: underline;">UV_DEMO </span>is
+also available&nbsp;(outside UVMAT) with test data
+files.&nbsp;<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; &nbsp;The current help file is
+accessible on-line from each of the&nbsp;GUIs.&nbsp; A short
+comment about&nbsp; each GUI uicontrol (push buttons,
+edit
+boxes, menus..), as well as the name of this uicontrol, is provided as
+a tool tip window by moving the
+mouse over it. In this help document, the names of GUI uicontrols are
+quoted
+with <span style="font-weight: bold;">bold</span>
+characters, names of files in the package are <span style="text-decoration: underline;">underlined</span>,
+and text on the matlab workspace is under quotes ' &nbsp;'.
+Features not yet implemented or tested (in particular 3D features) are
+marked by **.<br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-weight: bold; font-style: italic;">Copyright
+and licence:</span> <br>
+
+
+
+
+Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG,
+sommeria@coriolis-legi.org.<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; The
+package UVMAT is free
+software; it can be redistributed and/or modified it under the terms of
+the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any
+later version.<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; UVMAT is
+distributed in the hope
+that it will be useful, but WITHOUT ANY WARRANTY; without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE. See theGNU General Public License (file&nbsp;<a href="COPYING.txt">COPYING.txt</a>) for more details.</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId428776"></a><a name="netcdf2"></a><a name="opening"></a>1.3
+Overview of the GUI <span style="text-decoration: underline;">uvmat.fig</span>:</h2>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Type 'uvmat' in the Matlab
+prompt to display
+the GUI.
+Then the path and date of the version of <span style="text-decoration: underline;">uvmat.m</span>
+used is
+displayed in the central display window. During opening, the
+program checks that the Matlab path to all the functions called by
+uvmat
+are in the
+same directory <span style="text-decoration: underline;">UVMAT</span>
+as <span style="text-decoration: underline;">uvmat.m</span>,
+using the function<span style="text-decoration: underline;">
+<a href="FUNCTIONS_DOC/check_functions.html">check_functions</a></span>.
+Indeed a function with a higher priority path
+could
+override a function of the toolbox with the same name (see the Matlab
+help 'help path'). The list of overridden functions is given in the
+central display window at the opening of the uvmat interface.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The name of each uicontrol
+(push
+buttons, edit boxes, menus..) on the GUI can be displayed in
+a&nbsp; tool tip window by moving the
+mouse over it: it is followed by a short help comment. The name is also
+displayed in the window&nbsp;<span style="font-weight: bold;">text_display_1</span>,
+at the upper right of the GUI. The red pushbuttons command the main
+actions, while the
+green ones command ancillary or help actions.&nbsp; Links with
+other
+interfaces are in magenta. &nbsp;The current activation of an
+uicontrol
+is indicated by a yellow color. </p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The menu bar <span style="font-weight: bold;">Open/Browse...</span>at
+the top
+left allows to browse the directories to open files. The last
+previously opened files can be also directly accessed in the same menu.
+After selection,
+the file names are decomposed into path, root name, index and
+extension,
+displayed in the top edit boxes.&nbsp;The input file name, as well
+as
+other personal information, &nbsp; is stored for convenience in a
+file (<span style="text-decoration: underline;">uvmat_perso.mat</span>)
+automatically created in the user preference directory of Matlab
+(indicated by the
+Matlab command 'prefdir'). Browsers then&nbsp; read default input
+in this file. A corruption of this file <span style="text-decoration: underline;">uvmat_perso.mat </span>may
+lead to problems for &nbsp;opening uvmat, type <a href="FUNCTIONS_DOC/reinit.html">reinit</a> on the
+Matlab prompt to delete it.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+A choice of input field ( 'image',
+'velocity'... ) can be made by the menu <span style="font-weight: bold;">Fields</span>.&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Two file series can be
+simultaneously opened and compared using the check box <span style="font-weight: bold;">SubField</span> (<span style="font-weight: bold;">'-'</span>) at
+the upper left.&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Once a root name has been
+introduced, navigation among&nbsp; the file indices is provided by
+the push buttons&nbsp; <span style="font-weight: bold;">runplus</span>
+( '<span style="font-weight: bold;">-&gt;</span>')
+&nbsp;and&nbsp; <span style="font-weight: bold;">runmin</span>
+('<span style="font-weight: bold;">&lt;-</span>')
+at the upper left. The&nbsp;push button <span style="font-weight: bold;">REFRESH</span>
+reactualizes the current plot on the interface.&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Parameters for the display of
+scalars/images and vector fields are
+defined in the frames <span style="font-weight: bold;">SCAL</span>
+and&nbsp;<span style="font-weight: bold;">VEC</span>
+respectively on the right
+side.&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The push buttons&nbsp;<span style="font-weight: bold;">calib</span>.
+,&nbsp;<span style="font-weight: bold;">mask</span>,&nbsp;<span style="font-weight: bold;">grid</span> are used to
+create respectively a geometric calibration of the images, masks and
+grids used for PIV.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The button <span style="font-weight: bold;">CIV</span>
+opens the
+interface<span style="font-weight: bold;"> </span><span style="text-decoration: underline;">civ.fig</span><span style="font-weight: bold;"> </span>or Particle
+Imaging Velocimetry.&nbsp;The menu bar<span style="font-weight: bold;"> Run/Field series </span>opens the
+interface <span style="text-decoration: underline;">series.fig</span>
+for analysing field series. </p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId783870"></a>1.4
+General tools:</h2>
+
+
+
+
+<p style="text-align: justify;"><span style="font-weight: bold; font-style: italic;">Mouse
+motion:</span> the local
+coordinates and field values are obtained by moving the mouse over any
+plotting axes in the uvmat system. This is displayed in the four text
+boxes <span style="font-weight: bold;">text_display_1,
+_2, _3, _4</span> on the upper right.</p>
+
+
+
+
+<p style="text-align: justify;"><span style="font-weight: bold; font-style: italic;"><a name="Zoom"></a>Zoom:</span> a zoom rectangle
+can
+be cut in any plotting axes by pressing the mouse left button, moving
+the mouse while the button is pressed, and releasing the button to end
+the operation. The plot in the enclosed rectangular region is
+reproduced in a new figure. Zoom can be alternatively obtained in the
+initial figure by selecting the check box zoom on the right of the
+uvmat interface, and pressing the mouse left button on the figure. Zoom
+out by pressing the right mouse button<span style="font-style: italic;">. </span>The zoomed
+region can be translated&nbsp; through the initial field by
+pressing the directional arrows of the key board.</p>
+
+
+
+
+<p style="text-align: justify;"><span style="font-weight: bold; font-style: italic;"><a name="Zoom"></a>Other mouse operations:</span>
+if an object creation option is selected, or the options calib. or
+mask, mouse action products specific effects, see the corresponding
+sections. These actions&nbsp; override the zoom.&nbsp; </p>
+
+
+
+
+<p style="text-align: justify;"><span style="font-weight: bold; font-style: italic;">Keyboard
+short cuts:</span> the activation of the push buttons&nbsp; <span style="font-weight: bold;">runplus</span> ( '<span style="font-weight: bold;">-&gt;</span>')
+&nbsp;and&nbsp; <span style="font-weight: bold;">runmin</span>
+('<span style="font-weight: bold;">&lt;-</span>')
+can be performed by the key board short cuts 'p' and 'm' respectively,
+after initialisation by pressing the mouse on the uvmat interface.
+Similarly the command of the push button run0 can be performed by
+typing the return carriage key.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;<span style="font-style: italic;"><span style="font-weight: bold;">Extracting graphs</span></span><span style="font-weight: bold; font-style: italic;">:</span>&nbsp;&nbsp;
+The current field is displayed in the central
+window, while their histograms are displayed in the lower left graphs.
+The field in the central window can be copied to a separate figure by
+the push button <span style="font-weight: bold;">extract_plot</span>
+on the right. This allows plot editing, exporting and printing, using
+standard Matlab graphic tools. It is also possible to extract a
+subregion of any graph&nbsp; by cutting a <a href="uvmat_doc.html#Zoom">zoom</a> rectangle with the
+mouse. The creation of <a href="uvmat_doc.html#ProjectionObject">projection
+objects</a>, with the buttons in the box <span style="font-weight: bold;">OBJECT, </span>provides
+alternative ways for extracting graphs. Movies in the avi format can be
+extracted using &nbsp;<span style="font-weight: bold;">Export/make movie avi</span> in the menu bar.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;<span style="font-style: italic;"><span style="font-weight: bold;">Extracting data as Matlab arrays</span></span><span style="font-weight: bold; font-style: italic;">:</span>&nbsp;
+the data plotted in any figure&nbsp; can be made available in the
+Matlab workspace as global&nbsp; variables: for that purpose click
+on
+the corresponding axes with the right mouse button. The list of
+available fields is then displayed in a new figure, and the same list
+is printed on the Matlab workspace in the form of a Matlab structure
+'CurData'. An image or scalar matrix is for instance obtained as
+CurData.A.&nbsp;</p>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId483726"></a>
+</div>
+
+
+
+
+<h1 style="text-align: justify;"><a class="mozTocH1" name="mozTocId805645"></a><a name="file_input"></a>2
+Input files and navigation with uvmat:</h1>
+
+
+
+
+<p style="text-align: justify;"><a href="#top"><img style="border: 0px solid ; width: 23px; height: 49px;" alt="AG00112_.gif (1861 bytes)" src="AG00112_.gif"></a><a href="#top">Back to the Top</a></p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId260505"></a><a name="nomenclature"></a>2.1
+Input file naming and
+indexing:</h2>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+A wide variety of input files,
+organised in
+indexed series, can be opened by uvmat. When a file name is selected by
+the browser, it is automatically split into a root path (filling
+the&nbsp;edit box <span style="font-weight: bold;">RootPath</span>),
+a subdirectory (edit box <span style="font-weight: bold;">SubDir</span>),
+a root name (edit box <span style="font-weight: bold;">RootFile</span>),
+an index suffix (edit box <span style="font-weight: bold;">FileIndex</span>),
+a file extension (edit box <span style="font-weight: bold;">FileExt</span>).
+Note that no blank is allowed in path and file names, to avoid possible
+errors in some processing software. The input file name can be directly
+entered and modified by these edit
+boxes, without the browser. The file indices can be then incremented or
+decremented&nbsp; by
+the navigation buttons <span style="font-weight: bold;">runmin</span>
+('<span style="font-weight: bold;">&lt;-</span>')
+and <span style="font-weight: bold;">runplus</span>
+( '<span style="font-weight: bold;">-&gt;</span>'),
+see <a href="#navigation">section 2.4</a>.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Different kinds of file
+indexing are recognised:</p>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li><span style="font-weight: bold;"><span style="font-style: italic;">Simple series:</span>&nbsp;</span></li>
+
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp; They are labeled
+by a single integer index <em>i</em>, with name obtained
+by concatenation of the full root ('RootPath'/'RootFile'), the suffix
+'_i', and the file extension<em></em> 'Ext'
+(example 'Exp1/aa_45.png'). Then the character transcription of
+the integer i must not begin by 0. Other indexing systems without the
+suffix '_',are also recognized&nbsp;(e.g. 'Exp1/aa045.jpg' or
+'Exp1/aa45.TIF'),&nbsp; but not recommended. Finally a simple
+series
+can be read from a single .avi movie file, with no file index. <li><span style="font-weight: bold; font-style: italic;">Double
+series:</span>&nbsp;</li>
+
+
+
+
+&nbsp;&nbsp;&nbsp; They are labeled
+by two integer indices i and j, with names obtained by concatenating
+the full root, the suffix '_i_j' and the file extension(e.g.
+'Exp/aa_45_2.png'). This two index labeling is commonly used for
+bursts of images (index
+j) separated by longer time intervals (index i). &nbsp;It can be
+also
+used for successive volume scanning by a laser sheet, with index j
+representing the position in the volume and i the time.&nbsp; <li><span style="font-weight: bold;"><span style="font-style: italic;">Derived file indexing:</span></span>&nbsp;</li>
+
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp; New file series can result
+from the processing of
+primary series. For a processing involving each file sequentially, the
+initial file index is naturally reproduced in the output series with
+one to one correspondence.
+  
+  
+  
+  <p>&nbsp;&nbsp;&nbsp;
+Other processing can involve file pairs, for
+instance Particle Imaging Velocity producing a velocity field from an
+image pair. In a simple series, the result from the two primary fields
+*_<span style="font-style: italic;">i</span>1 and *_<span style="font-style: italic;">i</span>2 is then labeled
+as *_<span style="font-style: italic;">i</span>1-<span style="font-style: italic;">i</span>2 with the file
+extension indicating&nbsp; the output format. More generally,
+&nbsp;the result from any processing involving
+a range of primary indices <span style="font-style: italic;">i</span>1
+to <span style="font-style: italic;">i</span>2&nbsp;
+is&nbsp; labeled as
+_<span style="font-style: italic;">i</span>1-<span style="font-style: italic;">i</span>2.</p>
+
+
+
+
+  
+  
+  
+  <p>&nbsp;&nbsp;&nbsp;
+The same rule applies for double series.&nbsp;
+For instance the file resulting from the comparison of the images 'root_<em>i</em>_<em>j</em>1.ext'
+and 'root_<em>i</em>_<em>j2</em>.ext' is called
+'root_<em>i</em>_<em>j</em>1-<em>j</em>2.nc',
+while the result from the images 'root_<em>i</em>1_<em>j</em>.ext'
+and 'root_<em>i</em>2_<em>j</em>.ext' is called
+'root_<em>i</em>1-<em>i</em>2_<em>j</em>.nc'.&nbsp;More
+generally, &nbsp;a file resulting from any processing involving
+a range of primary indices<span style="font-style: italic;">
+i</span>1 to<span style="font-style: italic;"> i</span>2
+and <span style="font-style: italic;">j</span>1 to<span style="font-style: italic;"> j</span>2 is labeled as
+*_<span style="font-style: italic;">i</span>1-<span style="font-style: italic;">i</span>2_j1-<span style="font-style: italic;">j</span>2. For instance,
+this can be the result of the&nbsp;averaging from i1 to i2 of the
+velocity fields&nbsp;'root_<em>i</em>_<em>j</em>1-<em>j</em>2.nc'
+obtained from image pairs <span style="font-style: italic;">j</span>1-<span style="font-style: italic;">j</span>2 inside a
+burst.&nbsp;</p>
+
+
+
+
+  
+  
+  
+  <p>&nbsp;&nbsp;&nbsp;
+This derived file series is preferably stored in
+a subdirectory of the primary file series, to clearly indicate the
+filiation. Then the documentation file of the primary series also apply
+to the derived one (for instance calibration data). In addition, a
+specific documentation file named root.xml, containing the processing
+parameters, can be introduced&nbsp; in the sub-directory by the
+processing
+program </p>
+
+
+
+
+  
+  
+  
+  <p>&nbsp;&nbsp;&nbsp;
+For scanning (index incrementing) among files series with derived
+indexing, for instance&nbsp; *_<em>i</em>1-<em>i</em>2_<em>j</em>,
+the 'reference
+index' is &nbsp;used, defined as the integer part of the mean index
+(<span style="font-style: italic;">i</span>1+<span style="font-style: italic;">i</span>2)/2).&nbsp;</p>
+
+
+
+
+</ul>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId729818"></a>
+<span style="font-weight: bold; font-style: italic;">Cyclic
+indexing:</span> it is
+sometimes useful to change file indices in a cyclic way as the field
+number is increased. For that purpose we use the convention that when
+the root name ends in the form [root '_xx' 'mmmm' ],
+where xx is a number and 'mmmm' a string of four letters beginning
+with m (like 'mask' or 'mean'), then the file number is taken modulo
+xx . This is convenient to visualize a mask for each slice or for
+subtracting a field average calculated on each slice.&nbsp;<br>
+
+
+
+
+<br>
+
+
+
+
+&nbsp;<span style="font-weight: bold;"><span style="font-style: italic;">Old nomenclature:</span> </span>double
+image series (bursts) were previously labeled by 3 digit
+number&nbsp;
+and a letter, for instance 'Exp1/aa045b.png'. PIV results from images a
+and b were then represented as Exp1/A/aa045ab.nc. This older
+nomenclature is still handled but not recommended.&nbsp;
+</div>
+
+
+
+
+<p style="text-align: justify;"><span style="font-weight: bold; font-style: italic;">Relevant
+Matlab functions:</span>
+the&nbsp;file name&nbsp;is determined by the functions&nbsp;<a href="FUNCTIONS_DOC/name_generator.html"><span style="text-decoration: underline;">name_generator.m</span></a><span style="font-weight: bold;"><span style="text-decoration: underline;">
+</span></span>from a root name, indices and a nomenclature
+type
+('_i', '_i_j'...). The reverse operation, splitting a name into a root
+and indices and detecting the nomenclature type, is performed
+by&nbsp;<a href="FUNCTIONS_DOC/name2display.html"><span style="text-decoration: underline;">name2display.m</span></a>.
+Other file nomenclatures could be defined by
+consistently changing these two inverse functions.&nbsp;</p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId596391"></a><a name="netcdf5"></a><a name="netcdf4"></a>2.2
+Comparing two fields:</h2>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp; A second field series can be opened and compared to the first one, using
+the menu bar <span style="font-weight: bold;">Open_1</span>.
+When this box is activated, the current input file name
+is copied in the second line of input file. Then a new file name and
+indices appear on the second line, as well as the check box <span style="font-weight: bold;">SubField</span>. The two file series will be scanned
+simultaneously,
+according to their own nomenclature.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+If the two files are both images or scalar, their difference
+is introduced
+as the input field. If the second file is an image (or scalar), while
+the first
+one is
+a vector field, the image will appear as a background in the vector
+field. This is convenient for instance to relate the CIV result to
+the quality of the raw image, or to relate vorticity to the vector
+field. This option is also activated by the check box <strong>mask</strong>,
+to visualize the mask as a background image in the velocity field,
+see<strong> </strong><a href="uvmat_doc.html#Makemask">Makemask</a>
+for details.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;
+&nbsp;&nbsp;&nbsp; It is also possible to visualize an
+image pair as a small movie by simultaneously
+writting the field numbers <em>i1</em> and <em>i2</em>,
+or <em>j1</em>
+and <em>j2</em> (or the letters a,b for the 'png_old'
+nomenclature)
+in each line, and selecting the checkbox '<strong>-</strong>'
+between
+the two lines of field numbers, see also&nbsp;<a href="uvmat_doc.html#view_images">3.1</a>.&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+If the two files are vector fields, their difference is taken
+as
+the input field, and is then displayed and analysed. If the two
+fields are not at the same points, the velocities of the second field
+are linearly interpolated at the positions of the first one (using
+the Matlab function <b>griddata</b>) .&nbsp;</p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId383799"></a><a name="netcdf5"></a><a name="netcdf4"></a>2.3
+Documentation files (.xml):</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId500238"></a>
+&nbsp;&nbsp;&nbsp;&nbsp; When a new root name is
+introduced, a
+documentation file is automatically sought, whose path and name are
+displayed by <span style="font-weight: bold;">RootPath</span>
+and&nbsp; <span style="font-weight: bold;">RootFile </span>respectively,
+with extension .xml. This file contains information on timing for image
+series, geometric calibration and various information on the camera and
+illumination. The structure of the documentation file is constrained by
+an xml schema, <span style="text-decoration: underline;">XML_SCHEMAS/ImaDoc.xsd</span>.
+The following information is directly used by uvmat:<br>
+
+
+
+
+</div>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li><span style="font-weight: bold; font-style: italic;">Timing</span>
+of each file with index i and j in the series. This time is displayed
+for in the text box <span style="font-weight: bold;">abs_time</span>
+at the upper right of the interface (the corresponding unit is stored
+in the text box <span style="font-weight: bold;">TimeUnit</span>).
+The second text box <span style="font-weight: bold;">abs_time_1</span>
+is&nbsp; used when a second file series is introduced (the same
+time
+unit must be used)**. In the absence of time information in the
+documentation file, uvmat&nbsp;reads the time in each input file,
+if
+available.&nbsp;</li>
+
+
+
+
+  <li><span style="font-weight: bold; font-style: italic;">Geometric
+calibration:</span>
+&nbsp;this includes coefficients of transforms from image to
+physical
+coordinates. For multiplane scanning it&nbsp;also describes the set
+of
+laser planes. Then the current plane index is indicated by the text box
+    <span style="font-weight: bold;">z_index</span>
+and the total number of planes by the text box <span style="font-weight: bold;">nb_slice</span>.&nbsp;</li>
+
+
+
+
+  <li><span style="font-style: italic; font-weight: bold;">File
+path: </span>&nbsp;the
+path to the current file can be recalled by a heading with elements
+'Device' (not mandatory), 'Exp', 'Project' (or alternatively
+'Campaign'). This &nbsp;means that the path RootPath should end as
+Project/Exp/Device. Discrepancy is indicated by a warning message,
+which may be evidence for misplaced data files. &nbsp;If a
+consistent
+path is read, the current Matlab working directory is moved to
+Project/0_MATLAB_WORK (it is created if it does not exist yet). Then
+all figures and functions created during data processing of this
+project are written in this directory by default. This is convenient
+when the same data set is analysed from different computers and/or by
+different users. Note that the uvmat interface keeps&nbsp;
+its&nbsp;Matlab working directory in memory, and it returns to it
+at
+each activation of the <span style="font-weight: bold;">run0
+    </span>command.&nbsp; </li>
+
+
+
+
+</ul>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId826472"></a>
+&nbsp;&nbsp;&nbsp; The xml documentation file is read by
+the function <span style="text-decoration: underline;">read_imadoc.m</span>.
+If this file does not exist, a file with the same root name but
+extension .civ is read by the function <span style="text-decoration: underline;">read_imatext.m. </span>This
+function can be modified to account for any user defined&nbsp;
+format.
+In the absence of any documentation file, uvmat&nbsp;reads timing
+information directly on the input file in the case of avi movies or
+NetCDF files.
+The information read when a new root name is introduced is stored in
+the uvmat interface as
+'UserData' .<br>
+
+
+
+
+<br>
+
+
+
+
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId962678"></a><a name="navigation"></a>2.4
+Navigation among file
+indices:</h2>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The field indices can be
+incremented or decremented by the push buttons&nbsp; <span style="font-weight: bold;">runplus</span> ( '<span style="font-weight: bold;">-&gt;</span>')
+and&nbsp; <span style="font-weight: bold;">runmin</span>
+('<span style="font-weight: bold;">&lt;-</span>')
+respectively.&nbsp; This scanning is performed&nbsp; over the
+first
+index (i) or the second one (j), depending on the selection of the
+check boxes&nbsp;<span style="font-weight: bold;">scan_i
+</span>or&nbsp;<span style="font-weight: bold;">scan_j</span>
+respectively. The step for increment is set by the edit box <span style="font-weight: bold;">increment_scan</span>.&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;The current
+indices are displayed in the four edit
+boxes <span style="font-weight: bold;">i1, i2, j1, j2</span>.
+The two first indices i1 and j1 are used for image series, while the
+second line i2, j2 is used to label the image pairs used for PIV data.
+The file indices can be directly set in these edit boxes, or
+equivalently in the edit box <span style="font-weight: bold;">FileIndex</span>
+at the top of the interface. The maximum value of each index is
+indicated by the edit boxes <span style="font-weight: bold;">last_i</span>
+and <span style="font-weight: bold;">last_j</span>
+respectively, filled from the xml documentation file.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+In the case of a second input
+field (check box <span style="font-weight: bold;">SubField</span>
+activated), the corresponding file indices <span style="font-weight: bold;">FileIndex_1 </span>is also
+updated by&nbsp;<span style="font-weight: bold;">runplus</span>
+( '<span style="font-weight: bold;">-&gt;</span>')
+and&nbsp; <span style="font-weight: bold;">runmin</span>
+('<span style="font-weight: bold;">&lt;-</span>')
+, so the indices of both fields remain synchronized by default. It is
+however possible to manually edit <span style="font-weight: bold;">FieldIndex_1</span>
+to compare two fields with different indices.&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+For navigation with index
+pairs, the reference index, defined as the
+integer part of the mean value ((j1+j2)/2), is incremented. If the
+check box <span style="font-weight: bold;">fix_pair</span>
+is
+selected,&nbsp; the difference j1-j2 is then imposed while the
+reference index is incremented. Else the pair with appropriate
+reference index is searched. In the case of multiple choices, the most
+recent file is chosen. This allows to scan successive fields obtained
+with different image pairs (to match changing velocity of the
+fluid).&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Fields&nbsp; can be
+continuously scanned as a movie by pressing the push button&nbsp; <span style="font-weight: bold;">RunMovie </span>( '<span style="font-weight: bold;">--&gt;</span>')<span style="font-weight: bold;"> </span>instead of <span style="font-weight: bold;">runplus</span> ( '<span style="font-weight: bold;">-&gt;</span>').
+Press&nbsp;<span style="font-weight: bold;">STOP</span>
+to stop the movie.&nbsp; The movie speed can be
+controlled by the slider <b>movie speed</b>. The movie can
+be extracted and recorded as an avi file, by activating the menu bar <span style="font-weight: bold;">Export/make movie avi</span>.<br>
+
+
+
+
+&nbsp;</p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId130904"></a><a name="netcdf5"></a><a name="netcdf4"></a>2.5
+Ancillary input files:</h2>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li>Masks: The mask image
+can be displayed in 'uvmat' by selecting the check box <strong>view mask</strong>
+on the upper right. If the .png file with
+appropriate name is available in the image directory. In case of
+mutiple levels, the number of slices detected (xx in the mask name)
+is displayed in the edit box <strong>nb_slice&nbsp;</strong>on
+the upper
+left (nb_slice is set in priority by the xml file ImaDoc so a warning
+message should appear in case of conflict<span style="font-style: italic;">*</span>*).<br>
+
+
+
+
+  </li>
+
+
+
+
+</ul>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;">'.civ' file. name 'root
+.civ', ascii text file containing the calibration and the list of image
+times. This file is automatically sought by 'uvmat' and 'civ' when an
+image is opened by the file input browser. It must be stored in the
+same directory as the corresponding series of images. The scaling in
+pixel/cm (<b>pxcm</b> and <b>pycm</b> in x and
+y directions), the number of pixels of the image in both directions (<b>npx</b>
+and <b>npy</b>) are read in the .civ file, see <a href="http://www.civproject.org/documentation/fileformat">http://www.civproject.org/documentation/fileformat</a>
+for details on the file format. </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;">'.cmx' text files,
+containing the parameters sent to the CIV fortran programmes. The name
+is obtained by replacing the result file extension '.nc' by '.cmx'. </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;">'.log' text files,
+containing information about the CIV or PATCH processing. The name is
+obtained by replacing the result file extension '.nc' by '.log' or
+'_patch.log'. </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p>'.fig' Matlab figures, which represent plots but also
+Graphic User Interfaces (GUI). In that case matlab functions
+(Callbacks) are attached to the graphic objects on the figure and can
+be activated by the mouse. When the 'civ' interface is run, its present
+state is saved as a figure named 'root _ SUBDIR <em>i1</em>
+- <em>i2</em> .fig', in the base directory, where SUBDIR
+is the subdirectory containing the .nc files, <em>i1</em>
+and <em>i2</em> are the first and last numbers in the
+processed image series. </p>
+
+
+
+
+  </li>
+
+
+
+
+</ul>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId764268"></a>
+</div>
+
+
+
+
+<h1 style="text-align: justify;"><a class="mozTocH1" name="mozTocId314695"></a><a name="view_field"></a>3
+Field representation (uvmat):&nbsp;</h1>
+
+
+
+
+<p style="text-align: justify;"><a href="uvmat_doc.html#top"><img style="border: 0px solid ; width: 23px; height: 49px;" alt="AG00112_.gif (1861 bytes)" src="AG00112_.gif"></a><a href="uvmat_doc.html#top">Back to the Top</a></p>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId923709"></a>
+&nbsp;&nbsp; The uvmat interface primarily reads and visualises
+two-dimensional fields, which can be images or scalars, or vector
+fields.
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId187440"></a><a name="view_images"></a><b>3.1
+Images and scalars:</b></h2>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Images are matrices of
+integers, visualised by the
+<span style="text-decoration: underline;">imagesc.m</span>
+Matlab function. </p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+True color images are described
+by a matrix A(nx,ny,3) of integers
+between 0 and 255, the last index labeling the color component red,
+green or blue. They are displayed directly as color images.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The black and white (B/W)
+images are described by a matrix A(nx,ny,1) of
+integers, whose range depends on the camera dynamics (0 to 255 for 8
+bit images, 0 to 65535 for 16 bit images). They are represented with
+grey levels, according to the colorbar displayed on the right. The
+luminosity and contrast can be adjusted using the edit boxes<b>
+AMin</b> and <b>AMax </b>on the right of the
+interface:<b>
+</b>the luminosity level <strong>AMin</strong> (and
+levels below) is
+represented as black, and the luminosity level <strong>AMax</strong>
+(or levels above) as white. Selecting the <strong>AutoScal</strong>
+check box, <strong>AMin</strong> and <span style="font-weight: bold;">AMax</span> are set
+automatically to the
+image minimum and maximum respectively. Then the image may appear
+dark if a single point is very bright, in that case unselect the
+option <strong>AutoScal</strong>, and choose a lower value
+for <strong>AMax</strong>.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Two images can be visually
+compared by switching back and forth
+between them as a short movie. This is quite useful to get a visual
+feeling of the image correlation. This effect is obtained by
+introducing two image numbers in the edit boxes <span style="font-weight: bold;">j1</span> and <span style="font-weight: bold;">j2</span>, and
+selecting the checkbox <span style="font-weight: bold;">fix_pair</span>
+(<span style="font-weight: bold;">'|'</span>)
+between the two lines of field numbers.
+The speed of the movie can be adjusted by the slider <span style="font-weight: bold;">speed</span> which then
+appears. Press <strong>STOP</strong> to stop the
+motion.&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Scalar fields are&nbsp;
+represented like B/W
+images, but with with a false color map ranging from blue (minimum
+values) to red (maximum). They can be alternatively displayed
+as&nbsp;B/W images by the check box <span style="font-weight: bold;">auto_scalar</span> ('<span style="font-weight: bold;">B/W</span>')
+(to test**). Other false color maps can be introduced by the standard
+Matlab figure menu Edit/Colormap , after extracting the figure with
+'EXTRACT PLOT'.<br>
+
+
+
+
+Scalar are represented by matrices with real
+('double') values, unlike images which are integers. They can be
+alternatively defined with unstructured grid: they are then linearly
+interpolated on a regular grid before plotting (which is a fairly slow
+process). </p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The x,y coordinates, image
+value, and pixel
+indices i and j are displayed on the upper right, when the mouse is
+moved on the image.&nbsp;&nbsp;To extract the image visualize
+it by
+yourselves, click on it with the mouse riight button, then type
+'image(CurData.AX,CurData.AY,CurData.A)' on the Matlab
+workspace.&nbsp;</p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId794224"></a><a name="velocity"></a>3.2
+<a name="vectors"></a>Vectors:</h2>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The vector fields are represented as arrows. The length of the
+arrows can be automatically adjusted (checkbox <span style="font-weight: bold;">AutoVec</span> selected),
+or
+manually set&nbsp; by the edit box&nbsp; <span style="font-weight: bold;">VecScale</span>.&nbsp;
+</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Colors represent scalars associated with the vectors. With the
+default option 'ima_cor', the value of the image correlation (vec_C)
+is represented by a code with three colors. The red values correspond
+to poor correlations, green to fair values, and blue to good ones. The
+value range covered by each of the three colors is set by the pair of
+sliders on the upper right. </p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Other color representations can be specified by the menu on
+the
+upper right. 'Black' and 'white' provides arrows with this fixed
+color. The other options provide a choice of scalars, for instance
+the vector norm ('norm_vec') or vorticity ('vort'). The list of
+available scalars is set by the function&nbsp;<a href="FUNCTIONS_DOC/calc_scal.html">calc_scal.m</a>. A
+quasi-continuous color representation with 64 levels can be used
+instead of the three colors by mouse clicking the color band between
+the two sliders. A second click switches back to the three color
+representation. The color thresholds can be relative to the min-max
+scalar values or remain fixed, depending on the 'auto' check box on
+the upper right.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+If the option <b>show flags</b> is selected, the
+correlation
+colors are taken over by flag colors indicating dubious or false
+vectors.&nbsp; False vectors are detected by various criteria: they
+are not removed from the files but marqued by flags, so that the
+process is reversible. By default these vectors are displayed in
+magenta, and they can be just removed from the view by deselecting
+the option <b>magenta on</b>. But in all cases these <b>magenta
+vectors are</b> <b>not taken into account</b> in
+processing: they are
+ignored in statistics or replaced by interpolation from neighboors
+when needed, in particular to get the fields <b>interp</b>
+or <b>filter</b>
+on a regular grid. The black color indicates some warning from the
+CIV process, but the corresponding vectors are taken into account in
+the processing (see the <b>FIX </b>in the <b>civ </b>interface
+or the
+<b>ACTION</b> <b>fix_vel </b>to
+remove&nbsp; dubious vectors using
+different criteria). The display of black color can be desactivated
+by unselecting the option <b>show black</b>. Then their
+correlation
+color is seen.&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+One can also use the same mouse operation to display
+information
+on any vector in the text window on the upper right (there will be no
+change in the data if the pushbutton <b>record</b> is not
+pressed).
+These are the position coordinates vec_X and vec_Y, the velocity
+components vec_U and vec_V, the correlation vec_C, and flags vec_F
+and FixFlag in case of anomaly. Their meaning is explained below. </p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The fields <b>interp</b> and <b>filter</b>
+are interpolations from
+several vectors, so they bear no color information (and cannot be
+removed by the mouse). If a first&nbsp; velocity field civ1 or civ2
+is substracted to a second field (by activating the two fields
+simultaneously or by using the pushbutton <b><font color="#ff0000">-</font></b><font color="#330000">)</font><font color="#000000">,the
+colors are set by the first field, and the removed vectors of field 2
+are not taken into account for the interpolation to the grid points
+of the first field.</font> </p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The current vector field information can be made available in the
+Command
+window by clicking with the right mouse button in the
+&nbsp;plot.&nbsp;
+To plot the vector field
+by yourselves type&nbsp;
+'quiver(CurData.X,CurData.Y,CurData.U,CurData.V)'. To remove the false
+vectors, type&nbsp;'index=find(CurData.FF~=0)' to select the
+appropriate
+vector indices&nbsp;,
+then&nbsp;'quiver(CurData.X(index),CurData.Y(index),CurData.U(index),CurData.V(index))'.&nbsp;
+</p>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId172527"></a>
+<span style="font-style: italic; font-weight: bold;">Manual
+editing of vectors:&nbsp;</span> One can manually remove a
+vector with the mouse. First
+activate
+the <span style="font-weight: bold;">edit_vect</span>
+push button. A selected vector becomes magenta. Inversely, if a magenta
+vector is selected, it is rehabilitated and retrieve its initial
+color.&nbsp; The corrections are&nbsp; recorded as false flags
+in the
+data file by pressing the
+pushbutton <b>record</b>.
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId356208"></a><a name="netcdf5"></a><a name="netcdf4"></a>3.3
+Selecting fields from CIVx files:</h2>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The uvmat package recognizes&nbsp; the NetCDF
+fields obtained from the CIVx software (see **ref). &nbsp;This
+includes
+the velocity fields and their spatial derivatives,
+as well as information about the CIV processing (correlation values
+and flags). The content of any NetCDF file can be checked directly by
+the Matlab command <b>ncbrowser</b>, or by the GUI <span style="text-decoration: underline;">get_field.fig</span>.
+The vorticity,
+divergence, or
+strain are read in the same NetCDF files, but are available only after
+a <b>PATCH</b> operation has been run
+in the CIVx
+software.&nbsp;
+</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+One of the field options <b>civ1, interp1</b> and
+<b>filter1,
+civ2, interp2</b> and <b>filter2</b> can be chosen,
+using the check
+boxes on the left. The first CIV processing is visualized by the CIV1
+option. Then <strong>filter1 </strong>and<strong>
+interp1</strong>
+fields are interpolated on a regular grid, with or without smoothing
+respectively. It allows to fill holes and get spatial derivatives. If
+a scalar depending on spatial derivatives, like <strong>vort</strong>,
+is selected, the field option switches automatically from civ2 or
+interp2 to filter2, from civ1 or interp1 to filter2. If a refined CIV
+processing has been realised, it can be visualized by <b>civ2,
+patch2, filter2</b>. If more than two iterations have been
+performed,
+only the last two are stored, with the names civ1 and 2. </p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+If no field option is selected, it will be automatically
+chosen.
+For velocity, 'civ2' is chosen in priority, or 'civ1' if it does not
+exist. For scalar fields, like vort, 'filter2' is chosen in priority,
+or 'filter1' if it does not exist. This choice is motivated by the
+fact that civ2 results are supposedly better than civ1, that the
+velocity fields are most reliably defined by the uninterpolated civ
+fileds, while filter is needed for spatial derivatives. </p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The choice of field names in the .nc file is set by the
+function
+'varname_generator.m' of the UVMAT toolbox.</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The reading and calculation of scalars from the NetCDF files
+is
+done by the function 'UVMAT/calc_scal.m'. New scalars can be defined
+by modifying this function. They will appear in the <strong>FIELDS</strong>
+menu as a submenu <strong>scalar</strong>.The same scalars
+can be
+also displayed as colors of the vectors.</p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId271098"></a>3.4 Succession of operations:</h2>
+
+
+
+
+The following succession of operations is performed by uvmat.fig:<span style="font-style: italic; font-weight: bold;"></span><br>
+
+
+
+
+<span style="font-style: italic; font-weight: bold;">Reading:
+</span>The input field is first read from the input file by the
+function <a href="FUNCTIONS_DOC/read_ncfield.html"><span style="text-decoration: underline;">read_ncfield.m</span></a>
+or <a href="FUNCTIONS_DOC/read_image.html"><span style="text-decoration: underline;">read_image.m</span></a>.
+<br>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId298394"></a>
+<span style="font-weight: bold; font-style: italic;">Transform:
+</span>a
+transform can be systematically applied just after reading, for
+instance to take into account geometric calibration. The processing
+function is set by the menu <span style="font-weight: bold;">menu_coord</span>
+on the left. With the default 'phys' option, the input field is
+transformed (by the function <a href="FUNCTIONS_DOC/phys.html">phys.m</a>)
+if it contains the key 'CoordType' with value 'raw' (or 'px'), else it
+is left unchanged. Similarly, a reverse transform to image coordinates
+is performed if the input file contains the key 'CoordType' with value
+'phys'.&nbsp;</div>
+
+
+
+
+&nbsp;&nbsp;&nbsp; Note that this transform can be
+also performed
+pointwise when moving the mouse. In 3D cases, the initial 3D
+coordinates are given by the mouse, while the plot axis correspond to
+the coordinates of&nbsp; the current plane.<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; Other transform functions can be made,
+following the examples in the subdirectories IMA_TRANSFORMS and
+VEL_TRANSFORMS.
+<br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-weight: bold; font-style: italic;">Scalar
+calculation: </span><span style="font-style: italic;"></span>a
+scalar can be calculated from the input data, as selected by
+&nbsp;the menu <span style="font-weight: bold;">Fields</span>.
+It is then mapped as an image, or represented by contours (selecting
+the check box <span style="font-weight: bold;">contour</span>
+in the frame <span style="font-weight: bold;">SCAL</span>).
+&nbsp;If a vector field is plotted, a scalar can be
+&nbsp;alternatively represented as arrow color, as described in
+section 3.2.
+<br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-weight: bold; font-style: italic;">Comparison:</span>
+when two fields of the same nature are introduced, the difference is
+taken by the function <span style="text-decoration: underline;">subfield.m</span>.&nbsp;
+<br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-weight: bold; font-style: italic;">Projection:
+</span>on the projection object, see section 5.
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId274690"></a></div>
+
+
+
+
+<span style="font-weight: bold; font-style: italic;">Plotting:</span>
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId599668"></a></div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId901896"></a>3.5
+Histograms</h2>
+
+
+
+
+<p style="text-align: justify;">Histograms of the input
+fields are represented on the
+bottom left. The choice of the variable is done by the menus <span style="font-weight: bold;">histo1_menu</span> and <span style="font-weight: bold;">histo2_menu</span>.&nbsp;
+</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;For color
+images, the
+histogram of each color component, r, g, b, is given with a curve of
+the corresponding color. In case of saturation, the proportion of
+pixels beyond the <b>max</b> limit is written on the graph.</p>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId107014"></a>
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId472013"></a>3.6
+Viewing volume fields:**</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId757221"></a>
+not yet implemented</div>
+
+
+
+
+<br>
+
+
+
+
+<h1 style="text-align: justify;"><a class="mozTocH1" name="mozTocId71913"></a><a name="get_field" class="mozTocH1"></a>4 The
+GUI get_field.fig:</h1>
+
+
+
+
+<p style="text-align: justify;"><a href="uvmat_doc.html#top"><img style="border: 0px solid ; width: 23px; height: 49px;" alt="AG00112_.gif (1861 bytes)" src="AG00112_.gif"></a><a href="uvmat_doc.html#top">Back to the Top</a></p>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId515715"></a>
+<h2><a class="mozTocH2" name="mozTocId539613"></a>4.1
+Overview:</h2>
+
+
+
+
+&nbsp;&nbsp;&nbsp; This GUI is designed to analyse a NetCDF
+file,
+showing all the variables, attributes and variable dimensions.
+Variables can be selected and plotted. The GUI is opened by the prompt
+command 'get_field' or
+'get_field (input)', where 'input' is a NetCDF file name or a Matlab
+structure&nbsp; with the appropriate content. It is also opened by
+the
+GUI <span style="text-decoration: underline;">uvmat.fig</span>
+when an input NetCDF file does contain recognized variables.
+&nbsp;Finally the GUI <a href="FUNCTIONS_DOC/get_field.html">get_field.m</a>
+is also opened by pressing the right mouse button
+on a current plotting axis, to display information on the corresponding
+fields. &nbsp; &nbsp;&nbsp; <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; &nbsp; When a NetCDF input file is
+entered, the names and
+value of the global attributes are listed in the left column <span style="font-weight: bold;">attributes</span>, the list
+of variables in the central column <span style="font-weight: bold;">variables</span>,
+and the list of dimension names and values in the right column <span style="font-weight: bold;">dimensions</span>.
+By selecting one of the variables in the central column, the
+corresponding variable attributes and dimensions are displayed in the
+left and right columns respectively. By a right button mouse click on the interface,
+the whole content of the NetCDF file can be made available on the
+Matlab prompt in the form of a Matlab structure 'CurData'. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; Ordinary graphs: to make a simple graph,
+select the abscissa in the column <span style="font-weight: bold;">abscissa</span>,
+and a corresponding set of fields&nbsp; in the column <span style="font-weight: bold;">ordinate</span>, then press
+<span style="font-weight: bold;">PLOT</span>.
+If the variable is indexed with more than one dimension, plots of each
+component are made versus the first index (like with the <span style="text-decoration: underline;">plot</span> Matlab
+command). If no abscissa is selected ( blank selected at the top of <span style="font-weight: bold;">abscissa</span>), variables
+are plotted versus their (first)&nbsp;index&nbsp;. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; Plots can be made in a new figure
+(default), or
+added to an existing one. The choice of available figures is available
+in the listbox menu <span style="font-weight: bold;">list_fig</span>. The full list of available plotting axes can be obtained in <span style="font-weight: bold;">list_fig</span> by pressing <span style="font-weight: bold;">browse_field</span>.
+<br>
+
+
+
+
+<h2><a class="mozTocH2" name="mozTocId665737"></a>4.2
+2D and 3D plots: </h2>
+
+
+
+
+&nbsp;&nbsp;&nbsp; 2D vector plots or scalar images can be
+made by
+selecting the check boxes <span style="font-weight: bold;">check_2D</span>
+or <span style="font-weight: bold;">check_scalar </span>respectively.
+Then select the appropriate variables representing the velocity
+components and/or the scalar, then the variables chosen as <span style="font-weight: bold;">abscissa</span>,
+<span style="font-weight: bold;">ordinate</span> and
+<span style="font-weight: bold;">z coordinate</span>. <br>
+
+
+&nbsp;&nbsp;&nbsp; &nbsp; If these coordinate variables correspond to
+&nbsp;one of the dimensions of the matrix selected as scalar or vector
+components, they will be used as structured coordinates. If they have
+the same dimensions as the matrix, they will be used as unstructured
+coordinates.&nbsp; If the blank option is selected for a coordinate,
+the corresponding matrix index is used as coordinate. <br>
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;If the&nbsp; options <span style="font-weight: bold;">check_2D</span> and <span style="font-weight: bold;">check_scalar</span> are
+simultaenously selected, the scalar is represented as colors of the
+vector arrows. <br>
+
+
+&nbsp;&nbsp;&nbsp; &nbsp;The uvmat GUI is automatically
+opened when 2D
+or 3D fields are displayed, allowing us to adjust the plotting
+parameters. In 3D, a middle plane of cut is automatically selected.
+This can be moved then with the slider on the interface set_object (see
+section 5). The default cuts are made at constant z coordiante, but any
+of the three initial coordiantes can be used as z coordinate, using the
+menu <span style="font-weight: bold;">coord_z</span>. <br>
+
+
+&nbsp;&nbsp;&nbsp; Once uvmat is opened, navigations through file numbers is then possible, while
+keeping the same&nbsp;selection of plotted field variables. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; </div>
+
+
+
+
+<h1 style="text-align: justify;"><a class="mozTocH1" name="mozTocId71913"></a><a name="ProjectionObject" class="mozTocH1"></a>5
+Projection objects:</h1>
+
+
+
+
+<p style="text-align: justify;"><a href="uvmat_doc.html#top"><img style="border: 0px solid ; width: 23px; height: 49px;" alt="AG00112_.gif (1861 bytes)" src="AG00112_.gif"></a><a href="uvmat_doc.html#top">Back to the Top</a></p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId113693"></a><a name="set_object"></a>5-1
+Definition and editing with the uvmat interface:</h2>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+These are geometrical objects
+used to define cuts
+along lines, or
+planes&nbsp;for 3D data, to interpolate fields on a regular grid,
+to
+restrict the
+visualization of fields and their analysis to subregions. See next
+subsection for details. Objects are
+created by selecting the appropriate creation buttons on the interface
+uvmat (lower right). This opens an auxiliary GUI <a href="FUNCTIONS_DOC/set_object.html"><span style="text-decoration: underline;">set_object.fig</span></a><span style="text-decoration: underline;"></span>.&nbsp;</p>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+The list of current projection
+objects is
+displayed on the uvmat interface. Each field displayed by uvmat is
+projected on these current objects, and displayed in corresponding
+satellite figures. The projection of fields on objects is performed by
+the function&nbsp;<a href="FUNCTIONS_DOC/proj_field.html">proj_field.m</a>,
+which can be used also for instance in the GUI <a href="#series"><span style="text-decoration: underline;">series</span>.fig</a>.&nbsp;</p>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li>Creating objects:&nbsp;</li>
+
+
+
+
+</ul>
+
+
+
+
+&nbsp; &nbsp; &nbsp;Object can be interactively drawn with
+the mouse on
+the GUI uvmat&nbsp;. First activate the creation mode by selecting the
+appropriate item in the menu bar <span style="font-weight: bold;">Tools</span>. <br>
+
+
+
+
+&nbsp; &nbsp; &nbsp;-'points': mark points with mouse left
+button. Use
+right click to end the series. The list of coordinates appear on the
+set_object interface. &nbsp;These can be then manually edited, use <span style="font-weight: bold;">plot</span> on the GUI <a href="FUNCTIONS_DOC/set_object.html"><span style="text-decoration: underline;">set_object</span></a>
+to validate. The range of action&nbsp; can be set on the
+GUI&nbsp;<a href="FUNCTIONS_DOC/set_object.html"><span style="text-decoration: underline;">set_object</span></a>
+by the edit box <span style="font-weight: bold;">YMax</span>
+(only needed in the ProjMode 'projection'). This range&nbsp;is
+visualized by dashed circles around each point. The set of points can
+be determined from successive images (to track a feature for instance):
+for that purpose use the keyboard keys 'p' and 'm' to increament or
+decrement fields&nbsp; without the mouse.&nbsp; <br>
+
+
+
+
+&nbsp; &nbsp; -'line': just draw a line, keeping the mouse left
+button
+pressed, release to end. The range of action, set by YMax, is
+visualized by two dashed lines (only in ProjMode 'projection').<br>
+
+
+
+
+&nbsp; &nbsp; -'polyline': draw a line with several segments,
+press and
+release the mouse left button to mark each summit, press the right
+button to end the line.<br>
+
+
+
+
+&nbsp; &nbsp;-'rectangle': defined by its center, half width
+and half
+height.<br>
+
+
+
+
+&nbsp; &nbsp;-'polygon': closed line made of n consecutive
+segments
+(defined by n points)<br>
+
+
+
+
+&nbsp; &nbsp;-ellipse: defined by its center, half width and
+half
+height.<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp;-plane: plane with&nbsp;associated
+cartesian
+coordinates<br>
+
+
+
+
+&nbsp;&nbsp; -volume: volume with associated cartesian
+coordinates
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId407637"></a></div>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+</ul>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId624817"></a>5-2
+Object properties:</h2>
+
+
+
+
+<p style="margin-bottom: 0cm; text-align: justify;">&nbsp;&nbsp;&nbsp;
+The type of
+projection object is defined by a&nbsp; 'Style' and a projection
+mode
+'ProjMode', whose possible options are listed in the
+table&nbsp;below.
+&nbsp;A 'TITLE', derived from these two properties, is also given
+for
+clarity.&nbsp;</p>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId264298"></a></div>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId440774"></a></div>
+
+
+
+
+<table style="width: 874px; height: 745px; text-align: left; margin-left: 0px; margin-right: 0px;" border="1" cellpadding="4" cellspacing="3">
+
+
+
+
+  <col width="43*"> <col width="43*"> <col width="43*"> <col width="43*"> <col width="43*"> <col width="43*"> <tbody>
+
+
+
+
+    <tr valign="top">
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p><b>TITLE</b></p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p><b>Style</b></p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p style="width: 158px;"><b>ProjMode</b></p>
+
+
+
+
+      </td>
+
+
+
+
+      <td style="font-weight: bold;" width="17%">
+      
+      
+      
+      <p>Resulting fields</p>
+
+
+
+
+      </td>
+
+
+
+
+    </tr>
+
+
+
+
+    <tr>
+
+
+
+
+      <td></td>
+
+
+
+
+      <td></td>
+
+
+
+
+      <td></td>
+
+
+
+
+      <td></td>
+
+
+
+
+    </tr>
+
+
+
+
+    <tr valign="top">
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>POINTS</p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>points</p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%"> projection<br>
+
+
+
+
+interp<br>
+
+
+
+
+filter<br>
+
+
+
+
+none </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>set of <span style="font-style: italic;">n</span>
+values of each field component, corresponding
+to the <span style="font-style: italic;">n</span>
+points of projection.</p>
+
+
+
+
+      </td>
+
+
+
+
+    </tr>
+
+
+
+
+    <tr valign="top">
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>LINE</p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%"> line<br>
+
+
+
+
+polyline<br>
+
+
+
+
+rectangle <br>
+
+
+
+
+polygon<br>
+
+
+
+
+ellipse </td>
+
+
+
+
+      <td width="17%"> projection<br>
+
+
+
+
+interp<br>
+
+
+
+
+filter<br>
+
+
+
+
+none
+      
+      
+      
+      <p></p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p style="margin-bottom: 0cm;">profile of each
+field
+component&nbsp; (and mean value) along the line.</p>
+
+
+
+
+      
+      
+      
+      <p style="margin-bottom: 0cm;">&nbsp; &nbsp;
+&nbsp; &nbsp;The
+vectors
+are projected along the line direction&nbsp; and its
+normal, providing the new x and y components respectively.&nbsp;</p>
+
+
+
+
+      </td>
+
+
+
+
+    </tr>
+
+
+
+
+    <tr valign="top">
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>PATCH</p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%"> rectangle<br>
+
+
+
+
+polygon<br>
+
+
+
+
+ellipse </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>inside</p>
+
+
+
+
+      
+      
+      
+      <p>outside</p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>histogram of each field component inside or outside
+the
+closed line + surface integral.</p>
+
+
+
+
+      </td>
+
+
+
+
+    </tr>
+
+
+
+
+    <tr>
+      <td>MASK</td>
+      <td>polygon</td>
+      <td>mask_inside<br>
+mask_outside</td>
+      <td>no projection result. Object used to make masks.</td>
+    </tr>
+    <tr valign="top">
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>PLANE</p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>plane</p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%"> projection<br>
+
+
+
+
+interp<br>
+
+
+
+
+none </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>2D&nbsp; field components. Vectors are
+projected&nbsp; in the plane (new x y components), and along the
+normal in 3D.&nbsp;</p>
+
+
+
+
+      </td>
+
+
+
+
+    </tr>
+
+
+
+
+    <tr valign="top">
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>VOLUME</p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>volume</p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>projection</p>
+
+
+
+
+      
+      
+      
+      <p>interp</p>
+
+
+
+
+      
+      
+      
+      <p>none</p>
+
+
+
+
+      </td>
+
+
+
+
+      <td width="17%">
+      
+      
+      
+      <p>3D field components.&nbsp;Vectors are projected
+along&nbsp; the&nbsp;&nbsp;new coordinates attached to the
+volume&nbsp;.&nbsp;</p>
+
+
+
+
+      </td>
+
+
+
+
+    </tr>
+
+
+
+
+  
+  
+  
+  </tbody>
+</table>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId596019"></a><br>
+
+
+
+
+</div>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;"><strong>Style:</strong></p>
+
+
+
+
+    
+    
+    
+    <ul>
+
+
+
+
+      <li>points: set of <span style="font-style: italic;">n</span>
+points</li>
+
+
+
+
+      <li>line: simple straight segment, defined by its two end
+points</li>
+
+
+
+
+      <li>polyline: open line made of <span style="font-style: italic;">n</span>-1 consecutive
+segments
+(defined by <span style="font-style: italic;">n</span>
+points)</li>
+
+
+
+
+      <li>rectangle: defined by its center, half width and half
+height.</li>
+
+
+
+
+      <li>polygon: closed line made of <span style="font-style: italic;">n</span> consecutive
+segments
+(defined by <span style="font-style: italic;">n</span>
+points)</li>
+
+
+
+
+      <li>ellipse: defined by its center, half width and half
+height.</li>
+
+
+
+
+      <li> plane: plane with&nbsp;associated cartesian
+coordinates</li>
+
+
+
+
+      <li>volume: volume with associated cartesian coordinates</li>
+
+
+
+
+    
+    
+    
+    </ul>
+
+
+
+
+  </li>
+
+
+
+
+  <li> <strong>ProjMode:&nbsp;&nbsp;</strong><br>
+
+
+
+
+  </li>
+
+
+
+
+It specifies the method of projection of coordinates and
+fields.&nbsp;
+  
+  
+  
+  <ul>
+
+
+
+
+    <li>'projection':&nbsp;</li>
+
+
+
+
+&nbsp; &nbsp; &nbsp; &nbsp;Direct
+projection&nbsp; of the field data in a region of action
+around the object, as defined by the parameters 'RangeX', 'RangeY',
+"RangeZ'. &nbsp;For
+'points',
+this region of action is a circle (or sphere in 3D)
+around &nbsp;each point. For 'line', 'polyline' or 'polygon', it is
+a
+band surrounding the line, and for 'plane' (in 3D cases), it is a layer
+around
+the plane (in the range Z=[-RangeZ RangeZ] with respect to the
+projection plane). &nbsp;<br>
+
+
+
+
+&nbsp; &nbsp; &nbsp; - For 'points': an average of all
+the
+(nonfalse) data points is made in each neighborhood, yielding a single
+field value (=NaN if all the data points are false).&nbsp;
+Each field component U (or U(:)) results in a projected field U(i) (or
+U(i,:)), with unstructured coordinates (X(i), Y(i)), i=1 to n.<br>
+
+
+
+
+&nbsp; &nbsp; &nbsp; - For
+'line',&nbsp;'polyline', 'rectangle'
+or 'polygon:&nbsp; each&nbsp;non-false data point in the region
+of
+action is projected
+onto the line. The direction
+of projection is normal
+except if 'Phi' is non equal to 0 (only possible for 'line'). For each
+field component U, a corresponding projected field U is produced. If DX
+is defined, a smoothed field
+Usmooth is also calculated, as well as the mean Umean along the
+line.&nbsp; <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp;
+&nbsp; -For 'rectangle' and 'ellipse':&nbsp; option
+'projection' not
+implemented<br>
+
+
+
+
+&nbsp;&nbsp; &nbsp;-For
+'plane': each data point in the layer of action is projected normally
+to
+the plane, and its position expressed with respect to the new frame
+attached to the plane.<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; &nbsp; -For 'volume':
+each scalar data in the domain selected by 'RangeX, RangeY, RangeZ' is
+preserved, but
+their coordinates are expressed with respect to the&nbsp; new frame
+attached to the volume.<br>
+
+
+
+
+    <li>'interp' :</li>
+
+
+
+
+&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp;Linear
+interpolation of the fields on a grid of regularly spaced points
+defined on the projection object, with meshes DX, DY, DZ. The grid
+array along x starts at RangeX(1) and ends at the closest value smaller
+than RangeX(2). Similar convention is used&nbsp;for y and z in case
+of planes and volumes. <li>'filter':&nbsp;</li>
+
+
+
+
+&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp;Filtered
+interpolation (used only for lines). For each point an average of the
+neighborhing data is used, with a weighting function whose range is
+given by max(RangeY). This is useful to get reliable profiles in the
+presence of
+'holes' in the&nbsp; data fields.&nbsp; <li>'inside':
+defined only for rectangle, polygon,
+ellipse.
+For
+each field U, its probability distribution function Uhist of the field
+data inside the patch
+is calculated, as well as the mean Umean.&nbsp;</li>
+
+
+
+
+    <li>'outside': defined only for rectangle, polygon,
+ellipse.
+The probability
+distribution function and mean of the field data outside the patch is
+given.&nbsp;&nbsp;</li>
+
+
+
+
+    <li>'none', 'mask_inside', 'mask_outside': no projection operation. The object
+is&nbsp;used
+solely for plotting purpose (e. g. to show a boundary).</li>
+
+
+
+
+  
+  
+  
+  </ul>
+
+
+
+
+Note: when any averaging or interpolation process is involved, the only
+projected variables are scalars and vector components, excluding
+'warnflag', 'errorflag', 'ancillary'. Those are only projected with the
+mode 'projection' on LINE, PLANE, VOLUME.&nbsp; <li><strong>CoordType:</strong>&nbsp;</li>
+
+
+
+
+type of coordinates used to describe
+the object, = 'phys' (physical), or 'raw' (pixels). &nbsp;It must
+fit with the coordinate type of the projected field.&nbsp; <li><strong>Coord:</strong></li>
+
+
+
+
+coordinates [x y z] (or [x y] in 2D) defining the object position.
+  
+  
+  
+  <ul>
+
+
+
+
+    <li> for&nbsp; 'points', 'line', 'polyline', 'polygon':
+matrix with<span style="font-style: italic;"> n</span>
+lines [x<sub>i</sub> y<sub>i</sub> z<sub>i</sub>],
+corresponding to each of the <span style="font-style: italic;">n</span>
+defining points. Note that in 3D case, polygons must be included in a
+plane, which imposes restrictions on these coordinates.&nbsp;</li>
+
+
+
+
+    <li>for 'rectangle', 'ellipse': coordinates&nbsp;of the
+center.</li>
+
+
+
+
+    <li>for 'plane' or 'volume': coordinates&nbsp;of the
+origin of
+the new coordinate frame attached to the object.</li>
+
+
+
+
+  
+  
+  
+  </ul>
+
+
+
+
+  <li><span style="font-weight: bold;">RangeX,
+RangeY,RangeZ:</span><br>
+
+
+
+
+&nbsp; &nbsp;&nbsp; scalars, or vectors of two real
+numbers,
+defining the range of action of the
+object along each dimension (default value=0)
+    
+    
+    
+    <ul>
+
+
+
+
+      <li> for&nbsp; 'points':&nbsp;RangeX (or
+max(RangeX,RangeY,RangeZ)) is a scalar specifying
+the radius of action.</li>
+
+
+
+
+      <li>for 'line', 'polyline', 'polygon':&nbsp;</li>
+
+
+
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;- RangeY (or
+max(RangeY))
+represents the half
+width of the projection band (needed for ProjMode= 'projection'
+or&nbsp; &nbsp;'filter') &nbsp; &nbsp;
+&nbsp;&nbsp; &nbsp;- RangeX (or min(RangeX)) represents the
+abscissa&nbsp; of the line
+origin
+(first defining point) in the line coordinate (=0 by default) <li>for
+'rectangle', 'ellipse':</li>
+
+
+
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;-RangeX (or
+max(RangeX)): half
+width along x &nbsp; &nbsp; &nbsp; &nbsp; <br>
+
+
+
+
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;-RangeY (or
+max(RangeY)): half
+width along y<br>
+
+
+
+
+&nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp;-RangeZ&nbsp;(or max(RangeZ)): half
+width of the layer of action (in 3D) <li>for 'plane':</li>
+
+
+
+
+&nbsp; &nbsp; &nbsp; -min(RangeX),
+max(RangeX): min and max
+abscissa of the selected domain (in the plane coordinates) &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <br>
+
+
+
+
+&nbsp; &nbsp; -min(RangeY),
+max(RangeY): min and max
+ordinates of the selected domain (in the plane coordinates)<br>
+
+
+
+
+&nbsp; &nbsp;&nbsp;&nbsp;-
+Range(Z) (or max(RangeZ)): half width of the layer of action of the
+plane (in 3D)
+    
+    
+    
+    </ul>
+
+
+
+
+  </li>
+
+
+
+
+  <li> <span style="font-weight: bold;">DX, DY,
+DZ:</span>&nbsp;<br>
+
+
+
+
+    
+    
+    
+    <ul style="font-weight: bold;">
+
+
+
+
+      <li> <span style="font-weight: normal;">grid
+mesh along the
+x, y, z directions respectively. Needed for the projection modes
+'interp' and 'filter', or to define smoothed variables in the mode
+'projection'.</span></li>
+
+
+
+
+    
+    
+    
+    </ul>
+
+
+
+
+  </li>
+
+
+
+
+  <li>Angles<span style="font-weight: bold;">
+Phi,
+Theta, Psi</span><strong>:</strong></li>
+
+
+
+
+  
+  
+  
+  <ul>
+
+
+
+
+    <li>For 'plane' and 'volume':</li>
+
+
+
+
+it corresponds
+to
+the Euler angles defining the coordinate
+system attached to the object. The first rotation is by an angle <img style="border: 0px solid ; width: 8px; height: 15px;" src="Inline8.gif" class="inlineformula" alt="phi">
+about the <a href="http://mathworld.wolfram.com/z-Axis.html" class="Hyperlink"><i>z</i>-axis</a>, the
+second is by an angle <img style="border: 0px solid ; width: 55px; height: 15px;" src="Inline9.gif" class="inlineformula" alt="theta in [0,pi]"> about the <a href="http://mathworld.wolfram.com/x-Axis.html" class="Hyperlink"><i>x</i>-axis</a>, and
+the third is by an angle <img style="border: 0px solid ; width: 9px; height: 15px;" src="Inline10.gif" class="inlineformula" alt="psi">
+about the <a href="http://mathworld.wolfram.com/z-Axis.html" class="Hyperlink"><i>z</i>-axis</a>
+(again).&nbsp;
+  
+  
+  
+  </ul>
+
+
+
+
+</ul>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId777014"></a><img style="width: 498px; height: 143px;" alt="definition of Euler's angle" src="EulerAngles_600.gif"></div>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li>For&nbsp; 'points', 'polyline', 'polygon': not
+used&nbsp;</li>
+
+
+
+
+  <li>For 'rectangle',&nbsp; 'ellipse': defines the
+plane
+of the figure and its orientation (along the x and y orientatons
+defined by the new plane axis)</li>
+
+
+
+
+  <li>for 'line': in 2D, Phi can represent a non-normal
+angle
+of projection (=0 by default for a normal projection). In 3D, Psi can
+be used to define a new axis with origin at the first point of the line
+and z axis aligned with the line (then Phi and&nbsp;Theta are
+already implicitely imposed by the line direction).&nbsp;</li>
+
+
+
+
+</ul>
+
+
+
+
+<p style="margin-bottom: 0cm; text-align: justify;">&nbsp;&nbsp;&nbsp;</p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId680179"></a>5-3
+Object plotting:</h2>
+
+
+
+
+Projections objects are drawn in magenta color when they are selected
+for creation or edition, and in blue otherwise.
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId180938"></a>
+<ul>
+
+
+
+
+  <li>'points' are represented by dots surrounded by a dashed
+circle showing the range of projection.</li>
+
+
+
+
+  <li>'line' , 'polyline' are plotted as lines, surrounded by two
+dashed lines showing the range of projection, when applicable (i.e. not
+in the case ProjMode='interp').</li>
+
+
+
+
+  <li>'polygon', 'rectangle', 'ellipse' are drawn. In the
+case&nbsp;ProjMode ='inside' or 'outside' the corresponding area is
+painted in magenta (or blue when they are not selected).</li>
+
+
+
+
+  <li>'plane' are shown by their axis. These axis are limited to
+their range of selection &nbsp;(RangeX and RangeY) when applicable.
+Otherwise they end at the edge of the figure with an arrow. **</li>
+
+
+
+
+  <li>'volume' are shown like 'plane', except that they are
+painted in magenta (or blue) **<span style="font-weight: bold;"></span></li>
+
+
+
+
+</ul>
+
+
+
+
+</div>
+
+
+
+
+<h1 style="text-align: justify;"><a class="mozTocH1" name="mozTocId529788"></a>6
+<a name="geometry_calib"></a>Geometric
+calibration:</h1>
+
+
+
+
+<p style="text-align: justify;"><a href="uvmat_doc.html#top"><img style="border: 0px solid ; width: 23px; height: 49px;" alt="AG00112_.gif (1861 bytes)" src="AG00112_.gif"></a><a href="uvmat_doc.html#top">Back to the Top</a></p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId348355"></a><a name="geometric_calib_gene"></a>6-1 Generalities:</h2>
+
+
+
+
+<p style="text-align: justify;">&nbsp;&nbsp;&nbsp;
+Transforming image to
+physical
+coordinates is an important problem
+for measuring techniques based on imaging. The image coordinates
+represent the two cartesian axis x,y of the image, with origin at the
+lower left corner. Note that the y direction is directed upward, while
+the corresponding image index j is oriented downward. &nbsp;The
+physical coordinates are defined from the experimental set-up. The
+correspondance is obtained by imaging&nbsp; reference object(s)
+whose
+positions are known with respect to the physical coordinate system. We
+handle three kinds of transforms:</p>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li><span style="font-weight: bold;"><span style="font-style: italic;">Scaling</span>:</span>
+linear rescaling along x and y + translation</li>
+
+
+
+
+</ul>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li><span style="font-style: italic; font-weight: bold;">Linear:</span>
+general linear transform, including translation and rotation (but no
+perspective effects)</li>
+
+
+
+
+</ul>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li><span style="font-weight: bold; font-style: italic;">Tsai:</span>
+this transforms handles projection effects, as needed for stereoscopic
+view, as well as quadratic distortion, according to the pinhole camera
+&nbsp;model ( R.Y. Tsai,<em> An Efficient and Accurate Camera
+Calibration Technique for 3D Machine Vision.</em> Proceedings of
+IEEE Conference on Computer Vision and Pattern Recognition, Miami
+Beach, FL, pp. 364-374, 1986).&nbsp;</li>
+
+
+
+
+</ul>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId949329"></a>
+<span style="font-weight: normal;">&nbsp;&nbsp;&nbsp;
+The transform coefficients for each
+image series are stored in the corresponding xml documentation file, in
+the section
+ImaDoc/GeometryCalib. These coefficients are read by the function <span style="text-decoration: underline;">UVMAT/read_imadoc.m</span>.
+The function&nbsp;<a href="FUNCTIONS_DOC/phys.html"><span style="text-decoration: underline;">phys.m</span></a>
+applies the transform of any input field from image to physical
+coordinates, while&nbsp;<a href="FUNCTIONS_DOC/px.html"><span style="text-decoration: underline;">px.m</span></a>
+applies the reverse transform. &nbsp; The coefficients for the Tsai
+transform can be determined using the image acquisition software <span style="text-decoration: underline;">Acquix</span>.
+Calibration coefficients&nbsp; can be also obtained with the
+interface <span style="text-decoration: underline;">geometry_calib.fig</span>.&nbsp;
+</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+</span></div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId348355"></a>6-2
+The GUI <span style="text-decoration: underline;">geometry_calib.fig</span>:</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId478717"></a>
+&nbsp;&nbsp;&nbsp; This GUI appears by pressing by activating the menu bar<span style="font-weight: bold;"> Tools/Geometric calibration </span>in
+the GUI <span style="text-decoration: underline;">uvmat</span> .<br>
+
+
+
+
+</div>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li><span style="font-weight: bold; font-style: italic;">Appending
+and editing calibration points:</span><span style="font-weight: bold;"></span></li>
+
+
+
+
+</ul>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId982303"></a>
+&nbsp;&nbsp;&nbsp;&nbsp;To introduce new reference points,
+select 'append' in the <span style="font-weight: bold;">edit_append</span>
+menu, and mark the points with the mouse on uvmat (with the option 'px'
+in <span style="font-weight: bold;">menu_coord</span>).
+The new image coordinates then appear in the list <span style="font-weight: bold;">ListCoord</span><span style="font-weight: bold;">. </span>Reference points
+can be also added manually using the edit boxes<span style="font-weight: bold;"> </span>with the option
+'append'. For proper calibration, the point coordinates&nbsp; should be ordered in a monotonic way (like on a grid). <br>
+
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; &nbsp; If calibration data already
+exist in the ImaDoc file when <span style="text-decoration: underline;">geometry_calib</span>
+is opened, the corresponding list of reference points are
+displayed&nbsp; in the central window <span style="font-weight: bold;">ListCoord</span>
+of <span style="text-decoration: underline;">geometry_calib</span>.
+The three first columns indicate the physical coordinates and the two
+last ones the corresponding image coordinates.<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; Alternatively, a file with point
+coordinates (created by <span style="text-decoration: underline;">set_object</span>)
+can be&nbsp; imported with the <span style="font-weight: bold;">import</span>
+browser at
+the top of the GUI&nbsp; <span style="text-decoration: underline;">geometry_calib</span>.
+In the 'edit' mode the new point coordinates will be listed below the
+current line&nbsp;in <span style="font-weight: bold;">ListCoord</span>, replacing the previous data. In the
+'append' mode, it will be added at the bottom of the current list. If
+the input file contain pixel coordinates (CoordType='px')..... created
+by <span style="text-decoration: underline;">set_object</span>,
+in pixel coordinates, only the pixel coordinates are displayed. The
+corresponding physical coordinates can be introduced by
+manually editing each line in the list <span style="font-weight: bold;">ListCoord.</span><br>
+
+
+
+
+<span style="font-weight: bold;">
+</span>&nbsp;&nbsp;&nbsp; For editing a referece
+point, select it in the list <span style="font-weight: bold;">ListCoord</span>,
+and use the edit boxes&nbsp;<span style="font-weight: bold;">XObject</span>,
+<span style="font-weight: bold;">YObject, </span><span style="font-weight: bold;">ZObject </span>(for 3D
+calibration), <span style="font-weight: bold;">XImage</span>,
+<span style="font-weight: bold;">YImage</span>.
+Type
+return carriage to validate the edition. The reference point can be
+suppressed by typing the 'backward' arrow on the key-boeard, or by
+filling the five boxes with blank values.<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;<br>
+
+
+
+
+</div>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li style="font-weight: bold; font-style: italic;">Plotting
+calibration points:&nbsp;&nbsp; <br>
+
+
+
+
+  </li>
+
+
+
+
+</ul>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId595821"></a>
+&nbsp;&nbsp;&nbsp; Press the button <span style="font-weight: bold;">plot</span>
+to visualise the list of reference points. The physical or image
+coordinates will be used in the list ListCoord, depending on the option
+'phys' or 'px' in the menu <span style="font-weight: bold;">menu_coord</span>
+of the GUI uvmat .&nbsp;
+</div>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li style="font-weight: bold; font-style: italic;">Translation
+and rotation of calibration points:</li>
+
+
+
+
+</ul>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId700227"></a>
+&nbsp;&nbsp;&nbsp; A translation or rotation (in physical
+space) can be
+introduced by the edit boxes on the top of geometry_calib. Press the
+'+' or '-' button to control the sign of the translation or
+rotation. In the case of rotation, the origin of the rotation, as well
+as the angle (in degree) must be introduced. The resulting coordinates
+appear in the list <span style="font-weight: bold;">ListCoord</span>.
+</div>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li><span style="font-weight: bold; font-style: italic;">Recording
+calibration parameters:</span></li>
+
+
+
+
+</ul>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId202336"></a>
+&nbsp;&nbsp;&nbsp; Once the list of calibration points has
+been completed, press a calibration button at the top of <span style="text-decoration: underline;">geometry_calib</span>,
+with the following options (see previous sub-section).<br>
+
+
+
+
+&nbsp;<span style="font-weight: bold;">calib_rescale: </span>yields
+coefficients for simple rescaling and translation&nbsp; without
+rotation, <br>
+
+
+
+
+<span style="font-weight: bold;">&nbsp;calib_lin:</span>
+yields coefficients for a linear transform<br>
+
+
+
+
+<span style="font-weight: bold;">&nbsp;calib_tsai:</span>
+yields
+coefficients for the Tsai model, including perspective effects and
+quadradic deformation. This option requires a sufficient number of
+calibration points (typically &gt; 10) sufficiently spread over the
+image. <br>
+
+
+
+
+<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; &nbsp;The coefficients are recorded
+in the xml file associated with the image currently opened by <span style="text-decoration: underline;">uvmat</span>.
+If previous calibration data already exist, the previous xml file is
+updated, but&nbsp; the original one is preserved with the extension
+.xml~.&nbsp; If no xml file already exists, it is created. The
+image
+transformation to phys coordiantes can be directly seen on the uvmat
+interface after completion of the calib... commands.<br>
+
+
+
+
+<span style="font-weight: normal;"></span>&nbsp;&nbsp;&nbsp;
+&nbsp; To
+reproduce the same calibrationn for image series, open one of the image
+in the series, and do again the calibration with the same points, or
+copy-paste the section GeometryCalib of the xml documentation file with
+a text editor.<br>
+
+
+
+
+<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; The coefficients are recorded in the xml
+file under the key <span style="font-weight: normal;">ImaDoc/GeometryCalib
+as follows:</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+&lt;focal&gt;: focal length, in mm &nbsp;(=1 for the
+options <span style="font-weight: bold;">calib_lin</span>
+and <span style="font-weight: bold;">calib_rescale</span>)
+</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+</span><span style="font-weight: normal;">&lt;dpx_dpy&gt;:
+dimensions of the individual sensor elements, in mm </span><span style="font-weight: normal;">&nbsp;(=[1 1] for the
+options <span style="font-weight: bold;">calib_lin</span>
+and <span style="font-weight: bold;">calib_rescale</span>)</span><br>
+
+
+
+
+<span style="font-weight: normal;">&lt;Cx_Cy&gt;:
+position coordinates of the optical axis on the sensor (in px)&nbsp;</span><span style="font-weight: normal;">(=[0 0] for the options <span style="font-weight: bold;">calib_lin</span> and <span style="font-weight: bold;">calib_rescale</span>)</span><br>
+
+
+
+
+<span style="font-weight: normal;">&lt;sx&gt;:
+aspect ratio of sensor elements </span><span style="font-weight: normal;"></span><span style="font-weight: normal;">(=1 for the options <span style="font-weight: bold;">calib_lin</span> and <span style="font-weight: bold;">calib_rescale</span>)</span><br>
+
+
+
+
+<span style="font-weight: normal;">&lt;kappa1&gt;:
+coefficient of quadratic deformation </span><span style="font-weight: normal;"></span><span style="font-weight: normal;"></span><span style="font-weight: normal;">(=1 for the options <span style="font-weight: bold;">calib_lin</span> and <span style="font-weight: bold;">calib_rescale</span>)</span><br>
+
+
+
+
+<span style="font-weight: normal;">&lt;Tx_Ty_Tz&gt;:
+translation, </span><span style="font-weight: normal;"></span><span style="font-weight: normal;"></span><span style="font-weight: normal;"></span><span style="font-weight: normal;">(Tz=1 for the options <span style="font-weight: bold;">calib_lin</span> and <span style="font-weight: bold;">calib_rescale</span>)</span><br>
+
+
+
+
+<span style="font-weight: normal;">&lt;R&gt;:
+rotation matrix (in 3 lines)</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+&nbsp; &nbsp; &nbsp; For the option <span style="font-weight: bold;">calib_rescale</span></span><br>
+
+
+
+
+<span style="font-weight: normal;">
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;R
+(i=1)= [pxcmx 0 0]</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</span><span style="font-weight: normal;">R (i=2)= [0 pxcmy 0]</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</span><span style="font-weight: normal;">R (i=3)= [0 0 1]</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+where pxcmx and pxcmy are the scaling factors along x and y.</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+</span><span style="font-weight: normal;">&lt;ErrorRms&gt;:
+rms
+difference (in X and Y direction) between the image coordinates
+measured for the calibration points and the coordinates transformed
+from their physical coordinates (using the function <span style="text-decoration: underline;">UVMAT/px.m</span>)
+</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+</span><span style="font-weight: normal;">&lt;ErrorMax&gt;
+: </span><span style="font-weight: normal;">maximum
+difference (in X and Y
+direction) between the image coordinates measured for the calibration
+points and the coordinates transformed from their physical coordinates.
+(using the function <span style="text-decoration: underline;">UVMAT/px.m</span>)
+</span><br>
+
+
+
+
+<span style="font-weight: normal;">&lt;SourceCalib&gt;
+set of the point coordinates used for calibration</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+&nbsp;</span><span style="font-weight: normal;">&lt;PointCoord&gt;
+[x y z X Y] , where x,y,z are the physical coordinates of each point, X
+Y its image coordinates.</span><br>
+
+
+
+
+<span style="font-weight: normal;">
+</span><span style="font-weight: normal;"></span><br>
+
+
+
+
+</div>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+</ul>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId240292"></a>
+</div>
+
+
+
+
+<h1 style="text-align: justify;"><a class="mozTocH1" name="mozTocId574740"></a>7
+Masks and grids:</h1>
+
+
+
+
+<p style="text-align: justify;"><a href="uvmat_doc.html#top"><img style="border: 0px solid ; width: 23px; height: 49px;" alt="AG00112_.gif (1861 bytes)" src="AG00112_.gif"></a><a href="uvmat_doc.html#top">Back to the Top</a></p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId348355"></a><a name="makemask"></a>7-1
+Masks:</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId132948"></a>
+&nbsp;&nbsp;&nbsp; Mask files are used to restrict the
+domain of CIV processing, to
+take into account fluid boundaries or invalid image zones. They must
+be stored as .png images with 8 bits, with names [filebase '_xxmask_'
+'filenumber' '.png'], where xx is the number of masks (nbslices) used
+when the series of fields corresponds physically to a set of nbslices
+positions. The mask filenumber used is the image field number modulo
+nbslices. Use xx=1 in the default case of a fixed position and a
+single mask. Masks can be made by pressing the menu bar <span style="font-weight: bold;">Tools/make mask</span>
+on the GUI <strong>uvmat</strong>. The
+mask is created interactively with the mouse on the current
+image.&nbsp;
+</div>
+
+
+
+
+<p style="text-align: justify;">First open an input image
+file name with the browser, or
+the
+edit box
+and carriadge return<b>.</b> From the image name, a
+corresponding
+mask name is proposed in the lower edit box. It should be edited if a
+series of masks is made, in case of mutipositions (number nbslices)
+of the laser sheet in a series. The names must be [filebase '_xxmask'
+'filenumber' '.png'], where xx is the number of masks (nbslices). The
+mask filenumber used is the image field number modulo nbslices. The
+filenumber can be incremented by the NEXT press button.</p>
+
+
+
+
+<p style="text-align: justify;">Holes can be made by the
+press button <strong>mask_hole</strong>
+which allows to draw a polygon on the image (the matlab image
+processing toolbox is needed). The inside of this polygone is masked.</p>
+
+
+
+
+<p style="text-align: justify;">Press the red push
+button&nbsp; <b>save_mask</b>
+which appeared on the lower right.
+The saved mask is then
+displayed. A new image can be then entered.</p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId502619"></a><a name="set_grid"></a>7-2
+Grids:</h2>
+
+
+
+
+<p style="text-align: justify;">To create a grid for PIV, activate the menu bar <span style="font-weight: bold;">Tools/Make grid </span>on the GUI uvmat. Introduce a minimum value, mesh, and maximum value for
+each coordinate x in the edit boxes <span style="font-weight: bold;">XMin</span>,
+<span style="font-weight: bold;">DX</span>, <span style="font-weight: bold;">XMax</span> respectively.
+Do the same for the y coordinate.&nbsp; This must be expressed in
+physical coordinates.&nbsp;</p>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId742651"></a>
+The grid will be limited to an&nbsp; image&nbsp;, or to the
+common
+region of two images, depending whether one or two image names are
+indicated in the edit boxes <span style="font-weight: bold;">image_1</span>
+and <span style="font-weight: bold;">image_2</span>.
+Press <span style="font-weight: bold;">save</span>
+to save the corresponding grid file (s). A dialog box appears to edit
+the name of the output grid file, and a second one in case of two
+images. <br>
+
+
+
+
+</div>
+
+
+
+
+<h1 style="text-align: justify;"><a class="mozTocH1" name="mozTocId479237"></a><a name="series"></a>8
+Operations on field series:</h1>
+
+
+
+
+<p style="text-align: justify;"><a href="uvmat_doc.html#top"><img style="border: 0px solid ; width: 23px; height: 49px;" alt="AG00112_.gif (1861 bytes)" src="AG00112_.gif"></a><a href="uvmat_doc.html#top">Back to the Top</a></p>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId953279"></a>
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId856905"></a>8-1
+The GUI <span style="text-decoration: underline;">series.fig</span>:</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId185"></a>
+&nbsp;&nbsp;&nbsp; Operations on field series are controled
+by the GUI <span style="text-decoration: underline;">series.fig</span>,
+which allows to set the root name and file indices on which a
+processing function &nbsp;must operate. The root path,
+subdirectory,
+root file name and extension are introduced in the same way as with the
+uvmat interface, on the edit windows <span style="font-weight: bold;">RootPath</span>,<span style="font-weight: bold;"> SubDir</span>, <span style="font-weight: bold;">RootFile</span> and <span style="font-weight: bold;">FileExt</span>
+respectively. The nomenclature for file indexing is represented in <span style="font-weight: bold;">NomType</span> ('<span style="font-weight: bold;">Indices</span>'). <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; Several input file series can be
+introduced simultaneously. For that purpose activate the check
+box&nbsp; <span style="font-weight: bold;">add</span>
+and browse for a new field: the new field will appear on a new line. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; The velocity type and field is
+automatioally chosen by default, but it can be specified by <span style="font-weight: bold;">VelType</span> and <span style="font-weight: bold;">Field</span>. For that
+purpose use the menus <span style="font-weight: bold;">VelTypeMenu</span>
+and <span style="font-weight: bold;">fieldsinput</span>.
+In case of multiple input file series, these menus act only on the
+first line.&nbsp;&nbsp;<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; The set of file indices is set
+in the frame&nbsp;<span style="font-weight: bold;">RANGE</span>,
+while the processing function is chosen in the menu <span style="font-weight: bold;">ACTION</span>. All actions
+operate on the same series of input files, whose list can be obtained
+with the option&nbsp;<span style="font-weight: bold;">check_files</span>.
+The option <b>aver_stat </b>calculates<b>&nbsp;</b>
+a global average on&nbsp;the successive fields, while<b> </b><span style="font-weight: bold;">time_series</span><b>
+</b>provides a time series. The option <span style="font-weight: bold;">merge_proj</span>
+is used to project a whole series on a given grid, or to create a file
+series obtained by concatenation of different fields different fields.
+&nbsp;Finally any additional function can be called and included in
+the
+menu by selecting the option <span style="font-weight: bold;">usr_defined...</span>
+.<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; Any action is performed from field index
+<span style="font-weight: bold;">first_i</span>
+to <span style="font-weight: bold;">last_i</span>
+with
+increment <span style="font-weight: bold;">incr_i</span>.
+In case of double indexing, action is similarly performed from field
+index <span style="font-weight: bold;">first_j</span>
+to <span style="font-weight: bold;">last_j</span>
+with increment <span style="font-weight: bold;">incr_j</span>.
+Succesive file names are ordered as a matrix Name {j,i} with the index
+j varying the fastest. The parameter <span style="font-weight: bold;">nb_slice</span> can be
+introduced to scan the i index modulo nb_slice. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; For pair indexing, the selected pair
+must be chosen in the menu <span style="font-weight: bold;">list_pair-civ</span>
+in the frame PAIRS (browse again an input field if this menu does not
+appear). Then the first_i and last_i refer to the 'reference indices'.
+With the option '*-*' in <span style="font-weight: bold;">list_pair-civ,
+</span>available
+pairs are automatically chosen (this is appropriate if several image
+pairs are used in a time series, to account for a changing mean
+velocity). <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; A projection object can be introduced by
+selecting
+the check box GetObject. If a projection object has been already
+created the &nbsp;opened interface set_object will be used.
+Otherwise
+the blank set_object interface appears, and a projection object can be
+imported from an existing xml Object file.&nbsp; <br>
+
+
+
+
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId483256"></a>8-2
+check_files:</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId191551"></a>
+Gives the series of files selected for processing and checks their
+existence. The oldest modified file is indicated, which is useful to
+detect whether any file in a civ processing is missing (then the
+oldest file is not updated). <br>
+
+
+
+
+For NetCDF files, the last operation made (civ1, fix1, patch1,
+civ2, fix2, patch2) is indicated. The details of each NetCDF file can
+be dispalyed by selecting it with the mouse on the list.
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId310092"></a>8-3
+aver_stat:</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId106189"></a>
+&nbsp;&nbsp;&nbsp; This option provides any average over
+the processed files. If <span style="font-style: italic;">nb_slice</span>
+is not equal to 1, the average is performed slice by slice, providing
+nb_slice results. &nbsp; If a projection object is selected (check
+box&nbsp;<span style="font-weight: bold;">GetObject</span>),
+the field is projected before averaging. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; For unstructured coordinates varying for
+successive
+fields, the data is linearly interpolated on the coordinates of the
+first field in the series. It is then advised to project the fields on
+a regular grid, creating a projection object of type 'plane' with
+projection mode 'interp'. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; With a projection object with title
+PATCH, the
+global histogram of field variables on the selected region will be
+obtained. &nbsp;&nbsp; <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId887562"></a>8-4
+time_series:</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId672413"></a>
+&nbsp; This action provides a time series of the input field. It is
+advised to use a POINTS projection object, so the series is limited to
+the selected points. <br>
+
+
+
+
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId109414"></a>8-5
+merge_proj:&nbsp;</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId682822"></a>
+&nbsp;&nbsp;&nbsp; This option allows to merge several
+field
+series&nbsp; in a single one. This is useful to merge fields
+obtained
+with different cameras. Select the different series, activating the
+check box <span style="font-weight: bold;">add</span>.
+In this case, it is generally useful to first interpolate the fields on
+a single grid. For that purpose select the check box <span style="font-weight: bold;">GetObject, </span>creating
+a projection object of type 'plane' with projection mode 'interp'. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; Since the different views have their own
+calibration, it is important to use the option 'phys' (menu <span style="font-weight: bold;">menu_coord</span>), and to
+create the grid in phys coordinates. <br>
+
+
+
+
+<span style="font-weight: bold;"></span>
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId736727"></a>8-6 more...:</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId640736"></a>
+This action calls any user defined function by its name, acting on
+the series of fields defiend for ACTION. <br>
+
+
+
+
+Some examples of usr_defined functions are in the subdirectory
+UVMAT/USR_FCT. <br>
+
+
+
+
+<br>
+
+
+
+
+<u>List of available functions:</u> <br>
+
+
+
+
+-<strong>sub_background:</strong> used to removed a mean
+background to the images. This is useful before CIV processing when
+some fiked features are visible in the background (when the laser
+sheet is close to the bottom). <br>
+
+
+
+
+<br>
+
+
+
+
+To update (**):<br>
+
+
+
+
+-<strong>uvprofile</strong>: calculate the mean velocity
+profile
+and Reynolds stress u'v' along a band, averaged over the series of
+fields. <br>
+
+
+
+
+-<strong>view_ima3D:</strong> provides a perspective view
+of a 3D
+image defined by a series of slice 2D images. The isosurfaces of the
+scalar field are represented. <br>
+
+
+
+
+-<strong>part_stat:</strong> count particles and provides
+their
+density and luminosity histogramm
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId360245"></a><a name="peaklocking"></a>Peaklocking
+errors:(to update
+**)</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId217145"></a>
+By selecting the press button 'peaklocking' on the 'plotgraph'
+interface, you smooth the current velocity histograms while
+preserving its integral over each unity (in pixels). This appears in
+red. Then an estimate of the peaklocking error is obtained by
+comparing the initial histogram to the smooth one.<br>
+
+
+
+
+<br>
+
+
+
+
+</div>
+
+
+
+
+<h1 style="text-align: justify;"><a class="mozTocH1" name="mozTocId280008"></a><a name="editxml"></a>9
+The GUI editxml.fig:</h1>
+
+
+
+
+<p style="text-align: justify;"><a href="uvmat_doc.html#top"><img style="border: 0px solid ; width: 23px; height: 49px;" alt="AG00112_.gif (1861 bytes)" src="AG00112_.gif"></a><a href="uvmat_doc.html#top">Back to the Top</a></p>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId215335"></a>
+&nbsp;&nbsp;&nbsp; This GUI <a href="FUNCTIONS_DOC/editxml.html">editxml.fig</a>
+visualises xml files. It is automatically called by the browser of
+uvmat when a file .xml is opened.<br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; When an input file is opened, editxml
+detects the title key, e.g. ImaDoc, and looks for the corresponding xml
+schema (e.g. ImaDoc.xsd&nbsp;). This schema is sought&nbsp; in
+the directory defined by &lt;SchemaPath&gt; in the installation
+file <a href="../PARAM_LINUX.xml">PARAM_LINUX</a>
+or <a href="../PARAM_WIN.xml">PARAM_WIN</a> of
+uvmat. If the schema is fund, the hierarchical structure and keys given
+by the schema are diplayed.&nbsp; Otherwise the &nbsp;keys of
+the xml file are displayed. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; Simple elements in the xml
+file&nbsp; are listed in the forme 'key'='value', and the
+corresponding attributes are shown in green. Comments from the schema
+are dispalyed in blue. Complex elements are indicated by '+'. Selecting
+them on the list gives access to the lower hierarchical
+level.&nbsp; Press the&nbsp; arrow '&lt;---' to move back
+upward in the hierarchy. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; &nbsp;Manual editing of element
+value is possible. Select the element and use the lower edit box. This
+edit box transforms in a menu when a preselected list of allowed input
+values has been set by the schema. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; </div>
+
+
+
+
+<h1 style="text-align: justify;"><a class="mozTocH1" name="mozTocId609725"></a><a name="civ"></a>10
+Particle Imaging Velocimetry (PIV)</h1>
+
+
+
+
+<p style="text-align: justify;"><a href="uvmat_doc.html#top"><img style="border: 0px solid ; width: 23px; height: 49px;" alt="AG00112_.gif (1861 bytes)" src="AG00112_.gif"></a><a href="uvmat_doc.html#top">Back to the Top</a></p>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId109414"></a>10-1
+Civ operations:</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId1082"></a>
+The<strong style="font-weight: normal;"> <span style="text-decoration: underline;">civ.fig</span></strong><span style="font-weight: bold;"> </span>interface
+processing can be
+directly
+opened by the <strong style="font-weight: normal;">'civ'</strong>
+command on the Matlab
+prompt. Then
+a documentation file (.xml or .civ) should be enter to begin. It can be
+also opened by uvmat, activating the pusch button<strong> civ</strong>.
+With the fields option <strong>images</strong>
+it sets the interface at the default starting operation civ1. With
+the other fields options, it detects the state of processing of the
+existing NetCDF files, and proposes the next operation (fix1, patch1,
+civ2...). A third way of opening the interface is just to open the
+Matlab image (.fig file) stored after each processing in the
+directory of the .civ file. Then just edit it and run a new
+calculation. <br>
+
+
+
+
+First check the root name in the top edit box, and the series of
+fields. Then set the chosen series of
+operation by the check boxes on the left; The corresponding menus
+appear. <br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-style: italic; font-weight: bold;">CIV1:</span><span style="font-style: italic; font-weight: bold;"> </span>The
+main parameters is the chosen image pair in the
+left menu, the size of the correlation box (<strong>ibx, iby</strong>),
+the search range defined by its size in pixels (<strong>isx, isy</strong>)
+and a systematic shift (<strong>shift x,y</strong>). The
+default
+value 21x21 is generally good, use a larger size for images with few
+particles, use an elongated box (e.g. 11x41) to optimize the
+resolution in one direction (for instance in a boundary layer). The
+search parameters (<strong>isx, isy</strong>,<strong>shift
+x,y</strong>)
+can be estimated using the press button <strong>calcul search
+range</strong>.
+First introduce the estimated minimum and maximum values of each
+velocity component u and v. The result depends on the time interval
+of the image pair. Change the selected image pair if the maximum
+displacement (ibsx-ibx)/2 is too small (lack of precision) or too
+large (bad image correlations and risks of faulse vectors). A good
+typical displacement is 5-10 pixels. A parameter <strong>rho</strong>
+controls the smoothing of the image corelation curves used in civ,
+the default value 1 is generally used. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; The grid determines the central
+positions of the correlation boxes
+(in pixels). A default regular grid can be set by the meshes <strong>dx</strong>
+and <strong>dy</strong>
+(in pixels). A custom grid can be stored in a
+text file, and selected by the GET_GRID push button. This is
+convenient to limitate the processing to a subregion or to fine tune
+the resolution. See the site http://www.civproject.org/documentation
+for the file format. The function MISC_FCT/makegrid.m in UVMAT
+creates an example. An alternating way to select a subregion is to
+use a mask image. If a mask image with an appropriate name is found
+in the image directory, it wil be detected by the pushbutton
+GET_MASK, and the indication xxmask appears in the edit box. (xx is
+the number of slices, equal to 1 for a single mask).&nbsp; Finally
+thresholds on image intensity can be introduced to suppress
+underexposed or overexposed parts of the image: select the check box <span style="font-weight: bold;">ImaThresh</span>
+('THRESH'), and edit the boxes <span style="font-weight: bold;">MinIma</span>
+and <span style="font-weight: bold;">MaxIma</span>
+which then appear. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; The velocity results are stored
+in the subdirectory set by SUBDIR_CIV1. <br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-style: italic; font-weight: bold;">FIX1:</span><u>
+</u>used after civ1 to remove some false vectors using
+different criteria. Use generally the default options on vec_F. A
+threshold on the image correlation values (vec_C) can be introduced.
+Use first a small threshold 0.2, look at the resulting fields, by
+looking at red vectors in the view_field menu. If many red vectors
+appear, redo the fix operation with a higher threshold. A threshold
+on the velocity values can be also introduced: erratic zero velocity
+vectors can be indeed produced by a fixed image background. A mask
+image can be also introduced. It has the same effect as the one used
+in civ1, but the removed vectors are kept in memory, and labelled as
+false. <br>
+
+
+
+
+With a civ field selected and a second field, for instance filter,
+you can remove all vectors whose difference with the second field
+exceeds a threshold. <br>
+
+
+
+
+Interactive fixing with the mouse&nbsp;is also possible, see <a href="vectors">section 3.2</a>, but it is not
+recommended. <br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-style: italic; font-weight: bold;">PATCH1:</span>
+interpolates the velocity values on a regular grid
+with a smoothing parameter<strong> rho</strong>. This also
+provides
+the spatial derivatives (vorticity, divergence) needed for the
+refined processing civ2. The numbers of grid points in x and y are
+set by<strong> nx</strong> and <strong>ny</strong>.
+The vectors which
+are too far from the smoothed field (erratic vectors) can be
+eliminated, using a threshold expressed in pixel displacement. The
+thin plate spline method must be done by subdomains for computational
+saving, use the default value 300. <br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-style: italic; font-weight: bold;">CIV2:</span><span style="font-style: italic; font-weight: bold;"> </span>provides
+a refined calculation of the velocity field,
+using the civ1 result as previous estimate. The search range is
+determined by the civ1 field so there is no parameter. Use the option <strong>decimal
+shift</strong> to reduce peaklocking
+effects
+(advised). The option <strong>deformation</strong> is
+useful in the
+presence of strong shear or vorticity. Then image deformation and
+rotation is introduced before calculating the correlations. The other
+parameters (<strong>rho, ibx,iby, grid, mask</strong>) are
+used like
+for civ1 (take the same by default). The image pair for civ2 can be
+different than the one used in civ1 to get the first estimate. It is
+generally advised to use a moderate time interval for civ1, to avoid
+false vectors, and to take a larger intervel for civ2, in order to
+optimize precision. As civ2 already knows where to look and takes
+into account image strain and rotation (with the option deformation)
+it allows for higher time intervals. <br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-style: italic; font-weight: bold;">FIX2:</span>
+like FIX1, except for the different flags vec_F
+provided by civ2. Use the default options. <br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-style: italic;">PATCH2:</span>
+like PATCH1 <br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-style: italic; font-weight: bold;">Further
+iterations:</span> improvements can be obtained by further
+iterations of the civ2-fix2-patch2 process. Open again the interface,
+and consider the previous civ2 result as the prior guess civ1. It
+will be recopied and relabelled as civ1 in the new NetCDF file
+produced. <br>
+
+
+
+
+<br>
+
+
+
+
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId178080"></a>10-2
+Codes for vector flags:</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId393398"></a>
+<u>Code for vec_F:</u> </div>
+
+
+
+
+<ul style="text-align: justify;">
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;">vec_F(i)=1 : default ,
+evrything is fine </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;">vec_F(i)=-2: the
+maximum of the correlation function is close to the border: the search
+domain is too small </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;">vec_F(i)=2: (only in
+civ1) we keep the inaccurate Hart result (resulting from averaging with
+neighborhing points) and&nbsp; vec_C(i)=0 is chosen by convention. </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;">vec_F(i)=3: the
+optimization of the correlation function is unstable&nbsp;
+or&nbsp; local Intensity rms of the image =0 </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;">vec_F(i)=4:only in
+civ2: the difference between the estimator and the result is more than
+1 pixel </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p>vec_F(i)=1 . :vectors manually selected by <b>uvmat</b>
+for removalhave a value&nbsp; 1 for the second digit, in front of
+the vec_F unit value. &nbsp;&nbsp; </p>
+
+
+
+
+    
+    
+    
+    <p><u>Code for FixFlag:</u> </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;">FixFlag(i)=0 :default,
+everything is fine </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;">FixFlag(i)=1. : value 1
+for the second digit: vector removed by criteria on vec_F or/and low
+correlation value </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p style="margin-bottom: 0cm;">FixFlag(i)=1..: value 1
+for the third digit: vector selected by a criterium of difference with
+another field, for instance filter, or a field with differnt time
+interval. </p>
+
+
+
+
+  </li>
+
+
+
+
+  <li>
+    
+    
+    
+    <p>FixFlag(i)=...1, 2, 3&nbsp; different criteria for
+elimination set by the program Fix of CIVx (not yet documented). </p>
+
+
+
+
+  </li>
+
+
+
+
+</ul>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId109414"></a>10-3
+<span style="font-weight: bold;">RUN and BATCH:</span>&nbsp;</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId558175"></a>
+&nbsp;&nbsp;&nbsp; RUN controls the computation from the
+Matlab
+window, which you cannot use until the computations are finished,
+while BATCH sends the same computations as background computing tasks
+in the network. In the first option, the civ1 computations are first
+perfomed fo all the fields, then the fix1, then the patch1.... In the
+batch option, the whole series of computations is performed for the
+first field, and then repeated for each successive field. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; In both cases, the status of the
+computations can be checked by
+opening .cmx and .log files, using the uvmat browser or any text
+editor. These files are writtent in the same subdirectory as the NetCDF
+result files. Each .cmx file contains the set of parameters
+used for a civ computation. It is written by the civ interface just
+before ordering the computations. By contrast , the .log file is
+produced after completion of the computations, and it contains some
+information on the process, including possibly error messages. <br>
+
+
+
+
+<br>
+
+
+
+
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId491591"></a><span style="font-weight: bold;">10-4 Displacement between two
+image series:</span> &nbsp;</h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId954071"></a>
+&nbsp;&nbsp;&nbsp; This can be useful for steroscopic view,
+or to
+compare series of images to a reference, to measure displacement rather
+than velocity. &nbsp;For that purpose select the check box <span style="font-weight: bold;">compare</span> ( <span style="font-weight: bold;">'-'</span> )on the top
+left, and browse the second file, or edit manually the edit boxes <span style="font-weight: bold;">displ_filebase</span> and <span style="font-weight: bold;">displ_filebase_1</span>. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; Then select the option 'displacement'. A
+file with
+recognized indexing will be varied with the same index in each series
+(appropiate for stereo view), while a second file with no index will
+remain unchanged (approprite for a fixed reference). <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; <br>
+
+
+
+
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId118098"></a><span style="font-weight: bold;">10-5 Stereoscopic PIV:</span><span style="font-weight: bold; font-style: italic;"> </span><span style="font-weight: bold;"></span></h2>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId650824"></a>
+To<span style="font-weight: bold; font-style: italic;"> </span><span style="font-style: italic;"></span>obtain the three
+velocity components in a plane with stereoscopic PIV, use the following
+procedure:<br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-style: italic; font-weight: bold;">Install
+two cameras</span>
+viewing a common field with angle about 45 &deg; on each side. A
+system
+of titled objective lenses (Sheimpflug) allows to optimize the focus in
+the whole image.&nbsp;<br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-style: italic; font-weight: bold;">Make
+a careful geometric calibration</span>,
+by taking the images of a grid positioned in the plane of the laser
+sheet used for particle illumination. Introduce a Tsai calibration with
+the calibration tool associated with the&nbsp; image acquisition
+software Acquix. Calibration can be adjusted with the uvmat interface
+(see <a href="#calib">calibration</a>). <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; This calibration model is valid in air
+or with an
+interface air-water perpendicular to the line of sight for each camera.
+Otherwise, the calibration problem is more complex. <br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-weight: bold; font-style: italic;">Perform
+usual PIV for each image series:</span> <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; The images from each camera (camA and
+camB) must be
+in the same directory and the PIV results in a single subdirectory. It
+is advised to do the successive operations including civ2 and fix2.
+This double series of PIV processing can be done in two steps (keeping
+the same CIV subdirectory) or simulatenously, using the <span style="font-weight: bold;">compare</span> (<span style="font-weight: bold;">'-'</span>) option.
+&nbsp;Then the check boxed <span style="font-weight: bold;">test_stereo1</span>
+and <span style="font-weight: bold;">test_stereo2</span>
+in the<span style="font-weight: bold;"> PATCH1</span>
+and <span style="font-weight: bold;">PATCH2</span>
+frames must be unselected. <br>
+
+
+
+
+&nbsp;&nbsp;&nbsp; For PIV near a staigth wall, it is
+advised to create
+a grid for each image series, corresponding to a common array of
+physical positions. This can be done by the pusch button <span style="font-weight: bold;">grid</span> in uvmat
+(bottom right).<br>
+
+
+
+
+<br>
+
+
+
+
+<span style="font-weight: bold; font-style: italic;">Combine
+PIV fields:</span> &nbsp;this is done by selecting <span style="font-weight: bold;">PATCH1</span> and&nbsp;
+<span style="font-weight: bold;">test_stereo1 </span>(at
+level civ1), or<span style="font-weight: bold;"> </span><span style="font-weight: bold;">PATCH2</span> and&nbsp;
+test_stereo2 (at level civ2) in the stereo mode (check box <span style="font-weight: bold;">compare</span>
+selected). The resulting fields camA-camB are in physical coordinates.
+They are final results which cannot be processed for further Civ
+operations: one must go back to the two image series for that purpose.
+Note that this stereo combination is only &nbsp;possible in the RUN
+mode for the moment (no BATCH)**. <br>
+
+
+
+
+<br>
+
+
+
+
+</div>
+
+
+
+
+<h2 style="text-align: justify;"><a class="mozTocH2" name="mozTocId691001"></a><span style="font-weight: bold;">10-6 3D PIV in a volume:(to be
+implemented**)</span></h2>
+
+
+
+
+<div style="text-align: justify;"></div>
+
+
+
+
+<h1 style="text-align: justify;"><a class="mozTocH1" name="mozTocId280008"></a>11
+LIF:(to update **)</h1>
+
+
+
+<br>
+
+
+
+<h1 style="text-align: justify;"><a class="mozTocH1" name="mozTocId67078"></a><a name="SECTION000110000000000000000"></a>About this
+document
+...</h1>
+
+
+
+
+<p style="text-align: justify;"><b>UVMAT HELP</b>
+</p>
+
+
+
+
+<p style="text-align: justify;">This document was
+generated using the <a href="http://www.latex2html.org/"><b>LaTeX</b>2<tt>HTML</tt></a>
+translator Version 2002 (1.62) </p>
+
+
+
+
+<p style="text-align: justify;">Copyright &copy; 1993,
+1994, 1995, 1996, <a href="http://cbl.leeds.ac.uk/nikos/personal.html">Nikos
+Drakos</a> , Computer Based Learning Unit, University of Leeds. <br>
+
+
+
+
+Copyright &copy; 1997, 1998, 1999, <a href="http://www.maths.mq.edu.au/%7Eross/">Ross
+Moore</a> , Mathematics Department, Macquarie University, Sydney.
+</p>
+
+
+
+
+<p style="text-align: justify;">The command line arguments
+were: <br>
+
+
+
+
+<b>latex2html</b> <tt>-no_subdir
+-split 0 -show_section_numbers
+/tmp/lyx_tmpdir24503WtIvn5/lyx_tmpbuf24503v5Erql/uvmat_doc.tex</tt>
+</p>
+
+
+
+
+<div style="text-align: justify;"><a class="mozTocDIV" name="mozTocId600163"></a>
+</div>
+
+
+
+
+<p style="text-align: justify;">The translation was
+initiated by Joel Sommeria on
+2002-12-04 </p>
+
+
+
+
+<hr>
+<p style="margin-bottom: 0cm;"><!--Navigation Panel--><img src="/////C-red/BIG_RED/civbin3/UVMAT/nx_grp_g.png" name="Image4" alt="next_inactive" align="bottom" border="0" height="24" width="81"><img src="/////C-red/BIG_RED/civbin3/UVMAT/up_g.png" name="Image5" alt="up" align="bottom" border="0" height="24" width="26"><img src="/////C-red/BIG_RED/civbin3/UVMAT/prev_g.png" name="Image6" alt="previous" align="bottom" border="0" height="24" width="63"><!--End of Navigation Panel--></p>
+
+
+
+
+<address>Joel Sommeria 2002-12-04 </address>
+
+
+
+
+</body>
+</html>

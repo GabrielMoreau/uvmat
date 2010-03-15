@@ -1,0 +1,62 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ListDir</title>
+  <meta name="keywords" content="ListDir">
+  <meta name="description" content="'ListDir': scan the structure of the directory tree (for dataview.m)">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">.</a> &gt; ListDir.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for .&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>ListDir
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>'ListDir': scan the structure of the directory tree (for dataview.m)</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">'ListDir': scan the structure of the directory tree (for dataview.m)
+------------------------------------------------------------------------
+ function [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in)
+
+ 
+ OUTPUT:
+ ListDevices: list of Devices 
+ ListRecords: list of records
+ ListXml: list of xml file names
+ List: structure representing the tree structure
+
+INPUT
+ CurrentPath: full name (including path) to the input campaign (or subcampaign), we assume that
+          data are organised as (sub)campaign/Experiment/Device/(Record/)/file .xml
+ ListExperiments: list of experiments to scan (cell of names)
+ ListDevices_in: list of devices to scan (cell of names)
+ ListRecords_in: list of records to scan (cell of names)</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dataview.html" class="code" title="function varargout = dataview(varargin)">dataview</a>	'dataview': function for scanning directories in a campaign</li><li><a href="editxml.html" class="code" title="function varargout = editxml(varargin)">editxml</a>	'editxml': function for editing xml files using a xml schema (associated with the GUI editxml.fig)</li></ul>
+<!-- crossreference -->
+
+
+
+<hr><address>Generated on Wed 10-Mar-2010 20:42:36 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>
