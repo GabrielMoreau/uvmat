@@ -4,12 +4,10 @@ Steps for installing uvmat:
 - Install Matlab, release R 13 or more recent. 
  
 - Copy the whole UVMAT directory at a convenient location. Be careful on Windows machines:
- names of files and directories used must not contain blanks.
-- Add the full path of this UVMAT directory, as well as the ones of the mexnc, netcdf_toolbox and bin (or bin/win32) folder, 
-to the current matlab function paths (using 'File/SetPath...' in the matlab menu bar), so that 
-function names are recognized from the Matlab prompt.
--For reading avi movies, a codec must be available on the computer. This is the case for instance if a 
-fire wire port has been installed. See the documentation of Matlab for more details. 
+ names of files and pathes used must not contain blanks.
+- Add the full path of this UVMAT directory (without subdirectories)
+to the current matlab function paths (using 'File/SetPath...' in the matlab menu bar), so that function names are recognized from the Matlab prompt.
+-For reading avi movies, a codec must be available on the computer (available on recent computers). See the documentation of Matlab for more details. 
 
 --------------------------------------------------
 Netcdf library needed for old versions of Matlab (if the builtin function netcdf.create does not exist):
