@@ -90,15 +90,31 @@ elseif nbview>2  % TODO: make multiple series
 %     set(hseries.FileExt,'String',FileExt)
 %     nbview=2;
 end
+
+%determine image type
 hhh=which('mmreader');
 for iview=1:nbview
-    test_movie(iview)=0;
-    if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
-        if isequal(lower(FileExt{iview}),'.avi')
+    if isequal(FileExt{iview},'.nc')||isequal(FileExt{iview},'.cdf')
+        FileType{iview}='netcdf';
+    elseif isequal(lower(FileExt{iview}),'.avi')
+        if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
             MovieObject{iview}=mmreader(fullfile(RootPath{iview},[RootFile{iview} FileExt{iview}]));
-            test_movie(iview)=1;
+            FileType{iview}='movie';
+        else
+            FileType{iview}='avi';
         end
-    end 
+    elseif isequal(lower(FileExt{iview}),'.vol')
+        FileType{iview}='vol';
+    else 
+       form=imformats(FileExt{iview}(2:end));
+       if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+           if isequal(NomType{iview},'*');
+               FileType{iview}='multimage';
+           else
+               FileType{iview}='image';
+           end
+       end
+    end
 end
 filebase{1}=fullfile(RootPath{1},RootFile{1});
 
@@ -141,32 +157,32 @@ if isequal(FieldName,{'get_field...'})
 end
 
 %detect whether the two files are 'images' or 'netcdf'
-testima=0;
-testvol=0;
+% testima=0;
+% testvol=0;
 testcivx=0;
-testnc=0;
+% testnc=0;
 FileExt=get(hseries.FileExt,'String');
-for iview=1:nbview
-     ext=FileExt{iview};
-     form=imformats(ext([2:end]));
-     if isequal(lower(ext),'.vol')
-         testvol=testvol+1;
-     elseif ~isempty(form)||isequal(lower(ext),'.avi')% if the extension corresponds to an image format recognized by Matlab
-         testima=testima+1;
-     elseif isequal(ext,'.nc')
-         testnc=testnc+1;
-     end
-end
-if testvol
-    msgbox_uvmat('ERROR','volume images not implemented yet')
-    return
-end
-if testnc~=nbview && testima~=nbview && testvol~=nbview
-    msgbox_uvmat('need a set of images or a set of netcdf files with the same fields as input','ERROR')
-    return
-end
+% for iview=1:nbview
+%      ext=FileExt{iview};
+%      form=imformats(ext([2:end]));
+%      if isequal(lower(ext),'.vol')
+%          testvol=testvol+1;
+%      elseif ~isempty(form)||isequal(lower(ext),'.avi')% if the extension corresponds to an image format recognized by Matlab
+%          testima=testima+1;
+%      elseif isequal(ext,'.nc')
+%          testnc=testnc+1;
+%      end
+% end
+% if testvol
+%     msgbox_uvmat('ERROR','volume images not implemented yet')
+%     return
+% end
+% if testnc~=nbview && testima~=nbview && testvol~=nbview
+%     msgbox_uvmat('need a set of images or a set of netcdf files with the same fields as input','ERROR')
+%     return
+% end
 if ~isequal(FieldName,{'get_field...'})
-    testcivx=testnc;
+    testcivx=isequal(FileType{1},'netcdf');
 end
 
 % Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
@@ -318,14 +334,22 @@ for i_slice=1:NbSlice
                            name_generator(filebase{iview},num_i1{iview}(ifile),num_j1{iview}(ifile),FileExt{iview},NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile),SubDir{iview}); 
                 idetect(iview)=exist(filename,'file');
                 Data{iview}=[]; %default      
-                if testima                  
+                if ~isequal(FileType{iview},'netcdf')                
                     Data{iview}.ListVarName={'A'};
                     Data{iview}.AName='image';
-                    if test_movie(iview)
-                        A=read(MovieObject{iview},num_i1{iview}(ifile));
-                    else
-                        A=double(read_image(filename,NomType{iview},num_i1{iview}(ifile)));% read the image, num2 is the counter for avi files 
-                    end
+                    switch FileType{iview}
+                        case 'movie'
+                            A=read(MovieObject{iview},num_i1{iview}(ifile));
+                        case 'avi'
+                            mov=aviread(filename,num_i1{iview}(ifile));
+                            A=frame2im(mov(1));
+                        case 'vol'
+                            A=imread(filename);
+                        case 'multimage'
+                            A=imread(filename,num_i1{iview}(ifile));
+                        case 'image'
+                            A=imread(filename);
+                    end 
                     Data{iview}.ListVarName={'coord_y','coord_x','A'}; % 
                     npy=size(A,1);
                     npx=size(A,2);
@@ -337,7 +361,7 @@ for i_slice=1:NbSlice
                     end  
                     Data{iview}.coord_y=[npy-0.5 0.5];
                     Data{iview}.coord_x=[0.5 npx-0.5];
-                    Data{iview}.A=A;
+                    Data{iview}.A=double(A);
                     Data{iview}.CoordType='px';
                 elseif testcivx
                     [Data{iview},VelTypeOut]=read_civxdata(filename,FieldName,VelType);
@@ -566,177 +590,14 @@ end
 ind_coord=get(handles.CoordType,'Value');   
 
 %---------------------------------------------------------------------
-% --- Executes on selection change in ProjObject.
-function ProjObject_Callback(hObject, eventdata, handles)
+% % --- Executes on selection change in ProjObject.
+% function ProjObject_Callback(hObject, eventdata, handles)
+% 
+% list_object=get(handles.ProjObject,'String');
+% index=get(handles.ProjObject,'Value');
+% hseries=get(handles.ProjObject,'Parent');
+% SeriesData=get(hseries,'UserData');
+% Obj=SeriesData.ProjObject{index};
+% [SeriesData.hset_object,SeriesData.sethandles]=set_object(SeriesData.ProjObject{index});
+% set(hseries,'UserData',SeriesData);
 
-list_object=get(handles.ProjObject,'String');
-index=get(handles.ProjObject,'Value');
-hseries=get(handles.ProjObject,'Parent');
-SeriesData=get(hseries,'UserData');
-Obj=SeriesData.ProjObject{index};
-[SeriesData.hset_object,SeriesData.sethandles]=set_object(SeriesData.ProjObject{index});
-set(hseries,'UserData',SeriesData);
-
-%-------------------------------------------------------------
-%generates a series of file names with reference numbers between range1 and
-%range2 with increment incr. The reference number num_ref is the image number at the middle of the
-%image pair. The set of first numbers num1 of the image pairs is also
-%given as output
-%------------------------------------------------------
-function [num_i1,num_i2,num_j1,num_j2,nbmissing]=netseries_generator(filebase,subdir,mode,first_i,incr_i,last_i,first_j,incr_j,last_j)
-[Path,Name]=fileparts(filebase);
-filebasesub=fullfile(Path,subdir,Name);
-filecell={};%default
-num_i1=[];
-num_i2=[];
-num_j1=[];
-num_j2=[];
-ind0_i=first_i:incr_i:last_i;
-nbcolumn=length(ind0_i);
-ind0_j=first_j:incr_j:last_j;
-nbline=length(ind0_j);
-if isequal(mode,'#_ab')
-    dirpair=dir([filebasesub '*_*.nc']);
-elseif isequal(mode,'bursts')|isequal(mode,'series(Dj)')  
-    dirpair=dir([filebasesub '_*_*-*.nc']);
-elseif isequal(mode,'series(Di)')
-    dirpair=dir([filebasesub '_*-*_*.nc']);
-else
-    errordlg('option *|* not yet implemented')
-    return
-end
-if isempty(dirpair)
-        errordlg('no pair detected in the selected range')
-        return
-end
-    %ind0_i=first_i:incr_i:last_i;
-    %nbcolumn=length(ind0_i);
-    %dirpair=dir([filebasesub '_*_*-*.nc']);
-if isequal(mode,'bursts')|isequal(mode,'#_ab')
-    icount=0;
-    for ifile=1:length(dirpair)
-        [RootPath,RootFile,str_1,str_2,str_a,str_b,ext,nom_type]=name2display(dirpair(ifile).name);
-        
-%         if isempty(str2num(str_1))
-%             dirpair(ifile).name
-%         end
-        num1_r=str2num(str_1);
-        if isequal(RootFile,Name) & ~isempty(num1_r)   
-            num_i1(ifile)=num1_r;
-            num_a(ifile)=stra2num(str_a);
-            num_b(ifile)=stra2num(str_b);
-%             icount=icount+1;
-        end      
-    end
-    length(dirpair)
-%     num_j=floor((num_a+num_b)/2); %list of reference indices of the detected files
-    test_range= (num_i1 >=first_i)&(num_i1<= last_i);% =1 when both numbers are in the range
-    ind_i=((num_i1-first_i)/incr_i)+1;%indices i in the list of prescribed file indices 
-    select=find(test_range &(floor(ind_i)==ind_i));%selected indices of num_i1 in the file directory
-    ind_i=ind_i(select);%set of selected indices ind_i
-    [ind_i,indsort]=sort(ind_i);%sorted list of ind_i
-    select=select(indsort);
-    num_i1=num_i1(select);
-    num_a=num_a(select);
-    num_b=num_b(select);
-    dirpair=dirpair(select);
-    [ind_remove]=find_pairs(dirpair,ind_i,nbcolumn); 
-    ind_i(ind_remove)=[];
-    num_a(ind_remove)=[];
-    num_b(ind_remove)=[];
-    num_j1=zeros(1,nbcolumn);%default
-    num_j2=num_j1;
-    num_j1(ind_i)=num_a;
-    num_j2(ind_i)=num_b;
-    num_i1=first_i:incr_i:last_i;
-    num_i2=num_i1;
-    nbmissing=nbcolumn-length(ind_i);
-
-elseif isequal(mode,'series(Di)') 
-    %ind0_i=first_i:incr_i:last_i;
-    %nbcolumn=length(ind0_i);
-    %ind0_j=first_j:incr_j:last_j;
-    %nbline=length(ind0_j);
-    %dirpair=dir([filebasesub '_*-*_*.nc']);
-    for ifile=1:length(dirpair)
-        [RootPath,RootFile,str_1,str_2,str_a,str_b,ext,nom_type]=name2display(dirpair(ifile).name);
-        num_i1_r(ifile)=str2num(str_1);
-        num_i2_r(ifile)=str2num(str_2);
-        num_j(ifile)=str2num(str_a);
-    end
-    num_i=floor((num_i1_r+num_i2_r)/2); %list of reference indices of the detected files
-    test_range= (num_i >=first_i)&(num_i<= last_i)&(num_j >=first_j)&(num_j<= last_j);% =1 when both numbers are in the range
-    ind_i=((num_i-first_i)/incr_i)+1;%indices i and j in the list of prescribed file indices 
-    ind_j=((num_j-first_j)/incr_j)+1;
-    ind_ij=ind_j+nbline*(ind_i-1);%indices in the reshhaped series of prescribed file indices
-    select=find(test_range &(floor(ind_i)==ind_i)&(floor(ind_j)==ind_j));%selected indices in the file directory
-    ind_ij=ind_ij(select);%set of selected indices ind_ij
-    [ind_ij,indsort]=sort(ind_ij);%sorted list of ind_ij 
-    select=select(indsort);
-    num_i1_r=num_i1_r(select);
-    num_i2_r=num_i2_r(select);
-%     num_j=num_j(select);
-    dirpair=dirpair(select);
-    [ind_remove]=find_pairs(dirpair,ind_ij,nbcolumn*nbline) ;
-    ind_ij(ind_remove)=[];
-    num_i1_r(ind_remove)=[];
-    num_i2_r(ind_remove)=[];
-    num_i1=zeros(1,nbline*nbcolumn);%default
-    num_i2=num_i1;
-    num_i1(ind_ij)=num_i1_r;
-    num_j2(ind_ij)=num_i2_r;
-    num_i1=reshape(num_i1,nbline,nbcolumn);
-    num_i2=reshape(num_i2,nbline,nbcolumn);
-    num_j1=meshgrid(ind0_i,ind0_j);
-    num_j2=num_j1;
-    nbmissing=nbline*nbcolumn-length(ind_ij);
-elseif isequal(mode,'series(Dj)')
- %   ind0_i=first_i:incr_i:last_i;
- %   nbcolumn=length(ind0_i);
- %   ind0_j=first_j:incr_j:last_j;
-  %  nbline=length(ind0_j);
-  %  dirpair=dir([filebasesub '_*_*-*.nc']);
-    for ifile=1:length(dirpair)
-        [RootPath,RootFile,str_1,str_2,str_a,str_b,ext,nom_type]=name2display(dirpair(ifile).name);
-        num_i(ifile)=str2num(str_1);
-        num_a(ifile)=str2num(str_a);
-        num_b(ifile)=str2num(str_b);
-    end
-    num_j=floor((num_a+num_b)/2); %list of reference indices of the detected files
-    test_range= (num_i >=first_i)&(num_i<= last_i)&(num_j >=first_j)&(num_j<= last_j);% =1 when both numbers are in the range
-    ind_i=((num_i-first_i)/incr_i)+1;%indices i and j in the list of prescribed file indices 
-    ind_j=((num_j-first_j)/incr_j)+1;
-    ind_ij=ind_j+nbline*(ind_i-1);%indices in the reshhaped series of prescribed file indices
-    select=find(test_range &(floor(ind_i)==ind_i)&(floor(ind_j)==ind_j));%selected indices in the file directory
-    ind_ij=ind_ij(select);%set of selected indices ind_ij
-    [ind_ij,indsort]=sort(ind_ij);%sorted list of ind_ij 
-    select=select(indsort);
-    num_i=num_i(select);
-    num_a=num_a(select);
-    num_b=num_b(select);
-    dirpair=dirpair(select);
-    [ind_remove]=find_pairs(dirpair,ind_ij,nbcolumn*nbline) ;
-    ind_ij(ind_remove)=[];
-    num_a(ind_remove)=[];
-    num_b(ind_remove)=[];
-    num_j1=zeros(1,nbline*nbcolumn);%default
-    num_j2=num_j1;
-    num_j1(ind_ij)=num_a;
-    num_j2(ind_ij)=num_b;
-    num_j1=reshape(num_j1,nbline,nbcolumn);
-    num_j2=reshape(num_j2,nbline,nbcolumn);
-    num_i1=meshgrid(ind0_i,ind0_j);
-    num_i2=num_i1;
-    nbmissing=nbline*nbcolumn-length(ind_ij);
-%     for i=1:length(indsel);%A SUPPRIMER ULTERIEUREMENT
-%         if indsel(i)==0
-%             filecell{i}='';
-%         else
-%             Name=dirpair(indsel(i)).name;
-%             filecell{i}=fullfile(Path,subdir,Name);
-%         end
-%     end
-%else
-%    errordlg('option *|* not yet implemented')
-%    return
-end
