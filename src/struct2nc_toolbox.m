@@ -88,22 +88,22 @@ for ivar=1:length(ListVarName)
         eval(['VarVal=Data.' ListVarName{ivar} ';'])%varval=values of the current variable 
         siz=size(VarVal);
         VarDimIndex=Data.VarDimIndex{ivar}; %indices of the variable dimensions in the list of dimensions
-        VarDimName=Data.VarDimName{ivar};%NEW
-        if ischar(VarDimName)%NEW
-            VarDimName={VarDimName};%NEW
-        end%NEW
-        testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2); %NEW
+        VarDimName=Data.VarDimName{ivar};
+        if ischar(VarDimName)
+            VarDimName={VarDimName};
+        end
+        testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2); 
         testline=isequal(length(siz),2) & isequal(siz(1),1)& isequal(siz(2), Data.DimValue(VarDimIndex));
         testcolumn=isequal(length(siz),2) & isequal(siz(1), Data.DimValue(VarDimIndex))& isequal(siz(2),1);
         if ~testrange && ~testline && ~testcolumn && ~isequal(siz,Data.DimValue(VarDimIndex))
             errormsg=['wrong dimensions declared for ' ListVarName{ivar} ' in struct2nc.m'];
             break
         end 
-        if testline || testrange%NEW
+        if testline || testrange
            dimname=Data.ListDimName{VarDimIndex};
-           if testrange%NEW
-               VarVal=linspace(VarVal(1),VarVal(2),Data.DimValue(VarDimIndex));%NEW
-           end%NEW
+           if testrange
+               VarVal=linspace(VarVal(1),VarVal(2),Data.DimValue(VarDimIndex));
+           end
            nc{ListVarName{ivar}}=ncfloat(dimname);%vector of x coordinates
            nc{ListVarName{ivar}}(:) = VarVal';  
         else
@@ -112,9 +112,9 @@ for ivar=1:length(ListVarName)
         end
         %write variable attributes
         if testattr
-            for ivar=1:length(VarAttribute)  
-                if isstruct(VarAttribute{ivar})
-                    attr_names=fields(VarAttribute{ivar});
+            for ivarattr=1:length(VarAttribute)  
+                if isstruct(VarAttribute{ivarattr})
+                    attr_names=fields(VarAttribute{ivarattr});
                     for iattr=1:length(attr_names)
                         eval(['attr_val=VarAttribute{ivar}.' attr_names{iattr} ';']);
                         if ischar(attr_val) && ~isequal(attr_val,'')

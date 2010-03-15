@@ -136,7 +136,7 @@ end
 if testnewfig% create a new figure and axes if the plotting axes does not exist
     hfig=figure;
     if isfield(Data,'IndexObj')&isfield(Data,'Style')&isfield(Data,'ProjMode')
-        figname=[num2str(Data.IndexObj) '-' set_title(Data.Style,Data.ProjMode)];
+        figname=[num2str(Data.IndexObj) '-' Data.Style];
         set(hfig,'Name',figname)
     end
     testhandle=0;
@@ -1015,9 +1015,8 @@ end
 if ~(exist('KeepLim','var') && isequal(KeepLim,1))  %adjust the graph limits*
         test_lim=0;
         if test_vec
-            'TESTplot'
-            Xlim=[min(vec_X) max(vec_X)]
-            Ylim=[min(vec_Y) max(vec_Y)]
+            Xlim=[min(vec_X) max(vec_X)];
+            Ylim=[min(vec_Y) max(vec_Y)];
             test_lim=1;
             if test_ima%both background image and vectors coexist, take the wider bound
                 Xlim(1)=min(AX(1),Xlim(1));
@@ -1032,9 +1031,13 @@ if ~(exist('KeepLim','var') && isequal(KeepLim,1))  %adjust the graph limits*
             Ylim(2)=max(AY(1),AY(end));
             test_lim=1;
         end 
-        if test_lim
-            set(haxes,'XLim',Xlim);% set x limits of frame in axes coordinates
-            set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
+        if test_lim 
+            if Xlim(2)>Xlim(1)
+                set(haxes,'XLim',Xlim);% set x limits of frame in axes coordinates
+            end
+            if Ylim(2)>Ylim(1)
+                set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
+            end
         end
 end
 if ~(isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1))

@@ -89,6 +89,7 @@ if isfield(ObjectData,'ProjMode') && (isequal(ObjectData.ProjMode,'none')||isequ
     ProjData=[];
     return
 end
+FieldData
 %introduce default field properties (reading old standards)
 if ~isfield(ObjectData,'Style')||~isfield(ObjectData,'Coord')||~isfield(ObjectData,'ProjMode')
     ProjData=FieldData;
@@ -884,7 +885,7 @@ for icell=1:length(CellVarIndex)
             end
             ProjData.VarAttribute{nbvar+1}.long_name='abscissa along line';
             if nbcolor==3
-                ProjData.VarDimName{end}={XName,'rgb'};
+                ProjData.VarDimName{end}={AXName,'rgb'};
             end
         end      
     end
@@ -1176,12 +1177,12 @@ for icell=1:length(CellVarIndex)
             testFF=0;
             for ivar=VarIndex
                 VarName=FieldData.ListVarName{ivar}; 
-                if ~( ivar==ivar_X | ivar==ivar_Y | ivar==ivar_Z | ivar==ivar_F | ivar==ivar_FF | test_anc(ivar)==1)                 
+                if ~( ivar==ivar_X || ivar==ivar_Y || ivar==ivar_Z || ivar==ivar_F || ivar==ivar_FF || test_anc(ivar)==1)                 
                     ivar_new=ivar_new+1;
                     ProjData.ListVarName=[ProjData.ListVarName {VarName}];
                     ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
                     %ProjData.VarDimIndex=[ProjData.VarDimIndex {[1 2]}];
-                    if isfield(FieldData,'VarAttribute') & length(FieldData.VarAttribute) >=ivar
+                    if isfield(FieldData,'VarAttribute') && length(FieldData.VarAttribute) >=ivar
                         ProjData.VarAttribute{ivar_new+nbcoord}=FieldData.VarAttribute{ivar};
                     end
 %                     ProjData.VarAttribute{ivar_new}.Coord_2=[XMin XMax];
@@ -1189,7 +1190,7 @@ for icell=1:length(CellVarIndex)
                     if  ~isequal(ivar_FF,0)
                         eval(['FieldData.' VarName '=FieldData.' VarName '(indsel);'])
                     end
-                    eval(['ProjData.' VarName '=griddata_uvmat(coord_X,coord_Y,FieldData.' VarName ',coord_x_proj,coord_y_proj'');'])
+                    eval(['ProjData.' VarName '=griddata_uvmat(double(coord_X),double(coord_Y),double(FieldData.' VarName '),coord_x_proj,coord_y_proj'');'])
                     eval(['varline=reshape(ProjData.' VarName ',1,length(coord_y_proj)*length(coord_x_proj));'])
                     FFlag= isnan(varline); %detect undefined values NaN
                     indnan=find(FFlag);
@@ -1516,7 +1517,7 @@ for icell=1:length(CellVarIndex)
         end
     end
     %projection of  velocity components in the rotated coordinates
-    if ~isequal(Phi,0) & length(ivar_U)==1
+    if ~isequal(Phi,0) && length(ivar_U)==1
         if isempty(ivar_V)
             msgbox_uvmat('ERROR','v velocity component missing in proj_field.m')
             return

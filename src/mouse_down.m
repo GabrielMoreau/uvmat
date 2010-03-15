@@ -202,7 +202,7 @@ elseif ~isempty(huvmat)
             UvData.Object{IndexObj}.HandlesDisplay(1)=AxeData.CurrentObject;
             set(huvmat,'UserData',UvData)
             list_str=get(hhuvmat.list_object,'String');
-            list_str{IndexObj}=[num2str(IndexObj) '-' set_title(ObjectData.Style,ObjectData.ProjMode)];
+            list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style];
             if ~isequal(list_str{end},'...')
                  list_str{end+1}='...';
             end

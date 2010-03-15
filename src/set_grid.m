@@ -287,31 +287,6 @@ if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
 %read the file
  t=xmltree(fileinput);
  s=convert(t);
-%Display title
-title=set_title(s.Style,s.ProjMode);%update the title
-% menu=get(handles.TITLE,'String')
-% for iline=1:length(menu)
-%      if isequal(menu{iline},title)
-%          set(handles.TITLE,'Value',iline)
-%          break
-%      end
-% end
-% TITLE_Callback(hObject, eventdata, handles)
-% teststyle=0;
-% if isfield(s,'Style')
-%         menu=get(handles.ObjectStyle,'String');
-%         for iline=1:length(menu)
-%             if isequal(menu{iline},s.Style)
-%                 set(handles.ObjectStyle,'Value',iline)
-%                 teststyle=1;
-%                 break
-%             end
-%         end
-% end
-% if teststyle==0;
-%        s.Style='points';
-%        set(handles.ObjectStyle,'Value',1); %default (points)
-% end
 testmode=0;
 if isfield(s,'ProjMode')
         menu=get(handles.ProjMode,'String');
@@ -475,8 +450,8 @@ RangeY=Object.RangeY;
 imageA=get(handles.image_1,'String');
 imageB=get(handles.image_2,'String');
 testB=1;
-if isempty(imageA) | isequal(imageA,'')
-    if isempty(imageB) | isequal(imageB,'')
+if isempty(imageA) || isequal(imageA,'')
+    if isempty(imageB) || isequal(imageB,'')
         msgbox_uvmat('ERROR','at least one image file name must be introduced')
     else
         imageA=imageB;
@@ -493,9 +468,9 @@ if isequal(testexist,0)
     return
 end
 [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(imageA);
-form=imformats(ext([2:end]));
+form=imformats(ext(2:end));
 if isempty(form)% if the extension corresponds to an image format recognized by Matlab
-     msgbox_uvmat('ERROR',['error in read_image.m: ' imageA ' is not an image name recognized by Matlab '])
+     msgbox_uvmat('ERROR',['error: ' imageA ' is not an image name recognized by Matlab '])
      return
 end
 fileAxml=[fullfile(Pathsub,RootFile) '.xml'];
@@ -523,7 +498,7 @@ if testB
     [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(imageB);
     form=imformats(ext([2:end]));
     if isempty(form)% if the extension corresponds to an image format recognized by Matlab
-         msgbox_uvmat('ERROR',['error in read_image.m: ' imageB ' is not an image name recognized by Matlab '])
+         msgbox_uvmat('ERROR',['error: ' imageB ' is not an image name recognized by Matlab '])
          return
     end
     fileBxml=[fullfile(Pathsub,RootFile) '.xml'];
@@ -597,26 +572,6 @@ if testB
     Answer = msgbox_uvmat('INPUT_TXT','grid file name (*.grid)',fullfile(Pathsub,'gridB.grid'));
     dlmwrite(Answer,textout,'');
     msgbox_uvmat('CONFIRMATION',[Answer ' written as ASCII text file']);
-end
-
-
-%------------------------------------------------
-function TITLE=set_title(Style,ProjMode)
-%------------------------------------------------
-if isequal(Style,'points')
-    TITLE='POINTS';
-elseif isequal(Style,'line')|isequal(Style,'polyline')
-    TITLE='LINE';
-elseif isequal(Style,'plane')
-    TITLE='PLANE';
-elseif isequal(Style,'volume')
-    TITLE='VOLUME';
-elseif isequal(Style,'polygon')|isequal(Style,'rectangle')|isequal(Style,'ellipse')
-    if isequal(ProjMode,'inside')|isequal(ProjMode,'outside')
-        TITLE='PATCH';
-    else
-        TITLE='LINE';
-    end
 end
 
 

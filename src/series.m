@@ -1288,7 +1288,7 @@ if ~isequal(str_pair,'Dj=*|*')&~isequal(str_pair,'Di=*|*')
 	end 
 	
 	%update the first and last times of the series
-	if testupdate & isfield(SeriesData,'Time')
+	if testupdate && isfield(SeriesData,'Time')
         if ~isempty(SeriesData.Time{1})
             displ_time(handles,SeriesData.Time{1});
         end
@@ -1303,20 +1303,13 @@ function RUN_Callback(hObject, eventdata, handles)
 set(handles.RUN,'BusyAction','queue');
 %hseries=get(handles.RUN,'parent');
 set(0,'CurrentFigure',handles.figure1)
-if isequal(get(handles.GetObject,'Value'),1) 
+if isequal(get(handles.GetObject,'Visible'),'on') && isequal(get(handles.GetObject,'Value'),1) 
     Series.GetObject=1;
     GetObject_Callback(hObject, eventdata, handles)
 else
     Series.GetObject=0;
 end
 SeriesData=get(handles.figure1,'UserData');
-% if isfield(SeriesData,'sethandles')
-%     if iscell(SeriesData.sethandles)
-%         Series.sethandles=SeriesData.sethandles{1};
-%     else
-%         Series.sethandles=SeriesData.sethandles;%retrieve the handles of the set_object interface (to define projection objects)
-%     end
-% end
 
 %reinitiate waitbar position
 Series.WaitbarPos=get(handles.waitbar_frame,'Position');%TO SUPPRESS
@@ -1505,7 +1498,7 @@ end
 % RUN ACTION
 Series.Action=action;%name of the processing programme
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
-drawnow
+
 if length(RootPath)>1
     h_fun(num_i1_cell,num_i2_cell,num_j1_cell,num_j2_cell,Series);
 else
@@ -2082,10 +2075,11 @@ SeriesData=get(hseries,'UserData');
 value=get(handles.GetObject,'Value');
 if value
      set(handles.GetObject,'BackgroundColor',[1 1 0])%put unactivated buttons to yellow
-     DataInit.ParentButton=handles.GetObject;
+%      DataInit.ParentButton=handles.GetObject;
      hset_object=findobj(allchild(0),'Name','set_object');%find the set_object interface handle
      if ishandle(hset_object)
-         [SeriesData.hset_object,SeriesData.sethandles]=set_object(DataInit); %open the set_object interface
+         uistack(hset_object,'top')
+        %[SeriesData.hset_object,SeriesData.sethandles]=set_object(DataInit); %open the set_object interface
      else
          %get the object file 
          defaultname=get(handles.RootPath,'String');
@@ -2093,7 +2087,7 @@ if value
        {'*.xml;*.mat', ' (*.xml,*.mat)';
        '*.xml',  '.xml files '; ...
         '*.mat',  '.mat matlab files '}, ...
-        'Pick a file',defaultname{1});
+        'Pick an xml object file (or use uvmat to create it)',defaultname{1});
         fileinput=[PathName FileName];%complete file name 
         testblank=findstr(fileinput,' ');%look for blanks
         if ~isempty(testblank)
@@ -2122,7 +2116,7 @@ if value
         [SeriesData.hset_object,SeriesData.sethandles]=set_object(data);% call the set_object interface
      end 
 else
-    set(handles.GetObject,'BackgroundColor',[0 1 0])%put activated buttons to green
+    set(handles.GetObject,'BackgroundColor',[0.7 0.7 0.7])%put activated buttons to green
 %     if isfield(SeriesData,'hset_object')&& ishandle(SeriesData.hset_object)
 %         close(SeriesData.hset_object)
 %     end
@@ -2216,7 +2210,169 @@ end
 func=functions(list_transform{ind_coord});
 set(handles.path_transform,'String',fileparts(func.file)); %show the path to the senlected function
 
+%-------------------------------------------------------------
+%generates a series of file names with reference numbers between range1 and
+%range2 with increment incr. The reference number num_ref is the image number at the middle of the
+%image pair. The set of first numbers num1 of the image pairs is also
+%given as output
+%------------------------------------------------------
+function [num_i1,num_i2,num_j1,num_j2,nbmissing]=netseries_generator(filebase,subdir,mode,first_i,incr_i,last_i,first_j,incr_j,last_j)
+[Path,Name]=fileparts(filebase);
+filebasesub=fullfile(Path,subdir,Name);
+filecell={};%default
+num_i1=[];
+num_i2=[];
+num_j1=[];
+num_j2=[];
+ind0_i=first_i:incr_i:last_i;
+nbcolumn=length(ind0_i);
+ind0_j=first_j:incr_j:last_j;
+nbline=length(ind0_j);
+if isequal(mode,'#_ab')
+    dirpair=dir([filebasesub '*_*.nc']);
+elseif isequal(mode,'bursts')|isequal(mode,'series(Dj)')  
+    dirpair=dir([filebasesub '_*_*-*.nc']);
+elseif isequal(mode,'series(Di)')
+    dirpair=dir([filebasesub '_*-*_*.nc']);
+else
+    errordlg('option *|* not yet implemented')
+    return
+end
+if isempty(dirpair)
+        errordlg('no pair detected in the selected range')
+        return
+end
+    %ind0_i=first_i:incr_i:last_i;
+    %nbcolumn=length(ind0_i);
+    %dirpair=dir([filebasesub '_*_*-*.nc']);
+if isequal(mode,'bursts')|isequal(mode,'#_ab')
+    icount=0;
+    for ifile=1:length(dirpair)
+        [RootPath,RootFile,str_1,str_2,str_a,str_b,ext,nom_type]=name2display(dirpair(ifile).name);
+        
+%         if isempty(str2num(str_1))
+%             dirpair(ifile).name
+%         end
+        num1_r=str2num(str_1);
+        if isequal(RootFile,Name) & ~isempty(num1_r)   
+            num_i1(ifile)=num1_r;
+            num_a(ifile)=stra2num(str_a);
+            num_b(ifile)=stra2num(str_b);
+%             icount=icount+1;
+        end      
+    end
+    length(dirpair)
+%     num_j=floor((num_a+num_b)/2); %list of reference indices of the detected files
+    test_range= (num_i1 >=first_i)&(num_i1<= last_i);% =1 when both numbers are in the range
+    ind_i=((num_i1-first_i)/incr_i)+1;%indices i in the list of prescribed file indices 
+    select=find(test_range &(floor(ind_i)==ind_i));%selected indices of num_i1 in the file directory
+    ind_i=ind_i(select);%set of selected indices ind_i
+    [ind_i,indsort]=sort(ind_i);%sorted list of ind_i
+    select=select(indsort);
+    num_i1=num_i1(select);
+    num_a=num_a(select);
+    num_b=num_b(select);
+    dirpair=dirpair(select);
+    [ind_remove]=find_pairs(dirpair,ind_i,nbcolumn); 
+    ind_i(ind_remove)=[];
+    num_a(ind_remove)=[];
+    num_b(ind_remove)=[];
+    num_j1=zeros(1,nbcolumn);%default
+    num_j2=num_j1;
+    num_j1(ind_i)=num_a;
+    num_j2(ind_i)=num_b;
+    num_i1=first_i:incr_i:last_i;
+    num_i2=num_i1;
+    nbmissing=nbcolumn-length(ind_i);
 
+elseif isequal(mode,'series(Di)') 
+    %ind0_i=first_i:incr_i:last_i;
+    %nbcolumn=length(ind0_i);
+    %ind0_j=first_j:incr_j:last_j;
+    %nbline=length(ind0_j);
+    %dirpair=dir([filebasesub '_*-*_*.nc']);
+    for ifile=1:length(dirpair)
+        [RootPath,RootFile,str_1,str_2,str_a,str_b,ext,nom_type]=name2display(dirpair(ifile).name);
+        num_i1_r(ifile)=str2num(str_1);
+        num_i2_r(ifile)=str2num(str_2);
+        num_j(ifile)=str2num(str_a);
+    end
+    num_i=floor((num_i1_r+num_i2_r)/2); %list of reference indices of the detected files
+    test_range= (num_i >=first_i)&(num_i<= last_i)&(num_j >=first_j)&(num_j<= last_j);% =1 when both numbers are in the range
+    ind_i=((num_i-first_i)/incr_i)+1;%indices i and j in the list of prescribed file indices 
+    ind_j=((num_j-first_j)/incr_j)+1;
+    ind_ij=ind_j+nbline*(ind_i-1);%indices in the reshhaped series of prescribed file indices
+    select=find(test_range &(floor(ind_i)==ind_i)&(floor(ind_j)==ind_j));%selected indices in the file directory
+    ind_ij=ind_ij(select);%set of selected indices ind_ij
+    [ind_ij,indsort]=sort(ind_ij);%sorted list of ind_ij 
+    select=select(indsort);
+    num_i1_r=num_i1_r(select);
+    num_i2_r=num_i2_r(select);
+%     num_j=num_j(select);
+    dirpair=dirpair(select);
+    [ind_remove]=find_pairs(dirpair,ind_ij,nbcolumn*nbline) ;
+    ind_ij(ind_remove)=[];
+    num_i1_r(ind_remove)=[];
+    num_i2_r(ind_remove)=[];
+    num_i1=zeros(1,nbline*nbcolumn);%default
+    num_i2=num_i1;
+    num_i1(ind_ij)=num_i1_r;
+    num_j2(ind_ij)=num_i2_r;
+    num_i1=reshape(num_i1,nbline,nbcolumn);
+    num_i2=reshape(num_i2,nbline,nbcolumn);
+    num_j1=meshgrid(ind0_i,ind0_j);
+    num_j2=num_j1;
+    nbmissing=nbline*nbcolumn-length(ind_ij);
+elseif isequal(mode,'series(Dj)')
+ %   ind0_i=first_i:incr_i:last_i;
+ %   nbcolumn=length(ind0_i);
+ %   ind0_j=first_j:incr_j:last_j;
+  %  nbline=length(ind0_j);
+  %  dirpair=dir([filebasesub '_*_*-*.nc']);
+    for ifile=1:length(dirpair)
+        [RootPath,RootFile,str_1,str_2,str_a,str_b,ext,nom_type]=name2display(dirpair(ifile).name);
+        num_i(ifile)=str2num(str_1);
+        num_a(ifile)=str2num(str_a);
+        num_b(ifile)=str2num(str_b);
+    end
+    num_j=floor((num_a+num_b)/2); %list of reference indices of the detected files
+    test_range= (num_i >=first_i)&(num_i<= last_i)&(num_j >=first_j)&(num_j<= last_j);% =1 when both numbers are in the range
+    ind_i=((num_i-first_i)/incr_i)+1;%indices i and j in the list of prescribed file indices 
+    ind_j=((num_j-first_j)/incr_j)+1;
+    ind_ij=ind_j+nbline*(ind_i-1);%indices in the reshhaped series of prescribed file indices
+    select=find(test_range &(floor(ind_i)==ind_i)&(floor(ind_j)==ind_j));%selected indices in the file directory
+    ind_ij=ind_ij(select);%set of selected indices ind_ij
+    [ind_ij,indsort]=sort(ind_ij);%sorted list of ind_ij 
+    select=select(indsort);
+    num_i=num_i(select);
+    num_a=num_a(select);
+    num_b=num_b(select);
+    dirpair=dirpair(select);
+    [ind_remove]=find_pairs(dirpair,ind_ij,nbcolumn*nbline) ;
+    ind_ij(ind_remove)=[];
+    num_a(ind_remove)=[];
+    num_b(ind_remove)=[];
+    num_j1=zeros(1,nbline*nbcolumn);%default
+    num_j2=num_j1;
+    num_j1(ind_ij)=num_a;
+    num_j2(ind_ij)=num_b;
+    num_j1=reshape(num_j1,nbline,nbcolumn);
+    num_j2=reshape(num_j2,nbline,nbcolumn);
+    num_i1=meshgrid(ind0_i,ind0_j);
+    num_i2=num_i1;
+    nbmissing=nbline*nbcolumn-length(ind_ij);
+%     for i=1:length(indsel);%A SUPPRIMER ULTERIEUREMENT
+%         if indsel(i)==0
+%             filecell{i}='';
+%         else
+%             Name=dirpair(indsel(i)).name;
+%             filecell{i}=fullfile(Path,subdir,Name);
+%         end
+%     end
+%else
+%    errordlg('option *|* not yet implemented')
+%    return
+end
 
 function path_transform_Callback(hObject, eventdata, handles)
 % hObject    handle to path_transform (see GCBO)
