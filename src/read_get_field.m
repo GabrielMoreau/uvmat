@@ -587,7 +587,9 @@ if test_vector
         SingleCellU=[SingleCellU DimCellU(ind_single)];
     end
     ind_select=find(npxy~=1);%look for non singleton dimensions
-    DimCellU=DimCellU(ind_select);
+    if numel(DimCellU)>=ind_select
+        DimCellU=DimCellU(ind_select);
+    end
     npxy=npxy(ind_select);
     dimU=[];
     if test_zdimvar%dim_x && dim_y && ~isempty(VarSubIndexA)

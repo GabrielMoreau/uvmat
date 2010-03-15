@@ -3,7 +3,10 @@
 % RUN_FIX(filename,field,flagindex,thresh_vecC,thresh_vel,iter,flag_mask,maskname,fileref,fieldref)
 %
 %filename: name of the netcdf file (used as input and output)
-%field: structure specifying the field to fix (field.vel_type='civ1' or 'civ2')
+%field: structure specifying the names of the fields to fix (depending on civ1 or civ2)
+    %.vel_type='civ1' or 'civ2';
+    %.nb=name of the dimension common to the field to fix ('nb_vectors' for civ1);
+    %.fixflag=name of fix flag variable ('vec_FixFlag' for civ1)
 %flagindex: flag specifying which values of vec_f are removed: 
         % if flagindex(1)=1: vec_f=-2 vectors are removed
         % if flagindex(2)=1: vec_f=3 vectors are removed
@@ -20,7 +23,13 @@
 function error=RUN_FIX(filename,field,flagindex,iter,thresh_vecC,flag_mask,maskname,thresh_vel,inf_sup,fileref,fieldref)
 error=[]; %default
 vel_type{1}=field.vel_type;
-Field=read_civxdata(filename,[],field.vel_type);
+%check writing access
+[errorread,message]=fileattrib(filename);
+if ~isempty(message) && ~isequal(message.UserWrite,1)
+     msgbox_uvmat('ERROR',['no writting access to ' filename ' (RUN_FIX.m)']);
+    return
+end
+Field=read_civxdata(filename,'ima_cor',field.vel_type);
 if isfield(Field,'Txt')
     error=Field.Txt; %error in reading
     return
@@ -81,7 +90,6 @@ if exist('fileref','var') && ~isempty(fileref)
     delta_u=Field.U-vec_U_ref;%take the difference with the interpolated ref field
     delta_v=Field.V-vec_V_ref;
 end
-
 thresh_vel_x=thresh_vel; 
 thresh_vel_y=thresh_vel; 
 if isequal(inf_sup,1)
@@ -122,24 +130,38 @@ else
    flag7=0;
 end   
 flagmagenta=flag1|flag2|flag3|flag4|flag5|flag7;
-
-%write fix flags
-[errorread,message]=fileattrib(filename);
-
-if ~isempty(message) && ~isequal(message.UserWrite,1)
-     msgbox_uvmat('ERROR',['no writting access to ' filename ' (RUN_FIX.m)']);
-    return
-end
-nc=netcdf(filename,'write'); %open netcdf file for writing
-result=redef(nc);
-if isempty(result), errordlg('##Bad redef operation.'),end  
-if iter==1
-    nc.fix=1;
-elseif iter==2
-    nc.fix2=1;
-end
-%theDim=nc(field.nb) ;% get the number of velocity vectors
-nc{field.fixflag}=ncfloat(field.nb);
 fixflag_unit=Field.FF-10*floor(Field.FF/10); %unity term of fix_flag
-nc{field.fixflag}(:)=fixflag_unit+10*flagmagenta;
-close(nc);
+
+%write fix flags in the netcdf file
+hhh=which('netcdf.open');% look for built-in matlab netcdf library
+if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
+    nc=netcdf.open(filename,'NC_WRITE'); 
+    netcdf.reDef(nc)
+    if iter==1
+        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'fix1',1)
+    elseif iter==2
+        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'fix2',1)
+    end
+    dimid = netcdf.inqDimID(nc,field.nb); 
+    try
+        varid = netcdf.inqVarID(nc,field.fixflag);% look for already existing fixflag variable
+    catch
+        varid=netcdf.defVar(nc,field.fixflag,'double',dimid);%create fixflag variable if it does not exist
+    end
+    netcdf.endDef(nc)
+    netcdf.putVar(nc,varid,fixflag_unit+10*flagmagenta);
+    netcdf.close(nc)
+else %old netcdf library
+    nc=netcdf(filename,'write'); %open netcdf file for writing
+    result=redef(nc);
+    if isempty(result), msgbox_uvmat('ERROR','##Bad redef operation.'),end  
+    if iter==1
+        nc.fix=1;
+    elseif iter==2
+        nc.fix2=1;
+    end
+    nc{field.fixflag}=ncfloat(field.nb);
+    fixflag_unit=Field.FF-10*floor(Field.FF/10); %unity term of fix_flag
+    nc{field.fixflag}(:)=fixflag_unit+10*flagmagenta;
+    close(nc);
+end

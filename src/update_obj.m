@@ -67,7 +67,7 @@ if ~isempty(PlotHandles) %&& ~testmask
         plotfig=get(plotaxes,'parent');
         name_str=get(plotfig,'Name');
         if ~isequal(name_str,'uvmat')
-            set(plotfig,'Name',['Projection on' num2str(IndexObj) '-' set_title(ObjectData.Style,ObjectData.ProjMode)]);
+            set(plotfig,'Name',['Projection on' num2str(IndexObj) '-' ObjectData.Style]);
         end
     end
 end
