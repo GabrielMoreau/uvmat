@@ -331,31 +331,34 @@ if xstest==0  %look for the corresponding schema in the directory PARAM_LINUX.xm
     %Path to shemas:
     path_uvmat=which('editxml');% check the path detected for source file uvmat
     path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-    if isunix
-        xmlparam=fullfile(path_UVMAT,'PARAM_LINUX.xml')
-        if exist(xmlparam,'file')
-            tparam=xmltree(xmlparam);
-            sparam=convert(tparam);
-            if isfield(sparam,'SchemaPath')
-                schemapath=[fullfile(sparam.SchemaPath,head_name) '.xsd']
-            end
-        end      
-%         schemapath=['/coriolis/papillon/data/civbin/XML_SCHEMAS/' head_name '.xsd']%current dir for schema
-    else
-        xmlparam=fullfile(path_UVMAT,'PARAM_WIN.xml')
-        if exist(xmlparam,'file')
-            tparam=xmltree(xmlparam);
-            sparam=convert(tparam)
-            if isfield(sparam,'SchemaPath')
-                schemapath=[fullfile(sparam.SchemaPath,head_name) '.xsd']
-            end
-        end 
-%         schemapath=['\\Papillon\data\civbin\XML_SCHEMAS\' head_name '.xsd']%current dir for schemas
+%     if isunix
+xmlparam=fullfile(path_UVMAT,'PARAM.xml');
+if exist(xmlparam,'file')
+    tparam=xmltree(xmlparam);
+    sparam=convert(tparam);
+    if isfield(sparam,'SchemaPath')
+        schemapath=[fullfile(sparam.SchemaPath,head_name) '.xsd']
+    end 
+    if exist(fullfile(path_UVMAT,schemapath)
+        schemapath=fullfile(path_UVMAT,schemapath);%look for relative path definition
     end
+    schemapath=fullfile(path_UVMAT,schemapath);
+%         schemapath=['/coriolis/papillon/data/civbin/XML_SCHEMAS/' head_name '.xsd']%current dir for schema
+%     else
+%         xmlparam=fullfile(path_UVMAT,'PARAM_WIN.xml')
+%         if exist(xmlparam,'file')
+%             tparam=xmltree(xmlparam);
+%             sparam=convert(tparam)
+%             if isfield(sparam,'SchemaPath')
+%                 schemapath=[fullfile(sparam.SchemaPath,head_name) '.xsd']
+%             end
+%         end 
+%         schemapath=['\\Papillon\data\civbin\XML_SCHEMAS\' head_name '.xsd']%current dir for schemas
+%     end
     if exist(schemapath,'file')
         xs=xmltree(schemapath);
     else
-        msgbox_uvmat('ERROR',['The xml schema for ' CurrentFile ' is unknown, check the schema path set in the xml file PARAM'])
+        msgbox_uvmat('ERROR',['The xml schema for ' CurrentFile ' is unknown, check the schema path set in the file PARAM.xml'])
         [FileName, PathName]=uigetfile( ...
        {'*.xsd', '(*.xsd)';
         '*.xsd',  '.xsd files '; ...

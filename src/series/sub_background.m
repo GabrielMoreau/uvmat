@@ -57,7 +57,36 @@ hseries=guidata(Series.hseries);%handles of the GUI series
 WaitbarPos=get(hseries.waitbar_frame,'Position');
 %-----------------------------------------------------------------
 if iscell(Series.RootPath)
-    wardlg_uvmat('This function use only one input file series','ERROR')
+    msgbox_uvmat('ERROR','This function use only one input image series')
+    return
+end
+
+%determine input image type
+FileType=[];%default
+MovieObject=[];
+if isequal(lower(FileExt),'.avi')
+    hhh=which('mmreader');
+    if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
+        MovieObject=mmreader(fullfile(RootPath,[RootFile FileExt]));
+        FileType='movie';
+    else
+        FileType='avi';
+    end
+elseif isequal(lower(FileExt),'.vol')
+    FileType='vol';
+else 
+   form=imformats(FileExt(2:end));
+   if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+       if isequal(NomType,'*');
+           FileType='multimage';
+       else
+           FileType='image';
+       end
+   end
+end
+if isempty(FileType)
+    msgbox_uvmat('ERROR',['invalid file extension ' FileExt ': this function only accepts image or movie input'])
+    return
 end
 
 nbslice_i=Series.NbSlice; %number of slices 
@@ -205,15 +234,10 @@ for islice=1:nbslice_i
     end  
     %read the first series of nbaver_ima images and sort by luminosity at each pixel
     for ifield = 1:nbaver_ima
-              ifile=indselect(ifield);
-                [filename,idetect]=...
-           name_generator(filebase,num_i1(ifile),num_j1(ifile),Series.FileExt,Series.NomType);
-               Aread=imread(filename);
-               size(Aread)
-               if size(Aread,3)>1 %(color images)
-                   Aread=sum(Aread,3); %sum over color components
-               end
-                Ak(:,:,ifield)=Aread;           
+        ifile=indselect(ifield);
+        filename=name_generator(filebase,num_i1(ifile),num_j1(ifile),Series.FileExt,Series.NomType);
+        Aread=read_image(filename,FileType,num_i1(ifile),movieobject);
+        Ak(:,:,ifield)=Aread;           
     end
     Asort=sort(Ak,3);%sort the luminosity of images at each point
     B=Asort(:,:,rank);%background image
@@ -240,22 +264,14 @@ for islice=1:nbslice_i
         for ifield = step*ceil(nbaver/2)+1:step:nbfield_slice-step*floor(nbaver/2)
             stopstate=get(hseries.RUN,'BusyAction');
             if isequal(stopstate,'queue')% enable STOP command
-%                 waitbarpos(4)=((ifield+(islice-1)*nbfield_slice)/(nbfield_slice*nbslice_i))*Series.WaitbarPos(4);
-%                 waitbarpos(2)=Series.WaitbarPos(4)+Series.WaitbarPos(2)-waitbarpos(4);
-%                 set(hwaitbar,'Position',waitbarpos)
-%                 drawnow
                 update_waitbar(hseries.waitbar,WaitbarPos,(ifield+(islice-1)*nbfield_slice)/(nbfield_slice*nbslice_i))
                 (ifield+(islice-1)*nbfield_slice)/(nbfield_slice*nbslice_i)
                 Ak(:,:,[1:nbaver_ima-step])=Ak(:,:,[1+step:nbaver_ima]);% shift the current image series by one burst (step)
                 %incorporate next burst in the current image series
                 for iburst=1:step
                     ifile=indselect(ifield+step*floor(nbaver/2)+iburst-1);
-                    [filename,idetect]=...
-                       name_generator(filebase,num_i1(ifile),num_j1(ifile),Series.FileExt,Series.NomType);
-                    Aread=imread(filename);
-                    if size(Aread,3)>1 %(color images)
-                       Aread=sum(Aread,3); %sum over color components
-                    end
+                    filename=name_generator(filebase,num_i1(ifile),num_j1(ifile),Series.FileExt,Series.NomType);
+                    Aread=read_image(filename,FileType,num_i1(ifile),movieobject);
                     Ak(:,:,nbaver_ima-step+iburst)=Aread;
                 end
                 Asort=sort(Ak,3);%sort the new current image series by luminosity
@@ -297,5 +313,24 @@ end
 update_waitbar(hseries.waitbar,WaitbarPos,1)
 
 
-    
+%------------------------------------------------------------------------
+%--read images and convert them to the uint16 format used for PIV
+function A=read_image(filename,type_ima,num,movieobject)
+%------------------------------------------------------------------------
+%num is the view number needed for an avi movie
+switch type_ima
+    case 'movie'
+        A=read(movieobject,num);
+    case 'avi'
+        mov=aviread(filename,num);
+        A=frame2im(mov(1));
+    case 'multimage'
+        A=imread(filename,num);
+    case 'image'    
+        A=imread(filename);
+end
+siz=size(A);
+if length(siz)==3;%color images
+    A=sum(double(A),3);
+end
     

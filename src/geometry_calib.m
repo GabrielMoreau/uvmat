@@ -581,28 +581,31 @@ function GeometryCalib=calib_tsai(Coord)
 % 'calibration_lin' provides a linear transform on coordinates, 
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-if isunix
+% if isunix
     %fid = fopen(fullfile(path_UVMAT,'PARAM_LINUX.txt'),'r');%open the file with civ binary names
-    xmlfile=fullfile(path_UVMAT,'PARAM_LINUX.xml');
-    if exist(xmlfile,'file')
-        t=xmltree(xmlfile);
-        sparam=convert(t);
-    end
-else
-    %fid = fopen(fullfile(path_UVMAT,'PARAM_WIN.txt'),'r');%open the file with civ binary names
-    xmlfile=fullfile(path_UVMAT,'PARAM_WIN.xml');
-    if exist(xmlfile,'file')
-        t=xmltree(xmlfile);
-        sparam=convert(t);
-    end
-end 
+xmlfile=fullfile(path_UVMAT,'PARAM.xml');
+if exist(xmlfile,'file')
+    t=xmltree(xmlfile);
+    sparam=convert(t);
+end
+% else
+%     %fid = fopen(fullfile(path_UVMAT,'PARAM_WIN.txt'),'r');%open the file with civ binary names
+%     xmlfile=fullfile(path_UVMAT,'PARAM_WIN.xml');
+%     if exist(xmlfile,'file')
+%         t=xmltree(xmlfile);
+%         sparam=convert(t);
+%     end
+% end 
 if ~isfield(sparam,'GeometryCalib_exe')
     msgbox_uvmat('ERROR',['calibration program <GeometryCalib_exe> undefined in parameter file ' xmlfile])
     return
 end
 Tsai_exe=sparam.GeometryCalib_exe;
+if ~exist(Tsai_exe,'file')%the binary is defined in /bin, default setting
+     Tsai_exe=fullfile(path_UVMAT,Tsai_exe);
+end
 if ~exist(Tsai_exe,'file')
-    msgbox_uvmat('ERROR',['calibration program ' Tsai_exe ' does not exist'])
+    msgbox_uvmat('ERROR',['calibration program ' sparam.GeometryCalib_exe ' defined in PARAM.xml does not exist'])
     return
 end
 

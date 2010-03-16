@@ -113,30 +113,19 @@ path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 errormsg=[];%default error message
 if isunix
     syst='LINUX';
-    xmlfile=fullfile(path_UVMAT,'PARAM_LINUX.xml');
-    if exist(xmlfile,'file')
-        try
-        t=xmltree(xmlfile);
-        sparam=convert(t);
-        catch
-             errormsg={[' Problem for reading ' xmlfile]; lasterr};   
-        end
-    else
-        erromsg=[xmlfile ' not found: path to civx binaries undefined'];
-    end
 else
     syst='WIN';
-    xmlfile=fullfile(path_UVMAT,'PARAM_WIN.xml');
-    if exist(xmlfile,'file')
-        try
-        t=xmltree(xmlfile);
-        sparam=convert(t);
-        catch
-             errormsg={[' Problem for reading ' xmlfile]; lasterr};
-        end
-    else
-        erromsg=[xmlfile ' not found: path to civx binaries undefined'];
+end
+xmlfile=fullfile(path_UVMAT,'PARAM.xml');
+if exist(xmlfile,'file')
+    try
+    t=xmltree(xmlfile);
+    sparam=convert(t);
+    catch
+         errormsg={[' Problem for reading ' xmlfile]; lasterr};   
     end
+else
+    errormsg=[xmlfile ' not found: path to civx binaries undefined'];
 end
 display(syst)
 if ~isempty(errormsg)
@@ -159,7 +148,7 @@ name_todo=fullfile(todo_path,'TODO.txt');
 test_batch=1;
 if ~sge
     if isequal(todo_path,'') || isequal(todo_path,[])
-        display(['no batch distributed processing available:file path TODO.txt not defined in UVMAT/PARAM_' syst])
+        display(['no batch distributed processing available:file path TODO.txt not defined in UVMAT/PARAM.xml'])
         test_batch=0;
     end
     if exist(name_todo,'file')~=2 
@@ -326,16 +315,19 @@ if testeditxml==1 || isequal(ext,'.xls')
        return
    end
 end
-[RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)
+[RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput);
 filebase=fullfile(RootPath,RootFile);
-if isequal(nom_type,'*')% all fields in a single file ( movie files)
-    num_i1=1;num_i2=1;num_j1=1;num_j2=1;
-else
-    num_i1=str2double(str1);
-    num_i2=str2double(str2);
-    num_j1=str2double(str_a);
-    num_j2=str2double(str_b);
-end
+% if isequal(nom_type,'*')% all fields in a single file ( movie files)
+%     num_i1=1;num_i2=1;num_j1=1;num_j2=1;
+% else
+num_i1=stra2num(str1);
+if isempty(num_i1),num_i1=1;end
+num_i2=stra2num(str2);
+if isempty(num_i2),num_i2=1;end
+num_j1=stra2num(str_a);
+if isempty(num_j1),num_j1=1;end
+num_j2=stra2num(str_b);
+if isempty(num_j2),num_j2=1;end 
 if isequal(get(handles.compare,'Value'),1)
     browse=[];%initialisation
 else
@@ -459,7 +451,7 @@ function ImaDoc_Callback(hObject, eventdata, handles)
 displ_filebase_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
-%function activated when a new filebase (image series) is introduced
+% --- function activated when a new filebase (image series) is introduced
 function displ_filebase_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 global test_batch
@@ -565,8 +557,8 @@ elseif isequal(ext,'.xml')
     [XmlData,warntext]=imadoc2struct([filebase '.xml']);
     if isfield(XmlData,'Time')
         time=XmlData.Time;
-        nbfield=size(XmlData.Time,1);
-        nburst=size(XmlData.Time,2);
+        nbfield=size(time,1);
+        nburst=size(time,2);
     end
     ext_ima_read=[];
     nom_type_read=[];
@@ -834,7 +826,7 @@ else
     mode=mode_list{mode_value};
 end
 displ_num=[];%default
-first_i=str2num(get(handles.first_i,'String'));
+ref_i=str2num(get(handles.ref_i,'String'));
 % last_i=str2num(get(handles.last_i,'String'));
 time=get(handles.displ_filebase,'UserData'); %get the set of times
 siztime=size(time);
@@ -856,7 +848,7 @@ if isequal(mode,'pair j1-j2')%| isequal(mode,'st_pair j1-j2')
              numlist_a(index)=numod_a;
              numlist_b(index)=numod_b;
              if ~isempty(time)
-                dt(numod_a,numod_b)=time(first_i,numod_b)-time(first_i,numod_a);%first time interval dt
+                dt(numod_a,numod_b)=time(ref_i,numod_b)-time(ref_i,numod_a);%first time interval dt
                 displ_dt(index)=dt(numod_a,numod_b);
              else
                  displ_dt(index)=1;
@@ -1633,36 +1625,27 @@ end
 if box_test(1)==1 || box_test(3)==1 || box_test(4)==1 || box_test(6)==1 
     path_uvmat=which('uvmat');% check the path detected for source file uvmat
     path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-    if isunix
-        %fid = fopen(fullfile(path_UVMAT,'PARAM_LINUX.txt'),'r');%open the file with civ binary names
-        xmlfile=fullfile(path_UVMAT,'PARAM_LINUX.xml');
-        if exist(xmlfile,'file')
-            t=xmltree(xmlfile);
-            sparam=convert(t);
-        end
-    else
-        %fid = fopen(fullfile(path_UVMAT,'PARAM_WIN.txt'),'r');%open the file with civ binary names
-        xmlfile=fullfile(path_UVMAT,'PARAM_WIN.xml');
-        if exist(xmlfile,'file')
-            t=xmltree(xmlfile);
-            sparam=convert(t);
-        end
-    end 
+    %fid = fopen(fullfile(path_UVMAT,'PARAM_LINUX.txt'),'r');%open the file with civ binary names
+    xmlfile=fullfile(path_UVMAT,'PARAM.xml');
+    if exist(xmlfile,'file')
+        t=xmltree(xmlfile);
+        sparam=convert(t);
+    end
     if isfield(sparam,'Civ1_exe')
         civ1_exe=sparam.Civ1_exe;
-        if isequal(civ1_exe(1:4),'civx')%the binary is defined in /civx, default setting
+        if ~exist(civ1_exe,'file')
             civ1_exe=fullfile(path_UVMAT,civ1_exe);
         end
     end
     if isfield(sparam,'Civ2_exe')
         civ2_exe=sparam.Civ2_exe;
-        if isequal(civ2_exe(1:4),'civx')%the binary is defined in /civx, default setting
+        if ~exist(civ2_exe,'file')%the binary is defined in /bin, default setting
             civ2_exe=fullfile(path_UVMAT,civ2_exe);
         end
     end
     if isfield(sparam,'Patch_exe')
         patch_exe=sparam.Patch_exe;
-        if isequal(patch_exe(1:4),'civx')%the binary is defined in /civx, default setting
+        if ~exist(patch_exe,'file')%the binary is defined in /bin, default setting
             patch_exe=fullfile(path_UVMAT,patch_exe);
         end
     end
@@ -2117,19 +2100,18 @@ end
 %read names of the .exe file
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-if isunix
-    xmlfile=fullfile(path_UVMAT,'PARAM_LINUX.xml');
-    if exist(xmlfile,'file')
-        t=xmltree(xmlfile);
-        sparam=convert(t);
-    end
-else
-    xmlfile=fullfile(path_UVMAT,'PARAM_WIN.xml');
-    if exist(xmlfile,'file')
-        t=xmltree(xmlfile);
-        sparam=convert(t);
-    end
+xmlfile=fullfile(path_UVMAT,'PARAM.xml');
+if exist(xmlfile,'file')
+    t=xmltree(xmlfile);
+    sparam=convert(t);
 end
+% else
+%     xmlfile=fullfile(path_UVMAT,'PARAM_WIN.xml');
+%     if exist(xmlfile,'file')
+%         t=xmltree(xmlfile);
+%         sparam=convert(t);
+%     end
+% end
 sge=0;
 if isfield(sparam,'Civ_exe')
     Civ_exe=sparam.Civ_exe;
@@ -2349,10 +2331,6 @@ end
 p1text=[];%initiate command text
 time=get(handles.displ_filebase,'UserData'); %get the set of times
 civAll=get(handles.Experimental,'Value'); % Boolean for new civ excution method 
-'TESTbatch'
-size(filecell.nc.civ1)
-nbslice
-nbfield
 for ifile=1:nbfield
     for j=1:nbslice
         i_cmd=0; 
@@ -2408,7 +2386,6 @@ for ifile=1:nbfield
                 end
             end
             
-            %TESTgrid
             test_grid=get(handles.browse_gridciv1,'Value');
             if test_grid
                 par_civ1.gridflag='y';
@@ -2431,8 +2408,7 @@ for ifile=1:nbfield
                   par_civ1.gridname='noFile use default';
                   par_civ1.gridflag='n';
             end
-            %endTESTgrid
-            
+            %           
             i_cmd=i_cmd+1;
             if isequal(civAll,0)
                 cmd=[cmd '\n' BATCH_CIV1(filename_cmx(1:end-4),namelog,par_civ1,handles)];
