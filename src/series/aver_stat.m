@@ -240,7 +240,7 @@ end
 
 %check coincidence in time
 multitime=0;
-if length(timecell)==0
+if isempty(timecell)
     time=[];
 elseif length(timecell)==1
     time=timecell{1};
@@ -453,7 +453,7 @@ for i_slice=1:NbSlice
             imwrite(uint8(DataMean.A),filemean,'BitDepth',8);
         end
         display([filemean ' written']);
-    else %determine global attributes
+    else %case of netcdf input file , determine global attributes
         DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {Series.Action}];
         ActionKey='Action';
         while isfield(DataMean,ActionKey)
@@ -492,6 +492,7 @@ for i_slice=1:NbSlice
         end
    end
 end
+
 hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
 delete(hget_field)
 uvmat(filemean)

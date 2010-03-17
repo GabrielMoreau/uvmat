@@ -707,8 +707,6 @@ if test_1Dplot
         eval(['SubField.' VarName '=squeeze(SubField.' VarName ');'])%remove singleton dimensions
         if testpermute(ilist)
             eval(['SubField.' VarName '=permute(SubField.' VarName ',[2 1]);'])
-            subvarindex(ilist)
-            SubField.VarDimName{subvarindex(ilist)}
             SubField.VarDimName{subvarindex(ilist)}=SubField.VarDimName{subvarindex(ilist)}([2 1]);
         end
     end

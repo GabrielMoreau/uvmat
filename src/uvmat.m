@@ -1425,10 +1425,10 @@ if isequal(get(handles.mask_test,'Value'),1)
     if ~isempty(nbslice) && Name(i)=='_'
         Mask.Base=[FileBase Name(i:ind_mask+3)];
         Mask.NbSlice=nbslice;
-        num_i1=mod(num_i1-1,nbslice)+1
+        num_i1=mod(num_i1-1,nbslice)+1;
         Mask.NomType=Mask_NomType{1};
-        [maskname,mdetect]=name_generator(Mask.Base,num_i1,num_j1,'.png',Mask.NomType)%
-        mdetect=exist(maskname,'file')
+        [maskname,mdetect]=name_generator(Mask.Base,num_i1,num_j1,'.png',Mask.NomType);%
+        mdetect=exist(maskname,'file');
         if mdetect
             set(handles.nb_slice,'String',Name(i+1:ind_mask-1));
             set(handles.nb_slice,'BackgroundColor',[1 1 0])
@@ -2694,33 +2694,56 @@ function record_Callback(hObject, eventdata, handles)
 filename=read_file_boxes(handles);
 AxeData=get(gca,'UserData');
 [erread,message]=fileattrib(filename);
-if ~isempty(message) & ~isequal(message.UserWrite,1)
+if ~isempty(message) && ~isequal(message.UserWrite,1)
      msgbox_uvmat('ERROR',['no writting access to ' filename])
      return
 end
-nc=netcdf(filename,'write'); %open netcdf file
-result=redef(nc);
-if isempty(result), msgbox_uvmat('ERROR','##Bad redef operation.'),end
 test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
-if ~test_civ2
-    test_civ1=isequal(get(handles.civ1,'BackgroundColor'),[1 1 0]);
-end 
-if test_civ2 % for civ2  
-   
-    theDim=nc('nb_vectors2') ;% get the number of velocity vectors
-    nb_vectors2=size(theDim);
-    var_FixFlag=ncvar('vec2_FixFlag',nc);% var_FixFlag will be written as the netcdf variable vec_FixFlag
-    var_FixFlag(1:nb_vectors2)=AxeData.FF;% 
-elseif test_civ1 % for civ1
-    
-    theDim=nc('nb_vectors') ;% get the number of velocity vectors
-    nb_vectors=size(theDim);
-     var_FixFlag=ncvar('vec_FixFlag',nc);% var_FixFlag will be written as the netcdf variable vec_FixFlag
-    var_FixFlag(1:nb_vectors)=AxeData.FF;% 
-else
+test_civ1=isequal(get(handles.civ1,'BackgroundColor'),[1 1 0]);
+if ~test_civ2 && ~test_civ1
     msgbox_uvmat('ERROR','manual correction only possible for CIV1 or CIV2 velocity fields')
 end 
-fin=close(nc);
+if test_civ2
+    nbname='nb_vectors2';
+   flagname='vec2_FixFlag';
+   attrname='fix2';
+end
+if test_civ1
+    nbname='nb_vectors';
+   flagname='vec_FixFlag';
+   attrname='fix';
+end
+%write fix flags in the netcdf file
+hhh=which('netcdf.open');% look for built-in matlab netcdf library
+if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
+    nc=netcdf.open(filename,'NC_WRITE'); 
+    netcdf.reDef(nc)
+    netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),attrname,1)
+    dimid = netcdf.inqDimID(nc,nbname); 
+    try
+        varid = netcdf.inqVarID(nc,flagname);% look for already existing fixflag variable
+    catch
+        varid=netcdf.defVar(nc,flagname,'double',dimid);%create fixflag variable if it does not exist
+    end
+    netcdf.endDef(nc)
+    netcdf.putVar(nc,varid,AxeData.FF);
+    netcdf.close(nc)  
+else %old netcdf library
+    nc=netcdf(filename,'write'); %open netcdf file
+    result=redef(nc);
+    eval(['nc.' attrname '=1;']);
+    theDim=nc(nbname) ;% get the number of velocity vectors
+    nb_vectors=size(theDim);
+    var_FixFlag=ncvar(flagname,nc);% var_FixFlag will be written as the netcdf variable vec_FixFlag
+    var_FixFlag(1:nb_vectors)=AxeData.FF;% 
+    fin=close(nc);
+end
+
+
+
+
+
+
 
 
 
@@ -3679,9 +3702,14 @@ set(huvmat,'UserData',UvData)
 %-------------------------------------------------------
 function edit_vect_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------
-huvmat=get(handles.edit_vect,'parent');
-UvData=get(huvmat,'UserData');%read UvData properties stored on the uvmat interface 
+
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 if isequal(get(handles.edit_vect,'Value'),1)
+    test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
+    test_civ1=isequal(get(handles.civ1,'BackgroundColor'),[1 1 0]);
+    if ~test_civ2 && ~test_civ1
+        msgbox_uvmat('ERROR','manual correction only possible for CIV1 or CIV2 velocity fields')
+    end 
     set(handles.record,'Visible','on')
     set(handles.edit_vect,'BackgroundColor',[1 1 0])
     set(handles.edit,'Value',0)
@@ -3695,7 +3723,7 @@ else
     set(handles.edit_vect,'BackgroundColor',[0.7 0.7 0.7])
     UvData.MouseAction='none';
 end
-set(huvmat,'UserData',UvData)
+set(handles.uvmat,'UserData',UvData)
 
 %----------------------------------------------
 function save_mask_Callback(hObject, eventdata, handles)
@@ -4878,13 +4906,9 @@ edit_vect_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function Menupoints_Callback(hObject, eventdata, handles)
-% set(handles.create,'Visible','on')
-% set(handles.create,'Value',1)
-% POINTS_Callback(hObject,eventdata,handles)
 data.Style='points';
 data.ProjMode='projection';%default
-PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-create_object(data,handles.uvmat,PlotHandles)
+create_object(data,handles)
 
 % --------------------------------------------------------------------
 function Menuline_Callback(hObject, eventdata, handles)
@@ -4893,42 +4917,35 @@ function Menuline_Callback(hObject, eventdata, handles)
 % LINE_Callback(hObject,eventdata,handles)
 data.Style='line';
 data.ProjMode='projection';%default
-PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-create_object(data,handles.uvmat,PlotHandles)
+create_object(data,handles)
 
 %------------------------------------------------------------------------
 function Menupolyline_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Style='polyline';
 data.ProjMode='projection';%default
-PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-create_object(data,handles.uvmat,PlotHandles)
+create_object(data,handles)
 
-% ------------------------------------------------------------------
+%------------------------------------------------------------------------
 function Menupolygon_Callback(hObject, eventdata, handles)
-% set(handles.create,'Visible','on')
-% set(handles.create,'Value',1)
-% PATCH_Callback(hObject,eventdata,handles)
+%------------------------------------------------------------------------
 data.Style='polygon';
 data.ProjMode='inside';%default
-PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-create_object(data,handles.uvmat,PlotHandles)
+create_object(data,handles)
 
 %------------------------------------------------------------------------
 function Menurectangle_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Style='rectangle';
 data.ProjMode='inside';%default
-PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-create_object(data,handles.uvmat,PlotHandles)
+create_object(data,handles)
 
 %------------------------------------------------------------------------
 function Menuellipse_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Style='ellipse';
 data.ProjMode='inside';%default
-PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-create_object(data,handles.uvmat,PlotHandles)
+create_object(data,handles)
 
 % ------------------------------------------------------------------
 function Menuplane_Callback(hObject, eventdata, handles)
@@ -4937,8 +4954,8 @@ function Menuplane_Callback(hObject, eventdata, handles)
 % PLANE_Callback(hObject,eventdata,handles)
 data.Style='plane';
 data.ProjMode='projection';%default
-PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-create_object(data,handles.uvmat,PlotHandles)
+
+create_object(data,handles)
 
 % ------------------------------------------------------------------
 function Menuvolume_Callback(hObject, eventdata, handles)
@@ -4965,34 +4982,34 @@ sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
 %read the file
- t=xmltree(fileinput);
- data=convert(t);
- if ~isfield(data,'Style')
-     data.Style='points';
- end
- if ~isfield(data,'ProjMode')
-     data.ProjMode='none';
- end
+t=xmltree(fileinput);
+data=convert(t);
 PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-create_object(data,handles.uvmat,PlotHandles)
-
-%------------------------------------------------------------------------
-function create_object(data,huvmat,PlotHandles)
-%------------------------------------------------------------------------
-hset_object=findobj(allchild(0),'Name','set_object')
+hset_object=findobj(allchild(0),'Name','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
-UvData=get(huvmat,'UserData');
+[hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface
+UvData.MouseAction='create_object';
+set(handles.uvmat,'UserData',UvData)
+
+%------------------------------------------------------------------------
+function create_object(data,handles)
+%------------------------------------------------------------------------
+hset_object=findobj(allchild(0),'Name','set_object');
+if ~isempty(hset_object)
+    delete(hset_object)% delete existing version of set_object
+end
+UvData=get(handles.uvmat,'UserData');
 if isfield(UvData,'CoordType')
     data.CoordType=UvData.CoordType;
 end
-if isfield(UvData,'Mesh')&~isempty(UvData.Mesh)
+if isfield(UvData,'Mesh')&&~isempty(UvData.Mesh)
     data.RangeX=UvData.Mesh;
     data.RangeY=UvData.Mesh;
     data.DX=UvData.Mesh;
     data.DY=UvData.Mesh;
-elseif isfield(UvData.Field,'AX')&isfield(UvData.Field,'AY')& isfield(UvData.Field,'A')%only image
+elseif isfield(UvData.Field,'AX')&& isfield(UvData.Field,'AY')&& isfield(UvData.Field,'A')%only image
     np=size(UvData.Field.A);
     meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/np(2);
     meshy=abs(UvData.Field.AY(end)-UvData.Field.AY(1))/np(1);
@@ -5000,15 +5017,22 @@ elseif isfield(UvData.Field,'AX')&isfield(UvData.Field,'AY')& isfield(UvData.Fie
     data.RangeX=max(meshx,meshy);
     data.DX=max(meshx,meshy);
 end 
-if isfield(data,'DX')
-    data.Coord=[[0 0 0];[data.DX 0 0]]; %default 
-else
-    data.Coord=[[0 0 0];[1 0 0]]; %default 
+data.Coord=[0 0 0]; %default
+if isfield(data,'Style') && isequal(data.Style,'line')
+    if isfield(data,'DX')
+        data.Coord=[[0 0 0];[data.DX 0 0]]; %default 
+    else
+        data.Coord=[[0 0 0];[1 0 0]]; %default 
+    end
 end
 %data.ParentButton=handles.create;
-
+if ishandle(handles.UVMAT_title)
+    delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
+end
+PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
 [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface
 UvData.MouseAction='create_object';
-set(huvmat,'UserData',UvData)
-
+set(handles.uvmat,'UserData',UvData)
+set(handles.zoom,'Value',0)
+zoom_Callback(handles.uvmat, [], handles)
 

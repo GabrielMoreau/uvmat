@@ -776,7 +776,7 @@ if test_ima
             npxy=np;
             test_interp=0; % no interpolation done
         end
-        if test_interp==1%if we interpolate              
+        if test_interp==1%if we interpolate    
             x=linspace(AX(1),AX(2),np(2));
             y=linspace(AY(1),AY(2),np(1));
             [X,Y]=meshgrid(x,y);

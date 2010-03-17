@@ -1536,11 +1536,11 @@ last_i_Callback(hObject, eventdata, handles)
 function last_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %     hseries=get(handles.last_i,'parent');
-first_i=str2num(get(handles.first_i,'String'));
-last_i=str2num(get(handles.last_i,'String'));
-ref_i=ceil((first_i+last_i)/2);
-set(handles.ref_i,'String', num2str(ref_i))
-ref_i_Callback(hObject, eventdata, handles)
+% first_i=str2num(get(handles.first_i,'String'));
+% last_i=str2num(get(handles.last_i,'String'));
+% ref_i=ceil((first_i+last_i)/2);
+% set(handles.ref_i,'String', num2str(ref_i))
+% ref_i_Callback(hObject, eventdata, handles)
 SeriesData=get(handles.figure1,'UserData');
 if ~isfield(SeriesData,'Time')
     SeriesData.Time{1}=[];
@@ -2164,7 +2164,7 @@ global nb_transform
 menu=get(handles.transform_fct,'String');
 ind_coord=get(handles.transform_fct,'Value');
 coord_option=menu{ind_coord};
-list_transform=get(handles.transform_fct,'UserData')
+list_transform=get(handles.transform_fct,'UserData');
 ff=functions(list_transform{end});
 if isequal(coord_option,'more...'); 
     coord_fct='';
@@ -2199,7 +2199,7 @@ if isequal(coord_option,'more...');
    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
    if exist(profil_perso,'file')
        for ilist=nb_transform+1:numel(list_transform)
-           ff=functions(list_transform{ilist})
+           ff=functions(list_transform{ilist});
            transform_fct{ilist-nb_transform}=ff.file;
        end 
         save (profil_perso,'transform_fct','-append'); %store the root name for future opening of uvmat

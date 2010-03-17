@@ -184,7 +184,7 @@ end
 if test_root% we are a the root, 
     testupfile=0;
     DataIn=get(get(hObject,'parent'),'UserData');
-    if isfield(DataIn,'UpFile')&~isempty(DataIn.UpFile)
+    if isfield(DataIn,'UpFile')&&~isempty(DataIn.UpFile)
         [UpPath,UpName,UpExt]=fileparts(DataIn.UpFile{1});
         if isequal(UpExt,'.xml')
             set(handles.CurrentFile,'String',DataIn.UpFile{1})
@@ -282,12 +282,12 @@ DataIn.Schema=[];%schema input file put to [] by default
         'Pick a file',CurrentFile); %file browser
 CurrentFile=fullfile(PathName,FileName);
 sizf=size(CurrentFile);
-if (~ischar(CurrentFile)|~isequal(sizf(1),1)),return;end% keep only character strings as input file name
+if (~ischar(CurrentFile)||~isequal(sizf(1),1)),return;end% keep only character strings as input file name
 if exist(CurrentFile,'file')
 %     set(handles.CurrentAttributes,'UserDataIn',PathName); %store the path to the xml file
     [CurPath,CurName,CurExt]=fileparts(CurrentFile);
     if isequal(CurExt,'.xls')    
-        if isfield(DataIn,'hfig_xls')&ishandle(DataIn.hfig_xls)
+        if isfield(DataIn,'hfig_xls') && ishandle(DataIn.hfig_xls)
             [hfig_xls]=read_xls(CurrentFile,DataIn.hfig_xls);
         else
             [hfig_xls]=read_xls(CurrentFile);
@@ -309,18 +309,18 @@ heditxml=get(handles.CurrentFile,'parent');%handles of the inteface
 DataIn=get(heditxml,'UserData');
 t=xmltree(CurrentFile);%open the xml file 
 head_element=get(t,1);
-if ~isfield(head_element,'name') | ~isfield(head_element,'attributes')
+if ~isfield(head_element,'name') || ~isfield(head_element,'attributes')
     msgbox_uvmat('ERROR','root element of the .xml file not in correct format')
 end
 head_name=head_element.name;
 head_attr=head_element.attributes;% attribute of root gives the name of the associated schema
 xstest=0;
 for iattr=1:length(head_attr)
-    if isequal(head_attr{iattr}.key,'xmlns:xsi')& isequal(head_attr{iattr}.val,'none')%no schema to read
+    if isequal(head_attr{iattr}.key,'xmlns:xsi')&& isequal(head_attr{iattr}.val,'none')%no schema to read
          xs=[];
 %          xstest=1;
     end
-    if isequal(head_attr{iattr}.key,'xsi:noNamespaceSchemaLocation') & exist(head_attr{iattr}.val,'file')
+    if isequal(head_attr{iattr}.key,'xsi:noNamespaceSchemaLocation') && exist(head_attr{iattr}.val,'file')
         DataIn.Schema=head_attr{iattr}.val;
         xs=xmltree(DataIn.Schema);%open the associated schema file
         xstest=1;
@@ -331,59 +331,42 @@ if xstest==0  %look for the corresponding schema in the directory PARAM_LINUX.xm
     %Path to shemas:
     path_uvmat=which('editxml');% check the path detected for source file uvmat
     path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-%     if isunix
-xmlparam=fullfile(path_UVMAT,'PARAM.xml');
-if exist(xmlparam,'file')
-    tparam=xmltree(xmlparam);
-    sparam=convert(tparam);
-    if isfield(sparam,'SchemaPath')
-        schemapath=[fullfile(sparam.SchemaPath,head_name) '.xsd']
-    end 
-    if exist(fullfile(path_UVMAT,schemapath)
-        schemapath=fullfile(path_UVMAT,schemapath);%look for relative path definition
-    end
-    schemapath=fullfile(path_UVMAT,schemapath);
-%         schemapath=['/coriolis/papillon/data/civbin/XML_SCHEMAS/' head_name '.xsd']%current dir for schema
-%     else
-%         xmlparam=fullfile(path_UVMAT,'PARAM_WIN.xml')
-%         if exist(xmlparam,'file')
-%             tparam=xmltree(xmlparam);
-%             sparam=convert(tparam)
-%             if isfield(sparam,'SchemaPath')
-%                 schemapath=[fullfile(sparam.SchemaPath,head_name) '.xsd']
-%             end
-%         end 
-%         schemapath=['\\Papillon\data\civbin\XML_SCHEMAS\' head_name '.xsd']%current dir for schemas
-%     end
-    if exist(schemapath,'file')
-        xs=xmltree(schemapath);
-    else
-        msgbox_uvmat('ERROR',['The xml schema for ' CurrentFile ' is unknown, check the schema path set in the file PARAM.xml'])
-        [FileName, PathName]=uigetfile( ...
-       {'*.xsd', '(*.xsd)';
-        '*.xsd',  '.xsd files '; ...
-        '*.*',  'All Files (*.*)'}, ...
-        ['Pick a .xsd schema'] ,schemapath); %file browser
-        if ischar(PathName)&ischar(FileName)& exist(fullfile(PathName,FileName),'file')
-            DataIn.Schema=fullfile(PathName,FileName);
-            xs=xmltree(DataIn.Schema);%open the associated schema file
+    xmlparam=fullfile(path_UVMAT,'PARAM.xml');
+    if exist(xmlparam,'file')
+        tparam=xmltree(xmlparam);
+        sparam=convert(tparam);
+        if isfield(sparam,'SchemaPath')
+            schemafile=[fullfile(sparam.SchemaPath,head_name) '.xsd'];
+        end 
+        if ~exist(schemafile,'file')
+            schemafile=fullfile(path_UVMAT,schemafile);%look for relative path definition
+        end
+        if exist(schemafile,'file')
+            xs=xmltree(schemafile);
         else
-            xs=[];
+            msgbox_uvmat('ERROR',['The xml schema for ' CurrentFile ' is unknown, check the schema path set in the file PARAM.xml'])
+            [FileName, PathName]=uigetfile( ...
+           {'*.xsd', '(*.xsd)';
+            '*.xsd',  '.xsd files '; ...
+            '*.*',  'All Files (*.*)'}, ...
+            'Pick a .xsd schema' ,schemapath); %file browser
+            if ischar(PathName) && ischar(FileName) && exist(fullfile(PathName,FileName),'file')
+                DataIn.Schema=fullfile(PathName,FileName);
+                xs=xmltree(DataIn.Schema);%open the associated schema file
+            else
+                xs=[];
+            end
         end
     end
 end
 DataIn.CurrentUid=1;
 if isempty(xs)
     displ_xml(handles,t,1,DataIn,get(hObject,'parent'));%no associated schema, default  display of the xml file
-%    set(handles.inport_file,'Visible','off')
-%    set(handles.RefFile,'Visible','off')
 else
     DataIn.xs_CurrentUid=find(xs,'/xs:schema/xs:element');%uid of the root element in the schema
 	[nodeup,path,xs_element,xs_subelem]=scan_schema(xs,DataIn.xs_CurrentUid);%scan the schema at the root level
 	[element,subelem]=get_xml(t,path,xs_element,1,xs_subelem);% read the corresponding xml data
 	update_list(handles,path,xs_element,element,1,xs_subelem,subelem);%update the display of information on the interface
-   % set(handles.inport_file,'Visible','on')
-   % set(handles.RefFile,'Visible','on')
 end
 set(heditxml,'UserData',DataIn);%store the new input xml file name
 
@@ -889,7 +872,7 @@ else % we edit an element
      set(handles.element_value,'Visible','On')
 end
 set(handles.element_value,'UserData',node)
-if ~testedit && isfield(element,'attrup') & isfield(element.attrup,'source')&& ~isequal(element.attrup.source,'manual')
+if ~testedit && isfield(element,'attrup') && isfield(element.attrup,'source')&& ~isequal(element.attrup.source,'manual')
      set(handles.element_value,'Enable','inactive')
 else
     set(handles.element_value,'Enable','on')

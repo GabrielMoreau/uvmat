@@ -9,14 +9,11 @@
 %flname: name of the netcdf file to create (must end with the extension '.nc')
 %  Data: structure containing all the information of the netcdf file (or netcdf object)
 %           with fields:
-%    .ListGlobalAttribute: cell listing the names of the global attributes (note that a global atribute with the same name as a variable is excluded)
-%        .Att_1,Att_2... : values of the global attributes
-%            .ListDimName: cell listing the names of the array dimensions
-%               .DimValue: array dimension values (Matlab vector with the same length as .ListDimName
-%            .ListVarName: cell listing the names of the variables
-%            .VarDimIndex: cell containing the set of dimension indices (in list .ListDimName) for each variable of .ListVarName
-%           .VarAttribute: cell of structures s containing names and values of variable attributes (s.name=value) for each variable of .ListVarName
-%        .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
+%         (optional) .ListGlobalAttribute: cell listing the names of the global attributes
+%                    .Att_1,Att_2... : values of the global attributes
+%         (requested)  .ListVarName: list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
+%         (requested)  .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)                         
+%         (requested) .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
@@ -125,14 +122,14 @@ if ~isequal(hhh,'')
                 errormsg=['wrong dimensions declared for ' ListVarName{ivar} ' in struct2nc.m'];
                 break
             end 
-            if testline || testrange%NEW
+            if testline || testrange
                 if testrange
-                    VarVal=linspace(VarVal(1),VarVal(2),Data.DimValue(VarDimIndex));%NEW
+                    VarVal=linspace(VarVal(1),VarVal(2),Data.DimValue(VarDimIndex));
                 end
                %nc{ListVarName{ivar}}=ncfloat(Data.ListDimName(VarDimIndex));%vector of x coordinates
-               netcdf.putVar(nc,varid(ivar), VarVal');
+               netcdf.putVar(nc,varid(ivar), double(VarVal'));
             else
-                netcdf.putVar(nc,varid(ivar), VarVal);
+                netcdf.putVar(nc,varid(ivar), double(VarVal));
                 %nc{ListVarName{ivar}}(:) = VarVal;
             end
             

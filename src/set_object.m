@@ -6,9 +6,15 @@
 % OUTPUT:
 % hset_object: handle of the GUI figure
 % 
-% INTPUT:
+% INPUT:
 % data: structure describing the object properties
-%  PlotHandles: handles for projection plots
+%    .Style=...
+%    .ProjMode
+%    .CoordType: 'phys' or 'px'
+%    .DX,.DY,.DZ : mesh along each dirction
+%    .RangeX, RangeY
+%    .Coord(j,i), i=1, 2, 3,  components x, y, z of j=1...n position(s) characterizing the object components
+% PlotHandles: handles for projection plots
 % Zbounds: bounds on Z ( 3D case)
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -85,7 +91,7 @@ end
 desable_open=0;%default: allow reading of object from xml file
 desable_plot=0;%default
 SetData.PlotHandles=PlotHandles;
-if exist('data','var') & isfield(data,'ParentButton')
+if exist('data','var') && isfield(data,'ParentButton')
         SetData.ParentButton=data.ParentButton;
         set(hObject,'DeleteFcn',{@closefcn,SetData.ParentButton})%
 end
@@ -93,13 +99,10 @@ set(hObject,'UserData',SetData)
 
 % fill the interface as set in the input data:
 if exist('data','var') 
-%     if isfield(data,'desable_open')
-%         desable_open=data.desable_open;%test to desable button OPEN (edit or display mode)
-%     end
     if isfield(data,'desable_plot')
         desable_plot=data.desable_plot;%test to desable button PLOT (display mode)
     end
-    if ~isfield(data,'NbDim')|~isequal(data.NbDim,3)%2D case
+    if ~isfield(data,'NbDim')||~isequal(data.NbDim,3)%2D case
         set(handles.ZObject,'Visible','off')
         set(handles.z_slider,'Visible','off')
     else
@@ -109,23 +112,6 @@ if exist('data','var')
             set(handles.ZObject,'String',num2str(data.Coord(1,3),4))
         end
     end
-%     if isfield(data,'ProjMode') && isfield(data,'Style')
-%         data.TITLE=set_title(data.Style,data.ProjMode);% define TITLE in set_object (POINTS, LINE, PATCH,...)
-%     end
-%     if isfield(data,'TITLE')
-%         menutitle=get(handles.TITLE,'String');
-%         for iline=1:length(menutitle)
-%             strmenu=menutitle{iline};
-%             if isequal(data.TITLE,strmenu)
-%                 set(handles.TITLE,'Value',iline)
-%                 break
-%             end
-%         end
-%         TITLE_Callback(hObject, eventdata, handles)% enable edit boxes depending on TITLE
-%     end
-%     if isfield(data,'fixedtitle')&isequal(data.fixedtitle,1)
-%         set(handles.TITLE,'enable','off')
-%     end
     if isfield(data,'Style')
         menu=get(handles.ObjectStyle,'String');
         for iline=1:length(menu)
@@ -146,42 +132,44 @@ if exist('data','var')
         end
     end
     ProjMode_Callback(hObject, eventdata, handles)
-    if isfield(data,'Coord') & size(data.Coord,2)>=2
-        sizcoord=size(data.Coord);
-        for i=1:sizcoord(1)
-            XObject{i}=num2str(data.Coord(i,1),4);
-            YObject{i}=num2str(data.Coord(i,2),4);
-        end
-        set(handles.XObject,'String',XObject)
-        set(handles.YObject,'String',YObject)
-        %set(handles.XObject,'String',mat2cell(data.Coord(:,1),sizcoord(1)))
-        %set(handles.YObject,'String',mat2cell(data.Coord(:,2),sizcoord(1)))
-        if sizcoord(2)>3
-            for i=1:sizcoord(1)
-                ZObject{i}=num2str(data.Coord(i,3),4);
+    if isfield(data,'Coord')
+        if ischar(data.Coord)
+            data.Coord=str2num(data.Coord);
+        elseif iscell(data.Coord)
+            CoordCell=data.Coord;
+            data.Coord=zeros(numel(CoordCell),3);
+            for iline=1:numel(CoordCell)
+                data.Coord(iline,:)=str2num(CoordCell{iline});
             end
-            set(handles.ZObject,'String',ZObject)
+        end
+        if size(data.Coord,2)>=2
+            sizcoord=size(data.Coord);
+            for i=1:sizcoord(1)
+                XObject{i}=num2str(data.Coord(i,1),4);
+                YObject{i}=num2str(data.Coord(i,2),4);
+            end
+            set(handles.XObject,'String',XObject)
+            set(handles.YObject,'String',YObject)
+            if sizcoord(2)>3
+                for i=1:sizcoord(1)
+                    ZObject{i}=num2str(data.Coord(i,3),4);
+                end
+                set(handles.ZObject,'String',ZObject)
+            end
         end
     end
     if isfield(data,'DX')
-        set(handles.DX,'String',num2str(data.DX,3))
+        if ~ischar(handles.DX)
+            data.DX=num2str(data.DX,3);
+        end
+        set(handles.DX,'String',data.DX)
     end
     if isfield(data,'DY')
-         set(handles.DY,'String',num2str(data.DY,3))
+        if ~ischar(handles.DY)
+            data.DY=num2str(data.DY,3);
+        end
+        set(handles.DY,'String',data.DX)
     end
-    %OBSOLETE (replaced by Range)
-%     if isfield(data,'XMin')
-%          set(handles.XMin,'String',num2str(data.XMin,3))
-%     end
-%     if isfield(data,'XMax')
-%          set(handles.XMax,'String',num2str(data.XMax,3))
-%     end
-%     if isfield(data,'YMin')
-%          set(handles.YMin,'String',num2str(data.YMin,3))
-%     end
-%     if isfield(data,'YMax')
-%          set(handles.YMax,'String',num2str(data.YMax,3))
-%     end
     if isfield(data,'RangeZ') && length(ZBounds) >= 2
         set(handles.ZMax,'String',num2str(max(data.RangeZ),3))
         DZ=max(data.RangeZ);%slider step
@@ -196,28 +184,49 @@ if exist('data','var')
         end
     end
     if isfield(data,'RangeX')
-            set(handles.XMax,'String',num2str(max(data.RangeX),3))
-            set(handles.XMin,'String',num2str(min(data.RangeX),3))
+        if ischar(data.RangeX)
+            data.RangeX=str2num(data.RangeX);
+        end
+        set(handles.XMax,'String',num2str(max(data.RangeX),3))
+        set(handles.XMin,'String',num2str(min(data.RangeX),3))
     end
     if isfield(data,'RangeY')
-            set(handles.YMax,'String',num2str(max(data.RangeY),3))
-            set(handles.YMin,'String',num2str(min(data.RangeY),3))
+        if ischar(data.RangeY)
+            data.RangeY=str2num(data.RangeY);
+        end
+        set(handles.YMax,'String',num2str(max(data.RangeY),3))
+        set(handles.YMin,'String',num2str(min(data.RangeY),3))
     end
     if isfield(data,'RangeZ')
-            set(handles.ZMax,'String',num2str(max(data.RangeZ),3))
-            set(handles.ZMin,'String',num2str(min(data.RangeZ),3))
+        if ischar(data.RangeZ)
+            data.RangeZ=str2num(data.RangeZ);
+        end
+        set(handles.ZMax,'String',num2str(max(data.RangeZ),3))
+        set(handles.ZMin,'String',num2str(min(data.RangeZ),3))
     end  
     if isfield(data,'Phi')
-         set(handles.Phi,'String',num2str(data.Phi,3))
+        if ~ischar(handles.Phi)
+            data.DY=num2str(data.Phi,3);
+        end
+         set(handles.Phi,'String',data.Phi)
     end
     if isfield(data,'Theta')
-         set(handles.Theta,'String',num2str(data.Theta,3))
+        if ~ischar(handles.Theta)
+            data.DY=num2str(data.Theta,3);
+        end
+        set(handles.Theta,'String',data.Theta)
     end
     if isfield(data,'Psi')
-         set(handles.Psi,'String',num2str(data.Psi,3))
+         if ~ischar(handles.Psi)
+            data.DY=num2str(data.Psi,3);
+        end
+         set(handles.Psi,'String',data.Psi)
     end  
     if isfield(data,'DZ')
-        set(handles.DZ,'String',num2str(data.DZ,3))
+        if ~ischar(handles.DZ)
+            data.DY=num2str(data.DZ,3);
+        end
+        set(handles.DZ,'String',data.DZ)
     end
     if isfield(data,'CoordType')
         if isequal(data.CoordType,'phys')
@@ -505,7 +514,7 @@ function DZ_Callback(hObject, eventdata, handles)
 
 
 %-----------------------------------------------------
-% --- Executes on button press in OPEN.
+% --- Executes on button press in OPEN: DESACTIVATED use uvmat browser
 function OPEN_Callback(hObject, eventdata, handles)
 %get the object file 
 oldfile=' ';

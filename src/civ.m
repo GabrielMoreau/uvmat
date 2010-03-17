@@ -138,22 +138,17 @@ sge=0;
 if isfield(sparam,'PatchNew_exe')
     patch_new_exe=sparam.PatchNew_exe;
 end
+
+if isfield(sparam,'SGE')
+    sge=str2double(sparam.SGE);
+end   
+
+test_batch=sge;%default
 if isfield(sparam,'Todo_path')
     todo_path=sparam.Todo_path;
-end
-if isfield(sparam,'SGE')
-    sge=str2num(sparam.SGE);
-end   
-name_todo=fullfile(todo_path,'TODO.txt');
-test_batch=1;
-if ~sge
-    if isequal(todo_path,'') || isequal(todo_path,[])
-        display(['no batch distributed processing available:file path TODO.txt not defined in UVMAT/PARAM.xml'])
-        test_batch=0;
-    end
-    if exist(name_todo,'file')~=2 
-        msgbox_uvmat('WARNING',['no batch distributed processing available, queue file ' name_todo ' absent']);
-      %  test_batch=0;  % Problems to detect file on linux/nfs filesystems
+    name_todo=fullfile(todo_path,'TODO.txt');
+    if exist(name_todo,'file')
+        test_batch=1;
     end
 end
 if test_batch==0

@@ -89,7 +89,6 @@ if isfield(ObjectData,'ProjMode') && (isequal(ObjectData.ProjMode,'none')||isequ
     ProjData=[];
     return
 end
-FieldData
 %introduce default field properties (reading old standards)
 if ~isfield(ObjectData,'Style')||~isfield(ObjectData,'Coord')||~isfield(ObjectData,'ProjMode')
     ProjData=FieldData;

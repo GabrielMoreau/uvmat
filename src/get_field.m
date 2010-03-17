@@ -227,7 +227,7 @@ end
 [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Field);
 for icell=1:numel(CellVarIndex)
     VarIndex=CellVarIndex{icell};
-    if ~isempty(find(VarIndex==yindex)) && (isempty(VarType{icell}.coord_x)||~isequal(VarType{icell}.coord_x,VarIndex))
+    if ~isempty(find(VarIndex==yindex,1)) && (isempty(VarType{icell}.coord_x)||~isequal(VarType{icell}.coord_x,VarIndex))
         cell_select=icell;
         break
     end
@@ -236,7 +236,7 @@ end
 val=get(handles.abscissa,'Value');
 set(handles.abscissa,'Value',min(val,2));
 coord_x_index=VarType{cell_select}.coord;
-coord_x_index=coord_x_index(find(coord_x_index));
+coord_x_index=coord_x_index(coord_x_index~=0);
 set(handles.abscissa,'String',[{''}; (Field.ListVarName(coord_x_index))'; (Field.ListVarName(VarIndex))'])
 % Field.VarIndex.y=yindex;
 % set(hselect_field,'UserData',Field);
@@ -1244,7 +1244,7 @@ set(handles.path_action,'String',PathName); %show the path to the senlected func
 
 %default setting for the visibility of the GUI elements*
 if ~isequal(ACTION,'PLOT')
-    varargout=feval(ACTION)% input list asked by the selected function
+    varargout=feval(ACTION);% input list asked by the selected function
     test_1Dplot=[];
     test_scalar=[];
     test_vector=[];
@@ -1252,11 +1252,11 @@ if ~isequal(ACTION,'PLOT')
         switch varargout{ilist,1}
                            %RootFile always visible
             case 'check_1Dplot'   
-                 test_1Dplot=isequal(lower(varargout{ilist,2}),'y')
+                 test_1Dplot=isequal(lower(varargout{ilist,2}),'y');
             case 'check_scalar'
-                 test_scalar=isequal(lower(varargout{ilist,2}),'y')    
+                 test_scalar=isequal(lower(varargout{ilist,2}),'y');   
             case 'check_vector'   
-                 test_vector=isequal(lower(varargout{ilist,2}),'y') 
+                 test_vector=isequal(lower(varargout{ilist,2}),'y'); 
         end
     end
     if test_1Dplot==0
@@ -1448,7 +1448,8 @@ set(handles.MenuFile_3,'Label',MenuFile_3)
 set(handles.MenuFile_4,'Label',MenuFile_4)
 set(handles.MenuFile_5,'Label',MenuFile_5)
 dir_perso=prefdir;
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat')
+profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+display(profil_perso)
 if exist(profil_perso,'file')
     save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-append'); %store the file names for future opening of uvmat
 else

@@ -1,25 +1,21 @@
 %'nc2struct': transform a netcdf file in a corresponding matlab structure
 % it reads all the global attributes and all variables, or a selected list.
 % The corresponding dimensions and variable attributes are then extracted
-%%%%%% TODO: add the possibility to read only attributes, see  nc2struct_toolbox %%%
 %----------------------------------------------------------------------
 % function [Data,var_detect,ichoice]=nc2struct(nc,ListVarName)
 %
 % OUTPUT:
 %  Data: structure containing all the information of the netcdf file (or netcdf object)
 %           with fields:
-%    .ListGlobalAttribute: cell listing the names of the global attributes
-%        .Att_1,Att_2... : values of the global attributes
-%            .ListDimName: cell listing the names of the array dimensions
-%               .DimValue: array dimension values (Matlab vector with the same length as .ListDimName
-%            .ListVarName: cell listing the names of the variables
-%            .VarDimIndex: cell containing the set of dimension indices (in list .ListDimName) for each variable of .ListVarName
-%            .VarDimName: cell containing a cell of dimension names (in list .ListDimName) for each variable of .ListVarName
-%           .VarAttribute: cell of structures s containing names and values of variable attributes (s.name=value) for each variable of .ListVarName
-%        .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
-%  var_detect: vector with same length as ListVarName, with 1 for each detected variable and 0 else.
-%  ichoice: = line 
-%
+%         (optional) .ListGlobalAttribute: cell listing the names of the global attributes
+%                    .Att_1,Att_2... : values of the global attributes
+%                    .ListVarName: list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
+%                    .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)                         
+%                    .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
+%                    .ListDimName=list of dimension (added information, not requested for field description)
+%                    .DimValue= vlalues of dimensions (added information, not requested for field description)
+%                    .VarDimIndex= list of dimension indices (added information,
+
 %INPUT:
 %     nc:      name of a netcdf file (char string) or netcdf object   
 % ListVarName: optional list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
@@ -46,7 +42,7 @@
    
 function [Data,var_detect,ichoice]=nc2struct(nc,varargin)
 List=varargin;
-if nargin==0
+if isempty(varargin)
     List{1}='*';
 end
 % if ~exist('ListVarName','var')
@@ -121,16 +117,15 @@ if ~isequal(hhh,'')
     Data.ListGlobalAttribute=att_key;
 
     %  -------- read dimensions -----------
-    dim_name={};
+    ListDimName={};
     dim_value=[];
     for idim=1:ndims%length(dim_read);
-        [dim_name{idim},dim_value(idim)] = netcdf.inqDim(nc,idim-1);
+        [ListDimName{idim},dim_value(idim)] = netcdf.inqDim(nc,idim-1);
     end
-    if ~isempty(dim_name) && ~isempty(dim_value)
-        Data.ListDimName=dim_name;
-        Data.DimValue=dim_value;
+    if ~isempty(ListDimName) %&& ~isempty(dim_value)
+%         Data.DimValue=dim_value;
 %         DimIndices=[1:ndims]; %index of the dimension in the netcdf file
-        dim_used=zeros(1,ndims);%initialize test of used dimensions
+        flag_used=zeros(1,ndims);%initialize test of used dimensions
     end
  
     %  -------- read variables -----------
@@ -197,8 +192,7 @@ if ~isequal(hhh,'')
             var_read=var_read(var_index);         
         end
     end
-    
-    
+       
     %select variable attributes and associate dimensions
 %     var_dim_index=[]; %default
     Data.ListVarName={};%default
@@ -210,7 +204,7 @@ if ~isequal(hhh,'')
             Data.ListVarName{ivar}=var_read{ivar};%name of the variable
         end
         var_dim=dimids{var_index(ivar)}+1; %dimension indices used by the variable
-        dim_used(var_dim)=ones(size(var_dim));
+        flag_used(var_dim)=ones(size(var_dim));%flag_used =1 for the indices of used dimensions
         VarDimIndex{ivar}=var_dim;
 
         %variable attributes
@@ -232,23 +226,27 @@ if ~isequal(hhh,'')
     end
 
     %select the used dimensions
-    if isempty(var_read) 
-        if isfield(Data,'ListDimName') && isfield(Data,'DimValue')
-        Data=rmfield(Data,'ListDimName');
-        Data=rmfield(Data,'DimValue');
-        end
-    else
+    if ~isempty(var_read) 
+%         if isfield(Data,'ListDimName') %&& isfield(Data,'DimValue')
+%         Data=rmfield(Data,'ListDimName');
+%         %Data=rmfield(Data,'DimValue');
+%         end
+%     else
 %         list_dim=1:ndims;
-        dim_index=find(dim_used);
+        dim_index=find(flag_used);
 %         list_dim=list_dim(dim_index);
-        old2new=cumsum(dim_used); 
-        Data.ListDimName=Data.ListDimName(dim_index);
-        Data.DimValue=Data.DimValue(dim_index);
+        old2new=cumsum(flag_used); 
+        ListDimName=ListDimName(dim_index); 
+        dim_value=dim_value(dim_index);
     end
     for ivar=1:length(var_read)
-        Data.VarDimIndex{ivar}=old2new(VarDimIndex{ivar});% ENLEVER Data.VarDimIndex ulterieurement
-        Data.VarDimName{ivar}=Data.ListDimName(Data.VarDimIndex{ivar});
+        %Data.VarDimIndex{ivar}=old2new(VarDimIndex{ivar});% ENLEVER Data.VarDimIndex ulterieurement
+        %Data.VarDimName{ivar}=Data.ListDimName(Data.VarDimIndex{ivar});
+        Data.VarDimName{ivar}=ListDimName(old2new(VarDimIndex{ivar}));
     end
+    Data.ListDimName=ListDimName;
+    Data.DimValue=dim_value;
+    Data.VarDimIndex= VarDimIndex;
     %variable values
     if  ~isempty(ListVarName)
         for ivar=1:length(Data.ListVarName)
@@ -258,10 +256,10 @@ if ~isequal(hhh,'')
                 VarName(indstr)=[];
             end
             eval(['Data.' VarName '=netcdf.getVar(nc,var_index(ivar)-1);'])%read the variable data
-            eval(['siz=size(Data.' VarName ');'])
-            if numel(siz)<=2
-            eval(['Data.' VarName '=Data.' VarName ''';'])%read the variable data
-            end
+            %eval(['siz=size(Data.' VarName ');'])
+           % if numel(siz)<=2
+            %eval(['Data.' VarName '=Data.' VarName ''';'])%read the variable data
+            %end
         end
     end
     %  -------- close fle-----------
