@@ -152,16 +152,19 @@ if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
     netcdf.putVar(nc,varid,fixflag_unit+10*flagmagenta);
     netcdf.close(nc)
 else %old netcdf library
-    nc=netcdf(filename,'write'); %open netcdf file for writing
-    result=redef(nc);
-    if isempty(result), msgbox_uvmat('ERROR','##Bad redef operation.'),end  
-    if iter==1
-        nc.fix=1;
-    elseif iter==2
-        nc.fix2=1;
-    end
-    nc{field.fixflag}=ncfloat(field.nb);
-    fixflag_unit=Field.FF-10*floor(Field.FF/10); %unity term of fix_flag
-    nc{field.fixflag}(:)=fixflag_unit+10*flagmagenta;
-    close(nc);
+    netcdf_toolbox(filename,Field,flagmagenta,iter,field)
 end
+
+function netcdf_toolbox(filename,Field,flagmagenta,iter,field)
+nc=netcdf(filename,'write'); %open netcdf file for writing
+result=redef(nc);
+if isempty(result), msgbox_uvmat('ERROR','##Bad redef operation.'),end  
+if iter==1
+    nc.fix=1;
+elseif iter==2
+    nc.fix2=1;
+end
+nc{field.fixflag}=ncfloat(field.nb);
+fixflag_unit=Field.FF-10*floor(Field.FF/10); %unity term of fix_flag
+nc{field.fixflag}(:)=fixflag_unit+10*flagmagenta;
+close(nc);

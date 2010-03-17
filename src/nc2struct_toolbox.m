@@ -78,11 +78,11 @@ end
 if isempty(List)
    ListVarName='*';
 else
-if isempty(List{1})
-    ListVarName='*';
-else
-    ListVarName=List{1};  
-end
+%     if isempty(List{1})
+%         ListVarName='*';
+%     else
+        ListVarName=List{1};  
+%     end
 end
 %  -------- read global attributes -----------              
 att_read=att(nc);%cell of 'global attributes' (nc objects), CPU time 30 ms   

@@ -2,7 +2,7 @@
 % it reads all the global attributes and all variables, or a selected list.
 % The corresponding dimensions and variable attributes are then extracted
 %----------------------------------------------------------------------
-% function [Data,var_detect,ichoice]=nc2struct(nc,ListVarName)
+% function [Data,var_detect,ichoice]=nc2struct(nc,varargin)
 %
 % OUTPUT:
 %  Data: structure containing all the information of the netcdf file (or netcdf object)
@@ -18,11 +18,14 @@
 
 %INPUT:
 %     nc:      name of a netcdf file (char string) or netcdf object   
-% ListVarName: optional list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
-%         if ListVarName=[] or {}, no variables is read (only global attributes and lists of dimensions, variables and attriburtes)
+%    additional arguments:
+%         -in the absence of other arguments, all the fields are read
+%         -a cell array, ListVarName, of  char strings {'VarName1', 'VarName2',...} ) 
+%         if ListVarName=[] or {}, no variables is read (only global attributes)
 %         if ListVarName is absent, or = '*', ALL the variables are read. 
 %        if ListVarName is a cell array with n lines, the set of variables
 %                        will be sought by order of priority in the list, while output names will be set by the first line
+%        - the string 'ListGlobalAttribute' followed by a list of attribute  names: reads only these attributes (fast reading)
 % 
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
@@ -41,13 +44,10 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
    
 function [Data,var_detect,ichoice]=nc2struct(nc,varargin)
-List=varargin;
+
 if isempty(varargin)
-    List{1}='*';
+    varargin{1}='*';
 end
-% if ~exist('ListVarName','var')
-%     ListVarName='*';
-% end
 hhh=which('netcdf.open');% look for built-in matlab netcdf library
 
 if ~isequal(hhh,'')
@@ -68,21 +68,21 @@ if ~isequal(hhh,'')
         testfile=0;
     end
     % short reading of global attributes
-    if isequal(List{1},'ListGlobalAttribute')
-        for ilist=2:numel(List)
+    if isequal(varargin{1},'ListGlobalAttribute')
+        for ilist=2:numel(varargin)
             try
-            valuestr = netcdf.getAtt(nc,netcdf.getConstant('NC_GLOBAL'),List{ilist});
+            valuestr = netcdf.getAtt(nc,netcdf.getConstant('NC_GLOBAL'),varargin{ilist});
             catch
                 valuestr=[];
             end
-            eval(['Data.' List{ilist} '=valuestr;'])
+            eval(['Data.' varargin{ilist} '=valuestr;'])
         end
         netcdf.close(nc)
        return
     end
 
     % reading of variables, including attributes
-    ListVarName=List{1};  
+    ListVarName=varargin{1};  
     [ndims,nvars,ngatts]=netcdf.inq(nc);%nbre of dimensions, variables, attributes
     
     %  -------- read global attributes (constants)-----------

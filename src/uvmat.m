@@ -821,9 +821,9 @@ if testima
    set(handles.Fields,'Value',1) % set menu to 'image'
    set(handles.Fields,'String',{'image';'get_field...';'velocity';'vort';'div';'more...'})
 elseif isequal(FileExt,'.nc')||isequal(FileExt,'.cdf')
-   Data=nc2struct(FileName,[]);
+   Data=nc2struct(FileName,'ListGlobalAttribute','absolut_time_T0','civ');
    col_vec=get(handles.col_vec,'String');
-   if isfield(Data,'absolut_time_T0')%&& (isfield(Data,'civ1')||isfield(Data,'civ'))
+   if isfield(Data,'absolut_time_T0')&& ~(isfield(Data,'civ') && isequal(Data.civ,0))
        set(handles.Fields,'String',{'image';'get_field...';'velocity';'vort';'div';'more...'})
        set(handles.Fields,'Value',3) % set menu to 'velocity'
        col_vec{1}='ima_cor';
@@ -1985,6 +1985,8 @@ if ~isempty(filename) && isequal(FieldName,'image')
     Field{1}.CoordType='px'; %used for mouse_motion
     Field{1}.CoordUnit='pixel'; %used for mouse_motion
 end
+
+%read a second image
 if ~isfield(UvData,'Txt')&& ~isempty(filename_1) && isequal(FieldName_1,'image')
     switch FileType_1
         case 'movie'
@@ -2729,22 +2731,18 @@ if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
     netcdf.putVar(nc,varid,AxeData.FF);
     netcdf.close(nc)  
 else %old netcdf library
-    nc=netcdf(filename,'write'); %open netcdf file
-    result=redef(nc);
-    eval(['nc.' attrname '=1;']);
-    theDim=nc(nbname) ;% get the number of velocity vectors
-    nb_vectors=size(theDim);
-    var_FixFlag=ncvar(flagname,nc);% var_FixFlag will be written as the netcdf variable vec_FixFlag
-    var_FixFlag(1:nb_vectors)=AxeData.FF;% 
-    fin=close(nc);
+    netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
 end
 
-
-
-
-
-
-
+function netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
+nc=netcdf(filename,'write'); %open netcdf file
+result=redef(nc);
+eval(['nc.' attrname '=1;']);
+theDim=nc(nbname) ;% get the number of velocity vectors
+nb_vectors=size(theDim);
+var_FixFlag=ncvar(flagname,nc);% var_FixFlag will be written as the netcdf variable vec_FixFlag
+var_FixFlag(1:nb_vectors)=AxeData.FF;% 
+fin=close(nc);
 
 
 %-------------------------------------------------------------------

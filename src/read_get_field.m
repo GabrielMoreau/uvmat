@@ -531,8 +531,8 @@ if test_scalar
     %old convention; use of coord_1 and Coord_2
         if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=field_var_index
             if isfield(Field.VarAttribute{field_var_index},'Coord_2')&& isfield(Field.VarAttribute{field_var_index},'Coord_1')
-%                 Coord_2=Field.VarAttribute{field_var_index}.Coord_2;
-%                 Coord_1=Field.VarAttribute{field_var_index}.Coord_1;
+                 Coord_2=Field.VarAttribute{field_var_index}.Coord_2;
+                 Coord_1=Field.VarAttribute{field_var_index}.Coord_1;
                 testold=1;
             end
         end
@@ -658,8 +658,8 @@ if test_vector
     %old convention; use of coord_1 and Coord_2
         if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=field_var_index
             if isfield(Field.VarAttribute{field_var_index},'Coord_2')&& isfield(Field.VarAttribute{field_var_index},'Coord_1')
-%                 Coord_2=Field.VarAttribute{field_var_index}.Coord_2;
-%                 Coord_1=Field.VarAttribute{field_var_index}.Coord_1;
+                 Coord_2=Field.VarAttribute{field_var_index}.Coord_2;
+                 Coord_1=Field.VarAttribute{field_var_index}.Coord_1;
                 testold=1;
             end
         end

@@ -133,7 +133,7 @@ function browse_Callback(hObject, eventdata, handles)
 function inputfile_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 inputfile=get(handles.inputfile,'String');
-Field=nc2struct(inputfile,[]);% reads only the lists of fields, dimensions and attributes
+Field=nc2struct(inputfile);% reads the whole field
 hfig=get(handles.inputfile,'parent');
 set(hfig,'UserData',Field);
 Field_input(eventdata,handles,Field);
@@ -170,7 +170,8 @@ set(handles.coord_z_scalar,'String',[{''} Txt ])
 set(handles.coord_z_vectors,'String',[{''} Txt ])
 set(handles.scalar,'Value',1)
 set(handles.scalar,'String', Txt )
-
+'TESTget'
+Field
 [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Field);
 if ~isempty(errormsg)  
     msgbox_uvmat('ERROR',['error in get_field/Field_input/find_field_indices: ' errormsg])
