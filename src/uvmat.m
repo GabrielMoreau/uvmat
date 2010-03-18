@@ -1585,8 +1585,7 @@ set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
 set(handles.RunMovie,'BusyAction','queue')
 testavi=0;
-huvmat=get(handles.RunMovie,'parent');
-UvData=get(huvmat,'UserData');
+UvData=get(handles.uvmat,'UserData');
 
 while get(handles.speed,'Value')~=0 & isequal(get(handles.RunMovie,'BusyAction'),'queue') % enable STOP command
         runpm(hObject,eventdata,handles,increment)
@@ -1594,14 +1593,15 @@ while get(handles.speed,'Value')~=0 & isequal(get(handles.RunMovie,'BusyAction')
 end
 if isfield(UvData,'aviobj') && ~isempty( UvData.aviobj),
     UvData.aviobj=close(UvData.aviobj);
-   set(huvmat,'UserData',UvData);
+   set(handles.uvmat,'UserData',UvData);
 end
 set(handles.RunMovie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 
 %-------------------------------------------------------------------
 function STOP_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-set(handles.run0,'BusyAction','Cancel')
+set(handles.movie_pair,'BusyAction','Cancel')
+set(handles.movie_pair,'value',0)
 set(handles.RunMovie,'BusyAction','Cancel')
 set(handles.MenuExportMovie,'BusyAction','Cancel')
 
@@ -1609,6 +1609,11 @@ set(handles.MenuExportMovie,'BusyAction','Cancel')
 %------------------------------------------------------------------
 function runpm(hObject,eventdata,handles,increment)
 %------------------------------------------------------------------
+%check for mùovie pair status
+movie_status=get(handles.movie_pair,'Value');
+if isequal(movie_status,1)
+    STOP_Callback(hObject, eventdata, handles)
+end
 %read the data on the current input rootfile(s)
 
 [FileName,RootPath,filebase,FileIndices,FileExt,subdir]=read_file_boxes(handles);
@@ -1675,21 +1680,32 @@ if sub_value ==1
      set(handles.FileIndex_1,'String',indices);
 end
 
+if isequal(movie_status,1)
+    set(handles.movie_pair,'Value',1)
+    movie_pair_Callback(hObject, eventdata, handles); %run
+else
 % refresh plots
-run0_Callback(hObject, eventdata, handles); %run
+    run0_Callback(hObject, eventdata, handles); %run
+end
 
 
 %-------------------------------------------------------
-% --- Executes on button press in movie_pair.
+% --- Executes on button press in movie_pair: create an alternating movie with two view
 %-------------------------------------------------------
 function movie_pair_Callback(hObject, eventdata, handles)
+status=get(handles.movie_pair,'value');
+if isequal(status,0)
+    set(handles.movie_pair,'BusyAction','Cancel')
+    return
+else
+    set(handles.movie_pair,'BusyAction','queue')
+end
 %initialisation
 set(handles.movie_pair,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 list_fields=get(handles.Fields,'String');% list menu fields
 index_fields=get(handles.Fields,'Value');% selected string index
 FieldName=list_fields{index_fields}; % selected field
-%huvmat=get(handles.movie_pair,'parent');
 if isequal(FieldName,'image')
     run0_Callback(hObject, eventdata, handles)%display the first image
     UvData=get(handles.uvmat,'UserData');
@@ -1699,32 +1715,38 @@ else
 end
 [ff,rr,filebase,xx,Ext,SubDir]=read_file_boxes(handles);
 NomType=get(handles.FileIndex,'UserData');
-num_i2=str2num(get(handles.i2,'String'));
-num_j2=str2num(get(handles.j2,'String'));
-if ~isempty(num_j2) 
-    num_i1=str2num(get(handles.i1,'String'));
-    [imaname_1,idetect]=name_generator(filebase,num_i1,num_j2,Ext,NomType);
-    if idetect==0
-        msgbox_uvmat('ERROR',['second input open (-)  ' imaname_1 ' not found']);
+num_i1=stra2num(get(handles.i1,'String'));
+num_j1=stra2num(get(handles.j1,'String'));
+num_i2=stra2num(get(handles.i2,'String'));
+num_j2=stra2num(get(handles.j2,'String'));
+if isempty(num_j2)
+    if isempty(num_i2)   
+        msgbox_uvmat('ERROR', 'a second image index i2 or j2 is needed to show the pair as a movie')
         return
+    else
+        num_j2=num_j1;%repeat the index i1 by default
     end
-    set(handles.i2,'String',''); % indicates that the second index i2 is not used
-elseif ~isempty(num_i2)
-    num_j1=str2num(get(handles.j1,'String'));
-    [imaname_1,idetect]=name_generator(filebase,num_i2,num_j1,Ext,NomType);
-    if idetect==0
-        msgbox_uvmat('ERROR',['second input open (-)  ' imaname_1 ' not found']);
-        return
-    end
-else   
-    msgbox_uvmat('ERROR', 'a second image index i2 or j2 is needed to show the pair as a movie')
-    return
-end 
+end
+if isempty(num_i2)
+    num_i2=num_i1;%repeat the index i1 by default
+end
+imaname_1=name_generator(filebase,num_i2,num_j2,Ext,NomType);
+if ~exist(imaname_1,'file')
+      msgbox_uvmat('ERROR',['second input open (-)  ' imaname_1 ' not found']);
+      return
+end
+% set(handles.i2,'String',''); % indicates that the second index i2 is not used
+% set(handles.j2,'String',''); % indicates that the second index i2 is not used
 
 %read the second image
 Field.AName='image';
 Field.AX=UvData.Field.AX;
 Field.AY=UvData.Field.AY;
+% z index
+nbslice=str2double(get(handles.nb_slice,'String'));
+if ~isempty(nbslice)
+    Field.ZIndex=mod(num_i2-1,nbslice)+1;
+end
 Field.CoordType='px';
 %determine the input file type
 if isfield(UvData,'MovieObject')
@@ -1774,7 +1796,7 @@ hima=findobj(handles.axes3,'Tag','ima');% %handles.axes3 =main plotting window (
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
-while get(handles.speed,'Value')~=0 && isequal(get(handles.run0,'BusyAction'),'queue'); % enable STOP command
+while get(handles.speed,'Value')~=0 && isequal(get(handles.movie_pair,'BusyAction'),'queue')%isequal(get(handles.run0,'BusyAction'),'queue'); % enable STOP command
     % read and plot the series of images in non erase mode
     set(hima,'CData',Field.A); 
     pause(1.02-get(handles.speed,'Value'));% wait for next image
@@ -1794,14 +1816,12 @@ drawnow
 abstime=[];
 abstime_1=[];
 dt=[];
-% CalibCell={};%default 
 Field={};
-%huvmat=get(handles.run0,'parent');
 UvData=get(handles.uvmat,'UserData');
 if isfield(UvData,'Txt')
     UvData=rmfield(UvData,'Txt');%erase previous error message
 end
-set(handles.run0,'BusyAction','queue');
+%set(handles.run0,'BusyAction','queue');
 if ishandle(handles.UVMAT_title) %remove title panel on uvmat
     delete(handles.UVMAT_title)
 end
@@ -1825,12 +1845,8 @@ if TestInputFile
     num_j2=stra2num(get(handles.j2,'String'));
     NomType=get(handles.FileIndex,'UserData');
     %update the z position index
-%     if isequal(get(handles.nb_slice,'String'),'vol.')%case of volume
-%         set(handles.z_index,'String',get(handles.j1,'String'));
-%     else
     nbslice=str2double(get(handles.nb_slice,'String'));
-%     z_index=mod(num_i1-1,nbslice)+1;
-    if ~isempty(nbslice)
+    if ~isnan(nbslice)
         z_index=mod(num_i1-1,nbslice)+1;
         set(handles.z_index,'String',num2str(z_index))
         % refresh menu for save_mask if relevant
@@ -1884,8 +1900,6 @@ end
 filename_1=[];
 FieldName_1=[];
 scal_color=[];
-% testvel=0;
-% testX=0;%default
 VelType_1=setfield_1(handles);
 sub_value=get(handles.SubField,'Value');
 FileType_1='none';%default
@@ -1950,7 +1964,6 @@ if sub_value>=2
 end
 
 %read the input field(s)
-% testima_1=isequal(FieldName_1,'image');
 
 %read images
 if ~isempty(filename) && isequal(FieldName,'image')
@@ -2006,11 +2019,6 @@ if ~isfield(UvData,'Txt')&& ~isempty(filename_1) && isequal(FieldName_1,'image')
     set(handles.npy,'String',num2str(npxy(1)));
     Rangx=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
     Rangy=[npxy(1)-0.5 0.5]; %
-%     npx=str2num(get(handles.npx,'String'));
-%     npy=str2num(get(handles.npy,'String'));
-%     if isfield(UvData,'XmlData_1') && isfield(UvData.XmlData_1,'Time')
-%         abs_time=UvData.XmlData_1.Time;
-%     end
     Field{2}.AName='image';
     Field{2}.ListVarName={'AY','AX','A'}; % 
     if size(A,3)==3;%color
@@ -2043,13 +2051,11 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&& isequal(FileType,'netcdf')) 
     end
     if isequal(FileType,'netcdf')  %read the first nc field
         if isequal(FieldName,'get_field...')% read the field names on the interface get_field.
-%             test_detect=0;%default
             VelType=get(handles.Fields,'UserData');
             hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
             if isempty(hget_field)
                 hget_field= get_field(filename);%open the get_field GUI    
             end
-%             test_detect=1;
             hhget_field=guidata(hget_field);
             set(hhget_field.inputfile,'String',filename)% update the list of input fields in get_field
             set(hhget_field.ACTION,'Value',1)% PLOT option selected
@@ -2073,26 +2079,16 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&& isequal(FileType,'netcdf')) 
     end
     if ~isempty(filename_1) && isequal(FileType_1,'netcdf') %read the second file
         if isequal(FieldName_1,'get_field...')% read the field names on the interface get_field.
-%             test_detect=0;%default
             hget_field=findobj(allchild(0),'Name','get_field_1');%find the get_field... GUI
              if isempty(hget_field)
                  hget_field= get_field(filename_1);%open the get_field GUI
                  set(hget_field,'name','get_field_1')
 %                 enable_transform(handles,'off')% no field transform (possible transform in the GUI get_field)
              end
-%             test_detect=1;
             hhget_field=guidata(hget_field);%handles of GUI elements in get_field
             SubField=get_field('read_var_names',hObject,eventdata,hhget_field); %read the names of the variables to plot in the get_field GUI 
             [Field{2},var_detect]=nc2struct(filename_1,SubField.ListVarName); %read the corresponding input data                
             Field{2}.VarAttribute=SubField.VarAttribute;
-%             if isequal(get(hhget_field.transform_fct,'Visible'),'on')
-%                 list_transform=get(hhget_field.transform_fct,'String');
-%                 val_list=get(hhget_field.transform_fct,'Value');
-%                 transf=list_transform{val_list};
-%                 if ~isempty(transf)
-%                     Field{2}=feval(transf,Field{2});
-%                 end
-%             end
             %update the display on get_field
             set(hhget_field.inputfile,'String',filename_1)
             set(hhget_field.variables,'Value',1)
@@ -3187,26 +3183,25 @@ if ~isfield(UvData,'NewSeries')|isequal(UvData.NewSeries,0)
     run0_Callback(hObject, eventdata, handles)
 end
 
-
-%-----------------------------------
-%set the visibility of relevant velocity type menus: 
-%-----------------------------------
+%------------------------------------------------------------------------
+% --- set the visibility of relevant velocity type menus: 
+function set_veltype_display(handles,Civ)
+%------------------------------------------------------------------------
 %Civ=0; all states 'off'
 %Civ=6; all states 'on'
-function set_veltype_display(handles,Civ)
 if isequal(Civ,0)
     imax=0;
 %    set(handles(1),'Visible','on')  % unvisible civ buttons
 % else
 %    set(handles(1),'String','civ1') 
 % end
-elseif isequal(Civ,1)
+elseif isequal(Civ,1) || isequal(Civ,2)
    imax=1;
-elseif isequal(Civ,2) | isequal(Civ,3) 
+elseif isequal(Civ,3) 
     imax=3;
-elseif isequal(Civ,4) | isequal(Civ,5)
+elseif isequal(Civ,4) || isequal(Civ,5)
     imax=4;
-elseif isequal(Civ,6) 
+elseif isequal(Civ,6) %patch2
     imax=6;
 end
 for ibutton=1:imax;

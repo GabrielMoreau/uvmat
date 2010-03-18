@@ -1210,10 +1210,10 @@ if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
 else
     ref_j=str2num(get(handles.ref_j,'String'));
 end
-if isequal(get(handles.dt_text,'String'),'dt(ms)=')%simple series(Di) with equal interval
-    ref_i=ceil((first_i+last_i)/2);
-    ref_j=1;
-end
+% if isequal(get(handles.dt_text,'String'),'dt(ms)=')%simple series(Di) with equal interval
+%     ref_i=ceil((first_i+last_i)/2);
+%     ref_j=1;
+% end
 %     ref_i=browse.num_ref;%field number initially selected by the browser
 time=get(handles.displ_filebase,'UserData'); %get the set of times
 if isempty(time)
@@ -5028,8 +5028,8 @@ switch type_ima
     case 'movie'
         A=read(movieobject,num);
     case 'avi'
-        mov=aviread(filename,num);
-        A=frame2im(mov(1));
+       mov=aviread(filename,num);      
+       A=frame2im(mov(1));
     case 'multimage'
         A=imread(filename,num);
     case 'image'    
