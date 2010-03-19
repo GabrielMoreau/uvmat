@@ -110,23 +110,24 @@ for ivar=1:length(ListVarName)
             nc{ListVarName{ivar}}=ncfloat(Data.ListDimName(VarDimIndex));%vector of x coordinates
             nc{ListVarName{ivar}}(:) = VarVal;
         end
-        %write variable attributes
-        if testattr
-            for ivarattr=1:length(VarAttribute)  
-                if isstruct(VarAttribute{ivarattr})
-                    attr_names=fields(VarAttribute{ivarattr});
-                    for iattr=1:length(attr_names)
-                        eval(['attr_val=VarAttribute{ivar}.' attr_names{iattr} ';']);
-                        if ischar(attr_val) && ~isequal(attr_val,'')
-                            eval(['nc{''' ListVarName{ivar} '''}.' attr_names{iattr} '=''' attr_val ''';'])
-                        elseif isnumeric(attr_val)&& ~isempty(attr_val)
-                             eval(['nc{''' ListVarName{ivar} '''}.' attr_names{iattr} '=attr_val ;'])
-                        end
-                    end
-                end
-            end
-         end
     end
 end
+%write variable attributes
+if testattr
+    for ivar=1:length(VarAttribute)  %loop on the attributes of variable ivar
+        if isstruct(VarAttribute{ivar})
+            attr_names=fields(VarAttribute{ivar});
+            for iattr=1:length(attr_names)
+                eval(['attr_val=VarAttribute{ivar}.' attr_names{iattr} ';']);
+                if ischar(attr_val) && ~isequal(attr_val,'')
+                    eval(['nc{''' ListVarName{ivar} '''}.' attr_names{iattr} '=''' attr_val ''';'])
+                elseif isnumeric(attr_val)&& ~isempty(attr_val)
+                     eval(['nc{''' ListVarName{ivar} '''}.' attr_names{iattr} '=attr_val ;'])
+                end
+            end
+        end
+    end
+ end
+
 
 close(nc);
