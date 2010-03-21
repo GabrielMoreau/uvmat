@@ -1,11 +1,8 @@
-%'nomtype2pair': creates nomencalture for index pairs. 
+%'nomtype2pair': creates nomencalture for index pairs knowing the image nomenclature
 %---------------------------------------------------------------------
-% [nom_type_nc]=nomtype2pair(nom_type);
+% [nom_type_pair]=nomtype2pair(nom_type,Dti,Dtj);
 %---------------------------------------------------------------------           
-% This function detects the existence the constructed file name and it can
-% find indices according to file existence if they are not specified
-%%rmq: this function is related to the reverse functions display2name and name2diplay 
-%---------------------------------------------------------------------
+
 % OUTPUT:
 %nom_type_nc
 

@@ -170,8 +170,6 @@ set(handles.coord_z_scalar,'String',[{''} Txt ])
 set(handles.coord_z_vectors,'String',[{''} Txt ])
 set(handles.scalar,'Value',1)
 set(handles.scalar,'String', Txt )
-'TESTget'
-Field
 [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Field);
 if ~isempty(errormsg)  
     msgbox_uvmat('ERROR',['error in get_field/Field_input/find_field_indices: ' errormsg])

@@ -315,15 +315,17 @@ if exist('input','var')
         Field=input;
     elseif ischar(input)% file name introduced as input
            inputfile=input;
-    elseif isnumeric(input)
+    elseif isnumeric(input)%simple matrix introduced as input
         sizinput=size(input);
         if sizinput(1)<=1 || sizinput(2)<=1
             msgbox_uvmat('ERROR','bad input for uvmat: file name, structure or numerical matrix accepted')
             return
         end
+        Field.ListVarName={'A','coord_y','coord_x'};
+        Field.VarDimName={{'coord_y','coord_x'},'cord_y','coord_x'};
         Field.A=input;
-        Field.AX=[0.5 size(input,2)-0.5];
-        Field.AY=[size(input,1)-0.5 0.5];
+        Field.coord_x=[0.5 size(input,2)-0.5];
+        Field.coord_y=[size(input,1)-0.5 0.5];
     end
     if ~isempty(inputfile)
         display_file_name(hObject, eventdata, handles,inputfile)
@@ -334,7 +336,7 @@ if exist('input','var')
     if ~isempty(Field)
         set(handles.Fields,'Value',1)
         set(handles.Fields,'String',{'get_field...'})    
-        set(handles.Fields,'UserData',Field)
+       % set(handles.Fields,'UserData',Field)
         testinputfield=1;
         
         % set the colorbar position on the interface:
@@ -363,7 +365,7 @@ if testinputfield
         delete_object(hother(iobj))
     end  
     if isempty(inputfile)
-        run0_Callback(hObject, eventdata, handles)
+        errormsg=refresh_field(handles,[],[],[],[],[],[],{Field});
         set(handles.MenuTools,'Enable','on')
         set(handles.OBJECT_txt,'Visible','on')
         set(handles.edit,'Visible','on')
@@ -635,8 +637,8 @@ global dircur  dir_opening
 set(handles.RootPath,'BackgroundColor',[1 1 0])
 drawnow
 set(handles.Fields,'UserData',[])% reinialize data from uvmat opening
-huvmat=get(handles.RootPath,'parent');
-UvData=get(huvmat,'UserData');%huvmat=handles of the uvmat interface
+%huvmat=get(handles.RootPath,'parent');
+UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for run0: begin a new series
 UvData.TestInputFile=1;
 set(handles.fix_pair,'Value',0) % desactivate by default the comp_input '-'input window
@@ -661,7 +663,7 @@ if isequal(lower(FileExt),'.avi') %.avi file
     nbfield=info.NumFrames;
     nburst=1;
     set(handles.Dt_txt,'String',['Dt=' num2str(1000/info.FramesPerSecond) 'ms']);%display the elementary time interval in millisec
-    XmlData.Time=[0:1/info.FramesPerSecond:(info.NumFrames-1)/info.FramesPerSecond]';
+    XmlData.Time=(0:1/info.FramesPerSecond:(info.NumFrames-1)/info.FramesPerSecond)';
     TimeUnit='s';
     set(handles.npx,'String',num2str(info.Width));%fills nbre of pixels x box
     set(handles.npy,'String',num2str(info.Height));%fills nbre of pixels y box
@@ -809,7 +811,7 @@ end
 UvData.TimeUnit=TimeUnit;
 UvData.XmlData=XmlData;
 UvData.NewSeries=1;
-set(huvmat,'UserData',UvData)
+set(handles.uvmat,'UserData',UvData)
 
 %display warning message
 if ~isequal(warntext,'')
@@ -823,7 +825,7 @@ if testima
 elseif isequal(FileExt,'.nc')||isequal(FileExt,'.cdf')
    Data=nc2struct(FileName,'ListGlobalAttribute','absolut_time_T0','civ');
    col_vec=get(handles.col_vec,'String');
-   if isfield(Data,'absolut_time_T0')&& ~(isfield(Data,'civ') && isequal(Data.civ,0))
+   if ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)
        set(handles.Fields,'String',{'image';'get_field...';'velocity';'vort';'div';'more...'})
        set(handles.Fields,'Value',3) % set menu to 'velocity'
        col_vec{1}='ima_cor';
@@ -898,6 +900,7 @@ if mask_test
     end
     mask_test_Callback(hObject, eventdata, handles)
 end
+
 %-------------------------------------------------------------------
 function MenuBrowse_1_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
@@ -1612,7 +1615,7 @@ function runpm(hObject,eventdata,handles,increment)
 %check for mùovie pair status
 movie_status=get(handles.movie_pair,'Value');
 if isequal(movie_status,1)
-    STOP_Callback(hObject, eventdata, handles)
+    STOP_Callback(hObject, eventdata, handles)%interrupt movie pair if active
 end
 %read the data on the current input rootfile(s)
 
@@ -1625,68 +1628,82 @@ num_a=stra2num(get(handles.j1,'String'));
 num_b=stra2num(get(handles.j2,'String'));
 
 sub_value= get(handles.SubField,'Value');
-if sub_value ==1
+if sub_value % a second input file has been entered
     [FileName_1,RootPath_1,filebase_1,FileIndices_1,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
+    [pp,ff,str1,str2,str_a,str_b]=name2display(FileIndices_1);
+    num1_1=stra2num(str1);%current set of indices for the second field (may be set different than the main indices)
+    num2_1=stra2num(str2);
+    num_a_1=stra2num(str_a);
+    num_b_1=stra2num(str_b);
+    NomType_1=get(handles.FileIndex_1,'UserData');
+else
+    filename_1=[];
 end   
 
 comp_input=get(handles.fix_pair,'Value');
-if isequal(NomType,'_i1-i2')|isequal(NomType,'_i1-i2_j')
-    comp_input=1; %impose a fixed pair interval
+if isequal(NomType,'_i1-i2')||isequal(NomType,'_i1-i2_j')
+    comp_input=1; %impose a fixed pair 
     set(handles.fix_pair,'Value',1)
 end
 
 %case of scanning along the first direction (rootfile numbers)
-if get(handles.scan_i,'Value')==1% case of scanning along field numbers   
+if get(handles.scan_i,'Value')==1% case of scanning along index i   
      num1=num1+increment;
      num2=num2+increment;
-    if comp_input==0% find a free pair
-        [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out]=...
-           name_generator(filebase,num1,num_a,FileExt,NomType,0,num2,num_b,subdir);
-        if exist(filename,'file')
-            num_a=num_j1_out;
-            num_b=num_j2_out;
-        end 
-    end
-    if sub_value>=2
-        num_i1=num_i1+increment;
-        num_i2=num_i2+increment;
-    end   
-else % case of scanning along the second direction (burst numbers)
-    lastfield_cell=get(handles.last_j,'String'); % get the last field number
-    lastfield=str2num(lastfield_cell{1});
+     [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
+     if sub_value% set the second field name and indices
+        num1_1=num1_1+increment;
+        num2_1=num2_1+increment;
+        filename_1=name_generator(filebase_1,num1_1,num_a_1,FileExt_1,NomType_1,1,num2_1,num_b_1,SubDir_1);
+     end   
+else % case of scanning along index j (burst numbers)
     num_a=num_a+increment;
     num_b=num_b+increment;
-    if sub_value >=2
-      num_j1=num_j1+increment;
-      num_j2=num_j2+increment;
-    elseif ~isempty(lastfield) && num_a>lastfield
-        num_a=1;
-        num1=num1+1;
-        num2=num2+1;
+    if sub_value 
+        num_a_1=num_a_1+increment;
+        num_b_1=num_b_1+increment;
+        filename_1=name_generator(filebase_1,num1_1,num_a_1,FileExt_1,NomType_1,1,num2_1,num_b_1,SubDir_1);
+%     else % redefine the j index if it exceeds its upper bound (only in the absence of a second field)
+%         lastfield_cell=get(handles.last_j,'String'); % get the last field number
+%         lastfield=str2double(lastfield_cell{1});
+%         if num_a>lastfield && ~isnan(lastfield) 
+%             num_a=mod(num_a,lastfield);
+%             num_b=mod(num_b,lastfield)
+%         end
     end
+    filename=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
 end
 
-% display the new open numbers
-set(handles.i1,'String',num2stra(num1,NomType,1)); 
-set(handles.i2,'String',num2stra(num2,NomType,1));
-set(handles.j1,'String',num2stra(num_a,NomType,2));
-set(handles.j2,'String',num2stra(num_b,NomType,2));
-[indices]=name_generator('',num1,num_a,'',NomType,1,num2,num_b,'');
-set(handles.FileIndex,'String',indices);
-if sub_value ==1
-    NomType_1=get(handles.FileIndex_1,'UserData');
-     [indices]=...
-           name_generator('',num1,num_a,'',NomType_1,1,num2,num_b,'');
-     set(handles.FileIndex_1,'String',indices);
-end
-
-if isequal(movie_status,1)
-    set(handles.movie_pair,'Value',1)
-    movie_pair_Callback(hObject, eventdata, handles); %run
-else
 % refresh plots
-    run0_Callback(hObject, eventdata, handles); %run
+errormsg=refresh_field(handles,filename,filename_1,num1,num2,num_a,num_b);
+
+if isempty(errormsg)  %update the index counters
+    set(handles.i1,'String',num2stra(num1,NomType,1)); 
+    if isequal(num2,num1)
+         set(handles.i2,'String','');
+    else
+        set(handles.i2,'String',num2stra(num2,NomType,1));
+    end 
+    set(handles.j1,'String',num2stra(num_a,NomType,2));
+    if isequal(num_b,num_a)
+         set(handles.j2,'String','');
+    else
+        set(handles.j2,'String',num2stra(num_b,NomType,2));
+    end
+    [indices]=name_generator('',num1,num_a,'',NomType,1,num2,num_b,'');
+    set(handles.FileIndex,'String',indices);
+    if sub_value 
+         indices_1=name_generator('',num1_1,num_a_1,'',NomType_1,1,num2_1,num_b_1,'');
+         set(handles.FileIndex_1,'String',indices_1);
+    end
+    if isequal(movie_status,1)
+        set(handles.movie_pair,'Value',1)
+        movie_pair_Callback(hObject, eventdata, handles); %reactivate moviepair if it was activated
+    end
+else
+     msgbox_uvmat('ERROR',errormsg);
 end
+
 
 
 %-------------------------------------------------------
@@ -1695,7 +1712,9 @@ end
 function movie_pair_Callback(hObject, eventdata, handles)
 status=get(handles.movie_pair,'value');
 if isequal(status,0)
-    set(handles.movie_pair,'BusyAction','Cancel')
+    set(handles.movie_pair,'BusyAction','Cancel')%stop movie pair if button is 'off'
+    set(handles.i2,'String','')
+    set(handles.j2,'String','')
     return
 else
     set(handles.movie_pair,'BusyAction','queue')
@@ -1707,7 +1726,7 @@ list_fields=get(handles.Fields,'String');% list menu fields
 index_fields=get(handles.Fields,'Value');% selected string index
 FieldName=list_fields{index_fields}; % selected field
 if isequal(FieldName,'image')
-    run0_Callback(hObject, eventdata, handles)%display the first image
+%     run0_Callback(hObject, eventdata, handles)%display the first image
     UvData=get(handles.uvmat,'UserData');
 else
     msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
@@ -1805,44 +1824,64 @@ while get(handles.speed,'Value')~=0 && isequal(get(handles.movie_pair,'BusyActio
 end
 set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in run0.
-%-------------------------------------------------
 function run0_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+filename=read_file_boxes(handles);
 
+filename_1=[];%default
+if get(handles.SubField,'Value')
+    filename_1=read_file_boxes_1(handles);
+end
+num_i1=stra2num(get(handles.i1,'String'));
+num_i2=stra2num(get(handles.i2,'String'));
+num_j1=stra2num(get(handles.j1,'String'));
+num_j2=stra2num(get(handles.j2,'String'));
+errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2);
+if ~isempty(errormsg)
+      msgbox_uvmat('ERROR',errormsg);
+end    
+
+%------------------------------------------------------------------------
+% --- read the input files and refresh all the plots, including projection.
+% OUTPUT: 
+%  errormsg: error message char string  =[] by default
+% INPUT:
+% filename: first input file (=[] in the absence of input file)
+% filename_1: second input file (=[] in the asbsenc of secodn input file) 
+% num_i1,num_i2,num_j1,num_j2; frame indices
+% Field: structure describing an optional input field (then replace the input file)
+
+function errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,Field)
+%------------------------------------------------------------------------
 %initialisation
 set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
+errormsg=[]; % default error message
 abstime=[];
 abstime_1=[];
 dt=[];
-Field={};
-UvData=get(handles.uvmat,'UserData');
-if isfield(UvData,'Txt')
-    UvData=rmfield(UvData,'Txt');%erase previous error message
+if ~exist('Field','var')
+    Field={};
 end
-%set(handles.run0,'BusyAction','queue');
+UvData=get(handles.uvmat,'UserData');
+% if isfield(UvData,'Txt')
+%     UvData=rmfield(UvData,'Txt');%erase previous error message
+% end
 if ishandle(handles.UVMAT_title) %remove title panel on uvmat
     delete(handles.UVMAT_title)
 end
 
 % determine the main input file information for action
-TestInputFile=1;%default
-if isfield(UvData,'TestInputFile')&& isequal(UvData.TestInputFile,0),
-    TestInputFile=0;
-end
-num_i1=[];%default
 FileType=[];%default
-if TestInputFile
-    [filename,RootPath,filebase,xx,Ext]=read_file_boxes(handles);
+if ~isempty(filename)
+%     [filename,RootPath,filebase,xx,Ext]=read_file_boxes(handles);
     if ~exist(filename,'file')
-        msgbox_uvmat('ERROR',['input file ' filename ' does not exist'])
+        errormsg=['input file ' filename ' does not exist'];
         return
     end
-    num_i1=stra2num(get(handles.i1,'String'));
-    num_i2=stra2num(get(handles.i2,'String'));
-    num_j1=stra2num(get(handles.j1,'String'));
-    num_j2=stra2num(get(handles.j2,'String'));
+    Ext=get(handles.FileExt,'String');
     NomType=get(handles.FileIndex,'UserData');
     %update the z position index
     nbslice=str2double(get(handles.nb_slice,'String'));
@@ -1879,7 +1918,6 @@ if TestInputFile
        end
     end
 else
-    filename=[];
     FileType='netcdf';
     FieldName='get_field...';
 end
@@ -1888,27 +1926,20 @@ if isequal(FileType,'netcdf')
     list_fields=get(handles.Fields,'String');% list menu fields
     index_fields=get(handles.Fields,'Value');% selected string index
     FieldName= list_fields{index_fields}; % selected field
-    if isequal(FieldName,'get_field...')% read the field names on the interface get_field...
-        VelType=get(handles.Fields,'UserData'); 
-        Field{1}=get(handles.Fields,'UserData');
-    else
+    if ~isequal(FieldName,'get_field...')% read the field names on the interface get_field...
        VelType=setfield(handles);
     end
 end
 
 % choose a second field if Subfield option is 'on'
-filename_1=[];
 FieldName_1=[];
 scal_color=[];
 VelType_1=setfield_1(handles);
 sub_value=get(handles.SubField,'Value');
 FileType_1='none';%default
-if sub_value==1
-    filename_1=read_file_boxes_1(handles);
-    if ~exist(filename_1,'file')
-        msgbox_uvmat('ERROR',['second file ' filename_1 ' does not exist'])
-        return
-    end
+%if sub_value==1
+if ~isempty(filename_1)
+    % test for a constant second field (comparison with a fixed field)
     NomType_1=get(handles.FileIndex_1,'UserData');
     Ext_1=get(handles.FileExt_1,'String');
     % determine the input file type
@@ -1948,23 +1979,22 @@ if sub_value==1
             end
         end
     end
-end
-
-% test for keeping the previous stored data if the input files are unchanged
-test_keepdata_1=0;%defautl
-test_keepdata=0;
-if sub_value>=2
-    if ~isequal(NomType_1,'*')%in cas of a series of files (not avi movie)
+    test_keepdata_1=0;% test for keeping the previous stored data if the input files are unchanged
+    if ~isequal(NomType_1,'*')%in case of a series of files (not avi movie)
         if isfield(UvData,'filename_1')&& isfield(UvData,'VelType_1') && isfield(UvData,'FieldName_1')
             test_keepdata_1= isequal(filename_1,UvData.filename_1)&&...
                 isequal(VelType_1,UvData.filename_1) && isequal(FieldName_1,UvData.FieldName_1);
-
         end
+    end
+    if test_keepdata_1
+        Field{2}=UvData.Field_1;   
+    elseif ~exist(filename_1,'file')
+        errormsg=['second file ' filename_1 ' does not exist'];
+        return
     end
 end
 
 %read the input field(s)
-
 %read images
 if ~isempty(filename) && isequal(FieldName,'image')
      switch FileType
@@ -2000,7 +2030,7 @@ if ~isempty(filename) && isequal(FieldName,'image')
 end
 
 %read a second image
-if ~isfield(UvData,'Txt')&& ~isempty(filename_1) && isequal(FieldName_1,'image')
+if  ~isempty(filename_1) && ~test_keepdata_1 && isequal(FieldName_1,'image')
     switch FileType_1
         case 'movie'
             A=read(UvData.MovieObject_1,num_i1);
@@ -2038,7 +2068,7 @@ CivStage_1=0;%default
 VelType_out_1=[];
 InputField={FieldName};
 InputField_1={FieldName_1};
-if ~isfield(UvData,'Txt') && ((~isempty(filename)&& isequal(FileType,'netcdf')) || (~isempty(filename_1)&& isequal(FileType,'netcdf'))) ;
+if (~isempty(filename)&& isequal(FileType,'netcdf')) || (~isempty(filename_1)&& isequal(FileType_1,'netcdf')) ;
     %read the velocity field(s) from netcdf rootfile(s)
     list_code=get(handles.col_vec,'String');% list menu fields
     index_code=get(handles.col_vec,'Value');% selected string index
@@ -2051,7 +2081,7 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&& isequal(FileType,'netcdf')) 
     end
     if isequal(FileType,'netcdf')  %read the first nc field
         if isequal(FieldName,'get_field...')% read the field names on the interface get_field.
-            VelType=get(handles.Fields,'UserData');
+            %VelType=get(handles.Fields,'UserData');
             hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
             if isempty(hget_field)
                 hget_field= get_field(filename);%open the get_field GUI    
@@ -2062,7 +2092,7 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&& isequal(FileType,'netcdf')) 
             set(hhget_field.list_fig,'Value',2)% plotting axes =uvmat selected
             [Field{1},errormsg]=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
             if ~isempty(errormsg)
-                msgbox_uvmat('ERROR',['error in uvmat/run0_Callback/read_get_field: ' errormsg])
+                errormsg=['error in uvmat/run0_Callback/read_get_field: ' errormsg];
                 return
             end
             CivStage=0;
@@ -2070,14 +2100,14 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&& isequal(FileType,'netcdf')) 
         else
             [Field{1},VelType_out]=read_civxdata(filename,InputField,VelType);
             if isfield(Field{1},'Txt')
-                msgbox_uvmat('ERROR',Field{1}.Txt)
+                errormsg=Field{1}.Txt;
                 return
             end
             CivStage=Field{1}.CivStage;
             UvData.NbDim=Field{1}.nb_dim;
         end
     end
-    if ~isempty(filename_1) && isequal(FileType_1,'netcdf') %read the second file
+    if ~isempty(filename_1) && ~test_keepdata_1 && isequal(FileType_1,'netcdf') %read the second file
         if isequal(FieldName_1,'get_field...')% read the field names on the interface get_field.
             hget_field=findobj(allchild(0),'Name','get_field_1');%find the get_field... GUI
              if isempty(hget_field)
@@ -2122,11 +2152,16 @@ if ~isfield(UvData,'Txt') && ((~isempty(filename)&& isequal(FileType,'netcdf')) 
     end
 end
 
+%store the second field for possible latter use
+if numel(Field)==2
+    UvData.Field_1=Field{2};
+end
+
 %update the display buttons for the first velocity type (first menuline)
 veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
 if ~isequal(FileType,'netcdf')
     reset_vel_type(veltype_handles)
-elseif isempty(VelType)
+elseif isempty(VelType) && ~isequal(FieldName,'get_field...')
     set_veltype_display(veltype_handles,CivStage)%update the display of available velocity types for the first field
     if isempty(VelType_out)
         reset_vel_type(veltype_handles)
@@ -2140,7 +2175,7 @@ end
 veltype_handles_1=[handles.civ1_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
 if ~isequal(FileType_1,'netcdf')
     reset_vel_type(veltype_handles_1)
-elseif isempty(VelType_1)
+elseif isempty(VelType_1) && ~isequal(FieldName_1,'get_field...')
     set_veltype_display(veltype_handles_1,CivStage_1)%update the display of available velocity types for the first field
     if isempty(VelType_out_1)
         reset_vel_type(veltype_handles_1)
@@ -2179,9 +2214,8 @@ if ~isfield(UvData,'NbDim')||isempty(UvData.NbDim)||~isequal(UvData.NbDim,3)
 end           
 
 %multislice case
-if TestInputFile &&(~isfield(UvData,'NbDim') || isequal(UvData.NbDim,2))&&...%2D case
+if ~isempty(filename) &&(~isfield(UvData,'NbDim') || isequal(UvData.NbDim,2))&&...%2D case
       isfield(UvData,'XmlData') && isfield(UvData.XmlData,'GeometryCalib')&& isfield(UvData.XmlData.GeometryCalib,'SliceCoord')
-%     nbfield2=str2num(get(handles.last_j,'String'));
        siz=size(UvData.XmlData.GeometryCalib.SliceCoord);
        if siz(1)>1
            NbSlice=siz(1);
@@ -2191,10 +2225,7 @@ if TestInputFile &&(~isfield(UvData,'NbDim') || isequal(UvData.NbDim,2))&&...%2D
            NbSlice=1;
        end
        set(handles.nb_slice,'String',num2str(NbSlice))
-       slices_Callback(hObject, eventdata, handles)
-%        Coord=UvData.XmlData.GeometryCalib.SliceCoord;
-%        ZIndex=num_i1-NbSlice*(floor((num_i1-1)/NbSlice));
-%        Field{1}.Z=ZIndex;
+       slices_Callback(handles.uvmat, [], handles)
 end
 
 %store the current open names, fields and vel types in uvmat interface 
@@ -2219,16 +2250,16 @@ if isfield(UvData,'XmlData_1')
 end
 menu_transform=get(handles.transform_fct,'String');
 choice_value=get(handles.transform_fct,'Value');
-%transform=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
 transform_list=get(handles.transform_fct,'UserData');
 transform=transform_list{choice_value};%selected function handles
 
 % z index
-if TestInputFile
+if ~isempty(filename)
     Field{1}.ZIndex=mod(num_i1-1,nbslice)+1;
 end
+
 %px to phys or other transform on field
-if  ~isempty(transform) 
+if ~isempty(transform) 
     if length(Field)>=2
         Field{2}.ZIndex=mod(num_i1-1,nbslice)+1;
         [Field{1},Field{2}]=transform(Field{1},XmlData,Field{2},XmlData_1);
@@ -2244,18 +2275,17 @@ end
 if isequal(FileType,'netcdf') && ~isequal(FieldName,'get_field...')%
     Field{1}=calc_field(InputField,Field{1});
 end
-if length(Field)==2 && isequal(FileType_1,'netcdf') && ~isequal(FieldName_1,'get_field...')
+if length(Field)==2 && ~test_keepdata_1 && isequal(FileType_1,'netcdf') && ~isequal(FieldName_1,'get_field...')
     Field{2}=calc_field(InputField_1,Field{2});
 end
 
 % combine the two input fields (e.g. substract velocity fields)
 if numel(Field)==2
-    if ~(isequal(get(handles.movie_pair,'Value'),1) && isequal(FieldName,'image') && isequal(FieldName_1,'image')) %combine fields if not viewing image pairs
-        UvData.Field=sub_field(Field{1},Field{2}); %TO UPDATE FOR MORE GENERAL INPUT
-    end
+   UvData.Field=sub_field(Field{1},Field{2}); %TO UPDATE FOR MORE GENERAL INPUT  
 else
    UvData.Field=Field{1};
 end
+
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
 % test 3D , default projection menuplane and typical mesh (needed to menuopen set_object)
 test_x=0;
@@ -2265,7 +2295,7 @@ UvData.ZMin=0;%default
 UvData.Mesh=1; %default
 [UvData.Field,errormsg]=check_field_structure(UvData.Field);
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['error in uvmat/run0_Callback/check_field_structure: ' errormsg])
+    errormsg=['error in uvmat/run0_Callback/check_field_structure: ' errormsg];
     return
 end
 [CellVarIndex,NbDim,VarType]=find_field_indices(UvData.Field);
@@ -2510,12 +2540,12 @@ for iobj=1:length(Object)
                 if isempty(hget_field)
                     get_field([],ObjectData)% the projected field cannot be automatically plotted: use get_field to specify the variablesdelete(hget_field)
                 else
-                    msgbox_uvmat('ERROR','The field defined by get_field cannot be plotted')
+                    errormsg='The field defined by get_field cannot be plotted';
+                    return
                 end 
             end  
             UvData.Object{iobj}.PlotParam=ScalOut; %record the plotting parameters
-        end
-        
+        end       
     end
 end
 
@@ -2558,14 +2588,14 @@ test_v=0;
 if ~isempty(menu_histo)
     set(handles.histo1_menu,'Value',1)
     set(handles.histo1_menu,'String',menu_histo)
-    histo1_menu_Callback(hObject, eventdata, handles)
+    histo1_menu_Callback(handles.histo1_menu, [], handles)
     if nb_histo > 1
         test_v=1;
         set(handles.histo2_menu,'Visible','on')
         set(handles.histo_v,'Visible','on')
         set(handles.histo2_menu,'String',menu_histo)
         set(handles.histo2_menu,'Value',2)
-        histo2_menu_Callback(hObject, eventdata, handles)
+        histo2_menu_Callback(handles.histo2_menu,[], handles)
     end
 end
 if ~test_v
@@ -2901,7 +2931,7 @@ FileName_1=[FileName_1 FileIndices_1 FileExt_1];
 % --- Executes on menu selection Fields
 function Fields_Callback(hObject, eventdata, handles)
 %-------------------------------------------------
-huvmat=get(handles.Fields,'parent');
+
 list_fields=get(handles.Fields,'String');% list menu fields
 index_fields=get(handles.Fields,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
@@ -2919,7 +2949,7 @@ end
 list_fields=get(handles.Fields_1,'String');% list menu fields
 index_fields=get(handles.Fields_1,'Value');% selected string index
 field_1= list_fields{index_fields(1)}; % selected string
-UvData=get(huvmat,'UserData');
+UvData=get(handles.uvmat,'UserData');
 
 %read the rootfile input display
 FileExt=get(handles.FileExt,'String');
@@ -2985,16 +3015,6 @@ else
     set(handles.npy,'Visible','off')
     set(handles.fix_pair,'Value',1)
 end
-% if isequal(field,'velocity')|isequal(field_1,'velocity');
-%     state_vect='on';
-% else
-%     state_vect='off';
-% end 
-% if ~isequal(field,'velocity')|(~isequal(field_1,'velocity'));
-%     state_scal='on';
-% else
-%     state_scal='off';
-% end 
 setfield(handles);% update the field structure ('civ1'....)
 
 if ~isfield(UvData,'NewSeries')||isequal(UvData.NewSeries,0)
@@ -3005,7 +3025,6 @@ end
 % --- Executes on menu selection Fields
 function Fields_1_Callback(hObject, eventdata, handles)
 %-------------------------------------------------
-huvmat=get(handles.Fields_1,'parent');
 list_fields=get(handles.Fields,'String');% list menu fields
 index_fields=get(handles.Fields,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
@@ -3017,7 +3036,7 @@ if isequal(field_1,'') %remove second field if 'blank' field is selected
     SubField_Callback(hObject, eventdata, handles)
     return
 end
-UvData=get(huvmat,'UserData');
+UvData=get(handles.uvmat,'UserData');
 
 %read the rootfile input display
 FileExt_prev=get(handles.FileExt_1,'String');
@@ -3177,7 +3196,7 @@ if ~isequal(field,'velocity')|(~isequal(field_1,'velocity')&~isequal(field_1,'')
 else
     state_scal='off';
 end 
-set(huvmat,'UserData',UvData)
+set(handles.uvmat,'UserData',UvData)
 setfield(handles);% update the field structure ('civ1'....)
 if ~isfield(UvData,'NewSeries')|isequal(UvData.NewSeries,0)
     run0_Callback(hObject, eventdata, handles)
