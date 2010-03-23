@@ -10,6 +10,7 @@
 
 function PlotHandles=get_plot_handles(handles)
 PlotHandles.auto_xy=handles.auto_xy;
+PlotHandles.FixedLimits=handles.FixedLimits;
 %For scalar field representation
 PlotHandles.MaxA=handles.MaxA;
 PlotHandles.MinA=handles.MinA;
@@ -61,7 +62,7 @@ PlotHandles.mouse_coord=handles.mouse_coord;
 % PlotHandles.LINE=handles.LINE;
 % PlotHandles.PLANE=handles.PLANE;
 % PlotHandles.PATCH=handles.PATCH;
-PlotHandles.cal=handles.cal;
+%PlotHandles.cal=handles.cal;
 %PlotHandles.makemask=handles.makemask;
 PlotHandles.edit=handles.edit;
 PlotHandles.text_display_1=handles.text_display_1;

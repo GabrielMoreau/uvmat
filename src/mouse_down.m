@@ -161,8 +161,8 @@ elseif ~isempty(huvmat)
                      set(hcurrentobject,'Color','m'); %set the selected DeformPoint to magenta color
                 end
                 IndexObj=ObjectData.IndexObj;
-                hlist_object=findobj(huvmat,'Tag','list_object');
-                set(hlist_object,'Value',IndexObj);
+                set(hhuvmat.list_object_1,'Value',IndexObj);
+                set(hhuvmat.list_object_2,'Value',IndexObj);
                 testdeform=0;
                 set(gcbo,'Pointer','circle'); 
                 AxeData.Drawing='deform';
@@ -204,13 +204,15 @@ elseif ~isempty(huvmat)
             UvData.Object{IndexObj}=ObjectData;
             UvData.Object{IndexObj}.HandlesDisplay(1)=AxeData.CurrentObject;
             set(huvmat,'UserData',UvData)
-            list_str=get(hhuvmat.list_object,'String');
+            list_str=get(hhuvmat.list_object_1,'String');
             list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style];
             if ~isequal(list_str{end},'...')
                  list_str{end+1}='...';
             end
-            set(hhuvmat.list_object,'String',list_str)
-            set(hhuvmat.list_object,'Value',IndexObj)
+            set(hhuvmat.list_object_1,'String',list_str)
+            set(hhuvmat.list_object_1,'Value',IndexObj)
+            set(hhuvmat.list_object_2,'String',list_str)
+            set(hhuvmat.list_object_2,'Value',IndexObj)
             PlotData=get(AxeData.CurrentObject,'UserData');
             PlotData.IndexObj=IndexObj;
             set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph
@@ -294,7 +296,7 @@ elseif ~isempty(huvmat)
     if test_ruler
         UvData.RulerCoord(1,1)=xy(1,1);
         UvData.RulerCoord(1,2)=xy(1,2);
-        UvData.RulerHandle=line([xy(1,1) xy(1,1)],[xy(1,2) xy(1,2)],'Color','m','Tag','proj_object');
+        UvData.RulerHandle=line([xy(1,1) xy(1,1)],[xy(1,2) xy(1,2)],'Color','m','Tag','ruler');
         set(huvmat,'UserData',UvData)
     end
 end

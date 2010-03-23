@@ -53,7 +53,6 @@ for iview=1:length(Object_set) %loop on projection planes iview
          end
       end
 end
-
 % plot the field projected on the object
 if ~isempty(PlotHandles) %&& ~testmask
     ProjData= proj_field(UvData.Field,ObjectData,IndexObj);%project the current interface field on ObjectData
@@ -65,7 +64,6 @@ if ~isempty(PlotHandles) %&& ~testmask
         else
              [plotaxes]=view_field(ProjData);
         end
-       
 %         [PlotType,Object_out.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);
         Object_out.plotaxes=plotaxes;
         plotfig=get(plotaxes,'parent');

@@ -42,7 +42,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 23-Mar-2010 06:22:33
+% Last Modified by GUIDE v2.5 23-Mar-2010 16:19:01
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -147,13 +147,13 @@ nbcoord=0;
 
 %case of calibration (ImaDoc) input file
 % hcalib=get(handles.calib_type,'parent');
-CalibData=get(handles.figure1,'UserData');
+CalibData=get(handles.geometry_calib,'UserData');
 CalibData.XmlInput=fileinput;
 if isfield(s,'Heading')
     CalibData.Heading=s.Heading;
 end
 
-set(handles.figure1,'UserData',CalibData);%store the heading in the interface 'UserData'
+set(handles.geometry_calib,'UserData',CalibData);%store the heading in the interface 'UserData'
 if isfield(s,'GeometryCalib')
     Calib=s.GeometryCalib;
     if isfield(Calib,'CalibrationType')
@@ -311,7 +311,7 @@ h_dataview=findobj(allchild(0),'name','dataview');
 if ~isempty(h_dataview)
     delete(h_dataview)
 end
-CalibData=get(handles.figure1,'UserData');%read the calibration image source on the interface userdata
+CalibData=get(handles.geometry_calib,'UserData');%read the calibration image source on the interface userdata
 
 if isfield(CalibData,'XmlInput')
     XmlInput=fileparts(CalibData.XmlInput);
@@ -790,6 +790,8 @@ else
     set(hh,'XData',ObjectData.Coord(:,1))
     set(hh,'YData',ObjectData.Coord(:,2))
 end
+pause(.1)
+figure(handles.geometry_calib)
 
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
@@ -806,13 +808,13 @@ end
 function MenuCreateGrid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
-CalibData=get(handles.figure1,'UserData');
+CalibData=get(handles.geometry_calib,'UserData');
 Tinput=[];%default
 if isfield(CalibData,'grid')
     Tinput=CalibData.grid;
 end
 [T,CalibData.grid]=create_grid(grid_input);%display the GUI create_grid
-set(handles.figure1,'UserData',CalibData)
+set(handles.geometry_calib,'UserData',CalibData)
 
 %grid in phys space
 Coord_cell=get(handles.ListCoord,'String');
@@ -843,14 +845,14 @@ set(handles.ListCoord,'String',Tabchar)
 function MenuTranslatePoints_Callback(hObject, eventdata, handles)
 %-----------------------------------------------------------------------
 %hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
-CalibData=get(handles.figure1,'UserData');
+CalibData=get(handles.geometry_calib,'UserData');
 Tinput=[];%default
 if isfield(CalibData,'translate')
     Tinput=CalibData.translate;
 end
 T=translate_points(Tinput);%display translate_points GUI and get shift parameters 
 CalibData.translate=T;
-set(handles.figure1,'UserData',CalibData)
+set(handles.geometry_calib,'UserData',CalibData)
 %translation
 Coord_cell=get(handles.ListCoord,'String');
 data=read_geometry_calib(Coord_cell);
@@ -871,14 +873,14 @@ set(handles.ListCoord,'String',Tabchar)
 % --------------------------------------------------------------------
 function MenuRotatePoints_Callback(hObject, eventdata, handles)
 %hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
-CalibData=get(handles.figure1,'UserData');
+CalibData=get(handles.geometry_calib,'UserData');
 Tinput=[];%default
 if isfield(CalibData,'rotate')
     Tinput=CalibData.rotate;
 end
 T=rotate_points(Tinput);%display translate_points GUI and get shift parameters 
 CalibData.rotate=T;
-set(handles.figure1,'UserData',CalibData)
+set(handles.geometry_calib,'UserData',CalibData)
 %-----------------------------------------------------
 %rotation
 Phi=T(1);
@@ -914,13 +916,13 @@ set(handles.ListCoord,'String',Tabchar)
 % --------------------------------------------------------------------
 function MenuDetectGrid_Callback(hObject, eventdata, handles)
 
-CalibData=get(handles.figure1,'UserData');
+CalibData=get(handles.geometry_calib,'UserData');
 grid_input=[];%default
 if isfield(CalibData,'grid')
     grid_input=CalibData.grid;%retrieve the previously used grid
 end
 [T,CalibData.grid]=create_grid(grid_input);%display the GUI create_grid 
-set(handles.figure1,'UserData',CalibData)%store the phys grid for later use
+set(handles.geometry_calib,'UserData',CalibData)%store the phys grid for later use
 
 %read the four last point coordiantes in pixels
 Coord_cell=get(handles.ListCoord,'String');%read list of coordiantes on geometry_calib
@@ -977,8 +979,19 @@ for ipoint=1:nbpoints
     y_profile=sum(Asub,2);
     [Amax,ind_x_max]=max(x_profile);
     [Amax,ind_y_max]=max(y_profile);
-    Delta(ipoint,1)=(ind_x_max-ind_range-1)*Dx;%shift from the initial guess
-    Delta(ipoint,2)=(ind_y_max-ind_range-1)*Dy;
+    %sub-pixel improvement using moments
+    x_shift=0;
+    y_shift=0;
+    if ind_x_max+2<=2*ind_range+1 && ind_x_max-2>=1
+        Atop=x_profile(ind_x_max-2:ind_x_max+2);
+        x_shift=sum(Atop.*[-2 -1 0 1 2])/sum(Atop);
+    end
+    if ind_y_max+2<=2*ind_range+1 && ind_y_max-2>=1
+        Atop=y_profile(ind_y_max-2:ind_y_max+2);
+        y_shift=sum(Atop.*[-2 -1 0 1 2]')/sum(Atop);
+    end
+    Delta(ipoint,1)=(x_shift+ind_x_max-ind_range-1)*Dx;%shift from the initial guess
+    Delta(ipoint,2)=(y_shift+ind_y_max-ind_range-1)*Dy;
 end
 Tmod=T(:,(1:2))+Delta;
 [Xpx,Ypx]=px_XYZ(GeometryCalib,Tmod(:,1),Tmod(:,2));

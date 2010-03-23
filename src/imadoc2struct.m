@@ -63,10 +63,6 @@ if ~isempty(uid_Heading),
         s.Heading.Record=get(t,children(t,uid_Record),'value');
     end
     s.Heading.ImageName=get(t,children(t,uid_FirstImage),'value');
-%     FirstImage=s.Heading.ImageName;
-%     if ~isempty(FirstImage)
-%         [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type_ima]=name2display(FirstImage);
-%     end
 end
 
 %Camera   
@@ -77,15 +73,10 @@ if ~isempty(uid_Camera)
         ImageSize=get(t,children(t,uid_ImageSize),'value');
         xindex=findstr(ImageSize,'x');
         if length(xindex)>=2
-%             npx=str2num(ImageSize(1:xindex(1)-1));
-%             npy=str2num(ImageSize(xindex(1)+1:xindex(2)-1));
+             npx=str2double(ImageSize(1:xindex(1)-1));
+             npy=str2double(ImageSize(xindex(1)+1:xindex(2)-1));
         end
     end
-%     uid_NbSlice=find(t,'/ImaDoc/Camera/NbSlice');
-%     if ~isempty(uid_NbSlice)
-%         NbSlice=str2num(get(t,children(t,uid_NbSlice),'value'));
-% %         if isempty(NbSlice),NbSlice=1;end; %default
-%     end
     uid_TimeUnit=find(t,'/ImaDoc/Camera/TimeUnit');
     if ~isempty(uid_TimeUnit)
         s.TimeUnit=get(t,children(t,uid_TimeUnit),'value');
@@ -93,8 +84,6 @@ if ~isempty(uid_Camera)
     uid_BurstTiming=find(t,'/ImaDoc/Camera/BurstTiming');
     if ~isempty(uid_BurstTiming)
         for k=1:length(uid_BurstTiming)
-%             Dtj=[];%default
-%             NbDtj=1;%default
             subt=branch(t,uid_BurstTiming(k));%subtree under BurstTiming
              % reading Dtk
             Frequency=get_value(subt,'/BurstTiming/FrameFrequency',1);

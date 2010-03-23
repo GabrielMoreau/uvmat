@@ -38,9 +38,9 @@ end
 % if ~isempty(proj_coord); proj_coord=proj_coord{choice};else;proj_coord=[];end;
 test_create=0;%default
 test_edit=0;%default
-if isfield(handles,'VOLUME') % mouse_motion not applied to the uvmat figure, no object creation
-    test_create=get(handles.create,'Value');   
-end
+% if isfield(handles,'VOLUME') % mouse_motion not applied to the uvmat figure, no object creation
+%     test_create=get(handles.create,'Value');   
+% end
 test_edit=isfield(handles,'edit') & get(handles.edit,'Value');% edit test for mouse shap: an arrow
 test_zoom=isfield(handles,'zoom')& get(handles.zoom,'Value');% edit test for mouse shap: an arrow 
 
@@ -91,6 +91,13 @@ for ichild=1:length(hchild)
                     if length(ivec)>0 
                         if ~test_create
                             pointershape='arrow'; %mouse indicates  the detection of a vector
+                            hhh=findobj(haxes,'Tag','vector_marker');
+                            if isempty(hhh)
+                                line(AxeData.X(ivec),AxeData.Y(ivec),'Color','m','Tag','vector_marker','LineStyle','.','Marker','o','MarkerSize',AxeData.Mesh);
+                            else
+                                set(hhh,'XData',AxeData.X(ivec))
+                                set(hhh,'YData',AxeData.Y(ivec))
+                            end
                         end
                         ivec=ivec(1);%choice the first selected vector if several are selected
                         mouse.X=AxeData.X(ivec);
@@ -193,7 +200,11 @@ set(handles.text_display_4,'String',text_displ_4);
 
 %%%%%%%%%%%%%%%%%
 %create or modify an object
-if isfield(AxeData,'CurrentObject') & ishandle(AxeData.CurrentObject) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off')
+huvmat=findobj(allchild(0),'Name','uvmat');%find the uvmat interface handle
+if ~isempty(huvmat)
+    UvData=get(huvmat,'UserData');
+end
+if ~isempty(huvmat) & isfield(AxeData,'CurrentObject') & ishandle(AxeData.CurrentObject) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off')
     PlotData=get(AxeData.CurrentObject,'UserData');
     huvmat=findobj(allchild(0),'Name','uvmat');%find the uvmat interface handle
     if ~isempty(huvmat)
@@ -267,12 +278,14 @@ if test_zoom
 end
 
 %draw ruler
-UvData=get(handles.uvmat,'UserData');
-if isfield(UvData,'MouseAction') && isequal(UvData.MouseAction,'ruler')
-       if isfield(UvData,'RulerHandle')
-            RulerCoord=[UvData.RulerCoord ;xy(1,1:2)];
-            set(UvData.RulerHandle,'XData',RulerCoord(:,1));
-            set(UvData.RulerHandle,'YData',RulerCoord(:,2));
-       end
+if ~isempty(huvmat)
+    UvData=get(huvmat,'UserData');
+    if isfield(UvData,'MouseAction') && isequal(UvData.MouseAction,'ruler')
+           if isfield(UvData,'RulerHandle')
+                RulerCoord=[UvData.RulerCoord ;xy(1,1:2)];
+                set(UvData.RulerHandle,'XData',RulerCoord(:,1));
+                set(UvData.RulerHandle,'YData',RulerCoord(:,2));
+           end
+    end
 end
 set(currentfig,'Pointer',pointershape);

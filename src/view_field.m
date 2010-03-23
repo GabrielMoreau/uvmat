@@ -69,30 +69,33 @@ dir_opening=dircur;
 
 % set the position of colorbar and ancillary GUIs:
 set(hObject,'Units','Normalized')
-movegui(hObject,'center')
-UvData.PosColorbar=[0.805 0.022 0.019 0.445];
-UvData.SetObjectOrigin=[-0.05 -0.03]; %position for set_object
-UvData.SetObjectSize=[0.3 0.7];
-UvData.CalOrigin=[0.95 -0.03];%position for geometry_calib (TO IMPROVE)
-UvData.CalSize=[0.28 1];
 handles_mouse=handles;
 huvmat=findobj(allchild(0),'Name','uvmat');
 hhuvmat=guidata(huvmat);
-handles_mouse.create=hhuvmat.create;
+set(hhuvmat.list_object_2,'Visible','on')
+% handles_mouse.create=hhuvmat.create;
 handles_mouse.edit=hhuvmat.edit;
+pos_uvmat=get(huvmat,'Position');
+pos_view_field(1)=pos_uvmat(1)+pos_uvmat(3)/2;
+pos_view_field(2)=pos_uvmat(2)-pos_uvmat(3)/4;
+pos_view_field(3:4)=pos_uvmat(3:4);
+set(hObject,'Position',pos_view_field)
+
+
 
 %functions for the mouse and keyboard
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles_mouse})%set keyboard action function
 set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles_mouse})%set mouse action functio
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse}) 
-
+% set(hObject,'CloseRequestFcn ',{'close_fcn'})
 
 [PlotType,PlotParamOut,haxes]= plot_field(Field,handles.axes3)%,PlotParam,KeepLim,PosColorbar)
 %-------------------------------------------------------------------
 % --- Outputs from this function are returned to the command menuline.
 function varargout = view_field_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;% the only output argument is the handle to the GUI figure
+
 
 %-------------------------------------------------------------------
 %-------------------------------------------------------------------
@@ -1987,461 +1990,6 @@ if exist('handle1','var')%handles of selected button
 	set(handle1,'BackgroundColor',[1 1 0])  
 end
 
-%------------------------------------------------
-function create_Callback(hObject,eventdata,handles)
-%------------------------------------------------
-if ishandle(handles.VIEW_FIELD_title)
-    delete(handles.VIEW_FIELD_title)
-end
-huvmat=get(handles.create,'parent');
-UvData=get(huvmat,'UserData');%read UvData properties stored on the view_field interface (handles huvmat)
-if isequal(get(handles.create,'Value'),1)
-    set(handles.zoom,'Value',0)
-    zoom_Callback(hObject, eventdata, handles)
-     set(handles.create,'BackgroundColor',[1 1 0]) %visualise in yellow
-    set(handles.edit_vect,'Value',0)  
-    edit_vect_Callback(hObject, eventdata, handles)
-    set(handles.edit,'Value',0)
-    set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-    list_object=get(handles.list_object,'String');
-    if ~isempty(list_object)
-        set(handles.list_object,'Value',length(list_object))
-    end
-    MouseAction='create_object';
-    hset_object=findobj(allchild(0),'Name','set_object');
-    uistack(hset_object,'top')
-else
-    set(handles.create,'BackgroundColor',[0 1 0])
-    set(handles.edit,'Value',1)
-    set(handles.edit,'BackgroundColor',[1 1 0])
-    MouseAction='none';
-end
-
-UvData.MouseAction=MouseAction;
-set(huvmat,'UserData',UvData);
-
-%------------------------------------------------
-function POINTS_Callback(hObject,eventdata,handles)
-%------------------------------------------------
-if ishandle(handles.VIEW_FIELD_title)
-    delete(handles.VIEW_FIELD_title)
-end
-huvmat=get(handles.create,'parent');
-UvData=get(huvmat,'UserData');%read UvData properties stored on the view_field interface (handles huvmat)
-if isequal(get(handles.create,'Value'),1)
-    set(handles.zoom,'Value',0)
-    zoom_Callback(hObject, eventdata, handles)
-    set(handles.edit_vect,'Value',0)  
-    edit_vect_Callback(hObject, eventdata, handles)
-    set(handles.edit,'Value',0)
-    set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-    %set(handles.grid,'Value',0)
-    %set(handles.grid,'BackgroundColor',[0 1 0])
-    % initiate set_object GUI
-     data.TITLE='POINTS';
-    if isfield(UvData,'CoordType')
-        data.CoordType=UvData.CoordType;
-    end
-    if isfield(UvData,'Mesh')&~isempty(UvData.Mesh)
-        data.RangeY=UvData.Mesh;
-    elseif isfield(UvData,'AX')&isfield(UvData,'AY')& isfield(UvData,'A')%only image
-        np=size(UvData.Field.A);
-        meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/np(2);
-        meshy=abs(UvData.Field.AY(end)-UvData.Field.AY(1))/np(1);
-        data.RangeY=max(meshx,meshy);
-        data.DX=max(meshx,meshy);
-    end
-    data.Coord=[0 0 0]; %default
-    data.ParentButton=handles.create;
-    PlotHandles=get_plot_handles(handles);%get the handles of the graphic objects setting the plotting parameters
-    [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface
-    if isfield(UvData,'SetObjectOrigin')
-    pos_view_field=get(huvmat,'Position');
-    pos_set_object(1:2)=UvData.SetObjectOrigin + pos_view_field(1:2);
-    pos_set_object(3:4)=UvData.SetObjectSize .* pos_view_field(3:4);
-    set(hset_object,'Position',pos_set_object)
-    end
-    %set(hset_object,'Position',[pos_view_field(1) pos_view_field(2)-0.05*pos_view_field(4) 0.2*pos_view_field(3)  0.5*pos_view_field(4)]);
-    list_object=get(handles.list_object,'String');
-    if ~isempty(list_object)
-        set(handles.list_object,'Value',length(list_object))
-    end
-    MouseAction='create_object';
-    %UvData.ZoomOn=0;
-else
-    set(handles.create,'BackgroundColor',[0 1 0])
-    set(handles.edit,'Value',1)
-    set(handles.edit,'BackgroundColor',[1 1 0])
-    MouseAction='none';
-end
-
-UvData.MouseAction=MouseAction;
-set(huvmat,'UserData',UvData);
-
-%-----------------------------------------------------------
-function LINE_Callback(hObject, eventdata, handles)
-%-------------------------------------------------
-if ishandle(handles.VIEW_FIELD_title)
-    delete(handles.VIEW_FIELD_title)
-end
-% handles.view_field
-huvmat=get(handles.create,'parent');
-UvData=get(huvmat,'UserData');%read UvData properties stored on the view_field interface
-set(handles.zoom,'Value',0)
-zoom_Callback(hObject, eventdata, handles)
-set(handles.edit_vect,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.edit_vect,'Value',0)
-edit_vect_Callback(hObject, eventdata, handles)
-set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.edit,'Value',0)
-set(handles.list_object,'Value',1);
-edit_vect_Callback(hObject, eventdata, handles)
-set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.cal,'Value',0)
-set(handles.cal,'BackgroundColor',[0 1 0])
-%  initiate the set_object GUI
-data.TITLE='LINE';
-if isfield(UvData,'CoordType')
-    data.CoordType=UvData.CoordType;
-end
-if isfield(UvData,'Mesh')&~isempty(UvData.Mesh)
-    data.RangeX=UvData.Mesh;
-    data.RangeY=UvData.Mesh;
-    data.DX=UvData.Mesh;
-    data.DY=UvData.Mesh;
-elseif isfield(UvData.Field,'AX')&isfield(UvData.Field,'AY')& isfield(UvData.Field,'A')%only image
-    np=size(UvData.Field.A);
-    meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/np(2);
-    meshy=abs(UvData.Field.AY(end)-UvData.Field.AY(1))/np(1);
-    data.RangeY=max(meshx,meshy);
-    data.RangeX=max(meshx,meshy);
-    data.DX=max(meshx,meshy);
-end 
-if isfield(data,'DX')
-    data.Coord=[[0 0 0];[data.DX 0 0]]; %default 
-else
-    data.Coord=[[0 0 0];[1 0 0]]; %default 
-end
-data.ParentButton=handles.create;
-PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-[hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface with action on haxes,
-                                                  % associate the set_edit interface handle to the plotting axes
-pos_view_field=get(huvmat,'Position');
-if isfield(UvData,'SetObjectOrigin')
-    pos_set_object(1:2)=UvData.SetObjectOrigin + pos_view_field(1:2);
-    pos_set_object(3:4)=UvData.SetObjectSize .* pos_view_field(3:4);  
-    set(hset_object,'Position',pos_set_object)
-end
-list_object=get(handles.list_object,'String');
-if ~isempty(list_object)
-    set(handles.list_object,'Value',length(list_object))
-end
-MouseAction='create_object';
-UvData.MouseAction=MouseAction;
-set(huvmat,'UserData',UvData)
-
-%-----------------------------------------------------------
-function PATCH_Callback(hObject, eventdata, handles)
-%-----------------------------------------------------------
-if ishandle(handles.VIEW_FIELD_title)
-    delete(handles.VIEW_FIELD_title)
-end
-huvmat=get(handles.create,'parent');
-UvData=get(huvmat,'UserData');%read UvData properties stored on the view_field interface 
-% if isequal(get(handles.PATCH,'Value'),1)
-    set(handles.zoom,'Value',0)
-    set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
-%     set(handles.create,'Value',0)%suppress the other options if LINE is chosen
-%     set(handles.create,'BackgroundColor',[0 1 0])
-%     set(handles.LINE,'Value',0)
-%     set(handles.LINE,'BackgroundColor',[0 1 0])
-%     set(handles.PATCH,'Value',1)
-%     set(handles.PATCH,'BackgroundColor',[1 1 0])
-%     set(handles.PLANE,'Value',0)
-%     set(handles.PLANE,'BackgroundColor',[0 1 0])%put activated buttons to yellow
-%     set(handles.VOLUME,'Value',0)
-%     set(handles.VOLUME,'BackgroundColor',[0 1 0])
-    %set(handles.makemask,'Value',0)
-    %makemask_Callback(hObject, eventdata, handles)
-    set(handles.edit_vect,'Value',0)
-    edit_vect_Callback(hObject, eventdata, handles)
-    set(handles.edit,'Value',0)
-    set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-    set(handles.edit_vect,'Value',0)  
-    edit_vect_Callback(hObject, eventdata, handles)
-    set(handles.cal,'Value',0)
-    set(handles.cal,'BackgroundColor',[0 1 0])
-    %set(handles.grid,'Value',0)
-    %set(handles.grid,'BackgroundColor',[0 1 0])
-    %initiate set_object GUI
-    data.TITLE='PATCH';
-    if isfield(UvData,'CoordType')
-        data.CoordType=UvData.CoordType;
-    end
-    if isfield(UvData,'Mesh')&~isempty(UvData.Mesh)
-        data.YMax=UvData.Mesh;
-    elseif isfield(UvData.Field,'AX')&isfield(UvData.Field,'AY')& isfield(UvData.Field,'A')%only image
-        np=size(UvData.Field.A);
-        meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/(np(2)-1);
-        meshy=abs(UvData.Field.AY(end)-UvData.Field.AY(1))/(np(1)-1);
-        data.YMax=max(meshx,meshy);
-        data.DX=max(meshx,meshy);
-    end
-    data.Coord=[0 0 0]; %default
-    data.ParentButton=handles.create;
-    PlotHandles=get_plot_handles(handles);%get the handles of the graphic objects setting the plotting parameters
-    [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface
-    pos_view_field=get(huvmat,'Position');
-    if isfield(UvData,'SetObjectOrigin')
-        pos_set_object(1:2)=UvData.SetObjectOrigin + pos_view_field(1:2);
-        pos_set_object(3:4)=UvData.SetObjectSize .* pos_view_field(3:4); 
-        set(hset_object,'Position',pos_set_object)
-    end
-    list_object=get(handles.list_object,'String');
-    if ~isempty(list_object)
-        set(handles.list_object,'Value',length(list_object))
-    end
-    UvData.MouseAction='create_object';
-    set(huvmat,'UserData',UvData);
-%-------------------------------------------------------
-function PLANE_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------
-if ishandle(handles.VIEW_FIELD_title)
-    delete(handles.VIEW_FIELD_title)
-end
-huvmat=get(handles.create,'parent');
-UvData=get(huvmat,'UserData');%read UvData properties stored on the view_field interface 
-set(handles.zoom,'Value',0)
-set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.edit_vect,'Value',0)
-edit_vect_Callback(hObject, eventdata, handles)
-set(handles.edit,'Value',0)
-set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.cal,'Value',0)
-set(handles.cal,'BackgroundColor',[0 1 0])
-%set(handles.grid,'Value',0)
-%set(handles.grid,'BackgroundColor',[0 1 0])
-%initiate set_object GUI
-data.TITLE='PLANE';
-if isfield(UvData,'CoordType')
-    data.CoordType=UvData.CoordType;
-end
-%Si 3D data.nbdim=3;
-%Si 2D 
-if isfield(UvData,'Mesh')&~isempty(UvData.Mesh)
-    data.ZMax=UvData.Mesh;
-    data.DX=UvData.Mesh;
-    data.DY=UvData.Mesh;
-elseif isfield(UvData.Field,'AX')&isfield(UvData.Field,'AY')& isfield(UvData.Field,'A')%only image
-    np=size(UvData.Field.A);
-    meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/(np(2)-1);
-    meshy=abs(UvData.Field.AY(end)-UvData.Field.AY(1))/(np(1)-1);
-    data.DX=max(meshx,meshy);
-end
-if isfield(UvData,'DX')
-    data.DX=UvData.DX;
-end
-if isfield(UvData,'DY')
-    data.DY=UvData.DY;
-elseif isfield(UvData,'Mesh')
-    data.DY=UvData.Mesh;
-end
-if isfield(UvData.Field,'X')& isfield(UvData.Field,'Y')
-    data.Coord=[0 0 0];
-    data.Style='plane';
-    data.Phi=0;
-    data.IndexObj=1; %act on the first reference plane by default
-    haxes= handles.axes3;%GENERALISER
-    plot_object(data,[],haxes,'m'); %plot the axes of the default plane  
-end
-data.ParentButton=handles.create;
-PlotHandles=get_plot_handles(handles);%get the handles of the graphic objects setting the plotting parameters
-ZBounds=0; % default
-if isfield(UvData,'ZMin') && isfield(UvData,'ZMax')
-    ZBounds(1)=UvData.ZMin; %minimum for the Z slider
-    ZBounds(2)=UvData.ZMax;%maximum for the Z slider
-end
-[hset_object,UvData.sethandles]=set_object(data,PlotHandles,ZBounds);% call the set_object interface with action on haxes,
-if isfield(UvData,'SetObjectOrigin')
-pos_view_field=get(huvmat,'Position');
-pos_set_object(1:2)=UvData.SetObjectOrigin + pos_view_field(1:2);
-pos_set_object(3:4)=UvData.SetObjectSize .* pos_view_field(3:4);  
-set(hset_object,'Position',pos_set_object)
-end
-list_object=get(handles.list_object,'String');
-nbobject=length(list_object);
-set(handles.list_object,'Value',nbobject)
-UvData.MouseAction='create_object';
-set(huvmat,'UserData',UvData)
-
-%-------------------------------------------------------
-% --- Executes on button press in MENUVOLUME.
-%-------------------------------------------------------
-function VOLUME_Callback(hObject, eventdata, handles)
-%errordlg('command VOL not implemented yet')
-if ishandle(handles.VIEW_FIELD_title)
-    delete(handles.VIEW_FIELD_title)
-end
-huvmat=get(handles.create,'parent');
-UvData=get(huvmat,'UserData');%read UvData properties stored on the view_field interface 
-if isequal(get(handles.VOLUME,'Value'),1)
-    set(handles.zoom,'Value',0)
-    set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
-    set(handles.edit_vect,'Value',0)
-    edit_vect_Callback(hObject, eventdata, handles)
-    set(handles.edit,'Value',0)
-    set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-    set(handles.cal,'Value',0)
-    set(handles.cal,'BackgroundColor',[0 1 0])
-    set(handles.edit_vect,'Value',0)
-    edit_vect_Callback(hObject, eventdata, handles)
-    %initiate set_object GUI
-    data.TITLE='VOLUME';
-    if isfield(UvData,'CoordType')
-        data.CoordType=UvData.CoordType;
-    end
-    if isfield(UvData,'Mesh')&~isempty(UvData.Mesh)
-        data.RangeY=UvData.Mesh;
-        data.RangeX=UvData.Mesh;
-        data.DX=UvData.Mesh;
-        data.DY=UvData.Mesh;
-    elseif isfield(UvData.Field,'AX')&isfield(UvData.Field,'AY')& isfield(UvData.Field,'A')%only image
-        np=size(UvData.Field.A);
-        meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/np(2);
-        meshy=abs(UvData.Field.AY(end)-UvData.Field.AY(1))/np(1);
-        data.RangeY=max(meshx,meshy);
-        data.RangeX=max(meshx,meshy);
-        data.DX=max(meshx,meshy);
-    end 
-    data.ParentButton=handles.VOLUME;
-    PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-    [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface with action on haxes,
-                                                      % associate the set_edit interface handle to the plotting axes
-    if isfield(UvData,'SetObjectOrigin')                                                
-    pos_view_field=get(huvmat,'Position');
-    pos_set_object(1:2)=UvData.SetObjectOrigin + pos_view_field(1:2);
-    pos_set_object(3:4)=UvData.SetObjectSize .* pos_view_field(3:4);  
-    set(hset_object,'Position',pos_set_object)
-    end
-    UvData.MouseAction='create_object';
-else
-    set(handles.VOLUME,'BackgroundColor',[0 1 0])
-    UvData.MouseAction='none';
-end
-set(huvmat,'UserData',UvData)
-
-%-------------------------------------------------------
-function edit_vect_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------
-
-UvData=get(handles.view_field,'UserData');%read UvData properties stored on the view_field interface 
-if isequal(get(handles.edit_vect,'Value'),1)
-    test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
-    test_civ1=isequal(get(handles.civ1,'BackgroundColor'),[1 1 0]);
-    if ~test_civ2 && ~test_civ1
-        msgbox_view_field('ERROR','manual correction only possible for CIV1 or CIV2 velocity fields')
-    end 
-    set(handles.record,'Visible','on')
-    set(handles.edit_vect,'BackgroundColor',[1 1 0])
-    set(handles.edit,'Value',0)
-    set(handles.create,'Value',0)
-    set(handles.create,'BackgroundColor',[0 1 0])
-    set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-    set(gcf,'Pointer','arrow')
-    UvData.MouseAction='edit_vect';
-else
-    set(handles.record,'Visible','off')
-    set(handles.edit_vect,'BackgroundColor',[0.7 0.7 0.7])
-    UvData.MouseAction='none';
-end
-set(handles.view_field,'UserData',UvData)
-
-%----------------------------------------------
-function save_mask_Callback(hObject, eventdata, handles)
-%-----------------------------------------------------------------------
-huvmat=get(handles.save_mask,'parent');
-UvData=get(huvmat,'UserData');
-
-hpatch=findobj(huvmat,'Type','patch');
-flag=1;
-npx=size(UvData.Field.A,2);
-npy=size(UvData.Field.A,1);
-xi=[0.5:npx-0.5];
-yi=[0.5:npy-0.5];
-[Xi,Yi]=meshgrid(xi,yi);
-if isfield(UvData,'Object')
-    for iobj=1:length(UvData.Object)
-        ObjectData=UvData.Object{iobj};
-        if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
-            flagobj=1;
-            testphys=0; %coordinates in pixels by default
-            if isfield(ObjectData,'CoordType') && isequal(ObjectData.CoordType,'phys')
-                if isfield(UvData,'XmlData')&& isfield(UvData.XmlData,'GeometryCalib')
-                    Calib=UvData.XmlData.GeometryCalib;
-                    testphys=1;
-                end
-            end
-            if isfield(ObjectData,'Coord')& isfield(ObjectData,'Style') 
-                if isequal(ObjectData.Style,'polygon') 
-                    X=ObjectData.Coord(:,1);
-                    Y=ObjectData.Coord(:,2);
-                    if testphys
-                        [X,Y]=px_XYZ(Calib,X,Y,0);% to generalise with 3D cases
-                    end
-                    flagobj=~inpolygon(Xi,Yi,X,Y);%=0 inside the polygon, 1 outside                  
-                elseif isequal(ObjectData.Style,'ellipse')
-                    if testphys
-                        %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                    end
-                    RangeX=max(ObjectData.RangeX);
-                    RangeY=max(ObjectData.RangeY);
-                    X2Max=RangeX*RangeX;
-                    Y2Max=RangeY*RangeY;
-                    distX=(Xi-ObjectData.Coord(1,1));
-                    distY=(Yi-ObjectData.Coord(1,2));
-                    flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
-                elseif isequal(ObjectData.Style,'rectangle')
-                    if testphys
-                        %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                    end
-                    distX=abs(Xi-ObjectData.Coord(1,1));
-                    distY=abs(Yi-ObjectData.Coord(1,2));
-                    flagobj=distX>max(ObjectData.RangeX) | distY>max(ObjectData.RangeY);
-                end
-                if isequal(ObjectData.ProjMode,'mask_outside')
-                    flagobj=~flagobj;
-                end
-                flag=flag & flagobj;
-            end
-        end
-    end
-end
-% flag=~flag;
-%mask name
-RootPath=get(handles.RootPath,'String');
-RootFile=get(handles.RootFile,'String');
-if ~isempty(RootFile)&(isequal(RootFile(1),'/')| isequal(RootFile(1),'\'))
-        RootFile(1)=[];
-end
-filebase=fullfile(RootPath,RootFile);
-list=get(handles.masklevel,'String');
-masknumber=num2str(length(list));
-maskindex=get(handles.masklevel,'Value');
-mask_name=name_generator([filebase '_' masknumber 'mask'],maskindex,1,'.png','_i');
-imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
-imflag=flipdim(imflag,1);
-% imflag=uint8(255*flag);% =0 for flag=0 (vectors=0 when 20<imflag<200)
-msgbox_view_field('CONFIRMATION',[mask_name ' saved'])
-imwrite(imflag,mask_name,'BitDepth',8); 
-
-%display the mask
-%update_mask(handles,num_i1,num_j1)
-figure;
-vec=linspace(0,1,256);%define a linear greyscale colormap
-map=[vec' vec' vec'];
-colormap(map)
-
-image(imflag);
 
 %-------------------------------------------------------------------
 %-------------------------------------------------------------------
@@ -2606,271 +2154,6 @@ set_vec_col_bar(handles)
 % A(:,:,2)=A2';
 % A(:,:,3)=A3';
 % set(handles.vec_col_bar,'Cdata',A)
-
-%--------------------------------------------------------
-% --- Executes on button press in cal.
-function cal_Callback(hObject, eventdata, handles)
-
-huvmat=get(handles.cal,'parent');%handles of the view_field interface
-UvData=get(huvmat,'UserData');%read UvData properties stored on the view_field interface 
-%reinitialize the edit interface associated with view_field
-value=get(handles.cal,'Value'); 
-if value
-        set(handles.cal,'BackgroundColor',[1 1 0])
-        %suppress the other options if MENULINE is chosen
-        set(handles.zoom,'Value',0)
-        set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
-        set(handles.create,'Value',0)
-        set(handles.create,'BackgroundColor',[0 1 0])
-        set(handles.create,'enable','off')      
-        set(handles.edit_vect,'Value',0)
-        set(handles.edit_vect,'enable','off')
-        edit_vect_Callback(hObject, eventdata, handles)
-        set(handles.edit,'Value',0)
-        set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-        set(handles.edit,'enable','off')
-        set(handles.list_object,'Value',1)      
-        % initiate display of GUI geometry_calib
-        data=[]; %default
-		if isfield(UvData,'CoordType')
-            data.CoordType=UvData.CoordType;
-        end
-        %data.ParentButton=handles.cal; % transmit the handles of the calling button to the GUI geometry_calib
-		pos=get(huvmat,'Position');
-		pos(1)=pos(1)+pos(3)-0.311+0.04; %0.311= width of the geometry_calib interface (units relative to the srcreen)
-		pos(2)=pos(2)-0.02;
-        [FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes(handles);
-%         [filebase,num_i1,num_j1,num_i2,num_j2,Ext,NomType,SubDir]=read_input_file(handles);
-%         [inputfile,idetect]=name_generator(filebase,num_i1,num_j1,Ext,NomType,1,num_i2,num_j2,SubDir);
-		[UvData.hset_object,UvData.sethandles]=geometry_calib(handles,pos,FileName);% call the set_object interface	
-        pos_view_field=get(huvmat,'Position');
-        %pos_cal(1:2)=UvData.CalOrigin + pos_view_field(1:2);
-        if isfield(UvData,'CalOrigin')
-            pos_cal(1)=pos_view_field(1)+UvData.CalOrigin(1)*pos_view_field(3);
-            pos_cal(2)=pos_view_field(2)+UvData.CalOrigin(2)*pos_view_field(4);
-            pos_cal(3:4)=UvData.CalSize .* pos_view_field(3:4);
-            set(UvData.hset_object,'Position',pos_cal)
-        end
-        UvData.MouseAction='calib';
-else
-     UvData.MouseAction='none';     
-     hgeometry_calib=findobj(allchild(0),'Name','geometry_calib');
-%      if ~isempty(hgeometry_calib)
-%          answer=questdlg('close the GUI geometry-calib?');
-%          if isequal(answer,'Yes')
-%              delete(hgeometry_calib)
-%              set(handles.cal,'BackgroundColor',[0 1 0])
-%          else
-%              set(handles.cal,'Value',1)% keep the calibration function active
-%          end
-%      end
-     set(handles.edit_vect,'enable','on')
-     set(handles.edit,'enable','on')
-     set(handles.create,'enable','on')
-%      set(handles.LINE,'enable','on')
-%      set(handles.PATCH,'enable','on')
-%      set(handles.PLANE,'enable','on')
-%      set(handles.VOLUME,'enable','on')
-     %set(handles.makemask,'enable','on')
-     hh=findobj(handles.axes3,'Tag','calib_points');
-     if ~isempty(hh)
-         delete(hh)
-     end
-     hhh=findobj(handles.axes3,'Tag','calib_marker');
-     if ~isempty(hhh)
-         delete(hhh)
-     end    
-end
-set(huvmat,'UserData',UvData);
-
-%-------------------------------------------------------------
-% --- Executes on selection change in transform_fct.
-function transform_fct_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------
-global nb_builtin
-
-huvmat=get(handles.transform_fct,'parent');
-menu=get(handles.transform_fct,'String');
-ind_coord=get(handles.transform_fct,'Value');
-coord_option=menu{ind_coord};
-list_transform=get(handles.transform_fct,'UserData');
-ff=functions(list_transform{end});  
-if isequal(coord_option,'more...'); 
-    coord_fct='';
-
-%     if exist(profil_perso,'file')
-%           h=load (profil_perso);
-%          if isfield(h,'transform_fct')
-%                 transform_fct=h.transform_fct;
-%          end
-%     end
-    prompt = {'Enter the name of the transform function'};
-    dlg_title = 'user defined transform';
-    num_lines= 1;
-    [FileName, PathName, filterindex] = uigetfile( ...
-       {'*.m', ' (*.m)';
-        '*.m',  '.m files '; ...
-        '*.*', 'All Files (*.*)'}, ...
-        'Pick a file', ff.file);
-    if isequal(PathName(end),'/')||isequal(PathName(end),'\')
-        PathName(end)=[];
-    end
-    transform_selected =fullfile(PathName,FileName);
-    if ~exist(transform_selected,'file')
-%            msgbox_view_field('ERROR',['procesing fct ' transform_selected ' not found'])
-           return
-    end
-   [ppp,transform,ext_fct]=fileparts(FileName);% removes extension .m
-   if ~isequal(ext_fct,'.m')
-        msgbox_view_field('ERROR','a Matlab function .m must be introduced');
-        return
-   end
-   menu=update_menu(handles.transform_fct,transform);%add the selected fct to the menu
-   ind_coord=get(handles.transform_fct,'Value');
-   addpath(PathName)
-   list_transform{ind_coord}=str2func(transform);% create the function handle corresponding to the newly seleced function
-   set(handles.transform_fct,'UserData',list_transform)
-   rmpath(PathName)
-   % save the new menu in the personal file 'view_field_perso.mat' 
-   dir_perso=prefdir;%personal Matalb directory
-   profil_perso=fullfile(dir_perso,'view_field_perso.mat');
-   if exist(profil_perso,'file')
-       for ilist=nb_builtin+1:numel(list_transform)
-           ff=functions(list_transform{ilist});
-           transform_fct{ilist-nb_builtin}=ff.file;
-       end 
-        save (profil_perso,'transform_fct','-append'); %store the root name for future opening of view_field
-   end   
-end
-
-%check the current path to the selected function
-if isa(list_transform{ind_coord},'function_handle')
-    func=functions(list_transform{ind_coord});
-    set(handles.path_transform,'String',fileparts(func.file)); %show the path to the senlected function
-else
-    set(handles.path_transform,'String','')
-end
-%CurrentPath=fileparts(which(coord_option));
-% if ~isequal(PathName,CurrentPath)
-%     addpath(PathName) 
-%     errormsg=check_functions;
-%     msgbox_view_field('WARNING',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
-% end
-%set(handles.path_transform,'String',fullfile(PathName,' ')); %show the path to the senlected function
-set(handles.FixedLimits,'Value',0)
-set(handles.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
-
-UvData=get(huvmat,'UserData');
-
-%delete drawn objects
-hother=findobj('Tag','proj_object');%find all the proj objects
-for iobj=1:length(hother)
-    delete_object(hother(iobj))
-end
-hother=findobj('Tag','DeformPoint');%find all the proj objects
-for iobj=1:length(hother)
-    delete_object(hother(iobj))
-end
-hh=findobj('Tag','calib_points');
-if ~isempty(hh)
-    delete(hh)
-end
-hhh=findobj('Tag','calib_marker');
-if ~isempty(hhh)
-    delete(hhh)
-end
-if isfield(UvData,'Object')
-    nbobject=length(UvData.Object);
-    UvData.Object([2:nbobject])=[];
-end 
-
-%delete mask if it is displayed 
-if isequal(get(handles.mask_test,'Value'),1)%if the mask option is on
-   UvData=rmfield(UvData,'MaskName'); %will impose mask refresh  
-end
-set(huvmat,'UserData',UvData)
-run0_Callback(hObject, eventdata, handles)
-
-%--------------------------------------------
-function histo1_menu_Callback(hObject, eventdata, handles)
-%--------------------------------------------
-%plot first histo
-huvmat=get(handles.histo1_menu,'parent');
-histo_menu=get(handles.histo1_menu,'String');
-histo_value=get(handles.histo1_menu,'Value');
-FieldName=histo_menu{histo_value};
-UvData=get(huvmat,'UserData');
-update_histo(handles.histo_u,huvmat,FieldName)
-
-%----------------------------------------------
-function histo2_menu_Callback(hObject, eventdata, handles)
-%----------------------------------------------
-%plot second histo
-huvmat=get(handles.histo2_menu,'parent');
-histo_menu=get(handles.histo2_menu,'String');
-histo_value=get(handles.histo2_menu,'Value');
-FieldName=histo_menu{histo_value};
-UvData=get(huvmat,'UserData');
-update_histo(handles.histo_v,huvmat,FieldName)
-
-
-%--------------------------------------------
-%read the field .Fieldname stored in UvData and plot its histogram
-function update_histo(haxes,huvmat,FieldName)
-UvData=get(huvmat,'UserData');
-
-if ~isfield(UvData.Field,FieldName)
-    msgbox_view_field('ERROR',['no field  ' FieldName ' for histogram'])
-    return
-end
-Field=UvData.Field;
-FieldHisto=eval(['Field.' FieldName]);
-if isfield(Field,'FF') & ~isempty(Field.FF) & isequal(size(Field.FF),size(FieldHisto))
-    indsel=find(Field.FF==0);%find values marked as false
-    if ~isempty(indsel)
-        FieldHisto=FieldHisto(indsel);
-    end
-end
-if isempty(Field)
-    msgbox_view_field('ERROR',['empty field ' FieldName])
-else
-    nxy=size(FieldHisto);
-    Amin=double(min(min(min(FieldHisto))));%min of image
-    Amax=double(max(max(max(FieldHisto))));%max of image
-    if isequal(Amin,Amax)
-       Histo.Txt=['uniform field =' num2str(Amin)];
-    else
-    Histo.ListVarName={FieldName,'histo'};
-    if numel(nxy)==2
-        Histo.VarDimName={FieldName,FieldName}; %dimensions for the histogram
-    else %color images
-        Histo.VarDimName={FieldName,{FieldName,'rgb'}}; %dimensions for the histogram
-    end
-    %unit
-    units=[]; %default
-    for ivar=1:numel(Field.ListVarName)    
-        if strcmp(Field.ListVarName{ivar},FieldName)
-            if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'units')
-                units=Field.VarAttribute{ivar}.units;
-                break
-            end
-        end
-    end
-    if ~isempty(units)
-        Histo.VarAttribute{1}.units=units;
-    end
-    eval(['Histo.' FieldName '=linspace(Amin,Amax,50);'])%absissa values for histo
-    for col=1:size(FieldHisto,3)
-        B=FieldHisto(:,:,col);
-        C=reshape(double(B),1,nxy(1)*nxy(2));% reshape in a vector
-       eval(['Histo.histo(:,col)=hist(C, Histo.' FieldName ');']);  %calculate histogram
-    end
-    set(haxes,'XLimMode','auto')%reset auto mode (after zoom effect)
-    set(haxes,'YLimMode','auto')
-    plot_field(Histo,haxes);
-    end
-end
-
 
 
 %------------------------------------------------
@@ -3082,18 +2365,18 @@ colorbar
 
 
 
-function edit84_Callback(hObject, eventdata, handles)
-% hObject    handle to edit84 (see GCBO)
+function npx_Callback(hObject, eventdata, handles)
+% hObject    handle to npx (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit84 as text
-%        str2double(get(hObject,'String')) returns contents of edit84 as a double
+% Hints: get(hObject,'String') returns contents of npx as text
+%        str2double(get(hObject,'String')) returns contents of npx as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit84_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit84 (see GCBO)
+function npx_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to npx (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -3105,18 +2388,18 @@ end
 
 
 
-function edit85_Callback(hObject, eventdata, handles)
-% hObject    handle to edit85 (see GCBO)
+function npy_Callback(hObject, eventdata, handles)
+% hObject    handle to npy (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit85 as text
-%        str2double(get(hObject,'String')) returns contents of edit85 as a double
+% Hints: get(hObject,'String') returns contents of npy as text
+%        str2double(get(hObject,'String')) returns contents of npy as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit85_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit85 (see GCBO)
+function npy_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to npy (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -3129,17 +2412,17 @@ end
 
 
 function edit86_Callback(hObject, eventdata, handles)
-% hObject    handle to edit86 (see GCBO)
+% hObject    handle to MaxA (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit86 as text
-%        str2double(get(hObject,'String')) returns contents of edit86 as a double
+% Hints: get(hObject,'String') returns contents of MaxA as text
+%        str2double(get(hObject,'String')) returns contents of MaxA as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit86_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit86 (see GCBO)
+function MaxA_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to MaxA (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -3152,17 +2435,17 @@ end
 
 
 function edit87_Callback(hObject, eventdata, handles)
-% hObject    handle to edit87 (see GCBO)
+% hObject    handle to MinA (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit87 as text
-%        str2double(get(hObject,'String')) returns contents of edit87 as a double
+% Hints: get(hObject,'String') returns contents of MinA as text
+%        str2double(get(hObject,'String')) returns contents of MinA as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit87_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit87 (see GCBO)
+function MinA_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to MinA (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -3173,28 +2456,28 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in checkbox39.
-function checkbox39_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox39 (see GCBO)
+% --- Executes on button press in auto_sclar.
+function auto_sclar_Callback(hObject, eventdata, handles)
+% hObject    handle to auto_sclar (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox39
+% Hint: get(hObject,'Value') returns toggle state of auto_sclar
 
 
 
 function edit88_Callback(hObject, eventdata, handles)
-% hObject    handle to edit88 (see GCBO)
+% hObject    handle to IncrA (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit88 as text
-%        str2double(get(hObject,'String')) returns contents of edit88 as a double
+% Hints: get(hObject,'String') returns contents of IncrA as text
+%        str2double(get(hObject,'String')) returns contents of IncrA as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit88_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit88 (see GCBO)
+function IncrA_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to IncrA (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -3205,13 +2488,13 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in checkbox40.
+% --- Executes on button press in AutoScal.
 function checkbox40_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox40 (see GCBO)
+% hObject    handle to AutoScal (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox40
+% Hint: get(hObject,'Value') returns toggle state of AutoScal
 
 
 
@@ -3239,17 +2522,17 @@ end
 
 
 function edit83_Callback(hObject, eventdata, handles)
-% hObject    handle to edit83 (see GCBO)
+% hObject    handle to min_vec (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit83 as text
-%        str2double(get(hObject,'String')) returns contents of edit83 as a double
+% Hints: get(hObject,'String') returns contents of min_vec as text
+%        str2double(get(hObject,'String')) returns contents of min_vec as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit83_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit83 (see GCBO)
+function min_vec_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to min_vec (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -3304,28 +2587,28 @@ if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColo
 end
 
 
-% --- Executes on button press in checkbox41.
+% --- Executes on button press in AutoVecColor.
 function checkbox41_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox41 (see GCBO)
+% hObject    handle to AutoVecColor (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox41
+% Hint: get(hObject,'Value') returns toggle state of AutoVecColor
 
 
 
 function edit89_Callback(hObject, eventdata, handles)
-% hObject    handle to edit89 (see GCBO)
+% hObject    handle to max_vec (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit89 as text
-%        str2double(get(hObject,'String')) returns contents of edit89 as a double
+% Hints: get(hObject,'String') returns contents of max_vec as text
+%        str2double(get(hObject,'String')) returns contents of max_vec as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit89_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit89 (see GCBO)
+function max_vec_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to max_vec (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -3359,10 +2642,14 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton35.
+% --- Executes on button press in vec_col_bar.
 function pushbutton35_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton35 (see GCBO)
+% hObject    handle to vec_col_bar (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 
+function close_fcn(hObject, eventdata, handles)
+huvmat=findobj(allchild(0),'Name','uvmat');
+hhuvmat=guidata(huvmat);
+set(hhuvmat.list_object_2,'Visible','off')

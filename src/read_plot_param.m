@@ -13,6 +13,7 @@
 function PlotParam=read_plot_param(handles)
 
 PlotParam.Auto_xy=get(handles.auto_xy,'Value');
+PlotParam.FixedLimits=get(handles.FixedLimits,'Value');
 
 % scalars
 Scalar.MaxA=str2double(get(handles.MaxA,'String'));

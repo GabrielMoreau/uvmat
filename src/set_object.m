@@ -708,8 +708,8 @@ function closefcn(gcbo,eventdata,parent_button)
 huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
-    set(hhuvmat.create,'Value',0)
-    set(hhuvmat.create,'BackgroundColor',[0 1 0])%put unactivated buttons to green
+%     set(hhuvmat.create,'Value',0)
+%     set(hhuvmat.create,'BackgroundColor',[0 1 0])%put unactivated buttons to green
 %     set(hhuvmat.LINE,'Value',0)
 %     set(hhuvmat.LINE,'BackgroundColor',[0 1 0])%put unactivated buttons to green
 %     set(hhuvmat.PATCH,'Value',0)
@@ -732,10 +732,9 @@ end
 % --- Executes on button press in PLOT: PLOT the defined object and its projected field
 function PLOT_Callback(hObject, eventdata, handles)
 
-hsetobject=get(handles.PLOT,'parent');
-SetData=get(hsetobject,'UserData');%get the hidden interface data
+SetData=get(handles.set_object,'UserData');%get the hidden interface data
 huvmat=findobj('Name','uvmat');%find the current uvmat interface handle
-hlist_object=findobj(huvmat,'Tag','list_object');%handles of the object list in the GUI uvmat 
+hlist_object=findobj(huvmat,'Tag','list_object_1');%handles of the object list in the GUI uvmat 
 IndexObj=get(hlist_object,'Value');%position in the objet list
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
 ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
@@ -766,23 +765,24 @@ end
 % update the object plot and projection field
 UvData.Object{IndexObj}=update_obj(UvData,IndexObj,ObjectData,SetData.PlotHandles);
 
+
 set(huvmat,'UserData',UvData)%update the data in the uvmat interface
 list_str=get(hlist_object,'String');
 % TITLE=set_title(ObjectData.Style,ObjectData.ProjMode);
 % list_str{IndexObj}=[num2str(IndexObj) '-' TITLE];
 list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style];
-if isequal(length(list_str),IndexObj)
-    list_str{IndexObj+1}='more...';
-end
-set(hlist_object,'String',list_str)
-set(hlist_object,'Value',IndexObj)
+% if isequal(length(list_str),IndexObj)
+%     list_str{IndexObj+1}='more...';
+% end
+set(hlist_object_1,'String',list_str)
+set(hlist_object_1,'Value',IndexObj)
 
 %update create buttons on the GUI uvmat: set to object edit mode after object plotting
 hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI
 %desactivate all create buttons in mode edit
 % if isequal(get(hhuvmat.edit,'Value'),0)
-    set(hhuvmat.create,'Value',0)
-    set(hhuvmat.create,'BackgroundColor',[0 1 0])%put unactivated buttons to green
+%     set(hhuvmat.create,'Value',0)
+%     set(hhuvmat.create,'BackgroundColor',[0 1 0])%put unactivated buttons to green
 %     set(hhuvmat.LINE,'Value',0)
 %     set(hhuvmat.LINE,'BackgroundColor',[0 1 0])%put unactivated buttons to green
 %     set(hhuvmat.PATCH,'Value',0)

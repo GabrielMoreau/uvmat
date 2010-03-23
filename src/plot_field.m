@@ -120,7 +120,6 @@ testzoomaxes=0;%test for the existence of a zoom secondary figure attached to th
 if exist('haxes','var')
     if ishandle(haxes)
         if isequal(get(haxes,'Type'),'axes')
-%             hfig=get(haxes,'Parent');
             axes(haxes)
             testnewfig=0;
             AxeData=get(haxes,'UserData');
@@ -203,8 +202,6 @@ elseif isequal(Data.NbDim,2)
 elseif isequal(Data.NbDim,3)
     msgbox_uvmat('ERROR','volume plot not implemented yet')
     return
-    %plot_volume(haxes,Data,PlotParam)% A FAIRE
-    %PlotType='volume';
 else
     testnbdim=0;
 end
@@ -308,13 +305,21 @@ set(haxes,'UserData',AxeData)
 %----------------------------------------------------------
 function [AxeData,haxes]=plot_profile(data,CellVarIndex,VarType,haxes,PlotParam)
 %-----------------------------------------------------------
-axes(haxes)
+%axes(haxes)
 hfig=get(haxes,'parent');
 AxeData=data;
 ColorOrder=[1 0 0;0 0.5 0;0 0 1;0 0.75 0.75;0.75 0 0.75;0.75 0.75 0;0.25 0.25 0.25];
 set(haxes,'ColorOrder',ColorOrder)
 if isfield(PlotParam,'NextPlot')
     set(haxes,'NextPlot',PlotParam.NextPlot)
+end
+% adjust the size of the plot to include the whole field, except if KeepLim=1
+if isfield(PlotParam,'FixedLimits') && isequal(PlotParam.FixedLimits,1)  %adjust the graph limits*
+    set(haxes,'XLimMode', 'manual')
+    set(haxes,'YLimMode', 'manual')
+else
+    set(haxes,'XLimMode', 'auto')
+    set(haxes,'YLimMode', 'auto')
 end
 legend_str={};
 
@@ -371,10 +376,6 @@ for icell=1:length(CellVarIndex)
     else
           charplot_0='''-''';
     end
-%     if testcoordvar==0
-%         coord_x{icell}=[1:data.DimValue(DimIndices(1))];%abscissa by default if no coordinate variable
-%        % charplot_0='''-''';
-%     end
     if isfield(data,'VarAttribute')
         VarAttribute=data.VarAttribute;
         for ivar=1:length(VarIndex) 
@@ -414,7 +415,7 @@ for icell=1:length(CellVarIndex)
 end
 if ~isequal(plotstr,'plot(')
     plotstr(end)=')';
-                %execute plot (instruction  plotstr)
+                %execute plot (instruction  plotstr)   
     eval(plotstr)
                 %%%%%
     grid on

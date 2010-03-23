@@ -132,8 +132,8 @@ if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off
             if  isfield(UvData.Object{IndexObj},'PlotParam')
                 write_plot_param(PlotHandles,UvData.Object{IndexObj}.PlotParam); %update the display of plotting parameters for the current object
             end              
-            set(hhuvmat.create,'Value',0);% set to 'off' the button for object creation
-            set(hhuvmat.create,'BackgroundColor',[0 1 0]);% paint the creation button in green
+%             set(hhuvmat.create,'Value',0);% set to 'off' the button for object creation
+%             set(hhuvmat.create,'BackgroundColor',[0 1 0]);% paint the creation button in green
             set(hhuvmat.edit,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
             set(hhuvmat.edit,'Value',1);%
             set(hhuvmat.edit,'Enable','on');%
@@ -165,25 +165,13 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
                 if isfield(AxeData,'CurrentVec') & ishandle(AxeData.CurrentVec)
                     delete(AxeData.CurrentVec)
                 end
-                %update the axes UvData.Plane2 if it exists, else create it
-%                 if isfield (UvData,'Plane2') & ishandle(UvData.Plane2.Fig)%if the second plan plotting axis already exists
-%                     hfig2=UvData.Plane2.Fig;
-%                     if isequal(gcf,hfig2)%if we are already on the secondary figure
-%                         test_replot=1;
-%                     else
-%                         figure(hfig2)%set hfig2 as the current figure
-%                         clf; %erase axes
-%                     end
-%                 else
-                    hfig2=figure;%create new figure
-                    set(hfig2,'name','zoom')
-                    set(hfig2,'Units','normalized')
-                    set(hfig2,'Position',[0.2 0.33 0.6 0.6]);
-%                     UvData.Plane2.Fig=hfig2; 
-                    map=colormap(currentaxes);
-                    colormap(map);%transmit the current colormap to the zoom fig
-                    get(handles.RootFile,'String')
-%                 end
+                hfig2=figure;%create new figure
+                set(hfig2,'name','zoom')
+                set(hfig2,'Units','normalized')
+                set(hfig2,'Position',[0.2 0.33 0.6 0.6]);
+                map=colormap(currentaxes);
+                colormap(map);%transmit the current colormap to the zoom fig
+                get(handles.RootFile,'String')
                 set(hfig2,'Position',[0.2 0.33 0.6 0.6]);
                 if test_replot==0
                     set(hfig2,'Unit','normalized')
@@ -218,8 +206,6 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
                         ChildAxeData.Drawing='off';
                         ChildAxeData.ParentRect=AxeData.CurrentRectZoom;%set the rectangle as a 'parent' associated to the new axes
                         set(AxeData.ZoomAxes,'UserData',ChildAxeData);%update the AxeData of the new axes
-                       % UvData.TopFig=hfig2;%put the new fig to the top of the stack for uvmat
-        %                 set(huvmat,'UserData',UvData)
                         set(AxeData.ZoomAxes,'Xlim',[PosRect(1) PosRect(1)+PosRect(3)])
                         set(AxeData.ZoomAxes,'Ylim',[PosRect(2) PosRect(2)+PosRect(4)])
                     end
@@ -276,15 +262,17 @@ if zoomstate
 end
 if isequal(MouseAction,'ruler')
     UvData.MouseAction='none';
-    UvData=rmfield(UvData,'RulerHandle')
+    UvData=rmfield(UvData,'RulerHandle');
      xy=get(currentaxes,'CurrentPoint');
-    RulerCoord=[UvData.RulerCoord ;xy(1,1:2)]
+    RulerCoord=[UvData.RulerCoord ;xy(1,1:2)];
     set(huvmat,'UserData',UvData)
-    RulerCoord=diff(RulerCoord,1)
+    RulerCoord=diff(RulerCoord,1);
     RulerCoord=RulerCoord(1)+i*RulerCoord(2);
-    distance=abs(RulerCoord)
-    azimuth=(180/pi)*angle(RulerCoord)
+    distance=abs(RulerCoord);
+    azimuth=(180/pi)*angle(RulerCoord);
     msgbox_uvmat('RULER','',['length: ' num2str(distance,3) ',  angle(degrees): ' num2str(azimuth,3)])
+    hruler=findobj(currentaxes,'Tag','ruler');
+    delete(hruler)
 end
 
 
