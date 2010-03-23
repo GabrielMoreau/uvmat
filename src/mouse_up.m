@@ -274,6 +274,19 @@ if zoomstate
             end
       end
 end
+if isequal(MouseAction,'ruler')
+    UvData.MouseAction='none';
+    UvData=rmfield(UvData,'RulerHandle')
+     xy=get(currentaxes,'CurrentPoint');
+    RulerCoord=[UvData.RulerCoord ;xy(1,1:2)]
+    set(huvmat,'UserData',UvData)
+    RulerCoord=diff(RulerCoord,1)
+    RulerCoord=RulerCoord(1)+i*RulerCoord(2);
+    distance=abs(RulerCoord)
+    azimuth=(180/pi)*angle(RulerCoord)
+    msgbox_uvmat('RULER','',['length: ' num2str(distance,3) ',  angle(degrees): ' num2str(azimuth,3)])
+end
+
 
 %display the data of the current object selected with the mouse right click
 if isequal(get(currentfig,'SelectionType'),'alt') && ~zoomstate && (~isfield(AxeData,'Drawing')||~isequal(AxeData.Drawing,'create'))

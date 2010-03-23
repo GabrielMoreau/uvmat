@@ -61,8 +61,12 @@ if ~isempty(PlotHandles) %&& ~testmask
         plotaxes=[];%default
         if length(Object_set)>= IndexObj && isfield(Object_set{IndexObj},'plotaxes')
             plotaxes=Object_set{IndexObj}.plotaxes;
+            [PlotType,Object_out.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);
+        else
+             [plotaxes]=view_field(ProjData);
         end
-        [PlotType,Object_out.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);
+       
+%         [PlotType,Object_out.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);
         Object_out.plotaxes=plotaxes;
         plotfig=get(plotaxes,'parent');
         name_str=get(plotfig,'Name');

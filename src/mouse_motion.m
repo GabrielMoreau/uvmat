@@ -26,15 +26,16 @@ function mouse_motion(hObject,eventdata,handles)
 if ~exist('handles','var')
     return
 end
-if ~isfield(handles, 'mouse_coord')
-    return
-end
-if ~ishandle(handles.mouse_coord)
-    return
-end
-proj_coord=get(handles.mouse_coord,'String');
-choice=get(handles.mouse_coord,'Value');
-if ~isempty(proj_coord); proj_coord=proj_coord{choice};else;proj_coord=[];end;
+% if ~isfield(handles, 'mouse_coord')
+%     'TEST'
+%     return
+% end
+% if ~ishandle(handles.mouse_coord)
+%     return
+% end
+% proj_coord=get(handles.mouse_coord,'String');
+% choice=get(handles.mouse_coord,'Value');
+% if ~isempty(proj_coord); proj_coord=proj_coord{choice};else;proj_coord=[];end;
 test_create=0;%default
 test_edit=0;%default
 if isfield(handles,'VOLUME') % mouse_motion not applied to the uvmat figure, no object creation
@@ -147,29 +148,7 @@ for ichild=1:length(hchild)
             end
             if isfield(AxeData,'CoordUnit')
                   mouse.CoordUnit=AxeData.CoordUnit;
-            end
-            if isfield(mouse,'CoordType') &~isequal(mouse.CoordType,proj_coord)
-                huvmat=findobj(allchild(0),'Tag','uvmat');%find the uvmat interface handle
-                UvData=get(huvmat,'UserData'); %coord transformed stored in the uvmat interface, updated by file input
-                if isfield(AxeData,'CoordType')
-                    mouse.CoordType=AxeData.CoordType;
-                end
-                if isfield(AxeData,'dt')
-                    mouse.dt=AxeData.dt;
-                end
-%                 if ~isempty(z_mouse)
-%                     mouse.Z=z_mouse;
-%                 end
-                if length(ivec)>0 %& isfield(AxeData,'dt')                    
-                      mouse.U=u_mouse; 
-                      mouse.V=v_mouse;
-                end
-                mouse=feval(proj_coord,mouse,UvData);%apply transform proj_coord to the position
-                if length(ivec)>0%& isfield(AxeData,'dt')
-                     u_mouse=mouse.U;
-                     v_mouse=mouse.V;
-                end
-            end  
+            end 
             if isfield(mouse,'CoordType') 
                 if isequal(mouse.CoordType,'px')
                     mouse.CoordUnit='px';
@@ -202,7 +181,7 @@ for ichild=1:length(hchild)
             if ~isempty(A_mouse)
                 text_displ_2=['A=' num2str(double(A_mouse)) ',i='  num2str(indx0) ',j=' num2str(indy0)];
             end
-        elseif isequal(get(hchild(ichild),'Visible'),'on')& ~isequal(get(hchild(ichild),'Style'),'frame')
+        elseif isequal(htype,'uicontrol') && isequal(get(hchild(ichild),'Visible'),'on')&& ~isequal(get(hchild(ichild),'Style'),'frame')
             text_displ_1=get(hchild(ichild),'Tag');
         end
     end
@@ -285,5 +264,15 @@ if ~isempty(haxes) & isfield(AxeData,'Drawing')& isequal(AxeData.Drawing,'zoom')
 end
 if test_zoom
     pointershape='arrow';
+end
+
+%draw ruler
+UvData=get(handles.uvmat,'UserData');
+if isfield(UvData,'MouseAction') && isequal(UvData.MouseAction,'ruler')
+       if isfield(UvData,'RulerHandle')
+            RulerCoord=[UvData.RulerCoord ;xy(1,1:2)];
+            set(UvData.RulerHandle,'XData',RulerCoord(:,1));
+            set(UvData.RulerHandle,'YData',RulerCoord(:,2));
+       end
 end
 set(currentfig,'Pointer',pointershape);

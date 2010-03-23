@@ -42,7 +42,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 05-Jan-2010 23:22:04
+% Last Modified by GUIDE v2.5 23-Mar-2010 06:22:33
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -69,8 +69,9 @@ end
 %handles: handles of the geometry_calib interface elements
 % PlotHandles: set of handles of the elements contolling the plotting
 % parameters on the uvmat interface (obtained by 'get_plot_handle.m')
+%------------------------------------------------------------------------
 function geometry_calib_OpeningFcn(hObject, eventdata, handles, handles_uvmat,pos,inputfile)
-
+%------------------------------------------------------------------------
 % Choose default command line output for geometry_calib
 handles.output = hObject;
 
@@ -217,9 +218,10 @@ set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
 
 
-%----------------------------------------------------
+%------------------------------------------------------------------------
 % executed when closing: set the parent interface button to value 0
 function closefcn(gcbo,eventdata,handles_uvmat)
+%------------------------------------------------------------------------
 huvmat=findobj(allchild(0),'Name','uvmat');
 if exist('handles_uvmat','var')
     set(handles_uvmat.cal,'Value',0)
@@ -228,22 +230,10 @@ if exist('handles_uvmat','var')
 %     set(parent_button,'BackgroundColor',[0 1 0]);
 end
 
-
-% % --- Executes on button press in MenuCoord.
-% function MenuCoord_Callback(hObject, eventdata, handles)
-
-% 
-% % --- Executes on button press in delete.
-% function delete_Callback(hObject, eventdata, handles)
-% SetData=get(gcbf,'UserData');%get the interface data
-% IndexObj=SetData.IndexObj;
-% delete_object(IndexObj);
-
-
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in calibrate_lin.
 function APPLY_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
 calib_cell=get(handles.calib_type,'String');
 val=get(handles.calib_type,'Value');
 calib_type=calib_cell{val};
@@ -279,50 +269,6 @@ else
     outputfile=answer{1};
 end
 update_imadoc(GeometryCalib,outputfile)
-% testappend=0;
-% if exist(outputfile,'file');%=1 if the output file already exists, 0 else 
-%     t=xmltree(outputfile); %read the file
-%     backupfile=outputfile;
-%     testexist=2;
-%     while testexist==2
-%         backupfile=[backupfile '~'];% make a backup name by adding  ~ to the xml file name
-%         testexist=exist(backupfile,'file');
-%     end
-%     [success,message]=copyfile(outputfile,backupfile);%make backup   
-%     t=xmltree(outputfile); %read the file
-%     uid=find(t,'ImaDoc');
-%     if ~isequal(uid,1)%if the xml file is not ImaDoc, delete it (after backup)
-%         if isequal(success,1)
-%             delete(outputfile)
-%         else
-%             msgbox_uvmat('ERROR',['error in the backup of the existing xml file: ' message])
-%             return
-%         end
-%     else
-%         uid_calib=find(t,'ImaDoc/GeometryCalib');
-%         testappend=1;
-%         if isempty(uid_calib)
-%             [t,uid_calib]=add(t,1,'element','GeometryCalib');
-%         else %if GeometryCalib already exists, delete its content
-%             uid_child=children(t,uid_calib);
-%             t=delete(t,uid_child);
-% %             testappend=1;
-%         end
-%     end
-% end
-% if ~testappend %create a new xml file for calibration data
-%     t=xmltree;
-%     t=set(t,1,'name','ImaDoc');
-%     [t,uid_calib]=add(t,1,'element','GeometryCalib');
-% end
-% % hgrid=get(handles.REPLICATE,'parent');%read the calibration image source on the interface userdata
-% % imagename=get(hgrid,'UserData');
-% % if exist(imagename,'file')
-% %     GeometryCalib.SourceCalib.ImageCalib=imagename;
-% % end
-% GeometryCalib.SourceCalib.PointCoord=Object.Coord;
-% t=struct2xml(GeometryCalib,t,uid_calib); 
-% save(t,outputfile);
 msgbox_uvmat('CONFIRMATION',{[outputfile ' updated with calibration data'];...
     ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
     ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']})
@@ -340,10 +286,10 @@ set(hhuvmat.FixedLimits,'Value',0)% put FixedLimits option to 'off'
 set(hhuvmat.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
 uvmat('RootPath_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
 
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in calibrate_lin.
 function REPLICATE_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
 calib_cell=get(handles.calib_type,'String');
 val=get(handles.calib_type,'Value');
 calib_type=calib_cell{val};
@@ -387,13 +333,9 @@ if isfield(CalibData,'Heading')
     end
     testinput=0;
     if isfield(Heading,'SubCampaign') && isequal([filename ext],Heading.SubCampaign)
-%         set(hhdataview.RootDirectory,'String',XmlInput)
-%         set(hhdataview.SubCampaignTest,'Value',1)
         SubCampaignTest='y';
         testinput=1;
     elseif isfield(Heading,'Campaign') && isequal([filename ext],Heading.Campaign)
-%         set(hhdataview.RootDirectory,'String',XmlInput)
-%         set(hhdataview.SubCampaignTest,'Value',0)
         testinput=1;
     end 
 end
@@ -413,101 +355,11 @@ end
 if testinput
     outcome=dataview(XmlInput,SubCampaignTest,GeometryCalib);
 end
-%     %A COMPLETER
-%     dataview('RootDirectory_Callback',hObject,eventdata,hhdataview)
-%     ListDevices=get(hhdataview.ListDevices,'String');
-%     for ilist=1:length(ListDevices)
-%         if isequal(ListDevices{ilist},Device)
-%             set(hhdataview.ListDevices,'Value',ilist)
-%             dataview('ListDevices_Callback',hObject,eventdata,hhdataview)
-%             break
-%         end
-%     end
 
-% % hhdataview=guidata(h_dataview);
-% CurrentPath=get(hhdataview.RootDirectory,'String');
-% ListExperiments=get(hhdataview.ListExperiments,'String');
-% Value=get(hhdataview.ListExperiments,'Value');
-% if ~isequal(Value,1)
-%     ListExperiments=ListExperiments(Value);
-% end
-% ListDevices=get(hhdataview.ListDevices,'String');
-% Value=get(hhdataview.ListDevices,'Value');
-% if isequal(Value,1)
-%     msgbox_uvmat('ERROR','manually select in the GUI dataview the device being calibrated')
-%     return
-% else 
-%     ListDevices=ListDevices(Value);
-% end
-% ListRecords=get(hhdataview.ListRecords,'String');
-% Value=get(hhdataview.ListRecords,'Value');
-% if ~isequal(Value,1)
-%     ListRecords=ListRecords(Value);
-% end
-% [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices,ListRecords);
-% ListXml=get(hhdataview.ListXml,'String');
-% Value=get(hhdataview.ListXml,'Value');
-% if isequal(Value,1)
-%     msgbox_uvmat('ERROR','you need to select in the GUI dataview the xml files to edit')
-%     return
-% else
-%     ListXml=ListXml(Value);
-% end
-% 
-% %update all the selected xml files
-% answer=msgbox_uvmat('INPUT_Y-N',[num2str(length(Value)) ' xml files for device ' ListDevices{1} ' will be refreshed with ' calib_type ' calibration data'])
-% if ~isequal(answer,'Yes')
-%     return
-% end
-% 'TESTcalib'
-% List=DataFiles.List
-% for iexp=1:length(List.Experiment)
-%     ExpName=List.Experiment{iexp}.name;
-%     if isfield(List.Experiment{iexp},'Device')
-%         for idevice=1:length(List.Experiment{iexp}.Device)
-%             DeviceName=List.Experiment{iexp}.Device{idevice}.name;       
-%             if isfield(List.Experiment{iexp}.Device{idevice},'xmlfile')
-%                 for ixml=1:length(List.Experiment{iexp}.Device{idevice}.xmlfile)
-%                     FileName=List.Experiment{iexp}.Device{idevice}.xmlfile{ixml};
-%                     for ilistxml=1:length(ListXml)
-%                         if isequal(FileName,ListXml{ilistxml})
-%                             set(hhdataview.ListXml,'Value',Value(ilistxml))
-%                             drawnow
-%                             xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,FileName);
-%                             update_imadoc(GeometryCalib,xmlfullname)
-%                             break
-%                         end
-%                     end
-%                 end
-%              elseif isfield(List.Experiment{iexp}.Device{idevice},'Record')
-%                 for irecord=1:length(List.Experiment{iexp}.Device{idevice}.Record)
-%                     RecordName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.name;
-%                     if isfield(List.Experiment{iexp}.Device{idevice}.Record{irecord},'xmlfile')
-%                         for ixml=1:length(List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile)
-%                             FileName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile{ixml};
-%                             for ilistxml=1:length(ListXml)
-%                                 if isequal(FileName,ListXml{ilistxml})
-%                                     set(hhdataview.ListXml,'Value',Value(ilistxml))
-%                                     drawnow
-%                                     xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,RecordName,FileName);
-%                                     update_imadoc(GeometryCalib,xmlfullname)
-%                                     break
-%                                 end
-%                             end
-%                         end
-%                     end
-%                 end
-%             end
-%         end
-%     end
-% end
-% set(hhdataview.ListXml,'Value',Value)
-
-
-%-----------------------------------------------------------------
+%------------------------------------------------------------------------
 % determine the parameters for a calibration by an affine function (rescaling and offset, no rotation)
 function GeometryCalib=calib_rescale(Coord)
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
  
 X=Coord(:,1);
 Y=Coord(:,2);
@@ -541,11 +393,10 @@ GeometryCalib.ErrorMax(1)=max(abs(Xpoints-x_ima));
 GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
 GeometryCalib.ErrorMax(2)=max(abs(Ypoints-y_ima));
 
-
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
 % determine the parameters for a calibration by a linear transform matrix (rescale and rotation)
 function GeometryCalib=calib_linear(Coord)
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
 X=Coord(:,1);
 Y=Coord(:,2);
 x_ima=Coord(:,4);
@@ -571,12 +422,9 @@ GeometryCalib.ErrorMax(1)=max(abs(x1-x_ima));
 GeometryCalib.ErrorRms(2)=sqrt(mean((y1-y_ima).*(y1-y_ima)));
 GeometryCalib.ErrorMax(2)=max(abs(y1-y_ima));
 
-
-
-
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
 function GeometryCalib=calib_tsai(Coord)
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
 %TSAI
 % 'calibration_lin' provides a linear transform on coordinates, 
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
@@ -588,14 +436,6 @@ if exist(xmlfile,'file')
     t=xmltree(xmlfile);
     sparam=convert(t);
 end
-% else
-%     %fid = fopen(fullfile(path_UVMAT,'PARAM_WIN.txt'),'r');%open the file with civ binary names
-%     xmlfile=fullfile(path_UVMAT,'PARAM_WIN.xml');
-%     if exist(xmlfile,'file')
-%         t=xmltree(xmlfile);
-%         sparam=convert(t);
-%     end
-% end 
 if ~isfield(sparam,'GeometryCalib_exe')
     msgbox_uvmat('ERROR',['calibration program <GeometryCalib_exe> undefined in parameter file ' xmlfile])
     return
@@ -617,6 +457,8 @@ if ~exist('calib.dat','file')
     msgbox_uvmat('ERROR','no output from calibration program Tsai_exe: possibly too few points')
 end
 calibdat=dlmread('calib.dat');
+delete('calib.dat')
+delete('t.txt')
 GeometryCalib.CalibrationType='tsai';
 GeometryCalib.focal=calibdat(10);
 GeometryCalib.dpx_dpy=[calibdat(5) calibdat(6)];
@@ -689,9 +531,10 @@ GeometryCalib.ErrorMax(2)=max(abs(Ypoints-y_ima));
 %calibcoeff=str2num(calibdat)
 
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in rotation.
 function rotation_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 angle_rot=(pi/180)*str2num(get(handles.Phi,'String'));
 Coord_cell=get(handles.ListCoord,'String');
 data=read_geometry_calib(Coord_cell);
@@ -700,11 +543,14 @@ data.Coord(:,1)=-sin(angle_rot)*data.Coord(:,1)+cos(angle_rot)*data.Coord(:,2);
 set(handles.XObject,'String',num2str(data.Coord(:,1),4));
 set(handles.YObject,'String',num2str(data.Coord(:,2),4));
 
-
+%------------------------------------------------------------------------
 function XImage_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 update_list(hObject, eventdata,handles)
 
+%------------------------------------------------------------------------
 function YImage_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 update_list(hObject, eventdata,handles)
 
 function XObject_Callback(hObject, eventdata, handles)
@@ -716,7 +562,9 @@ update_list(hObject, eventdata,handles)
 function ZObject_Callback(hObject, eventdata, handles)
 update_list(hObject, eventdata,handles)
 
+%------------------------------------------------------------------------
 function update_list(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 str4=get(handles.XImage,'String');
 str5=get(handles.YImage,'String');
 str1=get(handles.XObject,'String');
@@ -731,18 +579,13 @@ Coord=get(handles.ListCoord,'String');
 val=get(handles.ListCoord,'Value');
 Coord{val}=strline;
 set(handles.ListCoord,'String',Coord)
+%update the plot 
+ListCoord_Callback(hObject, eventdata, handles)
 
-%--------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in ListCoord.
-%--------------------------------------------------------------------
 function ListCoord_Callback(hObject, eventdata, handles)
-% hObject    handle to ListCoord (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = get(hObject,'String') returns ListCoord contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from ListCoord
-%set(handles.edit_append,'Value',2); %set to edit mode
+%------------------------------------------------------------------------
 Coord_cell=get(handles.ListCoord,'String');
 val=get(handles.ListCoord,'Value');
 if length(Coord_cell)>0
@@ -787,44 +630,10 @@ if length(Coord_cell)>0
     end
 end
 
-
-%----------------------------------------------------
-% --- Executes on button press in rotation_plus.
-function rotation_plus_Callback(hObject, eventdata, handles)
-Phi=0;
-Phi=get(handles.Phi,'String');
-if ~isempty(Phi)
-    Phi=str2num(Phi);
-end
-rotation(handles,Phi)
-
-%-------------------------------------------------
-% --- Executes on button press in rotation_minus.
-function rotation_minus_Callback(hObject, eventdata, handles)
-Phi=0;
-Phi=get(handles.Phi,'String');
-if ~isempty(Phi)
-    Phi=-str2num(Phi);
-end
-rotation(handles,Phi)
-
-
-
-function O_x_Callback(hObject, eventdata, handles)
-
-
-function O_y_Callback(hObject, eventdata, handles)
-
-
-function O_z_Callback(hObject, eventdata, handles)
-
-
+%------------------------------------------------------------------------
 % --- Executes on selection change in edit_append.
 function edit_append_Callback(hObject, eventdata, handles)
-% val=get(handles.PLOT_append,'Value');
-% if isequal(val,2); %append mode
-%     %appeler mouse
-% end
+%------------------------------------------------------------------------
 choice=get(handles.edit_append,'Value');
 if choice==1
        Coord=get(handles.ListCoord,'String'); 
@@ -838,29 +647,6 @@ if choice==1
 end
 
 
-%A REVOIR
-% if choice==2
-%     %display image with px coordinates
-%     hrootpath=findobj(huvmat,'Tag','RootPath');
-%     hrootfile=findobj(huvmat,'Tag','RootFile');
-%     RootPath='';
-%     RootFile='';
-% %     if ~isempty(hrootpath)& ~isempty(hrootfile)
-%         testhandle=1;
-%         RootPath=get(hrootpath,'String');
-%         RootFile=get(hrootfile,'String');
-% %         filebase=fullfile(RootPath,RootFile);
-% %         outputfile=[filebase '.xml']; 
-%         Indices=get(findobj(huvmat,'Tag','FileIndex'),'String');
-%         Ext=get(findobj(huvmat,'Tag','FileExt'),'String');
-%         imagename=[fullfile(RootPath,RootFile) Indices Ext];
-%         % input.menu_coord=1;
-%          h_menu_coord=findobj(huvmat,'Tag','menu_coord');
-%         set(h_menu_coord,'Value',3)
-%         huvmat=uvmat(imagename);%open uvmat, set phys coord (Value 1)
-%      
-% %     end
-% end
     
 function NEW_Callback(hObject, eventdata, handles)
 %A METTRE SOUS UN BOUTON
@@ -899,10 +685,10 @@ Data.CoordType='px';
 plot_field(Data)
  
 
-
-%'key_press_fcn:' function activated when a key is pressed on the keyboard
-%-----------------------------------
+%------------------------------------------------------------------------
+% --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
 function key_press_fcn(hObject,eventdata,handles)
+%------------------------------------------------------------------------
 hh=get(hObject,'parent');
 xx=double(get(hh,'CurrentCharacter')); %get the keyboard character
 
@@ -929,10 +715,10 @@ if ismember(xx,[8 127])%backspace or delete
     MenuPlot_Callback(hObject,eventdata,handles)
 end
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in append_point.
 function append_point_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
        Coord=get(handles.ListCoord,'String'); 
        val=length(Coord);
        if val>=1 & isequal(Coord{val},'')
@@ -942,9 +728,9 @@ function append_point_Callback(hObject, eventdata, handles)
        set(handles.ListCoord,'String',Coord)
        set(handles.ListCoord,'Value',val+1)
 
-
-% --------------------------------------------------------------------
+%------------------------------------------------------------------------
 function MenuOpen_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 %get the object file 
 huvmat=findobj(allchild(0),'Name','uvmat');
 UvData=get(huvmat,'UserData');
@@ -971,21 +757,14 @@ if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
 loadfile(handles,fileinput)
 
 
-% --------------------------------------------------------------------
-function Untitled_3_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_3 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
+%------------------------------------------------------------------------
 function MenuPlot_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
 hhuvmat=guidata(huvmat); %handles of GUI elements in uvmat
 hplot=findobj(huvmat,'Tag','axes3');%main plotting axis of uvmat
-h_menu_coord=findobj(huvmat,'Tag','menu_coord');
+h_menu_coord=findobj(huvmat,'Tag','transform_fct');
 menu=get(h_menu_coord,'String');
 choice=get(h_menu_coord,'Value');
 if iscell(menu)
@@ -1032,8 +811,7 @@ Tinput=[];%default
 if isfield(CalibData,'grid')
     Tinput=CalibData.grid;
 end
-T=create_grid(Tinput);%display the GUI create_grid 
-CalibData.grid=T;
+[T,CalibData.grid]=create_grid(grid_input);%display the GUI create_grid
 set(handles.figure1,'UserData',CalibData)
 
 %grid in phys space
@@ -1133,3 +911,198 @@ set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
 
 
+% --------------------------------------------------------------------
+function MenuDetectGrid_Callback(hObject, eventdata, handles)
+
+CalibData=get(handles.figure1,'UserData');
+grid_input=[];%default
+if isfield(CalibData,'grid')
+    grid_input=CalibData.grid;%retrieve the previously used grid
+end
+[T,CalibData.grid]=create_grid(grid_input);%display the GUI create_grid 
+set(handles.figure1,'UserData',CalibData)%store the phys grid for later use
+
+%read the four last point coordiantes in pixels
+Coord_cell=get(handles.ListCoord,'String');%read list of coordiantes on geometry_calib
+data=read_geometry_calib(Coord_cell);
+nbpoints=size(data.Coord,1); %nbre of calibration points
+if nbpoints<4
+    msgbox_uvmat('ERROR','four points must be selected by the mouse to delimitate the detection area')
+end
+corners_X=(data.Coord(end-3:end,4)); %pixel absissa of the four corners
+corners_Y=(data.Coord(end-3:end,5)); 
+
+%read the current image
+huvmat=findobj(allchild(0),'Name','uvmat');
+UvData=get(huvmat,'UserData');
+A=UvData.Field.A;
+npxy=size(A);
+%linear transform on the current image
+X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the rectified image
+Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner absissa in the rectified image
+XY_mat=[ones(size(X)) X Y];
+a_X1=XY_mat\corners_X; %transformation matrix for X
+x1=XY_mat*a_X1;%reconstruction
+err_X1=max(abs(x1-corners_X))%error
+a_Y1=XY_mat\corners_Y;%transformation matrix for X
+y1=XY_mat*a_Y1;
+err_Y1=max(abs(y1-corners_Y))%error
+GeometryCalib.CalibrationType='linear';
+GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
+GeometryCalib.f=1;
+GeometryCalib.dpx=1;
+GeometryCalib.dpy=1;
+GeometryCalib.sx=1;
+GeometryCalib.Cx=0;
+GeometryCalib.Cy=0;
+GeometryCalib.kappa1=0;
+GeometryCalib.Tx=a_X1(1);
+GeometryCalib.Ty=a_Y1(1);
+GeometryCalib.Tz=1;
+GeometryCalib.R=[a_X1(2),a_X1(3),0;a_Y1(2),a_Y1(3),0;0,0,1];
+[Amod,Rangx,Rangy]=phys_Ima(A-min(min(A)),GeometryCalib,0);
+Amod=double(Amod);
+%figure(12)
+%Amax=max(max(Amod))
+%image(Rangx,Rangy,uint8(255*Amod/Amax))
+ind_range=10;% range of search of image ma around each point obtained by linear interpolation from the marked points
+nbpoints=size(T,1);
+for ipoint=1:nbpoints
+    Dx=(Rangx(2)-Rangx(1))/(npxy(2)-1); %x mesh in real space
+    Dy=(Rangy(2)-Rangy(1))/(npxy(1)-1); %y mesh in real space
+    i0=1+round((T(ipoint,1)-Rangx(1))/Dx);%round(Xpx(ipoint));
+    j0=1+round((T(ipoint,2)-Rangy(1))/Dy);%round(Xpx(ipoint));
+    Asub=Amod(j0-ind_range:j0+ind_range,i0-ind_range:i0+ind_range);
+    x_profile=sum(Asub,1);
+    y_profile=sum(Asub,2);
+    [Amax,ind_x_max]=max(x_profile);
+    [Amax,ind_y_max]=max(y_profile);
+    Delta(ipoint,1)=(ind_x_max-ind_range-1)*Dx;%shift from the initial guess
+    Delta(ipoint,2)=(ind_y_max-ind_range-1)*Dy;
+end
+Tmod=T(:,(1:2))+Delta;
+[Xpx,Ypx]=px_XYZ(GeometryCalib,Tmod(:,1),Tmod(:,2));
+for i=1:nbpoints
+     Coord{i,1}=num2str(T(i,1),4);%display coordiantes with 4 digits
+     Coord{i,2}=num2str(T(i,2),4);%display coordiantes with 4 digits
+     Coord{i,3}='0';
+     Coord{i,4}=num2str(Xpx(i),4);%display coordiantes with 4 digi
+     Coord{i,5}=num2str(Ypx(i),4);%display coordiantes with 4 digi
+end
+Tabchar=cell2tab(Coord,'    |    ');
+set(handles.ListCoord,'Value',1)
+set(handles.ListCoord,'String',Tabchar)
+
+
+%%%%%%%%%%%%%%%%%%%%
+function [A_out,Rangx,Rangy]=phys_Ima(A,Calib,ZIndex)
+xcorner=[];
+ycorner=[];
+npx=[];
+npy=[];
+siz=size(A);
+npx=[npx siz(2)];
+npy=[npy siz(1)];
+xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordiantes of corners
+yima=[0.5 0.5 siz(1)-0.5 siz(1)-0.5];
+[xcorner,ycorner]=phys_XYZ(Calib,xima,yima,ZIndex);%corresponding physical coordinates
+Rangx(1)=min(xcorner);
+Rangx(2)=max(xcorner);
+Rangy(2)=min(ycorner);
+Rangy(1)=max(ycorner);
+test_multi=(max(npx)~=min(npx)) | (max(npy)~=min(npy)); 
+npx=max(npx);
+npy=max(npy);
+x=linspace(Rangx(1),Rangx(2),npx);
+y=linspace(Rangy(1),Rangy(2),npy);
+[X,Y]=meshgrid(x,y);%grid in physical coordiantes
+vec_B=[];
+
+zphys=0; %default
+if isfield(Calib,'SliceCoord') %.Z= index of plane
+   SliceCoord=Calib.SliceCoord(ZIndex,:);
+   zphys=SliceCoord(3); %to generalize for non-parallel planes
+end
+[XIMA,YIMA]=px_XYZ(Calib,X,Y,zphys);%corresponding image indices for each point in the real space grid
+XIMA=reshape(round(XIMA),1,npx*npy);%indices reorganized in 'line'
+YIMA=reshape(round(YIMA),1,npx*npy);
+flagin=XIMA>=1 & XIMA<=npx & YIMA >=1 & YIMA<=npy;%flagin=1 inside the original image
+testuint8=isa(A,'uint8');
+testuint16=isa(A,'uint16');
+if numel(siz)==2 %(B/W images)
+    vec_A=reshape(A,1,npx*npy);%put the original image in line
+    ind_in=find(flagin);
+    ind_out=find(~flagin);
+    ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
+    ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
+    vec_B(ind_in)=vec_A(ICOMB);
+    vec_B(ind_out)=zeros(size(ind_out));
+    A_out=reshape(vec_B,npy,npx);%new image in real coordinates
+elseif numel(siz)==3     
+    for icolor=1:siz(3)
+        vec_A=reshape(A{icell}(:,:,icolor),1,npx*npy);%put the original image in line
+        ind_in=find(flagin);
+        ind_out=find(~flagin);
+        ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
+        ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
+        vec_B(ind_in)=vec_A(ICOMB);
+        vec_B(ind_out)=zeros(size(ind_out));
+        A_out(:,:,icolor)=reshape(vec_B,npy,npx);%new image in real coordinates
+    end
+end
+if testuint8
+    A_out=uint8(A_out);
+end
+if testuint16
+    A_out=uint16(A_out);
+end
+
+%INPUT:
+%Z: index of plane
+function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Z)
+if exist('Z','var')& isequal(Z,round(Z))& Z>0 & isfield(Calib,'SliceCoord')&length(Calib.SliceCoord)>=Z
+    Zindex=Z;
+    Zphys=Calib.SliceCoord(Zindex,3);%GENERALISER AUX CAS AVEC ANGLE
+else
+%     if exist('Z','var')
+%         Zphys=Z;
+%     else
+        Zphys=0;
+%     end
+end
+if ~exist('X','var')||~exist('Y','var')
+    Xphys=[];
+    Yphys=[];%default
+    return
+end
+Xphys=X;%default
+Yphys=Y;
+%image transform
+if isfield(Calib,'R')
+    R=(Calib.R)';
+    Dx=R(5)*R(7)-R(4)*R(8);
+    Dy=R(1)*R(8)-R(2)*R(7);
+    D0=Calib.f*(R(2)*R(4)-R(1)*R(5));
+    Z11=R(6)*R(8)-R(5)*R(9);
+    Z12=R(2)*R(9)-R(3)*R(8);  
+    Z21=R(4)*R(9)-R(6)*R(7);
+    Z22=R(3)*R(7)-R(1)*R(9);
+    Zx0=R(3)*R(5)-R(2)*R(6);
+    Zy0=R(1)*R(6)-R(3)*R(4);
+    A11=R(8)*Calib.Ty-R(5)*Calib.Tz+Z11*Zphys;
+    A12=R(2)*Calib.Tz-R(8)*Calib.Tx+Z12*Zphys;
+    A21=-R(7)*Calib.Ty+R(4)*Calib.Tz+Z21*Zphys;
+    A22=-R(1)*Calib.Tz+R(7)*Calib.Tx+Z11*Zphys;
+    X0=Calib.f*(R(5)*Calib.Tx-R(2)*Calib.Ty+Zx0*Zphys);
+    Y0=Calib.f*(-R(4)*Calib.Tx+R(1)*Calib.Ty+Zy0*Zphys);
+        %px to camera:
+    Xd=(Calib.dpx/Calib.sx)*(X-Calib.Cx); % sensor coordinates
+    Yd=Calib.dpy*(Y-Calib.Cy);
+    dist_fact=1+Calib.kappa1*(Xd.*Xd+Yd.*Yd); %distortion factor
+    Xu=dist_fact.*Xd;%undistorted sensor coordinates
+    Yu=dist_fact.*Yd;
+    denom=Dx*Xu+Dy*Yu+D0;
+    % denom2=denom.*denom;
+    Xphys=(A11.*Xu+A12.*Yu+X0)./denom;%world coordinates
+    Yphys=(A21.*Xu+A22.*Yu+Y0)./denom;
+end

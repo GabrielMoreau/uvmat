@@ -209,14 +209,30 @@ if ~isempty(uid_GeometryCalib)
         end
         %look for laser plane definitions   
         uid_Angle=find(subt,'/GeometryCalib/PlaneAngle');
-        uid_Pos=find(subt,'/GeometryCalib/PlanePos');
+        uid_Pos=find(subt,'/GeometryCalib/SliceCoord');
+        if isempty(uid_Pos)
+            uid_Pos=find(subt,'/GeometryCalib/PlanePos');%old convention
+        end
         if ~isempty(uid_Angle) 
             tsai.PlaneAngle=str2num(get(subt,children(subt,uid_Angle),'value'));
         end
-        if ~isempty(uid_Pos)
+        if ~isempty(uid_Pos)     
             for j=1:length(uid_Pos)
                 tsai.SliceCoord(j,:)=str2num(get(subt,children(subt,uid_Pos(j)),'value'));
             end
+            uid_DZ=find(subt,'/GeometryCalib/SliceDZ');
+            uid_NbSlice=find(subt,'/GeometryCalib/NbSlice');
+            if ~isempty(uid_DZ) && ~isempty(uid_NbSlice)
+                DZ=str2double(get(subt,children(subt,uid_DZ),'value'));
+                NbSlice=get(subt,children(subt,uid_NbSlice),'value');
+                if isequal(NbSlice,'volume')
+                    tsai.NbSlice='volume';
+                    NbSlice=NbDtj+1;
+                else
+                    tsai.NbSlice=str2double(NbSlice);
+                end
+                tsai.SliceCoord=ones(NbSlice,1)*tsai.SliceCoord+DZ*[0:NbSlice-1]'*[0 0 1];
+            end         
         end
         s.GeometryCalib=tsai;
     end

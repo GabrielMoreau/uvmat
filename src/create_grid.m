@@ -90,13 +90,13 @@ if exist('input_grid','var') && ~isempty(input_grid)
         set(handles.Dx,'String',num2str(input_grid.Dx));
    end
    if isfield(input_grid,'y_0')
-        set(handles.x_0,'String',num2str(input_grid.x_0));
+        set(handles.y_0,'String',num2str(input_grid.y_0));
    end
    if isfield(input_grid,'y_1')
-        set(handles.x_1,'String',num2str(input_grid.x_1));
+        set(handles.y_1,'String',num2str(input_grid.y_1));
    end
    if isfield(input_grid,'Dy')
-        set(handles.Dx,'String',num2str(input_grid.Dx));
+        set(handles.Dy,'String',num2str(input_grid.Dy));
    end
    if isfield(input_grid,'z')
         set(handles.z,'String',num2str(input_grid.z));
@@ -114,33 +114,25 @@ function varargout = create_grid_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1}=[0 0 0];%default
 if ~isequal(handles.output,'Cancel')
-    x_0=str2num(get(handles.x_0,'String'));
-    Dx=str2num(get(handles.Dx,'String'));
-    x_1=str2num(get(handles.x_1,'String'));
-    xarray=[x_0:Dx:x_1];
-    y_0=str2num(get(handles.y_0,'String'));
-    Dy=str2num(get(handles.Dy,'String'));
-    y_1=str2num(get(handles.y_1,'String'));
-    yarray=[y_0:Dy:y_1];
+    T.x_0=str2num(get(handles.x_0,'String'));
+    T.Dx=str2num(get(handles.Dx,'String'));
+    T.x_1=str2num(get(handles.x_1,'String'));
+    xarray=[T.x_0:T.Dx:T.x_1];
+    T.y_0=str2num(get(handles.y_0,'String'));
+    T.Dy=str2num(get(handles.Dy,'String'));
+    T.y_1=str2num(get(handles.y_1,'String'));
+    yarray=[T.y_0:T.Dy:T.y_1];
     [yarray,xarray]=meshgrid(yarray,xarray);
     xarray=reshape(xarray,numel(xarray),1);
     yarray=reshape(yarray,numel(yarray),1);
-    z_0=str2num(get(handles.z_0,'String'));
-    if isempty(z_0)
-        z_0=0;
+    T.z_0=str2num(get(handles.z_0,'String'));
+    if isempty(T.z_0)
+        T.z_0=0;
     end
-    zarray=z_0*ones(size(yarray));
+    zarray=T.z_0*ones(size(yarray));
     varargout{1}=[xarray yarray zarray];
-%     if ~isempty(x_shift)
-%         varargout{1}(1)=x_shift;
-%     end
-%     if ~isempty(y_shift)
-%         varargout{1}(2)=y_shift;
-%     end
-%     if ~isempty(z_shift)
-%         varargout{1}(3)=z_shift;
-%     end
 end
+varargout{2}=T;
 % The figure can be deleted now
 delete(handles.figure1);
 

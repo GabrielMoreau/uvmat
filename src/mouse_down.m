@@ -25,17 +25,20 @@ function xy=mouse_down(hObject,eventdata)
 testzoom=0;%default
 MouseAction='none'; %default
 huvmat=findobj(allchild(0),'Name','uvmat');%find the uvmat interface handle which controls theoption of  mouse action
-if ~isempty(huvmat)
-    hhuvmat=guidata(huvmat);%handles of elements in uvmat
-    UvData=get(huvmat,'UserData');
-    testzoom=get(hhuvmat.zoom,'Value');% get the mouse action from the uvmat GUI: options:
-    if isfield(UvData,'MouseAction')
-        MouseAction=UvData.MouseAction;% get the mouse action from the uvmat GUI: options:
-    end
+if isempty(huvmat)
+    return
 end
+hhuvmat=guidata(huvmat);%handles of elements in uvmat
+UvData=get(huvmat,'UserData');
+testzoom=get(hhuvmat.zoom,'Value');% get the mouse action from the uvmat GUI: options:
+if isfield(UvData,'MouseAction')
+    MouseAction=UvData.MouseAction;% get the mouse action from the uvmat GUI: options:
+end
+
 test_create=~testzoom && (isequal(MouseAction,'create_object') || isequal(MouseAction,'create_mask'));
 %test_cal=get(handles.cal,'Value');
 test_cal=isequal(MouseAction,'calib');
+test_ruler=isequal(MouseAction,'ruler');
 menu_coord=get(hhuvmat.transform_fct,'String');
 coord_choice=get(hhuvmat.transform_fct,'Value');
 coord_type=menu_coord{coord_choice};
@@ -84,8 +87,8 @@ for ichild=1:length(hchild)
                     end
                 end
             end
-        elseif isequal(get(hchild(ichild),'Visible'),'on')& ~isequal(get(hchild(ichild),'Style'),'frame')
-           %FAIRE UNE OPTION D'AIDE AVEC BOUTON SOURIS DROIT (ALT)??
+%         elseif isequal(get(hchild(ichild),'Visible'),'on')& ~isequal(get(hchild(ichild),'Style'),'frame')
+%            %FAIRE UNE OPTION D'AIDE AVEC BOUTON SOURIS DROIT (ALT)??
         end
     end
 end
@@ -221,12 +224,13 @@ elseif ~isempty(huvmat)
         h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
         h_edit_append=hh_geometry_calib.edit_append;%findobj(h_geometry_calib,'Tag','edit_append');
         if isequal(get(h_edit_append,'Value'),1) 
-            if ~isequal(coord_type,'')
-                set(handles_coord,'Value',1)
-                coord_type='';
+            coord_value=get(hhuvmat.transform_fct,'Value');
+            if ~(isequal(coord_value,1)||isequal(coord_value,3)); %active only with no transform or px (no phys)
+                set(hhuvmat.transform_fct,'Value',1)
                 set(hhuvmat.FixedLimits,'Value',0)% put FixedLimits option to 'off'
                 set(hhuvmat.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
                 uvmat('run0_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
+                return
             end
 %             if isequal(coord_type,'px')|isequal(coord_type,'');%px cordinates
                 strline=[ '    |    '  '    |    '  '    |    ' num2str(xy(1,1),4) '    |    ' num2str(xy(1,2),4)];
@@ -285,6 +289,14 @@ elseif ~isempty(huvmat)
         PlotParam=read_plot_param(hhuvmat);
         [PlotType,ScalOut]= plot_field(AxeData,haxes,PlotParam,1);
     end   
+    
+    %create ruler
+    if test_ruler
+        UvData.RulerCoord(1,1)=xy(1,1);
+        UvData.RulerCoord(1,2)=xy(1,2);
+        UvData.RulerHandle=line([xy(1,1) xy(1,1)],[xy(1,2) xy(1,2)],'Color','m','Tag','proj_object');
+        set(huvmat,'UserData',UvData)
+    end
 end
 set(haxes,'UserData',AxeData);
 
