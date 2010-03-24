@@ -935,7 +935,7 @@ corners_X=(data.Coord(end-3:end,4)); %pixel absissa of the four corners
 corners_Y=(data.Coord(end-3:end,5)); 
 
 %reorder the last two points if needed
-angles=angle((corners_X-corners_X(1))+i*(corners_Y-corners_Y(1));
+angles=angle((corners_X-corners_X(1))+i*(corners_Y-corners_Y(1)));
 if abs(angles(4)-angles(2))>abs(angles(3)-angles(2))
       X_end=corners_X(4);
       Y_end=corners_Y(4);
@@ -1006,12 +1006,12 @@ for ipoint=1:nbpoints
 end
 Tmod=T(:,(1:2))+Delta;
 [Xpx,Ypx]=px_XYZ(GeometryCalib,Tmod(:,1),Tmod(:,2));
-for i=1:nbpoints
-     Coord{i,1}=num2str(T(i,1),4);%display coordiantes with 4 digits
-     Coord{i,2}=num2str(T(i,2),4);%display coordiantes with 4 digits
-     Coord{i,3}='0';
-     Coord{i,4}=num2str(Xpx(i),4);%display coordiantes with 4 digi
-     Coord{i,5}=num2str(Ypx(i),4);%display coordiantes with 4 digi
+for ipoint=1:nbpoints
+     Coord{ipoint,1}=num2str(T(ipoint,1),4);%display coordiantes with 4 digits
+     Coord{ipoint,2}=num2str(T(ipoint,2),4);%display coordiantes with 4 digits
+     Coord{ipoint,3}='0';
+     Coord{ipoint,4}=num2str(Xpx(ipoint),4);%display coordiantes with 4 digi
+     Coord{ipoint,5}=num2str(Ypx(ipoint),4);%display coordiantes with 4 digi
 end
 Tabchar=cell2tab(Coord,'    |    ');
 set(handles.ListCoord,'Value',1)
