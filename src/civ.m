@@ -3597,8 +3597,8 @@ fprintf(fid, ['##############   CMX file' '\n']);
 fclose(fid);
        
 		s=-1; 
-        display(['!' civ1_exe ' -f ' filename_cmx ' > ' namelog])
-        eval(['!' civ1_exe ' -f ' filename_cmx ' > ' namelog]);
+        display(['!' civ1_exe ' -f ' filename_cmx ' > ' namelog ' &'])
+        eval(['!' civ1_exe ' -f ' filename_cmx ' > ' namelog ' &']);
 % 		if sge%dispatch computation on the cluster using interactive queue
 %           %  [s,w] = unix(['qrsh -q fast.q ' civ1_exe ' -f ' filename_cmx ' > ' namelog ' 2>&1' ]);
 %        end     
@@ -3759,8 +3759,8 @@ for ifile=1:nbfield
         textout=char(textcmx);
         dlmwrite(filename_cmx,textout,''); 
         s=-1;  
-        display(['!' civ2_exe ' -f ' filename_cmx ' > ' namelog])
-        eval(['!' civ2_exe ' -f ' filename_cmx ' > ' namelog]);    
+        display(['!' civ2_exe ' -f ' filename_cmx ' > ' namelog ' &'])
+        eval(['!' civ2_exe ' -f ' filename_cmx ' > ' namelog ' &']);    
      
 % 		if sge%dispatch computation on the cluster using interactive queue
 %             [s,w] = unix(['qrsh -q fast.q ' civ2_exe ' -f ' filename_cmx ' > ' namelog ' 2>&1']);
@@ -3781,10 +3781,10 @@ global patch_exe patch_new_exe
         namelog=[filename_nc([1:end-3]) '_patch.log'];
         if test_interp==0
             cmd_PATCH=[patch_exe ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ...
-            '  > ' namelog ' 2>&1']; % redirect standard output to the log file
+            '  > ' namelog ' 2>&1 &']; % redirect standard output to the log file
          else %nouveau programme patch
              cmd_PATCH=[patch_new_exe ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ...
-                ' -max ' thresh_value ' -nopt ' subdomain_patch  '  > ' namelog ' 2>&1']; % redirect standard output to the log file
+                ' -max ' thresh_value ' -nopt ' subdomain_patch  '  > ' namelog ' 2>&1 &']; % redirect standard output to the log file
         end
 
 %------------------------------------------------------------------------

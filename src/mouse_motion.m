@@ -88,24 +88,28 @@ for ichild=1:length(hchild)
                     flag_vec=(AxeData.X<(xy(1,1)+AxeData.Mesh/3) & AxeData.X>(xy(1,1)-AxeData.Mesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
                           (AxeData.Y<(xy(1,2)+AxeData.Mesh/3) & AxeData.Y>(xy(1,2)-AxeData.Mesh/3));%f
                     ivec=find(flag_vec);% search the selected vector index ivec
+                    hhh=findobj(haxes,'Tag','vector_marker');
                     if length(ivec)>0 
+                        %ivec=ivec(1);%choice the first selected vector if several are selected
                         if ~test_create
                             pointershape='arrow'; %mouse indicates  the detection of a vector
-                            hhh=findobj(haxes,'Tag','vector_marker');
+  
                             if isempty(hhh)
-                                line(AxeData.X(ivec),AxeData.Y(ivec),'Color','m','Tag','vector_marker','LineStyle','.','Marker','o','MarkerSize',AxeData.Mesh);
+                                set(currentfig,'CurrentAxes',haxes)
+                                rectangle('Curvature',[1 1],...
+                  'Position',[AxeData.X(ivec)-AxeData.Mesh AxeData.Y(ivec)/2-AxeData.Mesh/2 AxeData.Mesh AxeData.Mesh],'EdgeColor','m',...
+                  'LineStyle','-','Tag','vector_marker');
+%                                 line(AxeData.X(ivec),AxeData.Y(ivec),'Color','m','Tag','vector_marker','LineStyle','.','Marker','o','MarkerSize',AxeData.Mesh);
                             else
-                                set(hhh,'XData',AxeData.X(ivec))
-                                set(hhh,'YData',AxeData.Y(ivec))
+                                set(hhh,'Position',[AxeData.X(ivec)-AxeData.Mesh/2 AxeData.Y(ivec)-AxeData.Mesh/2 AxeData.Mesh AxeData.Mesh])
                             end
-                        end
-                        ivec=ivec(1);%choice the first selected vector if several are selected
+                        end                 
                         mouse.X=AxeData.X(ivec);
                         mouse.Y=AxeData.Y(ivec);
                         u_mouse=AxeData.U(ivec);%displacement
                         v_mouse=AxeData.V(ivec);
                         w_mouse=0; %default
-                        if isfield(AxeData,'W')&length(AxeData.W)>=ivec
+                        if isfield(AxeData,'W') & length(AxeData.W)>=ivec
                             w_text=[',  w=' num2str(AxeData.W(ivec),3)];
                         else
                             w_text='';
@@ -123,6 +127,10 @@ for ichild=1:length(hchild)
                             ff_text=[',  ff=' num2str(AxeData.FF(ivec),3)];
                         else
                             ff_text='';
+                        end
+                    else
+                        if ~isempty(hhh)
+                            delete(hhh)
                         end
                     end
                 end

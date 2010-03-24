@@ -59,62 +59,59 @@ end
 if ~exist('num_i2','var') || isequal(num_i2,[]) 
     num_i2=num_i1; %default
 end
+if ~exist('num_j2','var') || isequal(num_i2,[]) 
+    num_j2=num_j1; %default
+end
 if ~exist('subdir','var')|| isempty(subdir) 
     subdir='' ; %default
 end
-%detection of mask or mean: filebase of the form [root '_' xxx 'm$$$'] with xxx a number and $$$ three characters
-% if length(filebase)>4 & filebase(end-3)=='m';
-%     basedouble=double(filebase);
-%     val=(48>basedouble)|(basedouble>57);% select the non-numerical characters
-%     i=length(filebase)-4;
-%     while val(i)==0 & i>0
-%         i=i-1;
-%     end
-%     nbslice=str2num(filebase(i+1:end-4));
-%     if ~isequal(nbslice,[]) 
-%         num_i1=mod(num_i1-1,nbslice)+1; %take the rest in the division
-%         if isequal(nom_type,'png_old')|isequal(nom_type,'#a')
-%             num_j1=1;% mask name must end by 'a'
-%         end
-%     end
-% end
+num_i1_out=num_i1;%default output
+num_j1_out=num_j1;%default output
+num_i2_out=num_i2;%default output
+num_j2_out=num_j2;%default output
+
 test_pairs=isequal(nom_type,'netc_old')| isequal(nom_type,'netc_2D') | isequal(nom_type,'netc_3D')| isequal(nom_type,'_i1-i2_j1-j2')| ...
   isequal(nom_type,'netc_series')| isequal(nom_type,'#_ab')| isequal(nom_type,'_i_j1-j2')| isequal(nom_type,'_i1-i2_j')| isequal(nom_type,'_i1-i2');
 test_2D= isequal(nom_type,'netc_old') |isequal(nom_type,'netc_2D')|isequal(nom_type,'#_ab') |isequal(nom_type,'_i_j1-j2');
 test_3D=isequal(nom_type,'netc_3D') |isequal(nom_type,'netc_series')| isequal(nom_type,'_i1-i2_j')| isequal(nom_type,'_i1-i2');
 if isequal(nom_type,'series_i')| isequal(nom_type,'_i');
         filename=[filebase '_' num2str(num_i1) ext];
- %       idetect=(exist(filename,'file')==2); 
+        num_i2_out=num_i1;
+        num_j1_out=[];
+        num_j2_out=[]; 
 elseif length(nom_type)==5 && isequal(nom_type(1:3),'_%0')&& isequal(nom_type(5),'d');
         filename=[filebase '_' num2str(num_i1,nom_type(2:5)) ext];
- %       idetect=(exist(filename,'file')==2); 
+        num_i2_out=num_i1;
+        num_j2_out=num_j1;
 elseif isequal(nom_type,'series_i_j')| isequal(nom_type,'_i_j')
         filename=[filebase '_' num2str(num_i1) '_' num2str(num_j1) ext];
- %       idetect=(exist(filename,'file')==2);
+        num_i2_out=num_i1;
+        num_j2_out=num_j1;
 elseif isequal(nom_type,'png_old')| isequal(nom_type,'#a')| isequal(nom_type,'#A')
         filename=[filebase num2str(num_i1,'%03d') num2stra(num_j1,nom_type) ext];
-   %     idetect=(exist(filename,'file')==2);
+        num_i2_out=num_i1;
+        num_j2_out=num_j1;
 elseif  length(nom_type)>=5 & isequal(nom_type(2:3),'%0') & isequal(nom_type(5),'d')  %isequal(nom_type,'_%04dA') %camera PCO Toulouse
         filename=[filebase nom_type(1) num2str(num_i1,nom_type(2:4)) num2stra(num_j1,nom_type) ext];
- %       idetect=(exist(filename,'file')==2);         
+        num_i2_out=num_i1;
+        num_j2_out=num_j1;   
 elseif isequal(nom_type,'raw_SMD') %suffix a, b, c without extension
         filename=[filebase num2str(num_i1,'%03d') num2stra(num_j1,nom_type)];
-%        idetect=(exist(filename,'file')==2);
+        num_i2_out=num_i1;
+        num_j2_out=num_j1;
 elseif isequal(nom_type,'ima_num')| isequal(nom_type,'#')
         filename=[filebase num2str(num_i1) ext];
-%        idetect=(exist(filename,'file')==2);
+        num_i2_out=num_i1;
+        num_j1_out=[];
+        num_j2_out=[];
 elseif length(nom_type)>=4 & isequal(nom_type(1:2),'%0') & isequal(nom_type(end),'d')
-            filename=[filebase num2str(num_i1,nom_type) ext]; %test number with a 0 before
-%            idetect=(exist(filename,'file')==2);
+        filename=[filebase num2str(num_i1,nom_type) ext]; %test number with a 0 before
+        num_i2_out=num_i1;
+        num_j1_out=[];
+        num_j2_out=[];
 
 %case of derived file indexing (e.g. netcdf files)
 elseif test_pairs
-    if (~exist('num_j2','var')| isequal(num_j2,[])) & test_2D
-          num_j2=num_j1+1; %default if num_j2 undefined
-    end
-    if (~exist('num_i2','var')| isequal(num_i2,[])) & test_3D
-          num_i2=num_i1+1; %default if num_i2 undefined
-    end
     filebasesub=filebase;
     % get the root name filebasesub for the netcdf files
     if  ~isequal(subdir,'') && ~isequal(subdir,'?') 
@@ -122,14 +119,14 @@ elseif test_pairs
             filebasesub=fullfile(Path,subdir,Name);
     end
      %inexistant pair if num_i2=0 or num_j2=0
-    if isequal(num_i2,0)
-        filename=[filebasesub '*-*_' num2str(num_i1) ext];
-        return
-    end
-    if isequal(num_j2,0)
-        filename=[filebasesub '_' num2str(num_i1) '_*-*' ext];
-        return
-    end
+%     if isequal(num_i2,0)
+%         filename=[filebasesub '*-*_' num2str(num_i1) ext];
+%         return
+%     end
+%     if isequal(num_j2,0)
+%         filename=[filebasesub '_' num2str(num_i1) '_*-*' ext];
+%         return
+%     end
     % case of an imposed image pair (comp_input=1)
     if  (exist('comp_input','var') & isequal(comp_input,1)) 
             if isequal(nom_type,'netc_old')|isequal(nom_type,'#_ab')
@@ -138,24 +135,28 @@ elseif test_pairs
                 else
                     filename=[filebasesub num2str(num_i1,'%03d') '_' num2stra(num_j1,nom_type) num2stra(num_j2,nom_type) ext];
                 end
+                num_i2_out=num_i1;
             elseif isequal(nom_type,'netc_2D')|isequal(nom_type,'_i_j1-j2')
                 if isequal(num2str(num_j1),num2str(num_j2))% case of displacements at the same time
                     filename=[filebasesub '_' num2str(num_i1) '_' num2str(num_j1) ext];
                 else
                     filename=[filebasesub '_' num2str(num_i1) '_' num2str(num_j1) '-' num2str(num_j2) ext];
                 end
+                num_i2_out=num_i1;
             elseif isequal(nom_type,'netc_3D') || isequal(nom_type,'_i1-i2_j')
                 if isequal(num2str(num_i1),num2str(num_i2))% case of displacements at the same time
                       filename=[filebasesub '_' num2str(num_i1) '_' num2str(num_j1) ext];
                 else
                     filename=[filebasesub '_' num2str(num_i1) '-' num2str(num_i2) '_' num2str(num_j1) ext];
                 end
+                num_j2_out=num_j1;
             elseif isequal(nom_type,'netc_series') || isequal(nom_type,'_i1-i2')
                 if isequal(num2str(num_i1),num2str(num_i2))% case of displacements at the same time
                      filename=[filebasesub '_' num2str(num_i1) ext];
                 else
                     filename=[filebasesub '_' num2str(num_i1) '-' num2str(num_i2) ext];
                 end
+                num_j2_out=num_j1;
             elseif isequal(nom_type,'_i1-i2_j1-j2')
                 if isequal(num2str(num_i1),num2str(num_i2))% case of displacements at the same time
                     app1= [num2str(num_i1)];
@@ -173,7 +174,7 @@ elseif test_pairs
            % idetect=(exist(filename,'file')==2);
      % case of an image pair to determine (comp_input=0)
     else
-            [filename,num_i1,num_j1,num_i2,num_j2,idetect]=search_pair(filebasesub,num_i1,num_j1,num_i2,nom_type);
+            [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out,idetect]=search_pair(filebasesub,num_i1,num_j1,num_i2,nom_type);
     end
     
      %look for sub-directories containing netcdf files
@@ -215,7 +216,7 @@ elseif test_pairs
             end
             idetect=(exist(filename,'file')==2);
         else
-            [filename,num_i1,num_j1,num_i2,num_j2,idetect]=search_pair(filebasesub,num_i1,num_j1,num_i2,nom_type);             
+            [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out,idetect]=search_pair(filebasesub,num_i1,num_j1,num_i2,nom_type);             
         end
     end
 % elseif isequal(nom_type,'none')|isequal(nom_type,'')|isequal(nom_type,'*')
@@ -228,10 +229,6 @@ else
     filename=[filebasesub ext];
     idetect=(exist(filename,'file')==2);  
 end
-num_i1_out=num_i1;
-num_j1_out=num_j1;
-if exist('num_i2','var'), num_i2_out=num_i2; else, num_i2_out=[]; end;
-if exist('num_j2','var'), num_j2_out=num_j2; else, num_j2_out=[]; end;
 if ~isequal(subdir,'?'), subdir_out=subdir; else, subdir_out='';end;
 
 %---------------------------------------------------------------

@@ -625,17 +625,10 @@ run0_Callback(hObject, eventdata, handles);
 function RootFile_Callback(hObject, eventdata, handles)
 update_rootinfo(hObject,eventdata,handles)
 
-%-------------------------------------------------------------------
-%-- called by action in FileIndex edit box
-%-------------------------------------------------------------------
-function FileIndex_Callback(hObject, eventdata, handles)
-NomType_str=get(handles.FileIndex,'String') ;
-[P,F,str1,str2,str_a,str_b]=name2display(['xx' NomType_str get(handles.FileExt,'String')]);
-% display the new index values on the counters
-set(handles.i1,'String',str1); 
-set(handles.i2,'String',str2);
-set(handles.j1,'String',str_a);
-set(handles.j2,'String',str_b);
+
+
+
+
 
 %-------------------------------------------------------------------
 % -- update information about a new field series (indices to scan, timing, calibration from an xml file, then refresh current plots
@@ -1669,7 +1662,7 @@ end
 if get(handles.scan_i,'Value')==1% case of scanning along index i   
      num1=num1+increment;
      num2=num2+increment;
-     [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
+     [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir)
      if sub_value% set the second field name and indices
         num1_1=num1_1+increment;
         num2_1=num2_1+increment;
@@ -1690,7 +1683,7 @@ else % case of scanning along index j (burst numbers)
 %             num_b=mod(num_b,lastfield)
 %         end
     end
-    filename=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
+    [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
 end
 
 % refresh plots
@@ -1744,15 +1737,25 @@ drawnow
 list_fields=get(handles.Fields,'String');% list menu fields
 index_fields=get(handles.Fields,'Value');% selected string index
 FieldName=list_fields{index_fields}; % selected field
+UvData=get(handles.uvmat,'UserData');
 if isequal(FieldName,'image')
-%     run0_Callback(hObject, eventdata, handles)%display the first image
-    UvData=get(handles.uvmat,'UserData');
+    test_1=0;
+    [ff,rr,filebase,xx,Ext,SubDir]=read_file_boxes(handles);
+    NomType=get(handles.FileIndex,'UserData');
 else
-    msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
-    return
+    list_fields=get(handles.Fields_1,'String');% list menu fields
+    index_fields=get(handles.Fields_1,'Value');% selected string index
+    FieldName=list_fields{index_fields}; % selected field
+    if isequal(FieldName,'image')
+        test_1=1;
+        [ff,rr,filebase,xx,Ext,SubDir]=read_file_boxes_1(handles);
+        NomType=get(handles.FileIndex_1,'UserData');
+    else
+        msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
+        return
+    end
 end
-[ff,rr,filebase,xx,Ext,SubDir]=read_file_boxes(handles);
-NomType=get(handles.FileIndex,'UserData');
+
 num_i1=stra2num(get(handles.i1,'String'));
 num_j1=stra2num(get(handles.j1,'String'));
 num_i2=stra2num(get(handles.i2,'String'));
@@ -1778,16 +1781,21 @@ end
 
 %read the second image
 Field.AName='image';
-Field.AX=UvData.Field.AX;
-Field.AY=UvData.Field.AY;
+if test_1
+    Field_a=UvData.Field_1;
+else
+    Field_a=UvData.Field;
+end
+Field_b.AX=Field_a.AX;
+Field_b.AY=Field_a.AY;
 % z index
 nbslice=str2double(get(handles.nb_slice,'String'));
 if ~isempty(nbslice)
-    Field.ZIndex=mod(num_i2-1,nbslice)+1;
+    Field_b.ZIndex=mod(num_i2-1,nbslice)+1;
 end
-Field.CoordType='px';
+Field_b.CoordType='px';
 %determine the input file type
-if isfield(UvData,'MovieObject')
+if (test_1 && isfield(UvData,'MovieObject_1'))||(~test_1 && isfield(UvData,'MovieObject'))
     FileType='movie';
 elseif isequal(lower(Ext),'.avi')
     FileType='avi';
@@ -1805,16 +1813,20 @@ else
 end
 switch FileType
         case 'movie'
-            Field.A=read(UvData.MovieObject,num_i2);
+            if test_1
+                Field_b.A=read(UvData.MovieObject_1,num_i2);
+            else
+                Field_b.A=read(UvData.MovieObject,num_i2);
+            end
         case 'avi'
             mov=aviread(imaname_1,num_i2);
-            Field.A=frame2im(mov(1));
+            Field_b.A=frame2im(mov(1));
         case 'vol'
-            Field.A=imread(imaname_1);
+            Field_b.A=imread(imaname_1);
         case 'multimage'
-            Field.A=imread(imaname_1,num_i2);
+            Field_b.A=imread(imaname_1,num_i2);
         case 'image'
-            Field.A=imread(imaname_1);
+            Field_b.A=imread(imaname_1);
 end 
 if get(handles.slices,'Value')
     Field.ZIndex=str2double(get(handles.z_index,'String'));
@@ -1827,8 +1839,10 @@ transform_name=menu_transform{choice_value};%name of the transform fct  given by
 transform_list=get(handles.transform_fct,'UserData');
 transform=transform_list{choice_value};
 if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
-    if isfield(UvData,'XmlData') && isfield(UvData.XmlData,'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
-        Field=transform(Field,UvData.XmlData);
+    if test_1 && isfield(UvData,'XmlData_1') && isfield(UvData.XmlData_1,'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
+        Field_b=transform(Field_b,UvData.XmlData_1);
+    elseif ~test_1 && isfield(UvData,'XmlData') && isfield(UvData.XmlData,'GeometryCalib')%use geometry calib
+        Field_b=transform(Field_b,UvData.XmlData);
     end
 end
 
@@ -1839,9 +1853,9 @@ set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
 while get(handles.speed,'Value')~=0 && isequal(get(handles.movie_pair,'BusyAction'),'queue')%isequal(get(handles.run0,'BusyAction'),'queue'); % enable STOP command
     % read and plot the series of images in non erase mode
-    set(hima,'CData',Field.A); 
+    set(hima,'CData',Field_b.A); 
     pause(1.02-get(handles.speed,'Value'));% wait for next image
-    set(hima,'CData',UvData.Field.A);
+    set(hima,'CData',Field_a.A);
     pause(1.02-get(handles.speed,'Value'));% wait for next image
 end
 set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
@@ -1965,11 +1979,12 @@ scal_color=[];
 VelType_1=setfield_1(handles);
 sub_value=get(handles.SubField,'Value');
 FileType_1='none';%default
-%if sub_value==1
+%if sub_value==
+filename_1
 if ~isempty(filename_1)
     % test for a constant second field (comparison with a fixed field)
     NomType_1=get(handles.FileIndex_1,'UserData');
-    Ext_1=get(handles.FileExt_1,'String');
+    Ext_1=get(handles.FileExt_1,'String')
     % determine the input file type
     if isequal(Ext_1,'.nc')||isequal(Ext_1,'.cdf')
         FileType_1='netcdf';
@@ -1983,7 +1998,7 @@ if ~isempty(filename_1)
         FileType_1='vol';
         FieldName_1='image';
     else 
-       form=imformats(Ext([2:end]));
+       form=imformats(Ext_1([2:end]));
        if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
            if isequal(NomType_1,'*');
                FileType_1='multimage';
@@ -2063,14 +2078,17 @@ if  ~isempty(filename_1) && ~test_keepdata_1 && isequal(FieldName_1,'image')
         case 'movie'
             A=read(UvData.MovieObject_1,num_i1);
         case 'avi'
-            mov=aviread(filename,num_i1);
+            mov=aviread(filename_1,num_i1);
             A=frame2im(mov(1));
         case 'vol'
-            A=imread(filename);
+            A=imread(filename_1);
         case 'multimage'
-            A=imread(filename,num_i1);
+            A=imread(filename_1,num_i1);
         case 'image'
-            A=imread(filename);
+            A=imread(filename_1);
+        case 'netcdf'
+        otherwise
+            errormsg=['unknown input file type ' filename_1];
     end 
     npxy=size(A);
     set(handles.npx,'String',num2str(npxy(2)));% display image size on the interface
@@ -2497,13 +2515,18 @@ if isfield(UvData,'Mask')&~isfield(UvData,'A')
     set(handles.MinA,'String','0')
     set(handles.MaxA,'String','255')
 end
-IndexObj=get(handles.list_object_1,'Value');
-Object=UvData.Object;
-IndexObj=min(IndexObj,numel(Object));
-for iobj=[1 IndexObj]
-    if ~isempty(Object{iobj})%& isfield(Object{iobj},'plotaxes')& ishandle(Object{iobj}.plotaxes)
+IndexObj(1)=get(handles.list_object_1,'Value');
+if IndexObj(1)> numel(UvData.Object)
+    IndexObj(1)=1;
+end
+IndexObj_2=get(handles.list_object_2,'Value');
+if IndexObj_2 <= numel(UvData.Object)
+    IndexObj(2)=IndexObj_2;
+end
+for iobj=IndexObj
+    if ~isempty(UvData.Object{iobj})%& isfield(Object{iobj},'plotaxes')& ishandle(Object{iobj}.plotaxes)
         %Projeter les champs sur l'objet:*
-        ObjectData=proj_field(UvData.Field,Object{iobj},iobj);
+        ObjectData=proj_field(UvData.Field,UvData.Object{iobj},iobj);
    
         %use of mask
         if isfield(ObjectData,'NbDim')&isequal(ObjectData.NbDim,2)
@@ -2553,8 +2576,8 @@ for iobj=[1 IndexObj]
         end
         if ~isempty(ObjectData)
             haxes=[];%default
-            if isfield(Object{iobj},'plotaxes')
-                haxes=Object{iobj}.plotaxes;%axes used for representing the projection on the object
+            if isfield(UvData.Object{iobj},'plotaxes')
+                haxes=UvData.Object{iobj}.plotaxes;%axes used for representing the projection on the object
             end
             PosColorbar=[];%default: no colorbar
             if ishandle(haxes) & isequal(get(haxes,'Tag'),'axes3')& isfield(UvData,'PosColorbar')
@@ -4168,8 +4191,6 @@ function list_object_1_Callback(hObject, eventdata, handles)
 list_str=get(handles.list_object_1,'String');
 IndexObj=get(handles.list_object_1,'Value');
 str_1=list_str{IndexObj};
-% set(handles.list_object_1,'BackgroundColor',[1 1 0]) 
-% set(handles.list_object_2,'BackgroundColor',[1 1 1]) 
 val_2=get(handles.list_object_2,'Value');
 str_2=get(handles.list_object_2,'String');
 if isequal(val_2,IndexObj)

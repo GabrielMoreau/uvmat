@@ -37,13 +37,13 @@ end
 
 test_create=~testzoom && (isequal(MouseAction,'create_object') || isequal(MouseAction,'create_mask'));
 %test_cal=get(handles.cal,'Value');
-test_cal=isequal(MouseAction,'calib');
-test_ruler=isequal(MouseAction,'ruler');
-menu_coord=get(hhuvmat.transform_fct,'String');
-coord_choice=get(hhuvmat.transform_fct,'Value');
-coord_type=menu_coord{coord_choice};
-test_edit=isequal(MouseAction,'edit_object');
-test_edit_vect=isequal(MouseAction,'edit_vect');
+test_cal=strcmp(MouseAction,'calib');
+test_ruler=strcmp(MouseAction,'ruler');
+% menu_coord=get(hhuvmat.transform_fct,'String');
+% coord_choice=get(hhuvmat.transform_fct,'Value');
+% coord_type=menu_coord{coord_choice};
+test_edit=strcmp(MouseAction,'edit_object');
+test_edit_vect=strcmp(MouseAction,'edit_vect');
 xdisplay=[];%default
 ydisplay=[];%default
 haxes=[];
@@ -256,13 +256,13 @@ elseif ~isempty(huvmat)
             set(h_ListCoord,'Value',val+1)
             geometry_calib('ListCoord_Callback',hObject,eventdata,hh_geometry_calib)
             data=read_geometry_calib(Coord);
-            if isequal(coord_type,'px')|isequal(coord_type,'');%px cordinates
+%             if isequal(coord_type,'px')|isequal(coord_type,'');%px cordinates
                 XCoord=data.Coord(:,4);
                 YCoord=data.Coord(:,5);
-            else %phys cordinates
-                XCoord=data.Coord(:,1);
-                YCoord=data.Coord(:,2);
-            end
+%             else %phys cordinates
+%                 XCoord=data.Coord(:,1);
+%                 YCoord=data.Coord(:,2);
+%             end
             hh=findobj('Tag','calib_points');           
             if isempty(hh)
                 line(XCoord,YCoord,'Color','m','Tag','calib_points','LineStyle','.','Marker','+');
