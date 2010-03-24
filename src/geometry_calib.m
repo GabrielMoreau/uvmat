@@ -928,11 +928,22 @@ set(handles.geometry_calib,'UserData',CalibData)%store the phys grid for later u
 Coord_cell=get(handles.ListCoord,'String');%read list of coordiantes on geometry_calib
 data=read_geometry_calib(Coord_cell);
 nbpoints=size(data.Coord,1); %nbre of calibration points
-if nbpoints<4
-    msgbox_uvmat('ERROR','four points must be selected by the mouse to delimitate the detection area')
+if nbpoints~=4
+    msgbox_uvmat('ERROR','four points must be selected by the mouse, beginning by the new x axis, to delimitate the phs grid area')
 end
 corners_X=(data.Coord(end-3:end,4)); %pixel absissa of the four corners
 corners_Y=(data.Coord(end-3:end,5)); 
+
+%reorder the last two points if needed
+angles=angle((corners_X-corners_X(1))+i*(corners_Y-corners_Y(1));
+if abs(angles(4)-angles(2))>abs(angles(3)-angles(2))
+      X_end=corners_X(4);
+      Y_end=corners_Y(4);
+      corners_X(4)=corners_X(3);
+      corners_Y(4)=corners_Y(3);
+      corners_X(3)=X_end;
+      corners_Y(3)=Y_end;
+end
 
 %read the current image
 huvmat=findobj(allchild(0),'Name','uvmat');

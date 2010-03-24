@@ -52,6 +52,7 @@ AxeData=[];%default
 %edit an existing point or line if found
 hcurrentobject=gco;% current object handle (selected by the mouse)
 hcurrentfig=gcbo;% current figure handle
+fig_tag=get(hcurrentfig,'Tag');
 tag_obj=get(gco,'Tag');
 xy=[];%default
 xy_fig=get(hcurrentfig,'CurrentPoint');% current point of the current figure (gcbo)
@@ -210,9 +211,12 @@ elseif ~isempty(huvmat)
                  list_str{end+1}='...';
             end
             set(hhuvmat.list_object_1,'String',list_str)
-            set(hhuvmat.list_object_1,'Value',IndexObj)
             set(hhuvmat.list_object_2,'String',list_str)
-            set(hhuvmat.list_object_2,'Value',IndexObj)
+            if strcmp(fig_tag,'view_field')%we are in view_field plot
+                  set(hhuvmat.list_object_1,'Value',IndexObj)
+            else%we are in uvmat plot
+                set(hhuvmat.list_object_2,'Value',IndexObj)
+            end
             PlotData=get(AxeData.CurrentObject,'UserData');
             PlotData.IndexObj=IndexObj;
             set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph
