@@ -42,7 +42,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 23-Mar-2010 16:19:01
+% Last Modified by GUIDE v2.5 25-Mar-2010 19:10:05
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -254,8 +254,10 @@ if isequal(calib_type,'rescale')
     GeometryCalib=calib_rescale(Object.Coord);
 elseif isequal(calib_type,'linear')
     GeometryCalib=calib_linear(Object.Coord);
-elseif isequal(calib_type,'tsai')
+elseif isequal(calib_type,'tsai_cpp')
     GeometryCalib=calib_tsai(Object.Coord);
+elseif isequal(calib_type,'tsai_matlab')
+    GeometryCalib=calib_tsai2(Object.Coord);
 end
 unitlist=get(handles.CoordUnit,'String');
 unit=unitlist{get(handles.CoordUnit,'value')};
@@ -296,7 +298,9 @@ set(hhuvmat.FixedLimits,'Value',0)% put FixedLimits option to 'off'
 set(hhuvmat.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
 uvmat('RootPath_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
 
-%------------------------------------------------------------------------
+figure(handles.geometry_calib)
+
+%------------------------------------------------------------------
 % --- Executes on button press in calibrate_lin.
 function REPLICATE_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -433,6 +437,52 @@ GeometryCalib.ErrorRms(2)=sqrt(mean((y1-y_ima).*(y1-y_ima)));
 GeometryCalib.ErrorMax(2)=max(abs(y1-y_ima));
 
 %------------------------------------------------------------------------
+function GeometryCalib=calib_tsai2(Coord)
+%------------------------------------------------------------------
+path_uvmat=which('uvmat');% check the path detected for source file uvmat
+path_UVMAT=fileparts(path_uvmat); %path to UVMAT
+
+x_1=Coord(:,4:5)';
+X_1=Coord(:,1:3)';
+n_ima=1;
+% check_cond=0;
+nx=1024;ny=1024;
+% est_kc=[1;0;0;0;0];
+est_dist=[1;0;0;0;0];
+run('D:\PROG\MATLAB\TOOLBOX_calib\go_calib_optim');
+
+GeometryCalib.CalibrationType='tsai';
+GeometryCalib.focal=f(2);
+GeometryCalib.dpx_dpy=[1 1];
+GeometryCalib.Cx_Cy=cc';
+GeometryCalib.sx=fc(1)/fc(2);
+GeometryCalib.kappa1=-k(1)/f(2)^2;
+GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
+GeometryCalib.Tx_Ty_Tz=Tc_1';
+GeometryCalib.R=Rc_1;
+Calib.dpx=GeometryCalib.dpx_dpy(1);
+Calib.dpy=GeometryCalib.dpx_dpy(2);
+Calib.sx=GeometryCalib.sx;
+Calib.Cx=GeometryCalib.Cx_Cy(1);
+Calib.Cy=GeometryCalib.Cx_Cy(2);
+Calib.kappa1=GeometryCalib.kappa1;
+Calib.f=GeometryCalib.focal;
+Calib.Tx=GeometryCalib.Tx_Ty_Tz(1);
+Calib.Ty=GeometryCalib.Tx_Ty_Tz(2);
+Calib.Tz=GeometryCalib.Tx_Ty_Tz(3);
+Calib.R=GeometryCalib.R;
+X=Coord(:,1);
+Y=Coord(:,2);
+Z=Coord(:,3);
+x_ima=Coord(:,4);
+y_ima=Coord(:,5);
+[Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
+
+GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
+GeometryCalib.ErrorMax(1)=max(abs(Xpoints-x_ima));
+GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
+GeometryCalib.ErrorMax(2)=max(abs(Ypoints-y_ima));
+
 function GeometryCalib=calib_tsai(Coord)
 %------------------------------------------------------------------------
 %TSAI
@@ -921,8 +971,6 @@ end
 Tabchar=cell2tab(Coord,'    |    ');
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
-
-
 % --------------------------------------------------------------------
 function MenuDetectGrid_Callback(hObject, eventdata, handles)
 
