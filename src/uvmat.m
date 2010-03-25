@@ -221,6 +221,7 @@ set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action fun
 set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles})%set mouse action functio
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
+set(hObject,'DeleteFcn',{@closefcn})%
 
 %TRANSFORM menu: loads the information stored in prefdir to initiate the browser and the list of functions
 menu_str={'';'phys';'px';'phys_polar'};
@@ -1840,6 +1841,7 @@ transform_list=get(handles.transform_fct,'UserData');
 transform=transform_list{choice_value};
 if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
     if test_1 && isfield(UvData,'XmlData_1') && isfield(UvData.XmlData_1,'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
+        Field_a=transform(Field_a,UvData.XmlData_1);%the first field has been stored without transform
         Field_b=transform(Field_b,UvData.XmlData_1);
     elseif ~test_1 && isfield(UvData,'XmlData') && isfield(UvData.XmlData,'GeometryCalib')%use geometry calib
         Field_b=transform(Field_b,UvData.XmlData);
@@ -4351,10 +4353,6 @@ function Insert_Callback(hObject, eventdata, handles)
 
 
 % --------------------------------------------------------------------
-function MenuRun_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------
-
-% --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 path_to_uvmat=which ('uvmat');% check the path of uvmat
@@ -4366,15 +4364,6 @@ else
     web(helpfile);
 end
 
-% --------------------------------------------------------------------
-function MenuOpen_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------
-% --------------------------------------------------------------------
-function MenuOpen_1_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------
-% --------------------------------------------------------------------
-function MenuExport_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------
 
 % --------------------------------------------------------------------
 function MenuExportMovie_Callback(hObject, eventdata, handles)
@@ -4467,15 +4456,18 @@ UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat
 %suppress the other options if MENULINE is chosen
 set(handles.zoom,'Value',0)
 set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
+set(handles.MenuTools,'enable','off')
+set(handles.MenuObject,'enable','off')
+set(handles.MenuEdit,'enable','off')
 %         set(handles.create,'Value',0)
 %         set(handles.create,'BackgroundColor',[0 1 0])
 %         set(handles.create,'enable','off')      
-set(handles.edit_vect,'Value',0)
-set(handles.edit_vect,'enable','off')
-edit_vect_Callback(hObject, eventdata, handles)
-set(handles.edit,'Value',0)
-set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.edit,'enable','off')
+% set(handles.edit_vect,'Value',0)
+% set(handles.edit_vect,'enable','off')
+% edit_vect_Callback(hObject, eventdata, handles)
+% set(handles.edit,'Value',0)
+% set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
+% set(handles.edit,'enable','off')
 set(handles.list_object_1,'Value',1)      
 % initiate display of GUI geometry_calib
 data=[]; %default
@@ -4668,7 +4660,9 @@ civ(varargin);% interface de civ(not in the uvmat file)
 function MenuTools_Callback(hObject, eventdata, handles)
 
 % ------------------------------------------------------------------
-function MenuEdit_Callback(hObject, eventdata, handles)
+function MenuEditObject_Callback(hObject, eventdata, handles)
+set(handles.edit,'Value',1)
+edit_Callback(hObject, eventdata, handles)
 
 %--------------------------------------------------------------------------
 function enable_transform(handles,state)
@@ -4850,3 +4844,21 @@ UvData=get(handles.uvmat,'UserData');
 UvData.MouseAction='ruler';
 set(handles.uvmat,'UserData',UvData);
 
+%------------------------------------------------------------------------
+% executed when closing: set the parent interface button to value 0
+function closefcn(gcbo,eventdata)
+%------------------------------------------------------------------------
+%delete all the associated figures if exist
+hh=findobj(allchild(0),'tag','view_field');
+if ~isempty(hh)
+    delete(hh)
+end
+hh=findobj(allchild(0),'name','geometry_calib');
+if ~isempty(hh)
+    delete(hh)
+end
+hh=findobj(allchild(0),'tag','set_object');
+if ~isempty(hh)
+    hhh=findobj(hh,'tag','PLOT');
+    set(hhh,'enable','off')
+end

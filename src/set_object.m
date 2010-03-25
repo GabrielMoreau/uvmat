@@ -88,19 +88,18 @@ set(handles.MenuCoord,'ListboxTop',1)
 if ~exist('PlotHandles','var')
      PlotHandles=[];
 end
-desable_open=0;%default: allow reading of object from xml file
-desable_plot=0;%default
+enable_plot=0;%default
 SetData.PlotHandles=PlotHandles;
-if exist('data','var') && isfield(data,'ParentButton')
-        SetData.ParentButton=data.ParentButton;
-        set(hObject,'DeleteFcn',{@closefcn,SetData.ParentButton})%
-end
+% if exist('data','var') && isfield(data,'ParentButton')
+%         SetData.ParentButton=data.ParentButton;
+%         set(hObject,'DeleteFcn',{@closefcn,SetData.ParentButton})%
+% end
 set(hObject,'UserData',SetData)
 
 % fill the interface as set in the input data:
 if exist('data','var') 
     if isfield(data,'desable_plot')
-        desable_plot=data.desable_plot;%test to desable button PLOT (display mode)
+        enable_plot=~data.desable_plot;%test to desable button PLOT (display mode)
     end
     if ~isfield(data,'NbDim')||~isequal(data.NbDim,3)%2D case
         set(handles.ZObject,'Visible','off')
@@ -241,10 +240,10 @@ end
 % else
 %     set(handles.OPEN,'Visible','on')
 % end
-if desable_plot
-   set(handles.PLOT,'Visible','off')
+if enable_plot
+   set(handles.PLOT,'enable','on')
 else
-   set(handles.PLOT,'Visible','on') 
+   set(handles.PLOT,'enable','off') 
 end
 
 
@@ -792,9 +791,9 @@ hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI
 %     set(hhuvmat.VOLUME,'Value',0)
 %     set(hhuvmat.VOLUME,'BackgroundColor',[0 1 0])%put unactivated buttons to green
 % end
+set(hhuvmat.MenuEditObject,'enable','on')
 set(hhuvmat.edit,'Value',1)
 set(hhuvmat.edit,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
-set(hhuvmat.edit,'Value',1);%
 UvData.MouseAction='edit_object'; % set the edit button to 'on'
 set(huvmat,'UserData',UvData)
 

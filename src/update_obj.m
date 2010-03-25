@@ -27,7 +27,7 @@ end
 % object representation in the different projected field plots
 for iview=1:length(Object_set) %loop on projection planes iview
       if isfield(Object_set{iview},'plotaxes')
-         haxes=Object_set{iview}.plotaxes;% axes for the field plot
+         haxes=Object_set{iview}.plotaxes% axes for the field plot
          if ishandle(haxes) & isequal(get(haxes,'Type'),'axes')% update the representation of the object IndexObj on this axes if it exists
              testupdate=0;
              HandlesDisplay=[];%default

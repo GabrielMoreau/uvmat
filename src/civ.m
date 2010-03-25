@@ -50,7 +50,7 @@ function civ_OpeningFcn(hObject, eventdata, handles, varargin)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to civ (see VARARGIN)
-global test_batch patch_new_exe%=1 if patch processing available
+global test_batch patch_newBin%=1 if patch processing available
 %filebase: root name 
 %nom_type: nomencalture used ('png_old','_i_j'...)
 %list of field numbers to process
@@ -131,12 +131,12 @@ display(syst)
 if ~isempty(errormsg)
        msgbox_uvmat('ERROR',errormsg);
 end
-patch_new_exe='';
+patch_newBin='';
 % todo_patch='';
 sge=0;
 
-if isfield(sparam,'PatchNew_exe')
-    patch_new_exe=sparam.PatchNew_exe;
+if isfield(sparam,'PatchNewBin')
+    patch_newBin=sparam.PatchNewBin;
 end
 
 if isfield(sparam,'SGE')
@@ -1556,484 +1556,500 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in RUN.
+
+
+
+% compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displacement (=2) or stereo PIV (=3)
+% %check the list of operations:
+% operations={'CIV1','FIX1','PATCH1','CIV2','FIX2','PATCH2'};
+% run_flag=1;
+% box_test(1)=get(handles.CIV1,'Value');
+% box_test(2)=get(handles.FIX1,'Value');
+% box_test(3)=get(handles.PATCH1,'Value');
+% box_test(4)=get(handles.CIV2,'Value');
+% box_test(5)=get(handles.FIX2,'Value');
+% box_test(6)=get(handles.PATCH2,'Value');
+% index=find(box_test==1);
+% if isempty(index)
+%     msgbox_uvmat('ERROR','no selected operation')
+%     return
+% end
+% index_first=min(index);
+% index_last=max(index);
+% box_used=box_test([index_first : index_last]);
+% [box_missing,ind_missing]=min(box_used);
+% if isequal(box_missing,0)
+%     msgbox_uvmat('ERROR',['missing' cell2mat(operations(ind_missing))]);
+%     return
+% end
+% 
+% %root name
+% filebase=get(handles.displ_filebase,'String');
+% if isempty(filebase)||isequal(filebase,'')
+%     msgbox_uvmat('ERROR','no input files')
+%     return
+% end
+% %check mask if selecetd
+% if isequal(get(handles.get_mask_civ1,'Value'),1)
+%     maskname=get(handles.mask_civ1,'String');
+%     if ~exist(maskname,'file')
+%         get_mask_civ1_Callback(hObject, eventdata, handles);
+%     end
+% end
+% if isequal(get(handles.get_mask_fix1,'Value'),1)
+%     maskname=get(handles.mask_fix1,'String');
+%     if ~exist(maskname,'file')
+%      get_mask_fix1_Callback(hObject, eventdata, handles);
+%     end
+% end
+% if isequal(get(handles.get_mask_civ2,'Value'),1)
+%     maskname=get(handles.mask_civ2,'String');
+%     if ~exist(maskname,'file')
+%      get_mask_civ2_Callback(hObject, eventdata, handles);
+%     end
+% end
+% if isequal(get(handles.get_mask_fix2,'Value'),1)
+%     maskname=get(handles.mask_fix2,'String');
+%     if ~exist(maskname,'file')
+%      get_mask_fix2_Callback(hObject, eventdata, handles);
+%     end
+% end
+% 
+% %read names of the .exe file 
+% if box_test(1)==1 || box_test(3)==1 || box_test(4)==1 || box_test(6)==1 
+%     path_uvmat=which('uvmat');% check the path detected for source file uvmat
+%     path_UVMAT=fileparts(path_uvmat); %path to UVMAT
+%     %fid = fopen(fullfile(path_UVMAT,'PARAM_LINUX.txt'),'r');%open the file with civ binary names
+%     xmlfile=fullfile(path_UVMAT,'PARAM.xml');
+%     if exist(xmlfile,'file')
+%         t=xmltree(xmlfile);
+%         sparam=convert(t);
+%     end
+%     if isfield(sparam,'Civ1Bin')
+%         civ1Bin=sparam.Civ1Bin;
+%         if ~exist(civ1Bin,'file')
+%             civ1Bin=fullfile(path_UVMAT,civ1Bin);
+%         end
+%     end
+%     if isfield(sparam,'Civ2Bin')
+%         civ2Bin=sparam.Civ2Bin;
+%         if ~exist(civ2_exe,'file')%the binary is defined in /bin, default setting
+%             civ2_exe=fullfile(path_UVMAT,civ2_exe);
+%         end
+%     end
+%     if isfield(sparam,'Patch_exe')
+%         patch_exe=sparam.Patch_exe;
+%         if ~exist(patch_exe,'file')%the binary is defined in /bin, default setting
+%             patch_exe=fullfile(path_UVMAT,patch_exe);
+%         end
+%     end
+%     if isfield(sparam,'Stinterp_exe')
+%         stinterp_exe=sparam.Stinterp_exe;
+%     end
+%     if isfield(sparam,'SGE')
+%         sge=str2double(sparam.SGE);
+%     end 
+%     if ~isunix % for windows system, check whether the Matlab working dir is a UBC name
+%         dircur=pwd;
+%         if ~isequal(dircur([2 3]),':\')
+%             msgbox_uvmat('ERROR','move to a Matlab current working directory with a Windows name, e.g. m:/...')
+%             return;
+%         end
+%     end
+% end
+% 
+% %initialize the waitbars
+% set(handles.waitbar_1,'Position',[0.946 0.877 0.03 0.001])
+% set(handles.waitbar_patch1,'Position',[0.946 0.626 0.03 0.001])
+% set(handles.waitbar_civ2,'Position',[0.946 0.406 0.03 0.001])
+% set(handles.waitbar_patch2,'Position',[0.946 0.187 0.03 0.001])
+% set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
+% set(handles.RUN, 'Enable','Off')
+% drawnow
+% 
+% % get the list of file names and check the files
+% display('checking the files...')
+% [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
+%        set_civ_filenames(handles,compare,box_test);
+% nbfield=numel(num1_civ1);
+% nbslice=size(num_a_civ1);
+% 
+% if isempty(filecell)
+%    set(handles.RUN, 'Enable','On')
+%     set(handles.RUN,'BackgroundColor',[1 0 0])
+%     set(handles.BATCH, 'Enable','On')
+%     set(handles.BATCH,'BackgroundColor',[1 0 0])
+%    return
+% end
+% display('files OK, processing...')   
+% nbfield=size(num1_civ1,2);
+% nbslice=size(num1_civ1,1);
+% 
+% %RUN CIV1
+% if box_test(1)==1
+%       RUN_CIV1(handles,filecell.ima1.civ1,filecell.ima2.civ1,filecell.nc.civ1,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,nom_type_nc)
+%       if compare==3
+%             RUN_CIV1(handles,filecell.imaA1.civ1,filecell.imaA2.civ1,filecell.ncA.civ1,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,nom_type_nc)
+%      end
+% end
+% 
+% %RUN FIX1
+% if box_test(2)==1 
+%     filebase=get(handles.displ_filebase,'String');
+%     %names of the civ1 fields
+%     field1.vel_type='civ1';
+%     field1.nb='nb_vectors';
+% %     field1.X='vec_X';
+% %     field1.Y='vec_Y';
+% %     field1.U='vec_U';
+% %     field1.V='vec_V';
+%     field1.fixflag='vec_FixFlag';
+%     flagindex(1)=get(handles.vec_Fmin2, 'Value');
+%     flagindex(2)=get(handles.vec_F3, 'Value');
+%     flagindex(3)=get(handles.vec_F2, 'Value');
+%     thresh_vecC=str2double(get(handles.thresh_vecC,'String'));%threshold on image correlation vec_C
+%     thresh_vel=str2double(get(handles.thresh_vel,'String'));%threshold on velocity modulus
+%     inf_sup=get(handles.inf_sup1,'Value');
+%     menu=get(handles.field_ref1,'String');
+%     index=get(handles.field_ref1,'Value');
+%     if isempty(menu)
+%         fieldchoice='';
+%     else
+%         fieldchoice=menu{index};
+%     end   
+%     h = waitbar(0,'removing velocity vectors, fix1');% display a wait bar 
+%     test_mask=get(handles.get_mask_fix1,'Value');    
+%     if test_mask
+%         maskdispl=get(handles.mask_fix1,'String');
+%         if exist(maskdispl,'file')
+%             test_mask=2;
+%             maskname=maskdispl;
+%         else
+%             maskbase=[get(handles.displ_filebase,'String') '_' maskdispl]; % mask root name
+%         end
+%     end
+%     for ifile=1:nbfield
+%         waitbar(ifile/nbfield); %update the waitbar
+%         for j=1:nbslice
+%             if test_mask==0
+%                 maskname='noFile use default';
+%                 maskflag=0;
+%             elseif test_mask==1
+%                 nbslice_mask=str2double(maskdispl(1:end-4)); % 
+%                 num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
+%                 maskname=name_generator(maskbase,num1_mask,1,'.png','_i');% mask corresponding to the first image of the pair
+%                 maskflag= exist(maskname,'file')==2;
+%                 if ~maskflag; 
+%                     maskname='noFile use default';
+%                 end              
+%             end
+%             if ~isempty(file_ref_fix1)
+%                 file_ref=file_ref_fix1{ifile,j};
+%             else
+%                 file_ref='';
+%             end
+%             error=RUN_FIX(filecell.nc.civ1{ifile,j},field1,flagindex,1,thresh_vecC,maskflag,maskname,...
+%                                     thresh_vel,inf_sup,file_ref,fieldchoice);
+% 
+%             if compare==3 &&(isequal(mode,'pair j1-j2') || isequal(mode,'series(Dj)') || isequal(mode,'series(Di)'))
+%                  if test_mask==0  
+%                       maskname='noFile use default';
+%                       maskflag=0;
+%                  else
+%                      maskbase=[get(handles.displ_filebase2,'String') '_' maskdispl]; % mask root name
+%                      nbslice_mask=str2num(maskdispl(1:end-4)); % 
+%                      num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;               
+%                      maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
+%                      maskflag= exist(maskname,'file')==2;
+%                      if ~maskflag; 
+%                         maskname='noFile use default';
+%                      end
+%                  end
+%                  error=RUN_FIX(filecell.ncA.civ1{ifile,j},field1,flagindex,1,thresh_vecC,maskflag,maskname,...
+%                                     thresh_vel,inf_sup,file_ref,fieldchoice);
+%                  if ~isempty(error)
+%                     msgbox_uvmat('ERROR',error)
+%                     return
+%                  end             
+%             end
+%         end
+%     end
+%     close(h)
+% end
+% 
+% % RUN PATCH1
+% if box_test(3)==1
+%     rho_patch1=str2num(get(handles.rho_patch1,'String'));
+%     if isempty(rho_patch1)
+%         rho_patch1='1000';
+%         set(handles.rho_patch1,'String','1')
+%     else
+%         rho_patch1=num2str(1000*rho_patch1);
+%     end
+%     nx_patch1=get(handles.nx_patch1,'String');
+%     if isequal(str2num(nx_patch1),[])
+%          nx_patch1='50' ;%default
+%          set(handles.nx_patch1,'String','50');
+%     end
+%     ny_patch1=get(handles.ny_patch1,'String');
+%     if isequal(str2num(ny_patch1),[])
+%          ny_patch1='50' ;%default
+%          set(handles.ny_patch1,'String','50');
+%     end
+%     subdomain_patch1=get(handles.subdomain_patch1,'String');
+%     thresh_patch1=get(handles.thresh_patch1,'String');
+%     test_interp=get(handles.test_interp,'Value'); 
+%     icount=0;
+%     for ifile=1:nbfield
+%         for j=1:nbslice
+%             icount=icount+1;
+%             barlength=0.188*icount/(nbfield*nbslice);
+%             set(handles.waitbar_patch1,'Position',[0.946 0.627-barlength 0.03 barlength])
+%             drawnow
+%             if  isequal(get(handles.test_stereo1,'Value'),0)
+%                 cmd=RUN_PATCH(filecell.nc.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp);
+%                 s=-1;
+%                 if sge
+%                     [s,w]=unix(['qrsh -q -fast.q ' cmd]);
+%                 end
+%                 if s~=0
+%                     display(['!' cmd])
+%                     eval(['!' cmd]);                  
+%                 end
+% 
+%                 %stereo case:
+%             elseif  isequal(get(handles.test_stereo1,'Value'),1)
+%                 if exist('stinterp_exe','var')%Prog Gauthier
+%                     cmd=RUN_STINTERP(stinterp_exe,filecell.ncA.civ1{ifile,j},filecell.nc.civ1{ifile,j},filecell.st{ifile,j},...
+%                           nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,[filebase_A '.xml'],[filebase_B '.xml']);
+%                     display(['!' cmd])
+%                     eval(['!' cmd]);       
+%                 else
+%                     RUN_STLIN(filecell.ncA.civ1{ifile,j},filecell.nc.civ1{ifile,j},'civ1',filecell.st{ifile,j},...
+%                         str2num(nx_patch1),str2num(ny_patch1),str2num(thresh_patch1),[filebase_A '.xml'],[filebase_B '.xml']);
+%                 end
+%             end
+%             if compare==3 && isequal(get(handles.test_stereo1,'Value'),0)
+%                 cmd=RUN_PATCH(filecell.ncA.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp);
+%                 s=-1;
+%                 if sge
+%                     [s,w]=unix(['qrsh -q -fast.q ' cmd]);
+%                 end
+%                 if s~=0
+%                    display(['!' cmd])
+%                    eval(['!' cmd]);
+%                 end
+%             end
+%         end
+%     end
+% end
+% 
+% % CIV2
+% if box_test(4)==1 
+%     RUN_CIV2(handles,filecell.ima1.civ2,filecell.ima2.civ2,filecell.nc.civ1,filecell.nc.civ2,num1_civ2,num2_civ2,...
+%         num_a_civ2,num_b_civ2,nom_type_nc)
+% end
+% 
+% % FIX2
+% if box_test(5)==1 
+%     %names of the civ2 fields
+%     field2.vel_type='civ2';
+%     field2.nb='nb_vectors2';
+%     field2.X='vec2_X';
+%     field2.Y='vec2_Y';
+%     field2.U='vec2_U';
+%     field2.V='vec2_V';
+%     field2.fixflag='vec2_FixFlag';
+%     flagindex(1)=get(handles.vec_Fmin2_2, 'Value');
+%     flagindex(2)=get(handles.vec_F3_2, 'Value');
+%     flagindex(3)=get(handles.vec_F4, 'Value');
+%     thresh_vec2C=str2num(get(handles.thresh_vec2C,'String'));%threshold on image correlation vec_C
+%     thresh_vel2=str2num(get(handles.thresh_vel2,'String'));%threshold on velocity modulus
+%     inf_sup=get(handles.inf_sup2,'Value');
+%     menu=get(handles.field_ref2,'String');
+%     index=get(handles.field_ref2,'Value');
+%     if isempty(menu)
+%         fieldchoice='';
+%     else
+%         fieldchoice=menu{index};
+%     end   
+%     h = waitbar(0,['removing velocity vectors, fix2']);% display a wait bar
+%     test_mask=get(handles.get_mask_fix2,'Value');
+%     if test_mask
+%         maskdispl=get(handles.mask_fix2,'String');
+%         if exist(maskdispl,'file')
+%             test_mask=2;
+%             maskname=maskdispl;
+%         else
+%             maskbase=[get(handles.displ_filebase,'String') '_' maskdispl]; % mask root name
+%         end
+%     end
+%     for ifile=1:nbfield
+%         waitbar(ifile/nbfield); %update the waitbar
+%         for j=1:nbslice       
+%            if test_mask==0 
+%                 maskname='noFile use default';
+%                 maskflag=0;
+%            elseif test_mask==1
+%                 nbslice_mask=str2num(maskdispl(1:end-4)); % 
+%                 num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
+%                 maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
+%                 maskflag= exist(maskname,'file')==2;
+%                 if ~maskflag; 
+%                       maskname='noFile use default';
+%                 end
+%             end
+%             if ~isempty(file_ref_fix2)
+%                 file_ref=file_ref_fix2{ifile,j};
+%             else
+%                 file_ref='';
+%             end
+%             error=RUN_FIX(filecell.nc.civ2{ifile,j},field2,flagindex,2,thresh_vec2C,maskflag,maskname,...
+%                                     thresh_vel2,inf_sup,file_ref,fieldchoice); 
+%             if ~isempty(error)
+%                 msgbox_uvmat('ERROR',error)
+%                 return
+%             end  
+%             if compare==3
+%                  if test_mask==0  
+%                       maskname='noFile use default';
+%                       maskflag=0;
+%                  else
+%                       maskbase=[get(handles.displ_filebase2,'String') '_' maskdispl]; % mask root name
+%                       nbslice_mask=str2num(maskdispl(1:end-4)); % 
+%                       num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
+%                       maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
+%                       maskflag= exist(maskname,'file')==2;
+%                       if ~maskflag; 
+%                          maskname='noFile use default';
+%                       end
+%                  end
+%                  error=RUN_FIX(filecell.ncA.civ2{ifile,j},field2,flagindex,1,thresh_vec2C,maskflag,maskname,...
+%                                     thresh_vel2,inf_sup,file_ref,fieldchoice);
+%                  if ~isempty(error)
+%                     msgbox_uvmat('ERROR',error)
+%                     return
+%                  end  
+%             end
+%         end
+%     end
+%     close(h)
+% end
+% 
+% %PATCH 2
+% if box_test(6)==1
+%     rho_patch2=str2num(get(handles.rho_patch2,'String'));
+%     if isempty(rho_patch2)
+%         rho_patch2='1000';
+%         set(handles.rho_patch2,'String','1')
+%     else
+%         rho_patch2=num2str(1000*rho_patch2);
+%     end
+%     nx_patch2=get(handles.nx_patch2,'String');
+%     ny_patch2=get(handles.ny_patch2,'String');
+%     thresh_patch2=get(handles.thresh_patch2,'String');
+%     if isequal(str2num(nx_patch2),[])
+%          nx_patch2='50' ;%default
+%          set(handles.nx_patch2,'String','50');
+%     end
+%     if isequal(str2num(ny_patch2),[])
+%          ny_patch2='50' ;%default
+%          set(handles.ny_patch2,'String','50');
+%     end
+%     subdomain_patch2=get(handles.subdomain_patch2,'String');
+%     icount=0;
+%     for ifile=1:nbfield
+%         for j=1:nbslice
+%             icount=icount+1;
+%             barlength=0.188*icount/(nbfield*nbslice);
+%             set(handles.waitbar_patch2,'Position',[0.946 0.188-barlength 0.03 barlength])
+%             drawnow
+%             if compare~=3 | isequal(get(handles.test_stereo2,'Value'),0)
+%                 cmd=RUN_PATCH(filecell.nc.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,1,0);
+%                 s=-1;
+%                 if sge
+%                     [s,w]=unix(['qrsh -q -fast.q ' cmd]);
+%                 end
+%                 if s~=0
+%                     display(['!' cmd])
+%                     eval(['!' cmd]);
+%                 end
+%             elseif compare==3 &&  isequal(get(handles.test_stereo2,'Value'),1)
+%                if exist('stinterp_exe','var')%Prog Gauthier  
+%                    cmd=RUN_STINTERP(stinterp_exe,filecell.ncA.civ2{ifile,j},filecell.nc.civ2{ifile,j},filecell.st{ifile,j},...
+%                    nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,thresh_patch2,[filebase_A '.xml'],[filebase_B '.xml']);
+%                    display(['!' cmd])
+%                    eval(['!' cmd])
+%                else
+%                    RUN_STLIN(filecell.ncA.civ2{ifile,j},filecell.nc.civ2{ifile,j},'civ2',filecell.st{ifile,j},...
+%                    str2num(nx_patch2),str2num(ny_patch2),str2num(thresh_patch2),[filebase_A '.xml'],[filebase_B '.xml'])
+%                end
+%             end    
+%             if compare==3 && isequal(get(handles.test_stereo2,'Value'),0)
+%                 cmd=RUN_PATCH(filecell.ncA.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,1,0);
+%                 s=-1;
+%                 if sge
+%                     [s,w]=unix(['qrsh -q -fast.q ' cmd]);
+%                 end
+%                 if s~=0
+%                     display(['!' cmd])
+%                     eval(['!' cmd]);
+%                 end
+%             end
+%         end
+%     end
+% end
+% 
+% set(handles.RUN, 'Enable','On')
+% set(handles.RUN,'BackgroundColor',[1 0 0])
+% 
+% %save the current interface setting as figure namefig, append .0 to the name if it already exists
+% if isfield(filecell,'st')
+%     fileresu=filecell.st{1,1};
+% elseif isfield(filecell,'nc')
+%     if isfield(filecell.nc,'civ2')
+%         fileresu=filecell.nc.civ2{1,1};
+%     else
+%         fileresu=filecell.nc.civ1{1,1};
+%     end
+% end
+% [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileresu);
+% namedoc=fullfile(RootPath,subdir,RootFile);
+% detect=1; 
+% while detect==1
+%     namefigfull=[namedoc '.fig'];
+%     hh=dir(namefigfull);
+%     if ~isempty(hh)
+%         detect=1;
+%         namedoc=[namedoc '.0'];
+%     else
+%         detect=0;
+%     end
+% end
+% saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
+
 function RUN_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-global civ1_exe civ2_exe patch_exe patch_new_exe sge
+% global civ1_exe civ2_exe patch_exe patch_new_exe sge
 
-compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displacement (=2) or stereo PIV (=3)
-%check the list of operations:
-operations={'CIV1','FIX1','PATCH1','CIV2','FIX2','PATCH2'};
-run_flag=1;
-box_test(1)=get(handles.CIV1,'Value');
-box_test(2)=get(handles.FIX1,'Value');
-box_test(3)=get(handles.PATCH1,'Value');
-box_test(4)=get(handles.CIV2,'Value');
-box_test(5)=get(handles.FIX2,'Value');
-box_test(6)=get(handles.PATCH2,'Value');
-index=find(box_test==1);
-if isempty(index)
-    msgbox_uvmat('ERROR','no selected operation')
-    return
-end
-index_first=min(index);
-index_last=max(index);
-box_used=box_test([index_first : index_last]);
-[box_missing,ind_missing]=min(box_used);
-if isequal(box_missing,0)
-    msgbox_uvmat('ERROR',['missing' cell2mat(operations(ind_missing))]);
-    return
-end
+batch=0;
+launch_jobs(hObject, eventdata, handles,batch);
 
-%root name
-filebase=get(handles.displ_filebase,'String');
-if isempty(filebase)||isequal(filebase,'')
-    msgbox_uvmat('ERROR','no input files')
-    return
-end
-%check mask if selecetd
-if isequal(get(handles.get_mask_civ1,'Value'),1)
-    maskname=get(handles.mask_civ1,'String');
-    if ~exist(maskname,'file')
-        get_mask_civ1_Callback(hObject, eventdata, handles);
-    end
-end
-if isequal(get(handles.get_mask_fix1,'Value'),1)
-    maskname=get(handles.mask_fix1,'String');
-    if ~exist(maskname,'file')
-     get_mask_fix1_Callback(hObject, eventdata, handles);
-    end
-end
-if isequal(get(handles.get_mask_civ2,'Value'),1)
-    maskname=get(handles.mask_civ2,'String');
-    if ~exist(maskname,'file')
-     get_mask_civ2_Callback(hObject, eventdata, handles);
-    end
-end
-if isequal(get(handles.get_mask_fix2,'Value'),1)
-    maskname=get(handles.mask_fix2,'String');
-    if ~exist(maskname,'file')
-     get_mask_fix2_Callback(hObject, eventdata, handles);
-    end
-end
-
-%read names of the .exe file 
-if box_test(1)==1 || box_test(3)==1 || box_test(4)==1 || box_test(6)==1 
-    path_uvmat=which('uvmat');% check the path detected for source file uvmat
-    path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-    %fid = fopen(fullfile(path_UVMAT,'PARAM_LINUX.txt'),'r');%open the file with civ binary names
-    xmlfile=fullfile(path_UVMAT,'PARAM.xml');
-    if exist(xmlfile,'file')
-        t=xmltree(xmlfile);
-        sparam=convert(t);
-    end
-    if isfield(sparam,'Civ1_exe')
-        civ1_exe=sparam.Civ1_exe;
-        if ~exist(civ1_exe,'file')
-            civ1_exe=fullfile(path_UVMAT,civ1_exe);
-        end
-    end
-    if isfield(sparam,'Civ2_exe')
-        civ2_exe=sparam.Civ2_exe;
-        if ~exist(civ2_exe,'file')%the binary is defined in /bin, default setting
-            civ2_exe=fullfile(path_UVMAT,civ2_exe);
-        end
-    end
-    if isfield(sparam,'Patch_exe')
-        patch_exe=sparam.Patch_exe;
-        if ~exist(patch_exe,'file')%the binary is defined in /bin, default setting
-            patch_exe=fullfile(path_UVMAT,patch_exe);
-        end
-    end
-    if isfield(sparam,'Stinterp_exe')
-        stinterp_exe=sparam.Stinterp_exe;
-    end
-    if isfield(sparam,'SGE')
-        sge=str2double(sparam.SGE);
-    end 
-    if ~isunix % for windows system, check whether the Matlab working dir is a UBC name
-        dircur=pwd;
-        if ~isequal(dircur([2 3]),':\')
-            msgbox_uvmat('ERROR','move to a Matlab current working directory with a Windows name, e.g. m:/...')
-            return;
-        end
-    end
-end
-
-%initialize the waitbars
-set(handles.waitbar_1,'Position',[0.946 0.877 0.03 0.001])
-set(handles.waitbar_patch1,'Position',[0.946 0.626 0.03 0.001])
-set(handles.waitbar_civ2,'Position',[0.946 0.406 0.03 0.001])
-set(handles.waitbar_patch2,'Position',[0.946 0.187 0.03 0.001])
-set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
-set(handles.RUN, 'Enable','Off')
-drawnow
-
-% get the list of file names and check the files
-display('checking the files...')
-[filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
-       set_civ_filenames(handles,compare,box_test);
-nbfield=numel(num1_civ1);
-nbslice=size(num_a_civ1);
-
-if isempty(filecell)
-   set(handles.RUN, 'Enable','On')
-    set(handles.RUN,'BackgroundColor',[1 0 0])
-    set(handles.BATCH, 'Enable','On')
-    set(handles.BATCH,'BackgroundColor',[1 0 0])
-   return
-end
-display('files OK, processing...')   
-nbfield=size(num1_civ1,2);
-nbslice=size(num1_civ1,1);
-
-%RUN CIV1
-if box_test(1)==1
-      RUN_CIV1(handles,filecell.ima1.civ1,filecell.ima2.civ1,filecell.nc.civ1,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,nom_type_nc)
-      if compare==3
-            RUN_CIV1(handles,filecell.imaA1.civ1,filecell.imaA2.civ1,filecell.ncA.civ1,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,nom_type_nc)
-     end
-end
-
-%RUN FIX1
-if box_test(2)==1 
-    filebase=get(handles.displ_filebase,'String');
-    %names of the civ1 fields
-    field1.vel_type='civ1';
-    field1.nb='nb_vectors';
-%     field1.X='vec_X';
-%     field1.Y='vec_Y';
-%     field1.U='vec_U';
-%     field1.V='vec_V';
-    field1.fixflag='vec_FixFlag';
-    flagindex(1)=get(handles.vec_Fmin2, 'Value');
-    flagindex(2)=get(handles.vec_F3, 'Value');
-    flagindex(3)=get(handles.vec_F2, 'Value');
-    thresh_vecC=str2double(get(handles.thresh_vecC,'String'));%threshold on image correlation vec_C
-    thresh_vel=str2double(get(handles.thresh_vel,'String'));%threshold on velocity modulus
-    inf_sup=get(handles.inf_sup1,'Value');
-    menu=get(handles.field_ref1,'String');
-    index=get(handles.field_ref1,'Value');
-    if isempty(menu)
-        fieldchoice='';
-    else
-        fieldchoice=menu{index};
-    end   
-    h = waitbar(0,'removing velocity vectors, fix1');% display a wait bar 
-    test_mask=get(handles.get_mask_fix1,'Value');    
-    if test_mask
-        maskdispl=get(handles.mask_fix1,'String');
-        if exist(maskdispl,'file')
-            test_mask=2;
-            maskname=maskdispl;
-        else
-            maskbase=[get(handles.displ_filebase,'String') '_' maskdispl]; % mask root name
-        end
-    end
-    for ifile=1:nbfield
-        waitbar(ifile/nbfield); %update the waitbar
-        for j=1:nbslice
-            if test_mask==0
-                maskname='noFile use default';
-                maskflag=0;
-            elseif test_mask==1
-                nbslice_mask=str2double(maskdispl(1:end-4)); % 
-                num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
-                maskname=name_generator(maskbase,num1_mask,1,'.png','_i');% mask corresponding to the first image of the pair
-                maskflag= exist(maskname,'file')==2;
-                if ~maskflag; 
-                    maskname='noFile use default';
-                end              
-            end
-            if ~isempty(file_ref_fix1)
-                file_ref=file_ref_fix1{ifile,j};
-            else
-                file_ref='';
-            end
-            error=RUN_FIX(filecell.nc.civ1{ifile,j},field1,flagindex,1,thresh_vecC,maskflag,maskname,...
-                                    thresh_vel,inf_sup,file_ref,fieldchoice);
-
-            if compare==3 &&(isequal(mode,'pair j1-j2') || isequal(mode,'series(Dj)') || isequal(mode,'series(Di)'))
-                 if test_mask==0  
-                      maskname='noFile use default';
-                      maskflag=0;
-                 else
-                     maskbase=[get(handles.displ_filebase2,'String') '_' maskdispl]; % mask root name
-                     nbslice_mask=str2num(maskdispl(1:end-4)); % 
-                     num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;               
-                     maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
-                     maskflag= exist(maskname,'file')==2;
-                     if ~maskflag; 
-                        maskname='noFile use default';
-                     end
-                 end
-                 error=RUN_FIX(filecell.ncA.civ1{ifile,j},field1,flagindex,1,thresh_vecC,maskflag,maskname,...
-                                    thresh_vel,inf_sup,file_ref,fieldchoice);
-                 if ~isempty(error)
-                    msgbox_uvmat('ERROR',error)
-                    return
-                 end             
-            end
-        end
-    end
-    close(h)
-end
-
-% RUN PATCH1
-if box_test(3)==1
-    rho_patch1=str2num(get(handles.rho_patch1,'String'));
-    if isempty(rho_patch1)
-        rho_patch1='1000';
-        set(handles.rho_patch1,'String','1')
-    else
-        rho_patch1=num2str(1000*rho_patch1);
-    end
-    nx_patch1=get(handles.nx_patch1,'String');
-    if isequal(str2num(nx_patch1),[])
-         nx_patch1='50' ;%default
-         set(handles.nx_patch1,'String','50');
-    end
-    ny_patch1=get(handles.ny_patch1,'String');
-    if isequal(str2num(ny_patch1),[])
-         ny_patch1='50' ;%default
-         set(handles.ny_patch1,'String','50');
-    end
-    subdomain_patch1=get(handles.subdomain_patch1,'String');
-    thresh_patch1=get(handles.thresh_patch1,'String');
-    test_interp=get(handles.test_interp,'Value'); 
-    icount=0;
-    for ifile=1:nbfield
-        for j=1:nbslice
-            icount=icount+1;
-            barlength=0.188*icount/(nbfield*nbslice);
-            set(handles.waitbar_patch1,'Position',[0.946 0.627-barlength 0.03 barlength])
-            drawnow
-            if  isequal(get(handles.test_stereo1,'Value'),0)
-                cmd=RUN_PATCH(filecell.nc.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp);
-                s=-1;
-                if sge
-                    [s,w]=unix(['qrsh -q -fast.q ' cmd]);
-                end
-                if s~=0
-                    display(['!' cmd])
-                    eval(['!' cmd]);                  
-                end
-
-                %stereo case:
-            elseif  isequal(get(handles.test_stereo1,'Value'),1)
-                if exist('stinterp_exe','var')%Prog Gauthier
-                    cmd=RUN_STINTERP(stinterp_exe,filecell.ncA.civ1{ifile,j},filecell.nc.civ1{ifile,j},filecell.st{ifile,j},...
-                          nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,[filebase_A '.xml'],[filebase_B '.xml']);
-                    display(['!' cmd])
-                    eval(['!' cmd]);       
-                else
-                    RUN_STLIN(filecell.ncA.civ1{ifile,j},filecell.nc.civ1{ifile,j},'civ1',filecell.st{ifile,j},...
-                        str2num(nx_patch1),str2num(ny_patch1),str2num(thresh_patch1),[filebase_A '.xml'],[filebase_B '.xml']);
-                end
-            end
-            if compare==3 && isequal(get(handles.test_stereo1,'Value'),0)
-                cmd=RUN_PATCH(filecell.ncA.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp);
-                s=-1;
-                if sge
-                    [s,w]=unix(['qrsh -q -fast.q ' cmd]);
-                end
-                if s~=0
-                   display(['!' cmd])
-                   eval(['!' cmd]);
-                end
-            end
-        end
-    end
-end
-
-% CIV2
-if box_test(4)==1 
-    RUN_CIV2(handles,filecell.ima1.civ2,filecell.ima2.civ2,filecell.nc.civ1,filecell.nc.civ2,num1_civ2,num2_civ2,...
-        num_a_civ2,num_b_civ2,nom_type_nc)
-end
-
-% FIX2
-if box_test(5)==1 
-    %names of the civ2 fields
-    field2.vel_type='civ2';
-    field2.nb='nb_vectors2';
-    field2.X='vec2_X';
-    field2.Y='vec2_Y';
-    field2.U='vec2_U';
-    field2.V='vec2_V';
-    field2.fixflag='vec2_FixFlag';
-    flagindex(1)=get(handles.vec_Fmin2_2, 'Value');
-    flagindex(2)=get(handles.vec_F3_2, 'Value');
-    flagindex(3)=get(handles.vec_F4, 'Value');
-    thresh_vec2C=str2num(get(handles.thresh_vec2C,'String'));%threshold on image correlation vec_C
-    thresh_vel2=str2num(get(handles.thresh_vel2,'String'));%threshold on velocity modulus
-    inf_sup=get(handles.inf_sup2,'Value');
-    menu=get(handles.field_ref2,'String');
-    index=get(handles.field_ref2,'Value');
-    if isempty(menu)
-        fieldchoice='';
-    else
-        fieldchoice=menu{index};
-    end   
-    h = waitbar(0,['removing velocity vectors, fix2']);% display a wait bar
-    test_mask=get(handles.get_mask_fix2,'Value');
-    if test_mask
-        maskdispl=get(handles.mask_fix2,'String');
-        if exist(maskdispl,'file')
-            test_mask=2;
-            maskname=maskdispl;
-        else
-            maskbase=[get(handles.displ_filebase,'String') '_' maskdispl]; % mask root name
-        end
-    end
-    for ifile=1:nbfield
-        waitbar(ifile/nbfield); %update the waitbar
-        for j=1:nbslice       
-           if test_mask==0 
-                maskname='noFile use default';
-                maskflag=0;
-           elseif test_mask==1
-                nbslice_mask=str2num(maskdispl(1:end-4)); % 
-                num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
-                maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
-                maskflag= exist(maskname,'file')==2;
-                if ~maskflag; 
-                      maskname='noFile use default';
-                end
-            end
-            if ~isempty(file_ref_fix2)
-                file_ref=file_ref_fix2{ifile,j};
-            else
-                file_ref='';
-            end
-            error=RUN_FIX(filecell.nc.civ2{ifile,j},field2,flagindex,2,thresh_vec2C,maskflag,maskname,...
-                                    thresh_vel2,inf_sup,file_ref,fieldchoice); 
-            if ~isempty(error)
-                msgbox_uvmat('ERROR',error)
-                return
-            end  
-            if compare==3
-                 if test_mask==0  
-                      maskname='noFile use default';
-                      maskflag=0;
-                 else
-                      maskbase=[get(handles.displ_filebase2,'String') '_' maskdispl]; % mask root name
-                      nbslice_mask=str2num(maskdispl(1:end-4)); % 
-                      num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
-                      maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
-                      maskflag= exist(maskname,'file')==2;
-                      if ~maskflag; 
-                         maskname='noFile use default';
-                      end
-                 end
-                 error=RUN_FIX(filecell.ncA.civ2{ifile,j},field2,flagindex,1,thresh_vec2C,maskflag,maskname,...
-                                    thresh_vel2,inf_sup,file_ref,fieldchoice);
-                 if ~isempty(error)
-                    msgbox_uvmat('ERROR',error)
-                    return
-                 end  
-            end
-        end
-    end
-    close(h)
-end
-
-%PATCH 2
-if box_test(6)==1
-    rho_patch2=str2num(get(handles.rho_patch2,'String'));
-    if isempty(rho_patch2)
-        rho_patch2='1000';
-        set(handles.rho_patch2,'String','1')
-    else
-        rho_patch2=num2str(1000*rho_patch2);
-    end
-    nx_patch2=get(handles.nx_patch2,'String');
-    ny_patch2=get(handles.ny_patch2,'String');
-    thresh_patch2=get(handles.thresh_patch2,'String');
-    if isequal(str2num(nx_patch2),[])
-         nx_patch2='50' ;%default
-         set(handles.nx_patch2,'String','50');
-    end
-    if isequal(str2num(ny_patch2),[])
-         ny_patch2='50' ;%default
-         set(handles.ny_patch2,'String','50');
-    end
-    subdomain_patch2=get(handles.subdomain_patch2,'String');
-    icount=0;
-    for ifile=1:nbfield
-        for j=1:nbslice
-            icount=icount+1;
-            barlength=0.188*icount/(nbfield*nbslice);
-            set(handles.waitbar_patch2,'Position',[0.946 0.188-barlength 0.03 barlength])
-            drawnow
-            if compare~=3 | isequal(get(handles.test_stereo2,'Value'),0)
-                cmd=RUN_PATCH(filecell.nc.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,1,0);
-                s=-1;
-                if sge
-                    [s,w]=unix(['qrsh -q -fast.q ' cmd]);
-                end
-                if s~=0
-                    display(['!' cmd])
-                    eval(['!' cmd]);
-                end
-            elseif compare==3 &&  isequal(get(handles.test_stereo2,'Value'),1)
-               if exist('stinterp_exe','var')%Prog Gauthier  
-                   cmd=RUN_STINTERP(stinterp_exe,filecell.ncA.civ2{ifile,j},filecell.nc.civ2{ifile,j},filecell.st{ifile,j},...
-                   nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,thresh_patch2,[filebase_A '.xml'],[filebase_B '.xml']);
-                   display(['!' cmd])
-                   eval(['!' cmd])
-               else
-                   RUN_STLIN(filecell.ncA.civ2{ifile,j},filecell.nc.civ2{ifile,j},'civ2',filecell.st{ifile,j},...
-                   str2num(nx_patch2),str2num(ny_patch2),str2num(thresh_patch2),[filebase_A '.xml'],[filebase_B '.xml'])
-               end
-            end    
-            if compare==3 && isequal(get(handles.test_stereo2,'Value'),0)
-                cmd=RUN_PATCH(filecell.ncA.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,1,0);
-                s=-1;
-                if sge
-                    [s,w]=unix(['qrsh -q -fast.q ' cmd]);
-                end
-                if s~=0
-                    display(['!' cmd])
-                    eval(['!' cmd]);
-                end
-            end
-        end
-    end
-end
-
-set(handles.RUN, 'Enable','On')
-set(handles.RUN,'BackgroundColor',[1 0 0])
-
-%save the current interface setting as figure namefig, append .0 to the name if it already exists
-if isfield(filecell,'st')
-    fileresu=filecell.st{1,1};
-elseif isfield(filecell,'nc')
-    if isfield(filecell.nc,'civ2')
-        fileresu=filecell.nc.civ2{1,1};
-    else
-        fileresu=filecell.nc.civ1{1,1};
-    end
-end
-[RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileresu);
-namedoc=fullfile(RootPath,subdir,RootFile);
-detect=1; 
-while detect==1
-    namefigfull=[namedoc '.fig'];
-    hh=dir(namefigfull);
-    if ~isempty(hh)
-        detect=1;
-        namedoc=[namedoc '.0'];
-    else
-        detect=0;
-    end
-end
-saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in BATCH: remote processing
 function BATCH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-global civ1_exe civ2_exe patch_exe patch_new_exe fix_exe todo_path sge Civ_exe
+%global civ1_exe civ2_exe patch_exe patch_new_exe fix_exe todo_path sge Civ_exe % probabely to remove
+batch=1;
+launch_jobs(hObject, eventdata, handles, batch)
+
+%------------------------------------------------------------------------
+% --- Executes on button press in BATCH: remote processing
+function launch_jobs(hObject, eventdata, handles, batch)
+%-----------------------------------------------------------------------
+% global civ2Bin patchBin patch_newBin fixBin CivBin % probabely to remove
+
 compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displacement (=2) or stereo PIV (=3)
 
 %check the list of operations:
@@ -2098,7 +2114,7 @@ path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 xmlfile=fullfile(path_UVMAT,'PARAM.xml');
 if exist(xmlfile,'file')
     t=xmltree(xmlfile);
-    sparam=convert(t);
+    s=convert(t);
 end
 % else
 %     xmlfile=fullfile(path_UVMAT,'PARAM_WIN.xml');
@@ -2107,50 +2123,55 @@ end
 %         sparam=convert(t);
 %     end
 % end
-sge=0;
-if isfield(sparam,'Civ_exe')
-    Civ_exe=sparam.Civ_exe;
-end
-if isfield(sparam,'Civ1_exe')
-    civ1_exe=sparam.Civ1_exe;
-end
-if isfield(sparam,'Civ2_exe')
-    civ2_exe=sparam.Civ2_exe;
-end
-if isfield(sparam,'Patch_exe')
-    patch_exe=sparam.Patch_exe;
-end
- if isfield(sparam,'PatchNew_exe')
-    patch_new_exe=sparam.PatchNew_exe;
- end
- if isfield(sparam,'Fix_exe')
-    fix_exe=sparam.Fix_exe;
- end
- if isfield(sparam,'Todo_path')
-    todo_path=sparam.Todo_path;
- end
-if isfield(sparam,'SGE')
-    sge=str2num(sparam.SGE);
-end 
-
-%choice of batch priority
-ind_answer=2;
-if sge
-    [s,w]=unix('qstat -q civ.q|grep job_| wc -l'); %check the waiting list (command unix)
-    if isequal(s,0)
-        w(end)=[];
-        str_displ={[w ' jobs in the waiting list'];'Select a priority:'};
-        str={'urgent';'normal';'low'};
-        [ind_answer,v] = listdlg('PromptString',str_displ,...
-                'SelectionMode','single',...
-                'ListString',str,'ListSize',[200 200],'Name','job priority','InitialValue',3);
-        if isequal(v,0) % to handle Cancel button and figure close,  
-           return % a better way should be create
+% batch=0;
+if batch
+    if isfield(s,'BatchParam')
+        sparam=s.BatchParam;
+        if ~ismember(sparam.BatchMode,{'sge'})
+            msgbox_uvmat('ERROR',['batch mode ' sparam.BatchMode ' not supported by UVMAT'])
         end
     else
-        msgbox_uvmat('ERROR','batch system not available')
+        msgbox_uvmat('ERROR','no batch mode defined in PARAM.xml')
         return
     end
+else
+    if isfield(s,'RunParam')
+        sparam=s.RunParam;
+    else
+        msgbox_uvmat('ERROR','no civ binaries defined in PARAM.xml')
+        return
+    end
+end
+if isfield(sparam,'CivBin')
+    CivBin=sparam.CivBin;
+end
+if isfield(sparam,'Civ1Bin')
+    civ1Bin=sparam.Civ1Bin;
+end
+if isfield(sparam,'Civ2Bin')
+    civ2Bin=sparam.Civ2Bin;
+end
+if isfield(sparam,'PatchBin')
+    patchBin=sparam.PatchBin;
+end
+ if isfield(sparam,'PatchNewBin')
+    patch_newBin=sparam.PatchNewBin;
+ end
+ if isfield(sparam,'FixBin')
+    fixBin=sparam.FixBin;
+ end
+%  if isfield(sparam,'Todo_path')
+%     todo_path=sparam.Todo_path;
+%  end
+if batch
+    if isfield(sparam,'BatchMode')
+        batch_mode=sparam.BatchMode;
+    end
+else
+    MaxCivProcesses=50;
+   if isfield(sparam,'MaxCivProcesses') 
+        MaxCivProcesses=str2double(sparam.MaxCivProcesses);
+   end
 end
 
 %initialize the waitbars
@@ -2190,6 +2211,35 @@ end
 display('checking the files...')
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
        set_civ_filenames(handles,compare,box_test);
+
+%choice of batch priority
+ind_answer=2;
+if batch
+    [s,w]=unix('qstat -q civ.q|grep job_| wc -l'); %check the waiting list (command unix)
+    if isequal(s,0)
+        w(end)=[];
+        str_displ={[w ' jobs in the waiting list'];'Select a priority:'};
+        str={'urgent';'normal';'low'};
+        [ind_answer,v] = listdlg('PromptString',str_displ,...
+                'SelectionMode','single',...
+                'ListString',str,'ListSize',[200 200],'Name','job priority','InitialValue',3);
+        if isequal(v,0) % to handle Cancel button and figure close,  
+           return % a better way should be create
+        end
+    else
+        msgbox_uvmat('ERROR','batch system not available')
+        return
+    end
+else
+    if isunix
+        [s,w]=unix('ps faux |grep civ|wc -l');
+        w(end)=[];
+        if str2num(w)+numel(filecell)> MaxCivProcesses
+            msgbox_uvmat('ERROR',{['There are already ' w ' civ processes running locally'];'Use BATCH or submit RUN later'})
+            return
+        end
+    end
+end
  
 display('files OK, processing...')  
 nbfield=numel(num1_civ1);
@@ -2226,7 +2276,7 @@ if box_test(2)==1
 end
  
  %get patch1 parameters
- if box_test(3)==1
+if box_test(3)==1
         rho_patch1=str2num(get(handles.rho_patch1,'String'));
         if isempty(rho_patch1)
             rho_patch1='1000';
@@ -2295,31 +2345,31 @@ if box_test(6)==1
              test_interp=get(handles.test_interp,'Value');
 end
 
-if ~sge
-       
-    %OPEN THE WAIT LIST FOR BATCH PROCESSES
-    name_lock=fullfile(todo_path,'lock'); %lock file 
-    iwait=0;
-    while(exist(name_lock) & iwait<15)
-        pause(1); %wait 1 second
-        iwait=iwait+1;
-    end
-    if iwait==15
-        msgbox_uvmat('ERROR',['I''m tired to wait for the lock file, please delete it then click again on BATCH' name_lock ])
-        set(handles.BATCH, 'Enable','On')
-        set(handles.BATCH,'BackgroundColor',[1 0 0])
-        return
-    end
-    p0=fopen(name_lock,'w'); %create the file name_lock: prevents other users to interfere
-    name_todo=fullfile(todo_path,'TODO.txt');
-    p1=fopen(name_todo,'a');
-    if (p1<0)
-        msgbox_uvmat('ERROR',['error in opening ' name_todo])
-        set(handles.BATCH, 'Enable','On')
-        set(handles.BATCH,'BackgroundColor',[1 0 0])
-        return;
-    end
-end
+% if ~sge
+%        
+%     %OPEN THE WAIT LIST FOR BATCH PROCESSES
+%     name_lock=fullfile(todo_path,'lock'); %lock file 
+%     iwait=0;
+%     while(exist(name_lock) & iwait<15)
+%         pause(1); %wait 1 second
+%         iwait=iwait+1;
+%     end
+%     if iwait==15
+%         msgbox_uvmat('ERROR',['I''m tired to wait for the lock file, please delete it then click again on BATCH' name_lock ])
+%         set(handles.BATCH, 'Enable','On')
+%         set(handles.BATCH,'BackgroundColor',[1 0 0])
+%         return
+%     end
+%     p0=fopen(name_lock,'w'); %create the file name_lock: prevents other users to interfere
+%     name_todo=fullfile(todo_path,'TODO.txt');
+%     p1=fopen(name_todo,'a');
+%     if (p1<0)
+%         msgbox_uvmat('ERROR',['error in opening ' name_todo])
+%         set(handles.BATCH, 'Enable','On')
+%         set(handles.BATCH,'BackgroundColor',[1 0 0])
+%         return;
+%     end
+% end
 
 %MAIN LOOP
 % for ifile=1:nbfield
@@ -2330,7 +2380,7 @@ for ifile=1:nbfield
     for j=1:nbslice
         i_cmd=0; 
         cmd='';
-        if sge
+        if batch
            %fid=fopen([filename '.cmx'],'w')
            cmd='#!/bin/bash';
            cmd=[cmd '\n' '#$ -cwd'];
@@ -2406,7 +2456,7 @@ for ifile=1:nbfield
             %           
             i_cmd=i_cmd+1;
             if isequal(civAll,0)
-                cmd=[cmd '\n' BATCH_CIV1(filename_cmx(1:end-4),namelog,par_civ1,handles)];
+                cmd=[cmd '\n' BATCH_CIV1(filename_cmx(1:end-4),namelog,par_civ1,handles,sparam)];
             else
                  civAllCmd=[civAllCmd ' civ1 '];
                  str=BATCH_CIV1_Unified(filename_cmx([1:end-4]),namelog,par_civ1);
@@ -2435,7 +2485,7 @@ for ifile=1:nbfield
                 maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
            end
            if isequal(civAll,0)
-           cmd_FIX=[fix_exe ' -f ' filecell.nc.civ1{ifile,j} ' -fi1 ' num2str(flagindex1(1)) ...
+           cmd_FIX=[fixBin ' -f ' filecell.nc.civ1{ifile,j} ' -fi1 ' num2str(flagindex1(1)) ...
                    ' -fi2 ' num2str(flagindex1(2)) ' -fi3 ' num2str(flagindex1(3)) ...
                    ' -threshC ' num2str(thresh_vecC1) ' -threshV ' num2str(thresh_vel1) ' -maskName ' maskname];
            cmd=[cmd '\n' cmd_FIX];
@@ -2572,7 +2622,7 @@ for ifile=1:nbfield
             end
             %endTESTgrid
             i_cmd=i_cmd+1;
-            cmd_CIV2=BATCH_CIV2(filename_cmx,namelog,par_civ2);
+            cmd_CIV2=BATCH_CIV2(filename_cmx,namelog,par_civ2,sparam);
             if isequal(civAll,0)
                 if(isunix)
                     cmd=[cmd '\n' 'cp -f ' filename_cmx '2 ' filename_cmx '\n' cmd_CIV2];
@@ -2581,7 +2631,7 @@ for ifile=1:nbfield
                 end
             else
                  civAllCmd=[civAllCmd ' civ2 '];
-                 str=BATCH_CIV2_Unified(filename_cmx([1:end-4]),namelog,par_civ2);
+                 str=BATCH_CIV2_Unified(filename_cmx([1:end-4]),namelog,par_civ2,sparam);
                  fieldnames=fields(str);
                 [civAllxml,uid_civ2]=add(civAllxml,1,'element','civ2');
                 for ilist=1:length(fieldnames)
@@ -2607,7 +2657,7 @@ for ifile=1:nbfield
                 maskname =name_generator(maskbase,num1_mask,1,'.png','_i');
             end                  
            if isequal(civAll,0)
-                cmd_FIX=[fix_exe ' -f ' filecell.nc.civ2{ifile,j} ' -fi1 ' num2str(flagindex2(1)) ...
+                cmd_FIX=[fixBin ' -f ' filecell.nc.civ2{ifile,j} ' -fi1 ' num2str(flagindex2(1)) ...
                    ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
                    ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName ' maskname];
                 cmd=[cmd '\n' cmd_FIX];
@@ -2680,10 +2730,10 @@ for ifile=1:nbfield
         end
         if isequal(civAll,1)
             save(civAllxml,[filename_cmx([1:end-4]) '.xml']);
-            cmd=char({cmd;[Civ_exe ' -f ' [filename_cmx([1:end-4]) '.xml'] ' ' civAllCmd]});
+            cmd=char({cmd;[CivBin ' -f ' [filename_cmx([1:end-4]) '.xml'] ' ' civAllCmd]});
         end
       % create the .bat file:
-        if sge
+        if batch
                 [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
                 filename_bat=fullfile(Rootbat,['job_' Filebat extbat]);
         else
@@ -2694,26 +2744,38 @@ for ifile=1:nbfield
         fprintf(fid,cmd);
         fclose(fid);
         %dlmwrite(filename_bat,cmd,'');%write commands in filename_bat
-        if sge
-            pvalue=num2str((1-ind_answer)*500);
-            namelog=[filename_bat '.patch.log'];
-            ['!qsub -p ' pvalue ' -q civ.q -e ' filename_cmx(1:end-4) '.errors -o ' filename_cmx(1:end-4) '.log' ' ' filename_bat];
-            eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' filename_cmx(1:end-4) '.errors -o ' filename_cmx(1:end-4) '.log' ' ' filename_bat]);
-        else
-            if(isunix)
-              cmdtodo=['. ' filename_bat ];%removed for Mathieu tests %' && rm -f ' filename_bat] ;
-            else
-               cmdtodo=[filename_bat];%removed for Mathieu tests %' && del /F /Q ' filename_bat' ;
+        if batch
+            switch batch_mode
+                case 'sge'
+                    pvalue=num2str((1-ind_answer)*500);
+                    namelog=[filename_bat '.patch.log'];
+                    ['!qsub -p ' pvalue ' -q civ.q -e ' filename_cmx(1:end-4) '.errors -o ' filename_cmx(1:end-4) '.log' ' ' filename_bat];
+                    eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' filename_cmx(1:end-4) '.errors -o ' filename_cmx(1:end-4) '.log' ' ' filename_bat]);
             end
-            count= fprintf(p1,'%s\n', cmdtodo);
+        
+            
+
+        else
+%% to lauch the jobs locally :
+            if(isunix)
+              eval(['!. ' filename_bat ' &']);
+            else
+              eval(['!' filename_bat ' &']);
+            end
+%             if(isunix)
+%               cmdtodo=['. ' filename_bat ];%removed for Mathieu tests %' && rm -f ' filename_bat] ;
+%             else
+%                cmdtodo=[filename_bat];%removed for Mathieu tests %' && del /F /Q ' filename_bat' ;
+%             end
+%             count= fprintf(p1,'%s\n', cmdtodo);
         end
      end
 end
-if ~sge
-    fclose(p1);
-    fclose(p0);
-    delete(name_lock);
-end
+% if ~sge
+%     fclose(p1);
+%     fclose(p0);
+%     delete(name_lock);
+% end
 
 set(handles.BATCH, 'Enable','On')
 set(handles.BATCH,'BackgroundColor',[1 0 0])
@@ -3402,7 +3464,7 @@ end
 function RUN_CIV1(handles,filecell,filecell_1,filecell_nc1,num1,num2,num_a,num_b,nom_type_nc)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
-global civ1_exe sge%name of the executable for civ1 calculation
+global civ1Bin sge%name of the executable for civ1 calculation
 
 %get civ parameters
 ibx_val=str2num(get(handles.ibx,'String'));
@@ -3597,202 +3659,202 @@ fprintf(fid, ['##############   CMX file' '\n']);
 fclose(fid);
        
 		s=-1; 
-        display(['!' civ1_exe ' -f ' filename_cmx ' > ' namelog ])
-        eval(['!' civ1_exe ' -f ' filename_cmx ' > ' namelog ]);
+        display(['!' civ1Bin ' -f ' filename_cmx ' > ' namelog ])
+        eval(['!' civ1Bin ' -f ' filename_cmx ' > ' namelog ]);
 % 		if sge%dispatch computation on the cluster using interactive queue
-%           %  [s,w] = unix(['qrsh -q fast.q ' civ1_exe ' -f ' filename_cmx ' > ' namelog ' 2>&1' ]);
+%           %  [s,w] = unix(['qrsh -q fast.q ' civ1Bin ' -f ' filename_cmx ' > ' namelog ' 2>&1' ]);
 %        end     
 %         if s~=0
-%            %  ['!' civ1_exe ' -f ' filename_cmx ' > ' namelog]
-%            % eval(['!' civ1_exe ' -f ' filename_cmx ' > ' namelog]);       
+%            %  ['!' civ1Bin ' -f ' filename_cmx ' > ' namelog]
+%            % eval(['!' civ1Bin ' -f ' filename_cmx ' > ' namelog]);       
 %         end
     end
 end
 
-%------------------------------------------------------------------------
-% RUN CIV2   CIV2    CIV2   CIV2
-function RUN_CIV2(handles,filecell_2,filecell_3,filecell_nc1,filecell_nc2,num1,num2,num_a,num_b,nom_type_nc)
-%------------------------------------------------------------------------
-%filecell_2: names of first image
-%filecell_3: names of second images
-global civ2_exe sge
-
-%names of the civ2 fields
-field.vel_type='civ2';
-field.nb='nb_vectors2';
-field.X='vec2_X';
-field.Y='vec2_Y';
-field.U='vec2_U';
-field.V='vec2_V';
- 
-%get civ parameters
-ibx=get(handles.ibx_civ2,'String');
-iby=get(handles.iby_civ2,'String');
-rho=get(handles.rho_civ2,'String');
-decimal=int2str(get(handles.decimal,'Value'));
-deformation=int2str(get(handles.deformation,'Value'));
-dx=get(handles.dx_civ2,'String');
-dy=get(handles.dy_civ2,'String');
-if isequal(str2num(dx),[])
-    dx='20';%default
-end
-if isequal(str2num(dy),[])
-    dy='20';%default
-end
-    pxcmx='1';%velocity fields are expressed in pixel displacement
-    pxcmy='1';
-A=imread(cell2mat(filecell_2(1,1)));%read the first image to get the size
-sizim=size(A);
-npx=num2str(sizim(2));
-npy=num2str(sizim(1));
-time=get(handles.displ_filebase,'UserData'); %get the set of times
-filebase=get(handles.displ_filebase,'String');
-%grid
-gridname='';%default  ='noFile use default'
-gridflag='n';%default
-test_grid=get(handles.browse_gridciv2,'Value');
-nbslice_grid=[];
-if test_grid
-    gridname=get(handles.grid_civ2,'String');
-    if numel(gridname)>4 && isequal(gridname(end-3:end),'grid')
-        nbslice_grid=str2num(gridname(1:end-4)); %
-        if ~isempty(nbslice_grid) 
-            gridflag='y'; 
-        end
-    elseif exist(gridname,'file')
-        gridflag='y';
-    else
-        msgbox_uvmat('ERROR',['input grid file ' gridname ' not found'])
-        return
-    end
-end
-sizcell=size(filecell_2);
-nbfield=sizcell(1);
-nbslice=sizcell(2);
-  
-%main loop
-icount=0;
-for ifile=1:nbfield
-    for j=1:nbslice
-        icount=icount+1;
-        barlength=0.188*icount/(nbfield*nbslice);
-        set(handles.waitbar_civ2,'Position',[0.946 0.407-barlength 0.03 barlength])
-        drawnow
-        filename_ima_2=cell2mat(filecell_2(ifile,j));
-        filename_ima_2([end-3:end])=[];%remove .png extension
-        filename_ima_3=cell2mat(filecell_3(ifile,j));
-        filename_ima_3([end-3:end])=[];%remove .png extension
-        filename_cmx=cell2mat(filecell_nc2(ifile,j));%output netcdf file
-        filename_cmx([end-1:end])=[ 'cm'];%name of cmx file
-        filename_cmx=[filename_cmx 'x'];
-        namelog=[filename_cmx([1:end-3]) 'log']; 
-        if size(time,1)>=num2(ifile) &  size(time,2)>=num_b(j)
-            Dt=num2str(time(num2(ifile),num_b(j))-time(num1(ifile),num_a(j)));
-            if isequal(Dt,'0')
-                Dt='1' ;%case of 'displacement' mode
-            end
-            T0=num2str((time(num2(ifile),num_b(j))+time(num1(ifile),num_a(j)))/2);
-        else
-            Dt='1';
-            T0='0';
-        end 
-        term_a=num2stra(num_a(j),nom_type_nc);
-        term_b=num2stra(num_b(j),nom_type_nc);
-        filename_nc1=cell2mat(filecell_nc1(ifile,j));
-        filename_nc1([end-2:end])=[]; % remove '.nc'     
-        if test_grid && ~isempty(nbslice_grid)        
-            num1_grid=mod(num1(ifile)-1,nbslice_grid)+1;
-            gridname=[filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
-            if ~exist(gridname,'file')
-                msgbox_uvmat('ERROR',['missing grid file ' gridname])
-                return
-            end
-        end      
-        test_mask=get(handles.get_mask_civ2,'Value');
-        if test_mask==0  
-            maskname='noFile use default';
-            maskflag='n';
-        else
-            maskdispl=get(handles.mask_civ2,'String');
-            maskbase=[filebase '_' maskdispl]; % 
-            nbslice_mask=str2num(maskdispl(1:end-4)); % 
-            num1_mask=mod(num1(ifile)-1,nbslice_mask)+1;
-            maskname =name_generator(maskbase,num1_mask,1,'.png','_i');
-            if ~exist(maskname,'file')
-                maskflag='y'; 
-            else
-                maskname='noFile use default';
-                maskflag='n'; 
-            end
-        end
-    
-		textcmx={'##############   CMX file';...
-		['FirstImage ' filename_ima_2];...
-		['LastImage  ' filename_ima_3];...
-		'XX' ;...
-		['Mask ' maskflag];...
-		['MaskName ' maskname];...
-		['ImageSize ' npx ' ' npy];...   
-		['CorrelationBoxesSize ' ibx ' ' iby];...
-		['SearchBoxeSize ' ibx ' ' iby];...
-		['RO ' rho];...
-		['GridSpacing ' dx ' ' dy];...
-		'XX 1.0';...
-		['Dt_TO ' Dt ' ' T0];...
-		['PixCmXY ' pxcmx ' ' pxcmy];...
-		'XX 1';...
-		['ShiftXY 0 0'];...
-		['Grid ' gridflag];...
-		['GridName ' gridname];...
-		'XX 85';...
-		'XX 1.0';...
-		'XX 1.0';...
-		'Hart 1';...
-		['DecimalShift ' decimal];...
-		['Deformation ' deformation];...
-		'CorrelationMin 0';...
-		'IntensityMin 0';...
-		'SeuilImage n';...
-		'SeuilImageValues 0 4096';...
-		['ImageToUse ' term_a ' ' term_b];... % VERIFIER ?
-		['ImageUsedBefore ' filename_nc1]};
-        textout=char(textcmx);
-        dlmwrite(filename_cmx,textout,''); 
-        s=-1;  
-        display(['!' civ2_exe ' -f ' filename_cmx ' > ' namelog ])
-        eval(['!' civ2_exe ' -f ' filename_cmx ' > ' namelog ]);    
-     
-% 		if sge%dispatch computation on the cluster using interactive queue
-%             [s,w] = unix(['qrsh -q fast.q ' civ2_exe ' -f ' filename_cmx ' > ' namelog ' 2>&1']);
-%         end     
-%         if s~=0
-%             eval(['!' civ2_exe ' -f ' filename_cmx ' > ' namelog]);
-%             ['!' civ2_exe ' -f ' filename_cmx ' > ' namelog]
-%         end                      
-    end
-end
-% close(h) 
+% %------------------------------------------------------------------------
+% % RUN CIV2   CIV2    CIV2   CIV2
+% function RUN_CIV2(handles,filecell_2,filecell_3,filecell_nc1,filecell_nc2,num1,num2,num_a,num_b,nom_type_nc)
+% %------------------------------------------------------------------------
+% %filecell_2: names of first image
+% %filecell_3: names of second images
+% global civ2Bin sge
+% 
+% %names of the civ2 fields
+% field.vel_type='civ2';
+% field.nb='nb_vectors2';
+% field.X='vec2_X';
+% field.Y='vec2_Y';
+% field.U='vec2_U';
+% field.V='vec2_V';
+%  
+% %get civ parameters
+% ibx=get(handles.ibx_civ2,'String');
+% iby=get(handles.iby_civ2,'String');
+% rho=get(handles.rho_civ2,'String');
+% decimal=int2str(get(handles.decimal,'Value'));
+% deformation=int2str(get(handles.deformation,'Value'));
+% dx=get(handles.dx_civ2,'String');
+% dy=get(handles.dy_civ2,'String');
+% if isequal(str2num(dx),[])
+%     dx='20';%default
+% end
+% if isequal(str2num(dy),[])
+%     dy='20';%default
+% end
+%     pxcmx='1';%velocity fields are expressed in pixel displacement
+%     pxcmy='1';
+% A=imread(cell2mat(filecell_2(1,1)));%read the first image to get the size
+% sizim=size(A);
+% npx=num2str(sizim(2));
+% npy=num2str(sizim(1));
+% time=get(handles.displ_filebase,'UserData'); %get the set of times
+% filebase=get(handles.displ_filebase,'String');
+% %grid
+% gridname='';%default  ='noFile use default'
+% gridflag='n';%default
+% test_grid=get(handles.browse_gridciv2,'Value');
+% nbslice_grid=[];
+% if test_grid
+%     gridname=get(handles.grid_civ2,'String');
+%     if numel(gridname)>4 && isequal(gridname(end-3:end),'grid')
+%         nbslice_grid=str2num(gridname(1:end-4)); %
+%         if ~isempty(nbslice_grid) 
+%             gridflag='y'; 
+%         end
+%     elseif exist(gridname,'file')
+%         gridflag='y';
+%     else
+%         msgbox_uvmat('ERROR',['input grid file ' gridname ' not found'])
+%         return
+%     end
+% end
+% sizcell=size(filecell_2);
+% nbfield=sizcell(1);
+% nbslice=sizcell(2);
+%   
+% %main loop
+% icount=0;
+% for ifile=1:nbfield
+%     for j=1:nbslice
+%         icount=icount+1;
+%         barlength=0.188*icount/(nbfield*nbslice);
+%         set(handles.waitbar_civ2,'Position',[0.946 0.407-barlength 0.03 barlength])
+%         drawnow
+%         filename_ima_2=cell2mat(filecell_2(ifile,j));
+%         filename_ima_2([end-3:end])=[];%remove .png extension
+%         filename_ima_3=cell2mat(filecell_3(ifile,j));
+%         filename_ima_3([end-3:end])=[];%remove .png extension
+%         filename_cmx=cell2mat(filecell_nc2(ifile,j));%output netcdf file
+%         filename_cmx([end-1:end])=[ 'cm'];%name of cmx file
+%         filename_cmx=[filename_cmx 'x'];
+%         namelog=[filename_cmx([1:end-3]) 'log']; 
+%         if size(time,1)>=num2(ifile) &  size(time,2)>=num_b(j)
+%             Dt=num2str(time(num2(ifile),num_b(j))-time(num1(ifile),num_a(j)));
+%             if isequal(Dt,'0')
+%                 Dt='1' ;%case of 'displacement' mode
+%             end
+%             T0=num2str((time(num2(ifile),num_b(j))+time(num1(ifile),num_a(j)))/2);
+%         else
+%             Dt='1';
+%             T0='0';
+%         end 
+%         term_a=num2stra(num_a(j),nom_type_nc);
+%         term_b=num2stra(num_b(j),nom_type_nc);
+%         filename_nc1=cell2mat(filecell_nc1(ifile,j));
+%         filename_nc1([end-2:end])=[]; % remove '.nc'     
+%         if test_grid && ~isempty(nbslice_grid)        
+%             num1_grid=mod(num1(ifile)-1,nbslice_grid)+1;
+%             gridname=[filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
+%             if ~exist(gridname,'file')
+%                 msgbox_uvmat('ERROR',['missing grid file ' gridname])
+%                 return
+%             end
+%         end      
+%         test_mask=get(handles.get_mask_civ2,'Value');
+%         if test_mask==0  
+%             maskname='noFile use default';
+%             maskflag='n';
+%         else
+%             maskdispl=get(handles.mask_civ2,'String');
+%             maskbase=[filebase '_' maskdispl]; % 
+%             nbslice_mask=str2num(maskdispl(1:end-4)); % 
+%             num1_mask=mod(num1(ifile)-1,nbslice_mask)+1;
+%             maskname =name_generator(maskbase,num1_mask,1,'.png','_i');
+%             if ~exist(maskname,'file')
+%                 maskflag='y'; 
+%             else
+%                 maskname='noFile use default';
+%                 maskflag='n'; 
+%             end
+%         end
+%     
+% 		textcmx={'##############   CMX file';...
+% 		['FirstImage ' filename_ima_2];...
+% 		['LastImage  ' filename_ima_3];...
+% 		'XX' ;...
+% 		['Mask ' maskflag];...
+% 		['MaskName ' maskname];...
+% 		['ImageSize ' npx ' ' npy];...   
+% 		['CorrelationBoxesSize ' ibx ' ' iby];...
+% 		['SearchBoxeSize ' ibx ' ' iby];...
+% 		['RO ' rho];...
+% 		['GridSpacing ' dx ' ' dy];...
+% 		'XX 1.0';...
+% 		['Dt_TO ' Dt ' ' T0];...
+% 		['PixCmXY ' pxcmx ' ' pxcmy];...
+% 		'XX 1';...
+% 		['ShiftXY 0 0'];...
+% 		['Grid ' gridflag];...
+% 		['GridName ' gridname];...
+% 		'XX 85';...
+% 		'XX 1.0';...
+% 		'XX 1.0';...
+% 		'Hart 1';...
+% 		['DecimalShift ' decimal];...
+% 		['Deformation ' deformation];...
+% 		'CorrelationMin 0';...
+% 		'IntensityMin 0';...
+% 		'SeuilImage n';...
+% 		'SeuilImageValues 0 4096';...
+% 		['ImageToUse ' term_a ' ' term_b];... % VERIFIER ?
+% 		['ImageUsedBefore ' filename_nc1]};
+%         textout=char(textcmx);
+%         dlmwrite(filename_cmx,textout,''); 
+%         s=-1;  
+%         display(['!' civ2Bin ' -f ' filename_cmx ' > ' namelog ])
+%         eval(['!' civ2Bin ' -f ' filename_cmx ' > ' namelog ]);    
+%      
+% % 		if sge%dispatch computation on the cluster using interactive queue
+% %             [s,w] = unix(['qrsh -q fast.q ' civ2Bin ' -f ' filename_cmx ' > ' namelog ' 2>&1']);
+% %         end     
+% %         if s~=0
+% %             eval(['!' civ2Bin ' -f ' filename_cmx ' > ' namelog]);
+% %             ['!' civ2Bin ' -f ' filename_cmx ' > ' namelog]
+% %         end                      
+%     end
+% end
+% % close(h) 
 
 %------------------------------------------------------------------------
 % --- PATCH
 function cmd_PATCH=RUN_PATCH(filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,test_interp)
 %------------------------------------------------------------------------
-global patch_exe patch_new_exe
+global patchBin patch_newBin
         namelog=[filename_nc([1:end-3]) '_patch.log'];
         if test_interp==0
-            cmd_PATCH=[patch_exe ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ...
+            cmd_PATCH=[patchBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ...
             '  > ' namelog ' 2>&1']; % redirect standard output to the log file
          else %nouveau programme patch
-             cmd_PATCH=[patch_new_exe ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ...
+             cmd_PATCH=[patch_newBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ...
                 ' -max ' thresh_value ' -nopt ' subdomain_patch  '  > ' namelog ' 2>&1']; % redirect standard output to the log file
         end
 
 %------------------------------------------------------------------------
 % --- STEREO Interp
-function cmd=RUN_STINTERP(stinterp_exe,filename_A_nc,filename_B_nc,filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,xmlA,xmlB)
+function cmd=RUN_STINTERP(stinterpBin,filename_A_nc,filename_B_nc,filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,xmlA,xmlB)
 %------------------------------------------------------------------------
 namelog=[filename_nc([1:end-3]) '_stinterp.log'];
-cmd=[stinterp_exe ' -f1 ' filename_A_nc  ' -f2 ' filename_B_nc ' -f  ' filename_nc ...
+cmd=[stinterpBin ' -f1 ' filename_A_nc  ' -f2 ' filename_B_nc ' -f  ' filename_nc ...
     ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ' -c1 ' xmlA ' -c2 ' xmlB '  -xy  x -Nfy 1024 > ' namelog ' 2>&1']; % redirect standard output to the log file
 
 %------------------------------------------------------------------------
@@ -4472,7 +4534,7 @@ set(handles.field_ref1,'Visible',state)
 %------------------------------------------------------------------------
 function enable_patch1(handles)
 %------------------------------------------------------------------------
-global patch_new_exe
+global patch_newBin
 set(handles.frame_patch1,'BackgroundColor',[1 1 0])
 set(handles.rho_patch1,'Visible','on')
 set(handles.rho_text1,'Visible','on')
@@ -4484,7 +4546,7 @@ set(handles.nx_patch1,'Visible','on')
 set(handles.ny_patch1,'Visible','on')
 set(handles.nx_patch1_title,'Visible','on')
 set(handles.ny_patch1_title,'Visible','on')
-if (~isequal(patch_new_exe,[]) & ~isequal(patch_new_exe,[]))
+if (~isequal(patch_newBin,[]) & ~isequal(patch_newBin,[]))
     set(handles.test_interp,'Visible','on');
 end
 set(handles.get_gridpatch1,'Visible','on')
@@ -4776,10 +4838,9 @@ end
 
 %------------------------------------------------------------------------
 % --- CIV1  CIV1  CIV1 CIV1
-function cmd_CIV1=BATCH_CIV1(filename,namelog,par,handles)
+function cmd_CIV1=BATCH_CIV1(filename,namelog,par,handles,sparam)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
-global civ1_exe Civ_exe sge%name of the executable for civ1 calculation
 
 %changes : filename_cmx -> filename ( no extension )
 
@@ -4853,17 +4914,17 @@ fprintf(fid,['##############   CMX file' '\n' ]);
  fprintf(fid,   ['ImageUsedBefore null null' '\n' ]);
 fclose(fid);
   
-if sge  
-    cmd_CIV1=[civ1_exe ' -f ' filename '.cmx' ]; % redirect standard output to the log file
-else
-    cmd_CIV1=[civ1_exe ' -f ' filename_cmx ' > ' namelog ' 2>&1']; % redirect standard output to the log file
-end
+% if sge  
+    cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx' ]; % redirect standard output to the log file
+% else
+%     cmd_CIV1=[civ1Bin ' -f ' filename_cmx ' > ' namelog ' 2>&1']; % redirect standard output to the log file
+% end
 if(isunix)
     [Rootbat,Filebat,extbat]=fileparts(namelog);
     ncName=fullfile(Rootbat,[ Filebat '.nc']);
-    cmd_CIV1=[cmd_CIV1 '\n' 'mv ' namelog  ' ' namelog '.civ1.log' '\n' 'chmod g+w ' ncName];
+    cmd_CIV1=[cmd_CIV1 '\n' 'mv ' namelog  ' ' regexprep(namelog,'\.log','') '.civ1.log' '\n' 'chmod g+w ' ncName];
 else
-    cmd_CIV1=[cmd_CIV1 '\n' 'copy /Y ' namelog ' ' namelog '.civ1.log'];
+    cmd_CIV1=[cmd_CIV1 '\n' 'copy /Y ' namelog ' ' regexprep(namelog,'\.log','') '.civ1.log'];
 end
 
 %------------------------------------------------------------------------
@@ -4871,7 +4932,7 @@ end
 function xml_civ1_parameters=BATCH_CIV1_Unified(filename,namelog,par)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
-global civ1_exe Civ_exe%name of the executable for civ1 calculation
+global civ1Bin CivBin%name of the executable for civ1 calculation
 
     civ1.image1=par.filename_ima_a;
     civ1.image2=par.filename_ima_b;
@@ -4910,7 +4971,7 @@ global civ1_exe Civ_exe%name of the executable for civ1 calculation
 function civ2=BATCH_CIV2_Unified(filename,namelog,par)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
-global civ2_exe Civ_exe%name of the executable for civ1 calculation
+global civ2Bin CivBin%name of the executable for civ1 calculation
 
 civ2.image1=par.filename_ima_a;
 civ2.image2=par.filename_ima_b;
@@ -4959,10 +5020,10 @@ civ2.convectFlow='n';
 
 %------------------------------------------------------------------------
 % --- CIV2  CIV2  CIV2 CIV2
-function cmd_CIV2=BATCH_CIV2(filename_cmx,namelog,par)
+function cmd_CIV2=BATCH_CIV2(filename_cmx,namelog,par,sparam)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
-global civ2_exe sge%name of the executable for civ1 calculation
+% global civ2Bin sge%name of the executable for civ1 calculation
    if isequal(par.Dt,'0')
                 par.Dt='1' ;%case of 'displacement' mode
   end 
@@ -5000,11 +5061,11 @@ textout=char(textcmx);
 fid=fopen([filename_cmx '2'],'w');
 fprintf(fid,textout); 
 fclose(fid)
-if sge
-    cmd_CIV2=[civ2_exe ' -f ' filename_cmx ]; % redirect standard output to the log file
-else
-    cmd_CIV2=[civ2_exe ' -f ' filename_cmx ' > ' namelog ' 2>&1']; % redirect standard output to the log file
-end
+% if sge
+    cmd_CIV2=[sparam.Civ2Bin ' -f ' filename_cmx ]; % redirect standard output to the log file
+% else
+%     cmd_CIV2=[civ2Bin ' -f ' filename_cmx ' > ' namelog ' 2>&1']; % redirect standard output to the log file
+% end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in HELP.

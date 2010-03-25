@@ -36,9 +36,9 @@ if ~isempty(huvmat)
     end
     zoomstate=get(hhuvmat.zoom,'Value');
 end
-if isequal(MouseAction,'calib') && ~zoomstate
-    return
-end
+% if isequal(MouseAction,'calib') && ~zoomstate
+%     return
+% end
 currentfig=gcbo;
 AxeData=get(gca,'UserData');
 currentaxes=gca; %store the current axes handle
@@ -137,9 +137,9 @@ if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off
             set(hhuvmat.edit,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
             set(hhuvmat.edit,'Value',1);%
             set(hhuvmat.edit,'Enable','on');%
+            set(hhuvmat.MenuEditObject,'Enable','on');%
             set(hhuvmat.MenuEdit,'Enable','on');%
-            set(hhuvmat.MenuEdit,'Enable','on');%
-            set(hhuvmat.MenuObject,'Enable','on');%
+%             set(hhuvmat.MenuObject,'Enable','on');%
             UvData.MouseAction='edit_object'; % set the edit button to 'on'
         end
     else
@@ -260,7 +260,34 @@ if zoomstate
             end
       end
 end
-if isequal(MouseAction,'ruler')
+
+% editing calibration point
+if strcmp(MouseAction,'calib') 
+    xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
+    hh=findobj('Tag','calib_points')%look for handle of calibration points           
+    if ~isempty(hh)
+        set(hh,'UserData',[])%remove edit mode
+    end   
+    strline=[ '    |    '  '    |    '  '    |    ' num2str(xy(1,1),4) '    |    ' num2str(xy(1,2),4)];
+    h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
+    hh_geometry_calib=guidata(h_geometry_calib);
+    h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
+    Coord=get(h_ListCoord,'String');
+    val=get(h_ListCoord,'Value');
+%     if length(Coord)>=val
+%         Coord(val+1:length(Coord)+1)=Coord(val:length(Coord));% push the list forward beyond the current point
+%     end
+    Coord{val}=strline;
+    set(h_ListCoord,'String',Coord)
+    %set(h_ListCoord,'Value',val+1)
+    %geometry_calib('ListCoord_Callback',hObject,eventdata,hh_geometry_calib)
+    %data=read_geometry_calib(Coord);%transform char cell to numbers
+    %XCoord=data.Coord(:,4);
+    %YCoord=data.Coord(:,5)
+end
+
+% finalising ruler
+if strcmp(MouseAction,'ruler')
     UvData.MouseAction='none';
     UvData=rmfield(UvData,'RulerHandle');
      xy=get(currentaxes,'CurrentPoint');

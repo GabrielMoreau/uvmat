@@ -88,7 +88,7 @@ set(hObject,'KeyPressFcn',{'keyboard_callback',handles_mouse})%set keyboard acti
 set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles_mouse})%set mouse action functio
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse}) 
-% set(hObject,'CloseRequestFcn ',{'close_fcn'})
+set(hObject,'CloseRequestFcn',{@closefcn})%
 
 [PlotType,PlotParamOut,haxes]= plot_field(Field,handles.axes3)%,PlotParam,KeepLim,PosColorbar)
 %-------------------------------------------------------------------
@@ -2336,8 +2336,6 @@ PlotParam=read_plot_param(handles);
 [PlotType,PlotParamOut]= plot_field(AxeData,haxes,PlotParam,1);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
-
-
 %------------------------------------------------------
 % --- Executes on button press in Menu/Export/field in workspace.
 %------------------------------------------------------
@@ -2366,94 +2364,16 @@ colorbar
 
 
 function npx_Callback(hObject, eventdata, handles)
-% hObject    handle to npx (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of npx as text
-%        str2double(get(hObject,'String')) returns contents of npx as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function npx_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to npx (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 
 function npy_Callback(hObject, eventdata, handles)
-% hObject    handle to npy (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of npy as text
-%        str2double(get(hObject,'String')) returns contents of npy as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function npy_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to npy (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 
 
 function edit86_Callback(hObject, eventdata, handles)
-% hObject    handle to MaxA (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of MaxA as text
-%        str2double(get(hObject,'String')) returns contents of MaxA as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function MaxA_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to MaxA (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
 
 
 function edit87_Callback(hObject, eventdata, handles)
-% hObject    handle to MinA (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of MinA as text
-%        str2double(get(hObject,'String')) returns contents of MinA as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function MinA_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to MinA (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 % --- Executes on button press in auto_sclar.
@@ -2465,27 +2385,8 @@ function auto_sclar_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of auto_sclar
 
 
-
 function edit88_Callback(hObject, eventdata, handles)
-% hObject    handle to IncrA (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of IncrA as text
-%        str2double(get(hObject,'String')) returns contents of IncrA as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function IncrA_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to IncrA (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 % --- Executes on button press in AutoScal.
@@ -2499,25 +2400,6 @@ function checkbox40_Callback(hObject, eventdata, handles)
 
 
 function edit82_Callback(hObject, eventdata, handles)
-% hObject    handle to edit82 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit82 as text
-%        str2double(get(hObject,'String')) returns contents of edit82 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit82_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit82 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
 
@@ -2530,61 +2412,25 @@ function edit83_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of min_vec as a double
 
 
-% --- Executes during object creation, after setting all properties.
-function min_vec_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to min_vec (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
 % --- Executes on slider movement.
 function slider9_Callback(hObject, eventdata, handles)
-% hObject    handle to slider9 (see GCBO)
+% hObject    handle to slider2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-
-% --- Executes during object creation, after setting all properties.
-function slider9_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider9 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
 
 
 % --- Executes on slider movement.
 function slider10_Callback(hObject, eventdata, handles)
-% hObject    handle to slider10 (see GCBO)
+% hObject    handle to slider1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-
-% --- Executes during object creation, after setting all properties.
-function slider10_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider10 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of
+%        slider
 
 
 % --- Executes on button press in AutoVecColor.
@@ -2596,7 +2442,6 @@ function checkbox41_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of AutoVecColor
 
 
-
 function edit89_Callback(hObject, eventdata, handles)
 % hObject    handle to max_vec (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -2606,50 +2451,72 @@ function edit89_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of max_vec as a double
 
 
-% --- Executes during object creation, after setting all properties.
-function max_vec_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to max_vec (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
 function edit90_Callback(hObject, eventdata, handles)
-% hObject    handle to edit90 (see GCBO)
+% hObject    handle to colcode2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit90 as text
-%        str2double(get(hObject,'String')) returns contents of edit90 as a double
+% Hints: get(hObject,'String') returns contents of colcode2 as text
+%        str2double(get(hObject,'String')) returns contents of colcode2 as a double
 
 
-% --- Executes during object creation, after setting all properties.
-function edit90_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit90 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
 
 
-% --- Executes on button press in vec_col_bar.
-function pushbutton35_Callback(hObject, eventdata, handles)
-% hObject    handle to vec_col_bar (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-function close_fcn(hObject, eventdata, handles)
+function closefcn(hObject, eventdata, handles)
 huvmat=findobj(allchild(0),'Name','uvmat');
 hhuvmat=guidata(huvmat);
-set(hhuvmat.list_object_2,'Visible','off')
+list_object_2=get(hhuvmat.list_object_2,'String');
+set(hhuvmat.list_object_2,'Value',numel(list_object_2))%select the last value ('...')
+delete(hObject)
+
+
+% --- Executes during object creation, after setting all properties.
+function colcode1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to colcode1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function slider2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to slider2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function slider1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to slider1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function colcode2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to colcode2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+

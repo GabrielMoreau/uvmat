@@ -25,7 +25,11 @@ error=[]; %default
 vel_type{1}=field.vel_type;
 %check writing access
 [errorread,message]=fileattrib(filename);
-if ~isempty(message) && ~isequal(message.UserWrite,1)
+if ischar(message) 
+    msgbox_uvmat('ERROR',[filename ':' message]);
+    return
+end
+if ~isequal(message.UserWrite,1)
      msgbox_uvmat('ERROR',['no writting access to ' filename ' (RUN_FIX.m)']);
     return
 end

@@ -26,21 +26,8 @@ function mouse_motion(hObject,eventdata,handles)
 if ~exist('handles','var')
     return
 end
-% if ~isfield(handles, 'mouse_coord')
-%     'TEST'
-%     return
-% end
-% if ~ishandle(handles.mouse_coord)
-%     return
-% end
-% proj_coord=get(handles.mouse_coord,'String');
-% choice=get(handles.mouse_coord,'Value');
-% if ~isempty(proj_coord); proj_coord=proj_coord{choice};else;proj_coord=[];end;
 test_create=0;%default
 test_edit=0;%default
-% if isfield(handles,'VOLUME') % mouse_motion not applied to the uvmat figure, no object creation
-%     test_create=get(handles.create,'Value');   
-% end
 test_edit=isfield(handles,'edit') & get(handles.edit,'Value');% edit test for mouse shap: an arrow
 test_zoom=isfield(handles,'zoom')& get(handles.zoom,'Value');% edit test for mouse shap: an arrow 
 
@@ -53,12 +40,13 @@ text_displ_4='';
 haxes=[];
 AxeData=[];%default
 mouse=[];
+xy=[];%default
 
 pointershape='arrow';% default pointer is an arrow 
-
-xy_fig=get(gcbo,'CurrentPoint');% current point of the current figure (gcbo)
-hchild=get(gcbo,'Children');%handles of all objects in the current figure
 currentfig=gcbo;%store gcbo as variable currentfig
+xy_fig=get(currentfig,'CurrentPoint');% current point of the current figure (gcbo)
+hchild=get(currentfig,'Children');%handles of all objects in the current figure
+
 % loop on all the objects in the current figure (selected by the last mouse click) 
 for ichild=1:length(hchild)
     obj_pos=get(hchild(ichild),'Position');%position of the object
@@ -87,13 +75,12 @@ for ichild=1:length(hchild)
                 if ~isempty(AxeData.Mesh)
                     flag_vec=(AxeData.X<(xy(1,1)+AxeData.Mesh/3) & AxeData.X>(xy(1,1)-AxeData.Mesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
                           (AxeData.Y<(xy(1,2)+AxeData.Mesh/3) & AxeData.Y>(xy(1,2)-AxeData.Mesh/3));%f
-                    ivec=find(flag_vec);% search the selected vector index ivec
+                    ivec=find(flag_vec,1);% search the (first) selected vector index ivec
                     hhh=findobj(haxes,'Tag','vector_marker');
-                    if length(ivec)>0 
+                    if ~isempty(ivec) 
                         %ivec=ivec(1);%choice the first selected vector if several are selected
                         if ~test_create
                             pointershape='arrow'; %mouse indicates  the detection of a vector
-  
                             if isempty(hhh)
                                 set(currentfig,'CurrentAxes',haxes)
                                 rectangle('Curvature',[1 1],...
@@ -261,8 +248,9 @@ if ~isempty(huvmat) & isfield(AxeData,'CurrentObject') & ishandle(AxeData.Curren
         end
     end
 end    
+
 %%%%%%%%%%%%%
-%draw a rectangle if no object creation is selected
+%draw a zoom rectangle if no object creation is selected
 if ~isempty(haxes) & isfield(AxeData,'Drawing')& isequal(AxeData.Drawing,'zoom')& isfield(AxeData,'CurrentOrigin')...
         & isequal(get(gcf,'SelectionType'),'normal')% 
    xy_rect=AxeData.CurrentOrigin;
@@ -280,9 +268,47 @@ if ~isempty(haxes) & isfield(AxeData,'Drawing')& isequal(AxeData.Drawing,'zoom')
             end
         end
    end
-end
-if test_zoom
+% end
+% if test_zoom
     pointershape='arrow';
+end
+
+% detect calibration points if the GUI geometry_calib is opened
+h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
+if ~test_zoom && ~isempty(h_geometry_calib)
+    pointershape='crosshair';%default for geometry_calib: ready to create new points
+    hh_geometry_calib=guidata(h_geometry_calib);
+    if get(hh_geometry_calib.edit_append,'Value')  && ~isempty(xy)
+        h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
+        Coord=get(h_ListCoord,'String');
+        data=read_geometry_calib(Coord);%transform char cell to numbers
+        if size(data.Coord,2)>=5
+            XCoord=(data.Coord(:,4));
+            YCoord=(data.Coord(:,5));
+            xy=get(haxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
+            if ~isempty(xy)
+                ind_range=10;
+                index_point=find((XCoord<xy(1,1)+ind_range) & (XCoord>xy(1,1)-ind_range) & ...%flagx=1 for the vectors with x position selected by the mouse
+                              (YCoord<xy(1,2)+ind_range) & (YCoord>xy(1,2)-ind_range),1);%find the first calibration point in the neighborhood of the mouse
+                if ~isempty(index_point)
+                    pointershape='arrow';% default pointer is an arrow 
+                    set(h_ListCoord,'Value',index_point)%mrk the point on the GUI geometry_calib 
+                    hh=findobj('Tag','calib_points');%look for handle of calibration points 
+                    if ~isempty(hh) && strcmp(get(hh,'UserData'),'edit_mode')
+                        XCoord(index_point)=xy(1,1);
+                        YCoord(index_point)=xy(1,2);
+                        set(hh,'XData',XCoord)
+                        set(hh,'YData',YCoord)
+                    end
+                    hhh=findobj('Tag','calib_marker');%look for handle of point marker (circle)
+                    if ~isempty(hhh)
+                        set(hhh,'XData',XCoord(index_point))
+                        set(hhh,'YData',YCoord(index_point))
+                    end
+                end          
+            end
+        end
+    end
 end
 
 %draw ruler
@@ -290,6 +316,7 @@ if ~isempty(huvmat)
     UvData=get(huvmat,'UserData');
     if isfield(UvData,'MouseAction') && isequal(UvData.MouseAction,'ruler')
            if isfield(UvData,'RulerHandle')
+               pointershape='crosshair';
                 RulerCoord=[UvData.RulerCoord ;xy(1,1:2)];
                 set(UvData.RulerHandle,'XData',RulerCoord(:,1));
                 set(UvData.RulerHandle,'YData',RulerCoord(:,2));

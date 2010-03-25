@@ -77,10 +77,10 @@ handles.output = hObject;
 
 % Update handles structure
 guidata(hObject, handles);
-movegui(hObject,'east');% position the GUI ton the right of the screen
-if exist('handles_uvmat','var') %& isfield(data,'ParentButton')
-     set(hObject,'DeleteFcn',{@closefcn,handles_uvmat})%
-end
+%movegui(hObject,'east');% position the GUI ton the right of the screen
+% if exist('handles_uvmat','var') %& isfield(data,'ParentButton')
+      set(hObject,'DeleteFcn',{@closefcn})%
+% end
 %set the position of the interface
 if exist('pos','var')& length(pos)>2
     pos_gui=get(hObject,'Position');
@@ -99,7 +99,7 @@ if exist('inputfile','var')& ~isempty(inputfile)
         inputxml=[fullfile(Pathsub,RootFile) '.xml'];
     end   
 end
-set(handles.ListCoord,'String',{''})
+set(handles.ListCoord,'String',{'...'})
 if exist(inputxml,'file')
     loadfile(handles,inputxml)% load the point coordiantes existing in the xml file
 end
@@ -212,22 +212,32 @@ for iline=1:size(Coord,1)
     for j=1:5
         CoordCell{iline,j}=num2str(Coord(iline,j),4);
     end
-end        
+end
+CoordCell=[CoordCell;{' ',' ',' ',' ',' '}];
 Tabchar=cell2tab(CoordCell,'    |    ');%transform cells into table ready for display
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
 
-
+% 
 %------------------------------------------------------------------------
 % executed when closing: set the parent interface button to value 0
-function closefcn(gcbo,eventdata,handles_uvmat)
+function closefcn(gcbo,eventdata)
 %------------------------------------------------------------------------
 huvmat=findobj(allchild(0),'Name','uvmat');
-if exist('handles_uvmat','var')
-    set(handles_uvmat.cal,'Value',0)
-    uvmat('cal_Callback',huvmat,[],handles_uvmat);
-%     set(parent_button,'Value',0)%put unactivated buttons to green
-%     set(parent_button,'BackgroundColor',[0 1 0]);
+if ~isempty(huvmat)
+    handles=guidata(huvmat);
+    set(handles.MenuTools,'enable','on')
+    set(handles.MenuObject,'enable','on')
+    set(handles.MenuEdit,'enable','on')
+    set(handles.edit,'enable','on')
+    hobject=findobj(handles.axes3,'tag','calib_points');
+    if ~isempty(hobject)
+        delete(hobject)
+    end
+    hobject=findobj(handles.axes3,'tag','calib_marker');
+    if ~isempty(hobject)
+        delete(hobject)
+    end    
 end
 
 %------------------------------------------------------------------------
@@ -581,7 +591,7 @@ Coord{val}=strline;
 set(handles.ListCoord,'String',Coord)
 %update the plot 
 ListCoord_Callback(hObject, eventdata, handles)
-
+MenuPlot_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListCoord.
 function ListCoord_Callback(hObject, eventdata, handles)
@@ -1016,7 +1026,7 @@ end
 Tabchar=cell2tab(Coord,'    |    ');
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
-
+MenuPlot_Callback(hObject, eventdata, handles)
 
 %%%%%%%%%%%%%%%%%%%%
 function [A_out,Rangx,Rangy]=phys_Ima(A,Calib,ZIndex)
