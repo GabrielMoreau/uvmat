@@ -99,6 +99,7 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)
+
 %default output
 if ~exist('PlotParam','var'),PlotParam=[];end;
 if ~exist('KeepLim','var'),KeepLim=0;end;
@@ -150,6 +151,8 @@ if testnewfig% create a new figure and axes if the plotting axes does not exist
     set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse action function
     haxes=axes;
     set(haxes,'position',[0.13,0.2,0.775,0.73])
+else
+    hstack=findobj(allchild(0),'Type','figure');%current stack order of figures in matlab
 end
 if isfield(PlotParam,'text_display_1')& ishandle(PlotParam.text_display_1)
     PlotParam=read_plot_param(PlotParam);   
@@ -225,81 +228,10 @@ end
 
 
 set(haxes,'UserData',AxeData)
+if ~testnewfig
+set(0,'Children',hstack);%put back the initial figure stack after plot creation
 %set(haxes,'Tag','uvmat'); 
-
- 
-% %-------------------------------------------
-% function [AxeData,haxes]=plot_hist(Data,haxes,PlotParam)% TODO: chech whether this function is still used, replace by plot_profile ?
-% %------------------------------------------
-% AxeData=get(haxes,'UserData'); %defau
-% hfig=get(haxes,'parent');
-% if ~isfield(Data,'ListVarName')
-%     return
-% end
-% ColorOrder=[1 0 0;0 0.5 0;0 0 1;0 0.75 0.75;0.75 0 0.75;0.75 0.75 0;0.25 0.25 0.25];
-% set(haxes,'ColorOrder',ColorOrder)
-% if isfield(PlotParam,'NextPlot')
-%     set(haxes,'NextPlot',PlotParam.NextPlot)
-% end
-% charplot='''-''';
-% iplot=0;
-% legend_str={};
-% label_str='';
-% textmean={};
-% plotstr='plot(';
-% for ilist=1:length(Data.ListVarName)
-%     VarName=Data.ListVarName{ilist}; 
-%     eval(['[' VarName 'hist,' VarName 'val]=hist(double(Data.' VarName '),100);']);%coordinate variable set as c
-%     plotstr=[plotstr VarName 'val,' VarName 'hist,' charplot ','];
-%     eval(['nbcomponent2=size(Data.' VarName ',2);']);
-%     eval(['nbcomponent1=size(Data.' VarName ',1);']);
-%     eval(['varmean=mean(double(Data.' VarName '));']);%mean value
-%     textmean=[textmean; {[VarName 'mean= ' num2str(varmean,4)]}];
-%     if nbcomponent1==1| nbcomponent2==1
-%         legend_str=[legend_str {VarName}]; %variable with one component
-%     else
-%         for ic=1:min(nbcomponent1,nbcomponent2)
-%             legend_str=[legend_str [VarName '_' num2str(ic)]]; %variable with severals  components 
-%                                                                % labeled by their index (e.g. color component)
-%         end
-%     end
-%     label_str=[label_str ' ' VarName]; 
-% end
-% if ~isequal(plotstr,'plot(')
-%     plotstr(end)=')';
-%     eval(plotstr)
-%     hlegend=findobj(hfig,'Tag','legend');%find existing legend on the plot
-%     if ~isempty(hlegend)
-%         legend_old=get(hlegend,'String');
-%         if isequal(size(legend_old,1),size(legend_str,1))
-%              legend_str=[legend_old legend_str];
-%         end
-%     end
-%     legend(legend_str)
-%     xlabel(label_str)
-%     ylabel('nb values')
-%      grid on
-%     title_str='';
-%     if isfield(Data,'filename')
-%        [Path, title_str, ext]=fileparts(Data.filename);
-%        title_str=[title_str ext];
-%     end
-%     if isfield(Data,'Action')
-%         if ~isequal(title_str,'')
-%             title_str=[title_str ', '];
-%         end
-%         title_str=[title_str Data.Action];
-%     end
-%     htitle=title(title_str);
-%     set(htitle,'Interpreter','none')% desable tex interpreter
-%     hlist=findobj(gcf,'Style','listbox');
-%     if isempty(hlist)
-%             uicontrol('Style','popupmenu','Position',[20 20 200 20],'String',textmean);
-%     else
-%             set(hlist(1),'String',textmean)
-%     end
-% end
-% AxeData=Data;
+end
 
 
 %----------------------------------------------------------
@@ -308,6 +240,7 @@ function [AxeData,haxes]=plot_profile(data,CellVarIndex,VarType,haxes,PlotParam)
 %axes(haxes)
 hfig=get(haxes,'parent');
 AxeData=data;
+
 ColorOrder=[1 0 0;0 0.5 0;0 0 1;0 0.75 0.75;0.75 0 0.75;0.75 0.75 0;0.25 0.25 0.25];
 set(haxes,'ColorOrder',ColorOrder)
 if isfield(PlotParam,'NextPlot')
@@ -324,10 +257,11 @@ end
 legend_str={};
 
 %initiates string of the plot command
-plotstr='plot(';
+plotstr='hhh=plot(';
 textmean={};
 abscissa_name='';
 coord_x_index=[];
+test_newplot=1;
 for icell=1:length(CellVarIndex)
     testfalse=0;
     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list data.ListVarName
@@ -353,7 +287,7 @@ for icell=1:length(CellVarIndex)
     testcoordvar=0;
     charplot_0='''-''';%default
     if isfield(data,'ObjectProjMode')& isequal(data.ObjectProjMode,'projection')
-        charplot_0='''+''';
+        charplot_0='+';
     end
     xtitle='';  
     
@@ -371,11 +305,7 @@ for icell=1:length(CellVarIndex)
     if ~isempty(VarType{icell}.warnflag')
             testplot(VarType{icell}.warnflag)=0;
     end
-    if ~isempty(VarType{icell}.discrete')
-         charplot_0='''+''';
-    else
-          charplot_0='''-''';
-    end
+ 
     if isfield(data,'VarAttribute')
         VarAttribute=data.VarAttribute;
         for ivar=1:length(VarIndex) 
@@ -386,39 +316,89 @@ for icell=1:length(CellVarIndex)
              end
         end
     end
-    for ivar=1:length(VarIndex)
-        if testplot(VarIndex(ivar))
-            VarName=data.ListVarName{VarIndex(ivar)};
-            eval(['data.' VarName '=squeeze(data.' VarName ');'])
-            if isequal(VarName,'A')
-                charplot='''-''';
-            else
-                charplot=charplot_0;
+    hh=findobj(haxes,'tag','plot_line');
+    if isequal(numel(hh),numel(find(testplot(VarIndex))))%update existing curves
+        icurve=0;
+        test_newplot=0;
+        if ~isempty(VarType{icell}.discrete')
+            charplot_0='+';
+            LineStyle='none';
+        else
+            charplot_0='none';
+            LineStyle='-';
+        end
+        for ivar=1:length(VarIndex)
+            if testplot(VarIndex(ivar))
+                icurve=icurve+1;
+                VarName=data.ListVarName{VarIndex(ivar)};
+                eval(['data.' VarName '=squeeze(data.' VarName ');'])
+                set(hh(icurve),'LineStyle',LineStyle)
+                set(hh(icurve),'Marker',charplot_0)
+%                 if isequal(VarName,'A')
+%                     set(hh(icurve),'LineStyle','-');
+%                 else
+%                     set(hh(icurve),'LineStyle',charplot_0);
+%                 end
+                set(hh(icurve),'XData',coord_x{icell})
+                eval(['yy=data.' VarName ';'])
+                set(hh(icurve),'YData',yy);
+%                 eval(['nbcomponent2=size(data.' VarName ',2);']);
+%                 eval(['nbcomponent1=size(data.' VarName ',1);']);
+%                 if numel(coord_x{icell})==2
+%                     coord_x{icell}=linspace(coord_x{icell}(1),coord_x{icell}(2),nbcomponent1);
+%                 end
+%                 eval(['varmean=mean(double(data.' VarName '));']);%mean value
+%                 textmean=[textmean; {[VarName 'mean= ' num2str(varmean,4)]}];
+%                 if nbcomponent1==1| nbcomponent2==1
+%                     legend_str=[legend_str {VarName}]; %variable with one component
+%                 else  %variable with severals  components
+%                     for ic=1:min(nbcomponent1,nbcomponent2)
+%                         legend_str=[legend_str [VarName '_' num2str(ic)]]; %variable with severals  components 
+%                     end                                                   % labeled by their index (e.g. color component)
+%                 end
             end
-            plotstr=[plotstr 'coord_x{' num2str(icell) '},data.' VarName ',' charplot ','];
-            eval(['nbcomponent2=size(data.' VarName ',2);']);
-            eval(['nbcomponent1=size(data.' VarName ',1);']);
-            if numel(coord_x{icell})==2
-                coord_x{icell}=linspace(coord_x{icell}(1),coord_x{icell}(2),nbcomponent1);
-            end
-            eval(['varmean=mean(double(data.' VarName '));']);%mean value
-            textmean=[textmean; {[VarName 'mean= ' num2str(varmean,4)]}];
-            if nbcomponent1==1| nbcomponent2==1
-                legend_str=[legend_str {VarName}]; %variable with one component
-            else  %variable with severals  components
-                for ic=1:min(nbcomponent1,nbcomponent2)
-                    legend_str=[legend_str [VarName '_' num2str(ic)]]; %variable with severals  components 
-                end                                                   % labeled by their index (e.g. color component)
+        end
+    else% new plot
+        if ~isempty(VarType{icell}.discrete')
+            charplot_0='''+''';
+        else
+            charplot_0='''-''';
+        end
+        for ivar=1:length(VarIndex)
+            if testplot(VarIndex(ivar))
+                VarName=data.ListVarName{VarIndex(ivar)};
+                eval(['data.' VarName '=squeeze(data.' VarName ');'])
+%                 if isequal(VarName,'A')
+%                     charplot='''-''';
+%                 else
+%                     charplot=charplot_0;
+%                 end
+                plotstr=[plotstr 'coord_x{' num2str(icell) '},data.' VarName ',' charplot_0 ','];
+                eval(['nbcomponent2=size(data.' VarName ',2);']);
+                eval(['nbcomponent1=size(data.' VarName ',1);']);
+                if numel(coord_x{icell})==2
+                    coord_x{icell}=linspace(coord_x{icell}(1),coord_x{icell}(2),nbcomponent1);
+                end
+                eval(['varmean=mean(double(data.' VarName '));']);%mean value
+                textmean=[textmean; {[VarName 'mean= ' num2str(varmean,4)]}];
+                if nbcomponent1==1| nbcomponent2==1
+                    legend_str=[legend_str {VarName}]; %variable with one component
+                else  %variable with severals  components
+                    for ic=1:min(nbcomponent1,nbcomponent2)
+                        legend_str=[legend_str [VarName '_' num2str(ic)]]; %variable with severals  components 
+                    end                                                   % labeled by their index (e.g. color component)
+                end
             end
         end
     end
 end
-if ~isequal(plotstr,'plot(')
-    plotstr(end)=')';
-                %execute plot (instruction  plotstr)   
+if test_newplot && ~isequal(plotstr,'plot(')
+    plotstr=[plotstr '''tag'',''plot_line'')']
+                %execute plot (instruction  plotstr)  
     eval(plotstr)
+   
                 %%%%%
-    grid on
+    grid(haxes, 'on')
     hxlabel=xlabel(xtitle);
     set(hxlabel,'Interpreter','none')% desable tex interpreter
     if length(legend_str)>=1
@@ -477,7 +457,7 @@ end
 % plot_plane
 %----------------------------------------
 function [AxeData,haxes,PlotParamOut,PlotType]=plot_plane(Data,CellVarIndex,VarTypeCell,haxes,PlotParam,KeepLim,PosColorbar)
-
+grid(haxes, 'off')
 %default plotting parameters
 PlotType='plane';%default
 if ~exist('PlotParam','var')

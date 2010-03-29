@@ -21,7 +21,7 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 function varargout = civ_3D(varargin)
 
-% Last Modified by GUIDE v2.5 25-Feb-2009 23:14:16
+% Last Modified by GUIDE v2.5 26-Mar-2010 22:51:31
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -233,10 +233,7 @@ else
 end
 set(handles.first_i,'String',num2str(num_ref_i));
 set(handles.last_i,'String',num2str(num_ref_i));
-set(handles.first_j,'String',num2str(num_ref_j));
-set(handles.last_j,'String',num2str(num_ref_j));
 set(handles.ref_i,'String',num2str(num_ref_i));
-set(handles.ref_j,'String',num2str(num_ref_j));
 set(handles.browse_root,'UserData',browse);
 if ~isempty(varargin)% the interface is opened from uvmat
     displ_filebase_Callback(hObject, eventdata, handles); 
@@ -380,18 +377,6 @@ if ~isempty(str2num(field_count))
     set(handles.last_i,'String',num2str(ref_i));
     set(handles.ref_i,'String',num2str(ref_i)); 
 end
-if isempty(str2num(str_a))
-    set(handles.ref_j,'String','1');
-else
-    ref_j=str2num(str_a);
-    if ~isempty(str2num(str_b))
-        ref_j=floor((str2num(str_a)+str2num(str_b))/2);
-        browse.incr_pair(2)=str2num(str_b)-str2num(str_a); 
-    end
-    set(handles.first_j,'String',num2str(ref_j));
-    set(handles.last_j,'String',num2str(ref_j));
-    set(handles.ref_j,'String',num2str(ref_j)); 
-end;
 if isequal(ind_opening,1)
     set(handles.CIV1,'Value',1)
     enable_civ1(handles,'on')
@@ -469,21 +454,10 @@ last_i=str2num(get(handles.last_i,'String'));
 if isempty(last_i)| last_i < first_i
     last_i=first_i;  %default last_i
 end
-first_j=str2num(get(handles.first_j,'String'));
-if isempty(first_j)| first_j < 1
-    first_j=1; %default first_j
-end
-last_j=str2num(get(handles.last_j,'String'));
-if isempty(last_j)| last_j < first_j
-    last_j=first_j; %default last_j
-end
+
 incr_i=str2num(get(handles.incr_i,'String'));
 if isempty(incr_i) | incr_i < 1;
     set(handles.incr_i,'String','1') %default incr_i
-end
-incr_j=str2num(get(handles.incr_j,'String'));
-if isempty(incr_j) | incr_j < 1;
-    set(handles.incr_j,'String','1') %default incr_j
 end
 dt=[];%default
 testmode=0;%default
@@ -513,42 +487,21 @@ if ~isequal(ext,'.xml') & ~ isequal(ext,'.avi')& ~ isequal(ext,'.AVI')
 end
 %%%%%%%%   read image documentation file  %%%%%%%%%%%%%%%%%%%%%%%%%%%
     mode=''; %default
-    %read the image documentation file if found
-if  isequal(ext,'.xml')
-    set(handles.ref_i,'Visible','On')%use a reference index
-    set(handles.ref_j,'Visible','On')
-    set(handles.dt,'Visible','Off')
-    set(handles.dt_text,'String','ref. ind.')
-elseif isequal(ext,'.avi') | isequal(ext,'.AVI')
-    set(handles.ref_j,'Visible','Off')
-    set(handles.dt,'Visible','Off')
-    set(handles.dt_text,'String','ref. ind.')
-else
-    set(handles.ref_i,'Visible','Off')
-    set(handles.ref_j,'Visible','Off')
-    set(handles.dt,'Visible','On')
-    set(handles.dt_text,'String','dt(ms)=')
-end
-
 if isequal(ext,'.xml')
-    [XmlData,warntext]=imadoc2struct([filebase '.xml']);
+    [XmlData,warntext]=imadoc2struct([filebase '.xml'])
         if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')
             [PP,FF,fc,str2,str_a,str_b,ext_ima_read,nom_type_read]=name2display(XmlData.Heading.ImageName);
         end
-        if isfield(XmlData,'Camera')
-            if isfield(XmlData.Camera,'TimeUnit')
-                TimeUnit=XmlData.Camera.TimeUnit;
-            end
-            if isfield(XmlData.Camera,'ImageSize')
-               ImageSize=XmlData.Camera.ImageSize;
-               if ~isempty(ImageSize)&& ~isempty(ImageSize)
-                   xindex=findstr(ImageSize,'x');
-                   if length(xindex)>=2
-                        npx=str2num(ImageSize(1:xindex(1)-1));
-                        npy=str2num(ImageSize(xindex(1)+1:xindex(2)-1));
-                   end
-               end
-           end
+        if isfield(XmlData,'TimeUnit')
+                TimeUnit=XmlData.TimeUnit;
+        end
+        if isfield(XmlData,'Npx')&&isfield(XmlData,'Npy')
+            set(handles.npx,'String',num2str(XmlData.Npx));
+            set(handles.npy,'String',num2str(XmlData.Npy));
+        end
+        if isfield(XmlData,'Time')&&~isempty(XmlData.Time)
+            time=XmlData.Time;
+            set(handles.npz,'String',num2str(size(time,2)));
         end
         pxcmx_search=1;
         pxcmy_search=1;
@@ -640,30 +593,22 @@ if isequal(nom_type_ima,'none')% no file numbering used
    first_j=1;
   last_j=1;
 end
+UvData.XmlData=XmlData;
+
 if exist('time','var')
-    siztime=size(time);
-    nbfield=siztime(1);
-    nbfield2=siztime(2);
+    nbfield=size(time,1);
     set(handles.displ_filebase,'UserData',time); %store the set of times
-    set(handles.dt_unit,'String',['m' TimeUnit]);
     set(handles.TimeUnit,'String',TimeUnit);
     set(handles.nb_field,'String',num2str(nbfield));
-    set(handles.nb_field2,'String',num2str(nbfield2));
 end
 set(handles.CoordUnit,'String',[CoordUnit '/'])
-set(handles.pxcmx,'String',num2str(pxcmx));
-set(handles.pxcmy,'String',num2str(pxcmy));
 if isempty(pxcmx_search)
    set(handles.calcul_search,'UserData',[pxcmx pxcmy]);
 else
    set(handles.calcul_search,'UserData',[pxcmx_search pxcmy_search]);
 end
-set(handles.pxcmx,'UserData',npx);
-set(handles.pxcmy,'UserData',npy);
 set(handles.first_i,'String',num2str(first_i));
 set(handles.last_i,'String',num2str(last_i));%
-set(handles.first_j,'String',num2str(first_j));
-set(handles.last_j,'String',num2str(last_j));%
 browse.ext_ima=ext_ima;
 browse.nom_type_ima=nom_type_ima;
 set(handles.browse_root,'UserData',browse)% store the nomenclature type
@@ -829,21 +774,6 @@ elseif isequal(mode,'series(Di)') | isequal(mode,'st_series(Di)')
      set(handles.incr_i,'Visible','On')
      set(handles.nb_field,'Visible','On')
      set(handles.ref_i,'Visible','On')
-     if nbfield2 > 1
-        set(handles.jtext,'Visible','On')
-        set(handles.first_j,'Visible','On')
-        set(handles.last_j,'Visible','On')
-        set(handles.incr_j,'Visible','On')
-        set(handles.nb_field2,'Visible','On')
-        set(handles.ref_j,'Visible','On')
-     else
-        set(handles.jtext,'Visible','Off')
-        set(handles.first_j,'Visible','Off')
-        set(handles.last_j,'Visible','Off')
-        set(handles.incr_j,'Visible','Off')
-        set(handles.nb_field2,'Visible','Off')
-        set(handles.ref_j,'Visible','Off')
-    end
 elseif isequal(mode,'displacement')%the pairs have the same indices
      displ_num(1,1)=0; 
      displ_num(2,1)=0;
@@ -938,20 +868,10 @@ if isempty(num1)
     return
 end
 ref_i=str2num(get(handles.ref_i,'String'));
-if isequal(mode,'pair j1-j2')|isequal(mode,'st_pair j1-j2')
-    ref_j=0;
-else
-    ref_j=str2num(get(handles.ref_j,'String'));
-end
-if isequal(get(handles.dt_text,'String'),'dt(ms)=')%simple series(Di) with equal interval
-    ref_i=floor((first_i+last_i)/2);
-    ref_j=1;
-end
 time=get(handles.displ_filebase,'UserData');%get the set of times
 if isempty(time)
     time=[0 1];
 end 
-dt_unit=str2num(get(handles.dt,'String'));% used when there is no image documentation file
 displ_num=get(handles.list_pair_civ1,'UserData');
 
 %eliminate the first pairs inconsistent with the position 
@@ -1005,43 +925,20 @@ if get(handles.CIV1,'Value')==0 %
         end
     end
 end
-if isequal(mode,'series(Di)') | isequal(mode,'st_series(Di)')
+if isequal(mode,'series(Di)') 
     if testpair
               displ_pair{1}=['Di= ' num2str(-floor(browse.incr_pair(1)/2)) '|' num2str(ceil(browse.incr_pair(1)/2))];        
-    elseif ~isequal(get(handles.dt_text,'String'),'dt(ms)=') 
+    else 
        for ipair=1:nbpair
           if select(ipair)          
-              dt=time(ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair));%time interval dt
+              dt=time(ref_i+displ_num(4,ipair),1)-time(ref_i+displ_num(3,ipair),1);%time interval dt
               displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ' :dt= ' num2str(dt*1000)];
           else 
              displ_pair{ipair}='...'; %pair not displayed in the menu
           end
        end
-    else
-       for ipair=1:nbpair
-         if select(ipair)
-            displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ' :dt= ' num2str(dt_unit*ipair)];
-         else 
-            displ_pair{ipair}='...'; %pair not displayed in the menu
-         end
-       end
     end
-elseif isequal(mode,'series(Dj)')|isequal(mode,'st_series(Dj)')% series on the j index
-    if testpair
-         displ_pair{1}=['Dj= ' num2str(-floor(browse.incr_pair(1)/2)) '|' num2str(ceil(browse.incr_pair(1)/2))]; 
-    else
-       for ipair=1:nbpair
-          if select(ipair)
-              dt=time(ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair));%time interval dt
-              displ_pair{ipair}=['Dj= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ' :dt= ' num2str(dt*1000)];
-           elseif testpair
-              displ_pair{1}=['Dj= ' num2str(-floor(browse.incr_pair(2)/2)) '|' num2str(ceil(browse.incr_pair(2)/2))];
-          else 
-             displ_pair{ipair}='...'; %pair not displayed in the menu
-          end
-       end
-   end
-elseif isequal(mode,'pair j1-j2')|isequal(mode,'st_pair j1-j2')%case of pairs
+elseif isequal(mode,'pair j1-j2')%case of pairs
     for ipair=1:nbpair
         if select(ipair)
            dt=time(ref_i+displ_num(4,ipair),displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),displ_num(1,ipair));%time interval dt
@@ -1072,6 +969,7 @@ set(gcf,'Pointer','arrow')
 %middle of the series set by first_i, incr, last_i 
 %--------------------------------------------------------------
 function find_netcpair_civ2(hObject, eventdata, handles)
+return %do not exist in 3D
 set(gcf,'Pointer','watch')
 %nomenclature types
 filebase=get(handles.displ_filebase,'String');
@@ -1123,11 +1021,6 @@ if isequal(mode,'pair j1-j2')|isequal(mode,'st_pair j1-j2')
 else
     ref_j=str2num(get(handles.ref_j,'String'));
 end
-if isequal(get(handles.dt_text,'String'),'dt(ms)=')%simple series(Di) with equal interval
-    ref_i=ceil((first_i+last_i)/2);
-    ref_j=1;
-end
-%     ref_i=browse.num_ref;%field number initially selected by the browser
 time=get(handles.displ_filebase,'UserData'); %get the set of times
 if isempty(time)
     time=[0 1];%default
@@ -1184,7 +1077,7 @@ if get(handles.CIV2,'Value')==0 & get(handles.CIV1,'Value')==0 & get(handles.FIX
     end
 end
 if isequal(mode,'series(Di)')  | isequal(mode,'st_series(Di)') 
-    if  ~isequal(get(handles.dt_text,'String'),'dt(ms)=')
+    if  ~isequal(get(handles.ext_txt,'String'),'dt(ms)=')
        for ipair=1:nbpair
           if select(ipair)
               dt=time(ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair));%time interval dt
@@ -1239,26 +1132,22 @@ function [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_ci
 first_i=str2num(get(handles.first_i,'String'));
 last_i=str2num(get(handles.last_i,'String'));
 incr=str2num(get(handles.incr_i,'String'));
-first_j=str2num(get(handles.first_j,'String'));
-last_j=str2num(get(handles.last_j,'String'));
-incr_j=str2num(get(handles.incr_j,'String'));
 list_civ1=get(handles.list_pair_civ1,'String');
 index_civ1=get(handles.list_pair_civ1,'Value');
 str_civ1=list_civ1{index_civ1};
 list_civ2=get(handles.list_pair_civ2,'String');
 index_civ2=get(handles.list_pair_civ2,'Value');
 str_civ2=list_civ2{index_civ2};
-if isequal(first_i,[])|isequal(first_j,[]), errordlg('first field number not defined'),...
+if isempty(first_i), msgbox_uvmat('ERROR','first field number not defined'),...
     set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
-if isequal(last_i,[])| isequal(last_j,[]),errordlg('last field number not defined'),...
+if isempty(last_i),msgbox_uvmat('ERROR','last field number not defined'),...
     set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
-if isequal(incr,[])| isequal(incr_j,[]),errordlg('increment in field number not defined'),...
+if isempty(incr), msgbox_uvmat('ERROR','increment in field number not defined'),...
     set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
-if last_i < first_i | last_j < first_j , errordlg('last field number must be larger than the first one'),...
+if last_i < first_i , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
     set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
 num1=[first_i:incr:last_i];
-num_j=[first_j:incr_j:last_j];
-if isequal (mode,'series(Di)') |isequal(mode,'st_series(Di)')
+if isequal (mode,'series(Di)') 
      %recognize the pair civ1 from the display
 	indsel=find((double(str_civ1)<48)|(double(str_civ1)>57));% character indices of non numerical characters
     str_raw=str_civ1(indsel);
@@ -1272,14 +1161,14 @@ if isequal (mode,'series(Di)') |isequal(mode,'st_series(Di)')
     %recognize the pair civ2 from the display
     num1_civ1=num1-d1;% set of first image numbers
     num2_civ1=num1+d2;
-    num_a_civ1=num_j;
-    num_b_civ1=num_j;
+    num_a_civ1=1;
+    num_b_civ1=1;
     num1_civ2=num1-floor(index_civ2/2)*ones(size(num1));% set of first image numbers
     num2_civ2=num1+ceil(index_civ2/2)*ones(size(num1));
     num1_civ2=num1-d1;% set of first image numbers
     num2_civ2=num1+d2;
-    num_a_civ2=num_j;
-    num_b_civ2=num_j;
+    num_a_civ2=1;
+    num_b_civ2=1;
     % adjust the first and last field number
     lastfield=str2num(get(handles.nb_field,'String'));
     if isequal(lastfield,[])
@@ -1438,10 +1327,10 @@ end
 function BATCH_Callback(hObject, eventdata, handles)
 global civ1_exe civ2_exe patch_exe patch_new_exe fix_exe todo_path sge Civ_exe
 
-pxcmx=get(handles.pxcmx,'String');
-pxcmy=get(handles.pxcmy,'String');
-npx=get(handles.pxcmx,'UserData');
-npy=get(handles.pxcmy,'UserData');
+% pxcmx=get(handles.pxcmx,'String');
+% pxcmy=get(handles.pxcmy,'String');
+% npx=get(handles.pxcmx,'UserData');
+% npy=get(handles.pxcmy,'UserData');
 
 %check the list of operations:
 operations={'CIV1','FIX1','PATCH1','CIV2','FIX2','PATCH2'};
@@ -1488,49 +1377,22 @@ end
 %read names of the .exe file
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-if isunix
-    %fid = fopen(fullfile(path_UVMAT,'PARAM_LINUX.txt'),'r');%open the file with civ_3D binary names
-    xmlfile=fullfile(path_UVMAT,'PARAM_LINUX.xml');
-    if exist(xmlfile,'file')
-        t=xmltree(xmlfile);
-        sparam=convert(t);
-    end
+%fid = fopen(fullfile(path_UVMAT,'PARAM_LINUX.txt'),'r');%open the file with civ_3D binary names
+xmlfile=fullfile(path_UVMAT,'PARAM.xml');
+if exist(xmlfile,'file')
+    t=xmltree(xmlfile);
+    sparam=convert(t);
+end
+if isfield(sparam.BatchParam,'Civ3D3CBin')
+    Civ3D3CBin=sparam.BatchParam.Civ3D3CBin;
 else
-    %fid = fopen(fullfile(path_UVMAT,'PARAM_WIN.txt'),'r');%open the file with civ_3D binary names
-    xmlfile=fullfile(path_UVMAT,'PARAM_WIN.xml');
-    if exist(xmlfile,'file')
-        t=xmltree(xmlfile);
-        sparam=convert(t);
-    end
+    msgbox_uvmat('ERROR','binary for CIV3D3C not defined in PARAM.xml')
+    return
 end
- sge=0;
-if isfield(sparam,'Civ_exe')
-    Civ_exe=sparam.Civ_exe
-end
-if isfield(sparam,'Civ1_exe')
-    civ1_exe=sparam.Civ1_exe
-end
-if isfield(sparam,'Civ2_exe')
-    civ2_exe=sparam.Civ2_exe
-end
-if isfield(sparam,'Patch_exe')
-    patch_exe=sparam.Patch_exe
-end
-if isfield(sparam,'PatchNew_exe')
-    patch_new_exe=sparam.PatchNew_exe
-end
-if isfield(sparam,'Fix_exe')
-    fix_exe=sparam.Fix_exe
-end
-if isfield(sparam,'Todo_path')
-    todo_path=sparam.Todo_path
-end
-if isfield(sparam,'SGE')
-    sge=str2num(sparam.SGE)
-end 
+ 
 %choice of batch priority
 ind_answer=2;
-if sge
+% if sge
     [s,w]=unix('qstat -q civ_3D.q|grep job_| wc -l'); %check the waiting list (command unix)
     if isequal(s,0)
         w(end)=[];
@@ -1546,7 +1408,7 @@ if sge
         msgbox_uvmat('ERROR','batch system not available')
         return
     end
-end
+% end
 %initialize the waitbars
 set(handles.waitbar_1,'Position',[0.946 0.876 0.03 0.001])
 set(handles.waitbar_patch1,'Position',[0.946 0.439 0.03 0.001])
@@ -1634,7 +1496,7 @@ while detect==1 %name a new subdir if one of the netcdf files already exists
       for ifile=1:nbfield
 %           for j=1:nbslice
               filename=name_generator(filebase,num1_civ1(ifile),[],'.nc',...
-                nom_type_nc,1,num2_civ1(ifile),[],subdir_civ1);%
+                '_i1-i2',1,num2_civ1(ifile),[],subdir_civ1);%
             detect=exist(filename,'file')
               if detect% if a netcdf file already exists
                  subdir_civ1=[subdir_civ1 '.0'];
@@ -1656,8 +1518,8 @@ while detect==1 %name a new subdir if one of the netcdf files already exists
 end
 %get image names
 for ifile=1:nbfield
-    filecell_ima1_civ1{ifile}=name_generator(filebase, num1_civ1(ifile),[],ext_ima,nom_type_ima);%first image
-    filecell_ima2_civ1{ifile}=name_generator(filebase, num2_civ1(ifile),[],ext_ima,nom_type_ima); %second image
+    filecell_ima1_civ1{ifile}=name_generator(filebase, num1_civ1(ifile),[],'.vol','_i');%first image
+    filecell_ima2_civ1{ifile}=name_generator(filebase, num2_civ1(ifile),[],'.vol','_i'); %second image
      if ~exist(filecell_ima1_civ1{ifile},'file')
             msgbox_uvmat('ERROR',[filecell_ima1_civ1{ifile} ' not found'])
             set(handles.BATCH, 'Enable','On')
@@ -1683,73 +1545,6 @@ set(handles.subdir_civ2,'String',subdir_civ2);%update the edit box
 browse.nom_type_nc=nom_type_nc;
 set(handles.browse_root,'UserData',browse);%update the nomenclature type for uvmat
 
-%COPY IMAGES TO THE FORMAT .vol IF NEEDED
-if isequal(nom_type_ima,'avi')
-    nom_type_imanew='_i';
-else
-    nom_type_imanew=nom_type_ima;
-end
-
-if ~isequal(ext_ima,'.vol')
-    if box_test(1)==1 %if civ1 is performed
-       h = waitbar(0,['copy images to the .png format for civ1']);% display a wait bar 
-       for ifile=1:nbfield
-            waitbar(ifile/nbfield);
-            Atot=[];
-            filename_A=name_generator(filebase,num1_civ1(ifile),1,'.png','_i');%A VOIR
-            idetect_cur=exist(filename_A,'file');
-            for j=1:nbslice
-                    if idetect_cur==0
-                        A=read_image(cell2mat(filecell_ima1_civ1(ifile,j)),nom_type_ima2,npx,npy,num1_civ1(ifile));
-                        Atot=[Atot;A];
-                        %imwrite(A,filename,'BitDepth',16); 
-                    end
-            end
-            imwrite(Atot,filename_A,'BitDepth',16);
-                    %filecell_ima1_civ1(ifile,j)={filename};
-            Atot=[];
-            filename_B=name_generator(filebase, num2_civ1(ifile),1,'.png','_i');
-            idetect_cur=exist(filename_B,'file');
-            for j=1:nbslice
-                    if idetect_cur==0
-                        A=read_image(cell2mat(filecell_ima2_civ1(ifile,j)),nom_type_ima2,npx,npy,num2_civ1(ifile));
-                        Atot=[Atot;A];
-%                         imwrite(A,filename,'BitDepth',16);
-                    end
-                    %filecell_ima2_civ1(ifile,j)={filename};
-            end
-            imwrite(Atot,filename_B,'BitDepth',16);
-        end
-        close(h)
-    end    
-end
-
-if ~sge      
-    %OPEN THE WAIT LIST FOR BATCH PROCESSES
-    name_lock=fullfile(todo_path,'lock'); %lock file 
-    iwait=0;
-    while(exist(name_lock) & iwait<15)
-        pause(1); %wait 1 second
-        iwait=iwait+1;
-    end
-    if iwait==15
-        errordlg(['I''m tired to wait for the lock file, please delete it then click again on BATCH' name_lock ])
-        set(handles.BATCH, 'Enable','On')
-        set(handles.BATCH,'BackgroundColor',[1 0 0])
-        return
-    end
-    p0=fopen(name_lock,'w'); %create the file name_lock: prevents other users to interfere
-    name_todo=fullfile(todo_path,'TODO.txt');
-    p1=fopen(name_todo,'a');
-    if (p1<0)
-        errordlg(['error in opening ' name_todo])
-        set(handles.BATCH, 'Enable','On')
-        set(handles.BATCH,'BackgroundColor',[1 0 0])
-        return;
-    end
-end
-'TESTciv3D'
-nbfield
 for ifile=1:nbfield
     i_cmd=0; 
     cmd='';
@@ -1769,9 +1564,9 @@ for ifile=1:nbfield
         p1text=[];
         [par_civ1.path,resu_file,resu_ext]=fileparts(filecell_nc1{ifile});
         par_civ1.volume1=filecell_ima1_civ1{ifile};
-        par_civ1.volume2=filecell_ima2_civ1{ifile}
-        par_civ1.nx=1024;
-        par_civ1.ny=1024;
+        par_civ1.volume2=filecell_ima2_civ1{ifile};
+        par_civ1.nx=str2double(get(handles.npx,'String'));
+        par_civ1.ny=str2double(get(handles.npy,'String'));;
         par_civ1.nz=par_civ1.gridLimits_Zmax - par_civ1.gridLimits_Zmin;
         'TEST'
         par_civ1
@@ -1781,15 +1576,16 @@ for ifile=1:nbfield
         civAllxml=set(civAllxml,1,'name','civ3d3c');
     %    save(civAllxml)
     	par_civ1_3d_xml=fullfile(par_civ1.path,[resu_file '.xml']);%[par_civ1.path '/test_to_change.xml'];
-	 pvalue=num2str((1-ind_answer)*500);
+ 	 pvalue=num2str((1-ind_answer)*500)
     	save(civAllxml,par_civ1_3d_xml);
-      if(isunix && sge)
-	 ['echo /CIVX/bin/MPI/lam-7.1.3_g95/bin/mpirun C  /CIVX/bin/civ3d3c -p ' par_civ1_3d_xml '|qsub -p ' pvalue ' -q lam.q -pe lam_loose 16 -e ' par_civ1_3d_xml '.errors -o ' par_civ1_3d_xml '.log' ]
-	 eval ( ['!echo /CIVX/bin/MPI/lam-7.1.3_g95/bin/mpirun C  /CIVX/bin/civ3d3c -p ' par_civ1_3d_xml '|qsub -p ' pvalue ' -q lam.q -pe lam_loose 16 -e ' par_civ1_3d_xml '.errors -o ' par_civ1_3d_xml '.log' ])
-      else
- 	    '3D mode is NOT supported without sge'
-      end
-	 return
+    
+%       if(isunix && sge)
+	 ['echo /CIVX/bin/MPI/lam-7.1.3_g95/bin/mpirun C  ' Civ3D3CBin ' -p ' par_civ1_3d_xml '|qsub -p ' pvalue ' -q lam.q -pe lam_loose 16 -e ' par_civ1_3d_xml '.errors -o ' par_civ1_3d_xml '.log' ]
+	 eval ( ['!echo /CIVX/bin/MPI/lam-7.1.3_g95/bin/mpirun C  ' Civ3D3CBin ' -p ' par_civ1_3d_xml '|qsub -p ' pvalue ' -q lam.q -pe lam_loose 16 -e ' par_civ1_3d_xml '.errors -o ' par_civ1_3d_xml '.log' ])
+%       else
+%  	    '3D mode is NOT supported without sge'
+%       end
+     return
         % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %  fichier xml produit
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2722,14 +2518,14 @@ par.gridSpacing_X=get(handles.dx_civ1,'String');
 par.gridSpacing_Y=get(handles.dy_civ1,'String');
 par.gridSpacing_Z=get(handles.dz_civ1,'String');
 % Zmin=str2num(get(handles.first_j,'String'))-1;
-Zmax=str2num(get(handles.nb_field2,'String'));
+Zmax=str2num(get(handles.npz,'String'));
 par.gridLimits_Xmin=0;
 par.gridLimits_Ymin=0;
 par.gridLimits_Zmin=0;
 % A=imread(file_ima);%read the first image to get the size
 %sizim=size(A);
-par.gridLimits_Xmax=1024;%num2str(sizim(2));
-par.gridLimits_Ymax=1024;%num2str(sizim(1));
+par.gridLimits_Xmax=str2double(get(handles.npx,'String'));%num2str(sizim(2));
+par.gridLimits_Ymax=str2double(get(handles.npy,'String'));%num2str(sizim(1));
 par.gridLimits_Zmax=Zmax;
 par.grid='grille';
 par.grid_division=4;
@@ -3300,30 +3096,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
-function edit75_Callback(hObject, eventdata, handles)
-% hObject    handle to edit75 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit75 as text
-%        str2double(get(hObject,'String')) returns contents of edit75 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit75_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit75 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
 function dz_civ1_Callback(hObject, eventdata, handles)
 % hObject    handle to dz_civ1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -3333,16 +3105,63 @@ function dz_civ1_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of dz_civ1 as a double
 
 
-% --- Executes during object creation, after setting all properties.
-function dz_civ1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to dz_civ1 (see GCBO)
+function edit77_Callback(hObject, eventdata, handles)
+% hObject    handle to edit77 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% Hints: get(hObject,'String') returns contents of edit77 as text
+%        str2double(get(hObject,'String')) returns contents of edit77 as a double
+
+
+
+function edit78_Callback(hObject, eventdata, handles)
+% hObject    handle to ref_i (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of ref_i as text
+%        str2double(get(hObject,'String')) returns contents of ref_i as a double
+
+
+function edit79_Callback(hObject, eventdata, handles)
+% hObject    handle to edit79 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit79 as text
+%        str2double(get(hObject,'String')) returns contents of edit79 as a double
+
+
+
+function npz_Callback(hObject, eventdata, handles)
+% hObject    handle to npz (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of npz as text
+%        str2double(get(hObject,'String')) returns contents of npz as a double
+
+
+function npy_Callback(hObject, eventdata, handles)
+% hObject    handle to npy (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of npy as text
+%        str2double(get(hObject,'String')) returns contents of npy as a double
+
+
+
+
+function npx_Callback(hObject, eventdata, handles)
+% hObject    handle to npx (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of npx as text
+%        str2double(get(hObject,'String')) returns contents of npx as a double
+
+
 
 

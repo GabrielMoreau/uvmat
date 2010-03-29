@@ -768,6 +768,11 @@ for icell=1:length(CellVarIndex)
             ProjData.ListVarName=[ProjData.ListVarName {VarName}];
             ProjData.VarDimName=[ProjData.VarDimName {XName}];
             ProjData.VarAttribute{iselect}=FieldData.VarAttribute{VarIndex(iselect)};
+            if strcmp(ProjMode,'projection')
+                ProjData.VarAttribute{iselect}.Role='discrete';
+            else
+                 ProjData.VarAttribute{iselect}.Role='continuous';
+            end
         end
     
     %case of structured coordinates
@@ -875,6 +880,7 @@ for icell=1:length(CellVarIndex)
                 end  
                 ProjData.ListVarName=[ProjData.ListVarName VarName{ivar} ];
                 ProjData.VarDimName=[ProjData.VarDimName {AXName}];%to generalize with the initial name of the x coordinate
+                ProjData.VarAttribute{ivar}.Role='continuous';% for plot with continuous line
             end
             if testU
                  eval(['vector_x =ProjData.' VarName{VarType.vector_x} ';'])

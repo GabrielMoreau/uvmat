@@ -2343,7 +2343,8 @@ function MenuExportField_Callback(hObject, eventdata, handles)
 
 global CurData
 huvmat=findobj(allchild(0),'Name','uvmat');
-CurData=get(huvmat,'UserData');
+UvData=get(huvmat,'UserData');
+CurData=UvData.ProjField_2;
 evalin('base','global CurData')%make CurData global in the workspace
 display(['UserData of view_field :'])
 evalin('base','CurData') %display CurData in the workspace
@@ -2470,53 +2471,65 @@ set(hhuvmat.list_object_2,'Value',numel(list_object_2))%select the last value ('
 delete(hObject)
 
 
-% --- Executes during object creation, after setting all properties.
-function colcode1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to colcode1 (see GCBO)
+
+% --- Executes on button press in checkbox42.
+function checkbox42_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox42 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% Hint: get(hObject,'Value') returns toggle state of checkbox42
 
 
-% --- Executes during object creation, after setting all properties.
-function slider2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider2 (see GCBO)
+% --- Executes on button press in checkbox43.
+function checkbox43_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox43 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
+% Hint: get(hObject,'Value') returns toggle state of checkbox43
 
 
-% --- Executes during object creation, after setting all properties.
-function slider1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to slider1 (see GCBO)
+% --- Executes on button press in checkbox44.
+function checkbox44_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox44 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
+% Hint: get(hObject,'Value') returns toggle state of checkbox44
 
 
-% --- Executes during object creation, after setting all properties.
-function colcode2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to colcode2 (see GCBO)
+% --- Executes on selection change in popupmenu18.
+function popupmenu18_Callback(hObject, eventdata, handles)
+
+
+function edit91_Callback(hObject, eventdata, handles)
+% hObject    handle to edit91 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% Hints: get(hObject,'String') returns contents of edit91 as text
+%        str2double(get(hObject,'String')) returns contents of edit91 as a double
+
+
+% --- Executes on button press in checkbox45.
+function checkbox45_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox45 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox45
+
+
+% --- Executes on selection change in popupmenu19.
+function popupmenu19_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu19 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = get(hObject,'String') returns popupmenu19 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu19
+
+
 
 

@@ -17,7 +17,7 @@ fct2=cos(ix/((np-1)/2)*pi/2);
 Mfiltre=fct2'*fct2;
 Mfiltre=Mfiltre/(sum(sum(Mfiltre)));
 
-C=filter2(ones(windowsize)/windowsize^2,B);
+C=filter2(Mfiltre,B);
 C(:,1:windowsize)=C(:,windowsize)*ones(1,windowsize);
 C(:,end-windowsize+1:end)=C(:,end-windowsize+1)*ones(1,windowsize);
 C(1:windowsize,:)=ones(windowsize,1)*C(windowsize,:);

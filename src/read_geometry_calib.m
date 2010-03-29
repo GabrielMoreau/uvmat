@@ -1,20 +1,6 @@
 %'read_geometry_calib': read data on the GUI geometry_calib
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function data=read_geometry_calib(Coord_cell)
-data_XIma=[];
-data_YIma=[];
-data_XObject=[];
-data_YObject=[];
-data_ZObject=[];
-%Coord=get(handles.ListCoord,'String');
-% XImage=get(handles.XImage,'String');
-% YImage=get(handles.YImage,'String');
-% XObject=get(handles.XObject,'String');
-% YObject=get(handles.YObject,'String');
-% ZObject=get(handles.ZObject,'String');
-% if ischar(Xcolumn)
-%     Xcolumn={Xcolumn};
-% end
 nb_defining_points=length(Coord_cell);
 iline=0;
 data.Coord=[];%default
@@ -27,7 +13,7 @@ for i=1:nb_defining_points
         data3=str2num(coord_str(k(2)+5:k(3)-5));
         data4=str2num(coord_str(k(3)+5:k(4)-5));
         data5=str2num(coord_str(k(4)+5:end));
-        if ~isempty(data1)|~isempty(data2)|~isempty(data3)|~isempty(data4)|~isempty(data5)
+        if ~isempty(data1)||~isempty(data2)||~isempty(data3)||~isempty(data4)||~isempty(data5)
             iline=iline+1;
             if ~isempty(data1)
                 data.Coord(iline,1)=data1;

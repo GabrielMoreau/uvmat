@@ -194,16 +194,13 @@ end
 % --- Executes just before uvmat is made visible.
 function uvmat_OpeningFcn(hObject, eventdata, handles, input )
 %-------------------------------------------------------------------
-%WARNING: avoid the second input parameter, leads to erros
-global dircur dir_opening nb_builtin
+global nb_builtin
+
 % Choose default command menuline output for uvmat
 handles.output = hObject;
 
 % Update handles structure
 guidata(hObject, handles);
-
-dircur=pwd; %current working directory
-dir_opening=dircur;
 
 % set the position of colorbar and ancillary GUIs:
 set(hObject,'Units','Normalized')
@@ -246,8 +243,8 @@ UvData.Object{1}.Style='plane';%main plotting plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
 if ~isfield(UvData.Object{1},'plotaxes')
     UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis
-    set(handles.list_object_1,'String',{'1-PLANE'});
     set(handles.list_object_1,'Value',1);
+    set(handles.list_object_1,'String',{'1-PLANE'});
 end
 
 %load the list of previously browsed files in menus Open and Open_1
@@ -381,6 +378,9 @@ if testinputfield
         set(handles.edit,'Visible','on')
         set(handles.list_object_1,'Visible','on')
         set(handles.frame_object,'Visible','on')
+        if ~isempty(errormsg)
+            msgbox_uvmat('ERROR',errormsg)
+        end
     else
         update_rootinfo(hObject,eventdata,handles);
     end
@@ -565,18 +565,17 @@ switch ext_test
         set(handles.FileIndex,'UserData',NomType);
         set(handles.FileExt,'String',ext);
         % fill file index counters
-        set(handles.i1,'String',i1);
-      
+        set(handles.i1,'String',i1);    
         set(handles.i2,'String',i2);
         set(handles.j1,'String',str_a);
         set(handles.j2,'String',str_b);
         
         % synchronise indices of the second  input file if it exists
         if get(handles.SubField,'Value')==1% if the subfield button is activated, update the field numbers
-            [FileName_1,RootPath_1,FileBase_1,FileIndices_1,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
+            [ff,rr,FileBase_1,ii,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
             NomType_1=get(handles.FileIndex_1,'UserData');     
-            [FileName_1,idetect]=name_generator(FileBase_1,stra2num(i1),stra2num(i2),FileExt_1,NomType_1,1,stra2num(str_a),stra2num(str_b),SubDir_1);
-            if idetect
+            FileName_1=name_generator(FileBase_1,stra2num(i1),stra2num(i2),FileExt_1,NomType_1,1,stra2num(str_a),stra2num(str_b),SubDir_1);
+            if exist(FileName_1,'file')
                 FileIndex_1=name_generator('',stra2num(i1),stra2num(i2),'',NomType_1,1,stra2num(str_a),stra2num(str_b),'');
                 set(handles.FileIndex_1,'String',FileIndex_1)
             else
@@ -635,7 +634,6 @@ update_rootinfo(hObject,eventdata,handles)
 % -- update information about a new field series (indices to scan, timing, calibration from an xml file, then refresh current plots
 %-------------------------------------------------------------------
 function update_rootinfo(hObject,eventdata,handles)
-global dircur  dir_opening
 
 set(handles.RootPath,'BackgroundColor',[1 1 0])
 drawnow
@@ -1151,9 +1149,9 @@ if isfield(UvData,'TimeUnit')
     TimeUnit=UvData.TimeUnit;
 end
 TimeUnit_1=[];
-testima=0; %test for image input
+% testima=0; %test for image input
 if isequal(lower(FileExt),'.avi') %.avi file
-    testima=1;
+%     testima=1;
     info=aviinfo([FileBase FileIndices FileExt]);
     nbfield_1=info.NumFrames;
     nburst_1=1;
@@ -1367,7 +1365,7 @@ end
 %-------------------------------------------------------------------
 function nb_slice_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-nb_slice_str=get(handles.nb_slice,'String')
+nb_slice_str=get(handles.nb_slice,'String');
 if isequal(nb_slice_str,'volume')
     num=stra2num(get(handles.j1,'String'));
     last_j=get(handles.last_j,'String');
@@ -1663,7 +1661,7 @@ end
 if get(handles.scan_i,'Value')==1% case of scanning along index i   
      num1=num1+increment;
      num2=num2+increment;
-     [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir)
+     [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
      if sub_value% set the second field name and indices
         num1_1=num1_1+increment;
         num2_1=num2_1+increment;
@@ -1981,12 +1979,10 @@ scal_color=[];
 VelType_1=setfield_1(handles);
 sub_value=get(handles.SubField,'Value');
 FileType_1='none';%default
-%if sub_value==
-filename_1
 if ~isempty(filename_1)
     % test for a constant second field (comparison with a fixed field)
     NomType_1=get(handles.FileIndex_1,'UserData');
-    Ext_1=get(handles.FileExt_1,'String')
+    Ext_1=get(handles.FileExt_1,'String');
     % determine the input file type
     if isequal(Ext_1,'.nc')||isequal(Ext_1,'.cdf')
         FileType_1='netcdf';
@@ -2473,8 +2469,8 @@ UvData.Object{1}.Style='plane';%main plotting plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
 if ~isfield(UvData.Object{1},'plotaxes')
     UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis
-    set(handles.list_object_1,'String',{'1-PLANE'});
     set(handles.list_object_1,'Value',1);
+    set(handles.list_object_1,'String',{'1-PLANE'});  
 end
 
 %3D case (menuvolume)
@@ -2525,11 +2521,16 @@ IndexObj_2=get(handles.list_object_2,'Value');
 if IndexObj_2 <= numel(UvData.Object)
     IndexObj(2)=IndexObj_2;
 end
-for iobj=IndexObj
+for imap=1:numel(IndexObj)
+    iobj=IndexObj(imap);
     if ~isempty(UvData.Object{iobj})%& isfield(Object{iobj},'plotaxes')& ishandle(Object{iobj}.plotaxes)
         %Projeter les champs sur l'objet:*
         ObjectData=proj_field(UvData.Field,UvData.Object{iobj},iobj);
-   
+        if imap==2
+            UvData.ProjField_2=ObjectData;%store the projection field on uvmat: ***** WILL REPLACE THE FIELD SORED ON THE AXES: AxeData *****
+        else
+            UvData.ProjField_1=ObjectData;%store the projection field on view_field
+        end
         %use of mask
         if isfield(ObjectData,'NbDim')&isequal(ObjectData.NbDim,2)
             if isfield(ObjectData,'Mask') & isfield(ObjectData,'A')
@@ -3773,13 +3774,6 @@ list_transform=get(handles.transform_fct,'UserData');
 ff=functions(list_transform{end});  
 if isequal(coord_option,'more...'); 
     coord_fct='';
-
-%     if exist(profil_perso,'file')
-%           h=load (profil_perso);
-%          if isfield(h,'transform_fct')
-%                 transform_fct=h.transform_fct;
-%          end
-%     end
     prompt = {'Enter the name of the transform function'};
     dlg_title = 'user defined transform';
     num_lines= 1;
@@ -3793,7 +3787,6 @@ if isequal(coord_option,'more...');
     end
     transform_selected =fullfile(PathName,FileName);
     if ~exist(transform_selected,'file')
-%            msgbox_uvmat('ERROR',['procesing fct ' transform_selected ' not found'])
            return
     end
    [ppp,transform,ext_fct]=fileparts(FileName);% removes extension .m
@@ -3826,13 +3819,7 @@ if isa(list_transform{ind_coord},'function_handle')
 else
     set(handles.path_transform,'String','')
 end
-%CurrentPath=fileparts(which(coord_option));
-% if ~isequal(PathName,CurrentPath)
-%     addpath(PathName) 
-%     errormsg=check_functions;
-%     msgbox_uvmat('WARNING',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
-% end
-%set(handles.path_transform,'String',fullfile(PathName,' ')); %show the path to the senlected function
+
 set(handles.FixedLimits,'Value',0)
 set(handles.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
 
@@ -3856,9 +3843,16 @@ if ~isempty(hhh)
     delete(hhh)
 end
 if isfield(UvData,'Object')
-    nbobject=length(UvData.Object);
-    UvData.Object([2:nbobject])=[];
+     UvData.Object=UvData.Object(1);
 end 
+list_object=get(handles.list_object_1,'String');
+set(handles.list_object_1,'Value',1)
+set(handles.list_object_1,'String',list_object(1))
+set(handles.list_object_2,'Value',2)
+set(handles.list_object_2,'String',[list_object(1);{'...'}])
+list_object_2_Callback(hObject, eventdata, handles)
+
+
 
 %delete mask if it is displayed 
 if isequal(get(handles.mask_test,'Value'),1)%if the mask option is on
@@ -4180,9 +4174,9 @@ hset_object=findobj(allchild(0),'Tag','set_object');
 if ~isempty(hset_object)
     hhset_object=guidata(hset_object);
     if test
-        set(hhset_object.PLOT,'Visible','on');
+        set(hhset_object.PLOT,'enable','on');
     else
-       set(hhset_object.PLOT,'Visible','off'); 
+       set(hhset_object.PLOT,'enable','off'); 
     end
 end
 
@@ -4195,15 +4189,11 @@ IndexObj=get(handles.list_object_1,'Value');
 str_1=list_str{IndexObj};
 val_2=get(handles.list_object_2,'Value');
 str_2=get(handles.list_object_2,'String');
-if isequal(val_2,IndexObj)
-    set(handles.list_object_2,'Value',numel(str_2))
+if isequal(val_2,IndexObj)% if the first selection is equal to the second, it will suppress the second
+    set(handles.list_object_2,'Value',numel(str_2))%select the end of the list ('...')
     list_object_2_Callback(hObject, eventdata, handles)
 end
-hset_object=findobj(allchild(0),'Tag','set_object');
-if ~isempty(hset_object)
-     set(hset_object,'name',str_1);
-end
-update_object(handles,IndexObj,1)
+update_object(handles,IndexObj,1,str_1)
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in list_object_1.
@@ -4212,31 +4202,25 @@ function list_object_2_Callback(hObject, eventdata, handles)
 list_str=get(handles.list_object_2,'String');
 IndexObj=get(handles.list_object_2,'Value');
 if isequal(list_str{IndexObj},'...')
-    hview_field=findobj(allchild(0),'Tag','view_field')
+    hview_field=findobj(allchild(0),'Tag','view_field');
     if ~isempty(hview_field)
         delete(hview_field)
     end
-    set(handles.list_object_2,'BackgroundColor',[1 1 1])
 else
-    hset_object=findobj(allchild(0),'Tag','set_object');
-    if ~isempty(hset_object)
-        set(hset_object,'name',list_str{IndexObj});
-    end
-%     set(handles.list_object_2,'BackgroundColor',[1 1 0]) 
-%     set(handles.list_object_1,'BackgroundColor',[1 1 1]) 
-    update_object(handles,IndexObj,2)
+    update_object(handles,IndexObj,2,list_str{IndexObj})
 end
 
 %------------------------------------------------------------------------
-function update_object(handles,IndexObj,option)
+function update_object(handles,IndexObj,option,ObjectName)
 %------------------------------------------------------------------------
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 if ~(length(UvData.Object)>=IndexObj);
     return
 end
 ObjectData=UvData.Object{IndexObj};
-if isequal(get(handles.edit,'Value'),0)
-    ObjectData.desable_plot=1; % desable the PLOT option in the set_object GUI (editing mode
+ObjectData.Name=ObjectName;
+if isequal(get(handles.edit,'Value'),1)
+    ObjectData.enable_plot=1; % desable the PLOT option in the set_object GUI (editing mode
 end
 PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
 ZBounds=0; % default
@@ -4244,11 +4228,12 @@ ZBounds=0; % default
         ZBounds(1)=UvData.ZMin; %minimum for the Z slider
         ZBounds(2)=UvData.ZMax;%maximum for the Z slider
     end
-hset_object=findobj(allchild(0),'Name','set_object');
+hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
 hset_object=set_object(ObjectData,PlotHandles,ZBounds);% call the set_object interface,
+set(hset_object,'name',ObjectName)
 pos_uvmat=get(handles.uvmat,'Position');
 %position the set_object GUI with respect to uvmat
 if isfield(UvData,'SetObjectOrigin')
@@ -4326,12 +4311,12 @@ figure(hset_object)%put set_object in front
 % --- Executes on button press in Menu/Export/field in workspace.
 %------------------------------------------------------
 function MenuExportField_Callback(hObject, eventdata, handles)
-
 global CurData
-huvmat=get(handles.RootPath,'parent');
-CurData=get(huvmat,'UserData');
+huvmat=findobj(allchild(0),'Name','uvmat');
+UvData=get(huvmat,'UserData');
+CurData=UvData.ProjField_1;
 evalin('base','global CurData')%make CurData global in the workspace
-display(['UserData of uvmat :'])
+display(['UserData of view_field :'])
 evalin('base','CurData') %display CurData in the workspace
 commandwindow;
 
@@ -4449,25 +4434,16 @@ msgbox_uvmat('CONFIRMATION',{['movie ' aviname ' created '];['with ' num2str(ima
 
 % ------------------------------------------------------------------
 function MenuCalib_Callback(hObject, eventdata, handles)
-% set(handles.TOOLS_txt,'Visible','on')
-% set(handles.frame_tools,'Visible','on')
+
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-%reinitialize the edit interface associated with uvmat
-%suppress the other options if MENULINE is chosen
+
+%suppress competing options 
 set(handles.zoom,'Value',0)
 set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.MenuTools,'enable','off')
+set(handles.MenuMask,'enable','off')
+set(handles.MenuGrid,'enable','off')
 set(handles.MenuObject,'enable','off')
 set(handles.MenuEdit,'enable','off')
-%         set(handles.create,'Value',0)
-%         set(handles.create,'BackgroundColor',[0 1 0])
-%         set(handles.create,'enable','off')      
-% set(handles.edit_vect,'Value',0)
-% set(handles.edit_vect,'enable','off')
-% edit_vect_Callback(hObject, eventdata, handles)
-% set(handles.edit,'Value',0)
-% set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-% set(handles.edit,'enable','off')
 set(handles.list_object_1,'Value',1)      
 % initiate display of GUI geometry_calib
 data=[]; %default
@@ -4480,7 +4456,7 @@ pos(2)=pos(2)-0.02;
 [FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes(handles);
 [UvData.hset_object,UvData.sethandles]=geometry_calib(handles,pos,FileName);% call the set_object interface	
 pos_uvmat=get(handles.uvmat,'Position');
-%pos_cal(1:2)=UvData.CalOrigin + pos_uvmat(1:2);
+
 if isfield(UvData,'CalOrigin')
     pos_cal(1)=pos_uvmat(1)+UvData.CalOrigin(1)*pos_uvmat(3);
     pos_cal(2)=pos_uvmat(2)+UvData.CalOrigin(2)*pos_uvmat(4);
@@ -4645,16 +4621,16 @@ if isequal(ext,'.nc') ||  isequal(ext,'.cdf')% netcdf files
         ind_opening=6;
     end
 end      
-varargin{1}=filebase;
-varargin{2}=NomType;
-varargin{3}=num1;
-varargin{4}=num2;
-varargin{5}=num_a;
-varargin{6}=num_b;
-varargin{7}=SubDir;
-varargin{8}=ind_opening;% A REVOIR +TRANSMETTRE IMADOC INFO
-varargin{11}=ext;
-civ(varargin);% interface de civ(not in the uvmat file)
+param.RootName=filebase;
+param.NomType=NomType;
+param.num1=num1;
+param.num2=num2;
+param.num_a=num_a;
+param.num_b=num_b;
+param.SubDir=SubDir;
+param.IndOpening=ind_opening;% A REVOIR +TRANSMETTRE IMADOC INFO
+param.ImaExt=ext;
+civ(param);% interface de civ(not in the uvmat file)
 
 % ------------------------------------------------------------------
 function MenuTools_Callback(hObject, eventdata, handles)
@@ -4762,12 +4738,15 @@ if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 %read the file
 t=xmltree(fileinput);
 data=convert(t);
-PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
+data.enable_plot=1;
+[pp,data.Name]=fileparts(FileName);
+%PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
 hset_object=findobj(allchild(0),'Name','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
-[hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface
+UvData=get(handles.uvmat,'UserData');
+[hset_object,UvData.sethandles]=set_object(data);% call the set_object interface
 %position the set_object GUI with respect to uvmat
 pos_uvmat=get(handles.uvmat,'Position');
 if isfield(UvData,'SetObjectOrigin')
@@ -4781,6 +4760,7 @@ UvData.MouseAction='create_object';
 set(handles.uvmat,'UserData',UvData)
 
 %------------------------------------------------------------------------
+% --- generic function used for the creation of a projection object
 function create_object(data,handles)
 %------------------------------------------------------------------------
 hset_object=findobj(allchild(0),'Name','set_object');
@@ -4790,6 +4770,7 @@ end
 UvData=get(handles.uvmat,'UserData');
 set(handles.edit,'Value',0); %suppress the object edit mode
 set(handles.edit,'BackgroundColor',[0.7,0.7,0.7])  
+data.enable_plot=1;
 if isfield(UvData,'CoordType')
     data.CoordType=UvData.CoordType;
 end
@@ -4834,10 +4815,9 @@ set(handles.uvmat,'UserData',UvData)
 set(handles.zoom,'Value',0)
 zoom_Callback(handles.uvmat, [], handles)
 
-
-
-% --------------------------------------------------------------------
+%------------------------------------------------------------------------
 function MenuRuler_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 set(handles.zoom,'Value',0)
 zoom_Callback(handles.uvmat, [], handles)
 UvData=get(handles.uvmat,'UserData');
@@ -4845,7 +4825,7 @@ UvData.MouseAction='ruler';
 set(handles.uvmat,'UserData',UvData);
 
 %------------------------------------------------------------------------
-% executed when closing: set the parent interface button to value 0
+% --- executed when closing: set the parent interface button to value 0
 function closefcn(gcbo,eventdata)
 %------------------------------------------------------------------------
 %delete all the associated figures if exist
@@ -4862,3 +4842,13 @@ if ~isempty(hh)
     hhh=findobj(hh,'tag','PLOT');
     set(hhh,'enable','off')
 end
+
+
+% --- Executes on button press in delete_object.
+function delete_object_Callback(hObject, eventdata, handles)
+IndexObj=get(handles.list_object_2,'Value');
+    if IndexObj>1 
+        delete_object(IndexObj)
+    end
+    
+

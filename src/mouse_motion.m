@@ -26,10 +26,18 @@ function mouse_motion(hObject,eventdata,handles)
 if ~exist('handles','var')
     return
 end
+test_draw=0;
 test_create=0;%default
-test_edit=0;%default
-test_edit=isfield(handles,'edit') & get(handles.edit,'Value');% edit test for mouse shap: an arrow
-test_zoom=isfield(handles,'zoom')& get(handles.zoom,'Value');% edit test for mouse shap: an arrow 
+test_object=0; %default
+test_edit=isfield(handles,'edit') && get(handles.edit,'Value');% edit test for mouse shap: an arrow
+test_zoom_draw=0; %default
+test_ruler=0;
+huvmat=findobj(allchild(0),'Name','uvmat');%find the uvmat interface handle
+if ~isempty(huvmat)
+    UvData=get(huvmat,'UserData');
+    test_ruler=isfield(UvData,'MouseAction') && isequal(UvData.MouseAction,'ruler');
+end
+
 
 %find the current axe 'haxes' and display the current mouse position or uicontrol tag
 text_displ_1='';
@@ -37,17 +45,17 @@ text_displ_2='';
 text_displ_3='';
 text_displ_4='';
 
-haxes=[];
 AxeData=[];%default
 mouse=[];
 xy=[];%default
 
 pointershape='arrow';% default pointer is an arrow 
-currentfig=gcbo;%store gcbo as variable currentfig
+currentfig=hObject;
 xy_fig=get(currentfig,'CurrentPoint');% current point of the current figure (gcbo)
 hchild=get(currentfig,'Children');%handles of all objects in the current figure
 
-% loop on all the objects in the current figure (selected by the last mouse click) 
+% loop on all the objects in the current figure and detect whether the mouse is over a plot  axes
+haxes=[];
 for ichild=1:length(hchild)
     obj_pos=get(hchild(ichild),'Position');%position of the object
     if xy_fig(1) >=obj_pos(1) & xy_fig(2) >= obj_pos(2)& xy_fig(1) <=obj_pos(1)+obj_pos(3) & xy_fig(2) <= obj_pos(2)+obj_pos(4);
@@ -67,9 +75,13 @@ for ichild=1:length(hchild)
             ff_text=[];     
             ivec=[];
             AxeData=get(haxes,'UserData');% data attached to the axis
-             if ~test_edit && ~test_zoom
+            if isfield(AxeData,'Drawing')&& ~isempty(AxeData.Drawing) 
+                test_draw=~isequal(AxeData.Drawing,'off');
+            end
+            test_zoom_draw=test_draw && isequal(AxeData.Drawing,'zoom')&& isfield(AxeData,'CurrentOrigin') && isequal(get(gcf,'SelectionType'),'normal');
+            test_object=test_draw && isfield(AxeData,'CurrentObject') && ~isempty(AxeData.CurrentObject) && ishandle(AxeData.CurrentObject);       
+             if ~test_edit && ~test_zoom_draw && ~test_ruler
                  pointershape='crosshair';%set pointer with cross shape (default when mouse is over an axis)
-%                % pointershape='crosshair';%set pointer with cross shape (default over axis)
              end
             if isfield(AxeData,'X') && isfield(AxeData,'Y') && isfield(AxeData,'Mesh')% test on the existence of a vector field in the current axis
                 if ~isempty(AxeData.Mesh)
@@ -77,20 +89,22 @@ for ichild=1:length(hchild)
                           (AxeData.Y<(xy(1,2)+AxeData.Mesh/3) & AxeData.Y>(xy(1,2)-AxeData.Mesh/3));%f
                     ivec=find(flag_vec,1);% search the (first) selected vector index ivec
                     hhh=findobj(haxes,'Tag','vector_marker');
-                    if ~isempty(ivec) 
-                        %ivec=ivec(1);%choice the first selected vector if several are selected
-                        if ~test_create
-                            pointershape='arrow'; %mouse indicates  the detection of a vector
-                            if isempty(hhh)
-                                set(currentfig,'CurrentAxes',haxes)
-                                rectangle('Curvature',[1 1],...
-                  'Position',[AxeData.X(ivec)-AxeData.Mesh AxeData.Y(ivec)/2-AxeData.Mesh/2 AxeData.Mesh AxeData.Mesh],'EdgeColor','m',...
-                  'LineStyle','-','Tag','vector_marker');
-%                                 line(AxeData.X(ivec),AxeData.Y(ivec),'Color','m','Tag','vector_marker','LineStyle','.','Marker','o','MarkerSize',AxeData.Mesh);
-                            else
-                                set(hhh,'Position',[AxeData.X(ivec)-AxeData.Mesh/2 AxeData.Y(ivec)-AxeData.Mesh/2 AxeData.Mesh AxeData.Mesh])
+                    if ~isempty(ivec)
+                        if ~test_object % mark the vectors with a circle in the absence of other operations
+                            if  ~test_create && ~test_edit && ~test_ruler
+                                pointershape='arrow'; %mouse indicates  the detection of a vector
+                                if isempty(hhh)
+                                     hstack=findobj(allchild(0),'Type','figure');%current stack order of figures in matlab
+                                    axes(haxes)
+                                    rectangle('Curvature',[1 1],...
+                      'Position',[AxeData.X(ivec)-AxeData.Mesh/2 AxeData.Y(ivec)-AxeData.Mesh/2 AxeData.Mesh AxeData.Mesh],'EdgeColor','m',...
+                      'LineStyle','-','Tag','vector_marker');
+                                    set(0,'Children',hstack);%put back the initial figure stack after plot creation
+                                else
+                                    set(hhh,'Position',[AxeData.X(ivec)-AxeData.Mesh/2 AxeData.Y(ivec)-AxeData.Mesh/2 AxeData.Mesh AxeData.Mesh])
+                                end
                             end
-                        end                 
+                        end
                         mouse.X=AxeData.X(ivec);
                         mouse.Y=AxeData.Y(ivec);
                         u_mouse=AxeData.U(ivec);%displacement
@@ -192,14 +206,37 @@ set(handles.text_display_1,'String',text_displ_1);
 set(handles.text_display_2,'String',text_displ_2);
 set(handles.text_display_3,'String',text_displ_3);
 set(handles.text_display_4,'String',text_displ_4);
+if ~test_draw
+    return 
+end
+% At this stage  if no drawing  operation is done
+
+
+%%%%%%%%%%%%%
+%draw a zoom rectangle if no object creation is selected
+if test_zoom_draw 
+   xy_rect=AxeData.CurrentOrigin;
+   if ~isempty(xy_rect) 
+        rect(1)=min(xy(1,1),xy_rect(1));%origin rectangle, x coordinate
+        rect(2)=min(xy(1,2),xy_rect(2));%origin rectangle, y coordinate
+        rect(3)=abs(xy(1,1)-xy_rect(1));%rectangle width
+        rect(4)=abs(xy(1,2)-xy_rect(2));%rectangle height
+        if rect(3)>0 & rect(4)>0
+            if isfield(AxeData,'CurrentRectZoom')& ishandle(AxeData.CurrentRectZoom)
+                set(AxeData.CurrentRectZoom,'Position',rect);%update the rectangle position
+            else
+                AxeData.CurrentRectZoom=rectangle('Position',rect,'LineStyle',':','Tag','rect_zoom');
+                set(haxes,'UserData',AxeData)
+            end
+        end
+   end
+    pointershape='arrow';
+end
 
 %%%%%%%%%%%%%%%%%
 %create or modify an object
-huvmat=findobj(allchild(0),'Name','uvmat');%find the uvmat interface handle
-if ~isempty(huvmat)
-    UvData=get(huvmat,'UserData');
-end
-if ~isempty(huvmat) & isfield(AxeData,'CurrentObject') & ishandle(AxeData.CurrentObject) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off')
+
+if ~isempty(huvmat) && test_object
     PlotData=get(AxeData.CurrentObject,'UserData');
     huvmat=findobj(allchild(0),'Name','uvmat');%find the uvmat interface handle
     if ~isempty(huvmat)
@@ -249,33 +286,9 @@ if ~isempty(huvmat) & isfield(AxeData,'CurrentObject') & ishandle(AxeData.Curren
     end
 end    
 
-%%%%%%%%%%%%%
-%draw a zoom rectangle if no object creation is selected
-if ~isempty(haxes) & isfield(AxeData,'Drawing')& isequal(AxeData.Drawing,'zoom')& isfield(AxeData,'CurrentOrigin')...
-        & isequal(get(gcf,'SelectionType'),'normal')% 
-   xy_rect=AxeData.CurrentOrigin;
-   if ~isempty(xy_rect) 
-        rect(1)=min(xy(1,1),xy_rect(1));%origin rectangle, x coordinate
-        rect(2)=min(xy(1,2),xy_rect(2));%origin rectangle, y coordinate
-        rect(3)=abs(xy(1,1)-xy_rect(1));%rectangle width
-        rect(4)=abs(xy(1,2)-xy_rect(2));%rectangle height
-        if rect(3)>0 & rect(4)>0
-            if isfield(AxeData,'CurrentRectZoom')& ishandle(AxeData.CurrentRectZoom)
-                set(AxeData.CurrentRectZoom,'Position',rect);%update the rectangle position
-            else
-                AxeData.CurrentRectZoom=rectangle('Position',rect,'LineStyle',':','Tag','rect_zoom');
-                set(haxes,'UserData',AxeData)
-            end
-        end
-   end
-% end
-% if test_zoom
-    pointershape='arrow';
-end
-
 % detect calibration points if the GUI geometry_calib is opened
 h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
-if ~test_zoom && ~isempty(h_geometry_calib)
+if ~test_zoom_draw && ~isempty(h_geometry_calib)
     pointershape='crosshair';%default for geometry_calib: ready to create new points
     hh_geometry_calib=guidata(h_geometry_calib);
     if get(hh_geometry_calib.edit_append,'Value')  && ~isempty(xy)
@@ -302,8 +315,9 @@ if ~test_zoom && ~isempty(h_geometry_calib)
                     end
                     hhh=findobj('Tag','calib_marker');%look for handle of point marker (circle)
                     if ~isempty(hhh)
-                        set(hhh,'XData',XCoord(index_point))
-                        set(hhh,'YData',YCoord(index_point))
+                        set(hhh,'Position',[XCoord(index_point)-ind_range/2 YCoord(index_point)-ind_range/2 ind_range ind_range])
+%                         set(hhh,'XData',XCoord(index_point))
+%                         set(hhh,'YData',YCoord(index_point))
                     end
                 end          
             end
@@ -312,15 +326,12 @@ if ~test_zoom && ~isempty(h_geometry_calib)
 end
 
 %draw ruler
-if ~isempty(huvmat)
-    UvData=get(huvmat,'UserData');
-    if isfield(UvData,'MouseAction') && isequal(UvData.MouseAction,'ruler')
+if test_ruler && isequal(AxeData.Drawing,'ruler')
            if isfield(UvData,'RulerHandle')
                pointershape='crosshair';
                 RulerCoord=[UvData.RulerCoord ;xy(1,1:2)];
                 set(UvData.RulerHandle,'XData',RulerCoord(:,1));
                 set(UvData.RulerHandle,'YData',RulerCoord(:,2));
            end
-    end
 end
 set(currentfig,'Pointer',pointershape);

@@ -73,8 +73,8 @@ if ~isempty(uid_Camera)
         ImageSize=get(t,children(t,uid_ImageSize),'value');
         xindex=findstr(ImageSize,'x');
         if length(xindex)>=2
-             npx=str2double(ImageSize(1:xindex(1)-1));
-             npy=str2double(ImageSize(xindex(1)+1:xindex(2)-1));
+             s.Npx=str2double(ImageSize(1:xindex(1)-1));
+             s.Npy=str2double(ImageSize(xindex(1)+1:xindex(2)-1));
         end
     end
     uid_TimeUnit=find(t,'/ImaDoc/Camera/TimeUnit');

@@ -88,18 +88,17 @@ set(handles.MenuCoord,'ListboxTop',1)
 if ~exist('PlotHandles','var')
      PlotHandles=[];
 end
-enable_plot=0;%default
-SetData.PlotHandles=PlotHandles;
-% if exist('data','var') && isfield(data,'ParentButton')
-%         SetData.ParentButton=data.ParentButton;
-%         set(hObject,'DeleteFcn',{@closefcn,SetData.ParentButton})%
-% end
-set(hObject,'UserData',SetData)
+enable_plot=0;%default: does not allow plot of object and projection
+% SetData.PlotHandles=PlotHandles;
+% set(hObject,'UserData',SetData)
 
 % fill the interface as set in the input data:
 if exist('data','var') 
-    if isfield(data,'desable_plot')
-        enable_plot=~data.desable_plot;%test to desable button PLOT (display mode)
+    if isfield(data,'enable_plot')
+        enable_plot=data.enable_plot;%test to desable button PLOT (display mode)
+    end
+    if isfield(data,'Name')
+        set(handles.TITLE,'String',data.Name)
     end
     if ~isfield(data,'NbDim')||~isequal(data.NbDim,3)%2D case
         set(handles.ZObject,'Visible','off')
@@ -731,66 +730,93 @@ end
 % --- Executes on button press in PLOT: PLOT the defined object and its projected field
 function PLOT_Callback(hObject, eventdata, handles)
 
-SetData=get(handles.set_object,'UserData');%get the hidden interface data
-huvmat=findobj('Name','uvmat');%find the current uvmat interface handle
-hlist_object=findobj(huvmat,'Tag','list_object_1');%handles of the object list in the GUI uvmat 
-IndexObj=get(hlist_object,'Value');%position in the objet list
+%SetData=get(handles.set_object,'UserData');%get the hidden interface data
+huvmat=findobj('tag','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
+hhuvmat=guidata(huvmat);%handles in the uvmat GUI
+ObjectName=get(handles.set_object,'name');%name ome)f the current object (set_object na
+ListObject=get(hhuvmat.list_object_1,'String');%position in the objet list
+IndexObj_1=get(hhuvmat.list_object_1,'Value');
+IndexObj_2=get(hhuvmat.list_object_2,'Value');
+
+% set(plotfig,'Name',['Projection on' num2str(IndexObj) '-' ObjectData.Style]);
 ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
-ObjectData.HandlesDisplay=[]; % new object plot by default
-if length(UvData.Object) >= IndexObj && isfield(UvData.Object{IndexObj},'HandlesDisplay')
-    hdisplay=UvData.Object{IndexObj}.HandlesDisplay;
-    if isequal(UvData.Object{IndexObj}.Style, ObjectData.Style) && isequal(UvData.Object{IndexObj}.ProjMode, ObjectData.ProjMode)
-        ObjectData.HandlesDisplay=UvData.Object{IndexObj}.HandlesDisplay;
-    else  % for a new object styl, delete the existing object plots 
-        for ih=1:length(hdisplay)
-            PlotData=get(hdisplay(ih),'UserData');
-            if isfield(PlotData,'SubObject') & ishandle(PlotData.SubObject)
-                    delete(PlotData.SubObject);
-            end
-            if isfield(PlotData,'DeformPoint') & ishandle(PlotData.DeformPoint)
-                   delete(PlotData.DeformPoint);
-            end
-            if ~isequal(hdisplay(ih),0)
-                delete(hdisplay(ih));
-            end
-        end
-        if isfield(ObjectData,'plotaxes') && ishandle(ObjectData.plotaxes)
-            delete(ObjectData.plotaxes)%delete the axes for plotting the current projection result
-        end
-    end      
+PlotHandles=[];%default
+testnew=0;
+if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose projection is viewed in the uvmat frame
+   ObjectData.HandlesDisplay=handles.axes3;
+    PlotHandles=get_plot_handles(handles);
+    IndexObj=IndexObj_1;
+elseif strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field
+    hview_field=findobj('tag','view_field');
+    if ~isempty(hview_field)
+        PlotHandles=guidata(hview_field);
+%         PlotHandles=get_plot_handles( hhview_field);
+        ObjectData.HandlesDisplay=PlotHandles.axes3;%handle of axes3 in view_field
+    end
+    IndexObj=IndexObj_2;
+else %new object 
+    testnew=1;
+   
+    IndexObj=numel(ListObject)+1;
+    %ObjectName=[num2str(IndexObj) '-' ObjectData.Style];
+%     ListObject=[ListObject;ObjectName];
+%     set(hhuvmat.list_object_2,'String',[ListObject;ObjectName;{'...'}])
+%     set(hhuvmat.list_object_2,'Value',IndexObj)
 end
+ObjectName=get(handles.TITLE,'String');
+if length(ObjectName)<1
+    ObjectName=[num2str(IndexObj) '-' ObjectData.Style];
+else
+    for ilist=1:numel(ListObject)
+        if strcmp(ListObject{ilist},ObjectName)
+            ObjectName=[num2str(IndexObj) '-' ObjectName];
+            break
+        end 
+    end
+end
+ListObject{IndexObj,1}=ObjectName;
+set(hhuvmat.list_object_1,'String',ListObject)
+set(hhuvmat.list_object_2,'String',[ListObject;{'...'}])
+set(handles.set_object,'name',ObjectName);%update the name of set_object so that it equals its corresponding object in the list
+if testnew
+    set(hhuvmat.list_object_2,'Value',IndexObj)
+end
+% ObjectData.HandlesDisplay=[]; % new object plot by default
+% if length(UvData.Object) >= IndexObj && isfield(UvData.Object{IndexObj},'HandlesDisplay')
+%     hdisplay=UvData.Object{IndexObj}.HandlesDisplay;
+%     if isequal(UvData.Object{IndexObj}.Style, ObjectData.Style) && isequal(UvData.Object{IndexObj}.ProjMode, ObjectData.ProjMode)
+%         ObjectData.HandlesDisplay=UvData.Object{IndexObj}.HandlesDisplay;
+%     else  % for a new object styl, delete the existing object plots 
+%         for ih=1:length(hdisplay)
+%             PlotData=get(hdisplay(ih),'UserData');
+%             if isfield(PlotData,'SubObject') & ishandle(PlotData.SubObject)
+%                     delete(PlotData.SubObject);
+%             end
+%             if isfield(PlotData,'DeformPoint') & ishandle(PlotData.DeformPoint)
+%                    delete(PlotData.DeformPoint);
+%             end
+%             if ~isequal(hdisplay(ih),0)
+%                 delete(hdisplay(ih));
+%             end
+%         end
+%         if isfield(ObjectData,'plotaxes') && ishandle(ObjectData.plotaxes)
+%             delete(ObjectData.plotaxes)%delete the axes for plotting the current projection result
+%         end
+%     end      
+% end
 
 % update the object plot and projection field
-UvData.Object{IndexObj}=update_obj(UvData,IndexObj,ObjectData,SetData.PlotHandles);
-
+UvData.Object{IndexObj}=update_obj(UvData,IndexObj,ObjectData,PlotHandles);
 
 set(huvmat,'UserData',UvData)%update the data in the uvmat interface
-list_str=get(hlist_object,'String');
-% TITLE=set_title(ObjectData.Style,ObjectData.ProjMode);
-% list_str{IndexObj}=[num2str(IndexObj) '-' TITLE];
-list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style];
-% if isequal(length(list_str),IndexObj)
-%     list_str{IndexObj+1}='more...';
-% end
-set(hlist_object_1,'String',list_str)
-set(hlist_object_1,'Value',IndexObj)
+% list_str=get(hlist_object,'String');
+% list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style];
+% set(hlist_object_1,'String',list_str)
+% set(hlist_object_1,'Value',IndexObj)
 
-%update create buttons on the GUI uvmat: set to object edit mode after object plotting
+%set uvmat to object edit mode to allow further object update
 hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI
-%desactivate all create buttons in mode edit
-% if isequal(get(hhuvmat.edit,'Value'),0)
-%     set(hhuvmat.create,'Value',0)
-%     set(hhuvmat.create,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.LINE,'Value',0)
-%     set(hhuvmat.LINE,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.PATCH,'Value',0)
-%     set(hhuvmat.PATCH,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.PLANE,'Value',0)
-%     set(hhuvmat.PLANE,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.VOLUME,'Value',0)
-%     set(hhuvmat.VOLUME,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-% end
 set(hhuvmat.MenuEditObject,'enable','on')
 set(hhuvmat.edit,'Value',1)
 set(hhuvmat.edit,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
@@ -847,7 +873,12 @@ else
 end
 title={'object name'};
 dir_save=uigetdir(RootPath);
-def={fullfile(dir_save,['Object' Object.CoordType '.xml'])};
+ObjectName=get(handles.TITLE,'String');
+if ~isempty(ObjectName)&&~strcmp(ObjectName,'')
+    def={fullfile(dir_save,[ObjectName Object.CoordType '.xml'])};
+else
+    def={fullfile(dir_save,[Object.Style Object.CoordType '.xml'])};
+end
 options.Resize='on';
 displ_txt='save object as an .xml file';%default display
 menu=get(handles.ProjMode,'String');

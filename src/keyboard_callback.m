@@ -23,11 +23,11 @@ if ~isempty(cur_axes)
 end
 if ismember(xx,[8 127]) %if the delete or suppr key is pressed, delete the current object 
     currentobject=gco;
-    huvmat=findobj(allchild(0),'Name','uvmat');
+    huvmat=findobj(allchild(0),'tag','uvmat');
 %     UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
-    hlist_object=findobj(huvmat,'Tag','list_object');
+    hlist_object=findobj(huvmat,'Tag','list_object_1');
     ObjIndex=get(hlist_object,'Value')
-    if ObjIndex>1
+    if ObjIndex>1 
         delete_object(ObjIndex)
     end
     if ishandle(currentobject)
