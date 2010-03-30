@@ -580,8 +580,8 @@ elseif ~isequal(ext,'.nc')
         end
         first_i=max(field_i+1,1);
             %determine the set of times and possible intervals for CIV_3D
-        dt=(1/1000)*str2num(get(handles.dt,'String'));
-        time=(dt*[0:nb_field-1])';
+%         dt=(1/1000)*str2num(get(handles.dt,'String'));
+        time=(0:nb_field-1)';
 %             set(handles.incr_i,'UserData',dt);%store the time interval
 %             between successive images
             %displ_num:list  of possible time intervals for civ_3D calculations
@@ -593,7 +593,6 @@ if isequal(nom_type_ima,'none')% no file numbering used
    first_j=1;
   last_j=1;
 end
-UvData.XmlData=XmlData;
 
 if exist('time','var')
     nbfield=size(time,1);
@@ -1547,12 +1546,9 @@ set(handles.browse_root,'UserData',browse);%update the nomenclature type for uvm
 
 for ifile=1:nbfield
     i_cmd=0; 
-    cmd='';
-    if sge
        cmd='#!/bin/bash';
        cmd=char({cmd;'#$ -cwd'});
        cmd=char({cmd;'hostname && date'});
-    end
     filename_cmx=cell2mat(filecell_nc1(ifile));%output netcdf file
     filename_cmx([end-1:end])='cm';%name of cmx file
     filename_cmx=[filename_cmx 'x'];
@@ -1578,90 +1574,17 @@ for ifile=1:nbfield
     	par_civ1_3d_xml=fullfile(par_civ1.path,[resu_file '.xml']);%[par_civ1.path '/test_to_change.xml'];
  	 pvalue=num2str((1-ind_answer)*500)
     	save(civAllxml,par_civ1_3d_xml);
-    
-%       if(isunix && sge)
-	 ['echo /CIVX/bin/MPI/lam-7.1.3_g95/bin/mpirun C  ' Civ3D3CBin ' -p ' par_civ1_3d_xml '|qsub -p ' pvalue ' -q lam.q -pe lam_loose 16 -e ' par_civ1_3d_xml '.errors -o ' par_civ1_3d_xml '.log' ]
-	 eval ( ['!echo /CIVX/bin/MPI/lam-7.1.3_g95/bin/mpirun C  ' Civ3D3CBin ' -p ' par_civ1_3d_xml '|qsub -p ' pvalue ' -q lam.q -pe lam_loose 16 -e ' par_civ1_3d_xml '.errors -o ' par_civ1_3d_xml '.log' ])
-%       else
-%  	    '3D mode is NOT supported without sge'
-%       end
-     return
-        % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %  fichier xml produit
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % A CONTINUER
-        %civAllxml
-        civAllCmd=[];
-        civAllxml=set(civAllxml,1,'name','civ3d3c');
-        namelog=[filename_cmx([1:end-3]) 'log'];
-        %par_civ1.Dt=num2str(time(num2_civ1(ifile),num_b_civ1(j))-time(num1_civ1(ifile),num_a_civ1(1)));
-        %par_civ1.T0=num2str((time(num2_civ1(ifile),num_b_civ1(j))+time(num1_civ1(ifile),num_a_civ1(1)))/2); 
-       % test_mask=get(handles.get_mask_civ1,'Value');
-        i_cmd=i_cmd+1;
-%         if isequal(civAll,0)
-%             cmd=char({cmd;BATCH_CIV1(filename_cmx([1:end-4]),namelog,par_civ1,handles)});
-%         else
-             civAllCmd=[civAllCmd ' civ1 '];
-             str=BATCH_CIV1_Unified(filename_cmx([1:end-4]),namelog,par_civ1,handles);
-            fieldnames=fields(str);
-            [civAllxml,uid_civ1]=add(civAllxml,1,'element','civ1');
-            for ilist=1:length(fieldnames)
-              val=eval(['str.' fieldnames{ilist}]);
-              if ischar(val)
-                [civAllxml,uid_t]=add(civAllxml,uid_civ1,'element',fieldnames{ilist});
-                [civAllxml,uid_t2]=add(civAllxml,uid_t,'chardata',val);
-               end
-            end   
-%         end
-    end         
-    if(isunix)
-	    cmd=char({cmd ; ['cp -f ' filename_cmx '2 ' filename_cmx]; cmd_CIV2});
-    else
-        cmd=char({cmd ; ['copy /Y ' filename_cmx '2 ' filename_cmx]; cmd_CIV2});
-    end
+     nb_processor='8';
+	 ['echo /CIVX/bin/MPI/lam-7.1.3_g95/bin/mpirun C  ' Civ3D3CBin ' -p ' par_civ1_3d_xml '|qsub -p ' pvalue ' -q lam.q -pe lam_loose ' nb_processor ' -e ' par_civ1_3d_xml '.errors -o ' par_civ1_3d_xml '.log' ]
+	 eval ( ['!echo /CIVX/bin/MPI/lam-7.1.3_g95/bin/mpirun C  ' Civ3D3CBin ' -p ' par_civ1_3d_xml '|qsub -p ' pvalue ' -q lam.q -pe lam_loose ' nb_processor ' -e ' par_civ1_3d_xml '.errors -o ' par_civ1_3d_xml '.log' ])
+
+    end           
 end
-     
-%  if isequal(civAll,1)
-    save(civAllxml,[filename_cmx([1:end-4]) '.xml']);
-    cmd=char({cmd;[Civ_exe ' -f ' [filename_cmx([1:end-4]) '.xml'] ' ' civAllCmd]});
 
-     %save(civAllxml,'/tmp/test.xml');
-%  end
-
-
-% create the .bat file:
-if sge
-        [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
-        filename_bat=fullfile(Rootbat,['job_' Filebat extbat]);
-else
-    filename_bat=filename_cmx;
-end
-filename_bat(end-2:end)='bat';
-
-%     pbat=fopen(filename_bat,'w'); %create the file filename_bat
-dlmwrite(filename_bat,cmd,'');%write commands in filename_bat
-if sge
-    pvalue=num2str((1-ind_answer)*500);
-    namelog=[filename_bat '.patch.log'];
-    ['!qsub -p ' pvalue ' -q civ_3D.q -e ' filename_cmx(1:end-4) '.errors -o ' filename_cmx(1:end-4) '.log' ' ' filename_bat];
-    eval(  ['!qsub -p ' pvalue ' -q civ_3D.q -e ' filename_cmx(1:end-4) '.errors -o ' filename_cmx(1:end-4) '.log' ' ' filename_bat]);
-else
-    if(isunix)
-      cmdtodo=['. ' filename_bat ];%removed for Mathieu tests %' && rm -f ' filename_bat] ;
-    else
-%      cmdtodo=[filename_bat ' && del /F /Q ' filename_bat];
-       cmdtodo=[filename_bat];%removed for Mathieu tests %' && del /F /Q ' filename_bat' ;
-    end
-    count= fprintf(p1,'%s\n', cmdtodo);
-end
-if ~sge
-    fclose(p1);
-    fclose(p0);
-    delete(name_lock);
-end 
 set(handles.BATCH, 'Enable','On')
 set(handles.BATCH,'BackgroundColor',[1 0 0])
-%save interface state
+
+%save GUI state
 [Path,Name]=fileparts(filebase);
 namefig=fullfile(Path,subdir_civ2,Name);
 detect=1; 

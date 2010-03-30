@@ -99,6 +99,7 @@ if exist('data','var')
     end
     if isfield(data,'Name')
         set(handles.TITLE,'String',data.Name)
+        set(hObject,'name',data.Name)
     end
     if ~isfield(data,'NbDim')||~isequal(data.NbDim,3)%2D case
         set(handles.ZObject,'Visible','off')
@@ -244,7 +245,15 @@ if enable_plot
 else
    set(handles.PLOT,'enable','off') 
 end
-
+huvmat=findobj(allchild(0),'tag','uvmat');
+UvData=get(huvmat,'UserData');
+pos_uvmat=get(huvmat,'Position');
+%position the set_object GUI with respect to uvmat
+if isfield(UvData,'SetObjectOrigin')
+    pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
+    pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
+    set(hObject,'Position',pos_set_object)
+end
 
 % --- Outputs from this function are returned to the command line.
 function varargout = set_object_OutputFcn(hObject, eventdata, handles)
@@ -744,8 +753,8 @@ ObjectData=read_set_object(handles);%read the input parameters defining the obje
 PlotHandles=[];%default
 testnew=0;
 if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose projection is viewed in the uvmat frame
-   ObjectData.HandlesDisplay=handles.axes3;
-    PlotHandles=get_plot_handles(handles);
+   ObjectData.HandlesDisplay=hhuvmat.axes3;
+    PlotHandles=get_plot_handles(hhuvmat);
     IndexObj=IndexObj_1;
 elseif strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field
     hview_field=findobj('tag','view_field');

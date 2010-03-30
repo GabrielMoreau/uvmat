@@ -1602,7 +1602,10 @@ testavi=0;
 UvData=get(handles.uvmat,'UserData');
 
 while get(handles.speed,'Value')~=0 & isequal(get(handles.RunMovie,'BusyAction'),'queue') % enable STOP command
-        runpm(hObject,eventdata,handles,increment)
+        errormsg=runpm(hObject,eventdata,handles,increment);
+        if ~isempty(errormsg)
+            return
+        end
         pause(1.02-get(handles.speed,'Value'))% wait for next image
 end
 if isfield(UvData,'aviobj') && ~isempty( UvData.aviobj),
@@ -1621,7 +1624,7 @@ set(handles.MenuExportMovie,'BusyAction','Cancel')
 
 
 %------------------------------------------------------------------
-function runpm(hObject,eventdata,handles,increment)
+function errormsg=runpm(hObject,eventdata,handles,increment)
 %------------------------------------------------------------------
 %check for mùovie pair status
 movie_status=get(handles.movie_pair,'Value');
@@ -2410,9 +2413,9 @@ if  isempty(coord_x)&~isempty(CellVarIndex)
         nbpoints=UvData.Field.DimValue(DimIndex(1));
         %Zvar=DimVarIndex(DimIndex(1));
          %Zvar=DimVarIndex(1);
-         Zvar=VarType{imax}.coord_3;
-        if Zvar~=0 % z is a dimension variable
-            ZName=UvData.Field.ListVarName{Zvar};
+%          Zvar=VarType{imax}.coord_3;
+        if isfield(VarType{imax},'coord_3')&& ~isequal(VarType{imax}.coord_3,0) % z is a dimension variable
+            ZName=UvData.Field.ListVarName{VarType{imax}.coord_3}
             eval(['UvData.ZMax=max(UvData.Field.' ZName ');'])
             eval(['UvData.ZMin=min(UvData.Field.' ZName ');'])
         else
@@ -2485,6 +2488,8 @@ if NbDim==3
     PlotHandles=get_plot_handles(handles);
     ZBounds(1)=UvData.ZMin; %minimum for the Z slider
     ZBounds(2)=UvData.ZMax;%maximum for the Z slider
+    UvData.Object{1}.Name='1-PLANE';
+    UvData.Object{1}.enable_plot=1;
     set_object(UvData.Object{1},PlotHandles,ZBounds);
     set(handles.list_object_1,'Value',1);
 %multilevel case (single menuplane in a 3D space)
@@ -4758,6 +4763,9 @@ set(handles.edit,'Value',0); %suppress the object edit mode
 set(handles.edit,'BackgroundColor',[0.7,0.7,0.7])  
 UvData.MouseAction='create_object';
 set(handles.uvmat,'UserData',UvData)
+set(handles.delete_object,'Visible','on')
+set(handles.uvmat_title,'Visible','on')
+set(handles.viw_field_title,'Visible','on')
 
 %------------------------------------------------------------------------
 % --- generic function used for the creation of a projection object
@@ -4802,18 +4810,21 @@ end
 PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
 [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface
 
-pos_uvmat=get(handles.uvmat,'Position');
-%position the set_object GUI with respect to uvmat
-if isfield(UvData,'SetObjectOrigin')
-    pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
-    pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
-    set(hset_object,'Position',pos_set_object)
-end
+% pos_uvmat=get(handles.uvmat,'Position');
+% %position the set_object GUI with respect to uvmat
+% if isfield(UvData,'SetObjectOrigin')
+%     pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
+%     pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
+%     set(hset_object,'Position',pos_set_object)
+% end
 
 UvData.MouseAction='create_object';
 set(handles.uvmat,'UserData',UvData)
 set(handles.zoom,'Value',0)
 zoom_Callback(handles.uvmat, [], handles)
+set(handles.delete_object,'Visible','on')
+set(handles.uvmat_title,'Visible','on')
+set(handles.viw_field_title,'Visible','on')
 
 %------------------------------------------------------------------------
 function MenuRuler_Callback(hObject, eventdata, handles)

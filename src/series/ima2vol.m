@@ -19,9 +19,9 @@ basename=fullfile(Series.RootPath,Series.RootFile) ;
 [path,subdir_ima]=fileparts(dir_images);
 curdir=pwd;
 cd(path);
-mkdir([subdir_ima '_ij']);
+mkdir([subdir_ima '_vol']);
 cd(curdir);
-basename_new=fullfile(path,[subdir_ima '_ij'],namebase);
+basename_new=fullfile(path,[subdir_ima '_vol'],namebase);
 
 % read imadoc
 [XmlData,warntext]=imadoc2struct([basename '.xml']);
@@ -54,17 +54,6 @@ if exist([basename '.xml'],'file')
     else
         t=set(t,uid_value(1),'value',ImageName)%indicate  name of the first image, with ;png extension
     end  
-
-%     %add information about image transform
-%     [t,new_uid]=add(t,1,'element','ImageTransform');
-%     [t,NameFunction_uid]=add(t,new_uid,'element','NameFunction');
-%     [t]=add(t,NameFunction_uid,'chardata','sub_background');      
-%     [t,NbSlice_uid]=add(t,new_uid,'element','NbSlice');
-%     [t]=add(t,new_uid,'chardata',num2str(nbslice_i));
-%     [t,NbSlidingImages_uid]=add(t,new_uid,'element','NbSlidingImages');
-%     [t]=add(t,NbSlidingImages_uid,'chardata',num2str(nbaver));
-%     [t,LuminosityRank_uid]=add(t,new_uid,'element','RankBackground');
-%     [t]=add(t,LuminosityRank_uid,'chardata',num2str(rank));% luminosity rank almong the nbaver sliding images 
     save(t,[basename_new '.xml'])
 end
 
@@ -82,7 +71,7 @@ for ifile=1:nbfield1*nbfield2
     vol=[vol;A];%concacene along y
     if num_j==nbfield2
          filename_new=name_generator(basename_new,num_i,1,'.vol','_i');
-         imwrite(vol,filename_new,'png')
+         imwrite(vol,filename_new,'png','BitDepth',16)% WRITE IN 16 bits
          vol=[];
     end      
 end
@@ -103,7 +92,7 @@ fct2=cos(ix/(windowsize-1)/2*pi/2);
 Mfiltre=fct2'*fct2;
 Mfiltre=Mfiltre/(sum(sum(Mfiltre)));
 
-C=filter2(ones(windowsize)/windowsize^2,B);
+C=filter2(Mfiltre,B);
 C(:,1:windowsize)=C(:,windowsize)*ones(1,windowsize);
 C(:,end-windowsize+1:end)=C(:,end-windowsize+1)*ones(1,windowsize);
 C(1:windowsize,:)=ones(windowsize,1)*C(windowsize,:);
@@ -126,4 +115,4 @@ n_select=n(i_select);
 cmin=min(c_select);
 cmax=max(c_select);
 C=(C-cmin)/(cmax-cmin)*256;
-C=uint8(C);
+%C=uint8(C);

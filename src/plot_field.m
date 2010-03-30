@@ -11,7 +11,7 @@
 %  and/or coord_y and/or coord_z (case of unstructured coordinates), or
 %  dimension variables (case of matrices). 
 %
-% function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)
+% function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,htext,PosColorbar)
 %
 % OUPUT:
 % PlotType: type of plot: 'text','line'(curve plot),'plane':2D view,'volume'
@@ -52,6 +52,8 @@
 %   haxes: handle of the plotting axes to update with the new plot. If this input is absent or not a valid axes handle, a new figure is created.
 %
 %   PlotParam: parameters for plotting, as read on the uvmat interface (by function 'read_plot_param.m')
+%     .FixedLimits:=0 (default) adjust axes limit to the X,Y data, =1: preserves the previous axes limits
+%     .Auto_xy: =0 (default): kepp 1 to 1 aspect ratio for x and y scales, =1: automatic adjustment of the graph
 %            --scalars--
 %    .Scalar.MaxA: upper bound (saturation color) for the scalar representation, max(field) by default
 %    .Scalar.MinA: lower bound (saturation) for the scalar representation, min(field) by default
@@ -78,7 +80,7 @@
 %    .Vectors.MinC = imposed minimum of the scalar field used for vector color;
 %    .Vectors.MaxC = imposed maximum of the scalar field used for vector color;
 %
-% KeepLim:=0 (default) adjust axes limit to the X,Y data, =1: preserves the previous axes limits
+% 
 % PosColorbar: if not empty, display a colorbar for B&W images
 %               imposed position of the colorbar (ex [0.821 0.471 0.019 0.445])
 %
@@ -98,11 +100,14 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,KeepLim,PosColorbar)
-
+function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,htext,PosColorbar)
+% TODO:
+% use htext: handles of the text edit box (uicontrol)
+% introduce PlotParam.Hold: 'on' or 'off' (for curves)
+  
 %default output
 if ~exist('PlotParam','var'),PlotParam=[];end;
-if ~exist('KeepLim','var'),KeepLim=0;end;
+if ~exist('htext','var'),htext=[];end;
 if ~exist('PosColorbar','var'),PosColorbar=[];end;
 PlotType='text'; %default
 PlotParamOut=PlotParam;%default
@@ -176,13 +181,9 @@ end
 if ~isfield(Data,'NbDim') %& ~isfield(Data,'Style')%determine the space dimensionb if not defined: choose the kind of plot 
     [Data.NbDim,imax]=max(NbDim);
 end
-if isequal(Data.NbDim,0) % TODO: chech whether this function is still used, replace by plot_profile ?
-%     if isfield(Data,'Style') & isequal(Data.Style,'points')
-        AxeData=plot_text(Data,haxes);
+if isequal(Data.NbDim,0) 
+        AxeData=plot_text(Data,htext);
         PlotType='text';
-%     else
-%         [AxeData,haxes]=plot_hist(Data,haxes,PlotParam);
-%     end
 elseif isequal(Data.NbDim,1)
     [AxeData,haxes]=plot_profile(Data,CellVarIndex,VarType,haxes,PlotParam);% 
     if testzoomaxes
@@ -197,7 +198,7 @@ elseif isequal(Data.NbDim,2)
         display(['more than two fields to map'])
         return
     end
-    [AxeData,haxes,PlotParamOut,PlotType]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),haxes,PlotParam,KeepLim,PosColorbar);
+    [AxeData,haxes,PlotParamOut,PlotType]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),haxes,PlotParam,htext,PosColorbar);
     if testzoomaxes
         [AxeData,zoomaxes,PlotParamOut]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),zoomaxes,PlotParam,1,PosColorbar);
         AxeData.ZoomAxes=zoomaxes;
@@ -234,9 +235,69 @@ set(0,'Children',hstack);%put back the initial figure stack after plot creation
 end
 
 
-%----------------------------------------------------------
+%-------------------------------------------------------------------
+function hdisplay=plot_text(FieldData,hdisplay_in)
+%-------------------------------------------------------------------
+if exist('hdisplay_in','var') & ishandle(hdisplay_in) & isequal(get(hdisplay_in,'Type'),'uicontrol')
+    hdisplay=hdisplay_in;
+else
+    figure;%create new figure
+    hdisplay=uicontrol('Style','edit', 'Units','normalized','Position', [0 0 1 1],'Max',2,'FontName','monospaced');
+end
+    
+ff=fields(FieldData);%list of field names
+vv=struct2cell(FieldData);%list of field values
+
+for icell=1:length(vv)
+    Tabcell{icell,1}=ff{icell};
+    ss=vv{icell};
+    sizss=size(ss);
+    if isnumeric(ss)
+        if sizss(1)<=1 & length(ss)<5
+            displ{icell}=num2str(ss);
+        else
+            displ{icell}=[class(ss) ', size ' num2str(size(ss))];
+        end
+    elseif ischar(ss)
+        displ{icell}=ss;
+    elseif iscell(ss)
+        sizcell=size(ss);
+        if sizcell(1)==1 & length(sizcell)==2 %line cell
+           ssline='{''';
+           for icolumn=1:sizcell(2)
+               if isnumeric(ss{icolumn})
+                   if size(ss{icolumn},1)<=1 & length(ss{icolumn})<5
+                      sscolumn=num2str(ss{icolumn});%line vector
+                   else
+                      sscolumn=[class(ss{icolumn}) ', size ' num2str(size(ss{icolumn}))];
+                   end
+               elseif ischar(ss{icolumn})
+                   sscolumn=ss{icolumn};
+               else
+                   sscolumn=class(ss{icolumn});
+               end
+               if icolumn==1
+                   ssline=[ssline sscolumn];
+               else
+                   ssline=[ssline ''',''' sscolumn];
+               end
+           end
+           displ{icell}=[ssline '''}'];
+        else
+           displ{icell}=[class(ss) ', size ' num2str(sizcell)];
+        end
+    else
+        displ{icell}=class(ss);
+    end
+    Tabcell{icell,2}=displ{icell};
+end 
+Tabchar=cell2tab(Tabcell,': '); 
+set(hdisplay,'String', Tabchar)
+
+
+%-------------------------------------------------------------------
 function [AxeData,haxes]=plot_profile(data,CellVarIndex,VarType,haxes,PlotParam)
-%-----------------------------------------------------------
+%-------------------------------------------------------------------
 %axes(haxes)
 hfig=get(haxes,'parent');
 AxeData=data;
@@ -246,7 +307,7 @@ set(haxes,'ColorOrder',ColorOrder)
 if isfield(PlotParam,'NextPlot')
     set(haxes,'NextPlot',PlotParam.NextPlot)
 end
-% adjust the size of the plot to include the whole field, except if KeepLim=1
+% adjust the size of the plot to include the whole field,
 if isfield(PlotParam,'FixedLimits') && isequal(PlotParam.FixedLimits,1)  %adjust the graph limits*
     set(haxes,'XLimMode', 'manual')
     set(haxes,'YLimMode', 'manual')
@@ -453,10 +514,9 @@ if test_newplot && ~isequal(plotstr,'plot(')
 end
 
 
-%---------------------------------------
-% plot_plane
-%----------------------------------------
-function [AxeData,haxes,PlotParamOut,PlotType]=plot_plane(Data,CellVarIndex,VarTypeCell,haxes,PlotParam,KeepLim,PosColorbar)
+%-------------------------------------------------------------------
+function [AxeData,haxes,PlotParamOut,PlotType]=plot_plane(Data,CellVarIndex,VarTypeCell,haxes,PlotParam,htext,PosColorbar)
+%-------------------------------------------------------------------
 grid(haxes, 'off')
 %default plotting parameters
 PlotType='plane';%default
@@ -853,8 +913,8 @@ if test_vec
     vec_Y=reshape(vec_Y,1,numel(vec_Y));
     vec_U=reshape(vec_U,1,numel(vec_U));
     vec_V=reshape(vec_V,1,numel(vec_V));
-    MinMaxX=max(vec_X)-min(vec_X);
-    MinMaxY=max(vec_Y)-min(vec_Y);
+    MinMaxX=max(vec_X)-min(vec_X)
+    MinMaxY=max(vec_Y)-min(vec_Y)
     AxeData.Mesh=sqrt((MinMaxX*MinMaxY)/length(vec_X));
     if  ~isfield(PlotParam.Vectors,'AutoVec') || isequal(PlotParam.Vectors.AutoVec,0)|| ~isfield(PlotParam.Vectors,'VecScale')...
                ||isempty(PlotParam.Vectors.VecScale)||~isa(PlotParam.Vectors.VecScale,'double') %automatic vector scale
@@ -992,8 +1052,9 @@ for ilist=1:numel(listfields)
     end
 end
 
-% adjust the size of the plot to include the whole field, except if KeepLim=1
-if ~(exist('KeepLim','var') && isequal(KeepLim,1))  %adjust the graph limits*
+% adjust the size of the plot to include the whole field, except if PlotParam.FixedLimits=1
+if ~(isfield(PlotParam,'FixedLimits') && PlotParam.FixedLimits)
+    %~(exist('KeepLim','var') && isequal(KeepLim,1))  %adjust the graph limits*
         test_lim=0;
         if test_vec
             Xlim=[min(vec_X) max(vec_X)];
@@ -1027,9 +1088,9 @@ end
 set(haxes,'YDir','normal') 
 set(get(haxes,'XLabel'),'String',[XName x_units]);
 set(get(haxes,'YLabel'),'String',[YName y_units]);
-%---------------------------------------------
-%function for plotting vectors
-%------------------------------------------------
+
+%-------------------------------------------------------------------
+% --- function for plotting vectors
 %INPUT:
 % haxes: handles of the plotting axes
 %x,y,u,v: vectors coordinates and vector components to plot, arrays withb the same dimension
@@ -1037,7 +1098,7 @@ set(get(haxes,'YLabel'),'String',[YName y_units]);
 %colorlist(icolor,:): list of vector colors, dim (nbcolor,3), depending on color #i
 %col_vec: matlab vector setting the color number #i for each velocity vector
 function quiresetn(haxes,x,y,u,v,scale,colorlist,col_vec)
-
+%-------------------------------------------------------------------
 %define arrows
 theta=0.5 ;%angle arrow
 alpha=0.3 ;%length arrow
@@ -1117,10 +1178,10 @@ if sizh(1) > 2*ncolor
     end
 end
 
-%---------------------------------------
-%determine tick positions for colorbar
-%------------------------------------
+%-------------------------------------------------------------------
+% ---- determine tick positions for colorbar
 function YTick=colbartick(MinA,MaxA)
+%-------------------------------------------------------------------
 %determine tick positions with "simple" values between MinA and MaxA
 YTick=0;%default
 maxabs=max([abs(MinA) abs(MaxA)]);

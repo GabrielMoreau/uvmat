@@ -949,8 +949,8 @@ NormVec_Z=cos(Theta);
 
 % test for 3D fields
 test3D=0;
-if isfield(FieldData,'NbDim')
-    test3D=isequal(FieldData.NbDim,3);
+if isfield(FieldData,'nb_dim')
+    test3D=isequal(FieldData.nb_dim,3)
 end
 test3C=test3D; %default 3 vel components
 
@@ -1045,12 +1045,12 @@ for icell=1:length(CellVarIndex)
     
 %case of input fields with unstructured coordinates
     if testX
-        XName=FieldData.ListVarName{ivar_X};
-        YName=FieldData.ListVarName{ivar_Y};
+        XName=FieldData.ListVarName{ivar_X}
+        YName=FieldData.ListVarName{ivar_Y}
         eval(['coord_x=FieldData.' XName ';'])
         eval(['coord_y=FieldData.' YName ';'])
         if length(ivar_Z)==1
-            ZName=FieldData.ListVarName{ivar_X};
+            ZName=FieldData.ListVarName{ivar_Z}
             eval(['coord_z=FieldData.' ZName ';'])
         end
 
