@@ -418,7 +418,7 @@ if isempty(oldfile)||isequal(oldfile,'') %loads the previously stored file name 
          end
 end
 [FileName, PathName] = uigetfile( ...
-       {'*.xml;*.xls;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.nc;*.cmx;*.fig;*.log;*.dat', ' (*.xml,*.xls,*.civ,*.jpg ,*.png, .tif, *.avi,*.nc,*.cmx ,*.fig,*.log,*.dat)';
+       {'*.xml;*.xls;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol;*.nc;*.cmx;*.fig;*.log;*.dat;*.bat;', ' (*.xml,*.xls,*.civ,*.jpg ,*.png, .tif, *.avi,*.vol,*.nc,*.cmx ,*.fig,*.log,*.dat,*.bat)';
        '*.xml',  '.xml files '; ...
         '*.xls',  '.xls files '; ...
         '*.civ',  '.civ files '; ...
@@ -426,6 +426,7 @@ end
         '*.png','.png image files'; ...
         '*.tif','.tif image files'; ...
         '*.avi;*.AVI','.avi movie files'; ...
+        '*.vol','.volume images (png)'; ...
         '*.nc','.netcdf files'; ...
         '*.cdf','.netcdf files'; ...
         '*.cmx','.cmx text files';...
@@ -433,6 +434,7 @@ end
         '*.fig','.fig files (matlab fig)';...
         '*.log','.log text files ';...
         '*.dat','.dat text files ';...
+        '*.bat','.bat system command text files';...
         '*.*',  'All Files (*.*)'}, ...
         'Pick a file',oldfile);
 %global filebase
@@ -540,7 +542,7 @@ if ~isempty(ext)
     end
 end
 switch ext_test
-    case {'.civ','.log','.cmx','.cmx2','.txt'}  %display text file
+    case {'.civ','.log','.cmx','.cmx2','.txt','.bat'}  %display text file
         edit(fileinput)  
     case '.fig'                           %display matlab figure
         hfig=open(fileinput);
@@ -794,7 +796,7 @@ if isfield(XmlData,'GeometryCalib')
                set(handles.slices,'Visible','on')
                set(handles.slices,'Value',1)
            end
-           if isequal(GeometryCalib.NbSlice,'volume')
+           if isfield(GeometryCalib,'NbSlice') && isequal(GeometryCalib.NbSlice,'volume')
                set(handles.nb_slice,'String','volume')
            else
                set(handles.nb_slice,'String',num2str(NbSlice))
@@ -4136,8 +4138,6 @@ function grid_Callback(hObject, eventdata, handles)
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 
 %suppress the other options if grid is chosen
-% set(handles.create,'Value',0)
-% set(handles.create,'BackgroundColor',[0 1 0])
 set(handles.edit_vect,'Value',0)
 edit_vect_Callback(hObject, eventdata, handles)
 set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
@@ -4145,14 +4145,12 @@ set(handles.edit_vect,'Value',0)
 edit_vect_Callback(hObject, eventdata, handles)
 set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
 set(handles.list_object_1,'Value',1)      
-% set(handles.cal,'Value',0)
-% set(handles.cal,'BackgroundColor',[0 1 0])   
 
 %prepare display of the set_grid GUI
 data.fixedtitle=1;
 FileName=read_file_boxes(handles);
 [hset_object,UvData.sethandles]=set_grid(FileName);% call the set_object interface
-set(huvmat,'UserData',UvData);
+set(handles.uvmat,'UserData',UvData);
 
 
 %-------------------------------------------------------------------

@@ -59,26 +59,32 @@ end
 
 %main loop
  vol=[];
-for ifile=1:nbfield1*nbfield2
-    update_waitbar(hseries.waitbar,WaitbarPos,ifile/(nbfield1*nbfield2))
-    filename=name_generator(basename,ifile-1,1,Series.FileExt,Series.NomType);
-    num_j=mod(ifile-1,nbfield2)+1;
-    num_i=floor((ifile-1)/nbfield2)+1;
-    A=imread(filename);
-    if test_level
-         A=levels(A);
-    end 
-    vol=[vol;A];%concacene along y
-    if num_j==nbfield2
-         filename_new=name_generator(basename_new,num_i,1,'.vol','_i');
-         imwrite(vol,filename_new,'png','BitDepth',16)% WRITE IN 16 bits
-         vol=[];
-    end      
-end
+ for ifile=1:nbfield1*nbfield2
+     update_waitbar(hseries.waitbar,WaitbarPos,ifile/(nbfield1*nbfield2))
+     stopstate=get(hseries.RUN,'BusyAction');
+     if isequal(stopstate,'queue') % enable STOP command
+         filename=name_generator(basename,ifile-1,1,Series.FileExt,Series.NomType);
+         num_j=mod(ifile-1,nbfield2)+1;
+         num_i=floor((ifile-1)/nbfield2)+1;
+         A=imread(filename);
+         Atype=class(A);
+         if test_level
+             A=levels(A,16);
+             display(num2str(num_i))
+         end
+         vol=[vol;A];%concacene along y
+         if num_j==nbfield2
+             filename_new=name_generator(basename_new,num_i,1,'.vol','_i');
+             imwrite(vol,filename_new,'png','BitDepth',16)% WRITE IN 16 bits: needed for the current version of civ3C3D
+             display([filename_new 'written (16bits image)'])
+             vol=[];
+         end
+     end
+ end
 
 
 
-function C=levels(A)
+function C=levels(A,bitdepth)
 %whos A;
 B=double(A(:,:,1));
 windowsize=round(min(size(B,1),size(B,2))/20);
@@ -114,5 +120,10 @@ c_select=c(i_select);
 n_select=n(i_select);
 cmin=min(c_select);
 cmax=max(c_select);
-C=(C-cmin)/(cmax-cmin)*256;
-%C=uint8(C);
+if isequal(bitdepth,16)
+    C=((C-cmin)/(cmax-cmin))*256*256;
+    C=uint16(C);
+else
+    C=((C-cmin)/(cmax-cmin))*256;
+    C=uint8(C);
+end

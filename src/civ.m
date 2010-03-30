@@ -50,7 +50,7 @@ function civ_OpeningFcn(hObject, eventdata, handles, param)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to civ (see VARARGIN)
-global test_batch patch_newBin%=1 if patch processing available
+global test_batch patch_newBin CivBin%=1 if patch processing available
 %filebase: root name 
 %nom_type: nomencalture used ('png_old','_i_j'...)
 %list of field numbers to process
@@ -294,7 +294,7 @@ if testeditxml==1 || isequal(ext,'.xls')
        return
    end
 end
-[RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput);
+[RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)
 filebase=fullfile(RootPath,RootFile);
 % if isequal(nom_type,'*')% all fields in a single file ( movie files)
 %     num_i1=1;num_i2=1;num_j1=1;num_j2=1;
@@ -302,11 +302,11 @@ filebase=fullfile(RootPath,RootFile);
 num_i1=stra2num(str1);
 if isempty(num_i1),num_i1=1;end
 num_i2=stra2num(str2);
-if isempty(num_i2),num_i2=1;end
+if isempty(num_i2),num_i2=num_i1;end
 num_j1=stra2num(str_a);
 if isempty(num_j1),num_j1=1;end
 num_j2=stra2num(str_b);
-if isempty(num_j2),num_j2=1;end 
+if isempty(num_j2),num_j2=num_j1;end 
 if isequal(get(handles.compare,'Value'),1)
     browse=[];%initialisation
 else
@@ -354,7 +354,9 @@ end
 set(handles.RootName,'String',filebase);
 set(handles.ImaDoc,'String',ext);
 if ~isempty(num_i1)
-    ref_i=num_i1;
+    ref_i=num_i1
+    'TEStbrowse'
+    num_i2
     if ~isempty(num_i2)
         ref_i=floor((ref_i+num_i2)/2);% reference image number corresponding to the file
         browse.incr_pair(1)=num_i2-num_i1;
@@ -536,7 +538,7 @@ if isequal(ext,'.civxml')%TO ABANDON
             nom_type_ima='_i_j';
     end
 elseif isequal(ext,'.xml')
-    [XmlData,warntext]=imadoc2struct([filebase '.xml'])
+    [XmlData,warntext]=imadoc2struct([filebase '.xml']);
     if isfield(XmlData,'Time')
         time=XmlData.Time;
         nbfield=size(time,1);
@@ -1046,26 +1048,29 @@ if get(handles.CIV1,'Value')==0 %
 end
 if isequal(mode,'series(Di)') %| isequal(mode,'st_series(Di)')
     if testpair
-              displ_pair{1}=['Di= ' num2str(-floor(browse.incr_pair(1)/2)) '|' num2str(ceil(browse.incr_pair(1)/2))];        
-%     elseif ~isequal(get(handles.root_txt,'String'),'dt(ms)=') 
-%        for ipair=1:nbpair
-%           if select(ipair)  
-%               if size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)
-%               dt=time(ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair));%time interval dt
-%               displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ' :dt= ' num2str(dt*1000)];
-%               end
-%           else 
-%              displ_pair{ipair}='...'; %pair not displayed in the menu
-%           end
-%        end
+        displ_pair{1}=['Di= ' num2str(-floor(browse.incr_pair(1)/2)) '|' num2str(ceil(browse.incr_pair(1)/2))];
+        %     elseif ~isequal(get(handles.root_txt,'String'),'dt(ms)=')
+        %        for ipair=1:nbpair
+        %           if select(ipair)
+        %               if size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)
+        %               dt=time(ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair));%time interval dt
+        %               displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ' :dt= ' num2str(dt*1000)];
+        %               end
+        %           else
+        %              displ_pair{ipair}='...'; %pair not displayed in the menu
+        %           end
+        %        end
     else
-       for ipair=1:nbpair
-         if select(ipair)
-            displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ' :dt= ' num2str(dt_unit*ipair)];
-         else 
-            displ_pair{ipair}='...'; %pair not displayed in the menu
-         end
-       end
+        for ipair=1:nbpair
+            if select(ipair)
+                if size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)
+                    dt=time(ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair));%time interval dt
+                    displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ' :dt= ' num2str(dt*1000)];
+                else
+                    displ_pair{ipair}='...'; %pair not displayed in the menu
+                end
+            end
+        end
     end
 elseif isequal(mode,'series(Dj)')%|isequal(mode,'st_series(Dj)')% series on the j index
     if testpair
@@ -1189,7 +1194,7 @@ if isempty(time)
     time=[0 1];%default
 end
 %dt_unit=str2num(get(handles.dt,'String'));% used when there is no image documentation file
-dt_unit=1000;
+%dt_unit=1000;
 displ_num=get(handles.list_pair_civ1,'UserData');
 
 
@@ -2000,18 +2005,24 @@ end
 function RUN_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % global civ1_exe civ2_exe patch_exe patch_new_exe sge
-
+set(handles.RUN, 'Enable','Off')
+set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
 batch=0;
 launch_jobs(hObject, eventdata, handles,batch);
-
+set(handles.RUN, 'Enable','On')
+set(handles.RUN,'BackgroundColor',[1 0 0])
 
 %------------------------------------------------------------------------
 % --- Executes on button press in BATCH: remote processing
 function BATCH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %global civ1_exe civ2_exe patch_exe patch_new_exe fix_exe todo_path sge Civ_exe % probabely to remove
+set(handles.BATCH, 'Enable','Off')
+set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])
 batch=1;
 launch_jobs(hObject, eventdata, handles, batch)
+set(handles.BATCH, 'Enable','On')
+set(handles.BATCH,'BackgroundColor',[1 0 0])
 
 %------------------------------------------------------------------------
 % --- Executes on button press in BATCH: remote processing
@@ -2085,14 +2096,6 @@ if exist(xmlfile,'file')
     t=xmltree(xmlfile);
     s=convert(t);
 end
-% else
-%     xmlfile=fullfile(path_UVMAT,'PARAM_WIN.xml');
-%     if exist(xmlfile,'file')
-%         t=xmltree(xmlfile);
-%         sparam=convert(t);
-%     end
-% end
-% batch=0;
 if batch
     if isfield(s,'BatchParam')
         sparam=s.BatchParam;
@@ -2112,7 +2115,7 @@ else
     end
 end
 if isfield(sparam,'CivBin')
-    CivBin=sparam.CivBin;
+    CivBin=sparam.CivBin
 end
 if isfield(sparam,'Civ1Bin')
     civ1Bin=sparam.Civ1Bin;
@@ -2120,18 +2123,16 @@ end
 if isfield(sparam,'Civ2Bin')
     civ2Bin=sparam.Civ2Bin;
 end
-if isfield(sparam,'PatchBin')
-    patchBin=sparam.PatchBin;
+test_interp=get(handles.test_interp,'Value');
+if ~test_interp && isfield(sparam,'PatchBin')
+    PatchBin=sparam.PatchBin;
 end
- if isfield(sparam,'PatchNewBin')
-    patch_newBin=sparam.PatchNewBin;
- end
- if isfield(sparam,'FixBin')
+if test_interp && isfield(sparam,'PatchNewBin')
+    PatchBin=sparam.PatchNewBin;
+end
+if isfield(sparam,'FixBin')
     fixBin=sparam.FixBin;
- end
-%  if isfield(sparam,'Todo_path')
-%     todo_path=sparam.Todo_path;
-%  end
+end
 if batch
     if isfield(sparam,'BatchMode')
         batch_mode=sparam.BatchMode;
@@ -2148,8 +2149,7 @@ set(handles.waitbar_1,'Position',[0.946 0.876 0.03 0.001])
 set(handles.waitbar_patch1,'Position',[0.946 0.439 0.03 0.001])
 set(handles.waitbar_civ2,'Position',[0.946 0.219 0.03 0.001])
 set(handles.waitbar_patch2,'Position',[0.946 0.0 0.03 0.001])
-set(handles.BATCH, 'Enable','Off')
-set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])
+
 drawnow
 %get the filename root, nomenclature and numbers
 
@@ -2265,7 +2265,6 @@ if box_test(3)==1
         end
         subdomain_patch1=get(handles.subdomain_patch1,'String');
         thresh_patch1=get(handles.thresh_patch1,'String');
-        test_interp=get(handles.test_interp,'Value');
  end
  
  %get civ2 parameters
@@ -2290,6 +2289,7 @@ if box_test(5)==1
 end
 
 
+
 %get patch2 parameters
 if box_test(6)==1
     rho_patch2=str2num(get(handles.rho_patch2,'String'));
@@ -2311,34 +2311,8 @@ if box_test(6)==1
     end
     subdomain_patch2=get(handles.subdomain_patch2,'String');
     thresh_patch2=get(handles.thresh_patch2,'String');
-             test_interp=get(handles.test_interp,'Value');
+%              test_interp=get(handles.test_interp,'Value');
 end
-
-% if ~sge
-%        
-%     %OPEN THE WAIT LIST FOR BATCH PROCESSES
-%     name_lock=fullfile(todo_path,'lock'); %lock file 
-%     iwait=0;
-%     while(exist(name_lock) & iwait<15)
-%         pause(1); %wait 1 second
-%         iwait=iwait+1;
-%     end
-%     if iwait==15
-%         msgbox_uvmat('ERROR',['I''m tired to wait for the lock file, please delete it then click again on BATCH' name_lock ])
-%         set(handles.BATCH, 'Enable','On')
-%         set(handles.BATCH,'BackgroundColor',[1 0 0])
-%         return
-%     end
-%     p0=fopen(name_lock,'w'); %create the file name_lock: prevents other users to interfere
-%     name_todo=fullfile(todo_path,'TODO.txt');
-%     p1=fopen(name_todo,'a');
-%     if (p1<0)
-%         msgbox_uvmat('ERROR',['error in opening ' name_todo])
-%         set(handles.BATCH, 'Enable','On')
-%         set(handles.BATCH,'BackgroundColor',[1 0 0])
-%         return;
-%     end
-% end
 
 %MAIN LOOP
 % for ifile=1:nbfield
@@ -2349,7 +2323,7 @@ for ifile=1:nbfield
     for j=1:nbslice
         i_cmd=0; 
         cmd='';
-        if batch
+        if isunix % check: necessaire aussi en RUN?
            %fid=fopen([filename '.cmx'],'w')
            cmd='#!/bin/bash';
            cmd=[cmd '\n' '#$ -cwd'];
@@ -2357,21 +2331,17 @@ for ifile=1:nbfield
         end
         if civAll
             civAllxml=xmltree;% xml contents,  all parameters
-            civAllCmd=[];
+            civAllCmd='';
             civAllxml=set(civAllxml,1,'name','CivDoc');
         end
-%         filecell.nc.civ1
-        filename_cmx=filecell.nc.civ1{ifile,j}%output netcdf file
+        filename_cmx=filecell.nc.civ1{ifile,j};%output netcdf file
         filename_cmx(end-1:end)='cm';%name of cmx file
         filename_cmx=[filename_cmx 'x'];
         
    %CIV1
         if box_test(1)==1
             par_civ1.filename_ima_a=filecell.ima1.civ1{ifile,j};
-           % par_civ1.filename_ima_a([end-3:end])=[];%remove .png extension
-            par_civ1.filename_ima_b=filecell.ima2.civ1{ifile,j};
-           % par_civ1.filename_ima_b([end-3:end])=[];%remove .png extension
-         
+            par_civ1.filename_ima_b=filecell.ima2.civ1{ifile,j};         
             namelog=[filename_cmx([1:end-3]) 'log'];
             par_civ1.Dt=num2str(time(num2_civ1(ifile),num_b_civ1(j))-time(num1_civ1(ifile),num_a_civ1(j)));
             par_civ1.T0=num2str((time(num2_civ1(ifile),num_b_civ1(j))+time(num1_civ1(ifile),num_a_civ1(j)))/2); 
@@ -2481,7 +2451,7 @@ for ifile=1:nbfield
     %PATCH1
     if box_test(3)==1
         if isequal(civAll,0)
-            cmd_PATCH=RUN_PATCH(filecell.nc.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp);
+            cmd_PATCH=RUN_PATCH(filecell.nc.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp,PatchBin);
             cmd=[cmd '\n' cmd_PATCH];
         else
             patch1.inputFileName=filecell.nc.civ1{ifile,j} ;
@@ -2600,7 +2570,7 @@ for ifile=1:nbfield
                 end
             else
                  civAllCmd=[civAllCmd ' civ2 '];
-                 str=BATCH_CIV2_Unified(filename_cmx([1:end-4]),namelog,par_civ2,sparam);
+                 str=BATCH_CIV2_Unified(filename_cmx([1:end-4]),namelog,par_civ2);
                  fieldnames=fields(str);
                 [civAllxml,uid_civ2]=add(civAllxml,1,'element','civ2');
                 for ilist=1:length(fieldnames)
@@ -2653,7 +2623,7 @@ for ifile=1:nbfield
      %PATCH2
        if box_test(6)==1
             if isequal(civAll,0)
-                cmd_PATCH=RUN_PATCH(filecell.nc.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,thresh_patch2,test_interp);
+                cmd_PATCH=RUN_PATCH(filecell.nc.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,thresh_patch2,test_interp,PatchBin);
                 cmd=[cmd '\n' cmd_PATCH];
             else
                 patch2.inputFileName=filecell.nc.civ1{ifile,j} ;
@@ -2699,7 +2669,8 @@ for ifile=1:nbfield
         end
         if isequal(civAll,1)
             save(civAllxml,[filename_cmx([1:end-4]) '.xml']);
-            cmd=char({cmd;[CivBin ' -f ' [filename_cmx([1:end-4]) '.xml'] ' ' civAllCmd]});
+            %cmd=char({cmd;[CivBin ' -f ' [filename_cmx([1:end-4]) '.xml'] ' ' civAllCmd]});
+            cmd=[cmd '\n' CivBin ' -f ' filename_cmx(1:end-4) '.xml '  civAllCmd]
         end
       % create the .bat file:
         if batch
@@ -2718,18 +2689,17 @@ for ifile=1:nbfield
                 case 'sge'
                     pvalue=num2str((1-ind_answer)*500);
                     namelog=[filename_bat '.patch.log'];
-                    ['!qsub -p ' pvalue ' -q civ.q -e ' filename_cmx(1:end-4) '.errors -o ' filename_cmx(1:end-4) '.log' ' ' filename_bat];
+                    display(['!qsub -p ' pvalue ' -q civ.q -e ' filename_cmx(1:end-4) '.errors -o ' filename_cmx(1:end-4) '.log' ' ' filename_bat]);
                     eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' filename_cmx(1:end-4) '.errors -o ' filename_cmx(1:end-4) '.log' ' ' filename_bat]);
             end
-        
-            
-
         else
 %% to lauch the jobs locally :
             if(isunix)
               eval(['!. ' filename_bat ' &']);
+              display(['!. ' filename_bat ' &'])
             else
               eval(['!' filename_bat ' &']);
+              display(['!' filename_bat ' &'])
             end
 %             if(isunix)
 %               cmdtodo=['. ' filename_bat ];%removed for Mathieu tests %' && rm -f ' filename_bat] ;
@@ -3429,7 +3399,7 @@ if ~isequal(ext_ima,'.png')
 end
 
 %------------------------------------------------------------------------
-%CIV1  CIV1  CIV1 CIV1
+%CIV1  CIV1  CIV1 CIV1 NOT USED: replaced by RUN_BATCH
 function RUN_CIV1(handles,filecell,filecell_1,filecell_nc1,num1,num2,num_a,num_b,nom_type_nc)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
@@ -3806,15 +3776,17 @@ end
 
 %------------------------------------------------------------------------
 % --- PATCH
-function cmd_PATCH=RUN_PATCH(filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,test_interp)
+function cmd_PATCH=RUN_PATCH(filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,test_interp,PatchBin)
 %------------------------------------------------------------------------
-global patchBin patch_newBin
+%global patchBin patch_newBin
+
+
         namelog=[filename_nc([1:end-3]) '_patch.log'];
         if test_interp==0
-            cmd_PATCH=[patchBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ...
+            cmd_PATCH=[PatchBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ...
             '  > ' namelog ' 2>&1']; % redirect standard output to the log file
          else %nouveau programme patch
-             cmd_PATCH=[patch_newBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ...
+             cmd_PATCH=[PatchBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ...
                 ' -max ' thresh_value ' -nopt ' subdomain_patch  '  > ' namelog ' 2>&1']; % redirect standard output to the log file
         end
 
@@ -4894,11 +4866,7 @@ fprintf(fid,['##############   CMX file' '\n' ]);
  fprintf(fid,   ['ImageUsedBefore null null' '\n' ]);
 fclose(fid);
   
-% if sge  
-    cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx' ]; % redirect standard output to the log file
-% else
-%     cmd_CIV1=[civ1Bin ' -f ' filename_cmx ' > ' namelog ' 2>&1']; % redirect standard output to the log file
-% end
+cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx' ]; % redirect standard output to the log file
 if(isunix)
     [Rootbat,Filebat,extbat]=fileparts(namelog);
     ncName=fullfile(Rootbat,[ Filebat '.nc']);
@@ -4912,7 +4880,7 @@ end
 function xml_civ1_parameters=BATCH_CIV1_Unified(filename,namelog,par)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
-global civ1Bin CivBin%name of the executable for civ1 calculation
+%global CivBin%name of the executable for civ1 calculation
 
     civ1.image1=par.filename_ima_a;
     civ1.image2=par.filename_ima_b;
@@ -4951,7 +4919,7 @@ global civ1Bin CivBin%name of the executable for civ1 calculation
 function civ2=BATCH_CIV2_Unified(filename,namelog,par)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
-global civ2Bin CivBin%name of the executable for civ1 calculation
+%global CivBin%name of the executable for civ1 calculation
 
 civ2.image1=par.filename_ima_a;
 civ2.image2=par.filename_ima_b;

@@ -454,7 +454,7 @@ for icell=1:length(CellVarIndex)
     end
 end
 if test_newplot && ~isequal(plotstr,'plot(')
-    plotstr=[plotstr '''tag'',''plot_line'')']
+    plotstr=[plotstr '''tag'',''plot_line'');'];
                 %execute plot (instruction  plotstr)  
     eval(plotstr)
    
@@ -913,8 +913,8 @@ if test_vec
     vec_Y=reshape(vec_Y,1,numel(vec_Y));
     vec_U=reshape(vec_U,1,numel(vec_U));
     vec_V=reshape(vec_V,1,numel(vec_V));
-    MinMaxX=max(vec_X)-min(vec_X)
-    MinMaxY=max(vec_Y)-min(vec_Y)
+    MinMaxX=max(vec_X)-min(vec_X);
+    MinMaxY=max(vec_Y)-min(vec_Y);
     AxeData.Mesh=sqrt((MinMaxX*MinMaxY)/length(vec_X));
     if  ~isfield(PlotParam.Vectors,'AutoVec') || isequal(PlotParam.Vectors.AutoVec,0)|| ~isfield(PlotParam.Vectors,'VecScale')...
                ||isempty(PlotParam.Vectors.VecScale)||~isa(PlotParam.Vectors.VecScale,'double') %automatic vector scale

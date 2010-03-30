@@ -481,7 +481,14 @@ if isfield(XmlDataA,'GeometryCalib')
      msgbox_uvmat('WARNING','no geometric calibration available for image A')
      tsaiA=[];
 end
-[grid_imaA(:,1),grid_imaA(:,2)]=px_XYZ(tsaiA,grid_real(:,1),grid_real(:,2),0);
+size(grid_real)
+tsaiA
+if isempty(tsaiA)
+    grid_imaA(:,1)=grid_real(:,1);
+    grid_imaA(:,2)=grid_real(:,2);
+else
+    [grid_imaA(:,1),grid_imaA(:,2)]=px_XYZ(tsaiA,grid_real(:,1),grid_real(:,2),0);
+end
     A=imread(imageA);
    siz=size(A);
    npxA=siz(2);
@@ -536,7 +543,12 @@ nx_patch_new=length(grid_real_x);
 grid_real2(:,1)=grid_real_x;
 grid_real2(:,2)=grid_real_y;
 grid_real2(:,3)=zeros(nx_patch_new,1);
-[grid_pix_A(:,1),grid_pix_A(:,2)]=px_XYZ(tsaiA,grid_real2(:,1),grid_real2(:,2));
+if isempty(tsaiA)
+    grid_pix_A(:,1)=grid_real2(:,1);
+   grid_pix_A(:,2)= grid_real2(:,2);
+else
+    [grid_pix_A(:,1),grid_pix_A(:,2)]=px_XYZ(tsaiA,grid_real2(:,1),grid_real2(:,2));
+end
 if testB
     [grid_pix_B(:,1),grid_pix_B(:,2)]=px_XYZ(tsaiB,grid_real2(:,1),grid_real2(:,2));
 end
