@@ -2335,7 +2335,6 @@ else
    UvData.Field=Field{1};
 end
 
-UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
 % test 3D , default projection menuplane and typical mesh (needed to menuopen set_object)
 test_x=0;
 test_z=0;% test for unstructured z coordinate
@@ -2479,7 +2478,7 @@ if ~isfield(UvData.Object{1},'plotaxes')
 end
 
 %3D case (menuvolume)
-if NbDim==3
+if NbDim==3 && UvData.NewSeries
     UvData.Object{1}.NbDim=UvData.NbDim;%test for 3D objects
     UvData.Object{1}.RangeZ=UvData.Mesh;%main plotting plane
     UvData.Object{1}.Coord(1,3)=(UvData.ZMin+UvData.ZMax)/2;%section at a middle plane chosen
@@ -2613,6 +2612,7 @@ end
 
 %display the updated plotting parameters for the base menuplane
 write_plot_param(handles,UvData.Object{1}.PlotParam);% update the display of the plotting parameters
+UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
 set(handles.uvmat,'UserData',UvData)
 
 %update the mask

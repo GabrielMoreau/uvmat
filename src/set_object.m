@@ -201,7 +201,9 @@ if exist('data','var')
             data.RangeZ=str2num(data.RangeZ);
         end
         set(handles.ZMax,'String',num2str(max(data.RangeZ),3))
-        set(handles.ZMin,'String',num2str(min(data.RangeZ),3))
+        if numel(data.RangeZ)>=2
+            set(handles.ZMin,'String',num2str(min(data.RangeZ),3))
+        end
     end  
     if isfield(data,'Phi')
         if ~ischar(handles.Phi)
@@ -406,7 +408,31 @@ switch ObjectStyle
         set(handles.YMax,'TooltipString',['YMax: half width of the ' ObjectStyle])
         set(handles.XObject,'TooltipString',['XObject:  x coordinate of the ' ObjectStyle ' centre'])
         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the ' ObjectStyle ' centre'])
-    case {'plane','volume'}  
+    case {'plane'}  
+        set(handles.Phi,'Visible','on')
+        set(handles.XMin,'Visible','on')
+        set(handles.XMax,'Visible','on')
+        set(handles.YMin,'Visible','on')
+        set(handles.YMax,'Visible','on')
+        set(handles.XObject,'TooltipString',['XObject:  x coordinate of the axis origin for the ' ObjectStyle])
+        set(handles.YObject,'TooltipString',['YObject:  y coordinate of the axis origin for the ' ObjectStyle])
+        set(handles.ZMax,'TooltipString',['ZMax: range of projection normal to the plane'])
+        if test3D
+            set(handles.Theta,'Visible','on')
+            set(handles.Psi,'Visible','on')
+            set(handles.ZMax,'Visible','on')
+        end
+        if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
+            set(handles.DX,'Visible','on')
+            set(handles.DY,'Visible','on')
+        else
+            set(handles.DX,'Visible','off')
+            set(handles.DY,'Visible','off')
+        end
+        if isequal(ObjectStyle,'volume') && isequal(ProjMode,'interp')
+            set(handles.DZ,'Visible','on')  
+        end
+     case {'volume'}  
         set(handles.Phi,'Visible','on')
         set(handles.XMin,'Visible','on')
         set(handles.XMax,'Visible','on')

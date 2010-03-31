@@ -997,9 +997,9 @@ if test_vec
        nbcolor=nbcolor+1;
        colorlist(nbcolor,:)=[0 0 0]; %add black to the list of colors
        if ~isempty(ivar_FF)
-            ind_flag=find(vec_F~=1 & vec_FF==0);  %flag warning but not false
+            ind_flag=find(vec_F~=1 & vec_F~=0 & vec_FF==0);  %flag warning but not false
        else
-            ind_flag=find(vec_F~=1);
+            ind_flag=find(vec_F~=1 & vec_F~=0);
        end
        col_vec(ind_flag)=nbcolor;    
     end
