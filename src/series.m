@@ -2076,7 +2076,7 @@ value=get(handles.GetObject,'Value');
 if value
      set(handles.GetObject,'BackgroundColor',[1 1 0])%put unactivated buttons to yellow
 %      DataInit.ParentButton=handles.GetObject;
-     hset_object=findobj(allchild(0),'Name','set_object');%find the set_object interface handle
+     hset_object=findobj(allchild(0),'tag','set_object');%find the set_object interface handle
      if ishandle(hset_object)
          uistack(hset_object,'top')
         %[SeriesData.hset_object,SeriesData.sethandles]=set_object(DataInit); %open the set_object interface

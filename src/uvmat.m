@@ -4245,13 +4245,13 @@ if ~isempty(hset_object)
 end
 hset_object=set_object(ObjectData,PlotHandles,ZBounds);% call the set_object interface,
 set(hset_object,'name',ObjectName)
-pos_uvmat=get(handles.uvmat,'Position');
-%position the set_object GUI with respect to uvmat
-if isfield(UvData,'SetObjectOrigin')
-    pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
-    pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
-    set(hset_object,'Position',pos_set_object)
-end
+% pos_uvmat=get(handles.uvmat,'Position');
+% %position the set_object GUI with respect to uvmat
+% if isfield(UvData,'SetObjectOrigin')
+%     pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
+%     pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
+%     set(hset_object,'Position',pos_set_object)
+% end
 
 %project the current field on the object and plot it
 ProjData= proj_field(UvData.Field,ObjectData,IndexObj);%project the current interface field on ObjectData
@@ -4261,7 +4261,7 @@ if option==1%length(UvData.Object)>= IndexObj && isfield(UvData.Object{IndexObj}
 else
     UvData.Object{IndexObj}.plotaxes=view_field(ProjData);
 end
-
+set(handles.uvmat,'UserData',UvData)
 hother=findobj('Tag','proj_object');%find all the proj objects
 for iobj=1:length(hother)
     if isequal(get(hother(iobj),'Type'),'rectangle')|isequal(get(hother(iobj),'Type'),'patch')

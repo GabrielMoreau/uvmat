@@ -35,7 +35,7 @@ WaitbarPos=get(hseries.waitbar_frame,'Position');
 %projection object
 test_object=get(hseries.GetObject,'Value');
 if test_object%isfield(Series,'sethandles')
-    hset_object=findobj(allchild(0),'Name','set_object');
+    hset_object=findobj(allchild(0),'tag','set_object');
     ProjObject=read_set_object(guidata(hset_object));
     %answeryes=questdlg({['field series projected on ' Series.ProjObject.Style]});
     answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Style ' before averaging']);

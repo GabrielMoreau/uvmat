@@ -26,7 +26,7 @@ WaitbarPos=get(hseries.waitbar_frame,'Position'); %positiopn of waitbar frame
 %projection object
 test_object=get(hseries.GetObject,'Value');
 if test_object
-    hset_object=findobj(allchild(0),'Name','set_object');
+    hset_object=findobj(allchild(0),'tag','set_object');
     ProjObject=read_set_object(guidata(hset_object));
     if ~isfield(ProjObject,'Style')
             msgbox_uvmat('ERROR','Undefined projection object style')
