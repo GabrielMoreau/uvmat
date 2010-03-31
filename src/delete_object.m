@@ -72,5 +72,5 @@ set(huvmat,'UserData',UvData);
 set(hlist_object,'String',list_str)
 set(hlist_object,'Value',length(list_str))
 hlist_object=findobj(huvmat,'Tag','list_object_2');%handles of the object liçst in the uvmat interface
-set(hlist_object,'String',[list_str {'...'}])
+set(hlist_object,'String',[list_str;{'...'}])
 set(hlist_object,'Value',length(list_str)+1)

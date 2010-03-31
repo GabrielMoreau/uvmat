@@ -453,8 +453,8 @@ for icell=1:length(CellVarIndex)
         end
     end
 end
-if test_newplot && ~isequal(plotstr,'plot(')
-    plotstr=[plotstr '''tag'',''plot_line'');'];
+if test_newplot && ~isequal(plotstr,'hhh=plot(')
+    plotstr=[plotstr '''tag'',''plot_line'');']
                 %execute plot (instruction  plotstr)  
     eval(plotstr)
    

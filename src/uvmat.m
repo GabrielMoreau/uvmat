@@ -1907,9 +1907,17 @@ if ~exist('Field','var')
     Field={};
 end
 UvData=get(handles.uvmat,'UserData');
-% if isfield(UvData,'Txt')
-%     UvData=rmfield(UvData,'Txt');%erase previous error message
-% end
+%UvData =structure containing information stored outside the uicontrol of uvmat
+%      .NewSeries: =1 for a new series (new root fiel introduced), 0 else
+%      .MovieObject: movie object representing an input movie
+%      .MovieObject_1: idem for a second input series (_1)
+%      .filename_1 : last second input file name (to deal with a constant second input without reading again the file)
+%      .VelType_1: last velocity type (civ1, civ2...) for the second input series
+%      .FieldName_1: last field name(velocity, vorticity...) for the second input series
+%      .NbDim: number of space dimensions of the input field
+%      .ZMin, .ZMax: range of the z coordinate
+%..... to complement
+
 if ishandle(handles.UVMAT_title) %remove title panel on uvmat
     delete(handles.UVMAT_title)
 end
@@ -4706,9 +4714,6 @@ create_object(data,handles)
 
 % ------------------------------------------------------------------
 function Menuplane_Callback(hObject, eventdata, handles)
-% set(handles.create,'Visible','on')
-% set(handles.create,'Value',1)
-% PLANE_Callback(hObject,eventdata,handles)
 data.Style='plane';
 data.ProjMode='projection';%default
 
@@ -4749,27 +4754,27 @@ if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
 UvData=get(handles.uvmat,'UserData');
-[hset_object,UvData.sethandles]=set_object(data);% call the set_object interface
-%position the set_object GUI with respect to uvmat
-pos_uvmat=get(handles.uvmat,'Position');
-if isfield(UvData,'SetObjectOrigin')
-    pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
-    pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
-    set(hset_object,'Position',pos_set_object)
-end
+% [hset_object,UvData.sethandles]=set_object(data);% call the set_object interface
+% %position the set_object GUI with respect to uvmat
+% pos_uvmat=get(handles.uvmat,'Position');
+% if isfield(UvData,'SetObjectOrigin')
+%     pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
+%     pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
+%     set(hset_object,'Position',pos_set_object)
+% end
 set(handles.edit,'Value',0); %suppress the object edit mode
 set(handles.edit,'BackgroundColor',[0.7,0.7,0.7])  
 UvData.MouseAction='create_object';
 set(handles.uvmat,'UserData',UvData)
 set(handles.delete_object,'Visible','on')
 set(handles.uvmat_title,'Visible','on')
-set(handles.viw_field_title,'Visible','on')
+set(handles.view_field_title,'Visible','on')
 
 %------------------------------------------------------------------------
 % --- generic function used for the creation of a projection object
 function create_object(data,handles)
 %------------------------------------------------------------------------
-hset_object=findobj(allchild(0),'Name','set_object');
+hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
@@ -4793,6 +4798,9 @@ elseif isfield(UvData.Field,'AX')&& isfield(UvData.Field,'AY')&& isfield(UvData.
     data.RangeX=max(meshx,meshy);
     data.DX=max(meshx,meshy);
 end 
+if isfield(UvData,'NbDim')
+    data.NbDim=UvData.NbDim;
+end
 data.Coord=[0 0 0]; %default
 if isfield(data,'Style') && isequal(data.Style,'line')
     if isfield(data,'DX')
@@ -4808,21 +4816,13 @@ end
 PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
 [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface
 
-% pos_uvmat=get(handles.uvmat,'Position');
-% %position the set_object GUI with respect to uvmat
-% if isfield(UvData,'SetObjectOrigin')
-%     pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
-%     pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
-%     set(hset_object,'Position',pos_set_object)
-% end
-
 UvData.MouseAction='create_object';
 set(handles.uvmat,'UserData',UvData)
 set(handles.zoom,'Value',0)
 zoom_Callback(handles.uvmat, [], handles)
 set(handles.delete_object,'Visible','on')
 set(handles.uvmat_title,'Visible','on')
-set(handles.viw_field_title,'Visible','on')
+set(handles.view_field_title,'Visible','on')
 
 %------------------------------------------------------------------------
 function MenuRuler_Callback(hObject, eventdata, handles)
