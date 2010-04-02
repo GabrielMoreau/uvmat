@@ -62,29 +62,33 @@ for ichild=1:length(hchild)
         htype=get(hchild(ichild),'Type');%type of object child of the current figure
         %if the mouse is over an axis, look at the data
         if isequal(htype,'axes')
+            y_lim=get(hchild(ichild),'YLim');
+            x_lim=get(hchild(ichild),'XLim');
             haxes=hchild(ichild);
             xy=get(haxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
-            AxeData=get(haxes,'UserData');% data attached to the axis
-            AxeData.CurrentOrigin=[xy(1,1) xy(1,2)];% The current point set by the mouse becomes the current origin
-            if ~isequal(tag_obj,'proj_object') & ~test_create
-                x_mouse=xy(1,1);%default
-                y_mouse=xy(1,2);%default
-                u_mouse=[];
-                v_mouse=[];
-                w_mouse=[];
-                A_mouse=[];
-                c_text=[];
-                f_text=[];
-                ff_text=[];     
-                ivec=[];   
-                if isfield(AxeData,'X') & isfield(AxeData,'Y') & isfield(AxeData,'Mesh')% test on the existence of a vector field in the current axis
-                    flag_vec=(AxeData.X<(xy(1,1)+AxeData.Mesh/4) & AxeData.X>(xy(1,1)-AxeData.Mesh/4)) & ...%flagx=1 for the vectors with x position selected by the mouse
-                      (AxeData.Y<(xy(1,2)+AxeData.Mesh/4) & AxeData.Y>(xy(1,2)-AxeData.Mesh/4));%f
-                    ivec=find(flag_vec,1);% search the (first) selected vector index ivec
+            if xy(1,1)>x_lim(1) && xy(1,1)<x_lim(2) && xy(1,2)>y_lim(1) && xy(1,2)<y_lim(2)
+                AxeData=get(haxes,'UserData');% data attached to the axis
+                AxeData.CurrentOrigin=[xy(1,1) xy(1,2)];% The current point set by the mouse becomes the current origin
+                if ~isequal(tag_obj,'proj_object') & ~test_create
+                    x_mouse=xy(1,1);%default
+                    y_mouse=xy(1,2);%default
+                    u_mouse=[];
+                    v_mouse=[];
+                    w_mouse=[];
+                    A_mouse=[];
+                    c_text=[];
+                    f_text=[];
+                    ff_text=[];     
+                    ivec=[];   
+                    if isfield(AxeData,'X') & isfield(AxeData,'Y') & isfield(AxeData,'Mesh')% test on the existence of a vector field in the current axis
+                        flag_vec=(AxeData.X<(xy(1,1)+AxeData.Mesh/4) & AxeData.X>(xy(1,1)-AxeData.Mesh/4)) & ...%flagx=1 for the vectors with x position selected by the mouse
+                          (AxeData.Y<(xy(1,2)+AxeData.Mesh/4) & AxeData.Y>(xy(1,2)-AxeData.Mesh/4));%f
+                        ivec=find(flag_vec,1);% search the (first) selected vector index ivec
+                    end
                 end
+            else
+                haxes=[];%mouse out of axes
             end
-%         elseif isequal(get(hchild(ichild),'Visible'),'on')& ~isequal(get(hchild(ichild),'Style'),'frame')
-%            %FAIRE UNE OPTION D'AIDE AVEC BOUTON SOURIS DROIT (ALT)??
         end
     end
 end
@@ -239,12 +243,12 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
 end
 
 % create calibration points if the GUI geometry_calib is opened, if the main axes axes3 of uvmat has ben selected
-if test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3') 
+if ~testzoom && test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3') 
     h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
     hh_geometry_calib=guidata(h_geometry_calib);
     h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
     h_edit_append=hh_geometry_calib.edit_append;%findobj(h_geometry_calib,'Tag','edit_append');
-    if isequal(get(h_edit_append,'Value'),1) 
+    if isequal(get(h_edit_append,'Value'),1) && ~isempty(haxes)
         coord_value=get(hhuvmat.transform_fct,'Value');% set uvmat to pixel coordinates, run it again if not
         if ~(isequal(coord_value,1)||isequal(coord_value,3)); %active only with no transform or px (no phys)
             set(hhuvmat.transform_fct,'Value',1)
@@ -255,7 +259,11 @@ if test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3')
         end
         Coord=get(h_ListCoord,'String');
         data=read_geometry_calib(Coord);%transform char cell to numbers
-        ind_range=10;%range of research around each existing point
+        xlim=get(haxes,'XLim');
+        ind_range_x=abs((xlim(2)-xlim(1))/50);
+        ylim=get(haxes,'YLim');
+        ind_range_y=abs((ylim(2)-ylim(1))/50);
+        ind_range=sqrt(ind_range_x*ind_range_y);
         test_newpoint=1;
         if size(data.Coord,2)>=5 %if calibration points already exist
             XCoord=(data.Coord(:,4));
@@ -264,10 +272,11 @@ if test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3')
                           (YCoord<xy(1,2)+ind_range) & (YCoord>xy(1,2)-ind_range),1);%find the first calibration point in the neighborhood of the mouse
             test_newpoint=isempty(index_point);%test for no existing calibration point near the mouse position
         end
+        val=get(h_ListCoord,'Value');
         %create a new calib point if we are not close to an existing one
         if test_newpoint                 
              strline=[ '    |    '  '    |    '  '    |    ' num2str(xy(1,1),4) '    |    ' num2str(xy(1,2),4)];
-             val=get(h_ListCoord,'Value');
+           
              if length(Coord)>=val
                  Coord(val+1:length(Coord)+1)=Coord(val:length(Coord));% push the list forward beyond the current point
              end
@@ -285,7 +294,7 @@ if test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3')
             set(hh,'XData',XCoord)
             set(hh,'YData',YCoord)
         end
-        set(hh,'UserData','edit_mode')% flag the points to edit mode
+        set(hh,'UserData',val)% flag the points to edit mode
         hhh=findobj('Tag','calib_marker');%look for handle of point marker (circle)
         if ~isempty(hhh)
             set(hhh,'Position',[xy(1,1)-ind_range/2 xy(1,2)-ind_range/2 ind_range ind_range])

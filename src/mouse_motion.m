@@ -23,6 +23,7 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function mouse_motion(hObject,eventdata,handles)
+
 if ~exist('handles','var')
     return
 end
@@ -33,6 +34,8 @@ test_edit=isfield(handles,'edit') && get(handles.edit,'Value');% edit test for m
 test_zoom_draw=0; %default
 test_ruler=0;
 huvmat=findobj(allchild(0),'Name','uvmat');%find the uvmat interface handle
+hhuvmat=guidata(huvmat);
+test_zoom=get(hhuvmat.zoom,'Value');
 if ~isempty(huvmat)
     UvData=get(huvmat,'UserData');
     test_ruler=isfield(UvData,'MouseAction') && isequal(UvData.MouseAction,'ruler');
@@ -206,9 +209,9 @@ set(handles.text_display_1,'String',text_displ_1);
 set(handles.text_display_2,'String',text_displ_2);
 set(handles.text_display_3,'String',text_displ_3);
 set(handles.text_display_4,'String',text_displ_4);
-if ~test_draw
-    return 
-end
+% if ~test_draw
+%     return 
+% end
 % At this stage  if no drawing  operation is done
 
 
@@ -288,10 +291,10 @@ end
 
 % detect calibration points if the GUI geometry_calib is opened
 h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
-if ~test_zoom_draw && ~isempty(h_geometry_calib)
+if ~test_zoom && ~isempty(h_geometry_calib)
     pointershape='crosshair';%default for geometry_calib: ready to create new points
     hh_geometry_calib=guidata(h_geometry_calib);
-    if get(hh_geometry_calib.edit_append,'Value')  && ~isempty(xy)
+    if  ~isempty(xy)
         h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
         Coord=get(h_ListCoord,'String');
         data=read_geometry_calib(Coord);%transform char cell to numbers
@@ -300,26 +303,31 @@ if ~test_zoom_draw && ~isempty(h_geometry_calib)
             YCoord=(data.Coord(:,5));
             xy=get(haxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
             if ~isempty(xy)
-                ind_range=10;
+                xlim=get(haxes,'XLim');
+                ind_range_x=abs((xlim(2)-xlim(1))/50);
+                ylim=get(haxes,'YLim');
+                ind_range_y=abs((ylim(2)-ylim(1))/50);
+                ind_range=sqrt(ind_range_x*ind_range_y);
                 index_point=find((XCoord<xy(1,1)+ind_range) & (XCoord>xy(1,1)-ind_range) & ...%flagx=1 for the vectors with x position selected by the mouse
                               (YCoord<xy(1,2)+ind_range) & (YCoord>xy(1,2)-ind_range),1);%find the first calibration point in the neighborhood of the mouse
                 if ~isempty(index_point)
                     pointershape='arrow';% default pointer is an arrow 
-                    set(h_ListCoord,'Value',index_point)%mrk the point on the GUI geometry_calib 
-                    hh=findobj('Tag','calib_points');%look for handle of calibration points 
-                    if ~isempty(hh) && strcmp(get(hh,'UserData'),'edit_mode')
-                        XCoord(index_point)=xy(1,1);
-                        YCoord(index_point)=xy(1,2);
-                        set(hh,'XData',XCoord)
-                        set(hh,'YData',YCoord)
-                    end
+                end
+                hh=findobj('Tag','calib_points');%look for handle of calibration points
+               if ~isempty(hh) && ~isempty(get(hh,'UserData')) && get(hh_geometry_calib.edit_append,'Value') 
+                    index_point=get(hh,'UserData');
+                    XCoord(index_point)=xy(1,1);
+                    YCoord(index_point)=xy(1,2);
+                    set(hh,'XData',XCoord)
+                    set(hh,'YData',YCoord)
+               end
+                if ~isempty(index_point)
+                    set(h_ListCoord,'Value',index_point)%mrk the point on the GUI geometry_calib
                     hhh=findobj('Tag','calib_marker');%look for handle of point marker (circle)
                     if ~isempty(hhh)
                         set(hhh,'Position',[XCoord(index_point)-ind_range/2 YCoord(index_point)-ind_range/2 ind_range ind_range])
-%                         set(hhh,'XData',XCoord(index_point))
-%                         set(hhh,'YData',YCoord(index_point))
                     end
-                end          
+                end
             end
         end
     end

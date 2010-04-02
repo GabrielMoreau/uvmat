@@ -215,7 +215,13 @@ Tabchar=[Tabchar;{'......'}];
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
 MenuPlot_Callback(handles.geometry_calib, [], handles)
-
+if isempty(Coord)
+    set(handles.edit_append,'Value',1)
+    set(handles.edit_append,'BackgroundColor',[1 1 0])
+else
+    set(handles.edit_append,'Value',0)
+    set(handles.edit_append,'BackgroundColor',[0.7 0.7 0.7])
+end
 % 
 %------------------------------------------------------------------------
 % executed when closing: set the parent interface button to value 0
@@ -440,14 +446,20 @@ function GeometryCalib=calib_tsai2(Coord)
 %------------------------------------------------------------------
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-
+huvmat=findobj(allchild(0),'Tag','uvmat');
+hhuvmat=guidata(huvmat);
 x_1=Coord(:,4:5)';
 X_1=Coord(:,1:3)';
 n_ima=1;
 % check_cond=0;
-nx=1024;ny=1024;
+
+
+nx=str2num(get(hhuvmat.npx,'String'));
+ny=str2num(get(hhuvmat.npy,'String'));
+
+
 % est_kc=[1;0;0;0;0];
-est_dist=[1;0;0;0;0];
+est_dist=[0;0;0;0;0];
 run(fullfile(path_UVMAT,'TOOLBOX_calib','go_calib_optim'));
 
 GeometryCalib.CalibrationType='tsai';
@@ -651,6 +663,9 @@ hplot=findobj(huvmat,'Tag','axes3');%main plotting axis of uvmat
 hhh=findobj(hplot,'Tag','calib_marker');
 Coord_cell=get(handles.ListCoord,'String');
 val=get(handles.ListCoord,'Value');
+if numel(val)>1
+    return %no action if several lines have been selected
+end
 coord_str=Coord_cell{val};
 k=findstr('|',coord_str);
 if isempty(k)%last line '.....' selected
@@ -705,18 +720,21 @@ end
 function edit_append_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 choice=get(handles.edit_append,'Value');
-if choice==1
-       Coord=get(handles.ListCoord,'String'); 
-       val=length(Coord);
-       if val>=1 & isequal(Coord{val},'')
-            val=val-1; %do not take into account blank
-       end
-       Coord{val+1}='';
-       set(handles.ListCoord,'String',Coord)
-       set(handles.ListCoord,'Value',val+1)
+% if choice==1
+%        Coord=get(handles.ListCoord,'String'); 
+%        val=length(Coord);
+%        if val>=1 & isequal(Coord{val},'')
+%             val=val-1; %do not take into account blank
+%        end
+%        Coord{val+1}='';
+%        set(handles.ListCoord,'String',Coord)
+%        set(handles.ListCoord,'Value',val+1)
+% end
+if choice
+    set(handles.edit_append,'BackgroundColor',[1 1 0])
+else
+    set(handles.edit_append,'BackgroundColor',[0.7 0.7 0.7]) 
 end
-
-
     
 function NEW_Callback(hObject, eventdata, handles)
 %A METTRE SOUS UN BOUTON
@@ -762,12 +780,13 @@ xx=double(get(handles.geometry_calib,'CurrentCharacter')); %get the keyboard cha
 if ismember(xx,[8 127])%backspace or delete
     Coord_cell=get(handles.ListCoord,'String');
     val=get(handles.ListCoord,'Value');
-    if val<numel(Coord_cell) % the last element '...' has not been selected
+     if max(val)<numel(Coord_cell) % the last element '...' has not been selected
         Coord_cell(val)=[];%remove the selected line
+        set(handles.ListCoord,'Value',min(val)) 
         set(handles.ListCoord,'String',Coord_cell)         
         ListCoord_Callback(hObject, eventdata, handles) 
         MenuPlot_Callback(hObject,eventdata,handles)
-    end
+     end
 end
 
 % %------------------------------------------------------------------------

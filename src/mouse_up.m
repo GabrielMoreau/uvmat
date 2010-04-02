@@ -261,16 +261,18 @@ if zoomstate
 end
 
 % editing calibration point
-if strcmp(MouseAction,'calib') 
-    hh=findobj(currentaxes,'Tag','calib_points')%look for handle of calibration points           
-    if ~isempty(hh)
+if ~zoomstate strcmp(MouseAction,'calib') 
+    h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
+    hh_geometry_calib=guidata(h_geometry_calib);
+    edit_test=get(hh_geometry_calib.edit_append,'Value');
+    hh=findobj(currentaxes,'Tag','calib_points');%look for handle of calibration points           
+    if ~isempty(hh) && edit_test
+        index_point=get(hh,'UserData');
         set(hh,'UserData',[])%remove edit mode
-        h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
-        hh_geometry_calib=guidata(h_geometry_calib);
         h_ListCoord=hh_geometry_calib.ListCoord; %handles of the coordinate list
         Coord=get(h_ListCoord,'String');
-        val=get(h_ListCoord,'Value');
-        coord_str=Coord{val}; %current line (string)
+%         val=get(h_ListCoord,'Value');
+        coord_str=Coord{index_point}; %current line (string)
         k=findstr('|',coord_str);%find separator indices on the string
         xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates 
         if numel(k)>=3
@@ -278,8 +280,11 @@ if strcmp(MouseAction,'calib')
         else
             coord_str=[ '    |    '  '    |    '  '    |    ' num2str(xy(1,1),4) '    |    ' num2str(xy(1,2),4)];
         end
-        Coord{val}=coord_str;        
+        Coord{index_point}=coord_str;        
         set(h_ListCoord,'String',Coord)
+        data=read_geometry_calib(Coord);%transform char cell to numbers
+        set(hh,'XData',data.Coord(:,4))
+        set(hh,'YData',data.Coord(:,5))
     end
 end
 

@@ -258,7 +258,7 @@ for ifile=1:nbfield
                 if test_movie(iview)
                     Field{iview}.A=read(MovieObject{iview},num_i1{iview}(ifile));
                 else
-                    Field{iview}.A=read_image(filename,Series.NomType{iview},num_i1{iview}(ifile)); 
+                    Field{iview}.A=imread(filename); 
                 end % TODO: introduce ListVarName
                 npxy=size(Field{iview}.A);
                 Field{iview}.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
