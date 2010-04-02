@@ -237,11 +237,6 @@ if exist('data','var')
         end
     end
 end
-% if desable_open
-%     set(handles.OPEN,'Visible','off')
-% else
-%     set(handles.OPEN,'Visible','on')
-% end
 if enable_plot
    set(handles.PLOT,'enable','on')
 else
@@ -330,7 +325,7 @@ switch style
     case {'polygon','rectangle','ellipse'}
         menu_proj={'inside';'outside';'mask_inside';'mask_outside'};
     case 'volume'
-        menu_proj={'none'};
+        menu_proj={'interp';'none'};
 end   
 proj_index=get(handles.ProjMode,'Value');
 if proj_index<numel(menu_proj)

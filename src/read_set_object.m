@@ -66,7 +66,7 @@ if ~testcalib
                 data.RangeZ(1)=ZMax;
             end
         else 
-           data.RangeZ=ZMax;
+           data.RangeZ(2)=ZMax;
            dimrange=[dimrange(1) 3];
         end
     end

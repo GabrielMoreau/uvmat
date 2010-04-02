@@ -4323,11 +4323,12 @@ figure(hset_object)%put set_object in front
 %------------------------------------------------------
 function MenuExportField_Callback(hObject, eventdata, handles)
 global CurData
-huvmat=findobj(allchild(0),'Name','uvmat');
-UvData=get(huvmat,'UserData');
-CurData=UvData.ProjField_1;
-evalin('base','global CurData')%make CurData global in the workspace
-display(['UserData of view_field :'])
+CurData=get(handles.uvmat,'UserData');
+% if isfield(UvData,'ProjField')
+    CurData=UvData;
+    evalin('base','global CurData')%make CurData global in the workspace
+    display(['current field :'])
+% end
 evalin('base','CurData') %display CurData in the workspace
 commandwindow;
 
@@ -4721,9 +4722,12 @@ create_object(data,handles)
 
 % ------------------------------------------------------------------
 function Menuvolume_Callback(hObject, eventdata, handles)
+data.Style='volume';
+data.ProjMode='interp';%default
 % set(handles.create,'Visible','on')
 % set(handles.create,'Value',1)
-VOLUME_Callback(hObject,eventdata,handles)
+% VOLUME_Callback(hObject,eventdata,handles)
+create_object(data,handles)
 
 %------------------------------------------------------------------------
 function MenuBrowseObject_Callback(hObject, eventdata, handles)
