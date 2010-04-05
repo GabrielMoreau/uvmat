@@ -535,7 +535,7 @@ for i_slice=1:NbSlice
     RecordData.Action=Series.Action;%name of the processing programme
     %name of result file
     [filemean]=...
-               name_generator(filebase_out,num_i1{1}(i_slice),num_j1{1}(i_slice),'.nc','_i1-i2_j1-j2',1,num_i2{end}(ifile),num_j2{end}(ifile),SubDir{1});
+               name_generator(filebase_out,num_i1{1}(i_slice),num_j1{1}(i_slice),'.nc','_i1-i2_j1-j2',1,num_i2{end}(ifile),num_j2{end}(ifile),subdir_result);
     errormsg=struct2nc(filemean,RecordData); %save result file
     if isempty(errormsg)
         display([filemean ' written'])

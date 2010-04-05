@@ -167,6 +167,8 @@ for icell=1:length(A)
     xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordiantes of corners
     yima=[0.5 0.5 siz(1)-0.5 siz(1)-0.5];
     [xcorner_new,ycorner_new]=phys_XYZ(Calib,xima,yima,ZIndex);%corresponding physical coordinates
+    dx(icell)=(max(xcorner_new)-min(xcorner_new))/(siz(2)-1);
+    dy(icell)=(max(ycorner_new)-min(ycorner_new))/(siz(1)-1);
     xcorner=[xcorner xcorner_new];
     ycorner=[ycorner ycorner_new];
 end
@@ -175,10 +177,10 @@ Rangx(2)=max(xcorner);
 Rangy(2)=min(ycorner);
 Rangy(1)=max(ycorner);
 test_multi=(max(npx)~=min(npx)) | (max(npy)~=min(npy)); 
-npx=max(npx);
-npy=max(npy);
-x=linspace(Rangx(1),Rangx(2),npx);
-y=linspace(Rangy(1),Rangy(2),npy);
+npX=1+round((Rangx(2)-Rangx(1))/min(dx));% nbre of pixels in the new image (use the finest resolution min(dx) in the set of images)
+npY=1+round((Rangy(1)-Rangy(2))/min(dy));
+x=linspace(Rangx(1),Rangx(2),npX);
+y=linspace(Rangy(1),Rangy(2),npY);
 [X,Y]=meshgrid(x,y);%grid in physical coordiantes
 vec_B=[];
 A_out={};
@@ -191,21 +193,21 @@ for icell=1:length(A)
            SliceCoord=Calib.SliceCoord(ZIndex,:);
            zphys=SliceCoord(3); %to generalize for non-parallel planes
         end
-        [XIMA,YIMA]=px_XYZ(CalibIn{icell},X,Y,zphys);%corresponding image indices for each point in the real space grid
-        XIMA=reshape(round(XIMA),1,npx*npy);%indices reorganized in 'line'
-        YIMA=reshape(round(YIMA),1,npx*npy);
-        flagin=XIMA>=1 & XIMA<=npx & YIMA >=1 & YIMA<=npy;%flagin=1 inside the original image
+        [XIMA,YIMA]=px_XYZ(CalibIn{icell},X,Y,zphys);% image coordinates for each point in the real space grid
+        XIMA=reshape(round(XIMA),1,npX*npY);%indices reorganized in 'line'
+        YIMA=reshape(round(YIMA),1,npX*npY);
+        flagin=XIMA>=1 & XIMA<=npx(icell) & YIMA >=1 & YIMA<=npy(icell);%flagin=1 inside the original image
         testuint8=isa(A{icell},'uint8');
         testuint16=isa(A{icell},'uint16');
         if numel(siz)==2 %(B/W images)
-            vec_A=reshape(A{icell},1,npx*npy);%put the original image in line
+            vec_A=reshape(A{icell},1,npx(icell)*npy(icell));%put the original image in line
             ind_in=find(flagin);
             ind_out=find(~flagin);
-            ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
+            ICOMB=((XIMA-1)*npy(icell)+(npy(icell)+1-YIMA));
             ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
             vec_B(ind_in)=vec_A(ICOMB);
             vec_B(ind_out)=zeros(size(ind_out));
-            A_out{icell}=reshape(vec_B,npy,npx);%new image in real coordinates
+            A_out{icell}=reshape(vec_B,npY,npX);%new image in real coordinates
         elseif numel(siz)==3     
             for icolor=1:siz(3)
                 vec_A=reshape(A{icell}(:,:,icolor),1,npx*npy);%put the original image in line

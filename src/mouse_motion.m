@@ -104,6 +104,7 @@ for ichild=1:length(hchild)
                       'LineStyle','-','Tag','vector_marker');
                                     set(0,'Children',hstack);%put back the initial figure stack after plot creation
                                 else
+                                    set(hhh,'Visible','on')
                                     set(hhh,'Position',[AxeData.X(ivec)-AxeData.Mesh/2 AxeData.Y(ivec)-AxeData.Mesh/2 AxeData.Mesh AxeData.Mesh])
                                 end
                             end
@@ -134,7 +135,7 @@ for ichild=1:length(hchild)
                         end
                     else
                         if ~isempty(hhh)
-                            delete(hhh)
+                            set(hhh,'Visible','off')
                         end
                     end
                 end

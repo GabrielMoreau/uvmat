@@ -777,7 +777,7 @@ if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose pr
    ObjectData.HandlesDisplay=hhuvmat.axes3;
     PlotHandles=get_plot_handles(hhuvmat);
     IndexObj=IndexObj_1;
-elseif strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field
+elseif IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field
     hview_field=findobj('tag','view_field');
     if ~isempty(hview_field)
         PlotHandles=guidata(hview_field);
