@@ -323,6 +323,9 @@ textmean={};
 abscissa_name='';
 coord_x_index=[];
 test_newplot=1;
+hh=findobj(haxes,'tag','plot_line');
+num_curve=numel(hh);
+icurve=0;
 for icell=1:length(CellVarIndex)
     testfalse=0;
     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list data.ListVarName
@@ -376,50 +379,29 @@ for icell=1:length(CellVarIndex)
                  plotname{VarIndex(ivar)}=data.ListVarName{VarIndex(ivar)};%name for display in plot A METTRE
              end
         end
-    end
-    hh=findobj(haxes,'tag','plot_line');
-    if isequal(numel(hh),numel(find(testplot(VarIndex))))%update existing curves
-        icurve=0;
-        test_newplot=0;
-        if ~isempty(VarType{icell}.discrete')
-            charplot_0='+';
-            LineStyle='none';
-        else
-            charplot_0='none';
-            LineStyle='-';
-        end
-        for ivar=1:length(VarIndex)
-            if testplot(VarIndex(ivar))
-                icurve=icurve+1;
-                VarName=data.ListVarName{VarIndex(ivar)};
-                eval(['data.' VarName '=squeeze(data.' VarName ');'])
-                set(hh(icurve),'LineStyle',LineStyle)
-                set(hh(icurve),'Marker',charplot_0)
-%                 if isequal(VarName,'A')
-%                     set(hh(icurve),'LineStyle','-');
-%                 else
-%                     set(hh(icurve),'LineStyle',charplot_0);
-%                 end
-                set(hh(icurve),'XData',coord_x{icell})
-                eval(['yy=data.' VarName ';'])
-                set(hh(icurve),'YData',yy);
-%                 eval(['nbcomponent2=size(data.' VarName ',2);']);
-%                 eval(['nbcomponent1=size(data.' VarName ',1);']);
-%                 if numel(coord_x{icell})==2
-%                     coord_x{icell}=linspace(coord_x{icell}(1),coord_x{icell}(2),nbcomponent1);
-%                 end
-%                 eval(['varmean=mean(double(data.' VarName '));']);%mean value
-%                 textmean=[textmean; {[VarName 'mean= ' num2str(varmean,4)]}];
-%                 if nbcomponent1==1| nbcomponent2==1
-%                     legend_str=[legend_str {VarName}]; %variable with one component
-%                 else  %variable with severals  components
-%                     for ic=1:min(nbcomponent1,nbcomponent2)
-%                         legend_str=[legend_str [VarName '_' num2str(ic)]]; %variable with severals  components 
-%                     end                                                   % labeled by their index (e.g. color component)
-%                 end
-            end
-        end
-    else% new plot
+    end  
+%     test_newplot=0;%default
+%     if num_curve>=icurve+numel(find(testplot(VarIndex)))%update existing curves
+%         if ~isempty(VarType{icell}.discrete')
+%             charplot_0='+';
+%             LineStyle='none';
+%         else
+%             charplot_0='none';
+%             LineStyle='-';
+%         end
+%         for ivar=1:length(VarIndex)
+%             if testplot(VarIndex(ivar))
+%                 icurve=icurve+1;
+%                 VarName=data.ListVarName{VarIndex(ivar)};
+%                 eval(['data.' VarName '=squeeze(data.' VarName ');'])
+%                 set(hh(icurve),'LineStyle',LineStyle)
+%                 set(hh(icurve),'Marker',charplot_0)
+%                 set(hh(icurve),'XData',coord_x{icell})
+%                 eval(['yy=data.' VarName ';'])
+%                 set(hh(icurve),'YData',yy);
+%             end
+%         end
+%     else% new plot
         if ~isempty(VarType{icell}.discrete')
             charplot_0='''+''';
         else
@@ -451,10 +433,10 @@ for icell=1:length(CellVarIndex)
                 end
             end
         end
-    end
+%     end
 end
 if test_newplot && ~isequal(plotstr,'hhh=plot(')
-    plotstr=[plotstr '''tag'',''plot_line'');']
+    plotstr=[plotstr '''tag'',''plot_line'');'];
                 %execute plot (instruction  plotstr)  
     eval(plotstr)
    

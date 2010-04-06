@@ -4,7 +4,7 @@ function PLOT(hget_field)
 %---------------------------------------------------------
 [SubField,errormsg]=read_get_field(hget_field);
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['error in get_field/PLOT input:' errormsg])
+    msgbox_uvmat('ERROR',['error in read_get_field/PLOT input:' errormsg])
     return
 end
 handles=guidata(hget_field);

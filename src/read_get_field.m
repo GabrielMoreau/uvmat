@@ -80,7 +80,7 @@ if test_1Dplot
         empty_coord_x=1;
     else
         dimname_x=Field.VarDimName{VarIndex};
-        if numel(dimname_x)~=1
+        if iscell(dimname_x) && numel(dimname_x)~=1
             errormsg='abscissa must be a one-dimensional variable';
             return
         end

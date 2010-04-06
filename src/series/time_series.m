@@ -386,7 +386,7 @@ for i_slice=1:NbSlice
                         Data(2)=[];
                     end
                 else
-                    Data{1}=transform_fct(Data{1},XmlData);
+                    Data{1}=transform_fct(Data{1},XmlData{1});
                 end
             end     
             if testcivx
@@ -551,6 +551,8 @@ hget_field=findobj(allchild(0),'name','get_field');
 if ~isempty(hget_field)
     delete(hget_field)
 end
+RecordData
+
 get_field(filemean,RecordData)
     
 %-----------------------------------------------------------------------
