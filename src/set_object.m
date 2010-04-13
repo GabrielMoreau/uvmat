@@ -75,7 +75,8 @@ function set_object_OpeningFcn(hObject, eventdata, handles, data, PlotHandles,ZB
 %-------------------------------------------------------------------
 % Choose default command line output for set_object
 handles.output = hObject;
-
+'TESTsetobj'
+data
 % Update handles structure
 guidata(hObject, handles);
 
@@ -137,8 +138,14 @@ if exist('data','var')
         elseif iscell(data.Coord)
             CoordCell=data.Coord;
             data.Coord=zeros(numel(CoordCell),3);
+            data.Coord(:,3)=zeros(numel(CoordCell),1); % z component set to 0 by default
             for iline=1:numel(CoordCell)
-                data.Coord(iline,:)=str2num(CoordCell{iline});
+                line_vec=str2num(CoordCell{iline});
+                if numel(line_vec)==2
+                    data.Coord(iline,1:2)=str2num(CoordCell{iline});
+                else
+                    data.Coord(iline,:)=str2num(CoordCell{iline});
+                end
             end
         end
         if size(data.Coord,2)>=2

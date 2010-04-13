@@ -20,21 +20,7 @@ s.Heading=[];%default
 s.Time=[]; %default
 s.TimeUnit=[]; %default
 s.GeometryCalib=[];
-% nom_type_ima=[];%default
-% ext_ima=[];%default
-% abs_time=[];%initiation
-% GeometryCalib.CoordUnit='cm';%default
-% mode=[]; %default
-% NbSlice=1;%default
-% npx=[];%default
-% npy=[];%default
-% GeometryCalib.Pxcmx=1;
-% GeometryCalib.Pxcmy=1;
-% GeometryCalib=[];
-% NbDtj=1;
 tsai=[];%default
-% if ~exist('testime','var')
-%     testime=1;%default
 
 if exist(ImaDoc,'file')~=2, errormsg=[ ImaDoc ' does not exist']; return;end;%input file does not exist
 try
@@ -120,9 +106,9 @@ if ~isempty(uid_Camera)
             end
         end
     end
-    if size(s.Time,1)==1
-        s.Time=(s.Time)'; %change vector into column
-    end
+%     if size(s.Time,1)==1
+%         s.Time=(s.Time)'; %change vector into column
+%     end
 end
 
 %read calibration

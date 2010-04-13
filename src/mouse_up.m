@@ -261,7 +261,7 @@ if zoomstate
 end
 
 % editing calibration point
-if ~zoomstate strcmp(MouseAction,'calib') 
+if ~zoomstate && strcmp(MouseAction,'calib') 
     h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
     hh_geometry_calib=guidata(h_geometry_calib);
     edit_test=get(hh_geometry_calib.edit_append,'Value');

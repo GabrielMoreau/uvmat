@@ -200,10 +200,10 @@ if test_scalar
         else
             SubVarAttribute{nbvar}.Role='coord_y';%abcissa with unstructured coordinates
         end
-        if isequal(dimname_y,dimname_x)
-            errormsg='identical x and y coordinates selected in get_field';
-            return
-        end
+%         if isequal(dimname_y,dimname_x)
+%             errormsg='identical x and y coordinates selected in get_field';
+%             return
+%         end
     end
 
         % select z variable
@@ -464,7 +464,9 @@ if test_scalar
         DimCellA=DimCellA(end-numel(npxy)+1:end); %suppress the first singletons) dimensions
     end
     ind_single=find(npxy==1);
-    SingleCellA=[SingleCellA DimCellA(ind_single)];
+    if ~isempty(ind_single)
+    %SingleCellA=[SingleCellA DimCellA(ind_single)];TO CHECK
+    end
     ind_select=find(npxy~=1);%look for non singleton dimensions
     DimCellA=DimCellA(ind_select);
     npxy=npxy(ind_select);
@@ -514,7 +516,7 @@ if test_scalar
     dimextra=(1:numel(DimCellA));
     dimextra(dimA)=[]; %list of unselected dimension indices
     DimCellA=DimCellA([dimA dimextra]);
-    eval(['SubField.' VarNameA '=permute(squeeze(SubField.' VarNameA '),[dimA dimextra]);'])
+   % eval(['SubField.' VarNameA '=permute(squeeze(SubField.' VarNameA '),[dimA dimextra]);'])TO CHECK
     SubField.VarDimName{VarSubIndexA}=DimCellA;  
     %add default coord_x and/or coord_y if empty
     if empty_coord_x || empty_coord_y

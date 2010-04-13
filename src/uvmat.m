@@ -627,10 +627,43 @@ run0_Callback(hObject, eventdata, handles);
 function RootFile_Callback(hObject, eventdata, handles)
 update_rootinfo(hObject,eventdata,handles)
 
+%-------------------------------------------------------------------
+%-- called by action in FileIndex edit box
+%-------------------------------------------------------------------
+function FileIndex_Callback(hObject, eventdata, handles)
+FileIndices=get(handles.FileIndex,'String');
+if isempty(str2num(FileIndices))
+    [pp,ff,str1,str2,str_a,str_b]=name2display(FileIndices);
+else
+    str1=FileIndices;
+    str2='';
+    str_a='';
+    str_b='';
+end
+set(handles.i1,'String',str1);
+set(handles.i2,'String',str2);
+set(handles.j1,'String',str_a);
+set(handles.j2,'String',str_b);
+run0_Callback(hObject, eventdata, handles)
 
-
-
-
+%-------------------------------------------------------------------
+%-- called by action in FileIndex_1 edit box
+%-------------------------------------------------------------------
+function FileIndex_1_Callback(hObject, eventdata, handles)
+% FileIndices=get(handles.FileIndex_1,'String');
+% if isempty(str2num(FileIndices))
+%     [pp,ff,str1,str2,str_a,str_b]=name2display(FileIndices)
+% else
+%     str1=FileIndices;
+%     str2='';
+%     str_a='';
+%     str_b='';
+% end
+% set(handles.i1,'String',str1);
+% set(handles.i2,'String',str2);
+% set(handles.j1,'String',str_a);
+% set(handles.j2,'String',str_b);
+run0_Callback(hObject, eventdata, handles)
 
 %-------------------------------------------------------------------
 % -- update information about a new field series (indices to scan, timing, calibration from an xml file, then refresh current plots
@@ -643,7 +676,7 @@ set(handles.Fields,'UserData',[])% reinialize data from uvmat opening
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for run0: begin a new series
 UvData.TestInputFile=1;
-set(handles.fix_pair,'Value',0) % desactivate by default the comp_input '-'input window
+set(handles.fix_pair,'Value',1) % activate by default the comp_input '-'input window
 %FileIndex_Callback(hObject, eventdata, handles)% update field counters
 
 [FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes(handles);
@@ -859,29 +892,30 @@ set_scan_options(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 function set_scan_options(hObject, eventdata, handles)
 
-%  set the corresponding index navigation options (TO CHECK WITH THE SECOND FIELD)
-NomType=get(handles.FileIndex,'UserData');
+%  set the corresponding index navigation options 
+NomType=get(handles.FileIndex,'UserData');       
 NomType_1=get(handles.FileIndex_1,'UserData');
+last_i_str=get(handles.last_i,'String');
+nbfield=str2num(last_i_str{1});
+if numel(last_i_str)==2
+    nbfield=min(nbfield,str2num(last_i_str{2}));
+end  
 state_j='off'; %default
-scan_option='i';
+scan_option='i';%default
 switch NomType
     case {'_i_j','_i_j1-j2','_i1-i2_j','#_ab'},% two navigation indices
         state_j='on';
-        if exist('nbfield','var') && isequal(nbfield,1)
-            scan_option='j'; 
-        else
-            scan_option='i';                
+        if isequal(nbfield,1)
+            scan_option='j';                 
         end 
 end
 if ~isempty(NomType_1)
     switch NomType_1
         case {'_i_j','_i_j1-j2','_i1-i2_j','#_ab'},% two navigation indices
             state_j='on';
-            if exist('nbfield','var') && isequal(nbfield,1)
-                scan_option='j'; 
-            else
-                scan_option='i';                
-            end 
+            if isequal(nbfield,1)
+                scan_option='j';                 
+            end           
     end
 end
 if isequal(scan_option,'i')
@@ -1072,7 +1106,7 @@ else  % cases of data files
         end 
     end
 end
-set(handles.FileIndex,'UserData',NomType_1);
+set(handles.FileIndex_1,'UserData',NomType_1);
 
 % make visible and fill the second raw of edit boxes
 set(handles.RootPath_1,'Visible','on')
@@ -1289,12 +1323,13 @@ function scan_i_Callback(hObject, eventdata, handles)
 if get(handles.scan_i,'Value')==1
     set(handles.scan_i,'BackgroundColor',[1 1 0])
     set(handles.scan_j,'Value',0)
-    set(handles.scan_j,'BackgroundColor',[0.831 0.816 0.784])
+%     set(handles.scan_j,'BackgroundColor',[0.831 0.816 0.784])
 else
     set(handles.scan_i,'BackgroundColor',[0.831 0.816 0.784])
     set(handles.scan_j,'Value',1)
-    set(handles.scan_j,'BackgroundColor',[1 1 0])
+%     set(handles.scan_j,'BackgroundColor',[1 1 0])
 end
+scan_j_Callback(hObject, eventdata, handles)
 
 %-------------------------------------------------------------------
 % switch file index scanning options scan_i and scan_j in an exclusive way
@@ -1304,10 +1339,18 @@ if get(handles.scan_j,'Value')==1
     set(handles.scan_j,'BackgroundColor',[1 1 0])
     set(handles.scan_i,'Value',0)
     set(handles.scan_i,'BackgroundColor',[0.831 0.816 0.784])
+    NomType=get(handles.FileIndex,'UserData');
+    switch NomType
+    case {'_i_j1-j2','#_ab','%3dab'},% pair with j index
+        set(handles.fix_pair,'Visible','on')% option fixed pair on/off made visible (choice of avaible pair with buttons + and - if ='off')
+    otherwise
+        set(handles.fix_pair,'Visible','off')
+    end 
 else
     set(handles.scan_j,'BackgroundColor',[0.831 0.816 0.784])
     set(handles.scan_i,'Value',1)
     set(handles.scan_i,'BackgroundColor',[1 1 0])
+    set(handles.fix_pair,'Visible','off')
 end
 
 %-------------------------------------------------------------------
@@ -1587,23 +1630,20 @@ increment=-str2num(get(handles.increment_scan,'String')); %get the field increme
 runpm(hObject,eventdata,handles,increment)
 
 %-------------------------------------------------------------------
-%Executes on button press in runmin: make one step backward and call
-%run0. The step backward is along the fields series 1 or 2 depending on 
-%the scan_i and scan_j check box (exclusive each other)
-%-------------------------------------------------------------------
-function RunMovie_Callback(hObject, eventdata, handles)
+% -- Executes on button press in Movie: make a series of +> steps
+function Movie_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------
-set(handles.RunMovie,'BackgroundColor',[1 1 0])%paint the command button in yellow
+set(handles.Movie,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 increment=str2num(get(handles.increment_scan,'String')); %get the field increment d
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
-set(handles.RunMovie,'BusyAction','queue')
+set(handles.Movie,'BusyAction','queue')
 testavi=0;
 UvData=get(handles.uvmat,'UserData');
 
-while get(handles.speed,'Value')~=0 & isequal(get(handles.RunMovie,'BusyAction'),'queue') % enable STOP command
+while get(handles.speed,'Value')~=0 & isequal(get(handles.Movie,'BusyAction'),'queue') % enable STOP command
         errormsg=runpm(hObject,eventdata,handles,increment);
         if ~isempty(errormsg)
             return
@@ -1614,14 +1654,42 @@ if isfield(UvData,'aviobj') && ~isempty( UvData.aviobj),
     UvData.aviobj=close(UvData.aviobj);
    set(handles.uvmat,'UserData',UvData);
 end
-set(handles.RunMovie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
+set(handles.Movie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
+
+%-------------------------------------------------------------------
+% -- Executes on button press in Movie: make a series of <- steps
+function MovieBackward_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------
+set(handles.MovieBackward,'BackgroundColor',[1 1 0])%paint the command button in yellow
+drawnow
+increment=-str2num(get(handles.increment_scan,'String')); %get the field increment d
+set(handles.STOP,'Visible','on')
+set(handles.speed,'Visible','on')
+set(handles.speed_txt,'Visible','on')
+set(handles.MovieBackward,'BusyAction','queue')
+testavi=0;
+UvData=get(handles.uvmat,'UserData');
+
+while get(handles.speed,'Value')~=0 & isequal(get(handles.MovieBackward,'BusyAction'),'queue') % enable STOP command
+        errormsg=runpm(hObject,eventdata,handles,increment);
+        if ~isempty(errormsg)
+            return
+        end
+        pause(1.02-get(handles.speed,'Value'))% wait for next image
+end
+if isfield(UvData,'aviobj') && ~isempty( UvData.aviobj),
+    UvData.aviobj=close(UvData.aviobj);
+   set(handles.uvmat,'UserData',UvData);
+end
+set(handles.MovieBackward,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 
 %-------------------------------------------------------------------
 function STOP_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 set(handles.movie_pair,'BusyAction','Cancel')
 set(handles.movie_pair,'value',0)
-set(handles.RunMovie,'BusyAction','Cancel')
+set(handles.Movie,'BusyAction','Cancel')
+set(handles.MovieBackward,'BusyAction','Cancel')
 set(handles.MenuExportMovie,'BusyAction','Cancel')
 
 
@@ -1657,10 +1725,10 @@ else
 end   
 
 comp_input=get(handles.fix_pair,'Value');
-if isequal(NomType,'_i1-i2')||isequal(NomType,'_i1-i2_j')
-    comp_input=1; %impose a fixed pair 
-    set(handles.fix_pair,'Value',1)
-end
+% if isequal(NomType,'_i1-i2')||isequal(NomType,'_i1-i2_j')
+%     comp_input=1; %impose a fixed pair 
+%     set(handles.fix_pair,'Value',1)
+% end
 
 %case of scanning along the first direction (rootfile numbers)
 if get(handles.scan_i,'Value')==1% case of scanning along index i   
@@ -1708,7 +1776,7 @@ if isempty(errormsg)  %update the index counters
     end
     [indices]=name_generator('',num1,num_a,'',NomType,1,num2,num_b,'');
     set(handles.FileIndex,'String',indices);
-    if sub_value 
+    if ~isempty(filename_1) 
          indices_1=name_generator('',num1_1,num_a_1,'',NomType_1,1,num2_1,num_b_1,'');
          set(handles.FileIndex_1,'String',indices_1);
     end
@@ -1896,6 +1964,7 @@ end
 
 function errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,Field)
 %------------------------------------------------------------------------
+
 %initialisation
 set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
@@ -1925,7 +1994,6 @@ end
 % determine the main input file information for action
 FileType=[];%default
 if ~isempty(filename)
-%     [filename,RootPath,filebase,xx,Ext]=read_file_boxes(handles);
     if ~exist(filename,'file')
         errormsg=['input file ' filename ' does not exist'];
         return
@@ -2420,11 +2488,8 @@ if  isempty(coord_x)&~isempty(CellVarIndex)
     DimIndex=UvData.Field.VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
     if NbDim==3
         nbpoints=UvData.Field.DimValue(DimIndex(1));
-        %Zvar=DimVarIndex(DimIndex(1));
-         %Zvar=DimVarIndex(1);
-%          Zvar=VarType{imax}.coord_3;
         if isfield(VarType{imax},'coord_3')&& ~isequal(VarType{imax}.coord_3,0) % z is a dimension variable
-            ZName=UvData.Field.ListVarName{VarType{imax}.coord_3}
+            ZName=UvData.Field.ListVarName{VarType{imax}.coord_3};
             eval(['UvData.ZMax=max(UvData.Field.' ZName ');'])
             eval(['UvData.ZMin=min(UvData.Field.' ZName ');'])
         else
@@ -3074,13 +3139,13 @@ if isequal(field,'image')||isequal(field_1,'image')
     set(handles.npy_title,'Visible','on')
     set(handles.npx,'Visible','on')
     set(handles.npy,'Visible','on')
-    set(handles.fix_pair,'Value',0)
+%     set(handles.fix_pair,'Value',0)
 else
     set(handles.npx_title,'Visible','off')% visible npx,pxcm... buttons
     set(handles.npy_title,'Visible','off')
     set(handles.npx,'Visible','off')
     set(handles.npy,'Visible','off')
-    set(handles.fix_pair,'Value',1)
+%     set(handles.fix_pair,'Value',1)
 end
 setfield(handles);% update the field structure ('civ1'....)
 
@@ -3245,13 +3310,13 @@ if isequal(field,'image')|isequal(field_1,'image')
     set(handles.npy_title,'Visible','on')
     set(handles.npx,'Visible','on')
     set(handles.npy,'Visible','on')
-    set(handles.fix_pair,'Value',0)
+%     set(handles.fix_pair,'Value',0)
 else
     set(handles.npx_title,'Visible','off')% visible npx,pxcm... buttons
     set(handles.npy_title,'Visible','off')
     set(handles.npx,'Visible','off')
     set(handles.npy,'Visible','off')
-    set(handles.fix_pair,'Value',1)
+%     set(handles.fix_pair,'Value',1)
 end
 if isequal(field,'velocity')|isequal(field_1,'velocity');
     state_vect='on';
@@ -4414,7 +4479,7 @@ increment=str2num(get(handles.increment_scan,'String')); %get the field incremen
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
-set(handles.RunMovie,'BusyAction','queue')
+set(handles.Movie,'BusyAction','queue')
 
 imin=str2num(get(handles.i1,'String'));
 imax=str2num(answer{5});
@@ -4758,7 +4823,7 @@ if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
 UvData=get(handles.uvmat,'UserData');
-% [hset_object,UvData.sethandles]=set_object(data);% call the set_object interface
+[hset_object,UvData.sethandles]=set_object(data);% call the set_object interface
 % %position the set_object GUI with respect to uvmat
 % pos_uvmat=get(handles.uvmat,'Position');
 % if isfield(UvData,'SetObjectOrigin')
@@ -4864,4 +4929,8 @@ IndexObj=get(handles.list_object_2,'Value');
         delete_object(IndexObj)
     end
     
+
+
+
+
 

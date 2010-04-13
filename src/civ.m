@@ -630,53 +630,46 @@ if isempty(nom_type_ima)
 end   
     
 % no image documentation file found: look for a series of existing images or .nc files 
-if isempty(time) && ~isequal(ext,'.nc') 
+if isempty(time) && ~isequal(ext,'.nc') && ~strcmp(nom_type_ima,'none') && ~strcmp(nom_type_ima,'') && ~strcmp(nom_type_ima,'*')
     subdir=get(handles.subdir_civ1,'String');
     incr_pair=[0 0];%default
     if isfield(browse,'incr_pair')
             incr_pair=browse.incr_pair;
     end
-    nbdetect=0;%test of detected images
+%     nbdetect=0;%test of detected images
     field_i=field_count;
     idetect=1;
-    while idetect==1 %look for the maximum file number in the series
+    while idetect==1 %look for the maximum file number in the series     
+        imagename=name_generator(filebase,field_i+1,1,ext_ima,nom_type_ima);
+        idetect=(exist(imagename,'file')==2);
+        if idetect
             field_i=field_i+1;
-            imagename=name_generator(filebase,field_i,1,ext_ima,nom_type_ima);
-            if strcmp(nom_type_ima,'none')||strcmp(nom_type_ima,'')
-               idetect=0; %stop if the same image is repeated (if nom_type='none')
-               nbdetect=1;
-            else
-                idetect=(exist(imagename,'file')==2);
-            end
+        end
             %SEE CASE OF NETCDF FILES
-            nbdetect=nbdetect+(exist(imagename,'file')==2);
+%             nbdetect=nbdetect+(exist(imagename,'file')==2);
     end
     nb_field=field_i;% last detected field number
     field_i=field_count;%look for the minimum file number in the series
     idetect=1;
     while idetect==1 
-                field_i=field_i-1;
-                imagename=name_generator(filebase,field_i,1,ext_ima,nom_type_ima);
-                if isequal(nom_type_ima,'none')||strcmp(nom_type_ima,'')
-                    idetect=0; %stop if the same image is repeated (if nom_type='none')
-                    nbdetect=1;
-                else
-                    idetect=(exist(imagename,'file')==2);
-                end
-                nbdetect=nbdetect+idetect;
+        imagename=name_generator(filebase,field_i-1,1,ext_ima,nom_type_ima);
+        idetect=(exist(imagename,'file')==2);
+        if idetect
+           field_i=field_i-1;
+        end
     end
-    first_i=max(field_i+1,1);
+    first_i=max(field_i,1);
         %determine the set of times and possible intervals for CIV
  %   dt=(1/1000)*str2num(get(handles.dt,'String'));
     time=[0:nb_field-1]';% time=file index -1  by default
     set(handles.mode,'String',{'series(Di)'})
 end
-if isequal(nom_type_ima,'none')% no file numbering used
-  first_i=1; 
-  last_i=1;
-   first_j=1;
-  last_j=1;
-end
+% if isequal(nom_type_ima,'none')% no file numbering used
+%   first_i=1; 
+%   last_i=1;
+%    first_j=1;
+%   last_j=1;
+% end
 if exist('time','var')
     if size(time,1)+size(time,2)>=3 % if there are at least two time values to define dt
         nbfield=size(time,1);
