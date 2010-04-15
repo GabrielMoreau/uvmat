@@ -212,18 +212,17 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
             end
         end
 end
-%zoom in if no new figure is created
+%zoom in by a factor 2 if no new figure is created
 if zoomstate
+    xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
      if  isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed
-        %zoom(2)% zoom in by a factor of 2
-        alpha=0.5; %zoom factor (zoom in by a factor 2)
         xlim=get(currentaxes,'XLim');
-        xlim_new(1)=(1+alpha)*xlim(1)/2+(1-alpha)*xlim(2)/2;
-        xlim_new(2)=(1-alpha)*xlim(1)/2+(1+alpha)*xlim(2)/2;
+        xlim_new(2)=0.5*xy(1,1)+0.5*xlim(2);
+        xlim_new(1)=0.5*xy(1,1)+0.5*xlim(1);
         set(currentaxes,'XLim',xlim_new)
         ylim=get(currentaxes,'YLim'); 
-        ylim_new(1)=(1+alpha)*ylim(1)/2+(1-alpha)*ylim(2)/2;
-        ylim_new(2)=(1-alpha)*ylim(1)/2+(1+alpha)*ylim(2)/2;
+        ylim_new(2)=0.5*xy(1,2)+0.5*ylim(2);
+        ylim_new(1)=0.5*xy(1,2)+0.5*ylim(1);
         set(currentaxes,'YLim',ylim_new)
         if isfield(AxeData,'ParentRect')% update the position of the parent rectangle represneting the field
             hparentrect=AxeData.ParentRect;
@@ -233,20 +232,35 @@ if zoomstate
             rect([3 4])=[xlim(2)-xlim(1) ylim(2)-ylim(1)];
             set(hparentrect,'Position',rect)
         end
-
+     %zoom out by a factor of 2 out when the right mouse button has been used 
      elseif isequal(get(currentfig,'SelectionType'),'alt'); %if right button has been pressed
-            %zoom(0.5)% zoom out by a factor of 2
             alpha=2; %zoom factor (zoom out by a factor 2)
             xlim=get(currentaxes,'XLim');
-            xlim_new(1)=(1+alpha)*xlim(1)/2+(1-alpha)*xlim(2)/2;
-            xlim_new(2)=(1-alpha)*xlim(1)/2+(1+alpha)*xlim(2)/2;
+            xlim_new(1)=2*xlim(1)-xy(1,1);
+            xlim_new(2)=2*xlim(2)-xy(1,1);
+%             xlim_new(1)=(1+alpha)*xlim(1)/2+(1-alpha)*xlim(2)/2;
+%             xlim_new(2)=(1-alpha)*xlim(1)/2+(1+alpha)*xlim(2)/2;
             ylim=get(currentaxes,'YLim');
-            ylim_new(1)=(1+alpha)*ylim(1)/2+(1-alpha)*ylim(2)/2;
-            ylim_new(2)=(1-alpha)*ylim(1)/2+(1+alpha)*ylim(2)/2;
+            ylim_new(1)=2*ylim(1)-xy(1,2);
+            ylim_new(2)=2*ylim(2)-xy(1,2);
+%             ylim_new(1)=(1+alpha)*ylim(1)/2+(1-alpha)*ylim(2)/2;
+%             ylim_new(2)=(1-alpha)*ylim(1)/2+(1+alpha)*ylim(2)/2;
+            if isfield(AxeData,'RangeX') && isfield(AxeData,'RangeY')
+                xlim_new(1)=max(AxeData.RangeX(1),xlim_new(1));
+                xlim_new(2)=min(AxeData.RangeX(2),xlim_new(2));
+                ylim_new(1)=max(AxeData.RangeY(1),ylim_new(1));
+                ylim_new(2)=min(AxeData.RangeY(2),ylim_new(2));
+                if isequal(xlim_new,AxeData.RangeX) && isequal(ylim_new,AxeData.RangeY)
+                    set(hhuvmat.zoom,'Value',0)
+                    set(hhuvmat.zoom,'BackgroundColor',[0.7 0.7 0.7])
+                    set(hhuvmat.FixedLimits,'Value',0)
+                    set(hhuvmat.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
+                end
+            end
             set(currentaxes,'XLim',xlim_new)
             set(currentaxes,'YLim',ylim_new)
             %test whther zoom out is operating (to inactivate AxedAta
-            if ~isfield(AxeData,'CurrentXLim')| ~isequal(xlim,AxeData.CurrentXLim)
+            if ~isfield(AxeData,'CurrentXLim')|| ~isequal(xlim,AxeData.CurrentXLim)
                 AxeData.CurrentXLim=xlim;%
             end
             if isfield(AxeData,'ParentRect')% update the position of the parent rectangle represneting the field
@@ -337,7 +351,7 @@ if isequal(get(currentfig,'SelectionType'),'alt') && ~zoomstate && (~isfield(Axe
         objtype=get(currentobj,'Type');
         display(['UserData of ' objtype ':'])
         evalin('base','CurData') %display CurData in the workspace
-        commandwindow
+        commandwindow %brings the Matlab command window to the front
     end
 end
 if test_drawing==0

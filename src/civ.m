@@ -294,7 +294,7 @@ if testeditxml==1 || isequal(ext,'.xls')
        return
    end
 end
-[RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput)
+[RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput);
 filebase=fullfile(RootPath,RootFile);
 % if isequal(nom_type,'*')% all fields in a single file ( movie files)
 %     num_i1=1;num_i2=1;num_j1=1;num_j2=1;
@@ -354,9 +354,7 @@ end
 set(handles.RootName,'String',filebase);
 set(handles.ImaDoc,'String',ext);
 if ~isempty(num_i1)
-    ref_i=num_i1
-    'TEStbrowse'
-    num_i2
+    ref_i=num_i1;
     if ~isempty(num_i2)
         ref_i=floor((ref_i+num_i2)/2);% reference image number corresponding to the file
         browse.incr_pair(1)=num_i2-num_i1;
@@ -2108,7 +2106,7 @@ else
     end
 end
 if isfield(sparam,'CivBin')
-    CivBin=sparam.CivBin
+    CivBin=sparam.CivBin;
 end
 if isfield(sparam,'Civ1Bin')
     civ1Bin=sparam.Civ1Bin;
@@ -2355,7 +2353,7 @@ for ifile=1:nbfield
                     num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
                     par_civ1.maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
                     if exist(par_civ1.maskname,'file')
-                        par_civ1.maskflag='y'; 
+                        par_civ1.maskflag='y';
                     else
                         par_civ1.maskname='noFile use default';
                         par_civ1.maskflag='n'; 
@@ -2663,7 +2661,7 @@ for ifile=1:nbfield
         if isequal(civAll,1)
             save(civAllxml,[filename_cmx([1:end-4]) '.xml']);
             %cmd=char({cmd;[CivBin ' -f ' [filename_cmx([1:end-4]) '.xml'] ' ' civAllCmd]});
-            cmd=[cmd '\n' CivBin ' -f ' filename_cmx(1:end-4) '.xml '  civAllCmd]
+            cmd=[cmd '\n' CivBin ' -f ' filename_cmx(1:end-4) '.xml '  civAllCmd];
         end
       % create the .bat file:
         if batch
@@ -3992,6 +3990,7 @@ else
     set(handles.mask_civ2,'String',mask_displ)
     set(handles.mask_fix2,'String',mask_displ)
 end
+set(handles.mask_civ2,'Value',maskval)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in get_mask_fix1.

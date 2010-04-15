@@ -1033,35 +1033,34 @@ for ilist=1:numel(listfields)
         AxeData.VarAttribute{nbvar}.Role=Role{ilist};
     end
 end
-
+%store the coordinate extrema occupied by the field
+test_lim=0;
+if test_vec
+    Xlim=[min(vec_X) max(vec_X)];
+    Ylim=[min(vec_Y) max(vec_Y)];
+    test_lim=1;
+    if test_ima%both background image and vectors coexist, take the wider bound
+        Xlim(1)=min(AX(1),Xlim(1));
+        Xlim(2)=max(AX(end),Xlim(2));
+        Ylim(1)=min(AY(end),Ylim(1));
+        Ylim(2)=max(AY(1),Ylim(2));
+    end
+elseif test_ima %only image plot
+    Xlim(1)=min(AX(1),AX(end));
+    Xlim(2)=max(AX(1),AX(end));
+    Ylim(1)=min(AY(1),AY(end));
+    Ylim(2)=max(AY(1),AY(end));
+    test_lim=1;
+end
+AxeData.RangeX=Xlim;
+AxeData.RangeY=Ylim;
 % adjust the size of the plot to include the whole field, except if PlotParam.FixedLimits=1
-if ~(isfield(PlotParam,'FixedLimits') && PlotParam.FixedLimits)
-    %~(exist('KeepLim','var') && isequal(KeepLim,1))  %adjust the graph limits*
-        test_lim=0;
-        if test_vec
-            Xlim=[min(vec_X) max(vec_X)];
-            Ylim=[min(vec_Y) max(vec_Y)];
-            test_lim=1;
-            if test_ima%both background image and vectors coexist, take the wider bound
-                Xlim(1)=min(AX(1),Xlim(1));
-                Xlim(2)=max(AX(end),Xlim(2));
-                Ylim(1)=min(AY(end),Ylim(1));
-                Ylim(2)=max(AY(1),Ylim(2));
-            end
-        elseif test_ima %only image plot
-            Xlim(1)=min(AX(1),AX(end));
-            Xlim(2)=max(AX(1),AX(end));
-            Ylim(1)=min(AY(1),AY(end));
-            Ylim(2)=max(AY(1),AY(end));
-            test_lim=1;
-        end 
-        if test_lim 
-            if Xlim(2)>Xlim(1)
-                set(haxes,'XLim',Xlim);% set x limits of frame in axes coordinates
-            end
-            if Ylim(2)>Ylim(1)
-                set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
-            end
+if ~(isfield(PlotParam,'FixedLimits') && PlotParam.FixedLimits) && test_lim 
+        if Xlim(2)>Xlim(1)
+            set(haxes,'XLim',Xlim);% set x limits of frame in axes coordinates
+        end
+        if Ylim(2)>Ylim(1)
+            set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
         end
 end
 if ~(isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1))

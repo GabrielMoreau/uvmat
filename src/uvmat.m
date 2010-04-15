@@ -3084,7 +3084,7 @@ field_1= list_fields{index_fields(1)}; % selected string
 UvData=get(handles.uvmat,'UserData');
 
 %read the rootfile input display
-FileExt=get(handles.FileExt,'String');
+[FileName,RootPath,FileBase,FileIndices,FileExt]=read_file_boxes(handles);
 [P,F,str1,str2,str_a,str_b,E,NomType]=name2display(['xxx' get(handles.FileIndex,'String') FileExt]);
 NomTypeNew=NomType;%default
 if isequal(field,'image') 
@@ -3102,6 +3102,7 @@ if isequal(field,'image')
             NomTypeNew='#a';
         elseif isequal(NomType,'_i1-i2')
             NomTypeNew='_i';
+            % TODO: look for other types
         end  
     end
     veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
@@ -3191,13 +3192,13 @@ set(handles.FileIndex_1,'Visible','on')
 set(handles.FileExt_1,'Visible','on')
 RootPath_1=get(handles.RootPath_1,'String');
 RootFile_1=get(handles.RootFile_1,'String');
-if isempty(RootPath_1)|isequal(RootPath_1,'')
+if isempty(RootPath_1)||isequal(RootPath_1,'')
     set(handles.RootPath_1,'String','"')
 end
-if isempty(RootFile_1) | isequal(RootFile_1,'')
+if isempty(RootFile_1) || isequal(RootFile_1,'')
     set(handles.RootFile_1,'String','"')
 end
-if ~isempty(RootFile_1)&(isequal(RootFile_1(1),'/')|isequal(RootFile_1(1),'\'))
+if ~isempty(RootFile_1)&&(isequal(RootFile_1(1),'/')||isequal(RootFile_1(1),'\'))
     RootFile_1(1)=[];
 end
 
@@ -3248,27 +3249,29 @@ else
         end
         filebase_1=fullfile(RootPath_1,RootFile_1);
         SubDir_1=get(handles.SubDir,'String');
-        if isempty(SubDir_1)|isequal(SubDir_1,'')
+        if isempty(SubDir_1)||isequal(SubDir_1,'')
             if isfield(UvData,'SubDir_1')
                 SubDir_1=UvData.SubDir_1;%retrieve previous subdir
             else
                 SubDir_1='?';
             end
         end
-        if isequal(NomType_1,'#_ab')|isequal(NomType_1,'_i1-i2_j')|isequal(NomType_1,'_i_j1-j2')|isequal(NomType_1,'_i1-i2')
+        str1=get(handles.i1,'String');
+        str_a=get(handles.j1,'String');
+        if isequal(NomType_1,'#_ab')||isequal(NomType_1,'_i1-i2_j')||isequal(NomType_1,'_i_j1-j2')||isequal(NomType_1,'_i1-i2')
             NomTypeNew=NomType_1;
         elseif isequal(NomType_1,'#a')
-             [filename,idetect,n1,na,n2,nb,SubDir_1]=name_generator(filebase_1, str2num(str1),str2num(str_a),'.nc','#_ab',0,[],[],SubDir_1);
+             [filename, n1,na,n2,nb,SubDir_1]=name_generator(filebase_1, str2num(str1),stra2num(str_a),'.nc','#_ab',0,[],[],SubDir_1);
              NomTypeNew='#_ab';
         elseif isequal(NomType_1,'_i_j')
-             [filename,idetect,n1,na,n2,nb,SubDir_1]=name_generator(filebase_1,str2num(str1),str2num(str_a),'.nc','_i1-i2_j',0,str2num(str1),[],SubDir_1);
+             [filename,n1,na,n2,nb,SubDir_1]=name_generator(filebase_1,str2num(str1),stra2num(str_a),'.nc','_i1-i2_j',0,str2num(str1),[],SubDir_1);
             if idetect==1
                 NomTypeNew='_i1-i2_j';
             else
                 NomTypeNew='_i_j1-j2';
             end
         else %for instance avi files or any ima_num series
-            [filename,idetect,n1,na,n2,nb,SubDir_1]=name_generator(filebase_1,str2num(str1),str2num(str_a),'.nc','_i1-i2',0,str2num(str1),[],SubDir_1);
+            [filename,n1,na,n2,nb,SubDir_1]=name_generator(filebase_1,str2num(str1),stra2num(str_a),'.nc','_i1-i2',0,str2num(str1),[],SubDir_1);
             NomTypeNew='_i1-i2';
         end            
         [Path,Name]=fileparts(filebase_1);
@@ -3586,10 +3589,8 @@ set(handles.uvmat,'UserData',UvData)
 %----------------------------------------------
 function save_mask_Callback(hObject, eventdata, handles)
 %-----------------------------------------------------------------------
-huvmat=get(handles.save_mask,'parent');
-UvData=get(huvmat,'UserData');
+UvData=get(handles.uvmat,'UserData');
 
-hpatch=findobj(huvmat,'Type','patch');
 flag=1;
 npx=size(UvData.Field.A,2);
 npy=size(UvData.Field.A,1);
@@ -3615,7 +3616,7 @@ if isfield(UvData,'Object')
                     if testphys
                         [X,Y]=px_XYZ(Calib,X,Y,0);% to generalise with 3D cases
                     end
-                    flagobj=~inpolygon(Xi,Yi,X,Y);%=0 inside the polygon, 1 outside                  
+                    flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside                  
                 elseif isequal(ObjectData.Style,'ellipse')
                     if testphys
                         %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
@@ -4310,39 +4311,32 @@ if ~isempty(hset_object)
 end
 hset_object=set_object(ObjectData,PlotHandles,ZBounds);% call the set_object interface,
 set(hset_object,'name',ObjectName)
-% pos_uvmat=get(handles.uvmat,'Position');
-% %position the set_object GUI with respect to uvmat
-% if isfield(UvData,'SetObjectOrigin')
-%     pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
-%     pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
-%     set(hset_object,'Position',pos_set_object)
-% end
 
-%project the current field on the object and plot it
-ProjData= proj_field(UvData.Field,ObjectData,IndexObj);%project the current interface field on ObjectData
-if option==1%length(UvData.Object)>= IndexObj && isfield(UvData.Object{IndexObj},'plotaxes')&& ishandle(UvData.Object{IndexObj}.plotaxes)
-    plot_field(ProjData,handles.axes3,PlotHandles);
-    UvData.Object{IndexObj}.plotaxes=handles.axes3;
-else
-    UvData.Object{IndexObj}.plotaxes=view_field(ProjData);
-end
-set(handles.uvmat,'UserData',UvData)
-hother=findobj('Tag','proj_object');%find all the proj objects
-for iobj=1:length(hother)
-    if isequal(get(hother(iobj),'Type'),'rectangle')|isequal(get(hother(iobj),'Type'),'patch')
-        set(hother(iobj),'EdgeColor','b')
-        if isequal(get(hother(iobj),'FaceColor'),'m')
-            set(hother(iobj),'FaceColor','b')
-        end
-    elseif isequal(get(hother(iobj),'Type'),'image')
-           Acolor=get(hother(iobj),'CData');
-           Acolor(:,:,1)=zeros(size(Acolor,1),size(Acolor,2));
-           set(hother(iobj),'CData',Acolor);
-    else
-         set(hother(iobj),'Color','b')
-    end
-    set(hother(iobj),'Selected','off')
-end
+% %project the current field on the object and plot it
+% ProjData= proj_field(UvData.Field,ObjectData,IndexObj);%project the current interface field on ObjectData
+% if option==1%length(UvData.Object)>= IndexObj && isfield(UvData.Object{IndexObj},'plotaxes')&& ishandle(UvData.Object{IndexObj}.plotaxes)
+%     plot_field(ProjData,handles.axes3,PlotHandles);
+%     UvData.Object{IndexObj}.plotaxes=handles.axes3;
+% else
+%     UvData.Object{IndexObj}.plotaxes=view_field(ProjData);
+% end
+% set(handles.uvmat,'UserData',UvData)
+% hother=findobj('Tag','proj_object');%find all the proj objects
+% for iobj=1:length(hother)
+%     if isequal(get(hother(iobj),'Type'),'rectangle')|isequal(get(hother(iobj),'Type'),'patch')
+%         set(hother(iobj),'EdgeColor','b')
+%         if isequal(get(hother(iobj),'FaceColor'),'m')
+%             set(hother(iobj),'FaceColor','b')
+%         end
+%     elseif isequal(get(hother(iobj),'Type'),'image')
+%            Acolor=get(hother(iobj),'CData');
+%            Acolor(:,:,1)=zeros(size(Acolor,1),size(Acolor,2));
+%            set(hother(iobj),'CData',Acolor);
+%     else
+%          set(hother(iobj),'Color','b')
+%     end
+%     set(hother(iobj),'Selected','off')
+% end
 hother=findobj('Tag','DeformPoint');
 set(hother,'Color','b');
 set(hother,'Selected','off')    
@@ -4389,13 +4383,10 @@ figure(hset_object)%put set_object in front
 function MenuExportField_Callback(hObject, eventdata, handles)
 global CurData
 CurData=get(handles.uvmat,'UserData');
-% if isfield(UvData,'ProjField')
-    CurData=UvData;
-    evalin('base','global CurData')%make CurData global in the workspace
-    display(['current field :'])
-% end
+evalin('base','global CurData')%make CurData global in the workspace
+display(['current field :'])
 evalin('base','CurData') %display CurData in the workspace
-commandwindow;
+commandwindow; %brings the Matlab command window to the front
 
 %------------------------------------------------------
 % --- Executes on button press in Menu/Export/extract figure.
@@ -4546,71 +4537,169 @@ set(handles.uvmat,'UserData',UvData);
 
 % ------------------------------------------------------------------
 function MenuMask_Callback(hObject, eventdata, handles)
-set(handles.TOOLS_txt,'Visible','on')
-set(handles.frame_tools,'Visible','on')
-% set(handles.create,'Visible','on')
-% set(handles.create,'Value',1)
-% set(handles.create,'BackgroundColor',[1 1 0]) %visualise in yellow
-set(handles.save_mask,'Visible','on')
-set(handles.masklevel,'Visible','on')
-if isequal(get(handles.z_index,'Visible'),'on')
-    nb_slice=str2num(get(handles.nb_slice,'String'));
-    for ilist=1:nb_slice
-        list_index{ilist,1}=num2str(ilist);
-    end   
-    set(handles.masklevel,'String',list_index)
-    val=str2num(get(handles.z_index,'String'));
-    if val<=nb_slice
-        set(handles.masklevel,'Value',val)
-    end
-else
-    set(handles.masklevel,'String',{'1'})
-    set(handles.masklevel,'Value',1)
-end
-if ishandle(handles.UVMAT_title)
-    delete(handles.UVMAT_title)
-end
-% huvmat=get(handles.create,'parent');
+% set(handles.TOOLS_txt,'Visible','on')
+% set(handles.frame_tools,'Visible','on')
+% % set(handles.create,'Visible','on')
+% % set(handles.create,'Value',1)
+% % set(handles.create,'BackgroundColor',[1 1 0]) %visualise in yellow
+% set(handles.save_mask,'Visible','on')
+% set(handles.masklevel,'Visible','on')
+% if isequal(get(handles.z_index,'Visible'),'on')
+%     nb_slice=str2num(get(handles.nb_slice,'String'));
+%     for ilist=1:nb_slice
+%         list_index{ilist,1}=num2str(ilist);
+%     end   
+%     set(handles.masklevel,'String',list_index)
+%     val=str2num(get(handles.z_index,'String'));
+%     if val<=nb_slice
+%         set(handles.masklevel,'Value',val)
+%     end
+% else
+%     set(handles.masklevel,'String',{'1'})
+%     set(handles.masklevel,'Value',1)
+% end
+% if ishandle(handles.UVMAT_title)
+%     delete(handles.UVMAT_title)
+% end
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-set(handles.zoom,'Value',0)
-set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.edit_vect,'Value',0)
-edit_vect_Callback(hObject, eventdata, handles)
-set(handles.edit,'Value',0)
-set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.edit_vect,'Value',0)  
-edit_vect_Callback(hObject, eventdata, handles)
+% set(handles.zoom,'Value',0)
+% set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
+% set(handles.edit_vect,'Value',0)
+% edit_vect_Callback(hObject, eventdata, handles)
+% set(handles.edit,'Value',0)
+% set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
+% set(handles.edit_vect,'Value',0)  
+% edit_vect_Callback(hObject, eventdata, handles)
 % set(handles.cal,'Value',0)
 % set(handles.cal,'BackgroundColor',[0 1 0])
 
 %initiate the GUI set_object
-data.TITLE='MASK';
-if isfield(UvData,'CoordType')
-    data.CoordType=UvData.CoordType;
+% data.TITLE='MASK';
+% if isfield(UvData,'CoordType')
+%     data.CoordType=UvData.CoordType;
+% end
+% if isfield(UvData,'Mesh')&&~isempty(UvData.Mesh)
+%     data.YMax=UvData.Mesh;
+% elseif isfield(UvData.Field,'AX')&&isfield(UvData.Field,'AY')&& isfield(UvData.Field,'A')%only image
+%     np=size(UvData.Field.A);
+%     meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/(np(2)-1);
+%     meshy=abs(UvData.Field.AY(end)-UvData.Field.AY(1))/(np(1)-1);
+%     data.YMax=max(meshx,meshy);
+%     data.DX=max(meshx,meshy);
+% end
+% data.Coord=[0 0 0]; %default
+% PlotHandles=get_plot_handles(handles);%get the handles of the graphic objects setting the plotting parameters
+% [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface
+% pos_uvmat=get(handles.uvmat,'Position');
+% if isfield(UvData,'SetObjectOrigin')
+%     pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
+%     pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4); 
+%     set(hset_object,'Position',pos_set_object)
+% end
+ListObj=UvData.Object;
+select=zeros(1,numel(ListObj));
+for iobj=1:numel(ListObj);
+    if strcmp(ListObj{iobj}.ProjMode,'mask_inside')||strcmp(ListObj{iobj}.ProjMode,'mask_outside')
+        select(iobj)=1;
+    end
 end
-if isfield(UvData,'Mesh')&&~isempty(UvData.Mesh)
-    data.YMax=UvData.Mesh;
-elseif isfield(UvData.Field,'AX')&&isfield(UvData.Field,'AY')&& isfield(UvData.Field,'A')%only image
-    np=size(UvData.Field.A);
-    meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/(np(2)-1);
-    meshy=abs(UvData.Field.AY(end)-UvData.Field.AY(1))/(np(1)-1);
-    data.YMax=max(meshx,meshy);
-    data.DX=max(meshx,meshy);
-end
-data.Coord=[0 0 0]; %default
-PlotHandles=get_plot_handles(handles);%get the handles of the graphic objects setting the plotting parameters
-[hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface
-pos_uvmat=get(handles.huvmat,'Position');
-if isfield(UvData,'SetObjectOrigin')
-    pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
-    pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4); 
-    set(hset_object,'Position',pos_set_object)
-end
-list_object=get(handles.list_object_1,'String');
-if ~isempty(list_object)
-    set(handles.list_object_1,'Value',length(list_object))
-end
-UvData.MouseAction='create_object';
+val=find(select);
+if isempty(val)
+    msgbox_uvmat('ERROR','polygons must be first created by Projection object/mask polygon in the menu bar');
+    return
+else
+    set(handles.list_object_1,'Max',2);%allow multiple selection
+    set(handles.list_object_1,'Value',val);
+%     answer=msgbox_uvmat('INPUT_Y-N',['make the mask image from ' num2str(numel(val)) ' polygons']);
+%     if ~isempty(answer)
+        flag=1;
+        npx=size(UvData.Field.A,2);
+        npy=size(UvData.Field.A,1);
+        xi=[0.5:npx-0.5];
+        yi=[0.5:npy-0.5];
+        [Xi,Yi]=meshgrid(xi,yi);
+        if isfield(UvData,'Object')
+            for iobj=1:length(UvData.Object)
+                ObjectData=UvData.Object{iobj};
+                if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
+                    flagobj=1;
+                    testphys=0; %coordinates in pixels by default
+                    if isfield(ObjectData,'CoordType') && isequal(ObjectData.CoordType,'phys')
+                        if isfield(UvData,'XmlData')&& isfield(UvData.XmlData,'GeometryCalib')
+                            Calib=UvData.XmlData.GeometryCalib;
+                            testphys=1;
+                        end
+                    end
+                    if isfield(ObjectData,'Coord')& isfield(ObjectData,'Style')
+                        if isequal(ObjectData.Style,'polygon')
+                            X=ObjectData.Coord(:,1);
+                            Y=ObjectData.Coord(:,2);
+                            if testphys
+                                [X,Y]=px_XYZ(Calib,X,Y,0);% to generalise with 3D cases
+                            end
+                            flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
+                        elseif isequal(ObjectData.Style,'ellipse')
+                            if testphys
+                                %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
+                            end
+                            RangeX=max(ObjectData.RangeX);
+                            RangeY=max(ObjectData.RangeY);
+                            X2Max=RangeX*RangeX;
+                            Y2Max=RangeY*RangeY;
+                            distX=(Xi-ObjectData.Coord(1,1));
+                            distY=(Yi-ObjectData.Coord(1,2));
+                            flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
+                        elseif isequal(ObjectData.Style,'rectangle')
+                            if testphys
+                                %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
+                            end
+                            distX=abs(Xi-ObjectData.Coord(1,1));
+                            distY=abs(Yi-ObjectData.Coord(1,2));
+                            flagobj=distX>max(ObjectData.RangeX) | distY>max(ObjectData.RangeY);
+                        end
+                        if isequal(ObjectData.ProjMode,'mask_outside')
+                            flagobj=~flagobj;
+                        end
+                        flag=flag & flagobj;
+                    end
+                end
+            end
+        end
+        % flag=~flag;
+        %mask name
+        RootPath=get(handles.RootPath,'String');
+        RootFile=get(handles.RootFile,'String');
+        if ~isempty(RootFile)&(isequal(RootFile(1),'/')| isequal(RootFile(1),'\'))
+            RootFile(1)=[];
+        end
+        filebase=fullfile(RootPath,RootFile);
+        list=get(handles.masklevel,'String');
+        masknumber=num2str(length(list));
+        maskindex=get(handles.masklevel,'Value');
+        mask_name=name_generator([filebase '_' masknumber 'mask'],maskindex,1,'.png','_i');
+        imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
+        imflag=flipdim(imflag,1);
+        % imflag=uint8(255*flag);% =0 for flag=0 (vectors=0 when
+        % 20<imflag<200)
+
+        %display the mask
+        %update_mask(handles,num_i1,num_j1)
+        figure;
+        vec=linspace(0,1,256);%define a linear greyscale colormap
+        map=[vec' vec' vec'];
+        colormap(map)
+        image(imflag);
+        answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name)
+        if ~strcmp(answer,'Cancel')
+            imwrite(imflag,answer,'BitDepth',8);
+        end
+        set(list_object_1,'Value',1)
+        set(list_object_1,'Max',1)
+%     end
+end        
+      
+
+% UvData.MouseAction='create_object';
 set(handles.uvmat,'UserData',UvData);
 
 % ------------------------------------------------------------------
@@ -4778,6 +4867,15 @@ data.Style='ellipse';
 data.ProjMode='inside';%default
 create_object(data,handles)
 
+%------------------------------------------------------------------------
+function MenuMaskObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Style='polygon';
+data.StyleMenu={'polygon'};
+data.ProjMode='mask_inside';%default
+data.ProjMenu={'mask_inside';'mask_outside'};
+create_object(data,handles)
+
 % ------------------------------------------------------------------
 function Menuplane_Callback(hObject, eventdata, handles)
 data.Style='plane';
@@ -4851,9 +4949,12 @@ UvData=get(handles.uvmat,'UserData');
 set(handles.edit,'Value',0); %suppress the object edit mode
 set(handles.edit,'BackgroundColor',[0.7,0.7,0.7])  
 data.enable_plot=1;
-if isfield(UvData,'CoordType')
-    data.CoordType=UvData.CoordType;
-end
+transform_list=get(handles.transform_fct,'String');
+val=get(handles.transform_fct,'Value');
+data.CoordType=transform_list{val};
+% if isfield(UvData,'CoordType')
+%     data.CoordType=UvData.CoordType;
+% end
 if isfield(UvData,'Mesh')&&~isempty(UvData.Mesh)
     data.RangeX=UvData.Mesh;
     data.RangeY=UvData.Mesh;
@@ -4929,7 +5030,6 @@ IndexObj=get(handles.list_object_2,'Value');
         delete_object(IndexObj)
     end
     
-
 
 
 

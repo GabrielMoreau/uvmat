@@ -75,8 +75,6 @@ function set_object_OpeningFcn(hObject, eventdata, handles, data, PlotHandles,ZB
 %-------------------------------------------------------------------
 % Choose default command line output for set_object
 handles.output = hObject;
-'TESTsetobj'
-data
 % Update handles structure
 guidata(hObject, handles);
 
@@ -112,6 +110,9 @@ if exist('data','var')
             set(handles.ZObject,'String',num2str(data.Coord(1,3),4))
         end
     end
+    if isfield(data,'StyleMenu')
+        set(handles.ObjectStyle,'String',data.StyleMenu);
+    end
     if isfield(data,'Style')
         menu=get(handles.ObjectStyle,'String');
         for iline=1:length(menu)
@@ -122,6 +123,9 @@ if exist('data','var')
         end
     end
     ObjectStyle_Callback(hObject, eventdata, handles)
+    if isfield(data,'ProjMenu')
+        set(handles.ProjMode,'String',data.ProjMenu);
+    end
     if isfield(data,'ProjMode')
         menu=get(handles.ProjMode,'String');
         for iline=1:length(menu)
@@ -236,12 +240,12 @@ if exist('data','var')
         end
         set(handles.DZ,'String',data.DZ)
     end
-    if isfield(data,'CoordType')
-        if isequal(data.CoordType,'phys')
-            set(handles.MenuCoord,'Value',1)
-        elseif isequal(data.CoordType,'px')
+    if isfield(data,'CoordType')&& isequal(data.CoordType,'px')
+%         if isequal(data.CoordType,'phys')
+%             set(handles.MenuCoord,'Value',1)
+%         elseif isequal(data.CoordType,'px')
              set(handles.MenuCoord,'Value',2)
-        end
+%         end
     end
 end
 if enable_plot
