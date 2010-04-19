@@ -88,14 +88,14 @@ if exist('pos','var')& length(pos)>2
 end
 inputxml='';
 if exist('inputfile','var')& ~isempty(inputfile)
-    [Path,Name,ext]=fileparts(inputfile);
-    form=imformats(ext([2:end]));
-    if ~isempty(form)% if the input file is an image
+%     [Path,Name,ext]=fileparts(inputfile);
+%     form=imformats(ext([2:end]));
+%     if ~isempty(form)% if the input file is an image
         struct.XmlInputfile=inputfile;
         set(hObject,'UserData',struct)
         [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(inputfile);
         inputxml=[fullfile(Pathsub,RootFile) '.xml'];
-    end   
+%     end   
 end
 set(handles.ListCoord,'String',{'......'})
 if exist(inputxml,'file')
@@ -460,7 +460,7 @@ ny=str2num(get(hhuvmat.npy,'String'));
 
 % est_kc=[1;0;0;0;0];
 est_dist=[0;0;0;0;0];
-run(fullfile(path_UVMAT,'TOOLBOX_calib','go_calib_optim'));
+run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));
 
 GeometryCalib.CalibrationType='tsai';
 GeometryCalib.focal=f(2);
