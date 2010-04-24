@@ -787,6 +787,15 @@ end
 if ~isempty(XmlData.Time)
     nbfield=size(XmlData.Time,1);
     nburst=size(XmlData.Time,2);
+    %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
+    if isequal(nbfield,1) && ~isequal(nburst,1)% .Time is a line vector
+        NomType=get(handles.FileIndex,'UserData');
+        if numel(NomType)>=2 &&(strcmp(NomType,'_i')||strcmp(NomType(1:2),'%0')||strcmp(NomType(1:2),'_%'))
+            XmlData.Time=(XmlData.Time)';
+            nbfield=nburst;
+            nburst=1;
+        end
+    end
 end
 last_i_cell=get(handles.last_i,'String');
 if isempty(nbfield)
@@ -821,7 +830,9 @@ if isfield(XmlData,'GeometryCalib')
             set(handles.pxcm,'String',num2str(pixcmx))
             set(handles.pycm,'String',num2str(pixcmy))
         end
-        set(handles.transform_fct,'Value',2); % phys transform by default
+        if ~get(handles.FixedLimits,'Value')
+            set(handles.transform_fct,'Value',2); % phys transform by default if fixedLimits is off
+        end
         if isfield(GeometryCalib,'SliceCoord')
            siz=size(GeometryCalib.SliceCoord);
            if siz(1)>1
@@ -2121,9 +2132,19 @@ end
 if ~isempty(filename) && isequal(FieldName,'image')
      switch FileType
         case 'movie'
-            A=read(UvData.MovieObject,num_i1);
+            try
+                A=read(UvData.MovieObject,num_i1);
+            catch
+                errormsg=lasterr;
+                return
+            end
         case 'avi'
-            mov=aviread(filename,num_i1);
+            try
+                mov=aviread(filename,num_i1);
+            catch
+                errormsg=lasterr;
+                return
+            end
             A=frame2im(mov(1));
         case 'vol'
             A=imread(filename);
@@ -2813,6 +2834,7 @@ if test
     set(handles.FixedLimits,'BackgroundColor',[1 1 0])
 else
     set(handles.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
+    update_plot(handles);
 end
 
 %-------------------------------------------------------------------
@@ -4207,24 +4229,7 @@ write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 %-------------------------------------------------------------------
 % --- Executes on button press in grid.
 function grid_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
 
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-
-%suppress the other options if grid is chosen
-set(handles.edit_vect,'Value',0)
-edit_vect_Callback(hObject, eventdata, handles)
-set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.edit_vect,'Value',0)  
-edit_vect_Callback(hObject, eventdata, handles)
-set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.list_object_1,'Value',1)      
-
-%prepare display of the set_grid GUI
-data.fixedtitle=1;
-FileName=read_file_boxes(handles);
-[hset_object,UvData.sethandles]=set_grid(FileName);% call the set_object interface
-set(handles.uvmat,'UserData',UvData);
 
 
 %-------------------------------------------------------------------
@@ -4705,9 +4710,23 @@ set(handles.uvmat,'UserData',UvData);
 % ------------------------------------------------------------------
 %-- open the GUI set_grid.fig to create grid
 function MenuGrid_Callback(hObject, eventdata, handles)
-set(handles.TOOLS_txt,'Visible','on')
-set(handles.frame_tools,'Visible','on')
-grid_Callback(hObject,eventdata,handles)
+%UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
+
+%suppress the other options if grid is chosen
+set(handles.edit_vect,'Value',0)
+edit_vect_Callback(hObject, eventdata, handles)
+set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
+set(handles.edit_vect,'Value',0)  
+edit_vect_Callback(hObject, eventdata, handles)
+set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
+set(handles.list_object_1,'Value',1)      
+
+%prepare display of the set_grid GUI
+FileName=read_file_boxes(handles);
+CoordList=get(handles.transform_fct,'String');
+val=get(handles.transform_fct,'Value');
+set_grid(FileName,CoordList{val});% call the set_object interface
+%set(handles.uvmat,'UserData',UvData);
 
 %----------------------------------------------------------------
 % open the GUI 'series'

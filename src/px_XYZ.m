@@ -12,7 +12,27 @@ Y=[];
 if ~exist('Zphys','var')
     Zphys=0;
 end
-
+if ~isfield(Calib,'f')
+    Calib.f=1;
+end
+if ~isfield(Calib,'kappa1')
+    Calib.kappa1=0;
+end
+if ~isfield(Calib,'sx')
+    Calib.sx=1;
+end
+if ~isfield(Calib,'dpx')
+    Calib.dpx=1;
+end
+if ~isfield(Calib,'dpy')
+    Calib.dpy=1;
+end
+if ~isfield(Calib,'Cx')
+    Calib.Cx=0;
+end
+if ~isfield(Calib,'Cy')
+    Calib.Cy=0;
+end
 %%%%%%%%%%%%%
 if isfield(Calib,'R')
     R=(Calib.R)';

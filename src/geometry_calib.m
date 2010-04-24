@@ -159,6 +159,8 @@ if isfield(s,'GeometryCalib')
                 set(handles.calib_type,'Value',2)
             case 'tsai'
                 set(handles.calib_type,'Value',3)
+            case 'tsai_matlab'
+                set(handles.calib_type,'Value',4)
         end
     end
     if isfield(Calib,'SourceCalib')
@@ -254,16 +256,57 @@ val=get(handles.calib_type,'Value');
 calib_type=calib_cell{val};
 Coord_cell=get(handles.ListCoord,'String');
 Object=read_geometry_calib(Coord_cell);
-
+X=Object.Coord(:,1);
+Y=Object.Coord(:,2);
+Z=Object.Coord(:,3);
 if isequal(calib_type,'rescale')
     GeometryCalib=calib_rescale(Object.Coord);
+    Z=0;%Z not taken into account
 elseif isequal(calib_type,'linear')
     GeometryCalib=calib_linear(Object.Coord);
+    Z=0; %Z not taken into account
 elseif isequal(calib_type,'tsai_cpp')
     GeometryCalib=calib_tsai(Object.Coord);
 elseif isequal(calib_type,'tsai_matlab')
     GeometryCalib=calib_tsai2(Object.Coord);
 end
+
+%check error
+if isfield(GeometryCalib,'dpx_dpy')
+    Calib.dpx=GeometryCalib.dpx_dpy(1);
+    Calib.dpy=GeometryCalib.dpx_dpy(2);
+end
+if isfield(GeometryCalib,'sx')
+    Calib.sx=GeometryCalib.sx;
+end
+if isfield(GeometryCalib,'Cx_Cy')
+    Calib.Cx=GeometryCalib.Cx_Cy(1);
+    Calib.Cy=GeometryCalib.Cx_Cy(2);
+end
+if isfield(GeometryCalib,'kappa1')
+    Calib.kappa1=GeometryCalib.kappa1;
+end
+if isfield(GeometryCalib,'focal')
+    Calib.f=GeometryCalib.focal;
+end
+if isfield(GeometryCalib,'Tx_Ty_Tz')
+    Calib.Tx=GeometryCalib.Tx_Ty_Tz(1);
+    Calib.Ty=GeometryCalib.Tx_Ty_Tz(2);
+    Calib.Tz=GeometryCalib.Tx_Ty_Tz(3);
+end
+if isfield(GeometryCalib,'R')
+    Calib.R=GeometryCalib.R;
+end
+x_ima=Object.Coord(:,4);
+y_ima=Object.Coord(:,5); 
+[Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
+GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
+[GeometryCalib.ErrorMax(1),index(1)]=max(abs(Xpoints-x_ima));
+GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
+[GeometryCalib.ErrorMax(2),index(2)]=max(abs(Ypoints-y_ima));
+[EM,ind_dim]=max(GeometryCalib.ErrorMax);
+index=index(ind_dim);
+
 unitlist=get(handles.CoordUnit,'String');
 unit=unitlist{get(handles.CoordUnit,'value')};
 GeometryCalib.CoordUnit=unit;
@@ -285,25 +328,28 @@ else
     answer=inputdlg(question,'save average in a new file',1,def,options);
     outputfile=answer{1};
 end
-update_imadoc(GeometryCalib,outputfile)
-msgbox_uvmat('CONFIRMATION',{[outputfile ' updated with calibration data'];...
+answer=msgbox_uvmat('INPUT_Y-N',{[outputfile ' updated with calibration data'];...
     ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
-    ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']})
-
-%display image with new calibration in the currently opened uvmat interface
-hhh=findobj(hhuvmat.axes3,'Tag','calib_marker');% delete calib points and markers
-if ~isempty(hhh)
-    delete(hhh);
+    ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']});
+if isequal(answer,'Yes')
+    update_imadoc(GeometryCalib,outputfile)
+    %display image with new calibration in the currently opened uvmat interface
+    hhh=findobj(hhuvmat.axes3,'Tag','calib_marker');% delete calib points and markers
+    if ~isempty(hhh)
+        delete(hhh);
+    end
+    hhh=findobj(hhuvmat.axes3,'Tag','calib_points');
+    if ~isempty(hhh)
+        delete(hhh);
+    end
+    set(hhuvmat.FixedLimits,'Value',0)% put FixedLimits option to 'off'
+    set(hhuvmat.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
+    uvmat('RootPath_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
+    MenuPlot_Callback(hObject, eventdata, handles)
+    set(handles.ListCoord,'Value',index)% indicate in the list the point with max deviation (possible mistake)
+    ListCoord_Callback(hObject, eventdata, handles)
+    figure(handles.geometry_calib)
 end
-hhh=findobj(hhuvmat.axes3,'Tag','calib_points');
-if ~isempty(hhh)
-    delete(hhh);
-end
-set(hhuvmat.FixedLimits,'Value',0)% put FixedLimits option to 'off'
-set(hhuvmat.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
-uvmat('RootPath_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
-MenuPlot_Callback(hObject, eventdata, handles)
-figure(handles.geometry_calib)
 
 %------------------------------------------------------------------
 % --- Executes on button press in calibrate_lin.
@@ -394,23 +440,23 @@ GeometryCalib.CoordUnit=[];% default value, to be updated by the calling functio
 GeometryCalib.Tx_Ty_Tz=[T_x T_y 1];
 GeometryCalib.R=[px(1),0,0;0,py(1),0;0,0,1];
 
-%check error
-Calib.dpx=1;
-Calib.dpy=1;
-Calib.sx=1;
-Calib.Cx=0;
-Calib.Cy=0;
-Calib.Tz=1;
-Calib.kappa1=0;
-Calib.f=GeometryCalib.focal;
-Calib.Tx=T_x;
-Calib.Ty=T_y;
-Calib.R=GeometryCalib.R;
-[Xpoints,Ypoints]=px_XYZ(Calib,X,Y,0);
-GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
-GeometryCalib.ErrorMax(1)=max(abs(Xpoints-x_ima));
-GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
-GeometryCalib.ErrorMax(2)=max(abs(Ypoints-y_ima));
+% %check error
+% Calib.dpx=1;
+% Calib.dpy=1;
+% Calib.sx=1;
+% Calib.Cx=0;
+% Calib.Cy=0;
+% Calib.Tz=1;
+% Calib.kappa1=0;
+% Calib.f=GeometryCalib.focal;
+% Calib.Tx=T_x;
+% Calib.Ty=T_y;
+% Calib.R=GeometryCalib.R;
+% [Xpoints,Ypoints]=px_XYZ(Calib,X,Y,0);
+% GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
+% GeometryCalib.ErrorMax(1)=max(abs(Xpoints-x_ima));
+% GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
+% GeometryCalib.ErrorMax(2)=max(abs(Ypoints-y_ima));
 
 %------------------------------------------------------------------------
 % determine the parameters for a calibration by a linear transform matrix (rescale and rotation)
@@ -435,11 +481,11 @@ GeometryCalib.CoordUnit=[];% default value, to be updated by the calling functio
 GeometryCalib.Tx_Ty_Tz=[T_x T_y 1]; 
 GeometryCalib.R=[a_X1(2),a_X1(3),0;a_Y1(2),a_Y1(3),0;0,0,1];
 
-%check error
-GeometryCalib.ErrorRms(1)=sqrt(mean((x1-x_ima).*(x1-x_ima)));
-GeometryCalib.ErrorMax(1)=max(abs(x1-x_ima));
-GeometryCalib.ErrorRms(2)=sqrt(mean((y1-y_ima).*(y1-y_ima)));
-GeometryCalib.ErrorMax(2)=max(abs(y1-y_ima));
+% %check error
+% GeometryCalib.ErrorRms(1)=sqrt(mean((x1-x_ima).*(x1-x_ima)));
+% GeometryCalib.ErrorMax(1)=max(abs(x1-x_ima));
+% GeometryCalib.ErrorRms(2)=sqrt(mean((y1-y_ima).*(y1-y_ima)));
+% GeometryCalib.ErrorMax(2)=max(abs(y1-y_ima));
 
 %------------------------------------------------------------------------
 function GeometryCalib=calib_tsai2(Coord)
@@ -462,7 +508,7 @@ ny=str2num(get(hhuvmat.npy,'String'));
 est_dist=[0;0;0;0;0];
 run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));
 
-GeometryCalib.CalibrationType='tsai';
+GeometryCalib.CalibrationType='tsai_matlab';
 GeometryCalib.focal=f(2);
 GeometryCalib.dpx_dpy=[1 1];
 GeometryCalib.Cx_Cy=cc';
@@ -471,28 +517,28 @@ GeometryCalib.kappa1=-k(1)/f(2)^2;
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
 GeometryCalib.Tx_Ty_Tz=Tc_1';
 GeometryCalib.R=Rc_1;
-Calib.dpx=GeometryCalib.dpx_dpy(1);
-Calib.dpy=GeometryCalib.dpx_dpy(2);
-Calib.sx=GeometryCalib.sx;
-Calib.Cx=GeometryCalib.Cx_Cy(1);
-Calib.Cy=GeometryCalib.Cx_Cy(2);
-Calib.kappa1=GeometryCalib.kappa1;
-Calib.f=GeometryCalib.focal;
-Calib.Tx=GeometryCalib.Tx_Ty_Tz(1);
-Calib.Ty=GeometryCalib.Tx_Ty_Tz(2);
-Calib.Tz=GeometryCalib.Tx_Ty_Tz(3);
-Calib.R=GeometryCalib.R;
-X=Coord(:,1);
-Y=Coord(:,2);
-Z=Coord(:,3);
-x_ima=Coord(:,4);
-y_ima=Coord(:,5);
-[Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
-
-GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
-GeometryCalib.ErrorMax(1)=max(abs(Xpoints-x_ima));
-GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
-GeometryCalib.ErrorMax(2)=max(abs(Ypoints-y_ima));
+% Calib.dpx=GeometryCalib.dpx_dpy(1);
+% Calib.dpy=GeometryCalib.dpx_dpy(2);
+% Calib.sx=GeometryCalib.sx;
+% Calib.Cx=GeometryCalib.Cx_Cy(1);
+% Calib.Cy=GeometryCalib.Cx_Cy(2);
+% Calib.kappa1=GeometryCalib.kappa1;
+% Calib.f=GeometryCalib.focal;
+% Calib.Tx=GeometryCalib.Tx_Ty_Tz(1);
+% Calib.Ty=GeometryCalib.Tx_Ty_Tz(2);
+% Calib.Tz=GeometryCalib.Tx_Ty_Tz(3);
+% Calib.R=GeometryCalib.R;
+% X=Coord(:,1);
+% Y=Coord(:,2);
+% Z=Coord(:,3);
+% x_ima=Coord(:,4);
+% y_ima=Coord(:,5);
+% [Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
+% 
+% GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
+% [GeometryCalib.ErrorMax(1),GeometryCalib.IndexMax(1)]=max(abs(Xpoints-x_ima));
+% GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
+% [GeometryCalib.ErrorMax(2),GeometryCalib.IndexMax(2)]=max(abs(Ypoints-y_ima));
 
 function GeometryCalib=calib_tsai(Coord)
 %------------------------------------------------------------------------
@@ -557,49 +603,29 @@ r9 = ca * cb;
 %EN DEDUIRE MATRICE R ??
 GeometryCalib.R=[r1,r2,r3;r4,r5,r6;r7,r8,r9];
 %erreur a caracteriser?
-%check error
-Calib.dpx=GeometryCalib.dpx_dpy(1);
-Calib.dpy=GeometryCalib.dpx_dpy(2);
-Calib.sx=GeometryCalib.sx;
-Calib.Cx=GeometryCalib.Cx_Cy(1);
-Calib.Cy=GeometryCalib.Cx_Cy(2);
-Calib.kappa1=GeometryCalib.kappa1;
-Calib.f=GeometryCalib.focal;
-Calib.Tx=GeometryCalib.Tx_Ty_Tz(1);
-Calib.Ty=GeometryCalib.Tx_Ty_Tz(2);
-Calib.Tz=GeometryCalib.Tx_Ty_Tz(3);
-Calib.R=GeometryCalib.R;
-X=Coord(:,1);
-Y=Coord(:,2);
-Z=Coord(:,3);
-x_ima=Coord(:,4);
-y_ima=Coord(:,5);
-[Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
-
-GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
-GeometryCalib.ErrorMax(1)=max(abs(Xpoints-x_ima));
-GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
-GeometryCalib.ErrorMax(2)=max(abs(Ypoints-y_ima));
-% Nfx
-% dx
-% dy
-% 5 dpx
-% 6 dpy
-% cx
-% cy
-% sx
-% f
-% kappa1
-% tx
-% ty
-% tz
-% rx
-% ry
-% rz
-% p1
-% p2
-
-%calibcoeff=str2num(calibdat)
+% %check error
+% Calib.dpx=GeometryCalib.dpx_dpy(1);
+% Calib.dpy=GeometryCalib.dpx_dpy(2);
+% Calib.sx=GeometryCalib.sx;
+% Calib.Cx=GeometryCalib.Cx_Cy(1);
+% Calib.Cy=GeometryCalib.Cx_Cy(2);
+% Calib.kappa1=GeometryCalib.kappa1;
+% Calib.f=GeometryCalib.focal;
+% Calib.Tx=GeometryCalib.Tx_Ty_Tz(1);
+% Calib.Ty=GeometryCalib.Tx_Ty_Tz(2);
+% Calib.Tz=GeometryCalib.Tx_Ty_Tz(3);
+% Calib.R=GeometryCalib.R;
+% X=Coord(:,1);
+% Y=Coord(:,2);
+% Z=Coord(:,3);
+% x_ima=Coord(:,4);
+% y_ima=Coord(:,5);
+% [Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
+% 
+% GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
+% GeometryCalib.ErrorMax(1)=max(abs(Xpoints-x_ima));
+% GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
+% GeometryCalib.ErrorMax(2)=max(abs(Ypoints-y_ima));
 
 
 %------------------------------------------------------------------------

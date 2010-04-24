@@ -21,9 +21,9 @@
 
 function varargout = set_grid(varargin)
 
-% Last Modified by GUIDE v2.5 04-Feb-2008 16:05:02
+% Last Modified by GUIDE v2.5 23-Apr-2010 15:44:47
 
-% Begin initialization code - DO NOT EDIT
+% Begin initialization code - DO NOT PLOT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
@@ -40,7 +40,7 @@ if nargout
 else
     gui_mainfcn(gui_State, varargin{:});
 end
-% End initialization code - DO NOT EDIT
+% End initialization code - DO NOT PLOT
 
 %-------------------------------------------------------------------
 % --- Executes just before set_grid is made visible.
@@ -57,7 +57,7 @@ end
 % PlotHandles: set of handles of the elements contolling the plotting of the projected field:
 %  if =[] or absent, no plot (mask mode in uvmat)
 % parameters on the uvmat interface (obtained by 'get_plot_handle.m')
-function set_grid_OpeningFcn(hObject, eventdata, handles,inputfile)
+function set_grid_OpeningFcn(hObject, eventdata, handles,inputfile,CoordType)
 
 % Choose default command line output for set_grid
 handles.output = hObject;
@@ -69,9 +69,9 @@ guidata(hObject, handles);
 % set(hObject,'Unit','Normalized')% set the unit normalized to the screen size
 % set(hObject,'Position',[0.7 0.1 0.25 0.5])%set the position of the set_grid interface 
 set(hObject,'DeleteFcn',@closefcn)
-set(handles.TITLE,'Value',1)
-set(handles.ObjectStyle,'Value',1)
-set(handles.ProjMode,'Value',1)
+% set(handles.TITLE,'Value',1)
+%set(handles.ObjectStyle,'Value',1)
+%set(handles.ProjMode,'Value',1)
 set(handles.MenuCoord,'ListboxTop',1)
 set(handles.MenuCoord,'Value',1);
 set(handles.MenuCoord,'String',{'phys';'px'});
@@ -79,179 +79,17 @@ if exist('inputfile','var')& ~isempty(inputfile)
    set(handles.image_1,'String',inputfile)
    set(handles.image_2,'String',inputfile)
 end
-
+if exist('CoordType','var')
+    if strcmp(CoordType,'px')
+        set(handles.MenuCoord,'Value',2)
+    end
+end
 
 % --- Outputs from this function are returned to the command line.
 function varargout = set_grid_OutputFcn(hObject, eventdata, handles)
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 varargout{2}=handles;
-
-% --- Executes on selection change in ObjectStyle.
-function ObjectStyle_Callback(hObject, eventdata, handles)
-
-ProjMode_Callback(hObject, eventdata, handles)
-
-%----------------------------------------------
-function xObject_Callback(hObject, eventdata, handles)
-
-
-function yObject_Callback(hObject, eventdata, handles)
-
-
-% --- Executes on selection change in zObject.
-function zObject_Callback(hObject, eventdata, handles)
-
-
-%---------------------------------------------------
-% --- Executes on selection change in ProjMode.
-function ProjMode_Callback(hObject, eventdata, handles)
-menu=get(handles.ProjMode,'String');
-value=get(handles.ProjMode,'Value');
-ProjMode=menu{value};
-menu=get(handles.ObjectStyle,'String');
-value=get(handles.ObjectStyle,'Value');
-ObjectStyle=menu{value};
-test3D=isequal(get(handles.ZObject,'Visible'),'on');%3D case
-if isequal(ObjectStyle,'plane')||isequal(ObjectStyle,'volume')
-    set(handles.Phi,'Visible','on')
-    if test3D%3D case
-        set(handles.Theta,'Visible','on')
-        set(handles.Psi,'Visible','on')
-    end
-    set(handles.XMin,'Visible','on')
-    set(handles.XMax,'Visible','on')
-    set(handles.YMin,'Visible','on')
-    set(handles.YMax,'Visible','on')
-    if test3D
-        set(handles.Theta,'Visible','on')
-        set(handles.Psi,'Visible','on')
-        set(handles.ZMin,'Visible','on')
-        set(handles.ZMax,'Visible','on')
-    end
-else
-    set(handles.Phi,'Visible','off')
-    set(handles.Theta,'Visible','off')
-    set(handles.Psi,'Visible','off')
-    set(handles.XMin,'Visible','off')
-    set(handles.XMax,'Visible','off')
-    set(handles.YMin,'Visible','off')
-    if isequal(ProjMode,'interp')
-        set(handles.YMax,'Visible','off')
-    else
-        set(handles.YMax,'Visible','on')
-    end
-    if isequal(ObjectStyle,'rectangle')|isequal(ObjectStyle,'ellipse')
-        set(handles.XMax,'Visible','on')
-    else
-       set(handles.XMax,'Visible','off')
-    end
-    set(handles.ZMin,'Visible','off')
-    set(handles.ZMax,'Visible','off')
-end
-if isequal(ProjMode,'projection')|isequal(ProjMode,'inside')|isequal(ProjMode,'outside')|isequal(ObjectStyle,'points')
-    set(handles.DX,'Visible','off')
-    set(handles.DY,'Visible','off')
-    set(handles.DZ,'Visible','off')   
-else
-    set(handles.DX,'Visible','on')
-    set(handles.DY,'Visible','on')
-    if test3D%3D case
-        set(handles.DZ,'Visible','on')
-    end
-end
-
-%---------------------------------------------
-% --- Executes on selection change in TITLE.
-function TITLE_Callback(hObject, eventdata, handles)
-hsetobject=get(handles.TITLE,'parent');
-SetData=get(hsetobject,'UserData');%get the hidden interface data
-%      function named CALLBACK in UNTITLED.M with the given input arguments.
-menu=get(handles.TITLE,'String');
-value=get(handles.TITLE,'Value');
-titl=menu{value};
-if isequal(titl,'POINTS')
-     menu_style={'points'};
-     menu_proj={'projection';'interp';'filter';'none'};
-elseif isequal(titl,'LINE')
-     menu_style={'line';'polyline';'rectangle';'polygon';'ellipse'};%'line' =default
-     menu_proj={'projection';'interp';'filter';'none'};
-elseif isequal(titl,'PATCH')
-     menu_style={'rectangle';'polygon';'ellipse'};%'line' =default
-     menu_proj={'inside';'outside';'none'};
- elseif isequal(titl,'PLANE')
-     menu_style={'plane'};
-     menu_proj={'projection';'interp'};
-elseif isequal(titl,'VOLUME')
-     menu_style={'volume'};
-     menu_proj={'none'};
-  
-end
-set(handles.ObjectStyle,'String',menu_style)
-set(handles.ObjectStyle,'Value',1)
-set(handles.ProjMode,'String',menu_proj)
-set(handles.ProjMode,'Value',1)
-if isfield(SetData,'ParentButton')
-    update_parentbutton(SetData.ParentButton,titl)
-end
-ObjectStyle_Callback(hObject, eventdata, handles)  
-
-%-----------
-function update_parentbutton(ParentButton,titl)
-
-if isstruct(ParentButton)
-    parentfields=fields(ParentButton);
-    for ibutton=1:length(parentfields)
-        buttonhandle=eval(['ParentButton.' parentfields{ibutton}]);
-        if ishandle(buttonhandle)
-            set(buttonhandle,'Value',0)
-            set(buttonhandle,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-        end
-    end
-    if isfield(ParentButton,titl)
-       buttonhandle=eval(['ParentButton.' titl]);
-       if ishandle(buttonhandle)
-            set(buttonhandle,'Value',1)
-            set(buttonhandle,'BackgroundColor',[1 1 0])%put activated button to yellow
-       end
-    end
-end
-%------------
-function Phi_Callback(hObject, eventdata, handles)
-update_slider(hObject, eventdata,handles)
-
-function Theta_Callback(hObject, eventdata, handles)
-update_slider(hObject, eventdata,handles)
-
-function update_slider(hObject, eventdata,handles)
-%rotation angles
-Phi=(pi/180)*str2num(get(handles.Phi,'String'));%first Euler angle in radian
-Theta=(pi/180)*str2num(get(handles.Theta,'String'));%second Euler angle in radian
-
-%components of the unitiy vector normal to the projection plane
-NormVec_X=-sin(Phi)*sin(Theta);
-NormVec_Y=cos(Phi)*sin(Theta);
-NormVec_Z=cos(Theta);
-huvmat=findobj('Tag','uvmat');%find the current uvmat interface handle
-UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
-Z=NormVec_X *(UvData.X)+NormVec_Y *(UvData.Y)+NormVec_Z *(UvData.Z);
-set(handles.z_slider,'Min',min(Z))
-set(handles.z_slider,'Max',max(Z))
-ZMax_Callback(hObject, eventdata, handles)
-
-function DX_Callback(hObject, eventdata, handles)
-
-
-function DY_Callback(hObject, eventdata, handles)
-
-
-function DZ_Callback(hObject, eventdata, handles)
-
 
 
 %-----------------------------------------------------
@@ -361,24 +199,28 @@ if ~isempty(parent_button)
 end
 
 %-----------------------------------------------------------------------
-% --- Executes on button press in edit: PLOT the defined object and its projected field
-function edit_Callback(hObject, eventdata, handles)
-hsetobject=get(hObject,'parent');
-SetData=get(hsetobject,'UserData');%get the hidden interface data
-%IndexObj=SetData.IndexObj%index of the current projection object in the list of projection objects (UvData.ProjObject)
-huvmat=findobj('Tag','uvmat');%find the current uvmat interface handle
-UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
-if isfield(UvData,'CuurentObjectIndex')
-    IndexObj=UvData.CurrentObjectIndex;
-else
-    IndexObj=[];
-end
-ObjectData=read_set_grid(handles);%read the interface input parameters defining the object
-[UvData,IndexObj]=update_obj(UvData,IndexObj,ObjectData,SetData.PlotHandles);
-uvmat('write_plot_param',PlotHandles,UvData.Object{IndexObj}.PlotParam); %update the display of plotting parameters for the current object
-SetData.IndexObj=IndexObj;
-set(gcbf,'UserData',SetData)%update object index in the set_grid interface
-set(huvmat,'UserData',UvData)%update the data in the uvmat interface
+% --- Executes on button press in plot: PLOT the defined object and its projected field
+function plot_Callback(hObject, eventdata, handles)
+grid_pix_A=get_grid(handles);
+huvmat=uvmat(get(handles.image_1,'String'));
+hhuvmat=guidata(huvmat);
+set(hhuvmat.transform_fct,'Value',1)
+uvmat('run0_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
+axes(hhuvmat.axes3);
+hold on
+plot(grid_pix_A(:,1),grid_pix_A(:,2),'.')
+
+% --- Executes on button press in plot_2.
+function plot_2_Callback(hObject, eventdata, handles)
+[grid_pix_A,grid_pix_B]=get_grid(handles);
+huvmat=uvmat(get(handles.image_2,'String'));
+hhuvmat=guidata(huvmat);
+set(hhuvmat.transform_fct,'Value',1)
+uvmat('run0_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
+axes(hhuvmat.axes3);
+hold on
+plot(grid_pix_B(:,1),grid_pix_B(:,2),'.')
+
 
 
 % --- Executes on button press in MenuCoord.
@@ -400,52 +242,65 @@ else
 end
 delete_object(IndexObj);
 
-%----------------------------------------------------
-function YMin_Callback(hObject, eventdata, handles)
-% hObject    handle to YMin (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of YMin as text
-%        str2double(get(hObject,'String')) returns contents of YMin as a double
-
-
-function ZMin_Callback(hObject, eventdata, handles)
-
-
-function ZMax_Callback(hObject, eventdata, handles)
-DZ=str2num(get(handles.ZMax,'String'));
-ZMin=get(handles.z_slider,'Min');
-ZMax=get(handles.z_slider,'Max');
-rel_step(1)=DZ/(ZMax-ZMin);
-rel_step(2)=0.2;
-set(handles.z_slider,'SliderStep',rel_step)
-
-function YMax_Callback(hObject, eventdata, handles)
-
-
-function XMin_Callback(hObject, eventdata, handles)
-
-
-function XMax_Callback(hObject, eventdata, handles)
-
 
 % ------------------------------------------------------
 function save_Callback(hObject, eventdata, handles)
 % ------------------------------------------------------
-Object=read_set_object(handles);%read the set_grid interface;
-DX=Object.DX;
-DY=Object.DY;
-RangeX=Object.RangeX;
-RangeY=Object.RangeY;
- array_realx=[RangeX(2):DX:RangeX(1)];
- array_realy=[RangeY(2):DY:RangeY(1)];
- nx_patch=length(array_realx);
- ny_patch=length(array_realy);
- [grid_realx,grid_realy]=meshgrid(array_realx,array_realy);
- grid_real(:,1)=reshape(grid_realx,nx_patch*ny_patch,1);
- grid_real(:,2)=reshape(grid_realy,nx_patch*ny_patch,1);
- grid_real(:,3)=zeros(nx_patch*ny_patch,1);
+[grid_pix_A,grid_pix_B]=get_grid(handles);
+
+ %ECRIRE FICHIERS
+nbpointsA=size(grid_pix_A);
+XA=grid_pix_A(:,1);
+YA=grid_pix_A(:,2);
+unitcolumn=32*ones(size(XA));
+Xchar=num2str(XA);
+blanc=char(unitcolumn);
+Ychar=num2str(YA);
+tete=['1 ' num2str(nbpointsA(1))];
+txt=[Xchar blanc Ychar];
+textgrid={tete;txt};
+textout=char(textgrid);
+imageA=get(handles.image_1,'String');
+[Pathsub]=name2display(imageA);
+Answer = msgbox_uvmat('INPUT_TXT','grid file name (*.grid)',fullfile(Pathsub,'gridA.grid'));
+% Answer = inputdlg('grid file name (*.grid)',' ',1,{fullfile(Pathsub,'gridA.grid')},'on');
+dlmwrite(Answer,textout,'');
+msgbox_uvmat('CONFIRMATION',[Answer ' written as ASCII text file']);
+if ~isempty(grid_pix_B)
+    nbpointsB=size(grid_pix_B);
+    XB=grid_pix_B(:,1);
+    YB=grid_pix_B(:,2);
+    unitcolumn=32*ones(size(XB));
+    Xchar=num2str(XB);
+    blanc=char(unitcolumn);
+    Ychar=num2str(YB);
+    tete=['1 ' num2str(nbpointsB(1))];
+    txt=[Xchar blanc Ychar];
+    textgrid={tete;txt};
+    textout=char(textgrid);
+    Answer = msgbox_uvmat('INPUT_TXT','grid file name (*.grid)',fullfile(Pathsub,'gridB.grid'));
+    dlmwrite(Answer,textout,'');
+    msgbox_uvmat('CONFIRMATION',[Answer ' written as ASCII text file']);
+end
+
+%-------------------------
+function [grid_pix_A,grid_pix_B]=get_grid(handles);
+%Object=read_set_object(handles);%read the set_grid interface;
+grid_pix_B=[];%default
+DX=str2num(get(handles.DX,'String'));
+DY=str2num(get(handles.DY,'String'));
+XMin=str2num(get(handles.XMin,'String'));
+XMax=str2num(get(handles.XMax,'String'));
+YMin=str2num(get(handles.YMin,'String'));
+YMax=str2num(get(handles.YMax,'String'));
+array_realx=[XMin:DX:XMax];
+array_realy=[YMin:DY:YMax];
+nx_patch=length(array_realx);
+ny_patch=length(array_realy);
+[grid_realx,grid_realy]=meshgrid(array_realx,array_realy);
+grid_real(:,1)=reshape(grid_realx,nx_patch*ny_patch,1);
+grid_real(:,2)=reshape(grid_realy,nx_patch*ny_patch,1);
+grid_real(:,3)=zeros(nx_patch*ny_patch,1);
  
 imageA=get(handles.image_1,'String');
 imageB=get(handles.image_2,'String');
@@ -481,9 +336,9 @@ if isfield(XmlDataA,'GeometryCalib')
      msgbox_uvmat('WARNING','no geometric calibration available for image A')
      tsaiA=[];
 end
-size(grid_real)
-tsaiA
-if isempty(tsaiA)
+MenuCoord=get(handles.MenuCoord,'String');
+val=get(handles.MenuCoord,'Value');
+if isempty(tsaiA)||strcmp(MenuCoord{val},'px')
     grid_imaA(:,1)=grid_real(:,1);
     grid_imaA(:,2)=grid_real(:,2);
 else
@@ -543,7 +398,7 @@ nx_patch_new=length(grid_real_x);
 grid_real2(:,1)=grid_real_x;
 grid_real2(:,2)=grid_real_y;
 grid_real2(:,3)=zeros(nx_patch_new,1);
-if isempty(tsaiA)
+if isempty(tsaiA)||strcmp(MenuCoord{val},'px')
     grid_pix_A(:,1)=grid_real2(:,1);
    grid_pix_A(:,2)= grid_real2(:,2);
 else
@@ -553,99 +408,19 @@ if testB
     [grid_pix_B(:,1),grid_pix_B(:,2)]=px_XYZ(tsaiB,grid_real2(:,1),grid_real2(:,2));
 end
 
- %ECRIRE FICHIERS
-nbpointsA=size(grid_pix_A);
-XA=grid_pix_A(:,1);
-YA=grid_pix_A(:,2);
-unitcolumn=32*ones(size(XA));
-Xchar=num2str(XA);
-blanc=char(unitcolumn);
-Ychar=num2str(YA);
-tete=['1 ' num2str(nbpointsA(1))];
-txt=[Xchar blanc Ychar];
-textgrid={tete;txt};
-textout=char(textgrid);
-Answer = msgbox_uvmat('INPUT_TXT','grid file name (*.grid)',fullfile(Pathsub,'gridA.grid'));
-% Answer = inputdlg('grid file name (*.grid)',' ',1,{fullfile(Pathsub,'gridA.grid')},'on');
-dlmwrite(Answer,textout,'');
-msgbox_uvmat('CONFIRMATION',[Answer ' written as ASCII text file']);
-if testB
-    nbpointsB=size(grid_pix_B);
-    XB=grid_pix_B(:,1);
-    YB=grid_pix_B(:,2);
-    unitcolumn=32*ones(size(XB));
-    Xchar=num2str(XB);
-    blanc=char(unitcolumn);
-    Ychar=num2str(YB);
-    tete=['1 ' num2str(nbpointsB(1))];
-    txt=[Xchar blanc Ychar];
-    textgrid={tete;txt};
-    textout=char(textgrid);
-    Answer = msgbox_uvmat('INPUT_TXT','grid file name (*.grid)',fullfile(Pathsub,'gridB.grid'));
-    dlmwrite(Answer,textout,'');
-    msgbox_uvmat('CONFIRMATION',[Answer ' written as ASCII text file']);
-end
 
 
-% --- Executes on slider movement.
-function z_slider_Callback(hObject, eventdata, handles)
-%A ADAPTER
-Z_value=get(handles.z_slider,'Value');
-
-%rotation angles
-Phi=(pi/180)*str2num(get(handles.Phi,'String'));%first Euler angle in radian
-Theta=(pi/180)*str2num(get(handles.Theta,'String'));%second Euler angle in radian
-
-%components of the unity vector normal to the projection plane
-NormVec_X=-sin(Phi)*sin(Theta);
-NormVec_Y=cos(Phi)*sin(Theta);
-NormVec_Z=cos(Theta);
-
-%set new plane position and update graph
-set(handles.XObject,'String',num2str(NormVec_X*Z_value))
-set(handles.YObject,'String',num2str(NormVec_Y*Z_value))
-set(handles.ZObject,'String',num2str(NormVec_Z*Z_value))
-edit_Callback(hObject, eventdata, handles)
-
-
-
-function XObject_Callback(hObject, eventdata, handles)
-
-
-function YObject_Callback(hObject, eventdata, handles)
-
-
-
-
-function ZObject_Callback(hObject, eventdata, handles)
-
-
-function image_2_Callback(hObject, eventdata, handles)
-% hObject    handle to image_2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of image_2 as text
-%        str2double(get(hObject,'String')) returns contents of image_2 as a double
-
-
-
-function image_1_Callback(hObject, eventdata, handles)
-% hObject    handle to image_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of image_1 as text
-%        str2double(get(hObject,'String')) returns contents of image_1 as a double
-
-
+%------------------------------------------------------------------------
 % --- Executes on button press in HELP.
 function HELP_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 path_to_uvmat=which ('uvmat');% check the path of uvmat
 pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'UVMAT_DOC','uvmat_doc.html');
+helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
 if isempty(dir(helpfile)), errordlg('Please put the help file uvmat_doc.html in the directory UVMAT/UVMAT_DOC')
 else
 web([helpfile '#set_grid'])    
 end
+
+
 

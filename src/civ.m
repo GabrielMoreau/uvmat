@@ -50,7 +50,7 @@ function civ_OpeningFcn(hObject, eventdata, handles, param)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to civ (see VARARGIN)
-global test_batch patch_newBin CivBin%=1 if patch processing available
+global patch_newBin %=1 if new patch processing available
 %filebase: root name 
 %nom_type: nomencalture used ('png_old','_i_j'...)
 %list of field numbers to process
@@ -126,14 +126,8 @@ test_batch=0;%default: ,no batch mode available
 if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
     test_batch=strcmp(sparam.BatchParam.BatchMode,'sge'); %sge is currently the only implemented batch mod
 end
-% if isfield(sparam,'PatchNewBin')
-%     patch_newBin=sparam.PatchNewBin;
-% end
-% if isfield(sparam,'SGE')
-%     sge=str2double(sparam.SGE);
-% end   
-% test_batch=sge;%default
 if test_batch==0
+    set(handles.BATCH,'Enable','off')% put the BATCH button in grey (unactivated)
     set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])% put the BATCH button in grey (unactivated)
 end
 set(handles.subdir_civ1,'String',subdir)%default subdir on which uvmat was working
@@ -296,9 +290,6 @@ if testeditxml==1 || isequal(ext,'.xls')
 end
 [RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput);
 filebase=fullfile(RootPath,RootFile);
-% if isequal(nom_type,'*')% all fields in a single file ( movie files)
-%     num_i1=1;num_i2=1;num_j1=1;num_j2=1;
-% else
 num_i1=stra2num(str1);
 if isempty(num_i1),num_i1=1;end
 num_i2=stra2num(str2);
@@ -317,9 +308,6 @@ if length(ext)>1 && (~isempty(imformats(ext([2:end])))||...
     set(handles.ImaExt,'String',ext)
     browse.nom_type_ima=nom_type;
     browse.field_count=num_i1;
-%     A=imread(fileinput);
-%     npxy=size(A);
-%     set(handles.ImaExt,'UserData',npxy)
 end
 set(handles.ImaDoc,'String',ext);
 
@@ -436,7 +424,6 @@ RootName_Callback(hObject, eventdata, handles)
 % --- function activated when a new filebase (image series) is introduced
 function RootName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-global test_batch
 set(handles.compare,'Visible','on')
 ext_ima=get(handles.ImaExt,'String'); 
 nom_type_ima=[];%default
@@ -509,24 +496,17 @@ if ~isequal(ext,'.xml') && ~isequal(ext,'.civ')&& ~isequal(ext,'.avi')&& ~isequa
 end
 
 %%%%%%%%   read image documentation file  %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    mode=''; %default
-    set(handles.ImaDoc,'BackgroundColor',[1 1 0])
-    drawnow
-    %read the image documentation file if found
+mode=''; %default
+set(handles.ImaDoc,'BackgroundColor',[1 1 0])
+drawnow
 if isequal(ext,'.civxml') || isequal(ext,'.xml')|| isequal(ext,'.civ')
     set(handles.ref_i,'Visible','On')%use a reference index
     set(handles.ref_j,'Visible','On')
-%     set(handles.dt,'Visible','Off')
- %   set(handles.root_txt,'String','')
 elseif isequal(ext,'.avi') || isequal(ext,'.AVI')
     set(handles.ref_j,'Visible','Off')
- %   set(handles.dt,'Visible','Off')
- %   set(handles.root_txt,'String','ref. ind.')
 else
     set(handles.ref_i,'Visible','Off')
     set(handles.ref_j,'Visible','Off')
- %   set(handles.dt,'Visible','On')
- %   set(handles.root_txt,'String','dt(ms)=')
 end
 testima_xml=0;
 if isequal(ext,'.civxml')%TO ABANDON
@@ -537,11 +517,6 @@ if isequal(ext,'.civxml')%TO ABANDON
     end
 elseif isequal(ext,'.xml')
     [XmlData,warntext]=imadoc2struct([filebase '.xml']);
-    if isfield(XmlData,'Time')
-        time=XmlData.Time;
-        nbfield=size(time,1);
-        nburst=size(time,2);
-    end
     ext_ima_read=[];
     nom_type_read=[];
     if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
@@ -549,6 +524,19 @@ elseif isequal(ext,'.xml')
         fullname=fullfile(fileparts(filebase),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file, 
         if ~exist(fullname,'file')
             msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
+        end
+    end
+    if isfield(XmlData,'Time')
+        time=XmlData.Time
+        nbfield=size(time,1);
+        nburst=size(time,2);
+        %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
+        if isequal(nbfield,1) && ~isequal(nburst,1)% .Time is a line vector
+            if numel(nom_type_read)>=2 && (strcmp(nom_type_read,'_i')||strcmp(nom_type_read(1:2),'%0')||strcmp(nom_type_read(1:2),'_%'))
+                time=time';
+                nbfield=nburst;
+                nburst=1;
+            end
         end
     end
     if isfield(XmlData,'TimeUnit')
@@ -747,8 +735,7 @@ set(handles.waitbar_civ2,'Position',[0.946 0.219 0.03 0.001])
 set(handles.waitbar_patch2,'Position',[0.946 0.0 0.03 0.001])
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
-if isequal(test_batch,1)%if batch installation is available
-    set(handles.BATCH, 'Enable','On')
+if isequal(get(handles.BATCH, 'Enable'),'On')
     set(handles.BATCH,'BackgroundColor',[1 0 0])
 end
     
@@ -3373,13 +3360,13 @@ if ~isequal(ext_ima,'.png')
             for j=1:nbslice
                     filename=name_generator(filebase_ima1,num1_civ2(ifile),num_a_civ2(j),'.png',nom_type_imanew1);
                     if ~exist(filename,'file')
-                        A=read_image(cell2mat(filecell.ima1.civ2(ifile,j)),nom_type_ima2,num1_civ2(ifile));
+                        A=read_image(cell2mat(filecell.ima1.civ2(ifile,j)),type_ima2,num1_civ2(ifile));
                         imwrite(A,filename,'BitDepth',16); 
                     end
                     filecell.ima1.civ2(ifile,j)={filename};
                     filename=name_generator(filebase_ima2, num2_civ2(ifile),num_b_civ2(j),'.png',nom_type_imanew2);
                     if ~exist(filename,'file')
-                        A=read_image(cell2mat(filecell.ima2.civ2(ifile,j)),nom_type_ima2,num2.civ1(ifile));
+                        A=read_image(cell2mat(filecell.ima2.civ2(ifile,j)),type_ima2,num2_civ2(ifile));
                         imwrite(A,filename,'BitDepth',16);
                     end
                     filecell.ima2.civ2(ifile,j)={filename};
