@@ -527,7 +527,7 @@ elseif isequal(ext,'.xml')
         end
     end
     if isfield(XmlData,'Time')
-        time=XmlData.Time
+        time=XmlData.Time;
         nbfield=size(time,1);
         nburst=size(time,2);
         %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
@@ -2148,8 +2148,8 @@ if ~isunix & isequal(todo_path(1:2),'\\') & isequal(filebase(2:3),':\')
         end
     else
          msgbox_uvmat('ERROR','for BATCH option, UBC file names, beginning by \\, are needed');
-         set(handles.BATCH, 'Enable','On')
-         set(handles.BATCH,'BackgroundColor',[1 0 0])
+%          set(handles.BATCH, 'Enable','On')
+%          set(handles.BATCH,'BackgroundColor',[1 0 0])
          return
     end
 end
@@ -2158,7 +2158,9 @@ end
 display('checking the files...')
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
        set_civ_filenames(handles,compare,box_test);
-
+if isempty(filecell)
+    return
+end
 %choice of batch priority
 ind_answer=2;
 if batch
@@ -2208,7 +2210,7 @@ if box_test(2)==1
     test_mask=get(handles.get_mask_fix1,'Value');
     nbslice_mask=get(handles.mask_fix1,'UserData'); % get the number of slices (= number of masks)
     %%%%%%%%%%%%%COMPLETER LE PROGRAMME FIX
-%     inf_sup=get(handles.inf_sup1,'Value');
+%     inf_sup=get(handles.inf_sup1,'Value');80
 %     fileref=get(handles.ref_fix1,'String');
 %     refpath=get(handles.ref_fix1,'UserData');
 %     fileref=fullfile(refpath,fileref);
@@ -2679,23 +2681,11 @@ for ifile=1:nbfield
               eval(['!' filename_bat ' &']);
               display(['!' filename_bat ' &'])
             end
-%             if(isunix)
-%               cmdtodo=['. ' filename_bat ];%removed for Mathieu tests %' && rm -f ' filename_bat] ;
-%             else
-%                cmdtodo=[filename_bat];%removed for Mathieu tests %' && del /F /Q ' filename_bat' ;
-%             end
-%             count= fprintf(p1,'%s\n', cmdtodo);
         end
      end
 end
-% if ~sge
-%     fclose(p1);
-%     fclose(p0);
-%     delete(name_lock);
-% end
-
-set(handles.BATCH, 'Enable','On')
-set(handles.BATCH,'BackgroundColor',[1 0 0])
+% set(handles.BATCH, 'Enable','On')
+% set(handles.BATCH,'BackgroundColor',[1 0 0])
 
 %save interface state
 if isfield(filecell,'nc')
@@ -2739,6 +2729,7 @@ saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN
 function [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
     set_civ_filenames(handles,compare,box_test)
 %------------------------------------------------------------------------
+filecell=[];%default
 %get the filename root, nomenclature and numbers
 filebase=get(handles.RootName,'String');
 browse=get(handles.browse_root,'UserData');
@@ -3047,9 +3038,9 @@ elseif (box_test(2)==1 || box_test(3)==1);
                         msgbox_uvmat('ERROR',['input file ' filename ' not found'])
                         set(handles.RUN, 'Enable','On')
                         set(handles.RUN,'BackgroundColor',[1 0 0])
-                        set(handles.BATCH, 'Enable','On')
-                    set(handles.BATCH,'BackgroundColor',[1 0 0])
-                    filecell=[];
+%                         set(handles.BATCH, 'Enable','On')
+%                         set(handles.BATCH,'BackgroundColor',[1 0 0])
+                        filecell=[];
                         cd(currentdir)
                         return
                     end
@@ -3159,8 +3150,8 @@ if box_test(4)==1 || box_test(5)==1 || box_test(6)==1 %civ2
                         msgbox_uvmat('ERROR',['input file ' filename ' not found'])
                         set(handles.RUN, 'Enable','On')
                         set(handles.RUN,'BackgroundColor',[1 0 0])
-                               set(handles.BATCH, 'Enable','On')
-                    set(handles.BATCH,'BackgroundColor',[1 0 0])
+%                                set(handles.BATCH, 'Enable','On')
+%                     set(handles.BATCH,'BackgroundColor',[1 0 0])
                         cd(currentdir)
                         return
                     end
@@ -5000,7 +4991,7 @@ function HELP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 path_to_uvmat=which ('uvmat');% check the path of uvmat
 pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html')
+helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
 if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
 else
     addpath (fullfile(pathelp,'uvmat_doc'))

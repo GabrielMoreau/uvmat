@@ -55,7 +55,10 @@ if isfield(PlotParam,'Vectors')
     end
 else
     set_vect_display(handles,'off')
-    set(handles.edit_vect,'Visible','off')
+    if isfield(handles,'edit_vect')
+        set(handles.edit_vect,'Visible','off')
+        set(handles.record,'Visible','off')
+    end
 end
 
 %------------------------------------------------------------------
@@ -89,9 +92,9 @@ set(handles.VecScale,'Visible',state)
 set(handles.AutoVec,'Visible',state)
 set(handles.HideFalse,'Visible',state)
 set(handles.HideWarning,'Visible',state)
-if isfield(handles,'record')
-    set(handles.record,'Visible',state)
-end
+% if isfield(handles,'record')
+%     set(handles.record,'Visible',state)
+% end
 set(handles.colcode1,'Visible',state)
 set(handles.colcode2,'Visible',state)
 set(handles.min_vec,'Visible',state)
@@ -103,9 +106,11 @@ set(handles.col_vec,'Visible',state)
 set(handles.Color_title,'Visible',state)
 set(handles.color_code,'Visible',state)
 set(handles.vec_col_bar,'Visible',state)
-set(handles.record,'Visible',state)
+% set(handles.record,'Visible',state)
 set(handles.AutoVecColor,'Visible',state)
 set(handles.decimate4,'Visible',state)
 set(handles.min_C_title,'Visible',state)
 set(handles.max_C_title,'Visible',state)
-set(handles.MenuEditVectors,'Enable',state)
+if isfield(handles,'MenuEditVectors')
+    set(handles.MenuEditVectors,'Enable',state)
+end

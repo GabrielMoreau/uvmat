@@ -1621,24 +1621,30 @@ colorbar
 %-------------------------------------------------------------------
 % III - MAIN REFRESH FUNCTIONS : 'FRAME PLOT'
 %-------------------------------------------------------------------
-%-------------------------------------------------------------------
 
-%Executes on button press in runplus: make one step forward and call
-%run0. The step forward is along the fields series 1 or 2 depending on 
-%the scan_i and scan_j check box (exclusive each other)
 %-------------------------------------------------------------------
+% --- Executes on button press in runplus: make one step forward and call
+% --- run0. The step forward is along the fields series 1 or 2 depending on 
+% --- the scan_i and scan_j check box (exclusive each other)
 function runplus_Callback(hObject, eventdata, handles)
+%-------------------------------------------------------------------
+set(handles.runplus,'BackgroundColor',[1 1 0])%paint the command button in yellow
+drawnow
 increment=str2num(get(handles.increment_scan,'String')); %get the field increment d
 runpm(hObject,eventdata,handles,increment)
+set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button in yellow
 
 %-------------------------------------------------------------------
-%Executes on button press in runmin: make one step backward and call
-%run0. The step backward is along the fields series 1 or 2 depending on 
-%the scan_i and scan_j check box (exclusive each other)
-%-------------------------------------------------------------------
+% --- Executes on button press in runmin: make one step backward and call
+% --- run0. The step backward is along the fields series 1 or 2 depending on 
+% --- the scan_i and scan_j check box (exclusive each other)
 function runmin_Callback(hObject, eventdata, handles)
+%-------------------------------------------------------------------
+set(handles.runmin,'BackgroundColor',[1 1 0])%paint the command button in yellow
+drawnow
 increment=-str2num(get(handles.increment_scan,'String')); %get the field increment d
 runpm(hObject,eventdata,handles,increment)
+set(handles.runmin,'BackgroundColor',[1 0 0])%paint the command button in yellow
 
 %-------------------------------------------------------------------
 % -- Executes on button press in Movie: make a series of +> steps
@@ -1702,7 +1708,9 @@ set(handles.movie_pair,'value',0)
 set(handles.Movie,'BusyAction','Cancel')
 set(handles.MovieBackward,'BusyAction','Cancel')
 set(handles.MenuExportMovie,'BusyAction','Cancel')
-
+set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command buttonback to red
+set(handles.Movie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
+set(handles.MovieBackward,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 
 %------------------------------------------------------------------
 function errormsg=runpm(hObject,eventdata,handles,increment)
@@ -1835,6 +1843,7 @@ else
         NomType=get(handles.FileIndex_1,'UserData');
     else
         msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
+        set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
         return
     end
 end
@@ -1846,6 +1855,7 @@ num_j2=stra2num(get(handles.j2,'String'));
 if isempty(num_j2)
     if isempty(num_i2)   
         msgbox_uvmat('ERROR', 'a second image index i2 or j2 is needed to show the pair as a movie')
+        set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
         return
     else
         num_j2=num_j1;%repeat the index i1 by default
@@ -1857,10 +1867,9 @@ end
 imaname_1=name_generator(filebase,num_i2,num_j2,Ext,NomType);
 if ~exist(imaname_1,'file')
       msgbox_uvmat('ERROR',['second input open (-)  ' imaname_1 ' not found']);
+      set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
       return
 end
-% set(handles.i2,'String',''); % indicates that the second index i2 is not used
-% set(handles.j2,'String',''); % indicates that the second index i2 is not used
 
 %read the second image
 Field.AName='image';
@@ -1948,6 +1957,8 @@ set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in re
 % --- Executes on button press in run0.
 function run0_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
+drawnow
 filename=read_file_boxes(handles);
 
 filename_1=[];%default
@@ -1962,7 +1973,7 @@ errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2);
 if ~isempty(errormsg)
       msgbox_uvmat('ERROR',errormsg);
 end    
-
+set(handles.run0,'BackgroundColor',[1 0 0])
 %------------------------------------------------------------------------
 % --- read the input files and refresh all the plots, including projection.
 % OUTPUT: 
@@ -1977,8 +1988,7 @@ function errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1
 %------------------------------------------------------------------------
 
 %initialisation
-set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
-drawnow
+
 errormsg=[]; % default error message
 abstime=[];
 abstime_1=[];
@@ -2814,7 +2824,7 @@ else
         set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' UvData.TimeUnit] )
     end
 end
-set(handles.run0,'BackgroundColor',[1 0 0])
+
 
 
 
@@ -3050,42 +3060,49 @@ FileIndices=get(handles.FileIndex,'String');
 FileExt=get(handles.FileExt,'String');
 FileName=[FileName FileIndices FileExt];
 
-%----------------------------------------------
-%read the data displayed for the second input rootfile windows
-%-------------------------------------------------
+%------------------------------------------------------------------------
+% ---- read the data displayed for the second input rootfile windows
 function [FileName_1,RootPath_1,FileBase_1,FileIndices_1,FileExt_1,SubDir_1]=read_file_boxes_1(handles)
-RootPath_1=get(handles.RootPath_1,'String'); % read the data from the file1_input window
-if isequal(RootPath_1,'"'),RootPath_1=get(handles.RootPath,'String'); end;
+%------------------------------------------------------------------------
+RootPath_1=get(handles.RootPath_1,'String') % read the data from the file1_input window
+if isequal(get(handles.RootPath_1,'Visible'),'off') || isequal(RootPath_1,'"')
+    RootPath_1=get(handles.RootPath,'String');
+end;
 FileName_1=RootPath_1; %default
 SubDir_1=get(handles.SubDir_1,'String');
-if isequal(SubDir_1,'"')
+if isequal(get(handles.SubDir_1,'Visible'),'off')|| isequal(SubDir_1,'"')
     SubDir_1=get(handles.SubDir,'String');
 end
-if ~isempty(SubDir_1) && ~isequal(SubDir_1,'')
+if numel(SubDir_1)>=1
     if (isequal(SubDir_1(1),'/')|| isequal(SubDir_1(1),'\'))
         SubDir_1(1)=[]; %suppress possible / or \ separator
     end
     FileName_1=fullfile(RootPath_1,SubDir_1);
 end
 RootFile_1=get(handles.RootFile_1,'String');
-if isequal(RootFile_1,'"'),RootFile_1=get(handles.RootFile,'String'); end;
-if ~isempty(RootFile_1) && ~isequal(RootFile_1,'')
+if isequal(get(handles.RootFile_1,'Visible'),'off') || isequal(RootFile_1,'"')
+    RootFile_1=get(handles.RootFile,'String'); 
+end
+if numel(RootFile_1)>=1
     if ~(isequal(RootFile_1(1),'/')|isequal(RootFile_1(1),'\'))
         RootFile_1(1)=[];%suppress possible / or \ separator
     end
     FileName_1=fullfile(FileName_1,RootFile_1);
 end
 FileBase_1=fullfile(RootPath_1,RootFile_1);
-FileIndices_1=get(handles.FileIndex_1,'String');
+if isequal(get(handles.FileIndex_1,'Visible'),'off') 
+    FileIndices_1=get(handles.FileIndex,'String');
+else
+    FileIndices_1=get(handles.FileIndex_1,'String');
+end
 FileExt_1=get(handles.FileExt_1,'String');
 if isequal(FileExt_1,'"'),FileExt_1=get(handles.FileExt,'String'); end;
 FileName_1=[FileName_1 FileIndices_1 FileExt_1];
 
-%---------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on menu selection Fields
 function Fields_Callback(hObject, eventdata, handles)
-%-------------------------------------------------
-
+%------------------------------------------------------------------------
 list_fields=get(handles.Fields,'String');% list menu fields
 index_fields=get(handles.Fields,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
@@ -3111,28 +3128,52 @@ UvData=get(handles.uvmat,'UserData');
 NomTypeNew=NomType;%default
 if isequal(field,'image') 
     % transform netc type to the corresponding image type
-    if isequal(NomType,'_i1-i2_j')||isequal(NomType,'_i_j1-j2')|| isequal(NomType,'#_ab')|| isequal(NomType,'_i1-i2')
-        UvData.SubDir=get(handles.SubDir,'String'); %preserve the subdir in memory
-        if ~isempty(UvData.SubDir) && (isequal(UvData.SubDir(1),'/')||isequal(UvData.SubDir(1),'/'))
-            UvData.SubDir(1)=[];
-        end
-        set(handles.SubDir,'String','')
-        set(handles.FileExt,'String','.png');
+%     if isequal(NomType,'_i1-i2_j')||isequal(NomType,'_i_j1-j2')|| isequal(NomType,'#_ab')|| isequal(NomType,'_i1-i2')
+%         UvData.SubDir=get(handles.SubDir,'String'); %preserve the subdir in memory
+%         if ~isempty(UvData.SubDir) && (isequal(UvData.SubDir(1),'/')||isequal(UvData.SubDir(1),'/'))
+%             UvData.SubDir(1)=[];
+%         end
+%         set(handles.SubDir,'String','')
+%         set(handles.FileExt,'String','.png');
         if isequal(NomType,'_i1-i2_j')||isequal(NomType,'_i_j1-j2')
             NomTypeNew='_i_j';
         elseif isequal(NomType,'#_ab')
             NomTypeNew='#a';
         elseif isequal(NomType,'_i1-i2')
             NomTypeNew='_i';
-            % TODO: look for other types
         end  
-    end
-    veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
-    set_veltype_display(veltype_handles,0) % unvisible civ buttons
+        imagename=name_generator(FileBase,str2double(str1),str2double(str_a),'.png',NomTypeNew,1,str2double(str2),str2double(str_b),'')
+        if ~exist(imagename,'file')
+                [FileName,PathName] = uigetfile( ...
+           {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';
+            '*.jpg',' jpeg image files'; ...
+            '*.png','.png image files'; ...
+            '*.tif','.tif image files'; ...
+            '*.avi;*.AVI','.avi movie files'; ...
+            '*.vol','.volume images (png)'; ...
+            '*.*',  'All Files (*.*)'}, ...
+            'Pick an image',imagename)           
+            % display the selected field and related information
+           imagename=[PathName FileName];
+        end
+        display_file_name(hObject, eventdata, handles,imagename)%display the image
+        return
+%     end
+%     veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
+%     set_veltype_display(veltype_handles,0) % unvisible civ buttons
 else
     ext=get(handles.FileExt,'String');
     if ~isequal(ext,'.nc') %find the new NomType if the previous display was not already a netcdf file
-         MenuBrowse_Callback(hObject, eventdata, handles)
+                [FileName,PathName] = uigetfile( ...
+           {'*.nc', ' (*.nc)';
+            '*.nc',' netcdf files'; ...
+            '*.*',  'All Files (*.*)'}, ...
+            'Pick a netcdf file',FileBase)           
+            % display the selected field and related information
+           filename=[PathName FileName];
+        display_file_name(hObject, eventdata, handles,filename)
+        return
+       %  MenuBrowse_Callback(hObject, eventdata, handles)
     end
     if isequal(field,'vort') || isequal(field,'div') || isequal(field,'strain')
         set(handles.civ1,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
@@ -3162,13 +3203,11 @@ if isequal(field,'image')||isequal(field_1,'image')
     set(handles.npy_title,'Visible','on')
     set(handles.npx,'Visible','on')
     set(handles.npy,'Visible','on')
-%     set(handles.fix_pair,'Value',0)
 else
     set(handles.npx_title,'Visible','off')% visible npx,pxcm... buttons
     set(handles.npy_title,'Visible','off')
     set(handles.npx,'Visible','off')
     set(handles.npy,'Visible','off')
-%     set(handles.fix_pair,'Value',1)
 end
 setfield(handles);% update the field structure ('civ1'....)
 
@@ -3194,7 +3233,8 @@ end
 UvData=get(handles.uvmat,'UserData');
 
 %read the rootfile input display
-FileExt_prev=get(handles.FileExt_1,'String');
+[FileName,RootPath,FileBase,FileIndices,FileExt_prev]=read_file_boxes_1(handles);
+[P,F,str1,str2,str_a,str_b,E,NomType]=name2display(['xxx' get(handles.FileIndex,'String') FileExt_prev]);
 if isempty(FileExt_prev)|isequal(FileExt_prev,'')
     FileExt_1=get(handles.FileExt,'String');
 else
@@ -3238,10 +3278,10 @@ if isequal(field_1,'get_field...')
 end
 if isequal(field_1,'image') 
     % transform netc type to the corresponding image type
-    set(handles.FileExt_1,'String','.png');
+%     set(handles.FileExt_1,'String','.png');
     if isequal(NomType_1,'_i1-i2_j')|isequal(NomType_1,'_i_j1-j2')| isequal(NomType_1,'#_ab')| isequal(NomType_1,'_i1-i2')
         UvData.SubDir_1=get(handles.SubDir_1,'String'); %preserve the subdir in memory
-        set(handles.SubDir_1,'String','')
+%         set(handles.SubDir_1,'String','')
 %         set(handles.FileExt_1,'String','.png');        
         if isequal(NomType_1,'_i1-i2_j')|isequal(NomType_1,'_i_j1-j2')
             NomTypeNew='_i_j';
@@ -3251,8 +3291,24 @@ if isequal(field_1,'image')
             NomTypeNew='_i';
         end  
     end
-    veltype_handles=[handles.civ1_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
-    set_veltype_display(veltype_handles,0) % unvisible civ buttons
+    imagename=name_generator(FileBase,str2double(str1),str2double(str_a),'.png',NomTypeNew,1,str2double(str2),str2double(str_b),'');
+    if ~exist(imagename,'file')
+        [FileName,PathName] = uigetfile( ...
+            {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';
+            '*.jpg',' jpeg image files'; ...
+            '*.png','.png image files'; ...
+            '*.tif','.tif image files'; ...
+            '*.avi;*.AVI','.avi movie files'; ...
+            '*.vol','.volume images (png)'; ...
+            '*.*',  'All Files (*.*)'}, ...
+            'Pick an image',imagename)
+        % display the selected field and related information
+        imagename=[PathName FileName];
+    end
+    display_file_name_1(hObject, eventdata, handles,imagename)%display the image
+    return
+%     veltype_handles=[handles.civ1_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
+%     set_veltype_display(veltype_handles,0) % unvisible civ buttons
 else
     set(handles.SubDir_1,'Visible','on')
     if ~isequal(FileExt_prev,'.nc') %find the new NomType if the previous display was not already a netcdf file
@@ -4714,9 +4770,6 @@ function MenuGrid_Callback(hObject, eventdata, handles)
 
 %suppress the other options if grid is chosen
 set(handles.edit_vect,'Value',0)
-edit_vect_Callback(hObject, eventdata, handles)
-set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.edit_vect,'Value',0)  
 edit_vect_Callback(hObject, eventdata, handles)
 set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
 set(handles.list_object_1,'Value',1)      

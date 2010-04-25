@@ -194,8 +194,8 @@ elseif isequal(Data.NbDim,1)
 elseif isequal(Data.NbDim,2)
     ind_select=find(NbDim>=2);
     if numel(ind_select)>2
-        msgbox_uvmat('ERROR',['more than two fields to map'])
-        display(['more than two fields to map'])
+        msgbox_uvmat('ERROR','more than two fields to map')
+        display('more than two fields to map')
         return
     end
     [AxeData,haxes,PlotParamOut,PlotType]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),haxes,PlotParam,htext,PosColorbar);

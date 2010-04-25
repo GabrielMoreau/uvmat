@@ -1,17 +1,17 @@
 %'name_generator': creates a file name from a root name and indices. 
 %---------------------------------------------------------------------
 % [filename,idetect,num_i1_out,num_j1_out,num_i2_out,num_j2_out,subdir_out]=...
-            % name_generator(filebase,num_i1,num_j1,ext,nom_type,comp_input,num_i2,num_j2,subdir);
+%        name_generator(filebase,num_i1,num_j1,ext,nom_type,comp_input,num_i2,num_j2,subdir);
 %---------------------------------------------------------------------           
 % This function detects the existence the constructed file name and it can
 % find indices according to file existence if they are not specified
-%%rmq: this function is related to the reverse functions display2name and name2diplay 
+% rmq: this function is related to the reverse functions display2name and name2diplay 
 %---------------------------------------------------------------------
 % OUTPUT:
-%filename: string representing the file name (including path)
-%idetect: =1 if the file is detected, 0 otherwise
-%num_i1_out,num_j1_out,num_i2_out,num_j2_out,subdir_out: index numbers and subdirectory detected 
-             %for free input (= to the corresponding input indices when comp_input=1)
+% filename: string representing the file name (including path)
+% idetect: =1 if the file is detected, 0 otherwise
+% num_i1_out,num_j1_out,num_i2_out,num_j2_out,subdir_out: index numbers and subdirectory detected 
+%            for free input (= to the corresponding input indices when comp_input=1)
 %---------------------------------------------------------------------
 % INPUT:
 % 'filebase': the root name, 
@@ -19,28 +19,28 @@
 % 'num_j1', first labelling index j
 % 'ext': file name extension (e.g. '.png' or '.nc')
 % 'nom_type': string defining the kind of nomenclature used:
-     %nom_type='': constant name [filebase ext] (default output if 'nom_type' is undefined)
-     %nom_type='*': the same  file [filebase ext] contains successive fields (ex avi movies)
-     %nom_type='_i': series of files with a single index i preceded by '_'(e.g. 'aa_45.png').
-     %nom_type='#' series of indexed images wich is not series_i [filebase index ext], e.g. 'aa045.jpg' or 'aa45.tif'
-     %nom_type='_i_j' matrix of files with two indices i and j separated by '_'(e.g. 'aa_45_2.png')
-     %nom_type='_i1-i2' from pairs from a single index (e.g. 'aa_45-47.nc') 
-     %nom_type='_i_j1-j2'pairs of j indices (e.g. 'aa_45_2-3.nc')
-     %nom_type='_i1-i2_j' pairs of i indices (e.g. 'aa_45-46_2.nc')
-     %nom_type='#a','#A' with a numerical index and an index letter(e.g.'aa045b.png'), OBSOLETE (replaced by 'series_i_j')
-     %nom_type='%03d' or '%04d', series of indexed images with numbers completed with zeros to 3 or 4 digits, e.g.'aa045.tif'
-     %nom_type='_%03d', '_%04d', or '_%05d', series of indexed images with _ and numbers completed with zeros to 3, 4 or 5 digits, e.g.'aa_045.tif'
-     %nom_type='raw_SMD', same as '#a' but with no extension ext='', OBSOLETE
-     %nom_type='#_ab' from pairs of '#a' images (e.g. 'aa045bc.nc'), ext='.nc', OBSOLETE (replaced by 'netc_2D')
-     %nom_type='%3dab' from pairs of '%3da' images (e.g. 'aa045bc.nc'), ext='.nc', OBSOLETE (replaced by 'netc_2D')
-% A REVOIR: 'comp_input'=1 for writting =0 for reading ,  'comp_input'(for nom_type involving index pairs (e.g. netc))
-     %comp_input=1: the index pair is imposed, 
-     %comp_input=0: the index pair is automatically searched, choosing the most recent  file in case of multiple choice
+%       nom_type='': constant name [filebase ext] (default output if 'nom_type' is undefined)
+%       nom_type='*': the same  file [filebase ext] contains successive fields (ex avi movies)
+%       nom_type='_i': series of files with a single index i preceded by '_'(e.g. 'aa_45.png').
+%       nom_type='#' series of indexed images wich is not series_i [filebase index ext], e.g. 'aa045.jpg' or 'aa45.tif'
+%       nom_type='_i_j' matrix of files with two indices i and j separated by '_'(e.g. 'aa_45_2.png')
+%       nom_type='_i1-i2' from pairs from a single index (e.g. 'aa_45-47.nc') 
+%       nom_type='_i_j1-j2'pairs of j indices (e.g. 'aa_45_2-3.nc')
+%       nom_type='_i1-i2_j' pairs of i indices (e.g. 'aa_45-46_2.nc')
+%       nom_type='#a','#A' with a numerical index and an index letter(e.g.'aa045b.png'), OBSOLETE (replaced by 'series_i_j')
+%       nom_type='%03d' or '%04d', series of indexed images with numbers completed with zeros to 3 or 4 digits, e.g.'aa045.tif'
+%       nom_type='_%03d', '_%04d', or '_%05d', series of indexed images with _ and numbers completed with zeros to 3, 4 or 5 digits, e.g.'aa_045.tif'
+%       nom_type='raw_SMD', same as '#a' but with no extension ext='', OBSOLETE
+%       nom_type='#_ab' from pairs of '#a' images (e.g. 'aa045bc.nc'), ext='.nc', OBSOLETE (replaced by 'netc_2D')
+%       nom_type='%3dab' from pairs of '%3da' images (e.g. 'aa045bc.nc'), ext='.nc', OBSOLETE (replaced by 'netc_2D')
+%'comp_input' (for nom_type involving index pairs (e.g. netc))
+%       comp_input=1: the index pair is imposed, 
+%       comp_input=0: the index pair is automatically searched, choosing the most recent  file in case of multiple choice
 % 'num_i2': second index i (for nom_type involving index pairs (e.g. netc))
 % 'num_j2': second index j (for nom_type involving index pairs (e.g. netc))
 % 'subdir': (used for nom_type=netc...) string representing the name of the subdirectory 'subdir' containing file. 
-     %subdir='': no subdirectory, 
-     %subdir='?', the file is first searched with no subdirectory, then in the most recently modified subdirectory if not detected.
+%       subdir='': no subdirectory, 
+%       subdir='?', the file is first searched with no subdirectory, then in the most recently modified subdirectory if not detected.
 
 % A FAIRE: si comp_inpu=0, si _i_j n'existe pas, chercher _i, 
 function [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out,subdir_out]=...

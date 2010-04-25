@@ -91,6 +91,13 @@ set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse})
 set(hObject,'CloseRequestFcn',{@closefcn})%
 
 [PlotType,PlotParamOut,haxes]= plot_field(Field,handles.axes3)%,PlotParam,KeepLim,PosColorbar)
+'TEST'
+if isfield(PlotParamOut,'Vectors')
+    set(handles.VECT_title,'Visible','on')
+end
+handles
+write_plot_param(handles,PlotParamOut);% update the display of the plotting parameters
+
 %-------------------------------------------------------------------
 % --- Outputs from this function are returned to the command menuline.
 function varargout = view_field_OutputFcn(hObject, eventdata, handles)
@@ -2028,7 +2035,7 @@ else
        set(handles.slider1,'Max',1);
        set(handles.slider2,'Min',0);
        set(handles.slider2,'Max',1);
- %      set(handles.min_title_vec,'String','0')
+ %      set(handles.min_C_title_vec,'String','0')
        set(handles.max_vec,'String','1')
        set(handles.colcode1,'String','0.333')
        colcode1_Callback(hObject, eventdata, handles)
@@ -2106,7 +2113,7 @@ update_plot(handles)
 % set(handles.slider1,'Max',maxC)
 % set(handles.slider2,'Min',minC) 
 % set(handles.slider2,'Max',maxC)
-% set(handles.min_title_vec,'String',num2str(minC))
+% set(handles.min_C_title_vec,'String',num2str(minC))
 % set(handles.max_vec,'String',num2str(maxC))
 % if auto
 %         set(handles.colcode1,'String',num2str(colcode1,3))%update display
@@ -2331,9 +2338,12 @@ set(handles.vec_col_bar,'Cdata',A)
 function [PlotType,ScalOut]=update_plot(handles)
 %-------------------------------------------------------------------
 haxes= handles.axes3;
-AxeData=get(haxes,'UserData');
+huvmat=findobj(allchild(0),'tag','uvmat');
+UvData=get(huvmat,'UserData');
+% 
+% AxeData=get(haxes,'UserData');
 PlotParam=read_plot_param(handles);
-[PlotType,PlotParamOut]= plot_field(AxeData,haxes,PlotParam,1);
+[PlotType,PlotParamOut]= plot_field(UvData.ProjField_2,haxes,PlotParam,1);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %------------------------------------------------------

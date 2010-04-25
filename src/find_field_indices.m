@@ -17,7 +17,7 @@
 %      .color : color image, the last index, which is not a coordinate variable, represent the 3 color components rgb
 %      .discrete: like scalar, but set of data points without continuity, represented as dots in a usual plot, instead of continuous lines otherwise
 %      .scalar: scalar field (default)
-
+%
 %   
 %INPUT:
 % Data: structure representing fields, output of check_field_structure
@@ -71,8 +71,8 @@ for ivar=1:nbvar
     end
     testnewcell=1;
     for icell_prev=1:numel(CellVarIndex)%detect whether the dimensions of ivar fit with an existing cell
-        PrevVarIndex=CellVarIndex{icell_prev};
-        PrevDimName=Data.VarDimName{PrevVarIndex(1)};
+        PrevVarIndex=CellVarIndex{icell_prev};%list of variable indices in cell # icell_prev
+        PrevDimName=Data.VarDimName{PrevVarIndex(1)};%list of corresponding variable names
         if isequal(PrevDimName,DimCell)
             CellVarIndex{icell_prev}=[CellVarIndex{icell_prev} ivar];% add variable index #ivar to the cell #icell_prev
             testnewcell=0; %existing cell detected
@@ -153,14 +153,15 @@ for icell=1:length(CellVarIndex)
         return
     end
     NbDim(icell)=0;% nbre of space dimensions 
-    if ~isempty(ivar_coord_z)
-        NbDim(icell)=3;
-    elseif ~isempty(ivar_coord_y)
-        NbDim(icell)=2;
-    elseif ~isempty(ivar_coord_x)
-        NbDim(icell)=1;
-    end
-           
+    if numel(VarIndex)>1
+        if ~isempty(ivar_coord_z)
+            NbDim(icell)=3;
+        elseif ~isempty(ivar_coord_y)
+            NbDim(icell)=2;
+        elseif ~isempty(ivar_coord_x)
+            NbDim(icell)=1;
+        end
+    end 
     % look at coordinates variables  
     coord=zeros(1,numel(DimCell));%default
     if NbDim(icell)==0 && ~isempty(VarDimName)% no unstructured coordinate found 
