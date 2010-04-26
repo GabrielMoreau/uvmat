@@ -2299,7 +2299,7 @@ if (~isempty(filename)&& isequal(FileType,'netcdf')) || (~isempty(filename_1)&& 
             end
             set(hhget_field.attributes,'String',Tabchar);%update list of global attributes in get_field 
         else
-            [Field{2},VelType_out_1]=read_civxdata(filename_1,[],VelType_1);
+            [Field{2},VelType_out_1]=read_civxdata(filename_1,InputField_1,VelType_1);
             CivStage_1=Field{2}.CivStage;
         end
         if ~isequal(FileType,'netcdf')
@@ -3064,7 +3064,7 @@ FileName=[FileName FileIndices FileExt];
 % ---- read the data displayed for the second input rootfile windows
 function [FileName_1,RootPath_1,FileBase_1,FileIndices_1,FileExt_1,SubDir_1]=read_file_boxes_1(handles)
 %------------------------------------------------------------------------
-RootPath_1=get(handles.RootPath_1,'String') % read the data from the file1_input window
+RootPath_1=get(handles.RootPath_1,'String'); % read the data from the file1_input window
 if isequal(get(handles.RootPath_1,'Visible'),'off') || isequal(RootPath_1,'"')
     RootPath_1=get(handles.RootPath,'String');
 end;
@@ -3142,7 +3142,7 @@ if isequal(field,'image')
         elseif isequal(NomType,'_i1-i2')
             NomTypeNew='_i';
         end  
-        imagename=name_generator(FileBase,str2double(str1),str2double(str_a),'.png',NomTypeNew,1,str2double(str2),str2double(str_b),'')
+        imagename=name_generator(FileBase,str2double(str1),str2double(str_a),'.png',NomTypeNew,1,str2double(str2),str2double(str_b),'');
         if ~exist(imagename,'file')
                 [FileName,PathName] = uigetfile( ...
            {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';
@@ -3152,7 +3152,7 @@ if isequal(field,'image')
             '*.avi;*.AVI','.avi movie files'; ...
             '*.vol','.volume images (png)'; ...
             '*.*',  'All Files (*.*)'}, ...
-            'Pick an image',imagename)           
+            'Pick an image',imagename);           
             % display the selected field and related information
            imagename=[PathName FileName];
         end
@@ -3168,7 +3168,7 @@ else
            {'*.nc', ' (*.nc)';
             '*.nc',' netcdf files'; ...
             '*.*',  'All Files (*.*)'}, ...
-            'Pick a netcdf file',FileBase)           
+            'Pick a netcdf file',FileBase);           
             % display the selected field and related information
            filename=[PathName FileName];
         display_file_name(hObject, eventdata, handles,filename)
@@ -3301,7 +3301,7 @@ if isequal(field_1,'image')
             '*.avi;*.AVI','.avi movie files'; ...
             '*.vol','.volume images (png)'; ...
             '*.*',  'All Files (*.*)'}, ...
-            'Pick an image',imagename)
+            'Pick an image',imagename);
         % display the selected field and related information
         imagename=[PathName FileName];
     end
@@ -3354,7 +3354,7 @@ else
         end            
         [Path,Name]=fileparts(filebase_1);
         set(handles.FileExt_1,'String','.nc');
-        if ~isempty(SubDir_1) & ~isequal(SubDir_1,'''')& ~isequal(SubDir_1,'"')
+        if ~isempty(SubDir_1) && ~strcmp(SubDir_1,'''')&& ~strcmp(SubDir_1,'"')&& ~strcmp(SubDir_1(1),'/')
             SubDir_1=['/' SubDir_1];
         end
         set(handles.SubDir_1,'String',SubDir_1);
@@ -4750,7 +4750,7 @@ else
         map=[vec' vec' vec'];
         colormap(map)
         image(imflag);
-        answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name)
+        answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name);
         if ~strcmp(answer,'Cancel')
             imwrite(imflag,answer,'BitDepth',8);
         end

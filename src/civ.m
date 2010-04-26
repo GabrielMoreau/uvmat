@@ -2457,7 +2457,7 @@ for ifile=1:nbfield
                     end
                 end
             else
-                   patch1.gridPatch='n';
+                   patch1.gridPatch='none';
                    patch1.gridflag='n';
                   patch1.m=nx_patch1;
                   patch1.n=ny_patch1;
@@ -2629,7 +2629,7 @@ for ifile=1:nbfield
                         end
                     end
                 else
-                      patch2.gridPatch='n';
+                      patch2.gridPatch='none';
                       patch2.gridflag='n';
                       patch2.m=nx_patch2;
                       patch2.n=ny_patch2;

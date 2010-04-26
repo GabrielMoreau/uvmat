@@ -227,7 +227,7 @@ if testU && ~testU_1
     if testX_1 %unstructured coordinate
        XName_1=Field_1.ListVarName{VarType_1.coord_x};
        YName_1=Field_1.ListVarName{VarType_1.coord_y};
-       SubData.ListVarName=[SubData.ListVarName {XName_1} {YName_1}];
+       %SubData.ListVarName=[SubData.ListVarName {XName_1} {YName_1}];
        DimCell=Field_1.VarDimName([VarType_1.coord_x VarType_1.coord_y ]);
        if isfield(Field_1,'VarAttribute') 
            if numel(Field_1.VarAttribute)>=VarType_1.coord_x
