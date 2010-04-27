@@ -90,12 +90,11 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action functio
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse}) 
 set(hObject,'CloseRequestFcn',{@closefcn})%
 
-[PlotType,PlotParamOut,haxes]= plot_field(Field,handles.axes3)%,PlotParam,KeepLim,PosColorbar)
-'TEST'
+[PlotType,PlotParamOut,haxes]= plot_field(Field,handles.axes3);%,PlotParam,KeepLim,PosColorbar)
+set(handles.axes3,'UserData',Field);%store the current field
 if isfield(PlotParamOut,'Vectors')
     set(handles.VECT_title,'Visible','on')
 end
-handles
 write_plot_param(handles,PlotParamOut);% update the display of the plotting parameters
 
 %-------------------------------------------------------------------
@@ -2339,11 +2338,11 @@ function [PlotType,ScalOut]=update_plot(handles)
 %-------------------------------------------------------------------
 haxes= handles.axes3;
 huvmat=findobj(allchild(0),'tag','uvmat');
-UvData=get(huvmat,'UserData');
+ProjField=get(haxes,'UserData');
 % 
 % AxeData=get(haxes,'UserData');
 PlotParam=read_plot_param(handles);
-[PlotType,PlotParamOut]= plot_field(UvData.ProjField_2,haxes,PlotParam,1);
+[PlotType,PlotParamOut]= plot_field(ProjField,haxes,PlotParam,1);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %------------------------------------------------------

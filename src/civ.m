@@ -2132,27 +2132,27 @@ drawnow
 %get the filename root, nomenclature and numbers
 
 % for Windows system find the UBC path name if needed
-if ~isunix & isequal(todo_path(1:2),'\\') & isequal(filebase(2:3),':\')
-    cur_dir=pwd;
-    if ~isequal(cur_dir(2:3),':\')
-        cd(matlabroot); %move to the Matlab root directory if the current Matlab dir does not allow the dos command or is M: 
-    end
-    [ss,ww]=dos(['net use ' filebase(1:2)]);
-    if isequal(ss,0)
-        rankpath=findstr(ww,'\\');
-        if ~isempty(rankpath)
-            wwrest=ww(rankpath:end);
-            rankend=min(find(double(wwrest)==10))-1;
-            filebase=[wwrest(1:rankend) filebase(3:end)];
-            set(handles.RootName,'String',filebase);
-        end
-    else
-         msgbox_uvmat('ERROR','for BATCH option, UBC file names, beginning by \\, are needed');
-%          set(handles.BATCH, 'Enable','On')
-%          set(handles.BATCH,'BackgroundColor',[1 0 0])
-         return
-    end
-end
+% if ~isunix & isequal(todo_path(1:2),'\\') & isequal(filebase(2:3),':\')
+%     cur_dir=pwd;
+%     if ~isequal(cur_dir(2:3),':\')
+%         cd(matlabroot); %move to the Matlab root directory if the current Matlab dir does not allow the dos command or is M: 
+%     end
+%     [ss,ww]=dos(['net use ' filebase(1:2)]);
+%     if isequal(ss,0)
+%         rankpath=findstr(ww,'\\');
+%         if ~isempty(rankpath)
+%             wwrest=ww(rankpath:end);
+%             rankend=min(find(double(wwrest)==10))-1;
+%             filebase=[wwrest(1:rankend) filebase(3:end)];
+%             set(handles.RootName,'String',filebase);
+%         end
+%     else
+%          msgbox_uvmat('ERROR','for BATCH option, UBC file names, beginning by \\, are needed');
+% %          set(handles.BATCH, 'Enable','On')
+% %          set(handles.BATCH,'BackgroundColor',[1 0 0])
+%          return
+%     end
+% end
 
 % set the list of files and check them
 display('checking the files...')

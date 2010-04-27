@@ -29,9 +29,10 @@ if isempty(huvmat)
     return
 end
 hhuvmat=guidata(huvmat);%handles of elements in uvmat
+guihandles=guidata(hObject);
 UvData=get(huvmat,'UserData');
 MouseAction='none'; %default
-testzoom=get(hhuvmat.zoom,'Value');% get the mouse action from the uvmat GUI: options:
+testzoom=get(guihandles.zoom,'Value');% get the mouse action from the uvmat GUI: options:
 if isfield(UvData,'MouseAction')
     MouseAction=UvData.MouseAction;% get the mouse action from the uvmat GUI: options:
 end

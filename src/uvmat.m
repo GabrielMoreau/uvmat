@@ -2636,11 +2636,11 @@ for imap=1:numel(IndexObj)
     if ~isempty(UvData.Object{iobj})%& isfield(Object{iobj},'plotaxes')& ishandle(Object{iobj}.plotaxes)
         %Projeter les champs sur l'objet:*
         ObjectData=proj_field(UvData.Field,UvData.Object{iobj},iobj);
-        if imap==2
-            UvData.ProjField_2=ObjectData;%store the projection field on uvmat: ***** WILL REPLACE THE FIELD SORED ON THE AXES: AxeData *****
-        else
-            UvData.ProjField_1=ObjectData;%store the projection field on view_field
-        end
+%         if imap==2
+%             UvData.ProjField_2=ObjectData;%store the projection field on uvmat: ***** WILL REPLACE THE FIELD SORED ON THE AXES: AxeData *****
+%         else
+%             UvData.ProjField_1=ObjectData;%store the projection field on view_field
+%         end
         %use of mask
         if isfield(ObjectData,'NbDim')&isequal(ObjectData.NbDim,2)
             if isfield(ObjectData,'Mask') & isfield(ObjectData,'A')
