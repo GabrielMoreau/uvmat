@@ -953,7 +953,7 @@ grid_input=[];%default
 if isfield(CalibData,'grid')
     grid_input=CalibData.grid;%retrieve the previously used grid
 end
-[T,CalibData.grid]=create_grid(grid_input);%display the GUI create_grid 
+[T,CalibData.grid]=create_grid(grid_input,'detect grid');%display the GUI create_grid 
 set(handles.geometry_calib,'UserData',CalibData)%store the phys grid for later use
 
 %read the four last point coordiantes in pixels
@@ -1011,14 +1011,15 @@ Amod=double(Amod);
 %figure(12)
 %Amax=max(max(Amod))
 %image(Rangx,Rangy,uint8(255*Amod/Amax))
-ind_range=10;% range of search of image ma around each point obtained by linear interpolation from the marked points
+Dx=(Rangx(2)-Rangx(1))/(npxy(2)-1); %x mesh in real space
+Dy=(Rangy(2)-Rangy(1))/(npxy(1)-1); %y mesh in real space
+ind_range_x=ceil(GeometryCalib.R(1,1)*CalibData.grid.Dx/3)% range of search of image ma around each point obtained by linear interpolation from the marked points
+ind_range_y=ceil(GeometryCalib.R(2,2)*CalibData.grid.Dy/3)% range of search of image ma around each point obtained by linear interpolation from the marked points
 nbpoints=size(T,1);
 for ipoint=1:nbpoints
-    Dx=(Rangx(2)-Rangx(1))/(npxy(2)-1); %x mesh in real space
-    Dy=(Rangy(2)-Rangy(1))/(npxy(1)-1); %y mesh in real space
     i0=1+round((T(ipoint,1)-Rangx(1))/Dx);%round(Xpx(ipoint));
     j0=1+round((T(ipoint,2)-Rangy(1))/Dy);%round(Xpx(ipoint));
-    Asub=Amod(j0-ind_range:j0+ind_range,i0-ind_range:i0+ind_range);
+    Asub=Amod(j0-ind_range_y:j0+ind_range_y,i0-ind_range_x:i0+ind_range_x);
     x_profile=sum(Asub,1);
     y_profile=sum(Asub,2);
     [Amax,ind_x_max]=max(x_profile);
@@ -1026,16 +1027,16 @@ for ipoint=1:nbpoints
     %sub-pixel improvement using moments
     x_shift=0;
     y_shift=0;
-    if ind_x_max+2<=2*ind_range+1 && ind_x_max-2>=1
+    if ind_x_max+2<=2*ind_range_x+1 && ind_x_max-2>=1
         Atop=x_profile(ind_x_max-2:ind_x_max+2);
         x_shift=sum(Atop.*[-2 -1 0 1 2])/sum(Atop);
     end
-    if ind_y_max+2<=2*ind_range+1 && ind_y_max-2>=1
+    if ind_y_max+2<=2*ind_range_y+1 && ind_y_max-2>=1
         Atop=y_profile(ind_y_max-2:ind_y_max+2);
         y_shift=sum(Atop.*[-2 -1 0 1 2]')/sum(Atop);
     end
-    Delta(ipoint,1)=(x_shift+ind_x_max-ind_range-1)*Dx;%shift from the initial guess
-    Delta(ipoint,2)=(y_shift+ind_y_max-ind_range-1)*Dy;
+    Delta(ipoint,1)=(x_shift+ind_x_max-ind_range_x-1)*Dx;%shift from the initial guess
+    Delta(ipoint,2)=(y_shift+ind_y_max-ind_range_y-1)*Dy;
 end
 Tmod=T(:,(1:2))+Delta;
 [Xpx,Ypx]=px_XYZ(GeometryCalib,Tmod(:,1),Tmod(:,2));
@@ -1077,7 +1078,7 @@ for i=1:size(data.Coord,1)
    end
 end
 Tabchar=cell2tab(Coord,'    |    ');
-Tabchar=[Tabchar {'.....'}];
+Tabchar=[Tabchar; {'.....'}];
 %set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
 

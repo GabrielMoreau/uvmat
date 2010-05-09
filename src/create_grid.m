@@ -33,13 +33,16 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes just before create_grid is made visible.
-function create_grid_OpeningFcn(hObject, eventdata, handles,input_grid)
+function create_grid_OpeningFcn(hObject, eventdata, handles,input_grid,name)
 %------------------------------------------------------------------------
 % This function has no output args, see OutputFcn.
 
 % Choose default command line output for create_grid
 handles.output = 'Cancel';
 
+if exist('name','var') && ischar(name)
+    set(hObject,'name',name)
+end
 % Update handles structure
 guidata(hObject, handles);
 testNo=0;

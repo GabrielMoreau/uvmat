@@ -697,9 +697,23 @@ PlotParamOut=PlotParam; %default
 if test_ima
     % distinguish B/W and color images
     np=size(A);%size of image
-    siz=size(np);
+    siz=numel(np);
+    if siz>3
+        msgbox_uvmat('ERROR','unrecognized scalar type ')
+            return
+    end
+    if siz==3
+        if np(3)==1
+            siz=2;%B W image
+        elseif np(3)==3
+            siz=3;%color image
+        else
+             msgbox_uvmat('ERROR',['unrecognized scalar type: ' num2str(np(3)) ' color components'])
+            return
+        end
+    end
     %set the color map
-    if siz(2)==2 %for black and white images
+    if siz==2 %for black and white images
         if ~isfield(PlotParam.Scalar,'AutoScal')
             PlotParam.Scalar.AutoScal=0;%default
         end
@@ -780,7 +794,7 @@ if test_ima
                 colormap('default'); % standard faulse colors for div, vort , scalar fields 
             end
         end
-    elseif siz(2)==3 %color images
+    else %color images
         axes(haxes)
         B=uint8(A); 
         MinA=0;
@@ -831,7 +845,7 @@ if test_ima
     AxeData.AY=[AY(1) AY(end)];
     test_ima=1;
     %display the colorbar code for B/W images if Poscolorbar not empty
-    if siz(2)==2 & exist('PosColorbar','var')& ~isempty(PosColorbar)
+    if siz==2 & exist('PosColorbar','var')& ~isempty(PosColorbar)
         if isempty(hcol)|~ishandle(hcol)
              hcol=colorbar;%create new colorbar
         end

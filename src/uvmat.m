@@ -2238,9 +2238,12 @@ if (~isempty(filename)&& isequal(FileType,'netcdf')) || (~isempty(filename_1)&& 
     if isequal(FileType,'netcdf')  %read the first nc field
         if isequal(FieldName,'get_field...')% read the field names on the interface get_field.
             %VelType=get(handles.Fields,'UserData');
-            hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
+            hget_field=findobj(allchild(0),'Name','get_field')%find the get_field... GUI
             if isempty(hget_field)
                 hget_field= get_field(filename);%open the get_field GUI    
+            end
+            if numel(hget_field)>1%case of several get_field GUI
+                hget_field=hget_field(1);
             end
             hhget_field=guidata(hget_field);
             set(hhget_field.inputfile,'String',filename)% update the list of input fields in get_field
