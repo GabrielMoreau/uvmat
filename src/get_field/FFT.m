@@ -2,10 +2,7 @@ function GUI_input=FFT(hget_field)
 global spec x_vec
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
 if ~exist('hget_field','var')
-    GUI_input={'check_1Dplot','y';...%
-        'check_scalar','n';... % 
-        'check_vector','n'... %
-               };
+    GUI_input={'check_1Dplot'};
     return %exit the function 
 end
 

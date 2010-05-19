@@ -1,7 +1,13 @@
 %'cell2tab': transform a Matlab cell in a character array suitable for display in a table
+%------------------------------------------------------------------------
+% function Tabchar=cell2tab(Tabcell,separator) 
+%
+% OUTPUT:
+% Tabchar: character array suitable for table display
+%
 % INPUT:
-% Tabcell: (nx,ny) cell table, for nx lines
-% separator: character used for separating displayed columns
+% Tabcell: (nx,ny) cell table, for nx lines separator: character used for separating displayed columns
+
 function Tabchar=cell2tab(Tabcell,separator) 
 Tabchar={};%default
 [nx,ny]=size(Tabcell);

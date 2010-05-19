@@ -1,4 +1,4 @@
-function GUI_input=merge_proj(num_i1,num_i2,num_j1,num_j2,Series);
+function GUI_input=merge_proj(num_i1,num_i2,num_j1,num_j2,Series)
 
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
 if ~exist('num_i1','var')
@@ -64,7 +64,7 @@ for iview=1:nbview
     test_movie(iview)=0;
     if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
         if isequal(lower(FileExt{iview}),'.avi')
-            MovieObject{iview}=mmreader(fullfile(RootPath{iview},[RootFile{iview} FileExt{iview}]));
+            MovieObject{iview}=mmreader(fullfile(Series.RootPath{iview},[Series.RootFile{iview} Series.FileExt{iview}]));
             test_movie(iview)=1;
         end
     end 
@@ -116,7 +116,7 @@ end
 
 %check coincidence in time
 multitime=0;
-if length(timecell)==0
+if isempty(timecell)
     time=[];
 elseif length(timecell)==1
     time=timecell{1};
@@ -159,13 +159,7 @@ VelType_val=get(hseries.VelTypeMenu,'Value');
 VelType=VelType_str{VelType_val}; %the same for all views
 if isequal(FieldName,'get_field...')
     hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
-   % hhget_field=guidata(hget_field);%handles of GUI elements in get_field
     SubField=get_field('read_get_field',hObject,eventdata,hget_field); %read the names of the variables to plot in the get_field GUI
-%     if isequal(get(hhget_field.menu_coord,'Visible'),'on')
-%         list_transform=get(hhget_field.menu_coord,'String');
-%         val_list=get(hhget_field.menu_coord,'Value');
-%         transform=list_transform{val_list};
-%     end
 end
 %detect whether all the files are 'images' or 'netcdf'
 testima=0;
@@ -175,7 +169,7 @@ testnc=0;
 FileExt=get(hseries.FileExt,'String');
 for iview=1:nbview
      ext=FileExt{iview};
-     form=imformats(ext([2:end]));
+     form=imformats(ext(2:end));
      if isequal(lower(ext),'.vol')
          testvol=testvol+1;
      elseif ~isempty(form)||isequal(lower(ext),'.avi')% if the extension corresponds to an image format recognized by Matlab
@@ -285,9 +279,11 @@ for ifile=1:nbfield
             if ~isempty(transform_fct)
                 Field{iview}=transform_fct(Field{iview},XmlData{iview});%transform to phys if requested
             end
+            min(Field{iview}.X)
             if testcivx
                     Field{iview}=calc_field(FieldName,Field{iview});
             end
+            min(Field{iview}.X)
 
             %projection on object (gridded plane)
             if test_object
@@ -385,11 +381,77 @@ for iview=1:nbview
     if ~isequal(MergeData.ListVarName,Data{iview}.ListVarName)
         error=1;
     end
-%      if ~isequal(MergeData.VarDimIndex,Data{iview}.VarDimIndex)
-%         error=1;
-%      end
 end
 if error
     MergeData.Txt='ERROR: attempt at merging fields of incompatible type';
     return
 end
+
+%group the variables (fields of 'FieldData') in cells of variables with the same dimensions
+[CellVarIndex,NbDim,VarTypeCell]=find_field_indices(Data{1});
+%LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
+% CellVarIndex=cells of variable index arrays
+ivar_new=0; % index of the current variable in the projected field
+icoord=0;
+for icell=1:length(CellVarIndex)
+    if NbDim(icell)==1
+        continue
+    end
+    VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list FieldData.ListVarName
+    VarType=VarTypeCell{icell};
+    ivar_X=VarType.coord_x;
+    ivar_Y=VarType.coord_y;
+    ivar_FF=VarType.errorflag;
+    if isempty(ivar_X)
+        test_grid=1;%test for input data on regular grid (e.g. image)coordinates
+    else
+        if length(ivar_Y)~=1
+                msgbox_uvmat('ERROR','y coordinate missing in proj_field.m')
+                return
+        end
+        test_grid=0;
+    end
+%    DimIndices=Data{1}.VarDimIndex{VarIndex(1)};%indices of the dimensions of the first variable (common to all variables in the cell)
+    %case of input fields with unstructured coordinates
+    if ~test_grid
+        for ivar=VarIndex
+            VarName=MergeData.ListVarName{ivar};
+            for iview=1:nbview
+                eval(['MergeData.' VarName '=[MergeData.' VarName '; Data{iview}.' VarName '];'])
+            end
+        end
+    %case of fields defined on a structured  grid 
+    else  
+%        DimValue=MergeData.DimValue(DimIndices);%set of dimension values
+        testFF=0;
+        for iview=2:nbview
+%             if ~isequal(DimValue,Data{iview}.DimValue(DimIndices))
+%                 MergeData.Txt='ERROR: attempt at merging structured fields with different sizes';
+%                 return
+%             end
+            for ivar=VarIndex
+                VarName=MergeData.ListVarName{ivar};
+                if isfield(MergeData,'VarAttribute')
+                    if length(MergeData.VarAttribute)>=ivar && isfield(MergeData.VarAttribute{ivar},'Role') && isequal(MergeData.VarAttribute{ivar}.Role,'errorflag')
+                        testFF=1;
+                    end
+                end
+                eval(['MergeData.' VarName '=MergeData.' VarName '+ Data{iview}.' VarName ';'])
+            end
+        end
+        if testFF
+            nbaver=nbview-MergeData.FF;
+            indgood=find(nbaver>0);
+            for ivar=VarIndex
+                VarName=MergeData.ListVarName{ivar};
+                eval(['MergeData.' VarName '(indgood)=double(MergeData.' VarName '(indgood))./nbaver(indgood);'])
+            end 
+        else
+            for ivar=VarIndex
+                VarName=MergeData.ListVarName{ivar};
+                eval(['MergeData.' VarName '=double(MergeData.' VarName ')./nbview;'])
+            end    
+        end
+    end
+end
+    

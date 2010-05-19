@@ -30,17 +30,17 @@
 %            Variable attribute .Role :
 %    The only variable attribute used for plotting purpose is .Role which can take
 %    the values
-        %       Role = 'scalar':  (default) represents a scalar field
-        %            = 'coord_x', 'coord_y',  'coord_z': represents a separate set of
-        %                        unstructured coordinate x, y  or z
-        %            = 'vector': represents a vector field whose number of components
-        %                is given by the last dimension (called 'nb_dim')
-        %            = 'vector_x', 'vector_y', 'vector_z'  :represents the x, y or z  component of a vector  
-        %            = 'warnflag' : provides a warning flag about the quality of data in a 'Field', default=0, no warning
-        %            = 'errorflag': provides an error flag marking false data,
-        %                   default=0, no error. Different non zero values can represent different criteria of elimination.
-
-
+%       Role = 'scalar':  (default) represents a scalar field
+%            = 'coord_x', 'coord_y',  'coord_z': represents a separate set of
+%                        unstructured coordinate x, y  or z
+%            = 'vector': represents a vector field whose number of components
+%                is given by the last dimension (called 'nb_dim')
+%            = 'vector_x', 'vector_y', 'vector_z'  :represents the x, y or z  component of a vector  
+%            = 'warnflag' : provides a warning flag about the quality of data in a 'Field', default=0, no warning
+%            = 'errorflag': provides an error flag marking false data,
+%                   default=0, no error. Different non zero values can represent different criteria of elimination.
+%
+%
 %         additional elements characterizing the projection object (should not be necessary)--
 %            Data.Style : style of projection object
 %            Data.XObject,.YObject: set of coordinates defining the object position;
@@ -83,7 +83,7 @@
 % 
 % PosColorbar: if not empty, display a colorbar for B&W images
 %               imposed position of the colorbar (ex [0.821 0.471 0.019 0.445])
-%
+
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -140,14 +140,14 @@ if exist('haxes','var')
 end
 if testnewfig% create a new figure and axes if the plotting axes does not exist
     hfig=figure;
-    if isfield(Data,'IndexObj')&isfield(Data,'Style')&isfield(Data,'ProjMode')
+    if isfield(Data,'IndexObj') && isfield(Data,'Style') && isfield(Data,'ProjMode')
         figname=[num2str(Data.IndexObj) '-' Data.Style];
         set(hfig,'Name',figname)
     end
-    testhandle=0;
-    if isfield(PlotParam,'text_display_1')& ishandle(PlotParam.text_display_1)
+%     testhandle=0;
+    if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
         set(hfig,'UserData',PlotParam)
-        testhandle=1;
+%         testhandle=1;
     end
     set(hfig,'Units','normalized')
     set(hfig,'WindowButtonDownFcn','mouse_down')
@@ -159,7 +159,7 @@ if testnewfig% create a new figure and axes if the plotting axes does not exist
 else
     hstack=findobj(allchild(0),'Type','figure');%current stack order of figures in matlab
 end
-if isfield(PlotParam,'text_display_1')& ishandle(PlotParam.text_display_1)
+if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
     PlotParam=read_plot_param(PlotParam);   
 end
 if testnewfig
@@ -170,7 +170,7 @@ if isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1)
 end
 
 % check the cells of fields :
-testnbdim=1;
+% testnbdim=1;
 [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data);
 
 if ~isempty(errormsg)
@@ -179,7 +179,7 @@ if ~isempty(errormsg)
     return
 end
 if ~isfield(Data,'NbDim') %& ~isfield(Data,'Style')%determine the space dimensionb if not defined: choose the kind of plot 
-    [Data.NbDim,imax]=max(NbDim);
+    [Data.NbDim]=max(NbDim);
 end
 if isequal(Data.NbDim,0) 
         AxeData=plot_text(Data,htext);
@@ -206,8 +206,8 @@ elseif isequal(Data.NbDim,2)
 elseif isequal(Data.NbDim,3)
     msgbox_uvmat('ERROR','volume plot not implemented yet')
     return
-else
-    testnbdim=0;
+% else
+%     testnbdim=0;
 end
 
 %display (or delete) error message
@@ -238,7 +238,7 @@ end
 %-------------------------------------------------------------------
 function hdisplay=plot_text(FieldData,hdisplay_in)
 %-------------------------------------------------------------------
-if exist('hdisplay_in','var') & ishandle(hdisplay_in) & isequal(get(hdisplay_in,'Type'),'uicontrol')
+if exist('hdisplay_in','var') && ishandle(hdisplay_in) && isequal(get(hdisplay_in,'Type'),'uicontrol')
     hdisplay=hdisplay_in;
 else
     figure;%create new figure
@@ -253,7 +253,7 @@ for icell=1:length(vv)
     ss=vv{icell};
     sizss=size(ss);
     if isnumeric(ss)
-        if sizss(1)<=1 & length(ss)<5
+        if sizss(1)<=1 && length(ss)<5
             displ{icell}=num2str(ss);
         else
             displ{icell}=[class(ss) ', size ' num2str(size(ss))];
@@ -262,11 +262,11 @@ for icell=1:length(vv)
         displ{icell}=ss;
     elseif iscell(ss)
         sizcell=size(ss);
-        if sizcell(1)==1 & length(sizcell)==2 %line cell
+        if sizcell(1)==1 && length(sizcell)==2 %line cell
            ssline='{''';
            for icolumn=1:sizcell(2)
                if isnumeric(ss{icolumn})
-                   if size(ss{icolumn},1)<=1 & length(ss{icolumn})<5
+                   if size(ss{icolumn},1)<=1 && length(ss{icolumn})<5
                       sscolumn=num2str(ss{icolumn});%line vector
                    else
                       sscolumn=[class(ss{icolumn}) ', size ' num2str(size(ss{icolumn}))];
@@ -320,11 +320,11 @@ legend_str={};
 %initiates string of the plot command
 plotstr='hhh=plot(';
 textmean={};
-abscissa_name='';
+% abscissa_name='';
 coord_x_index=[];
 test_newplot=1;
 hh=findobj(haxes,'tag','plot_line');
-num_curve=numel(hh);
+% num_curve=numel(hh);
 icurve=0;
 for icell=1:length(CellVarIndex)
     testfalse=0;
@@ -350,7 +350,7 @@ for icell=1:length(CellVarIndex)
     testplot=ones(size(data.ListVarName));%default test for plotted variables
     testcoordvar=0;
     charplot_0='''-''';%default
-    if isfield(data,'ObjectProjMode')& isequal(data.ObjectProjMode,'projection')
+    if isfield(data,'ObjectProjMode')&& isequal(data.ObjectProjMode,'projection')
         charplot_0='+';
     end
     xtitle='';  
@@ -373,7 +373,7 @@ for icell=1:length(CellVarIndex)
     if isfield(data,'VarAttribute')
         VarAttribute=data.VarAttribute;
         for ivar=1:length(VarIndex) 
-             if length(VarAttribute)>=VarIndex(ivar) & isfield(VarAttribute{VarIndex(ivar)},'long_name')
+             if length(VarAttribute)>=VarIndex(ivar) && isfield(VarAttribute{VarIndex(ivar)},'long_name')
                  plotname{VarIndex(ivar)}=VarAttribute{VarIndex(ivar)}.long_name;
              else
                  plotname{VarIndex(ivar)}=data.ListVarName{VarIndex(ivar)};%name for display in plot A METTRE
@@ -460,7 +460,7 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
             end
         else
             legend_old=get(hlegend,'String');
-            if isequal(size(legend_old,1),size(legend_str,1))&~isequal(legend_old,legend_str)
+            if isequal(size(legend_old,1),size(legend_str,1))&&~isequal(legend_old,legend_str)
                 set(hlegend,'String',[legend_old legend_str]);
             end
         end 
@@ -536,7 +536,6 @@ x_units='';
 YName='';
 y_units='';
 for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the calling function)
-%     VarIndex=CellVarIndex{icell};
     VarType=VarTypeCell{icell};
     ivar_X=VarType.coord_x; % defines (unique) index for the variable representing unstructured x coordinate (default =[])
     ivar_Y=VarType.coord_y; % defines (unique)index for the variable representing unstructured y coordinate (default =[])
@@ -563,6 +562,8 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             test_vec=1;
             eval(['vec_U=Data.' Data.ListVarName{ivar_U} ';']) 
             eval(['vec_V=Data.' Data.ListVarName{ivar_V} ';']) 
+            'TESTplot'
+            VarType.coord
             if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field (with unstructured coordinates or structured ones (then ivar_X and ivar_Y empty)     
                 eval(['vec_X=Data.' Data.ListVarName{ivar_X} ';']) 
                 eval(['vec_Y=Data.' Data.ListVarName{ivar_Y} ';'])
@@ -613,10 +614,10 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             eval(['AY=Data.' YName ';'])
             [A,AX,AY]=proj_grid(AX',AY',A',[],[],'np>256');  % interpolate on a grid  
             if isfield(Data,'VarAttribute')
-                if numel(Data.VarAttribute)>=ivar_X & isfield(Data.VarAttribute{ivar_X},'units')
+                if numel(Data.VarAttribute)>=ivar_X && isfield(Data.VarAttribute{ivar_X},'units')
                     x_units=['(' Data.VarAttribute{ivar_X}.units ')'];
                 end
-                if numel(Data.VarAttribute)>=ivar_Y & isfield(Data.VarAttribute{ivar_Y},'units')
+                if numel(Data.VarAttribute)>=ivar_Y && isfield(Data.VarAttribute{ivar_Y},'units')
                     y_units=['(' Data.VarAttribute{ivar_Y}.units ')'];
                 end
             end        
@@ -628,7 +629,7 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             test_interp_X=0; %default, regularly meshed X coordinate
             test_interp_Y=0; %default, regularly meshed Y coordinate
             if isfield(Data,'VarAttribute')
-                if numel(Data.VarAttribute)>=VarType.coord(2) & isfield(Data.VarAttribute{VarType.coord(2)},'units')
+                if numel(Data.VarAttribute)>=VarType.coord(2) && isfield(Data.VarAttribute{VarType.coord(2)},'units')
                     x_units=['(' Data.VarAttribute{VarType.coord(2)}.units ')'];
                 end
                 if numel(Data.VarAttribute)>=VarType.coord(1) & isfield(Data.VarAttribute{VarType.coord(1)},'units')
@@ -713,6 +714,11 @@ if test_ima
         end
     end
     %set the color map
+    if isfield(PlotParam.Scalar,'BW')
+        BW=PlotParam.Scalar.BW; %test for BW gray scale images
+    else
+        BW=(siz==2) && (isa(A,'uint8')|| isa(A,'uint16'));% non color images represented in gray scale by default
+    end
     if siz==2 %for black and white images
         if ~isfield(PlotParam.Scalar,'AutoScal')
             PlotParam.Scalar.AutoScal=0;%default
@@ -728,7 +734,7 @@ if test_ima
         else
             MinA=PlotParam.Scalar.MinA;  
         end; 
-        if isequal(PlotParam.Scalar.AutoScal,0)|isempty(PlotParam.Scalar.MaxA)|~isa(PlotParam.Scalar.MaxA,'double') %correct if there is no numerical data in edit box
+        if isequal(PlotParam.Scalar.AutoScal,0)||isempty(PlotParam.Scalar.MaxA)||~isa(PlotParam.Scalar.MaxA,'double') %correct if there is no numerical data in edit box
             MaxA=double(max(max(A)));
         else
             MaxA=PlotParam.Scalar.MaxA;  
@@ -755,13 +761,13 @@ if test_ima
             abscontmax=intercont*ceil(MaxA/intercont);
             contmin=intercont*floor(min(min(B))/intercont);
             contmax=intercont*ceil(max(max(B))/intercont);
-            cont_pos_plus=[0:intercont:contmax];
-            cont_pos_min=[double(contmin):intercont:-intercont];
+            cont_pos_plus=0:intercont:contmax;
+            cont_pos_min=double(contmin):intercont:-intercont;
             cont_pos=[cont_pos_min cont_pos_plus];
             sizpx=(AX(end)-AX(1))/(np(2)-1);
             sizpy=(AY(1)-AY(end))/(np(1)-1);
             x_cont=[AX(1):sizpx:AX(end)]; % pixel x coordinates for image display 
-            y_cont=[AY(1):-sizpy:AY(end)]; % pixel x coordinates for image display
+            y_cont=AY(1):-sizpy:AY(end); % pixel x coordinates for image display
             txt=ver;%version of Matlab
             Release=txt(1).Release;
             relnumb=str2num(Release(3:4));
@@ -782,9 +788,9 @@ if test_ima
             caxis([abscontmin abscontmax]) 
             colormap(map);
         end
-        if ~isequal(PlotParam.Scalar.Contours,1)       
+        if ~isequal(PlotParam.Scalar.Contours,1)  
             % rescale the grey levels with min and max, put a grey scale colorbar
-            if (isfield(PlotParam.Scalar,'BW')& (isequal(PlotParam.Scalar.BW,1))|isa(A,'uint8')| isa(A,'uint16'))%images
+            if BW
                 B=A;
                 vec=linspace(0,1,255);%define a linear greyscale colormap
                 map=[vec' vec' vec'];
@@ -796,7 +802,11 @@ if test_ima
         end
     else %color images
         axes(haxes)
-        B=uint8(A); 
+        if BW
+            B=uint16(sum(A,3));
+        else
+            B=uint8(A);
+        end
         MinA=0;
         MaxA=255;
     end
@@ -845,7 +855,7 @@ if test_ima
     AxeData.AY=[AY(1) AY(end)];
     test_ima=1;
     %display the colorbar code for B/W images if Poscolorbar not empty
-    if siz==2 & exist('PosColorbar','var')& ~isempty(PosColorbar)
+    if siz==2 && exist('PosColorbar','var')&& ~isempty(PosColorbar)
         if isempty(hcol)|~ishandle(hcol)
              hcol=colorbar;%create new colorbar
         end
@@ -965,7 +975,7 @@ if test_vec
         diffy=diff(vec_Y); %difference dy=vec_Y(i+1)-vec_Y(i)
         dy_thresh=max(abs(diffy))/2; 
         ind_jump=find(abs(diffy) > dy_thresh); %indices with diff(vec_Y)> max/2, detect change of line
-        ind_sel=[1:ind_jump(1)];%select the first line
+        ind_sel=1:ind_jump(1);%select the first line
         for i=2:2:length(ind_jump)-1
             ind_sel=[ind_sel [ind_jump(i)+1:ind_jump(i+1)]];% select the odd lines
         end
@@ -1190,7 +1200,7 @@ while siz2<2
     ind=find((ord*values-MaxA)<0 & (ord*values-MinA)>0);%indices of 'values' such that MinA<ord*values<MaxA
     siz=size(ind);
     if siz(2)<4%if there are less than 4 selected values (4 levels)
-        values=[-9:0.5*div:9];
+        values=-9:0.5*div:9;
         ind=find((ord*values-MaxA)<0 & (ord*values-MinA)>0);
     end
     siz2=size(ind,2);

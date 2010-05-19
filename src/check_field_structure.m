@@ -1,9 +1,9 @@
 %'check_field_structure': check the validity of the field struture representation consistant with the netcdf format
-%----------------------------------------------------------------------
+%------------------------------------------------------------------------
 % function [DataOut,errormsg]=check_field_structure(Data)
 %
 % OUTPUT:
-%  Data: structure reproducing the input structure Data, with the additional elements:
+% DataOut: structure reproducing the input structure Data, with the additional elements:
 %           with fields:
 %
 %            .ListDimName: cell listing the names of the array dimensions
@@ -12,7 +12,7 @@
 %            .VarDimName: cell containing a cell of dimension names (in list .ListDimName) for each variable of .ListVarName
 % errormsg: error message which is not empty when the input structure does not have the right form
 %
-%INPUT:
+% INPUT:
 % Data:   structure containing 
 %         (optional) .ListGlobalAttribute: cell listing the names of the global attributes
 %                    .Att_1,Att_2... : values of the global attributes

@@ -1,9 +1,9 @@
 %'find_file_indices': test field structure for input in proj_field and plot_field
-%group the variables  into 'fields' with common dimensions
-%----------------------------------------------------------------------
+%    group the variables  into 'fields' with common dimensions
+%------------------------------------------------------------------------
 % function [DimVarIndex,CellVarIndex,NbDim,VarType]=find_field_indices(Data)
 %
-%OUTPUT:
+% OUTPUT:
 % CellVaxIndex: cell whose elements are arrays of indices in the list data.ListVarName  
 %              CellvarIndex{i} represents a set of variables with the same dimensions
 % NbDim: array with the length of CellVarIndex, giving its  space dimension
@@ -17,9 +17,9 @@
 %      .color : color image, the last index, which is not a coordinate variable, represent the 3 color components rgb
 %      .discrete: like scalar, but set of data points without continuity, represented as dots in a usual plot, instead of continuous lines otherwise
 %      .scalar: scalar field (default)
-%
+%      .coord: vector of indices of coordinate variables corresponding to matrix dimensions
 %   
-%INPUT:
+% INPUT:
 % Data: structure representing fields, output of check_field_structure
 %            .ListDimName: cell listing the names of the array dimensions
 %            .ListVarName: cell listing the names of the variables
@@ -152,19 +152,25 @@ for icell=1:length(CellVarIndex)
         errormsg='multiply defined warning flag in the same cell';
         return
     end
-    NbDim(icell)=0;% nbre of space dimensions 
-    if numel(VarIndex)>1
+    %NbDim(icell)=0;% nbre of space dimensions 
+    NbDim(icell)=numel(DimCell);
+    test_coord=0;
+    if numel(VarIndex)>1      
         if ~isempty(ivar_coord_z)
             NbDim(icell)=3;
+            test_coord=1;
         elseif ~isempty(ivar_coord_y)
             NbDim(icell)=2;
+            test_coord=1;
         elseif ~isempty(ivar_coord_x)
             NbDim(icell)=1;
+            test_coord=1;
         end
     end 
     % look at coordinates variables  
     coord=zeros(1,numel(DimCell));%default
-    if NbDim(icell)==0 && ~isempty(VarDimName)% no unstructured coordinate found 
+%     if NbDim(icell)==0 && ~isempty(VarDimName)% no unstructured coordinate found 
+    if  ~test_coord && ~isempty(VarDimName)
         for idim=1:numel(DimCell)   %loop on the dimensions of the variables in cell #icell
             for ivardim=1:numel(VarDimName)
                 if strcmp(VarDimName{ivardim},DimCell{idim})

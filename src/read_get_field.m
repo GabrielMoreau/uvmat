@@ -665,15 +665,19 @@ if test_vector
                 testold=1;
             end
         end
-        if empty_coord_vec_x        
-                coord_x_name=DimCell{2};
-                SubField.ListVarName=[{coord_x_name} SubField.ListVarName];
-                SubField.VarDimName=[{coord_x_name} SubField.VarDimName];  
-                if testold
-                    eval(['SubField.' coord_x_name '=linspace(Coord_2(1),Coord_2(end),npxy(2));'])
-                else
-                    eval(['SubField.' coord_x_name '=[0.5 npxy(2)-0.5];'])
-                end
+        if empty_coord_vec_x 
+            if numel(DimCell)<2  
+                errormsg='undefined x coordinate';
+                return
+            end
+            coord_x_name=DimCell{2};
+            SubField.ListVarName=[{coord_x_name} SubField.ListVarName];
+            SubField.VarDimName=[{coord_x_name} SubField.VarDimName];  
+            if testold
+                eval(['SubField.' coord_x_name '=linspace(Coord_2(1),Coord_2(end),npxy(2));'])
+            else
+                eval(['SubField.' coord_x_name '=[0.5 npxy(2)-0.5];'])
+            end
             
             if ~testold
                 coord_x_attr.units='index';

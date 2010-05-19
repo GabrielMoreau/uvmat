@@ -1,10 +1,11 @@
 %'create_grid': called by the GUI geometry_calib to create a physical grid 
+%------------------------------------------------------------------------
 % coord=create_grid(input_grid)
 %
 % OUTPUT:
 % coord: matrix (nbpoint, 3) of coordinates for grid points, with columns x,y,z
 %
-%INPUT:
+% INPUT:
 % input_grid (optional): structure to initiate the GUI with fields .x_0,.Dx,.x_1
 % (defining x coordinates), .y_0,.Dy,.y_1 (defining y coordinates)
 

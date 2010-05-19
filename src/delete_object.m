@@ -1,8 +1,10 @@
 %'delete_object': delete a projection object, defined by its index in the Uvmat list or by its graphic handle
+%------------------------------------------------------------------------
+% function delete_object(hObject)
 %
-%INPUT:
+% INPUT:
 % hObject: object index (if integer) or handle of the graphic object. If
-% hObject is a subobject, the parent object is detected and deleted. 
+%          hObject is a subobject, the parent object is detected and deleted. 
 
 function delete_object(hObject)
 

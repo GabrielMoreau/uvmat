@@ -15,7 +15,7 @@
 %                    .ListDimName=list of dimension (added information, not requested for field description)
 %                    .DimValue= vlalues of dimensions (added information, not requested for field description)
 %                    .VarDimIndex= list of dimension indices (added information,
-
+%
 %INPUT:
 %     nc:      name of a netcdf file (char string) or netcdf object   
 %    additional arguments:

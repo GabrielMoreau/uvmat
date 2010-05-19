@@ -54,16 +54,24 @@ handles.output = hObject;
 
 % Update handles structure
 guidata(hObject, handles);
-%pathuvmat=fileparts(which('uvmat'));
-%addpath(fullfile(pathuvmat,'FIELD_FCT'))
-%loads the information stored in prefdir to initiate the browser and the list of functions
+
+%ACTION menu: builtin fcts
 menu_str={'PLOT';'FFT';'filter_band';'histogram'}; %list of functions included in 'get_field.m'
-nb_builtin=numel(menu_str)-1;
-%menu_str(end)=[];%remove from the list the last option 'more...'
-path_get_field=fileparts(which('get_field'));%path of the function 'get_field'
+nb_builtin=numel(menu_str);
+path_uvmat=fileparts(which('uvmat'));%path of the function 'uvmat'
+addpath(fullfile(path_uvmat,'get_field'))
+testexist=zeros(size(menu_str'));%default
 for ilist=1:length(menu_str)
-    fct_path{ilist,1}=fullfile(path_get_field,'get_field');%paths of the fuctions buil-in in 'get_field.m'
+    if exist(menu_str{ilist},'file')
+        fct_handle{ilist,1}=str2func(menu_str{ilist});
+        testexist(ilist)=1;
+    else
+        fct_handle{ilist,1}=[];
+        testexist(ilist)=0;
+    end
 end
+rmpath(fullfile(path_uvmat,'get_field'))
+
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
 if exist(profil_perso,'file')
@@ -72,22 +80,42 @@ if exist(profil_perso,'file')
      if isfield(h,'get_field_fct') && iscell(h.get_field_fct)
          for ilist=1:length(h.get_field_fct)
             [path,file]=fileparts(h.get_field_fct{ilist});
-            fct_path=[fct_path; {path}];%concatene the list of paths
-            menu_str=[menu_str; {file}];
+            addpath(path)        
+            if exist(file,'file')
+                h_func=str2func(file);
+                testexist=[testexist 1]; 
+             else
+                h_func=[];
+                testexist=[testexist 0]; 
+             end
+             fct_handle=[fct_handle; {h_func}]; %concatene the list of paths
+             rmpath(path)
+             menu_str=[menu_str; {file}]; 
          end
      end
 end
+menu_str=menu_str(testexist==1);%=menu_str(testexist~=0)
+fct_handle=fct_handle(testexist==1);
 menu_str=[menu_str;{'more...'}];
 set(handles.ACTION,'String',menu_str)
-set(handles.ACTION,'UserData',fct_path)% store the list of path in UserData of ACTION  
-ACTION_Callback(hObject, eventdata, handles) 
+set(handles.ACTION,'UserData',fct_handle)% store the list of path in UserData of ACTION
+set(handles.path_action,'String',fullfile(path_uvmat,'get_field'))
+set(handles.ACTION,'Value',1)% PLOT option selected
 set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles})%set mouse click action function
 if exist('filename','var')& ischar(filename)
-    set(handles.inputfile,'String',filename)
+    set(handles.inputfile,'String',filename)% prefill the input file name 
+    set(handles.inputfile,'Enable','off')% desactivate the input file edit box   
+    set(handles.list_fig,'Value',2)% plotting axes =uvmat selected
+    set(handles.list_fig,'Visible','off')% 
+    set(handles.RUN,'Visible','off')% RUN button not visible (passive mode, get_field used to define the field for uvamt)
+    set(handles.MenuOpen,'Visible','off')
+    set(handles.MenuExport,'Visible','off')
+    set(handles.MenuHelp,'Visible','off')
     inputfile_Callback(hObject, eventdata, handles)
 else
     set(handles.inputfile,'String','')   
 end
+%ACTION_Callback(hObject, eventdata, handles) 
 if exist('Field','var') & isstruct(Field)
         Field_input(eventdata,handles,Field)
         if exist('haxes','var')
@@ -193,14 +221,34 @@ if maxdim>=2
     set(handles.check_1Dplot,'Value',0)
     if ~isempty(VarType{imax}.vector_x) && ~isempty(VarType{imax}.vector_y)      
         set(handles.check_vector,'Value',1)
+        set(handles.check_scalar,'Value',0)
         set(handles.vector_x,'Value',VarType{imax}.vector_x)
         set(handles.vector_y,'Value',VarType{imax}.vector_y)
-        set(handles.check_scalar,'Value',0)
+        if ~isempty(VarType{imax}.coord_x) && ~isempty(VarType{imax}.coord_y)
+            set(handles.coord_x_vectors,'Value',VarType{imax}.coord_x+1)
+            set(handles.coord_y_vectors,'Value',VarType{imax}.coord_y+1)
+        end
+        if ~isempty(VarType{imax}.coord) 
+            set(handles.coord_y_vectors,'Value',VarType{imax}.coord(1)+1)
+            if numel(VarType{imax}.coord)>=2
+                set(handles.coord_x_vectors,'Value',VarType{imax}.coord(2)+1)
+            end
+        end
     else
         set(handles.check_scalar,'Value',1)
         set(handles.check_vector,'Value',0)
         if isfield(VarType{imax},'scalar') && length(VarType{imax}.scalar)>=1
             set(handles.scalar,'Value',VarType{imax}.scalar(1))
+            if ~isempty(VarType{imax}.coord_x) && ~isempty(VarType{imax}.coord_y)
+                set(handles.coord_x_scalar,'Value',VarType{imax}.coord_x+1)
+                set(handles.coord_y_scalar,'Value',VarType{imax}.coord_y+1)
+            end
+            if ~isempty(VarType{imax}.coord)
+                set(handles.coord_y_scalar,'Value',VarType{imax}.coord(1)+1)
+                if numel(VarType{imax}.coord)>=2
+                    set(handles.coord_x_scalar,'Value',VarType{imax}.coord(2)+1)
+                end
+            end
         end
     end
     check_1Dplot_Callback(handles.check_1Dplot, eventdata, handles)
@@ -283,73 +331,73 @@ function abscissa_Callback(hObject, eventdata, handles)
 % 
 % update_UserData(handles)
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in scalar menu.
 function scalar_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 Aindex=get(handles.scalar,'Value');
 Astring=get(handles.scalar,'String');
 VarName=Astring{Aindex};
 update_field(hObject, eventdata, handles,VarName)
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in coord_x_scalar.
 function coord_x_scalar_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 index=get(handles.coord_x_scalar,'Value');
 string=get(handles.coord_x_scalar,'String');
 VarName=string{index};
 update_field(hObject, eventdata, handles,VarName)
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in coord_y_scalar.
 function coord_y_scalar_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 index=get(handles.coord_y_scalar,'Value');
 string=get(handles.coord_y_scalar,'String');
 VarName=string{index};
 update_field(hObject, eventdata, handles,VarName)
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in coord_z_scalar.
 function coord_z_scalar_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 index=get(handles.coord_z_scalar,'Value');
 string=get(handles.coord_z_scalar,'String');
 VarName=string{index};
 update_field(hObject, eventdata, handles,VarName)
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in vector_x.
 function vector_x_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 index=get(handles.vector_x,'Value');
 string=get(handles.vector_x,'String');
 VarName=string{index};
 update_field(hObject, eventdata, handles,VarName)
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in vector_y.
 function vector_y_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 index=get(handles.vector_y,'Value');
 string=get(handles.vector_y,'String');
 VarName=string{index};
 update_field(hObject, eventdata, handles,VarName)
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in vector_z.
 function vector_z_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 index=get(handles.vector_z,'Value');
 string=get(handles.vector_z,'String');
 VarName=Astring{index};
 update_field(hObject, eventdata, handles,VarName)
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in coord_x_vectors.
 function coord_x_vectors_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 index=get(handles.coord_x_vectors,'Value');
 string=get(handles.coord_x_vectors,'String');
 VarName=string{index};
@@ -735,30 +783,55 @@ set(hselect_field,'UserData',Field)
 % --- Executes on button press in RUN.
 function RUN_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
-path_get_field=fileparts(which('get_field'));
-list=get(handles.ACTION,'String');
+%path_get_field=fileparts(which('get_field'));
+%list=get(handles.ACTION,'String');
 index=get(handles.ACTION,'Value');
-ACTION=list{index};
-list_path=get(handles.ACTION,'UserData');
-%hselect_field=get(handles.inputfile,'parent');%handle of the get_field interface
-fct_path=list_path{index}; %path stored for the function ACTION
-if ~isequal(fct_path,path_get_field)
-%     eval(['spath=which(''' action ''');']) %spath = current path of the selected function ACTION
-%     if ~isequal(spath,fct_path)& exist(fct_path,'dir')
-        addpath(fct_path)% add the prescribed path if not the current one
-%     end
-end
-% fct_path
-eval(['h_fun=@' ACTION ';'])
-if ~isequal(fct_path,path_get_field)
-        rmpath(fct_path)% add the prescribed path if not the current one    
-end
-
+% ACTION=list{index};
+list_func=get(handles.ACTION,'UserData');
+h_fun=list_func{index};
+% %hselect_field=get(handles.inputfile,'parent');%handle of the get_field interface
+% fct_path=list_path{index}; %path stored for the function ACTION
+% if ~isequal(fct_path,path_get_field)
+%     addpath(fct_path)% add the prescribed path if not the current one
+% end
+% eval(['h_fun=@' ACTION ';'])
+% if ~isequal(fct_path,path_get_field)
+%      rmpath(fct_path)% add the prescribed path if not the current one    
+% end
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
 drawnow
-h_fun(handles.figure1);%handles.figure1 =handles of the GUI get_field
+SubField=h_fun(handles.figure1);%handles.figure1 =handles of the GUI get_field
+if ~isempty(SubField)
+    plot_get_field(SubField,handles)
+end
 browse_fig(handles.list_fig); %update the list of new existing figures
 
+%------------------------------------------------------------------------
+function plot_get_field(SubField,handles)
+%------------------------------------------------------------------------
+list_fig=get(handles.list_fig,'String');
+val=get(handles.list_fig,'Value');
+if strcmp(list_fig{val},'uvmat')
+    set(handles.figure1,'Name','uvmat_field')
+    set(handles.inputfile,'Enable','off')% desactivate the input file edit box   
+%     set(handles.list_fig,'Visible','off')% 
+    set(handles.RUN,'Visible','off')% RUN button not visible (passive mode, get_field used to define the field for uvamt)
+    set(handles.MenuOpen,'Visible','off')
+    set(handles.MenuExport,'Visible','off')
+    uvmat(get(handles.inputfile,'String'))
+else
+    hfig=str2num(list_fig{val});% chosen figure number from tyhe GUI
+    if isempty(hfig)
+        hfig=figure;
+        list_fig=[list_fig;num2str(hfig)];
+        set(handles.list_fig,'String',list_fig);
+        haxes=axes;
+    else
+        figure(hfig);
+    end
+    haxes=findobj(hfig,'Type','axes');
+    plot_field(SubField,haxes) 
+end
 
 %------------------------------------------------
 % --- Executes on button press in Plot_histo.
@@ -1037,19 +1110,8 @@ function check_scalar_Callback(hObject, eventdata, handles)
 val=get(handles.check_scalar,'Value');
 if isequal(val,0)
     set(handles.PanelScalar,'Visible','off')
-%      set(handles.scalar,'Visible','off')
-%     set(handles.ordinate,'Max',2.0)%allow multiple ordinate input option
-%     if isequal(get(handles.check_vector,'Value'),0);
-%         set(handles.coord_z_vectors_scalar,'Visible','off')
-%     end
 else
     set(handles.PanelScalar,'Visible','on')
-%     set(handles.scalar,'Visible','on')
-%     val=get(handles.ordinate,'Value');
-%     val=val(1);
-%     set(handles.ordinate,'Value',val);%suppress multiple ordinates
-%     set(handles.ordinate,'Max',1.0);%suppress multiple ordinate input option
-%       set(handles.coord_z_vectors_scalar,'Visible','on')
 end
 
 %---------------------------
@@ -1061,8 +1123,6 @@ if isequal(val,0)
 else
     set(handles.PanelVectors,'Visible','on')
 end
-
-
 
 %-----------------------------
 function mouse_up_gui(ggg,eventdata,handles)
@@ -1087,36 +1147,20 @@ global nb_builtin
 list_ACTION=get(handles.ACTION,'String');% list menu fields
 index_ACTION=get(handles.ACTION,'Value');% selected string index
 ACTION= list_ACTION{index_ACTION}; % selected string
-path_get_field=which('get_field');%path to series.m
-list_path=get(handles.ACTION,'UserData');
-
-% nb_builtin=0;
-% if iscell(list_path)
-%     for ilist=1:length(list_path)
-%         if isequal(list_path{ilist},path_get_field)
-%             nb_builtin=nb_builtin+1;
-%         else
-%             break
-%         end
-%     end
-% end
-% if nb_builtin==0% the path to get_field has been changed, reinitialize
-%     get_field_OpeningFcn(hObject, eventdata, handles)
-%     return
-% end
-
+list_func_handles=get(handles.ACTION,'UserData');% get list of function handles (full address of the function, including name and path)
+ff=functions(list_func_handles{end});
 % add a new function to the menu
 if isequal(ACTION,'more...')
-    pathfct=fileparts(path_get_field);
-    browse_name=fullfile(path_get_field,'FIELD_FCT');
-    if length(list_path)>nb_builtin
-        browse_name=list_path{end};% initialize browser with  the path of the last introduced function
-    end
+%     pathfct=fileparts(path_get_field);
+%     browse_name=fullfile(path_get_field,'FIELD_FCT');
+%     if length(list_path)>nb_builtin
+%         browse_name=list_path{end};% initialize browser with  the path of the last introduced function
+%     end
     [FileName, PathName] = uigetfile( ...
        {'*.m', ' (*.m)';
         '*.m',  '.m files '; ...
         '*.*', 'All Files (*.*)'}, ...
-        'Pick a file',browse_name);
+        'Pick a file',ff.file);
     if length(FileName)<2
         return
     end
@@ -1125,28 +1169,29 @@ if isequal(ACTION,'more...')
         msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
         return
     end
-%     ACTION=FileName(1:end-2);% ACTION choice updated by the selected item  
+
     % insert the choice in the action menu
    menu_str=update_menu(handles.ACTION,ACTION);%new action menu in which the new item has been appended if needed
    index_ACTION=get(handles.ACTION,'Value');% currently selected index in the list
-   list_path{index_ACTION}=PathName;
+   addpath(PathName)
+   list_func_handles{index_ACTION}=str2func(ACTION);% create the function handle corresponding to the newly seleced function
+   set(handles.ACTION,'UserData',list_func_handles)
+   set(handles.path_action,'enable','inactive')% indicate that the current path is accessible (not 'off')
+   %list_path{index_ACTION}=PathName;
    if length(menu_str)>nb_builtin+5;
        nbremove=length(menu_str)-nb_builtin-5;
        menu_str(nb_builtin+1:end-5)=[];
-       list_path(nb_builtin+1:end-4)=[];
+       list_func_handles(nb_builtin+1:end-4)=[];
        index_ACTION=index_ACTION-nbremove;
        set(handles.ACTION,'Value',index_ACTION)
        set(handles.ACTION,'String',menu_str)
-   end
-   list_path{index_ACTION}=PathName;
-   set(handles.ACTION,'UserData',list_path);
-   set(handles.path_action,'enable','inactive')% indicate that the current path is accessible (not 'off')
-   
+   end   
    %record the current menu in personal file profil_perso
    dir_perso=prefdir;
    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
    for ilist=nb_builtin+1:length(menu_str)-1
-       get_field_fct{ilist-nb_builtin}=fullfile(list_path{ilist},[menu_str{ilist} '.m']);
+       ff=functions(list_func_handles{ilist});
+       get_field_fct{ilist-nb_builtin}=ff.file;
    end
    if exist(profil_perso,'file')
         save(profil_perso,'get_field_fct','-append')
@@ -1162,124 +1207,42 @@ if isequal(ACTION,'more...')
    end
 end
 
-   %check the current path to the selected function
-PathName=list_path{index_ACTION};%current recorded path
-% if ~isequal(path_get_field,PathName)
-%     CurrentPath=fileparts(which(ACTION));
-%     if ~isequal(CurrentPath,PathName)%&&~isequal(CurrentPath,fullfile(PathName,'private'))
-%         addpath(PathName) 
-%         errormsg=check_functions;
-%         msgbox_uvmat('CONFIRMATION',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
-%     end
-% end
-set(handles.path_action,'String',PathName); %show the path to the senlected function 
-    
-    
-%     fct_name=fullfile(PathName, FileName);
-%     if ~exist(fct_name,'file')
-%            msgbox_uvmat('ERROR',['procesing fct ' fct_name ' not found'])
-%     else
-%        ACTION=FileName(1:end-2);% 
-%        menu=update_menu(handles.ACTION,ACTION);%add the selected fct to the menu
-%        index_ACTION=get(handles.ACTION,'Value');% selected string index
-%        list_path{index_ACTION}=PathName;
-%        set(handles.ACTION,'UserData',list_path)
-%        if exist(profil_perso,'file')
-%             save (profil_perso,'coord_fct','-append'); %store the root name for future opening of uvmat
-%         end
-%     end   
-%     
-%     
-%     fileinput=FileName;%complete file name 
-%     eval(['spath=which(''' FileName ''');'])% current path to the function FileName
-%     if ~isequal(spath,PathName)
-%         addpath(PathName)
-%     end
-%     FileName([end-1:end])=[];
-%     
-%    % insert the choice in the action menu
-%     nbACTION=length(list_ACTION);
-%     index=0;
-%     for ilist=1:nbACTION
-%        if isequal(FileName,list_ACTION{ilist})%look for the selected scalar in the fields_input menu
-%             index=ilist;% 
-%        end
-%     end
-%     if index==0
-%        list_ACTION{nbACTION}=FileName; %put the chosen fct at the penultimate place in the fields_input menu
-%        list_path{nbACTION}=PathName;
-%        index=nbACTION;
-%        list_ACTION{nbACTION+1}='more...';
-%        set(handles.ACTION,'String',list_ACTION)
-%     end
-%     set(handles.ACTION,'Value',index);% store the selected scalar type
-%     set(handles.ACTION,'UserData',list_path);
-%     usr_defined_fct=fct_name;
-%     nbmenu=length(list_ACTION);
-%     nbadd=nbmenu-5;
-%     ilist=0;
-%     for imenu=nbmenu-min(4,nbadd):nbmenu-1
-%       ilist=ilist+1;
-%       fct_get_field{ilist,1}=list_ACTION{imenu};
-%       fct_path_get_field{ilist}=list_path{imenu};
-%     end
-%     if exist(profil_perso,'file')
-%         save(profil_perso,'usr_defined_fct','fct_get_field','fct_path_get_field','-append')
-%     else
-%        save(profil_perso,'usr_defined_fct','fct_get_field','fct_path_get_field','-V6')
-%     end
-% end
+%check the current path to the selected function
+h_fun=list_func_handles{index_ACTION};
+if isa(h_fun,'function_handle')
+    func=functions(h_fun);
+    set(handles.path_action,'String',fileparts(func.file)); %show the path to the senlected function
+    GUI_input=h_fun();%handles.figure1 =handles of the GUI get_field
+else
+    set(handles.path_action,'String','')
+    msgbox_uvmat('ERROR','unknown path to ACTION function, reload it')
+    return
+end
 
-% %check the current path to the selected function
-% list_path
-% PathName=list_path{index_ACTION}
-% CurrentPath=fileparts(which(ACTION))
-% if ~isequal(PathName,CurrentPath)
-%     addpath(PathName) 
-%     errormsg=check_functions;
-%     msgbox_uvmat('WARNING',[['path ' PathName ' added to the current Matlab pathes'];errormsg])
-% end
-% set(handles.path_action,'String',fullfile(PathName,' ')); %show the path to the senlected function
-
-%default setting for the visibility of the GUI elements*
-if ~isequal(ACTION,'PLOT')
-    varargout=feval(ACTION);% input list asked by the selected function
-    test_1Dplot=[];
-    test_scalar=[];
-    test_vector=[];
-    for ilist=1:length(varargout)
-        switch varargout{ilist,1}
+%prepare the GUI options for the selected ACTION
+test_1Dplot=0;
+test_scalar=0;
+test_vector=0;
+if iscell(GUI_input)
+    for ilist=1:length(GUI_input)
+        switch GUI_input{ilist}
                            %RootFile always visible
             case 'check_1Dplot'   
-                 test_1Dplot=isequal(lower(varargout{ilist,2}),'y');
+                 test_1Dplot=1;
             case 'check_scalar'
-                 test_scalar=isequal(lower(varargout{ilist,2}),'y');   
+                 test_scalar=1;   
             case 'check_vector'   
-                 test_vector=isequal(lower(varargout{ilist,2}),'y'); 
+                 test_vector=1; 
         end
     end
-    if test_1Dplot==0
-        set(handles.check_1Dplot,'Value',0);
-    end
-    if test_1Dplot==1
-        set(handles.check_1Dplot,'Value',1);
-    end
-    if test_scalar==0
-        set(handles.check_scalar,'Value',0); 
-    end
-    if test_scalar==1
-        set(handles.check_scalar,'Value',1); 
-    end
-    if test_vector==0
-        set(handles.check_vector,'Value',0);
-    end
-    if test_vector==1
-        set(handles.check_vector,'Value',1);
-    end
-    check_1Dplot_Callback(hObject, eventdata, handles)
-    check_scalar_Callback(hObject, eventdata, handles)
-    check_vector_Callback(hObject, eventdata, handles)
 end
+set(handles.check_1Dplot,'Value',test_1Dplot);
+set(handles.check_scalar,'Value',test_scalar); 
+set(handles.check_vector,'Value',test_vector);
+check_1Dplot_Callback(hObject, eventdata, handles)
+check_scalar_Callback(hObject, eventdata, handles)
+check_vector_Callback(hObject, eventdata, handles)
+
 
 %-----------------------------------------------------
 % --- browse existing figures
@@ -1461,16 +1424,6 @@ else
         save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5'); %store the file names for future opening of uvmat
     end
 end
-
-% %store input file in personal file uvmat_perso.mat
-% dir_perso=prefdir;
-% profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-% if exist(profil_perso,'file')
-%     save (profil_perso,'RootPath','SubDir','RootFile','NomType', 'ext','-append'); %store the root name for future opening of uvmat
-% else
-%    save (profil_perso,'RootPath','SubDir','RootFile','NomType', 'ext'); %store the root name for future opening of uvmat 
-% end   
-
 
 % --------------------------------------------------------------------
 function MenuFile_1_Callback(hObject, eventdata, handles)

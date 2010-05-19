@@ -1,13 +1,13 @@
 %'mouse_up': function  activated when the mouse button is released
-%----------------------------------------------------------------
+%------------------------------------------------------------------------
 % function mouse_up(hObject,eventdata,handles)
 % activated by the command:
 % set(hObject,'WindowButtonUpFcn',{'mouse_up'}), 
 % where hObject is the handle of the figure
-%
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %     This file is part of the toolbox UVMAT.
 % 
 %     UVMAT is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
-%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function mouse_up(hObject,eventdata,handles)
 MouseAction='none'; %default
@@ -343,14 +343,14 @@ if isequal(get(currentfig,'SelectionType'),'alt') && ~zoomstate && (~isfield(Axe
         currentobj=gco;%default
     end
     if ((nbselect==0) && isequal(get(currentobj,'Type'),'axes')) || isequal(currentobj,huvmat)
-        global CurData
-        CurData=get(currentobj,'UserData');
+        global Data_uvmat
+        Data_uvmat=get(currentobj,'UserData');
         %plot_text(CurData)
         %get_field([],CurData);
-        evalin('base','global CurData')%make CurData global in the workspace
+        evalin('base','global Data_uvmat')%make CurData global in the workspace
         objtype=get(currentobj,'Type');
         display(['UserData of ' objtype ':'])
-        evalin('base','CurData') %display CurData in the workspace
+        evalin('base','Data_uvmat') %display CurData in the workspace
         commandwindow %brings the Matlab command window to the front
     end
 end

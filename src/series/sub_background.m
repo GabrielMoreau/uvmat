@@ -64,6 +64,8 @@ end
 %determine input image type
 FileType=[];%default
 MovieObject=[];
+FileExt=Series.FileExt;
+
 if isequal(lower(FileExt),'.avi')
     hhh=which('mmreader');
     if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
@@ -77,7 +79,7 @@ elseif isequal(lower(FileExt),'.vol')
 else 
    form=imformats(FileExt(2:end));
    if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-       if isequal(NomType,'*');
+       if isequal(Series.NomType,'*');
            FileType='multimage';
        else
            FileType='image';
@@ -236,7 +238,7 @@ for islice=1:nbslice_i
     for ifield = 1:nbaver_ima
         ifile=indselect(ifield);
         filename=name_generator(filebase,num_i1(ifile),num_j1(ifile),Series.FileExt,Series.NomType);
-        Aread=read_image(filename,FileType,num_i1(ifile),movieobject);
+        Aread=read_image(filename,FileType,num_i1(ifile),MovieObject);
         Ak(:,:,ifield)=Aread;           
     end
     Asort=sort(Ak,3);%sort the luminosity of images at each point
@@ -271,7 +273,7 @@ for islice=1:nbslice_i
                 for iburst=1:step
                     ifile=indselect(ifield+step*floor(nbaver/2)+iburst-1);
                     filename=name_generator(filebase,num_i1(ifile),num_j1(ifile),Series.FileExt,Series.NomType);
-                    Aread=read_image(filename,FileType,num_i1(ifile),movieobject);
+                    Aread=read_image(filename,FileType,num_i1(ifile),MovieObject);
                     Ak(:,:,nbaver_ima-step+iburst)=Aread;
                 end
                 Asort=sort(Ak,3);%sort the new current image series by luminosity
@@ -315,12 +317,12 @@ update_waitbar(hseries.waitbar,WaitbarPos,1)
 
 %------------------------------------------------------------------------
 %--read images and convert them to the uint16 format used for PIV
-function A=read_image(filename,type_ima,num,movieobject)
+function A=read_image(filename,type_ima,num,MovieObject)
 %------------------------------------------------------------------------
 %num is the view number needed for an avi movie
 switch type_ima
     case 'movie'
-        A=read(movieobject,num);
+        A=read(MovieObject,num);
     case 'avi'
         mov=aviread(filename,num);
         A=frame2im(mov(1));

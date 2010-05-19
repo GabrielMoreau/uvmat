@@ -164,11 +164,12 @@
 % To each projection object #iobj, corresponds an axis
 % Object{iobj}.plotaxes and nbobj representation graphs  Object{iobj}.plothandles(:) (where nbobj is the
 % nbre of current objects opened in uvmat. Note that Object{iobj}.plothandles(iobj)=[] : an object is not represented in its own projection field;
-%-------------------------------------------------------------------
-%-------------------------------------------------------------------
+
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
 %  I - MAIN FUNCTION UVMAT (DO NOT MODIFY)
-%-------------------------------------------------------------------
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
 function varargout = uvmat(varargin)
 
 % Begin initialization code - DO NOT EDIT
@@ -190,10 +191,10 @@ else
 end
 % End initialization code - DO NOT EDIT
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes just before uvmat is made visible.
 function uvmat_OpeningFcn(hObject, eventdata, handles, input )
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 global nb_builtin
 
 % Choose default command menuline output for uvmat
@@ -220,7 +221,16 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action functio
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
 set(hObject,'DeleteFcn',{@closefcn})%
 
-%TRANSFORM menu: loads the information stored in prefdir to initiate the browser and the list of functions
+%refresh projection plane
+UvData.Object{1}.Style='plane';%main plotting plane
+UvData.Object{1}.ProjMode='projection';%main plotting plane
+if ~isfield(UvData.Object{1},'plotaxes')
+    UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis
+    set(handles.list_object_1,'Value',1);
+    set(handles.list_object_1,'String',{'1-PLANE'});
+end
+
+%TRANSFORM menu: builtin fcts
 menu_str={'';'phys';'px';'phys_polar'};
 nb_builtin=numel(menu_str); %number of functions
 path_uvmat=fileparts(which('uvmat'));
@@ -237,15 +247,6 @@ for ilist=2:length(menu_str)
     end
 end
 rmpath(fullfile(path_uvmat,'transform_field'))
-
-%refresh projection plane
-UvData.Object{1}.Style='plane';%main plotting plane
-UvData.Object{1}.ProjMode='projection';%main plotting plane
-if ~isfield(UvData.Object{1},'plotaxes')
-    UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis
-    set(handles.list_object_1,'Value',1);
-    set(handles.list_object_1,'String',{'1-PLANE'});
-end
 
 %load the list of previously browsed files in menus Open and Open_1
  dir_perso=prefdir; % path to the directory .matlab for personal data
@@ -278,14 +279,14 @@ end
              addpath(path)
              if exist(file,'file')
                 h_func=str2func(file);
-                testexist=[testexist 1]; %#ok<AGROW>
+                testexist=[testexist 1]; 
              else
                 h_func=[];
-                testexist=[testexist 0];  %#ok<AGROW>
+                testexist=[testexist 0]; 
              end
-             fct_handle=[fct_handle; {h_func}];%#ok<AGROW> %concatene the list of paths
+             fct_handle=[fct_handle; {h_func}]; %concatene the list of paths
              rmpath(path)
-             menu_str=[menu_str; {file}]; %#ok<AGROW>
+             menu_str=[menu_str; {file}]; 
          end
       end
  end
@@ -343,7 +344,6 @@ if exist('input','var')
     if ~isempty(Field)
         set(handles.Fields,'Value',1)
         set(handles.Fields,'String',{'get_field...'})    
-       % set(handles.Fields,'UserData',Field)
         testinputfield=1;
         
         % set the colorbar position on the interface:
@@ -576,9 +576,9 @@ switch ext_test
         if get(handles.SubField,'Value')==1% if the subfield button is activated, update the field numbers
             [ff,rr,FileBase_1,ii,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
             NomType_1=get(handles.FileIndex_1,'UserData');     
-            FileName_1=name_generator(FileBase_1,stra2num(i1),stra2num(i2),FileExt_1,NomType_1,1,stra2num(str_a),stra2num(str_b),SubDir_1);
+            FileName_1=name_generator(FileBase_1,str2double(i1),str2double(i2),FileExt_1,NomType_1,1,stra2num(str_a),stra2num(str_b),SubDir_1);
             if exist(FileName_1,'file')
-                FileIndex_1=name_generator('',stra2num(i1),stra2num(i2),'',NomType_1,1,stra2num(str_a),stra2num(str_b),'');
+                FileIndex_1=name_generator('',str2double(i1),str2double(i2),'',NomType_1,1,stra2num(str_a),stra2num(str_b),'');
                 set(handles.FileIndex_1,'String',FileIndex_1)
             else
                 set(handles.SubField,'Value',0)
@@ -607,30 +607,30 @@ switch ext_test
        msgbox_uvmat('ERROR',['invalid input file extension' ext])
 end
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function RootPath_Callback(hObject,eventdata,handles)
+%------------------------------------------------------------------------
 update_rootinfo(hObject,eventdata,handles);
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 %-- called by action in RootFile edit box
-%-------------------------------------------------------------------
 function SubDir_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 %refresh the menu of input fields
 Fields_Callback(hObject, eventdata, handles);
 % refresh the current field
 run0_Callback(hObject, eventdata, handles); 
 
-
-%-------------------------------------------------------------------
-%-- called by action in RootFile edit box
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
+% --- called by action in RootFile edit box
 function RootFile_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 update_rootinfo(hObject,eventdata,handles)
 
-%-------------------------------------------------------------------
-%-- called by action in FileIndex edit box
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
+% --- called by action in FileIndex edit box
 function FileIndex_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 FileIndices=get(handles.FileIndex,'String');
 if isempty(str2num(FileIndices))
     [pp,ff,str1,str2,str_a,str_b]=name2display(FileIndices);
@@ -646,30 +646,16 @@ set(handles.j1,'String',str_a);
 set(handles.j2,'String',str_b);
 run0_Callback(hObject, eventdata, handles)
 
-%-------------------------------------------------------------------
-%-- called by action in FileIndex_1 edit box
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
+% --- called by action in FileIndex_1 edit box
 function FileIndex_1_Callback(hObject, eventdata, handles)
-% FileIndices=get(handles.FileIndex_1,'String');
-% if isempty(str2num(FileIndices))
-%     [pp,ff,str1,str2,str_a,str_b]=name2display(FileIndices)
-% else
-%     str1=FileIndices;
-%     str2='';
-%     str_a='';
-%     str_b='';
-% end
-% set(handles.i1,'String',str1);
-% set(handles.i2,'String',str2);
-% set(handles.j1,'String',str_a);
-% set(handles.j2,'String',str_b);
+%------------------------------------------------------------------------
 run0_Callback(hObject, eventdata, handles)
 
-%-------------------------------------------------------------------
-% -- update information about a new field series (indices to scan, timing, calibration from an xml file, then refresh current plots
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
+% --- update information about a new field series (indices to scan, timing, calibration from an xml file, then refresh current plots
 function update_rootinfo(hObject,eventdata,handles)
-
+%------------------------------------------------------------------------
 set(handles.RootPath,'BackgroundColor',[1 1 0])
 drawnow
 set(handles.Fields,'UserData',[])% reinialize data from uvmat opening
@@ -677,7 +663,6 @@ UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for run0: begin a new series
 UvData.TestInputFile=1;
 set(handles.fix_pair,'Value',1) % activate by default the comp_input '-'input window
-%FileIndex_Callback(hObject, eventdata, handles)% update field counters
 
 [FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes(handles);
 if ~exist(FileName,'file')
@@ -692,20 +677,19 @@ XmlData.Time=[];%default
 XmlData.GeometryCalib=[];%default
 TimeUnit=[];%default
 testima=0; %test for image input
+imainfo=[];
+ColorType='falsecolor'; %default
+hhh='';
 if isequal(lower(FileExt),'.avi') %.avi file
     testima=1;
-    info=aviinfo([FileBase FileIndices FileExt]);
-    nbfield=info.NumFrames;
+    imainfo=aviinfo([FileBase FileIndices FileExt]);
+    nbfield=imainfo.NumFrames;
     nburst=1;
-    set(handles.Dt_txt,'String',['Dt=' num2str(1000/info.FramesPerSecond) 'ms']);%display the elementary time interval in millisec
-    XmlData.Time=(0:1/info.FramesPerSecond:(info.NumFrames-1)/info.FramesPerSecond)';
+    set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FramesPerSecond) 'ms']);%display the elementary time interval in millisec
+    XmlData.Time=(0:1/imainfo.FramesPerSecond:(imainfo.NumFrames-1)/imainfo.FramesPerSecond)';
     TimeUnit='s';
-    set(handles.npx,'String',num2str(info.Width));%fills nbre of pixels x box
-    set(handles.npy,'String',num2str(info.Height));%fills nbre of pixels y box
     hhh=which('mmreader');
-    if ~isequal(hhh,'')&& mmreader.isPlatformSupported()% if the function is found (recent version of matlab)
-        UvData.MovieObject=mmreader([FileBase FileIndices FileExt]);
-    end
+    ColorType=imainfo.ImageType;%='truecolor' for color images
 elseif ~isempty(imformats(FileExt(2:end))) || isequal(FileExt,'.vol')%&& isequal(NomType,'*')% multi-frame image
     testima=1;
     if ~isequal(SubDir,'')
@@ -714,21 +698,25 @@ elseif ~isempty(imformats(FileExt(2:end))) || isequal(FileExt,'.vol')%&& isequal
     else
         imainfo=imfinfo([FileBase FileIndices FileExt]);
     end
+    ColorType=imainfo.ColorType;%='truecolor' for color images
     if length(imainfo) >1 %case of image with multiple frames
         nbfield=length(imainfo);
         nburst=1;
     end 
-    if isfield(UvData,'MovieObject')
-        UvData=rmfield(UvData,'MovieObject');
-    end
-else 
-    %set(handles.last_i,'String','');%fills last_field box
-    set(handles.npx,'String','');%fills nbre of pixels x box
-    set(handles.npy,'String','');%fills nbre of pixels y box
-    if isfield(UvData,'MovieObject')
-        UvData=rmfield(UvData,'MovieObject');
-    end
 end
+if ~strcmp(hhh,'')&& mmreader.isPlatformSupported()% if the function is found (recent version of matlab)
+    UvData.MovieObject=mmreader([FileBase FileIndices FileExt]);
+elseif isfield(UvData,'MovieObject')
+    UvData=rmfield(UvData,'MovieObject');
+end
+if isfield(imainfo,'Width') && isfield(imainfo,'Height')
+    set(handles.npx,'String',num2str(imainfo.Width));%fills nbre of pixels x box
+    set(handles.npy,'String',num2str(imainfo.Height));%fills nbre of pixels x box
+else
+    set(handles.npx,'String','');%fills nbre of pixels x box
+    set(handles.npy,'String','');%fills nbre of pixels x box
+end
+set(handles.BW,'Value',strcmp(ColorType,'grayscale'))% select handles.BW if grayscale image
 
 % read parameters (time, geometric calibration..) from a documentation file (.xml advised)
 filexml=[FileBase '.xml'];
@@ -820,8 +808,8 @@ if isfield(XmlData,'GeometryCalib')
         set(handles.pycm,'String','')
         set(handles.transform_fct,'Value',1); %  no transform by default
     else
-        if (isfield(GeometryCalib,'R')& ~isequal(GeometryCalib.R(2,1),0) & ~isequal(GeometryCalib.R(1,2),0)) |...
-            (isfield(GeometryCalib,'kappa1')& ~isequal(GeometryCalib.kappa1,0))
+        if (isfield(GeometryCalib,'R')&& ~isequal(GeometryCalib.R(2,1),0) && ~isequal(GeometryCalib.R(1,2),0)) |...
+            (isfield(GeometryCalib,'kappa1')&& ~isequal(GeometryCalib.kappa1,0))
             set(handles.pxcm,'String','var')
             set(handles.pycm,'String','var')
         else
@@ -834,6 +822,7 @@ if isfield(XmlData,'GeometryCalib')
             set(handles.transform_fct,'Value',2); % phys transform by default if fixedLimits is off
         end
         if isfield(GeometryCalib,'SliceCoord')
+            
            siz=size(GeometryCalib.SliceCoord);
            if siz(1)>1
                NbSlice=siz(1);
@@ -846,20 +835,14 @@ if isfield(XmlData,'GeometryCalib')
                set(handles.nb_slice,'String',num2str(NbSlice))
            end
            slices_Callback(hObject, eventdata, handles)
-    %        Coord=UvData.XmlData.GeometryCalib.SliceCoord;
-    %        ZIndex=num_i1-NbSlice*(floor((num_i1-1)/NbSlice));
-        end
-
-            
+        end           
     end
 end
 
 %update the data attached to the uvmat interface
-% set(handles.nb_slice,'String',num2str(NbSlice)) 
 if ~isempty(TimeUnit)
     set(handles.time_txt,'String',['time (' TimeUnit ')'])
 end
-%set(handles.DtUnit,'String',['10^(-3)' TimeUnit])
 UvData.TimeUnit=TimeUnit;
 UvData.XmlData=XmlData;
 UvData.NewSeries=1;
@@ -985,7 +968,7 @@ if ~isempty(testblank)
     return
 end
 sizf=size(fileinput_1);
-if (~ischar(fileinput_1)|~isequal(sizf(1),1)),return;end
+if (~ischar(fileinput_1)||~isequal(sizf(1),1)),return;end
 
 % refresh the current displayed field
 display_file_name_1(hObject,eventdata,handles,fileinput_1)
@@ -1196,34 +1179,44 @@ if isfield(UvData,'TimeUnit')
     TimeUnit=UvData.TimeUnit;
 end
 TimeUnit_1=[];
-% testima=0; %test for image input
+hhh='';%default, test for  movie reading with mmreader
+imainfo=[];
 if isequal(lower(FileExt),'.avi') %.avi file
-%     testima=1;
-    info=aviinfo([FileBase FileIndices FileExt]);
-    nbfield_1=info.NumFrames;
+    imainfo=aviinfo([FileBase FileIndices FileExt]);
+    nbfield_1=imainfo.NumFrames;
     nburst_1=1;
-    %set(handles.last_i,'String',num2str(info.NumFrames));%fills last_field box
     set(handles.Dt_txt,'String',['Dt=' num2str(1000/info.FramesPerSecond) 'ms']);%display the elementary time interval in millisec
-%     set(handles.dt,'UserData',info.FramesPerSecond);
-    time=[0:1/info.FramesPerSecond:(info.NumFrames-1)/info.FramesPerSecond]';
-    npx=get(handles.npx,'String');
-    npy=get(handles.npy,'String');
-    if isequal(npx,'') || isequal(npy,'')
-        set(handles.npx,'String',num2str(info.Width));%fills nbre of pixels x box
-        set(handles.npy,'String',num2str(info.Height));%fills nbre of pixels y box
-    end
-elseif ~isempty(imformats(FileExt(2:end))) %&& isequal(NomType,'*')% multi-frame image
+    time=[0:1/imainfo.FramesPerSecond:(imainfo.NumFrames-1)/imainfo.FramesPerSecond]';
+    ColorType=imainfo.ImageType;%='truecolor' for color images
+    hhh=which('mmreader');
+elseif ~isempty(imformats(FileExt(2:end)))|| isequal(FileExt,'.vol')
     testima=1;
-    imainfo=imfinfo([FileBase FileIndices FileExt]);  
+    if ~isequal(SubDir,'')
+        RootFile=get(handles.RootFile,'String');
+        imainfo=imfinfo([fullfile(RootPath,SubDir,RootFile) FileIndices FileExt]);
+    else
+        imainfo=imfinfo([FileBase FileIndices FileExt]);
+    end
+    ColorType=imainfo.ColorType;%='truecolor' for color images
     if length(imainfo) >1 %case of image with multiple frames
         nbfield_1=length(imainfo);
         nburst_1=1;
-        %set(handles.last_i,'String',num2str(length(imainfo)));%fills last_field box
-    end       
-else 
-    %set(handles.last_i,'String','');%fills last_field box
-    set(handles.npx,'String','');%fills nbre of pixels x box
-    set(handles.npy,'String','');%fills nbre of pixels y box 
+    end 
+end
+if ~strcmp(hhh,'')&& mmreader.isPlatformSupported()% if the function is found (recent version of matlab)
+    UvData.MovieObject_1=mmreader([FileBase FileIndices FileExt]);
+elseif isfield(UvData,'MovieObject_1')
+    UvData=rmfield(UvData,'MovieObject_1');
+end
+if strcmp(get(handles.npx,'String'),'') || strcmp(get(handles.npy,'String'),'')%update npx and npy if it is not already filled by the first input field
+    if  isfield(imainfo,'Width') && isfield(imainfo,'Height')
+        set(handles.npx,'String',num2str(imainfo.Width));%fills nbre of pixels x box
+        set(handles.npy,'String',num2str(imainfo.Height));%fills nbre of pixels x box
+    else
+        set(handles.npx,'String','');%fills nbre of pixels x box
+        set(handles.npy,'String','');%fills nbre of pixels x box
+    end
+    set(handles.BW,'Value',strcmp(ColorType,'grayscale'))% select handles.BW if grayscale image
 end
 
 % find scaling parameters
@@ -1848,11 +1841,11 @@ else
     end
 end
 
-num_i1=stra2num(get(handles.i1,'String'));
+num_i1=str2double(get(handles.i1,'String'));
 num_j1=stra2num(get(handles.j1,'String'));
-num_i2=stra2num(get(handles.i2,'String'));
+num_i2=str2double(get(handles.i2,'String'));
 num_j2=stra2num(get(handles.j2,'String'));
-if isempty(num_j2)
+if isnan(num_j2)
     if isempty(num_i2)   
         msgbox_uvmat('ERROR', 'a second image index i2 or j2 is needed to show the pair as a movie')
         set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
@@ -1861,7 +1854,7 @@ if isempty(num_j2)
         num_j2=num_j1;%repeat the index i1 by default
     end
 end
-if isempty(num_i2)
+if isnan(num_i2)
     num_i2=num_i1;%repeat the index i1 by default
 end
 imaname_1=name_generator(filebase,num_i2,num_j2,Ext,NomType);
@@ -2237,25 +2230,22 @@ if (~isempty(filename)&& isequal(FileType,'netcdf')) || (~isempty(filename_1)&& 
     end
     if isequal(FileType,'netcdf')  %read the first nc field
         if isequal(FieldName,'get_field...')% read the field names on the interface get_field.
-            %VelType=get(handles.Fields,'UserData');
-            hget_field=findobj(allchild(0),'Name','get_field')%find the get_field... GUI
+            hget_field=findobj(allchild(0),'Name','uvmat_field');%find the get_field... GUI
             if isempty(hget_field)
-                hget_field= get_field(filename);%open the get_field GUI    
-            end
-            if numel(hget_field)>1%case of several get_field GUI
-                hget_field=hget_field(1);
+                hget_field= get_field(filename);%open the get_field GUI   
+                set(hget_field,'name','uvmat_field')
+            elseif UvData.NewSeries
+                delete(hget_field)
+                hget_field= get_field(filename);%open the get_field GUI 
+                set(hget_field,'name','uvmat_field')
             end
             hhget_field=guidata(hget_field);
-            set(hhget_field.inputfile,'String',filename)% update the list of input fields in get_field
-            set(hhget_field.ACTION,'Value',1)% PLOT option selected
-            set(hhget_field.list_fig,'Value',2)% plotting axes =uvmat selected
-            [Field{1},errormsg]=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
-            if ~isempty(errormsg)
-                errormsg=['error in uvmat/run0_Callback/read_get_field: ' errormsg];
-                return
-            end
+            funct_list=get(hhget_field.ACTION,'UserData');
+            funct_index=get(hhget_field.ACTION,'Value');
+            funct=funct_list{funct_index};
+            Field{1}=funct(hget_field); %read the names of the variables to plot in the get_field GUI
             CivStage=0;
-            VelType_out=[];         
+            VelType_out=[];    
         else
             [Field{1},VelType_out]=read_civxdata(filename,InputField,VelType);
             if isfield(Field{1},'Txt')
@@ -2268,39 +2258,16 @@ if (~isempty(filename)&& isequal(FileType,'netcdf')) || (~isempty(filename_1)&& 
     end
     if ~isempty(filename_1) && ~test_keepdata_1 && isequal(FileType_1,'netcdf') %read the second file
         if isequal(FieldName_1,'get_field...')% read the field names on the interface get_field.
-            hget_field=findobj(allchild(0),'Name','get_field_1');%find the get_field... GUI
-             if isempty(hget_field)
-                 hget_field= get_field(filename_1);%open the get_field GUI
-                 set(hget_field,'name','get_field_1')
-%                 enable_transform(handles,'off')% no field transform (possible transform in the GUI get_field)
-             end
-            hhget_field=guidata(hget_field);%handles of GUI elements in get_field
-            SubField=get_field('read_var_names',hObject,eventdata,hhget_field); %read the names of the variables to plot in the get_field GUI 
-            [Field{2},var_detect]=nc2struct(filename_1,SubField.ListVarName); %read the corresponding input data                
-            Field{2}.VarAttribute=SubField.VarAttribute;
-            %update the display on get_field
-            set(hhget_field.inputfile,'String',filename_1)
-            set(hhget_field.variables,'Value',1)
-            Tabchar={''};%default
-            Tabcell=[];
-            if isfield(Field{2},'ListGlobalAttribute')& ~isempty(Field{2}.ListGlobalAttribute)
-                for iline=1:length(Field{2}.ListGlobalAttribute)
-                    Tabcell{iline,1}=Field{2}.ListGlobalAttribute{iline};
-                    if isfield(Field{2}, Field{2}.ListGlobalAttribute{iline})
-                        eval(['val=Field{2}.' Field{2}.ListGlobalAttribute{iline} ';'])
-                        if ischar(val);
-                            Tabcell{iline,2}=val;
-                        else
-                            Tabcell{iline,2}=num2str(val);
-                        end
-                    end
-                end
-                if ~isempty(Tabcell)
-                    Tabchar=cell2tab(Tabcell,'=');
-                    Tabchar=[{''};Tabchar];
-                end
+            hget_field_1=findobj(allchild(0),'Name','uvmat_field_1');%find the get_field... GUI
+            if isempty(hget_field_1)
+                 hget_field_1= get_field(filename_1);%open the get_field GUI
+                 set(hget_field_1,'name','uvmat_field_1')
             end
-            set(hhget_field.attributes,'String',Tabchar);%update list of global attributes in get_field 
+            hhget_field_1=guidata(hget_field_1);%handles of GUI elements in get_field
+            funct_list=get(hhget_field_1.ACTION,'UserData');
+            funct_index=get(hhget_field_1.ACTION,'Value');
+            funct=funct_list{funct_index};
+            Field{2}=funct(hget_field_1); %read the names of the variables to plot in the get_field GUI
         else
             [Field{2},VelType_out_1]=read_civxdata(filename_1,InputField_1,VelType_1);
             CivStage_1=Field{2}.CivStage;
@@ -2378,13 +2345,9 @@ if ~isempty(filename) &&(~isfield(UvData,'NbDim') || isequal(UvData.NbDim,2))&&.
        siz=size(UvData.XmlData.GeometryCalib.SliceCoord);
        if siz(1)>1
            NbSlice=siz(1);
-%            set(handles.slices,'Visible','on')
-%            set(handles.slices,'Value',1)
        else
            NbSlice=1;
        end
-       %set(handles.nb_slice,'String',num2str(NbSlice))
-%        slices_Callback(handles.uvmat, [], handles)
 end
 
 %store the current open names, fields and vel types in uvmat interface 
@@ -2509,7 +2472,7 @@ if test_x
     end
 end
 %case of structured coordinates
-if isfield(UvData.Field,'AX') & isfield(UvData.Field,'AY')& isfield(UvData.Field,'A')
+if isfield(UvData.Field,'AX') && isfield(UvData.Field,'AY')&& isfield(UvData.Field,'A')
     UvData.XMax=max(UvData.Field.AX);
     UvData.XMin=min(UvData.Field.AX);
     UvData.YMax=max(UvData.Field.AY);
@@ -2517,7 +2480,7 @@ if isfield(UvData.Field,'AX') & isfield(UvData.Field,'AY')& isfield(UvData.Field
     np_A=size(UvData.Field.A);
     UvData.Mesh=sqrt((UvData.XMax-UvData.XMin)*(UvData.YMax-UvData.YMin)/((np_A(1)-1) * (np_A(2)-1))) ; 
 end
-if  isempty(coord_x)&~isempty(CellVarIndex)
+if  isempty(coord_x) && ~isempty(CellVarIndex)
     VarIndex=CellVarIndex{imax}; % list of variable indices
     DimIndex=UvData.Field.VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
     if NbDim==3
@@ -2639,11 +2602,6 @@ for imap=1:numel(IndexObj)
     if ~isempty(UvData.Object{iobj})%& isfield(Object{iobj},'plotaxes')& ishandle(Object{iobj}.plotaxes)
         %Projeter les champs sur l'objet:*
         ObjectData=proj_field(UvData.Field,UvData.Object{iobj},iobj);
-%         if imap==2
-%             UvData.ProjField_2=ObjectData;%store the projection field on uvmat: ***** WILL REPLACE THE FIELD SORED ON THE AXES: AxeData *****
-%         else
-%             UvData.ProjField_1=ObjectData;%store the projection field on view_field
-%         end
         %use of mask
         if isfield(ObjectData,'NbDim')&isequal(ObjectData.NbDim,2)
             if isfield(ObjectData,'Mask') & isfield(ObjectData,'A')
@@ -2777,13 +2735,13 @@ end
 %display time
 testimedoc=0;
 if isfield(UvData,'XmlData') && isfield(UvData.XmlData,'Time')
-    if isempty(num_i2)
+    if isempty(num_i2)||isnan(num_i2)
         num_i2=num_i1;
     end
-    if isempty(num_j1)
+    if isempty(num_j1)||isnan(num_j1)
         num_j1=1;
     end
-    if isempty(num_j2)
+    if isempty(num_j2)||isnan(num_j2)
         num_j2=num_j1;
     end
     siz=size(UvData.XmlData.Time);
@@ -2827,7 +2785,53 @@ else
         set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' UvData.TimeUnit] )
     end
 end
-
+%update the input file name in the get_field GUI
+if isequal(FieldName,'get_field...')
+    set(hhget_field.inputfile,'String',filename)
+    Tabchar={''};%default
+    Tabcell=[];
+    if isfield(Field{1},'ListGlobalAttribute')& ~isempty(Field{1}.ListGlobalAttribute)
+        for iline=1:length(Field{1}.ListGlobalAttribute)
+            Tabcell{iline,1}=Field{1}.ListGlobalAttribute{iline};
+            if isfield(Field{1}, Field{1}.ListGlobalAttribute{iline})
+                eval(['val=Field{1}.' Field{1}.ListGlobalAttribute{iline} ';'])
+                if ischar(val);
+                    Tabcell{iline,2}=val;
+                else
+                    Tabcell{iline,2}=num2str(val);
+                end
+            end
+        end
+        if ~isempty(Tabcell)
+            Tabchar=cell2tab(Tabcell,'=');
+            Tabchar=[{''};Tabchar];
+        end
+    end
+    set(hhget_field.attributes,'String',Tabchar);%update list of global attributes in get_field 
+end
+if isequal(FieldName_1,'get_field...')
+    set(hhget_field_1.inputfile,'String',filename_1)
+    Tabchar={''};%default
+    Tabcell=[];
+    if isfield(Field{2},'ListGlobalAttribute')& ~isempty(Field{2}.ListGlobalAttribute)
+        for iline=1:length(Field{2}.ListGlobalAttribute)
+            Tabcell{iline,1}=Field{2}.ListGlobalAttribute{iline};
+            if isfield(Field{2}, Field{2}.ListGlobalAttribute{iline})
+                eval(['val=Field{2}.' Field{2}.ListGlobalAttribute{iline} ';'])
+                if ischar(val);
+                    Tabcell{iline,2}=val;
+                else
+                    Tabcell{iline,2}=num2str(val);
+                end
+            end
+        end
+        if ~isempty(Tabcell)
+            Tabchar=cell2tab(Tabcell,'=');
+            Tabchar=[{''};Tabchar];
+        end
+    end
+    set(hhget_field_1.attributes,'String',Tabchar);%update list of global attributes in get_field 
+end
 
 
 
@@ -2857,10 +2861,10 @@ test=get(handles.auto_xy,'Value');
 if test
     set(handles.auto_xy,'BackgroundColor',[1 1 0])
     cla(handles.axes3)
-    update_plot(handles)
+    update_plot(handles);
 else
     set(handles.auto_xy,'BackgroundColor',[0.7 0.7 0.7])
-    update_plot(handles)
+    update_plot(handles);
 %     axis(handles.axes3,'image')
 end
 
@@ -3038,10 +3042,10 @@ else
     MenuBrowse_1_Callback(hObject, eventdata, handles)
 end
 
-% %----------------------------------------------
-% %read the data displayed for the input rootfile windows (new)
-% %-------------------------------------------------
+%------------------------------------------------------------------------
+% --- read the data displayed for the input rootfile windows (new)
 function [FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes(handles)
+%------------------------------------------------------------------------
 RootPath=get(handles.RootPath,'String');
 FileName=RootPath; %default
 SubDir=get(handles.SubDir,'String');
@@ -3113,11 +3117,11 @@ if isequal(field,'get_field...')
      veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
      set_veltype_display(veltype_handles,0) % unvisible civ buttons
      filename=read_file_boxes(handles);
-     hget_field=findobj(allchild(0),'name','get_field');
-     if ~isempty(hget_field)
-         delete(hget_field)
+     hget_field=findobj(allchild(0),'name','uvmat_field');
+     if isempty(hget_field)
+         hget_field=get_field(filename);
+         set(hget_field,'Name','uvmat_field')        
      end
-     get_field(filename)
     return %no action
 end
 list_fields=get(handles.Fields_1,'String');% list menu fields
@@ -3848,7 +3852,7 @@ function colcode1_Callback(hObject, eventdata, handles)
 % col=str2num(get(handles.colcode1,'String'));
 % set(handles.slider1,'Value',col) 
 set_vec_col_bar(handles)
-update_plot(handles)
+update_plot(handles);
 
 %----------------------------------------------------------------
 %execute on return carriage on the edit box corresponding to slider 2
@@ -3858,7 +3862,7 @@ function colcode2_Callback(hObject, eventdata, handles)
 % set(handles.slider2,'Value',col) 
 % slider2_Callback(hObject, eventdata, handles)
 set_vec_col_bar(handles)
-update_plot(handles)
+update_plot(handles);
 %------------------------------------------------------------
 %update the slider values after displaying vectors
 %--------------------------------------------------------
@@ -3884,44 +3888,6 @@ update_plot(handles)
 function vec_col_bar_Callback(hObject, eventdata, handles)
 set_vec_col_bar(handles)
 
-% %--------------------------------------------
-% %update the display of color code for vectors
-% %--------------------------------------------
-% function set_vec_col_bar(handles)
-% %get the image of the color display button 'vec_col_bar' in pixels
-% uni=get(handles.vec_col_bar,'Unit');
-% set(handles.vec_col_bar,'Unit','pixel')
-% pos_vert=get(handles.vec_col_bar,'Position');
-% set(handles.vec_col_bar,'Unit','Normalized')
-% width=ceil(pos_vert(3));
-% height=ceil(pos_vert(4));
-% %get slider indications
-% colcode.min=get(handles.slider1,'Min');
-% colcode.max=get(handles.slider1,'Max');
-% colcode.colcode1=get(handles.slider1,'Value');
-% colcode.colcode2=get(handles.slider2,'Value');
-% colcode.option=get(handles.vec_col_bar,'Value');
-% colcode.auto=1;
-% list_code=get(handles.col_vec,'String');% list menu fields
-% index_code=get(handles.col_vec,'Value');% selected string index
-% colcode.CName= list_code{index_code(1)}; % selected field used for vector color
-% vec_C=colcode.min+(colcode.max-colcode.min)*[0.5:width-0.5]/width;%sample of vec_C values from min to max
-% [colorlist,col_vec]=set_col_vec(colcode,vec_C);
-% oneheight=ones(1,height);
-% A1=colorlist(col_vec,1)*oneheight;
-% A2=colorlist(col_vec,2)*oneheight;
-% A3=colorlist(col_vec,3)*oneheight;
-% A(:,:,1)=A1';
-% A(:,:,2)=A2';
-% A(:,:,3)=A3';
-% set(handles.vec_col_bar,'Cdata',A)
-
-%--------------------------------------------------------
-% --- Executes on button press in cal.
-function cal_Callback(hObject, eventdata, handles)
-
-
-
 %-------------------------------------------------------------
 % --- Executes on selection change in transform_fct.
 function transform_fct_Callback(hObject, eventdata, handles)
@@ -3939,7 +3905,7 @@ if isequal(coord_option,'more...');
     prompt = {'Enter the name of the transform function'};
     dlg_title = 'user defined transform';
     num_lines= 1;
-    [FileName, PathName, filterindex] = uigetfile( ...
+    [FileName, PathName] = uigetfile( ...
        {'*.m', ' (*.m)';
         '*.m',  '.m files '; ...
         '*.*', 'All Files (*.*)'}, ...
@@ -4013,8 +3979,6 @@ set(handles.list_object_1,'String',list_object(1))
 set(handles.list_object_2,'Value',2)
 set(handles.list_object_2,'String',[list_object(1);{'...'}])
 list_object_2_Callback(hObject, eventdata, handles)
-
-
 
 %delete mask if it is displayed 
 if isequal(get(handles.mask_test,'Value'),1)%if the mask option is on
@@ -4114,14 +4078,14 @@ function MinA_Callback(hObject, eventdata, handles)
 %------------------------------------------
 set(handles.AutoScal,'Value',1) %suppress auto mode
 set(handles.AutoScal,'BackgroundColor',[1 1 0])
-update_plot(handles)
+update_plot(handles);
 
 %-----------------------------------------------------------------
 function MaxA_Callback(hObject, eventdata, handles)
 %--------------------------------------------
 set(handles.AutoScal,'Value',1) %suppress auto mode
 set(handles.AutoScal,'BackgroundColor',[1 1 0])
-update_plot(handles)
+update_plot(handles);
 
 %-----------------------------------------------
 function AutoScal_Callback(hObject, eventdata, handles)
@@ -4132,14 +4096,12 @@ if test
 else
     set(handles.AutoScal,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
-%     set(handles.MinA,'String',num2str(ScalOut.MinA,3))
-%     set(handles.MaxA,'String',num2str(ScalOut.MaxA,3))
 end
 
 %-------------------------------------------------------------------
 function BW_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-update_plot(handles)
+update_plot(handles);
 
 %-------------------------------------------------------------------
 function Contours_Callback(hObject, eventdata, handles)
@@ -4152,29 +4114,29 @@ else
     set(handles.interval_txt,'Visible','off')
     set(handles.IncrA,'Visible','off')
 end
-update_plot(handles)
+update_plot(handles);
 
 %-------------------------------------------------------------------
 function IncrA_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-update_plot(handles)
+update_plot(handles);
 
 %-------------------------------------------------------------------
 function HideWarning_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-update_plot(handles)
+update_plot(handles);
 
 %-------------------------------------------------------------------
 function HideFalse_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-update_plot(handles)
+update_plot(handles);
 
 %-------------------------------------------------------------------
 function VecScale_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 set(handles.AutoVec,'Value',1);
 set(handles.AutoVec,'BackgroundColor',[1 1 0])
-update_plot(handles)
+update_plot(handles);
 
 %-------------------------------------------------------------------
 function AutoVec_Callback(hObject, eventdata, handles)
@@ -4188,24 +4150,23 @@ else
     set(handles.AutoVec,'BackgroundColor',[0.7 0.7 0.7])
 end
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in decimate4 (nb_vec/4).
-%-------------------------------------------------------
 function decimate4_Callback(hObject, eventdata, handles)
-update_plot(handles)
+%------------------------------------------------------------------------
+update_plot(handles);
 
-
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in color_code menu
-%-------------------------------------------------------
 function color_code_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 set_vec_col_bar(handles)
 update_plot(handles);
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in AutoVecColor.
-%-------------------------------------------------------
 function AutoVecColor_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 test=get(handles.AutoVecColor,'Value');
 if test
     set(handles.AutoVecColor,'BackgroundColor',[1 1 0])
@@ -4214,16 +4175,17 @@ else
     %set(handles.VecScale,'String',num2str(ScalOut.VecScale,3))
     set(handles.AutoVecColor,'BackgroundColor',[0.7 0.7 0.7])
 end
-%set_vec_col_bar(handles)
 
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in max_vec.
-%-------------------------------------------------------
 function min_vec_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 max_vec_Callback(hObject, eventdata, handles)
 
+%------------------------------------------------------------------------
 % --- Executes on selection change in max_vec.
 function max_vec_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 set(handles.AutoVecColor,'Value',1)
 AutoVecColor_Callback(hObject, eventdata, handles)
 min_val=str2num(get(handles.min_vec,'String'));
@@ -4236,10 +4198,10 @@ set(handles.colcode1,'String',num2str(colcode1))
 set(handles.colcode2,'String',num2str(colcode2))
 update_plot(handles);
 
-%-------------------------------------------------------------------
-%update the display of color code for vectors
+%------------------------------------------------------------------------
+% --- update the display of color code for vectors
 function set_vec_col_bar(handles)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 %get the image of the color display button 'vec_col_bar' in pixels
 set(handles.vec_col_bar,'Unit','pixel');
 pos_vert=get(handles.vec_col_bar,'Position');
@@ -4282,6 +4244,7 @@ function [PlotType,ScalOut]=update_plot(handles)
 haxes= handles.axes3;
 AxeData=get(haxes,'UserData');
 PlotParam=read_plot_param(handles);
+PlotParam.Scalar
 [PlotType,PlotParamOut]= plot_field(AxeData,haxes,PlotParam,1);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
@@ -4445,11 +4408,11 @@ figure(hset_object)%put set_object in front
 % --- Executes on button press in Menu/Export/field in workspace.
 %------------------------------------------------------
 function MenuExportField_Callback(hObject, eventdata, handles)
-global CurData
-CurData=get(handles.uvmat,'UserData');
-evalin('base','global CurData')%make CurData global in the workspace
+global Data_uvmat
+Data_uvmat=get(handles.uvmat,'UserData');
+evalin('base','global Data_uvmat')%make CurData global in the workspace
 display(['current field :'])
-evalin('base','CurData') %display CurData in the workspace
+evalin('base','Data_uvmat') %display CurData in the workspace
 commandwindow; %brings the Matlab command window to the front
 
 %------------------------------------------------------
@@ -4975,7 +4938,7 @@ function MenuBrowseObject_Callback(hObject, eventdata, handles)
        {'*.xml;*.mat', ' (*.xml,*.mat)';
        '*.xml',  '.xml files '; ...
         '*.mat',  '.mat matlab files '}, ...
-        'Pick a file',get(handles.RootPath,'String'));
+        'Pick an xml Object file',get(handles.RootPath,'String'));
 fileinput=[PathName FileName];%complete file name 
 testblank=findstr(fileinput,' ');%look for blanks
 if ~isempty(testblank)

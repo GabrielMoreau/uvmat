@@ -1,12 +1,12 @@
 %'check_functions': check the path and modification date for all the
-%  function in the toolbox UVMAT. Called at the opening of uvmat.fig
+%  function in the toolbox UVMAT. Called at the opening of uvmat
 %----------------------------------------------------------------------
 % function [errormsg,date_str]=check_functions
 %
 % OUTPUT:
 % errormsg: error message listing functions whose paths are not in the directory of uvmat.m
 % date_str: date of the most recent modification of a file in the toolbox
-%
+
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA

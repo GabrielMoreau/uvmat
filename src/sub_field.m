@@ -201,8 +201,8 @@ if (testU && testU_1) || (~testU && ~testU_1)
                 U_1 =interp2(X_1,Y_1,U_1,x,y');
                 V_1 =interp2(X_1,Y_1,V_1,x,y');
            end
-           val(['SubData.' UName '=Field.' UName '-U_1;'])
-           val(['SubData.' VName '=Field.' VName '-V_1;'])
+           eval(['SubData.' UName '=Field.' UName '-U_1;'])
+           eval(['SubData.' VName '=Field.' VName '-V_1;'])
        else
            AName=Field.ListVarName{ivar_C};
            A_1_Name=Field_1.ListVarName{ivar_C_1};

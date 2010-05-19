@@ -1,7 +1,7 @@
 %'imadoc2struct': reads the xml file for image documentation 
+%------------------------------------------------------------------------
+% function [s,errormsg]=imadoc2struct(ImaDoc) 
 %
-%function [s,errormsg]=imadoc2struct(ImaDoc) 
-%--------------------------------------------------------
 % OUTPUT:
 % s: structure representing ImaDoc
 %   s.Heading: information about the data hierarchical structure
@@ -12,7 +12,7 @@
 %
 % INPUT:
 % ImaDoc: full name of the xml input file with head key ImaDoc
-%function [s,error,Heading,nom_type_ima,ext_ima,abs_time,TimeUnit,mode,NbSlice]=imadoc2struct(ImaDoc) 
+
 function [s,errormsg]=imadoc2struct(ImaDoc) 
 
 errormsg=[];%default

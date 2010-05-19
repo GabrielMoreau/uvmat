@@ -1,21 +1,21 @@
 %'calc_field': defines fields (velocity, vort, div...) from civx data and calculate them  
 %---------------------------------------------------------------------
-
 %
 % OUTPUT: 
 % Scal: matlab vector representing the scalar values (length nbvec defined by var_read)  
-            % if no input , Scal=list of programmed scalar names (to put in menus)
-            % if only the sclar name is put as input, vec_A=type of scalar, which can be:
+%      if no input , Scal=list of programmed scalar names (to put in menus)
+%      if only the sclar name is put as input, vec_A=type of scalar, which can be:
 %                   'vel': scalar calculated solely from velocity components
 %                   'der': needs spatial derivatives     
 %                   'var': the scalar name directly corresponds to a field name in the netcdf files
 % error: error flag
-            % error = 0; OK
-            % error = 1; the prescribed scalar cannot be read or calculated from available fields
+%      error = 0; OK
+%      error = 1; the prescribed scalar cannot be read or calculated from available fields
+%
 % INPUT:
 % ScalName: string representing the name of the scalar
 % DataIn: structure representing the field, as defined in check_field_srtructure.m
-
+%
 % FUNCTION related
 % varname_generator.m: determines the field names to read in the netcdf file, depending on the scalar
 

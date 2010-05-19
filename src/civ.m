@@ -180,15 +180,15 @@ elseif isequal(ind_opening,6)
 end
 
 % set the range of fields (1:1 by default) and selected pair
-if isempty(num2)||isequal(num2,num1)
+if isnan(num2)||isequal(num2,num1)
     num_ref_i=num1;
 else
     num_ref_i=floor((num1+num2)/2);
     browse.incr_pair(1)=num2-num1;
     browse.incr_pair(2)=0;
 end
-if isempty(num_b)||isequal(num_a,num_b)
-    if isempty(num_a)
+if isnan(num_b)||isequal(num_a,num_b)
+    if isnan(num_a)
         num_ref_j=1;
     else
         num_ref_j=num_a;
@@ -290,14 +290,14 @@ if testeditxml==1 || isequal(ext,'.xls')
 end
 [RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput);
 filebase=fullfile(RootPath,RootFile);
-num_i1=stra2num(str1);
-if isempty(num_i1),num_i1=1;end
-num_i2=stra2num(str2);
-if isempty(num_i2),num_i2=num_i1;end
+num_i1=str2double(str1);
+if isnan(num_i1),num_i1=1;end
+num_i2=str2double(str2);
+if isnan(num_i2),num_i2=num_i1;end
 num_j1=stra2num(str_a);
-if isempty(num_j1),num_j1=1;end
+if isnan(num_j1),num_j1=1;end
 num_j2=stra2num(str_b);
-if isempty(num_j2),num_j2=num_j1;end 
+if isnan(num_j2),num_j2=num_j1;end 
 if isequal(get(handles.compare,'Value'),1)
     browse=[];%initialisation
 else
@@ -614,7 +614,6 @@ if isempty(nom_type_ima)
        [pp,ff,fc,str2,str_a,str_b,ext_ima,nom_type_ima]=name2display(dirima(1).name);
     end
 end   
-    
 % no image documentation file found: look for a series of existing images or .nc files 
 if isempty(time) && ~isequal(ext,'.nc') && ~strcmp(nom_type_ima,'none') && ~strcmp(nom_type_ima,'') && ~strcmp(nom_type_ima,'*')
     subdir=get(handles.subdir_civ1,'String');
@@ -645,9 +644,33 @@ if isempty(time) && ~isequal(ext,'.nc') && ~strcmp(nom_type_ima,'none') && ~strc
         end
     end
     first_i=max(field_i,1);
-        %determine the set of times and possible intervals for CIV
+
+    if strcmp(nom_type_ima,'_i_j')
+        field_i=field_count;
+        field_j=1;
+        jdetect=1;
+        while jdetect==1 %look for the maximum file number in the series
+            imagename=name_generator(filebase,field_i,field_j,ext_ima,nom_type_ima);
+            jdetect=(exist(imagename,'file')==2);
+            if jdetect
+                field_j=field_j+1;
+            end
+            %SEE CASE OF NETCDF FILES
+            %             nbdetect=nbdetect+(exist(imagename,'file')==2);
+        end
+        nb_field_j=field_j-1;% last detected field number
+    end
+
+    
+    %determine the set of times and possible intervals for CIV
  %   dt=(1/1000)*str2num(get(handles.dt,'String'));
     time=[0:nb_field-1]';% time=file index -1  by default
+    if strcmp(nom_type_ima,'_i_j') 
+       % time=[0:nb_field-1]'*ones(1,nb_field_j);% time=file index -1  by default
+       time=[0:nb_field-1]'*[0:nb_field_j-1];% time=file index -1  by default
+    end
+  
+
     set(handles.mode,'String',{'series(Di)'})
 end
 % if isequal(nom_type_ima,'none')% no file numbering used
@@ -2661,6 +2684,7 @@ for ifile=1:nbfield
         end
         filename_bat(end-2:end)='bat';
         fid=fopen(filename_bat,'w');
+          
         fprintf(fid,cmd);
         fclose(fid);
         %dlmwrite(filename_bat,cmd,'');%write commands in filename_bat
@@ -5151,8 +5175,8 @@ if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end %stop if fileinput not a 
 ref.filebase=fullfile(Path,File);
 ref.num_a=stra2num(str_a);
 ref.num_b=stra2num(str_b);
-ref.num1=str2num(field_count);
-ref.num2=str2num(str2);
+ref.num1=str2double(field_count);
+ref.num2=str2double(str2);
 browse=[];%initialisation
 if ~isequal(ref.ext,'.nc')
     msgbox_uvmat('ERROR','the reference file must be in netcdf format (*.nc)')
@@ -5247,14 +5271,14 @@ set(handles.ref_fix2,'UserData',[]);
 set(handles.ref_fix2,'String','');
 set(handles.thresh_vel2,'String','0');
 
-%------------------------------------------------------------------------
-% transform letters to numbers
-function numres=stra2num(str)
-%------------------------------------------------------------------------
-numres=double(str)-96;
-if double(str) >= 48 & double(str) <= 57 % = 1 for numbers
-    numres=str2num(str);
-end
+% %------------------------------------------------------------------------
+% % transform letters to numbers
+% function numres=stra2num(str)
+% %------------------------------------------------------------------------
+% numres=double(str)-96;
+% if double(str) >= 48 & double(str) <= 57 % = 1 for numbers
+%     numres=str2num(str);
+% end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in test_stereo1.
