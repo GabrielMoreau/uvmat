@@ -1021,6 +1021,7 @@ if test_vec
     end
     %plot vectors:
     quiresetn(haxes,vec_X,vec_Y,vec_U,vec_V,scale,colorlist,col_vec);   
+
 else
     hvec=findobj(haxes,'Tag','vel');
     if ~isempty(hvec)
@@ -1098,10 +1099,10 @@ set(get(haxes,'YLabel'),'String',[YName y_units]);
 % --- function for plotting vectors
 %INPUT:
 % haxes: handles of the plotting axes
-%x,y,u,v: vectors coordinates and vector components to plot, arrays withb the same dimension
+% x,y,u,v: vectors coordinates and vector components to plot, arrays withb the same dimension
 % scale: scaling factor for vector length representation
-%colorlist(icolor,:): list of vector colors, dim (nbcolor,3), depending on color #i
-%col_vec: matlab vector setting the color number #i for each velocity vector
+% colorlist(icolor,:): list of vector colors, dim (nbcolor,3), depending on color #i
+% col_vec: matlab vector setting the color number #i for each velocity vector
 function quiresetn(haxes,x,y,u,v,scale,colorlist,col_vec)
 %-------------------------------------------------------------------
 %define arrows
@@ -1133,25 +1134,39 @@ for icolor=1:ncolor
     vc=v(ind)*scale;
     n=size(xc);
     xN=NaN*ones(size(xc));
-    matx=[xc(:) xc(:)+uc(:) xN(:)]';
+    matx=[xc(:)-uc(:)/2 xc(:)+uc(:)/2 xN(:)]';
+%     matx=[xc(:) xc(:)+uc(:) xN(:)]';
     matx=reshape(matx,1,3*n(2));
-    maty=[yc(:) yc(:)+vc(:) xN(:)]';
+    maty=[yc(:)-vc(:)/2 yc(:)+vc(:)/2 xN(:)]';
+%     maty=[yc(:) yc(:)+vc(:) xN(:)]';
     maty=reshape(maty,1,3*n(2));
     
     %determine arrow heads
     arrowplus=rot*[uc;vc];
     arrowmoins=rot'*[uc;vc];
-    x1=xc+uc-arrowplus(1,:);
-    x2=xc+uc;
-    x3=xc+uc-arrowmoins(1,:);
-    y1=yc+vc-arrowplus(2,:);
-    y2=yc+vc;
-    y3=yc+vc-arrowmoins(2,:);
+    x1=xc+uc/2-arrowplus(1,:);
+    x2=xc+uc/2;
+    x3=xc+uc/2-arrowmoins(1,:);
+    y1=yc+vc/2-arrowplus(2,:);
+    y2=yc+vc/2;
+    y3=yc+vc/2-arrowmoins(2,:);
+%     x1=xc+uc-arrowplus(1,:);
+%     x2=xc+uc;
+%     x3=xc+uc-arrowmoins(1,:);
+%     y1=yc+vc-arrowplus(2,:);
+%     y2=yc+vc;
+%     y3=yc+vc-arrowmoins(2,:);
     matxar=[x1(:) x2(:) x3(:) xN(:)]';
     matxar=reshape(matxar,1,4*n(2));
     matyar=[y1(:) y2(:) y3(:) xN(:)]';
     matyar=reshape(matyar,1,4*n(2));
     %draw the line or modify the existing ones
+      hx = [x1;x2;x3];
+      hy = [y1;y2;y3];
+    tri=reshape([1:3*length(uc)],3,[])';
+    d = tri(:,[1 2 3 1])';
+  
+    
     isn=isnan(colorlist(icolor,:));%test if color NaN
     if 2*icolor > sizh(1) %if icolor exceeds the number of existing ones
         axes(haxes)
@@ -1160,7 +1175,9 @@ for icolor=1:ncolor
                 hold on
                 line(matx,maty,'Color',colorlist(icolor,:),'Tag','vel');% plot new lines
                 line(matxar,matyar,'Color',colorlist(icolor,:),'Tag','vel');% plot arrows
-            end
+%                 fill(hx(d),hy(d),colorlist(icolor,:),'EdgeColor','none','
+%                 Tag','Vel');
+          end
         end
     else
         if isn(1) 
@@ -1209,3 +1226,4 @@ while siz2<2
 end
 YTick=ord*values(ind);
 end
+
