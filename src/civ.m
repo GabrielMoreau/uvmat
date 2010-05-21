@@ -2328,9 +2328,9 @@ for ifile=1:nbfield
         cmd='';
         if isunix % check: necessaire aussi en RUN?
            %fid=fopen([filename '.cmx'],'w')
-           cmd='#!/bin/bash';
-           cmd=[cmd '\n' '#$ -cwd'];
-           cmd=[cmd '\n' 'hostname && date'];
+           cmd='#!/bin/bash \n';
+           cmd=[cmd '#$ -cwd \n'];
+           cmd=[cmd 'hostname && date \n'];
         end
         if civAll
             civAllxml=xmltree;% xml contents,  all parameters
@@ -2398,7 +2398,7 @@ for ifile=1:nbfield
             %           
             i_cmd=i_cmd+1;
             if isequal(civAll,0)
-                cmd=[cmd '\n' BATCH_CIV1(filename_cmx(1:end-4),namelog,par_civ1,handles,sparam)];
+                cmd=[cmd BATCH_CIV1(filename_cmx(1:end-4),namelog,par_civ1,handles,sparam) '\n'];
             else
                  civAllCmd=[civAllCmd ' civ1 '];
                  str=BATCH_CIV1_Unified(filename_cmx([1:end-4]),namelog,par_civ1);
@@ -2430,7 +2430,7 @@ for ifile=1:nbfield
            cmd_FIX=[fixBin ' -f ' filecell.nc.civ1{ifile,j} ' -fi1 ' num2str(flagindex1(1)) ...
                    ' -fi2 ' num2str(flagindex1(2)) ' -fi3 ' num2str(flagindex1(3)) ...
                    ' -threshC ' num2str(thresh_vecC1) ' -threshV ' num2str(thresh_vel1) ' -maskName ' maskname];
-           cmd=[cmd '\n' cmd_FIX];
+           cmd=[cmd cmd_FIX '\n'];
            else
                 fix1.inputFileName=filecell.nc.civ1{ifile,j} ;
                 fix1.fi1=num2str(flagindex1(1));
@@ -2455,7 +2455,7 @@ for ifile=1:nbfield
     if box_test(3)==1
         if isequal(civAll,0)
             cmd_PATCH=RUN_PATCH(filecell.nc.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp,PatchBin);
-            cmd=[cmd '\n' cmd_PATCH];
+            cmd=[cmd cmd_PATCH '\n'];
         else
             patch1.inputFileName=filecell.nc.civ1{ifile,j} ;
             patch1.nopt=subdomain_patch1;
@@ -2567,9 +2567,9 @@ for ifile=1:nbfield
             cmd_CIV2=BATCH_CIV2(filename_cmx,namelog,par_civ2,sparam);
             if isequal(civAll,0)
                 if(isunix)
-                    cmd=[cmd '\n' 'cp -f ' filename_cmx '2 ' filename_cmx '\n' cmd_CIV2];
+                    cmd=[cmd 'cp -f ' filename_cmx '2 ' filename_cmx '\n' cmd_CIV2 '\n'];
                 else
-                    cmd=[cmd '\n' 'copy /Y ' filename_cmx '2 ' filename_cmx '\n' cmd_CIV2];
+                    cmd=[cmd 'copy /Y ' filename_cmx '2 ' filename_cmx '\n' cmd_CIV2 '\n'];
                 end
             else
                  civAllCmd=[civAllCmd ' civ2 '];
@@ -2602,7 +2602,7 @@ for ifile=1:nbfield
                 cmd_FIX=[fixBin ' -f ' filecell.nc.civ2{ifile,j} ' -fi1 ' num2str(flagindex2(1)) ...
                    ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
                    ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName ' maskname];
-                cmd=[cmd '\n' cmd_FIX];
+                cmd=[cmd cmd_FIX '\n'];
            else                      
                 fix2.inputFileName=filecell.nc.civ2{ifile,j} ;
                 fix2.fi1=num2str(flagindex2(1));
@@ -2627,7 +2627,7 @@ for ifile=1:nbfield
        if box_test(6)==1
             if isequal(civAll,0)
                 cmd_PATCH=RUN_PATCH(filecell.nc.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,thresh_patch2,test_interp,PatchBin);
-                cmd=[cmd '\n' cmd_PATCH];
+                cmd=[cmd cmd_PATCH '\n'];
             else
                 patch2.inputFileName=filecell.nc.civ1{ifile,j} ;
                 patch2.nopt=subdomain_patch1;
@@ -2673,7 +2673,7 @@ for ifile=1:nbfield
         if isequal(civAll,1)
             save(civAllxml,[filename_cmx([1:end-4]) '.xml']);
             %cmd=char({cmd;[CivBin ' -f ' [filename_cmx([1:end-4]) '.xml'] ' ' civAllCmd]});
-            cmd=[cmd '\n' CivBin ' -f ' filename_cmx(1:end-4) '.xml '  civAllCmd];
+            cmd=[cmd CivBin ' -f ' filename_cmx(1:end-4) '.xml '  civAllCmd  '\n'];
         end
       % create the .bat file:
         if batch
@@ -2684,7 +2684,6 @@ for ifile=1:nbfield
         end
         filename_bat(end-2:end)='bat';
         fid=fopen(filename_bat,'w');
-          
         fprintf(fid,cmd);
         fclose(fid);
         %dlmwrite(filename_bat,cmd,'');%write commands in filename_bat
@@ -4826,11 +4825,12 @@ function cmd_CIV1=BATCH_CIV1(filename,namelog,par,handles,sparam)
 %     'ImageUsedBefore null null'};
 % 
 %             textout=char(textcmx);
-
+par.filename_ima_a=regexprep(par.filename_ima_a,'.png','');
+par.filename_ima_b=regexprep(par.filename_ima_b,'.png','');
    fid=fopen([filename '.cmx'],'w');
 fprintf(fid,['##############   CMX file' '\n' ]);
- fprintf(fid,   ['FirstImage ' par.filename_ima_a '\n' ]);
- fprintf(fid,   ['LastImage  ' par.filename_ima_b '\n' ]);
+ fprintf(fid,   ['FirstImage ' regexprep(par.filename_ima_a,'\\','\\\\') '\n' ]);
+ fprintf(fid,   ['LastImage  ' regexprep(par.filename_ima_b,'\\','\\\\') '\n' ]);
   fprintf(fid,  ['XX' '\n' ]);
   fprintf(fid,  ['Mask ' par.maskflag '\n' ]);
   fprintf(fid,  ['MaskName ' par.maskname '\n' ]);
@@ -4861,6 +4861,9 @@ fprintf(fid,['##############   CMX file' '\n' ]);
 fclose(fid);
   
 cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx' ]; % redirect standard output to the log file
+cmd_CIV1=regexprep(cmd_CIV1,'\\','\\\\');
+namelog=regexprep(namelog,'\\','\\\\');
+
 if(isunix)
     [Rootbat,Filebat,extbat]=fileparts(namelog);
     ncName=fullfile(Rootbat,[ Filebat '.nc']);
