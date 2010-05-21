@@ -4826,11 +4826,11 @@ function cmd_CIV1=BATCH_CIV1(filename,namelog,par,handles,sparam)
 % 
 %             textout=char(textcmx);
 par.filename_ima_a=regexprep(par.filename_ima_a,'.png','');
-par.filename_ima_b=regexprep(par.filename_ima_b,'.png','');
+par.filename_ima_b=regexprep(par.filename_ima_b,'.png','');% bug : .png appears two times ?
    fid=fopen([filename '.cmx'],'w');
 fprintf(fid,['##############   CMX file' '\n' ]);
- fprintf(fid,   ['FirstImage ' regexprep(par.filename_ima_a,'\\','\\\\') '\n' ]);
- fprintf(fid,   ['LastImage  ' regexprep(par.filename_ima_b,'\\','\\\\') '\n' ]);
+ fprintf(fid,   ['FirstImage ' regexprep(par.filename_ima_a,'\\','\\\\') '\n' ]);% for windows compatibility
+ fprintf(fid,   ['LastImage  ' regexprep(par.filename_ima_b,'\\','\\\\') '\n' ]);% for windows compatibility
   fprintf(fid,  ['XX' '\n' ]);
   fprintf(fid,  ['Mask ' par.maskflag '\n' ]);
   fprintf(fid,  ['MaskName ' par.maskname '\n' ]);
