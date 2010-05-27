@@ -1,7 +1,5 @@
 %'read_civxdata': reads civx data from netcdf files
 %------------------------------------------------------------------
-% COMBINE ET REMPLACE read_ncfield, read_vel et read_scalar_new
-%------------------------------------------------------------------
 % OUTPUT:
 % nb_coord,nb_dim,
 % Civ: =0 or 1, indicates whether the data is civ (A SUPPRIMER ?)
@@ -19,13 +17,13 @@
 %            .NbCoord: number of vector components
 %            .CoordType: expresses the type of coordinate ('px' for image, 'sig' for instruments, or 'phys')
 %            .dt: time interval for the corresponding image pair
-%            .CivStage: =0, ??? A UTILISER POUR REMPLACER civ
-        %           =1, civ1 has been performed only
-        %           =2, fix1 has been performed
-        %           =3, pacth1 has been performed
-        %           =4, civ2 has been performed 
-        %           =5, fix2 has been performed
-        %           =6, pacth2 has been performed
+%            .CivStage: =0, 
+%                   =1, civ1 has been performed only
+%                   =2, fix1 has been performed
+%                   =3, pacth1 has been performed
+%                   =4, civ2 has been performed 
+%                   =5, fix2 has been performed
+%                   =6, pacth2 has been performed
 %            .X, .Y, .Z: set of vector coordinates 
 %            .U,.V,.W: corresponding set of vector components
 %            .F: warning flags
@@ -36,7 +34,6 @@
 %            DijU(1,2,:)=DUDY, Dij(2,1,:)=DVDX, DijU(2,2,:)=DVDY
 %            .A, .AX, .AY: additional scalar
 % dt:time interval of the image pair red from a single file, or vector with
- 
 % pixcmx,pixcmy: scaling factors (from the first file)
 % vel_type_out: string representing the selected velocity type (civ1,civ2,filter1...)
 %
@@ -67,7 +64,6 @@ end
 if ~exist('FieldNames','var') 
     FieldNames=[]; %default
 end
-
 VelTypeOut=VelType;%default
 [var,role,units,vel_type_out_cell]=varcivx_generator(FieldNames,VelType);%determine the names of constants and variables to read
 [Field,vardetect,ichoice]=nc2struct(filename,var);
@@ -75,7 +71,7 @@ if isfield(Field,'Txt')
     return % error in file reading
 end
 if isequal(vardetect,0)
-     Field.Txt=[FieldNames ' not accessible in ' filename '/' VelType];
+     Field.Txt=[reshape(FieldNames,1,numel(FieldNames)) ' not accessible in ' filename '/' VelType];
      return
 end
 var_ind=find(vardetect);

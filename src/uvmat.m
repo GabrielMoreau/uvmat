@@ -1166,7 +1166,7 @@ drawnow
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for run0: begin a new series
 
-[FileName,RootPath,FileBase,FileIndices,FileExt]=read_file_boxes_1(handles);
+[FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes_1(handles);
 if ~exist(FileName,'file')
     msgbox_uvmat('ERROR',['input file ' FileName ' not found']);
 end

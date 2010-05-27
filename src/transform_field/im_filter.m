@@ -10,8 +10,12 @@ Mfiltre=fct2'*fct2;
 Mfiltre=Mfiltre/(sum(sum(Mfiltre)));%normalize filter
 
 DataOut=DataIn; %default
-
 Atype=class(DataIn.A)% detect integer 8 or 16 bits
-DataOut.A=filter2(Mfiltre,DataIn.A); 
-DataOut.A=feval(Atype,DataOut.A);
+if numel(size(DataIn.A))==3
+    DataOut.A=filter2(Mfiltre,sum(DataIn.A,3));%filter the input image, after summation on the color component (for color images)
+    DataOut.A=uint16(DataOut.A); %transform to 16 bit images
+else
+    DataOut.A=filter2(Mfiltre,DataIn.A)
+    DataOut.A=feval(Atype,DataOut.A);%transform to the initial image format
+end
  

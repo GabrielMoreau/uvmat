@@ -1,20 +1,21 @@
-%'struct2nc': create a netcdf file from a Matlab structure
+% 'struct2nc': create a netcdf file from a Matlab structure
 %---------------------------------------------------------------------
 % errormsg=struct2nc(flname,Data)
 %
-%OUPUT:
-%errormsg=error message, =[]: default, no error
+% OUPUT:
+% errormsg=error message, =[]: default, no error
 %
-%INPUT:
-%flname: name of the netcdf file to create (must end with the extension '.nc')
+% INPUT:
+% flname: name of the netcdf file to create (must end with the extension '.nc')
 %  Data: structure containing all the information of the netcdf file (or netcdf object)
 %           with fields:
-%         (optional) .ListGlobalAttribute: cell listing the names of the global attributes
-%                    .Att_1,Att_2... : values of the global attributes
-%         (requested)  .ListVarName: list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
-%         (requested)  .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)                         
-%         (requested) .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
-%
+%       (optional) .ListGlobalAttribute: list (cell array of character strings) of the names of the global attributes Att_1, Att_2...
+%                  .Att_1,Att_2...: values of the global attributes
+%      (requested) .ListVarName: list of the variable names Var_1, Var_2....(cell array of character strings). 
+%      (requested) .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)
+%       (optional) .VarAttribute: cell array of structures of the form .VarAttribute{ivar}.key=value, defining an attribute key name and value for the variable #ivar
+%      (requested) .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
+
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA

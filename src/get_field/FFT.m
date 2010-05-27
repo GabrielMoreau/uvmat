@@ -5,7 +5,7 @@ if ~exist('hget_field','var')
     GUI_input={'check_1Dplot'};
     return %exit the function 
 end
-
+GUI_input=[];
 %initiation
 hhget_field=guidata(hget_field);
 % testinterp=0;
@@ -28,13 +28,14 @@ end
 
 % get variable
 eval(['Var= Field.' ordinate_name ';']);
-np=size(Var);
+np=size(Var)
 np_freq=floor(np(1)/2);
 dx=1;%default
 dfreq=1/np(1);%default frequency interval (abscissa= array index)
+sum_data=sum(Var,2);
 if ~isequal(abscissa_name,'')
     eval(['Coord_x= Field.' abscissa_name ';']);
-    ind_select=find(~isinf(Coord_x));%detect infinite values
+    ind_select=find(~isinf(Coord_x)&~isnan(sum_data));%detect infinite values
     Coord_x=Coord_x(ind_select);
     Var=Var(ind_select,:);
     diff_x=diff(Coord_x);

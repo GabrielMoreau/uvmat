@@ -171,7 +171,7 @@ end
 
 % check the cells of fields :
 % testnbdim=1;
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data);
+[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data)
 
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['input of plot_field/find_field_indices: ' errormsg])
@@ -323,9 +323,9 @@ textmean={};
 % abscissa_name='';
 coord_x_index=[];
 test_newplot=1;
-hh=findobj(haxes,'tag','plot_line');
+% hh=findobj(haxes,'tag','plot_line');
 % num_curve=numel(hh);
-icurve=0;
+% icurve=0;
 for icell=1:length(CellVarIndex)
     testfalse=0;
     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list data.ListVarName
@@ -361,7 +361,7 @@ for icell=1:length(CellVarIndex)
          xtitle=[xtitle '(' data.VarAttribute{coord_x_index}.units ')'];
     end
     eval(['coord_x{icell}=data.' data.ListVarName{coord_x_index} ';']);%coordinate variable set as coord_x
-    testcoordvar=1;
+%     testcoordvar=1;
     testplot(coord_x_index)=0;
     if ~isempty(VarType{icell}.ancillary')
             testplot(VarType{icell}.ancillary)=0;
@@ -424,7 +424,7 @@ for icell=1:length(CellVarIndex)
                 end
                 eval(['varmean=mean(double(data.' VarName '));']);%mean value
                 textmean=[textmean; {[VarName 'mean= ' num2str(varmean,4)]}];
-                if nbcomponent1==1| nbcomponent2==1
+                if nbcomponent1==1|| nbcomponent2==1
                     legend_str=[legend_str {VarName}]; %variable with one component
                 else  %variable with severals  components
                     for ic=1:min(nbcomponent1,nbcomponent2)
@@ -552,7 +552,7 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
     if numel(ind_coord)==2
         VarType.coord=VarType.coord(ind_coord);
     end
-    idim_Y=[];  
+%     idim_Y=[];  
     test_grid=0;
     if ~isempty(ivar_U) && ~isempty(ivar_V)% vector components detected
         if test_vec
@@ -562,8 +562,6 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             test_vec=1;
             eval(['vec_U=Data.' Data.ListVarName{ivar_U} ';']) 
             eval(['vec_V=Data.' Data.ListVarName{ivar_V} ';']) 
-            'TESTplot'
-            VarType.coord
             if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field (with unstructured coordinates or structured ones (then ivar_X and ivar_Y empty)     
                 eval(['vec_X=Data.' Data.ListVarName{ivar_X} ';']) 
                 eval(['vec_Y=Data.' Data.ListVarName{ivar_Y} ';'])
@@ -747,9 +745,9 @@ if test_ima
                 delete(hima)
             end
             if ~isfield(PlotParam.Scalar,'IncrA')
-                PlotParam.Scalar.IncrA=[];
+                PlotParam.Scalar.IncrA=NaN;
             end
-            if isempty(PlotParam.Scalar.IncrA)% | PlotParam.Scalar.AutoScal==0
+            if isnan(PlotParam.Scalar.IncrA)% | PlotParam.Scalar.AutoScal==0
                 cont=colbartick(MinA,MaxA);
                 intercont=cont(2)-cont(1);%default
                 PlotParamOut.Scalar.IncrA=intercont;
@@ -766,7 +764,7 @@ if test_ima
             cont_pos=[cont_pos_min cont_pos_plus];
             sizpx=(AX(end)-AX(1))/(np(2)-1);
             sizpy=(AY(1)-AY(end))/(np(1)-1);
-            x_cont=[AX(1):sizpx:AX(end)]; % pixel x coordinates for image display 
+            x_cont=AX(1):sizpx:AX(end); % pixel x coordinates for image display 
             y_cont=AY(1):-sizpy:AY(end); % pixel x coordinates for image display
             txt=ver;%version of Matlab
             Release=txt(1).Release;
@@ -856,7 +854,7 @@ if test_ima
     test_ima=1;
     %display the colorbar code for B/W images if Poscolorbar not empty
     if siz==2 && exist('PosColorbar','var')&& ~isempty(PosColorbar)
-        if isempty(hcol)|~ishandle(hcol)
+        if isempty(hcol)||~ishandle(hcol)
              hcol=colorbar;%create new colorbar
         end
         if length(PosColorbar)==4
@@ -980,7 +978,7 @@ if test_vec
             ind_sel=[ind_sel [ind_jump(i)+1:ind_jump(i+1)]];% select the odd lines
         end
         nb_sel=length(ind_sel);
-        ind_sel=ind_sel([1:2:nb_sel]);% take half the points on a line
+        ind_sel=ind_sel(1:2:nb_sel);% take half the points on a line
         vec_X=vec_X(ind_sel);
         vec_Y=vec_Y(ind_sel);
         vec_U=vec_U(ind_sel);

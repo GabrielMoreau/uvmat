@@ -266,6 +266,10 @@ for ifile=1:nbfield
                     [Field{iview},var_detect]=nc2struct(filename,SubField.ListVarName); %read the corresponding input data                
                     Field{iview}.VarAttribute=SubField.VarAttribute;
                 end
+                if isfield(Field{iview},'Txt')
+                    msgbox_uvmat('ERROR',Field{iview}.Txt)
+                    return
+                end
                 if isfield(Field{iview},'Time')
                     timeread(iview)=Field{iview}.Time;
                     nbtime=nbtime+1;
@@ -279,11 +283,9 @@ for ifile=1:nbfield
             if ~isempty(transform_fct)
                 Field{iview}=transform_fct(Field{iview},XmlData{iview});%transform to phys if requested
             end
-            min(Field{iview}.X)
             if testcivx
                     Field{iview}=calc_field(FieldName,Field{iview});
             end
-            min(Field{iview}.X)
 
             %projection on object (gridded plane)
             if test_object
@@ -349,7 +351,21 @@ for ifile=1:nbfield
             MergeData.ListGlobalAttribute={'Project','InputFile_1','InputFile_end','nb_coord','nb_dim','dt','Time','civ'};        
             MergeData.nb_coord=2;
             MergeData.nb_dim=2;
-            MergeData.dt=1;
+            dt=[];
+            if isfield(Field{1},'dt')&& isnumeric(Field{1}.dt)
+                dt=Field{1}.dt;
+            end
+            for iview =2:numel(Field)
+                if ~(isfield(Field{iview},'dt')&& isequal(Field{iview}.dt,dt))
+                    dt=[];%dt not the same for all fields
+                end
+            end
+            if isempty(dt)
+                MergeData.ListGlobalAttribute(6)=[];
+            else
+               MergeData.dt=dt;
+            end
+            %MergeData.dt=1;
             MergeData.Time=time_i;
             error=struct2nc(mergename,MergeData); %save result file
             if isempty(error)
@@ -387,6 +403,9 @@ if error
     return
 end
 
+
+
+
 %group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 [CellVarIndex,NbDim,VarTypeCell]=find_field_indices(Data{1});
 %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
@@ -411,7 +430,6 @@ for icell=1:length(CellVarIndex)
         end
         test_grid=0;
     end
-%    DimIndices=Data{1}.VarDimIndex{VarIndex(1)};%indices of the dimensions of the first variable (common to all variables in the cell)
     %case of input fields with unstructured coordinates
     if ~test_grid
         for ivar=VarIndex
@@ -422,13 +440,8 @@ for icell=1:length(CellVarIndex)
         end
     %case of fields defined on a structured  grid 
     else  
-%        DimValue=MergeData.DimValue(DimIndices);%set of dimension values
         testFF=0;
         for iview=2:nbview
-%             if ~isequal(DimValue,Data{iview}.DimValue(DimIndices))
-%                 MergeData.Txt='ERROR: attempt at merging structured fields with different sizes';
-%                 return
-%             end
             for ivar=VarIndex
                 VarName=MergeData.ListVarName{ivar};
                 if isfield(MergeData,'VarAttribute')

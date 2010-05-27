@@ -27,7 +27,7 @@ else
     DataOut.Txt='wrong input: need two or four structures';
 end
 test_1=0;
-if nargin==4
+if nargin==4% case of two input fields
     test_1=1;
     Data_1=varargin{3};
     DataOut_1=Data_1;%default
@@ -64,6 +64,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 iscalar=0;
+%transform first field to cartesian phys coordiantes
 if  ~isempty(Calib{1})
     DataOut=phys_1(Data,Calib{1},origin_xy,radius_offset,angle_offset,angle_scale);
     %case of images or scalar
@@ -79,7 +80,7 @@ if  ~isempty(Calib{1})
         ZIndex=0;
     end
 end
-
+%transform second field (if exists) to cartesian phys coordiantes
 if test_1
     DataOut_1=phys_1(Data_1,Calib{2},origin_xy,radius_offset,angle_offset,angle_scale);
     if isfield(Data_1,'A')&isfield(Data_1,'AX')&~isempty(Data_1.AX) & isfield(Data_1,'AY')&...
@@ -152,6 +153,28 @@ if isfield(Data,'CoordType') && isequal(Data.CoordType,'px') && ~isempty(Calib)
             DataOut.U=UX.*cos(theta)+VY.*sin(theta);%radial velocity
             DataOut.V=(-UX.*sin(theta)+VY.*cos(theta));%./(DataOut.X)%+radius_ref);%angular velocity calculated 
             %shift and renormalize the angular velocity
+            end
+        end
+        %transform of spatial derivatives
+        if isfield(Data,'X') && ~isempty(Data.X) && isfield(Data,'DjUi') && ~isempty(Data.DjUi)...
+                && isfield(Data,'dt')
+            if ~isempty(Data.dt)
+                % estimate the Jacobian matrix DXpx/DXphys
+                for ip=1:length(Data.X)
+                    [Xp1,Yp1]=phys_XYZ(Calib,Data.X(ip)+0.5,Data.Y(ip),Z);
+                    [Xm1,Ym1]=phys_XYZ(Calib,Data.X(ip)-0.5,Data.Y(ip),Z);
+                    [Xp2,Yp2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)+0.5,Z);
+                    [Xm2,Ym2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)-0.5,Z);
+                    %Jacobian matrix DXpphys/DXpx
+                    DjXi(1,1)=(Xp1-Xm1);
+                    DjXi(2,1)=(Yp1-Ym1);
+                    DjXi(1,2)=(Xp2-Xm2);
+                    DjXi(2,2)=(Yp2-Ym2);
+                    DjUi(:,:)=Data.DjUi(ip,:,:);
+                    DjUi=(DjXi*DjUi')/DjXi;% =J-1*M*J , curvature effects (derivatives of J) neglected
+                    DataOut.DjUi(ip,:,:)=DjUi';
+                end
+                DataOut.DjUi =  DataOut.DjUi/Data.dt;   %     min(Data.DjUi(:,1,1))=DUDX
             end
         end
     end
