@@ -171,7 +171,7 @@ end
 
 % check the cells of fields :
 % testnbdim=1;
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data)
+[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data);
 
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['input of plot_field/find_field_indices: ' errormsg])
