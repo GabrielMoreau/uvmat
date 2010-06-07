@@ -134,10 +134,8 @@ if isfield(sparam.RunParam,'CivBin')
     if ~exist(sparam.RunParam.CivBin,'file')
          sparam.RunParam.CivBin=fullfile(path_UVMAT,sparam.RunParam.CivBin);
     end
-else
-    sparam.RunParam.CivBin='';
 end
-patch_newBin=exist(sparam.RunParam.CivBin,'file')
+patch_newBin=exist(sparam.RunParam.CivBin,'file');
 set(handles.subdir_civ1,'String',subdir)%default subdir on which uvmat was working
 set(handles.subdir_civ2,'String',subdir)%default subdir on which uvmat was working
 
@@ -4502,7 +4500,7 @@ set(handles.nx_patch1,'Visible','on')
 set(handles.ny_patch1,'Visible','on')
 set(handles.nx_patch1_title,'Visible','on')
 set(handles.ny_patch1_title,'Visible','on')
-if ~isequal(patch_newBin,0) 
+if ~isempty(patch_newBin) 
     set(handles.test_interp,'Visible','on');
 end
 set(handles.get_gridpatch1,'Visible','on')
