@@ -701,7 +701,7 @@ if ~strcmp(NomType,'*')
     nb_field=max(floor((max(num_i1)+max(num_i2))/2));
     nb_field2=max(floor((max(num_j1)+max(num_j2))/2));
 end
-if isempty(nb_field)
+if isempty(nb_field)||isnan(nb_field)
     nb_field_str='?';
     nb_field_str2='?';
 else
@@ -1261,8 +1261,10 @@ if ~isequal(str_pair,'Dj=*|*')&~isequal(str_pair,'Di=*|*')
             ind=find((num1-floor(index_pair/2)*ones(size(num1))>0)& (num1+ceil(index_pair/2)*ones(size(num1))<=lastfield));
             num1=num1(ind);       
         end
-        set(handles.first_i,'String',num2str(num1(1)));
-        set(handles.last_i,'String',num2str(num1(end)));
+        if ~isempty(num1)
+            set(handles.first_i,'String',num2str(num1(1)));
+            set(handles.last_i,'String',num2str(num1(end)));
+        end
         testupdate=1;
 	elseif isequal(mode,'series(Dj)')
         first_j=str2num(get(handles.first_j,'String'));

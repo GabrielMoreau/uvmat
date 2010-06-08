@@ -2136,17 +2136,18 @@ if isfield(sparam,'Civ2Bin')
          sparam.Civ2Bin=fullfile(path_UVMAT,sparam.Civ2Bin);
     end
 end
-test_interp=get(handles.test_interp,'Value');
-if ~test_interp && isfield(sparam,'PatchBin')
+%test_interp=get(handles.test_interp,'Value');
+test_interp=0;
+if  isfield(sparam,'PatchBin')
     if ~exist(sparam.PatchBin,'file')
          sparam.PatchBin=fullfile(path_UVMAT,sparam.PatchBin);
     end
 end
-if test_interp && isfield(sparam,'PatchNewBin')
-    if ~exist(sparam.PatchNewBin,'file')
-         sparam.PatchNewBin=fullfile(path_UVMAT,sparam.PatchNewBin);
-    end
-end
+% if test_interp && isfield(sparam,'PatchNewBin')
+%     if ~exist(sparam.PatchNewBin,'file')
+%          sparam.PatchNewBin=fullfile(path_UVMAT,sparam.PatchNewBin);
+%     end
+% end
 if isfield(sparam,'FixBin')
 %     fixBin=sparam.FixBin;
     if ~exist(sparam.FixBin,'file')
@@ -4502,9 +4503,9 @@ set(handles.nx_patch1,'Visible','on')
 set(handles.ny_patch1,'Visible','on')
 set(handles.nx_patch1_title,'Visible','on')
 set(handles.ny_patch1_title,'Visible','on')
-if ~isempty(patch_newBin) 
-    set(handles.test_interp,'Visible','on');
-end
+% if ~isempty(patch_newBin) 
+%     set(handles.test_interp,'Visible','on');
+% end
 set(handles.get_gridpatch1,'Visible','on')
 set(handles.grid_patch1,'string','none');
 set(handles.grid_patch1,'Visible','on')
@@ -4523,7 +4524,7 @@ set(handles.nx_patch1,'Visible','off')
 set(handles.ny_patch1,'Visible','off')
 set(handles.nx_patch1_title,'Visible','off')
 set(handles.ny_patch1_title,'Visible','off')
-set(handles.test_interp,'Visible','off')
+%set(handles.test_interp,'Visible','off')
 set(handles.get_gridpatch1,'Visible','off')
 set(handles.grid_patch1,'Visible','off')
 

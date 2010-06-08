@@ -255,7 +255,7 @@ if ~isequal(hhh,'')
             if ~isempty(indstr)
                 VarName(indstr)=[];
             end
-            eval(['Data.' VarName '=netcdf.getVar(nc,var_index(ivar)-1);'])%read the variable data
+            eval(['Data.' VarName '=double(netcdf.getVar(nc,var_index(ivar)-1));'])%read the variable data
             %eval(['siz=size(Data.' VarName ');'])
            % if numel(siz)<=2
             %eval(['Data.' VarName '=Data.' VarName ''';'])%read the variable data
