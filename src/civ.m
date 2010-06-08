@@ -134,6 +134,8 @@ if isfield(sparam.RunParam,'CivBin')
     if ~exist(sparam.RunParam.CivBin,'file')
          sparam.RunParam.CivBin=fullfile(path_UVMAT,sparam.RunParam.CivBin);
     end
+else
+    sparam.RunParam.CivBin='';
 end
 patch_newBin=exist(sparam.RunParam.CivBin,'file');
 set(handles.subdir_civ1,'String',subdir)%default subdir on which uvmat was working
