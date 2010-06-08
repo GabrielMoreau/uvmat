@@ -75,11 +75,11 @@ if ~isempty(ProjData)
     end
 %         [PlotType,Object_out.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);
     Object_out.plotaxes=plotaxes;
-    plotfig=get(plotaxes,'parent');
-    name_str=get(plotfig,'Name');
-    if ~isequal(name_str,'uvmat')
-        set(plotfig,'Name',['Projection on' num2str(IndexObj) '-' ObjectData.Style]);
-    end
+%     plotfig=get(plotaxes,'parent');
+%     name_str=get(plotfig,'Name');
+%     if ~isequal(name_str,'uvmat')
+%         set(plotfig,'Name',['Projection on' num2str(IndexObj) '-' ObjectData.Style]);
+%     end
 end
 
 

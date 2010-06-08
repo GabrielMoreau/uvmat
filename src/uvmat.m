@@ -172,7 +172,6 @@
 %------------------------------------------------------------------------
 function varargout = uvmat(varargin)
 
-
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',          mfilename, ...
@@ -4338,7 +4337,7 @@ if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
 hset_object=set_object(ObjectData,PlotHandles,ZBounds);% call the set_object interface,
-set(hset_object,'name',ObjectName)
+%set(hset_object,'name',ObjectName)
 
 % %project the current field on the object and plot it
 % ProjData= proj_field(UvData.Field,ObjectData,IndexObj);%project the current interface field on ObjectData
@@ -4955,7 +4954,7 @@ data=convert(t);
 data.enable_plot=1;
 [pp,data.Name]=fileparts(FileName);
 %PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-hset_object=findobj(allchild(0),'Name','set_object');
+hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
@@ -5051,7 +5050,7 @@ hh=findobj(allchild(0),'tag','view_field');
 if ~isempty(hh)
     delete(hh)
 end
-hh=findobj(allchild(0),'name','geometry_calib');
+hh=findobj(allchild(0),'tag','geometry_calib');
 if ~isempty(hh)
     delete(hh)
 end

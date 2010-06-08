@@ -140,10 +140,10 @@ if exist('haxes','var')
 end
 if testnewfig% create a new figure and axes if the plotting axes does not exist
     hfig=figure;
-    if isfield(Data,'IndexObj') && isfield(Data,'Style') && isfield(Data,'ProjMode')
-        figname=[num2str(Data.IndexObj) '-' Data.Style];
-        set(hfig,'Name',figname)
-    end
+%     if isfield(Data,'IndexObj') && isfield(Data,'Style') && isfield(Data,'ProjMode')
+%         figname=[num2str(Data.IndexObj) '-' Data.Style];
+%         set(hfig,'Name',figname)
+%     end
 %     testhandle=0;
     if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
         set(hfig,'UserData',PlotParam)
