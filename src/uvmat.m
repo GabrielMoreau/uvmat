@@ -2590,12 +2590,16 @@ if isfield(UvData,'Mask')&~isfield(UvData,'A')
     set(handles.MaxA,'String','255')
 end
 IndexObj(1)=get(handles.list_object_1,'Value');
+haxes_1=handles.axes3;
 if IndexObj(1)> numel(UvData.Object)
     IndexObj(1)=1;
+    haxes_1=handles.axes3;
 end
+view_field_handle=[];
 IndexObj_2=get(handles.list_object_2,'Value');
-if IndexObj_2 <= numel(UvData.Object)
+if isequal(get(handles.list_object_2,'Visible'),'on') && IndexObj_2 <= numel(UvData.Object)
     IndexObj(2)=IndexObj_2;
+    view_field_handle=findobj(allchild(0),'tag','view_field');
 end
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);
@@ -2649,18 +2653,27 @@ for imap=1:numel(IndexObj)
             end  
         end
         if ~isempty(ObjectData)
-            haxes=[];%default
-            if isfield(UvData.Object{iobj},'plotaxes')
-                haxes=UvData.Object{iobj}.plotaxes;%axes used for representing the projection on the object
-            end
+%             haxes=[];%default
+%             if isfield(UvData.Object{iobj},'plotaxes')
+%                 haxes=UvData.Object{iobj}.plotaxes;%axes used for representing the projection on the object
+%             end
             PosColorbar=[];%default: no colorbar
-            if ishandle(haxes) & isequal(get(haxes,'Tag'),'axes3')& isfield(UvData,'PosColorbar')
+            if ishandle(haxes_1) & isequal(get(haxes_1,'Tag'),'axes3')& isfield(UvData,'PosColorbar')
                 PosColorbar=UvData.PosColorbar;%prescribe the colorbar position on the uvmat interface
             else
                 PosColorbar='*';%default position
             end
-            PlotParam=read_plot_param(handles);%read plotting parameters on the uvmat interface
-            [PlotType,ScalOut,UvData.Object{iobj}.plotaxes]=plot_field(ObjectData,haxes,PlotParam,keeplim,PosColorbar);
+            if imap==1 %plot on uvmat
+                PlotParam=read_plot_param(handles);%read plotting parameters on the uvmat interface
+                [PlotType,ScalOut,UvData.Object{iobj}.plotaxes]=plot_field(ObjectData,haxes_1,PlotParam,keeplim,PosColorbar);
+            elseif ~isempty(view_field_handle)
+                view_field_hh=guidata(view_field_handle);
+                PlotParam=read_plot_param(view_field_hh);%read plotting parameters on the uvmat interface
+                [PlotType,ScalOut,UvData.Object{iobj}.plotaxes]=plot_field(ObjectData,view_field_hh.axes3,PlotParam,keeplim,PosColorbar);
+            else
+                [pt,so,UvData.Object{iobj}.plotaxes]=view_field(ObjectData);
+            end
+            
             if isequal(PlotType,'none')
                 hget_field=findobj(allchild(0),'name','get_field');
                 if isempty(hget_field)
