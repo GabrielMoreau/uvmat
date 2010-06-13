@@ -27,7 +27,7 @@ zoomstate=0;%default
 if ~exist('handles','var')
    handles=get(gcbo,'UserData');
 end
-huvmat=findobj(allchild(0),'Name','uvmat');%find the uvmat interface handle
+huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
     UvData=get(huvmat,'UserData');
@@ -61,8 +61,8 @@ if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off
         ObjectData.Coord(ind_move,1)=xy(1,1);
         ObjectData.Coord(ind_move,2)=xy(1,2);
     else   %creating object
-        if isequal(ObjectData.Style,'line')||isequal(ObjectData.Style,'polyline')||...
-                isequal(ObjectData.Style,'polygon')||isequal(ObjectData.Style,'points')
+        if strcmp(ObjectData.Style,'line')||strcmp(ObjectData.Style,'polyline')||...
+                strcmp(ObjectData.Style,'polygon')||strcmp(ObjectData.Style,'points')
             if isfield(AxeData,'ObjectCoord') && size(AxeData.ObjectCoord,2)==3
               xy(1,3)=AxeData.ObjectCoord(1,3); % z coordinate of the mouse: to generalise ...
             else
@@ -90,24 +90,22 @@ if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off
         end
     end
     %set(AxeData.CurrentObject,'UserData',ObjectData); %update the object properties
-    if isequal(ObjectData.Style,'rectangle')||isequal(ObjectData.Style,'ellipse')
+    if strcmp(ObjectData.Style,'rectangle')||strcmp(ObjectData.Style,'ellipse')
         NbDefPoint=1;  
-    elseif isequal(ObjectData.Style,'line')|| isequal(ObjectData.Style,'plane');
+    elseif strcmp(ObjectData.Style,'line')|| strcmp(ObjectData.Style,'plane');
         NbDefPoint=2; 
     else
          NbDefPoint=3;
     end
     
     %show object coordinates in the GUI set_object
-    h_set_object=findobj(allchild(0),'Name','set_object');
-    h_XObject=findobj(h_set_object,'Tag','XObject');
-    h_YObject=findobj(h_set_object,'Tag','YObject');
-    h_ZObject=findobj(h_set_object,'Tag','ZObject');
-    set(h_XObject,'String',num2str(ObjectData.Coord(:,1),4)); 
-    set(h_YObject,'String',num2str(ObjectData.Coord(:,2),4)); 
-    set(h_ZObject,'String',num2str(ObjectData.Coord(:,3),4));
+    h_set_object=findobj(allchild(0),'Tag','set_object');
+    hh_set_object=guidata(h_set_object);
+    set(hh_set_object.XObject,'String',num2str(ObjectData.Coord(:,1),4)); 
+    set(hh_set_object.YObject,'String',num2str(ObjectData.Coord(:,2),4)); 
+    set(hh_set_object.ZObject,'String',num2str(ObjectData.Coord(:,3),4));
     if NbDefPoint<=2 || isequal(get(currentfig,'SelectionType'),'alt') ||...
-              isequal(AxeData.Drawing,'translate') || isequal(AxeData.Drawing,'deform');%stop drawing
+              strcmp(AxeData.Drawing,'translate') || strcmp(AxeData.Drawing,'deform');%stop drawing
         AxeData.CurrentOrigin=[]; %suppress the current origin
        if isequal(ObjectData.Style,'line') && size(ObjectData.Coord,1)<=1
            AxeData.Drawing='off';
@@ -125,20 +123,15 @@ if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off
              else
                  PlotHandles=get_plot_handles(handles);%get the handles of the graphic objects setting the plotting parameters
              end
-            AxeData.hset_object=set_object(ObjectData,PlotHandles);% call the set_object interface ,*
             UvData.Object{IndexObj}=update_obj(UvData,IndexObj,ObjectData,PlotHandles); 
-            %ObjectData=update_obj(UvData,IndexObj,ObjectData,PlotHandles); 
             if  isfield(UvData.Object{IndexObj},'PlotParam')
                 write_plot_param(PlotHandles,UvData.Object{IndexObj}.PlotParam); %update the display of plotting parameters for the current object
-            end              
-%             set(hhuvmat.create,'Value',0);% set to 'off' the button for object creation
-%             set(hhuvmat.create,'BackgroundColor',[0 1 0]);% paint the creation button in green
+            end   
             set(hhuvmat.edit,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
             set(hhuvmat.edit,'Value',1);%
             set(hhuvmat.edit,'Enable','on');%
             set(hhuvmat.MenuEditObject,'Enable','on');%
             set(hhuvmat.MenuEdit,'Enable','on');%
-%             set(hhuvmat.MenuObject,'Enable','on');%
             UvData.MouseAction='edit_object'; % set the edit button to 'on'
         end
     else
@@ -151,7 +144,6 @@ if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off
 else
     test_drawing=0;
 end
-
 %creation of a new zoom plot
 test_replot=0;
 if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed
@@ -234,7 +226,7 @@ if zoomstate
         end
      %zoom out by a factor of 2 out when the right mouse button has been used 
      elseif isequal(get(currentfig,'SelectionType'),'alt'); %if right button has been pressed
-            alpha=2; %zoom factor (zoom out by a factor 2)
+%             alpha=2; %zoom factor (zoom out by a factor 2)
             xlim=get(currentaxes,'XLim');
             xlim_new(1)=2*xlim(1)-xy(1,1);
             xlim_new(2)=2*xlim(2)-xy(1,1);
@@ -343,14 +335,14 @@ if isequal(get(currentfig,'SelectionType'),'alt') && ~zoomstate && (~isfield(Axe
         currentobj=gco;%default
     end
     if ((nbselect==0) && isequal(get(currentobj,'Type'),'axes')) || isequal(currentobj,huvmat)
-        global Data_uvmat
-        Data_uvmat=get(currentobj,'UserData');
-        %plot_text(CurData)
-        %get_field([],CurData);
-        evalin('base','global Data_uvmat')%make CurData global in the workspace
+        currentfig=get(currentobj,'parent');
+        figname=get(currentfig,'name');
+        eval(['global Data_' figname])
+        eval(['Data_' figname '=get(currentobj,''UserData'')']);
+        evalin('base',['global Data_' figname])%make CurData global in the workspace
         objtype=get(currentobj,'Type');
         display(['UserData of ' objtype ':'])
-        evalin('base','Data_uvmat') %display CurData in the workspace
+        evalin('base',['Data_' figname]) %display CurData in the workspace
         commandwindow %brings the Matlab command window to the front
     end
 end

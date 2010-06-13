@@ -228,7 +228,8 @@ end
 % set graph aspect ratio
 
 
-set(haxes,'UserData',AxeData)
+%set(haxes,'UserData',AxeData)
+set(haxes,'UserData',Data)
 if ~testnewfig
 set(0,'Children',hstack);%put back the initial figure stack after plot creation
 %set(haxes,'Tag','uvmat'); 
@@ -238,7 +239,8 @@ end
 %-------------------------------------------------------------------
 function hdisplay=plot_text(FieldData,hdisplay_in)
 %-------------------------------------------------------------------
-if exist('hdisplay_in','var') && ishandle(hdisplay_in) && isequal(get(hdisplay_in,'Type'),'uicontrol')
+hdisplay_in
+if exist('hdisplay_in','var') && ~isempty(hdisplay_in) && ishandle(hdisplay_in) && isequal(get(hdisplay_in,'Type'),'uicontrol')
     hdisplay=hdisplay_in;
 else
     figure;%create new figure
@@ -964,9 +966,6 @@ if test_vec
     else
         AxeData.FF=vec_FF';
     end
-%     if isfield(Data,'W')
-%         AxeData.W=Data.W;
-%     end
     
     %decimate by a factor 2 in vector mesh(4 in nbre of vectors)
     if isfield(PlotParam.Vectors,'decimate4')&isequal(PlotParam.Vectors.decimate4,1)
@@ -994,6 +993,7 @@ if test_vec
     
     %get main level color code
     [colorlist,col_vec,PlotParamOut.Vectors]=set_col_vec(PlotParam.Vectors,vec_C);
+    
     % take flags into account: add flag colors to the list of colors
     sizlist=size(colorlist);
     nbcolor=sizlist(1);
@@ -1113,7 +1113,6 @@ h=findobj(haxes,'Tag','vel');% search existing lines in the current axes
 sizh=size(h);
 set(h,'EraseMode','xor');
 set(haxes,'NextPlot','replacechildren');
-%htext=findobj('Tag','scalevec');
       
 %drawnow
 %create lines (if no lines) or modify them
@@ -1162,8 +1161,7 @@ for icolor=1:ncolor
       hx = [x1;x2;x3];
       hy = [y1;y2;y3];
     tri=reshape([1:3*length(uc)],3,[])';
-    d = tri(:,[1 2 3 1])';
-  
+    d = tri(:,[1 2 3 1])'; 
     
     isn=isnan(colorlist(icolor,:));%test if color NaN
     if 2*icolor > sizh(1) %if icolor exceeds the number of existing ones

@@ -66,20 +66,13 @@ end
 ProjData= proj_field(UvData.Field,ObjectData,IndexObj);%project the current interface field on ObjectData
 if ~isempty(ProjData)   
     plotaxes=[];%default
-%         get(Object_set{IndexObj}.plotaxes)
     if length(Object_set)>= IndexObj && isfield(Object_set{IndexObj},'plotaxes')
         plotaxes=Object_set{IndexObj}.plotaxes;
-        [PlotType,Object_out.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);
+        [PlotType,Object_out.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);        
     else
-         [plotaxes]=view_field(ProjData);
+        [plotaxes]=view_field(ProjData);
     end
-%         [PlotType,Object_out.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);
     Object_out.plotaxes=plotaxes;
-%     plotfig=get(plotaxes,'parent');
-%     name_str=get(plotfig,'Name');
-%     if ~isequal(name_str,'uvmat')
-%         set(plotfig,'Name',['Projection on' num2str(IndexObj) '-' ObjectData.Style]);
-%     end
 end
 
 

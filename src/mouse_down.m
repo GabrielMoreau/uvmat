@@ -141,7 +141,7 @@ if  test_edit && (isequal(tag_obj,'proj_object')||isequal(tag_obj,'DeformPoint')
             AxeData.CurrentObject=hcurrentobject;% the selected object becomes the current one
         end
         ObjectData=get(AxeData.CurrentObject,'UserData');
-        if test_edit & isfield(ObjectData,'IndexObj')
+        if test_edit && isfield(ObjectData,'IndexObj')
             hother=findobj('Tag','proj_object','Type','line');%find all the proj objects
             set(hother,'Color','b');%reset all the proj objects in 'blue' by default
             set(hother,'Selected','off')
@@ -183,9 +183,19 @@ if  test_edit && (isequal(tag_obj,'proj_object')||isequal(tag_obj,'DeformPoint')
                     %indicate on the list of the GUI uvmat which object has been selected
             if strcmp(get(hcurrentfig,'tag'),'uvmat') %if the uvmat graph has been selected, object projection is on the other frame view_field
                 set(hhuvmat.list_object_2,'Value',IndexObj);
+                list_str=get(hhuvmat.list_object_2,'String');
+                UvData.Object{IndexObj}.Name=list_str{IndexObj};
             else
                 set(hhuvmat.list_object_1,'Value',IndexObj);
+                list_str=get(hhuvmat.list_object_1,'String');
+                UvData.Object{IndexObj}.Name=list_str{IndexObj};
             end
+            h_set_object=findobj(allchild(0),'Tag','set_object');
+            if ~isempty(h_set_object)
+                delete(h_set_object)
+            end
+            set_object(UvData.Object{IndexObj})
+            axes(haxes);%set back the current axes haxes
             testdeform=0;
             set(gcbo,'Pointer','circle'); 
             AxeData.Drawing='deform';
@@ -228,7 +238,13 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
         UvData.Object{IndexObj}.HandlesDisplay(1)=AxeData.CurrentObject;
         set(huvmat,'UserData',UvData)
         list_str=get(hhuvmat.list_object_1,'String');
-        list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style]; 
+        object_name=get(UvData.sethandles.TITLE,'String')
+        if isempty(object_name)|| strcmp(object_name,'')
+            list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style]; 
+            set(UvData.sethandles.TITLE,'String',list_str{IndexObj})
+        else
+           list_str{IndexObj}=object_name;
+        end
         set(hhuvmat.list_object_1,'String',list_str)
         list_str{end+1}='...';
         set(hhuvmat.list_object_2,'String',list_str)
@@ -322,49 +338,5 @@ if test_edit_vect & ~isempty(ivec)
     PlotParam=read_plot_param(hhuvmat);
     [PlotType,ScalOut]= plot_field(AxeData,haxes,PlotParam,1);
 end   
-
-
 set(haxes,'UserData',AxeData);
-
-%------------------------------------------------------
-function update_plot(AxeData,haxes)
-%--------------------------------------------
-
-
-% %determine the axes of action of the set_edit interface
-% % haxes= findobj(huvmat,'Tag','axes3'); %main plotting axes as default
-% % AxeData=get(haxes,'UserData')
-% %For vector field representation
-% PlotHandles.auto_xy=findobj(huvmat,'Tag','auto_xy');
-% PlotHandles.VecScale=findobj(huvmat,'Tag','VecScale');
-% PlotHandles.AutoVec=findobj(huvmat,'Tag','AutoVec');
-% PlotHandles.checkyellow=findobj(huvmat,'Tag','checkyellow');
-% PlotHandles.checkblack=findobj(huvmat,'Tag','checkblack');
-% PlotHandles.col_vec=findobj(huvmat,'Tag','col_vec');
-% PlotHandles.colcode1=findobj(huvmat,'Tag','colcode1');
-% PlotHandles.colcode2=findobj(huvmat,'Tag','colcode2');
-% PlotHandles.vec_col_bar=findobj(huvmat,'Tag','vec_col_bar');
-% PlotHandles.slider1=findobj(huvmat,'Tag','slider1');
-% PlotHandles.slider2=findobj(huvmat,'Tag','slider2');
-% PlotHandles.max_vec=findobj(huvmat,'Tag','max_vec');
-% PlotHandles.min_vec=findobj(huvmat,'Tag','min_vec');
-% PlotHandles.AutoVecColor=findobj(huvmat,'Tag','AutoVecColor');
-% PlotHandles.decimate4=findobj(huvmat,'Tag','decimate4');
-% 
-% %vectors
-% Vectors.VecScale=str2num(get(PlotHandles.VecScale,'String'));
-% Vectors.AutoVec=get(PlotHandles.AutoVec,'Value');%automatic vector length
-% Vectors.checkyellow=get(PlotHandles.checkyellow,'Value');
-% Vectors.checkblack=get(PlotHandles.checkblack,'Value');
-% Vectors.decimate4=get(PlotHandles.decimate4,'Value');% =1; for reducing the nbre of vectors
-% menu_col=get(PlotHandles.col_vec,'String');
-% menu_val=get(PlotHandles.col_vec,'Value');
-% Vectors.CName=menu_col{menu_val}; %'ima_cor','black','white',...
-% Vectors.colcode1=str2num(get(PlotHandles.colcode1,'String'));% first threshold for rgb, first value for'continuous' 
-% Vectors.colcode2=str2num(get(PlotHandles.colcode2,'String'));% second threshold for rgb, last value (saturation) for 'continuous' 
-% Vectors.option=get(PlotHandles.vec_col_bar,'Value'); % =1 (64 colors), =0 (3 colors)
-% Vectors.min=get(PlotHandles.slider1,'Min');
-% Vectors.max=get(PlotHandles.slider1,'Max');
-% Vectors.auto=get(PlotHandles.AutoVecColor,'Value');% =1; thresholds scaling relative to min and max, =0 fixed thresholds
-% PlotParam.Vectors=Vectors;
 

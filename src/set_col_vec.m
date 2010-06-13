@@ -23,6 +23,7 @@ col_vec=[];
 colcode_out=colcode;%default
 if isempty(vec_C) || ~isnumeric(vec_C)
     colorlist=[0 0 1]; %blue  
+    col_vec=ones(size(vec_C));
     return
 end
 if (isfield(colcode,'FixedCbounds') && isequal(colcode.FixedCbounds,1))
@@ -37,6 +38,7 @@ end
 if ~isstruct(colcode),colcode=[];end;
 if ~isfield(colcode,'ColorCode') || isempty(colcode.ColorCode)
     colorlist=[0 0 1]; %blue  
+    col_vec=ones(size(vec_C));
     return
 end
 if  isfield(colcode,'colcode1')
@@ -51,7 +53,6 @@ else
 end
 colcode_out.MinC=minC;
 colcode_out.MaxC=maxC;
-
 if strcmp(colcode.ColorCode,'black')
     colorlist(1,:)=[0 0 0];%black
     col_vec=ones(size(vec_C));%all vectors at color#1

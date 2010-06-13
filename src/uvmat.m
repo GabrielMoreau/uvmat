@@ -4361,22 +4361,22 @@ hset_object=set_object(ObjectData,PlotHandles,ZBounds);% call the set_object int
 %     UvData.Object{IndexObj}.plotaxes=view_field(ProjData);
 % end
 % set(handles.uvmat,'UserData',UvData)
-% hother=findobj('Tag','proj_object');%find all the proj objects
-% for iobj=1:length(hother)
-%     if isequal(get(hother(iobj),'Type'),'rectangle')|isequal(get(hother(iobj),'Type'),'patch')
-%         set(hother(iobj),'EdgeColor','b')
-%         if isequal(get(hother(iobj),'FaceColor'),'m')
-%             set(hother(iobj),'FaceColor','b')
-%         end
-%     elseif isequal(get(hother(iobj),'Type'),'image')
-%            Acolor=get(hother(iobj),'CData');
-%            Acolor(:,:,1)=zeros(size(Acolor,1),size(Acolor,2));
-%            set(hother(iobj),'CData',Acolor);
-%     else
-%          set(hother(iobj),'Color','b')
-%     end
-%     set(hother(iobj),'Selected','off')
-% end
+hother=findobj('Tag','proj_object');%find all the proj objects
+for iobj=1:length(hother)
+    if isequal(get(hother(iobj),'Type'),'rectangle')|isequal(get(hother(iobj),'Type'),'patch')
+        set(hother(iobj),'EdgeColor','b')
+        if isequal(get(hother(iobj),'FaceColor'),'m')
+            set(hother(iobj),'FaceColor','b')
+        end
+    elseif isequal(get(hother(iobj),'Type'),'image')
+           Acolor=get(hother(iobj),'CData');
+           Acolor(:,:,1)=zeros(size(Acolor,1),size(Acolor,2));
+           set(hother(iobj),'CData',Acolor);
+    else
+         set(hother(iobj),'Color','b')
+    end
+    set(hother(iobj),'Selected','off')
+end
 hother=findobj('Tag','DeformPoint');
 set(hother,'Color','b');
 set(hother,'Selected','off')    

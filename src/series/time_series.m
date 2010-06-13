@@ -142,7 +142,7 @@ if isequal(FieldName,{'get_field...'})
        return
     end
     %hhget_field=guidata(hget_field);%handles of GUI elements in get_field
-    SubField=read_get_field(hget_field) %read the names of the variables to plot in the get_field GUI
+    SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
     if isempty(SubField)
         delete(hget_field)
        filename=name_generator(filebase{1},num_i1{1}(1),num_j1{1}(1),FileExt{1},NomType{1},1,num_i2{1}(1),num_j2{1}(1),SubDir{1});
@@ -551,7 +551,6 @@ hget_field=findobj(allchild(0),'name','get_field');
 if ~isempty(hget_field)
     delete(hget_field)
 end
-RecordData
 
 get_field(filemean,RecordData)
     

@@ -81,8 +81,6 @@ pos_view_field(2)=pos_uvmat(2)-pos_uvmat(3)/4;
 pos_view_field(3:4)=pos_uvmat(3:4);
 set(hObject,'Position',pos_view_field)
 
-
-
 %functions for the mouse and keyboard
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles_mouse})%set keyboard action function
 set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles_mouse})%set mouse action functio
@@ -90,7 +88,7 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action functio
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse}) 
 set(hObject,'CloseRequestFcn',{@closefcn})%
 
-[PlotType,PlotParamOut,haxes]= plot_field(Field,handles.axes3);%,PlotParam,KeepLim,PosColorbar)
+[PlotType,PlotParamOut]= plot_field(Field,handles.axes3);%,PlotParam,KeepLim,PosColorbar)
 set(handles.axes3,'UserData',Field);%store the current field
 if isfield(PlotParamOut,'Vectors')
     set(handles.VECT_title,'Visible','on')
@@ -689,15 +687,12 @@ A(:,:,2)=A2';
 A(:,:,3)=A3';
 set(handles.vec_col_bar,'Cdata',A)
 
-
 %-------------------------------------------------------------------
 function [PlotType,ScalOut]=update_plot(handles)
 %-------------------------------------------------------------------
 haxes= handles.axes3;
-huvmat=findobj(allchild(0),'tag','uvmat');
+%huvmat=findobj(allchild(0),'tag','uvmat');
 ProjField=get(haxes,'UserData');
-% 
-% AxeData=get(haxes,'UserData');
 PlotParam=read_plot_param(handles);
 [PlotType,PlotParamOut]= plot_field(ProjField,haxes,PlotParam,1);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
@@ -707,13 +702,13 @@ write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 %------------------------------------------------------
 function MenuExportField_Callback(hObject, eventdata, handles)
 
-global CurData
-huvmat=findobj(allchild(0),'Name','uvmat');
-UvData=get(huvmat,'UserData');
-CurData=UvData.ProjField_2;
-evalin('base','global CurData')%make CurData global in the workspace
+global Data_view_field
+% huvmat=findobj(allchild(0),'Name','uvmat');
+Data_view_field=get(handles.axes3,'UserData');
+% Data_view_field=UvData.ProjField_2;
+evalin('base','global Data_view_field')%make CurData global in the workspace
 display(['UserData of view_field :'])
-evalin('base','CurData') %display CurData in the workspace
+evalin('base','Data_view_field') %display CurData in the workspace
 commandwindow;
 
 %------------------------------------------------------
@@ -752,32 +747,6 @@ function auto_sclar_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of auto_sclar
 
 
-function edit88_Callback(hObject, eventdata, handles)
-
-
-
-% --- Executes on button press in AutoScal.
-function checkbox40_Callback(hObject, eventdata, handles)
-% hObject    handle to AutoScal (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of AutoScal
-
-
-
-function edit82_Callback(hObject, eventdata, handles)
-
-
-
-function edit83_Callback(hObject, eventdata, handles)
-% hObject    handle to min_vec (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of min_vec as text
-%        str2double(get(hObject,'String')) returns contents of min_vec as a double
-
 
 % --- Executes on slider movement.
 function slider9_Callback(hObject, eventdata, handles)
@@ -800,35 +769,6 @@ function slider10_Callback(hObject, eventdata, handles)
 %        slider
 
 
-% --- Executes on button press in AutoVecColor.
-function checkbox41_Callback(hObject, eventdata, handles)
-% hObject    handle to AutoVecColor (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of AutoVecColor
-
-
-function edit89_Callback(hObject, eventdata, handles)
-% hObject    handle to max_vec (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of max_vec as text
-%        str2double(get(hObject,'String')) returns contents of max_vec as a double
-
-
-function edit90_Callback(hObject, eventdata, handles)
-% hObject    handle to colcode2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of colcode2 as text
-%        str2double(get(hObject,'String')) returns contents of colcode2 as a double
-
-
-
-
 function closefcn(hObject, eventdata, handles)
 huvmat=findobj(allchild(0),'Name','uvmat');
 hhuvmat=guidata(huvmat);
@@ -836,33 +776,6 @@ list_object_2=get(hhuvmat.list_object_2,'String');
 set(hhuvmat.list_object_2,'Value',numel(list_object_2))%select the last value ('...')
 delete(hObject)
 
-
-
-% --- Executes on button press in checkbox42.
-function checkbox42_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox42 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox42
-
-
-% --- Executes on button press in checkbox43.
-function checkbox43_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox43 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox43
-
-
-% --- Executes on button press in checkbox44.
-function checkbox44_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox44 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox44
 
 
 % --- Executes on selection change in popupmenu18.

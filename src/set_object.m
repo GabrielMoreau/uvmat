@@ -14,7 +14,7 @@
 %    .DX,.DY,.DZ : mesh along each dirction
 %    .RangeX, RangeY
 %    .Coord(j,i), i=1, 2, 3,  components x, y, z of j=1...n position(s) characterizing the object components
-% PlotHandles: handles for projection plots
+% PlotHandles: handles for projection plots NO MORE USED
 % Zbounds: bounds on Z ( 3D case)
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -84,9 +84,9 @@ if ~exist('ZBound','var')
 end
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function (allow action on uvmat when set_object is in front)
 set(handles.MenuCoord,'ListboxTop',1)
-if ~exist('PlotHandles','var')
-     PlotHandles=[];
-end
+% if ~exist('PlotHandles','var')
+%      PlotHandles=[];
+% end
 enable_plot=0;%default: does not allow plot of object and projection
 % SetData.PlotHandles=PlotHandles;
 % set(hObject,'UserData',SetData)
@@ -98,7 +98,7 @@ if exist('data','var')
     end
     if isfield(data,'Name')
         set(handles.TITLE,'String',data.Name)
-        set(hObject,'name',data.Name)
+%         set(hObject,'name',data.Name)
     end
     if ~isfield(data,'NbDim')||~isequal(data.NbDim,3)%2D case
         set(handles.ZObject,'Visible','off')
@@ -775,7 +775,7 @@ function PLOT_Callback(hObject, eventdata, handles)
 huvmat=findobj('tag','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
 hhuvmat=guidata(huvmat);%handles in the uvmat GUI
-ObjectName=get(handles.set_object,'name');%name ome)f the current object (set_object na
+ObjectName=get(handles.TITLE,'String');%name ome)f the current object (set_object na
 ListObject=get(hhuvmat.list_object_1,'String');%position in the objet list
 IndexObj_1=get(hhuvmat.list_object_1,'Value');
 IndexObj_2=get(hhuvmat.list_object_2,'Value');
@@ -784,15 +784,14 @@ IndexObj_2=get(hhuvmat.list_object_2,'Value');
 ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
 PlotHandles=[];%default
 testnew=0;
+PlotHandles=get_plot_handles(hhuvmat);
 if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose projection is viewed in the uvmat frame
    ObjectData.HandlesDisplay=hhuvmat.axes3;
-    PlotHandles=get_plot_handles(hhuvmat);
     IndexObj=IndexObj_1;
 elseif IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field
     hview_field=findobj('tag','view_field');
     if ~isempty(hview_field)
         PlotHandles=guidata(hview_field);
-%         PlotHandles=get_plot_handles( hhview_field);
         ObjectData.HandlesDisplay=PlotHandles.axes3;%handle of axes3 in view_field
     end
     IndexObj=IndexObj_2;
@@ -805,7 +804,7 @@ else %new object
 %     set(hhuvmat.list_object_2,'String',[ListObject;ObjectName;{'...'}])
 %     set(hhuvmat.list_object_2,'Value',IndexObj)
 end
-ObjectName=get(handles.TITLE,'String');
+% ObjectName=get(handles.TITLE,'String');
 if length(ObjectName)<1
     ObjectName=[num2str(IndexObj) '-' ObjectData.Style];
 else
@@ -819,42 +818,13 @@ end
 ListObject{IndexObj,1}=ObjectName;
 set(hhuvmat.list_object_1,'String',ListObject)
 set(hhuvmat.list_object_2,'String',[ListObject;{'...'}])
-set(handles.set_object,'name',ObjectName);%update the name of set_object so that it equals its corresponding object in the list
 if testnew
     set(hhuvmat.list_object_2,'Value',IndexObj)
 end
-% ObjectData.HandlesDisplay=[]; % new object plot by default
-% if length(UvData.Object) >= IndexObj && isfield(UvData.Object{IndexObj},'HandlesDisplay')
-%     hdisplay=UvData.Object{IndexObj}.HandlesDisplay;
-%     if isequal(UvData.Object{IndexObj}.Style, ObjectData.Style) && isequal(UvData.Object{IndexObj}.ProjMode, ObjectData.ProjMode)
-%         ObjectData.HandlesDisplay=UvData.Object{IndexObj}.HandlesDisplay;
-%     else  % for a new object styl, delete the existing object plots 
-%         for ih=1:length(hdisplay)
-%             PlotData=get(hdisplay(ih),'UserData');
-%             if isfield(PlotData,'SubObject') & ishandle(PlotData.SubObject)
-%                     delete(PlotData.SubObject);
-%             end
-%             if isfield(PlotData,'DeformPoint') & ishandle(PlotData.DeformPoint)
-%                    delete(PlotData.DeformPoint);
-%             end
-%             if ~isequal(hdisplay(ih),0)
-%                 delete(hdisplay(ih));
-%             end
-%         end
-%         if isfield(ObjectData,'plotaxes') && ishandle(ObjectData.plotaxes)
-%             delete(ObjectData.plotaxes)%delete the axes for plotting the current projection result
-%         end
-%     end      
-% end
 
 % update the object plot and projection field
 UvData.Object{IndexObj}=update_obj(UvData,IndexObj,ObjectData,PlotHandles);
-
 set(huvmat,'UserData',UvData)%update the data in the uvmat interface
-% list_str=get(hlist_object,'String');
-% list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style];
-% set(hlist_object_1,'String',list_str)
-% set(hlist_object_1,'Value',IndexObj)
 
 %set uvmat to object edit mode to allow further object update
 hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI
