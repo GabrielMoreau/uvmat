@@ -60,7 +60,11 @@ hchild=get(currentfig,'Children');%handles of all objects in the current figure
 % loop on all the objects in the current figure and detect whether the mouse is over a plot  axes
 haxes=[];
 for ichild=1:length(hchild)
-    obj_pos=get(hchild(ichild),'Position');%position of the object
+    obj_pos=get(hchild(ichild),'Position');
+    if numel(obj_pos)~=4% for some versions of matlab some objects
+        get(hchild(ichild))
+%         continue
+    end%position of the object
     if xy_fig(1) >=obj_pos(1) & xy_fig(2) >= obj_pos(2)& xy_fig(1) <=obj_pos(1)+obj_pos(3) & xy_fig(2) <= obj_pos(2)+obj_pos(4);
         htype=get(hchild(ichild),'Type');%type of the crrent child
         %if the mouse is over an axis, look at the data
