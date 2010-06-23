@@ -61,9 +61,8 @@ hchild=get(currentfig,'Children');%handles of all objects in the current figure
 haxes=[];
 for ichild=1:length(hchild)
     obj_pos=get(hchild(ichild),'Position');
-    if numel(obj_pos)~=4% for some versions of matlab some objects
-        get(hchild(ichild))
-%         continue
+    if numel(obj_pos)~=4% for some versions of matlab a uicontextmenu appears
+        continue
     end%position of the object
     if xy_fig(1) >=obj_pos(1) & xy_fig(2) >= obj_pos(2)& xy_fig(1) <=obj_pos(1)+obj_pos(3) & xy_fig(2) <= obj_pos(2)+obj_pos(4);
         htype=get(hchild(ichild),'Type');%type of the crrent child
