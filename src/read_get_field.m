@@ -247,8 +247,8 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % vectors
-% test_vec_x_dimvar=0;%default
-% test_vec_y_dimvar=0;%default
+test_vec_x_dimvar=0;%default
+test_vec_y_dimvar=0;%default
 % test_vec_z_dimvar=0;%defaul
 dimname_vec_x=[];
 dimname_vec_y=[];
@@ -320,7 +320,7 @@ if test_vector
                     return
                 end
             end
-%             test_vec_x_dimvar=1;
+             test_vec_x_dimvar=1;
             SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
         else
             SubVarAttribute{nbvar}.Role='coord_x';%abcissa with unstructured coordinates
@@ -353,7 +353,7 @@ if test_vector
                     return
                 end
             end
-%             test_vec_y_dimvar=1;
+             test_vec_y_dimvar=1;
             SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
         else
             SubVarAttribute{nbvar}.Role='coord_y';%abcissa with unstructured coordinates
@@ -457,7 +457,7 @@ SubField.VarAttribute=SubVarAttribute;
 if test_scalar
     VarNameA=Field.ListVarName{VarIndexA};
     DimCellA=Field.VarDimName{VarIndexA};   
-    eval(['npxy=size(SubField.' VarNameA ')'])
+    eval(['npxy=size(SubField.' VarNameA ');'])
     SingleCellA={};
     if numel(npxy) < numel(DimCellA)
         SingleCellA=DimCellA(1:end-numel(npxy));
@@ -488,7 +488,7 @@ if test_scalar
     if test_ydimvar%dim_x && dim_y && ~isempty(VarSubIndexA)
         for icoord=1:numel(SingleCellA)% look for coincidence of dimension with one of the dimensions of the scalar 
             if strcmp(dimname_y,SingleCellA{icoord})% a singleton dimension
-                errormsg=['the singleton dimension ' dimname_y ' has been selected for ordiante'];
+                errormsg=['the singleton dimension ' dimname_y ' has been selected for ordinate'];
                 return
             end
         end
@@ -516,13 +516,13 @@ if test_scalar
     dimextra=(1:numel(DimCellA));
     dimextra(dimA)=[]; %list of unselected dimension indices
     DimCellA=DimCellA([dimA dimextra]);
-   % eval(['SubField.' VarNameA '=permute(squeeze(SubField.' VarNameA '),[dimA dimextra]);'])TO CHECK
+    eval(['SubField.' VarNameA '=permute(squeeze(SubField.' VarNameA '),[dimA dimextra]);'])
     SubField.VarDimName{VarSubIndexA}=DimCellA;  
     %add default coord_x and/or coord_y if empty
     if empty_coord_x || empty_coord_y
         VarName=Field.ListVarName{field_var_index};
         DimCell=Field.VarDimName{field_var_index};    
-        eval(['npxy=size(SubField.' VarName ')'])
+        eval(['npxy=size(SubField.' VarName ');'])
         if numel(npxy) < numel(DimCell)
             DimCell=DimCell(end-numel(npxy)+1:end); %suppress the first singletons) dimensions 
         end
@@ -578,7 +578,7 @@ end
 if test_vector
     VarNameU=Field.ListVarName{VarIndexU}; % name of u component variable
     DimCellU=Field.VarDimName{VarIndexU}; % list of dimensions for u component  
-    eval(['npxy=size(SubField.' VarNameU ')']) % npxy= dimension values for the u component
+    eval(['npxy=size(SubField.' VarNameU ');']) % npxy= dimension values for the u component
     SingleCellU={};
     if numel(npxy) < numel(DimCellU)
         SingleCellU=DimCellU(1:end-numel(npxy));
@@ -608,7 +608,7 @@ if test_vector
              end
         end
     end
-    if test_ydimvar%dim_x && dim_y && ~isempty(VarSubIndexA)
+    if test_vec_y_dimvar%dim_x && dim_y && ~isempty(VarSubIndexA)
         for icoord=1:numel(SingleCellU)% look for coincidence of dimension with one of the dimensions of the scalar 
             if strcmp(dimname_vec_y,SingleCellU{icoord})% a singleton dimension
                 errormsg=['the singleton dimension ' dimname_vec_y ' has been selected for ordinate'];
@@ -649,7 +649,7 @@ if test_vector
     if empty_coord_vec_x || empty_coord_vec_y
         VarName=Field.ListVarName{field_var_index};
         DimCell=Field.VarDimName{field_var_index};    
-        eval(['npxy=size(SubField.' VarName ')'])
+        eval(['npxy=size(SubField.' VarName ');'])
         if numel(npxy) < numel(DimCell)
             DimCell=DimCell(end-numel(npxy)+1:end); %suppress the first singletons) dimensions 
         end
@@ -721,13 +721,10 @@ if test_1Dplot
         SubField.VarDimName=[{coord_x_name } SubField.VarDimName];
         VarName=Field.ListVarName{VarIndex_y(1)};
         DimCell=Field.VarDimName{VarIndex_y(1)};    
-        eval(['npxy=size(SubField.' VarName ')'])
+        eval(['npxy=size(SubField.' VarName ');'])
         if numel(npxy) < numel(DimCell)
 %             DimCell=DimCell(end-numel(npxy)+1:end); %suppress the first singletons) dimensions 
         end
-%         ind_select=find(npxy~=1) ;%look for non singleton dimensions
-%         DimCell=DimCell(ind_select);
-%         npxy=npxy(ind_select);
         if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=VarIndex_y(1) ...
                              && isfield(Field.VarAttribute{VarIndex_y(1)},'Coord_1')
 %              Coord_1=Field.VarAttribute{VarIndex_y(1)}.Coord_1;%old convention; use of coord_1 

@@ -70,142 +70,126 @@ for ichild=1:length(hchild)
         if isequal(htype,'axes')
             haxes=hchild(ichild);
             xy=get(haxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
-            mouse.X=xy(1,1);
-            mouse.Y=xy(1,2);
-            u_mouse=[];
-            v_mouse=[];
-            w_mouse=[];
-            A_mouse=[];
-            c_text=[];
-            f_text=[];
-            ff_text=[];     
-            ivec=[];
             AxeData=get(haxes,'UserData');% data attached to the axis
-            if isfield(AxeData,'Drawing')&& ~isempty(AxeData.Drawing) 
+            if isfield(AxeData,'Drawing')&& ~isempty(AxeData.Drawing)
                 test_draw=~isequal(AxeData.Drawing,'off');
             end
             test_zoom_draw=test_draw && isequal(AxeData.Drawing,'zoom')&& isfield(AxeData,'CurrentOrigin') && isequal(get(gcf,'SelectionType'),'normal');
-            test_object=test_draw && isfield(AxeData,'CurrentObject') && ~isempty(AxeData.CurrentObject) && ishandle(AxeData.CurrentObject);       
-             if ~test_edit && ~test_zoom_draw && ~test_ruler
-                 pointershape='crosshair';%set pointer with cross shape (default when mouse is over an axis)
-             end
-            if isfield(AxeData,'X') && isfield(AxeData,'Y') && isfield(AxeData,'Mesh')% test on the existence of a vector field in the current axis
-                if ~isempty(AxeData.Mesh)
-                    flag_vec=(AxeData.X<(xy(1,1)+AxeData.Mesh/3) & AxeData.X>(xy(1,1)-AxeData.Mesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
-                          (AxeData.Y<(xy(1,2)+AxeData.Mesh/3) & AxeData.Y>(xy(1,2)-AxeData.Mesh/3));%f
-                    ivec=find(flag_vec,1);% search the (first) selected vector index ivec
-                    hhh=findobj(haxes,'Tag','vector_marker');
-                    if ~isempty(ivec)
-                        if ~test_object % mark the vectors with a circle in the absence of other operations
-                            if  ~test_create && ~test_edit && ~test_ruler
-                                pointershape='arrow'; %mouse indicates  the detection of a vector
-                                if isempty(hhh)
-                                     hstack=findobj(allchild(0),'Type','figure');%current stack order of figures in matlab
-                                    axes(haxes)
-                                    rectangle('Curvature',[1 1],...
-                      'Position',[AxeData.X(ivec)-AxeData.Mesh/2 AxeData.Y(ivec)-AxeData.Mesh/2 AxeData.Mesh AxeData.Mesh],'EdgeColor','m',...
-                      'LineStyle','-','Tag','vector_marker');
-                                    set(0,'Children',hstack);%put back the initial figure stack after plot creation
+            test_object=test_draw && isfield(AxeData,'CurrentObject') && ~isempty(AxeData.CurrentObject) && ishandle(AxeData.CurrentObject);
+            if ~test_edit && ~test_zoom_draw && ~test_ruler
+                pointershape='crosshair';%set pointer with cross shape (default when mouse is over an axis)
+            end
+            if isfield(AxeData,'ListVarName')
+                [CellVarIndex,NbDim,VarType]=find_field_indices(AxeData);
+                if isfield(AxeData,'Mesh') && ~isempty(AxeData.Mesh)
+                    text_displ_1='';
+                    text_displ_2='';
+                    text_displ_3='';
+                    text_displ_4='';
+                    for icell=1:numel(CellVarIndex)%look for all physical fields
+                        if NbDim(icell)==2 % select 2D field
+                            if ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
+                                eval(['X=AxeData.' AxeData.ListVarName{VarType{icell}.coord_x} ';'])
+                                eval(['Y=AxeData.' AxeData.ListVarName{VarType{icell}.coord_y} ';'])
+                                flag_vec=(X<(xy(1,1)+AxeData.Mesh/3) & X>(xy(1,1)-AxeData.Mesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
+                                    (Y<(xy(1,2)+AxeData.Mesh/3) & Y>(xy(1,2)-AxeData.Mesh/3));%f
+                                ivec=find(flag_vec,1);% search the (first) selected vector index ivec
+                                hhh=findobj(haxes,'Tag','vector_marker');
+                                if ~isempty(ivec)
+                                    if ~test_object && ~test_create && ~test_edit && ~test_ruler% mark the vectors with a circle in the absence of other operations
+                                        pointershape='arrow'; %mouse indicates  the detection of a vector
+                                        if isempty(hhh)
+                                            hstack=findobj(allchild(0),'Type','figure');%current stack order of figures in matlab
+                                            axes(haxes)
+                                            rectangle('Curvature',[1 1],...
+                                                'Position',[X(ivec)-AxeData.Mesh/2 Y(ivec)-AxeData.Mesh/2 AxeData.Mesh AxeData.Mesh],'EdgeColor','m',...
+                                                'LineStyle','-','Tag','vector_marker');
+                                            set(0,'Children',hstack);%put back the initial figure stack after plot creation
+                                        else
+                                            set(hhh,'Visible','on')
+                                            set(hhh,'Position',[X(ivec)-AxeData.Mesh/2 Y(ivec)-AxeData.Mesh/2 AxeData.Mesh AxeData.Mesh])
+                                        end
+                                    end
+                                    for ivar=1:numel(CellVarIndex{icell})
+                                        VarName=AxeData.ListVarName{CellVarIndex{icell}(ivar)};
+                                        eval(['VarVal=AxeData.' VarName '(ivec);'])
+                                        var_text=[VarName '=' num2str(VarVal,3) ','];
+                                        if isequal(ivar,VarType{icell}.coord_x)||isequal(ivar,VarType{icell}.coord_y)||isequal(ivar,VarType{icell}.coord_z)
+                                            text_displ_1=[text_displ_1 var_text];
+                                        elseif isequal(ivar,VarType{icell}.vector_x)||isequal(ivar,VarType{icell}.vector_y)||isequal(ivar,VarType{icell}.vector_z)
+                                            text_displ_3=[text_displ_3 var_text];
+                                        else
+                                            text_displ_4=[text_displ_4 var_text];
+                                        end
+                                    end
                                 else
-                                    set(hhh,'Visible','on')
-                                    set(hhh,'Position',[AxeData.X(ivec)-AxeData.Mesh/2 AxeData.Y(ivec)-AxeData.Mesh/2 AxeData.Mesh AxeData.Mesh])
+                                    if ~isempty(hhh)
+                                        set(hhh,'Visible','off')
+                                    end
+                                end
+                            elseif numel(VarType{icell}.coord) >=2 %structured coordinates
+                                eval(['y=AxeData.' AxeData.ListVarName{VarType{icell}.coord(1)} ';'])
+                                eval(['x=AxeData.' AxeData.ListVarName{VarType{icell}.coord(2)} ';'])
+                                nxy(1)=numel(y);
+                                nxy(2)=numel(x);
+                                MaxAY=max(y(1),y(end));
+                                MinAY=min(y(1),y(end));
+                                if (xy(1,1)>x(1))&(xy(1,1)<x(end))&(xy(1,2)<MaxAY)&(xy(1,2)>MinAY)
+                                    indx0=1+round((nxy(2)-1)*(xy(1,1)-x(1))/(x(end)-x(1)));% index x of pixel
+                                    indy0=1+round((nxy(1)-1)*(xy(1,2)-y(1))/(y(end)-y(1)));% index y of pixel
+                                    if indx0>=1 & indx0<=nxy(2) & indy0>=1 & indy0<=nxy(1)
+                                        text_displ_2=['i='  num2str(indx0) ',j=' num2str(indy0) ','];
+                                        for ivar=1:numel(CellVarIndex{icell})
+                                            VarName=AxeData.ListVarName{CellVarIndex{icell}(ivar)};
+                                            eval(['VarVal=AxeData.' VarName '(indy0,indx0);'])
+                                            var_text=[VarName '=' num2str(VarVal,3) ','];
+                                            text_displ_2=[text_displ_2 var_text];
+                                        end
+                                    end
                                 end
                             end
                         end
-                        mouse.X=AxeData.X(ivec);
-                        mouse.Y=AxeData.Y(ivec);
-                        u_mouse=AxeData.U(ivec);%displacement
-                        v_mouse=AxeData.V(ivec);
-                        w_mouse=0; %default
-                        if isfield(AxeData,'W') & length(AxeData.W)>=ivec
-                            w_text=[',  w=' num2str(AxeData.W(ivec),3)];
-                        else
-                            w_text='';
-                        end
-                        if ~isfield(AxeData,'CName')
-                            AxeData.CName='C';%REVOIR
-                        end
-                        c_text=[', ' AxeData.CName '=' num2str(AxeData.C(ivec),3)];
-                        if isfield(AxeData,'F')&length(AxeData.F)>=ivec
-                            f_text=[',  f=' num2str(AxeData.F(ivec),3)];
-                        else
-                            f_text='';
-                        end
-                        if isfield(AxeData,'FF')&length(AxeData.FF)>=ivec
-                            ff_text=[',  ff=' num2str(AxeData.FF(ivec),3)];
-                        else
-                            ff_text='';
-                        end
-                    else
-                        if ~isempty(hhh)
-                            set(hhh,'Visible','off')
+                    end
+                end
+                if strcmp(text_displ_1,'')
+                    text_displ_1=['x=' num2str(xy(1,1)) ',y=' num2str(xy(1,2))];
+                end
+                if isfield(AxeData,'Z')
+                    text_displ_1=[text_displ_1 num2str(AxeData.Z)]; %generaliser au cas avec angle
+                end
+                if isfield(AxeData,'ObjectCoord') && size(AxeData.ObjectCoord,2)==3
+                    text_displ_1=[text_displ_1 num2str(AxeData.ObjectCoord(1,3))]; %generaliser au cas avec angle
+                end
+                %images
+                if strcmp(text_displ_2,'')&&isfield(AxeData,'A')&&isfield(AxeData,'AX')&&isfield(AxeData,'AY')
+                    y=AxeData.AY;
+                    x=AxeData.AX;
+                    nxy=size(AxeData.A);
+                    MaxAY=max(y(1),y(end));
+                    MinAY=min(y(1),y(end));
+                    if (xy(1,1)>x(1))&(xy(1,1)<x(end))&(xy(1,2)<MaxAY)&(xy(1,2)>MinAY)
+                        indx0=1+round((nxy(2)-1)*(xy(1,1)-x(1))/(x(end)-x(1)));% index x of pixel
+                        indy0=1+round((nxy(1)-1)*(xy(1,2)-y(1))/(y(end)-y(1)));% index y of pixel
+                        if indx0>=1 & indx0<=nxy(2) & indy0>=1 & indy0<=nxy(1)
+                            text_displ_2=['i='  num2str(indx0) ',j=' num2str(indy0) ',A=' num2str(AxeData.A(indy0,indx0,:))];
                         end
                     end
                 end
-            end
-            if isfield(AxeData,'Z')
-                mouse.Z=AxeData.Z; %generaliser au cas avec angle
-            end
-            if isfield(AxeData,'ObjectCoord') & size(AxeData.ObjectCoord,2)==3
-                mouse.Z=AxeData.ObjectCoord(1,3); %generaliser au cas avec angle
-            end
-            testscal= isfield(AxeData,'A')& isfield(AxeData,'AX')& isfield(AxeData,'AY');%test the existence of an image (or scalar represented by an image)
-               if testscal
-                   testscal=~isempty(AxeData.A)&~isempty(AxeData.AX)& ~isempty(AxeData.AY);
-               end
-            if testscal%test the existence of an image (or scalar represented by an image)
-                nxy=size(AxeData.A);
-                MaxAY=max(AxeData.AY(1),AxeData.AY(end));
-                MinAY=min(AxeData.AY(1),AxeData.AY(end));
-                if (xy(1,1)>AxeData.AX(1))&(xy(1,1)<AxeData.AX(end))&(xy(1,2)<MaxAY)&(xy(1,2)>MinAY)
-                    indx0=1+round((nxy(2)-1)*(xy(1,1)-AxeData.AX(1))/(AxeData.AX(end)-AxeData.AX(1)));% index x of pixel
-                    indy0=1+round((nxy(1)-1)*(xy(1,2)-AxeData.AY(1))/(AxeData.AY(end)-AxeData.AY(1)));% index y of pixel
-                    if indx0>=1 & indx0<=nxy(2) & indy0>=1 & indy0<=nxy(1)
-                        A_mouse=AxeData.A(indy0,indx0,:);
+                %coordinate transform if proj_coord differs from menu_coord A REVOIR
+                if isfield(AxeData,'CoordType')
+                    mouse.CoordType=AxeData.CoordType;
+                end
+                if isfield(AxeData,'CoordUnit')
+                    mouse.CoordUnit=AxeData.CoordUnit;
+                end
+                if isfield(mouse,'CoordType')
+                    if isequal(mouse.CoordType,'px')
+                        mouse.CoordUnit='px';
                     end
+                else
+                    mouse.CoordUnit='';%default
                 end
             end
-            %coordinate transform if proj_coord differs from menu_coord 
-            if isfield(AxeData,'CoordType')
-                  mouse.CoordType=AxeData.CoordType;
-            end
-            if isfield(AxeData,'CoordUnit')
-                  mouse.CoordUnit=AxeData.CoordUnit;
-            end 
-            if isfield(mouse,'CoordType') 
-                if isequal(mouse.CoordType,'px')
-                    mouse.CoordUnit='px';
-                end
-            else
-                mouse.CoordUnit='';%default      
-            end      
-            text_displ_1=['x=' num2str(mouse.X,4) ',y=' num2str(mouse.Y,4)];
-            if isfield(mouse,'Z')&~isempty(mouse.Z)
-                text_displ_1=[text_displ_1 ',z=' num2str(mouse.Z,3)];
-            end
-            if isfield(mouse,'CoordUnit')
-                 text_displ_1=[text_displ_1 ' ' mouse.CoordUnit];
-            end
-            if ~isempty(ivec)
-                text_displ_4=['vec#=' num2str(ivec)];
-            end
-            if ~isempty(u_mouse)
-                text_displ_3=['u=' num2str(u_mouse,3) ',v=' num2str(v_mouse,3) w_text ];
-                if  isfield(mouse,'CoordUnit')
-                    if isequal(mouse.CoordUnit,'px')
-                        text_displ_3=[text_displ_3 '  ' mouse.CoordUnit];
-                    elseif isfield(AxeData,'TimeUnit') 
-                        text_displ_3=[text_displ_3 '  ' mouse.CoordUnit '/' AxeData.TimeUnit];
-                    end
-                end
-                text_displ_4=[text_displ_4 c_text f_text ff_text];
-            end
-           
-            if ~isempty(A_mouse)
-                text_displ_2=['A=' num2str(double(A_mouse)) ',i='  num2str(indx0) ',j=' num2str(indy0)];
-            end
-        elseif isequal(htype,'uicontrol') && isequal(get(hchild(ichild),'Visible'),'on')&& ~isequal(get(hchild(ichild),'Style'),'frame')
-            text_displ_1=get(hchild(ichild),'Tag');
         end
     end
 end
@@ -213,11 +197,6 @@ set(handles.text_display_1,'String',text_displ_1);
 set(handles.text_display_2,'String',text_displ_2);
 set(handles.text_display_3,'String',text_displ_3);
 set(handles.text_display_4,'String',text_displ_4);
-% if ~test_draw
-%     return 
-% end
-% At this stage  if no drawing  operation is done
-
 
 %%%%%%%%%%%%%
 %draw a zoom rectangle if no object creation is selected

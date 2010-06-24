@@ -201,7 +201,8 @@ elseif isequal(Data.NbDim,2)
     [AxeData,haxes,PlotParamOut,PlotType]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),haxes,PlotParam,htext,PosColorbar);
     if testzoomaxes
         [AxeData,zoomaxes,PlotParamOut]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),zoomaxes,PlotParam,1,PosColorbar);
-        AxeData.ZoomAxes=zoomaxes;
+        %AxeData.ZoomAxes=zoomaxes;
+        Data.ZoomAxes=zoomaxes;
     end
 elseif isequal(Data.NbDim,3)
     msgbox_uvmat('ERROR','volume plot not implemented yet')
@@ -226,7 +227,9 @@ elseif ~isempty(htext)
 end
 
 % set graph aspect ratio
-
+if isfield(AxeData,'Mesh')
+    Data.Mesh=AxeData.Mesh;
+end
 
 %set(haxes,'UserData',AxeData)
 set(haxes,'UserData',Data)

@@ -1,7 +1,7 @@
 %'find_file_indices': test field structure for input in proj_field and plot_field
 %    group the variables  into 'fields' with common dimensions
 %------------------------------------------------------------------------
-% function [DimVarIndex,CellVarIndex,NbDim,VarType]=find_field_indices(Data)
+% function  [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data)
 %
 % OUTPUT:
 % CellVaxIndex: cell whose elements are arrays of indices in the list data.ListVarName  
@@ -18,6 +18,7 @@
 %      .discrete: like scalar, but set of data points without continuity, represented as dots in a usual plot, instead of continuous lines otherwise
 %      .scalar: scalar field (default)
 %      .coord: vector of indices of coordinate variables corresponding to matrix dimensions
+% errormsg: error message
 %   
 % INPUT:
 % Data: structure representing fields, output of check_field_structure

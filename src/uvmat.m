@@ -355,11 +355,13 @@ else
    if ishandle(handles.UVMAT_title)
        fid=fopen('revision.log');
        if fid~=-1
-        a=textscan(fid,'%s%s%s',1,'HeaderLines',1,'Delimiter','|');
-        set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG';'GNU General Public License'; path_to_uvmat; ['at revision ' a{1}{1}]};a{3}{1};date_str;errormsg]);
-        fclose(fid);
+         a=textscan(fid,'%s%s%s',1,'HeaderLines',1,'Delimiter','|');
+         set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG'};{'GNU General Public License'}; {path_to_uvmat}; ...
+           {['at revision ' a{1}{1}]};a{3}(1);{date_str};errormsg]);
+         fclose(fid);
        else
-           set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG';'GNU General Public License'; path_to_uvmat;date_str};errormsg]);
+          set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG'};{'GNU General Public License'};{path_to_uvmat};...
+               {date_str};errormsg]);
        end
    end
 end
