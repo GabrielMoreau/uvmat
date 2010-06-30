@@ -2062,6 +2062,9 @@ if value
      else
          %get the object file 
          defaultname=get(handles.RootPath,'String');
+         if isempty(defaultname)
+            defaultname={''};
+         end
         [FileName, PathName, filterindex] = uigetfile( ...
        {'*.xml;*.mat', ' (*.xml,*.mat)';
        '*.xml',  '.xml files '; ...

@@ -63,7 +63,7 @@ hhh=which('mmreader');
 for iview=1:nbview
     test_movie(iview)=0;
     if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
-        if isequal(lower(FileExt{iview}),'.avi')
+        if isequal(lower(Series.FileExt{iview}),'.avi')
             MovieObject{iview}=mmreader(fullfile(Series.RootPath{iview},[Series.RootFile{iview} Series.FileExt{iview}]));
             test_movie(iview)=1;
         end
@@ -157,7 +157,9 @@ FieldName=Field_str(val);%the same set of fields for all views
 VelType_str=get(hseries.VelTypeMenu,'String');
 VelType_val=get(hseries.VelTypeMenu,'Value');
 VelType=VelType_str{VelType_val}; %the same for all views
-if isequal(FieldName,'get_field...')
+if strcmp(FieldName,'')
+    msgbox_uvmat('ERROR','no input field defined in FieldMenu')
+elseif strcmp(FieldName,'get_field...')
     hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
     SubField=get_field('read_get_field',hObject,eventdata,hget_field); %read the names of the variables to plot in the get_field GUI
 end

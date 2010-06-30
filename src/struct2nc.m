@@ -112,14 +112,14 @@ if ~isequal(hhh,'')
             eval(['VarVal=Data.' ListVarName{ivar} ';'])%varval=values of the current variable 
             VarDimIndex=Data.VarDimIndex{ivar}; %indices of the variable dimensions in the list of dimensions
             siz=size(VarVal);
-            VarDimName=Data.VarDimName{ivar};%NEW
-            if ischar(VarDimName)%NEW
-                VarDimName={VarDimName};%NEW
-            end%NEW
-            testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2); %NEW
+            VarDimName=Data.VarDimName{ivar};
+            if ischar(VarDimName)
+                VarDimName={VarDimName};
+            end
+            testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2);
             testline=isequal(length(siz),2) && isequal(siz(1),1)&& isequal(siz(2), Data.DimValue(VarDimIndex));
             testcolumn=isequal(length(siz),2) && isequal(siz(1), Data.DimValue(VarDimIndex))&& isequal(siz(2),1);
-            if ~testline && ~testcolumn && ~isequal(siz,Data.DimValue(VarDimIndex))
+            if ~testrange && ~testline && ~testcolumn && ~isequal(siz,Data.DimValue(VarDimIndex))
                 errormsg=['wrong dimensions declared for ' ListVarName{ivar} ' in struct2nc.m'];
                 break
             end 
