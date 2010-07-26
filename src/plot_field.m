@@ -836,7 +836,11 @@ if test_ima
         end        
         if isempty(hima)
             tag=get(haxes,'Tag');
-            hima=imagesc(AX,AY,B,[MinA MaxA]);
+            if MinA<MaxA
+                hima=imagesc(AX,AY,B,[MinA MaxA]);
+            else
+                hima=imagesc(AX,AY,B,[MaxA-1 MaxA]);
+            end
             set(hima,'Tag','ima','HitTest','off')
             set(haxes,'Tag',tag);%preserve the axes tag (removed by image fct !!!)       
         else
@@ -844,7 +848,7 @@ if test_ima
             if MinA<MaxA
                 caxis([MinA MaxA])
             else
-                caxis([MinA MinA+1])
+                caxis([MaxA-1 MaxA])
             end
             set(hima,'XData',AX);
             set(hima,'YData',AY);

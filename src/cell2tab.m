@@ -34,6 +34,5 @@ for itab=1:nx
         end
         charchain=[charchain textlu];
     end
-    %Tabchar(itab)={charchain};
     Tabchar(itab,1)={charchain};
 end

@@ -751,8 +751,8 @@ for ilist=1:length(listot)
 end
 set(handles.list_subdir_civ1,'Value',1) 
 set(handles.list_subdir_civ2,'Value',1)
-set(handles.list_subdir_civ1,'String',['browse...';listdir])
-set(handles.list_subdir_civ2,'String',['browse...';listdir])
+set(handles.list_subdir_civ1,'String',[{'browse...'};listdir])
+set(handles.list_subdir_civ2,'String',[{'browse...'};listdir])
 %check wether the current subdir exists:
 subdir_civ1=get(handles.subdir_civ1,'String');
 subdir_civ2=get(handles.subdir_civ2,'String');

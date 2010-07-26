@@ -94,7 +94,7 @@ if ~isequal(hhh,'')
     end
      %write variable attributes
     if testattr
-        for ivar=1:length(VarAttribute)  
+        for ivar=1:min(numel(VarAttribute),numel(ListVarName))  
             if isstruct(VarAttribute{ivar})
                 attr_names=fields(VarAttribute{ivar});
                 for iattr=1:length(attr_names)

@@ -322,18 +322,18 @@ for i_slice=1:NbSlice
                         case 'image'
                             A=imread(filename);
                     end 
-                    Data{iview}.ListVarName={'coord_y','coord_x','A'}; % 
+                    Data{iview}.ListVarName={'AY','AX','A'}; % 
                     Atype{iview}=class(A);
                     npy=size(A,1);
                     npx=size(A,2);
                     nbcolor=size(A,3);
                     if nbcolor==3
-                         Data{iview}.VarDimName={'coord_y','coord_x',{'coord_y','coord_x','rgb'}};
+                         Data{iview}.VarDimName={'AY','AX',{'AY','AX','rgb'}};
                     else
-                         Data{iview}.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'}};
+                         Data{iview}.VarDimName={'AY','AX',{'AY','AX'}};
                     end  
-                    Data{iview}.coord_y=[npy-0.5 0.5];
-                    Data{iview}.coord_x=[0.5 npx-0.5];
+                    Data{iview}.AY=[npy-0.5 0.5];
+                    Data{iview}.AX=[0.5 npx-0.5];
                     Data{iview}.A=double(A);
                     Data{iview}.CoordType='px';
                 elseif testcivx

@@ -185,22 +185,6 @@ if ~isequal(FieldName,{'get_field...'})
     testcivx=isequal(FileType{1},'netcdf');
 end
 
-% Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
-% filebasesub=fullfile(RootPath{1},RootFile{1});
-% if NbSlice==1
-%     filebase_out=[filebasesub '_time'];
-% else
-%     filebase_out=[filebasesub '_' NbSlice_name 'mtim'];
-%     increment=num_i1{1}(2)-num_i1{1}(1);
-%     if ~isequal(increment,1) % if an increment is set
-%         answeryes=msgbox_uvmat('INPUT_Y-N',['will take time series in ' num2str(NbSlice) 'slices with increment = ' num2str(increment) '!']); 
-%     else    
-%         answeryes=msgbox_uvmat('INPUT_Y-N',{['will take time series in ' num2str(NbSlice) ' slices'];['results stored as files ' filebase_out ' ...']});
-%     end
-%     if ~isequal(answeryes,'Yes')
-%         return
-%     end
-% end
 VelType_str=get(hseries.VelTypeMenu,'String');
 VelType_val=get(hseries.VelTypeMenu,'Value');
 VelType{1}=VelType_str{VelType_val};
@@ -287,10 +271,6 @@ end
 
 % Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
 subdir_result='time_series';
-% filebasesub=fullfile(RootPath{1},subdir_result,RootFile{1});
-% if isempty(SubDir{1}) % create a subdirectory '/aver_stat'
-%     subdir_result='aver_stat';
-%     filebasemean=fullfile(RootPath{1},subdir_result);
 if ~exist(fullfile(RootPath{1},subdir_result),'dir')
     dircur=pwd; %record current working directory
     cd(RootPath{1})% goes to the iamge directory
@@ -350,17 +330,17 @@ for i_slice=1:NbSlice
                         case 'image'
                             A=imread(filename);
                     end 
-                    Data{iview}.ListVarName={'coord_y','coord_x','A'}; % 
+                    Data{iview}.ListVarName={'AY','AX','A'}; % 
                     npy=size(A,1);
                     npx=size(A,2);
                     nbcolor=size(A,3);
                     if nbcolor==3
-                         Data{iview}.VarDimName={'coord_y','coord_x',{'coord_y','coord_x','rgb'}};
+                         Data{iview}.VarDimName={'AY','AX',{'AY','AX','rgb'}};
                     else
-                         Data{iview}.VarDimName={'coord_y','coord_x',{'coord_y','coord_x'}};
+                         Data{iview}.VarDimName={'AY','AX',{'AY','AX'}};
                     end  
-                    Data{iview}.coord_y=[npy-0.5 0.5];
-                    Data{iview}.coord_x=[0.5 npx-0.5];
+                    Data{iview}.AY=[npy-0.5 0.5];
+                    Data{iview}.AX=[0.5 npx-0.5];
                     Data{iview}.A=double(A);
                     Data{iview}.CoordType='px';
                 elseif testcivx
@@ -425,6 +405,7 @@ for i_slice=1:NbSlice
                     if isfield(Field,'VarAttribute') % look for coordinate and flag variables    
                         for ivar=1:nbvar
                             if length(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'Role')
+                               %Field.ListVarName{ivar}
                                 var_role=Field.VarAttribute{ivar}.Role;%'role' of the variable
                                 if isequal(var_role,'errorflag')
                                     msgbox_uvmat('ERROR','do not handle error flags in time series')
@@ -438,14 +419,14 @@ for i_slice=1:NbSlice
                                     isequal(var_role,'coord_z')|isequal(var_role,'coord')
                                     testsum(ivar)=1; %constant coordinates, record without time evolution
                                 end
-                                % check whether the variable ivar is a dimension variable
-                                DimCell=Field.VarDimName{ivar};
-                                if ischar(DimCell)
-                                    DimCell={DimCell};
-                                end
-                                if numel(DimCell)==1 && isequal(Field.ListVarName{ivar},DimCell{1})%detect dimension variables
-                                   testsum(ivar)=1;
-                                end
+                            end
+                            % check whether the variable ivar is a dimension variable
+                            DimCell=Field.VarDimName{ivar};
+                            if ischar(DimCell)
+                                DimCell={DimCell};
+                            end
+                            if numel(DimCell)==1 && isequal(Field.ListVarName{ivar},DimCell{1})%detect dimension variables
+                               testsum(ivar)=1;
                             end
                         end
                     end
@@ -505,19 +486,14 @@ for i_slice=1:NbSlice
         eval(['RecordData.' VarName '=squeeze(RecordData.' VarName ');']) %remove singletons
     end
         % add time dimension and update VarDimIndex:
-   %if ~isequal(Series.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
         for ivar=1:length(Field.ListVarName)
-%              vardimindex=Field.VarDimIndex{ivar};% array of dimension indices for variable VarIndex(ivar)
              DimCell=Field.VarDimName(ivar);
              if testsum(ivar)==2%variable used as time series
-%                  RecordData.VarDimIndex{ivar}=[1 vardimindex+1];
                   RecordData.VarDimName{ivar}=[{'Time'} DimCell];
              elseif testsum(ivar)==1
-%                  RecordData.VarDimIndex{ivar}=[vardimindex+1];
                  RecordData.VarDimName{ivar}=DimCell;
              end
         end
-   % end
     indexremove=find(~testsum);
     if ~isempty(indexremove)
         RecordData.ListVarName(1+indexremove)=[];
@@ -526,13 +502,14 @@ for i_slice=1:NbSlice
             RecordData.Role(1+indexremove)=[];
         end
     end
-    %RecordData.VarDimIndex=[{[1]} RecordData.VarDimIndex]; %time dimension
+
     %shift variable attributes
     if isfield(RecordData,'VarAttribute')
         RecordData.VarAttribute=[{[]} RecordData.VarAttribute];
     end 
     RecordData.VarDimName=[{'Time'} RecordData.VarDimName];
     RecordData.Action=Series.Action;%name of the processing programme
+    
     %name of result file
     [filemean]=...
                name_generator(filebase_out,num_i1{1}(i_slice),num_j1{1}(i_slice),'.nc','_i1-i2_j1-j2',1,num_i2{end}(ifile),num_j2{end}(ifile),subdir_result);
@@ -543,6 +520,7 @@ for i_slice=1:NbSlice
         msgbox_uvmat('ERROR',['error in Series/struct2nc' errormsg])
     end
 end
+
 figure
 haxes=axes;
 

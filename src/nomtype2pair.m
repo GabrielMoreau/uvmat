@@ -30,38 +30,40 @@ function [nom_type_pair]=nomtype2pair(nom_type,Dti,Dtj)
 
 %determine nom_type_nc:
 nom_type_pair=[];%default
-switch nom_type
-    case {'_i_j'}
-        if Dtj>0 || Dtj<0
-            nom_type_pair='_i_j1-j2';
-            if Dti>0 || Dti<0
-                nom_type_pair='_i1-i2_j1-j2';
+if ischar(nom_type)
+    switch nom_type
+        case {'_i_j'}
+            if Dtj>0 || Dtj<0
+                nom_type_pair='_i_j1-j2';
+                if Dti>0 || Dti<0
+                    nom_type_pair='_i1-i2_j1-j2';
+                end
+                elseif Dti>0 || Dti<0
+                nom_type_pair='_i1-i21_j';   
+            else
+                 nom_type_pair='_i_j';
             end
-            elseif Dti>0 || Dti<0
-            nom_type_pair='_i1-i21_j';   
-        else
-             nom_type_pair='_i_j';
-        end
-    case {'_i1-i2_j'}
-        if Dtj>0 || Dtj<0
-           nom_type_pair='_i1-i2_j1-j2';
-        else
-            nom_type_pair='_i1-i2_j';
-        end
-    case {'i_j1-j2'}
-        if Dti>0 || Dti<0
-           nom_type_pair='_i1-i2_j1-j2';
-        else
-            nom_type_pair='_i1-i2_j';
-        end
-    case {'i1-i2_j1-j2'}
-         nom_type_pair='_i1-i2_j1-j2';
-    case '#a'
-        if Dtj>0 || Dtj<0
-            nom_type_pair='#_ab';
-        end
-    otherwise
-        if Dti>0 || Dti<0
-           nom_type_pair='_i1-i2'; 
-        end
+        case {'_i1-i2_j'}
+            if Dtj>0 || Dtj<0
+               nom_type_pair='_i1-i2_j1-j2';
+            else
+                nom_type_pair='_i1-i2_j';
+            end
+        case {'i_j1-j2'}
+            if Dti>0 || Dti<0
+               nom_type_pair='_i1-i2_j1-j2';
+            else
+                nom_type_pair='_i1-i2_j';
+            end
+        case {'i1-i2_j1-j2'}
+             nom_type_pair='_i1-i2_j1-j2';
+        case '#a'
+            if Dtj>0 || Dtj<0
+                nom_type_pair='#_ab';
+            end
+        otherwise
+            if Dti>0 || Dti<0
+               nom_type_pair='_i1-i2'; 
+            end
+    end
 end

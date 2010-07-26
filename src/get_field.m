@@ -783,21 +783,9 @@ set(hselect_field,'UserData',Field)
 % --- Executes on button press in RUN.
 function RUN_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
-%path_get_field=fileparts(which('get_field'));
-%list=get(handles.ACTION,'String');
 index=get(handles.ACTION,'Value');
-% ACTION=list{index};
 list_func=get(handles.ACTION,'UserData');
 h_fun=list_func{index};
-% %hselect_field=get(handles.inputfile,'parent');%handle of the get_field interface
-% fct_path=list_path{index}; %path stored for the function ACTION
-% if ~isequal(fct_path,path_get_field)
-%     addpath(fct_path)% add the prescribed path if not the current one
-% end
-% eval(['h_fun=@' ACTION ';'])
-% if ~isequal(fct_path,path_get_field)
-%      rmpath(fct_path)% add the prescribed path if not the current one    
-% end
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
 drawnow
 SubField=h_fun(handles.figure1);%handles.figure1 =handles of the GUI get_field
@@ -1025,9 +1013,9 @@ if isequal(index,1)
             Tabcell{iline,1}=Field.ListGlobalAttribute{iline};   
             if isfield(Field, Field.ListGlobalAttribute{iline})
                 eval(['val=Field.' Field.ListGlobalAttribute{iline} ';'])
-                if ischar(val);
+                if ischar(val);% attribute value is char string
                     Tabcell{iline,2}=val;
-                else
+                elseif size(val,1)==1 %attribute value is a number or matlab vector
                     Tabcell{iline,2}=num2str(val);
                 end
             end
@@ -1457,7 +1445,15 @@ inputfile_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function MenuExportField_Callback(hObject, eventdata, handles)
-
+global Data_get_field
+% huvmat=findobj(allchild(0),'Name','uvmat');
+inputfile=get(handles.inputfile,'String');
+Data_get_field=nc2struct(inputfile);
+% Data_view_field=UvData.ProjField_2;
+evalin('base','global Data_get_field')%make CurData global in the workspace
+display(['content of ' inputfile ':'])
+evalin('base','Data_get_field') %display CurData in the workspace
+commandwindow;
 
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
