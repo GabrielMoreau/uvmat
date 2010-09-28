@@ -505,7 +505,8 @@ ny=str2num(get(hhuvmat.npy,'String'));
 
 
 % est_kc=[1;0;0;0;0];
-est_dist=[0;0;0;0;0];
+est_fc=0;
+est_dist=[1;0;0;0;0];
 run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));
 
 GeometryCalib.CalibrationType='tsai_matlab';
@@ -948,16 +949,16 @@ set(handles.ListCoord,'String',Tabchar)
 % --- automatic grid dectection from local maxima of the images 
 function MenuDetectGrid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-CalibData=get(handles.geometry_calib,'UserData');
+CalibData=get(handles.geometry_calib,'UserData');%get information stored on the GUI geometry_calib
 grid_input=[];%default
 if isfield(CalibData,'grid')
     grid_input=CalibData.grid;%retrieve the previously used grid
 end
-[T,CalibData.grid]=create_grid(grid_input,'detect grid');%display the GUI create_grid 
-set(handles.geometry_calib,'UserData',CalibData)%store the phys grid for later use
+[T,CalibData.grid]=create_grid(grid_input,'detect grid');%display the GUI create_grid, read the set of phys coordinates T
+set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
 
-%read the four last point coordiantes in pixels
-Coord_cell=get(handles.ListCoord,'String');%read list of coordiantes on geometry_calib
+%read the four last point coordinates in pixels
+Coord_cell=get(handles.ListCoord,'String');%read list of coordinates on geometry_calib
 data=read_geometry_calib(Coord_cell);
 nbpoints=size(data.Coord,1); %nbre of calibration points
 if nbpoints~=4
@@ -978,22 +979,53 @@ if abs(angles(4)-angles(2))>abs(angles(3)-angles(2))
       corners_Y(3)=Y_end;
 end
 
-%read the current image
+%read the current image, displayed in the GUI uvmat
 huvmat=findobj(allchild(0),'Name','uvmat');
 UvData=get(huvmat,'UserData');
 A=UvData.Field.A;
 npxy=size(A);
 %linear transform on the current image
-X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the rectified image
-Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner absissa in the rectified image
-XY_mat=[ones(size(X)) X Y];
-a_X1=XY_mat\corners_X; %transformation matrix for X
-x1=XY_mat*a_X1;%reconstruction
-err_X1=max(abs(x1-corners_X));%error
-a_Y1=XY_mat\corners_Y;%transformation matrix for X
-y1=XY_mat*a_Y1;
-err_Y1=max(abs(y1-corners_Y));%error
-GeometryCalib.CalibrationType='linear';
+X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the phys coordinates
+Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner ordinates in the phys coordinates
+%X=[CalibData.grid.x_0 CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_1]';%corner absissa in the phys coordinates
+%Y=[CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1 CalibData.grid.y_0]';%corner ordinates in the phys coordinate
+%XY_mat=[ones(size(X)) X Y];
+%a_X1=XY_mat\corners_X; %transformation matrix for X
+%x1=XY_mat*a_X1;%reconstruction
+%err_X1=max(abs(x1-corners_X));%error
+%a_Y1=XY_mat\corners_Y;%transformation matrix for X
+%y1=XY_mat*a_Y1;
+%err_Y1=max(abs(y1-corners_Y));%error
+% figure(1)
+% hold off
+% plot([corners_X;corners_X(1)],[corners_Y;corners_Y(1)],'r')
+%test points along contour
+% u=[0:0.1:1];
+% x12=u*corners_X(2)+(1-u)*corners_X(1);
+% x23=u*corners_X(3)+(1-u)*corners_X(2);
+% x34=u*corners_X(4)+(1-u)*corners_X(3);
+% x41=u*corners_X(1)+(1-u)*corners_X(4);
+% y12=u*corners_Y(2)+(1-u)*corners_Y(1);
+% y23=u*corners_Y(3)+(1-u)*corners_Y(2);
+% y34=u*corners_Y(4)+(1-u)*corners_Y(3);
+% y41=u*corners_Y(1)+(1-u)*corners_Y(4);
+% hold on
+% plot(x12,y12,'xr')
+% plot(x23,y23,'xr')
+% plot(x34,y34,'xr')
+% plot(x41,y41,'xr')
+%calculate transform matrices: 
+% reference: http://alumni.media.mit.edu/~cwren/interpolator/ by Christopher R. Wren
+B = [ X Y ones(size(X)) zeros(4,3)        -X.*corners_X -Y.*corners_X ...
+      zeros(4,3)        X Y ones(size(X)) -X.*corners_Y -Y.*corners_Y ];
+B = reshape (B', 8 , 8 )';
+D = [ corners_X , corners_Y ];
+D = reshape (D', 8 , 1 );
+l = inv(B' * B) * B' * D;
+Amat = reshape([l(1:6)' 0 0 1 ],3,3)';
+C = [l(7:8)' 1];
+
+GeometryCalib.CalibrationType='tsai';%'linear';
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
 GeometryCalib.f=1;
 GeometryCalib.dpx=1;
@@ -1002,19 +1034,70 @@ GeometryCalib.sx=1;
 GeometryCalib.Cx=0;
 GeometryCalib.Cy=0;
 GeometryCalib.kappa1=0;
-GeometryCalib.Tx=a_X1(1);
-GeometryCalib.Ty=a_Y1(1);
+GeometryCalib.Tx=Amat(1,3);
+GeometryCalib.Ty=Amat(2,3);
 GeometryCalib.Tz=1;
-GeometryCalib.R=[a_X1(2),a_X1(3),0;a_Y1(2),a_Y1(3),0;0,0,1];
+GeometryCalib.R=[Amat(1,1),Amat(1,2),0;Amat(2,1),Amat(2,2),0;C(1),C(2),0];
+%montre points du pourtour transformes 
+% for ip=1:numel(u),
+%   XY12(:,ip)=Amat*[x12(ip);y12(ip);1]/(C*[x12(ip);y12(ip);1]);
+%   XY23(:,ip)=Amat*[x23(ip);y23(ip);1]/(C*[x23(ip);y23(ip);1]);
+%   XY34(:,ip)=Amat*[x34(ip);y34(ip);1]/(C*[x34(ip);y34(ip);1]);
+%   XY41(:,ip)=Amat*[x41(ip);y41(ip);1]/(C*[x41(ip);y41(ip);1]);
+% end
+% xphys12=u*X(2)+(1-u)*X(1);
+% xphys23=u*X(3)+(1-u)*X(2);
+% xphys34=u*X(4)+(1-u)*X(3);
+% xphys41=u*X(1)+(1-u)*X(4);
+% yphys12=u*Y(2)+(1-u)*Y(1);
+% yphys23=u*Y(3)+(1-u)*Y(2);
+% yphys34=u*Y(4)+(1-u)*Y(3);
+% yphys41=u*Y(1)+(1-u)*Y(4);
+% for ip=1:numel(u),
+%   XY12(:,ip)=Amat*[xphys12(ip);yphys12(ip);1]/(C*[xphys12(ip);yphys12(ip);1]);
+%   XY23(:,ip)=Amat*[xphys23(ip);yphys23(ip);1]/(C*[xphys23(ip);yphys23(ip);1]);
+%   XY34(:,ip)=Amat*[xphys34(ip);yphys34(ip);1]/(C*[xphys34(ip);yphys34(ip);1]);
+%   XY41(:,ip)=Amat*[xphys41(ip);yphys41(ip);1]/(C*[xphys41(ip);yphys41(ip);1]);
+% end
+% x12=XY12(1,:);
+% y12=XY12(2,:);
+% x23=XY23(1,:);
+% y23=XY23(2,:);
+% x34=XY34(1,:);
+% y34=XY34(2,:);
+% x41=XY41(1,:);
+% y41=XY41(2,:);
+% [x12,y12]=px_XYZ(GeometryCalib,xphys12,yphys12);
+% [x23,y23]=px_XYZ(GeometryCalib,xphys23,yphys23);
+% [x34,y34]=px_XYZ(GeometryCalib,xphys34,yphys34);
+% [x41,y41]=px_XYZ(GeometryCalib,xphys41,yphys41);
+% plot(x12,y12,'xb')
+% plot(x23,y23,'xb')
+% plot(x34,y34,'xb')
+% plot(x41,y41,'xb')
+% figure(2)
+% hold off
+% plot(XY12(1,:),XY12(2,:),'ob')  
+% hold on
+% plot(XY23(1,:),XY23(2,:),'ob') 
+% plot(XY34(1,:),XY34(2,:),'ob')
+% plot(XY41(1,:),XY41(2,:),'ob')
+% plot(xphys12,yphys12,'ob')  
+% hold on
+% plot(xphys23,yphys23,'ob') 
+% plot(xphys34,yphys34,'ob')
+% plot(xphys41,yphys41,'ob')
+
 [Amod,Rangx,Rangy]=phys_Ima(A-min(min(A)),GeometryCalib,0);
+
 Amod=double(Amod);
-%figure(12)
-%Amax=max(max(Amod))
-%image(Rangx,Rangy,uint8(255*Amod/Amax))
+figure(12)
+Amax=max(max(Amod));
+image(Rangx,Rangy,uint8(255*Amod/Amax))
 Dx=(Rangx(2)-Rangx(1))/(npxy(2)-1); %x mesh in real space
 Dy=(Rangy(2)-Rangy(1))/(npxy(1)-1); %y mesh in real space
-ind_range_x=ceil(GeometryCalib.R(1,1)*CalibData.grid.Dx/3)% range of search of image ma around each point obtained by linear interpolation from the marked points
-ind_range_y=ceil(GeometryCalib.R(2,2)*CalibData.grid.Dy/3)% range of search of image ma around each point obtained by linear interpolation from the marked points
+ind_range_x=ceil(GeometryCalib.R(1,1)*CalibData.grid.Dx/3);% range of search of image ma around each point obtained by linear interpolation from the marked points
+ind_range_y=ceil(GeometryCalib.R(2,2)*CalibData.grid.Dy/3);% range of search of image ma around each point obtained by linear interpolation from the marked points
 nbpoints=size(T,1);
 for ipoint=1:nbpoints
     i0=1+round((T(ipoint,1)-Rangx(1))/Dx);%round(Xpx(ipoint));
@@ -1126,17 +1209,20 @@ Tabchar=[Tabchar;{'......'}];
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
 
-
-%%%%%%%%%%%%%%%%%%%%
+%------------------------------------------------------------------------
+% image transform from px to phys 
+%INPUT:
+%Zindex: index of plane
 function [A_out,Rangx,Rangy]=phys_Ima(A,Calib,ZIndex)
+%------------------------------------------------------------------------
 xcorner=[];
 ycorner=[];
 npx=[];
 npy=[];
-siz=size(A);
+siz=size(A)
 npx=[npx siz(2)];
-npy=[npy siz(1)];
-xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordiantes of corners
+npy=[npy siz(1)]
+xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordinates of corners
 yima=[0.5 0.5 siz(1)-0.5 siz(1)-0.5];
 [xcorner,ycorner]=phys_XYZ(Calib,xima,yima,ZIndex);%corresponding physical coordinates
 Rangx(1)=min(xcorner);
@@ -1190,9 +1276,12 @@ if testuint16
     A_out=uint16(A_out);
 end
 
+%------------------------------------------------------------------------
+% pointwise transform from px to phys
 %INPUT:
 %Z: index of plane
 function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Z)
+%------------------------------------------------------------------------
 if exist('Z','var')& isequal(Z,round(Z))& Z>0 & isfield(Calib,'SliceCoord')&length(Calib.SliceCoord)>=Z
     Zindex=Z;
     Zphys=Calib.SliceCoord(Zindex,3);%GENERALISER AUX CAS AVEC ANGLE
