@@ -135,8 +135,9 @@ if ~isequal(handles.output,'Cancel')
     end
     zarray=T.z_0*ones(size(yarray));
     varargout{1}=[xarray yarray zarray];
+    varargout{2}=T;
 end
-varargout{2}=T;
+
 % The figure can be deleted now
 delete(handles.figure1);
 

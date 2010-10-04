@@ -101,65 +101,72 @@ end
 if (testU && testU_1) || (~testU && ~testU_1)
    %check coincidence in positions
    %unstructured coordinates
-   if testX
-       XName=Field.ListVarName{VarType.coord_x};
-       YName=Field.ListVarName{VarType.coord_y};
-       eval(['vec_X=Field.' XName ';']) 
-       eval(['vec_Y=Field.' YName ';'])
-       nbpoints=numel(vec_X);
-       vec_X=reshape(vec_X,1,nbpoints);
-       vec_Y=reshape(vec_Y,1,nbpoints);
-       if testX_1 %unstructured coordinates for the second field
-            X_1_Name=Field_1.ListVarName{VarType_1.coord_x};
-            Y_1_Name=Field_1.ListVarName{VarType_1.coord_y};
-            eval(['vec_X_1=Field_1.' X_1_Name ';']) 
-            eval(['vec_Y_1=Field_1.' Y_1_Name ';'])
-            nbpoints_1=numel(vec_X_1);
-       else   %structured coordinates for the second field
-           y_1_Name=Field_1.ListVarName{VarType_1.coord(1)};
-           x_1_Name=Field_1.ListVarName{VarType_1.coord(2)};
-           eval(['y_1=Field_1.' y_1_Name ';']) 
-           eval(['x_1=Field_1.' x_1_Name ';'])  
-           npxy(1)=numel(y_1);
-           npxy(2)=numel(x_1);
-           nbpoints_1=npxy(1)*npxy(2);
-           [vec_X_1,vec_Y_1]=meshgrid(x_1,y_1);
-       end
-       vec_X_1=reshape(vec_X_1,1,nbpoints_1);
-       vec_Y_1=reshape(vec_Y_1,1,nbpoints_1);
-       if testfalse_1
-           FFName_1=Field_1.ListVarName{VarType_1.errorflag};          
-           eval(['vec_FF_1=Field_1.' FFName_1 ';']) 
-           vec_FF_1=reshape(vec_FF_1,1,nbpoints_1);
-           indsel=find(~vec_FF_1);
-           vec_X_1=vec_X_1(indsel);
-           vec_Y_1=vec_Y_1(indsel);
-       end
+   if testX      
        if testU % vector fields
             U_1_Name=Field_1.ListVarName{VarType_1.vector_x};
             V_1_Name=Field_1.ListVarName{VarType_1.vector_y};
             eval(['vec_U_1=Field_1.' U_1_Name ';']) 
             eval(['vec_V_1=Field_1.' V_1_Name ';'])
-            vec_U_1=reshape(vec_U_1,1,nbpoints_1);
-            vec_V_1=reshape(vec_V_1,1,nbpoints_1);
+            nbpoints_x_1=size(vec_U_1,2);
+            nbpoints_y_1=size(vec_U_1,1);
+            vec_U_1=reshape(vec_U_1,nbpoints_x_1*nbpoints_y_1,1);
+            vec_V_1=reshape(vec_V_1,nbpoints_x_1*nbpoints_y_1,1);
             if testfalse_1
                 vec_U_1=vec_U_1(indsel);
                 vec_V_1=vec_V_1(indsel);
             end            
-       else
+       else %(~testU && ~testU_1)
            A_1_Name=Field_1.ListVarName{ivar_C_1};
-           eval(['vec_A_1=Field_1.' A_1_Name ';'])
-           vec_A_1=reshape(vec_A_1,1,nbpoints_1);
+           eval(['vec_A_1=Field_1.' A_1_Name ';'])   
+           nbpoints_x_1=size(vec_A_1,2);
+           nbpoints_y_1=size(vec_A_1,1);%TODO: use a faster interpolation method for a regular grid (size(x)=2)
+           vec_A_1=reshape(vec_A_1,nbpoints_x_1*nbpoints_y_1,1);
            if testfalse_1
                 vec_A_1=vec_A_1(indsel);
            end
+       end
+       XName=Field.ListVarName{VarType.coord_x};
+       YName=Field.ListVarName{VarType.coord_y};
+       eval(['vec_X=Field.' XName ';']) 
+       eval(['vec_Y=Field.' YName ';'])
+       nbpoints=numel(vec_X);
+       vec_X=reshape(vec_X,nbpoints,1);
+       vec_Y=reshape(vec_Y,nbpoints,1);
+       if testX_1 %unstructured coordinates for the second field
+            X_1_Name=Field_1.ListVarName{VarType_1.coord_x};
+            Y_1_Name=Field_1.ListVarName{VarType_1.coord_y};
+            eval(['vec_X_1=Field_1.' X_1_Name ';']) 
+            eval(['vec_Y_1=Field_1.' Y_1_Name ';'])
+
+       else   %structured coordinates for the second field
+           y_1_Name=Field_1.ListVarName{VarType_1.coord(1)};
+           x_1_Name=Field_1.ListVarName{VarType_1.coord(2)};
+           eval(['y_1=Field_1.' y_1_Name ';']) 
+           eval(['x_1=Field_1.' x_1_Name ';'])
+           if isequal(numel(x_1),2)  
+               x_1=linspace(x_1(1),x_1(2),nbpoints_x_1);
+           end
+           if isequal(numel(y_1),2)  
+               y_1=linspace(y_1(1),y_1(2),nbpoints_y_1);
+           end
+           [vec_X_1,vec_Y_1]=meshgrid(x_1,y_1);
+       end
+       vec_X_1=reshape(vec_X_1,nbpoints_x_1*nbpoints_y_1,1);
+       vec_Y_1=reshape(vec_Y_1,nbpoints_x_1*nbpoints_y_1,1);
+       if testfalse_1
+           FFName_1=Field_1.ListVarName{VarType_1.errorflag};          
+           eval(['vec_FF_1=Field_1.' FFName_1 ';']) 
+           vec_FF_1=reshape(vec_FF_1,nbpoints_1,1);
+           indsel=find(~vec_FF_1);
+           vec_X_1=vec_X_1(indsel);
+           vec_Y_1=vec_Y_1(indsel);
        end
        if ~isequal(vec_X_1,vec_X) && ~isequal(vec_Y_1,vec_Y) % if the unstructured positions are not the same
            if testU
                vec_U_1=griddata_uvmat(vec_X_1,vec_Y_1,vec_U_1,vec_X,vec_Y);  %interpolate vectors in the second field
                vec_V_1=griddata_uvmat(vec_X_1,vec_Y_1,vec_V_1,vec_X,vec_Y);  %interpolate vectors in the second field   
            else
-               vec_A_1=griddata_uvmat(vec_X_1,vec_Y_1,vec_A_1,vec_X,vec_Y);  %interpolate vectors in the second field
+               vec_A_1=griddata_uvmat(vec_X_1,vec_Y_1,double(vec_A_1),vec_X,vec_Y);  %interpolate vectors in the second field
            end
        end 
        if testU
@@ -167,12 +174,13 @@ if (testU && testU_1) || (~testU && ~testU_1)
            VName=Field.ListVarName{VarType.vector_y};  
            eval(['vec_U=Field.' UName ';']) 
            eval(['vec_V=Field.' VName ';'])       
-           vec_U=reshape(vec_U,1,numel(vec_U));
-           vec_V=reshape(vec_V,1,numel(vec_V));
+           vec_U=reshape(vec_U,numel(vec_U),1);
+           vec_V=reshape(vec_V,numel(vec_V),1);
            eval(['SubData.' UName '=vec_U-vec_U_1;'])
            eval(['SubData.' VName '=vec_V-vec_V_1;'])
        else
            AName=Field.ListVarName{ivar_C};
+           size(Field.vort)
            eval(['SubData.' AName '=Field.' AName '-vec_A_1;'])
        end
    else  %structured coordiantes

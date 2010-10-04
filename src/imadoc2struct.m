@@ -1,6 +1,6 @@
 %'imadoc2struct': reads the xml file for image documentation 
 %------------------------------------------------------------------------
-% function [s,errormsg]=imadoc2struct(ImaDoc) 
+% function [s,errormsg]=imadoc2struct(ImaDoc,option) 
 %
 % OUTPUT:
 % s: structure representing ImaDoc
@@ -12,9 +12,12 @@
 %
 % INPUT:
 % ImaDoc: full name of the xml input file with head key ImaDoc
+% option: ='GeometryCalib': read  the data of GeometryCalib, including source point coordinates
 
-function [s,errormsg]=imadoc2struct(ImaDoc) 
-
+function [s,errormsg]=imadoc2struct(ImaDoc,option) 
+if ~exist('option','var')
+    option='default';
+end
 errormsg=[];%default
 s.Heading=[];%default
 s.Time=[]; %default
@@ -87,10 +90,6 @@ if ~isempty(uid_Camera)
             if ~isempty(Dtj)
                 Dtj=reshape(Dtj'*ones(1,NbDtj),1,NbDtj*numel(Dtj)); %concatene Dti vector NbDti times
                 Dtj=[0 Dtj];
-%                 Time_val'
-%                 ones(1,numel(Dtj))
-%                 ones(numel(Time_val'),1)
-%                 cumsum(Dtj)
                 Time_val=Time_val*ones(1,numel(Dtj))+ones(numel(Time_val),1)*cumsum(Dtj);% produce a time matrix with Dtj
             end
             % reading Dtk
@@ -106,9 +105,6 @@ if ~isempty(uid_Camera)
             end
         end
     end
-%     if size(s.Time,1)==1
-%         s.Time=(s.Time)'; %change vector into column
-%     end
 end
 
 %read calibration
@@ -209,6 +205,9 @@ if ~isempty(uid_GeometryCalib)
                 tsai.SliceCoord=ones(NbSlice,1)*tsai.SliceCoord+DZ*[0:NbSlice-1]'*[0 0 1];
             end         
         end
+        if strcmp(option,'GeometryCalib')
+            tsai.PointCoord=get_value(subt,'/GeometryCalib/SourceCalib/PointCoord',[0 0 0 0 0]);%time in TimeUnit
+        end
         s.GeometryCalib=tsai;
     end
 end   
@@ -227,7 +226,7 @@ if ~isempty(uid)
            for icell=1:numel(data)
                val_read=str2num(get(t,uid_child(icell),'value'));
                if ~isempty(val_read)
-                   val(icell)=val_read;
+                   val(icell,:)=val_read;
                end
            end
            val=val';

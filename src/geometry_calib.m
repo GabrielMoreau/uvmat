@@ -2,7 +2,7 @@
 %
 % function varargout = geometry_calib(varargin)
 %
-%A%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+%A%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %     This file is part of the toolbox UVMAT.
@@ -42,7 +42,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 25-Mar-2010 19:10:05
+% Last Modified by GUIDE v2.5 03-Oct-2010 09:34:12
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -86,22 +86,21 @@ if exist('pos','var')& length(pos)>2
     pos_gui(2)=pos(2);
     set(hObject,'Position',pos_gui);
 end
+
+%set menu of calibration options
+%set(handles.calib_type,'String',{'rescale';'linear';'perspective';'normal';'tsai';'bouguet';'extrinsic'})
+set(handles.calib_type,'String',{'rescale';'linear';'quadr';'3D_linear';'3D_quadr';'3D_extrinsic'})
 inputxml='';
 if exist('inputfile','var')& ~isempty(inputfile)
-%     [Path,Name,ext]=fileparts(inputfile);
-%     form=imformats(ext([2:end]));
-%     if ~isempty(form)% if the input file is an image
-        struct.XmlInputfile=inputfile;
-        set(hObject,'UserData',struct)
-        [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(inputfile);
-        inputxml=[fullfile(Pathsub,RootFile) '.xml'];
-%     end   
+    struct.XmlInputfile=inputfile;
+    set(hObject,'UserData',struct)
+    [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(inputfile);
+    inputxml=[fullfile(Pathsub,RootFile) '.xml'];
 end
 set(handles.ListCoord,'String',{'......'})
 if exist(inputxml,'file')
     loadfile(handles,inputxml)% load the point coordiantes existing in the xml file
 end
-
 set(handles.ListCoord,'KeyPressFcn',{@key_press_fcn,handles})%set keyboard action function
 
 
@@ -112,118 +111,6 @@ function varargout = geometry_calib_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 varargout{2}=handles;
-
-%------------
-function Phi_Callback(hObject, eventdata, handles)
-
-%------------------------------------------------------------------------
-%read input xml file and update the edit boxes
-function loadfile(handles,fileinput)
-%------------------------------------------------------------------------
-%read the input xml file
-t=xmltree(fileinput);
-s=convert(t);%convert to matlab structure
-%read data currently displayed on the interface
-PointCoord=[];
-Coord_cell=get(handles.ListCoord,'String');
-data=read_geometry_calib(Coord_cell);
-%data=read_geometry_calib(handles);
-Coord=[]; %default
-if isfield(data,'Coord')
-    Coord=data.Coord;
-end
-TabChar_0=get(handles.ListCoord,'String');
-nbcoord_0=size(TabChar_0,1);
-if isequal(get(handles.edit_append,'Value'),2) %edit mode  A REVOIR
-    val=get(handles.ListCoord,'Value')-1;
-else
-   val=length(TabChar_0); 
-end
-nbcoord=0;
-
-%case of calibration (ImaDoc) input file
-% hcalib=get(handles.calib_type,'parent');
-CalibData=get(handles.geometry_calib,'UserData');
-CalibData.XmlInput=fileinput;
-if isfield(s,'Heading')
-    CalibData.Heading=s.Heading;
-end
-
-set(handles.geometry_calib,'UserData',CalibData);%store the heading in the interface 'UserData'
-if isfield(s,'GeometryCalib')
-    Calib=s.GeometryCalib;
-    if isfield(Calib,'CalibrationType')
-        CalibrationType=Calib.CalibrationType;
-        switch CalibrationType
-            case 'linear'
-                set(handles.calib_type,'Value',2)
-            case 'tsai'
-                set(handles.calib_type,'Value',3)
-            case 'tsai_matlab'
-                set(handles.calib_type,'Value',4)
-        end
-    end
-    if isfield(Calib,'SourceCalib')
-        if isfield(Calib.SourceCalib,'PointCoord')
-            PointCoord=Calib.SourceCalib.PointCoord;
-        end
-    end
-    nbcoord=length(PointCoord);
-    if ~isfield(Calib,'ErrorRms')&~isfield(Calib,'ErrorMax') %old convention of Gauthier (cord in mm)
-        for i=1:length(PointCoord)
-          line=str2num(PointCoord{i});
-          Coord(i+val,4:5)=line(4:5);%px x
-          Coord(i+val,1:3)=line(1:3)/10;%phys x
-        end
-    else
-        for i=1:length(PointCoord)
-          line=str2num(PointCoord{i});
-          Coord(i,4:5)=line(4:5);%px x
-          Coord(i,1:3)=line(1:3);%phys x
-       end
-    end
-end
-%case of xml files of points 
-if isfield(s,'Coord')
-    PointCoord=s.Coord;
-    nbcoord=length(PointCoord);
-     %case of image coordinates
-    if isfield(s,'CoordType')& isequal(s.CoordType,'px')
-        for i=1:nbcoord
-           line=str2num(PointCoord{i});
-           Coord(i+val,4:5)=line(1:2);
-        end
-     %case of  physical coordinates
-    else
-        for i=1:nbcoord
-           line=str2num(PointCoord{i});
-           Coord(i+val,1:3)=line(1:3);
-           nbcolumn=size(Coord,2);
-           if nbcolumn<5
-               Coord(i+val,nbcolumn+1:5)=zeros(1,5-nbcolumn);
-           end
-        end
-     end
-end
-CoordCell={};
-for iline=1:size(Coord,1)
-    for j=1:5
-        CoordCell{iline,j}=num2str(Coord(iline,j),4);
-    end
-end
-% CoordCell=[CoordCell;{' ',' ',' ',' ',' '}];
-Tabchar=cell2tab(CoordCell,'    |    ');%transform cells into table ready for display
-Tabchar=[Tabchar;{'......'}];
-set(handles.ListCoord,'Value',1)
-set(handles.ListCoord,'String',Tabchar)
-MenuPlot_Callback(handles.geometry_calib, [], handles)
-if isempty(Coord)
-    set(handles.edit_append,'Value',1)
-    set(handles.edit_append,'BackgroundColor',[1 1 0])
-else
-    set(handles.edit_append,'Value',0)
-    set(handles.edit_append,'BackgroundColor',[0.7 0.7 0.7])
-end
 % 
 %------------------------------------------------------------------------
 % executed when closing: set the parent interface button to value 0
@@ -251,25 +138,21 @@ end
 % --- Executes on button press in calibrate_lin.
 function APPLY_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-calib_cell=get(handles.calib_type,'String');
-val=get(handles.calib_type,'Value');
-calib_type=calib_cell{val};
+
+%read the current calibration points
 Coord_cell=get(handles.ListCoord,'String');
 Object=read_geometry_calib(Coord_cell);
-X=Object.Coord(:,1);
-Y=Object.Coord(:,2);
-Z=Object.Coord(:,3);
-if isequal(calib_type,'rescale')
-    GeometryCalib=calib_rescale(Object.Coord);
-    Z=0;%Z not taken into account
-elseif isequal(calib_type,'linear')
-    GeometryCalib=calib_linear(Object.Coord);
-    Z=0; %Z not taken into account
-elseif isequal(calib_type,'tsai_cpp')
-    GeometryCalib=calib_tsai(Object.Coord);
-elseif isequal(calib_type,'tsai_matlab')
-    GeometryCalib=calib_tsai2(Object.Coord);
-end
+Coord=Object.Coord;
+
+% apply the calibration, whose type is selected in  handles.calib_type
+if ~isempty(Coord)
+    calib_cell=get(handles.calib_type,'String');
+    val=get(handles.calib_type,'Value');
+    GeometryCalib=feval(['calib_' calib_cell{val}],Coord,handles);
+else
+    msgbox_uvmat('ERROR','No calibration points, abort')
+    return
+end 
 
 %check error
 if isfield(GeometryCalib,'dpx_dpy')
@@ -297,20 +180,60 @@ end
 if isfield(GeometryCalib,'R')
     Calib.R=GeometryCalib.R;
 end
-x_ima=Object.Coord(:,4);
-y_ima=Object.Coord(:,5); 
-[Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
-GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
-[GeometryCalib.ErrorMax(1),index(1)]=max(abs(Xpoints-x_ima));
-GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
-[GeometryCalib.ErrorMax(2),index(2)]=max(abs(Ypoints-y_ima));
-[EM,ind_dim]=max(GeometryCalib.ErrorMax);
-index=index(ind_dim);
-
+if ~isempty(Coord)
+    X=Coord(:,1);
+    Y=Coord(:,2);
+    Z=Coord(:,3);
+    x_ima=Coord(:,4);
+    y_ima=Coord(:,5);
+    [Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
+    GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
+    [GeometryCalib.ErrorMax(1),index(1)]=max(abs(Xpoints-x_ima));
+    GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
+    [GeometryCalib.ErrorMax(2),index(2)]=max(abs(Ypoints-y_ima));
+    [EM,ind_dim]=max(GeometryCalib.ErrorMax);
+    index=index(ind_dim);
+    if isequal(max(Z),min(Z))%Z constant
+        GeometryCalib.NbSlice=1;
+        GeometryCalib.SliceCoord=[0 0 Z(1)];
+    end
+end
 unitlist=get(handles.CoordUnit,'String');
 unit=unitlist{get(handles.CoordUnit,'value')};
 GeometryCalib.CoordUnit=unit;
-GeometryCalib.SourceCalib.PointCoord=Object.Coord;
+GeometryCalib.SourceCalib.PointCoord=Coord;
+
+%display calibration intrinsic parameters
+k=0;
+if isfield(GeometryCalib,'kappa1')
+    k=GeometryCalib.kappa1 * GeometryCalib.focal*GeometryCalib.focal;
+end
+sx=1;dpx_dpy=[1 1];
+if isfield(GeometryCalib,'sx')
+    sx=GeometryCalib.sx;
+end
+if isfield(GeometryCalib,'dpx_dpy')
+    dpx_dpy=GeometryCalib.dpx_dpy;
+end
+Cx_Cy=[0 0];
+if isfield(GeometryCalib,'Cx_Cy')
+    Cx_Cy=GeometryCalib.Cx_Cy;
+end
+f1=GeometryCalib.focal*sx/dpx_dpy(1);
+f2=GeometryCalib.focal/dpx_dpy(2);
+Cx=Cx_Cy(1);
+Cy=Cx_Cy(2);
+set(handles.fx,'String',num2str(f1,4))
+set(handles.fy,'String',num2str(f2,4))
+set(handles.k,'String',num2str(k,'%1.4f'))
+set(handles.Cx,'String',num2str(Cx,'%1.1f'))
+set(handles.Cy,'String',num2str(Cy,'%1.1f'))
+% Display extrinsinc parameters
+set(handles.Tx,'String',num2str(GeometryCalib.Tx_Ty_Tz(1),4))
+set(handles.Ty,'String',num2str(GeometryCalib.Tx_Ty_Tz(2),4))
+set(handles.Tz,'String',num2str(GeometryCalib.Tx_Ty_Tz(3),4))
+
+% indicate the plane of the calibration grid if defined
 huvmat=findobj(allchild(0),'Name','uvmat');
 hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
 RootPath='';
@@ -336,7 +259,7 @@ if isequal(answer,'Yes')
     %display image with new calibration in the currently opened uvmat interface
     hhh=findobj(hhuvmat.axes3,'Tag','calib_marker');% delete calib points and markers
     if ~isempty(hhh)
-        delete(hhh);
+        delete(hhh);      
     end
     hhh=findobj(hhuvmat.axes3,'Tag','calib_points');
     if ~isempty(hhh)
@@ -345,29 +268,25 @@ if isequal(answer,'Yes')
     set(hhuvmat.FixedLimits,'Value',0)% put FixedLimits option to 'off'
     set(hhuvmat.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
     uvmat('RootPath_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
-    MenuPlot_Callback(hObject, eventdata, handles)
-    set(handles.ListCoord,'Value',index)% indicate in the list the point with max deviation (possible mistake)
-    ListCoord_Callback(hObject, eventdata, handles)
+%     if ip==0
+        MenuPlot_Callback(hObject, eventdata, handles)
+        set(handles.ListCoord,'Value',index)% indicate in the list the point with max deviation (possible mistake)
+        ListCoord_Callback(hObject, eventdata, handles)
+%     end
     figure(handles.geometry_calib)
 end
 
 %------------------------------------------------------------------
 % --- Executes on button press in calibrate_lin.
 function REPLICATE_Callback(hObject, eventdata, handles)
+% %%%%%%Todo: correct on the model of APPLY_Callback%%%%%%%%%%
 %------------------------------------------------------------------------
 calib_cell=get(handles.calib_type,'String');
 val=get(handles.calib_type,'Value');
-calib_type=calib_cell{val};
 Coord_cell=get(handles.ListCoord,'String');
 Object=read_geometry_calib(Coord_cell);
+GeometryCalib=feval(calib_cell{val},Object.Coord);
 
-if isequal(calib_type,'rescale')
-    GeometryCalib=calib_rescale(Object.Coord);
-elseif isequal(calib_type,'linear')
-    GeometryCalib=calib_linear(Object.Coord);
-elseif isequal(calib_type,'tsai')
-    GeometryCalib=calib_tsai(Object.Coord);
-end
 % %record image source
 GeometryCalib.SourceCalib.PointCoord=Object.Coord;
 
@@ -423,11 +342,10 @@ end
 
 %------------------------------------------------------------------------
 % determine the parameters for a calibration by an affine function (rescaling and offset, no rotation)
-function GeometryCalib=calib_rescale(Coord)
+function GeometryCalib=calib_rescale(Coord,handles)
 %------------------------------------------------------------------------
- 
 X=Coord(:,1);
-Y=Coord(:,2);
+Y=Coord(:,2);% Z not used
 x_ima=Coord(:,4);
 y_ima=Coord(:,5);
 [px,sx]=polyfit(X,x_ima,1);
@@ -435,124 +353,268 @@ y_ima=Coord(:,5);
 T_x=px(2);
 T_y=py(2);
 GeometryCalib.CalibrationType='rescale';
-GeometryCalib.focal=1;
+GeometryCalib.focal=1;%default
+GeometryCalib.sx=px(1)/py(1);
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
-GeometryCalib.Tx_Ty_Tz=[T_x T_y 1];
-GeometryCalib.R=[px(1),0,0;0,py(1),0;0,0,1];
-
-% %check error
-% Calib.dpx=1;
-% Calib.dpy=1;
-% Calib.sx=1;
-% Calib.Cx=0;
-% Calib.Cy=0;
-% Calib.Tz=1;
-% Calib.kappa1=0;
-% Calib.f=GeometryCalib.focal;
-% Calib.Tx=T_x;
-% Calib.Ty=T_y;
-% Calib.R=GeometryCalib.R;
-% [Xpoints,Ypoints]=px_XYZ(Calib,X,Y,0);
-% GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
-% GeometryCalib.ErrorMax(1)=max(abs(Xpoints-x_ima));
-% GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
-% GeometryCalib.ErrorMax(2)=max(abs(Ypoints-y_ima));
+GeometryCalib.Tx_Ty_Tz=[T_x T_y GeometryCalib.focal/py(1)];
+GeometryCalib.R=[1,0,0;0,1,0;0,0,0];
 
 %------------------------------------------------------------------------
 % determine the parameters for a calibration by a linear transform matrix (rescale and rotation)
-function GeometryCalib=calib_linear(Coord)
+function GeometryCalib=calib_linear(Coord,handles)
 %------------------------------------------------------------------------
 X=Coord(:,1);
-Y=Coord(:,2);
+Y=Coord(:,2);% Z not used
 x_ima=Coord(:,4);
 y_ima=Coord(:,5);
 XY_mat=[ones(size(X)) X Y];
 a_X1=XY_mat\x_ima; %transformation matrix for X
-x1=XY_mat*a_X1;%reconstruction
-err_X1=max(abs(x1-x_ima));%error
+% x1=XY_mat*a_X1;%reconstruction
+% err_X1=max(abs(x1-x_ima));%error
 a_Y1=XY_mat\y_ima;%transformation matrix for X
-y1=XY_mat*a_Y1;
-err_Y1=max(abs(y1-y_ima));%error
-T_x=a_X1(1);
-T_y=a_Y1(1);
+% y1=XY_mat*a_Y1;
+% err_Y1=max(abs(y1-y_ima));%error
 GeometryCalib.CalibrationType='linear';
 GeometryCalib.focal=1;
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
-GeometryCalib.Tx_Ty_Tz=[T_x T_y 1]; 
-GeometryCalib.R=[a_X1(2),a_X1(3),0;a_Y1(2),a_Y1(3),0;0,0,1];
-
-% %check error
-% GeometryCalib.ErrorRms(1)=sqrt(mean((x1-x_ima).*(x1-x_ima)));
-% GeometryCalib.ErrorMax(1)=max(abs(x1-x_ima));
-% GeometryCalib.ErrorRms(2)=sqrt(mean((y1-y_ima).*(y1-y_ima)));
-% GeometryCalib.ErrorMax(2)=max(abs(y1-y_ima));
+R=[a_X1(2),a_X1(3),0;a_Y1(2),a_Y1(3),0;0,0,0];
+norm=det(R);
+GeometryCalib.Tx_Ty_Tz=[a_X1(1) a_Y1(1) norm]; 
+GeometryCalib.R=R/norm;
 
 %------------------------------------------------------------------------
-function GeometryCalib=calib_tsai2(Coord)
+% determine the tsai parameters for a view normal to the grid plane
+function GeometryCalib=calib_normal(Coord,handles)
+%------------------------------------------------------------------------
+Calib.f1=str2num(get(handles.fx,'String'));
+Calib.f2=str2num(get(handles.fy,'String'));
+Calib.k=str2num(get(handles.k,'String'));
+Calib.Cx=str2num(get(handles.Cx,'String'));
+Calib.Cy=str2num(get(handles.Cy,'String'));
+%default
+if isempty(Calib.f1)
+    Calib.f1=25/0.012;
+end
+if isempty(Calib.f2)
+    Calib.f2=25/0.012;
+end
+if isempty(Calib.k)
+    Calib.k=0;
+end
+if isempty(Calib.Cx)||isempty(Calib.Cy)
+    huvmat=findobj(allchild(0),'Tag','uvmat');
+    hhuvmat=guidata(huvmat);
+    Calib.Cx=str2num(get(hhuvmat.npx,'String'))/2;
+    Calib.Cx=str2num(get(hhuvmat.npy,'String'))/2;
+end   
+%tsai parameters
+Calib.dpx=0.012;%arbitrary
+Calib.dpy=0.012;
+Calib.sx=Calib.f1*Calib.dpx/(Calib.f2*Calib.dpy);
+Calib.f=Calib.f2*Calib.dpy;
+Calib.kappa1=Calib.k/(Calib.f*Calib.f);
+
+%initial guess
+X=Coord(:,1);
+Y=Coord(:,2);
+Zmean=mean(Coord(:,3));
+x_ima=Coord(:,4)-Calib.Cx;
+y_ima=Coord(:,5)-Calib.Cy;
+XY_mat=[ones(size(X)) X Y];
+a_X1=XY_mat\x_ima; %transformation matrix for X
+a_Y1=XY_mat\y_ima;%transformation matrix for Y
+R=[a_X1(2),a_X1(3),0;a_Y1(2),a_Y1(3),0;0,0,-1];% rotation+ z axis reversal (upward)
+norm=sqrt(det(-R));
+calib_param(1)=0;% quadratic distortion
+calib_param(2)=a_X1(1);
+calib_param(3)=a_Y1(1);
+calib_param(4)=Calib.f/(norm*Calib.dpx)-R(3,3)*Zmean;
+calib_param(5)=angle(a_X1(2)+i*a_X1(3));
+display(['initial guess=' num2str(calib_param)])
+
+%optimise the parameters: minimisation of error
+calib_param = fminsearch(@(calib_param) error_calib(calib_param,Calib,Coord),calib_param)
+
+GeometryCalib.CalibrationType='tsai_normal';
+GeometryCalib.focal=Calib.f;
+GeometryCalib.dpx_dpy=[Calib.dpx Calib.dpy];
+GeometryCalib.Cx_Cy=[Calib.Cx Calib.Cy];
+GeometryCalib.sx=Calib.sx;
+GeometryCalib.kappa1=calib_param(1);
+GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
+GeometryCalib.Tx_Ty_Tz=[calib_param(2) calib_param(3) calib_param(4)]; 
+alpha=calib_param(5);
+GeometryCalib.R=[cos(alpha) sin(alpha) 0;-sin(alpha) cos(alpha) 0;0 0 -1];
+
+%------------------------------------------------------------------------
+function GeometryCalib=calib_3D_linear(Coord,handles)
 %------------------------------------------------------------------
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
-x_1=Coord(:,4:5)';
-X_1=Coord(:,1:3)';
+x_1=Coord(:,4:5)'
+X_1=Coord(:,1:3)'
 n_ima=1;
 % check_cond=0;
-
 
 nx=str2num(get(hhuvmat.npx,'String'));
 ny=str2num(get(hhuvmat.npy,'String'));
 
-
-% est_kc=[1;0;0;0;0];
-est_fc=0;
-est_dist=[1;0;0;0;0];
+est_dist=[0;0;0;0;0];
+est_aspect_ratio=0;
+est_fc=[1;1];
+%fc=[25;25]/0.012;
+center_optim=0;
 run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));
 
-GeometryCalib.CalibrationType='tsai_matlab';
-GeometryCalib.focal=f(2);
+GeometryCalib.CalibrationType='3D_linear';
+GeometryCalib.focal=fc(2);
 GeometryCalib.dpx_dpy=[1 1];
 GeometryCalib.Cx_Cy=cc';
 GeometryCalib.sx=fc(1)/fc(2);
-GeometryCalib.kappa1=-k(1)/f(2)^2;
+GeometryCalib.kappa1=-kc(1)/fc(2)^2;
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
 GeometryCalib.Tx_Ty_Tz=Tc_1';
 GeometryCalib.R=Rc_1;
-% Calib.dpx=GeometryCalib.dpx_dpy(1);
-% Calib.dpy=GeometryCalib.dpx_dpy(2);
-% Calib.sx=GeometryCalib.sx;
-% Calib.Cx=GeometryCalib.Cx_Cy(1);
-% Calib.Cy=GeometryCalib.Cx_Cy(2);
-% Calib.kappa1=GeometryCalib.kappa1;
-% Calib.f=GeometryCalib.focal;
-% Calib.Tx=GeometryCalib.Tx_Ty_Tz(1);
-% Calib.Ty=GeometryCalib.Tx_Ty_Tz(2);
-% Calib.Tz=GeometryCalib.Tx_Ty_Tz(3);
-% Calib.R=GeometryCalib.R;
-% X=Coord(:,1);
-% Y=Coord(:,2);
-% Z=Coord(:,3);
-% x_ima=Coord(:,4);
-% y_ima=Coord(:,5);
-% [Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
-% 
-% GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
-% [GeometryCalib.ErrorMax(1),GeometryCalib.IndexMax(1)]=max(abs(Xpoints-x_ima));
-% GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
-% [GeometryCalib.ErrorMax(2),GeometryCalib.IndexMax(2)]=max(abs(Ypoints-y_ima));
 
-function GeometryCalib=calib_tsai(Coord)
 %------------------------------------------------------------------------
-%TSAI
-% 'calibration_lin' provides a linear transform on coordinates, 
+function GeometryCalib=calib_3D_quadr(Coord,handles)
+%------------------------------------------------------------------
+
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-% if isunix
-    %fid = fopen(fullfile(path_UVMAT,'PARAM_LINUX.txt'),'r');%open the file with civ binary names
-xmlfile=fullfile(path_UVMAT,'PARAM.xml');
+huvmat=findobj(allchild(0),'Tag','uvmat');
+hhuvmat=guidata(huvmat);
+% check_cond=0;
+coord_files=get(handles.coord_files,'String');
+if ischar(coord_files)
+    coord_files={coord_files};
+end
+if isempty(coord_files{1}) || isequal(coord_files,{''})
+    coord_files={};
+end
+
+%retrieve the calibration points stored in the files listed in the popup list coord_files
+x_1=Coord(:,4:5)';
+X_1=Coord(:,1:3)';
+n_ima=numel(coord_files)+1;
+if ~isempty(coord_files) 
+    msgbox_uvmat('CONFIRMATION',['The xy coordinates of the calibration points in ' num2str(n_ima) ' planes will be used'])
+    for ifile=1:numel(coord_files)
+    t=xmltree(coord_files{ifile});
+    s=convert(t);%convert to matlab structure
+        if isfield(s,'GeometryCalib')
+            if isfield(s.GeometryCalib,'SourceCalib')
+                if isfield(s.GeometryCalib.SourceCalib,'PointCoord')
+                PointCoord=s.GeometryCalib.SourceCalib.PointCoord;
+                Coord_file=[];
+                for i=1:length(PointCoord)
+                    line=str2num(PointCoord{i});
+                    Coord_file(i,4:5)=line(4:5);%px x
+                    Coord_file(i,1:3)=line(1:3);%phys x
+                end
+                eval(['x_' num2str(ifile+1) '=Coord_file(:,4:5)'';']);
+                eval(['X_' num2str(ifile+1) '=Coord_file(:,1:3)'';']);
+                end
+            end
+        end
+    end
+end
+
+n_ima=numel(coord_files)+1;
+whos
+nx=str2num(get(hhuvmat.npx,'String'));
+ny=str2num(get(hhuvmat.npy,'String'));
+
+est_dist=[1;0;0;0;0];
+est_aspect_ratio=1;
+%est_fc=[0;0];
+%fc=[25;25]/0.012;
+center_optim=0;
+run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));
+
+GeometryCalib.CalibrationType='3D_quadr';
+GeometryCalib.focal=fc(2);
+GeometryCalib.dpx_dpy=[1 1];
+GeometryCalib.Cx_Cy=cc';
+GeometryCalib.sx=fc(1)/fc(2);
+GeometryCalib.kappa1=-kc(1)/fc(2)^2;
+GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
+GeometryCalib.Tx_Ty_Tz=Tc_1';
+GeometryCalib.R=Rc_1;
+GeometryCalib.R(3,1:3)=-GeometryCalib.R(3,1:3);%inversion for z upward
+GeometryCalib.ErrorRMS=[];
+GeometryCalib.ErrorMax=[];
+
+
+%------------------------------------------------------------------------
+function GeometryCalib=calib_3D_extrinsic(Coord,handles)
+%------------------------------------------------------------------
+path_uvmat=which('geometry_calib');% check the path detected for source file uvmat
+path_UVMAT=fileparts(path_uvmat); %path to UVMAT
+x_1=Coord(:,4:5)';
+X_1=Coord(:,1:3)';
+n_ima=1;
+Calib.f1=str2num(get(handles.fx,'String'));
+Calib.f2=str2num(get(handles.fy,'String'));
+Calib.k=str2num(get(handles.k,'String'));
+Calib.Cx=str2num(get(handles.Cx,'String'));
+Calib.Cy=str2num(get(handles.Cy,'String'));
+
+fct_path=fullfile(path_UVMAT,'toolbox_calib');
+addpath(fct_path)
+% [omc1,Tc1,Rc1,H,x,ex,JJ] = compute_extrinsic(x_1,X_1,...
+%     [Calib.f Calib.f*Calib.sx]',...
+%     [Calib.Cx Calib.Cy]',...
+%     [-Calib.kappa1*Calib.f^2 0 0 0 0]);
+[omc1,Tc1,Rc1,H,x,ex,JJ] = compute_extrinsic(x_1,X_1,...
+    [Calib.f1 Calib.f2]',...
+    [Calib.Cx Calib.Cy]',...
+    [-Calib.k 0 0 0 0]);
+%get the euler angles ???
+rmpath(fct_path);
+
+std(ex')
+GeometryCalib.CalibrationType='3D_extrinsic';
+GeometryCalib.focal=Calib.f2;
+GeometryCalib.dpx_dpy=[1 1];
+GeometryCalib.Cx_Cy=[Calib.Cx Calib.Cy];
+GeometryCalib.sx=Calib.f1/Calib.f2;
+GeometryCalib.kappa1=Calib.k/(Calib.f2*Calib.f2);
+GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
+GeometryCalib.Tx_Ty_Tz=Tc1';
+%inversion of z axis 
+GeometryCalib.R=Rc1;
+%GeometryCalib.R(3,1:3)=-GeometryCalib.R(3,1:3);%inversion for z upward
+
+
+%------------------------------------------------------------------------
+%function GeometryCalib=calib_tsai_heikkila(Coord)
+% TEST: NOT IMPLEMENTED
+%------------------------------------------------------------------
+% path_uvmat=which('uvmat');% check the path detected for source file uvmat
+% path_UVMAT=fileparts(path_uvmat); %path to UVMAT
+% path_calib=fullfile(path_UVMAT,'toolbox_calib_heikkila');
+% addpath(path_calib)
+% npoints=size(Coord,1);
+% Coord(:,1:3)=10*Coord(:,1:3);
+% Coord=[Coord zeros(npoints,2) -ones(npoints,1)];
+% [par,pos,iter,res,er,C]=cacal('dalsa',Coord);
+% GeometryCalib.CalibrationType='tsai';
+% GeometryCalib.focal=par(2);
+
+
+%--------------------------------------------------------------------------
+function GeometryCalib=calib_tsai(Coord,handles)% old version using gauthier's bianry ccal_fo
+%------------------------------------------------------------------------
+%TSAI
+path_uvmat=which('uvmat');% check the path detected for source file uvmat
+path_UVMAT=fileparts(path_uvmat); %path to UVMAT
+xmlfile=fullfile(path_UVMAT,'PARAM.xml');%name of the file containing names of binary executables
 if exist(xmlfile,'file')
-    t=xmltree(xmlfile);
-    sparam=convert(t);
+    t=xmltree(xmlfile);% read the (xml) file containing names of binary executables
+    sparam=convert(t);% convert to matlab structure
 end
 if ~isfield(sparam,'GeometryCalibBin')
     msgbox_uvmat('ERROR',['calibration program <GeometryCalibBin> undefined in parameter file ' xmlfile])
@@ -569,14 +631,14 @@ end
 
 textcoord=num2str(Coord,4);
 dlmwrite('t.txt',textcoord,'');  
-% ['!' Tsai_exe ' -f1 0 -f2 t.txt']
-    eval(['!' Tsai_exe ' -f t.txt > tsaicalib.log']);
+% ['!' Tsai_exe ' -fx 0 -fy t.txt']
+eval(['!' Tsai_exe ' -f t.txt > tsaicalib.log']);
 if ~exist('calib.dat','file')
     msgbox_uvmat('ERROR','no output from calibration program Tsai_exe: possibly too few points')
 end
 calibdat=dlmread('calib.dat');
 delete('calib.dat')
-delete('t.txt')
+%delete('t.txt')
 GeometryCalib.CalibrationType='tsai';
 GeometryCalib.focal=calibdat(10);
 GeometryCalib.dpx_dpy=[calibdat(5) calibdat(6)];
@@ -603,43 +665,35 @@ r8 = cb * sa;
 r9 = ca * cb;
 %EN DEDUIRE MATRICE R ??
 GeometryCalib.R=[r1,r2,r3;r4,r5,r6;r7,r8,r9];
-%erreur a caracteriser?
-% %check error
-% Calib.dpx=GeometryCalib.dpx_dpy(1);
-% Calib.dpy=GeometryCalib.dpx_dpy(2);
-% Calib.sx=GeometryCalib.sx;
-% Calib.Cx=GeometryCalib.Cx_Cy(1);
-% Calib.Cy=GeometryCalib.Cx_Cy(2);
-% Calib.kappa1=GeometryCalib.kappa1;
-% Calib.f=GeometryCalib.focal;
-% Calib.Tx=GeometryCalib.Tx_Ty_Tz(1);
-% Calib.Ty=GeometryCalib.Tx_Ty_Tz(2);
-% Calib.Tz=GeometryCalib.Tx_Ty_Tz(3);
-% Calib.R=GeometryCalib.R;
-% X=Coord(:,1);
-% Y=Coord(:,2);
-% Z=Coord(:,3);
-% x_ima=Coord(:,4);
-% y_ima=Coord(:,5);
-% [Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
-% 
-% GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
-% GeometryCalib.ErrorMax(1)=max(abs(Xpoints-x_ima));
-% GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
-% GeometryCalib.ErrorMax(2)=max(abs(Ypoints-y_ima));
-
 
 %------------------------------------------------------------------------
-% --- Executes on button press in rotation.
-function rotation_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-angle_rot=(pi/180)*str2num(get(handles.Phi,'String'));
-Coord_cell=get(handles.ListCoord,'String');
-data=read_geometry_calib(Coord_cell);
-data.Coord(:,1)=cos(angle_rot)*data.Coord(:,1)+sin(angle_rot)*data.Coord(:,2);
-data.Coord(:,1)=-sin(angle_rot)*data.Coord(:,1)+cos(angle_rot)*data.Coord(:,2);
-set(handles.XObject,'String',num2str(data.Coord(:,1),4));
-set(handles.YObject,'String',num2str(data.Coord(:,2),4));
+% --- determine the rms of calibration error
+function ErrorRms=error_calib(calib_param,Calib,Coord)
+%calib_param: vector of free calibration parameters (to optimise)
+%Calib: structure of the given calibration parameters
+%Coord: list of phys coordinates (columns 1-3, and pixel coordinates (columns 4-5)
+Calib.f=25;
+Calib.dpx=0.012;
+Calib.dpy=0.012;
+Calib.sx=1;
+Calib.Cx=512;
+Calib.Cy=512;
+Calib.kappa1=calib_param(1);
+Calib.Tx=calib_param(2);
+Calib.Ty=calib_param(3);
+Calib.Tz=calib_param(4);
+alpha=calib_param(5);
+Calib.R=[cos(alpha) sin(alpha) 0;-sin(alpha) cos(alpha) 0;0 0 -1];
+
+X=Coord(:,1);
+Y=Coord(:,2);
+Z=Coord(:,3);
+x_ima=Coord(:,4);
+y_ima=Coord(:,5); 
+[Xpoints,Ypoints]=px_XYZ(Calib,X,Y,Z);
+ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
+ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
+ErrorRms=mean(ErrorRms);
 
 %------------------------------------------------------------------------
 function XImage_Callback(hObject, eventdata, handles)
@@ -651,13 +705,60 @@ function YImage_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 update_list(hObject, eventdata,handles)
 
+%------------------------------------------------------------------------
+% --- Executes on button press in STORE.
+function STORE_Callback(hObject, eventdata, handles)
+Coord_cell=get(handles.ListCoord,'String');
+Object=read_geometry_calib(Coord_cell);
+unitlist=get(handles.CoordUnit,'String');
+unit=unitlist{get(handles.CoordUnit,'value')};
+GeometryCalib.CoordUnit=unit;
+GeometryCalib.SourceCalib.PointCoord=Object.Coord;
+huvmat=findobj(allchild(0),'Name','uvmat');
+hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
+RootPath='';
+RootFile='';
+if ~isempty(hhuvmat.RootPath)& ~isempty(hhuvmat.RootFile)
+    testhandle=1;
+    RootPath=get(hhuvmat.RootPath,'String');
+    RootFile=get(hhuvmat.RootFile,'String');
+    filebase=fullfile(RootPath,RootFile);
+    while exist([filebase '.xml'],'file')
+        filebase=[filebase '~'];
+    end
+    outputfile=[filebase '.xml'];
+    update_imadoc(GeometryCalib,outputfile)
+    listfile=get(handles.coord_files,'string');
+    if isequal(listfile,{''})
+        listfile={outputfile};
+    else
+        listfile=[listfile;{outputfile}]%update the list of coord files
+    end
+    set(handles.coord_files,'string',listfile);
+end
+set(handles.ListCoord,'Value',1)% refresh the display of coordinates
+set(handles.ListCoord,'String',{'......'})
+
+%------------------------------------------------------------------------
+% --- Executes on button press in CLEAR.
+function CLEAR_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+set(handles.coord_files,'Value',1)
+set(handles.coord_files,'String',{''})
+
+%------------------------------------------------------------------------
 function XObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 update_list(hObject, eventdata,handles)
 
+%------------------------------------------------------------------------
 function YObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 update_list(hObject, eventdata,handles)
 
+%------------------------------------------------------------------------
 function ZObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 update_list(hObject, eventdata,handles)
 
 %------------------------------------------------------------------------
@@ -747,16 +848,6 @@ end
 function edit_append_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 choice=get(handles.edit_append,'Value');
-% if choice==1
-%        Coord=get(handles.ListCoord,'String'); 
-%        val=length(Coord);
-%        if val>=1 & isequal(Coord{val},'')
-%             val=val-1; %do not take into account blank
-%        end
-%        Coord{val+1}='';
-%        set(handles.ListCoord,'String',Coord)
-%        set(handles.ListCoord,'Value',val+1)
-% end
 if choice
     set(handles.edit_append,'BackgroundColor',[1 1 0])
 else
@@ -815,48 +906,6 @@ if ismember(xx,[8 127])%backspace or delete
         MenuPlot_Callback(hObject,eventdata,handles)
      end
 end
-
-% %------------------------------------------------------------------------
-% % --- Executes on button press in append_point.
-% function append_point_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-%        Coord=get(handles.ListCoord,'String'); 
-%        val=length(Coord);
-%        if val>=1 & isequal(Coord{val},'')
-%             val=val-1; %do not take into account blank
-%        end
-%        Coord{val+1}='';
-%        set(handles.ListCoord,'String',Coord)
-%        set(handles.ListCoord,'Value',val+1)
-
-%------------------------------------------------------------------------
-function MenuOpen_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-%get the object file 
-huvmat=findobj(allchild(0),'Name','uvmat');
-UvData=get(huvmat,'UserData');
-hchild=get(huvmat,'Children');
-hrootpath=findobj(hchild,'Tag','RootPath');
-oldfile=get(hrootpath,'String');
-if isempty(oldfile)
-    oldfile='';
-end
-%[FileName,PathName] = uigetfile('*.civ','Select a .civ file',oldfile)
-[FileName, PathName, filterindex] = uigetfile( ...
-       {'*.xml;*.mat', ' (*.xml,*.mat)';
-       '*.xml',  '.xml files '; ...
-        '*.mat',  '.mat matlab files '}, ...
-        'Pick a file',oldfile);
-fileinput=[PathName FileName];%complete file name 
-testblank=findstr(fileinput,' ');%look for blanks
-if ~isempty(testblank)
-    msgbox_uvmat('ERROR','forbidden input file name or path: no blank character allowed')
-    return
-end
-sizf=size(fileinput);
-if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
-loadfile(handles,fileinput)
-
 
 %------------------------------------------------------------------------
 function MenuPlot_Callback(hObject, eventdata, handles)
@@ -954,7 +1003,8 @@ grid_input=[];%default
 if isfield(CalibData,'grid')
     grid_input=CalibData.grid;%retrieve the previously used grid
 end
-[T,CalibData.grid]=create_grid(grid_input,'detect grid');%display the GUI create_grid, read the set of phys coordinates T
+[T,CalibData.grid]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
+
 set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
 
 %read the four last point coordinates in pixels
@@ -987,33 +1037,7 @@ npxy=size(A);
 %linear transform on the current image
 X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the phys coordinates
 Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner ordinates in the phys coordinates
-%X=[CalibData.grid.x_0 CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_1]';%corner absissa in the phys coordinates
-%Y=[CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1 CalibData.grid.y_0]';%corner ordinates in the phys coordinate
-%XY_mat=[ones(size(X)) X Y];
-%a_X1=XY_mat\corners_X; %transformation matrix for X
-%x1=XY_mat*a_X1;%reconstruction
-%err_X1=max(abs(x1-corners_X));%error
-%a_Y1=XY_mat\corners_Y;%transformation matrix for X
-%y1=XY_mat*a_Y1;
-%err_Y1=max(abs(y1-corners_Y));%error
-% figure(1)
-% hold off
-% plot([corners_X;corners_X(1)],[corners_Y;corners_Y(1)],'r')
-%test points along contour
-% u=[0:0.1:1];
-% x12=u*corners_X(2)+(1-u)*corners_X(1);
-% x23=u*corners_X(3)+(1-u)*corners_X(2);
-% x34=u*corners_X(4)+(1-u)*corners_X(3);
-% x41=u*corners_X(1)+(1-u)*corners_X(4);
-% y12=u*corners_Y(2)+(1-u)*corners_Y(1);
-% y23=u*corners_Y(3)+(1-u)*corners_Y(2);
-% y34=u*corners_Y(4)+(1-u)*corners_Y(3);
-% y41=u*corners_Y(1)+(1-u)*corners_Y(4);
-% hold on
-% plot(x12,y12,'xr')
-% plot(x23,y23,'xr')
-% plot(x34,y34,'xr')
-% plot(x41,y41,'xr')
+
 %calculate transform matrices: 
 % reference: http://alumni.media.mit.edu/~cwren/interpolator/ by Christopher R. Wren
 B = [ X Y ones(size(X)) zeros(4,3)        -X.*corners_X -Y.*corners_X ...
@@ -1025,7 +1049,7 @@ l = inv(B' * B) * B' * D;
 Amat = reshape([l(1:6)' 0 0 1 ],3,3)';
 C = [l(7:8)' 1];
 
-GeometryCalib.CalibrationType='tsai';%'linear';
+GeometryCalib.CalibrationType='tsai';
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
 GeometryCalib.f=1;
 GeometryCalib.dpx=1;
@@ -1038,62 +1062,13 @@ GeometryCalib.Tx=Amat(1,3);
 GeometryCalib.Ty=Amat(2,3);
 GeometryCalib.Tz=1;
 GeometryCalib.R=[Amat(1,1),Amat(1,2),0;Amat(2,1),Amat(2,2),0;C(1),C(2),0];
-%montre points du pourtour transformes 
-% for ip=1:numel(u),
-%   XY12(:,ip)=Amat*[x12(ip);y12(ip);1]/(C*[x12(ip);y12(ip);1]);
-%   XY23(:,ip)=Amat*[x23(ip);y23(ip);1]/(C*[x23(ip);y23(ip);1]);
-%   XY34(:,ip)=Amat*[x34(ip);y34(ip);1]/(C*[x34(ip);y34(ip);1]);
-%   XY41(:,ip)=Amat*[x41(ip);y41(ip);1]/(C*[x41(ip);y41(ip);1]);
-% end
-% xphys12=u*X(2)+(1-u)*X(1);
-% xphys23=u*X(3)+(1-u)*X(2);
-% xphys34=u*X(4)+(1-u)*X(3);
-% xphys41=u*X(1)+(1-u)*X(4);
-% yphys12=u*Y(2)+(1-u)*Y(1);
-% yphys23=u*Y(3)+(1-u)*Y(2);
-% yphys34=u*Y(4)+(1-u)*Y(3);
-% yphys41=u*Y(1)+(1-u)*Y(4);
-% for ip=1:numel(u),
-%   XY12(:,ip)=Amat*[xphys12(ip);yphys12(ip);1]/(C*[xphys12(ip);yphys12(ip);1]);
-%   XY23(:,ip)=Amat*[xphys23(ip);yphys23(ip);1]/(C*[xphys23(ip);yphys23(ip);1]);
-%   XY34(:,ip)=Amat*[xphys34(ip);yphys34(ip);1]/(C*[xphys34(ip);yphys34(ip);1]);
-%   XY41(:,ip)=Amat*[xphys41(ip);yphys41(ip);1]/(C*[xphys41(ip);yphys41(ip);1]);
-% end
-% x12=XY12(1,:);
-% y12=XY12(2,:);
-% x23=XY23(1,:);
-% y23=XY23(2,:);
-% x34=XY34(1,:);
-% y34=XY34(2,:);
-% x41=XY41(1,:);
-% y41=XY41(2,:);
-% [x12,y12]=px_XYZ(GeometryCalib,xphys12,yphys12);
-% [x23,y23]=px_XYZ(GeometryCalib,xphys23,yphys23);
-% [x34,y34]=px_XYZ(GeometryCalib,xphys34,yphys34);
-% [x41,y41]=px_XYZ(GeometryCalib,xphys41,yphys41);
-% plot(x12,y12,'xb')
-% plot(x23,y23,'xb')
-% plot(x34,y34,'xb')
-% plot(x41,y41,'xb')
-% figure(2)
-% hold off
-% plot(XY12(1,:),XY12(2,:),'ob')  
-% hold on
-% plot(XY23(1,:),XY23(2,:),'ob') 
-% plot(XY34(1,:),XY34(2,:),'ob')
-% plot(XY41(1,:),XY41(2,:),'ob')
-% plot(xphys12,yphys12,'ob')  
-% hold on
-% plot(xphys23,yphys23,'ob') 
-% plot(xphys34,yphys34,'ob')
-% plot(xphys41,yphys41,'ob')
 
 [Amod,Rangx,Rangy]=phys_Ima(A-min(min(A)),GeometryCalib,0);
 
 Amod=double(Amod);
-figure(12)
-Amax=max(max(Amod));
-image(Rangx,Rangy,uint8(255*Amod/Amax))
+% figure(12) display corrected image
+% Amax=max(max(Amod));
+% image(Rangx,Rangy,uint8(255*Amod/Amax))
 Dx=(Rangx(2)-Rangx(1))/(npxy(2)-1); %x mesh in real space
 Dy=(Rangy(2)-Rangy(1))/(npxy(1)-1); %y mesh in real space
 ind_range_x=ceil(GeometryCalib.R(1,1)*CalibData.grid.Dx/3);% range of search of image ma around each point obtained by linear interpolation from the marked points
@@ -1102,7 +1077,11 @@ nbpoints=size(T,1);
 for ipoint=1:nbpoints
     i0=1+round((T(ipoint,1)-Rangx(1))/Dx);%round(Xpx(ipoint));
     j0=1+round((T(ipoint,2)-Rangy(1))/Dy);%round(Xpx(ipoint));
-    Asub=Amod(j0-ind_range_y:j0+ind_range_y,i0-ind_range_x:i0+ind_range_x);
+    j0min=max(j0-ind_range_y,1);
+    j0max=min(j0+ind_range_y,size(Amod,1));
+    i0min=max(i0-ind_range_x,1);
+    i0max=min(i0+ind_range_x,size(Amod,2));
+    Asub=Amod(j0min:j0max,i0min:i0max);
     x_profile=sum(Asub,1);
     y_profile=sum(Asub,2);
     [Amax,ind_x_max]=max(x_profile);
@@ -1110,25 +1089,26 @@ for ipoint=1:nbpoints
     %sub-pixel improvement using moments
     x_shift=0;
     y_shift=0;
-    if ind_x_max+2<=2*ind_range_x+1 && ind_x_max-2>=1
+    %if ind_x_max+2<=2*ind_range_x+1 && ind_x_max-2>=1
+    if ind_x_max+2<=numel(x_profile) && ind_x_max-2>=1
         Atop=x_profile(ind_x_max-2:ind_x_max+2);
         x_shift=sum(Atop.*[-2 -1 0 1 2])/sum(Atop);
     end
-    if ind_y_max+2<=2*ind_range_y+1 && ind_y_max-2>=1
+    if ind_x_max+2<=numel(y_profile) && ind_y_max-2>=1
         Atop=y_profile(ind_y_max-2:ind_y_max+2);
         y_shift=sum(Atop.*[-2 -1 0 1 2]')/sum(Atop);
     end
-    Delta(ipoint,1)=(x_shift+ind_x_max-ind_range_x-1)*Dx;%shift from the initial guess
-    Delta(ipoint,2)=(y_shift+ind_y_max-ind_range_y-1)*Dy;
+    Delta(ipoint,1)=(x_shift+ind_x_max+i0min-i0-1)*Dx;%shift from the initial guess
+    Delta(ipoint,2)=(y_shift+ind_y_max+j0min-j0-1)*Dy;
 end
 Tmod=T(:,(1:2))+Delta;
 [Xpx,Ypx]=px_XYZ(GeometryCalib,Tmod(:,1),Tmod(:,2));
 for ipoint=1:nbpoints
      Coord{ipoint,1}=num2str(T(ipoint,1),4);%display coordiantes with 4 digits
      Coord{ipoint,2}=num2str(T(ipoint,2),4);%display coordiantes with 4 digits
-     Coord{ipoint,3}='0';
-     Coord{ipoint,4}=num2str(Xpx(ipoint),4);%display coordiantes with 4 digi
-     Coord{ipoint,5}=num2str(Ypx(ipoint),4);%display coordiantes with 4 digi
+     Coord{ipoint,3}=num2str(T(ipoint,3),4);%display coordiantes with 4 digits;
+     Coord{ipoint,4}=num2str(Xpx(ipoint),4);%display coordiantes with 4 digits
+     Coord{ipoint,5}=num2str(Ypx(ipoint),4);%display coordiantes with 4 digits
 end
 Tabchar=cell2tab(Coord(end:-1:1,:),'    |    ');
 Tabchar=[Tabchar ;{'......'}];
@@ -1209,6 +1189,20 @@ Tabchar=[Tabchar;{'......'}];
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
 
+
+% %------------------------------------------------------------------------
+% % --- Executes on button press in rotation.
+% function rotation_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% angle_rot=(pi/180)*str2num(get(handles.Phi,'String'));
+% Coord_cell=get(handles.ListCoord,'String');
+% data=read_geometry_calib(Coord_cell);
+% data.Coord(:,1)=cos(angle_rot)*data.Coord(:,1)+sin(angle_rot)*data.Coord(:,2);
+% data.Coord(:,1)=-sin(angle_rot)*data.Coord(:,1)+cos(angle_rot)*data.Coord(:,2);
+% set(handles.XObject,'String',num2str(data.Coord(:,1),4));
+% set(handles.YObject,'String',num2str(data.Coord(:,2),4));
+
+
 %------------------------------------------------------------------------
 % image transform from px to phys 
 %INPUT:
@@ -1286,11 +1280,7 @@ if exist('Z','var')& isequal(Z,round(Z))& Z>0 & isfield(Calib,'SliceCoord')&leng
     Zindex=Z;
     Zphys=Calib.SliceCoord(Zindex,3);%GENERALISER AUX CAS AVEC ANGLE
 else
-%     if exist('Z','var')
-%         Zphys=Z;
-%     else
-        Zphys=0;
-%     end
+    Zphys=0;
 end
 if ~exist('X','var')||~exist('Y','var')
     Xphys=[];
@@ -1328,3 +1318,146 @@ if isfield(Calib,'R')
     Xphys=(A11.*Xu+A12.*Yu+X0)./denom;%world coordinates
     Yphys=(A21.*Xu+A22.*Yu+Y0)./denom;
 end
+
+
+% --------------------------------------------------------------------
+function MenuImportPoints_Callback(hObject, eventdata, handles)
+fileinput=browse_xml(hObject, eventdata, handles)
+if isempty(fileinput)
+    return
+end
+[s,errormsg]=imadoc2struct(fileinput,'GeometryCalib');
+GeometryCalib=s.GeometryCalib;
+GeometryCalib=load_calib(hObject, eventdata, handles)
+calib=reshape(GeometryCalib.PointCoord',[],1);
+for ilist=1:numel(calib)
+    CoordCell{ilist}=num2str(calib(ilist));
+end
+CoordCell=reshape(CoordCell,[],5);
+Tabchar=cell2tab(CoordCell,'    |    ');%transform cells into table ready for display
+Tabchar=[Tabchar;{'......'}];
+set(handles.ListCoord,'Value',1)
+set(handles.ListCoord,'String',Tabchar)
+MenuPlot_Callback(handles.geometry_calib, [], handles)
+
+% -----------------------------------------------------------------------
+function MenuImportIntrinsic_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+fileinput=browse_xml(hObject, eventdata, handles);
+if isempty(fileinput)
+    return
+end
+[s,errormsg]=imadoc2struct(fileinput,'GeometryCalib');
+GeometryCalib=s.GeometryCalib;
+k=GeometryCalib.kappa1 * GeometryCalib.f*GeometryCalib.f;
+f1=GeometryCalib.f*GeometryCalib.sx/GeometryCalib.dpx;
+f2=GeometryCalib.f/GeometryCalib.dpy;
+Cx=GeometryCalib.Cx;
+Cy=GeometryCalib.Cy;
+set(handles.fx,'String',num2str(f1,'%1.1f'))
+set(handles.fy,'String',num2str(f2,'%1.1f'))
+set(handles.k,'String',num2str(k,'%1.4f'))
+set(handles.Cx,'String',num2str(Cx,'%1.1f'))
+set(handles.Cy,'String',num2str(Cy,'%1.1f'))
+
+% -----------------------------------------------------------------------
+function MenuImportAll_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+fileinput=browse_xml(hObject, eventdata, handles)
+if ~isempty(fileinput)
+    loadfile(handles,fileinput)
+end
+
+% -----------------------------------------------------------------------
+% --- Executes on menubar option Import/Grid file: introduce previous grid files
+function MenuGridFile_Callback(hObject, eventdata, handles)
+% -----------------------------------------------------------------------
+inputfile=browse_xml(hObject, eventdata, handles)
+listfile=get(handles.coord_files,'string');
+if isequal(listfile,{''})
+    listfile={inputfile};
+else
+    listfile=[listfile;{inputfile}]%update the list of coord files
+end
+set(handles.coord_files,'string',listfile);
+
+%------------------------------------------------------------------------
+function fileinput=browse_xml(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+fileinput=[];%default
+oldfile=''; %default
+UserData=get(handles.geometry_calib,'UserData');
+if isfield(UserData,'XmlInput')
+    oldfile=UserData.XmlInput;
+end
+[FileName, PathName, filterindex] = uigetfile( ...
+       {'*.xml;*.mat', ' (*.xml,*.mat)';
+       '*.xml',  '.xml files '; ...
+        '*.mat',  '.mat matlab files '}, ...
+        'Pick a file',oldfile);
+fileinput=[PathName FileName];%complete file name 
+testblank=findstr(fileinput,' ');%look for blanks
+if ~isempty(testblank)
+    msgbox_uvmat('ERROR','forbidden input file name or path: no blank character allowed')
+    return
+end
+sizf=size(fileinput);
+if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
+UserData.XmlInput=fileinput;
+set(handles.geometry_calib,'UserData',UserData)%record current file foer further use of browser
+
+% -----------------------------------------------------------------------
+function loadfile(handles,fileinput)
+%------------------------------------------------------------------------
+[s,errormsg]=imadoc2struct(fileinput,'GeometryCalib');
+GeometryCalib=s.GeometryCalib;
+if isempty(GeometryCalib)
+    Tabchar={};
+    CoordCell={};
+    k=0;%default
+    f1=1000;
+    f2=1000;
+    hhuvmat=guidata(findobj(allchild(0),'Name','uvmat'));
+    Cx=str2num(get(hhuvmat.npx,'String'))/2;
+    Cy=str2num(get(hhuvmat.npy,'String'))/2;
+else
+    k=GeometryCalib.kappa1 * GeometryCalib.f*GeometryCalib.f;
+    f1=GeometryCalib.f*GeometryCalib.sx/GeometryCalib.dpx;
+    f2=GeometryCalib.f/GeometryCalib.dpy;
+    Cx=GeometryCalib.Cx;
+    Cy=GeometryCalib.Cy;
+    set(handles.fx,'String',num2str(f1,'%1.1f'))
+    set(handles.fy,'String',num2str(f2,'%1.1f'))
+    set(handles.k,'String',num2str(k,'%1.4f'))
+    set(handles.Cx,'String',num2str(Cx,'%1.1f'))
+    set(handles.Cy,'String',num2str(Cy,'%1.1f'))
+    calib=reshape(GeometryCalib.PointCoord',[],1);
+    for ilist=1:numel(calib)
+        CoordCell{ilist}=num2str(calib(ilist));
+    end
+    CoordCell=reshape(CoordCell,[],5);
+    Tabchar=cell2tab(CoordCell,'    |    ');%transform cells into table ready for display
+    set(handles.ListCoord,'Value',1)
+    set(handles.ListCoord,'String',Tabchar)
+    MenuPlot_Callback(handles.geometry_calib, [], handles)
+end
+Tabchar=[Tabchar;{'......'}];
+if isempty(CoordCell)% allow mouse action by default in the absence of input points
+    set(handles.edit_append,'Value',1)
+    set(handles.edit_append,'BackgroundColor',[1 1 0])
+else % does not allow mouse action by default in the presence of input points
+    set(handles.edit_append,'Value',0)
+    set(handles.edit_append,'BackgroundColor',[0.7 0.7 0.7])
+end
+
+
+
+
+
+% --------------------------------------------------------------------
+% --- Executes on button press in CLEAR_PTS: clear the list of calibration points
+function CLEAR_PTS_Callback(hObject, eventdata, handles)
+% --------------------------------------------------------------------
+set(handles.ListCoord,'Value',1)% refresh the display of coordinates
+set(handles.ListCoord,'String',{'......'})
+

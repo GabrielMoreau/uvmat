@@ -1,3 +1,13 @@
+%'px_XYZ': transform physical to image coordinates. 
+%------------------------------------------------------------------------
+%[X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)
+%------------------------------------------------------------------------           
+% OUTPUT:
+% [X,Y]: image coordinates(in pixels)
+%------------------------------------------------------------------------
+% INPUT:
+% Calib: structure containing calibration parameters
+% Xphys,Yphys,Zphys; vectors of physical coordinates for a set of points
 
 function [X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)
 X=[];%default

@@ -242,7 +242,6 @@ end
 %-------------------------------------------------------------------
 function hdisplay=plot_text(FieldData,hdisplay_in)
 %-------------------------------------------------------------------
-hdisplay_in
 if exist('hdisplay_in','var') && ~isempty(hdisplay_in) && ishandle(hdisplay_in) && isequal(get(hdisplay_in,'Type'),'uicontrol')
     hdisplay=hdisplay_in;
 else
@@ -686,10 +685,7 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             return
         end
           x_label=[Data.ListVarName{ivar_X} '(' x_units ')'];
-    end       
-%     if isfield(Data,'VarAttribute')
-%         VarAttribute=Data.VarAttribute;
-%     end    
+    end          
 end 
 
 %%%%%%%%%%%%%%%%%%%%%   image or scalar plot %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -703,7 +699,7 @@ if test_ima
     np=size(A);%size of image
     siz=numel(np);
     if siz>3
-        msgbox_uvmat('ERROR','unrecognized scalar type ')
+        msgbox_uvmat('ERROR',['unrecognized scalar type: ' num2str(siz) ' dimensions'])
             return
     end
     if siz==3
@@ -793,13 +789,12 @@ if test_ima
         end
         if ~isequal(PlotParam.Scalar.Contours,1)  
             % rescale the grey levels with min and max, put a grey scale colorbar
+            B=A;
             if BW
-                B=A;
                 vec=linspace(0,1,255);%define a linear greyscale colormap
                 map=[vec' vec' vec'];
                 colormap(map);  %grey scale color map 
             else
-                B=A;
                 colormap('default'); % standard faulse colors for div, vort , scalar fields 
             end
         end

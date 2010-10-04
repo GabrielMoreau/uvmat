@@ -58,7 +58,7 @@ if ~testcell
 end 
 nbview=length(Series.RootFile);%number of views (file series to merge)
 nbfield=size(num_i1{1},1)*size(num_i1{1},2);%number of fields in the time series
-transform=Series.CoordType; %  field transform function
+% transform=Series.CoordType; %  field transform function
 hhh=which('mmreader');
 for iview=1:nbview
     test_movie(iview)=0;
@@ -71,7 +71,7 @@ for iview=1:nbview
 end
 
 %Calibration data and timing: read the ImaDoc files
-mode=''; %default
+% mode=''; %default
 timecell={};
 itime=0;
 NbSlice_calib={}; %test for z index 
@@ -151,6 +151,8 @@ if isfield(Series,'transform_fct')
 end
 
 % Field and velocity type (the same for all views)
+FieldName='';
+if strcmp(get(hseries.FieldMenu,'Visible'),'on')
 Field_str=get(hseries.FieldMenu,'String');
 val=get(hseries.FieldMenu,'Value');
 FieldName=Field_str(val);%the same set of fields for all views
@@ -162,6 +164,7 @@ if strcmp(FieldName,'')
 elseif strcmp(FieldName,'get_field...')
     hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
     SubField=get_field('read_get_field',hObject,eventdata,hget_field); %read the names of the variables to plot in the get_field GUI
+end
 end
 %detect whether all the files are 'images' or 'netcdf'
 testima=0;
@@ -237,7 +240,7 @@ for ifile=1:nbfield
     stopstate=get(hseries.RUN,'BusyAction');
     if isequal(stopstate,'queue')% enable STOP command from the 'series' interface
          update_waitbar(hseries.waitbar,WaitbarPos,ifile/nbfield)
-         Amerge=0;
+%          Amerge=0;
          
          %----------LOOP ON VIEWS----------------------
         nbtime=0;
@@ -257,10 +260,13 @@ for ifile=1:nbfield
                     Field{iview}.A=imread(filename); 
                 end % TODO: introduce ListVarName
                 npxy=size(Field{iview}.A);
+                Field{iview}.ListVarName={'AX','AY','A'};
+                Field{iview}.VarDimName={'AX','AY',{'AY','AX'}};
                 Field{iview}.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
                 Field{iview}.AY=[npxy(1)-0.5 0.5];
                 Field{iview}.CoordType='px'; 
                 Field{iview}.AName='image';
+                timeread(iview)=0;
             else
                 if testcivx
                     [Field{iview},VelTypeOut]=read_civxdata(filename,FieldName,VelType);
@@ -286,7 +292,7 @@ for ifile=1:nbfield
                 Field{iview}=transform_fct(Field{iview},XmlData{iview});%transform to phys if requested
             end
             if testcivx
-                    Field{iview}=calc_field(FieldName,Field{iview});
+                Field{iview}=calc_field(FieldName,Field{iview});
             end
 
             %projection on object (gridded plane)
@@ -392,28 +398,24 @@ nbview=length(Data);
 if nbview==1
     return
 end
-for iview=1:nbview
-    if ~isequal(MergeData.ListDimName,Data{iview}.ListDimName)
-        error=1;
-    end
-    if ~isequal(MergeData.ListVarName,Data{iview}.ListVarName)
-        error=1;
-    end
-end
-if error
-    MergeData.Txt='ERROR: attempt at merging fields of incompatible type';
-    return
-end
-
-
-
-
+% for iview=1:nbview
+%     if ~isequal(MergeData.ListDimName,Data{iview}.ListDimName)
+%         error=1;
+%     end
+%     if ~isequal(MergeData.ListVarName,Data{iview}.ListVarName)
+%         error=1;
+%     end
+% end
+% if error
+%     MergeData.Txt='ERROR: attempt at merging fields of incompatible type';
+%     return
+% end
+% 
 %group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 [CellVarIndex,NbDim,VarTypeCell]=find_field_indices(Data{1});
 %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
 % CellVarIndex=cells of variable index arrays
 ivar_new=0; % index of the current variable in the projected field
-icoord=0;
 for icell=1:length(CellVarIndex)
     if NbDim(icell)==1
         continue
