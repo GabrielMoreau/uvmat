@@ -107,6 +107,9 @@ path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 errormsg=[];%default error message
 xmlfile=fullfile(path_UVMAT,'PARAM.xml');
+if ~exist(xmlfile,'file')
+    xmlfile='PARAM.xml';
+end
 if exist(xmlfile,'file')
     try
     t=xmltree(xmlfile);
@@ -117,6 +120,7 @@ if exist(xmlfile,'file')
 else
     errormsg=[xmlfile ' not found: path to civx binaries undefined'];
 end
+
 
 if ~isempty(errormsg)
        msgbox_uvmat('ERROR',errormsg);
