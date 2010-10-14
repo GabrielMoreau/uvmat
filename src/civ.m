@@ -106,10 +106,10 @@ set(handles.ImaDoc,'String',ext)
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 errormsg=[];%default error message
-xmlfile=fullfile(path_UVMAT,'PARAM.xml');
-if ~exist(xmlfile,'file')
+% xmlfile=fullfile(path_UVMAT,'PARAM.xml');
+% if ~exist(xmlfile,'file')
     xmlfile='PARAM.xml';
-end
+% end
 if exist(xmlfile,'file')
     try
     t=xmltree(xmlfile);
