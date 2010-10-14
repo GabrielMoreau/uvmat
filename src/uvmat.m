@@ -814,9 +814,9 @@ if isfield(XmlData,'GeometryCalib')
             (isfield(GeometryCalib,'kappa1')&& ~isequal(GeometryCalib.kappa1,0))
             set(handles.pxcm,'String','var')
             set(handles.pycm,'String','var')
-        else
-            pixcmx=GeometryCalib.f*GeometryCalib.R(1,1)*GeometryCalib.sx/(GeometryCalib.Tz*GeometryCalib.dpx);
-            pixcmy=GeometryCalib.f*GeometryCalib.R(2,2)/(GeometryCalib.Tz*GeometryCalib.dpy);
+        elseif isfield(GeometryCalib,'fx_fy')
+            pixcmx=GeometryCalib.fx_fy(1)%*GeometryCalib.R(1,1)*GeometryCalib.sx/(GeometryCalib.Tz*GeometryCalib.dpx);
+            pixcmy=GeometryCalib.fx_fy(2)%*GeometryCalib.R(2,2)/(GeometryCalib.Tz*GeometryCalib.dpy);
             set(handles.pxcm,'String',num2str(pixcmx))
             set(handles.pycm,'String',num2str(pixcmy))
         end
@@ -4735,8 +4735,8 @@ else
         if ~strcmp(answer,'Cancel')
             imwrite(imflag,answer,'BitDepth',8);
         end
-        set(list_object_1,'Value',1)
-        set(list_object_1,'Max',1)
+        set(handles.list_object_1,'Value',1)
+        set(handles.list_object_1,'Max',1)
 %     end
 end        
       

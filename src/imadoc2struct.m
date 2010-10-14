@@ -117,67 +117,76 @@ if ~isempty(uid_GeometryCalib)
     subt=branch(t,uid_GeometryCalib);%subtree under GeometryCalib
     cont=get(subt,1,'contents');
     if ~isempty(cont)
-        uid_pixcmx=find(subt,'/GeometryCalib/Pxcmx');
-        uid_pixcmy=find(subt,'/GeometryCalib/Pxcmy');
-        if ~isempty(uid_pixcmx) && ~isempty(uid_pixcmy)%NON UTILISE 
-           pixcmx=str2num(get(subt,children(subt,uid_pixcmx),'value'));
-            if isempty(pixcmx),pixcmx=1;end; %default
-            pixcmy=str2num(get(subt,children(subt,uid_pixcmy),'value'));
-            if isempty(pixcmy),pixcmy=1;end; %default
-            tsai.Pxcmx=pixcmx;
-            tsai.Pxcmy=pixcmy;
-        end
+%         uid_pixcmx=find(subt,'/GeometryCalib/Pxcmx');
+%         uid_pixcmy=find(subt,'/GeometryCalib/Pxcmy');
+%         if ~isempty(uid_pixcmx) && ~isempty(uid_pixcmy)%NON UTILISE 
+%            pixcmx=str2num(get(subt,children(subt,uid_pixcmx),'value'));
+%             if isempty(pixcmx),pixcmx=1;end; %default
+%             pixcmy=str2num(get(subt,children(subt,uid_pixcmy),'value'));
+%             if isempty(pixcmy),pixcmy=1;end; %default
+%             tsai.Pxcmx=pixcmx;
+%             tsai.Pxcmy=pixcmy;
+%         end
         %default values:
-        tsai.f=1;
-        tsai.dpx=1;
-        tsai.dpy=1;
-        tsai.sx=1;
-        tsai.Cx=0;
-        tsai.Cy=0;
-        tsai.Tz=1;
-        tsai.Tx=0;
-        tsai.Ty=0;
-        tsai.R=[1 0 0; 0 1 0; 0 0 0];
-        tsai.kappa1=0;
+        %tsai.dpx_dpy=1;
+        %tsai.dpy=1;
+        %tsai.sx=1;
+%         tsai.Cx_Cy=[0 0];
+       % tsai.Cy=0;
+%         tsai.Tx_Ty_Tz=[0 0 1];
+%         tsai.Tx=0;
+%         tsai.Ty=0;
+%         tsai.R=[1 0 0; 0 1 0; 0 0 0];
+        uid_CalibrationType=find(subt,'/GeometryCalib/CalibrationType');
+        if isequal(length(uid_CalibrationType),1)
+            tsai.CalibrationType=get(subt,children(subt,uid_CalibrationType),'value');
+        end
         uid_CoordUnit=find(subt,'/GeometryCalib/CoordUnit');
-        if ~isempty(uid_CoordUnit) 
+        if isequal(length(uid_CoordUnit),1)
             tsai.CoordUnit=get(subt,children(subt,uid_CoordUnit),'value');
         end
-        uid_focal=find(subt,'/GeometryCalib/focal');
-        uid_dpx_dpy=find(subt,'/GeometryCalib/dpx_dpy');
-        uid_sx=find(subt,'/GeometryCalib/sx');
-        uid_Cx_Cy=find(subt,'/GeometryCalib/Cx_Cy');
-        uid_kappa1=find(subt,'/GeometryCalib/kappa1');
-        uid_Tx_Ty_Tz=find(subt,'/GeometryCalib/Tx_Ty_Tz');
-        uid_R=find(subt,'/GeometryCalib/R');
-        if ~isempty(uid_focal) && ~isempty(uid_dpx_dpy) && ~isempty(uid_Cx_Cy)
-            tsai.f=str2num(get(subt,children(subt,uid_focal),'value'));
-            dpx_dpy=str2num(get(subt,children(subt,uid_dpx_dpy),'value'));
-            tsai.dpx=dpx_dpy(1);
-            tsai.dpy=dpx_dpy(2);
-            if ~isempty(uid_sx)
-               tsai.sx=str2num(get(subt,children(subt,uid_sx),'value')); 
+        uid_fx_fy=find(subt,'/GeometryCalib/fx_fy');
+        focal=[];%default fro old convention (Reg Wilson)
+        if isequal(length(uid_fx_fy),1)
+            tsai.fx_fy=str2num(get(subt,children(subt,uid_fx_fy),'value'));
+        else %old convention (Reg Wilson)
+            uid_focal=find(subt,'/GeometryCalib/focal');
+            uid_dpx_dpy=find(subt,'/GeometryCalib/dpx_dpy');
+            uid_sx=find(subt,'/GeometryCalib/sx');
+            if ~isempty(uid_focal) && ~isempty(uid_dpx_dpy) && ~isempty(uid_sx)
+                dpx_dpy=str2num(get(subt,children(subt,uid_dpx_dpy),'value'));
+                sx=str2num(get(subt,children(subt,uid_sx),'value'));
+                focal=str2num(get(subt,children(subt,uid_focal),'value'));
+                tsai.fx_fy(1)=sx*focal/dpx_dpy(1);
+                tsai.fx_fy(2)=focal/dpx_dpy(2);
             end
-            Cx_Cy=str2num(get(subt,children(subt,uid_Cx_Cy),'value'));
-            tsai.Cx=Cx_Cy(1);
-            tsai.Cy=Cx_Cy(2);
         end
+        uid_Cx_Cy=find(subt,'/GeometryCalib/Cx_Cy');
+        if ~isempty(uid_Cx_Cy)
+            tsai.Cx_Cy=str2num(get(subt,children(subt,uid_Cx_Cy),'value'));
+        end
+        uid_kc=find(subt,'/GeometryCalib/kc');
+        if ~isempty(uid_kc) 
+            tsai.kc=str2num(get(subt,children(subt,uid_kc),'value'));
+        else %old convention (Reg Wilson)
+            uid_kappa1=find(subt,'/GeometryCalib/kappa1');
+            if ~isempty(uid_kappa1)&& ~isempty(focal)
+                kappa1=str2num(get(subt,children(subt,uid_kappa1),'value'));
+                tsai.kc=-kappa1*focal*focal;
+            end
+        end
+        uid_Tx_Ty_Tz=find(subt,'/GeometryCalib/Tx_Ty_Tz');
         if ~isempty(uid_Tx_Ty_Tz) 
-            Tx_Ty_T_char=get(subt,children(subt,uid_Tx_Ty_Tz),'value');
-            Tx_Ty_Tz=str2num(Tx_Ty_T_char);
-            tsai.Tx=Tx_Ty_Tz(1);
-            tsai.Ty=Tx_Ty_Tz(2);
-            tsai.Tz=Tx_Ty_Tz(3);
+            tsai.Tx_Ty_Tz=str2num(get(subt,children(subt,uid_Tx_Ty_Tz),'value'));
         end
+        uid_R=find(subt,'/GeometryCalib/R');
         if ~isempty(uid_R)
             RR=get(subt,children(subt,uid_R),'value');
             if length(RR)==3
                 tsai.R=[str2num(RR{1});str2num(RR{2});str2num(RR{3})];
             end
         end
-        if ~isempty(uid_kappa1)     
-            tsai.kappa1=str2num(get(subt,children(subt,uid_kappa1),'value'));
-        end
+        
         %look for laser plane definitions   
         uid_Angle=find(subt,'/GeometryCalib/PlaneAngle');
         uid_Pos=find(subt,'/GeometryCalib/SliceCoord');
@@ -202,7 +211,7 @@ if ~isempty(uid_GeometryCalib)
                 else
                     tsai.NbSlice=str2double(NbSlice);
                 end
-                tsai.SliceCoord=ones(NbSlice,1)*tsai.SliceCoord+DZ*[0:NbSlice-1]'*[0 0 1];
+                tsai.SliceCoord=ones(NbSlice,1)*tsai.SliceCoord+DZ*(0:NbSlice-1)'*[0 0 1];
             end         
         end
         if strcmp(option,'GeometryCalib')

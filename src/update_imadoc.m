@@ -6,7 +6,8 @@
 % GeometryCalib: structure containing the calibration parameters
 % outputfile: xml file to modify
 %-------------------------------------------------------------
-function update_imadoc(GeometryCalib,outputfile)
+function errormsg=update_imadoc(GeometryCalib,outputfile)
+errormsg='';
 testappend=0;
 if exist(outputfile,'file');%=1 if the output file already exists, 0 else  
     testappend=1;
@@ -18,11 +19,13 @@ if exist(outputfile,'file');%=1 if the output file already exists, 0 else
        testexist=exist(backupfile,'file');
     end
     [success,message]=copyfile(outputfile,backupfile);%make backup
+    if success==0
+        errormsg=message
+    end
     uid=find(t,'ImaDoc');
     if ~isequal(uid,1)
         return
-    end
-        
+    end       
     %if the xml file is  ImaDoc
     uid_calib=find(t,'ImaDoc/GeometryCalib');
     if isempty(uid_calib)  %if GeometryCalib does not already exists, create it
