@@ -2232,7 +2232,8 @@ else
     if isunix
         [s,w]=unix('ps faux |grep civ|wc -l');
         w(end)=[];
-        if str2num(w)+numel(filecell)> MaxCivProcesses
+        str2num(w)+numel(num1_civ1)
+        if str2num(w)+numel(num1_civ1)> MaxCivProcesses
             msgbox_uvmat('ERROR',{['There are already ' w ' civ processes running locally'];'Use BATCH or submit RUN later'})
             return
         end
