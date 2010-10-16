@@ -769,9 +769,8 @@ set(handles.waitbar_civ2,'Position',[0.946 0.219 0.03 0.001])
 set(handles.waitbar_patch2,'Position',[0.946 0.0 0.03 0.001])
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
-if isequal(get(handles.BATCH, 'Enable'),'On')
+  set(handles.BATCH,'Enable','On')
     set(handles.BATCH,'BackgroundColor',[1 0 0])
-end
 
 %%%%% store the root input filename for future opening
 dir_perso=prefdir;
@@ -2106,7 +2105,8 @@ if exist(xmlfile,'file')
     t=xmltree(xmlfile);
     s=convert(t);
 end
-if batch
+    test_interp=0;
+    if batch
     if isfield(s,'BatchParam')
         sparam=s.BatchParam;
         if ~ismember(sparam.BatchMode,{'sge'})
@@ -2139,7 +2139,7 @@ else
         end
     end
     %test_interp=get(handles.test_interp,'Value');
-    test_interp=0;
+
     if  isfield(sparam,'PatchBin')
         if ~exist(sparam.PatchBin,'file')
             sparam.PatchBin=fullfile(path_UVMAT,sparam.PatchBin);

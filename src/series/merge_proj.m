@@ -23,6 +23,8 @@ hseries=guidata(Series.hseries);%handles of the GUI series
 WaitbarPos=get(hseries.waitbar_frame,'Position'); %positiopn of waitbar frame
 %-------------------------------------------------
 
+
+
 %projection object
 test_object=get(hseries.GetObject,'Value');
 if test_object
@@ -228,9 +230,14 @@ if ~exist(fulldir,'dir')
 end
 if ~exist(res_subdir,'dir')
     dircur=pwd;
-    cd(fulldir)
-    error=mkdir(subdir);
-    cd(dircur)
+    cd(fulldir);
+    succeed=mkdir(subdir);
+    if succeed
+    cd(dircur);
+    else
+    msgbox_uvmat('ERROR',['Cannot create directory ' fulldir])
+    return
+    end        
 end
 filebasesub=fullfile(res_subdir,Series.RootFile{1});
 filebase_merge=fullfile(res_subdir,'merged');%root name for the merged files
@@ -285,11 +292,15 @@ for ifile=1:nbfield
             end
             % coord transform
             % z index
+      
             if ~isempty(NbSlice_calib)
-                Field{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;
+                Field{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1
             end
+%              Field{iview}.ZIndex=1;
             if ~isempty(transform_fct)
-                Field{iview}=transform_fct(Field{iview},XmlData{iview});%transform to phys if requested
+                XmlData{iview}.GeometryCalib
+                Field{iview}=transform_fct(Field{iview},XmlData{iview});                
+                %transform to phys if requested
             end
             if testcivx
                 Field{iview}=calc_field(FieldName,Field{iview});
@@ -300,7 +311,6 @@ for ifile=1:nbfield
                 Field{iview}=proj_field(Field{iview},ProjObject);
             end
         end    
-        
          %----------END LOOP ON VIEWS----------------------
          
         %merge the nbview fields
@@ -375,7 +385,7 @@ for ifile=1:nbfield
             end
             %MergeData.dt=1;
             MergeData.Time=time_i;
-            error=struct2nc(mergename,MergeData); %save result file
+            error=struct2nc(mergename,MergeData);%save result file
             if isempty(error)
                 display(['output file ' mergename ' written'])
             else

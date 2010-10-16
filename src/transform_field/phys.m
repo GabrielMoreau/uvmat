@@ -57,10 +57,10 @@ if  ~isempty(Calib{1})
     end
 end
 %transform of X,Y coordinates for vector fields
-if isfield(Data,'ZIndex')&&~isempty(Data.ZIndex)
+if isfield(Data,'ZIndex')&&~isempty(Data.ZIndex)&&~isnan(Data.ZIndex)
     ZIndex=Data.ZIndex;
 else
-    ZIndex=0;
+    ZIndex=1;
 end
 if test_1
     DataOut_1=phys_1(Data_1,Calib{2});
@@ -110,8 +110,8 @@ if isfield(Data,'CoordType')&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
     end
     DataOut.TimeUnit='s';
     %transform of X,Y coordinates for vector fields
-    if isfield(Data,'ZIndex') && ~isempty(Data.ZIndex)
-        Z=Data.ZIndex;
+    if isfield(Data,'ZIndex') && ~isempty(Data.ZIndex)&&~isnan(Data.ZIndex)
+        Z=Data.ZIndex
     else
         Z=0;
     end
@@ -152,19 +152,26 @@ if isfield(Data,'CoordType')&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
     end
 end
 
-
 %%%%%%%%%%%%%%%%%%%%
 function [A_out,Rangx,Rangy]=phys_Ima(A,CalibIn,ZIndex)
+
+if ndims(A)==3
+    A=mean(A,3);
+end
+
+
 xcorner=[];
 ycorner=[];
 npx=[];
 npy=[];
+dx=ones(1,length(A));
+dy=ones(1,length(A));
 for icell=1:length(A)
     siz=size(A{icell});
     npx=[npx siz(2)];
     npy=[npy siz(1)];
     Calib=CalibIn{icell};
-    xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordiantes of corners
+    xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordinates of corners
     yima=[0.5 0.5 siz(1)-0.5 siz(1)-0.5];
     [xcorner_new,ycorner_new]=phys_XYZ(Calib,xima,yima,ZIndex);%corresponding physical coordinates
     dx(icell)=(max(xcorner_new)-min(xcorner_new))/(siz(2)-1);
@@ -176,7 +183,7 @@ Rangx(1)=min(xcorner);
 Rangx(2)=max(xcorner);
 Rangy(2)=min(ycorner);
 Rangy(1)=max(ycorner);
-test_multi=(max(npx)~=min(npx)) | (max(npy)~=min(npy)); 
+test_multi=(max(npx)~=min(npx)) || (max(npy)~=min(npy)); %different image lengths
 npX=1+round((Rangx(2)-Rangx(1))/min(dx));% nbre of pixels in the new image (use the finest resolution min(dx) in the set of images)
 npY=1+round((Rangy(1)-Rangy(2))/min(dy));
 x=linspace(Rangx(1),Rangx(2),npX);
@@ -186,8 +193,7 @@ vec_B=[];
 A_out={};
 for icell=1:length(A) 
     Calib=CalibIn{icell};
-    if (isfield(Calib,'R') && ~isequal(Calib.R(2,1),0) && ~isequal(Calib.R(1,2),0)) ||...
-        ((isfield(Calib,'kappa1')&& ~isequal(Calib.kappa1,0))) || test_multi || ~isequal(Calib,CalibIn{1})
+    if isfield(Calib,'R') || isfield(Calib,'kc')|| test_multi ||~isequal(Calib,CalibIn{1})% the image needs to be interpolated to the new coordinates
         zphys=0; %default
         if isfield(Calib,'SliceCoord') %.Z= index of plane
            SliceCoord=Calib.SliceCoord(ZIndex,:);
@@ -226,16 +232,16 @@ for icell=1:length(A)
         if testuint16
             A_out{icell}=uint16(A_out{icell});
         end
-    else%
-        
+    else%      
         A_out{icell}=A{icell};%no transform
         Rangx=[0.5 npx-0.5];%image coordiantes of corners
         Rangy=[npy-0.5 0.5];
-        [Rangx]=phys_XYZ(Calib,Rangx,[0.5 0.5],[ZIndex ZIndex]);%case of translations without rotation and quadratic deformation
-        [xx,Rangy]=phys_XYZ(Calib,[0.5 0.5],Rangy,[ZIndex ZIndex]);
+        [Rangx]=phys_XYZ(Calib,Rangx,[0.5 0.5],ZIndex);%case of translations without rotation and quadratic deformation
+        [xx,Rangy]=phys_XYZ(Calib,[0.5 0.5],Rangy,ZIndex);
     end
 end
 
+%------------------------------------------------------------------------
 %'phys_XYZ':transforms image (px) to real world (phys) coordinates using geometric calibration parameters
 % function [Xphys,Yphys]=phys_XYZ(Calib,X,Y,Z)
 %
@@ -244,51 +250,80 @@ end
 %INPUT:
 %Z: index of plane
 function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Z)
-if exist('Z','var')& isequal(Z,round(Z))& Z>0 & isfield(Calib,'SliceCoord')&length(Calib.SliceCoord)>=Z
+%------------------------------------------------------------------------
+if exist('Z','var')&& isequal(Z,round(Z))&& Z>0 && isfield(Calib,'SliceCoord')&&length(Calib.SliceCoord)>=Z
     Zindex=Z;
     Zphys=Calib.SliceCoord(Zindex,3);%GENERALISER AUX CAS AVEC ANGLE
 else
-%     if exist('Z','var')
-%         Zphys=Z;
-%     else
-        Zphys=0;
-%     end
+    Zphys=0;
 end
 if ~exist('X','var')||~exist('Y','var')
     Xphys=[];
     Yphys=[];%default
     return
 end
-Xphys=X;%default
-Yphys=Y;
-%image transform
+%coordinate transform
+if ~isfield(Calib,'fx_fy')
+     Calib.fx_fy=[1 1];
+end
+if ~isfield(Calib,'Tx_Ty_Tz')
+     Calib.Tx_Ty_Tz=[0 0 1];
+end
+if ~isfield(Calib,'Cx_Cy')
+     Calib.Cx_Cy=[0 0];
+end
+if ~isfield(Calib,'kc')
+     Calib.kc=0;
+end
 if isfield(Calib,'R')
     R=(Calib.R)';
+    Tx=Calib.Tx_Ty_Tz(1);
+    Ty=Calib.Tx_Ty_Tz(2);
+    Tz=Calib.Tx_Ty_Tz(3);
+    f=Calib.fx_fy(1);%dpy=1; sx=1
+    dpx=Calib.fx_fy(2)/Calib.fx_fy(1);
     Dx=R(5)*R(7)-R(4)*R(8);
     Dy=R(1)*R(8)-R(2)*R(7);
-    D0=Calib.f*(R(2)*R(4)-R(1)*R(5));
+    D0=f*(R(2)*R(4)-R(1)*R(5));
     Z11=R(6)*R(8)-R(5)*R(9);
     Z12=R(2)*R(9)-R(3)*R(8);  
     Z21=R(4)*R(9)-R(6)*R(7);
     Z22=R(3)*R(7)-R(1)*R(9);
     Zx0=R(3)*R(5)-R(2)*R(6);
     Zy0=R(1)*R(6)-R(3)*R(4);
-    A11=R(8)*Calib.Ty-R(5)*Calib.Tz+Z11*Zphys;
-    A12=R(2)*Calib.Tz-R(8)*Calib.Tx+Z12*Zphys;
-    A21=-R(7)*Calib.Ty+R(4)*Calib.Tz+Z21*Zphys;
-    A22=-R(1)*Calib.Tz+R(7)*Calib.Tx+Z11*Zphys;
-    X0=Calib.f*(R(5)*Calib.Tx-R(2)*Calib.Ty+Zx0*Zphys);
-    Y0=Calib.f*(-R(4)*Calib.Tx+R(1)*Calib.Ty+Zy0*Zphys);
+    A11=R(8)*Ty-R(5)*Tz+Z11*Zphys;
+    A12=R(2)*Tz-R(8)*Tx+Z12*Zphys;
+    A21=-R(7)*Ty+R(4)*Tz+Z21*Zphys;
+    A22=-R(1)*Tz+R(7)*Tx+Z22*Zphys;
+    X0=f*(R(5)*Tx-R(2)*Ty+Zx0*Zphys);
+    Y0=f*(-R(4)*Tx+R(1)*Ty+Zy0*Zphys);
         %px to camera:
-    Xd=(Calib.dpx/Calib.sx)*(X-Calib.Cx); % sensor coordinates
-    Yd=Calib.dpy*(Y-Calib.Cy);
-    dist_fact=1+Calib.kappa1*(Xd.*Xd+Yd.*Yd); %distortion factor
-    Xu=dist_fact.*Xd;%undistorted sensor coordinates
-    Yu=dist_fact.*Yd;
+    Xd=dpx*(X-Calib.Cx_Cy(1)); % sensor coordinates
+    Yd=(Y-Calib.Cx_Cy(2));
+    dist_fact=1+Calib.kc*(Xd.*Xd+Yd.*Yd)/(f*f); %distortion factor
+    Xu=Xd./dist_fact;%undistorted sensor coordinates
+    Yu=Yd./dist_fact;
     denom=Dx*Xu+Dy*Yu+D0;
     % denom2=denom.*denom;
     Xphys=(A11.*Xu+A12.*Yu+X0)./denom;%world coordinates
     Yphys=(A21.*Xu+A22.*Yu+Y0)./denom;
+%     Xd=(X-Calib.Cx_Cy(1))/Calib.fx_fy(1); % sensor coordinates
+%     Yd=(Y-Calib.Cx_Cy(2))/Calib.fx_fy(2);
+%     dist_fact=1+Calib.kc*(Xd.*Xd+Yd.*Yd); %distortion factor
+%     Xu=Xd./dist_fact;%undistorted sensor coordinates
+%     Yu=Yd./dist_fact;
+%     A11=R(7)*Xu-R(1);
+%     A12=R(8)*Xu-R(2);
+%     A21=R(7)*Yu-R(4);
+%     A22=R(8)*Yu-R(5);
+%     B1=(R(3)-R(9)*Xu)*Zphys-Tz*Xu+Tx;
+%     B2=(R(6)-R(9)*Yu)*Zphys-Tz*Yu+Ty;
+%     deter=A12.*A21-A11.*A22;
+%     Xphys=(A21.*B1-A11.*B2)./deter;
+%     Yphys=(-A22.*B1+A12.*B2)./deter;
+else
+    Xphys=-Calib.Tx_Ty_Tz(1)+X/Calib.fx_fy(1);
+    Yphys=-Calib.Tx_Ty_Tz(2)+Y/Calib.fx_fy(2);
 end
 
 %'px_XYZ': transform phys coordinates to image coordinates (px)

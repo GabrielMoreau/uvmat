@@ -604,6 +604,7 @@ end
 % --- Executes on selection change in decimate4 (nb_vec/4).
 %-------------------------------------------------------
 function decimate4_Callback(hObject, eventdata, handles)
+'TEST'
 update_plot(handles)
 
 

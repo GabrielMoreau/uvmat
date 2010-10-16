@@ -743,6 +743,18 @@ if exist(filexml,'file')
     end
     set(handles.view_xml,'BackgroundColor',[1 1 1])
     drawnow
+    if isfield(XmlData, 'GeometryCalib') && ~isempty(XmlData.GeometryCalib)
+        hgeometry_calib=findobj('tag','geometry_calib');
+        if ~isempty(hgeometry_calib)
+            GUserData=get(hgeometry_calib,'UserData');
+            if ~(isfield(GUserData,'XmlInputFile') && strcmp(GUserData.XmlInputFile,filexml))
+                answer=msgbox_uvmat('INPUT_Y-N','replace the display of geometry_calib with the new input data?');
+                if strcmp(answer,'Yes')
+                    geometry_calib(filexml);%diplay the new calibration points and parameters in geometry_calib
+                end
+            end
+        end
+    end  
 elseif exist(fileciv,'file')% if .civ file found 
     [error,XmlData.Time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext([FileBase '.civ']);
     GeometryCalib.R=[pxcmx 0 0; 0 pxcmy 0;0 0 0];
@@ -4564,7 +4576,7 @@ pos=get(handles.uvmat,'Position');
 pos(1)=pos(1)+pos(3)-0.311+0.04; %0.311= width of the geometry_calib interface (units relative to the srcreen)
 pos(2)=pos(2)-0.02;
 [FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes(handles);
-[UvData.hset_object,UvData.sethandles]=geometry_calib(handles,pos,FileName);% call the set_object interface	
+[UvData.hset_object,UvData.sethandles]=geometry_calib(FileName,pos);% call the geometry_calib interface	
 pos_uvmat=get(handles.uvmat,'Position');
 
 if isfield(UvData,'CalOrigin')

@@ -216,6 +216,7 @@ if ~isempty(uid_GeometryCalib)
         end
         if strcmp(option,'GeometryCalib')
             tsai.PointCoord=get_value(subt,'/GeometryCalib/SourceCalib/PointCoord',[0 0 0 0 0]);%time in TimeUnit
+            size(tsai.PointCoord)
         end
         s.GeometryCalib=tsai;
     end
@@ -227,19 +228,19 @@ function val=get_value(t,label,default)
 %--------------------------------------------------
 val=default;
 uid=find(t,label);%find the element iud(s)
-if ~isempty(uid)
-   uid_child=children(t,uid);
+if ~isempty(uid) %if the element named label exists
+   uid_child=children(t,uid);%find the children 
    if ~isempty(uid_child)
-       data=get(t,uid_child,'type');
-       if iscell(data)
+       data=get(t,uid_child,'type');%get the type of child
+       if iscell(data)% case of multiple element
            for icell=1:numel(data)
                val_read=str2num(get(t,uid_child(icell),'value'));
                if ~isempty(val_read)
                    val(icell,:)=val_read;
                end
            end
-           val=val';
-       else
+%           val=val';
+       else % case of unique element value
            val_read=str2num(get(t,uid_child,'value'));
            if ~isempty(val_read)
                val=val_read;
