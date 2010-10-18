@@ -2358,6 +2358,7 @@ for ifile=1:nbfield
             cmd='#!/bin/bash \n';
             cmd=[cmd '#$ -cwd \n'];
             cmd=[cmd 'hostname && date \n'];
+            cmd=[cmd 'umask 002 \n'];
         end
         if civAll
             civAllxml=xmltree;% xml contents,  all parameters
