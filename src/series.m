@@ -1016,17 +1016,17 @@ ref_j=str2num(get(handles.ref_j,'String'));
 % time=[];
 % ref_time=[];
  ref_time=0;
-if isfield(SeriesData,'Time')&~isempty(SeriesData.Time{Val})&~isequal(SeriesData.Time{Val},0)
-    time=SeriesData.Time{Val}; %get the set of times
-    siztime=size(time);
-    nbfield=siztime(1);
-    nbfield2=siztime(2);
-%     test_imadoc=1;
-else
+% if isfield(SeriesData,'Time')&~isempty(SeriesData.Time{Val})&~isequal(SeriesData.Time{Val},0)
+%     time=SeriesData.Time{Val}; %get the set of times
+%     siztime=size(time);
+%     nbfield=siztime(1);
+%     nbfield2=siztime(2);
+% %     test_imadoc=1;
+% else
 %     test_imadoc=0;%no image documentation file
     nbfield=50;
     nbfield2=50;%default max number of pairs
-end
+% end
 %look for existing processed pairs involving the field at the middle of the series if civ1 will not 
 % be performed, while the result is needed for next steps.
 displ_pair={''};
@@ -1038,7 +1038,8 @@ if length(TimeUnit)>=1
 else
     dtunit='e-03';
 end
-if isequal(mode,'series(Di)') 
+if strcmp(mode,'series(Di)') 
+    nbfield
      for index=1:min(nbfield-1,50)
          filename=name_generator(filebase,ref_i-floor(index/2),ref_j,'.nc',NomType,1,ref_i+ceil(index/2),ref_j,subdir);
          select=(exist(filename,'file')==2);
