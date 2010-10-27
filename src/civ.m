@@ -4653,7 +4653,7 @@ end
 function enable_patch2(handles)
 %------------------------------------------------------------------------
 set(handles.frame_patch2,'BackgroundColor',[1 1 0])
-%set(handles.rho_patch2,'Visible','on')
+set(handles.rho_patch2,'Visible','on')
 set(handles.rho_text2,'Visible','on')
 set(handles.thresh_patch2,'Visible','on')
 set(handles.thresh_text2,'Visible','on')
