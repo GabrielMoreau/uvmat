@@ -656,7 +656,8 @@ if isempty(time) && ~isequal(ext,'.nc') && ~strcmp(nom_type_ima,'none') && ~strc
     end
     first_i=max(field_i,1);
     
-    if strcmp(nom_type_ima,'_i_j')
+     switch nom_type_ima
+        case {'_i_j','%01dA','%02dA','%03dA','%04dA'}
         field_i=field_count;
         field_j=1;
         jdetect=1;
@@ -670,15 +671,20 @@ if isempty(time) && ~isequal(ext,'.nc') && ~strcmp(nom_type_ima,'none') && ~strc
             %             nbdetect=nbdetect+(exist(imagename,'file')==2);
         end
         nb_field_j=field_j-1;% last detected field number
-    end
+     end
+
     
     
     %determine the set of times and possible intervals for CIV
     %   dt=(1/1000)*str2num(get(handles.dt,'String'));
     time=(0:nb_field-1)';% time=file index -1  by default
-    if strcmp(nom_type_ima,'_i_j')
+
+    switch nom_type_ima
+        case {'_i_j','%01dA','%02dA','%03dA','%04dA'}
         % time=[0:nb_field-1]'*ones(1,nb_field_j);% time=file index -1  by default
-        time=[0:nb_field-1]'*[0:nb_field_j-1];% time=file index -1  by default
+        [x,y]=meshgrid([0:2-1],[0:152-1]);
+        time=x+y;
+%         time=[0:nb_field-1]'*[0:nb_field_j-1];% time=file index -1  by default
     end
     
     
@@ -690,6 +696,7 @@ end
 %    first_j=1;
 %   last_j=1;
 % end
+
 if exist('time','var')
     if size(time,1)+size(time,2)>=3 % if there are at least two time values to define dt
         nbfield=size(time,1);
@@ -2731,11 +2738,13 @@ for ifile=1:nbfield
         else
             %% to lauch the jobs locally :
             if(isunix)
-                eval(['!. ' filename_bat ' &']);
-                display(['!. ' filename_bat ' &'])
+                cmd_str=['!at -qb now -f ' filename_bat ' &']; %ou at -qb now -f
+                eval(cmd_str);
+                display(cmd_str);
             else
-                eval(['!' filename_bat ' &']);
-                display(['!' filename_bat ' &'])
+                cmd_str=['!' filename_bat ' &'];
+                eval(cmd_str);
+                display(cmd_str);
             end
         end
     end
@@ -4890,7 +4899,7 @@ fprintf(fid,   ['ImageToUse ' par.term_a ' ' par.term_b '\n' ]); % VERIFIER ?
 fprintf(fid,   ['ImageUsedBefore null null' '\n' ]);
 fclose(fid);
 
-cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx' ]; % redirect standard output to the log file
+cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file
 cmd_CIV1=regexprep(cmd_CIV1,'\\','\\\\');
 namelog=regexprep(namelog,'\\','\\\\');
 

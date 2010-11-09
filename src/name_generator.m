@@ -114,6 +114,11 @@ elseif length(nom_type)>=4 & strcmp(nom_type(1:2),'%0') & strcmp(nom_type(end),'
         num_i2_out=num_i1;
         num_j1_out=[];
         num_j2_out=[];
+elseif length(nom_type)>=4 & strcmp(nom_type(1:2),'%0') & strcmp(nom_type(end-1:end),'dA')
+        filename=[filebase num2str(num_i1,nom_type(1:end-1)) num2stra(num_j1,'#A') ext]; %test number with a 0 before
+        num_i2_out=num_i1;
+        num_j1_out=[];
+        num_j2_out=[];
 
 %case of derived file indexing (e.g. netcdf files)
 elseif test_pairs

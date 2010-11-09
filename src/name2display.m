@@ -95,7 +95,6 @@ elseif  penult >= 48 && penult <= 57  && (last <= 66 && last >= 65)% PCO camera 
     % search the appendix a,b,c,
     str_a=last_str; %put appendix a,b,c....
     indcur=indcur-1;
-    nom_type='#A';   
     num=1;count=0; % extract the numerical appendix
     while num==1;
         filascii=double(RootFile(indcur));
@@ -105,10 +104,16 @@ elseif  penult >= 48 && penult <= 57  && (last <= 66 && last >= 65)% PCO camera 
             indcur=indcur-1; count=count+1;
         end
     end
+    if strcmp('0',RootFile(indcur+1)); % select the non-numerical characters
+        nom_type=['%0' num2str(length(RootFile(indcur+1:end-1))) 'dA'];
+    else
+        nom_type='#A';
+    end  
+   
     if count~=0             
             field_count=RootFile(indcur+1:indcur+count);% set the selected field number
     end   
-    indcur=indcur-1;
+%     indcur=indcur-1;
 elseif strcmp(filelit(end-2:end),'-_-_')%new  nomenclature appendix num1-num2_num_a-num_b
     field_count=num0;
     str2=num1;

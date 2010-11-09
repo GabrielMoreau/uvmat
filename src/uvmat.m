@@ -911,7 +911,7 @@ end
 state_j='off'; %default
 scan_option='i';%default
 switch NomType
-    case {'_i_j','_i_j1-j2','_i1-i2_j','#_ab'},% two navigation indices
+    case {'_i_j','_i_j1-j2','_i1-i2_j','#_ab','#A','%01dA','%02dA','%03dA','%04dA'},% two navigation indices
         state_j='on';
         if isequal(nbfield,1)
             scan_option='j';                 
@@ -1722,7 +1722,7 @@ set(handles.MovieBackward,'BackgroundColor',[1 0 0])%paint the command buttonbac
 %------------------------------------------------------------------
 function errormsg=runpm(hObject,eventdata,handles,increment)
 %------------------------------------------------------------------
-%check for mùovie pair status
+%check for mï¿½ovie pair status
 movie_status=get(handles.movie_pair,'Value');
 if isequal(movie_status,1)
     STOP_Callback(hObject, eventdata, handles)%interrupt movie pair if active
