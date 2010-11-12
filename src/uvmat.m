@@ -2803,7 +2803,7 @@ set(handles.abs_time_1,'String',num2str(abstime_1,4))
 if testimedoc && isfield(UvData,'dt')
     dt=UvData.dt;
 end 
-if isequal(dt,0)
+if isempty(dt)||isequal(dt,0)
     set(handles.Dt_txt,'String','')
 else
     if ~(isfield(UvData,'TimeUnit') && ~isempty(UvData.TimeUnit))

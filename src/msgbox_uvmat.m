@@ -25,8 +25,8 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_OutputFcn',  @msgbox_uvmat_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
-if nargin && ischar(varargin{1})
-    gui_State.gui_Callback = str2func(varargin{1});
+if nargin && ischar(varargin{1}) && ~isempty(regexp(varargin{1},'_Callback','once'))
+    gui_State.gui_Callback = str2func(varargin{1});%for running msgbox_uvmat from a Callback
 end
 
 if nargout
