@@ -12,15 +12,15 @@
 %nom_type: char chain characterizing the file nomenclature: with values
 %   nom_type='': constant name [filebase ext] (default output if 'nom_type' is undefined)
 %   nom_type='*':constant name for a file representing a series (e.g. avi movie)
-%   nom_type='_i': series of files with a single index i preceded by '_'(e.g. 'aa_45.png').
-%   nom_type='#', series of indexed images wich is not series_i [filebase index ext], e.g. 'aa045.jpg' or 'aa45.tif'
-%   nom_type='_i_j': matrix of files with two indices i and j separated by '_'(e.g. 'aa_45_2.png')
-%   nom_type='_i1-i2': from pairs from a single index (e.g. 'aa_45-47.nc') 
+%   nom_type='1','01',or '001'...': series of files with a single index i without separator(e.g. 'aa045.png').
+%   nom_type='_1','_01','_001'...':  series of files with a single index i with separator '_'(e.g. 'aa_045.png').
+%   nom_type='1a','1A','01a','01A',... with a numerical index and an index letter(e.g.'aa45b.png') (lower or upper case)
+%   nom_type='_1a','_1A','_01a','_01A',...: idem, with a separator '_' before the index
+%   nom_type='_1_1','_01_1',...: matrix of files with two indices i and j separated by '_'(e.g. 'aa_45_2.png')
+%   nom_type='_i1-i2': from pairs from a single index (e.g. 'aa_45-47.nc')
 %   nom_type='_i_j1-j2': pairs of j indices (e.g. 'aa_45_2-3.nc')
 %   nom_type='_i1-i2_j': pairs of i indices (e.g. 'aa_45-46_2.nc')
-%   nom_type='#a','#A", with a numerical index and an index letter(e.g.'aa045b.png') (lower or upper case)
-%   nom_type='raw_SMD', same as '#' but with no extension ext='', OBSOLETE
-%   nom_type='#_ab', from pairs of '#' images (e.g. 'aa045bc.nc'), ext='.nc', OBSOLETE (replaced by '_i_j1-j2')
+%   nom_type='_1_ab','1_ab','01_ab'..., from pairs of '#' images (e.g.'aa045bc.nc'), ext='.nc'
 %subdir: name of the subdirectory for netcdf files
 %
 %INPUT:
@@ -43,9 +43,9 @@ subdir='';
 indcur=length(RootFile);% nbre of characters in fileraw
 
         %recognize the name form
-filerawascii=double(RootFile);%ascci code
-val=(48>filerawascii)|(filerawascii>57); % test for the non-numerical characters
-indsel=find(val);% character indices of non numerical characters
+% filerawascii=double(RootFile);%ascci code
+% val=(48>filerawascii)|(filerawascii>57); % test for the non-numerical characters
+indsel=regexp(RootFile,'\D');% character indices of non numerical characters
 filelit=RootFile(indsel);% fileraw name with numbers removed
 nbchar=length(indsel);
 if nbchar<4% put '*' before the name (remove at the end)
@@ -68,52 +68,29 @@ last_str=RootFile(indcur);%last character in fileraw
 last=double(last_str);%corresponding ascii code
 penult=double(RootFile(indcur-1));%ascii code of the penultimate character
 testsub=0; %default 
+% case of an indexed series in a single file
 if strcmpi(ext,'.avi')
      nom_type='*';
-      %case of old image nomenclature
-elseif (strcmp(ext,'.png') || strcmp(ext,'')) &&  penult >= 48 && penult <= 57 && (last < 48 || last > 57)
-    % if the penultimate character is a number and the last a letter
-    % search the appendix a,b,c,
-    str_a=last_str; %put appendix a,b,c....
-    indcur=indcur-1;
-    if strcmp(ext,'.png'), nom_type='#a'; end
-    if strcmp(ext,''), nom_type='raw_SMD'; end      
-    num=1;count=0; % extract the numerical appendix
-    while num==1;
-        filascii=double(RootFile(indcur));
-        if (48>filascii)||(filascii>57); % select the non-numerical characters
-            num=0; 
-        else
-            indcur=indcur-1; count=count+1;
-        end
+%case of a numerical index follewed by a lower case letter (e.g. a,b,c):
+%the penultimate character is a number and the last one a letter (lower case: last >= 97 && last <= 122
+%                                                                 capital letter:  last >= 65 && last <= 90)                                                             
+elseif  penult >= 48 && penult <= 57 && (last >= 65 && last <= 90)||(last >= 97 && last <= 122)
+    str_a=last_str; %extract appendix a,b,c... or A,B,C... as output.
+    ind_end=indcur-1; %current index just before the suffix letter
+    indices_root=regexp(RootFile(1:indcur-1),'\D');%detect non digit characters
+    indcur=max(indices_root);
+    field_count=RootFile(indcur+1:ind_end);
+    charstring=['%0' num2str(length(field_count)) 'd'];
+    nom_type=num2str(1,charstring);
+    if strcmp(RootFile(indcur),'_')
+       nom_type=['_' nom_type];
+       indcur=indcur-1;
     end
-    if count~=0             
-            field_count=RootFile(indcur+1:indcur+count);% set the selected field number
-    end
-elseif  penult >= 48 && penult <= 57  && (last <= 66 && last >= 65)% PCO camera Toulouse, end with A or B (NEW)
-    % if the penultimate character is a number and the last a letter
-    % search the appendix a,b,c,
-    str_a=last_str; %put appendix a,b,c....
-    indcur=indcur-1;
-    num=1;count=0; % extract the numerical appendix
-    while num==1;
-        filascii=double(RootFile(indcur));
-        if (48>filascii)||(filascii>57); % select the non-numerical characters
-            num=0; 
-        else
-            indcur=indcur-1; count=count+1;
-        end
-    end
-    if strcmp('0',RootFile(indcur+1)); % select the non-numerical characters
-        nom_type=['%0' num2str(length(RootFile(indcur+1:end-1))) 'dA'];
+    if (last >= 65 && last <= 90)
+        nom_type=[nom_type 'A'];
     else
-        nom_type='#A';
-    end  
-   
-    if count~=0             
-            field_count=RootFile(indcur+1:indcur+count);% set the selected field number
+        nom_type=[nom_type 'a'];
     end   
-%     indcur=indcur-1;
 elseif strcmp(filelit(end-2:end),'-_-_')%new  nomenclature appendix num1-num2_num_a-num_b
     field_count=num0;
     str2=num1;
@@ -148,7 +125,7 @@ elseif strcmp(filelit(end-1:end),'__')
     field_count=num2;
     str2='';
     str_a=num3;
-    nom_type='_i_j';
+    nom_type='_1_1';
 elseif strcmp(filelit(end),'_')
     indcur=separ3-1;
 %     field_count=num3;
@@ -156,25 +133,33 @@ elseif strcmp(filelit(end),'_')
     str_a='';
     %detect zeros before the number
 %     count=0; % extract the numerical appendix
-    if strcmp('0',RootFile(separ3+1)); % select the non-numerical characters
-        nom_type=['_%0' num2str(length(RootFile(separ3+1:end))) 'd'];
-    else
-        nom_type='_i';
-    end  
-    field_count=RootFile(separ3+1:end);% set the selected field number'%03d' 
+    field_count=RootFile(separ3+1:end);% set the selected field number'%03d'
+    charstring=['%0' num2str(length(field_count)) 'd'];
+    nom_type=['_' num2str(1,charstring)];
+%     if strcmp('0',RootFile(separ3+1)); % select the non-numerical characters
+%         nom_type=['_%0' num2str(length(RootFile(separ3+1:end))) 'd'];
+%     else
+%         nom_type='_i';
+%     end  
+     
 elseif RootFile(indcur-2)=='_'% search appendix a,b,c,d
     last=RootFile(indcur-1:indcur);
-    if isequal(length(last),2) && double(last(1)) >= 97 && double(last(1)) <= 122 ...% = 1 for letters
-            && double(last(2)) >= 97 && double(last(2)) <= 122
+    if isequal(length(last),2) 
           str_a=last(1);%put appendix a,b,c, ou d
           str_b=last(2);%put appendix a,b,c, ou d
 %           indcur=indcur-3;
           separ0=indsel(end-3);
-        num0=RootFile(separ0+1:separ1-1);
-        field_count=num0;
+        field_count=RootFile(separ0+1:separ1-1);
         indcur=separ0;
-        nom_type='#_ab';
-        testsub=1;
+        if double(last) >= 97 & double(last)<= 122 
+            nom_type='_ab';
+            testsub=1;
+        elseif double(last) >= 65 & double(last) <= 90 
+            nom_type='_AB';
+            testsub=1;
+        end
+        charstring=['%0' num2str(length(field_count)) 'd'];
+        nom_type=[num2str(1,charstring) nom_type];
     end
 %search for other names with counter
 else
@@ -190,12 +175,14 @@ else
             end
             if count~=0   
                 field_count=RootFile(indcur+1:indcur+count);% set the selected field number'%03d'
-                if isequal(field_count(1),'0')
-                    nbfigures=length(field_count);
-                    nom_type=['%0' num2str(nbfigures) 'd'];
-                else
-                    nom_type='#';
-                end
+                charstring=['%0' num2str(length(field_count)) 'd'];
+                nom_type=num2str(1,charstring);
+%                 if isequal(field_count(1),'0')
+%                     nbfigures=length(field_count);
+%                     nom_type=['%0' num2str(nbfigures) 'd'];
+%                 else
+%                     nom_type='#';
+%                 end
             end
     end
 end

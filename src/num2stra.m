@@ -11,7 +11,7 @@
 %
 % see also: stra2num, name_generator, name2display
 
-function str=num2stra(num,nom_type,index);
+function str=num2stra(num,nom_type,index)
 if ~exist('index','var')
     index=2; %index 1 or 2 of the file indices
 end

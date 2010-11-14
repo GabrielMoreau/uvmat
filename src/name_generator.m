@@ -1,6 +1,6 @@
 %'name_generator': creates a file name from a root name and indices. 
 %------------------------------------------------------------------------
-% [filename,idetect,num_i1_out,num_j1_out,num_i2_out,num_j2_out,subdir_out]=...
+% [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out,subdir_out]=...
 %        name_generator(filebase,num_i1,num_j1,ext,nom_type,comp_input,num_i2,num_j2,subdir);
 %------------------------------------------------------------------------           
 % This function detects the existence the constructed file name and it can
@@ -9,7 +9,6 @@
 %------------------------------------------------------------------------
 % OUTPUT:
 % filename: string representing the file name (including path)
-% idetect: =1 if the file is detected, 0 otherwise
 % num_i1_out,num_j1_out,num_i2_out,num_j2_out,subdir_out: index numbers and subdirectory detected 
 %            for free input (= to the corresponding input indices when comp_input=1)
 %------------------------------------------------------------------------
@@ -18,21 +17,18 @@
 % 'num_i1: first labelling index i 
 % 'num_j1', first labelling index j
 % 'ext': file name extension (e.g. '.png' or '.nc')
-% 'nom_type': string defining the kind of nomenclature used:
-%       nom_type='': constant name [filebase ext] (default output if 'nom_type' is undefined)
-%       nom_type='*': the same  file [filebase ext] contains successive fields (ex avi movies)
-%       nom_type='%03d' or '%04d', series of indexed images with numbers completed with zeros to 3 or 4 digits, e.g.'aa045.tif'
-%       nom_type='_i': series of files with a single index i preceded by '_'(e.g. 'aa_45.png').
-%       nom_type='_%03d', '_%04d', or '_%05d', series of indexed images with _ and numbers completed with zeros to 3, 4 or 5 digits, e.g.'aa_045.tif'
-%       nom_type='#' series of indexed images wich is not series_i [filebase index ext], e.g. 'aa045.jpg' or 'aa45.tif'
-%       nom_type='_i_j' matrix of files with two indices i and j separated by '_'(e.g. 'aa_45_2.png')
-%       nom_type='_i1-i2' from pairs from a single index (e.g. 'aa_45-47.nc') 
-%       nom_type='_i_j1-j2'pairs of j indices (e.g. 'aa_45_2-3.nc')
-%       nom_type='_i1-i2_j' pairs of i indices (e.g. 'aa_45-46_2.nc')
-%       nom_type='%3da','%3dA' with a numerical index and an index letter(e.g.'aa045b.png'), 
-%       nom_type='#a','#A' with a numerical index and an index letter(e.g.'aa045b.png'), OBSOLETE (replaced by 'series_i_j')
-%       nom_type='#_ab' from pairs of '#a' images (e.g. 'aa045bc.nc'),
-%       nom_type='%3d_ab' from pairs of '%3da' images (e.g. 'aa045bc.nc')
+%nom_type: char chain characterizing the file nomenclature: with values
+%   nom_type='': constant name [filebase ext] (default output if 'nom_type' is undefined)
+%   nom_type='*':constant name for a file representing a series (e.g. avi movie)
+%   nom_type='1','01',or '001'...': series of files with a single index i without separator(e.g. 'aa045.png').
+%   nom_type='_1','_01','_001'...':  series of files with a single index i with separator '_'(e.g. 'aa_045.png').
+%   nom_type='1a','1A','01a','01A',... with a numerical index and an index letter(e.g.'aa45b.png') (lower or upper case)
+%   nom_type='_1a','_1A','_01a','_01A',...: idem, with a separator '_' before the index
+%   nom_type='_1_1','_01_1',...: matrix of files with two indices i and j separated by '_'(e.g. 'aa_45_2.png')
+%   nom_type='_i1-i2': from pairs from a single index (e.g. 'aa_45-47.nc')
+%   nom_type='_i_j1-j2': pairs of j indices (e.g. 'aa_45_2-3.nc')
+%   nom_type='_i1-i2_j': pairs of i indices (e.g. 'aa_45-46_2.nc')
+%   nom_type='_1_ab','1_ab','01_ab'..., from pairs of '#' images (e.g.'aa045bc.nc'), ext='.nc'
 %'comp_input' (for nom_type involving index pairs (e.g. netc))
 %       comp_input=1: the index pair is imposed, 
 %       comp_input=0: the index pair is automatically searched, choosing the most recent  file in case of multiple choice
@@ -44,7 +40,7 @@
 
 % A FAIRE: si comp_inpu=0, si _i_j n'existe pas, chercher _i, 
 function [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out,subdir_out]=...
-           name_generator(filebase,num_i1,num_j1,ext,nom_type,comp_input,num_i2,num_j2,subdir);
+           name_generator(filebase,num_i1,num_j1,ext,nom_type,comp_input,num_i2,num_j2,subdir)
 sizf=size(filebase);
 if (~ischar(filebase)||~isequal(sizf(1),1)),filebase='';end
 if ~exist('ext','var')
@@ -74,60 +70,83 @@ num_i1_out=num_i1;%default output
 num_j1_out=num_j1;%default output
 num_i2_out=num_i2;%default output
 num_j2_out=num_j2;%default output
-
-test_pairs=strcmp(nom_type,'netc_old')| strcmp(nom_type,'netc_2D') | strcmp(nom_type,'netc_3D')| strcmp(nom_type,'_i1-i2_j1-j2')| ...
-  strcmp(nom_type,'netc_series')| strcmp(nom_type,'#_ab')| strcmp(nom_type,'_i_j1-j2')| strcmp(nom_type,'_i1-i2_j')| strcmp(nom_type,'_i1-i2');
-test_2D= strcmp(nom_type,'netc_old') |strcmp(nom_type,'netc_2D')|strcmp(nom_type,'#_ab') |strcmp(nom_type,'_i_j1-j2');
-test_3D=strcmp(nom_type,'netc_3D') |strcmp(nom_type,'netc_series')| strcmp(nom_type,'_i1-i2_j')| strcmp(nom_type,'_i1-i2');
-if strcmp(nom_type,'series_i')| strcmp(nom_type,'_i');
-        filename=[filebase '_' num2str(num_i1) ext];
-        num_i2_out=num_i1;
-        num_j1_out=[];
-        num_j2_out=[]; 
-elseif length(nom_type)==5 && strcmp(nom_type(1:3),'_%0')&& strcmp(nom_type(5),'d');
-        filename=[filebase '_' num2str(num_i1,nom_type(2:5)) ext];
-        num_i2_out=num_i1;
-        num_j2_out=num_j1;
-elseif strcmp(nom_type,'series_i_j')| strcmp(nom_type,'_i_j')
-        filename=[filebase '_' num2str(num_i1) '_' num2str(num_j1) ext];
-        num_i2_out=num_i1;
-        num_j2_out=num_j1;
-elseif strcmp(nom_type,'png_old')| strcmp(nom_type,'#a')| strcmp(nom_type,'#A')
-        filename=[filebase num2str(num_i1,'%03d') num2stra(num_j1,nom_type) ext];
-        num_i2_out=num_i1;
-        num_j2_out=num_j1;
-elseif  length(nom_type)>=5 & strcmp(nom_type(2:3),'%0') & strcmp(nom_type(5),'d')  %strcmp(nom_type,'_%04dA') %camera PCO Toulouse
-        filename=[filebase nom_type(1) num2str(num_i1,nom_type(2:4)) num2stra(num_j1,nom_type) ext];
-        num_i2_out=num_i1;
-        num_j2_out=num_j1;   
-elseif strcmp(nom_type,'raw_SMD') %suffix a, b, c without extension
-        filename=[filebase num2str(num_i1,'%03d') num2stra(num_j1,nom_type)];
-        num_i2_out=num_i1;
-        num_j2_out=num_j1;
-elseif strcmp(nom_type,'ima_num')| strcmp(nom_type,'#')
-        filename=[filebase num2str(num_i1) ext];
-        num_i2_out=num_i1;
-        num_j1_out=[];
-        num_j2_out=[];
-elseif length(nom_type)>=4 & strcmp(nom_type(1:2),'%0') & strcmp(nom_type(end),'d')
-        filename=[filebase num2str(num_i1,nom_type) ext]; %test number with a 0 before
-        num_i2_out=num_i1;
-        num_j1_out=[];
-        num_j2_out=[];
-elseif length(nom_type)>=4 & strcmp(nom_type(1:2),'%0') & strcmp(nom_type(end-1:end),'dA')
-        filename=[filebase num2str(num_i1,nom_type(1:end-1)) num2stra(num_j1,'#A') ext]; %test number with a 0 before
-        num_i2_out=num_i1;
-        num_j1_out=[];
-        num_j2_out=[];
-
-%case of derived file indexing (e.g. netcdf files)
-elseif test_pairs
-    filebasesub=filebase;
-    % get the root name filebasesub for the netcdf files
-    if  ~strcmp(subdir,'') && ~strcmp(subdir,'?') 
-            [Path,Name]=fileparts(filebase);
-            filebasesub=fullfile(Path,subdir,Name);
+test_pairs=numel(nom_type)>=2 &&(strcmp(nom_type,'_i1-i2_j1-j2')|| strcmp(nom_type(end-1:end),'ab')|| strcmp(nom_type(end-1:end),'AB')||...
+                strcmp(nom_type,'_i_j1-j2')|| strcmp(nom_type,'_i1-i2_j')||strcmp(nom_type,'_i1-i2'));
+%test_2D= strcmp(nom_type(end-1:end),'ab')|| strcmp(nom_type(end-1:end),'AB') ||strcmp(nom_type,'_i_j1-j2');
+%test_3D=strcmp(nom_type,'_i1-i2_j')|| strcmp(nom_type,'_i1-i2');
+if ~isequal(subdir,'') && ~isequal(subdir,'?') 
+      [Path,Name]=fileparts(filebase);
+      filename=fullfile(Path,subdir,Name);
+else
+    filename=filebase;%default
+end 
+if ~test_pairs%case of a single index i, and possibly j
+    numlength=numel(nom_type);
+    num_j_str='';
+    if strcmp(nom_type(1),'_')
+        filename=[filename '_'];
+        nom_type(1)=[];
     end
+    if strcmp(nom_type(end),'a')
+        nom_type(end)=[];
+        num_j_str=char(num_j1+96);% lower letter corresponding to the index
+    elseif strcmp(nom_type(end),'A')
+        nom_type(end)=[];
+        num_j_str=char(num_j1+64);% lower letter corresponding to the index
+    elseif isequal(numel(regexp(nom_type(2:end),'_')),1)%if a separator '_' exists in nom_type
+        num_j_str=['_' num2str(num_j1)];
+        nom_type(regexp(nom_type(2:end),'_'):end)=[];
+    else
+        num_j1_out=[];%no index j
+    end
+    if ~isempty(str2num(nom_type))    
+        numtype=['%0' num2str(length(nom_type)) 'd'];%indicate the number of digits (0 before the number)
+        filename=[filename num2str(num_i1,numtype) num_j_str ext];
+        num_i2_out=num_i1_out;
+        num_j2_out=num_j1_out;
+    else %fixed name , no indexing, for instance '*'
+%           filebasesub=filebase;
+        filename=[filename ext];
+    end
+%     if  strcmp(nom_type,'_i');
+%         filename=[filebase '_' num2str(num_i1) ext];
+%         num_i2_out=num_i1;
+%         num_j1_out=[];
+%         num_j2_out=[];
+%     elseif length(nom_type)==5 && strcmp(nom_type(1:3),'_%0')&& strcmp(nom_type(5),'d');
+%         filename=[filebase '_' num2str(num_i1,nom_type(2:5)) ext];
+%         num_i2_out=num_i1;
+%         num_j2_out=num_j1;
+%     elseif  strcmp(nom_type,'_i_j')
+%         filename=[filebase '_' num2str(num_i1) '_' num2str(num_j1) ext];
+%         num_i2_out=num_i1;
+%         num_j2_out=num_j1;
+%     elseif  strcmp(nom_type,'#a')| strcmp(nom_type,'#A')
+%         filename=[filebase num2str(num_i1,'%03d') num2stra(num_j1,nom_type) ext];
+%         num_i2_out=num_i1;
+%         num_j2_out=num_j1;
+%     elseif  length(nom_type)>=5 & strcmp(nom_type(2:3),'%0') & strcmp(nom_type(5),'d')  %strcmp(nom_type,'_%04dA') %camera PCO Toulouse
+%         filename=[filebase nom_type(1) num2str(num_i1,nom_type(2:4)) num2stra(num_j1,nom_type) ext];
+%         num_i2_out=num_i1;
+%         num_j2_out=num_j1;
+%     elseif  strcmp(nom_type,'#')
+%         filename=[filebase num2str(num_i1) ext];
+%         num_i2_out=num_i1;
+%         num_j1_out=[];
+%         num_j2_out=[];
+%     elseif length(nom_type)>=4 & strcmp(nom_type(1:2),'%0') & strcmp(nom_type(end),'d')
+%         filename=[filebase num2str(num_i1,nom_type) ext]; %test number with a 0 before
+%         num_i2_out=num_i1;
+%         num_j1_out=[];
+%         num_j2_out=[];
+%     elseif length(nom_type)>=4 & strcmp(nom_type(1:2),'%0') & strcmp(nom_type(end-1:end),'dA')
+%         filename=[filebase num2str(num_i1,nom_type(1:end-1)) num2stra(num_j1,'#A') ext]; %test number with a 0 before
+%         num_i2_out=num_i1;
+%         num_j1_out=[];
+%         num_j2_out=[];
+%     end
+%case of derived file indexing (e.g. netcdf files)
+else
      %inexistant pair if num_i2=0 or num_j2=0
 %     if strcmp(num_i2,0)
 %         filename=[filebasesub '*-*_' num2str(num_i1) ext];
@@ -138,36 +157,52 @@ elseif test_pairs
 %         return
 %     end
     % case of an imposed image pair (comp_input=1)
-    if  (exist('comp_input','var') & isequal(comp_input,1)) 
-            if isequal(nom_type,'netc_old')|isequal(nom_type,'#_ab')
-                if isequal(num2str(num_j1),num2str(num_j2))% case of displacements at the same time
-                    filename=[filebasesub num2str(num_i1,'%03d') '_' num2stra(num_j1,nom_type) ext];
+    if  (exist('comp_input','var') && isequal(comp_input,1))
+            if strcmp(nom_type(1),'_')
+                filename=[filename '_'];
+                nom_type(1)=[];
+            end
+            if strcmp(nom_type(end-1:end),'AB')||strcmp(nom_type(end-1:end),'ab')
+                if strcmp(nom_type(end-1:end),'AB')
+                    nchar=64;
                 else
-                    filename=[filebasesub num2str(num_i1,'%03d') '_' num2stra(num_j1,nom_type) num2stra(num_j2,nom_type) ext];
+                    nchar=96;
+                end
+                if isequal(num_j1,num_j2)% case of displacements at the same time
+                    num_j_str=char(num_j1+nchar);
+                else
+                    num_j_str=[char(num_j1+nchar) char(num_j2+nchar)];
+                end
+                if strcmp(nom_type(end-2),'_')
+                    numstr=['%0' num2str(numel(nom_type)-3) 'd'];
+                    num_j_str=['_' num_j_str];
+                else
+                    numstr=['%0' num2str(numel(nom_type)-2) 'd'];
+                end
+                filename=[filename num2str(num_i1,numstr) num_j_str ext];
+                num_i2_out=num_i1;
+            elseif isequal(nom_type,'i_j1-j2')
+                if isequal(num2str(num_j1),num2str(num_j2))% case of displacements at the same time
+                    filename=[filename num2str(num_i1) '_' num2str(num_j1) ext];
+                else
+                    filename=[filename num2str(num_i1) '_' num2str(num_j1) '-' num2str(num_j2) ext];
                 end
                 num_i2_out=num_i1;
-            elseif isequal(nom_type,'netc_2D')|isequal(nom_type,'_i_j1-j2')
-                if isequal(num2str(num_j1),num2str(num_j2))% case of displacements at the same time
-                    filename=[filebasesub '_' num2str(num_i1) '_' num2str(num_j1) ext];
-                else
-                    filename=[filebasesub '_' num2str(num_i1) '_' num2str(num_j1) '-' num2str(num_j2) ext];
-                end
-                num_i2_out=num_i1;
-            elseif isequal(nom_type,'netc_3D') || isequal(nom_type,'_i1-i2_j')
+            elseif  isequal(nom_type,'i1-i2_j')
                 if isequal(num2str(num_i1),num2str(num_i2))% case of displacements at the same time
-                      filename=[filebasesub '_' num2str(num_i1) '_' num2str(num_j1) ext];
+                      filename=[filename num2str(num_i1) '_' num2str(num_j1) ext];
                 else
-                    filename=[filebasesub '_' num2str(num_i1) '-' num2str(num_i2) '_' num2str(num_j1) ext];
+                    filename=[filename num2str(num_i1) '-' num2str(num_i2) '_' num2str(num_j1) ext];
                 end
                 num_j2_out=num_j1;
-            elseif isequal(nom_type,'netc_series') || isequal(nom_type,'_i1-i2')
+            elseif  isequal(nom_type,'i1-i2')
                 if isequal(num2str(num_i1),num2str(num_i2))% case of displacements at the same time
-                     filename=[filebasesub '_' num2str(num_i1) ext];
+                     filename=[filename num2str(num_i1) ext];
                 else
-                    filename=[filebasesub '_' num2str(num_i1) '-' num2str(num_i2) ext];
+                    filename=[filename num2str(num_i1) '-' num2str(num_i2) ext];
                 end
                 num_j2_out=num_j1;
-            elseif isequal(nom_type,'_i1-i2_j1-j2')
+            elseif isequal(nom_type,'i1-i2_j1-j2')
                 if isequal(num2str(num_i1),num2str(num_i2))% case of displacements at the same time
                     app1= [num2str(num_i1)];
                 else
@@ -178,13 +213,13 @@ elseif test_pairs
                 else
                     app2= [num2str(num_j1) '-' num2str(num_j2)];
                 end     
-                filename=[filebasesub '_' app1 '_' app2 ext];
+                filename=[filename app1 '_' app2 ext];
             end
             idetect=1;
            % idetect=(exist(filename,'file')==2);
      % case of an image pair to determine (comp_input=0)
     else
-            [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out,idetect]=search_pair(filebasesub,num_i1,num_j1,num_i2,nom_type);
+          [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out,idetect]=search_pair(filename,num_i1,num_j1,num_i2,nom_type);
     end
     
      %look for sub-directories containing netcdf files
@@ -229,15 +264,6 @@ elseif test_pairs
             [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out,idetect]=search_pair(filebasesub,num_i1,num_j1,num_i2,nom_type);             
         end
     end
-% elseif isequal(nom_type,'none')|isequal(nom_type,'')|isequal(nom_type,'*')
-else
-    filebasesub=filebase;
-    if ~isequal(subdir,'') && ~isequal(subdir,'?') 
-            [Path,Name]=fileparts(filebase);
-            filebasesub=fullfile(Path,subdir,Name);
-    end
-    filename=[filebasesub ext];
-    idetect=(exist(filename,'file')==2);  
 end
 if ~isequal(subdir,'?'), subdir_out=subdir; else, subdir_out='';end;
 

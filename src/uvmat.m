@@ -822,13 +822,13 @@ if isfield(XmlData,'GeometryCalib')
         set(handles.pycm,'String','')
         set(handles.transform_fct,'Value',1); %  no transform by default
     else
-        if (isfield(GeometryCalib,'R')&& ~isequal(GeometryCalib.R(2,1),0) && ~isequal(GeometryCalib.R(1,2),0)) |...
+        if (isfield(GeometryCalib,'R')&& ~isequal(GeometryCalib.R(2,1),0) && ~isequal(GeometryCalib.R(1,2),0)) ||...
             (isfield(GeometryCalib,'kappa1')&& ~isequal(GeometryCalib.kappa1,0))
             set(handles.pxcm,'String','var')
             set(handles.pycm,'String','var')
         elseif isfield(GeometryCalib,'fx_fy')
-            pixcmx=GeometryCalib.fx_fy(1)%*GeometryCalib.R(1,1)*GeometryCalib.sx/(GeometryCalib.Tz*GeometryCalib.dpx);
-            pixcmy=GeometryCalib.fx_fy(2)%*GeometryCalib.R(2,2)/(GeometryCalib.Tz*GeometryCalib.dpy);
+            pixcmx=GeometryCalib.fx_fy(1);%*GeometryCalib.R(1,1)*GeometryCalib.sx/(GeometryCalib.Tz*GeometryCalib.dpx);
+            pixcmy=GeometryCalib.fx_fy(2);%*GeometryCalib.R(2,2)/(GeometryCalib.Tz*GeometryCalib.dpy);
             set(handles.pxcm,'String',num2str(pixcmx))
             set(handles.pycm,'String',num2str(pixcmy))
         end
@@ -910,16 +910,19 @@ if numel(last_i_str)==2
 end  
 state_j='off'; %default
 scan_option='i';%default
-switch NomType
-    case {'_i_j','_i_j1-j2','_i1-i2_j','#_ab','#A','%01dA','%02dA','%03dA','%04dA'},% two navigation indices
+NomTypeRaw=regexprep(NomType(2:end), '-', '');
+if numel(regexp(NomTypeRaw,'\D'))>=1 
+%     case {'_i_j','_i_j1-j2','_i1-i2_j','#_ab','#A','%01dA','%02dA','%03dA','%04dA'},% two navigation indices
         state_j='on';
         if isequal(nbfield,1)
-            scan_option='j';                 
+            scan_option='j'; %scan j index by default if nbfield=1                
         end 
 end
 if ~isempty(NomType_1)
-    switch NomType_1
-        case {'_i_j','_i_j1-j2','_i1-i2_j','#_ab'},% two navigation indices
+    NomTypeRaw=regexprep(NomType_1(2:end), '-', '');
+    if numel(regexp(NomTypeRaw,'\D'))>=1
+%     switch NomType_1
+%         case {'_i_j','_i_j1-j2','_i1-i2_j','#_ab'},% two navigation indices
             state_j='on';
             if isequal(nbfield,1)
                 scan_option='j';                 
@@ -1485,7 +1488,7 @@ if isequal(get(handles.mask_test,'Value'),1)
         val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
         ind_mask=findstr('mask',Name);
         i=ind_mask-1;
-        while val(i)==0 & i>0
+        while val(i)==0 && i>0
             i=i-1;
         end
         nbmask_str=str2num(Name(i+1:ind_mask-1));
@@ -1667,7 +1670,7 @@ set(handles.Movie,'BusyAction','queue')
 testavi=0;
 UvData=get(handles.uvmat,'UserData');
 
-while get(handles.speed,'Value')~=0 & isequal(get(handles.Movie,'BusyAction'),'queue') % enable STOP command
+while get(handles.speed,'Value')~=0 && isequal(get(handles.Movie,'BusyAction'),'queue') % enable STOP command
         errormsg=runpm(hObject,eventdata,handles,increment);
         if ~isempty(errormsg)
             return
@@ -1901,7 +1904,7 @@ elseif isequal(lower(Ext),'.avi')
 elseif isequal(lower(Ext),'.vol')
     FileType='vol';
 else 
-   form=imformats(Ext([2:end]));
+   form=imformats(Ext(2:end));
    if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
        if isequal(NomType,'*');
            FileType='multimage';
@@ -2058,7 +2061,7 @@ if ~isempty(filename)
         FileType='vol';
         FieldName='image';
     else 
-       form=imformats(Ext([2:end]));
+       form=imformats(Ext(2:end));
        if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
            if isequal(NomType,'*');
                FileType='multimage';
@@ -2105,7 +2108,7 @@ if ~isempty(filename_1)
         FileType_1='vol';
         FieldName_1='image';
     else 
-       form=imformats(Ext_1([2:end]));
+       form=imformats(Ext_1(2:end));
        if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
            if isequal(NomType_1,'*');
                FileType_1='multimage';
@@ -2622,24 +2625,24 @@ for imap=1:numel(IndexObj)
         ObjectData=proj_field(UvData.Field,UvData.Object{iobj},iobj);
         %use of mask
         if isfield(ObjectData,'NbDim')&isequal(ObjectData.NbDim,2)
-            if isfield(ObjectData,'Mask') & isfield(ObjectData,'A')
+            if isfield(ObjectData,'Mask') && isfield(ObjectData,'A')
                  flag_mask=double(ObjectData.Mask>200);%=0 for masked regions
                  AX=ObjectData.AX;
                  AY=ObjectData.AY;
                  MaskX=ObjectData.MaskX;
                  MaskY=ObjectData.MaskY;
-                 if ~isequal(MaskX,AX)|~isequal(MaskY,AY)
+                 if ~isequal(MaskX,AX)||~isequal(MaskY,AY)
                      nxy=size(flag_mask);
                      sizpx=(ObjectData.MaskX(end)-ObjectData.MaskX(1))/(nxy(2)-1);%size of a mask pixel
                      sizpy=(ObjectData.MaskY(1)-ObjectData.MaskY(end))/(nxy(1)-1);
-                     x_mask=[ObjectData.MaskX(1):sizpx:ObjectData.MaskX(end)]; % pixel x coordinates for image display 
-                     y_mask=[ObjectData.MaskY(1):-sizpy:ObjectData.MaskY(end)];% pixel x coordinates for image display
+                     x_mask=ObjectData.MaskX(1):sizpx:ObjectData.MaskX(end); % pixel x coordinates for image display 
+                     y_mask=ObjectData.MaskY(1):-sizpy:ObjectData.MaskY(end);% pixel x coordinates for image display
                      %project on the positions of the scalar
                      npxy=size(ObjectData.A);
                      dxy(1)=(ObjectData.AY(end)-ObjectData.AY(1))/(npxy(1)-1);%grid mesh in y
                      dxy(2)=(ObjectData.AX(end)-ObjectData.AX(1))/(npxy(2)-1);%grid mesh in x
-                     xi=[ObjectData.AX(1):dxy(2):ObjectData.AX(end)];
-                     yi=[ObjectData.AY(1):dxy(1):ObjectData.AY(end)];      
+                     xi=ObjectData.AX(1):dxy(2):ObjectData.AX(end);
+                     yi=ObjectData.AY(1):dxy(1):ObjectData.AY(end);      
                      [XI,YI]=meshgrid(xi,yi);% creates the matrix of regular coordinates
                     flag_mask = interp2(x_mask,y_mask,flag_mask,XI,YI);
                  end
@@ -2649,7 +2652,7 @@ for imap=1:numel(IndexObj)
                  ind_off=[];
                  if isfield(ObjectData,'ListVarName')
                       for ilist=1:length(ObjectData.ListVarName)
-                           if isequal(ObjectData.ListVarName{ilist},'Mask')|isequal(ObjectData.ListVarName{ilist},'MaskX')|isequal(ObjectData.ListVarName{ilist},'MaskY')
+                           if isequal(ObjectData.ListVarName{ilist},'Mask')||isequal(ObjectData.ListVarName{ilist},'MaskX')||isequal(ObjectData.ListVarName{ilist},'MaskY')
                                ind_off=[ind_off ilist];
                            end
                       end
@@ -2840,7 +2843,7 @@ if isequal(FieldName_1,'get_field...')
     set(hhget_field_1.inputfile,'String',filename_1)
     Tabchar={''};%default
     Tabcell=[];
-    if isfield(Field{2},'ListGlobalAttribute')& ~isempty(Field{2}.ListGlobalAttribute)
+    if isfield(Field{2},'ListGlobalAttribute')&& ~isempty(Field{2}.ListGlobalAttribute)
         for iline=1:length(Field{2}.ListGlobalAttribute)
             Tabcell{iline,1}=Field{2}.ListGlobalAttribute{iline};
             if isfield(Field{2}, Field{2}.ListGlobalAttribute{iline})
@@ -3800,7 +3803,7 @@ function col_vec_Callback(hObject, eventdata, handles)
 list_code=get(handles.col_vec,'String');% list menu fields
 index_code=get(handles.col_vec,'Value');% selected string index
 col_code= list_code{index_code(1)}; % selected field
-if isequal(col_code,'black') | isequal(col_code,'white')
+if isequal(col_code,'black') || isequal(col_code,'white')
    set(handles.slider1,'Visible','off')
    set(handles.slider2,'Visible','off')
    set(handles.colcode1,'Visible','off')
@@ -4438,7 +4441,7 @@ function MenuExportField_Callback(hObject, eventdata, handles)
 global Data_uvmat
 Data_uvmat=get(handles.uvmat,'UserData');
 evalin('base','global Data_uvmat')%make CurData global in the workspace
-display(['current field :'])
+display('current field :')
 evalin('base','Data_uvmat') %display CurData in the workspace
 commandwindow; %brings the Matlab command window to the front
 
@@ -4669,8 +4672,8 @@ else
         flag=1;
         npx=size(UvData.Field.A,2);
         npy=size(UvData.Field.A,1);
-        xi=[0.5:npx-0.5];
-        yi=[0.5:npy-0.5];
+        xi=0.5:npx-0.5;
+        yi=0.5:npy-0.5;
         [Xi,Yi]=meshgrid(xi,yi);
         if isfield(UvData,'Object')
             for iobj=1:length(UvData.Object)
