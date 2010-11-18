@@ -10,20 +10,15 @@
 
 function Tabchar=cell2tab(Tabcell,separator) 
 Tabchar={};%default
-[nx,ny]=size(Tabcell);
-%determine width withcolumn(jtab) of each column
-for jtab=1:ny 
-    widthcolumn(jtab)=0;%default
-    for itab=1:nx% read line
-        if widthcolumn(jtab)<length(Tabcell{itab,jtab})
-            widthcolumn(jtab)=length(Tabcell{itab,jtab});
-        end
-    end
-end
+[ni,nj]=size(Tabcell);
+
+%determine width of each column
+widthcolumn=max(cellfun(@length,Tabcell));
+
 %justify table
-for itab=1:nx    
+for itab=1:ni    
     charchain=[];         
-    for jtab=1:ny% read line
+    for jtab=1:nj% read line
         textlu=Tabcell{itab,jtab};
         if widthcolumn(jtab)>length(textlu)
             blankstr=char(32*ones(1,widthcolumn(jtab)-length(textlu)));
@@ -36,3 +31,5 @@ for itab=1:nx
     end
     Tabchar(itab,1)={charchain};
 end
+
+%nb : char(Tabchar(:,jtab)) gives directly a column with the blanks filled
