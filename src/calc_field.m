@@ -1,10 +1,12 @@
 %'calc_field': defines fields (velocity, vort, div...) from civx data and calculate them  
 %---------------------------------------------------------------------
+% [DataOut,errormsg]=calc_field(FieldName,DataIn)
 %
 % OUTPUT: 
 % Scal: matlab vector representing the scalar values (length nbvec defined by var_read)  
-%      if no input , Scal=list of programmed scalar names (to put in menus)
-%      if only the sclar name is put as input, vec_A=type of scalar, which can be:
+%      if no input, Scal=list of programmed scalar names (to put in menus)
+%      if only the field name is put as input, vec_A=type of scalar, which can be:
+%                   'discrete': related to the individual velocity vectors, not interpolated by patch
 %                   'vel': scalar calculated solely from velocity components
 %                   'der': needs spatial derivatives     
 %                   'var': the scalar name directly corresponds to a field name in the netcdf files
@@ -13,7 +15,7 @@
 %      error = 1; the prescribed scalar cannot be read or calculated from available fields
 %
 % INPUT:
-% ScalName: string representing the name of the scalar
+% FieldName: string representing the name of the field
 % DataIn: structure representing the field, as defined in check_field_srtructure.m
 %
 % FUNCTION related
@@ -28,10 +30,11 @@ function [DataOut,errormsg]=calc_field(FieldName,DataIn)
 %              'der': needs spatial derivatives     
 %              'var': the scalar name corresponds to a field name in the netcdf files
 % a specific variable name for civ1 and civ2 fields are also associated, if
-% '' the scalar is calculated from other fields, as explicited below
+% the scalar is calculated from other fields, as explicited below
+
 %list_scal={title, type, civ1 var name,civ2 var name}
 list_field={'velocity';...%image correlation corresponding to a vel vector
-            'ima_cor';...%image correlation corresponding to a vel vector
+           'ima_cor';...%image correlation corresponding to a vel vector
            'norm_vel';...%norm of the velocity
            'vort';...%vorticity
            'div';...%divergence
@@ -56,7 +59,7 @@ else
     else
         nbcoord=2;
     end    
-    DataOut=DataIn; %reporduce global attribute
+    DataOut=DataIn; %reproduce global attribute
     ListVarName={};
     ValueList={};
     RoleList={};
@@ -67,7 +70,7 @@ else
         ValueList=[ValueList Value];
         RoleList=[RoleList Role];
         units_cell=[units_cell units];
-    end   
+   end   
        %erase previous data (except coordinates)
     for ivar=nbcoord+1:length(DataOut.ListVarName)
         VarName=DataOut.ListVarName{ivar};
