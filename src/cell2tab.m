@@ -6,7 +6,8 @@
 % Tabchar: character array suitable for table display
 %
 % INPUT:
-% Tabcell: (nx,ny) cell table, for nx lines separator: character used for separating displayed columns
+% Tabcell: (ni,nj) cell table, for ni lines 
+% separator: character used for separating displayed columns
 
 function Tabchar=cell2tab(Tabcell,separator) 
 Tabchar={};%default
