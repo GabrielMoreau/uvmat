@@ -294,13 +294,11 @@ for ifile=1:nbfield
             % z index
       
             if ~isempty(NbSlice_calib)
-                Field{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1
+                Field{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;
             end
 %              Field{iview}.ZIndex=1;
             if ~isempty(transform_fct)
-                XmlData{iview}.GeometryCalib
-                Field{iview}=transform_fct(Field{iview},XmlData{iview});                
-                %transform to phys if requested
+                Field{iview}=transform_fct(Field{iview},XmlData{iview});  %transform to phys if requested
             end
             if testcivx
                 Field{iview}=calc_field(FieldName,Field{iview});

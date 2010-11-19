@@ -452,7 +452,7 @@ pxcmx_search=[];%default
 pxcmy_search=[];%default
 filebase=get(handles.RootName,'String');
 ext=get(handles.ImaDoc,'String');
-browse=get(handles.browse_root,'UserData');%default
+browse=get(handles.browse_root,'UserData')%default
 if isfield(browse,'nom_type_ima')
     nom_type_ima=browse.nom_type_ima;% get an image nomenclature type already determined by an input image name
     ext_ima=browse.ext_ima;
@@ -547,9 +547,9 @@ elseif isequal(ext,'.xml')
         time=XmlData.Time;
         nbfield=size(time,1);
         nbfield2=size(time,2);
-        %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
+        %transform .Time to a column vector if it is a line vector thenomenclature uses a single index: correct possible bug in xml
         if isequal(nbfield,1) && ~isequal(nbfield2,1)% .Time is a line vector
-            if numel(nom_type_read)>=2 && (strcmp(nom_type_read,'_i')||strcmp(nom_type_read(1:2),'%0')||strcmp(nom_type_read(1:2),'_%'))
+            if numel(nom_type_read)>=2 && isempty(regexp(nom_type_read(2:end),'\D'))
                 time=time';
                 nbfield=nbfield2;
                 nbfield2=1;
@@ -2058,7 +2058,7 @@ compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displace
 
 %check the list of operations:
 operations={'CIV1','FIX1','PATCH1','CIV2','FIX2','PATCH2'};
-run_flag=1;
+% run_flag=1;
 box_test(1)=get(handles.CIV1,'Value');
 box_test(2)=get(handles.FIX1,'Value');
 box_test(3)=get(handles.PATCH1,'Value');
@@ -2120,8 +2120,8 @@ if exist(xmlfile,'file')
     t=xmltree(xmlfile);
     s=convert(t);
 end
-    test_interp=0;
-    if batch
+test_interp=0;
+if batch
     if isfield(s,'BatchParam')
         sparam=s.BatchParam;
         if ~ismember(sparam.BatchMode,{'sge'})
@@ -2166,7 +2166,6 @@ else
     %     end
     % end
     if isfield(sparam,'FixBin')
-        %     fixBin=sparam.FixBin;
         if ~exist(sparam.FixBin,'file')
             sparam.FixBin=fullfile(path_UVMAT,sparam.FixBin);
         end
@@ -2217,9 +2216,9 @@ if batch
     end
 else
     if isunix
-        [s,w]=unix('ps faux |grep civ|wc -l');
+        [xx,w]=unix('ps faux |grep civ|wc -l');
         w(end)=[];
-        if str2num(w)+numel(num1_civ1)> MaxCivProcesses
+        if str2double(w)+numel(num1_civ1)> MaxCivProcesses
             msgbox_uvmat('ERROR',{['There are already ' w ' civ processes running locally'];'Use BATCH or submit RUN later'})
             return
         end
@@ -2240,8 +2239,8 @@ if box_test(2)==1
     flagindex1(1)=get(handles.vec_Fmin2, 'Value');
     flagindex1(2)=get(handles.vec_F3, 'Value');
     flagindex1(3)=get(handles.vec_F2, 'Value');
-    thresh_vecC1=str2num(get(handles.thresh_vecC,'String'));%threshold on image correlation vec_C
-    thresh_vel1=str2num(get(handles.thresh_vel,'String'));%threshold on velocity modulus
+    thresh_vecC1=str2double(get(handles.thresh_vecC,'String'));%threshold on image correlation vec_C
+    thresh_vel1=str2double(get(handles.thresh_vel,'String'));%threshold on velocity modulus
     test_mask=get(handles.get_mask_fix1,'Value');
     nbslice_mask=get(handles.mask_fix1,'UserData'); % get the number of slices (= number of masks)
     %%%%%%%%%%%%%COMPLETER LE PROGRAMME FIX
@@ -2261,8 +2260,8 @@ end
 
 %get patch1 parameters
 if box_test(3)==1
-    rho_patch1=str2num(get(handles.rho_patch1,'String'));
-    if isempty(rho_patch1)
+    rho_patch1=str2double(get(handles.rho_patch1,'String'));
+    if isnan(rho_patch1)
         rho_patch1='1000';
         set(handles.rho_patch1,'String','1')
     else
@@ -2270,11 +2269,11 @@ if box_test(3)==1
     end
     nx_patch1=get(handles.nx_patch1,'String');
     ny_patch1=get(handles.ny_patch1,'String');
-    if isequal(str2num(nx_patch1),[])
+    if isnan(str2double(nx_patch1))
         nx_patch1='50' ;%default
         set(handles.nx_patch1,'String','50');
     end
-    if isequal(str2num(ny_patch1),[])
+    if isnan(str2double(ny_patch1))
         ny_patch1='50' ;%default
         set(handles.ny_patch1,'String','50');
     end
@@ -2292,8 +2291,8 @@ if box_test(5)==1
     flagindex2(1)=get(handles.vec_Fmin2_2, 'Value');
     flagindex2(2)=get(handles.vec_F3_2, 'Value');
     flagindex2(3)=get(handles.vec_F4, 'Value');
-    thresh_vec2C=str2num(get(handles.thresh_vec2C,'String'));%threshold on image correlation vec_C
-    thresh_vel2=str2num(get(handles.thresh_vel2,'String'));%threshold on velocity modulus
+    thresh_vec2C=str2double(get(handles.thresh_vec2C,'String'));%threshold on image correlation vec_C
+    thresh_vel2=str2double(get(handles.thresh_vel2,'String'));%threshold on velocity modulus
     test_mask=get(handles.get_mask_fix2,'Value');
     nbslice_mask=get(handles.mask_fix2,'UserData'); % get the number of slices (= number of masks)
     %%%%%%%%%%%%%COMPLETER LE PROGRAMME FIX AVEC REF FILE ET OPTION inf_sup=2
@@ -2305,8 +2304,8 @@ end
 
 %get patch2 parameters
 if box_test(6)==1
-    rho_patch2=str2num(get(handles.rho_patch2,'String'));
-    if isempty(rho_patch2)
+    rho_patch2=str2double(get(handles.rho_patch2,'String'));
+    if isnan(rho_patch2)
         rho_patch2='1000';
         set(handles.rho_patch2,'String','1')
     else
@@ -2314,11 +2313,11 @@ if box_test(6)==1
     end
     nx_patch2=get(handles.nx_patch2,'String');
     ny_patch2=get(handles.ny_patch2,'String');
-    if isequal(str2num(nx_patch2),[])
+    if isnan(str2double(nx_patch2))
         nx_patch2='50' ;%default
         set(handles.nx_patch2,'String','50');
     end
-    if isequal(str2num(ny_patch2),[])
+    if isnan(str2double(ny_patch2))
         ny_patch2='50' ;%default
         set(handles.ny_patch2,'String','50');
     end
@@ -2329,7 +2328,7 @@ end
 
 %MAIN LOOP
 % for ifile=1:nbfield
-p1text=[];%initiate command text
+% p1text=[];%initiate command text
 time=get(handles.RootName,'UserData'); %get the set of times
 civAll=get(handles.Experimental,'Value'); % Boolean for new civ excution method
 for ifile=1:nbfield
@@ -2349,8 +2348,7 @@ for ifile=1:nbfield
             civAllxml=set(civAllxml,1,'name','CivDoc');
         end
         filename_cmx=filecell.nc.civ1{ifile,j};%output netcdf file
-        filename_cmx(end-1:end)='cm';%name of cmx file
-        filename_cmx=[filename_cmx 'x'];
+        filename_cmx(end-1:end+1)='cmx';%name of cmx file
         
         %CIV1
         if box_test(1)==1
@@ -2512,10 +2510,10 @@ for ifile=1:nbfield
             end
         end
         
-        if box_test(4)==1 | box_test(5)==1 | box_test(6)==1
+        if box_test(4)==1 || box_test(5)==1 || box_test(6)==1
             filename_cmx=filecell.nc.civ2{ifile,j};%output netcdf file
-            filename_cmx([end-1:end])=[ 'cm'];%name of cmx file
-            filename_cmx=[filename_cmx 'x'];
+            filename_cmx([end-1:end+1])=[ 'cmx'];%name of cmx file
+%             filename_cmx=[filename_cmx 'x'];
         end
         
         if box_test(4)==1
@@ -2797,7 +2795,7 @@ if isempty(nom_type_nc),nom_type_nc='_i1-i2';end; %default
 %determine the new filebase for 'displacement' mode (comparison of two series)
 filebase_B=filebase;% root name of the second field series for stereo
 if strcmp(compare,'displacement') || strcmp(compare,'stereo PIV')
-    test_disp=1;
+%     test_disp=1;
     nom_type_ima1=browse.nom_type_ima_1; %nomenclature type of the second file series
     [Path2,Name2]=fileparts(filebase_B);
     Path1=Path2;
@@ -2811,7 +2809,7 @@ if strcmp(compare,'displacement') || strcmp(compare,'stereo PIV')
     end
     filebase_AB=fullfile(Path2,[Name2 '-' Name1]);
 else
-    test_disp=0;
+%     test_disp=0;
     filebase_A=filebase;
     nom_type_ima1=nom_type_ima2;
     filebase_AB=filebase;
@@ -2840,8 +2838,8 @@ if box_test(2)==1% fix1 performed
         first_j=str2num(get(handles.first_j,'String'));
         last_j=str2num(get(handles.last_j,'String'));
         incr_j=str2num(get(handles.incr_j,'String'));
-        num_i_ref=[first_i:incr_i:last_i];
-        num_j_ref=[first_j:incr_j:last_j];
+        num_i_ref=first_i:incr_i:last_i;
+        num_j_ref=first_j:incr_j:last_j;
         if isequal(mode,'displacement')
             num_i1=num_i_ref;
             num_i2=num_i_ref;
@@ -2888,12 +2886,12 @@ end
 if box_test(5)==1% fix2 performed
     ref=get(handles.ref_fix2,'UserData');
     if ~isempty(ref)
-        first_i=str2num(get(handles.first_i,'String'));
-        last_i=str2num(get(handles.last_i,'String'));
-        incr_i=str2num(get(handles.incr_i,'String'));
-        first_j=str2num(get(handles.first_j,'String'));
-        last_j=str2num(get(handles.last_j,'String'));
-        incr_j=str2num(get(handles.incr_j,'String'));
+        first_i=str2double(get(handles.first_i,'String'));
+        last_i=str2double(get(handles.last_i,'String'));
+        incr_i=str2double(get(handles.incr_i,'String'));
+        first_j=str2double(get(handles.first_j,'String'));
+        last_j=str2double(get(handles.last_j,'String'));
+        incr_j=str2double(get(handles.incr_j,'String'));
         num_i_ref=[first_i:incr_i:last_i];
         num_j_ref=[first_j:incr_j:last_j];
         if isequal(mode,'displacement')
@@ -2950,7 +2948,7 @@ end
 cd(Path_ima);%move to the directory of the images: needed to create the result dir by 'mkdir'
 dircur=pwd; %current working directory
 m2='';
-[erread,message]=fileattrib(Path_ima);
+[xx,message]=fileattrib(Path_ima);
 if ~isempty(message) && ~isequal(message.UserWrite,1)
     msgbox_uvmat('ERROR',['No writting access to ' Path_ima])
     filecell={};
@@ -2962,16 +2960,22 @@ end
 % %%%%%%%%%%%%  case CIV1 activated   %%%%%%%%%%%%%
 if box_test(1)==1;
     detect=1;
+    vers=0;
+    subdir_civ1_new=subdir_civ1;
     while detect==1 %create a new subdir if the netcdf files already exist
-        vers=0;
-        subdir_civ1_new=subdir_civ1;
         for ifile=1:nbfield
             for j=1:nbslice
                 filename=name_generator(filebase_nc,num1_civ1(ifile),num_a_civ1(j),'.nc',nom_type_nc,1,num2_civ1(ifile),num_b_civ1(j),subdir_civ1_new);
                 detect=exist(filename,'file')==2;
                 if detect% if a netcdf file already exists
-                    vers=vers+1;
-                    subdir_civ1_new=[subdir_civ1 '_' num2str(vers)];
+                    indstr=regexp(subdir_civ1,'\D');
+                    if indstr(end)<length(subdir_civ1) %subdir_civ1 ends by a number
+                        vers=str2double(subdir_civ1(indstr(end)+1:end))+1;
+                        subdir_civ1_new=[subdir_civ1(1:indstr(end)) num2str(vers)];
+                    else
+                        vers=vers+1;
+                        subdir_civ1_new=[subdir_civ1(1:indstr(end)) '_' num2str(vers)];       
+                    end
                     subdir_civ2=subdir_civ1;
                     break
                 end
@@ -2981,10 +2985,9 @@ if box_test(1)==1;
                 break
             end
         end
-        subdir_civ1=subdir_civ1_new;
         %create the new subdir_civ1
-        if ~exist(fullfile(Path_ima,subdir_civ1),'dir')
-            [m1,m2,m3]=mkdir(subdir_civ1);
+        if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
+            [xx,m2]=mkdir(subdir_civ1_new);
             if ~isequal(m2,'')
                 msgbox_uvmat('ERROR', m2)%error message for directory creation
                 cd(currentdir)
@@ -2993,17 +2996,23 @@ if box_test(1)==1;
             end
         end
         if strcmp(compare,'stereo PIV')&&(strcmp(mode,'pair j1-j2')||strcmp(mode,'series(Dj)')||strcmp(mode,'series(Di)'))%check second nc series
-            vers=0;
-            subdir_civ1_new=subdir_civ1;
+%             vers=0;
+%             subdir_civ1_new=subdir_civ1;
             for ifile=1:nbfield
                 for j=1:nbslice
                     filename=name_generator(filebase_A,num1_civ1(ifile),num_a_civ1(j),'.nc',nom_type_nc,1,num2_civ1(ifile),num_b_civ1(j),subdir_civ1_new);%
                     detect=exist(filename,'file')==2;
                     if detect% if a netcdf file already exists
-                        vers=vers+1;
-                        subdir_civ1_new=[subdir_civ1 '_' num2str(vers)];
-                        subdir_civ2=subdir_civ1;
-                        break
+                       indstr=regexp(subdir_civ1,'\D');
+                       if indstr(end)<length(subdir_civ1) %subdir_civ1 ends by a number
+                           vers=str2double(subdir_civ1(indstr(end)+1:end))+1;
+                           subdir_civ1_new=[subdir_civ1(1:indstr(end)) num2str(vers)];
+                       else
+                           vers=vers+1;
+                           subdir_civ1_new=[subdir_civ1 '_' num2str(vers)];
+                       end
+                       subdir_civ2=subdir_civ1;
+                       break
                     end
                     filecell.ncA.civ1(ifile,j)={filename};
                 end
@@ -3011,10 +3020,10 @@ if box_test(1)==1;
                     break
                 end
             end
-            subdir_civ1=subdir_civ1_new;
+%             subdir_civ1=subdir_civ1_new;
             %create the new subdir_civ1
-            if ~exist(fullfile(Path_ima,subdir_civ1),'dir')
-                [m1,m2,m3]=mkdir(subdir_civ1);
+            if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
+                [xx,m2]=mkdir(subdir_civ1_new);
                 if ~isequal(m2,'')
                     msgbox_uvmat('ERROR', m2)
                     cd(currentdir)
@@ -3024,6 +3033,7 @@ if box_test(1)==1;
             end
         end
     end
+    subdir_civ1=subdir_civ1_new;
     % get image names
     for ifile=1:nbfield
         for j=1:nbslice
@@ -3113,16 +3123,25 @@ end
 %%%%%%%%%%%%%  if civ2 performed with pairs different than civ1  %%%%%%%%%%%%%
 testdiff=0;
 if (box_test(4)==1)&&...
-        ((get(handles.list_pair_civ1,'Value')~=get(handles.list_pair_civ2,'Value'))||~isequal(subdir_civ2,subdir_civ1))
+        ((get(handles.list_pair_civ1,'Value')~=get(handles.list_pair_civ2,'Value'))||~strcmp(subdir_civ2,subdir_civ1))
     testdiff=1;
     detect=1;
+    vers=0;
+    subdir_civ2_new=subdir_civ2;
     while detect==1 %create a new subdir if the netcdf files already exist
         for ifile=1:nbfield
             for j=1:nbslice
-                filename=name_generator(filebase_nc,num1_civ2(ifile),num_a_civ2(j),'.nc',nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);%
+                filename=name_generator(filebase_nc,num1_civ2(ifile),num_a_civ2(j),'.nc',nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2_new);%
                 detect=exist(filename,'file')==2;
                 if detect% if a netcdf file already exists
-                    subdir_civ2=[subdir_civ2 '.0'];
+                    indstr=regexp(subdir_civ2,'\D');
+                    if indstr(end)<length(subdir_civ2) %subdir_civ1 ends by a number
+                        vers=str2double(subdir_civ2(indstr(end)+1:end))+1;
+                        subdir_civ2_new=[subdir_civ2(1:indstr(end)) num2str(vers)];
+                    else
+                        vers=vers+1;
+                        subdir_civ2_new=[subdir_civ1 '_' num2str(vers)];
+                    end
                     break
                 end
                 filecell.nc.civ2(ifile,j)={filename};
@@ -3133,7 +3152,7 @@ if (box_test(4)==1)&&...
         end
         %create the new subdir_civ2
         if ~exist(fullfile(Path_ima,subdir_civ2),'dir')
-            [m1,m2,m3]=mkdir(subdir_civ2);
+            [xx,m2]=mkdir(subdir_civ2);
             if ~isequal(m2,'')
                 msgbox_uvmat('ERROR', m2)
                 filecell={};
@@ -3142,16 +3161,20 @@ if (box_test(4)==1)&&...
             end
         end
         if strcmp(compare,'stereo PIV')%check second nc series
-            vers=0;
-            subdir_civ2_new=subdir_civ2;
             for ifile=1:nbfield
                 for j=1:nbslice
                     filename=name_generator(filebase_A,num1_civ2(ifile),num_a_civ2(j),'.nc',...
                         nom_type_nc,1,num2_civ2(ifile),num_b_civ1(j),subdir_civ2_new);%
                     detect=exist(filename,'file')==2;
                     if detect% if a netcdf file already exists
-                        vers=vers+1;
-                        subdir_civ2_new=[subdir_civ2 '_' num2str(vers)];
+                        indstr=regexp(subdir_civ2,'\D');
+                        if indstr(end)<length(subdir_civ2) %subdir_civ1 ends by a number
+                           vers=str2double(subdir_civ2(indstr(end)+1:end))+1;
+                           subdir_civ2_new=[subdir_civ2(1:indstr(end)) num2str(vers)];
+                        else
+                           vers=vers+1;
+                           subdir_civ2_new=[subdir_civ1 '_' num2str(vers)];
+                        end
                         break
                     end
                     filecell.ncA.civ2(ifile,j)={filename};
@@ -3162,8 +3185,8 @@ if (box_test(4)==1)&&...
             end
             subdir_civ2=subdir_civ2_new;
             %create the new subdir_civ1
-            if ~exist(fullfile(Path_ima,subdir_civ2),'dir')
-                [m1,m2,m3]=mkdir(subdir_civ2);
+            if ~exist(fullfile(Path_ima,subdir_civ2_new),'dir')
+                [xx,m2]=mkdir(subdir_civ2_new);
                 if ~isequal(m2,'')
                     msgbox_uvmat('ERROR', m2)%error message for directory creation
                     cd(currentdir)
@@ -3173,6 +3196,7 @@ if (box_test(4)==1)&&...
             end
         end
     end
+    subdir_civ2=subdir_civ2_new;
 end
 cd(currentdir);%come back to the current working directory
 
@@ -3302,7 +3326,7 @@ end
 
 %%%%%%%%%%%%%  if stereo fields are calculated by PATCH %%%%%%%%%%%%%
 if strcmp(compare,'stereo PIV')
-    if  box_test(3)==1 & isequal(get(handles.test_stereo1,'Value'),1)
+    if  box_test(3)==1 && isequal(get(handles.test_stereo1,'Value'),1)
         for ifile=1:nbfield
             for j=1:nbslice
                 filename=name_generator(filebase_AB,num1_civ1(ifile),num_a_civ1(j),'.nc',...
@@ -3311,7 +3335,7 @@ if strcmp(compare,'stereo PIV')
             end
         end
     end
-    if  box_test(6)==1 & isequal(get(handles.test_stereo2,'Value'),1)
+    if  box_test(6)==1 && isequal(get(handles.test_stereo2,'Value'),1)
         for ifile=1:nbfield
             for j=1:nbslice
                 filename=name_generator(filebase_AB,num1_civ2(ifile),num_a_civ2(j),'.nc',...
@@ -3433,381 +3457,6 @@ if ~isequal(ext_ima,'.png')
     end
 end
 
-%------------------------------------------------------------------------
-%CIV1  CIV1  CIV1 CIV1 NOT USED: replaced by RUN_BATCH
-function RUN_CIV1(handles,filecell,filecell_1,filecell_nc1,num1,num2,num_a,num_b,nom_type_nc)
-%------------------------------------------------------------------------
-%pixels per cm and matrix of the image times, read from the .civ file by uvmat
-global civ1Bin sge%name of the executable for civ1 calculation
-
-%get civ parameters
-ibx_val=str2num(get(handles.ibx,'String'));
-if isempty(ibx_val)
-    ibx='21'; set(handles.ibx,'String','21')
-else
-    ibx=num2str(ibx_val);
-end
-iby_val=str2num(get(handles.iby,'String'));
-if isempty(iby_val)
-    iby='21'; set(handles.iby,'String','21')
-else
-    iby=num2str(iby_val);
-end
-isx=get(handles.isx,'String');
-if isempty(str2num(isx)), isx='41'; set(handles.isx,'String','41'), end; %default
-if str2num(isx)<ibx_val+8,isx=num2str(ibx_val+8); set(handles.isx,'String',num2str(ibx_val+8)); end
-isy=get(handles.isy,'String');
-if isempty(str2num(isy)), isy='41'; set(handles.isy,'String','41'), end;%default
-if str2num(isy)<iby_val+8,isy=num2str(iby_val+8); set(handles.isy,'String',num2str(iby_val+8)); end
-shiftx=get(handles.shiftx,'String');
-if isempty(str2num(shiftx)), shiftx='0'; set(handles.shiftx,'String','0'), end;%default
-shifty=get(handles.shifty,'String');
-if isempty(str2num(shifty)), shifty='0'; set(handles.shifty,'String','0'), end;%default
-rho=get(handles.rho,'String');
-dx=get(handles.dx_civ1,'String');
-if isequal(str2num(dx),[]), dx='20'; set(handles.dx_civ1,'String','20'); end%default
-dy=get(handles.dy_civ1,'String');
-if isequal(str2num(dy),[]), dy='20'; set(handles.dy_civ1,'String','20');end %default
-if isequal(str2num(dy),[]), dy='20'; end%default
-pxcmx='1'; %velocity fields are expressed in pixel displacement
-pxcmy='1';
-image_first=cell2mat(filecell(1,1));
-if ~exist(image_first,'file')
-    msgbox_uvmat('ERROR',['image ' image_first 'not found'])
-    set(handles.RUN, 'Enable','On')
-    set(handles.RUN,'BackgroundColor',[1 0 0])
-    return
-end
-A=imread(cell2mat(filecell(1,1)));%read the first image to get the size
-sizim=size(A);
-npx=num2str(sizim(2));
-npy=num2str(sizim(1));
-time=get(handles.RootName,'UserData'); %get the set of times
-gridname='';%default  ='noFile use default'
-gridflag='n';%default
-test_grid=get(handles.browse_gridciv1,'Value');
-nbslice_grid=[];
-if test_grid
-    gridname=get(handles.grid_civ1,'String');
-    if numel(gridname)>4 && isequal(gridname(end-3:end),'grid')
-        nbslice_grid=str2num(gridname(1:end-4)); %
-        if ~isempty(nbslice_grid)
-            gridflag='y';
-        end
-    elseif exist(gridname,'file')
-        gridflag='y';
-    else
-        msgbox_uvmat('ERROR',['input grid file ' gridname ' not found'])
-        return
-    end
-end
-if isequal(get(handles.ImaThreshold,'Value'),1)
-    threshflag='y';
-    min_ima=get(handles.MinIma,'String');
-    max_ima=get(handles.MaxIma,'String');
-else
-    threshflag='n';
-    min_ima='0';
-    max_ima='4096';
-end
-%main loop
-filebase=get(handles.RootName,'String');
-sizcell=size(filecell);
-nbfield=sizcell(1);
-nbslice=sizcell(2);
-icount=0;
-for ifile=1:nbfield
-    for j=1:nbslice
-        icount=icount+1;
-        barlength=0.188*icount/(nbfield*nbslice);
-        set(handles.waitbar_1,'Position',[0.946 0.877-barlength 0.03 barlength])
-        drawnow
-        filename_ima=cell2mat(filecell(ifile,j));
-        filename_ima([end-3:end])=[];%remove .png extension
-        filename_ima_1=cell2mat(filecell_1(ifile,j));
-        filename_ima_1([end-3:end])=[];%remove .png extension
-        filename_cmx=cell2mat(filecell_nc1(ifile,j));%output netcdf file
-        filename_cmx([end-1:end])=[ 'cm'];%name of cmx file
-        filename_cmx=[filename_cmx 'x'];
-        namelog=[filename_cmx([1:end-3]) 'log'];
-        if size(time,1)>=num2(ifile) &  size(time,2)>=num_b(j)
-            Dt=num2str(time(num2(ifile),num_b(j))-time(num1(ifile),num_a(j)));
-            if isequal(Dt,'0')
-                Dt='1' ;%case of 'displacement' mode
-            end
-            T0=num2str((time(num2(ifile),num_b(j))+time(num1(ifile),num_a(j)))/2);
-        else
-            Dt='1';
-            T0='0';
-        end
-        term_a=num2stra(num_a(j),nom_type_nc);%UTILITE?
-        term_b=num2stra(num_b(j),nom_type_nc);%
-        if test_grid && ~isempty(nbslice_grid)
-            num1_grid=mod(num1(ifile)-1,nbslice_grid)+1;
-            gridname=[filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
-            if ~exist(gridname,'file')
-                msgbox_uvmat('ERROR',['missing grid file ' gridname])
-                return
-            end
-        end
-        test_mask=get(handles.get_mask_civ1,'Value');
-        if test_mask==0
-            maskname='noFile use default';
-            maskflag='n';
-        else
-            maskdispl=get(handles.mask_civ1,'String');%look for mask name in edit box
-            maskbase=[filebase '_' maskdispl];%
-            nbslice=str2num(maskdispl(1:end-4)); %
-            num1_mask=mod(num1(ifile)-1,nbslice)+1;
-            maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
-            if exist(maskname,'file')
-                maskflag='y';
-            else
-                maskname='noFile use default';
-                maskflag='n';
-            end
-        end
-        textcmx={'##############   CMX file';...
-            ['FirstImage ' filename_ima];...
-            ['LastImage  ' filename_ima_1];...
-            'XX' ;...
-            ['Mask ' maskflag] ;...
-            ['MaskName ' maskname];...
-            ['ImageSize ' npx ' ' npy];...   %VERIFIER CAS GENERAL ?
-            ['CorrelationBoxesSize ' ibx ' ' iby];...
-            ['SearchBoxeSize ' isx ' ' isy];...
-            ['RO ' rho];...
-            ['GridSpacing ' dx ' ' dy];...
-            'XX 1.0';...
-            ['Dt_TO ' Dt ' ' T0];...
-            ['PixCmXY ' pxcmx ' ' pxcmy];...
-            'XX 1';...
-            ['ShiftXY ' shiftx ' ' shifty];...
-            ['Grid ' gridflag];...
-            ['GridName ' gridname] ;...
-            'XX 85';...
-            'XX 1.0';...
-            'XX 1.0';...
-            'Hart 1';...
-            'DecimalShift 0';...
-            'Deformation 0';...
-            'CorrelationMin 0';...
-            'IntensityMin 0';...
-            ['SeuilImage ' threshflag];...
-            ['SeuilImageValues ' min_ima ' ' max_ima];...
-            ['ImageToUse ' term_a ' ' term_b];... % VERIFIER ?
-            'ImageUsedBefore null null'};
-        textout=char(textcmx);
-        % 		dlmwrite(filename_cmx,textout,'');
-        fid=fopen([filename_cmx],'w');
-        fprintf(fid, ['##############   CMX file' '\n']);
-        fprintf(fid,   ['FirstImage ' regexprep(filename_ima,'\\','\\\\') '\n' ]);
-        fprintf(fid,   ['LastImage  ' regexprep(filename_ima_1,'\\','\\\\') '\n' ]);
-        fprintf(fid,  ['XX' '\n' ]);
-        fprintf(fid,  ['Mask '  maskflag '\n' ]);
-        fprintf(fid,  ['MaskName '  maskname '\n' ]);
-        fprintf(fid,   ['ImageSize '  npx ' '  npy '\n' ]);   %VERIFIER CAS GENERAL ?
-        fprintf(fid,   ['CorrelationBoxesSize '  ibx ' '  iby '\n' ]);
-        fprintf(fid,   ['SearchBoxeSize '  isx ' '  isy '\n' ]);
-        fprintf(fid,   ['RO '  rho '\n' ]);
-        fprintf(fid,   ['GridSpacing '  dx ' '  dy '\n' ]);
-        fprintf(fid,   ['XX 1.0' '\n' ]);
-        fprintf(fid,   ['Dt_TO '  Dt ' '  T0 '\n' ]);
-        fprintf(fid,  ['PixCmXY '  pxcmx ' '  pxcmy '\n' ]);
-        fprintf(fid,  ['XX 1' '\n' ]);
-        fprintf(fid,   ['ShiftXY '  shiftx ' '   shifty '\n' ]);
-        fprintf(fid,  ['Grid '  gridflag '\n' ]);
-        fprintf(fid,   ['GridName '  gridname '\n' ]);
-        fprintf(fid,   ['XX 85' '\n' ]);
-        fprintf(fid,   ['XX 1.0' '\n' ]);
-        fprintf(fid,   ['XX 1.0' '\n' ]);
-        fprintf(fid,   ['Hart 1' '\n' ]);
-        fprintf(fid,  [ 'DecimalShift 0' '\n' ]);
-        fprintf(fid,   ['Deformation 0' '\n' ]);
-        fprintf(fid,  ['CorrelationMin 0' '\n' ]);
-        fprintf(fid,   ['IntensityMin 0' '\n' ]);
-        fprintf(fid,  ['SeuilImage n' '\n' ]);
-        fprintf(fid,   ['SeuilImageValues 0 4096' '\n' ]);
-        fprintf(fid,   ['ImageToUse '  term_a ' '  term_b '\n' ]); % VERIFIER ?
-        fprintf(fid,   ['ImageUsedBefore null null' '\n' ]);
-        fclose(fid);
-        
-        s=-1;
-        display(['!' civ1Bin ' -f ' filename_cmx ' > ' namelog ])
-        eval(['!' civ1Bin ' -f ' filename_cmx ' > ' namelog ]);
-        % 		if sge%dispatch computation on the cluster using interactive queue
-        %           %  [s,w] = unix(['qrsh -q fast.q ' civ1Bin ' -f ' filename_cmx ' > ' namelog ' 2>&1' ]);
-        %        end
-        %         if s~=0
-        %            %  ['!' civ1Bin ' -f ' filename_cmx ' > ' namelog]
-        %            % eval(['!' civ1Bin ' -f ' filename_cmx ' > ' namelog]);
-        %         end
-    end
-end
-
-% %------------------------------------------------------------------------
-% % RUN CIV2   CIV2    CIV2   CIV2
-% function RUN_CIV2(handles,filecell_2,filecell_3,filecell_nc1,filecell_nc2,num1,num2,num_a,num_b,nom_type_nc)
-% %------------------------------------------------------------------------
-% %filecell_2: names of first image
-% %filecell_3: names of second images
-% global civ2Bin sge
-%
-% %names of the civ2 fields
-% field.vel_type='civ2';
-% field.nb='nb_vectors2';
-% field.X='vec2_X';
-% field.Y='vec2_Y';
-% field.U='vec2_U';
-% field.V='vec2_V';
-%
-% %get civ parameters
-% ibx=get(handles.ibx_civ2,'String');
-% iby=get(handles.iby_civ2,'String');
-% rho=get(handles.rho_civ2,'String');
-% decimal=int2str(get(handles.decimal,'Value'));
-% deformation=int2str(get(handles.deformation,'Value'));
-% dx=get(handles.dx_civ2,'String');
-% dy=get(handles.dy_civ2,'String');
-% if isequal(str2num(dx),[])
-%     dx='20';%default
-% end
-% if isequal(str2num(dy),[])
-%     dy='20';%default
-% end
-%     pxcmx='1';%velocity fields are expressed in pixel displacement
-%     pxcmy='1';
-% A=imread(cell2mat(filecell_2(1,1)));%read the first image to get the size
-% sizim=size(A);
-% npx=num2str(sizim(2));
-% npy=num2str(sizim(1));
-% time=get(handles.RootName,'UserData'); %get the set of times
-% filebase=get(handles.RootName,'String');
-% %grid
-% gridname='';%default  ='noFile use default'
-% gridflag='n';%default
-% test_grid=get(handles.browse_gridciv2,'Value');
-% nbslice_grid=[];
-% if test_grid
-%     gridname=get(handles.grid_civ2,'String');
-%     if numel(gridname)>4 && isequal(gridname(end-3:end),'grid')
-%         nbslice_grid=str2num(gridname(1:end-4)); %
-%         if ~isempty(nbslice_grid)
-%             gridflag='y';
-%         end
-%     elseif exist(gridname,'file')
-%         gridflag='y';
-%     else
-%         msgbox_uvmat('ERROR',['input grid file ' gridname ' not found'])
-%         return
-%     end
-% end
-% sizcell=size(filecell_2);
-% nbfield=sizcell(1);
-% nbslice=sizcell(2);
-%
-% %main loop
-% icount=0;
-% for ifile=1:nbfield
-%     for j=1:nbslice
-%         icount=icount+1;
-%         barlength=0.188*icount/(nbfield*nbslice);
-%         set(handles.waitbar_civ2,'Position',[0.946 0.407-barlength 0.03 barlength])
-%         drawnow
-%         filename_ima_2=cell2mat(filecell_2(ifile,j));
-%         filename_ima_2([end-3:end])=[];%remove .png extension
-%         filename_ima_3=cell2mat(filecell_3(ifile,j));
-%         filename_ima_3([end-3:end])=[];%remove .png extension
-%         filename_cmx=cell2mat(filecell_nc2(ifile,j));%output netcdf file
-%         filename_cmx([end-1:end])=[ 'cm'];%name of cmx file
-%         filename_cmx=[filename_cmx 'x'];
-%         namelog=[filename_cmx([1:end-3]) 'log'];
-%         if size(time,1)>=num2(ifile) &  size(time,2)>=num_b(j)
-%             Dt=num2str(time(num2(ifile),num_b(j))-time(num1(ifile),num_a(j)));
-%             if isequal(Dt,'0')
-%                 Dt='1' ;%case of 'displacement' mode
-%             end
-%             T0=num2str((time(num2(ifile),num_b(j))+time(num1(ifile),num_a(j)))/2);
-%         else
-%             Dt='1';
-%             T0='0';
-%         end
-%         term_a=num2stra(num_a(j),nom_type_nc);
-%         term_b=num2stra(num_b(j),nom_type_nc);
-%         filename_nc1=cell2mat(filecell_nc1(ifile,j));
-%         filename_nc1([end-2:end])=[]; % remove '.nc'
-%         if test_grid && ~isempty(nbslice_grid)
-%             num1_grid=mod(num1(ifile)-1,nbslice_grid)+1;
-%             gridname=[filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
-%             if ~exist(gridname,'file')
-%                 msgbox_uvmat('ERROR',['missing grid file ' gridname])
-%                 return
-%             end
-%         end
-%         test_mask=get(handles.get_mask_civ2,'Value');
-%         if test_mask==0
-%             maskname='noFile use default';
-%             maskflag='n';
-%         else
-%             maskdispl=get(handles.mask_civ2,'String');
-%             maskbase=[filebase '_' maskdispl]; %
-%             nbslice_mask=str2num(maskdispl(1:end-4)); %
-%             num1_mask=mod(num1(ifile)-1,nbslice_mask)+1;
-%             maskname =name_generator(maskbase,num1_mask,1,'.png','_i');
-%             if ~exist(maskname,'file')
-%                 maskflag='y';
-%             else
-%                 maskname='noFile use default';
-%                 maskflag='n';
-%             end
-%         end
-%
-% 		textcmx={'##############   CMX file';...
-% 		['FirstImage ' filename_ima_2];...
-% 		['LastImage  ' filename_ima_3];...
-% 		'XX' ;...
-% 		['Mask ' maskflag];...
-% 		['MaskName ' maskname];...
-% 		['ImageSize ' npx ' ' npy];...
-% 		['CorrelationBoxesSize ' ibx ' ' iby];...
-% 		['SearchBoxeSize ' ibx ' ' iby];...
-% 		['RO ' rho];...
-% 		['GridSpacing ' dx ' ' dy];...
-% 		'XX 1.0';...
-% 		['Dt_TO ' Dt ' ' T0];...
-% 		['PixCmXY ' pxcmx ' ' pxcmy];...
-% 		'XX 1';...
-% 		['ShiftXY 0 0'];...
-% 		['Grid ' gridflag];...
-% 		['GridName ' gridname];...
-% 		'XX 85';...
-% 		'XX 1.0';...
-% 		'XX 1.0';...
-% 		'Hart 1';...
-% 		['DecimalShift ' decimal];...
-% 		['Deformation ' deformation];...
-% 		'CorrelationMin 0';...
-% 		'IntensityMin 0';...
-% 		'SeuilImage n';...
-% 		'SeuilImageValues 0 4096';...
-% 		['ImageToUse ' term_a ' ' term_b];... % VERIFIER ?
-% 		['ImageUsedBefore ' filename_nc1]};
-%         textout=char(textcmx);
-%         dlmwrite(filename_cmx,textout,'');
-%         s=-1;
-%         display(['!' civ2Bin ' -f ' filename_cmx ' > ' namelog ])
-%         eval(['!' civ2Bin ' -f ' filename_cmx ' > ' namelog ]);
-%
-% % 		if sge%dispatch computation on the cluster using interactive queue
-% %             [s,w] = unix(['qrsh -q fast.q ' civ2Bin ' -f ' filename_cmx ' > ' namelog ' 2>&1']);
-% %         end
-% %         if s~=0
-% %             eval(['!' civ2Bin ' -f ' filename_cmx ' > ' namelog]);
-% %             ['!' civ2Bin ' -f ' filename_cmx ' > ' namelog]
-% %         end
-%     end
-% end
-% % close(h)
 
 %------------------------------------------------------------------------
 % --- PATCH
@@ -4720,40 +4369,40 @@ set(handles.PAIR_frame,'Visible',state)
 % --- Read the parameters for civ1 on the interface
 function par=read_param_civ1(handles,file_ima)
 %------------------------------------------------------------------------
-ibx_val=str2num(get(handles.ibx,'String'));
+ibx_val=str2double(get(handles.ibx,'String'));
 par.ibx=num2str(ibx_val);
-iby_val=str2num(get(handles.iby,'String'));
+iby_val=str2double(get(handles.iby,'String'));
 par.iby=num2str(iby_val);
 isx=get(handles.isx,'String');
-if isempty(str2num(isx)), isx='41'; set(handles.isx,'String','41'), end; %default
-if str2num(isx)<ibx_val+8,isx=num2str(ibx_val+8); set(handles.isx,'String',num2str(ibx_val+8)); end
+if isnan(str2double(isx)), isx='41'; set(handles.isx,'String','41'), end; %default
+if str2double(isx)<ibx_val+8,isx=num2str(ibx_val+8); set(handles.isx,'String',num2str(ibx_val+8)); end
 isy=get(handles.isy,'String');
-if isempty(str2num(isy)), isy='41'; set(handles.isy,'String','41'), end;%default
-if str2num(isy)<iby_val+8,isy=num2str(iby_val+8); set(handles.isy,'String',num2str(iby_val+8)); end
+if isnan(str2double(isy)), isy='41'; set(handles.isy,'String','41'), end;%default
+if str2double(isy)<iby_val+8,isy=num2str(iby_val+8); set(handles.isy,'String',num2str(iby_val+8)); end
 par.isx=get(handles.isx,'String');
 par.isy=get(handles.isy,'String');
 par.shiftx=get(handles.shiftx,'String');
 par.shifty=get(handles.shifty,'String');
-if isempty(str2num(par.isx))
+if isnan(str2double(par.isx))
     par.isx='41';%default
     set(handles.isx,'String','41');
 end
-if isempty(str2num(par.isy))
+if isnan(str2double(par.isy))
     par.isy='41'; %default
     set(handles.isy,'String','41');
 end
-if isempty(str2num(par.shiftx))
+if isnan(str2double(par.shiftx))
     par.shiftx='0';%default
     set(handles.shiftx,'String','0');
 end
-if isempty(str2num(par.shifty))
+if isnan(str2double(par.shifty))
     par.shifty='0'; %default
     set(handles.shifty,'String','0');
 end
 par.rho=get(handles.rho,'String');
 par.dx=get(handles.dx_civ1,'String');
 par.dy=get(handles.dy_civ1,'String');
-if isequal(str2num(par.dx),[])
+if isnan(str2double(par.dx))
     if isempty(get(handles.grid_civ1,'String'));
         par.dx='0'; %just read by civ program, not used
     else
@@ -4761,7 +4410,7 @@ if isequal(str2num(par.dx),[])
         set(handles.dx_civ1,'String','20');
     end
 end
-if isequal(str2num(par.dy),[])
+if isnan(str2double(par.dy))
     if isempty(get(handles.grid_civ1,'String'));
         par.dy='0';%just read by civ program, not used
     else
@@ -4776,10 +4425,10 @@ A=imread(file_ima);%read the first image to get the size
 sizim=size(A);
 par.npx=num2str(sizim(2));
 par.npy=num2str(sizim(1));
-time=get(handles.RootName,'UserData'); %get the set of times
+%time=get(handles.RootName,'UserData'); %get the set of times
 par.gridname=get(handles.grid_civ1,'String');
 par.gridflag='y';
-if isequal(par.gridname,'')| isempty(par.gridname)
+if strcmp(par.gridname,'')|| isempty(par.gridname)
     par.gridname='nogrid';
     par.gridflag='n';
 end
@@ -4794,7 +4443,7 @@ par.decimal=int2str(get(handles.decimal,'Value'));
 par.deformation=int2str(get(handles.deformation,'Value'));
 par.dx=get(handles.dx_civ2,'String');
 par.dy=get(handles.dy_civ2,'String');
-if isequal(str2num(par.dx),[])
+if isnan(str2double(par.dx))
     if isempty(get(handles.grid_civ2,'String'));
         par.dx='0'; %just read by civ program, not used
     else
@@ -4802,7 +4451,7 @@ if isequal(str2num(par.dx),[])
         set(handles.dx_civ2,'String','20');
     end
 end
-if isequal(str2num(par.dy),[])
+if isnan(str2double(par.dy))
     if isempty(get(handles.grid_civ2,'String'));
         par.dy='0';%just read by civ program, not used
     else
@@ -4816,10 +4465,10 @@ A=imread(file_ima);%read the first image to get the size
 sizim=size(A);
 par.npx=num2str(sizim(2));
 par.npy=num2str(sizim(1));
-time=get(handles.RootName,'UserData'); %get the set of times
+%time=get(handles.RootName,'UserData'); %get the set of times
 par.gridname=get(handles.grid_civ2,'String');
 par.gridflag='y';
-if isequal(par.gridname,'')| isempty(par.gridname)
+if strcmp(par.gridname,'')|| isempty(par.gridname)
     par.gridname='nogrid';
     par.gridflag='n';
 end

@@ -180,7 +180,7 @@ if (testU && testU_1) || (~testU && ~testU_1)
            eval(['SubData.' VName '=vec_V-vec_V_1;'])
        else
            AName=Field.ListVarName{ivar_C};
-           size(Field.vort)
+          % size(Field.vort)
            eval(['SubData.' AName '=Field.' AName '-vec_A_1;'])
        end
    else  %structured coordiantes

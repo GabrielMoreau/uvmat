@@ -96,10 +96,11 @@ end
 test_civ1=isequal(VelTypeOut,'civ1')||isequal(VelTypeOut,'interp1')||isequal(VelTypeOut,'filter1');
 test_civ2=isequal(VelTypeOut,'civ2')||isequal(VelTypeOut,'interp2')||isequal(VelTypeOut,'filter2');
 if test_civ1
-    Field.Time=Field.absolut_time_T0;
+    Field.Time=double(Field.absolut_time_T0);
+    Field.dt=double(Field.dt);
 elseif test_civ2
-    Field.Time=Field.absolut_time_T0_2;
-    Field.dt=Field.dt2;
+    Field.Time=double(Field.absolut_time_T0_2);
+    Field.dt=double(Field.dt2);
 else
     Field.Txt='the input file is not civx';
     display(Field.Txt)
@@ -135,6 +136,8 @@ Field.ListGlobalAttribute=[List {'Time','CivStage','CoordUnit'}];
 
 % rescale to pixel coordiantes
 if isfield(Field,'pixcmx')
+Field.pixcmx=double(Field.pixcmx); 
+Field.pixcmy=double(Field.pixcmy);
 Field.U=Field.U*Field.pixcmx;
 Field.V=Field.V*Field.pixcmy;
 Field.X=Field.X*Field.pixcmx;

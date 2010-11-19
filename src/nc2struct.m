@@ -97,8 +97,8 @@ if ~isequal(hhh,'')
            valuestr = netcdf.getAtt(nc,netcdf.getConstant('NC_GLOBAL'),keystr);
            if ischar(valuestr) && length(valuestr)<200
                 iatt_g=iatt_g+1;
-                indstr1=regexp(keystr,'\\');%detect '\\'
-                indstr2=regexp(keystr,'\.');%detect '\.'
+                indstr1=regexp(keystr,'\\','once');%detect '\\'
+                indstr2=regexp(keystr,'\.','once');%detect '\.'
                 if isempty(indstr1) && isempty(indstr2)
                     eval(['Data.' keystr '=''' valuestr ''';'])
                     att_key{iatt_g}=keystr;
@@ -227,21 +227,12 @@ if ~isequal(hhh,'')
 
     %select the used dimensions
     if ~isempty(var_read) 
-%         if isfield(Data,'ListDimName') %&& isfield(Data,'DimValue')
-%         Data=rmfield(Data,'ListDimName');
-%         %Data=rmfield(Data,'DimValue');
-%         end
-%     else
-%         list_dim=1:ndims;
         dim_index=find(flag_used);
-%         list_dim=list_dim(dim_index);
         old2new=cumsum(flag_used); 
         ListDimName=ListDimName(dim_index); 
         dim_value=dim_value(dim_index);
     end
     for ivar=1:length(var_read)
-        %Data.VarDimIndex{ivar}=old2new(VarDimIndex{ivar});% ENLEVER Data.VarDimIndex ulterieurement
-        %Data.VarDimName{ivar}=Data.ListDimName(Data.VarDimIndex{ivar});
         Data.VarDimName{ivar}=ListDimName(old2new(VarDimIndex{ivar}));
     end
     Data.ListDimName=ListDimName;
@@ -256,10 +247,6 @@ if ~isequal(hhh,'')
                 VarName(indstr)=[];
             end
             eval(['Data.' VarName '=double(netcdf.getVar(nc,var_index(ivar)-1));'])%read the variable data
-            %eval(['siz=size(Data.' VarName ');'])
-           % if numel(siz)<=2
-            %eval(['Data.' VarName '=Data.' VarName ''';'])%read the variable data
-            %end
         end
     end
     %  -------- close fle-----------

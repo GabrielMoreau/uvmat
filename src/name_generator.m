@@ -50,7 +50,7 @@ if ~exist('nom_type','var')
     nom_type='';
 end
 if ~ischar(ext),ext='';end
-idetect=0;
+% idetect=0;
 if ~exist('num_i1','var') || isempty(num_i1) || isnan(num_i1)
     num_i1=1; %default
 end
@@ -81,26 +81,27 @@ else
     filename=filebase;%default
 end 
 if ~test_pairs%case of a single index i, and possibly j
-    numlength=numel(nom_type);
+%     numlength=numel(nom_type);
+    nom_type_mod=nom_type;
     num_j_str='';
     if strcmp(nom_type(1),'_')
         filename=[filename '_'];
-        nom_type(1)=[];
+        nom_type_mod(1)=[];
     end
-    if strcmp(nom_type(end),'a')
-        nom_type(end)=[];
+    if strcmp(nom_type_mod(end),'a')
+        nom_type_mod(end)=[];
         num_j_str=char(num_j1+96);% lower letter corresponding to the index
-    elseif strcmp(nom_type(end),'A')
+    elseif strcmp(nom_type_mod(end),'A')
         nom_type(end)=[];
         num_j_str=char(num_j1+64);% lower letter corresponding to the index
-    elseif isequal(numel(regexp(nom_type(2:end),'_')),1)%if a separator '_' exists in nom_type
+    elseif isequal(numel(regexp(nom_type_mod,'_')),1)%if a second separator '_' exists in nom_type
         num_j_str=['_' num2str(num_j1)];
-        nom_type(regexp(nom_type(2:end),'_'):end)=[];
+        nom_type_mod(regexp(nom_type_mod,'_'):end)=[];
     else
         num_j1_out=[];%no index j
     end
-    if ~isempty(str2num(nom_type))    
-        numtype=['%0' num2str(length(nom_type)) 'd'];%indicate the number of digits (0 before the number)
+    if ~isnan(str2double(nom_type_mod))    
+        numtype=['%0' num2str(length(nom_type_mod)) 'd'];%indicate the number of digits (0 before the number)
         filename=[filename num2str(num_i1,numtype) num_j_str ext];
         num_i2_out=num_i1_out;
         num_j2_out=num_j1_out;
@@ -108,54 +109,9 @@ if ~test_pairs%case of a single index i, and possibly j
 %           filebasesub=filebase;
         filename=[filename ext];
     end
-%     if  strcmp(nom_type,'_i');
-%         filename=[filebase '_' num2str(num_i1) ext];
-%         num_i2_out=num_i1;
-%         num_j1_out=[];
-%         num_j2_out=[];
-%     elseif length(nom_type)==5 && strcmp(nom_type(1:3),'_%0')&& strcmp(nom_type(5),'d');
-%         filename=[filebase '_' num2str(num_i1,nom_type(2:5)) ext];
-%         num_i2_out=num_i1;
-%         num_j2_out=num_j1;
-%     elseif  strcmp(nom_type,'_i_j')
-%         filename=[filebase '_' num2str(num_i1) '_' num2str(num_j1) ext];
-%         num_i2_out=num_i1;
-%         num_j2_out=num_j1;
-%     elseif  strcmp(nom_type,'#a')| strcmp(nom_type,'#A')
-%         filename=[filebase num2str(num_i1,'%03d') num2stra(num_j1,nom_type) ext];
-%         num_i2_out=num_i1;
-%         num_j2_out=num_j1;
-%     elseif  length(nom_type)>=5 & strcmp(nom_type(2:3),'%0') & strcmp(nom_type(5),'d')  %strcmp(nom_type,'_%04dA') %camera PCO Toulouse
-%         filename=[filebase nom_type(1) num2str(num_i1,nom_type(2:4)) num2stra(num_j1,nom_type) ext];
-%         num_i2_out=num_i1;
-%         num_j2_out=num_j1;
-%     elseif  strcmp(nom_type,'#')
-%         filename=[filebase num2str(num_i1) ext];
-%         num_i2_out=num_i1;
-%         num_j1_out=[];
-%         num_j2_out=[];
-%     elseif length(nom_type)>=4 & strcmp(nom_type(1:2),'%0') & strcmp(nom_type(end),'d')
-%         filename=[filebase num2str(num_i1,nom_type) ext]; %test number with a 0 before
-%         num_i2_out=num_i1;
-%         num_j1_out=[];
-%         num_j2_out=[];
-%     elseif length(nom_type)>=4 & strcmp(nom_type(1:2),'%0') & strcmp(nom_type(end-1:end),'dA')
-%         filename=[filebase num2str(num_i1,nom_type(1:end-1)) num2stra(num_j1,'#A') ext]; %test number with a 0 before
-%         num_i2_out=num_i1;
-%         num_j1_out=[];
-%         num_j2_out=[];
-%     end
+
 %case of derived file indexing (e.g. netcdf files)
 else
-     %inexistant pair if num_i2=0 or num_j2=0
-%     if strcmp(num_i2,0)
-%         filename=[filebasesub '*-*_' num2str(num_i1) ext];
-%         return
-%     end
-%     if strcmp(num_j2,0)
-%         filename=[filebasesub '_' num2str(num_i1) '_*-*' ext];
-%         return
-%     end
     % case of an imposed image pair (comp_input=1)
     if  (exist('comp_input','var') && isequal(comp_input,1))
             if strcmp(nom_type(1),'_')
@@ -204,12 +160,12 @@ else
                 num_j2_out=num_j1;
             elseif isequal(nom_type,'i1-i2_j1-j2')
                 if isequal(num2str(num_i1),num2str(num_i2))% case of displacements at the same time
-                    app1= [num2str(num_i1)];
+                    app1= num2str(num_i1);
                 else
                     app1= [num2str(num_i1) '-' num2str(num_i2)];
                 end
                 if isequal(num2str(num_j1),num2str(num_j2))% case of displacements at the same time
-                    app2= [num2str(num_j1)];
+                    app2= num2str(num_j1);
                 else
                     app2= [num2str(num_j1) '-' num2str(num_j2)];
                 end     
@@ -227,9 +183,9 @@ else
         [pathfile,name]=fileparts(filebase);
         direct=dir(pathfile);%directory containing filebase
         datedir=[];%default
-        idir=0;
+%         idir=0;
         indir=find(cell2mat({direct.isdir}));% find indices of subdirectories
-        direct=direct(indir([3:end]));% keep only the subdirectories,eliminating the two first terms '.' and '..'
+        direct=direct(indir(3:end));% keep only the subdirectories,eliminating the two first terms '.' and '..'
         lengthdir=length(direct);
         if lengthdir==0
             subdir='';% no subdirectory found
@@ -239,7 +195,7 @@ else
                 datedir(idir)=0;%default
                 char_code=double(date_str);% code of the date characters
                 special_char=(char_code>127); %non standard Ascii character (e.g. date in french)
-                if isempty(find(special_char))% standard Ascii character 
+                if isempty(find(special_char,1))% standard Ascii character 
                     datedir(idir)=datenum(date_str);
                 end                            
 %                 datedir(idir)=datenum(direct(idir).date); %absolute date of last directory modification
@@ -249,23 +205,27 @@ else
         end
         filebasesub=fullfile(pathfile,subdir,name);
         %if the image pair is imposed
-        if (exist('comp_input','var') & isequal(comp_input,1)) 
-            if isequal(nom_type,'netc_old')|isequal(nom_type,'#_ab')
+        if (exist('comp_input','var') && isequal(comp_input,1)) 
+            if isequal(nom_type,'#_ab')
                 filename=[filebasesub num2str(num_i1,'%03d') '_' num2stra(num_j1,nom_type) num2stra(num_j2,nom_type) ext];
-            elseif isequal(nom_type,'netc_2D')|isequal(nom_type,'_i1_j1-j2')
+            elseif isequal(nom_type,'_i1_j1-j2')
                 filename=[filebasesub '_' num2str(num_i1) '_' num2str(num_j1) '-' num2str(num_i2) ext];
-            elseif isequal(nom_type,'netc_3D')|isequal(nom_type,'_i1-i2_j')
+            elseif isequal(nom_type,'_i1-i2_j')
                 filename=[filebasesub '_' num2str(num_i1) '-' num2str(num_i2) '_' num2str(num_j1) ext];
-            elseif isequal(nom_type,'netc_series')|isequal(nom_type,'_i1-i2')
+            elseif isequal(nom_type,'_i1-i2')
                 filename=[filebasesub '_' num2str(num_i1) '-' num2str(num_i2) ext];
             end
-            idetect=(exist(filename,'file')==2);
+%             idetect=(exist(filename,'file')==2);
         else
-            [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out,idetect]=search_pair(filebasesub,num_i1,num_j1,num_i2,nom_type);             
+            [filename,num_i1_out,num_j1_out,num_i2_out,num_j2_out]=search_pair(filebasesub,num_i1,num_j1,num_i2,nom_type);             
         end
     end
 end
-if ~isequal(subdir,'?'), subdir_out=subdir; else, subdir_out='';end;
+if ~strcmp(subdir,'?')
+    subdir_out=subdir;
+else
+    subdir_out='';
+end
 
 %------------------------------------------------------------------------
 % --- search the appropriate image pair (netcdf file) corresponding to a given image number
@@ -277,13 +237,13 @@ function [filename,num_i1,num_j1,num_i2,num_j2,idetect]=search_pair(filebasesub,
 %num_i2), with num_i1 as the first  index, and chooses the most recent file.
 
 filename=[];num_j2=[];idetect=0;%default values
-if isequal(nom_type,'netc_old')|isequal(nom_type,'#_ab')
+if isequal(nom_type,'#_ab')
     dirpair=dir([filebasesub num2str(num_i1,'%03d') '_*.nc']);
-elseif isequal(nom_type,'netc_2D')|isequal(nom_type,'_i_j1-j2')
+elseif isequal(nom_type,'_i_j1-j2')
     dirpair=dir([filebasesub '_' num2str(num_i1) '_*-*.nc']);
-elseif isequal(nom_type,'netc_3D')|isequal(nom_type,'_i1-i2_j')
+elseif isequal(nom_type,'_i1-i2_j')
     dirpair=dir([filebasesub '_' num2str(num_i1) '-*_' num2str(num_j1) '.nc']);
-elseif isequal(nom_type,'netc_series')|isequal(nom_type,'_i1-i2')
+elseif isequal(nom_type,'_i1-i2')
     dirpair=dir([filebasesub '_' num2str(num_i1) '-*.nc']);
     if isempty(dirpair)
         dirpair=dir([filebasesub '_*-' num2str(num_i2) '.nc']);
@@ -292,23 +252,21 @@ end
 nbpair=length(dirpair);
 if nbpair >= 1 %choose the most recent file if several are found
     idetect=1; %detected pair
+    datepair=zeros(1,nbpair);%default
     for ipair=1:nbpair
          date_str=dirpair(ipair).date;%string of the date of last modification
-         datepair(ipair)=0;%default
          char_code=double(date_str);% code of the date characters
          special_char=(char_code>127); %non standard Ascii character (e.g. date in french)
          if isempty(find(special_char))% standard Ascii character 
              datepair(ipair)=datenum(date_str);
          end    
-      %  datepair(ipair)=datenum(dirpair(ipair).date);
     end
     [choice,indpair]=max(datepair);
-%     [filebase,field_count,str2,str_a,str_b,ext,nom_type]=name2display(dirpair(indpair).name);
-    [pathname,file,field_count,str2,str_a,str_b,ext,nom_type]=name2display(dirpair(indpair).name);
-    num_i1=str2num(field_count);
-    num_i2=str2num(str2);
-    num_j1=stra2num(str_a);
-    num_j2=stra2num(str_b);
+    [pathname,file,field_count,str2,str_a,str_b]=name2display(dirpair(indpair).name);
+    num_i1=str2double(field_count);
+    num_i2=str2double(str2);
+    num_j1=stra2double(str_a);
+    num_j2=stra2double(str_b);
      pathname=fileparts(filebasesub);% CORRIGE LE 6 JUIN (ETAIT DESACTIVE)
     filename=fullfile(pathname,dirpair(indpair).name);
 end

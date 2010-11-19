@@ -112,7 +112,7 @@ function varargout = dataview_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-delete(handles.figure)
+%delete(handles.figure)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in browser.

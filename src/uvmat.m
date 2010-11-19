@@ -1754,16 +1754,12 @@ else
 end   
 
 comp_input=get(handles.fix_pair,'Value');
-% if isequal(NomType,'_i1-i2')||isequal(NomType,'_i1-i2_j')
-%     comp_input=1; %impose a fixed pair 
-%     set(handles.fix_pair,'Value',1)
-% end
 
 %case of scanning along the first direction (rootfile numbers)
 if get(handles.scan_i,'Value')==1% case of scanning along index i   
      num1=num1+increment;
      num2=num2+increment;
-     [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
+     [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir)
      if sub_value% set the second field name and indices
         num1_1=num1_1+increment;
         num2_1=num2_1+increment;
@@ -1772,19 +1768,12 @@ if get(handles.scan_i,'Value')==1% case of scanning along index i
 else % case of scanning along index j (burst numbers)
     num_a=num_a+increment;
     num_b=num_b+increment;
+    [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
     if sub_value 
         num_a_1=num_a_1+increment;
         num_b_1=num_b_1+increment;
         filename_1=name_generator(filebase_1,num1_1,num_a_1,FileExt_1,NomType_1,1,num2_1,num_b_1,SubDir_1);
-%     else % redefine the j index if it exceeds its upper bound (only in the absence of a second field)
-%         lastfield_cell=get(handles.last_j,'String'); % get the last field number
-%         lastfield=str2double(lastfield_cell{1});
-%         if num_a>lastfield && ~isnan(lastfield) 
-%             num_a=mod(num_a,lastfield);
-%             num_b=mod(num_b,lastfield)
-%         end
-    end
-    [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
+    end    
 end
 
 % refresh plots
