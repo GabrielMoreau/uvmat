@@ -114,6 +114,12 @@ nom_type=Series.NomType;
 curdir=pwd;
 cd(path);
 mkdir([subdir_ima '_b']);
+[xx,msg2] = fileattrib(subdir_ima,'+w','g'); %yield writing access (+w) to user group (g)
+if ~strcmp(msg2,'')
+    msgbox_uvmat('ERROR',['pb of permission for ' subdir_ima ': ' msg2])%error message for directory creation
+    cd(curdir)
+    return
+end
 cd(curdir);
 filebase_b=fullfile(path,[subdir_ima '_b'],namebase);
 

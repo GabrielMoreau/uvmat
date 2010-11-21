@@ -233,11 +233,17 @@ if ~exist(res_subdir,'dir')
     cd(fulldir);
     succeed=mkdir(subdir);
     if succeed
-    cd(dircur);
+        [xx,msg2] = fileattrib(res_subdir,'+w','g'); %yield writing access (+w) to user group (g)
+        if ~strcmp(msg2,'')
+            msgbox_uvmat('ERROR',['pb of permission for ' res_subdir ': ' msg2])%error message for directory creation
+            cd(dircur)
+            return
+        end
+        cd(dircur);
     else
-    msgbox_uvmat('ERROR',['Cannot create directory ' fulldir])
-    return
-    end        
+        msgbox_uvmat('ERROR',['Cannot create directory ' fulldir])
+        return
+    end
 end
 filebasesub=fullfile(res_subdir,Series.RootFile{1});
 filebase_merge=fullfile(res_subdir,'merged');%root name for the merged files

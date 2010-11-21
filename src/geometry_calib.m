@@ -53,7 +53,7 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_OutputFcn',  @geometry_calib_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
-if nargin && ischar(varargin{1})
+if nargin && ischar(varargin{1}) && ~isempty(regexp(varargin{1},'_Callback','once'))
     gui_State.gui_Callback = str2func(varargin{1});
 end
 
@@ -94,16 +94,19 @@ set(handles.calib_type,'String',{'rescale';'linear';'3D_linear';'3D_quadr';'3D_e
 inputxml='';
 if exist('inputfile','var')&& ~isempty(inputfile)
     struct.XmlInputFile=inputfile;
-    set(hObject,'UserData',struct)
-    [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(inputfile);
+    [Pathsub,RootFile,field_count,str2,str_a,str_b,ext]=name2display(inputfile);
     if ~strcmp(ext,'.xml')
         inputfile=[fullfile(Pathsub,RootFile) '.xml'];%xml file corresponding to the input file
     end
 end
 set(handles.ListCoord,'String',{'......'})
 if exist(inputfile,'file')
-    loadfile(handles,inputfile)% load the point coordiantes existing in the xml file
+    Heading=loadfile(handles,inputfile);% load the point coordiantes existing in the xml file
 end
+if isfield(Heading,'Campaign')&& ischar(Heading.Campaign)
+    struct.Campaign=Heading.Campaign;
+end
+set(hObject,'UserData',struct)
 set(handles.ListCoord,'KeyPressFcn',{@key_press_fcn,handles})%set keyboard action function
 
 
@@ -212,13 +215,15 @@ end
 answer=msgbox_uvmat('INPUT_Y-N',{[outputfile ' updated with calibration data'];...
     ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
     ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']});
+
+%% record the calibration parameters and display the current image of uvmat in the new phys coordinates
 if strcmp(answer,'Yes')
     if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
         answer_1=msgbox_uvmat('INPUT_TXT',' Z= ',num2str(Z_plane)); 
         if strcmp(answer_1,'Cancel')
             Z_plane=0; %default
         else
-            Z_plane=str2num(answer_1);
+            Z_plane=str2double(answer_1);
         end
         GeometryCalib.NbSlice=1;
         GeometryCalib.SliceCoord=[0 0 Z_plane];
@@ -227,6 +232,7 @@ if strcmp(answer,'Yes')
     if ~strcmp(errormsg,'')
         msgbox_uvmat('ERROR',errormsg);
     end
+    
     %display image with new calibration in the currently opened uvmat interface
     hhh=findobj(hhuvmat.axes3,'Tag','calib_marker');% delete calib points and markers
     if ~isempty(hhh)
@@ -250,14 +256,13 @@ end
 
 %------------------------------------------------------------------
 % --- Executes on button press in calibrate_lin.
+
 function REPLICATE_Callback(hObject, eventdata, handles)
-% %%%%%%Todo: correct on the model of APPLY_Callback%%%%%%%%%%
 %------------------------------------------------------------------------
-calib_cell=get(handles.calib_type,'String');
-val=get(handles.calib_type,'Value');
-Coord_cell=get(handles.ListCoord,'String');
-Object=read_geometry_calib(Coord_cell);
-GeometryCalib=feval(['calib_' calib_cell{val}],Object.Coord,handles);
+
+%% Apply calibration
+calib_cell=get(handles.calib_type,'String'); %#ok<NASGU>
+val=get(handles.calib_type,'Value'); %#ok<NASGU>
 
 %read the current calibration points
 Coord_cell=get(handles.ListCoord,'String');
@@ -287,14 +292,14 @@ if ~isempty(Coord)
     GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
     [GeometryCalib.ErrorMax(2),index(2)]=max(abs(Ypoints-y_ima));
     [EM,ind_dim]=max(GeometryCalib.ErrorMax);
-    index=index(ind_dim);
+%     index=index(ind_dim);
     %set the Z position of the reference plane used for calibration
     Z_plane=[];
     if isequal(max(Z),min(Z))
         Z_plane=Z(1);
     end
     answer_1=msgbox_uvmat('INPUT_TXT',' Z= ',num2str(Z_plane)); 
-    Z_plane=str2num(answer_1);
+    Z_plane=str2double(answer_1);
     GeometryCalib.NbSlice=1;
     GeometryCalib.SliceCoord=[0 0 Z_plane];
     %set the coordinate unit
@@ -303,11 +308,9 @@ if ~isempty(Coord)
     GeometryCalib.CoordUnit=unit;
     %record the points
     GeometryCalib.SourceCalib.PointCoord=Coord;
-%     errormsg=update_imadoc(GeometryCalib,outputfile);% introduce the calibration data in the xml file
-%     if ~strcmp(errormsg,'')
-%         msgbox_uvmat('ERROR',errormsg);
-%     end
 end
+
+%% display calibration paprameters
 display_intrinsic(GeometryCalib,handles)%display calibration intrinsic parameters
 
 % Display extrinsinc parameters (rotation and translation of camera with  respect to the phys coordiantes)
@@ -318,74 +321,72 @@ set(handles.Phi,'String',num2str(GeometryCalib.omc(1),4))
 set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
 set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
 
-% indicate the plane of the calibration grid if defined
-% huvmat=findobj(allchild(0),'Name','uvmat');
-% hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
-% RootPath='';
-% RootFile='';
-% if ~isempty(hhuvmat.RootPath)& ~isempty(hhuvmat.RootFile)
-%     testhandle=1;
-%     RootPath=get(hhuvmat.RootPath,'String');
-%     RootFile=get(hhuvmat.RootFile,'String');
-%     filebase=fullfile(RootPath,RootFile);
-%     outputfile=[filebase '.xml'];
-% else
-%     question={'save the calibration data and point coordinates in'};
-%     def={fullfile(RootPath,['ObjectCalib.xml'])};
-%     options.Resize='on';
-%     answer=inputdlg(question,'save average in a new file',1,def,options);
-%     outputfile=answer{1};
-% end
-
-%open and read the dataview GUI
+%% open the GUI dataview 
 h_dataview=findobj(allchild(0),'name','dataview');
 if ~isempty(h_dataview)
     delete(h_dataview)
 end
 CalibData=get(handles.geometry_calib,'UserData');%read the calibration image source on the interface userdata
-
+InputFile='';
 if isfield(CalibData,'XmlInputFile')
-    XmlInput=fileparts(CalibData.XmlInputFile);
-    [XmlInput,filename,ext]=fileparts(XmlInput);
+    InputDir=fileparts(CalibData.XmlInputFile);
+    [InputDir,DirName]=fileparts(InputDir);
 end
 SubCampaignTest='n'; %default
-testinput=0;
-if isfield(CalibData,'Heading')
-    Heading=CalibData.Heading;
-    if isfield(Heading,'Record') && isequal([filename ext],Heading.Record)
-        [XmlInput,filename,ext]=fileparts(XmlInput);
-    end
-    if isfield(Heading,'Device') && isequal([filename ext],Heading.Device)
-        [XmlInput,filename,ext]=fileparts(XmlInput);
-        Device=Heading.Device;
-    end
-    if isfield(Heading,'Experiment') && isequal([filename ext],Heading.Experiment)
-        [PP,filename,ext]=fileparts(XmlInput);
-    end
-    testinput=0;
-    if isfield(Heading,'SubCampaign') && isequal([filename ext],Heading.SubCampaign)
-        SubCampaignTest='y';
-        testinput=1;
-    elseif isfield(Heading,'Campaign') && isequal([filename ext],Heading.Campaign)
-        testinput=1;
-    end 
+testup=0;
+if isfield(CalibData,'SubCampaign')
+    SubCampaignTest='y';
+    dir_ref=CalibData.SubCampaign;
+    testup=1;
+elseif isfield(CalibData,'Campaign')
+    dir_ref=CalibData.Campaign;
+    testup=1;
 end
-if ~testinput
-    filename='PROJETS';%default
-    if isfield(CalibData,'XmlInputFile')
-         [pp,filename]=fileparts(CalibData.XmlInputFile);
+while testup
+    [InputDir,DirName]=fileparts(InputDir);
+    if strcmp(DirName,dir_ref)
+        break
     end
-    while ~isequal(filename,'PROJETS') && numel(filename)>1
-        filename_1=filename;
-        pp_1=pp;
-        [pp,filename]=fileparts(pp);
-    end
-    XmlInput=fullfile(pp_1,filename_1);
-    testinput=1;
 end
-if testinput
-    outcome=dataview(XmlInput,SubCampaignTest,GeometryCalib);
+InputDir=fullfile(InputDir,DirName);
+answer=msgbox_uvmat('INPUT_TXT','Campaign ?',InputDir); 
+if strcmp(answer,'Cancel')
+    return
 end
+
+dataview(answer,SubCampaignTest,GeometryCalib);
+        
+%     if isfield(Heading,'Device') && isequal([filename ext],Heading.Device)
+%         [XmlInput,filename,ext]=fileparts(XmlInput);
+%         Device=Heading.Device;
+%     end
+%     if isfield(Heading,'Experiment') && isequal([filename ext],Heading.Experiment)
+%         [PP,filename,ext]=fileparts(XmlInput);
+%     end
+%     testinput=0;
+%     if isfield(Heading,'SubCampaign') && isequal([filename ext],Heading.SubCampaign)
+%         SubCampaignTest='y';
+%         testinput=1;
+%     elseif isfield(Heading,'Campaign') && isequal([filename ext],Heading.Campaign)
+%         testinput=1;
+% %     end 
+% end
+% if ~testinput
+%     filename='PROJETS';%default
+%     if isfield(CalibData,'XmlInputFile')
+%          [pp,filename]=fileparts(CalibData.XmlInputFile);
+%     end
+%     while ~isequal(filename,'PROJETS') && numel(filename)>1
+%         filename_1=filename;
+%         pp_1=pp;
+%         [pp,filename]=fileparts(pp);
+%     end
+%     XmlInput=fullfile(pp_1,filename_1);
+%     testinput=1;
+% end
+% if testinput
+%     outcome=dataview(XmlInput,SubCampaignTest,GeometryCalib);
+% end
 
 %------------------------------------------------------------------------
 % determine the parameters for a calibration by an affine function (rescaling and offset, no rotation)
@@ -433,7 +434,7 @@ R(1,:)=R(1,:)/GeometryCalib.fx_fy(1);
 R(2,:)=R(2,:)/GeometryCalib.fx_fy(2);
 R=[R;[0 0]];
 GeometryCalib.R=[R [0;0;1]];
-GeometryCalib.omc=(180/pi)*[acos(GeometryCalib.R(1,1)) 0 0]
+GeometryCalib.omc=(180/pi)*[acos(GeometryCalib.R(1,1)) 0 0];
 %------------------------------------------------------------------------
 % determine the tsai parameters for a view normal to the grid plane
 % NOT USED
@@ -699,7 +700,7 @@ GeometryCalib.omc=(180/pi)*omc';
 
 
 %--------------------------------------------------------------------------
-function GeometryCalib=calib_tsai(Coord,handles)% old version using gauthier's bianry ccal_fo
+function GeometryCalib=calib_tsai(Coord,handles)% OBSOLETE: old version using gauthier's bianry ccal_fo
 % NOT USED
 %------------------------------------------------------------------------
 %TSAI
@@ -810,8 +811,8 @@ GeometryCalib.CoordUnit=unit;
 GeometryCalib.SourceCalib.PointCoord=Object.Coord;
 huvmat=findobj(allchild(0),'Name','uvmat');
 hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
-RootPath='';
-RootFile='';
+% RootPath='';
+% RootFile='';
 if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
     testhandle=1;
     RootPath=get(hhuvmat.RootPath,'String');
@@ -829,7 +830,7 @@ if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
     if isequal(listfile,{''})
         listfile={outputfile};
     else
-        listfile=[listfile;{outputfile}]%update the list of coord files
+        listfile=[listfile;{outputfile}];%update the list of coord files
     end
     set(handles.coord_files,'string',listfile);
 end
@@ -900,7 +901,7 @@ if numel(val)>1
     return %no action if several lines have been selected
 end
 coord_str=Coord_cell{val};
-k=findstr('|',coord_str);
+k=findstr(' | ',coord_str);
 if isempty(k)%last line '.....' selected
     if ~isempty(hhh)
         delete(hhh)%delete the circle marker
@@ -999,9 +1000,9 @@ plot_field(Data)
 function MenuPlot_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
-UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
+%UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
 hhuvmat=guidata(huvmat); %handles of GUI elements in uvmat
-hplot=findobj(huvmat,'Tag','axes3');%main plotting axis of uvmat
+%hplot=findobj(huvmat,'Tag','axes3');%main plotting axis of uvmat
 h_menu_coord=findobj(huvmat,'Tag','transform_fct');
 menu=get(h_menu_coord,'String');
 choice=get(h_menu_coord,'Value');
@@ -1078,7 +1079,7 @@ for i=1:size(data.Coord,1)
 end
 
 %size(data.Coord,1)
-Tabchar=cell2tab(Coord,'    |    ');
+Tabchar=cell2tab(Coord,' | ');
 Tabchar=[Tabchar ;{'......'}];
 set(handles.ListCoord,'String',Tabchar)
 
@@ -1235,7 +1236,7 @@ for ipoint=1:nbpoints
      Coord{ipoint,4}=num2str(Xpx(ipoint),4);%display coordiantes with 4 digits
      Coord{ipoint,5}=num2str(Ypx(ipoint),4);%display coordiantes with 4 digits
 end
-Tabchar=cell2tab(Coord(end:-1:1,:),'    |    ');
+Tabchar=cell2tab(Coord(end:-1:1,:),' | ');
 Tabchar=[Tabchar ;{'......'}];
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
@@ -1265,7 +1266,7 @@ for i=1:size(data.Coord,1)
           Coord{i,j}=num2str(data.Coord(i,j),4);%phys x,y,z
    end
 end
-Tabchar=cell2tab(Coord,'    |    ');
+Tabchar=cell2tab(Coord,' | ');
 Tabchar=[Tabchar; {'.....'}];
 %set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
@@ -1309,7 +1310,7 @@ for i=1:size(data.Coord,1)
           Coord{i,j}=num2str(data.Coord(i,j),4);%phys x,y,z
    end
 end
-Tabchar=cell2tab(Coord,'    |    ');
+Tabchar=cell2tab(Coord,'| ');
 Tabchar=[Tabchar;{'......'}];
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
@@ -1459,7 +1460,7 @@ for ilist=1:numel(calib)
     CoordCell{ilist}=num2str(calib(ilist));
 end
 CoordCell=reshape(CoordCell,[],5);
-Tabchar=cell2tab(CoordCell,'    |    ');%transform cells into table ready for display
+Tabchar=cell2tab(CoordCell,' | ');%transform cells into table ready for display
 Tabchar=[Tabchar;{'......'}];
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
@@ -1540,9 +1541,18 @@ UserData.XmlInputFile=fileinput;
 set(handles.geometry_calib,'UserData',UserData)%record current file foer further use of browser
 
 % -----------------------------------------------------------------------
-function loadfile(handles,fileinput)
+function Heading=loadfile(handles,fileinput)
 %------------------------------------------------------------------------
+Heading=[];%default
 [s,errormsg]=imadoc2struct(fileinput,'GeometryCalib');
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',['Error for reading ' fileinput ': '  errormsg])
+    return
+end
+if ~isempty(s.Heading)
+    Heading=s.Heading;
+end
+    
 GeometryCalib=s.GeometryCalib;
 fx=1;fy=1;Cx=0;Cy=0;kc=0; %default
 %     Tabchar={};
@@ -1584,7 +1594,7 @@ if ~isempty(GeometryCalib)
         CoordCell{ilist}=num2str(calib(ilist));
     end
     CoordCell=reshape(CoordCell,[],5);
-    Tabchar=cell2tab(CoordCell,'    |    ');%transform cells into table ready for display
+    Tabchar=cell2tab(CoordCell,' | ');%transform cells into table ready for display
     MenuPlot_Callback(handles.geometry_calib, [], handles)
 end
 set(handles.calib_type,'Value',val_cal)

@@ -18,7 +18,7 @@ PlotHandles.AutoScal=handles.AutoScal;
 PlotHandles.BW=handles.BW;
 PlotHandles.Contours=handles.Contours;
 PlotHandles.IncrA=handles.IncrA;
-PlotHandles.SCALAR_title=handles.SCALAR_title;
+%PlotHandles.SCALAR_title=handles.SCALAR_title;
 PlotHandles.min_title=handles.min_title;
 PlotHandles.max_title=handles.max_title;
 PlotHandles.frame_scal=handles.frame_scal;
@@ -29,7 +29,7 @@ PlotHandles.npy_title=handles.npy_title;
 
 %For vector field representation
 PlotHandles.frame_vect=handles.frame_vect;
-PlotHandles.VECT_title=handles.VECT_title;
+%PlotHandles.VECT_title=handles.VECT_title;
 PlotHandles.VecScale=handles.VecScale;
 PlotHandles.AutoVec=handles.AutoVec;
 PlotHandles.HideFalse=handles.HideFalse;

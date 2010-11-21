@@ -180,7 +180,7 @@ gui_State = struct('gui_Name',          mfilename, ...
                    'gui_OutputFcn',     @uvmat_OutputFcn, ...
                    'gui_LayoutFcn',     [], ...
                    'gui_Callback',      []);
-if nargin && ischar(varargin{1})
+if nargin && ischar(varargin{1})&& ~isempty(regexp(varargin{1},'_Callback','once'))
     gui_State.gui_Callback = str2func(varargin{1});
 end
 
@@ -1150,7 +1150,7 @@ set(handles.FileExt_1,'String',FileExt_1);
 if isequal(ext_test,'.image')
    set(handles.Fields_1,'String',{'';'image';'get_field...';'velocity';'vort';'div';'more...'})
    set(handles.Fields_1,'Value',2) % set menu to 'image'
-elseif isequal(FileExt_1,'.nc')|isequal(FileExt_1,'.cdf')
+elseif strcmp(FileExt_1,'.nc')||strcmp(FileExt_1,'.cdf')
    Data=nc2struct(fileinput_1,[]);
    if isfield(Data,'absolut_time_T0')
        set(handles.Fields_1,'String',{'';'image';'get_field...';'velocity';'vort';'div';'more...'})
@@ -1620,9 +1620,9 @@ end
 function MenuExportFigure_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 huvmat=get(handles.MenuExport,'parent');
-UvData=get(huvmat,'UserData');
+%UvData=get(huvmat,'UserData');
 hfig=figure;
-newaxes=copyobj(handles.axes3,hfig);
+copyobj(handles.axes3,hfig);
 map=colormap(handles.axes3);
 colormap(map);%transmit the current colormap to the zoom fig
 colorbar
@@ -1640,9 +1640,17 @@ function runplus_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 set(handles.runplus,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-increment=str2num(get(handles.increment_scan,'String')); %get the field increment d
-runpm(hObject,eventdata,handles,increment)
-set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button in yellow
+%TODO: introduce the option: increment ='*' to move to the next available view
+increment=str2double(get(handles.increment_scan,'String')); %get the field increment d
+if isnan(increment)
+    set(handles.increment_scan,'String','1')%default value
+    increment=1;
+end
+errormsg=runpm(hObject,eventdata,handles,increment);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg);
+end
+set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button back to red
 
 %-------------------------------------------------------------------
 % --- Executes on button press in runmin: make one step backward and call
@@ -1652,9 +1660,16 @@ function runmin_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 set(handles.runmin,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-increment=-str2num(get(handles.increment_scan,'String')); %get the field increment d
-runpm(hObject,eventdata,handles,increment)
-set(handles.runmin,'BackgroundColor',[1 0 0])%paint the command button in yellow
+increment=-str2double(get(handles.increment_scan,'String')); %get the field increment d
+if isnan(increment)
+    set(handles.increment_scan,'String','1')%default value
+    increment=1;
+end
+errormsg=runpm(hObject,eventdata,handles,increment);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg);
+end
+set(handles.runmin,'BackgroundColor',[1 0 0])%paint the command button back to red
 
 %-------------------------------------------------------------------
 % -- Executes on button press in Movie: make a series of +> steps
@@ -1662,17 +1677,21 @@ function Movie_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------
 set(handles.Movie,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-increment=str2num(get(handles.increment_scan,'String')); %get the field increment d
+increment=str2double(get(handles.increment_scan,'String')); %get the field increment d
+if isnan(increment)
+    set(handles.increment_scan,'String','1')%default value
+    increment=1;
+end
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
 set(handles.Movie,'BusyAction','queue')
-testavi=0;
 UvData=get(handles.uvmat,'UserData');
 
 while get(handles.speed,'Value')~=0 && isequal(get(handles.Movie,'BusyAction'),'queue') % enable STOP command
         errormsg=runpm(hObject,eventdata,handles,increment);
         if ~isempty(errormsg)
+            set(handles.Movie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
             return
         end
         pause(1.02-get(handles.speed,'Value'))% wait for next image
@@ -1689,17 +1708,21 @@ function MovieBackward_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------
 set(handles.MovieBackward,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-increment=-str2num(get(handles.increment_scan,'String')); %get the field increment d
+increment=-str2double(get(handles.increment_scan,'String')); %get the field increment d
+if isnan(increment)
+    set(handles.increment_scan,'String','1')%default value
+    increment=1;
+end
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
 set(handles.MovieBackward,'BusyAction','queue')
-testavi=0;
 UvData=get(handles.uvmat,'UserData');
 
-while get(handles.speed,'Value')~=0 & isequal(get(handles.MovieBackward,'BusyAction'),'queue') % enable STOP command
+while get(handles.speed,'Value')~=0 && isequal(get(handles.MovieBackward,'BusyAction'),'queue') % enable STOP command
         errormsg=runpm(hObject,eventdata,handles,increment);
         if ~isempty(errormsg)
+            set(handles.MovieBackward,'BackgroundColor',[1 0 0])%paint the command buttonback to red
             return
         end
         pause(1.02-get(handles.speed,'Value'))% wait for next image
@@ -1759,7 +1782,7 @@ comp_input=get(handles.fix_pair,'Value');
 if get(handles.scan_i,'Value')==1% case of scanning along index i   
      num1=num1+increment;
      num2=num2+increment;
-     [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir)
+     [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
      if sub_value% set the second field name and indices
         num1_1=num1_1+increment;
         num2_1=num2_1+increment;
@@ -1778,7 +1801,6 @@ end
 
 % refresh plots
 errormsg=refresh_field(handles,filename,filename_1,num1,num2,num_a,num_b);
-
 if isempty(errormsg)  %update the index counters
     set(handles.i1,'String',num2stra(num1,NomType,1)); 
     if isequal(num2,num1)
@@ -1802,10 +1824,7 @@ if isempty(errormsg)  %update the index counters
         set(handles.movie_pair,'Value',1)
         movie_pair_Callback(hObject, eventdata, handles); %reactivate moviepair if it was activated
     end
-else
-     msgbox_uvmat('ERROR',errormsg);
 end
-
 
 
 %-------------------------------------------------------
@@ -1973,6 +1992,7 @@ if ~isempty(errormsg)
       msgbox_uvmat('ERROR',errormsg);
 end    
 set(handles.run0,'BackgroundColor',[1 0 0])
+
 %------------------------------------------------------------------------
 % --- read the input files and refresh all the plots, including projection.
 % OUTPUT: 
@@ -1982,13 +2002,11 @@ set(handles.run0,'BackgroundColor',[1 0 0])
 % filename_1: second input file (=[] in the asbsenc of secodn input file) 
 % num_i1,num_i2,num_j1,num_j2; frame indices
 % Field: structure describing an optional input field (then replace the input file)
-
 function errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,Field)
 %------------------------------------------------------------------------
 
 %initialisation
-
-errormsg=[]; % default error message
+% errormsg=[]; % default error message
 abstime=[];
 abstime_1=[];
 dt=[];
@@ -2011,7 +2029,7 @@ if ishandle(handles.UVMAT_title) %remove title panel on uvmat
     delete(handles.UVMAT_title)
 end
 
-% determine the main input file information for action
+%% determine the main input file information for action
 FileType=[];%default
 if ~isempty(filename)
     if ~exist(filename,'file')
@@ -2022,7 +2040,7 @@ if ~isempty(filename)
     NomType=get(handles.FileIndex,'UserData');
     %update the z position index
     nbslice_str=get(handles.nb_slice,'String');
-    z_index=1;%default
+   % z_index=1;%default
     if isequal(nbslice_str,'volume')
         z_index=num_j1;
         set(handles.z_index,'String',num2str(z_index))
@@ -2073,12 +2091,11 @@ if isequal(FileType,'netcdf')
        VelType=setfield(handles);
     end
 end
-
-% choose a second field if Subfield option is 'on'
+%% choose a second field if Subfield option is 'on'
 FieldName_1=[];
 scal_color=[];
 VelType_1=setfield_1(handles);
-sub_value=get(handles.SubField,'Value');
+% sub_value=get(handles.SubField,'Value');
 FileType_1='none';%default
 if ~isempty(filename_1)
     % test for a constant second field (comparison with a fixed field)
@@ -2136,7 +2153,7 @@ if ~isempty(filename_1)
     end
 end
 
-%read the input field(s)
+%% read the input field(s)
 %read images
 if ~isempty(filename) && isequal(FieldName,'image')
      switch FileType
@@ -2240,16 +2257,16 @@ if (~isempty(filename)&& isequal(FileType,'netcdf')) || (~isempty(filename_1)&& 
             if isempty(hget_field)
                 hget_field= get_field(filename);%open the get_field GUI   
                 set(hget_field,'name','uvmat_field')
-            elseif UvData.NewSeries
+            elseif UvData.NewSeries% refresh the fet_field GUI for a new series
                 delete(hget_field)
                 hget_field= get_field(filename);%open the get_field GUI 
-                set(hget_field,'name','uvmat_field')
+                set(hget_field,'name','uvmat_field')%rename  get_field GUI for the 'slave' mode
             end
             hhget_field=guidata(hget_field);
             funct_list=get(hhget_field.ACTION,'UserData');
             funct_index=get(hhget_field.ACTION,'Value');
-            funct=funct_list{funct_index};
-            Field{1}=funct(hget_field); %read the names of the variables to plot in the get_field GUI
+            funct=funct_list{funct_index};%select  the current action in get_field, e;g. PLOT
+            Field{1}=funct(hget_field); %%activate the current action selected in get_field, e;g.read the names of the variables to plot 
             CivStage=0;
             VelType_out=[];    
         else
@@ -2289,7 +2306,7 @@ if numel(Field)==2
     UvData.Field_1=Field{2};
 end
 
-%update the display buttons for the first velocity type (first menuline)
+%% update the display buttons for the first velocity type (first menuline)
 veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
 if ~isequal(FileType,'netcdf')
     reset_vel_type(veltype_handles)
@@ -2303,7 +2320,7 @@ elseif isempty(VelType) && ~isequal(FieldName,'get_field...')
     end
 end
 
-%update the display buttons for the second velocity type (second menuline)
+%% update the display buttons for the second velocity type (second menuline)
 veltype_handles_1=[handles.civ1_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
 if ~isequal(FileType_1,'netcdf')
     reset_vel_type(veltype_handles_1)
@@ -2317,7 +2334,7 @@ elseif isempty(VelType_1) && ~isequal(FieldName_1,'get_field...')
     end
 end
 
-%introduce w as background image by default for a new series (only for nbdim=2)
+%% introduce w as background image by default for a new series (only for nbdim=2)
 if ~isfield(UvData,'NewSeries')
     UvData.NewSeries=1;
 end
@@ -2341,7 +2358,7 @@ if ~isfield(UvData,'NbDim')||isempty(UvData.NbDim)||~isequal(UvData.NbDim,3)
         set(handles.FileExt_1,'Visible','on');
         set(handles.Fields_1,'Visible','on');
         Field{1}.AName='w';
-        testscal=1;
+%         testscal=1;
     end
 end           
 
@@ -2349,11 +2366,11 @@ end
 if ~isempty(filename) &&(~isfield(UvData,'NbDim') || isequal(UvData.NbDim,2))&&...%2D case
       isfield(UvData,'XmlData') && isfield(UvData.XmlData,'GeometryCalib')&& isfield(UvData.XmlData.GeometryCalib,'SliceCoord')
        siz=size(UvData.XmlData.GeometryCalib.SliceCoord);
-       if siz(1)>1
-           NbSlice=siz(1);
-       else
-           NbSlice=1;
-       end
+%        if siz(1)>1
+%            NbSlice=siz(1);
+%        else
+%            NbSlice=1;
+%        end
 end
 
 %store the current open names, fields and vel types in uvmat interface 
@@ -2367,7 +2384,7 @@ if ~isempty(scal_color)
     UvData.CName=scal_color;
 end
 
-%coordinate transform or user fct
+%% coordinate transform or user fct
 XmlData=[];%default
 if isfield(UvData,'XmlData')%use geometry calib recorded from the ImaDoc xml file as first priority
     XmlData=UvData.XmlData;
@@ -2376,16 +2393,14 @@ XmlData_1=[];%default
 if isfield(UvData,'XmlData_1')
    XmlData_1=UvData.XmlData_1;
 end
-menu_transform=get(handles.transform_fct,'String');
+% menu_transform=get(handles.transform_fct,'String');
 choice_value=get(handles.transform_fct,'Value');
 transform_list=get(handles.transform_fct,'UserData');
 transform=transform_list{choice_value};%selected function handles
-
 % z index
 if ~isempty(filename)
     Field{1}.ZIndex=z_index;
 end
-
 %px to phys or other transform on field
 if ~isempty(transform) 
     if length(Field)>=2
@@ -2399,14 +2414,13 @@ if ~isempty(transform)
     end
 end 
 
-%calculate scalar
+%% calculate scalar
 if isequal(FileType,'netcdf') && ~isequal(FieldName,'get_field...')%
     Field{1}=calc_field(InputField,Field{1});
 end
 if length(Field)==2 && ~test_keepdata_1 && isequal(FileType_1,'netcdf') && ~isequal(FieldName_1,'get_field...')
     Field{2}=calc_field(InputField_1,Field{2});
 end
-
 % combine the two input fields (e.g. substract velocity fields)
 if numel(Field)==2
    UvData.Field=sub_field(Field{1},Field{2}); %TO UPDATE FOR MORE GENERAL INPUT  
@@ -2414,7 +2428,7 @@ else
    UvData.Field=Field{1};
 end
 
-% test 3D , default projection menuplane and typical mesh (needed to menuopen set_object)
+%% test 3D , default projection menuplane and typical mesh (needed to menuopen set_object)
 test_x=0;
 test_z=0;% test for unstructured z coordinate
 UvData.ZMax=0;
@@ -2477,6 +2491,7 @@ if test_x
         UvData.Mesh=sqrt((UvData.XMax-UvData.XMin)*(UvData.YMax-UvData.YMin)/nbvec);%2D
     end
 end
+
 %case of structured coordinates
 if isfield(UvData.Field,'AX') && isfield(UvData.Field,'AY')&& isfield(UvData.Field,'A')
     UvData.XMax=max(UvData.Field.AX);
@@ -2571,7 +2586,7 @@ if NbDim==3 && UvData.NewSeries
     set(handles.list_object_1,'Value',1);
 %multilevel case (single menuplane in a 3D space)
 elseif isfield(UvData,'Z')
-    if isfield(UvData,'CoordType')& isequal(UvData.CoordType,'phys') & isfield(UvData,'XmlData')
+    if isfield(UvData,'CoordType')&& isequal(UvData.CoordType,'phys') && isfield(UvData,'XmlData')
         XmlData=UvData.XmlData;
         if isfield(XmlData,'PlanePos')
              UvData.Object{1}.Coord=XmlData.PlanePos(UvData.ZIndex,:);
@@ -2588,127 +2603,126 @@ elseif isfield(UvData,'Z')
     end
 end
 
-%Plot the projections on all existing  projection objects
-keeplim=get(handles.FixedLimits,'Value');
-%reset the min and max of scalar if only the mask is displayed
-if isfield(UvData,'Mask')&~isfield(UvData,'A')
+%% reset the min and max of scalar if only the mask is displayed(TODO: check the need)
+if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
     set(handles.MinA,'String','0')
     set(handles.MaxA,'String','255')
 end
-IndexObj(1)=get(handles.list_object_1,'Value');
-haxes_1=handles.axes3;
+
+%% Plot the projections on the selected  projection objects
+
+% main projection object (uvmat display)
+IndexObj(1)=get(handles.list_object_1,'Value');%selected projection object for main view
 if IndexObj(1)> numel(UvData.Object)
-    IndexObj(1)=1;
-    haxes_1=handles.axes3;
+    IndexObj(1)=1;%select the first object if the selected one does not exist
+    set(handles.list_object_1,'Value',1)
 end
-view_field_handle=[];
-IndexObj_2=get(handles.list_object_2,'Value');
-if isequal(get(handles.list_object_2,'Visible'),'on') && IndexObj_2 <= numel(UvData.Object)
+plot_handles{1}=handles;
+haxes(1)=handles.axes3;
+PlotParam{1}=read_plot_param(handles);%read plotting parameters on the uvmat interfac
+keeplim(1)=get(handles.FixedLimits,'Value');% test for fixed graph limits
+PosColorbar{1}=UvData.PosColorbar;%prescribe the colorbar position on the uvmat interface
+
+% second projection object (view_field display)
+IndexObj_2=get(handles.list_object_2,'Value');%selected projection object for the second view
+if isequal(get(handles.list_object_2,'Visible'),'on') && IndexObj_2 <= numel(UvData.Object)&& ~isempty(UvData.Object{IndexObj_2})
     IndexObj(2)=IndexObj_2;
-    view_field_handle=findobj(allchild(0),'tag','view_field');
-end
-for imap=1:numel(IndexObj)
-    iobj=IndexObj(imap);
-    if ~isempty(UvData.Object{iobj})%& isfield(Object{iobj},'plotaxes')& ishandle(Object{iobj}.plotaxes)
-        %Projeter les champs sur l'objet:*
-        ObjectData=proj_field(UvData.Field,UvData.Object{iobj},iobj);
-        %use of mask
-        if isfield(ObjectData,'NbDim')&isequal(ObjectData.NbDim,2)
-            if isfield(ObjectData,'Mask') && isfield(ObjectData,'A')
-                 flag_mask=double(ObjectData.Mask>200);%=0 for masked regions
-                 AX=ObjectData.AX;
-                 AY=ObjectData.AY;
-                 MaskX=ObjectData.MaskX;
-                 MaskY=ObjectData.MaskY;
-                 if ~isequal(MaskX,AX)||~isequal(MaskY,AY)
-                     nxy=size(flag_mask);
-                     sizpx=(ObjectData.MaskX(end)-ObjectData.MaskX(1))/(nxy(2)-1);%size of a mask pixel
-                     sizpy=(ObjectData.MaskY(1)-ObjectData.MaskY(end))/(nxy(1)-1);
-                     x_mask=ObjectData.MaskX(1):sizpx:ObjectData.MaskX(end); % pixel x coordinates for image display 
-                     y_mask=ObjectData.MaskY(1):-sizpy:ObjectData.MaskY(end);% pixel x coordinates for image display
-                     %project on the positions of the scalar
-                     npxy=size(ObjectData.A);
-                     dxy(1)=(ObjectData.AY(end)-ObjectData.AY(1))/(npxy(1)-1);%grid mesh in y
-                     dxy(2)=(ObjectData.AX(end)-ObjectData.AX(1))/(npxy(2)-1);%grid mesh in x
-                     xi=ObjectData.AX(1):dxy(2):ObjectData.AX(end);
-                     yi=ObjectData.AY(1):dxy(1):ObjectData.AY(end);      
-                     [XI,YI]=meshgrid(xi,yi);% creates the matrix of regular coordinates
-                    flag_mask = interp2(x_mask,y_mask,flag_mask,XI,YI);
-                 end
-                 AClass=class(ObjectData.A);
-                 ObjectData.A=flag_mask.*double(ObjectData.A);
-                 ObjectData.A=feval(AClass,ObjectData.A);
-                 ind_off=[];
-                 if isfield(ObjectData,'ListVarName')
-                      for ilist=1:length(ObjectData.ListVarName)
-                           if isequal(ObjectData.ListVarName{ilist},'Mask')||isequal(ObjectData.ListVarName{ilist},'MaskX')||isequal(ObjectData.ListVarName{ilist},'MaskY')
-                               ind_off=[ind_off ilist];
-                           end
-                      end
-                      ObjectData.ListVarName(ind_off)=[];
-                      ObjectData.VarDimIndex(ind_off)=[];
-                      ind_off=[];        
-                      for ilist=1:length(ObjectData.ListDimName)       
-                           if isequal(ObjectData.ListDimName{ilist},'MaskX')|isequal(ObjectData.ListDimName{ilist},'MaskY')
-                               ind_off=[ind_off ilist];
-                           end
-                      end
-                      ObjectData.ListDimName(ind_off)=[];
-                      ObjectData.DimValue(ind_off)=[];
-                 end
-            end  
-        end
-        if ~isempty(ObjectData)
-%             haxes=[];%default
-%             if isfield(UvData.Object{iobj},'plotaxes')
-%                 haxes=UvData.Object{iobj}.plotaxes;%axes used for representing the projection on the object
-%             end
-            PosColorbar=[];%default: no colorbar
-            if ishandle(haxes_1) & isequal(get(haxes_1,'Tag'),'axes3')& isfield(UvData,'PosColorbar')
-                PosColorbar=UvData.PosColorbar;%prescribe the colorbar position on the uvmat interface
-            else
-                PosColorbar='*';%default position
-            end
-            if imap==1 %plot on uvmat
-                PlotParam=read_plot_param(handles);%read plotting parameters on the uvmat interface
-                [PlotType,ScalOut,UvData.Object{iobj}.plotaxes]=plot_field(ObjectData,haxes_1,PlotParam,keeplim,PosColorbar);
-            elseif ~isempty(view_field_handle)
-                view_field_hh=guidata(view_field_handle);
-                PlotParam=read_plot_param(view_field_hh);%read plotting parameters on the uvmat interface
-                [PlotType,ScalOut,UvData.Object{iobj}.plotaxes]=plot_field(ObjectData,view_field_hh.axes3,PlotParam,keeplim,PosColorbar);
-            else
-                [pt,so,UvData.Object{iobj}.plotaxes]=view_field(ObjectData);
-            end
-            
-            if isequal(PlotType,'none')
-                hget_field=findobj(allchild(0),'name','get_field');
-                if isempty(hget_field)
-                    get_field([],ObjectData)% the projected field cannot be automatically plotted: use get_field to specify the variablesdelete(hget_field)
-                else
-                    errormsg='The field defined by get_field cannot be plotted';
-                    return
-                end 
-            end  
-            UvData.Object{iobj}.PlotParam=ScalOut; %record the plotting parameters
-        end       
+    view_field_handle=findobj(allchild(0),'tag','view_field');%handles of the view_field GUI
+    if ~isempty(view_field_handle)
+        plot_handles{2}=guidata(view_field_handle);
+        haxes(2)=plot_handles{2}.axes3;
+        PlotParam{2}=read_plot_param(plot_handles{2});%read plotting parameters on the uvmat interface
+        keeplim(2)=get(plot_handles{2}.FixedLimits,'Value');
+        PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
     end
 end
 
-%display the updated plotting parameters for the base menuplane
-write_plot_param(handles,UvData.Object{1}.PlotParam);% update the display of the plotting parameters
+%loop on the projection objects: one or two
+for imap=1:numel(IndexObj)
+    iobj=IndexObj(imap);    
+    ObjectData=proj_field(UvData.Field,UvData.Object{iobj},iobj);% project field on the object
+    
+    %use of mask (TODO: check)
+    if isfield(ObjectData,'NbDim') && isequal(ObjectData.NbDim,2) && isfield(ObjectData,'Mask') && isfield(ObjectData,'A')
+        flag_mask=double(ObjectData.Mask>200);%=0 for masked regions
+        AX=ObjectData.AX;%x coordiantes for the scalar field
+        AY=ObjectData.AY;%y coordinates for the scalar field
+        MaskX=ObjectData.MaskX;%x coordiantes for the mask
+        MaskY=ObjectData.MaskY;%y coordiantes for the mask
+        if ~isequal(MaskX,AX)||~isequal(MaskY,AY)
+            nxy=size(flag_mask);
+            sizpx=(ObjectData.MaskX(end)-ObjectData.MaskX(1))/(nxy(2)-1);%size of a mask pixel
+            sizpy=(ObjectData.MaskY(1)-ObjectData.MaskY(end))/(nxy(1)-1);
+            x_mask=ObjectData.MaskX(1):sizpx:ObjectData.MaskX(end); % pixel x coordinates for image display
+            y_mask=ObjectData.MaskY(1):-sizpy:ObjectData.MaskY(end);% pixel x coordinates for image display
+            %project on the positions of the scalar
+            npxy=size(ObjectData.A);
+            dxy(1)=(ObjectData.AY(end)-ObjectData.AY(1))/(npxy(1)-1);%grid mesh in y
+            dxy(2)=(ObjectData.AX(end)-ObjectData.AX(1))/(npxy(2)-1);%grid mesh in x
+            xi=ObjectData.AX(1):dxy(2):ObjectData.AX(end);
+            yi=ObjectData.AY(1):dxy(1):ObjectData.AY(end);
+            [XI,YI]=meshgrid(xi,yi);% creates the matrix of regular coordinates
+            flag_mask = interp2(x_mask,y_mask,flag_mask,XI,YI);
+        end
+        AClass=class(ObjectData.A);
+        ObjectData.A=flag_mask.*double(ObjectData.A);
+        ObjectData.A=feval(AClass,ObjectData.A);
+        ind_off=[];
+        if isfield(ObjectData,'ListVarName')
+            for ilist=1:length(ObjectData.ListVarName)
+                if isequal(ObjectData.ListVarName{ilist},'Mask')||isequal(ObjectData.ListVarName{ilist},'MaskX')||isequal(ObjectData.ListVarName{ilist},'MaskY')
+                    ind_off=[ind_off ilist];
+                end
+            end
+            ObjectData.ListVarName(ind_off)=[];
+            ObjectData.VarDimIndex(ind_off)=[];
+            ind_off=[];
+            for ilist=1:length(ObjectData.ListDimName)
+                if isequal(ObjectData.ListDimName{ilist},'MaskX') || isequal(ObjectData.ListDimName{ilist},'MaskY')
+                    ind_off=[ind_off ilist];
+                end
+            end
+            ObjectData.ListDimName(ind_off)=[];
+            ObjectData.DimValue(ind_off)=[];
+        end
+    end
+    
+    if ~isempty(ObjectData)
+        PlotType='none'; %default
+        if imap==2 && isempty(view_field_handle)
+            view_field(ObjectData)
+        else
+            [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},keeplim(imap),PosColorbar{imap});
+             write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
+        end
+        if isequal(PlotType,'none')
+            hget_field=findobj(allchild(0),'name','get_field');
+            if isempty(hget_field)
+                get_field([],ObjectData)% the projected field cannot be automatically plotted: use get_field to specify the variablesdelete(hget_field)
+            else
+                errormsg='The field defined by get_field cannot be plotted';
+                return
+            end
+        end
+    end
+end
+
+%write_plot_param(handles,UvData.Object{1}.PlotParam);% update the display of the plotting parameters
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
 set(handles.uvmat,'UserData',UvData)
 
-%update the mask
+%% update the mask
 if isequal(get(handles.mask_test,'Value'),1)%if the mask option is on
    update_mask(handles,num_i1,num_i2);
 end
 
-%prepare the menus of histograms (for the whole menuvolume in 3D case)
-menu_histo=(UvData.Field.ListVarName)';
+%% prepare the menus of histograms and plot them (histogram of the whole volume in 3D case)
+menu_histo=(UvData.Field.ListVarName)';%list of field variables to be displayed for the menu of histogram display
 ind_bad=[];
 nb_histo=1;
-for ivar=1:numel(menu_histo)
+
+% suppress coordinates from the histogram menu
+for ivar=1:numel(menu_histo)%l loop on field variables: 
     if isfield(UvData.Field,'VarAttribute') && numel(UvData.Field.VarAttribute)>=ivar && isfield(UvData.Field.VarAttribute{ivar},'Role')
         Role=UvData.Field.VarAttribute{ivar}.Role;
         switch Role
@@ -2730,18 +2744,22 @@ for ivar=1:numel(menu_histo)
     end
 end
 menu_histo(ind_bad)=[];
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% display menus and plot histograms
 test_v=0;
 if ~isempty(menu_histo)
     set(handles.histo1_menu,'Value',1)
     set(handles.histo1_menu,'String',menu_histo)
-    histo1_menu_Callback(handles.histo1_menu, [], handles)
-    if nb_histo > 1
+    histo1_menu_Callback(handles.histo1_menu, [], handles)% plot first histogram 
+    % case of more than one variables (eg vector components)
+    if nb_histo > 1 
         test_v=1;
         set(handles.histo2_menu,'Visible','on')
         set(handles.histo_v,'Visible','on')
         set(handles.histo2_menu,'String',menu_histo)
         set(handles.histo2_menu,'Value',2)
-        histo2_menu_Callback(handles.histo2_menu,[], handles)
+        histo2_menu_Callback(handles.histo2_menu,[], handles)% plot second histogram 
     end
 end
 if ~test_v
@@ -2750,8 +2768,9 @@ if ~test_v
     cla(handles.histo_v)
     set(handles.histo2_menu,'Value',1)
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%display time
+%% display time
 testimedoc=0;
 if isfield(UvData,'XmlData') && isfield(UvData.XmlData,'Time')
     if isempty(num_i2)||isnan(num_i2)
@@ -2764,29 +2783,29 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData,'Time')
         num_j2=num_j1;
     end
     siz=size(UvData.XmlData.Time);
-    if siz(1)>=max(num_i1,num_i2) & siz(2)>=max(num_j1,num_j2)
+    if siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
         abstime=(UvData.XmlData.Time(num_i1,num_j1)+UvData.XmlData.Time(num_i2,num_j2))/2;%overset the time read from files
         dt=(UvData.XmlData.Time(num_i2,num_j2)-UvData.XmlData.Time(num_i1,num_j1));
         testimedoc=1;
     end
 end
 if isfield(UvData,'XmlData_1') && isfield(UvData.XmlData_1,'Time')
-    [P,F,str1,str2,str_a,str_b,E,NomType]=name2display(['xx' get(handles.FileIndex_1,'String') get(handles.FileExt_1,'String')]);
-    num_i2=str2num(str2);
+    [P,F,str1,str2,str_a,str_b,E]=name2display(['xx' get(handles.FileIndex_1,'String') get(handles.FileExt_1,'String')]);
+    num_i2=str2double(str2);
     if isempty(num_i2)
         num_i2=num_i1;
     end
-    num_j1=str2num(str_a);
+    num_j1=str2double(str_a);
     if isempty(num_j1)
         num_j1=1;
     end
-    num_j2=str2num(str_b);
+    num_j2=str2double(str_b);
     if isempty(num_j2)
         num_j2=num_j1;
     end
-    num_i1=str2num(str1);
+    num_i1=str2double(str1);
     siz=size(UvData.XmlData_1.Time);
-    if siz(1)>=max(num_i1,num_i2) & siz(2)>=max(num_j1,num_j2)
+    if siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
         abstime_1=(UvData.XmlData_1.Time(num_i1,num_j1)+UvData.XmlData_1.Time(num_i2,num_j2))/2;%overset the time read from files
     end
 end
@@ -2804,12 +2823,13 @@ else
         set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' UvData.TimeUnit] )
     end
 end
-%update the input file name in the get_field GUI
+
+%% update the input file name in the get_field GUI
 if isequal(FieldName,'get_field...')
     set(hhget_field.inputfile,'String',filename)
     Tabchar={''};%default
     Tabcell=[];
-    if isfield(Field{1},'ListGlobalAttribute')& ~isempty(Field{1}.ListGlobalAttribute)
+    if isfield(Field{1},'ListGlobalAttribute')&& ~isempty(Field{1}.ListGlobalAttribute)
         for iline=1:length(Field{1}.ListGlobalAttribute)
             Tabcell{iline,1}=Field{1}.ListGlobalAttribute{iline};
             if isfield(Field{1}, Field{1}.ListGlobalAttribute{iline})
@@ -2851,7 +2871,6 @@ if isequal(FieldName_1,'get_field...')
     end
     set(hhget_field_1.attributes,'String',Tabchar);%update list of global attributes in get_field 
 end
-
 
 
 %-------------------------------------------------------------------
@@ -4014,7 +4033,7 @@ huvmat=get(handles.histo1_menu,'parent');
 histo_menu=get(handles.histo1_menu,'String');
 histo_value=get(handles.histo1_menu,'Value');
 FieldName=histo_menu{histo_value};
-UvData=get(huvmat,'UserData');
+% UvData=get(huvmat,'UserData');
 update_histo(handles.histo_u,huvmat,FieldName)
 
 %----------------------------------------------
@@ -4025,7 +4044,7 @@ huvmat=get(handles.histo2_menu,'parent');
 histo_menu=get(handles.histo2_menu,'String');
 histo_value=get(handles.histo2_menu,'Value');
 FieldName=histo_menu{histo_value};
-UvData=get(huvmat,'UserData');
+% UvData=get(huvmat,'UserData');
 update_histo(handles.histo_v,huvmat,FieldName)
 
 
@@ -4033,14 +4052,13 @@ update_histo(handles.histo_v,huvmat,FieldName)
 %read the field .Fieldname stored in UvData and plot its histogram
 function update_histo(haxes,huvmat,FieldName)
 UvData=get(huvmat,'UserData');
-
 if ~isfield(UvData.Field,FieldName)
     msgbox_uvmat('ERROR',['no field  ' FieldName ' for histogram'])
     return
 end
 Field=UvData.Field;
 FieldHisto=eval(['Field.' FieldName]);
-if isfield(Field,'FF') & ~isempty(Field.FF) & isequal(size(Field.FF),size(FieldHisto))
+if isfield(Field,'FF') && ~isempty(Field.FF) && isequal(size(Field.FF),size(FieldHisto))
     indsel=find(Field.FF==0);%find values marked as false
     if ~isempty(indsel)
         FieldHisto=FieldHisto(indsel);
@@ -4263,7 +4281,6 @@ function [PlotType,ScalOut]=update_plot(handles)
 haxes= handles.axes3;
 AxeData=get(haxes,'UserData');
 PlotParam=read_plot_param(handles);
-PlotParam.Scalar
 [PlotType,PlotParamOut]= plot_field(AxeData,haxes,PlotParam,1);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
@@ -4475,11 +4492,11 @@ UvData=get(huvmat,'UserData');
 prompt = {'movie file name';'frames per second';'frame resolution (*[512x384] pixels)';'axis position relative to the frame';'total frame number (starting from the current uvmat display)'};
 dlg_title = 'select properties of the output avi movie';
 num_lines= 1;
-nbfield_cell=get(handles.last_i,'String');
+% nbfield_cell=get(handles.last_i,'String');
 def     = {[FileBase '_out.avi'];'10';'1';'[0.03 0.05 0.95 0.92]';'10'};
 answer = inputdlg(prompt,dlg_title,num_lines,def,'on');
 aviname=answer{1};
-fps=str2num(answer{2});
+fps=str2double(answer{2});
 % check for existing file with output name aviname
 if exist(aviname,'file')
     backup=aviname;
@@ -4503,7 +4520,7 @@ aviobj=avifile(aviname,'Compression','None','fps',fps);
 newfig=figure;
 newaxes=copyobj(handles.axes3,newfig);%new plotting axes in the new figure
 set(newaxes,'Tag','movieaxes')
-nbpix=[512 384]*str2num(answer{3});
+nbpix=[512 384]*str2double(answer{3});
 set(gcf,'Position',[1 1 nbpix])% resolution XVGA 
 set(newaxes,'Position',eval(answer{4}));
 map=colormap(handles.axes3);
@@ -4512,14 +4529,18 @@ msgbox_uvmat('INPUT_Y-N',{['adjust figure ' num2str(newfig) ' with its matlab ed
         ['then press OK to get the avi movie as a copy of figure ' num2str(newfig) ' display']});
 UvData.Object{1}.plotaxes=newaxes;% the axis in the new figure becomes the current main plotting axes
 set(huvmat,'UserData',UvData);
-increment=str2num(get(handles.increment_scan,'String')); %get the field increment d
+increment=str2double(get(handles.increment_scan,'String')); %get the field increment d
+if isnan(increment)
+    set(handles.increment_scan,'String','1')%default value
+    increment=1;
+end
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
 set(handles.Movie,'BusyAction','queue')
 
-imin=str2num(get(handles.i1,'String'));
-imax=str2num(answer{5});
+%imin=str2double(get(handles.i1,'String'));
+imax=str2double(answer{5});
 % if isfield(UvData,'Time')
 htitle=get(newaxes,'Title');
 xlim=get(newaxes,'XLim');
@@ -4529,8 +4550,8 @@ time_str=get(handles.abs_time,'String');
 set(htitle,'String',['t=' time_str])
 set(handles.speed,'Value',1)
 for i=1:imax
-    if get(handles.speed,'Value')~=0 & isequal(get(handles.MenuExportMovie,'BusyAction'),'queue') % enable STOP command
-            runpm(hObject,eventdata,handles,increment)
+    if get(handles.speed,'Value')~=0 && isequal(get(handles.MenuExportMovie,'BusyAction'),'queue') % enable STOP command
+            runpm(hObject,eventdata,handles,increment)% run plus 
             drawnow
             time_str=get(handles.abs_time,'String');
             if ishandle(htitle)
@@ -4540,7 +4561,7 @@ for i=1:imax
             aviobj=addframe(aviobj,mov);
     end
 end
-aviobj=close(aviobj);
+close(aviobj);
 UvData.Object{1}.plotaxes=handles.axes3;
 set(huvmat,'UserData',UvData);
 msgbox_uvmat('CONFIRMATION',{['movie ' aviname ' created '];['with ' num2str(imax) ' frames']})
@@ -4788,9 +4809,9 @@ if isfield(UvData,'Time')
     param.Time=UvData.XmlData.Time;
 end
 if isequal(get(handles.scan_i,'Value'),1)
-    param.incr_i=str2num(get(handles.increment_scan,'String'));
+    param.incr_i=str2double(get(handles.increment_scan,'String'));
 elseif isequal(get(handles.scan_j,'Value'),1)
-    param.incr_j=str2num(get(handles.increment_scan,'String'));
+    param.incr_j=str2double(get(handles.increment_scan,'String'));
 end
 param.list_fields=get(handles.Fields,'String');% list menu fields
 param.list_fields(1)=[]; %suppress  'image' option 

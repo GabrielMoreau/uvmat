@@ -278,6 +278,12 @@ if ~exist(fullfile(RootPath{1},subdir_result),'dir')
     if ~isequal(m2,'')
          msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
     end
+    [xx,msg2] = fileattrib(subdir_result,'+w','g'); %yield writing access (+w) to user group (g)
+    if ~strcmp(msg2,'')
+        msgbox_uvmat('ERROR',['pb of permission for ' subdir_result ': ' msg2])%error message for directory creation
+        cd(dircur)
+        return
+    end
     cd(dircur) %back to the initial working directory
 end
 filebase_out=filebase{1}; 

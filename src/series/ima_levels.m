@@ -20,6 +20,13 @@ basename=fullfile(Series.RootPath,Series.RootFile) ;
 curdir=pwd;
 cd(path);
 mkdir([subdir_ima '_levels']);
+  [xx,msg2] = fileattrib(subdir_ima,'+w','g'); %yield writing access (+w) to user group (g)
+if ~strcmp(msg2,'')
+    msgbox_uvmat('ERROR',['pb of permission for ' subdir_ima ': ' msg2])%error message for directory creation
+    cd(dircur)
+    return
+end
+cd(dircur);
 cd(curdir);
 basename_new=fullfile(path,[subdir_ima '_levels'],namebase);
 

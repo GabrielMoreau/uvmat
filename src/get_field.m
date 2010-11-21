@@ -31,7 +31,7 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_OutputFcn',  @get_field_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
-if nargin & isstr(varargin{1})
+if nargin && ischar(varargin{1})&& ~isempty(regexp(varargin{1},'_Callback','once'))
     gui_State.gui_Callback = str2func(varargin{1});
 end
 
@@ -47,16 +47,21 @@ end
 function get_field_OpeningFcn(hObject, eventdata, handles,filename,Field,haxes)
 %------------------------------------------------------------------------
 global nb_builtin
+
+%% look at the existing figues in the work space
 browse_fig(handles.list_fig)
 
-% Choose default command line output for get_field
+%% Choose default command line output for get_field
 handles.output = hObject;
 
-% Update handles structure
+%% Update handles structure
 guidata(hObject, handles);
 
-%ACTION menu: builtin fcts
-menu_str={'PLOT';'FFT';'filter_band';'histogram'}; %list of functions included in 'get_field.m'
+%% activate the mouse action function: visualise the current field on work space by right click action
+set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles})
+
+%% prepare the list of builtin fcts and set their paths
+menu_str={'PLOT';'FFT';'filter_band';'histogram'}; %list of functions included by default in 'get_field.m'
 nb_builtin=numel(menu_str);
 path_uvmat=fileparts(which('uvmat'));%path of the function 'uvmat'
 addpath(fullfile(path_uvmat,'get_field'))
@@ -71,7 +76,6 @@ for ilist=1:length(menu_str)
     end
 end
 rmpath(fullfile(path_uvmat,'get_field'))
-
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
 if exist(profil_perso,'file')
@@ -101,8 +105,9 @@ set(handles.ACTION,'String',menu_str)
 set(handles.ACTION,'UserData',fct_handle)% store the list of path in UserData of ACTION
 set(handles.path_action,'String',fullfile(path_uvmat,'get_field'))
 set(handles.ACTION,'Value',1)% PLOT option selected
-set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles})%set mouse click action function
-if exist('filename','var')& ischar(filename)
+
+%% settings for 'slave' mode, called by uvamt, or 'master' mode
+if exist('filename','var') && ischar(filename) %transfer input file name in slave mode
     set(handles.inputfile,'String',filename)% prefill the input file name 
     set(handles.inputfile,'Enable','off')% desactivate the input file edit box   
     set(handles.list_fig,'Value',2)% plotting axes =uvmat selected
@@ -112,39 +117,42 @@ if exist('filename','var')& ischar(filename)
     set(handles.MenuExport,'Visible','off')
     set(handles.MenuHelp,'Visible','off')
     inputfile_Callback(hObject, eventdata, handles)
-else
+else  %master mode
     set(handles.inputfile,'String','')   
-end
-%ACTION_Callback(hObject, eventdata, handles) 
-if exist('Field','var') & isstruct(Field)
-        Field_input(eventdata,handles,Field)
-        if exist('haxes','var')
-            Field.PlotAxes=haxes;
+    % load the list of previously browsed files for the upper bar menu Open 
+    dir_perso=prefdir;
+    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');%
+    if exist(profil_perso,'file')
+        h=load (profil_perso);
+        if isfield(h,'MenuFile_1')
+            set(handles.MenuFile_1,'Label',h.MenuFile_1);
         end
+        if isfield(h,'MenuFile_1')
+            set(handles.MenuFile_2,'Label',h.MenuFile_2);
+        end
+        if isfield(h,'MenuFile_1')
+            set(handles.MenuFile_3,'Label',h.MenuFile_3);
+        end
+        if isfield(h,'MenuFile_1')
+            set(handles.MenuFile_4,'Label',h.MenuFile_4);
+        end
+        if isfield(h,'MenuFile_1')
+            set(handles.MenuFile_5,'Label',h.MenuFile_5);
+        end
+    end
+end
+%transfer input field  in slave mode
+if exist('Field','var') && isstruct(Field)
+        Field_input(eventdata,handles,Field)
+%         if exist('haxes','var')
+%             'TESTget'
+%             get(haxes,'Tag')
+%             Field.PlotAxes=haxes;
+%         end
     set(hObject,'UserData',Field);
 end
 
-%load the list of previously browsed files in menus Open 
- dir_perso=prefdir;
- profil_perso=fullfile(dir_perso,'uvmat_perso.mat');%
- if exist(profil_perso,'file')
-      h=load (profil_perso);
-      if isfield(h,'MenuFile_1')
-          set(handles.MenuFile_1,'Label',h.MenuFile_1);
-      end
-      if isfield(h,'MenuFile_1')
-          set(handles.MenuFile_2,'Label',h.MenuFile_2);
-      end
-      if isfield(h,'MenuFile_1')
-          set(handles.MenuFile_3,'Label',h.MenuFile_3);
-      end
-      if isfield(h,'MenuFile_1')
-          set(handles.MenuFile_4,'Label',h.MenuFile_4);
-      end
-      if isfield(h,'MenuFile_1')
-          set(handles.MenuFile_5,'Label',h.MenuFile_5);
-     end
- end
+
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
@@ -821,59 +829,59 @@ else
     plot_field(SubField,haxes) 
 end
 
-%------------------------------------------------
-% --- Executes on button press in Plot_histo.
-%RUN global histograms
-%-------------------------------------------------
-function RUN_histo_Callback(hObject, eventdata, handles)
-% hObject    handle to RUN (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-%time plots
-leg={};
-n=0;
-if (get(handles.cm_switch,'Value')==1)
-    Uval_p=Uval_cm;
-    Vval_p=Vval_cm;
-    Uhist_p=Uhist_cm;
-    Vhist_p=Vhist_cm;
-    xlab='velocity (cm/s)';
-else
-    Uval_p=Uval;
-    Vval_p=Vval;
-    Uhist_p=Uhist;
-    Vhist_p=Vhist;
-    xlab='velocity (pixels)';
-end
-if (get(handles.vector_y,'Value') == 1)
-   hhh=figure(2);
-   hold on
-   title([filebase ', ' strindex ', ' fieldtitle])
-   plot(Uval_p,Uhist_p,'b-')
-   n=n+1;
-   leg{n}='Uhist';
-   xlabel(xlab)
-end
-if (get(handles.Vhist_input,'Value') == 1)
-   hhh=figure(2);
-   hold on
-   title([filebase ', ' strindex ', ' fieldtitle])
-   plot(Vval_p,Vhist_p,'r-')
-   n=n+1;
-   leg{n}='Vhist';
-   xlabel(xlab);
-end
-if (get(handles.Chist_input,'Value') == 1)
-   hhhh=figure(3);
-   hold on
-   title([filebase ', ' strindex ', ' fieldtitle])
-   plot(Cval,Chist,'k-')
-   leg{1}='Chist';
-end
-% hold off
-grid on
-legend(leg);
+% %------------------------------------------------
+% % --- Executes on button press in Plot_histo.
+% %RUN global histograms
+% %-------------------------------------------------
+% function RUN_histo_Callback(hObject, eventdata, handles)
+% % hObject    handle to RUN (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% 
+% %time plots
+% leg={};
+% n=0;
+% if (get(handles.cm_switch,'Value')==1)
+%     Uval_p=Uval_cm;
+%     Vval_p=Vval_cm;
+%     Uhist_p=Uhist_cm;
+%     Vhist_p=Vhist_cm;
+%     xlab='velocity (cm/s)';
+% else
+%     Uval_p=Uval;
+%     Vval_p=Vval;
+%     Uhist_p=Uhist;
+%     Vhist_p=Vhist;
+%     xlab='velocity (pixels)';
+% end
+% if (get(handles.vector_y,'Value') == 1)
+%    hhh=figure(2);
+%    hold on
+%    title([filebase ', ' strindex ', ' fieldtitle])
+%    plot(Uval_p,Uhist_p,'b-')
+%    n=n+1;
+%    leg{n}='Uhist';
+%    xlabel(xlab)
+% end
+% if (get(handles.Vhist_input,'Value') == 1)
+%    hhh=figure(2);
+%    hold on
+%    title([filebase ', ' strindex ', ' fieldtitle])
+%    plot(Vval_p,Vhist_p,'r-')
+%    n=n+1;
+%    leg{n}='Vhist';
+%    xlabel(xlab);
+% end
+% if (get(handles.Chist_input,'Value') == 1)
+%    hhhh=figure(3);
+%    hold on
+%    title([filebase ', ' strindex ', ' fieldtitle])
+%    plot(Cval,Chist,'k-')
+%    leg{1}='Chist';
+% end
+% % hold off
+% grid on
+% legend(leg);
 
 % %-------------------------------------------------------------
 % % --- Executes on button press in Save_input.
@@ -1027,7 +1035,7 @@ else
     list_var=get(handles.variables,'String');
     var_select=list_var{index};
     set(handles.attributes_txt,'String', ['attributes of ' var_select])
-    if isfield(Field,'VarAttribute')& length(Field.VarAttribute)>=index-1
+    if isfield(Field,'VarAttribute')&& length(Field.VarAttribute)>=index-1
 %         nbline=0;
         VarAttr=Field.VarAttribute{index-1};
         if isstruct(VarAttr)
@@ -1049,6 +1057,7 @@ if ~isempty(Tabcell)
     Tabchar=cell2tab(Tabcell,'=');
     Tabchar=[{''};Tabchar];
 end
+set(handles.attributes,'Value',1);% select the first item
 set(handles.attributes,'String',Tabchar);
 
 % list_var=get(handles.dimensions,'String');

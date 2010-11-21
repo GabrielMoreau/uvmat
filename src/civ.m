@@ -91,6 +91,7 @@ browse.num_j1=num_a;
 browse.num_j2=num_b;
 if ~isempty(ext) && (~isempty(imformats(ext(2:end)))||strcmpi(ext,'.avi'));%if an image file has been opened by uvmat
     set(handles.ImaExt,'String',ext)
+    browse.ext_ima=ext;
     if exist('nom_type_read','var')
         browse.nom_type_ima=nom_type_read; % the image nomenclature is stored
     end
@@ -451,7 +452,7 @@ CoordUnit='px';%default
 pxcmx_search=[];%default
 pxcmy_search=[];%default
 filebase=get(handles.RootName,'String');
-ext=get(handles.ImaDoc,'String');
+ext_imadoc=get(handles.ImaDoc,'String');
 browse=get(handles.browse_root,'UserData')%default
 if isfield(browse,'nom_type_ima')
     nom_type_ima=browse.nom_type_ima;% get an image nomenclature type already determined by an input image name
@@ -497,42 +498,42 @@ pxcmx=1;
 pxcmy=1;
 
 %look for an image documentation file
-if ~isequal(ext,'.xml') && ~isequal(ext,'.civ')&& ~isequal(ext,'.avi')&& ~isequal(ext,'.AVI')
+if ~strcmp(ext_imadoc,'.xml') && ~strcmp(ext_imadoc,'.civ')&& ~strcmpi(ext_imadoc,'.avi')
     if exist([filebase '.xml'],'file')
-        ext='.xml';
+        ext_imadoc='.xml';
     elseif exist([filebase '.civxml'],'file')
-        ext='.civxml';
+        ext_imadoc='.civxml';
     elseif exist([filebase '.civ'],'file')
-        ext='.civ';
+        ext_imadoc='.civ';
     elseif exist([filebase '.avi'],'file')
-        ext='.avi';
+        ext_imadoc='.avi';
     elseif exist([filebase '.AVI'],'file')
-        ext='.AVI';
+        ext_imadoc='.AVI';
     end
-    set(handles.ImaDoc,'String',ext)
+    set(handles.ImaDoc,'String',ext_imadoc)
 end
 
 %%%%%%%%   read image documentation file  %%%%%%%%%%%%%%%%%%%%%%%%%%%
 mode=''; %default
 set(handles.ImaDoc,'BackgroundColor',[1 1 0])
 drawnow
-if isequal(ext,'.civxml') || isequal(ext,'.xml')|| isequal(ext,'.civ')
+if isequal(ext_imadoc,'.civxml') || isequal(ext_imadoc,'.xml')|| isequal(ext_imadoc,'.civ')
     set(handles.ref_i,'Visible','On')%use a reference index
     set(handles.ref_j,'Visible','On')
-elseif isequal(ext,'.avi') || isequal(ext,'.AVI')
+elseif isequal(ext_imadoc,'.avi') || isequal(ext_imadoc,'.AVI')
     set(handles.ref_j,'Visible','Off')
 else
     set(handles.ref_i,'Visible','Off')
     set(handles.ref_j,'Visible','Off')
 end
 testima_xml=0;
-if isequal(ext,'.civxml')%TO ABANDON
+if isequal(ext_imadoc,'.civxml')%TO ABANDON
     [nbfield,nbfield2,time]=read_civxml([filebase '.civxml']);
     mode='pair j1-j2';
     if isempty(nom_type_ima)% dtermine types by default if not already selected by browser or uvmat
         nom_type_ima='_i_j';
     end
-elseif isequal(ext,'.xml')
+elseif isequal(ext_imadoc,'.xml')
     [XmlData,warntext]=imadoc2struct([filebase '.xml']);
     ext_ima_read=[];
     nom_type_read=[];
@@ -576,30 +577,29 @@ elseif isequal(ext,'.xml')
             CoordUnit=tsai.CoordUnit;
         end
     end
-    if ~isempty(ext_ima_read) && ~isempty(nom_type_read)
-%         if isempty(ext_ima)
-%             ext_ima=ext_ima_read;% define image extension from the xml file if an image has not been opened previously
-%         else   %keep the image extension
-%             if  ~strcmp(ext_ima_read,ext_ima)
-%                 msgbox_uvmat('WARNING',['FirtsImage extension ' ext_ima_read ' announced in the xml file inconsistent with the selected image'])
-%             end
-%         end
-        nom_type_ima=nom_type_read;
-    end
-elseif strcmp(ext,'.civ')% case of .civ image documentation file
+%     if ~isempty(ext_ima_read) && ~isempty(nom_type_read)
+% %         if isempty(ext_ima)
+% %             ext_ima=ext_ima_read;% define image extension from the xml file if an image has not been opened previously
+% %         else   %keep the image extension
+% %             if  ~strcmp(ext_ima_read,ext_ima)
+% %                 msgbox_uvmat('WARNING',['FirtsImage extension ' ext_ima_read ' announced in the xml file inconsistent with the selected image'])
+% %             end
+% %         end
+%         nom_type_ima=nom_type_read;
+%     end
+elseif strcmp(ext_imadoc,'.civ')% case of .civ image documentation file
     [error,time,TimeUnit,mode,npx,npy]=read_imatext([filebase '.civ']);
     if error==2, msgbox_uvmat('WARNING',['no file ' filebase '.civ']);
     elseif error==1, msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
     end
-    %         ImaExt='.png';
-    nom_type_ima='png_old';
-elseif strcmpi(ext,'.avi')
+    nom_type_ima='001a';
+elseif strcmpi(ext_imadoc,'.avi')
     nom_type_ima='*';
-    ext_ima=ext;
+    ext_ima=ext_imadoc;
     set(handles.mode,'String',{'series(Di)'})
     dt=0.04;%default
-    if exist([filebase ext],'file')==2
-        info=aviinfo([filebase ext]);%read infos on the avi movie
+    if exist([filebase ext_imadoc],'file')==2
+        info=aviinfo([filebase ext_imadoc]);%read infos on the avi movie
         dt=1/info.FramesPerSecond;%time interval between successive frames
         nbfield=info.NumFrames;%number of frames
     end
@@ -626,17 +626,8 @@ if isempty(nom_type_ima)
                 % look for other images series witth letter appendix
                 appendix=char(96+first_j);
                 dirima=dir([filebase '*' num2str(first_i) appendix '.*']);
-%                 if ~isempty(dirima)
-%                     [pp,ff,fc,str2,str_a,str_b,ext_ima,nom_type_ima]=name2display(dirima(1).name);
-%                 end
-%             else
-%                 [pp,ff,fc,str2,str_a,str_b,ext_ima,nom_type_ima]=name2display(dirima(1).name);
             end
-%         else
-%             [pp,ff,fc,str2,str_a,str_b,ext_ima,nom_type_ima]=name2display(dirima(1).name);
         end
-%     else
-%         [pp,ff,fc,str2,str_a,str_b,ext_ima,nom_type_ima]=name2display(dirima(1).name);
     end
 end
 for ilist=1:numel(dirima)
@@ -650,7 +641,7 @@ for ilist=1:numel(dirima)
 end
 % no image documentation file found: look for a series of existing files,images by priority or .nc files
 if isempty(nom_type_ima)
-    ext_search=ext;
+    ext_search=ext_imadoc;
     nom_type_search=nom_type_nc;
 else
     ext_search=ext_ima;
@@ -2987,12 +2978,20 @@ if box_test(1)==1;
         end
         %create the new subdir_civ1
         if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
-            [xx,m2]=mkdir(subdir_civ1_new);
-            if ~isequal(m2,'')
-                msgbox_uvmat('ERROR', m2)%error message for directory creation
+            [xx,msg1]=mkdir(subdir_civ1_new);
+            if ~strcmp(msg1,'')
+                msgbox_uvmat('ERROR',['cannot create ' subdir_civ1_new ': ' msg1])%error message for directory creation
                 cd(currentdir)
                 filecell={};
                 return
+            else
+                [xx,msg2] = fileattrib(subdir_civ1_new,'+w','g'); %yield writing access (+w) to user group (g)
+                if ~strcmp(msg2,'')
+                    msgbox_uvmat('ERROR',['cannot create ' subdir_civ1_new ': ' msg2])%error message for directory creation
+                    cd(currentdir)
+                    filecell={};
+                    return
+                end
             end
         end
         if strcmp(compare,'stereo PIV')&&(strcmp(mode,'pair j1-j2')||strcmp(mode,'series(Dj)')||strcmp(mode,'series(Di)'))%check second nc series
@@ -3023,12 +3022,20 @@ if box_test(1)==1;
 %             subdir_civ1=subdir_civ1_new;
             %create the new subdir_civ1
             if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
-                [xx,m2]=mkdir(subdir_civ1_new);
-                if ~isequal(m2,'')
-                    msgbox_uvmat('ERROR', m2)
+                [xx,msg1]=mkdir(subdir_civ1_new);
+                if ~strcmpl(msg1,'')
+                    msgbox_uvmat('ERROR',['cannot create ' subdir_civ1_new ': ' msg1])
                     cd(currentdir)
                     filecell={};
                     return
+                else
+                    [xx,msg2] = fileattrib(subdir_civ1_new,'+w','g'); %yield writing access (+w) to user group (g)
+                    if ~strcmp(msg2,'')
+                        msgbox_uvmat('ERROR',['pb of permission for ' subdir_civ1_new ': ' msg2])%error message for directory creation
+                        cd(currentdir)
+                        filecell={};
+                        return
+                    end
                 end
             end
         end
@@ -3150,11 +3157,12 @@ if (box_test(4)==1)&&...
                 break
             end
         end
-        %create the new subdir_civ2
-        if ~exist(fullfile(Path_ima,subdir_civ2),'dir')
-            [xx,m2]=mkdir(subdir_civ2);
+        %create the new subdir_civ2_new
+        if ~exist(fullfile(Path_ima,subdir_civ2_new),'dir')
+            [xx,m2]=mkdir(subdir_civ2_new);
+            [xx,msg2] = fileattrib(subdir_civ2_new,'+w','g'); %yield writing access (+w) to user group (g)
             if ~isequal(m2,'')
-                msgbox_uvmat('ERROR', m2)
+                msgbox_uvmat('ERROR',['cannot create ' subdir_civ2_new ': ' m2])
                 filecell={};
                 cd(currentdir)
                 return
@@ -3187,8 +3195,9 @@ if (box_test(4)==1)&&...
             %create the new subdir_civ1
             if ~exist(fullfile(Path_ima,subdir_civ2_new),'dir')
                 [xx,m2]=mkdir(subdir_civ2_new);
+                 [xx,msg2] = fileattrib(subdir_civ2_new,'+w','g'); %yield writing access (+w) to user group (g)
                 if ~isequal(m2,'')
-                    msgbox_uvmat('ERROR', m2)%error message for directory creation
+                    msgbox_uvmat('ERROR', ['cannot create ' subdir_civ2_new ': ' m2])%error message for directory creation
                     cd(currentdir)
                     filecell={};
                     return

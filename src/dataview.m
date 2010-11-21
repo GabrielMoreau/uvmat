@@ -31,7 +31,7 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_OutputFcn',  @dataview_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
-if nargin & ischar(varargin{1})
+if nargin && ischar(varargin{1}) && ~isempty(regexp(varargin{1},'_Callback','once'))              
     gui_State.gui_Callback = str2func(varargin{1});
 end
 
@@ -118,7 +118,10 @@ varargout{1} = handles.output;
 % --- Executes on button press in browser.
 function browser_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-CurrentFile='/raid/PROJETS';%get(handles.RootDirectory,'String');
+CurrentFile=fileparts(get(handles.RootDirectory,'String'));
+if ~exist(CurrentFile,'dir')
+    CurrentFile='/fsnet/project/coriolis';
+end
 set(handles.SubCampaignTest,'Value',0)
 CampaignDir=uigetdir(CurrentFile,'Open the Campaign directory'); %file browser
 set(handles.RootDirectory,'String',CampaignDir)
@@ -128,7 +131,10 @@ RootDirectory_Callback(hObject, eventdata, handles)
 % --- Executes on button press in open_SubCampaign.
 function OpenSubCampaign_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-CurrentFile='/coriolis/bigone/PROJETS';%get(handles.RootDirectory,'String');
+CurrentFile=get(handles.RootDirectory,'String');
+if ~exist(CurrentFile,'dir')
+    CurrentFile='/fsnet/project/coriolis';
+end
 set(handles.SubCampaignTest,'Value',1)
 CampaignDir=uigetdir(CurrentFile,'Open the Campaign directory'); %file browser
 set(handles.RootDirectory,'String',CampaignDir)
@@ -183,9 +189,11 @@ set(handles.ListXml,'Value',1)
 set(handles.ListRecords,'String',[{'*'};ListRecords'])
 set(handles.ListDevices,'String',[{'*'};ListDevices'])
 set(handles.ListXml,'String',[{'*'};ListXml'])
+'TEST'
+testList
 if testList
     DataviewData=get(handles.figure,'UserData');
-    DataView.List=List;
+    DataviewData.List=List;
     set(handles.figure,'UserData',DataviewData)
 end
 set(handles.CampaignDoc,'Visible','on')
@@ -501,12 +509,12 @@ end
 function clean_civ_cmx_Callback(hObject, eventdata, handles)
 message='this function will delete all files with extensions .log, .bat, .cmx,.cmx2,.errors in the input directory(ies)';
 answer=msgbox_uvmat('INPUT_Y-N',message);
-if ~isequal(answer{1},'OK')
+if ~isequal(answer,'Yes')
     return
 end
 set(handles.ListExperiments,'Value',1)
 ListExperiments_Callback(hObject, eventdata, handles)%update the overview of the experiment directories
-DataviewData=get(handles.figure,'UserData');
+DataviewData=get(handles.figure,'UserData')
 List=DataviewData.List;
 Currentpath=get(handles.RootDirectory,'String');
 [Currentpath,Campaign,DirExt]=fileparts(Currentpath);

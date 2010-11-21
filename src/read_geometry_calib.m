@@ -8,26 +8,26 @@ for i=1:nb_defining_points
     coord_str=Coord_cell{i};%character string of line number i
     k=findstr('|',coord_str);%find separators '|'
     if length(k)>=4 % test for separators '|'
-        data1=str2num(coord_str(1:k(1)-5));
-        data2=str2num(coord_str(k(1)+5:k(2)-5));
-        data3=str2num(coord_str(k(2)+5:k(3)-5));
-        data4=str2num(coord_str(k(3)+5:k(4)-5));
-        data5=str2num(coord_str(k(4)+5:end));
-        if ~isempty(data1)||~isempty(data2)||~isempty(data3)||~isempty(data4)||~isempty(data5)
+        data1=str2double(coord_str(1:k(1)-2));
+        data2=str2double(coord_str(k(1)+2:k(2)-2));
+        data3=str2double(coord_str(k(2)+2:k(3)-2));
+        data4=str2double(coord_str(k(3)+2:k(4)-2));
+        data5=str2double(coord_str(k(4)+2:end));
+        if ~isnan(data1)||~isnan(data2)||~isnan(data3)||~isnan(data4)||~isnan(data5)
             iline=iline+1;
-            if ~isempty(data1)
+            if ~isnan(data1)
                 data.Coord(iline,1)=data1;
             end    
-            if ~isempty(data2)
+            if ~isnan(data2)
                 data.Coord(iline,2)=data2;
             end
-            if ~isempty(data3)
+            if ~isnan(data3)
                 data.Coord(iline,3)=data3;
             end
-            if ~isempty(data4)
+            if ~isnan(data4)
                 data.Coord(iline,4)=data4;
             end
-            if isempty(data5)
+            if isnan(data5)
                 data.Coord(iline,5)=0;
             else
                 data.Coord(iline,5)=data5;

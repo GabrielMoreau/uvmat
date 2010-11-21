@@ -41,9 +41,9 @@ if ~exist('Data','var')
      errormsg='no data  input for the netcdf file';
     return
 end 
-hhh=which('netcdf.create');% look for built-in matlab library
+hhh=which('netcdf.create');% look for built-in matlab netcdf library
 
-%USE OF built-in  netcdf library
+%USE OF built-in matlab netcdf library
 if ~isequal(hhh,'')
     FilePath=fileparts(flname);
     if ~strcmp(FilePath,'') && ~exist(FilePath,'dir')
@@ -67,20 +67,18 @@ if ~isequal(hhh,'')
                 end
                 if ~testvar               
                     eval(['cte=Data.' keys{iattr} ';'])
-                    if (ischar(cte) ||isnumeric(cte)) &&  ~isempty(cte)&& ~isequal(cte,'')
+                    if (ischar(cte) ||isnumeric(cte)) &&  ~isempty(cte)%&& ~isequal(cte,'')
+                        %write constant only if it is numeric or char string, and not empty
                         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),keys{iattr},cte)
-                    else
-                        errormsg='global attributes must be characters or numbers';
-                        return
                     end
                 end
             end
         end
     end
     %create dimensions
-    dimid=[];
+    dimid=zeros(1,length(Data.ListDimName));
     for idim=1:length(Data.ListDimName)
-         dimid(idim) = netcdf.defDim(nc,Data.ListDimName{idim},Data.DimValue(idim)); 
+         dimid(idim) = netcdf.defDim(nc,Data.ListDimName{idim},Data.DimValue(idim));
     end
     VarAttribute={}; %default
     testattr=0;
@@ -88,9 +86,9 @@ if ~isequal(hhh,'')
         VarAttribute=Data.VarAttribute;
         testattr=1;
     end
-    varid=[];
+    varid=zeros(1,length(Data.ListVarName));
     for ivar=1:length(ListVarName)
-        varid(ivar)=netcdf.defVar(nc,ListVarName{ivar},'double',dimid(Data.VarDimIndex{ivar}));%define variable  
+        varid(ivar)=netcdf.defVar(nc,ListVarName{ivar},'nc_double',dimid(Data.VarDimIndex{ivar}));%define variable  
     end
      %write variable attributes
     if testattr
@@ -116,26 +114,24 @@ if ~isequal(hhh,'')
             if ischar(VarDimName)
                 VarDimName={VarDimName};
             end
-            testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2);
-            testline=isequal(length(siz),2) && isequal(siz(1),1)&& isequal(siz(2), Data.DimValue(VarDimIndex));
-            testcolumn=isequal(length(siz),2) && isequal(siz(1), Data.DimValue(VarDimIndex))&& isequal(siz(2),1);
+            testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2);% case of a coordinate defined on a regular mesh by the first and last values.
+            testline=isequal(length(siz),2) && isequal(siz(1),1)&& isequal(siz(2), Data.DimValue(VarDimIndex));%matlab vector
+            testcolumn=isequal(length(siz),2) && isequal(siz(1), Data.DimValue(VarDimIndex))&& isequal(siz(2),1);%matlab column vector
             if ~testrange && ~testline && ~testcolumn && ~isequal(siz,Data.DimValue(VarDimIndex))
                 errormsg=['wrong dimensions declared for ' ListVarName{ivar} ' in struct2nc.m'];
                 break
             end 
             if testline || testrange
                 if testrange
-                    VarVal=linspace(VarVal(1),VarVal(2),Data.DimValue(VarDimIndex));
+                    VarVal=linspace(VarVal(1),VarVal(2),Data.DimValue(VarDimIndex));% restitute the whole array of coordinate values
                 end
-               %nc{ListVarName{ivar}}=ncfloat(Data.ListDimName(VarDimIndex));%vector of x coordinates
-               netcdf.putVar(nc,varid(ivar), double(VarVal'));
+                netcdf.putVar(nc,varid(ivar), double(VarVal'));
             else
                 netcdf.putVar(nc,varid(ivar), double(VarVal));
-                %nc{ListVarName{ivar}}(:) = VarVal;
-            end
-            
+            end      
         end
     end
+    netcdf.close(nc)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %OLD netcdf toolbox
 else
