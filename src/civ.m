@@ -2703,7 +2703,8 @@ for ifile=1:nbfield
         else
             %% to lauch the jobs locally :
             if(isunix)
-                cmd_str=['!at -qb now -f ' filename_bat ' &']; %ou at -qb now -f
+                cmd_str=['!. ' filename_bat ' &'];
+%                 cmd_str=['!at -qb now -f ' filename_bat ' &']; %ou at -qb now -f bad idea...
                 eval(cmd_str);
                 display(cmd_str);
             else
