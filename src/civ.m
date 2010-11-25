@@ -456,6 +456,8 @@ ext_imadoc=get(handles.ImaDoc,'String');
 browse=get(handles.browse_root,'UserData')%default
 if isfield(browse,'nom_type_ima')
     nom_type_ima=browse.nom_type_ima;% get an image nomenclature type already determined by an input image name
+end 
+if isfield(browse,'ext_ima')
     ext_ima=browse.ext_ima;
 end
 if isfield(browse,'nom_type_nc')
@@ -1545,480 +1547,6 @@ elseif isequal(mode,'series(Dj)')
     set(handles.last_j,'String',num2str(num1(end)));
 end
 
-%------------------------------------------------------------------------
-% --- Executes on button press in RUN.
-
-
-
-% compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displacement (=2) or stereo PIV (=3)
-% %check the list of operations:
-% operations={'CIV1','FIX1','PATCH1','CIV2','FIX2','PATCH2'};
-% run_flag=1;
-% box_test(1)=get(handles.CIV1,'Value');
-% box_test(2)=get(handles.FIX1,'Value');
-% box_test(3)=get(handles.PATCH1,'Value');
-% box_test(4)=get(handles.CIV2,'Value');
-% box_test(5)=get(handles.FIX2,'Value');
-% box_test(6)=get(handles.PATCH2,'Value');
-% index=find(box_test==1);
-% if isempty(index)
-%     msgbox_uvmat('ERROR','no selected operation')
-%     return
-% end
-% index_first=min(index);
-% index_last=max(index);
-% box_used=box_test([index_first : index_last]);
-% [box_missing,ind_missing]=min(box_used);
-% if isequal(box_missing,0)
-%     msgbox_uvmat('ERROR',['missing' cell2mat(operations(ind_missing))]);
-%     return
-% end
-%
-% %root name
-% filebase=get(handles.RootName,'String');
-% if isempty(filebase)||isequal(filebase,'')
-%     msgbox_uvmat('ERROR','no input files')
-%     return
-% end
-% %check mask if selecetd
-% if isequal(get(handles.get_mask_civ1,'Value'),1)
-%     maskname=get(handles.mask_civ1,'String');
-%     if ~exist(maskname,'file')
-%         get_mask_civ1_Callback(hObject, eventdata, handles);
-%     end
-% end
-% if isequal(get(handles.get_mask_fix1,'Value'),1)
-%     maskname=get(handles.mask_fix1,'String');
-%     if ~exist(maskname,'file')
-%      get_mask_fix1_Callback(hObject, eventdata, handles);
-%     end
-% end
-% if isequal(get(handles.get_mask_civ2,'Value'),1)
-%     maskname=get(handles.mask_civ2,'String');
-%     if ~exist(maskname,'file')
-%      get_mask_civ2_Callback(hObject, eventdata, handles);
-%     end
-% end
-% if isequal(get(handles.get_mask_fix2,'Value'),1)
-%     maskname=get(handles.mask_fix2,'String');
-%     if ~exist(maskname,'file')
-%      get_mask_fix2_Callback(hObject, eventdata, handles);
-%     end
-% end
-%
-% %read names of the .exe file
-% if box_test(1)==1 || box_test(3)==1 || box_test(4)==1 || box_test(6)==1
-%     path_uvmat=which('uvmat');% check the path detected for source file uvmat
-%     path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-%     %fid = fopen(fullfile(path_UVMAT,'PARAM_LINUX.txt'),'r');%open the file with civ binary names
-%     xmlfile=fullfile(path_UVMAT,'PARAM.xml');
-%     if exist(xmlfile,'file')
-%         t=xmltree(xmlfile);
-%         sparam=convert(t);
-%     end
-%     if isfield(sparam,'Civ1Bin')
-%         civ1Bin=sparam.Civ1Bin;
-%         if ~exist(civ1Bin,'file')
-%             civ1Bin=fullfile(path_UVMAT,civ1Bin);
-%         end
-%     end
-%     if isfield(sparam,'Civ2Bin')
-%         civ2Bin=sparam.Civ2Bin;
-%         if ~exist(civ2_exe,'file')%the binary is defined in /bin, default setting
-%             civ2_exe=fullfile(path_UVMAT,civ2_exe);
-%         end
-%     end
-%     if isfield(sparam,'Patch_exe')
-%         patch_exe=sparam.Patch_exe;
-%         if ~exist(patch_exe,'file')%the binary is defined in /bin, default setting
-%             patch_exe=fullfile(path_UVMAT,patch_exe);
-%         end
-%     end
-%     if isfield(sparam,'Stinterp_exe')
-%         stinterp_exe=sparam.Stinterp_exe;
-%     end
-%     if isfield(sparam,'SGE')
-%         sge=str2double(sparam.SGE);
-%     end
-%     if ~isunix % for windows system, check whether the Matlab working dir is a UBC name
-%         dircur=pwd;
-%         if ~isequal(dircur([2 3]),':\')
-%             msgbox_uvmat('ERROR','move to a Matlab current working directory with a Windows name, e.g. m:/...')
-%             return;
-%         end
-%     end
-% end
-%
-% %initialize the waitbars
-% set(handles.waitbar_1,'Position',[0.946 0.877 0.03 0.001])
-% set(handles.waitbar_patch1,'Position',[0.946 0.626 0.03 0.001])
-% set(handles.waitbar_civ2,'Position',[0.946 0.406 0.03 0.001])
-% set(handles.waitbar_patch2,'Position',[0.946 0.187 0.03 0.001])
-% set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
-% set(handles.RUN, 'Enable','Off')
-% drawnow
-%
-% % get the list of file names and check the files
-% display('checking the files...')
-% [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
-%        set_civ_filenames(handles,compare,box_test);
-% nbfield=numel(num1_civ1);
-% nbslice=size(num_a_civ1);
-%
-% if isempty(filecell)
-%    set(handles.RUN, 'Enable','On')
-%     set(handles.RUN,'BackgroundColor',[1 0 0])
-%     set(handles.BATCH, 'Enable','On')
-%     set(handles.BATCH,'BackgroundColor',[1 0 0])
-%    return
-% end
-% display('files OK, processing...')
-% nbfield=size(num1_civ1,2);
-% nbslice=size(num1_civ1,1);
-%
-% %RUN CIV1
-% if box_test(1)==1
-%       RUN_CIV1(handles,filecell.ima1.civ1,filecell.ima2.civ1,filecell.nc.civ1,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,nom_type_nc)
-%       if compare==3
-%             RUN_CIV1(handles,filecell.imaA1.civ1,filecell.imaA2.civ1,filecell.ncA.civ1,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,nom_type_nc)
-%      end
-% end
-%
-% %RUN FIX1
-% if box_test(2)==1
-%     filebase=get(handles.RootName,'String');
-%     %names of the civ1 fields
-%     field1.vel_type='civ1';
-%     field1.nb='nb_vectors';
-% %     field1.X='vec_X';
-% %     field1.Y='vec_Y';
-% %     field1.U='vec_U';
-% %     field1.V='vec_V';
-%     field1.fixflag='vec_FixFlag';
-%     flagindex(1)=get(handles.vec_Fmin2, 'Value');
-%     flagindex(2)=get(handles.vec_F3, 'Value');
-%     flagindex(3)=get(handles.vec_F2, 'Value');
-%     thresh_vecC=str2double(get(handles.thresh_vecC,'String'));%threshold on image correlation vec_C
-%     thresh_vel=str2double(get(handles.thresh_vel,'String'));%threshold on velocity modulus
-%     inf_sup=get(handles.inf_sup1,'Value');
-%     menu=get(handles.field_ref1,'String');
-%     index=get(handles.field_ref1,'Value');
-%     if isempty(menu)
-%         fieldchoice='';
-%     else
-%         fieldchoice=menu{index};
-%     end
-%     h = waitbar(0,'removing velocity vectors, fix1');% display a wait bar
-%     test_mask=get(handles.get_mask_fix1,'Value');
-%     if test_mask
-%         maskdispl=get(handles.mask_fix1,'String');
-%         if exist(maskdispl,'file')
-%             test_mask=2;
-%             maskname=maskdispl;
-%         else
-%             maskbase=[get(handles.RootName,'String') '_' maskdispl]; % mask root name
-%         end
-%     end
-%     for ifile=1:nbfield
-%         waitbar(ifile/nbfield); %update the waitbar
-%         for j=1:nbslice
-%             if test_mask==0
-%                 maskname='noFile use default';
-%                 maskflag=0;
-%             elseif test_mask==1
-%                 nbslice_mask=str2double(maskdispl(1:end-4)); %
-%                 num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
-%                 maskname=name_generator(maskbase,num1_mask,1,'.png','_i');% mask corresponding to the first image of the pair
-%                 maskflag= exist(maskname,'file')==2;
-%                 if ~maskflag;
-%                     maskname='noFile use default';
-%                 end
-%             end
-%             if ~isempty(file_ref_fix1)
-%                 file_ref=file_ref_fix1{ifile,j};
-%             else
-%                 file_ref='';
-%             end
-%             error=RUN_FIX(filecell.nc.civ1{ifile,j},field1,flagindex,1,thresh_vecC,maskflag,maskname,...
-%                                     thresh_vel,inf_sup,file_ref,fieldchoice);
-%
-%             if compare==3 &&(isequal(mode,'pair j1-j2') || isequal(mode,'series(Dj)') || isequal(mode,'series(Di)'))
-%                  if test_mask==0
-%                       maskname='noFile use default';
-%                       maskflag=0;
-%                  else
-%                      maskbase=[get(handles.RootName2,'String') '_' maskdispl]; % mask root name
-%                      nbslice_mask=str2num(maskdispl(1:end-4)); %
-%                      num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
-%                      maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
-%                      maskflag= exist(maskname,'file')==2;
-%                      if ~maskflag;
-%                         maskname='noFile use default';
-%                      end
-%                  end
-%                  error=RUN_FIX(filecell.ncA.civ1{ifile,j},field1,flagindex,1,thresh_vecC,maskflag,maskname,...
-%                                     thresh_vel,inf_sup,file_ref,fieldchoice);
-%                  if ~isempty(error)
-%                     msgbox_uvmat('ERROR',error)
-%                     return
-%                  end
-%             end
-%         end
-%     end
-%     close(h)
-% end
-%
-% % RUN PATCH1
-% if box_test(3)==1
-%     rho_patch1=str2num(get(handles.rho_patch1,'String'));
-%     if isempty(rho_patch1)
-%         rho_patch1='1000';
-%         set(handles.rho_patch1,'String','1')
-%     else
-%         rho_patch1=num2str(1000*rho_patch1);
-%     end
-%     nx_patch1=get(handles.nx_patch1,'String');
-%     if isequal(str2num(nx_patch1),[])
-%          nx_patch1='50' ;%default
-%          set(handles.nx_patch1,'String','50');
-%     end
-%     ny_patch1=get(handles.ny_patch1,'String');
-%     if isequal(str2num(ny_patch1),[])
-%          ny_patch1='50' ;%default
-%          set(handles.ny_patch1,'String','50');
-%     end
-%     subdomain_patch1=get(handles.subdomain_patch1,'String');
-%     thresh_patch1=get(handles.thresh_patch1,'String');
-%     test_interp=get(handles.test_interp,'Value');
-%     icount=0;
-%     for ifile=1:nbfield
-%         for j=1:nbslice
-%             icount=icount+1;
-%             barlength=0.188*icount/(nbfield*nbslice);
-%             set(handles.waitbar_patch1,'Position',[0.946 0.627-barlength 0.03 barlength])
-%             drawnow
-%             if  isequal(get(handles.test_stereo1,'Value'),0)
-%                 cmd=RUN_PATCH(filecell.nc.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp);
-%                 s=-1;
-%                 if sge
-%                     [s,w]=unix(['qrsh -q -fast.q ' cmd]);
-%                 end
-%                 if s~=0
-%                     display(['!' cmd])
-%                     eval(['!' cmd]);
-%                 end
-%
-%                 %stereo case:
-%             elseif  isequal(get(handles.test_stereo1,'Value'),1)
-%                 if exist('stinterp_exe','var')%Prog Gauthier
-%                     cmd=RUN_STINTERP(stinterp_exe,filecell.ncA.civ1{ifile,j},filecell.nc.civ1{ifile,j},filecell.st{ifile,j},...
-%                           nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,[filebase_A '.xml'],[filebase_B '.xml']);
-%                     display(['!' cmd])
-%                     eval(['!' cmd]);
-%                 else
-%                     RUN_STLIN(filecell.ncA.civ1{ifile,j},filecell.nc.civ1{ifile,j},'civ1',filecell.st{ifile,j},...
-%                         str2num(nx_patch1),str2num(ny_patch1),str2num(thresh_patch1),[filebase_A '.xml'],[filebase_B '.xml']);
-%                 end
-%             end
-%             if compare==3 && isequal(get(handles.test_stereo1,'Value'),0)
-%                 cmd=RUN_PATCH(filecell.ncA.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp);
-%                 s=-1;
-%                 if sge
-%                     [s,w]=unix(['qrsh -q -fast.q ' cmd]);
-%                 end
-%                 if s~=0
-%                    display(['!' cmd])
-%                    eval(['!' cmd]);
-%                 end
-%             end
-%         end
-%     end
-% end
-%
-% % CIV2
-% if box_test(4)==1
-%     RUN_CIV2(handles,filecell.ima1.civ2,filecell.ima2.civ2,filecell.nc.civ1,filecell.nc.civ2,num1_civ2,num2_civ2,...
-%         num_a_civ2,num_b_civ2,nom_type_nc)
-% end
-%
-% % FIX2
-% if box_test(5)==1
-%     %names of the civ2 fields
-%     field2.vel_type='civ2';
-%     field2.nb='nb_vectors2';
-%     field2.X='vec2_X';
-%     field2.Y='vec2_Y';
-%     field2.U='vec2_U';
-%     field2.V='vec2_V';
-%     field2.fixflag='vec2_FixFlag';
-%     flagindex(1)=get(handles.vec_Fmin2_2, 'Value');
-%     flagindex(2)=get(handles.vec_F3_2, 'Value');
-%     flagindex(3)=get(handles.vec_F4, 'Value');
-%     thresh_vec2C=str2num(get(handles.thresh_vec2C,'String'));%threshold on image correlation vec_C
-%     thresh_vel2=str2num(get(handles.thresh_vel2,'String'));%threshold on velocity modulus
-%     inf_sup=get(handles.inf_sup2,'Value');
-%     menu=get(handles.field_ref2,'String');
-%     index=get(handles.field_ref2,'Value');
-%     if isempty(menu)
-%         fieldchoice='';
-%     else
-%         fieldchoice=menu{index};
-%     end
-%     h = waitbar(0,['removing velocity vectors, fix2']);% display a wait bar
-%     test_mask=get(handles.get_mask_fix2,'Value');
-%     if test_mask
-%         maskdispl=get(handles.mask_fix2,'String');
-%         if exist(maskdispl,'file')
-%             test_mask=2;
-%             maskname=maskdispl;
-%         else
-%             maskbase=[get(handles.RootName,'String') '_' maskdispl]; % mask root name
-%         end
-%     end
-%     for ifile=1:nbfield
-%         waitbar(ifile/nbfield); %update the waitbar
-%         for j=1:nbslice
-%            if test_mask==0
-%                 maskname='noFile use default';
-%                 maskflag=0;
-%            elseif test_mask==1
-%                 nbslice_mask=str2num(maskdispl(1:end-4)); %
-%                 num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
-%                 maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
-%                 maskflag= exist(maskname,'file')==2;
-%                 if ~maskflag;
-%                       maskname='noFile use default';
-%                 end
-%             end
-%             if ~isempty(file_ref_fix2)
-%                 file_ref=file_ref_fix2{ifile,j};
-%             else
-%                 file_ref='';
-%             end
-%             error=RUN_FIX(filecell.nc.civ2{ifile,j},field2,flagindex,2,thresh_vec2C,maskflag,maskname,...
-%                                     thresh_vel2,inf_sup,file_ref,fieldchoice);
-%             if ~isempty(error)
-%                 msgbox_uvmat('ERROR',error)
-%                 return
-%             end
-%             if compare==3
-%                  if test_mask==0
-%                       maskname='noFile use default';
-%                       maskflag=0;
-%                  else
-%                       maskbase=[get(handles.RootName2,'String') '_' maskdispl]; % mask root name
-%                       nbslice_mask=str2num(maskdispl(1:end-4)); %
-%                       num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
-%                       maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
-%                       maskflag= exist(maskname,'file')==2;
-%                       if ~maskflag;
-%                          maskname='noFile use default';
-%                       end
-%                  end
-%                  error=RUN_FIX(filecell.ncA.civ2{ifile,j},field2,flagindex,1,thresh_vec2C,maskflag,maskname,...
-%                                     thresh_vel2,inf_sup,file_ref,fieldchoice);
-%                  if ~isempty(error)
-%                     msgbox_uvmat('ERROR',error)
-%                     return
-%                  end
-%             end
-%         end
-%     end
-%     close(h)
-% end
-%
-% %PATCH 2
-% if box_test(6)==1
-%     rho_patch2=str2num(get(handles.rho_patch2,'String'));
-%     if isempty(rho_patch2)
-%         rho_patch2='1000';
-%         set(handles.rho_patch2,'String','1')
-%     else
-%         rho_patch2=num2str(1000*rho_patch2);
-%     end
-%     nx_patch2=get(handles.nx_patch2,'String');
-%     ny_patch2=get(handles.ny_patch2,'String');
-%     thresh_patch2=get(handles.thresh_patch2,'String');
-%     if isequal(str2num(nx_patch2),[])
-%          nx_patch2='50' ;%default
-%          set(handles.nx_patch2,'String','50');
-%     end
-%     if isequal(str2num(ny_patch2),[])
-%          ny_patch2='50' ;%default
-%          set(handles.ny_patch2,'String','50');
-%     end
-%     subdomain_patch2=get(handles.subdomain_patch2,'String');
-%     icount=0;
-%     for ifile=1:nbfield
-%         for j=1:nbslice
-%             icount=icount+1;
-%             barlength=0.188*icount/(nbfield*nbslice);
-%             set(handles.waitbar_patch2,'Position',[0.946 0.188-barlength 0.03 barlength])
-%             drawnow
-%             if compare~=3 | isequal(get(handles.test_stereo2,'Value'),0)
-%                 cmd=RUN_PATCH(filecell.nc.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,1,0);
-%                 s=-1;
-%                 if sge
-%                     [s,w]=unix(['qrsh -q -fast.q ' cmd]);
-%                 end
-%                 if s~=0
-%                     display(['!' cmd])
-%                     eval(['!' cmd]);
-%                 end
-%             elseif compare==3 &&  isequal(get(handles.test_stereo2,'Value'),1)
-%                if exist('stinterp_exe','var')%Prog Gauthier
-%                    cmd=RUN_STINTERP(stinterp_exe,filecell.ncA.civ2{ifile,j},filecell.nc.civ2{ifile,j},filecell.st{ifile,j},...
-%                    nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,thresh_patch2,[filebase_A '.xml'],[filebase_B '.xml']);
-%                    display(['!' cmd])
-%                    eval(['!' cmd])
-%                else
-%                    RUN_STLIN(filecell.ncA.civ2{ifile,j},filecell.nc.civ2{ifile,j},'civ2',filecell.st{ifile,j},...
-%                    str2num(nx_patch2),str2num(ny_patch2),str2num(thresh_patch2),[filebase_A '.xml'],[filebase_B '.xml'])
-%                end
-%             end
-%             if compare==3 && isequal(get(handles.test_stereo2,'Value'),0)
-%                 cmd=RUN_PATCH(filecell.ncA.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,1,0);
-%                 s=-1;
-%                 if sge
-%                     [s,w]=unix(['qrsh -q -fast.q ' cmd]);
-%                 end
-%                 if s~=0
-%                     display(['!' cmd])
-%                     eval(['!' cmd]);
-%                 end
-%             end
-%         end
-%     end
-% end
-%
-% set(handles.RUN, 'Enable','On')
-% set(handles.RUN,'BackgroundColor',[1 0 0])
-%
-% %save the current interface setting as figure namefig, append .0 to the name if it already exists
-% if isfield(filecell,'st')
-%     fileresu=filecell.st{1,1};
-% elseif isfield(filecell,'nc')
-%     if isfield(filecell.nc,'civ2')
-%         fileresu=filecell.nc.civ2{1,1};
-%     else
-%         fileresu=filecell.nc.civ1{1,1};
-%     end
-% end
-% [RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileresu);
-% namedoc=fullfile(RootPath,subdir,RootFile);
-% detect=1;
-% while detect==1
-%     namefigfull=[namedoc '.fig'];
-%     hh=dir(namefigfull);
-%     if ~isempty(hh)
-%         detect=1;
-%         namedoc=[namedoc '.0'];
-%     else
-%         detect=0;
-%     end
-% end
-% saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
-
 function RUN_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % global civ1_exe civ2_exe patch_exe patch_new_exe sge
@@ -2032,7 +1560,7 @@ set(handles.RUN,'BackgroundColor',[1 0 0])
 %------------------------------------------------------------------------
 % --- Executes on button press in BATCH: remote processing
 function BATCH_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
+%% -----------------------------------------------------------------------
 %global civ1_exe civ2_exe patch_exe patch_new_exe fix_exe todo_path sge Civ_exe % probabely to remove
 set(handles.BATCH, 'Enable','Off')
 set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])
@@ -2042,14 +1570,11 @@ set(handles.BATCH, 'Enable','On')
 set(handles.BATCH,'BackgroundColor',[1 0 0])
 
 %------------------------------------------------------------------------
-% --- Executes on button press in BATCH: remote processing
+% --- Lauch command called by RUN and BATCH: remote processing
 function launch_jobs(hObject, eventdata, handles, batch)
 %-----------------------------------------------------------------------
-compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displacement (=2) or stereo PIV (=3)
-
-%check the list of operations:
+%% check the selected list of operations:
 operations={'CIV1','FIX1','PATCH1','CIV2','FIX2','PATCH2'};
-% run_flag=1;
 box_test(1)=get(handles.CIV1,'Value');
 box_test(2)=get(handles.FIX1,'Value');
 box_test(3)=get(handles.PATCH1,'Value');
@@ -2070,7 +1595,7 @@ if isequal(box_missing,0)
     return
 end
 
-%root name
+%% get the root names
 filebase=get(handles.RootName,'String');
 if isempty(filebase)||isequal(filebase,'')
     msgbox_uvmat('ERROR','no input files')
@@ -2103,11 +1628,58 @@ if isequal(get(handles.get_mask_fix2,'Value'),1)
     end
 end
 
-%read names of the .exe file
-path_uvmat=which('uvmat');% check the path detected for source file uvmat
-path_UVMAT=fileparts(path_uvmat); %path to UVMAT
+%% initialize the waitbars
+set(handles.waitbar_1,'Position',[0.946 0.876 0.03 0.001])
+set(handles.waitbar_patch1,'Position',[0.946 0.439 0.03 0.001])
+set(handles.waitbar_civ2,'Position',[0.946 0.219 0.03 0.001])
+set(handles.waitbar_patch2,'Position',[0.946 0.0 0.03 0.001])
+drawnow
+
+%% set the list of files and check them
+display('checking the files...')
+compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displacement (=2) or stereo PIV (=3)
+[filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc]=...
+    set_civ_filenames(handles,compare,box_test);
+if isempty(filecell)
+    return
+end
+nbfield=numel(num1_civ1);
+nbslice=numel(num_a_civ1);
+
+%% choice of batch priority
+ind_answer=2;
+if batch
+    [s,w]=unix('qstat -q civ.q|grep job_| wc -l'); %check the waiting list (command unix)
+    if isequal(s,0)
+        w(end)=[];
+        str_displ={[w ' jobs in the waiting list'];'Select a priority:'};
+        str={'urgent';'normal';'low'};
+        [ind_answer,v] = listdlg('PromptString',str_displ,...
+            'SelectionMode','single',...
+            'ListString',str,'ListSize',[200 200],'Name','job priority','InitialValue',3);
+        if isequal(v,0) % to handle Cancel button and figure close,
+            return % a better way should be create
+        end
+    else
+        msgbox_uvmat('ERROR','batch system not available')
+        return
+    end
+else
+    if isunix
+        [xx,w]=unix('ps faux |grep civ|wc -l');
+        w(end)=[];
+        if str2double(w)+numel(num1_civ1)> 50
+            msgbox_uvmat('ERROR',{['There are already ' w ' civ processes running locally'];'Use BATCH or submit RUN later'})
+            return
+        end
+    end
+end
+
+
+%% read names of the .exe files for PIV and patch
+path_UVMAT=fileparts(which('uvmat')); %path to the source directory of uvmat
 xmlfile='PARAM.xml';
-if exist(xmlfile,'file')
+if exist(xmlfile,'file')% search parameter xml file in the whole matlab path
     t=xmltree(xmlfile);
     s=convert(t);
 end
@@ -2167,65 +1739,21 @@ if batch
         batch_mode=sparam.BatchMode;
     end
 else
-    MaxCivProcesses=50;
-    if isfield(sparam,'MaxCivProcesses')
-        MaxCivProcesses=str2double(sparam.MaxCivProcesses);
-    end
+%     MaxCivProcesses=50;
+%     if isfield(sparam,'MaxCivProcesses')
+%         MaxCivProcesses=str2double(sparam.MaxCivProcesses);
+%     end
 end
 
-%initialize the waitbars
-set(handles.waitbar_1,'Position',[0.946 0.876 0.03 0.001])
-set(handles.waitbar_patch1,'Position',[0.946 0.439 0.03 0.001])
-set(handles.waitbar_civ2,'Position',[0.946 0.219 0.03 0.001])
-set(handles.waitbar_patch2,'Position',[0.946 0.0 0.03 0.001])
-drawnow
 
-% set the list of files and check them
-display('checking the files...')
-[filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
-    set_civ_filenames(handles,compare,box_test);
-if isempty(filecell)
-    return
-end
-%choice of batch priority
-ind_answer=2;
-if batch
-    [s,w]=unix('qstat -q civ.q|grep job_| wc -l'); %check the waiting list (command unix)
-    if isequal(s,0)
-        w(end)=[];
-        str_displ={[w ' jobs in the waiting list'];'Select a priority:'};
-        str={'urgent';'normal';'low'};
-        [ind_answer,v] = listdlg('PromptString',str_displ,...
-            'SelectionMode','single',...
-            'ListString',str,'ListSize',[200 200],'Name','job priority','InitialValue',3);
-        if isequal(v,0) % to handle Cancel button and figure close,
-            return % a better way should be create
-        end
-    else
-        msgbox_uvmat('ERROR','batch system not available')
-        return
-    end
-else
-    if isunix
-        [xx,w]=unix('ps faux |grep civ|wc -l');
-        w(end)=[];
-        if str2double(w)+numel(num1_civ1)> MaxCivProcesses
-            msgbox_uvmat('ERROR',{['There are already ' w ' civ processes running locally'];'Use BATCH or submit RUN later'})
-            return
-        end
-    end
-end
+%% get civ1 parameters:
 display('files OK, processing...')
-nbfield=numel(num1_civ1);
-nbslice=numel(num_a_civ1);
-
-%GET PARAMETERS:
 %get civ parameters
 if box_test(1)==1
     par_civ1=read_param_civ1(handles,filecell.ima1.civ1{1,1});
 end
 
-%get fix1 parameters
+%% get fix1 parameters
 if box_test(2)==1
     flagindex1(1)=get(handles.vec_Fmin2, 'Value');
     flagindex1(2)=get(handles.vec_F3, 'Value');
@@ -2249,7 +1777,7 @@ if box_test(2)==1
     end
 end
 
-%get patch1 parameters
+%% get patch1 parameters
 if box_test(3)==1
     rho_patch1=str2double(get(handles.rho_patch1,'String'));
     if isnan(rho_patch1)
@@ -2272,12 +1800,12 @@ if box_test(3)==1
     thresh_patch1=get(handles.thresh_patch1,'String');
 end
 
-%get civ2 parameters
+%% get civ2 parameters:
 if box_test(4)==1
     par_civ2=read_param_civ2(handles,cell2mat(filecell.ima1.civ2(1,1)));
 end
 
-%get fix2 parameters
+%% get fix2 parameters
 if box_test(5)==1
     flagindex2(1)=get(handles.vec_Fmin2_2, 'Value');
     flagindex2(2)=get(handles.vec_F3_2, 'Value');
@@ -2293,7 +1821,7 @@ if box_test(5)==1
     %%%%%%%%%%%%%%%%%%%
 end
 
-%get patch2 parameters
+%% get patch2 parameters
 if box_test(6)==1
     rho_patch2=str2double(get(handles.rho_patch2,'String'));
     if isnan(rho_patch2)
@@ -2317,11 +1845,12 @@ if box_test(6)==1
     %              test_interp=get(handles.test_interp,'Value');
 end
 
-%MAIN LOOP
-% for ifile=1:nbfield
-% p1text=[];%initiate command text
+%% MAIN LOOP
 time=get(handles.RootName,'UserData'); %get the set of times
 civAll=get(handles.Experimental,'Value'); % Boolean for new civ excution method
+super_cmd='#!/bin/bash \n';
+super_cmd=[super_cmd '#$ -cwd \n'];
+super_cmd=[super_cmd 'hostname && date \n'];
 for ifile=1:nbfield
     for j=1:nbslice
         i_cmd=0;
@@ -2696,27 +2225,29 @@ for ifile=1:nbfield
             switch batch_mode
                 case 'sge'
                     pvalue=num2str((1-ind_answer)*500);
-                    namelog=[filename_bat '.patch.log'];
+                    %namelog=[filename_bat '.patch.log'];
                     display(['!qsub -p ' pvalue ' -q civ.q -e ' filename_cmx(1:end-4) '.errors -o ' filename_cmx(1:end-4) '.log' ' ' filename_bat]);
                     eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' filename_cmx(1:end-4) '.errors -o ' filename_cmx(1:end-4) '.log' ' ' filename_bat]);
             end
         else
             %% to lauch the jobs locally :
             if(isunix)
-                cmd_str=['!. ' filename_bat ' &'];
-%                 cmd_str=['!at -qb now -f ' filename_bat ' &']; %ou at -qb now -f bad idea...
-                eval(cmd_str);
-                display(cmd_str);
-            else
-                cmd_str=['!' filename_bat ' &'];
-                eval(cmd_str);
-                display(cmd_str);
+        %       cmd_str=['!. ' filename_bat ' &'];
+                cmd_str=['!. ' filename_bat];
+                display(cmd_str)
+         %       super_cmd=[super_cmd filename_bat]
+     %            cmd_str=['!at -qb now -f ' filename_bat ' &']; %ou at -qb now -f bad idea...
+            else %case of Windows
+               cmd_str=['!' filename_bat ' &'];
             end
+            eval(cmd_str);
+            display(cmd_str);
         end
     end
 end
-% set(handles.BATCH, 'Enable','On')
-% set(handles.BATCH,'BackgroundColor',[1 0 0])
+if ~batch%TODO: a revoir, cas 'run as background task'
+    eval(['!.' super_cmd])
+end
 
 %save interface state
 if isfield(filecell,'nc')
@@ -2741,22 +2272,6 @@ while detect==1
 end
 saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
 
-%------------------------------------------------------------------------
-%OUTPUT:
-% filecell: structure of input and output files
-%         .ima1.civ1{i,j}, .ima1.civ2{i,j}; set of first image names for  correlations, for civ1 and civ2
-%         .ima2.civ1{i,j}, .ima2.civ2{i,j} ; set of second image names for correlations
-%         .imaA1.civ1{i,j}, .ima1.civ2{i,j}; set of first image names for correlations, for civ1 and civ2, with camA in stereo case (then .ima1 corresponds to camB)
-%         .imaA2.civ1{i,j}, .ima2.civ2{i,j} ; set of second image names for  correlations, with camA in stereo case (then .ima1 corresponds to camB)
-%         .nc.civ1{i,j}, .nc.civ2{i,j}; set of nc files for PIV results
-%         .ncA.civ1{i,j}, .ncA.civ2{i,j}; set of nc files for PIV results with camA (then .nc corresponds to camB)
-%         .st{i,j};   set of nc files for the combined stereo fields
-% num1_civ1(i),num2_civ1(i): lists of first and last i indices for civ1
-% num_a_civ1(j),num_b_civ1(j): lists of first and last j indices for civ1
-% num1_civ2(i),num2_civ2(i): lists of first and last i indices for civ2
-% num_a_civ2(j),num_b_civ2(j): lists of first and last j indices for civ2
-% nom_type_nc: nomenclature type for velocity files
-% file_ref_fix1,file_ref_fix2: reference files possibly used by Fix1 and 2
 function [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
     set_civ_filenames(handles,compare,box_test)
 %------------------------------------------------------------------------
@@ -3376,7 +2891,7 @@ if ~isequal(ext_ima,'.png')
     %%type of image file
     type_ima1='none';%default
     movieobject1=[];%default
-    if isequal(lower(ext_ima),'.avi')
+    if strcmpi(ext_ima,'.avi')
         hhh=which('mmreader');
         if ~isequal(hhh,'')&& mmreader.isPlatformSupported()% if the mmreader function is found (recent version of matlab)
             type_ima1='movie';
@@ -3384,7 +2899,7 @@ if ~isequal(ext_ima,'.png')
         else
             type_ima1='avi';
         end
-    else
+    elseif ischar(ext_ima) && ~isempty(ext_ima(2:end))
         form=imformats(ext_ima(2:end));
         if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
             if isequal(nom_type_ima1,'*');
@@ -3396,7 +2911,7 @@ if ~isequal(ext_ima,'.png')
     end
     type_ima2='none';%default
     movieobject2=[];
-    if isequal(lower(ext_ima),'.avi')
+    if strcmpi(ext_ima,'.avi')
         hhh=which('mmreader');
         if ~isequal(hhh,'')&& mmreader.isPlatformSupported()% if the mmreader function is found (recent version of matlab)
             type_ima2='movie';
@@ -3404,7 +2919,7 @@ if ~isequal(ext_ima,'.png')
         else
             type_ima2='avi';
         end
-    else
+    elseif ischar(ext_ima) && ~isempty(ext_ima(2:end))
         form=imformats(ext_ima(2:end));
         if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
             if isequal(nom_type_ima1,'*');
@@ -3466,7 +2981,6 @@ if ~isequal(ext_ima,'.png')
         close(h);
     end
 end
-
 
 %------------------------------------------------------------------------
 % --- PATCH
@@ -3645,7 +3159,7 @@ if get(handles.CIV2,'Value')==0 & get(handles.CIV1,'Value')==0 & get(handles.FIX
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in get_mask_civ1.
+% --- Executes on button press in get_mask_civ1: select box for mask option
 function get_mask_civ1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 maskval=get(handles.get_mask_civ1,'Value');
@@ -3690,7 +3204,7 @@ else
     set(handles.mask_civ2,'String',mask_displ)
     set(handles.mask_fix2,'String',mask_displ)
 end
-set(handles.mask_civ2,'Value',maskval)
+set(handles.get_mask_civ2,'Value',maskval)%update the civ2 mask with the same option as civ1
 
 %------------------------------------------------------------------------
 % --- Executes on button press in get_mask_fix1.
@@ -3737,7 +3251,7 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in get_mask_civ2.
+% --- Executes on button press in get_mask_civ2: select box for mask option
 function get_mask_civ2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 maskval=get(handles.get_mask_civ2,'Value');
@@ -5008,15 +4522,6 @@ set(handles.field_ref2,'String',{' '})
 set(handles.ref_fix2,'UserData',[]);
 set(handles.ref_fix2,'String','');
 set(handles.thresh_vel2,'String','0');
-
-% %------------------------------------------------------------------------
-% % transform letters to numbers
-% function numres=stra2num(str)
-% %------------------------------------------------------------------------
-% numres=double(str)-96;
-% if double(str) >= 48 & double(str) <= 57 % = 1 for numbers
-%     numres=str2num(str);
-% end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in test_stereo1.
