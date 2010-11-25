@@ -1595,12 +1595,7 @@ if isequal(box_missing,0)
     return
 end
 
-%% get the root names
-filebase=get(handles.RootName,'String');
-if isempty(filebase)||isequal(filebase,'')
-    msgbox_uvmat('ERROR','no input files')
-    return
-end
+
 
 %check mask if selecetd
 if isequal(get(handles.get_mask_civ1,'Value'),1)
@@ -1643,6 +1638,8 @@ compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displace
 if isempty(filecell)
     return
 end
+filecell
+
 nbfield=numel(num1_civ1);
 nbslice=numel(num_a_civ1);
 
@@ -1888,7 +1885,7 @@ for ifile=1:nbfield
                     par_civ1.maskname=maskdispl;
                     par_civ1.maskflag='y';
                 else
-                    maskbase=[filebase '_' maskdispl]; %
+                    maskbase=[filecell.filebase '_' maskdispl]; %
                     nbslice_mask=str2num(maskdispl(1:end-4)); %
                     num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
                     par_civ1.maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
@@ -1909,7 +1906,7 @@ for ifile=1:nbfield
                     nbslice_grid=str2num(gridname(1:end-4)); %
                     if ~isempty(nbslice_grid)
                         num1_grid=mod(num1_civ1(ifile)-1,nbslice_grid)+1;
-                        par_civ1.gridname=[filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
+                        par_civ1.gridname=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
                         if ~exist(par_civ1.gridname,'file')
                             msgbox_uvmat('ERROR','grid file absent for civ1')
                         end
@@ -1951,7 +1948,7 @@ for ifile=1:nbfield
                 maskdispl=get(handles.mask_fix1,'String');
                 nbslice_mask=str2num(maskdispl(1:end-4)); %
                 num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
-                maskbase=[filebase '_' maskdispl];
+                maskbase=[filecell.filebase '_' maskdispl];
                 maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
             end
             if isequal(civAll,0)
@@ -1999,7 +1996,7 @@ for ifile=1:nbfield
                         nbslice_grid=str2num(gridname(1:end-4)); %
                         if ~isempty(nbslice_grid)
                             num1_grid=mod(num1_civ1(ifile)-1,nbslice_grid)+1;
-                            patch1.gridPatch=[filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
+                            patch1.gridPatch=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
                             if ~exist(patch1.gridPatch,'file')
                                 msgbox_uvmat('ERROR','grid file absent for patch1')
                             end
@@ -2057,7 +2054,7 @@ for ifile=1:nbfield
                     par_civ2.maskname=maskdispl;
                     par_civ2.maskflag='y';
                 else
-                    maskbase=[filebase '_' maskdispl]; %
+                    maskbase=[filecell.filebase '_' maskdispl]; %
                     nbslice_mask=str2num(maskdispl(1:end-4)); %
                     num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
                     par_civ2.maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
@@ -2078,7 +2075,7 @@ for ifile=1:nbfield
                 if ~isempty(nbslice_grid)
                     par_civ2.gridflag='y';
                     num1_grid=mod(num1_civ2(ifile)-1,nbslice_grid)+1;
-                    par_civ2.gridname=[filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
+                    par_civ2.gridname=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
                     if exist(par_civ2.gridname,'file')
                         par_civ2.gridflag='y';
                     else
@@ -2124,7 +2121,7 @@ for ifile=1:nbfield
                 maskname=''; %no mask used
             else
                 maskdispl=get(handles.mask_fix2,'String');
-                maskbase=[filebase '_' maskdispl]; %
+                maskbase=[filecell.filebase '_' maskdispl]; %
                 nbslice_mask=str2num(maskdispl(1:end-4)); %
                 num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
                 maskname =name_generator(maskbase,num1_mask,1,'.png','_i');
@@ -2174,7 +2171,7 @@ for ifile=1:nbfield
                         nbslice_grid=str2num(gridname(1:end-4)); %
                         if ~isempty(nbslice_grid)
                             num1_grid=mod(num1_civ2(ifile)-1,nbslice_grid)+1;
-                            patch2.gridPatch=[filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
+                            patch2.gridPatch=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
                             if ~exist(patch2.gridPatch,'file')
                                 msgbox_uvmat('ERROR','grid file absent for patch2')
                             end
@@ -2212,7 +2209,7 @@ for ifile=1:nbfield
         if batch
             [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
             filename_bat=fullfile(Rootbat,['job_' Filebat extbat]);
-        else
+         else
             filename_bat=filename_cmx;
         end
         filename_bat(end-2:end)='bat';
@@ -2287,8 +2284,18 @@ function [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2
     set_civ_filenames(handles,compare,box_test)
 %------------------------------------------------------------------------
 filecell=[];%default
-%get the filename root, nomenclature and numbers
+
+%% get the root names nomenclature and numbers
 filebase=get(handles.RootName,'String');
+
+if isempty(filebase)||isequal(filebase,'')
+    msgbox_uvmat('ERROR','no input files')
+    return
+end
+
+filebase=regexprep(filebase,'\.fsnet','fsnet');% temporary fix for cluster Coriolis
+filecell.filebase=filebase;
+
 browse=get(handles.browse_root,'UserData');
 compare_list=get(handles.compare,'String');
 val=get(handles.compare,'Value');
