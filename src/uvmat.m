@@ -2693,7 +2693,14 @@ for imap=1:numel(IndexObj)
             view_field(ObjectData)
         else
             [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},keeplim(imap),PosColorbar{imap});
-             write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
+            write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
+            if imap==1
+                UvData.ProjField=ObjectData;
+            else
+                ViewFieldData=get(view_field_handle,'UserData');
+                ViewFieldData.ProjField=ObjectData;
+                set(view_field_handle,'UserData',ViewFieldData)
+            end
         end
         if isequal(PlotType,'none')
             hget_field=findobj(allchild(0),'name','get_field');
@@ -4276,7 +4283,7 @@ set(handles.vec_col_bar,'Cdata',A)
 
 
 %-------------------------------------------------------------------
-function [PlotType,ScalOut]=update_plot(handles)
+function update_plot(handles)
 %-------------------------------------------------------------------
 haxes= handles.axes3;
 AxeData=get(haxes,'UserData');
