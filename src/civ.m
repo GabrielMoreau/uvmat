@@ -453,7 +453,7 @@ pxcmx_search=[];%default
 pxcmy_search=[];%default
 filebase=get(handles.RootName,'String');
 ext_imadoc=get(handles.ImaDoc,'String');
-browse=get(handles.browse_root,'UserData')%default
+browse=get(handles.browse_root,'UserData');%default
 if isfield(browse,'nom_type_ima')
     nom_type_ima=browse.nom_type_ima;% get an image nomenclature type already determined by an input image name
 end 
@@ -2094,7 +2094,6 @@ for ifile=1:nbfield
             end
             %endTESTgrid
             i_cmd=i_cmd+1;
-            filename_cmx(1:end-4)
             cmd_CIV2=CIV2_CMD(filename_cmx(1:end-4),namelog,par_civ2,sparam);
             if isequal(civAll,0)
                 if(isunix)
@@ -2232,33 +2231,30 @@ for ifile=1:nbfield
         else
             %% to lauch the jobs locally :
             if(isunix)
-              cmd_str=['!. ' filename_bat ' &'];
-%                 cmd_str=['!. ' filename_bat];
-                display(cmd_str)
-     %            cmd_str=['!at -qb now -f ' filename_bat ' &']; %ou at -qb now -f bad idea...
+                cmd_str=['. ' filename_bat];
+                % cmd_str=['!at -qb now -f ' filename_bat ' &']; %ou at -qb now -f bad idea...
             else %case of Windows
-               cmd_str=['!' filename_bat ' &'];
+                cmd_str=['@call ' regexprep(filename_bat,'\\','\\\\')];
             end
-               super_cmd=[super_cmd '. ' filename_bat '\n']
-%             eval(cmd_str);
-%             display(cmd_str);
+            super_cmd=[super_cmd cmd_str '\n'];         
+            %             eval(cmd_str);
+            disp(cmd_str);
         end
     end
 end
 
-           
-% filename_superbat(end-2:end)='bat';
-%         fid=fopen(filename_bat,'w');
-%         fprintf(fid,cmd);
-%         fclose(fid);
 
 if ~batch%TODO: a revoir, cas 'run as background task'
-    eval(['!. ' filename_superbat ' &'])
     [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
-    filename_superbat=fullfile(Rootbat,['toto.bat']);
+    filename_superbat=fullfile(Rootbat,['job_list.bat']);
     fid=fopen(filename_superbat,'w');
     fprintf(fid,super_cmd');
     fclose(fid);
+    if(isunix)
+        eval(['!. ' filename_superbat ' &']);
+    else
+        eval(['!' filename_superbat ' &']);
+    end
 end
 
 
@@ -2460,7 +2456,7 @@ subdir_civ1=get(handles.subdir_civ1,'String');%subdirectory subdir_civ1 for the 
 subdir_civ2=get(handles.subdir_civ2,'String');
 if isequal(subdir_civ1,''),subdir_civ1='A'; end% put default subdir
 if isequal(subdir_civ2,''),subdir_civ2=subdir_civ1; end% put default subdir
-currentdir=pwd%store the current working directory
+currentdir=pwd;%store the current working directory
 [Path_ima,Name]=fileparts(filebase);%Path of the image files (.civ)
 if ~exist(Path_ima,'dir')
     msgbox_uvmat('ERROR',['path to images ' Path_ima ' not found'])
