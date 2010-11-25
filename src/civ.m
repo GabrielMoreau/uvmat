@@ -1848,9 +1848,8 @@ end
 %% MAIN LOOP
 time=get(handles.RootName,'UserData'); %get the set of times
 civAll=get(handles.Experimental,'Value'); % Boolean for new civ excution method
-super_cmd='#!/bin/bash \n';
-super_cmd=[super_cmd '#$ -cwd \n'];
-super_cmd=[super_cmd 'hostname && date \n'];
+super_cmd=[];
+
 for ifile=1:nbfield
     for j=1:nbslice
         i_cmd=0;
@@ -2095,7 +2094,8 @@ for ifile=1:nbfield
             end
             %endTESTgrid
             i_cmd=i_cmd+1;
-            cmd_CIV2=CIV2_CMD(filename_cmx,namelog,par_civ2,sparam);
+            filename_cmx(1:end-4)
+            cmd_CIV2=CIV2_CMD(filename_cmx(1:end-4),namelog,par_civ2,sparam);
             if isequal(civAll,0)
                 if(isunix)
                     cmd=[cmd 'cp -f ' filename_cmx '2 ' filename_cmx '\n' cmd_CIV2 '\n'];
@@ -2232,22 +2232,35 @@ for ifile=1:nbfield
         else
             %% to lauch the jobs locally :
             if(isunix)
-        %       cmd_str=['!. ' filename_bat ' &'];
-                cmd_str=['!. ' filename_bat];
+              cmd_str=['!. ' filename_bat ' &'];
+%                 cmd_str=['!. ' filename_bat];
                 display(cmd_str)
-         %       super_cmd=[super_cmd filename_bat]
      %            cmd_str=['!at -qb now -f ' filename_bat ' &']; %ou at -qb now -f bad idea...
             else %case of Windows
                cmd_str=['!' filename_bat ' &'];
             end
-            eval(cmd_str);
-            display(cmd_str);
+               super_cmd=[super_cmd '. ' filename_bat '\n']
+%             eval(cmd_str);
+%             display(cmd_str);
         end
     end
 end
+
+           
+% filename_superbat(end-2:end)='bat';
+%         fid=fopen(filename_bat,'w');
+%         fprintf(fid,cmd);
+%         fclose(fid);
+
 if ~batch%TODO: a revoir, cas 'run as background task'
-    eval(['!.' super_cmd])
+    eval(['!. ' filename_superbat ' &'])
+    [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
+    filename_superbat=fullfile(Rootbat,['toto.bat']);
+    fid=fopen(filename_superbat,'w');
+    fprintf(fid,super_cmd');
+    fclose(fid);
 end
+
 
 %save interface state
 if isfield(filecell,'nc')
@@ -2271,6 +2284,8 @@ while detect==1
     end
 end
 saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
+
+
 
 function [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
     set_civ_filenames(handles,compare,box_test)
@@ -2445,16 +2460,13 @@ subdir_civ1=get(handles.subdir_civ1,'String');%subdirectory subdir_civ1 for the 
 subdir_civ2=get(handles.subdir_civ2,'String');
 if isequal(subdir_civ1,''),subdir_civ1='A'; end% put default subdir
 if isequal(subdir_civ2,''),subdir_civ2=subdir_civ1; end% put default subdir
-currentdir=pwd;%store the current working directory
+currentdir=pwd%store the current working directory
 [Path_ima,Name]=fileparts(filebase);%Path of the image files (.civ)
 if ~exist(Path_ima,'dir')
     msgbox_uvmat('ERROR',['path to images ' Path_ima ' not found'])
     filecell={};
     return
 end
-cd(Path_ima);%move to the directory of the images: needed to create the result dir by 'mkdir'
-dircur=pwd; %current working directory
-m2='';
 [xx,message]=fileattrib(Path_ima);
 if ~isempty(message) && ~isequal(message.UserWrite,1)
     msgbox_uvmat('ERROR',['No writting access to ' Path_ima])
@@ -2492,23 +2504,25 @@ if box_test(1)==1;
                 break
             end
         end
+  
         %create the new subdir_civ1
         if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
+            cd(Path_ima);          
             [xx,msg1]=mkdir(subdir_civ1_new);
+
             if ~strcmp(msg1,'')
                 msgbox_uvmat('ERROR',['cannot create ' subdir_civ1_new ': ' msg1])%error message for directory creation
-                cd(currentdir)
                 filecell={};
                 return
-            else
+            else          
                 [xx,msg2] = fileattrib(subdir_civ1_new,'+w','g'); %yield writing access (+w) to user group (g)
                 if ~strcmp(msg2,'')
-                    msgbox_uvmat('ERROR',['cannot create ' subdir_civ1_new ': ' msg2])%error message for directory creation
-                    cd(currentdir)
+                    msgbox_uvmat('ERROR',['pb of permission for  ' subdir_civ1_new ': ' msg2])%error message for directory creation
                     filecell={};
                     return
                 end
             end
+            cd(currentdir);
         end
         if strcmp(compare,'stereo PIV')&&(strcmp(mode,'pair j1-j2')||strcmp(mode,'series(Dj)')||strcmp(mode,'series(Di)'))%check second nc series
 %             vers=0;
@@ -2537,8 +2551,10 @@ if box_test(1)==1;
             end
 %             subdir_civ1=subdir_civ1_new;
             %create the new subdir_civ1
-            if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
+            if exist(fullfile(Path_ima,subdir_civ1_new),'dir')
+                   cd(Path_ima);          
                 [xx,msg1]=mkdir(subdir_civ1_new);
+                            cd(currentdir);
                 if ~strcmpl(msg1,'')
                     msgbox_uvmat('ERROR',['cannot create ' subdir_civ1_new ': ' msg1])
                     cd(currentdir)
@@ -4181,7 +4197,7 @@ civ2.convectFlow='n';
 
 %------------------------------------------------------------------------
 % --- CIV2  CIV2  CIV2 CIV2
-function cmd_CIV2=CIV2_CMD(filename_cmx,namelog,par,sparam)
+function cmd_CIV2=CIV2_CMD(filename,namelog,par,sparam)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
 % global civ2Bin sge%name of the executable for civ1 calculation
@@ -4225,7 +4241,7 @@ end
 
 par.filename_ima_a=regexprep(par.filename_ima_a,'.png','');
 par.filename_ima_b=regexprep(par.filename_ima_b,'.png','');% bug : .png appears two times ?
-fid=fopen([filename_cmx '2'],'w');
+fid=fopen([filename '.cmx2'],'w');
 fprintf(fid,['##############   CMX file' '\n' ]);
 fprintf(fid,   ['FirstImage ' regexprep(par.filename_ima_a,'\\','\\\\') '\n' ]);% for windows compatibility
 fprintf(fid,   ['LastImage  ' regexprep(par.filename_ima_b,'\\','\\\\') '\n' ]);% for windows compatibility
@@ -4258,8 +4274,19 @@ fprintf(fid,   ['ImageToUse ' par.term_a ' ' par.term_b '\n' ]); % VERIFIER ?
 fprintf(fid, ['ImageUsedBefore ' regexprep(par.filename_nc1,'\\','\\\\') '\n']);
 fclose(fid);
 
-cmd_CIV2=[sparam.Civ2Bin ' -f ' filename_cmx ]; % redirect standard output to the log file
+cmd_CIV2=[sparam.Civ2Bin ' -f ' filename  '.cmx >' filename '.log' ]; % redirect standard output to the log file
 cmd_CIV2=regexprep(cmd_CIV2,'\\','\\\\');
+namelog=regexprep(namelog,'\\','\\\\');
+
+if(isunix)
+    [Rootbat,Filebat,extbat]=fileparts(namelog);
+    ncName=fullfile(Rootbat,[ Filebat '.nc']);
+    cmd_CIV2=[cmd_CIV2 '\n' 'mv ' namelog  ' ' regexprep(namelog,'\.log','') '.civ2.log' '\n' 'chmod g+w ' ncName];
+else
+    cmd_CIV2=[cmd_CIV2 '\n' 'copy /Y ' namelog ' ' regexprep(namelog,'\.log','') '.civ2.log'];
+end
+
+
 
 %------------------------------------------------------------------------
 % --- Executes on button press in HELP.
