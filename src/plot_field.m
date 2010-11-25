@@ -138,7 +138,9 @@ if exist('haxes','var')
         end
     end
 end
-
+if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
+    PlotParam=read_plot_param(PlotParam);   
+end
 if testnewfig% create a new figure and axes if the plotting axes does not exist
     hfig=figure;
 %     if isfield(Data,'IndexObj') && isfield(Data,'Style') && isfield(Data,'ProjMode')
@@ -157,13 +159,13 @@ if testnewfig% create a new figure and axes if the plotting axes does not exist
     set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse action function
     haxes=axes;
     set(haxes,'position',[0.13,0.2,0.775,0.73])
+     PlotParam.NextPlot='add'; %parameter for plot_profile and plot_his
+else
+    hfig=get(haxes,'parent');
+    set(0,'CurrentFigure',hfig)
+    set(hfig,'CurrentAxes',haxes)
 end
-if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
-    PlotParam=read_plot_param(PlotParam);   
-end
-if testnewfig
-  PlotParam.NextPlot='add'; %parameter for plot_profile and plot_hist
-end
+
 if isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1) 
     set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
 end
@@ -427,8 +429,9 @@ end
 %% activate the plot
 if test_newplot && ~isequal(plotstr,'hhh=plot(')
     plotstr=[plotstr '''tag'',''plot_line'');'];
-                %execute plot (instruction  plotstr)  
-    axes(haxes)% select the plotting axes for plot operation
+                %execute plot (instruction  plotstr)
+%     set(hfig,'CurrentAxes',haxes)
+%     axes(haxes)% select the plotting axes for plot operation
     eval(plotstr)
    
                 %%%%%
@@ -757,6 +760,7 @@ if test_ima
             sizpy=(AY(1)-AY(end))/(np(1)-1);
             x_cont=AX(1):sizpx:AX(end); % pixel x coordinates for image display 
             y_cont=AY(1):-sizpy:AY(end); % pixel x coordinates for image display
+           % axes(haxes)% set the input axes handle as current axis
             txt=ver;%version of Matlab
             Release=txt(1).Release;
             relnumb=str2double(Release(3:4));
@@ -827,7 +831,7 @@ if test_ima
         % create new image if there  no image handle is found
         if isempty(hima)
            % axes(haxes)% set haxes the current axes for image creation
-            set(hfig,'CurrentAxes',haxes) % set haxes the current axes for image creation 
+         %   set(hfig,'CurrentAxes',haxes) % set haxes the current axes for image creation 
             tag=get(haxes,'Tag');
             if MinA<MaxA
                 hima=imagesc(AX,AY,B,[MinA MaxA]);
@@ -840,9 +844,11 @@ if test_ima
         else
             set(hima,'CData',B);
             if MinA<MaxA
-                caxis([MinA MaxA])
+                set(haxes,'CLim',[MinA MaxA])
+                %caxis([MinA MaxA])
             else
-                caxis([MaxA-1 MaxA])
+                set(haxes,'CLim',[MinA MaxA])
+                %caxis([MaxA-1 MaxA])
             end
             set(hima,'XData',AX);
             set(hima,'YData',AY);
@@ -1168,10 +1174,10 @@ for icolor=1:ncolor
     isn=isnan(colorlist(icolor,:));%test if color NaN
     if 2*icolor > sizh(1) %if icolor exceeds the number of existing ones
         %axes(haxes)
-        hfig=get(haxes,'parent');
+      %  hfig=get(haxes,'parent');
 %         axes(haxes)
-        set(0,'CurrentFigure',hfig)
-        set(hfig,'CurrentAxes',haxes)
+      %  set(0,'CurrentFigure',hfig)
+       % set(hfig,'CurrentAxes',haxes)
         if ~isn(1) %if the vectors are visible color not nan
             if n(2)>0
                 hold on
