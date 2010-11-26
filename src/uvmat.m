@@ -692,7 +692,7 @@ if isequal(lower(FileExt),'.avi') %.avi file
     TimeUnit='s';
     hhh=which('mmreader');
     ColorType=imainfo.ImageType;%='truecolor' for color images
-elseif ~isempty(imformats(FileExt(2:end))) || isequal(FileExt,'.vol')%&& isequal(NomType,'*')% multi-frame image
+elseif ~isempty(FileExt(2:end))&&(~isempty(imformats(FileExt(2:end))) || isequal(FileExt,'.vol'))%&& isequal(NomType,'*')% multi-frame image
     testima=1;
     if ~isequal(SubDir,'')
        RootFile=get(handles.RootFile,'String');
@@ -1377,8 +1377,7 @@ end
 %-------------------------------------------------------------------
 function i1_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-% [filebase,num1,num_a,num2,num_b,ext,NomType,subdir]=read_input_file(handles);
-%[FileName,RootPath,filebase,xx,FileExt]=read_file_boxes(handles);
+set(handles.i1,'BackgroundColor',[0.7 0.7 0.7])
 NomType=get(handles.FileIndex,'UserData');
 num1=stra2num(get(handles.i1,'String'));
 num2=stra2num(get(handles.i2,'String'));
@@ -1386,27 +1385,32 @@ num_a=stra2num(get(handles.j1,'String'));
 num_b=stra2num(get(handles.j2,'String'));
 indices=name_generator('',num1,num_a,'',NomType,1,num2,num_b,'');
 set(handles.FileIndex,'String',indices)
+set(handles.FileIndex,'BackgroundColor',[0.7 0.7 0.7])
 if get(handles.SubField,'Value')==1
     NomType_1=get(handles.FileIndex_1,'String');
      FileExt_1=get(handles.FileExt_1,'String');
     [P,F,str1,str2,str_a,str_b,Ext,NomType_1]=name2display(['xx' NomType_1 FileExt_1]);
      indices=name_generator('',num1,num_a,'',NomType_1,1,num2,num_b,'');
      set(handles.FileIndex_1,'String',indices)
+     set(handles.FileIndex_1,'BackgroundColor',[0.7 0.7 0.7])
 end
-run0_Callback(hObject, eventdata, handles)
+%Run0_Callback(hObject, eventdata, handles)
 
 %-------------------------------------------------------------------
 function i2_Callback(hObject, eventdata, handles)
+set(handles.i2,'BackgroundColor',[0.7 0.7 0.7])
 i1_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 
 %-------------------------------------------------------------------
 function j1_Callback(hObject, eventdata, handles)
+set(handles.j1,'BackgroundColor',[0.7 0.7 0.7])
 i1_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 
 %-------------------------------------------------------------------
 function j2_Callback(hObject, eventdata, handles)
+set(handles.j2,'BackgroundColor',[0.7 0.7 0.7])
 i1_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 
@@ -1463,6 +1467,7 @@ end
 % --- Executes on button press in mask_test.
 function mask_test_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
+%case of view mask selection
 if isequal(get(handles.mask_test,'Value'),1)
     [FF,RootPath,FileBase]=read_file_boxes(handles);
     num_i1=stra2num(get(handles.i1,'String'));
@@ -1472,61 +1477,82 @@ if isequal(get(handles.mask_test,'Value'),1)
     maskfiles=dir('*_*mask_*.png');%look for a mask file
     cd(currentdir);%come back to the working directory
     mdetect=0;
-    if isempty(maskfiles)
-         msgbox_uvmat('ERROR','no mask file detected (format ..._xxmask_ii.png needed), use the menu bar Tools/Make mask')
-         return
-    end
-    for ilist=1:length(maskfiles)
-        maskname=maskfiles(ilist).name;% take the first mask file in the list
-        [rr,ff,x1,x2,xa,xb,xext,Mask_NomType{ilist}]=name2display(maskname);
-        if ~strcmp(Mask_NomType{ilist},Mask_NomType{1})
-            msgbox_uvmat('ERROR',['inconsistent mask types ' Mask_NomType{1} Mask_NomType{ilist } ' coexist in the current image directory'])
-            return
-        end
-        [Path2,Name,ext]=fileparts(maskname);
-        Namedouble=double(Name);
-        val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
-        ind_mask=findstr('mask',Name);
-        i=ind_mask-1;
-        while val(i)==0 && i>0
-            i=i-1;
-        end
-        nbmask_str=str2num(Name(i+1:ind_mask-1));
-        if ~isempty(nbmask_str)
-            nbslice(ilist)=nbmask_str; % number of different masks (slices)
-        end
-    end
-    if isequal(min(nbslice),max(nbslice))
-        nbslice=nbslice(1);
-    else
-        msgbox_uvmat('ERROR','several inconsistent mask sets coexist in the current image directory')
-         return
-    end
-    if ~isempty(nbslice) && Name(i)=='_'
-        Mask.Base=[FileBase Name(i:ind_mask+3)];
-        Mask.NbSlice=nbslice;
-        num_i1=mod(num_i1-1,nbslice)+1;
-        Mask.NomType=Mask_NomType{1};
-        [maskname,mdetect]=name_generator(Mask.Base,num_i1,num_j1,'.png',Mask.NomType);%
-        mdetect=exist(maskname,'file');
-        if mdetect
-            set(handles.nb_slice,'String',Name(i+1:ind_mask-1));
-            set(handles.nb_slice,'BackgroundColor',[1 1 0])
-            set(handles.mask_test,'UserData',Mask);  
-            set(handles.mask_test,'BackgroundColor',[1 1 0])
-            if nbslice > 1
-                set(handles.slices,'value',1)
-                slices_Callback(hObject, eventdata, handles)
+    if ~isempty(maskfiles)
+        for ilist=1:length(maskfiles)
+            maskname=maskfiles(ilist).name;% take the first mask file in the list
+            [rr,ff,x1,x2,xa,xb,xext,Mask_NomType{ilist}]=name2display(maskname);
+            if ~strcmp(Mask_NomType{ilist},Mask_NomType{1})
+                msgbox_uvmat('ERROR',['inconsistent mask types ' Mask_NomType{1} Mask_NomType{ilist } ' coexist in the current image directory'])
+                return
+            end
+            [Path2,Name,ext]=fileparts(maskname);
+            Namedouble=double(Name);
+            val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
+            ind_mask=findstr('mask',Name);
+            i=ind_mask-1;
+            while val(i)==0 && i>0
+                i=i-1;
+            end
+            nbmask_str=str2num(Name(i+1:ind_mask-1));
+            if ~isempty(nbmask_str)
+                nbslice(ilist)=nbmask_str; % number of different masks (slices)
             end
         end
+        if isequal(min(nbslice),max(nbslice))
+            nbslice=nbslice(1);
+        else
+            msgbox_uvmat('ERROR','several inconsistent mask sets coexist in the current image directory')
+            return
+        end
+        if ~isempty(nbslice) && Name(i)=='_'
+            Mask.Base=[FileBase Name(i:ind_mask+3)];
+            Mask.NbSlice=nbslice;
+            num_i1=mod(num_i1-1,nbslice)+1;
+            Mask.NomType=Mask_NomType{1};
+            [maskname,mdetect]=name_generator(Mask.Base,num_i1,num_j1,'.png',Mask.NomType);%
+            mdetect=exist(maskname,'file');
+            if mdetect
+                set(handles.nb_slice,'String',Name(i+1:ind_mask-1));
+                set(handles.nb_slice,'BackgroundColor',[1 1 0])
+                set(handles.mask_test,'UserData',Mask);
+                set(handles.mask_test,'BackgroundColor',[1 1 0])
+                if nbslice > 1
+                    set(handles.slices,'value',1)
+                    slices_Callback(hObject, eventdata, handles)
+                end
+            end
+        end
+%         if mdetect==0
+%             msgbox_uvmat('ERROR','no mask file detected (format ..._xxmask_ii.png needed), use the menu bar Tools/Make mask')
+%             set(handles.mask_test,'Value',0)
+%             return
+%         end
     end
+    errormsg=[];%default
     if mdetect==0
-         msgbox_uvmat('ERROR','no mask file detected (format ..._xxmask_ii.png needed), use the menu bar Tools/Make mask')
-         set(handles.mask_test,'Value',0)
-         return
-    end    
-    update_mask(handles,num_i1,num_j1);
-else
+        [FileName, PathName, filterindex] = uigetfile( ...
+            {'*.png', ' (*.png)';
+            '*.png',  '.png files '; ...
+            '*.*', 'All Files (*.*)'}, ...
+            'Pick a mask file *.png',FileBase);
+        maskname=fullfile(PathName,FileName);
+        if ~exist(maskname,'file')
+            errormsg='no file browsed';
+        end
+        [RootDir,RootFile,x1,x2,xa,xb,xext,Mask.NomType]=name2display(maskname);
+        Mask.Base=fullfile(RootDir,RootFile);
+        Mask.NbSlice=1;
+        set(handles.mask_test,'UserData',Mask);
+        set(handles.mask_test,'BackgroundColor',[1 1 0])
+    end
+    if isempty(errormsg)
+        errormsg=update_mask(handles,num_i1,num_j1);
+    end
+    if ~isempty(errormsg)
+            set(handles.mask_test,'Value',0)
+            set(handles.mask_test,'BackgroundColor',[0.7 0.7 0.7])
+     end
+else 
     MaskData=get(handles.mask_test,'UserData');
     if isfield(MaskData,'maskhandle') && ishandle(MaskData.maskhandle)
           delete(MaskData.maskhandle)    
@@ -1542,15 +1568,16 @@ else
 end
 
 %-------------------------------------------------------------------
-function update_mask(handles,num_i1,num_j1)
+function errormsg=update_mask(handles,num_i1,num_j1)
 %-------------------------------------------------------------------
-
+errormsg=[];%default
 MaskData=get(handles.mask_test,'UserData');
 if isfield(MaskData,'maskhandle')&& ishandle(MaskData.maskhandle)
     uistack(MaskData.maskhandle,'top');
 end
 num_i1_mask=mod(num_i1-1,MaskData.NbSlice)+1;
-[MaskName,mdetect]=name_generator(MaskData.Base,num_i1_mask,num_j1,'.png',MaskData.NomType);
+MaskData.NomType
+MaskName=name_generator(MaskData.Base,num_i1_mask,num_j1,'.png',MaskData.NomType);
 huvmat=get(handles.mask_test,'parent');
 UvData=get(huvmat,'UserData');
 
@@ -1558,7 +1585,7 @@ UvData=get(huvmat,'UserData');
 if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName)) 
     UvData.MaskName=MaskName; %update the recorded name on UvData
     set(huvmat,'UserData',UvData);
-    if mdetect==0
+    if ~exist(MaskName,'file')
         if isfield(MaskData,'maskhandle')&& ishandle(MaskData.maskhandle)
             delete(MaskData.maskhandle)    
         end
@@ -1567,6 +1594,14 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
         Mask.AName='image';
         Mask.A=imread(MaskName);
         npxy=size(Mask.A);
+        test_error=0;
+        if length(npxy)>2
+            errormsg=[MaskName ' is not a grey scale image'];
+            return
+        elseif ~isa(Mask.A,'uint8')
+            errormsg=[MaskName ' is not a 8 bit grey level image'];
+            return
+        end
         Mask.AX=[0.5 npxy(2)-0.5];
         Mask.AY=[npxy(1)-0.5 0.5 ];
         Mask.CoordType='px';
@@ -1990,8 +2025,16 @@ num_j2=stra2num(get(handles.j2,'String'));
 errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2);
 if ~isempty(errormsg)
       msgbox_uvmat('ERROR',errormsg);
+else
+    set(handles.i1,'BackgroundColor',[1 1 1])
+    set(handles.i2,'BackgroundColor',[1 1 1])
+    set(handles.j1,'BackgroundColor',[1 1 1])
+    set(handles.j2,'BackgroundColor',[1 1 1])
+    set(handles.FileIndex,'BackgroundColor',[1 1 1])
+    set(handles.FileIndex_1,'BackgroundColor',[1 1 1])
 end    
 set(handles.run0,'BackgroundColor',[1 0 0])
+
 
 %------------------------------------------------------------------------
 % --- read the input files and refresh all the plots, including projection.
@@ -4765,6 +4808,11 @@ else
         image(imflag);
         answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name);
         if ~strcmp(answer,'Cancel')
+            mask_dir=fileparts(answer);
+            if ~exist(mask_dir,'dir')
+                msgbox_uvmat('ERROR',['directory ' mask_dir ' does not exist'])
+                return
+            end
             imwrite(imflag,answer,'BitDepth',8);
         end
         set(handles.list_object_1,'Value',1)
