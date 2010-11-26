@@ -468,28 +468,28 @@ if isfield(browse,'num_i1')
 end
 
 %default first_i and j and increments
-first_i=str2num(get(handles.first_i,'String'));%value possibly set by uvmat_Opening
-if isempty(first_i)|| first_i < 1
+first_i=str2double(get(handles.first_i,'String'));%value possibly set by uvmat_Opening
+if isnan(first_i)|| first_i < 1
     first_i=1; %default first_i
 end
-last_i=str2num(get(handles.last_i,'String'));
-if isempty(last_i)|| last_i < first_i
+last_i=str2double(get(handles.last_i,'String'));
+if isnan(last_i)|| last_i < first_i
     last_i=first_i;  %default last_i
 end
-first_j=str2num(get(handles.first_j,'String'));
-if isempty(first_j)|| first_j < 1
+first_j=str2double(get(handles.first_j,'String'));
+if isnan(first_j)|| first_j < 1
     first_j=1; %default first_j
 end
-last_j=str2num(get(handles.last_j,'String'));
-if isempty(last_j)|| last_j < first_j
+last_j=str2double(get(handles.last_j,'String'));
+if isnan(last_j)|| last_j < first_j
     last_j=first_j; %default last_j
 end
-incr_i=str2num(get(handles.incr_i,'String'));
-if isempty(incr_i) || incr_i < 1;
+incr_i=str2double(get(handles.incr_i,'String'));
+if isnan(incr_i) || incr_i < 1;
     set(handles.incr_i,'String','1') %default incr_i
 end
-incr_j=str2num(get(handles.incr_j,'String'));
-if isempty(incr_j) || incr_j < 1;
+incr_j=str2double(get(handles.incr_j,'String'));
+if isnan(incr_j) || incr_j < 1;
     set(handles.incr_j,'String','1') %default incr_j
 end
 dt=[];%default
@@ -695,7 +695,7 @@ if isempty(time) && ~strcmp(nom_type_search,'none') && ~strcmp(nom_type_search,'
      end
  
     %determine the set of times and possible intervals for CIV
-    %   dt=(1/1000)*str2num(get(handles.dt,'String'));
+    %   dt=(1/1000)*str2double(get(handles.dt,'String'));
     time=(0:nbfield-1)';% time=file index -1  by default
     if numel(regexp(nom_type_search,'\D'))>=1%two indices i and j
 %     switch nom_type_search  
@@ -789,7 +789,7 @@ if exist(profil_perso,'file')
 else
     txt=ver;
     Release=txt(1).Release;
-    relnumb=str2num(Release(3:4));
+    relnumb=str2double(Release(3:4));
     if relnumb >= 14
         save (profil_perso,'RootPath','-V6'); %store the root name for future opening of uvmat
     else
@@ -815,7 +815,7 @@ else
     mode=mode_list{mode_value};
 end
 displ_num=[];%default
-ref_i=str2num(get(handles.ref_i,'String'));
+ref_i=str2double(get(handles.ref_i,'String'));
 % last_i=str2num(get(handles.last_i,'String'));
 time=get(handles.RootName,'UserData'); %get the set of times
 siztime=size(time);
@@ -1202,11 +1202,11 @@ subdir_civ2=get(handles.subdir_civ2,'String');%subdirectory subdir_civ2 for the 
 %     set(handles.list_pair_civ2,'String',{''});
 %     return
 % end
-ref_i=str2num(get(handles.ref_i_civ2,'String'));
+ref_i=str2double(get(handles.ref_i_civ2,'String'));
 if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
     ref_j=0;
 else
-    ref_j=str2num(get(handles.ref_j_civ2,'String'));
+    ref_j=str2double(get(handles.ref_j_civ2,'String'));
 end
 time=get(handles.RootName,'UserData'); %get the set of times
 if isempty(time)
@@ -1303,8 +1303,8 @@ elseif isequal(mode,'displacement')
 end
 val=get(handles.list_pair_civ2,'Value');
 ichoice=min(find(select));
-if (isempty(ichoice) | ichoice < 1); ichoice=1; end;
-if get(handles.CIV2,'Value')==0 & get(handles.CIV1,'Value')==0 & get(handles.FIX1,'Value')==0 & get(handles.PATCH1,'Value')==0
+if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
+if get(handles.CIV2,'Value')==0 && get(handles.CIV1,'Value')==0 && get(handles.FIX1,'Value')==0 && get(handles.PATCH1,'Value')==0
     val=ichoice;% first valid pair proposed by default in the menu
 end
 if val>length(displ_pair')
@@ -1323,7 +1323,7 @@ function [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_ci
 first_i=str2double(get(handles.first_i,'String'));%first index i
 last_i=str2double(get(handles.last_i,'String'));%last index i
 incr=str2double(get(handles.incr_i,'String'));% increment
-num_i=[first_i:incr:last_i];% list of i indices (reference values for each pair)
+num_i=first_i:incr:last_i;% list of i indices (reference values for each pair)
 if isequal(get(handles.first_j,'Visible'),'on')
     first_j=str2double(get(handles.first_j,'String'));%first index j
     last_j=str2double(get(handles.last_j,'String'));%last index j
@@ -1361,11 +1361,11 @@ if isequal (mode,'series(Di)')
     indsel=find((double(str_civ1)<48)|(double(str_civ1)>57));% character indices of non numerical characters
     str_raw=str_civ1(indsel);
     indsepar=find(str_raw=='|'); %character index of the separator
-    d1=str2double(str_civ1([indsel(indsepar-1)+1:indsel(indsepar)-1]));
+    d1=str2double(str_civ1(indsel(indsepar-1)+1:indsel(indsepar)-1));
     if indsepar==length(str_raw)
-        d2=str2double(str_civ1([indsel(indsepar)+1:end]));
+        d2=str2double(str_civ1(indsel(indsepar)+1:end));
     else
-        d2=str2double(str_civ1([indsel(indsepar)+1:indsel(indsepar+1)-1]));
+        d2=str2double(str_civ1(indsel(indsepar)+1:indsel(indsepar+1)-1));
     end
     num1_civ1=num_i-d1;% set of first image numbers
     num2_civ1=num_i+d2;
@@ -1376,18 +1376,18 @@ if isequal (mode,'series(Di)')
     indsel=find((double(str_civ2)<48)|(double(str_civ2)>57));% character indices of non numerical characters
     str_raw=str_civ2(indsel);
     indsepar=find(str_raw=='|'); %character index of the separator
-    d1=str2num(str_civ2([indsel(indsepar-1)+1:indsel(indsepar)-1]));
+    d1=str2double(str_civ2(indsel(indsepar-1)+1:indsel(indsepar)-1));
     if indsepar==length(str_raw)
-        d2=str2num(str_civ2([indsel(indsepar)+1:end]));
+        d2=str2double(str_civ2(indsel(indsepar)+1:end));
     else
-        d2=str2num(str_civ2([indsel(indsepar)+1:indsel(indsepar+1)-1]));
+        d2=str2double(str_civ2(indsel(indsepar)+1:indsel(indsepar+1)-1));
     end
-    if isempty(d1)
+    if isnan(d1)
         num1_civ2=num_i;
     else
         num1_civ2=num_i-d1;% set of first image numbers
     end
-    if isempty(d2)
+    if isnan(d2)
         num2_civ2=num_i;
     else
         num2_civ2=num_i+d2;
@@ -1396,7 +1396,7 @@ if isequal (mode,'series(Di)')
     num_b_civ2=num_j;
     
     % adjust the first and last field number
-    lastfield=str2num(get(handles.nb_field,'String'));
+    lastfield=str2double(get(handles.nb_field,'String'));
     if isequal(lastfield,[])
         indsel=find((num1_civ1 >= 1)&(num1_civ2 >= 1));
     else
@@ -1414,7 +1414,7 @@ if isequal (mode,'series(Di)')
         num2_civ2=num2_civ2(indsel);
     end
 elseif isequal (mode,'series(Dj)')
-    lastfield_j=str2num(get(handles.nb_field2,'String'));
+    lastfield_j=str2double(get(handles.nb_field2,'String'));
     num1_civ1=num_i;% set of first image numbers
     num2_civ1=num_i;
     num_a_civ1=num_j-floor(index_civ1/2)*ones(size(num_j));
@@ -1424,7 +1424,7 @@ elseif isequal (mode,'series(Dj)')
     num_a_civ2=num_j-floor(index_civ2/2)*ones(size(num_j));
     num_b_civ2=num_j+ceil(index_civ2/2)*ones(size(num_j));
     % adjust the first and last field number
-    if isequal(lastfield_j,[])
+    if isnan(lastfield_j)
         indsel=find((num_a_civ1 >= 1)&(num_a_civ2 >= 1));
     else
         indsel=find((num_b_civ1 <= lastfield_j)&(num_b_civ2 <= lastfield_j)&(num_a_civ1 >= 1)&(num_a_civ2 >= 1));
@@ -1470,8 +1470,8 @@ function list_pair_civ1_Callback(hObject, eventdata, handles)
 list_pair=get(handles.list_pair_civ1,'String');%get the menu of image pairs
 index_pair=get(handles.list_pair_civ1,'Value');
 displ_num=get(handles.list_pair_civ1,'UserData');
-num_a=displ_num(1,index_pair);
-num_b=displ_num(2,index_pair);
+% num_a=displ_num(1,index_pair);
+% num_b=displ_num(2,index_pair);
 list_pair2=get(handles.list_pair_civ2,'String');%get the menu of image pairs
 if index_pair<=length(list_pair2)
     set(handles.list_pair_civ2,'Value',index_pair);
@@ -1482,12 +1482,12 @@ mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
 if isequal(mode,'series(Di)')
-    first_i=str2num(get(handles.first_i,'String'));
-    last_i=str2num(get(handles.last_i,'String'));
-    incr_i=str2num(get(handles.incr_i,'String'));
+    first_i=str2double(get(handles.first_i,'String'));
+    last_i=str2double(get(handles.last_i,'String'));
+    incr_i=str2double(get(handles.incr_i,'String'));
     num1=first_i:incr_i:last_i;
-    lastfield=str2num(get(handles.nb_field,'String'));
-    if ~isequal(lastfield,[])
+    lastfield=str2double(get(handles.nb_field,'String'));
+    if ~isnan(lastfield)
         ind=find((num1-floor(index_pair/2)*ones(size(num1))>0)& ...
             (num1+ceil(index_pair/2)*ones(size(num1))<=lastfield));
         num1=num1(ind);
@@ -1495,12 +1495,12 @@ if isequal(mode,'series(Di)')
     set(handles.first_i,'String',num2str(num1(1)));
     set(handles.last_i,'String',num2str(num1(end)));
 elseif isequal(mode,'series(Dj)')
-    first_j=str2num(get(handles.first_j,'String'));
-    last_j=str2num(get(handles.last_j,'String'));
-    incr_j=str2num(get(handles.incr_j,'String'));
+    first_j=str2double(get(handles.first_j,'String'));
+    last_j=str2double(get(handles.last_j,'String'));
+    incr_j=str2double(get(handles.incr_j,'String'));
     num_j=first_j:incr_j:last_j;
-    lastfield2=str2num(get(handles.nb_field2,'String'));
-    if ~isequal(lastfield2,[])
+    lastfield2=str2double(get(handles.nb_field2,'String'));
+    if ~isnan(lastfield2)
         ind=find((num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
             (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2));
         num1=num_j(ind);
@@ -1520,12 +1520,12 @@ mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
 if isequal(mode,'series(Di)')
-    first_i=str2num(get(handles.first_i,'String'));
-    last_i=str2num(get(handles.last_i,'String'));
-    incr_i=str2num(get(handles.incr_i,'String'));
+    first_i=str2double(get(handles.first_i,'String'));
+    last_i=str2double(get(handles.last_i,'String'));
+    incr_i=str2double(get(handles.incr_i,'String'));
     num1=first_i:incr_i:last_i;
-    lastfield=str2num(get(handles.nb_field,'String'));
-    if ~isequal(lastfield,[])
+    lastfield=str2double(get(handles.nb_field,'String'));
+    if ~isnan(lastfield)
         ind=find((num1-floor(index_pair/2)*ones(size(num1))>0)& ...
             (num1+ceil(index_pair/2)*ones(size(num1))<=lastfield));
         num1=num1(ind);
@@ -1533,12 +1533,12 @@ if isequal(mode,'series(Di)')
     set(handles.first_i,'String',num2str(num1(1)));
     set(handles.last_i,'String',num2str(num1(end)));
 elseif isequal(mode,'series(Dj)')
-    first_j=str2num(get(handles.first_j,'String'));
-    last_j=str2num(get(handles.last_j,'String'));
-    incr_j=str2num(get(handles.incr_j,'String'));
+    first_j=str2double(get(handles.first_j,'String'));
+    last_j=str2double(get(handles.last_j,'String'));
+    incr_j=str2double(get(handles.incr_j,'String'));
     num_j=first_j:incr_j:last_j;
-    lastfield2=str2num(get(handles.nb_field2,'String'));
-    if ~isequal(lastfield2,[])
+    lastfield2=str2double(get(handles.nb_field2,'String'));
+    if ~isnan(lastfield2)
         ind=find((num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
             (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2));
         num1=num_j(ind);
@@ -1595,8 +1595,6 @@ if isequal(box_missing,0)
     return
 end
 
-
-
 %check mask if selecetd
 if isequal(get(handles.get_mask_civ1,'Value'),1)
     maskname=get(handles.mask_civ1,'String');
@@ -1623,7 +1621,7 @@ if isequal(get(handles.get_mask_fix2,'Value'),1)
     end
 end
 
-%% initialize the waitbars
+%% initialize the waitbars: TO suppress, waitbar not used
 set(handles.waitbar_1,'Position',[0.946 0.876 0.03 0.001])
 set(handles.waitbar_patch1,'Position',[0.946 0.439 0.03 0.001])
 set(handles.waitbar_civ2,'Position',[0.946 0.219 0.03 0.001])
@@ -1635,11 +1633,9 @@ display('checking the files...')
 compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displacement (=2) or stereo PIV (=3)
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc]=...
     set_civ_filenames(handles,compare,box_test);
-if isempty(filecell)
+if isempty(filecell)% (error message displayed in fct set_civ_filenames)
     return
 end
-filecell
-
 nbfield=numel(num1_civ1);
 nbslice=numel(num_a_civ1);
 
@@ -1886,7 +1882,7 @@ for ifile=1:nbfield
                     par_civ1.maskflag='y';
                 else
                     maskbase=[filecell.filebase '_' maskdispl]; %
-                    nbslice_mask=str2num(maskdispl(1:end-4)); %
+                    nbslice_mask=str2double(maskdispl(1:end-4)); %
                     num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
                     par_civ1.maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
                     if exist(par_civ1.maskname,'file')
@@ -1903,8 +1899,8 @@ for ifile=1:nbfield
                 par_civ1.gridflag='y';
                 gridname=get(handles.grid_civ1,'String');
                 if isequal(gridname(end-3:end),'grid')
-                    nbslice_grid=str2num(gridname(1:end-4)); %
-                    if ~isempty(nbslice_grid)
+                    nbslice_grid=str2double(gridname(1:end-4)); %
+                    if ~isnan(nbslice_grid)
                         num1_grid=mod(num1_civ1(ifile)-1,nbslice_grid)+1;
                         par_civ1.gridname=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
                         if ~exist(par_civ1.gridname,'file')
@@ -1946,7 +1942,7 @@ for ifile=1:nbfield
                 maskname='';
             else
                 maskdispl=get(handles.mask_fix1,'String');
-                nbslice_mask=str2num(maskdispl(1:end-4)); %
+                nbslice_mask=str2double(maskdispl(1:end-4)); %
                 num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
                 maskbase=[filecell.filebase '_' maskdispl];
                 maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
@@ -1993,8 +1989,8 @@ for ifile=1:nbfield
                     patch1.gridflag='y';
                     gridname=get(handles.grid_patch1,'String');
                     if isequal(gridname(end-3:end),'grid')
-                        nbslice_grid=str2num(gridname(1:end-4)); %
-                        if ~isempty(nbslice_grid)
+                        nbslice_grid=str2double(gridname(1:end-4)); %
+                        if ~isnan(nbslice_grid)
                             num1_grid=mod(num1_civ1(ifile)-1,nbslice_grid)+1;
                             patch1.gridPatch=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
                             if ~exist(patch1.gridPatch,'file')
@@ -2055,7 +2051,7 @@ for ifile=1:nbfield
                     par_civ2.maskflag='y';
                 else
                     maskbase=[filecell.filebase '_' maskdispl]; %
-                    nbslice_mask=str2num(maskdispl(1:end-4)); %
+                    nbslice_mask=str2double(maskdispl(1:end-4)); %
                     num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
                     par_civ2.maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
                     if exist(par_civ2.maskname,'file')
@@ -2067,12 +2063,12 @@ for ifile=1:nbfield
                 end
             end
             %TESTgrid
-            test_grid=get(handles.browse_gridciv2,'Value');
+            %test_grid=get(handles.browse_gridciv2,'Value');
             gridname=get(handles.grid_civ2,'String');
-            gridflag='y';
+            %gridflag='y';
             if numel(gridname)>=4 && isequal(gridname(end-3:end),'grid')
-                nbslice_grid=str2num(gridname(1:end-4)); %
-                if ~isempty(nbslice_grid)
+                nbslice_grid=str2double(gridname(1:end-4)); %
+                if ~isnan(nbslice_grid)
                     par_civ2.gridflag='y';
                     num1_grid=mod(num1_civ2(ifile)-1,nbslice_grid)+1;
                     par_civ2.gridname=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
@@ -2122,7 +2118,7 @@ for ifile=1:nbfield
             else
                 maskdispl=get(handles.mask_fix2,'String');
                 maskbase=[filecell.filebase '_' maskdispl]; %
-                nbslice_mask=str2num(maskdispl(1:end-4)); %
+                nbslice_mask=str2double(maskdispl(1:end-4)); %
                 num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
                 maskname =name_generator(maskbase,num1_mask,1,'.png','_i');
             end
@@ -2168,8 +2164,8 @@ for ifile=1:nbfield
                     patch2.gridflag='y';
                     gridname=get(handles.grid_patch2,'String');
                     if isequal(gridname(end-3:end),'grid')
-                        nbslice_grid=str2num(gridname(1:end-4)); %
-                        if ~isempty(nbslice_grid)
+                        nbslice_grid=str2double(gridname(1:end-4)); %
+                        if ~isnan(nbslice_grid)
                             num1_grid=mod(num1_civ2(ifile)-1,nbslice_grid)+1;
                             patch2.gridPatch=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
                             if ~exist(patch2.gridPatch,'file')
@@ -2240,8 +2236,7 @@ for ifile=1:nbfield
     end
 end
 
-
-if ~batch%TODO: a revoir, cas 'run as background task'
+if ~batch
     [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
     filename_superbat=fullfile(Rootbat,['job_list.bat']);
     fid=fopen(filename_superbat,'w');
@@ -2254,8 +2249,7 @@ if ~batch%TODO: a revoir, cas 'run as background task'
     end
 end
 
-
-%save interface state
+%% save interface state
 if isfield(filecell,'nc')
     if isfield(filecell.nc,'civ2')
         fileresu=filecell.nc.civ2{1,1};
@@ -2293,7 +2287,7 @@ if isempty(filebase)||isequal(filebase,'')
     return
 end
 
-filebase=regexprep(filebase,'\.fsnet','fsnet');% temporary fix for cluster Coriolis
+%filebase=regexprep(filebase,'\.fsnet','fsnet');% temporary fix for cluster Coriolis
 filecell.filebase=filebase;
 
 browse=get(handles.browse_root,'UserData');
@@ -2307,7 +2301,7 @@ else
     mode_value=get(handles.mode,'Value');
     mode=mode_list{mode_value};
 end
-time=get(handles.RootName,'UserData'); %get the set of times
+%time=get(handles.RootName,'UserData'); %get the set of times
 ext_ima=get(handles.ImaExt,'String');
 nom_type_nc=browse.nom_type_nc;
 if isfield(browse,'nom_type_ima')
@@ -2357,12 +2351,12 @@ nbslice=length(num_a_civ1);
 if box_test(2)==1% fix1 performed
     ref=get(handles.ref_fix1,'UserData');%read data on the ref file stored by get_ref_fix1_Callback
     if ~isempty(ref)
-        first_i=str2num(get(handles.first_i,'String'));
-        last_i=str2num(get(handles.last_i,'String'));
-        incr_i=str2num(get(handles.incr_i,'String'));
-        first_j=str2num(get(handles.first_j,'String'));
-        last_j=str2num(get(handles.last_j,'String'));
-        incr_j=str2num(get(handles.incr_j,'String'));
+        first_i=str2double(get(handles.first_i,'String'));
+        last_i=str2double(get(handles.last_i,'String'));
+        incr_i=str2double(get(handles.incr_i,'String'));
+        first_j=str2double(get(handles.first_j,'String'));
+        last_j=str2double(get(handles.last_j,'String'));
+        incr_j=str2double(get(handles.incr_j,'String'));
         num_i_ref=first_i:incr_i:last_i;
         num_j_ref=first_j:incr_j:last_j;
         if isequal(mode,'displacement')
@@ -2484,21 +2478,22 @@ if box_test(1)==1;
     detect=1;
     vers=0;
     subdir_civ1_new=subdir_civ1;
-    while detect==1 %create a new subdir if the netcdf files already exist
+    ind_test=0;
+    while detect==1 && ind_test<10%create a new subdir if the netcdf files already exist
         for ifile=1:nbfield
             for j=1:nbslice
                 filename=name_generator(filebase_nc,num1_civ1(ifile),num_a_civ1(j),'.nc',nom_type_nc,1,num2_civ1(ifile),num_b_civ1(j),subdir_civ1_new);
                 detect=exist(filename,'file')==2;
                 if detect% if a netcdf file already exists
-                    indstr=regexp(subdir_civ1,'\D');
-                    if indstr(end)<length(subdir_civ1) %subdir_civ1 ends by a number
-                        vers=str2double(subdir_civ1(indstr(end)+1:end))+1;
-                        subdir_civ1_new=[subdir_civ1(1:indstr(end)) num2str(vers)];
+                    indstr=regexp(subdir_civ1_new,'\D');
+                    if indstr(end)<length(subdir_civ1_new) %subdir_civ1 ends by a number
+                        vers=str2double(subdir_civ1_new(indstr(end)+1:end))+1;
+                        subdir_civ1_new=[subdir_civ1_new(1:indstr(end)) num2str(vers)];
                     else
                         vers=vers+1;
-                        subdir_civ1_new=[subdir_civ1(1:indstr(end)) '_' num2str(vers)];       
+                        subdir_civ1_new=[subdir_civ1_new(1:indstr(end)) '_' num2str(vers)];       
                     end
-                    subdir_civ2=subdir_civ1;
+                    subdir_civ2=subdir_civ1_new;
                     break
                 end
                 filecell.nc.civ1(ifile,j)={filename};
@@ -2528,20 +2523,18 @@ if box_test(1)==1;
             cd(currentdir);
         end
         if strcmp(compare,'stereo PIV')&&(strcmp(mode,'pair j1-j2')||strcmp(mode,'series(Dj)')||strcmp(mode,'series(Di)'))%check second nc series
-%             vers=0;
-%             subdir_civ1_new=subdir_civ1;
             for ifile=1:nbfield
                 for j=1:nbslice
                     filename=name_generator(filebase_A,num1_civ1(ifile),num_a_civ1(j),'.nc',nom_type_nc,1,num2_civ1(ifile),num_b_civ1(j),subdir_civ1_new);%
                     detect=exist(filename,'file')==2;
                     if detect% if a netcdf file already exists
-                       indstr=regexp(subdir_civ1,'\D');
-                       if indstr(end)<length(subdir_civ1) %subdir_civ1 ends by a number
-                           vers=str2double(subdir_civ1(indstr(end)+1:end))+1;
-                           subdir_civ1_new=[subdir_civ1(1:indstr(end)) num2str(vers)];
+                       indstr=regexp(subdir_civ1_new,'\D');
+                       if indstr(end)<length(subdir_civ1_new) %subdir_civ1 ends by a number
+                           vers=str2double(subdir_civ1_new(indstr(end)+1:end))+1;
+                           subdir_civ1_new=[subdir_civ1_new(1:indstr(end)) num2str(vers)];
                        else
                            vers=vers+1;
-                           subdir_civ1_new=[subdir_civ1 '_' num2str(vers)];
+                           subdir_civ1_new=[subdir_civ1_new '_' num2str(vers)];
                        end
                        subdir_civ2=subdir_civ1;
                        break
@@ -2552,7 +2545,6 @@ if box_test(1)==1;
                     break
                 end
             end
-%             subdir_civ1=subdir_civ1_new;
             %create the new subdir_civ1
             if exist(fullfile(Path_ima,subdir_civ1_new),'dir')
                    cd(Path_ima);          
@@ -3092,7 +3084,7 @@ end
 function first_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % last_i_Callback(hObject, eventdata, handles)
-first_i=str2num(get(handles.first_i,'String'));
+first_i=str2double(get(handles.first_i,'String'));
 % last_i=str2num(get(handles.last_i,'String'));
 % ref_i=ceil((first_i+last_i)/2);
 set(handles.ref_i,'String', num2str(first_i))% reference index for pair dt = first index
@@ -3122,7 +3114,7 @@ mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
 if isequal (mode, 'series(Di)' )
-    ref_i=str2num(get(handles.ref_i,'String'));
+    ref_i=str2double(get(handles.ref_i,'String'));
     num1=ref_i-floor(index/2);%  first image numbers
     num2=ref_i+ceil(index/2);
     num_a=1;
@@ -3130,23 +3122,23 @@ if isequal (mode, 'series(Di)' )
 elseif isequal (mode, 'series(Dj)')
     num1=1;
     num2=1;
-    ref_j=str2num(get(handles.ref_j,'String'));
+    ref_j=str2double(get(handles.ref_j,'String'));
     num_a=ref_j-floor(index/2);%  first image numbers
     num_b=ref_j+ceil(index/2);
 elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)
-    ref_i=str2num(get(handles.ref_i,'String'));
+    ref_i=str2double(get(handles.ref_i,'String'));
     num1=ref_i;
     num2=ref_i;
     num_a=displ_num(1,index);
     num_b=displ_num(2,index);
 end
 dt=time(num2,num_b)-time(num1,num_a);
-ibx=str2num(get(handles.ibx,'String'));
-iby=str2num(get(handles.iby,'String'));
-umin=dt*pxcmx*str2num(get(handles.umin,'String'));
-umax=dt*pxcmx*str2num(get(handles.umax,'String'));
-vmin=dt*pxcmy*str2num(get(handles.vmin,'String'));
-vmax=dt*pxcmy*str2num(get(handles.vmax,'String'));
+ibx=str2double(get(handles.ibx,'String'));
+iby=str2double(get(handles.iby,'String'));
+umin=dt*pxcmx*str2double(get(handles.umin,'String'));
+umax=dt*pxcmx*str2double(get(handles.umax,'String'));
+vmin=dt*pxcmy*str2double(get(handles.vmin,'String'));
+vmax=dt*pxcmy*str2double(get(handles.vmax,'String'));
 shiftx=round((umin+umax)/2);
 shifty=round((vmin+vmax)/2);
 isx=(umax+2-shiftx)*2+ibx;
@@ -3378,11 +3370,11 @@ if ~isempty(maskfiles)
     val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
     ind_mask=findstr('mask',Name);
     i=ind_mask-1;
-    while val(i)==0 & i>0
+    while val(i)==0 && i>0
         i=i-1;
     end
-    nbslice=str2num(Name(i+1:ind_mask-1));
-    if ~isequal(nbslice,[]) & Name(i)=='_'
+    nbslice=str2double(Name(i+1:ind_mask-1));
+    if ~isnan(nbslice) && Name(i)=='_'
         flag_mask=1;
     else
         msgbox_uvmat('ERROR',['bad mask file ' Name ext ' found in ' Path2])
@@ -3410,11 +3402,11 @@ if ~isempty(maskfiles)
     val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
     ind_mask=findstr('grid',Name);
     i=ind_mask-1;
-    while val(i)==0 & i>0
+    while val(i)==0 && i>0
         i=i-1;
     end
-    nbslice=str2num(Name(i+1:ind_mask-1));
-    if ~isequal(nbslice,[]) & Name(i)=='_'
+    nbslice=str2double(Name(i+1:ind_mask-1));
+    if ~isnan(nbslice) && Name(i)=='_'
         flag_mask=1;
     else
         msgbox_uvmat('ERROR',['bad grid file ' Name ext ' found in ' Path2])
