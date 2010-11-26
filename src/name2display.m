@@ -73,8 +73,9 @@ if strcmpi(ext,'.avi')
      nom_type='*';
 %case of a numerical index follewed by a lower case letter (e.g. a,b,c):
 %the penultimate character is a number and the last one a letter (lower case: last >= 97 && last <= 122
-%                                                                 capital letter:  last >= 65 && last <= 90)                                                             
-elseif  penult >= 48 && penult <= 57 && (last >= 65 && last <= 90)||(last >= 97 && last <= 122)
+%                                                                 capital
+%                                                                 letter:  last >= 65 && last <= 90)  
+elseif  penult >= 48 && penult <= 57 && ((last >= 65 && last <= 90)||(last >= 97 && last <= 122))
     str_a=last_str; %extract appendix a,b,c... or A,B,C... as output.
     ind_end=indcur-1; %current index just before the suffix letter
     indices_root=regexp(RootFile(1:indcur-1),'\D');%detect non digit characters
@@ -128,39 +129,30 @@ elseif strcmp(filelit(end-1:end),'__')
     nom_type='_1_1';
 elseif strcmp(filelit(end),'_')
     indcur=separ3-1;
-%     field_count=num3;
     str2='';
     str_a='';
     %detect zeros before the number
-%     count=0; % extract the numerical appendix
     field_count=RootFile(separ3+1:end);% set the selected field number'%03d'
     charstring=['%0' num2str(length(field_count)) 'd'];
     nom_type=['_' num2str(1,charstring)];
-%     if strcmp('0',RootFile(separ3+1)); % select the non-numerical characters
-%         nom_type=['_%0' num2str(length(RootFile(separ3+1:end))) 'd'];
-%     else
-%         nom_type='_i';
-%     end  
-     
 elseif RootFile(indcur-2)=='_'% search appendix a,b,c,d
-    last=RootFile(indcur-1:indcur);
-    if isequal(length(last),2) 
-          str_a=last(1);%put appendix a,b,c, ou d
-          str_b=last(2);%put appendix a,b,c, ou d
-%           indcur=indcur-3;
-          separ0=indsel(end-3);
+    lasts=RootFile(indcur-1:indcur);
+%     if isequal(length(last),2) 
+        str_a=lasts(1);%put appendix a,b,c, ou d
+        str_b=lasts(2);%put appendix a,b,c, ou d
+        separ0=indsel(end-3);
         field_count=RootFile(separ0+1:separ1-1);
         indcur=separ0;
-        if double(last) >= 97 & double(last)<= 122 
+        if double(lasts) >= 97 & double(lasts)<= 122 
             nom_type='_ab';
             testsub=1;
-        elseif double(last) >= 65 & double(last) <= 90 
+        elseif double(lasts) >= 65 & double(lasts) <= 90 
             nom_type='_AB';
             testsub=1;
         end
         charstring=['%0' num2str(length(field_count)) 'd'];
         nom_type=[num2str(1,charstring) nom_type];
-    end
+%     end
 %search for other names with counter
 else
     if length(ext)>1     
@@ -177,12 +169,6 @@ else
                 field_count=RootFile(indcur+1:indcur+count);% set the selected field number'%03d'
                 charstring=['%0' num2str(length(field_count)) 'd'];
                 nom_type=num2str(1,charstring);
-%                 if isequal(field_count(1),'0')
-%                     nbfigures=length(field_count);
-%                     nom_type=['%0' num2str(nbfigures) 'd'];
-%                 else
-%                     nom_type='#';
-%                 end
             end
     end
 end

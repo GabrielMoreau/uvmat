@@ -84,30 +84,36 @@ if ~test_pairs%case of a single index i, and possibly j
 %     numlength=numel(nom_type);
     nom_type_mod=nom_type;
     num_j_str='';
-    if strcmp(nom_type(1),'_')
-        filename=[filename '_'];
-        nom_type_mod(1)=[];
-    end
-    if strcmp(nom_type_mod(end),'a')
-        nom_type_mod(end)=[];
-        num_j_str=char(num_j1+96);% lower letter corresponding to the index
-    elseif strcmp(nom_type_mod(end),'A')
-        nom_type(end)=[];
-        num_j_str=char(num_j1+64);% lower letter corresponding to the index
-    elseif isequal(numel(regexp(nom_type_mod,'_')),1)%if a second separator '_' exists in nom_type
-        num_j_str=['_' num2str(num_j1)];
-        nom_type_mod(regexp(nom_type_mod,'_'):end)=[];
-    else
-        num_j1_out=[];%no index j
-    end
-    if ~isnan(str2double(nom_type_mod))    
-        numtype=['%0' num2str(length(nom_type_mod)) 'd'];%indicate the number of digits (0 before the number)
-        filename=[filename num2str(num_i1,numtype) num_j_str ext];
-        num_i2_out=num_i1_out;
-        num_j2_out=num_j1_out;
-    else %fixed name , no indexing, for instance '*'
-%           filebasesub=filebase;
+    if strcmp(nom_type,'1')
+        filename=[filename num2str(num_i1) ext];
+    elseif length(nom_type)<=1%fixed name , no indexing, for instance '*'
         filename=[filename ext];
+    else
+        nom_type_mod=nom_type;
+        if strcmp(nom_type(1),'_')
+            filename=[filename '_'];
+            nom_type_mod(1)=[];
+        end
+        if strcmp(nom_type_mod(end),'a')
+            nom_type_mod(end)=[];
+            num_j_str=char(num_j1+96);% lower letter corresponding to the index
+        elseif strcmp(nom_type_mod(end),'A')
+            nom_type(end)=[];
+            num_j_str=char(num_j1+64);% lower letter corresponding to the index
+        elseif isequal(numel(regexp(nom_type_mod,'_')),1)%if a second separator '_' exists in nom_type
+            num_j_str=['_' num2str(num_j1)];
+            nom_type_mod(regexp(nom_type_mod,'_'):end)=[];
+        else
+            num_j1_out=[];%no index j
+        end
+        if ~isnan(str2double(nom_type_mod))    
+            numtype=['%0' num2str(length(nom_type_mod)) 'd'];%indicate the number of digits (0 before the number)
+            filename=[filename num2str(num_i1,numtype) num_j_str ext];
+            num_i2_out=num_i1_out;
+            num_j2_out=num_j1_out;
+        else %fixed name 
+            filename=[filename ext];
+        end
     end
 
 %case of derived file indexing (e.g. netcdf files)
