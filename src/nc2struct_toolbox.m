@@ -1,30 +1,33 @@
 %'nc2struct_toolbox': transform a netcdf file in a corresponding matlab structure, USE OLD NETCDF LIBRARY
+% it reads all the global attributes and all variables, or a selected list.
+% The corresponding dimensions and variable attributes are then extracted
 %----------------------------------------------------------------------
-% function [Data,var_detect,ichoice]=nc2struct_toolbox(nc,ListField)
+% function [Data,var_detect,ichoice]=nc2struct_toolbox(nc,varargin)
 %
 % OUTPUT:
 %  Data: structure containing all the information of the netcdf file (or netcdf object)
-%           with fields:
-%    .ListGlobalAttribute: cell listing the names of the global attributes
-%        .Att_1,Att_2... : values of the global attributes
-%            .ListDimName: cell listing the names of the array dimensions
-%               .DimValue: array dimension values (Matlab vector with the same length as .ListDimName
-%            .ListVarName: cell listing the names of the variables
-%            .VarDimIndex: cell containing the set of dimension indices (in list .ListDimName) for each variable of .ListVarName
-%            .VarDimName: cell containing a cell of dimension names (in list .ListDimName) for each variable of .ListVarName
-%           .VarAttribute: cell of structures s containing names and values of variable attributes (s.name=value) for each variable of .ListVarName
-%        .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
-%  var_detect: vector with same length as ListVarName, with 1 for each detected variable and 0 else.
-%  ichoice: = line 
-%
+%           with (optional)fields:
+%                    .ListGlobalAttribute: cell listing the names of the global attributes
+%                    .Att_1,Att_2... : values of the global attributes
+%                    .ListVarName: list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
+%                    .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)                         
+%                    .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
+%                    .ListDimName=list of dimension (added information, not requested for field description)
+%                    .DimValue= vlalues of dimensions (added information, not requested for field description)
+%  var_detect: vector with same length as the cell array ListVarName, = 1 for each detected variable and 0 else.
+%            var_detect=[] in the absence of input cell array 
+%  ichoice: index of the selected line in the case of multiple choice 
+%        (cell array of varible names with multiple lines) , =[] by default 
 %INPUT:
-%     nc:      name of a netcdf file (char string) or netcdf object   
-% ListField: optional list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
-%         if ListField is absent or ='*', ALL the attributes and variables are read.  %      
-%        if  ListField='ListGlobalAttribute', followed by the arguments 'name1', name2'..., only thes global attributes will be read (short option)
-%        if  ListField=[] or{}, no variables is read (only global attributes and lists of vdimensions, variables and attriburtes)
-%        if ListField is a cell array with n lines, the set of variables
-%                        will be sought by order of priority in the list, while output names will be set by the first line
+%  nc:  name of a netcdf file (char string) or netcdf object   
+%  additional arguments:
+%       -no additional arguments: all the variables of the netcdf fiel are read.
+%       -a cell array, ListVarName, made of  char strings {'VarName1', 'VarName2',...} ) 
+%         if ListVarName=[] or {}, no variables is read (only global attributes)
+%         if ListVarName is absent, or = '*', ALL the variables of the netcdf file are read. 
+%         if ListVarName is a cell array with n lines, the set of variables will be sought by order of priority
+%                  in the list, while output names will be set by the first line
+%        - the string 'ListGlobalAttribute' followed by a list of attribute  names: reads only these attributes (fast reading)
 % 
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
@@ -202,7 +205,7 @@ for ivar=1:length(var_read)
         var_dim_name=name(var_dim{ivardim});%name of the dimension
         for idim=1:length(dim_name)% find the index of the current dimension in the list of dimensions
             if isequal(dim_name{idim},var_dim_name)
-                Data.VarDimIndex{ivar}(ivardim)=idim;
+                VarDimIndex{ivar}(ivardim)=idim;
                 used(idim)=1;
                 break
             end
@@ -239,8 +242,8 @@ else
     Data.DimValue=Data.DimValue(old_dim_index);
 end
 for ivar=1:length(var_read)
-    Data.VarDimIndex{ivar}=(old2new(Data.VarDimIndex{ivar}));
-    Data.VarDimName{ivar}=(Data.ListDimName(Data.VarDimIndex{ivar}));
+    VarDimIndex{ivar}=(old2new(VarDimIndex{ivar}));
+    Data.VarDimName{ivar}=(Data.ListDimName(VarDimIndex{ivar}));
 end
 %variable values
 

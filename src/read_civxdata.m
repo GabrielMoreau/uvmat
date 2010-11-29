@@ -70,8 +70,8 @@ VelTypeOut=VelType;%default
 if isfield(Field,'Txt')
     return % error in file reading
 end
-if isequal(vardetect,0)
-     Field.Txt=[reshape(FieldNames,1,numel(FieldNames)) ' not accessible in ' filename '/' VelType];
+if vardetect(1)==0
+     Field.Txt=[ 'requested field not available in ' filename '/' VelType];
      return
 end
 var_ind=find(vardetect);
@@ -136,12 +136,12 @@ Field.ListGlobalAttribute=[List {'Time','CivStage','CoordUnit'}];
 
 % rescale to pixel coordiantes
 if isfield(Field,'pixcmx')
-Field.pixcmx=double(Field.pixcmx); 
-Field.pixcmy=double(Field.pixcmy);
-Field.U=Field.U*Field.pixcmx;
-Field.V=Field.V*Field.pixcmy;
-Field.X=Field.X*Field.pixcmx;
-Field.Y=Field.Y*Field.pixcmy; 
+    Field.pixcmx=double(Field.pixcmx);
+    Field.pixcmy=double(Field.pixcmy);
+    Field.U=Field.U*Field.pixcmx;
+    Field.V=Field.V*Field.pixcmy;
+    Field.X=Field.X*Field.pixcmx;
+    Field.Y=Field.Y*Field.pixcmy;
 end
 if ~isequal(Field.dt,0)
     Field.U=Field.U*Field.dt;%translate in px displacement

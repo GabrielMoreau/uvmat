@@ -50,7 +50,11 @@ if ~isequal(hhh,'')
         errormsg=['directory ' FilePath ' needs to be created'];
         return
     end
-    [Data,errormsg]=check_field_structure(Data);%check the validity of the input field structure
+    [Data,errormsg]=check_field_structure(Data)%check the validity of the input field structure
+    if ~isempty(errormsg)
+        errormsg=['invalid input structure:' errormsg];
+        return
+    end
     ListVarName=Data.ListVarName;
     nc=netcdf.create(flname,'NC_CLOBBER');%,'clobber'); %create the netcdf file with name flname   
     %write global constants
@@ -109,11 +113,11 @@ if ~isequal(hhh,'')
         if isfield(Data,ListVarName{ivar})
             eval(['VarVal=Data.' ListVarName{ivar} ';'])%varval=values of the current variable 
             VarDimIndex=Data.VarDimIndex{ivar}; %indices of the variable dimensions in the list of dimensions
-            siz=size(VarVal);
             VarDimName=Data.VarDimName{ivar};
             if ischar(VarDimName)
                 VarDimName={VarDimName};
             end
+            siz=size(VarVal);
             testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2);% case of a coordinate defined on a regular mesh by the first and last values.
             testline=isequal(length(siz),2) && isequal(siz(1),1)&& isequal(siz(2), Data.DimValue(VarDimIndex));%matlab vector
             testcolumn=isequal(length(siz),2) && isequal(siz(1), Data.DimValue(VarDimIndex))&& isequal(siz(2),1);%matlab column vector
