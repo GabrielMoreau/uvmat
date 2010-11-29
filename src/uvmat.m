@@ -192,7 +192,7 @@ end
 % End initialization code - DO NOT EDIT
 
 %------------------------------------------------------------------------
-% --- Executes just before uvmat is made visible.
+% --- Executes just before the GUI uvmat is made visible.
 function uvmat_OpeningFcn(hObject, eventdata, handles, input )
 %------------------------------------------------------------------------
 global nb_builtin
@@ -389,21 +389,20 @@ if testinputfield
 end
 set_vec_col_bar(handles) %update the display of color code for vectors
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command menuline.
 function varargout = uvmat_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;% the only output argument is the handle to the GUI figure
 
-%-------------------------------------------------------------------
-%-------------------------------------------------------------------
-% II - FUNCTIONS FOR INTRODUCING THE INPUT FILES
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
+%  II - FUNCTIONS FOR INTRODUCING THE INPUT FILES
 % automatically sets the global properties when the rootfile name is introduced
 % then activate the view-field action if selected
 % it is activated either by clicking on the RootPath window or by the 
 % browser 
-%------------------------------------------------------------------
-%------------------------------------------------------------------
-
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on the menu Open/Browse...
 % search the files, recognize their type according to their name and fill the rootfile input windows
 function MenuBrowse_Callback(hObject, eventdata, handles)
@@ -483,34 +482,38 @@ else
     end
 end
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% --- Open again the file whose name has been recorded in MenuFile_1
 function MenuFile_1_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_1,'Label');
 display_file_name(hObject, eventdata, handles,fileinput)
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% --- Open again the file whose name has been recorded in MenuFile_2
 function MenuFile_2_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_2,'Label');
 display_file_name(hObject, eventdata, handles,fileinput)
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% --- Open again the file whose name has been recorded in MenuFile_3
 function MenuFile_3_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_3,'Label');
 display_file_name(hObject, eventdata, handles,fileinput)
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% --- Open again the file whose name has been recorded in MenuFile_4
 function MenuFile_4_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_4,'Label');
 display_file_name(hObject, eventdata, handles,fileinput)
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% --- Open again the file whose name has been recorded in MenuFile_5
 function MenuFile_5_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_5,'Label');
 display_file_name(hObject, eventdata, handles,fileinput)
 
-%----------------------------------------------------------------- 
-% fills the edit boxes RootPath, RootFile,NomType...from an input file name 'fileinput'
-%----------------------------------------------------------------
+%------------------------------------------------------------------------ 
+% --- Fills the edit boxes RootPath, RootFile,NomType...from an input file name 'fileinput'
 function display_file_name(hObject, eventdata, handles,fileinput)
 if ~exist(fileinput,'file')
     msgbox_uvmat('ERROR',['input file ' fileinput  ' does not exist'])
@@ -610,12 +613,13 @@ switch ext_test
 end
 
 %------------------------------------------------------------------------
+% --- Called by action in RootPath edit box
 function RootPath_Callback(hObject,eventdata,handles)
 %------------------------------------------------------------------------
 update_rootinfo(hObject,eventdata,handles);
 
 %------------------------------------------------------------------------
-%-- called by action in RootFile edit box
+% --- Called by action in RootFile edit box
 function SubDir_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %refresh the menu of input fields
@@ -624,13 +628,13 @@ Fields_Callback(hObject, eventdata, handles);
 run0_Callback(hObject, eventdata, handles); 
 
 %------------------------------------------------------------------------
-% --- called by action in RootFile edit box
+% --- Called by action in RootFile edit box
 function RootFile_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 update_rootinfo(hObject,eventdata,handles)
 
 %------------------------------------------------------------------------
-% --- called by action in FileIndex edit box
+% --- Called by action in FileIndex edit box
 function FileIndex_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 FileIndices=get(handles.FileIndex,'String');
@@ -649,13 +653,8 @@ set(handles.j2,'String',str_b);
 run0_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
-% --- called by action in FileIndex_1 edit box
-function FileIndex_1_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-run0_Callback(hObject, eventdata, handles)
-
-%------------------------------------------------------------------------
-% --- update information about a new field series (indices to scan, timing, calibration from an xml file, then refresh current plots
+% --- Update information about a new field series (indices to scan, timing,
+%     calibration from an xml file, then refresh current plots
 function update_rootinfo(hObject,eventdata,handles)
 %------------------------------------------------------------------------
 set(handles.RootPath,'BackgroundColor',[1 1 0])
@@ -894,10 +893,9 @@ set(handles.RootPath,'BackgroundColor',[1 1 1])
 drawnow
 set_scan_options(hObject, eventdata, handles)
 
-
-%-------------------------------------------------------------------
-%-- set index navigation options for new series input and refresh plot
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
+%--- Set index navigation options for new series input and refresh plot
+%------------------------------------------------------------------------
 function set_scan_options(hObject, eventdata, handles)
 
 %  set the corresponding index navigation options 
@@ -954,7 +952,9 @@ if mask_test
     mask_test_Callback(hObject, eventdata, handles)
 end
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
+% --- Executes on the menu Open/Browse_1 for the second input field,
+%     search the files, recognize their type according to their name and fill the rootfile input windows
 function MenuBrowse_1_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 % huvmat=get(handles.run0,'parent');
@@ -1021,34 +1021,39 @@ else
     end
 end
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% --- Open again as second field the file whose name has been recorded in MenuFile_1
 function MenuFile_1_1_Callback(hObject, eventdata, handles)
 fileinput_1=get(handles.MenuFile_1_1,'Label');
 display_file_name_1(hObject,eventdata,handles,fileinput_1)
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% --- Open again as second field the file whose name has been recorded in MenuFile_2
 function MenuFile_2_1_Callback(hObject, eventdata, handles)
 fileinput_1=get(handles.MenuFile_2_1,'Label');
 display_file_name_1(hObject,eventdata,handles,fileinput_1)
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% --- Open again as second field the file whose name has been recorded in MenuFile_3
 function MenuFile_3_1_Callback(hObject, eventdata, handles)
 fileinput_1=get(handles.MenuFile_3_1,'Label');
 display_file_name_1(hObject,eventdata,handles,fileinput_1)
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% --- Open again as second field the file whose name has been recorded in MenuFile_4
 function MenuFile_4_1_Callback(hObject, eventdata, handles)
 fileinput_1=get(handles.MenuFile_4_1,'Label');
 display_file_name_1(hObject,eventdata,handles,fileinput_1)
 
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% --- Open again as second field the file whose name has been recorded in MenuFile_5
 function MenuFile_5_1_Callback(hObject, eventdata, handles)
 fileinput_1=get(handles.MenuFile_5_1,'Label');
 display_file_name_1(hObject,eventdata,handles,fileinput_1)
 
-%----------------------------------------------------------------- 
-% fills the edit boxes RootPath, RootFile,NomType...from an input file name 'fileinput'
-%----------------------------------------------------------------
+%------------------------------------------------------------------------
+% fills the edit boxes RootPath_1, RootFile_1,NomType_1...from an input file name 'fileinput_1'
+%------------------------------------------------------------------------
 function display_file_name_1(hObject,eventdata,handles,fileinput_1)
 
 %[path,name,ext]=fileparts(fileinput_1);
@@ -1164,22 +1169,31 @@ set(handles.SubField,'Visible','on')
 set(handles.SubField,'Value',1)
 RootPath_1_Callback(hObject,eventdata,handles);  
 
-
-%-----------------------------------------------------
+%-----------------------------------------------------------------------
+% --- Called by action in RootPath_1 edit box
 function RootPath_1_Callback(hObject,eventdata,handles)
 update_rootinfo_1(hObject,eventdata,handles)
 
-%-------------------------------------------------------------------
+%-----------------------------------------------------------------------
+% --- Called by action in RootFile_1 edit box
 function RootFile_1_Callback(hObject, eventdata, handles)
 update_rootinfo_1(hObject,eventdata,handles)
-%-------------------------------------------------------------------
+%-----------------------------------------------------------------------
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
+% --- Called by action in FileIndex_1 edit box
+function FileIndex_1_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+
+run0_Callback(hObject, eventdata, handles)
+
+%------------------------------------------------------------------------
+% --- Update information about a new second field series (indices to scan, timing,
+%     calibration from an xml file, then refresh current plots
 function update_rootinfo_1(hObject,eventdata,handles) %A REVOIR
 
 set(handles.RootPath_1,'BackgroundColor',[1 1 0])% indicate active program by yellow color
 drawnow
-%huvmat=get(handles.RootPath,'parent');
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for run0: begin a new series
 
@@ -1207,7 +1221,6 @@ if isequal(lower(FileExt),'.avi') %.avi file
     ColorType=imainfo.ImageType;%='truecolor' for color images
     hhh=which('mmreader');
 elseif ~isempty(imformats(FileExt(2:end)))|| isequal(FileExt,'.vol')
-    testima=1;
     if ~isequal(SubDir,'')
         RootFile=get(handles.RootFile,'String');
         imainfo=imfinfo([fullfile(RootPath,SubDir,RootFile) FileIndices FileExt]);
@@ -1225,17 +1238,18 @@ if ~strcmp(hhh,'')&& mmreader.isPlatformSupported()% if the function is found (r
 elseif isfield(UvData,'MovieObject_1')
     UvData=rmfield(UvData,'MovieObject_1');
 end
-if strcmp(get(handles.npx,'String'),'') || strcmp(get(handles.npy,'String'),'')%update npx and npy if it is not already filled by the first input field
-    if  isfield(imainfo,'Width') && isfield(imainfo,'Height')
-        set(handles.npx,'String',num2str(imainfo.Width));%fills nbre of pixels x box
-        set(handles.npy,'String',num2str(imainfo.Height));%fills nbre of pixels x box
-    else
-        set(handles.npx,'String','');%fills nbre of pixels x box
-        set(handles.npy,'String','');%fills nbre of pixels x box
+if ~isempty(imainfo)% (an image has been introduced as second fierld input)
+    if strcmp(get(handles.npx,'String'),'') || strcmp(get(handles.npy,'String'),'')%update npx and npy if it is not already filled by the first input field
+        if  isfield(imainfo,'Width') && isfield(imainfo,'Height')
+            set(handles.npx,'String',num2str(imainfo.Width));%fills nbre of pixels x box
+            set(handles.npy,'String',num2str(imainfo.Height));%fills nbre of pixels x box
+        else
+            set(handles.npx,'String','');%fills nbre of pixels x box
+            set(handles.npy,'String','');%fills nbre of pixels x box
+        end
+        set(handles.BW,'Value',strcmp(ColorType,'grayscale'))% select handles.BW if grayscale image
     end
-    set(handles.BW,'Value',strcmp(ColorType,'grayscale'))% select handles.BW if grayscale image
 end
-
 % find scaling parameters
 filexml=[FileBase '.xml'];
 fileciv=[FileBase '.civ'];
@@ -1246,9 +1260,6 @@ if exist(filexml,'file')
         msgbox_uvmat('WARNING',warntext)
     end
     if isfield(XmlData,'Camera')
-%         if isfield(XmlData.Camera,'NbSlice')&& ~isempty(XmlData.Camera.NbSlice)
-%             NbSlice=XmlData.Camera.NbSlice;
-%         end
         if isfield(XmlData.Camera,'TimeUnit')&& ~isempty(XmlData.Camera.TimeUnit)
             TimeUnit=XmlData.Camera.TimeUnit;
         end
@@ -1451,7 +1462,6 @@ for ilist=1:nbslice
 end   
 set(handles.masklevel,'String',list_index)
 set(handles.masklevel,'Value',z)
-
 
 %-------------------------------------------------------------------
 % --- Executes on button press in view_xml.
