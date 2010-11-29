@@ -110,15 +110,16 @@ set(handles.ACTION,'Value',1)% PLOT option selected
 if exist('filename','var') && ischar(filename) %transfer input file name in slave mode
     set(handles.inputfile,'String',filename)% prefill the input file name 
     set(handles.inputfile,'Enable','off')% desactivate the input file edit box   
-    set(handles.list_fig,'Value',2)% plotting axes =uvmat selected
-    set(handles.list_fig,'Visible','off')% 
-    set(handles.RUN,'Visible','off')% RUN button not visible (passive mode, get_field used to define the field for uvamt)
+  %  set(handles.list_fig,'Value',2)% plotting axes =uvmat selected
+  %  set(handles.list_fig,'Visible','off')% 
+    set(handles.RUN,'String','REFRESH')% passive mode, get_field used to define the field for uvamt
     set(handles.MenuOpen,'Visible','off')
     set(handles.MenuExport,'Visible','off')
     set(handles.MenuHelp,'Visible','off')
     inputfile_Callback(hObject, eventdata, handles)
 else  %master mode
     set(handles.inputfile,'String','')   
+    set(handles.RUN,'String','RUN')%
     % load the list of previously browsed files for the upper bar menu Open 
     dir_perso=prefdir;
     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');%
@@ -170,8 +171,7 @@ function inputfile_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 inputfile=get(handles.inputfile,'String');
 Field=nc2struct(inputfile);% reads the whole field
-hfig=get(handles.inputfile,'parent');
-set(hfig,'UserData',Field);
+set(handles.figure1,'UserData',Field);
 Field_input(eventdata,handles,Field);
 
 %------------------------------------------------------------------------
@@ -791,16 +791,23 @@ set(hselect_field,'UserData',Field)
 % --- Executes on button press in RUN.
 function RUN_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
-index=get(handles.ACTION,'Value');
-list_func=get(handles.ACTION,'UserData');
-h_fun=list_func{index};
-set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
-drawnow
-SubField=h_fun(handles.figure1);%handles.figure1 =handles of the GUI get_field
-if ~isempty(SubField)
-    plot_get_field(SubField,handles)
+figstring=get(handles.list_fig,'String');
+if isequal(figstring,{'uvmat'})
+    huvmat=findobj(allchild(0),'tag','uvmat');
+    hhuvmat=guidata(huvmat);
+    uvmat('run0_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
+else
+    index=get(handles.ACTION,'Value');
+    list_func=get(handles.ACTION,'UserData');
+    h_fun=list_func{index};
+    set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
+    drawnow
+    SubField=h_fun(handles.figure1);%handles.figure1 =handles of the GUI get_field
+    if ~isempty(SubField)
+        plot_get_field(SubField,handles)
+    end
+    browse_fig(handles.list_fig); %update the list of new existing figures
 end
-browse_fig(handles.list_fig); %update the list of new existing figures
 
 %------------------------------------------------------------------------
 function plot_get_field(SubField,handles)
@@ -808,13 +815,15 @@ function plot_get_field(SubField,handles)
 list_fig=get(handles.list_fig,'String');
 val=get(handles.list_fig,'Value');
 if strcmp(list_fig{val},'uvmat')
-    set(handles.figure1,'Name','uvmat_field')
+%     set(handles.figure1,'Name','uvmat_field')
     set(handles.inputfile,'Enable','off')% desactivate the input file edit box   
 %     set(handles.list_fig,'Visible','off')% 
     set(handles.RUN,'Visible','off')% RUN button not visible (passive mode, get_field used to define the field for uvamt)
     set(handles.MenuOpen,'Visible','off')
     set(handles.MenuExport,'Visible','off')
     uvmat(get(handles.inputfile,'String'))
+elseif strcmp(list_fig{val},'view_field')
+    view_field(SubField)
 else
     hfig=str2num(list_fig{val});% chosen figure number from tyhe GUI
     if isempty(hfig)
@@ -1064,13 +1073,24 @@ set(handles.attributes,'String',Tabchar);
 % val=get(handles.dimensions,'Value');
 
 % update dimensions;
-if isfield(Field,'VarDimIndex')
+if isfield(Field,'ListDimName')
+    Field.ListDimName
     Tabdim={};%default
-    if isequal(index,1)
+    if isequal(index,1)%list all dimensions
         dim_indices=1:length(Field.ListDimName);
         set(handles.dimensions_txt,'String', 'dimensions')
     else
-        dim_indices=Field.VarDimIndex{index-1};
+        DimCell=Field.VarDimName{index-1};
+        if ischar(DimCell)
+            DimCell={DimCell};
+        end   
+        dim_indices=[];
+        for idim=1:length(DimCell)
+            dim_index=strcmp(DimCell{idim},Field.ListDimName);%vector with size of Field.ListDimName, =0 
+            dim_index=find(dim_index,1);
+            dim_indices=[dim_indices dim_index];
+        end
+        %dim_indices=find(dim_list) %removes 0 values
         set(handles.dimensions_txt,'String', ['dimensions of ' var_select])
     end
     for iline=1:length(dim_indices)
@@ -1250,7 +1270,7 @@ ilist=0;
 list={};
 for ifig=1:length(hh)  %look for all existing figures
     name=get(hh(ifig),'Name');
-     if ~isequal(name,'uvmat')%case of uvmat GUI
+     if ~strcmp(name,'uvmat')&& ~strcmp(name,'view_field') %case of uvmat GUI
         hchild=get(hh(ifig),'children');% look for axes contained in each figure
         nbaxe=0;
         for ichild=1:length(hchild)           
@@ -1273,7 +1293,7 @@ for ifig=1:length(hh)  %look for all existing figures
         end
      end
 end
-list=['new fig...';'uvmat';list];
+list=['view_field';list];
 set(menu_handle,'Value',1)
 set(menu_handle,'String',list)
 
@@ -1284,12 +1304,12 @@ function list_fig_Callback(hObject, eventdata, handles)
 list_fig=get(handles.list_fig,'String');
 fig_val=get(handles.list_fig,'Value');
 plot_fig=list_fig{fig_val};
-if isequal(plot_fig,'uvmat')
-    huvmat=findobj(allchild(0),'name','uvmat');
-    if ~isempty(huvmat)
-        uistack(huvmat,'top')
-    end    
-elseif ~isequal(plot_fig,'new fig...') & ~isequal(plot_fig,'uvmat')
+if strcmp(plot_fig,'view_field')
+%     huvmat=findobj(allchild(0),'name','uvmat');
+%     if ~isempty(huvmat)
+%         uistack(huvmat,'top')
+%     end    
+else%if ~isequal(plot_fig,'new fig...') & ~isequal(plot_fig,'uvmat')
     sep=regexp(plot_fig,'_');
     if ~isempty(sep)
         plot_fig=plot_fig([1:sep-1]);

@@ -71,15 +71,17 @@ dir_opening=dircur;
 set(hObject,'Units','Normalized')
 handles_mouse=handles;
 huvmat=findobj(allchild(0),'Name','uvmat');
-hhuvmat=guidata(huvmat);
-set(hhuvmat.list_object_2,'Visible','on')
-% handles_mouse.create=hhuvmat.create;
-handles_mouse.edit=hhuvmat.edit;
-pos_uvmat=get(huvmat,'Position');
-pos_view_field(1)=pos_uvmat(1)+pos_uvmat(3)/2;
-pos_view_field(2)=pos_uvmat(2)-pos_uvmat(3)/4;
-pos_view_field(3:4)=pos_uvmat(3:4);
-set(hObject,'Position',pos_view_field)
+if ~isempty(huvmat)
+    hhuvmat=guidata(huvmat);
+    set(hhuvmat.list_object_2,'Visible','on')
+    % handles_mouse.create=hhuvmat.create;
+    handles_mouse.edit=hhuvmat.edit;
+    pos_uvmat=get(huvmat,'Position');
+    pos_view_field(1)=pos_uvmat(1)+pos_uvmat(3)/2;
+    pos_view_field(2)=pos_uvmat(2)-pos_uvmat(3)/4;
+    pos_view_field(3:4)=pos_uvmat(3:4);
+    set(hObject,'Position',pos_view_field)
+end
 
 %functions for the mouse and keyboard
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles_mouse})%set keyboard action function

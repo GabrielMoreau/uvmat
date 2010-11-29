@@ -2306,16 +2306,18 @@ if (~isempty(filename)&& isequal(FileType,'netcdf')) || (~isempty(filename_1)&& 
     end
     if isequal(FileType,'netcdf')  %read the first nc field
         if isequal(FieldName,'get_field...')% read the field names on the interface get_field.
-            hget_field=findobj(allchild(0),'Name','uvmat_field');%find the get_field... GUI
+            hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
             if isempty(hget_field)
                 hget_field= get_field(filename);%open the get_field GUI   
-                set(hget_field,'name','uvmat_field')
+              %  set(hget_field,'name','get_field')
             elseif UvData.NewSeries% refresh the fet_field GUI for a new series
                 delete(hget_field)
                 hget_field= get_field(filename);%open the get_field GUI 
-                set(hget_field,'name','uvmat_field')%rename  get_field GUI for the 'slave' mode
+                set(hget_field,'name','get_field')%rename  get_field GUI for the 'slave' mode
             end
             hhget_field=guidata(hget_field);
+            set(hhget_field.list_fig,'Value',1)
+            set(hhget_field.list_fig,'String',{'uvmat'})
             funct_list=get(hhget_field.ACTION,'UserData');
             funct_index=get(hhget_field.ACTION,'Value');
             funct=funct_list{funct_index};%select  the current action in get_field, e;g. PLOT
@@ -2334,12 +2336,18 @@ if (~isempty(filename)&& isequal(FileType,'netcdf')) || (~isempty(filename_1)&& 
     end
     if ~isempty(filename_1) && ~test_keepdata_1 && isequal(FileType_1,'netcdf') %read the second file
         if isequal(FieldName_1,'get_field...')% read the field names on the interface get_field.
-            hget_field_1=findobj(allchild(0),'Name','uvmat_field_1');%find the get_field... GUI
+            hget_field_1=findobj(allchild(0),'Name','get_field_1');%find the get_field... GUI
             if isempty(hget_field_1)
                  hget_field_1= get_field(filename_1);%open the get_field GUI
-                 set(hget_field_1,'name','uvmat_field_1')
+                 set(hget_field_1,'name','get_field_1')
+            elseif UvData.NewSeries% refresh the fet_field GUI for a new series
+                delete(hget_field_1)
+                hget_field_1= get_field(filename);%open the get_field GUI 
+                set(hget_field_1,'name','get_field_1')%rename  get_field GUI for the 'slave' mode
             end
             hhget_field_1=guidata(hget_field_1);%handles of GUI elements in get_field
+            set(hhget_field_1.list_fig,'Value',1)
+            set(hhget_field_1.list_fig,'String',{'uvmat'})
             funct_list=get(hhget_field_1.ACTION,'UserData');
             funct_index=get(hhget_field_1.ACTION,'Value');
             funct=funct_list{funct_index};
@@ -3215,11 +3223,17 @@ if isequal(field,'get_field...')
      veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
      set_veltype_display(veltype_handles,0) % unvisible civ buttons
      filename=read_file_boxes(handles);
-     hget_field=findobj(allchild(0),'name','uvmat_field');
-     if isempty(hget_field)
-         hget_field=get_field(filename);
-         set(hget_field,'Name','uvmat_field')        
+     hget_field=findobj(allchild(0),'name','get_field');
+     if ~isempty(hget_field)
+         delete(hget_field)
      end
+     hget_field=get_field(filename);
+     set(hget_field,'Name','get_field')        
+     hhget_field=guidata(hget_field);
+     set(hhget_field.list_fig,'Value',1)
+     set(hhget_field.list_fig,'String',{'uvmat'})
+     set(handles.transform_fct,'Value',1)% no transform by default
+     set(handles.path_transform,'String','')
     return %no action
 end
 list_fields=get(handles.Fields_1,'String');% list menu fields
@@ -3379,6 +3393,11 @@ if isequal(field_1,'get_field...')
      end
      hget_field=get_field(filename);
      set(hget_field,'name','get_field_1')
+     hhget_field=guidata(hget_field);
+     set(hhget_field.list_fig,'Value',1)
+     set(hhget_field.list_fig,'String',{'uvmat'})
+     set(handles.transform_fct,'Value',1)% no transform by default
+     set(handles.path_transform,'String','')
     return %no action
 end
 if isequal(field_1,'image') 
