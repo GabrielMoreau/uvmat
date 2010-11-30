@@ -446,9 +446,9 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
         hlegend=findobj(hfig,'Tag','legend');
         if isempty(hlegend)
             hlegend=legend(legend_str);
-            txt=ver;
-            Release=txt(1).Release;
-            relnumb=str2num(Release(3:4));
+            txt=ver('MATLAB');
+            Release=txt.Release
+            relnumb=str2num(Release(3:4));% should be changed to Version for better compatibility
             if relnumb >= 14
                 set(hlegend,'Interpreter','none')% desable tex interpreter
             end
@@ -471,8 +471,8 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
         title_str=[title_str data.Action];
     end
     htitle=title(title_str);
-    txt=ver;
-    Release=txt(1).Release;
+    txt=ver('MATLAB');
+    Release=txt.Release;
     relnumb=str2num(Release(3:4));
     if relnumb >= 14
         set(htitle,'Interpreter','none')% desable tex interpreter
@@ -761,8 +761,8 @@ if test_ima
             x_cont=AX(1):sizpx:AX(end); % pixel x coordinates for image display 
             y_cont=AY(1):-sizpy:AY(end); % pixel x coordinates for image display
            % axes(haxes)% set the input axes handle as current axis
-            txt=ver;%version of Matlab
-            Release=txt(1).Release;
+    txt=ver('MATLAB');
+    Release=txt.Release;
             relnumb=str2double(Release(3:4));
             if relnumb >= 14
                     vec=linspace(0,1,(abscontmax-abscontmin)/intercont);%define a greyscale colormap with steps intercont

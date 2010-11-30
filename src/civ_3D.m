@@ -670,8 +670,8 @@ RootPath=fileparts(filebase);
 if exist(profil_perso,'file')
     save (profil_perso,'RootPath','-append'); %store the root name for future opening of uvmat
 else
-    txt=ver;
-    Release=txt(1).Release;
+    txt=ver('MATLAB');
+    Release=txt.Release;
     relnumb=str2num(Release(3:4));
     if relnumb >= 14
         save (profil_perso,'RootPath','-V6'); %store the root name for future opening of uvmat 

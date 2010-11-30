@@ -1,8 +1,8 @@
 %'griddata_uvmat': function griddata_uvmat(vec2_X,vec2_Y,vec2_U,vec_X,vec_Y,'linear')
 %adapt the input of the matlab function griddata to the appropriate version of Matlab
 function ZI = griddata_uvmat(X,Y,Z,XI,YI)
-txt=ver;
-Release=txt(1).Release;
+txt=ver('MATLAB');
+Release=txt.Release;
 relnumb=str2num(Release(3:4));
 if relnumb >= 20
     ZI=griddata(double(X),double(Y),double(Z),double(XI),double(YI),'linear',{'QJ'});

@@ -1213,9 +1213,9 @@ if isequal(ACTION,'more...')
    if exist(profil_perso,'file')
         save(profil_perso,'get_field_fct','-append')
    else
-        txt=ver;
-        Release=txt(1).Release;
-        relnumb=str2num(Release(3:4));
+     txt=ver('MATLAB');
+    Release=txt.Release;
+       relnumb=str2num(Release(3:4));
         if relnumb >= 14
             save(profil_perso,'get_field_fct','-V6')
         else
@@ -1432,8 +1432,8 @@ display(profil_perso)
 if exist(profil_perso,'file')
     save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-append'); %store the file names for future opening of uvmat
 else
-    txt=ver;
-    Release=txt(1).Release;
+    txt=ver('MATLAB');
+    Release=txt.Release;
     relnumb=str2double(Release(3:4));
     if relnumb >= 14
         save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-V6'); %store the file names for future opening of uvmat
