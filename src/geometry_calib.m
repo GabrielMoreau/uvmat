@@ -1310,7 +1310,7 @@ for i=1:size(data.Coord,1)
           Coord{i,j}=num2str(data.Coord(i,j),4);%phys x,y,z
    end
 end
-Tabchar=cell2tab(Coord,'| ');
+Tabchar=cell2tab(Coord,' | ');
 Tabchar=[Tabchar;{'......'}];
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
