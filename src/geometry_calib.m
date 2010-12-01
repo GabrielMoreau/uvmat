@@ -870,20 +870,29 @@ update_list(hObject, eventdata,handles)
 %------------------------------------------------------------------------
 function update_list(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-str4=get(handles.XImage,'String');
-str5=get(handles.YImage,'String');
-str1=get(handles.XObject,'String');
-tt=double(str1);
-str2=get(handles.YObject,'String');
-str3=get(handles.ZObject,'String');
-if ~isempty(str1) && ~isequal(double(str1),32) && (isempty(str3)||isequal(double(str3),32))
-    str3='0';%put z to 0 by default
+newval(4)=str2double(get(handles.XImage,'String'));
+newval(5)=str2double(get(handles.YImage,'String'));
+newval(1)=str2double(get(handles.XObject,'String'));
+newval(2)=str2double(get(handles.YObject,'String'));
+newval(3)=str2double(get(handles.ZObject,'String'));
+if isnan(newval(3)) 
+    newval(3)=0;%put z to 0 by default
 end
-strline=[str1 '    |    ' str2 '    |    ' str3 '    |    ' str4 '    |    ' str5];
 Coord=get(handles.ListCoord,'String');
+Coord(end)=[]; %remove last string '.....'
 val=get(handles.ListCoord,'Value');
-Coord{val}=strline;
-set(handles.ListCoord,'String',Coord)
+data=read_geometry_calib(Coord);
+data.Coord(val,:)=newval;
+for i=1:size(data.Coord,1)
+    for j=1:5
+          Coord_cell{i,j}=num2str(data.Coord(i,j),4);%display coordiantes with 4 digits
+    end
+end
+
+Tabchar=cell2tab(Coord_cell,' | ');
+Tabchar=[Tabchar ;{'......'}];
+set(handles.ListCoord,'String',Tabchar)
+
 %update the plot 
 ListCoord_Callback(hObject, eventdata, handles)
 MenuPlot_Callback(hObject, eventdata, handles)
@@ -909,11 +918,11 @@ if isempty(k)%last line '.....' selected
     return
 end
 %fill the edit boxex
-set(handles.XObject,'String',coord_str(1:k(1)-5))
-set(handles.YObject,'String',coord_str(k(1)+5:k(2)-5))
-set(handles.ZObject,'String',coord_str(k(2)+5:k(3)-5))
-set(handles.XImage,'String',coord_str(k(3)+5:k(4)-5))
-set(handles.YImage,'String',coord_str(k(4)+5:end))
+set(handles.XObject,'String',coord_str(1:k(1)-1))
+set(handles.YObject,'String',coord_str(k(1)+3:k(2)-1))
+set(handles.ZObject,'String',coord_str(k(2)+3:k(3)-1))
+set(handles.XImage,'String',coord_str(k(3)+3:k(4)-1))
+set(handles.YImage,'String',coord_str(k(4)+3:end))
 h_menu_coord=findobj(huvmat,'Tag','transform_fct');
 menu=get(h_menu_coord,'String');
 choice=get(h_menu_coord,'Value');
@@ -923,11 +932,11 @@ else
     option='px'; %default
 end
 if isequal(option,'phys')
-    XCoord=str2num(coord_str(1:k(1)-5));
-    YCoord=str2num(coord_str(k(1)+5:k(2)-5));
+    XCoord=str2double(coord_str(1:k(1)-1));
+    YCoord=str2double(coord_str(k(1)+3:k(2)-1));
 elseif isequal(option,'px')|| isequal(option,'')
-    XCoord=str2num(coord_str(k(3)+5:k(4)-5));
-    YCoord=str2num(coord_str(k(4)+5:end));
+    XCoord=str2double(coord_str(k(3)+3:k(4)-1));
+    YCoord=str2double(coord_str(k(4)+3:end));
 else
     msgbox_uvmat('ERROR','the choice in menu_coord of uvmat must be px or phys ')
 end
@@ -941,7 +950,8 @@ xlim=get(hplot,'XLim');
 ylim=get(hplot,'YLim');
 ind_range=max(abs(xlim(2)-xlim(1)),abs(ylim(end)-ylim(1)))/20;%defines the size of the circle marker
 if isempty(hhh)
-    axes(hplot)
+    set(0,'CurrentFig',huvmat)
+    set(huvmat,'CurrentAxes',hplot)
     rectangle('Curvature',[1 1],...
               'Position',[XCoord-ind_range/2 YCoord-ind_range/2 ind_range ind_range],'EdgeColor','m',...
               'LineStyle','-','Tag','calib_marker');
