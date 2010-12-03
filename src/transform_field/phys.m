@@ -99,14 +99,15 @@ function DataOut=phys_1(Data,Calib)
 
 DataOut=Data;%default
 DataOut.CoordType='phys'; %put flag for physical coordinates
+if isfield(Calib,'SliceCoord')
+    DataOut.PlaneCoord=Calib.SliceCoord;%to generalise for any plane 
+end
 % The transform ACTS ONLY IF .CoordType='px'and Calib defined
 if isfield(Data,'CoordType')&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
     if isfield(Calib,'CoordUnit')
         DataOut.CoordUnit=Calib.CoordUnit;
     else
         DataOut.CoordUnit='cm'; %default
-%     elseif isfield(DataOut,'CoordUnit')
-%         DataOut=rmfield(DataOut,'CoordUnit');
     end
     DataOut.TimeUnit='s';
     %transform of X,Y coordinates for vector fields
