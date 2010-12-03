@@ -189,8 +189,6 @@ set(handles.ListXml,'Value',1)
 set(handles.ListRecords,'String',[{'*'};ListRecords'])
 set(handles.ListDevices,'String',[{'*'};ListDevices'])
 set(handles.ListXml,'String',[{'*'};ListXml'])
-'TEST'
-testList
 if testList
     DataviewData=get(handles.figure,'UserData');
     DataviewData.List=List;

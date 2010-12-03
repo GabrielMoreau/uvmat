@@ -209,7 +209,7 @@ for ichild=1:length(hchild)
                                 'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2],'EdgeColor','m',...
                                 'LineStyle','-','Tag','PIV_box_marker');
                             rectangle('Curvature',[0 0],...
-                                'Position',[xround-isx2 yround-isy2 2*isx 2*isy],'EdgeColor','m',...
+                                'Position',[xround-isx2 yround-isy2 2*isx2 2*isy2],'EdgeColor','m',...
                                 'LineStyle','- -','Tag','PIV_search_marker');
                             % set(0,'Children',hstack);%put back the initial figure stack after plot creation
                         else
@@ -239,8 +239,8 @@ for ichild=1:length(hchild)
                             end
                         end
                         if isempty(hcorr)
-                            coorfig=findobj(allchild(0),'tag','corrfig');
-                            if isempty(coorfig)
+                            corrfig=findobj(allchild(0),'tag','corrfig');
+                            if isempty(corrfig)
                                 corrfig=figure;
                                 set(corrfig,'tag','corrfig')
                             end
