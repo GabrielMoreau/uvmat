@@ -21,7 +21,7 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 function varargout = civ(varargin)
 
-% Last Modified by GUIDE v2.5 27-Mar-2010 13:41:11
+% Last Modified by GUIDE v2.5 01-Dec-2010 23:19:15
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -224,10 +224,10 @@ if exist('param','var')%varargin the interface is opened from uvmat
     RootName_Callback(hObject, eventdata, handles);
 end
 
-set(handles.waitbar_1,'Position',[0.946 0.877 0.03 0.001])
-set(handles.waitbar_patch1,'Position',[0.946 0.626 0.03 0.001])
-set(handles.waitbar_civ2,'Position',[0.946 0.406 0.03 0.001])
-set(handles.waitbar_patch2,'Position',[0.946 0.187 0.03 0.001])
+% set(handles.waitbar_1,'Position',[0.946 0.877 0.03 0.001])
+% set(handles.waitbar_patch1,'Position',[0.946 0.626 0.03 0.001])
+% set(handles.waitbar_civ2,'Position',[0.946 0.406 0.03 0.001])
+% set(handles.waitbar_patch2,'Position',[0.946 0.187 0.03 0.001])
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
@@ -771,10 +771,10 @@ subdir_civ2=get(handles.subdir_civ2,'String');
 mode_Callback(hObject, eventdata, handles)
 
 %%%%%% initialize waitbars and RUN button
-set(handles.waitbar_1,'Position',[0.946 0.876 0.03 0.001])
-set(handles.waitbar_patch1,'Position',[0.946 0.439 0.03 0.001])
-set(handles.waitbar_civ2,'Position',[0.946 0.219 0.03 0.001])
-set(handles.waitbar_patch2,'Position',[0.946 0.0 0.03 0.001])
+% set(handles.waitbar_1,'Position',[0.946 0.876 0.03 0.001])
+% set(handles.waitbar_patch1,'Position',[0.946 0.439 0.03 0.001])
+% set(handles.waitbar_civ2,'Position',[0.946 0.219 0.03 0.001])
+% set(handles.waitbar_patch2,'Position',[0.946 0.0 0.03 0.001])
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 set(handles.BATCH,'Enable','On')
@@ -1622,17 +1622,17 @@ if isequal(get(handles.get_mask_fix2,'Value'),1)
 end
 
 %% initialize the waitbars: TO suppress, waitbar not used
-set(handles.waitbar_1,'Position',[0.946 0.876 0.03 0.001])
-set(handles.waitbar_patch1,'Position',[0.946 0.439 0.03 0.001])
-set(handles.waitbar_civ2,'Position',[0.946 0.219 0.03 0.001])
-set(handles.waitbar_patch2,'Position',[0.946 0.0 0.03 0.001])
-drawnow
+% set(handles.waitbar_1,'Position',[0.946 0.876 0.03 0.001])
+% set(handles.waitbar_patch1,'Position',[0.946 0.439 0.03 0.001])
+% set(handles.waitbar_civ2,'Position',[0.946 0.219 0.03 0.001])
+% set(handles.waitbar_patch2,'Position',[0.946 0.0 0.03 0.001])
+% drawnow
 
 %% set the list of files and check them
 display('checking the files...')
-compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displacement (=2) or stereo PIV (=3)
+%compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displacement (=2) or stereo PIV (=3)
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc]=...
-    set_civ_filenames(handles,compare,box_test);
+    set_civ_filenames(handles,box_test);
 if isempty(filecell)% (error message displayed in fct set_civ_filenames)
     return
 end
@@ -2275,7 +2275,7 @@ saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN
 
 
 function [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
-    set_civ_filenames(handles,compare,box_test)
+    set_civ_filenames(handles,box_test)
 %------------------------------------------------------------------------
 filecell=[];%default
 
@@ -3955,11 +3955,12 @@ if isnan(str2double(par.dy))
 end
 par.pxcmx='1'; %velocities are expressed in pixel dispalcement
 par.pxcmy='1';
-%      end
+if exist('file_ima','var')
 A=imread(file_ima);%read the first image to get the size
 sizim=size(A);
 par.npx=num2str(sizim(2));
 par.npy=num2str(sizim(1));
+end
 %time=get(handles.RootName,'UserData'); %get the set of times
 par.gridname=get(handles.grid_civ1,'String');
 par.gridflag='y';
@@ -4592,6 +4593,26 @@ else
     set(handles.MinIma2,'Visible','off')
     set(handles.MaxIma2,'Visible','off')
 end
+
+
+% --- Executes on button press in TestCiv1.
+function TestCiv1_Callback(hObject, eventdata, handles)
+test_civ1=get(handles.TestCiv1,'Value');
+if test_civ1
+[filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
+    set_civ_filenames(handles,[1 0 0 0 0 0]);
+Data.ListVarName={'ny','nx','A'};
+Data.VarDimName={'ny','nx',{'ny','nx'}};
+Data.A=imread(filecell.ima1.civ1{1});
+Data.ny=[size(Data.A,1) 1];
+Data.nx=[1 size(Data.A,2)];
+hh=view_field(Data);
+ViewData=get(hh,'UserData');
+ViewData.axes3.B=imread(filecell.ima2.civ1{1});
+set(hh,'UserData',ViewData)
+end
+
+
 
 
 

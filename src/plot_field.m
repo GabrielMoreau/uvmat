@@ -230,10 +230,10 @@ elseif ~isempty(htext)
     delete(htext)
 end
 
-% set graph aspect ratio
-if isfield(AxeData,'Mesh')
-    Data.Mesh=AxeData.Mesh;
-end
+% % set graph aspect ratio
+% if isfield(AxeData,'Mesh')
+%     Data.Mesh=AxeData.Mesh;
+% end
 
 %set(haxes,'UserData',AxeData)
 set(haxes,'UserData',Data)
@@ -447,8 +447,8 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
         if isempty(hlegend)
             hlegend=legend(legend_str);
             txt=ver('MATLAB');
-            Release=txt.Release
-            relnumb=str2num(Release(3:4));% should be changed to Version for better compatibility
+            Release=txt.Release;
+            relnumb=str2double(Release(3:4));% should be changed to Version for better compatibility
             if relnumb >= 14
                 set(hlegend,'Interpreter','none')% desable tex interpreter
             end
@@ -473,7 +473,7 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
     htitle=title(title_str);
     txt=ver('MATLAB');
     Release=txt.Release;
-    relnumb=str2num(Release(3:4));
+    relnumb=str2double(Release(3:4));
     if relnumb >= 14
         set(htitle,'Interpreter','none')% desable tex interpreter
     end
@@ -927,16 +927,16 @@ if test_vec
     vec_Y=reshape(vec_Y,1,numel(vec_Y));
     vec_U=reshape(vec_U,1,numel(vec_U));
     vec_V=reshape(vec_V,1,numel(vec_V));
-    MinMaxX=max(vec_X)-min(vec_X);
-    MinMaxY=max(vec_Y)-min(vec_Y);
-    AxeData.Mesh=sqrt((MinMaxX*MinMaxY)/length(vec_X));
+     MinMaxX=max(vec_X)-min(vec_X);
+%     MinMaxY=max(vec_Y)-min(vec_Y);
+%     AxeData.Mesh=sqrt((MinMaxX*MinMaxY)/length(vec_X));
     if  ~isfield(PlotParam.Vectors,'AutoVec') || isequal(PlotParam.Vectors.AutoVec,0)|| ~isfield(PlotParam.Vectors,'VecScale')...
                ||isempty(PlotParam.Vectors.VecScale)||~isa(PlotParam.Vectors.VecScale,'double') %automatic vector scale
 %         scale=[];
         if test_false %remove false vectors
             indsel=find(AxeData.FF==0);%indsel =indices of good vectors
         else     
-            indsel=[1:numel(vec_X)];%
+            indsel=1:numel(vec_X);%
         end
         if isempty(vec_U)
             scale=1;
@@ -976,13 +976,13 @@ if test_vec
     end
     
     %decimate by a factor 2 in vector mesh(4 in nbre of vectors)
-    if isfield(PlotParam.Vectors,'decimate4')&isequal(PlotParam.Vectors.decimate4,1)
+    if isfield(PlotParam.Vectors,'decimate4') && isequal(PlotParam.Vectors.decimate4,1)
         diffy=diff(vec_Y); %difference dy=vec_Y(i+1)-vec_Y(i)
         dy_thresh=max(abs(diffy))/2; 
         ind_jump=find(abs(diffy) > dy_thresh); %indices with diff(vec_Y)> max/2, detect change of line
         ind_sel=1:ind_jump(1);%select the first line
         for i=2:2:length(ind_jump)-1
-            ind_sel=[ind_sel [ind_jump(i)+1:ind_jump(i+1)]];% select the odd lines
+            ind_sel=[ind_sel (ind_jump(i)+1:ind_jump(i+1))];% select the odd lines
         end
         nb_sel=length(ind_sel);
         ind_sel=ind_sel(1:2:nb_sel);% take half the points on a line
@@ -1041,7 +1041,7 @@ else
     AxeData.W=[];
     AxeData.F=[];
      AxeData.FF=[];
-    AxeData.Mesh=[];
+%     AxeData.Mesh=[];
     PlotParamOut=rmfield(PlotParamOut,'Vectors');
 end
 if isfield(Data,'Z')
@@ -1168,7 +1168,7 @@ for icolor=1:ncolor
     %draw the line or modify the existing ones
       hx = [x1;x2;x3];
       hy = [y1;y2;y3];
-    tri=reshape([1:3*length(uc)],3,[])';
+    tri=reshape(1:3*length(uc),3,[])';
     d = tri(:,[1 2 3 1])'; 
     
     isn=isnan(colorlist(icolor,:));%test if color NaN

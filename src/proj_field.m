@@ -80,7 +80,7 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function [ProjData,errormsg]=proj_field(FieldData,ObjectData,IndexObj)
-
+errormsg=[];%default
 if isfield(ObjectData,'ProjMode') && (isequal(ObjectData.ProjMode,'none')||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'))
     ProjData=[];
     return
@@ -169,7 +169,7 @@ elseif  ~isequal(ObjectData.ProjMode,'interp')
     errormsg=(['ProjMode option ' ObjectData.ProjMode ' not available in proj_field']);
         return
 end
-ProjData=proj_heading(FieldData,ObjectData);
+[ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 ProjData.NbDim=0;
 %ProjData.ListDimName= {'nb_points'};
 %ProjData.DimValue=siz(1);  %nbre of projection points  
@@ -372,7 +372,7 @@ end
 %project in a patch
 function  [ProjData,errormsg]=proj_patch(FieldData,ObjectData)%%
 %-------------------------------------------------------------------
-ProjData=proj_heading(FieldData,ObjectData);
+[ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 
 objectfield=fieldnames(ObjectData);
 widthx=0;
@@ -559,9 +559,11 @@ end
 % AJOUTER flux,circul,error
 function  [ProjData,errormsg] = proj_line(FieldData, ObjectData)
 %-----------------------------------------------------------------
-ProjData=proj_heading(FieldData,ObjectData);%transfer global attributes
+[ProjData,errormsg]=proj_heading(FieldData,ObjectData);%transfer global attributes
+if ~isempty(errormsg)
+    return
+end
 ProjData.NbDim=1;
-
 %initialisation of the input parameters and defaultoutput
 ProjMode='projection';%direct projection on the line by default
 if isfield(ObjectData,'ProjMode'),ProjMode=ObjectData.ProjMode; end; 
@@ -990,7 +992,7 @@ if isfield(ObjectData,'RangeZ')
 end
 
 % initiate Matlab  structure for physical field
-ProjData=proj_heading(FieldData,ObjectData);
+[ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 ProjData.NbDim=2;
 ProjData.ListVarName={};
 ProjData.VarDimName={};
@@ -1560,7 +1562,7 @@ if isfield(ObjectData,'RangeZ')
 end
 
 % initiate Matlab  structure for physical field
-ProjData=proj_heading(FieldData,ObjectData);
+[ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 ProjData.NbDim=3;
 %ProjData.ListDimName={};%name of dimension 
 %ProjData.DimValue=[];%values of dimension (nbre of vectors)
@@ -2063,6 +2065,7 @@ function [ProjData,errormsg]=proj_heading(FieldData,ObjectData)
 %-----------------------------------------------------------------
 % ProjData=FieldData;
 ProjData=[];%default
+errormsg=[];%default
 if ~isfield(FieldData,'ListGlobalAttribute')
     ProjData.ListGlobalAttribute={};
 else

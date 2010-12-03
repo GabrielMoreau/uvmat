@@ -23,7 +23,10 @@
 
 function mouse_up(hObject,eventdata,handles)
 MouseAction='none'; %default
-zoomstate=0;%default
+test_zoom=0;%default
+currentfig=hObject;
+hhcurrentfig=guidata(currentfig);
+test_zoom=get(hhcurrentfig.zoom,'Value');
 if ~exist('handles','var')
    handles=get(gcbo,'UserData');
 end
@@ -34,7 +37,7 @@ if ~isempty(huvmat)
     if isfield(UvData,'MouseAction')
         MouseAction=UvData.MouseAction;% set the mouse action (edit, create objects...)
     end
-    zoomstate=get(hhuvmat.zoom,'Value');
+%     test_zoom=get(hhuvmat.zoom,'Value');
 end
 currentfig=hObject;
 currentaxes=gca; %store the current axes handle
@@ -205,7 +208,7 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
         end
 end
 %zoom in by a factor 2 if no new figure is created
-if zoomstate
+if test_zoom
     xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
      if  isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed
         xlim=get(currentaxes,'XLim');
@@ -267,7 +270,7 @@ if zoomstate
 end
 
 % editing calibration point
-if ~zoomstate && strcmp(MouseAction,'calib') 
+if ~test_zoom && strcmp(MouseAction,'calib') 
     h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
     hh_geometry_calib=guidata(h_geometry_calib);
     edit_test=get(hh_geometry_calib.edit_append,'Value');
@@ -313,7 +316,7 @@ end
 
 
 %display the data of the current object selected with the mouse right click
-if isequal(get(currentfig,'SelectionType'),'alt') && ~zoomstate && (~isfield(AxeData,'Drawing')||~isequal(AxeData.Drawing,'create'))
+if isequal(get(currentfig,'SelectionType'),'alt') && ~test_zoom && (~isfield(AxeData,'Drawing')||~isequal(AxeData.Drawing,'create'))
     hother=findobj('Tag','proj_object');%find all the proj objects
     nbselect=0;
     %test the existence of selected objects:

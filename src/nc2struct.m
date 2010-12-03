@@ -61,8 +61,13 @@ if ~isequal(hhh,'')
     %% open the netcdf file for reading
     if ischar(nc) 
         if exist(nc,'file')
+            try
             nc=netcdf.open(nc,'NC_NOWRITE');
             testfile=1;
+            catch errormsg
+              Data.Txt=['ERROR opening ' nc ': ' errormsg.identifier];
+              return
+            end
         else
            Data.Txt=['ERROR:file ' nc ' does not exist'];
            return

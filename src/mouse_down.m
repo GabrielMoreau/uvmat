@@ -32,12 +32,15 @@ hhuvmat=guidata(huvmat);%handles of elements in uvmat
 guihandles=guidata(hObject);
 UvData=get(huvmat,'UserData');
 MouseAction='none'; %default
-testzoom=get(guihandles.zoom,'Value');% get the mouse action from the uvmat GUI: options:
+currentfig=hObject;
+hhcurrentfig=guidata(currentfig);
+test_zoom=get(hhcurrentfig.zoom,'Value')
+%test_zoom=get(guihandles.zoom,'Value');% get the mouse action from the uvmat GUI: options:
 if isfield(UvData,'MouseAction')
     MouseAction=UvData.MouseAction;% get the mouse action from the uvmat GUI: options:
 end
 
-test_create=~testzoom && (isequal(MouseAction,'create_object') || isequal(MouseAction,'create_mask'));
+test_create=~test_zoom && (isequal(MouseAction,'create_object') || isequal(MouseAction,'create_mask'));
 %test_cal=get(handles.cal,'Value');
 test_cal=strcmp(MouseAction,'calib');
 test_ruler=strcmp(MouseAction,'ruler');
@@ -110,7 +113,7 @@ if isfield(AxeData,'CurrentRectZoom') & ishandle(AxeData.CurrentRectZoom)
 end    
 
 % zoom has first priority 
-if testzoom %&& ~test_create && ~test_edit && ~test_edit_vect && exist('xy','var')
+if test_zoom %&& ~test_create && ~test_edit && ~test_edit_vect && exist('xy','var')
      AxeData.Drawing='zoom'; %initiate drawing mode
      AxeData.CurrentObject=[];%unselect objects
      set(haxes,'UserData',AxeData);
@@ -260,7 +263,7 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
 end
 
 % create calibration points if the GUI geometry_calib is opened, if the main axes axes3 of uvmat has ben selected
-if ~testzoom && test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3') 
+if ~test_zoom && test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3') 
     h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
     hh_geometry_calib=guidata(h_geometry_calib);
     h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');

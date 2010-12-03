@@ -1013,7 +1013,7 @@ if exist(profil_perso,'file')
 else
     txt=ver('MATLAB');
     Release=txt.Release;
-    relnumb=str2num(Release(3:4));
+    relnumb=str2double(Release(3:4));
     if relnumb >= 14
         save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-V6'); %store the file names for future opening of uvmat
     else
@@ -2166,7 +2166,7 @@ if ~isempty(filename_1)
     elseif isequal(lower(Ext_1),'.vol')
         FileType_1='vol';
         FieldName_1='image';
-    else 
+    elseif length(Ext_1)>1
        form=imformats(Ext_1(2:end));
        if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
            if isequal(NomType_1,'*');
@@ -2687,6 +2687,7 @@ PosColorbar{1}=UvData.PosColorbar;%prescribe the colorbar position on the uvmat 
 % second projection object (view_field display)
 IndexObj_2=get(handles.list_object_2,'Value');%selected projection object for the second view
 if isequal(get(handles.list_object_2,'Visible'),'on') && IndexObj_2 <= numel(UvData.Object)&& ~isempty(UvData.Object{IndexObj_2})
+    UvData.Object{IndexObj_2}
     IndexObj(2)=IndexObj_2;
     view_field_handle=findobj(allchild(0),'tag','view_field');%handles of the view_field GUI
     if ~isempty(view_field_handle)
@@ -2701,8 +2702,10 @@ end
 %loop on the projection objects: one or two
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);    
-    ObjectData=proj_field(UvData.Field,UvData.Object{iobj},iobj);% project field on the object
-    
+    [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj},iobj);% project field on the object
+    if ~isempty(errormsg)
+        return
+    end
     %use of mask (TODO: check)
     if isfield(ObjectData,'NbDim') && isequal(ObjectData.NbDim,2) && isfield(ObjectData,'Mask') && isfield(ObjectData,'A')
         flag_mask=double(ObjectData.Mask>200);%=0 for masked regions
@@ -2755,11 +2758,14 @@ for imap=1:numel(IndexObj)
         else
             [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},keeplim(imap),PosColorbar{imap});
             write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
-            if imap==1
-                UvData.ProjField=ObjectData;
+            if isfield(UvData,'Mesh')&~isempty(UvData.Mesh)
+                ObjectData.Mesh=UvData.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
+            end
+            if imap==1            
+                UvData.axes3=ObjectData;
             else
                 ViewFieldData=get(view_field_handle,'UserData');
-                ViewFieldData.ProjField=ObjectData;
+                ViewFieldData.axes3=ObjectData;
                 set(view_field_handle,'UserData',ViewFieldData)
             end
         end
@@ -4358,7 +4364,8 @@ set(handles.vec_col_bar,'Cdata',A)
 function update_plot(handles)
 %-------------------------------------------------------------------
 haxes= handles.axes3;
-AxeData=get(haxes,'UserData');
+UvData=get(handles.uvmat,'UserData');
+AxeData=UvData.axes3;
 PlotParam=read_plot_param(handles);
 [PlotType,PlotParamOut]= plot_field(AxeData,haxes,PlotParam,1);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
@@ -4935,17 +4942,17 @@ ind_opening=1; % default (images): will advice civ1 option by default in the civ
 if isequal(ext,'.nc') ||  isequal(ext,'.cdf')% netcdf files
     ind_opening=2;% propose 'fix' as the default option
 % +read the current netcdf rootfile
-    Data=nc2struct(FileName,[]);
-    if isfield(Data,'fix') & isequal(Data.fix,1)
+    Data=nc2struct(FileName,'ListGlobalAttribute','fix','patch','civ2','fix2');
+    if isfield(Data,'fix') && isequal(Data.fix,1)
         ind_opening=3;
     end
-    if isfield(Data,'patch') & isequal(Data.patch,1)
+    if isfield(Data,'patch') && isequal(Data.patch,1)
         ind_opening=4;
     end
-    if isfield(Data,'civ2') & isequal(Data.civ2,1)
+    if isfield(Data,'civ2') && isequal(Data.civ2,1)
         ind_opening=5;
     end
-    if isfield(Data,'fix2') & isequal(Data.fix2,1)
+    if isfield(Data,'fix2') && isequal(Data.fix2,1)
         ind_opening=6;
     end
 end      
@@ -4959,7 +4966,7 @@ param.SubDir=SubDir;
 param.IndOpening=ind_opening;% A REVOIR +TRANSMETTRE IMADOC INFO
 param.ImaExt=ext;
 civ(param);% interface de civ(not in the uvmat file)
-
+   
 % ------------------------------------------------------------------
 function MenuTools_Callback(hObject, eventdata, handles)
 

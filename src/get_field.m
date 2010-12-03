@@ -171,8 +171,12 @@ function inputfile_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 inputfile=get(handles.inputfile,'String');
 Field=nc2struct(inputfile);% reads the whole field
+if isfield(Field,'Txt')
+    msgbox_uvmat('ERROR',Field.Txt)
+else
 set(handles.figure1,'UserData',Field);
 Field_input(eventdata,handles,Field);
+end
 
 %------------------------------------------------------------------------
 function Field_input(eventdata,handles,Field)
@@ -810,14 +814,13 @@ else
 end
 
 %------------------------------------------------------------------------
+% --- Function for plotting the current subfield
 function plot_get_field(SubField,handles)
 %------------------------------------------------------------------------
 list_fig=get(handles.list_fig,'String');
 val=get(handles.list_fig,'Value');
 if strcmp(list_fig{val},'uvmat')
-%     set(handles.figure1,'Name','uvmat_field')
     set(handles.inputfile,'Enable','off')% desactivate the input file edit box   
-%     set(handles.list_fig,'Visible','off')% 
     set(handles.RUN,'Visible','off')% RUN button not visible (passive mode, get_field used to define the field for uvamt)
     set(handles.MenuOpen,'Visible','off')
     set(handles.MenuExport,'Visible','off')
@@ -825,8 +828,8 @@ if strcmp(list_fig{val},'uvmat')
 elseif strcmp(list_fig{val},'view_field')
     view_field(SubField)
 else
-    hfig=str2num(list_fig{val});% chosen figure number from tyhe GUI
-    if isempty(hfig)
+    hfig=str2double(list_fig{val});% chosen figure number from tyhe GUI
+    if isnan(hfig)
         hfig=figure;
         list_fig=[list_fig;num2str(hfig)];
         set(handles.list_fig,'String',list_fig);
@@ -1074,7 +1077,6 @@ set(handles.attributes,'String',Tabchar);
 
 % update dimensions;
 if isfield(Field,'ListDimName')
-    Field.ListDimName
     Tabdim={};%default
     if isequal(index,1)%list all dimensions
         dim_indices=1:length(Field.ListDimName);

@@ -771,7 +771,6 @@ end
 % --- Executes on button press in PLOT: PLOT the defined object and its projected field
 function PLOT_Callback(hObject, eventdata, handles)
 
-%SetData=get(handles.set_object,'UserData');%get the hidden interface data
 huvmat=findobj('tag','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
 hhuvmat=guidata(huvmat);%handles in the uvmat GUI
@@ -785,9 +784,11 @@ ObjectData=read_set_object(handles);%read the input parameters defining the obje
 PlotHandles=[];%default
 testnew=0;
 PlotHandles=get_plot_handles(hhuvmat);
+projview='';
 if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose projection is viewed in the uvmat frame
    ObjectData.HandlesDisplay=hhuvmat.axes3;
     IndexObj=IndexObj_1;
+    projview='uvmat';
 elseif IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field
     hview_field=findobj('tag','view_field');
     if ~isempty(hview_field)
@@ -795,6 +796,7 @@ elseif IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)
         ObjectData.HandlesDisplay=PlotHandles.axes3;%handle of axes3 in view_field
     end
     IndexObj=IndexObj_2;
+    projview='view_field';
 else %new object 
     testnew=1;
    
@@ -824,7 +826,13 @@ end
 
 % update the object plot and projection field
 UvData.Object{IndexObj}=update_obj(UvData,IndexObj,ObjectData,PlotHandles);
-set(huvmat,'UserData',UvData)%update the data in the uvmat interface
+if strcmp(projview,'view_field')
+    ViewFieldData=get(hview_field,'UserData');
+    ViewFieldData.axes3=ObjectData;
+    set(hview_field,'UserData',ViewFieldData)
+else
+    UvData.axes3=ObjectData;
+end
 
 %set uvmat to object edit mode to allow further object update
 hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI

@@ -1,4 +1,3 @@
-
 %'view_field': function associated with the GUI 'view_field.fig' for images and data field visualization 
 %------------------------------------------------------------------------
 % function huvmat=view_field(input)
@@ -59,7 +58,7 @@ function view_field_OpeningFcn(hObject, eventdata, handles, Field )
 %-------------------------------------------------------------------
 
 % Choose default command menuline output for view_field
-handles.output = handles.axes3;
+handles.output = handles.view_field;
 
 % Update handles structure
 guidata(hObject, handles);
@@ -91,7 +90,9 @@ set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse})
 set(hObject,'CloseRequestFcn',{@closefcn})%
 
 [PlotType,PlotParamOut]= plot_field(Field,handles.axes3);%,PlotParam,KeepLim,PosColorbar)
-set(handles.axes3,'UserData',Field);%store the current field
+ViewFieldData.axes3=Field;
+set(handles.view_field,'UserData',ViewFieldData);%store the current field
+get(handles.view_field)
 if isfield(PlotParamOut,'Vectors')
     set(handles.VECT_title,'Visible','on')
 end
@@ -691,7 +692,7 @@ A(:,:,3)=A3';
 set(handles.vec_col_bar,'Cdata',A)
 
 %-------------------------------------------------------------------
-function [PlotType,ScalOut]=update_plot(handles)
+function PlotType=update_plot(handles)
 %-------------------------------------------------------------------
 haxes= handles.axes3;
 %huvmat=findobj(allchild(0),'tag','uvmat');
@@ -707,7 +708,8 @@ function MenuExportField_Callback(hObject, eventdata, handles)
 
 global Data_view_field
 % huvmat=findobj(allchild(0),'Name','uvmat');
-Data_view_field=get(handles.axes3,'UserData');
+Data_view_field=get(handles.view_field,'UserData');
+Data_view_field=Data_view_field.axes3;
 % Data_view_field=UvData.ProjField_2;
 evalin('base','global Data_view_field')%make CurData global in the workspace
 display(['UserData of view_field :'])
@@ -774,47 +776,16 @@ function slider10_Callback(hObject, eventdata, handles)
 
 function closefcn(hObject, eventdata, handles)
 huvmat=findobj(allchild(0),'Name','uvmat');
+if ~isempty(huvmat)
 hhuvmat=guidata(huvmat);
 list_object_2=get(hhuvmat.list_object_2,'String');
 set(hhuvmat.list_object_2,'Value',numel(list_object_2))%select the last value ('...')
+end
 delete(hObject)
-
 
 
 % --- Executes on selection change in popupmenu18.
 function popupmenu18_Callback(hObject, eventdata, handles)
-
-
-function edit91_Callback(hObject, eventdata, handles)
-% hObject    handle to edit91 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of edit91 as text
-%        str2double(get(hObject,'String')) returns contents of edit91 as a double
-
-
-% --- Executes on button press in checkbox45.
-function checkbox45_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox45 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox45
-
-
-% --- Executes on selection change in popupmenu19.
-function popupmenu19_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu19 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = get(hObject,'String') returns popupmenu19 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu19
-
-
-
-
 
 
 
