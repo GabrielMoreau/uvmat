@@ -25,6 +25,7 @@ function mouse_up(hObject,eventdata,handles)
 MouseAction='none'; %default
 test_zoom=0;%default
 currentfig=hObject;
+tagfig=get(currentfig,'tag');
 hhcurrentfig=guidata(currentfig);
 test_zoom=get(hhcurrentfig.zoom,'Value');
 if ~exist('handles','var')
@@ -45,7 +46,7 @@ AxeData=get(currentaxes,'UserData');
 
 test_drawing=0;%default
 
-%finalize the fabrication or the translation/deformation of an object and plot the corresponding projected field
+%% finalize the fabrication or the translation/deformation of an object and plot the corresponding projected field
 if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off') & isfield(AxeData,'CurrentObject')...
            & ishandle(AxeData.CurrentObject)
     xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
@@ -53,17 +54,23 @@ if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off
     IndexObj=PlotData.IndexObj;
     ObjectData=UvData.Object{IndexObj};    
     ObjectData.enable_plot=1;
+    
+    % ending translation
     if isequal(AxeData.Drawing,'translate')
         XYData=AxeData.CurrentOrigin;
         DX=xy(1,1)-XYData(1);%translation from initial position
         DY=xy(1,2)-XYData(2);
         ObjectData.Coord(:,1)=ObjectData.Coord(:,1)+DX;
         ObjectData.Coord(:,2)=ObjectData.Coord(:,2)+DY;
+        
+    %ending object deformation
     elseif isequal(AxeData.Drawing,'deform')
         ind_move=AxeData.CurrentIndex;
         ObjectData.Coord(ind_move,1)=xy(1,1);
         ObjectData.Coord(ind_move,2)=xy(1,2);
-    else   %creating object
+        
+    %creating object   
+    else   
         if strcmp(ObjectData.Style,'line')||strcmp(ObjectData.Style,'polyline')||...
                 strcmp(ObjectData.Style,'polygon')||strcmp(ObjectData.Style,'points')
             if isfield(AxeData,'ObjectCoord') && size(AxeData.ObjectCoord,2)==3
@@ -83,7 +90,7 @@ if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off
         elseif isequal(ObjectData.Style,'plane') %case of 'plane'
             DX=(xy(1,1)-ObjectData.Coord(1,1));
             DY=(xy(1,2)-ObjectData.Coord(1,2));
-            ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle widt
+            ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle width
             if isfield(ObjectData,'RangeX')
                 XMax=sqrt(DX*DX+DY*DY);
                 if XMax>max(ObjectData.RangeX)
@@ -92,7 +99,6 @@ if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off
             end
         end
     end
-    %set(AxeData.CurrentObject,'UserData',ObjectData); %update the object properties
     if strcmp(ObjectData.Style,'rectangle')||strcmp(ObjectData.Style,'ellipse')
         NbDefPoint=1;  
     elseif strcmp(ObjectData.Style,'line')|| strcmp(ObjectData.Style,'plane');
@@ -116,17 +122,26 @@ if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off
             return % line needs at leqst two points
        end
        if  ~isempty(ObjectData)
-             testmask=0;
-             hmask=findobj(huvmat,'Tag','makemask');
-             if ~isempty(hmask)
-                testmask=get(hmask,'Value');
-             end
-             if testmask
-                 PlotHandles=[];%do not project data on the object during mask creation
-             else
-                 PlotHandles=get_plot_handles(handles);%get the handles of the graphic objects setting the plotting parameters
-             end
-            UvData.Object{IndexObj}=update_obj(UvData,IndexObj,ObjectData,PlotHandles); 
+%              testmask=0;
+%              hmask=findobj(huvmat,'Tag','makemask');
+%              if ~isempty(hmask)
+%                 testmask=get(hmask,'Value');
+%              end
+%              if testmask
+%                  PlotHandles=[];%do not project data on the object during mask creation
+%              else
+            PlotHandles=get_plot_handles(handles);%get the handles of the graphic objects setting the plotting parameters
+%              end
+            UvData.Object=update_obj(UvData,IndexObj,ObjectData,PlotHandles); 
+            if strcmp(tagfig,'uvmat')% uvmat plot selected, projection plot seen on view_field
+%             if strcmp(projview,'view_field')
+                hview_field=findobj(allchild(0),'tag','view_field');
+                ViewFieldData=get(hview_field,'UserData');
+                ViewFieldData.axes3=ObjectData;
+                set(hview_field,'UserData',ViewFieldData)
+            else
+                UvData.axes3=ObjectData;
+            end
             if  isfield(UvData.Object{IndexObj},'PlotParam')
                 write_plot_param(PlotHandles,UvData.Object{IndexObj}.PlotParam); %update the display of plotting parameters for the current object
             end   
@@ -147,7 +162,8 @@ if ~isempty(huvmat) & isfield(AxeData,'Drawing') & ~isequal(AxeData.Drawing,'off
 else
     test_drawing=0;
 end
-%creation of a new zoom plot
+
+%% creation of a new zoom plot
 test_replot=0;
 if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed
 %         FigData=get(currentfig,'UserData');
@@ -207,7 +223,8 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
             end
         end
 end
-%zoom in by a factor 2 if no new figure is created
+
+%% zoom in by a factor 2 if no new figure is created
 if test_zoom
     xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
      if  isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed
@@ -269,35 +286,49 @@ if test_zoom
       end
 end
 
-% editing calibration point
-if ~test_zoom && strcmp(MouseAction,'calib') 
+%% editing calibration point
+if ~test_zoom && strcmp(MouseAction,'calib')
     h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
     hh_geometry_calib=guidata(h_geometry_calib);
     edit_test=get(hh_geometry_calib.edit_append,'Value');
-    hh=findobj(currentaxes,'Tag','calib_points');%look for handle of calibration points           
+    hh=findobj(currentaxes,'Tag','calib_points');%look for handle of calibration points
     if ~isempty(hh) && edit_test
         index_point=get(hh,'UserData');
         set(hh,'UserData',[])%remove edit mode
         h_ListCoord=hh_geometry_calib.ListCoord; %handles of the coordinate list
         Coord=get(h_ListCoord,'String');
-%         val=get(h_ListCoord,'Value');
-        coord_str=Coord{index_point}; %current line (string)
-        k=findstr('|',coord_str);%find separator indices on the string
-        xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates 
-        if numel(k)>=3
-            coord_str=[coord_str(1:k(3)-1) '|    ' num2str(xy(1,1),4) '    |    ' num2str(xy(1,2),4)]; %update the pixel information while preserving phys coord
-        else
-            coord_str=[ '    |    '  '    |    '  '    |    ' num2str(xy(1,1),4) '    |    ' num2str(xy(1,2),4)];
+        data=read_geometry_calib(Coord);
+        %         val=get(h_ListCoord,'Value');
+        xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
+        data.Coord(index_point,4)=xy(1,1);
+        data.Coord(index_point,5)=xy(1,2);
+        for ipoint=1:size(data.Coord,1)
+            for jcoord=1:5
+                Coord_cell{ipoint,jcoord}=num2str(data.Coord(ipoint,jcoord),4);%display coordiantes with 4 digits
+            end
         end
-        Coord{index_point}=coord_str;        
-        set(h_ListCoord,'String',Coord)
-        data=read_geometry_calib(Coord);%transform char cell to numbers
+        Tabchar=cell2tab(Coord_cell,' | ');
+        Tabchar=[Tabchar ;{'......'}];
+        set(h_ListCoord,'String',Tabchar)
+        %         coord_str=Coord{index_point}; %current line (string)
+        %         k=findstr('|',coord_str);%find separator indices on the string
+        %         blanks=blank
+        %         xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
+        %         if numel(k)>=3
+        %             coord_str=[coord_str(1:k(3)-1) ' | ' num2str(xy(1,1),4) ' | ' num2str(xy(1,2),4)]; %update the pixel information while preserving phys coord
+        %         else
+        %             coord_str=[ '    |    '  '    |    '  '    |    ' num2str(xy(1,1),4) '    |    ' num2str(xy(1,2),4)];
+        %         end
+        %         Coord{index_point}=coord_str;
+        %         set(h_ListCoord,'String',Coord)
+        %         data=read_geometry_calib(Coord);%transform char cell to numbers
         set(hh,'XData',data.Coord(:,4))
         set(hh,'YData',data.Coord(:,5))
     end
 end
 
-% finalising ruler
+
+%% finalising ruler
 if strcmp(MouseAction,'ruler')
     UvData.MouseAction='none';
     UvData=rmfield(UvData,'RulerHandle');
@@ -314,8 +345,7 @@ if strcmp(MouseAction,'ruler')
     AxeData.Drawing='off';%stop current drawing a
 end
 
-
-%display the data of the current object selected with the mouse right click
+%% display the data of the current object selected with the mouse right click
 if isequal(get(currentfig,'SelectionType'),'alt') && ~test_zoom && (~isfield(AxeData,'Drawing')||~isequal(AxeData.Drawing,'create'))
     hother=findobj('Tag','proj_object');%find all the proj objects
     nbselect=0;
@@ -349,6 +379,8 @@ if isequal(get(currentfig,'SelectionType'),'alt') && ~test_zoom && (~isfield(Axe
         commandwindow %brings the Matlab command window to the front
     end
 end
+
+%% update 
 if test_drawing==0
         AxeData.Drawing='off';%stop current drawing action
 end
