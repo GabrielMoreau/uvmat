@@ -147,11 +147,11 @@ for ichild=1:length(hchild)
                                     eval(['nxy=size(Field.' VarName ');']);
 %                                     nxy(1)=numel(y);
 %                                     nxy(2)=numel(x);
-                                    MaxAY=max(y(1),y(end));
-                                    MinAY=min(y(1),y(end));
-                                    if (xy(1,1)>x(1))&(xy(1,1)<x(end))&(xy(1,2)<MaxAY)&(xy(1,2)>MinAY)
-                                        indx0=1+round((nxy(2)-1)*(xy(1,1)-x(1))/(x(end)-x(1)));% index x of pixel
-                                        indy0=1+round((nxy(1)-1)*(xy(1,2)-y(1))/(y(end)-y(1)));% index y of pixel
+                                    MaxAY=max(y(1),y(end)); %#ok<COLND>
+                                    MinAY=min(y(1),y(end)); %#ok<COLND>
+                                    if (xy(1,1)>x(1))&(xy(1,1)<x(end))&(xy(1,2)<MaxAY)&(xy(1,2)>MinAY) %#ok<COLND>
+                                        indx0=1+round((nxy(2)-1)*(xy(1,1)-x(1))/(x(end)-x(1)));%#ok<COLND> % index x of pixel
+                                        indy0=1+round((nxy(1)-1)*(xy(1,2)-y(1))/(y(end)-y(1)));%#ok<COLND> % index y of pixel
                                         if indx0>=1 & indx0<=nxy(2) & indy0>=1 & indy0<=nxy(1)
                                             text_displ_2=['i='  num2str(indx0) ',j=' num2str(indy0) ','];
                                             for ivar=1:numel(CellVarIndex{icell})

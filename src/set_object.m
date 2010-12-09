@@ -55,8 +55,8 @@ else
     gui_mainfcn(gui_State, varargin{:});
 end
 % End initialization code - DO NOT PLOT
-
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes just before set_object is made visible.
 %INPUT: 
 % handles: handles of the set_object interface elements
@@ -274,7 +274,7 @@ function varargout = set_object_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 varargout{2}=handles;
 
-%-----------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in ObjectStyle.
 function ObjectStyle_Callback(hObject, eventdata, handles)
 style_prev=get(handles.ObjectStyle,'UserData');%previous object style
@@ -349,18 +349,18 @@ str=get(handles.ObjectStyle,'String');
 val=get(handles.ObjectStyle,'Value');
 set(handles.ObjectStyle,'UserData',style)
 
-%----------------------------------------------
+%------------------------------------------------------------------------
 function xObject_Callback(hObject, eventdata, handles)
 
-
+%------------------------------------------------------------------------
 function yObject_Callback(hObject, eventdata, handles)
 
-
+%------------------------------------------------------------------------
 % --- Executes on selection change in zObject.
 function zObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 
-
-
+%------------------------------------------------------------------------
 % --- Executes on selection change in ProjMode.
 function ProjMode_Callback(hObject, eventdata, handles)
 menu=get(handles.ProjMode,'String');
@@ -463,67 +463,16 @@ switch ObjectStyle
             set(handles.DZ,'Visible','on')  
         end
 end
-% 
-% %---------------------------------------------
-% % --- Executes on selection change in TITLE.
-% function TITLE_Callback(style, handles)
-% %---------------------------------------------
-% switch style
-%     case {'points','line','polyline','plane'}
-%         menu_proj={'projection';'interp';'filter';'none'}; 
-%     case {'polygon','rectangle','ellipse'}
-%         menu_proj={'inside';'outside';'mask_inside';'mask_outside'};
-%     case 'volume'
-%         menu_proj={'none'};
-% end
-% 
-% 
-% old_menu=get(handles.ObjectStyle,'String');
-% value=get(handles.ObjectStyle,'Value');
-% old_style=old_menu{value};
-% teststyle=0;
-% for iline=1:length(menu_style)
-%     if isequal(menu_style{iline},old_style)
-%         styleval=iline;
-%         teststyle=1;
-%         break
-%     end
-% end
-% if ~teststyle
-%     new_style=[];%default
-%     switch old_style
-%         case 'polyline'
-%             new_style='polygon';
-%         case 'polygon'
-%             new_style='polyline';
-%     end
-%     if ~isempty(new_style)
-%         for iline=1:length(menu_style)
-%             if isequal(menu_style{iline},new_style)
-%                 styleval=iline;
-%                 teststyle=1;
-%                 break
-%             end
-%         end
-%     end
-% end
-% if ~teststyle
-%     styleval=1;
-% end
-% set(handles.ObjectStyle,'String',menu_style)
-% set(handles.ObjectStyle,'Value',styleval)
-% set(handles.ProjMode,'String',menu_proj)
-% set(handles.ProjMode,'Value',1)
-% ObjectStyle_Callback(hObject, eventdata, handles)  
+%------------------------------------------------------------------------
 
-%---------------------------------------------
+%------------------------------------------------------------------------
 function Phi_Callback(hObject, eventdata, handles)
 update_slider(hObject, eventdata,handles)
-%---------------------------------------------
-
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
 function Theta_Callback(hObject, eventdata, handles)
 update_slider(hObject, eventdata,handles)
-
+%------------------------------------------------------------------------
 function update_slider(hObject, eventdata,handles)
 %rotation angles
 Phi=(pi/180)*str2num(get(handles.Phi,'String'));%first Euler angle in radian
@@ -541,17 +490,17 @@ if isfield(UvData,'X') & isfield(UvData,'Y') & isfield(UvData,'Z')
     set(handles.z_slider,'Max',max(Z))
     ZMax_Callback(hObject, eventdata, handles)
 end
-
+%------------------------------------------------------------------------
 function DX_Callback(hObject, eventdata, handles)
-
-
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
 function DY_Callback(hObject, eventdata, handles)
-
-
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
 function DZ_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 
-
-
+%------------------------------------------------------------------------
 %-----------------------------------------------------
 % --- Executes on button press in OPEN: DESACTIVATED use uvmat browser
 function OPEN_Callback(hObject, eventdata, handles)
@@ -739,7 +688,7 @@ end
 set(handles.XObject,'String',XObject)
 set(handles.YObject,'String',YObject)
 %METTRA A JOUR ASPECT DE L'INTERFACE (COMME set_object_Opening
-
+%------------------------------------------------------------------------
 %----------------------------------------------------
 % executed when closing: set the parent interface button to value 0
 function closefcn(gcbo,eventdata,parent_button)
@@ -767,21 +716,18 @@ if ~isempty(hseries)
     set(hhseries.GetObject,'BackgroundColor',[0 1 0])%put unactivated buttons to green
 end
 
-%-----------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in PLOT: PLOT the defined object and its projected field
 function PLOT_Callback(hObject, eventdata, handles)
 
 huvmat=findobj('tag','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
 hhuvmat=guidata(huvmat);%handles in the uvmat GUI
-ObjectName=get(handles.TITLE,'String');%name ome)f the current object (set_object na
+ObjectName=get(handles.TITLE,'String');%name of the current object 
 ListObject=get(hhuvmat.list_object_1,'String');%position in the objet list
 IndexObj_1=get(hhuvmat.list_object_1,'Value');
 IndexObj_2=get(hhuvmat.list_object_2,'Value');
-
-% set(plotfig,'Name',['Projection on' num2str(IndexObj) '-' ObjectData.Style]);
 ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
-PlotHandles=[];%default
 testnew=0;
 PlotHandles=get_plot_handles(hhuvmat);
 projview='';
@@ -790,7 +736,7 @@ if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose pr
     IndexObj=IndexObj_1;
     projview='uvmat';
 elseif IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field
-    hview_field=findobj('tag','view_field');
+    hview_field=findobj(allchild(0),'tag','view_field');
     if ~isempty(hview_field)
         PlotHandles=guidata(hview_field);
         ObjectData.HandlesDisplay=PlotHandles.axes3;%handle of axes3 in view_field
@@ -798,24 +744,29 @@ elseif IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)
     IndexObj=IndexObj_2;
     projview='view_field';
 else %new object 
-    testnew=1;
-   
+    testnew=1;  
     IndexObj=numel(ListObject)+1;
-    %ObjectName=[num2str(IndexObj) '-' ObjectData.Style];
-%     ListObject=[ListObject;ObjectName];
-%     set(hhuvmat.list_object_2,'String',[ListObject;ObjectName;{'...'}])
-%     set(hhuvmat.list_object_2,'Value',IndexObj)
 end
-% ObjectName=get(handles.TITLE,'String');
-if length(ObjectName)<1
-    ObjectName=[num2str(IndexObj) '-' ObjectData.Style];
-else
-    for ilist=1:numel(ListObject)
-        if strcmp(ListObject{ilist},ObjectName)
-            ObjectName=[num2str(IndexObj) '-' ObjectName];
-            break
-        end 
+if length(ObjectName)<1% name of object not defined in set_object
+    ObjectName=[num2str(IndexObj) '-' ObjectData.Style];%default name
+elseif ~get(hhuvmat.edit,'Value')%not in edit mode (new object created)
+    detectname=1;
+    ObjectNameNew=ObjectName;
+    vers=0;
+    while detectname==1 %create a new subdir if the netcdf files already exist
+        detectname=find(strcmp(ObjectNameNew,ListObject),1)%test the existence of the proposed name in the list
+        if detectname% if athe object name already exists
+            indstr=regexp(ObjectNameNew,'\D')
+            if indstr(end)<length(ObjectNameNew) %object name ends by a number
+                vers=str2double(ObjectNameNew(indstr(end)+1:end))+1;
+                ObjectNameNew=[ObjectNameNew(1:indstr(end)) num2str(vers)];
+            else
+                vers=vers+1
+                ObjectNameNew=[ObjectNameNew(1:indstr(end)) '_' num2str(vers)]      
+            end
+        end
     end
+    ObjectName=ObjectNameNew;
 end
 ListObject{IndexObj,1}=ObjectName;
 set(hhuvmat.list_object_1,'String',ListObject)
@@ -841,16 +792,16 @@ set(hhuvmat.edit,'Value',1)
 set(hhuvmat.edit,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
 UvData.MouseAction='edit_object'; % set the edit button to 'on'
 set(huvmat,'UserData',UvData)
-
+%------------------------------------------------------------------------
 % --- Executes on button press in MenuCoord.
 function MenuCoord_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 %----------------------------------------------------
 function YMin_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 
 function ZMin_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 
 function ZMax_Callback(hObject, eventdata, handles)
 DZ=str2num(get(handles.ZMax,'String'));
@@ -861,17 +812,16 @@ if ~isequal(ZMax-ZMin,0)
     rel_step(2)=0.2;
     set(handles.z_slider,'SliderStep',rel_step)
 end
-
+%------------------------------------------------------------------------
 function YMax_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 
 function XMin_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 
 function XMax_Callback(hObject, eventdata, handles)
-
-
-% ------------------------------------------------------
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
 function SAVE_Callback(hObject, eventdata, handles)
 % ------------------------------------------------------
 Object=read_set_object(handles);
@@ -913,8 +863,8 @@ if ~isempty(answer)
     save(t,answer{1})
 end
 msgbox_uvmat('CONFIRMATION',[answer{1}  ' saved'])
-
-%---------------------------------------------------------
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on slider movement.
 function z_slider_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
@@ -935,8 +885,8 @@ set(handles.XObject,'String',num2str(NormVec_X*Z_value,4))
 set(handles.YObject,'String',num2str(NormVec_Y*Z_value,4))
 set(handles.ZObject,'String',num2str(NormVec_Z*Z_value,4))
 PLOT_Callback(hObject, eventdata, handles)
-
-
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in HELP.
 function HELP_Callback(hObject, eventdata, handles)
 path_to_uvmat=which ('uvmat');% check the path of uvmat
@@ -947,6 +897,6 @@ else
     addpath (fullfile(pathelp,'uvmat_doc'))
     web([helpfile '#set_object']) 
 end
-
+%------------------------------------------------------------------------
 
 

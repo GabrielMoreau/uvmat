@@ -309,7 +309,7 @@ function [AxeData,haxes]=plot_profile(data,CellVarIndex,VarType,haxes,PlotParam)
 %TODO: modify existing plot if it exists
 
 hfig=get(haxes,'parent');
-AxeData=data;
+AxeData=[];%data;
 
 ColorOrder=[1 0 0;0 0.5 0;0 0 1;0 0.75 0.75;0.75 0 0.75;0.75 0.75 0;0.25 0.25 0.25];
 set(haxes,'ColorOrder',ColorOrder)
@@ -515,9 +515,9 @@ if ~isstruct(AxeData)% AxeData must be a structure
     AxeData=[];
 end
 AxeData.NbDim=2;
-if isfield(Data,'ObjectCoord')
-    AxeData.ObjectCoord=Data.ObjectCoord;
-end
+% if isfield(Data,'ObjectCoord')
+%     AxeData.ObjectCoord=Data.ObjectCoord;
+% end
 errormsg=[];%default
 test_ima=0; %default: test for image or map plot
 test_vec=0; %default: test for vector plots
@@ -857,9 +857,9 @@ if test_ima
     if ~isstruct(AxeData)
         AxeData=[];
     end
-    AxeData.A=A;
-    AxeData.AX=[AX(1) AX(end)];
-    AxeData.AY=[AY(1) AY(end)];
+%     AxeData.A=A;
+%     AxeData.AX=[AX(1) AX(end)];
+%     AxeData.AY=[AY(1) AY(end)];
     test_ima=1;
     
     %display the colorbar code for B/W images if Poscolorbar not empty
@@ -911,9 +911,9 @@ else%no scalar plot
     if ~isempty(hcol)&& ishandle(hcol)
        delete(hcol)
     end
-    AxeData.A=[];
-    AxeData.AX=[];
-    AxeData.AY=[];
+%     AxeData.A=[];
+%     AxeData.AX=[];
+%     AxeData.AY=[];
     PlotParamOut=rmfield(PlotParamOut,'Scalar');
 end
 
@@ -959,21 +959,21 @@ if test_vec
     if test_C==0
         vec_C=ones(1,numel(vec_X));
     end
-    AxeData.X=vec_X';
-    AxeData.Y=vec_Y';
-    AxeData.U=vec_U';
-    AxeData.V=vec_V';
-    AxeData.C=vec_C';
-    if isempty(ivar_F)
-        AxeData.F=[];
-    else
-        AxeData.F=vec_F';
-    end
-    if isempty(ivar_FF)
-        AxeData.FF=[];
-    else
-        AxeData.FF=vec_FF';
-    end
+%     AxeData.X=vec_X';
+%     AxeData.Y=vec_Y';
+%     AxeData.U=vec_U';
+%     AxeData.V=vec_V';
+%     AxeData.C=vec_C';
+%     if isempty(ivar_F)
+%         AxeData.F=[];
+%     else
+%         AxeData.F=vec_F';
+%     end
+%     if isempty(ivar_FF)
+%         AxeData.FF=[];
+%     else
+%         AxeData.FF=vec_FF';
+%     end
     
     %decimate by a factor 2 in vector mesh(4 in nbre of vectors)
     if isfield(PlotParam.Vectors,'decimate4') && isequal(PlotParam.Vectors.decimate4,1)
@@ -1033,37 +1033,37 @@ else
     if ~isempty(hvec)
         delete(hvec);
     end
-    AxeData.X=[];
-    AxeData.Y=[];
-    AxeData.U=[];
-    AxeData.V=[];
-    AxeData.C=[];
-    AxeData.W=[];
-    AxeData.F=[];
-     AxeData.FF=[];
+%     AxeData.X=[];
+%     AxeData.Y=[];
+%     AxeData.U=[];
+%     AxeData.V=[];
+%     AxeData.C=[];
+%     AxeData.W=[];
+%     AxeData.F=[];
+%      AxeData.FF=[];
 %     AxeData.Mesh=[];
     PlotParamOut=rmfield(PlotParamOut,'Vectors');
 end
-if isfield(Data,'Z')
-    AxeData.Z=Data.Z;% A REVOIR
-end
+% if isfield(Data,'Z')
+%     AxeData.Z=Data.Z;% A REVOIR
+% end
 listfields={'AY','AX','A','X','Y','U','V','C','W','F','FF'};
 listdim={'AY','AX',{'AY','AX'},'nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors'};
 Role={'coord_y','coord_x','scalar','coord_x','coord_y','vector_x','vector_y','scalar','vector_z','warnflag','errorflag'};
 %ind_select=[];
 nbvar=0;
-AxeData.ListVarName={};
-AxeData.VarDimName={};
-AxeData.VarAttribute={};
-for ilist=1:numel(listfields)
-    eval(['testvar=isfield(AxeData,listfields{ilist}) && ~isempty(AxeData.' listfields{ilist} ');'])
-    if testvar
-        nbvar=nbvar+1;
-        AxeData.ListVarName{nbvar}=listfields{ilist};
-        AxeData.VarDimName{nbvar}=listdim{ilist};
-        AxeData.VarAttribute{nbvar}.Role=Role{ilist};
-    end
-end
+% AxeData.ListVarName={};
+% AxeData.VarDimName={};
+% AxeData.VarAttribute={};
+% for ilist=1:numel(listfields)
+%     eval(['testvar=isfield(AxeData,listfields{ilist}) && ~isempty(AxeData.' listfields{ilist} ');'])
+%     if testvar
+%         nbvar=nbvar+1;
+%         AxeData.ListVarName{nbvar}=listfields{ilist};
+%         AxeData.VarDimName{nbvar}=listdim{ilist};
+%         AxeData.VarAttribute{nbvar}.Role=Role{ilist};
+%     end
+% end
 %store the coordinate extrema occupied by the field
 test_lim=0;
 if test_vec

@@ -4427,7 +4427,7 @@ function list_object_2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 list_str=get(handles.list_object_2,'String');
 IndexObj=get(handles.list_object_2,'Value');
-if isequal(list_str{IndexObj},'...')
+if strcmp(list_str{IndexObj},'...')
     hview_field=findobj(allchild(0),'Tag','view_field');
     if ~isempty(hview_field)
         delete(hview_field)
@@ -4440,7 +4440,7 @@ end
 function update_object(handles,IndexObj,option,ObjectName)
 %------------------------------------------------------------------------
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-if ~(length(UvData.Object)>=IndexObj);
+if numel(UvData.Object)<IndexObj;
     return
 end
 ObjectData=UvData.Object{IndexObj};
@@ -4462,14 +4462,16 @@ hset_object=set_object(ObjectData,PlotHandles,ZBounds);% call the set_object int
 %set(hset_object,'name',ObjectName)
 
 % %project the current field on the object and plot it
-% ProjData= proj_field(UvData.Field,ObjectData,IndexObj);%project the current interface field on ObjectData
-% if option==1%length(UvData.Object)>= IndexObj && isfield(UvData.Object{IndexObj},'plotaxes')&& ishandle(UvData.Object{IndexObj}.plotaxes)
-%     plot_field(ProjData,handles.axes3,PlotHandles);
-%     UvData.Object{IndexObj}.plotaxes=handles.axes3;
-% else
-%     UvData.Object{IndexObj}.plotaxes=view_field(ProjData);
-% end
-% set(handles.uvmat,'UserData',UvData)
+ProjData= proj_field(UvData.Field,ObjectData,IndexObj);%project the current interface field on ObjectData
+if option==1%length(UvData.Object)>= IndexObj && isfield(UvData.Object{IndexObj},'plotaxes')&& ishandle(UvData.Object{IndexObj}.plotaxes)
+    plot_field(ProjData,handles.axes3,PlotHandles);
+    UvData.Object{IndexObj}.plotaxes=handles.axes3;
+else
+    hviewfield=view_field(ProjData);
+    hhviewfield=guidata(hviewfield);
+    UvData.Object{IndexObj}.plotaxes=hhviewfield.axes3;
+end
+set(handles.uvmat,'UserData',UvData)
 hother=findobj('Tag','proj_object');%find all the proj objects
 for iobj=1:length(hother)
     if isequal(get(hother(iobj),'Type'),'rectangle')|isequal(get(hother(iobj),'Type'),'patch')

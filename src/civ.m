@@ -67,28 +67,32 @@ filebase=''; % root file name ('filebase'.civ)
 ext=[];
 testall=0;
 %default input parameters:
-num1=1; % set of field i numbers
-num2=1; % set of field i numbers
-num_a=1; % set of field j numbers (fields a)
-num_b=1; % second set of field j numbers (fields b)
+num_i1=1; % set of field i numbers
+num_i2=1; % set of field i numbers
+num_j1=1; % set of field j numbers (fields a)
+num_j2=1; % second set of field j numbers (fields b)
 subdir='A'; % subdir for the netcdf result files
 ind_opening=1; % proposed operation number (1=civ1,2=fix1,3=patch1,4=civ2,5=fix2,6=patch2)
 %load the initial parameters if the interface is started from uvmat
 if exist('param','var')&&isstruct(param)% the interface is opened from uvmat
     filebase=param.RootName;
     nom_type_read=param.NomType;
-    num1=param.num1;
-    num2=param.num2;
-    num_a=param.num_a;
-    num_b=param.num_b;
+    num_i1=param.num1;
+    if isnan(num_i1),num_i1=1;end
+    num_i2=param.num2;
+    if isnan(num_i2),num_i2=num_i1;end
+    num_j1=param.num_a;
+    if isnan(num_j1),num_j1=1;end
+    num_j2=param.num_b;
+    if isnan(num_j2),num_j2=num_j1;end
     subdir=param.SubDir;
     ind_opening=param.IndOpening;
     ext=param.ImaExt;
 end
-browse.num_i1=num1;
-browse.num_i2=num2;
-browse.num_j1=num_a;
-browse.num_j2=num_b;
+browse.num_i1=num_i1;
+browse.num_i2=num_i2;
+browse.num_j1=num_j1;
+browse.num_j2=num_j2;
 if ~isempty(ext) && (~isempty(imformats(ext(2:end)))||strcmpi(ext,'.avi'));%if an image file has been opened by uvmat
     set(handles.ImaExt,'String',ext)
     browse.ext_ima=ext;
@@ -194,22 +198,22 @@ elseif isequal(ind_opening,6)
 end
 
 % set the range of fields (1:1 by default) and selected pair
-if isnan(num2)||isequal(num2,num1)
-    num_ref_i=num1;
+if isequal(num_i2,num_i1)
+    num_ref_i=num_i1;
 else
-    num_ref_i=floor((num1+num2)/2);
-    browse.incr_pair(1)=num2-num1;
+    num_ref_i=floor((num_i1+num_i2)/2);
+    browse.incr_pair(1)=num_i2-num_i1;
     browse.incr_pair(2)=0;
 end
-if isnan(num_b)||isequal(num_a,num_b)
-    if isnan(num_a)
+if isequal(num_j1,num_j2)
+    if isnan(num_j1)
         num_ref_j=1;
     else
-        num_ref_j=num_a;
+        num_ref_j=num_j1;
     end
 else
-    num_ref_j=floor((num_a+num_b)/2);
-    browse.incr_pair(2)=num_b-num_a;
+    num_ref_j=floor((num_j1+num_j2)/2);
+    browse.incr_pair(2)=num_j2-num_j1;
 end
 set(handles.first_i,'String',num2str(num_ref_i));
 set(handles.last_i,'String',num2str(num_ref_i));
@@ -657,10 +661,12 @@ if isempty(time) && ~strcmp(nom_type_search,'none') && ~strcmp(nom_type_search,'
     end
     %     nbdetect=0;%test of detected images
     field_i=browse.num_i2;
+    imagename=name_generator(filebase,field_i,1,ext_search,nom_type_search);
+    imagename_plus='';
     idetect=1;
-    while idetect==1 %look for the maximum file number in the series
-        imagename=name_generator(filebase,field_i+1,1,ext_search,nom_type_search);
-        idetect=(exist(imagename,'file')==2);
+    while idetect %look for the maximum file number in the series
+        imagename_plus=name_generator(filebase,field_i+1,1,ext_search,nom_type_search);
+        idetect=(exist(imagename_plus,'file')==2)&& ~strcmp(imagename,imagename_plus);
         if idetect
             field_i=field_i+1;
         end
@@ -669,10 +675,11 @@ if isempty(time) && ~strcmp(nom_type_search,'none') && ~strcmp(nom_type_search,'
     end
     nbfield=field_i;% last detected field number
     field_i=browse.num_i1;%look for the minimum file number in the series
+    imagename_min='';
     idetect=1;
     while idetect==1
-        imagename=name_generator(filebase,field_i-1,1,ext_search,nom_type_search);
-        idetect=(exist(imagename,'file')==2);
+        imagename_min=name_generator(filebase,field_i-1,1,ext_search,nom_type_search);
+        idetect=(exist(imagename_min,'file')==2)&& ~strcmp(imagename,imagename_min);
         if idetect
             field_i=field_i-1;
         end
@@ -681,10 +688,11 @@ if isempty(time) && ~strcmp(nom_type_search,'none') && ~strcmp(nom_type_search,'
     if numel(regexp(nom_type_search,'\D'))>=1%two indices i and j
         field_i=browse.num_i1;
         field_j=browse.num_j2;
+        imagename_plus='';
         jdetect=1;
         while jdetect==1 %look for the maximum file number in the series
-            imagename=name_generator(filebase,field_i,field_j,ext_search,nom_type_search);
-            jdetect=(exist(imagename,'file')==2);
+            imagename_plus=name_generator(filebase,field_i,field_j+1,ext_search,nom_type_search);
+            jdetect=(exist(imagename_plus,'file')==2)&& ~strcmp(imagename,imagename_plus);
             if jdetect
                 field_j=field_j+1;
             end
@@ -2478,8 +2486,7 @@ if box_test(1)==1;
     detect=1;
     vers=0;
     subdir_civ1_new=subdir_civ1;
-    ind_test=0;
-    while detect==1 && ind_test<10%create a new subdir if the netcdf files already exist
+    while detect==1 %create a new subdir if the netcdf files already exist
         for ifile=1:nbfield
             for j=1:nbslice
                 filename=name_generator(filebase_nc,num1_civ1(ifile),num_a_civ1(j),'.nc',nom_type_nc,1,num2_civ1(ifile),num_b_civ1(j),subdir_civ1_new);
