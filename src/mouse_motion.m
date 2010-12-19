@@ -32,19 +32,17 @@ hhcurrentfig=guidata(currentfig);
 test_zoom=get(hhcurrentfig.zoom,'Value');%test for zoom activated on the current figure
 test_draw=0;%test for mouse drawing of object, =0 by default
 test_object=0; %test for object editing or creation 
-test_edit=isfield(handles,'edit') && get(handles.edit,'Value');% edit test for mouse shap: an arrow
+test_edit_object=0;% edit test for mouse shap: an arrow
 test_zoom_draw=0; % test for zoom drawing 
 test_ruler=0;%test for active ruler 
 test_piv=0;% test for PIV correlation display
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
+    test_edit_object=get(hhuvmat.edit_object,'Value');
+    test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');
 end
-if ~isempty(huvmat)
-    UvData=get(huvmat,'UserData');
-    test_ruler=isfield(UvData,'MouseAction') && isequal(UvData.MouseAction,'ruler');
-end
-hciv=findobj(allchild(0),'tag','civ');%find the uvmat interface handle
+hciv=findobj(allchild(0),'tag','civ');%find the civ interface handle
 if ~isempty(hciv) && strcmp(get(currentfig,'tag'),'view_field')
     hhciv=guidata(hciv);
     test_piv =get(hhciv.TestCiv1,'Value');
@@ -84,7 +82,7 @@ for ichild=1:length(hchild)
             end
             test_zoom_draw=test_draw && isequal(AxeData.Drawing,'zoom')&& isfield(AxeData,'CurrentOrigin') && isequal(get(gcf,'SelectionType'),'normal');
             test_object=test_draw && isfield(AxeData,'CurrentObject') && ~isempty(AxeData.CurrentObject) && ishandle(AxeData.CurrentObject);
-            if ~test_edit && ~test_zoom_draw && ~test_ruler
+            if ~test_edit_object && ~test_zoom_draw && ~test_ruler
                 pointershape='crosshair';%set pointer with cross shape (default when mouse is over an axis)
             end
             FigData=get(currentfig,'UserData');
@@ -109,7 +107,7 @@ for ichild=1:length(hchild)
                                     hhh=findobj(haxes,'Tag','vector_marker');
                                     if ~isempty(ivec)
                                         % mark the vectors with a circle in the absence of other operations
-                                        if ~test_object && ~test_edit && ~test_ruler
+                                        if ~test_object && ~test_edit_object && ~test_ruler
                                             pointershape='arrow'; %mouse indicates  the detection of a vector
                                             if isempty(hhh)
                                                 set(0,'CurrentFigure',currentfig)
@@ -290,7 +288,6 @@ end
 
 %%%%%%%%%%%%%%%%%
 %% create or modify an object
-
 if ~isempty(huvmat) && test_object
     PlotData=get(AxeData.CurrentObject,'UserData');
     huvmat=findobj(allchild(0),'Name','uvmat');%find the uvmat interface handle
@@ -346,7 +343,7 @@ h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomter
 if ~test_zoom && ~isempty(h_geometry_calib)
     pointershape='crosshair';%default for geometry_calib: ready to create new points
     hh_geometry_calib=guidata(h_geometry_calib);
-    if  ~isempty(xy)
+    if  ~isempty(xy) && isfield(hh_geometry_calib,'ListCoord')
         h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
         Coord=get(h_ListCoord,'String');
         data=read_geometry_calib(Coord);%transform char cell to numbers
@@ -367,7 +364,7 @@ if ~test_zoom && ~isempty(h_geometry_calib)
                 end
                 hh=findobj('Tag','calib_points');%look for handle of calibration points
                if ~isempty(hh) && ~isempty(get(hh,'UserData')) && get(hh_geometry_calib.edit_append,'Value') 
-                    index_point=get(hh,'UserData');
+                    index_point=get(hh,'UserData')
                     XCoord(index_point)=xy(1,1);
                     YCoord(index_point)=xy(1,2);
                     set(hh,'XData',XCoord)
@@ -386,13 +383,13 @@ if ~test_zoom && ~isempty(h_geometry_calib)
 end
 
 %% draw ruler
-if test_ruler && isequal(AxeData.Drawing,'ruler')
-           if isfield(UvData,'RulerHandle')
-               pointershape='crosshair';
-                RulerCoord=[UvData.RulerCoord ;xy(1,1:2)];
-                set(UvData.RulerHandle,'XData',RulerCoord(:,1));
-                set(UvData.RulerHandle,'YData',RulerCoord(:,2));
-           end
+if test_ruler && isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'ruler')
+    if isfield(AxeData,'RulerHandle')
+        pointershape='crosshair'; %give  the mouse pointer a cross shape
+        RulerCoord=[AxeData.RulerCoord ;xy(1,1:2)]; %coordinates defining the ruler segment
+        set(AxeData.RulerHandle,'XData',RulerCoord(:,1));% updtate the x coordinates for the ruler graphic object
+        set(AxeData.RulerHandle,'YData',RulerCoord(:,2));% updtate the y coordinates for the ruler graphic object
+    end
 end
 
 %% update the mouse pointer

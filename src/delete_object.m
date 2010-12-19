@@ -16,8 +16,8 @@ ObjectData=[];%default
 hdisplay=[];
 if isequal(floor(hObject),hObject) %case of an index
     if  ~isempty(UvData) & isfield(UvData, 'Object') & length(UvData.Object)>=hObject 
-        if isfield(UvData.Object{hObject},'HandlesDisplay') 
-            hdisplay=UvData.Object{hObject}.HandlesDisplay;
+        if isfield(UvData.Object{hObject},'DisplayHandle_uvmat') 
+            hdisplay=UvData.Object{hObject}.DisplayHandle_uvmat;
             for iview=1:length(hdisplay)
                 if ishandle(hdisplay(iview)) & ~isequal(hdisplay(iview),0)
                     ObjectData=get(hdisplay(iview),'UserData');
@@ -33,7 +33,7 @@ if isequal(floor(hObject),hObject) %case of an index
             end
         end   
         for iobj=hObject+1:length(UvData.Object)
-            hdisplay=UvData.Object{iobj}.HandlesDisplay;
+            hdisplay=UvData.Object{iobj}.DisplayHandle_uvmat;
             for iview=1:length(hdisplay)
                 if ishandle(hdisplay(iview)) && ~isequal(hdisplay(iview),0)
                     PlotData=get(hdisplay(iview),'UserData');

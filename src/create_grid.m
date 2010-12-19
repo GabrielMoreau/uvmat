@@ -11,7 +11,7 @@
 
 function varargout = create_grid(varargin)
 
-% Last Modified by GUIDE v2.5 05-Mar-2010 21:57:44
+% Last Modified by GUIDE v2.5 16-Dec-2010 00:17:20
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -43,6 +43,10 @@ handles.output = 'Cancel';
 
 if exist('name','var') && ischar(name)
     set(hObject,'name',name)
+    if strcmp(name,'detect_grid')
+        set(handles.white,'Visible','on')
+        set(handles.black,'Visible','on')
+    end
 end
 % Update handles structure
 guidata(hObject, handles);
@@ -136,6 +140,7 @@ if ~isequal(handles.output,'Cancel')
     zarray=T.z_0*ones(size(yarray));
     varargout{1}=[xarray yarray zarray];
     varargout{2}=T;
+    varargout{3}=get(handles.white,'Value')
 end
 
 % The figure can be deleted now
@@ -188,6 +193,27 @@ if isequal(get(hObject,'CurrentKey'),'return')
 end    
 
 
+% --- Executes on button press in white.
+function white_Callback(hObject, eventdata, handles)
+val=get(handles.white,'Value');
+if val
+    set(handles.black,'Value',0)
+else
+    set(handles.black,'Value',1)
+end
+% hObject    handle to white (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of white
 
 
+% --- Executes on button press in black.
+function black_Callback(hObject, eventdata, handles)
+val=get(handles.black,'Value');
+if val
+    set(handles.white,'Value',0)
+else
+    set(handles.white,'Value',1)
+end
 

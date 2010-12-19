@@ -1,6 +1,6 @@
 %'proj_field': projects the field on a projection object
 %--------------------------------------------------------------------------
-%  function [ProjData,errormsg]=proj_field(FieldData,ObjectData,IndexObj)
+%  function [ProjData,errormsg]=proj_field(FieldData,ObjectData)
 %
 % OUTPUT:
 % ProjData structure containing the fields of the input field FieldData,
@@ -79,7 +79,7 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [ProjData,errormsg]=proj_field(FieldData,ObjectData,IndexObj)
+function [ProjData,errormsg]=proj_field(FieldData,ObjectData)
 errormsg=[];%default
 if isfield(ObjectData,'ProjMode') && (isequal(ObjectData.ProjMode,'none')||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'))
     ProjData=[];
@@ -137,9 +137,9 @@ switch ObjectData.Style
     case 'volume'
         [ProjData,errormsg] = proj_volume(FieldData,ObjectData);
 end
-if exist('IndexObj','var')
-    ProjData.IndexObj=IndexObj;%transfer object index
-end
+% if exist('IndexObj','var')
+%     ProjData.IndexObj=IndexObj;%transfer object index
+% end
 
 %-----------------------------------------------------------------
 %project on a set of points

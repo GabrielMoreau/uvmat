@@ -88,7 +88,7 @@ end
 if isfield(Field,'DjUi')
     Field.ListVarName(end-2:end)=[];
     Field.ListVarName{end}='DjUi';
-    Field.VarDimIndex(end-2:end)=[];
+    Field.VarDimName(end-2:end)=[];
     Field.VarAttribute(end-2:end)=[];
 end
 

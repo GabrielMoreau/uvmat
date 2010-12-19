@@ -50,22 +50,27 @@ testCancel=1;
 testinputstring=0;
 icontype='quest';%default question icon (text input asked)
 if exist('title','var')
-      set(hObject, 'Name', title); 
-      if isequal (title,'CONFIRMATION')
-         icontype='';
-         testCancel=0; %no cancel button
-      elseif isequal (title,'ERROR')
-         icontype='error';
-         testCancel=0; %no cancel button
-      elseif isequal (title,'WARNING')
-         icontype='warn';
-         testCancel=0; %no cancel button
-      elseif isequal (title,'INPUT_Y-N')
-         icontype='quest'; 
-         testNo=1; % button No activated
-      else
-          testinputstring=1;
-      end
+    set(hObject, 'Name', title);
+    switch title
+        case {'CONFIRMATION'}
+            icontype='';
+            testCancel=0; %no cancel button
+        case 'ERROR'
+            icontype='error';
+            testCancel=0; %no cancel button
+        case 'WARNING'
+            icontype='warn';
+            testCancel=0; %no cancel button
+        case 'INPUT_Y-N'
+            icontype='quest';
+            testNo=1; % button No activated
+        case {'RULER'}
+            icontype='';
+            testCancel=0; %no cancel button
+            testinputstring=1;
+        otherwise
+            testinputstring=1;
+    end
 end
 if exist('display','var')
     set(handles.text1, 'String', display);

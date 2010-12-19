@@ -36,6 +36,7 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function [hh]=plot_object(ObjectDataIn,ProjObject,hplot,col)
+%% default output
 hh=[];%default output
 if isequal(ProjObject,ObjectDataIn)% object representation does not appear in its own projection plot
     return
@@ -47,11 +48,11 @@ elseif isequal(ProjObject.Style,'plane')
 else
     return % no object representation yet available
 end
-if ~isfield(ObjectData,'Style')|isempty(ObjectData.Style)|~ischar(ObjectData.Style)
+if ~isfield(ObjectData,'Style')||isempty(ObjectData.Style)||~ischar(ObjectData.Style)
     msgbox_uvmat('ERROR','undefined ObjectData.Style in plot_object.m')
     return
 end
-if ~isfield(ObjectData,'Style')|isempty(ObjectData.Style)|~ischar(ObjectData.Style)
+if ~isfield(ObjectData,'Style')||isempty(ObjectData.Style)||~ischar(ObjectData.Style)
     msgbox_uvmat('ERROR','undefined ObjectData.Style in plot_object.m')
     return
 end
@@ -62,20 +63,22 @@ YMax=0;
 ZMin=0;
 ZMax=0;
 
-%determine the plotting axes (with handle 'haxes')
+%% determine the plotting axes (with handle 'haxes')
 test_newobj=1;
 if ishandle(hplot)
-    if isequal(get(hplot,'Tag'),'proj_object')  
+    if isequal(get(hplot,'Tag'),'proj_object')% hplot is the handle of an object representation  
         test_newobj=0;
         haxes=get(hplot,'parent');
-    elseif isequal(get(hplot,'Type'),'axes')
-        axes(hplot)
+    elseif isequal(get(hplot,'Type'),'axes')% hplot is the handle of an axis 
+        currentfig=get(hplot,'parent');
+        set(0,'CurrentFigure',currentfig)
         haxes=hplot;
-    elseif isequal(get(hplot,'Type'),'figure')
-        figure(hplot);%set the input figure as the current one
+        set(currentfig,'CurrentAxes',haxes);
+    elseif isequal(get(hplot,'Type'),'figure')% hplot is the handle of a figure 
+        set(0,'CurrentFigure',hplot);%set the input figure as the current one
         haxes=findobj(hplot,'Type','axes');%look for axes in the figure
         haxes=haxes(1);
-        axes(haxes); %set the first found axis as the current one
+        set(hplot,'CurrentAxes',haxes);%set the first found axis as the current one
     else
         figure; %create new figure
         hplot=axes;%create new axes
@@ -87,7 +90,7 @@ else
     haxes=hplot;
 end
 
-%default input parameters
+%% default input parameters
 if ~isfield(ObjectData,'ProjMode')|isempty(ObjectData.ProjMode)
      ObjectData.ProjMode='projection';%default
 end
@@ -147,7 +150,7 @@ elseif isequal(ObjectData.Style,'plane')
 end
 sizcoord=size(ObjectData.Coord);
 
-%determine the coordinates xline, yline,xsup,xinf, yinf,ysup determining the new object plot
+%% determine the coordinates xline, yline,xsup,xinf, yinf,ysup determining the new object plot
 test_line= isequal(ObjectData.Style,'points')|isequal(ObjectData.Style,'line')|isequal(ObjectData.Style,'polyline')|...
     isequal(ObjectData.Style,'polygon')| isequal(ObjectData.Style,'plane')| isequal(ObjectData.Style,'volume');
 test_patch=isequal(ObjectData.ProjMode,'inside')||isequal(ObjectData.ProjMode,'outside')||isequal(ObjectData.Style,'volume')...
@@ -205,7 +208,7 @@ if test_line
     end
 end
 
-%shading image
+%% shading image
 if test_patch
     npMx=512;
     npMy=512;  
@@ -266,7 +269,7 @@ if test_patch
 end
 
 PlotData=[];%default
-%MODIFY AN EXISTING OBJECT PLOT
+%% MODIFY AN EXISTING OBJECT PLOT
 if test_newobj==0;
     hh=hplot;
     PlotData=get(hplot,'UserData');            
@@ -325,7 +328,7 @@ if test_newobj==0;
     end
 end
 
-%create the object
+%% create the object
 if test_newobj
     axes(haxes)
     hother=findobj('Tag','proj_object');%find all the proj objects

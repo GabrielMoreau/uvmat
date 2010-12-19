@@ -222,6 +222,7 @@ if isfield(DataIn,'DjUi')
     ValCell{1}=DataIn.DjUi(:,1,2)+DataIn.DjUi(:,2,1);%DVDX+DUDY
     siz=size(ValCell{1});
     ValCell{1}=reshape(ValCell{1},siz(1),1);
+    Role{1}='scalar';
     if isfield(DataIn,'TimeUnit')
         units={[DataIn.TimeUnit '-1']};
     else

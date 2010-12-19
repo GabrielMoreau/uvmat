@@ -23,34 +23,51 @@
 
 function xy=mouse_down(hObject,eventdata)
 
-MouseAction='none'; %default
+%MouseAction='none'; %default
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle which controls theoption of  mouse action
 if isempty(huvmat)
     return
 end
 hhuvmat=guidata(huvmat);%handles of elements in uvmat
-guihandles=guidata(hObject);
 UvData=get(huvmat,'UserData');
-MouseAction='none'; %default
+%MouseAction='none'; %default
 currentfig=hObject;
 hhcurrentfig=guidata(currentfig);
-test_zoom=get(hhcurrentfig.zoom,'Value')
-%test_zoom=get(guihandles.zoom,'Value');% get the mouse action from the uvmat GUI: options:
-if isfield(UvData,'MouseAction')
-    MouseAction=UvData.MouseAction;% get the mouse action from the uvmat GUI: options:
-end
+test_zoom=get(hhcurrentfig.zoom,'Value');%test for zoom action, first priority
+% if isfield(UvData,'MouseAction')
+%     MouseAction=UvData.MouseAction;% get the mouse action from the uvmat GUI: options:
+% end
 
-test_create=~test_zoom && (isequal(MouseAction,'create_object') || isequal(MouseAction,'create_mask'));
 %test_cal=get(handles.cal,'Value');
-test_cal=strcmp(MouseAction,'calib');
-test_ruler=strcmp(MouseAction,'ruler');
-test_edit=strcmp(MouseAction,'edit_object');
-test_edit_vect=strcmp(MouseAction,'edit_vect');
+% test_cal=strcmp(MouseAction,'calib');
+test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority
+%test_ruler=strcmp(MouseAction,'ruler');
+%test_edit=strcmp(MouseAction,'edit_object');
+test_edit=get(hhuvmat.edit_object,'Value');%test for object editing, third priority
+%test_edit_vect=strcmp(MouseAction,'edit_vect');%test for vector editing,  priority 4
+test_edit_vect=get(hhuvmat.edit_vect,'Value');%test for vector editing,  priority 4
+test_create=isequal(get(hhuvmat.MenuObject,'checked'),'on');% test for object creation,  priority 5
+if test_create
+    hset_object=findobj(allchild(0),'tag','set_object');
+    test_create=~isempty(hset_object)&&~test_edit;
+end
+test_cal=isequal(get(hhuvmat.MenuCalib,'checked'),'on');% test for calibration
+if test_cal% test for calibration popints,  priority 6
+    h_calib=findobj(allchild(0),'tag','geometry_calib');
+    if isempty(h_calib)
+        test_cal=0;
+        set(hhuvmat.MenuCalib,'checked','off');% test for calibration off
+    else
+        hh_calib=guidata(h_calib);
+        test_cal=get(hh_calib.edit_append,'Value');
+    end
+end
+%test_create=~test_zoom && strcmp(MouseAction,'create_object')&&~test_edit && ~test_edit_vect ;% || isequal(MouseAction,'create_mask'));
 xdisplay=[];%default
 ydisplay=[];%default
 AxeData=[];%default
 
-%edit an existing point or line if found
+%% edit an existing point or line if found
 hcurrentobject=gco;% current object handle (selected by the mouse)
 hcurrentfig=hObject;% current figure handle
 fig_tag=get(hcurrentfig,'Tag');
@@ -59,7 +76,8 @@ xy=[];%default
 xy_fig=get(hcurrentfig,'CurrentPoint');% current point of the current figure (gcbo)
 hchild=get(hcurrentfig,'Children');%handles of all objects in the current figure
 haxes=[];
-% loop on all the objects in the current figure (selected by the last mouse click) 
+
+%% loop on all the objects in the current figure (selected by the last mouse click) 
 for ichild=1:length(hchild)
     obj_pos=get(hchild(ichild),'Position');%position of the object
     if xy_fig(1) >=obj_pos(1) & xy_fig(2) >= obj_pos(2)& xy_fig(1) <=obj_pos(1)+obj_pos(3) & xy_fig(2) <= obj_pos(2)+obj_pos(4);
@@ -73,21 +91,24 @@ for ichild=1:length(hchild)
             if xy(1,1)>x_lim(1) && xy(1,1)<x_lim(2) && xy(1,2)>y_lim(1) && xy(1,2)<y_lim(2)
                 AxeData=get(haxes,'UserData');% data attached to the axis
                 AxeData.CurrentOrigin=[xy(1,1) xy(1,2)];% The current point set by the mouse becomes the current origin
-                if ~isequal(tag_obj,'proj_object') & ~test_create
-                    x_mouse=xy(1,1);%default
-                    y_mouse=xy(1,2);%default
-                    u_mouse=[];
-                    v_mouse=[];
-                    w_mouse=[];
-                    A_mouse=[];
-                    c_text=[];
-                    f_text=[];
-                    ff_text=[];     
-                    ivec=[];   
-                    if isfield(AxeData,'X') & isfield(AxeData,'Y') & isfield(AxeData,'Mesh')% test on the existence of a vector field in the current axis
-                        flag_vec=(AxeData.X<(xy(1,1)+AxeData.Mesh/4) & AxeData.X>(xy(1,1)-AxeData.Mesh/4)) & ...%flagx=1 for the vectors with x position selected by the mouse
-                          (AxeData.Y<(xy(1,2)+AxeData.Mesh/4) & AxeData.Y>(xy(1,2)-AxeData.Mesh/4));%f
-                        ivec=find(flag_vec,1);% search the (first) selected vector index ivec
+                if test_edit_vect && ~isequal(tag_obj,'proj_object') & ~test_create
+                    ivec=[];
+                    FigData=get(hcurrentfig,'UserData');
+                    tagaxes=get(haxes,'tag');
+                    if isfield(FigData,tagaxes)
+                        eval(['Field=FigData.' tagaxes ';'])
+                        [CellVarIndex,NbDim,VarType]=find_field_indices(Field);%analyse the physical fields contained in Field
+                        for icell=1:numel(CellVarIndex)%look for all physical fields
+                            if NbDim(icell)==2 % select 2D field
+                                if  isfield(Field,'Mesh') && ~isempty(Field.Mesh)&& ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
+                                    eval(['X=Field.' Field.ListVarName{VarType{icell}.coord_x} ';'])
+                                    eval(['Y=Field.' Field.ListVarName{VarType{icell}.coord_y} ';'])
+                                    flag_vec=(X<(xy(1,1)+Field.Mesh/4) & X>(xy(1,1)-Field.Mesh/4)) & ...%flagx=1 for the vectors with x position selected by the mouse
+                                        (Y<(xy(1,2)+Field.Mesh/4) & Y>(xy(1,2)-Field.Mesh/4));%f
+                                    ivec=find(flag_vec,1);% search the (first) selected vector index ivec
+                                end
+                            end
+                        end
                     end
                 end
             else
@@ -112,29 +133,28 @@ if isfield(AxeData,'CurrentRectZoom') & ishandle(AxeData.CurrentRectZoom)
     AxeData.CurrentRectZoom=[];
 end    
 
-% zoom has first priority 
+%% zoom has first priority 
 if test_zoom %&& ~test_create && ~test_edit && ~test_edit_vect && exist('xy','var')
      AxeData.Drawing='zoom'; %initiate drawing mode
      AxeData.CurrentObject=[];%unselect objects
      set(haxes,'UserData',AxeData);
      return
 end
-if isempty(huvmat)
-    return
+if isempty(huvmat)%further options require the uvmat GUI
+    return 
 end
 
-%ruler has second priority 
+%% ruler has second priority 
 if test_ruler
-    UvData.RulerCoord(1,1)=xy(1,1);
-    UvData.RulerCoord(1,2)=xy(1,2);
-    UvData.RulerHandle=line([xy(1,1) xy(1,1)],[xy(1,2) xy(1,2)],'Color','m','Tag','ruler');
-    set(huvmat,'UserData',UvData)
+    AxeData.RulerCoord(1,1)=xy(1,1);
+    AxeData.RulerCoord(1,2)=xy(1,2);
+    AxeData.RulerHandle=line([xy(1,1) xy(1,1)],[xy(1,2) xy(1,2)],'Color','m','Tag','ruler');
     AxeData.Drawing='ruler';
     set(haxes,'UserData',AxeData);
     return
 end
 
-%selection of an existing projection object
+%% selection of an existing projection object (third priority)
 if  test_edit && (isequal(tag_obj,'proj_object')||isequal(tag_obj,'DeformPoint'))
     if ~(isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'create'))
         userdata=get(hcurrentobject,'UserData');
@@ -221,54 +241,62 @@ if  test_edit && (isequal(tag_obj,'proj_object')||isequal(tag_obj,'DeformPoint')
         end
     end
 end
-%  create new projection  object
+
+%%  create new projection  object
 if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeData.Drawing,'create'))
-        ObjectData=read_set_object(UvData.sethandles); 
-        ObjectData.Coord=[]; %reset previous object coordinates
-        ObjectData.Coord(1,1)=xy(1,1);
-        ObjectData.Coord(1,2)=xy(1,2);
-        ObjectData.Coord(1,3)=0;
-        if isfield(AxeData,'ObjectCoord') & size(AxeData.ObjectCoord,2)==3
-             ObjectData.Coord(1,3)=AxeData.ObjectCoord(1,3); %generaliser au cas avec angle
+        hset_object=findobj(allchild(0),'tag','set_object');
+        if ~isempty(hset_object)
+            sethandles=guidata(hset_object);
+            ObjectData=read_set_object(sethandles); 
+            ObjectData.Coord=[]; %reset previous object coordinates
+            ObjectData.Coord(1,1)=xy(1,1);
+            ObjectData.Coord(1,2)=xy(1,2);
+            ObjectData.Coord(1,3)=0;
+            if isfield(AxeData,'ObjectCoord') & size(AxeData.ObjectCoord,2)==3
+                 ObjectData.Coord(1,3)=AxeData.ObjectCoord(1,3); %generaliser au cas avec angle
+            end
+            AxeData.CurrentObject=plot_object(ObjectData,[],haxes,'m');%draw the object and its handle becomes AxeData.CurrentObject
+            if isfield(UvData,'Object')
+                IndexObj=length(UvData.Object)+1;% add the object as index IndexObj on the list of the interface
+            else
+                IndexObj=2;
+            end  
+            UvData.Object{IndexObj}=ObjectData;        
+            list_str=get(hhuvmat.list_object_1,'String');
+            object_name=get(sethandles.TITLE,'String');
+            if isempty(object_name)|| strcmp(object_name,'')
+                list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style]; 
+                set(sethandles.TITLE,'String',list_str{IndexObj})
+            else
+               list_str{IndexObj}=object_name;
+            end
+            set(hhuvmat.list_object_1,'String',list_str)
+            list_str{end+1}='...';
+            set(hhuvmat.list_object_2,'String',list_str)
+            if strcmp(fig_tag,'view_field')%we are in view_field plot
+                  set(hhuvmat.list_object_1,'Value',IndexObj)% the projection field will be plotted in uvmat frame
+                  UvData.Object{IndexObj}.DisplayHandle_uvmat=[];
+                  UvData.Object{IndexObj}.DisplayHandle_view_field=AxeData.CurrentObject;        
+            else%we are in uvmat plot
+                set(hhuvmat.list_object_2,'Value',IndexObj)
+                UvData.Object{IndexObj}.DisplayHandle_uvmat=AxeData.CurrentObject;
+                UvData.Object{IndexObj}.DisplayHandle_view_field=[]; 
+            end
+            set(huvmat,'UserData',UvData)
+            PlotData=get(AxeData.CurrentObject,'UserData');
+            PlotData.IndexObj=IndexObj;
+            set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph
+            AxeData.Drawing='create';
         end
-        AxeData.CurrentObject=plot_object(ObjectData,[],haxes,'m');%draw the object and its handle becomes AxeData.CurrentObject
-        if isfield(UvData,'Object')
-            IndexObj=length(UvData.Object)+1;% add the object as index IndexObj on the list of the interface
-        else
-            IndexObj=2;
-        end  
-        UvData.Object{IndexObj}=ObjectData;
-        UvData.Object{IndexObj}.HandlesDisplay(1)=AxeData.CurrentObject;
-        set(huvmat,'UserData',UvData)
-        list_str=get(hhuvmat.list_object_1,'String');
-        object_name=get(UvData.sethandles.TITLE,'String')
-        if isempty(object_name)|| strcmp(object_name,'')
-            list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style]; 
-            set(UvData.sethandles.TITLE,'String',list_str{IndexObj})
-        else
-           list_str{IndexObj}=object_name;
-        end
-        set(hhuvmat.list_object_1,'String',list_str)
-        list_str{end+1}='...';
-        set(hhuvmat.list_object_2,'String',list_str)
-        if strcmp(fig_tag,'view_field')%we are in view_field plot
-              set(hhuvmat.list_object_1,'Value',IndexObj)% the projection field will be plotted in uvmat frame
-        else%we are in uvmat plot
-            set(hhuvmat.list_object_2,'Value',IndexObj)
-        end
-        PlotData=get(AxeData.CurrentObject,'UserData');
-        PlotData.IndexObj=IndexObj;
-        set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph
-        AxeData.Drawing='create';
 end
 
 % create calibration points if the GUI geometry_calib is opened, if the main axes axes3 of uvmat has ben selected
 if ~test_zoom && test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3') 
     h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
     hh_geometry_calib=guidata(h_geometry_calib);
-    h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
     h_edit_append=hh_geometry_calib.edit_append;%findobj(h_geometry_calib,'Tag','edit_append');
     if isequal(get(h_edit_append,'Value'),1) && ~isempty(haxes)
+        h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
         coord_value=get(hhuvmat.transform_fct,'Value');% set uvmat to pixel coordinates, run it again if not
         if ~(isequal(coord_value,1)||isequal(coord_value,3)); %active only with no transform or px (no phys)
             set(hhuvmat.transform_fct,'Value',1)
@@ -302,7 +330,6 @@ if ~test_zoom && test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3')
              end
              Coord{val}=strline;
              set(h_ListCoord,'String',Coord)
-            % set(h_ListCoord,'Value',val+1)
              data=read_geometry_calib(Coord);%transform char cell to numbers
              XCoord=data.Coord(:,4);
              YCoord=data.Coord(:,5);
@@ -329,17 +356,24 @@ if ~test_zoom && test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3')
 end
 
 % edit vectors
-if test_edit_vect & ~isempty(ivec) 
-    if ~(isfield(AxeData,'FF')&& ~isempty(AxeData.FF))
-        AxeData.FF=zeros(size(AxeData.X));
+if test_edit_vect && ~isempty(ivec) 
+    %create the error flag FF if it does not exist
+    if ~isfield(Field,'FF')
+        Field.ListVarName=[Field.ListVarName 'FF'];
+        Field.VarDimName=[Field.VarDimName Field.VarDimName{VarType{icell}.coord_x}];
+        nbvar=length(Field.ListVarName);
+        Field.VarAttribute{nbvar}.Role='errorflag';
+        Field.FF=zeros(size(Field.X));
     end
-    if isequal(AxeData.FF(ivec),0)
-        AxeData.FF(ivec)=100; %mark vector #ivec as false
+    if isequal(Field.FF(ivec),0)
+        Field.FF(ivec)=100 %mark vector #ivec as false
     else
-        AxeData.FF(ivec)=0;
+        Field.FF(ivec)=0;
     end
-    PlotParam=read_plot_param(hhuvmat);
-    [PlotType,ScalOut]= plot_field(AxeData,haxes,PlotParam,1);
+    PlotParam=read_plot_param(hhcurrentfig);
+    plot_field(Field,haxes,PlotParam);
+    eval(['FigData.' tagaxes '=Field;'])%record the modified field in FigData
+    set(hcurrentfig,'UserData',FigData);
 end   
 set(haxes,'UserData',AxeData);
 

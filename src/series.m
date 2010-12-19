@@ -60,6 +60,7 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 %default initial parameters
+drawnow
 
 %load the list of previously browsed files in menus Open and Open_1
 dir_perso=prefdir;
@@ -655,7 +656,7 @@ XmlData=[];
 NbSlice_calib={};
 if isequal(ext_imadoc,'.xml')
         [XmlData,warntext]=imadoc2struct([FileBase '.xml']);
-        if isfield(XmlData,'Heading') && isfield(XmlData.Heading,'ImageName')
+        if isfield(XmlData,'Heading') && isfield(XmlData.Heading,'ImageName') && ischar(XmlData.Heading.ImageName)
             [PP,FF,ext_ima_read]=fileparts(XmlData.Heading.ImageName);
         end
         if isfield(XmlData,'Time')

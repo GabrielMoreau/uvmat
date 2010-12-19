@@ -74,6 +74,7 @@ end
 function geometry_calib_OpeningFcn(hObject, eventdata, handles,inputfile,pos)
 %------------------------------------------------------------------------
 % Choose default command line output for geometry_calib
+
 handles.output = hObject;
 
 % Update handles structure
@@ -81,15 +82,14 @@ guidata(hObject, handles);
 set(hObject,'DeleteFcn',{@closefcn})%
 
 %set the position of the interface
-if exist('pos','var')&& length(pos)>2
-    pos_gui=get(hObject,'Position');
-    pos_gui(1)=pos(1);
-    pos_gui(2)=pos(2);
-    set(hObject,'Position',pos_gui);
+if exist('pos','var')&& length(pos)>=4
+%     %pos_gui=get(hObject,'Position');
+%     pos_gui(1)=pos(1);
+%     pos_gui(2)=pos(2);
+    set(hObject,'Position',pos);
 end
 
 %set menu of calibration options
-%set(handles.calib_type,'String',{'rescale';'linear';'perspective';'normal';'tsai';'bouguet';'extrinsic'})
 set(handles.calib_type,'String',{'rescale';'linear';'3D_linear';'3D_quadr';'3D_extrinsic'})
 inputxml='';
 if exist('inputfile','var')&& ~isempty(inputfile)
@@ -98,15 +98,16 @@ if exist('inputfile','var')&& ~isempty(inputfile)
     if ~strcmp(ext,'.xml')
         inputfile=[fullfile(Pathsub,RootFile) '.xml'];%xml file corresponding to the input file
     end
+    set(handles.ListCoord,'String',{'......'})
+    if exist(inputfile,'file')
+        Heading=loadfile(handles,inputfile);% load the point coordiantes existing in the xml file
+        if isfield(Heading,'Campaign')&& ischar(Heading.Campaign)
+            struct.Campaign=Heading.Campaign;
+        end
+    end   
+    set(hObject,'UserData',struct)
 end
-set(handles.ListCoord,'String',{'......'})
-if exist(inputfile,'file')
-    Heading=loadfile(handles,inputfile);% load the point coordiantes existing in the xml file
-end
-if isfield(Heading,'Campaign')&& ischar(Heading.Campaign)
-    struct.Campaign=Heading.Campaign;
-end
-set(hObject,'UserData',struct)
+
 set(handles.ListCoord,'KeyPressFcn',{@key_press_fcn,handles})%set keyboard action function
 
 
@@ -125,11 +126,11 @@ function closefcn(gcbo,eventdata)
 huvmat=findobj(allchild(0),'Name','uvmat');
 if ~isempty(huvmat)
     handles=guidata(huvmat);
-    set(handles.MenuMask,'enable','on')
-    set(handles.MenuGrid,'enable','on')
-    set(handles.MenuObject,'enable','on')
-    set(handles.MenuEdit,'enable','on')
-    set(handles.edit,'enable','on')
+%     set(handles.MenuMask,'enable','on')
+%     set(handles.MenuGrid,'enable','on')
+%     set(handles.MenuObject,'enable','on')
+%     set(handles.MenuEdit,'enable','on')
+%     set(handles.edit,'enable','on')
     hobject=findobj(handles.axes3,'tag','calib_points');
     if ~isempty(hobject)
         delete(hobject)
@@ -1102,7 +1103,7 @@ grid_input=[];%default
 if isfield(CalibData,'grid')
     grid_input=CalibData.grid;%retrieve the previously used grid
 end
-[T,CalibData.grid]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
+[T,CalibData.grid,white_test]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
 
 set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
 
@@ -1199,8 +1200,11 @@ Rangy=DataOut.AY;
 % 
 % [Amod,Rangx,Rangy]=phys_Ima(A-min(min(A)),GeometryCalib,0);
 
-
-Amod=double(Amod);
+if white_test
+    Amod=double(Amod);%will look for image maxima
+else
+    Amod=-double(Amod);%will look for image minima
+end
 % figure(12) %display corrected image
 % Amax=max(max(Amod));
 % image(Rangx,Rangy,uint8(255*Amod/Amax))

@@ -720,6 +720,7 @@ end
 % --- Executes on button press in PLOT: PLOT the defined object and its projected field
 function PLOT_Callback(hObject, eventdata, handles)
 
+%% reading the object parameters on the GUI uvmat
 huvmat=findobj('tag','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
 hhuvmat=guidata(huvmat);%handles in the uvmat GUI
@@ -727,42 +728,56 @@ ObjectName=get(handles.TITLE,'String');%name of the current object
 ListObject=get(hhuvmat.list_object_1,'String');%position in the objet list
 IndexObj_1=get(hhuvmat.list_object_1,'Value');
 IndexObj_2=get(hhuvmat.list_object_2,'Value');
-ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
 testnew=0;
 PlotHandles=get_plot_handles(hhuvmat);
-projview='';
+projview='view_field';%default
 if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose projection is viewed in the uvmat frame
-   ObjectData.HandlesDisplay=hhuvmat.axes3;
+%    ObjectData.HandlesDisplay=hhuvmat.axes3;
+%     Object_set{iobj}.DisplayHandle_view_field
     IndexObj=IndexObj_1;
     projview='uvmat';
+     plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
 elseif IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field
+   
+    IndexObj=IndexObj_2;
+%     projview='view_field';
+else %new object 
+    testnew=1;
+    IndexObj=numel(ListObject)+1;
     hview_field=findobj(allchild(0),'tag','view_field');
     if ~isempty(hview_field)
         PlotHandles=guidata(hview_field);
-        ObjectData.HandlesDisplay=PlotHandles.axes3;%handle of axes3 in view_field
+        plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
+%         ObjectData.HandlesDisplay=PlotHandles.axes3;%handle of axes3 in view_field
     end
-    IndexObj=IndexObj_2;
-    projview='view_field';
-else %new object 
-    testnew=1;  
-    IndexObj=numel(ListObject)+1;
 end
+if strcmp(projview,'view_field')
+    hview_field=findobj(allchild(0),'tag','view_field')
+    if isempty(hview_field)
+        hview_field=view_field
+    end
+    PlotHandles=guidata(hview_field);
+    plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
+end   
+ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
+
+%% naming the object
 if length(ObjectName)<1% name of object not defined in set_object
     ObjectName=[num2str(IndexObj) '-' ObjectData.Style];%default name
-elseif ~get(hhuvmat.edit,'Value')%not in edit mode (new object created)
+elseif ~get(hhuvmat.edit_object,'Value')%not in edit mode (new object created)
     detectname=1;
     ObjectNameNew=ObjectName;
     vers=0;
-    while detectname==1 %create a new subdir if the netcdf files already exist
-        detectname=find(strcmp(ObjectNameNew,ListObject),1)%test the existence of the proposed name in the list
-        if detectname% if athe object name already exists
-            indstr=regexp(ObjectNameNew,'\D')
+    while detectname==1 
+        detectname=find(strcmp(ObjectNameNew,ListObject),1);%test the existence of the proposed name in the list
+        if detectname% if the object name already exists
+            indstr=regexp(ObjectNameNew,'\D');
             if indstr(end)<length(ObjectNameNew) %object name ends by a number
                 vers=str2double(ObjectNameNew(indstr(end)+1:end))+1;
                 ObjectNameNew=[ObjectNameNew(1:indstr(end)) num2str(vers)];
             else
-                vers=vers+1
-                ObjectNameNew=[ObjectNameNew(1:indstr(end)) '_' num2str(vers)]      
+                vers=vers+1;
+                ObjectNameNew=[ObjectNameNew(1:indstr(end)) '_' num2str(vers)];      
             end
         end
     end
@@ -771,12 +786,25 @@ end
 ListObject{IndexObj,1}=ObjectName;
 set(hhuvmat.list_object_1,'String',ListObject)
 set(hhuvmat.list_object_2,'String',[ListObject;{'...'}])
+
+%% update the object plot and projection field
 if testnew
     set(hhuvmat.list_object_2,'Value',IndexObj)
+    ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
+    ObjectData.DisplayHandle_view_field=[];
+else % save the previous object graph handles
+    ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj}.DisplayHandle_uvmat;
+    ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj}.DisplayHandle_view_field;
 end
+UvData.Object{IndexObj}=ObjectData;%update the current object properties
+IndexObj
+ObjectData
+UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
 
-% update the object plot and projection field
-UvData.Object{IndexObj}=update_obj(UvData,IndexObj,ObjectData,PlotHandles);
+%% plot the field projected on the object and store it the corresponding figue
+get(plotaxes,'tag')
+ProjData= proj_field(UvData.Field,ObjectData)%project the current interface field on ObjectData
+[PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);%update an existing field plot
 if strcmp(projview,'view_field')
     ViewFieldData=get(hview_field,'UserData');
     ViewFieldData.axes3=ObjectData;
@@ -785,12 +813,12 @@ else
     UvData.axes3=ObjectData;
 end
 
-%set uvmat to object edit mode to allow further object update
+%% update the GUI uvmat
 hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI
 set(hhuvmat.MenuEditObject,'enable','on')
-set(hhuvmat.edit,'Value',1)
-set(hhuvmat.edit,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
-UvData.MouseAction='edit_object'; % set the edit button to 'on'
+set(hhuvmat.edit_object,'Value',1) % set uvmat to object edit mode to allow further object update
+set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
+%UvData.MouseAction='edit_object'; % set the edit button to 'on'
 set(huvmat,'UserData',UvData)
 %------------------------------------------------------------------------
 % --- Executes on button press in MenuCoord.

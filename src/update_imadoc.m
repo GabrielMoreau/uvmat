@@ -7,6 +7,7 @@
 % outputfile: xml file to modify
 %-------------------------------------------------------------
 function errormsg=update_imadoc(GeometryCalib,outputfile)
+tic
 errormsg='';
 testappend=0;
 if exist(outputfile,'file');%=1 if the output file already exists, 0 else  
@@ -20,7 +21,7 @@ if exist(outputfile,'file');%=1 if the output file already exists, 0 else
     end
     [success,message]=copyfile(outputfile,backupfile);%make backup
     if success==0
-        errormsg=message
+        errormsg=message;
     end
     uid=find(t,'ImaDoc');
     if ~isequal(uid,1)
@@ -55,13 +56,13 @@ if ~testappend
     if ~isempty(info)
         [t,uid_camera]=add(t,1,'element','Camera');
         Camera.TimeUnit='s';
-%         Camera.BurstTiming.FrameFrequency=info.FramesPerSecond;
         Camera.BurstTiming.Time=0;
         Camera.BurstTiming.Dti=1/info.FramesPerSecond;
         Camera.BurstTiming.NbDti=info.NumFrames-1;
-        t=struct2xml(Camera,t,uid_camera)
+        t=struct2xml(Camera,t,uid_camera);
     end
    [t,uid_calib]=add(t,1,'element','GeometryCalib');
 end
 t=struct2xml(GeometryCalib,t,uid_calib); 
 save(t,outputfile);
+toc

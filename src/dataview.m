@@ -101,6 +101,8 @@ if exist('RootDir','var')
    set(handles.OK,'Visible','on')
    set(handles.Cancel,'Visible','on')
    set(handles.figure,'WindowStyle','modal')% Make% Make the GUI modal 
+   set(hObject,'Visible','on')
+   drawnow
    RootDirectory_Callback(hObject, eventdata, handles)
    % UIWAIT makes translate_points wait for user response (see UIRESUME)
    uiwait(handles.figure);
@@ -143,6 +145,8 @@ RootDirectory_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function RootDirectory_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.RootDirectory,'BackgroundColor',[1 1 0])
+drawnow
 CampaignDir=get(handles.RootDirectory,'String');
 ExpName={''};
 if exist(CampaignDir,'dir')
@@ -166,6 +170,7 @@ if exist(CampaignDir,'dir')
 else
     msgbox_uvmat('ERROR',['The input ' CampaignDir ' is not a directory'])
 end
+set(handles.RootDirectory,'BackgroundColor',[1 1 1])
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListExperiments.

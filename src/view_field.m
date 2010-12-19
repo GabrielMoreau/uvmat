@@ -74,7 +74,7 @@ if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
     set(hhuvmat.list_object_2,'Visible','on')
     % handles_mouse.create=hhuvmat.create;
-    handles_mouse.edit=hhuvmat.edit;
+    handles_mouse.edit=hhuvmat.edit_object;
     pos_uvmat=get(huvmat,'Position');
     pos_view_field(1)=pos_uvmat(1)+pos_uvmat(3)/2;
     pos_view_field(2)=pos_uvmat(2)-pos_uvmat(3)/4;
@@ -88,11 +88,13 @@ set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles_mouse})%set mouse ac
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse}) 
 set(hObject,'CloseRequestFcn',{@closefcn})%
+if ~exist('Field','var')
+    return
+end
 
 [PlotType,PlotParamOut]= plot_field(Field,handles.axes3);%,PlotParam,KeepLim,PosColorbar)
 ViewFieldData.axes3=Field;
 set(handles.view_field,'UserData',ViewFieldData);%store the current field
-get(handles.view_field)
 if isfield(PlotParamOut,'Vectors')
     set(handles.VECT_title,'Visible','on')
 end
