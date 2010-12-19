@@ -98,8 +98,8 @@
 %                                                                    |                                                                          |
 %                                                                ObjectData
 %                                                                    |
-% plot_field.m: plot the projected fields and store them as user     |
-% data of the plotting axes                                          |
+% plot_field.m: plot the projected fields and store them as          |
+% UvData.axes3                                        |
 %                                                                    |
 %                                                                AxeData
 %
@@ -115,7 +115,7 @@
 % If the scalar exists in an input open (image or scalar stored under its
 % name in a netcdf open), it is directly read at the level of Field{1}or Field{2}.
 % Else only its name AName is recorded in Field{i}, and its field is then calculated 
-%by the fuction calc_scal after the coordinate transform or after projection on an edit
+%by the fuction calc_scal after the coordinate transform or after projection on an edit_object
      
 % Properties attached to plotting figures (standard Matlab properties):
 %    'CurrentAxes'= gca or get(gcf,'CurrentAxes');
@@ -129,34 +129,27 @@
 % Properties attached to plotting axes:
 %    'CurrentPoint'=get(gca,'CurrentPoint'); (standard Matlab) same as for the figure, but position in plot coordinates.
 %     AxeData:=get(gca,'UserData');
-%     AxeData.Drawing  = create: create a new edit 
-%                       = deform: modify an existing edit by moving its defining create
+%     AxeData.Drawing  = create: create a new object 
+%                       = deform: modify an existing object by moving its defining create
 %                      = off: no current drawing action
-%                     = translate: translate an existing edit
-%                    = zoom: isolate a subregion for zoom in=1 if an edit is being currently drawn, 0 else (set to 0 by releasing mouse button)
-%            .hset_edit=handle of the set_edit interface (if a projection edit is edited);
-%            .CurrentOrigin: Origin of a curently drawn edit
+%                     = translate: translate an existing object
+%                    = calibration: move a calibration point
+%                    = zoom: isolate a subregion for zoom in=1 if an object is being currently drawn, 0 else (set to 0 by releasing mouse button)
+%            .CurrentOrigin: Origin of a curently drawn edit_object
 %            .CurrentLine: currently drawn menuline (A REVOIR)
-%            .CurrentObject: handle of the currently drawn edit
+%            .CurrentObject: handle of the currently drawn edit_object
 %            .CurrentRectZoom: current rectangle used for zoom
-%            .zoomon : zoom state (a revoir)
-%            .X, .Y, .Z: array of coordinates defining the position of the vector: ASSOCIER AU PLAN (OBJET) PLUTOT QU'A L'AXE ?
-%            .U, .V, .W: array of components of the vector
-%            .C:
-%            .F:
-%            .FF:
-%            .A
 
 % Properties attached to projection objects (create, menuline, menuplane...):
-%    'Tag'='proj_edit': for all projection objects
-%    ObjectData.Style=...: style of projection edit:
+%    'Tag'='proj_object': for all projection objects
+%    ObjectData.Style=...: style of projection object:
 %              .ProjMode
-%              .Coord: defines the position of the edit
+%              .Coord: defines the position of the object
 %              .XMin,YMin....
 %              .XMax,YMax....
 %              .DX,DY,DZ
 %              .Phi, .Theta, .Psi : Euler angles
-%              .X,.Y,.U,.V.... : field data projected on the edit
+%              .X,.Y,.U,.V.... : field data projected on the object
 %              .IndexObj: index in the list of UvData.Object
            %during plotting
 %               .plotaxes: handles of the current axes used to plot the  result of field projection on the object
@@ -377,7 +370,7 @@ if testinputfield
         errormsg=refresh_field(handles,[],[],[],[],[],[],{Field});
         set(handles.MenuTools,'Enable','on')
         set(handles.OBJECT_txt,'Visible','on')
-        set(handles.edit,'Visible','on')
+        set(handles.edit_object,'Visible','on')
         set(handles.list_object_1,'Visible','on')
         set(handles.frame_object,'Visible','on')
         if ~isempty(errormsg)
@@ -603,7 +596,7 @@ switch ext_test
         set(handles.MenuExportMovie,'Enable','on')
         set(handles.MenuTools,'Enable','on')
         set(handles.OBJECT_txt,'Visible','on')
-        set(handles.edit,'Visible','on')
+        set(handles.edit_object,'Visible','on')
         set(handles.list_object_1,'Visible','on')
         set(handles.frame_object,'Visible','on')
          % initiate input file: 
@@ -1330,10 +1323,12 @@ else
         set(handles.pxcm,'String','var')
         set(handles.pycm,'String','var')
     else
-        pixcmx=GeometryCalib.f*GeometryCalib.R(1,1)*GeometryCalib.sx/(GeometryCalib.Tz*GeometryCalib.dpx);
-        pixcmy=GeometryCalib.f*GeometryCalib.R(2,2)/(GeometryCalib.Tz*GeometryCalib.dpy);
-        set(handles.pxcm,'String',num2str(pixcmx))
-        set(handles.pycm,'String',num2str(pixcmy))
+        if isfield(GeometryCalib,'fx_fy')
+            pixcmx=GeometryCalib.fx_fy(1);
+            pixcmy=GeometryCalib.fx_fy(2);
+            set(handles.pxcm,'String',num2str(pixcmx))
+            set(handles.pycm,'String',num2str(pixcmy))
+        end
     end
 end
 UvData.XmlData_1=XmlData;
@@ -2702,7 +2697,7 @@ end
 %loop on the projection objects: one or two
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);    
-    [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj},iobj);% project field on the object
+    [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
     if ~isempty(errormsg)
         return
     end
@@ -2758,7 +2753,7 @@ for imap=1:numel(IndexObj)
         else
             [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},keeplim(imap),PosColorbar{imap});
             write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
-            if isfield(UvData,'Mesh')&~isempty(UvData.Mesh)
+            if isfield(UvData,'Mesh')&&~isempty(UvData.Mesh)
                 ObjectData.Mesh=UvData.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
             end
             if imap==1            
@@ -2866,15 +2861,15 @@ end
 if isfield(UvData,'XmlData_1') && isfield(UvData.XmlData_1,'Time')
     [P,F,str1,str2,str_a,str_b,E]=name2display(['xx' get(handles.FileIndex_1,'String') get(handles.FileExt_1,'String')]);
     num_i2=str2double(str2);
-    if isempty(num_i2)
+    if isnan(num_i2)
         num_i2=num_i1;
     end
     num_j1=str2double(str_a);
-    if isempty(num_j1)
+    if isnan(num_j1)
         num_j1=1;
     end
     num_j2=str2double(str_b);
-    if isempty(num_j2)
+    if isnan(num_j2)
         num_j2=num_j1;
     end
     num_i1=str2double(str1);
@@ -3003,7 +2998,6 @@ end
 function record_Callback(hObject, eventdata, handles)
 % [filebase,num_i1,num_j1,num_i2,num_j2,Ext,NomType,SubDir]=read_input_file(handles);
 filename=read_file_boxes(handles);
-AxeData=get(gca,'UserData');
 [erread,message]=fileattrib(filename);
 if ~isempty(message) && ~isequal(message.UserWrite,1)
      msgbox_uvmat('ERROR',['no writting access to ' filename])
@@ -3025,6 +3019,7 @@ if test_civ1
    attrname='fix';
 end
 %write fix flags in the netcdf file
+UvData=get(handles.uvmat,'UserData');
 hhh=which('netcdf.open');% look for built-in matlab netcdf library
 if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
     nc=netcdf.open(filename,'NC_WRITE'); 
@@ -3037,12 +3032,15 @@ if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
         varid=netcdf.defVar(nc,flagname,'double',dimid);%create fixflag variable if it does not exist
     end
     netcdf.endDef(nc)
-    netcdf.putVar(nc,varid,AxeData.FF);
+    netcdf.putVar(nc,varid,UvData.axes3.FF);
     netcdf.close(nc)  
 else %old netcdf library
     netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
 end
 
+%-------------------------------------------------------------------
+%----Correct the netcdf file, using toolbox (old versions of Matlab).
+%-------------------------------------------------------------------
 function netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
 nc=netcdf(filename,'write'); %open netcdf file
 result=redef(nc);
@@ -3725,8 +3723,8 @@ if isequal(get(handles.VOLUME,'Value'),1)
     set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
     set(handles.edit_vect,'Value',0)
     edit_vect_Callback(hObject, eventdata, handles)
-    set(handles.edit,'Value',0)
-    set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.edit_object,'Value',0)
+    set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
 %     set(handles.cal,'Value',0)
 %     set(handles.cal,'BackgroundColor',[0 1 0])
     set(handles.edit_vect,'Value',0)
@@ -3752,7 +3750,7 @@ if isequal(get(handles.VOLUME,'Value'),1)
     data.ParentButton=handles.VOLUME;
     PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
     [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface with action on haxes,
-                                                      % associate the set_edit interface handle to the plotting axes
+                                                      % associate the set_object interface handle to the plotting axes
     if isfield(UvData,'SetObjectOrigin')                                                
     pos_uvmat=get(huvmat,'Position');
     pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
@@ -3769,8 +3767,8 @@ set(huvmat,'UserData',UvData)
 %-------------------------------------------------------
 function edit_vect_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------
-
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
+% 
+% UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 if isequal(get(handles.edit_vect,'Value'),1)
     test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
     test_civ1=isequal(get(handles.civ1,'BackgroundColor'),[1 1 0]);
@@ -3779,20 +3777,20 @@ if isequal(get(handles.edit_vect,'Value'),1)
     end 
     set(handles.record,'Visible','on')
     set(handles.edit_vect,'BackgroundColor',[1 1 0])
-    set(handles.edit,'Value',0)
+    set(handles.edit_object,'Value',0)
     set(handles.zoom,'Value',0)
     set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
 %     set(handles.create,'Value',0)
 %     set(handles.create,'BackgroundColor',[0 1 0])
-    set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
     set(gcf,'Pointer','arrow')
-    UvData.MouseAction='edit_vect';
+%     UvData.MouseAction='edit_vect';
 else
     set(handles.record,'Visible','off')
     set(handles.edit_vect,'BackgroundColor',[0.7 0.7 0.7])
-    UvData.MouseAction='none';
+%     UvData.MouseAction='none';
 end
-set(handles.uvmat,'UserData',UvData)
+% set(handles.uvmat,'UserData',UvData)
 
 %----------------------------------------------
 function save_mask_Callback(hObject, eventdata, handles)
@@ -4377,23 +4375,19 @@ function grid_Callback(hObject, eventdata, handles)
 
 
 %-------------------------------------------------------------------
-% --- Executes on selection change in edit.
-function edit_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in edit_object.
+function edit_object_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-test=get(handles.edit,'Value');
+test=get(handles.edit_object,'Value');
 if test
-    UvData.MouseAction='edit_object';
-    set(handles.edit,'BackgroundColor',[1,1,0])  
+    set(handles.edit_object,'BackgroundColor',[1,1,0])  
     %suppress the other options 
     set(handles.zoom,'Value',0)
     zoom_Callback(hObject, eventdata, handles)
-    set(handles.edit_vect,'Value',0)
-    edit_vect_Callback(hObject, eventdata, handles)  
-    %list_object_Callback(hObject, eventdata, handles)
 else 
     UvData.MouseAction='none';
-    set(handles.edit,'BackgroundColor',[0.7,0.7,0.7])   
+    set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])   
 end
 set(handles.uvmat,'UserData',UvData);
 hset_object=findobj(allchild(0),'Tag','set_object');
@@ -4445,10 +4439,9 @@ if numel(UvData.Object)<IndexObj;
 end
 ObjectData=UvData.Object{IndexObj};
 ObjectData.Name=ObjectName;
-if isequal(get(handles.edit,'Value'),1)
+if isequal(get(handles.edit_object,'Value'),1)
     ObjectData.enable_plot=1; % desable the PLOT option in the set_object GUI (editing mode
 end
-PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
 ZBounds=0; % default
     if isfield(UvData,'ZMin') && isfield(UvData,'ZMax')
         ZBounds(1)=UvData.ZMin; %minimum for the Z slider
@@ -4458,18 +4451,25 @@ hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
-hset_object=set_object(ObjectData,PlotHandles,ZBounds);% call the set_object interface,
-%set(hset_object,'name',ObjectName)
+hset_object=set_object(ObjectData,[],ZBounds);% call the set_object interface,
 
 % %project the current field on the object and plot it
-ProjData= proj_field(UvData.Field,ObjectData,IndexObj);%project the current interface field on ObjectData
+ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
 if option==1%length(UvData.Object)>= IndexObj && isfield(UvData.Object{IndexObj},'plotaxes')&& ishandle(UvData.Object{IndexObj}.plotaxes)
-    plot_field(ProjData,handles.axes3,PlotHandles);
-    UvData.Object{IndexObj}.plotaxes=handles.axes3;
+    PlotHandles=handles;
+%     UvData.Object{IndexObj}.plotaxes=handles.axes3;
 else
-    hviewfield=view_field(ProjData);
-    hhviewfield=guidata(hviewfield);
-    UvData.Object{IndexObj}.plotaxes=hhviewfield.axes3;
+    hview_field=findobj(allchild(0),'tag','view_field');
+    if isempty(hview_field)
+        hview_field=view_field;
+    end
+    PlotHandles=guidata(hview_field);
+%     hview_field=view_field(ProjData);
+%     hhviewfield=guidata(hviewfield);
+   % UvData.Object{IndexObj}.plotaxes=hhviewfield.axes3;
+end
+if ~isempty(ProjData)
+plot_field(ProjData,PlotHandles.axes3,PlotHandles);
 end
 set(handles.uvmat,'UserData',UvData)
 hother=findobj('Tag','proj_object');%find all the proj objects
@@ -4491,20 +4491,20 @@ end
 hother=findobj('Tag','DeformPoint');
 set(hother,'Color','b');
 set(hother,'Selected','off')    
-if isfield(ObjectData,'HandlesDisplay')
-    for iview=1:length(ObjectData.HandlesDisplay)
-        if ishandle(ObjectData.HandlesDisplay(iview))
-            uistack(ObjectData.HandlesDisplay(iview),'top')
-            linetype=get(ObjectData.HandlesDisplay(iview),'Type');
+if isfield(ObjectData,'DisplayHandle_uvmat')
+%     for iview=1:length(ObjectData.HandlesDisplay)
+        if ishandle(ObjectData.DisplayHandle_uvmat)
+            uistack(ObjectData.DisplayHandle_uvmat,'top')
+            linetype=get(ObjectData.DisplayHandle_uvmat,'Type');
             if isequal(linetype,'line')
-                set(ObjectData.HandlesDisplay(iview),'Color','m'); %set the selected object to magenta color
+                set(ObjectData.DisplayHandle_uvmat,'Color','m'); %set the selected object to magenta color
             elseif isequal(linetype,'rectangle')
-                set(ObjectData.HandlesDisplay(iview),'EdgeColor','m'); %set the selected object to magenta color
+                set(ObjectData.DisplayHandle_uvmat,'EdgeColor','m'); %set the selected object to magenta color
             elseif isequal(linetype,'patch')
-                set(ObjectData.HandlesDisplay(iview),'FaceColor','m'); %set the selected object to magenta color
+                set(ObjectData.DisplayHandle_uvmat,'FaceColor','m'); %set the selected object to magenta color
             end 
-            SubObjectData=get(ObjectData.HandlesDisplay(iview),'UserData');
-            if isfield(SubObjectData,'SubObject')& ishandle(SubObjectData.SubObject)
+            SubObjectData=get(ObjectData.DisplayHandle_uvmat,'UserData');
+            if isfield(SubObjectData,'SubObject') & ishandle(SubObjectData.SubObject)
                 uistack(SubObjectData.SubObject,'top')
                 for iobj=1:length(SubObjectData.SubObject)
                     hsub=SubObjectData.SubObject(iobj);
@@ -4519,11 +4519,11 @@ if isfield(ObjectData,'HandlesDisplay')
                     end
                 end
             end
-            if isfield(SubObjectData,'DeformPoint')& ishandle(SubObjectData.DeformPoint)
+            if isfield(SubObjectData,'DeformPoint') & ishandle(SubObjectData.DeformPoint)
                 set(SubObjectData.DeformPoint,'Color','m')
             end
         end
-    end
+%     end
 end
 pause(0.1)
 figure(hset_object)%put set_object in front
@@ -4657,16 +4657,17 @@ msgbox_uvmat('CONFIRMATION',{['movie ' aviname ' created '];['with ' num2str(ima
 
 % ------------------------------------------------------------------
 function MenuCalib_Callback(hObject, eventdata, handles)
+%geometry_calib; %display the GUI as a  waiting display
 
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 
 %suppress competing options 
 set(handles.zoom,'Value',0)
 set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.MenuMask,'enable','off')
-set(handles.MenuGrid,'enable','off')
-set(handles.MenuObject,'enable','off')
-set(handles.MenuEdit,'enable','off')
+% set(handles.MenuMask,'enable','off')
+% set(handles.MenuGrid,'enable','off')
+% set(handles.MenuObject,'enable','off')
+% set(handles.MenuEdit,'enable','off')
 set(handles.list_object_1,'Value',1)      
 % initiate display of GUI geometry_calib
 data=[]; %default
@@ -4677,80 +4678,25 @@ pos=get(handles.uvmat,'Position');
 pos(1)=pos(1)+pos(3)-0.311+0.04; %0.311= width of the geometry_calib interface (units relative to the srcreen)
 pos(2)=pos(2)-0.02;
 [FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes(handles);
-[UvData.hset_object,UvData.sethandles]=geometry_calib(FileName,pos);% call the geometry_calib interface	
-pos_uvmat=get(handles.uvmat,'Position');
-
+set(handles.view_xml,'Backgroundcolor',[1 1 0])%indicate the reading of the current xml file by geometry_calib
 if isfield(UvData,'CalOrigin')
+    pos_uvmat=get(handles.uvmat,'Position');
     pos_cal(1)=pos_uvmat(1)+UvData.CalOrigin(1)*pos_uvmat(3);
     pos_cal(2)=pos_uvmat(2)+UvData.CalOrigin(2)*pos_uvmat(4);
     pos_cal(3:4)=UvData.CalSize .* pos_uvmat(3:4);
-    set(UvData.hset_object,'Position',pos_cal)
+    %set(UvData.hset_object,'Position',pos_cal)
 end
-UvData.MouseAction='calib';
-set(handles.uvmat,'UserData',UvData);
+geometry_calib(FileName,pos_cal);% call the geometry_calib interface	
+set(handles.view_xml,'Backgroundcolor',[1 1 1])%indicate the end of reading of the current xml file by geometry_calib
+set(handles.MenuCalib,'checked','on')% indicate that MenuCalib is activated, test used by mouse action
+
+%UvData.MouseAction='calib';
+% set(handles.uvmat,'UserData',UvData);
 
 
 % ------------------------------------------------------------------
 function MenuMask_Callback(hObject, eventdata, handles)
-% set(handles.TOOLS_txt,'Visible','on')
-% set(handles.frame_tools,'Visible','on')
-% % set(handles.create,'Visible','on')
-% % set(handles.create,'Value',1)
-% % set(handles.create,'BackgroundColor',[1 1 0]) %visualise in yellow
-% set(handles.save_mask,'Visible','on')
-% set(handles.masklevel,'Visible','on')
-% if isequal(get(handles.z_index,'Visible'),'on')
-%     nb_slice=str2num(get(handles.nb_slice,'String'));
-%     for ilist=1:nb_slice
-%         list_index{ilist,1}=num2str(ilist);
-%     end   
-%     set(handles.masklevel,'String',list_index)
-%     val=str2num(get(handles.z_index,'String'));
-%     if val<=nb_slice
-%         set(handles.masklevel,'Value',val)
-%     end
-% else
-%     set(handles.masklevel,'String',{'1'})
-%     set(handles.masklevel,'Value',1)
-% end
-% if ishandle(handles.UVMAT_title)
-%     delete(handles.UVMAT_title)
-% end
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-% set(handles.zoom,'Value',0)
-% set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
-% set(handles.edit_vect,'Value',0)
-% edit_vect_Callback(hObject, eventdata, handles)
-% set(handles.edit,'Value',0)
-% set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
-% set(handles.edit_vect,'Value',0)  
-% edit_vect_Callback(hObject, eventdata, handles)
-% set(handles.cal,'Value',0)
-% set(handles.cal,'BackgroundColor',[0 1 0])
-
-%initiate the GUI set_object
-% data.TITLE='MASK';
-% if isfield(UvData,'CoordType')
-%     data.CoordType=UvData.CoordType;
-% end
-% if isfield(UvData,'Mesh')&&~isempty(UvData.Mesh)
-%     data.YMax=UvData.Mesh;
-% elseif isfield(UvData.Field,'AX')&&isfield(UvData.Field,'AY')&& isfield(UvData.Field,'A')%only image
-%     np=size(UvData.Field.A);
-%     meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/(np(2)-1);
-%     meshy=abs(UvData.Field.AY(end)-UvData.Field.AY(1))/(np(1)-1);
-%     data.YMax=max(meshx,meshy);
-%     data.DX=max(meshx,meshy);
-% end
-% data.Coord=[0 0 0]; %default
-% PlotHandles=get_plot_handles(handles);%get the handles of the graphic objects setting the plotting parameters
-% [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface
-% pos_uvmat=get(handles.uvmat,'Position');
-% if isfield(UvData,'SetObjectOrigin')
-%     pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
-%     pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4); 
-%     set(hset_object,'Position',pos_set_object)
-% end
 ListObj=UvData.Object;
 select=zeros(1,numel(ListObj));
 for iobj=1:numel(ListObj);
@@ -4765,102 +4711,94 @@ if isempty(val)
 else
     set(handles.list_object_1,'Max',2);%allow multiple selection
     set(handles.list_object_1,'Value',val);
-%     answer=msgbox_uvmat('INPUT_Y-N',['make the mask image from ' num2str(numel(val)) ' polygons']);
-%     if ~isempty(answer)
-        flag=1;
-        npx=size(UvData.Field.A,2);
-        npy=size(UvData.Field.A,1);
-        xi=0.5:npx-0.5;
-        yi=0.5:npy-0.5;
-        [Xi,Yi]=meshgrid(xi,yi);
-        if isfield(UvData,'Object')
-            for iobj=1:length(UvData.Object)
-                ObjectData=UvData.Object{iobj};
-                if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
-                    flagobj=1;
-                    testphys=0; %coordinates in pixels by default
-                    if isfield(ObjectData,'CoordType') && isequal(ObjectData.CoordType,'phys')
-                        if isfield(UvData,'XmlData')&& isfield(UvData.XmlData,'GeometryCalib')
-                            Calib=UvData.XmlData.GeometryCalib;
-                            testphys=1;
-                        end
+    flag=1;
+    npx=size(UvData.Field.A,2);
+    npy=size(UvData.Field.A,1);
+    xi=0.5:npx-0.5;
+    yi=0.5:npy-0.5;
+    [Xi,Yi]=meshgrid(xi,yi);
+    if isfield(UvData,'Object')
+        for iobj=1:length(UvData.Object)
+            ObjectData=UvData.Object{iobj};
+            if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
+                flagobj=1;
+                testphys=0; %coordinates in pixels by default
+                if isfield(ObjectData,'CoordType') && isequal(ObjectData.CoordType,'phys')
+                    if isfield(UvData,'XmlData')&& isfield(UvData.XmlData,'GeometryCalib')
+                        Calib=UvData.XmlData.GeometryCalib;
+                        testphys=1;
                     end
-                    if isfield(ObjectData,'Coord')& isfield(ObjectData,'Style')
-                        if isequal(ObjectData.Style,'polygon')
-                            X=ObjectData.Coord(:,1);
-                            Y=ObjectData.Coord(:,2);
-                            if testphys
-                                [X,Y]=px_XYZ(Calib,X,Y,0);% to generalise with 3D cases
-                            end
-                            flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
-                        elseif isequal(ObjectData.Style,'ellipse')
-                            if testphys
-                                %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                            end
-                            RangeX=max(ObjectData.RangeX);
-                            RangeY=max(ObjectData.RangeY);
-                            X2Max=RangeX*RangeX;
-                            Y2Max=RangeY*RangeY;
-                            distX=(Xi-ObjectData.Coord(1,1));
-                            distY=(Yi-ObjectData.Coord(1,2));
-                            flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
-                        elseif isequal(ObjectData.Style,'rectangle')
-                            if testphys
-                                %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
-                            end
-                            distX=abs(Xi-ObjectData.Coord(1,1));
-                            distY=abs(Yi-ObjectData.Coord(1,2));
-                            flagobj=distX>max(ObjectData.RangeX) | distY>max(ObjectData.RangeY);
+                end
+                if isfield(ObjectData,'Coord')& isfield(ObjectData,'Style')
+                    if isequal(ObjectData.Style,'polygon')
+                        X=ObjectData.Coord(:,1);
+                        Y=ObjectData.Coord(:,2);
+                        if testphys
+                            [X,Y]=px_XYZ(Calib,X,Y,0);% to generalise with 3D cases
                         end
-                        if isequal(ObjectData.ProjMode,'mask_outside')
-                            flagobj=~flagobj;
+                        flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
+                    elseif isequal(ObjectData.Style,'ellipse')
+                        if testphys
+                            %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
                         end
-                        flag=flag & flagobj;
+                        RangeX=max(ObjectData.RangeX);
+                        RangeY=max(ObjectData.RangeY);
+                        X2Max=RangeX*RangeX;
+                        Y2Max=RangeY*RangeY;
+                        distX=(Xi-ObjectData.Coord(1,1));
+                        distY=(Yi-ObjectData.Coord(1,2));
+                        flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
+                    elseif isequal(ObjectData.Style,'rectangle')
+                        if testphys
+                            %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
+                        end
+                        distX=abs(Xi-ObjectData.Coord(1,1));
+                        distY=abs(Yi-ObjectData.Coord(1,2));
+                        flagobj=distX>max(ObjectData.RangeX) | distY>max(ObjectData.RangeY);
                     end
+                    if isequal(ObjectData.ProjMode,'mask_outside')
+                        flagobj=~flagobj;
+                    end
+                    flag=flag & flagobj;
                 end
             end
         end
-        % flag=~flag;
-        %mask name
-        RootPath=get(handles.RootPath,'String');
-        RootFile=get(handles.RootFile,'String');
-        if ~isempty(RootFile)&(isequal(RootFile(1),'/')| isequal(RootFile(1),'\'))
-            RootFile(1)=[];
-        end
-        filebase=fullfile(RootPath,RootFile);
-        list=get(handles.masklevel,'String');
-        masknumber=num2str(length(list));
-        maskindex=get(handles.masklevel,'Value');
-        mask_name=name_generator([filebase '_' masknumber 'mask'],maskindex,1,'.png','_i');
-        imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
-        imflag=flipdim(imflag,1);
-        % imflag=uint8(255*flag);% =0 for flag=0 (vectors=0 when
-        % 20<imflag<200)
+    end
+    % flag=~flag;
+    %mask name
+    RootPath=get(handles.RootPath,'String');
+    RootFile=get(handles.RootFile,'String');
+    if ~isempty(RootFile)&(isequal(RootFile(1),'/')| isequal(RootFile(1),'\'))
+        RootFile(1)=[];
+    end
+    filebase=fullfile(RootPath,RootFile);
+    list=get(handles.masklevel,'String');
+    masknumber=num2str(length(list));
+    maskindex=get(handles.masklevel,'Value');
+    mask_name=name_generator([filebase '_' masknumber 'mask'],maskindex,1,'.png','_i');
+    imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
+    imflag=flipdim(imflag,1);
 
-        %display the mask
-        %update_mask(handles,num_i1,num_j1)
-        figure;
-        vec=linspace(0,1,256);%define a linear greyscale colormap
-        map=[vec' vec' vec'];
-        colormap(map)
-        image(imflag);
-        answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name);
-        if ~strcmp(answer,'Cancel')
-            mask_dir=fileparts(answer);
-            if ~exist(mask_dir,'dir')
-                msgbox_uvmat('ERROR',['directory ' mask_dir ' does not exist'])
-                return
-            end
-            imwrite(imflag,answer,'BitDepth',8);
+    %display the mask
+    figure;
+    vec=linspace(0,1,256);%define a linear greyscale colormap
+    map=[vec' vec' vec'];
+    colormap(map)
+    image(imflag);
+    answer=msgbox_uvmat('INPUT_TXT','mask file name:', mask_name);
+    if ~strcmp(answer,'Cancel')
+        mask_dir=fileparts(answer);
+        if ~exist(mask_dir,'dir')
+            msgbox_uvmat('ERROR',['directory ' mask_dir ' does not exist'])
+            return
         end
-        set(handles.list_object_1,'Value',1)
-        set(handles.list_object_1,'Max',1)
-%     end
-end        
-      
+        imwrite(imflag,answer,'BitDepth',8);
+    end
+    set(handles.list_object_1,'Value',1)
+    set(handles.list_object_1,'Max',1)
+end
 
-% UvData.MouseAction='create_object';
-set(handles.uvmat,'UserData',UvData);
+%set(handles.uvmat,'UserData',UvData);
 
 % ------------------------------------------------------------------
 %-- open the GUI set_grid.fig to create grid
@@ -4870,7 +4808,7 @@ function MenuGrid_Callback(hObject, eventdata, handles)
 %suppress the other options if grid is chosen
 set(handles.edit_vect,'Value',0)
 edit_vect_Callback(hObject, eventdata, handles)
-set(handles.edit,'BackgroundColor',[0.7 0.7 0.7])
+set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
 set(handles.list_object_1,'Value',1)      
 
 %prepare display of the set_grid GUI
@@ -4885,7 +4823,7 @@ set_grid(FileName,CoordList{val});% call the set_object interface
 %----------------------------------------------------------------
 function MenuSeries_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-
+series; %first display of the GUI to fill waiting time
 [param.FileName]=read_file_boxes(handles);
 if isequal(get(handles.SubField,'Value'),1)
     FileName_1=read_file_boxes_1(handles);%
@@ -4974,7 +4912,7 @@ function MenuTools_Callback(hObject, eventdata, handles)
 
 % ------------------------------------------------------------------
 function MenuEditObject_Callback(hObject, eventdata, handles)
-set(handles.edit,'Value',1)
+set(handles.edit_object,'Value',1)
 edit_Callback(hObject, eventdata, handles)
 
 %--------------------------------------------------------------------------
@@ -4991,6 +4929,7 @@ set(handles.pycm,'Visible',state)
 %------------------------------------------------------------------------
 function MenuEditVectors_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+% set(handles.MenuEditVectors,'checked','on')
 set(handles.edit_vect,'Visible','on')
 set(handles.edit_vect,'Value',1)
 edit_vect_Callback(hObject, eventdata, handles)
@@ -5091,8 +5030,8 @@ hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
-UvData=get(handles.uvmat,'UserData');
-[hset_object,UvData.sethandles]=set_object(data);% call the set_object interface
+% UvData=get(handles.uvmat,'UserData');
+set_object(data);% call the set_object interface
 % %position the set_object GUI with respect to uvmat
 % pos_uvmat=get(handles.uvmat,'Position');
 % if isfield(UvData,'SetObjectOrigin')
@@ -5100,10 +5039,11 @@ UvData=get(handles.uvmat,'UserData');
 %     pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
 %     set(hset_object,'Position',pos_set_object)
 % end
-set(handles.edit,'Value',0); %suppress the object edit mode
-set(handles.edit,'BackgroundColor',[0.7,0.7,0.7])  
-UvData.MouseAction='create_object';
-set(handles.uvmat,'UserData',UvData)
+set(handles.edit_object,'Value',0); %suppress the object edit mode
+set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
+set(handles.MenuObject,'checked','on')
+%UvData.MouseAction='create_object';
+% set(handles.uvmat,'UserData',UvData)
 set(handles.delete_object,'Visible','on')
 set(handles.uvmat_title,'Visible','on')
 set(handles.view_field_title,'Visible','on')
@@ -5117,8 +5057,8 @@ if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
 UvData=get(handles.uvmat,'UserData');
-set(handles.edit,'Value',0); %suppress the object edit mode
-set(handles.edit,'BackgroundColor',[0.7,0.7,0.7])  
+set(handles.edit_object,'Value',0); %suppress the object edit mode
+set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
 data.enable_plot=1;
 transform_list=get(handles.transform_fct,'String');
 val=get(handles.transform_fct,'Value');
@@ -5155,9 +5095,9 @@ if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
 end
 PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-[hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface
-
-UvData.MouseAction='create_object';
+set_object(data,PlotHandles);% call the set_object interface
+set(handles.MenuObject,'checked','on')
+%UvData.MouseAction='create_object';
 set(handles.uvmat,'UserData',UvData)
 set(handles.zoom,'Value',0)
 zoom_Callback(handles.uvmat, [], handles)
@@ -5170,6 +5110,7 @@ function MenuRuler_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.zoom,'Value',0)
 zoom_Callback(handles.uvmat, [], handles)
+set(handles.MenuRuler,'checked','on')
 UvData=get(handles.uvmat,'UserData');
 UvData.MouseAction='ruler';
 set(handles.uvmat,'UserData',UvData);
