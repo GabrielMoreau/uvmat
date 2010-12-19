@@ -112,7 +112,7 @@ if isfield(Data,'CoordType')&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
     DataOut.TimeUnit='s';
     %transform of X,Y coordinates for vector fields
     if isfield(Data,'ZIndex') && ~isempty(Data.ZIndex)&&~isnan(Data.ZIndex)
-        Z=Data.ZIndex
+        Z=Data.ZIndex;
     else
         Z=0;
     end
