@@ -341,7 +341,7 @@ for i_slice=1:NbSlice
                     Data{iview}.AY=[npy-0.5 0.5];
                     Data{iview}.AX=[0.5 npx-0.5];
                     Data{iview}.A=double(A);
-                    Data{iview}.CoordType='px';
+                    Data{iview}.CoordUnit='pixel';
                 elseif testcivx
                     [Data{iview},VelTypeOut]=read_civxdata(filename,FieldName,VelType);
                 else

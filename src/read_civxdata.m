@@ -153,7 +153,7 @@ if ~isequal(Field.dt,0)
        Field.DjUi(:,2,1)=(Field.pixcmx/Field.pixcmy)*Field.dt*Field.DjUi(:,2,1);
     end
 end
-Field.CoordType='px';% TODO: abandon, use COORdUnit instead ? (to adapt 'px' and 'phys')
+%Field.CoordType='px';% TODO: abandon, use COORdUnit instead ? (to adapt 'px' and 'phys')
 Field.CoordUnit='pixel';
 
 

@@ -86,11 +86,19 @@ if isfield(ObjectData,'ProjMode') && (isequal(ObjectData.ProjMode,'none')||isequ
     return
 end
 %introduce default field properties (reading old standards)
-if ~isfield(ObjectData,'Style')||~isfield(ObjectData,'Coord')||~isfield(ObjectData,'ProjMode')
+if ~isfield(ObjectData,'Style')||~isfield(ObjectData,'ProjMode')
     ProjData=FieldData;
     return
 end
-
+if ~isfield(ObjectData,'Coord')
+    if strcmp(ObjectData.Style,'plane')
+        ObjectData.Coord=[0 0 0];%default
+    else
+        ProjData=FieldData;
+        return
+    end
+end
+        
 % OBSOLETE
 if isfield(ObjectData,'XMax') && ~isempty(ObjectData.XMax)
     ObjectData.RangeX(1)=ObjectData.XMax;
@@ -111,11 +119,6 @@ if isfield(ObjectData,'ZMin') && ~isempty(ObjectData.ZMin)
     ObjectData.RangeZ(2)=ObjectData.ZMin;
 end
 %%%%%%%%%%
-
-% FieldData=document_field(FieldData);%transform FieldData to the standard format
-% if ~isfield(FieldData,'VarAttribute')
-%     FieldData.VarAttribute={};
-% end
 switch ObjectData.Style
     case 'points'
     [ProjData,errormsg]=proj_points(FieldData,ObjectData);
@@ -137,9 +140,7 @@ switch ObjectData.Style
     case 'volume'
         [ProjData,errormsg] = proj_volume(FieldData,ObjectData);
 end
-% if exist('IndexObj','var')
-%     ProjData.IndexObj=IndexObj;%transfer object index
-% end
+
 
 %-----------------------------------------------------------------
 %project on a set of points
@@ -1003,7 +1004,7 @@ testfalse=0;
 ListIndex={};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%group the variables (fields of 'FieldData') in cells of variables with the same dimensions
+%% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 %-----------------------------------------------------------------
 idimvar=0;
 [CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_indices(FieldData);
@@ -1011,7 +1012,8 @@ if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_plane:' errormsg];
     return
 end
-%LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
+
+% LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
 % CellVarIndex=cells of variable index arrays
 ivar_new=0; % index of the current variable in the projected field
 icoord=0;
@@ -1035,13 +1037,12 @@ for icell=1:length(CellVarIndex)
     ivar_F=VarType.warnflag;
     ivar_FF=VarType.errorflag;
     testX=~isempty(ivar_X) && ~isempty(ivar_Y);
-    %DimIndices=FieldData.VarDimIndex{VarIndex(1)};%indices of the dimensions of the first variable (common to all variables in the cell)
     DimCell=FieldData.VarDimName{VarIndex(1)};
     if ischar(DimCell)
         DimCell={DimCell};%name of dimensions
     end
 
-%case of input fields with unstructured coordinates
+%% case of input fields with unstructured coordinates
     if testX
         XName=FieldData.ListVarName{ivar_X};
         YName=FieldData.ListVarName{ivar_Y};
@@ -1065,10 +1066,8 @@ for icell=1:length(CellVarIndex)
             fieldZ=NormVec_X*coord_x + NormVec_Y*coord_y+ NormVec_Z*coord_z;% distance to the plane            
             indcut=find(abs(fieldZ) <= width);
             for ivar=VarIndex
-                 VarName=FieldData.ListVarName{ivar};
-%                 eval(['size(FieldData.' VarName ')'])
-                eval(['FieldData.' VarName '=FieldData.' VarName '(indcut);'])
-%                 end      
+                VarName=FieldData.ListVarName{ivar};
+                eval(['FieldData.' VarName '=FieldData.' VarName '(indcut);'])  
                     % A VOIR : CAS DE VAR STRUCTUREE MAIS PAS GRILLE REGULIERE : INTERPOLER SUR GRILLE REGULIERE              
             end
             coord_x=coord_x(indcut);
@@ -1216,7 +1215,8 @@ for icell=1:length(CellVarIndex)
                 ProjData.VarAttribute{ivar_new+1+nbcoord}.Role='errorflag';
             end
         end
-%case of input fields defined on a structured  grid 
+        
+%% case of input fields defined on a structured  grid 
     else  
         AYName=FieldData.ListVarName{VarType.coord(1)};%name of input x coordinate (name preserved on projection)
         AXName=FieldData.ListVarName{VarType.coord(2)};%name of input y coordinate (name preserved on projection)
@@ -1255,7 +1255,7 @@ for icell=1:length(CellVarIndex)
                     DCoord_min(idim)=min(DCoord);
                     DCoord_max=max(DCoord);
                 %    test_direct(idim)=DCoord_max>0;% =1 for increasing values, 0 otherwise
-                    if ~isequal(DCoord_max,DCoord_min(idim)>0)
+                    if abs(DCoord_max-DCoord_min(idim))>abs(DCoord_max/1000) 
                         msgbox_uvmat('ERROR',['non monotonic dimension variable # ' num2str(idim)  ' in proj_field.m'])
                                 return
                     end               
@@ -1366,11 +1366,13 @@ for icell=1:length(CellVarIndex)
                 VarName=FieldData.ListVarName{ivar}; 
                 ProjData.ListVarName=[ProjData.ListVarName VarName];
                 ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
-                if length(FieldData.VarAttribute)>=ivar
+                if isfield(FieldData,'VarAttribute') && length(FieldData.VarAttribute)>=ivar
                     ProjData.VarAttribute{length(ProjData.ListVarName)}=FieldData.VarAttribute{ivar};
                 end
                 eval(['ProjData.' VarName '=FieldData.' VarName '(min_ind1:max_ind1,min_ind2:max_ind2) ;']);
-            end         
+            end  
+            eval(['ProjData.' AYName '=FieldData.' AYName ';']) %record the new (projected ) y coordinates
+            eval(['ProjData.' AXName '=FieldData.' AXName ';']) %record the new (projected ) x coordinates
         else       % case with rotation and/or interpolation
             if isempty(Coord_z) %2D case
                 [X,Y]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
@@ -1451,7 +1453,8 @@ for icell=1:length(CellVarIndex)
             end
         end
     end
-    %projection of  velocity components in the rotated coordinates
+    
+    %% projection of  velocity components in the rotated coordinates
     if ~isequal(Phi,0) && length(ivar_U)==1
         if isempty(ivar_V)
             msgbox_uvmat('ERROR','v velocity component missing in proj_field.m')
@@ -2081,12 +2084,12 @@ for iattr=1:length(ProjData.ListGlobalAttribute)
         eval(['ProjData.' AttrName '=FieldData.' AttrName ';']);
     end
 end
-if isfield(FieldData,'CoordType')
-    if isfield(ObjectData,'CoordType')&~isequal(FieldData.CoordType,ObjectData.CoordType)
-        errormsg=[ObjectData.Style ' in ' ObjectData.CoordType ' coordinates, while field in ' FieldData.CoordType ' coordinates'];
+if isfield(FieldData,'CoordUnit')
+    if isfield(ObjectData,'CoordUnit')&~isequal(FieldData.CoordUnit,ObjectData.CoordUnit)
+        errormsg=[ObjectData.Style ' in ' ObjectData.CoordUnit ' coordinates, while field in ' FieldData.CoordUnit ];
         return
     else
-         ProjData.CoordType=FieldData.CoordType;
+         ProjData.CoordUnit=FieldData.CoordUnit;
     end
 end
 

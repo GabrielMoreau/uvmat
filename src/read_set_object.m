@@ -21,9 +21,9 @@ if isfield(handles,'ObjectStyle')%case of the set_object interface
 	menu=get(handles.ProjMode,'String');
 	value=get(handles.ProjMode,'Value');
 	data.ProjMode=menu{value};
-	menu=get(handles.MenuCoord,'String');
-	value=get(handles.MenuCoord,'Value');
-	data.CoordType=menu{value};
+% 	menu=get(handles.CoordUnit,'String');
+% 	value=get(handles.MenuCoord,'Value');
+	data.CoordUnit=get(handles.CoordUnit,'String');
     testcalib=0;
 else %default
     data.Style='points';
@@ -32,104 +32,68 @@ end
 
 %Euler angles and projection ranges
 if ~testcalib
-	if isequal(get(handles.Phi,'Visible'),'on')
+    if isequal(get(handles.Phi,'Visible'),'on')
         data.Phi=str2num(get(handles.Phi,'String'));
-	end
-	if isequal(get(handles.Theta,'Visible'),'on')
+    end
+    if isequal(get(handles.Theta,'Visible'),'on')
         data.Theta=str2num(get(handles.Theta,'String'));
-	end
-	if isequal(get(handles.Psi,'Visible'),'on')
+    end
+    if isequal(get(handles.Psi,'Visible'),'on')
         data.Psi=str2num(get(handles.Psi,'String'));
-    end	
-	if isequal(get(handles.DX,'Visible'),'on')
+    end
+    if isequal(get(handles.DX,'Visible'),'on')
         data.DX=str2num(get(handles.DX,'String'));
-	end
-	if isequal(get(handles.DY,'Visible'),'on')
+    end
+    if isequal(get(handles.DY,'Visible'),'on')
         data.DY=str2num(get(handles.DY,'String'));
-	end
-	if isequal(get(handles.DZ,'Visible'),'on')
+    end
+    if isequal(get(handles.DZ,'Visible'),'on')
         data.DZ=str2num(get(handles.DZ,'String'));
     end
     dimrange=[1 1];%default
     if isequal(get(handles.ZMin,'Visible'),'on')
         ZMin=str2num(get(handles.ZMin,'String'));
         if ~isempty(ZMin)
-           data.RangeZ(1)=ZMin;
-           dimrange=[2 3];
+            data.RangeZ(1)=ZMin;
+            dimrange=[2 3];
         end
     end
-	if isequal(get(handles.ZMax,'Visible'),'on')
-        ZMax=str2num(get(handles.ZMax,'String'));
-        if isempty(ZMax)
+    if isequal(get(handles.ZMax,'Visible'),'on')
+        ZMax=str2double(get(handles.ZMax,'String'));
+        if isnan(ZMax)
             if dimrange(1)>1
-%                 set(handles.ZMax,'String',get(handles.ZMin,'String'))
                 data.RangeZ(1)=ZMax;
             end
-        else 
-           data.RangeZ(2)=ZMax;
-           dimrange=[dimrange(1) 3];
+        else
+            data.RangeZ(2)=ZMax;
+            dimrange=[dimrange(1) 3];
         end
     end
     if isequal(get(handles.YMin,'Visible'),'on')
-        YMin=str2num(get(handles.YMin,'String'));
-        if isempty(YMin) 
-%             if dimrange(2)>2
-% %                 set(handles.YMin,'String','0')
-%                 data.RangeY(2)=0;
-%             end
-        else
+        YMin=str2double(get(handles.YMin,'String'));
+        if ~isnan(YMin)
             data.RangeY(2)=YMin;
             dimrange=[2 max(dimrange(2),2)];
         end
     end
     if isequal(get(handles.YMax,'Visible'),'on')
-%         data.YMax=str2num(get(handles.YMax,'String'));
-        YMax=str2num(get(handles.YMax,'String'));
-        if isempty(YMax) 
-%             if dimrange(1)>1
-% %                 set(handles.YMax,'String',get(handles.YMin,'String'))
-%                 if ~isempty(YMin)
-%                 data.RangeY(1)=YMin;
-%                 end
-%             elseif dimrange(2)>2
-% %                 set(handles.YMax,'String',get(handles.ZMin,'String'))
-%                 data.RangeY(2)=ZMin;
-%             end
-        else
+        YMax=str2double(get(handles.YMax,'String'));
+        if ~isnan(YMax)
             data.RangeY(1)=YMax;
             dimrange=[dimrange(1) max(dimrange(2),2)];
         end
     end
     if isequal(get(handles.XMin,'Visible'),'on')
-        XMin=str2num(get(handles.XMin,'String'));
-        if isempty(XMin) 
-%             if ~isempty(YMin)
-%                 if dimrange(2)>1
-% %                     set(handles.XMin,'String',get(handles.YMin,'String'))
-%                     data.RangeX(2)=YMin;
-%                     XMin=YMin;
-%                 end
-%             end
-        else
+        XMin=str2double(get(handles.XMin,'String'));
+        if ~isnan(XMin)
             data.RangeX(2)=XMin;
-            %dimrange=[2 max(dimrange(2),1)];
         end
-	end
-	if isequal(get(handles.XMax,'Visible'),'on')
-         XMax=str2num(get(handles.XMax,'String'));
-         if isempty(XMax) 
-%             if dimrange(1)>1
-% %                 set(handles.XMax,'String',get(handles.XMin,'String'))
-%                 if ~isempty(XMin)
-%                 data.RangeX(2)=XMin;
-%                 end
-%             elseif dimrange(2)>1
-% %                 set(handles.XMax,'String',get(handles.YMax,'String'))
-%                 data.RangeX(1)=YMax;
-%             end
-        else
+    end
+    if isequal(get(handles.XMax,'Visible'),'on')
+        XMax=str2double(get(handles.XMax,'String'));
+        if ~isnan(XMax)
             data.RangeX(1)=XMax;
-         end
+        end
     end
 end
 

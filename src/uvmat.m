@@ -1527,11 +1527,6 @@ if isequal(get(handles.mask_test,'Value'),1)
                 end
             end
         end
-%         if mdetect==0
-%             msgbox_uvmat('ERROR','no mask file detected (format ..._xxmask_ii.png needed), use the menu bar Tools/Make mask')
-%             set(handles.mask_test,'Value',0)
-%             return
-%         end
     end
     errormsg=[];%default
     if mdetect==0
@@ -1609,7 +1604,7 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
         end
         Mask.AX=[0.5 npxy(2)-0.5];
         Mask.AY=[npxy(1)-0.5 0.5 ];
-        Mask.CoordType='px';
+        Mask.CoordUnit='pixel';
         if isequal(get(handles.slices,'Value'),1)
            NbSlice=str2num(get(handles.nb_slice,'String'));
            num_i1=str2num(get(handles.i1,'String')); 
@@ -1943,7 +1938,7 @@ nbslice=str2double(get(handles.nb_slice,'String'));
 if ~isempty(nbslice)
     Field_b.ZIndex=mod(num_i2-1,nbslice)+1;
 end
-Field_b.CoordType='px';
+Field_b.CoordUnit='pixel';
 %determine the input file type
 if (test_1 && isfield(UvData,'MovieObject_1'))||(~test_1 && isfield(UvData,'MovieObject'))
     FileType='movie';
@@ -2242,7 +2237,7 @@ if ~isempty(filename) && isequal(FieldName,'image')
     Field{1}.AY=Rangy;
     Field{1}.AX=Rangx;
     Field{1}.A=A;
-    Field{1}.CoordType='px'; %used for mouse_motion
+   % Field{1}.CoordType='px'; %used for mouse_motion
     Field{1}.CoordUnit='pixel'; %used for mouse_motion
 end
 
@@ -2489,7 +2484,7 @@ test_x=0;
 test_z=0;% test for unstructured z coordinate
 UvData.ZMax=0;
 UvData.ZMin=0;%default
-UvData.Mesh=1; %default
+%UvData.Mesh=1; %default
 [UvData.Field,errormsg]=check_field_structure(UvData.Field);
 if ~isempty(errormsg)
     errormsg=['error in uvmat/run0_Callback/check_field_structure: ' errormsg];
@@ -2541,21 +2536,23 @@ if test_x
         test_z=0;
     end    
     if test_z
-         UvData.Mesh=((UvData.XMax-UvData.XMin)*(UvData.YMax-UvData.YMin)*(UvData.ZMax-UvData.ZMin))/nbvec;% volume per vector
-         UvData.Mesh=(UvData.Mesh)^(1/3);
+         Field.Mesh=((UvData.XMax-UvData.XMin)*(UvData.YMax-UvData.YMin)*(UvData.ZMax-UvData.ZMin))/nbvec;% volume per vector
+         Field.Mesh=(Field.Mesh)^(1/3);
     else
-        UvData.Mesh=sqrt((UvData.XMax-UvData.XMin)*(UvData.YMax-UvData.YMin)/nbvec);%2D
+        Field.Mesh=sqrt((UvData.XMax-UvData.XMin)*(UvData.YMax-UvData.YMin)/nbvec);%2D
     end
 end
 
 %case of structured coordinates
+'TESTfield'
+UvData.Field
 if isfield(UvData.Field,'AX') && isfield(UvData.Field,'AY')&& isfield(UvData.Field,'A')
     UvData.XMax=max(UvData.Field.AX);
     UvData.XMin=min(UvData.Field.AX);
     UvData.YMax=max(UvData.Field.AY);
     UvData.YMin=min(UvData.Field.AY);
     np_A=size(UvData.Field.A);
-    UvData.Mesh=sqrt((UvData.XMax-UvData.XMin)*(UvData.YMax-UvData.YMin)/((np_A(1)-1) * (np_A(2)-1))) ; 
+    Field.Mesh=sqrt((UvData.XMax-UvData.XMin)*(UvData.YMax-UvData.YMin)/((np_A(1)-1) * (np_A(2)-1))) ; 
 end
 if  isempty(coord_x) && ~isempty(CellVarIndex)
     VarIndex=CellVarIndex{imax}; % list of variable indices
@@ -2581,7 +2578,7 @@ if  isempty(coord_x) && ~isempty(CellVarIndex)
                   UvData.ZMax=UvData.Field.DimValue(DimIndex(1));
             end
         end
-        UvData.Mesh=(UvData.ZMax-UvData.ZMin)/(nbpoints-1); 
+        Field.Mesh=(UvData.ZMax-UvData.ZMin)/(nbpoints-1); 
     elseif NbDim==2
         nbpoints_y=UvData.Field.DimValue(DimIndex(1));       
         Yvar=VarType{imax}.coord_y;
@@ -2611,7 +2608,7 @@ if  isempty(coord_x) && ~isempty(CellVarIndex)
             end
         end
         DX=(UvData.XMax-UvData.XMin)/(nbpoints_x-1);
-        UvData.Mesh= sqrt(DX*DY); 
+        Field.Mesh= sqrt(DX*DY); 
     end
 end
 
@@ -2627,7 +2624,7 @@ end
 %3D case (menuvolume)
 if NbDim==3 && UvData.NewSeries
     UvData.Object{1}.NbDim=UvData.NbDim;%test for 3D objects
-    UvData.Object{1}.RangeZ=UvData.Mesh;%main plotting plane
+    UvData.Object{1}.RangeZ=Field.Mesh;%main plotting plane
     UvData.Object{1}.Coord(1,3)=(UvData.ZMin+UvData.ZMax)/2;%section at a middle plane chosen
     UvData.Object{1}.Phi=0;
     UvData.Object{1}.Theta=0;
@@ -2753,8 +2750,8 @@ for imap=1:numel(IndexObj)
         else
             [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},keeplim(imap),PosColorbar{imap});
             write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
-            if isfield(UvData,'Mesh')&&~isempty(UvData.Mesh)
-                ObjectData.Mesh=UvData.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
+            if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
+                ObjectData.Mesh=Field.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
             end
             if imap==1            
                 UvData.axes3=ObjectData;
@@ -5062,25 +5059,28 @@ set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])
 data.enable_plot=1;
 transform_list=get(handles.transform_fct,'String');
 val=get(handles.transform_fct,'Value');
-data.CoordType=transform_list{val};
-% if isfield(UvData,'CoordType')
-%     data.CoordType=UvData.CoordType;
-% end
-if isfield(UvData,'Mesh')&&~isempty(UvData.Mesh)
-    data.RangeX=UvData.Mesh;
-    data.RangeY=UvData.Mesh;
-    data.DX=UvData.Mesh;
-    data.DY=UvData.Mesh;
-elseif isfield(UvData.Field,'AX')&& isfield(UvData.Field,'AY')&& isfield(UvData.Field,'A')%only image
-    np=size(UvData.Field.A);
-    meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/np(2);
-    meshy=abs(UvData.Field.AY(end)-UvData.Field.AY(1))/np(1);
-    data.RangeY=max(meshx,meshy);
-    data.RangeX=max(meshx,meshy);
-    data.DX=max(meshx,meshy);
-end 
-if isfield(UvData,'NbDim')
-    data.NbDim=UvData.NbDim;
+%data.CoordType=transform_list{val};
+if isfield(UvData,'Field')
+    Field=UvData.Field;
+    if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
+        data.RangeX=Field.Mesh;
+        data.RangeY=Field.Mesh;
+        data.DX=Field.Mesh;
+        data.DY=Field.Mesh;
+    elseif isfield(Field,'AX')&& isfield(Field,'AY')&& isfield(Field,'A')%only image
+        np=size(Field.A);
+        meshx=(Field.AX(end)-Field.AX(1))/np(2);
+        meshy=abs(Field.AY(end)-Field.AY(1))/np(1);
+        data.RangeY=max(meshx,meshy);
+        data.RangeX=max(meshx,meshy);
+        data.DX=max(meshx,meshy);
+    end
+    if isfield(Field,'NbDim')
+        data.NbDim=Field.NbDim;
+    end
+    if isfield(Field,'CoordUnit')
+        data.CoordUnit=Field.CoordUnit;
+    end
 end
 data.Coord=[0 0 0]; %default
 if isfield(data,'Style') && isequal(data.Style,'line')
@@ -5090,14 +5090,12 @@ if isfield(data,'Style') && isequal(data.Style,'line')
         data.Coord=[[0 0 0];[1 0 0]]; %default 
     end
 end
-%data.ParentButton=handles.create;
 if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
 end
 PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
 set_object(data,PlotHandles);% call the set_object interface
 set(handles.MenuObject,'checked','on')
-%UvData.MouseAction='create_object';
 set(handles.uvmat,'UserData',UvData)
 set(handles.zoom,'Value',0)
 zoom_Callback(handles.uvmat, [], handles)

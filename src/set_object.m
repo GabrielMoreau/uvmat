@@ -83,7 +83,7 @@ if ~exist('ZBound','var')
     ZBound=0; %default 
 end
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function (allow action on uvmat when set_object is in front)
-set(handles.MenuCoord,'ListboxTop',1)
+%set(handles.MenuCoord,'ListboxTop',1)
 % if ~exist('PlotHandles','var')
 %      PlotHandles=[];
 % end
@@ -240,13 +240,16 @@ if exist('data','var')
         end
         set(handles.DZ,'String',data.DZ)
     end
-    if isfield(data,'CoordType')&& isequal(data.CoordType,'px')
-%         if isequal(data.CoordType,'phys')
-%             set(handles.MenuCoord,'Value',1)
-%         elseif isequal(data.CoordType,'px')
-             set(handles.MenuCoord,'Value',2)
-%         end
+    if isfield(data,'CoordUnit')
+        set(handles.CoordUnit,'String',data.CoordUnit)
     end
+%     if isfield(data,'CoordType')&& isequal(data.CoordType,'px')
+% %         if isequal(data.CoordType,'phys')
+% %             set(handles.MenuCoord,'Value',1)
+% %         elseif isequal(data.CoordType,'px')
+%              set(handles.MenuCoord,'Value',2)
+% %         end
+%     end
 end
 if enable_plot
    set(handles.PLOT,'enable','on')
@@ -581,15 +584,15 @@ for iline=1:length(menu_proj)
 end
 
 ProjMode_Callback(hObject, eventdata, handles);%visualize the appropriate edit boxes
-if isfield(s,'CoordType')
-    if isequal(s.CoordType,'phys')
-        set(handles.MenuCoord,'Value',1)
-    elseif isequal(s.CoordType,'px')
-        set(handles.MenuCoord,'Value',2)
-    else
-        warndlg('unknown CoordType (px or phys) in set_object.m')
-    end
-end
+% if isfield(s,'CoordType')
+%     if isequal(s.CoordType,'phys')
+%         set(handles.MenuCoord,'Value',1)
+%     elseif isequal(s.CoordType,'px')
+%         set(handles.MenuCoord,'Value',2)
+%     else
+%         warndlg('unknown CoordType (px or phys) in set_object.m')
+%     end
+% end
 if isfield(s,'XMax')
     set(handles.XMax,'String',s.XMax)
 end
@@ -872,9 +875,9 @@ title={'object name'};
 dir_save=uigetdir(RootPath);
 ObjectName=get(handles.TITLE,'String');
 if ~isempty(ObjectName)&&~strcmp(ObjectName,'')
-    def={fullfile(dir_save,[ObjectName Object.CoordType '.xml'])};
+    def={fullfile(dir_save,[ObjectName '.xml'])};
 else
-    def={fullfile(dir_save,[Object.Style Object.CoordType '.xml'])};
+    def={fullfile(dir_save,[Object.Style '.xml'])};
 end
 options.Resize='on';
 displ_txt='save object as an .xml file';%default display

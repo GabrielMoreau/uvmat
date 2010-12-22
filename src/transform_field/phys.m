@@ -98,12 +98,12 @@ function DataOut=phys_1(Data,Calib)
 % for icell=1:length(Data)
 
 DataOut=Data;%default
-DataOut.CoordType='phys'; %put flag for physical coordinates
+DataOut.CoordUnit=Calib.CoordUnit; %put flag for physical coordinates
 if isfield(Calib,'SliceCoord')
     DataOut.PlaneCoord=Calib.SliceCoord;%to generalise for any plane 
 end
 % The transform ACTS ONLY IF .CoordType='px'and Calib defined
-if isfield(Data,'CoordType')&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
+if isfield(Data,'CoordUnit')%&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
     if isfield(Calib,'CoordUnit')
         DataOut.CoordUnit=Calib.CoordUnit;
     else

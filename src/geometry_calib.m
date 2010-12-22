@@ -1180,7 +1180,7 @@ end
 Data.A=A-min(min(A));
 Data.AY=[npxy(1)-0.5 0.5];
 Data.AX=[0.5 npxy(2)];
-Data.CoordType='px';
+Data.CoordUnit='pixel';
 Calib.GeometryCalib=GeometryCalib;
 DataOut=phys(Data,Calib);
 rmpath(fullfile(path_UVMAT,'transform_field'))

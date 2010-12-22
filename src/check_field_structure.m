@@ -49,6 +49,8 @@ if isfield(Data,'DimValue')
 end
 nbdim=0;
 Data.ListDimName={};
+
+%% main loop on the list of variables
 for ivar=1:nbfield
     VarName=Data.ListVarName{ivar};
     if ~isfield(Data,VarName)
@@ -63,7 +65,8 @@ for ivar=1:nbfield
         errormsg=['wrong format for .VarDimName{' num2str(ivar) ' (must be the cell of dimension names of the variable ' VarName];
         return
     end
-    nbcoord=numel(sizvar);%nbre of coordiantes for variable named VarName
+    nbcoord=numel(sizvar);%nbre of coordinates for variable named VarName
+    testrange=0;
     if numel(DimCell)==0
         errormsg=['empty declared dimension .VarDimName{' num2str(ivar) '} for ' VarName];
         return
@@ -78,13 +81,16 @@ for ivar=1:nbfield
                 errormsg=['1 dimension declared in .VarDimName{' num2str(ivar) '} inconsistent with the nbre of dimensions =2 of the variable ' VarName];
                 return
             end
+            if sizvar(1)==2 && isequal(VarName,DimCell{1})
+                testrange=1;% test for a dimension variable representing a range 
+            end
         else
             errormsg=['1 dimension declared in .VarDimName{' num2str(ivar) '} inconsistent with the nbre of dimensions =' num2str(nbcoord) ' of the variable ' VarName];
             return
         end
     else
         if numel(DimCell)>nbcoord
-            DimCell=DimCell(end-nbcoord+1:end);%first singleton diemnsions omitted,
+            DimCell=DimCell(end-nbcoord+1:end);%first singleton diemensions omitted,
         elseif nbcoord > numel(DimCell)
             errormsg=['nbre of declared dimensions in .VarDimName{' num2str(ivar) '} smaller than the nbre of dimensions =' num2str(nbcoord) ' of the variable ' VarName];
             return
@@ -96,6 +102,7 @@ for ivar=1:nbfield
         iprev=find(strcmp(DimName,Data.ListDimName),1);%look for dimension name DimName in the current list
         if isempty(iprev)% append the dimension name to the current list
             nbdim=nbdim+1;
+            RangeTest(nbdim)=0; %default
             if sizvar(idim)==2 && strcmp(DimName,VarName)%case of a coordinate defined by the two end values (regular spacing)
                 RangeTest(nbdim)=1; %to be updated for a later variable  
             end
@@ -104,9 +111,11 @@ for ivar=1:nbfield
             DimIndex=[DimIndex nbdim];
         else % DimName is detected in the current list of dimension names
             if ~isequal(Data.DimValue(iprev),sizvar(idim))
+                        RangeTest(iprev)
+            Data.DimValue(iprev)
                 if isequal(Data.DimValue(iprev),2)&& RangeTest(iprev)  % the dimension has been already detected as a range [min max]
                     Data.DimValue(iprev)=sizvar(idim); %update with actual value
-                else
+                elseif ~testrange                
                     errormsg=['dimension declaration inconsistent with the size =[' num2str(sizvar) '] for ' VarName];
                     return
                 end

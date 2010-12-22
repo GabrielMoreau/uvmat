@@ -171,19 +171,19 @@ for ichild=1:length(hchild)
                         text_displ_1=[text_displ_1 ' z=' num2str(Field.PlaneCoord(Field.ZIndex,3))]; %TODO: generaliser au cas avec angle
                     end
                     %coordinate transform if proj_coord differs from menu_coord A REVOIR
-                    if isfield(Field,'CoordType')
-                        mouse.CoordType=Field.CoordType;
-                    end
                     if isfield(Field,'CoordUnit')
                         mouse.CoordUnit=Field.CoordUnit;
                     end
-                    if isfield(mouse,'CoordType')
-                        if isequal(mouse.CoordType,'px')
-                            mouse.CoordUnit='px';
-                        end
-                    else
-                        mouse.CoordUnit='';%default
-                    end
+%                     if isfield(Field,'CoordUnit')
+%                         mouse.CoordUnit=Field.CoordUnit;
+%                     end
+%                     if isfield(mouse,'CoordType')
+%                         if isequal(mouse.CoordType,'px')
+%                             mouse.CoordUnit='px';
+%                         end
+%                     else
+%                         mouse.CoordUnit='';%default
+%                     end
                     if test_piv 
                        par=civ('read_param_civ1',hhciv);
                         if isfield(Field,'A')

@@ -277,7 +277,7 @@ for ifile=1:nbfield
                 Field{iview}.VarDimName={'AX','AY',{'AY','AX'}};
                 Field{iview}.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
                 Field{iview}.AY=[npxy(1)-0.5 0.5];
-                Field{iview}.CoordType='px'; 
+                Field{iview}.CoordUnit='pixel'; 
                 Field{iview}.AName='image';
                 timeread(iview)=0;
             else

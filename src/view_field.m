@@ -144,7 +144,7 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
         npxy=size(Mask.A);
         Mask.AX=[0.5 npxy(2)-0.5];
         Mask.AY=[npxy(1)-0.5 0.5 ];
-        Mask.CoordType='px';
+        Mask.CoordUnit='pixel';
         if isequal(get(handles.slices,'Value'),1)
            NbSlice=str2num(get(handles.nb_slice,'String'));
            num_i1=str2num(get(handles.i1,'String')); 

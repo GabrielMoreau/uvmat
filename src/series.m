@@ -2091,11 +2091,11 @@ if value
         end
         transform_menu=get(handles.transform_fct,'String');
         ichoice=get(handles.transform_fct,'Value');
-        if isequal(transform_menu{ichoice},'px');
-            data.CoordType='px';
-        else
-            data.CoordType='phys';
-        end
+%         if isequal(transform_menu{ichoice},'px');
+%             data.CoordType='px';
+%         else
+%             data.CoordType='phys';
+%         end
         data.desable_plot=1;
         [SeriesData.hset_object,SeriesData.sethandles]=set_object(data);% call the set_object interface
      end 
