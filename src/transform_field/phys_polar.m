@@ -112,24 +112,27 @@ if iscalar~=0
     end
 end
 
+
+
+
 %------------------------------------------------
 function DataOut=phys_1(Data,Calib,origin_xy,radius_offset,angle_offset,angle_scale)
 
 DataOut=Data;
-DataOut.CoordType='phys'; %put flag for physical coordinates
-if isfield(Calib,'CoordUnit')
-    DataOut.CoordUnit=Calib.CoordUnit;
-else
-    DataOut.CoordUnit='cm'; %default
+DataOut.CoordUnit=Calib.CoordUnit; %put flag for physical coordinates
+if isfield(Calib,'SliceCoord')
+    DataOut.PlaneCoord=Calib.SliceCoord;%to generalise for any plane 
 end
-DataOut.TimeUnit='s';
-%perform a geometry transform if Calib contains a field .GeometryCalib 
-if isfield(Data,'CoordType') && isequal(Data.CoordType,'px') && ~isempty(Calib)
-    if isfield(Data,'CoordUnit')
-         DataOut=rmfield(DataOut,'CoordUnit');
+
+if isfield(Data,'CoordUnit')%&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
+    if isfield(Calib,'CoordUnit')
+        DataOut.CoordUnit=Calib.CoordUnit;
+    else
+        DataOut.CoordUnit='cm'; %default
     end
+    DataOut.TimeUnit='s';
     %transform of X,Y coordinates for vector fields
-    if isfield(Data,'ZIndex')&~isempty(Data.ZIndex)
+    if isfield(Data,'ZIndex') && ~isempty(Data.ZIndex)&&~isnan(Data.ZIndex)
         Z=Data.ZIndex;
     else
         Z=0;
