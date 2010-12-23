@@ -45,7 +45,7 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_OutputFcn',  @set_object_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
-if nargin & isstr(varargin{1})
+if nargin & ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
 
@@ -317,7 +317,7 @@ if ~isempty(Zcolumn)
     z_new{1}=Zcolumn{1};
 end
 if isequal(style,'line')
-    if isequal(style_prev,'rectangle')|isequal(style_prev,'ellipse')
+    if strcmp(style_prev,'rectangle')||strcmp(style_prev,'ellipse')
         XMax=get(handles.XMax,'String');
         YMax=get(handles.YMax,'String');
         x_new{2}=num2str(XMax,4);
@@ -327,7 +327,7 @@ if isequal(style,'line')
         set(handles.ZObject,'String',z_new)
     end
 elseif isequal(style,'polyline')
-elseif isequal(style,'rectangle')| isequal(style,'ellipse')
+elseif strcmp(style,'rectangle')|| strcmp(style,'ellipse')
      set(handles.XObject,'String',x_new)
      set(handles.YObject,'String',y_new)
      set(handles.ZObject,'String',z_new)
@@ -386,7 +386,7 @@ if isequal(ProjMode,'interp')
 else
     set(handles.YMax,'Visible','on')
 end
-if isequal(ObjectStyle,'rectangle')|isequal(ObjectStyle,'ellipse')
+if strcmp(ObjectStyle,'rectangle')||strcmp(ObjectStyle,'ellipse')
     set(handles.XMax,'Visible','on')
 else
    set(handles.XMax,'Visible','off')
@@ -730,7 +730,11 @@ hhuvmat=guidata(huvmat);%handles in the uvmat GUI
 ObjectName=get(handles.TITLE,'String');%name of the current object 
 ListObject=get(hhuvmat.list_object_1,'String');%position in the objet list
 IndexObj_1=get(hhuvmat.list_object_1,'Value');
-IndexObj_2=get(hhuvmat.list_object_2,'Value');
+if isequal(get(hhuvmat.list_object_2,'Visible'),'on')
+    IndexObj_2=get(hhuvmat.list_object_2,'Value');
+else
+    IndexObj_2=[];
+end
 testnew=0;
 PlotHandles=get_plot_handles(hhuvmat);
 projview='view_field';%default
@@ -740,8 +744,7 @@ if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose pr
     IndexObj=IndexObj_1;
     projview='uvmat';
      plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
-elseif IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field
-   
+elseif ~isempty(IndexObj_2) && IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field  
     IndexObj=IndexObj_2;
 %     projview='view_field';
 else %new object 
@@ -755,9 +758,9 @@ else %new object
     end
 end
 if strcmp(projview,'view_field')
-    hview_field=findobj(allchild(0),'tag','view_field')
+    hview_field=findobj(allchild(0),'tag','view_field');
     if isempty(hview_field)
-        hview_field=view_field
+        hview_field=view_field;
     end
     PlotHandles=guidata(hview_field);
     plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
@@ -791,22 +794,23 @@ set(hhuvmat.list_object_1,'String',ListObject)
 set(hhuvmat.list_object_2,'String',[ListObject;{'...'}])
 
 %% update the object plot and projection field
-if testnew
+if testnew 
     set(hhuvmat.list_object_2,'Value',IndexObj)
     ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
     ObjectData.DisplayHandle_view_field=[];
-else % save the previous object graph handles
+elseif ~isfield(UvData.Object{IndexObj},'DisplayHandle_uvmat')% save the previous object graph handles
     ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj}.DisplayHandle_uvmat;
     ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj}.DisplayHandle_view_field;
+else
+    ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
+    ObjectData.DisplayHandle_view_field=[];
 end
 UvData.Object{IndexObj}=ObjectData;%update the current object properties
-IndexObj
-ObjectData
 UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
 
 %% plot the field projected on the object and store it the corresponding figue
 get(plotaxes,'tag')
-ProjData= proj_field(UvData.Field,ObjectData)%project the current interface field on ObjectData
+ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
 [PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);%update an existing field plot
 if strcmp(projview,'view_field')
     ViewFieldData=get(hview_field,'UserData');
@@ -879,7 +883,6 @@ if ~isempty(ObjectName)&&~strcmp(ObjectName,'')
 else
     def={fullfile(dir_save,[Object.Style '.xml'])};
 end
-options.Resize='on';
 displ_txt='save object as an .xml file';%default display
 menu=get(handles.ProjMode,'String');
 value=get(handles.ProjMode,'Value');
@@ -888,7 +891,6 @@ if strcmp(ProjMode,'mask_inside')||strcmp(ProjMode,'mask_outside')
     displ_txt='save mask contour as an .xml file: to create a mask image, use save_mask on the GUI uvmat (lower right)';
 end
 answer=msgbox_uvmat('INPUT_TXT','save object as an .xml file',def);
-%answer=inputdlg('','save object in a new .xml file',1,def,'on');
 if ~isempty(answer)
     t=struct2xml(Object);
     save(t,answer{1})

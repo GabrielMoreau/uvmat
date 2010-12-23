@@ -1596,7 +1596,7 @@ if isempty(index)
 end
 index_first=min(index);
 index_last=max(index);
-box_used=box_test([index_first : index_last]);
+box_used=box_test(index_first : index_last);
 [box_missing,ind_missing]=min(box_used);
 if isequal(box_missing,0)
     msgbox_uvmat('ERROR',['missing' cell2mat(operations(ind_missing))]);
@@ -1869,6 +1869,13 @@ for ifile=1:nbfield
         end
         filename_cmx=filecell.nc.civ1{ifile,j};%output netcdf file
         filename_cmx(end-1:end+1)='cmx';%name of cmx file
+        if batch
+            [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
+            filename_bat=fullfile(Rootbat,['job_' Filebat extbat]);
+         else
+            filename_bat=filename_cmx;
+        end
+        filename_bat(end-2:end)='bat';
         
         %CIV1
         if box_test(1)==1
@@ -2210,14 +2217,11 @@ for ifile=1:nbfield
             cmd=[cmd CivBin ' -f ' filename_cmx(1:end-4) '.xml '  civAllCmd  '\n'];
         end
         % create the .bat file:
-        if batch
-            [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
-            filename_bat=fullfile(Rootbat,['job_' Filebat extbat]);
-         else
-            filename_bat=filename_cmx;
+        [fid,message]=fopen(filename_bat,'w');
+        if isequal(fid,-1)
+            msgbox_uvmat('ERROR', ['creation of .bat file: ' message])
+            return
         end
-        filename_bat(end-2:end)='bat';
-        fid=fopen(filename_bat,'w');
         fprintf(fid,cmd);
         fclose(fid);
         %dlmwrite(filename_bat,cmd,'');%write commands in filename_bat
@@ -2245,7 +2249,7 @@ for ifile=1:nbfield
 end
 
 if ~batch
-    [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
+    [Rootbat,Filebat,extbat]=fileparts(filename_bat);
     filename_superbat=fullfile(Rootbat,['job_list.bat']);
     fid=fopen(filename_superbat,'w');
     fprintf(fid,super_cmd');

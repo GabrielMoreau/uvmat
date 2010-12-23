@@ -1336,43 +1336,47 @@ for icell=1:length(CellVarIndex)
         
         % case with no rotation and interpolation
         if isequal(ProjMode,'projection') && isequal(Phi,0) && isequal(Theta,0) && isequal(Psi,0)
-            if test_direct(1)
-                min_ind1=ceil((YMin-Coord{1}(1))/DYinit)+1;
-                max_ind1=floor((YMax-Coord{1}(1))/DYinit)+1;
-                Ybound(1)=Coord{1}(1)+DYinit*(min_ind1-1);
-                Ybound(2)=Coord{1}(1)+DYinit*(max_ind1-1);
+            if ~testXMin && ~testXMax && ~testYMin && ~testYMax
+                ProjData=FieldData; 
             else
-                min_ind1=ceil((Coord{1}(1)-YMax)/DYinit)+1;
-                max_ind1=floor((Coord{1}(1)-YMin)/DYinit)+1;
-                Ybound(2)=Coord{1}(1)-DYinit*(max_ind1-1);
-                Ybound(1)=Coord{1}(1)-DYinit*(min_ind1-1);
-            end              
-            if test_direct(2)==1
-                min_ind2=ceil((XMin-Coord{2}(1))/DXinit)+1;
-                max_ind2=floor((XMax-Coord{2}(1))/DXinit)+1;
-                Xbound(1)=Coord{2}(1)+DXinit*(min_ind2-1);
-                Xbound(2)=Coord{2}(1)+DXinit*(max_ind2-1);
-            else
-                min_ind2=ceil((Coord{2}(1)-XMax)/DXinit)+1;
-                max_ind2=floor((Coord{2}(1)-XMin)/DXinit)+1;
-                Xbound(2)=Coord{2}(1)+DXinit*(max_ind2-1);
-                Xbound(1)=Coord{2}(1)+DXinit*(min_ind2-1);
-            end 
-            min_ind1=max(min_ind1,1);% deals with margin (bound lower than the first index)
-            min_ind2=max(min_ind2,1);
-            max_ind1=min(max_ind1,DimValue(1));
-            max_ind2=min(max_ind2,DimValue(2));
-            for ivar=VarIndex
-                VarName=FieldData.ListVarName{ivar}; 
-                ProjData.ListVarName=[ProjData.ListVarName VarName];
-                ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
-                if isfield(FieldData,'VarAttribute') && length(FieldData.VarAttribute)>=ivar
-                    ProjData.VarAttribute{length(ProjData.ListVarName)}=FieldData.VarAttribute{ivar};
-                end
-                eval(['ProjData.' VarName '=FieldData.' VarName '(min_ind1:max_ind1,min_ind2:max_ind2) ;']);
-            end  
-            eval(['ProjData.' AYName '=FieldData.' AYName ';']) %record the new (projected ) y coordinates
-            eval(['ProjData.' AXName '=FieldData.' AXName ';']) %record the new (projected ) x coordinates
+                if test_direct(1)
+                    min_ind1=ceil((YMin-Coord{1}(1))/DYinit)+1;
+                    max_ind1=floor((YMax-Coord{1}(1))/DYinit)+1;
+                    Ybound(1)=Coord{1}(1)+DYinit*(min_ind1-1);
+                    Ybound(2)=Coord{1}(1)+DYinit*(max_ind1-1);
+                else
+                    min_ind1=ceil((Coord{1}(1)-YMax)/DYinit)+1;
+                    max_ind1=floor((Coord{1}(1)-YMin)/DYinit)+1;
+                    Ybound(2)=Coord{1}(1)-DYinit*(max_ind1-1);
+                    Ybound(1)=Coord{1}(1)-DYinit*(min_ind1-1);
+                end              
+                if test_direct(2)==1
+                    min_ind2=ceil((XMin-Coord{2}(1))/DXinit)+1;
+                    max_ind2=floor((XMax-Coord{2}(1))/DXinit)+1;
+                    Xbound(1)=Coord{2}(1)+DXinit*(min_ind2-1);
+                    Xbound(2)=Coord{2}(1)+DXinit*(max_ind2-1);
+                else
+                    min_ind2=ceil((Coord{2}(1)-XMax)/DXinit)+1;
+                    max_ind2=floor((Coord{2}(1)-XMin)/DXinit)+1;
+                    Xbound(2)=Coord{2}(1)+DXinit*(max_ind2-1);
+                    Xbound(1)=Coord{2}(1)+DXinit*(min_ind2-1);
+                end 
+                min_ind1=max(min_ind1,1);% deals with margin (bound lower than the first index)
+                min_ind2=max(min_ind2,1);
+                max_ind1=min(max_ind1,DimValue(1));
+                max_ind2=min(max_ind2,DimValue(2));
+                for ivar=VarIndex
+                    VarName=FieldData.ListVarName{ivar}; 
+                    ProjData.ListVarName=[ProjData.ListVarName VarName];
+                    ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
+                    if isfield(FieldData,'VarAttribute') && length(FieldData.VarAttribute)>=ivar
+                        ProjData.VarAttribute{length(ProjData.ListVarName)}=FieldData.VarAttribute{ivar};
+                    end
+                    eval(['ProjData.' VarName '=FieldData.' VarName '(min_ind1:max_ind1,min_ind2:max_ind2,:) ;']);
+                end  
+                eval(['ProjData.' AYName '=[Ybound(1) Ybound(2)];']) %record the new (projected ) y coordinates
+                eval(['ProjData.' AXName '=[Xbound(1) Xbound(2)];']) %record the new (projected ) x coordinates
+            end
         else       % case with rotation and/or interpolation
             if isempty(Coord_z) %2D case
                 [X,Y]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates

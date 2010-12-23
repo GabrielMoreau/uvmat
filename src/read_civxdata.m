@@ -1,5 +1,8 @@
 %'read_civxdata': reads civx data from netcdf files
 %------------------------------------------------------------------
+%
+% function [Field,VelTypeOut]=read_civxdata(filename,FieldNames,VelType)
+%
 % OUTPUT:
 % nb_coord,nb_dim,
 % Civ: =0 or 1, indicates whether the data is civ (A SUPPRIMER ?)

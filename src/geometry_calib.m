@@ -1098,21 +1098,21 @@ set(handles.ListCoord,'String',Tabchar)
 % --- automatic grid dectection from local maxima of the images 
 function MenuDetectGrid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+%% initiate the grid
 CalibData=get(handles.geometry_calib,'UserData');%get information stored on the GUI geometry_calib
 grid_input=[];%default
 if isfield(CalibData,'grid')
     grid_input=CalibData.grid;%retrieve the previously used grid
 end
 [T,CalibData.grid,white_test]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
-
 set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
 
-%read the four last point coordinates in pixels
+%% read the four last point coordinates in pixels
 Coord_cell=get(handles.ListCoord,'String');%read list of coordinates on geometry_calib
 data=read_geometry_calib(Coord_cell);
 nbpoints=size(data.Coord,1); %nbre of calibration points
 if nbpoints~=4
-    msgbox_uvmat('ERROR','four points must be selected by the mouse, beginning by the new x axis, to delimitate the phs grid area')
+    msgbox_uvmat('ERROR','four points must have be selected by the mouse, beginning by the new x axis, to delimitate the phys grid area')
     return
 end
 corners_X=(data.Coord(end:-1:end-3,4)); %pixel absissa of the four corners
@@ -1129,46 +1129,30 @@ if abs(angles(4)-angles(2))>abs(angles(3)-angles(2))
       corners_Y(3)=Y_end;
 end
 
-%read the current image, displayed in the GUI uvmat
+%% read the current image, displayed in the GUI uvmat
 huvmat=findobj(allchild(0),'Name','uvmat');
 UvData=get(huvmat,'UserData');
 A=UvData.Field.A;
 npxy=size(A);
-%linear transform on the current image
-X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the phys coordinates
-Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner ordinates in the phys coordinates
+X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the phys coordinates (cm)
+Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner ordinates in the phys coordinates (cm)
 
-%calculate transform matrices: 
+%calculate transform matrices for plane projection
 % reference: http://alumni.media.mit.edu/~cwren/interpolator/ by Christopher R. Wren
 B = [ X Y ones(size(X)) zeros(4,3)        -X.*corners_X -Y.*corners_X ...
       zeros(4,3)        X Y ones(size(X)) -X.*corners_Y -Y.*corners_Y ];
 B = reshape (B', 8 , 8 )';
 D = [ corners_X , corners_Y ];
 D = reshape (D', 8 , 1 );
-%l = inv(B' * B) * B' * D;
 l = (B' * B)\B' * D;
 Amat = reshape([l(1:6)' 0 0 1 ],3,3)';
 C = [l(7:8)' 1];
 
-%GeometryCalib.CalibrationType='tsai';
-%GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
-% GeometryCalib.f=1;
-% GeometryCalib.dpx=1;
-% GeometryCalib.dpy=1;
-% GeometryCalib.sx=1;
-% GeometryCalib.Cx=0;
-% GeometryCalib.Cy=0;
-% GeometryCalib.kappa1=0;
-% GeometryCalib.Tx=Amat(1,3);
-% GeometryCalib.Ty=Amat(2,3);
-% GeometryCalib.Tz=1;
-% GeometryCalib.R=[Amat(1,1),Amat(1,2),0;Amat(2,1),Amat(2,2),0;C(1),C(2),0];
-% 
-% [Amod,Rangx,Rangy]=phys_Ima(A-min(min(A)),GeometryCalib,0);
-
+% transform grid image into 'phys' coordinates 
 GeometryCalib.fx_fy=[1 1];
 GeometryCalib.Tx_Ty_Tz=[Amat(1,3) Amat(2,3) 1];
 GeometryCalib.R=[Amat(1,1),Amat(1,2),0;Amat(2,1),Amat(2,2),0;C(1),C(2),0];
+GeometryCalib.CoordUnit='cm';
 path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 addpath(fullfile(path_UVMAT,'transform_field'))
@@ -1187,28 +1171,16 @@ rmpath(fullfile(path_UVMAT,'transform_field'))
 Amod=DataOut.A;
 Rangx=DataOut.AX;
 Rangy=DataOut.AY;
-% GeometryCalib.dpx=1;
-% GeometryCalib.dpy=1;
-% GeometryCalib.sx=1;
-% GeometryCalib.Cx=0;
-% GeometryCalib.Cy=0;
-% GeometryCalib.kappa1=0;
-% GeometryCalib.Tx=Amat(1,3);
-% GeometryCalib.Ty=Amat(2,3);
-% GeometryCalib.Tz=1;
-% GeometryCalib.R=[Amat(1,1),Amat(1,2),0;Amat(2,1),Amat(2,2),0;C(1),C(2),0];
-% 
-% [Amod,Rangx,Rangy]=phys_Ima(A-min(min(A)),GeometryCalib,0);
-
 if white_test
-    Amod=double(Amod);%will look for image maxima
+    Amod=double(Amod);%case of white grid markers: will look for image maxima
 else
-    Amod=-double(Amod);%will look for image minima
+    Amod=-double(Amod);%case of black grid markers: will look for image minima
 end
 % figure(12) %display corrected image
 % Amax=max(max(Amod));
 % image(Rangx,Rangy,uint8(255*Amod/Amax))
 
+%% detection of local image extrema in each direction
 Dx=(Rangx(2)-Rangx(1))/(npxy(2)-1); %x mesh in real space
 Dy=(Rangy(2)-Rangy(1))/(npxy(1)-1); %y mesh in real space
 ind_range_x=ceil(abs(GeometryCalib.R(1,1)*CalibData.grid.Dx/3));% range of search of image ma around each point obtained by linear interpolation from the marked points
@@ -1229,7 +1201,6 @@ for ipoint=1:nbpoints
     %sub-pixel improvement using moments
     x_shift=0;
     y_shift=0;
-    %if ind_x_max+2<=2*ind_range_x+1 && ind_x_max-2>=1
     if ind_x_max+2<=numel(x_profile) && ind_x_max-2>=1
         Atop=x_profile(ind_x_max-2:ind_x_max+2);
         x_shift=sum(Atop.*[-2 -1 0 1 2])/sum(Atop);

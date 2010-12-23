@@ -47,31 +47,17 @@ Object_out=UvData.Object;
 % end
 
 %%  representation of the different objects in the plots uvmat and view_field
-%hfig=get(plotaxes,'parent');
-%tagfig=get(hfig,'tag');
-% if length(Object_set)<IndexObj
-    %Object_set{IndexObj}=ObjectData;
-% end
-% plot the updated object in uvmat
-%  hobject=[];
-% if isfield(Object_set{IndexObj},'DisplayHandle_uvmat') && ~isempty(Object_set{IndexObj}.DisplayHandle_uvmat) && ishandle(Object_set{IndexObj}.DisplayHandle_uvmat)
-%     hobject=Object_set{IndexObj}.DisplayHandle_uvmat;
-% % else
-% %     hobject=plotaxes;
-% end
-% Object_out{IndexObj}.DisplayHandle_uvmat=plot_object(Object_set{IndexObj},Object_set{1},hobject,'m');%update the object representation
 
-% if strcmp(tagfig,'uvmat')%plot uvmat
+%plot uvmat
     for iobj=1:length(Object_out) %change the view of all existing objects on the updated current object #IndexObj_1
          hobject=[];
         if isfield(Object_out{iobj},'DisplayHandle_uvmat') && ~isempty(Object_out{iobj}.DisplayHandle_uvmat) && ishandle(Object_out{iobj}.DisplayHandle_uvmat)
             hobject=Object_out{iobj}.DisplayHandle_uvmat;
-%         else 
-%             hobject=plotaxes;
         end
         Object_out{iobj}.DisplayHandle_uvmat=plot_object(Object_out{iobj},Object_out{IndexObj_1},hobject,'m');%update the object representation
     end
-% else%plot view_field
+% plot view_field
+if ~isempty(IndexObj_2)
     for iobj=1:length(Object_out) %change the view of all existing objects on the updated current object #IndexObj_2
         hobject=[];
         if isfield(Object_out{iobj},'DisplayHandle_view_field') &&  ~isempty(Object_out{iobj}.DisplayHandle_view_field) && ishandle(Object_out{iobj}.DisplayHandle_view_field)
@@ -81,6 +67,7 @@ Object_out=UvData.Object;
         end
         Object_out{iobj}.DisplayHandle_view_field=plot_object(Object_out{iobj},Object_out{IndexObj_2},hobject,'m');%update the object representation
     end
+end
 %  end
 
 %     if isfield(Object_set{iobj},'plotaxes')
