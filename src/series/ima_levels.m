@@ -17,7 +17,7 @@ basename=fullfile(Series.RootPath,Series.RootFile) ;
 %create dir of the new images
 [dir_images,namebase]=fileparts(basename);
 [path,subdir_ima]=fileparts(dir_images);
-curdir=pwd;
+dircur=pwd;
 cd(path);
 mkdir([subdir_ima '_levels']);
   [xx,msg2] = fileattrib(subdir_ima,'+w','g'); %yield writing access (+w) to user group (g)
@@ -27,15 +27,14 @@ if ~strcmp(msg2,'')
     return
 end
 cd(dircur);
-cd(curdir);
 basename_new=fullfile(path,[subdir_ima '_levels'],namebase);
 
 % read imadoc
-[XmlData,warntext]=imadoc2struct([basename '.xml']);
-nbfield1=size(XmlData.Time,1)
-nbfield2=size(XmlData.Time,2)
+%[XmlData,warntext]=imadoc2struct([basename '.xml']);
+% nbfield1=size(XmlData.Time,1);
+% nbfield2=size(XmlData.Time,2);
 
-answer=msgbox_uvmat('CONFIRMATION','apply image rescaling function levels.m ')
+msgbox_uvmat('CONFIRMATION','apply image rescaling function levels.m ');
 
 %copy the xml file
 if exist([basename '.xml'],'file')
@@ -43,8 +42,8 @@ if exist([basename '.xml'],'file')
 end
 
 %main loop
-nbfield=size(num_i1,2)
-nbfield2=size(num_i1,1)
+nbfield=size(num_i1,2);
+nbfield2=size(num_i1,1);
 for ifile=1:nbfield
     update_waitbar(hseries.waitbar,WaitbarPos,ifile/nbfield)
     stopstate=get(hseries.RUN,'BusyAction');
