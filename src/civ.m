@@ -1860,7 +1860,7 @@ for ifile=1:nbfield
             cmd='#!/bin/bash \n';
             cmd=[cmd '#$ -cwd \n'];
             cmd=[cmd 'hostname && date \n'];
-            cmd=[cmd 'umask 002 \n'];
+            cmd=[cmd 'umask 002 \n'];%allow writting access for user group for created files
         end
         if civAll
             civAllxml=xmltree;% xml contents,  all parameters
@@ -1963,10 +1963,16 @@ for ifile=1:nbfield
                 maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
             end
             if isequal(civAll,0)
+                if isunix %unix system
                 cmd_FIX=[sparam.FixBin ' -f ' filecell.nc.civ1{ifile,j} ' -fi1 ' num2str(flagindex1(1)) ...
                     ' -fi2 ' num2str(flagindex1(2)) ' -fi3 ' num2str(flagindex1(3)) ...
                     ' -threshC ' num2str(thresh_vecC1) ' -threshV ' num2str(thresh_vel1) ' -maskName ' maskname];
-                cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
+                else %windows system
+                    cmd_FIX=['"' sparam.FixBin '" -f "' filecell.nc.civ1{ifile,j} '" -fi1 ' num2str(flagindex1(1)) ...
+                    ' -fi2 ' num2str(flagindex1(2)) ' -fi3 ' num2str(flagindex1(3)) ...
+                    ' -threshC ' num2str(thresh_vecC1) ' -threshV ' num2str(thresh_vel1) ' -maskName "' maskname '"'];
+                    cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
+                end
                 cmd=[cmd cmd_FIX '\n'];
             else
                 fix1.inputFileName=filecell.nc.civ1{ifile,j} ;
@@ -1992,7 +1998,6 @@ for ifile=1:nbfield
         if box_test(3)==1
             if isequal(civAll,0)
                 cmd_PATCH=PATCH_CMD(filecell.nc.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp,sparam.PatchBin);
-                cmd_PATCH=regexprep(cmd_PATCH,'\\','\\\\');
                 cmd=[cmd cmd_PATCH '\n'];
             else
                 patch1.inputFileName=filecell.nc.civ1{ifile,j} ;
@@ -2108,7 +2113,7 @@ for ifile=1:nbfield
                     cmd=[cmd 'cp -f ' filename_cmx '2 ' filename_cmx '\n' cmd_CIV2 '\n'];
                 else
                     filename_cmx=regexprep(filename_cmx,'\\','\\\\');
-                    cmd=[cmd 'copy /Y ' filename_cmx '2 ' filename_cmx '\n' cmd_CIV2 '\n'];
+                    cmd=[cmd 'copy /Y "' filename_cmx '2" "' filename_cmx '"\n' cmd_CIV2 '\n'];
                 end
             else
                 civAllCmd=[civAllCmd ' civ2 '];
@@ -2138,10 +2143,16 @@ for ifile=1:nbfield
                 maskname =name_generator(maskbase,num1_mask,1,'.png','_i');
             end
             if isequal(civAll,0)
+                if isunix
                 cmd_FIX=[sparam.FixBin ' -f ' filecell.nc.civ2{ifile,j} ' -fi1 ' num2str(flagindex2(1)) ...
                     ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
                     ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName ' maskname];
-                cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
+                else
+                    cmd_FIX=['"' sparam.FixBin '" -f "' filecell.nc.civ2{ifile,j} '" -fi1 ' num2str(flagindex2(1)) ...
+                    ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
+                    ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName "' maskname '"'];
+                    cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
+                end
                 cmd=[cmd cmd_FIX '\n'];
             else
                 fix2.inputFileName=filecell.nc.civ2{ifile,j} ;
@@ -2167,7 +2178,6 @@ for ifile=1:nbfield
         if box_test(6)==1
             if isequal(civAll,0)
                 cmd_PATCH=PATCH_CMD(filecell.nc.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,thresh_patch2,test_interp,sparam.PatchBin);
-                cmd_PATCH=regexprep(cmd_PATCH,'\\','\\\\');
                 cmd=[cmd cmd_PATCH '\n'];
             else
                 patch2.inputFileName=filecell.nc.civ1{ifile,j} ;
@@ -2239,7 +2249,7 @@ for ifile=1:nbfield
                 cmd_str=['. ' filename_bat];
                 % cmd_str=['!at -qb now -f ' filename_bat ' &']; %ou at -qb now -f bad idea...
             else %case of Windows
-                cmd_str=['@call ' regexprep(filename_bat,'\\','\\\\')];
+                cmd_str=['@call "' regexprep(filename_bat,'\\','\\\\') '"'];
             end
             super_cmd=[super_cmd cmd_str '\n'];         
             %             eval(cmd_str);
@@ -2523,7 +2533,7 @@ if box_test(1)==1;
                 msgbox_uvmat('ERROR',['cannot create ' subdir_civ1_new ': ' msg1])%error message for directory creation
                 filecell={};
                 return
-            else          
+            elseif isunix          
                 [xx,msg2] = fileattrib(subdir_civ1_new,'+w','g'); %yield writing access (+w) to user group (g)
                 if ~strcmp(msg2,'')
                     msgbox_uvmat('ERROR',['pb of permission for  ' subdir_civ1_new ': ' msg2])%error message for directory creation
@@ -3010,13 +3020,18 @@ function cmd_PATCH=PATCH_CMD(filename_nc,nx_patch,ny_patch,rho_patch,subdomain_p
 %------------------------------------------------------------------------
 namelog=[filename_nc([1:end-3]) '_patch.log'];
 if test_interp==0
+    if isunix
     cmd_PATCH=[PatchBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ...
         '  > ' namelog ' 2>&1']; % redirect standard output to the log file
+    else
+      cmd_PATCH=['"' PatchBin '" -f "' filename_nc '" -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ...
+        '  > "' namelog '" 2>&1']; % redirect standard output to the log file
+    end
 else %nouveau programme patch
     cmd_PATCH=[PatchBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ...
         ' -max ' thresh_value ' -nopt ' subdomain_patch  '  > ' namelog ' 2>&1']; % redirect standard output to the log file
 end
-
+cmd_PATCH=regexprep(cmd_PATCH,'\\','\\\\');
 %------------------------------------------------------------------------
 % --- STEREO Interp
 function cmd=RUN_STINTERP(stinterpBin,filename_A_nc,filename_B_nc,filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,xmlA,xmlB)
@@ -4031,39 +4046,6 @@ function cmd_CIV1=CIV1_CMD(filename,namelog,par,handles,sparam)
 if isequal(par.Dt,'0')
     par.Dt='1' ;%case of 'displacement' mode
 end
-%
-%     textcmx={'##############   CMX file';...
-%     ['FirstImage ' par.filename_ima_a];...
-%     ['LastImage  ' par.filename_ima_b];...
-%     'XX' ;...
-%     ['Mask ' par.maskflag] ;...
-%     ['MaskName ' par.maskname];...
-%     ['ImageSize ' par.npx ' ' par.npy];...   %VERIFIER CAS GENERAL ?
-%     ['CorrelationBoxesSize ' par.ibx ' ' par.iby];...
-%     ['SearchBoxeSize ' par.isx ' ' par.isy];...
-%     ['RO ' par.rho];...
-%     ['GridSpacing ' par.dx ' ' par.dy];...
-%     'XX 1.0';...
-%     ['Dt_TO ' par.Dt ' ' par.T0];...
-%     ['PixCmXY ' par.pxcmx ' ' par.pxcmy];...
-%     'XX 1';...
-%     ['ShiftXY ' par.shiftx ' '  par.shifty];...
-%     ['Grid ' par.gridflag];...
-%     ['GridName ' par.gridname] ;...
-%     'XX 85';...
-%     'XX 1.0';...
-%     'XX 1.0';...
-%     'Hart 1';...
-%     'DecimalShift 0';...
-%     'Deformation 0';...
-%     'CorrelationMin 0';...
-%     'IntensityMin 0';...
-%     'SeuilImage n';...
-%     'SeuilImageValues 0 4096';...
-%     ['ImageToUse ' par.term_a ' ' par.term_b];... % VERIFIER ?
-%     'ImageUsedBefore null null'};
-%
-%             textout=char(textcmx);
 par.filename_ima_a=regexprep(par.filename_ima_a,'.png','');
 par.filename_ima_b=regexprep(par.filename_ima_b,'.png','');
 fid=fopen([filename '.cmx'],'w');
@@ -4099,16 +4081,19 @@ fprintf(fid,   ['ImageToUse ' par.term_a ' ' par.term_b '\n' ]); % VERIFIER ?
 fprintf(fid,   ['ImageUsedBefore null null' '\n' ]);
 fclose(fid);
 
-cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file
-cmd_CIV1=regexprep(cmd_CIV1,'\\','\\\\');
-namelog=regexprep(namelog,'\\','\\\\');
-
+% cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file
+% cmd_CIV1=regexprep(cmd_CIV1,'\\','\\\\');
+% namelog=regexprep(namelog,'\\','\\\\');
 if(isunix)
     [Rootbat,Filebat,extbat]=fileparts(namelog);
     ncName=fullfile(Rootbat,[ Filebat '.nc']);
+    cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file
     cmd_CIV1=[cmd_CIV1 '\n' 'mv ' namelog  ' ' regexprep(namelog,'\.log','') '.civ1.log' '\n' 'chmod g+w ' ncName];
-else
-    cmd_CIV1=[cmd_CIV1 '\n' 'copy /Y ' namelog ' ' regexprep(namelog,'\.log','') '.civ1.log'];
+else %Windows system
+    cmd_CIV1=['"' sparam.Civ1Bin '" -f "' filename '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
+    cmd_CIV1=regexprep(cmd_CIV1,'\\','\\\\');
+    namelog=regexprep(namelog,'\\','\\\\');
+    cmd_CIV1=[cmd_CIV1 '\n' 'copy /Y "' namelog '" "' regexprep(namelog,'\.log','') '.civ1.log"']; 
 end
 
 %------------------------------------------------------------------------
@@ -4211,40 +4196,6 @@ function cmd_CIV2=CIV2_CMD(filename,namelog,par,sparam)
 if isequal(par.Dt,'0')
     par.Dt='1' ;%case of 'displacement' mode
 end
-% textcmx=['##############   CMX file'  '\n'...
-% ['FirstImage ' par.filename_ima_a]  '\n'...
-% ['LastImage  ' par.filename_ima_b]  '\n'...
-% 'XX'   '\n'...
-% ['Mask ' par.maskflag]  '\n'...
-% ['MaskName ' par.maskname]  '\n'...
-% ['ImageSize ' par.npx ' ' par.npy]  '\n'...
-% ['CorrelationBoxesSize ' par.ibx ' ' par.iby]  '\n'...
-% ['SearchBoxeSize ' par.ibx ' ' par.iby]  '\n'...
-% ['RO ' par.rho]  '\n'...
-% ['GridSpacing ' par.dx ' ' par.dy]  '\n'...
-% 'XX 1.0'  '\n'...
-% ['Dt_TO ' par.Dt ' ' par.T0]  '\n'...
-% ['PixCmXY ' par.pxcmx ' ' par.pxcmy]  '\n'...
-% 'XX 1'  '\n'...
-% ['ShiftXY 0 0']  '\n'...
-% ['Grid ' par.gridflag]  '\n'...
-% ['GridName ' par.gridname]  '\n'...
-% 'XX 85'  '\n'...
-% 'XX 1.0'  '\n'...
-% 'XX 1.0'  '\n'...
-% 'Hart 1'  '\n'...
-% ['DecimalShift ' par.decimal]  '\n'...
-% ['Deformation ' par.deformation]  '\n'...
-% 'CorrelationMin 0'  '\n'...
-% 'IntensityMin 0'  '\n'...
-% 'SeuilImage n'  '\n'...
-% 'SeuilImageValues 0 4096'  '\n'...
-% ['ImageToUse ' par.term_a ' ' par.term_b]  '\n'... % VERIFIER ?
-% ['ImageUsedBefore ' par.filename_nc1]];
-% textout=char(textcmx);
-% fid=fopen([filename_cmx '2'],'w');
-% fprintf(fid,textout);
-% fclose(fid)
 
 par.filename_ima_a=regexprep(par.filename_ima_a,'.png','');
 par.filename_ima_b=regexprep(par.filename_ima_b,'.png','');% bug : .png appears two times ?
@@ -4281,16 +4232,16 @@ fprintf(fid,   ['ImageToUse ' par.term_a ' ' par.term_b '\n' ]); % VERIFIER ?
 fprintf(fid, ['ImageUsedBefore ' regexprep(par.filename_nc1,'\\','\\\\') '\n']);
 fclose(fid);
 
-cmd_CIV2=[sparam.Civ2Bin ' -f ' filename  '.cmx >' filename '.log' ]; % redirect standard output to the log file
-cmd_CIV2=regexprep(cmd_CIV2,'\\','\\\\');
-namelog=regexprep(namelog,'\\','\\\\');
-
 if(isunix)
+    cmd_CIV2=[sparam.Civ2Bin ' -f ' filename  '.cmx >' filename '.log' ]; % redirect standard output to the log file
     [Rootbat,Filebat,extbat]=fileparts(namelog);
     ncName=fullfile(Rootbat,[ Filebat '.nc']);
     cmd_CIV2=[cmd_CIV2 '\n' 'mv ' namelog  ' ' regexprep(namelog,'\.log','') '.civ2.log' '\n' 'chmod g+w ' ncName];
-else
-    cmd_CIV2=[cmd_CIV2 '\n' 'copy /Y ' namelog ' ' regexprep(namelog,'\.log','') '.civ2.log'];
+else 
+    cmd_CIV2=['"' sparam.Civ2Bin '" -f "' filename  '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
+    cmd_CIV2=regexprep(cmd_CIV2,'\\','\\\\');
+    namelog=regexprep(namelog,'\\','\\\\');
+    cmd_CIV2=[cmd_CIV2 '\n' 'copy /Y "' namelog '" "' regexprep(namelog,'\.log','') '.civ2.log"'];
 end
 
 

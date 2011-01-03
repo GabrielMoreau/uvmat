@@ -446,11 +446,11 @@ end
         'Pick a file',oldfile);
 %global filebase
 fileinput=[PathName FileName];%complete file name 
-testblank=findstr(fileinput,' ');%look for blanks
-if ~isempty(testblank)
-    msgbox_uvmat('ERROR',['The input file name ' fileinput ' contains blank character : This is not allowed. Please change name'])
-    return
-end
+% testblank=findstr(fileinput,' ');%look for blanks
+% if ~isempty(testblank)
+%     msgbox_uvmat('ERROR',['The input file name ' fileinput ' contains blank character : This is not allowed. Please change name'])
+%     return
+% end
 sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
@@ -985,11 +985,11 @@ RootPath=get(handles.RootPath,'String');
         '*.*',  'All Files (*.*)'}, ...
         'Pick a file',RootPath);
 fileinput_1=[PathName FileName];%complete file name 
-testblank=findstr(fileinput_1,' ');%look for blanks
-if ~isempty(testblank)
-    msgbox_uvmat('ERROR',['The input file name ' fileinput_1 ' contains blank character : This is not allowed. Please change name'])
-    return
-end
+% testblank=findstr(fileinput_1,' ');%look for blanks
+% if ~isempty(testblank)
+%     msgbox_uvmat('ERROR',['The input file name ' fileinput_1 ' contains blank character : This is not allowed. Please change name'])
+%     return
+% end
 sizf=size(fileinput_1);
 if (~ischar(fileinput_1)||~isequal(sizf(1),1)),return;end
 
@@ -5016,11 +5016,11 @@ function MenuBrowseObject_Callback(hObject, eventdata, handles)
         '*.mat',  '.mat matlab files '}, ...
         'Pick an xml Object file',get(handles.RootPath,'String'));
 fileinput=[PathName FileName];%complete file name 
-testblank=findstr(fileinput,' ');%look for blanks
-if ~isempty(testblank)
-    msgbox_uvmat('ERROR','forbidden input file name: contain blanks')
-    return
-end
+% testblank=findstr(fileinput,' ');%look for blanks
+% if ~isempty(testblank)
+%     msgbox_uvmat('ERROR','forbidden input file name: contain blanks')
+%     return
+% end
 sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
