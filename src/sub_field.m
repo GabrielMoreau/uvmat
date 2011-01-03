@@ -347,12 +347,14 @@ if ~testU && testU_1
     SubData.ListVarName=[SubData.ListVarName {XName_1_1} {YName_1_1} {UName_1_1} {VName_1_1}];
     DimCell=[DimCell Field_1.VarDimName([VarType_1.vector_x VarType_1.vector_y ])];
     SubData.VarDimName=[SubData.VarDimName DimCell];
-    if ~(isfield(SubData,'VarAttribute') && numel(SubData.VarAttribute)==numel(SubData.ListVarName))
-        for ivar=numel(SubData.VarAttribute)+1:numel(SubData.ListVarName)-4
-             SubData.VarAttribute{ivar}=[];
+    if isfield(SubData,'VarAttribute')
+        if ~(numel(SubData.VarAttribute)==numel(SubData.ListVarName))
+            for ivar=numel(SubData.VarAttribute)+1:numel(SubData.ListVarName)-4
+                SubData.VarAttribute{ivar}=[];
+            end
         end
+        SubData.VarAttribute=[SubData.VarAttribute {XAttr} {YAttr} {UAttr} {VAttr}];
     end
-    SubData.VarAttribute=[SubData.VarAttribute {XAttr} {YAttr} {UAttr} {VAttr}];
     eval(['SubData.' XName_1_1 '=Field_1.' XName_1 ';'])
     eval(['SubData.' YName_1_1 '=Field_1.' YName_1 ';'])
     eval(['SubData.' UName_1_1 '=Field_1.' UName_1 ';'])
