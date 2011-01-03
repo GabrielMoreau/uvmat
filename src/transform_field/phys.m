@@ -98,7 +98,7 @@ function DataOut=phys_1(Data,Calib)
 % for icell=1:length(Data)
 
 DataOut=Data;%default
-DataOut.CoordUnit=Calib.CoordUnit; %put flag for physical coordinates
+% DataOut.CoordUnit=Calib.CoordUnit; %put flag for physical coordinates
 if isfield(Calib,'SliceCoord')
     DataOut.PlaneCoord=Calib.SliceCoord;%to generalise for any plane 
 end

@@ -119,7 +119,7 @@ end
 function DataOut=phys_1(Data,Calib,origin_xy,radius_offset,angle_offset,angle_scale)
 
 DataOut=Data;
-DataOut.CoordUnit=Calib.CoordUnit; %put flag for physical coordinates
+% DataOut.CoordUnit=Calib.CoordUnit; %put flag for physical coordinates
 if isfield(Calib,'SliceCoord')
     DataOut.PlaneCoord=Calib.SliceCoord;%to generalise for any plane 
 end
