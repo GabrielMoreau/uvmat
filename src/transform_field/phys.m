@@ -155,12 +155,6 @@ end
 
 %%%%%%%%%%%%%%%%%%%%
 function [A_out,Rangx,Rangy]=phys_Ima(A,CalibIn,ZIndex)
-
-if ndims(A)==3
-    A=mean(A,3);
-end
-
-
 xcorner=[];
 ycorner=[];
 npx=[];

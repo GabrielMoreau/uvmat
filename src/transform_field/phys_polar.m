@@ -92,7 +92,7 @@ if test_1
               DataOut.Txt='inconsistent plane indexes in the two input fields';
           end
           if iscalar==1% case for which only the second field is a scalar
-               [A,AX,AY]=phys_Ima(A,Calib,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale);
+               [A,AX,AY]=phys_Ima_polar(A,Calib,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale);
                DataOut_1.A=A{1};
                DataOut_1.AX=AX; 
                DataOut_1.AY=AY;
@@ -101,7 +101,7 @@ if test_1
     end
 end
 if iscalar~=0
-    [A,AX,AY]=phys_Ima(A,Calib,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale);%
+    [A,AX,AY]=phys_Ima_polar(A,Calib,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale);%
     DataOut.A=A{1};
     DataOut.AX=AX; 
     DataOut.AY=AY;
@@ -183,6 +183,7 @@ if isfield(Data,'CoordUnit')%&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
     end
 end
 
+
 %------------------------------------------------------------------------
 %'phys_XYZ':transforms image (px) to real world (phys) coordinates using geometric calibration parameters
 % function [Xphys,Yphys]=phys_XYZ(Calib,X,Y,Z)
@@ -246,34 +247,19 @@ if isfield(Calib,'R')
     Xu=Xd./dist_fact;%undistorted sensor coordinates
     Yu=Yd./dist_fact;
     denom=Dx*Xu+Dy*Yu+D0;
-    % denom2=denom.*denom;
     Xphys=(A11.*Xu+A12.*Yu+X0)./denom;%world coordinates
     Yphys=(A21.*Xu+A22.*Yu+Y0)./denom;
-%     Xd=(X-Calib.Cx_Cy(1))/Calib.fx_fy(1); % sensor coordinates
-%     Yd=(Y-Calib.Cx_Cy(2))/Calib.fx_fy(2);
-%     dist_fact=1+Calib.kc*(Xd.*Xd+Yd.*Yd); %distortion factor
-%     Xu=Xd./dist_fact;%undistorted sensor coordinates
-%     Yu=Yd./dist_fact;
-%     A11=R(7)*Xu-R(1);
-%     A12=R(8)*Xu-R(2);
-%     A21=R(7)*Yu-R(4);
-%     A22=R(8)*Yu-R(5);
-%     B1=(R(3)-R(9)*Xu)*Zphys-Tz*Xu+Tx;
-%     B2=(R(6)-R(9)*Yu)*Zphys-Tz*Yu+Ty;
-%     deter=A12.*A21-A11.*A22;
-%     Xphys=(A21.*B1-A11.*B2)./deter;
-%     Yphys=(-A22.*B1+A12.*B2)./deter;
 else
     Xphys=-Calib.Tx_Ty_Tz(1)+X/Calib.fx_fy(1);
     Yphys=-Calib.Tx_Ty_Tz(2)+Y/Calib.fx_fy(2);
 end
+
 %%%%%%%%%%%%%%%%%%%%
-function [A_out,Rangx,Rangy]=phys_Ima(A,CalibIn,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale)
+function [A_out,Rangx,Rangy]=phys_Ima_polar(A,CalibIn,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale)
 xcorner=[];
 ycorner=[];
 npx=[];
 npy=[];
-
 for icell=1:length(A)
     siz=size(A{icell});
     npx=[npx siz(2)];
@@ -317,59 +303,31 @@ Y=(Y+angle_offset)/angle_scale;% normalized angle: distance along reference radi
 X=X+origin_xy(1);%shift to the origin of the polar coordinates 
 Y=Y+origin_xy(2);%shift to the origin of the polar coordinates 
 for icell=1:length(A) 
+    siz=size(A{icell});
     [XIMA,YIMA]=px_XYZ(CalibIn{icell},X,Y,zphys);%corresponding image indices for each point in the real space grid
     XIMA=reshape(round(XIMA),1,npx*npy);%indices reorganized in 'line'
     YIMA=reshape(round(YIMA),1,npx*npy);
     flagin=XIMA>=1 & XIMA<=npx & YIMA >=1 & YIMA<=npy;%flagin=1 inside the original image
-    vec_A=reshape(A{icell}(:,:,1),1,npx*npy);%put the original image in line
-    ind_in=find(flagin);
-    ind_out=find(~flagin);
-    ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
-    ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
-    vec_B(ind_in)=vec_A(ICOMB);
-    vec_B(ind_out)=zeros(size(ind_out));
-    A_out{icell}=reshape(vec_B,npy,npx);%new image in real coordinates
+    if numel(siz)==2 %(B/W images)
+        vec_A=reshape(A{icell}(:,:,1),1,npx*npy);%put the original image in line
+        ind_in=find(flagin);
+        ind_out=find(~flagin);
+        ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
+        ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
+        vec_B(ind_in)=vec_A(ICOMB);
+        vec_B(ind_out)=zeros(size(ind_out));
+        A_out{icell}=reshape(vec_B,npy,npx);%new image in real coordinates
+    else
+        for icolor=1:siz(3)
+                vec_A=reshape(A{icell}(:,:,icolor),1,npx*npy);%put the original image in line
+                ind_in=find(flagin);
+                ind_out=find(~flagin);
+                ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
+                ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
+                vec_B(ind_in)=vec_A(ICOMB);
+                vec_B(ind_out)=zeros(size(ind_out));
+                A_out{icell}(:,:,icolor)=reshape(vec_B,npy,npx);%new image in real coordinates
+        end
+    end
 end
-%Rangx=Rangx-radius_offset;
-
-
-
-% 
-% function [X,Y]=px_XYZ(Calib,Xphys,Yphys,Zphys)
-% X=[];%default
-% Y=[];
-% % if exist('Z','var')& isequal(Z,round(Z))& Z>0 & isfield(Calib,'PlanePos')&length(Calib.PlanePos)>=Z
-% %     Zindex=Z;
-% %     planepos=Calib.PlanePos{Zindex};
-% %     zphys=planepos(3);%A GENERALISER CAS AVEC ANGLE
-% % else
-% %     zphys=0;
-% % end
-% if ~exist('Zphys','var')
-%     Zphys=0;
-% end
-% 
-% %%%%%%%%%%%%%
-% if isfield(Calib,'R')
-%     R=(Calib.R)';
-%     xc=R(1)*Xphys+R(2)*Yphys+R(3)*Zphys+Calib.Tx;
-%     yc=R(4)*Xphys+R(5)*Yphys+R(6)*Zphys+Calib.Ty;
-%     zc=R(7)*Xphys+R(8)*Yphys+R(9)*Zphys+Calib.Tz;
-% %undistorted image coordinates
-%     Xu=Calib.f*xc./zc;
-%     Yu=Calib.f*yc./zc;
-% %distorted image coordinates
-%     distortion=(Calib.kappa1)*(Xu.*Xu+Yu.*Yu)+1; %A REVOIR
-% % distortion=1;
-%     Xd=Xu./distortion;
-%     Yd=Yu./distortion;
-% %pixel coordinates
-%     X=Xd*Calib.sx/Calib.dpx+Calib.Cx;
-%     Y=Yd/Calib.dpy+Calib.Cy;
-% 
-% elseif isfield(Calib,'Pxcmx')&isfield(Calib,'Pxcmy')%old calib  
-%         X=Xphys*Calib.Pxcmx;
-%         Y=Yphys*Calib.Pxcmy;
-% end
-% 
 
