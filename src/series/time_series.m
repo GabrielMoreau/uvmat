@@ -1,13 +1,18 @@
-function GUI_input=time_series(num_i1,num_i2,num_j1,num_j2,Series) 
-%----------------------------------------------------------------------
-% --- make a time series analysis
-%----------------------------------------------------------------------
-%INPUT: 
+%'time_series': extract a time series, used with series.fig
+%------------------------------------------------------------------------
+% function GUI_input=time_series(num_i1,num_i2,num_j1,num_j2,Series)
+%
+%OUTPUT
+% GUI_input=list of options in the GUI series.fig needed for the function
+%
+%INPUT:
 %num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
 %num_i2: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
 %num_j1: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
 %num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
-%OTHER INPUTS given by the structure Series
+%Series: Matlab structure containing information set by the series interface
+%
+function GUI_input=time_series(num_i1,num_i2,num_j1,num_j2,Series) 
 
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
 if ~exist('num_i1','var')

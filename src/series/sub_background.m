@@ -1,5 +1,21 @@
-%----------------------------------------------------------------------
-% --- substract background to the images: rank the images by luminosity at each point and substracts to the images
+%'sub_background': substract background to an image series, used with series.fig
+%------------------------------------------------------------------------
+% function GUI_input=aver_stat(num_i1,num_i2,num_j1,num_j2,Series)
+%
+%OUTPUT
+% GUI_input=list of options in the GUI series.fig needed for the function
+%
+%INPUT:
+%num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
+%num_i2: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
+%num_j1: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
+%num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
+%Series: Matlab structure containing information set by the series interface
+%       .RootPath: path to the image series
+%       .RootFile: root file name
+%       .FileExt: image file extension 
+%       .NomType: nomenclature type for file indexing
+%       .NbSlice: %number of slices defined on the interface
 %----------------------------------------------------------------------
 % Method: 
     %calculate the background image by sorting the luminosity of each point
@@ -13,19 +29,8 @@
     % by the input matlab vectors num_i1 and num_j1 respectively. In the list, j is the fastest increasing index.
     % The processing can be done in slices (number nbslice), with bursts of
     % nbfield2 successive images for a given slice (mode 'multilevel')
-    % In the mode 'volume', nbfield2=1 (1 image at each level), and
-    % nbslice=
-%INPUT:
-% num_i1: matrix of image indices i
-% num_j1: matrix of image indices j, must be the same size as num_i1
-% num_i2 and num_j2: not used for a function acting on images
-% Series: matlab structure containing parameters, as defined by the interface UVMAT/series
-%       Series.RootPath: path to the image series
-%       Series.RootFile: root file name
-%       Series.FileExt: image file extension 
-%       Series.NomType: nomenclature type for file indexing
-%       Series.NbSlice: %number of slices defined on the interface
-
+    % In the mode 'volume', nbfield2=1 (1 image at each level)
+%
 function GUI_input=sub_background (num_i1,num_i2,num_j1,num_j2,Series)
 
 %------------------------------------------------------------------------
