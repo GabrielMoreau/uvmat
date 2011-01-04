@@ -997,6 +997,11 @@ end
 ProjData.NbDim=2;
 ProjData.ListVarName={};
 ProjData.VarDimName={};
+if ~isequal(DX,0)&& ~isequal(DY,0)
+    ProjData.Mesh=sqrt(DX*DY);%define typical data mesh, useful for mouse selection in plots
+elseif isfield(FieldData,'Mesh')
+    ProjData.Mesh=FieldData.Mesh;
+end
 
 error=0;%default
 flux=0;

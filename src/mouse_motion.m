@@ -364,7 +364,7 @@ if ~test_zoom && ~isempty(h_geometry_calib)
                 end
                 hh=findobj('Tag','calib_points');%look for handle of calibration points
                if ~isempty(hh) && ~isempty(get(hh,'UserData')) && get(hh_geometry_calib.edit_append,'Value') 
-                    index_point=get(hh,'UserData')
+                    index_point=get(hh,'UserData');
                     XCoord(index_point)=xy(1,1);
                     YCoord(index_point)=xy(1,2);
                     set(hh,'XData',XCoord)

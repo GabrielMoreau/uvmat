@@ -3457,29 +3457,29 @@ else
     str=num2str(num);
 end
 
-%------------------------------------------------------------------------
-function mask_civ1_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-set(handles.mask_civ1,'UserData',[])
-set(handles.mask_civ1,'String','')
-
-%------------------------------------------------------------------------
-function mask_civ2_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-set(handles.mask_civ2,'UserData',[])
-set(handles.mask_civ2,'String','')
-
-%------------------------------------------------------------------------
-function mask_fix1_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-set(handles.mask_fix1,'UserData',[])
-set(handles.mask_fix1,'String','')
-
-%------------------------------------------------------------------------
-function mask_fix2_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-set(handles.mask_fix2,'UserData',[])
-set(handles.mask_fix2,'String','')
+% %------------------------------------------------------------------------
+% function mask_civ1_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% set(handles.mask_civ1,'UserData',[])
+% set(handles.mask_civ1,'String','')
+% 
+% %------------------------------------------------------------------------
+% function mask_civ2_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% set(handles.mask_civ2,'UserData',[])
+% set(handles.mask_civ2,'String','')
+% 
+% %------------------------------------------------------------------------
+% function mask_fix1_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% set(handles.mask_fix1,'UserData',[])
+% set(handles.mask_fix1,'String','')
+% 
+% %------------------------------------------------------------------------
+% function mask_fix2_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% set(handles.mask_fix2,'UserData',[])
+% set(handles.mask_fix2,'String','')
 
 %------------------------------------------------------------------------
 % --- Executes on button press in list_subdir_civ1.
