@@ -1,5 +1,4 @@
-%transform image coordinates (px) to physical coordinates
-% then transform to polar coordinates: 
+% transform image coordinates (px) to polar physical coordinates 
 %[DataOut,DataOut_1]=phys_polar(varargin)
 %
 % OUTPUT: 
