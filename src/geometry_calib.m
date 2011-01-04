@@ -1,7 +1,13 @@
-%%
-%'geometry_calib': performs geometric calibration from a set of reference points
+%'geometry_calib': associated to the GUI geometry_calib to perform geometric calibration from a set of reference points
+%------------------------------------------------------------------------
+% function hgeometry_calib = geometry_calib(inputfile,pos)
 %
-% function varargout = geometry_calib(varargin)
+%OUTPUT: 
+% hgeometry_calib=current handles of the GUI geometry_calib.fig
+%
+%INPUT:
+% inputfile: (optional) name of an xml file containing coordinates of reference points
+% pos: (optional) 4 element vector setting the 'Position' of the GUI 
 %
 %A%AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
