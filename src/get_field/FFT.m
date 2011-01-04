@@ -1,3 +1,13 @@
+% 'FFT': calculate and display spectrum of the field selected in the GUI  get_field 
+%  GUI_input=FFT(hget_field)
+%
+% OUTPUT: 
+% GUI_input: option for display in the GUI get_field
+%
+%INPUT:
+% hget_field: handles of the GUI get_field
+%
+
 function GUI_input=FFT(hget_field)
 global spec x_vec
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
@@ -8,7 +18,6 @@ end
 GUI_input=[];
 %initiation
 hhget_field=guidata(hget_field);
-% testinterp=0;
 abscissa_list=get(hhget_field.abscissa,'String');
 val=get(hhget_field.abscissa,'Value');
 val=val(1);
@@ -17,7 +26,6 @@ ordinate_list=get(hhget_field.ordinate,'String');
 val=get(hhget_field.ordinate,'Value');
 val=val(1); %take only the first variable in the list
 
-%ordinate_name=Field.ListVarName{val};
 ordinate_name=ordinate_list{val};
 
 [Field,errormsg]=read_get_field(hget_field);
@@ -28,7 +36,7 @@ end
 
 % get variable
 eval(['Var= Field.' ordinate_name ';']);
-np=size(Var)
+np=size(Var);
 np_freq=floor(np(1)/2);
 dx=1;%default
 dfreq=1/np(1);%default frequency interval (abscissa= array index)
@@ -58,7 +66,7 @@ spec=spec(1:np_freq,:);%keep only the first half (the other is symmetric)
 %plot
 list_fig=get(hhget_field.list_fig,'String');
 val=get(hhget_field.list_fig,'Value');
-hfig=str2num(list_fig{val})% chosen figure number from tyhe GUI
+hfig=str2num(list_fig{val});% chosen figure number from tyhe GUI
 if isempty(hfig)
     hfig=figure;
 else
