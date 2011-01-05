@@ -266,17 +266,26 @@ if isempty(filebase)|| isequal(filebase,'')%loads the previously stored file nam
 else
     oldfile=filebase;
 end
-testall=get(handles.ImaDoc,'UserData');
+% testall=get(handles.ImaDoc,'UserData');
 ind_opening=1;%default
 browse.incr_pair=[0 0]; %default
-if testall
-    menu={'*.*', 'All Files (*.*)'; '*.xml; *.avi;*.AVI;*.nc','(*.xml,*.avi,*.nc)'; ...
-        '*.xml', '.xml files';'*.avi;*.AVI', '.avi files';'*.nc','.nc files'};
-else % menu selecting only .civ or .avi files
-    menu={'*.xml;*.avi;*.AVI;*.nc','(*.xml,*.avi,*.nc)'; ...
-        '*.xml', '.xml files';'*.avi;*.AVI', '.avi files';'*.nc', '.nc files';...
-        '*.*', 'All Files (*.*)'};
-end
+% if testall
+%     menu={'*.*', 'All Files (*.*)'; '*.xml; *.avi;*.AVI;*.nc','(*.xml,*.avi,*.nc)'; ...
+%         '*.xml', '.xml files';'*.avi;*.AVI', '.avi files';'*.nc','.nc files'};
+% else % menu selecting only .civ or .avi files
+ menu={'*.xml;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.nc;', ' (*.xml,*.civ,*.png,*.jpg ,.tif, *.avi,*.nc)';
+       '*.xml',  '.xml files '; ...
+        '*.civ',  '.civ files '; ...
+        '*.png','.png image files'; ...
+        '*.jpg',' jpeg image files'; ...
+        '*.tif','.tif image files'; ...
+        '*.avi;*.AVI','.avi movie files'; ...
+        '*.nc','.netcdf files'; ...
+        '*.*',  'All Files (*.*)'};
+   % menu={'*.xml;*.avi;*.AVI;*.nc','(*.xml,*.avi,*.nc)'; ...
+     %   '*.xml', '.xml files';'*.avi;*.AVI', '.avi files';'*.nc', '.nc files';...
+    %    '*.*', 'All Files (*.*)'};
+% end
 [FileName, PathName, filtindex] = uigetfile( menu, 'Pick a file',oldfile);
 fileinput=[PathName FileName];%complete file name
 sizf=size(fileinput);
@@ -430,8 +439,8 @@ elseif isequal(ind_opening,6)
     set(handles.list_pair_civ2,'Enable','On')
 end
 set(handles.browse_root,'UserData',browse);% store information from browser
-testall=isequal(menu(filtindex,1),{'*.*'});
-set(handles.ImaDoc,'UserData',testall);
+% testall=isequal(menu(filtindex,1),{'*.*'});
+% set(handles.ImaDoc,'UserData',testall);
 
 RootName_Callback(hObject, eventdata, handles);
 
@@ -1867,21 +1876,22 @@ for ifile=1:nbfield
             civAllCmd='';
             civAllxml=set(civAllxml,1,'name','CivDoc');
         end
-        filename_cmx=filecell.nc.civ1{ifile,j};%output netcdf file
-        filename_cmx(end-1:end+1)='cmx';%name of cmx file
+        %filename_cur=filecell.nc.civ1{ifile,j};%output netcdf file
+        [Rootbat,Filebat]=fileparts(filecell.nc.civ1{ifile,j});%output netcdf file (without extention)
+        %filename_cmx(end-1:end+6)='civ1.cmx';%name of cmx file
         if batch
-            [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
-            filename_bat=fullfile(Rootbat,['job_' Filebat extbat]);
+%             [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
+            filename_bat=fullfile(Rootbat,['job_' Filebat]);
          else
-            filename_bat=filename_cmx;
+            filename_bat=fullfile(Rootbat,Filebat);
         end
-        filename_bat(end-2:end)='bat';
+        filename_bat=[filename_bat '.bat'];
         
         %CIV1
         if box_test(1)==1
             par_civ1.filename_ima_a=filecell.ima1.civ1{ifile,j};
             par_civ1.filename_ima_b=filecell.ima2.civ1{ifile,j};
-            namelog=[filename_cmx([1:end-3]) 'log'];
+            namelog=[fullfile(Rootbat,Filebat) '.civ1.log'];
             par_civ1.Dt=num2str(time(num2_civ1(ifile),num_b_civ1(j))-time(num1_civ1(ifile),num_a_civ1(j)));
             par_civ1.T0=num2str((time(num2_civ1(ifile),num_b_civ1(j))+time(num1_civ1(ifile),num_a_civ1(j)))/2);
             par_civ1.term_a=num2stra(num_a_civ1(j),nom_type_nc);%UTILITE?
@@ -1934,10 +1944,10 @@ for ifile=1:nbfield
             %
             i_cmd=i_cmd+1;
             if isequal(civAll,0)
-                cmd=[cmd CIV1_CMD(filename_cmx(1:end-4),namelog,par_civ1,handles,sparam) '\n'];
+                cmd=[cmd CIV1_CMD(fullfile(Rootbat,Filebat),'',par_civ1,handles,sparam) '\n'];
             else
                 civAllCmd=[civAllCmd ' civ1 '];
-                str=CIV1_CMD_Unified(filename_cmx([1:end-4]),namelog,par_civ1);
+                str=CIV1_CMD_Unified(fullfile(Rootbat,Filebat),'',par_civ1);
                 fieldnames=fields(str);
                 [civAllxml,uid_civ1]=add(civAllxml,1,'element','civ1');
                 for ilist=1:length(fieldnames)
@@ -2053,7 +2063,8 @@ for ifile=1:nbfield
             %par_civ2.filename_ima_a([end-3:end])=[];%remove .png extension
             par_civ2.filename_ima_b=filecell.ima2.civ2{ifile,j};
             %par_civ2.filename_ima_b([end-3:end])=[];%remove .png extension
-            namelog=[filename_cmx([1:end-3]) 'log'];
+            [Rootbat,Filebat]=fileparts(filecell.nc.civ2{ifile,j});%output netcdf file (without extention)
+            namelog=[fullfile(Rootbat,Filebat) '.civ2.log'];
             par_civ2.Dt=num2str(time(num2_civ2(ifile),num_b_civ2(j))-time(num1_civ2(ifile),num_a_civ2(j)));
             par_civ2.T0=num2str((time(num2_civ1(ifile),num_b_civ2(j))+time(num1_civ2(ifile),num_a_civ2(j)))/2);
             par_civ2.term_a=num2stra(num_a_civ2(j),nom_type_nc);
@@ -2107,13 +2118,14 @@ for ifile=1:nbfield
             end
             %endTESTgrid
             i_cmd=i_cmd+1;
-            cmd_CIV2=CIV2_CMD(filename_cmx(1:end-4),namelog,par_civ2,sparam);
+            cmd_CIV2=CIV2_CMD(fullfile(Rootbat,Filebat),[],par_civ2,sparam);%creates the cmx file [fullfile(Rootbat,Filebat) '.civ2.cmx]
             if isequal(civAll,0)
+                flname=fullfile(Rootbat,Filebat);
                 if(isunix)
-                    cmd=[cmd 'cp -f ' filename_cmx '2 ' filename_cmx '\n' cmd_CIV2 '\n'];
+                     cmd=[cmd 'cp -f ' flname '.civ2.cmx ' flname '.cmx\n' cmd_CIV2 '\n'];
                 else
-                    filename_cmx=regexprep(filename_cmx,'\\','\\\\');
-                    cmd=[cmd 'copy /Y "' filename_cmx '2" "' filename_cmx '"\n' cmd_CIV2 '\n'];
+                    flname=regexprep(flname,'\\','\\\\');
+                    cmd=[cmd 'copy /Y "' flname '.civ2.cmx" "' flname '.cmx"\n' cmd_CIV2 '\n'];
                 end
             else
                 civAllCmd=[civAllCmd ' civ2 '];
@@ -2252,7 +2264,6 @@ for ifile=1:nbfield
                 cmd_str=['@call "' regexprep(filename_bat,'\\','\\\\') '"'];
             end
             super_cmd=[super_cmd cmd_str '\n'];         
-            %             eval(cmd_str);
             disp(cmd_str);
         end
     end
@@ -2477,7 +2488,7 @@ end
 %check dir
 subdir_civ1=get(handles.subdir_civ1,'String');%subdirectory subdir_civ1 for the netcdf output data
 subdir_civ2=get(handles.subdir_civ2,'String');
-if isequal(subdir_civ1,''),subdir_civ1='A'; end% put default subdir
+if isequal(subdir_civ1,''),subdir_civ1='CIV'; end% put default subdir
 if isequal(subdir_civ2,''),subdir_civ2=subdir_civ1; end% put default subdir
 currentdir=pwd;%store the current working directory
 [Path_ima,Name]=fileparts(filebase);%Path of the image files (.civ)
@@ -2707,7 +2718,7 @@ if (box_test(4)==1)&&...
         end
         %create the new subdir_civ2_new
         if ~exist(fullfile(Path_ima,subdir_civ2_new),'dir')
-            [xx,m2]=mkdir(subdir_civ2_new);
+            [xx,m2]=mkdir(fullfile(Path_ima,subdir_civ2_new));
             [xx,msg2] = fileattrib(subdir_civ2_new,'+w','g'); %yield writing access (+w) to user group (g)
             if ~isequal(m2,'')
                 msgbox_uvmat('ERROR',['cannot create ' subdir_civ2_new ': ' m2])
@@ -4042,7 +4053,7 @@ function cmd_CIV1=CIV1_CMD(filename,namelog,par,handles,sparam)
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
 
 %changes : filename_cmx -> filename ( no extension )
-
+% input namelog not used
 if isequal(par.Dt,'0')
     par.Dt='1' ;%case of 'displacement' mode
 end
@@ -4085,15 +4096,21 @@ fclose(fid);
 % cmd_CIV1=regexprep(cmd_CIV1,'\\','\\\\');
 % namelog=regexprep(namelog,'\\','\\\\');
 if(isunix)
-    [Rootbat,Filebat,extbat]=fileparts(namelog);
-    ncName=fullfile(Rootbat,[ Filebat '.nc']);
-    cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file
-    cmd_CIV1=[cmd_CIV1 '\n' 'mv ' namelog  ' ' regexprep(namelog,'\.log','') '.civ1.log' '\n' 'chmod g+w ' ncName];
+%     filename
+%     namelog
+%     
+%     [Rootbat,Filebat,extbat]=fileparts(namelog);
+%     ncName=fullfile(Rootbat,[ Filebat '.nc']);
+    cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
+    cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.log' ' ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.nc'];%rename .log as .civ1.log and set the netcdf result file for group user writting
+    cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.cmx' ' ' filename '.civ1.cmx' '\n'];%rename .cmx as .civ1.cmx
 else %Windows system
+    filename=regexprep(filename,'\\','\\\\');
     cmd_CIV1=['"' sparam.Civ1Bin '" -f "' filename '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
     cmd_CIV1=regexprep(cmd_CIV1,'\\','\\\\');
     namelog=regexprep(namelog,'\\','\\\\');
-    cmd_CIV1=[cmd_CIV1 '\n' 'copy /Y "' namelog '" "' regexprep(namelog,'\.log','') '.civ1.log"']; 
+    cmd_CIV1=[cmd_CIV1 '\n' 'copy /Y "' filename '.log' '" "' filename '.civ1.log"']; 
+    cmd_CIV1=[cmd_CIV1 '\n' 'copy /Y "' filename '.cmx' '" "' filename '.civ1.cmx"'];
 end
 
 %------------------------------------------------------------------------
@@ -4196,10 +4213,14 @@ function cmd_CIV2=CIV2_CMD(filename,namelog,par,sparam)
 if isequal(par.Dt,'0')
     par.Dt='1' ;%case of 'displacement' mode
 end
-
 par.filename_ima_a=regexprep(par.filename_ima_a,'.png','');
 par.filename_ima_b=regexprep(par.filename_ima_b,'.png','');% bug : .png appears two times ?
-fid=fopen([filename '.cmx2'],'w');
+[fid,errormsg]=fopen([filename '.civ2.cmx'],'w');
+if isequal(fid,-1)
+    msgbox_uvmat('ERROR',errormsg)
+    cmd_CIV2='';
+    return
+end
 fprintf(fid,['##############   CMX file' '\n' ]);
 fprintf(fid,   ['FirstImage ' regexprep(par.filename_ima_a,'\\','\\\\') '\n' ]);% for windows compatibility
 fprintf(fid,   ['LastImage  ' regexprep(par.filename_ima_b,'\\','\\\\') '\n' ]);% for windows compatibility
@@ -4233,15 +4254,22 @@ fprintf(fid, ['ImageUsedBefore ' regexprep(par.filename_nc1,'\\','\\\\') '\n']);
 fclose(fid);
 
 if(isunix)
-    cmd_CIV2=[sparam.Civ2Bin ' -f ' filename  '.cmx >' filename '.log' ]; % redirect standard output to the log file
-    [Rootbat,Filebat,extbat]=fileparts(namelog);
-    ncName=fullfile(Rootbat,[ Filebat '.nc']);
-    cmd_CIV2=[cmd_CIV2 '\n' 'mv ' namelog  ' ' regexprep(namelog,'\.log','') '.civ2.log' '\n' 'chmod g+w ' ncName];
+%         cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
+%     cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.log' ' ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.nc'];
+%     cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.cmx' ' ' filename '.civ1.cmx' '\n'];%rename .cmx as .civ1.cmx, the result file is named [filename '.nc'] by CIVx
+    
+    cmd_CIV2=[sparam.Civ2Bin ' -f ' filename  '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
+    cmd_CIV2=[cmd_CIV2 '\n' 'mv ' filename '.log' ' ' filename '.civ2.log' '\n' 'chmod g+w ' filename '.nc'];
+    cmd_CIV2=[cmd_CIV2 '\n' 'mv ' filename '.cmx' ' ' filename '.civ2.cmx' '\n'];%rename .cmx as .civ2.cmx, the result file is named [filename '.nc'] by CIVx
+%     [Rootbat,Filebat,extbat]=fileparts(namelog);
+%     ncName=fullfile(Rootbat,[ Filebat '.nc']);
+%    cmd_CIV2=[cmd_CIV2 '\n' 'mv ' namelog  ' ' regexprep(namelog,'\.log','') '.civ2.log' '\n' 'chmod g+w ' ncName];
 else 
+    filename=regexprep(filename,'\\','\\\\');
     cmd_CIV2=['"' sparam.Civ2Bin '" -f "' filename  '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
     cmd_CIV2=regexprep(cmd_CIV2,'\\','\\\\');
-    namelog=regexprep(namelog,'\\','\\\\');
-    cmd_CIV2=[cmd_CIV2 '\n' 'copy /Y "' namelog '" "' regexprep(namelog,'\.log','') '.civ2.log"'];
+    cmd_CIV2=[cmd_CIV2 '\n' 'copy /Y "' filename '.log' '" "' filename '.civ2.log"'];
+     cmd_CIV2=[cmd_CIV2 '\n' 'copy /Y "' filename '.cmx' '" "' filename '.civ2.cmx"'];
 end
 
 

@@ -425,7 +425,7 @@ if isempty(oldfile)||isequal(oldfile,'') %loads the previously stored file name 
          end
 end
 [FileName, PathName] = uigetfile( ...
-       {'*.xml;*.xls;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol;*.nc;*.cmx;*.fig;*.log;*.dat;*.bat;', ' (*.xml,*.xls,*.civ,*.jpg ,*.png, .tif, *.avi,*.vol,*.nc,*.cmx ,*.fig,*.log,*.dat,*.bat)';
+       {'*.xml;*.xls;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol;*.nc;*.cmx;*.fig;*.log;*.dat;*.bat;', ' (*.xml,*.xls,*.civ,*.jpg ,*.png, .tif, *.avi,*.vol,*.nc,*.cmx,*.fig,*.log,*.dat,*.bat)';
        '*.xml',  '.xml files '; ...
         '*.xls',  '.xls files '; ...
         '*.civ',  '.civ files '; ...
@@ -436,8 +436,7 @@ end
         '*.vol','.volume images (png)'; ...
         '*.nc','.netcdf files'; ...
         '*.cdf','.netcdf files'; ...
-        '*.cmx','.cmx text files';...
-        '*.cmx2','.cmx2 text files';...
+        '*.cmx','.cmx text files ';...
         '*.fig','.fig files (matlab fig)';...
         '*.log','.log text files ';...
         '*.dat','.dat text files ';...
@@ -2204,6 +2203,7 @@ end
 %% read the input field(s)
 %read images
 if ~isempty(filename) && isequal(FieldName,'image')
+    Npz=1;%default
      switch FileType
         case 'movie'
             try
@@ -2222,6 +2222,10 @@ if ~isempty(filename) && isequal(FieldName,'image')
             A=frame2im(mov(1));
         case 'vol'
             A=imread(filename);
+            if isfield(UvData.XmlData,'Npy')
+                Npz=size(A,1)/UvData.XmlData.Npy;
+                A=reshape(A,Npz,UvData.XmlData.Npy,UvData.XmlData.Npx);
+            end
         case 'multimage'
             A=imread(filename,num_i1);
         case 'image'
@@ -2234,15 +2238,24 @@ if ~isempty(filename) && isequal(FieldName,'image')
     Rangy=[npxy(1)-0.5 0.5]; %
     Field{1}.AName='image';
     Field{1}.ListVarName={'AY','AX','A'}; % 
-    if size(A,3)==3;%color
-        Field{1}.VarDimName={'AY','AX',{'AY','AX','rgb'}}; %
+    if ndims(A)==3 
+        if Npz==1;%color
+             Field{1}.VarDimName={'AY','AX',{'AY','AX','rgb'}}; %
+             Field{1}.AY=[npxy(1)-0.5 0.5];
+             Field{1}.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
+        else
+            Field{1}.ListVarName=['AZ' Field{1}.ListVarName];
+            Field{1}.VarDimName={'AZ','AY','AX',{'AZ','AY','AX'}}; 
+            Field{1}.AZ=[0.5 npxy(1)-0.5];
+            Field{1}.AY=[npxy(2)-0.5 0.5];
+            Field{1}.AX=[0.5 npxy(3)-0.5]; % coordinates of the first and last pixel centers
+        end
     else
         Field{1}.VarDimName={'AY','AX',{'AY','AX'}}; %
+        Field{1}.AY=[npxy(1)-0.5 0.5];
+       Field{1}.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
     end
-    Field{1}.AY=Rangy;
-    Field{1}.AX=Rangx;
     Field{1}.A=A;
-   % Field{1}.CoordType='px'; %used for mouse_motion
     Field{1}.CoordUnit='pixel'; %used for mouse_motion
 end
 
@@ -2487,8 +2500,8 @@ end
 %% test 3D , default projection menuplane and typical mesh (needed to menuopen set_object)
 test_x=0;
 test_z=0;% test for unstructured z coordinate
-UvData.ZMax=0;
-UvData.ZMin=0;%default
+% UvData.ZMax=0;
+% UvData.ZMin=0;%default
 %UvData.Mesh=1; %default
 [UvData.Field,errormsg]=check_field_structure(UvData.Field);
 if ~isempty(errormsg)
@@ -2521,8 +2534,9 @@ elseif NbDim==3
     ZName=UvData.Field.ListVarName{VarType{imax}.coord(1)};%structured coordinates in 3D
     YName=UvData.Field.ListVarName{VarType{imax}.coord(2)};
     XName=UvData.Field.ListVarName{VarType{imax}.coord(3)};
+    eval(['ZMax=max(UvData.Field.' ZName ');'])
+    eval(['ZMin=min(UvData.Field.' ZName ');'])
 end
-
 eval(['XMax=max(UvData.Field.' XName ');'])
 eval(['XMin=min(UvData.Field.' XName ');'])
 eval(['YMax=max(UvData.Field.' YName ');'])
@@ -2564,7 +2578,7 @@ UvData.Field.XMax=XMax;
 UvData.Field.XMin=XMin;
 UvData.Field.YMax=XMax;
 UvData.Field.YMin=XMin;
-if test_z
+if NbDim==3
     UvData.Field.ZMax=ZMax;
     UvData.Field.ZMin=ZMin;
 end
@@ -2641,15 +2655,15 @@ end
 %3D case (menuvolume)
 if NbDim==3 && UvData.NewSeries
     UvData.Object{1}.NbDim=UvData.NbDim;%test for 3D objects
-    UvData.Object{1}.RangeZ=Field.Mesh;%main plotting plane
-    UvData.Object{1}.Coord(1,3)=(UvData.ZMin+UvData.ZMax)/2;%section at a middle plane chosen
+    UvData.Object{1}.RangeZ=UvData.Field.Mesh;%main plotting plane
+    UvData.Object{1}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
     UvData.Object{1}.Phi=0;
     UvData.Object{1}.Theta=0;
     UvData.Object{1}.Psi=0;
     UvData.Object{1}.HandlesDisplay=plot(0,0,'Tag','proj_object');% A REVOIR  
     PlotHandles=get_plot_handles(handles);
-    ZBounds(1)=UvData.ZMin; %minimum for the Z slider
-    ZBounds(2)=UvData.ZMax;%maximum for the Z slider
+    ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
+    ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
     UvData.Object{1}.Name='1-PLANE';
     UvData.Object{1}.enable_plot=1;
     set_object(UvData.Object{1},PlotHandles,ZBounds);

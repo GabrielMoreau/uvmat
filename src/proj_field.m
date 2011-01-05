@@ -917,8 +917,7 @@ end
  function  [ProjData,errormsg] = proj_plane(FieldData, ObjectData)
 %-----------------------------------------------------------------
 
-%initialisation of the input parameters of the projection plane
-%-----------------------------------------------------------------
+%% initialisation of the input parameters of the projection plane
 ProjMode='projection';%direct projection by default
 if isfield(ObjectData,'ProjMode'),ProjMode=ObjectData.ProjMode; end;
 
@@ -947,13 +946,6 @@ end
 NormVec_X=-sin(Phi)*sin(Theta);
 NormVec_Y=cos(Phi)*sin(Theta);
 NormVec_Z=cos(Theta);
-
-% test for 3D fields
-test3D=0;
-if isfield(FieldData,'nb_dim')
-    test3D=isequal(FieldData.nb_dim,3);
-end
-test3C=test3D; %default 3 vel components
 
 %mesh sizes DX and DY
 DX=0;
@@ -1247,7 +1239,7 @@ for icell=1:length(CellVarIndex)
         Coord_z=[];
         Coord_y=[];
         Coord_x=[];   
-        nb_dim=numel(size(DimValue));
+        nb_dim=numel(DimValue);
         for idim=1:nb_dim %loop on space dimensions
             test_interp(idim)=0;%test for coordiate interpolation (non regular grid), =0 by default
             ivar=VarType.coord(idim);% index of the variable corresponding to the current dimension
@@ -1295,7 +1287,7 @@ for icell=1:length(CellVarIndex)
         DAY=DCoord_min(nb_dim-1);
         if nb_dim==3
             DZ=abs(DCoord_min(1));
-            Coord_z=linspace(Coord{1}(1),Coord{1}(end),npz);
+            Coord_z=linspace(Coord{1}(1),Coord{1}(end),DimValue(1));
             test_direct_z=test_direct(1);
         end  
         minAX=min(Coord_x);
@@ -1341,7 +1333,7 @@ for icell=1:length(CellVarIndex)
         
         % case with no rotation and interpolation
         if isequal(ProjMode,'projection') && isequal(Phi,0) && isequal(Theta,0) && isequal(Psi,0)
-            if ~testXMin && ~testXMax && ~testYMin && ~testYMax
+            if ~testXMin && ~testXMax && ~testYMin && ~testYMax && nb_dim==2
                 ProjData=FieldData; 
             else
                 if test_direct(1)
@@ -1366,6 +1358,12 @@ for icell=1:length(CellVarIndex)
                     Xbound(2)=Coord{2}(1)+DXinit*(max_ind2-1);
                     Xbound(1)=Coord{2}(1)+DXinit*(min_ind2-1);
                 end 
+                if nb_dim==3 %TODO: to update 
+                    min_ind3=ceil((Coord{1}(1)-ZMax)/DZinit)+1;
+                    max_ind2=floor((Coord{1}(2)-XMin)/DZinit)+1;
+                    Zbound(2)=Coord{1}(1)+DXinit*(max_ind2-1);
+                    Zbound(1)=Coord{1}(1)+DXinit*(min_ind2-1);
+                end
                 min_ind1=max(min_ind1,1);% deals with margin (bound lower than the first index)
                 min_ind2=max(min_ind2,1);
                 max_ind1=min(max_ind1,DimValue(1));
