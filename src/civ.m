@@ -782,8 +782,10 @@ set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 set(handles.BATCH,'Enable','On')
 set(handles.BATCH,'BackgroundColor',[1 0 0])
+if isfield(handles,'status')
 set(handles.status,'Value',0);%suppress status display
 status_Callback(hObject, eventdata, handles)
+end
 
 %% store the root input filename for future opening
 dir_perso=prefdir;
@@ -1562,8 +1564,10 @@ set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 
 % start status callback to visualise results
+if isfield(handles,'status')
 set(handles.status,'Value',1);%suppress status display
 status_Callback(hObject, eventdata, handles)
+end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in BATCH: remote processing
@@ -1577,8 +1581,10 @@ set(handles.BATCH, 'Enable','On')
 set(handles.BATCH,'BackgroundColor',[1 0 0])
 
 % start status callback to visualise results
+if isfield(handles,'status')
 set(handles.status,'Value',1);%suppress status display
 status_Callback(hObject, eventdata, handles)
+end
 %------------------------------------------------------------------------
 % --- Lauch command called by RUN and BATCH: remote processing
 function launch_jobs(hObject, eventdata, handles, batch)
@@ -1632,8 +1638,10 @@ if isequal(get(handles.get_mask_fix2,'Value'),1)
 end
 
 %% reinitialise status callback 
+if isfield(handles,'status')
 set(handles.status,'Value',0);%suppress status display
 status_Callback(hObject, eventdata, handles)
+end
 
 %% set the list of files and check them
 display('checking the files...')
@@ -4714,10 +4722,12 @@ function open_view_field(hObject, eventdata)
      filename=list{index};
      ind_dot=findstr(filename,'...');
      filename=filename(1:ind_dot-1);
-      filename=fullfile(rootroot,filename);
+      filename=fullfile(rootroot,filename)
       if exist(filename,'file')%visualise the vel field if it exists
-        [Field,VelTypeOut]=read_civxdata(filename);
-        view_field(Field)
+        %[Field,VelTypeOut]=read_civxdata(filename);
+        %view_field(Field)
+        uvmat(filename)
+        set(gcbo,'Value',1)
       end
 
 

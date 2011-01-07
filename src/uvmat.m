@@ -303,7 +303,7 @@ fct_handle=fct_handle(testexist==1);
 menu_str=[menu_str;{'more...'}];
 set(handles.transform_fct,'String',menu_str)
 set(handles.transform_fct,'UserData',fct_handle)% store the list of path in UserData of ACTION
- 
+set(handles.uvmat,'UserData',UvData)
 %initiates menu of vector colors 
 list_menu=calc_field;
 %list_menu=[{'ima_cor'};{'black'};{'white'};list_menu(3:end)];
@@ -346,8 +346,8 @@ if exist('input','var')
     if ~isempty(inputfile)
         display_file_name(hObject, eventdata, handles,inputfile)
         testinputfield=1;
-    else
-        UvData.TestInputFile=0;
+%     else
+%         UvData.TestInputFile=0;
     end
     if ~isempty(Field)
         set(handles.Fields,'Value',1)
@@ -355,7 +355,7 @@ if exist('input','var')
         testinputfield=1;
         
         % set the colorbar position on the interface:
-        UvData.PosColorbar=[0.805 0.022 0.019 0.445];
+       % UvData.PosColorbar=[0.805 0.022 0.019 0.445];
     elseif ischar(input)
         scan_i_Callback(handles.scan_i, eventdata, handles);        
     end
@@ -373,8 +373,8 @@ else
        end
    end
 end
-UvData.NewSeries=1;
-set(hObject,'UserData',UvData)
+% UvData.NewSeries=1;
+set(handles.uvmat,'UserData',UvData)
 if testinputfield
     %delete drawn objects
     hother=findobj(handles.axes3,'Tag','proj_object');%find all the proj objects
