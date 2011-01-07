@@ -263,35 +263,37 @@ rmpath(fullfile(path_uvmat,'transform_field'))
           set(handles.MenuFile_1,'Label',h.MenuFile_1);
           set(handles.MenuFile_1_1,'Label',h.MenuFile_1);
       end
-      if isfield(h,'MenuFile_1')
+      if isfield(h,'MenuFile_2')
           set(handles.MenuFile_2,'Label',h.MenuFile_2);
           set(handles.MenuFile_2_1,'Label',h.MenuFile_2);
       end
-      if isfield(h,'MenuFile_1')
+      if isfield(h,'MenuFile_3')
           set(handles.MenuFile_3,'Label',h.MenuFile_3);
           set(handles.MenuFile_3_1,'Label',h.MenuFile_3);
       end
-      if isfield(h,'MenuFile_1')
+      if isfield(h,'MenuFile_4')
           set(handles.MenuFile_4,'Label',h.MenuFile_4);
           set(handles.MenuFile_4_1,'Label',h.MenuFile_4);
       end
-      if isfield(h,'MenuFile_1')
+      if isfield(h,'MenuFile_5')
           set(handles.MenuFile_5,'Label',h.MenuFile_5);
           set(handles.MenuFile_5_1,'Label',h.MenuFile_5);
       end
       if isfield(h,'transform_fct') && iscell(h.transform_fct)
          for ilist=1:length(h.transform_fct);
-             [path,file]=fileparts(h.transform_fct{ilist});
-             addpath(path)
-             if exist(file,'file')
+             if exist(h.transform_fct{ilist},'file')
+                [path,file]=fileparts(h.transform_fct{ilist});
+                addpath(path)
+%              if exist(file,'file')
                 h_func=str2func(file);
+                rmpath(path)
                 testexist=[testexist 1]; 
              else
+                file='';
                 h_func=[];
                 testexist=[testexist 0]; 
              end
              fct_handle=[fct_handle; {h_func}]; %concatene the list of paths
-             rmpath(path)
              menu_str=[menu_str; {file}]; 
          end
       end
@@ -4412,6 +4414,12 @@ if test
     %suppress the other options 
     set(handles.zoom,'Value',0)
     zoom_Callback(hObject, eventdata, handles)
+    hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
+    if ishandle(hgeometry_calib)
+        hhgeometry_calib=guidata(hgeometry_calib);
+        set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
+        set(hhgeometry_calib.edit_append,'BackgroundColor',[0.7 0.7 0.7])
+    end
 else 
     UvData.MouseAction='none';
     set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])   
@@ -5073,6 +5081,12 @@ function create_object(data,handles)
 hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
+end
+hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
+if ishandle(hgeometry_calib)
+    hhgeometry_calib=guidata(hgeometry_calib);
+    set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
+    set(hhgeometry_calib.edit_append,'BackgroundColor',[0.7 0.7 0.7])
 end
 UvData=get(handles.uvmat,'UserData');
 set(handles.edit_object,'Value',0); %suppress the object edit mode

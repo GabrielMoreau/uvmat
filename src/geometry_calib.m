@@ -973,6 +973,12 @@ function edit_append_Callback(hObject, eventdata, handles)
 choice=get(handles.edit_append,'Value');
 if choice
     set(handles.edit_append,'BackgroundColor',[1 1 0])
+    huvmat=findobj(allchild(0),'tag','uvmat');
+    if ishandle(huvmat)
+        hhuvmat=guidata(huvmat);
+        set(hhuvmat.edit_object,'Value',0)
+        set(hhuvmat.edit_object,'BackgroundColor',[0.7 0.7 0.7])
+    end
 else
     set(handles.edit_append,'BackgroundColor',[0.7 0.7 0.7]) 
 end

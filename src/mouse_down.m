@@ -23,28 +23,17 @@
 
 function xy=mouse_down(hObject,eventdata)
 
-%MouseAction='none'; %default
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle which controls theoption of  mouse action
 if isempty(huvmat)
     return
 end
 hhuvmat=guidata(huvmat);%handles of elements in uvmat
 UvData=get(huvmat,'UserData');
-%MouseAction='none'; %default
 currentfig=hObject;
 hhcurrentfig=guidata(currentfig);
 test_zoom=get(hhcurrentfig.zoom,'Value');%test for zoom action, first priority
-% if isfield(UvData,'MouseAction')
-%     MouseAction=UvData.MouseAction;% get the mouse action from the uvmat GUI: options:
-% end
-
-%test_cal=get(handles.cal,'Value');
-% test_cal=strcmp(MouseAction,'calib');
-test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority
-%test_ruler=strcmp(MouseAction,'ruler');
-%test_edit=strcmp(MouseAction,'edit_object');
+test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
 test_edit=get(hhuvmat.edit_object,'Value');%test for object editing, third priority
-%test_edit_vect=strcmp(MouseAction,'edit_vect');%test for vector editing,  priority 4
 test_edit_vect=get(hhuvmat.edit_vect,'Value');%test for vector editing,  priority 4
 test_create=isequal(get(hhuvmat.MenuObject,'checked'),'on');% test for object creation,  priority 5
 if test_create
@@ -62,16 +51,15 @@ if test_cal% test for calibration popints,  priority 6
         test_cal=get(hh_calib.edit_append,'Value');
     end
 end
-%test_create=~test_zoom && strcmp(MouseAction,'create_object')&&~test_edit && ~test_edit_vect ;% || isequal(MouseAction,'create_mask'));
 xdisplay=[];%default
 ydisplay=[];%default
 AxeData=[];%default
 
-%% edit an existing point or line if found
+%% determine the currently selected items
 hcurrentobject=gco;% current object handle (selected by the mouse)
 hcurrentfig=hObject;% current figure handle
 fig_tag=get(hcurrentfig,'Tag');
-tag_obj=get(gco,'Tag');
+tag_obj=get(gco,'Tag');%tag of the currently selected object
 xy=[];%default
 xy_fig=get(hcurrentfig,'CurrentPoint');% current point of the current figure (gcbo)
 hchild=get(hcurrentfig,'Children');%handles of all objects in the current figure
@@ -366,7 +354,7 @@ if test_edit_vect && ~isempty(ivec)
         Field.FF=zeros(size(Field.X));
     end
     if isequal(Field.FF(ivec),0)
-        Field.FF(ivec)=100 %mark vector #ivec as false
+        Field.FF(ivec)=100; %mark vector #ivec as false
     else
         Field.FF(ivec)=0;
     end

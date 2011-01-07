@@ -91,13 +91,13 @@ else
 end
 
 %% default input parameters
-if ~isfield(ObjectData,'ProjMode')|isempty(ObjectData.ProjMode)
+if ~isfield(ObjectData,'ProjMode')||isempty(ObjectData.ProjMode)
      ObjectData.ProjMode='projection';%default
 end
-if ~isfield(ObjectData,'Coord')|isempty(ObjectData.Coord)
+if ~isfield(ObjectData,'Coord')||isempty(ObjectData.Coord)
      ObjectData.Coord=[0 0 0];%default
 end
-if ~isfield(ObjectData,'Phi')|isempty(ObjectData.Phi)
+if ~isfield(ObjectData,'Phi')||isempty(ObjectData.Phi)
      ObjectData.Phi=0;%default
 end
 if ~isfield(ObjectData,'Range')
@@ -130,7 +130,7 @@ end
 if isequal(ObjectData.Style,'points')&isequal(ObjectData.ProjMode,'projection')
     YMax=max(XMax,YMax);
     YMax=max(YMax,ZMax);
-elseif isequal(ObjectData.Style,'rectangle')|isequal(ObjectData.Style,'ellipse')|isequal(ObjectData.Style,'volume')
+elseif isequal(ObjectData.Style,'rectangle')||isequal(ObjectData.Style,'ellipse')||isequal(ObjectData.Style,'volume')
     if  isequal(YMax,0)
         ylim=get(haxes,'YLim');
         YMax=(ylim(2)-ylim(1))/100;
@@ -158,10 +158,11 @@ test_patch=isequal(ObjectData.ProjMode,'inside')||isequal(ObjectData.ProjMode,'o
 if test_line
     xline=ObjectData.Coord(:,1);
     yline=ObjectData.Coord(:,2);
+    nbpoints=numel(xline);
     if isequal(ObjectData.Style,'polygon')
         xline=[xline; ObjectData.Coord(1,1)];%closing the line
         yline=[yline; ObjectData.Coord(1,2)];
-    elseif isequal(ObjectData.Style,'plane')| isequal(ObjectData.Style,'volume') 
+    elseif isequal(ObjectData.Style,'plane')|| isequal(ObjectData.Style,'volume') 
         phi=ObjectData.Phi*pi/180;%angle in radians
         Xend_x=xline(1)+XMax*cos(phi);
         Xend_y=yline(1)+XMax*sin(phi);
@@ -179,16 +180,16 @@ if test_line
         if isequal(ObjectData.ProjMode,'projection')
             SubLineStyle='--'; %range of projection marked by dash
             if isfield (ObjectData,'DX')
-               rmfield(ObjectData,'DX');
+               ObjectData=rmfield(ObjectData,'DX');
             end
             if isfield (ObjectData,'DY')
-               rmfield(ObjectData,'DY');
+               ObjectData=rmfield(ObjectData,'DY');
             end
         elseif isequal(ObjectData.ProjMode,'filter')
             SubLineStyle=':';%range of projection not visible
         end
     end 
-    if isequal(ObjectData.Style,'line')|isequal(ObjectData.Style,'polyline')|isequal(ObjectData.Style,'polygon')
+    if isequal(ObjectData.Style,'line')||isequal(ObjectData.Style,'polyline')||isequal(ObjectData.Style,'polygon')
         if length(xline)<2
             theta=0;
         else
@@ -222,15 +223,15 @@ if test_patch
         ylim=[1.2*YimaMin-0.2*YimaMax 1.2*YimaMax-0.2*YimaMin];
         scale_x=2*1.4*XMax/npMx;
         scale_y=2*1.4*YMax/npMy;
-        xi=[0.5:npMx-0.5]*scale_x+xlim(1);
-        yi=[0.5:npMy-0.5]*scale_y+ylim(1);
+        xi=(0.5:npMx-0.5)*scale_x+xlim(1);
+        yi=(0.5:npMy-0.5)*scale_y+ylim(1);
         [Xi,Yi]=meshgrid(xi,yi);
         X2Max=XMax*XMax;
         Y2Max=YMax*YMax;
         distX=(Xi-ObjectData.Coord(1,1));
         distY=(Yi-ObjectData.Coord(1,2));
         flag=(distX.*distX/X2Max+distY.*distY/Y2Max)<1;
-    elseif isequal(ObjectData.Style,'rectangle')|isequal(ObjectData.Style,'volume')
+    elseif isequal(ObjectData.Style,'rectangle')||isequal(ObjectData.Style,'volume')
         XimaMin=ObjectData.Coord(1,1)-XMax;
         XimaMax=ObjectData.Coord(1,1)+XMax;
         YimaMin=ObjectData.Coord(1,2)-YMax;
@@ -239,8 +240,8 @@ if test_patch
         ylim=[1.2*YimaMin-0.2*YimaMax 1.2*YimaMax-0.2*YimaMin];
         scale_x=2*1.4*XMax/npMx;
         scale_y=2*1.4*YMax/npMy;
-        xi=[0.5:npMx-0.5]*scale_x+xlim(1);
-        yi=[0.5:npMy-0.5]*scale_y+ylim(1);
+        xi=(0.5:npMx-0.5)*scale_x+xlim(1);
+        yi=(0.5:npMy-0.5)*scale_y+ylim(1);
         [Xi,Yi]=meshgrid(xi,yi);
         distX=abs(Xi-ObjectData.Coord(1,1));
         distY=abs(Yi-ObjectData.Coord(1,2));
@@ -269,6 +270,7 @@ if test_patch
 end
 
 PlotData=[];%default
+
 %% MODIFY AN EXISTING OBJECT PLOT
 if test_newobj==0;
     hh=hplot;
@@ -300,20 +302,20 @@ if test_newobj==0;
         if isfield(PlotData,'DeformPoint')
            for ipt=1:length(PlotData.DeformPoint)
                if ishandle(PlotData.DeformPoint(ipt))
-                   if length(xline)>=ipt &   length(yline)>=ipt    
+                   if nbpoints>=ipt  
                         set(PlotData.DeformPoint(ipt),'XData',xline(ipt),'YData',yline(ipt));
                     end
                end
            end
-           if length(xline)>length(PlotData.DeformPoint)
-               for ipt=length(PlotData.DeformPoint)+1:length(xline)
+           if nbpoints>length(PlotData.DeformPoint)
+               for ipt=length(PlotData.DeformPoint)+1:nbpoints
                     PlotData.DeformPoint(ipt)=line(xline(ipt),yline(ipt),'Color',col,'LineStyle','.','Tag','DeformPoint',...
                         'SelectionHighlight','off','UserData',hplot);
                end
                set(hplot,'UserData',PlotData)
            end
         end
-    elseif isequal(ObjectData.Style,'rectangle')|isequal(ObjectData.Style,'ellipse')
+    elseif isequal(ObjectData.Style,'rectangle')||isequal(ObjectData.Style,'ellipse')
         set(hplot,'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax])          
     end
     if test_patch 
@@ -333,7 +335,7 @@ if test_newobj
     axes(haxes)
     hother=findobj('Tag','proj_object');%find all the proj objects
     for iobj=1:length(hother)
-        if isequal(get(hother(iobj),'Type'),'rectangle')|isequal(get(hother(iobj),'Type'),'patch')
+        if strcmp(get(hother(iobj),'Type'),'rectangle')|| strcmp(get(hother(iobj),'Type'),'patch')
             set(hother(iobj),'EdgeColor','b')
             if isequal(get(hother(iobj),'FaceColor'),'m')
                 set(hother(iobj),'FaceColor','b')
@@ -362,21 +364,21 @@ if test_newobj
                   'LineStyle',SubLineStyle,'Tag','proj_object');
               end
         end
-    elseif  isequal(ObjectData.Style,'line')|isequal(ObjectData.Style,'polyline')|...        
-          isequal(ObjectData.Style,'polygon') |isequal(ObjectData.Style,'plane')|isequal(ObjectData.Style,'volume')%  (isequal(ObjectData.Style,'polygon') & ~test_patch) |isequal(ObjectData.Style,'plane')
+    elseif  strcmp(ObjectData.Style,'line')||strcmp(ObjectData.Style,'polyline')||...        
+          strcmp(ObjectData.Style,'polygon') ||strcmp(ObjectData.Style,'plane')||strcmp(ObjectData.Style,'volume')%  (isequal(ObjectData.Style,'polygon') & ~test_patch) |isequal(ObjectData.Style,'plane')
         hh=line(xline,yline,'Color',col);
-        if ~isequal(ObjectData.Style,'plane')& ~isequal(ObjectData.Style,'volume')
+        if ~strcmp(ObjectData.Style,'plane') && ~strcmp(ObjectData.Style,'volume')
+            PlotData.SubObject(1)=line(xinf,yinf,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');%draw sub-lines
+            PlotData.SubObject(2)=line(xsup,ysup,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');
             for ipt=1:sizcoord(1)
                 PlotData.DeformPoint(ipt)=line(ObjectData.Coord(ipt,1),ObjectData.Coord(ipt,2),'Color',...
                       col,'LineStyle','none','Marker','.','Tag','DeformPoint','SelectionHighlight','off','UserData',hh);
             end
-            PlotData.SubObject(1)=line(xinf,yinf,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');%draw sub-lines
-            PlotData.SubObject(2)=line(xsup,ysup,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');
         end
     
-    elseif isequal(ObjectData.Style,'rectangle')
+    elseif strcmp(ObjectData.Style,'rectangle')
         hh=rectangle('Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax],'EdgeColor',col);   
-    elseif isequal(ObjectData.Style,'ellipse')
+    elseif strcmp(ObjectData.Style,'ellipse')
         hh=rectangle('Curvature',[1 1],'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax],'EdgeColor',col);
     else
         msgbox_uvmat('ERROR','unknown ObjectData.Style in plot_object.m')
@@ -386,7 +388,7 @@ if test_newobj
     if test_patch
         hold on
         hhh=image([xlim(1)+dx/2 xlim(2)-dx/2],[ylim(1)+dy/2 ylim(2)-dy/2],imflag,'Tag','proj_object','HitTest','off');
-        set(hhh,'AlphaData',(flag)*0.2)
+        set(hhh,'AlphaData',(flag)*0.2)% set partial transparency to the filling color
         PlotData.SubObject=hhh;    
     end
     if isfield(PlotData,'SubObject')
