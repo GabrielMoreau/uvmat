@@ -795,12 +795,16 @@ set(hselect_field,'UserData',Field)
 % --- Executes on button press in RUN.
 function RUN_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
-figstring=get(handles.list_fig,'String');
-if isequal(figstring,{'uvmat'})
+figcell=get(handles.list_fig,'String');
+index=get(handles.list_fig,'value');
+figstring=figcell{index};
+if isequal(figstring,'uvmat')
     huvmat=findobj(allchild(0),'tag','uvmat');
     hhuvmat=guidata(huvmat);
-    uvmat('run0_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
+    uvmat('run0_Callback',hObject,eventdata,hhuvmat); % display field in uvmat
 else
+    huvmat=findobj(allchild(0),'tag','uvmat');
+    delete(huvmat)% 
     index=get(handles.ACTION,'Value');
     list_func=get(handles.ACTION,'UserData');
     h_fun=list_func{index};

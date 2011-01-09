@@ -4622,8 +4622,9 @@ box_test(2)=get(handles.FIX1,'Value');
 box_test(3)=get(handles.PATCH1,'Value');
 box_test(4)=get(handles.CIV2,'Value');
 box_test(5)=get(handles.FIX2,'Value');
-box_test(6)=get(handles.PATCH2,'Value');
-option=listtype{max(box_test(find(box_test)))};
+box_test(6)=get(handles.PATCH2,'Value')
+find(box_test)
+option_civ=max(find(box_test))
 filecell=get(handles.civ,'UserData');
 if ~isfield(filecell,'nc')
     filecell=set_civ_filenames(handles,box_test);%determine the list of output files expected from the GUI status
@@ -4654,8 +4655,9 @@ while count<nbfiles
     count=0;
     for ifile=1:nbfiles
         detect=exist(civ_files{ifile},'file'); % check the existence of the file
+        option=0;
         if detect==0
-            lastfield='not created';
+            option_str='not created';
         else
             datfile=dir(civ_files{ifile});
             datnum(ifile)=datenum(datfile.date);
@@ -4664,24 +4666,30 @@ while count<nbfiles
             % check the content  netcdf file
             Data=nc2struct(civ_files{ifile},'ListGlobalAttribute','patch2','fix2','civ2','patch','fix');
             if ~isempty(Data.patch2) && isequal(Data.patch2,1)
-                lastfield='patch2';
+                option=6;
+                option_str='patch2';
             elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
-                lastfield='fix2';
+                option=5;
+                option_str='fix2';
             elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
-                lastfield='civ2';
+                option=4;
+                option_str='civ2';
             elseif ~isempty(Data.patch) && isequal(Data.patch,1);
-                lastfield='patch1';
+                option=3;
+                option_str='patch1';
             elseif ~isempty(Data.fix) && isequal(Data.fix,1);
-                lastfield='fix1';
+                option=2;
+                option_str='fix1';
             else
-                lastfield='civ1';
+                option=1;
+                option_str='civ1';
             end
         end
-        if strcmp(lastfield,option)
+        if option >= option_civ
             count=count+1;
         end
         [rr,filename,ext]=fileparts(civ_files{ifile});
-        Tabchar{ifile,1}=[fullfile([subdir extdir],filename) ext  '...' lastfield];
+        Tabchar{ifile,1}=[fullfile([subdir extdir],filename) ext  '...' option_str];
     end
     if isempty(datnum)
          message='no civ result created yet';

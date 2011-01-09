@@ -4,41 +4,31 @@
 % function [Field,VelTypeOut]=read_civxdata(filename,FieldNames,VelType)
 %
 % OUTPUT:
-% nb_coord,nb_dim,
-% Civ: =0 or 1, indicates whether the data is civ (A SUPPRIMER ?)
-% CivStage: =0, ??? A UTILISER POUR REMPLACER civ
-%           =1, civ1 has been performed only
-%           =2, fix1 has been performed
-%           =3, pacth1 has been performed
-%           =4, civ2 has been performed 
-%           =5, fix2 has been performed
-%           =6, pacth2 has been performed
-% time: absolute time
-% Field
+% Field: structure representing the selected field, containing
 %            .Txt: (char string) error message if any
-%            .NbDim: number of dimensions (=0 by default)
-%            .NbCoord: number of vector components
-%            .CoordType: expresses the type of coordinate ('px' for image, 'sig' for instruments, or 'phys')
-%            .dt: time interval for the corresponding image pair
-%            .CivStage: =0, 
-%                   =1, civ1 has been performed only
-%                   =2, fix1 has been performed
-%                   =3, pacth1 has been performed
-%                   =4, civ2 has been performed 
-%                   =5, fix2 has been performed
-%                   =6, pacth2 has been performed
-%            .X, .Y, .Z: set of vector coordinates 
-%            .U,.V,.W: corresponding set of vector components
-%            .F: warning flags
-%            .FF: error flag, =0 for good vectors
-%            .C: scalar associated with velocity (used for vector colors)
-%            .CoordType
-%            .DijU; matrix of spatial derivatives (DijU(1,1,:)=DUDX,
-%            DijU(1,2,:)=DUDY, Dij(2,1,:)=DVDX, DijU(2,2,:)=DVDY
-%            .A, .AX, .AY: additional scalar
-% dt:time interval of the image pair red from a single file, or vector with
-% pixcmx,pixcmy: scaling factors (from the first file)
-% vel_type_out: string representing the selected velocity type (civ1,civ2,filter1...)
+%            .ListGlobalAttribute: list of global attributes containing:
+%                    .NbCoord: number of vector components
+%                    .NbDim: number of dimensions (=2 or 3)
+%                    .dt: time interval for the corresponding image pair
+%                    .Time: absolute time (average of the initial image pair)
+%                    .CivStage: =0, 
+%                       =1, civ1 has been performed only
+%                       =2, fix1 has been performed
+%                       =3, pacth1 has been performed
+%                       =4, civ2 has been performed 
+%                       =5, fix2 has been performed
+%                       =6, pacth2 has been performed
+%                     .CoordUnit: 'pixel'
+%             .ListVarName: {'X'  'Y'  'U'  'V'  'F'  'FF'}
+%                   .X, .Y, .Z: set of vector coordinates 
+%                    .U,.V,.W: corresponding set of vector components
+%                    .F: warning flags
+%                    .FF: error flag, =0 for good vectors
+%                     .C: scalar associated with velocity (used for vector colors)
+%                    .DijU; matrix of spatial derivatives (DijU(1,1,:)=DUDX,
+%                        DijU(1,2,:)=DUDY, Dij(2,1,:)=DVDX, DijU(2,2,:)=DVDY
+%
+% VelTypeOut: velocity type corresponding to the selected field: ='civ1','interp1','interp2','civ2'....
 %
 % INPUT:
 % filename: file name (string).
@@ -95,6 +85,10 @@ if isfield(Field,'DjUi')
     Field.VarAttribute(end-2:end)=[];
 end
 
+%renaiming for standard conventions
+Field.NbCoord=Field.nb_coord;
+Field.NbDim=Field.nb_dim;
+
 %determine the appropriate constant for time and dt for the PIV pair
 test_civ1=isequal(VelTypeOut,'civ1')||isequal(VelTypeOut,'interp1')||isequal(VelTypeOut,'filter1');
 test_civ2=isequal(VelTypeOut,'civ2')||isequal(VelTypeOut,'interp2')||isequal(VelTypeOut,'filter2');
@@ -124,20 +118,7 @@ else
     Field.CivStage=1;
 end 
 
-%update list of global attributes
-List=Field.ListGlobalAttribute;
-ind_remove=[];
-for ilist=1:length(List)
-    switch(List{ilist})
-        case {'patch2','fix2','civ2','patch','fix','dt2','absolut_time_T0','absolut_time_T0_2'}
-            ind_remove=[ind_remove ilist];
-            Field=rmfield(Field,List{ilist});
-    end
-end
-List(ind_remove)=[];
-Field.ListGlobalAttribute=[List {'Time','CivStage','CoordUnit'}];
-
-% rescale to pixel coordiantes
+%% rescale fields to pixel coordinates
 if isfield(Field,'pixcmx')
     Field.pixcmx=double(Field.pixcmx);
     Field.pixcmy=double(Field.pixcmy);
@@ -156,7 +137,19 @@ if ~isequal(Field.dt,0)
        Field.DjUi(:,2,1)=(Field.pixcmx/Field.pixcmy)*Field.dt*Field.DjUi(:,2,1);
     end
 end
-%Field.CoordType='px';% TODO: abandon, use COORdUnit instead ? (to adapt 'px' and 'phys')
+
+%% update list of global attributes
+List=Field.ListGlobalAttribute;
+ind_remove=[];
+for ilist=1:length(List)
+    switch(List{ilist})
+        case {'patch2','fix2','civ2','patch','fix','dt2','absolut_time_T0','absolut_time_T0_2','nb_coord','nb_dim','pixcmx','pixcmy'}
+            ind_remove=[ind_remove ilist];
+            Field=rmfield(Field,List{ilist});
+    end
+end
+List(ind_remove)=[];
+Field.ListGlobalAttribute=[{'NbCoord'},{'NbDim'} List {'Time','CivStage','CoordUnit'}];
 Field.CoordUnit='pixel';
 
 

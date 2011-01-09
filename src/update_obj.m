@@ -20,39 +20,15 @@
 function Object_out=update_obj(UvData,IndexObj_1,IndexObj_2)
 
 %% default input and output
-% Object_out{IndexObj}=ObjectData;%default
-% if  isfield(UvData,'Object') 
-%     Object_set=UvData.Object;
-% else
-%     Object_set={};%create the object
-% end
 Object_out=UvData.Object;
 
-%% plot the field projected on the object
-% ProjData= proj_field(UvData.Field,ObjectData,IndexObj);%project the current interface field on ObjectData
-% if ~isempty(ProjData)   
-%     plotaxes=[];%default
-%     if length(Object_set)>= IndexObj && isfield(Object_set{IndexObj},'plotaxes')
-%         plotaxes=Object_set{IndexObj}.plotaxes;
-%         [PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);%update an existing field plot
-%         plotfig=get(plotaxes,'parent');
-%         ViewData=get(plotfig,'UserData');
-%         eval(
-%     else
-%         hview_field=view_field(ProjData);%create a new field plot with view_field
-%         hhview_field=guidata(hview_field);
-%         plotaxes=hhview_field.axes3;
-%     end
-%     Object_out{IndexObj}.plotaxes=plotaxes;
-% end
 
 %%  representation of the different objects in the plots uvmat and view_field
-
 %plot uvmat
     for iobj=1:length(Object_out) %change the view of all existing objects on the updated current object #IndexObj_1
          hobject=[];
         if isfield(Object_out{iobj},'DisplayHandle_uvmat') && ~isempty(Object_out{iobj}.DisplayHandle_uvmat) && ishandle(Object_out{iobj}.DisplayHandle_uvmat)
-            hobject=Object_out{iobj}.DisplayHandle_uvmat;
+            hobject=Object_out{iobj}.DisplayHandle_uvmat;%graphic handle of object #iobj in the uvmat plot
         end
         Object_out{iobj}.DisplayHandle_uvmat=plot_object(Object_out{iobj},Object_out{IndexObj_1},hobject,'m');%update the object representation
     end
@@ -61,46 +37,12 @@ if ~isempty(IndexObj_2)
     for iobj=1:length(Object_out) %change the view of all existing objects on the updated current object #IndexObj_2
         hobject=[];
         if isfield(Object_out{iobj},'DisplayHandle_view_field') &&  ~isempty(Object_out{iobj}.DisplayHandle_view_field) && ishandle(Object_out{iobj}.DisplayHandle_view_field)
-            hobject=Object_out{iobj}.DisplayHandle_view_field;
-%         else 
-%             hobject=plotaxes;
+            hobject=Object_out{iobj}.DisplayHandle_view_field;%graphic handle of object #iobj in the view_field plot
         end
         Object_out{iobj}.DisplayHandle_view_field=plot_object(Object_out{iobj},Object_out{IndexObj_2},hobject,'m');%update the object representation
     end
 end
-%  end
 
-%     if isfield(Object_set{iobj},'plotaxes')
-%         haxes=Object_set{iobj}.plotaxes;% axes for the field plot
-%         if ishandle(haxes) && isequal(get(haxes,'Type'),'axes')% update the representation of the object IndexObj on this axes if it exists
-%             testupdate=0;
-%             HandlesDisplay=[];%default
-%             if length(Object_set)>= IndexObj && isfield(Object_set{IndexObj},'HandlesDisplay')
-%                 HandlesDisplay=Object_set{IndexObj}.HandlesDisplay;%list of handles of object representations
-%             end
-%             hplot_list=findobj(haxes,'Tag','proj_object');%list of projection objects on the axes
-%             for ih=1:length(HandlesDisplay)
-%                 plot_detect=find(hplot_list==HandlesDisplay(ih));
-%                 if ~isempty(plot_detect)
-%                     Object_out.HandlesDisplay(ih)=plot_object(ObjectData,Object_set{iobj},HandlesDisplay(ih),'m');%update the the object representation
-%                     testupdate=1;
-%                     break
-%                 end
-%             end
-%             if ~testupdate% draw new object plot
-%                 hh=plot_object(ObjectData,Object_set{iobj},haxes,'m');%draw the object with the new object data
-%                 if isfield(Object_out,'HandlesDisplay')
-%                     Object_out.HandlesDisplay=[Object_out.HandlesDisplay hh];
-%                 else
-%                     Object_out.HandlesDisplay=hh;
-%                 end
-%                 PlotData=get(hh,'UserData');
-%                 PlotData.IndexObj=IndexObj;
-%                 set(hh,'UserData',PlotData); %record the object index in the graph
-%             end
-%         end
-%     end
-% end
 
 
 

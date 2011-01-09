@@ -163,76 +163,49 @@ if isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1)
     set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
 end
 
-% check the cells of fields :
-% testnbdim=1;
+%% check the cells of fields :
 [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data);
 
+%% plot if the input field is valid
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['input of plot_field/find_field_indices: ' errormsg])
-    display(['input of plot_field: ' errormsg])
-    return
-end
-if ~isfield(Data,'NbDim') %& ~isfield(Data,'Style')%determine the space dimensionb if not defined: choose the kind of plot 
-    [Data.NbDim]=max(NbDim);
-end
-errormsg=[];
-if isequal(Data.NbDim,0) 
-        AxeData=plot_text(Data,htext);
-        PlotType='text';
-        errormsg=[];
-elseif isequal(Data.NbDim,1)
-    [AxeData]=plot_profile(Data,CellVarIndex,VarType,haxes,PlotParam);% 
-    if testzoomaxes
-        [AxeData,zoomaxes,PlotParamOut]=plot_profile(Data,CellVarIndex,VarType,zoomaxes,PlotParam);
-        AxeData.ZoomAxes=zoomaxes;
+    errormsg=['input of plot_field/find_field_indices: ' errormsg];
+else
+    if ~isfield(Data,'NbDim') %& ~isfield(Data,'Style')%determine the space dimensionb if not defined: choose the kind of plot 
+        [Data.NbDim]=max(NbDim);
     end
-    PlotType='line';
-    errormsg=[];
-elseif isequal(Data.NbDim,2)
-    ind_select=find(NbDim>=2);
-    if numel(ind_select)>2
-        errormsg='more than two fields to map';
-    else
-        [AxeData,xx,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),haxes,PlotParam,htext,PosColorbar);
-        if testzoomaxes && isempty(errormsg)
-            [AxeData,zoomaxes,PlotParamOut,xx,errormsg]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),zoomaxes,PlotParam,1,PosColorbar);
-            Data.ZoomAxes=zoomaxes;
+    if isequal(Data.NbDim,0) 
+            AxeData=plot_text(Data,htext);
+            PlotType='text';
+            errormsg=[];
+    elseif isequal(Data.NbDim,1)
+        [AxeData]=plot_profile(Data,CellVarIndex,VarType,haxes,PlotParam);% 
+        if testzoomaxes
+            [AxeData,zoomaxes,PlotParamOut]=plot_profile(Data,CellVarIndex,VarType,zoomaxes,PlotParam);
+            AxeData.ZoomAxes=zoomaxes;
         end
+        PlotType='line';
+        errormsg=[];
+    elseif isequal(Data.NbDim,2)
+        ind_select=find(NbDim>=2);
+        if numel(ind_select)>2
+            errormsg='more than two fields to map';
+        else
+            [AxeData,xx,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),haxes,PlotParam,htext,PosColorbar);
+            if testzoomaxes && isempty(errormsg)
+                [AxeData,zoomaxes,PlotParamOut,xx,errormsg]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),zoomaxes,PlotParam,1,PosColorbar);
+                Data.ZoomAxes=zoomaxes;
+            end
+        end
+    elseif isequal(Data.NbDim,3)
+        errormsg='volume plot not implemented yet';
     end
-elseif isequal(Data.NbDim,3)
-    errormsg='volume plot not implemented yet';
-end
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR','volume plot not implemented yet')
-    return
 end
 
-%display (or delete) error message
-htext=findobj(haxes,'Tag','hTxt');
-if isfield(Data,'Txt')
-    if isempty(htext)
-        Xlim=get(haxes,'XLim');
-        Ylim=get(haxes,'YLim');
-        htext=text(Xlim(1),(Ylim(1)+Ylim(2))/2,Data.Txt,'Tag','hTxt','Color','r');
-        set(htext,'Interpreter','none')
-    else
-        set(htext,'String',Data.Txt)
-    end
-elseif ~isempty(htext)
-    delete(htext)
+if isempty(errormsg)
+    set(haxes,'UserData',Data)
+else
+    msgbox_uvmat('ERROR', errormsg)
 end
-
-% % set graph aspect ratio
-% if isfield(AxeData,'Mesh')
-%     Data.Mesh=AxeData.Mesh;
-% end
-
-%set(haxes,'UserData',AxeData)
-set(haxes,'UserData',Data)
-% if ~testnewfig
-% %set(0,'Children',hstack);%put back the initial figure stack after plot creation
-% 
-% end
 
 
 %-------------------------------------------------------------------

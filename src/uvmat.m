@@ -51,7 +51,6 @@
 %          .filename_1 : last second input file name (to deal with a constant second input without reading again the file)
 %          .VelType_1: last velocity type (civ1, civ2...) for the second input series
 %          .FieldName_1: last field name(velocity, vorticity...) for the second input series
-%          .NbDim: number of space dimensions of the input field
 %          .ZMin, .ZMax: range of the z coordinate
 %..... to complement
 %     - Information on  projection objects
@@ -1224,7 +1223,7 @@ if isequal(lower(FileExt),'.avi') %.avi file
     nbfield_1=imainfo.NumFrames;
     nburst_1=1;
     set(handles.Dt_txt,'String',['Dt=' num2str(1000/info.FramesPerSecond) 'ms']);%display the elementary time interval in millisec
-    time=[0:1/imainfo.FramesPerSecond:(imainfo.NumFrames-1)/imainfo.FramesPerSecond]';
+    time=(0:1/imainfo.FramesPerSecond:(imainfo.NumFrames-1)/imainfo.FramesPerSecond)';
     ColorType=imainfo.ImageType;%='truecolor' for color images
     hhh=which('mmreader');
 elseif ~isempty(imformats(FileExt(2:end)))|| isequal(FileExt,'.vol')
@@ -1332,8 +1331,8 @@ if isempty(GeometryCalib)
     end
 else
     UvData.GeometryCalib_1=GeometryCalib;
-    if (isfield(GeometryCalib,'R')& ~isequal(GeometryCalib.R(2,1),0) & ~isequal(GeometryCalib.R(1,2),0)) |...
-        (isfield(GeometryCalib,'kappa1')& ~isequal(GeometryCalib.kappa1,0))
+    if (isfield(GeometryCalib,'R')&& ~isequal(GeometryCalib.R(2,1),0) && ~isequal(GeometryCalib.R(1,2),0)) ||...
+        (isfield(GeometryCalib,'kappa1')&& ~isequal(GeometryCalib.kappa1,0))
         set(handles.pxcm,'String','var')
         set(handles.pycm,'String','var')
     else
@@ -1590,7 +1589,6 @@ if isfield(MaskData,'maskhandle')&& ishandle(MaskData.maskhandle)
     uistack(MaskData.maskhandle,'top');
 end
 num_i1_mask=mod(num_i1-1,MaskData.NbSlice)+1;
-MaskData.NomType
 MaskName=name_generator(MaskData.Base,num_i1_mask,num_j1,'.png',MaskData.NomType);
 huvmat=get(handles.mask_test,'parent');
 UvData=get(huvmat,'UserData');
@@ -2226,7 +2224,8 @@ if ~isempty(filename) && isequal(FieldName,'image')
             A=imread(filename);
             if isfield(UvData.XmlData,'Npy')
                 Npz=size(A,1)/UvData.XmlData.Npy;
-                A=reshape(A,Npz,UvData.XmlData.Npy,UvData.XmlData.Npx);
+                A=reshape(A',UvData.XmlData.Npx,UvData.XmlData.Npy,Npz);
+                A=permute(A,[3 2 1]);
             end
         case 'multimage'
             A=imread(filename,num_i1);
@@ -2238,6 +2237,7 @@ if ~isempty(filename) && isequal(FieldName,'image')
     set(handles.npy,'String',num2str(npxy(1)));
     Rangx=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
     Rangy=[npxy(1)-0.5 0.5]; %
+    Field{1}.NbDim=2;%default
     Field{1}.AName='image';
     Field{1}.ListVarName={'AY','AX','A'}; % 
     if ndims(A)==3 
@@ -2246,9 +2246,10 @@ if ~isempty(filename) && isequal(FieldName,'image')
              Field{1}.AY=[npxy(1)-0.5 0.5];
              Field{1}.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
         else
+            Field{1}.NbDim=3;
             Field{1}.ListVarName=['AZ' Field{1}.ListVarName];
             Field{1}.VarDimName={'AZ','AY','AX',{'AZ','AY','AX'}}; 
-            Field{1}.AZ=[0.5 npxy(1)-0.5];
+            Field{1}.AZ=[npxy(1)-0.5 0.5];
             Field{1}.AY=[npxy(2)-0.5 0.5];
             Field{1}.AX=[0.5 npxy(3)-0.5]; % coordinates of the first and last pixel centers
         end
@@ -2341,7 +2342,7 @@ if (~isempty(filename)&& isequal(FileType,'netcdf')) || (~isempty(filename_1)&& 
                 return
             end
             CivStage=Field{1}.CivStage;
-            UvData.NbDim=Field{1}.nb_dim;
+            %UvData.NbDim=Field{1}.NbDim;
         end
     end
     if ~isempty(filename_1) && ~test_keepdata_1 && isequal(FileType_1,'netcdf') %read the second file
@@ -2410,8 +2411,7 @@ if ~isfield(UvData,'NewSeries')
     UvData.NewSeries=1;
 end
 %put W as background image by default if NbDim=2:
-if ~isfield(UvData,'NbDim')||isempty(UvData.NbDim)||~isequal(UvData.NbDim,3)
-    if UvData.NewSeries && isequal(get(handles.SubField,'Value'),0) && isfield(Field{1},'W') && ~isempty(Field{1}.W);
+if  UvData.NewSeries && isequal(get(handles.SubField,'Value'),0) && isfield(Field{1},'W') && ~isempty(Field{1}.W) && ~isequal(Field{1}.NbDim,3);
         set(handles.SubField,'Value',1);
         %menu=update_menu(handles.Fields_1,'w');%update the menu for the background scalar nd set the choice to 'w'
         set(handles.RootPath_1,'String','"')
@@ -2429,20 +2429,13 @@ if ~isfield(UvData,'NbDim')||isempty(UvData.NbDim)||~isequal(UvData.NbDim,3)
         set(handles.FileExt_1,'Visible','on');
         set(handles.Fields_1,'Visible','on');
         Field{1}.AName='w';
-%         testscal=1;
-    end
 end           
 
 %multislice case
-if ~isempty(filename) &&(~isfield(UvData,'NbDim') || isequal(UvData.NbDim,2))&&...%2D case
-      isfield(UvData,'XmlData') && isfield(UvData.XmlData,'GeometryCalib')&& isfield(UvData.XmlData.GeometryCalib,'SliceCoord')
-       siz=size(UvData.XmlData.GeometryCalib.SliceCoord);
-%        if siz(1)>1
-%            NbSlice=siz(1);
-%        else
-%            NbSlice=1;
-%        end
-end
+% if ~isempty(filename) &&(~isfield(UvData,'NbDim') || isequal(UvData.NbDim,2))&&...%2D case
+%       isfield(UvData,'XmlData') && isfield(UvData.XmlData,'GeometryCalib')&& isfield(UvData.XmlData.GeometryCalib,'SliceCoord')
+%        siz=size(UvData.XmlData.GeometryCalib.SliceCoord);
+% end
 
 %store the current open names, fields and vel types in uvmat interface 
 UvData.filename=filename;
@@ -2492,9 +2485,10 @@ end
 if length(Field)==2 && ~test_keepdata_1 && isequal(FileType_1,'netcdf') && ~isequal(FieldName_1,'get_field...')
     Field{2}=calc_field(InputField_1,Field{2});
 end
-% combine the two input fields (e.g. substract velocity fields)
+
+%% combine the two input fields (e.g. substract velocity fields)
 if numel(Field)==2
-   UvData.Field=sub_field(Field{1},Field{2}); %TO UPDATE FOR MORE GENERAL INPUT  
+   UvData.Field=sub_field(Field{1},Field{2});  
 else
    UvData.Field=Field{1};
 end
@@ -2502,9 +2496,6 @@ end
 %% test 3D , default projection menuplane and typical mesh (needed to menuopen set_object)
 test_x=0;
 test_z=0;% test for unstructured z coordinate
-% UvData.ZMax=0;
-% UvData.ZMin=0;%default
-%UvData.Mesh=1; %default
 [UvData.Field,errormsg]=check_field_structure(UvData.Field);
 if ~isempty(errormsg)
     errormsg=['error in uvmat/run0_Callback/check_field_structure: ' errormsg];
@@ -2512,55 +2503,31 @@ if ~isempty(errormsg)
 end
 [CellVarIndex,NbDim,VarType]=find_field_indices(UvData.Field);
 [NbDim,imax]=max(NbDim);
-% if isempty(imax)
-% %    DimVarIndex=0;    
-%     coord_x=[];
-% else
-% %     VarIndex=CellVarIndex{imax};
-%     coord_x=VarType{imax}.coord_x;
-% end
-% if isfield(UvData,'NbDim') && ~isempty(UvData.NbDim)
-%     NbDim=UvData.NbDim;
-% else  
-UvData.NbDim=NbDim;
-% end
 if ~isempty(VarType{imax}.coord_x)  && ~isempty(VarType{imax}.coord_y)    %unstructured coordinates
     XName=UvData.Field.ListVarName{VarType{imax}.coord_x};
     YName=UvData.Field.ListVarName{VarType{imax}.coord_y};
     eval(['nbvec=length(UvData.Field.' XName ');'])%nbre of measurement points (e.g. vectors)
     test_x=1;%test for unstructured coordinates
-elseif NbDim==2
-    YName=UvData.Field.ListVarName{VarType{imax}.coord(1)}; %structured coordinates
-    XName=UvData.Field.ListVarName{VarType{imax}.coord(2)};
-elseif NbDim==3
+else %structured coordinate
+    YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
+    XName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim)};
+end
+if NbDim==3
     ZName=UvData.Field.ListVarName{VarType{imax}.coord(1)};%structured coordinates in 3D
-    YName=UvData.Field.ListVarName{VarType{imax}.coord(2)};
-    XName=UvData.Field.ListVarName{VarType{imax}.coord(3)};
     eval(['ZMax=max(UvData.Field.' ZName ');'])
     eval(['ZMin=min(UvData.Field.' ZName ');'])
+    test_z=1;
+    if isequal(ZMin,ZMax)%no z dependency
+        NbDim=2;
+        test_z=0;
+    end
 end
 eval(['XMax=max(UvData.Field.' XName ');'])
 eval(['XMin=min(UvData.Field.' XName ');'])
 eval(['YMax=max(UvData.Field.' YName ');'])
 eval(['YMin=min(UvData.Field.' YName ');'])
 eval(['nbvec=length(UvData.Field.' XName ');'])
-if NbDim==3%
-    if ~isempty(CellVarIndex) && ~isempty(VarType{imax}.coord_z)%unstructured coordinate z
-%         ZName=UvData.Field.ListVarName{VarType{imax}.coord_z};
-        eval(['ZMax=max(UvData.Field.' ZName ');'])
-        eval(['ZMin=min(UvData.Field.' ZName ');'])
-        test_z=1;   
-    elseif isfield(UvData,'Z')% usual civ data
-        ZMax=max(UvData.Z);
-        ZMin=min(UvData.Z);
-        test_z=1;
-    end
-    if isequal(ZMin,ZMax)%no z dependency
-        NbDim=2;
-        test_z=0;
-    end
-end
-if test_x
+if test_x %unstructured coordinates
     if test_z
         UvData.Field.Mesh=((XMax-XMin)*(YMax-YMin)*(ZMax-ZMin))/nbvec;% volume per vector
         UvData.Field.Mesh=(UvData.Field.Mesh)^(1/3);
@@ -2570,116 +2537,76 @@ if test_x
 else
     VarIndex=CellVarIndex{imax}; % list of variable indices
     DimIndex=UvData.Field.VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
-    nbpoints_y=UvData.Field.DimValue(DimIndex(1));
-    nbpoints_x=UvData.Field.DimValue(DimIndex(2));
-    DX=(XMax-XMin)/nbpoints_x;
-    DY=(YMax-YMin)/nbpoints_y;
-    UvData.Field.Mesh=sqrt(DX*DY);
+    nbpoints_y=UvData.Field.DimValue(DimIndex(NbDim-1));
+    nbpoints_x=UvData.Field.DimValue(DimIndex(NbDim));
+    DX=(XMax-XMin)/(nbpoints_x-1);
+    DY=(YMax-YMin)/(nbpoints_y-1);
+    if NbDim==3
+        nbpoints_z=UvData.Field.DimValue(DimIndex(1));
+        DZ=(ZMax-ZMin)/(nbpoints_z-1);
+        UvData.Field.Mesh=sqrt(DX*DY*DZ);
+        UvData.Field.ZMax=ZMax;
+        UvData.Field.ZMin=ZMin;
+    else
+        UvData.Field.Mesh=sqrt(DX*DY);
+    end
 end
+UvData.Field.NbDim=NbDim;
 UvData.Field.XMax=XMax;
 UvData.Field.XMin=XMin;
-UvData.Field.YMax=XMax;
-UvData.Field.YMin=XMin;
-if NbDim==3
-    UvData.Field.ZMax=ZMax;
-    UvData.Field.ZMin=ZMin;
-end
+UvData.Field.YMax=YMax;
+UvData.Field.YMin=YMin;
 
-%case of structured coordinates
-
-% if  isempty(coord_x) && ~isempty(CellVarIndex)
-%     VarIndex=CellVarIndex{imax}; % list of variable indices
-%     DimIndex=UvData.Field.VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
-%     if NbDim==3
-%         nbpoints=UvData.Field.DimValue(DimIndex(1));
-%         if isfield(VarType{imax},'coord_3')&& ~isequal(VarType{imax}.coord_3,0) % z is a dimension variable
-%             ZName=UvData.Field.ListVarName{VarType{imax}.coord_3};
-%             eval(['UvData.ZMax=max(UvData.Field.' ZName ');'])
-%             eval(['UvData.ZMin=min(UvData.Field.' ZName ');'])
-%         else
-%             testcoord_z=0;
-%             if length(UvData.Field.VarAttribute)>=VarIndex(1)
-%                 if isfield(UvData.Field.VarAttribute{VarIndex(1)},'Coord_1')%regular grid 
-%                     Coord_z=UvData.Field.VarAttribute{VarIndex(1)}.Coord_1;
-%                     UvData.ZMax=max(Coord_z);
-%                     UvData.ZMin=min(Coord_z);
-%                     testcoord_z=1;
-%                 end
-%             end
-%             if ~testcoord_z
-%                   UvData.ZMin=1;
-%                   UvData.ZMax=UvData.Field.DimValue(DimIndex(1));
-%             end
-%         end
-%         Field.Mesh=(UvData.ZMax-UvData.ZMin)/(nbpoints-1); 
-%     elseif NbDim==2
-%         nbpoints_y=UvData.Field.DimValue(DimIndex(1));       
-%         Yvar=VarType{imax}.coord_y;
-%         if Yvar~=0  % x is a dimension variable
-%             YName=UvData.Field.ListVarName{Yvar};
-%             eval(['UvData.YMax=max(UvData.Field.' YName ');'])
-%             eval(['UvData.YMin=min(UvData.Field.' YName ');'])
-%         else
-%             testcoord_y=0;
-%             if ~testcoord_y
-%                   UvData.YMin=1;
-%                   UvData.YMax=UvData.Field.DimValue(DimIndex(1));
-%             end
-%         end
-%         DY=(UvData.YMax-UvData.YMin)/(nbpoints_y-1);
-%         nbpoints_x=UvData.Field.DimValue(DimIndex(2));
-%         Xvar=VarType{imax}.coord_x;
-%         if Xvar~=0  % x is a dimension variable
-%             XName=UvData.Field.ListVarName{Xvar};
-%             eval(['UvData.XMax=max(UvData.Field.' XName ');'])
-%             eval(['UvData.XMin=min(UvData.Field.' XName ');'])
-%         else
-%             testcoord_x=0;
-%             if ~testcoord_x
-%                   UvData.XMin=1;
-%                   UvData.XMax=UvData.Field.DimValue(DimIndex(2));
-%             end
-%         end
-%         DX=(UvData.XMax-UvData.XMin)/(nbpoints_x-1);
-%         Field.Mesh= sqrt(DX*DY); 
-%     end
-% end
-
-%create a default projection menuplane
+%% create a default projection menuplane
 UvData.Object{1}.Style='plane';%main plotting plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
-if ~isfield(UvData.Object{1},'plotaxes')
-    UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis
-    set(handles.list_object_1,'Value',1);
-    set(handles.list_object_1,'String',{'1-PLANE'});  
-end
+UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
 
-%3D case (menuvolume)
-if NbDim==3 && UvData.NewSeries
-    UvData.Object{1}.NbDim=UvData.NbDim;%test for 3D objects
-    UvData.Object{1}.RangeZ=UvData.Field.Mesh;%main plotting plane
-    UvData.Object{1}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
-    UvData.Object{1}.Phi=0;
-    UvData.Object{1}.Theta=0;
-    UvData.Object{1}.Psi=0;
-    UvData.Object{1}.HandlesDisplay=plot(0,0,'Tag','proj_object');% A REVOIR  
-    PlotHandles=get_plot_handles(handles);
+
+%% 3D case (menuvolume)
+if NbDim==3% && UvData.NewSeries
+    test_set_object=1;
+    hset_object=findobj(allchild(0),'tag','set_object');
     ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
     ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
-    UvData.Object{1}.Name='1-PLANE';
-    UvData.Object{1}.enable_plot=1;
-    set_object(UvData.Object{1},PlotHandles,ZBounds);
-    set(handles.list_object_1,'Value',1);
-%multilevel case (single menuplane in a 3D space)
+    if ~isempty(hset_object)
+        hhset_object=guidata(hset_object);
+        ZBounds_old(1)=get(hhset_object.z_slider,'Min');
+        ZBounds_old(2)=get(hhset_object.z_slider,'Max');
+        if isequal(ZBounds_old,ZBounds)
+            test_set_object=0;
+        else
+            delete(test_set_object);
+        end
+    end
+    if test_set_object% reinitiate set_object
+        delete_object(1);
+        UvData.Object{1}.Style='plane';%main plotting plane
+        UvData.Object{1}.ProjMode='projection';%main plotting plane
+        UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
+        UvData.Object{1}.NbDim=NbDim;%test for 3D objects
+        UvData.Object{1}.RangeZ=UvData.Field.Mesh;%main plotting plane
+        UvData.Object{1}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
+        UvData.Object{1}.Phi=0;
+        UvData.Object{1}.Theta=0;
+        UvData.Object{1}.Psi=0;
+        UvData.Object{1}.HandlesDisplay=plot(0,0,'Tag','proj_object');% A REVOIR
+        PlotHandles=get_plot_handles(handles);
+        UvData.Object{1}.Name='1-PLANE';
+        UvData.Object{1}.enable_plot=1;
+        set_object(UvData.Object{1},PlotHandles,ZBounds);
+        set(handles.list_object_1,'Value',1);
+    end
+    %multilevel case (single menuplane in a 3D space)
 elseif isfield(UvData,'Z')
     if isfield(UvData,'CoordType')&& isequal(UvData.CoordType,'phys') && isfield(UvData,'XmlData')
         XmlData=UvData.XmlData;
         if isfield(XmlData,'PlanePos')
-             UvData.Object{1}.Coord=XmlData.PlanePos(UvData.ZIndex,:);
+            UvData.Object{1}.Coord=XmlData.PlanePos(UvData.ZIndex,:);
         end
         if isfield(XmlData,'PlaneAngle')
             siz=size(XmlData.PlaneAngle);
-            indangle=min(siz(1),UvData.ZIndex);%take first angle if a single angle is defined (translating scanning)              
+            indangle=min(siz(1),UvData.ZIndex);%take first angle if a single angle is defined (translating scanning)
             UvData.Object{1}.Phi=XmlData.PlaneAngle(indangle,1);
             UvData.Object{1}.Theta=XmlData.PlaneAngle(indangle,2);
             UvData.Object{1}.Psi=XmlData.PlaneAngle(indangle,3);
@@ -2687,6 +2614,11 @@ elseif isfield(UvData,'Z')
     elseif isfield(UvData,'ZIndex')
         UvData.Object{1}.ZObject=UvData.ZIndex;
     end
+end
+if ~isfield(UvData.Object{1},'plotaxes')
+    UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis
+    set(handles.list_object_1,'Value',1);
+    set(handles.list_object_1,'String',{'1-PLANE'});  
 end
 
 %% reset the min and max of scalar if only the mask is displayed(TODO: check the need)
@@ -3568,7 +3500,7 @@ else
 end 
 set(handles.uvmat,'UserData',UvData)
 setfield(handles);% update the field structure ('civ1'....)
-if ~isfield(UvData,'NewSeries')|isequal(UvData.NewSeries,0)
+if ~isfield(UvData,'NewSeries')||isequal(UvData.NewSeries,0)
     run0_Callback(hObject, eventdata, handles)
 end
 
@@ -3829,8 +3761,8 @@ UvData=get(handles.uvmat,'UserData');
 flag=1;
 npx=size(UvData.Field.A,2);
 npy=size(UvData.Field.A,1);
-xi=[0.5:npx-0.5];
-yi=[0.5:npy-0.5];
+xi=0.5:npx-0.5;
+yi=0.5:npy-0.5;
 [Xi,Yi]=meshgrid(xi,yi);
 if isfield(UvData,'Object')
     for iobj=1:length(UvData.Object)
@@ -3883,7 +3815,7 @@ end
 %mask name
 RootPath=get(handles.RootPath,'String');
 RootFile=get(handles.RootFile,'String');
-if ~isempty(RootFile)&(isequal(RootFile(1),'/')| isequal(RootFile(1),'\'))
+if ~isempty(RootFile)&&(isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
         RootFile(1)=[];
 end
 filebase=fullfile(RootPath,RootFile);
@@ -4183,36 +4115,45 @@ else
     Amin=double(min(min(min(FieldHisto))));%min of image
     Amax=double(max(max(max(FieldHisto))));%max of image
     if isequal(Amin,Amax)
-       Histo.Txt=['uniform field =' num2str(Amin)];
+        msgbox_uvmat('WARNING',['uniform field =' num2str(Amin)]);
     else
-    Histo.ListVarName={FieldName,'histo'};
-    if numel(nxy)==2
-        Histo.VarDimName={FieldName,FieldName}; %dimensions for the histogram
-    else %color images
-        Histo.VarDimName={FieldName,{FieldName,'rgb'}}; %dimensions for the histogram
-    end
-    %unit
-    units=[]; %default
-    for ivar=1:numel(Field.ListVarName)    
-        if strcmp(Field.ListVarName{ivar},FieldName)
-            if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'units')
-                units=Field.VarAttribute{ivar}.units;
-                break
+        Histo.ListVarName={FieldName,'histo'};
+        if isequal(Field.NbDim,3)
+            Histo.VarDimName={FieldName,FieldName}; %dimensions for the histogram
+        else
+            if numel(nxy)==2
+                Histo.VarDimName={FieldName,FieldName}; %dimensions for the histogram
+            else
+                Histo.VarDimName={FieldName,{FieldName,'rgb'}}; %dimensions for the histogram
             end
         end
-    end
-    if ~isempty(units)
-        Histo.VarAttribute{1}.units=units;
-    end
-    eval(['Histo.' FieldName '=linspace(Amin,Amax,50);'])%absissa values for histo
-    for col=1:size(FieldHisto,3)
-        B=FieldHisto(:,:,col);
-        C=reshape(double(B),1,nxy(1)*nxy(2));% reshape in a vector
-       eval(['Histo.histo(:,col)=hist(C, Histo.' FieldName ');']);  %calculate histogram
-    end
-    set(haxes,'XLimMode','auto')%reset auto mode (after zoom effect)
-    set(haxes,'YLimMode','auto')
-    plot_field(Histo,haxes);
+        %unit
+        units=[]; %default
+        for ivar=1:numel(Field.ListVarName)
+            if strcmp(Field.ListVarName{ivar},FieldName)
+                if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'units')
+                    units=Field.VarAttribute{ivar}.units;
+                    break
+                end
+            end
+        end
+        if ~isempty(units)
+            Histo.VarAttribute{1}.units=units;
+        end
+        eval(['Histo.' FieldName '=linspace(Amin,Amax,50);'])%absissa values for histo
+        if isequal(Field.NbDim,3)
+            C=reshape(double(FieldHisto),1,[]);% reshape in a vector
+            eval(['Histo.histo(:,1)=hist(C, Histo.' FieldName ');']);  %calculate histogram
+        else
+            for col=1:size(FieldHisto,3)
+                B=FieldHisto(:,:,col);
+                C=reshape(double(B),1,nxy(1)*nxy(2));% reshape in a vector
+                eval(['Histo.histo(:,col)=hist(C, Histo.' FieldName ');']);  %calculate histogram
+            end
+        end
+        set(haxes,'XLimMode','auto')%reset auto mode (after zoom effect)
+        set(haxes,'YLimMode','auto')
+        plot_field(Histo,haxes);
     end
 end
 
@@ -4375,7 +4316,7 @@ colcode.FixedCbounds=0;
 % index_code=get(handles.col_vec,'Value');% selected string index
 % colcode.CName= list_code{index_code(1)}; % selected field used for vector color
 colcode.FixedCbounds=1;
-vec_C=colcode.MinC+(colcode.MaxC-colcode.MinC)*[0.5:width-0.5]/width;%sample of vec_C values from min to max
+vec_C=colcode.MinC+(colcode.MaxC-colcode.MinC)*(0.5:width-0.5)/width;%sample of vec_C values from min to max
 [colorlist,col_vec]=set_col_vec(colcode,vec_C);
 oneheight=ones(1,height);
 A1=colorlist(col_vec,1)*oneheight;
@@ -4509,7 +4450,7 @@ end
 set(handles.uvmat,'UserData',UvData)
 hother=findobj('Tag','proj_object');%find all the proj objects
 for iobj=1:length(hother)
-    if isequal(get(hother(iobj),'Type'),'rectangle')|isequal(get(hother(iobj),'Type'),'patch')
+    if isequal(get(hother(iobj),'Type'),'rectangle')||isequal(get(hother(iobj),'Type'),'patch')
         set(hother(iobj),'EdgeColor','b')
         if isequal(get(hother(iobj),'FaceColor'),'m')
             set(hother(iobj),'FaceColor','b')
@@ -4790,11 +4731,11 @@ else
             end
         end
     end
-    % flag=~flag;
+    
     %mask name
     RootPath=get(handles.RootPath,'String');
     RootFile=get(handles.RootFile,'String');
-    if ~isempty(RootFile)&(isequal(RootFile(1),'/')| isequal(RootFile(1),'\'))
+    if ~isempty(RootFile)&&(isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
         RootFile(1)=[];
     end
     filebase=fullfile(RootPath,RootFile);

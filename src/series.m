@@ -1693,10 +1693,13 @@ if ~isequal(path_series,PathName)
     addpath(PathName)
 end
 eval(['h_function=@' ACTION ';']);
+[fid,errormsg] =fopen([ACTION '.m']);
+InputText=textscan(fid,'%s',1,'delimiter','\n');
+fclose(fid)
 if ~isequal(path_series,PathName)
     rmpath(PathName)
 end
-
+set(handles.ACTION,'ToolTipString',InputText{1}{1})
 varargout=h_function();
 Param_list={};
 

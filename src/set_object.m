@@ -732,6 +732,10 @@ ListObject=get(hhuvmat.list_object_1,'String');%position in the objet list
 IndexObj_1=get(hhuvmat.list_object_1,'Value');
 if isequal(get(hhuvmat.list_object_2,'Visible'),'on')
     IndexObj_2=get(hhuvmat.list_object_2,'Value');
+    List2=get(hhuvmat.list_object_2,'String')
+    if IndexObj_2==length(List2)
+        IndexObj_2=[];% '...' selected
+    end
 else
     IndexObj_2=[];
 end

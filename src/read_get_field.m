@@ -178,7 +178,6 @@ if test_scalar
         empty_coord_y=1;
     else
         dimname_y=Field.VarDimName{VarIndex};
-         %check consistency of dimensions
         nbvar=nbvar+1;
         ListVarName{nbvar}=Field.ListVarName{VarIndex};
         VarDimName{nbvar}=dimname_y;
@@ -200,10 +199,6 @@ if test_scalar
         else
             SubVarAttribute{nbvar}.Role='coord_y';%abcissa with unstructured coordinates
         end
-%         if isequal(dimname_y,dimname_x)
-%             errormsg='identical x and y coordinates selected in get_field';
-%             return
-%         end
     end
 
         % select z variable
@@ -213,33 +208,29 @@ if test_scalar
         VarName=inputlist{val}; %name of the variable in the list    
         VarIndex=name2index(VarName,Field.ListVarName);%index of the variable in ListVarName
         if isempty(VarIndex)% default abscissa = matrix index
-%             coord_z_name=dimname_A{1};% name of the x coordinate = dimension of the plotted quantity
-%            empty_coord_z=1;
+            empty_coord_z=1;
         else
             dimname_z=Field.VarDimName{VarIndex};
-             %check consistency of dimensions
-            if ~isequal(dimname_z,dimname_A)
-                for icoord=1:numel(dimname_A)
-                    if strcmp(dimname_z,dimname_A{icoord})%  a dimension variable
-                         dim_z=icoord;
-                        break
-                    end
-                end
-                if ~dim_z
-                    errormsg='inconsistent dimensions for coordinate z';
-                    return
-                end
-            end
             nbvar=nbvar+1;
             ListVarName{nbvar}=Field.ListVarName{VarIndex};
-            VarDimName{nbvar}=dimname_z;
+            VarDimName{nbvar}=dimname_y;
             if numel(VarAttribute)>=VarIndex
                 SubVarAttribute{nbvar}=VarAttribute{VarIndex};
             end
-            if dim_z
+            %check consistency of dimensions
+            if ~isequal(dimname_y,dimname_A)% case of dimension variables
+                if iscell(dimname_y)
+                    if numel(dimname_y)==1
+                        dimname_y=dimname_y{1};%transform to char chain
+                    else
+                        errormsg='invalid y coordinate selection in get_field';
+                        return
+                    end
+                end
+                test_zdimvar=1;
                 SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
             else
-                SubVarAttribute{nbvar}.Role='coord_z';%z coordinate with unstructured coordinates
+                SubVarAttribute{nbvar}.Role='coord_z';%abcissa with unstructured coordinates
             end
         end
    end
@@ -455,63 +446,51 @@ SubField.VarAttribute=SubVarAttribute;
 
 %permute indices if coord_y is not the first matrix index: scalar case
 if test_scalar
-    VarNameA=Field.ListVarName{VarIndexA};
-    DimCellA=Field.VarDimName{VarIndexA};   
-    eval(['npxy=size(SubField.' VarNameA ');'])
+    VarNameA=Field.ListVarName{VarIndexA};%name of the scalar variable
+    DimCellA=Field.VarDimName{VarIndexA};  %dimension names for the scalar variable
+    eval(['npxy=size(SubField.' VarNameA ');'])%zize of the scalar variable
     SingleCellA={};
     if numel(npxy) < numel(DimCellA)
         SingleCellA=DimCellA(1:end-numel(npxy));
         DimCellA=DimCellA(end-numel(npxy)+1:end); %suppress the first singletons) dimensions
     end
-    ind_single=find(npxy==1);
-    if ~isempty(ind_single)
-    %SingleCellA=[SingleCellA DimCellA(ind_single)];TO CHECK
-    end
+    %ind_single=find(npxy==1);
     ind_select=find(npxy~=1);%look for non singleton dimensions
-    DimCellA=DimCellA(ind_select);
+    DimCellA=DimCellA(ind_select);%dimension names for the scalar variable, after removing singletons
     npxy=npxy(ind_select);
     dimA=[];
     if test_zdimvar%dim_x && dim_y && ~isempty(VarSubIndexA)
-        for icoord=1:numel(SingleCellA)% look for coincidence of dimension with one of the dimensions of the scalar 
-            if strcmp(dimname_z,SingleCellA{icoord})% a singleton dimension
-                errormsg=['the singleton dimension ' dimname_z ' has been selected for z'];
-                return
-            end
+        ind_singleton=find(strcmp(dimname_z,SingleCellA),1);% look for coincidence of dimension with one of the singleton dimensions
+        if ~isempty(ind_singleton)
+             errormsg=['the singleton dimension ' dimname_z ' has been selected for z'];
+             return
         end
-        for icoord=1:numel(DimCellA)% look for coincidence of dimension with one of the dimensions of the scalar 
-             if strcmp(dimname_z,DimCellA{icoord})% a dimension variable
-                 dimA=[dimA icoord];
-                 break
-             end
-        end
+        icoord=find(strcmp(dimname_z,DimCellA),1);% a dimension variable
+        dimA=[dimA icoord];
+%         for icoord=1:numel(DimCellA)% look for coincidence of dimension with one of the dimensions of the scalar 
+%              if strcmp(dimname_z,DimCellA{icoord})% a dimension variable
+%                  dimA=[dimA icoord];
+%                  break
+%              end
+%         end
     end
     if test_ydimvar%dim_x && dim_y && ~isempty(VarSubIndexA)
-        for icoord=1:numel(SingleCellA)% look for coincidence of dimension with one of the dimensions of the scalar 
-            if strcmp(dimname_y,SingleCellA{icoord})% a singleton dimension
-                errormsg=['the singleton dimension ' dimname_y ' has been selected for ordinate'];
-                return
-            end
+        ind_singleton=find(strcmp(dimname_y,SingleCellA),1);% look for coincidence of dimension with one of the singleton dimensions
+        if ~isempty(ind_singleton)
+             errormsg=['the singleton dimension ' dimname_y ' has been selected for ordinate'];
+             return
         end
-        for icoord=1:numel(DimCellA)% look for coincidence of dimension with one of the dimensions of the scalar 
-             if strcmp(dimname_y,DimCellA{icoord})% a dimension variable
-                 dimA=[dimA icoord];
-                 break
-             end
-        end
+        icoord=find(strcmp(dimname_y,DimCellA),1);% a dimension variable
+        dimA=[dimA icoord];
     end
-    if test_xdimvar%dim_x && dim_y && ~isempty(VarSubIndexA)
-        for icoord=1:numel(SingleCellA)% look for coincidence of dimension with one of the dimensions of the scalar
-            if strcmp(dimname_x,SingleCellA{icoord})% a singleton dimension
-                errormsg=['the singleton dimension ' dimname_x ' has been selected for abscissa'];
-                return
-            end
+    if test_xdimvar
+        ind_singleton=find(strcmp(dimname_x,SingleCellA),1);% look for coincidence of dimension with one of the singleton dimensions
+        if ~isempty(ind_singleton)
+             errormsg=['the singleton dimension ' dimname_x ' has been selected for ordinate'];
+             return
         end
-        for icoord=1:numel(DimCellA)% look for coincidence of dimension with one of the dimensions of the scalar 
-             if strcmp(dimname_x,DimCellA{icoord})% a dimension variable
-                 dimA=[dimA icoord];
-                 break
-             end
-        end
+        icoord=find(strcmp(dimname_x,DimCellA),1);% a dimension variable
+        dimA=[dimA icoord];
     end
     dimextra=(1:numel(DimCellA));
     dimextra(dimA)=[]; %list of unselected dimension indices

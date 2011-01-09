@@ -1,4 +1,10 @@
-%'sub_field': combines two input fields 
+%'sub_field': combines two input fields
+%
+% the two fields are subtstracted when of the same nature (scalar or
+% vector), if the coordinates do not coincide, the second field is
+% interpolated on the cooridintes of the first one
+%
+% when scalar and vectors are combined, the fields are just merged in a single matlab structure for common visualisation
 %-----------------------------------------------------------------------
 % function SubData=sub_field(Field,Field_1)
 %
@@ -6,10 +12,8 @@
 % SubData: structure representing the resulting field
 %
 % INPUT: 
-% UvData: main structure UvData associated to the uvmat GUI as 'UserData'
-% Field: cell of Matlab structures representing the input fields
-% 
-%    -- TODO: need to be rationalized --
+% Field: matlab structure representing the first field
+% Field_1:matlab structure representing the second field
 
 function [SubData,errormsg]=sub_field(Field,Field_1)
 test_attr=0;
@@ -76,15 +80,12 @@ if ~isequal(numel(iselect_1),1)
     errormsg='invalid  second input to sub_field: it must  contain a single 2D field cell';
     return
 end
-% VarIndex=CellVarIndex{iselect};
-% VarIndex_1=CellVarIndex_1{iselect_1};
 VarType=VarTypeCell{iselect};
 VarType_1=VarTypeCell_1{iselect_1};
 testX=~isempty(VarType.coord_x)&& ~isempty(VarType.coord_y);%unstructured coordiantes
 testX_1=~isempty(VarType_1.coord_x)&& ~isempty(VarType_1.coord_y);%unstructured coordiantes
 testU=~isempty(VarType.vector_x)&& ~isempty(VarType.vector_y);%vector field
 testU_1=~isempty(VarType_1.vector_x)&& ~isempty(VarType_1.vector_y);%vector field
-% testfalse=~isempty(VarType.errorflag);
 testfalse_1=~isempty(VarType_1.errorflag);
 ivar_C=[VarType.scalar VarType.image VarType.color VarType.ancillary]; %defines index (indices) for the scalar or ancillary fields
 if numel(ivar_C)>1
@@ -100,31 +101,8 @@ end
 %substract two vector fields or two scalars
 if (testU && testU_1) || (~testU && ~testU_1)
    %check coincidence in positions
-   %unstructured coordinates
-   if testX      
-       if testU % vector fields
-            U_1_Name=Field_1.ListVarName{VarType_1.vector_x};
-            V_1_Name=Field_1.ListVarName{VarType_1.vector_y};
-            eval(['vec_U_1=Field_1.' U_1_Name ';']) 
-            eval(['vec_V_1=Field_1.' V_1_Name ';'])
-            nbpoints_x_1=size(vec_U_1,2);
-            nbpoints_y_1=size(vec_U_1,1);
-            vec_U_1=reshape(vec_U_1,nbpoints_x_1*nbpoints_y_1,1);
-            vec_V_1=reshape(vec_V_1,nbpoints_x_1*nbpoints_y_1,1);
-            if testfalse_1
-                vec_U_1=vec_U_1(indsel);
-                vec_V_1=vec_V_1(indsel);
-            end            
-       else %(~testU && ~testU_1)
-           A_1_Name=Field_1.ListVarName{ivar_C_1};
-           eval(['vec_A_1=Field_1.' A_1_Name ';'])   
-           nbpoints_x_1=size(vec_A_1,2);
-           nbpoints_y_1=size(vec_A_1,1);%TODO: use a faster interpolation method for a regular grid (size(x)=2)
-           vec_A_1=reshape(vec_A_1,nbpoints_x_1*nbpoints_y_1,1);
-           if testfalse_1
-                vec_A_1=vec_A_1(indsel);
-           end
-       end
+   %unstructured coordinates for the first field
+   if testX  
        XName=Field.ListVarName{VarType.coord_x};
        YName=Field.ListVarName{VarType.coord_y};
        eval(['vec_X=Field.' XName ';']) 
@@ -151,16 +129,40 @@ if (testU && testU_1) || (~testU && ~testU_1)
            end
            [vec_X_1,vec_Y_1]=meshgrid(x_1,y_1);
        end
-       vec_X_1=reshape(vec_X_1,nbpoints_x_1*nbpoints_y_1,1);
-       vec_Y_1=reshape(vec_Y_1,nbpoints_x_1*nbpoints_y_1,1);
+       vec_X_1=reshape(vec_X_1,[],1);
+       vec_Y_1=reshape(vec_Y_1,[],1);
        if testfalse_1
            FFName_1=Field_1.ListVarName{VarType_1.errorflag};          
            eval(['vec_FF_1=Field_1.' FFName_1 ';']) 
-           vec_FF_1=reshape(vec_FF_1,nbpoints_1,1);
+           vec_FF_1=reshape(vec_FF_1,[],1);
            indsel=find(~vec_FF_1);
            vec_X_1=vec_X_1(indsel);
            vec_Y_1=vec_Y_1(indsel);
        end
+       if testU % vector fields
+            U_1_Name=Field_1.ListVarName{VarType_1.vector_x};
+            V_1_Name=Field_1.ListVarName{VarType_1.vector_y};
+            eval(['vec_U_1=Field_1.' U_1_Name ';']) 
+            eval(['vec_V_1=Field_1.' V_1_Name ';'])
+            nbpoints_x_1=size(vec_U_1,2);
+            nbpoints_y_1=size(vec_U_1,1);
+            vec_U_1=reshape(vec_U_1,nbpoints_x_1*nbpoints_y_1,1);
+            vec_V_1=reshape(vec_V_1,nbpoints_x_1*nbpoints_y_1,1);
+            if testfalse_1
+                vec_U_1=vec_U_1(indsel);
+                vec_V_1=vec_V_1(indsel);
+            end            
+       else %(~testU && ~testU_1)
+           A_1_Name=Field_1.ListVarName{ivar_C_1};
+           eval(['vec_A_1=Field_1.' A_1_Name ';'])   
+           nbpoints_x_1=size(vec_A_1,2);
+           nbpoints_y_1=size(vec_A_1,1);%TODO: use a faster interpolation method for a regular grid (size(x)=2)
+           vec_A_1=reshape(vec_A_1,nbpoints_x_1*nbpoints_y_1,1);
+           if testfalse_1
+                vec_A_1=vec_A_1(indsel);
+           end
+       end
+
        if ~isequal(vec_X_1,vec_X) && ~isequal(vec_Y_1,vec_Y) % if the unstructured positions are not the same
            if testU
                vec_U_1=griddata_uvmat(vec_X_1,vec_Y_1,vec_U_1,vec_X,vec_Y);  %interpolate vectors in the second field
@@ -227,7 +229,7 @@ end
 % merge a vector field and a scalar as second input
 if testU && ~testU_1
     AName_1=Field_1.ListVarName{ivar_C_1};
-    if isfield(Field_1,'VarAttribute') && numel(Field_1.VarAttribute)>=ivar_C_1
+    if isfield(Field_1,'VarAttribute') & numel(Field_1.VarAttribute)>=ivar_C_1
         AAttr=Field_1.VarAttribute{ivar_C_1} ;
     else
         AAttr=[];
@@ -235,16 +237,15 @@ if testU && ~testU_1
     if testX_1 %unstructured coordinate
        XName_1=Field_1.ListVarName{VarType_1.coord_x};
        YName_1=Field_1.ListVarName{VarType_1.coord_y};
-       %SubData.ListVarName=[SubData.ListVarName {XName_1} {YName_1}];
        DimCell=Field_1.VarDimName([VarType_1.coord_x VarType_1.coord_y ]);
        if isfield(Field_1,'VarAttribute') 
            if numel(Field_1.VarAttribute)>=VarType_1.coord_x
-                XAttr=Field_1.VarAttribute{VarType_1.coord_x} ;
+                XAttr=Field_1.VarAttribute{VarType_1.coord_x}; 
            else
                 XAttr=[];
            end
            if numel(Field_1.VarAttribute)>=VarType_1.coord_y
-               YAttr=Field_1.VarAttribute{VarType_1.coord_y} ;
+               YAttr=Field_1.VarAttribute{VarType_1.coord_y}; 
            else
                YAttr=[];
            end
@@ -360,5 +361,4 @@ if ~testU && testU_1
     eval(['SubData.' UName_1_1 '=Field_1.' UName_1 ';'])
     eval(['SubData.' VName_1_1 '=Field_1.' VName_1 ';'])  
 end
-
   
