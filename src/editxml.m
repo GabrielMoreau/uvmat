@@ -329,9 +329,10 @@ end
 if xstest==0  %look for the corresponding schema in the directory PARAM_LINUX.xml or PARAM_WIN.xml
     head_name=get(t,1,'name');
     %Path to shemas:
-    path_uvmat=which('editxml');% check the path detected for source file uvmat
-    path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-    xmlparam=fullfile(path_UVMAT,'PARAM.xml');
+%     path_uvmat=which('editxml');% check the path detected for source file uvmat
+%     path_UVMAT=fileparts(path_uvmat); %path to UVMAT
+%     xmlparam=fullfile(path_UVMAT,'PARAM.xml');
+    xmlparam='PARAM.xml'; %will find PARAM.xml whose path is set in priority
     if exist(xmlparam,'file')
         tparam=xmltree(xmlparam);
         sparam=convert(tparam);
@@ -349,7 +350,7 @@ if xstest==0  %look for the corresponding schema in the directory PARAM_LINUX.xm
            {'*.xsd', '(*.xsd)';
             '*.xsd',  '.xsd files '; ...
             '*.*',  'All Files (*.*)'}, ...
-            'Pick a .xsd schema' ,schemapath); %file browser
+            'Pick a .xsd schema' ,schemafile); %file browser
             if ischar(PathName) && ischar(FileName) && exist(fullfile(PathName,FileName),'file')
                 DataIn.Schema=fullfile(PathName,FileName);
                 xs=xmltree(DataIn.Schema);%open the associated schema file

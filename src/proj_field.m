@@ -1376,7 +1376,6 @@ for icell=1:length(CellVarIndex)
                     Xbound(2)=Coord{NbDim}(1)+DXinit*(max_indx-1);
                     Xbound(1)=Coord{NbDim}(1)+DXinit*(min_indx-1);
                 end 
-                iz_str=':'; %default
                 if NbDim==3
                     DimCell(1)=[]; %suppress z variable
                     DimValue(1)=[];

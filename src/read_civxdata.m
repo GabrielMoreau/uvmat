@@ -60,12 +60,11 @@ end
 VelTypeOut=VelType;%default
 [var,role,units,vel_type_out_cell]=varcivx_generator(FieldNames,VelType);%determine the names of constants and variables to read
 [Field,vardetect,ichoice]=nc2struct(filename,var);
-if isfield(Field,'Txt')
-    return % error in file reading
-end
+% if isfield(Field,'Txt')
+%     return % error in file reading
+% end
 if vardetect(1)==0
      Field.Txt=[ 'requested field not available in ' filename '/' VelType];
-     return
 end
 var_ind=find(vardetect);
 for ivar=1:length(var_ind)
@@ -89,20 +88,6 @@ end
 Field.NbCoord=Field.nb_coord;
 Field.NbDim=Field.nb_dim;
 
-%determine the appropriate constant for time and dt for the PIV pair
-test_civ1=isequal(VelTypeOut,'civ1')||isequal(VelTypeOut,'interp1')||isequal(VelTypeOut,'filter1');
-test_civ2=isequal(VelTypeOut,'civ2')||isequal(VelTypeOut,'interp2')||isequal(VelTypeOut,'filter2');
-if test_civ1
-    Field.Time=double(Field.absolut_time_T0);
-    Field.dt=double(Field.dt);
-elseif test_civ2
-    Field.Time=double(Field.absolut_time_T0_2);
-    Field.dt=double(Field.dt2);
-else
-    Field.Txt='the input file is not civx';
-    display(Field.Txt)
-end
-
 % CivStage
 if isfield(Field,'patch2')&& isequal(Field.patch2,1)
     Field.CivStage=6;
@@ -117,6 +102,30 @@ elseif isfield(Field,'fix')&& isequal(Field.fix,1)
 else
     Field.CivStage=1;
 end 
+
+%determine the appropriate constant for time and dt for the PIV pair
+test_civ1=isequal(VelTypeOut,'civ1')||isequal(VelTypeOut,'interp1')||isequal(VelTypeOut,'filter1');
+test_civ2=isequal(VelTypeOut,'civ2')||isequal(VelTypeOut,'interp2')||isequal(VelTypeOut,'filter2');
+Field.Time=0; %default
+if test_civ1
+    if isfield(Field,'absolut_time_T0')
+        Field.Time=double(Field.absolut_time_T0);
+        Field.dt=double(Field.dt);
+    else
+       Field.Txt='the input file is not civx'; 
+       Field.CivStage=0;
+       Field.dt=0;
+    end
+elseif test_civ2
+    Field.Time=double(Field.absolut_time_T0_2);
+    Field.dt=double(Field.dt2);
+else
+    Field.Txt='the input file is not civx';
+    Field.CivStage=0;
+    Field.dt=0;
+end
+
+
 
 %% rescale fields to pixel coordinates
 if isfield(Field,'pixcmx')

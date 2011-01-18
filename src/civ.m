@@ -1597,16 +1597,15 @@ box_test(3)=get(handles.PATCH1,'Value');
 box_test(4)=get(handles.CIV2,'Value');
 box_test(5)=get(handles.FIX2,'Value');
 box_test(6)=get(handles.PATCH2,'Value');
-index=find(box_test==1);
-if isempty(index)
+index_first=find(box_test==1,1);
+if isempty(index_first)
     msgbox_uvmat('ERROR','no selected operation')
     return
 end
-index_first=min(index);
-index_last=max(index);
+index_last=find(box_test==1,1,'last');
 box_used=box_test(index_first : index_last);
 [box_missing,ind_missing]=min(box_used);
-if isequal(box_missing,0)
+if isequal(box_missing,0); %there is a missing step in the sequence of operations
     msgbox_uvmat('ERROR',['missing' cell2mat(operations(ind_missing))]);
     return
 end
@@ -1639,13 +1638,12 @@ end
 
 %% reinitialise status callback 
 if isfield(handles,'status')
-set(handles.status,'Value',0);%suppress status display
-status_Callback(hObject, eventdata, handles)
+    set(handles.status,'Value',0);%suppress status display
+    status_Callback(hObject, eventdata, handles)
 end
 
 %% set the list of files and check them
 display('checking the files...')
-%compare=get(handles.compare,'Value');%test for usual PIV (compare=1) or displacement (=2) or stereo PIV (=3)
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc]=...
     set_civ_filenames(handles,box_test);
 set(handles.civ,'UserData',filecell);%store for futur use of status callback
@@ -4622,9 +4620,8 @@ box_test(2)=get(handles.FIX1,'Value');
 box_test(3)=get(handles.PATCH1,'Value');
 box_test(4)=get(handles.CIV2,'Value');
 box_test(5)=get(handles.FIX2,'Value');
-box_test(6)=get(handles.PATCH2,'Value')
-find(box_test)
-option_civ=max(find(box_test))
+box_test(6)=get(handles.PATCH2,'Value');
+option_civ=find(box_test,1,'last');%last selected option (non-zero index of box_test)
 filecell=get(handles.civ,'UserData');
 if ~isfield(filecell,'nc')
     filecell=set_civ_filenames(handles,box_test);%determine the list of output files expected from the GUI status

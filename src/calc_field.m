@@ -66,11 +66,13 @@ else
     RoleList={};
     units_cell={};
     for ilist=1:length(FieldName)
-        [VarName,Value,Role,units]=feval(FieldName{ilist},DataIn);%calculate field with appropriate function named FieldName{ilist}
-        ListVarName=[ListVarName VarName];
-        ValueList=[ValueList Value];
-        RoleList=[RoleList Role];
-        units_cell=[units_cell units];
+        if ~isempty(FieldName{ilist})
+            [VarName,Value,Role,units]=feval(FieldName{ilist},DataIn);%calculate field with appropriate function named FieldName{ilist}
+            ListVarName=[ListVarName VarName];
+            ValueList=[ValueList Value];
+            RoleList=[RoleList Role];
+            units_cell=[units_cell units];
+        end
     end
     %erase previous data (except coordinates)
     for ivar=nbcoord+1:length(DataOut.ListVarName)

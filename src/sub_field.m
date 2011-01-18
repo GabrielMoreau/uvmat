@@ -288,6 +288,13 @@ if testU && ~testU_1
     end
     SubData.ListVarName=[SubData.ListVarName {XName_1_1} {YName_1_1} {AName_1_1}];
     DimCell=[DimCell Field_1.VarDimName(ivar_C_1)]; %(TODO: check for dimension names)
+    if testX_1
+        for icell=1:numel(DimCell)
+            if isequal(DimCell{icell}{1},SubData.VarDimName{1}{1})
+                DimCell{icell}{1}=[DimCell{icell}{1} '_1'];
+            end
+        end
+    end
     SubData.VarDimName=[SubData.VarDimName DimCell];
     if isfield(Field_1,'VarAttribute')
         SubData.VarAttribute=[SubData.VarAttribute {AAttr}];

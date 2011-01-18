@@ -425,7 +425,7 @@ switch ObjectStyle
         set(handles.YMax,'Visible','on')
         set(handles.XObject,'TooltipString',['XObject:  x coordinate of the axis origin for the ' ObjectStyle])
         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the axis origin for the ' ObjectStyle])
-        set(handles.ZMax,'TooltipString',['ZMax: range of projection normal to the plane'])
+        set(handles.ZMax,'TooltipString','ZMax: range of projection normal to the plane')
         if test3D
             set(handles.Theta,'Visible','on')
             set(handles.Psi,'Visible','on')
@@ -732,7 +732,7 @@ ListObject=get(hhuvmat.list_object_1,'String');%position in the objet list
 IndexObj_1=get(hhuvmat.list_object_1,'Value');
 if isequal(get(hhuvmat.list_object_2,'Visible'),'on')
     IndexObj_2=get(hhuvmat.list_object_2,'Value');
-    List2=get(hhuvmat.list_object_2,'String')
+    List2=get(hhuvmat.list_object_2,'String');
     if IndexObj_2==length(List2)
         IndexObj_2=[];% '...' selected
     end
@@ -802,7 +802,7 @@ if testnew
     set(hhuvmat.list_object_2,'Value',IndexObj)
     ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
     ObjectData.DisplayHandle_view_field=[];
-elseif ~isfield(UvData.Object{IndexObj},'DisplayHandle_uvmat')% save the previous object graph handles
+elseif isfield(UvData.Object{IndexObj},'DisplayHandle_uvmat')% save the previous object graph handles
     ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj}.DisplayHandle_uvmat;
     ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj}.DisplayHandle_view_field;
 else

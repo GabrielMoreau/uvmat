@@ -44,11 +44,11 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes just before get_field is made visible.
-function get_field_OpeningFcn(hObject, eventdata, handles,filename,Field,haxes)
+function get_field_OpeningFcn(hObject, eventdata, handles,filename,multiple)
 %------------------------------------------------------------------------
-global nb_builtin
+global nb_builtin % nbre of functions to include by default in the menu of  functions called by RUN
 
-%% look at the existing figues in the work space
+%% look at the existing figures in the work space
 browse_fig(handles.list_fig)
 
 %% Choose default command line output for get_field
@@ -60,8 +60,9 @@ guidata(hObject, handles);
 %% activate the mouse action function: visualise the current field on work space by right click action
 set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles})
 
-%% prepare the list of builtin fcts and set their paths
-menu_str={'PLOT';'FFT';'filter_band';'histogram'}; %list of functions included by default in 'get_field.m'
+%% prepare the list of RUN fcts and set their paths
+% functions included by default in 'get_field.m
+menu_str={'PLOT';'FFT';'filter_band';'histogram'}; 
 nb_builtin=numel(menu_str);
 path_uvmat=fileparts(which('uvmat'));%path of the function 'uvmat'
 addpath(fullfile(path_uvmat,'get_field'))
@@ -77,9 +78,10 @@ for ilist=1:length(menu_str)
 end
 rmpath(fullfile(path_uvmat,'get_field'))
 dir_perso=prefdir;
+
+% look for functions previously used (names and paths saved in the personal file uvmat_perso.mat):
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
 if exist(profil_perso,'file')
-    % menu={'RUN';'raw2phys';'histogram';'FFT';'peaklocking'};
       h=load (profil_perso);
      if isfield(h,'get_field_fct') && iscell(h.get_field_fct)
          for ilist=1:length(h.get_field_fct)
@@ -98,6 +100,7 @@ if exist(profil_perso,'file')
          end
      end
 end
+
 menu_str=menu_str(testexist==1);%=menu_str(testexist~=0)
 fct_handle=fct_handle(testexist==1);
 menu_str=[menu_str;{'more...'}];
@@ -109,17 +112,16 @@ set(handles.ACTION,'Value',1)% PLOT option selected
 %% settings for 'slave' mode, called by uvamt, or 'master' mode
 if exist('filename','var') && ischar(filename) %transfer input file name in slave mode
     set(handles.inputfile,'String',filename)% prefill the input file name 
-    set(handles.inputfile,'Enable','off')% desactivate the input file edit box   
-  %  set(handles.list_fig,'Value',2)% plotting axes =uvmat selected
-  %  set(handles.list_fig,'Visible','off')% 
-    set(handles.RUN,'String','REFRESH')% passive mode, get_field used to define the field for uvamt
-    set(handles.MenuOpen,'Visible','off')
-    set(handles.MenuExport,'Visible','off')
-    set(handles.MenuHelp,'Visible','off')
-    inputfile_Callback(hObject, eventdata, handles)
+    Field=nc2struct(filename);% reads the whole field
+    if isfield(Field,'Txt')
+        msgbox_uvmat('ERROR',Field.Txt)
+    else
+        set(handles.figure1,'UserData',Field);
+        Field_input(eventdata,handles,Field);
+    end
 else  %master mode
     set(handles.inputfile,'String','')   
-    set(handles.RUN,'String','RUN')%
+%     set(handles.RUN,'String','RUN')%
     % load the list of previously browsed files for the upper bar menu Open 
     dir_perso=prefdir;
     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');%
@@ -142,17 +144,16 @@ else  %master mode
         end
     end
 end
-%transfer input field  in slave mode
-if exist('Field','var') && isstruct(Field)
-        Field_input(eventdata,handles,Field)
-%         if exist('haxes','var')
-%             'TESTget'
-%             get(haxes,'Tag')
-%             Field.PlotAxes=haxes;
-%         end
-    set(hObject,'UserData',Field);
-end
 
+%% remove already opened get_field GUI with name get_field
+if ~(exist('multiple','var') && isequal(multiple,1)) %set single occurrence
+    hget_field=findobj(allchild(0),'Name','get_field'); %hget_field(1)= new GUI
+    if length(hget_field)>1
+        delete(hget_field(2))
+    end
+else
+    set(hObject,'name','get_field_1')
+end
 
 
 %------------------------------------------------------------------------
@@ -162,11 +163,7 @@ function varargout = get_field_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 %------------------------------------------------------------------------
-% --- Executes on button press in browse.
-function browse_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-
-%------------------------------------------------------------------------
+% --- Executes when a new input file name is introduced.
 function inputfile_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 inputfile=get(handles.inputfile,'String');
@@ -177,8 +174,13 @@ else
 set(handles.figure1,'UserData',Field);
 Field_input(eventdata,handles,Field);
 end
+huvmat=findobj(allchild(0),'tag','uvmat');
+if ~isempty(huvmat)
+    delete(huvmat)%delete uvmat for plot reinitialisation 
+end
 
 %------------------------------------------------------------------------
+% --- update the display when a new field is introduced.
 function Field_input(eventdata,handles,Field)
 %------------------------------------------------------------------------
 if isfield(Field,'ListDimName')&&~isempty(Field.ListDimName)
@@ -255,11 +257,19 @@ if maxdim>=2
                 set(handles.coord_x_scalar,'Value',VarType{imax}.coord_x+1)
                 set(handles.coord_y_scalar,'Value',VarType{imax}.coord_y+1)
             end
+            if ~isempty(VarType{imax}.coord_z) 
+                set(handles.coord_z_scalar,'Value',VarType{imax}.coord_z+1)
+            end
             if ~isempty(VarType{imax}.coord)
-                set(handles.coord_y_scalar,'Value',VarType{imax}.coord(1)+1)
-                if numel(VarType{imax}.coord)>=2
-                    set(handles.coord_x_scalar,'Value',VarType{imax}.coord(2)+1)
+                if numel(VarType{imax}.coord)>=maxdim-2
+                    set(handles.coord_z_scalar,'Value',VarType{imax}.coord(maxdim-2)+1)
                 end
+                if numel(VarType{imax}.coord)>=maxdim-1
+                    set(handles.coord_y_scalar,'Value',VarType{imax}.coord(maxdim-1)+1)
+                end
+                if numel(VarType{imax}.coord)>=maxdim
+                    set(handles.coord_x_scalar,'Value',VarType{imax}.coord(maxdim)+1)
+                end     
             end
         end
     end
@@ -271,11 +281,8 @@ end
 %------------------------------------------------------------------------
 function ordinate_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-%update_field(hObject, eventdata, handles)
-% A REVOIR
 hselect_field=get(handles.inputfile,'parent');
 Field=get(hselect_field,'UserData');
-% xindex=get(handles.abscissa,'Value');
 list=get(handles.ordinate,'String');
 yindex=get(handles.ordinate,'Value');
 yindex=name2index(list{yindex(1)},Field.ListVarName);
@@ -297,9 +304,6 @@ set(handles.abscissa,'Value',min(val,2));
 coord_x_index=VarType{cell_select}.coord;
 coord_x_index=coord_x_index(coord_x_index~=0);
 set(handles.abscissa,'String',[{''}; (Field.ListVarName(coord_x_index))'; (Field.ListVarName(VarIndex))'])
-% Field.VarIndex.y=yindex;
-% set(hselect_field,'UserData',Field);
-%update_UserData(handles)
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in abscissa.
@@ -793,18 +797,27 @@ set(hselect_field,'UserData',Field)
 
 %---------------------------------------------------------
 % --- Executes on button press in RUN.
+
 function RUN_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
 figcell=get(handles.list_fig,'String');
 index=get(handles.list_fig,'value');
 figstring=figcell{index};
+
+% plot requested in uvmat
 if isequal(figstring,'uvmat')
+    inputfile=get(handles.inputfile,'String');
     huvmat=findobj(allchild(0),'tag','uvmat');
-    hhuvmat=guidata(huvmat);
-    uvmat('run0_Callback',hObject,eventdata,hhuvmat); % display field in uvmat
+    if isempty(huvmat)
+        inputfile=get(handles.inputfile,'String');
+        uvmat(inputfile)
+    else
+        hhuvmat=guidata(huvmat);
+        uvmat('run0_Callback',hObject,eventdata,hhuvmat); % display field in uvmat
+    end
+   
+% other kind of plot
 else
-    huvmat=findobj(allchild(0),'tag','uvmat');
-    delete(huvmat)% 
     index=get(handles.ACTION,'Value');
     list_func=get(handles.ACTION,'UserData');
     h_fun=list_func{index};
@@ -1076,9 +1089,6 @@ end
 set(handles.attributes,'Value',1);% select the first item
 set(handles.attributes,'String',Tabchar);
 
-% list_var=get(handles.dimensions,'String');
-% val=get(handles.dimensions,'Value');
-
 % update dimensions;
 if isfield(Field,'ListDimName')
     Tabdim={};%default
@@ -1108,28 +1118,21 @@ if isfield(Field,'ListDimName')
     set(handles.dimensions,'String',Tabchar)  
 end  
 
+%------------------------------------------------------------------------
 % --- Executes on button press in check_1Dplot.
 function check_1Dplot_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 val=get(handles.check_1Dplot,'Value');
 if isequal(val,0)
     set(handles.Panel1Dplot,'Visible','off')
-%      set(handles.scalar,'Visible','off')
-%     set(handles.ordinate,'Max',2.0)%allow multiple ordinate input option
-%     if isequal(get(handles.check_vector,'Value'),0);
-%         set(handles.coord_z_vectors_scalar,'Visible','off')
-%     end
 else
     set(handles.Panel1Dplot,'Visible','on')
-%     set(handles.scalar,'Visible','on')
-%     val=get(handles.ordinate,'Value');
-%     val=val(1);
-%     set(handles.ordinate,'Value',val);%suppress multiple ordinates
-%     set(handles.ordinate,'Max',1.0);%suppress multiple ordinate input option
-%       set(handles.coord_z_vectors_scalar,'Visible','on')
 end
 
+%------------------------------------------------------------------------
 % --- Executes on button press in check_scalar.
 function check_scalar_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 val=get(handles.check_scalar,'Value');
 if isequal(val,0)
     set(handles.PanelScalar,'Visible','off')
@@ -1137,9 +1140,10 @@ else
     set(handles.PanelScalar,'Visible','on')
 end
 
-%---------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in check_vector.
 function check_vector_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 val=get(handles.check_vector,'Value');
 if isequal(val,0)
     set(handles.PanelVectors,'Visible','off')
@@ -1147,8 +1151,9 @@ else
     set(handles.PanelVectors,'Visible','on')
 end
 
-%-----------------------------
+%------------------------------------------------------------------------
 function mouse_up_gui(ggg,eventdata,handles)
+%------------------------------------------------------------------------
 if isequal(get(ggg,'SelectionType'),'alt') 
     message='';  
     global CurData
@@ -1163,8 +1168,9 @@ if isequal(get(ggg,'SelectionType'),'alt')
     evalin('base','CurData') %display CurData in the workspace
 end
 
-%---------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on selection change in ACTION.
+%------------------------------------------------------------------------
 function ACTION_Callback(hObject, eventdata, handles)
 global nb_builtin
 list_ACTION=get(handles.ACTION,'String');% list menu fields
@@ -1174,11 +1180,6 @@ list_func_handles=get(handles.ACTION,'UserData');% get list of function handles 
 ff=functions(list_func_handles{end});
 % add a new function to the menu
 if isequal(ACTION,'more...')
-%     pathfct=fileparts(path_get_field);
-%     browse_name=fullfile(path_get_field,'FIELD_FCT');
-%     if length(list_path)>nb_builtin
-%         browse_name=list_path{end};% initialize browser with  the path of the last introduced function
-%     end
     [FileName, PathName] = uigetfile( ...
        {'*.m', ' (*.m)';
         '*.m',  '.m files '; ...
@@ -1299,7 +1300,7 @@ for ifig=1:length(hh)  %look for all existing figures
         end
      end
 end
-list=['view_field';list];
+list=['uvmat';list];
 set(menu_handle,'Value',1)
 set(menu_handle,'String',list)
 
