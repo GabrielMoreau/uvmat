@@ -119,6 +119,7 @@ else
     %% case of image
     ParamOut.FieldName='image';
     ParamOut.FieldList={'image'};
+    Npz=1;%default
     switch FileType
         case 'movie'
             try
@@ -150,10 +151,7 @@ else
             A=imread(ObjectName);
             FieldName='image';
     end
-    Npz=1;%default
     npxy=size(A);
-    ParamOut.Npx=npxy(2);% display image size on the interface
-    ParamOut.Npy=npxy(1);
     Rangx=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
     Rangy=[npxy(1)-0.5 0.5]; %
     Field.NbDim=2;%default
@@ -164,6 +162,8 @@ else
             Field.VarDimName={'AY','AX',{'AY','AX','rgb'}}; %
             Field.AY=[npxy(1)-0.5 0.5];
             Field.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
+            ParamOut.Npx=npxy(2);% display image size on the interface
+            ParamOut.Npy=npxy(1);
         else
             Field.NbDim=3;
             Field.ListVarName=['AZ' Field.ListVarName];
@@ -171,11 +171,15 @@ else
             Field.AZ=[npxy(1)-0.5 0.5];
             Field.AY=[npxy(2)-0.5 0.5];
             Field.AX=[0.5 npxy(3)-0.5]; % coordinates of the first and last pixel centers
+            ParamOut.Npx=npxy(3);% display image size on the interface
+            ParamOut.Npy=npxy(2);
         end
     else
         Field.VarDimName={'AY','AX',{'AY','AX'}}; %
         Field.AY=[npxy(1)-0.5 0.5];
         Field.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
+        ParamOut.Npx=npxy(2);% display image size on the interface
+        ParamOut.Npy=npxy(1);
     end
     Field.A=A;
     Field.CoordUnit='pixel'; %used for mouse_motion

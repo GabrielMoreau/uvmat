@@ -4638,9 +4638,10 @@ hfig=findobj(allchild(0),'name','civ_status');
 if isempty(hfig)
     hfig=figure;
     set(hfig,'name','civ_status')
-    hlist=uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.05 0.9 0.75], 'Callback', @open_view_field,'tag','list');
+    hlist=uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', @open_view_field,'tag','list');
     uicontrol('Style','listbox','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','msgbox');
     uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
+    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','OK','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@close_GUI);
     BarPosition=[0.05 0.81 0.01 0.05];
     hwaitbar=uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
 end
@@ -4735,4 +4736,8 @@ function open_view_field(hObject, eventdata)
         set(gcbo,'Value',1)
       end
 
-
+%-------------------------------------------------------------------   
+% call 'view_field.fig' to display the selected field
+function close_GUI(hObject, eventdata)
+%-------------------------------------------------------------------
+     delete(gcbf)

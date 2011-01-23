@@ -743,14 +743,11 @@ testnew=0;
 PlotHandles=get_plot_handles(hhuvmat);
 projview='view_field';%default
 if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose projection is viewed in the uvmat frame
-%    ObjectData.HandlesDisplay=hhuvmat.axes3;
-%     Object_set{iobj}.DisplayHandle_view_field
     IndexObj=IndexObj_1;
     projview='uvmat';
      plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
 elseif ~isempty(IndexObj_2) && IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field  
     IndexObj=IndexObj_2;
-%     projview='view_field';
 else %new object 
     testnew=1;
     IndexObj=numel(ListObject)+1;
@@ -758,7 +755,6 @@ else %new object
     if ~isempty(hview_field)
         PlotHandles=guidata(hview_field);
         plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
-%         ObjectData.HandlesDisplay=PlotHandles.axes3;%handle of axes3 in view_field
     end
 end
 if strcmp(projview,'view_field')
@@ -802,12 +798,17 @@ if testnew
     set(hhuvmat.list_object_2,'Value',IndexObj)
     ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
     ObjectData.DisplayHandle_view_field=[];
-elseif isfield(UvData.Object{IndexObj},'DisplayHandle_uvmat')% save the previous object graph handles
-    ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj}.DisplayHandle_uvmat;
-    ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj}.DisplayHandle_view_field;
 else
-    ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
-    ObjectData.DisplayHandle_view_field=[];
+    if isfield(UvData.Object{IndexObj},'DisplayHandle_uvmat')% save the previous object graph handles
+        ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj}.DisplayHandle_uvmat;
+    else
+        ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;%there is no object handle, than the axes handles is used as input
+    end
+    if isfield(UvData.Object{IndexObj},'DisplayHandle_view_field')% save the previous object graph handles
+        ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj}.DisplayHandle_view_field;
+    else
+        ObjectData.DisplayHandle_view_field=[];
+    end
 end
 UvData.Object{IndexObj}=ObjectData;%update the current object properties
 UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
