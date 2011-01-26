@@ -1723,18 +1723,11 @@ else
             sparam.Civ2Bin=fullfile(path_UVMAT,sparam.Civ2Bin);
         end
     end
-    %test_interp=get(handles.test_interp,'Value');
-
     if  isfield(sparam,'PatchBin')
         if ~exist(sparam.PatchBin,'file')
             sparam.PatchBin=fullfile(path_UVMAT,sparam.PatchBin);
         end
     end
-    % if test_interp && isfield(sparam,'PatchNewBin')
-    %     if ~exist(sparam.PatchNewBin,'file')
-    %          sparam.PatchNewBin=fullfile(path_UVMAT,sparam.PatchNewBin);
-    %     end
-    % end
     if isfield(sparam,'FixBin')
         if ~exist(sparam.FixBin,'file')
             sparam.FixBin=fullfile(path_UVMAT,sparam.FixBin);
@@ -1745,17 +1738,11 @@ if batch
     if isfield(sparam,'BatchMode')
         batch_mode=sparam.BatchMode;
     end
-else
-%     MaxCivProcesses=50;
-%     if isfield(sparam,'MaxCivProcesses')
-%         MaxCivProcesses=str2double(sparam.MaxCivProcesses);
-%     end
 end
 
 
 %% get civ1 parameters:
 display('files OK, processing...')
-%get civ parameters
 if box_test(1)==1
     par_civ1=read_param_civ1(handles,filecell.ima1.civ1{1,1});
 end
@@ -1862,7 +1849,6 @@ for ifile=1:nbfield
         i_cmd=0;
         cmd='';
         if isunix % check: necessaire aussi en RUN?
-            %fid=fopen([filename '.cmx'],'w')
             cmd='#!/bin/bash \n';
             cmd=[cmd '#$ -cwd \n'];
             cmd=[cmd 'hostname && date \n'];
@@ -1873,12 +1859,9 @@ for ifile=1:nbfield
             civAllCmd='';
             civAllxml=set(civAllxml,1,'name','CivDoc');
         end
-        %filename_cur=filecell.nc.civ1{ifile,j};%output netcdf file
         [Rootbat,Filebat]=fileparts(filecell.nc.civ1{ifile,j});%output netcdf file (without extention)
         flname=fullfile(Rootbat,Filebat);
-        %filename_cmx(end-1:end+6)='civ1.cmx';%name of cmx file
         if batch
-%             [Rootbat,Filebat,extbat]=fileparts(filename_cmx);
             filename_bat=fullfile(Rootbat,['job_' Filebat]);
          else
             filename_bat=flname;
@@ -1889,7 +1872,6 @@ for ifile=1:nbfield
         if box_test(1)==1
             par_civ1.filename_ima_a=filecell.ima1.civ1{ifile,j};
             par_civ1.filename_ima_b=filecell.ima2.civ1{ifile,j};
-            %namelog=[fullfile(Rootbat,Filebat) '.civ1.log'];
             par_civ1.Dt=num2str(time(num2_civ1(ifile),num_b_civ1(j))-time(num1_civ1(ifile),num_a_civ1(j)));
             par_civ1.T0=num2str((time(num2_civ1(ifile),num_b_civ1(j))+time(num1_civ1(ifile),num_a_civ1(j)))/2);
             par_civ1.term_a=num2stra(num_a_civ1(j),nom_type_nc);%UTILITE?
@@ -1942,7 +1924,13 @@ for ifile=1:nbfield
             %
             i_cmd=i_cmd+1;
             if isequal(civAll,0)
-                cmd=[cmd CIV1_CMD(fullfile(Rootbat,Filebat),'',par_civ1,handles,sparam) '\n'];
+                if(isunix)
+                     cmd=[cmd 'cp -f ' flname '.civ1.cmx ' flname '.cmx\n'];
+                else
+                    flname=regexprep(flname,'\\','\\\\');
+                    cmd=[cmd 'copy /Y "' flname '.civ1.cmx" "' flname '.cmx"\n'];
+                end
+                cmd=[cmd CIV1_CMD(fullfile(Rootbat,Filebat),'',par_civ1,handles,sparam) '\n']
             else
                 civAllCmd=[civAllCmd ' civ1 '];
                 str=CIV1_CMD_Unified(fullfile(Rootbat,Filebat),'',par_civ1);
@@ -2053,16 +2041,12 @@ for ifile=1:nbfield
         if box_test(4)==1 || box_test(5)==1 || box_test(6)==1
             filename_cmx=filecell.nc.civ2{ifile,j};%output netcdf file
             filename_cmx([end-1:end+1])=[ 'cmx'];%name of cmx file
-%             filename_cmx=[filename_cmx 'x'];
         end
         
         if box_test(4)==1
             par_civ2.filename_ima_a=filecell.ima1.civ2{ifile,j};
-            %par_civ2.filename_ima_a([end-3:end])=[];%remove .png extension
             par_civ2.filename_ima_b=filecell.ima2.civ2{ifile,j};
-            %par_civ2.filename_ima_b([end-3:end])=[];%remove .png extension
             [Rootbat,Filebat]=fileparts(filecell.nc.civ2{ifile,j});%output netcdf file (without extention)
-            %namelog=[fullfile(Rootbat,Filebat) '.civ2.log'];
             par_civ2.Dt=num2str(time(num2_civ2(ifile),num_b_civ2(j))-time(num1_civ2(ifile),num_a_civ2(j)));
             par_civ2.T0=num2str((time(num2_civ1(ifile),num_b_civ2(j))+time(num1_civ2(ifile),num_a_civ2(j)))/2);
             par_civ2.term_a=num2stra(num_a_civ2(j),nom_type_nc);
@@ -2114,7 +2098,6 @@ for ifile=1:nbfield
                     par_civ2.gridflag='n';
                 end
             end
-            %endTESTgrid
             i_cmd=i_cmd+1;
             flname=fullfile(Rootbat,Filebat);
             cmd_CIV2=CIV2_CMD(flname,[],par_civ2,sparam);%creates the cmx file [fullfile(Rootbat,Filebat) '.civ2.cmx]
@@ -2233,7 +2216,6 @@ for ifile=1:nbfield
         end
         if isequal(civAll,1)
             save(civAllxml,[filename_cmx([1:end-4]) '.xml']);
-            %cmd=char({cmd;[CivBin ' -f ' [filename_cmx([1:end-4]) '.xml'] ' ' civAllCmd]});
             cmd=[cmd CivBin ' -f ' filename_cmx(1:end-4) '.xml '  civAllCmd  '\n'];
         end
         % create the .bat file:
@@ -2244,12 +2226,10 @@ for ifile=1:nbfield
         end
         fprintf(fid,cmd);
         fclose(fid);
-        %dlmwrite(filename_bat,cmd,'');%write commands in filename_bat
         if batch
             switch batch_mode
                 case 'sge'
                     pvalue=num2str((1-ind_answer)*500);
-                    %namelog=[filename_bat '.patch.log'];
                     display(['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
                     eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
             end
@@ -2257,7 +2237,6 @@ for ifile=1:nbfield
             %% to lauch the jobs locally :
             if(isunix)
                 cmd_str=['. ' filename_bat];
-                % cmd_str=['!at -qb now -f ' filename_bat ' &']; %ou at -qb now -f bad idea...
             else %case of Windows
                 cmd_str=['@call "' regexprep(filename_bat,'\\','\\\\') '"'];
             end

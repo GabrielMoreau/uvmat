@@ -2158,7 +2158,11 @@ if ~isempty(filename)
     ParamIn.FieldName=FieldName;
     ParamIn.VelType=VelType;
     ParamIn.GUIName='get_field';
-    [Field{1},ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn);
+    [Field{1},ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num_i1);
+    if ~isempty(errormsg)
+        errormsg=['error in reading ' filename ': ' errormsg];
+        return
+    end
     if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
         set(handles.npx,'String',num2str(ParamOut.Npx));% display image size on the interface
         set(handles.npy,'String',num2str(ParamOut.Npy));
@@ -2243,7 +2247,11 @@ if ~isempty(filename_1)
             ParamIn.FieldName=FieldName_1;
             ParamIn.VelType=VelType_1;
             ParamIn.GUIName='get_field_1';
-            [Field{2},ParamOut_1,errormsg] = read_field(Name,FileType_1,ParamIn);         
+            [Field{2},ParamOut_1,errormsg] = read_field(Name,FileType_1,ParamIn,num_i1);
+            if ~isempty(errormsg)
+                errormsg=['error in reading ' filename_1 ': ' errormsg];
+                return
+            end
             UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
         end
     end
@@ -4247,6 +4255,10 @@ if ischar(list_str) || strcmp(list_str{IndexObj},'...')
     hview_field=findobj(allchild(0),'Tag','view_field');
     if ~isempty(hview_field)
         delete(hview_field)
+    end
+    hset_object=findobj(allchild(0),'Tag','set_object');
+    if ~isempty(hset_object)
+        delete(hset_object)
     end
 else
     update_object(handles,IndexObj,2,list_str{IndexObj})

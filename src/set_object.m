@@ -83,13 +83,7 @@ if ~exist('ZBound','var')
     ZBound=0; %default 
 end
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function (allow action on uvmat when set_object is in front)
-%set(handles.MenuCoord,'ListboxTop',1)
-% if ~exist('PlotHandles','var')
-%      PlotHandles=[];
-% end
 enable_plot=0;%default: does not allow plot of object and projection
-% SetData.PlotHandles=PlotHandles;
-% set(hObject,'UserData',SetData)
 
 % fill the interface as set in the input data:
 if exist('data','var') 
@@ -98,7 +92,6 @@ if exist('data','var')
     end
     if isfield(data,'Name')
         set(handles.TITLE,'String',data.Name)
-%         set(hObject,'name',data.Name)
     end
     if ~isfield(data,'NbDim')||~isequal(data.NbDim,3)%2D case
         set(handles.ZObject,'Visible','off')
@@ -124,7 +117,7 @@ if exist('data','var')
     end
     ObjectStyle_Callback(hObject, eventdata, handles)
     if isfield(data,'ProjMenu')
-        set(handles.ProjMode,'String',data.ProjMenu);
+        set(handles.ProjMode,'String',data.ProjMenu);%overset the standard menu
     end
     if isfield(data,'ProjMode')
         menu=get(handles.ProjMode,'String');
@@ -243,13 +236,6 @@ if exist('data','var')
     if isfield(data,'CoordUnit')
         set(handles.CoordUnit,'String',data.CoordUnit)
     end
-%     if isfield(data,'CoordType')&& isequal(data.CoordType,'px')
-% %         if isequal(data.CoordType,'phys')
-% %             set(handles.MenuCoord,'Value',1)
-% %         elseif isequal(data.CoordType,'px')
-%              set(handles.MenuCoord,'Value',2)
-% %         end
-%     end
 end
 if enable_plot
    set(handles.PLOT,'enable','on')
@@ -266,13 +252,10 @@ if isfield(UvData,'SetObjectOrigin')
     set(hObject,'Position',pos_set_object)
 end
 
+%------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = set_object_OutputFcn(hObject, eventdata, handles)
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+%------------------------------------------------------------------------
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 varargout{2}=handles;
@@ -280,12 +263,12 @@ varargout{2}=handles;
 %------------------------------------------------------------------------
 % --- Executes on selection change in ObjectStyle.
 function ObjectStyle_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 style_prev=get(handles.ObjectStyle,'UserData');%previous object style
 str=get(handles.ObjectStyle,'String');
 val=get(handles.ObjectStyle,'Value');
 style=str{val};
 % make correspondance between different object styles
-% if ~isequal(str{val},style_prev)
 Xcolumn=get(handles.XObject,'String');
 Ycolumn=get(handles.YObject,'String');
 if ischar(Xcolumn)
@@ -332,7 +315,7 @@ elseif strcmp(style,'rectangle')|| strcmp(style,'ellipse')
      set(handles.YObject,'String',y_new)
      set(handles.ZObject,'String',z_new)
 end
-% end
+
 switch style
     case {'points','line','polyline','plane'}
         menu_proj={'projection';'interp';'filter';'none'}; 
@@ -541,19 +524,6 @@ if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
  if ~isfield(s,'ProjMode')
      s.ProjMode='none';
  end
-%Display title
-% title=set_title(s.Style,s.ProjMode);%update the title
-% if ~isempty(huvmat)
-%     hhuvmat=guidata(huvmat);
-% end
-% menu=get(handles.TITLE,'String');
-% for iline=1:length(menu)
-%      if isequal(menu{iline},title)
-%          set(handles.TITLE,'Value',iline)
-%          break
-%      end
-% end
-%TITLE_Callback(hObject, eventdata, handles)
 teststyle=0;
 
 switch s.Style
@@ -584,15 +554,6 @@ for iline=1:length(menu_proj)
 end
 
 ProjMode_Callback(hObject, eventdata, handles);%visualize the appropriate edit boxes
-% if isfield(s,'CoordType')
-%     if isequal(s.CoordType,'phys')
-%         set(handles.MenuCoord,'Value',1)
-%     elseif isequal(s.CoordType,'px')
-%         set(handles.MenuCoord,'Value',2)
-%     else
-%         warndlg('unknown CoordType (px or phys) in set_object.m')
-%     end
-% end
 if isfield(s,'XMax')
     set(handles.XMax,'String',s.XMax)
 end

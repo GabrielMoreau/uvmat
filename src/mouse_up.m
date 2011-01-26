@@ -115,6 +115,10 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     set(hh_set_object.XObject,'String',num2str(ObjectData.Coord(:,1),4)); 
     set(hh_set_object.YObject,'String',num2str(ObjectData.Coord(:,2),4)); 
     set(hh_set_object.ZObject,'String',num2str(ObjectData.Coord(:,3),4));
+    if strcmp(ObjectData.Style,'rectangle')||strcmp(ObjectData.Style,'ellipse')
+        set(hh_set_object.XMax,'String',num2str(ObjectData.RangeX,4));
+        set(hh_set_object.YMax,'String',num2str(ObjectData.RangeY,4));
+    end
     if NbDefPoint<=2 || isequal(get(currentfig,'SelectionType'),'alt') ||...
               strcmp(AxeData.Drawing,'translate') || strcmp(AxeData.Drawing,'deform');%stop drawing
         AxeData.CurrentOrigin=[]; %suppress the current origin

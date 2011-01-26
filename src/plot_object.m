@@ -46,7 +46,7 @@ if ~isfield(ProjObject,'Style')
 elseif isequal(ProjObject.Style,'plane')
     ObjectData=ObjectDataIn;% TODO: modify take into account rotation of axis
 else
-    return % no object representation yet available
+    return % object representation only  available in a plane
 end
 if ~isfield(ObjectData,'Style')||isempty(ObjectData.Style)||~ischar(ObjectData.Style)
     msgbox_uvmat('ERROR','undefined ObjectData.Style in plot_object.m')

@@ -26,7 +26,7 @@
 %     .VelType: type of velocity data ('civ1', 'filter1', 'civ2'...)
 %     .ColorVar: variable used for vector color
 %     .Npx, .Npy: nbre of pixels along x and y (used for .vol input files)
-function [Field,ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn)
+function [Field,ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num)
 Field=[];
 ParamOut=[];
 errormsg='';
@@ -123,7 +123,7 @@ else
     switch FileType
         case 'movie'
             try
-                A=read(ObjectName,num_i1);
+                A=read(ObjectName,num);
                 FieldName='image';
             catch
                 errormsg=lasterr;
@@ -131,7 +131,7 @@ else
             end
         case 'avi'
             try
-                mov=aviread(ObjectName,num_i1);
+                mov=aviread(ObjectName,num);
             catch
                 errormsg=lasterr;
                 return
@@ -145,7 +145,7 @@ else
             A=permute(A,[3 2 1]);
             FieldName='image';
         case 'multimage'
-            A=imread(ObjectName,num_i1);
+            A=imread(ObjectName,num);
             FieldName='image';
         case 'image'
             A=imread(ObjectName);
@@ -184,6 +184,5 @@ else
     Field.A=A;
     Field.CoordUnit='pixel'; %used for mouse_motion
 end
-
 
 
