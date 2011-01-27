@@ -102,8 +102,8 @@ if strcmp(option,'*') || strcmp(option,'Camera')
                     s.Time=[s.Time;Time_val];
                 else
                     for kblock=1:NbDtk+1
-                        Time_val=Time_val+(kblock-1)*Dtk;
-                        s.Time=[s.Time;Time_val];
+                        Time_val_k=Time_val+(kblock-1)*Dtk;
+                        s.Time=[s.Time;Time_val_k];
                     end
                 end
             end

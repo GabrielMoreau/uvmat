@@ -200,7 +200,6 @@ else
         errormsg='volume plot not implemented yet';
     end
 end
-
 if isempty(errormsg)
     set(haxes,'UserData',Data)
 else
@@ -520,9 +519,11 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             test_vec=1;
             eval(['vec_U=Data.' Data.ListVarName{ivar_U} ';']) 
             eval(['vec_V=Data.' Data.ListVarName{ivar_V} ';']) 
-            if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field (with unstructured coordinates or structured ones (then ivar_X and ivar_Y empty)     
-                eval(['vec_X=Data.' Data.ListVarName{ivar_X} ';']) 
-                eval(['vec_Y=Data.' Data.ListVarName{ivar_Y} ';'])
+            if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field (with unstructured coordinates or structured ones (then ivar_X and ivar_Y empty)
+                XName=Data.ListVarName{ivar_X};
+                YName=Data.ListVarName{ivar_Y};
+                eval(['vec_X=Data.' XName ';']) 
+                eval(['vec_Y=Data.' YName ';'])
             elseif numel(VarType.coord)==2 && ~isequal(VarType.coord,[0 0]);%coordinates defines by dimension variables
                 eval(['y=Data.' Data.ListVarName{VarType.coord(1)} ';']) 
                 eval(['x=Data.' Data.ListVarName{VarType.coord(2)} ';'])
@@ -571,10 +572,10 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             [A,AX,AY]=proj_grid(AX',AY',A',[],[],'np>256');  % interpolate on a grid  
             if isfield(Data,'VarAttribute')
                 if numel(Data.VarAttribute)>=ivar_X && isfield(Data.VarAttribute{ivar_X},'units')
-                    x_units=['(' Data.VarAttribute{ivar_X}.units ')'];
+                    x_units=[' (' Data.VarAttribute{ivar_X}.units ')'];
                 end
                 if numel(Data.VarAttribute)>=ivar_Y && isfield(Data.VarAttribute{ivar_Y},'units')
-                    y_units=['(' Data.VarAttribute{ivar_Y}.units ')'];
+                    y_units=[' (' Data.VarAttribute{ivar_Y}.units ')'];
                 end
             end        
         elseif numel(VarType.coord)==2 %structured coordinates
@@ -586,10 +587,10 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             test_interp_Y=0; %default, regularly meshed Y coordinate
             if isfield(Data,'VarAttribute')
                 if numel(Data.VarAttribute)>=VarType.coord(2) && isfield(Data.VarAttribute{VarType.coord(2)},'units')
-                    x_units=['(' Data.VarAttribute{VarType.coord(2)}.units ')'];
+                    x_units=Data.VarAttribute{VarType.coord(2)}.units;
                 end
                 if numel(Data.VarAttribute)>=VarType.coord(1) && isfield(Data.VarAttribute{VarType.coord(1)},'units')
-                    y_units=['(' Data.VarAttribute{VarType.coord(1)}.units ')'];
+                    y_units=Data.VarAttribute{VarType.coord(1)}.units;
                 end
             end  
             if numel(AY)>2
@@ -638,8 +639,17 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             errormsg='error in plot_field: invalid coordinate definition ';
             return
         end
-          %x_label=[Data.ListVarName{ivar_X} '(' x_units ')'];
-    end          
+    end
+    %define coordinates as CoordUnits, if not defined as attribute for each variable
+    if isfield(Data,'CoordUnit')
+        if isempty(x_units)
+            x_units=Data.CoordUnit;
+        end
+        if isempty(y_units)
+            y_units=Data.CoordUnit;
+        end
+    end
+        
 end 
 
 %%   image or scalar plot %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -794,9 +804,7 @@ if test_ima
             B = interp2(X,Y,double(B),xi,yi');
         end           
         % create new image if there  no image handle is found
-        if isempty(hima)
-           % axes(haxes)% set haxes the current axes for image creation
-         %   set(hfig,'CurrentAxes',haxes) % set haxes the current axes for image creation 
+        if isempty(hima) 
             tag=get(haxes,'Tag');
             if MinA<MaxA
                 hima=imagesc(AX,AY,B,[MinA MaxA]);
@@ -822,9 +830,6 @@ if test_ima
     if ~isstruct(AxeData)
         AxeData=[];
     end
-%     AxeData.A=A;
-%     AxeData.AX=[AX(1) AX(end)];
-%     AxeData.AY=[AY(1) AY(end)];
     test_ima=1;
     
     %display the colorbar code for B/W images if Poscolorbar not empty
@@ -924,21 +929,6 @@ if test_vec
     if test_C==0
         vec_C=ones(1,numel(vec_X));
     end
-%     AxeData.X=vec_X';
-%     AxeData.Y=vec_Y';
-%     AxeData.U=vec_U';
-%     AxeData.V=vec_V';
-%     AxeData.C=vec_C';
-%     if isempty(ivar_F)
-%         AxeData.F=[];
-%     else
-%         AxeData.F=vec_F';
-%     end
-%     if isempty(ivar_FF)
-%         AxeData.FF=[];
-%     else
-%         AxeData.FF=vec_FF';
-%     end
     
     %decimate by a factor 2 in vector mesh(4 in nbre of vectors)
     if isfield(PlotParam.Vectors,'decimate4') && isequal(PlotParam.Vectors.decimate4,1)
@@ -998,37 +988,15 @@ else
     if ~isempty(hvec)
         delete(hvec);
     end
-%     AxeData.X=[];
-%     AxeData.Y=[];
-%     AxeData.U=[];
-%     AxeData.V=[];
-%     AxeData.C=[];
-%     AxeData.W=[];
-%     AxeData.F=[];
-%      AxeData.FF=[];
-%     AxeData.Mesh=[];
     PlotParamOut=rmfield(PlotParamOut,'Vectors');
 end
-% if isfield(Data,'Z')
-%     AxeData.Z=Data.Z;% A REVOIR
-% end
-listfields={'AY','AX','A','X','Y','U','V','C','W','F','FF'};
-listdim={'AY','AX',{'AY','AX'},'nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors'};
-Role={'coord_y','coord_x','scalar','coord_x','coord_y','vector_x','vector_y','scalar','vector_z','warnflag','errorflag'};
+
+%listfields={'AY','AX','A','X','Y','U','V','C','W','F','FF'};
+%listdim={'AY','AX',{'AY','AX'},'nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors'};
+%Role={'coord_y','coord_x','scalar','coord_x','coord_y','vector_x','vector_y','scalar','vector_z','warnflag','errorflag'};
 %ind_select=[];
 nbvar=0;
-% AxeData.ListVarName={};
-% AxeData.VarDimName={};
-% AxeData.VarAttribute={};
-% for ilist=1:numel(listfields)
-%     eval(['testvar=isfield(AxeData,listfields{ilist}) && ~isempty(AxeData.' listfields{ilist} ');'])
-%     if testvar
-%         nbvar=nbvar+1;
-%         AxeData.ListVarName{nbvar}=listfields{ilist};
-%         AxeData.VarDimName{nbvar}=listdim{ilist};
-%         AxeData.VarAttribute{nbvar}.Role=Role{ilist};
-%     end
-% end
+
 %store the coordinate extrema occupied by the field
 test_lim=0;
 if test_vec
@@ -1063,8 +1031,10 @@ if ~(isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1))
      set(haxes,'DataAspectRatio',[1 1 1])
 end
 set(haxes,'YDir','normal') 
-set(get(haxes,'XLabel'),'String',[XName x_units]);
-set(get(haxes,'YLabel'),'String',[YName y_units]);
+set(get(haxes,'XLabel'),'String',[XName ' (' x_units ')']);
+set(get(haxes,'YLabel'),'String',[YName ' (' y_units ')']);
+PlotParamOut.x_units=x_units;
+PlotParamOut.y_units=y_units;
 
 %-------------------------------------------------------------------
 % --- function for plotting vectors
@@ -1131,10 +1101,10 @@ for icolor=1:ncolor
     matyar=[y1(:) y2(:) y3(:) xN(:)]';
     matyar=reshape(matyar,1,4*n(2));
     %draw the line or modify the existing ones
-      hx = [x1;x2;x3];
-      hy = [y1;y2;y3];
+  %    hx = [x1;x2;x3];
+  %    hy = [y1;y2;y3];
     tri=reshape(1:3*length(uc),3,[])';
-    d = tri(:,[1 2 3 1])'; 
+    %d = tri(:,[1 2 3 1])'; 
     
     isn=isnan(colorlist(icolor,:));%test if color NaN
     if 2*icolor > sizh(1) %if icolor exceeds the number of existing ones
