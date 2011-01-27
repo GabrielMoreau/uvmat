@@ -1,4 +1,5 @@
-% relabel_i_j: relabel an image series with two indices, according to the time matrix given by ImaDoc
+% relabel_i_j: relabel an image series with two indices, according to the time matrix given by ImaDoc 
+% (specific to RDvision system)
 %----------------------------------------------------------------------
 function GUI_input=relabel_i_j(num_i1,num_i2,num_j1,num_j2,Series)
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
@@ -12,32 +13,37 @@ hseries=guidata(Series.hseries);%handles of the GUI series
 WaitbarPos=get(hseries.waitbar_frame,'Position');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-basename=fullfile(Series.RootPath,Series.RootFile) ;
+%% PARAMETERS (for RDvision system)
+display('RDvision system')
+first_label=0 %image numbers start from 0
+errorfactor=2 %correct a factor of 2 in NbDk+1
 
-%create dir of the new images
+%% create dir of the new images
+basename=fullfile(Series.RootPath,Series.RootFile) ;
 [dir_images,namebase]=fileparts(basename);
 [path,subdir_ima]=fileparts(dir_images);
-curdir=pwd;
-cd(path);
-mkdir([subdir_ima '_ij']);
-[xx,msg2] = fileattrib(subdir_ima,'+w','g'); %yield writing access (+w) to user group (g)
+newdir=fullfile(path,[subdir_ima '_ij']);
+mkdir(newdir);
+[xx,msg2] = fileattrib(newdir,'+w','g'); %yield writing access (+w) to user group (g)
 if ~strcmp(msg2,'')
     msgbox_uvmat('ERROR',['pb of permission for ' subdir_ima ': ' msg2])%error message for directory creation
-    cd(dircur)
     return
 end
-cd(curdir);
-basename_new=fullfile(path,[subdir_ima '_ij'],namebase);
+display(['relabelled images in the directory ' newdir])
+basename_new=fullfile(newdir,namebase);
 
-% read imadoc
+%% read imadoc
 [XmlData,warntext]=imadoc2struct([basename '.xml']);
-nbfield1=size(XmlData.Time,1)
-nbfield2=size(XmlData.Time,2)
+nbfield1=size(XmlData.Time,1)/errorfactor;
+nbfield2=size(XmlData.Time,2);
+set(hseries.first_i,'String',num2str(first_label))% display the first image in the process
+set(hseries.last_i,'String',num2str(nbfield1*nbfield2-1+first_label))% display the last image in the process
 
-answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m')
-test_level=isequal(answer,'Yes')
+%% apply the image rescaling function 'level' (avoid bright particles)
+answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m');
+test_level=isequal(answer,'Yes');
 
-%copy the xml file
+%% copy and adapt the xml file
 if exist([basename '.xml'],'file')
     copyfile([basename '.xml'],[basename_new '.xml']);% copy the .civ file
     t=xmltree([basename_new '.xml']);
@@ -48,7 +54,7 @@ if exist([basename '.xml'],'file')
         [t,uid_Heading]=add(t,1,'element','Heading');
     end   
     uid_ImageName=find(t,'ImaDoc/Heading/ImageName');
-    ImageName=name_generator(basename_new,num_i1(1),num_j1(1),'.png','_i_j');
+    ImageName=name_generator(basename_new,1,1,'.png','_i_j');
     [pth,ImageName]=fileparts(ImageName);
     ImageName=[ImageName '.png']
     if isempty(uid_ImageName)
@@ -74,12 +80,12 @@ if exist([basename '.xml'],'file')
     save(t,[basename_new '.xml'])
 end
 
-%main loop
+%% main loop
 for ifile=1:nbfield1*nbfield2
     update_waitbar(hseries.waitbar,WaitbarPos,ifile/(nbfield1*nbfield2))
     filename=name_generator(basename,ifile-1,1,Series.FileExt,Series.NomType);
-    num_j=mod(ifile-1,nbfield2)+1;
-    num_i=floor((ifile-1)/nbfield2)+1;
+    num_j=mod(ifile-1+first_label,nbfield2)+1;
+    num_i=floor((ifile-1+first_label)/nbfield2)+1;
     filename_new=name_generator(basename_new,num_i,num_j,'.png','_i_j');
     if test_level
         A=imread(filename);
