@@ -69,6 +69,7 @@ end
 var_ind=find(vardetect);
 for ivar=1:length(var_ind)
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
+     Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
 %     Field.VarAttribute{ivar}.units=units{var_ind(ivar)};% not necessary: set with calc_field
 end
 VelTypeOut=VelType;

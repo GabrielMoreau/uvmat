@@ -111,7 +111,10 @@ if ~exist('htext','var'),htext=[];end;
 if ~exist('PosColorbar','var'),PosColorbar=[];end;
 PlotType='text'; %default
 PlotParamOut=PlotParam;%default
-
+if isempty(Data)
+    PlotType='none';
+   return
+end
 % check input structure
 [Data,errormsg]=check_field_structure(Data);
 

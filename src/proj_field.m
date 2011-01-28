@@ -384,17 +384,21 @@ end
 
 %A REVOIR, GENERALISER: UTILISER proj_line
 ProjData.NbDim=1;
-%ProjData.ListDimName={};%name of dimension 
-%ProjData.DimValue=[];%values of dimension (nbre of vectors)
 ProjData.ListVarName={};
-%ProjData.VarDimIndex={};
 ProjData.VarDimName={};
-if isfield (FieldData,'ListVarAttribute')
-    ProjData.ListVarAttribute=FieldData.ListVarAttribute;%list of variable attribute names
-    for iattr=1:length(ProjData.ListVarAttribute)%initialization of variable attribute values
-        AttrName=ProjData.ListVarAttribute{iattr};
-        eval(['ProjData.' AttrName '={};'])
-    end;
+
+Mesh=zeros(1,numel(FieldData.ListVarName));
+if isfield (FieldData,'VarAttribute')
+    ProjData.VarAttribute=FieldData.VarAttribute;%list of variable attribute names
+    for iattr=1:length(ProjData.VarAttribute)%initialization of variable attribute values
+%         ProjData.VarAttribute{iattr}={};
+        if isfield(ProjData.VarAttribute{iattr},'Unit')
+            unit{iattr}=ProjData.VarAttribute{iattr}.Unit;
+        end
+        if isfield(ProjData.VarAttribute{iattr},'Mesh')
+            Mesh(iattr)=ProjData.VarAttribute{iattr}.Mesh;
+        end
+    end
 end
 
 %group the variables (fields of 'FieldData') in cells of variables with the same dimensions
@@ -448,24 +452,28 @@ for icell=1:length(CellVarIndex)
     end
     % image or 2D matrix
     if numel(VarType.coord)>=2 & VarType.coord(1:2) > 0;
-        test_Amat=1;%image or 2D matrix
+        test_Amat=1;% test for image or 2D matrix
         AYName=FieldData.ListVarName{VarType.coord(1)};
         AXName=FieldData.ListVarName{VarType.coord(2)};
         eval(['AX=FieldData.' AXName ';'])% x coordinate
         eval(['AY=FieldData.' AYName ';'])% y coordinate
         VarName=FieldData.ListVarName{VarIndex(1)};
         eval(['DimValue=size(FieldData.' VarName ');'])
+       if length(AX)==2
+           AX=linspace(AX(1),AX(end),DimValue(2));
+       end
+       if length(AY)==2
+           AY=linspace(AY(1),AY(end),DimValue(1));
+       end
+%         for idim=1:length(DimValue)        
+%             Coord_i_str=['Coord_' num2str(idim)];
+%             DCoord_min(idim)=1;%default
+%             Coord{idim}=[0.5 DimValue(idim)];
+%             test_direct(idim)=1;
+%         end
+%         AX=linspace(Coord{2}(1),Coord{2}(2),DimValue(2));
+%         AY=linspace(Coord{1}(1),Coord{1}(2),DimValue(1));  %TODO : 3D case 
         testcolor=find(numel(DimValue)==3);
-%                     errormsg='multicomponent field not projected';
-
-        for idim=1:length(DimValue)        
-            Coord_i_str=['Coord_' num2str(idim)];
-            DCoord_min(idim)=1;%default
-            Coord{idim}=[0.5 DimValue(idim)];
-            test_direct(idim)=1;
-        end
-        AX=linspace(Coord{2}(1),Coord{2}(2),DimValue(2));
-        AY=linspace(Coord{1}(1),Coord{1}(2),DimValue(1));  %TODO : 3D case 
         if length(DimValue)==3
             testcolor=1;
             npxy(3)=3;
@@ -532,7 +540,14 @@ for icell=1:length(CellVarIndex)
         if testproj(ivar)
             VarName=FieldData.ListVarName{ivar};
             eval(['ProjData.' VarName 'Mean=mean(mean(double(FieldData.' VarName '(indsel,:))));']); % keep only non false vectors
-            eval(['[ProjData.' VarName 'Histo,ProjData.' VarName ']=hist(double(FieldData.' VarName '(indsel,:)),100);']); % keep only non false vectors 
+            eval(['ProjData.' VarName 'Min=min(min(double(FieldData.' VarName '(indsel,:))));']); % keep only non false vectors
+            eval(['ProjData.' VarName 'Max=max(max(double(FieldData.' VarName '(indsel,:))));']); % keep only non false vectors
+            if isequal(Mesh(ivar),0)
+                eval(['[ProjData.' VarName 'Histo,ProjData.' VarName ']=hist(double(FieldData.' VarName '(indsel,:)),100);']); % default histogram with 100 bins
+            else
+                eval(['ProjData.' VarName '=(ProjData.' VarName 'Min+Mesh(ivar)/2:Mesh(ivar):ProjData.' VarName 'Max);']); % list of bin values
+                eval(['ProjData.' VarName 'Histo=hist(double(FieldData.' VarName '(indsel,:)),ProjData.' VarName ');']); % histogram at predefined bin positions
+            end
             ProjData.ListVarName=[ProjData.ListVarName {VarName} {[VarName 'Histo']} {[VarName 'Mean']}];
             if test_Amat && testcolor
                  ProjData.VarDimName=[ProjData.VarDimName  {VarName} {{VarName,'rgb'}} {'rgb'}];%{{'nb_point','rgb'}};
@@ -549,7 +564,6 @@ for icell=1:length(CellVarIndex)
 %        ProjData.VarDimName
 %     end
 end
-
 
 
 %-----------------------------------------------------------------
@@ -1758,9 +1772,9 @@ for icell=1:length(CellVarIndex)
                 end
             end  
         elseif isequal(ObjectData.ProjMode,'interp')||isequal(ObjectData.ProjMode,'filter')%interpolate data on a regular grid
-            coord_x_proj=[XMin:DX:XMax];
-            coord_y_proj=[YMin:DY:YMax];
-            coord_z_proj=[ZMin:DZ:ZMax];
+            coord_x_proj=(XMin:DX:XMax);
+            coord_y_proj=(YMin:DY:YMax);
+            coord_z_proj=(ZMin:DZ:ZMax);
             [XI,YI,ZI]=meshgrid(coord_x_proj,coord_y_proj,coord_z_proj);
             DimCell={'coord_y','coord_x'};
             ProjData.ListVarName={'coord_z','coord_y','coord_x'};

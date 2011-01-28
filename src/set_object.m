@@ -701,6 +701,7 @@ else
     IndexObj_2=[];
 end
 testnew=0;
+ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
 PlotHandles=get_plot_handles(hhuvmat);
 projview='view_field';%default
 if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose projection is viewed in the uvmat frame
@@ -722,11 +723,12 @@ if strcmp(projview,'view_field')
     hview_field=findobj(allchild(0),'tag','view_field');
     if isempty(hview_field)
         hview_field=view_field;
+%     elseif strcmp(ObjectData.ProjMode,'none')||strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')
     end
     PlotHandles=guidata(hview_field);
     plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
 end   
-ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
+
 
 %% naming the object
 if length(ObjectName)<1% name of object not defined in set_object

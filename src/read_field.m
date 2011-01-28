@@ -164,6 +164,7 @@ else
             Field.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
             ParamOut.Npx=npxy(2);% display image size on the interface
             ParamOut.Npy=npxy(1);
+            Field.VarAttribute{3}.Mesh=1;
         else
             Field.NbDim=3;
             Field.ListVarName=['AZ' Field.ListVarName];
@@ -173,6 +174,7 @@ else
             Field.AX=[0.5 npxy(3)-0.5]; % coordinates of the first and last pixel centers
             ParamOut.Npx=npxy(3);% display image size on the interface
             ParamOut.Npy=npxy(2);
+            Field.VarAttribute{4}.Mesh=1;
         end
     else
         Field.VarDimName={'AY','AX',{'AY','AX'}}; %
@@ -180,6 +182,7 @@ else
         Field.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
         ParamOut.Npx=npxy(2);% display image size on the interface
         ParamOut.Npy=npxy(1);
+        Field.VarAttribute{3}.Mesh=1;
     end
     Field.A=A;
     Field.CoordUnit='pixel'; %used for mouse_motion
