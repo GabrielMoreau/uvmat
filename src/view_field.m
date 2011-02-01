@@ -89,13 +89,14 @@ set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles_mouse})%set mouse ac
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse}) 
 set(hObject,'CloseRequestFcn',{@closefcn})%
+ViewFieldData.axes3=[];%initiates the record of the current field (will be updated by plot_field)
+set(handles.view_field,'UserData',ViewFieldData);%store the current field
 if ~exist('Field','var')
     return
 end
-
+'TESviewfield'
 [PlotType,PlotParamOut]= plot_field(Field,handles.axes3);%,PlotParam,KeepLim,PosColorbar)
-ViewFieldData.axes3=Field;
-set(handles.view_field,'UserData',ViewFieldData);%store the current field
+
 if isfield(PlotParamOut,'Vectors')
     set(handles.VECT_title,'Visible','on')
 end
@@ -284,7 +285,6 @@ if test
 else
     set(handles.auto_xy,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles)
-%     axis(handles.axes3,'image')
 end
 
 
@@ -698,8 +698,11 @@ set(handles.vec_col_bar,'Cdata',A)
 function PlotType=update_plot(handles)
 %-------------------------------------------------------------------
 haxes= handles.axes3;
-%huvmat=findobj(allchild(0),'tag','uvmat');
-ProjField=get(haxes,'UserData');
+
+%ProjField=get(haxes,'UserData');
+ViewFieldData=get(handles.view_field,'UserData');
+ProjField=ViewFieldData.axes3;
+%ProjField=get(haxes,'UserData');
 PlotParam=read_plot_param(handles);
 [PlotType,PlotParamOut]= plot_field(ProjField,haxes,PlotParam,1);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters

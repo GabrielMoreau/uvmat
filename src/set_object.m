@@ -775,18 +775,11 @@ else
 end
 UvData.Object{IndexObj}=ObjectData;%update the current object properties
 UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
+set(huvmat,'UserData',UvData)
 
-%% plot the field projected on the object and store it the corresponding figue
-get(plotaxes,'tag')
+%% plot the field projected on the object and store in the corresponding figue
 ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
 [PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);%update an existing field plot
-if strcmp(projview,'view_field')
-    ViewFieldData=get(hview_field,'UserData');
-    ViewFieldData.axes3=ObjectData;
-    set(hview_field,'UserData',ViewFieldData)
-else
-    UvData.axes3=ObjectData;
-end
 
 %% update the GUI uvmat
 hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI
@@ -794,7 +787,7 @@ set(hhuvmat.MenuEditObject,'enable','on')
 set(hhuvmat.edit_object,'Value',1) % set uvmat to object edit mode to allow further object update
 set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
 %UvData.MouseAction='edit_object'; % set the edit button to 'on'
-set(huvmat,'UserData',UvData)
+
 %------------------------------------------------------------------------
 % --- Executes on button press in MenuCoord.
 function MenuCoord_Callback(hObject, eventdata, handles)

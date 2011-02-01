@@ -154,7 +154,8 @@ for icell=1:length(CellVarIndex)
         return
     end
     %NbDim(icell)=0;% nbre of space dimensions 
-    NbDim(icell)=numel(DimCell);
+%     NbDim(icell)=numel(DimCell);
+    NbDim(icell)=0;
     test_coord=0;
     if numel(VarIndex)>1      
         if ~isempty(ivar_coord_z)

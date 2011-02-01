@@ -193,7 +193,7 @@ if test_line
         if length(xline)<2
             theta=0;
         else
-            theta=angle(diff(xline)+i*diff(yline));
+            theta=angle(diff(xline)+1i*diff(yline));
             theta(length(xline))=theta(length(xline)-1);
         end
         xsup(1)=xline(1)+YMax*sin(theta(1));
@@ -385,12 +385,12 @@ if test_newobj
         return
     end
     set(hh,'Tag','proj_object')
-    if test_patch
-        hold on
+     if test_patch
+         hold on
         hhh=image([xlim(1)+dx/2 xlim(2)-dx/2],[ylim(1)+dy/2 ylim(2)-dy/2],imflag,'Tag','proj_object','HitTest','off');
-        set(hhh,'AlphaData',(flag)*0.2)% set partial transparency to the filling color
-        PlotData.SubObject=hhh;    
-    end
+       set(hhh,'AlphaData',(flag)*0.2)% set partial transparency to the filling color
+         PlotData.SubObject=hhh;    
+     end
     if isfield(PlotData,'SubObject')
         set(PlotData.SubObject,'UserData',hh)%record the parent handles in the SubObjects
     end

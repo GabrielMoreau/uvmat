@@ -100,36 +100,22 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,htext,PosColorbar)
+function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColorbar)
 % TODO:
 % use htext: handles of the text edit box (uicontrol)
 % introduce PlotParam.Hold: 'on' or 'off' (for curves)
-
 %default output
 if ~exist('PlotParam','var'),PlotParam=[];end;
-if ~exist('htext','var'),htext=[];end;
 if ~exist('PosColorbar','var'),PosColorbar=[];end;
 PlotType='text'; %default
 PlotParamOut=PlotParam;%default
-if isempty(Data)
-    PlotType='none';
-   return
-end
-% check input structure
-[Data,errormsg]=check_field_structure(Data);
 
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['input of plot_field/check_field_structure: ' errormsg])
-    display(['input of plot_field/check_field_structure:: ' errormsg])
-    return
-end
-
+%% test axes and figure
 testnewfig=1;%test to create a new figure (default)
 testzoomaxes=0;%test for the existence of a zoom secondary figure attached to the plotting axes
 if exist('haxes','var')
     if ishandle(haxes)
         if isequal(get(haxes,'Type'),'axes')
-%             axes(haxes)
             testnewfig=0;
             AxeData=get(haxes,'UserData');
             if isfield(AxeData,'ZoomAxes')&& ishandle(AxeData.ZoomAxes)
@@ -144,7 +130,8 @@ end
 if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
     PlotParam=read_plot_param(PlotParam);   
 end
-if testnewfig% create a new figure and axes if the plotting axes does not exist
+% create a new figure and axes if the plotting axes does not exist
+if testnewfig
     hfig=figure;
     if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
         set(hfig,'UserData',PlotParam)
@@ -162,121 +149,192 @@ else
     set(hfig,'CurrentAxes',haxes)
 end
 
-if isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1) 
-    set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
+%% check input structure
+if ~isempty(Data)
+    [Data,errormsg]=check_field_structure(Data);
+
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',['input of plot_field/check_field_structure: ' errormsg])
+        display(['input of plot_field/check_field_structure:: ' errormsg])
+        return
+    end
+
+    %% check the cells of fields :
+    [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data);
+
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',['input of plot_field/find_field_indices: ' errormsg]);
+        return
+    end
+    index_3D=find(NbDim>2,1);
+    if ~isempty(index_3D)
+        msgbox_uvmat('ERROR','volume plot not implemented yet');
+        return
+    end
+    index_2D=find(NbDim==2,2);%find 2D fields (at most 2)
+    index_1D=find(NbDim==1);
+    index_0D=find(NbDim==0);
+    
+        %% set axes properties
+    if isfield(PlotParam,'FixedLimits') && isequal(PlotParam.FixedLimits,1)  %adjust the graph limits*
+        set(haxes,'XLimMode', 'manual')
+        set(haxes,'YLimMode', 'manual')
+    else
+        set(haxes,'XLimMode', 'auto')
+        set(haxes,'YLimMode', 'auto')
+    end
+    if isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1) 
+        set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
+    else
+        set(haxes,'DataAspectRatioMode','manual')
+    end
+else
+    index_2D=[];
+    index_1D=[];
+    index_0D=[];
 end
 
-%% check the cells of fields :
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data);
-
 %% plot if the input field is valid
-if ~isempty(errormsg)
-    errormsg=['input of plot_field/find_field_indices: ' errormsg];
+PlotType='text';
+errormsg=[];
+AxeData=get(haxes,'UserData');
+if isempty(index_2D)
+    plot_plane([],[],[],haxes);%removes images or vector plots if any
 else
-    if ~isfield(Data,'NbDim') %& ~isfield(Data,'Style')%determine the space dimensionb if not defined: choose the kind of plot 
-        [Data.NbDim]=max(NbDim);
-    end
-    if isequal(Data.NbDim,0) 
-            AxeData=plot_text(Data,htext);
-            PlotType='text';
-            errormsg=[];
-    elseif isequal(Data.NbDim,1)
-        [AxeData]=plot_profile(Data,CellVarIndex,VarType,haxes,PlotParam);% 
+         [xx,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),haxes,PlotParam,PosColorbar);
+         AxeData.NbDim=2;
+            if testzoomaxes && isempty(errormsg)
+                [zoomaxes,PlotParamOut,xx,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),zoomaxes,PlotParam,PosColorbar);
+                AxeData.ZoomAxes=zoomaxes;
+            end
+end
+if isempty(index_1D)
+     plot_profile([],[],[],haxes);%
+else
+        plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,PlotParam);% 
         if testzoomaxes
-            [AxeData,zoomaxes,PlotParamOut]=plot_profile(Data,CellVarIndex,VarType,zoomaxes,PlotParam);
+            [zoomaxes,PlotParamOut]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam);
             AxeData.ZoomAxes=zoomaxes;
         end
         PlotType='line';
-        errormsg=[];
-    elseif isequal(Data.NbDim,2)
-        ind_select=find(NbDim>=2);
-        if numel(ind_select)>2
-            errormsg='more than two fields to map';
-        else
-            [AxeData,xx,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),haxes,PlotParam,htext,PosColorbar);
-            if testzoomaxes && isempty(errormsg)
-                [AxeData,zoomaxes,PlotParamOut,xx,errormsg]=plot_plane(Data,CellVarIndex(ind_select),VarType(ind_select),zoomaxes,PlotParam,1,PosColorbar);
-                Data.ZoomAxes=zoomaxes;
-            end
-        end
-    elseif isequal(Data.NbDim,3)
-        errormsg='volume plot not implemented yet';
+end
+htext=findobj(hfig,'Tag','text_display');
+if ~isempty(htext)
+    if isempty(index_0D)
+        set(htext,'String',{''})
+    else
+        [errormsg]=plot_text(Data,CellVarIndex(index_0D),htext);
     end
 end
-if isempty(errormsg)
-    set(haxes,'UserData',Data)
-else
+
+if ~isempty(errormsg)
     msgbox_uvmat('ERROR', errormsg)
 end
 
+%% update the parameters stored in AxeData
+set(haxes,'UserData',AxeData)
 
-%-------------------------------------------------------------------
-function hdisplay=plot_text(FieldData,hdisplay_in)
-%-------------------------------------------------------------------
-if exist('hdisplay_in','var') && ~isempty(hdisplay_in) && ishandle(hdisplay_in) && isequal(get(hdisplay_in,'Type'),'uicontrol')
-    hdisplay=hdisplay_in;
-else
-    figure;%create new figure
-    hdisplay=uicontrol('Style','edit', 'Units','normalized','Position', [0 0 1 1],'Max',2,'FontName','monospaced');
+%% update the parameters stored in parent figure
+FigData=get(hfig,'UserData');
+tagaxes=get(haxes,'tag');
+if isfield(FigData,tagaxes)
+    eval(['FigData.' tagaxes '=Data'])
+    set(hfig,'UserData',FigData)
 end
-    
-ff=fields(FieldData);%list of field names
-vv=struct2cell(FieldData);%list of field values
-
-for icell=1:length(vv)
-    Tabcell{icell,1}=ff{icell};
-    ss=vv{icell};
-    sizss=size(ss);
-    if isnumeric(ss)
-        if sizss(1)<=1 && length(ss)<5
-            displ{icell}=num2str(ss);
-        else
-            displ{icell}=[class(ss) ', size ' num2str(size(ss))];
-        end
-    elseif ischar(ss)
-        displ{icell}=ss;
-    elseif iscell(ss)
-        sizcell=size(ss);
-        if sizcell(1)==1 && length(sizcell)==2 %line cell
-           ssline='{''';
-           for icolumn=1:sizcell(2)
-               if isnumeric(ss{icolumn})
-                   if size(ss{icolumn},1)<=1 && length(ss{icolumn})<5
-                      sscolumn=num2str(ss{icolumn});%line vector
-                   else
-                      sscolumn=[class(ss{icolumn}) ', size ' num2str(size(ss{icolumn}))];
-                   end
-               elseif ischar(ss{icolumn})
-                   sscolumn=ss{icolumn};
-               else
-                   sscolumn=class(ss{icolumn});
-               end
-               if icolumn==1
-                   ssline=[ssline sscolumn];
-               else
-                   ssline=[ssline ''',''' sscolumn];
-               end
-           end
-           displ{icell}=[ssline '''}'];
-        else
-           displ{icell}=[class(ss) ', size ' num2str(sizcell)];
-        end
-    else
-        displ{icell}=class(ss);
+             
+%-------------------------------------------------------------------
+function errormsg=plot_text(FieldData,CellVarIndex,htext)
+%-------------------------------------------------------------------
+% if exist('hdisplay_in','var') && ~isempty(hdisplay_in) && ishandle(hdisplay_in) && isequal(get(hdisplay_in,'Type'),'uicontrol')
+%     hdisplay=hdisplay_in;
+% else
+%     figure;%create new figure
+%     hdisplay=uicontrol('Style','edit', 'Units','normalized','Position', [0 0 1 1],'Max',2,'FontName','monospaced');
+% end
+errormsg=[];
+txt_cell={};
+for icell=1:length(CellVarIndex)
+    VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list data.ListVarName
+% ff=fields(FieldData);%list of field names
+% vv=struct2cell(FieldData);%list of field values
+% 
+% for icell=1:length(vv)
+    for ivar=1:length(VarIndex)
+         VarName=FieldData.ListVarName{VarIndex(ivar)};
+         eval(['VarValue=FieldData.' VarName ';'])
+         if size(VarValue,1)~=1
+             VarValue=VarValue';
+         end
+         txt=[VarName '=' num2str(VarValue)];
+         txt_cell=[txt_cell;{txt}];
     end
-    Tabcell{icell,2}=displ{icell};
-end 
-Tabchar=cell2tab(Tabcell,': '); 
-set(hdisplay,'String', Tabchar)
+end
+
+set(htext,'String',txt_cell)
+%     txt_cell=[txt_cell {num2str(
+%     Tabcell{icell,1}=ff{icell};
+%     ss=vv{icell};
+%     sizss=size(ss);
+%     if isnumeric(ss)
+%         if sizss(1)<=1 && length(ss)<5
+%             displ{icell}=num2str(ss);
+%         else
+%             displ{icell}=[class(ss) ', size ' num2str(size(ss))];
+%         end
+%     elseif ischar(ss)
+%         displ{icell}=ss;
+%     elseif iscell(ss)
+%         sizcell=size(ss);
+%         if sizcell(1)==1 && length(sizcell)==2 %line cell
+%            ssline='{''';
+%            for icolumn=1:sizcell(2)
+%                if isnumeric(ss{icolumn})
+%                    if size(ss{icolumn},1)<=1 && length(ss{icolumn})<5
+%                       sscolumn=num2str(ss{icolumn});%line vector
+%                    else
+%                       sscolumn=[class(ss{icolumn}) ', size ' num2str(size(ss{icolumn}))];
+%                    end
+%                elseif ischar(ss{icolumn})
+%                    sscolumn=ss{icolumn};
+%                else
+%                    sscolumn=class(ss{icolumn});
+%                end
+%                if icolumn==1
+%                    ssline=[ssline sscolumn];
+%                else
+%                    ssline=[ssline ''',''' sscolumn];
+%                end
+%            end
+%            displ{icell}=[ssline '''}'];
+%         else
+%            displ{icell}=[class(ss) ', size ' num2str(sizcell)];
+%         end
+%     else
+%         displ{icell}=class(ss);
+%     end
+%     Tabcell{icell,2}=displ{icell};
+% end 
+% Tabchar=cell2tab(Tabcell,': '); 
+% set(hdisplay,'String', Tabchar)
 
 
 %-------------------------------------------------------------------
-function [AxeData,haxes]=plot_profile(data,CellVarIndex,VarType,haxes,PlotParam)
+function [haxes]=plot_profile(data,CellVarIndex,VarType,haxes,PlotParam)
 %-------------------------------------------------------------------
-%TODO: modify existing plot if it exists
-
 hfig=get(haxes,'parent');
-AxeData=[];%data;
+%suppress existing plot isf empty data
+if isempty(data)
+    hplot=findobj(haxes,'tag','plot_line');
+    if ~isempty(hplot)
+        delete(hplot)
+    end
+    hlegend=findobj(hfig,'tag','legend');
+    if ~isempty(hlegend)
+        delete(hlegend)
+    end
+    return
+end
+
 
 ColorOrder=[1 0 0;0 0.5 0;0 0 1;0 0.75 0.75;0.75 0 0.75;0.75 0.75 0;0.25 0.25 0.25];
 set(haxes,'ColorOrder',ColorOrder)
@@ -284,24 +342,17 @@ if isfield(PlotParam,'NextPlot')
     set(haxes,'NextPlot',PlotParam.NextPlot)
 end
 % adjust the size of the plot to include the whole field,
-if isfield(PlotParam,'FixedLimits') && isequal(PlotParam.FixedLimits,1)  %adjust the graph limits*
-    set(haxes,'XLimMode', 'manual')
-    set(haxes,'YLimMode', 'manual')
-else
-    set(haxes,'XLimMode', 'auto')
-    set(haxes,'YLimMode', 'auto')
-end
+
 legend_str={};
 
 %% prepare the string for plot command
 %initiate  the plot command
 plotstr='hhh=plot(';
-textmean={};
+% textmean={};
 coord_x_index=[];
+xtitle='';
+ytitle='';
 test_newplot=1;
-% hh=findobj(haxes,'tag','plot_line');
-% num_curve=numel(hh);
-% icurve=0;
 
 %loop on input  fields
 for icell=1:length(CellVarIndex)
@@ -310,20 +361,23 @@ for icell=1:length(CellVarIndex)
         coord_x_index=VarType{icell}.coord_x;
     else
         coord_x_index_cell=VarType{icell}.coord(1);
-        if isequal(coord_x_index_cell,0)
-            continue  % the cell has no abscissa, skip it
-        end
-        if ~isempty(coord_x_index)&&~isequal(coord_x_index_cell,coord_x_index)
-            continue %all the selected variables must have the same first dimension
-        else
-            coord_x_index=coord_x_index_cell;
-        end
+         if isequal(coord_x_index_cell,0)
+             continue  % the cell has no abscissa, skip it
+         end
+%         if ~isempty(coord_x_index)&&~isequal(coord_x_index_cell,coord_x_index)
+%             %continue %all the selected variables must have the same first dimension
+%         else
+%             coord_x_index=coord_x_index_cell;
+%         end
+          coord_x_index=coord_x_index_cell;
     end
     testplot=ones(size(data.ListVarName));%default test for plotted variables
-    xtitle=data.ListVarName{coord_x_index};
+    xtitle=[xtitle data.ListVarName{coord_x_index}];
     eval(['coord_x{icell}=data.' data.ListVarName{coord_x_index} ';']);%coordinate variable set as coord_x
     if isfield(data,'VarAttribute')&& numel(data.VarAttribute)>=coord_x_index && isfield(data.VarAttribute{coord_x_index},'units')
-        xtitle=[xtitle '(' data.VarAttribute{coord_x_index}.units ')'];
+        xtitle=[xtitle '(' data.VarAttribute{coord_x_index}.units '), '];
+    else
+        xtitle=[xtitle ', '];
     end
     eval(['coord_x{icell}=data.' data.ListVarName{coord_x_index} ';']);%coordinate variable set as coord_x
     testplot(coord_x_index)=0;
@@ -343,28 +397,6 @@ for icell=1:length(CellVarIndex)
             end
         end
     end
-    %     test_newplot=0;%default
-    %     if num_curve>=icurve+numel(find(testplot(VarIndex)))%update existing curves
-    %         if ~isempty(VarType{icell}.discrete')
-    %             charplot_0='+';
-    %             LineStyle='none';
-    %         else
-    %             charplot_0='none';
-    %             LineStyle='-';
-    %         end
-    %         for ivar=1:length(VarIndex)
-    %             if testplot(VarIndex(ivar))
-    %                 icurve=icurve+1;
-    %                 VarName=data.ListVarName{VarIndex(ivar)};
-    %                 eval(['data.' VarName '=squeeze(data.' VarName ');'])
-    %                 set(hh(icurve),'LineStyle',LineStyle)
-    %                 set(hh(icurve),'Marker',charplot_0)
-    %                 set(hh(icurve),'XData',coord_x{icell})
-    %                 eval(['yy=data.' VarName ';'])
-    %                 set(hh(icurve),'YData',yy);
-    %             end
-    %         end
-    %     else% new plot
     if ~isempty(VarType{icell}.discrete')
         charplot_0='''+''';
     else
@@ -373,6 +405,12 @@ for icell=1:length(CellVarIndex)
     for ivar=1:length(VarIndex)
         if testplot(VarIndex(ivar))
             VarName=data.ListVarName{VarIndex(ivar)};
+            ytitle=[ytitle VarName];
+            if isfield(data,'VarAttribute')&& numel(data.VarAttribute)>=VarIndex(ivar) && isfield(data.VarAttribute{VarIndex(ivar)},'units')
+                ytitle=[ytitle '(' data.VarAttribute{VarIndex(ivar)}.units '), '];
+            else
+                ytitle=[ytitle ', '];
+            end
             eval(['data.' VarName '=squeeze(data.' VarName ');'])
             plotstr=[plotstr 'coord_x{' num2str(icell) '},data.' VarName ',' charplot_0 ','];
             eval(['nbcomponent2=size(data.' VarName ',2);']);
@@ -380,8 +418,8 @@ for icell=1:length(CellVarIndex)
             if numel(coord_x{icell})==2
                 coord_x{icell}=linspace(coord_x{icell}(1),coord_x{icell}(2),nbcomponent1);
             end
-            eval(['varmean=mean(double(data.' VarName '));']);%mean value
-            textmean=[textmean; {[VarName 'mean= ' num2str(varmean,4)]}];
+            %eval(['varmean=mean(double(data.' VarName '));']);%mean value
+            %textmean=[textmean; {[VarName 'mean= ' num2str(varmean,4)]}];
             if nbcomponent1==1|| nbcomponent2==1
                 legend_str=[legend_str {VarName}]; %variable with one component
             else  %variable with severals  components
@@ -394,19 +432,21 @@ for icell=1:length(CellVarIndex)
 end
 
 %% activate the plot
-if test_newplot && ~isequal(plotstr,'hhh=plot(')
-    plotstr=[plotstr '''tag'',''plot_line'');'];
-                %execute plot (instruction  plotstr)
-%     set(hfig,'CurrentAxes',haxes)
-%     axes(haxes)% select the plotting axes for plot operation
-    eval(plotstr)
-   
-                %%%%%
+if test_newplot && ~isequal(plotstr,'hhh=plot(')  
+    set(hfig,'CurrentAxes',haxes)
+    tag=get(haxes,'tag');
+    
+    %%%
+    plotstr=[plotstr '''tag'',''plot_line'');'];   
+    eval(plotstr)                  %execute plot (instruction  plotstr)
+    %%%
+    
+    set(haxes,'tag',tag)
     grid(haxes, 'on')
-    hxlabel=xlabel(xtitle);
+    hxlabel=xlabel(xtitle(1:end-2));% xlabel (removes ', ' at the end)
     set(hxlabel,'Interpreter','none')% desable tex interpreter
     if length(legend_str)>=1
-        hylabel=ylabel(legend_str{end});
+        hylabel=ylabel(ytitle(1:end-2));% ylabel (removes ', ' at the end)
         set(hylabel,'Interpreter','none')% desable tex interpreter
     end
     if ~isempty(legend_str)
@@ -444,21 +484,11 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
     if relnumb >= 14
         set(htitle,'Interpreter','none')% desable tex interpreter
     end
-    % A REPRENDRE Mean
-%         hlist=findobj(gcf,'Style','listbox','Tag','liststat');
-%         if isempty(hlist)
-%             'text'
-%             textmean
-%             set(gca,'position',[0.13,0.2,0.775,0.73])
-%             uicontrol('Style','popupmenu','Position',[20 20 200 20],'String',textmean,'Tag','liststat');
-%         else
-%             set(hlist(1),'String',textmean)
-%         end
 end
 
 
 %-------------------------------------------------------------------
-function [AxeData,haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex,VarTypeCell,haxes,PlotParam,htext,PosColorbar)
+function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex,VarTypeCell,haxes,PlotParam,PosColorbar)
 %-------------------------------------------------------------------
 
 grid(haxes, 'off')
@@ -477,11 +507,11 @@ PlotParamOut=PlotParam;%default
 hfig=get(haxes,'parent');
 hcol=findobj(hfig,'Tag','Colorbar'); %look for colorbar axes
 hima=findobj(haxes,'Tag','ima');% search existing image in the current axes
-AxeData=get(haxes,'UserData'); %default
-if ~isstruct(AxeData)% AxeData must be a structure
-    AxeData=[];
-end
-AxeData.NbDim=2;
+% AxeData=get(haxes,'UserData'); %default
+% if ~isstruct(AxeData)% AxeData must be a structure
+%     AxeData=[];
+% end
+% AxeData.NbDim=2;
 % if isfield(Data,'ObjectCoord')
 %     AxeData.ObjectCoord=Data.ObjectCoord;
 % end
@@ -815,7 +845,8 @@ if test_ima
                 hima=imagesc(AX,AY,B,[MaxA-1 MaxA]);
             end
             set(hima,'Tag','ima','HitTest','off')
-            set(haxes,'Tag',tag);%preserve the axes tag (removed by image fct !!!)            
+            set(haxes,'Tag',tag);%preserve the axes tag (removed by image fct !!!)     
+            uistack(hima, 'bottom')
         % update an existing image
         else
             set(hima,'CData',B);
@@ -830,9 +861,9 @@ if test_ima
             set(hima,'YData',AY);
         end
     end
-    if ~isstruct(AxeData)
-        AxeData=[];
-    end
+%     if ~isstruct(AxeData)
+%         AxeData=[];
+%     end
     test_ima=1;
     
     %display the colorbar code for B/W images if Poscolorbar not empty
@@ -884,9 +915,6 @@ else%no scalar plot
     if ~isempty(hcol)&& ishandle(hcol)
        delete(hcol)
     end
-%     AxeData.A=[];
-%     AxeData.AX=[];
-%     AxeData.AY=[];
     PlotParamOut=rmfield(PlotParamOut,'Scalar');
 end
 
@@ -901,13 +929,11 @@ if test_vec
     vec_U=reshape(vec_U,1,numel(vec_U));
     vec_V=reshape(vec_V,1,numel(vec_V));
      MinMaxX=max(vec_X)-min(vec_X);
-%     MinMaxY=max(vec_Y)-min(vec_Y);
-%     AxeData.Mesh=sqrt((MinMaxX*MinMaxY)/length(vec_X));
     if  ~isfield(PlotParam.Vectors,'AutoVec') || isequal(PlotParam.Vectors.AutoVec,0)|| ~isfield(PlotParam.Vectors,'VecScale')...
                ||isempty(PlotParam.Vectors.VecScale)||~isa(PlotParam.Vectors.VecScale,'double') %automatic vector scale
 %         scale=[];
         if test_false %remove false vectors
-            indsel=find(AxeData.FF==0);%indsel =indices of good vectors
+            %indsel=find(AxeData.FF==0);%indsel =indices of good vectors
         else     
             indsel=1:numel(vec_X);%
         end
@@ -1001,44 +1027,45 @@ end
 nbvar=0;
 
 %store the coordinate extrema occupied by the field
-test_lim=0;
-if test_vec
-    Xlim=[min(vec_X) max(vec_X)];
-    Ylim=[min(vec_Y) max(vec_Y)];
-    test_lim=1;
-    if test_ima%both background image and vectors coexist, take the wider bound
-        Xlim(1)=min(AX(1),Xlim(1));
-        Xlim(2)=max(AX(end),Xlim(2));
-        Ylim(1)=min(AY(end),Ylim(1));
-        Ylim(2)=max(AY(1),Ylim(2));
+if ~isempty(Data)
+    test_lim=0;
+    if test_vec
+        Xlim=[min(vec_X) max(vec_X)];
+        Ylim=[min(vec_Y) max(vec_Y)];
+        test_lim=1;
+        if test_ima%both background image and vectors coexist, take the wider bound
+            Xlim(1)=min(AX(1),Xlim(1));
+            Xlim(2)=max(AX(end),Xlim(2));
+            Ylim(1)=min(AY(end),Ylim(1));
+            Ylim(2)=max(AY(1),Ylim(2));
+        end
+    elseif test_ima %only image plot
+        Xlim(1)=min(AX(1),AX(end));
+        Xlim(2)=max(AX(1),AX(end));
+        Ylim(1)=min(AY(1),AY(end));
+        Ylim(2)=max(AY(1),AY(end));
+        test_lim=1;
     end
-elseif test_ima %only image plot
-    Xlim(1)=min(AX(1),AX(end));
-    Xlim(2)=max(AX(1),AX(end));
-    Ylim(1)=min(AY(1),AY(end));
-    Ylim(2)=max(AY(1),AY(end));
-    test_lim=1;
+    AxeData.RangeX=Xlim;
+    AxeData.RangeY=Ylim;
+%    adjust the size of the plot to include the whole field, except if PlotParam.FixedLimits=1
+    if ~(isfield(PlotParam,'FixedLimits') && PlotParam.FixedLimits) && test_lim 
+            if Xlim(2)>Xlim(1)
+                set(haxes,'XLim',Xlim);% set x limits of frame in axes coordinates
+            end
+            if Ylim(2)>Ylim(1)
+                set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
+            end
+    end
+    if ~(isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1))
+         set(haxes,'DataAspectRatio',[1 1 1])
+    end
+    set(haxes,'YDir','normal') 
+    set(get(haxes,'XLabel'),'String',[XName ' (' x_units ')']);
+    set(get(haxes,'YLabel'),'String',[YName ' (' y_units ')']);
+    PlotParamOut.x_units=x_units;
+    PlotParamOut.y_units=y_units;
 end
-AxeData.RangeX=Xlim;
-AxeData.RangeY=Ylim;
-% adjust the size of the plot to include the whole field, except if PlotParam.FixedLimits=1
-if ~(isfield(PlotParam,'FixedLimits') && PlotParam.FixedLimits) && test_lim 
-        if Xlim(2)>Xlim(1)
-            set(haxes,'XLim',Xlim);% set x limits of frame in axes coordinates
-        end
-        if Ylim(2)>Ylim(1)
-            set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
-        end
-end
-if ~(isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1))
-     set(haxes,'DataAspectRatio',[1 1 1])
-end
-set(haxes,'YDir','normal') 
-set(get(haxes,'XLabel'),'String',[XName ' (' x_units ')']);
-set(get(haxes,'YLabel'),'String',[YName ' (' y_units ')']);
-PlotParamOut.x_units=x_units;
-PlotParamOut.y_units=y_units;
-
 %-------------------------------------------------------------------
 % --- function for plotting vectors
 %INPUT:

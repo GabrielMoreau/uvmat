@@ -138,7 +138,6 @@ switch ObjectData.Style
         [ProjData,errormsg] = proj_volume(FieldData,ObjectData);
 end
 
-
 %-----------------------------------------------------------------
 %project on a set of points
 function  [ProjData,errormsg]=proj_points(FieldData,ObjectData)%%
@@ -345,10 +344,10 @@ for icell=1:length(CellVarIndex)
                 j_plus=min(npxy(1),j_plus);
                 ProjData.X(ipoint,1)=ObjectData.Coord(ipoint,1);
                 ProjData.Y(ipoint,1)=ObjectData.Coord(ipoint,2);
-                i_int=[i_min:i_plus];
-                j_int=[j_min:j_plus];
+                i_int=(i_min:i_plus);
+                j_int=(j_min:j_plus);
                 ProjData.NbVal(ipoint,1)=length(j_int)*length(i_int);
-                if isempty(i_int) | isempty(j_int)
+                if isempty(i_int) || isempty(j_int)
                    for ivar=VarIndex   
                         eval(['ProjData.' FieldData.ListVarName{ivar} '(ipoint,:)=NaN;']);
                    end
@@ -386,17 +385,18 @@ end
 ProjData.NbDim=1;
 ProjData.ListVarName={};
 ProjData.VarDimName={};
+ProjData.VarAttribute={};
 
 Mesh=zeros(1,numel(FieldData.ListVarName));
 if isfield (FieldData,'VarAttribute')
-    ProjData.VarAttribute=FieldData.VarAttribute;%list of variable attribute names
-    for iattr=1:length(ProjData.VarAttribute)%initialization of variable attribute values
+    %ProjData.VarAttribute=FieldData.VarAttribute;%list of variable attribute names
+    for iattr=1:length(FieldData.VarAttribute)%initialization of variable attribute values
 %         ProjData.VarAttribute{iattr}={};
-        if isfield(ProjData.VarAttribute{iattr},'Unit')
-            unit{iattr}=ProjData.VarAttribute{iattr}.Unit;
+        if isfield(FieldData.VarAttribute{iattr},'Unit')
+            unit{iattr}=FieldData.VarAttribute{iattr}.Unit;
         end
-        if isfield(ProjData.VarAttribute{iattr},'Mesh')
-            Mesh(iattr)=ProjData.VarAttribute{iattr}.Mesh;
+        if isfield(FieldData.VarAttribute{iattr},'Mesh')
+            Mesh(iattr)=FieldData.VarAttribute{iattr}.Mesh;
         end
     end
 end
@@ -548,12 +548,13 @@ for icell=1:length(CellVarIndex)
                 eval(['ProjData.' VarName '=(ProjData.' VarName 'Min+Mesh(ivar)/2:Mesh(ivar):ProjData.' VarName 'Max);']); % list of bin values
                 eval(['ProjData.' VarName 'Histo=hist(double(FieldData.' VarName '(indsel,:)),ProjData.' VarName ');']); % histogram at predefined bin positions
             end
-            ProjData.ListVarName=[ProjData.ListVarName {VarName} {[VarName 'Histo']} {[VarName 'Mean']}];
+            ProjData.ListVarName=[ProjData.ListVarName {VarName} {[VarName 'Histo']} {[VarName 'Mean']} {[VarName 'Min']} {[VarName 'Max']}];
             if test_Amat && testcolor
                  ProjData.VarDimName=[ProjData.VarDimName  {VarName} {{VarName,'rgb'}} {'rgb'}];%{{'nb_point','rgb'}};
             else
-               ProjData.VarDimName=[ProjData.VarDimName {VarName} {VarName} {'nbpoint'}];
+               ProjData.VarDimName=[ProjData.VarDimName {VarName} {VarName} {'nbpoint'} {'nbpoint'} {'nbpoint'}];
             end
+            ProjData.VarAttribute=[ProjData.VarAttribute FieldData.VarAttribute{ivar} {[]} {[]} {[]} {[]}];
         end
     end 
 %     if test_Amat & testcolor
@@ -2075,7 +2076,7 @@ for icell=1:length(CellVarIndex)
                             ProjData.VarAttribute{length(ProjData.ListVarName)}=FieldData.VarAttribute{ivar}; %reproduce the variable attributes  
                             eval(['ProjData.' VarName '=squeeze(FieldData.' VarName '(iz,:,:));'])% select the z index iz
                             %TODO : do a vertical average for a thick plane
-                            if test_interp(2) | test_interp(3)
+                            if test_interp(2) || test_interp(3)
                                 eval(['ProjData.' VarName '=interp2(Coord{3},Coord{2},ProjData.' VarName ',Coord_x,Coord_y'');']) 
                             end
                         end

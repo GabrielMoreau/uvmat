@@ -29,8 +29,13 @@ if isempty(huvmat)
 end
 hhuvmat=guidata(huvmat);%handles of elements in uvmat
 UvData=get(huvmat,'UserData');
-currentfig=hObject;
-hhcurrentfig=guidata(currentfig);
+FigData=get(hObject,'UserData');
+if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is stored in UserData, its parent is the plotting axes of the rectangle
+    hcurrentfig=get(get(FigData,'parent'),'parent');
+else
+    hcurrentfig=hObject;%usual plot
+end
+hhcurrentfig=guidata(hcurrentfig);
 test_zoom=get(hhcurrentfig.zoom,'Value');%test for zoom action, first priority
 test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
 test_edit=get(hhuvmat.edit_object,'Value');%test for object editing, third priority
@@ -57,12 +62,12 @@ AxeData=[];%default
 
 %% determine the currently selected items
 hcurrentobject=gco;% current object handle (selected by the mouse)
-hcurrentfig=hObject;% current figure handle
+%hcurrentfig=hObject;% current figure handle
 fig_tag=get(hcurrentfig,'Tag');
 tag_obj=get(gco,'Tag');%tag of the currently selected object
 xy=[];%default
-xy_fig=get(hcurrentfig,'CurrentPoint');% current point of the current figure (gcbo)
-hchild=get(hcurrentfig,'Children');%handles of all objects in the current figure
+xy_fig=get(hObject,'CurrentPoint');% current point of the current figure (gcbo)
+hchild=get(hObject,'Children');%handles of all objects in the current figure
 haxes=[];
 
 %% loop on all the objects in the current figure (selected by the last mouse click) 
@@ -105,17 +110,14 @@ for ichild=1:length(hchild)
         end
     end
 end
-test2D=0;
-if isfield(AxeData,'NbDim')
-    if isequal(AxeData.NbDim,2)
-        test2D=1;
-    end
-end
-if ~test2D     %desable  object creation and vector editing if NbDim different from 2
+
+%% desable  object creation and vector editing if NbDim different from 2
+if ~(isfield(AxeData,'NbDim') && isequal(AxeData.NbDim,2))
     test_create=0;
-    test_edit_vect=0;
+    test_edit_vect=0;    
 end
-%delete the current zoom rectangle
+
+%% delete the current zoom rectangle
 if isfield(AxeData,'CurrentRectZoom') & ishandle(AxeData.CurrentRectZoom)
     delete(AxeData.CurrentRectZoom)
     AxeData.CurrentRectZoom=[];

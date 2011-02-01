@@ -27,7 +27,12 @@ function mouse_motion(hObject,eventdata,handles)
 if ~exist('handles','var')
     return
 end
-currentfig=hObject;
+FigData=get(hObject,'UserData');
+if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is stored in UserData, its parent is the plotting axes of the rectangle
+    currentfig=get(get(FigData,'parent'),'parent');
+else
+    currentfig=hObject;%usual plot
+end
 hhcurrentfig=guidata(currentfig);
 test_zoom=get(hhcurrentfig.zoom,'Value');%test for zoom activated on the current figure
 test_draw=0;%test for mouse drawing of object, =0 by default
@@ -60,8 +65,8 @@ xy=[];%default
 
 pointershape='arrow';% default pointer is an arrow 
 
-xy_fig=get(currentfig,'CurrentPoint');% current point of the current figure (gcbo)
-hchild=get(currentfig,'Children');%handles of all objects in the current figure
+xy_fig=get(hObject,'CurrentPoint');% current point of the current figure (gcbo)
+hchild=get(hObject,'Children');%handles of all objects in the current figure
 
 %% loop on all the objects in the current figure and detect whether the mouse is over a plot  axes
 haxes=[];
@@ -73,7 +78,7 @@ for ichild=1:length(hchild)
     if xy_fig(1) >=obj_pos(1) && xy_fig(2) >= obj_pos(2)&& xy_fig(1) <=obj_pos(1)+obj_pos(3) && xy_fig(2) <= obj_pos(2)+obj_pos(4);
         htype=get(hchild(ichild),'Type');%type of the crrent child
         %if the mouse is over an axis, look at the data
-        if isequal(htype,'axes')
+        if strcmp(htype,'axes')
             haxes=hchild(ichild);
             xy=get(haxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
             AxeData=get(haxes,'UserData');% data attached to the axis
@@ -143,8 +148,6 @@ for ichild=1:length(hchild)
                                     eval(['x=Field.' Field.ListVarName{VarType{icell}.coord(2)} ';'])
                                     VarName=Field.ListVarName{CellVarIndex{icell}(1)};
                                     eval(['nxy=size(Field.' VarName ');']);
-%                                     nxy(1)=numel(y);
-%                                     nxy(2)=numel(x);
                                     MaxAY=max(y(1),y(end)); %#ok<COLND>
                                     MinAY=min(y(1),y(end)); %#ok<COLND>
                                     if (xy(1,1)>x(1))&(xy(1,1)<x(end))&(xy(1,2)<MaxAY)&(xy(1,2)>MinAY) %#ok<COLND>

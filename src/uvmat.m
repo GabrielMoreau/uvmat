@@ -216,6 +216,9 @@ UvData.OpenParam.SetObjectOrigin=[-0.05 -0.03]; %position for set_object
 UvData.OpenParam.SetObjectSize=[0.3 0.7];
 UvData.OpenParam.CalOrigin=[0.95 -0.03];%position for geometry_calib (TO IMPROVE)
 UvData.OpenParam.CalSize=[0.28 1];
+UvData.axes3=[];%initiate the record of plotted field
+UvData.axes2=[];
+UvData.axes1=[];
 
 %functions for the mouse and keyboard
 set(handles.histo_u,'NextPlot','replacechildren');
@@ -2519,6 +2522,8 @@ end
 if ~isfield(UvData.Object{1},'plotaxes')
     UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis 
 end
+UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
+set(handles.uvmat,'UserData',UvData)
 
 %% reset the min and max of scalar if only the mask is displayed(TODO: check the need)
 if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
@@ -2611,18 +2616,18 @@ for imap=1:numel(IndexObj)
         if imap==2 && isempty(view_field_handle)
             view_field(ObjectData)
         else
-            [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},keeplim(imap),PosColorbar{imap});
+            [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},PosColorbar{imap});
             write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
             if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
                 ObjectData.Mesh=Field.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
             end
-            if imap==1            
-                UvData.axes3=ObjectData;
-            else
-                ViewFieldData=get(view_field_handle,'UserData');
-                ViewFieldData.axes3=ObjectData;
-                set(view_field_handle,'UserData',ViewFieldData)
-            end
+%             if imap==1            
+%                 UvData.axes3=ObjectData;
+%             else
+%                 ViewFieldData=get(view_field_handle,'UserData');
+%                 ViewFieldData.axes3=ObjectData;
+%                 set(view_field_handle,'UserData',ViewFieldData)
+%             end
         end
         if isequal(PlotType,'none')
             hget_field=findobj(allchild(0),'name','get_field');
@@ -2635,9 +2640,6 @@ for imap=1:numel(IndexObj)
     end
 end
 
-%write_plot_param(handles,UvData.Object{1}.PlotParam);% update the display of the plotting parameters
-UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
-set(handles.uvmat,'UserData',UvData)
 
 %% update the mask
 if isequal(get(handles.mask_test,'Value'),1)%if the mask option is on
@@ -3927,7 +3929,6 @@ huvmat=get(handles.histo1_menu,'parent');
 histo_menu=get(handles.histo1_menu,'String');
 histo_value=get(handles.histo1_menu,'Value');
 FieldName=histo_menu{histo_value};
-% UvData=get(huvmat,'UserData');
 update_histo(handles.histo_u,huvmat,FieldName)
 
 %----------------------------------------------
@@ -3938,7 +3939,6 @@ huvmat=get(handles.histo2_menu,'parent');
 histo_menu=get(handles.histo2_menu,'String');
 histo_value=get(handles.histo2_menu,'Value');
 FieldName=histo_menu{histo_value};
-% UvData=get(huvmat,'UserData');
 update_histo(handles.histo_v,huvmat,FieldName)
 
 
@@ -4001,9 +4001,10 @@ else
                 eval(['Histo.histo(:,col)=hist(C, Histo.' FieldName ');']);  %calculate histogram
             end
         end
-        set(haxes,'XLimMode','auto')%reset auto mode (after zoom effect)
-        set(haxes,'YLimMode','auto')
-        plot_field(Histo,haxes);
+%         set(haxes,'XLimMode','auto')%reset auto mode (after zoom effect)
+%         set(haxes,'YLimMode','auto')
+        PlotParam.Auto_xy=1;
+        plot_field(Histo,haxes,PlotParam);
     end
 end
 
@@ -4185,7 +4186,7 @@ haxes= handles.axes3;
 UvData=get(handles.uvmat,'UserData');
 AxeData=UvData.axes3;
 PlotParam=read_plot_param(handles);
-[PlotType,PlotParamOut]= plot_field(AxeData,haxes,PlotParam,1);
+[PP,PlotParamOut]= plot_field(AxeData,haxes,PlotParam);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %-------------------------------------------------------------------
@@ -4306,9 +4307,11 @@ else
     end
     PlotHandles=guidata(hview_field);
 end
-if ~isempty(ProjData)
+% if ~isempty(ProjData)
+'TEST'
+ProjData
     plot_field(ProjData,PlotHandles.axes3,PlotHandles);
-end
+% end
 set(handles.uvmat,'UserData',UvData)
 hother=findobj('Tag','proj_object');%find all the proj objects
 for iobj=1:length(hother)
@@ -4362,7 +4365,7 @@ if isfield(ObjectData,'DisplayHandle_uvmat')
     end
     %     end
 end
-pause(0.1)
+% pause(0.1)
 figure(hset_object)%put set_object in front
 
 %------------------------------------------------------

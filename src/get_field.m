@@ -261,7 +261,7 @@ if maxdim>=2
                 set(handles.coord_z_scalar,'Value',VarType{imax}.coord_z+1)
             end
             if ~isempty(VarType{imax}.coord)
-                if numel(VarType{imax}.coord)>=maxdim-2
+                if numel(VarType{imax}.coord)>=maxdim-2 && maxdim>=3
                     set(handles.coord_z_scalar,'Value',VarType{imax}.coord(maxdim-2)+1)
                 end
                 if numel(VarType{imax}.coord)>=maxdim-1
@@ -1213,6 +1213,7 @@ if isequal(ACTION,'more...')
    %record the current menu in personal file profil_perso
    dir_perso=prefdir;
    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+   get_field_fct={};
    for ilist=nb_builtin+1:length(menu_str)-1
        ff=functions(list_func_handles{ilist});
        get_field_fct{ilist-nb_builtin}=ff.file;
