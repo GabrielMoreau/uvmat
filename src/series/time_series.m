@@ -36,7 +36,7 @@ end
 hseries=guidata(Series.hseries);%handles in the GUI series
 WaitbarPos=get(hseries.waitbar_frame,'Position'); %position of the waitbar frame
 
-%projection object
+%% projection object
 test_object=get(hseries.GetObject,'Value');
 if test_object
     hset_object=findobj(allchild(0),'tag','set_object');
@@ -51,7 +51,7 @@ else
     return
 end
 
-% root names
+%% root names
 if iscell(Series.RootPath)
     RootPath=Series.RootPath;
     RootFile=Series.RootFile;
@@ -78,23 +78,8 @@ end
 nbview=length(RootPath);%number of series (1 or 2)
 nbfield=size(num_i1{1},1)*size(num_i1{1},2); %number of fields in the time series
 
-%Number of input series: this function  accepts only a single input file series 
+%Number of input series: this function  accepts only one or two input file series (sub_field is used in the latter case)
 nbview=length(RootPath);
-if nbview==2
-    %TODO: choose between difference and two series
-elseif nbview>2  % TODO: make multiple series
-%     RootPath=RootPath(1:2);
-%     set(hseries.RootPath,'String',RootPath)
-%     SubDir=SubDir(1:2);
-%     set(hseries.SubDir,'String',SubDir)
-%     RootFile=RootFile(1:2);
-%     set(hseries.RootFile,'String',RootFile)
-%     NomType=NomType(1:2);
-%     %set(hseries.NomType,'String',NomType)
-%     FileExt=FileExt(1:2);
-%     set(hseries.FileExt,'String',FileExt)
-%     nbview=2;
-end
 
 %determine image type
 hhh=which('mmreader');
@@ -146,7 +131,6 @@ if isequal(FieldName,{'get_field...'})
        hget_field=get_field(filename);
        return
     end
-    %hhget_field=guidata(hget_field);%handles of GUI elements in get_field
     SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
     if isempty(SubField)
         delete(hget_field)
@@ -154,38 +138,12 @@ if isequal(FieldName,{'get_field...'})
         hget_field=get_field(filename);
         SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
     end
-%     if isequal(get(hhget_field.menu_coord,'Visible'),'on')
-%         list_transform=get(hhget_field.menu_coord,'String');
-%         val_list=get(hhget_field.menu_coord,'Value');
-%         transform=list_transform{val_list};
-%     end
 end
 
 %detect whether the two files are 'images' or 'netcdf'
-% testima=0;
-% testvol=0;
+
 testcivx=0;
-% testnc=0;
 FileExt=get(hseries.FileExt,'String');
-% for iview=1:nbview
-%      ext=FileExt{iview};
-%      form=imformats(ext([2:end]));
-%      if isequal(lower(ext),'.vol')
-%          testvol=testvol+1;
-%      elseif ~isempty(form)||isequal(lower(ext),'.avi')% if the extension corresponds to an image format recognized by Matlab
-%          testima=testima+1;
-%      elseif isequal(ext,'.nc')
-%          testnc=testnc+1;
-%      end
-% end
-% if testvol
-%     msgbox_uvmat('ERROR','volume images not implemented yet')
-%     return
-% end
-% if testnc~=nbview && testima~=nbview && testvol~=nbview
-%     msgbox_uvmat('need a set of images or a set of netcdf files with the same fields as input','ERROR')
-%     return
-% end
 if ~isequal(FieldName,{'get_field...'})
     testcivx=isequal(FileType{1},'netcdf');
 end
@@ -199,7 +157,7 @@ if nbview==2
     VelType{2}=VelType_str{VelType_val};
 end
 
-%Calibration data and timing: read the ImaDoc files
+%% Calibration data and timing: read the ImaDoc files
 mode=''; %default
 timecell={};
 XmlData={};
@@ -244,7 +202,7 @@ for iview=1:nbview%Loop on views
     end
 end
 
-%check coincidence in time
+%% check coincidence in time
 multitime=0;
 if length(timecell)==0
     time=[];
@@ -274,33 +232,32 @@ if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array abs
     time=[];
 end
 
-% Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
+%%  Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
 subdir_result='time_series';
-if ~exist(fullfile(RootPath{1},subdir_result),'dir')
-    dircur=pwd; %record current working directory
-    cd(RootPath{1})% goes to the iamge directory
-    [m1,m2,m3]=mkdir(subdir_result);
-    if ~isequal(m2,'')
-         msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
-    end
-    [xx,msg2] = fileattrib(subdir_result,'+w','g'); %yield writing access (+w) to user group (g)
-    if ~strcmp(msg2,'')
-        msgbox_uvmat('ERROR',['pb of permission for ' subdir_result ': ' msg2])%error message for directory creation
-        cd(dircur)
-        return
-    end
-    cd(dircur) %back to the initial working directory
+pathdir=fullfile(RootPath{1},subdir_result);
+while exist(pathdir,'dir')
+    pathdir=[pathdir '.0'];
 end
+[m1,m2,m3]=mkdir(pathdir);
+if ~isequal(m2,'')
+     msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
+end
+[xx,msg2] = fileattrib(pathdir,'+w','g'); %yield writing access (+w) to user group (g)
+if ~strcmp(msg2,'')
+    msgbox_uvmat('ERROR',['pb of permission for ' subdir_result ': ' msg2])%error message for directory creation
+    return
+end
+
 filebase_out=filebase{1}; 
 NomTypeOut=nomtype2pair(NomType{1},num_i2{end}(end)-num_i1{1}(1),num_j2{end}(end)-num_j1{1}(1));
 
-% coordinate transform or other user defined transform
+%% coordinate transform or other user defined transform
 transform_fct=[];%default
 if isfield(Series,'transform_fct')
     transform_fct=Series.transform_fct;
 end
 
-% to update:
+%% velocity type
 VelType_str=get(hseries.VelTypeMenu,'String');
 VelType_val=get(hseries.VelTypeMenu,'Value');
 VelType{1}=VelType_str{VelType_val};
@@ -310,7 +267,7 @@ if nbview==2
     VelType{2}=VelType_str{VelType_val};
 end
 
-%LOOP ON SLICES
+%% LOOP ON SLICES
 for i_slice=1:NbSlice
      dt=[];
      nbmissing=0; %number of undetected files

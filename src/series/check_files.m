@@ -87,7 +87,7 @@ for iview=1:nbview
         message{6}=[ 'quality ' num2str(info.Quality)];   
         Tabchar=message;
     else
-        datnum=[];
+        datnum=zeros(1,nbfield);
         Tabchar={};
         %LOOP ON SLICES
         for i_slice=1:NbSlice
@@ -108,7 +108,9 @@ for iview=1:nbview
                         lastfield='not found';
                     else
                         datfile=dir(file);
-                        datnum(ifile)=datenum(datfile.date);
+                        if isfield(datfile,'datenum')
+                            datnum(ifile)=datfile.datenum;
+                        end
                         filefound(ifile)={datfile.name};
                         lastfield='';
                         if isequal(Series.FileExt{iview},'.nc') || isequal(Series.FileExt{iview},'.cdf')

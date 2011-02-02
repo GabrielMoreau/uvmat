@@ -367,6 +367,7 @@ for i_slice=1:NbSlice
                     return
                 end
              end   
+
              % coordinate transform (or other user defined transform)
              if ~isempty(transform_fct)
                  % z index
@@ -421,9 +422,6 @@ for i_slice=1:NbSlice
                         end
                     end
                 end
-%             else
-%                 nbmissing=nbmissing+1;
-%             end
         end
     end %end averaging loop
     for ivar=1:length(Field.ListVarName)
@@ -446,14 +444,10 @@ for i_slice=1:NbSlice
         DataMean.Time=time(1,num_i1{1}(1),num_j1{1}(1));
         DataMean.Time_end=time(end,num_i1{end}(end),num_j1{end}(end));
     end
-    
+
     %writing the result file
    if testima   
-%        if NbSlice==1
         [filemean]=name_generator(filebase_out,num_i1{1}(1),num_j1{1}(1),'.png',NomTypeOut,1,num_i2{end}(end),num_j2{end}(end),subdir_result);
-%        else % label the file number by the slice # for simplicity
-%           [filemean]=name_generator(filebase_out,i_slice,1,'.png','_i');
-%        end
         if exist(filemean,'file')
             backupfile=filemean;
             testexist=2;
@@ -484,11 +478,7 @@ for i_slice=1:NbSlice
         if isfield(DataMean,'Time')
             DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {'Time','Time_end'}];
         end  
-%         if NbSlice==1
-          filemean=name_generator(filebase_out,num_i1{1}(1),num_j1{1}(1),'.nc',NomTypeOut,1,num_i2{end}(end),num_j2{end}(end),subdir_result);
-%         else % label the file number by the slice # for simplicity
-%           [filemean]=name_generator(filebase_out,i_slice,1,'.nc','_i');
-%         end
+        filemean=name_generator(filebase_out,num_i1{1}(1),num_j1{1}(1),'.nc',NomTypeOut,1,num_i2{end}(end),num_j2{end}(end),subdir_result);
         if exist(filemean,'file')
             backupfile=filemean;
             testexist=2;
