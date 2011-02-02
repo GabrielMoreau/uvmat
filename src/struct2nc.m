@@ -50,7 +50,7 @@ if ~isequal(hhh,'')
         errormsg=['directory ' FilePath ' needs to be created'];
         return
     end
-    [Data,errormsg]=check_field_structure(Data)%check the validity of the input field structure
+    [Data,errormsg]=check_field_structure(Data);%check the validity of the input field structure
     if ~isempty(errormsg)
         errormsg=['invalid input structure:' errormsg];
         return
