@@ -102,9 +102,10 @@ if ~isequal(hhh,'')
         keystr= netcdf.inqAttName(nc,netcdf.getConstant('NC_GLOBAL'),iatt-1);
         indstr1=regexp(keystr,'\\','once');%detect '\\'
         indstr2=regexp(keystr,'\.','once');%detect '\.'
-        if isempty(indstr1) && isempty(indstr2)
+        %indtitle=regexp(keystr,'title','once');%detect 'title'(bad characters)
+        if isempty(indstr1) && isempty(indstr2)%&&isempty(indtitle)
            valuestr = netcdf.getAtt(nc,netcdf.getConstant('NC_GLOBAL'),keystr);
-           if ischar(valuestr) && length(valuestr)<200
+           if ischar(valuestr) & length(valuestr)<200 & double(valuestr)<=122 & double(valuestr)>=48 %usual characters
                 iatt_g=iatt_g+1;
                 indstr1=regexp(keystr,'\\','once');%detect '\\'
                 indstr2=regexp(keystr,'\.','once');%detect '\.'

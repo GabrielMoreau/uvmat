@@ -809,7 +809,6 @@ if isequal(figstring,'uvmat')
     inputfile=get(handles.inputfile,'String');
     huvmat=findobj(allchild(0),'tag','uvmat');
     if isempty(huvmat)
-        inputfile=get(handles.inputfile,'String');
         uvmat(inputfile)
     else
         hhuvmat=guidata(huvmat);
@@ -829,6 +828,7 @@ else
     end
     browse_fig(handles.list_fig); %update the list of new existing figures
 end
+set(handles.RUN,'BackgroundColor',[1 0 0])
 
 %------------------------------------------------------------------------
 % --- Function for plotting the current subfield

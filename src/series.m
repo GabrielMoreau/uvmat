@@ -1014,20 +1014,10 @@ mode=mode_list{mode_value};
 %reads image numbers from the interface
 ref_i=str2num(get(handles.ref_i,'String'));
 ref_j=str2num(get(handles.ref_j,'String'));
-% time=[];
-% ref_time=[];
- ref_time=0;
-% if isfield(SeriesData,'Time')&~isempty(SeriesData.Time{Val})&~isequal(SeriesData.Time{Val},0)
-%     time=SeriesData.Time{Val}; %get the set of times
-%     siztime=size(time);
-%     nbfield=siztime(1);
-%     nbfield2=siztime(2);
-% %     test_imadoc=1;
-% else
-%     test_imadoc=0;%no image documentation file
-    nbfield=50;
-    nbfield2=50;%default max number of pairs
-% end
+ref_time=0;
+nbfield=50;
+nbfield2=50;%default max number of pairs
+
 %look for existing processed pairs involving the field at the middle of the series if civ1 will not 
 % be performed, while the result is needed for next steps.
 displ_pair={''};
@@ -1040,7 +1030,6 @@ else
     dtunit='e-03';
 end
 if strcmp(mode,'series(Di)') 
-    nbfield
      for index=1:min(nbfield-1,50)
          filename=name_generator(filebase,ref_i-floor(index/2),ref_j,'.nc',NomType,1,ref_i+ceil(index/2),ref_j,subdir);
          select=(exist(filename,'file')==2);
@@ -1078,7 +1067,6 @@ elseif isequal(mode,'series(Dj)')% series on the j index
                 displ_num(2,ind_exist)=ceil(index/2);
                 displ_num(3,ind_exist)=0;
                 displ_num(4,ind_exist)=0;
-                %[cte_detect,vdt,cte_read]=read_netcdf(filename,{'dt','dt2','absolut_time_T0','absolute_time_TO_2'});
                 [Cte,var_detect,ichoice]=nc2struct(filename,{});
                 if isfield(Cte,'dt2')
                     dt=Cte.dt2;

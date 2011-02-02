@@ -238,7 +238,7 @@ set(haxes,'UserData',AxeData)
 FigData=get(hfig,'UserData');
 tagaxes=get(haxes,'tag');
 if isfield(FigData,tagaxes)
-    eval(['FigData.' tagaxes '=Data'])
+    eval(['FigData.' tagaxes '=Data;'])
     set(hfig,'UserData',FigData)
 end
              

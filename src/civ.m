@@ -4624,20 +4624,25 @@ if isempty(hfig)
     BarPosition=[0.05 0.81 0.01 0.05];
     hwaitbar=uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
 end
-datnum=[];
+% datnum=[];
 Tabchar={};
 nbfiles=numel(civ_files);
 count=0;
+testrecent=0;
 while count<nbfiles
     count=0;
+    datnum=zeros(1,nbfiles);
     for ifile=1:nbfiles
         detect=exist(civ_files{ifile},'file'); % check the existence of the file
         option=0;
         if detect==0
             option_str='not created';
         else
-            datfile=dir(civ_files{ifile});
-            datnum(ifile)=datenum(datfile.date);
+            datfile=dir(civ_files{ifile})
+            if isfield(datfile,'datenum')
+                datnum(ifile)=datfile.datenum;%only available in recent matlab versions
+                testrecent=1;
+            end
             filefound(ifile)={datfile.name};
             lastfield='';
             % check the content  netcdf file
@@ -4668,8 +4673,13 @@ while count<nbfiles
         [rr,filename,ext]=fileparts(civ_files{ifile});
         Tabchar{ifile,1}=[fullfile([subdir extdir],filename) ext  '...' option_str];
     end
-    if isempty(datnum)
-         message='no civ result created yet';
+    datnum=datnum(find(datnum));%keep the non zero values corresponding to existing files
+    if isempty(datnum) 
+        if testrecent
+            message='no civ result created yet';
+        else
+            message='';
+        end
     else
         datnum=datnum(find(datnum));%keep the non zero values corresponding to existing files
         [first,ind]=min(datnum);
@@ -4707,7 +4717,7 @@ function open_view_field(hObject, eventdata)
      filename=list{index};
      ind_dot=findstr(filename,'...');
      filename=filename(1:ind_dot-1);
-      filename=fullfile(rootroot,filename)
+      filename=fullfile(rootroot,filename);
       if exist(filename,'file')%visualise the vel field if it exists
         %[Field,VelTypeOut]=read_civxdata(filename);
         %view_field(Field)
