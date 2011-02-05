@@ -1,6 +1,21 @@
 %'write_plot_param': update the plotting parameters on the uvmat interface after a plotting operation
 function write_plot_param(handles,PlotParam)
 
+%coordinates
+if isfield(PlotParam,'FixEqual')
+    if PlotParam.FixEqual
+        set(handles.FixEqual,'Value',1)
+        set(handles.FixEqual,'BackgroundColor',[1 1 0])
+    else
+        set(handles.FixEqual,'Value',0)
+        set(handles.FixEqual,'BackgroundColor',[0.7 0.7 0.7])
+    end
+end
+set(handles.MinX,'String',num2str(PlotParam.MinX,4));
+set(handles.MaxX,'String',num2str(PlotParam.MaxX,4));
+set(handles.MinY,'String',num2str(PlotParam.MinY,4));
+set(handles.MaxY,'String',num2str(PlotParam.MaxY,4));
+
 %scalar or image parameters
 if isfield(PlotParam,'Scalar')
     set_scal_display(handles,'on')
@@ -69,7 +84,7 @@ function set_scal_display(handles,state)
 set(handles.MaxA,'Visible',state)
 set(handles.MinA,'Visible',state)
 %set(handles.IncrA,'Visible',state)
-set(handles.AutoScal,'Visible',state)
+set(handles.FixScal,'Visible',state)
 set(handles.BW,'Visible',state)
 set(handles.Contours,'Visible',state)
 set(handles.min_title,'Visible',state)
@@ -88,7 +103,7 @@ function set_vect_display(handles,state)
 set(handles.frame_vect,'Visible',state)
 % set(handles.VECT_title,'Visible',state)
 set(handles.VecScale,'Visible',state)
-set(handles.AutoVec,'Visible',state)
+set(handles.FixVec,'Visible',state)
 set(handles.HideFalse,'Visible',state)
 set(handles.HideWarning,'Visible',state)
 % if isfield(handles,'record')

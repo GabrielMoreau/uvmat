@@ -308,10 +308,8 @@ menu_str=[menu_str;{'more...'}];
 set(handles.transform_fct,'String',menu_str)
 set(handles.transform_fct,'UserData',fct_handle)% store the list of path in UserData of ACTION
 set(handles.uvmat,'UserData',UvData)
-%initiates menu of vector colors 
-% list_menu=calc_field;
-% %list_menu=[{'ima_cor'};{'black'};{'white'};list_menu(3:end)];
-% set(handles.col_vec,'String',list_menu)
+%set(handles.FixEqual,'Value',1)% by default: axes free to adapt in aspect ratio
+%set(handles.FixEqual,'BackgroundColor',[1 1 0])
 
 %check the path and date of modification of all functions in uvmat
 path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
@@ -351,14 +349,6 @@ if exist('input','var')
         display_file_name(hObject, eventdata, handles,inputfile)
         testinputfield=1;
     end
-%     if ~isempty(Field)
-%         menu_str=update_menu(handles.Fields,'get_field...');
-% %         set(handles.Fields,'Value',1)
-% %         set(handles.Fields,'String',{'get_field...'})    
-%         testinputfield=1;
-%     elseif ischar(input)
-%         scan_i_Callback(handles.scan_i, eventdata, handles);    
-%     end
 else
    if ishandle(handles.UVMAT_title)
        fid=fopen('revision.log');
@@ -748,6 +738,11 @@ if exist(filexml,'file')
     set(handles.view_xml,'BackgroundColor',[1 1 1])
     drawnow
     if isfield(XmlData, 'GeometryCalib') && ~isempty(XmlData.GeometryCalib)
+        XmlData.GeometryCalib
+        if isfield(XmlData.GeometryCalib,'VolumeScan') && isequal(XmlData.GeometryCalib.VolumeScan,'y')
+            'TESTvol'
+            set (handles.nb_slice,'String','volume')
+        end
         hgeometry_calib=findobj('tag','geometry_calib');
         if ~isempty(hgeometry_calib)
             GUserData=get(hgeometry_calib,'UserData');
@@ -836,7 +831,7 @@ if isfield(XmlData,'GeometryCalib')
             set(handles.pxcm,'String',num2str(pixcmx))
             set(handles.pycm,'String',num2str(pixcmy))
         end
-        if ~get(handles.FixedLimits,'Value')
+        if ~get(handles.FixLimits,'Value')
             set(handles.transform_fct,'Value',2); % phys transform by default if fixedLimits is off
         end
         if isfield(GeometryCalib,'SliceCoord')
@@ -847,7 +842,7 @@ if isfield(XmlData,'GeometryCalib')
                set(handles.slices,'Visible','on')
                set(handles.slices,'Value',1)
            end
-           if isfield(GeometryCalib,'NbSlice') && isequal(GeometryCalib.NbSlice,'volume')
+           if isfield(GeometryCalib,'VolumeScan') && isequal(GeometryCalib.VolumeScan,'y')
                set(handles.nb_slice,'String','volume')
            else
                set(handles.nb_slice,'String',num2str(NbSlice))
@@ -2097,7 +2092,7 @@ end
 NomType=get(handles.FileIndex,'UserData');
 %update the z position index
 nbslice_str=get(handles.nb_slice,'String');
-if isequal(nbslice_str,'volume')
+if isequal(nbslice_str,'volume')%NOT USED
     z_index=num_j1;
     set(handles.z_index,'String',num2str(z_index))
 else
@@ -2522,6 +2517,7 @@ end
 if ~isfield(UvData.Object{1},'plotaxes')
     UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis 
 end
+testnewseries=UvData.NewSeries;
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
 set(handles.uvmat,'UserData',UvData)
 
@@ -2542,7 +2538,7 @@ end
 plot_handles{1}=handles;
 haxes(1)=handles.axes3;
 PlotParam{1}=read_plot_param(handles);%read plotting parameters on the uvmat interfac
-keeplim(1)=get(handles.FixedLimits,'Value');% test for fixed graph limits
+keeplim(1)=get(handles.FixLimits,'Value');% test for fixed graph limits
 PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
 
 % second projection object (view_field display)
@@ -2563,6 +2559,9 @@ end
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);    
     [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
+    if testnewseries && isfield(ObjectData,'CoordUnit')
+        PlotParam{imap}=rmfield(PlotParam{imap},'FixEqual'); %set FixEqual to depend on the field (=1 if Data.CoordUnit=1 in plot_field)
+    end 
     if ~isempty(errormsg)
         return
     end
@@ -2609,8 +2608,7 @@ for imap=1:numel(IndexObj)
             ObjectData.ListDimName(ind_off)=[];
             ObjectData.DimValue(ind_off)=[];
         end
-    end
-    
+    end   
     if ~isempty(ObjectData)
         PlotType='none'; %default
         if imap==2 && isempty(view_field_handle)
@@ -2621,13 +2619,6 @@ for imap=1:numel(IndexObj)
             if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
                 ObjectData.Mesh=Field.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
             end
-%             if imap==1            
-%                 UvData.axes3=ObjectData;
-%             else
-%                 ViewFieldData=get(view_field_handle,'UserData');
-%                 ViewFieldData.axes3=ObjectData;
-%                 set(view_field_handle,'UserData',ViewFieldData)
-%             end
         end
         if isequal(PlotType,'none')
             hget_field=findobj(allchild(0),'name','get_field');
@@ -2639,7 +2630,6 @@ for imap=1:numel(IndexObj)
         end
     end
 end
-
 
 %% update the mask
 if isequal(get(handles.mask_test,'Value'),1)%if the mask option is on
@@ -2763,27 +2753,27 @@ indx=1+round((nxy(2)-1)*(x0-rangx0(1))/(rangx0(2)-rangx0(1)));% index x of pixel
 indy=1+round((nxy(1)-1)*(y12-rangy0(1))/(rangy0(2)-rangy0(1)));% index y of pixel
 
 %-------------------------------------------------------------------
-% --- Executes on button press in 'FixedLimits'.
+% --- Executes on button press in 'FixLimits'.
 %-------------------------------------------------------------------
-function FixedLimits_Callback(hObject, eventdata, handles)
-test=get(handles.FixedLimits,'Value');
+function FixLimits_Callback(hObject, eventdata, handles)
+test=get(handles.FixLimits,'Value');
 if test
-    set(handles.FixedLimits,'BackgroundColor',[1 1 0])
+    set(handles.FixLimits,'BackgroundColor',[1 1 0])
 else
-    set(handles.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
 end
 
 %-------------------------------------------------------------------
-% --- Executes on button press in auto_xy.
-function auto_xy_Callback(hObject, eventdata, handles)
-test=get(handles.auto_xy,'Value');
+% --- Executes on button press in FixEqual.
+function FixEqual_Callback(hObject, eventdata, handles)
+test=get(handles.FixEqual,'Value');
 if test
-    set(handles.auto_xy,'BackgroundColor',[1 1 0])
+    set(handles.FixEqual,'BackgroundColor',[1 1 0])
     cla(handles.axes3)
     update_plot(handles);
 else
-    set(handles.auto_xy,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.FixEqual,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
 %     axis(handles.axes3,'image')
 end
@@ -2798,8 +2788,8 @@ function zoom_Callback(hObject, eventdata, handles)
 
 if (get(handles.zoom,'Value') == 1); 
     set(handles.zoom,'BackgroundColor',[1 1 0])
-    set(handles.FixedLimits,'Value',1)% propose by default fixed limits for the plotting axes
-    set(handles.FixedLimits,'BackgroundColor',[1 1 0]) 
+    set(handles.FixLimits,'Value',1)% propose by default fixed limits for the plotting axes
+    set(handles.FixLimits,'BackgroundColor',[1 1 0]) 
 else
     set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
 end
@@ -3147,7 +3137,7 @@ else
 end
 setfield(handles);% update the field structure ('civ1'....)
 
-if ~isfield(UvData,'NewSeries')||isequal(UvData.NewSeries,0)
+if ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
     run0_Callback(hObject, eventdata, handles)
 end
 
@@ -3352,7 +3342,7 @@ else
 end 
 set(handles.uvmat,'UserData',UvData)
 setfield(handles);% update the field structure ('civ1'....)
-if ~isfield(UvData,'NewSeries')||isequal(UvData.NewSeries,0)
+if ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
     run0_Callback(hObject, eventdata, handles)
 end
 
@@ -3882,8 +3872,8 @@ else
     set(handles.path_transform,'String','')
 end
 
-set(handles.FixedLimits,'Value',0)
-set(handles.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
+set(handles.FixLimits,'Value',0)
+set(handles.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
 
 UvData=get(huvmat,'UserData');
 
@@ -4003,39 +3993,64 @@ else
         end
 %         set(haxes,'XLimMode','auto')%reset auto mode (after zoom effect)
 %         set(haxes,'YLimMode','auto')
-        PlotParam.Auto_xy=1;
-        plot_field(Histo,haxes,PlotParam);
+%         PlotParam.Auto_xy=1;
+        plot_field(Histo,haxes);
     end
 end
-
-
 
 %------------------------------------------------
 %CALLBACKS FOR PLOTTING PARAMETERS
 %-------------------------------------------------
+%-----------------------------------------------------------------
+function MinX_Callback(hObject, eventdata, handles)
+%------------------------------------------
+set(handles.FixLimits,'Value',1) %suppress auto mode
+set(handles.FixLimits,'BackgroundColor',[1 1 0])
+update_plot(handles);
+
+%-----------------------------------------------------------------
+function MaxX_Callback(hObject, eventdata, handles)
+%------------------------------------------
+set(handles.FixLimits,'Value',1) %suppress auto mode
+set(handles.FixLimits,'BackgroundColor',[1 1 0])
+update_plot(handles);
+
+%-----------------------------------------------------------------
+function MinY_Callback(hObject, eventdata, handles)
+%------------------------------------------
+set(handles.FixLimits,'Value',1) %suppress auto mode
+set(handles.FixLimits,'BackgroundColor',[1 1 0])
+update_plot(handles);
+
+%-----------------------------------------------------------------
+function MaxY_Callback(hObject, eventdata, handles)
+%------------------------------------------
+set(handles.FixLimits,'Value',1) %suppress auto mode
+set(handles.FixLimits,'BackgroundColor',[1 1 0])
+update_plot(handles);
 
 %-----------------------------------------------------------------
 function MinA_Callback(hObject, eventdata, handles)
 %------------------------------------------
-set(handles.AutoScal,'Value',1) %suppress auto mode
-set(handles.AutoScal,'BackgroundColor',[1 1 0])
+set(handles.FixScal,'Value',1) %suppress auto mode
+set(handles.FixScal,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %-----------------------------------------------------------------
 function MaxA_Callback(hObject, eventdata, handles)
 %--------------------------------------------
-set(handles.AutoScal,'Value',1) %suppress auto mode
-set(handles.AutoScal,'BackgroundColor',[1 1 0])
+set(handles.FixScal,'Value',1) %suppress auto mode
+set(handles.FixScal,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %-----------------------------------------------
-function AutoScal_Callback(hObject, eventdata, handles)
+function FixScal_Callback(hObject, eventdata, handles)
 %--------------------------------------------
-test=get(handles.AutoScal,'Value');
+test=get(handles.FixScal,'Value');
 if test
-    set(handles.AutoScal,'BackgroundColor',[1 1 0])
+    set(handles.FixScal,'BackgroundColor',[1 1 0])
 else
-    set(handles.AutoScal,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.FixScal,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
 end
 
@@ -4075,20 +4090,20 @@ update_plot(handles);
 %-------------------------------------------------------------------
 function VecScale_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-set(handles.AutoVec,'Value',1);
-set(handles.AutoVec,'BackgroundColor',[1 1 0])
+set(handles.FixVec,'Value',1);
+set(handles.FixVec,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %-------------------------------------------------------------------
-function AutoVec_Callback(hObject, eventdata, handles)
+function FixVec_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-test=get(handles.AutoVec,'Value');
+test=get(handles.FixVec,'Value');
 if test
-    set(handles.AutoVec,'BackgroundColor',[1 1 0])
+    set(handles.FixVec,'BackgroundColor',[1 1 0])
 else
     update_plot(handles);
     %set(handles.VecScale,'String',num2str(ScalOut.VecScale,3))
-    set(handles.AutoVec,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.FixVec,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 %------------------------------------------------------------------------
@@ -4186,6 +4201,7 @@ haxes= handles.axes3;
 UvData=get(handles.uvmat,'UserData');
 AxeData=UvData.axes3;
 PlotParam=read_plot_param(handles);
+PlotParam.Scalar
 [PP,PlotParamOut]= plot_field(AxeData,haxes,PlotParam);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
@@ -4307,11 +4323,7 @@ else
     end
     PlotHandles=guidata(hview_field);
 end
-% if ~isempty(ProjData)
-'TEST'
-ProjData
-    plot_field(ProjData,PlotHandles.axes3,PlotHandles);
-% end
+plot_field(ProjData,PlotHandles.axes3,PlotHandles);
 set(handles.uvmat,'UserData',UvData)
 hother=findobj('Tag','proj_object');%find all the proj objects
 for iobj=1:length(hother)
@@ -4981,8 +4993,5 @@ IndexObj=get(handles.list_object_2,'Value');
 if IndexObj>1 
     delete_object(IndexObj)
 end
-    
-
-
 
 

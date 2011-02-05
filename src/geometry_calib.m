@@ -203,7 +203,20 @@ set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
 set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
 
 % store the calibration data, by default in the xml file of the currently displayed image
-hhuvmat=guidata(findobj(allchild(0),'Name','uvmat'));%handles of elements in the GUI uvmat
+huvmat=findobj(allchild(0),'Name','uvmat');
+UvData=get(huvmat,'UserData');
+NbSlice_j=1;%default
+ZStart=Z_plane;
+ZEnd=Z_plane;
+if isfield(UvData,'XmlData')
+    UvData.XmlData
+    if isfield(UvData.XmlData,'TranslationMotor')
+        NbSlice_j=UvData.XmlData.TranslationMotor.Nbslice;
+        ZStart=UvData.XmlData.TranslationMotor.ZStart;
+        ZEnd=UvData.XmlData.TranslationMotor.ZEnd;
+    end
+end
+hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
 RootPath='';
 RootFile='';
 if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
@@ -226,14 +239,18 @@ answer=msgbox_uvmat('INPUT_Y-N',{[outputfile ' updated with calibration data'];.
 %% record the calibration parameters and display the current image of uvmat in the new phys coordinates
 if strcmp(answer,'Yes')
     if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
-        answer_1=msgbox_uvmat('INPUT_TXT',' Z= ',num2str(Z_plane)); 
-        if strcmp(answer_1,'Cancel')
+       input_key={'Z (first position)','Z (last position)','Z (water surface)', 'refractive index','NbSlice','volume scan (y/n)','tilt angle'};
+       input_val=[{num2str(ZEnd/10)} {num2str(ZStart/10)} {num2str(ZStart/10)} {'1.33'} num2str(NbSlice_j) {'y'} {'0'}];
+        answer=inputdlg(input_key,'slice position(s)',ones(1,7), input_val,'on');
+        %answer_1=msgbox_uvmat('INPUT_TXT',' Z= ',num2str(Z_plane)); 
+        GeometryCalib.NbSlice=str2double(answer{5});
+        GeometryCalib.VolumeScan=answer{6};
+        if isempty(answer)
             Z_plane=0; %default
         else
-            Z_plane=str2double(answer_1);
-        end
-        GeometryCalib.NbSlice=1;
-        GeometryCalib.SliceCoord=[0 0 Z_plane];
+            Z_plane=linspace(str2double(answer{1}),str2double(answer{2}),GeometryCalib.NbSlice);
+        end     
+        GeometryCalib.SliceCoord=Z_plane'*[0 0 1]
     end
     errormsg=update_imadoc(GeometryCalib,outputfile);% introduce the calibration data in the xml file
     if ~strcmp(errormsg,'')
@@ -249,8 +266,8 @@ if strcmp(answer,'Yes')
     if ~isempty(hhh)
         delete(hhh);
     end
-    set(hhuvmat.FixedLimits,'Value',0)% put FixedLimits option to 'off'
-    set(hhuvmat.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
+    set(hhuvmat.FixLimits,'Value',0)% put FixedLimits option to 'off'
+    set(hhuvmat.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
     UserData=get(handles.geometry_calib,'UserData');
     UserData.XmlInputFile=outputfile;%save the current xml file name
     set(handles.geometry_calib,'UserData',UserData)

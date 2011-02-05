@@ -7,7 +7,6 @@
 % outputfile: xml file to modify
 %-------------------------------------------------------------
 function errormsg=update_imadoc(GeometryCalib,outputfile)
-tic
 errormsg='';
 testappend=0;
 if exist(outputfile,'file');%=1 if the output file already exists, 0 else  
@@ -63,6 +62,7 @@ if ~testappend
     end
    [t,uid_calib]=add(t,1,'element','GeometryCalib');
 end
+'TESTupdate'
+GeometryCalib
 t=struct2xml(GeometryCalib,t,uid_calib); 
 save(t,outputfile);
-toc

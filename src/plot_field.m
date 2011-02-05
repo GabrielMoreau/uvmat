@@ -52,19 +52,19 @@
 %   haxes: handle of the plotting axes to update with the new plot. If this input is absent or not a valid axes handle, a new figure is created.
 %
 %   PlotParam: parameters for plotting, as read on the uvmat interface (by function 'read_plot_param.m')
-%     .FixedLimits:=0 (default) adjust axes limit to the X,Y data, =1: preserves the previous axes limits
-%     .Auto_xy: =0 (default): kepp 1 to 1 aspect ratio for x and y scales, =1: automatic adjustment of the graph
+%     .FixLimits:=0 (default) adjust axes limit to the X,Y data, =1: preserves the previous axes limits
+%     .FixEqual: =0 (default):automatic adjustment of the graph, keep 1 to 1 aspect ratio for x and y scales. 
 %            --scalars--
 %    .Scalar.MaxA: upper bound (saturation color) for the scalar representation, max(field) by default
 %    .Scalar.MinA: lower bound (saturation) for the scalar representation, min(field) by default
-%    .Scalar.AutoScal: =1 (default) lower and upper bounds of the scalar representation set to the min and max of the field
-%               =0 lower and upper bound imposed by .AMax and .MinA
+%    .Scalar.FixScal: =0 (default) lower and upper bounds of the scalar representation set to the min and max of the field
+%               =1 lower and upper bound imposed by .AMax and .MinA
 %    .Scalar.BW= 1 black and white representation imposed, =0 by default.
 %    .Scalar.Contours= 1: represent scalars by contour plots (Matlab function 'contour'); =0 by default
 %    .IncrA : contour interval
 %            -- vectors--
 %    .Vectors.VecScale: scale for the vector representation
-%    .Vectors.AutoVec: =0 (default) automatic length for vector representation, =1: length set by .VecScale
+%    .Vectors.FixVec: =0 (default) automatic length for vector representation, =1: length set by .VecScale
 %    .Vectors.HideFalse= 0 (default) false vectors represented in magenta, =1: false vectors not represented;
 %    .Vectors.HideWarning= 0 (default) vectors marked by warnflag~=0 marked in black, 1: no warning representation;
 %    .Vectors.decimate4 = 0 (default) all vectors reprtesented, =1: half of  the vectors represented along each coordinate
@@ -176,17 +176,21 @@ if ~isempty(Data)
     index_0D=find(NbDim==0);
     
         %% set axes properties
-    if isfield(PlotParam,'FixedLimits') && isequal(PlotParam.FixedLimits,1)  %adjust the graph limits*
+    if isfield(PlotParam,'FixLimits') && isequal(PlotParam.FixLimits,1)  %adjust the graph limits*
         set(haxes,'XLimMode', 'manual')
         set(haxes,'YLimMode', 'manual')
     else
         set(haxes,'XLimMode', 'auto')
         set(haxes,'YLimMode', 'auto')
     end
-    if isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1) 
-        set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
-    else
+    if ~isfield(PlotParam,'FixEqual')&& isfield(Data,'CoordUnit')
+        PlotParam.FixEqual=1;
+    end
+    if isfield(PlotParam,'FixEqual') && isequal(PlotParam.FixEqual,1) 
         set(haxes,'DataAspectRatioMode','manual')
+       set(haxes,'DataAspectRatio',[1 1 1])
+    else
+        set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
     end
 else
     index_2D=[];
@@ -198,6 +202,16 @@ end
 PlotType='text';
 errormsg=[];
 AxeData=get(haxes,'UserData');
+if isempty(index_1D)
+     plot_profile([],[],[],haxes);%
+else
+        PlotParamOut=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,PlotParam);% 
+        if testzoomaxes
+            [zoomaxes,PlotParamOut]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam);
+            AxeData.ZoomAxes=zoomaxes;
+        end
+        PlotType='line';
+end
 if isempty(index_2D)
     plot_plane([],[],[],haxes);%removes images or vector plots if any
 else
@@ -207,16 +221,6 @@ else
                 [zoomaxes,PlotParamOut,xx,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),zoomaxes,PlotParam,PosColorbar);
                 AxeData.ZoomAxes=zoomaxes;
             end
-end
-if isempty(index_1D)
-     plot_profile([],[],[],haxes);%
-else
-        plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,PlotParam);% 
-        if testzoomaxes
-            [zoomaxes,PlotParamOut]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam);
-            AxeData.ZoomAxes=zoomaxes;
-        end
-        PlotType='line';
 end
 htext=findobj(hfig,'Tag','text_display');
 if ~isempty(htext)
@@ -229,6 +233,10 @@ end
 
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR', errormsg)
+end
+if isfield(PlotParamOut,'MinX')
+set(haxes,'XLim',[PlotParamOut.MinX PlotParamOut.MaxX])
+set(haxes,'YLim',[PlotParamOut.MinY PlotParamOut.MaxY])
 end
 
 %% update the parameters stored in AxeData
@@ -319,8 +327,9 @@ set(htext,'String',txt_cell)
 
 
 %-------------------------------------------------------------------
-function [haxes]=plot_profile(data,CellVarIndex,VarType,haxes,PlotParam)
+function PlotParamOut=plot_profile(data,CellVarIndex,VarType,haxes,PlotParam)
 %-------------------------------------------------------------------
+PlotParamOut=PlotParam; %default
 hfig=get(haxes,'parent');
 %suppress existing plot isf empty data
 if isempty(data)
@@ -503,18 +512,11 @@ end
 if ~isfield(PlotParam,'Vectors')
     PlotParam.Vectors=[];
 end
+
 PlotParamOut=PlotParam;%default
 hfig=get(haxes,'parent');
 hcol=findobj(hfig,'Tag','Colorbar'); %look for colorbar axes
 hima=findobj(haxes,'Tag','ima');% search existing image in the current axes
-% AxeData=get(haxes,'UserData'); %default
-% if ~isstruct(AxeData)% AxeData must be a structure
-%     AxeData=[];
-% end
-% AxeData.NbDim=2;
-% if isfield(Data,'ObjectCoord')
-%     AxeData.ObjectCoord=Data.ObjectCoord;
-% end
 errormsg=[];%default
 test_ima=0; %default: test for image or map plot
 test_vec=0; %default: test for vector plots
@@ -719,8 +721,8 @@ if test_ima
     
     %case of grey level images or contour plot
     if siz==2 
-        if ~isfield(PlotParam.Scalar,'AutoScal')
-            PlotParam.Scalar.AutoScal=0;%default
+        if ~isfield(PlotParam.Scalar,'FixScal')
+            PlotParam.Scalar.FixScal=0;%default
         end
         if ~isfield(PlotParam.Scalar,'MinA')
             PlotParam.Scalar.MinA=[];%default
@@ -728,12 +730,12 @@ if test_ima
         if ~isfield(PlotParam.Scalar,'MaxA')
             PlotParam.Scalar.MaxA=[];%default
         end
-        if isequal(PlotParam.Scalar.AutoScal,0)||isempty(PlotParam.Scalar.MinA)||~isa(PlotParam.Scalar.MinA,'double')  %correct if there is no numerical data in edit box
+        if isequal(PlotParam.Scalar.FixScal,0)||isempty(PlotParam.Scalar.MinA)||~isa(PlotParam.Scalar.MinA,'double')  %correct if there is no numerical data in edit box
             MinA=double(min(min(A)));
         else
             MinA=PlotParam.Scalar.MinA;  
         end; 
-        if isequal(PlotParam.Scalar.AutoScal,0)||isempty(PlotParam.Scalar.MaxA)||~isa(PlotParam.Scalar.MaxA,'double') %correct if there is no numerical data in edit box
+        if isequal(PlotParam.Scalar.FixScal,0)||isempty(PlotParam.Scalar.MaxA)||~isa(PlotParam.Scalar.MaxA,'double') %correct if there is no numerical data in edit box
             MaxA=double(max(max(A)));
         else
             MaxA=PlotParam.Scalar.MaxA;  
@@ -1048,18 +1050,21 @@ if ~isempty(Data)
     end
     AxeData.RangeX=Xlim;
     AxeData.RangeY=Ylim;
+
 %    adjust the size of the plot to include the whole field, except if PlotParam.FixedLimits=1
-    if ~(isfield(PlotParam,'FixedLimits') && PlotParam.FixedLimits) && test_lim 
-            if Xlim(2)>Xlim(1)
-                set(haxes,'XLim',Xlim);% set x limits of frame in axes coordinates
-            end
-            if Ylim(2)>Ylim(1)
-                set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
-            end
+    if ~(isfield(PlotParam,'FixLimits') && PlotParam.FixLimits) && test_lim 
+        PlotParamOut.MinX=Xlim(1);
+        PlotParamOut.MaxX=Xlim(2);
+        PlotParamOut.MinY=Ylim(1);
+        PlotParamOut.MaxY=Ylim(2);
+        if Xlim(2)>Xlim(1)
+            set(haxes,'XLim',Xlim);% set x limits of frame in axes coordinates
+        end
+        if Ylim(2)>Ylim(1)
+            set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
+        end
     end
-    if ~(isfield(PlotParam,'Auto_xy') && isequal(PlotParam.Auto_xy,1))
-         set(haxes,'DataAspectRatio',[1 1 1])
-    end
+
     set(haxes,'YDir','normal') 
     set(get(haxes,'XLabel'),'String',[XName ' (' x_units ')']);
     set(get(haxes,'YLabel'),'String',[YName ' (' y_units ')']);
