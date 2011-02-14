@@ -91,10 +91,11 @@ set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse})
 set(hObject,'CloseRequestFcn',{@closefcn})%
 ViewFieldData.axes3=[];%initiates the record of the current field (will be updated by plot_field)
 set(handles.view_field,'UserData',ViewFieldData);%store the current field
+AxeData.LimEditBox=1; %initialise AxeData, the parent figure sets plot parameters
+set(handles.axes3,'UserData',AxeData)
 if ~exist('Field','var')
     return
 end
-'TESviewfield'
 [PlotType,PlotParamOut]= plot_field(Field,handles.axes3);%,PlotParam,KeepLim,PosColorbar)
 
 if isfield(PlotParamOut,'Vectors')

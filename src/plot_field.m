@@ -127,32 +127,31 @@ if exist('haxes','var')
         end
     end
 end
-if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
-    PlotParam=read_plot_param(PlotParam);   
-end
+% if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
+%     PlotParam=read_plot_param(PlotParam);   
+% end
 % create a new figure and axes if the plotting axes does not exist
 if testnewfig
     hfig=figure;
-    if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
-        set(hfig,'UserData',PlotParam)
-    end
+%     if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
+%         set(hfig,'UserData',PlotParam)
+%     end
     set(hfig,'Units','normalized')
-    set(hfig,'WindowButtonDownFcn','mouse_down')
-    set(hfig,'WindowButtonMotionFcn','mouse_motion')%set mouse action function
-    set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse action function
+%     set(hfig,'WindowButtonDownFcn','mouse_down')
+%     set(hfig,'WindowButtonMotionFcn','mouse_motion')%set mouse action function
+%     set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse action function
     haxes=axes;
     set(haxes,'position',[0.13,0.2,0.775,0.73])
      PlotParam.NextPlot='add'; %parameter for plot_profile and plot_his
 else
     hfig=get(haxes,'parent');
-    set(0,'CurrentFigure',hfig)
-    set(hfig,'CurrentAxes',haxes)
+    set(0,'CurrentFigure',hfig)% the parent of haxes becomes the current figure
+    set(hfig,'CurrentAxes',haxes)%  haxes becomes the current axes of the parent figure 
 end
 
 %% check input structure
 if ~isempty(Data)
     [Data,errormsg]=check_field_structure(Data);
-
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',['input of plot_field/check_field_structure: ' errormsg])
         display(['input of plot_field/check_field_structure:: ' errormsg])
@@ -212,6 +211,7 @@ else
         end
         PlotType='line';
 end
+
 if isempty(index_2D)
     plot_plane([],[],[],haxes);%removes images or vector plots if any
 else
@@ -329,6 +329,9 @@ set(htext,'String',txt_cell)
 %-------------------------------------------------------------------
 function PlotParamOut=plot_profile(data,CellVarIndex,VarType,haxes,PlotParam)
 %-------------------------------------------------------------------
+if ~exist('PlotParam','var')
+    PlotParam=[];
+end
 PlotParamOut=PlotParam; %default
 hfig=get(haxes,'parent');
 %suppress existing plot isf empty data
@@ -1029,43 +1032,63 @@ end
 nbvar=0;
 
 %store the coordinate extrema occupied by the field
+Data
 if ~isempty(Data)
-    test_lim=0;
-    if test_vec
-        Xlim=[min(vec_X) max(vec_X)];
-        Ylim=[min(vec_Y) max(vec_Y)];
-        test_lim=1;
+    fix_lim=isfield(PlotParam,'FixLimits') && PlotParam.FixLimits;
+    if fix_lim
+        if ~isfield(PlotParam,'MinX')||~isfield(PlotParam,'MaxX')||~isfield(PlotParam,'MinY')||~isfield(PlotParam,'MaxY')
+            fix_lim=0; %free limits if lits are not set,
+        end  %else PlotParamOut.XMin =PlotParam.XMin...
+    end
+    'TESTfix'
+    fix_lim
+    if ~fix_lim
+        XMin=[];
+        XMax=[];
+        YMin=[];
+        YMax=[];
         if test_ima%both background image and vectors coexist, take the wider bound
-            Xlim(1)=min(AX(1),Xlim(1));
-            Xlim(2)=max(AX(end),Xlim(2));
-            Ylim(1)=min(AY(end),Ylim(1));
-            Ylim(2)=max(AY(1),Ylim(2));
+            XMin=min(AX);
+            XMax=max(AX);
+            YMin=min(AY);
+            YMax=max(AY);
         end
-    elseif test_ima %only image plot
-        Xlim(1)=min(AX(1),AX(end));
-        Xlim(2)=max(AX(1),AX(end));
-        Ylim(1)=min(AY(1),AY(end));
-        Ylim(2)=max(AY(1),AY(end));
-        test_lim=1;
-    end
-    AxeData.RangeX=Xlim;
-    AxeData.RangeY=Ylim;
-
-%    adjust the size of the plot to include the whole field, except if PlotParam.FixedLimits=1
-    if ~(isfield(PlotParam,'FixLimits') && PlotParam.FixLimits) && test_lim 
-        PlotParamOut.MinX=Xlim(1);
-        PlotParamOut.MaxX=Xlim(2);
-        PlotParamOut.MinY=Ylim(1);
-        PlotParamOut.MaxY=Ylim(2);
-        if Xlim(2)>Xlim(1)
-            set(haxes,'XLim',Xlim);% set x limits of frame in axes coordinates
+        if test_vec
+            XMin=[XMin min(vec_X)];
+            XMax=[XMax max(vec_X)];
+            YMin=[YMin min(vec_Y)];
+            YMax=[YMax max(vec_Y)];
         end
-        if Ylim(2)>Ylim(1)
-            set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
+        PlotParamOut.MinX=min(XMin);
+        PlotParamOut.MaxX=max(XMax);
+        PlotParamOut.MinY=min(YMin);
+        PlotParamOut.MaxY=max(YMax);
+        if XMax>XMin
+            set(haxes,'XLim',[XMin XMax]);% set x limits of frame in axes coordinates
+        end
+        if YMax>YMin
+            set(haxes,'YLim',[YMin YMax]);% set x limits of frame in axes coordinates
         end
     end
+%     if Ylim(2)>Ylim(1)
+%         set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
+%     end
+%     end
+    %    adjust the size of the plot to include the whole field, except if PlotParam.FixLimits=1
+    %     if ~(isfield(PlotParam,'FixLimits') && PlotParam.FixLimits) && test_lim
+    %         PlotParamOut.MinX=Xlim(1);
+    %         PlotParamOut.MaxX=Xlim(2);
+    %         PlotParamOut.MinY=Ylim(1);
+    %         PlotParamOut.MaxY=Ylim(2);
+%     if Xlim(2)>Xlim(1)
+%         set(haxes,'XLim',Xlim);% set x limits of frame in axes coordinates
+%     end
+%     if Ylim(2)>Ylim(1)
+%         set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
+%     end
+    %     end
 
-    set(haxes,'YDir','normal') 
+    set(haxes,'YDir','normal')
     set(get(haxes,'XLabel'),'String',[XName ' (' x_units ')']);
     set(get(haxes,'YLabel'),'String',[YName ' (' y_units ')']);
     PlotParamOut.x_units=x_units;

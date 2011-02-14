@@ -1,6 +1,7 @@
 %'write_plot_param': update the plotting parameters on the uvmat interface after a plotting operation
 function write_plot_param(handles,PlotParam)
-
+'TESTwrite'
+PlotParam
 %coordinates
 if isfield(PlotParam,'FixEqual')
     if PlotParam.FixEqual

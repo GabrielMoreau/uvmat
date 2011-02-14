@@ -1671,15 +1671,15 @@ if batch
         msgbox_uvmat('ERROR','batch system not available')
         return
     end
-else
-    if isunix
-        [xx,w]=unix('ps faux |grep civ|wc -l');
-        w(end)=[];
-        if str2double(w)+numel(num1_civ1)> 50
-            msgbox_uvmat('ERROR',{['There are already ' w ' civ processes running locally'];'Use BATCH or submit RUN later'})
-            return
-        end
-    end
+% else
+%     if isunix
+%         [xx,w]=unix('ps faux |grep civ|wc -l');
+%         w(end)=[];
+%         if str2double(w)+numel(num1_civ1)> 50
+%             msgbox_uvmat('ERROR',{['There are already ' w ' civ processes running locally'];'Use BATCH or submit RUN later'})
+%             return
+%         end
+%     end
 end
 
 
@@ -2252,11 +2252,12 @@ if ~batch
     fid=fopen(filename_superbat,'w');
     fprintf(fid,super_cmd');
     fclose(fid);
-    if(isunix)
-        eval(['!. ' filename_superbat ' &']);
-    else
-        eval(['!' filename_superbat ' &']);
-    end
+%     if(isunix)
+        %system(['chmod +x ' filename_superbat])
+     system([filename_superbat ' &'])% execute main commmand
+%     else
+%         eval(['!' filename_superbat ' &']);
+%     end
 end
 
 %% save interface state

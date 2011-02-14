@@ -219,6 +219,8 @@ UvData.OpenParam.CalSize=[0.28 1];
 UvData.axes3=[];%initiate the record of plotted field
 UvData.axes2=[];
 UvData.axes1=[];
+AxeData.LimEditBox=1; %initialise AxeData
+set(handles.axes3,'UserData',AxeData)
 
 %functions for the mouse and keyboard
 set(handles.histo_u,'NextPlot','replacechildren');
@@ -4200,9 +4202,12 @@ function update_plot(handles)
 haxes= handles.axes3;
 UvData=get(handles.uvmat,'UserData');
 AxeData=UvData.axes3;
-PlotParam=read_plot_param(handles);
-PlotParam.Scalar
+'TESTupdateplot'
+PlotParam=read_plot_param(handles)
+PlotParam.Vectors
 [PP,PlotParamOut]= plot_field(AxeData,haxes,PlotParam);
+'TESTOUT'
+PlotParamOut
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %-------------------------------------------------------------------
@@ -4946,8 +4951,8 @@ end
 if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
 end
-PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
-set_object(data,PlotHandles);% call the set_object interface
+%PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
+set_object(data,handles);% call the set_object interface
 set(handles.MenuObject,'checked','on')
 set(handles.uvmat,'UserData',UvData)
 set(handles.zoom,'Value',0)
