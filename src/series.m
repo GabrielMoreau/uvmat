@@ -54,7 +54,7 @@ end
 % --- Executes just before series is made visible.
 %--------------------------------------------------------------------------
 function series_OpeningFcn(hObject, eventdata, handles,param)
-global nb_builtin nb_transform
+global nb_builtin_ACTION nb_builtin_transform
 % Choose default command line output for series
 handles.output = hObject;
 % Update handles structure
@@ -64,9 +64,11 @@ drawnow
 
 %load the list of previously browsed files in menus Open and Open_1
 dir_perso=prefdir;
+test_profil_perso=0;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
 if exist(profil_perso,'file')
      h=load (profil_perso);
+     test_profil_perso=1;
      if isfield(h,'MenuFile_1')
           set(handles.MenuFile_1,'Label',h.MenuFile_1);
           set(handles.MenuFile_insert_1,'Label',h.MenuFile_1);
@@ -135,7 +137,7 @@ NomType_Callback(hObject, eventdata, handles)
 %loads the information stored in prefdir to initiate  the list of ACTION functions
 fct_menu={'check_files';'aver_stat';'time_series';'merge_proj';'clean_civ_cmx'};
 transform_menu={'';'phys';'px';'phys_polar'};
-nb_builtin=numel(fct_menu); %number of functions
+nb_builtin_ACTION=numel(fct_menu); %number of functions
 nb_transform=numel(transform_menu);
 [path_series,name,ext]=fileparts(which('series'));
 path_series=fullfile(path_series,'series');%path of the function 'series'
@@ -146,7 +148,7 @@ end
 
 %TRANSFORM menu: loads the information stored in prefdir to initiate  the list of field transform functions
 menu_str={'';'phys';'px';'phys_polar'};
-nb_builtin=numel(menu_str); %number of functions
+nb_builtin_transform=numel(menu_str); %number of functions
 [path_uvmat,name,ext]=fileparts(which('uvmat'));
 addpath(fullfile(path_uvmat,'transform_field'))
 fct_handle{1,1}=[];
@@ -162,15 +164,12 @@ end
 rmpath(fullfile(path_uvmat,'transform_field'))
 
 % read the list of functions stored in the personal file 'uvmat_perso.mat' in prefdir
-dir_perso=prefdir; 
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-if exist(profil_perso,'file')
-    h=load (profil_perso);
+if test_profil_perso
     if isfield(h,'series_fct') && iscell(h.series_fct)
          for ilist=1:length(h.series_fct)
              [path,file]=fileparts(h.series_fct{ilist});
              fct_path=[fct_path; {path}];%concatene the list of paths
-             transform_menu=[transform_menu; {file}];
+             fct_menu=[fct_menu; {file}];
          end
     end
     if isfield(h,'transform_fct') && iscell(h.transform_fct)
@@ -258,9 +257,9 @@ if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
 [path,name,ext]=fileparts(fileinput);
 SeriesData=[];%dfault
 if isequal(ext,'.xml')
-    errordlg('input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
+    warndlg_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
 elseif isequal(ext,'.xls')
-    errordlg('input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
+    warndlg_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
 else
     update_file(hObject, eventdata, handles,fileinput,0)
      %update list of recent files in the menubar
@@ -294,11 +293,6 @@ else
         end
     end
 end
-% set(hseries,'UserData',SeriesData);
-% RootFile_Callback(hObject, eventdata, handles); 
-% FileExt_Callback(hObject, eventdata, handles); 
-% NomType_Callback(hObject, eventdata, handles)
-% mode_Callback(hObject, eventdata, handles)
 
 
 % --------------------------------------------------------------------
@@ -537,8 +531,8 @@ drawnow
 TimeUnit=''; %default
 time=[];%default
 GeometryCalib=[];%default
-nb_field=[];%default
-nb_field2=[];%default
+nb_field=NaN;%default
+nb_field2=NaN;%default
 SeriesData.PathCampaign=get(handles.PathCampaign,'String');
 
 % read timing and total frame number from the current file (movie files) !! may be overrid by xml file
@@ -548,7 +542,7 @@ testima=0; %test for image input
 if isequal(lower(FileExt),'.avi') %.avi file
     testima=1;
     info=aviinfo([FileBase FileExt]);
-    time=[0:1/info.FramesPerSecond:(info.NumFrames-1)/info.FramesPerSecond]';
+    time=(0:1/info.FramesPerSecond:(info.NumFrames-1)/info.FramesPerSecond)';
     nb_field=info.NumFrames;
     nb_field2=1;
 elseif ~isempty(imformats(FileExt(2:end))) 
@@ -702,7 +696,7 @@ if ~strcmp(NomType,'*')
     nb_field=max(floor((max(num_i1)+max(num_i2))/2));
     nb_field2=max(floor((max(num_j1)+max(num_j2))/2));
 end
-if isempty(nb_field)||isnan(nb_field)
+if isnan(nb_field)
     nb_field_str='?';
     nb_field_str2='?';
 else
@@ -887,7 +881,7 @@ if ~isempty(NomTypeCell)
                 testpair=1;
     end
     switch NomType   
-            case {'_i_j','_i_j1-j2','_i1-i2_j','#_ab'},% two navigation indices
+            case {'_1_1','_i_j1-j2','_i1-i2_j','1_ab','01_ab'},% two navigation indices
                 state_j='on';
     end
 end 
@@ -1366,8 +1360,8 @@ if isequal(incr_i,[])| isequal(incr_j,[]),msgbox_uvmat('ERROR','increment in fie
     set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
 if last_i < first_i | last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
     set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
-num_i=[first_i:incr_i:last_i];
-num_j=[first_j:incr_j:last_j];
+num_i=first_i:incr_i:last_i;
+num_j=first_j:incr_j:last_j;
 nbfield_cell=get(handles.nb_field,'String');
 nbfield=[]; %default
 for iview=1:length(nbfield_cell)
@@ -1581,7 +1575,7 @@ end
 % --- Executes on selection change in ACTION.
 function ACTION_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-global nb_builtin
+global nb_builtin_ACTION
 list_ACTION=get(handles.ACTION,'String');% list menu fields
 index_ACTION=get(handles.ACTION,'Value');% selected string index
 ACTION= list_ACTION{index_ACTION}; % selected function name
@@ -1609,10 +1603,10 @@ if isequal(ACTION,'more...')
    menu_str=update_menu(handles.ACTION,ACTION);%new action menu in which the new item has been appended if needed
    index_ACTION=get(handles.ACTION,'Value');% currently selected index in the list
    list_path{index_ACTION}=PathName;
-   if length(menu_str)>nb_builtin+5; %nb_builtin=nbre of functions always remaining in the initial menu
-       nbremove=length(menu_str)-nb_builtin-5;
-       menu_str(nb_builtin+1:end-5)=[];
-       list_path(nb_builtin+1:end-4)=[];
+   if length(menu_str)>nb_builtin_ACTION+5; %nb_builtin=nbre of functions always remaining in the initial menu
+       nbremove=length(menu_str)-nb_builtin_ACTION-5;
+       menu_str(nb_builtin_ACTION+1:end-5)=[];
+       list_path(nb_builtin_ACTION+1:end-4)=[];
        index_ACTION=index_ACTION-nbremove;
        set(handles.ACTION,'Value',index_ACTION)
        set(handles.ACTION,'String',menu_str)
@@ -1624,10 +1618,11 @@ if isequal(ACTION,'more...')
    %record the current menu in personal file profil_perso
    dir_perso=prefdir;
    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-   for ilist=nb_builtin+1:length(menu_str)-1
-       series_fct{ilist-nb_builtin}=fullfile(list_path{ilist},[menu_str{ilist} '.m']);
+   for ilist=nb_builtin_ACTION+1:length(menu_str)-1
+       series_fct{ilist-nb_builtin_ACTION}=fullfile(list_path{ilist},[menu_str{ilist} '.m']);      
    end
-   if exist(profil_perso,'file')
+   if nb_builtin_ACTION+1>=length(menu_str)-1
+   if exist(profil_perso,'file') && nb_builtin_ACTION+1>=length(menu_str)-1
         save(profil_perso,'series_fct','-append')
    else
     txt=ver('MATLAB');
@@ -1638,6 +1633,7 @@ if isequal(ACTION,'more...')
         else
             save(profil_perso, 'series_fct')
         end
+   end
    end
 end
 
@@ -2340,27 +2336,19 @@ else
 end
 dirpair=[]; %default
 switch NomType
-    case '_i'
+    case '_1'
         dirpair=dir([filebasesub '_*' FileExt]);
-    case '_i_j'
+    case '_1_1'
         dirpair=dir([filebasesub '_*_*' FileExt]);
     case '_i1-i2'
         dirpair=dir([filebasesub '_*-*' FileExt]);
-    case '#_ab'
+    case '1_ab'
         dirpair=dir([filebasesub '*_*' FileExt]);
     case '_i_j1-j2'
         dirpair=dir([filebasesub '*_*-*' FileExt]);   
     case '_i1-i2_j'
         dirpair=dir([filebasesub '*-*_*' FileExt]);   
 end
-%       nom_type='#' series of indexed images wich is not series_i
-%       [filebase index ext], e.g. 'aa045.jpg' or 'aa45.tif'
-%       nom_type='#a','#A' with a numerical index and an index letter(e.g.'aa045b.png'), OBSOLETE (replaced by 'series_i_j')
-%       nom_type='%03d' or '%04d', series of indexed images with numbers completed with zeros to 3 or 4 digits, e.g.'aa045.tif'
-%       nom_type='_%03d', '_%04d', or '_%05d', series of indexed images with _ and numbers completed with zeros to 3, 4 or 5 digits, e.g.'aa_045.tif'
-%       nom_type='raw_SMD', same as '#a' but with no extension ext='', OBSOLETE
-%       nom_type='#_ab' from pairs of '#a' images (e.g. 'aa045bc.nc'), ext='.nc', OBSOLETE (replaced by 'netc_2D')
-%       nom_type='%3dab' from pairs of '%3da' images (e.g. 'aa045bc.nc'), ext='.nc', OBSOLETE (replaced by 'netc_2D')
 for ifile=1:length(dirpair)
     [RootPath,RF,str_1,str_2,str_a,str_b]=name2display(dirpair(ifile).name);
     num_i1(ifile)=str2double(str_1);
