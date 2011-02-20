@@ -62,7 +62,5 @@ if ~testappend
     end
    [t,uid_calib]=add(t,1,'element','GeometryCalib');
 end
-'TESTupdate'
-GeometryCalib
 t=struct2xml(GeometryCalib,t,uid_calib); 
 save(t,outputfile);
