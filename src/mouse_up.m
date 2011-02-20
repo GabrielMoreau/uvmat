@@ -137,11 +137,6 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
 %              if ~isempty(hmask)
 %                 testmask=get(hmask,'Value');
 %              end
-%              if testmask
-%                  PlotHandles=[];%do not project data on the object during mask creation
-%              else
-           % PlotHandles=get_plot_handles(handles);%get the handles of the graphic objects setting the plotting parameters
-%              end
 
             %% update the object representation
             ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj}.DisplayHandle_uvmat;
@@ -152,11 +147,10 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
             IndexObj_2=get(hhuvmat.list_object_2,'Value');
             UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
 
-            %% plot the field projected on the object and store it on the corresponding figure
+            %% plot the field projected on the object 
             ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
             if ~isempty(ProjData)
                 if strcmp(tagfig,'uvmat')% uvmat plot selected, projection plot seen on view_field
-                    %             if strcmp(projview,'view_field')
                     hview_field=findobj(allchild(0),'tag','view_field');
                     if isempty(hview_field)
                         hview_field=view_field;
@@ -164,17 +158,14 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                     ViewFieldData=get(hview_field,'UserData');
                     ViewFieldData.axes3=ProjData;
                     set(hview_field,'UserData',ViewFieldData)
-%                     PlotHandles=guidata(hview_field);
+                    hh_plotfield=guidata(hview_field);
                 else
                     UvData.axes3=ProjData;
-%                     PlotHandles=hhuvmat;
+                    hh_plotfield=hhuvmat;
                 end
-                [PlotType,PlotParam]=plot_field(ProjData,hhcurrentfig.axes3,hhcurrentfig);%update an existing field plot
-                write_plot_param(hhcurrentfig,PlotParam); %update the display of plotting parameters for the current object
+                [PlotType,PlotParam]=plot_field(ProjData,hh_plotfield.axes3,read_plot_param(hh_plotfield));%update an existing field plot
+                write_plot_param(hh_plotfield,PlotParam); %update the display of plotting parameters for the current object
             end
-            %             if  isfield(UvData.Object{IndexObj},'PlotParam')
-            %                 write_plot_param(PlotHandles,UvData.Object{IndexObj}.PlotParam); %update the display of plotting parameters for the current object
-            %             end
             set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
             set(hhuvmat.edit_object,'Value',1);%
             set(hhuvmat.edit_object,'Enable','on');%
@@ -247,7 +238,7 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
                 ChildAxeData.Drawing='off';
                 ChildAxeData.ParentRect=AxeData.CurrentRectZoom;%set the rectangle as a 'parent' associated to the new axe
                 PosRect=CurrentOrigin;
-                xy=get(currentaxes,'CurrentPoint')%xy(1,1),xy(1,2): current x,y positions in axes coordinates
+                xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
                 set(AxeData.ZoomAxes,'Xlim',[PosRect(1) xy(1,1)])
                 set(AxeData.ZoomAxes,'Ylim',[PosRect(2) xy(1,2)])
 %             end

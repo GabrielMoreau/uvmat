@@ -811,6 +811,7 @@ if isequal(figstring,'uvmat')
     if isempty(huvmat)
         uvmat(inputfile)
     else
+        set(huvmat,'Visible','on')%make uvmat visible (bugs can hide it in some cases)
         hhuvmat=guidata(huvmat);
         uvmat('run0_Callback',hObject,eventdata,hhuvmat); % display field in uvmat
     end
@@ -834,7 +835,7 @@ set(handles.RUN,'BackgroundColor',[1 0 0])
 % --- Function for plotting the current subfield
 function plot_get_field(SubField,handles)
 %------------------------------------------------------------------------
-list_fig=get(handles.list_fig,'String');
+list_fig=get(handles.list_fig,'String')
 val=get(handles.list_fig,'Value');
 if strcmp(list_fig{val},'uvmat')
     set(handles.inputfile,'Enable','off')% desactivate the input file edit box   

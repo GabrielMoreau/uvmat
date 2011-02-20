@@ -702,22 +702,16 @@ else
 end
 testnew=0;
 ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
-PlotHandles=get_plot_handles(hhuvmat);
-projview='view_field';%default
 if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose projection is viewed in the uvmat frame
     IndexObj=IndexObj_1;
     projview='uvmat';
-     plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
 elseif ~isempty(IndexObj_2) && IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field  
     IndexObj=IndexObj_2;
+    projview='view_field';
 else %new object 
     testnew=1;
     IndexObj=numel(ListObject)+1;
-    hview_field=findobj(allchild(0),'tag','view_field');
-    if ~isempty(hview_field)
-        PlotHandles=guidata(hview_field);
-        plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
-    end
+    projview='view_field';
 end
 if strcmp(projview,'view_field')
     hview_field=findobj(allchild(0),'tag','view_field');
@@ -727,8 +721,10 @@ if strcmp(projview,'view_field')
     end
     PlotHandles=guidata(hview_field);
     plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
+else
+    PlotHandles=hhuvmat;
+    plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
 end   
-
 
 %% naming the object
 if length(ObjectName)<1% name of object not defined in set_object
@@ -779,7 +775,8 @@ set(huvmat,'UserData',UvData)
 
 %% plot the field projected on the object and store in the corresponding figue
 ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
-[PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotHandles);%update an existing field plot
+PlotParam=read_plot_param(PlotHandles);
+[PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
 
 %% update the GUI uvmat
 hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI

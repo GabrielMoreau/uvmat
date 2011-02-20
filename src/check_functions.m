@@ -46,7 +46,6 @@ list_fct={'calc_field';...% defines fields (velocity, vort, div...) from civx da
           'geometry_calib.fig';...%interface for geometry_calib
           'get_field';...% choose and plot a field from a Netcdf file
           'get_field.fig';...%interface for get_field
-          'get_plot_handles';... %provides handles of elements setting the plotting parameters in the uvmat interface
           'griddata_uvmat';...%make 2D linear interpolation using griddata, with input appropriate for both Matlab 6.5 and 7
           'hist_update';...%  update of a current global histogram by inclusion of a new field  
           'imadoc2struct';...%convert the image documentation file ImaDoc into a Matlab structure
@@ -91,6 +90,7 @@ list_fct={'calc_field';...% defines fields (velocity, vort, div...) from civx da
 [pathuvmat,name,ext]=fileparts(dir_fct);
 icount=0;
 % loop on the list of functions in the uvmat package
+datnum=zeros(1,length(list_fct));
  for i=1:length(list_fct)
     dir_fct=which(list_fct{i});% path to fct
     if isempty(dir_fct)
@@ -103,13 +103,16 @@ icount=0;
            errormsg{icount}=[dir_fct ' overrides the package UVMAT'];% bad path for the function
        end
        datfile=dir(dir_fct);
-       date_str=datfile.date;%string of the date of last modification
-       datnum(i)=0;%default
-       try 
-           datnum(i)=datenum(date_str);
-       catch
-           datnum(i)=0;%in case of error with datenum (e.g. date in french)
+       if isfield(datfile,'datenum')
+          datnum(i)= datfile.datenum;
        end
+%        date_str=datfile.date;%string of the date of last modification
+%        datnum(i)=0;%default
+%        try 
+%            datnum(i)=datenum(date_str);
+%        catch
+%            datnum(i)=0;%in case of error with datenum (e.g. date in french)
+%        end
    end
 end
 errormsg=errormsg';

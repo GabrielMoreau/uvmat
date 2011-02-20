@@ -200,15 +200,14 @@ end
 % --- Executes just before the GUI uvmat is made visible.
 function uvmat_OpeningFcn(hObject, eventdata, handles, input )
 %------------------------------------------------------------------------
-global nb_builtin
 
-% Choose default command menuline output for uvmat
+%% Choose default command menuline output for uvmat (standard GUI)
 handles.output = hObject;
 
-% Update handles structure
+%% Update handles structure (standard GUI)
 guidata(hObject, handles);
 
-% set the position of colorbar and ancillary GUIs:
+%% set the position of colorbar and ancillary GUIs:
 set(hObject,'Units','Normalized')
 movegui(hObject,'center')
 UvData.OpenParam.PosColorbar=[0.805 0.022 0.019 0.445];
@@ -222,7 +221,7 @@ UvData.axes1=[];
 AxeData.LimEditBox=1; %initialise AxeData
 set(handles.axes3,'UserData',AxeData)
 
-%functions for the mouse and keyboard
+%% set functions for the mouse and keyboard
 set(handles.histo_u,'NextPlot','replacechildren');
 set(handles.histo_v,'NextPlot','replacechildren');
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
@@ -231,20 +230,21 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action functio
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
 set(hObject,'DeleteFcn',{@closefcn})%
 
-%refresh projection plane
-UvData.Object{1}.Style='plane';%main plotting plane
+%% refresh projection plane
+%UvData.Object{1}.Style='plane';%main plotting plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
 if ~isfield(UvData.Object{1},'plotaxes')
     UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis
     set(handles.list_object_1,'Value',1);
-    set(handles.list_object_1,'String',{'1-PLANE'});
+   % set(handles.list_object_1,'String',{'1-PLANE'});
+   set(handles.list_object_1,'String',{''});
 end
 set(handles.Fields,'Value',1)
-set(handles.Fields,'string',{''})%TODO:  PUT IN THE GUI
+set(handles.Fields,'string',{''})
 
-%TRANSFORM menu: builtin fcts
+%% TRANSFORM menu: builtin fcts
 menu_str={'';'phys';'px';'phys_polar'};
-nb_builtin=numel(menu_str); %number of functions
+UvData.OpenParam.NbBuiltin=numel(menu_str); %number of functions
 path_uvmat=fileparts(which('uvmat'));
 addpath(fullfile(path_uvmat,'transform_field'))
 fct_handle{1,1}=[];
@@ -260,7 +260,7 @@ for ilist=2:length(menu_str)
 end
 rmpath(fullfile(path_uvmat,'transform_field'))
 
-%load the list of previously browsed files in menus Open and Open_1
+%% load the list of previously browsed files in menus Open and Open_1
  dir_perso=prefdir; % path to the directory .matlab for personal data
  profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmauvmat_perso.mat' in .matlab
  if exist(profil_perso,'file')
@@ -290,7 +290,6 @@ rmpath(fullfile(path_uvmat,'transform_field'))
              if exist(h.transform_fct{ilist},'file')
                 [path,file]=fileparts(h.transform_fct{ilist});
                 addpath(path)
-%              if exist(file,'file')
                 h_func=str2func(file);
                 rmpath(path)
                 testexist=[testexist 1]; 
@@ -310,14 +309,13 @@ menu_str=[menu_str;{'more...'}];
 set(handles.transform_fct,'String',menu_str)
 set(handles.transform_fct,'UserData',fct_handle)% store the list of path in UserData of ACTION
 set(handles.uvmat,'UserData',UvData)
-%set(handles.FixEqual,'Value',1)% by default: axes free to adapt in aspect ratio
-%set(handles.FixEqual,'BackgroundColor',[1 1 0])
 
-%check the path and date of modification of all functions in uvmat
+%% check the path and date of modification of all functions in uvmat
 path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
 [errormsg,date_str]=check_functions;%check the path of the functions called by uvmat.m
 date_str=['last modification: ' date_str];
-%case of an input argument for uvmat
+
+%% case of an input argument for uvmat
 testinputfield=0;
 inputfile=[];
 Field=[];
@@ -348,7 +346,9 @@ if exist('input','var')
         Field.coord_y=[size(input,1)-0.5 0.5];
     end
     if ~isempty(inputfile)
+        %%%%% display the indput field %%%%%%%
         display_file_name(hObject, eventdata, handles,inputfile)
+        %%%%%%%
         testinputfield=1;
     end
 else
@@ -365,8 +365,9 @@ else
        end
    end
 end
-% UvData.NewSeries=1;
-set(handles.uvmat,'UserData',UvData)
+% set(handles.uvmat,'UserData',UvData)
+
+%% plot input field if exists
 if testinputfield
     %delete drawn objects
     hother=findobj(handles.axes3,'Tag','proj_object');%find all the proj objects
@@ -603,7 +604,7 @@ switch ext_test
         set(handles.edit_object,'Visible','on')
         set(handles.list_object_1,'Visible','on')
         set(handles.frame_object,'Visible','on')
-         % initiate input file: 
+         %%%%%% initiate input file: 
         update_rootinfo(hObject,eventdata,handles);  
     otherwise
        msgbox_uvmat('ERROR',['invalid input file extension' ext])
@@ -742,7 +743,6 @@ if exist(filexml,'file')
     if isfield(XmlData, 'GeometryCalib') && ~isempty(XmlData.GeometryCalib)
         XmlData.GeometryCalib
         if isfield(XmlData.GeometryCalib,'VolumeScan') && isequal(XmlData.GeometryCalib.VolumeScan,'y')
-            'TESTvol'
             set (handles.nb_slice,'String','volume')
         end
         hgeometry_calib=findobj('tag','geometry_calib');
@@ -871,8 +871,6 @@ end
 % set default options in menu 'Fields'
 
 if testima
-%   set(handles.Fields,'Value',1) % set menu to 'image'
-%    set(handles.Fields,'String',{'image';'get_field...';'velocity';'vort';'div';'more...'})
 elseif isequal(FileExt,'.nc')||isequal(FileExt,'.cdf')
    Data=nc2struct(FileName,'ListGlobalAttribute','absolut_time_T0','civ');
    %col_vec=get(handles.col_vec,'String');
@@ -900,7 +898,7 @@ else
     return
 end  
 
-% set index navigation options and refresh plots
+%% set index navigation options and refresh plots
 set(handles.RootPath,'BackgroundColor',[1 1 1])
 drawnow
 set_scan_options(hObject, eventdata, handles)
@@ -922,7 +920,6 @@ state_j='off'; %default
 scan_option='i';%default
 NomTypeRaw=regexprep(NomType(2:end), '-', '');
 if numel(regexp(NomTypeRaw,'\D'))>=1 
-%     case {'_i_j','_i_j1-j2','_i1-i2_j','#_ab','#A','%01dA','%02dA','%03dA','%04dA'},% two navigation indices
         state_j='on';
         if isequal(nbfield,1)
             scan_option='j'; %scan j index by default if nbfield=1                
@@ -931,8 +928,6 @@ end
 if ~isempty(NomType_1)
     NomTypeRaw=regexprep(NomType_1(2:end), '-', '');
     if numel(regexp(NomTypeRaw,'\D'))>=1
-%     switch NomType_1
-%         case {'_i_j','_i_j1-j2','_i1-i2_j','#_ab'},% two navigation indices
             state_j='on';
             if isequal(nbfield,1)
                 scan_option='j';                 
@@ -953,7 +948,7 @@ set(handles.last_j,'Visible',state_j);
 set(handles.frame_j,'Visible',state_j);
 set(handles.j_text,'Visible',state_j);
 
-% view the field  
+%% view the field  
 run0_Callback(hObject, eventdata, handles); %view field
 mask_test=get(handles.mask_test,'value');
 if mask_test
@@ -1168,20 +1163,20 @@ set(handles.FileIndex_1,'String',indices)
 set(handles.FileIndex_1,'UserData',NomType_1)
 set(handles.FileExt_1,'String',FileExt_1);
 
-% default choice of fields
-if isequal(ext_test,'.image')
-%    set(handles.Fields_1,'String',{'';'image';'get_field...';'velocity';'vort';'div';'more...'})
-%    set(handles.Fields_1,'Value',2) % set menu to 'image'
-elseif strcmp(FileExt_1,'.nc')||strcmp(FileExt_1,'.cdf')
-   Data=nc2struct(fileinput_1,[]);
-%    if isfield(Data,'absolut_time_T0')
-%        set(handles.Fields_1,'String',{'';'image';'get_field...';'velocity';'vort';'div';'more...'})
-%        set(handles.Fields_1,'Value',4) % set menu to 'velocity'
-%    else   
-%        set(handles.Fields_1,'Value',2) % set menu to 'get_field...'
-%        set(handles.Fields_1,'String',{'';'get_field...'});
-%    end
-end  
+% % default choice of fields
+% if isequal(ext_test,'.image')
+% %    set(handles.Fields_1,'String',{'';'image';'get_field...';'velocity';'vort';'div';'more...'})
+% %    set(handles.Fields_1,'Value',2) % set menu to 'image'
+% elseif strcmp(FileExt_1,'.nc')||strcmp(FileExt_1,'.cdf')
+%    Data=nc2struct(fileinput_1,[]);
+% %    if isfield(Data,'absolut_time_T0')
+% %        set(handles.Fields_1,'String',{'';'image';'get_field...';'velocity';'vort';'div';'more...'})
+% %        set(handles.Fields_1,'Value',4) % set menu to 'velocity'
+% %    else   
+% %        set(handles.Fields_1,'Value',2) % set menu to 'get_field...'
+% %        set(handles.Fields_1,'String',{'';'get_field...'});
+% %    end
+% end  
 set(handles.SubField,'Visible','on')
 set(handles.SubField,'Value',1)
 RootPath_1_Callback(hObject,eventdata,handles);  
@@ -2404,9 +2399,11 @@ if ~isempty(VarType{imax}.coord_x)  && ~isempty(VarType{imax}.coord_y)    %unstr
     YName=UvData.Field.ListVarName{VarType{imax}.coord_y};
     eval(['nbvec=length(UvData.Field.' XName ');'])%nbre of measurement points (e.g. vectors)
     test_x=1;%test for unstructured coordinates
-else %structured coordinate
-    YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
+elseif VarType{imax}.coord(NbDim)>0 %structured coordinate  
     XName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim)};
+    if NbDim>1
+        YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
+    end
 end
 if NbDim==3
     ZName=UvData.Field.ListVarName{VarType{imax}.coord(1)};%structured coordinates in 3D
@@ -2418,10 +2415,18 @@ if NbDim==3
         test_z=0;
     end
 end
+if exist('XName','var')
 eval(['XMax=max(UvData.Field.' XName ');'])
 eval(['XMin=min(UvData.Field.' XName ');'])
-eval(['YMax=max(UvData.Field.' YName ');'])
-eval(['YMin=min(UvData.Field.' YName ');'])
+UvData.Field.NbDim=NbDim;
+UvData.Field.XMax=XMax;
+UvData.Field.XMin=XMin;
+if NbDim >1
+    eval(['YMax=max(UvData.Field.' YName ');'])
+    eval(['YMin=min(UvData.Field.' YName ');'])
+    UvData.Field.YMax=YMax;
+    UvData.Field.YMin=YMin;
+end
 eval(['nbvec=length(UvData.Field.' XName ');'])
 if test_x %unstructured coordinates
     if test_z
@@ -2433,10 +2438,12 @@ if test_x %unstructured coordinates
 else
     VarIndex=CellVarIndex{imax}; % list of variable indices
     DimIndex=UvData.Field.VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
-    nbpoints_y=UvData.Field.DimValue(DimIndex(NbDim-1));
     nbpoints_x=UvData.Field.DimValue(DimIndex(NbDim));
     DX=(XMax-XMin)/(nbpoints_x-1);
-    DY=(YMax-YMin)/(nbpoints_y-1);
+    if NbDim >1
+        nbpoints_y=UvData.Field.DimValue(DimIndex(NbDim-1));
+        DY=(YMax-YMin)/(nbpoints_y-1);
+    end
     if NbDim==3
         nbpoints_z=UvData.Field.DimValue(DimIndex(1));
         DZ=(ZMax-ZMin)/(nbpoints_z-1);
@@ -2447,12 +2454,7 @@ else
         UvData.Field.Mesh=sqrt(DX*DY);
     end
 end
-UvData.Field.NbDim=NbDim;
-UvData.Field.XMax=XMax;
-UvData.Field.XMin=XMin;
-UvData.Field.YMax=YMax;
-UvData.Field.YMin=YMin;
-
+end
 
 %% 3D case (menuvolume)
 if NbDim==3% && UvData.NewSeries
@@ -2510,11 +2512,11 @@ elseif isfield(UvData,'Z')
     end
 else
     % create a default projection menuplane
-    UvData.Object{1}.Style='plane';%main plotting plane
+    %UvData.Object{1}.Style='none';%main plotting plane
     UvData.Object{1}.ProjMode='projection';%main plotting plane
     UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
     set(handles.list_object_1,'Value',1);
-    set(handles.list_object_1,'String',{'1-PLANE'});
+    set(handles.list_object_1,'String',{''});
 end
 if ~isfield(UvData.Object{1},'plotaxes')
     UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis 
@@ -2552,7 +2554,7 @@ if isequal(get(handles.list_object_2,'Visible'),'on') && IndexObj_2 <= numel(UvD
         plot_handles{2}=guidata(view_field_handle);
         haxes(2)=plot_handles{2}.axes3;
         PlotParam{2}=read_plot_param(plot_handles{2});%read plotting parameters on the uvmat interface
-        keeplim(2)=get(plot_handles{2}.FixedLimits,'Value');
+        keeplim(2)=get(plot_handles{2}.FixLimits,'Value');
         PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
     end
 end
@@ -2828,17 +2830,17 @@ UvData=get(handles.uvmat,'UserData');
 hhh=which('netcdf.open');% look for built-in matlab netcdf library
 if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
     nc=netcdf.open(filename,'NC_WRITE'); 
-    netcdf.reDef(nc)
-    netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),attrname,1)
+    netcdf.reDef(nc);
+    netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),attrname,1);
     dimid = netcdf.inqDimID(nc,nbname); 
     try
         varid = netcdf.inqVarID(nc,flagname);% look for already existing fixflag variable
     catch
         varid=netcdf.defVar(nc,flagname,'double',dimid);%create fixflag variable if it does not exist
     end
-    netcdf.endDef(nc)
+    netcdf.endDef(nc);
     netcdf.putVar(nc,varid,UvData.axes3.FF);
-    netcdf.close(nc)  
+    netcdf.close(nc);  
 else %old netcdf library
     netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
 end
@@ -3818,9 +3820,8 @@ set_vec_col_bar(handles)
 % --- Executes on selection change in transform_fct.
 function transform_fct_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------
-global nb_builtin
 
-huvmat=get(handles.transform_fct,'parent');
+UvData=get(handles.uvmat,'UserData');
 menu=get(handles.transform_fct,'String');
 ind_coord=get(handles.transform_fct,'Value');
 coord_option=menu{ind_coord};
@@ -3858,6 +3859,7 @@ if isequal(coord_option,'more...');
    dir_perso=prefdir;%personal Matalb directory
    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
    if exist(profil_perso,'file')
+       nb_builtin=UvData.OpenParam.NbBuiltin;
        for ilist=nb_builtin+1:numel(list_transform)
            ff=functions(list_transform{ilist});
            transform_fct{ilist-nb_builtin}=ff.file;
@@ -3876,8 +3878,6 @@ end
 
 set(handles.FixLimits,'Value',0)
 set(handles.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
-
-UvData=get(huvmat,'UserData');
 
 %delete drawn objects
 hother=findobj('Tag','proj_object');%find all the proj objects
@@ -3910,7 +3910,7 @@ list_object_2_Callback(hObject, eventdata, handles)
 if isequal(get(handles.mask_test,'Value'),1)%if the mask option is on
    UvData=rmfield(UvData,'MaskName'); %will impose mask refresh  
 end
-set(huvmat,'UserData',UvData)
+set(handles.uvmat,'UserData',UvData)
 run0_Callback(hObject, eventdata, handles)
 
 %--------------------------------------------
@@ -4178,11 +4178,7 @@ if test3color
     colcode.colcode1=str2num(get(handles.colcode1,'String'));
     colcode.colcode2=str2num(get(handles.colcode2,'String'));
 end
-% colcode.option=get(handles.vec_col_bar,'Value');
 colcode.FixedCbounds=0;
-% list_code=get(handles.col_vec,'String');% list menu fields
-% index_code=get(handles.col_vec,'Value');% selected string index
-% colcode.CName= list_code{index_code(1)}; % selected field used for vector color
 colcode.FixedCbounds=1;
 vec_C=colcode.MinC+(colcode.MaxC-colcode.MinC)*(0.5:width-0.5)/width;%sample of vec_C values from min to max
 [colorlist,col_vec]=set_col_vec(colcode,vec_C);
@@ -4202,18 +4198,13 @@ function update_plot(handles)
 haxes= handles.axes3;
 UvData=get(handles.uvmat,'UserData');
 AxeData=UvData.axes3;
-'TESTupdateplot'
-PlotParam=read_plot_param(handles)
-PlotParam.Vectors
+PlotParam=read_plot_param(handles);
 [PP,PlotParamOut]= plot_field(AxeData,haxes,PlotParam);
-'TESTOUT'
-PlotParamOut
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %-------------------------------------------------------------------
 % --- Executes on button press in grid.
 function grid_Callback(hObject, eventdata, handles)
-
 
 
 %-------------------------------------------------------------------

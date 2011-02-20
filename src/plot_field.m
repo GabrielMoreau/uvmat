@@ -133,13 +133,7 @@ end
 % create a new figure and axes if the plotting axes does not exist
 if testnewfig
     hfig=figure;
-%     if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
-%         set(hfig,'UserData',PlotParam)
-%     end
     set(hfig,'Units','normalized')
-%     set(hfig,'WindowButtonDownFcn','mouse_down')
-%     set(hfig,'WindowButtonMotionFcn','mouse_motion')%set mouse action function
-%     set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse action function
     haxes=axes;
     set(haxes,'position',[0.13,0.2,0.775,0.73])
      PlotParam.NextPlot='add'; %parameter for plot_profile and plot_his
@@ -160,7 +154,6 @@ if ~isempty(Data)
 
     %% check the cells of fields :
     [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data);
-
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',['input of plot_field/find_field_indices: ' errormsg]);
         return
@@ -201,6 +194,24 @@ end
 PlotType='text';
 errormsg=[];
 AxeData=get(haxes,'UserData');
+if isempty(index_2D)
+    plot_plane([],[],[],haxes);%removes images or vector plots if any
+else
+    [xx,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),haxes,PlotParam,PosColorbar);
+    AxeData.NbDim=2;
+    if testzoomaxes && isempty(errormsg)
+        [zoomaxes,PlotParamOut,xx,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),zoomaxes,PlotParam,PosColorbar);
+        AxeData.ZoomAxes=zoomaxes;
+    end
+    %remove coordinates variables from 1D plot
+    for ivar=1:length(index_1D)
+        if isequal(CellVarIndex{index_1D(ivar)},VarType{index_1D(ivar)}.coord)
+            index_1D(ivar)=0;
+        end
+    end
+    index_1D=find(index_1D);
+end
+
 if isempty(index_1D)
      plot_profile([],[],[],haxes);%
 else
@@ -210,17 +221,6 @@ else
             AxeData.ZoomAxes=zoomaxes;
         end
         PlotType='line';
-end
-
-if isempty(index_2D)
-    plot_plane([],[],[],haxes);%removes images or vector plots if any
-else
-         [xx,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),haxes,PlotParam,PosColorbar);
-         AxeData.NbDim=2;
-            if testzoomaxes && isempty(errormsg)
-                [zoomaxes,PlotParamOut,xx,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),zoomaxes,PlotParam,PosColorbar);
-                AxeData.ZoomAxes=zoomaxes;
-            end
 end
 htext=findobj(hfig,'Tag','text_display');
 if ~isempty(htext)
@@ -373,15 +373,10 @@ for icell=1:length(CellVarIndex)
         coord_x_index=VarType{icell}.coord_x;
     else
         coord_x_index_cell=VarType{icell}.coord(1);
-         if isequal(coord_x_index_cell,0)
+        if isequal(coord_x_index_cell,0)
              continue  % the cell has no abscissa, skip it
-         end
-%         if ~isempty(coord_x_index)&&~isequal(coord_x_index_cell,coord_x_index)
-%             %continue %all the selected variables must have the same first dimension
-%         else
-%             coord_x_index=coord_x_index_cell;
-%         end
-          coord_x_index=coord_x_index_cell;
+        end
+        coord_x_index=coord_x_index_cell;
     end
     testplot=ones(size(data.ListVarName));%default test for plotted variables
     xtitle=[xtitle data.ListVarName{coord_x_index}];
@@ -392,6 +387,8 @@ for icell=1:length(CellVarIndex)
         xtitle=[xtitle ', '];
     end
     eval(['coord_x{icell}=data.' data.ListVarName{coord_x_index} ';']);%coordinate variable set as coord_x
+    XMin(icell)=min(coord_x{icell});
+    XMax(icell)=max(coord_x{icell});
     testplot(coord_x_index)=0;
     if ~isempty(VarType{icell}.ancillary')
         testplot(VarType{icell}.ancillary)=0;
@@ -424,14 +421,14 @@ for icell=1:length(CellVarIndex)
                 ytitle=[ytitle ', '];
             end
             eval(['data.' VarName '=squeeze(data.' VarName ');'])
+            eval(['YMin(ivar)=min(data.' VarName ');'])
+            eval(['YMax(ivar)=max(data.' VarName ');'])
             plotstr=[plotstr 'coord_x{' num2str(icell) '},data.' VarName ',' charplot_0 ','];
             eval(['nbcomponent2=size(data.' VarName ',2);']);
             eval(['nbcomponent1=size(data.' VarName ',1);']);
             if numel(coord_x{icell})==2
                 coord_x{icell}=linspace(coord_x{icell}(1),coord_x{icell}(2),nbcomponent1);
             end
-            %eval(['varmean=mean(double(data.' VarName '));']);%mean value
-            %textmean=[textmean; {[VarName 'mean= ' num2str(varmean,4)]}];
             if nbcomponent1==1|| nbcomponent2==1
                 legend_str=[legend_str {VarName}]; %variable with one component
             else  %variable with severals  components
@@ -441,18 +438,18 @@ for icell=1:length(CellVarIndex)
             end
         end
     end
+    YMin_cell(icell)=min(YMin);
+    YMax_cell(icell)=max(YMax);
 end
 
 %% activate the plot
 if test_newplot && ~isequal(plotstr,'hhh=plot(')  
     set(hfig,'CurrentAxes',haxes)
-    tag=get(haxes,'tag');
-    
+    tag=get(haxes,'tag');    
     %%%
     plotstr=[plotstr '''tag'',''plot_line'');'];   
     eval(plotstr)                  %execute plot (instruction  plotstr)
     %%%
-    
     set(haxes,'tag',tag)
     grid(haxes, 'on')
     hxlabel=xlabel(xtitle(1:end-2));% xlabel (removes ', ' at the end)
@@ -498,6 +495,19 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
     end
 end
 
+%% determine axes bounds
+ fix_lim=isfield(PlotParam,'FixLimits') && PlotParam.FixLimits;
+if fix_lim
+    if ~isfield(PlotParam,'MinX')||~isfield(PlotParam,'MaxX')||~isfield(PlotParam,'MinY')||~isfield(PlotParam,'MaxY')
+        fix_lim=0; %free limits if lits are not set,
+    end  %else PlotParamOut.XMin =PlotParam.XMin...
+end
+if ~fix_lim
+    PlotParamOut.MinX=min(XMin);
+    PlotParamOut.MaxX=max(XMax);
+    PlotParamOut.MinY=min(YMin_cell);
+    PlotParamOut.MaxY=max(YMax_cell);
+end
 
 %-------------------------------------------------------------------
 function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex,VarTypeCell,haxes,PlotParam,PosColorbar)
@@ -520,7 +530,7 @@ PlotParamOut=PlotParam;%default
 hfig=get(haxes,'parent');
 hcol=findobj(hfig,'Tag','Colorbar'); %look for colorbar axes
 hima=findobj(haxes,'Tag','ima');% search existing image in the current axes
-errormsg=[];%default
+errormsg='';%default
 test_ima=0; %default: test for image or map plot
 test_vec=0; %default: test for vector plots
 test_black=0;
@@ -660,7 +670,7 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
                 end
             end
             if test_interp_X  
-                npxy(1)=max([256 floor((AX(end)-AX(1))/DAX_min) floor((AX(end)-AX(1))/DAX_max)]);
+                npxy(2)=max([256 floor((AX(end)-AX(1))/DAX_min) floor((AX(end)-AX(1))/DAX_max)]);
                 xI=linspace(AX(1),AX(end),npxy(2));   
                 if ~test_interp_Y
                    yI=linspace(AY(1),AY(end),size(A,1)); 
@@ -1032,7 +1042,6 @@ end
 nbvar=0;
 
 %store the coordinate extrema occupied by the field
-Data
 if ~isempty(Data)
     fix_lim=isfield(PlotParam,'FixLimits') && PlotParam.FixLimits;
     if fix_lim
@@ -1040,8 +1049,6 @@ if ~isempty(Data)
             fix_lim=0; %free limits if lits are not set,
         end  %else PlotParamOut.XMin =PlotParam.XMin...
     end
-    'TESTfix'
-    fix_lim
     if ~fix_lim
         XMin=[];
         XMax=[];
@@ -1109,12 +1116,11 @@ theta=0.5 ;%angle arrow
 alpha=0.3 ;%length arrow
 rot=alpha*[cos(theta) -sin(theta); sin(theta) cos(theta)]';
 %find the existing lines
-%h=findobj(gca,'Type','Line');% search existing lines in the current axes
 h=findobj(haxes,'Tag','vel');% search existing lines in the current axes
 sizh=size(h);
 set(h,'EraseMode','xor');
 set(haxes,'NextPlot','replacechildren');
-      
+
 %drawnow
 %create lines (if no lines) or modify them
 if ~isequal(size(col_vec),size(x))
@@ -1124,7 +1130,7 @@ sizlist=size(colorlist);
 ncolor=sizlist(1);
 
 for icolor=1:ncolor
-    %determine the line positions for each color icolor 
+    %determine the line positions for each color icolor
     ind=find(col_vec==icolor);
     xc=x(ind);
     yc=y(ind);
@@ -1133,10 +1139,10 @@ for icolor=1:ncolor
     n=size(xc);
     xN=NaN*ones(size(xc));
     matx=[xc(:)-uc(:)/2 xc(:)+uc(:)/2 xN(:)]';
-%     matx=[xc(:) xc(:)+uc(:) xN(:)]';
+    %     matx=[xc(:) xc(:)+uc(:) xN(:)]';
     matx=reshape(matx,1,3*n(2));
     maty=[yc(:)-vc(:)/2 yc(:)+vc(:)/2 xN(:)]';
-%     maty=[yc(:) yc(:)+vc(:) xN(:)]';
+    %     maty=[yc(:) yc(:)+vc(:) xN(:)]';
     maty=reshape(maty,1,3*n(2));
     
     %determine arrow heads
@@ -1148,40 +1154,23 @@ for icolor=1:ncolor
     y1=yc+vc/2-arrowplus(2,:);
     y2=yc+vc/2;
     y3=yc+vc/2-arrowmoins(2,:);
-%     x1=xc+uc-arrowplus(1,:);
-%     x2=xc+uc;
-%     x3=xc+uc-arrowmoins(1,:);
-%     y1=yc+vc-arrowplus(2,:);
-%     y2=yc+vc;
-%     y3=yc+vc-arrowmoins(2,:);
     matxar=[x1(:) x2(:) x3(:) xN(:)]';
     matxar=reshape(matxar,1,4*n(2));
     matyar=[y1(:) y2(:) y3(:) xN(:)]';
     matyar=reshape(matyar,1,4*n(2));
     %draw the line or modify the existing ones
-  %    hx = [x1;x2;x3];
-  %    hy = [y1;y2;y3];
-    tri=reshape(1:3*length(uc),3,[])';
-    %d = tri(:,[1 2 3 1])'; 
-    
+    tri=reshape(1:3*length(uc),3,[])';   
     isn=isnan(colorlist(icolor,:));%test if color NaN
     if 2*icolor > sizh(1) %if icolor exceeds the number of existing ones
-        %axes(haxes)
-      %  hfig=get(haxes,'parent');
-%         axes(haxes)
-      %  set(0,'CurrentFigure',hfig)
-       % set(hfig,'CurrentAxes',haxes)
         if ~isn(1) %if the vectors are visible color not nan
             if n(2)>0
                 hold on
                 line(matx,maty,'Color',colorlist(icolor,:),'Tag','vel');% plot new lines
                 line(matxar,matyar,'Color',colorlist(icolor,:),'Tag','vel');% plot arrows
-%                 fill(hx(d),hy(d),colorlist(icolor,:),'EdgeColor','none','
-%                 Tag','Vel');
-          end
+            end
         end
     else
-        if isn(1) 
+        if isn(1)
             delete(h(2*icolor-1))
             delete(h(2*icolor))
         else
@@ -1192,7 +1181,7 @@ for icolor=1:ncolor
             set(h(2*icolor),'Color',colorlist(icolor,:));
             set(h(2*icolor),'EraseMode','xor');
         end
-     end
+    end
 end
 if sizh(1) > 2*ncolor
     for icolor=ncolor+1 : sizh(1)/2%delete additional objects

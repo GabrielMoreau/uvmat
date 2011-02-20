@@ -2049,7 +2049,7 @@ for icell=1:length(CellVarIndex)
                     ind_out=find(~flagin);
                     ICOMB=(XIMA-1)*DimValue(1)+YIMA;
                     ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
-                    vec_B(ind_in,[1:nbcolor])=vec_A(ICOMB,:); 
+                    vec_B(ind_in,1:nbcolor)=vec_A(ICOMB,:); 
                     for icolor=1:nbcolor
                         vec_B(ind_out,icolor)=zeros(size(ind_out));
                     end

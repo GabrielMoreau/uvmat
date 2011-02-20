@@ -1,7 +1,5 @@
 %'write_plot_param': update the plotting parameters on the uvmat interface after a plotting operation
 function write_plot_param(handles,PlotParam)
-'TESTwrite'
-PlotParam
 %coordinates
 if isfield(PlotParam,'FixEqual')
     if PlotParam.FixEqual
@@ -12,10 +10,17 @@ if isfield(PlotParam,'FixEqual')
         set(handles.FixEqual,'BackgroundColor',[0.7 0.7 0.7])
     end
 end
+if isfield(PlotParam,'MinX')
 set(handles.MinX,'String',num2str(PlotParam.MinX,4));
 set(handles.MaxX,'String',num2str(PlotParam.MaxX,4));
 set(handles.MinY,'String',num2str(PlotParam.MinY,4));
 set(handles.MaxY,'String',num2str(PlotParam.MaxY,4));
+else
+    set(handles.MinX,'String','');
+set(handles.MaxX,'String','');
+set(handles.MinY,'String','');
+set(handles.MaxY,'String','');
+end
 
 %scalar or image parameters
 if isfield(PlotParam,'Scalar')
@@ -90,7 +95,7 @@ set(handles.BW,'Visible',state)
 set(handles.Contours,'Visible',state)
 set(handles.min_title,'Visible',state)
 set(handles.max_title,'Visible',state)
-set(handles.frame_scal,'Visible',state)
+%set(handles.frame_scal,'Visible',state)
 set(handles.npx,'Visible',state)
 set(handles.npy,'Visible',state)
 set(handles.npx_title,'Visible',state)

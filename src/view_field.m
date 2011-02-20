@@ -265,26 +265,26 @@ indx=1+round((nxy(2)-1)*(x0-rangx0(1))/(rangx0(2)-rangx0(1)));% index x of pixel
 indy=1+round((nxy(1)-1)*(y12-rangy0(1))/(rangy0(2)-rangy0(1)));% index y of pixel
 
 %-------------------------------------------------------------------
-% --- Executes on button press in 'FixedLimits'.
+% --- Executes on button press in 'FixLimits'.
 %-------------------------------------------------------------------
-function FixedLimits_Callback(hObject, eventdata, handles)
-test=get(handles.FixedLimits,'Value');
+function FixLimits_Callback(hObject, eventdata, handles)
+test=get(handles.FixLimits,'Value');
 if test
-    set(handles.FixedLimits,'BackgroundColor',[1 1 0])
+    set(handles.FixLimits,'BackgroundColor',[1 1 0])
 else
-    set(handles.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 %-------------------------------------------------------------------
-% --- Executes on button press in auto_xy.
-function auto_xy_Callback(hObject, eventdata, handles)
-test=get(handles.auto_xy,'Value');
+% --- Executes on button press in FixEqual.
+function FixEqual_Callback(hObject, eventdata, handles)
+test=get(handles.FixEqual,'Value');
 if test
-    set(handles.auto_xy,'BackgroundColor',[1 1 0])
+    set(handles.FixEqual,'BackgroundColor',[1 1 0])
     cla(handles.axes3)
     update_plot(handles)
 else
-    set(handles.auto_xy,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.FixEqual,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles)
 end
 
@@ -297,8 +297,8 @@ end
 function zoom_Callback(hObject, eventdata, handles)
 if (get(handles.zoom,'Value') == 1); 
     set(handles.zoom,'BackgroundColor',[1 1 0])
-    set(handles.FixedLimits,'Value',1)% propose by default fixed limits for the plotting axes
-    set(handles.FixedLimits,'BackgroundColor',[1 1 0])
+    set(handles.FixLimits,'Value',1)% propose by default fixed limits for the plotting axes
+    set(handles.FixLimits,'BackgroundColor',[1 1 0])
 else
     set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
 end
@@ -531,25 +531,25 @@ set_vec_col_bar(handles)
 %-----------------------------------------------------------------
 function MinA_Callback(hObject, eventdata, handles)
 %------------------------------------------
-set(handles.AutoScal,'Value',1) %suppress auto mode
-set(handles.AutoScal,'BackgroundColor',[1 1 0])
+set(handles.FixScal,'Value',1) %suppress auto mode
+set(handles.FixScal,'BackgroundColor',[1 1 0])
 update_plot(handles)
 
 %-----------------------------------------------------------------
 function MaxA_Callback(hObject, eventdata, handles)
 %--------------------------------------------
-set(handles.AutoScal,'Value',1) %suppress auto mode
-set(handles.AutoScal,'BackgroundColor',[1 1 0])
+set(handles.FixScal,'Value',1) %suppress auto mode
+set(handles.FixScal,'BackgroundColor',[1 1 0])
 update_plot(handles)
 
 %-----------------------------------------------
-function AutoScal_Callback(hObject, eventdata, handles)
+function FixScal_Callback(hObject, eventdata, handles)
 %--------------------------------------------
-test=get(handles.AutoScal,'Value');
+test=get(handles.FixScal,'Value');
 if test
-    set(handles.AutoScal,'BackgroundColor',[1 1 0])
+    set(handles.FixScal,'BackgroundColor',[1 1 0])
 else
-    set(handles.AutoScal,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.FixScal,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
 %     set(handles.MinA,'String',num2str(ScalOut.MinA,3))
 %     set(handles.MaxA,'String',num2str(ScalOut.MaxA,3))
@@ -591,20 +591,20 @@ update_plot(handles)
 %-------------------------------------------------------------------
 function VecScale_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-set(handles.AutoVec,'Value',1);
-set(handles.AutoVec,'BackgroundColor',[1 1 0])
+set(handles.FixVec,'Value',1);
+set(handles.FixVec,'BackgroundColor',[1 1 0])
 update_plot(handles)
 
 %-------------------------------------------------------------------
-function AutoVec_Callback(hObject, eventdata, handles)
+function FixVec_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-test=get(handles.AutoVec,'Value');
+test=get(handles.FixVec,'Value');
 if test
-    set(handles.AutoVec,'BackgroundColor',[1 1 0])
+    set(handles.FixVec,'BackgroundColor',[1 1 0])
 else
     update_plot(handles);
     %set(handles.VecScale,'String',num2str(ScalOut.VecScale,3))
-    set(handles.AutoVec,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.FixVec,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 %-------------------------------------------------------
@@ -808,6 +808,100 @@ function text_display_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function text_display_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to text_display (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+
+
+function MinX_Callback(hObject, eventdata, handles)
+% hObject    handle to MinX (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of MinX as text
+%        str2double(get(hObject,'String')) returns contents of MinX as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function MinX_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to MinX (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function MaxX_Callback(hObject, eventdata, handles)
+% hObject    handle to MaxX (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of MaxX as text
+%        str2double(get(hObject,'String')) returns contents of MaxX as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function MaxX_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to MaxX (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function MinY_Callback(hObject, eventdata, handles)
+% hObject    handle to MinY (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of MinY as text
+%        str2double(get(hObject,'String')) returns contents of MinY as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function MinY_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to MinY (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function MaxY_Callback(hObject, eventdata, handles)
+% hObject    handle to MaxY (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of MaxY as text
+%        str2double(get(hObject,'String')) returns contents of MaxY as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function MaxY_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to MaxY (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
