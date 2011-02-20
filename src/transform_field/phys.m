@@ -193,6 +193,12 @@ for icell=1:length(A)
         if isfield(Calib,'SliceCoord') %.Z= index of plane
            SliceCoord=Calib.SliceCoord(ZIndex,:);
            zphys=SliceCoord(3); %to generalize for non-parallel planes
+           if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex') 
+                H=Calib.InterfaceCoord(3);
+                if H>zphys
+                    zphys=H-(H-zphys)/Calib.RefractionIndex; %corrected z (virtual object)
+                end
+           end
         end
         [XIMA,YIMA]=px_XYZ(CalibIn{icell},X,Y,zphys);% image coordinates for each point in the real space grid
         XIMA=reshape(round(XIMA),1,npX*npY);%indices reorganized in 'line'
@@ -249,6 +255,12 @@ function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Z)
 if exist('Z','var')&& isequal(Z,round(Z))&& Z>0 && isfield(Calib,'SliceCoord')&&length(Calib.SliceCoord)>=Z
     Zindex=Z;
     Zphys=Calib.SliceCoord(Zindex,3);%GENERALISER AUX CAS AVEC ANGLE
+    if isfield(Calib,'InterfaceCoord') && isfield(Calib,'RefractionIndex') 
+        H=Calib.InterfaceCoord(3);
+        if H>Zphys
+            Zphys=H-(H-Zphys)/Calib.RefractionIndex; %corrected z (virtual object)
+        end
+    end   
 else
     Zphys=0;
 end
