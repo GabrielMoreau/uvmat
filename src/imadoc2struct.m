@@ -211,6 +211,9 @@ if strcmp(option,'*') || strcmp(option,'GeometryCalib')
             if ~isempty(uid_VolumeScan)
                 tsai.VolumeScan=get(subt,children(subt,uid_VolumeScan),'value');
             end
+            tsai.InterfaceCoord=get_value(subt,'/GeometryCalib/InterfaceCoord',[0 0 0])
+            tsai.RefractionIndex=get_value(subt,'/GeometryCalib/RefractionIndex',1)
+            
             if strcmp(option,'GeometryCalib')
                 tsai.PointCoord=get_value(subt,'/GeometryCalib/SourceCalib/PointCoord',[0 0 0 0 0]);
             end
