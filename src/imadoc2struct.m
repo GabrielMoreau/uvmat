@@ -116,7 +116,7 @@ if strcmp(option,'*') || strcmp(option,'GeometryCalib')
     uid_subtree=find(t,'/ImaDoc/TranslationMotor');
     if length(uid_subtree)==1
         subt=branch(t,uid_subtree);%subtree under GeometryCalib
-       [s.TranslationMotor,errormsg]=read_subtree(subt,{'Nbslice','ZStart','ZEnd'},[1 1 1],[1 1 1])
+       [s.TranslationMotor,errormsg]=read_subtree(subt,{'Nbslice','ZStart','ZEnd'},[1 1 1],[1 1 1]);
     end 
 end
 %%  geometric calibration
@@ -206,13 +206,11 @@ if strcmp(option,'*') || strcmp(option,'GeometryCalib')
                     end
                     tsai.SliceCoord=ones(NbSlice,1)*tsai.SliceCoord+DZ*(0:NbSlice-1)'*[0 0 1];
                 end
-            end
-            uid_VolumeScan=find(subt,'/GeometryCalib/VolumeScan');
-            if ~isempty(uid_VolumeScan)
-                tsai.VolumeScan=get(subt,children(subt,uid_VolumeScan),'value');
-            end
-            tsai.InterfaceCoord=get_value(subt,'/GeometryCalib/InterfaceCoord',[0 0 0])
-            tsai.RefractionIndex=get_value(subt,'/GeometryCalib/RefractionIndex',1)
+            end   
+            tsai.SliceAngle=get_value(subt,'/GeometryCalib/SliceAngle',[0 0 0]);
+            tsai.VolumeScan=get_value(subt,'/GeometryCalib/VolumeScan','n');
+            tsai.InterfaceCoord=get_value(subt,'/GeometryCalib/InterfaceCoord',[0 0 0]);
+            tsai.RefractionIndex=get_value(subt,'/GeometryCalib/RefractionIndex',1);
             
             if strcmp(option,'GeometryCalib')
                 tsai.PointCoord=get_value(subt,'/GeometryCalib/SourceCalib/PointCoord',[0 0 0 0 0]);
@@ -235,17 +233,17 @@ function [s,errormsg]=read_subtree(subt,Data,NbOccur,NumTest)
 %--------------------------------------------------
 s=[];%default
 errormsg='';
-head_element=get(subt,1,'name')
+head_element=get(subt,1,'name');
     cont=get(subt,1,'contents');
     if ~isempty(cont)
         for ilist=1:length(Data)
-            uid_key=find(subt,[head_element '/' Data{ilist}])
+            uid_key=find(subt,[head_element '/' Data{ilist}]);
             if ~isequal(length(uid_key),NbOccur(ilist))
-                errormsg=['wrong number of occurence for ' Data{ilist}]
+                errormsg=['wrong number of occurence for ' Data{ilist}];
                 return
             end
             for ival=1:length(uid_key)
-                val=get(subt,children(subt,uid_key(ival)),'value')
+                val=get(subt,children(subt,uid_key(ival)),'value');
                 if ~NumTest(ilist)
                     eval(['s.' Data{ilist} '=val;']);
                 else
@@ -278,6 +276,8 @@ if ~isempty(uid) %if the element named label exists
            val_read=str2num(get(t,uid_child,'value'));
            if ~isempty(val_read)
                val=val_read;
+           else
+              val=get(t,uid_child,'value');%char string data
            end
        end
    end

@@ -102,7 +102,7 @@ for ichild=1:length(hchild)
                         text_displ_3='';
                         text_displ_4='';
                         for icell=1:numel(CellVarIndex)%look for all physical fields
-                            if NbDim(icell)==2 % select 2D field
+                            if NbDim(icell)>=2 % select 2D field
                                 if  isfield(Field,'Mesh') && ~isempty(Field.Mesh)&& ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
                                     eval(['X=Field.' Field.ListVarName{VarType{icell}.coord_x} ';'])
                                     eval(['Y=Field.' Field.ListVarName{VarType{icell}.coord_y} ';'])
@@ -168,10 +168,29 @@ for ichild=1:length(hchild)
                         end
 %                     end
                     if strcmp(text_displ_1,'')
-                        text_displ_1=['x=' num2str(xy(1,1),3) ',y=' num2str(xy(1,2),3) ','];
-                    end
-                    if isfield(Field,'PlaneCoord') && isfield(Field,'ZIndex')
-                        text_displ_1=[text_displ_1 ' z=' num2str(Field.PlaneCoord(Field.ZIndex,3))]; %TODO: generaliser au cas avec angle
+                        text_displ_1=['x=' num2str(xy(1,1),3) ',y=' num2str(xy(1,2),3) ','];  
+                        z=[];
+                        if isfield(Field,'PlaneCoord') && isfield(Field,'ZIndex')
+                            ZIndex=Field.ZIndex;
+                            if size(Field.PlaneCoord)>=[ZIndex 3]
+                            z=Field.PlaneCoord(ZIndex,3);
+                            if isfield(Field,'PlaneAngle')
+                                om=norm(Field.PlaneAngle(ZIndex,:));%norm of rotation angle in radians
+                                OmAxis=Field.PlaneAngle(ZIndex,:)/om; %unit vector marking the rotation axis
+                                cos_om=cos(pi*om/180);
+                                sin_om=sin(pi*om/180);
+                                coeff=OmAxis(3)*(1-cos_om);
+                                norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
+                                norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
+                                norm_plane(3)=OmAxis(3)*coeff+cos_om;
+                                Z0=norm_plane*Field.PlaneCoord(ZIndex,:)'/norm_plane(3);
+                                z=Z0-norm_plane(1)*xy(1,1)/norm_plane(3)-norm_plane(2)*xy(1,2)/norm_plane(3);
+                            end
+                            end
+                        end
+                        if ~isempty(z)
+                            text_displ_1=[text_displ_1 ' z=' num2str(z,3)]; %TODO: generaliser au cas avec angle
+                        end
                     end
                     %coordinate transform if proj_coord differs from menu_coord A REVOIR
                     if isfield(Field,'CoordUnit')

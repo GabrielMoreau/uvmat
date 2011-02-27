@@ -253,8 +253,9 @@ if strcmp(answer,'Yes')
             Z_plane=linspace(str2double(answer{1}),str2double(answer{2}),GeometryCalib.NbSlice);
         end     
         GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+        GeometryCalib.SliceAngle=answer{7}*ones(GeometryCalib.NbSlice,1)*[0 1 0];%rotation around y axis (to generalise)
         GeometryCalib.InterfaceCoord=[0 0 str2double(answer{3})];
-        GeometryCalib.RefractionIndex=str2double(answer{4});
+        GeometryCalib.RefractionIndex=str2double(answer{4});     
     end
     errormsg=update_imadoc(GeometryCalib,outputfile);% introduce the calibration data in the xml file
     if ~strcmp(errormsg,'')
