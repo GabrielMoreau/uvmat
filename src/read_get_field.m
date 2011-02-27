@@ -387,25 +387,27 @@ if test_vector
     end   
             
     if test3D %  (a revoir)  
-         %scalar w variable
+        %scalar w variable
         inputlist=get(handles.vector_z,'String');
         val=get(handles.vector_z,'Value');%selected indices in the ordinate listbox
         VarNameW=inputlist{val}; %name of the variable in the list
-        VarIndex=name2index(VarNameW,Field.ListVarName);%index of the variable in ListVarName 
-         %check consistency of dimensions with u
-        dimname_w=Field.VarDimName{VarIndex};
-        if ~isequal(dimname_w,dimname_u)
-           errormsg='inconsistent dimensions for u and v';
-            return
+        VarIndex=name2index(VarNameW,Field.ListVarName);%index of the variable in ListVarName
+        %check consistency of dimensions with u
+        if ~isempty( VarIndex)
+            dimname_w=Field.VarDimName{VarIndex};
+            if ~isequal(dimname_w,dimname_u)
+                errormsg='inconsistent dimensions for u and w';
+                return
+            end
+            nbvar=nbvar+1;
+            %         w_index=nbvar;
+            ListVarName{nbvar}=Field.ListVarName{VarIndex};
+            VarDimName{nbvar}=dimname_u;
+            if numel(VarAttribute)>=VarIndex
+                SubVarAttribute{nbvar}=VarAttribute{VarIndex};
+            end
+            SubVarAttribute{nbvar}.Role='vector_z';
         end
-        nbvar=nbvar+1;
-%         w_index=nbvar;
-        ListVarName{nbvar}=Field.ListVarName{VarIndex};
-        VarDimName{nbvar}=dimname_u;
-        if numel(VarAttribute)>=VarIndex
-            SubVarAttribute{nbvar}=VarAttribute{VarIndex};
-        end
-        SubVarAttribute{nbvar}.Role='vector_z';
     end  
     
     % select color variable
@@ -445,6 +447,7 @@ SubField.InputFile=get(handles.inputfile,'String');
 SubField.VarAttribute=SubVarAttribute;
 
 %permute indices if coord_y is not the first matrix index: scalar case
+NbDim=2; %default 
 if test_scalar
     VarNameA=Field.ListVarName{VarIndexA};%name of the scalar variable
     DimCellA=Field.VarDimName{VarIndexA};  %dimension names for the scalar variable
@@ -454,12 +457,12 @@ if test_scalar
         SingleCellA=DimCellA(1:end-numel(npxy));
         DimCellA=DimCellA(end-numel(npxy)+1:end); %suppress the first singletons) dimensions
     end
-    %ind_single=find(npxy==1);
     ind_select=find(npxy~=1);%look for non singleton dimensions
     DimCellA=DimCellA(ind_select);%dimension names for the scalar variable, after removing singletons
     npxy=npxy(ind_select);
     dimA=[];
     if test_zdimvar%dim_x && dim_y && ~isempty(VarSubIndexA)
+        NbDim=3;% field considered as 3D if a z coordinate is defined (to distinguish for instance from 2D color images with 3 components)
         ind_singleton=find(strcmp(dimname_z,SingleCellA),1);% look for coincidence of dimension with one of the singleton dimensions
         if ~isempty(ind_singleton)
              errormsg=['the singleton dimension ' dimname_z ' has been selected for z'];
@@ -467,12 +470,6 @@ if test_scalar
         end
         icoord=find(strcmp(dimname_z,DimCellA),1);% a dimension variable
         dimA=[dimA icoord];
-%         for icoord=1:numel(DimCellA)% look for coincidence of dimension with one of the dimensions of the scalar 
-%              if strcmp(dimname_z,DimCellA{icoord})% a dimension variable
-%                  dimA=[dimA icoord];
-%                  break
-%              end
-%         end
     end
     if test_ydimvar%dim_x && dim_y && ~isempty(VarSubIndexA)
         ind_singleton=find(strcmp(dimname_y,SingleCellA),1);% look for coincidence of dimension with one of the singleton dimensions
@@ -506,7 +503,7 @@ if test_scalar
             DimCell=DimCell(end-numel(npxy)+1:end); %suppress the first singletons) dimensions 
         end
         ind_select=find(npxy~=1) ;%look for non singleton dimensions
-        DimCell=DimCell(ind_select);
+        DimCell=DimCell(ind_select);%list of dimension names for the scalar, after singleton removal
         npxy=npxy(ind_select);
         testold=0;
     %old convention; use of coord_1 and Coord_2
@@ -518,13 +515,13 @@ if test_scalar
             end
         end
         if empty_coord_x        
-                coord_x_name=DimCell{2};
+                coord_x_name=DimCell{NbDim};
                 SubField.ListVarName=[{coord_x_name} SubField.ListVarName];
                 SubField.VarDimName=[{coord_x_name} SubField.VarDimName];  
                 if testold
                     eval(['SubField.' coord_x_name '=linspace(Coord_2(1),Coord_2(end),npxy(2));'])
                 else
-                    eval(['SubField.' coord_x_name '=[0.5 npxy(2)-0.5];'])
+                    eval(['SubField.' coord_x_name '=[0.5 npxy(NbDim)-0.5];'])
                 end
             
             if ~testold
@@ -535,13 +532,13 @@ if test_scalar
             SubField.VarAttribute=[{coord_x_attr} SubField.VarAttribute];  
         end
         if empty_coord_y 
-            coord_y_name=DimCell{1};
+            coord_y_name=DimCell{NbDim-1};
             SubField.ListVarName=[{coord_y_name} SubField.ListVarName];
             SubField.VarDimName=[{coord_y_name} SubField.VarDimName];
             if testold
                 eval(['SubField.' coord_y_name '=linspace(Coord_1(1),Coord_1(end),npxy(1));']) 
             else
-                eval(['SubField.' coord_y_name '=[npxy(1)-0.5 0.5];'])
+                eval(['SubField.' coord_y_name '=[npxy(NbDim-1)-0.5 0.5];'])
             end
             if ~testold
                 coord_y_attr.units='index';

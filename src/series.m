@@ -247,11 +247,11 @@ if isempty(RootPathCell)|isequal(RootPathCell,{''})%loads the previously stored 
         '*.*',  'All Files (*.*)'}, ...
         'Pick a file',oldfile);
 fileinput=[PathName FileName];%complete file name 
-testblank=findstr(fileinput,' ');%look for blanks
-if ~isempty(testblank)
-    errordlg('forbidden input file name: contain blanks')
-    return
-end
+%testblank=findstr(fileinput,' ');%look for blanks
+% if ~isempty(testblank)
+%     errordlg('forbidden input file name: contain blanks')
+%     return
+% end
 sizf=size(fileinput);
 if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
 [path,name,ext]=fileparts(fileinput);
@@ -326,7 +326,7 @@ function MenuBrowse_insert_Callback(hObject, eventdata, handles)
 RootPathCell=get(handles.RootPath,'String'); 
 RootFileCell=get(handles.RootFile,'String');
 oldfile=''; %default
-if isempty(RootPathCell)|isequal(RootPathCell,{''})%loads the previously stored file name and set it as default in the file_input box
+if isempty(RootPathCell)||isequal(RootPathCell,{''})%loads the previously stored file name and set it as default in the file_input box
      dir_perso=prefdir;
      profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
      if exist(profil_perso,'file')
@@ -351,19 +351,19 @@ if isempty(RootPathCell)|isequal(RootPathCell,{''})%loads the previously stored 
         '*.*',  'All Files (*.*)'}, ...
         'Pick a file',oldfile);
 fileinput=[PathName FileName];%complete file name 
-testblank=findstr(fileinput,' ');%look for blanks
-if ~isempty(testblank)
-    errordlg('forbidden input file name: contain blanks')
-    return
-end
+% testblank=findstr(fileinput,' ');%look for blanks
+% if ~isempty(testblank)
+%     errordlg('forbidden input file name: contain blanks')
+%     return
+% end
 sizf=size(fileinput);
 if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
 [path,name,ext]=fileparts(fileinput);
 SeriesData=[];%dfault
 if isequal(ext,'.xml')
-    errordlg('input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
+    msgbox_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
 elseif isequal(ext,'.xls')
-    errordlg('input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
+    msgbox_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
 else
     update_file(hObject, eventdata, handles,fileinput,1)
     %update list of recent files in the menubar
@@ -1621,19 +1621,19 @@ if isequal(ACTION,'more...')
    for ilist=nb_builtin_ACTION+1:length(menu_str)-1
        series_fct{ilist-nb_builtin_ACTION}=fullfile(list_path{ilist},[menu_str{ilist} '.m']);      
    end
-   if nb_builtin_ACTION+1>=length(menu_str)-1
-   if exist(profil_perso,'file') && nb_builtin_ACTION+1>=length(menu_str)-1
-        save(profil_perso,'series_fct','-append')
-   else
-    txt=ver('MATLAB');
-    Release=txt.Release;
-        relnumb=str2num(Release(3:4));
-        if relnumb >= 14
-            save(profil_perso,'series_fct','-V6')
-        else
-            save(profil_perso, 'series_fct')
-        end
-   end
+   if nb_builtin_ACTION+1<=length(menu_str)-1
+       if exist(profil_perso,'file')% && nb_builtin_ACTION+1>=length(menu_str)-1
+           save(profil_perso,'series_fct','-append')
+       else
+           txt=ver('MATLAB');
+           Release=txt.Release;
+           relnumb=str2num(Release(3:4));
+           if relnumb >= 14%recent relaese of Matlab
+               save(profil_perso,'series_fct','-V6')
+           else
+               save(profil_perso, 'series_fct')
+           end
+       end
    end
 end
 

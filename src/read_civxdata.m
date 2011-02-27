@@ -47,7 +47,7 @@
 % 'nc2struct': reads a netcdf file 
 
 function [Field,VelTypeOut]=read_civxdata(filename,FieldNames,VelType)
-
+%% default input
 if ~exist('VelType','var')
     VelType=[];
 end
@@ -57,27 +57,29 @@ end
 if ~exist('FieldNames','var') 
     FieldNames=[]; %default
 end
+
+%% reading data
 VelTypeOut=VelType;%default
 [var,role,units,vel_type_out_cell]=varcivx_generator(FieldNames,VelType);%determine the names of constants and variables to read
-[Field,vardetect,ichoice]=nc2struct(filename,var);
-% if isfield(Field,'Txt')
-%     return % error in file reading
-% end
+[Field,vardetect,ichoice]=nc2struct(filename,var);%read the variables in the netcdf file
+if isfield(Field,'Txt')
+    return
+end
 if vardetect(1)==0
      Field.Txt=[ 'requested field not available in ' filename '/' VelType];
+     return
 end
 var_ind=find(vardetect);
 for ivar=1:length(var_ind)
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
-     Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
-%     Field.VarAttribute{ivar}.units=units{var_ind(ivar)};% not necessary: set with calc_field
+    Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
 end
 VelTypeOut=VelType;
 if ~isempty(ichoice)
     VelTypeOut=vel_type_out_cell{ichoice};
 end
 
-%adjust for Djui:
+%% adjust for Djui:
 if isfield(Field,'DjUi')
     Field.ListVarName(end-2:end)=[];
     Field.ListVarName{end}='DjUi';
@@ -85,11 +87,11 @@ if isfield(Field,'DjUi')
     Field.VarAttribute(end-2:end)=[];
 end
 
-%renaiming for standard conventions
+%% renaming for standard conventions
 Field.NbCoord=Field.nb_coord;
 Field.NbDim=Field.nb_dim;
 
-% CivStage
+%% CivStage
 if isfield(Field,'patch2')&& isequal(Field.patch2,1)
     Field.CivStage=6;
 elseif isfield(Field,'fix2')&& isequal(Field.fix2,1)
@@ -177,14 +179,13 @@ Field.CoordUnit='pixel';
 
 function [var,role,units,vel_type_out]=varcivx_generator(FieldNames,vel_type) 
 
-%default input values
+%% default input values
 if ~exist('vel_type','var'),vel_type=[];end;
 if iscell(vel_type),vel_type=vel_type{1}; end;%transform cell to string if needed
-% if ~exist('display','var'),display=[];end;
 if ~exist('FieldNames','var'),FieldNames={'ima_cor'};end;%default scalar 
 if ischar(FieldNames), FieldNames={FieldNames}; end;
 
-%select the priority order for automatic vel_type selection
+%% select the priority order for automatic vel_type selection
 testder=0;
 for ilist=1:length(FieldNames)
     if ~isempty(FieldNames{ilist})
@@ -220,7 +221,7 @@ else
 end
 vel_type_out=vel_type_out';
 
-%determine names of netcdf variables to read
+%% determine names of netcdf variables to read
 var={'X','Y','Z','U','V','W','C','F','FF'};
 role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
 units={'pixel','pixel','pixel','pixel','pixel','pixel',[],[],[]};
@@ -233,12 +234,10 @@ for ilist=1:length(vel_type_out)
     var=[var;varname1(vel_type_out{ilist},FieldNames)];
 end
 
-  
-%-------------------------
-%determine  var names to read
-%--------------------------------------
+%------------------------------------------------------------------------  
+%--- determine  var names to read
 function varin=varname1(vel_type,FieldNames)
-
+%------------------------------------------------------------------------
 testder=0;
 C1='';
 C2='';

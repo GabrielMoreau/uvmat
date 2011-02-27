@@ -79,8 +79,8 @@ handles.output = hObject;
 guidata(hObject, handles);
 
 %default
-if ~exist('ZBound','var')
-    ZBound=0; %default 
+if ~exist('ZBounds','var')
+    ZBounds=0; %default 
 end
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function (allow action on uvmat when set_object is in front)
 enable_plot=0;%default: does not allow plot of object and projection
@@ -176,7 +176,7 @@ if exist('data','var')
     if isfield(data,'RangeZ') && length(ZBounds) >= 2
         set(handles.ZMax,'String',num2str(max(data.RangeZ),3))
         DZ=max(data.RangeZ);%slider step
-        if ZBounds(2)~=ZBounds(1)
+        if ~isnan(ZBounds(1)) && ZBounds(2)~=ZBounds(1)
             rel_step(1)=min(DZ/(ZBounds(2)-ZBounds(1)),0.2);%must be smaller than 1
             rel_step(2)=0.1;
             set(handles.z_slider,'Visible','on')
@@ -421,7 +421,7 @@ switch ObjectStyle
             set(handles.DX,'Visible','off')
             set(handles.DY,'Visible','off')
         end
-        if isequal(ObjectStyle,'volume') && isequal(ProjMode,'interp')
+        if  isequal(ProjMode,'interp')
             set(handles.DZ,'Visible','on')  
         end
      case {'volume'}  
@@ -432,21 +432,20 @@ switch ObjectStyle
         set(handles.YMax,'Visible','on')
         set(handles.XObject,'TooltipString',['XObject:  x coordinate of the axis origin for the ' ObjectStyle])
         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the axis origin for the ' ObjectStyle])
-        if test3D
+%         if test3D
             set(handles.Theta,'Visible','on')
             set(handles.Psi,'Visible','on')
             set(handles.ZMin,'Visible','on')
             set(handles.ZMax,'Visible','on')
-        end
+%         end
         if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
             set(handles.DX,'Visible','on')
             set(handles.DY,'Visible','on')
+            set(handles.DZ,'Visible','on')
         else
             set(handles.DX,'Visible','off')
             set(handles.DY,'Visible','off')
-        end
-        if isequal(ObjectStyle,'volume') && isequal(ProjMode,'interp')
-            set(handles.DZ,'Visible','on')  
+            set(handles.DZ,'Visible','off')
         end
 end
 %------------------------------------------------------------------------
@@ -774,7 +773,8 @@ UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
 set(huvmat,'UserData',UvData)
 
 %% plot the field projected on the object and store in the corresponding figue
-ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
+'TESTproj'
+ProjData= proj_field(UvData.Field,ObjectData)%project the current interface field on ObjectData
 PlotParam=read_plot_param(PlotHandles);
 [PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
 

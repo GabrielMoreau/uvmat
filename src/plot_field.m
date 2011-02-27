@@ -158,12 +158,17 @@ if ~isempty(Data)
         msgbox_uvmat('ERROR',['input of plot_field/find_field_indices: ' errormsg]);
         return
     end
+    index_2D=find(NbDim==2,2);%find 2D fields (at most 2)
     index_3D=find(NbDim>2,1);
     if ~isempty(index_3D)
+        if isfield(Data,'NbDim')&& isequal(Data.NbDim,2)
+            index_2D=[index_2D index_3D];
+        else
         msgbox_uvmat('ERROR','volume plot not implemented yet');
         return
+        end
     end
-    index_2D=find(NbDim==2,2);%find 2D fields (at most 2)
+   
     index_1D=find(NbDim==1);
     index_0D=find(NbDim==0);
     
@@ -242,7 +247,7 @@ end
 %% update the parameters stored in AxeData
 set(haxes,'UserData',AxeData)
 
-%% update the parameters stored in parent figure
+%% update the plotted field stored in parent figure
 FigData=get(hfig,'UserData');
 tagaxes=get(haxes,'tag');
 if isfield(FigData,tagaxes)
@@ -561,8 +566,6 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
     if numel(ind_coord)==2
         VarType.coord=VarType.coord(ind_coord);
     end
-%     idim_Y=[];  
-%     test_grid=0;
     if ~isempty(ivar_U) && ~isempty(ivar_V)% vector components detected
         if test_vec
             errormsg='error in plot_field: attempt to plot two vector fields';
@@ -724,7 +727,7 @@ if test_ima
         elseif np(3)==3
             siz=3;%color image
         else
-            errormsg=['unrecognized scalar type: ' num2str(np(3)) ' color components'];
+            errormsg=['unrecognized scalar type in plot_field: considered as 2D field with ' num2str(np(3)) ' color components'];
             return
         end
     end
@@ -747,13 +750,30 @@ if test_ima
         if ~isfield(PlotParam.Scalar,'MaxA')
             PlotParam.Scalar.MaxA=[];%default
         end
+        Aline=[];
         if isequal(PlotParam.Scalar.FixScal,0)||isempty(PlotParam.Scalar.MinA)||~isa(PlotParam.Scalar.MinA,'double')  %correct if there is no numerical data in edit box
-            MinA=double(min(min(A)));
+            Aline=reshape(A,1,[]);
+            Aline=Aline(~isnan(A));
+            if isempty(Aline)
+                 errormsg=['NaN input scalar or image in plot_field'];
+                return
+            end
+            MinA=double(min(Aline))
+            %MinA=double(min(min(A)));
         else
-            MinA=PlotParam.Scalar.MinA;  
+            MinA=PlotParam.Scalar.MinA;
         end; 
         if isequal(PlotParam.Scalar.FixScal,0)||isempty(PlotParam.Scalar.MaxA)||~isa(PlotParam.Scalar.MaxA,'double') %correct if there is no numerical data in edit box
-            MaxA=double(max(max(A)));
+            if isempty(Aline)
+               Aline=reshape(A,1,[]);
+               Aline=Aline(~isnan(A));
+               if isempty(Aline)
+                 errormsg=['NaN input scalar or image in plot_field'];
+                return
+               end
+            end
+            MaxA=double(max(Aline))
+           % MaxA=double(max(max(A)));
         else
             MaxA=PlotParam.Scalar.MaxA;  
         end; 

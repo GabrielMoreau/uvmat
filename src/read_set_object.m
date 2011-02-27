@@ -21,8 +21,6 @@ if isfield(handles,'ObjectStyle')%case of the set_object interface
 	menu=get(handles.ProjMode,'String');
 	value=get(handles.ProjMode,'Value');
 	data.ProjMode=menu{value};
-% 	menu=get(handles.CoordUnit,'String');
-% 	value=get(handles.MenuCoord,'Value');
 	data.CoordUnit=get(handles.CoordUnit,'String');
     testcalib=0;
 else %default
@@ -33,13 +31,13 @@ end
 %Euler angles and projection ranges
 if ~testcalib
     if isequal(get(handles.Phi,'Visible'),'on')
-        data.Phi=str2num(get(handles.Phi,'String'));
+        data.Angle(1)=str2double(get(handles.Phi,'String'));
     end
     if isequal(get(handles.Theta,'Visible'),'on')
-        data.Theta=str2num(get(handles.Theta,'String'));
+        data.Angle(2)=str2double(get(handles.Theta,'String'));
     end
     if isequal(get(handles.Psi,'Visible'),'on')
-        data.Psi=str2num(get(handles.Psi,'String'));
+        data.Angle(3)=str2double(get(handles.Psi,'String'));
     end
     if isequal(get(handles.DX,'Visible'),'on')
         data.DX=str2num(get(handles.DX,'String'));
