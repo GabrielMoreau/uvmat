@@ -281,7 +281,7 @@ function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Zindex)
 testangle=0;
 test_refraction=0;
 if exist('Zindex','var')&& isequal(Zindex,round(Zindex))&& Zindex>0 && isfield(Calib,'SliceCoord')&&length(Calib.SliceCoord)>=Zindex
-    if isfield(Calib, 'SliceAngle') && ~isequal(Calib.SliceAngle,0)
+    if isfield(Calib, 'SliceAngle') && ~isequal(Calib.SliceAngle,[0 0 0])
         testangle=1;
         om=norm(Calib.SliceAngle(Zindex,:));%norm of rotation angle in radians
         OmAxis=Calib.SliceAngle(Zindex,:)/om; %unit vector marking the rotation axis
