@@ -71,6 +71,7 @@ hchild=get(hObject,'Children');%handles of all objects in the current figure
 haxes=[];
 
 %% loop on all the objects in the current figure (selected by the last mouse click) 
+%CurrentOrigin=get(hObject,'CurrentPoint')
 for ichild=1:length(hchild)
     obj_pos=get(hchild(ichild),'Position');%position of the object
     if xy_fig(1) >=obj_pos(1) & xy_fig(2) >= obj_pos(2)& xy_fig(1) <=obj_pos(1)+obj_pos(3) & xy_fig(2) <= obj_pos(2)+obj_pos(4);

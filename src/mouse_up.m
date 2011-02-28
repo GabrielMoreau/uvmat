@@ -247,12 +247,12 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
     end
 end
 
-%% zoom in by a factor 2 if no new figure is created
+%% zoom in or out by a factor 2 if no new figure is created
 if test_zoom
     xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
     xlim=get(currentaxes,'XLim');
     ylim=get(currentaxes,'YLim');
-    if  isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed
+    if  isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed, zoom in by a factor of 2
         xlim(1)=0.5*xy(1,1)+0.5*xlim(1);
         xlim(2)=0.5*xy(1,1)+0.5*xlim(2);
         set(currentaxes,'XLim',xlim)
@@ -267,7 +267,7 @@ if test_zoom
         ylim(2)=2*ylim(2)-xy(1,2);
         %             ylim_new(1)=(1+alpha)*ylim(1)/2+(1-alpha)*ylim(2)/2;
         %             ylim_new(2)=(1-alpha)*ylim(1)/2+(1+alpha)*ylim(2)/2;
-        if isfield(AxeData,'RangeX') && isfield(AxeData,'RangeY')
+        if isfield(AxeData,'RangeX')&& isfield(AxeData,'RangeY')
             xlim(1)=max(AxeData.RangeX(1),xlim(1));
             xlim(2)=min(AxeData.RangeX(2),xlim(2));
             ylim(1)=max(AxeData.RangeY(1),ylim(1));
@@ -275,8 +275,8 @@ if test_zoom
             if isequal(xlim,AxeData.RangeX) && isequal(ylim,AxeData.RangeY)
                 set(hhuvmat.zoom,'Value',0)
                 set(hhuvmat.zoom,'BackgroundColor',[0.7 0.7 0.7])
-                set(hhuvmat.FixedLimits,'Value',0)
-                set(hhuvmat.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
+                set(hhuvmat.FixLimits,'Value',0)
+                set(hhuvmat.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
             end
         end
         set(currentaxes,'XLim',xlim)

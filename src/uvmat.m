@@ -2388,15 +2388,15 @@ if ~isempty(errormsg)
     errormsg=['error in uvmat/refresh_field/check_field_structure: ' errormsg];
     return
 end
-'testUVMAT'
-UvData.Field
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(UvData.Field)
+[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(UvData.Field);
 if ~isempty(errormsg)
     errormsg=['error in uvmat/refresh_field/find_field_indices: ' errormsg];
     return
 end
 [NbDim,imax]=max(NbDim);
-VarType{imax}
+if isfield(UvData.Field,'NbDim')
+    NbDim=UvData.Field.NbDim;% deal with plane fields containing z coordinates
+end
 if ~isempty(VarType{imax}.coord_x)  && ~isempty(VarType{imax}.coord_y)    %unstructured coordinates
     XName=UvData.Field.ListVarName{VarType{imax}.coord_x};
     YName=UvData.Field.ListVarName{VarType{imax}.coord_y};
@@ -3018,7 +3018,7 @@ if isequal(get(handles.RootFile_1,'Visible'),'off') || isequal(RootFile_1,'"')
     RootFile_1=get(handles.RootFile,'String'); 
 end
 if numel(RootFile_1)>=1
-    if ~(isequal(RootFile_1(1),'/')|isequal(RootFile_1(1),'\'))
+    if ~(isequal(RootFile_1(1),'/')||isequal(RootFile_1(1),'\'))
         RootFile_1(1)=[];%suppress possible / or \ separator
     end
     FileName_1=fullfile(FileName_1,RootFile_1);
@@ -3175,13 +3175,13 @@ UvData=get(handles.uvmat,'UserData');
 %read the rootfile input display
 [FileName,RootPath,FileBase,FileIndices,FileExt_prev]=read_file_boxes_1(handles);
 [P,F,str1,str2,str_a,str_b,E,NomType]=name2display(['xxx' get(handles.FileIndex,'String') FileExt_prev]);
-if isempty(FileExt_prev)|isequal(FileExt_prev,'')
+if isempty(FileExt_prev)|| strcmp(FileExt_prev,'')
     FileExt_1=get(handles.FileExt,'String');
 else
     FileExt_1=FileExt_prev;
 end
 NomType_1=get(handles.FileIndex_1,'UserData');
-if isempty(NomType_1)|isequal(NomType_1,'')
+if isempty(NomType_1)|| strcmp(NomType_1,'')
     NomType_1=get(handles.FileIndex,'UserData');
 end
 NomTypeNew=NomType_1;%default
@@ -4313,7 +4313,7 @@ edit_test=get(handles.edit_object,'Value');
 if edit_test
     ObjectData.enable_plot=1;
 else
-	if isfield(ObjectData,'enable_plot')
+    if isfield(ObjectData,'enable_plot')
         ObjectData=rmfield(ObjectData,'enable_plot');
     end
 end

@@ -240,8 +240,10 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR', errormsg)
 end
 if isfield(PlotParamOut,'MinX')
-set(haxes,'XLim',[PlotParamOut.MinX PlotParamOut.MaxX])
-set(haxes,'YLim',[PlotParamOut.MinY PlotParamOut.MaxY])
+    set(haxes,'XLim',[PlotParamOut.MinX PlotParamOut.MaxX])
+    set(haxes,'YLim',[PlotParamOut.MinY PlotParamOut.MaxY])
+    AxeData.RangeX=[PlotParamOut.MinX PlotParamOut.MaxX];
+    AxeData.RangeY=[PlotParamOut.MinY PlotParamOut.MaxY];
 end
 
 %% update the parameters stored in AxeData
@@ -521,7 +523,6 @@ end
 %-------------------------------------------------------------------
 function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex,VarTypeCell,haxes,PlotParam,PosColorbar)
 %-------------------------------------------------------------------
-
 grid(haxes, 'off')
 %default plotting parameters
 PlotType='plane';%default
@@ -755,10 +756,10 @@ if test_ima
             Aline=reshape(A,1,[]);
             Aline=Aline(~isnan(A));
             if isempty(Aline)
-                 errormsg=['NaN input scalar or image in plot_field'];
+                 errormsg='NaN input scalar or image in plot_field';
                 return
             end
-            MinA=double(min(Aline))
+            MinA=double(min(Aline));
             %MinA=double(min(min(A)));
         else
             MinA=PlotParam.Scalar.MinA;
@@ -768,11 +769,11 @@ if test_ima
                Aline=reshape(A,1,[]);
                Aline=Aline(~isnan(A));
                if isempty(Aline)
-                 errormsg=['NaN input scalar or image in plot_field'];
+                 errormsg='NaN input scalar or image in plot_field';
                 return
                end
             end
-            MaxA=double(max(Aline))
+            MaxA=double(max(Aline));
            % MaxA=double(max(max(A)));
         else
             MaxA=PlotParam.Scalar.MaxA;  
@@ -968,12 +969,11 @@ if test_vec
     vec_U=reshape(vec_U,1,numel(vec_U));
     vec_V=reshape(vec_V,1,numel(vec_V));
      MinMaxX=max(vec_X)-min(vec_X);
-    if  ~isfield(PlotParam.Vectors,'AutoVec') || isequal(PlotParam.Vectors.AutoVec,0)|| ~isfield(PlotParam.Vectors,'VecScale')...
-               ||isempty(PlotParam.Vectors.VecScale)||~isa(PlotParam.Vectors.VecScale,'double') %automatic vector scale
-%         scale=[];
-        if test_false %remove false vectors
-            %indsel=find(AxeData.FF==0);%indsel =indices of good vectors
-        else     
+    if  isfield(PlotParam.Vectors,'FixVec') && isequal(PlotParam.Vectors.FixVec,1)&& isfield(PlotParam.Vectors,'VecScale')...
+               &&~isempty(PlotParam.Vectors.VecScale) && isa(PlotParam.Vectors.VecScale,'double') %fixed vector scale
+        scale=PlotParam.Vectors.VecScale;  %impose the length of vector representation
+    else
+        if ~test_false %remove false vectors    
             indsel=1:numel(vec_X);%
         end
         if isempty(vec_U)
@@ -989,9 +989,7 @@ if test_vec
             scale=MinMaxX/(max(MaxU,MaxV)*50);
             PlotParam.Vectors.VecScale=scale;%update the 'scale' display
         end
-    else
-        scale=PlotParam.Vectors.VecScale;  %impose the length of vector representation
-    end;
+    end
     
     %record vectors on the plotting axes
     if test_C==0
@@ -1032,21 +1030,23 @@ if test_vec
        nbcolor=nbcolor+1;
        colorlist(nbcolor,:)=[0 0 0]; %add black to the list of colors
        if ~isempty(ivar_FF)
-            ind_flag=find(vec_F~=1 & vec_F~=0 & vec_FF==0);  %flag warning but not false
+          %  ind_flag=find(vec_F~=1 & vec_F~=0 & vec_FF==0);  %flag warning but not false
+            col_vec(vec_F~=1 & vec_F~=0 & vec_FF==0)=nbcolor;
        else
-            ind_flag=find(vec_F~=1 & vec_F~=0);
+           % ind_flag=find(vec_F~=1 & vec_F~=0);
+            col_vec(vec_F~=1 & vec_F~=0)=nbcolor;
        end
-       col_vec(ind_flag)=nbcolor;    
+      % col_vec(ind_flag)=nbcolor;    
     end
     nbcolor=nbcolor+1;
     if ~isempty(ivar_FF)
-        ind_flag=find(vec_FF~=0);
+        %ind_flag=find(vec_FF~=0);
         if isfield(PlotParam.Vectors,'HideFalse') && PlotParam.Vectors.HideFalse==1
             colorlist(nbcolor,:)=[NaN NaN NaN];% no plot of false vectors
         else
             colorlist(nbcolor,:)=[1 0 1];% magenta color
         end
-        col_vec(ind_flag)=nbcolor;
+        col_vec(vec_FF~=0)=nbcolor;
     end
     %plot vectors:
     quiresetn(haxes,vec_X,vec_Y,vec_U,vec_V,scale,colorlist,col_vec);   
