@@ -948,11 +948,11 @@ norm_plane=[0 0 1];
 cos_om=1;
 sin_om=0;
 if isfield(ObjectData,'Angle')&& isequal(size(ObjectData.Angle),[1 3])&& ~isequal(ObjectData.Angle,[0 0 0])
-    PlaneAngle=ObjectData.Angle;
+    PlaneAngle=(pi/180)*ObjectData.Angle;
     om=norm(PlaneAngle);%norm of rotation angle in radians
     OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
-    cos_om=cos(pi*om/180);
-    sin_om=sin(pi*om/180);
+    cos_om=cos(om);
+    sin_om=sin(om);
     coeff=OmAxis(3)*(1-cos_om);
     %components of the unity vector norm_plane normal to the projection plane
     norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
@@ -1448,8 +1448,8 @@ for icell=1:length(CellVarIndex)
         else       % case with rotation and/or interpolation
             if NbDim==2 %2D case
                 [X,Y]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
-                XIMA=ObjectData.Coord(1,1)+(X)*cos(Phi)-Y*sin(Phi);%corresponding coordinates in the original image
-                YIMA=ObjectData.Coord(1,2)+(X)*sin(Phi)+Y*cos(Phi);
+                XIMA=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(3))-Y*sin(PlaneAngle(3));%corresponding coordinates in the original image
+                YIMA=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(3))+Y*cos(PlaneAngle(3));
                 XIMA=(XIMA-minAX)/DXinit+1;% image index along x
                 YIMA=(-YIMA+maxAY)/DYinit+1;% image index along y
                 XIMA=reshape(round(XIMA),1,npX*npY);%indices reorganized in 'line'
@@ -1535,8 +1535,8 @@ for icell=1:length(CellVarIndex)
         end
         UName=FieldData.ListVarName{ivar_U};
         VName=FieldData.ListVarName{ivar_V};    
-        eval(['ProjData.' UName  '=cos(Phi)*ProjData.' UName '+ sin(Phi)*ProjData.' VName ';'])
-        eval(['ProjData.' VName  '=cos(Theta)*(-sin(Phi)*ProjData.' UName '+ cos(Phi)*ProjData.' VName ');'])
+        eval(['ProjData.' UName  '=cos(PlaneAngle(3))*ProjData.' UName '+ sin(PlaneAngle(3))*ProjData.' VName ';'])
+        eval(['ProjData.' VName  '=cos(Theta)*(-sin(PlaneAngle(3))*ProjData.' UName '+ cos(PlaneAngle(3))*ProjData.' VName ');'])
         if ~isempty(ivar_W)
             WName=FieldData.ListVarName{ivar_W};
             eval(['ProjData.' VName '=ProjData.' VName '+ ProjData.' WName '*sin(Theta);'])% 

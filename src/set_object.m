@@ -209,24 +209,11 @@ if exist('data','var')
             set(handles.ZMin,'String',num2str(min(data.RangeZ),3))
         end
     end  
-    if isfield(data,'Phi')
-        if ~ischar(handles.Phi)
-            data.DY=num2str(data.Phi,3);
-        end
-         set(handles.Phi,'String',data.Phi)
+    if isfield(data,'Angle') && isequal(numel(data.Angle),3)
+         set(handles.Phi,'String',num2str(data.Angle(1)))
+         set(handles.Theta,'String',num2str(data.Angle(2)))
+         set(handles.Psi,'String',num2str(data.Angle(3)))
     end
-    if isfield(data,'Theta')
-        if ~ischar(handles.Theta)
-            data.DY=num2str(data.Theta,3);
-        end
-        set(handles.Theta,'String',data.Theta)
-    end
-    if isfield(data,'Psi')
-         if ~ischar(handles.Psi)
-            data.DY=num2str(data.Psi,3);
-        end
-         set(handles.Psi,'String',data.Psi)
-    end  
     if isfield(data,'DZ')
         if ~ischar(handles.DZ)
             data.DY=num2str(data.DZ,3);
@@ -401,7 +388,7 @@ switch ObjectStyle
         set(handles.XObject,'TooltipString',['XObject:  x coordinate of the ' ObjectStyle ' centre'])
         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the ' ObjectStyle ' centre'])
     case {'plane'}  
-        set(handles.Phi,'Visible','on')
+        set(handles.Psi,'Visible','on')
         set(handles.XMin,'Visible','on')
         set(handles.XMax,'Visible','on')
         set(handles.YMin,'Visible','on')
@@ -411,7 +398,7 @@ switch ObjectStyle
         set(handles.ZMax,'TooltipString','ZMax: range of projection normal to the plane')
         if test3D
             set(handles.Theta,'Visible','on')
-            set(handles.Psi,'Visible','on')
+            set(handles.Phi,'Visible','on')
             set(handles.ZMax,'Visible','on')
         end
         if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
@@ -425,19 +412,17 @@ switch ObjectStyle
             set(handles.DZ,'Visible','on')  
         end
      case {'volume'}  
-        set(handles.Phi,'Visible','on')
         set(handles.XMin,'Visible','on')
         set(handles.XMax,'Visible','on')
         set(handles.YMin,'Visible','on')
         set(handles.YMax,'Visible','on')
         set(handles.XObject,'TooltipString',['XObject:  x coordinate of the axis origin for the ' ObjectStyle])
         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the axis origin for the ' ObjectStyle])
-%         if test3D
-            set(handles.Theta,'Visible','on')
-            set(handles.Psi,'Visible','on')
-            set(handles.ZMin,'Visible','on')
-            set(handles.ZMax,'Visible','on')
-%         end
+        set(handles.Phi,'Visible','on')
+        set(handles.Theta,'Visible','on')
+        set(handles.Psi,'Visible','on')
+        set(handles.ZMin,'Visible','on')
+        set(handles.ZMax,'Visible','on')
         if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
             set(handles.DX,'Visible','on')
             set(handles.DY,'Visible','on')
@@ -460,17 +445,22 @@ update_slider(hObject, eventdata,handles)
 %------------------------------------------------------------------------
 function update_slider(hObject, eventdata,handles)
 %rotation angles
-Phi=(pi/180)*str2num(get(handles.Phi,'String'));%first Euler angle in radian
-Theta=(pi/180)*str2num(get(handles.Theta,'String'));%second Euler angle in radian
-
-%components of the unitiy vector normal to the projection plane
-NormVec_X=-sin(Phi)*sin(Theta);
-NormVec_Y=cos(Phi)*sin(Theta);
-NormVec_Z=cos(Theta);
+PlaneAngle(1)=str2num(get(handles.Phi,'String'));%first  angle in degrees
+PlaneAngle(2)=str2num(get(handles.Theta,'String'));%second  angle in degrees
+PlaneAngle(3)=str2num(get(handles.Psi,'String'));%second  angle in degrees
+om=norm(PlaneAngle);%norm of rotation angle in radians
+OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
+cos_om=cos(pi*om/180);
+sin_om=sin(pi*om/180);
+coeff=OmAxis(3)*(1-cos_om);
+%components of the unity vector norm_plane normal to the projection plane
+norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
+norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
+norm_plane(3)=OmAxis(3)*coeff+cos_om;
 huvmat=findobj('Tag','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
 if isfield(UvData,'X') & isfield(UvData,'Y') & isfield(UvData,'Z')
-    Z=NormVec_X *(UvData.X)+NormVec_Y *(UvData.Y)+NormVec_Z *(UvData.Z);
+    Z=norm_plane(1)*(UvData.X)+norm_plane(2)*(UvData.Y)+norm_plane(3)*(UvData.Z);
     set(handles.z_slider,'Min',min(Z))
     set(handles.z_slider,'Max',max(Z))
     ZMax_Callback(hObject, eventdata, handles)
@@ -619,14 +609,16 @@ if isfield(s,'RangeZ')
     end
 end
 if isfield(s,'Phi')
-    set(handles.Phi,'String',s.Phi)
+    set(handles.Psi,'String',s.Phi)%old definition
 end
-if isfield(s,'Theta')
-    set(handles.Theta,'String',s.Theta)
+if isfield(s,'Angle')&& isequal(numel(s.Angle),3)
+    set(handles.Phi,'String',s.Angle(1))
+    set(handles.Theta,'String',s.Angle(2))
+    set(handles.Psi,'String',s.Angle(3))
 end
-if isfield(s,'Psi')
-    set(handles.Psi,'String',s.Psi)
-end
+% if isfield(s,'Psi')
+%     set(handles.Psi,'String',s.Psi)
+% end
 
 if isfield(s,'DX')
     set(handles.DX,'String',s.DX)
@@ -859,22 +851,25 @@ msgbox_uvmat('CONFIRMATION',[answer{1}  ' saved'])
 % --- Executes on slider movement.
 function z_slider_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
-%A ADAPTER
 Z_value=get(handles.z_slider,'Value');
-
 %rotation angles
-Phi=(pi/180)*str2num(get(handles.Phi,'String'));%first Euler angle in radian
-Theta=(pi/180)*str2num(get(handles.Theta,'String'));%second Euler angle in radian
-
-%components of the unity vector normal to the projection plane
-NormVec_X=-sin(Phi)*sin(Theta);
-NormVec_Y=cos(Phi)*sin(Theta);
-NormVec_Z=cos(Theta);
+PlaneAngle(1)=str2num(get(handles.Phi,'String'));%first  angle in degrees
+PlaneAngle(2)=str2num(get(handles.Theta,'String'));%second  angle in degrees
+PlaneAngle(3)=str2num(get(handles.Psi,'String'));%second  angle in degrees
+om=norm(PlaneAngle);%norm of rotation angle in radians
+OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
+cos_om=cos(pi*om/180);
+sin_om=sin(pi*om/180);
+coeff=OmAxis(3)*(1-cos_om);
+%components of the unity vector norm_plane normal to the projection plane
+norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
+norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
+norm_plane(3)=OmAxis(3)*coeff+cos_om;
 
 %set new plane position and update graph
-set(handles.XObject,'String',num2str(NormVec_X*Z_value,4))
-set(handles.YObject,'String',num2str(NormVec_Y*Z_value,4))
-set(handles.ZObject,'String',num2str(NormVec_Z*Z_value,4))
+set(handles.XObject,'String',num2str(norm_plane(1)*Z_value,4))
+set(handles.YObject,'String',num2str(norm_plane(2)*Z_value,4))
+set(handles.ZObject,'String',num2str(norm_plane(3)*Z_value,4))
 PLOT_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
