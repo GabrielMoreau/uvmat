@@ -62,7 +62,7 @@ set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles})
 
 %% prepare the list of RUN fcts and set their paths
 % functions included by default in 'get_field.m
-menu_str={'PLOT';'FFT';'filter_band';'histogram'}; 
+menu_str={'PLOT';'FFT';'filter_band'}; 
 nb_builtin=numel(menu_str);
 path_uvmat=fileparts(which('uvmat'));%path of the function 'uvmat'
 addpath(fullfile(path_uvmat,'get_field'))
@@ -626,7 +626,7 @@ if test_scalar | test_vector
         msgbox_uvmat('ERROR','array with more than three dimensions, not supported')
         return
     else
-        perm_ind=[1:nbdim];
+        perm_ind=1:nbdim;
     end
     if nbdim==3
         zstring=get(handles.coord_z_vectors_scalar,'String');
@@ -835,7 +835,7 @@ set(handles.RUN,'BackgroundColor',[1 0 0])
 % --- Function for plotting the current subfield
 function plot_get_field(SubField,handles)
 %------------------------------------------------------------------------
-list_fig=get(handles.list_fig,'String')
+list_fig=get(handles.list_fig,'String');
 val=get(handles.list_fig,'Value');
 if strcmp(list_fig{val},'uvmat')
     set(handles.inputfile,'Enable','off')% desactivate the input file edit box   

@@ -766,6 +766,8 @@ set(huvmat,'UserData',UvData)
 
 %% plot the field projected on the object and store in the corresponding figue
 'TESTproj'
+UvData.Field
+ObjectData
 ProjData= proj_field(UvData.Field,ObjectData)%project the current interface field on ObjectData
 PlotParam=read_plot_param(PlotHandles);
 [PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot

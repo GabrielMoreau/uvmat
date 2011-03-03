@@ -207,7 +207,7 @@ for icell=1:length(CellVarIndex)
         test_grid=1;%test for input data on regular grid (e.g. image)coordinates
       
     else
-        if length(ivar_X)>1 | length(ivar_Y)>1 | length(ivar_Z)>1
+        if length(ivar_X)>1 || length(ivar_Y)>1 || length(ivar_Z)>1
                  errormsg='multiple coordinate input in proj_field.m';
                     return
         end
@@ -237,7 +237,7 @@ for icell=1:length(CellVarIndex)
             eval(['coord_z=FieldData.' FieldData.ListVarName{ivar_Z} ';'])
             test3D=1;
         end
-        if length(ivar_F)>1 | length(ivar_FF)>1 
+        if length(ivar_F)>1 || length(ivar_FF)>1 
                  msgbox_uvmat('ERROR','multiple flag input in proj_field.m')
                     return
         end      
@@ -747,7 +747,7 @@ for icell=1:length(CellVarIndex)
                 end
             elseif isequal(ProjMode,'filter') %filtering
                 npoint=floor(linelength/DX)+1;% nbre of points in the profile (interval DX)
-                Xproj=[linelength/(2*npoint):linelength/npoint:linelength-linelength/(2*npoint)];
+                Xproj=linelength/(2*npoint):linelength/npoint:linelength-linelength/(2*npoint);
                 siz=size(X_sel);
                 xregij=cos(theta(ip))*Xproj'*ones(1,siz(2))+ObjectData.Coord(ip,1);
                 yregij=sin(theta(ip))*Xproj'*ones(1,siz(2))+ObjectData.Coord(ip,2);
@@ -886,7 +886,7 @@ for icell=1:length(CellVarIndex)
                     A_out=reshape(vec_B,npY,npX);
                     eval(['ProjData.' VarName{ivar} '=((sum(A_out,1)/npY))'';']);
                 elseif nbcolor==3
-                    vec_B(ind_in,[1:3])=vec_A(ICOMB,:);
+                    vec_B(ind_in,1:3)=vec_A(ICOMB,:);
                     vec_B(ind_out,1)=zeros(size(ind_out));
                     vec_B(ind_out,2)=zeros(size(ind_out));
                     vec_B(ind_out,3)=zeros(size(ind_out));
@@ -1327,7 +1327,7 @@ for icell=1:length(CellVarIndex)
             DX=abs(DCoord_min(NbDim));
         end
         npX=1+round(abs(Coord{NbDim}(end)-Coord{NbDim}(1))/DX);%nbre of points after interpol 
-        for idim=[1:NbDim]
+        for idim=1:NbDim
             if test_interp(idim)
                 DimValue(idim)=1+round(abs(Coord{idim}(end)-Coord{idim}(1))/abs(DCoord_min(idim)));%nbre of points after possible interpolation on a regular gri
             end

@@ -174,7 +174,7 @@ for ichild=1:length(hchild)
                             ZIndex=Field.ZIndex;
                             if size(Field.PlaneCoord)>=[ZIndex 3]
                             z=Field.PlaneCoord(ZIndex,3);
-                            if isfield(Field,'PlaneAngle')
+                            if isfield(Field,'PlaneAngle')&&~isequal(Field.PlaneAngle,[0 0 0])
                                 om=norm(Field.PlaneAngle(ZIndex,:));%norm of rotation angle in radians
                                 OmAxis=Field.PlaneAngle(ZIndex,:)/om; %unit vector marking the rotation axis
                                 cos_om=cos(pi*om/180);

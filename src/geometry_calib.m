@@ -241,9 +241,9 @@ answer=msgbox_uvmat('INPUT_Y-N',{[outputfile ' updated with calibration data'];.
 %% record the calibration parameters and display the current image of uvmat in the new phys coordinates
 if strcmp(answer,'Yes')
     if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
-       input_key={'Z (first position)','Z (last position)','Z (water surface)', 'refractive index','NbSlice','volume scan (y/n)','tilt angle'};
-       input_val=[{num2str(ZEnd)} {num2str(ZStart)} {num2str(ZStart)} {'1.33'} num2str(NbSlice_j) {volume_scan} {'0'}];
-        answer=inputdlg(input_key,'slice position(s)',ones(1,7), input_val,'on');
+       input_key={'Z (first position)','Z (last position)','Z (water surface)', 'refractive index','NbSlice','volume scan (y/n)','tilt angle y axis','tilt angle x axis'};
+       input_val=[{num2str(ZEnd)} {num2str(ZStart)} {num2str(ZStart)} {'1.333'} num2str(NbSlice_j) {volume_scan} {'0'} {'0'}];
+        answer=inputdlg(input_key,'slice position(s)',ones(1,8), input_val,'on');
         %answer_1=msgbox_uvmat('INPUT_TXT',' Z= ',num2str(Z_plane)); 
         GeometryCalib.NbSlice=str2double(answer{5});
         GeometryCalib.VolumeScan=answer{6};
@@ -253,7 +253,9 @@ if strcmp(answer,'Yes')
             Z_plane=linspace(str2double(answer{1}),str2double(answer{2}),GeometryCalib.NbSlice);
         end     
         GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-        GeometryCalib.SliceAngle=answer{7}*ones(GeometryCalib.NbSlice,1)*[0 1 0];%rotation around y axis (to generalise)
+        GeometryCalib.SliceAngle(:,3)=0;
+        GeometryCalib.SliceAngle(:,2)=str2double(answer{7})*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
+        GeometryCalib.SliceAngle(:,1)=str2double(answer{8})*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
         GeometryCalib.InterfaceCoord=[0 0 str2double(answer{3})];
         GeometryCalib.RefractionIndex=str2double(answer{4});     
     end
