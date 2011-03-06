@@ -49,15 +49,15 @@ if ~exist('num_i1','var')
         %'CoordType';...%can use a transform function
         %'GetObject';...;%can use projection object
         %'GetMask';...;%can use mask option  
-        'PARAMETER';'NbSliding';...
-        'PARAMETER';'VolumeScan';...
-        'PARAMETER';'RankBrightness';...
+        %'PARAMETER';'NbSliding';...
+        %'PARAMETER';'VolumeScan';...
+        %'PARAMETER';'RankBrightness';...
                ''};
     return %exit the function 
 end
 
 %----------------------------------------------------------------
-% initiate the waitbar
+%% initiate the waitbar
 hseries=guidata(Series.hseries);%handles of the GUI series
 WaitbarPos=get(hseries.waitbar_frame,'Position');
 %-----------------------------------------------------------------
@@ -66,7 +66,7 @@ if iscell(Series.RootPath)
     return
 end
 
-%determine input image type
+%% determine input image type
 FileType=[];%default
 MovieObject=[];
 FileExt=Series.FileExt;
@@ -100,7 +100,12 @@ nbslice_i=Series.NbSlice; %number of slices
 siz=size(num_i1);
 nbaver_init=23;%approximate number of images used for the sliding background: to be adjusted later to include an integer number of bursts
 
-%adjust the proposed number of images in the sliding average to include an integer number of bursts
+
+%% apply the image rescaling function 'level' (avoid the blinking effects of bright particles)
+answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m after sub_background');
+test_level=isequal(answer,'Yes');
+
+%% adjust the proposed number of images in the sliding average to include an integer number of bursts
 if siz(2)~=1
     nbaver=floor(nbaver_init/siz(1)); % number of bursts used for the sliding background, 
     if isequal(floor(nbaver/2),nbaver)
@@ -113,24 +118,32 @@ filebase=fullfile(Series.RootPath,Series.RootFile);
 dir_images=Series.RootPath;
 nom_type=Series.NomType;
 
-%create dir of the new images
-[dir_images,namebase]=fileparts(filebase);
-[path,subdir_ima]=fileparts(dir_images);
-curdir=pwd;
-cd(path);
-mkdir([subdir_ima '_b']);
-[xx,msg2] = fileattrib([subdir_ima '_b'],'+w','g'); %yield writing access (+w) to user group (g)
+%% create dir of the new images
+% [dir_images,namebase]=fileparts(filebase);
+if test_level
+    term='_b_levels';
+else
+    term='_b';
+end
+[pp,subdir_ima]=fileparts(Series.RootPath);
+try
+    mkdir([dir_images term]);
+catch
+    errormsg=lasterr
+            msgbox_uvmat('ERROR',errormsg);
+            return
+end
+[xx,msg2] = fileattrib([dir_images term],'+w','g'); %yield writing access (+w) to user group (g)
 if ~strcmp(msg2,'')
-    msgbox_uvmat('ERROR',['pb of permission for ' subdir_ima '_b' ': ' msg2])%error message for directory creation
-    cd(curdir)
+    msgbox_uvmat('ERROR',['pb of permission for ' subdir_ima term ': ' msg2])%error message for directory creation
     return
 end
-cd(curdir);
-filebase_b=fullfile(path,[subdir_ima '_b'],namebase);
+filebase_b=fullfile([dir_images term],Series.RootFile);
 
+%% set processing parameters
 prompt = {'Number of images for the sliding background';'The number of positions (laser slices)';'volume scan mode (Yes/No)';...
         'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles'};
-dlg_title = ['get (slice by slice) a sliding background and substract to each image, result in subdir ' subdir_ima '_b'];
+dlg_title = ['get (slice by slice) a sliding background and substract to each image, result in subdir ' subdir_ima term];
 num_lines= 3;
 def     = { num2str(nbaver_init);num2str(nbslice_i);'No';'0.1'};
 answer = inputdlg(prompt,dlg_title,num_lines,def);
@@ -138,15 +151,11 @@ set(hseries.ParamVal,'String',answer([1 [3:4]]))
 set(hseries.ParamVal,'Visible','on')
 
 nbaver_ima=str2num(answer{1});%number of images for the sliding background
-nbaver=ceil(nbaver_ima/siz(1))%number of bursts for the sliding background
+nbaver=ceil(nbaver_ima/siz(1));%number of bursts for the sliding background
 if isequal(floor(nbaver/2),nbaver)
    nbaver=nbaver+1%put the number of burst to an odd number (so the middle burst is defined)
 end
-% if isequal(nbaver,round(nbaver))
 step=siz(1);%case of bursts: the sliding background is shifted by one burst 
-% else
-%    step=1;
-% end
 vol_test=answer{3};
 if isequal(vol_test,'Yes')
     nbfield2=1;%case of volume: no consecutive series at a given level
@@ -163,18 +172,6 @@ else
         return
     end
 end
-% nbaver=floor(nbaver_init/nbfield2); % number of bursts used for the sliding background, 
-% if isequal(floor(nbaver/2),nbaver)
-%     nbaver=nbaver+1;%put the number of burst to an odd number 
-% end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%nbaver_ima=nbaver*nbfield2;% adjust the number of sliding images A  REMETRE
-% if ~isequal(nbaver_ima,nbaver_init)
-%     hwarn=warndlg(['number of images in the sliding average adjusted to ' num2str(nbaver_ima)]);
-%     set(hwarn,'Units','normalized')
-%     set(hwarn,'Position',[0.3 0.3 0.4 0.1])
-% end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 rank=floor(str2num(answer{4})*nbaver_ima);
 if rank==0
     rank=1;%rank selected in the sorted image series
@@ -182,19 +179,18 @@ end
 lengthtot=siz(1)*siz(2);
 nbfield=floor(lengthtot/(nbfield2*nbslice_i));%total number of i indexes (adjusted to an integer number of slices)
 nbfield_slice=nbfield*nbfield2;% number of fields per slice
-% test_plot=isequal(answer{5},'Yes'); %=1 to display background images
 if nbaver_ima > nbfield*nbfield2
     errordlg('number of images in a slice smaller than the proposed number of images for the sliding average')
     return
 end
 nbfirst=(ceil(nbaver/2))*step;
 if nbfirst>nbaver_ima
-    nbfirst=ceil(nbaver_ima/2)
+    nbfirst=ceil(nbaver_ima/2);
     step=1;
     nbaver=nbaver_ima;
 end
 
-%copy the xml file
+%% copy the xml file
 if exist([filebase '.xml'],'file')
     copyfile([filebase '.xml'],[filebase_b '.xml']);% copy the .civ file
     t=xmltree([filebase_b '.xml']);
@@ -222,6 +218,10 @@ if exist([filebase '.xml'],'file')
     [t,new_uid]=add(t,1,'element','ImageTransform');
     [t,NameFunction_uid]=add(t,new_uid,'element','NameFunction');
     [t]=add(t,NameFunction_uid,'chardata','sub_background');      
+    if test_levels
+            [t,NameFunction_uid]=add(t,new_uid,'element','NameFunction');
+            [t]=add(t,NameFunction_uid,'chardata','levels');
+    end
     [t,NbSlice_uid]=add(t,new_uid,'element','NbSlice');
     [t]=add(t,new_uid,'chardata',num2str(nbslice_i));
     [t,NbSlidingImages_uid]=add(t,new_uid,'element','NbSlidingImages');
@@ -239,13 +239,14 @@ end
 
 %MAIN LOOP ON SLICES
 for islice=1:nbslice_i
-    %select the series of image indices at the level islice
+    %% select the series of image indices at the level islice
     for ifield=1:nbfield
         for iburst=1:nbfield2
             indselect(iburst,ifield)=((ifield-1)*nbslice_i+(islice-1))*nbfield2+iburst;
         end
     end  
-    %read the first series of nbaver_ima images and sort by luminosity at each pixel
+    
+    %% read the first series of nbaver_ima images and sort by luminosity at each pixel
     for ifield = 1:nbaver_ima
         ifile=indselect(ifield);
         filename=name_generator(filebase,num_i1(ifile),num_j1(ifile),Series.FileExt,Series.NomType);
@@ -254,26 +255,24 @@ for islice=1:nbslice_i
     end
     Asort=sort(Ak,3);%sort the luminosity of images at each point
     B=Asort(:,:,rank);%background image
-% 
-%     namemean=name_generator([filebase '_back'],islice,[],'.png','_i');% makes the file name
-%     imwrite(B,namemean,'BitDepth',16); % save the first background image
-%     ['background image for slice ' num2str(islice) ' saved in ' namemean]
-    %substract the background from each of the first images and save the new images
-%     for ifield=1:floor(nbaver_ima/2)+1 
-    'first background image will be substracted'
-
+   display( 'first background image will be substracted')
     for ifield=1:nbfirst
             Acor=double(Ak(:,:,ifield))-double(B);%substract background to the current image
             Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
             C=uint16(Acor);% set to integer 16 bits
             ifile=indselect(ifield);
             newname=name_generator(filebase_b,num_i1(ifile),num_j1(ifile),'.png',nom_type)% makes the new file name
-            imwrite(C,newname,'BitDepth',16); % save the new image
+            if test_level
+                C=levels(C);
+                 imwrite(C,newname,'BitDepth',8); % save the new image
+            else
+                 imwrite(C,newname,'BitDepth',16); % save the new image
+            end
     end
-    %repeat the operation on a sliding series of nbaver*nbfield2 images
-    'sliding background image will be substracted'
+    
+    %% repeat the operation on a sliding series of nbaver*nbfield2 images
+    display('sliding background image will be substracted')
     if nbfield_slice > nbaver_ima
-%         for ifield = floor(nbaver_ima/2)+2:step:nbfield_slice-floor(nbaver_ima/2)
         for ifield = step*ceil(nbaver/2)+1:step:nbfield_slice-step*floor(nbaver/2)
             stopstate=get(hseries.RUN,'BusyAction');
             if isequal(stopstate,'queue')% enable STOP command
@@ -290,36 +289,43 @@ for islice=1:nbslice_i
                 Asort=sort(Ak,3);%sort the new current image series by luminosity
                 B=Asort(:,:,rank);%current background image
                 for iburst=1:step
-%                     Acor=double(Ak(:,:,floor(nbaver_ima/2)+iburst-1))-double(B);
                     index=step*floor(nbaver/2)+iburst;
                     Acor=double(Ak(:,:,index))-double(B);
                     Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
                     C=uint16(Acor);
                     ifile=indselect(ifield+iburst-1);
                     [newname]=...
-                       name_generator(filebase_b,num_i1(ifile),num_j1(ifile),'.png',Series.NomType)
-%                     newname=name_generator(filebase_b,num_i1(indselect(ifield+iburst-1)),num_j1(indselect(ifield+iburst-1)),'.png',nom_type)% makes the new file name
-                    imwrite(C,newname,'BitDepth',16); % save the new image
-                end  
+                        name_generator(filebase_b,num_i1(ifile),num_j1(ifile),'.png',Series.NomType) % makes the new file name
+                    if test_level
+                        C=levels(C);
+                        imwrite(C,newname,'BitDepth',8); % save the new image
+                    else
+                        imwrite(C,newname,'BitDepth',16); % save the new image
+                    end
+                end
             else
                 return
             end
         end
     end
 
-%substract the background from the last images
-%     for ifield=nbfield_slice-floor(nbaver_ima/2)+1:nbfield_slice
-     'last background image will be substracted'
+%% substract the background from the last images
+    display('last background image will be substracted')
      ifield=nbfield_slice-(step*ceil(nbaver/2))+1:nbfield_slice;
-    for ifield=nbfield_slice-(step*floor(nbaver/2))+1:nbfield_slice  
-        index=ifield-nbfield_slice+step*(2*floor(nbaver/2)+1);
-        Acor=double(Ak(:,:,index))-double(B);
-        Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
-        C=uint16(Acor);
-        ifile=indselect(ifield);
-        newname=name_generator(filebase_b,num_i1(ifile),num_j1(ifile),'.png',nom_type)% makes the new file name
-        imwrite(C,newname,'BitDepth',16); % save the new image
-    end
+     for ifield=nbfield_slice-(step*floor(nbaver/2))+1:nbfield_slice
+         index=ifield-nbfield_slice+step*(2*floor(nbaver/2)+1);
+         Acor=double(Ak(:,:,index))-double(B);
+         Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
+         C=uint16(Acor);
+         ifile=indselect(ifield);
+         newname=name_generator(filebase_b,num_i1(ifile),num_j1(ifile),'.png',nom_type)% makes the new file name
+         if test_level
+             C=levels(C);
+             imwrite(C,newname,'BitDepth',8); % save the new image
+         else
+             imwrite(C,newname,'BitDepth',16); % save the new image
+         end
+     end
 end
 
 %finish the waitbar
@@ -347,3 +353,42 @@ if length(siz)==3;%color images
     A=sum(double(A),3);
 end
     
+
+function C=levels(A)
+%whos A;
+B=double(A(:,:,1));
+windowsize=round(min(size(B,1),size(B,2))/20);
+windowsize=floor(windowsize/2)*2+1;
+ix=[1/2-windowsize/2:-1/2+windowsize/2];%
+%del=np/3;
+%fct=exp(-(ix/del).^2);
+fct2=cos(ix/(windowsize-1)/2*pi/2);
+%Mfiltre=(ones(5,5)/5^2);
+%Mfiltre=fct2';
+Mfiltre=fct2'*fct2;
+Mfiltre=Mfiltre/(sum(sum(Mfiltre)));
+
+C=filter2(Mfiltre,B);
+C(:,1:windowsize)=C(:,windowsize)*ones(1,windowsize);
+C(:,end-windowsize+1:end)=C(:,end-windowsize+1)*ones(1,windowsize);
+C(1:windowsize,:)=ones(windowsize,1)*C(windowsize,:);
+C(end-windowsize+1:end,:)=ones(windowsize,1)*C(end-windowsize,:);
+C=tanh(B./(2*C));
+[n,c]=hist(reshape(C,1,[]),100);
+% figure;plot(c,n);
+
+[m,i]=max(n);
+c_max=c(i);
+[dummy,index]=sort(abs(c-c(i)));
+n=n(index);
+c=c(index);
+i_select = find(cumsum(n)<0.95*sum(n));
+if isempty(i_select)
+    i_select = 1:length(c);
+end
+c_select=c(i_select);
+n_select=n(i_select);
+cmin=min(c_select);
+cmax=max(c_select);
+C=(C-cmin)/(cmax-cmin)*256;
+C=uint8(C);
