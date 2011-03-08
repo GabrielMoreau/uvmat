@@ -218,7 +218,7 @@ if exist([filebase '.xml'],'file')
     [t,new_uid]=add(t,1,'element','ImageTransform');
     [t,NameFunction_uid]=add(t,new_uid,'element','NameFunction');
     [t]=add(t,NameFunction_uid,'chardata','sub_background');      
-    if test_levels
+    if test_level
             [t,NameFunction_uid]=add(t,new_uid,'element','NameFunction');
             [t]=add(t,NameFunction_uid,'chardata','levels');
     end
