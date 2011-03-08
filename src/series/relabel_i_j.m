@@ -19,14 +19,11 @@ first_label=0 %image numbers start from 0
 %% read imadoc
 RootPath=get(hseries.RootPath,'String');
 RootFile=get(hseries.RootFile,'String');
-basename=fullfile(RootPath{1},RootFile{1}); 
-SeriesData=get(hGUI,'UserData');
-if ~strcmp(SeriesData.NomType,'_000001')
-    msgbox_uvmat('WARNING','the input is not a file from RDvision: this function relabel_i_j has no action')%error message for directory creation
+if ~iscell(RootFile)
+    msgbox_uvmat('ERROR','please enter an input image series from RDVision system')%error message for xml file reading
     return
-else
-    msgbox_uvmat('CONFIRMATION','this function will relabel the file series from RDvision and correct the xml file')%error message for directory creation
 end
+basename=fullfile(RootPath{1},RootFile{1}); 
 [XmlData,warntext]=imadoc2struct([basename '.xml'])% read the xml file appended to the present function (containing bug corrections)
 if ~isempty(warntext)
     msgbox_uvmat('ERROR',warntext)%error message for xml file reading
@@ -37,6 +34,13 @@ nbfield2=size(XmlData.Time,2);
 set(hseries.first_i,'String',num2str(first_label))% display the first image in the process
 set(hseries.last_i,'String',num2str(nbfield1*nbfield2-1+first_label))% display the last image in the process
 set(hseries.nb_field,'String',{num2str(nbfield1*nbfield2-1+first_label)})% display the total nbre of images
+SeriesData=get(hGUI,'UserData');
+if ~strcmp(SeriesData.NomType,'_000001')
+    msgbox_uvmat('WARNING','the input is not a file from RDvision: this function relabel_i_j has no action')%error message for directory creation
+    return
+else
+    msgbox_uvmat('CONFIRMATION','this function will relabel the file series from RDvision and correct the xml file')%error message for directory creation
+end
 
 %% stop program ther when it is selected in the menu (no run action)
 if ~exist('num_i1','var')
@@ -81,9 +85,9 @@ if exist([basename '.xml'],'file')
     
     %%%% correction RDvision %%%%
     uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
-    t=set(t,uid_NbDtj,'value',num2str(s.NbDtj))
+    t=set(t,uid_NbDtj,'value',num2str(XmlData.NbDtj));
     uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
-    t=set(t,uid_NbDtk,'value',num2str(s.NbDtk))
+    t=set(t,uid_NbDtk,'value',num2str(XmlData.NbDtk));
     %%%
     
     save(t,[basename '.xml'])
