@@ -233,12 +233,12 @@ set(hObject,'DeleteFcn',{@closefcn})%
 %% refresh projection plane
 %UvData.Object{1}.Style='plane';%main plotting plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
-if ~isfield(UvData.Object{1},'plotaxes')
-    UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis
-    set(handles.list_object_1,'Value',1);
-   % set(handles.list_object_1,'String',{'1-PLANE'});
-   set(handles.list_object_1,'String',{''});
-end
+% if ~isfield(UvData.Object{1},'plotaxes')
+%     UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis
+%     set(handles.list_object_1,'Value',1);
+%    % set(handles.list_object_1,'String',{'1-PLANE'});
+%    set(handles.list_object_1,'String',{''});
+% end
 set(handles.Fields,'Value',1)
 set(handles.Fields,'string',{''})
 
@@ -2528,9 +2528,9 @@ else
     set(handles.list_object_1,'Value',1);
     set(handles.list_object_1,'String',{''});
 end
-if ~isfield(UvData.Object{1},'plotaxes')
-    UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis 
-end
+% if ~isfield(UvData.Object{1},'plotaxes')
+%     UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis 
+% end
 testnewseries=UvData.NewSeries;
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
 set(handles.uvmat,'UserData',UvData)
@@ -2550,7 +2550,11 @@ if IndexObj(1)> numel(UvData.Object)
     set(handles.list_object_1,'Value',1)
 end
 plot_handles{1}=handles;
-haxes(1)=handles.axes3;
+if isfield(UvData,'plotaxes')%case of movies
+    haxes(1)=UvData.plotaxes;
+else
+    haxes(1)=handles.axes3;
+end
 PlotParam{1}=read_plot_param(handles);%read plotting parameters on the uvmat interfac
 keeplim(1)=get(handles.FixLimits,'Value');% test for fixed graph limits
 PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
@@ -4474,7 +4478,7 @@ map=colormap(handles.axes3);
 colormap(map);%transmit the current colormap to the zoom fig
 msgbox_uvmat('INPUT_Y-N',{['adjust figure ' num2str(newfig) ' with its matlab edit menu '] ;...
         ['then press OK to get the avi movie as a copy of figure ' num2str(newfig) ' display']});
-UvData.Object{1}.plotaxes=newaxes;% the axis in the new figure becomes the current main plotting axes
+UvData.plotaxes=newaxes;% the axis in the new figure becomes the current main plotting axes
 set(huvmat,'UserData',UvData);
 increment=str2double(get(handles.increment_scan,'String')); %get the field increment d
 if isnan(increment)
@@ -4508,8 +4512,9 @@ for i=1:imax
             aviobj=addframe(aviobj,mov);
     end
 end
-close(aviobj);
-UvData.Object{1}.plotaxes=handles.axes3;
+aviobj=close(aviobj);
+UvData=rmfield(UvData,'plotaxes');
+%UvData.Object{1}.plotaxes=handles.axes3;
 set(huvmat,'UserData',UvData);
 msgbox_uvmat('CONFIRMATION',{['movie ' aviname ' created '];['with ' num2str(imax) ' frames']})
 

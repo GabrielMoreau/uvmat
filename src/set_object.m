@@ -275,7 +275,7 @@ end
 Zcolumn={};%default
 z_new={};
 if isequal(get(handles.ZObject,'Visible'),'on')
-    data.NbDim=3; %test 3D object
+    %data.NbDim=3; %test 3D object
     Zcolumn=get(handles.ZObject,'String');
     if ischar(Zcolumn)
         Zcolumn={Zcolumn};
@@ -765,10 +765,7 @@ UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
 set(huvmat,'UserData',UvData)
 
 %% plot the field projected on the object and store in the corresponding figue
-'TESTproj'
-UvData.Field
-ObjectData
-ProjData= proj_field(UvData.Field,ObjectData)%project the current interface field on ObjectData
+ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
 PlotParam=read_plot_param(PlotHandles);
 [PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
 

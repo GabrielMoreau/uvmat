@@ -91,7 +91,7 @@ if strcmp(option,'*') || strcmp(option,'Camera')
                     Time_val=[Time_val;Time_val(end)+cumsum(Dti)];%append the times defined by the intervals  Dti
                 end
                 if ~isempty(Dtj)
-                    Dtj=reshape(Dtj'*ones(1,NbDtj),1,NbDtj*numel(Dtj)); %concatene Dti vector NbDti times
+                    Dtj=reshape(Dtj'*ones(1,NbDtj),1,NbDtj*numel(Dtj)); %concatene Dtj vector NbDtj times
                     Dtj=[0 Dtj];
                     Time_val=Time_val*ones(1,numel(Dtj))+ones(numel(Time_val),1)*cumsum(Dtj);% produce a time matrix with Dtj
                 end

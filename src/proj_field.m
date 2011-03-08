@@ -219,14 +219,12 @@ for icell=1:length(CellVarIndex)
     end
     ProjData.ListVarName={'Y','X','NbVal'};
     ProjData.VarDimName={'nb_points','nb_points','nb_points'};
-    %ProjData.VarDimIndex={[1],[1],[1]}; 
     ProjData.VarAttribute{1}.Role='ancillary';
     ProjData.VarAttribute{2}.Role='ancillary';
     ProjData.VarAttribute{3}.Role='ancillary';
     for ivar=VarIndex        
         VarName=FieldData.ListVarName{ivar};
         ProjData.ListVarName=[ProjData.ListVarName {VarName}];
-        %ProjData.VarDimIndex=[ProjData.VarDimIndex {[1]}];
         ProjData.VarDimName=[ProjData.VarDimName {'nb_points'}];
     end
     if ~test_grid
@@ -252,8 +250,8 @@ for icell=1:length(CellVarIndex)
            if isequal(length(ivar_FF),1)
                FFName=FieldData.ListVarName{ivar_FF};
                eval(['FF=FieldData.' FFName '(indsel);'])
-               ind_indsel=find(~FF);
-               indsel=indsel(ind_indsel);
+               %ind_indsel=find(~FF);
+               indsel=indsel(~FF);
            end
            ProjData.NbVal(ipoint,1)=length(indsel);
             for ivar=VarIndex 
@@ -749,15 +747,15 @@ for icell=1:length(CellVarIndex)
                 npoint=floor(linelength/DX)+1;% nbre of points in the profile (interval DX)
                 Xproj=linelength/(2*npoint):linelength/npoint:linelength-linelength/(2*npoint);
                 siz=size(X_sel);
-                xregij=cos(theta(ip))*Xproj'*ones(1,siz(2))+ObjectData.Coord(ip,1);
-                yregij=sin(theta(ip))*Xproj'*ones(1,siz(2))+ObjectData.Coord(ip,2);
-                xij=ones(npoint,1)*X_sel;
-                yij=ones(npoint,1)*Y_sel;
+                xregij=cos(theta(ip))*ones(siz(1),1)*Xproj+ObjectData.Coord(ip,1);
+                yregij=sin(theta(ip))*ones(siz(1),1)*Xproj+ObjectData.Coord(ip,2);
+                xij=X_sel*ones(1,npoint);
+                yij=Y_sel*ones(1,npoint);
                 Aij=exp(-lambda*((xij-xregij).*(xij-xregij)+(yij-yregij).*(yij-yregij)));
-                norm=ones(1,siz(2))*Aij';
+                norm=Aij'*ones(siz(1),1);
                 for ivar=1:numel(ProjVar)
                      if ~isempty(ProjVar{ivar})
-                        ProjVar{ivar}=ProjVar{ivar}*Aij'./norm;
+                        ProjVar{ivar}=Aij'*ProjVar{ivar}./norm;
                      end
                 end              
             end
@@ -1255,7 +1253,7 @@ for icell=1:length(CellVarIndex)
     else
         VarName=FieldData.ListVarName{VarIndex(1)};%get the first variable of the cell to get the input matrix dimensions
         eval(['DimValue=size(FieldData.' VarName ');'])%input matrix dimensions
-        DimValue(find(DimValue==1))=[];%remove singleton dimensions       
+        DimValue(DimValue==1)=[];%remove singleton dimensions       
         NbDim=numel(DimValue);%update number of space dimensions
         nbcolor=1; %default number of 'color' components: third matrix index without corresponding coordinate
         if NbDim>=3
