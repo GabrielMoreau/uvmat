@@ -282,22 +282,21 @@ if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array abs
     time=[];
 end
 
-% Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
+%% Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
 subdir_result='aver_stat';
-if ~exist(fullfile(RootPath{1},subdir_result),'dir')
-    dircur=pwd; %record current working directory
-    cd(RootPath{1})% goes to the iamge directory
-    [m1,m2,m3]=mkdir(subdir_result);
-    if ~isequal(m2,'')
-         msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
-    end
-    [xx,msg2] = fileattrib(subdir_result,'+w','g'); %yield writing access (+w) to user group (g)
-    if ~strcmp(msg2,'')
-        msgbox_uvmat('ERROR',['pb of permission for ' subdir_result ': ' msg2])%error message for directory creation
-        cd(curdir)
-        return
-    end
-    cd(dircur) %back to the initial working directory
+pathdir=fullfile(RootPath{1},subdir_result);
+while exist(pathdir,'dir')
+    subdir_result=[subdir_result '.0'];
+    pathdir=fullfile(RootPath{1},subdir_result);
+end
+[m1,m2,m3]=mkdir(pathdir);
+if ~isequal(m2,'')
+     msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
+end
+[xx,msg2] = fileattrib(pathdir,'+w','g'); %yield writing access (+w) to user group (g)
+if ~strcmp(msg2,'')
+    msgbox_uvmat('ERROR',['pb of permission for ' pathdir ': ' msg2])%error message for directory creation
+    return
 end
 filebase_out=filebase{1}; 
 NomTypeOut=nomtype2pair(NomType{1},num_i2{end}(end)-num_i1{1}(1),num_j2{end}(end)-num_j1{1}(1));
@@ -308,7 +307,7 @@ if isfield(Series,'transform_fct')
     transform_fct=Series.transform_fct;
 end
 
-%slice loop
+%% slice loop
 siz=size(num_i1{1});
 lengthtot=siz(1)*siz(2);
 nbfield=floor(lengthtot/(siz(1)*NbSlice));%total number of i indexes (adjusted to an integer number of slices)

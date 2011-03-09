@@ -236,7 +236,8 @@ end
 subdir_result='time_series';
 pathdir=fullfile(RootPath{1},subdir_result);
 while exist(pathdir,'dir')
-    pathdir=[pathdir '.0'];
+    subdir_result=[subdir_result '.0'];
+    pathdir=fullfile(pathdir,subdir_result);
 end
 [m1,m2,m3]=mkdir(pathdir);
 if ~isequal(m2,'')
@@ -244,7 +245,7 @@ if ~isequal(m2,'')
 end
 [xx,msg2] = fileattrib(pathdir,'+w','g'); %yield writing access (+w) to user group (g)
 if ~strcmp(msg2,'')
-    msgbox_uvmat('ERROR',['pb of permission for ' subdir_result ': ' msg2])%error message for directory creation
+    msgbox_uvmat('ERROR',['pb of permission for ' pathdir ': ' msg2])%error message for directory creation
     return
 end
 
