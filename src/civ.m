@@ -2252,8 +2252,9 @@ if ~batch
     fid=fopen(filename_superbat,'w');
     fprintf(fid,super_cmd');
     fclose(fid);
-%     if(isunix)
-        %system(['chmod +x ' filename_superbat])
+     if(isunix)
+        system(['chmod +x ' filename_superbat])
+     end
      system([filename_superbat ' &'])% execute main commmand
 %     else
 %         eval(['!' filename_superbat ' &']);
@@ -4081,7 +4082,7 @@ if(isunix)
 %     [Rootbat,Filebat,extbat]=fileparts(namelog);
 %     ncName=fullfile(Rootbat,[ Filebat '.nc']);
     cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
-    cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.log' ' ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.nc'];%rename .log as .civ1.log and set the netcdf result file for group user writting
+    cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.log' ' ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.nc'];%rename .log as .civ1.log and set the netcdf result file for group user writting
     cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.cmx' ' ' filename '.civ1.cmx' '\n'];%rename .cmx as .civ1.cmx
 else %Windows system
     filename=regexprep(filename,'\\','\\\\');
@@ -4639,7 +4640,7 @@ while count<nbfiles
         if detect==0
             option_str='not created';
         else
-            datfile=dir(civ_files{ifile})
+            datfile=dir(civ_files{ifile});
             if isfield(datfile,'datenum')
                 datnum(ifile)=datfile.datenum;%only available in recent matlab versions
                 testrecent=1;
@@ -4674,7 +4675,7 @@ while count<nbfiles
         [rr,filename,ext]=fileparts(civ_files{ifile});
         Tabchar{ifile,1}=[fullfile([subdir extdir],filename) ext  '...' option_str];
     end
-    datnum=datnum(find(datnum));%keep the non zero values corresponding to existing files
+    datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
     if isempty(datnum) 
         if testrecent
             message='no civ result created yet';
@@ -4682,7 +4683,7 @@ while count<nbfiles
             message='';
         end
     else
-        datnum=datnum(find(datnum));%keep the non zero values corresponding to existing files
+        datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
         [first,ind]=min(datnum);
         [last,indlast]=max(datnum);
         message={[num2str(count) ' file(s) done over ' num2str(nbfiles)] ;['oldest modification:  ' cell2mat(filefound(ind)) ' : ' datestr(first)];...
