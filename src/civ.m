@@ -21,7 +21,7 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 function varargout = civ(varargin)
 
-% Last Modified by GUIDE v2.5 05-Jan-2011 16:19:30
+% Last Modified by GUIDE v2.5 11-Mar-2011 08:21:21
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -224,7 +224,7 @@ set(handles.ref_j,'String',num2str(num_ref_j));
 set(handles.ref_i_civ2,'String',num2str(num_ref_i));
 set(handles.ref_j_civ2,'String',num2str(num_ref_j));
 set(handles.browse_root,'UserData',browse);
-if exist('param','var')%varargin the interface is opened from uvmat
+if exist('param','var') && isfield(param,'RootName') && ~isempty(param.RootName)%varargin the interface is opened from uvmat
     RootName_Callback(hObject, eventdata, handles);
 end
 
@@ -1710,17 +1710,32 @@ else
     end
     if isfield(sparam,'CivBin')
         if ~exist(sparam.CivBin,'file')
+            CivBin=sparam.CivBin;
             sparam.CivBin=fullfile(path_UVMAT,sparam.CivBin);
+            if ~exist(sparam.CivBin,'file')
+                 msgbox_uvmat('ERROR',['CIVx binary ' CivBin ' defined in PARAM.xm does not exist'])
+                 return
+            end
         end
     end
     if isfield(sparam,'Civ1Bin')
         if ~exist(sparam.Civ1Bin,'file')
+            CivBin=sparam.Civ1Bin;
             sparam.Civ1Bin=fullfile(path_UVMAT,sparam.Civ1Bin);
+            if ~exist(sparam.CivBin,'file')
+                 msgbox_uvmat('ERROR',['civ1 binary ' CivBin ' defined in PARAM.xm does not exist'])
+                 return
+            end
         end
     end
     if isfield(sparam,'Civ2Bin')
+        CivBin=sparam.Civ2Bin;
         if ~exist(sparam.Civ2Bin,'file')
             sparam.Civ2Bin=fullfile(path_UVMAT,sparam.Civ2Bin);
+            if ~exist(sparam.Civ2Bin,'file')
+                 msgbox_uvmat('ERROR',['civ2 binary ' CivBin ' defined in PARAM.xm does not exist'])
+                 return
+            end
         end
     end
     if  isfield(sparam,'PatchBin')
@@ -1841,7 +1856,7 @@ end
 
 %% MAIN LOOP
 time=get(handles.RootName,'UserData'); %get the set of times
-civAll=get(handles.Experimental,'Value'); % Boolean for new civ excution method
+civAll=get(handles.CivAll,'Value'); % Boolean for new civ excution method
 super_cmd=[];
 
 for ifile=1:nbfield
@@ -1852,7 +1867,7 @@ for ifile=1:nbfield
             cmd='#!/bin/bash \n';
             cmd=[cmd '#$ -cwd \n'];
             cmd=[cmd 'hostname && date \n'];
-            cmd=[cmd 'umask 002 \n'];%allow writting access for user group for created files
+            cmd=[cmd 'umask 002 \n'];%allow writting access to created files for user group
         end
         if civAll
             civAllxml=xmltree;% xml contents,  all parameters
@@ -2110,7 +2125,7 @@ for ifile=1:nbfield
                 end
             else
                 civAllCmd=[civAllCmd ' civ2 '];
-                str=CIV2_CMD_Unified(filename_cmx([1:end-4]),namelog,par_civ2);
+                str=CIV2_CMD_Unified(flname,'',par_civ2);
                 fieldnames=fields(str);
                 [civAllxml,uid_civ2]=add(civAllxml,1,'element','civ2');
                 for ilist=1:length(fieldnames)
@@ -2174,9 +2189,9 @@ for ifile=1:nbfield
                 cmd=[cmd cmd_PATCH '\n'];
             else
                 patch2.inputFileName=filecell.nc.civ1{ifile,j} ;
-                patch2.nopt=subdomain_patch1;
-                patch2.maxdiff=thresh_patch1;
-                patch2.ro=rho_patch1;
+                patch2.nopt=subdomain_patch2;
+                patch2.maxdiff=thresh_patch2;
+                patch2.ro=rho_patch2;
                 test_grid=get(handles.get_gridpatch2,'Value');
                 if test_grid
                     patch2.gridflag='y';
@@ -2215,8 +2230,10 @@ for ifile=1:nbfield
             end
         end
         if isequal(civAll,1)
-            save(civAllxml,[filename_cmx([1:end-4]) '.xml']);
-            cmd=[cmd CivBin ' -f ' filename_cmx(1:end-4) '.xml '  civAllCmd  '\n'];
+            save(civAllxml,[flname '.xml']);
+            'TEST'
+            cmd=[cmd sparam.CivBin ' -f ' flname '.xml '  civAllCmd ' >' flname '.log' '\n']
+            'fincmd'
         end
         % create the .bat file:
         [fid,message]=fopen(filename_bat,'w');
@@ -4123,7 +4140,7 @@ end
 if isequal(par.maskflag,'y')
     civ1.mask=par.maskname;
 end
-civ1.dt=par.Dt;
+civ1.dt=1%par.Dt;
 civ1.unit='pixel';
 civ1.absolut_time_T0=par.T0;
 civ1.pixcmx=par.pxcmx;
@@ -4732,3 +4749,14 @@ function open_view_field(hObject, eventdata)
 function close_GUI(hObject, eventdata)
 %-------------------------------------------------------------------
      delete(gcbf)
+
+
+% --- Executes on button press in CivAll.
+function CivAll_Callback(hObject, eventdata, handles)
+% hObject    handle to CivAll (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of CivAll
+
+

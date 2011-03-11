@@ -491,39 +491,6 @@ update_plot(handles)
 function vec_col_bar_Callback(hObject, eventdata, handles)
 set_vec_col_bar(handles)
 
-% %--------------------------------------------
-% %update the display of color code for vectors
-% %--------------------------------------------
-% function set_vec_col_bar(handles)
-% %get the image of the color display button 'vec_col_bar' in pixels
-% uni=get(handles.vec_col_bar,'Unit');
-% set(handles.vec_col_bar,'Unit','pixel')
-% pos_vert=get(handles.vec_col_bar,'Position');
-% set(handles.vec_col_bar,'Unit','Normalized')
-% width=ceil(pos_vert(3));
-% height=ceil(pos_vert(4));
-% %get slider indications
-% colcode.min=get(handles.slider1,'Min');
-% colcode.max=get(handles.slider1,'Max');
-% colcode.colcode1=get(handles.slider1,'Value');
-% colcode.colcode2=get(handles.slider2,'Value');
-% colcode.option=get(handles.vec_col_bar,'Value');
-% colcode.auto=1;
-% list_code=get(handles.col_vec,'String');% list menu fields
-% index_code=get(handles.col_vec,'Value');% selected string index
-% colcode.CName= list_code{index_code(1)}; % selected field used for vector color
-% vec_C=colcode.min+(colcode.max-colcode.min)*[0.5:width-0.5]/width;%sample of vec_C values from min to max
-% [colorlist,col_vec]=set_col_vec(colcode,vec_C);
-% oneheight=ones(1,height);
-% A1=colorlist(col_vec,1)*oneheight;
-% A2=colorlist(col_vec,2)*oneheight;
-% A3=colorlist(col_vec,3)*oneheight;
-% A(:,:,1)=A1';
-% A(:,:,2)=A2';
-% A(:,:,3)=A3';
-% set(handles.vec_col_bar,'Cdata',A)
-
-
 %------------------------------------------------
 %CALLBACKS FOR PLOTTING PARAMETERS
 %-------------------------------------------------
@@ -706,11 +673,7 @@ if test3color
     colcode.colcode1=str2num(get(handles.colcode1,'String'));
     colcode.colcode2=str2num(get(handles.colcode2,'String'));
 end
-% colcode.option=get(handles.vec_col_bar,'Value');
 colcode.FixedCbounds=0;
-% list_code=get(handles.col_vec,'String');% list menu fields
-% index_code=get(handles.col_vec,'Value');% selected string index
-% colcode.CName= list_code{index_code(1)}; % selected field used for vector color
 colcode.FixedCbounds=1;
 vec_C=colcode.MinC+(colcode.MaxC-colcode.MinC)*[0.5:width-0.5]/width;%sample of vec_C values from min to max
 [colorlist,col_vec]=set_col_vec(colcode,vec_C);
@@ -723,9 +686,9 @@ A(:,:,2)=A2';
 A(:,:,3)=A3';
 set(handles.vec_col_bar,'Cdata',A)
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function PlotType=update_plot(handles)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 haxes= handles.axes3;
 
 %ProjField=get(haxes,'UserData');
@@ -736,11 +699,10 @@ PlotParam=read_plot_param(handles);
 [PlotType,PlotParamOut]= plot_field(ProjField,haxes,PlotParam,1);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
-%------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in Menu/Export/field in workspace.
-%------------------------------------------------------
 function MenuExportField_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 global Data_view_field
 % huvmat=findobj(allchild(0),'Name','uvmat');
 Data_view_field=get(handles.view_field,'UserData');
@@ -751,10 +713,10 @@ display(['UserData of view_field :'])
 evalin('base','Data_view_field') %display CurData in the workspace
 commandwindow;
 
-%------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in Menu/Export/extract figure.
-%------------------------------------------------------
 function MenuExport_plot_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 huvmat=get(handles.MenuExport_plot,'parent');
 UvData=get(huvmat,'UserData');
 hfig=figure;
@@ -763,45 +725,9 @@ map=colormap(handles.axes3);
 colormap(map);%transmit the current colormap to the zoom fig
 colorbar
 
-
-
-function npx_Callback(hObject, eventdata, handles)
-
-function text_display_CreateFcn(hObject, eventdata, handles)%to suppress
-function MinX_CreateFcn(hObject, eventdata, handles)%to suppress
-function MaxX_CreateFcn(hObject, eventdata, handles)%to suppress
-function MinY_CreateFcn(hObject, eventdata, handles)%to suppress
-function MaxY_CreateFcn(hObject, eventdata, handles)%to suppress
-function npy_Callback(hObject, eventdata, handles)
-
-
-function edit86_Callback(hObject, eventdata, handles)
-
-
-function edit87_Callback(hObject, eventdata, handles)
-
-
-% --- Executes on button press in auto_sclar.
-function auto_sclar_Callback(hObject, eventdata, handles)
-% hObject    handle to auto_sclar (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of auto_sclar
-
-
-
-% --- Executes on slider movement.
-function slider9_Callback(hObject, eventdata, handles)
-
-
-
-% --- Executes on slider movement.
-function slider10_Callback(hObject, eventdata, handles)
-
-
-
+%------------------------------------------------------------------------
 function closefcn(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 huvmat=findobj(allchild(0),'Name','uvmat');
 if ~isempty(huvmat)
 hhuvmat=guidata(huvmat);
@@ -810,9 +736,6 @@ set(hhuvmat.list_object_2,'Value',numel(list_object_2))%select the last value ('
 end
 delete(hObject)
 
-
-% --- Executes on selection change in popupmenu18.
-function popupmenu18_Callback(hObject, eventdata, handles)
 
 
 
