@@ -239,11 +239,15 @@ end
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR', errormsg)
 end
-if isfield(PlotParamOut,'MinX')
-    set(haxes,'XLim',[PlotParamOut.MinX PlotParamOut.MaxX])
-    set(haxes,'YLim',[PlotParamOut.MinY PlotParamOut.MaxY])
-    AxeData.RangeX=[PlotParamOut.MinX PlotParamOut.MaxX];
-    AxeData.RangeY=[PlotParamOut.MinY PlotParamOut.MaxY];
+if isfield(PlotParamOut,'RangeX')&& isfield(PlotParamOut,'RangeY')
+%     'TESTplot'
+%     haxes
+%     PlotParamOut.MinX
+%     PlotParamOut.MaxY
+%     set(haxes,'XLim',[PlotParamOut.MinX PlotParamOut.MaxX])
+%     set(haxes,'YLim',[PlotParamOut.MinY PlotParamOut.MaxY])
+    AxeData.RangeX=PlotParamOut.RangeX;%'[PlotParamOut.MinX PlotParamOut.MaxX];
+    AxeData.RangeY=PlotParamOut.RangeY;%[PlotParamOut.MinY PlotParamOut.MaxY]
 end
 
 %% update the parameters stored in AxeData
@@ -507,11 +511,13 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
 end
 
 %% determine axes bounds
- fix_lim=isfield(PlotParam,'FixLimits') && PlotParam.FixLimits;
+PlotParamOut.RangeX=[min(XMin) max(XMax)];
+PlotParamOut.RangeY=[min(YMin_cell) max(YMax_cell)];
+fix_lim=isfield(PlotParam,'FixLimits') && PlotParam.FixLimits;
 if fix_lim
     if ~isfield(PlotParam,'MinX')||~isfield(PlotParam,'MaxX')||~isfield(PlotParam,'MinY')||~isfield(PlotParam,'MaxY')
         fix_lim=0; %free limits if lits are not set,
-    end  %else PlotParamOut.XMin =PlotParam.XMin...
+    end 
 end
 if ~fix_lim
     PlotParamOut.MinX=min(XMin);
@@ -1073,7 +1079,7 @@ if ~isempty(Data)
             fix_lim=0; %free limits if lits are not set,
         end  %else PlotParamOut.XMin =PlotParam.XMin...
     end
-    if ~fix_lim
+%     if ~fix_lim
         XMin=[];
         XMax=[];
         YMin=[];
@@ -1090,6 +1096,9 @@ if ~isempty(Data)
             YMin=[YMin min(vec_Y)];
             YMax=[YMax max(vec_Y)];
         end
+        PlotParamOut.RangeX=[min(XMin) max(XMax)]; %range of x, to be stored in the user data of the plot axes
+        PlotParamOut.RangeY=[min(YMin) max(YMax)]; %range of x, to be stored in the user data of the plot axes
+    if ~fix_lim
         PlotParamOut.MinX=min(XMin);
         PlotParamOut.MaxX=max(XMax);
         PlotParamOut.MinY=min(YMin);
@@ -1101,24 +1110,6 @@ if ~isempty(Data)
             set(haxes,'YLim',[YMin YMax]);% set x limits of frame in axes coordinates
         end
     end
-%     if Ylim(2)>Ylim(1)
-%         set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
-%     end
-%     end
-    %    adjust the size of the plot to include the whole field, except if PlotParam.FixLimits=1
-    %     if ~(isfield(PlotParam,'FixLimits') && PlotParam.FixLimits) && test_lim
-    %         PlotParamOut.MinX=Xlim(1);
-    %         PlotParamOut.MaxX=Xlim(2);
-    %         PlotParamOut.MinY=Ylim(1);
-    %         PlotParamOut.MaxY=Ylim(2);
-%     if Xlim(2)>Xlim(1)
-%         set(haxes,'XLim',Xlim);% set x limits of frame in axes coordinates
-%     end
-%     if Ylim(2)>Ylim(1)
-%         set(haxes,'YLim',Ylim);% set y limits of frame in axes coordinate
-%     end
-    %     end
-
     set(haxes,'YDir','normal')
     set(get(haxes,'XLabel'),'String',[XName ' (' x_units ')']);
     set(get(haxes,'YLabel'),'String',[YName ' (' y_units ')']);

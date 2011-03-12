@@ -200,7 +200,7 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
                 set(hfig2,'Position',[0.2 0.33 0.6 0.6]);
                 map=colormap(currentaxes);
                 colormap(map);%transmit the current colormap to the zoom fig
-                set(hfig2,'Position',[0.2 0.33 0.6 0.6]);          
+                set(hfig2,'Position',[0.2 0.33 0.6 0.6]);
                 set(hfig2,'Unit','normalized')
                 set(hfig2,'KeyPressFcn',{@keyboard_callback,handles})%set keyboard action function
                 set(hfig2,'WindowButtonMotionFcn',{@mouse_motion,handles})%set mouse action function
@@ -228,20 +228,14 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
                     set(hcol_new,'YTick',YTick_rescaled);
                     set(hcol_new,'Yticklabel',YTicklabel);
                 end
-            end
-    %             if ishandle(AxeData.ZoomAxes)
-%             hnew_rect=findobj(AxeData.ZoomAxes,'Tag','rect_zoom');
-%             if ~isempty(hnew_rect)
-%                 delete(hnew_rect);
-
-                ChildAxeData.CurrentRectZoom=[]; % no rect zoom in the new window
-                ChildAxeData.Drawing='off';
-                ChildAxeData.ParentRect=AxeData.CurrentRectZoom;%set the rectangle as a 'parent' associated to the new axe
-                PosRect=CurrentOrigin;
-                xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
-                set(AxeData.ZoomAxes,'Xlim',[PosRect(1) xy(1,1)])
-                set(AxeData.ZoomAxes,'Ylim',[PosRect(2) xy(1,2)])
-%             end
+            end          
+            ChildAxeData.CurrentRectZoom=[]; % no rect zoom in the new window
+            ChildAxeData.Drawing='off';
+            ChildAxeData.ParentRect=AxeData.CurrentRectZoom;%set the rectangle as a 'parent' associated to the new axe
+            PosRect=CurrentOrigin;
+            xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
+            set(AxeData.ZoomAxes,'Xlim',[PosRect(1) xy(1,1)])
+            set(AxeData.ZoomAxes,'Ylim',[PosRect(2) xy(1,2)])
             set(AxeData.ZoomAxes,'UserData',ChildAxeData);%update the AxeData of the new axes
         end
     end
@@ -252,6 +246,7 @@ if test_zoom
     xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
     xlim=get(currentaxes,'XLim');
     ylim=get(currentaxes,'YLim');
+ % if left mouse button has been pressed, zoom in by a factor of 2
     if  isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed, zoom in by a factor of 2
         xlim(1)=0.5*xy(1,1)+0.5*xlim(1);
         xlim(2)=0.5*xy(1,1)+0.5*xlim(2);
@@ -259,19 +254,20 @@ if test_zoom
         ylim(2)=0.5*xy(1,2)+0.5*ylim(2);
         ylim(1)=0.5*xy(1,2)+0.5*ylim(1);
         set(currentaxes,'YLim',ylim)
-        %zoom out by a factor of 2 out when the right mouse button has been used
-    else%if isequal(get(currentfig,'SelectionType'),'alt'); %if right button has been pressed
+ % if right mouse button has been pressed, zoom out by a factor of 2
+    else
         xlim(1)=2*xlim(1)-xy(1,1);
         xlim(2)=2*xlim(2)-xy(1,1);
         ylim(1)=2*ylim(1)-xy(1,2);
         ylim(2)=2*ylim(2)-xy(1,2);
-        %             ylim_new(1)=(1+alpha)*ylim(1)/2+(1-alpha)*ylim(2)/2;
-        %             ylim_new(2)=(1-alpha)*ylim(1)/2+(1+alpha)*ylim(2)/2;
         if isfield(AxeData,'RangeX')&& isfield(AxeData,'RangeY')
+            'TESTup'
+            AxeData
             xlim(1)=max(AxeData.RangeX(1),xlim(1));
             xlim(2)=min(AxeData.RangeX(2),xlim(2));
             ylim(1)=max(AxeData.RangeY(1),ylim(1));
             ylim(2)=min(AxeData.RangeY(2),ylim(2));
+         % desactivate the zoom if the full field is visible within the axes
             if isequal(xlim,AxeData.RangeX) && isequal(ylim,AxeData.RangeY)
                 set(hhuvmat.zoom,'Value',0)
                 set(hhuvmat.zoom,'BackgroundColor',[0.7 0.7 0.7])
@@ -279,6 +275,8 @@ if test_zoom
                 set(hhuvmat.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
             end
         end
+        xlim
+        ylim
         set(currentaxes,'XLim',xlim)
         set(currentaxes,'YLim',ylim)
         %test whther zoom out is operating (to inactivate AxedAta
@@ -286,13 +284,6 @@ if test_zoom
             AxeData.CurrentXLim=xlim;%
         end
     end
-%     if isfield(AxeData,'ParentRect')% update the position of the parent rectangle represneting the field
-%         hparentrect=AxeData.ParentRect;
-%         xlim=get(currentaxes,'XLim');
-%         ylim=get(currentaxes,'YLim');
-%         rect([1 2])=[xlim(1) ylim(1)];
-%         rect([3 4])=[xlim(2)-xlim(1) ylim(2)-ylim(1)];
-%         set(hparentrect,'Position',rect)
     if isfield(AxeData,'LimEditBox')&& AxeData.LimEditBox% update display of the GUI containing the axis (uvmat or view_field)
         set(hhcurrentfig.MinX,'String',num2str(xlim(1)))
         set(hhcurrentfig.MaxX,'String',num2str(xlim(2)))
@@ -326,24 +317,11 @@ if ~test_zoom && isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'calibrat
             Tabchar=cell2tab(Coord_cell,' | ');
             Tabchar=[Tabchar ;{'......'}];
             set(h_ListCoord,'String',Tabchar)
-            %         coord_str=Coord{index_point}; %current line (string)
-            %         k=findstr('|',coord_str);%find separator indices on the string
-            %         blanks=blank
-            %         xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
-            %         if numel(k)>=3
-            %             coord_str=[coord_str(1:k(3)-1) ' | ' num2str(xy(1,1),4) ' | ' num2str(xy(1,2),4)]; %update the pixel information while preserving phys coord
-            %         else
-            %             coord_str=[ '    |    '  '    |    '  '    |    ' num2str(xy(1,1),4) '    |    ' num2str(xy(1,2),4)];
-            %         end
-            %         Coord{index_point}=coord_str;
-            %         set(h_ListCoord,'String',Coord)
-            %         data=read_geometry_calib(Coord);%transform char cell to numbers
             set(hh,'XData',data.Coord(:,4))
             set(hh,'YData',data.Coord(:,5))
         end
     end
 end
-
 
 %% finalising ruler
 if test_ruler
@@ -382,17 +360,17 @@ if isequal(get(currentfig,'SelectionType'),'alt') && ~test_zoom && (~isfield(Axe
     else 
         currentobj=gco;%default
     end
-    if ((nbselect==0) && isequal(get(currentobj,'Type'),'axes')) || isequal(currentobj,huvmat)
-        currentfig=get(currentobj,'parent');
-        figname=get(currentfig,'name');
-        eval(['global Data_' figname])
-        eval(['Data_' figname '=get(currentobj,''UserData'')']);
-        evalin('base',['global Data_' figname])%make CurData global in the workspace
-        objtype=get(currentobj,'Type');
-        display(['UserData of ' objtype ':'])
-        evalin('base',['Data_' figname]) %display CurData in the workspace
-        commandwindow %brings the Matlab command window to the front
-    end
+%     if ((nbselect==0) && isequal(get(currentobj,'Type'),'axes')) || isequal(currentobj,huvmat)
+%         currentfig=get(currentobj,'parent');
+%         figname=get(currentfig,'name');
+%         eval(['global Data_' figname])
+%         eval(['Data_' figname '=get(currentobj,''UserData'')']);
+%         evalin('base',['global Data_' figname])%make CurData global in the workspace
+%         objtype=get(currentobj,'Type');
+%         display(['UserData of ' objtype ':'])
+%         evalin('base',['Data_' figname]) %display CurData in the workspace
+%         commandwindow %brings the Matlab command window to the front
+%     end
 end
 
 %% update 

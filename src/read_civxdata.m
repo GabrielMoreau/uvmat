@@ -110,6 +110,7 @@ end
 test_civ1=isequal(VelTypeOut,'civ1')||isequal(VelTypeOut,'interp1')||isequal(VelTypeOut,'filter1');
 test_civ2=isequal(VelTypeOut,'civ2')||isequal(VelTypeOut,'interp2')||isequal(VelTypeOut,'filter2');
 Field.Time=0; %default
+Field.TimeUnit='s'; 
 if test_civ1
     if isfield(Field,'absolut_time_T0')
         Field.Time=double(Field.absolut_time_T0);
@@ -161,7 +162,7 @@ for ilist=1:length(List)
     end
 end
 List(ind_remove)=[];
-Field.ListGlobalAttribute=[{'NbCoord'},{'NbDim'} List {'Time','CivStage','CoordUnit'}];
+Field.ListGlobalAttribute=[{'NbCoord'},{'NbDim'} List {'Time','TimeUnit','CivStage','CoordUnit'}];
 Field.CoordUnit='pixel';
 
 

@@ -271,8 +271,11 @@ if nbpair >= 1 %choose the most recent file if several are found
     [pathname,file,field_count,str2,str_a,str_b]=name2display(dirpair(indpair).name);
     num_i1=str2double(field_count);
     num_i2=str2double(str2);
-    num_j1=stra2double(str_a);
-    num_j2=stra2double(str_b);
+    if isnan(num_i2)
+        num_i2=num_i1;
+    end
+    num_j1=stra2num(str_a);
+    num_j2=stra2num(str_b);
      pathname=fileparts(filebasesub);% CORRIGE LE 6 JUIN (ETAIT DESACTIVE)
     filename=fullfile(pathname,dirpair(indpair).name);
 end

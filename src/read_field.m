@@ -74,12 +74,13 @@ if strcmp(FileType,'netcdf')  %read the first nc field
     end
     if ~test_civx% read the field names on the interface get_field.
         hget_field=findobj(allchild(0),'Name',GUIName);%find the get_field... GUI
-        if isempty(hget_field)
+        if isempty(hget_field)% open the GUI get_field if it is not found
             hget_field= get_field(ObjectName);%open the get_field GUI
-            set(hget_field,'Name',GUIName)
+            set(hget_field,'Name',GUIName)%update the name of get_field (e.g. get_field_1)
         end
         hhget_field=guidata(hget_field);
         %% update  the get_field GUI
+        set(hhget_field.inputfile,'String',ObjectName)
         set(hhget_field.list_fig,'Value',1)
         funct_list=get(hhget_field.ACTION,'UserData');
         funct_index=get(hhget_field.ACTION,'Value');

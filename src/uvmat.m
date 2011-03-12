@@ -947,6 +947,11 @@ set(handles.j2,'Visible',state_j)
 set(handles.last_j,'Visible',state_j);
 set(handles.frame_j,'Visible',state_j);
 set(handles.j_text,'Visible',state_j);
+if strcmp(state_j,'on')
+    set(handles.fix_pair,'Visible','on')
+else
+    set(handles.fix_pair,'Visible','off')
+end
 
 %% view the field  
 run0_Callback(hObject, eventdata, handles); %view field
@@ -1385,7 +1390,7 @@ if get(handles.scan_j,'Value')==1
     set(handles.scan_j,'BackgroundColor',[1 1 0])
     set(handles.scan_i,'Value',0)
     set(handles.scan_i,'BackgroundColor',[0.831 0.816 0.784])
-    NomType=get(handles.FileIndex,'UserData');
+    NomType=get(handles.FileIndex,'UserData')
     switch NomType
     case {'_i_j1-j2','#_ab','%3dab'},% pair with j index
         set(handles.fix_pair,'Visible','on')% option fixed pair on/off made visible (choice of avaible pair with buttons + and - if ='off')
@@ -2114,8 +2119,8 @@ if ~isempty(filename)
         list_fields=get(handles.Fields,'String');% list menu fields
         index_fields=get(handles.Fields,'Value');% selected string index
         FieldName= list_fields{index_fields}; % selected field
-        if ~strcmp(FieldName,'get_field...')% read the field names on the interface get_field...
-           VelType=setfield(handles);
+        if ~strcmp(FieldName,'get_field...')
+           VelType=setfield(handles);% read the velocity type.
         end
         if strcmp(FieldName,'velocity')
             list_code=get(handles.color_code,'String');% list menu fields
@@ -2463,7 +2468,7 @@ if exist('XName','var')
             UvData.Field.ZMax=ZMax;
             UvData.Field.ZMin=ZMin;
         else
-            UvData.Field.Mesh=sqrt(DX*DY);
+            UvData.Field.Mesh=DX;%sqrt(DX*DY);
         end
     end
 end
@@ -2710,6 +2715,25 @@ end
 
 %% display time
 testimedoc=0;
+TimeUnit='';
+if isfield(UvData.Field,'Time')
+    abstime=UvData.Field.Time;%time read from the netcdf input file 
+end
+if isfield(UvData,'Field_1') && isfield(UvData.Field_1,'Time')
+    abstime_1=UvData.Field_1.Time;%time read from the netcdf input file 
+end
+if isfield(UvData.Field,'dt')
+    dt=UvData.Field.dt;%dt read from the netcdf input file
+    if isfield(UvData.Field,'TimeUnit')
+       TimeUnit=UvData.Field.TimeUnit;
+    end
+elseif isfield(UvData,'Field_1') && isfield(UvData.Field_1,'dt')%dt obtained from the second field if not defined in the first
+    dt=UvData.Field_1.dt;%dt read from the netcdf input file
+    if isfield(UvData.Field_1,'TimeUnit')
+       TimeUnit=UvData.Field_1.TimeUnit;
+    end
+end
+% time from xml file overset previous result
 if isfield(UvData,'XmlData') && isfield(UvData.XmlData,'Time')
     if isempty(num_i2)||isnan(num_i2)
         num_i2=num_i1;
@@ -2725,6 +2749,9 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData,'Time')
         abstime=(UvData.XmlData.Time(num_i1,num_j1)+UvData.XmlData.Time(num_i2,num_j2))/2;%overset the time read from files
         dt=(UvData.XmlData.Time(num_i2,num_j2)-UvData.XmlData.Time(num_i1,num_j1));
         testimedoc=1;
+        if isfield(UvData.XmlData,'TimeUnit')
+            TimeUnit=UvData.XmlData.TimeUnit;
+        end
     end
 end
 if isfield(UvData,'XmlData_1') && isfield(UvData.XmlData_1,'Time')
@@ -2755,10 +2782,10 @@ end
 if isempty(dt)||isequal(dt,0)
     set(handles.Dt_txt,'String','')
 else
-    if ~(isfield(UvData,'TimeUnit') && ~isempty(UvData.TimeUnit))
+    if  isempty(TimeUnit)
         set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  10^(-3)'] )
     else
-        set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' UvData.TimeUnit] )
+        set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' TimeUnit] )
     end
 end
 
