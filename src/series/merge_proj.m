@@ -1,3 +1,4 @@
+
 %'merge_proj': project and concatene fields, used with series.fig
 %------------------------------------------------------------------------
 % function GUI_input=merge_proj(num_i1,num_i2,num_j1,num_j2,Series)
@@ -38,8 +39,7 @@ WaitbarPos=get(hseries.waitbar_frame,'Position'); %positiopn of waitbar frame
 %-------------------------------------------------
 
 
-
-%projection object
+%% projection object
 test_object=get(hseries.GetObject,'Value');
 if test_object
     hset_object=findobj(allchild(0),'tag','set_object');
@@ -48,18 +48,17 @@ if test_object
             msgbox_uvmat('ERROR','Undefined projection object style')
             return
     end
-    if ~isequal(ProjObject.Style,'plane')
-            msgbox_uvmat('ERROR','The projection object must be a plane')
+    if ~isequal(ProjObject.Style,'plane')|| isequal(ProjObject.ProjMode,'projection')
+            msgbox_uvmat('ERROR','The projection object must be a plane with projection mode interp or filter')
             return
     end
-    %answeryes=questdlg({['field series projected on ' Series.ProjObject.Style]});
     answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Style]);
     if ~isequal(answeryes,'Yes')
         return
     end
 end
 
-%numbers of view fields (nbre of inputs in RootPath)
+%% numbers of view fields (nbre of inputs in RootPath)
 testcell=iscell(Series.RootFile);
 if ~testcell
     Series.RootPath={Series.RootPath};
@@ -74,7 +73,6 @@ if ~testcell
 end 
 nbview=length(Series.RootFile);%number of views (file series to merge)
 nbfield=size(num_i1{1},1)*size(num_i1{1},2);%number of fields in the time series
-% transform=Series.CoordType; %  field transform function
 hhh=which('mmreader');
 for iview=1:nbview
     test_movie(iview)=0;
@@ -86,8 +84,7 @@ for iview=1:nbview
     end 
 end
 
-%Calibration data and timing: read the ImaDoc files
-% mode=''; %default
+%% Calibration data and timing: read the ImaDoc files
 timecell={};
 itime=0;
 NbSlice_calib={}; %test for z index 
@@ -130,7 +127,7 @@ for iview=1:nbview%Loop on views
     end
 end
 
-%check coincidence in time
+%% check coincidence in time
 multitime=0;
 if isempty(timecell)
     time=[];
@@ -160,13 +157,13 @@ if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array abs
     time=[];
 end
 
-% coordinate transform or other user defined transform
+%% coordinate transform or other user defined transform
 transform_fct=[];%default
 if isfield(Series,'transform_fct')
     transform_fct=Series.transform_fct;
 end
 
-% Field and velocity type (the same for all views)
+%% Field and velocity type (the same for all views)
 FieldName='';
 if strcmp(get(hseries.FieldMenu,'Visible'),'on')
 Field_str=get(hseries.FieldMenu,'String');
@@ -211,8 +208,7 @@ if ~isequal(FieldName,'get_field...')
     testcivx=testnc;
 end
 
-%name of output files and directory:
-% res_subdir=fullfile(Series.RootPath{1},[Series.SubDir{1} '_STAT']);
+%% name of output files and directory:
 ProjectDir=fileparts(fileparts(Series.RootPath{1}));% preoject directory (GERK)
 prompt={['result directory (in' ProjectDir ')']};
 RootPath=get(hseries.RootPath,'String');
@@ -262,24 +258,22 @@ end
 filebasesub=fullfile(res_subdir,Series.RootFile{1});
 filebase_merge=fullfile(res_subdir,'merged');%root name for the merged files
 
-    %MAIN LOOP
+%% MAIN LOOP
 for ifile=1:nbfield                
     stopstate=get(hseries.RUN,'BusyAction');
     if isequal(stopstate,'queue')% enable STOP command from the 'series' interface
          update_waitbar(hseries.waitbar,WaitbarPos,ifile/nbfield)
-%          Amerge=0;
          
-         %----------LOOP ON VIEWS----------------------
+        %% ----------LOOP ON VIEWS----------------------
         nbtime=0;
         for iview=1:nbview
-            %name of the current file
+         %name of the current file
             filename=name_generator(filebase{iview},num_i1{iview}(ifile),num_j1{iview}(ifile),Series.FileExt{iview},Series.NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile),SubDir{iview});
             if ~exist(filename,'file')
                 msgbox_uvmat('ERROR',['missing input file' filename])
                 break
             end
-
-            %reading the current file
+         %reading the current file
             if testima
                 if test_movie(iview)
                     Field{iview}.A=read(MovieObject{iview},num_i1{iview}(ifile));
@@ -310,38 +304,33 @@ for ifile=1:nbfield
                     nbtime=nbtime+1;
                 end
             end
-            % coord transform
-            % z index
-      
             if ~isempty(NbSlice_calib)
                 Field{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;
             end
-%              Field{iview}.ZIndex=1;
+         %transform the input field (e.g; phys) if requested
             if ~isempty(transform_fct)
                 Field{iview}=transform_fct(Field{iview},XmlData{iview});  %transform to phys if requested
             end
             if testcivx
                 Field{iview}=calc_field(FieldName,Field{iview});
             end
-
-            %projection on object (gridded plane)
+         %projection on object (gridded plane)
             if test_object
                 Field{iview}=proj_field(Field{iview},ProjObject);
             end
         end    
-         %----------END LOOP ON VIEWS----------------------
+        %----------END LOOP ON VIEWS----------------------
          
-        %merge the nbview fields
+        %% merge the nbview fields
         MergeData=merge_field(Field);
         if isfield(MergeData,'Txt')
             msgbox_uvmat('ERROR',MergeData.Txt)
             return
-        end
-        
-        % generating the name of the merged field
+        end        
+     % generating the name of the merged field
         mergename=name_generator(filebase_merge,num_i1{iview}(ifile),num_j1{iview}(ifile),Series.FileExt{iview},Series.NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile));
         
-        % time:
+     % time of the merged field:
         time_i=0;%default
         if isempty(time)% time from ImaDoc prevails
             time_i=sum(timeread)/nbtime;
@@ -349,7 +338,7 @@ for ifile=1:nbfield
             time_i=(time(iview,num_i1{iview}(ifile),num_j1{iview}(ifile))+time(iview,num_i2{iview}(ifile),num_j2{iview}(ifile)))/2;
         end
         
-        % recording the merged field
+     % recording the merged field
         if testima    %in case of input images an image is produced   
             if isa(MergeData.A,'uint8')
                 bitdepth=8;
@@ -401,7 +390,6 @@ for ifile=1:nbfield
             else
                MergeData.dt=dt;
             end
-            %MergeData.dt=1;
             MergeData.Time=time_i;
             error=struct2nc(mergename,MergeData);%save result file
             if isempty(error)
@@ -413,9 +401,10 @@ for ifile=1:nbfield
     end
 end
 
-%--------------------------------------------------------------------------   
+%'merge_field': concatene fields
+%------------------------------------------------------------------------
 function MergeData=merge_field(Data)
-% initiate Matlab  structure for physical field
+%% default output
 if isempty(Data)||~iscell(Data)
     MergeData=[];
     return
@@ -426,20 +415,8 @@ nbview=length(Data);
 if nbview==1
     return
 end
-% for iview=1:nbview
-%     if ~isequal(MergeData.ListDimName,Data{iview}.ListDimName)
-%         error=1;
-%     end
-%     if ~isequal(MergeData.ListVarName,Data{iview}.ListVarName)
-%         error=1;
-%     end
-% end
-% if error
-%     MergeData.Txt='ERROR: attempt at merging fields of incompatible type';
-%     return
-% end
-% 
-%group the variables (fields of 'FieldData') in cells of variables with the same dimensions
+
+%% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 [CellVarIndex,NbDim,VarTypeCell]=find_field_indices(Data{1});
 %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
 % CellVarIndex=cells of variable index arrays
@@ -499,4 +476,5 @@ for icell=1:length(CellVarIndex)
         end
     end
 end
+
     
