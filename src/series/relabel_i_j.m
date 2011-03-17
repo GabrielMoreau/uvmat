@@ -1,3 +1,4 @@
+
 % relabel_i_j: relabel an image series with two indices, and correct errors from the RDvision transfer program
 %----------------------------------------------------------------------
 function GUI_input=relabel_i_j(num_i1,num_i2,num_j1,num_j2,Series)
@@ -13,7 +14,7 @@ WaitbarPos=get(hseries.waitbar_frame,'Position');
 
 %% PARAMETERS (for RDvision system)
 display('RDvision system')
-first_label=0 %image numbers start from 0
+first_label=0; %image numbers start from 0
 %errorfactor=1 %correct a factor of 2 in NbDk+1
 
 %% read imadoc
@@ -24,7 +25,7 @@ if ~iscell(RootFile)
     return
 end
 basename=fullfile(RootPath{1},RootFile{1}); 
-[XmlData,warntext]=imadoc2struct([basename '.xml'])% read the xml file appended to the present function (containing bug corrections)
+[XmlData,warntext]=imadoc2struct([basename '.xml']);% read the xml file appended to the present function (containing bug corrections)
 if ~isempty(warntext)
     msgbox_uvmat('ERROR',warntext)%error message for xml file reading
 end
@@ -46,12 +47,7 @@ end
 if ~exist('num_i1','var')
     return
 end
-
-answer=msgbox_uvmat('CONFIRMATION',[num2str(nbfield1) ' bursts containing ' num2str(nbfield2) ' images each'])%error message for directory creation
-
-%% apply the image rescaling function 'level' (avoid bright particles)
-% answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m');
-% test_level=isequal(answer,'Yes');
+answer=msgbox_uvmat('CONFIRMATION',[num2str(nbfield1) ' bursts containing ' num2str(nbfield2) ' images each']);%error message for directory creation
 
 %% copy and adapt the xml file
 if exist([basename '.xml'],'file')
@@ -72,7 +68,7 @@ if exist([basename '.xml'],'file')
     uid_ImageName=find(t,'ImaDoc/Heading/ImageName');
     ImageName=name_generator(basename,1,1,'.png','_i_j');
     [pth,ImageName]=fileparts(ImageName);
-    ImageName=[ImageName '.png']
+    ImageName=[ImageName '.png'];
     if isempty(uid_ImageName)
        [t,uid_ImageName]=add(t,uid_Heading,'element','ImageName');
     end
@@ -85,9 +81,15 @@ if exist([basename '.xml'],'file')
     
     %%%% correction RDvision %%%%
     uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
-    t=set(t,uid_NbDtj,'value',num2str(XmlData.NbDtj));
+    uid_value=children(t,uid_NbDtj);
+    if ~isempty(uid_value)
+        t=set(t,uid_value(1),'value',num2str(XmlData.NbDtj));
+    end
     uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
-    t=set(t,uid_NbDtk,'value',num2str(XmlData.NbDtk));
+    uid_value=children(t,uid_NbDtk);
+    if ~isempty(uid_value)
+        t=set(t,uid_value(1),'value',num2str(XmlData.NbDtk));
+    end
     %%%
     
     save(t,[basename '.xml'])
@@ -184,6 +186,7 @@ C=uint8(C);
 % option: ='GeometryCalib': read  the data of GeometryCalib, including source point coordinates
 
 function [s,errormsg]=imadoc2struct(ImaDoc,option) 
+
 %% default input and output
 if ~exist('option','var')
     option='*';
@@ -272,7 +275,9 @@ if strcmp(option,'*') || strcmp(option,'Camera')
                 Dtk=get_value(subt,'/BurstTiming/Dtk',[]);
                 NbDtk=get_value(subt,'/BurstTiming/NbDtk',1);
                 %%%% correction RDvision %%%%
-                NbDtk=-1+(NbDtk+1)/(NbDti+1)
+                if ~isequal(NbDtk,1)
+                    NbDtk=-1+(NbDtk+1)/(NbDti+1);
+                end
                 s.NbDtk=NbDtk;
                 %%%%%
                 if isempty(Dtk)
