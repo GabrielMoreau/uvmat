@@ -219,35 +219,36 @@ for ichild=1:length(hchild)
                         iby2=floor((str2double(par.iby)-1)/2);
                         isx2=floor((str2double(par.isx)-1)/2);
                         isy2=floor((str2double(par.isy)-1)/2);
+                        shiftx=str2double(par.shiftx);
+                        shifty=str2double(par.shifty);
                         hhh=findobj(haxes,'Tag','PIV_box_marker');
                         hhhh=findobj(haxes,'Tag','PIV_search_marker');
                         if isempty(hhh)
-                            %hstack=findobj(allchild(0),'Type','figure');%current stack order of figures in matlab
                             set(0,'CurrentFigure',currentfig)
                             set(currentfig,'CurrentAxes',haxes)
                             rectangle('Curvature',[0 0],...
                                 'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2],'EdgeColor','m',...
                                 'LineStyle','-','Tag','PIV_box_marker');
                             rectangle('Curvature',[0 0],...
-                                'Position',[xround-isx2 yround-isy2 2*isx2 2*isy2],'EdgeColor','m',...
+                                'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2],'EdgeColor','m',...
                                 'LineStyle','- -','Tag','PIV_search_marker');
-                            % set(0,'Children',hstack);%put back the initial figure stack after plot creation
                         else
 %                             set(hhh,'Visible','on')
                             set(hhh,'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2])
-                            set(hhhh,'Position',[xround-isx2 yround-isy2 2*isx2 2*isy2])
+                            set(hhhh,'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2])
                         end
-                        Asub=Field.A(xround-ibx2:xround+ibx2,yround-iby2:yround+iby2);
-                        Asub=reshape(Asub,[],1);
-                        rangx(1)=-(isx2-ibx2);
-                        rangx(2)=isx2-ibx2;
-                        rangy(1)=isy2-iby2;
-                        rangy(2)=-(isy2-iby2);
+                        Asub=Field.A(yround-iby2:yround+iby2,xround-ibx2:xround+ibx2);%first sub-image
+                        Asub=reshape(Asub,[],1);%first sub-image reshaped as matlab vector
+                        rangx(1)=-(isx2-ibx2)+shiftx;
+                        rangx(2)=isx2-ibx2+shiftx
+                        rangy(1)=-(isy2-iby2)-shifty;
+                        rangy(2)=(isy2-iby2)-shifty
+                        correl=zeros(rangy(2)-rangy(1)+1,rangx(2)-rangx(1)+1);
                         for id=rangx(1):rangx(2)
-                            for jd=rangy(2):rangy(1)
-                                Bsub=Field.B(xround-ibx2+id:xround+ibx2+id,yround-iby2+jd:yround+iby2+jd);
+                            for jd=rangy(1):rangy(2)
+                                Bsub=Field.B(yround-iby2+jd:yround+iby2+jd,xround-ibx2+id:xround+ibx2+id);
                                 Bsub=reshape(Bsub,[],1);
-                                correl(jd-rangy(2)+1,id-rangx(1)+1)=corr(double(Asub),double(Bsub));
+                                correl(jd-rangy(1)+1,id-rangx(1)+1)=corr(double(Asub),double(Bsub));
                             end
                         end
                         %correl=uint8(63.5*correl+63.5);
@@ -260,21 +261,17 @@ for ichild=1:length(hchild)
                         end
                         if isempty(hcorr)
                             corrfig=findobj(allchild(0),'tag','corrfig');
-                            if isempty(corrfig)
-                                corrfig=figure;
-                                set(corrfig,'tag','corrfig')
+                            if ~isempty(corrfig)
+                                set(0,'CurrentFigure',corrfig(1))
+                                AxeData.CurrentCorrImage=imagesc(rangx,-rangy,correl,[0 1]);
+                                colorbar
+                                set(haxes,'UserData',AxeData)
+                                set(get(AxeData.CurrentCorrImage,'parent'),'YDir','normal')
                             end
-                            set(0,'CurrentFigure',corrfig)
-                            AxeData.CurrentCorrImage=imagesc(rangx,rangy,correl,[0 1]);
-                            colorbar
-%                             map_r=ones(42,1)*[1 0 0];
-%                             map_g=ones(11,1)*[0 1 0];
-%                             map_b=ones(11,1)*[0 0 1];
-%                             map=[map_r;map_g;map_b];
-%                             set(corrfig,'colormap',map)
-                            set(haxes,'UserData',AxeData)
                         else
                             set(AxeData.CurrentCorrImage,'CData',correl)
+                            set(AxeData.CurrentCorrImage,'XData',rangx)
+                            set(AxeData.CurrentCorrImage,'YData',-rangy)
                         end        
                     end
                 end

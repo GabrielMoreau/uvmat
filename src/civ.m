@@ -181,7 +181,7 @@ elseif isequal(ind_opening,3)
     enable_patch1(handles)
 elseif isequal(ind_opening,4)
     set(handles.CIV2,'Value',1)
-    enable_civ2(handles,1)
+    enable_civ2(handles,'on')
 elseif isequal(ind_opening,5)
     set(handles.FIX2,'Value',1)
     enable_fix2(handles)
@@ -423,7 +423,7 @@ elseif isequal(ind_opening,3)
     enable_patch1(handles)
 elseif isequal(ind_opening,4)
     set(handles.CIV2,'Value',1)
-    enable_civ2(handles,1)
+    enable_civ2(handles,'on')
 elseif isequal(ind_opening,5)
     enable_pair1(handles,'off')
     set(handles.FIX2,'Value',1)
@@ -1709,7 +1709,7 @@ else
         return
     end
     if isfield(sparam,'CivBin')
-        if ~exist(sparam.CivBin,'file')
+        if ~exist(sparam.CivBin,'file')||~isequal(which(sparam.CivBin),sparam.CivBin)% if path defined as relative to uvmat
             CivBin=sparam.CivBin;
             sparam.CivBin=fullfile(path_UVMAT,sparam.CivBin);
             if ~exist(sparam.CivBin,'file')
@@ -1719,32 +1719,32 @@ else
         end
     end
     if isfield(sparam,'Civ1Bin')
-        if ~exist(sparam.Civ1Bin,'file')
-            CivBin=sparam.Civ1Bin;
+        if ~exist(sparam.Civ1Bin,'file')||~isequal(which(sparam.Civ1Bin),sparam.Civ1Bin)% if path defined as relative to uvmat
+%             CivBin=sparam.Civ1Bin;
             sparam.Civ1Bin=fullfile(path_UVMAT,sparam.Civ1Bin);
-            if ~exist(sparam.CivBin,'file')
-                 msgbox_uvmat('ERROR',['civ1 binary ' CivBin ' defined in PARAM.xm does not exist'])
+            if ~exist(sparam.Civ1Bin,'file')
+                 msgbox_uvmat('ERROR',['civ1 binary ' sparam.Civ1Bin ' defined in PARAM.xm does not exist'])
                  return
             end
         end
     end
     if isfield(sparam,'Civ2Bin')
-        CivBin=sparam.Civ2Bin;
-        if ~exist(sparam.Civ2Bin,'file')
+%         CivBin=sparam.Civ2Bin;
+        if ~exist(sparam.Civ2Bin,'file')||~isequal(which(sparam.Civ2Bin),sparam.Civ2Bin)% if path defined as relative to uvmat
             sparam.Civ2Bin=fullfile(path_UVMAT,sparam.Civ2Bin);
             if ~exist(sparam.Civ2Bin,'file')
-                 msgbox_uvmat('ERROR',['civ2 binary ' CivBin ' defined in PARAM.xm does not exist'])
+                 msgbox_uvmat('ERROR',['civ2 binary ' sparam.Civ2Bin ' defined in PARAM.xm does not exist'])
                  return
             end
         end
     end
     if  isfield(sparam,'PatchBin')
-        if ~exist(sparam.PatchBin,'file')
+        if ~exist(sparam.PatchBin,'file')||~isequal(which(sparam.PatchBin),sparam.PatchBin)% if path defined as relative to uvmat
             sparam.PatchBin=fullfile(path_UVMAT,sparam.PatchBin);
         end
     end
     if isfield(sparam,'FixBin')
-        if ~exist(sparam.FixBin,'file')
+        if ~exist(sparam.FixBin,'file')||~isequal(which(sparam.FixBin),sparam.FixBin)% if path defined as relative to uvmat
             sparam.FixBin=fullfile(path_UVMAT,sparam.FixBin);
         end
     end
@@ -2979,7 +2979,7 @@ if ~isequal(ext_ima,'.png')
     %     npy=npxy(1);
     %     npx=npxy(2);
     if box_test(1)==1 %if civ1 is performed
-        h = waitbar(0,['copy images to the .png format for civ1']);% display a wait bar
+        h = waitbar(0,'copy images to the .png format for civ1');% display a wait bar
         for ifile=1:nbfield
             waitbar(ifile/nbfield);
             for j=1:nbslice
@@ -3026,7 +3026,7 @@ end
 % --- PATCH
 function cmd_PATCH=PATCH_CMD(filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,test_interp,PatchBin)
 %------------------------------------------------------------------------
-namelog=[filename_nc([1:end-3]) '_patch.log'];
+namelog=[filename_nc(1:end-3) '_patch.log'];
 if test_interp==0
     if isunix
     cmd_PATCH=[PatchBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ...
@@ -3044,7 +3044,7 @@ cmd_PATCH=regexprep(cmd_PATCH,'\\','\\\\');
 % --- STEREO Interp
 function cmd=RUN_STINTERP(stinterpBin,filename_A_nc,filename_B_nc,filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,xmlA,xmlB)
 %------------------------------------------------------------------------
-namelog=[filename_nc([1:end-3]) '_stinterp.log'];
+namelog=[filename_nc(1:end-3) '_stinterp.log'];
 cmd=[stinterpBin ' -f1 ' filename_A_nc  ' -f2 ' filename_B_nc ' -f  ' filename_nc ...
     ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ' -c1 ' xmlA ' -c2 ' xmlB '  -xy  x -Nfy 1024 > ' namelog ' 2>&1']; % redirect standard output to the log file
 
@@ -3643,12 +3643,6 @@ function get_gridpatch2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function enable_civ1(handles,state)
 %------------------------------------------------------------------------
-if isequal(state,0)
-    state='off';
-end
-if isequal(state,1)
-    state='on';
-end
 if isequal(state,'on')
     set(handles.frame_civ1,'BackgroundColor',[1 1 0])
     set(handles.frame_para_civ1,'BackgroundColor',[1 1 0])
@@ -3697,6 +3691,8 @@ set(handles.ib_title,'Visible',state)
 set(handles.is_title,'Visible',state)
 set(handles.shift_title,'Visible',state)
 set(handles.rho_title,'Visible',state)
+set(handles.TestCiv1,'Visible',state)
+%set(handles.CivAll,'Visible',state)
 
 %------------------------------------------------------------------------
 function enable_fix1(handles,state)
@@ -3730,12 +3726,13 @@ set(handles.field_ref1,'Visible',state)
 %------------------------------------------------------------------------
 function enable_patch1(handles)
 %------------------------------------------------------------------------
-global patch_newBin
 set(handles.frame_patch1,'BackgroundColor',[1 1 0])
 set(handles.rho_patch1,'Visible','on')
 set(handles.rho_text1,'Visible','on')
-set(handles.thresh_patch1,'Visible','on')
-set(handles.thresh_text1,'Visible','on')
+if get(handles.CivAll,'Value')
+    set(handles.thresh_patch1,'Visible','on')
+    set(handles.thresh_text1,'Visible','on')
+end
 set(handles.subdomain_patch1,'Visible','on')
 set(handles.subdomain_text1,'Visible','on')
 set(handles.nx_patch1,'Visible','on')
@@ -3743,7 +3740,7 @@ set(handles.ny_patch1,'Visible','on')
 set(handles.nx_patch1_title,'Visible','on')
 set(handles.ny_patch1_title,'Visible','on')
 % if ~isempty(patch_newBin)
-%     set(handles.test_interp,'Visible','on');
+set(handles.test_interp,'Visible','off');
 % end
 set(handles.get_gridpatch1,'Visible','on')
 set(handles.grid_patch1,'string','none');
@@ -4582,24 +4579,46 @@ else
     set(handles.MaxIma2,'Visible','off')
 end
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in TestCiv1.
 function TestCiv1_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 test_civ1=get(handles.TestCiv1,'Value');
 if test_civ1
-[filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
-    set_civ_filenames(handles,[1 0 0 0 0 0]);
-Data.ListVarName={'ny','nx','A'};
-Data.VarDimName={'ny','nx',{'ny','nx'}};
-Data.A=imread(filecell.ima1.civ1{1});
-Data.ny=[size(Data.A,1) 1];
-Data.nx=[1 size(Data.A,2)];
-hh=view_field(Data);
-ViewData=get(hh,'UserData');
-ViewData.axes3.B=imread(filecell.ima2.civ1{1});
-set(hh,'UserData',ViewData)
+    [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
+        set_civ_filenames(handles,[1 0 0 0 0 0]);
+    Data.ListVarName={'ny','nx','A'};
+    Data.VarDimName={'ny','nx',{'ny','nx'}};
+    Data.A=imread(filecell.ima1.civ1{1});
+    Data.ny=[size(Data.A,1) 1];
+    Data.nx=[1 size(Data.A,2)];
+    hh=view_field(Data);
+    ViewData=get(hh,'UserData');
+    ViewData.axes3.B=imread(filecell.ima2.civ1{1});%store the second image in the UserData of the GUI view_field
+    corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
+    if isempty(corrfig)
+        corrfig=figure;
+        set(corrfig,'tag','corrfig')
+        set(corrfig,'name','image correlation')
+        set(corrfig,'DeleteFcn',{@closeview_field})%
+    end
+    set(hh,'UserData',ViewData)
+else
+    corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
+    if ~isempty(corrfig)
+        delete(corrfig)
+    end
+    hview_field=findobj(allchild(0),'tag','view_field');% look for view_field    
+    if ~isempty(hview_field)
+        delete(hview_field)
+    end
 end
 
+function closeview_field(gcbo,eventdata)
+hview_field=findobj(allchild(0),'tag','view_field');% look for view_field    
+    if ~isempty(hview_field)
+        delete(hview_field)
+    end
 %-------------------------------------------------------------------
 % --- Executes on button press in status.
 function status_Callback(hObject, eventdata, handles)
@@ -4753,10 +4772,13 @@ function close_GUI(hObject, eventdata)
 
 % --- Executes on button press in CivAll.
 function CivAll_Callback(hObject, eventdata, handles)
-% hObject    handle to CivAll (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CivAll
-
+if get(handles.CivAll,'Value')
+    if get(handles.PATCH1,'Value')
+        set(handles.thresh_patch1,'Visible','on')
+        set(handles.thresh_text1,'Visible','on')
+    end
+else
+    set(handles.thresh_patch1,'Visible','off')
+    set(handles.thresh_text1,'Visible','off')
+end
 
