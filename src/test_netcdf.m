@@ -28,6 +28,10 @@ Data.VarAttribute{4}.longname='y velocity component';
 Data.VarAttribute{5}.longname='interpolated abscissa';
 Data.VarAttribute{6}.longname='interpolated ordinate';
 Data.VarAttribute{7}.longname='stream function';
+Data.VarAttribute{1}.Role='coord_x';
+Data.VarAttribute{2}.Role='coord_y';
+Data.VarAttribute{3}.Role='vector_x';
+Data.VarAttribute{4}.Role='vector_y';
 
 nbvec=200;
 Data.X=4*rand(1,nbvec)-2;%random set of abscissa between -2 and 2

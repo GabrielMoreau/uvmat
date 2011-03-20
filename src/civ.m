@@ -1564,9 +1564,9 @@ set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 
 % start status callback to visualise results
-if isfield(handles,'status')
-set(handles.status,'Value',1);%suppress status display
-status_Callback(hObject, eventdata, handles)
+if isfield(handles,'status') && ~isequal(get(handles.CivAll,'Value'),3)
+    set(handles.status,'Value',1);%suppress status display
+    status_Callback(hObject, eventdata, handles)
 end
 
 %------------------------------------------------------------------------
@@ -1653,35 +1653,6 @@ end
 nbfield=numel(num1_civ1);
 nbslice=numel(num_a_civ1);
 
-%% choice of batch priority
-ind_answer=2;
-if batch
-    [s,w]=unix('qstat -q civ.q|grep job_| wc -l'); %check the waiting list (command unix)
-    if isequal(s,0)
-        w(end)=[];
-        str_displ={[w ' jobs in the waiting list'];'Select a priority:'};
-        str={'urgent';'normal';'low'};
-        [ind_answer,v] = listdlg('PromptString',str_displ,...
-            'SelectionMode','single',...
-            'ListString',str,'ListSize',[200 200],'Name','job priority','InitialValue',3);
-        if isequal(v,0) % to handle Cancel button and figure close,
-            return % a better way should be create
-        end
-    else
-        msgbox_uvmat('ERROR','batch system not available')
-        return
-    end
-% else
-%     if isunix
-%         [xx,w]=unix('ps faux |grep civ|wc -l');
-%         w(end)=[];
-%         if str2double(w)+numel(num1_civ1)> 50
-%             msgbox_uvmat('ERROR',{['There are already ' w ' civ processes running locally'];'Use BATCH or submit RUN later'})
-%             return
-%         end
-%     end
-end
-
 
 %% read names of the .exe files for PIV and patch
 path_UVMAT=fileparts(which('uvmat')); %path to the source directory of uvmat
@@ -1698,62 +1669,80 @@ if batch
             msgbox_uvmat('ERROR',['batch mode ' sparam.BatchMode ' not supported by UVMAT'])
         end
     else
-        msgbox_uvmat('ERROR','no batch mode defined in PARAM.xml')
+        msgbox_uvmat('ERROR','no batch civ binaries defined in PARAM.xml')
+        return
+    end
+    if isfield(sparam,'BatchMode')
+        batch_mode=sparam.BatchMode;
+    end
+    % choice of batch priority:
+    ind_answer=2;
+    [s,w]=unix('qstat -q civ.q|grep job_| wc -l'); %check the waiting list (command unix)
+    if isequal(s,0)
+        w(end)=[];
+        str_displ={[w ' jobs in the waiting list'];'Select a priority:'};
+        str={'urgent';'normal';'low'};
+        [ind_answer,v] = listdlg('PromptString',str_displ,...
+            'SelectionMode','single',...
+            'ListString',str,'ListSize',[200 200],'Name','job priority','InitialValue',3);
+        if isequal(v,0) % to handle Cancel button and figure close,
+            return % a better way should be create
+        end
+    else
+        msgbox_uvmat('ERROR','sge batch system not available')
         return
     end
 else
     if isfield(s,'RunParam')
         sparam=s.RunParam;
     else
-        msgbox_uvmat('ERROR','no civ binaries defined in PARAM.xml')
+        msgbox_uvmat('ERROR','no run civ binaries defined in PARAM.xml')
         return
     end
-    if isfield(sparam,'CivBin')
-        if ~exist(sparam.CivBin,'file')||~isequal(which(sparam.CivBin),sparam.CivBin)% if path defined as relative to uvmat
-            CivBin=sparam.CivBin;
-            sparam.CivBin=fullfile(path_UVMAT,sparam.CivBin);
-            if ~exist(sparam.CivBin,'file')
-                 msgbox_uvmat('ERROR',['CIVx binary ' CivBin ' defined in PARAM.xm does not exist'])
-                 return
-            end
-        end
-    end
-    if isfield(sparam,'Civ1Bin')
-        if ~exist(sparam.Civ1Bin,'file')||~isequal(which(sparam.Civ1Bin),sparam.Civ1Bin)% if path defined as relative to uvmat
-%             CivBin=sparam.Civ1Bin;
-            sparam.Civ1Bin=fullfile(path_UVMAT,sparam.Civ1Bin);
-            if ~exist(sparam.Civ1Bin,'file')
-                 msgbox_uvmat('ERROR',['civ1 binary ' sparam.Civ1Bin ' defined in PARAM.xm does not exist'])
-                 return
-            end
-        end
-    end
-    if isfield(sparam,'Civ2Bin')
-%         CivBin=sparam.Civ2Bin;
-        if ~exist(sparam.Civ2Bin,'file')||~isequal(which(sparam.Civ2Bin),sparam.Civ2Bin)% if path defined as relative to uvmat
-            sparam.Civ2Bin=fullfile(path_UVMAT,sparam.Civ2Bin);
-            if ~exist(sparam.Civ2Bin,'file')
-                 msgbox_uvmat('ERROR',['civ2 binary ' sparam.Civ2Bin ' defined in PARAM.xm does not exist'])
-                 return
-            end
-        end
-    end
-    if  isfield(sparam,'PatchBin')
-        if ~exist(sparam.PatchBin,'file')||~isequal(which(sparam.PatchBin),sparam.PatchBin)% if path defined as relative to uvmat
-            sparam.PatchBin=fullfile(path_UVMAT,sparam.PatchBin);
-        end
-    end
-    if isfield(sparam,'FixBin')
-        if ~exist(sparam.FixBin,'file')||~isequal(which(sparam.FixBin),sparam.FixBin)% if path defined as relative to uvmat
-            sparam.FixBin=fullfile(path_UVMAT,sparam.FixBin);
+end
+civAll=isequal(get(handles.CivAll,'Value'),2); % Boolean for new civ programs
+if civAll && isfield(sparam,'CivBin')
+    CivBin=sparam.CivBin;
+    if ~exist(CivBin,'file') || ~isempty(which(CivBin))% if path defined as relative to uvmat 
+        sparam.CivBin=fullfile(path_UVMAT,CivBin);
+        if ~exist(sparam.CivBin,'file')
+             msgbox_uvmat('ERROR',['CIVx binary ' CivBin ' defined in PARAM.xm does not exist'])
+             return
         end
     end
 end
-if batch
-    if isfield(sparam,'BatchMode')
-        batch_mode=sparam.BatchMode;
+if isfield(sparam,'Civ1Bin')
+    Civ1Bin=sparam.Civ1Bin;
+    which(Civ1Bin)
+    if ~exist(Civ1Bin,'file')||~isempty(which(Civ1Bin))% if path defined as relative to uvmat
+        sparam.Civ1Bin=fullfile(path_UVMAT,Civ1Bin);
+        if ~exist(sparam.Civ1Bin,'file')
+             msgbox_uvmat('ERROR',['civ1 binary ' Civ1Bin ' defined in PARAM.xm does not exist'])
+             return
+        end
     end
 end
+if isfield(sparam,'Civ2Bin')
+    Civ2Bin=sparam.Civ2Bin;
+    if ~exist(Civ2Bin,'file')||~isempty(which(Civ2Bin))% if path defined as relative to uvmat      
+        sparam.Civ2Bin=fullfile(path_UVMAT,Civ2Bin);
+        if ~exist(sparam.Civ2Bin,'file')
+             msgbox_uvmat('ERROR',['civ2 binary ' Civ2Bin ' defined in PARAM.xm does not exist'])
+             return
+        end
+    end
+end
+if  isfield(sparam,'PatchBin')
+    if ~exist(sparam.PatchBin,'file')||~isempty(which(sparam.PatchBin))% if path defined as relative to uvmat
+        sparam.PatchBin=fullfile(path_UVMAT,sparam.PatchBin);
+    end
+end
+if isfield(sparam,'FixBin')
+    if ~exist(sparam.FixBin,'file')||~isempty(which(sparam.FixBin))% if path defined as relative to uvmat
+        sparam.FixBin=fullfile(path_UVMAT,sparam.FixBin);
+    end
+end
+
 
 
 %% get civ1 parameters:
@@ -1856,7 +1845,6 @@ end
 
 %% MAIN LOOP
 time=get(handles.RootName,'UserData'); %get the set of times
-civAll=get(handles.CivAll,'Value'); % Boolean for new civ excution method
 super_cmd=[];
 
 for ifile=1:nbfield
@@ -2231,9 +2219,7 @@ for ifile=1:nbfield
         end
         if isequal(civAll,1)
             save(civAllxml,[flname '.xml']);
-            'TEST'
-            cmd=[cmd sparam.CivBin ' -f ' flname '.xml '  civAllCmd ' >' flname '.log' '\n']
-            'fincmd'
+            cmd=[cmd sparam.CivBin ' -f ' flname '.xml '  civAllCmd ' >' flname '.log' '\n'];
         end
         % create the .bat file:
         [fid,message]=fopen(filename_bat,'w');
@@ -2250,7 +2236,7 @@ for ifile=1:nbfield
                     display(['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
                     eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
             end
-        else
+        elseif ~isequal(get(handles.CivAll,'Value'),3)
             %% to lauch the jobs locally :
             if(isunix)
                 cmd_str=['. ' filename_bat];
@@ -2259,11 +2245,38 @@ for ifile=1:nbfield
             end
             super_cmd=[super_cmd cmd_str '\n'];         
             disp(cmd_str);
-        end
+        else       %run PIVlab if selected
+            image1=imread(par_civ1.filename_ima_a);
+            image2=imread(par_civ1.filename_ima_b);         
+               [xtable ytable utable vtable ctable typevector] = pivlab (image1,image2,str2num(par_civ1.ibx), str2num(par_civ1.dx), 1, [], []); 
+               Data.ListGlobalAttribute={'title','Time','Dt'};
+               Data.title='PIVlab';
+               Data.Time=str2double(par_civ1.T0);
+               Data.Dt=str2double(par_civ1.Dt);
+               Data.ListVarName={'X','Y','U','V','C','FF'};%  cell array containing the names of the fields to record
+               Data.VarDimName={'nbvec','nbvec','nbvec','nbvec','nbvec','nbvec'};
+                Data.VarAttribute{1}.Role='coord_x';
+            Data.VarAttribute{2}.Role='coord_y';
+            Data.VarAttribute{3}.Role='vector_x';
+            Data.VarAttribute{4}.Role='vector_y';
+            Data.VarAttribute{5}.Role='errorflag';
+            Data.X=reshape(xtable,[],1);
+            Data.Y=reshape(ytable,[],1);
+            Data.U=reshape(utable,[],1);
+            Data.V=reshape(vtable,[],1);
+            Data.C=reshape(ctable,[],1);
+            Data.FF=reshape(~typevector,[],1);
+            errormsg=struct2nc(filecell.nc.civ1{ifile,j},Data);
+            if isempty(errormsg)
+                display([filecell.nc.civ1{ifile,j} ' written'])
+            else
+                msgbox_uvmat('ERROR',errormsg)
+            end
+        end                  
     end
 end
 
-if ~batch
+if ~batch && ~isequal(get(handles.CivAll,'Value'),3)
     [Rootbat,Filebat,extbat]=fileparts(filename_bat);
     filename_superbat=fullfile(Rootbat,['job_list.bat']);
     fid=fopen(filename_superbat,'w');
@@ -2273,9 +2286,6 @@ if ~batch
         system(['chmod +x ' filename_superbat])
      end
      system([filename_superbat ' &'])% execute main commmand
-%     else
-%         eval(['!' filename_superbat ' &']);
-%     end
 end
 
 %% save interface state
@@ -3729,7 +3739,7 @@ function enable_patch1(handles)
 set(handles.frame_patch1,'BackgroundColor',[1 1 0])
 set(handles.rho_patch1,'Visible','on')
 set(handles.rho_text1,'Visible','on')
-if get(handles.CivAll,'Value')
+if get(handles.CivAll,'Value')==2
     set(handles.thresh_patch1,'Visible','on')
     set(handles.thresh_text1,'Visible','on')
 end
@@ -4580,7 +4590,7 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in TestCiv1.
+% --- Executes on button press in TestCiv1: display image correlation function
 function TestCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 test_civ1=get(handles.TestCiv1,'Value');
@@ -4772,7 +4782,7 @@ function close_GUI(hObject, eventdata)
 
 % --- Executes on button press in CivAll.
 function CivAll_Callback(hObject, eventdata, handles)
-if get(handles.CivAll,'Value')
+if get(handles.CivAll,'Value')==2
     if get(handles.PATCH1,'Value')
         set(handles.thresh_patch1,'Visible','on')
         set(handles.thresh_text1,'Visible','on')
