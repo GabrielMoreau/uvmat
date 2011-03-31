@@ -1,6 +1,5 @@
-%'merge_proj': project and concatene fields, used with series.fig
-%------------------------------------------------------------------------
-% function GUI_input=merge_proj(num_i1,num_i2,num_j1,num_j2,Series)
+%'sub_field_series': substract the two input field series, then possibly project them on a grid (like merge_proj;m)
+% GUI_input=sub_field_series(num_i1,num_i2,num_j1,num_j2,Series)
 %
 %OUTPUT
 % GUI_input=list of options in the GUI series.fig needed for the function

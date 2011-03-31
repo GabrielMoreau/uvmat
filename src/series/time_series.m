@@ -204,7 +204,7 @@ end
 
 %% check coincidence in time
 multitime=0;
-if length(timecell)==0
+if isempty(timecell)
     time=[];
 elseif length(timecell)==1
     time=timecell{1};
@@ -237,7 +237,7 @@ subdir_result='time_series';
 pathdir=fullfile(RootPath{1},subdir_result);
 while exist(pathdir,'dir')
     subdir_result=[subdir_result '.0'];
-    pathdir=fullfile(pathdir,subdir_result);
+    pathdir=fullfile(RootPath{1},subdir_result);
 end
 [m1,m2,m3]=mkdir(pathdir);
 if ~isequal(m2,'')
