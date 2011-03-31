@@ -231,14 +231,7 @@ set(hObject,'WindowButtonUpFcn',{'mouse_up',handles})
 set(hObject,'DeleteFcn',{@closefcn})%
 
 %% refresh projection plane
-%UvData.Object{1}.Style='plane';%main plotting plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
-% if ~isfield(UvData.Object{1},'plotaxes')
-%     UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis
-%     set(handles.list_object_1,'Value',1);
-%    % set(handles.list_object_1,'String',{'1-PLANE'});
-%    set(handles.list_object_1,'String',{''});
-% end
 set(handles.Fields,'Value',1)
 set(handles.Fields,'string',{''})
 
@@ -330,7 +323,9 @@ if exist('input','var')
         if isfield(input,'InputFile')
             inputfile=input.InputFile;
         end
-        Field=input;
+        if isfield(Field,'TimeIndex')
+            set(handles.i1,num2str(Field.TimeIndex))
+        end
     elseif ischar(input)% file name introduced as input
            inputfile=input;
     elseif isnumeric(input)%simple matrix introduced as input
@@ -346,7 +341,7 @@ if exist('input','var')
         Field.coord_y=[size(input,1)-0.5 0.5];
     end
     if ~isempty(inputfile)
-        %%%%% display the indput field %%%%%%%
+        %%%%% display the input field %%%%%%%
         display_file_name(hObject, eventdata, handles,inputfile)
         %%%%%%%
         testinputfield=1;
@@ -365,7 +360,6 @@ else
        end
    end
 end
-% set(handles.uvmat,'UserData',UvData)
 
 %% plot input field if exists
 if testinputfield
@@ -436,13 +430,7 @@ end
         '*.bat','.bat system command text files';...
         '*.*',  'All Files (*.*)'}, ...
         'Pick a file',oldfile);
-%global filebase
 fileinput=[PathName FileName];%complete file name 
-% testblank=findstr(fileinput,' ');%look for blanks
-% if ~isempty(testblank)
-%     msgbox_uvmat('ERROR',['The input file name ' fileinput ' contains blank character : This is not allowed. Please change name'])
-%     return
-% end
 sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
@@ -483,36 +471,42 @@ end
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_1
 function MenuFile_1_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_1,'Label');
 display_file_name(hObject, eventdata, handles,fileinput)
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_2
 function MenuFile_2_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_2,'Label');
 display_file_name(hObject, eventdata, handles,fileinput)
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_3
 function MenuFile_3_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_3,'Label');
 display_file_name(hObject, eventdata, handles,fileinput)
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_4
 function MenuFile_4_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_4,'Label');
 display_file_name(hObject, eventdata, handles,fileinput)
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_5
 function MenuFile_5_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_5,'Label');
 display_file_name(hObject, eventdata, handles,fileinput)
 
 %------------------------------------------------------------------------ 
 % --- Fills the edit boxes RootPath, RootFile,NomType...from an input file name 'fileinput'
 function display_file_name(hObject, eventdata, handles,fileinput)
+%------------------------------------------------------------------------
 if ~exist(fileinput,'file')
     msgbox_uvmat('ERROR',['input file ' fileinput  ' does not exist'])
     return
@@ -870,33 +864,37 @@ end
 
 % set default options in menu 'Fields'
 
-if testima
-elseif isequal(FileExt,'.nc')||isequal(FileExt,'.cdf')
-   Data=nc2struct(FileName,'ListGlobalAttribute','absolut_time_T0','civ');
-   %col_vec=get(handles.col_vec,'String');
-   if ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)%if the new input is Civx
-       FieldList=calc_field;
-       set(handles.Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
-       set(handles.Fields,'Value',2) % set menu to 'velocity'
-       col_vec=FieldList;
-       col_vec(1)=[];%remove 'velocity' option for vector color (must be a scalar)
-   else %general netcdf file (not civx)
-       set(handles.Fields,'Value',1) % set menu to 'get_field...
-       set(handles.Fields,'String',{'get_field...'})
-       col_vec={'get_field...'};
-       hget_field=findobj('Name','get_field');
-       if ~isempty(hget_field)%delete any existing get_field GUI for reinitialisation withthe new file series
-           hhget_field=guidata(hget_field);
-           if ~strcmp(get(hhget_field.inputfile,'String'),FileName)%delete any existing get_field GUI with file name different than the input
-                delete(hget_field)
-           end
-       end
-   end
-   set(handles.col_vec,'String',col_vec)
-else
-    msgbox_uvmat('ERROR',['invalid input file extension ' FileExt])
-    return
-end  
+if ~testima
+    testcivx=0;
+    hget_field=findobj('Name','get_field');
+%     if isequal(FileExt,'.nc')||isequal(FileExt,'.cdf')
+    if isempty(hget_field)
+        Data=nc2struct(FileName,'ListGlobalAttribute','absolut_time_T0','civ');
+        if ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)%if the new input is Civx
+            FieldList=calc_field;
+            set(handles.Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
+            set(handles.Fields,'Value',2) % set menu to 'velocity'
+            col_vec=FieldList;
+            col_vec(1)=[];%remove 'velocity' option for vector color (must be a scalar)
+            testcivx=1;
+        end 
+    else
+         hhget_field=guidata(hget_field);
+        if ~strcmp(get(hhget_field.inputfile,'String'),FileName)%delete any existing get_field GUI with file name different than the input
+            delete(hget_field)
+        end
+    end
+    if ~testcivx
+            set(handles.Fields,'Value',1) % set menu to 'get_field...
+            set(handles.Fields,'String',{'get_field...'})
+            col_vec={'get_field...'}; 
+    end       
+    set(handles.col_vec,'String',col_vec)
+%     else
+%         msgbox_uvmat('ERROR',['invalid input file extension ' FileExt])
+%         return
+%     end
+end
 
 %% set index navigation options and refresh plots
 set(handles.RootPath,'BackgroundColor',[1 1 1])
@@ -1390,7 +1388,7 @@ if get(handles.scan_j,'Value')==1
     set(handles.scan_j,'BackgroundColor',[1 1 0])
     set(handles.scan_i,'Value',0)
     set(handles.scan_i,'BackgroundColor',[0.831 0.816 0.784])
-    NomType=get(handles.FileIndex,'UserData')
+    NomType=get(handles.FileIndex,'UserData');
     switch NomType
     case {'_i_j1-j2','#_ab','%3dab'},% pair with j index
         set(handles.fix_pair,'Visible','on')% option fixed pair on/off made visible (choice of avaible pair with buttons + and - if ='off')
@@ -2046,7 +2044,9 @@ num_i1=stra2num(get(handles.i1,'String'));
 num_i2=stra2num(get(handles.i2,'String'));
 num_j1=stra2num(get(handles.j1,'String'));
 num_j2=stra2num(get(handles.j2,'String'));
+
 errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2);
+
 if ~isempty(errormsg)
       msgbox_uvmat('ERROR',errormsg);
 else
@@ -2166,6 +2166,12 @@ if ~isempty(filename)
     if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
         set(handles.npx,'String',num2str(ParamOut.Npx));% display image size on the interface
         set(handles.npy,'String',num2str(ParamOut.Npy));
+    end
+    if isfield(ParamOut,'TimeIndex')
+        set(handles.i1,'String',num2str(ParamOut.TimeIndex))
+    end
+    if isfield(ParamOut,'TimeValue')
+        Field{1}.Time=ParamOut.TimeValue;
     end
 end
 
@@ -2433,14 +2439,14 @@ if NbDim==3
     end
 end
 if exist('XName','var')
-    eval(['XMax=max(UvData.Field.' XName ');'])
-    eval(['XMin=min(UvData.Field.' XName ');'])
+    eval(['XMax=max(max(UvData.Field.' XName '));'])
+    eval(['XMin=min(min(UvData.Field.' XName '));'])
     UvData.Field.NbDim=NbDim;
     UvData.Field.XMax=XMax;
     UvData.Field.XMin=XMin;
     if NbDim >1
-        eval(['YMax=max(UvData.Field.' YName ');'])
-        eval(['YMin=min(UvData.Field.' YName ');'])
+        eval(['YMax=max(max(UvData.Field.' YName '));'])
+        eval(['YMin=min(min(UvData.Field.' YName '));'])
         UvData.Field.YMax=YMax;
         UvData.Field.YMin=YMin;
     end
@@ -3255,11 +3261,11 @@ end
 if isequal(field_1,'image') 
     % transform netc type to the corresponding image type
 %     set(handles.FileExt_1,'String','.png');
-    if isequal(NomType_1,'_i1-i2_j')|isequal(NomType_1,'_i_j1-j2')| isequal(NomType_1,'#_ab')| isequal(NomType_1,'_i1-i2')
+    if isequal(NomType_1,'_i1-i2_j')||isequal(NomType_1,'_i_j1-j2')|| isequal(NomType_1,'#_ab')|| isequal(NomType_1,'_i1-i2')
         UvData.SubDir_1=get(handles.SubDir_1,'String'); %preserve the subdir in memory
 %         set(handles.SubDir_1,'String','')
 %         set(handles.FileExt_1,'String','.png');        
-        if isequal(NomType_1,'_i1-i2_j')|isequal(NomType_1,'_i_j1-j2')
+        if isequal(NomType_1,'_i1-i2_j')||isequal(NomType_1,'_i_j1-j2')
             NomTypeNew='_i_j';
         elseif isequal(NomType_1,'#_ab')
             NomTypeNew='#a';
@@ -4078,6 +4084,15 @@ function MinA_Callback(hObject, eventdata, handles)
 %------------------------------------------
 set(handles.FixScal,'Value',1) %suppress auto mode
 set(handles.FixScal,'BackgroundColor',[1 1 0])
+MinA=str2double(get(handles.MinA,'String'));
+MaxA=str2double(get(handles.MaxA,'String'));
+if MinA>MaxA% switch minA and maxA in case of error
+    MinA_old=MinA;
+    MinA=MaxA;
+    MaxA=MinA_old;
+    set(handles.MinA,'String',num2str(MinA,5));
+    set(handles.MaxA,'String',num2str(MaxA,5));
+end
 update_plot(handles);
 
 %------------------------------------------------------------------------
@@ -4085,6 +4100,15 @@ function MaxA_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.FixScal,'Value',1) %suppress auto mode
 set(handles.FixScal,'BackgroundColor',[1 1 0])
+MinA=str2double(get(handles.MinA,'String'));
+MaxA=str2double(get(handles.MaxA,'String'));
+if MinA>MaxA% switch minA and maxA in case of error
+        MinA_old=MinA;
+    MinA=MaxA;
+    MaxA=MinA_old;
+    set(handles.MinA,'String',num2str(MinA,5));
+    set(handles.MaxA,'String',num2str(MaxA,5));
+end
 update_plot(handles);
 
 %------------------------------------------------------------------------

@@ -64,8 +64,8 @@ if ~isequal(hhh,'')
             try
             nc=netcdf.open(nc,'NC_NOWRITE');
             testfile=1;
-            catch errormsg
-              Data.Txt=['ERROR opening ' nc ': ' errormsg.identifier];
+            catch ME
+              Data.Txt=['ERROR opening ' nc ': ' ME.message];
               return
             end
         else
@@ -76,13 +76,13 @@ if ~isequal(hhh,'')
         testfile=0;
     end
     
-    %% short reading opion for global attributes only, if the first argument is 'ListGlobalAttribute'
+    %% short reading option for global attributes only, if the first argument is 'ListGlobalAttribute'
     if isequal(varargin{1},'ListGlobalAttribute')
         for ilist=2:numel(varargin)
+            valuestr=[];%default
             try
             valuestr = netcdf.getAtt(nc,netcdf.getConstant('NC_GLOBAL'),varargin{ilist});
-            catch
-                valuestr=[];
+            catch ME
             end
             eval(['Data.' varargin{ilist} '=valuestr;'])
         end
@@ -96,32 +96,30 @@ if ~isequal(hhh,'')
     
     %%  -------- read all global attributes (constants)-----------
     att_key={};%default
-    iatt_g=0;
+%     iatt_g=0;
     Data.ListGlobalAttribute={};%default
     for iatt=1:ngatts
         keystr= netcdf.inqAttName(nc,netcdf.getConstant('NC_GLOBAL'),iatt-1);
-        indstr1=regexp(keystr,'\\','once');%detect '\\'
-        indstr2=regexp(keystr,'\.','once');%detect '\.'
-        %indtitle=regexp(keystr,'title','once');%detect 'title'(bad characters)
-        if isempty(indstr1) && isempty(indstr2)%&&isempty(indtitle)
-           valuestr = netcdf.getAtt(nc,netcdf.getConstant('NC_GLOBAL'),keystr);
-           if ischar(valuestr) & length(valuestr)<200 & double(valuestr)<=122 & double(valuestr)>=48 %usual characters
-                iatt_g=iatt_g+1;
-                indstr1=regexp(keystr,'\\','once');%detect '\\'
-                indstr2=regexp(keystr,'\.','once');%detect '\.'
-                if isempty(indstr1) && isempty(indstr2)
-                    eval(['Data.' keystr '=''' valuestr ''';'])
-                    att_key{iatt_g}=keystr;
-                end
-            elseif isempty(valuestr)
-                iatt_g=iatt_g+1;
-                eval(['Data.' keystr '=[];'])
-                att_key{iatt_g}=keystr;
+        valuestr = netcdf.getAtt(nc,netcdf.getConstant('NC_GLOBAL'),keystr);
+        keystr=regexprep(keystr,{'\','/','\.','-',' '},{'','','','',''});%remove  '\','.' or '-' if exists
+        if strcmp(keystr(1),'_')
+            keystr(1)=[];
+        end
+        try
+            if ischar(valuestr) & length(valuestr)<200 & double(valuestr)<=122 & double(valuestr)>=48 %usual characters
+               % valuestr=regexprep(valuestr,{'\\','\/','\.','\-',' '},{'_','_','_','_','_'})%remove  '\','.' or '-' if exists
+                eval(['Data.' keystr '=''' valuestr ''';'])
+%             elseif isempty(valuestr)
+%                 eval(['Data.' keystr '=[];'])
             elseif isnumeric(valuestr)
-                iatt_g=iatt_g+1;
                 eval(['Data.' keystr '=valuestr;'])
-                att_key{iatt_g}=keystr;
+            else
+                eval(['Data.' keystr '='';']) 
             end
+            att_key{iatt}=keystr;
+        catch ME
+            att_key{iatt}=['attr_' num2str(iatt)];
+            eval(['Data.' att_key{iatt} '=[];'])
         end
     end
     Data.ListGlobalAttribute=att_key;
@@ -183,12 +181,24 @@ if ~isequal(hhh,'')
         for iatt=1:nbatt(var_index(ivar))
             attname = netcdf.inqAttName(nc,var_index(ivar)-1,iatt-1);
             valuestr= netcdf.getAtt(nc,var_index(ivar)-1,attname);
+            attname=regexprep(attname,{'\','/','\.','-',' '},{'','','','',''});%remove  '\','.' or '-' if exists
+            if strcmp(attname(1),'_')
+                attname(1)=[];
+            end
+            try
             if ischar(valuestr)
+               % valuestr=regexprep(valuestr,{'\\','\/','\.','\-',' '},{'_','_','_','_','_'});%remove  '\','.' or '-' if exists
                 eval(['Data.VarAttribute{ivar}.' attname '=''' valuestr ''';'])
             elseif isempty(valuestr)
                 eval(['Data.VarAttribute{ivar}.' attname '=[];'])
             elseif isnumeric(valuestr)
                 eval(['Data.VarAttribute{ivar}.' attname '=valuestr;'])
+            end
+            catch ME
+                display(attname)
+                display(valuestr)
+                display(ME.message)         
+                eval(['Data.VarAttribute{ivar}.atrr_' num2str(iatt) '=''not read'';'])
             end
         end
     end

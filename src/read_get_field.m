@@ -123,10 +123,21 @@ if test_scalar
         errormsg='empty input field';
         return
     end
-    val=get(handles.scalar,'Value');%selected indices in the ordinate listbox
-    VarNameScalar=inputlist{val}; %name of the variable in the list
+    val=get(handles.scalar,'Value');%selected index for the scalar variable
+    VarNameScalar=inputlist{val}; %name of the variable
     VarIndexA=name2index(VarNameScalar,Field.ListVarName);%index of the variable in ListVarName
-    dimname_A=Field.VarDimName{VarIndexA};
+    dimname_A=Field.VarDimName{VarIndexA};% list of dimension names for the scalar variable (cell array)
+    %remove time dimension if defined
+    TimeVarIndex=[]; %default
+    if strcmp(get(handles.TimeDimensionMenu,'Visible'),'on')
+        dim_list=get(handles.TimeDimensionMenu,'String');
+        dim_index=get(handles.TimeDimensionMenu,'Value');
+        Time_dim=dim_list{dim_index};
+        TimeVarIndex=find(strcmp(Time_dim,dimname_A),1);
+        if ~isempty(TimeVarIndex)
+            dimname_A(TimeVarIndex)=[];
+        end
+    end
     nbvar=nbvar+1;
     ListVarName{nbvar}=Field.ListVarName{VarIndexA};
     VarSubIndexA=nbvar;
@@ -156,7 +167,10 @@ if test_scalar
         if ~isequal(dimname_x,dimname_A)% case of dimension variables
             if iscell(dimname_x)
                 if numel(dimname_x)==1
-                    dimname_x=dimname_x{1};%transform to char chain
+                    %dimname_x=dimname_x{1};%transform to char chain
+                elseif numel(dimname_x)==2
+                    index1_x = find(strcmp(dimname_x{1},dimname_A));%index of diname_x(1) in dimname_A
+                    index2_x = find(strcmp(dimname_x{2},dimname_A));%index of diname_x(2) in dimname_A
                 else
                     errormsg='invalid x coordinate selection in get_field';
                     return
@@ -189,6 +203,9 @@ if test_scalar
              if iscell(dimname_y)
                 if numel(dimname_y)==1
                     dimname_y=dimname_y{1};%transform to char chain
+                elseif numel(dimname_y)==2
+                    index1_y = find(strcmp(dimname_y{1},dimname_A));%index of diname_x(1) in dimname_A
+                    index2_y = find(strcmp(dimname_y{2},dimname_A));%index of diname_x(2) in dimname_A
                 else
                     errormsg='invalid y coordinate selection in get_field';
                     return
@@ -213,17 +230,17 @@ if test_scalar
             dimname_z=Field.VarDimName{VarIndex};
             nbvar=nbvar+1;
             ListVarName{nbvar}=Field.ListVarName{VarIndex};
-            VarDimName{nbvar}=dimname_y;
+            VarDimName{nbvar}=dimname_z;
             if numel(VarAttribute)>=VarIndex
                 SubVarAttribute{nbvar}=VarAttribute{VarIndex};
             end
             %check consistency of dimensions
-            if ~isequal(dimname_y,dimname_A)% case of dimension variables
-                if iscell(dimname_y)
-                    if numel(dimname_y)==1
-                        dimname_y=dimname_y{1};%transform to char chain
+            if ~isequal(dimname_z,dimname_A)% case of dimension variables
+                if iscell(dimname_z)
+                    if numel(dimname_z)==1
+                        dimname_z=dimname_z{1};%transform to char chain
                     else
-                        errormsg='invalid y coordinate selection in get_field';
+                        errormsg='invalid z coordinate selection in get_field';
                         return
                     end
                 end
@@ -431,9 +448,11 @@ if test_vector
         SubVarAttribute{nbvar}.Role='scalar';
     end
 end 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% get the input field
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% get the input field
 inputfield=get(handles.inputfile,'String');
 if exist(inputfield,'file')% read the input data corresponding to the list of selected varaibles
     SubField=nc2struct(inputfield,ListVarName);
@@ -442,7 +461,21 @@ else  % subfield stored in memory
     SubField.ListVarName=ListVarName;
     SubField.VarDimName=VarDimName;
 end
-SubField.ListGlobalAttribute=['InputFile' SubField.ListGlobalAttribute];
+if strcmp(get(handles.TimeIndexValue,'Visible'),'on') && ~isempty(get(handles.TimeIndexValue,'String'))
+    SubField.ListGlobalAttribute=[{'TimeIndex'} SubField.ListGlobalAttribute];
+    SubField.TimeIndex=str2double(get(handles.TimeIndexValue,'String'));  
+end
+TimeValue=NaN;
+if strcmp(get(handles.TimeVarValue,'Visible'),'on') 
+    TimeValue=str2double(get(handles.TimeVarValue,'String'));
+elseif strcmp(get(handles.TimeValue,'Visible'),'on') 
+    TimeValue=str2double(get(handles.TimeValue,'String'));
+end
+if ~isnan(TimeValue)   
+    SubField.ListGlobalAttribute=[{'TimeValue'} SubField.ListGlobalAttribute];
+    SubField.TimeValue=str2double(get(handles.TimeVarValue,'String'));  
+end
+SubField.ListGlobalAttribute=[{'InputFile'} SubField.ListGlobalAttribute];
 SubField.InputFile=get(handles.inputfile,'String');
 SubField.VarAttribute=SubVarAttribute;
 
@@ -452,6 +485,10 @@ if test_scalar
     VarNameA=Field.ListVarName{VarIndexA};%name of the scalar variable
     DimCellA=Field.VarDimName{VarIndexA};  %dimension names for the scalar variable
     eval(['npxy=size(SubField.' VarNameA ');'])%zize of the scalar variable
+%     if ~isempty(TimeVarIndex)% 
+%         DimCellA(TimeVarIndex)=[];%suppress the time dimension
+%         npxy(TimeVarIndex)=[];
+%     end
     SingleCellA={};
     if numel(npxy) < numel(DimCellA)
         SingleCellA=DimCellA(1:end-numel(npxy));
@@ -460,8 +497,13 @@ if test_scalar
     ind_select=find(npxy~=1);%look for non singleton dimensions
     DimCellA=DimCellA(ind_select);%dimension names for the scalar variable, after removing singletons
     npxy=npxy(ind_select);
+%     if ~isempty(TimeVarIndex)% 
+%         DimCellA(TimeVarIndex)=[];%suppress the time dimension
+%          npxy(TimeVarIndex)=[];
+%     end
+    NbDim=numel(npxy);
     dimA=[];
-    if test_zdimvar%dim_x && dim_y && ~isempty(VarSubIndexA)
+    if test_zdimvar
         NbDim=3;% field considered as 3D if a z coordinate is defined (to distinguish for instance from 2D color images with 3 components)
         ind_singleton=find(strcmp(dimname_z,SingleCellA),1);% look for coincidence of dimension with one of the singleton dimensions
         if ~isempty(ind_singleton)
@@ -471,7 +513,7 @@ if test_scalar
         icoord=find(strcmp(dimname_z,DimCellA),1);% a dimension variable
         dimA=[dimA icoord];
     end
-    if test_ydimvar%dim_x && dim_y && ~isempty(VarSubIndexA)
+    if test_ydimvar
         ind_singleton=find(strcmp(dimname_y,SingleCellA),1);% look for coincidence of dimension with one of the singleton dimensions
         if ~isempty(ind_singleton)
              errormsg=['the singleton dimension ' dimname_y ' has been selected for ordinate'];
@@ -480,30 +522,52 @@ if test_scalar
         icoord=find(strcmp(dimname_y,DimCellA),1);% a dimension variable
         dimA=[dimA icoord];
     end
-    if test_xdimvar
-        ind_singleton=find(strcmp(dimname_x,SingleCellA),1);% look for coincidence of dimension with one of the singleton dimensions
-        if ~isempty(ind_singleton)
+    if test_xdimvar% a varible has been selected for x coordinate
+        ind_singleton=find(strcmp(dimname_x{1},SingleCellA),1);% look for coincidence of dimension with one of the singleton dimensions
+        if ~isempty(ind_singleton)         
              errormsg=['the singleton dimension ' dimname_x ' has been selected for ordinate'];
              return
         end
-        icoord=find(strcmp(dimname_x,DimCellA),1);% a dimension variable
+        icoord=find(strcmp(dimname_x{1},DimCellA),1);% a dimension variable
         dimA=[dimA icoord];
     end
-    dimextra=(1:numel(DimCellA));
-    dimextra(dimA)=[]; %list of unselected dimension indices
+    dimextra=(1:numel(DimCellA)); %list of initial dimension indices
+    if isempty(TimeVarIndex)% 
+        dimextra(dimA)=[]; %list of unselected dimension indices
+        DimCellA=DimCellA([dimA dimextra]);
+        eval(['SubField.' VarNameA '=squeeze(SubField.' VarNameA ');'])
+        if ~isempty(dimA)&& ~isempty(dimextra)
+        eval(['SubField.' VarNameA '=permute(SubField.' VarNameA ',[dimA dimextra]);'])
+        end
+    else
+        time_index=str2double(get(handles.TimeIndexValue,'String'));
+        dimextra([dimA TimeVarIndex])=[];
+        %DimCellA=DimCellA([dimA dimextra TimeVarIndex])%put the time dimension at the end 
+        eval(['SubField.' VarNameA '=permute(squeeze(SubField.' VarNameA '),[dimA dimextra TimeVarIndex]);'])%put time variable as the last dimension
+        nbdimA=numel(dimA)+numel(dimextra);
+        switch nbdimA
+            case 1
+                colon_str='(:';
+            case 2
+                colon_str='(:,:';
+            case 3
+                colon_str='(:,:,:';
+        end
+        eval(['SubField.' VarNameA '=SubField.' VarNameA  colon_str ',time_index);'])
+        NbDim=NbDim-1;
+    end
     DimCellA=DimCellA([dimA dimextra]);
-    eval(['SubField.' VarNameA '=permute(squeeze(SubField.' VarNameA '),[dimA dimextra]);'])
     SubField.VarDimName{VarSubIndexA}=DimCellA;  
     %add default coord_x and/or coord_y if empty
     if empty_coord_x || empty_coord_y
-        VarName=Field.ListVarName{field_var_index};
-        DimCell=Field.VarDimName{field_var_index};    
-        eval(['npxy=size(SubField.' VarName ');'])
-        if numel(npxy) < numel(DimCell)
-            DimCell=DimCell(end-numel(npxy)+1:end); %suppress the first singletons) dimensions 
+        %VarName=Field.ListVarName{field_var_index}
+        %DimCell=Field.VarDimName{field_var_index}    
+        eval(['npxy=size(SubField.' VarNameA ')'])
+        if numel(npxy) < numel(DimCellA)
+            DimCellA=DimCellA(end-numel(npxy)+1:end); %suppress the first singletons) dimensions 
         end
         ind_select=find(npxy~=1) ;%look for non singleton dimensions
-        DimCell=DimCell(ind_select);%list of dimension names for the scalar, after singleton removal
+        DimCellA=DimCellA(ind_select);%list of dimension names for the scalar, after singleton removal
         npxy=npxy(ind_select);
         testold=0;
     %old convention; use of coord_1 and Coord_2
@@ -515,7 +579,7 @@ if test_scalar
             end
         end
         if empty_coord_x        
-                coord_x_name=DimCell{NbDim};
+                coord_x_name=DimCellA{NbDim};
                 SubField.ListVarName=[{coord_x_name} SubField.ListVarName];
                 SubField.VarDimName=[{coord_x_name} SubField.VarDimName];  
                 if testold
@@ -532,7 +596,7 @@ if test_scalar
             SubField.VarAttribute=[{coord_x_attr} SubField.VarAttribute];  
         end
         if empty_coord_y 
-            coord_y_name=DimCell{NbDim-1};
+            coord_y_name=DimCellA{NbDim-1};
             SubField.ListVarName=[{coord_y_name} SubField.ListVarName];
             SubField.VarDimName=[{coord_y_name} SubField.VarDimName];
             if testold
@@ -546,6 +610,22 @@ if test_scalar
                 coord_y_attr.units='cm';
             end
             SubField.VarAttribute=[{coord_y_attr} SubField.VarAttribute];       
+        end
+        if empty_coord_z && NbDim==3
+            coord_z_name=DimCellA{NbDim-2};
+            SubField.ListVarName=[{coord_z_name} SubField.ListVarName];
+            SubField.VarDimName=[{coord_z_name} SubField.VarDimName];
+            if testold
+                eval(['SubField.' coord_z_name '=linspace(Coord_3(1),Coord_3(end),npxy(1));']) 
+            else
+                eval(['SubField.' coord_z_name '=[0.5 npxy(NbDim-2)-0.5];'])
+            end
+            if ~testold
+                coord_z_attr.units='index';
+            else
+                coord_z_attr.units='cm';
+            end
+            SubField.VarAttribute=[{coord_z_attr} SubField.VarAttribute];   
         end
     end
 end
@@ -712,6 +792,17 @@ if test_1Dplot
         SubField.VarAttribute=[{struct} SubField.VarAttribute];
     end
 end
+
+%% remove time variable
+if get(handles.TimeDimension,'Value')
+
+%     TimeName=get(handles.TimeName,'String');
+%     time_index=find(strcmp(TimeName,SubField.ListVarName),1);
+%     SubField.ListVarName(TimeVarIndex)=[];
+%     SubField.VarDimName(TimeVarIndex)=[];
+%     SubField.VarAttribute(TimeVarIndex)=[];
+end
+
 
 %-------------------------------------------------
 % give index numbers of the strings str in the list ListvarName

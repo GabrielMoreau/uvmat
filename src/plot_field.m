@@ -584,8 +584,8 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field (with unstructured coordinates or structured ones (then ivar_X and ivar_Y empty)
                 XName=Data.ListVarName{ivar_X};
                 YName=Data.ListVarName{ivar_Y};
-                eval(['vec_X=Data.' XName ';']) 
-                eval(['vec_Y=Data.' YName ';'])
+                eval(['vec_X=reshape(Data.' XName ',[],1);']) 
+                eval(['vec_Y=reshape(Data.' YName ',[],1);'])
             elseif numel(VarType.coord)==2 && ~isequal(VarType.coord,[0 0]);%coordinates defines by dimension variables
                 eval(['y=Data.' Data.ListVarName{VarType.coord(1)} ';']) 
                 eval(['x=Data.' Data.ListVarName{VarType.coord(2)} ';'])
@@ -626,11 +626,12 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
         end
         eval(['A=squeeze(Data.' Data.ListVarName{ivar_C} ');']) ;% scalar represented as color image
         test_ima=1;
-        if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field (with unstructured coordinates or structured ones (then ivar_X and ivar_Y empty) 
+        if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field (with unstructured coordinates  (then ivar_X and ivar_Y not empty) 
+            A=reshape(A,1,[]);
             XName=Data.ListVarName{ivar_X};
             YName=Data.ListVarName{ivar_Y};
-            eval(['AX=Data.' XName ';']) 
-            eval(['AY=Data.' YName ';'])
+            eval(['AX=reshape(Data.' XName ',1,[]);']) 
+            eval(['AY=reshape(Data.' YName ',1,[]);'])
             [A,AX,AY]=proj_grid(AX',AY',A',[],[],'np>256');  % interpolate on a grid  
             if isfield(Data,'VarAttribute')
                 if numel(Data.VarAttribute)>=ivar_X && isfield(Data.VarAttribute{ivar_X},'units')

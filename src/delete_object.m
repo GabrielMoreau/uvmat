@@ -43,7 +43,9 @@ if isequal(floor(hObject),hObject) %case of an index
             end
         end
         UvData.Object(hObject)=[];  
-        list_str(hObject)=[];
+        if ~isempty(list_str)
+            list_str(hObject)=[];
+        end
     end
 elseif ishandle(hObject)%object handle
     userdata=get(hObject,'UserData');

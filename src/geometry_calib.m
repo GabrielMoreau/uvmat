@@ -440,7 +440,7 @@ GeometryCalib.omc=[0 0 0];
 
 %------------------------------------------------------------------------
 % determine the parameters for a calibration by a linear transform matrix (rescale and rotation)
-function GeometryCalib=calib_linear(Coord,handles) %TO UPDATE
+function GeometryCalib=calib_linear(Coord,handles) 
 %------------------------------------------------------------------------
 X=Coord(:,1);
 Y=Coord(:,2);% Z not used
@@ -460,7 +460,8 @@ GeometryCalib.CalibrationType='linear';
 GeometryCalib.fx_fy(1)=sqrt((a_X1(2)/a_Y1(3))*norm);
 GeometryCalib.fx_fy(2)=(a_Y1(3)/a_X1(2))*GeometryCalib.fx_fy(1);
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
-GeometryCalib.Tx_Ty_Tz=[a_X1(1) a_Y1(1) 1]; 
+%GeometryCalib.Tx_Ty_Tz=[a_X1(1) a_Y1(1) 1]; 
+GeometryCalib.Tx_Ty_Tz=[a_X1(1)/GeometryCalib.fx_fy(1) a_Y1(1)/GeometryCalib.fx_fy(2) 1];
 R(1,:)=R(1,:)/GeometryCalib.fx_fy(1);
 R(2,:)=R(2,:)/GeometryCalib.fx_fy(2);
 R=[R;[0 0]];
@@ -1029,7 +1030,7 @@ YLim=get(AxeData.ZoomAxes,'YLim');
 np=size(AxeData.A);
 ind_sub_x=round(XLim);
 ind_sub_y=np(1)-round(YLim);
-Mfiltre=AxeData.A([ind_sub_y(2):ind_sub_y(1)] ,ind_sub_x,:);
+Mfiltre=AxeData.A(ind_sub_y(2):ind_sub_y(1) ,ind_sub_x,:);
 Mfiltre_norm=double(Mfiltre);
 Mfiltre_norm=Mfiltre_norm/sum(sum(Mfiltre_norm));
 Mfiltre_norm=100*(Mfiltre_norm-mean(mean(Mfiltre_norm)));
@@ -1063,9 +1064,9 @@ ObjectData=read_geometry_calib(Coord_cell);
 %ObjectData=read_geometry_calib(handles);%read the interface input parameters defining the object
 if ~isempty(ObjectData.Coord)
     if isequal(option,'phys')
-        ObjectData.Coord=ObjectData.Coord(:,[1:3]);
+        ObjectData.Coord=ObjectData.Coord(:,1:3);
     elseif isequal(option,'px')||isequal(option,'')
-        ObjectData.Coord=ObjectData.Coord(:,[4:5]);
+        ObjectData.Coord=ObjectData.Coord(:,4:5);
     else
         msgbox_uvmat('ERROR','the choice in menu_coord of uvmat must be '''', px or phys ')
     end
@@ -1134,21 +1135,12 @@ set(handles.ListCoord,'String',Tabchar)
 % --- automatic grid dectection from local maxima of the images 
 function MenuDetectGrid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-%% initiate the grid
-CalibData=get(handles.geometry_calib,'UserData');%get information stored on the GUI geometry_calib
-grid_input=[];%default
-if isfield(CalibData,'grid')
-    grid_input=CalibData.grid;%retrieve the previously used grid
-end
-[T,CalibData.grid,white_test]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
-set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
-
 %% read the four last point coordinates in pixels
 Coord_cell=get(handles.ListCoord,'String');%read list of coordinates on geometry_calib
 data=read_geometry_calib(Coord_cell);
 nbpoints=size(data.Coord,1); %nbre of calibration points
 if nbpoints~=4
-    msgbox_uvmat('ERROR','four points must have be selected by the mouse, beginning by the new x axis, to delimitate the phys grid area')
+    msgbox_uvmat('ERROR','four points must have be selected by the mouse to delimitate the phys grid area; the Ox axis will be defined by the two first points')
     return
 end
 corners_X=(data.Coord(end:-1:end-3,4)); %pixel absissa of the four corners
@@ -1164,6 +1156,17 @@ if abs(angles(4)-angles(2))>abs(angles(3)-angles(2))
       corners_X(3)=X_end;
       corners_Y(3)=Y_end;
 end
+
+%% initiate the grid
+CalibData=get(handles.geometry_calib,'UserData');%get information stored on the GUI geometry_calib
+grid_input=[];%default
+if isfield(CalibData,'grid')
+    grid_input=CalibData.grid;%retrieve the previously used grid
+end
+[T,CalibData.grid,white_test]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
+set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
+
+
 
 %% read the current image, displayed in the GUI uvmat
 huvmat=findobj(allchild(0),'Name','uvmat');

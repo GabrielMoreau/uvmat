@@ -1,6 +1,6 @@
 % 'pivlab': function piv.m adapted from PIVlab http://pivlab.blogspot.com/
 %--------------------------------------------------------------------------
-% function [xtable ytable utable vtable typevector] = pivlab (image1,image2,interrogationarea, step, subpixfinder, mask, roi)
+% function [xtable ytable utable vtable typevector] = pivlab (image1,image2,ibx,iby step, subpixfinder, mask, roi)
 %
 % OUTPUT:
 % xtable: set of x coordinates
@@ -13,28 +13,28 @@
 %INPUT:
 % image1:first image (matrix)
 % image2: second image (matrix)
-% interrogationarea: size of the correlation box (in px)
+% ibx,iby: size of the correlation box along x and y (in px)
 % step: mesh of the measurement points (in px)
 % subpixfinder=1 or 2 controls the curve fitting of the image correlation
 % mask: =[] for no mask
 % roi: 4 element vector defining a region of interest: x position, y position, width, height, (in image indices), for the whole image, roi=[];
-function [xtable ytable utable vtable ctable typevector] = pivlab (image1,image2,interrogationarea, step, subpixfinder, mask, roi)
+function [xtable ytable utable vtable ctable typevector] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty, PointCoord, subpixfinder,mask)
 %this funtion performs the DCC PIV analysis. Recent window-deformation
 %methods perform better and will maybe be implemented in the future.
 warning off %MATLAB:log:logOfZero
-if numel(roi)>0
-    xroi=roi(1);
-    yroi=roi(2);
-    widthroi=roi(3);
-    heightroi=roi(4);
-    image1_roi=double(image1(yroi:yroi+heightroi,xroi:xroi+widthroi));
-    image2_roi=double(image2(yroi:yroi+heightroi,xroi:xroi+widthroi));
-else
+% if numel(roi)>0
+%     xroi=roi(1);
+%     yroi=roi(2);
+%     widthroi=roi(3);
+%     heightroi=roi(4);
+%     image1_roi=double(image1(yroi:yroi+heightroi,xroi:xroi+widthroi));
+%     image2_roi=double(image2(yroi:yroi+heightroi,xroi:xroi+widthroi));
+% else
     xroi=0;
     yroi=0;
     image1_roi=double(image1);
     image2_roi=double(image2);
-end
+% end
 if numel(mask)>0
     cellmask=mask;
     mask=zeros(size(image1_roi));
@@ -47,48 +47,46 @@ else
     mask=zeros(size(image1_roi));
 end
 mask(mask>1)=1;
+% ibx=2*ibx2-1%ibx and iby odd, reduced by 1 if even
+% iby=2*iby2-1
+% miniy=1+iby2
+% minix=1+ibx2
+% maxiy=step*(floor(size(image1_roi,1)/step))-(iby-1)+iby2 %statt size deltax von ROI nehmen
+% maxix=step*(floor(size(image1_roi,2)/step))-(ibx-1)+ibx2
+% numelementsy=floor((maxiy-miniy)/step+1);
+% numelementsx=floor((maxix-minix)/step+1);
+% 
+% LAy=miniy;
+% LAx=minix;
+% LUy=size(image1_roi,1)-maxiy;
+% LUx=size(image1_roi,2)-maxix;
+% shift4centery=round((LUy-LAy)/2);
+% shift4centerx=round((LUx-LAx)/2);
+% if shift4centery<0 %shift4center will be negative if in the unshifted case the left border is bigger than the right border. the vectormatrix is hence not centered on the image. the matrix cannot be shifted more towards the left border because then image2_crop would have a negative index. The only way to center the matrix would be to remove a column of vectors on the right side. but then we weould have less data....
+%     shift4centery=0;
+% end
+% if shift4centerx<0 %shift4center will be negative if in the unshifted case the left border is bigger than the right border. the vectormatrix is hence not centered on the image. the matrix cannot be shifted more towards the left border because then image2_crop would have a negative index. The only way to center the matrix would be to remove a column of vectors on the right side. but then we weould have less data....
+%     shift4centerx=0;
+% end
+% miniy=miniy+shift4centery;
+% minix=minix+shift4centerx;
+% maxix=maxix+shift4centerx;
+% maxiy=maxiy+shift4centery;
 
-miniy=1+(ceil(interrogationarea/2));
-minix=1+(ceil(interrogationarea/2));
-maxiy=step*(floor(size(image1_roi,1)/step))-(interrogationarea-1)+(ceil(interrogationarea/2)); %statt size deltax von ROI nehmen
-maxix=step*(floor(size(image1_roi,2)/step))-(interrogationarea-1)+(ceil(interrogationarea/2));
+image1_roi=padarray(image1_roi,[iby2 ibx2], min(min(image1_roi)));%add a border around the image with minimum image value
+image2_roi=padarray(image2_roi,[iby2 ibx2], min(min(image1_roi)));
+mask=padarray(mask,[iby2 ibx2],0);
+SubPixOffset=0.5;%odd values chosen for ibx and iby
 
-numelementsy=floor((maxiy-miniy)/step+1);
-numelementsx=floor((maxix-minix)/step+1);
-
-LAy=miniy;
-LAx=minix;
-LUy=size(image1_roi,1)-maxiy;
-LUx=size(image1_roi,2)-maxix;
-shift4centery=round((LUy-LAy)/2);
-shift4centerx=round((LUx-LAx)/2);
-if shift4centery<0 %shift4center will be negative if in the unshifted case the left border is bigger than the right border. the vectormatrix is hence not centered on the image. the matrix cannot be shifted more towards the left border because then image2_crop would have a negative index. The only way to center the matrix would be to remove a column of vectors on the right side. but then we weould have less data....
-    shift4centery=0;
-end
-if shift4centerx<0 %shift4center will be negative if in the unshifted case the left border is bigger than the right border. the vectormatrix is hence not centered on the image. the matrix cannot be shifted more towards the left border because then image2_crop would have a negative index. The only way to center the matrix would be to remove a column of vectors on the right side. but then we weould have less data....
-    shift4centerx=0;
-end
-miniy=miniy+shift4centery;
-minix=minix+shift4centerx;
-maxix=maxix+shift4centerx;
-maxiy=maxiy+shift4centery;
-
-image1_roi=padarray(image1_roi,[ceil(interrogationarea/2) ceil(interrogationarea/2)], min(min(image1_roi)));
-image2_roi=padarray(image2_roi,[ceil(interrogationarea/2) ceil(interrogationarea/2)], min(min(image1_roi)));
-mask=padarray(mask,[ceil(interrogationarea/2) ceil(interrogationarea/2)],0);
-if (rem(interrogationarea,2) == 0) %for the subpixel displacement measurement
-    SubPixOffset=1;
-else
-    SubPixOffset=0.5;
-end
-xtable=zeros(numelementsy,numelementsx);
+nbvec=size(PointCoord,1);
+xtable=zeros(nbvec,1);
 ytable=xtable;
 utable=xtable;
 vtable=xtable;
 u2table=xtable;
 v2table=xtable;
 s2n=xtable;
-typevector=ones(numelementsy,numelementsx);;
+typevector=ones(size(xtable));
 
 nrx=0;
 nrxreal=0;
@@ -96,28 +94,24 @@ nry=0;
 increments=0;
 
 %% MAINLOOP
-%handles=guihandles(getappdata(0,'hgui'));
-for j = miniy:step:maxiy %vertical loop
-    nry=nry+1;
-%     if increments<6 %reduced display refreshing rate
-%         increments=increments+1;
-%     else
-%         increments=1;
-%         %set(handles.progress, 'string' , ['Frame progress: ' int2str(j/maxiy*100) '%']);drawnow;
-%     end
-    n=round((j-miniy)/maxiy*100);
-    for i = minix:step:maxix % horizontal loop
-        nrx=nrx+1;%used to determine the pos of the vector in resulting matrix
-        if nrxreal < numelementsx
-            nrxreal=nrxreal+1;
-        else
-            nrxreal=1;
-        end
-        startpoint=[i j];
-        image1_crop=image1_roi(j:j+interrogationarea-1, i:i+interrogationarea-1);
-        image2_crop=image2_roi(ceil(j-interrogationarea/2):ceil(j+1.5*interrogationarea-1), ceil(i-interrogationarea/2):ceil(i+1.5*interrogationarea-1));
-        corrmax=0;
-        if mask(round(j+interrogationarea/2),round(i+interrogationarea/2))==0
+for ivec=1:nbvec
+    iref=PointCoord(ivec,1);
+    jref=PointCoord(ivec,2);
+    image1_crop=image1_roi(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);
+    image2_crop=image2_roi(jref+shifty-isy2:jref+shifty+isy2,iref+shiftx-isx2:iref+shiftx+isx2);
+%     n=round((j-miniy)/maxiy*100);
+%     for i = minix:step:maxix % horizontal loop
+%         nrx=nrx+1;%used to determine the pos of the vector in resulting matrix
+%         if nrxreal < numelementsx
+%             nrxreal=nrxreal+1;
+%         else
+%             nrxreal=1;
+%         end
+%         startpoint=[i j];
+%         image1_crop=image1_roi(j:j+iby-1, i:i+ibx-1);
+%         image2_crop=image2_roi(ceil(j-iby/2):ceil(j+1.5*iby-1), ceil(i-ibx/2):ceil(i+1.5*ibx-1));
+%         corrmax=0;
+        if mask(jref,iref)==0
            %reference: Oliver Pust, PIV: Direct Cross-Correlation
            % image2_crop: sub image with the size of the search area in image 2
            % image1_crop: sub image of the correlation box in image 1
@@ -131,9 +125,9 @@ for j = miniy:step:maxiy %vertical loop
             if isnan(y)==0 & isnan(x)==0 
                 try
                     if subpixfinder==1
-                        [vector] = SUBPIXGAUSS (result_conv,interrogationarea,x,y,SubPixOffset);
+                        [vector] = SUBPIXGAUSS (result_conv,ibx,iby,x,y,SubPixOffset);
                     elseif subpixfinder==2
-                        [vector] = SUBPIX2DGAUSS (result_conv,interrogationarea,x,y,SubPixOffset);
+                        [vector] = SUBPIX2DGAUSS (result_conv,ibx,iby,x,y,SubPixOffset);
                     end
                 catch
                     vector=[NaN NaN]; %if something goes wrong with cross correlation.....
@@ -143,30 +137,28 @@ for j = miniy:step:maxiy %vertical loop
             end
         else %if mask was not 0 then
             vector=[NaN NaN];
-            typevector(nry,nrxreal)=0;
+            typevector(ivec)=0;
         end
 
         %Create the vector matrix x, y, u, v
-        xtable(nry,nrxreal)=startpoint(1)+interrogationarea/2;
-        ytable(nry,:)=startpoint(1,2)+interrogationarea/2;
-        utable(nry,nrxreal)=vector(1);
-        vtable(nry,nrxreal)=vector(2);
-        ctable(nry,nrxreal)=corrmax/sum(sum(image1_crop.*image1_crop));
-     end
-
+        xtable(ivec)=PointCoord(ivec,2);
+        ytable(ivec)=PointCoord(ivec,1);
+        utable(ivec)=vector(1);
+        vtable(ivec)=vector(2);
+        ctable(ivec)=corrmax/sum(sum(image1_crop.*image1_crop));
 end
-xtable=xtable-ceil(interrogationarea/2);
-ytable=ytable-ceil(interrogationarea/2);
+% xtable=xtable-ibx2;
+% ytable=ytable-iby2;
+% 
+% xtable=xtable+xroi;
+% ytable=ytable+yroi;
+% 
+% utable(utable>ibx/1.5)=NaN;
+% vtable(utable>ibx/1.5)=NaN;
+% vtable(vtable>iby/1.5)=NaN;
+% utable(vtable>iby/1.5)=NaN;
 
-xtable=xtable+xroi;
-ytable=ytable+yroi;
-
-utable(utable>interrogationarea/1.5)=NaN;
-vtable(utable>interrogationarea/1.5)=NaN;
-vtable(vtable>interrogationarea/1.5)=NaN;
-utable(vtable>interrogationarea/1.5)=NaN;
-
-function [vector] = SUBPIXGAUSS (result_conv,interrogationarea,x,y,SubPixOffset)
+function [vector] = SUBPIXGAUSS (result_conv,ibx,iby,x,y,SubPixOffset)
 if size(x,1)>1 %if there are more than 1 peaks just take the first
     x=x(1:1);
 end
@@ -185,14 +177,14 @@ if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) 
     f2 = log(result_conv(y,x+1));
     peakx = x+ (f1-f2)/(2*f1-4*f0+2*f2);
     %
-    SubpixelX=peakx-(interrogationarea/2)-SubPixOffset;
-    SubpixelY=peaky-(interrogationarea/2)-SubPixOffset;
+    SubpixelX=peakx-(ibx/2)-SubPixOffset;
+    SubpixelY=peaky-(iby/2)-SubPixOffset;
     vector=[SubpixelX, SubpixelY];
 else
     vector=[NaN NaN];
 end
 
-function [vector] = SUBPIX2DGAUSS (result_conv,interrogationarea,x,y,SubPixOffset)
+function [vector] = SUBPIX2DGAUSS (result_conv,ibx,iby,x,y,SubPixOffset)
 if size(x,1)>1 %if there are more than 1 peaks just take the first
     x=x(1:1);
 end
@@ -228,8 +220,8 @@ if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) 
     peakx=x+deltax;
     peaky=y+deltay;
 
-    SubpixelX=peakx-(interrogationarea/2)-SubPixOffset;
-    SubpixelY=peaky-(interrogationarea/2)-SubPixOffset;
+    SubpixelX=peakx-(ibx/2)-SubPixOffset;
+    SubpixelY=peaky-(iby/2)-SubPixOffset;
     vector=[SubpixelX, SubpixelY];
 else
     vector=[NaN NaN];

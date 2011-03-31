@@ -122,9 +122,11 @@ if exist(xmlfile,'file')
         sparam=convert(t);
     catch
         errormsg={' Unable to read the file PARAM.xml defining the civx binaries:'; lasterr};
+        return
     end
 else
     errormsg=[xmlfile ' not found: path to civx binaries undefined'];
+    return
 end
 
 
@@ -1320,151 +1322,7 @@ end
 set(handles.list_pair_civ2,'String',displ_pair');
 set(gcf,'Pointer','arrow')
 
-%------------------------------------------------------------------------
-%  determine the list of index pairs of processing file
-function [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2]=...
-    find_pair_indices(handles,mode)
-%------------------------------------------------------------------------
-first_i=str2double(get(handles.first_i,'String'));%first index i
-last_i=str2double(get(handles.last_i,'String'));%last index i
-incr=str2double(get(handles.incr_i,'String'));% increment
-num_i=first_i:incr:last_i;% list of i indices (reference values for each pair)
-if isequal(get(handles.first_j,'Visible'),'on')
-    first_j=str2double(get(handles.first_j,'String'));%first index j
-    last_j=str2double(get(handles.last_j,'String'));%last index j
-    incr_j=str2double(get(handles.incr_j,'String'));% increment
-else
-    first_j=1;
-    last_j=1;
-    incr_j=1;
-end
-num_j=[first_j:incr_j:last_j];% list of j indices (reference values for each pair)
-list_civ1=get(handles.list_pair_civ1,'String');
-index_civ1=get(handles.list_pair_civ1,'Value');
-str_civ1=list_civ1{index_civ1};%string defining the image pairs for civ1
-if isempty(str_civ1)||isequal(str_civ1,'')
-    msgbox_uvmat('ERROR','no image pair selected for civ1')
-    return
-end
-list_civ2=get(handles.list_pair_civ2,'String');
-index_civ2=get(handles.list_pair_civ2,'Value');
-if index_civ2>length(list_civ2)
-    list_civ2=list_civ1;
-    index_civ2=index_civ1;
-end
-str_civ2=list_civ2{index_civ2};%string defining the image pairs for civ2
-if isempty(first_i)||isempty(first_j), msgbox_uvmat('ERROR','first field number not defined'),...
-        return,end;
-if isequal(last_i,[])|| isequal(last_j,[]),msgbox_uvmat('ERROR','last field number not defined'),...
-        return,end;
-if isequal(incr,[])|| isequal(incr_j,[]),msgbox_uvmat('ERROR','increment in field number not defined'),...
-        return,end;
-if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
-        return,end;
-if isequal (mode,'series(Di)')
-    %recognize the pair civ1 from the display
-    indsel=find((double(str_civ1)<48)|(double(str_civ1)>57));% character indices of non numerical characters
-    str_raw=str_civ1(indsel);
-    indsepar=find(str_raw=='|'); %character index of the separator
-    d1=str2double(str_civ1(indsel(indsepar-1)+1:indsel(indsepar)-1));
-    if indsepar==length(str_raw)
-        d2=str2double(str_civ1(indsel(indsepar)+1:end));
-    else
-        d2=str2double(str_civ1(indsel(indsepar)+1:indsel(indsepar+1)-1));
-    end
-    num1_civ1=num_i-d1;% set of first image numbers
-    num2_civ1=num_i+d2;
-    num_a_civ1=num_j;
-    num_b_civ1=num_j;
-    
-    %recognize the pair civ2 from the display
-    indsel=find((double(str_civ2)<48)|(double(str_civ2)>57));% character indices of non numerical characters
-    str_raw=str_civ2(indsel);
-    indsepar=find(str_raw=='|'); %character index of the separator
-    d1=str2double(str_civ2(indsel(indsepar-1)+1:indsel(indsepar)-1));
-    if indsepar==length(str_raw)
-        d2=str2double(str_civ2(indsel(indsepar)+1:end));
-    else
-        d2=str2double(str_civ2(indsel(indsepar)+1:indsel(indsepar+1)-1));
-    end
-    if isnan(d1)
-        num1_civ2=num_i;
-    else
-        num1_civ2=num_i-d1;% set of first image numbers
-    end
-    if isnan(d2)
-        num2_civ2=num_i;
-    else
-        num2_civ2=num_i+d2;
-    end
-    num_a_civ2=num_j;
-    num_b_civ2=num_j;
-    
-    % adjust the first and last field number
-    lastfield=str2double(get(handles.nb_field,'String'));
-    if isequal(lastfield,[])
-        indsel=find((num1_civ1 >= 1)&(num1_civ2 >= 1));
-    else
-        indsel=find((num2_civ1 <= lastfield)&(num2_civ2 <= lastfield)&(num1_civ1 >= 1)&(num1_civ2 >= 1));
-    end
-    if length(indsel)>=1
-        firstind=indsel(1);
-        lastind=indsel(end);
-        set(handles.first_i,'String',num2str(num_i(firstind)))%update the display of first and last fields
-        set(handles.last_i,'String',num2str(num_i(lastind)))
-        num_i=num_i(indsel);
-        num1_civ1=num1_civ1(indsel);
-        num1_civ2=num1_civ2(indsel);
-        num2_civ1=num2_civ1(indsel);
-        num2_civ2=num2_civ2(indsel);
-    end
-elseif isequal (mode,'series(Dj)')
-    lastfield_j=str2double(get(handles.nb_field2,'String'));
-    num1_civ1=num_i;% set of first image numbers
-    num2_civ1=num_i;
-    num_a_civ1=num_j-floor(index_civ1/2)*ones(size(num_j));
-    num_b_civ1=num_j+ceil(index_civ1/2)*ones(size(num_j));
-    num1_civ2=num_i;
-    num2_civ2=num_i;
-    num_a_civ2=num_j-floor(index_civ2/2)*ones(size(num_j));
-    num_b_civ2=num_j+ceil(index_civ2/2)*ones(size(num_j));
-    % adjust the first and last field number
-    if isnan(lastfield_j)
-        indsel=find((num_a_civ1 >= 1)&(num_a_civ2 >= 1));
-    else
-        indsel=find((num_b_civ1 <= lastfield_j)&(num_b_civ2 <= lastfield_j)&(num_a_civ1 >= 1)&(num_a_civ2 >= 1));
-    end
-    if length(indsel)>=1
-        firstind=indsel(1);
-        lastind=indsel(end);
-        set(handles.first_j,'String',num2str(num_j(firstind)))%update the display of first and last fields
-        set(handles.last_j,'String',num2str(num_j(lastind)))
-        num_j=num_j(indsel);
-        num_a_civ1=num_a_civ1(indsel);
-        num_a_civ2=num_a_civ2(indsel);
-        num_b_civ1=num_b_civ1(indsel);
-        num_b_civ2=num_b_civ2(indsel);
-    end
-elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)
-    num1_civ1=num_i;
-    num1_civ2=num_i;
-    displ_num=get(handles.list_pair_civ1,'UserData');
-    num2_civ1=num_i;
-    num_a_civ1=displ_num(1,index_civ1);
-    num_b_civ1=displ_num(2,index_civ1);
-    num2_civ2=num_i;
-    num_a_civ2=displ_num(1,index_civ2);
-    num_b_civ2=displ_num(2,index_civ2);
-elseif isequal(mode,'displacement')
-    num1_civ1=num_i;
-    num2_civ1=num_i;
-    num_a_civ1=num_j;
-    num_b_civ1=num_j;
-    num1_civ2=num_i;
-    num2_civ2=num_i;
-    num_a_civ2=num_j;
-    num_b_civ2=num_j;
-end
+
 
 
 %------------------------------------------------------------------------
@@ -1585,6 +1443,7 @@ if isfield(handles,'status')
 set(handles.status,'Value',1);%suppress status display
 status_Callback(hObject, eventdata, handles)
 end
+
 %------------------------------------------------------------------------
 % --- Lauch command called by RUN and BATCH: remote processing
 function launch_jobs(hObject, eventdata, handles, batch)
@@ -1644,15 +1503,19 @@ end
 
 %% set the list of files and check them
 display('checking the files...')
+[ref_i,ref_j,errormsg]=find_ref_indices(handles);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+    return
+end
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc]=...
-    set_civ_filenames(handles,box_test);
+    set_civ_filenames(handles,ref_i,ref_j,box_test);
 set(handles.civ,'UserData',filecell);%store for futur use of status callback
 if isempty(filecell)% (error message displayed in fct set_civ_filenames)
     return
 end
 nbfield=numel(num1_civ1);
 nbslice=numel(num_a_civ1);
-
 
 %% read names of the .exe files for PIV and patch
 path_UVMAT=fileparts(which('uvmat')); %path to the source directory of uvmat
@@ -2247,8 +2110,26 @@ for ifile=1:nbfield
             disp(cmd_str);
         else       %run PIVlab if selected
             image1=imread(par_civ1.filename_ima_a);
-            image2=imread(par_civ1.filename_ima_b);         
-               [xtable ytable utable vtable ctable typevector] = pivlab (image1,image2,str2num(par_civ1.ibx), str2num(par_civ1.dx), 1, [], []); 
+            image2=imread(par_civ1.filename_ima_b);     
+            stepx=str2num(par_civ1.dx);
+            stepy=str2num(par_civ1.dy);
+            ibx2=ceil(str2num(par_civ1.ibx)/2);
+            iby2=ceil(str2num(par_civ1.iby)/2);
+            isx2=ceil(str2num(par_civ1.isx)/2);
+            isy2=ceil(str2num(par_civ1.isy)/2);
+            shiftx=str2num(par_civ1.shiftx);
+            shifty=str2num(par_civ1.shifty);
+%             ibx=2*ibx2-1;%ibx and iby odd, reduced by 1 if even
+%             iby=2*iby2-1;
+            miniy=max(1+isy2-shifty,1+iby2);
+            minix=max(1+isx2-shiftx,1+ibx2);
+            maxiy=min(size(image1,1)-isy2-shifty,size(image1,1)-iby2); 
+            maxix=min(size(image1,2)-isx2-shiftx,size(image1,2)-ibx2); 
+%             maxix=stepx*(floor(size(image1_roi,2)/stepx))-(2*ibx2-2)+ibx2;
+            [GridX,GridY]=meshgrid(miniy:stepy:maxiy,minix:stepx:maxix);
+            PointCoord(:,1)=reshape(GridX,[],1);
+            PointCoord(:,2)=reshape(GridY,[],1);
+               [xtable ytable utable vtable ctable typevector] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty,PointCoord, 1, []); 
                Data.ListGlobalAttribute={'title','Time','Dt'};
                Data.title='PIVlab';
                Data.Time=str2double(par_civ1.T0);
@@ -2311,11 +2192,39 @@ while detect==1
 end
 saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
 
+%------------------------------------------------------------------------
+% --- determine the list of reference indices of processing file
+function [ref_i,ref_j,errormsg]=find_ref_indices(handles)
+%------------------------------------------------------------------------
+errormsg=''; %default error message
+first_i=str2double(get(handles.first_i,'String'));%first index i
+last_i=str2double(get(handles.last_i,'String'));%last index i
+incr_i=str2double(get(handles.incr_i,'String'));% increment
+if isequal(get(handles.first_j,'Visible'),'on')
+    first_j=str2double(get(handles.first_j,'String'));%first index j
+    last_j=str2double(get(handles.last_j,'String'));%last index j
+    incr_j=str2double(get(handles.incr_j,'String'));% increment
+else
+    first_j=1;
+    last_j=1;
+    incr_j=1;
+end
+ref_i=first_i:incr_i:last_i;% list of i indices (reference values for each pair)
+ref_j=first_j:incr_j:last_j;% list of j indices (reference values for each pair)
+if isnan(first_i)||isnan(first_j)
+    errormsg='first field number not defined';
+elseif isnan(last_i)||isnan(last_j)
+    errormsg='last field number not defined';
+elseif isnan(incr_i)||isnan(incr_j)
+    errormsg='increment in field number not defined';
+elseif last_i < first_i || last_j < first_j 
+    errormsg='last field number must be larger than the first one';
+end
 
-
-
+%------------------------------------------------------------------------
+% --- determine the list of filenames and indices needed for launch_job
 function [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
-    set_civ_filenames(handles,box_test)
+    set_civ_filenames(handles,ref_i,ref_j,box_test)
 %------------------------------------------------------------------------
 filecell=[];%default
 
@@ -2350,7 +2259,7 @@ end
 if isempty(nom_type_ima2),nom_type_ima2='1';end; %default
 if isempty(nom_type_nc),nom_type_nc='_i1-i2';end; %default
 [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2]=...
-    find_pair_indices(handles,mode);
+    find_pair_indices(handles,ref_i,ref_j,mode);
 %determine the new filebase for 'displacement' mode (comparison of two series)
 filebase_B=filebase;% root name of the second field series for stereo
 if strcmp(compare,'displacement') || strcmp(compare,'stereo PIV')
@@ -3031,6 +2940,105 @@ if ~isequal(ext_ima,'.png')
         close(h);
     end
 end
+
+%------------------------------------------------------------------------
+% --- determine the list of index pairs of processing file
+function [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2]=...
+    find_pair_indices(handles,ref_i,ref_j,mode)
+%------------------------------------------------------------------------
+
+list_civ1=get(handles.list_pair_civ1,'String');
+index_civ1=get(handles.list_pair_civ1,'Value');
+str_civ1=list_civ1{index_civ1};%string defining the image pairs for civ1
+if isempty(str_civ1)||isequal(str_civ1,'')
+    msgbox_uvmat('ERROR','no image pair selected for civ1')
+    return
+end
+list_civ2=get(handles.list_pair_civ2,'String');
+index_civ2=get(handles.list_pair_civ2,'Value');
+if index_civ2>length(list_civ2)
+    list_civ2=list_civ1;
+    index_civ2=index_civ1;
+end
+str_civ2=list_civ2{index_civ2};%string defining the image pairs for civ2
+
+if isequal (mode,'series(Di)')
+    lastfield=str2double(get(handles.nb_field,'String'));
+    num1_civ1=ref_i-floor(index_civ1/2)*ones(size(ref_i));% set of first image numbers
+    num2_civ1=ref_i+ceil(index_civ1/2)*ones(size(ref_i));
+    num_a_civ1=ref_j;
+    num_b_civ1=ref_j;
+    num1_civ2=ref_i-floor(index_civ2/2)*ones(size(ref_i));;
+    num2_civ2=ref_i+ceil(index_civ2/2)*ones(size(ref_i));
+    num_a_civ2=ref_j;
+    num_b_civ2=ref_j;   
+    
+    % adjust the first and last field number
+    lastfield=str2double(get(handles.nb_field,'String'));
+    if isnan(lastfield)
+        indsel=find((num1_civ1 >= 1)&(num1_civ2 >= 1));
+    else
+        indsel=find((num2_civ1 <= lastfield)&(num2_civ2 <= lastfield)&(num1_civ1 >= 1)&(num1_civ2 >= 1));
+    end
+    if length(indsel)>=1
+        firstind=indsel(1);
+        lastind=indsel(end);
+        set(handles.first_i,'String',num2str(ref_i(firstind)))%update the display of first and last fields
+        set(handles.last_i,'String',num2str(ref_i(lastind)))
+        ref_i=ref_i(indsel);
+        num1_civ1=num1_civ1(indsel);
+        num1_civ2=num1_civ2(indsel);
+        num2_civ1=num2_civ1(indsel);
+        num2_civ2=num2_civ2(indsel);
+    end
+elseif isequal (mode,'series(Dj)')
+    lastfield_j=str2double(get(handles.nb_field2,'String'));
+    num1_civ1=ref_i;% set of first image numbers
+    num2_civ1=ref_i;
+    num_a_civ1=ref_j-floor(index_civ1/2)*ones(size(ref_j));
+    num_b_civ1=ref_j+ceil(index_civ1/2)*ones(size(ref_j));
+    num1_civ2=ref_i;
+    num2_civ2=ref_i;
+    num_a_civ2=ref_j-floor(index_civ2/2)*ones(size(ref_j));
+    num_b_civ2=ref_j+ceil(index_civ2/2)*ones(size(ref_j));
+    % adjust the first and last field number
+    if isnan(lastfield_j)
+        indsel=find((num_a_civ1 >= 1)&(num_a_civ2 >= 1));
+    else
+        indsel=find((num_b_civ1 <= lastfield_j)&(num_b_civ2 <= lastfield_j)&(num_a_civ1 >= 1)&(num_a_civ2 >= 1));
+    end
+    if length(indsel)>=1
+        firstind=indsel(1);
+        lastind=indsel(end);
+        set(handles.first_j,'String',num2str(ref_j(firstind)))%update the display of first and last fields
+        set(handles.last_j,'String',num2str(ref_j(lastind)))
+        ref_j=ref_j(indsel);
+        num_a_civ1=num_a_civ1(indsel);
+        num_b_civ1=num_b_civ1(indsel);
+        num_a_civ2=num_a_civ2(indsel);
+        num_b_civ2=num_b_civ2(indsel);
+    end
+elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)
+    displ_num=get(handles.list_pair_civ1,'UserData');
+    num1_civ1=ref_i;
+    num2_civ1=ref_i;
+    num_a_civ1=displ_num(1,index_civ1);
+    num_b_civ1=displ_num(2,index_civ1);
+    num1_civ2=ref_i;
+    num2_civ2=ref_i;
+    num_a_civ2=displ_num(1,index_civ2);
+    num_b_civ2=displ_num(2,index_civ2);
+elseif isequal(mode,'displacement')
+    num1_civ1=ref_i;
+    num2_civ1=ref_i;
+    num_a_civ1=ref_j;
+    num_b_civ1=ref_j;
+    num1_civ2=ref_i;
+    num2_civ2=ref_i;
+    num_a_civ2=ref_j;
+    num_b_civ2=ref_j;
+end
+
 
 %------------------------------------------------------------------------
 % --- PATCH
@@ -4595,14 +4603,42 @@ function TestCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 test_civ1=get(handles.TestCiv1,'Value');
 if test_civ1
+    ref_i=str2double(get(handles.ref_i,'String'));
+    if strcmp(get(handles.ref_j,'Visible'),'on')
+        ref_j=str2double(get(handles.ref_j,'String'));
+    else
+        ref_j=1;%default
+    end
     [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
-        set_civ_filenames(handles,[1 0 0 0 0 0]);
+        set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);
     Data.ListVarName={'ny','nx','A'};
     Data.VarDimName={'ny','nx',{'ny','nx'}};
     Data.A=imread(filecell.ima1.civ1{1});
     Data.ny=[size(Data.A,1) 1];
     Data.nx=[1 size(Data.A,2)];
+    par_civ1=read_param_civ1(handles,filecell.ima1.civ1{1});
+    
+            stepx=str2num(par_civ1.dx);
+            stepy=str2num(par_civ1.dy);
+            ibx2=ceil(str2num(par_civ1.ibx)/2);
+            iby2=ceil(str2num(par_civ1.iby)/2);
+            isx2=ceil(str2num(par_civ1.isx)/2);
+            isy2=ceil(str2num(par_civ1.isy)/2);
+            shiftx=str2num(par_civ1.shiftx);
+            shifty=str2num(par_civ1.shifty);
+%             ibx=2*ibx2-1;%ibx and iby odd, reduced by 1 if even
+%             iby=2*iby2-1;
+            miniy=max(1+isy2-shifty,1+iby2);
+            minix=max(1+isx2-shiftx,1+ibx2);
+            maxiy=min(size(image1,1)-isy2-shifty,size(image1,1)-iby2); 
+            maxix=min(size(image1,2)-isx2-shiftx,size(image1,2)-ibx2); 
+%             maxix=stepx*(floor(size(image1_roi,2)/stepx))-(2*ibx2-2)+ibx2;
+            [GridX,GridY]=meshgrid(miniy:stepy:maxiy,minix:stepx:maxix);
+            PointCoord(:,1)=reshape(GridX,[],1);
+            PointCoord(:,2)=reshape(GridY,[],1);
     hh=view_field(Data);
+    set(0,'CurrentFigure',hh)
+    plot(PointCoord(:,2),PointCoord(:,1),'+')
     ViewData=get(hh,'UserData');
     ViewData.axes3.B=imread(filecell.ima2.civ1{1});%store the second image in the UserData of the GUI view_field
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
@@ -4651,7 +4687,12 @@ box_test(6)=get(handles.PATCH2,'Value');
 option_civ=find(box_test,1,'last');%last selected option (non-zero index of box_test)
 filecell=get(handles.civ,'UserData');
 if ~isfield(filecell,'nc')
-    filecell=set_civ_filenames(handles,box_test);%determine the list of output files expected from the GUI status
+    [ref_i,ref_j,errormsg]=find_ref_indices(handles);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',errormsg)
+        return
+    end
+    filecell=set_civ_filenames(handles,ref_i,ref_j,box_test);%determine the list of output files expected from the GUI status
 end
 
 if ~isequal(box_test(4:6),[0 0 0])

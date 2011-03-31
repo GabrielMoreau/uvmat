@@ -765,7 +765,11 @@ UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
 set(huvmat,'UserData',UvData)
 
 %% plot the field projected on the object and store in the corresponding figue
-ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
+[ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR', errormsg)
+    return
+end
 PlotParam=read_plot_param(PlotHandles);
 [PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
 
@@ -845,35 +849,46 @@ if ~isempty(answer)
     save(t,answer{1})
 end
 msgbox_uvmat('CONFIRMATION',[answer{1}  ' saved'])
-%------------------------------------------------------------------------
+
 %------------------------------------------------------------------------
 % --- Executes on slider movement.
 function z_slider_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
 Z_value=get(handles.z_slider,'Value');
 %rotation angles
-PlaneAngle(1)=str2num(get(handles.Phi,'String'));%first  angle in degrees
-PlaneAngle(2)=str2num(get(handles.Theta,'String'));%second  angle in degrees
-PlaneAngle(3)=str2num(get(handles.Psi,'String'));%second  angle in degrees
+PlaneAngle=[0 0 0]; 
+norm_plane=[0 0 1];
+cos_om=1;
+sin_om=0;
+
+PlaneAngle(1)=str2double(get(handles.Phi,'String'));%first  angle in degrees
+PlaneAngle(2)=str2double(get(handles.Theta,'String'));%second  angle in degrees
+PlaneAngle(3)=str2double(get(handles.Psi,'String'));%second  angle in degrees
+PlaneAngle=(pi/180)*PlaneAngle;
 om=norm(PlaneAngle);%norm of rotation angle in radians
-OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
-cos_om=cos(pi*om/180);
-sin_om=sin(pi*om/180);
-coeff=OmAxis(3)*(1-cos_om);
-%components of the unity vector norm_plane normal to the projection plane
-norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
-norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
-norm_plane(3)=OmAxis(3)*coeff+cos_om;
+if isequal(om,0)
+    norm_plane=[0 0 1];
+else
+    OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
+    cos_om=cos(om);
+    sin_om=sin(om);
+    coeff=OmAxis(3)*(1-cos_om);
+    %components of the unity vector norm_plane normal to the projection plane
+    norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
+    norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
+    norm_plane(3)=OmAxis(3)*coeff+cos_om;
+end
 
 %set new plane position and update graph
 set(handles.XObject,'String',num2str(norm_plane(1)*Z_value,4))
 set(handles.YObject,'String',num2str(norm_plane(2)*Z_value,4))
 set(handles.ZObject,'String',num2str(norm_plane(3)*Z_value,4))
 PLOT_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
+
 %------------------------------------------------------------------------
 % --- Executes on button press in HELP.
 function HELP_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 path_to_uvmat=which ('uvmat');% check the path of uvmat
 pathelp=fileparts(path_to_uvmat);
 helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');

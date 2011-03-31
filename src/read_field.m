@@ -30,7 +30,6 @@ function [Field,ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num)
 Field=[];
 ParamOut=[];
 errormsg='';
-%FieldName=ParamIn.FieldName;
 VelType=ParamIn.VelType;
 
 %% case of netcdf input file
@@ -41,12 +40,14 @@ if strcmp(FileType,'netcdf')  %read the first nc field
         GUIName=ParamIn.GUIName;
     end
     test_civx=0;
-    if ~strcmp(ParamOut.FieldName,'get_field...')% if get_field is not requested, look for Civx data
+    ParamIn
+    if ~strcmp(ParamIn.FieldName,'get_field...')% if get_field is not requested, look for Civx data
         FieldList=calc_field;%list of possible fields for Civx data
         ParamOut.ColorVar='';%default
         field_index=strcmp(ParamOut.FieldName,FieldList);%look for ParamOut.FieldName in the list
         if isempty(find(field_index,1))% ParamOut.FieldName is not in the list, check whether Civx data exist
-            Data=nc2struct(ObjectName,'ListGlobalAttribute','absolut_time_T0','civ');
+            'TESTnc1'
+            Data=nc2struct(ObjectName,'ListGlobalAttribute','absolut_time_T0','civ')
             if ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)
                 ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
                 ParamOut.ColorVar='ima_cor';
@@ -82,6 +83,9 @@ if strcmp(FileType,'netcdf')  %read the first nc field
         %% update  the get_field GUI
         set(hhget_field.inputfile,'String',ObjectName)
         set(hhget_field.list_fig,'Value',1)
+        if exist('num','var')&&~isnan(num)
+            set(hhget_field.TimeIndexValue,'String',num2str(num))
+        end
         funct_list=get(hhget_field.ACTION,'UserData');
         funct_index=get(hhget_field.ACTION,'Value');
         funct=funct_list{funct_index};%select  the current action in get_field, e;g. PLOT
@@ -106,9 +110,15 @@ if strcmp(FileType,'netcdf')  %read the first nc field
                 Tabchar=[{''};Tabchar];
             end
         end
-        set(hhget_field.attributes,'String',Tabchar);%update list of global attributes in get_field
+        %set(hhget_field.attributes,'String',Tabchar);%update list of global attributes in get_field
         ParamOut.CivStage=0;
         ParamOut.VelType=[];
+        if isfield(Field,'TimeIndex')
+            ParamOut.TimeIndex=Field.TimeIndex;
+        end
+        if isfield(Field,'TimeValue')
+            ParamOut.TimeValue=Field.TimeValue;
+        end
     end
     if test_civx
         ParamOut.FieldList=[{'image'};FieldList;{'get_field...'}];
@@ -126,15 +136,15 @@ else
             try
                 A=read(ObjectName,num);
                 FieldName='image';
-            catch
-                errormsg=lasterr;
+            catch ME
+                errormsg=ME.message;
                 return
             end
         case 'avi'
             try
                 mov=aviread(ObjectName,num);
-            catch
-                errormsg=lasterr;
+            catch ME
+                errormsg=ME.message;
                 return
             end
             A=frame2im(mov(1));
