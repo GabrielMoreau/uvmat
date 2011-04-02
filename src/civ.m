@@ -1797,13 +1797,14 @@ for ifile=1:nbfield
             %
             i_cmd=i_cmd+1;
             if isequal(civAll,0)
+                civ1_exe=CIV1_CMD(fullfile(Rootbat,Filebat),'',par_civ1,handles,sparam);%create the parameter file .civ1.cmx and set the execution string civ1_exe
 %                 if(isunix)
 %                      cmd=[cmd 'cp -f ' flname '.civ1.cmx ' flname '.cmx\n'];
 %                 else
 %                     flname=regexprep(flname,'\\','\\\\');
 %                     cmd=[cmd 'copy /Y "' flname '.civ1.cmx" "' flname '.cmx"\n'];
 %                 end
-                cmd=[cmd CIV1_CMD(fullfile(Rootbat,Filebat),'',par_civ1,handles,sparam) '\n'];
+                cmd=[cmd civ1_exe '\n'];
             else
                 civAllCmd=[civAllCmd ' civ1 '];
                 str=CIV1_CMD_Unified(fullfile(Rootbat,Filebat),'',par_civ1);
@@ -1973,14 +1974,15 @@ for ifile=1:nbfield
             end
             i_cmd=i_cmd+1;
             flname=fullfile(Rootbat,Filebat);
-            cmd_CIV2=CIV2_CMD(flname,[],par_civ2,sparam);%creates the cmx file [fullfile(Rootbat,Filebat) '.civ2.cmx]
+            
             if isequal(civAll,0)
-                if(isunix)
-                     cmd=[cmd 'cp -f ' flname '.civ2.cmx ' flname '.cmx\n' cmd_CIV2 '\n'];
-                else
-                    flname=regexprep(flname,'\\','\\\\');
-                    cmd=[cmd 'copy /Y "' flname '.civ2.cmx" "' flname '.cmx"\n' cmd_CIV2 '\n'];
-                end
+                cmd_CIV2=CIV2_CMD(flname,[],par_civ2,sparam);%creates the cmx file [fullfile(Rootbat,Filebat) '.civ2.cmx]
+%                 if(isunix)
+                 cmd=[cmd cmd_CIV2 '\n'];
+%                 else
+%                     flname=regexprep(flname,'\\','\\\\');
+%                     cmd=[cmd 'copy /Y "' flname '.civ2.cmx" "' flname '.cmx"\n' cmd_CIV2 '\n'];
+%                 end
             else
                 civAllCmd=[civAllCmd ' civ2 '];
                 str=CIV2_CMD_Unified(flname,'',par_civ2);
@@ -4078,7 +4080,7 @@ if isequal(par.Dt,'0')
 end
 par.filename_ima_a=regexprep(par.filename_ima_a,'.png','');
 par.filename_ima_b=regexprep(par.filename_ima_b,'.png','');
-fid=fopen([filename '.cmx'],'w');
+fid=fopen([filename '.civ1.cmx'],'w');
 fprintf(fid,['##############   CMX file' '\n' ]);
 fprintf(fid,   ['FirstImage ' regexprep(par.filename_ima_a,'\\','\\\\') '\n' ]);% for windows compatibility
 fprintf(fid,   ['LastImage  ' regexprep(par.filename_ima_b,'\\','\\\\') '\n' ]);% for windows compatibility
@@ -4115,21 +4117,20 @@ fclose(fid);
 % cmd_CIV1=regexprep(cmd_CIV1,'\\','\\\\');
 % namelog=regexprep(namelog,'\\','\\\\');
 if(isunix)
-%     filename
-%     namelog
-%     
-%     [Rootbat,Filebat,extbat]=fileparts(namelog);
-%     ncName=fullfile(Rootbat,[ Filebat '.nc']);
-    cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
+    cmd_CIV1=['cp -f ' filename '.civ1.cmx ' filename '.cmx\n'];
+    cmd_CIV1=[cmd_CIV1 sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
     cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.log' ' ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.nc'];%rename .log as .civ1.log and set the netcdf result file for group user writting
-    cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.cmx' ' ' filename '.civ1.cmx' '\n'];%rename .cmx as .civ1.cmx
+   % cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.cmx' ' ' filename '.civ1.cmx' '\n'];%rename .cmx as .civ1.cmx
 else %Windows system
+                    flname=regexprep(flname,'\\','\\\\');
+%                     cmd=[cmd 'copy /Y "' flname '.civ1.cmx" "' flname '.cmx"\n'];
     filename=regexprep(filename,'\\','\\\\');
+    cmd_CIV1=['copy /Y "' filename '.civ1.cmx" "' filename '.cmx"\n'];% copy the .civ1.cmx parameter file to .cmx
     cmd_CIV1=['"' sparam.Civ1Bin '" -f "' filename '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
     cmd_CIV1=regexprep(cmd_CIV1,'\\','\\\\');
     namelog=regexprep(namelog,'\\','\\\\');
-    cmd_CIV1=[cmd_CIV1 '\n' 'copy /Y "' filename '.log' '" "' filename '.civ1.log"']; 
-    cmd_CIV1=[cmd_CIV1 '\n' 'copy /Y "' filename '.cmx' '" "' filename '.civ1.cmx"'];
+    cmd_CIV1=[cmd_CIV1 '\n' 'copy /Y "' filename '.log' '" "' filename '.civ1.log"']; %preserve the log file as .civ1.log
+  %  cmd_CIV1=[cmd_CIV1 '\n' 'copy /Y "' filename '.cmx' '" "' filename '.civ1.cmx"'];
 end
 
 %------------------------------------------------------------------------
@@ -4273,22 +4274,18 @@ fprintf(fid, ['ImageUsedBefore ' regexprep(par.filename_nc1,'\\','\\\\') '\n']);
 fclose(fid);
 
 if(isunix)
-%         cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
-%     cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.log' ' ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.nc'];
-%     cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.cmx' ' ' filename '.civ1.cmx' '\n'];%rename .cmx as .civ1.cmx, the result file is named [filename '.nc'] by CIVx
-    
-    cmd_CIV2=[sparam.Civ2Bin ' -f ' filename  '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
-    cmd_CIV2=[cmd_CIV2 '\n' 'mv ' filename '.log' ' ' filename '.civ2.log' '\n' 'chmod g+w ' filename '.nc'];
-    cmd_CIV2=[cmd_CIV2 '\n' 'mv ' filename '.cmx' ' ' filename '.civ2.cmx' '\n'];%rename .cmx as .civ2.cmx, the result file is named [filename '.nc'] by CIVx
-%     [Rootbat,Filebat,extbat]=fileparts(namelog);
-%     ncName=fullfile(Rootbat,[ Filebat '.nc']);
-%    cmd_CIV2=[cmd_CIV2 '\n' 'mv ' namelog  ' ' regexprep(namelog,'\.log','') '.civ2.log' '\n' 'chmod g+w ' ncName];
+    cmd_CIV2=['cp -f ' filename '.civ2.cmx ' filename '.cmx\n'];
+    cmd_CIV2=[cmd_CIV2 sparam.Civ2Bin ' -f ' filename  '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
+    cmd_CIV2=[cmd_CIV2 '\n' 'mv ' filename '.log' ' ' filename '.civ2.log' '\n' 'chmod g+w ' filename '.nc'];%preserve the log file as .civ2.log
+%    cmd_CIV2=[cmd_CIV2 '\n' 'mv ' filename '.cmx' ' ' filename '.civ2.cmx' '\n'];%rename .cmx as .civ2.cmx, the result file is named [filename '.nc'] by CIVx
+
 else 
     filename=regexprep(filename,'\\','\\\\');
-    cmd_CIV2=['"' sparam.Civ2Bin '" -f "' filename  '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
+    cmd_CIV2=['copy /Y "' filename '.civ2.cmx" "' filename '.cmx"\n'];
+    cmd_CIV2=[cmd_CIV2 '"' sparam.Civ2Bin '" -f "' filename  '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
     cmd_CIV2=regexprep(cmd_CIV2,'\\','\\\\');
     cmd_CIV2=[cmd_CIV2 '\n' 'copy /Y "' filename '.log' '" "' filename '.civ2.log"'];
-     cmd_CIV2=[cmd_CIV2 '\n' 'copy /Y "' filename '.cmx' '" "' filename '.civ2.cmx"'];
+ %    cmd_CIV2=[cmd_CIV2 '\n' 'copy /Y "' filename '.cmx' '" "' filename '.civ2.cmx"'];
 end
 
 
