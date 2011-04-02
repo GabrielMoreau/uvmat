@@ -1129,7 +1129,7 @@ elseif isequal(mode,'displacement')
     displ_pair={'Di=Dj=0'};
 end
 set(handles.list_pair_civ1,'String',displ_pair');
-ichoice=min(find(select));
+ichoice=find(select,1);
 if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
 initial=get(handles.list_pair_civ1,'Value');%initial choice of pair
 if initial>nbpair
@@ -1309,7 +1309,7 @@ elseif isequal(mode,'displacement')
     displ_pair={'Di=Dj=0'};
 end
 val=get(handles.list_pair_civ2,'Value');
-ichoice=min(find(select));
+ichoice=find(select,1);
 if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
 if get(handles.CIV2,'Value')==0 && get(handles.CIV1,'Value')==0 && get(handles.FIX1,'Value')==0 && get(handles.PATCH1,'Value')==0
     val=ichoice;% first valid pair proposed by default in the menu
@@ -1351,9 +1351,9 @@ if isequal(mode,'series(Di)')
     num1=first_i:incr_i:last_i;
     lastfield=str2double(get(handles.nb_field,'String'));
     if ~isnan(lastfield)
-        ind=find((num1-floor(index_pair/2)*ones(size(num1))>0)& ...
-            (num1+ceil(index_pair/2)*ones(size(num1))<=lastfield));
-        num1=num1(ind);
+        test_find=(num1-floor(index_pair/2)*ones(size(num1))>0)& ...
+            (num1+ceil(index_pair/2)*ones(size(num1))<=lastfield);
+        num1=num1(test_find);
     end
     set(handles.first_i,'String',num2str(num1(1)));
     set(handles.last_i,'String',num2str(num1(end)));
@@ -1364,9 +1364,9 @@ elseif isequal(mode,'series(Dj)')
     num_j=first_j:incr_j:last_j;
     lastfield2=str2double(get(handles.nb_field2,'String'));
     if ~isnan(lastfield2)
-        ind=find((num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
-            (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2));
-        num1=num_j(ind);
+        test_find=(num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
+            (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2);
+        num1=num_j(test_find);
     end
     set(handles.first_j,'String',num2str(num1(1)));
     set(handles.last_j,'String',num2str(num1(end)));
@@ -1389,9 +1389,9 @@ if isequal(mode,'series(Di)')
     num1=first_i:incr_i:last_i;
     lastfield=str2double(get(handles.nb_field,'String'));
     if ~isnan(lastfield)
-        ind=find((num1-floor(index_pair/2)*ones(size(num1))>0)& ...
-            (num1+ceil(index_pair/2)*ones(size(num1))<=lastfield));
-        num1=num1(ind);
+        test_find=(num1-floor(index_pair/2)*ones(size(num1))>0)& ...
+            (num1+ceil(index_pair/2)*ones(size(num1))<=lastfield);
+        num1=num1(test_find);
     end
     set(handles.first_i,'String',num2str(num1(1)));
     set(handles.last_i,'String',num2str(num1(end)));
@@ -1402,9 +1402,9 @@ elseif isequal(mode,'series(Dj)')
     num_j=first_j:incr_j:last_j;
     lastfield2=str2double(get(handles.nb_field2,'String'));
     if ~isnan(lastfield2)
-        ind=find((num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
-            (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2));
-        num1=num_j(ind);
+        test_find=(num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
+            (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2);
+        num1=num_j(test_find);
     end
     set(handles.first_j,'String',num2str(num1(1)));
     set(handles.last_j,'String',num2str(num1(end)));
@@ -1417,12 +1417,15 @@ function RUN_Callback(hObject, eventdata, handles)
 set(handles.RUN, 'Enable','Off')
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
 batch=0;
-launch_jobs(hObject, eventdata, handles,batch);
+errormsg=launch_jobs(hObject, eventdata, handles,batch);
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 
 % start status callback to visualise results
-if isfield(handles,'status') && ~isequal(get(handles.CivAll,'Value'),3)
+if ~isempty(errormsg)
+    display(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+elseif  isfield(handles,'status') && ~isequal(get(handles.CivAll,'Value'),3)
     set(handles.status,'Value',1);%suppress status display
     status_Callback(hObject, eventdata, handles)
 end
@@ -1434,20 +1437,24 @@ function BATCH_Callback(hObject, eventdata, handles)
 set(handles.BATCH, 'Enable','Off')
 set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])
 batch=1;
-launch_jobs(hObject, eventdata, handles, batch)
+errormsg=launch_jobs(hObject, eventdata, handles, batch);
 set(handles.BATCH, 'Enable','On')
 set(handles.BATCH,'BackgroundColor',[1 0 0])
 
 % start status callback to visualise results
-if isfield(handles,'status')
-set(handles.status,'Value',1);%suppress status display
-status_Callback(hObject, eventdata, handles)
+if ~isempty(errormsg)
+    display(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+elseif isfield(handles,'status')
+    set(handles.status,'Value',1);%suppress status display
+    status_Callback(hObject, eventdata, handles)
 end
 
 %------------------------------------------------------------------------
 % --- Lauch command called by RUN and BATCH: remote processing
-function launch_jobs(hObject, eventdata, handles, batch)
+function errormsg=launch_jobs(hObject, eventdata, handles, batch)
 %-----------------------------------------------------------------------
+errormsg='';%default
 %% check the selected list of operations:
 operations={'CIV1','FIX1','PATCH1','CIV2','FIX2','PATCH2'};
 box_test(1)=get(handles.CIV1,'Value');
@@ -1458,14 +1465,14 @@ box_test(5)=get(handles.FIX2,'Value');
 box_test(6)=get(handles.PATCH2,'Value');
 index_first=find(box_test==1,1);
 if isempty(index_first)
-    msgbox_uvmat('ERROR','no selected operation')
+    errormsg='no selected operation';
     return
 end
 index_last=find(box_test==1,1,'last');
 box_used=box_test(index_first : index_last);
 [box_missing,ind_missing]=min(box_used);
 if isequal(box_missing,0); %there is a missing step in the sequence of operations
-    msgbox_uvmat('ERROR',['missing' cell2mat(operations(ind_missing))]);
+    errormsg=['missing' cell2mat(operations(ind_missing))];
     return
 end
 
@@ -1505,7 +1512,6 @@ end
 display('checking the files...')
 [ref_i,ref_j,errormsg]=find_ref_indices(handles);
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',errormsg)
     return
 end
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc]=...
@@ -1529,10 +1535,11 @@ if batch
     if isfield(s,'BatchParam')
         sparam=s.BatchParam;
         if ~ismember(sparam.BatchMode,{'sge'})
-            msgbox_uvmat('ERROR',['batch mode ' sparam.BatchMode ' not supported by UVMAT'])
+            errormsg=['batch mode ' sparam.BatchMode ' not supported by UVMAT'];
+            return
         end
     else
-        msgbox_uvmat('ERROR','no batch civ binaries defined in PARAM.xml')
+        errormsg='no batch civ binaries defined in PARAM.xml';
         return
     end
     if isfield(sparam,'BatchMode')
@@ -1549,6 +1556,7 @@ if batch
             'SelectionMode','single',...
             'ListString',str,'ListSize',[200 200],'Name','job priority','InitialValue',3);
         if isequal(v,0) % to handle Cancel button and figure close,
+            errormsg='job cancelled';
             return % a better way should be create
         end
     else
@@ -1576,7 +1584,6 @@ if civAll && isfield(sparam,'CivBin')
 end
 if isfield(sparam,'Civ1Bin')
     Civ1Bin=sparam.Civ1Bin;
-    which(Civ1Bin)
     if ~exist(Civ1Bin,'file')||~isempty(which(Civ1Bin))% if path defined as relative to uvmat
         sparam.Civ1Bin=fullfile(path_UVMAT,Civ1Bin);
         if ~exist(sparam.Civ1Bin,'file')
@@ -1790,13 +1797,13 @@ for ifile=1:nbfield
             %
             i_cmd=i_cmd+1;
             if isequal(civAll,0)
-                if(isunix)
-                     cmd=[cmd 'cp -f ' flname '.civ1.cmx ' flname '.cmx\n'];
-                else
-                    flname=regexprep(flname,'\\','\\\\');
-                    cmd=[cmd 'copy /Y "' flname '.civ1.cmx" "' flname '.cmx"\n'];
-                end
-                cmd=[cmd CIV1_CMD(fullfile(Rootbat,Filebat),'',par_civ1,handles,sparam) '\n']
+%                 if(isunix)
+%                      cmd=[cmd 'cp -f ' flname '.civ1.cmx ' flname '.cmx\n'];
+%                 else
+%                     flname=regexprep(flname,'\\','\\\\');
+%                     cmd=[cmd 'copy /Y "' flname '.civ1.cmx" "' flname '.cmx"\n'];
+%                 end
+                cmd=[cmd CIV1_CMD(fullfile(Rootbat,Filebat),'',par_civ1,handles,sparam) '\n'];
             else
                 civAllCmd=[civAllCmd ' civ1 '];
                 str=CIV1_CMD_Unified(fullfile(Rootbat,Filebat),'',par_civ1);
@@ -1906,7 +1913,7 @@ for ifile=1:nbfield
         
         if box_test(4)==1 || box_test(5)==1 || box_test(6)==1
             filename_cmx=filecell.nc.civ2{ifile,j};%output netcdf file
-            filename_cmx([end-1:end+1])=[ 'cmx'];%name of cmx file
+            filename_cmx(end-1:end+1)='cmx';%name of cmx file
         end
         
         if box_test(4)==1
@@ -1918,7 +1925,7 @@ for ifile=1:nbfield
             par_civ2.term_a=num2stra(num_a_civ2(j),nom_type_nc);
             par_civ2.term_b=num2stra(num_b_civ2(j),nom_type_nc);
             par_civ2.filename_nc1=filecell.nc.civ1{ifile,j};
-            par_civ2.filename_nc1([end-2:end])=[]; % remove '.nc'
+            par_civ2.filename_nc1(end-2:end)=[]; % remove '.nc'
             test_mask=get(handles.get_mask_civ2,'Value');
             if test_mask==0
                 par_civ2.maskname='noFile use default';
@@ -2159,7 +2166,7 @@ end
 
 if ~batch && ~isequal(get(handles.CivAll,'Value'),3)
     [Rootbat,Filebat,extbat]=fileparts(filename_bat);
-    filename_superbat=fullfile(Rootbat,['job_list.bat']);
+    filename_superbat=fullfile(Rootbat,'job_list.bat');
     fid=fopen(filename_superbat,'w');
     fprintf(fid,super_cmd');
     fclose(fid);
@@ -2360,8 +2367,8 @@ if box_test(5)==1% fix2 performed
         first_j=str2double(get(handles.first_j,'String'));
         last_j=str2double(get(handles.last_j,'String'));
         incr_j=str2double(get(handles.incr_j,'String'));
-        num_i_ref=[first_i:incr_i:last_i];
-        num_j_ref=[first_j:incr_j:last_j];
+        num_i_ref=first_i:incr_i:last_i;
+        num_j_ref=first_j:incr_j:last_j;
         if isequal(mode,'displacement')
             num_i1=num_i_ref;
             num_i2=num_i_ref;
@@ -2919,7 +2926,7 @@ if ~isequal(ext_ima,'.png')
         close(h)
     end
     if box_test(4)==1 %if civ2 is performed
-        h = waitbar(0,['copy images to the .png format for civ2']);% display a wait bar
+        h = waitbar(0,'copy images to the .png format for civ2');% display a wait bar
         for ifile=1:nbfield
             waitbar(ifile/nbfield);
             for j=1:nbslice
@@ -2968,7 +2975,7 @@ if isequal (mode,'series(Di)')
     num2_civ1=ref_i+ceil(index_civ1/2)*ones(size(ref_i));
     num_a_civ1=ref_j;
     num_b_civ1=ref_j;
-    num1_civ2=ref_i-floor(index_civ2/2)*ones(size(ref_i));;
+    num1_civ2=ref_i-floor(index_civ2/2)*ones(size(ref_i));
     num2_civ2=ref_i+ceil(index_civ2/2)*ones(size(ref_i));
     num_a_civ2=ref_j;
     num_b_civ2=ref_j;   
@@ -3285,7 +3292,7 @@ else
     elseif get(handles.compare,'Value')>1 & ~isequal(mask_displ,'no mask')% look for the second mask series
         filebase_a=get(handles.RootName_1,'String');
         [nbslice_a, flag_mask_a]=get_mask(filebase_a,handles);
-        if isequal(flag_mask_a,0) | ~isequal(nbslice_a,nbslice)
+        if isequal(flag_mask_a,0) || ~isequal(nbslice_a,nbslice)
             mask_displ='no mask';
         end
     end
@@ -3329,7 +3336,7 @@ else
     elseif get(handles.compare,'Value')>1 & ~isequal(mask_displ,'no mask')% look for the second mask series
         filebase_a=get(handles.RootName_1,'String');
         [nbslice_a, flag_mask_a]=get_mask(filebase_a,handles);
-        if isequal(flag_mask_a,0) | ~isequal(nbslice_a,nbslice)
+        if isequal(flag_mask_a,0) || ~isequal(nbslice_a,nbslice)
             mask_displ='no mask';
         end
     end
@@ -3370,7 +3377,7 @@ else
     elseif get(handles.compare,'Value')>1 & ~isequal(mask_displ,'no mask')% look for the second mask series
         filebase_a=get(handles.RootName_1,'String');
         [nbslice_a, flag_mask_a]=get_mask(filebase_a,handles);
-        if isequal(flag_mask_a,0) | ~isequal(nbslice_a,nbslice)
+        if isequal(flag_mask_a,0) || ~isequal(nbslice_a,nbslice)
             mask_displ='no mask';
         end
     end
@@ -3602,7 +3609,7 @@ if value
             '*.*', 'All Files (*.*)'}, ...
             'Pick a file',filebase);
         filegrid=fullfile(PathName,FileName);
-        if isempty(FileName)|isempty(PathName)|isequal(FileName,0)|~exist(filegrid,'file')
+        if isempty(FileName)||isempty(PathName)||isequal(FileName,0)||~exist(filegrid,'file')
             set(handles.browse_gridciv2,'Value',0);
             set(handles.grid_civ2,'string','');
             set(handles.dx_civ2,'Visible','on');
@@ -4155,7 +4162,7 @@ end
 if isequal(par.maskflag,'y')
     civ1.mask=par.maskname;
 end
-civ1.dt=1%par.Dt;
+civ1.dt=par.Dt;
 civ1.unit='pixel';
 civ1.absolut_time_T0=par.T0;
 civ1.pixcmx=par.pxcmx;
@@ -4386,19 +4393,30 @@ if test==2 || test==3
         set(handles.mode,'Visible','on')
     end
     
-    % open an image file with the browser
+    %% open an image file with the browser
     ind_opening=1;%default
     browse.incr_pair=[0 0]; %default
     oldfile=get(handles.RootName,'String');
-    menu={'*.xml;*.avi;*.AVI;*.nc','(*.xml,*.avi,*.nc)'; ...
-        '*.xml', '.xml files';'*.avi;*.AVI', '.avi files';'*.nc', '.nc files';...
-        '*.*', 'All Files (*.*)'};
-    [FileName, PathName, filtindex] = uigetfile( menu, 'Pick a file',oldfile);
+     menu={'*.xml;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.nc;', ' (*.xml,*.civ,*.png,*.jpg ,.tif, *.avi,*.nc)';
+       '*.xml',  '.xml files '; ...
+        '*.civ',  '.civ files '; ...
+        '*.png','.png image files'; ...
+        '*.jpg',' jpeg image files'; ...
+        '*.tif','.tif image files'; ...
+        '*.avi;*.AVI','.avi movie files'; ...
+        '*.nc','.netcdf files'; ...
+        '*.*',  'All Files (*.*)'};
+    [FileName, PathName, filtindex] = uigetfile( menu, 'Pick a file of the second series',oldfile);
     fileinput=[PathName FileName];%complete file name
     sizf=size(fileinput);
-    if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
+    if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
     [path,name,ext]=fileparts(fileinput);
     [path1]=fileparts(filebase);
+%     if isunix
+%         ['readlink ' path]
+%         [status,path]=system(['readlink ' path])
+%         [status,path1]=system(['readlink ' path1])% look for the true path in case of symbolic paths
+%     end
     if ~strcmp(path1,path)
         msgbox_uvmat('ERROR','The two  input image series must be in the same directory')
         return
@@ -4411,15 +4429,20 @@ if test==2 || test==3
     
     %check image extension
     if ~strcmp(ext,get(handles.ImaExt,'String'))
-        msgbox_uvmat('ERROR','The two  input image series must have the same extenion name')
+        msgbox_uvmat('ERROR','The two  input image series must have the same extension name')
         return
     end
     
-    %check image size
-    A=imread(fileinput);
-    npxy=get(handles.ImaExt,'UserData');
-    if ~isequal(npxy(1),size(A,1))|| ~isequal(npxy(2),size(A,2))
-        msgbox_uvmat('ERROR','The two input image series must have the same size')
+    %% check coincidence of image sizes
+    ref_i=get(handles.ref_i,'string');
+    ref_j=get(handles.ref_j,'string');
+    [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc]=set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);
+    A=imread(filecell.ima1.civ1{1});
+    A_1=imread(fileinput);
+    npxy=size(A);
+    npxy_1=size(A_1);
+    if ~isequal(size(A),size(A_1))
+        msgbox_uvmat('ERROR','The two input image series do not have the same size')
         return
     end
 else
