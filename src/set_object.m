@@ -651,16 +651,6 @@ function closefcn(gcbo,eventdata,parent_button)
 huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
-%     set(hhuvmat.create,'Value',0)
-%     set(hhuvmat.create,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.LINE,'Value',0)
-%     set(hhuvmat.LINE,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.PATCH,'Value',0)
-%     set(hhuvmat.PATCH,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.PLANE,'Value',0)
-%     set(hhuvmat.PLANE,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-%     set(hhuvmat.VOLUME,'Value',0)
-%     set(hhuvmat.VOLUME,'BackgroundColor',[0 1 0])%put unactivated buttons to green
     set(hhuvmat.edit,'Value',0)
     set(hhuvmat.edit,'BackgroundColor',[0.7 0.7 0.7])%put unactivated buttons to gree
 end
@@ -685,9 +675,6 @@ IndexObj_1=get(hhuvmat.list_object_1,'Value');
 if isequal(get(hhuvmat.list_object_2,'Visible'),'on')
     IndexObj_2=get(hhuvmat.list_object_2,'Value');
     List2=get(hhuvmat.list_object_2,'String');
-    if IndexObj_2==length(List2)
-        IndexObj_2=[];% '...' selected
-    end
 else
     IndexObj_2=[];
 end
@@ -708,13 +695,13 @@ if strcmp(projview,'view_field')
     hview_field=findobj(allchild(0),'tag','view_field');
     if isempty(hview_field)
         hview_field=view_field;
-%     elseif strcmp(ObjectData.ProjMode,'none')||strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')
     end
     PlotHandles=guidata(hview_field);
     plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
 else
     PlotHandles=hhuvmat;
     plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
+
 end   
 
 %% naming the object
@@ -741,7 +728,7 @@ elseif ~get(hhuvmat.edit_object,'Value')%not in edit mode (new object created)
 end
 ListObject{IndexObj,1}=ObjectName;
 set(hhuvmat.list_object_1,'String',ListObject)
-set(hhuvmat.list_object_2,'String',[ListObject;{'...'}])
+set(hhuvmat.list_object_2,'String',ListObject)
 
 %% update the object plot and projection field
 if testnew 

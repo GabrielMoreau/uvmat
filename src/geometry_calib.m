@@ -1071,7 +1071,9 @@ if ~isempty(ObjectData.Coord)
         msgbox_uvmat('ERROR','the choice in menu_coord of uvmat must be '''', px or phys ')
     end
 end
-axes(hhuvmat.axes3)
+%axes(hhuvmat.axes3)
+set(0,'CurrentFigure',huvmat)
+set(huvmat,'CurrentAxes',hhuvmat.axes3)
 hh=findobj('Tag','calib_points');
 if  ~isempty(ObjectData.Coord) && isempty(hh)
     hh=line(ObjectData.Coord(:,1),ObjectData.Coord(:,2),'Color','m','Tag','calib_points','LineStyle','.','Marker','+');

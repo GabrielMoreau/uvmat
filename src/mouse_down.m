@@ -238,7 +238,7 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
         hset_object=findobj(allchild(0),'tag','set_object');
         if ~isempty(hset_object)
             sethandles=guidata(hset_object);
-            ObjectData=read_set_object(sethandles); 
+            ObjectData=read_set_object(sethandles); %read object features in the GUI set_object
             ObjectData.Coord=[]; %reset previous object coordinates
             ObjectData.Coord(1,1)=xy(1,1);
             ObjectData.Coord(1,2)=xy(1,2);
@@ -262,7 +262,7 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
                list_str{IndexObj}=object_name;
             end
             set(hhuvmat.list_object_1,'String',list_str)
-            list_str{end+1}='...';
+            %list_str{end+1}='...';
             set(hhuvmat.list_object_2,'String',list_str)
             if strcmp(fig_tag,'view_field')%we are in view_field plot
                   set(hhuvmat.list_object_1,'Value',IndexObj)% the projection field will be plotted in uvmat frame

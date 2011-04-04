@@ -2118,44 +2118,45 @@ for ifile=1:nbfield
             super_cmd=[super_cmd cmd_str '\n'];         
             disp(cmd_str);
         else       %run PIVlab if selected
-            image1=imread(par_civ1.filename_ima_a);
-            image2=imread(par_civ1.filename_ima_b);     
-            stepx=str2num(par_civ1.dx);
-            stepy=str2num(par_civ1.dy);
-            ibx2=ceil(str2num(par_civ1.ibx)/2);
-            iby2=ceil(str2num(par_civ1.iby)/2);
-            isx2=ceil(str2num(par_civ1.isx)/2);
-            isy2=ceil(str2num(par_civ1.isy)/2);
-            shiftx=str2num(par_civ1.shiftx);
-            shifty=str2num(par_civ1.shifty);
-%             ibx=2*ibx2-1;%ibx and iby odd, reduced by 1 if even
-%             iby=2*iby2-1;
-            miniy=max(1+isy2-shifty,1+iby2);
-            minix=max(1+isx2-shiftx,1+ibx2);
-            maxiy=min(size(image1,1)-isy2-shifty,size(image1,1)-iby2); 
-            maxix=min(size(image1,2)-isx2-shiftx,size(image1,2)-ibx2); 
-%             maxix=stepx*(floor(size(image1_roi,2)/stepx))-(2*ibx2-2)+ibx2;
-            [GridX,GridY]=meshgrid(miniy:stepy:maxiy,minix:stepx:maxix);
-            PointCoord(:,1)=reshape(GridX,[],1);
-            PointCoord(:,2)=reshape(GridY,[],1);
-               [xtable ytable utable vtable ctable typevector] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty,PointCoord, 1, []); 
-               Data.ListGlobalAttribute={'title','Time','Dt'};
-               Data.title='PIVlab';
-               Data.Time=str2double(par_civ1.T0);
-               Data.Dt=str2double(par_civ1.Dt);
-               Data.ListVarName={'X','Y','U','V','C','FF'};%  cell array containing the names of the fields to record
-               Data.VarDimName={'nbvec','nbvec','nbvec','nbvec','nbvec','nbvec'};
-                Data.VarAttribute{1}.Role='coord_x';
-            Data.VarAttribute{2}.Role='coord_y';
-            Data.VarAttribute{3}.Role='vector_x';
-            Data.VarAttribute{4}.Role='vector_y';
-            Data.VarAttribute{5}.Role='errorflag';
-            Data.X=reshape(xtable,[],1);
-            Data.Y=reshape(ytable,[],1);
-            Data.U=reshape(utable,[],1);
-            Data.V=reshape(vtable,[],1);
-            Data.C=reshape(ctable,[],1);
-            Data.FF=reshape(~typevector,[],1);
+            Data=civ_uvmat(par_civ1);
+%             image1=imread(par_civ1.filename_ima_a);
+%             image2=imread(par_civ1.filename_ima_b);     
+%             stepx=str2num(par_civ1.dx);
+%             stepy=str2num(par_civ1.dy);
+%             ibx2=ceil(str2num(par_civ1.ibx)/2);
+%             iby2=ceil(str2num(par_civ1.iby)/2);
+%             isx2=ceil(str2num(par_civ1.isx)/2);
+%             isy2=ceil(str2num(par_civ1.isy)/2);
+%             shiftx=str2num(par_civ1.shiftx);
+%             shifty=str2num(par_civ1.shifty);
+% %             ibx=2*ibx2-1;%ibx and iby odd, reduced by 1 if even
+% %             iby=2*iby2-1;
+%             miniy=max(1+isy2-shifty,1+iby2);
+%             minix=max(1+isx2-shiftx,1+ibx2);
+%             maxiy=min(size(image1,1)-isy2-shifty,size(image1,1)-iby2); 
+%             maxix=min(size(image1,2)-isx2-shiftx,size(image1,2)-ibx2); 
+%             [GridX,GridY]=meshgrid(minix:stepx:maxix,miniy:stepy:maxiy);
+%             PointCoord(:,1)=reshape(GridX,[],1);
+%             PointCoord(:,2)=reshape(GridY,[],1);
+%             % caluclate velocity data (y and v in indices, reverse to y component)
+%             [xtable ytable utable vtable ctable typevector] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty,PointCoord, 1, []); 
+%                Data.ListGlobalAttribute={'title','Time','Dt'};
+%                Data.title='PIVlab';
+%                Data.Time=str2double(par_civ1.T0);
+%                Data.Dt=str2double(par_civ1.Dt);
+%                Data.ListVarName={'X','Y','U','V','C','FF'};%  cell array containing the names of the fields to record
+%                Data.VarDimName={'nbvec','nbvec','nbvec','nbvec','nbvec','nbvec'};
+%                 Data.VarAttribute{1}.Role='coord_x';
+%             Data.VarAttribute{2}.Role='coord_y';
+%             Data.VarAttribute{3}.Role='vector_x';
+%             Data.VarAttribute{4}.Role='vector_y';
+%             Data.VarAttribute{5}.Role='errorflag';
+%             Data.X=reshape(xtable,[],1);
+%             Data.Y=reshape(size(image1,1)-ytable+1,[],1);
+%             Data.U=reshape(utable,[],1);
+%             Data.V=reshape(-vtable,[],1);
+%             Data.C=reshape(ctable,[],1);
+%             Data.FF=reshape(~typevector,[],1);
             errormsg=struct2nc(filecell.nc.civ1{ifile,j},Data);
             if isempty(errormsg)
                 display([filecell.nc.civ1{ifile,j} ' written'])
@@ -4288,7 +4289,47 @@ else
  %    cmd_CIV2=[cmd_CIV2 '\n' 'copy /Y "' filename '.cmx' '" "' filename '.civ2.cmx"'];
 end
 
+%------------------------------------------------------------------------
+% --- civ using pivlab
+function Data=civ_uvmat(par_civ1)
+%------------------------------------------------------------------------
+image1=imread(par_civ1.filename_ima_a);
+image2=imread(par_civ1.filename_ima_b);
+stepx=str2num(par_civ1.dx);
+stepy=str2num(par_civ1.dy);
+ibx2=ceil(str2num(par_civ1.ibx)/2);
+iby2=ceil(str2num(par_civ1.iby)/2);
+isx2=ceil(str2num(par_civ1.isx)/2);
+isy2=ceil(str2num(par_civ1.isy)/2);
+shiftx=str2num(par_civ1.shiftx);
+shifty=str2num(par_civ1.shifty);
+miniy=max(1+isy2-shifty,1+iby2);
+minix=max(1+isx2-shiftx,1+ibx2);
+maxiy=min(size(image1,1)-isy2-shifty,size(image1,1)-iby2);
+maxix=min(size(image1,2)-isx2-shiftx,size(image1,2)-ibx2);
+[GridX,GridY]=meshgrid(minix:stepx:maxix,miniy:stepy:maxiy);
+PointCoord(:,1)=reshape(GridX,[],1);
+PointCoord(:,2)=reshape(GridY,[],1);
 
+% caluclate velocity data (y and v in indices, reverse to y component)
+[xtable ytable utable vtable ctable typevector] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty,PointCoord, 1, []);
+Data.ListGlobalAttribute={'title','Time','Dt'};
+Data.title='PIVlab';
+Data.Time=str2double(par_civ1.T0);
+Data.Dt=str2double(par_civ1.Dt);
+Data.ListVarName={'X','Y','U','V','C','FF'};%  cell array containing the names of the fields to record
+Data.VarDimName={'nbvec','nbvec','nbvec','nbvec','nbvec','nbvec'};
+Data.VarAttribute{1}.Role='coord_x';
+Data.VarAttribute{2}.Role='coord_y';
+Data.VarAttribute{3}.Role='vector_x';
+Data.VarAttribute{4}.Role='vector_y';
+Data.VarAttribute{5}.Role='errorflag';
+Data.X=reshape(xtable,[],1);
+Data.Y=reshape(size(image1,1)-ytable+1,[],1);
+Data.U=reshape(utable,[],1);
+Data.V=reshape(-vtable,[],1);
+Data.C=reshape(ctable,[],1);
+Data.FF=reshape(~typevector,[],1);
 
 %------------------------------------------------------------------------
 % --- Executes on button press in HELP.
@@ -4637,30 +4678,45 @@ if test_civ1
     Data.ny=[size(Data.A,1) 1];
     Data.nx=[1 size(Data.A,2)];
     par_civ1=read_param_civ1(handles,filecell.ima1.civ1{1});
-    
-            stepx=str2num(par_civ1.dx);
-            stepy=str2num(par_civ1.dy);
-            ibx2=ceil(str2num(par_civ1.ibx)/2);
-            iby2=ceil(str2num(par_civ1.iby)/2);
-            isx2=ceil(str2num(par_civ1.isx)/2);
-            isy2=ceil(str2num(par_civ1.isy)/2);
-            shiftx=str2num(par_civ1.shiftx);
-            shifty=str2num(par_civ1.shifty);
-%             ibx=2*ibx2-1;%ibx and iby odd, reduced by 1 if even
-%             iby=2*iby2-1;
-            miniy=max(1+isy2-shifty,1+iby2);
-            minix=max(1+isx2-shiftx,1+ibx2);
-            maxiy=min(size(image1,1)-isy2-shifty,size(image1,1)-iby2); 
-            maxix=min(size(image1,2)-isx2-shiftx,size(image1,2)-ibx2); 
-%             maxix=stepx*(floor(size(image1_roi,2)/stepx))-(2*ibx2-2)+ibx2;
-            [GridX,GridY]=meshgrid(miniy:stepy:maxiy,minix:stepx:maxix);
-            PointCoord(:,1)=reshape(GridX,[],1);
-            PointCoord(:,2)=reshape(GridY,[],1);
-    hh=view_field(Data);
-    set(0,'CurrentFigure',hh)
-    plot(PointCoord(:,2),PointCoord(:,1),'+')
-    ViewData=get(hh,'UserData');
+    par_civ1.filename_ima_a=filecell.ima1.civ1{1};
+    par_civ1.filename_ima_b=filecell.ima2.civ1{1};
+    par_civ1.T0=0;
+    par_civ1.Dt=1;
+    Data=civ_uvmat(par_civ1);
+%     stepx=str2num(par_civ1.dx);
+%     stepy=str2num(par_civ1.dy);
+%     ibx2=ceil(str2num(par_civ1.ibx)/2);
+%     iby2=ceil(str2num(par_civ1.iby)/2);
+%     isx2=ceil(str2num(par_civ1.isx)/2);
+%     isy2=ceil(str2num(par_civ1.isy)/2);
+%     shiftx=str2num(par_civ1.shiftx);
+%     shifty=str2num(par_civ1.shifty);
+% %             ibx=2*ibx2-1;%ibx and iby odd, reduced by 1 if even
+% %             iby=2*iby2-1;
+%     miniy=max(1+isy2-shifty,1+iby2)
+%     minix=max(1+isx2-shiftx,1+ibx2)
+%     maxiy=min(size(Data.A,1)-isy2-shifty,size(Data.A,1)-iby2) 
+%     maxix=min(size(Data.A,2)-isx2-shiftx,size(Data.A,2)-ibx2) 
+% %             maxix=stepx*(floor(size(image1_roi,2)/stepx))-(2*ibx2-2)+ibx2;
+%     [GridX,GridY]=meshgrid(minix:stepx:maxix,miniy:stepy:maxiy);
+%     PointCoord(:,1)=reshape(GridX,[],1);
+%     PointCoord(:,2)=reshape(GridY,[],1);
+    Data.ListVarName=[Data.ListVarName {'ny','nx','A'}];
+    Data.VarDimName=[Data.VarDimName {'ny','nx',{'ny','nx'}}];
+    Data.A=imread(filecell.ima1.civ1{1});
+    Data.ny=[size(Data.A,1) 1];
+    Data.nx=[1 size(Data.A,2)];
+    hview_field=view_field(Data);
+    set(0,'CurrentFigure',hview_field)
+    hhview_field=guihandles(hview_field);
+    set(hview_field,'CurrentAxes',hhview_field.axes3)
+    %hpoints=line(PointCoord(:,1),PointCoord(:,2),'Color','y','LineStyle','.','Marker','*','LineWidth',4,'Tag','grid_points');
+    ViewData=get(hview_field,'UserData');
+    ViewData.CivHandle=handles.civ;% indicate the handle of the civ GUI in view_field
     ViewData.axes3.B=imread(filecell.ima2.civ1{1});%store the second image in the UserData of the GUI view_field
+    ViewData.axes3.X=Data.X; %keep the set of points in memeory
+    ViewData.axes3.Y=Data.Y;
+    set(hview_field,'UserData',ViewData)
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
     if isempty(corrfig)
         corrfig=figure;
@@ -4668,7 +4724,6 @@ if test_civ1
         set(corrfig,'name','image correlation')
         set(corrfig,'DeleteFcn',{@closeview_field})%
     end
-    set(hh,'UserData',ViewData)
 else
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
     if ~isempty(corrfig)

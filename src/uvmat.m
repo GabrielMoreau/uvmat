@@ -301,7 +301,7 @@ fct_handle=fct_handle(testexist==1);
 menu_str=[menu_str;{'more...'}];
 set(handles.transform_fct,'String',menu_str)
 set(handles.transform_fct,'UserData',fct_handle)% store the list of path in UserData of ACTION
-set(handles.uvmat,'UserData',UvData)
+
 
 %% check the path and date of modification of all functions in uvmat
 path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
@@ -323,8 +323,12 @@ if exist('input','var')
         if isfield(input,'InputFile')
             inputfile=input.InputFile;
         end
-        if isfield(Field,'TimeIndex')
-            set(handles.i1,num2str(Field.TimeIndex))
+        if isfield(input,'TimeIndex')
+            set(handles.i1,num2str(input.TimeIndex))
+        end
+        if isfield(input,'FieldsString')
+%             set(handles.Fields,'Value',1)
+            UvData.FieldsString=input.FieldsString;
         end
     elseif ischar(input)% file name introduced as input
            inputfile=input;
@@ -334,16 +338,11 @@ if exist('input','var')
             msgbox_uvmat('ERROR','bad input for uvmat: file name, structure or numerical matrix accepted')
             return
         end
-        Field.ListVarName={'A','coord_y','coord_x'};
-        Field.VarDimName={{'coord_y','coord_x'},'cord_y','coord_x'};
-        Field.A=input;
-        Field.coord_x=[0.5 size(input,2)-0.5];
-        Field.coord_y=[size(input,1)-0.5 0.5];
-    end
-    if ~isempty(inputfile)
-        %%%%% display the input field %%%%%%%
-        display_file_name(hObject, eventdata, handles,inputfile)
-        %%%%%%%
+        UvData.Field.ListVarName={'A','coord_y','coord_x'};
+        UvData.Field.VarDimName={{'coord_y','coord_x'},'cord_y','coord_x'};
+        UvData.Field.A=input;
+        UvData.Field.coord_x=[0.5 size(input,2)-0.5];
+        UvData.Field.coord_y=[size(input,1)-0.5 0.5];
         testinputfield=1;
     end
 else
@@ -359,6 +358,13 @@ else
                {date_str};errormsg]);
        end
    end
+end
+set(handles.uvmat,'UserData',UvData)
+if ~isempty(inputfile)
+    %%%%% display the input field %%%%%%%
+    display_file_name(hObject, eventdata, handles,inputfile)
+    %%%%%%%
+    testinputfield=1;
 end
 
 %% plot input field if exists
@@ -855,7 +861,7 @@ end
 UvData.TimeUnit=TimeUnit;
 UvData.XmlData=XmlData;
 UvData.NewSeries=1;
-set(handles.uvmat,'UserData',UvData)
+
 
 %display warning message
 if ~isequal(warntext,'')
@@ -866,9 +872,14 @@ end
 
 if ~testima
     testcivx=0;
-    hget_field=findobj('Name','get_field');
-%     if isequal(FileExt,'.nc')||isequal(FileExt,'.cdf')
-    if isempty(hget_field)
+    % hget_field=findobj('Name','get_field');
+    %     if isequal(FileExt,'.nc')||isequal(FileExt,'.cdf')
+    if isfield(UvData,'FieldsString') && isequal(UvData.FieldsString,{'get_field...'})% field menu defined as input (from get_field)
+        set(handles.Fields,'Value',1)
+        set(handles.Fields,'String',{'get_field...'})
+        UvData=rmfield(UvData,'FieldsString');
+    else
+        %if isempty(hget_field)
         Data=nc2struct(FileName,'ListGlobalAttribute','absolut_time_T0','civ');
         if ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)%if the new input is Civx
             FieldList=calc_field;
@@ -877,24 +888,26 @@ if ~testima
             col_vec=FieldList;
             col_vec(1)=[];%remove 'velocity' option for vector color (must be a scalar)
             testcivx=1;
-        end 
-    else
-         hhget_field=guidata(hget_field);
-        if ~strcmp(get(hhget_field.inputfile,'String'),FileName)%delete any existing get_field GUI with file name different than the input
-            delete(hget_field)
         end
-    end
-    if ~testcivx
+        %     else
+        %          hhget_field=guidata(hget_field);
+        %         if ~strcmp(get(hhget_field.inputfile,'String'),FileName)%delete any existing get_field GUI with file name different than the input
+        %             delete(hget_field)
+        %         end
+        %     end
+        if ~testcivx
             set(handles.Fields,'Value',1) % set menu to 'get_field...
             set(handles.Fields,'String',{'get_field...'})
-            col_vec={'get_field...'}; 
-    end       
-    set(handles.col_vec,'String',col_vec)
-%     else
-%         msgbox_uvmat('ERROR',['invalid input file extension ' FileExt])
-%         return
-%     end
+            col_vec={'get_field...'};
+        end
+        set(handles.col_vec,'String',col_vec)
+        %     else
+        %         msgbox_uvmat('ERROR',['invalid input file extension ' FileExt])
+        %         return
+        %     end
+    end
 end
+set(handles.uvmat,'UserData',UvData)
 
 %% set index navigation options and refresh plots
 set(handles.RootPath,'BackgroundColor',[1 1 1])
@@ -2532,12 +2545,11 @@ elseif isfield(UvData,'Z')
         UvData.Object{1}.ZObject=UvData.ZIndex;
     end
 else
-    % create a default projection menuplane
-    %UvData.Object{1}.Style='none';%main plotting plane
-    UvData.Object{1}.ProjMode='projection';%main plotting plane
-    UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
-    set(handles.list_object_1,'Value',1);
-    set(handles.list_object_1,'String',{''});
+    % create a default projection
+%     UvData.Object{1}.ProjMode='projection';%main plotting plane
+%     UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
+%     set(handles.list_object_1,'Value',1);
+%     set(handles.list_object_1,'String',{''});
 end
 % if ~isfield(UvData.Object{1},'plotaxes')
 %     UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis 
@@ -2572,6 +2584,9 @@ PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on 
 
 % second projection object (view_field display)
 IndexObj_2=get(handles.list_object_2,'Value');%selected projection object for the second view
+if IndexObj_2==0
+    IndexObj_2=1;
+end
 if isequal(get(handles.list_object_2,'Visible'),'on') && IndexObj_2 <= numel(UvData.Object)&& ~isempty(UvData.Object{IndexObj_2})
     IndexObj(2)=IndexObj_2;
     view_field_handle=findobj(allchild(0),'tag','view_field');%handles of the view_field GUI
@@ -3948,9 +3963,9 @@ if isfield(UvData,'Object')
 end 
 list_object=get(handles.list_object_1,'String');
 set(handles.list_object_1,'Value',1)
-set(handles.list_object_1,'String',list_object(1))
+set(handles.list_object_1,'String',{''})
 set(handles.list_object_2,'Value',2)
-set(handles.list_object_2,'String',[list_object(1);{'...'}])
+set(handles.list_object_2,'String',{''})
 list_object_2_Callback(hObject, eventdata, handles)
 
 %delete mask if it is displayed 
@@ -4316,12 +4331,12 @@ function list_object_1_Callback(hObject, eventdata, handles)
 list_str=get(handles.list_object_1,'String');
 IndexObj=get(handles.list_object_1,'Value');
 str_1=list_str{IndexObj};
-val_2=get(handles.list_object_2,'Value');
-str_2=get(handles.list_object_2,'String');
-if isequal(val_2,IndexObj)% if the first selection is equal to the second, it will suppress the second
-    set(handles.list_object_2,'Value',numel(str_2))%select the end of the list ('...')
-    list_object_2_Callback(hObject, eventdata, handles)
-end
+% val_2=get(handles.list_object_2,'Value');
+% str_2=get(handles.list_object_2,'String');
+% if isequal(val_2,IndexObj)% if the first selection is equal to the second, it will suppress the second
+%     set(handles.list_object_2,'Value',numel(str_2))%select the end of the list ('...')
+%     list_object_2_Callback(hObject, eventdata, handles)
+% end
 update_object(handles,IndexObj,1,str_1)
 
 %------------------------------------------------------------------------
@@ -4330,7 +4345,7 @@ function list_object_2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 list_str=get(handles.list_object_2,'String');
 IndexObj=get(handles.list_object_2,'Value');
-if ischar(list_str) || strcmp(list_str{IndexObj},'...')
+if ischar(list_str) || isempty(list_str{IndexObj})% || strcmp(list_str{IndexObj},'...')
     hview_field=findobj(allchild(0),'Tag','view_field');
     if ~isempty(hview_field)
         delete(hview_field)
@@ -4385,7 +4400,7 @@ else
     end
     PlotHandles=guidata(hview_field);
 end
-plot_field(ProjData,PlotHandles.axes3,PlotHandles);
+%plot_field(ProjData,PlotHandles.axes3,PlotHandles);
 set(handles.uvmat,'UserData',UvData)
 hother=findobj('Tag','proj_object');%find all the proj objects
 for iobj=1:length(hother)
@@ -4669,8 +4684,7 @@ else
                 end
             end
         end
-    end
-    
+    end 
     %mask name
     RootPath=get(handles.RootPath,'String');
     RootFile=get(handles.RootFile,'String');
@@ -4686,7 +4700,8 @@ else
     imflag=flipdim(imflag,1);
 
     %display the mask
-    figure;
+    hfigmask=figure;
+    set(hfigmask,'Name','mask image')
     vec=linspace(0,1,256);%define a linear greyscale colormap
     map=[vec' vec' vec'];
     colormap(map)

@@ -732,7 +732,7 @@ huvmat=findobj(allchild(0),'Name','uvmat');
 if ~isempty(huvmat)
 hhuvmat=guidata(huvmat);
 list_object_2=get(hhuvmat.list_object_2,'String');
-set(hhuvmat.list_object_2,'Value',numel(list_object_2))%select the last value ('...')
+set(hhuvmat.list_object_2,'Value',1)%select the last value ('...')
 end
 delete(hObject)
 

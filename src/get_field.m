@@ -167,7 +167,6 @@ function inputfile_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 inputfile=get(handles.inputfile,'String');
 Field=nc2struct(inputfile,[]);% reads the  field description, without data
-Field.ListGlobalAttribute
 if isfield(Field,'Txt')
     msgbox_uvmat('ERROR',Field.Txt)
 else
@@ -834,7 +833,9 @@ if ~test_fig
     inputfile=get(handles.inputfile,'String');
     huvmat=findobj(allchild(0),'tag','uvmat');
     if isempty(huvmat)
-        uvmat(inputfile)
+        input.InputFile=inputfile;
+        input.FieldsString={'get_field...'};
+        uvmat(input)
     else
         set(huvmat,'Visible','on')%make uvmat visible (bugs can hide it in some cases)
         hhuvmat=guidata(huvmat);

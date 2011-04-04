@@ -1092,18 +1092,18 @@ if ~isempty(Data)
             YMax=max(AY);
         end
         if test_vec
-            XMin=[XMin min(vec_X)];
-            XMax=[XMax max(vec_X)];
-            YMin=[YMin min(vec_Y)];
-            YMax=[YMax max(vec_Y)];
+            XMin=min(XMin,min(vec_X));
+            XMax=max(XMax,max(vec_X));
+            YMin=min(YMin,min(vec_Y));
+            YMax=max(YMax,max(vec_Y));
         end
-        PlotParamOut.RangeX=[min(XMin) max(XMax)]; %range of x, to be stored in the user data of the plot axes
-        PlotParamOut.RangeY=[min(YMin) max(YMax)]; %range of x, to be stored in the user data of the plot axes
+        PlotParamOut.RangeX=[XMin XMax]; %range of x, to be stored in the user data of the plot axes
+        PlotParamOut.RangeY=[YMin YMax]; %range of x, to be stored in the user data of the plot axes
     if ~fix_lim
-        PlotParamOut.MinX=min(XMin);
-        PlotParamOut.MaxX=max(XMax);
-        PlotParamOut.MinY=min(YMin);
-        PlotParamOut.MaxY=max(YMax);
+        PlotParamOut.MinX=XMin;
+        PlotParamOut.MaxX=XMax;
+        PlotParamOut.MinY=YMin;
+        PlotParamOut.MaxY=YMax;
         if XMax>XMin
             set(haxes,'XLim',[XMin XMax]);% set x limits of frame in axes coordinates
         end

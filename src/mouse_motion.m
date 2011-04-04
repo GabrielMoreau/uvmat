@@ -28,6 +28,7 @@ if ~exist('handles','var')
     return
 end
 FigData=get(hObject,'UserData');
+
 if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is stored in UserData, its parent is the plotting axes of the rectangle
     currentfig=get(get(FigData,'parent'),'parent');
 else
@@ -47,11 +48,20 @@ if ~isempty(huvmat)
     test_edit_object=get(hhuvmat.edit_object,'Value');
     test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');
 end
-hciv=findobj(allchild(0),'tag','civ');%find the civ interface handle
-if ~isempty(hciv) && strcmp(get(currentfig,'tag'),'view_field')
-    hhciv=guidata(hciv);
-    test_piv =get(hhciv.TestCiv1,'Value');
+test_piv=0;
+if isfield(FigData,'CivHandle')
+    if ~ishandle(FigData.CivHandle)
+        delete(hObject)
+        return
+    end
+    hhciv=guidata(FigData.CivHandle);
+    test_piv=1;
 end
+% hciv=findobj(allchild(0),'tag','civ');%find the civ interface handle
+% if ~isempty(hciv) && strcmp(get(currentfig,'tag'),'view_field')
+%     hhciv=guidata(hciv);
+%     test_piv =get(hhciv.TestCiv1,'Value');
+% end
 
 %find the current axe 'haxes' and display the current mouse position or uicontrol tag
 text_displ_1='';
@@ -208,12 +218,17 @@ for ichild=1:length(hchild)
 %                     end
                     if test_piv 
                        par=civ('read_param_civ1',hhciv);
-                        if isfield(Field,'A')
-                            dx=str2double(par.dx);
-                            dy=str2double(par.dy);
-                            xround=x(1)+dx*round((xy(1,1)-x(1))/dx);% index x of pixel
-                            yround=y(1)+dy*round((xy(1,2)-y(1))/dy);% index y of pixel
-                        end
+%                        PointCoord=Field.X;
+                       [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
+%                        [dd,ind_y]=min(abs(Field.Y-xy(1,2)));
+                       xround=Field.X(ind_pt);
+                       yround=Field.Y(ind_pt);
+%                         if isfield(Field,'A')
+%                             dx=str2double(par.dx);
+%                             dy=str2double(par.dy);
+%                             xround=x(1)+dx*round((xy(1,1)-x(1))/dx);% index x of pixel
+%                             yround=y(1)+dy*round((xy(1,2)-y(1))/dy);% index y of pixel
+%                         end
                         % mark the correlation box with a rectangle
                         ibx2=floor((str2double(par.ibx)-1)/2);
                         iby2=floor((str2double(par.iby)-1)/2);
@@ -237,20 +252,21 @@ for ichild=1:length(hchild)
                             set(hhh,'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2])
                             set(hhhh,'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2])
                         end
-                        Asub=Field.A(yround-iby2:yround+iby2,xround-ibx2:xround+ibx2);%first sub-image
-                        Asub=reshape(Asub,[],1);%first sub-image reshaped as matlab vector
-                        rangx(1)=-(isx2-ibx2)+shiftx;
-                        rangx(2)=isx2-ibx2+shiftx;
-                        rangy(1)=-(isy2-iby2)-shifty;
-                        rangy(2)=(isy2-iby2)-shifty
-                        correl=zeros(rangy(2)-rangy(1)+1,rangx(2)-rangx(1)+1);
-                        for id=rangx(1):rangx(2)
-                            for jd=rangy(1):rangy(2)
-                                Bsub=Field.B(yround-iby2+jd:yround+iby2+jd,xround-ibx2+id:xround+ibx2+id);
-                                Bsub=reshape(Bsub,[],1);
-                                correl(jd-rangy(1)+1,id-rangx(1)+1)=corr(double(Asub),double(Bsub));
-                            end
-                        end
+                        [xtable ytable utable vtable ctable typevector result_conv] = pivlab (Field.A,Field.B,ibx2,iby2,isx2,isy2,shiftx,shifty,[xround yround], 1, []);
+%                         Asub=Field.A(yround-iby2:yround+iby2,xround-ibx2:xround+ibx2);%first sub-image
+%                         Asub=reshape(Asub,[],1);%first sub-image reshaped as matlab vector
+                         rangx(1)=-(isx2-ibx2)+shiftx;
+                         rangx(2)=isx2-ibx2+shiftx;
+                         rangy(1)=-(isy2-iby2)-shifty;
+                         rangy(2)=(isy2-iby2)-shifty;
+%                         correl=zeros(rangy(2)-rangy(1)+1,rangx(2)-rangx(1)+1);
+%                         for id=rangx(1):rangx(2)
+%                             for jd=rangy(1):rangy(2)
+%                                 Bsub=Field.B(yround-iby2+jd:yround+iby2+jd,xround-ibx2+id:xround+ibx2+id);
+%                                 Bsub=reshape(Bsub,[],1);
+%                                 correl(jd-rangy(1)+1,id-rangx(1)+1)=corr(double(Asub),double(Bsub));
+%                             end
+%                         end
                         %correl=uint8(63.5*correl+63.5);
                         hcorr=[];
                         if isfield(AxeData,'CurrentCorrImage')                        
@@ -263,15 +279,19 @@ for ichild=1:length(hchild)
                             corrfig=findobj(allchild(0),'tag','corrfig');
                             if ~isempty(corrfig)
                                 set(0,'CurrentFigure',corrfig(1))
-                                AxeData.CurrentCorrImage=imagesc(rangx,-rangy,correl,[0 1]);
+                                AxeData.CurrentCorrImage=imagesc(rangx,-rangy,result_conv,[0 1]);
+                                AxeData.CurrentVector=line([0 utable],[0 vtable],'Tag','vector');
+                                
                                 colorbar
                                 set(haxes,'UserData',AxeData)
                                 set(get(AxeData.CurrentCorrImage,'parent'),'YDir','normal')
                             end
                         else
-                            set(AxeData.CurrentCorrImage,'CData',correl)
+                           % set(AxeData.CurrentCorrImage,'CData',correl)
+                            set(AxeData.CurrentCorrImage,'CData',result_conv)
                             set(AxeData.CurrentCorrImage,'XData',rangx)
                             set(AxeData.CurrentCorrImage,'YData',-rangy)
+                            set(AxeData.CurrentVector,'XData',[0 utable],'YData',[0 -vtable])
                         end        
                     end
                 end

@@ -18,37 +18,35 @@
 % subpixfinder=1 or 2 controls the curve fitting of the image correlation
 % mask: =[] for no mask
 % roi: 4 element vector defining a region of interest: x position, y position, width, height, (in image indices), for the whole image, roi=[];
-function [xtable ytable utable vtable ctable typevector] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty, PointCoord, subpixfinder,mask)
+function [xtable ytable utable vtable ctable typevector result_conv errormsg] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty, GridIndices, subpixfinder,mask)
 %this funtion performs the DCC PIV analysis. Recent window-deformation
 %methods perform better and will maybe be implemented in the future.
+errormsg='';
 warning off %MATLAB:log:logOfZero
-% if numel(roi)>0
-%     xroi=roi(1);
-%     yroi=roi(2);
-%     widthroi=roi(3);
-%     heightroi=roi(4);
-%     image1_roi=double(image1(yroi:yroi+heightroi,xroi:xroi+widthroi));
-%     image2_roi=double(image2(yroi:yroi+heightroi,xroi:xroi+widthroi));
-% else
+[npy_ima npx_ima]=size(image1);
+if ~isequal(size(image1),size(image2))
+    errormsg='image pair with unequal size';
+    return
+end
     xroi=0;
     yroi=0;
     image1_roi=double(image1);
     image2_roi=double(image2);
-% end
 if numel(mask)>0
     cellmask=mask;
-    mask=zeros(size(image1_roi));
+    mask=zeros(size(image1));
     for i=1:size(cellmask,1);
         masklayerx=cellmask{i,1};
         masklayery=cellmask{i,2};
-        mask = mask + poly2mask(masklayerx-xroi,masklayery-yroi,size(image1_roi,1),size(image1_roi,2)); %kleineres eingangsbild und maske geshiftet
+        mask = mask + poly2mask(masklayerx-xroi,masklayery-yroi,npy_ima,npx_ima); %kleineres eingangsbild und maske geshiftet
     end
 else
-    mask=zeros(size(image1_roi));
+    mask=zeros(size(image1));
 end
 mask(mask>1)=1;
-% ibx=2*ibx2-1%ibx and iby odd, reduced by 1 if even
-% iby=2*iby2-1
+
+% ibx=2*ibx2-1;%ibx and iby odd, reduced by 1 if even
+% iby=2*iby2-1;
 % miniy=1+iby2
 % minix=1+ibx2
 % maxiy=step*(floor(size(image1_roi,1)/step))-(iby-1)+iby2 %statt size deltax von ROI nehmen
@@ -76,9 +74,9 @@ mask(mask>1)=1;
 image1_roi=padarray(image1_roi,[iby2 ibx2], min(min(image1_roi)));%add a border around the image with minimum image value
 image2_roi=padarray(image2_roi,[iby2 ibx2], min(min(image1_roi)));
 mask=padarray(mask,[iby2 ibx2],0);
-SubPixOffset=0.5;%odd values chosen for ibx and iby
+%SubPixOffset=0.5;%odd values chosen for ibx and iby
 
-nbvec=size(PointCoord,1);
+nbvec=size(GridIndices,1);
 xtable=zeros(nbvec,1);
 ytable=xtable;
 utable=xtable;
@@ -95,22 +93,11 @@ increments=0;
 
 %% MAINLOOP
 for ivec=1:nbvec
-    iref=PointCoord(ivec,1);
-    jref=PointCoord(ivec,2);
+    iref=GridIndices(ivec,1);
+    jref=GridIndices(ivec,2);
+    %jref=npy_ima-PointCoord(ivec,2)+1;
     image1_crop=image1_roi(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);
     image2_crop=image2_roi(jref+shifty-isy2:jref+shifty+isy2,iref+shiftx-isx2:iref+shiftx+isx2);
-%     n=round((j-miniy)/maxiy*100);
-%     for i = minix:step:maxix % horizontal loop
-%         nrx=nrx+1;%used to determine the pos of the vector in resulting matrix
-%         if nrxreal < numelementsx
-%             nrxreal=nrxreal+1;
-%         else
-%             nrxreal=1;
-%         end
-%         startpoint=[i j];
-%         image1_crop=image1_roi(j:j+iby-1, i:i+ibx-1);
-%         image2_crop=image2_roi(ceil(j-iby/2):ceil(j+1.5*iby-1), ceil(i-ibx/2):ceil(i+1.5*ibx-1));
-%         corrmax=0;
         if mask(jref,iref)==0
            %reference: Oliver Pust, PIV: Direct Cross-Correlation
            % image2_crop: sub image with the size of the search area in image 2
@@ -120,45 +107,41 @@ for ivec=1:nbvec
             %necessary. 'Valid' makes sure that no zero padded content is returned.
             corrmax= max(max(result_conv));
             result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
+           % result_conv=flipdim(result_conv,2);%reverse x direction
             %Find the 255 peak
             [y,x] = find(result_conv==255);
             if isnan(y)==0 & isnan(x)==0 
                 try
                     if subpixfinder==1
-                        [vector] = SUBPIXGAUSS (result_conv,ibx,iby,x,y,SubPixOffset);
+                        [vector] = SUBPIXGAUSS (result_conv,x,y);
                     elseif subpixfinder==2
-                        [vector] = SUBPIX2DGAUSS (result_conv,ibx,iby,x,y,SubPixOffset);
+                        [vector] = SUBPIX2DGAUSS (result_conv,x,y);
                     end
-                catch
-                    vector=[NaN NaN]; %if something goes wrong with cross correlation.....
+                catch ME
+                    errormsg=ME.message
+                    vector=[0 0]; %if something goes wrong with cross correlation.....
                 end
             else
-                vector=[NaN NaN]; %if something goes wrong with cross correlation.....
+                vector=[0 0]; %if something goes wrong with cross correlation.....
             end
         else %if mask was not 0 then
-            vector=[NaN NaN];
+            vector=[0 0];
             typevector(ivec)=0;
         end
 
         %Create the vector matrix x, y, u, v
-        xtable(ivec)=PointCoord(ivec,2);
-        ytable(ivec)=PointCoord(ivec,1);
+        xtable(ivec)=GridIndices(ivec,1);
+        ytable(ivec)=GridIndices(ivec,2);
         utable(ivec)=vector(1);
         vtable(ivec)=vector(2);
-        ctable(ivec)=corrmax/sum(sum(image1_crop.*image1_crop));
+        sum_square=sum(sum(image1_crop.*image1_crop));
+        ctable(ivec)=corrmax/sum_square;
 end
-% xtable=xtable-ibx2;
-% ytable=ytable-iby2;
-% 
-% xtable=xtable+xroi;
-% ytable=ytable+yroi;
-% 
-% utable(utable>ibx/1.5)=NaN;
-% vtable(utable>ibx/1.5)=NaN;
-% vtable(vtable>iby/1.5)=NaN;
-% utable(vtable>iby/1.5)=NaN;
+result_conv=result_conv/255;
 
-function [vector] = SUBPIXGAUSS (result_conv,ibx,iby,x,y,SubPixOffset)
+
+function [vector] = SUBPIXGAUSS (result_conv,x,y)
+
 if size(x,1)>1 %if there are more than 1 peaks just take the first
     x=x(1:1);
 end
@@ -176,15 +159,13 @@ if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) 
     f1 = log(result_conv(y,x-1));
     f2 = log(result_conv(y,x+1));
     peakx = x+ (f1-f2)/(2*f1-4*f0+2*f2);
-    %
-    SubpixelX=peakx-(ibx/2)-SubPixOffset;
-    SubpixelY=peaky-(iby/2)-SubPixOffset;
-    vector=[SubpixelX, SubpixelY];
+    [npy,npx]=size(result_conv);
+    vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 else
     vector=[NaN NaN];
 end
 
-function [vector] = SUBPIX2DGAUSS (result_conv,ibx,iby,x,y,SubPixOffset)
+function [vector] = SUBPIX2DGAUSS (result_conv,x,y)
 if size(x,1)>1 %if there are more than 1 peaks just take the first
     x=x(1:1);
 end
@@ -212,17 +193,17 @@ if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) 
     c01=(1/6)*sum(sum(c01));
     c11=(1/4)*sum(sum(c11));
     c20=(1/6)*sum(sum(c20));
-    c02=(1/6)*sum(sum(c02));
-    %c00=(1/9)*sum(sum(c00));
-
+    c02=(1/6)*sum(sum(c02)); 
     deltax=(c11*c01-2*c10*c02)/(4*c20*c02-c11^2);
     deltay=(c11*c10-2*c01*c20)/(4*c20*c02-c11^2);
     peakx=x+deltax;
     peaky=y+deltay;
-
-    SubpixelX=peakx-(ibx/2)-SubPixOffset;
-    SubpixelY=peaky-(iby/2)-SubPixOffset;
-    vector=[SubpixelX, SubpixelY];
+    
+    [npy,npx]=size(result_conv);
+    vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
+%     SubpixelX=peakx-(ibx/2)-SubPixOffset;
+%     SubpixelY=peaky-(iby/2)-SubPixOffset;
+%     vector=[SubpixelX, SubpixelY];
 else
     vector=[NaN NaN];
 end

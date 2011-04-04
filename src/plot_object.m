@@ -69,26 +69,31 @@ if ishandle(hplot)
     if isequal(get(hplot,'Tag'),'proj_object')% hplot is the handle of an object representation  
         test_newobj=0;
         haxes=get(hplot,'parent');
+        currentfig=get(haxes,'parent');
     elseif isequal(get(hplot,'Type'),'axes')% hplot is the handle of an axis 
-        currentfig=get(hplot,'parent');
-        set(0,'CurrentFigure',currentfig)
         haxes=hplot;
-        set(currentfig,'CurrentAxes',haxes);
+        currentfig=get(hplot,'parent');
+%         set(0,'CurrentFigure',currentfig)
+      
+%         set(currentfig,'CurrentAxes',haxes);
     elseif isequal(get(hplot,'Type'),'figure')% hplot is the handle of a figure 
         set(0,'CurrentFigure',hplot);%set the input figure as the current one
         haxes=findobj(hplot,'Type','axes');%look for axes in the figure
         haxes=haxes(1);
-        set(hplot,'CurrentAxes',haxes);%set the first found axis as the current one
+        currentfig=hplot;
+       % set(hplot,'CurrentAxes',haxes);%set the first found axis as the current one
     else
-        figure; %create new figure
+        currentfig=figure; %create new figure
         hplot=axes;%create new axes
         haxes=hplot;
     end
 else
-    figure; %create new figure
+    currentfig=figure; %create new figure
     hplot=axes;%create new axes
     haxes=hplot;
 end
+set(0,'CurrentFigure',currentfig)%set the currentfigure as the current one
+set(currentfig,'CurrentAxes',haxes);%set the current axes in the current figure
 
 %% default input parameters
 if ~isfield(ObjectData,'ProjMode')||isempty(ObjectData.ProjMode)
@@ -332,7 +337,7 @@ end
 
 %% create the object
 if test_newobj
-    axes(haxes)
+%     axes(haxes)
     hother=findobj('Tag','proj_object');%find all the proj objects
     for iobj=1:length(hother)
         if strcmp(get(hother(iobj),'Type'),'rectangle')|| strcmp(get(hother(iobj),'Type'),'patch')

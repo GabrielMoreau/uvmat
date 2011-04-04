@@ -596,6 +596,10 @@ if test_scalar
             SubField.VarAttribute=[{coord_x_attr} SubField.VarAttribute];  
         end
         if empty_coord_y 
+            if numel(DimCellA)<2
+                errormsg=['coordinates need to be defined for the scalar ' VarNameA];
+                return
+            end
             coord_y_name=DimCellA{NbDim-1};
             SubField.ListVarName=[{coord_y_name} SubField.ListVarName];
             SubField.VarDimName=[{coord_y_name} SubField.VarDimName];
