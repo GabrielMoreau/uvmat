@@ -680,7 +680,7 @@ else
 end
 testnew=0;
 ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
-if strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose projection is viewed in the uvmat frame
+if ~isempty(ListObject) && strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose projection is viewed in the uvmat frame
     IndexObj=IndexObj_1;
     projview='uvmat';
 elseif ~isempty(IndexObj_2) && IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field  

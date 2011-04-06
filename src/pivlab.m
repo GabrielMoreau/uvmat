@@ -98,6 +98,8 @@ for ivec=1:nbvec
     %jref=npy_ima-PointCoord(ivec,2)+1;
     image1_crop=image1_roi(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);
     image2_crop=image2_roi(jref+shifty-isy2:jref+shifty+isy2,iref+shiftx-isx2:iref+shiftx+isx2);
+    image1_crop=image1_crop-mean(mean(image1_crop));
+    image2_crop=image2_crop-mean(mean(image2_crop));
         if mask(jref,iref)==0
            %reference: Oliver Pust, PIV: Direct Cross-Correlation
            % image2_crop: sub image with the size of the search area in image 2

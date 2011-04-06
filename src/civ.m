@@ -4670,6 +4670,8 @@ end
 % --- Executes on button press in TestCiv1: display image correlation function
 function TestCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.TestCiv1,'BackgroundColor',[1 1 0])
+drawnow
 test_civ1=get(handles.TestCiv1,'Value');
 if test_civ1
     ref_i=str2double(get(handles.ref_i,'String'));
@@ -4732,6 +4734,7 @@ if test_civ1
         set(corrfig,'name','image correlation')
         set(corrfig,'DeleteFcn',{@closeview_field})%
     end
+    set(handles.TestCiv1,'BackgroundColor',[1 0 0])
 else
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
     if ~isempty(corrfig)

@@ -40,14 +40,12 @@ if strcmp(FileType,'netcdf')  %read the first nc field
         GUIName=ParamIn.GUIName;
     end
     test_civx=0;
-    ParamIn
     if ~strcmp(ParamIn.FieldName,'get_field...')% if get_field is not requested, look for Civx data
         FieldList=calc_field;%list of possible fields for Civx data
         ParamOut.ColorVar='';%default
         field_index=strcmp(ParamOut.FieldName,FieldList);%look for ParamOut.FieldName in the list
         if isempty(find(field_index,1))% ParamOut.FieldName is not in the list, check whether Civx data exist
-            'TESTnc1'
-            Data=nc2struct(ObjectName,'ListGlobalAttribute','absolut_time_T0','civ')
+            Data=nc2struct(ObjectName,'ListGlobalAttribute','absolut_time_T0','civ');
             if ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)
                 ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
                 ParamOut.ColorVar='ima_cor';
