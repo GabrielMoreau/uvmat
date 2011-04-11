@@ -49,7 +49,7 @@
 %          .MovieObject: movie object representing an input movie
 %          .MovieObject_1: idem for a second input series (_1)
 %          .filename_1 : last second input file name (to deal with a constant second input without reading again the file)
-%          .VelType_1: last velocity type (civ1, civ2...) for the second input series
+%          .VelType_1: last velocity type (VelType, civ2...) for the second input series
 %          .FieldName_1: last field name(velocity, vorticity...) for the second input series
 %          .ZMin, .ZMax: range of the z coordinate
 %..... to complement
@@ -386,6 +386,7 @@ if testinputfield
         end
     end
 end
+
 set_vec_col_bar(handles) %update the display of color code for vectors
 
 %------------------------------------------------------------------------
@@ -517,9 +518,9 @@ if ~exist(fileinput,'file')
     msgbox_uvmat('ERROR',['input file ' fileinput  ' does not exist'])
     return
 end
-[RootPath,RootFile,i1,i2,str_a,str_b,ext,NomType,SubDir]=name2display(fileinput);
+[RootPath,RootFile,i1,i2,str_a,str_b,ext,NomType,SubDir]=name2display(fileinput);%extract information from the file name
 ext_test=''; %default
-if ~isempty(ext) 
+if ~isempty(ext) % if a file extension is detected
     form=imformats(ext(2:end));%test valid Matlab image formats
     if ~isempty(form)
         ext_test='.image';
@@ -532,7 +533,7 @@ if ~isempty(ext)
             NomType='*'; %indicate a set of indexed frames within a single file
             [RootPath,RootFile]=fileparts(fileinput); %include the indices in the root file
         end
-    elseif isequal(lower(ext),'.avi')
+    elseif isequal(lower(ext),'.avi')%case of avi movie file
         ext_test='.image';
         i1='1'; % set the frame counter to 1 by default
         i2='';
@@ -662,7 +663,7 @@ UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for run0: begin a new series
 UvData.TestInputFile=1;
 set(handles.fix_pair,'Value',1) % activate by default the comp_input '-'input window
-
+set(handles.FixVelType,'Value',0); %desactivate fixed veltype
 [FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes(handles);
 if ~exist(FileName,'file')
    msgbox_uvmat('ERROR',['input file ' FileName ' not found']);
@@ -872,16 +873,13 @@ end
 
 if ~testima
     testcivx=0;
-    % hget_field=findobj('Name','get_field');
-    %     if isequal(FileExt,'.nc')||isequal(FileExt,'.cdf')
     if isfield(UvData,'FieldsString') && isequal(UvData.FieldsString,{'get_field...'})% field menu defined as input (from get_field)
         set(handles.Fields,'Value',1)
         set(handles.Fields,'String',{'get_field...'})
         UvData=rmfield(UvData,'FieldsString');
     else
-        %if isempty(hget_field)
-        Data=nc2struct(FileName,'ListGlobalAttribute','absolut_time_T0','civ');
-        if ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)%if the new input is Civx
+        Data=nc2struct(FileName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ');
+        if strcmp(Data.Conventions,'uvmat/civdata') ||( ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0))%if the new input is Civx
             FieldList=calc_field;
             set(handles.Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
             set(handles.Fields,'Value',2) % set menu to 'velocity'
@@ -889,22 +887,12 @@ if ~testima
             col_vec(1)=[];%remove 'velocity' option for vector color (must be a scalar)
             testcivx=1;
         end
-        %     else
-        %          hhget_field=guidata(hget_field);
-        %         if ~strcmp(get(hhget_field.inputfile,'String'),FileName)%delete any existing get_field GUI with file name different than the input
-        %             delete(hget_field)
-        %         end
-        %     end
         if ~testcivx
             set(handles.Fields,'Value',1) % set menu to 'get_field...
             set(handles.Fields,'String',{'get_field...'})
             col_vec={'get_field...'};
         end
         set(handles.col_vec,'String',col_vec)
-        %     else
-        %         msgbox_uvmat('ERROR',['invalid input file extension ' FileExt])
-        %         return
-        %     end
     end
 end
 set(handles.uvmat,'UserData',UvData)
@@ -1000,13 +988,8 @@ RootPath=get(handles.RootPath,'String');
         '*.log','.log text files ';...
         '*.dat','.dat text files ';...
         '*.*',  'All Files (*.*)'}, ...
-        'Pick a file',RootPath);
+        'Pick a second file for comparison',RootPath);
 fileinput_1=[PathName FileName];%complete file name 
-% testblank=findstr(fileinput_1,' ');%look for blanks
-% if ~isempty(testblank)
-%     msgbox_uvmat('ERROR',['The input file name ' fileinput_1 ' contains blank character : This is not allowed. Please change name'])
-%     return
-% end
 sizf=size(fileinput_1);
 if (~ischar(fileinput_1)||~isequal(sizf(1),1)),return;end
 
@@ -1180,20 +1163,7 @@ set(handles.FileIndex_1,'UserData',NomType_1)
 set(handles.FileExt_1,'String',FileExt_1);
 
 % % default choice of fields
-% if isequal(ext_test,'.image')
-% %    set(handles.Fields_1,'String',{'';'image';'get_field...';'velocity';'vort';'div';'more...'})
-% %    set(handles.Fields_1,'Value',2) % set menu to 'image'
-% elseif strcmp(FileExt_1,'.nc')||strcmp(FileExt_1,'.cdf')
-%    Data=nc2struct(fileinput_1,[]);
-% %    if isfield(Data,'absolut_time_T0')
-% %        set(handles.Fields_1,'String',{'';'image';'get_field...';'velocity';'vort';'div';'more...'})
-% %        set(handles.Fields_1,'Value',4) % set menu to 'velocity'
-% %    else   
-% %        set(handles.Fields_1,'Value',2) % set menu to 'get_field...'
-% %        set(handles.Fields_1,'String',{'';'get_field...'});
-% %    end
-% end  
-set(handles.SubField,'Visible','on')
+%set(handles.SubField,'Visible','on')
 set(handles.SubField,'Value',1)
 RootPath_1_Callback(hObject,eventdata,handles);  
 
@@ -1229,6 +1199,7 @@ UvData.NewSeries=1; %flag for run0: begin a new series
 if ~exist(FileName,'file')
     msgbox_uvmat('ERROR',['input file ' FileName ' not found']);
 end
+set(handles.FixVelType,'Value',0); %desactivate fixed veltype
 nbfield_1=[];%default
 nburst_1=[];%default
 XmlData.Time=[];
@@ -2133,7 +2104,10 @@ if ~isempty(filename)
         index_fields=get(handles.Fields,'Value');% selected string index
         FieldName= list_fields{index_fields}; % selected field
         if ~strcmp(FieldName,'get_field...')
-           VelType=setfield(handles);% read the velocity type.
+           TestVelType=get(handles.FixVelType,'Value');
+           if TestVelType
+               VelType=setfield(handles);% read the velocity type.
+           end
         end
         if strcmp(FieldName,'velocity')
             list_code=get(handles.color_code,'String');% list menu fields
@@ -2176,6 +2150,7 @@ if ~isempty(filename)
         errormsg=['error in reading ' filename ': ' errormsg];
         return
     end
+        
     if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
         set(handles.npx,'String',num2str(ParamOut.Npx));% display image size on the interface
         set(handles.npy,'String',num2str(ParamOut.Npy));
@@ -2188,7 +2163,7 @@ if ~isempty(filename)
     end
 end
 
-%% choose a second field if Subfield option is 'on', and if the field has changed
+%% choose a second field filename_1 if defined
 VelType_1=[];%default
 FieldName_1=[];
 ParamOut_1=[];
@@ -2200,7 +2175,11 @@ if ~isempty(filename_1)
         Name=filename_1;
         FieldName_1=[];%default
         VelType_1=[];%default
-        Ext_1=get(handles.FileExt_1,'String');
+        if strcmp(get(handles.FileExt_1,'Visible'),'on')
+            Ext_1=get(handles.FileExt_1,'String');
+        else
+            Ext_1=get(handles.FileExt,'String');%read the file extension for the first series (case of veltype comparison within a single file)
+        end
         NomType_1=get(handles.FileIndex_1,'UserData');
         if isequal(Ext_1,'.nc')||isequal(Ext_1,'.cdf')
             FileType_1='netcdf';
@@ -2219,6 +2198,7 @@ if ~isempty(filename_1)
                 return
             end
         else 
+           if length(Ext_1)>=2
            form=imformats(Ext_1(2:end));
            if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
                if isequal(NomType_1,'*');
@@ -2227,13 +2207,19 @@ if ~isempty(filename_1)
                    FileType_1='image';
                end
            end
+           end
         end
         if strcmp(FileType_1,'netcdf')
             list_fields=get(handles.Fields_1,'String');% list menu fields
             index_fields=get(handles.Fields_1,'Value');% selected string index
             FieldName_1= list_fields{index_fields}; % selected field
             if ~isequal(FieldName_1,'get_field...')% read the field names on the interface get_field...
-                VelType_1=setfield_1(handles);
+                VelType_1='';
+                if get(handles.FixVelType,'Value')
+                    VelTypeList=get(handles.VelType_1,'String');
+                    index=get(handles.VelType_1,'Value');
+                    VelType_1=VelTypeList{index};
+                end
             end
             if strcmp(VelType_1,'*')% free veltype choice
                 VelType_1=[];
@@ -2268,7 +2254,7 @@ if ~isempty(filename_1)
             ParamIn.GUIName='get_field_1';
             [Field{2},ParamOut_1,errormsg] = read_field(Name,FileType_1,ParamIn,num_i1);
             if ~isempty(errormsg)
-                errormsg=['error in reading ' filename_1 ': ' errormsg];
+                errormsg=['error in reading ' FieldName_1 ' in ' filename_1 ': ' errormsg];
                 return
             end
             UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
@@ -2285,44 +2271,81 @@ elseif isfield(ParamOut_1,'Npx')
     set(handles.npy,'String',num2str(ParamOut_1.Npy));
 end
 
-%% update the display buttons for the first velocity type (first menuline)
-veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
+%% update the display menu for the first velocity type (first menuline)
+% veltype_handles=[handles.VelType handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
+% if ~isequal(FileType,'netcdf')|| isequal(FieldName,'get_field...')
+%     set(veltype_handles,'Visible','off')
+% else% if isempty(ParamOut.VelType) && ~isequal(FieldName,'get_field...')
+%     set_veltype_display(veltype_handles,ParamOut.CivStage)%update the display of available velocity types for the first field
+%     if isempty(ParamOut.VelType)
+%         reset_vel_type(veltype_handles)
+%     else
+%         handle1=eval(['handles.' ParamOut.VelType]);
+%         reset_vel_type(veltype_handles,handle1)
+%     end
+% end
+test_veltype=0;
 if ~isequal(FileType,'netcdf')|| isequal(FieldName,'get_field...')
-%     reset_vel_type(veltype_handles)
-    set(veltype_handles,'Visible','off')
-else% if isempty(ParamOut.VelType) && ~isequal(FieldName,'get_field...')
-    set_veltype_display(veltype_handles,ParamOut.CivStage)%update the display of available velocity types for the first field
-    if isempty(ParamOut.VelType)
-        reset_vel_type(veltype_handles)
-    else
-        handle1=eval(['handles.' ParamOut.VelType]);
-        reset_vel_type(veltype_handles,handle1)
-    end
+    set(handles.VelType,'Visible','off')
+else
+    test_veltype=1;
+    set(handles.VelType,'Visible','on')
+    set(handles.VelType_1,'Visible','on')
+    set(handles.FixVelType,'Visible','on')
+    menu=set_veltype_display(ParamOut.CivStage);
+    index_menu=strcmp(ParamOut.VelType,menu);
+    set(handles.VelType,'Value',find(index_menu,1))
+    set(handles.VelType,'String',menu)
+%     set(handles.VelType_1,'Value',1)
+%     set(handles.VelType_1,'String',[{''};menu])
 end
 field_index=strcmp(ParamOut.FieldName,ParamOut.FieldList);
 set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
 set(handles.Fields,'Value',find(field_index,1))
 
-%% update the display buttons for the second velocity type (second menuline)
-if ~isempty(filename_1)
-    veltype_handles_1=[handles.civ1_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
+%% update the display menu for the second velocity type (second menuline)
+% if ~isempty(filename_1)
+%     veltype_handles_1=[handles.VelType_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
+%     if ~isequal(FileType_1,'netcdf')|| isequal(FieldName_1,'get_field...')
+%         set(veltype_handles_1,'Visible','off')
+%         %reset_vel_type(veltype_handles_1)
+%     else %if isempty(VelType_1) && ~isequal(FieldName_1,'get_field...')
+%         set_veltype_display(veltype_handles_1,ParamOut_1.CivStage)%update the display of available velocity types for the first field
+%         if isempty(ParamOut_1.VelType)
+%             reset_vel_type(veltype_handles_1)
+%         else
+%             handle1=eval(['handles.' ParamOut_1.VelType '_1']);
+%             reset_vel_type(veltype_handles_1,handle1)
+%         end
+%     end
+%     field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
+%     set(handles.Fields_1,'String',ParamOut_1.FieldList); %update the field menu
+%     set(handles.Fields_1,'Value',find(field_index,1))
+% end
+test_veltype_1=0;
+if isempty(filename_1)
+    set(handles.Fields_1,'Value',1); %update the field menu
+    set(handles.Fields_1,'String',[{''};ParamOut.FieldList]); %update the field menu
+else
     if ~isequal(FileType_1,'netcdf')|| isequal(FieldName_1,'get_field...')
-        set(veltype_handles_1,'Visible','off')
-        %reset_vel_type(veltype_handles_1)
-    else %if isempty(VelType_1) && ~isequal(FieldName_1,'get_field...')
-        set_veltype_display(veltype_handles_1,ParamOut_1.CivStage)%update the display of available velocity types for the first field
-        if isempty(ParamOut_1.VelType)
-            reset_vel_type(veltype_handles_1)
-        else
-            handle1=eval(['handles.' ParamOut_1.VelType '_1']);
-            reset_vel_type(veltype_handles_1,handle1)
+        set(handles.VelType_1,'Visible','off')
+    else 
+        test_veltype_1=1;
+        set(handles.VelType_1,'Visible','on')
+        if ~get(handles.FixVelType,'Value')
+            menu=set_veltype_display(ParamOut_1.CivStage);
+            index_menu=strcmp(ParamOut_1.VelType,menu);
+            set(handles.VelType_1,'Value',1+find(index_menu,1))
+            set(handles.VelType_1,'String',[{''};menu])
         end
     end
-    field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
-    set(handles.Fields_1,'String',ParamOut_1.FieldList); %update the field menu
-    set(handles.Fields_1,'Value',find(field_index,1))
 end
-
+if test_veltype||test_veltype_1
+     set(handles.FixVelType,'Visible','on')
+else
+     set(handles.FixVelType,'Visible','off')
+end
+    
 %% introduce w as background image by default for a new series (only for nbdim=2)
 if ~isfield(UvData,'NewSeries')
     UvData.NewSeries=1;
@@ -2431,11 +2454,14 @@ if ~isempty(VarType{imax}.coord_x)  && ~isempty(VarType{imax}.coord_y)    %unstr
     else
        NbDim=2;
     end
-elseif VarType{imax}.coord(NbDim)>0 %structured coordinate  
+elseif numel(VarType)>=imax && numel(VarType{imax}.coord)>=NbDim && VarType{imax}.coord(NbDim)>0 %structured coordinate  
     XName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim)};
     if NbDim>1
         YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
     end
+else
+    errormsg='input field coordinates not defined';
+    return
 end
 if NbDim==3
     if ~test_x
@@ -2567,6 +2593,14 @@ end
 %% Plot the projections on the selected  projection objects
 
 % main projection object (uvmat display)
+list_object=get(handles.list_object_1,'String');
+if isequal(list_object,{''})%refresh list of objects if the menu is empty
+    UvData.Object={[]}; 
+    set(handles.list_object_1,'Value',1)
+    set(handles.list_object_2,'Value',1)
+    set(handles.list_object_2,'String',{''})
+    set(handles.list_object_2,'Visible','off')
+end
 IndexObj(1)=get(handles.list_object_1,'Value');%selected projection object for main view
 if IndexObj(1)> numel(UvData.Object)
     IndexObj(1)=1;%select the first object if the selected one does not exist
@@ -2873,7 +2907,7 @@ if ~isempty(message) && ~isequal(message.UserWrite,1)
      return
 end
 test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
-test_civ1=isequal(get(handles.civ1,'BackgroundColor'),[1 1 0]);
+test_civ1=isequal(get(handles.VelType,'BackgroundColor'),[1 1 0]);
 if ~test_civ2 && ~test_civ1
     msgbox_uvmat('ERROR','manual correction only possible for CIV1 or CIV2 velocity fields')
 end 
@@ -2924,80 +2958,85 @@ fin=close(nc);
 %-------------------------------------------------------------------
 %determines the fields to read from the interface
 %------------------------------------------------------------------
-function [VelType,civ]=setfield(handles)
+function VelType=setfield(handles)
+VelTypeList=get(handles.VelType,'String');
+index=get(handles.VelType,'Value');
+VelType=VelTypeList{index};
 
-VelType=[]; %default
-if (get(handles.civ1,'Value') == 1);
-        VelType='civ1';
-% interp1   
-elseif (get(handles.interp1,'Value') == 1);
-    VelType='interp1';
-% filter1   
-elseif (get(handles.filter1,'Value') == 1); 
-    VelType='filter1';  
-% CIV2
-elseif (get(handles.civ2,'Value') == 1);
-    VelType='civ2';
-% interp2   
-elseif (get(handles.interp2,'Value') == 1); 
-    VelType='interp2';
-% filter2   
-elseif (get(handles.filter2,'Value') == 1);  
-    VelType='filter2'; 
-end 
-
-if isequal(get(handles.filter2,'Visible'),'on');
-    civ=6;
-% interp1   
-elseif isequal(get(handles.interp2,'Visible'),'on');
-    civ=5;
-% filter1   
-elseif isequal(get(handles.civ2,'Visible'),'on'); 
-    civ=4;  
-% CIV2
-elseif isequal(get(handles.filter1,'Visible'),'on');
-   civ=3;
-% interp2   
-elseif isequal(get(handles.interp1,'Visible'),'on'); 
-    civ=2;
-% filter2   
-elseif isequal(get(handles.civ1,'Visible'),'on');  
-    civ=1; 
-else
-    civ=0;
-end 
+% VelType=[]; %default
+% if (get(handles.VelType,'Value') == 1);
+%         VelType='civ1';
+% % interp1   
+% elseif (get(handles.interp1,'Value') == 1);
+%     VelType='interp1';
+% % filter1   
+% elseif (get(handles.filter1,'Value') == 1); 
+%     VelType='filter1';  
+% % CIV2
+% elseif (get(handles.civ2,'Value') == 1);
+%     VelType='civ2';
+% % interp2   
+% elseif (get(handles.interp2,'Value') == 1); 
+%     VelType='interp2';
+% % filter2   
+% elseif (get(handles.filter2,'Value') == 1);  
+%     VelType='filter2'; 
+% end 
+% 
+% if isequal(get(handles.filter2,'Visible'),'on');
+%     civ=6;
+% % interp1   
+% elseif isequal(get(handles.interp2,'Visible'),'on');
+%     civ=5;
+% % filter1   
+% elseif isequal(get(handles.civ2,'Visible'),'on'); 
+%     civ=4;  
+% % CIV2
+% elseif isequal(get(handles.filter1,'Visible'),'on');
+%    civ=3;
+% % interp2   
+% elseif isequal(get(handles.interp1,'Visible'),'on'); 
+%     civ=2;
+% % filter2   
+% elseif isequal(get(handles.VelType,'Visible'),'on');  
+%     civ=1; 
+% else
+%     civ=0;
+% end 
 
 %-------------------------------------------------------------------
 %determines the veltype of the second field to read from the iinterface
 %------------------------------------------------------------------
 function VelType=setfield_1(handles)
-
-VelType=[]; %default
-if (get(handles.civ1_1,'Value') == 1);
-    VelType='civ1';
-% interp1   
-elseif (get(handles.interp1_1,'Value') == 1);
-    VelType='interp1';
-% filter1   
-elseif (get(handles.filter1_1,'Value') == 1); 
-    VelType='filter1';  
-% CIV2
-elseif (get(handles.civ2_1,'Value') == 1);
-    VelType='civ2';
-% interp2   
-elseif (get(handles.interp2_1,'Value') == 1); 
-    VelType='interp2';
-% filter2   
-elseif (get(handles.filter2_1,'Value') == 1);  
-    VelType='filter2'; 
-end 
+VelTypeList=get(handles.VelType_1,'String');
+index=get(handles.VelType_1,'Value');
+VelType=VelTypeList{index};
+% VelType=[]; %default
+% if (get(handles.VelType_1,'Value') == 1);
+%     VelType='civ1';
+% % interp1   
+% elseif (get(handles.interp1_1,'Value') == 1);
+%     VelType='interp1';
+% % filter1   
+% elseif (get(handles.filter1_1,'Value') == 1); 
+%     VelType='filter1';  
+% % CIV2
+% elseif (get(handles.civ2_1,'Value') == 1);
+%     VelType='civ2';
+% % interp2   
+% elseif (get(handles.interp2_1,'Value') == 1); 
+%     VelType='interp2';
+% % filter2   
+% elseif (get(handles.filter2_1,'Value') == 1);  
+%     VelType='filter2'; 
+% end 
 
 
 %---------------------------------------------------
 % --- Executes on button press in SubField
 function SubField_Callback(hObject, eventdata, handles)
-huvmat=get(handles.run0,'parent');
-UvData=get(huvmat,'UserData');
+% huvmat=get(handles.run0,'parent');
+UvData=get(handles.uvmat,'UserData');
 if get(handles.SubField,'Value')==0% if the subfield button is desactivated   
     set(handles.RootPath_1,'String','')
     set(handles.RootFile_1,'String','')
@@ -3010,12 +3049,16 @@ if get(handles.SubField,'Value')==0% if the subfield button is desactivated
     set(handles.FileIndex_1,'Visible','off');
     set(handles.FileExt_1,'Visible','off');
     set(handles.Fields_1,'Value',1);%set to blank state
-    set_veltype_display([handles.civ1_1 handles.interp1_1 handles.filter1_1 ...
-            handles.civ2_1 handles.interp2_1 handles.filter2_1],0)
+    set(handles.VelType_1,'Value',1);%set to blank state
+    if ~strcmp(get(handles.VelType,'Visible'),'on')
+        set(handles.VelType_1,'Visible','off')
+    end
+%     set_veltype_display([handles.VelType_1 handles.interp1_1 handles.filter1_1 ...
+%             handles.civ2_1 handles.interp2_1 handles.filter2_1],0)
     if isfield(UvData,'XmlData_1')
         UvData=rmfield(UvData,'XmlData_1');
     end 
-    set(huvmat,'UserData',UvData);
+    set(handles.uvmat,'UserData',UvData);
     run0_Callback(hObject, eventdata, handles); %run
 else
     MenuBrowse_1_Callback(hObject, eventdata, handles)
@@ -3093,8 +3136,11 @@ list_fields=get(handles.Fields,'String');% list menu fields
 index_fields=get(handles.Fields,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
 if isequal(field,'get_field...')
-     veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
-     set_veltype_display(veltype_handles,0) % unvisible civ buttons
+     set(handles.FixVelType,'visible','off')
+      set(handles.VelType,'visible','off')
+       set(handles.VelType_1,'visible','off')
+%      veltype_handles=[handles.VelType handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
+%      set_veltype_display(veltype_handles,0) % unvisible civ buttons
      filename=read_file_boxes(handles);
      hget_field=findobj(allchild(0),'name','get_field');
      if ~isempty(hget_field)
@@ -3151,7 +3197,7 @@ if isequal(field,'image')
         display_file_name(hObject, eventdata, handles,imagename)%display the image
         return
 %     end
-%     veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
+%     veltype_handles=[handles.VelType handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
 %     set_veltype_display(veltype_handles,0) % unvisible civ buttons
 else
     ext=get(handles.FileExt,'String');
@@ -3167,24 +3213,24 @@ else
         return
        %  MenuBrowse_Callback(hObject, eventdata, handles)
     end
-    if isequal(field,'vort') || isequal(field,'div') || isequal(field,'strain')
-        set(handles.civ1,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
-        set(handles.civ2,'BackgroundColor',[0.702 0.702 0.702])
-        set(handles.interp1,'BackgroundColor',[0.702 0.702 0.702])
-        set(handles.interp2,'BackgroundColor',[0.702 0.702 0.702])
-    elseif isequal(field,'more...'); 
-        set(handles.civ1,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
-        set(handles.civ2,'BackgroundColor',[0.702 0.702 0.702])
-        str=calc_field;%get the list of available scalars by the function calc_scal
-        [ind_answer] = listdlg('PromptString','Select a file:',...
-                'SelectionMode','single',...
-                'ListString',str);
-       % edit the choice in the field and action menu
-        scalar=cell2mat(str(ind_answer));
-        menu=update_menu(handles.Fields,scalar);
-        menu=[{''};menu];
-        set(handles.Fields_1,'String',menu);% store the selected scalar type
-    end
+%     if isequal(field,'vort') || isequal(field,'div') || isequal(field,'strain')
+% %         set(handles.VelType,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
+% %         set(handles.civ2,'BackgroundColor',[0.702 0.702 0.702])
+% %         set(handles.interp1,'BackgroundColor',[0.702 0.702 0.702])
+% %         set(handles.interp2,'BackgroundColor',[0.702 0.702 0.702])
+%     elseif isequal(field,'more...'); 
+%         set(handles.VelType,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
+%         set(handles.civ2,'BackgroundColor',[0.702 0.702 0.702])
+%         str=calc_field;%get the list of available scalars by the function calc_scal
+%         [ind_answer] = listdlg('PromptString','Select a file:',...
+%                 'SelectionMode','single',...
+%                 'ListString',str);
+%        % edit the choice in the field and action menu
+%         scalar=cell2mat(str(ind_answer));
+%         menu=update_menu(handles.Fields,scalar);
+%         menu=[{''};menu];
+%         set(handles.Fields_1,'String',menu);% store the selected scalar type
+%     end
 end
 indices=name_generator('',str2double(str1),str2double(str_a),'',NomTypeNew,1,str2double(str2),str2double(str_b),'');
 set(handles.FileIndex,'String',indices)
@@ -3257,7 +3303,7 @@ if ~isempty(RootFile_1)&&(isequal(RootFile_1(1),'/')||isequal(RootFile_1(1),'\')
 end
 
 if isequal(field_1,'get_field...')
-     veltype_handles=[handles.civ1 handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
+     veltype_handles=[handles.VelType handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
      set_veltype_display(veltype_handles,0) % unvisible civ buttons
      filename=read_file_boxes_1(handles);
      hget_field=findobj(allchild(0),'name','get_field_1');
@@ -3275,11 +3321,8 @@ if isequal(field_1,'get_field...')
 end
 if isequal(field_1,'image') 
     % transform netc type to the corresponding image type
-%     set(handles.FileExt_1,'String','.png');
     if isequal(NomType_1,'_i1-i2_j')||isequal(NomType_1,'_i_j1-j2')|| isequal(NomType_1,'#_ab')|| isequal(NomType_1,'_i1-i2')
-        UvData.SubDir_1=get(handles.SubDir_1,'String'); %preserve the subdir in memory
-%         set(handles.SubDir_1,'String','')
-%         set(handles.FileExt_1,'String','.png');        
+        UvData.SubDir_1=get(handles.SubDir_1,'String'); %preserve the subdir in memory    
         if isequal(NomType_1,'_i1-i2_j')||isequal(NomType_1,'_i_j1-j2')
             NomTypeNew='_i_j';
         elseif isequal(NomType_1,'#_ab')
@@ -3304,22 +3347,20 @@ if isequal(field_1,'image')
     end
     display_file_name_1(hObject, eventdata, handles,imagename)%display the image
     return
-%     veltype_handles=[handles.civ1_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
-%     set_veltype_display(veltype_handles,0) % unvisible civ buttons
 else
     set(handles.SubDir_1,'Visible','on')
     if ~isequal(FileExt_prev,'.nc') %find the new NomType if the previous display was not already a netcdf file
-        veltype_handles=[handles.civ1_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
-        set_veltype_display(veltype_handles,6); % make all civ buttons visible
+%         veltype_handles=[handles.VelType_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
+%         set_veltype_display(veltype_handles,6); % make all civ buttons visible
         RootPath_1=get(handles.RootPath_1,'String');
         RootFile_1=get(handles.RootFile_1,'String');
-        if isempty(RootPath_1)|isequal(RootPath_1,'')
+        if isempty(RootPath_1)||isequal(RootPath_1,'')
             set(handles.RootPath_1,'String','"')
         end
-        if isempty(RootFile_1) | isequal(RootFile_1,'')
+        if isempty(RootFile_1) || isequal(RootFile_1,'')
             set(handles.RootFile_1,'String','"')
         end
-        if ~isempty(RootFile_1)&(isequal(RootFile_1(1),'/')|isequal(RootFile_1(1),'\'))
+        if ~isempty(RootFile_1)&&(isequal(RootFile_1(1),'/')||isequal(RootFile_1(1),'\'))
             RootFile_1(1)=[];
         end
         filebase_1=fullfile(RootPath_1,RootFile_1);
@@ -3356,13 +3397,13 @@ else
         end
         set(handles.SubDir_1,'String',SubDir_1);
     end
-    if isequal(field,'vort') | isequal(field,'div') | isequal(field,'strain')
-        set(handles.civ1_1,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
+    if isequal(field,'vort') || isequal(field,'div') || isequal(field,'strain')
+        set(handles.VelType_1,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
         set(handles.civ2_1,'BackgroundColor',[0.702 0.702 0.702])
         set(handles.interp1_1,'BackgroundColor',[0.702 0.702 0.702])
         set(handles.interp2_1,'BackgroundColor',[0.702 0.702 0.702])
     elseif isequal(field_1,'more...'); %add new item to the menu
-        set(handles.civ1_1,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
+        set(handles.VelType_1,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
         set(handles.civ2_1,'BackgroundColor',[0.702 0.702 0.702])
         str=calc_field;%get the list of available scalars by the function calc_scal
         [ind_answer,v] = listdlg('PromptString','Select a file:',...
@@ -3383,7 +3424,7 @@ set(handles.FileIndex_1,'String',indices)
 set(handles.FileIndex_1,'UserData',NomTypeNew)
 
 %common to Fields_Callback
-if isequal(field,'image')|isequal(field_1,'image')
+if isequal(field,'image')||isequal(field_1,'image')
     set(handles.npx_title,'Visible','on')% visible npx,pxcm... buttons
     set(handles.npy_title,'Visible','on')
     set(handles.npx,'Visible','on')
@@ -3396,12 +3437,12 @@ else
     set(handles.npy,'Visible','off')
 %     set(handles.fix_pair,'Value',1)
 end
-if isequal(field,'velocity')|isequal(field_1,'velocity');
+if isequal(field,'velocity')||isequal(field_1,'velocity');
     state_vect='on';
 else
     state_vect='off';
 end 
-if ~isequal(field,'velocity')|(~isequal(field_1,'velocity')&~isequal(field_1,''));
+if ~isequal(field,'velocity')||(~isequal(field_1,'velocity')&~isequal(field_1,''));
     state_scal='on';
 else
     state_scal='off';
@@ -3414,16 +3455,10 @@ end
 
 %------------------------------------------------------------------------
 % --- set the visibility of relevant velocity type menus: 
-function set_veltype_display(handles,Civ)
+function menu=set_veltype_display(Civ)
 %------------------------------------------------------------------------
-%Civ=0; all states 'off'
-%Civ=6; all states 'on'
 if isequal(Civ,0)
     imax=0;
-%    set(handles(1),'Visible','on')  % unvisible civ buttons
-% else
-%    set(handles(1),'String','civ1') 
-% end
 elseif isequal(Civ,1) || isequal(Civ,2)
    imax=1;
 elseif isequal(Civ,3) 
@@ -3433,139 +3468,66 @@ elseif isequal(Civ,4) || isequal(Civ,5)
 elseif isequal(Civ,6) %patch2
     imax=6;
 end
-for ibutton=1:imax;
-    set(handles(ibutton),'Visible','on')  % unvisible civ buttons
-end
-% for ibutton=max(imax+1,2):6;
-for ibutton=imax+1:6;
-    set(handles(ibutton),'Visible','off')  % unvisible civ buttons
-    set(handles(ibutton),'Value',0)%unactivate unvisible buttons
-end
+menu={'civ1';'interp1';'filter1';'civ2';'interp2';'filter2'};
+menu=menu(1:imax);
+% for ibutton=1:imax;
+%     set(handles(ibutton),'Visible','on')  % unvisible civ buttons
+% end
+% % for ibutton=max(imax+1,2):6;
+% for ibutton=imax+1:6;
+%     set(handles(ibutton),'Visible','off')  % unvisible civ buttons
+%     set(handles(ibutton),'Value',0)%unactivate unvisible buttons
+% end
 
 %-------------------------------------------------------------------
-% --- Executes on button press in civ1.
-function civ1_Callback(hObject, eventdata, handles)
+% --- Executes on button press in VelType.
+function VelType_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-if get(handles.civ1,'Value')==1
-    reset_vel_type([handles.interp1 handles.civ2 handles.filter1 handles.interp1 handles.interp2 handles.filter2],handles.civ1)
-else
-    reset_vel_type([handles.civ1 handles.filter1 handles.interp1 handles.civ2 handles.interp2 handles.filter2])
-end
-run0_Callback(hObject, eventdata, handles)
-
-%-------------------------------------------------------------------
-% --- Executes on button press in interp1.
-function interp1_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
-if get(handles.interp1,'Value')==1
-    reset_vel_type([handles.civ1 handles.civ2 handles.filter1 handles.interp2 handles.filter2],handles.interp1)
-else
-     reset_vel_type([handles.civ1 handles.filter1 handles.interp1 handles.civ2 handles.interp2 handles.filter2])
-end
-run0_Callback(hObject, eventdata, handles)
-
-%-------------------------------------------------------------------
-% --- Executes on button press in filter1.
-function filter1_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
-if get(handles.filter1,'Value')==1
-    reset_vel_type([handles.civ1 handles.civ2 handles.interp1 handles.interp2 handles.filter2],handles.filter1)
-else
-     reset_vel_type([handles.civ1 handles.filter1 handles.interp1 handles.civ2 handles.interp2 handles.filter2])
-end
-run0_Callback(hObject, eventdata, handles)
-
-%-------------------------------------------------------------------
-% --- Executes on button press in civ2.
-function civ2_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
-if get(handles.civ2,'Value')==1
-    reset_vel_type([handles.civ1 handles.filter1 handles.interp1 handles.interp2 handles.filter2],handles.civ2)
-else
-     reset_vel_type([handles.civ1 handles.filter1 handles.interp1 handles.civ2 handles.interp2 handles.filter2])
-end
-run0_Callback(hObject, eventdata, handles)
-
-%-----------------------------------------
-% --- Executes on button press in interp2.
-%-------------------------------------------
-function interp2_Callback(hObject, eventdata, handles)
-if get(handles.interp2,'Value')==1
-    reset_vel_type([handles.civ1 handles.filter1 handles.interp1 handles.civ2 handles.filter2],handles.interp2)
-else
-     reset_vel_type([handles.civ1 handles.filter1 handles.interp1 handles.civ2 handles.interp2 handles.filter2])
-end
-run0_Callback(hObject, eventdata, handles)
-%---------------------------------------------
-% --- Executes on button press in filter2.
-%-------------------------------------------
-function filter2_Callback(hObject, eventdata, handles)
-if get(handles.filter2,'Value')==1
-    reset_vel_type([handles.civ1 handles.filter1 handles.interp1 handles.civ2 handles.interp2],handles.filter2)
-else
-     reset_vel_type([handles.civ1 handles.filter1 handles.interp1 handles.civ2 handles.interp2 handles.filter2])
-end
+% if get(handles.VelType,'Value')==1
+%     reset_vel_type([handles.interp1 handles.civ2 handles.filter1 handles.interp1 handles.interp2 handles.filter2],handles.VelType)
+% else
+%     reset_vel_type([handles.VelType handles.filter1 handles.interp1 handles.civ2 handles.interp2 handles.filter2])
+% end
+set(handles.FixVelType,'Value',1)
 run0_Callback(hObject, eventdata, handles)
 
 %---------------------------------------------
-function civ1_1_Callback(hObject, eventdata, handles)
+function VelType_1_Callback(hObject, eventdata, handles)
 %---------------------------------------------
-if get(handles.civ1_1,'Value')==1
-    reset_vel_type([handles.interp1_1 handles.civ2_1 handles.filter1_1 handles.interp1_1 handles.interp2_1 handles.filter2_1],handles.civ1_1)
+  
+set(handles.FixVelType,'Value',1)
+%refresh field with a second filename=first fiel name
+set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
+drawnow
+filename=read_file_boxes(handles);
+if get(handles.SubField,'Value')
+    filename_1=read_file_boxes_1(handles);
 else
-     reset_vel_type([handles.civ1_1 handles.filter1_1 handles.interp1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1])
+    index=get(handles.VelType_1,'Value');
+    if index==1
+        filename_1='';% we plot the current field without the second field
+    else
+        filename_1=filename;
+    end
 end
-run0_Callback(hObject, eventdata, handles)
+num_i1=stra2num(get(handles.i1,'String'));
+num_i2=stra2num(get(handles.i2,'String'));
+num_j1=stra2num(get(handles.j1,'String'));
+num_j2=stra2num(get(handles.j2,'String'));
 
-%--------------------------------------------
-function interp1_1_Callback(hObject, eventdata, handles)
-%--------------------------------------------
-if get(handles.interp1_1,'Value')==1
-    reset_vel_type([handles.civ1_1 handles.civ2_1 handles.filter1_1 handles.interp2_1 handles.filter2_1],handles.interp1_1)
-else
-    reset_vel_type([handles.civ1_1 handles.filter1_1 handles.interp1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1])
-end
-run0_Callback(hObject, eventdata, handles)
+errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2);
 
-%--------------------------------------------
-function filter1_1_Callback(hObject, eventdata, handles)
-%--------------------------------------------
-if get(handles.filter1_1,'Value')==1
-    reset_vel_type([handles.interp1_1 handles.civ2_1 handles.interp1_1 handles.interp2_1 handles.filter2_1],handles.filter1_1)
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg);
 else
-    reset_vel_type([handles.civ1_1 handles.filter1_1 handles.interp1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1])
+    set(handles.i1,'BackgroundColor',[1 1 1])
+    set(handles.i2,'BackgroundColor',[1 1 1])
+    set(handles.j1,'BackgroundColor',[1 1 1])
+    set(handles.j2,'BackgroundColor',[1 1 1])
+    set(handles.FileIndex,'BackgroundColor',[1 1 1])
+    set(handles.FileIndex_1,'BackgroundColor',[1 1 1])
 end
-run0_Callback(hObject, eventdata, handles)
-
-%--------------------------------------------
-function civ2_1_Callback(hObject, eventdata, handles)
-%--------------------------------------------
-if get(handles.civ2_1,'Value')==1
-    reset_vel_type([handles.civ1_1 handles.interp1_1  handles.filter1_1 handles.interp2_1 handles.filter2_1],handles.civ2_1)
-else
-    reset_vel_type([handles.civ1_1 handles.filter1_1 handles.interp1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1])
-end
-run0_Callback(hObject, eventdata, handles)
-
-%--------------------------------------------
-function interp2_1_Callback(hObject, eventdata, handles)
-%--------------------------------------------
-if get(handles.interp2_1,'Value')==1
-    reset_vel_type([handles.civ1_1 handles.civ2_1 handles.filter1_1 handles.interp1_1 handles.filter2_1],handles.interp2_1)
-else
-    reset_vel_type([handles.civ1_1 handles.filter1_1 handles.interp1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1])
-end
-run0_Callback(hObject, eventdata, handles)
-
-%--------------------------------------------
-function filter2_1_Callback(hObject, eventdata, handles)
-%--------------------------------------------
-if get(handles.filter2_1,'Value')==1
-    reset_vel_type([handles.civ1_1 handles.interp1_1 handles.civ2_1 handles.filter1_1 handles.interp1_1 handles.interp2_1],handles.filter2_1)
-else
-    reset_vel_type([handles.civ1_1 handles.filter1_1 handles.interp1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1])
-end
-run0_Callback(hObject, eventdata, handles)
+set(handles.run0,'BackgroundColor',[1 0 0])
 
 %-----------------------------------------------
 % --- reset civ buttons
@@ -3640,7 +3602,7 @@ function edit_vect_Callback(hObject, eventdata, handles)
 % UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 if isequal(get(handles.edit_vect,'Value'),1)
     test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
-    test_civ1=isequal(get(handles.civ1,'BackgroundColor'),[1 1 0]);
+    test_civ1=isequal(get(handles.VelType,'BackgroundColor'),[1 1 0]);
     if ~test_civ2 && ~test_civ1
         msgbox_uvmat('ERROR','manual correction only possible for CIV1 or CIV2 velocity fields')
     end 
@@ -4775,7 +4737,7 @@ param.index_fields_1=get(handles.Fields_1,'Value')-1;% selected string index
 if param.index_fields_1>1
     param.index_fields_1=param.index_fields_1-1;
 end
-param.civ1=get(handles.civ1,'Value');
+param.civ1=get(handles.VelType,'Value');
 param.civ2=get(handles.civ2,'Value');
 param.interp1=get(handles.interp1,'Value');
 param.interp2=get(handles.interp2,'Value');
@@ -5070,6 +5032,13 @@ function delete_object_Callback(hObject, eventdata, handles)
 IndexObj=get(handles.list_object_2,'Value');
 if IndexObj>1 
     delete_object(IndexObj)
+end
+
+% --- Executes on button press in FixVelType.
+function FixVelType_Callback(hObject, eventdata, handles)
+val=get(handles.FixVelType,'Value');
+if ~val
+    run0_Callback(hObject, eventdata, handles)
 end
 
 

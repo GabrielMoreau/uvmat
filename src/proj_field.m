@@ -1188,6 +1188,11 @@ for icell=1:length(CellVarIndex)
                 end
             end
         elseif isequal(ObjectData.ProjMode,'interp')||isequal(ObjectData.ProjMode,'filter')%interpolate data on a regular grid
+            if isequal(ObjectData.ProjMode,'filter')
+                rho=1000;%smoothing parameter, (small for strong smoothing)
+            else
+                rho=0;
+            end
             coord_x_proj=XMin:DX:XMax;
             coord_y_proj=YMin:DY:YMax;
             DimCell={'coord_y','coord_x'};
@@ -1224,7 +1229,7 @@ for icell=1:length(CellVarIndex)
                     if  ~isequal(ivar_FF,0)
                         eval(['FieldData.' VarName '=FieldData.' VarName '(indsel);'])
                     end
-                    eval(['ProjData.' VarName '=griddata_uvmat(double(coord_X),double(coord_Y),double(FieldData.' VarName '),coord_x_proj,coord_y_proj'');'])
+                    eval(['ProjData.' VarName '=griddata_uvmat(double(coord_X),double(coord_Y),double(FieldData.' VarName '),coord_x_proj,coord_y_proj'',rho);'])
                     eval(['varline=reshape(ProjData.' VarName ',1,length(coord_y_proj)*length(coord_x_proj));'])
                     FFlag= isnan(varline); %detect undefined values NaN
                     indnan=find(FFlag);
@@ -1393,18 +1398,17 @@ for icell=1:length(CellVarIndex)
             if  NbDim==2 && ~testXMin && ~testXMax && ~testYMin && ~testYMax 
                 ProjData=FieldData;% no change by projection
             else
-                test_direct
-                indY=NbDim-1
+                indY=NbDim-1;
                 if test_direct(indY)
                     min_indy=ceil((YMin-Coord{indY}(1))/DYinit)+1;
                     max_indy=floor((YMax-Coord{indY}(1))/DYinit)+1;
                     Ybound(1)=Coord{indY}(1)+DYinit*(min_indy-1);
                     Ybound(2)=Coord{indY}(1)+DYinit*(max_indy-1);
                 else
-                    min_indy=ceil((Coord{indY}(1)-YMax)/DYinit)+1
-                    max_indy=floor((Coord{indY}(1)-YMin)/DYinit)+1
-                    Ybound(2)=Coord{indY}(1)-DYinit*(max_indy-1)
-                    Ybound(1)=Coord{indY}(1)-DYinit*(min_indy-1)
+                    min_indy=ceil((Coord{indY}(1)-YMax)/DYinit)+1;
+                    max_indy=floor((Coord{indY}(1)-YMin)/DYinit)+1;
+                    Ybound(2)=Coord{indY}(1)-DYinit*(max_indy-1);
+                    Ybound(1)=Coord{indY}(1)-DYinit*(min_indy-1);
                 end
                 if test_direct(NbDim)==1
                     min_indx=ceil((XMin-Coord{NbDim}(1))/DXinit)+1;
@@ -1422,7 +1426,7 @@ for icell=1:length(CellVarIndex)
 
                 if test90y
                     ind_new=[3 2 1];
-                    DimCell={AYProjName,AXProjName}
+                    DimCell={AYProjName,AXProjName};
 %                     DimValue=DimValue(ind_new);
                     iz=ceil((ObjectData.Coord(1,1)-Coord{3}(1))/DX)+1;
                     for ivar=VarIndex
@@ -1567,6 +1571,7 @@ for icell=1:length(CellVarIndex)
 end
 ProjData
 ProjData.VarDimName{3}
+
 %-----------------------------------------------------------------
 %projection in a volume 
  function  [ProjData,errormsg] = proj_volume(FieldData, ObjectData)

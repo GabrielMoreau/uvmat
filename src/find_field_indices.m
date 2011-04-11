@@ -141,10 +141,15 @@ for icell=1:length(CellVarIndex)
         errormsg='multiply defined coordinates  in the same cell';
         return
     end
-    if numel(ivar_vector_x)>1 || numel(ivar_vector_y)>1 || numel(ivar_vector_z)>1
-        errormsg='multiply defined vector components in the same cell';
-        return
-    end  
+%     if ivar_vector_x>1
+%         ivar_vector_x=ivar_vector_x(1);
+%     end
+%     if ivar_vector_y>1
+%         ivar_vector_y=ivar_vector_y(1);
+%     end
+%     if ivar_vector_z>1
+%         ivar_vector_z=ivar_vector_z(1);
+%     end
     if numel(ivar_errorflag)>1
         errormsg='multiply defined error flag in the same cell';
         return

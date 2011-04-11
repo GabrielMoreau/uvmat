@@ -818,6 +818,9 @@ if strcmp(compare,'displacement')
     mode='displacement';
 else
     mode_list=get(handles.mode,'String');
+    if ischar(mode_list)
+        mode_list={mode_list};
+    end
     mode_value=get(handles.mode,'Value');
     mode=mode_list{mode_value};
 end
@@ -1425,7 +1428,7 @@ set(handles.RUN,'BackgroundColor',[1 0 0])
 if ~isempty(errormsg)
     display(errormsg)
     msgbox_uvmat('ERROR',errormsg)
-elseif  isfield(handles,'status') && ~isequal(get(handles.CivAll,'Value'),3)
+elseif  isfield(handles,'status') %&& ~isequal(get(handles.CivAll,'Value'),3)
     set(handles.status,'Value',1);%suppress status display
     status_Callback(hObject, eventdata, handles)
 end
@@ -4318,26 +4321,31 @@ maxix=min(size(image1,2)-isx2-shiftx,size(image1,2)-ibx2);
 [GridX,GridY]=meshgrid(minix:stepx:maxix,miniy:stepy:maxiy);
 PointCoord(:,1)=reshape(GridX,[],1);
 PointCoord(:,2)=reshape(GridY,[],1);
-
 % caluclate velocity data (y and v in indices, reverse to y component)
-[xtable ytable utable vtable ctable typevector] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty,PointCoord, 1, []);
-Data.ListGlobalAttribute={'title','Time','Dt'};
-Data.title='PIVlab';
+[xtable ytable utable vtable ctable F] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty,PointCoord, 1, []);
+Data.ListGlobalAttribute=[{'Conventions','Program','CivStage'} {'Time','Dt'}];
+Data.Conventions='uvmat/civdata';
+Data.Program='civ_uvmat';
+Data.CivStage=1;
+% list_param=fieldnames(Param.Civ1);
+% for ilist=1:length(list_param)
+%     eval(['Data.Civ1_' list_param{ilist} '=Param.Civ1.' list_param{ilist} ';'])
+% end
 Data.Time=str2double(par_civ1.T0);
 Data.Dt=str2double(par_civ1.Dt);
-Data.ListVarName={'X','Y','U','V','C','FF'};%  cell array containing the names of the fields to record
+Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'};%  cell array containing the names of the fields to record
 Data.VarDimName={'nbvec','nbvec','nbvec','nbvec','nbvec','nbvec'};
 Data.VarAttribute{1}.Role='coord_x';
 Data.VarAttribute{2}.Role='coord_y';
 Data.VarAttribute{3}.Role='vector_x';
 Data.VarAttribute{4}.Role='vector_y';
-Data.VarAttribute{5}.Role='errorflag';
-Data.X=reshape(xtable,[],1);
-Data.Y=reshape(size(image1,1)-ytable+1,[],1);
-Data.U=reshape(utable,[],1);
-Data.V=reshape(-vtable,[],1);
-Data.C=reshape(ctable,[],1);
-Data.FF=reshape(~typevector,[],1);
+Data.VarAttribute{5}.Role='warnflag';
+Data.Civ1_X=reshape(xtable,[],1);
+Data.Civ1_Y=reshape(size(image1,1)-ytable+1,[],1);
+Data.Civ1_U=reshape(utable,[],1);
+Data.Civ1_V=reshape(-vtable,[],1);
+Data.Civ1_C=reshape(ctable,[],1);
+Data.Civ1_F=reshape(F,[],1);
 
 %------------------------------------------------------------------------
 % --- Executes on button press in HELP.
@@ -4724,8 +4732,8 @@ if test_civ1
     ViewData=get(hview_field,'UserData');
     ViewData.CivHandle=handles.civ;% indicate the handle of the civ GUI in view_field
     ViewData.axes3.B=imread(filecell.ima2.civ1{1});%store the second image in the UserData of the GUI view_field
-    ViewData.axes3.X=Data.X; %keep the set of points in memeory
-    ViewData.axes3.Y=Data.Y;
+    ViewData.axes3.X=Data.Civ1_X; %keep the set of points in memeory
+    ViewData.axes3.Y=Data.Civ1_Y;
     set(hview_field,'UserData',ViewData)
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
     if isempty(corrfig)

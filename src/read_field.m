@@ -35,7 +35,7 @@ VelType=ParamIn.VelType;
 %% case of netcdf input file
 if strcmp(FileType,'netcdf')  %read the first nc field
     ParamOut.FieldName=ParamIn.FieldName;
-    GUIName='get_field'; %default name of the GUI getç_field
+    GUIName='get_field'; %default name of the GUI get_field
     if isfield(ParamIn,'GUIName')
         GUIName=ParamIn.GUIName;
     end
@@ -43,10 +43,16 @@ if strcmp(FileType,'netcdf')  %read the first nc field
     if ~strcmp(ParamIn.FieldName,'get_field...')% if get_field is not requested, look for Civx data
         FieldList=calc_field;%list of possible fields for Civx data
         ParamOut.ColorVar='';%default
-        field_index=strcmp(ParamOut.FieldName,FieldList);%look for ParamOut.FieldName in the list
-        if isempty(find(field_index,1))% ParamOut.FieldName is not in the list, check whether Civx data exist
-            Data=nc2struct(ObjectName,'ListGlobalAttribute','absolut_time_T0','civ');
-            if ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)
+        field_index=strcmp(ParamIn.FieldName,FieldList);%look for ParamIn.FieldName in the list of possible fields for Civx data
+        if isempty(find(field_index,1))% ParamIn.FieldName is not in the list, check whether Civx data exist
+            Data=nc2struct(ObjectName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ');
+            if isequal(Data.Conventions,'uvmat/civdata')
+                ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
+                ParamOut.ColorVar='ima_cor';
+                InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
+                [Field,ParamOut.VelType]=read_civdata(ObjectName,InputField,ParamIn.VelType);
+                test_civx=Field.CivStage;
+            elseif ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)
                 ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
                 ParamOut.ColorVar='ima_cor';
                 InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
@@ -66,7 +72,10 @@ if strcmp(FileType,'netcdf')  %read the first nc field
                 ParamOut.ColorVar=ParamIn.ColorVar;
                 InputField=[InputField {ParamOut.ColorVar}];
             end
-            [Field,ParamOut.VelType]=read_civxdata(ObjectName,InputField,ParamIn.VelType);
+            [Field,ParamOut.VelType,errormsg]=read_civxdata(ObjectName,InputField,ParamIn.VelType);
+            if ~isempty(errormsg)
+                return
+            end
             test_civx=Field.CivStage;
             ParamOut.CivStage=Field.CivStage;
         end

@@ -33,7 +33,6 @@ function [DataOut,errormsg]=calc_field(FieldName,DataIn)
 % a specific variable name for civ1 and civ2 fields are also associated, if
 % the scalar is calculated from other fields, as explicited below
 
-%list_scal={title, type, civ1 var name,civ2 var name}
 list_field={'velocity';...%image correlation corresponding to a vel vector
     'ima_cor';...%image correlation corresponding to a vel vector
     'norm_vel';...%norm of the velocity
@@ -53,7 +52,7 @@ else
         DataIn=[];
     end
     if ischar(FieldName)
-        FieldName={FieldName};
+        FieldName={FieldName};%convert a string input to a cell with one string element
     end
     if isfield(DataIn,'Z')&& isequal(size(DataIn.Z),size(DataIn.X))
         nbcoord=3;

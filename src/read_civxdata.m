@@ -46,7 +46,14 @@
 % 'varcivx_generator':, sets the names of vaiables to read in the netcdf file 
 % 'nc2struct': reads a netcdf file 
 
-function [Field,VelTypeOut]=read_civxdata(filename,FieldNames,VelType)
+function [Field,VelTypeOut,errormsg]=read_civxdata(filename,FieldNames,VelType)
+errormsg='';
+DataTest=nc2struct(filename,'ListGlobalAttribute','Conventions');
+if isequal(DataTest.Conventions,'uvmat/civdata')%test for new civ format
+     [Field,VelTypeOut]=read_civdata(filename,FieldNames,VelType);
+     return
+end
+    
 %% default input
 if ~exist('VelType','var')
     VelType=[];
@@ -63,10 +70,11 @@ VelTypeOut=VelType;%default
 [var,role,units,vel_type_out_cell]=varcivx_generator(FieldNames,VelType);%determine the names of constants and variables to read
 [Field,vardetect,ichoice]=nc2struct(filename,var);%read the variables in the netcdf file
 if isfield(Field,'Txt')
+    errormsg=Field.Txt;
     return
 end
 if vardetect(1)==0
-     Field.Txt=[ 'requested field not available in ' filename '/' VelType];
+     errormsg=[ 'requested field not available in ' filename '/' VelType];
      return
 end
 var_ind=find(vardetect);
@@ -116,7 +124,7 @@ if test_civ1
         Field.Time=double(Field.absolut_time_T0);
         Field.dt=double(Field.dt);
     else
-       Field.Txt='the input file is not civx'; 
+       errormsg='the input file is not civx'; 
        Field.CivStage=0;
        Field.dt=0;
     end
@@ -124,7 +132,7 @@ elseif test_civ2
     Field.Time=double(Field.absolut_time_T0_2);
     Field.dt=double(Field.dt2);
 else
-    Field.Txt='the input file is not civx';
+    errormsg='the input file is not civx';
     Field.CivStage=0;
     Field.dt=0;
 end

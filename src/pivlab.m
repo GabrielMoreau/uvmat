@@ -18,128 +18,110 @@
 % subpixfinder=1 or 2 controls the curve fitting of the image correlation
 % mask: =[] for no mask
 % roi: 4 element vector defining a region of interest: x position, y position, width, height, (in image indices), for the whole image, roi=[];
-function [xtable ytable utable vtable ctable typevector result_conv errormsg] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty, GridIndices, subpixfinder,mask)
+function [xtable ytable utable vtable ctable F result_conv errormsg] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty, GridIndices, subpixfinder,mask)
 %this funtion performs the DCC PIV analysis. Recent window-deformation
 %methods perform better and will maybe be implemented in the future.
-errormsg='';
-warning off %MATLAB:log:logOfZero
-[npy_ima npx_ima]=size(image1);
-if ~isequal(size(image1),size(image2))
-    errormsg='image pair with unequal size';
-    return
-end
-    xroi=0;
-    yroi=0;
-    image1_roi=double(image1);
-    image2_roi=double(image2);
-if numel(mask)>0
-    cellmask=mask;
-    mask=zeros(size(image1));
-    for i=1:size(cellmask,1);
-        masklayerx=cellmask{i,1};
-        masklayery=cellmask{i,2};
-        mask = mask + poly2mask(masklayerx-xroi,masklayery-yroi,npy_ima,npx_ima); %kleineres eingangsbild und maske geshiftet
-    end
-else
-    mask=zeros(size(image1));
-end
-mask(mask>1)=1;
-
-% ibx=2*ibx2-1;%ibx and iby odd, reduced by 1 if even
-% iby=2*iby2-1;
-% miniy=1+iby2
-% minix=1+ibx2
-% maxiy=step*(floor(size(image1_roi,1)/step))-(iby-1)+iby2 %statt size deltax von ROI nehmen
-% maxix=step*(floor(size(image1_roi,2)/step))-(ibx-1)+ibx2
-% numelementsy=floor((maxiy-miniy)/step+1);
-% numelementsx=floor((maxix-minix)/step+1);
-% 
-% LAy=miniy;
-% LAx=minix;
-% LUy=size(image1_roi,1)-maxiy;
-% LUx=size(image1_roi,2)-maxix;
-% shift4centery=round((LUy-LAy)/2);
-% shift4centerx=round((LUx-LAx)/2);
-% if shift4centery<0 %shift4center will be negative if in the unshifted case the left border is bigger than the right border. the vectormatrix is hence not centered on the image. the matrix cannot be shifted more towards the left border because then image2_crop would have a negative index. The only way to center the matrix would be to remove a column of vectors on the right side. but then we weould have less data....
-%     shift4centery=0;
-% end
-% if shift4centerx<0 %shift4center will be negative if in the unshifted case the left border is bigger than the right border. the vectormatrix is hence not centered on the image. the matrix cannot be shifted more towards the left border because then image2_crop would have a negative index. The only way to center the matrix would be to remove a column of vectors on the right side. but then we weould have less data....
-%     shift4centerx=0;
-% end
-% miniy=miniy+shift4centery;
-% minix=minix+shift4centerx;
-% maxix=maxix+shift4centerx;
-% maxiy=maxiy+shift4centery;
-
-image1_roi=padarray(image1_roi,[iby2 ibx2], min(min(image1_roi)));%add a border around the image with minimum image value
-image2_roi=padarray(image2_roi,[iby2 ibx2], min(min(image1_roi)));
-mask=padarray(mask,[iby2 ibx2],0);
-%SubPixOffset=0.5;%odd values chosen for ibx and iby
-
 nbvec=size(GridIndices,1);
 xtable=zeros(nbvec,1);
 ytable=xtable;
 utable=xtable;
 vtable=xtable;
-u2table=xtable;
-v2table=xtable;
-s2n=xtable;
-typevector=ones(size(xtable));
+ctable=xtable;
+F=xtable;
+result_conv=[];
+errormsg='';
+%warning off %MATLAB:log:logOfZero
+[npy_ima npx_ima]=size(image1);
+if ~isequal(size(image2),[npy_ima npx_ima])
+    errormsg='image pair with unequal size';
+    return
+end
 
-nrx=0;
-nrxreal=0;
-nry=0;
-increments=0;
+%% mask
+testmask=0;
+if exist('mask','var') && ~isempty(mask)
+   testmask=1;
+   if ~isequal(size(mask),[npy_ima npx_ima])
+        errormsg='mask must be an image with the same size as the images';
+        return
+   end
+    % Convention for mask
+    % mask >200 : velocity calculated
+    %  200 >=mask>150;velocity not calculated, interpolation allowed (bad spots)
+    % 150>=mask >100: velocity not calculated, nor interpolated
+    %  100>=mask> 20: velocity not calculated, impermeable (no flux through mask boundaries)
+    %  20>=mask: velocity=0
+    test_noflux=(mask<=100) ;
+    test_undefined=(mask<=200 & mask>100 );
+    image1(test_undefined)=min(min(image1))*ones(size(image1));% put image to zero in the undefined  area
+    image2(test_undefined)=min(min(image1))*ones(size(image1));% put image to zero in the undefined  area
+end
+image1=double(image1);
+image2=double(image2);
 
-%% MAINLOOP
+%% calculate correlations: MAINLOOP
+corrmax=0;
+sum_square=1;% default
 for ivec=1:nbvec
     iref=GridIndices(ivec,1);
     jref=GridIndices(ivec,2);
-    %jref=npy_ima-PointCoord(ivec,2)+1;
-    image1_crop=image1_roi(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);
-    image2_crop=image2_roi(jref+shifty-isy2:jref+shifty+isy2,iref+shiftx-isx2:iref+shiftx+isx2);
-    image1_crop=image1_crop-mean(mean(image1_crop));
-    image2_crop=image2_crop-mean(mean(image2_crop));
-        if mask(jref,iref)==0
-           %reference: Oliver Pust, PIV: Direct Cross-Correlation
-           % image2_crop: sub image with the size of the search area in image 2
-           % image1_crop: sub image of the correlation box in image 1
-           % %image2_crop is bigger than image1_crop. Zeropading is therefore not
-            result_conv= conv2(image2_crop,rot90(image1_crop,2),'valid');         
-            %necessary. 'Valid' makes sure that no zero padded content is returned.
-            corrmax= max(max(result_conv));
-            result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
-           % result_conv=flipdim(result_conv,2);%reverse x direction
-            %Find the 255 peak
-            [y,x] = find(result_conv==255);
-            if isnan(y)==0 & isnan(x)==0 
-                try
-                    if subpixfinder==1
-                        [vector] = SUBPIXGAUSS (result_conv,x,y);
-                    elseif subpixfinder==2
-                        [vector] = SUBPIX2DGAUSS (result_conv,x,y);
-                    end
-                catch ME
-                    errormsg=ME.message
-                    vector=[0 0]; %if something goes wrong with cross correlation.....
-                end
-            else
-                vector=[0 0]; %if something goes wrong with cross correlation.....
+    testmask_ij=0;
+    test0=0;
+    if testmask
+        if mask(jref,iref)<=20
+           vector=[0 0];
+           test0=1;
+        else
+            mask_crop1=mask(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);
+            mask_crop2=mask(jref+shifty-isy2:jref+shifty+isy2,iref+shiftx-isx2:iref+shiftx+isx2);
+            if ~isempty(find(mask_crop1<=200 & mask_crop1>100,1)) || ~isempty(find(mask_crop2<=200 & mask_crop2>100,1));
+                testmask_ij=1;
             end
-        else %if mask was not 0 then
-            vector=[0 0];
-            typevector(ivec)=0;
         end
-
-        %Create the vector matrix x, y, u, v
-        xtable(ivec)=GridIndices(ivec,1);
-        ytable(ivec)=GridIndices(ivec,2);
-        utable(ivec)=vector(1);
-        vtable(ivec)=vector(2);
-        sum_square=sum(sum(image1_crop.*image1_crop));
-        ctable(ivec)=corrmax/sum_square;
+    end
+    if ~test0
+        image1_crop=image1(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);
+        image2_crop=image2(jref+shifty-isy2:jref+shifty+isy2,iref+shiftx-isx2:iref+shiftx+isx2);
+        image1_crop=image1_crop-mean(mean(image1_crop));
+        image2_crop=image2_crop-mean(mean(image2_crop));
+        %reference: Oliver Pust, PIV: Direct Cross-Correlation
+        result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
+        corrmax= max(max(result_conv));
+        result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
+        %Find the correlation max, at 255
+        [y,x] = find(result_conv==255);
+        if ~isnan(y) & ~isnan(x)
+            try
+                if subpixfinder==1
+                    [vector] = SUBPIXGAUSS (result_conv,x,y);
+                elseif subpixfinder==2
+                    [vector] = SUBPIX2DGAUSS (result_conv,x,y);
+                end
+                sum_square=sum(sum(image1_crop.*image1_crop));
+                ctable(ivec)=corrmax/sum_square;% correlation value
+                if vector(1)>shiftx+isx2-ibx2+subpixfinder || vector(2)>shifty+isy2-iby2+subpixfinder
+                    F(ivec)=-2;%vector reaches the border of the search zone
+                end
+            catch ME
+                vector=[0 0]; %if something goes wrong with cross correlation.....
+                F(ivec)=3;
+            end
+        else
+            vector=[0 0]; %if something goes wrong with cross correlation.....
+            F(ivec)=3;
+        end
+        if testmask_ij
+            F(ivec)=3;
+        end
+    end
+    
+    %Create the vector matrix x, y, u, v
+    xtable(ivec)=iref+vector(1)/2;% convec flow (velocity taken at the point middle from imgae1 and 2)
+    ytable(ivec)=jref+vector(2)/2;
+    utable(ivec)=vector(1);
+    vtable(ivec)=vector(2);
 end
-result_conv=result_conv/255;
+result_conv=result_conv*corrmax/(255*sum_square);% keep the last correlation matrix for output
 
 
 function [vector] = SUBPIXGAUSS (result_conv,x,y)

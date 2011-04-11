@@ -106,7 +106,7 @@ if ~isequal(hhh,'')
             keystr(1)=[];
         end
         try
-            if ischar(valuestr) & length(valuestr)<200 & double(valuestr)<=122 & double(valuestr)>=48 %usual characters
+            if ischar(valuestr) %& length(valuestr)<200 & double(valuestr)<=122 & double(valuestr)>=48 %usual characters
                % valuestr=regexprep(valuestr,{'\\','\/','\.','\-',' '},{'_','_','_','_','_'})%remove  '\','.' or '-' if exists
                 eval(['Data.' keystr '=''' valuestr ''';'])
 %             elseif isempty(valuestr)

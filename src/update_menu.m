@@ -12,13 +12,8 @@
 function menu_str=update_menu(handle,strinput)
 menu_str=get(handle,'String');
 nbmenu=length(menu_str);
-ichoice=0;%default
-for imenu=1:nbmenu
-    if isequal(menu_str{imenu},strinput)
-       ichoice=imenu;
-    end
-end
-if ichoice==0%the input string does not exist in the menu
+ichoice=find(strcmp(strinput,menu_str),1);
+if isempty(ichoice)%the input string does not exist in the menu
     menu_str{nbmenu+1}=menu_str{nbmenu};%shift  the last item ('more...')
     menu_str{nbmenu}=strinput;
     set(handle,'String',menu_str)
