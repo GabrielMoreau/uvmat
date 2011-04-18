@@ -128,9 +128,8 @@ end
 [pp,subdir_ima]=fileparts(Series.RootPath);
 try
     mkdir([dir_images term]);
-catch
-    errormsg=lasterr
-            msgbox_uvmat('ERROR',errormsg);
+catch ME
+            msgbox_uvmat('ERROR',ME.message);
             return
 end
 [xx,msg2] = fileattrib([dir_images term],'+w','g'); %yield writing access (+w) to user group (g)
@@ -141,7 +140,7 @@ end
 filebase_b=fullfile([dir_images term],Series.RootFile);
 
 %% set processing parameters
-prompt = {'Number of images for the sliding background';'The number of positions (laser slices)';'volume scan mode (Yes/No)';...
+prompt = {'Number of images for the sliding background (MUST FIT IN COMPUETER MEMORY)';'The number of positions (laser slices)';'volume scan mode (Yes/No)';...
         'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles'};
 dlg_title = ['get (slice by slice) a sliding background and substract to each image, result in subdir ' subdir_ima term];
 num_lines= 3;
@@ -153,7 +152,7 @@ set(hseries.ParamVal,'Visible','on')
 nbaver_ima=str2num(answer{1});%number of images for the sliding background
 nbaver=ceil(nbaver_ima/siz(1));%number of bursts for the sliding background
 if isequal(floor(nbaver/2),nbaver)
-   nbaver=nbaver+1%put the number of burst to an odd number (so the middle burst is defined)
+   nbaver=nbaver+1;%put the number of burst to an odd number (so the middle burst is defined)
 end
 step=siz(1);%case of bursts: the sliding background is shifted by one burst 
 vol_test=answer{3};
@@ -180,7 +179,7 @@ lengthtot=siz(1)*siz(2);
 nbfield=floor(lengthtot/(nbfield2*nbslice_i));%total number of i indexes (adjusted to an integer number of slices)
 nbfield_slice=nbfield*nbfield2;% number of fields per slice
 if nbaver_ima > nbfield*nbfield2
-    errordlg('number of images in a slice smaller than the proposed number of images for the sliding average')
+    msgbox_uvmat('ERROR','number of images in a slice smaller than the proposed number of images for the sliding average')
     return
 end
 nbfirst=(ceil(nbaver/2))*step;
@@ -188,6 +187,18 @@ if nbfirst>nbaver_ima
     nbfirst=ceil(nbaver_ima/2);
     step=1;
     nbaver=nbaver_ima;
+end
+
+%% prealocate memory for the sliding background
+first_image=name_generator(filebase,num_i1(1),num_j1(1),Series.FileExt,Series.NomType);
+Afirst=read_image(first_image,FileType,num_i1(1),MovieObject);
+[npy,npx]=size(Afirst);
+try 
+Ak=zeros(npy,npx,nbaver_ima,'uint16'); %prealocate memory
+Asort=zeros(npy,npx,nbaver_ima,'uint16'); %prealocate memory
+catch ME
+    msgbox_uvmat('ERROR',ME.message)
+    return
 end
 
 %% copy the xml file
@@ -203,15 +214,15 @@ if exist([filebase '.xml'],'file')
     uid_ImageName=find(t,'ImaDoc/Heading/ImageName');
     ImageName=name_generator(filebase_b,num_i1(1),num_j1(1),'.png',Series.NomType);
     [pth,ImageName]=fileparts(ImageName);
-    ImageName=[ImageName '.png']
+    ImageName=[ImageName '.png'];
     if isempty(uid_ImageName)
        [t,uid_ImageName]=add(t,uid_Heading,'element','ImageName');
     end
     uid_value=children(t,uid_ImageName);
     if isempty(uid_value)
-        t=add(t,uid_ImageName,'chardata',ImageName)%indicate  name of the first image, with ;png extension
+        t=add(t,uid_ImageName,'chardata',ImageName);%indicate  name of the first image, with ;png extension
     else
-        t=set(t,uid_value(1),'value',ImageName)%indicate  name of the first image, with ;png extension
+        t=set(t,uid_value(1),'value',ImageName);%indicate  name of the first image, with ;png extension
     end  
 
     %add information about image transform
@@ -238,6 +249,7 @@ if exist([filebase '_1mask_1'],'file')
 end
 
 %MAIN LOOP ON SLICES
+
 for islice=1:nbslice_i
     %% select the series of image indices at the level islice
     for ifield=1:nbfield
@@ -359,7 +371,7 @@ function C=levels(A)
 B=double(A(:,:,1));
 windowsize=round(min(size(B,1),size(B,2))/20);
 windowsize=floor(windowsize/2)*2+1;
-ix=[1/2-windowsize/2:-1/2+windowsize/2];%
+ix=1/2-windowsize/2:-1/2+windowsize/2;%
 %del=np/3;
 %fct=exp(-(ix/del).^2);
 fct2=cos(ix/(windowsize-1)/2*pi/2);
