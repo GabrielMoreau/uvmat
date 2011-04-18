@@ -121,16 +121,10 @@ if isfield(param,'list_fields')&& isfield(param,'index_fields') &&~isempty(param
     set(handles.FieldMenu,'Value',param.index_fields);% selected string index
     FieldCell{1}=param.list_fields{param.index_fields};
 end
-if isfield(param,'civ1')&& islogical(param.civ1) && isfield(param,'civ2')&& islogical(param.civ2)&...
-        isfield(param,'interp1')&& islogical(param.interp1)&&isfield(param,'interp2')&& islogical(param.interp2)&...
-        isfield(param,'filter1')&& islogical(param.filter1)&&isfield(param,'filter2')&& islogical(param.filter2)
-    set(handles.civ1,'Value',param.civ1);
-    set(handles.civ2,'Value',param.civ1);
-    set(handles.interp1,'Value',param.interp1);
-    set(handles.interp2,'Value',param.interp2);
-    set(handles.filter1,'Value',param.filter1);
-    set(handles.filter2,'Value',param.filter2);
-end
+% if isfield(param,'velTypeMenu')&&isfield(param,'velTypeIndex')
+%     set(handles.VelTypeMenu,'Value',param.VelTypeIndex)
+%     set(handles.VelTypeMenu,'String',param.VelTypeMenu)
+% end  
 set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles}) 
 NomType_Callback(hObject, eventdata, handles)
 

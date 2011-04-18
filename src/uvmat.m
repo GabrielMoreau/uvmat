@@ -2426,7 +2426,9 @@ if numel(Field)==2
 else
    UvData.Field=Field{1};
 end
-
+UvData.Field
+max(max(UvData.Field.A))
+min(min(UvData.Field.A))
 %% get bounds and mesh (needed for mouse action and to open set_object)
 test_x=0;
 test_z=0;% test for unstructured z coordinate
@@ -3926,7 +3928,7 @@ end
 list_object=get(handles.list_object_1,'String');
 set(handles.list_object_1,'Value',1)
 set(handles.list_object_1,'String',{''})
-set(handles.list_object_2,'Value',2)
+set(handles.list_object_2,'Value',1)
 set(handles.list_object_2,'String',{''})
 list_object_2_Callback(hObject, eventdata, handles)
 
@@ -4305,8 +4307,8 @@ update_object(handles,IndexObj,1,str_1)
 % --- Executes on selection change in list_object_1.
 function list_object_2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-list_str=get(handles.list_object_2,'String');
-IndexObj=get(handles.list_object_2,'Value');
+list_str=get(handles.list_object_2,'String')
+IndexObj=get(handles.list_object_2,'Value')
 if ischar(list_str) || isempty(list_str{IndexObj})% || strcmp(list_str{IndexObj},'...')
     hview_field=findobj(allchild(0),'Tag','view_field');
     if ~isempty(hview_field)
@@ -4737,12 +4739,16 @@ param.index_fields_1=get(handles.Fields_1,'Value')-1;% selected string index
 if param.index_fields_1>1
     param.index_fields_1=param.index_fields_1-1;
 end
-param.civ1=get(handles.VelType,'Value');
-param.civ2=get(handles.civ2,'Value');
-param.interp1=get(handles.interp1,'Value');
-param.interp2=get(handles.interp2,'Value');
-param.filter1=get(handles.filter1,'Value');
-param.filter2=get(handles.filter2,'Value');
+% if isequal(get(handles.VelType,'Visible'),'on')
+%     param.VelTypeMenu=get(handles.VelType,'String');
+%     param.VelTypeIndex=get(handles.VelType,'Value');
+% end
+% param.civ1=get(handles.VelType,'Value');
+% param.civ2=get(handles.civ2,'Value');
+% param.interp1=get(handles.interp1,'Value');
+% param.interp2=get(handles.interp2,'Value');
+% param.filter1=get(handles.filter1,'Value');
+% param.filter2=get(handles.filter2,'Value');
 param.menu_coord_str=get(handles.transform_fct,'String');
 param.menu_coord_val=get(handles.transform_fct,'Value');
 

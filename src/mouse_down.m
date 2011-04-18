@@ -108,6 +108,10 @@ for ichild=1:length(hchild)
             else
                 haxes=[];%mouse out of axes
             end
+            break
+        elseif isequal(htype,'uicontrol') && isequal(get(hchild(ichild),'Visible'),'on')
+            msgbox(get(hchild(ichild),'String'),get(hchild(ichild),'Tag'))
+            break
         end
     end
 end

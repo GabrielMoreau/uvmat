@@ -89,19 +89,19 @@ for ivec=1:nbvec
         corrmax= max(max(result_conv));
         result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
         %Find the correlation max, at 255
-        [y,x] = find(result_conv==255);
-        if ~isnan(y) & ~isnan(x)
+        [y,x] = find(result_conv==255,1);
+        if ~isnan(y) && ~isnan(x)
             try
                 if subpixfinder==1
-                    [vector] = SUBPIXGAUSS (result_conv,x,y);
+                    [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
                 elseif subpixfinder==2
-                    [vector] = SUBPIX2DGAUSS (result_conv,x,y);
+                    [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
                 end
                 sum_square=sum(sum(image1_crop.*image1_crop));
                 ctable(ivec)=corrmax/sum_square;% correlation value
-                if vector(1)>shiftx+isx2-ibx2+subpixfinder || vector(2)>shifty+isy2-iby2+subpixfinder
-                    F(ivec)=-2;%vector reaches the border of the search zone
-                end
+%                 if vector(1)>shiftx+isx2-ibx2+subpixfinder || vector(2)>shifty+isy2-iby2+subpixfinder
+%                     F(ivec)=-2;%vector reaches the border of the search zone
+%                 end
             catch ME
                 vector=[0 0]; %if something goes wrong with cross correlation.....
                 F(ivec)=3;
@@ -124,39 +124,45 @@ end
 result_conv=result_conv*corrmax/(255*sum_square);% keep the last correlation matrix for output
 
 
-function [vector] = SUBPIXGAUSS (result_conv,x,y)
+function [vector,F] = SUBPIXGAUSS (result_conv,x,y)
+vector=[0 0]; %default
+F=0;
+[npy,npx]=size(result_conv);
 
-if size(x,1)>1 %if there are more than 1 peaks just take the first
-    x=x(1:1);
-end
-if size(y,1)>1 %if there are more than 1 peaks just take the first
-    y=y(1:1);
-end
-if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) && (y >= 1)
+% if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) && (y >= 1)
     %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion – Israel Institute of Technology
     %http://urapiv.wordpress.com
-    f0 = log(result_conv(y,x));
-    f1 = log(result_conv(y-1,x));
-    f2 = log(result_conv(y+1,x));
-    peaky = y+ (f1-f2)/(2*f1-4*f0+2*f2);
-    f0 = log(result_conv(y,x));
-    f1 = log(result_conv(y,x-1));
-    f2 = log(result_conv(y,x+1));
-    peakx = x+ (f1-f2)/(2*f1-4*f0+2*f2);
-    [npy,npx]=size(result_conv);
+    peaky = y;
+    if y <= npy-1 && y >= 1
+        f0 = log(result_conv(y,x));
+        f1 = log(result_conv(y-1,x));
+        f2 = log(result_conv(y+1,x));
+        peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
+    else
+        F=-2; % warning flag for vector truncated by the limited search box
+    end
+    peakx=x;
+    if x <= npx-1 && x >= 1
+        f0 = log(result_conv(y,x));
+        f1 = log(result_conv(y,x-1));
+        f2 = log(result_conv(y,x+1));
+        peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
+    else
+        F=-2; % warning flag for vector truncated by the limited search box
+    end
     vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
-else
-    vector=[NaN NaN];
-end
+% else
+%     vector=[NaN NaN];
+% end
 
-function [vector] = SUBPIX2DGAUSS (result_conv,x,y)
-if size(x,1)>1 %if there are more than 1 peaks just take the first
-    x=x(1:1);
-end
-if size(y,1)>1 %if there are more than 1 peaks just take the first
-    y=y(1:1);
-end
-if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) && (y >= 1)
+function [vector,F] = SUBPIX2DGAUSS (result_conv,x,y)
+vector=[0 0]; %default
+F=-2;
+peaky=y;
+peakx=x;
+[npy,npx]=size(result_conv);
+if (x <= npx-1) && (y <= npy-1) && (x >= 1) && (y >= 1)
+    F=0;
     for i=-1:1
         for j=-1:1
             %following 15 lines based on
@@ -180,14 +186,11 @@ if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) 
     c02=(1/6)*sum(sum(c02)); 
     deltax=(c11*c01-2*c10*c02)/(4*c20*c02-c11^2);
     deltay=(c11*c10-2*c01*c20)/(4*c20*c02-c11^2);
-    peakx=x+deltax;
-    peaky=y+deltay;
-    
-    [npy,npx]=size(result_conv);
-    vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
-%     SubpixelX=peakx-(ibx/2)-SubPixOffset;
-%     SubpixelY=peaky-(iby/2)-SubPixOffset;
-%     vector=[SubpixelX, SubpixelY];
-else
-    vector=[NaN NaN];
+    if abs(deltax)<1
+        peakx=x+deltax;
+    end
+    if abs(deltay)<1
+        peaky=y+deltay;
+    end
 end
+vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];

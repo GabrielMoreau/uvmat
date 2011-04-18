@@ -899,18 +899,13 @@ if test_ima
             set(hima,'CData',B);
             if MinA<MaxA
                 set(haxes,'CLim',[MinA MaxA])
-                %caxis([MinA MaxA])
             else
-                set(haxes,'CLim',[MinA MaxA])
-                %caxis([MaxA-1 MaxA])
+                set(haxes,'CLim',[MinA MaxA+1])
             end
             set(hima,'XData',AX);
             set(hima,'YData',AY);
         end
     end
-%     if ~isstruct(AxeData)
-%         AxeData=[];
-%     end
     test_ima=1;
     
     %display the colorbar code for B/W images if Poscolorbar not empty
