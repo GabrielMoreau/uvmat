@@ -135,8 +135,8 @@ F=0;
     peaky = y;
     if y <= npy-1 && y >= 1
         f0 = log(result_conv(y,x));
-        f1 = log(result_conv(y-1,x));
-        f2 = log(result_conv(y+1,x));
+        f1 = real(log(result_conv(y-1,x)));
+        f2 = real(log(result_conv(y+1,x)));
         peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
     else
         F=-2; % warning flag for vector truncated by the limited search box
@@ -144,8 +144,8 @@ F=0;
     peakx=x;
     if x <= npx-1 && x >= 1
         f0 = log(result_conv(y,x));
-        f1 = log(result_conv(y,x-1));
-        f2 = log(result_conv(y,x+1));
+        f1 = real(log(result_conv(y,x-1)));
+        f2 = real(log(result_conv(y,x+1)));
         peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
     else
         F=-2; % warning flag for vector truncated by the limited search box

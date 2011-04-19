@@ -2426,9 +2426,7 @@ if numel(Field)==2
 else
    UvData.Field=Field{1};
 end
-UvData.Field
-max(max(UvData.Field.A))
-min(min(UvData.Field.A))
+
 %% get bounds and mesh (needed for mouse action and to open set_object)
 test_x=0;
 test_z=0;% test for unstructured z coordinate

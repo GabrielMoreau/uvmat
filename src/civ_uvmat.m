@@ -128,6 +128,7 @@ if isfield (Param,'Patch1')
     else
         ind_good=1:numel(Data.Civ1_X);
     end
+    Data.Civ1_X
     [Ures, Vres,FFres]=...
                             patch_uvmat(Data.Civ1_X(ind_good)',Data.Civ1_Y(ind_good)',Data.Civ1_U(ind_good)',Data.Civ1_V(ind_good)',Data.Patch1_Rho,Data.Patch1_Threshold,Data.Patch1_SubDomain); 
                         size(Ures)
@@ -268,18 +269,22 @@ end
 
 %------------------------------------------------------------------------
 % patch function
-function [U_smooth,V_smooth,FF] =patch_uvmat(X,Y,U,V,Rho,Threshold,SubDomain)
+function [U_patch,V_patch,FF,SubRangx,SubRangy,X_ctrs,Y_ctrs] =patch_uvmat(X,Y,U,V,Rho,Threshold,SubDomain)
 %subdomain decomposition
 warning off
+U=reshape(U,[],1);
+V=reshape(V,[],1);
+X=reshape(X,[],1);
+Y=reshape(Y,[],1);
 nbvec=numel(X);
-NbSubDomain=ceil(nbvec/SubDomain);
-MinX=min(X);
-MinY=min(Y);
-MaxX=max(X);
-MaxY=max(Y);
+NbSubDomain=ceil(nbvec/SubDomain)
+MinX=min(X)
+MinY=min(Y)
+MaxX=max(X)
+MaxY=max(Y)
 RangX=MaxX-MinX;
 RangY=MaxY-MinY;
-AspectRatio=RangY/RangX;
+AspectRatio=RangY/RangX
 NbSubDomainX=ceil(sqrt(NbSubDomain/AspectRatio))
 NbSubDomainY=ceil(sqrt(NbSubDomain*AspectRatio))
 
@@ -290,56 +295,65 @@ CentreY=linspace(MinY+SizY/2,MaxY-SizY/2,NbSubDomainY);
 SubIndexX=ceil((X-MinX)/SizX);%subdomain index of vectors
 SubIndexY=ceil((Y-MinY)/SizY);
 rho=RangX*RangY*Rho;%optimum rho increase as teh area of the subdomain
-U_tps=zeros(length(X)+3,1);%default spline
-V_tps=zeros(length(X)+3,1);%default spline
+U_tps=zeros(length(X),NbSubDomainY,NbSubDomainX);%default spline
+V_tps=zeros(length(X),NbSubDomainY,NbSubDomainX);%default spline
+X_dist=zeros(length(X),NbSubDomainY,NbSubDomainX);%default spline
+Y_dist=zeros(length(X),NbSubDomainY,NbSubDomainX);%default spline
+U_smooth=zeros(length(X),NbSubDomainY,NbSubDomainX);
+V_smooth=zeros(length(X),NbSubDomainY,NbSubDomainX);
+dist_ctre=zeros(length(X),NbSubDomainY,NbSubDomainX);
+FF=zeros(length(X),1);
 for isubx=1:NbSubDomainX
     for isuby=1:NbSubDomainY
-        SubRangx(isuby,isubx,:)=[CentreX(isubx)-SizX/2 CentreX(isubx)+SizX/2]
-        SubRangy(isuby,isubx,:)=[CentreY(isubx)-SizY/2 CentreY(isubx)+SizY/2]
+        SubRangx(isuby,isubx,:)=[CentreX(isubx)-SizX/2 CentreX(isubx)+SizX/2];
+        SubRangy(isuby,isubx,:)=[CentreY(isubx)-SizY/2 CentreY(isubx)+SizY/2];
         for iter=1:3 %increase the subdomain during three iterations at most
             ind_sel=find(X>SubRangx(isuby,isubx,1) & X<SubRangx(isuby,isubx,2) & Y>SubRangy(isuby,isubx,1) & Y<SubRangy(isuby,isubx,2));  
-            [U_smooth(ind_sel)]=tps_uvmat(X(ind_sel),Y(ind_sel),U(ind_sel),rho);
-            [V_smooth(ind_sel)]=tps_uvmat(X(ind_sel),Y(ind_sel),V(ind_sel),rho);
-            iter
-            numel(ind_sel)
+            size(ind_sel)
             if numel(ind_sel)<SubDomain/4;% too few selected vectors, increase the subrange for next iteration
                 SubRangx(isuby,isubx,1)=SubRangx(isuby,isubx,1)-SizX/4;
                 SubRangx(isuby,isubx,2)=SubRangx(isuby,isubx,2)+SizX/4;
                 SubRangy(isuby,isubx,1)=SubRangy(isuby,isubx,1)-SizY/4;
                 SubRangy(isuby,isubx,2)=SubRangy(isuby,isubx,2)+SizY/4;
             else
-                UDiff=U_smooth(ind_sel)-U(ind_sel);
-                VDiff=U_smooth(ind_sel)-U(ind_sel);
+                [U_smooth_sub,U_tps_sub]=tps_uvmat(X(ind_sel),Y(ind_sel),U(ind_sel),rho);
+                [V_smooth_sub,V_tps_sub]=tps_uvmat(X(ind_sel),Y(ind_sel),V(ind_sel),rho);
+                size(U_smooth_sub)
+                size(U(ind_sel))
+                UDiff=U_smooth_sub-U(ind_sel);
+                VDiff=V_smooth_sub-V(ind_sel);
                 NormDiff=UDiff.*UDiff+VDiff.*VDiff;
                 FF(ind_sel)=20*(NormDiff>Threshold);%put FF value to 20 to identify the criterium of elimmination
-                ind_ind_false=find(FF(ind_sel)~=0);
-                ind_ind_sel=find(FF(ind_sel)==0);
-                U_smooth(ind_sel(ind_ind_false))=zeros(numel(ind_ind_false),1);
-                V_smooth(ind_sel(ind_ind_false))=zeros(numel(ind_ind_false),1);         
-                [U_smooth(ind_sel(ind_ind_sel))]=tps_uvmat(X(ind_sel(ind_ind_sel)),Y(ind_sel(ind_ind_sel)),U(ind_sel(ind_ind_sel)),rho);
-                [V_smooth(ind_sel(ind_ind_sel))]=tps_uvmat(X(ind_sel(ind_ind_sel)),Y(ind_sel(ind_ind_sel)),V(ind_sel(ind_ind_sel)),rho);
-                 if numel(ind_ind_sel)<SubDomain/4;% too few selected vectors, increase the subrange for next iteration
+                ind_ind_sel=find(FF(ind_sel)==0); 
+                if isequal(numel(ind_ind_sel),numel(ind_sel))
+                    U_smooth(ind_sel,isuby,isubx)=U_smooth_sub;
+                    V_smooth(ind_sel,isuby,isubx)=V_smooth_sub;
+                    break 
+                elseif numel(ind_ind_sel)<SubDomain/4;% too few selected vectors, increase the subrange for next iteration
                     SubRangx(isuby,isubx,1)=SubRangx(isuby,isubx,1)-SizX/4;
                     SubRangx(isuby,isubx,2)=SubRangx(isuby,isubx,2)+SizX/4;
                     SubRangy(isuby,isubx,1)=SubRangy(isuby,isubx,1)-SizY/4;
                     SubRangy(isuby,isubx,2)=SubRangy(isuby,isubx,2)+SizY/4;
-                 else
-                     break
-                 end
+                else
+                    [U_smooth(ind_sel(ind_ind_sel),isuby,isubx),U_tps(ind_sel(ind_ind_sel),isuby,isubx),U_tps3(isuby,isubx)]=tps_uvmat(X(ind_sel(ind_ind_sel)),Y(ind_sel(ind_ind_sel)),U(ind_sel(ind_ind_sel)),rho);
+                    [V_smooth(ind_sel(ind_ind_sel),isuby,isubx),V_tps(ind_sel(ind_ind_sel),isuby,isubx),V_tps3(isuby,isubx)]=tps_uvmat(X(ind_sel(ind_ind_sel)),Y(ind_sel(ind_ind_sel)),V(ind_sel(ind_ind_sel)),rho);
+                     break                 
+                end
             end        
-        end
-        %intrpolate to new points XI, YI
-%         X_ctrs{isuby,isubx}=X(ind_sel(ind_ind_sel));%positions of tps sources for the subdomain i,j
-%         Y_ctrs{isuby,isubx}=Y(ind_sel(ind_ind_sel));      
+        end       
+        X_ctrs(isuby,isubx)=mean(X(ind_sel));%gravity centre of selected points
+        Y_ctrs(isuby,isubx)=mean(Y(ind_sel));%positions of tps sources for the subdomain i,      
+        dist_ctre(ind_sel,isuby,isubx)=sqrt(abs(((X(ind_sel)-X_ctrs(isuby,isubx)).*(X(ind_sel)-X_ctrs(isuby,isubx)))+((Y(ind_sel)-Y_ctrs(isuby,isubx)).*(Y(ind_sel)-Y_ctrs(isuby,isubx)))));
     end
 end
-
+U_patch=sum(sum(U_smooth.*dist_ctre,3),2)./sum(sum(dist_ctre,3),2);
+V_patch=sum(sum(V_smooth.*dist_ctre,3),2)./sum(sum(dist_ctre,3),2);
 
 %------------------------------------------------------------------------
 %fasshauer@iit.edu MATH 590 ? Chapter 19 32
 % X,Y initial coordiantes
 % XI vector, YI column vector for the grid of interpolation points
-function [U_smooth,U_tps]=tps_uvmat(X,Y,U,rho)
+function [U_smooth,U_tps,U_tps3]=tps_uvmat(X,Y,U,rho)
 %------------------------------------------------------------------------
 %rho smoothing parameter
 ep = 1; 
@@ -377,6 +391,8 @@ U_tps=(IM\rhs);
 PM = [ones(size(dsites,1),1) dsites]; 
 EM = [IM_sites PM];
 U_smooth=EM *U_tps;
+U_tps3=U_tps(end-2:end);
+U_tps=U_tps(1:end-3);
 
 
 % U_patch = EM * spline_coeff;
