@@ -440,6 +440,8 @@ GeometryCalib.omc=[0 0 0];
 
 %------------------------------------------------------------------------
 % determine the parameters for a calibration by a linear transform matrix (rescale and rotation)
+
+
 function GeometryCalib=calib_linear(Coord,handles) 
 %------------------------------------------------------------------------
 X=Coord(:,1);
@@ -455,24 +457,23 @@ a_Y1=XY_mat\y_ima;%transformation matrix for X
 % err_Y1=max(abs(y1-y_ima));%error
 % R=[a_X1(2),a_X1(3),0;a_Y1(2),a_Y1(3),0;0,0,1];
 R=[a_X1(2),a_X1(3);a_Y1(2),a_Y1(3)];
+epsilon=sign(det(R));
 norm=abs(det(R));
 GeometryCalib.CalibrationType='linear';
 if (a_X1(2)/a_Y1(3))>0
-    epsilon=1;
-GeometryCalib.fx_fy(1)=sqrt((a_X1(2)/a_Y1(3))*norm);
+    GeometryCalib.fx_fy(1)=sqrt((a_X1(2)/a_Y1(3))*norm);
 else
-    GeometryCalib.fx_fy(1)=-sqrt((-a_X1(2)/a_Y1(3))*norm);
-      epsilon=-1;
+    GeometryCalib.fx_fy(1)=-sqrt(-(a_X1(2)/a_Y1(3))*norm);
 end
 GeometryCalib.fx_fy(2)=(a_Y1(3)/a_X1(2))*GeometryCalib.fx_fy(1);
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
 %GeometryCalib.Tx_Ty_Tz=[a_X1(1) a_Y1(1) 1]; 
 GeometryCalib.Tx_Ty_Tz=[a_X1(1)/GeometryCalib.fx_fy(1) a_Y1(1)/GeometryCalib.fx_fy(2) 1];
-R(1,:)=epsilon*R(1,:)/GeometryCalib.fx_fy(1);
+R(1,:)=R(1,:)/GeometryCalib.fx_fy(1);
 R(2,:)=R(2,:)/GeometryCalib.fx_fy(2);
 R=[R;[0 0]];
-GeometryCalib.R=[R [0;0;-1]];
-GeometryCalib.omc=(180/pi)*[acos(GeometryCalib.R(1,1)) 0 0]
+GeometryCalib.R=[R [0;0;-epsilon]];
+GeometryCalib.omc=(180/pi)*[acos(GeometryCalib.R(1,1)) 0 0];
 %------------------------------------------------------------------------
 % determine the tsai parameters for a view normal to the grid plane
 % NOT USED

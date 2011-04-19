@@ -4307,8 +4307,8 @@ update_object(handles,IndexObj,1,str_1)
 % --- Executes on selection change in list_object_1.
 function list_object_2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-list_str=get(handles.list_object_2,'String')
-IndexObj=get(handles.list_object_2,'Value')
+list_str=get(handles.list_object_2,'String');
+IndexObj=get(handles.list_object_2,'Value');
 if ischar(list_str) || isempty(list_str{IndexObj})% || strcmp(list_str{IndexObj},'...')
     hview_field=findobj(allchild(0),'Tag','view_field');
     if ~isempty(hview_field)
