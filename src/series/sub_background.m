@@ -289,8 +289,8 @@ for islice=1:nbslice_i
             stopstate=get(hseries.RUN,'BusyAction');
             if isequal(stopstate,'queue')% enable STOP command
                 update_waitbar(hseries.waitbar,WaitbarPos,(ifield+(islice-1)*nbfield_slice)/(nbfield_slice*nbslice_i))
-                (ifield+(islice-1)*nbfield_slice)/(nbfield_slice*nbslice_i)
-                Ak(:,:,[1:nbaver_ima-step])=Ak(:,:,[1+step:nbaver_ima]);% shift the current image series by one burst (step)
+                display((ifield+(islice-1)*nbfield_slice)/(nbfield_slice*nbslice_i))
+                Ak(:,:,1:nbaver_ima-step)=Ak(:,:,1+step:nbaver_ima);% shift the current image series by one burst (step)
                 %incorporate next burst in the current image series
                 for iburst=1:step
                     ifile=indselect(ifield+step*floor(nbaver/2)+iburst-1);

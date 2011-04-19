@@ -301,7 +301,7 @@ for ifile=1:nbfield
         %----------END LOOP ON VIEWS----------------------
          
         %% merge the nbview=2 fields
-        MergeData=sub_field(Field{1},Field{2})
+        MergeData=sub_field(Field{1},Field{2});
         if isfield(MergeData,'Txt')
             msgbox_uvmat('ERROR',MergeData.Txt)
             return
