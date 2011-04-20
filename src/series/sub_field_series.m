@@ -67,10 +67,12 @@ end
 timecell={};
 itime=0;
 NbSlice_calib={}; %test for z index 
-for iview=1:nbview%Loop on views
+for iview=1:nbview%Loop on views (nbview=2)
     XmlData{iview}=[];%default
     filebase{iview}=fullfile(Series.RootPath{iview},Series.RootFile{iview});
+    testxml(iview)=0;% test for xml file
     if exist([filebase{iview} '.xml'],'file')
+        testxml(iview)=1;
         [XmlData{iview},error]=imadoc2struct([filebase{iview} '.xml']); 
         if isfield(XmlData{iview},'Time')
             itime=itime+1;
@@ -145,18 +147,18 @@ end
 %% Field and velocity type (the same for all views)
 FieldName='';
 if strcmp(get(hseries.FieldMenu,'Visible'),'on')
-Field_str=get(hseries.FieldMenu,'String');
-val=get(hseries.FieldMenu,'Value');
-FieldName=Field_str(val);%the same set of fields for all views
-VelType_str=get(hseries.VelTypeMenu,'String');
-VelType_val=get(hseries.VelTypeMenu,'Value');
-VelType=VelType_str{VelType_val}; %the same for all views
-if strcmp(FieldName,'')
-    msgbox_uvmat('ERROR','no input field defined in FieldMenu')
-elseif strcmp(FieldName,'get_field...')
-    hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
-    SubField=get_field('read_get_field',hObject,eventdata,hget_field); %read the names of the variables to plot in the get_field GUI
-end
+    Field_str=get(hseries.FieldMenu,'String');
+    val=get(hseries.FieldMenu,'Value');
+    FieldName=Field_str(val);%the same set of fields for all views
+    VelType_str=get(hseries.VelTypeMenu,'String');
+    VelType_val=get(hseries.VelTypeMenu,'Value');
+    VelType=VelType_str{VelType_val}; %the same for all views
+    if strcmp(FieldName,'')
+        msgbox_uvmat('ERROR','no input field defined in FieldMenu')
+    elseif strcmp(FieldName,'get_field...')
+        hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
+        SubField=get_field('read_get_field',hObject,eventdata,hget_field); %read the names of the variables to plot in the get_field GUI
+    end
 end
 %detect whether all the files are 'images' or 'netcdf'
 testima=0;
@@ -186,32 +188,42 @@ end
 if ~isequal(FieldName,'get_field...')
     testcivx=testnc;
 end
+if nbview~=2
+    msgbox_uvmat('ERROR','this function needs two input series as input')
+    return
+elseif testima
+    answer=msgbox_uvmat('CONFIRMATION','this function will substract each of the second image series from the first one');
+    if ~isequal(answer,'Yes')
+        return
+    end
+else
+    answer=msgbox_uvmat('CONFIRMATION','this function will substract each the second field series from the first one');
+    if ~isequal(answer,'Yes')
+        return
+    end
+end
+
 
 %% name of output files and directory:
 ProjectDir=fileparts(fileparts(Series.RootPath{1}));% preoject directory (GERK)
 prompt={['result directory (in' ProjectDir ')']};
 RootPath=get(hseries.RootPath,'String');
 SubDir=get(hseries.SubDir,'String');
-if isequal(length(RootPath),1)
-    fulldir=RootPath{1};
-    subdir='merge_proj';
-    res_subdir=fullfile(fulldir,subdir);
-else
-    def={fullfile(ProjectDir,'0_RESULTS')};
-    dlgTitle='result directory';
-    lineNo=1;
-    answer=msgbox_uvmat('INPUT_TXT',dlgTitle,def);
-    fulldir=answer{1};
-    subdir=[];
-    dirlist=sort(Series.RootFile);
-    for iview=1:nbview
-        if ~isempty(subdir)
-            subdir=[subdir '-'];
-        end
-        subdir=[subdir dirlist{iview}];
-    end  
-    res_subdir=fullfile(fulldir,subdir);
-end
+def={fullfile(ProjectDir,'0_RESULTS')};
+dlgTitle='result directory';
+lineNo=1;
+answer=msgbox_uvmat('INPUT_TXT',dlgTitle,def);
+fulldir=answer{1};
+subdir=[];
+dirlist=sort(Series.RootFile);
+for iview=1:nbview
+    if ~isempty(subdir)
+        subdir=[subdir '-'];
+    end
+    subdir=[subdir dirlist{iview}];
+end  
+res_subdir=fullfile(fulldir,subdir);
+
 ext=FileExt{1};
 if ~exist(fulldir,'dir')
     msgbox_uvmat('ERROR',['directory ' fulldir ' needs to be created'])
@@ -235,7 +247,11 @@ if ~exist(res_subdir,'dir')
     end
 end
 filebasesub=fullfile(res_subdir,Series.RootFile{1});
-filebase_merge=fullfile(res_subdir,'merged');%root name for the merged files
+filebase_merge=fullfile(res_subdir,'sub');%root name for the merged files
+ if testxml(1) && ( isempty(transform_fct)|| isequal(transform_fct,'px'))
+        copyfile([filebase{1} '.xml'],[filebase_merge '.xml'])% reproduce the xml file
+        display([filebase_merge '.xml copied from ' filebase{1} '.xml'])
+    end
 
 %% MAIN LOOP
 for ifile=1:nbfield                
@@ -320,37 +336,11 @@ for ifile=1:nbfield
              % generating the name of the merged field
             mergename=name_generator(filebase_merge,num_i1{1}(ifile),num_j1{1}(ifile),'.png',Series.NomType{1},1,num_i2{1}(ifile),num_j2{1}(ifile));
              if isa(Field{1}.A,'uint8')
-                imwrite(uint8(MergeData.A),mergename,'BitDepth',8); 
+                imwrite(uint8(MergeData.A),mergename,'BitDepth',8); % transform in integers (and put to 0 the negative values)
              elseif isa(Field{1}.A,'uint16')
                  imwrite(uint16(MergeData.A),mergename,'BitDepth',16);
              end
-%             imwrite(MergeData.A,mergename,'BitDepth',bitdepth); 
-            %write xml calibration file
-            siz=size(MergeData.A);
-            npy=siz(1);
-            npx=siz(2);
-            if isfield(MergeData,'VarAttribute')&&isfield(MergeData.VarAttribute{1},'Coord_2')&&isfield(MergeData.VarAttribute{1},'Coord_1')
-                Rangx=MergeData.VarAttribute{1}.Coord_2;
-                Rangy=MergeData.VarAttribute{1}.Coord_1;
-            elseif isfield(MergeData,'AX')&& isfield(MergeData,'AY')
-                Rangx=[MergeData.AX(1) MergeData.AX(end)];
-                Rangy=[MergeData.AY(1) MergeData.AY(end)];
-            else
-                Rangx=[0.5 npx-0.5];
-                Rangy=[npy-0.5 0.5];%default
-            end
-            pxcmx=(npx-1)/(Rangx(2)-Rangx(1));
-            pxcmy=(npy-1)/(Rangy(1)-Rangy(2));
-            T_x=-pxcmx*Rangx(1)+0.5;
-            T_y=-pxcmy*Rangy(2)+0.5;
-            GeometryCal.focal=1;
-            GeometryCal.R=[pxcmx,0,0;0,pxcmy,0;0,0,1];
-            GeometryCal.Tx_Ty_Tz=[T_x T_y 1];
-            ImaDoc.GeometryCalib=GeometryCal;
-            t=struct2xml(ImaDoc);
-            t=set(t,1,'name','ImaDoc');
-            save(t,[filebase_merge '.xml'])     
-            display([filebase_merge '.xml saved'])
+             display(['output image ' mergename ' written'])
         else
             mergename=name_generator(filebase_merge,num_i1{1}(ifile),num_j1{1}(ifile),'.nc',Series.NomType{1},1,num_i2{1}(ifile),num_j2{1}(ifile));
             MergeData.ListGlobalAttribute={'Project','InputFile_1','InputFile_end','nb_coord','nb_dim','dt','Time','civ'};        
@@ -380,79 +370,31 @@ for ifile=1:nbfield
         end
     end
 end
-
-%'merge_field': concatene fields
-%------------------------------------------------------------------------
-function MergeData=merge_field(Data)
-%% default output
-if isempty(Data)||~iscell(Data)
-    MergeData=[];
-    return
-end
-MergeData=Data{1};%default
-error=0;
-nbview=length(Data);
-if nbview==1
-    return
-end
-
-%% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
-[CellVarIndex,NbDim,VarTypeCell]=find_field_indices(Data{1});
-%LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
-% CellVarIndex=cells of variable index arrays
-ivar_new=0; % index of the current variable in the projected field
-for icell=1:length(CellVarIndex)
-    if NbDim(icell)==1
-        continue
-    end
-    VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list FieldData.ListVarName
-    VarType=VarTypeCell{icell};
-    ivar_X=VarType.coord_x;
-    ivar_Y=VarType.coord_y;
-    ivar_FF=VarType.errorflag;
-    if isempty(ivar_X)
-        test_grid=1;%test for input data on regular grid (e.g. image)coordinates
+%write xml calibration file
+if testima && ~isempty(transform_fct) && ~isequal(transform_fct,'px')
+    siz=size(MergeData.A);
+    npy=siz(1);
+    npx=siz(2);
+    if isfield(MergeData,'VarAttribute')&&isfield(MergeData.VarAttribute{1},'Coord_2')&&isfield(MergeData.VarAttribute{1},'Coord_1')
+        Rangx=MergeData.VarAttribute{1}.Coord_2;
+        Rangy=MergeData.VarAttribute{1}.Coord_1;
+    elseif isfield(MergeData,'AX')&& isfield(MergeData,'AY')
+        Rangx=[MergeData.AX(1) MergeData.AX(end)];
+        Rangy=[MergeData.AY(1) MergeData.AY(end)];
     else
-        if length(ivar_Y)~=1
-                msgbox_uvmat('ERROR','y coordinate missing in proj_field.m')
-                return
-        end
-        test_grid=0;
+        Rangx=[0.5 npx-0.5];
+        Rangy=[npy-0.5 0.5];%default
     end
-    %case of input fields with unstructured coordinates
-    if ~test_grid
-        for ivar=VarIndex
-            VarName=MergeData.ListVarName{ivar};
-            for iview=1:nbview
-                eval(['MergeData.' VarName '=[MergeData.' VarName '; Data{iview}.' VarName '];'])
-            end
-        end
-    %case of fields defined on a structured  grid 
-    else  
-        testFF=0;
-        for iview=2:nbview
-            for ivar=VarIndex
-                VarName=MergeData.ListVarName{ivar};
-                if isfield(MergeData,'VarAttribute')
-                    if length(MergeData.VarAttribute)>=ivar && isfield(MergeData.VarAttribute{ivar},'Role') && isequal(MergeData.VarAttribute{ivar}.Role,'errorflag')
-                        testFF=1;
-                    end
-                end
-                eval(['MergeData.' VarName '=MergeData.' VarName '+ Data{iview}.' VarName ';'])
-            end
-        end
-        if testFF
-            nbaver=nbview-MergeData.FF;
-            indgood=find(nbaver>0);
-            for ivar=VarIndex
-                VarName=MergeData.ListVarName{ivar};
-                eval(['MergeData.' VarName '(indgood)=double(MergeData.' VarName '(indgood))./nbaver(indgood);'])
-            end 
-        else
-            for ivar=VarIndex
-                VarName=MergeData.ListVarName{ivar};
-                eval(['MergeData.' VarName '=double(MergeData.' VarName ')./nbview;'])
-            end    
-        end
-    end
+    pxcmx=(npx-1)/(Rangx(2)-Rangx(1));
+    pxcmy=(npy-1)/(Rangy(1)-Rangy(2));
+    T_x=-pxcmx*Rangx(1)+0.5;
+    T_y=-pxcmy*Rangy(2)+0.5;
+    GeometryCal.focal=1;
+    GeometryCal.R=[pxcmx,0,0;0,pxcmy,0;0,0,1];
+    GeometryCal.Tx_Ty_Tz=[T_x T_y 1];
+    ImaDoc.GeometryCalib=GeometryCal;
+    t=struct2xml(ImaDoc);
+    t=set(t,1,'name','ImaDoc');
+    save(t,[filebase_merge '.xml'])
+    display([filebase_merge '.xml saved'])
 end

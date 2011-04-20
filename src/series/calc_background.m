@@ -181,7 +181,12 @@ end
     for ifile = 1:nbfield_slice
 %         ifile=indselect(ifield);
         filename=name_generator(filebase,num_i1(ifile),num_j1(ifile),Series.FileExt,Series.NomType)
-        Aread=read_image(filename,FileType,num_i1(ifile),MovieObject);
+        try
+            Aread=read_image(filename,FileType,num_i1(ifile),MovieObject);
+        catch ME
+            msgbox_uvmat('ERROR',ME.message)
+            return
+        end
         Ak(:,:,ifile)=Aread;
             %finish the waitbar
         update_waitbar(hseries.waitbar,WaitbarPos,1)

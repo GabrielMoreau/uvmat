@@ -1,5 +1,4 @@
-
-% relabel_i_j: relabel an image series with two indices, and correct errors from the RDvision transfer program
+%'relabel_i_j': relabel an image series with two indices, and correct errors from the RDvision transfer program
 %----------------------------------------------------------------------
 function GUI_input=relabel_i_j(num_i1,num_i2,num_j1,num_j2,Series)
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
@@ -25,37 +24,47 @@ if ~iscell(RootFile)
     return
 end
 basename=fullfile(RootPath{1},RootFile{1}); 
-[XmlData,warntext]=imadoc2struct([basename '.xml']);% read the xml file appended to the present function (containing bug corrections)
+[XmlData,warntext]=imadoc2struct([basename '.xml'])% read the xml file appended to the present function (containing bug corrections)
 if ~isempty(warntext)
     msgbox_uvmat('ERROR',warntext)%error message for xml file reading
 end
 nbfield1=size(XmlData.Time,1);
 nbfield2=size(XmlData.Time,2);
-
 set(hseries.first_i,'String',num2str(first_label))% display the first image in the process
 set(hseries.last_i,'String',num2str(nbfield1*nbfield2-1+first_label))% display the last image in the process
 set(hseries.nb_field,'String',{num2str(nbfield1*nbfield2-1+first_label)})% display the total nbre of images
 SeriesData=get(hGUI,'UserData');
 if ~strcmp(SeriesData.NomType,'_000001')
-    msgbox_uvmat('WARNING','the input is not a file from RDvision: this function relabel_i_j has no action')%error message for directory creation
+    msgbox_uvmat('WARNING','the input is not a file from RDvision: this function relabel_i_j has no action');%error message for directory creation
     return
 else
-    msgbox_uvmat('CONFIRMATION','this function will relabel the file series from RDvision and correct the xml file')%error message for directory creation
+    answer=msgbox_uvmat('','this function will relabel the file series from RDvision and correct the xml file');%error message for directory creation
+    if ~strcmp(answer,'Yes')
+        return
+    end
 end
 
 %% stop program ther when it is selected in the menu (no run action)
 if ~exist('num_i1','var')
     return
 end
-answer=msgbox_uvmat('CONFIRMATION',[num2str(nbfield1) ' bursts containing ' num2str(nbfield2) ' images each']);%error message for directory creation
+if nbfield2>=2
+answer=msgbox_uvmat('',[num2str(nbfield1) ' bursts containing ' num2str(nbfield2) ' images each']);%error message for directory creation
+nomtype='_i_j';
+else
+    answer=msgbox_uvmat('',['image series with ' num2str(nbfield1) ' images']);%error message for directory creation
+    nomtype='_i';
+end
+if ~strcmp(answer,'Yes')
+    return
+end
 
 %% copy and adapt the xml file
 if exist([basename '.xml'],'file')
     try
     copyfile([basename '.xml'],[basename '.xml~']);% backup the xml file
-    catch
-    errormsg=lasterr
-            msgbox_uvmat('ERROR',errormsg);
+    catch ME
+            msgbox_uvmat('ERROR',ME.message);
             return
     end
     t=xmltree([basename '.xml']);
@@ -80,15 +89,34 @@ if exist([basename '.xml'],'file')
     end
     
     %%%% correction RDvision %%%%
+    if isfield(XmlData,'NbDtj')
     uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
     uid_value=children(t,uid_NbDtj);
     if ~isempty(uid_value)
         t=set(t,uid_value(1),'value',num2str(XmlData.NbDtj));
     end
+    end
+    if isfield(XmlData,'NbDtk')
     uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
     uid_value=children(t,uid_NbDtk);
     if ~isempty(uid_value)
         t=set(t,uid_value(1),'value',num2str(XmlData.NbDtk));
+    end
+    end
+    if strcmp(nomtype,'_i') && isfield(XmlData,'NbDti')
+        uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
+        uid_value=children(t,uid_NbDti);
+        if ~isempty(uid_value)
+            t=set(t,uid_value(1),'value',num2str(XmlData.NbDti));
+        end
+        uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
+        uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
+        t=delete(t,uid_NbDtj);
+        t=delete(t,uid_NbDtk);
+        uid_Dtj=find(t,'ImaDoc/Camera/BurstTiming/Dtj');
+        uid_Dtk=find(t,'ImaDoc/Camera/BurstTiming/Dtk');
+        t=delete(t,uid_Dtj);
+        t=delete(t,uid_Dtk);    
     end
     %%%
     
@@ -96,12 +124,13 @@ if exist([basename '.xml'],'file')
 end
 
 %% main loop
+
 for ifile=1:nbfield1*nbfield2
     update_waitbar(hseries.waitbar,WaitbarPos,ifile/(nbfield1*nbfield2))
     filename=name_generator(basename,ifile-1,1,Series.FileExt,Series.NomType);
     num_j=mod(ifile-1+first_label,nbfield2)+1;
     num_i=floor((ifile-1+first_label)/nbfield2)+1;
-    filename_new=name_generator(basename,num_i,num_j,'.png','_i_j');
+    filename_new=name_generator(basename,num_i,num_j,'.png',nomtype);
     try
         movefile(filename,filename_new);
         [s,errormsg] = fileattrib(filename_new,'-w','a'); %set images to read only '-w' for all users ('a')
@@ -114,60 +143,8 @@ for ifile=1:nbfield1*nbfield2
         msgbox_uvmat('ERROR',errormsg);
         return
     end
-    %     if test_level
-    %         A=imread(filename);
-    %         C=levels(A);
-    %         imwrite(C,filename_new)
-    %     else
-    %         try
-    %             copyfile(filename,filename_new);
-    %         catch
-    %             errormsg=lasterr
-    %             msgbox_uvmat('ERROR',errormsg);
-    %             return
-    %         end
-    %     end
 end
 
-
-function C=levels(A)
-%whos A;
-B=double(A(:,:,1));
-windowsize=round(min(size(B,1),size(B,2))/20);
-windowsize=floor(windowsize/2)*2+1;
-ix=[1/2-windowsize/2:-1/2+windowsize/2];%
-%del=np/3;
-%fct=exp(-(ix/del).^2);
-fct2=cos(ix/(windowsize-1)/2*pi/2);
-%Mfiltre=(ones(5,5)/5^2);
-%Mfiltre=fct2';
-Mfiltre=fct2'*fct2;
-Mfiltre=Mfiltre/(sum(sum(Mfiltre)));
-
-C=filter2(Mfiltre,B);
-C(:,1:windowsize)=C(:,windowsize)*ones(1,windowsize);
-C(:,end-windowsize+1:end)=C(:,end-windowsize+1)*ones(1,windowsize);
-C(1:windowsize,:)=ones(windowsize,1)*C(windowsize,:);
-C(end-windowsize+1:end,:)=ones(windowsize,1)*C(end-windowsize,:);
-C=tanh(B./(2*C));
-[n,c]=hist(reshape(C,1,[]),100);
-% figure;plot(c,n);
-
-[m,i]=max(n);
-c_max=c(i);
-[dummy,index]=sort(abs(c-c(i)));
-n=n(index);
-c=c(index);
-i_select = find(cumsum(n)<0.95*sum(n));
-if isempty(i_select)
-    i_select = 1:length(c);
-end
-c_select=c(i_select);
-n_select=n(i_select);
-cmin=min(c_select);
-cmax=max(c_select);
-C=(C-cmin)/(cmax-cmin)*256;
-C=uint8(C);
 
 %'imadoc2struct': reads the xml file for image documentation 
 %------------------------------------------------------------------------
@@ -255,12 +232,26 @@ if strcmp(option,'*') || strcmp(option,'Camera')
                 Dtj=Dtj/Frequency;%Dtj converted from frame unit to TimeUnit (e.g. 's')
                 NbDtj=get_value(subt,'/BurstTiming/NbDtj',1);
                 %%%% correction RDvision %%%%
-                NbDtj=NbDtj/numel(Dtj);
-                s.NbDtj=NbDtj;
-                %%%%
-                Dti=get_value(subt,'/BurstTiming/Dti',[]);
+%                 NbDtj=NbDtj/numel(Dtj);
+%                 s.NbDtj=NbDtj;
+%                 %%%%
+                Dti=get_value(subt,'/BurstTiming/Dti',[])
+                NbDti=get_value(subt,'/BurstTiming/NbDti',1)
+                 %%%% correction RDvision %%%%
+                if isempty(Dti)% series 
+                     Dti=Dtj
+                      NbDti=NbDtj
+                     Dtj=[];
+                     s.Dti=Dti;
+                     'TESTrxml'
+                     s.NbDti=NbDti
+                else
+                     NbDtj=NbDtj/numel(Dtj);%bursts
+                    s.NbDtj=NbDtj;
+                end
+                %%%% %%%%
                 Dti=Dti/Frequency;%Dtj converted from frame unit to TimeUnit (e.g. 's')
-                NbDti=get_value(subt,'/BurstTiming/NbDti',1);
+
                 Time_val=get_value(subt,'/BurstTiming/Time',0);%time in TimeUnit
                 if ~isempty(Dti)
                     Dti=reshape(Dti'*ones(1,NbDti),NbDti*numel(Dti),1); %concatene Dti vector NbDti times
