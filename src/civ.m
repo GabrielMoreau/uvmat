@@ -2121,6 +2121,7 @@ for ifile=1:nbfield
             super_cmd=[super_cmd cmd_str '\n'];         
             disp(cmd_str);
         else       %run PIVlab if selected
+            drawnow
             if box_test(1)==1
                 Param.Civ1=par_civ1;
             end

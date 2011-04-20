@@ -37,11 +37,27 @@ end
 % End initialization code - DO NOT EDIT
 
 % --- Executes just before msgbox_uvmat is made visible.
-function msgbox_uvmat_OpeningFcn(hObject, eventdata, handles,title,display,default_answer)
+function msgbox_uvmat_OpeningFcn(hObject, eventdata, handles,title,display,default_answer,Position)
 % This function has no output args, see OutputFcn.
 
 % Choose default command line output for msgbox_uvmat
 handles.output = 'Cancel';
+set(handles.figure1,'Units','pixels')
+FigPos=[100 150 500 50];%default position
+if exist('Position','var')
+    FigPos(1)=Position(1);
+    FigPos(2)=Position(2)-FigPos(4);% upper left corner set by input Position
+    set(handles.figure1,'Position',FigPos)
+end
+set(handles.OK,'Units','pixels')
+set(handles.OK,'Position',[100 2 60 30])
+set(handles.OK,'FontSize',15)
+set(handles.No,'Units','pixels')
+set(handles.No,'Position',[200 2 60 30])
+set(handles.No,'FontSize',15)
+set(handles.Cancel,'Units','pixels')
+set(handles.Cancel,'Position',[300 2 60 30])
+set(handles.Cancel,'FontSize',15)
 
 % Update handles structure
 guidata(hObject, handles);
@@ -68,38 +84,70 @@ if exist('title','var')
             icontype='';
             testCancel=0; %no cancel button
             testinputstring=1;
-        otherwise
+        case 'INPUT_TXT'
             testinputstring=1;
+        otherwise
+          %  testinputstring=1;
+            icontype='';
+            testinputstring=exist('default_answer','var');
     end
 end
 if exist('display','var')
     set(handles.text1, 'String', display);
 end
+% if testinputstring
+%     set(handles.edit_box, 'Visible', 'on');
+% else
+%     set(handles.text1, 'Position', [0.15 0.3 0.85 0.7]);
+% end
 if testinputstring
+    % set(handles.figure1,'Position',[40,80,20*length(default_answer),50])
     set(handles.edit_box, 'Visible', 'on');
+    if ~exist('default_answer','var');
+        default_answer='';
+    end
+    set(handles.edit_box, 'String', default_answer);
+    if exist('Position','var')
+    if iscell(default_answer)
+        widthstring=max(cellfun('length',default_answer));
+        heightstring=size(default_answer,1);
+        set(handles.edit_box,'Max',2);
+    else
+        widthstring=length(default_answer);
+        heightstring=1;
+    end
+    widthstring=max(widthstring,length(title));
+    boxsize=[10*widthstring 20*heightstring];%size of the display edit box 
+    set(handles.edit_box,'Units','pixels')
+    set(handles.edit_box,'FontUnits','pixels')
+    set(handles.edit_box,'FontSize',12)  
+   set(handles.edit_box,'Position',[5,34,boxsize(1),boxsize(2)])
+   FigPos(3)=10+boxsize(1);
+   FigPos(4)=36+boxsize(2);
+   FigPos(2)=Position(2)-FigPos(4)-25;
+   set(handles.figure1,'Position',FigPos)
+    end
+%     set(handles.figure1,'Position',[40,40,20*length(default_answer),50])
 else
     set(handles.text1, 'Position', [0.15 0.3 0.85 0.7]);
 end
-if exist('default_answer','var') &&  testinputstring
-    set(handles.edit_box, 'String', default_answer);
-end
 % Determine the position of the dialog - centered on the screen
-FigPos=get(0,'DefaultFigurePosition');
-OldUnits = get(hObject, 'Units');
-set(hObject, 'Units', 'pixels');
-OldPos = get(hObject,'Position');
-FigWidth = OldPos(3);
-FigHeight = OldPos(4);
-ScreenUnits=get(0,'Units');
-set(0,'Units','pixels');
-ScreenSize=get(0,'ScreenSize');
-set(0,'Units',ScreenUnits);
-
-FigPos(1)=1/2*(ScreenSize(3)-FigWidth);
-FigPos(2)=2/3*(ScreenSize(4)-FigHeight);
-FigPos(3:4)=[FigWidth FigHeight];
-set(hObject, 'Position', FigPos);
-set(hObject, 'Units', OldUnits);
+% FigPos=get(0,'DefaultFigurePosition');
+% OldUnits = get(hObject, 'Units');
+% set(hObject, 'Units', 'pixels');
+% OldPos = get(hObject,'Position');
+% FigWidth = OldPos(3);
+% FigHeight = OldPos(4);
+% ScreenUnits=get(0,'Units');
+% set(0,'Units','pixels');
+% ScreenSize=get(0,'ScreenSize');
+% set(0,'Units',ScreenUnits);
+% 
+% FigPos(1)=1/2*(ScreenSize(3)-FigWidth);
+% FigPos(2)=2/3*(ScreenSize(4)-FigHeight);
+% FigPos(3:4)=[FigWidth FigHeight];
+% set(hObject, 'Position', FigPos);
+% set(hObject, 'Units', OldUnits);
 
 % Show a question icon from dialogicons.mat - variables questIconData and questIconMap
 if isequal(icontype,'')

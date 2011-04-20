@@ -35,6 +35,9 @@ if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is
 else
     hcurrentfig=hObject;%usual plot
 end
+    set(hcurrentfig,'Units','pixels')
+    currentfig_pos=get(hcurrentfig,'Position');%position of the GUI series (in pixels)
+    set(hcurrentfig,'Units','normalized')
 hhcurrentfig=guidata(hcurrentfig);
 test_zoom=get(hhcurrentfig.zoom,'Value');%test for zoom action, first priority
 test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
@@ -110,7 +113,9 @@ for ichild=1:length(hchild)
             end
             break
         elseif isequal(htype,'uicontrol') && isequal(get(hchild(ichild),'Visible'),'on')
-            msgbox(get(hchild(ichild),'String'),get(hchild(ichild),'Tag'))
+                msg_pos(1:2)=currentfig_pos(1:2)+obj_pos(1:2).*currentfig_pos(3:4);
+                msgbox_uvmat(['uicontrol: ' get(hchild(ichild),'Tag')],'',get(hchild(ichild),'String'),msg_pos)
+            %msgbox(get(hchild(ichild),'String'),get(hchild(ichild),'Tag'))
             break
         end
     end

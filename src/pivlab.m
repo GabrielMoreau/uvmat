@@ -90,7 +90,7 @@ for ivec=1:nbvec
         result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
         %Find the correlation max, at 255
         [y,x] = find(result_conv==255,1);
-        if ~isnan(y) && ~isnan(x)
+        if ~isempty(y) && ~isempty(x)
             try
                 if subpixfinder==1
                     [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);

@@ -61,7 +61,10 @@ handles.output = hObject;
 guidata(hObject, handles);
 %default initial parameters
 drawnow
-
+set(hObject,'Units','pixels')
+% set(0,'Units','pixels')
+% screensize=get(0,'ScreenSize'); %screen size in pixels
+set(hObject,'Position',[150 100 1000 600] );%position and size in pixels (get adjusted to the screen size in case of excess)
 %load the list of previously browsed files in menus Open and Open_1
 dir_perso=prefdir;
 test_profil_perso=0;
@@ -1671,13 +1674,15 @@ if ~isequal(path_series,PathName)
     addpath(PathName)
 end
 eval(['h_function=@' ACTION ';']);
-[fid,errormsg] =fopen([ACTION '.m']);
-InputText=textscan(fid,'%s',1,'delimiter','\n');
-fclose(fid)
+try
+    [fid,errormsg] =fopen([ACTION '.m']);
+    InputText=textscan(fid,'%s',1,'delimiter','\n');
+    fclose(fid)
+    set(handles.ACTION,'ToolTipString',InputText{1}{1})
+end
 if ~isequal(path_series,PathName)
     rmpath(PathName)
 end
-set(handles.ACTION,'ToolTipString',InputText{1}{1})
 varargout=h_function();
 Param_list={};
 
@@ -1853,15 +1858,28 @@ elseif isequal(field,'more...')
 end   
 
 %-----------------------------
-function mouse_up_gui(ggg,eventdata,handles)
-if isequal(get(ggg,'SelectionType'),'alt') 
-    display('global CurData, UserData of GUI series')
-    global CurData
-    CurData=get(ggg,'UserData');
-    evalin('base','global CurData');%make CurData global in the workspace
-    evalin('base','CurData'); %display CurData in the workspace
-    commandwindow
-   % plot_text(CurData)
+function mouse_up_gui(hObject,eventdata,handles)
+if isequal(get(hObject,'SelectionType'),'alt')
+    set(hObject,'Units','pixels')
+    series_pos=get(hObject,'Position');%position of the GUI series (in pixels)
+    set(hObject,'Units','normalized')
+    xy_fig=get(hObject,'CurrentPoint');% current point of the current figure (gcbo)
+    hchild=get(hObject,'Children');%handles of all objects in the current figure
+    %% loop on all the objects in the current figure (selected by the last mouse click)
+
+    for ichild=1:length(hchild)
+        obj_pos=get(hchild(ichild),'Position');%position of the object        
+        if numel(obj_pos)>=4 && xy_fig(1) >=obj_pos(1) && xy_fig(2) >= obj_pos(2)&& xy_fig(1) <=obj_pos(1)+obj_pos(3) && xy_fig(2) <= obj_pos(2)+obj_pos(4);         
+            htype=get(hchild(ichild),'Type');%type of object child of the current figure
+            %if the mouse is over an axis, look at the data
+            if isequal(htype,'uicontrol') && isequal(get(hchild(ichild),'Visible'),'on')
+                msg_pos(1:2)=series_pos(1:2)+obj_pos(1:2).*series_pos(3:4);
+                msgbox_uvmat(['uicontrol: ' get(hchild(ichild),'Tag')],'',get(hchild(ichild),'String'),msg_pos)
+                break
+            end
+        end
+    end
+    set(hObject,'Units','pixels')
 end
 
 %%%%%%%%%%%%%
@@ -2195,7 +2213,7 @@ ind0_j=first_j:incr_j:last_j;
 nbline=length(ind0_j);
 if isequal(mode,'#_ab')
     dirpair=dir([filebasesub '*_*.nc']);
-elseif isequal(mode,'bursts')|isequal(mode,'series(Dj)')  
+elseif isequal(mode,'bursts')||isequal(mode,'series(Dj)')  
     dirpair=dir([filebasesub '_*_*-*.nc']);
 elseif isequal(mode,'series(Di)')
     dirpair=dir([filebasesub '_*-*_*.nc']);
