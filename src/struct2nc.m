@@ -34,7 +34,7 @@
 
 function errormsg=struct2nc(flname,Data)
 if ~ischar(flname)
-    errormsg='no name input for the netcf file';
+    errormsg='invalid input for the netcf file name';
     return
 end
 if ~exist('Data','var')

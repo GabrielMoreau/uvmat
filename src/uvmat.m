@@ -2149,8 +2149,7 @@ if ~isempty(filename)
     if ~isempty(errormsg)
         errormsg=['error in reading ' filename ': ' errormsg];
         return
-    end
-        
+    end        
     if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
         set(handles.npx,'String',num2str(ParamOut.Npx));% display image size on the interface
         set(handles.npy,'String',num2str(ParamOut.Npy));
@@ -2295,9 +2294,11 @@ else
     menu=set_veltype_display(ParamOut.CivStage);
     index_menu=strcmp(ParamOut.VelType,menu);
     set(handles.VelType,'Value',find(index_menu,1))
+    if ~get(handles.SubField,'value')
     set(handles.VelType,'String',menu)
-%     set(handles.VelType_1,'Value',1)
-%     set(handles.VelType_1,'String',[{''};menu])
+     set(handles.VelType_1,'Value',1)
+     set(handles.VelType_1,'String',[{''};menu])
+    end
 end
 field_index=strcmp(ParamOut.FieldName,ParamOut.FieldList);
 set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
@@ -2416,7 +2417,7 @@ end
 if isequal(FileType,'netcdf') && ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
     Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
 end
-if length(Field)==2 && ~test_keepdata_1 && isequal(FileType_1,'netcdf') && ~isequal(ParamOut_1.FieldName,'get_field...')%&&~isempty(FieldName_1)
+if numel(Field)==2 && ~test_keepdata_1 && isequal(FileType_1,'netcdf') && ~isequal(ParamOut_1.FieldName,'get_field...')%&&~isempty(FieldName_1)
     Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
 end
 
@@ -2509,7 +2510,7 @@ if exist('XName','var')
         if NbDim==3
             nbpoints_z=UvData.Field.DimValue(DimIndex(1));
             DZ=(ZMax-ZMin)/(nbpoints_z-1);
-            UvData.Field.Mesh=sqrt(DX*DY*DZ);
+            UvData.Field.Mesh=(DX*DY*DZ)^(1/3);
             UvData.Field.ZMax=ZMax;
             UvData.Field.ZMin=ZMin;
         else
@@ -3125,7 +3126,9 @@ else
     FileIndices_1=get(handles.FileIndex_1,'String');
 end
 FileExt_1=get(handles.FileExt_1,'String');
-if isequal(FileExt_1,'"'),FileExt_1=get(handles.FileExt,'String'); end;
+if isequal(get(handles.FileExt_1,'Visible'),'off') || isequal(FileExt_1,'"')
+    FileExt_1=get(handles.FileExt,'String');%read FileExt by default
+end
 FileName_1=[FileName_1 FileIndices_1 FileExt_1];
 
 %------------------------------------------------------------------------
@@ -3271,13 +3274,13 @@ end
 UvData=get(handles.uvmat,'UserData');
 
 %read the rootfile input display
-[FileName,RootPath,FileBase,FileIndices,FileExt_prev]=read_file_boxes_1(handles);
-[P,F,str1,str2,str_a,str_b,E,NomType]=name2display(['xxx' get(handles.FileIndex,'String') FileExt_prev]);
-if isempty(FileExt_prev)|| strcmp(FileExt_prev,'')
-    FileExt_1=get(handles.FileExt,'String');
-else
-    FileExt_1=FileExt_prev;
-end
+[FileName,RootPath,FileBase,FileIndices,FileExt_1]=read_file_boxes_1(handles);
+[P,F,str1,str2,str_a,str_b,E,NomType]=name2display(['xxx' get(handles.FileIndex,'String') FileExt_1]);
+% if isempty(FileExt_prev)|| strcmp(FileExt_prev,'')
+%     FileExt_1=get(handles.FileExt,'String');
+% else
+%     FileExt_1=FileExt_prev;
+% end
 NomType_1=get(handles.FileIndex_1,'UserData');
 if isempty(NomType_1)|| strcmp(NomType_1,'')
     NomType_1=get(handles.FileIndex,'UserData');
@@ -3349,7 +3352,7 @@ if isequal(field_1,'image')
     return
 else
     set(handles.SubDir_1,'Visible','on')
-    if ~isequal(FileExt_prev,'.nc') %find the new NomType if the previous display was not already a netcdf file
+    if ~isequal(FileExt_1,'.nc') %find the new NomType if the previous display was not already a netcdf file
 %         veltype_handles=[handles.VelType_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
 %         set_veltype_display(veltype_handles,6); % make all civ buttons visible
         RootPath_1=get(handles.RootPath_1,'String');
@@ -3495,21 +3498,24 @@ run0_Callback(hObject, eventdata, handles)
 function VelType_1_Callback(hObject, eventdata, handles)
 %---------------------------------------------
   
-set(handles.FixVelType,'Value',1)
+set(handles.FixVelType,'Value',1)% the velocity type is now imposed by the GUI (not automatic)
 %refresh field with a second filename=first fiel name
 set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
-drawnow
+drawnow    
 filename=read_file_boxes(handles);
-if get(handles.SubField,'Value')
-    filename_1=read_file_boxes_1(handles);
-else
-    index=get(handles.VelType_1,'Value');
-    if index==1
+
+index=get(handles.VelType_1,'Value');
+if index==1
         filename_1='';% we plot the current field without the second field
-    else
-        filename_1=filename;
-    end
+        set(handles.SubField,'Value',0)
+        SubField_Callback(hObject, eventdata, handles)
+elseif get(handles.SubField,'Value')% if subfield is already 'on'
+    filename_1=read_file_boxes_1(handles); %read the current second field
+else
+     filename_1=filename;% we compare two fields in the same file
+     set(handles.SubField,'Value',1)
 end
+
 num_i1=stra2num(get(handles.i1,'String'));
 num_i2=stra2num(get(handles.i2,'String'));
 num_j1=stra2num(get(handles.j1,'String'));

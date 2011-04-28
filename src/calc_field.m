@@ -59,42 +59,143 @@ else
     else
         nbcoord=2;
     end
-    DataOut=DataIn; %reproduce global attribute
     ListVarName={};
     ValueList={};
     RoleList={};
     units_cell={};
-    for ilist=1:length(FieldName)
-        if ~isempty(FieldName{ilist})
-            [VarName,Value,Role,units]=feval(FieldName{ilist},DataIn);%calculate field with appropriate function named FieldName{ilist}
-            ListVarName=[ListVarName VarName];
-            ValueList=[ValueList Value];
-            RoleList=[RoleList Role];
-            units_cell=[units_cell units];
+    % new civ data
+    if isfield(DataIn,'X_SubRange')
+        XMax=max(max(DataIn.X_SubRange));
+        YMax=max(max(DataIn.Y_SubRange));
+        XMin=min(min(DataIn.X_SubRange));
+        YMin=min(min(DataIn.Y_SubRange));
+        Mesh=sqrt((YMax-YMin)*(XMax-XMin)/numel(DataIn.X_tps));%2D
+        xI=XMin:Mesh:XMax;
+        yI=YMin:Mesh:YMax;
+        [XI,YI]=meshgrid(xI,yI);
+        XI=reshape(XI,[],1);
+        YI=reshape(YI,[],1);
+        DataOut.ListGlobalAttribute=DataIn.ListGlobalAttribute; %reproduce global attribute
+        for ilist=1:numel(DataOut.ListGlobalAttribute)
+            eval(['DataOut.' DataOut.ListGlobalAttribute{ilist} '=DataIn.' DataIn.ListGlobalAttribute{ilist} ';'])
+        end
+        DataOut.ListVarName={'coord_y','coord_x','FF'};
+        DataOut.VarDimName{1}='coord_y';
+        DataOut.VarDimName{2}='coord_x';
+        DataOut.coord_y=[yI(1) yI(end)];
+        DataOut.coord_x=[xI(1) xI(end)];
+        DataOut.U=zeros(size(XI));
+        DataOut.V=zeros(size(XI));
+        DataOut.vort=zeros(size(XI));
+        DataOut.div=zeros(size(XI));
+        nbval=zeros(size(XI));
+        [NbSubDomain,xx]=size(DataIn.X_SubRange);
+        for isub=1:NbSubDomain
+            nbvec_sub=DataIn.NbSites(isub);         
+                ind_sel=find(XI>=DataIn.X_SubRange(isub,1) & XI<=DataIn.X_SubRange(isub,2) & YI>=DataIn.Y_SubRange(isub,1) & YI<=DataIn.Y_SubRange(isub,2));
+                %rho smoothing parameter
+                epoints = [XI(ind_sel) YI(ind_sel)];% coordinates of interpolation sites
+                ctrs=[DataIn.X_tps(1:nbvec_sub,isub) DataIn.Y_tps(1:nbvec_sub,isub)];%(=initial points) ctrs
+                nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
+%                 PM = [ones(size(epoints,1),1) epoints];
+                switch FieldName{1}
+                    case {'velocity','u','v'}
+                       % DM_eval = DistanceMatrix(epoints,ctrs);%2D matrix of distances between extrapolation points epoints and spline centres (=site points) ctrs
+                       % EM = tps(1,DM_eval);%values of thin plate
+                        EM = tps_eval(epoints,ctrs);
+                    case{'vort','div'}
+                        EMDXY = tps_eval_dxy(epoints,ctrs);%2D matrix of distances between extrapolation points epoints and spline centres (=site points) ctrs
+     
+                end
+                switch FieldName{1}
+                    case 'velocity'
+                        ListFields={'U', 'V'};
+                        VarAttributes{1}.Role='vector_x';
+                        VarAttributes{2}.Role='vector_y';
+                        DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *DataIn.U_tps(1:nbvec_sub+3,isub);
+                        DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *DataIn.V_tps(1:nbvec_sub+3,isub);
+                    case 'u'
+                        ListFields={'U'};
+                        VarAttributes{1}.Role='scalar';
+                        DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *DataIn.U_tps(1:nbvec_sub+3,isub);
+                    case 'v'
+                        ListFields={'V'};
+                        VarAttributes{1}.Role='scalar';
+                        DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *DataIn.V_tps(1:nbvec_sub+3,isub);
+                    case 'vort'
+                        ListFields={'vort'};
+                        VarAttributes{1}.Role='scalar';
+%                         EMX = [DMXY(:,:,1) PM];
+%                         EMY = [DMXY(:,:,2) PM];
+%                         DataIn.U_tps(nbvec_sub+1,isub)=0;%constant value suppressed by spatial derivatives
+%                         DataIn.V_tps(nbvec_sub+1,isub)=0;%constant value suppressed by spatial derivatives
+%                         DataIn.V_tps(nbvec_sub+2,isub)=0;% X coefficient suppressed for x wise derivatives
+%                         DataIn.U_tps(nbvec_sub+3,isub)=0;% Y coefficient suppressed for x wise derivatives
+                        DataOut.vort(ind_sel)=DataOut.vort(ind_sel)+EMDXY(:,:,2) *DataIn.U_tps(1:nbvec_sub+3,isub)-EMDXY(:,:,1) *DataIn.V_tps(1:nbvec_sub+3,isub);
+                    case 'div'
+                        ListFields={'div'};
+                        VarAttributes{1}.Role='scalar';
+%                         EMX = [DMXY(:,:,1) PM];
+%                         EMY = [DMXY(:,:,2) PM];
+%                         DataIn.U_tps(nbvec_sub+1,isub)=0;%constant value suppressed by spatial derivatives
+%                         DataIn.V_tps(nbvec_sub+1,isub)=0;%constant value suppressed by spatial derivatives
+%                         DataIn.V_tps(nbvec_sub+2,isub)=0;% X coefficient suppressed for x wise derivatives
+%                         DataIn.U_tps(nbvec_sub+3,isub)=0;% Y coefficient suppressed for x wise derivatives
+                        DataOut.div(ind_sel)=DataOut.div(ind_sel)+EMDXY(:,:,1)*DataIn.U_tps(1:nbvec_sub+3,isub)+EMDXY(:,:,2) *DataIn.V_tps(1:nbvec_sub+3,isub);
+                end
+        end
+        DataOut.FF=nbval==0; %put errorflag to 1 for points outside the interpolation rang  
+        
+        DataOut.FF=reshape(DataOut.FF,numel(yI),numel(xI));
+        nbval(nbval==0)=1;
+        DataOut.U=DataOut.U ./nbval;
+        DataOut.V=DataOut.V ./nbval;
+        DataOut.U=reshape(DataOut.U,numel(yI),numel(xI));
+        DataOut.V=reshape(DataOut.V,numel(yI),numel(xI));
+        DataOut.vort=reshape(DataOut.vort,numel(yI),numel(xI));
+        DataOut.div=reshape(DataOut.div,numel(yI),numel(xI));
+        DataOut.ListVarName=[DataOut.ListVarName ListFields];
+        for ilist=3:numel(DataOut.ListVarName)
+            DataOut.VarDimName{ilist}={'coord_y','coord_x'};
+        end
+        DataOut.VarAttribute={[],[]};
+        DataOut.VarAttribute{3}.Role='errorflag';
+        DataOut.VarAttribute=[DataOut.VarAttribute VarAttributes];      
+    else   
+        DataOut=DataIn;
+        for ilist=1:length(FieldName)
+            if ~isempty(FieldName{ilist})
+                [VarName,Value,Role,units]=feval(FieldName{ilist},DataIn);%calculate field with appropriate function named FieldName{ilist}
+                ListVarName=[ListVarName VarName];
+                ValueList=[ValueList Value];
+                RoleList=[RoleList Role];
+                units_cell=[units_cell units];
+            end
+        end
+        %erase previous data (except coordinates)
+        for ivar=nbcoord+1:length(DataOut.ListVarName)
+            VarName=DataOut.ListVarName{ivar};
+            DataOut=rmfield(DataOut,VarName);
+        end
+        DataOut.ListVarName=DataOut.ListVarName(1:nbcoord);
+        if isfield(DataOut,'VarDimName')
+            DataOut.VarDimName=DataOut.VarDimName(1:nbcoord);
+        else
+            errormsg='element .VarDimName missing in input data';
+            return
+        end
+        DataOut.VarAttribute=DataOut.VarAttribute(1:nbcoord);
+        %append new data
+        DataOut.ListVarName=[DataOut.ListVarName ListVarName];
+        for ivar=1:length(ListVarName)
+            DataOut.VarDimName{nbcoord+ivar}=DataOut.VarDimName{1};
+            DataOut.VarAttribute{nbcoord+ivar}.Role=RoleList{ivar};
+            DataOut.VarAttribute{nbcoord+ivar}.units=units_cell{ivar};
+            eval(['DataOut.' ListVarName{ivar} '=ValueList{ivar};'])
         end
     end
-    %erase previous data (except coordinates)
-    for ivar=nbcoord+1:length(DataOut.ListVarName)
-        VarName=DataOut.ListVarName{ivar};
-        DataOut=rmfield(DataOut,VarName);
-    end
-    DataOut.ListVarName=DataOut.ListVarName(1:nbcoord);
-    if isfield(DataOut,'VarDimName')
-        DataOut.VarDimName=DataOut.VarDimName(1:nbcoord);
-    else
-        errormsg='element .VarDimName missing in input data';
-        return
-    end
-    DataOut.VarAttribute=DataOut.VarAttribute(1:nbcoord);
-    %append new data
-    DataOut.ListVarName=[DataOut.ListVarName ListVarName];
-    for ivar=1:length(ListVarName)
-        DataOut.VarDimName{nbcoord+ivar}=DataOut.VarDimName{1};
-        DataOut.VarAttribute{nbcoord+ivar}.Role=RoleList{ivar};
-        DataOut.VarAttribute{nbcoord+ivar}.units=units_cell{ivar};
-        eval(['DataOut.' ListVarName{ivar} '=ValueList{ivar};'])
-    end
 end
+
 
 %%%%%%%%%%%%% velocity fieldn%%%%%%%%%%%%%%%%%%%%
 function [VarName,ValCell,Role,units_cell]=velocity(DataIn)

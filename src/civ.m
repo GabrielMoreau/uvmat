@@ -61,7 +61,7 @@ global patch_newBin %=1 if new patch processing available
 handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
-
+set(hObject,'WindowButtonUpFcn',{'mouse_up_GUI',handles}) %set mouse action (zoom on uicontrols)
 %default initial parameters
 filebase=''; % root file name ('filebase'.civ)
 ext=[];
@@ -333,18 +333,23 @@ set(handles.ImaDoc,'String',ext);
 if isequal(ext,'.nc')
     browse.nom_type_nc=nom_type;
     ind_opening=2;% propose 'fix' as the default option
-    Data=nc2struct(fileinput,[]);
-    if isfield(Data,'absolut_time_T0')%test for civx files
+    Data=nc2struct(fileinput,'ListGlobalAttribute','CivStage','absolut_time_T0','fix','patch','civ2','fix2');
+    if ~isempty(Data.CivStage)%test for civ files
+        ind_opening=Data.CivStage;
+        set(handles.CivAll,'Value',3)
+    end
+    if ~isempty(Data.absolut_time_T0)%test for civx files
+        set(handles.CivAll,'Value',1)
         if isfield(Data,'fix') && isequal(Data.fix,1)
             ind_opening=3;
         end
-        if isfield(Data,'patch') && isequal(Data.patch,1)
+        if isequal(Data.patch,1)
             ind_opening=4;
         end
-        if isfield(Data,'civ2') && isequal(Data.civ2,1)
+        if isequal(Data.civ2,1)
             ind_opening=5;
         end
-        if isfield(Data,'fix2') && isequal(Data.fix2,1)
+        if  isequal(Data.fix2,1)
             ind_opening=6;
         end
         testciv=1; %TO SUPPRESS WITH NEW VERSION OF CIVX
@@ -4682,7 +4687,8 @@ if test_civ1
     par_civ1.filename_ima_b=filecell.ima2.civ1{1};
     par_civ1.T0=0;
     par_civ1.Dt=1;
-    Data=civ_uvmat(par_civ1);
+    Param.Civ1=par_civ1;
+    Data=civ_uvmat(Param);
 %     stepx=str2num(par_civ1.dx);
 %     stepy=str2num(par_civ1.dy);
 %     ibx2=ceil(str2num(par_civ1.ibx)/2);
@@ -4876,16 +4882,15 @@ end
 % call 'view_field.fig' to display the selected field
 function open_view_field(hObject, eventdata)
 %-------------------------------------------------------------------
-     list=get(gcbo,'String');
-     index=get(gcbo,'Value');
-     rootroot=get(gcbo,'UserData');
+     list=get(hObject,'String');
+     index=get(hObject,'Value');
+     rootroot=get(hObject,'UserData');
      filename=list{index};
      ind_dot=findstr(filename,'...');
      filename=filename(1:ind_dot-1);
       filename=fullfile(rootroot,filename);
+      delete(get(hObject,'parent'))%delete the display figure to stop the check process
       if exist(filename,'file')%visualise the vel field if it exists
-        %[Field,VelTypeOut]=read_civxdata(filename);
-        %view_field(Field)
         uvmat(filename)
         set(gcbo,'Value',1)
       end

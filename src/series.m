@@ -128,7 +128,7 @@ end
 %     set(handles.VelTypeMenu,'Value',param.VelTypeIndex)
 %     set(handles.VelTypeMenu,'String',param.VelTypeMenu)
 % end  
-set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles}) 
+set(hObject,'WindowButtonUpFcn',{'mouse_up_gui',handles}) 
 NomType_Callback(hObject, eventdata, handles)
 
 %loads the information stored in prefdir to initiate  the list of ACTION functions
@@ -1857,30 +1857,6 @@ elseif isequal(field,'more...')
      update_menu(handles.FieldMenu_1,scalar)
 end   
 
-%-----------------------------
-function mouse_up_gui(hObject,eventdata,handles)
-if isequal(get(hObject,'SelectionType'),'alt')
-    set(hObject,'Units','pixels')
-    series_pos=get(hObject,'Position');%position of the GUI series (in pixels)
-    set(hObject,'Units','normalized')
-    xy_fig=get(hObject,'CurrentPoint');% current point of the current figure (gcbo)
-    hchild=get(hObject,'Children');%handles of all objects in the current figure
-    %% loop on all the objects in the current figure (selected by the last mouse click)
-
-    for ichild=1:length(hchild)
-        obj_pos=get(hchild(ichild),'Position');%position of the object        
-        if numel(obj_pos)>=4 && xy_fig(1) >=obj_pos(1) && xy_fig(2) >= obj_pos(2)&& xy_fig(1) <=obj_pos(1)+obj_pos(3) && xy_fig(2) <= obj_pos(2)+obj_pos(4);         
-            htype=get(hchild(ichild),'Type');%type of object child of the current figure
-            %if the mouse is over an axis, look at the data
-            if isequal(htype,'uicontrol') && isequal(get(hchild(ichild),'Visible'),'on')
-                msg_pos(1:2)=series_pos(1:2)+obj_pos(1:2).*series_pos(3:4);
-                msgbox_uvmat(['uicontrol: ' get(hchild(ichild),'Tag')],'',get(hchild(ichild),'String'),msg_pos)
-                break
-            end
-        end
-    end
-    set(hObject,'Units','pixels')
-end
 
 %%%%%%%%%%%%%
 function [ind_remove]=find_pairs(dirpair,ind_i,last_i)

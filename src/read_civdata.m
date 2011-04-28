@@ -46,37 +46,25 @@
 % 'varcivx_generator':, sets the names of vaiables to read in the netcdf file 
 % 'nc2struct': reads a netcdf file 
 
-function [Field,VelTypeOut,errormsg]=read_civdata(filename,FieldNames,VelType)
+function [Field,VelTypeOut,errormsg]=read_civdata(filename,FieldNames,VelType,XI,YI)
 errormsg='';
 VelTypeOut=VelType;%default
 %% default input
 if ~exist('VelType','var')
-    VelType=[];
+    VelType='';
 end
 if isequal(VelType,'*')
-    VelType=[];
+    VelType='';
+end
+if isempty(VelType)
+    VelType='';
 end
 if ~exist('FieldNames','var') 
     FieldNames=[]; %default
 end
 
 %% reading data
-%[var,role,units,vel_type_out_cell]=varcivx_generator(FieldNames,VelType);%determine the names of constants and variables to read
-% if isempty(VelType)
-%     VelType='civ1';
-% end
-% if isequal(VelType,'civ1')
-%     varlist=[{'X','Y','U','V','C','F','FF'};... %output names
-%         {'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF'}];%names in file
-%     role={'coord_x','coord_y','vector_x','vector_y','ancillary','warnflag','errorflag'};
-%     units={'pixel','pixel','pixel','pixel','','',''};
-% elseif isequal(VelType,'interp1')|| isequal(VelType,'filter1')% read diff between spline and initial data (change name interp1 -> splinediff
-%     varlist=[{'X','Y','U','V'};... %output names
-%         {'Civ1_X','Civ1_Y','Patch1_U','Patch1_V'}];
-%     role = {'coord_x','coord_y','vector_x','vector_y'};
-%     units={'pixel','pixel','pixel','pixel'};
-% end
-[varlist,role,units,vel_type_out_cell]=varcivx_generator(FieldNames,VelType); 
+[varlist,role,units,vel_type_out_cell]=varcivx_generator(FieldNames,VelType);
 [Field,vardetect,ichoice]=nc2struct(filename,varlist);%read the variables in the netcdf file
 if isfield(Field,'Txt')
     errormsg=Field.Txt;
@@ -92,12 +80,10 @@ for ivar=1:length(var_ind)
     Field.VarAttribute{ivar}.Unit=units{var_ind(ivar)};
     Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
 end
-
 if ~isempty(ichoice)
     VelTypeOut=vel_type_out_cell{ichoice};
 end
-%  Field.CivStage=3;%for patch, to generalise
-% return
+
 
 %% renaming for standard conventions
 %Field.NbCoord=Field.nb_coord;
@@ -161,6 +147,7 @@ Field.TimeUnit='s';
 Field.CoordUnit='pixel';
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TAKEN FROM read_civxdata NOT USED
 % [var,role,units,vel_type_out]=varcivx_generator(FieldNames,vel_type) 
@@ -177,21 +164,55 @@ Field.CoordUnit='pixel';
 function [var,role,units,vel_type_out]=varcivx_generator(FieldNames,vel_type) 
 
 %% default input values
-if ~exist('vel_type','var'),vel_type=[];end;
+if ~exist('vel_type','var'),vel_type='';end;
 if iscell(vel_type),vel_type=vel_type{1}; end;%transform cell to string if needed
 if ~exist('FieldNames','var'),FieldNames={'ima_cor'};end;%default scalar 
 if ischar(FieldNames), FieldNames={FieldNames}; end;
 
 %% select the priority order for automatic vel_type selection
 testder=0;
+testpatch=0;
 for ilist=1:length(FieldNames)
     if ~isempty(FieldNames{ilist})
     switch FieldNames{ilist}
+        case{'u','v'}
+            testpatch=1;
         case {'vort','div','strain'}
             testder=1;
     end
     end
-end      
+end    
+switch vel_type
+    case 'civ1'
+        var={'X','Y','Z','U','V','W','C','F','FF';...
+              'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF'};
+        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
+        units={'pixel','pixel','pixel','pixel','pixel','pixel',[],[],[]};
+    case 'interp1'
+         var={'X','Y','Z','U','V','W','FF';...
+               'Civ1_X','Civ1_Y','','Civ1_U_Diff','Civ1_V_Diff','','Civ1_FF'};
+         role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','errorflag'};  
+         units={'pixel','pixel','pixel','pixel','pixel','pixel',[]};
+    case 'filter1'
+        var={'X_tps','Y_tps','Z_tps','U_tps','V_tps','W_tps','X_SubRange','Y_SubRange','NbSites';...
+            'Civ1_X_tps','Civ1_Y_tps','','Civ1_U_tps','Civ1_V_tps','','Civ1_X_SubRange','Civ1_Y_SubRange','Civ1_NbSites'};
+         role={'','','','','','','','',''};  
+         units={'pixel','pixel','pixel','pixel','pixel','pixel','pixel','pixel',''};
+    otherwise % if VelType=[]
+        if testpatch
+           var={'X_tps','Y_tps','Z_tps','U_tps','V_tps','W_tps','X_SubRange','Y_SubRange','NbSites';...
+               'Civ2_X_tps','Civ2_Y_tps','','Civ2_U_tps','Civ2_V_tps','','Civ2_X_SubRange','Civ2_Y_SubRange','Civ2_NbSites';...
+               'Civ1_X_tps','Civ1_Y_tps','','Civ1_U_tps','Civ1_V_tps','','Civ1_X_SubRange','Civ1_Y_SubRange','Civ1_NbSites'};
+            role={'','','','','','','',''};  
+            units={'pixel','pixel','pixel','pixel','pixel','pixel','pixel','pixel'};
+        else
+             var={'X','Y','Z','U','V','W','C','F','FF';...
+              'Civ2_X','Civ2_Y','Civ2_Z','Civ2_U','Civ2_V','Civ2_W','Civ2_C','Civ2_F','Civ2_FF';...
+              'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF'};
+            role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
+            units={'pixel','pixel','pixel','pixel','pixel','pixel',[],[],[]};
+        end   
+end
 if isempty(vel_type) || isequal(vel_type,'*') %undefined velocity type (civ1,civ2...)
     if testder
          vel_type_out{1}='filter2'; %priority to filter2 for scalar reading, filter1 as second
@@ -218,61 +239,8 @@ else
 end
 vel_type_out=vel_type_out';
 
-%% determine names of netcdf variables to read
-var={'X','Y','Z','U','V','W','C','F','FF'};
-role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
-units={'pixel','pixel','pixel','pixel','pixel','pixel',[],[],[]};
-if testder
-    var=[var {'DjUi(:,1,1)','DjUi(:,1,2)','DjUi(:,2,1)','DjUi(:,2,2)'}];
-    role=[role {'tensor','tensor','tensor','tensor'}];
-    units=[units {'pixel','pixel','pixel','pixel'}];
-end
-for ilist=1:length(vel_type_out)
-    var=[var;varname1(vel_type_out{ilist},FieldNames)];
-end
 
-%------------------------------------------------------------------------  
-% TAKEN FROM read_civxdata NOT USED
-%--- determine  var names to read
 
-function varin=varname1(vel_type,FieldNames)
-%------------------------------------------------------------------------
-testder=0;
-C1='';
-C2='';
-for ilist=1:length(FieldNames)
-    if ~isempty(FieldNames{ilist})
-    switch FieldNames{ilist}
-        case 'ima_cor' %image correlation corresponding to a vel vector
-            C1='vec_C';
-            C2='vec2_C';
-        case 'error'
-            C1='vec_E';
-            C2='vec2_E';
-        case {'vort','div','strain'}
-            testder=1;
-    end
-    end
-end      
-switch vel_type
-    case 'civ1'
-        varin={'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF'};
-    case 'interp1'
-        varin={'','','','','','','','',''};
-    case 'filter1'
-        varin={'Civ1_X','Civ1_Y','','Civ1_U_Spline','Civ1_V_Spline','','','',''};
-    case 'civ2'
-        varin={'vec2_X','vec2_Y','vec2_Z','vec2_U','vec2_V','vec2_W',C2,'vec2_F','vec2_FixFlag'};
-    case 'interp2'
-        varin={'vec2_patch_X','vec2_patch_Y','vec2_patch_Z','vec2_patch0_U','vec2_patch0_V','vec2_patch0_W','','',''};
-    case 'filter2'
-        varin={'vec2_patch_X','vec2_patch_Y','vec2_patch_Z','vec2_patch_U','vec2_patch_V','vec2_patch0_W','','',''};
-end
-if testder
-     switch vel_type
-        case 'filter1'
-            varin=[varin {'vec_patch_DUDX','vec_patch_DVDX','vec_patch_DUDY','vec_patch_DVDY'}];
-        case 'filter2'
-            varin=[varin {'vec2_patch_DUDX','vec2_patch_DVDX','vec2_patch_DUDY','vec2_patch_DVDY'}];
-    end   
-end
+
+
+

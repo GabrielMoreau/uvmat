@@ -13,7 +13,9 @@
 %INPUT:
 % image1:first image (matrix)
 % image2: second image (matrix)
-% ibx,iby: size of the correlation box along x and y (in px)
+% ibx2,iby2: half size of the correlation box along x and y, in px (size=(2*iby2+1,2*ibx2+1)
+% isx2,isy2: half size of the search box along x and y, in px (size=(2*isy2+1,2*isx2+1)
+% shiftx, shifty: shift of the search box (in pixel index, yshift reversed)
 % step: mesh of the measurement points (in px)
 % subpixfinder=1 or 2 controls the curve fitting of the image correlation
 % mask: =[] for no mask
@@ -118,8 +120,8 @@ for ivec=1:nbvec
     %Create the vector matrix x, y, u, v
     xtable(ivec)=iref+vector(1)/2;% convec flow (velocity taken at the point middle from imgae1 and 2)
     ytable(ivec)=jref+vector(2)/2;
-    utable(ivec)=vector(1);
-    vtable(ivec)=vector(2);
+    utable(ivec)=vector(1)+shiftx;
+    vtable(ivec)=vector(2)+shifty;
 end
 result_conv=result_conv*corrmax/(255*sum_square);% keep the last correlation matrix for output
 

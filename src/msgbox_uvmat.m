@@ -62,7 +62,7 @@ set(handles.Cancel,'FontSize',15)
 % Update handles structure
 guidata(hObject, handles);
 testNo=0;
-testCancel=1;
+testCancel=0;
 testinputstring=0;
 icontype='quest';%default question icon (text input asked)
 if exist('title','var')
@@ -70,22 +70,20 @@ if exist('title','var')
     switch title
         case {'CONFIRMATION'}
             icontype='';
-            testCancel=0; %no cancel button
         case 'ERROR'
             icontype='error';
-            testCancel=0; %no cancel button
         case 'WARNING'
             icontype='warn';
-            testCancel=0; %no cancel button
         case 'INPUT_Y-N'
             icontype='quest';
+            testCancel=1; %no cancel button
             testNo=1; % button No activated
         case {'RULER'}
             icontype='';
-            testCancel=0; %no cancel button
             testinputstring=1;
         case 'INPUT_TXT'
             testinputstring=1;
+            testCancel=1; %no cancel button
         otherwise
           %  testinputstring=1;
             icontype='';
@@ -188,19 +186,21 @@ uiwait(handles.figure1);
 function varargout = msgbox_uvmat_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
-if isequal(handles.output,'Cancel')
-    varargout{1}='Cancel';
-elseif isequal(handles.output,'No')
-    varargout{1}='No';
-else
-    varargout{1}=get(handles.edit_box,'String');
-    if isempty(varargout{1}) || isequal(varargout{1},'')
-        varargout{1}='Yes';
+if isfield(handles,'output')
+    if isequal(handles.output,'Cancel')
+        varargout{1}='Cancel';
+    elseif isequal(handles.output,'No')
+        varargout{1}='No';
+    else
+        varargout{1}=get(handles.edit_box,'String');
+        if isempty(varargout{1}) || isequal(varargout{1},'')
+            varargout{1}='Yes';
+        end
     end
+    % The figure can be deleted now
 end
-% The figure can be deleted now
-delete(handles.figure1);
-
+ delete(handles.figure1);
+ 
 % --- Executes on button press in OK.
 function OK_Callback(hObject, eventdata, handles)
 handles.output = get(hObject,'String');
