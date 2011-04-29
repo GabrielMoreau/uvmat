@@ -105,6 +105,7 @@ function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColor
 % use htext: handles of the text edit box (uicontrol)
 % introduce PlotParam.Hold: 'on' or 'off' (for curves)
 %default output
+
 if ~exist('PlotParam','var'),PlotParam=[];end;
 if ~exist('PosColorbar','var'),PosColorbar=[];end;
 PlotType='text'; %default

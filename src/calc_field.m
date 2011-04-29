@@ -104,7 +104,7 @@ else
                        % EM = tps(1,DM_eval);%values of thin plate
                         EM = tps_eval(epoints,ctrs);
                     case{'vort','div'}
-                        EMDXY = tps_eval_dxy(epoints,ctrs);%2D matrix of distances between extrapolation points epoints and spline centres (=site points) ctrs
+                        [EMDX,EMDY] = tps_eval_dxy(epoints,ctrs);%2D matrix of distances between extrapolation points epoints and spline centres (=site points) ctrs
      
                 end
                 switch FieldName{1}
@@ -131,7 +131,7 @@ else
 %                         DataIn.V_tps(nbvec_sub+1,isub)=0;%constant value suppressed by spatial derivatives
 %                         DataIn.V_tps(nbvec_sub+2,isub)=0;% X coefficient suppressed for x wise derivatives
 %                         DataIn.U_tps(nbvec_sub+3,isub)=0;% Y coefficient suppressed for x wise derivatives
-                        DataOut.vort(ind_sel)=DataOut.vort(ind_sel)+EMDXY(:,:,2) *DataIn.U_tps(1:nbvec_sub+3,isub)-EMDXY(:,:,1) *DataIn.V_tps(1:nbvec_sub+3,isub);
+                        DataOut.vort(ind_sel)=DataOut.vort(ind_sel)+EMDY *DataIn.U_tps(1:nbvec_sub+3,isub)-EMDX *DataIn.V_tps(1:nbvec_sub+3,isub);
                     case 'div'
                         ListFields={'div'};
                         VarAttributes{1}.Role='scalar';
@@ -141,7 +141,7 @@ else
 %                         DataIn.V_tps(nbvec_sub+1,isub)=0;%constant value suppressed by spatial derivatives
 %                         DataIn.V_tps(nbvec_sub+2,isub)=0;% X coefficient suppressed for x wise derivatives
 %                         DataIn.U_tps(nbvec_sub+3,isub)=0;% Y coefficient suppressed for x wise derivatives
-                        DataOut.div(ind_sel)=DataOut.div(ind_sel)+EMDXY(:,:,1)*DataIn.U_tps(1:nbvec_sub+3,isub)+EMDXY(:,:,2) *DataIn.V_tps(1:nbvec_sub+3,isub);
+                        DataOut.div(ind_sel)=DataOut.div(ind_sel)+EMDX*DataIn.U_tps(1:nbvec_sub+3,isub)+EMDY *DataIn.V_tps(1:nbvec_sub+3,isub);
                 end
         end
         DataOut.FF=nbval==0; %put errorflag to 1 for points outside the interpolation rang  

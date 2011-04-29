@@ -2146,6 +2146,7 @@ if ~isempty(filename)
     ParamIn.VelType=VelType;
     ParamIn.GUIName='get_field';
     [Field{1},ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num_i1);
+    Field{1}
     if ~isempty(errormsg)
         errormsg=['error in reading ' filename ': ' errormsg];
         return
@@ -2461,8 +2462,8 @@ elseif numel(VarType)>=imax && numel(VarType{imax}.coord)>=NbDim && VarType{imax
         YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
     end
 else
-    errormsg='input field coordinates not defined';
-    return
+%     errormsg='input field coordinates not defined';
+%     return
 end
 if NbDim==3
     if ~test_x
@@ -2592,7 +2593,7 @@ if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
 end
 
 %% Plot the projections on the selected  projection objects
-
+'PLOT'
 % main projection object (uvmat display)
 list_object=get(handles.list_object_1,'String');
 if isequal(list_object,{''})%refresh list of objects if the menu is empty

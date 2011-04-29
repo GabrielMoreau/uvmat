@@ -49,7 +49,9 @@
 function [Field,VelTypeOut,errormsg]=read_civxdata(filename,FieldNames,VelType)
 errormsg='';
 DataTest=nc2struct(filename,'ListGlobalAttribute','Conventions');
-if isequal(DataTest.Conventions,'uvmat/civdata')%test for new civ format
+if isfield(DataTest,'Txt')
+    errormsg=DataTest.Txt;    
+elseif isequal(DataTest.Conventions,'uvmat/civdata')%test for new civ format
      [Field,VelTypeOut]=read_civdata(filename,FieldNames,VelType);
      return
 end
