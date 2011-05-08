@@ -24,7 +24,7 @@ if ~iscell(RootFile)
     return
 end
 basename=fullfile(RootPath{1},RootFile{1}); 
-[XmlData,warntext]=imadoc2struct([basename '.xml'])% read the xml file appended to the present function (containing bug corrections)
+[XmlData,warntext]=imadoc2struct([basename '.xml']);% read the xml file appended to the present function (containing bug corrections)
 if ~isempty(warntext)
     msgbox_uvmat('ERROR',warntext)%error message for xml file reading
 end
@@ -62,10 +62,10 @@ end
 %% copy and adapt the xml file
 if exist([basename '.xml'],'file')
     try
-    copyfile([basename '.xml'],[basename '.xml~']);% backup the xml file
+        copyfile([basename '.xml'],[basename '.xml~']);% backup the xml file
     catch ME
-            msgbox_uvmat('ERROR',ME.message);
-            return
+        msgbox_uvmat('ERROR',ME.message);
+        return
     end
     t=xmltree([basename '.xml']);
     
@@ -73,13 +73,13 @@ if exist([basename '.xml'],'file')
     uid_Heading=find(t,'ImaDoc/Heading');
     if isempty(uid_Heading)
         [t,uid_Heading]=add(t,1,'element','Heading');
-    end   
+    end
     uid_ImageName=find(t,'ImaDoc/Heading/ImageName');
     ImageName=name_generator(basename,1,1,'.png','_i_j');
     [pth,ImageName]=fileparts(ImageName);
     ImageName=[ImageName '.png'];
     if isempty(uid_ImageName)
-       [t,uid_ImageName]=add(t,uid_Heading,'element','ImageName');
+        [t,uid_ImageName]=add(t,uid_Heading,'element','ImageName');
     end
     uid_value=children(t,uid_ImageName);
     if isempty(uid_value)
@@ -90,25 +90,28 @@ if exist([basename '.xml'],'file')
     
     %%%% correction RDvision %%%%
     if isfield(XmlData,'NbDtj')
-    uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
-    uid_value=children(t,uid_NbDtj);
-    if ~isempty(uid_value)
-        t=set(t,uid_value(1),'value',num2str(XmlData.NbDtj));
-    end
+        uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
+        uid_value=children(t,uid_NbDtj);
+        if ~isempty(uid_value)
+            t=set(t,uid_value(1),'value',num2str(XmlData.NbDtj));
+        end
     end
     if isfield(XmlData,'NbDtk')
-    uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
-    uid_value=children(t,uid_NbDtk);
-    if ~isempty(uid_value)
-        t=set(t,uid_value(1),'value',num2str(XmlData.NbDtk));
-    end
+        uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
+        uid_value=children(t,uid_NbDtk);
+        if ~isempty(uid_value)
+            t=set(t,uid_value(1),'value',num2str(XmlData.NbDtk));
+        end
     end
     if strcmp(nomtype,'_i') && isfield(XmlData,'NbDti')
+        uid_Dti=find(t,'ImaDoc/Camera/BurstTiming/Dti');
+        t=add(t,uid_Dti,'chardata',num2str(XmlData.Dti));
         uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
-        uid_value=children(t,uid_NbDti);
-        if ~isempty(uid_value)
-            t=set(t,uid_value(1),'value',num2str(XmlData.NbDti));
-        end
+        t=add(t,uid_NbDti,'chardata',num2str(XmlData.NbDti));
+%         uid_value=children(t,uid_NbDti);
+%         if ~isempty(uid_value)
+%             t=set(t,uid_value(1),'value',num2str(XmlData.NbDti));
+%         end
         uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
         uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
         t=delete(t,uid_NbDtj);
@@ -116,7 +119,7 @@ if exist([basename '.xml'],'file')
         uid_Dtj=find(t,'ImaDoc/Camera/BurstTiming/Dtj');
         uid_Dtk=find(t,'ImaDoc/Camera/BurstTiming/Dtk');
         t=delete(t,uid_Dtj);
-        t=delete(t,uid_Dtk);    
+        t=delete(t,uid_Dtk);
     end
     %%%
     
@@ -138,9 +141,8 @@ for ifile=1:nbfield1*nbfield2
             msgbox_uvmat('ERROR',errormsg);
             return
         end
-    catch
-        errormsg=lasterr
-        msgbox_uvmat('ERROR',errormsg);
+    catch ME
+        msgbox_uvmat('ERROR',ME.message);
         return
     end
 end
@@ -235,16 +237,14 @@ if strcmp(option,'*') || strcmp(option,'Camera')
 %                 NbDtj=NbDtj/numel(Dtj);
 %                 s.NbDtj=NbDtj;
 %                 %%%%
-                Dti=get_value(subt,'/BurstTiming/Dti',[])
-                NbDti=get_value(subt,'/BurstTiming/NbDti',1)
+                Dti=get_value(subt,'/BurstTiming/Dti',[]);
+                NbDti=get_value(subt,'/BurstTiming/NbDti',1);
                  %%%% correction RDvision %%%%
                 if isempty(Dti)% series 
-                     Dti=Dtj
-                      NbDti=NbDtj
+                     Dti=Dtj;
+                      NbDti=NbDtj;
                      Dtj=[];
                      s.Dti=Dti;
-                     'TESTrxml'
-                     s.NbDti=NbDti
                 else
                      NbDtj=NbDtj/numel(Dtj);%bursts
                     s.NbDtj=NbDtj;
