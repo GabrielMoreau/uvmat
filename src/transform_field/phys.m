@@ -115,7 +115,11 @@ DataOut=Data;%default
 if isfield(Calib,'SliceCoord') && isfield(Data,'ZIndex')&&~isempty(Data.ZIndex)&&~isnan(Data.ZIndex)
     DataOut.PlaneCoord=Calib.SliceCoord(Data.ZIndex,:);% transfer the slice position
     if isfield(Calib,'SliceAngle') % transfer the slice rotation angles
-        DataOut.PlaneAngle=Calib.SliceAngle(Data.ZIndex,:);
+        if isequal(size(Calib.SliceAngle,1),1)
+             DataOut.PlaneAngle=Calib.SliceAngle;
+        else
+            DataOut.PlaneAngle=Calib.SliceAngle(Data.ZIndex,:);
+        end
     end
 end
 % The transform ACTS ONLY IF .CoordType='px'and Calib defined
