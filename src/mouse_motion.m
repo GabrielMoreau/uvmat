@@ -223,7 +223,6 @@ for ichild=1:length(hchild)
 %                        [dd,ind_y]=min(abs(Field.Y-xy(1,2)));
                        xround=Field.X(ind_pt);
                        yround=Field.Y(ind_pt);
-%                         if isfield(Field,'A')
 %                             dx=str2double(par.dx);
 %                             dy=str2double(par.dy);
 %                             xround=x(1)+dx*round((xy(1,1)-x(1))/dx);% index x of pixel
@@ -252,7 +251,7 @@ for ichild=1:length(hchild)
                             set(hhh,'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2])
                             set(hhhh,'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2])
                         end
-                        [xtable ytable utable vtable ctable typevector result_conv] = pivlab (Field.A,Field.B,ibx2,iby2,isx2,isy2,shiftx,shifty,[xround yround], 1, []);
+                        [xtable ytable utable vtable ctable typevector result_conv] = pivlab (Field.A,Field.B,ibx2,iby2,isx2,isy2,shiftx,shifty,[xround size(Field.A,1)-yround+1], 1, []);
 %                         Asub=Field.A(yround-iby2:yround+iby2,xround-ibx2:xround+ibx2);%first sub-image
 %                         Asub=reshape(Asub,[],1);%first sub-image reshaped as matlab vector
                          rangx(1)=-(isx2-ibx2)+shiftx;

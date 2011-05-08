@@ -2166,9 +2166,12 @@ if isequal(coord_option,'more...');
 end
 
 %check the current path to the selected function
+if ~isempty(list_transform{ind_coord})
 func=functions(list_transform{ind_coord});
 set(handles.path_transform,'String',fileparts(func.file)); %show the path to the senlected function
-
+else
+   set(handles.path_transform,'String',''); %show the path to the senlected function 
+end
 %------------------------------------------------------------------------
 % --- generates a series of file names with reference numbers between range1 and
 % --- range2 with increment incr. The reference number num_ref is the image number at the middle of the

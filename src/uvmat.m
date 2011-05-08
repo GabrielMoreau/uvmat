@@ -1493,10 +1493,11 @@ if isequal(get(handles.mask_test,'Value'),1)
         for ilist=1:length(maskfiles)
             maskname=maskfiles(ilist).name;% take the first mask file in the list
             [rr,ff,x1,x2,xa,xb,xext,Mask_NomType{ilist}]=name2display(maskname);
-            if ~strcmp(Mask_NomType{ilist},Mask_NomType{1})
-                msgbox_uvmat('ERROR',['inconsistent mask types ' Mask_NomType{1} Mask_NomType{ilist } ' coexist in the current image directory'])
-                return
-            end
+% 
+%             if ~strcmp(Mask_NomType{ilist},Mask_NomType{1})
+%                 msgbox_uvmat('ERROR',['inconsistent mask types ' Mask_NomType{1} ' and ' Mask_NomType{ilist } ' coexist in the current image directory'])
+%                 return
+%             end
             [Path2,Name,ext]=fileparts(maskname);
             Namedouble=double(Name);
             val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
@@ -1520,7 +1521,7 @@ if isequal(get(handles.mask_test,'Value'),1)
             Mask.Base=[FileBase Name(i:ind_mask+3)];
             Mask.NbSlice=nbslice;
             num_i1=mod(num_i1-1,nbslice)+1;
-            Mask.NomType=Mask_NomType{1};
+            Mask.NomType=regexprep(Mask_NomType{1},'0','');%remove '0' in nom type for masks
             [maskname,mdetect]=name_generator(Mask.Base,num_i1,num_j1,'.png',Mask.NomType);%
             mdetect=exist(maskname,'file');
             if mdetect
@@ -2146,7 +2147,6 @@ if ~isempty(filename)
     ParamIn.VelType=VelType;
     ParamIn.GUIName='get_field';
     [Field{1},ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num_i1);
-    Field{1}
     if ~isempty(errormsg)
         errormsg=['error in reading ' filename ': ' errormsg];
         return
@@ -2593,7 +2593,7 @@ if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
 end
 
 %% Plot the projections on the selected  projection objects
-'PLOT'
+
 % main projection object (uvmat display)
 list_object=get(handles.list_object_1,'String');
 if isequal(list_object,{''})%refresh list of objects if the menu is empty

@@ -329,33 +329,33 @@ end
 if xstest==0  %look for the corresponding schema in the directory PARAM_LINUX.xml or PARAM_WIN.xml
     head_name=get(t,1,'name');
     %Path to shemas:
-%     path_uvmat=which('editxml');% check the path detected for source file uvmat
-%     path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-%     xmlparam=fullfile(path_UVMAT,'PARAM.xml');
+    path_uvmat=which('editxml');% check the path detected for source file uvmat
+    path_UVMAT=fileparts(path_uvmat); %path to UVMAT
+    %     xmlparam=fullfile(path_UVMAT,'PARAM.xml');
     xmlparam='PARAM.xml'; %will find PARAM.xml whose path is set in priority
     if exist(xmlparam,'file')
         tparam=xmltree(xmlparam);
         sparam=convert(tparam);
         if isfield(sparam,'SchemaPath')
-            schemafile=[fullfile(sparam.SchemaPath,head_name) '.xsd'];
-        end 
-        if ~exist(schemafile,'file')
-            schemafile=fullfile(path_UVMAT,schemafile);%look for relative path definition
-        end
-        if exist(schemafile,'file')
-            xs=xmltree(schemafile);
-        else
-            msgbox_uvmat('ERROR',['The xml schema for ' CurrentFile ' is unknown, check the schema path set in the file PARAM.xml'])
-            [FileName, PathName]=uigetfile( ...
-           {'*.xsd', '(*.xsd)';
-            '*.xsd',  '.xsd files '; ...
-            '*.*',  'All Files (*.*)'}, ...
-            'Pick a .xsd schema' ,schemafile); %file browser
-            if ischar(PathName) && ischar(FileName) && exist(fullfile(PathName,FileName),'file')
-                DataIn.Schema=fullfile(PathName,FileName);
-                xs=xmltree(DataIn.Schema);%open the associated schema file
+            schemafile=[fullfile(sparam.SchemaPath,head_name) '.xsd'];           
+            if ~exist(schemafile,'file')
+                schemafile=fullfile(path_UVMAT,schemafile);%look for relative path definition
+            end
+            if exist(schemafile,'file')
+                xs=xmltree(schemafile);
             else
-                xs=[];
+                msgbox_uvmat('ERROR',['The needed xml schema  ' sparam.SchemaPath ' is not found, check the file PARAM.xml'])
+                [FileName, PathName]=uigetfile( ...
+                    {'*.xsd', '(*.xsd)';
+                    '*.xsd',  '.xsd files '; ...
+                    '*.*',  'All Files (*.*)'}, ...
+                    'Pick a .xsd schema' ,schemafile); %file browser
+                if ischar(PathName) && ischar(FileName) && exist(fullfile(PathName,FileName),'file')
+                    DataIn.Schema=fullfile(PathName,FileName);
+                    xs=xmltree(DataIn.Schema);%open the associated schema file
+                else
+                    xs=[];
+                end
             end
         end
     end

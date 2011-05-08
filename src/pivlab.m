@@ -41,6 +41,8 @@ end
 
 %% mask
 testmask=0;
+image1=double(image1);
+image2=double(image2);
 if exist('mask','var') && ~isempty(mask)
    testmask=1;
    if ~isequal(size(mask),[npy_ima npx_ima])
@@ -53,13 +55,11 @@ if exist('mask','var') && ~isempty(mask)
     % 150>=mask >100: velocity not calculated, nor interpolated
     %  100>=mask> 20: velocity not calculated, impermeable (no flux through mask boundaries)
     %  20>=mask: velocity=0
-    test_noflux=(mask<=100) ;
-    test_undefined=(mask<=200 & mask>100 );
-    image1(test_undefined)=min(min(image1))*ones(size(image1));% put image to zero in the undefined  area
-    image2(test_undefined)=min(min(image1))*ones(size(image1));% put image to zero in the undefined  area
+    test_noflux=(mask<100) ;
+    test_undefined=(mask<200 & mask>=100 );
+    image1(test_undefined)=min(min(image1));% put image to zero in the undefined  area
+    image2(test_undefined)=min(min(image2));% put image to zero in the undefined  area
 end
-image1=double(image1);
-image2=double(image2);
 
 %% calculate correlations: MAINLOOP
 corrmax=0;

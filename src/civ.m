@@ -2151,6 +2151,9 @@ for ifile=1:nbfield
                 Param.Patch1.Threshold=thresh_patch1;
                 Param.Patch1.SubDomain=subdomain_patch1;
             end
+            if box_test(4)==1
+                Param.Civ2=par_civ2;
+            end
             [Data,erromsg]=civ_uvmat(Param,filecell.nc.civ1{ifile,j});
             if isempty(errormsg)
                 display([filecell.nc.civ1{ifile,j} ' written'])
@@ -2704,15 +2707,25 @@ if box_test(4)==1 || box_test(5)==1 || box_test(6)==1 %civ2
                 end
                 if ~testdiff % civ2 or patch2 are written in the same file as civ1
                     if box_test(4)==0 ; %check the existence of civ2 if it is not calculated
-                        Data=nc2struct(filename,'ListGlobalAttribute','civ2');
-                        if isempty(Data.civ2)||isequal(Data.civ2,0)
+                        Data=nc2struct(filename,'ListGlobalAttribute','CivStage','civ2');
+                        if ~isempty(Data.CivStage) && Data.CivStage<4 %test for civ files
+                            msgbox_uvmat('ERROR',['no civ2 data in ' filename])
+                            filecell=[];
+                            return
+                        elseif isempty(Data.civ2)||isequal(Data.civ2,0)
                             msgbox_uvmat('ERROR',['no civ2 data in ' filename])
                             filecell=[];
                             return
                         end
                     elseif box_test(3)==0; %check the existence of patch if it is not calculated
-                        Data=nc2struct(filename,'ListGlobalAttribute','patch');
-                        if isempty(Data.patch)||isequal(Data.patch,0)
+                        Data=nc2struct(filename,'ListGlobalAttribute','CivStage','patch')
+                        if ~isempty(Data.CivStage)
+                            if Data.CivStage<3 %test for civ files
+                                msgbox_uvmat('ERROR',['no patch data in ' filename])
+                                filecell=[];
+                                return
+                            end
+                        elseif isempty(Data.patch)||isequal(Data.patch,0)
                             msgbox_uvmat('ERROR',['no patch data in ' filename])
                             filecell=[];
                             return
@@ -2800,8 +2813,12 @@ if (box_test(5)==1 || box_test(6)==1 ) && box_test(4)==0  % need to read an exis
                     filecell=[];
                     return
                 else
-                    Data=nc2struct(filename,'ListGlobalAttribute','civ2');
-                    if isempty(Data.civ2)||isequal(Data.civ2,0)
+                    Data=nc2struct(filename,'ListGlobalAttribute','CivStage','civ2');
+                    if ~isempty(Data.CivStage) && Data.CivStage<4 %test for civ files
+                            msgbox_uvmat('ERROR',['no civ2 data in ' filename])
+                            filecell=[];
+                            return
+                    elseif isempty(Data.civ2)||isequal(Data.civ2,0)
                         msgbox_uvmat('ERROR',['no civ2 data in ' filename])
                         filecell=[];
                         return
@@ -4676,7 +4693,7 @@ if test_civ1
         ref_j=1;%default
     end
     [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
-        set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);
+        set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0])
     Data.ListVarName={'ny','nx','A'};
     Data.VarDimName={'ny','nx',{'ny','nx'}};
     Data.A=imread(filecell.ima1.civ1{1});

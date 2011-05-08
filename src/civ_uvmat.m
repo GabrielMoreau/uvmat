@@ -7,11 +7,12 @@ Data.Program='civ_uvmat';
 Data.CivStage=0;%default
 ListVarCiv1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'};
 ListVarFix1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF'};
+mask='';
+maskname='';%default
 
 %% Civ1
 if isfield (Param,'Civ1')
     par_civ1=Param.Civ1;
-    str2num(par_civ1.rho)
     image1=imread(par_civ1.filename_ima_a);
     image2=imread(par_civ1.filename_ima_b);
     stepx=str2num(par_civ1.dx);
@@ -29,9 +30,12 @@ if isfield (Param,'Civ1')
     [GridX,GridY]=meshgrid(minix:stepx:maxix,miniy:stepy:maxiy);
     PointCoord(:,1)=reshape(GridX,[],1);
     PointCoord(:,2)=reshape(GridY,[],1);
-    
+    if ~isempty(par_civ1.maskname)
+        maskname=par_civ1.maskname;
+        mask=imread(maskname);
+    end
     % caluclate velocity data (y and v in indices, reverse to y component)
-    [xtable ytable utable vtable ctable F] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,-shifty,PointCoord,str2num(par_civ1.rho), []);
+    [xtable ytable utable vtable ctable F] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,-shifty,PointCoord,str2num(par_civ1.rho), mask);
     list_param=(fieldnames(par_civ1))';
     list_remove={'pxcmx','pxcmy','npx','npy','gridflag','maskflag','term_a','term_b','T0'};
     index=zeros(size(list_param));
@@ -147,6 +151,70 @@ if isfield (Param,'Patch1')
       Data.Civ1_FF(ind_good)=FFres;
       Data.CivStage=3;                             
 end   
+
+%% Civ2
+if isfield (Param,'Civ2')
+    par_civ2=Param.Civ2
+    image1=imread(par_civ2.filename_ima_a);
+    image2=imread(par_civ2.filename_ima_b);
+    stepx=str2num(par_civ2.dx);
+    stepy=str2num(par_civ2.dy);
+    ibx2=ceil(str2num(par_civ2.ibx)/2);
+    iby2=ceil(str2num(par_civ2.iby)/2);
+    isx2=4;
+    isy2=4;
+%     shiftx=str2num(par_civ1.shiftx);
+%     shifty=str2num(par_civ1.shifty);
+% TO GET shift from par_civ2.filename_nc1
+    miniy=max(1+isy2+shifty,1+iby2);
+    minix=max(1+isx2-shiftx,1+ibx2);
+    maxiy=min(size(image1,1)-isy2+shifty,size(image1,1)-iby2);
+    maxix=min(size(image1,2)-isx2-shiftx,size(image1,2)-ibx2);
+    [GridX,GridY]=meshgrid(minix:stepx:maxix,miniy:stepy:maxiy);
+    PointCoord(:,1)=reshape(GridX,[],1);
+    PointCoord(:,2)=reshape(GridY,[],1);
+    if ~isempty(par_civ2.maskname)&& ~strcmp(maskname,par_civ2.maskname)% mask exist, not already read in civ1
+        mask=imread(par_civ2.maskname);
+    end
+    % caluclate velocity data (y and v in indices, reverse to y component)
+    [xtable ytable utable vtable ctable F] = pivlab (image1,image2,ibx2,iby2,isx2,isy2,shiftx,-shifty,PointCoord,str2num(par_civ1.rho),mask);
+    list_param=(fieldnames(par_civ1))';
+    list_remove={'pxcmx','pxcmy','npx','npy','gridflag','maskflag','term_a','term_b','T0'};
+    index=zeros(size(list_param));
+    for ilist=1:length(list_remove)
+        index=strcmp(list_remove{ilist},list_param);
+        if ~isempty(find(index,1))
+            list_param(index)=[];
+        end
+    end
+    for ilist=1:length(list_param)
+        Civ1_param{ilist}=['Civ1_' list_param{ilist}];
+        eval(['Data.Civ1_' list_param{ilist} '=Param.Civ1.' list_param{ilist} ';'])
+    end
+    if isfield(Data,'Civ1_gridname') && strcmp(Data.Civ1_gridname(1:6),'noFile')
+        Data.Civ1_gridname='';
+    end
+    if isfield(Data,'Civ1_maskname') && strcmp(Data.Civ1_maskname(1:6),'noFile')
+        Data.Civ1_maskname='';
+    end
+    Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param {'Civ1_Time','Civ1_Dt'}];
+    Data.Civ1_Time=str2double(par_civ1.T0);
+    Data.Civ1_Dt=str2double(par_civ1.Dt);
+    Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'};%  cell array containing the names of the fields to record
+    Data.VarDimName={'nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1'};
+    Data.VarAttribute{1}.Role='coord_x';
+    Data.VarAttribute{2}.Role='coord_y';
+    Data.VarAttribute{3}.Role='vector_x';
+    Data.VarAttribute{4}.Role='vector_y';
+    Data.VarAttribute{5}.Role='warnflag';
+    Data.Civ1_X=reshape(xtable,[],1);
+    Data.Civ1_Y=reshape(size(image1,1)-ytable+1,[],1);
+    Data.Civ1_U=reshape(utable,[],1);
+    Data.Civ1_V=reshape(-vtable,[],1);
+    Data.Civ1_C=reshape(ctable,[],1);
+    Data.Civ1_F=reshape(F,[],1);
+    Data.CivStage=Data.CivStage+1;
+end
 %% write result
 % 'TESTcalc'
 % [DataOut,errormsg]=calc_field('velocity',Data)

@@ -1771,7 +1771,7 @@ for icell=1:length(CellVarIndex)
             testin=testin & (coord_Y >= YMin);
             testbound=1;
         end
-        if testYMin
+        if testYMax
             testin=testin & (coord_Y <= YMax);
             testbound=1;
         end
