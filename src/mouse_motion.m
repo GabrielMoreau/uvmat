@@ -106,128 +106,121 @@ for ichild=1:length(hchild)
                 eval(['Field=FigData.' tagaxes ';'])
                 if isfield(Field,'ListVarName')
                     [CellVarIndex,NbDim,VarType]=find_field_indices(Field);%analyse the physical fields contained in Field
-%                     if isfield(Field,'Mesh') && ~isempty(Field.Mesh)
-                        text_displ_1='';
-                        text_displ_2='';
-                        text_displ_3='';
-                        text_displ_4='';
-                        for icell=1:numel(CellVarIndex)%look for all physical fields
-                            if NbDim(icell)>=2 % select 2D field
-                                if  isfield(Field,'Mesh') && ~isempty(Field.Mesh)&& ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
-                                    eval(['X=Field.' Field.ListVarName{VarType{icell}.coord_x} ';'])
-                                    eval(['Y=Field.' Field.ListVarName{VarType{icell}.coord_y} ';'])
-                                    flag_vec=(X<(xy(1,1)+Field.Mesh/3) & X>(xy(1,1)-Field.Mesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
-                                        (Y<(xy(1,2)+Field.Mesh/3) & Y>(xy(1,2)-Field.Mesh/3));%f
-                                    ivec=find(flag_vec,1);% search the (first) selected vector index ivec                          
-                                    hhh=findobj(haxes,'Tag','vector_marker');
-                                    if ~isempty(ivec)
-                                        % mark the vectors with a circle in the absence of other operations
-                                        if ~test_object && ~test_edit_object && ~test_ruler
-                                            pointershape='arrow'; %mouse indicates  the detection of a vector
-                                            if isempty(hhh)
-                                                set(0,'CurrentFigure',currentfig)
-                                                set(currentfig,'CurrentAxes',haxes)
-                                                rectangle('Curvature',[1 1],...
-                                                    'Position',[X(ivec)-Field.Mesh/2 Y(ivec)-Field.Mesh/2 Field.Mesh Field.Mesh],'EdgeColor','m',...
-                                                    'LineStyle','-','Tag','vector_marker');
-                                            else
-                                                set(hhh,'Visible','on')
-                                                set(hhh,'Position',[X(ivec)-Field.Mesh/2 Y(ivec)-Field.Mesh/2 Field.Mesh Field.Mesh])
-                                            end
-                                        end
-                                        %display the field values
-                                        for ivar=1:numel(CellVarIndex{icell})
-                                            VarName=Field.ListVarName{CellVarIndex{icell}(ivar)};
-                                            eval(['VarVal=Field.' VarName '(ivec);'])
-                                            var_text=[VarName '=' num2str(VarVal,3) ','];
-                                            if isequal(ivar,VarType{icell}.coord_x)||isequal(ivar,VarType{icell}.coord_y)||isequal(ivar,VarType{icell}.coord_z)
-                                                text_displ_1=[text_displ_1 var_text];
-                                            elseif isequal(ivar,VarType{icell}.vector_x)||isequal(ivar,VarType{icell}.vector_y)||isequal(ivar,VarType{icell}.vector_z)
-                                                text_displ_3=[text_displ_3 var_text];
-                                            else
-                                                text_displ_4=[text_displ_4 var_text];
-                                            end
-                                        end
-                                    else
-                                        if ~isempty(hhh)
-                                            set(hhh,'Visible','off')
+                    %                     if isfield(Field,'Mesh') && ~isempty(Field.Mesh)
+                    text_displ_1='';
+                    text_displ_2='';
+                    text_displ_3='';
+                    text_displ_4='';
+                    ivec=[];
+                    xName='';
+                    z=[];
+                    for icell=1:numel(CellVarIndex)%look for all physical fields
+                        if NbDim(icell)>=2 % select 2D field
+                            if  isfield(Field,'Mesh') && ~isempty(Field.Mesh)&& ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
+                                eval(['X=Field.' Field.ListVarName{VarType{icell}.coord_x} ';'])
+                                eval(['Y=Field.' Field.ListVarName{VarType{icell}.coord_y} ';'])
+                                flag_vec=(X<(xy(1,1)+Field.Mesh/3) & X>(xy(1,1)-Field.Mesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
+                                    (Y<(xy(1,2)+Field.Mesh/3) & Y>(xy(1,2)-Field.Mesh/3));%f
+                                ivec=find(flag_vec,1);% search the (first) selected vector index ivec
+                                hhh=findobj(haxes,'Tag','vector_marker');
+                                if ~isempty(ivec)
+                                    % mark the vectors with a circle in the absence of other operations
+                                    if ~test_object && ~test_edit_object && ~test_ruler
+                                        pointershape='arrow'; %mouse indicates  the detection of a vector
+                                        if isempty(hhh)
+                                            set(0,'CurrentFigure',currentfig)
+                                            set(currentfig,'CurrentAxes',haxes)
+                                            rectangle('Curvature',[1 1],...
+                                                'Position',[X(ivec)-Field.Mesh/2 Y(ivec)-Field.Mesh/2 Field.Mesh Field.Mesh],'EdgeColor','m',...
+                                                'LineStyle','-','Tag','vector_marker');
+                                        else
+                                            set(hhh,'Visible','on')
+                                            set(hhh,'Position',[X(ivec)-Field.Mesh/2 Y(ivec)-Field.Mesh/2 Field.Mesh Field.Mesh])
                                         end
                                     end
-                                elseif numel(VarType{icell}.coord) >=2 %structured coordinates
-                                    eval(['y=Field.' Field.ListVarName{VarType{icell}.coord(1)} ';'])
-                                    eval(['x=Field.' Field.ListVarName{VarType{icell}.coord(2)} ';'])
-                                    VarName=Field.ListVarName{CellVarIndex{icell}(1)};
-                                    eval(['nxy=size(Field.' VarName ');']);
-                                    MaxAY=max(y(1),y(end)); %#ok<COLND>
-                                    MinAY=min(y(1),y(end)); %#ok<COLND>
-                                    if (xy(1,1)>x(1))&(xy(1,1)<x(end))&(xy(1,2)<MaxAY)&(xy(1,2)>MinAY) %#ok<COLND>
-                                        indx0=1+round((nxy(2)-1)*(xy(1,1)-x(1))/(x(end)-x(1)));%#ok<COLND> % index x of pixel
-                                        indy0=1+round((nxy(1)-1)*(xy(1,2)-y(1))/(y(end)-y(1)));%#ok<COLND> % index y of pixel
-                                        if indx0>=1 & indx0<=nxy(2) & indy0>=1 & indy0<=nxy(1)
-                                            text_displ_2=['i='  num2str(indx0) ',j=' num2str(indy0) ','];
-                                            for ivar=1:numel(CellVarIndex{icell})
-                                                VarName=Field.ListVarName{CellVarIndex{icell}(ivar)};
-                                                eval(['VarVal=Field.' VarName '(indy0,indx0,:);'])
-                                                var_text=[VarName '=' num2str(VarVal) ','];
-                                                text_displ_2=[text_displ_2 var_text];
-                                            end
+                                    %display the field values
+                                    for ivar=1:numel(CellVarIndex{icell})
+                                        VarName=Field.ListVarName{CellVarIndex{icell}(ivar)};
+                                        eval(['VarVal=Field.' VarName '(ivec);'])
+                                        var_text=[VarName '=' num2str(VarVal,3) ','];
+                                        if isequal(ivar,VarType{icell}.coord_x)||isequal(ivar,VarType{icell}.coord_y)||isequal(ivar,VarType{icell}.coord_z)
+                                            text_displ_1=[text_displ_1 var_text];
+                                        elseif isequal(ivar,VarType{icell}.vector_x)||isequal(ivar,VarType{icell}.vector_y)||isequal(ivar,VarType{icell}.vector_z)
+                                            text_displ_3=[text_displ_3 var_text];
+                                        else
+                                            text_displ_4=[text_displ_4 var_text];
+                                        end
+                                    end
+                                else
+                                    if ~isempty(hhh)
+                                        set(hhh,'Visible','off')
+                                    end
+                                end
+                            elseif numel(VarType{icell}.coord) >=2 %structured coordinates
+                                yName=Field.ListVarName{VarType{icell}.coord(1)};
+                                xName=Field.ListVarName{VarType{icell}.coord(2)};
+                                 eval(['y=Field.' yName ';'])
+                                 eval(['x=Field.' xName ';'])
+                                VarName=Field.ListVarName{CellVarIndex{icell}(1)};
+                                eval(['nxy=size(Field.' VarName ');']);
+                                MaxAY=max(y(1),y(end)); %#ok<COLND>
+                                MinAY=min(y(1),y(end)); %#ok<COLND>
+                                if (xy(1,1)>x(1))&(xy(1,1)<x(end))&(xy(1,2)<MaxAY)&(xy(1,2)>MinAY) %#ok<COLND>
+                                    indx0=1+round((nxy(2)-1)*(xy(1,1)-x(1))/(x(end)-x(1)));%#ok<COLND> % index x of pixel
+                                    indy0=1+round((nxy(1)-1)*(xy(1,2)-y(1))/(y(end)-y(1)));%#ok<COLND> % index y of pixel
+                                    if indx0>=1 & indx0<=nxy(2) & indy0>=1 & indy0<=nxy(1)
+                                        text_displ_2=['i='  num2str(indx0) ',j=' num2str(indy0) ','];
+                                        for ivar=1:numel(CellVarIndex{icell})
+                                            VarName=Field.ListVarName{CellVarIndex{icell}(ivar)};
+                                            eval(['VarVal=Field.' VarName '(indy0,indx0,:);'])
+                                            var_text=[VarName '=' num2str(VarVal) ','];
+                                            text_displ_2=[text_displ_2 var_text];
                                         end
                                     end
                                 end
                             end
                         end
-%                     end
-                    if strcmp(text_displ_1,'')
-                        text_displ_1=['x=' num2str(xy(1,1),3) ',y=' num2str(xy(1,2),3) ','];  
-                        z=[];
-                        if isfield(Field,'PlaneCoord') && isfield(Field,'ZIndex')
-                            ZIndex=Field.ZIndex;
-                            if size(Field.PlaneCoord)>=[ZIndex 3]
-                            z=Field.PlaneCoord(ZIndex,3);
+                    end
+              % display the current x,y coordinates in the absence of detected vector
+                    if isempty(ivec)
+                        if isempty(xName)
+                            xName='x';
+                            yName='y';
+                        end
+                        text_displ_1=[xName '=' num2str(xy(1,1),3) ', ' yName '=' num2str(xy(1,2),3) ','];
+                    end
+              %display the z coordinate if defined by the projection plane
+                    if isfield(Field,'PlaneCoord') 
+%                             ZIndex=Field.ZIndex;
+                        if size(Field.PlaneCoord)>=[1 3]
+                            z=Field.PlaneCoord(1,3);
                             if isfield(Field,'PlaneAngle')&&~isequal(Field.PlaneAngle,[0 0 0])
-                                om=norm(Field.PlaneAngle(ZIndex,:));%norm of rotation angle in radians
-                                OmAxis=Field.PlaneAngle(ZIndex,:)/om; %unit vector marking the rotation axis
+                                om=norm(Field.PlaneAngle);%norm of rotation angle in radians
+                                OmAxis=Field.PlaneAngle/om; %unit vector marking the rotation axis
                                 cos_om=cos(pi*om/180);
                                 sin_om=sin(pi*om/180);
                                 coeff=OmAxis(3)*(1-cos_om);
                                 norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
                                 norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
                                 norm_plane(3)=OmAxis(3)*coeff+cos_om;
-                                Z0=norm_plane*Field.PlaneCoord(ZIndex,:)'/norm_plane(3);
+                                Z0=norm_plane*Field.PlaneCoord'/norm_plane(3);
                                 z=Z0-norm_plane(1)*xy(1,1)/norm_plane(3)-norm_plane(2)*xy(1,2)/norm_plane(3);
                             end
-                            end
                         end
-                        if ~isempty(z)
-                            text_displ_1=[text_displ_1 ' z=' num2str(z,3)]; %TODO: generaliser au cas avec angle
-                        end
+                    end
+                    if ~isempty(z)
+                        text_displ_1=[text_displ_1 ' z=' num2str(z,3)];
                     end
                     %coordinate transform if proj_coord differs from menu_coord A REVOIR
-                    if isfield(Field,'CoordUnit')
-                        mouse.CoordUnit=Field.CoordUnit;
-                    end
 %                     if isfield(Field,'CoordUnit')
 %                         mouse.CoordUnit=Field.CoordUnit;
 %                     end
-%                     if isfield(mouse,'CoordType')
-%                         if isequal(mouse.CoordType,'px')
-%                             mouse.CoordUnit='px';
-%                         end
-%                     else
-%                         mouse.CoordUnit='';%default
-%                     end
-                    if test_piv 
-                       par=civ('read_param_civ1',hhciv);
-%                        PointCoord=Field.X;
-                       [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
-%                        [dd,ind_y]=min(abs(Field.Y-xy(1,2)));
-                       xround=Field.X(ind_pt);
-                       yround=Field.Y(ind_pt);
-%                             dx=str2double(par.dx);
-%                             dy=str2double(par.dy);
-%                             xround=x(1)+dx*round((xy(1,1)-x(1))/dx);% index x of pixel
-%                             yround=y(1)+dy*round((xy(1,2)-y(1))/dy);% index y of pixel
-%                         end
+             % case of PIV correlation display
+                    if test_piv
+                        par=civ('read_param_civ1',hhciv);
+                        [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
+                        xround=Field.X(ind_pt);
+                        yround=Field.Y(ind_pt);
                         % mark the correlation box with a rectangle
                         ibx2=floor((str2double(par.ibx)-1)/2);
                         iby2=floor((str2double(par.iby)-1)/2);
@@ -247,28 +240,16 @@ for ichild=1:length(hchild)
                                 'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2],'EdgeColor','m',...
                                 'LineStyle','- -','Tag','PIV_search_marker');
                         else
-%                             set(hhh,'Visible','on')
                             set(hhh,'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2])
                             set(hhhh,'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2])
                         end
                         [xtable ytable utable vtable ctable typevector result_conv] = pivlab (Field.A,Field.B,ibx2,iby2,isx2,isy2,shiftx,shifty,[xround size(Field.A,1)-yround+1], 1, []);
-%                         Asub=Field.A(yround-iby2:yround+iby2,xround-ibx2:xround+ibx2);%first sub-image
-%                         Asub=reshape(Asub,[],1);%first sub-image reshaped as matlab vector
-                         rangx(1)=-(isx2-ibx2)+shiftx;
-                         rangx(2)=isx2-ibx2+shiftx;
-                         rangy(1)=-(isy2-iby2)-shifty;
-                         rangy(2)=(isy2-iby2)-shifty;
-%                         correl=zeros(rangy(2)-rangy(1)+1,rangx(2)-rangx(1)+1);
-%                         for id=rangx(1):rangx(2)
-%                             for jd=rangy(1):rangy(2)
-%                                 Bsub=Field.B(yround-iby2+jd:yround+iby2+jd,xround-ibx2+id:xround+ibx2+id);
-%                                 Bsub=reshape(Bsub,[],1);
-%                                 correl(jd-rangy(1)+1,id-rangx(1)+1)=corr(double(Asub),double(Bsub));
-%                             end
-%                         end
-                        %correl=uint8(63.5*correl+63.5);
+                        rangx(1)=-(isx2-ibx2)+shiftx;
+                        rangx(2)=isx2-ibx2+shiftx;
+                        rangy(1)=-(isy2-iby2)-shifty;
+                        rangy(2)=(isy2-iby2)-shifty;
                         hcorr=[];
-                        if isfield(AxeData,'CurrentCorrImage')                        
+                        if isfield(AxeData,'CurrentCorrImage')
                             hcorr=AxeData.CurrentCorrImage;
                             if ~ishandle(hcorr)
                                 hcorr=[];
@@ -286,15 +267,14 @@ for ichild=1:length(hchild)
                                 set(get(AxeData.CurrentCorrImage,'parent'),'YDir','normal')
                             end
                         else
-                           % set(AxeData.CurrentCorrImage,'CData',correl)
                             set(AxeData.CurrentCorrImage,'CData',result_conv)
                             set(AxeData.CurrentCorrImage,'XData',rangx)
                             set(AxeData.CurrentCorrImage,'YData',-rangy)
                             set(AxeData.CurrentVector,'XData',[0 utable],'YData',[0 -vtable])
-                        end        
+                        end
                     end
                 end
-            end      
+            end
         end
     end
 end

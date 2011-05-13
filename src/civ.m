@@ -2143,7 +2143,10 @@ for ifile=1:nbfield
                     fix1.UppperBoundVel=thresh_vel1;
                 else
                      fix1.LowerBoundVel=thresh_vel1;
-                end
+                end   
+                if get(handles.get_mask_fix1,'Value')
+                    fix1.MaskName=maskname;
+                end     
                 Param.Fix1=fix1;
             end
             if box_test(3)==1

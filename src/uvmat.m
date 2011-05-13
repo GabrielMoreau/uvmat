@@ -1493,11 +1493,6 @@ if isequal(get(handles.mask_test,'Value'),1)
         for ilist=1:length(maskfiles)
             maskname=maskfiles(ilist).name;% take the first mask file in the list
             [rr,ff,x1,x2,xa,xb,xext,Mask_NomType{ilist}]=name2display(maskname);
-% 
-%             if ~strcmp(Mask_NomType{ilist},Mask_NomType{1})
-%                 msgbox_uvmat('ERROR',['inconsistent mask types ' Mask_NomType{1} ' and ' Mask_NomType{ilist } ' coexist in the current image directory'])
-%                 return
-%             end
             [Path2,Name,ext]=fileparts(maskname);
             Namedouble=double(Name);
             val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
@@ -1522,7 +1517,7 @@ if isequal(get(handles.mask_test,'Value'),1)
             Mask.NbSlice=nbslice;
             num_i1=mod(num_i1-1,nbslice)+1;
             Mask.NomType=regexprep(Mask_NomType{1},'0','');%remove '0' in nom type for masks
-            [maskname,mdetect]=name_generator(Mask.Base,num_i1,num_j1,'.png',Mask.NomType);%
+            maskname=name_generator(Mask.Base,num_i1,num_j1,'.png',Mask.NomType);%
             mdetect=exist(maskname,'file');
             if mdetect
                 set(handles.nb_slice,'String',Name(i+1:ind_mask-1));

@@ -9,6 +9,7 @@ ListVarCiv1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'};
 ListVarFix1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF'};
 mask='';
 maskname='';%default
+test_civx=0;%default
 
 %% Civ1
 if isfield (Param,'Civ1')
@@ -73,35 +74,42 @@ if isfield (Param,'Civ1')
     Data.Civ1_F=reshape(F,[],1);
     Data.CivStage=1;
 else
-    if isfield(Param,'Fix1')
-        Data=nc2struct(ncfile,ListVarCiv1);%read civ1 data in the existing netcdf file
+    Data=nc2struct(ncfile,'ListGlobalAttribute','absolut_time_T0');
+    
+    % read Civx data
+    if ~isempty(Data.absolut_time_T0')%read civx file
+%         var={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF';...
+%             'vec_X','vec_Y','vec_U','vec_V','vec_C','vec_F','vec_FixFlag'};
+
+        %var=varcivx_generator('velocity','Civ1');%determine the names of constants and variables to read
+        test_civx=1;
+        [Data,vardetect,ichoice]=nc2struct(ncfile);%read the variables in the netcdf file
+%         Data.ListGlobalAttribute=[{'Conventions','Program','CivStage'} Data.ListGlobalAttribute {'Civ1_Time','Civ1_Dt'}];
+%         Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
+%         Data.Program='civ_uvmat';
+%         Data.Civ1_Time=double(Data.absolut_time_T0);
+%         Data.Civ1_Dt=double(Data.dt);
+%         Data.VarDimName={'nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1'};
+%         Data.VarAttribute{1}.Role='coord_x';
+%         Data.VarAttribute{2}.Role='coord_y';
+%         Data.VarAttribute{3}.Role='vector_x';
+%         Data.VarAttribute{4}.Role='vector_y';
+%         Data.VarAttribute{5}.Role='ancillary';
+%         Data.VarAttribute{6}.Role='warnflag';
+%         Data.VarAttribute{7}.Role='errorflag';
+%         Data.CivStage=1;
     else
-        Data=nc2struct(ncfile,ListVarFix1);%read civ1 and fix1 data in the existing netcdf file
+
+        if isfield(Param,'Fix1')
+            Data=nc2struct(ncfile,ListVarCiv1);%read civ1 data in the existing netcdf file
+        else
+            Data=nc2struct(ncfile,ListVarFix1);%read civ1 and fix1 data in the existing netcdf file
+        end
     end
     if isfield(Data,'Txt')
         msgbox_uvmat('ERROR',Data.Txt)
         return
     end
-    % read Civx data
-    if isfield(Data,'absolut_time_T0')%read civx file
-        var={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF';'vec_X','vec_Y','vec_U','vec_V','vec_C','vec_F','vec_FixFlag'};
-        %var=varcivx_generator('velocity','Civ1');%determine the names of constants and variables to read
-        [Data,vardetect,ichoice]=nc2struct(ncfile,var);%read the variables in the netcdf file
-        Data.ListGlobalAttribute=[{'Conventions','Program','CivStage'} Data.ListGlobalAttribute {'Civ1_Time','Civ1_Dt'}];
-        Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
-        Data.Program='civ_uvmat';
-        Data.Civ1_Time=double(Data.absolut_time_T0);
-        Data.Civ1_Dt=double(Data.dt);
-        Data.VarDimName={'nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1'};
-        Data.VarAttribute{1}.Role='coord_x';
-        Data.VarAttribute{2}.Role='coord_y';
-        Data.VarAttribute{3}.Role='vector_x';
-        Data.VarAttribute{4}.Role='vector_y';
-        Data.VarAttribute{5}.Role='ancillary';
-        Data.VarAttribute{6}.Role='warnflag';
-        Data.VarAttribute{7}.Role='errorflag';
-        Data.CivStage=1;
-    end 
 end
 
 %% Fix1
@@ -118,12 +126,23 @@ if isfield (Param,'Fix1')
 %     Data.Fix1_ThreshCorr=Param.Fix1.ThreshCorr;
 %     Data.Fix1_ThreshVel=Param.Fix1.ThreshVel;
 %     Data.Fix1_UpperBoundTest=Param.Fix1.UpperBoundTest;
-    Data.ListVarName=[Data.ListVarName {'Civ1_FF'}];
-    Data.VarDimName=[Data.VarDimName {'nbvec1'}];
-    nbvar=length(Data.ListVarName);
-    Data.VarAttribute{nbvar}.Role='errorflag';    
-    Data.Civ1_FF=fix_uvmat(Param.Fix1,Data.Civ1_F,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V);
-    Data.CivStage=2;                               
+
+    if test_civx
+        if ~isfield(Data,'fix')
+            Data.ListGlobalAttribute=[Data.ListGlobalAttribute 'fix'];
+            Data.fix=1;
+            Data.ListVarName=[Data.ListVarName {'vec_FixFlag'}];
+            Data.VarDimName=[Data.VardimName {'nb_vectors'}];
+        end
+        Data.vec_FixFlag=fix_uvmat(Param.Fix1,Data.vec_F,Data.vec_C,Data.vec_U,Data.vec_V,Data.vec_X,Data.vec_Y);
+    else
+        Data.ListVarName=[Data.ListVarName {'Civ1_FF'}];
+        Data.VarDimName=[Data.VarDimName {'nbvec1'}];
+        nbvar=length(Data.ListVarName);
+        Data.VarAttribute{nbvar}.Role='errorflag';    
+        Data.Civ1_FF=fix_uvmat(Param.Fix1,Data.Civ1_F,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V);
+        Data.CivStage=2;    
+    end
 end   
 %% Patch1
 if isfield (Param,'Patch1')
@@ -245,8 +264,9 @@ end
 %fileref: .nc file name for a reference velocity (='': refrence 0 used)
 %fieldref: 'civ1','filter1'...feld used in fileref
 
-function FF=fix_uvmat(Param,F,C,U,V)
+function FF=fix_uvmat(Param,F,C,U,V,X,Y)
 %error=[]; %default
+Param
 FF=zeros(size(F));%default
 
 %criterium on warn flags
@@ -269,6 +289,38 @@ if isfield (Param,'UpperBoundVel')&& ~isequal(Param.UpperBoundVel,0)
     thresh=Param.UpperBoundVel*Param.UpperBoundVel;
     FF=FF==1 | (U.*U+V.*V)>thresh;
 end
+if isfield(Param,'MaskName')
+   M=imread(Param.MaskName);
+   nxy=size(M);
+   M=reshape(M,1,[]);
+   rangx0=[0.5 nxy(2)-0.5];
+   rangy0=[0.5 nxy(1)-0.5];
+   vec_x1=X-U/2;%beginning points
+   vec_x2=X+U/2;%end points of vectors
+   vec_y1=Y-V/2;%beginning points
+   vec_y2=Y+V/2;%end points of vectors
+   indx=1+round((nxy(2)-1)*(vec_x1-rangx0(1))/(rangx0(2)-rangx0(1)));% image index x at abcissa vec_x1
+   indy=1+round((nxy(1)-1)*(vec_y1-rangy0(1))/(rangy0(2)-rangy0(1)));% image index y at ordinate vec_y1   
+   test_in=~(indx < 1 |indy < 1 | indx > nxy(2) |indy > nxy(1)); %=0 out of the mask image, 1 inside
+   indx=indx.*test_in+(1-test_in); %replace indx by 1 out of the mask range
+   indy=indy.*test_in+(1-test_in); %replace indy by 1 out of the mask range
+   ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));%determine the indices in the image reshaped in a Matlab vector
+   Mvalues=M(ICOMB);
+   flag7b=((20 < Mvalues) & (Mvalues < 200))| ~test_in';
+   indx=1+round((nxy(2)-1)*(vec_x2-rangx0(1))/(rangx0(2)-rangx0(1)));% image index x at abcissa vec_x2
+   indy=1+round((nxy(1)-1)*(vec_y2-rangy0(1))/(rangy0(2)-rangy0(1)));% image index y at ordinate vec_y2
+   test_in=~(indx < 1 |indy < 1 | indx > nxy(2) |indy > nxy(1)); %=0 out of the mask image, 1 inside
+   indx=indx.*test_in+(1-test_in); %replace indx by 1 out of the mask range
+   indy=indy.*test_in+(1-test_in); %replace indy by 1 out of the mask range
+   ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));%determine the indices in the image reshaped in a Matlab vector
+   Mvalues=M(ICOMB);
+   flag7e=((Mvalues > 20) & (Mvalues < 200))| ~test_in';
+   FF=FF==1 |(flag7b|flag7e)';
+end
+%    flag7=0;
+% end   
+
+
 FF=double(FF);
 % 
 % % criterium on velocity values
@@ -310,36 +362,7 @@ FF=double(FF);
 % end
 % 
 %             % flag7 introduce a grey mask, matrix M
-% if isequal (flag_mask,1)
-%    M=imread(maskname);
-%    nxy=size(M);
-%    M=reshape(M,1,nxy(1)*nxy(2));
-%    rangx0=[0.5 nxy(2)-0.5];
-%    rangy0=[0.5 nxy(1)-0.5];
-%    vec_x1=Field.X-Field.U/2;%beginning points
-%    vec_x2=Field.X+Field.U/2;%end points of vectors
-%    vec_y1=Field.Y-Field.V/2;%beginning points
-%    vec_y2=Field.Y+Field.V/2;%end points of vectors
-%    indx=1+round((nxy(2)-1)*(vec_x1-rangx0(1))/(rangx0(2)-rangx0(1)));% image index x at abcissa vec_x
-%    indy=1+round((nxy(1)-1)*(vec_y1-rangy0(1))/(rangy0(2)-rangy0(1)));% image index y at ordinate vec_y   
-%    test_in=~(indx < 1 |indy < 1 | indx > nxy(2) |indy > nxy(1)); %=0 out of the mask image, 1 inside
-%    indx=indx.*test_in+(1-test_in); %replace indx by 1 out of the mask range
-%    indy=indy.*test_in+(1-test_in); %replace indy by 1 out of the mask range
-%    ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));%determine the indices in the image reshaped in a Matlab vector
-%    Mvalues=M(ICOMB);
-%    flag7b=((20 < Mvalues) & (Mvalues < 200))| ~test_in';
-%    indx=1+round((nxy(2)-1)*(vec_x2-rangx0(1))/(rangx0(2)-rangx0(1)));% image index x at abcissa Field.X
-%    indy=1+round((nxy(1)-1)*(vec_y2-rangy0(1))/(rangy0(2)-rangy0(1)));% image index y at ordinate vec_y
-%    test_in=~(indx < 1 |indy < 1 | indx > nxy(2) |indy > nxy(1)); %=0 out of the mask image, 1 inside
-%    indx=indx.*test_in+(1-test_in); %replace indx by 1 out of the mask range
-%    indy=indy.*test_in+(1-test_in); %replace indy by 1 out of the mask range
-%    ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));%determine the indices in the image reshaped in a Matlab vector
-%    Mvalues=M(ICOMB);
-%    flag7e=((Mvalues > 20) & (Mvalues < 200))| ~test_in';
-%    flag7=(flag7b|flag7e)';
-% else
-%    flag7=0;
-% end   
+
 % flagmagenta=flag1|flag2|flag3|flag4|flag5|flag7;
 % fixflag_unit=Field.FF-10*floor(Field.FF/10); %unity term of fix_flag
 
