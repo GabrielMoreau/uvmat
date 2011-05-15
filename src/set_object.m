@@ -83,6 +83,7 @@ if ~exist('ZBounds','var')
     ZBounds=0; %default 
 end
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function (allow action on uvmat when set_object is in front)
+set(hObject,'WindowButtonDownFcn',{'mouse_alt_gui',handles}) % allows mouse action with right button (zoom for uicontrol display)
 enable_plot=0;%default: does not allow plot of object and projection
 
 % fill the interface as set in the input data:

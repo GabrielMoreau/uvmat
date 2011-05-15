@@ -124,11 +124,7 @@ if isfield(param,'list_fields')&& isfield(param,'index_fields') &&~isempty(param
     set(handles.FieldMenu,'Value',param.index_fields);% selected string index
     FieldCell{1}=param.list_fields{param.index_fields};
 end
-% if isfield(param,'velTypeMenu')&&isfield(param,'velTypeIndex')
-%     set(handles.VelTypeMenu,'Value',param.VelTypeIndex)
-%     set(handles.VelTypeMenu,'String',param.VelTypeMenu)
-% end  
-set(hObject,'WindowButtonUpFcn',{'mouse_up_gui',handles}) 
+set(hObject,'WindowButtonDownFcn',{'mouse_alt_gui',handles}) % allows mouse action with right button (zoom for uicontrol display)
 NomType_Callback(hObject, eventdata, handles)
 
 %loads the information stored in prefdir to initiate  the list of ACTION functions

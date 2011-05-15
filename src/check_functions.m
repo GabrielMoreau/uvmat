@@ -33,11 +33,13 @@ list_fct={'calc_field';...% defines fields (velocity, vort, div...) from civx da
           'civ.fig';...
           'civ_3D';... function associated with the interface 'civ_3D.fig' for PIV in volume (in progress) 
           'civ_3D.fig';...
+          'civ_uvmat';...% civ programs, Matlab version (called by civ.m, option Civuvmat)
           'close_fig';...% function  activated when a figure is closed
           'copyfields';...% copy fields between two matlab structures
           'create_grid';...% called by the GUI geometry_calib to create a physical grid
           'create_grid.fig';...% GUI corresponding to create_grid.m
           'dataview';...% function for scanning directories in a campaign
+          'dataview.fig';...% GUI corresponding to dataview
           'delete_object';...%delete a projection object, defined by its index in the Uvmat list or by its graphic handle  
           'editxml';...%display and edit xml files using a xls schema
           'editxml.fig';...%interface for editxml
@@ -60,6 +62,9 @@ list_fct={'calc_field';...% defines fields (velocity, vort, div...) from civx da
           'name_generator';...%creates a file name from a root name and indices. 
           'nc2struct';...% transform a netcdf file in a corresponding matlab structure
           'peaklock';...%
+          'phys_XYZ';...% transform coordiantes from pixels to phys
+          'pivlab';...% PIV program (Civ1), called by civ_uvmat
+          'px_XYZ';...% transform coordiantes from phys to pixels
           'plot_field';...%displays a vector field and/or scalar or images
           'plot_object';...%draws a projection object (points, line, plane...)
           'proj_field';...%project a field on a projection object (plane, line,...)
@@ -69,7 +74,6 @@ list_fct={'calc_field';...% defines fields (velocity, vort, div...) from civx da
            'read_set_object';...%read the data on the set_object interface
            'read_xls';...%read excel files containing the list of the experiments
            'reinit';...% suppress the personal parameter file 'uvmat_perso.mat' 
-           'RUN_FIX';...% fix velocity fields
            'RUN_STLIN';...% combine 2 displacement fields for stereo PIV
            'series';...% master function for analysis field series, with interface 'series.fig'
            'series.fig';...% interface for 'series'

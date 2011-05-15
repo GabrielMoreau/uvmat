@@ -249,24 +249,26 @@ if test_zoom
  % if left mouse button has been pressed, zoom in by a factor of 2
     if  isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed, zoom in by a factor of 2
         xlim(1)=0.5*xy(1,1)+0.5*xlim(1);
-        xlim(2)=0.5*xy(1,1)+0.5*xlim(2);
+        xlim(2)=0.5*xy(1,1)+0.5*xlim(2);%double the field whith the middle at the selected points
         set(currentaxes,'XLim',xlim)
         ylim(2)=0.5*xy(1,2)+0.5*ylim(2);
         ylim(1)=0.5*xy(1,2)+0.5*ylim(1);
         set(currentaxes,'YLim',ylim)
  % if right mouse button has been pressed, zoom out by a factor of 2
     else
-        xlim(1)=2*xlim(1)-xy(1,1);
+        xlim(1)=2*xlim(1)-xy(1,1);% reverse of the zoom on action
         xlim(2)=2*xlim(2)-xy(1,1);
         ylim(1)=2*ylim(1)-xy(1,2);
         ylim(2)=2*ylim(2)-xy(1,2);
         if isfield(AxeData,'RangeX')&& isfield(AxeData,'RangeY')
-            'TESTup'
-            AxeData
             xlim(1)=max(AxeData.RangeX(1),xlim(1));
             xlim(2)=min(AxeData.RangeX(2),xlim(2));
             ylim(1)=max(AxeData.RangeY(1),ylim(1));
             ylim(2)=min(AxeData.RangeY(2),ylim(2));
+            if ylim(1)>=ylim(2)|| xlim(1)>=xlim(2)
+                xlim=AxeData.RangeX;
+                ylim=AxeData.RangeY;
+            end
          % desactivate the zoom if the full field is visible within the axes
             if isequal(xlim,AxeData.RangeX) && isequal(ylim,AxeData.RangeY)
                 set(hhuvmat.zoom,'Value',0)
@@ -275,8 +277,6 @@ if test_zoom
                 set(hhuvmat.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
             end
         end
-        xlim
-        ylim
         set(currentaxes,'XLim',xlim)
         set(currentaxes,'YLim',ylim)
         %test whther zoom out is operating (to inactivate AxedAta

@@ -112,10 +112,10 @@ for ichild=1:length(hchild)
                 haxes=[];%mouse out of axes
             end
             break
-        elseif isequal(htype,'uicontrol') && isequal(get(hchild(ichild),'Visible'),'on')
+        elseif isequal(get(hObject,'SelectionType'),'alt') && isequal(htype,'uicontrol') && isequal(get(hchild(ichild),'Visible'),'on') && ~isequal(get(hchild(ichild),'tag'),'frame_object')&&...
+             ~isequal(get(hchild(ichild),'tag'),'list_object_2') && ~isequal(get(hchild(ichild),'tag'),'list_object_1')
                 msg_pos(1:2)=currentfig_pos(1:2)+obj_pos(1:2).*currentfig_pos(3:4);
                 msgbox_uvmat(['uicontrol: ' get(hchild(ichild),'Tag')],'',get(hchild(ichild),'String'),msg_pos)
-            %msgbox(get(hchild(ichild),'String'),get(hchild(ichild),'Tag'))
             break
         end
     end

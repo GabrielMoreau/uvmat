@@ -86,6 +86,7 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 set(hObject,'DeleteFcn',{@closefcn})%
+set(hObject,'WindowButtonDownFcn',{'mouse_alt_gui',handles}) % allows mouse action with right button (zoom for uicontrol display)
 
 %set the position of the interface
 if exist('pos','var')&& length(pos)>=4

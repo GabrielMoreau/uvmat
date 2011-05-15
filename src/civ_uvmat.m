@@ -31,7 +31,7 @@ if isfield (Param,'Civ1')
     [GridX,GridY]=meshgrid(minix:stepx:maxix,miniy:stepy:maxiy);
     PointCoord(:,1)=reshape(GridX,[],1);
     PointCoord(:,2)=reshape(GridY,[],1);
-    if ~isempty(par_civ1.maskname)
+    if isfield(par_civ1,'maskname') && ~isempty(par_civ1.maskname)
         maskname=par_civ1.maskname;
         mask=imread(maskname);
     end
@@ -132,7 +132,7 @@ if isfield (Param,'Fix1')
             Data.ListGlobalAttribute=[Data.ListGlobalAttribute 'fix'];
             Data.fix=1;
             Data.ListVarName=[Data.ListVarName {'vec_FixFlag'}];
-            Data.VarDimName=[Data.VardimName {'nb_vectors'}];
+            Data.VarDimName=[Data.VarDimName {'nb_vectors'}];
         end
         Data.vec_FixFlag=fix_uvmat(Param.Fix1,Data.vec_F,Data.vec_C,Data.vec_U,Data.vec_V,Data.vec_X,Data.vec_Y);
     else
@@ -173,7 +173,7 @@ end
 
 %% Civ2
 if isfield (Param,'Civ2')
-    par_civ2=Param.Civ2
+    par_civ2=Param.Civ2;
     image1=imread(par_civ2.filename_ima_a);
     image2=imread(par_civ2.filename_ima_b);
     stepx=str2num(par_civ2.dx);
@@ -234,6 +234,61 @@ if isfield (Param,'Civ2')
     Data.Civ1_F=reshape(F,[],1);
     Data.CivStage=Data.CivStage+1;
 end
+
+%% Fix2
+if isfield (Param,'Fix2')
+    ListFixParam=fieldnames(Param.Fix2);
+    for ilist=1:length(ListFixParam)
+        ParamName=ListFixParam{ilist};
+        ListName=['Fix1_' ParamName];
+        eval(['Data.ListGlobalAttribute=[Data.ListGlobalAttribute ''' ParamName '''];'])
+        eval(['Data.' ListName '=Param.Fix2.' ParamName ';'])
+    end
+    if test_civx
+        if ~isfield(Data,'fix2')
+            Data.ListGlobalAttribute=[Data.ListGlobalAttribute 'fix2'];
+            Data.fix2=1;
+            Data.ListVarName=[Data.ListVarName {'vec2_FixFlag'}];
+            Data.VarDimName=[Data.VarDimName {'nb_vectors2'}];
+        end
+        Data.vec_FixFlag=fix_uvmat(Param.Fix2,Data.vec2_F,Data.vec2_C,Data.vec2_U,Data.vec2_V,Data.vec2_X,Data.vec2_Y);
+    else
+        Data.ListVarName=[Data.ListVarName {'Civ2_FF'}];
+        Data.VarDimName=[Data.VarDimName {'nbvec2'}];
+        nbvar=length(Data.ListVarName);
+        Data.VarAttribute{nbvar}.Role='errorflag';    
+        Data.Civ2_FF=fix_uvmat(Param.Fix2,Data.Civ2_F,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V);
+        Data.CivStage=5;    
+    end
+end   
+
+%% Patch2
+if isfield (Param,'Patch2')
+    Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch2_Rho','Patch2_Threshold','Patch2_SubDomain'}];
+    Data.Patch2_Rho=str2double(Param.Patch2.Rho);
+    Data.Patch2_Threshold=str2double(Param.Patch2.Threshold);
+    Data.Patch2_SubDomain=str2double(Param.Patch2.SubDomain);
+    Data.ListVarName=[Data.ListVarName {'Civ2_U_Diff','Civ2_V_Diff','Civ2_X_SubRange','Civ2_Y_SubRange','Civ2_NbSites','Civ2_X_tps','Civ2_Y_tps','Civ2_U_tps','Civ2_V_tps'}];
+    Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2',{'NbSubDomain2','Two'},{'NbSubDomain2','Two'},'NbSubDomain2',...
+             {'NbVec2Sub','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'Nbtps2','NbSubDomain2'}}];
+    nbvar=length(Data.ListVarName);
+    Data.VarAttribute{nbvar-1}.Role='vector_x';
+    Data.VarAttribute{nbvar}.Role='vector_y';
+    Data.Civ2_U_Diff=zeros(size(Data.Civ2_X));
+    Data.Civ2_V_Diff=zeros(size(Data.Civ2_X));
+    if isfield(Data,'Civ2_FF')
+        ind_good=find(Data.Civ2_FF==0);
+    else
+        ind_good=1:numel(Data.Civ2_X);
+    end
+    [Data.Civ2_X_SubRange,Data.Civ2_Y_SubRange,Data.Civ2_NbSites,FFres,Ures, Vres,Data.Civ2_X_tps,Data.Civ2_Y_tps,Data.Civ2_U_tps,Data.Civ2_V_tps]=...
+                            patch_uvmat(Data.Civ2_X(ind_good)',Data.Civ2_Y(ind_good)',Data.Civ2_U(ind_good)',Data.Civ2_V(ind_good)',Data.Patch2_Rho,Data.Patch2_Threshold,Data.Patch2_SubDomain); 
+      Data.Civ2_U_Diff(ind_good)=Data.Civ2_U(ind_good)-Ures;
+      Data.Civ2_V_Diff(ind_good)=Data.Civ2_V(ind_good)-Vres;
+      Data.Civ2_FF(ind_good)=FFres;
+      Data.CivStage=3;                             
+end   
+
 %% write result
 % 'TESTcalc'
 % [DataOut,errormsg]=calc_field('velocity',Data)
@@ -265,8 +320,6 @@ end
 %fieldref: 'civ1','filter1'...feld used in fileref
 
 function FF=fix_uvmat(Param,F,C,U,V,X,Y)
-%error=[]; %default
-Param
 FF=zeros(size(F));%default
 
 %criterium on warn flags
