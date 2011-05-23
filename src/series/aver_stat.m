@@ -46,7 +46,7 @@ hseries=guidata(Series.hseries);%handles of the GUI series
 WaitbarPos=get(hseries.waitbar_frame,'Position');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%projection object
+%% projection object
 test_object=get(hseries.GetObject,'Value');
 if test_object%isfield(Series,'sethandles')
     hset_object=findobj(allchild(0),'tag','set_object');
@@ -58,7 +58,7 @@ if test_object%isfield(Series,'sethandles')
     end
 end
 
-%root input file and type
+%% root input file and type
 if ~iscell(Series.RootPath)% case of a single input field series
     num_i1={num_i1};num_j1={num_j1};num_i2={num_i2};num_j2={num_j2};
     RootPath={Series.RootPath};
@@ -91,7 +91,7 @@ if length(FileExt)>=2
     end
 end
 
-%Number of input series: this function  accepts two input file series at most (then it operates on the difference of fields)
+%% Number of input series: this function  accepts two input file series at most (then it operates on the difference of fields)
 nbview=length(RootPath);
 if nbview>2  
     RootPath=RootPath(1:2);
@@ -106,7 +106,7 @@ if nbview>2
     nbview=2;
 end
 
-%determine image type
+%% determine image type
 hhh=which('mmreader');
 for iview=1:nbview
     if isequal(FileExt{iview},'.nc')||isequal(FileExt{iview},'.cdf')
@@ -132,14 +132,14 @@ for iview=1:nbview
     end
 end
 
-% number of slices
+%% number of slices
 NbSlice=str2num(get(hseries.NbSlice,'String'));
 if isempty(NbSlice)
     NbSlice=1;
 end
 NbSlice_name=num2str(NbSlice);
 
-% Field and velocity type (the same for the two views)
+%% Field and velocity type (the same for the two views)
 Field_str=get(hseries.FieldMenu,'String');
 FieldName=[]; %default
 testfield=get(hseries.FieldMenu,'Visible');
@@ -160,43 +160,13 @@ if isequal(testfield,'on')
         SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
     end
 end
-%detect whether the two files are 'images' or 'netcdf'
-% testima=0;
-% testvol=0;
+
+%% get the velocity type
 testcivx=0;
-% testnc=0;
 FileExt=get(hseries.FileExt,'String');
-% test_movie=0;
-% for iview=1:nbview
-%      ext=FileExt{iview};
-%      form=imformats(ext([2:end]));
-%      if isequal(lower(ext),'.vol')
-%          testvol=testvol+1;
-%      elseif ~isempty(form)||isequal(lower(ext),'.avi')% if the extension corresponds to an image format recognized by Matlab
-%          testima=testima+1;
-%      elseif isequal(ext,'.nc')
-%          testnc=testnc+1;
-%      end
-% end
-% if testvol
-%     msgbox_uvmat('ERROR','volume images not implemented yet')
-%     return
-% end
-% if testnc~=nbview && testima~=nbview && testvol~=nbview
-%     msgbox_uvmat('ERROR','compare two image series or two netcdf files with the same fields as input')
-%     return
-% end
 if ~isequal(FieldName,{'get_field...'})
     testcivx=isequal(FileType{1},'netcdf');
 end
-% if ~isequal(FieldName,{'get_field...'})
-%     if isequal(FieldName,{''}) && ~testima
-%         msgbox_uvmat('ERROR','an input field needs to be selected')
-%         return
-%     end
-%     testcivx=testnc;
-% end
-
 if testcivx
     VelType_str=get(hseries.VelTypeMenu,'String');
     VelType_val=get(hseries.VelTypeMenu,'Value');
@@ -208,7 +178,7 @@ if testcivx
     end
 end
 
-%Calibration data and timing: read the ImaDoc files
+%% Calibration data and timing: read the ImaDoc files
 mode=''; %default
 timecell={};
 itime=0;
@@ -252,7 +222,7 @@ for iview=1:nbview%Loop on views
     end
 end
 
-%check coincidence in time
+%% check coincidence in time
 multitime=0;
 if isempty(timecell)
     time=[];
@@ -282,50 +252,81 @@ if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array abs
     time=[];
 end
 
-%% Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
-subdir_result='aver_stat';
-pathdir=fullfile(RootPath{1},subdir_result);
-while exist(pathdir,'dir')
-    subdir_result=[subdir_result '.0'];
-    pathdir=fullfile(RootPath{1},subdir_result);
+%% Name(s) of output file(s) 
+filebase_out=filebase{1};% the result file has the same root name as the input file series (and the first one is chosen in case of two input series)
+%file extension of the result  
+if testima %case of images
+    ext_out='.png';
+else
+    ext_out='.nc';
 end
-[m1,m2,m3]=mkdir(pathdir);
-if ~isequal(m2,'')
-     msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
+subdir_result='aver_stat';%subdirectory for the results
+pathdir=fullfile(RootPath{1},subdir_result);% full subdirectory name, including path
+testexist=1;
+while testexist
+    pathdir=fullfile(RootPath{1},subdir_result);% full subdirectory name, including path
+    if NbSlice==1% keep track of the first and lsat indices of the input files
+        NomTypeOut=nomtype2pair(NomType{1},num_i2{end}(end)-num_i1{1}(1),num_j2{end}(end)-num_j1{1}(1));
+        fileresult{1}=name_generator(filebase_out,num_i1{1}(1),num_j1{1}(1),ext_out,NomTypeOut,1,num_i2{end}(end),num_j2{end}(end),subdir_result);
+        testexist=exist(fileresult{1},'file');
+    else % simplified indexing with i_slice for multiple slices
+        testexist=0;
+        for i_slice=1:NbSlice
+            fileresult{i_slice}=name_generator(filebase_out,i_slice,[],ext_out,'_1',1,i_slice,[],subdir_result);
+            if exist(fileresult{i_slice},'file')
+                testexist=1;
+                break
+            end
+        end
+    end
+    if testexist
+        subdir_result=[subdir_result '.0'];
+    end
+end
+% create result directory if needed
+if ~exist(pathdir,'dir')
+    [m1,m2,m3]=mkdir(pathdir);
+    if ~isequal(m2,'')
+        msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
+    end
 end
 [xx,msg2] = fileattrib(pathdir,'+w','g'); %yield writing access (+w) to user group (g)
 if ~strcmp(msg2,'')
-    msgbox_uvmat('ERROR',['pb of permission for ' pathdir ': ' msg2])%error message for directory creation
+    msgbox_uvmat('ERROR',['pb of permission for ' pathdir ': ' msg2])%error message for writting access
     return
 end
-filebase_out=filebase{1}; 
-NomTypeOut=nomtype2pair(NomType{1},num_i2{end}(end)-num_i1{1}(1),num_j2{end}(end)-num_j1{1}(1));
 
-% coordinate transform or other user defined transform
+%% coordinate transform or other user defined transform
 transform_fct=[];%default
 if isfield(Series,'transform_fct')
     transform_fct=Series.transform_fct;
 end
 
-%% slice loop
+%% main loop
 siz=size(num_i1{1});
-lengthtot=siz(1)*siz(2);
-nbfield=floor(lengthtot/(siz(1)*NbSlice));%total number of i indexes (adjusted to an integer number of slices)
-nbfield_slice=nbfield*siz(1);% number of fields per slice
+nbfield2=siz(1); %nb of consecutive fields at each level(burst
+nbfield=siz(1)*siz(2);
+nbfield=floor(nbfield/(nbfield2*NbSlice));%total number of i indexes (adjusted to an integer number of slices)
 
+% loop on slices
 for i_slice=1:NbSlice
-   S=0; %initiate the image sum S 
-   nbfiles=0;
-   nbmissing=0;
-    %averaging loop
-   for ifile=i_slice:NbSlice:lengthtot
+    for ifield=1:nbfield
+         indselect(:,ifield)=((ifield-1)*NbSlice+(i_slice-1))*nbfield2+[1:nbfield2]';%selected indices on the list of files of a slice
+    end 
+    S=0; %initiate the image sum S
+    nbfiles=0;
+    nbmissing=0;
+    % averaging loop
+    for index=1:nbfield*nbfield2
         stopstate=get(hseries.RUN,'BusyAction');
         if isequal(stopstate,'queue') % enable STOP command
-             update_waitbar(hseries.waitbar,WaitbarPos,ifile/lengthtot)
-             for iview=1:nbview
+            update_waitbar(hseries.waitbar,WaitbarPos,index/(nbfield*nbfield2))
+            ifile=indselect(index);
+            % reading input file(s)
+            for iview=1:nbview
                 [filename]=...
-                           name_generator(filebase{iview},num_i1{iview}(ifile),num_j1{iview}(ifile),FileExt{iview},NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile),SubDir{iview});
-                if ~isequal(FileType{iview},'netcdf')                
+                    name_generator(filebase{iview},num_i1{iview}(ifile),num_j1{iview}(ifile),FileExt{iview},NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile),SubDir{iview});
+                if ~isequal(FileType{iview},'netcdf')
                     Data{iview}.ListVarName={'A'};
                     Data{iview}.AName='image';
                     switch FileType{iview}
@@ -340,17 +341,17 @@ for i_slice=1:NbSlice
                             A=imread(filename,num_i1{iview}(ifile));
                         case 'image'
                             A=imread(filename);
-                    end 
-                    Data{iview}.ListVarName={'AY','AX','A'}; % 
+                    end
+                    Data{iview}.ListVarName={'AY','AX','A'}; %
                     Atype{iview}=class(A);
                     npy=size(A,1);
                     npx=size(A,2);
                     nbcolor=size(A,3);
                     if nbcolor==3
-                         Data{iview}.VarDimName={'AY','AX',{'AY','AX','rgb'}};
+                        Data{iview}.VarDimName={'AY','AX',{'AY','AX','rgb'}};
                     else
-                         Data{iview}.VarDimName={'AY','AX',{'AY','AX'}};
-                    end  
+                        Data{iview}.VarDimName={'AY','AX',{'AY','AX'}};
+                    end
                     Data{iview}.AY=[npy-0.5 0.5];
                     Data{iview}.AX=[0.5 npx-0.5];
                     Data{iview}.A=double(A);
@@ -358,18 +359,17 @@ for i_slice=1:NbSlice
                 elseif testcivx
                     [Data{iview},VelTypeOut]=read_civxdata(filename,FieldName,VelType);
                 else
-                    [Data{iview},var_detect]=nc2struct(filename,SubField.ListVarName); %read the corresponding input data                
+                    [Data{iview},var_detect]=nc2struct(filename,SubField.ListVarName); %read the corresponding input data
                     Data{iview}.VarAttribute=SubField.VarAttribute;
-                end 
+                end
                 if isfield(Data{iview},'Txt')
                     msgbox_uvmat('ERROR',['error of input reading: ' Data{iview}.Txt])
                     return
                 end
-             end   
-
-             % coordinate transform (or other user defined transform)
-             if ~isempty(transform_fct)
-                 % z index
+            end
+            
+            % coordinate transform (or other user defined transform)
+            if ~isempty(transform_fct)
                 if ~isempty(NbSlice_calib)
                     Data{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;%Zindex for phys transform
                 end
@@ -381,10 +381,14 @@ for i_slice=1:NbSlice
                 else
                     Data{1}=transform_fct(Data{1},XmlData{1});
                 end
-             end     
-            if testcivx
-                    Data{iview}=calc_field(FieldName,Data{iview});%calculate field (vort..)
             end
+            
+            % field calculation (vort, div...)
+            if testcivx
+                Data{iview}=calc_field(FieldName,Data{iview});%calculate field (vort..)
+            end
+            
+            % field substration (for two input file series)
             if length(Data)==2
                 [Field,errormsg]=sub_field(Data{1},Data{2}); %substract the two fields
                 if ~isempty(errormsg)
@@ -396,33 +400,34 @@ for i_slice=1:NbSlice
             end
             if test_object
                 [Field,errormsg]=proj_field(Field,ProjObject);
-                 if ~isempty(errormsg)
+                if ~isempty(errormsg)
                     msgbox_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg])
                     return
                 end
-             end                                                        
-                nbfiles=nbfiles+1;
-                if nbfiles==1 %first field
-                    time_1=[];
-                    if isfield(Field,'Time')
-                        time_1=Field.Time(1);
-                    end
-                    DataMean=Field;%default
-                else
-                    for ivar=1:length(Field.ListVarName)
-                        VarName=Field.ListVarName{ivar};
-                        eval(['sizmean=size(DataMean.' VarName ');']);
-                        eval(['siz=size(Field.' VarName ');']);
-                        if ~isequal(siz,sizmean)
-                           msgbox_uvmat('ERROR',['unequal size of input field ' VarName ', need to interpolate on a grid']) 
-                           return
-                        else
-                            eval(['DataMean.' VarName '=DataMean.' VarName '+ Field.' VarName ';']); % update the sum 
-                        end
+            end
+            nbfiles=nbfiles+1;
+            if nbfiles==1 %first field
+                time_1=[];
+                if isfield(Field,'Time')
+                    time_1=Field.Time(1);
+                end
+                DataMean=Field;%default
+            else
+                for ivar=1:length(Field.ListVarName)
+                    VarName=Field.ListVarName{ivar};
+                    eval(['sizmean=size(DataMean.' VarName ');']);
+                    eval(['siz=size(Field.' VarName ');']);
+                    if ~isequal(siz,sizmean)
+                        msgbox_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'])
+                        return
+                    else
+                        eval(['DataMean.' VarName '=DataMean.' VarName '+ Field.' VarName ';']); % update the sum
                     end
                 end
+            end
         end
-    end %end averaging loop
+    end
+    %end averaging loop
     for ivar=1:length(Field.ListVarName)
         VarName=Field.ListVarName{ivar};
         eval(['DataMean.' VarName '=DataMean.' VarName '/nbfiles;']); % normalize the mean
@@ -443,29 +448,15 @@ for i_slice=1:NbSlice
         DataMean.Time=time(1,num_i1{1}(1),num_j1{1}(1));
         DataMean.Time_end=time(end,num_i1{end}(end),num_j1{end}(end));
     end
-
+    
     %writing the result file
-   if testima   
-        [filemean]=name_generator(filebase_out,num_i1{1}(1),num_j1{1}(1),'.png',NomTypeOut,1,num_i2{end}(end),num_j2{end}(end),subdir_result);
-        if exist(filemean,'file')
-            backupfile=filemean;
-            testexist=2;
-            while testexist==2
-                backupfile=[backupfile(1:end-4) '~.png'];
-                testexist=exist(backupfile,'file');
-            end
-            [success,message]=copyfile(filemean,backupfile);%make backup
-            if ~isequal(success,1)
-                msgbox_uvmat('ERROR',['previous file result ' filemean ' already exists, problem in backup'])
-                return
-            end
-        end
+    if testima %case of images
         if isequal(Atype{1},'uint16')
-            imwrite(uint16(DataMean.A),filemean,'BitDepth',16);
+            imwrite(uint16(DataMean.A),fileresult{i_slice},'BitDepth',16); % case of 16 bit images
         else
-            imwrite(uint8(DataMean.A),filemean,'BitDepth',8);
+            imwrite(uint8(DataMean.A),fileresult{i_slice},'BitDepth',8); % case of 8 bit images
         end
-        display([filemean ' written']);
+        display([fileresult{i_slice} ' written']);
     else %case of netcdf input file , determine global attributes
         DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {Series.Action}];
         ActionKey='Action';
@@ -476,32 +467,30 @@ for i_slice=1:NbSlice
         DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {ActionKey}];
         if isfield(DataMean,'Time')
             DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {'Time','Time_end'}];
-        end  
-        filemean=name_generator(filebase_out,num_i1{1}(1),num_j1{1}(1),'.nc',NomTypeOut,1,num_i2{end}(end),num_j2{end}(end),subdir_result);
-        if exist(filemean,'file')
-            backupfile=filemean;
-            testexist=2;
-            while testexist==2
-                backupfile=[backupfile(1:end-3) '~.nc'];
-                testexist=exist(backupfile,'file');
-            end
-            [success,message]=copyfile(filemean,backupfile);%make backup
-            if ~isequal(success,1)
-                msgbox_uvmat('ERROR',['previous file result ' filemean ' already exists, problem in backup'])
-                display(['previous file result ' filemean ' already exists, problem in backup'])
-                return
-            end
-        end
-        errormsg=struct2nc(filemean,DataMean); %save result file
+        end 
+        errormsg=struct2nc(fileresult{i_slice},DataMean); %save result file
         if isempty(errormsg)
-            display([filemean ' written']);
+            display([fileresult{i_slice} ' written']);
         else
             msgbox_uvmat('ERROR',['error in writting result file: ' errormsg])
             display(errormsg)
         end
-   end
+    end  % end averaging  loop
+end % end loop on slices
+
+%% reproduce ImaDoc/GeometryCalib for image series
+if isfield(XmlData{1},'GeometryCalib') && ~isempty(XmlData{1}.GeometryCalib) 
+    [pp,RootFile]=fileparts(filebase_out);
+    outputxml=fullfile(pathdir,[RootFile '.xml'])
+    errormsg=update_imadoc(XmlData{1}.GeometryCalib,outputxml);% introduce the calibration data in the xml file
+    if strcmp(errormsg,'')
+        display(['GeometryCalib transferred to ' outputxml])
+    else
+        msgbox_uvmat('ERROR',errormsg);
+    end
 end
 
+%% open the result file with uvmat
 hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
 delete(hget_field)
-uvmat(filemean)
+uvmat(fileresult{end})
