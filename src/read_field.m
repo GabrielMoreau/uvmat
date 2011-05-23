@@ -30,7 +30,9 @@ function [Field,ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num)
 Field=[];
 ParamOut=[];
 errormsg='';
+if isfield(ParamIn,'VelType')
 VelType=ParamIn.VelType;
+end
 
 %% case of netcdf input file
 if strcmp(FileType,'netcdf')  %read the first nc field
