@@ -1534,7 +1534,8 @@ test_interp=0;
 if batch
     if isfield(s,'BatchParam')
         sparam=s.BatchParam;
-        if ~ismember(sparam.BatchMode,{'sge'})
+
+        if ~ismember(sparam.BatchMode,{'sge','oar'})
             errormsg=['batch mode ' sparam.BatchMode ' not supported by UVMAT'];
             return
         end
@@ -2122,6 +2123,11 @@ for ifile=1:nbfield
                     pvalue=num2str((1-ind_answer)*500);
                     display(['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
                     eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
+                case 'oar'
+%                     pvalue=num2str((1-ind_answer)*500);
+%                     display(['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
+                    eval(  ['!chmod +x ' filename_bat]);
+                    eval(  ['!oarsub -l /nodes=1/cpu=1,walltime=00:10:00  ' filename_bat]);
             end
         elseif ~CivUvmat
             %% to lauch the jobs locally :
