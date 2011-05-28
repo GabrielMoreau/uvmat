@@ -31,7 +31,7 @@ if isfield (Param,'Civ1')
     [GridX,GridY]=meshgrid(minix:stepx:maxix,miniy:stepy:maxiy);
     PointCoord(:,1)=reshape(GridX,[],1);
     PointCoord(:,2)=reshape(GridY,[],1);
-    if isfield(par_civ1,'maskname') && ~isempty(par_civ1.maskname)
+    if isfield(par_civ1,'maskname') && ~isempty(par_civ1.maskname) && ~isequal(par_civ1.maskname,'noFile use default')
         maskname=par_civ1.maskname;
         mask=imread(maskname);
     end

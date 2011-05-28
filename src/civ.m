@@ -21,7 +21,7 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 function varargout = civ(varargin)
 
-% Last Modified by GUIDE v2.5 11-Mar-2011 08:21:21
+% Last Modified by GUIDE v2.5 27-May-2011 17:55:50
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -65,13 +65,6 @@ set(hObject,'WindowButtonDownFcn',{'mouse_alt_gui',handles}) % allows mouse acti
 %default initial parameters
 filebase=''; % root file name ('filebase'.civ)
 ext=[];
-set(handles.CivAll,'String',{'CivX';'CivAll';'CivUvmat'})
-set(handles.subdomain_patch1,'String','1500')% default values
-set(handles.subdomain_patch2,'String','1500')
-delete(handles.grid_patch1)
-delete(handles.get_gridpatch1)
-delete(handles.grid_patch2)
-delete(handles.get_gridpatch2)
 
 %default input parameters:
 num_i1=1; % set of field i numbers
@@ -343,10 +336,10 @@ if isequal(ext,'.nc')
     Data=nc2struct(fileinput,'ListGlobalAttribute','CivStage','absolut_time_T0','fix','patch','civ2','fix2');
     if ~isempty(Data.CivStage)%test for civ files
         ind_opening=Data.CivStage;
-        set(handles.CivAll,'Value',3)
+        set(handles.CivMode,'Value',3)
     end
     if ~isempty(Data.absolut_time_T0)%test for civx files
-        set(handles.CivAll,'Value',1)
+        set(handles.CivMode,'Value',1)
         if isfield(Data,'fix') && isequal(Data.fix,1)
             ind_opening=3;
         end
@@ -1425,7 +1418,7 @@ set(handles.RUN,'BackgroundColor',[1 0 0])
 if ~isempty(errormsg)
     display(errormsg)
     msgbox_uvmat('ERROR',errormsg)
-elseif  isfield(handles,'status') %&& ~isequal(get(handles.CivAll,'Value'),3)
+elseif  isfield(handles,'status') %&& ~isequal(get(handles.CivMode,'Value'),3)
     set(handles.status,'Value',1);%suppress status display
     status_Callback(hObject, eventdata, handles)
 end
@@ -1523,7 +1516,7 @@ end
 nbfield=numel(num1_civ1);
 nbslice=numel(num_a_civ1);
 
-%% read names of the .exe files for PIV and patch
+%% choose the batch or run mode 
 path_UVMAT=fileparts(which('uvmat')); %path to the source directory of uvmat
 xmlfile='PARAM.xml';
 if exist(xmlfile,'file')% search parameter xml file in the whole matlab path
@@ -1534,45 +1527,48 @@ test_interp=0;
 if batch
     if isfield(s,'BatchParam')
         sparam=s.BatchParam;
-
-        if ~ismember(sparam.BatchMode,{'sge','oar'})
-            errormsg=['batch mode ' sparam.BatchMode ' not supported by UVMAT'];
-            return
+        if isfield(sparam,'BatchMode')
+            batch_mode=sparam.BatchMode;
+            if ~ismember(batch_mode,{'sge','oar'})
+                errormsg=['batch mode ' batch_mode ' not supported by UVMAT'];
+                return
+            end
         end
     else
         errormsg='no batch civ binaries defined in PARAM.xml';
         return
     end
-    if isfield(sparam,'BatchMode')
-        batch_mode=sparam.BatchMode;
+    
+    switch batch_mode
+        case 'sge'
+            % choice of batch priority:
+            ind_answer=2;
+            [s,w]=unix('qstat -q civ.q|grep job_| wc -l'); %check the waiting list (command unix)
+            if isequal(s,0)
+                w(end)=[];
+                str_displ={[w ' jobs in the waiting list'];...
+                    '***********************';...
+                    'JOBS PRIORITY POLICY';...
+                    '- urgent = less than 100 images pairs';...
+                    '- normal = during the experiments';...
+                    '- low = post processing';...
+                    '***********************';...
+                    'Select a priority:'};
+                ' ';...
+                    str={'urgent';'normal';'low'};
+                [ind_answer,v] = listdlg('PromptString',str_displ,...
+                    'SelectionMode','single',...
+                    'ListString',str,'ListSize',[200 100],'Name','job priority','InitialValue',3);
+                if isequal(v,0) % to handle Cancel button and figure close,
+                    errormsg='job cancelled';
+                    return % a better way should be create
+                end
+            else
+                msgbox_uvmat('ERROR','sge batch system not available')
+                return
+            end
     end
-    % choice of batch priority:
-    ind_answer=2;
-    [s,w]=unix('qstat -q civ.q|grep job_| wc -l'); %check the waiting list (command unix)
-    if isequal(s,0)
-        w(end)=[];
-        str_displ={[w ' jobs in the waiting list'];...
-            '***********************';...
-            'JOBS PRIORITY POLICY';...
-            '- urgent = less than 100 images pairs';...
-            '- normal = during the experiments';...
-            '- low = post processing';...
-            '***********************';...
-            'Select a priority:'};
-            ' ';...
-            str={'urgent';'normal';'low'};
-        [ind_answer,v] = listdlg('PromptString',str_displ,...
-            'SelectionMode','single',...
-            'ListString',str,'ListSize',[200 100],'Name','job priority','InitialValue',3);
-        if isequal(v,0) % to handle Cancel button and figure close,
-            errormsg='job cancelled';
-            return % a better way should be create
-        end
-    else
-        msgbox_uvmat('ERROR','sge batch system not available')
-        return
-    end
-else
+else % run
     if isfield(s,'RunParam')
         sparam=s.RunParam;
     else
@@ -1582,51 +1578,61 @@ else
 end
 
 %% choose the civ program
-ProgList=get(handles.CivAll,'String');
-index=get(handles.CivAll,'Value');
-CivX=isequal(ProgList{index},'CivX');
-CivAll=isequal(ProgList{index},'CivAll');
-CivUvmat=isequal(ProgList{index},'CivUvmat');
-%CivAll=isequal(get(handles.CivAll,'Value'),2); % Boolean for new civ programs
-if CivAll && isfield(sparam,'CivBin')
-    CivBin=sparam.CivBin;
-    if ~exist(CivBin,'file') || ~isempty(which(CivBin))% if path defined as relative to uvmat 
-        sparam.CivBin=fullfile(path_UVMAT,CivBin);
-        if ~exist(sparam.CivBin,'file')
-             msgbox_uvmat('ERROR',['CIVx binary ' CivBin ' defined in PARAM.xm does not exist'])
-             return
+ProgList=get(handles.CivMode,'String');
+index=get(handles.CivMode,'Value');
+% CivX=isequal(ProgList{index},'CivX');
+% CivAll=isequal(ProgList{index},'CivAll');
+% CivUvmat=isequal(ProgList{index},'CivUvmat');
+CivMode=ProgList{index};
+%CivMode=isequal(get(handles.CivMode,'Value'),2); % Boolean for new civ programs
+
+switch CivMode
+    case 'CivAll'
+        if isfield(sparam,'CivBin')
+            CivBin=sparam.CivBin;
+            if ~exist(CivBin,'file') || ~isempty(which(CivBin))% if path defined as relative to uvmat
+                sparam.CivBin=fullfile(path_UVMAT,CivBin);
+                if ~exist(sparam.CivBin,'file')
+                    msgbox_uvmat('ERROR',['CIVx binary ' CivBin ' defined in PARAM.xm does not exist'])
+                    return
+                end
+            end
         end
-    end
-end
-if isfield(sparam,'Civ1Bin')
-    Civ1Bin=sparam.Civ1Bin;
-    if ~exist(Civ1Bin,'file')||~isempty(which(Civ1Bin))% if path defined as relative to uvmat
-        sparam.Civ1Bin=fullfile(path_UVMAT,Civ1Bin);
-        if ~exist(sparam.Civ1Bin,'file')
-             msgbox_uvmat('ERROR',['civ1 binary ' Civ1Bin ' defined in PARAM.xm does not exist'])
-             return
+    case 'CivX'
+        if isfield(sparam,'Civ1Bin')
+            Civ1Bin=sparam.Civ1Bin;
+            if ~exist(Civ1Bin,'file')||~isempty(which(Civ1Bin))% if path defined as relative to uvmat
+                sparam.Civ1Bin=fullfile(path_UVMAT,Civ1Bin);
+                if ~exist(sparam.Civ1Bin,'file')
+                    msgbox_uvmat('ERROR',['civ1 binary ' Civ1Bin ' defined in PARAM.xm does not exist'])
+                    return
+                end
+            end
         end
-    end
-end
-if isfield(sparam,'Civ2Bin')
-    Civ2Bin=sparam.Civ2Bin;
-    if ~exist(Civ2Bin,'file')||~isempty(which(Civ2Bin))% if path defined as relative to uvmat      
-        sparam.Civ2Bin=fullfile(path_UVMAT,Civ2Bin);
-        if ~exist(sparam.Civ2Bin,'file')
-             msgbox_uvmat('ERROR',['civ2 binary ' Civ2Bin ' defined in PARAM.xm does not exist'])
-             return
+        if isfield(sparam,'Civ2Bin')
+            Civ2Bin=sparam.Civ2Bin;
+            if ~exist(Civ2Bin,'file')||~isempty(which(Civ2Bin))% if path defined as relative to uvmat
+                sparam.Civ2Bin=fullfile(path_UVMAT,Civ2Bin);
+                if ~exist(sparam.Civ2Bin,'file')
+                    msgbox_uvmat('ERROR',['civ2 binary ' Civ2Bin ' defined in PARAM.xm does not exist'])
+                    return
+                end
+            end
         end
-    end
-end
-if  isfield(sparam,'PatchBin')
-    if ~exist(sparam.PatchBin,'file')||~isempty(which(sparam.PatchBin))% if path defined as relative to uvmat
-        sparam.PatchBin=fullfile(path_UVMAT,sparam.PatchBin);
-    end
-end
-if isfield(sparam,'FixBin')
-    if ~exist(sparam.FixBin,'file')||~isempty(which(sparam.FixBin))% if path defined as relative to uvmat
-        sparam.FixBin=fullfile(path_UVMAT,sparam.FixBin);
-    end
+        if  isfield(sparam,'PatchBin')
+            if ~exist(sparam.PatchBin,'file')||~isempty(which(sparam.PatchBin))% if path defined as relative to uvmat
+                sparam.PatchBin=fullfile(path_UVMAT,sparam.PatchBin);
+            end
+        end
+        if isfield(sparam,'FixBin')
+            if ~exist(sparam.FixBin,'file')||~isempty(which(sparam.FixBin))% if path defined as relative to uvmat
+                sparam.FixBin=fullfile(path_UVMAT,sparam.FixBin);
+            end
+        end
+    case 'Matlab'
+        if batch
+            %% vérifier Mtlab installé sur le cluster
+        end          
 end
 
 
@@ -1637,7 +1643,7 @@ if box_test(1)==1
     par_civ1=read_param_civ1(handles,filecell.ima1.civ1{1,1});
 end
 
-%% get fix1 parameters
+%% get fix1 parameters TODO : par_fix1=read_param_fix1(handles);
 if box_test(2)==1
     flagindex1(1)=get(handles.vec_Fmin2, 'Value');
     flagindex1(2)=get(handles.vec_F3, 'Value');
@@ -1726,7 +1732,6 @@ if box_test(6)==1
     end
     subdomain_patch2=get(handles.subdomain_patch2,'String');
     thresh_patch2=get(handles.thresh_patch2,'String');
-    %              test_interp=get(handles.test_interp,'Value');
 end
 
 %% MAIN LOOP
@@ -1735,24 +1740,28 @@ super_cmd=[];
 
 for ifile=1:nbfield
     for j=1:nbslice
+        % initiate system command
         i_cmd=0;
-        cmd='';
-        if isunix % check: necessaire aussi en RUN?
-            cmd='#!/bin/bash \n';
-            cmd=[cmd '#$ -cwd \n'];
-            cmd=[cmd 'hostname && date \n'];
-            cmd=[cmd 'umask 002 \n'];%allow writting access to created files for user group
-        end
-        if CivAll
-            CivAllxml=xmltree;% xml contents,  all parameters
-            CivAllCmd='';
-            CivAllxml=set(CivAllxml,1,'name','CivDoc');
+        switch CivMode
+            case 'CivX'
+                cmd='';
+                if isunix % check: necessaire aussi en RUN?
+                    cmd='#!/bin/bash \n';
+                    cmd=[cmd '#$ -cwd \n'];
+                    cmd=[cmd 'hostname && date \n'];
+                    cmd=[cmd 'umask 002 \n'];%allow writting access to created files for user group
+                end
+            case 'CivAll'
+                %         if CivAll
+                CivAllxml=xmltree;% xml contents,  all parameters
+                CivAllCmd='';
+                CivAllxml=set(CivAllxml,1,'name','CivDoc');
         end
         [Rootbat,Filebat]=fileparts(filecell.nc.civ1{ifile,j});%output netcdf file (without extention)
         flname=fullfile(Rootbat,Filebat);
         if batch
             filename_bat=fullfile(Rootbat,['job_' Filebat]);
-         else
+        else
             filename_bat=flname;
         end
         filename_bat=[filename_bat '.bat'];
@@ -1787,7 +1796,6 @@ for ifile=1:nbfield
                     end
                 end
             end
-            
             test_grid=get(handles.browse_gridciv1,'Value');
             if test_grid
                 par_civ1.gridflag='y';
@@ -1810,29 +1818,24 @@ for ifile=1:nbfield
                 par_civ1.gridname='noFile use default';
                 par_civ1.gridflag='n';
             end
-            %
+            
             i_cmd=i_cmd+1;
-            if isequal(CivAll,0)
-                civ1_exe=CIV1_CMD(fullfile(Rootbat,Filebat),'',par_civ1,handles,sparam);%create the parameter file .civ1.cmx and set the execution string civ1_exe
-%                 if(isunix)
-%                      cmd=[cmd 'cp -f ' flname '.civ1.cmx ' flname '.cmx\n'];
-%                 else
-%                     flname=regexprep(flname,'\\','\\\\');
-%                     cmd=[cmd 'copy /Y "' flname '.civ1.cmx" "' flname '.cmx"\n'];
-%                 end
-                cmd=[cmd civ1_exe '\n'];
-            else
-                CivAllCmd=[CivAllCmd ' civ1 '];
-                str=CIV1_CMD_Unified(fullfile(Rootbat,Filebat),'',par_civ1);
-                fieldnames=fields(str);
-                [CivAllxml,uid_civ1]=add(CivAllxml,1,'element','civ1');
-                for ilist=1:length(fieldnames)
-                    val=eval(['str.' fieldnames{ilist}]);
-                    if ischar(val)
-                        [CivAllxml,uid_t]=add(CivAllxml,uid_civ1,'element',fieldnames{ilist});
-                        [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
+            switch CivMode
+                case 'CivX'
+                    civ1_exe=CIV1_CMD(fullfile(Rootbat,Filebat),'',par_civ1,handles,sparam);%create the parameter file .civ1.cmx and set the execution string civ1_exe
+                    cmd=[cmd civ1_exe '\n'];
+                case 'CivAll'
+                    CivAllCmd=[CivAllCmd ' civ1 '];
+                    str=CIV1_CMD_Unified(fullfile(Rootbat,Filebat),'',par_civ1);
+                    fieldnames=fields(str);
+                    [CivAllxml,uid_civ1]=add(CivAllxml,1,'element','civ1');
+                    for ilist=1:length(fieldnames)
+                        val=eval(['str.' fieldnames{ilist}]);
+                        if ischar(val)
+                            [CivAllxml,uid_t]=add(CivAllxml,uid_civ1,'element',fieldnames{ilist});
+                            [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
+                        end
                     end
-                end
             end
         end
         
@@ -1848,91 +1851,92 @@ for ifile=1:nbfield
                 maskbase=[filecell.filebase '_' maskdispl];
                 maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
             end
-            if CivX
-                if isunix %unix system
-                cmd_FIX=[sparam.FixBin ' -f ' filecell.nc.civ1{ifile,j} ' -fi1 ' num2str(flagindex1(1)) ...
-                    ' -fi2 ' num2str(flagindex1(2)) ' -fi3 ' num2str(flagindex1(3)) ...
-                    ' -threshC ' num2str(thresh_vecC1) ' -threshV ' num2str(thresh_vel1) ' -maskName ' maskname];
-                else %windows system
-                    cmd_FIX=['"' sparam.FixBin '" -f "' filecell.nc.civ1{ifile,j} '" -fi1 ' num2str(flagindex1(1)) ...
-                    ' -fi2 ' num2str(flagindex1(2)) ' -fi3 ' num2str(flagindex1(3)) ...
-                    ' -threshC ' num2str(thresh_vecC1) ' -threshV ' num2str(thresh_vel1) ' -maskName "' maskname '"'];
-                    cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
-                end
-                cmd=[cmd cmd_FIX '\n'];
-            elseif CivAll
-                fix1.inputFileName=filecell.nc.civ1{ifile,j} ;
-                fix1.fi1=num2str(flagindex1(1));
-                fix1.fi2=num2str(flagindex1(2));
-                fix1.fi3=num2str(flagindex1(3));
-                fix1.threshC=num2str(thresh_vecC1);
-                fix1.threshV=num2str(thresh_vel1);
-                fieldnames=fields(fix1);
-                [CivAllxml,uid_fix1]=add(CivAllxml,1,'element','fix1');
-                for ilist=1:length(fieldnames)
-                    val=eval(['fix1.' fieldnames{ilist}]);
-                    if ischar(val)
-                        [CivAllxml,uid_t]=add(CivAllxml,uid_fix1,'element',fieldnames{ilist});
-                        [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
+            switch CivMode
+                %             if CivX
+                case 'CivX'
+                    if isunix %unix system
+                        cmd_FIX=[sparam.FixBin ' -f ' filecell.nc.civ1{ifile,j} ' -fi1 ' num2str(flagindex1(1)) ...
+                            ' -fi2 ' num2str(flagindex1(2)) ' -fi3 ' num2str(flagindex1(3)) ...
+                            ' -threshC ' num2str(thresh_vecC1) ' -threshV ' num2str(thresh_vel1) ' -maskName ' maskname];
+                    else %windows system
+                        cmd_FIX=['"' sparam.FixBin '" -f "' filecell.nc.civ1{ifile,j} '" -fi1 ' num2str(flagindex1(1)) ...
+                            ' -fi2 ' num2str(flagindex1(2)) ' -fi3 ' num2str(flagindex1(3)) ...
+                            ' -threshC ' num2str(thresh_vecC1) ' -threshV ' num2str(thresh_vel1) ' -maskName "' maskname '"'];
+                        cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
                     end
-                end
-                CivAllCmd=[CivAllCmd ' fix1 '];
+                    cmd=[cmd cmd_FIX '\n'];
+                case 'CivAll'
+                    fix1.inputFileName=filecell.nc.civ1{ifile,j} ;
+                    fix1.fi1=num2str(flagindex1(1));
+                    fix1.fi2=num2str(flagindex1(2));
+                    fix1.fi3=num2str(flagindex1(3));
+                    fix1.threshC=num2str(thresh_vecC1);
+                    fix1.threshV=num2str(thresh_vel1);
+                    fieldnames=fields(fix1);
+                    [CivAllxml,uid_fix1]=add(CivAllxml,1,'element','fix1');
+                    for ilist=1:length(fieldnames)
+                        val=eval(['fix1.' fieldnames{ilist}]);
+                        if ischar(val)
+                            [CivAllxml,uid_t]=add(CivAllxml,uid_fix1,'element',fieldnames{ilist});
+                            [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
+                        end
+                    end
+                    CivAllCmd=[CivAllCmd ' fix1 '];
             end
         end
         
         %PATCH1
         if box_test(3)==1
-            if isequal(CivAll,0)
-                cmd_PATCH=PATCH_CMD(filecell.nc.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp,sparam.PatchBin);
-                cmd=[cmd cmd_PATCH '\n'];
-            else
-                patch1.inputFileName=filecell.nc.civ1{ifile,j} ;
-                patch1.nopt=subdomain_patch1;
-                patch1.maxdiff=thresh_patch1;
-                patch1.ro=rho_patch1;
-                test_grid=get(handles.get_gridpatch1,'Value');
-                if test_grid
-                    patch1.gridflag='y';
-                    gridname=get(handles.grid_patch1,'String');
-                    if isequal(gridname(end-3:end),'grid')
-                        nbslice_grid=str2double(gridname(1:end-4)); %
-                        if ~isnan(nbslice_grid)
-                            num1_grid=mod(num1_civ1(ifile)-1,nbslice_grid)+1;
-                            patch1.gridPatch=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
-                            if ~exist(patch1.gridPatch,'file')
+            switch CivMode
+                case 'CivX'
+                    cmd_PATCH=PATCH_CMD(filecell.nc.civ1{ifile,j},nx_patch1,ny_patch1,rho_patch1,subdomain_patch1,thresh_patch1,test_interp,sparam.PatchBin);
+                    cmd=[cmd cmd_PATCH '\n'];
+                case 'CivAll'
+                    patch1.inputFileName=filecell.nc.civ1{ifile,j} ;
+                    patch1.nopt=subdomain_patch1;
+                    patch1.maxdiff=thresh_patch1;
+                    patch1.ro=rho_patch1;
+                    test_grid=get(handles.get_gridpatch1,'Value');
+                    if test_grid
+                        patch1.gridflag='y';
+                        gridname=get(handles.grid_patch1,'String');
+                        if isequal(gridname(end-3:end),'grid')
+                            nbslice_grid=str2double(gridname(1:end-4)); %
+                            if ~isnan(nbslice_grid)
+                                num1_grid=mod(num1_civ1(ifile)-1,nbslice_grid)+1;
+                                patch1.gridPatch=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
+                                if ~exist(patch1.gridPatch,'file')
+                                    msgbox_uvmat('ERROR','grid file absent for patch1')
+                                end
+                            elseif exist(gridname,'file')
+                                patch1.gridPatch=gridname;
+                            else
                                 msgbox_uvmat('ERROR','grid file absent for patch1')
                             end
-                        elseif exist(gridname,'file')
-                            patch1.gridPatch=gridname;
-                        else
-                            msgbox_uvmat('ERROR','grid file absent for patch1')
+                        end
+                    else
+                        patch1.gridPatch='none';
+                        patch1.gridflag='n';
+                        patch1.m=nx_patch1;
+                        patch1.n=ny_patch1;
+                    end
+                    patch1.convectFlow='n';
+                    fieldnames=fields(patch1);
+                    [CivAllxml,uid_patch1]=add(CivAllxml,1,'element','patch1');
+                    for ilist=1:length(fieldnames)
+                        val=eval(['patch1.' fieldnames{ilist}]);
+                        if ischar(val)
+                            [CivAllxml,uid_t]=add(CivAllxml,uid_patch1,'element',fieldnames{ilist});
+                            [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
                         end
                     end
-                else
-                    patch1.gridPatch='none';
-                    patch1.gridflag='n';
-                    patch1.m=nx_patch1;
-                    patch1.n=ny_patch1;
-                end
-                patch1.convectFlow='n';
-                fieldnames=fields(patch1);
-                [CivAllxml,uid_patch1]=add(CivAllxml,1,'element','patch1');
-                for ilist=1:length(fieldnames)
-                    val=eval(['patch1.' fieldnames{ilist}]);
-                    if ischar(val)
-                        [CivAllxml,uid_t]=add(CivAllxml,uid_patch1,'element',fieldnames{ilist});
-                        [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
-                    end
-                end
-                CivAllCmd=[CivAllCmd ' patch1 '];
+                    CivAllCmd=[CivAllCmd ' patch1 '];
             end
         end
-        
         if box_test(4)==1 || box_test(5)==1 || box_test(6)==1
             filename_cmx=filecell.nc.civ2{ifile,j};%output netcdf file
             filename_cmx(end-1:end+1)='cmx';%name of cmx file
         end
-        
         if box_test(4)==1
             par_civ2.filename_ima_a=filecell.ima1.civ2{ifile,j};
             par_civ2.filename_ima_b=filecell.ima2.civ2{ifile,j};
@@ -1965,10 +1969,7 @@ for ifile=1:nbfield
                     end
                 end
             end
-            %TESTgrid
-            %test_grid=get(handles.browse_gridciv2,'Value');
             gridname=get(handles.grid_civ2,'String');
-            %gridflag='y';
             if numel(gridname)>=4 && isequal(gridname(end-3:end),'grid')
                 nbslice_grid=str2double(gridname(1:end-4)); %
                 if ~isnan(nbslice_grid)
@@ -1990,27 +1991,22 @@ for ifile=1:nbfield
             end
             i_cmd=i_cmd+1;
             flname=fullfile(Rootbat,Filebat);
-            
-            if isequal(CivAll,0)
-                cmd_CIV2=CIV2_CMD(flname,[],par_civ2,sparam);%creates the cmx file [fullfile(Rootbat,Filebat) '.civ2.cmx]
-%                 if(isunix)
-                 cmd=[cmd cmd_CIV2 '\n'];
-%                 else
-%                     flname=regexprep(flname,'\\','\\\\');
-%                     cmd=[cmd 'copy /Y "' flname '.civ2.cmx" "' flname '.cmx"\n' cmd_CIV2 '\n'];
-%                 end
-            else
-                CivAllCmd=[CivAllCmd ' civ2 '];
-                str=CIV2_CMD_Unified(flname,'',par_civ2);
-                fieldnames=fields(str);
-                [CivAllxml,uid_civ2]=add(CivAllxml,1,'element','civ2');
-                for ilist=1:length(fieldnames)
-                    val=eval(['str.' fieldnames{ilist}]);
-                    if ischar(val)
-                        [CivAllxml,uid_t]=add(CivAllxml,uid_civ2,'element',fieldnames{ilist});
-                        [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
+            switch CivMode
+                case 'CivX'
+                    cmd_CIV2=CIV2_CMD(flname,[],par_civ2,sparam);%creates the cmx file [fullfile(Rootbat,Filebat) '.civ2.cmx]
+                    cmd=[cmd cmd_CIV2 '\n'];
+                case 'CivAll'
+                    CivAllCmd=[CivAllCmd ' civ2 '];
+                    str=CIV2_CMD_Unified(flname,'',par_civ2);
+                    fieldnames=fields(str);
+                    [CivAllxml,uid_civ2]=add(CivAllxml,1,'element','civ2');
+                    for ilist=1:length(fieldnames)
+                        val=eval(['str.' fieldnames{ilist}]);
+                        if ischar(val)
+                            [CivAllxml,uid_t]=add(CivAllxml,uid_civ2,'element',fieldnames{ilist});
+                            [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
+                        end
                     end
-                end
             end
         end
         
@@ -2026,192 +2022,200 @@ for ifile=1:nbfield
                 num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
                 maskname =name_generator(maskbase,num1_mask,1,'.png','_i');
             end
-            if isequal(CivAll,0)
-                if isunix
-                cmd_FIX=[sparam.FixBin ' -f ' filecell.nc.civ2{ifile,j} ' -fi1 ' num2str(flagindex2(1)) ...
-                    ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
-                    ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName ' maskname];
-                else
-                    cmd_FIX=['"' sparam.FixBin '" -f "' filecell.nc.civ2{ifile,j} '" -fi1 ' num2str(flagindex2(1)) ...
-                    ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
-                    ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName "' maskname '"'];
-                    cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
-                end
-                cmd=[cmd cmd_FIX '\n'];
-            else
-                fix2.inputFileName=filecell.nc.civ2{ifile,j} ;
-                fix2.fi1=num2str(flagindex2(1));
-                fix2.fi2=num2str(flagindex2(2));
-                fix2.fi3=num2str(flagindex2(3));
-                fix2.threshC=num2str(thresh_vec2C);
-                fix2.threshV=num2str(thresh_vel2);
-                fieldnames=fields(fix2);
-                [CivAllxml,uid_fix2]=add(CivAllxml,1,'element','fix2');
-                for ilist=1:length(fieldnames)
-                    val=eval(['fix2.' fieldnames{ilist}]);
-                    if ischar(val)
-                        [CivAllxml,uid_t]=add(CivAllxml,uid_fix2,'element',fieldnames{ilist});
-                        [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
+            switch CivMode
+                case 'CivX'
+                    if isunix
+                        cmd_FIX=[sparam.FixBin ' -f ' filecell.nc.civ2{ifile,j} ' -fi1 ' num2str(flagindex2(1)) ...
+                            ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
+                            ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName ' maskname];
+                    else
+                        cmd_FIX=['"' sparam.FixBin '" -f "' filecell.nc.civ2{ifile,j} '" -fi1 ' num2str(flagindex2(1)) ...
+                            ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
+                            ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName "' maskname '"'];
+                        cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
                     end
-                end
-                CivAllCmd=[CivAllCmd ' fix2 '];
+                    cmd=[cmd cmd_FIX '\n'];
+                case 'CivAll'
+                    fix2.inputFileName=filecell.nc.civ2{ifile,j} ;
+                    fix2.fi1=num2str(flagindex2(1));
+                    fix2.fi2=num2str(flagindex2(2));
+                    fix2.fi3=num2str(flagindex2(3));
+                    fix2.threshC=num2str(thresh_vec2C);
+                    fix2.threshV=num2str(thresh_vel2);
+                    fieldnames=fields(fix2);
+                    [CivAllxml,uid_fix2]=add(CivAllxml,1,'element','fix2');
+                    for ilist=1:length(fieldnames)
+                        val=eval(['fix2.' fieldnames{ilist}]);
+                        if ischar(val)
+                            [CivAllxml,uid_t]=add(CivAllxml,uid_fix2,'element',fieldnames{ilist});
+                            [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
+                        end
+                    end
+                    CivAllCmd=[CivAllCmd ' fix2 '];
             end
         end
         
         %PATCH2
         if box_test(6)==1
-            if isequal(CivAll,0)
-                cmd_PATCH=PATCH_CMD(filecell.nc.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,thresh_patch2,test_interp,sparam.PatchBin);
-                cmd=[cmd cmd_PATCH '\n'];
-            else
-                patch2.inputFileName=filecell.nc.civ1{ifile,j} ;
-                patch2.nopt=subdomain_patch2;
-                patch2.maxdiff=thresh_patch2;
-                patch2.ro=rho_patch2;
-                test_grid=get(handles.get_gridpatch2,'Value');
-                if test_grid
-                    patch2.gridflag='y';
-                    gridname=get(handles.grid_patch2,'String');
-                    if isequal(gridname(end-3:end),'grid')
-                        nbslice_grid=str2double(gridname(1:end-4)); %
-                        if ~isnan(nbslice_grid)
-                            num1_grid=mod(num1_civ2(ifile)-1,nbslice_grid)+1;
-                            patch2.gridPatch=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
-                            if ~exist(patch2.gridPatch,'file')
+            switch CivMode
+                case 'CivX'
+                    cmd_PATCH=PATCH_CMD(filecell.nc.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,thresh_patch2,test_interp,sparam.PatchBin);
+                    cmd=[cmd cmd_PATCH '\n'];
+                case 'CivAll'
+                    patch2.inputFileName=filecell.nc.civ1{ifile,j} ;
+                    patch2.nopt=subdomain_patch2;
+                    patch2.maxdiff=thresh_patch2;
+                    patch2.ro=rho_patch2;
+                    test_grid=get(handles.get_gridpatch2,'Value');
+                    if test_grid
+                        patch2.gridflag='y';
+                        gridname=get(handles.grid_patch2,'String');
+                        if isequal(gridname(end-3:end),'grid')
+                            nbslice_grid=str2double(gridname(1:end-4)); %
+                            if ~isnan(nbslice_grid)
+                                num1_grid=mod(num1_civ2(ifile)-1,nbslice_grid)+1;
+                                patch2.gridPatch=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
+                                if ~exist(patch2.gridPatch,'file')
+                                    msgbox_uvmat('ERROR','grid file absent for patch2')
+                                end
+                            elseif exist(gridname,'file')
+                                patch2.gridPatch=gridname;
+                            else
                                 msgbox_uvmat('ERROR','grid file absent for patch2')
                             end
-                        elseif exist(gridname,'file')
-                            patch2.gridPatch=gridname;
-                        else
-                            msgbox_uvmat('ERROR','grid file absent for patch2')
+                        end
+                    else
+                        patch2.gridPatch='none';
+                        patch2.gridflag='n';
+                        patch2.m=nx_patch2;
+                        patch2.n=ny_patch2;
+                    end
+                    patch2.convectFlow='n';
+                    fieldnames=fields(patch2);
+                    [CivAllxml,uid_patch2]=add(CivAllxml,1,'element','patch2');
+                    for ilist=1:length(fieldnames)
+                        val=eval(['patch2.' fieldnames{ilist}]);
+                        if ischar(val)
+                            [CivAllxml,uid_t]=add(CivAllxml,uid_patch2,'element',fieldnames{ilist});
+                            [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
                         end
                     end
-                else
-                    patch2.gridPatch='none';
-                    patch2.gridflag='n';
-                    patch2.m=nx_patch2;
-                    patch2.n=ny_patch2;
+                    CivAllCmd=[CivAllCmd ' patch2 '];
+            end
+        end
+ 
+        switch CivMode
+            case {'CivX','CivAll'}
+                if isequal(CivMode,'CivAll')
+                    save(CivAllxml,[flname '.xml']);
+                    cmd=[cmd sparam.CivBin ' -f ' flname '.xml '  CivAllCmd ' >' flname '.log' '\n'];
                 end
-                patch2.convectFlow='n';
-                fieldnames=fields(patch2);
-                [CivAllxml,uid_patch2]=add(CivAllxml,1,'element','patch2');
-                for ilist=1:length(fieldnames)
-                    val=eval(['patch2.' fieldnames{ilist}]);
-                    if ischar(val)
-                        [CivAllxml,uid_t]=add(CivAllxml,uid_patch2,'element',fieldnames{ilist});
-                        [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
+                % create the .bat file:
+                [fid,message]=fopen(filename_bat,'w');
+                if isequal(fid,-1)
+                    msgbox_uvmat('ERROR', ['creation of .bat file: ' message])
+                    return
+                end
+                fprintf(fid,cmd);
+                fclose(fid);
+                if batch
+                    switch batch_mode
+                        case 'sge'
+                            pvalue=num2str((1-ind_answer)*500);
+                            display(['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
+                            eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
+                        case 'oar'
+                            eval(  ['!chmod +x ' filename_bat]);
+                            eval(  ['!oarsub -l /nodes=1/cpu=1,walltime=00:10:00  ' filename_bat]);
                     end
-                end
-                CivAllCmd=[CivAllCmd ' patch2 '];
-            end
-        end
-        if CivAll
-            save(CivAllxml,[flname '.xml']);
-            cmd=[cmd sparam.CivBin ' -f ' flname '.xml '  CivAllCmd ' >' flname '.log' '\n'];
-        end
-        % create the .bat file:
-        [fid,message]=fopen(filename_bat,'w');
-        if isequal(fid,-1)
-            msgbox_uvmat('ERROR', ['creation of .bat file: ' message])
-            return
-        end
-        fprintf(fid,cmd);
-        fclose(fid);
-        if batch
-            switch batch_mode
-                case 'sge'
-                    pvalue=num2str((1-ind_answer)*500);
-                    display(['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
-                    eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
-                case 'oar'
-%                     pvalue=num2str((1-ind_answer)*500);
-%                     display(['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
-                    eval(  ['!chmod +x ' filename_bat]);
-                    eval(  ['!oarsub -l /nodes=1/cpu=1,walltime=00:10:00  ' filename_bat]);
-            end
-        elseif ~CivUvmat
-            %% to lauch the jobs locally :
-            if(isunix)
-                cmd_str=['. ' filename_bat];
-            else %case of Windows
-                cmd_str=['@call "' regexprep(filename_bat,'\\','\\\\') '"'];
-            end
-            super_cmd=[super_cmd cmd_str '\n'];         
-            disp(cmd_str);
-        else       %run PIVlab if selected
-            drawnow
-            if box_test(1)==1
-                Param.Civ1=par_civ1;
-            end
-            if box_test(2)==1
-                fix1.WarnFlags=[];
-                if get(handles.vec_Fmin2,'Value')
-                    fix1.WarnFlags=[fix1.WarnFlags -2];
-                end
-                if get(handles.vec_F3,'Value')
-                    fix1.WarnFlags=[fix1.WarnFlags 3];
-                end
-                fix1.LowerBoundCorr=thresh_vecC1;
-                if get(handles.inf_sup1,'Value')
-                    fix1.UppperBoundVel=thresh_vel1;
                 else
-                     fix1.LowerBoundVel=thresh_vel1;
-                end   
-                if get(handles.get_mask_fix1,'Value')
-                    fix1.MaskName=maskname;
-                end     
-                Param.Fix1=fix1;
-            end
-            if box_test(3)==1
-                Param.Patch1.Rho=rho_patch1;
-                Param.Patch1.Threshold=thresh_patch1;
-                Param.Patch1.SubDomain=subdomain_patch1;
-            end
-            if box_test(4)==1
-                Param.Civ2=par_civ2;
-            end
-            if box_test(5)==1
-                fix2.WarnFlags=[];
-                if get(handles.vec_Fmin2_2,'Value')
-                    fix2.WarnFlags=[fix2.WarnFlags -2];
+                    %% to lauch the jobs locally :
+                    if(isunix)
+                        cmd_str=['. ' filename_bat];
+                    else %case of Windows
+                        cmd_str=['@call "' regexprep(filename_bat,'\\','\\\\') '"'];
+                    end
+                    super_cmd=[super_cmd cmd_str '\n'];
+                    disp(cmd_str);
                 end
-                if get(handles.vec_F4,'Value')
-                    fix2.WarnFlags=[fix2.WarnFlags 4];
+            case 'Matlab'
+                drawnow
+                if box_test(1)==1
+                    Param.Civ1=par_civ1;
                 end
-                if get(handles.vec_F3_2,'Value')
-                    fix2.WarnFlags=[fix2.WarnFlags 3];
+                if box_test(2)==1
+                    fix1.WarnFlags=[];
+                    if get(handles.vec_Fmin2,'Value')
+                        fix1.WarnFlags=[fix1.WarnFlags -2];
+                    end
+                    if get(handles.vec_F3,'Value')
+                        fix1.WarnFlags=[fix1.WarnFlags 3];
+                    end
+                    fix1.LowerBoundCorr=thresh_vecC1;
+                    if get(handles.inf_sup1,'Value')
+                        fix1.UppperBoundVel=thresh_vel1;
+                    else
+                        fix1.LowerBoundVel=thresh_vel1;
+                    end
+                    if get(handles.get_mask_fix1,'Value')
+                        fix1.MaskName=maskname;
+                    end
+                    Param.Fix1=fix1;
                 end
-                fix2.LowerBoundCorr=thresh_vec2C;
-                if get(handles.inf_sup2,'Value')
-                    fix2.UppperBoundVel=thresh_vel2;
+                if box_test(3)==1
+                    Param.Patch1.Rho=rho_patch1;
+                    Param.Patch1.Threshold=thresh_patch1;
+                    Param.Patch1.SubDomain=subdomain_patch1;
+                end
+                if box_test(4)==1
+                    Param.Civ2=par_civ2;
+                end
+                if box_test(5)==1
+                    fix2.WarnFlags=[];
+                    if get(handles.vec_Fmin2_2,'Value')
+                        fix2.WarnFlags=[fix2.WarnFlags -2];
+                    end
+                    if get(handles.vec_F4,'Value')
+                        fix2.WarnFlags=[fix2.WarnFlags 4];
+                    end
+                    if get(handles.vec_F3_2,'Value')
+                        fix2.WarnFlags=[fix2.WarnFlags 3];
+                    end
+                    fix2.LowerBoundCorr=thresh_vec2C;
+                    if get(handles.inf_sup2,'Value')
+                        fix2.UppperBoundVel=thresh_vel2;
+                    else
+                        fix2.LowerBoundVel=thresh_vel2;
+                    end
+                    if get(handles.get_mask_fix2,'Value')
+                        fix2.MaskName=maskname;
+                    end
+                    Param.Fix2=fix2;
+                end
+                [Data,erromsg]=civ_uvmat(Param,filecell.nc.civ1{ifile,j});
+                if isempty(errormsg)
+                    display([filecell.nc.civ1{ifile,j} ' written'])
                 else
-                    fix2.LowerBoundVel=thresh_vel2;
-                end   
-                if get(handles.get_mask_fix2,'Value')
-                    fix2.MaskName=maskname;
-                end     
-                Param.Fix2=fix2;
-            end
-            [Data,erromsg]=civ_uvmat(Param,filecell.nc.civ1{ifile,j});
-            if isempty(errormsg)
-                display([filecell.nc.civ1{ifile,j} ' written'])
-            else
-                msgbox_uvmat('ERROR',errormsg)
-            end
-        end                  
+                    msgbox_uvmat('ERROR',errormsg)
+                end
+        end
     end
 end
 
-if ~batch && ~CivUvmat
+if ~batch && ~isequal(CivMode,'Matlab')
     [Rootbat,Filebat,extbat]=fileparts(filename_bat);
     filename_superbat=fullfile(Rootbat,'job_list.bat');
     fid=fopen(filename_superbat,'w');
+    if fid==-1
+        msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+        return
+    end
     fprintf(fid,super_cmd');
     fclose(fid);
-     if(isunix)
+    if(isunix)
         system(['chmod +x ' filename_superbat])
-     end
-     system([filename_superbat ' &'])% execute main commmand
+    end
+    system([filename_superbat ' &'])% execute main commmand
 end
 
 %% save interface state
@@ -3745,7 +3749,7 @@ set(handles.is_title,'Visible',state)
 set(handles.shift_title,'Visible',state)
 set(handles.rho_title,'Visible',state)
 set(handles.TestCiv1,'Visible',state)
-%set(handles.CivAll,'Visible',state)
+%set(handles.CivMode,'Visible',state)
 
 %------------------------------------------------------------------------
 function enable_fix1(handles,state)
@@ -3782,7 +3786,7 @@ function enable_patch1(handles)
 set(handles.frame_patch1,'BackgroundColor',[1 1 0])
 set(handles.rho_patch1,'Visible','on')
 set(handles.rho_text1,'Visible','on')
-if get(handles.CivAll,'Value')==2
+if get(handles.CivMode,'Value')==2
     set(handles.thresh_patch1,'Visible','on')
     set(handles.thresh_text1,'Visible','on')
 end
@@ -4950,11 +4954,11 @@ set(hhciv.status,'value',0) %reset the status uicontrol in the GUI civ
 set(hhciv.status,'BackgroundColor',[0 1 0])
 
 %------------------------------------------------------------------------
-% --- Executes on button press in CivAll.
-function CivAll_Callback(hObject, eventdata, handles)
+% --- Executes on button press in CivMode.
+function CivMode_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-Listprog=get(handles.CivAll,'String');
-index=get(handles.CivAll,'Value');
+Listprog=get(handles.CivMode,'String');
+index=get(handles.CivMode,'Value');
 prog=Listprog{index};
 switch prog
     case 'CivX'
@@ -4987,4 +4991,3 @@ switch prog
         set(handles.rho,'String',{'1';'2'})
         set(handles.BATCH,'Enable','off')
 end
-
