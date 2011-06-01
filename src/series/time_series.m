@@ -83,9 +83,11 @@ nbview=length(RootPath);
 
 %determine image type
 hhh=which('mmreader');
+testnetcdf=0;
 for iview=1:nbview
     if isequal(FileExt{iview},'.nc')||isequal(FileExt{iview},'.cdf')
         FileType{iview}='netcdf';
+        testnetcdf=1;
     elseif isequal(lower(FileExt{iview}),'.avi')
         if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
             MovieObject{iview}=mmreader(fullfile(RootPath{iview},[RootFile{iview} FileExt{iview}]));
@@ -120,6 +122,10 @@ if isfield(Series,'Field')
     FieldName=Series.Field;%the same set of fields for all views
 else
     FieldName={''};
+end
+if isequal(FieldName,{''}) && testnetcdf
+    msgbox_uvmat('ERROR','A field must be defined as input')
+    return
 end
 if isequal(FieldName,{'get_field...'})
     hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
@@ -338,7 +344,7 @@ for i_slice=1:NbSlice
                     Data{1}=transform_fct(Data{1},XmlData{1});
                 end
             end     
-            if testcivx
+            if testcivx && ~isequal(FieldName,{''})
                     Data{iview}=calc_field(FieldName,Data{iview});%calculate field (vort..)
             end
             if length(Data)==2
@@ -480,13 +486,20 @@ for i_slice=1:NbSlice
     RecordData.Action=Series.Action;%name of the processing programme
     
     %name of result file
+%     RecordData
+%     RecordData.VarDimName{1}
+%     RecordData.VarDimName{2}
+%     RecordData.VarDimName{3}
+%     RecordData.VarDimName{4}
+%     RecordData.VarDimName{5}
+%     RecordData.VarDimName{6}
     [filemean]=...
                name_generator(filebase_out,num_i1{1}(i_slice),num_j1{1}(i_slice),'.nc','_i1-i2_j1-j2',1,num_i2{end}(ifile),num_j2{end}(ifile),subdir_result);
     errormsg=struct2nc(filemean,RecordData); %save result file
     if isempty(errormsg)
         display([filemean ' written'])
     else
-        msgbox_uvmat('ERROR',['error in Series/struct2nc' errormsg])
+        msgbox_uvmat('ERROR',['error in Series/struct2nc: ' errormsg])
     end
 end
 
