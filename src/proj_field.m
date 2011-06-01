@@ -175,7 +175,7 @@ ProjData.NbDim=0;
 
 
 % idimvar=0;
-[CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_indices(FieldData);
+[CellVarIndex,NbDimCell,VarTypeCell,errormsg]=find_field_indices(FieldData)
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_points:' errormsg];
     return
@@ -185,7 +185,7 @@ end
 % ivar_new=0; % index of the current variable in the projected field
 % icoord=0;
 for icell=1:length(CellVarIndex)
-    if NbDim(icell)==1
+    if NbDimCell(icell)==1
         continue
     end
     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list FieldData.ListVarName

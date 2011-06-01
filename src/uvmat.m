@@ -2836,6 +2836,12 @@ if isfield(UvData,'XmlData_1') && isfield(UvData.XmlData_1,'Time')
         abstime_1=(UvData.XmlData_1.Time(num_i1,num_j1)+UvData.XmlData_1.Time(num_i2,num_j2))/2;%overset the time read from files
     end
 end
+if ~isequal(numel(abstime),1)
+    abstime=[];
+end
+if ~isequal(numel(abstime_1),1)
+      abstime_1=[];
+end  
 set(handles.abs_time,'String',num2str(abstime,4))
 set(handles.abs_time_1,'String',num2str(abstime_1,4))
 if testimedoc && isfield(UvData,'dt')
@@ -3996,7 +4002,7 @@ else
         msgbox_uvmat('WARNING',['uniform field =' num2str(Amin)]);
     else
         Histo.ListVarName={FieldName,'histo'};
-        if isequal(Field.NbDim,3)
+        if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
             Histo.VarDimName={FieldName,FieldName}; %dimensions for the histogram
         else
             if numel(nxy)==2
@@ -4019,7 +4025,7 @@ else
             Histo.VarAttribute{1}.units=units;
         end
         eval(['Histo.' FieldName '=linspace(Amin,Amax,50);'])%absissa values for histo
-        if isequal(Field.NbDim,3)
+        if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
             C=reshape(double(FieldHisto),1,[]);% reshape in a vector
             eval(['Histo.histo(:,1)=hist(C, Histo.' FieldName ');']);  %calculate histogram
         else
