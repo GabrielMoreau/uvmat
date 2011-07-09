@@ -1590,7 +1590,7 @@ switch CivMode
     case 'CivAll'
         if isfield(sparam,'CivBin')
             CivBin=sparam.CivBin;
-            if ~exist(CivBin,'file') || ~isempty(which(CivBin))% if path defined as relative to uvmat
+            if ~exist(CivBin,'file') || isempty(which(CivBin))% if path defined as relative to uvmat
                 sparam.CivBin=fullfile(path_UVMAT,CivBin);
                 if ~exist(sparam.CivBin,'file')
                     msgbox_uvmat('ERROR',['CIVx binary ' CivBin ' defined in PARAM.xm does not exist'])
@@ -1601,7 +1601,7 @@ switch CivMode
     case 'CivX'
         if isfield(sparam,'Civ1Bin')
             Civ1Bin=sparam.Civ1Bin;
-            if ~exist(Civ1Bin,'file')||~isempty(which(Civ1Bin))% if path defined as relative to uvmat
+            if ~exist(Civ1Bin,'file')||isempty(which(Civ1Bin))% if path defined as relative to uvmat
                 sparam.Civ1Bin=fullfile(path_UVMAT,Civ1Bin);
                 if ~exist(sparam.Civ1Bin,'file')
                     msgbox_uvmat('ERROR',['civ1 binary ' Civ1Bin ' defined in PARAM.xm does not exist'])
@@ -1611,7 +1611,7 @@ switch CivMode
         end
         if isfield(sparam,'Civ2Bin')
             Civ2Bin=sparam.Civ2Bin;
-            if ~exist(Civ2Bin,'file')||~isempty(which(Civ2Bin))% if path defined as relative to uvmat
+            if ~exist(Civ2Bin,'file')||isempty(which(Civ2Bin))% if path defined as relative to uvmat
                 sparam.Civ2Bin=fullfile(path_UVMAT,Civ2Bin);
                 if ~exist(sparam.Civ2Bin,'file')
                     msgbox_uvmat('ERROR',['civ2 binary ' Civ2Bin ' defined in PARAM.xm does not exist'])
@@ -1620,12 +1620,12 @@ switch CivMode
             end
         end
         if  isfield(sparam,'PatchBin')
-            if ~exist(sparam.PatchBin,'file')||~isempty(which(sparam.PatchBin))% if path defined as relative to uvmat
+            if ~exist(sparam.PatchBin,'file')||isempty(which(sparam.PatchBin))% if path defined as relative to uvmat
                 sparam.PatchBin=fullfile(path_UVMAT,sparam.PatchBin);
             end
         end
         if isfield(sparam,'FixBin')
-            if ~exist(sparam.FixBin,'file')||~isempty(which(sparam.FixBin))% if path defined as relative to uvmat
+            if ~exist(sparam.FixBin,'file')||isempty(which(sparam.FixBin))% if path defined as relative to uvmat
                 sparam.FixBin=fullfile(path_UVMAT,sparam.FixBin);
             end
         end
