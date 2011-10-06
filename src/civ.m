@@ -2126,7 +2126,7 @@ for ifile=1:nbfield
                             eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
                         case 'oar'
                             eval(  ['!chmod +x ' filename_bat]);
-                            eval(  ['!oarsub -l /nodes=1/cpu=1,walltime=00:10:00  ' filename_bat]);
+                            eval(  ['!oarsub -n CIVX -l /nodes=1/cpu=1,walltime=00:10:00  ' filename_bat]);
                     end
                 else
                     %% to lauch the jobs locally :
