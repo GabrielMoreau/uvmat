@@ -3,8 +3,8 @@
 %vel_type: string ='civ1' or 'civ2'
 function RUN_STLIN(file_A,file_B,vel_type,file_st,nx_patch,ny_patch,thresh_patch,fileAxml,fileBxml)
                 
- [XmlDataA,error]=imadoc2struct(fileAxml); 
- [XmlDataB,error]=imadoc2struct(fileBxml);
+ [XmlDataA,error]=imadoc2struct(fileAxml);%read xml file associated to image series A
+ [XmlDataB,error]=imadoc2struct(fileBxml);%read xml file associated to image series B
  npxA=[]; npyA=[]; pxB=[]; npyB=[];
  if isfield(XmlDataA,'Camera') && isfield(XmlDataB,'Camera')
       if isfield(XmlDataA.Camera,'ImageSize')&& isfield(XmlDataB.Camera,'ImageSize')
@@ -24,6 +24,14 @@ function RUN_STLIN(file_A,file_B,vel_type,file_st,nx_patch,ny_patch,thresh_patch
           end
      end
  end
+ %%%%%%%% added for Duran
+ if isfield(XmlDataA,'Npx')&&isfield(XmlDataA,'Npy')&&isfield(XmlDataB,'Npx')&&isfield(XmlDataB,'Npy')
+     npxA=XmlDataA.Npx;
+     npyA=XmlDataA.Npy;
+     npxB=XmlDataB.Npx;
+     npyB=XmlDataB.Npy;
+ end
+ %%%%%%%% added for Duran
  if isempty(npxA) ||isempty(npxB)
      msgbox_uvmat('ERROR','The size of image A needs to be defined in the xml file ImaDoc')
      return
@@ -44,11 +52,12 @@ function RUN_STLIN(file_A,file_B,vel_type,file_st,nx_patch,ny_patch,thresh_patch
      return
  end
  
- %corners of each image in real coordinates:
+ %corners of each image in px coordinates:
  cornerA(:,1)=[0 0 npxA npxA]';%x positions
  cornerA(:,2)=[0 npyA 0 npyA]';%y positions
  cornerB(:,1)=[0 0 npxB npxB]';%x positions
  cornerB(:,2)=[0 npyB 0 npyB]';%y positions
+  %corners of each image in phys coordinates:
 [xyA(:,1),xyA(:,2)]=phys_XYZ(tsaiA,cornerA(:,1),cornerA(:,2));
 [xyB(:,1),xyB(:,2)]=phys_XYZ(tsaiB,cornerB(:,1),cornerB(:,2));
  max_x=max(max(xyA(:,1)),max(xyB(:,1)));%maximum on the 4 corners of the the images
@@ -77,25 +86,23 @@ function RUN_STLIN(file_A,file_B,vel_type,file_st,nx_patch,ny_patch,thresh_patch
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %read the velocity fields
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
-% [dt,time1,pixcmx,pixcmy,vec_X,vec_Y,vec_Z,vec_U,vec_V,vec_W,vec_C,vec_F,fixflag,vel_type_out,error,nb_coord,nb_dim]...
-%     =read_vel({filecell_ncA},{vel_type});
 %read field A
 [Field,VelTypeOut]=read_civxdata(file_A,[],vel_type);
-%interpolate on XimaA
-Field.X=Field.X(find(Field.FF==0));
-Field.Y=Field.Y(find(Field.FF==0));
-Field.U=Field.U(find(Field.FF==0));
-Field.V=Field.V(find(Field.FF==0));
+%removes false vectors
+if isfield(Field,'FF')
+    Field.X=Field.X(find(Field.FF==0));
+    Field.Y=Field.Y(find(Field.FF==0));
+    Field.U=Field.U(find(Field.FF==0));
+    Field.V=Field.V(find(Field.FF==0));
+end
+%interpolate on the grid common to both images in phys coordinates
 dXa= griddata_uvmat(Field.X,Field.Y,Field.U,XimaA,YimaA);
 dYa= griddata_uvmat(Field.X,Field.Y,Field.V,XimaA,YimaA);
 dt=Field.dt;
 time=Field.Time;
 
 %read field B
-% [dt,time2,pixcmx,pixcmy,vec_X,vec_Y,vec_Z,vec_U,vec_V,vec_W,vec_C,vec_F,fixflag,vel_type_out,error,nb_coord,nb_dim]...
-%     =read_vel({file_B},{vel_type});
-[Field,VelTypeOut]=read_civxdata(file_B,FieldNames,vel_type);
+[Field,VelTypeOut]=read_civxdata(file_B,[],vel_type);
 if ~isequal(Field.dt,dt)
     msgbox_uvmat('ERROR','different time intervals for the two velocity fields ')
      return
@@ -104,11 +111,14 @@ if ~isequal(Field.Time,time)
     msgbox_uvmat('ERROR','different times for the two velocity fields ')
      return
 end
-%interpolate on XimaB
+%removes false vectors
+if isfield(Field,'FF')
 Field.X=Field.X(find(Field.FF==0));
 Field.Y=Field.Y(find(Field.FF==0));
 Field.U=Field.U(find(Field.FF==0));
 Field.V=Field.V(find(Field.FF==0));
+end
+%interpolate on XimaB
 dXb=griddata_uvmat(Field.X,Field.Y,Field.U,XimaB,YimaB);
 dYb=griddata_uvmat(Field.X,Field.Y,Field.V,XimaB,YimaB);
 %eliminate Not-a-Number 
@@ -121,10 +131,8 @@ grid_phys1(:,1)=grid_real_x(ind_Nan);
 grid_phys1(:,2)=grid_real_y(ind_Nan);
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-%compute the coefficients
+%compute the differential coefficients of the geometric calibration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 [A11,A12,A13,A21,A22,A23]=pxcm_tsai(tsaiA,grid_phys1);
 [B11,B12,B13,B21,B22,B23]=pxcm_tsai(tsaiB,grid_phys1);
 
@@ -174,10 +182,10 @@ Result.hart=0;
 Result.dt=dt;%time interval for image correlation (put  by default)
 % cte.title='grid';
 Result.civ=0;%not a civ file (no direct correspondance with an image)
-Result.ListDimName={'nb_vectors'}
-Result.DimValue=length(U);
-Result.ListVarName={'vec_X';'vec_Y';'vec_U';'vec_V';'vec_W';'vec_E'};
-Result.VarDimIndex: {[1]  [1]  [1]  [1]  [1]  [1]}
+% Result.ListDimName={'nb_vectors'}
+% Result.DimValue=length(U);
+Result.ListVarName={'vec_X','vec_Y','vec_U','vec_V','vec_W','vec_E'};
+Result.VarDimName={'nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors'}
 Result.vec_X= grid_phys1(ind_error,1);
 Result.vec_Y= grid_phys1(ind_error,2);
 Result.vec_U=U/dt;
@@ -191,10 +199,7 @@ display([file_st ' written'])
 
 
 %'pxcm_tsai': find differentials of the Tsai calibration
-%
 function [A11,A12,A13,A21,A22,A23]=pxcm_tsai(a,var_phys)
-a_read=a;
-
 R=(a.R)';
 
 x=var_phys(:,1);
@@ -220,57 +225,23 @@ a.C1y=R(3)*R(8)-R(9)*R(2);
 a.C2x=R(6)*R(7)-R(9)*R(4);
 a.C2y=R(6)*R(8)-R(9)*R(5);
 
-
-%dependence in x,y
-denom=(R(7)*x+R(8)*y+R(9)*z+a.Tz).*(R(7)*x+R(8)*y+R(9)*z+a.Tz);
-A11=(a.f*a.sx*(a.C11*y-a.C1x*z+R(1)*a.Tz-R(7)*a.Tx)./denom)/a.dpx;
-A12=(a.f*a.sx*(a.C12*x-a.C1y*z+R(2)*a.Tz-R(8)*a.Tx)./denom)/a.dpx;
-A21=(a.f*a.sx*(a.C21*y-a.C2x*z+R(4)*a.Tz-R(7)*a.Ty)./denom)/a.dpy;
-A22=(a.f*(a.C22*x-a.C2y*z+R(5)*a.Tz-R(8)*a.Ty)./denom)/a.dpy;
-A13=(a.f*(a.C1x*x+a.C1y*y+R(3)*a.Tz-R(9)*a.Tx)./denom)/a.dpx;
-A23=(a.f*(a.C2x*x+a.C2y*y+R(6)*a.Tz-R(9)*a.Ty)./denom)/a.dpy;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Old Version for z=0
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %'camera' coordinates
-% xc=R(1)*x+R(2)*y+a.Tx;
-% yc=R(4)*x+R(5)*y+a.Ty;
-% zc=R(7)*x+R(8)*y+a.Tz;
-% %undistorted image coordinates
-% Xu=a.f*xc./zc;
-% Yu=a.f*yc./zc;
-% %distorted image coordinates
-% distortion=(a.kappa1)*(Xu.*Xu+Yu.*Yu)+1; %!! intégrer derivation kappa
-% % distortion=1;
-% Xd=Xu./distortion;
-% Yd=Yu./distortion;
-% %pixel coordinates
-% X=Xd*a.sx/a.dpx+a.Cx;
-% Y=Yd/a.dpy+a.Cy;
-% 
-% %transform coeff for differentiels
-% a.C11=R(1)*R(8)-R(2)*R(7);
-% a.C12=R(2)*R(7)-R(1)*R(8);
-% a.C21=R(4)*R(8)-R(5)*R(7);
-% a.C22=R(5)*R(7)-R(4)*R(8);
-% a.C1x=R(3)*R(7)-R(9)*R(1);
-% a.C1y=R(3)*R(8)-R(9)*R(2);
-% a.C2x=R(6)*R(7)-R(9)*R(4);
-% a.C2y=R(6)*R(8)-R(9)*R(5);
-% 
-% 
 % %dependence in x,y
-% denom=(R(7)*x+R(8)*y+a.Tz).*(R(7)*x+R(8)*y+a.Tz);
-% A11=(a.f*a.sx*(a.C11*y+R(1)*a.Tz-R(7)*a.Tx)./denom)/a.dpx;
-% A12=(a.f*a.sx*(a.C12*x+R(2)*a.Tz-R(8)*a.Tx)./denom)/a.dpx;
-% A21=(a.f*a.sx*(a.C21*y+R(4)*a.Tz-R(7)*a.Ty)./denom)/a.dpy;
-% A22=(a.f*(a.C22*x+R(5)*a.Tz-R(8)*a.Ty)./denom)/a.dpy;
+% denom=(R(7)*x+R(8)*y+R(9)*z+a.Tz).*(R(7)*x+R(8)*y+R(9)*z+a.Tz);
+% A11=(a.f*a.sx*(a.C11*y-a.C1x*z+R(1)*a.Tz-R(7)*a.Tx)./denom)/a.dpx;
+% A12=(a.f*a.sx*(a.C12*x-a.C1y*z+R(2)*a.Tz-R(8)*a.Tx)./denom)/a.dpx;
+% A21=(a.f*a.sx*(a.C21*y-a.C2x*z+R(4)*a.Tz-R(7)*a.Ty)./denom)/a.dpy;
+% A22=(a.f*(a.C22*x-a.C2y*z+R(5)*a.Tz-R(8)*a.Ty)./denom)/a.dpy;
 % A13=(a.f*(a.C1x*x+a.C1y*y+R(3)*a.Tz-R(9)*a.Tx)./denom)/a.dpx;
 % A23=(a.f*(a.C2x*x+a.C2y*y+R(6)*a.Tz-R(9)*a.Ty)./denom)/a.dpy;
-% 
 
-
+%dependence in x,y
+denom=(R(7)*x+R(8)*y+R(9)*z+a.Tx_Ty_Tz(3)).*(R(7)*x+R(8)*y+R(9)*z+a.Tx_Ty_Tz(3));
+A11=(a.fx_fy(1)*(a.C11*y-a.C1x*z+R(1)*a.Tx_Ty_Tz(3)-R(7)*a.Tx_Ty_Tz(1))./denom);
+A12=(a.fx_fy(1)*(a.C12*x-a.C1y*z+R(2)*a.Tx_Ty_Tz(3)-R(8)*a.Tx_Ty_Tz(1))./denom);
+A21=(a.fx_fy(1)*(a.C21*y-a.C2x*z+R(4)*a.Tx_Ty_Tz(3)-R(7)*a.Tx_Ty_Tz(2))./denom);
+A22=(a.fx_fy(2)*(a.C22*x-a.C2y*z+R(5)*a.Tx_Ty_Tz(3)-R(8)*a.Tx_Ty_Tz(2))./denom);
+A13=(a.fx_fy(2)*(a.C1x*x+a.C1y*y+R(3)*a.Tx_Ty_Tz(3)-R(9)*a.Tx_Ty_Tz(1))./denom);
+A23=(a.fx_fy(2)*(a.C2x*x+a.C2y*y+R(6)*a.Tx_Ty_Tz(3)-R(9)*a.Tx_Ty_Tz(2))./denom);
 
 
 
