@@ -1507,8 +1507,9 @@ display('checking the files...')
 if ~isempty(errormsg)
     return
 end
-[filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc]=...
-    set_civ_filenames(handles,ref_i,ref_j,box_test);
+[filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,xx,yy,compare]=...
+    set_civ_filenames(handles,ref_i,ref_j,box_test)
+
 set(handles.civ,'UserData',filecell);%store for futur use of status callback
 if isempty(filecell)% (error message displayed in fct set_civ_filenames)
     return
@@ -1601,7 +1602,7 @@ switch CivMode
     case 'CivX'
         if isfield(sparam,'Civ1Bin')
             Civ1Bin=sparam.Civ1Bin;
-            if ~exist(Civ1Bin,'file')||isempty(which(Civ1Bin))% if path defined as relative to uvmat
+            if ~exist(Civ1Bin,'file')&&~isempty(which(Civ1Bin))% if path defined as relative to uvmat
                 sparam.Civ1Bin=fullfile(path_UVMAT,Civ1Bin);
                 if ~exist(sparam.Civ1Bin,'file')
                     msgbox_uvmat('ERROR',['civ1 binary ' Civ1Bin ' defined in PARAM.xm does not exist'])
@@ -1611,7 +1612,7 @@ switch CivMode
         end
         if isfield(sparam,'Civ2Bin')
             Civ2Bin=sparam.Civ2Bin;
-            if ~exist(Civ2Bin,'file')||isempty(which(Civ2Bin))% if path defined as relative to uvmat
+            if ~exist(Civ2Bin,'file')&&~isempty(which(Civ2Bin))% if path defined as relative to uvmat
                 sparam.Civ2Bin=fullfile(path_UVMAT,Civ2Bin);
                 if ~exist(sparam.Civ2Bin,'file')
                     msgbox_uvmat('ERROR',['civ2 binary ' Civ2Bin ' defined in PARAM.xm does not exist'])
@@ -1620,12 +1621,12 @@ switch CivMode
             end
         end
         if  isfield(sparam,'PatchBin')
-            if ~exist(sparam.PatchBin,'file')||isempty(which(sparam.PatchBin))% if path defined as relative to uvmat
+            if ~exist(sparam.PatchBin,'file')&&~isempty(which(sparam.PatchBin))% if path defined as relative to uvmat
                 sparam.PatchBin=fullfile(path_UVMAT,sparam.PatchBin);
             end
         end
         if isfield(sparam,'FixBin')
-            if ~exist(sparam.FixBin,'file')||isempty(which(sparam.FixBin))% if path defined as relative to uvmat
+            if ~exist(sparam.FixBin,'file')&&~isempty(which(sparam.FixBin))% if path defined as relative to uvmat
                 sparam.FixBin=fullfile(path_UVMAT,sparam.FixBin);
             end
         end
@@ -1757,7 +1758,7 @@ for ifile=1:nbfield
                 CivAllCmd='';
                 CivAllxml=set(CivAllxml,1,'name','CivDoc');
         end
-        [Rootbat,Filebat]=fileparts(filecell.nc.civ1{ifile,j});%output netcdf file (without extention)
+        [Rootbat,Filebat]=fileparts(filecell.nc.civ1{ifile,j});%output netcdf file (without extension)
         flname=fullfile(Rootbat,Filebat);
         if batch
             filename_bat=fullfile(Rootbat,['job_' Filebat]);
@@ -2163,9 +2164,17 @@ for ifile=1:nbfield
                     Param.Fix1=fix1;
                 end
                 if box_test(3)==1
-                    Param.Patch1.Rho=rho_patch1;
-                    Param.Patch1.Threshold=thresh_patch1;
-                    Param.Patch1.SubDomain=subdomain_patch1;
+                    if strcmp(compare,'stereo PIV')
+                        filebase_A=filecell.filebase;
+                        [pp,ff]=fileparts(filebase_A);
+                        filebase_B=fullfile(pp,get(handles.RootName_1,'String'));
+                        RUN_STLIN(filecell.ncA.civ1{ifile,j},filecell.nc.civ1{ifile,j},'civ1',filecell.st{ifile,j},...
+                            str2num(nx_patch1),str2num(ny_patch1),str2num(thresh_patch1),[filebase_A '.xml'],[filebase_B '.xml'])
+                    else
+                        Param.Patch1.Rho=rho_patch1;
+                        Param.Patch1.Threshold=thresh_patch1;
+                        Param.Patch1.SubDomain=subdomain_patch1;
+                    end
                 end
                 if box_test(4)==1
                     Param.Civ2=par_civ2;
@@ -2192,11 +2201,22 @@ for ifile=1:nbfield
                     end
                     Param.Fix2=fix2;
                 end
-                [Data,erromsg]=civ_uvmat(Param,filecell.nc.civ1{ifile,j});
-                if isempty(errormsg)
-                    display([filecell.nc.civ1{ifile,j} ' written'])
-                else
-                    msgbox_uvmat('ERROR',errormsg)
+                if box_test(6)==1
+                    if strcmp(compare,'stereo PIV')
+                        filebase_A=filecell.filebase;
+                        [pp,ff]=fileparts(filebase_A);
+                        filebase_B=fullfile(pp,get(handles.RootName_1,'String'));
+                        RUN_STLIN(filecell.ncA.civ2{ifile,j},filecell.nc.civ2{ifile,j},'civ2',filecell.st{ifile,j},...
+                            str2num(nx_patch2),str2num(ny_patch2),str2num(thresh_patch2),[filebase_A '.xml'],[filebase_B '.xml'])
+                    end
+                end
+                if ~strcmp(compare,'stereo PIV')
+                    [Data,erromsg]=civ_uvmat(Param,filecell.nc.civ1{ifile,j});
+                    if isempty(errormsg)
+                        display([filecell.nc.civ1{ifile,j} ' written'])
+                    else
+                        msgbox_uvmat('ERROR',errormsg)
+                    end
                 end
         end
     end
@@ -2272,7 +2292,7 @@ end
 
 %------------------------------------------------------------------------
 % --- determine the list of filenames and indices needed for launch_job
-function [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
+function [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2,compare]=...
     set_civ_filenames(handles,ref_i,ref_j,box_test)
 %------------------------------------------------------------------------
 filecell=[];%default
@@ -2502,8 +2522,8 @@ if box_test(1)==1;
   
         %create the new subdir_civ1
         if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
-            cd(Path_ima);          
-            [xx,msg1]=mkdir(subdir_civ1_new);
+%             cd(Path_ima);          
+            [xx,msg1]=mkdir(fullfile(Path_ima,subdir_civ1_new));
 
             if ~strcmp(msg1,'')
                 msgbox_uvmat('ERROR',['cannot create ' subdir_civ1_new ': ' msg1])%error message for directory creation
@@ -2517,7 +2537,7 @@ if box_test(1)==1;
                     return
                 end
             end
-            cd(currentdir);
+%             cd(currentdir);
         end
         if strcmp(compare,'stereo PIV')&&(strcmp(mode,'pair j1-j2')||strcmp(mode,'series(Dj)')||strcmp(mode,'series(Di)'))%check second nc series
             for ifile=1:nbfield
@@ -2543,20 +2563,20 @@ if box_test(1)==1;
                 end
             end
             %create the new subdir_civ1
-            if exist(fullfile(Path_ima,subdir_civ1_new),'dir')
-                   cd(Path_ima);          
-                [xx,msg1]=mkdir(subdir_civ1_new);
-                            cd(currentdir);
+            if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
+%                    cd(Path_ima);          
+                [xx,msg1]=mkdir(fullfile(Path_ima,subdir_civ1_new));
+%                             cd(currentdir);
                 if ~strcmp(msg1,'')
                     msgbox_uvmat('ERROR',['cannot create ' subdir_civ1_new ': ' msg1])
-                    cd(currentdir)
+%                     cd(currentdir)
                     filecell={};
                     return
                 else
                     [xx,msg2] = fileattrib(subdir_civ1_new,'+w','g'); %yield writing access (+w) to user group (g)
                     if ~strcmp(msg2,'')
                         msgbox_uvmat('ERROR',['pb of permission for ' subdir_civ1_new ': ' msg2])%error message for directory creation
-                        cd(currentdir)
+%                         cd(currentdir)
                         filecell={};
                         return
                     end
@@ -4462,7 +4482,7 @@ end
 function compare_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 test=get(handles.compare,'Value');
-if test==2 || test==3
+if test==2 || test==3 % case 'dispalcemen' or 'stereo PIV'
     filebase=get(handles.RootName,'String');
     browse=get(handles.browse_root,'Userdata');
     browse.nom_type_ima1=browse.nom_type_ima;
@@ -4474,8 +4494,10 @@ if test==2 || test==3
     set(handles.mode,'Visible','off')
     if test==2
         set(handles.mode,'Visible','off')
+        set(handles.CivMode,'Value',1) % mode 'civX' selected by default
     else
         set(handles.mode,'Visible','on')
+        set(handles.CivMode,'Value',3) % mode 'Matlab' selected for stereo 
     end
     
     %% open an image file with the browser
@@ -4495,41 +4517,41 @@ if test==2 || test==3
     fileinput=[PathName FileName];%complete file name
     sizf=size(fileinput);
     if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
-    [path,name,ext]=fileparts(fileinput);
+    [path,name,ext]=fileparts(fileinput)
     [path1]=fileparts(filebase);
-%     if isunix
-%         ['readlink ' path]
-%         [status,path]=system(['readlink ' path])
-%         [status,path1]=system(['readlink ' path1])% look for the true path in case of symbolic paths
-%     end
-    if ~strcmp(path1,path)
-        msgbox_uvmat('ERROR','The two  input image series must be in the same directory')
-        return
+    if isunix
+        [status,path]=system(['readlink ' path])
+        [status,path1]=system(['readlink ' path1])% look for the true path in case of symbolic paths
     end
-    set(handles.RootName_1,'String',name);
+    if ~strcmp(path1,path)
+        msgbox_uvmat('ERROR','The second image series must be in the same directory as the first one')
+        return
+     end
+%     set(handles.RootName_1,'String',name);
     [RootPath,RootFile,field_count,str2,str_a,str_b,xx,nom_type,subdir]=name2display(name);
+    set(handles.RootName_1,'String',RootFile);
     browse=get(handles.browse_root,'UserData');
     browse.nom_type_ima_1=nom_type;
     set(handles.browse_root,'UserData',browse)
     
     %check image extension
     if ~strcmp(ext,get(handles.ImaExt,'String'))
-        msgbox_uvmat('ERROR','The two  input image series must have the same extension name')
+        msgbox_uvmat('ERROR','The second image series must have the same extension name as the first one')
         return
     end
     
     %% check coincidence of image sizes
-    ref_i=get(handles.ref_i,'string');
-    ref_j=get(handles.ref_j,'string');
-    [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc]=set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);
-    A=imread(filecell.ima1.civ1{1});
-    A_1=imread(fileinput);
-    npxy=size(A);
-    npxy_1=size(A_1);
-    if ~isequal(size(A),size(A_1))
-        msgbox_uvmat('ERROR','The two input image series do not have the same size')
-        return
-    end
+%     ref_i=get(handles.ref_i,'string');
+%     ref_j=get(handles.ref_j,'string');
+%     [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc]=set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);
+%     A=imread(filecell.ima1.civ1{1});
+%     A_1=imread(fileinput);
+%     npxy=size(A);
+%     npxy_1=size(A_1);
+%     if ~isequal(size(A),size(A_1))
+%         msgbox_uvmat('ERROR','The two input image series do not have the same size')
+%         return
+%     end
 else
     set(handles.mode,'Visible','on')
     set(handles.RootName_1,'Visible','Off');
@@ -4540,16 +4562,17 @@ else
     set(handles.mode,'String',mode_store)
     set(handles.test_stereo1,'Value',0)
     set(handles.test_stereo2,'Value',0)
+    set(handles.CivMode,'Value',1) % mode 'civX' selected by default
 end
 if test==3 && get(handles.PATCH1,'Value')
-    set(handles.stereo1,'Visible','on')
+    set(handles.test_stereo1,'Visible','on')
 else
-    set(handles.stereo1,'Visible','off')
+    set(handles.test_stereo1,'Visible','off')
 end
 if test==3 && get(handles.PATCH2,'Value')
-    set(handles.stereo2,'Visible','on')
+    set(handles.test_stereo2,'Visible','on')
 else
-    set(handles.stereo2,'Visible','off')
+    set(handles.test_stereo2,'Visible','off')
 end
 mode_Callback(hObject, eventdata, handles)
 
