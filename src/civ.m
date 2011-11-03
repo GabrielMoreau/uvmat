@@ -1560,6 +1560,8 @@ if batch
                 [ind_answer,v] = listdlg('PromptString',str_displ,...
                     'SelectionMode','single',...
                     'ListString',str,'ListSize',[200 100],'Name','job priority','InitialValue',3);
+                pvalue=num2str((1-ind_answer)*500); % 
+                
                 if isequal(v,0) % to handle Cancel button and figure close,
                     errormsg='job cancelled';
                     return % a better way should be create
@@ -1632,7 +1634,7 @@ switch CivMode
         end
     case 'Matlab'
         if batch
-            %% vérifier Mtlab installé sur le cluster
+            %% vï¿½rifier Mtlab installï¿½ sur le cluster
         end          
 end
 
@@ -1737,8 +1739,9 @@ end
 
 %% MAIN LOOP
 time=get(handles.RootName,'UserData'); %get the set of times
-super_cmd=[];
 
+super_cmd=[];
+    
 for ifile=1:nbfield
     for j=1:nbslice
         % initiate system command
@@ -1935,7 +1938,8 @@ for ifile=1:nbfield
             end
         end
         if box_test(4)==1 || box_test(5)==1 || box_test(6)==1
-            filename_cmx=filecell.nc.civ2{ifile,j};%output netcdf file
+ %                 pvalue=num2str((1-ind_answer)*500);
+           filename_cmx=filecell.nc.civ2{ifile,j};%output netcdf file
             filename_cmx(end-1:end+1)='cmx';%name of cmx file
         end
         if box_test(4)==1
@@ -2121,13 +2125,17 @@ for ifile=1:nbfield
                 fclose(fid);
                 if batch
                     switch batch_mode
-                        case 'sge'
-                            pvalue=num2str((1-ind_answer)*500);
+                        case 'sge'                            
                             display(['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
                             eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
                         case 'oar'
-                            eval(  ['!chmod +x ' filename_bat]);
-                            eval(  ['!oarsub -n CIVX -l /core=1,walltime=00:10:00  ' filename_bat]);
+%                             eval(  ['!chmod +x ' filename_bat]);
+%                             %eval(  ['!oarsub -n CIVX -l /core=1,walltime=00:10:00  ' filename_bat]);                    
+%                             eval(  ['!oarsub -n CIVX -l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:10:00"   ' filename_bat]);
+
+                    cmd_str=['. ' filename_bat];
+                    super_cmd{length(super_cmd)+1}=cmd_str;
+                           
                     end
                 else
                     %% to lauch the jobs locally :
@@ -2221,6 +2229,37 @@ for ifile=1:nbfield
         end
     end
 end
+
+if batch
+    switch batch_mode
+        case 'oar'
+            l=length(super_cmd)
+            for p=0:floor(l/6);
+                
+                filename_superbat=fullfile(Rootbat,['job_list_' num2str(p) '.bat']);
+                fid=fopen(filename_superbat,'w');
+                if fid==-1
+                    msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+                    return
+                end
+                if p==floor(l/6)
+                    kmax=mod(l,6);
+                else
+                    kmax=6;
+                end
+                for k=1:kmax
+                    fprintf(fid,[super_cmd{p*6+k} '\n']);
+                end
+                fclose(fid);
+                if(isunix)
+                    system(['chmod +x ' filename_superbat]);
+                end
+                
+                eval(  ['!oarsub -n CIVX -l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:10:00"   ' filename_superbat]);
+            end
+    end
+end
+            
 
 if ~batch && ~isequal(CivMode,'Matlab')
     [Rootbat,Filebat,extbat]=fileparts(filename_bat);
