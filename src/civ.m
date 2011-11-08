@@ -2233,7 +2233,7 @@ end
 if batch
     switch batch_mode
         case 'oar'
-            l=length(super_cmd)
+            l=length(super_cmd);
             for p=0:floor(l/6);
                 
                 filename_superbat=fullfile(Rootbat,['job_list_' num2str(p) '.bat']);
@@ -2255,7 +2255,7 @@ if batch
                     system(['chmod +x ' filename_superbat]);
                 end
                 
-                eval(  ['!oarsub -n CIVX -l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:10:00"   ' filename_superbat]);
+                eval(  ['!oarsub -n CIVX -q nicejob -l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:10:00"   ' filename_superbat]);
             end
     end
 end
