@@ -2255,7 +2255,7 @@ if batch
                     system(['chmod +x ' filename_superbat]);
                 end
                 
-                eval(  ['!oarsub -n CIVX -q nicejob -l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:10:00"   ' filename_superbat]);
+                eval(  ['!oarsub -n CIVX -q nicejob -l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:60:00"   ' filename_superbat]);
             end
     end
 end
