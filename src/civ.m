@@ -2514,7 +2514,7 @@ subdir_civ1=get(handles.subdir_civ1,'String');%subdirectory subdir_civ1 for the 
 subdir_civ2=get(handles.subdir_civ2,'String');
 if isequal(subdir_civ1,''),subdir_civ1='CIV'; end% put default subdir
 if isequal(subdir_civ2,''),subdir_civ2=subdir_civ1; end% put default subdir
-currentdir=pwd;%store the current working directory
+% currentdir=pwd;%store the current working directory
 [Path_ima,Name]=fileparts(filebase);%Path of the image files (.civ)
 if ~exist(Path_ima,'dir')
     msgbox_uvmat('ERROR',['path to images ' Path_ima ' not found'])
@@ -2525,7 +2525,7 @@ end
 if ~isempty(message) && ~isequal(message.UserWrite,1)
     msgbox_uvmat('ERROR',['No writting access to ' Path_ima])
     filecell={};
-    cd(currentdir);
+%     cd(currentdir);
     return
 end
 
@@ -2569,9 +2569,9 @@ if box_test(1)==1;
                 filecell={};
                 return
             elseif isunix          
-                [xx,msg2] = fileattrib(subdir_civ1_new,'+w','g'); %yield writing access (+w) to user group (g)
+                [xx,msg2] = fileattrib(fullfile(Path_ima,subdir_civ1_new),'+w','g'); %yield writing access (+w) to user group (g)
                 if ~strcmp(msg2,'')
-                    msgbox_uvmat('ERROR',['pb of permission for  ' subdir_civ1_new ': ' msg2])%error message for directory creation
+                    msgbox_uvmat('ERROR',['pb of permission for  ' fullfile(Path_ima,subdir_civ1_new) ': ' msg2])%error message for directory creation
                     filecell={};
                     return
                 end
@@ -2612,7 +2612,7 @@ if box_test(1)==1;
                     filecell={};
                     return
                 else
-                    [xx,msg2] = fileattrib(subdir_civ1_new,'+w','g'); %yield writing access (+w) to user group (g)
+                    [xx,msg2] = fileattrib(fullfile(Path_ima,subdir_civ1_new),'+w','g'); %yield writing access (+w) to user group (g)
                     if ~strcmp(msg2,'')
                         msgbox_uvmat('ERROR',['pb of permission for ' subdir_civ1_new ': ' msg2])%error message for directory creation
 %                         cd(currentdir)
@@ -2638,14 +2638,14 @@ if box_test(1)==1;
         if idetectmin==0,
             msgbox_uvmat('ERROR',[filecell.ima1.civ1{ifile,indexj} ' not found'])
             filecell={};
-            cd(currentdir)
+           % cd(currentdir)
             return
         end
         [idetectmin,indexj]=min(idetect_1);
         if idetectmin==0,
             msgbox_uvmat('ERROR',[filecell.ima2.civ1{ifile,indexj} ' not found'])
             filecell={};
-            cd(currentdir)
+            %cd(currentdir)
             return
         end
     end
@@ -2663,14 +2663,14 @@ if box_test(1)==1;
             if idetectmin==0,
                 msgbox_uvmat('ERROR',[filecell.imaA1.civ1{ifile,indexj} ' not found'])
                 filecell={};
-                cd(currentdir)
+               % cd(currentdir)
                 return
             end
             [idetectmin,indexj]=min(idetect_1);
             if idetectmin==0,
                 msgbox_uvmat('ERROR',[filecell.imaA2.civ1{ifile,indexj} ' not found'])
                 filecell={};
-                cd(currentdir)
+               % cd(currentdir)
                 return
             end
         end
@@ -2686,7 +2686,7 @@ elseif (box_test(2)==1 || box_test(3)==1);
             if detect==0
                 msgbox_uvmat('ERROR',[filename ' not found'])
                 filecell={};
-                cd(currentdir)
+               % cd(currentdir)
                 return
             end
             filecell.nc.civ1(ifile,j)={filename};
@@ -2702,7 +2702,7 @@ elseif (box_test(2)==1 || box_test(3)==1);
                     set(handles.RUN, 'Enable','On')
                     set(handles.RUN,'BackgroundColor',[1 0 0])
                     filecell={};
-                    cd(currentdir)
+                    %cd(currentdir)
                     return
                 end
             end
@@ -2743,11 +2743,11 @@ if (box_test(4)==1)&&...
         %create the new subdir_civ2_new
         if ~exist(fullfile(Path_ima,subdir_civ2_new),'dir')
             [xx,m2]=mkdir(fullfile(Path_ima,subdir_civ2_new));
-            [xx,msg2] = fileattrib(subdir_civ2_new,'+w','g'); %yield writing access (+w) to user group (g)
+            [xx,msg2] = fileattrib(fullfile(Path_ima,subdir_civ2_new),'+w','g'); %yield writing access (+w) to user group (g)
             if ~isequal(m2,'')
-                msgbox_uvmat('ERROR',['cannot create ' subdir_civ2_new ': ' m2])
+                msgbox_uvmat('ERROR',['cannot create ' fullfile(Path_ima,subdir_civ2_new) ': ' m2])
                 filecell={};
-                cd(currentdir)
+               % cd(currentdir)
                 return
             end
         end
@@ -2778,10 +2778,10 @@ if (box_test(4)==1)&&...
             %create the new subdir_civ1
             if ~exist(fullfile(Path_ima,subdir_civ2_new),'dir')
                 [xx,m2]=mkdir(subdir_civ2_new);
-                 [xx,msg2] = fileattrib(subdir_civ2_new,'+w','g'); %yield writing access (+w) to user group (g)
+                 [xx,msg2] = fileattrib(fullfile(Path_ima,subdir_civ2_new),'+w','g'); %yield writing access (+w) to user group (g)
                 if ~isequal(m2,'')
-                    msgbox_uvmat('ERROR', ['cannot create ' subdir_civ2_new ': ' m2])%error message for directory creation
-                    cd(currentdir)
+                    msgbox_uvmat('ERROR', ['cannot create ' fullfile(Path_ima,subdir_civ2_new) ': ' m2])%error message for directory creation
+                  %  cd(currentdir)
                     filecell={};
                     return
                 end
@@ -2790,7 +2790,7 @@ if (box_test(4)==1)&&...
     end
     subdir_civ2=subdir_civ2_new;
 end
-cd(currentdir);%come back to the current working directory
+%cd(currentdir);%come back to the current working directory
 
 %%%%%%%%%%%%%  if civ2 results are obtained or used  %%%%%%%%%%%%%
 if box_test(4)==1 || box_test(5)==1 || box_test(6)==1 %civ2
