@@ -1543,7 +1543,6 @@ if batch
     switch batch_mode
         case 'sge'
             % choice of batch priority:
-            ind_answer=2;
             [s,w]=unix('qstat -q civ.q|grep job_| wc -l'); %check the waiting list (command unix)
             if isequal(s,0)
                 w(end)=[];
@@ -1560,14 +1559,19 @@ if batch
                 [ind_answer,v] = listdlg('PromptString',str_displ,...
                     'SelectionMode','single',...
                     'ListString',str,'ListSize',[200 100],'Name','job priority','InitialValue',3);
-                pvalue=num2str((1-ind_answer)*500); % 
-                
+                pvalue=num2str((1-ind_answer)*500); %                 
                 if isequal(v,0) % to handle Cancel button and figure close,
                     errormsg='job cancelled';
                     return % a better way should be create
                 end
             else
                 msgbox_uvmat('ERROR','sge batch system not available')
+                return
+            end
+        case 'oar'
+            [s,w]=unix('oarstat'); %check the waiting list (command unix)
+            if ~isequal(s,0)
+                msgbox_uvmat('ERROR','oar batch system not available')
                 return
             end
     end
@@ -1741,6 +1745,7 @@ end
 time=get(handles.RootName,'UserData'); %get the set of times
 
 super_cmd=[];
+batch_file_list=[];
     
 for ifile=1:nbfield
     for j=1:nbslice
@@ -1762,13 +1767,8 @@ for ifile=1:nbfield
                 CivAllxml=set(CivAllxml,1,'name','CivDoc');
         end
         [Rootbat,Filebat]=fileparts(filecell.nc.civ1{ifile,j});%output netcdf file (without extension)
-        flname=fullfile(Rootbat,Filebat);
-        if batch
-            filename_bat=fullfile(Rootbat,['job_' Filebat]);
-        else
-            filename_bat=flname;
-        end
-        filename_bat=[filename_bat '.bat'];
+
+        filename_bat=[fullfile(Rootbat,Filebat) '.bat'];
         
         %CIV1
         if box_test(1)==1
@@ -2123,30 +2123,33 @@ for ifile=1:nbfield
                 end
                 fprintf(fid,cmd);
                 fclose(fid);
-                if batch
-                    switch batch_mode
-                        case 'sge'                            
-                            display(['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
-                            eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
-                        case 'oar'
-%                             eval(  ['!chmod +x ' filename_bat]);
-%                             %eval(  ['!oarsub -n CIVX -l /core=1,walltime=00:10:00  ' filename_bat]);                    
-%                             eval(  ['!oarsub -n CIVX -l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:10:00"   ' filename_bat]);
-
-                    cmd_str=['. ' filename_bat];
-                    super_cmd{length(super_cmd)+1}=cmd_str;
-                           
-                    end
-                else
-                    %% to lauch the jobs locally :
-                    if(isunix)
-                        cmd_str=['. ' filename_bat];
-                    else %case of Windows
-                        cmd_str=['@call "' regexprep(filename_bat,'\\','\\\\') '"'];
-                    end
-                    super_cmd=[super_cmd cmd_str '\n'];
-                    disp(cmd_str);
-                end
+                
+                batch_file_list{length(batch_file_list)+1}=filename_bat;
+                
+%                 if batch
+%                     switch batch_mode
+%                         case 'sge'                            
+%                             display(['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
+%                             eval(  ['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' filename_bat]);
+%                         case 'oar'
+% %                             eval(  ['!chmod +x ' filename_bat]);
+% %                             %eval(  ['!oarsub -n CIVX -l /core=1,walltime=00:10:00  ' filename_bat]);                    
+% %                             eval(  ['!oarsub -n CIVX -l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:10:00"   ' filename_bat]);
+% 
+%                     cmd_str=['sh ' filename_bat];
+%                     super_cmd{length(super_cmd)+1}=cmd_str;
+%                            
+%                     end
+%                 else
+%                     %% to lauch the jobs locally :
+%                     if(isunix)
+%                         cmd_str=['. ' filename_bat];
+%                     else %case of Windows
+%                         cmd_str=['@call "' regexprep(filename_bat,'\\','\\\\') '"'];
+%                     end
+%                     super_cmd=[super_cmd cmd_str '\n'];
+%                     disp(cmd_str);
+%                 end
             case 'Matlab'
                 drawnow
                 if box_test(1)==1
@@ -2231,51 +2234,70 @@ for ifile=1:nbfield
 end
 
 if batch
-    switch batch_mode
+    switch batch_mode                        
+        case 'sge'
+            for p=1:length(batch_file_list)
+                cmd=['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' batch_file_list{p}];
+                display(cmd);eval(cmd);
+            end
         case 'oar'
-            l=length(super_cmd);
-            for p=0:floor(l/6);
-                
-                filename_superbat=fullfile(Rootbat,['job_list_' num2str(p) '.bat']);
+            for p=0:floor(length(batch_file_list)/6);                
+                filename_batch_group=fullfile(Rootbat,['job_list_' num2str(p) '.bat']);
+                fid=fopen(filename_batch_group,'w');
+                if fid==-1
+                    msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+                    return
+                end
+                if p==floor(length(batch_file_list)/6)
+                    kmax=mod(length(batch_file_list),6);
+                else
+                    kmax=6;
+                end
+                for k=1:kmax
+                    fprintf(fid,['sh ' batch_file_list{p*6+k} '\n']);
+                end
+                fclose(fid);
+                system(['chmod +x ' filename_batch_group]);
+                eval(  ['!oarsub -n CIVX -q nicejob -l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:60:00"   ' filename_batch_group]);
+            end
+        case 'oar_new' % to be develloped with Patrick Begou
+                filename_joblist=fullfile(Rootbat,'job_list.txt');
                 fid=fopen(filename_superbat,'w');
                 if fid==-1
                     msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
                     return
                 end
-                if p==floor(l/6)
-                    kmax=mod(l,6);
-                else
-                    kmax=6;
-                end
-                for k=1:kmax
-                    fprintf(fid,[super_cmd{p*6+k} '\n']);
+                for p=1:length(batch_file_list)
+                    fprintf(fid,[batch_file_list{p} '\n']);
                 end
                 fclose(fid);
-                if(isunix)
-                    system(['chmod +x ' filename_superbat]);
-                end
-                
-                eval(  ['!oarsub -n CIVX -q nicejob -l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:60:00"   ' filename_superbat]);
+                walltime=datestr(length(super_cmd)*10/24/60,13);
+                eval(  ['!oarsub -n CIVX -q nicejob -l "/core=1+{type = ''smalljob''}/licence=1,walltime=' walltime '"   ' filename_superbat]);
+    end
+else
+    if ~isequal(CivMode,'Matlab')
+        filename_superbat=fullfile(Rootbat,'job_list.bat');
+        fid=fopen(filename_superbat,'w');
+        if fid==-1
+            msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+            return
+        end
+        for p=1:length(batch_file_list)
+            if isunix
+                fprintf(fid,['sh ' batch_file_list{p} '\n']);
+            else
+                fprintf(fid,['@call "' regexprep(filename_bat,'\\','\\\\') '"' '\n']);
             end
+        end
+        fclose(fid);
+        if(isunix)
+            system(['chmod +x ' filename_superbat]);
+        end
+        system([filename_superbat ' &']);% execute main commmand
     end
+    
 end
-            
 
-if ~batch && ~isequal(CivMode,'Matlab')
-    [Rootbat,Filebat,extbat]=fileparts(filename_bat);
-    filename_superbat=fullfile(Rootbat,'job_list.bat');
-    fid=fopen(filename_superbat,'w');
-    if fid==-1
-        msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
-        return
-    end
-    fprintf(fid,super_cmd');
-    fclose(fid);
-    if(isunix)
-        system(['chmod +x ' filename_superbat])
-    end
-    system([filename_superbat ' &'])% execute main commmand
-end
 
 %% save interface state
 if isfield(filecell,'nc')
@@ -4224,9 +4246,9 @@ if(isunix)
     cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.log' ' ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.nc'];%rename .log as .civ1.log and set the netcdf result file for group user writting
    % cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.cmx' ' ' filename '.civ1.cmx' '\n'];%rename .cmx as .civ1.cmx
 else %Windows system
-                    flname=regexprep(flname,'\\','\\\\');
+%                     flname=regexprep(flname,'\\','\\\\');
 %                     cmd=[cmd 'copy /Y "' flname '.civ1.cmx" "' flname '.cmx"\n'];
-    filename=regexprep(filename,'\\','\\\\');
+%     filename=regexprep(filename,'\\','\\\\');
     cmd_CIV1=['copy /Y "' filename '.civ1.cmx" "' filename '.cmx"\n'];% copy the .civ1.cmx parameter file to .cmx
     cmd_CIV1=['"' sparam.Civ1Bin '" -f "' filename '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
     cmd_CIV1=regexprep(cmd_CIV1,'\\','\\\\');
