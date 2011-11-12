@@ -1161,6 +1161,10 @@ if strcmp(compare,'displacement')
     mode='displacement';
 else
     mode_list=get(handles.mode,'String')
+    if isempty(mode_list)
+        msgbox_uvmat('ERROR','please enter an input image or netcdf file')
+        return
+    end
     mode_value=get(handles.mode,'Value')
     mode=mode_list{mode_value};
 end
@@ -2219,6 +2223,10 @@ for ifile=1:nbfield
                         filebase_B=fullfile(pp,get(handles.RootName_1,'String'));
                         RUN_STLIN(filecell.ncA.civ2{ifile,j},filecell.nc.civ2{ifile,j},'civ2',filecell.st{ifile,j},...
                             str2num(nx_patch2),str2num(ny_patch2),str2num(thresh_patch2),[filebase_A '.xml'],[filebase_B '.xml'])
+                    else
+                        Param.Patch2.Rho=rho_patch2;
+                        Param.Patch2.Threshold=thresh_patch2;
+                        Param.Patch2.SubDomain=subdomain_patch2;
                     end
                 end
                 if ~strcmp(compare,'stereo PIV')
@@ -2228,6 +2236,7 @@ for ifile=1:nbfield
                     else
                         msgbox_uvmat('ERROR',errormsg)
                     end
+
                 end
         end
     end

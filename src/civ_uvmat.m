@@ -5,14 +5,17 @@ Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
 Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
 Data.Program='civ_uvmat';
 Data.CivStage=0;%default
-ListVarCiv1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'};
+ListVarCiv1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'}; %variables to read
 ListVarFix1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF'};
 mask='';
 maskname='';%default
 test_civx=0;%default
+test_civ1=0;%default
+test_patch1=0;%default
 
 %% Civ1
 if isfield (Param,'Civ1')
+    test_civ1=1;% test for further use of civ1 results
     par_civ1=Param.Civ1;
     image1=imread(par_civ1.filename_ima_a);
     image2=imread(par_civ1.filename_ima_b);
@@ -74,32 +77,11 @@ if isfield (Param,'Civ1')
     Data.Civ1_F=reshape(F,[],1);
     Data.CivStage=1;
 else
-    Data=nc2struct(ncfile,'ListGlobalAttribute','absolut_time_T0');
-    
-    % read Civx data
+    Data=nc2struct(ncfile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format 
     if ~isempty(Data.absolut_time_T0')%read civx file
-%         var={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF';...
-%             'vec_X','vec_Y','vec_U','vec_V','vec_C','vec_F','vec_FixFlag'};
-
-        %var=varcivx_generator('velocity','Civ1');%determine the names of constants and variables to read
-        test_civx=1;
+        test_civx=1;% test for old civx data format
         [Data,vardetect,ichoice]=nc2struct(ncfile);%read the variables in the netcdf file
-%         Data.ListGlobalAttribute=[{'Conventions','Program','CivStage'} Data.ListGlobalAttribute {'Civ1_Time','Civ1_Dt'}];
-%         Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
-%         Data.Program='civ_uvmat';
-%         Data.Civ1_Time=double(Data.absolut_time_T0);
-%         Data.Civ1_Dt=double(Data.dt);
-%         Data.VarDimName={'nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1'};
-%         Data.VarAttribute{1}.Role='coord_x';
-%         Data.VarAttribute{2}.Role='coord_y';
-%         Data.VarAttribute{3}.Role='vector_x';
-%         Data.VarAttribute{4}.Role='vector_y';
-%         Data.VarAttribute{5}.Role='ancillary';
-%         Data.VarAttribute{6}.Role='warnflag';
-%         Data.VarAttribute{7}.Role='errorflag';
-%         Data.CivStage=1;
     else
-
         if isfield(Param,'Fix1')
             Data=nc2struct(ncfile,ListVarCiv1);%read civ1 data in the existing netcdf file
         else
@@ -146,6 +128,7 @@ if isfield (Param,'Fix1')
 end   
 %% Patch1
 if isfield (Param,'Patch1')
+    test_patch1=1;
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch1_Rho','Patch1_Threshold','Patch1_SubDomain'}];
     Data.Patch1_Rho=str2double(Param.Patch1.Rho);
     Data.Patch1_Threshold=str2double(Param.Patch1.Threshold);
@@ -174,17 +157,36 @@ end
 %% Civ2
 if isfield (Param,'Civ2')
     par_civ2=Param.Civ2;
-    image1=imread(par_civ2.filename_ima_a);
-    image2=imread(par_civ2.filename_ima_b);
-    stepx=str2num(par_civ2.dx);
-    stepy=str2num(par_civ2.dy);
-    ibx2=ceil(str2num(par_civ2.ibx)/2);
-    iby2=ceil(str2num(par_civ2.iby)/2);
-    isx2=4;
-    isy2=4;
+    if ~test_civ1 || ~strcmp(par_civ1.filename_ima_a,par_civ2.filename_ima_a)
+            image1=imread(par_civ2.filename_ima_a);%read first image if not already done for civ1 
+    end
+    if ~test_civ1|| ~strcmp(par_civ1.filename_ima_b,par_civ2.filename_ima_b)
+            image2=imread(par_civ2.filename_ima_b);%read second image if not already done for civ1 
+    end
+    stepx=str2double(par_civ2.dx);
+    stepy=str2double(par_civ2.dy);
+    ibx2=ceil(str2double(par_civ2.ibx)/2);
+    iby2=ceil(str2double(par_civ2.iby)/2);
+    isx2=ibx2+2;
+    isy2=iby2+2;
+    %get the previous guess for displacement
+    if ~test_patch1
+        [Guess,VelType]=read_civdata(ObjectName,InputField,ParamIn.VelType);%TO DEVELOP
+    else
+        Data.Civ1_U_Diff=zeros(size(Data.Civ1_X));
+        Data.Civ1_V_Diff=zeros(size(Data.Civ1_X));
+        if isfield(Data,'Civ1_FF')
+            ind_good=find(Data.Civ1_FF==0);
+        else
+            ind_good=1:numel(Data.Civ1_X);
+        end
+            [Data.Civ1_X_SubRange,Data.Civ1_Y_SubRange,Data.Civ1_NbSites,FFres,Ures, Vres,Data.Civ1_X_tps,Data.Civ1_Y_tps,Data.Civ1_U_tps,Data.Civ1_V_tps]=...
+                                patch_uvmat(Data.Civ1_X(ind_good)',Data.Civ1_Y(ind_good)',Data.Civ1_U(ind_good)',Data.Civ1_V(ind_good)',Data.Patch1_Rho,Data.Patch1_Threshold,Data.Patch1_SubDomain);
+        end 
 %     shiftx=str2num(par_civ1.shiftx);
 %     shifty=str2num(par_civ1.shifty);
 % TO GET shift from par_civ2.filename_nc1
+    % shiftx=velocity interpolated at position 
     miniy=max(1+isy2+shifty,1+iby2);
     minix=max(1+isx2-shiftx,1+ibx2);
     maxiy=min(size(image1,1)-isy2+shifty,size(image1,1)-iby2);
@@ -260,6 +262,7 @@ if isfield (Param,'Fix2')
         Data.Civ2_FF=fix_uvmat(Param.Fix2,Data.Civ2_F,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V);
         Data.CivStage=5;    
     end
+    
 end   
 
 %% Patch2
@@ -286,7 +289,7 @@ if isfield (Param,'Patch2')
       Data.Civ2_U_Diff(ind_good)=Data.Civ2_U(ind_good)-Ures;
       Data.Civ2_V_Diff(ind_good)=Data.Civ2_V(ind_good)-Vres;
       Data.Civ2_FF(ind_good)=FFres;
-      Data.CivStage=3;                             
+      Data.CivStage=6;                             
 end   
 
 %% write result
