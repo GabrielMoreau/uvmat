@@ -712,8 +712,13 @@ elseif isfield(UvData,'MovieObject')
     UvData=rmfield(UvData,'MovieObject');
 end
 if isfield(imainfo,'Width') && isfield(imainfo,'Height')
-    set(handles.npx,'String',num2str(imainfo.Width));%fills nbre of pixels x box
-    set(handles.npy,'String',num2str(imainfo.Height));%fills nbre of pixels x box
+    if length(imainfo)>1
+        set(handles.npx,'String',num2str(imainfo(1).Width));%fills nbre of pixels x box
+        set(handles.npy,'String',num2str(imainfo(1).Height));%fills nbre of pixels x box
+    else
+        set(handles.npx,'String',num2str(imainfo.Width));%fills nbre of pixels x box
+        set(handles.npy,'String',num2str(imainfo.Height));%fills nbre of pixels x box
+    end
 else
     set(handles.npx,'String','');%fills nbre of pixels x box
     set(handles.npy,'String','');%fills nbre of pixels x box
