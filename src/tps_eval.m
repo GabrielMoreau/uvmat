@@ -1,4 +1,4 @@
-%   DM:     MxN matrix whose i,j position contains the Euclidean
+%   EM:     MxN matrix whose i,j position contains the Euclidean
 %              distance between the i-th data site and j-th center
   function EM = tps_eval(dsites,ctrs)
   [M,s] = size(dsites); [N,s] = size(ctrs);

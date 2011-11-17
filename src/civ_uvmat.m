@@ -543,32 +543,3 @@ V_smooth=V_smooth./nb_select;
 
 
 
-
-
-% U_patch = EM * spline_coeff;
-% U_patch=reshape(U_patch,npy,npx);
-% PM = [ones(size(dsites,1),1) dsites]; 
-% EM = [IM_sites PM];
-% U(test_false)=[];
-% U_nodes=EM * spline_coeff;
-
-%exact = testfunctions(epoints);
-%maxerr = norm(Pf-exact,inf);
-% PlotSurf(xe,ye,Pf,neval,exact,maxerr,[160,20]);
-% PlotError2D(xe,ye,Pf,exact,maxerr,neval,[160,20]);
-
-
-
-  % DM = DistanceMatrix(dsites,ctrs)
-% Forms the distance matrix of two sets of points in R^s,
-% i.e., DM(i,j) = || datasite_i - center_j ||_2.
-% Input
-%   dsites: Mxs matrix representing a set of M data sites in R^s
-%              (i.e., each row contains one s-dimensional point)
-%   ctrs:   Nxs matrix representing a set of N centers in R^s
-%              (one center per row)
-% Output
-
-
-
-

@@ -61,10 +61,10 @@ if exist('mask','var') && ~isempty(mask)
     image2(test_undefined)=min(min(image2));% put image to zero in the undefined  area
 end
 
-%% calculate correlations: MAINLOOP
+%% calculate correlations: MAINLOOP on velocity vectors
 corrmax=0;
 sum_square=1;% default
-for ivec=1:nbvec
+for ivec=1:nbvec 
     iref=GridIndices(ivec,1);
     jref=GridIndices(ivec,2);
     testmask_ij=0;
@@ -81,10 +81,10 @@ for ivec=1:nbvec
             end
         end
     end
-    if ~test0
-        image1_crop=image1(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);
-        image2_crop=image2(jref+shifty-isy2:jref+shifty+isy2,iref+shiftx-isx2:iref+shiftx+isx2);
-        image1_crop=image1_crop-mean(mean(image1_crop));
+    if ~test0    
+        image1_crop=image1(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);%extract a subimage (correlation box) from images 1  
+        image2_crop=image2(jref+shifty-isy2:jref+shifty+isy2,iref+shiftx-isx2:iref+shiftx+isx2);%extract a larger subimage (search box) from image 2
+        image1_crop=image1_crop-mean(mean(image1_crop));%substract the mean
         image2_crop=image2_crop-mean(mean(image2_crop));
         %reference: Oliver Pust, PIV: Direct Cross-Correlation
         result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');

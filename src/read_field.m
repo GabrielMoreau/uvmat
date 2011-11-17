@@ -48,12 +48,14 @@ if strcmp(FileType,'netcdf')  %read the first nc field
         field_index=strcmp(ParamIn.FieldName,FieldList);%look for ParamIn.FieldName in the list of possible fields for Civx data
         if isempty(find(field_index,1))% ParamIn.FieldName is not in the list, check whether Civx data exist
             Data=nc2struct(ObjectName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ');
+            % case of new civdata conventions
             if isequal(Data.Conventions,'uvmat/civdata')
                 ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
                 ParamOut.ColorVar='ima_cor';
                 InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
                 [Field,ParamOut.VelType]=read_civdata(ObjectName,InputField,ParamIn.VelType);
                 test_civx=Field.CivStage;
+            %case of old civx conventions
             elseif ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)
                 ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
                 ParamOut.ColorVar='ima_cor';
@@ -61,7 +63,8 @@ if strcmp(FileType,'netcdf')  %read the first nc field
                 [Field,ParamOut.VelType]=read_civxdata(ObjectName,InputField,ParamIn.VelType);
                 test_civx=Field.CivStage;
                 ParamOut.CivStage=Field.CivStage;
-            else % not cvix file, fields will be chosen through the GUI get_field
+            % not cvix file, fields will be chosen through the GUI get_field   
+            else 
                 ParamOut.FieldName='get_field...';
                 hget_field=findobj(allchild(0),'Name',GUIName);%find the get_field... GUI
                 if ~isempty(hget_field)
