@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 16-Nov-2011 20:12:34
+% Last Modified by GUIDE v2.5 17-Nov-2011 23:05:55
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -249,7 +249,7 @@ end
 %TESTS
 
 
-struct=read_panel(handles.Patch2Panel)
+struct=read_panel(handles.panel_Patch2)
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
@@ -1569,7 +1569,9 @@ if ~isempty(errormsg)
 end
 [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,xx,yy,compare]=...
     set_civ_filenames(handles,ref_i,ref_j,box_test);
-
+% ADDED
+   [Rootbat,Filebat]=fileparts(filecell.nc.civ1{1,1});%output netcdf file (without extention)
+%ADDED 
 set(handles.civ,'UserData',filecell);%store for futur use of status callback
 if isempty(filecell)% (error message displayed in fct set_civ_filenames)
     return
@@ -1635,27 +1637,29 @@ else
     CivMode='CivX';
 end
 switch CivMode
-     case {'CivX','CivAll'}
-             
-        for bin_name={'Civ1Bin','Civ2Bin','PatchBin','FixBin','CivBin'}
-            if isfield(param.global,bin_name{1})
-                param.global.(bin_name{1})
-                exist(param.global.(bin_name{1}))
-                if ~exist(param.global.(bin_name{1}))
-                    param.global.(bin_name{1})=fullfile(path_UVMAT,param.global.(bin_name{1}));
-                    if ~exist(param.global.(bin_name{1}))
-                        msgbox_uvmat('ERROR',['Binary ' param.global.(bin_name{1}) ' defined in PARAM.xm does not exist'])
-                        return
-                    end
-                end
-                [path,name,ext]=fileparts(param.global.(bin_name{1}))
-                currentdir=pwd;
-                cd(path);
-                param.global.(bin_name{1})=which([name ext]);
-                display(param.global.(bin_name{1}));
-                cd(currentdir);
-            end
-        end
+     case {'CivX','CivAll'}      
+         for bin_name={'Civ1Bin','Civ2Bin','PatchBin','FixBin','CivBin'}
+             if isfield(param.global,bin_name{1})
+                 if ~exist(param.global.(bin_name{1}),'file')%look for the full path if the file name has been defined with a relative path in PARAM.xml
+                     fullname=fullfile(path_UVMAT,param.global.(bin_name{1}));
+                     if exist(fullname,'file')
+                         param.global.(bin_name{1})=fullname;
+                     else
+                         msgbox_uvmat('ERROR',['Binary ' param.global.(bin_name{1}) ' defined in PARAM.xm does not exist'])
+                         return
+                     end
+                 else
+                     [path,name,ext]=fileparts(param.global.(bin_name{1}));
+                     currentdir=pwd;
+                     cd(path);
+                     binpath=pwd;%path of the binary
+                     param.global.(bin_name{1})=fullfile(binpath,[name ext]);
+%                      display(param.global.(bin_name{1}));
+                     cd(currentdir);
+                 end
+                 
+             end
+         end
     case 'Matlab'
         if batch
             % vérifier Matlab installé sur le cluster
@@ -1675,9 +1679,10 @@ if box_test(2)
     param.fix1=read_param_fix1(handles,filecell)
 end
 
-%% get patch1 parameters TODO read_param_patch1
+%% get patch1 parameters 
 if box_test(3)
-    param.patch1=read_param_patch1(handles)
+    param.Patch1=read_panel(handles.panel_Patch1);
+    %param.patch1=read_param_patch1(handles)
 end
 
 %% get civ2 parameters:
@@ -1703,25 +1708,26 @@ end
 
 %% get patch2 parameters
 if box_test(6)==1
-    rho_patch2=str2double(get(handles.SmoothParam,'String'));
-    if isnan(rho_patch2)
-        rho_patch2='1000';
-        set(handles.SmoothParam,'String','1')
-    else
-        rho_patch2=num2str(1000*rho_patch2);
-    end
-    nx_patch2=get(handles.Nx,'String');
-    ny_patch2=get(handles.Ny,'String');
-    if isnan(str2double(nx_patch2))
-        nx_patch2='50' ;%default
-        set(handles.Nx,'String','50');
-    end
-    if isnan(str2double(ny_patch2))
-        ny_patch2='50' ;%default
-        set(handles.Ny,'String','50');
-    end
-    subdomain_patch2=get(handles.SubdomainSize,'String');
-    thresh_patch2=get(handles.MaxDiff,'String');
+    param.Patch2=read_panel(handles.panel_Patch1);
+%     rho_patch2=str2double(get(handles.num_SmoothParam,'String'));
+%     if isnan(rho_patch2)
+%         rho_patch2='1000';
+%         set(handles.num_SmoothParam,'String','1')
+%     else
+%         rho_patch2=num2str(1000*rho_patch2);
+%     end
+%     nx_patch2=get(handles.num_Nx,'String');
+%     ny_patch2=get(handles.num_Ny,'String');
+%     if isnan(str2double(nx_patch2))
+%         nx_patch2='50' ;%default
+%         set(handles.num_Nx,'String','50');
+%     end
+%     if isnan(str2double(ny_patch2))
+%         ny_patch2='50' ;%default
+%         set(handles.num_Ny,'String','50');
+%     end
+%     subdomain_patch2=get(handles.num_SubdomainSize,'String');
+%     thresh_patch2=get(handles.num_MaxDiff,'String');
 end
 
 %%
@@ -1877,7 +1883,7 @@ for ifile=1:nbfield
         if box_test(3)==1
             switch CivMode
                 case 'CivX'
-                    cmd_PATCH=cmd_patch(filecell.nc.civ1{ifile,j},param);
+                    cmd_PATCH=cmd_patch(filecell.nc.civ1{ifile,j},param.Patch1,param.global.PatchBin);
                     cmd=[cmd cmd_PATCH '\n'];
                 case 'CivAll'
                     patch1.inputFileName=filecell.nc.civ1{ifile,j} ;
@@ -2040,7 +2046,7 @@ for ifile=1:nbfield
         if box_test(6)==1
             switch CivMode
                 case 'CivX'
-                    cmd_PATCH=PATCH_CMD(filecell.nc.civ2{ifile,j},nx_patch2,ny_patch2,rho_patch2,subdomain_patch2,thresh_patch2,test_interp,param.global.PatchBin);
+                    cmd_PATCH=cmd_path(filecell.nc.civ2{ifile,j},param);
                     cmd=[cmd cmd_PATCH '\n'];
                 case 'CivAll'
                     patch2.inputFileName=filecell.nc.civ1{ifile,j} ;
@@ -2983,7 +2989,7 @@ if strcmp(compare,'stereo PIV')
             end
         end
     end
-    if  box_test(6)==1 && isequal(get(handles.StereoCheck,'Value'),1)
+    if  box_test(6)==1 && isequal(get(handles.check_Stereo,'Value'),1)
         for ifile=1:nbfield
             for j=1:nbslice
                 filename=name_generator(filebase_AB,num1_civ2(ifile),num_a_civ2(j),'.nc',...
@@ -3206,21 +3212,22 @@ end
 
 %------------------------------------------------------------------------
 % --- PATCH
-function cmd=cmd_patch(filename_nc,param)
+function cmd=cmd_patch(filename_nc,Param,PatchBin)
 %------------------------------------------------------------------------
 namelog=[filename_nc(1:end-3) '_patch.log'];
+
 % if test_interp==0
     if isunix
-    cmd=[param.global.PatchBin...
-        ' -f ' filename_nc ' -m ' param.patch1.nx_patch...
-        ' -n ' param.patch1.ny_patch ' -ro ' param.patch1.rho_patch...
-        ' -nopt ' param.patch1.subdomain_patch ...
-        '  > ' namelog ' 2>&1']; % redirect standard output to the log file
+    cmd=[PatchBin...
+        ' -f ' filename_nc ' -m ' num2str(Param.Nx)...
+        ' -n ' num2str(Param.Ny) ' -ro ' num2str(Param.SmoothingParam)...
+        ' -nopt ' num2str(Param.SubdomainSize) ...
+        '  > ' namelog ' 2>&1'] % redirect standard output to the log file
     else
       cmd=['"' param.global.PatchBin...
-          '" -f "' filename_nc '" -m ' param.patch1.nx_patch...
-          ' -n ' param.patch1.ny_patch ' -ro ' param.patch1.rho_patch...
-          ' -nopt ' param.patch1.subdomain_patch ...
+          '" -f "' filename_nc '" -m ' param.Patch1.Nx...
+          ' -n ' param.Patch1.Ny ' -ro ' param.Patch1.SmoothParam...
+          ' -nopt ' Param.Patch1.SubdomainSize ...
         '  > "' namelog '" 2>&1']; % redirect standard output to the log file
     end
 % else %nouveau programme patch
@@ -3228,6 +3235,7 @@ namelog=[filename_nc(1:end-3) '_patch.log'];
 %         ' -max ' thresh_value ' -nopt ' subdomain_patch  '  > ' namelog ' 2>&1']; % redirect standard output to the log file
 % end
 cmd=regexprep(cmd,'\\','\\\\');
+
 %------------------------------------------------------------------------
 % --- STEREO Interp
 function cmd=RUN_STINTERP(stinterpBin,filename_A_nc,filename_B_nc,filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,xmlA,xmlB)
@@ -3863,13 +3871,13 @@ if state
          msgbox_uvmat('ERROR','No input file')
         return
     end
-    set(handles.Civ1Panel,'Visible','on')   
-    set(handles.PairPanel,'Visible','on')
+    set(handles.panel_Civ1,'Visible','on')   
+    set(handles.panel_PairIndices,'Visible','on')
 %     set(handles.frame_civ1,'BackgroundColor',[1 1 0])
 %     set(handles.frame_para_civ1,'BackgroundColor',[1 1 0])
 %     set(handles.frame_grid_civ1,'BackgroundColor',[1 1 0])
 else
-    set(handles.Civ1Panel,'Visible','off')  
+    set(handles.panel_Civ1,'Visible','off')  
 %     set(handles.frame_civ1,'BackgroundColor',[0.831 0.816 0.784])
 %     set(handles.frame_para_civ1,'BackgroundColor',[0.831 0.816 0.784])
 %     set(handles.frame_grid_civ1,'BackgroundColor',[0.831 0.816 0.784])
@@ -3933,10 +3941,10 @@ if isequal(state,1)
     end
 end
 if isequal(state,'on')
-    set(handles.Fix1Panel,'Visible','on')
+    set(handles.panel_Fix1,'Visible','on')
 %     set(handles.frame_fix1,'BackgroundColor',[1 1 0])
 else
-    set(handles.Fix1Panel,'Visible','off')
+    set(handles.panel_Fix1,'Visible','off')
     %set(handles.frame_fix1,'BackgroundColor',[0.7 0.7 0.7])
 end
 % set(handles.REMOVE,'Visible',state)
@@ -3963,9 +3971,9 @@ if state
         msgbox_uvmat('ERROR','No input file')
         return
     end
-    set(handles.Patch1Panel,'Visible','on')
+    set(handles.panel_Patch1,'Visible','on')
 else
-    set(handles.Patch1Panel,'Visible','off')
+    set(handles.panel_Patch1,'Visible','off')
 end
 return
 set(handles.frame_patch1,'BackgroundColor',[1 1 0])
@@ -3978,7 +3986,7 @@ end
 set(handles.subdomain_patch1,'Visible','on')
 set(handles.subdomain_text1,'Visible','on')
 set(handles.nx_patch1,'Visible','on')
-set(handles.Ny,'Visible','on')
+set(handles.num_Ny,'Visible','on')
 set(handles.nx_patch1_title,'Visible','on')
 set(handles.ny_patch1_title,'Visible','on')
 % if ~isempty(patch_newBin)
@@ -4004,7 +4012,7 @@ end
 % set(handles.subdomain_patch1,'Visible','off')
 % set(handles.subdomain_text1,'Visible','off')
 % set(handles.nx_patch1,'Visible','off')
-% set(handles.Ny,'Visible','off')
+% set(handles.num_Ny,'Visible','off')
 % set(handles.nx_patch1_title,'Visible','off')
 % set(handles.ny_patch1_title,'Visible','off')
 % set(handles.test_stereo1,'Visible','off')
@@ -4021,9 +4029,9 @@ if state
          msgbox_uvmat('ERROR','No input file')
         return
     end
-    set(handles.Civ2Panel,'Visible','on')
+    set(handles.panel_Civ2,'Visible','on')
 else
-    set(handles.Civ2Panel,'Visible','off') 
+    set(handles.panel_Civ2,'Visible','off') 
 end
 return
 
@@ -4078,7 +4086,7 @@ set(handles.rho_civ2_title,'Visible',state)
 function enable_fix2(handles,state)
 %------------------------------------------------------------------------
 % if isequal(state,'on')
-%     set(handles.Fix2Panel,'Visible','on')  
+%     set(handles.panel_Fix2,'Visible','on')  
 %     
 % %     set(handles.frame_civ2,'BackgroundColor',[1 1 0])
 % %     set(handles.frame_para_civ2,'BackgroundColor',[1 1 0])
@@ -4091,9 +4099,9 @@ if state
          msgbox_uvmat('ERROR','No input file')
         return
     end
-    set(handles.Fix2Panel,'Visible','on') 
+    set(handles.panel_Fix2,'Visible','on') 
 else
-    set(handles.Fix2Panel,'Visible','off') 
+    set(handles.panel_Fix2,'Visible','off') 
 end
 return
 set(handles.frame_fix2,'BackgroundColor',[1 1 0])
@@ -4148,19 +4156,19 @@ RootName=get(handles.RootName,'String');
          msgbox_uvmat('ERROR','No input file')
         return
     end
-    set(handles.Patch2Panel,'Visible','on')
+    set(handles.panel_Patch2,'Visible','on')
 else
-set(handles.Patch2Panel,'Visible','off')
+set(handles.panel_Patch2,'Visible','off')
 end
 % set(handles.frame_patch2,'BackgroundColor',[1 1 0])
-% set(handles.SmoothParam,'Visible','on')
-% set(handles.SmoothingParam,'Visible','on')
-% set(handles.MaxDiff,'Visible','on')
+% set(handles.num_SmoothParam,'Visible','on')
+% set(handles.num_SmoothingParam,'Visible','on')
+% set(handles.num_MaxDiff,'Visible','on')
 % set(handles.thresh_text2,'Visible','on')
-% set(handles.SubdomainSize,'Visible','on')
+% set(handles.num_SubdomainSize,'Visible','on')
 % set(handles.subdomain_text2,'Visible','on')
-% set(handles.Nx,'Visible','on')
-% set(handles.Ny,'Visible','on')
+% set(handles.num_Nx,'Visible','on')
+% set(handles.num_Ny,'Visible','on')
 % set(handles.nx_patch2_title,'Visible','on')
 % set(handles.ny_patch2_title,'Visible','on')
 % % set(handles.get_gridpatch2,'Visible','on')
@@ -4170,23 +4178,23 @@ end
 % set(handles.subdir_civ2_text,'Visible','on')
 % stereo_test=get(handles.compare,'Value');
 % if stereo_test==3
-%     set(handles.StereoCheck,'Visible','on')
+%     set(handles.check_Stereo,'Visible','on')
 % end
 
 % %------------------------------------------------------------------------
 % function desable_patch2(handles)
 % %------------------------------------------------------------------------
-% %set(handles.Patch2Panel,'Visible','off')
+% %set(handles.panel_Patch2,'Visible','off')
 % return
 % set(handles.frame_patch2,'BackgroundColor',[0.831 0.816 0.784])
-% set(handles.SmoothParam,'Visible','off')
-% set(handles.SmoothingParam,'Visible','off')
-% set(handles.MaxDiff,'Visible','off')
+% set(handles.num_SmoothParam,'Visible','off')
+% set(handles.num_SmoothingParam,'Visible','off')
+% set(handles.num_MaxDiff,'Visible','off')
 % set(handles.thresh_text2,'Visible','off')
-% set(handles.SubdomainSize,'Visible','off')
+% set(handles.num_SubdomainSize,'Visible','off')
 % set(handles.subdomain_text2,'Visible','off')
-% set(handles.Nx,'Visible','off')
-% set(handles.Ny,'Visible','off')
+% set(handles.num_Nx,'Visible','off')
+% set(handles.num_Ny,'Visible','off')
 % set(handles.nx_patch2_title,'Visible','off')
 % set(handles.ny_patch2_title,'Visible','off')
 % % set(handles.get_gridpatch2,'Visible','off')
@@ -4196,7 +4204,7 @@ end
 %     set(handles.subdir_civ2,'Visible','off')
 %     set(handles.subdir_civ2_text,'Visible','off')
 % end
-% set(handles.StereoCheck,'Visible','off')
+% set(handles.check_Stereo,'Visible','off')
 %------------------------------------------------------------------------
 function enable_pair1(handles,state)
 %------------------------------------------------------------------------
@@ -4757,7 +4765,7 @@ else
     set(handles.CivMode,'Value',1)
     set(handles.CivMode,'String',mode_store)
     set(handles.test_stereo1,'Value',0)
-    set(handles.StereoCheck,'Value',0)
+    set(handles.check_Stereo,'Value',0)
     set(handles.CivMode,'Value',1) % mode 'civX' selected by default
 end
 if test==3 && get(handles.PATCH1,'Value')
@@ -4766,9 +4774,9 @@ else
     set(handles.test_stereo1,'Visible','off')
 end
 if test==3 && get(handles.PATCH2,'Value')
-    set(handles.StereoCheck,'Visible','on')
+    set(handles.check_Stereo,'Visible','on')
 else
-    set(handles.StereoCheck,'Visible','off')
+    set(handles.check_Stereo,'Visible','off')
 end
 mode_Callback(hObject, eventdata, handles)
 
@@ -4899,15 +4907,15 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in StereoCheck.
+% --- Executes on button press in check_Stereo.
 function StereoCheck_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-if isequal(get(handles.StereoCheck,'Value'),0)
-    set(handles.SubdomainSize,'Visible','on')
-    set(handles.SmoothParam,'Visible','on')
+if isequal(get(handles.check_Stereo,'Value'),0)
+    set(handles.num_SubdomainSize,'Visible','on')
+    set(handles.num_SmoothParam,'Visible','on')
 else
-    set(handles.SubdomainSize,'Visible','off')
-    set(handles.SmoothParam,'Visible','off')
+    set(handles.num_SubdomainSize,'Visible','off')
+    set(handles.num_SmoothParam,'Visible','off')
 end
 
 %------------------------------------------------------------------------
@@ -5183,7 +5191,7 @@ set(hhciv.status,'BackgroundColor',[0 1 0])
 %     case 'CivX'
 %         set(handles.thresh_patch1,'Visible','off')
 %         set(handles.thresh_text1,'Visible','off')
-%         set(handles.MaxDiff,'Visible','off')
+%         set(handles.num_MaxDiff,'Visible','off')
 %         set(handles.thresh_text2,'Visible','off')
 %         set(handles.rho,'Style','edit')
 %         set(handles.rho,'String','1')
@@ -5201,61 +5209,61 @@ set(hhciv.status,'BackgroundColor',[0 1 0])
 % end
 
 
-% --- Executes on button press in checkbox42.
-function checkbox42_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox42 (see GCBO)
+% --- Executes on button press in check_Stereo.
+function check_Stereo_Callback(hObject, eventdata, handles)
+% hObject    handle to check_Stereo (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox42
+% Hint: get(hObject,'Value') returns toggle state of check_Stereo
 
 
 
-function SubdomainSize_Callback(hObject, eventdata, handles)
-% hObject    handle to SubdomainSize (see GCBO)
+function num_SubdomainSize_Callback(hObject, eventdata, handles)
+% hObject    handle to num_SubdomainSize (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of SubdomainSize as text
-%        str2double(get(hObject,'String')) returns contents of SubdomainSize as a double
+% Hints: get(hObject,'String') returns contents of num_SubdomainSize as text
+%        str2double(get(hObject,'String')) returns contents of num_SubdomainSize as a double
 
 
 
-function SmoothingParam_Callback(hObject, eventdata, handles)
-% hObject    handle to SmoothingParam (see GCBO)
+function num_SmoothingParam_Callback(hObject, eventdata, handles)
+% hObject    handle to num_SmoothingParam (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of SmoothingParam as text
-%        str2double(get(hObject,'String')) returns contents of SmoothingParam as a double
+% Hints: get(hObject,'String') returns contents of num_SmoothingParam as text
+%        str2double(get(hObject,'String')) returns contents of num_SmoothingParam as a double
 
 
 
-function MaxDiff_Callback(hObject, eventdata, handles)
-% hObject    handle to MaxDiff (see GCBO)
+function num_MaxDiff_Callback(hObject, eventdata, handles)
+% hObject    handle to num_MaxDiff (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of MaxDiff as text
-%        str2double(get(hObject,'String')) returns contents of MaxDiff as a double
+% Hints: get(hObject,'String') returns contents of num_MaxDiff as text
+%        str2double(get(hObject,'String')) returns contents of num_MaxDiff as a double
 
 
-function Nx_Callback(hObject, eventdata, handles)
-% hObject    handle to Nx (see GCBO)
+function num_Nx_Callback(hObject, eventdata, handles)
+% hObject    handle to num_Nx (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of Nx as text
-%        str2double(get(hObject,'String')) returns contents of Nx as a double
+% Hints: get(hObject,'String') returns contents of num_Nx as text
+%        str2double(get(hObject,'String')) returns contents of num_Nx as a double
 
 
-function Ny_Callback(hObject, eventdata, handles)
-% hObject    handle to Ny (see GCBO)
+function num_Ny_Callback(hObject, eventdata, handles)
+% hObject    handle to num_Ny (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of Ny as text
-%        str2double(get(hObject,'String')) returns contents of Ny as a double
+% Hints: get(hObject,'String') returns contents of num_Ny as text
+%        str2double(get(hObject,'String')) returns contents of num_Ny as a double
 
 
 % --------------------------------------------------------------------
@@ -5273,7 +5281,7 @@ end
 function CivX_Callback(hObject, eventdata, handles)
 %set(handles.thresh_patch1,'Visible','off')
 set(handles.thresh_text1,'Visible','off')
-set(handles.MaxDiff,'Visible','off')
+set(handles.num_MaxDiff,'Visible','off')
 set(handles.thresh_text2,'Visible','off')
 set(handles.rho,'Style','edit')
 set(handles.rho,'String','1')
@@ -5288,7 +5296,7 @@ if get(handles.PATCH1,'Value')
     set(handles.thresh_text1,'Visible','on')
 end
 if get(handles.PATCH2,'Value')
-    set(handles.MaxDiff,'Visible','on')
+    set(handles.num_MaxDiff,'Visible','on')
     set(handles.thresh_text2,'Visible','on')
 end
 set(handles.rho,'Style','popupmenu')
@@ -5302,22 +5310,30 @@ function struct=read_panel(handle)
 hchild=get(handle,'children');
 for ichild=1:numel(hchild)
     object_style=get(hchild(ichild),'Style');
+    tag=get(hchild(ichild),'tag');
     check_input=1;%default
     switch object_style
         case 'edit'
-            input=str2double(get(hchild(ichild),'String'));
-            %deal with undefined input: retrieve the default value stored as UserData
-            if isnan(input)
-                input=get(hchild(ichild),'UserData');
-                set(hchild(ichild),'String',num2str(input))
+            switch(tag(1:4))
+                case 'num_'
+                    input=str2double(get(hchild(ichild),'String'));
+                    %deal with undefined input: retrieve the default value stored as UserData
+                    if isnan(input)
+                        input=get(hchild(ichild),'UserData');
+                        set(hchild(ichild),'String',num2str(input))
+                    end
+                case 'txt_'
+                    input=get(hchild(ichild),'String');
             end
+            key=tag(5:end);
         case 'checkbox'
-            input=get(hchild(ichild),'Value');  
+            input=get(hchild(ichild),'Value');
+            key=tag(7:end);
         otherwise
-                check_input=0;
-                
+            check_input=0;          
     end
     if check_input
-        eval(['struct.' get(hchild(ichild),'tag') '=input;'])
+        key
+        eval(['struct.' key '=input;'])
     end
 end
