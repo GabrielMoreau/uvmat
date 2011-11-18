@@ -1618,35 +1618,39 @@ if isequal(get(handles.Matlab,'checked'),'on')
 else
     CivMode='CivX';
 end
+binary_list={};
 switch CivMode
-     case {'CivX','CivAll'}      
-         for bin_name={'Civ1Bin','Civ2Bin','PatchBin','FixBin','CivBin'}
-             if isfield(param.global,bin_name{1})
-                 if ~exist(param.global.(bin_name{1}),'file')%look for the full path if the file name has been defined with a relative path in PARAM.xml
-                     fullname=fullfile(path_civ,param.global.(bin_name{1}));
-                     if exist(fullname,'file')
-                         param.global.(bin_name{1})=fullname;
-                     else
-                         msgbox_uvmat('ERROR',['Binary ' param.global.(bin_name{1}) ' defined in PARAM.xm does not exist'])
-                         return
-                     end
-                 else
-                     [path,name,ext]=fileparts(param.global.(bin_name{1}));
-                     currentdir=pwd;
-                     cd(path);
-                     binpath=pwd;%path of the binary
-                     param.global.(bin_name{1})=fullfile(binpath,[name ext]);
-%                      display(param.global.(bin_name{1}));
-                     cd(currentdir);
-                 end
-                 
-             end
-         end
+    case 'CivX'
+        binary_list={'Civ1Bin','Civ2Bin','PatchBin','FixBin'};
+    case 'CivAll'
+        binary_list={'Civ'}
     case 'Matlab'
         if batch
             % vérifier Matlab installé sur le cluster
             % difficile a faire a priori
         end          
+end
+for bin_name=binary_list
+    if isfield(param.global,bin_name{1})
+        if ~exist(param.global.(bin_name{1}),'file')%look for the full path if the file name has been defined with a relative path in PARAM.xml
+            fullname=fullfile(path_civ,param.global.(bin_name{1}));
+            if exist(fullname,'file')
+                param.global.(bin_name{1})=fullname;
+            else
+                msgbox_uvmat('ERROR',['Binary ' param.global.(bin_name{1}) ' defined in PARAM.xml does not exist'])
+                return
+            end
+        else
+            [path,name,ext]=fileparts(param.global.(bin_name{1}));
+            currentdir=pwd;
+            cd(path);
+            binpath=pwd;%path of the binary
+            param.global.(bin_name{1})=fullfile(binpath,[name ext]);
+            %                      display(param.global.(bin_name{1}));
+            cd(currentdir);
+        end
+        
+    end
 end
 
 display('files OK, processing...')
@@ -1743,7 +1747,8 @@ for ifile=1:nbfield
             param.civ1.term_b=num2stra(num_b_civ1(j),nom_type_nc);%
             
             % read mask parameters
-            if get(handles.check_Mask,'Value')
+            dummy=get(handles.check_Mask,'Value');
+            if dummy{1}
                 maskdispl=get(handles.txt_MaskName,'String');
                 if exist(maskdispl,'file')
                     param.civ1.maskname=maskdispl;
@@ -1766,7 +1771,8 @@ for ifile=1:nbfield
             end
             
             % read grid parameters
-            if get(handles.check_Grid,'Value')
+            dummy=get(handles.check_Grid,'Value');
+            if dummy{1}
                 param.civ1.gridflag='y';
                 gridname=get(handles.txt_GridName,'String');
                 if isequal(gridname(end-3:end),'grid')
@@ -4316,8 +4322,10 @@ if isequal(get(handles.rho,'Style'),'popupmenu')
     index=get(handles.rho,'Value');
     par.rho=par.rho{index};
 end
-par.dx=get(handles.num_Dx,'String');
-par.dy=get(handles.num_Dy,'String');
+dummy=get(handles.num_Dx,'String');
+par.dx=dummy{1};
+dummy=get(handles.num_Dy,'String');
+par.dy=dummy{1};
 if isnan(str2double(par.dx))
     if isempty(get(handles.txt_GridName,'String'));
         par.dx='0'; %just read by civ program, not used
@@ -4346,7 +4354,8 @@ par.npy=num2str(sizim(1));
 
 % end
 %time=get(handles.RootName,'UserData'); %get the set of times
-par.gridname=get(handles.txt_GridName,'String');
+dummy=get(handles.txt_GridName,'String');
+par.gridname=dummy{1};
 par.gridflag='y';
 if strcmp(par.gridname,'')|| isempty(par.gridname)
     par.gridname='nogrid';
