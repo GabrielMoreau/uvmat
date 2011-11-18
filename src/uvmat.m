@@ -241,7 +241,8 @@ set(handles.Fields,'string',{''})
 menu_str={'';'phys';'px';'phys_polar'};
 UvData.OpenParam.NbBuiltin=numel(menu_str); %number of functions
 path_uvmat=fileparts(which('uvmat'));
-addpath(fullfile(path_uvmat,'transform_field'))
+addpath (path_uvmat) ; %add the path to UVMAT, (useful in case of change of working directory after civ has been s opened in the working directory)
+addpath(fullfile(path_uvmat,'transform_field'))%add the path to transform functions,
 fct_handle{1,1}=[];
 testexist=zeros(size(menu_str'));%default
 testexist(1)=1;

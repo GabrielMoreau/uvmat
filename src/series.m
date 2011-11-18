@@ -134,7 +134,8 @@ nb_builtin_ACTION=numel(fct_menu); %number of functions
 nb_transform=numel(transform_menu);
 [path_series,name,ext]=fileparts(which('series'));
 path_series=fullfile(path_series,'series');%path of the function 'series'
-path_transform=fullfile(path_series,'transform_field');%path of the field transform functions 
+addpath path_series ; %add the path to UVMAT, (useful in case of change of working directory after civ has been s opened in the working directory)
+path_transform=fullfile(path_series,'transform_field');%path to the field transform functions 
 for ilist=1:length(fct_menu)
     fct_path{ilist,1}=path_series;%paths of the fuctions buil-in in 'series.m'
 end

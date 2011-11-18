@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 17-Nov-2011 23:05:55
+% Last Modified by GUIDE v2.5 18-Nov-2011 10:14:23
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -47,7 +47,6 @@ end
 function civ_OpeningFcn(hObject, eventdata, handles, param)
 %------------------------------------------------------------------------
 % This function has no output args, see OutputFcn.
-global patch_newBin %=1 if new patch processing available
 %filebase: root name
 %nom_type: nomencalture used ('png_old','_i_j'...)
 %list of field numbers to process
@@ -64,8 +63,9 @@ filebase=''; % root file name ('filebase'.civ)
 ext=[];
 
 %% read names of the .exe file to adjust the interface according to available binaries
-path_uvmat=which('uvmat');% check the path detected for source file uvmat
-path_UVMAT=fileparts(path_uvmat); %path to UVMAT
+%path_uvmat=which('uvmat');% check the path detected for source file uvmat
+path_civ=fileparts(which('civ')); %path to civ
+addpath (path_civ) ; %add the path to UVMAT, (useful in case of change of working directory after civ has been s opened in the working directory)
 errormsg=[];%default error message
 xmlfile='PARAM.xml';
 if exist(xmlfile,'file')
@@ -94,7 +94,7 @@ if test_batch==0
 end
 if isfield(sparam.RunParam,'CivBin')
     if ~exist(sparam.RunParam.CivBin,'file')
-        sparam.RunParam.CivBin=fullfile(path_UVMAT,sparam.RunParam.CivBin);
+        sparam.RunParam.CivBin=fullfile(path_civ,sparam.RunParam.CivBin);
     end
 else
     sparam.RunParam.CivBin='';
@@ -164,15 +164,7 @@ end
 set(handles.RootName,'String',filebase);
 set(handles.ImaDoc,'String',ext)
 
-% patch_newBin=exist(sparam.RunParam.CivBin,'file');
-% set(handles.subdir_civ1,'String',subdir)%default subdir on which uvmat was working
-% set(handles.subdir_civ2,'String',subdir)%default subdir on which uvmat was working
-
 %initiate advised operations
-% if isemp(ind_opening,[])
-%     ind_opening=1; % default
-% end
-% set default operation options
 enable_civ1(handles,0)
 enable_civ2(handles,0)
 %enable_pair1(handles,'on')
@@ -1520,8 +1512,8 @@ end
 
 %% check mask if selecetd 
 %could be included in get_mask callback ?
-if isequal(get(handles.get_mask_civ1,'Value'),1)
-    maskname=get(handles.mask_civ1,'String');
+if isequal(get(handles.check_Mask,'Value'),1)
+    maskname=get(handles.txt_MaskName,'String');
     if ~exist(maskname,'file')
         get_mask_civ1_Callback(hObject, eventdata, handles);
     end
@@ -1532,8 +1524,8 @@ if isequal(get(handles.get_mask_fix1,'Value'),1)
         get_mask_fix1_Callback(hObject, eventdata, handles);
     end
 end
-if isequal(get(handles.get_mask_civ2,'Value'),1)
-    maskname=get(handles.mask_civ2,'String');
+if isequal(get(handles.check_Mask,'Value'),1)
+    maskname=get(handles.txt_Mask,'String');
     if ~exist(maskname,'file')
         get_mask_civ2_Callback(hObject, eventdata, handles);
     end
@@ -1570,7 +1562,7 @@ nbfield=numel(num1_civ1);
 nbslice=numel(num_a_civ1);
 
 %% read the PARAM.xml file to get the binaries (and batch_mode if batch)
-path_UVMAT=fileparts(which('uvmat')); %path to the source directory of uvmat
+path_civ=fileparts(which('civ')); %path to the source directory of uvmat
 xmlfile='PARAM.xml';
 if exist(xmlfile,'file')% search parameter xml file in the whole matlab path
     t=xmltree(xmlfile);
@@ -1631,7 +1623,7 @@ switch CivMode
          for bin_name={'Civ1Bin','Civ2Bin','PatchBin','FixBin','CivBin'}
              if isfield(param.global,bin_name{1})
                  if ~exist(param.global.(bin_name{1}),'file')%look for the full path if the file name has been defined with a relative path in PARAM.xml
-                     fullname=fullfile(path_UVMAT,param.global.(bin_name{1}));
+                     fullname=fullfile(path_civ,param.global.(bin_name{1}));
                      if exist(fullname,'file')
                          param.global.(bin_name{1})=fullname;
                      else
@@ -1751,8 +1743,8 @@ for ifile=1:nbfield
             param.civ1.term_b=num2stra(num_b_civ1(j),nom_type_nc);%
             
             % read mask parameters
-            if get(handles.get_mask_civ1,'Value')
-                maskdispl=get(handles.mask_civ1,'String');
+            if get(handles.check_Mask,'Value')
+                maskdispl=get(handles.txt_MaskName,'String');
                 if exist(maskdispl,'file')
                     param.civ1.maskname=maskdispl;
                     param.civ1.maskflag='y';
@@ -1774,9 +1766,9 @@ for ifile=1:nbfield
             end
             
             % read grid parameters
-            if get(handles.browse_gridciv1,'Value')
+            if get(handles.check_Grid,'Value')
                 param.civ1.gridflag='y';
-                gridname=get(handles.grid_civ1,'String');
+                gridname=get(handles.txt_GridName,'String');
                 if isequal(gridname(end-3:end),'grid')
                     nbslice_grid=str2double(gridname(1:end-4)); %
                     if ~isnan(nbslice_grid)
@@ -1907,12 +1899,12 @@ for ifile=1:nbfield
             param.civ2.term_b=num2stra(num_b_civ2(j),nom_type_nc);
             param.civ2.filename_nc1=filecell.nc.civ1{ifile,j};
             param.civ2.filename_nc1(end-2:end)=[]; % remove '.nc'
-            test_mask=get(handles.get_mask_civ2,'Value');
+            test_mask=get(handles.check_Mask,'Value');
             if test_mask==0
                 param.civ2.maskname='noFile use default';
                 param.civ2.maskflag='n';
             else
-                maskdispl=get(handles.mask_civ2,'String');
+                maskdispl=get(handles.txt_Mask,'String');
                 if exist(maskdispl,'file')
                     param.civ2.maskname=maskdispl;
                     param.civ2.maskflag='y';
@@ -1929,7 +1921,7 @@ for ifile=1:nbfield
                     end
                 end
             end
-            gridname=get(handles.grid_civ2,'String');
+            gridname=get(handles.txt_GridName,'String');
             if numel(gridname)>=4 && isequal(gridname(end-3:end),'grid')
                 nbslice_grid=str2double(gridname(1:end-4)); %
                 if ~isnan(nbslice_grid)
@@ -3416,53 +3408,56 @@ if ~get(handles.CIV2,'Value') && ~get(handles.CIV1,'Value') && ~get(handles.FIX1
     find_netcpair_civ2(hObject, eventdata, handles);
 end
 
-%------------------------------------------------------------------------
-% --- Executes on button press in get_mask_civ1: select box for mask option
-function get_mask_civ1_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-maskval=get(handles.get_mask_civ1,'Value');
-if isequal(maskval,0)
-    set(handles.mask_civ1,'String','')
-else
-    mask_displ='no mask'; %default
-    filebase=get(handles.RootName,'String');
-    [ nbslice_mask, flag_mask]=get_mask(filebase,handles);
-    if isequal(flag_mask,1)
-        mask_displ=[num2str(nbslice_mask) 'mask'];
-    elseif get(handles.compare,'Value')>1 & ~isequal(mask_displ,'no mask')% look for the second mask series
-        common_path=fileparts(filebase);
-        filebase_a=fullfile(common_path,get(handles.RootName_1,'String'));
-        [nbslice_a, flag_mask_a]=get_mask(filebase_a,handles);
-        if isequal(flag_mask_a,0) || ~isequal(nbslice_a,nbslice_mask)
-            mask_displ='no mask';
-        end
-    end
-    if isequal(mask_displ,'no mask')
-        [FileName, PathName, filterindex] = uigetfile( ...
-            {'*.png', ' (*.png)';
-            '*.png',  '.png files '; ...
-            '*.*', 'All Files (*.*)'}, ...
-            'Pick a mask file *.png',filebase);
-        mask_displ=fullfile(PathName,FileName);
-        if ~exist(mask_displ,'file')
-            mask_displ='no mask';
-        end
-    end
-    if isequal(mask_displ,'no mask')
-        set(handles.get_mask_civ1,'Value',0)
-        set(handles.get_mask_fix1,'Value',0)
-        set(handles.get_mask_civ2,'Value',0)
-        set(handles.get_mask_fix2,'Value',0)
-    else
-        set(handles.get_mask_fix1,'Value',1)
-        set(handles.get_mask_fix2,'Value',1)
-    end
-    set(handles.mask_civ1,'String',mask_displ)
-    set(handles.mask_fix1,'String',mask_displ)
-    set(handles.mask_civ2,'String',mask_displ)
-    set(handles.mask_fix2,'String',mask_displ)
-end
-set(handles.get_mask_civ2,'Value',maskval)%update the civ2 mask with the same option as civ1
+% %------------------------------------------------------------------------
+% % --- Executes on button press in check_Mask: select box for mask option
+% function check_Mask_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% maskval=get(handles.check_Mask,'Value');
+% if isequal(maskval,0)
+%     set(handles.txt_MaskName,'Visible','off')
+% %     set(handles.txt_MaskName,'String','')
+% else
+%     mask_displ='no mask'; %default
+%     filebase=get(handles.RootName,'String');
+%     [ nbslice_mask, flag_mask]=get_mask(filebase,handles);
+%     if isequal(flag_mask,1)
+%         mask_displ=[num2str(nbslice_mask) 'mask'];
+%     elseif get(handles.compare,'Value')>1 & ~isequal(mask_displ,'no mask')% look for the second mask series
+%         common_path=fileparts(filebase);
+%         filebase_a=fullfile(common_path,get(handles.RootName_1,'String'));
+%         [nbslice_a, flag_mask_a]=get_mask(filebase_a,handles);
+%         if isequal(flag_mask_a,0) || ~isequal(nbslice_a,nbslice_mask)
+%             mask_displ='no mask';
+%         end
+%     end
+%     if isequal(mask_displ,'no mask')
+%         [FileName, PathName, filterindex] = uigetfile( ...
+%             {'*.png', ' (*.png)';
+%             '*.png',  '.png files '; ...
+%             '*.*', 'All Files (*.*)'}, ...
+%             'Pick a mask file *.png',filebase);
+%         mask_displ=fullfile(PathName,FileName);
+%         if exist(mask_displ,'file')
+%             set(handles.txt_MaskName,'Visible','on')
+%             set(handles.txt_MaskName,'String',mask_displ)
+% %             mask_displ='no mask';
+%         end
+%     end
+%     if isequal(mask_displ,'no mask')
+%         set(handles.check_Mask,'Value',0)
+%         set(handles.get_mask_fix1,'Value',0)
+%         set(handles.check_Mask,'Value',0)
+%         set(handles.get_mask_fix2,'Value',0)
+%     else
+%         set(handles.get_mask_fix1,'Value',1)
+%         set(handles.get_mask_fix2,'Value',1)
+%     end
+%     set(handles.txt_MaskName,'String',mask_displ)
+%     set(handles.mask_fix1,'String',mask_displ)
+%     set(handles.txt_Mask,'String',mask_displ)
+%     set(handles.mask_fix2,'String',mask_displ)
+% end
+% set(handles.check_Mask,'Value',maskval)%update the civ2 mask with the same option as civ1
 
 %------------------------------------------------------------------------
 % --- Executes on button press in get_mask_fix1.
@@ -3497,24 +3492,24 @@ else
     end
     if isequal(mask_displ,'no mask')
         set(handles.get_mask_fix1,'Value',0)
-        set(handles.get_mask_civ2,'Value',0)
+        set(handles.check_Mask,'Value',0)
         set(handles.get_mask_fix2,'Value',0)
     else
-        %set(handles.get_mask_civ2,'Value',1)
+        %set(handles.check_Mask,'Value',1)
         set(handles.get_mask_fix2,'Value',1)
     end
     set(handles.mask_fix1,'String',mask_displ)
-    set(handles.mask_civ2,'String',mask_displ)
+    set(handles.txt_Mask,'String',mask_displ)
     set(handles.mask_fix2,'String',mask_displ)
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in get_mask_civ2: select box for mask option
+% --- Executes on button press in check_Mask: select box for mask option
 function get_mask_civ2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-maskval=get(handles.get_mask_civ2,'Value');
+maskval=get(handles.check_Mask,'Value');
 if isequal(maskval,0)
-    set(handles.mask_civ2,'String','')
+    set(handles.txt_Mask,'String','')
 else
     mask_displ='no mask'; %default
     filebase=get(handles.RootName,'String');
@@ -3540,12 +3535,12 @@ else
         end
     end
     if isequal(mask_displ,'no mask')
-        set(handles.get_mask_civ2,'Value',0)
+        set(handles.check_Mask,'Value',0)
         set(handles.get_mask_fix2,'Value',0)
     else
         set(handles.get_mask_fix2,'Value',1)
     end
-    set(handles.mask_civ2,'String',mask_displ)
+    set(handles.txt_Mask,'String',mask_displ)
     set(handles.mask_fix2,'String',mask_displ)
 end
 
@@ -3707,69 +3702,134 @@ set(handles.subdir_civ2,'String',subdir);
 
 
 %------------------------------------------------------------------------
-% --- Executes on button press in browse_gridciv1.
-function browse_gridciv1_Callback(hObject, eventdata, handles)
+% --- Executes on button press in check_Grid.
+function check_Grid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-value=get(handles.browse_gridciv1,'Value');
+value=get(hObject,'Value');
+hparent=get(hObject,'parent');
+hchildren=get(hparent,'children');
+handle_txtbox=findobj(hchildren,'tag','txt_GridName');
+handle_dx=findobj(hchildren,'tag','num_Dx');
+handle_dy=findobj(hchildren,'tag','num_Dy');
 testgrid=0;
+filegrid='';
 if value
     filebase=get(handles.RootName,'String');
-    [nbslice, flag_grid]=get_grid(filebase,handles);
+    [nbslice, flag_grid]=get_grid(filebase,handles);% look for a grid with appropriate name 
     if isequal(flag_grid,1)
         filegrid=[num2str(nbslice) 'grid'];
         testgrid=1;
-    else
+    else % browse for a grid 
+        filegrid=get(hObject,'UserData');%look for previous grid name stored as UserData
+        if exist(filegrid,'file')
+            filebase=filegrid;
+        end
         [FileName, PathName, filterindex] = uigetfile( ...
             {'*.grid', ' (*.grid)';
             '*.grid',  '.grid files '; ...
             '*.*', 'All Files (*.*)'}, ...
             'Pick a file',filebase);
         filegrid=fullfile(PathName,FileName);
+        set(hObject,'UserData',filegrid);%store for future use
         if ~(isempty(FileName)||isempty(PathName)||isequal(FileName,0)||~exist(filegrid,'file'))
             testgrid=1;
         end
     end
 end
 if testgrid
-    set(handles.browse_gridciv2,'Value',1)
-    set(handles.get_gridpatch1,'Value',1)
-    set(handles.get_gridpatch2,'Value',1)
-    set(handles.dx_civ1,'Visible','off');
-    set(handles.dy_civ1,'Visible','off');
-    set(handles.dx_civ2,'Visible','off');
-    set(handles.dy_civ2,'Visible','off');
-    set(handles.grid_civ1,'String',filegrid)
-    set(handles.grid_patch1,'String',filegrid)
-    set(handles.grid_civ2,'String',filegrid)
-    set(handles.grid_patch2,'String',filegrid)
+    set(handle_dx,'Visible','off');
+    set(handle_dy,'Visible','off');
+    set(handle_txtbox,'Visible','on')
+    set(handle_txtbox,'String',filegrid)
 else
-    set(handles.browse_gridciv1,'Value',0);
-    set(handles.browse_gridciv2,'Value',0);
-    set(handles.get_gridpatch1,'Value',0)
-    set(handles.get_gridpatch2,'Value',0)
-    set(handles.dx_civ1,'Visible','on');
-    set(handles.dy_civ1,'Visible','on');
-    set(handles.dx_civ2,'Visible','on');
-    set(handles.dy_civ2,'Visible','on');
-    set(handles.grid_civ1,'String','')
-    set(handles.grid_patch1,'String','')
-    set(handles.grid_civ2,'String','')
-    set(handles.grid_patch2,'String','')
+    set(hObject,'Value',0);
+    set(handle_dx,'Visible','on');
+    set(handle_dy,'Visible','on');
+    set(handle_txtbox,'Visible','off')
+end
+
+%% if hObject is on the civ1 frame, duplicate action for civ2 frame
+PanelName=get(hparent,'tag');
+if strcmp(PanelName,'panel_Civ1')
+    hchildren=get(handles.panel_Civ2,'children');
+    handle_checkbox=findobj(hchildren,'tag','check_Grid');
+    handle_txtbox=findobj(hchildren,'tag','txt_GridName');
+    handle_dx=findobj(hchildren,'tag','num_Dx');
+    handle_dy=findobj(hchildren,'tag','num_Dy');
+    set(handle_checkbox,'UserData',filegrid);%store for future use
+    if testgrid
+        set(handle_checkbox,'Value',1);
+        set(handle_dx,'Visible','off');
+        set(handle_dy,'Visible','off');
+        set(handle_txtbox,'Visible','on')
+        set(handle_txtbox,'String',filegrid)
+    else
+        set(handle_checkbox,'Value',0);
+        set(handles.check_Grid,'Value',0);
+        set(handle_dx,'Visible','on');
+        set(handle_dy,'Visible','on');
+        set(handle_txtbox,'Visible','off')
+    end 
+end
+%------------------------------------------------------------------------
+% --- Executes on button press in check_Mask.
+function check_Mask_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+value=get(hObject,'Value');
+testmask=0;
+if value
+    filebase=get(handles.RootName,'String');
+    [nbslice, flag_mask]=get_mask(filebase,handles);% look for a mask with appropriate name 
+    if isequal(flag_mask,1)
+        filemask=[num2str(nbslice) 'mask'];
+        testmask=1;
+    else % browse for a mask 
+        filemask=get(handles.check_Mask,'UserData');%look for previous mask name stored as UserData
+        if exist(filemask,'file')
+            filebase=filemask;
+        end
+        [FileName, PathName, filterindex] = uigetfile( ...
+            {'*.png', ' (*.png)';
+            '*.png',  '.png files '; ...
+            '*.*', 'All Files (*.*)'}, ...
+            'Pick a mask file *.png',filebase);
+        filemask=fullfile(PathName,FileName);
+        set(handles.check_Mask,'UserData',filemask);%store for future use
+        if ~(isempty(FileName)||isempty(PathName)||isequal(FileName,0)||~exist(filemask,'file'))
+            testmask=1;
+        end
+    end
+end
+if testmask
+    set(handles.num_Dx,'Visible','off');
+    set(handles.num_Dy,'Visible','off');
+    set(handles.num_Dx,'Visible','off');
+    set(handles.num_Dy,'Visible','off');
+    set(handles.txt_MaskName,'Visible','on')
+    set(handles.txt_MaskName,'String',filemask)
+else
+    set(handles.check_Mask,'Value',0);
+    set(handles.check_Grid,'Value',0);
+    set(handles.num_Dx,'Visible','on');
+    set(handles.num_Dy,'Visible','on');
+    set(handles.num_Dx,'Visible','on');
+    set(handles.num_Dy,'Visible','on');
+    set(handles.txt_MaskName,'Visible','off')
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in browse_gridciv1.
+% --- Executes on button press in check_Grid.
 function browse_gridciv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-value=get(handles.browse_gridciv2,'Value');
+value=get(handles.check_Grid,'Value');
 if value
     filebase=get(handles.RootName,'String');
     [nbslice, flag_grid]=get_grid(filebase,handles);
     if isequal(flag_grid,1)
         mask_displ=[num2str(nbslice) 'grid'];
-        set(handles.grid_civ2,'String',mask_displ)
-        set(handles.dx_civ2,'Visible','off');
-        set(handles.dy_civ2,'Visible','off');
+        set(handles.txt_GridName,'String',mask_displ)
+        set(handles.num_Dx,'Visible','off');
+        set(handles.num_Dy,'Visible','off');
     else
         [FileName, PathName, filterindex] = uigetfile( ...
             {'*.grid', ' (*.grid)';
@@ -3778,26 +3838,26 @@ if value
             'Pick a file',filebase);
         filegrid=fullfile(PathName,FileName);
         if isempty(FileName)||isempty(PathName)||isequal(FileName,0)||~exist(filegrid,'file')
-            set(handles.browse_gridciv2,'Value',0);
-            set(handles.grid_civ2,'string','');
-            set(handles.dx_civ2,'Visible','on');
-            set(handles.dy_civ2,'Visible','on');
-            set(handles.grid_civ2,'string','');
+            set(handles.check_Grid,'Value',0);
+            set(handles.txt_GridName,'string','');
+            set(handles.num_Dx,'Visible','on');
+            set(handles.num_Dy,'Visible','on');
+            set(handles.txt_GridName,'string','');
         else
-            set(handles.grid_civ2,'string',filegrid);
-            set(handles.dx_civ2,'Visible','off');
-            set(handles.dy_civ2,'Visible','off');
-            set(handles.grid_civ2,'string',filegrid);
+            set(handles.txt_GridName,'string',filegrid);
+            set(handles.num_Dx,'Visible','off');
+            set(handles.num_Dy,'Visible','off');
+            set(handles.txt_GridName,'string',filegrid);
         end
     end
 else
-    set(handles.grid_civ2,'string','');
-    set(handles.dx_civ2,'Visible','on');
-    set(handles.dy_civ2,'Visible','on');
-    set(handles.grid_civ2,'string','');
+    set(handles.txt_GridName,'string','');
+    set(handles.num_Dx,'Visible','on');
+    set(handles.num_Dy,'Visible','on');
+    set(handles.txt_GridName,'string','');
 end
 
-% % --- Executes on button press in browse_gridciv2.
+% % --- Executes on button press in check_Grid.
 % function browse_gridciv2_Callback(hObject, eventdata, handles)
 %
 % filebase=get(handles.RootName,'String');
@@ -3807,9 +3867,9 @@ end
 %         '*.*', 'All Files (*.*)'}, ...
 %         'Pick a file',filebase);
 % filegrid=fullfile(PathName,FileName);
-% set(handles.grid_civ2,'string',filegrid);
-% set(handles.dx_civ2,'String',' ');
-% set(handles.dy_civ2,'String',' ');
+% set(handles.txt_GridName,'string',filegrid);
+% set(handles.num_Dx,'String',' ');
+% set(handles.num_Dy,'String',' ');
 % % set(handles.grid_patch2,'string',filegrid);
 
 % --- Executes on button press in get_gridpatch1.
@@ -3861,8 +3921,8 @@ set(handles.isy,'Visible',state)
 set(handles.shiftx,'Visible',state)
 set(handles.shifty,'Visible',state)
 set(handles.rho,'Visible',state)
-set(handles.dx_civ1,'Visible',state)
-set(handles.dy_civ1,'Visible',state)
+set(handles.num_Dx,'Visible',state)
+set(handles.num_Dy,'Visible',state)
 set(handles.SearchRange,'Visible',state)
 set(handles.u_title,'Visible',state)
 set(handles.v_title,'Visible',state)
@@ -3872,19 +3932,19 @@ set(handles.umin,'Visible',state)
 set(handles.umax,'Visible',state)
 set(handles.vmin,'Visible',state)
 set(handles.vmax,'Visible',state)
-set(handles.grid_civ1,'Visible',state)
-set(handles.mask_civ1,'Visible',state)
-set(handles.browse_gridciv1,'Visible',state)
-set(handles.get_mask_civ1,'Visible',state)
+set(handles.txt_GridName,'Visible',state)
+set(handles.txt_MaskName,'Visible',state)
+set(handles.check_Grid,'Visible',state)
+set(handles.check_Mask,'Visible',state)
 set(handles.parameters,'Visible',state)
 set(handles.grid,'Visible',state)
-set(handles.dx_civ1,'Visible',state)
-set(handles.dy_civ1,'Visible',state)
-set(handles.ImaThreshold,'Visible',state)
+set(handles.num_Dx,'Visible',state)
+set(handles.num_Dy,'Visible',state)
+set(handles.check_Threshold,'Visible',state)
 if isequal(state,'off')
     set(handles.MinIma,'Visible','off')
     set(handles.MaxIma,'Visible','off')
-    set(handles.ImaThreshold,'Value',0)
+    set(handles.check_Threshold,'Value',0)
 end
 set(handles.dx_civ1_title,'Visible',state)
 set(handles.dy_civ1_title,'Visible',state)
@@ -4011,16 +4071,16 @@ set(handles.iby_civ2,'Visible',state)
 set(handles.decimal,'Visible',state)
 set(handles.deformation,'Visible',state)
 set(handles.rho_civ2,'Visible',state)
-set(handles.dx_civ2,'Visible',state)
-set(handles.dy_civ2,'Visible',state)
-set(handles.browse_gridciv2,'Visible',state)
-set(handles.get_mask_civ2,'Visible',state)
+set(handles.num_Dx,'Visible',state)
+set(handles.num_Dy,'Visible',state)
+set(handles.check_Grid,'Visible',state)
+set(handles.check_Mask,'Visible',state)
 set(handles.parameters,'Visible',state)
 set(handles.grid,'Visible',state)
 set(handles.parameters_text,'Visible',state)
 set(handles.grid_text,'Visible',state)
-set(handles.grid_civ2,'Visible',state)
-set(handles.mask_civ2,'Visible',state)
+set(handles.txt_GridName,'Visible',state)
+set(handles.txt_Mask,'Visible',state)
 set(handles.dx_civ2_title,'Visible',state)
 set(handles.dy_civ2_title,'Visible',state)
 set(handles.ibx_civ2_text,'Visible',state)
@@ -4227,18 +4287,18 @@ if isequal(get(handles.rho,'Style'),'popupmenu')
     index=get(handles.rho,'Value');
     par.rho=par.rho{index};
 end
-par.dx=get(handles.dx_civ1,'String');
-par.dy=get(handles.dy_civ1,'String');
+par.dx=get(handles.num_Dx,'String');
+par.dy=get(handles.num_Dy,'String');
 if isnan(str2double(par.dx))
-    if isempty(get(handles.grid_civ1,'String'));
+    if isempty(get(handles.txt_GridName,'String'));
         par.dx='0'; %just read by civ program, not used
     else
         par.dx='20';%default
-        set(handles.dx_civ1,'String','20');
+        set(handles.num_Dx,'String','20');
     end
 end
 if isnan(str2double(par.dy))
-    if isempty(get(handles.grid_civ1,'String'));
+    if isempty(get(handles.txt_GridName,'String'));
         par.dy='0';%just read by civ program, not used
     else
         par.dy='20';%default
@@ -4257,7 +4317,7 @@ par.npy=num2str(sizim(1));
 
 % end
 %time=get(handles.RootName,'UserData'); %get the set of times
-par.gridname=get(handles.grid_civ1,'String');
+par.gridname=get(handles.txt_GridName,'String');
 par.gridflag='y';
 if strcmp(par.gridname,'')|| isempty(par.gridname)
     par.gridname='nogrid';
@@ -4330,22 +4390,22 @@ par.iby=get(handles.iby_civ2,'String');
 par.rho=get(handles.rho_civ2,'String');
 par.decimal=int2str(get(handles.decimal,'Value'));
 par.deformation=int2str(get(handles.deformation,'Value'));
-par.dx=get(handles.dx_civ2,'String');
-par.dy=get(handles.dy_civ2,'String');
+par.dx=get(handles.num_Dx,'String');
+par.dy=get(handles.num_Dy,'String');
 if isnan(str2double(par.dx))
-    if isempty(get(handles.grid_civ2,'String'));
+    if isempty(get(handles.txt_GridName,'String'));
         par.dx='0'; %just read by civ program, not used
     else
         par.dx='20';%default
-        set(handles.dx_civ2,'String','20');
+        set(handles.num_Dx,'String','20');
     end
 end
 if isnan(str2double(par.dy))
-    if isempty(get(handles.grid_civ2,'String'));
+    if isempty(get(handles.txt_GridName,'String'));
         par.dy='0';%just read by civ program, not used
     else
         par.dy='20';%default
-        set(handles.dy_civ2,'String','20');
+        set(handles.num_Dy,'String','20');
     end
 end
 par.pxcmx='1';
@@ -4355,7 +4415,7 @@ sizim=size(A);
 par.npx=num2str(sizim(2));
 par.npy=num2str(sizim(1));
 %time=get(handles.RootName,'UserData'); %get the set of times
-par.gridname=get(handles.grid_civ2,'String');
+par.gridname=get(handles.txt_GridName,'String');
 par.gridflag='y';
 if strcmp(par.gridname,'')|| isempty(par.gridname)
     par.gridname='nogrid';
@@ -4892,10 +4952,10 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in ImaThreshold.
+% --- Executes on button press in check_Threshold.
 function ImaThreshold_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-if isequal(get(handles.ImaThreshold,'Value'),1)
+if isequal(get(handles.check_Threshold,'Value'),1)
     set(handles.MinIma,'Visible','on')
     set(handles.MaxIma,'Visible','on')
 else
@@ -5241,12 +5301,12 @@ function num_Ny_Callback(hObject, eventdata, handles)
 
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
-path_to_uvmat=which ('uvmat');% check the path of uvmat
-pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
-if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
+path_civ=fileparts(which ('civ'));
+helpfile=fullfile(path_civ,'uvmat_doc','uvmat_doc.html');
+if isempty(dir(helpfile))
+    msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
 else
-    addpath (fullfile(pathelp,'uvmat_doc'))
+    addpath (fullfile(path_civ,'uvmat_doc'))
     web([helpfile '#civ'])
 end
 
