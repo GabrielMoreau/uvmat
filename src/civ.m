@@ -1653,41 +1653,6 @@ end
 display('files OK, processing...')
 
 
-%% get checkpatch1 parameters 
-if Param.CheckPatch1
-    param.Patch1=read_panel(handles.Patch1);
-    %param.checkpatch1=read_param_patch1(handles)
-end
-
-%% get checkciv2 parameters:
-if Param.CheckCiv2
-    param.civ2=read_param_civ2(handles,cell2mat(filecell.ima1.civ2(1,1)));
-end
-
-%% get checkfix2 parameters
-if Param.CheckFix2
-    flagindex2(1)=get(handles.vec_Fmin2_2, 'Value');
-    flagindex2(2)=get(handles.vec_F3_2, 'Value');
-    flagindex2(3)=get(handles.vec_F4, 'Value');
-    thresh_vec2C=str2double(get(handles.thresh_vec2C,'String'));%threshold on image correlation vec_C
-    thresh_vel2=str2double(get(handles.thresh_vel2,'String'));%threshold on velocity modulus
-    test_mask=get(handles.CheckMask,'Value');
-    nbslice_mask=get(handles.mask_fix2,'UserData'); % get the number of slices (= number of masks)
-    %%%%%%%%%%%%%COMPLETER LE PROGRAMME FIX AVEC REF FILE ET OPTION inf_sup=2
-    %     inf_sup=get(handles.inf_sup2,'Value');
-    %     ref=get(handles.ref_fix2,'UserData');
-    
-    %%%%%%%%%%%%%%%%%%%
-end
-
-%% get checkpatch2 parameters
-if Param.CheckPatch2==1
-    param.Patch2=read_panel(handles.Patch1);
-end
-
-%%
-
-
 %% MAIN LOOP
 time=get(handles.ImaDoc,'UserData'); %get the set of times
 
@@ -1831,8 +1796,8 @@ for ifile=1:nbfield
         if Param.CheckPatch1==1
             switch CivMode
                 case 'CivX'
-                    cmd_PATCH=cmd_patch(filecell.nc.civ1{ifile,j},param.Patch1,Param.xml.PatchBin);
-                    cmd=[cmd cmd_PATCH '\n'];
+                    cmd=[cmd...
+                        cmd_patch(filecell.nc.civ1{ifile,j},Param,'Patch1') '\n'];
                 case 'CivAll'
                     patch1.inputFileName=filecell.nc.civ1{ifile,j} ;
                     patch1.nopt=subdomain_patch1;
@@ -3188,32 +3153,6 @@ end
 
 
 %------------------------------------------------------------------------
-% --- PATCH
-function cmd=cmd_patch(filename_nc,Param,PatchBin)
-%------------------------------------------------------------------------
-namelog=[filename_nc(1:end-3) '_patch.log'];
-
-% if test_interp==0
-    if isunix
-    cmd=[PatchBin...
-        ' -f ' filename_nc ' -m ' num2str(Param.Nx)...
-        ' -n ' num2str(Param.Ny) ' -ro ' num2str(Param.SmoothingParam)...
-        ' -nopt ' num2str(Param.SubdomainSize) ...
-        '  > ' namelog ' 2>&1']; % redirect standard output to the log file
-    else
-      cmd=['"' Param.xml.PatchBin...
-          '" -f "' filename_nc '" -m ' param.Patch1.Nx...
-          ' -n ' param.Patch1.Ny ' -ro ' param.Patch1.SmoothParam...
-          ' -nopt ' Param.Patch1.SubdomainSize ...
-        '  > "' namelog '" 2>&1']; % redirect standard output to the log file
-    end
-% else %nouveau programme patch
-%     cmd=[PatchBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ...
-%         ' -max ' thresh_value ' -nopt ' subdomain_patch  '  > ' namelog ' 2>&1']; % redirect standard output to the log file
-% end
-cmd=regexprep(cmd,'\\','\\\\');
-
-%------------------------------------------------------------------------
 % --- STEREO Interp
 function cmd=RUN_STINTERP(stinterpBin,filename_A_nc,filename_B_nc,filename_nc,nx_patch,ny_patch,rho_patch,subdomain_patch,thresh_value,xmlA,xmlB)
 %------------------------------------------------------------------------
@@ -4342,63 +4281,7 @@ set(handles.PairCiv1_title,'Visible',state)
 %     par.gridflag='n';
 % end
 % 
-%------------------------------------------------------------------------
-function par=read_param_fix1(handles,filecell)
-%------------------------------------------------------------------------
-    par.flagindex1(1)=get(handles.CheckFmin2, 'Value');
-    par.flagindex1(2)=get(handles.CheckF3, 'Value');
-    par.flagindex1(3)=get(handles.CheckF2, 'Value');
-    par.thresh_vecC1=str2double(get(handles.num_MinCorr,'String'));%threshold on image correlation vec_C
-    par.thresh_vel1=str2double(get(handles.num_MaxVel,'String'));%threshold on velocity modulus
-    par.test_mask=get(handles.CheckMask,'Value');
-    par.nbslice_mask=get(handles.txt_MaskName,'UserData'); % get the number of slices (= number of masks)
-    %%%%%%%%%%%%%COMPLETER LE PROGRAMME FIX
-    %     inf_sup=get(handles.inf_sup1,'Value');80
-    %     fileref=get(handles.ref_fix1,'String');
-    %     refpath=get(handles.ref_fix1,'UserData');
-    %     fileref=fullfile(refpath,fileref);
-    par.menu=get(handles.field_ref1,'String');
-    par.index=get(handles.field_ref1,'Value');
-    if isempty(par.menu)
-        par.fieldchoice='';
-    else
-        par.fieldchoice=menu{index};
-        msgbox_uvmat('WARNING','reference field is not used presently with batch, use RUN option')
-    end
-           if par.test_mask==0
-                par.maskname='';
-            else
-                maskdispl=get(handles.txt_MaskName,'String');
-                nbslice_mask=str2double(maskdispl(1:end-4)); %
-                num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
-                maskbase=[filecell.filebase '_' maskdispl];
-                par.maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
-           end
  
-%------------------------------------------------------------------------
-function par=read_param_patch1(handles)
-%------------------------------------------------------------------------
-
-par.rho_patch=str2double(get(handles.rho_patch1,'String'));
-if isnan(par.rho_patch)
-    par.rho_patch='1000';
-    set(handles.rho_patch1,'String','1')
-else
-    par.rho_patch=num2str(1000*par.rho_patch);
-end
-par.nx_patch=get(handles.nx_patch1,'String');
-par.ny_patch=get(handles.ny_patch1,'String');
-if isnan(str2double(par.nx_patch))
-    par.nx_patch='50' ;%default
-    set(handles.nx_patch1,'String','50');
-end
-if isnan(str2double(par.ny_patch))
-    par.ny_patch='50' ;%default
-    set(handles.ny_patch1,'String','50');
-end
-par.subdomain_patch=get(handles.subdomain_patch1,'String');
-par.thresh_patch=get(handles.thresh_patch1,'String');
-
            
 %------------------------------------------------------------------------
 function par=read_param_civ2(handles,file_ima)
@@ -5467,13 +5350,39 @@ filename=regexprep(filename,'.nc','');
 if isunix
     cmd=[Param.xml.FixBin ' -f ' filename '.nc -fi1 ' num2str(Param.(fixname).flagindex(1)) ...
         ' -fi2 ' num2str(Param.(fixname).flagindex(2)) ' -fi3 ' num2str(Param.(fixname).flagindex(3)) ...
-        ' -threshC ' num2str(Param.(fixname).thresh_vecC) ' -threshV ' num2str(Param.(fixname).thresh_vel)...
-        ' -maskName ' Param.(fixname).MaskName '" > ' filename '.fix1.log'];
+        ' -threshC ' num2str(Param.(fixname).thresh_vecC)...% ' -threshV ' num2str(Param.(fixname).thresh_vel)...
+        ' -maskName ' Param.(fixname).MaskName...
+        '" > ' filename '.' lower(fixname) '.log 2>&1'];
 else
     cmd=['"' Param.xml.FixBin '" -f "' filename '.nc" -fi1 ' num2str(Param.(fixname).CheckFmin2)...
         ' -fi2 ' num2str(Param.(fixname).CheckF2) ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
         ' -threshC ' num2str(Param.(fixname).MinCorr)...
-        ' -maskName "' Param.(fixname).MaskName '" > "' filename '.fix1.log"'];
+        ' -maskName "' Param.(fixname).MaskName...
+        '" > "' filename '.' lower(fixname) '.log" 2>&1'];
 %         ' -threshV ' num2str(Param.(fixname).thresh_vel)...
     cmd=regexprep(cmd,'\\','\\\\');
 end
+
+
+function cmd=cmd_patch(filename,Param,patchname)
+%% ------------------------------------------------------------------------
+filename=regexprep(filename,'.nc','');
+% if test_interp==0
+if isunix
+    cmd=[Param.xml.PatchBin...
+        ' -f ' filename '.nc -m ' num2str(Param.(patchname).Nx)...
+        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothingParam)...
+        ' -nopt ' num2str(Param.(patchname).SubdomainSize) ...
+        '  > ' filename '.' lower(patchname) '.log 2>&1']; % redirect standard output to the log file
+else
+    cmd=['"' Param.xml.PatchBin...
+        '" -f "' filename '.nc" -m ' num2str(Param.(patchname).Nx)...
+        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothingParam)...
+        ' -nopt ' num2str(Param.(patchname).SubdomainSize)...
+        '  > "' filename '.' lower(patchname) '.log" 2>&1']; % redirect standard output to the log file
+    cmd=regexprep(cmd,'\\','\\\\');
+end
+% else %nouveau programme patch
+%     cmd=[PatchBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ...
+%         ' -max ' thresh_value ' -nopt ' subdomain_patch  '  > ' namelog ' 2>&1']; % redirect standard output to the log file
+% end
