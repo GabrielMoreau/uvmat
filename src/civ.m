@@ -1490,17 +1490,10 @@ errormsg='';%default
 
 %%read the civ GUI
 Param=read_GUI(handles.civ)
-Param.Civ1
-Param.Fix1
-Param.Patch1
 %% check the selected list of operations:
 operations={'CIV1','FIX1','PATCH1','CIV2','FIX2','PATCH2'};
 box_test=[Param.CheckCiv1 Param.CheckFix1 Param.CheckPatch1 Param.CheckCiv2 Param.CheckFix2 Param.CheckPatch2];
-% box_test(2)=get(handles.CheckFix1,'Value');
-% box_test(3)=get(handles.CheckPatch1,'Value');
-% box_test(4)=get(handles.CheckCiv2,'Value');
-% box_test(5)=get(handles.CheckFix2,'Value');
-% box_test(6)=get(handles.CheckPatch2,'Value');
+
 index_first=find(box_test==1,1);
 if isempty(index_first)
     errormsg='no selected operation';
@@ -1580,9 +1573,9 @@ test_interp=0; %eviter les variables test_ (LG)
 
 if batch
     if isfield(s,'BatchParam')
-        param.global=s.BatchParam;
-        if isfield(param.global,'BatchMode')
-            batch_mode=param.global.BatchMode;
+        Param.xml=s.BatchParam;
+        if isfield(Param.xml,'BatchMode')
+            batch_mode=Param.xml.BatchMode;
             if ~ismember(batch_mode,{'sge','oar'})
                 errormsg=['batch mode ' batch_mode ' not supported by UVMAT'];
                 return
@@ -1594,7 +1587,7 @@ if batch
     end
 else % run
     if isfield(s,'RunParam')
-        param.global=s.RunParam;
+        Param.xml=s.RunParam;
     else
         msgbox_uvmat('ERROR','no run civ binaries defined in PARAM.xml')
         return
@@ -1635,22 +1628,22 @@ switch CivMode
         end          
 end
 for bin_name=binary_list
-    if isfield(param.global,bin_name{1})
-        if ~exist(param.global.(bin_name{1}),'file')%look for the full path if the file name has been defined with a relative path in PARAM.xml
-            fullname=fullfile(path_civ,param.global.(bin_name{1}));
+    if isfield(Param.xml,bin_name{1})
+        if ~exist(Param.xml.(bin_name{1}),'file')%look for the full path if the file name has been defined with a relative path in PARAM.xml
+            fullname=fullfile(path_civ,Param.xml.(bin_name{1}))
             if exist(fullname,'file')
-                param.global.(bin_name{1})=fullname;
+                Param.xml.(bin_name{1})=fullname;
             else
-                msgbox_uvmat('ERROR',['Binary ' param.global.(bin_name{1}) ' defined in PARAM.xml does not exist'])
+                msgbox_uvmat('ERROR',['Binary ' Param.xml.(bin_name{1}) ' defined in PARAM.xml does not exist'])
                 return
             end
         else
-            [path,name,ext]=fileparts(param.global.(bin_name{1}));
+            [path,name,ext]=fileparts(Param.xml.(bin_name{1}));
             currentdir=pwd;
             cd(path);
             binpath=pwd;%path of the binary
-            param.global.(bin_name{1})=fullfile(binpath,[name ext]);
-            %                      display(param.global.(bin_name{1}));
+            Param.xml.(bin_name{1})=fullfile(binpath,[name ext]);
+            %                      display(Param.xml.(bin_name{1}));
             cd(currentdir);
         end
         
@@ -1661,7 +1654,7 @@ display('files OK, processing...')
 
 %% get checkciv1 parameters
 if Param.CheckCiv1
-    param.civ1=read_param_civ1(handles,filecell);
+%     Param.Civ1=read_param_civ1(handles,filecell);
 end
 
 %% get checkfix1 parameters 
@@ -1743,68 +1736,79 @@ for ifile=1:nbfield
         %CheckCiv1
         if Param.CheckCiv1
             % read image-dependent parameters
-            param.civ1.filename_ima_a=filecell.ima1.civ1{ifile,j};
-            param.civ1.filename_ima_b=filecell.ima2.civ1{ifile,j};
-            param.civ1.Dt=num2str(time(num2_civ1(ifile),num_b_civ1(j))-time(num1_civ1(ifile),num_a_civ1(j)));
-            param.civ1.T0=num2str((time(num2_civ1(ifile),num_b_civ1(j))+time(num1_civ1(ifile),num_a_civ1(j)))/2);
-            param.civ1.term_a=num2stra(num_a_civ1(j),nom_type_nc);%UTILITE?
-            param.civ1.term_b=num2stra(num_b_civ1(j),nom_type_nc);%
+            Param.Civ1.filename_ima_a=filecell.ima1.civ1{ifile,j};
+            Param.Civ1.filename_ima_b=filecell.ima2.civ1{ifile,j};
+            Param.Civ1.Dt=(time(num2_civ1(ifile),num_b_civ1(j))-time(num1_civ1(ifile),num_a_civ1(j)));
+            Param.Civ1.T0=((time(num2_civ1(ifile),num_b_civ1(j))+time(num1_civ1(ifile),num_a_civ1(j)))/2);
+            Param.Civ1.term_a=num2stra(num_a_civ1(j),nom_type_nc);%UTILITE?
+            Param.Civ1.term_b=num2stra(num_b_civ1(j),nom_type_nc);%
+Param.Civ1.pxcmx=1; %velocities are expressed in pixel dispalcement
+Param.Civ1.pxcmy=1;
+% if exist('file_ima','var')
+A=imread(filecell.ima1.civ1{1,1});%read the first image to get the size
+sizim=size(A);
+Param.Civ1.npx=(sizim(2));
+Param.Civ1.npy=(sizim(1));
+%TODO : civ should not need npx and npy
+
+
             
             % read mask parameters
-            dummy=get(handles.CheckMask,'Value');
-            if dummy{1}
+%             dummy=get(handles.CheckMask,'Value');
+            if Param.Civ1.CheckMask % the lines below should be changed with the new gui
+                %matbe they when check_mask the Maskname is read
                 maskdispl=get(handles.txt_MaskName,'String');
                 if exist(maskdispl,'file')
-                    param.civ1.maskname=maskdispl;
-                    param.civ1.maskflag='y';
+                    Param.Civ1.maskname=maskdispl;
+                    Param.Civ1.maskflag='y';
                 else
                     maskbase=[filecell.filebase '_' maskdispl]; %
                     nbslice_mask=str2double(maskdispl(1:end-4)); %
                     num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
-                    param.civ1.maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
-                    if exist(param.civ1.maskname,'file')
-                        param.civ1.maskflag='y';
+                    Param.Civ1.maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
+                    if exist(Param.Civ1.maskname,'file')
+                        Param.Civ1.maskflag='y';
                     else
-                        param.civ1.maskname='noFile use default';
-                        param.civ1.maskflag='n';
+                        Param.Civ1.maskname='noFile use default';
+                        Param.Civ1.maskflag='n';
                     end
                 end
             else
-                param.civ1.maskname='noFile use default';
-                param.civ1.maskflag='n';
+                Param.Civ1.maskname='noFile use default';
+                Param.Civ1.maskflag='n';
             end
             
             % read grid parameters=
-            dummy=get(handles.CheckGrid,'Value');
-            if dummy{1}
-                param.civ1.gridflag='y';
+            
+            if Param.Civ1.CheckGrid
+                Caram.Civ1.gridflag='y';
                 gridname=get(handles.txt_GridName,'String');
                 if isequal(gridname(end-3:end),'grid')
                     nbslice_grid=str2double(gridname(1:end-4)); %
                     if ~isnan(nbslice_grid)
                         num1_grid=mod(num1_civ1(ifile)-1,nbslice_grid)+1;
-                        param.civ1.gridname=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
-                        if ~exist(param.civ1.gridname,'file')
+                        Param.Civ1.gridname=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
+                        if ~exist(Param.Civ1.gridname,'file')
                             msgbox_uvmat('ERROR','grid file absent for civ1')
                         end
                     elseif exist(gridname,'file')
-                        param.civ1.gridname=gridname;
+                        Param.Civ1.gridname=gridname;
                     else
                         msgbox_uvmat('ERROR','grid file absent for civ1')
                     end
                 end
             else
-                param.civ1.gridname='noFile use default';
-                param.civ1.gridflag='n';
+                Param.Civ1.gridname='noFile use default';
+                Param.Civ1.gridflag='n';
             end
             
             switch CivMode
                 case 'CivX'
-                    civ1_exe=CIV1_CMD(filecell.nc.civ1{ifile,j},param);%create the parameter file .civ1.cmx and set the execution string civ1_exe
-                    cmd=[cmd civ1_exe '\n'];
+                    cmd=[cmd...
+                        cmd_civ1(filecell.nc.civ1{ifile,j},Param) '\n'];
                 case 'CivAll'
                     CivAllCmd=[CivAllCmd ' civ1 '];
-                    str=CIV1_CMD_Unified(filecell.nc.civ1{ifile,j},'',param.civ1);
+                    str=CIV1_CMD_Unified(filecell.nc.civ1{ifile,j},'',Param.Civ1);
                     fieldnames=fields(str);
                     [CivAllxml,uid_civ1]=add(CivAllxml,1,'element','civ1');
                     for ilist=1:length(fieldnames)
@@ -1822,11 +1826,11 @@ for ifile=1:nbfield
            switch CivMode
                 case 'CivX'
                     if isunix %unix system
-                        cmd_FIX=[param.global.FixBin ' -f ' filecell.nc.civ1{ifile,j} ' -fi1 ' num2str(param.fix1.flagindex1(1)) ...
+                        cmd_FIX=[Param.xml.FixBin ' -f ' filecell.nc.civ1{ifile,j} ' -fi1 ' num2str(param.fix1.flagindex1(1)) ...
                             ' -fi2 ' num2str(param.fix1.flagindex1(2)) ' -fi3 ' num2str(param.fix1.flagindex1(3)) ...
                             ' -threshC ' num2str(param.fix1.thresh_vecC1) ' -threshV ' num2str(param.fix1.thresh_vel1) ' -maskName ' param.fix1.maskname];
                     else %windows system
-                        cmd_FIX=['"' param.global.FixBin '" -f "' filecell.nc.civ1{ifile,j} '" -fi1 ' num2str(param.fix1.flagindex1(1)) ...
+                        cmd_FIX=['"' Param.xml.FixBin '" -f "' filecell.nc.civ1{ifile,j} '" -fi1 ' num2str(param.fix1.flagindex1(1)) ...
                             ' -fi2 ' num2str(param.fix1.flagindex1(2)) ' -fi3 ' num2str(param.fix1.flagindex1(3)) ...
                             ' -threshC ' num2str(param.fix1.thresh_vecC1) ' -threshV ' num2str(param.fix1.thresh_vel1) ' -maskName "' param.fix1.maskname '"'];
                         cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
@@ -1856,7 +1860,7 @@ for ifile=1:nbfield
         if Param.CheckPatch1==1
             switch CivMode
                 case 'CivX'
-                    cmd_PATCH=cmd_patch(filecell.nc.civ1{ifile,j},param.Patch1,param.global.PatchBin);
+                    cmd_PATCH=cmd_patch(filecell.nc.civ1{ifile,j},param.Patch1,Param.xml.PatchBin);
                     cmd=[cmd cmd_PATCH '\n'];
                 case 'CivAll'
                     patch1.inputFileName=filecell.nc.civ1{ifile,j} ;
@@ -1985,11 +1989,11 @@ for ifile=1:nbfield
             switch CivMode
                 case 'CivX'
                     if isunix
-                        cmd_FIX=[param.global.FixBin ' -f ' filecell.nc.civ2{ifile,j} ' -fi1 ' num2str(flagindex2(1)) ...
+                        cmd_FIX=[Param.xml.FixBin ' -f ' filecell.nc.civ2{ifile,j} ' -fi1 ' num2str(flagindex2(1)) ...
                             ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
                             ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName ' maskname];
                     else
-                        cmd_FIX=['"' param.global.FixBin '" -f "' filecell.nc.civ2{ifile,j} '" -fi1 ' num2str(flagindex2(1)) ...
+                        cmd_FIX=['"' Param.xml.FixBin '" -f "' filecell.nc.civ2{ifile,j} '" -fi1 ' num2str(flagindex2(1)) ...
                             ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
                             ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName "' maskname '"'];
                         cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
@@ -2019,7 +2023,7 @@ for ifile=1:nbfield
         if Param.CheckPatch2==1
             switch CivMode
                 case 'CivX'
-                    cmd_PATCH=cmd_patch(filecell.nc.civ2{ifile,j},param.Patch2,param.global.PatchBin);
+                    cmd_PATCH=cmd_patch(filecell.nc.civ2{ifile,j},param.Patch2,Param.xml.PatchBin);
                     cmd=[cmd cmd_PATCH '\n'];
                 case 'CivAll'
                     patch2.inputFileName=filecell.nc.civ1{ifile,j} ;
@@ -2114,7 +2118,7 @@ for ifile=1:nbfield
             case 'Matlab'
                 drawnow
                 if Param.CheckCiv1==1
-                    Param.Civ1=param.civ1;
+                    Param.Civ1=Param.Civ1;
                 end
                 if Param.CheckFix1==1
                     fix1.WarnFlags=[];
@@ -3226,7 +3230,7 @@ namelog=[filename_nc(1:end-3) '_patch.log'];
         ' -nopt ' num2str(Param.SubdomainSize) ...
         '  > ' namelog ' 2>&1']; % redirect standard output to the log file
     else
-      cmd=['"' param.global.PatchBin...
+      cmd=['"' Param.xml.PatchBin...
           '" -f "' filename_nc '" -m ' param.Patch1.Nx...
           ' -n ' param.Patch1.Ny ' -ro ' param.Patch1.SmoothParam...
           ' -nopt ' Param.Patch1.SubdomainSize ...
@@ -4473,30 +4477,30 @@ function cmd_CIV1=CIV1_CMD(filename,param)
 
 filename=regexprep(filename,'.nc','');
 
-if isequal(param.civ1.Dt,'0')
-    param.civ1.Dt='1' ;%case of 'displacement' mode
+if isequal(Param.Civ1.Dt,'0')
+    Param.Civ1.Dt='1' ;%case of 'displacement' mode
 end
-param.civ1.filename_ima_a=regexprep(param.civ1.filename_ima_a,'.png','');
-param.civ1.filename_ima_b=regexprep(param.civ1.filename_ima_b,'.png','');
+Param.Civ1.filename_ima_a=regexprep(Param.Civ1.filename_ima_a,'.png','');
+Param.Civ1.filename_ima_b=regexprep(Param.Civ1.filename_ima_b,'.png','');
 fid=fopen([filename '.civ1.cmx'],'w');
 fprintf(fid,['##############   CMX file' '\n' ]);
-fprintf(fid,   ['FirstImage ' regexprep(param.civ1.filename_ima_a,'\\','\\\\') '\n' ]);% for windows compatibility
-fprintf(fid,   ['LastImage  ' regexprep(param.civ1.filename_ima_b,'\\','\\\\') '\n' ]);% for windows compatibility
+fprintf(fid,   ['FirstImage ' regexprep(Param.Civ1.filename_ima_a,'\\','\\\\') '\n' ]);% for windows compatibility
+fprintf(fid,   ['LastImage  ' regexprep(Param.Civ1.filename_ima_b,'\\','\\\\') '\n' ]);% for windows compatibility
 fprintf(fid,  ['XX' '\n' ]);
-fprintf(fid,  ['Mask ' param.civ1.maskflag '\n' ]);
-fprintf(fid,  ['MaskName ' regexprep(param.civ1.maskname,'\\','\\\\') '\n' ]);
-fprintf(fid,   ['ImageSize ' param.civ1.npx ' ' param.civ1.npy '\n' ]);   %VERIFIER CAS GENERAL ?
-fprintf(fid,   ['CorrelationBoxesSize ' param.civ1.ibx ' ' param.civ1.iby '\n' ]);
-fprintf(fid,   ['SearchBoxeSize ' param.civ1.isx ' ' param.civ1.isy '\n' ]);
-fprintf(fid,   ['RO ' param.civ1.rho '\n' ]);
-fprintf(fid,   ['GridSpacing ' param.civ1.dx ' ' param.civ1.dy '\n' ]);
+fprintf(fid,  ['Mask ' Param.Civ1.maskflag '\n' ]);
+fprintf(fid,  ['MaskName ' regexprep(Param.Civ1.maskname,'\\','\\\\') '\n' ]);
+fprintf(fid,   ['ImageSize ' Param.Civ1.npx ' ' Param.Civ1.npy '\n' ]);   %VERIFIER CAS GENERAL ?
+fprintf(fid,   ['CorrelationBoxesSize ' Param.Civ1.ibx ' ' Param.Civ1.iby '\n' ]);
+fprintf(fid,   ['SearchBoxeSize ' Param.Civ1.isx ' ' Param.Civ1.isy '\n' ]);
+fprintf(fid,   ['RO ' Param.Civ1.rho '\n' ]);
+fprintf(fid,   ['GridSpacing ' Param.Civ1.dx ' ' Param.Civ1.dy '\n' ]);
 fprintf(fid,   ['XX 1.0' '\n' ]);
-fprintf(fid,   ['Dt_TO ' param.civ1.Dt ' ' param.civ1.T0 '\n' ]);
-fprintf(fid,  ['PixCmXY ' param.civ1.pxcmx ' ' param.civ1.pxcmy '\n' ]);
+fprintf(fid,   ['Dt_TO ' Param.Civ1.Dt ' ' Param.Civ1.T0 '\n' ]);
+fprintf(fid,  ['PixCmXY ' Param.Civ1.pxcmx ' ' Param.Civ1.pxcmy '\n' ]);
 fprintf(fid,  ['XX 1' '\n' ]);
-fprintf(fid,   ['ShiftXY ' param.civ1.shiftx ' '  param.civ1.shifty '\n' ]);
-fprintf(fid,  ['Grid ' param.civ1.gridflag '\n' ]);
-fprintf(fid,   ['GridName ' regexprep(param.civ1.gridname,'\\','\\\\') '\n' ]);
+fprintf(fid,   ['ShiftXY ' Param.Civ1.shiftx ' '  Param.Civ1.shifty '\n' ]);
+fprintf(fid,  ['Grid ' Param.Civ1.gridflag '\n' ]);
+fprintf(fid,   ['GridName ' regexprep(Param.Civ1.gridname,'\\','\\\\') '\n' ]);
 fprintf(fid,   ['XX 85' '\n' ]);
 fprintf(fid,   ['XX 1.0' '\n' ]);
 fprintf(fid,   ['XX 1.0' '\n' ]);
@@ -4507,7 +4511,7 @@ fprintf(fid,  ['CorrelationMin 0' '\n' ]);
 fprintf(fid,   ['IntensityMin 0' '\n' ]);
 fprintf(fid,  ['SeuilImage n' '\n' ]);
 fprintf(fid,   ['SeuilImageValues 0 4096' '\n' ]);
-fprintf(fid,   ['ImageToUse ' param.civ1.term_a ' ' param.civ1.term_b '\n' ]); % VERIFIER ?
+fprintf(fid,   ['ImageToUse ' Param.Civ1.term_a ' ' Param.Civ1.term_b '\n' ]); % VERIFIER ?
 fprintf(fid,   ['ImageUsedBefore null null' '\n' ]);
 fclose(fid);
 
@@ -4517,7 +4521,7 @@ fclose(fid);
 if(isunix)
     cmd_CIV1=['cp -f ' filename '.civ1.cmx ' filename '.cmx'];
     cmd_CIV1=[cmd_CIV1 '\n'...
-        param.global.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
+        Param.xml.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
     cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.log' ' ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.nc'];%rename .log as .civ1.log and set the netcdf result file for group user writting
    % cmd_CIV1=[cmd_CIV1 '\n' 'mv ' filename '.cmx' ' ' filename '.checkciv1.cmx' '\n'];%rename .cmx as .checkciv1.cmx
 else %Windows system
@@ -4525,7 +4529,7 @@ else %Windows system
 %                     cmd=[cmd 'copy /Y "' flname '.checkciv1.cmx" "' flname '.cmx"\n'];
 %     filename=regexprep(filename,'\\','\\\\');
     cmd_CIV1=['copy /Y "' filename '.civ1.cmx" "' filename '.cmx"'];% copy the .civ1.cmx parameter file to .cmx
-    cmd_CIV1=[cmd_CIV1 '\n "' regexprep(param.global.Civ1Bin,'\\','\\\\') '" -f "' filename '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
+    cmd_CIV1=[cmd_CIV1 '\n "' regexprep(Param.xml.Civ1Bin,'\\','\\\\') '" -f "' filename '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
 %     namelog=regexprep(namelog,'\\','\\\\');
     cmd_CIV1=[cmd_CIV1 '\n ' 'copy /Y "' filename '.log' '" "' filename '.civ1.log"']; %preserve the log file as .civ1.log
 
@@ -4677,14 +4681,14 @@ fclose(fid);
 
 if(isunix)
     cmd_CIV2=['cp -f ' filename '.civ2.cmx ' filename '.cmx\n'];
-    cmd_CIV2=[cmd_CIV2 param.global.Civ2Bin ' -f ' filename  '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
+    cmd_CIV2=[cmd_CIV2 Param.xml.Civ2Bin ' -f ' filename  '.cmx >' filename '.log' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
     cmd_CIV2=[cmd_CIV2 '\n' 'mv ' filename '.log' ' ' filename '.civ2.log' '\n' 'chmod g+w ' filename '.nc'];%preserve the log file as .civ2.log
 %    cmd_CIV2=[cmd_CIV2 '\n' 'mv ' filename '.cmx' ' ' filename '.checkciv2.cmx' '\n'];%rename .cmx as .checkciv2.cmx, the result file is named [filename '.nc'] by CIVx
 
 else 
     filename=regexprep(filename,'\\','\\\\');
     cmd_CIV2=['copy /Y "' filename '.civ2.cmx" "' filename '.cmx"'];
-    cmd_CIV2=[cmd_CIV2 '\n "' regexprep(param.global.Civ2Bin,'\\','\\\\') '" -f "' filename  '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
+    cmd_CIV2=[cmd_CIV2 '\n "' regexprep(Param.xml.Civ2Bin,'\\','\\\\') '" -f "' filename  '.cmx" >"' filename '.log"' ]; % redirect standard output to the log file
     cmd_CIV2=[cmd_CIV2 '\n ' 'copy /Y "' filename '.log' '" "' filename '.civ2.log"'];
  %    cmd_CIV2=[cmd_CIV2 '\n' 'copy /Y "' filename '.cmx' '" "' filename '.checkciv2.cmx"'];
 end
@@ -5106,6 +5110,8 @@ Param.CheckPatch1=get(handles.CheckPatch1,'Value');
 Param.CheckCiv2=get(handles.CheckCiv2,'Value');
 Param.CheckFix2=get(handles.CheckFix2,'Value');
 Param.CheckPatch2=get(handles.CheckPatch2,'Value');
+box_test=[Param.CheckCiv1 Param.CheckFix1 Param.CheckPatch1 Param.CheckCiv2 Param.CheckFix2 Param.CheckPatch2];
+
 option_civ=find(box_test,1,'last');%last selected option (non-zero index of box_test)
 filecell=get(handles.civ,'UserData');%retrieve the list of output files expected for PIV
 test_new=0;
@@ -5412,4 +5418,72 @@ for ichild=1:numel(hchild)
             eval(['struct.' key '=input;'])
         end
     end
+end
+
+
+
+function cmd=cmd_civ1(filename,Param)
+%TODO : include filename in par_civ1
+%------------------------------------------------------------------------
+%pixels per cm and matrix of the image times, read from the .civ file by uvmat
+
+%changes : filename_cmx -> filename ( no extension )
+
+filename=regexprep(filename,'.nc','')
+
+if isequal(Param.Civ1.Dt,'0')
+    Param.Civ1.Dt='1' ;%case of 'displacement' mode
+end
+Param.Civ1.filename_ima_a=regexprep(Param.Civ1.filename_ima_a,'.png','');
+Param.Civ1.filename_ima_b=regexprep(Param.Civ1.filename_ima_b,'.png','');
+fid=fopen([filename '.civ1.cmx'],'w');
+fprintf(fid,['##############   CMX file' '\n' ]);
+fprintf(fid,   ['FirstImage ' regexprep(Param.Civ1.filename_ima_a,'\\','\\\\') '\n' ]);% for windows compatibility
+fprintf(fid,   ['LastImage  ' regexprep(Param.Civ1.filename_ima_b,'\\','\\\\') '\n' ]);% for windows compatibility
+fprintf(fid,  ['XX' '\n' ]);
+fprintf(fid,  ['Mask ' Param.Civ1.maskflag '\n' ]);
+fprintf(fid,  ['MaskName ' regexprep(Param.Civ1.maskname,'\\','\\\\') '\n' ]);
+fprintf(fid,   ['ImageSize ' num2str(Param.Civ1.npx) ' ' num2str(Param.Civ1.npy) '\n' ]);   %VERIFIER CAS GENERAL ?
+fprintf(fid,   ['CorrelationBoxesSize ' num2str(Param.Civ1.Bx) ' ' num2str(Param.Civ1.By) '\n' ]);
+fprintf(fid,   ['SearchBoxeSize ' num2str(Param.Civ1.Sx) ' ' num2str(Param.Civ1.Sy) '\n' ]);
+fprintf(fid,   ['RO ' num2str(Param.Civ1.Rho) '\n' ]);
+fprintf(fid,   ['GridSpacing ' num2str(Param.Civ1.Dx) ' ' num2str(Param.Civ1.Dy) '\n' ]);
+fprintf(fid,   ['XX 1.0' '\n' ]);
+fprintf(fid,   ['Dt_TO ' num2str(Param.Civ1.Dt) ' ' num2str(Param.Civ1.T0) '\n' ]);
+fprintf(fid,  ['PixCmXY ' num2str(Param.Civ1.pxcmx) ' ' num2str(Param.Civ1.pxcmy) '\n' ]);
+fprintf(fid,  ['XX 1' '\n' ]);
+fprintf(fid,   ['ShiftXY ' num2str(Param.Civ1.Shiftx) ' '  num2str(Param.Civ1.Shifty) '\n' ]);
+fprintf(fid,  ['Grid ' Param.Civ1.gridflag '\n' ]);
+fprintf(fid,   ['GridName ' regexprep(Param.Civ1.gridname,'\\','\\\\') '\n' ]);
+fprintf(fid,   ['XX 85' '\n' ]);
+fprintf(fid,   ['XX 1.0' '\n' ]);
+fprintf(fid,   ['XX 1.0' '\n' ]);
+fprintf(fid,   ['Hart 1' '\n' ]);
+fprintf(fid,  [ 'DecimalShift 0' '\n' ]);
+fprintf(fid,   ['Deformation 0' '\n' ]);
+fprintf(fid,  ['CorrelationMin 0' '\n' ]);
+fprintf(fid,   ['IntensityMin 0' '\n' ]);
+fprintf(fid,  ['SeuilImage n' '\n' ]);
+fprintf(fid,   ['SeuilImageValues 0 4096' '\n' ]);
+fprintf(fid,   ['ImageToUse ' Param.Civ1.term_a ' ' Param.Civ1.term_b '\n' ]); % VERIFIER ?
+fprintf(fid,   ['ImageUsedBefore null null' '\n' ]);
+fclose(fid);
+
+% cmd_CIV1=[sparam.Civ1Bin ' -f ' filename '.cmx >' filename '.log' ]; % redirect standard output to the log file
+% cmd_CIV1=regexprep(cmd_CIV1,'\\','\\\\');
+% namelog=regexprep(namelog,'\\','\\\\');
+if(isunix)
+    cmd=['cp -f ' filename '.civ1.cmx ' filename '.cmx \n '];% the cmx file gives the name to the nc file
+    cmd=[cmd Param.xml.Civ1Bin ' -f ' filename '.cmx >' filename '.civ1.log \n ' ]; % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
+%     cmd=[cmd '\n' 'mv ' filename '.log' ' ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.civ1.log' '\n' 'chmod g+w ' filename '.nc'];%rename .log as .civ1.log and set the netcdf result file for group user writting
+%    cmd=[cmd '\n' 'mv ' filename '.cmx' ' ' filename '.civ1.cmx' '\n'];%rename .cmx as .civ1.cmx
+    cmd=[cmd 'rm ' filename '.cmx'];
+else %Windows system
+    filename=regexprep(filename,'\\','\\\\');
+    cmd=['copy /Y "' filename '.civ1.cmx" "' filename '.cmx" \n '];
+    cmd=[cmd '"' regexprep(Param.xml.Civ1Bin,'\\','\\\\')...
+        '" -f "' filename '.cmx" >"' filename '.civ1.log" \n ' ]; % redirect standard output to the log file
+%     namelog=regexprep(namelog,'\\','\\\\');
+%     cmd=[cmd '\n ' 'copy /Y "' filename '.log' '" "' filename '.civ1.log"']; %preserve the log file as .civ1.log
+    cmd=[cmd 'del "' filename '.cmx'];
 end
