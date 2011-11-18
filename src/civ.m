@@ -1652,15 +1652,6 @@ end
 
 display('files OK, processing...')
 
-%% get checkciv1 parameters
-if Param.CheckCiv1
-%     Param.Civ1=read_param_civ1(handles,filecell);
-end
-
-%% get checkfix1 parameters 
-if Param.CheckFix1
-    param.fix1=read_param_fix1(handles,filecell);
-end
 
 %% get checkpatch1 parameters 
 if Param.CheckPatch1
@@ -1732,8 +1723,6 @@ for ifile=1:nbfield
         end
         OutputFile=regexprep(OutputFile,'.nc','');
 
-        
-        %CheckCiv1
         if Param.CheckCiv1
             % read image-dependent parameters
             Param.Civ1.filename_ima_a=filecell.ima1.civ1{ifile,j};
@@ -1742,66 +1731,58 @@ for ifile=1:nbfield
             Param.Civ1.T0=((time(num2_civ1(ifile),num_b_civ1(j))+time(num1_civ1(ifile),num_a_civ1(j)))/2);
             Param.Civ1.term_a=num2stra(num_a_civ1(j),nom_type_nc);%UTILITE?
             Param.Civ1.term_b=num2stra(num_b_civ1(j),nom_type_nc);%
-Param.Civ1.pxcmx=1; %velocities are expressed in pixel dispalcement
-Param.Civ1.pxcmy=1;
-% if exist('file_ima','var')
-A=imread(filecell.ima1.civ1{1,1});%read the first image to get the size
-sizim=size(A);
-Param.Civ1.npx=(sizim(2));
-Param.Civ1.npy=(sizim(1));
-%TODO : civ should not need npx and npy
+            Param.Civ1.pxcmx=1; %velocities are expressed in pixel dispalcement
+            Param.Civ1.pxcmy=1;
 
+            A=imread(filecell.ima1.civ1{1,1});%read the first image to get the size
+            sizim=size(A);
+            Param.Civ1.npx=(sizim(2));
+            Param.Civ1.npy=(sizim(1));
+            %TODO : civ should not need npx and npy
 
-            
             % read mask parameters
-%             dummy=get(handles.CheckMask,'Value');
             if Param.Civ1.CheckMask % the lines below should be changed with the new gui
                 %matbe they when check_mask the Maskname is read
-                maskdispl=get(handles.txt_MaskName,'String');
-                if exist(maskdispl,'file')
-                    Param.Civ1.maskname=maskdispl;
-                    Param.Civ1.maskflag='y';
+                if exist(Param.Civ1.MaskName,'file')
+                    Param.Civ1.MaskFlag='y';
                 else
-                    maskbase=[filecell.filebase '_' maskdispl]; %
+                    maskbase=[filecell.filebase '_' Param.Civ1.MaskName]; %
                     nbslice_mask=str2double(maskdispl(1:end-4)); %
                     num1_mask=mod(num1_civ1(ifile)-1,nbslice_mask)+1;
-                    Param.Civ1.maskname=name_generator(maskbase,num1_mask,1,'.png','_i');
-                    if exist(Param.Civ1.maskname,'file')
+                    Param.Civ1.MaskName=name_generator(maskbase,num1_mask,1,'.png','_i');
+                    if exist(Param.Civ1.MaskName,'file')
                         Param.Civ1.maskflag='y';
                     else
-                        Param.Civ1.maskname='noFile use default';
-                        Param.Civ1.maskflag='n';
+                        Param.Civ1.MaskName='noFile use default';
+                        Param.Civ1.MaskFlag='n';
                     end
                 end
             else
-                Param.Civ1.maskname='noFile use default';
-                Param.Civ1.maskflag='n';
+                Param.Civ1.MaskName='noFile use default';
+                Param.Civ1.MaskFlag='n';
             end
             
             % read grid parameters=
-            
             if Param.Civ1.CheckGrid
-                Caram.Civ1.gridflag='y';
-                gridname=get(handles.txt_GridName,'String');
-                if isequal(gridname(end-3:end),'grid')
-                    nbslice_grid=str2double(gridname(1:end-4)); %
+                Param.Civ1.GridFlag='y';
+                if isequal(Param.Civ1.GridName(end-3:end),'grid')
+                    nbslice_grid=str2double(Param.Civ1.GridName(1:end-4)); %
                     if ~isnan(nbslice_grid)
                         num1_grid=mod(num1_civ1(ifile)-1,nbslice_grid)+1;
-                        Param.Civ1.gridname=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
-                        if ~exist(Param.Civ1.gridname,'file')
+                        Param.Civ1.GridName=[filecell.filebase '_' name_generator(gridname,num1_grid,1,'.grid','_i')];
+                        if ~exist(Param.Civ1.GridName,'file')
                             msgbox_uvmat('ERROR','grid file absent for civ1')
                         end
-                    elseif exist(gridname,'file')
-                        Param.Civ1.gridname=gridname;
-                    else
+                    elseif ~exist(Param.Civ1.GridName,'file')
                         msgbox_uvmat('ERROR','grid file absent for civ1')
                     end
                 end
             else
-                Param.Civ1.gridname='noFile use default';
-                Param.Civ1.gridflag='n';
+                Param.Civ1.GridName='noFile use default';
+                Param.Civ1.GridFlag='n';
             end
             
+            % send command
             switch CivMode
                 case 'CivX'
                     cmd=[cmd...
@@ -1821,21 +1802,11 @@ Param.Civ1.npy=(sizim(1));
             end
         end
         
-        % CheckFix1
         if Param.CheckFix1
            switch CivMode
                 case 'CivX'
-                    if isunix %unix system
-                        cmd_FIX=[Param.xml.FixBin ' -f ' filecell.nc.civ1{ifile,j} ' -fi1 ' num2str(param.fix1.flagindex1(1)) ...
-                            ' -fi2 ' num2str(param.fix1.flagindex1(2)) ' -fi3 ' num2str(param.fix1.flagindex1(3)) ...
-                            ' -threshC ' num2str(param.fix1.thresh_vecC1) ' -threshV ' num2str(param.fix1.thresh_vel1) ' -maskName ' param.fix1.maskname];
-                    else %windows system
-                        cmd_FIX=['"' Param.xml.FixBin '" -f "' filecell.nc.civ1{ifile,j} '" -fi1 ' num2str(param.fix1.flagindex1(1)) ...
-                            ' -fi2 ' num2str(param.fix1.flagindex1(2)) ' -fi3 ' num2str(param.fix1.flagindex1(3)) ...
-                            ' -threshC ' num2str(param.fix1.thresh_vecC1) ' -threshV ' num2str(param.fix1.thresh_vel1) ' -maskName "' param.fix1.maskname '"'];
-                        cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
-                    end
-                    cmd=[cmd cmd_FIX '\n'];
+                    cmd=[cmd...
+                        cmd_fix(filecell.nc.civ1{ifile,j},Param,'Fix1') '\n'];
                 case 'CivAll'
                     fix1.inputFileName=filecell.nc.civ1{ifile,j} ;
                     fix1.fi1=num2str(param.fix1.flagindex1(1));
@@ -4293,83 +4264,84 @@ set(handles.PairCiv1_title,'Visible',state)
 
 %------------------------------------------------------------------------
 % --- Read the parameters for checkciv1 on the interface
-function par=read_param_civ1(handles,filecell)
-%------------------------------------------------------------------------
-ibx_val=str2double(get(handles.num_Bx,'String'));
-par.ibx=num2str(ibx_val);
-iby_val=str2double(get(handles.num_By,'String'));
-par.iby=num2str(iby_val);
-isx=get(handles.num_Sx,'String');
-if isnan(str2double(isx)), isx='41'; set(handles.num_Sx,'String','41'), end; %default
-if str2double(isx)<ibx_val+8,isx=num2str(ibx_val+8); set(handles.num_Sx,'String',num2str(ibx_val+8)); end
-isy=get(handles.num_Sy,'String');
-if isnan(str2double(isy)), isy='41'; set(handles.num_Sy,'String','41'), end;%default
-if str2double(isy)<iby_val+8,isy=num2str(iby_val+8); set(handles.num_Sy,'String',num2str(iby_val+8)); end
-par.isx=get(handles.num_Sx,'String');
-par.isy=get(handles.num_Sy,'String');
-par.shiftx=get(handles.num_Shiftx,'String');
-par.shifty=get(handles.num_Shifty,'String');
-if isnan(str2double(par.isx))
-    par.isx='41';%default
-    set(handles.num_Sx,'String','41');
-end
-if isnan(str2double(par.isy))
-    par.isy='41'; %default
-    set(handles.num_Sy,'String','41');
-end
-if isnan(str2double(par.shiftx))
-    par.shiftx='0';%default
-    set(handles.num_Shiftx,'String','0');
-end
-if isnan(str2double(par.shifty))
-    par.shifty='0'; %default
-    set(handles.num_Shifty,'String','0');
-end
-par.rho=get(handles.num_Rho,'String');
-if isequal(get(handles.num_Rho,'Style'),'popupmenu')
-    index=get(handles.num_Rho,'Value');
-    par.rho=par.rho{index};
-end
-dummy=get(handles.num_Dx,'String');
-par.dx=dummy{1};
-dummy=get(handles.num_Dy,'String');
-par.dy=dummy{1};
-if isnan(str2double(par.dx))
-    if isempty(get(handles.txt_GridName,'String'));
-        par.dx='0'; %just read by civ program, not used
-    else
-        par.dx='20';%default
-        set(handles.num_Dx,'String','20');
-    end
-end
-if isnan(str2double(par.dy))
-    if isempty(get(handles.txt_GridName,'String'));
-        par.dy='0';%just read by civ program, not used
-    else
-        par.dy='20';%default
-        set(handles.dy_civ1_title,'String','20');
-    end
-end
-par.pxcmx='1'; %velocities are expressed in pixel dispalcement
-par.pxcmy='1';
-% if exist('file_ima','var')
-A=imread(filecell.ima1.civ1{1,1});%read the first image to get the size
-sizim=size(A);
-par.npx=num2str(sizim(2));
-par.npy=num2str(sizim(1));
-%TODO : civ should not need npx and npy
-
-
+% function par=read_param_civ1(handles,filecell)
+% % not deeden anymore
+% %------------------------------------------------------------------------
+% ibx_val=str2double(get(handles.num_Bx,'String'));
+% par.ibx=num2str(ibx_val);
+% iby_val=str2double(get(handles.num_By,'String'));
+% par.iby=num2str(iby_val);
+% isx=get(handles.num_Sx,'String');
+% if isnan(str2double(isx)), isx='41'; set(handles.num_Sx,'String','41'), end; %default
+% if str2double(isx)<ibx_val+8,isx=num2str(ibx_val+8); set(handles.num_Sx,'String',num2str(ibx_val+8)); end
+% isy=get(handles.num_Sy,'String');
+% if isnan(str2double(isy)), isy='41'; set(handles.num_Sy,'String','41'), end;%default
+% if str2double(isy)<iby_val+8,isy=num2str(iby_val+8); set(handles.num_Sy,'String',num2str(iby_val+8)); end
+% par.isx=get(handles.num_Sx,'String');
+% par.isy=get(handles.num_Sy,'String');
+% par.shiftx=get(handles.num_Shiftx,'String');
+% par.shifty=get(handles.num_Shifty,'String');
+% if isnan(str2double(par.isx))
+%     par.isx='41';%default
+%     set(handles.num_Sx,'String','41');
 % end
-%time=get(handles.RootName,'UserData'); %get the set of times
-dummy=get(handles.txt_GridName,'String');
-par.gridname=dummy{1};
-par.gridflag='y';
-if strcmp(par.gridname,'')|| isempty(par.gridname)
-    par.gridname='nogrid';
-    par.gridflag='n';
-end
-
+% if isnan(str2double(par.isy))
+%     par.isy='41'; %default
+%     set(handles.num_Sy,'String','41');
+% end
+% if isnan(str2double(par.shiftx))
+%     par.shiftx='0';%default
+%     set(handles.num_Shiftx,'String','0');
+% end
+% if isnan(str2double(par.shifty))
+%     par.shifty='0'; %default
+%     set(handles.num_Shifty,'String','0');
+% end
+% par.rho=get(handles.num_Rho,'String');
+% if isequal(get(handles.num_Rho,'Style'),'popupmenu')
+%     index=get(handles.num_Rho,'Value');
+%     par.rho=par.rho{index};
+% end
+% dummy=get(handles.num_Dx,'String');
+% par.dx=dummy{1};
+% dummy=get(handles.num_Dy,'String');
+% par.dy=dummy{1};
+% if isnan(str2double(par.dx))
+%     if isempty(get(handles.txt_GridName,'String'));
+%         par.dx='0'; %just read by civ program, not used
+%     else
+%         par.dx='20';%default
+%         set(handles.num_Dx,'String','20');
+%     end
+% end
+% if isnan(str2double(par.dy))
+%     if isempty(get(handles.txt_GridName,'String'));
+%         par.dy='0';%just read by civ program, not used
+%     else
+%         par.dy='20';%default
+%         set(handles.dy_civ1_title,'String','20');
+%     end
+% end
+% par.pxcmx='1'; %velocities are expressed in pixel dispalcement
+% par.pxcmy='1';
+% % if exist('file_ima','var')
+% A=imread(filecell.ima1.civ1{1,1});%read the first image to get the size
+% sizim=size(A);
+% par.npx=num2str(sizim(2));
+% par.npy=num2str(sizim(1));
+% %TODO : civ should not need npx and npy
+% 
+% 
+% % end
+% %time=get(handles.RootName,'UserData'); %get the set of times
+% dummy=get(handles.txt_GridName,'String');
+% par.gridname=dummy{1};
+% par.gridflag='y';
+% if strcmp(par.gridname,'')|| isempty(par.gridname)
+%     par.gridname='nogrid';
+%     par.gridflag='n';
+% end
+% 
 %------------------------------------------------------------------------
 function par=read_param_fix1(handles,filecell)
 %------------------------------------------------------------------------
@@ -5429,7 +5401,7 @@ function cmd=cmd_civ1(filename,Param)
 
 %changes : filename_cmx -> filename ( no extension )
 
-filename=regexprep(filename,'.nc','')
+filename=regexprep(filename,'.nc','');
 
 if isequal(Param.Civ1.Dt,'0')
     Param.Civ1.Dt='1' ;%case of 'displacement' mode
@@ -5441,8 +5413,8 @@ fprintf(fid,['##############   CMX file' '\n' ]);
 fprintf(fid,   ['FirstImage ' regexprep(Param.Civ1.filename_ima_a,'\\','\\\\') '\n' ]);% for windows compatibility
 fprintf(fid,   ['LastImage  ' regexprep(Param.Civ1.filename_ima_b,'\\','\\\\') '\n' ]);% for windows compatibility
 fprintf(fid,  ['XX' '\n' ]);
-fprintf(fid,  ['Mask ' Param.Civ1.maskflag '\n' ]);
-fprintf(fid,  ['MaskName ' regexprep(Param.Civ1.maskname,'\\','\\\\') '\n' ]);
+fprintf(fid,  ['Mask ' Param.Civ1.MaskFlag '\n' ]);
+fprintf(fid,  ['MaskName ' regexprep(Param.Civ1.MaskName,'\\','\\\\') '\n' ]);
 fprintf(fid,   ['ImageSize ' num2str(Param.Civ1.npx) ' ' num2str(Param.Civ1.npy) '\n' ]);   %VERIFIER CAS GENERAL ?
 fprintf(fid,   ['CorrelationBoxesSize ' num2str(Param.Civ1.Bx) ' ' num2str(Param.Civ1.By) '\n' ]);
 fprintf(fid,   ['SearchBoxeSize ' num2str(Param.Civ1.Sx) ' ' num2str(Param.Civ1.Sy) '\n' ]);
@@ -5453,8 +5425,8 @@ fprintf(fid,   ['Dt_TO ' num2str(Param.Civ1.Dt) ' ' num2str(Param.Civ1.T0) '\n' 
 fprintf(fid,  ['PixCmXY ' num2str(Param.Civ1.pxcmx) ' ' num2str(Param.Civ1.pxcmy) '\n' ]);
 fprintf(fid,  ['XX 1' '\n' ]);
 fprintf(fid,   ['ShiftXY ' num2str(Param.Civ1.Shiftx) ' '  num2str(Param.Civ1.Shifty) '\n' ]);
-fprintf(fid,  ['Grid ' Param.Civ1.gridflag '\n' ]);
-fprintf(fid,   ['GridName ' regexprep(Param.Civ1.gridname,'\\','\\\\') '\n' ]);
+fprintf(fid,  ['Grid ' Param.Civ1.GridFlag '\n' ]);
+fprintf(fid,   ['GridName ' regexprep(Param.Civ1.GridName,'\\','\\\\') '\n' ]);
 fprintf(fid,   ['XX 85' '\n' ]);
 fprintf(fid,   ['XX 1.0' '\n' ]);
 fprintf(fid,   ['XX 1.0' '\n' ]);
@@ -5486,4 +5458,22 @@ else %Windows system
 %     namelog=regexprep(namelog,'\\','\\\\');
 %     cmd=[cmd '\n ' 'copy /Y "' filename '.log' '" "' filename '.civ1.log"']; %preserve the log file as .civ1.log
     cmd=[cmd 'del "' filename '.cmx'];
+end
+
+
+function cmd=cmd_fix(filename,Param,fixname)
+%%
+filename=regexprep(filename,'.nc','');
+if isunix
+    cmd=[Param.xml.FixBin ' -f ' filename '.nc -fi1 ' num2str(Param.(fixname).flagindex(1)) ...
+        ' -fi2 ' num2str(Param.(fixname).flagindex(2)) ' -fi3 ' num2str(Param.(fixname).flagindex(3)) ...
+        ' -threshC ' num2str(Param.(fixname).thresh_vecC) ' -threshV ' num2str(Param.(fixname).thresh_vel)...
+        ' -maskName ' Param.(fixname).MaskName '" > ' filename '.fix1.log'];
+else
+    cmd=['"' Param.xml.FixBin '" -f "' filename '.nc" -fi1 ' num2str(Param.(fixname).CheckFmin2)...
+        ' -fi2 ' num2str(Param.(fixname).CheckF2) ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
+        ' -threshC ' num2str(Param.(fixname).MinCorr)...
+        ' -maskName "' Param.(fixname).MaskName '" > "' filename '.fix1.log"'];
+%         ' -threshV ' num2str(Param.(fixname).thresh_vel)...
+    cmd=regexprep(cmd,'\\','\\\\');
 end
