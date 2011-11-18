@@ -207,6 +207,12 @@ handles.output = hObject;
 %% Update handles structure (standard GUI)
 guidata(hObject, handles);
 
+%% check the path and date of modification of all functions in uvmat
+path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
+[errormsg,date_str,svn_info]=check_files;%check the path of the functions called by uvmat.m
+date_str=['last modification: ' date_str];
+
+
 %% set the position of colorbar and ancillary GUIs:
 set(hObject,'Units','Normalized')
 movegui(hObject,'center')
@@ -306,10 +312,6 @@ set(handles.transform_fct,'String',menu_str)
 set(handles.transform_fct,'UserData',fct_handle)% store the list of path in UserData of ACTION
 
 
-%% check the path and date of modification of all functions in uvmat
-path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
-[errormsg,date_str]=check_functions;%check the path of the functions called by uvmat.m
-date_str=['last modification: ' date_str];
 
 %% case of an input argument for uvmat
 testinputfield=0;
@@ -350,16 +352,13 @@ if exist('input','var')
     end
 else
    if ishandle(handles.UVMAT_title)
-       fid=fopen('revision.info');
-       if fid~=-1
-         a=textscan(fid,'%s%s%s',1,'HeaderLines',4,'Delimiter',' ');
-         set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG'};{'GNU General Public License'}; {path_to_uvmat}; ...
-           {['at revision ' a{3}{1}]};{date_str};errormsg]);
-         fclose(fid);
-       else
-          set(handles.UVMAT_title,'String',[{'Copyright Joel Sommeria, 2008, Coriolis/ LEGI / CNRS-UJF-INPG'};{'GNU General Public License'};{path_to_uvmat};...
-               {date_str};errormsg]);
-       end
+       set(handles.UVMAT_title,'String',...
+           [{'Copyright  LEGI UMR 5519 /CNRS-UJF-Grenoble INP, 2010'};...
+           {'GNU General Public License'};...
+           {path_to_uvmat};...
+           {date_str};...
+           {['SVN version : ' num2str(svn_info.cur_rev)]};...
+           errormsg]);
    end
 end
 set(handles.uvmat,'UserData',UvData)
