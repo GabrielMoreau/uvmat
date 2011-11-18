@@ -2071,6 +2071,10 @@ for ifile=1:nbfield
                 fprintf(fid,cmd);
                 fclose(fid);
                 
+                if isunix
+                    system(['chmod +x ' filename_bat]);
+                end
+                
                 batch_file_list{length(batch_file_list)+1}=filename_bat;
                 
 %                 if batch
@@ -2192,46 +2196,71 @@ if batch
                 cmd=['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' batch_file_list{p}];
                 display(cmd);eval(cmd);
             end
-        case 'sge'
-            [s,w]=unix('qstat -q civ.q|grep job_| wc -l'); %check the waiting list (command unix)
-            w(end)=[];
-            str_displ={[w ' jobs in the waiting list'];...
-                '***********************';...
-                'JOBS PRIORITY POLICY';...
-                '- urgent = less than 100 images pairs';...
-                '- normal = during the experiments';...
-                '- low = post processing';...
-                '***********************';...
-                'Select a priority:'};
-            str={'urgent';'normal';'low'};
-            [ind_answer,v] = listdlg('PromptString',str_displ,...
-                'SelectionMode','single',...
-                'ListString',str,'ListSize',[200 100],'Name','job priority','InitialValue',3);
-            pvalue=num2str((1-ind_answer)*500); %
-            if isequal(v,0) % to handle Cancel button and figure close
-                errormsg='job submission cancelled';
-                return
-            end
-        case 'oar'
-            for p=0:floor(length(batch_file_list)/6);                
-                filename_batch_group=fullfile(Rootbat,['job_list_' num2str(p) '.bat']);
-                fid=fopen(filename_batch_group,'w');
-                if fid==-1
-                    msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
-                    return
+        case 'oar_old'
+                for p=1:length(batch_file_list)
+                    oar_command=['!oarsub -n CIVX -q nicejob '...
+                   '-E ' regexprep(batch_file_list{p},'.bat','.errors') ' -O ' regexprep(batch_file_list{p},'.bat','.log ')...
+                    '-l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:60:00"   ' batch_file_list{p}];
+                display(oar_command);eval(oar_command);
                 end
-                if p==floor(length(batch_file_list)/6)
-                    kmax=mod(length(batch_file_list),6);
-                else
-                    kmax=6;
+       
+           
+       case 'oar_perl'
+                filename_joblist=fullfile(Rootbat,'job_list.txt');
+                fid=fopen(filename_joblist,'w');
+
+                for p=1:length(batch_file_list)
+                    oar_command=['oarsub -n CIVX '...
+                        '-l "/core=1,walltime=00:10:00"   ' batch_file_list{p}];
+                    fprintf(fid,[oar_command '\n']);
                 end
-                for k=1:kmax
-                    fprintf(fid,['sh ' batch_file_list{p*6+k} '\n']);
-                end
+                fclose(fid)
+                oar_command=['oarsub -t container -n civx-container -l /core=24,walltime=00:35:00 "/fsnet/data/legi/calcul9/home/gostiaux/Documents/MATLAB/uvmat_dev/oar-dispatch -f '...
+                    filename_joblist '"'];
+                filename_oarcommand=fullfile(Rootbat,'oar_command');
+                fid=fopen(filename_oarcommand,'w');
+                fprintf(fid,[oar_command '\n']);
                 fclose(fid);
-                system(['chmod +x ' filename_batch_group]);
-                eval(  ['!oarsub -n CIVX -q nicejob -l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:60:00"   ' filename_batch_group]);
-            end
+%                 display(oar_command);
+                eval(['! . ' filename_oarcommand]);
+
+        case 'oar'%'oar_mpi'
+                filename_joblist=fullfile(Rootbat,'job_list.txt');
+                fid=fopen(filename_joblist,'w');
+
+                for p=1:length(batch_file_list)
+                    fprintf(fid,[batch_file_list{p} '\n']);
+                end
+                fclose(fid)
+                
+                
+%                 oarsub -S ./oar.sub 
+
+                
+                
+
+                
+            %             for p=0:floor(length(batch_file_list)/6);                
+%                 filename_batch_group=fullfile(Rootbat,['job_list_' num2str(p) '.bat']);
+%                 fid=fopen(filename_batch_group,'w');
+%                 if fid==-1
+%                     msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+%                     return
+%                 end
+%                 if p==floor(length(batch_file_list)/6)
+%                     kmax=mod(length(batch_file_list),6);
+%                 else
+%                     kmax=6;
+%                 end
+%                 for k=1:kmax
+%                     fprintf(fid,['sh ' batch_file_list{p*6+k} '\n']);
+%                 end
+%                 fclose(fid);
+%                 system(['chmod +x ' filename_batch_group]);
+%                 eval(  ['!oarsub -n CIVX -q nicejob '...
+%                     '-E '  flname '.errors -O ' flname '.log '...
+%                     '-l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:60:00"   ' filename_batch_group]);
+%             end
         case 'oar_new' % to be develloped with Patrick Begou
                 filename_joblist=fullfile(Rootbat,'job_list.txt');
                 fid=fopen(filename_superbat,'w');
