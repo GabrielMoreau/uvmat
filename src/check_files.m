@@ -30,6 +30,7 @@ errormsg={};%default
 date_str='';
 svn_info.rep_rev=[];
 svn_info.cur_rev=[];
+svn_info.status=[];
 list_fct={...
     'calc_field';...% defines fields (velocity, vort, div...) from civx data and calculate them
     'cell2tab';... %transform a Matlab cell in a character array suitable for display in a table
@@ -148,17 +149,17 @@ if status==0
     svn_info.rep_rev=num2str(t.rev);
     [~,result]=system('svn status');    
     svn_info.status=result;
-end
-
-if svn_info.rep_rev>svn_info.cur_rev
-    errormsg {length(errormsg)+1}=['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder'];
-end
-
-modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');
-
-if ~isempty(modifications)
-    for k=1:length(modifications)
-        errormsg {length(errormsg)+1}=modifications{k};
+    if svn_info.rep_rev>svn_info.cur_rev
+        errormsg {length(errormsg)+1}=['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder'];
+    end
+    
+    modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');
+    
+    if ~isempty(modifications)
+        for k=1:length(modifications)
+            errormsg {length(errormsg)+1}=modifications{k};
+        end
     end
 end
 errormsg=errormsg';
+
