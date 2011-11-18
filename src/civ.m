@@ -245,12 +245,6 @@ if exist('param','var') && isfield(param,'RootName') && ~isempty(param.RootName)
     RootName_Callback(hObject, eventdata, handles);
 end
 
-
-%TESTS
-
-
-struct=read_panel(handles.panel_Patch2)
-
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = civ_OutputFcn(hObject, eventdata, handles)
@@ -736,7 +730,6 @@ if isempty(time) && ~strcmp(nom_type_search,'none') && ~strcmp(nom_type_search,'
         end
     end
     first_i=max(field_i,1); 
-    nom_type_search
     if numel(regexp(nom_type_search,'\D'))>=1%two indices i and j
         field_i=browse.num_i1;
         field_j=browse.num_j2;
@@ -1025,7 +1018,6 @@ function find_netcpair_civ1(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(gcf,'Pointer','watch')
 %nomenclature types
-'TESTpair'
 filebase=get(handles.RootName,'String');
 [filepath,Nme,ext_dir]=fileparts(filebase);
 browse=get(handles.RootName,'UserData');
@@ -1107,8 +1099,6 @@ if get(handles.CIV1,'Value')==0 %
     end   
     % case of no displayed pair
     if isequal(select,zeros(size(1:nbpair)))
-        'TESTzero'
-        browse
         if isfield(browse,'incr_pair') && ~isequal(browse.incr_pair,[0 0])
             num_i1=ref_i-floor(browse.incr_pair(1)/2);
             num_i2=ref_i+ceil(browse.incr_pair(1)/2);
@@ -1213,12 +1203,12 @@ compare=compare_list{val};
 if strcmp(compare,'displacement')
     mode='displacement';
 else
-    mode_list=get(handles.CivMode,'String')
+    mode_list=get(handles.CivMode,'String');
     if isempty(mode_list)
         msgbox_uvmat('ERROR','please enter an input image or netcdf file')
         return
     end
-    mode_value=get(handles.CivMode,'Value')
+    mode_value=get(handles.CivMode,'Value');
     mode=mode_list{mode_value};
 end
 
@@ -1676,7 +1666,7 @@ end
 
 %% get fix1 parameters 
 if box_test(2)
-    param.fix1=read_param_fix1(handles,filecell)
+    param.fix1=read_param_fix1(handles,filecell);
 end
 
 %% get patch1 parameters 
@@ -1709,25 +1699,6 @@ end
 %% get patch2 parameters
 if box_test(6)==1
     param.Patch2=read_panel(handles.panel_Patch1);
-%     rho_patch2=str2double(get(handles.num_SmoothParam,'String'));
-%     if isnan(rho_patch2)
-%         rho_patch2='1000';
-%         set(handles.num_SmoothParam,'String','1')
-%     else
-%         rho_patch2=num2str(1000*rho_patch2);
-%     end
-%     nx_patch2=get(handles.num_Nx,'String');
-%     ny_patch2=get(handles.num_Ny,'String');
-%     if isnan(str2double(nx_patch2))
-%         nx_patch2='50' ;%default
-%         set(handles.num_Nx,'String','50');
-%     end
-%     if isnan(str2double(ny_patch2))
-%         ny_patch2='50' ;%default
-%         set(handles.num_Ny,'String','50');
-%     end
-%     subdomain_patch2=get(handles.num_SubdomainSize,'String');
-%     thresh_patch2=get(handles.num_MaxDiff,'String');
 end
 
 %%
@@ -1980,7 +1951,7 @@ for ifile=1:nbfield
             end
             switch CivMode
                 case 'CivX'
-                    cmd_CIV2=CIV2_CMD(filecell.nc.civ2{ifile,j},[],param);%creates the cmx file [fullfile(Rootbat,Filebat) '.civ2.cmx]
+                    cmd_CIV2=CIV2_CMD(filecell.nc.civ2{ifile,j},param);%creates the cmx file [fullfile(Rootbat,Filebat) '.civ2.cmx]
                     cmd=[cmd cmd_CIV2 '\n'];
                 case 'CivAll'
                     CivAllCmd=[CivAllCmd ' civ2 '];
@@ -2046,7 +2017,7 @@ for ifile=1:nbfield
         if box_test(6)==1
             switch CivMode
                 case 'CivX'
-                    cmd_PATCH=cmd_path(filecell.nc.civ2{ifile,j},param);
+                    cmd_PATCH=cmd_patch(filecell.nc.civ2{ifile,j},param.Patch2,param.global.PatchBin);
                     cmd=[cmd cmd_PATCH '\n'];
                 case 'CivAll'
                     patch2.inputFileName=filecell.nc.civ1{ifile,j} ;
@@ -2867,7 +2838,7 @@ if box_test(4)==1 || box_test(5)==1 || box_test(6)==1 %civ2
                             return
                         end
                     elseif box_test(3)==0; %check the existence of patch if it is not calculated
-                        Data=nc2struct(filename,'ListGlobalAttribute','CivStage','patch')
+                        Data=nc2struct(filename,'ListGlobalAttribute','CivStage','patch');
                         if ~isempty(Data.CivStage)
                             if Data.CivStage<3 %test for civ files
                                 msgbox_uvmat('ERROR',['no patch data in ' filename])
@@ -3222,7 +3193,7 @@ namelog=[filename_nc(1:end-3) '_patch.log'];
         ' -f ' filename_nc ' -m ' num2str(Param.Nx)...
         ' -n ' num2str(Param.Ny) ' -ro ' num2str(Param.SmoothingParam)...
         ' -nopt ' num2str(Param.SubdomainSize) ...
-        '  > ' namelog ' 2>&1'] % redirect standard output to the log file
+        '  > ' namelog ' 2>&1']; % redirect standard output to the log file
     else
       cmd=['"' param.global.PatchBin...
           '" -f "' filename_nc '" -m ' param.Patch1.Nx...
@@ -3449,7 +3420,7 @@ end
 % --- Executes on button press in get_mask_civ1: select box for mask option
 function get_mask_civ1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-maskval=get(handles.get_mask_civ1,'Value')
+maskval=get(handles.get_mask_civ1,'Value');
 if isequal(maskval,0)
     set(handles.mask_civ1,'String','')
 else
@@ -4398,7 +4369,7 @@ function cmd_CIV1=CIV1_CMD(filename,param)
 
 %changes : filename_cmx -> filename ( no extension )
 
-filename=regexprep(filename,'.nc','')
+filename=regexprep(filename,'.nc','');
 
 if isequal(param.civ1.Dt,'0')
     param.civ1.Dt='1' ;%case of 'displacement' mode
@@ -4504,6 +4475,7 @@ function civ2=CIV2_CMD_Unified(filename,namelog,par)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
 %global CivBin%name of the executable for civ1 calculation
+
 filename=regexprep(filename,'.nc','');
 
 civ2.image1=par.filename_ima_a;
@@ -4557,7 +4529,8 @@ function cmd_CIV2=CIV2_CMD(filename,param)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
 % global civ2Bin sge%name of the executable for civ1 calculation
-if isequal(par.Dt,'0')
+filename=regexprep(filename,'.nc','');
+if isequal(param.civ2.Dt,'0')
     param.civ2.Dt='1' ;%case of 'displacement' mode
 end
 param.civ2.filename_ima_a=regexprep(param.civ2.filename_ima_a,'.png','');
@@ -4721,7 +4694,7 @@ if test==2 || test==3 % case 'dispalcemen' or 'stereo PIV'
     fileinput=[PathName FileName];%complete file name
     sizf=size(fileinput);
     if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
-    [path,name,ext]=fileparts(fileinput)
+    [path,name,ext]=fileparts(fileinput);
     [path1]=fileparts(filebase);
     if isunix
         [status,path]=system(['readlink ' path])
@@ -5333,7 +5306,6 @@ for ichild=1:numel(hchild)
             check_input=0;          
     end
     if check_input
-        key
         eval(['struct.' key '=input;'])
     end
 end
