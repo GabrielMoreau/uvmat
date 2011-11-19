@@ -1,6 +1,7 @@
 % --------------------------------------------------------------------
 % --- read a GUI with handle 'handle' producing a structure 'struct'
 function struct=read_GUI(handle)
+struct=[];%default
 hchild=get(handle,'children');
 for ichild=1:numel(hchild)
     if strcmp(get(hchild(ichild),'Visible'),'on')

@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 18-Nov-2011 15:30:17
+% Last Modified by GUIDE v2.5 19-Nov-2011 10:00:27
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -1528,7 +1528,7 @@ if isequal(get(handles.CheckMask,'Value'),1)
     end
 end
 if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.mask_fix2,'String');
+    maskname=get(handles.txt_MaskName,'String');
     if ~exist(maskname,'file')
         get_mask_fix2_Callback(hObject, eventdata, handles);
     end
@@ -1849,11 +1849,7 @@ for ifile=1:nbfield
             param.civ2.term_b=num2stra(num_b_civ2(j),nom_type_nc);
             param.civ2.filename_nc1=filecell.nc.civ1{ifile,j};
             param.civ2.filename_nc1(end-2:end)=[]; % remove '.nc'
-            test_mask=get(handles.CheckMask,'Value');
-            if test_mask==0
-                param.civ2.maskname='noFile use default';
-                param.civ2.maskflag='n';
-            else
+            if Param.Civ2.CheckMask
                 maskdispl=get(handles.txt_Mask,'String');
                 if exist(maskdispl,'file')
                     param.civ2.maskname=maskdispl;
@@ -1870,6 +1866,9 @@ for ifile=1:nbfield
                         param.civ2.maskflag='n';
                     end
                 end
+            else
+                param.civ2.maskname='noFile use default';
+                param.civ2.maskflag='n';
             end
             gridname=get(handles.txt_GridName,'String');
             if numel(gridname)>=4 && isequal(gridname(end-3:end),'grid')
@@ -1916,7 +1915,7 @@ for ifile=1:nbfield
             if test_mask==0
                 maskname=''; %no mask used
             else
-                maskdispl=get(handles.mask_fix2,'String');
+                maskdispl=get(handles.txt_MaskName,'String');
                 maskbase=[filecell.filebase '_' maskdispl]; %
                 nbslice_mask=str2double(maskdispl(1:end-4)); %
                 num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
@@ -2065,7 +2064,7 @@ for ifile=1:nbfield
                         fix1.WarnFlags=[fix1.WarnFlags 3];
                     end
                     fix1.LowerBoundCorr=thresh_vecC1;
-                    if get(handles.inf_sup1,'Value')
+                    if get(handles.num_MinVel,'Value')
                         fix1.UppperBoundVel=thresh_vel1;
                     else
                         fix1.LowerBoundVel=thresh_vel1;
@@ -2093,17 +2092,17 @@ for ifile=1:nbfield
                 end
                 if Param.CheckFix2==1
                     fix2.WarnFlags=[];
-                    if get(handles.vec_Fmin2_2,'Value')
+                    if get(handles.CheckFmin2,'Value')
                         fix2.WarnFlags=[fix2.WarnFlags -2];
                     end
-                    if get(handles.vec_F4,'Value')
+                    if get(handles.CheckF4,'Value')
                         fix2.WarnFlags=[fix2.WarnFlags 4];
                     end
-                    if get(handles.vec_F3_2,'Value')
+                    if get(handles.CheckF3,'Value')
                         fix2.WarnFlags=[fix2.WarnFlags 3];
                     end
                     fix2.LowerBoundCorr=thresh_vec2C;
-                    if get(handles.inf_sup2,'Value')
+                    if get(handles.num_MinVel,'Value')
                         fix2.UppperBoundVel=thresh_vel2;
                     else
                         fix2.LowerBoundVel=thresh_vel2;
@@ -3233,7 +3232,7 @@ set(handles.ref_j,'String', num2str(first_j))% reference index for pair dt = fir
 ref_j_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in case of non constant dt)
 
 %------------------------------------------------------------------------
-% --- Executes on button press in SearchRange: determine the search range num_Sx,num_Sy
+% --- Executes on button press in SearchRange: determine the search range num_Searchx,num_Searchy
 function SearchRange_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %determine pair numbers
@@ -3255,7 +3254,7 @@ else
 end
 
 %------------------------------------------------------------------------
-% ---  determine the search range num_Sx,num_Sy and shift
+% ---  determine the search range num_Searchx,num_Searchy and shift
 function get_search_range(hObject, eventdata, handles)
 umin=str2double(get(handles.umin,'String'));
 umax=str2double(get(handles.umax,'String'));
@@ -3321,8 +3320,8 @@ if ~(isnan(umin)||isnan(umax)||isnan(vmin)||isnan(vmax))
     isy=2*ceil(isy/2)+1;
     set(handles.num_Shiftx,'String',num2str(shiftx));
     set(handles.num_Shifty,'String',num2str(shifty));
-    set(handles.num_Sx,'String',num2str(isx));
-    set(handles.num_Sy,'String',num2str(isy));
+    set(handles.num_Searchx,'String',num2str(isx));
+    set(handles.num_Searchy,'String',num2str(isy));
 end
 
 %------------------------------------------------------------------------
@@ -3408,7 +3407,7 @@ end
 %     set(handles.txt_MaskName,'String',mask_displ)
 %     set(handles.txt_MaskName,'String',mask_displ)
 %     set(handles.txt_Mask,'String',mask_displ)
-%     set(handles.mask_fix2,'String',mask_displ)
+%     set(handles.txt_MaskName,'String',mask_displ)
 % end
 % set(handles.CheckMask,'Value',maskval)%update the checkciv2 mask with the same option as checkciv1
 
@@ -3453,7 +3452,7 @@ else
     end
     set(handles.txt_MaskName,'String',mask_displ)
     set(handles.txt_Mask,'String',mask_displ)
-    set(handles.mask_fix2,'String',mask_displ)
+    set(handles.txt_MaskName,'String',mask_displ)
 end
 
 %------------------------------------------------------------------------
@@ -3494,7 +3493,7 @@ else
         set(handles.CheckMask,'Value',1)
     end
     set(handles.txt_Mask,'String',mask_displ)
-    set(handles.mask_fix2,'String',mask_displ)
+    set(handles.txt_MaskName,'String',mask_displ)
 end
 
 %------------------------------------------------------------------------
@@ -3503,7 +3502,7 @@ function get_mask_fix2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 maskval=get(handles.CheckMask,'Value');
 if isequal(maskval,0)
-    set(handles.mask_fix2,'String','')
+    set(handles.txt_MaskName,'String','')
 else
     mask_displ='no mask'; %default
     filebase=get(handles.RootName,'String');
@@ -3531,7 +3530,7 @@ else
     if isequal(mask_displ,'no mask')
         set(handles.CheckMask,'Value',0)
     end
-    set(handles.mask_fix2,'String',mask_displ)
+    set(handles.txt_MaskName,'String',mask_displ)
 end
 
 %------------------------------------------------------------------------
@@ -3869,8 +3868,8 @@ end
 
 % set(handles.num_Bx,'Visible',state)
 % set(handles.num_By,'Visible',state)
-% set(handles.num_Sx,'Visible',state)
-% set(handles.num_Sy,'Visible',state)
+% set(handles.num_Searchx,'Visible',state)
+% set(handles.num_Searchy,'Visible',state)
 % set(handles.num_Shiftx,'Visible',state)
 % set(handles.num_Shifty,'Visible',state)
 % set(handles.num_Rho,'Visible',state)
@@ -3937,13 +3936,13 @@ end
 % set(handles.CheckF3,'Visible',state)
 % set(handles.num_MinCorr,'Visible',state)
 % set(handles.thresh_vecC_title,'Visible',state)
-% set(handles.num_MaxVel,'Visible',state)
-% set(handles.thresh_vel_text,'Visible',state)
+% set(handles.num_MinVel,'Visible',state)
+% set(handles.TitleMinVel,'Visible',state)
 % set(handles.txt_MaskName,'Visible',state)
 % set(handles.CheckMask,'Visible',state)
 % set(handles.get_ref_fix1,'Visible',state)
 % set(handles.ref_fix1,'Visible',state)
-% set(handles.inf_sup1,'Visible',state)
+% set(handles.num_MinVel,'Visible',state)
 % set(handles.field_ref1,'Visible',state)
 
 %------------------------------------------------------------------------
@@ -4019,11 +4018,11 @@ else
 end
 
 % 
-% set(handles.ibx_civ2,'Visible',state)
-% set(handles.iby_civ2,'Visible',state)
-% set(handles.decimal,'Visible',state)
-% set(handles.deformation,'Visible',state)
-% set(handles.rho_civ2,'Visible',state)
+% set(handles.num_Bx,'Visible',state)
+% set(handles.num_By,'Visible',state)
+% set(handles.CheckDecimal,'Visible',state)
+% set(handles.CheckDeformation,'Visible',state)
+% set(handles.num_Rho,'Visible',state)
 % set(handles.num_Dx,'Visible',state)
 % set(handles.num_Dy,'Visible',state)
 % set(handles.CheckGrid,'Visible',state)
@@ -4041,8 +4040,8 @@ end
 % set(handles.ImaThreshold2,'Visible',state)
 % set(handles.ImaThreshold_title2,'Visible',state)
 % if isequal(state,'off')
-%     set(handles.MinIma2,'Visible','off')
-%     set(handles.MaxIma2,'Visible','off')
+%     set(handles.num_MinIma,'Visible','off')
+%     set(handles.num_MaxIma,'Visible','off')
 %     set(handles.ImaThreshold2,'Value',0)
 %     if isequal(get(handles.CheckFix2,'Value'),0) & isequal(get(handles.CheckPatch2,'Value'),0)
 %         set(handles.ListPairCiv2,'Visible','off')
@@ -4090,21 +4089,21 @@ end
 
 % set(handles.frame_fix2,'BackgroundColor',[1 1 0])
 % set(handles.REMOVE2,'Visible','on')
-% set(handles.vec_Fmin2_2,'Visible','on')
-% set(handles.vec_F4,'Visible','on')
-% set(handles.vec_F3_2,'Visible','on')
-% set(handles.thresh_vec2C,'Visible','on')
+% set(handles.CheckFmin2,'Visible','on')
+% set(handles.CheckF4,'Visible','on')
+% set(handles.CheckF3,'Visible','on')
+% set(handles.num_MinCorr,'Visible','on')
 % set(handles.thresh_vec2C_text,'Visible','on')
-% set(handles.thresh_vel2,'Visible','on')
-% set(handles.thresh_vel2_text,'Visible','on')
-% set(handles.mask_fix2,'Visible','on')
+% set(handles.num_MinVel,'Visible','on')
+% set(handles.TitleMinVel,'Visible','on')
+% set(handles.txt_MaskName,'Visible','on')
 % set(handles.CheckMask,'Visible','on')
 % set(handles.ListPairCiv2,'Visible','on')
 % set(handles.subdir_civ2,'Visible','on')
 % set(handles.subdir_civ2_text,'Visible','on')
 % set(handles.get_ref_fix2,'Visible','on')
 % set(handles.ref_fix2,'Visible','on')
-% set(handles.inf_sup2,'Visible','on')
+% set(handles.num_MinVel,'Visible','on')
 % set(handles.field_ref2,'Visible','on')
 
 % %------------------------------------------------------------------------
@@ -4112,18 +4111,18 @@ end
 % %------------------------------------------------------------------------
 % set(handles.frame_fix2,'BackgroundColor',[0.831 0.816 0.784])
 % set(handles.REMOVE2,'Visible','off')
-% set(handles.vec_Fmin2_2,'Visible','off')
-% set(handles.vec_F4,'Visible','off')
-% set(handles.vec_F3_2,'Visible','off')
-% set(handles.thresh_vec2C,'Visible','off')
+% set(handles.CheckFmin2,'Visible','off')
+% set(handles.CheckF4,'Visible','off')
+% set(handles.CheckF3,'Visible','off')
+% set(handles.num_MinCorr,'Visible','off')
 % set(handles.thresh_vec2C_text,'Visible','off')
-% set(handles.thresh_vel2,'Visible','off')
-% set(handles.thresh_vel2_text,'Visible','off')
-% set(handles.mask_fix2,'Visible','off')
+% set(handles.num_MinVel,'Visible','off')
+% set(handles.TitleMinVel,'Visible','off')
+% set(handles.txt_MaskName,'Visible','off')
 % set(handles.CheckMask,'Visible','off')
 % set(handles.get_ref_fix2,'Visible','off')
 % set(handles.ref_fix2,'Visible','off')
-% set(handles.inf_sup2,'Visible','off')
+% set(handles.num_MinVel,'Visible','off')
 % set(handles.field_ref2,'Visible','off')
 % if isequal(get(handles.CheckCiv2,'Value'),0) & isequal(get(handles.CheckPatch2,'Value'),0)
 %     set(handles.ListPairCiv2,'Visible','off')
@@ -4210,23 +4209,23 @@ set(handles.PairCiv1_title,'Visible',state)
 % par.ibx=num2str(ibx_val);
 % iby_val=str2double(get(handles.num_By,'String'));
 % par.iby=num2str(iby_val);
-% isx=get(handles.num_Sx,'String');
-% if isnan(str2double(isx)), isx='41'; set(handles.num_Sx,'String','41'), end; %default
-% if str2double(isx)<ibx_val+8,isx=num2str(ibx_val+8); set(handles.num_Sx,'String',num2str(ibx_val+8)); end
-% isy=get(handles.num_Sy,'String');
-% if isnan(str2double(isy)), isy='41'; set(handles.num_Sy,'String','41'), end;%default
-% if str2double(isy)<iby_val+8,isy=num2str(iby_val+8); set(handles.num_Sy,'String',num2str(iby_val+8)); end
-% par.isx=get(handles.num_Sx,'String');
-% par.isy=get(handles.num_Sy,'String');
+% isx=get(handles.num_Searchx,'String');
+% if isnan(str2double(isx)), isx='41'; set(handles.num_Searchx,'String','41'), end; %default
+% if str2double(isx)<ibx_val+8,isx=num2str(ibx_val+8); set(handles.num_Searchx,'String',num2str(ibx_val+8)); end
+% isy=get(handles.num_Searchy,'String');
+% if isnan(str2double(isy)), isy='41'; set(handles.num_Searchy,'String','41'), end;%default
+% if str2double(isy)<iby_val+8,isy=num2str(iby_val+8); set(handles.num_Searchy,'String',num2str(iby_val+8)); end
+% par.isx=get(handles.num_Searchx,'String');
+% par.isy=get(handles.num_Searchy,'String');
 % par.shiftx=get(handles.num_Shiftx,'String');
 % par.shifty=get(handles.num_Shifty,'String');
 % if isnan(str2double(par.isx))
 %     par.isx='41';%default
-%     set(handles.num_Sx,'String','41');
+%     set(handles.num_Searchx,'String','41');
 % end
 % if isnan(str2double(par.isy))
 %     par.isy='41'; %default
-%     set(handles.num_Sy,'String','41');
+%     set(handles.num_Searchy,'String','41');
 % end
 % if isnan(str2double(par.shiftx))
 %     par.shiftx='0';%default
@@ -4286,11 +4285,11 @@ set(handles.PairCiv1_title,'Visible',state)
 %------------------------------------------------------------------------
 function par=read_param_civ2(handles,file_ima)
 %------------------------------------------------------------------------
-par.ibx=get(handles.ibx_civ2,'String');
-par.iby=get(handles.iby_civ2,'String');
-par.rho=get(handles.rho_civ2,'String');
-par.decimal=int2str(get(handles.decimal,'Value'));
-par.deformation=int2str(get(handles.deformation,'Value'));
+par.ibx=get(handles.num_Bx,'String');
+par.iby=get(handles.num_By,'String');
+par.rho=get(handles.num_Rho,'String');
+par.decimal=int2str(get(handles.CheckDecimal,'Value'));
+par.deformation=int2str(get(handles.CheckDeformation,'Value'));
 par.dx=get(handles.num_Dx,'String');
 par.dy=get(handles.num_Dy,'String');
 if isnan(str2double(par.dx))
@@ -4448,8 +4447,8 @@ civ2.outputFileName=[filename '.nc'];
 civ2.correlationBoxesSize_X=par.ibx;
 civ2.correlationBoxesSize_Y=par.iby;
 civ2.ro=par.rho;
-%checkciv2.decimalShift=par.decimal;
-%checkciv2.deformation=par.deformation;
+%checkciv2.decimalShift=par.CheckDecimal;
+%checkciv2.CheckDeformation=par.CheckDeformation;
 if isequal(par.decimal,'1')
     civ2.decimalShift='y';
 else
@@ -4754,8 +4753,8 @@ if isfield(Data,'patch2') && isequal(Data.patch2,1)
 end
 set(handles.field_ref1,'String',menu_field);
 set(handles.field_ref1,'Value',length(menu_field));
-set(handles.inf_sup1,'Value',2);
-set(handles.num_MaxVel,'String','1');%default threshold
+set(handles.num_MinVel,'Value',2);
+set(handles.num_MinVel,'String','1');%default threshold
 set(handles.ref_fix1,'Enable','on')
 
 %------------------------------------------------------------------------
@@ -4798,8 +4797,8 @@ if isequal(get(handles.get_ref_fix2,'Value'),1)
     end
     set(handles.field_ref2,'String',menu_field);
     set(handles.field_ref2,'Value',length(menu_field));
-    set(handles.inf_sup2,'Value',2);
-    set(handles.thresh_vel2,'String','1');%default threshold
+    set(handles.num_MinVel,'Value',2);
+    set(handles.num_MinVel,'String','1');%default threshold
     set(handles.ref_fix2,'Enable','on')
     set(handles.ref_fix2,'Visible','on')
     set(handles.field_ref2,'Visible','on')
@@ -4811,7 +4810,7 @@ end
 %------------------------------------------------------------------------
 function ref_fix1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.inf_sup1,'Value',1);
+set(handles.num_MinVel,'Value',1);
 set(handles.field_ref1,'Value',1)
 set(handles.field_ref1,'String',{' '})
 set(handles.ref_fix1,'UserData',[]);
@@ -4821,12 +4820,12 @@ set(handles.thresh_vel1,'String','0');
 %------------------------------------------------------------------------
 function ref_fix2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.inf_sup2,'Value',1);
+set(handles.num_MinVel,'Value',1);
 set(handles.field_ref2,'Value',1)
 set(handles.field_ref2,'String',{' '})
 set(handles.ref_fix2,'UserData',[]);
 set(handles.ref_fix2,'String','');
-set(handles.thresh_vel2,'String','0');
+set(handles.num_MinVel,'String','0');
 
 %------------------------------------------------------------------------
 % --- Executes on button press in test_stereo1.
@@ -4869,11 +4868,11 @@ end
 function ImaThreshold2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 if isequal(get(handles.ImaThreshold2,'Value'),1)
-    set(handles.MinIma2,'Visible','on')
-    set(handles.MaxIma2,'Visible','on')
+    set(handles.num_MinIma,'Visible','on')
+    set(handles.num_MaxIma,'Visible','on')
 else
-    set(handles.MinIma2,'Visible','off')
-    set(handles.MaxIma2,'Visible','off')
+    set(handles.num_MinIma,'Visible','off')
+    set(handles.num_MaxIma,'Visible','off')
 end
 
 %------------------------------------------------------------------------
@@ -5300,7 +5299,7 @@ fprintf(fid,  ['Mask ' Param.Civ1.MaskFlag '\n' ]);
 fprintf(fid,  ['MaskName ' regexprep(Param.Civ1.MaskName,'\\','\\\\') '\n' ]);
 fprintf(fid,   ['ImageSize ' num2str(Param.Civ1.npx) ' ' num2str(Param.Civ1.npy) '\n' ]);   %VERIFIER CAS GENERAL ?
 fprintf(fid,   ['CorrelationBoxesSize ' num2str(Param.Civ1.Bx) ' ' num2str(Param.Civ1.By) '\n' ]);
-fprintf(fid,   ['SearchBoxeSize ' num2str(Param.Civ1.Sx) ' ' num2str(Param.Civ1.Sy) '\n' ]);
+fprintf(fid,   ['SearchBoxeSize ' num2str(Param.Civ1.Searchx) ' ' num2str(Param.Civ1.Searchy) '\n' ]);
 fprintf(fid,   ['RO ' num2str(Param.Civ1.Rho) '\n' ]);
 fprintf(fid,   ['GridSpacing ' num2str(Param.Civ1.Dx) ' ' num2str(Param.Civ1.Dy) '\n' ]);
 fprintf(fid,   ['XX 1.0' '\n' ]);
@@ -5347,12 +5346,19 @@ end
 function cmd=cmd_fix(filename,Param,fixname)
 %%
 filename=regexprep(filename,'.nc','');
+MaskName_string='';%default
+if Param.(fixname).CheckMask
+    MaskName_string=[' -maskName "' Param.(fixname).MaskName];
+end
+MaxVel_string='';%default
+if ~isempty(Param.(fixname).MaxVel)
+    MaxVel_string=[' -threshV ' num2str(Param.(fixname).MaxVel)]
+end
 if isunix
-    cmd=[Param.xml.FixBin ' -f ' filename '.nc -fi1 ' num2str(Param.(fixname).flagindex(1)) ...
-        ' -fi2 ' num2str(Param.(fixname).flagindex(2)) ' -fi3 ' num2str(Param.(fixname).flagindex(3)) ...
-        ' -threshC ' num2str(Param.(fixname).thresh_vecC)...% ' -threshV ' num2str(Param.(fixname).thresh_vel)...
-        ' -maskName ' Param.(fixname).MaskName...
-        '" > ' filename '.' lower(fixname) '.log 2>&1'];
+    cmd=[Param.xml.FixBin ' -f ' filename '.nc -fi1 ' num2str(Param.(fixname).CheckFmin2) ...
+        ' -fi2 ' num2str(Param.(fixname).CheckF2) ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
+        ' -threshC ' num2str(Param.(fixname).MinCorr) MaxVel_string MaskName_string...
+        ' >' filename '.' lower(fixname) '.log 2>&1'];
 else
     cmd=['"' Param.xml.FixBin '" -f "' filename '.nc" -fi1 ' num2str(Param.(fixname).CheckFmin2)...
         ' -fi2 ' num2str(Param.(fixname).CheckF2) ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
@@ -5386,3 +5392,12 @@ end
 %     cmd=[PatchBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ...
 %         ' -max ' thresh_value ' -nopt ' subdomain_patch  '  > ' namelog ' 2>&1']; % redirect standard output to the log file
 % end
+
+
+% --- Executes on button press in CheckStereo.
+function CheckStereo_Callback(hObject, eventdata, handles)
+% hObject    handle to CheckStereo (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of CheckStereo
