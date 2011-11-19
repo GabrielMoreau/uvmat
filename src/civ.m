@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 19-Nov-2011 10:00:27
+% Last Modified by GUIDE v2.5 19-Nov-2011 19:26:20
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -362,8 +362,8 @@ if isequal(ext,'.nc')
         ind_opening=3; %GUI used only for patch
         testciv=0;
     end
-    set(handles.subdir_civ1,'String',subdir);%set the default subdir directories for installing the .nc results
-    set(handles.subdir_civ2,'String',subdir);
+    set(handles.txt_SubdirCiv1,'String',subdir);%set the default subdir directories for installing the .nc results
+    set(handles.txt_SubdirCiv2,'String',subdir);
     browse.testciv=testciv;
     browse.ind_opening=ind_opening;
 end
@@ -691,7 +691,7 @@ else
     nom_type_search=nom_type_ima;
 end
 if isempty(time) && ~strcmp(nom_type_search,'none') && ~strcmp(nom_type_search,'') && ~strcmp(nom_type_search,'*')
-    subdir=get(handles.subdir_civ1,'String');
+    subdir=get(handles.txt_SubdirCiv1,'String');
     incr_pair=[0 0];%default
     if isfield(browse,'incr_pair')
         incr_pair=browse.incr_pair;
@@ -830,19 +830,19 @@ for ilist=1:length(listot)
     end
 end
 set(handles.ListSubdirCiv1,'Value',1)
-set(handles.ListSubDirCiv2,'Value',1)
+set(handles.ListSubdirCiv2,'Value',1)
 set(handles.ListSubdirCiv1,'String',[listdir;'new...'])
-set(handles.ListSubDirCiv2,'String',[listdir;'new...'])
+set(handles.ListSubdirCiv2,'String',[listdir;'new...'])
 if isempty(listdir)
     dirname=listdir{1};
 else
     dirname='CIV'; %default civ directory name
 end
-set(handles.subdir_civ1,'String',dirname)
-set(handles.subdir_civ2,'String',dirname)
+set(handles.txt_SubdirCiv1,'String',dirname)
+set(handles.txt_SubdirCiv2,'String',dirname)
 %check wether the current subdir exists:
-% subdir_civ1=get(handles.subdir_civ1,'String');
-% subdir_civ2=get(handles.subdir_civ2,'String');
+% txt_SubdirCiv1=get(handles.txt_SubdirCiv1,'String');
+% txt_SubdirCiv2=get(handles.txt_SubdirCiv2,'String');
 
 ListPairMode_Callback(hObject, eventdata, handles)
 
@@ -1006,7 +1006,7 @@ find_netcpair_civ2(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % determine the menu for checkciv1 pairs depending on existing netcdf file at the middle of
 % the field series set by first_i, incr, last_i
-function find_netcpair_civ1(hObject, eventdata, handles)
+function find_netcpair_civ1(handles)
 %------------------------------------------------------------------------
 set(gcf,'Pointer','watch')
 %nomenclature types
@@ -1045,7 +1045,7 @@ browse.nom_type_nc=nom_type_nc;
 set(handles.RootName,'UserData',browse)
 
 %reads .nc subdirectoy and image numbers from the interface
-subdir_civ1=get(handles.subdir_civ1,'String');%subdirectory subdir_civ1 for the netcdf data
+subdir_civ1=get(handles.txt_SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf data
 ref_i=str2double(get(handles.ref_i,'String'));
 if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
     ref_j=0;
@@ -1182,7 +1182,7 @@ set(gcf,'Pointer','arrow')
 %------------------------------------------------------------------------
 % determine the menu for checkciv2 pairs depending on the existing netcdf file at the
 %middle of the series set by first_i, incr, last_i
-function find_netcpair_civ2(hObject, eventdata, handles)
+function find_netcpair_civ2(handles)
 %------------------------------------------------------------------------
 set(gcf,'Pointer','watch')
 %nomenclature types
@@ -1230,8 +1230,8 @@ browse.nom_type_nc=nom_type_nc;
 set(handles.RootName,'UserData',browse)
 
 %reads .nc subdirectory and image numbers from the interface
-subdir_civ1=get(handles.subdir_civ1,'String');%subdirectory subdir_civ1 for the netcdf data
-subdir_civ2=get(handles.subdir_civ2,'String');%subdirectory subdir_civ2 for the netcdf data
+subdir_civ1=get(handles.txt_SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf data
+subdir_civ2=get(handles.txt_SubdirCiv2,'String');%subdirectory subdir_civ2 for the netcdf data
 % first_i=str2num(get(handles.first_i,'String'));
 % last_i=str2num(get(handles.last_i,'String'));
 % incr=str2num(get(handles.incr_i,'String'));
@@ -1489,9 +1489,9 @@ function errormsg=launch_jobs(hObject, eventdata, handles, batch)
 errormsg='';%default
 
 %%read the civ GUI
-Param=read_GUI(handles.civ)
+Param=read_GUI(handles.civ);
 %% check the selected list of operations:
-operations={'CIV1','FIX1','PATCH1','CIV2','FIX2','PATCH2'};
+operations={'Civ1','Fix1','Patch1','Civ2','Fix2','Patch2'};
 box_test=[Param.CheckCiv1 Param.CheckFix1 Param.CheckPatch1 Param.CheckCiv2 Param.CheckFix2 Param.CheckPatch2];
 
 index_first=find(box_test==1,1);
@@ -1620,7 +1620,7 @@ switch CivMode
     case 'CivX'
         binary_list={'Civ1Bin','Civ2Bin','PatchBin','FixBin'};
     case 'CivAll'
-        binary_list={'Civ'}
+        binary_list={'Civ'};
     case 'Matlab'
         if batch
             % vérifier Matlab installé sur le cluster
@@ -1630,7 +1630,7 @@ end
 for bin_name=binary_list
     if isfield(Param.xml,bin_name{1})
         if ~exist(Param.xml.(bin_name{1}),'file')%look for the full path if the file name has been defined with a relative path in PARAM.xml
-            fullname=fullfile(path_civ,Param.xml.(bin_name{1}))
+            fullname=fullfile(path_civ,Param.xml.(bin_name{1}));
             if exist(fullname,'file')
                 Param.xml.(bin_name{1})=fullname;
             else
@@ -2281,7 +2281,11 @@ if exist(profil_perso,'file')
       if isfield(hh,'MenuFile')
           MenuFile=hh.MenuFile;
       end
-      MenuFile=[filecell.ima1.civ1(1,1); MenuFile];
+      if isfield(filecell.nc,'civ2')
+          MenuFile=[filecell.nc.civ2{1,1}; MenuFile];
+      else
+           MenuFile=[filecell.nc.civ1{1,1}; MenuFile];
+      end
       save (profil_perso,'MenuFile','-append'); %store the file names for future opening of uvmat
 else
     MenuFile=filecell.ima1.civ1(1,1);
@@ -2499,8 +2503,8 @@ if checkbox(5)==1% fix2 performed
 end
 
 %check dir
-subdir_civ1=get(handles.subdir_civ1,'String');%subdirectory subdir_civ1 for the netcdf output data
-subdir_civ2=get(handles.subdir_civ2,'String');
+subdir_civ1=get(handles.txt_SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf output data
+subdir_civ2=get(handles.txt_SubdirCiv2,'String');
 if isequal(subdir_civ1,''),subdir_civ1='CIV'; end% put default subdir
 if isequal(subdir_civ2,''),subdir_civ2=subdir_civ1; end% put default subdir
 % currentdir=pwd;%store the current working directory
@@ -2548,7 +2552,7 @@ if checkbox(1)==1;
             end
         end
   
-        %create the new subdir_civ1
+        %create the new txt_SubdirCiv1
         if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
 %             cd(Path_ima);          
             [xx,msg1]=mkdir(fullfile(Path_ima,subdir_civ1_new));
@@ -2590,7 +2594,7 @@ if checkbox(1)==1;
                     break
                 end
             end
-            %create the new subdir_civ1
+            %create the new txt_SubdirCiv1
             if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
 %                    cd(Path_ima);          
                 [xx,msg1]=mkdir(fullfile(Path_ima,subdir_civ1_new));
@@ -2764,7 +2768,7 @@ if (checkbox(4)==1)&&...
                 end
             end
             subdir_civ2=subdir_civ2_new;
-            %create the new subdir_civ1
+            %create the new txt_SubdirCiv1
             if ~exist(fullfile(Path_ima,subdir_civ2_new),'dir')
                 [xx,m2]=mkdir(subdir_civ2_new);
                  [xx,msg2] = fileattrib(fullfile(Path_ima,subdir_civ2_new),'+w','g'); %yield writing access (+w) to user group (g)
@@ -2940,8 +2944,8 @@ if strcmp(compare,'stereo PIV')
         end
     end
 end
-set(handles.subdir_civ1,'String',subdir_civ1);%update the edit box
-set(handles.subdir_civ2,'String',subdir_civ2);%update the edit box
+set(handles.txt_SubdirCiv1,'String',subdir_civ1);%update the edit box
+set(handles.txt_SubdirCiv2,'String',subdir_civ2);%update the edit box
 browse.nom_type_nc=nom_type_nc;
 set(handles.RootName,'UserData',browse); %update the nomenclature type for uvmat
 
@@ -3163,55 +3167,101 @@ cmd=[stinterpBin ' -f1 ' filename_A_nc  ' -f2 ' filename_B_nc ' -f  ' filename_n
 % --- Executes on button press in CheckCiv1.
 function CheckCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-state=get(handles.CheckCiv1,'Value');
-enable_civ1(handles,state)
-if state
-    enable_pair1(handles,'on')
-end
-find_netcpair_civ1(hObject, eventdata, handles);
+update_CivOptions(handles)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckFix1.
 function CheckFix1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-enable_fix1(handles,get(handles.CheckFix1,'Value'))
+update_CivOptions(handles)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckPatch1.
 function CheckPatch1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-enable_patch1(handles,get(handles.CheckPatch1,'Value'))
+update_CivOptions(handles)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckCiv2.
 function CheckCiv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-state=get(handles.CheckCiv2,'Value');
-enable_civ2(handles,state)
-if state
-    find_netcpair_civ2(hObject, eventdata, handles)
-    enable_pair1(handles,'on')
-end
+update_CivOptions(handles)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckFix2.
 function CheckFix2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-state=get(handles.CheckFix2,'Value');
-enable_fix2(handles,state)
-if state
-    find_netcpair_civ2(hObject, eventdata, handles) % select the available netcdf files
-end
+update_CivOptions(handles)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckPatch2.
 function CheckPatch2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-state=get(handles.CheckPatch2,'Value');
-enable_patch2(handles,state)
-if state
-    find_netcpair_civ2(hObject, eventdata, handles) % select the available netcdf files
+update_CivOptions(handles)
+
+%------------------------------------------------------------------------
+% --- activated by any checkbox controling the selection of Civ1,Fix1,Patch1,Civ2,Fix2,Patch2
+function update_CivOptions(handles)
+%------------------------------------------------------------------------
+checkbox=zeros(1,6);
+checkbox(1)=get(handles.CheckCiv1,'Value');
+checkbox(2)=get(handles.CheckFix1,'Value');
+checkbox(3)=get(handles.CheckPatch1,'Value');
+checkbox(4)=get(handles.CheckCiv2,'Value');
+checkbox(5)=get(handles.CheckFix2,'Value');
+checkbox(6)=get(handles.CheckPatch2,'Value');
+ind_selected=find(checkbox);
+if ~isempty(ind_selected)
+  RootName=get(handles.RootName,'String');
+    if isempty(RootName)
+         msgbox_uvmat('ERROR','No input file')
+        return
+    end
 end
+set(handles.PairIndices,'Visible','on')
+set(handles.txt_SubdirCiv1,'Visible','on')
+set(handles.ListSubdirCiv1,'Visible','on')
+find_netcpair_civ1(handles) % select the available netcdf files
+% check_civ2pair=ind_selected(4;6);
+if max(checkbox(4:6))% case of civ2 pair choice needed
+    set(handles.TitlePairCiv2,'Visible','on')
+    set(handles.TitleSubdirCiv2,'Visible','on')
+    set(handles.txt_SubdirCiv2,'Visible','on')
+    set(handles.ListSubdirCiv2,'Visible','on')
+    set(handles.ListPairCiv2,'Visible','on')
+    find_netcpair_civ2(handles) % select the available netcdf files
+else
+    set(handles.TitleSubdirCiv2,'Visible','off')
+    set(handles.txt_SubdirCiv2,'Visible','off')
+    set(handles.ListSubdirCiv2,'Visible','off')
+    set(handles.ListPairCiv2,'Visible','off')
+end
+%index_last=find(checkbox,1,'last');%last selected button
+options={'Civ1','Fix1','Patch1','Civ2','Fix2','Patch2'};
+for ilist=1:length(options)
+    if checkbox(ilist)
+        set(handles.(options{ilist}),'Visible','on')
+    else
+        set(handles.(options{ilist}),'Visible','off')
+    end
+end
+
+% end
+
+% set(handles.(operations(ind_selected)),'Visible','on')
+% 
+% if state
+%     RootName=get(handles.RootName,'String');
+%     if isempty(RootName)
+%          msgbox_uvmat('ERROR','No input file')
+%         return
+%     end
+%     set(handles.Civ1,'Visible','on')   
+%     set(handles.PairIndices,'Visible','on')
+% else
+%     set(handles.Civ1,'Visible','off')  
+% end
+
 
 %------------------------------------------------------------------------
 function first_i_Callback(hObject, eventdata, handles)
@@ -3326,10 +3376,10 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on carriage return on the subdir checkciv1 edit window
-function subdir_civ1_Callback(hObject, eventdata, handles)
+function txt_SubdirCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-subdir=get(handles.subdir_civ1,'String');
-set(handles.subdir_civ2,'String',subdir);% set civ2 directory the same as civ1 by default
+subdir=get(handles.txt_SubdirCiv1,'String');
+set(handles.txt_SubdirCiv2,'String',subdir);% set civ2 directory the same as civ1 by default
 menu_str=get(handles.ListSubdirCiv1,'String');% read the list of subdirectories for update
 ichoice=find(strcmp(subdir,menu_str),1);
 if isempty(ichoice)
@@ -3344,17 +3394,17 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on carriage return on the subdir checkciv1 edit window
-function subdir_civ2_Callback(hObject, eventdata, handles)
+function txt_SubdirCiv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-subdir=get(handles.subdir_civ1,'String');
-menu_str=get(handles.ListSubDirCiv2,'String');% read the list of subdirectories for update
+subdir=get(handles.txt_SubdirCiv1,'String');
+menu_str=get(handles.ListSubdirCiv2,'String');% read the list of subdirectories for update
 ichoice=find(strcmp(subdir,menu_str),1);
 if isempty(ichoice)
     ilist=numel(menu_str); %select 'new...' in the menu
 else
     ilist=ichoice;
 end
-set(handles.ListSubDirCiv2,'Value',ilist)% select the selected subdir in the menu
+set(handles.ListSubdirCiv2,'Value',ilist)% select the selected subdir in the menu
 %update the list of available pairs from netcdf files in the new directory
 if ~get(handles.CheckCiv2,'Value') && ~get(handles.CheckCiv1,'Value') && ~get(handles.CheckFix1,'Value') && ~get(handles.CheckPatch1,'Value')
     find_netcpair_civ2(hObject, eventdata, handles);
@@ -3544,7 +3594,7 @@ function [nbslice, flag_mask]=get_mask(filebase,handles)
 flag_mask=0;%default
 nbslice=1;
 
-% subdir=get(handles.subdir_civ1,'String');
+% subdir=get(handles.txt_SubdirCiv1,'String');
 [Path,Name]=fileparts(filebase);
 if ~isdir(Path)
     msgbox_uvmat('ERROR','no path for input files')
@@ -3635,22 +3685,22 @@ subdir=list_subdir_civ1{val};
 if strcmp(subdir,'new...')
     subdir='CIV'; %default subdirectory
 end
-set(handles.subdir_civ1,'String',subdir);
+set(handles.txt_SubdirCiv1,'String',subdir);
 find_netcpair_civ1(hObject, eventdata, handles) 
 % end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in ListSubDirCiv2.
-function ListSubDirCiv2_Callback(hObject, eventdata, handles)
+% --- Executes on button press in ListSubdirCiv2.
+function ListSubdirCiv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-list_subdir_civ2=get(handles.ListSubDirCiv2,'String');
-val=get(handles.ListSubDirCiv2,'Value');
+list_subdir_civ2=get(handles.ListSubdirCiv2,'String');
+val=get(handles.ListSubdirCiv2,'Value');
 subdir=list_subdir_civ2{val};
 if strcmp(subdir,'new...')
     subdir='CIV'; %default subdirectory
 end
-set(handles.subdir_civ2,'String',subdir);
-%     set(handles.ListSubDirCiv2,'Value',1);
+set(handles.txt_SubdirCiv2,'String',subdir);
+%     set(handles.ListSubdirCiv2,'Value',1);
 
 
 %------------------------------------------------------------------------
@@ -4013,6 +4063,9 @@ if state
         return
     end
     set(handles.Civ2,'Visible','on')
+    set(handles.ListSubdirCiv2,'Visible','on')
+    set(handles.SubdirCiv2,'Visible','on')
+    set(handles.TitleSubdirCiv2,'Visible','on')
 else
     set(handles.Civ2,'Visible','off') 
 end
@@ -4045,8 +4098,8 @@ end
 %     set(handles.ImaThreshold2,'Value',0)
 %     if isequal(get(handles.CheckFix2,'Value'),0) & isequal(get(handles.CheckPatch2,'Value'),0)
 %         set(handles.ListPairCiv2,'Visible','off')
-%         set(handles.subdir_civ2,'Visible','off')
-%         set(handles.subdir_civ2_text,'Visible','off')
+%         set(handles.txt_SubdirCiv2,'Visible','off')
+%         set(handles.TitleSubdirCiv2,'Visible','off')
 %         set(handles.dt_unit_civ2,'Visible','off')
 %         %set(handles.ref_i_civ2,'Visible','off')
 %         set(handles.i_ref_civ2_title,'Visible','off')
@@ -4055,8 +4108,8 @@ end
 %     end
 % else
 %     set(handles.ListPairCiv2,'Visible','on')
-%     set(handles.subdir_civ2,'Visible','on')
-%     set(handles.subdir_civ2_text,'Visible','on')
+%     set(handles.txt_SubdirCiv2,'Visible','on')
+%     set(handles.TitleSubdirCiv2,'Visible','on')
 %     set(handles.dt_unit_civ2,'Visible','on')
 %   %  set(handles.ref_i_civ2,'Visible','on')
 %     set(handles.i_ref_civ2_title,'Visible','on')
@@ -4099,8 +4152,8 @@ end
 % set(handles.txt_MaskName,'Visible','on')
 % set(handles.CheckMask,'Visible','on')
 % set(handles.ListPairCiv2,'Visible','on')
-% set(handles.subdir_civ2,'Visible','on')
-% set(handles.subdir_civ2_text,'Visible','on')
+% set(handles.txt_SubdirCiv2,'Visible','on')
+% set(handles.TitleSubdirCiv2,'Visible','on')
 % set(handles.get_ref_fix2,'Visible','on')
 % set(handles.ref_fix2,'Visible','on')
 % set(handles.num_MinVel,'Visible','on')
@@ -4126,8 +4179,8 @@ end
 % set(handles.field_ref2,'Visible','off')
 % if isequal(get(handles.CheckCiv2,'Value'),0) & isequal(get(handles.CheckPatch2,'Value'),0)
 %     set(handles.ListPairCiv2,'Visible','off')
-%     set(handles.subdir_civ2,'Visible','off')
-%     set(handles.subdir_civ2_text,'Visible','off')
+%     set(handles.txt_SubdirCiv2,'Visible','off')
+%     set(handles.TitleSubdirCiv2,'Visible','off')
 % end
 
 %------------------------------------------------------------------------
@@ -4157,8 +4210,8 @@ end
 % % set(handles.get_gridpatch2,'Visible','on')
 % % set(handles.grid_patch2,'Visible','on')
 % set(handles.ListPairCiv2,'Visible','on')
-% set(handles.subdir_civ2,'Visible','on')
-% set(handles.subdir_civ2_text,'Visible','on')
+% set(handles.txt_SubdirCiv2,'Visible','on')
+% set(handles.TitleSubdirCiv2,'Visible','on')
 % stereo_test=get(handles.ListCompareMode,'Value');
 % if stereo_test==3
 %     set(handles.CheckStereo,'Visible','on')
@@ -4184,19 +4237,19 @@ end
 % % set(handles.grid_patch2,'Visible','off')
 % if isequal(get(handles.CheckCiv2,'Value'),0) & isequal(get(handles.CheckFix2,'Value'),0)
 %     set(handles.ListPairCiv2,'Visible','off')
-%     set(handles.subdir_civ2,'Visible','off')
-%     set(handles.subdir_civ2_text,'Visible','off')
+%     set(handles.txt_SubdirCiv2,'Visible','off')
+%     set(handles.TitleSubdirCiv2,'Visible','off')
 % end
 % set(handles.CheckStereo,'Visible','off')
 %------------------------------------------------------------------------
 function enable_pair1(handles,state)
 %------------------------------------------------------------------------
-set(handles.subdir_civ1,'Visible',state)
+set(handles.txt_SubdirCiv1,'Visible',state)
 set(handles.ListSubdirCiv1,'Visible',state)
-set(handles.SUBDIR_CIV1_txt,'Visible',state)
+set(handles.TitleSubdirCiv1,'Visible',state)
 %set(handles.frame_subdirciv1,'Visible',state)
 set(handles.ListPairCiv1,'Visible',state)
-set(handles.PairCiv1_title,'Visible',state)
+set(handles.TitlePairCiv1,'Visible',state)
 %set(handles.dt_unit,'Visible',state)
 %set(handles.PAIR_frame,'Visible',state)
 
@@ -4657,8 +4710,8 @@ if test==2 || test==3 % case 'dispalcemen' or 'stereo PIV'
     [path,name,ext]=fileparts(fileinput);
     [path1]=fileparts(filebase);
     if isunix
-        [status,path]=system(['readlink ' path])
-        [status,path1]=system(['readlink ' path1])% look for the true path in case of symbolic paths
+        [status,path]=system(['readlink ' path]);
+        [status,path1]=system(['readlink ' path1]);% look for the true path in case of symbolic paths
     end
     if ~strcmp(path1,path)
         msgbox_uvmat('ERROR','The second image series must be in the same directory as the first one')
@@ -5144,63 +5197,6 @@ set(hhciv.status,'BackgroundColor',[0 1 0])
 % end
 
 
-% --- Executes on button press in CheckStereo.
-function CheckStereo_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckStereo (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CheckStereo
-
-
-
-function num_SubdomainSize_Callback(hObject, eventdata, handles)
-% hObject    handle to num_SubdomainSize (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_SubdomainSize as text
-%        str2double(get(hObject,'String')) returns contents of num_SubdomainSize as a double
-
-
-
-function num_SmoothingParam_Callback(hObject, eventdata, handles)
-% hObject    handle to num_SmoothingParam (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_SmoothingParam as text
-%        str2double(get(hObject,'String')) returns contents of num_SmoothingParam as a double
-
-
-
-function num_MaxDiff_Callback(hObject, eventdata, handles)
-% hObject    handle to num_MaxDiff (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_MaxDiff as text
-%        str2double(get(hObject,'String')) returns contents of num_MaxDiff as a double
-
-
-function num_Nx_Callback(hObject, eventdata, handles)
-% hObject    handle to num_Nx (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_Nx as text
-%        str2double(get(hObject,'String')) returns contents of num_Nx as a double
-
-
-function num_Ny_Callback(hObject, eventdata, handles)
-% hObject    handle to num_Ny (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_Ny as text
-%        str2double(get(hObject,'String')) returns contents of num_Ny as a double
-
-
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
 path_civ=fileparts(which ('civ'));
@@ -5352,7 +5348,7 @@ if Param.(fixname).CheckMask
 end
 MaxVel_string='';%default
 if ~isempty(Param.(fixname).MaxVel)
-    MaxVel_string=[' -threshV ' num2str(Param.(fixname).MaxVel)]
+    MaxVel_string=[' -threshV ' num2str(Param.(fixname).MaxVel)];
 end
 if isunix
     cmd=[Param.xml.FixBin ' -f ' filename '.nc -fi1 ' num2str(Param.(fixname).CheckFmin2) ...
@@ -5390,12 +5386,3 @@ end
 %     cmd=[PatchBin ' -f ' filename_nc ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ...
 %         ' -max ' thresh_value ' -nopt ' subdomain_patch  '  > ' namelog ' 2>&1']; % redirect standard output to the log file
 % end
-
-
-% --- Executes on button press in CheckStereo.
-function CheckStereo_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckStereo (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CheckStereo
