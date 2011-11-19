@@ -5348,7 +5348,7 @@ function cmd=cmd_fix(filename,Param,fixname)
 filename=regexprep(filename,'.nc','');
 MaskName_string='';%default
 if Param.(fixname).CheckMask
-    MaskName_string=[' -maskName "' Param.(fixname).MaskName];
+    MaskName_string=[' -maskName "' Param.(fixname).MaskName '"'];
 end
 MaxVel_string='';%default
 if ~isempty(Param.(fixname).MaxVel)
@@ -5362,10 +5362,8 @@ if isunix
 else
     cmd=['"' Param.xml.FixBin '" -f "' filename '.nc" -fi1 ' num2str(Param.(fixname).CheckFmin2)...
         ' -fi2 ' num2str(Param.(fixname).CheckF2) ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
-        ' -threshC ' num2str(Param.(fixname).MinCorr)...
-        ' -maskName "' Param.(fixname).MaskName...
-        '" > "' filename '.' lower(fixname) '.log" 2>&1'];
-%         ' -threshV ' num2str(Param.(fixname).thresh_vel)...
+        ' -threshC ' num2str(Param.(fixname).MinCorr) MaxVel_string MaskName_string...
+        ' > "' filename '.' lower(fixname) '.log"'];
     cmd=regexprep(cmd,'\\','\\\\');
 end
 
