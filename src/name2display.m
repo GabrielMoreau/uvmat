@@ -191,7 +191,7 @@ if ~isempty(ind_zero)
         if exist(filename,'file')
             break
         else
-            nom_type(ind_zero(1))=[] % remove a zero in nom_type
+            nom_type(ind_zero(1))=[]; % remove a zero in nom_type
         end
     end
 end
