@@ -51,8 +51,10 @@
 
 %   haxes: handle of the plotting axes to update with the new plot. If this input is absent or not a valid axes handle, a new figure is created.
 %
-%   PlotParam: parameters for plotting, as read on the uvmat or view_field interface (by function 'read_GUI.m')
-%     .Coordinates.CheckFixLimits:=0 (default) adjust axes limit to the X,Y data, =1: preserves the previous axes limits
+%   PlotParam: structure containing the parameters for plotting, as read on the uvmat or view_field GUI (by function 'read_GUI.m').
+%      Contains three substructures:
+%     .Coordinates: coordinate parameters:
+%           .CheckFixLimits:=0 (default) adjust axes limit to the X,Y data, =1: preserves the previous axes limits
 %     .Coordinates.CheckFixEqual: =0 (default):automatic adjustment of the graph, keep 1 to 1 aspect ratio for x and y scales. 
 %            --scalars--
 %    .Scalar.MaxA: upper bound (saturation color) for the scalar representation, max(field) by default
@@ -130,9 +132,7 @@ if exist('haxes','var')
         end
     end
 end
-% if isfield(PlotParam,'text_display_1') && ishandle(PlotParam.text_display_1)
-%     PlotParam=read_plot_param(PlotParam);   
-% end
+
 % create a new figure and axes if the plotting axes does not exist
 if testnewfig
     hfig=figure;
@@ -175,7 +175,7 @@ if ~isempty(Data)
     index_1D=find(NbDim==1);
     index_0D=find(NbDim==0);
     
-        %% set axes properties
+    %% set axes properties
     if isfield(Coordinates,'CheckFixLimits') && isequal(Coordinates.CheckFixLimits,1)  %adjust the graph limits*
         set(haxes,'XLimMode', 'manual')
         set(haxes,'YLimMode', 'manual')
@@ -186,9 +186,9 @@ if ~isempty(Data)
     if ~isfield(Coordinates,'CheckFixEqual')&& isfield(Data,'CoordUnit')
         Coordinates.CheckFixEqual=1;
     end
-    if isfield(Coordinates,'CheckFixEqual') && isequal(Coordinates.CheckFixEqual,1) 
+    if isfield(Coordinates,'CheckFixEqual') && isequal(Coordinates.CheckFixEqual,1)
         set(haxes,'DataAspectRatioMode','manual')
-       set(haxes,'DataAspectRatio',[1 1 1])
+        set(haxes,'DataAspectRatio',[1 1 1])
     else
         set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
     end
@@ -221,17 +221,17 @@ else
 end
 
 if isempty(index_1D)
-     plot_profile([],[],[],haxes);%
+    plot_profile([],[],[],haxes);%
 else
-        Coordinates=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,PlotParam.Coordinates);% 
-        if testzoomaxes
-            [zoomaxes,Coordinates]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam.Coordinates);
-            AxeData.ZoomAxes=zoomaxes;
-        end
-        if ~isempty(Coordinates)
-            PlotParamOut.Coordinates=Coordinates;
-        end
-        PlotType='line';
+    Coordinates=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,Coordinates);%
+    if testzoomaxes
+        [zoomaxes,Coordinates]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam.Coordinates);
+        AxeData.ZoomAxes=zoomaxes;
+    end
+    if ~isempty(Coordinates)
+        PlotParamOut.Coordinates=Coordinates;
+    end
+    PlotType='line';
 end
 htext=findobj(hfig,'Tag','text_display');
 if ~isempty(htext)
@@ -377,8 +377,8 @@ for icell=1:length(CellVarIndex)
             end
             eval(['data.' VarName '=squeeze(data.' VarName ');'])
             %eval(['min(data.' VarName ')'])
-            eval(['YMin(ivar)=min(min(data.' VarName '));'])
-            eval(['YMax(ivar)=max(max(data.' VarName '));'])
+            YMin(ivar)=min(min(data.(VarName)));
+            YMax(ivar)=max(max(data.(VarName)));
             plotstr=[plotstr 'coord_x{' num2str(icell) '},data.' VarName ',' charplot_0 ','];
             eval(['nbcomponent2=size(data.' VarName ',2);']);
             eval(['nbcomponent1=size(data.' VarName ',1);']);
@@ -452,15 +452,18 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
 end
 
 %% determine axes bounds
-CoordinatesOut.RangeX=[min(XMin) max(XMax)];
-CoordinatesOut.RangeY=[min(YMin_cell) max(YMax_cell)];
-fix_lim=isfield(Coordinates,'FixLimits') && Coordinates.FixLimits;
+%CoordinatesOut.RangeX=[min(XMin) max(XMax)];
+%CoordinatesOut.RangeY=[min(YMin_cell) max(YMax_cell)];
+fix_lim=isfield(Coordinates,'CheckFixLimits') && Coordinates.CheckFixLimits;
 if fix_lim
     if ~isfield(Coordinates,'MinX')||~isfield(Coordinates,'MaxX')||~isfield(Coordinates,'MinY')||~isfield(Coordinates,'MaxY')
         fix_lim=0; %free limits if lits are not set,
     end 
 end
-if ~fix_lim
+if fix_lim
+    set(haxes,'XLim',[Coordinates.MinX Coordinates.MaxX])
+    set(haxes,'YLim',[Coordinates.MinY Coordinates.MaxY])
+else    
     CoordinatesOut.MinX=min(XMin);
     CoordinatesOut.MaxX=max(XMax);
     CoordinatesOut.MinY=min(YMin_cell);
@@ -549,7 +552,7 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             if ~isempty(ivar_F)%~(isfield(PlotParam.Vectors,'HideWarning')&& isequal(PlotParam.Vectors.HideWarning,1)) 
                 if test_vec 
                     eval(['vec_F=Data.' Data.ListVarName{ivar_F} ';']) % warning flags for  dubious vectors
-                    if  ~(isfield(PlotParam.Vectors,'HideWarning') && isequal(PlotParam.Vectors.HideWarning,1)) 
+                    if  ~(isfield(PlotParam.Vectors,'CheckHideWarning') && isequal(PlotParam.Vectors.CheckHideWarning,1)) 
                         test_black=1;
                     end
                 end
@@ -658,8 +661,10 @@ end
 
 %%   image or scalar plot %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if ~isfield(PlotParam.Scalar,'CheckContours')
-    PlotParam.Scalar.Contours=0; %default
+if isfield(PlotParam.Scalar,'ListContour')
+    CheckContour=strcmp(PlotParam.Scalar.ListContour{1},'contours');
+else
+    CheckContour=0; %default
 end
 PlotParamOut=PlotParam; %default
 if test_ima
@@ -682,16 +687,16 @@ if test_ima
     end
     
     %set the color map
-    if isfield(PlotParam.Scalar,'BW')
-        BW=PlotParam.Scalar.BW; %test for BW gray scale images
+    if isfield(PlotParam.Scalar,'CheckBW')
+        BW=PlotParam.Scalar.CheckBW; %test for BW gray scale images
     else
         BW=(siz==2) && (isa(A,'uint8')|| isa(A,'uint16'));% non color images represented in gray scale by default
     end
     
     %case of grey level images or contour plot
     if siz==2 
-        if ~isfield(PlotParam.Scalar,'FixScal')
-            PlotParam.Scalar.FixScal=0;%default
+        if ~isfield(PlotParam.Scalar,'CheckFixScalar')
+            PlotParam.Scalar.CheckFixScalar=0;%default
         end
         if ~isfield(PlotParam.Scalar,'MinA')
             PlotParam.Scalar.MinA=[];%default
@@ -700,7 +705,7 @@ if test_ima
             PlotParam.Scalar.MaxA=[];%default
         end
         Aline=[];
-        if isequal(PlotParam.Scalar.FixScal,0)||isempty(PlotParam.Scalar.MinA)||~isa(PlotParam.Scalar.MinA,'double')  %correct if there is no numerical data in edit box
+        if ~PlotParam.Scalar.CheckFixScalar ||isempty(PlotParam.Scalar.MinA)||~isa(PlotParam.Scalar.MinA,'double')  %correct if there is no numerical data in edit box
             Aline=reshape(A,1,[]);
             Aline=Aline(~isnan(A));
             if isempty(Aline)
@@ -708,11 +713,10 @@ if test_ima
                 return
             end
             MinA=double(min(Aline));
-            %MinA=double(min(min(A)));
         else
             MinA=PlotParam.Scalar.MinA;
         end; 
-        if isequal(PlotParam.Scalar.FixScal,0)||isempty(PlotParam.Scalar.MaxA)||~isa(PlotParam.Scalar.MaxA,'double') %correct if there is no numerical data in edit box
+        if ~PlotParam.Scalar.CheckFixScalar||isempty(PlotParam.Scalar.MaxA)||~isa(PlotParam.Scalar.MaxA,'double') %correct if there is no numerical data in edit box
             if isempty(Aline)
                Aline=reshape(A,1,[]);
                Aline=Aline(~isnan(A));
@@ -722,22 +726,20 @@ if test_ima
                end
             end
             MaxA=double(max(Aline));
-           % MaxA=double(max(max(A)));
         else
             MaxA=PlotParam.Scalar.MaxA;  
         end; 
         PlotParamOut.Scalar.MinA=MinA;
         PlotParamOut.Scalar.MaxA=MaxA;
-        
         % case of contour plot
-        if isequal(PlotParam.Scalar.Contours,1)
+        if CheckContour
             if ~isempty(hima) && ishandle(hima)
                 delete(hima)
             end
             if ~isfield(PlotParam.Scalar,'IncrA')
                 PlotParam.Scalar.IncrA=NaN;
             end
-            if isnan(PlotParam.Scalar.IncrA)% | PlotParam.Scalar.AutoScal==0
+            if isempty(PlotParam.Scalar.IncrA)|| isnan(PlotParam.Scalar.IncrA)% | PlotParam.Scalar.AutoScal==0
                 cont=colbartick(MinA,MaxA);
                 intercont=cont(2)-cont(1);%default
                 PlotParamOut.Scalar.IncrA=intercont;
@@ -779,7 +781,7 @@ if test_ima
         end
         
         % set  colormap for  image display
-        if ~isequal(PlotParam.Scalar.Contours,1)  
+        if ~CheckContour
             % rescale the grey levels with min and max, put a grey scale colorbar
             B=A;
             if BW
@@ -803,7 +805,7 @@ if test_ima
     end
     
     % display usual image
-    if ~isequal(PlotParam.Scalar.Contours,1)      
+    if ~CheckContour      
         % interpolate field to increase resolution of image display
         test_interp=1;
         if max(np) <= 64 
@@ -859,13 +861,13 @@ if test_ima
         end 
         %YTick=0;%default
         if MaxA>MinA
-            if isequal(PlotParam.Scalar.Contours,1)
+            if CheckContour
                 colbarlim=get(hcol,'YLim');
                 scale_bar=(colbarlim(2)-colbarlim(1))/(abscontmax-abscontmin);                
                 YTick=cont_pos(2:end-1);
                 YTick_scaled=colbarlim(1)+scale_bar*(YTick-abscontmin);
                 set(hcol,'YTick',YTick_scaled);
-            elseif (isfield(PlotParam.Scalar,'BW') && isequal(PlotParam.Scalar.BW,1))||isa(A,'uint8')|| isa(A,'uint16')%images
+            elseif (isfield(PlotParam.Scalar,'CheckBW') && isequal(PlotParam.Scalar.CheckBW,1))||isa(A,'uint8')|| isa(A,'uint16')%images
                 hi=get(hcol,'children');
                 if iscell(hi)%multiple images in colorbar
                     hi=hi{1};
@@ -912,7 +914,7 @@ if test_vec
     vec_U=reshape(vec_U,1,numel(vec_U));
     vec_V=reshape(vec_V,1,numel(vec_V));
      MinMaxX=max(vec_X)-min(vec_X);
-    if  isfield(PlotParam.Vectors,'FixVec') && isequal(PlotParam.Vectors.FixVec,1)&& isfield(PlotParam.Vectors,'VecScale')...
+    if  isfield(PlotParam.Vectors,'CheckFixVectors') && isequal(PlotParam.Vectors.CheckFixVectors,1)&& isfield(PlotParam.Vectors,'VecScale')...
                &&~isempty(PlotParam.Vectors.VecScale) && isa(PlotParam.Vectors.VecScale,'double') %fixed vector scale
         scale=PlotParam.Vectors.VecScale;  %impose the length of vector representation
     else
@@ -940,7 +942,7 @@ if test_vec
     end
     
     %decimate by a factor 2 in vector mesh(4 in nbre of vectors)
-    if isfield(PlotParam.Vectors,'decimate4') && isequal(PlotParam.Vectors.decimate4,1)
+    if isfield(PlotParam.Vectors,'CheckDecimate4') && PlotParam.Vectors.CheckDecimate4
         diffy=diff(vec_Y); %difference dy=vec_Y(i+1)-vec_Y(i)
         dy_thresh=max(abs(diffy))/2; 
         ind_jump=find(abs(diffy) > dy_thresh); %indices with diff(vec_Y)> max/2, detect change of line
@@ -976,15 +978,12 @@ if test_vec
           %  ind_flag=find(vec_F~=1 & vec_F~=0 & vec_FF==0);  %flag warning but not false
             col_vec(vec_F~=1 & vec_F~=0 & vec_FF==0)=nbcolor;
        else
-           % ind_flag=find(vec_F~=1 & vec_F~=0);
             col_vec(vec_F~=1 & vec_F~=0)=nbcolor;
        end
-      % col_vec(ind_flag)=nbcolor;    
     end
     nbcolor=nbcolor+1;
     if ~isempty(ivar_FF)
-        %ind_flag=find(vec_FF~=0);
-        if isfield(PlotParam.Vectors,'HideFalse') && PlotParam.Vectors.HideFalse==1
+        if isfield(PlotParam.Vectors,'CheckHideFalse') && PlotParam.Vectors.CheckHideFalse==1
             colorlist(nbcolor,:)=[NaN NaN NaN];% no plot of false vectors
         else
             colorlist(nbcolor,:)=[1 0 1];% magenta color
@@ -1014,7 +1013,7 @@ if ~isempty(Data)
     XMax=[];
     YMin=[];
     YMax=[];
-    fix_lim=isfield(PlotParam,'FixLimits') && PlotParam.FixLimits;
+    fix_lim=isfield(PlotParam,'CheckFixLimits') && PlotParam.CheckFixLimits;
     if fix_lim
         if ~isfield(PlotParam,'MinX')||~isfield(PlotParam,'MaxX')||~isfield(PlotParam,'MinY')||~isfield(PlotParam,'MaxY')
             fix_lim=0; %free limits if limits are not set,
