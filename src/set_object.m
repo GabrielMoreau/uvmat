@@ -758,7 +758,9 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR', errormsg)
     return
 end
-PlotParam=read_plot_param(PlotHandles);
+%PlotParam=read_plot_param(PlotHandles);
+fighandle=get(plotaxes,'parent');
+PlotParam=read_GUI(fighandle);
 [PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
 
 %% update the GUI uvmat

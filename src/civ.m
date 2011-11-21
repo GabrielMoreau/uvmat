@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 19-Nov-2011 19:26:20
+% Last Modified by GUIDE v2.5 21-Nov-2011 10:58:28
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -4165,7 +4165,7 @@ else
 set(handles.Patch2,'Visible','off')
 end
 % set(handles.frame_patch2,'BackgroundColor',[1 1 0])
-% set(handles.num_SmoothParam,'Visible','on')
+% set(handles.num_SmoothingParam,'Visible','on')
 % set(handles.num_SmoothingParam,'Visible','on')
 % set(handles.num_MaxDiff,'Visible','on')
 % set(handles.thresh_text2,'Visible','on')
@@ -4191,7 +4191,7 @@ end
 % %set(handles.checkpatch2,'Visible','off')
 % return
 % set(handles.frame_patch2,'BackgroundColor',[0.831 0.816 0.784])
-% set(handles.num_SmoothParam,'Visible','off')
+% set(handles.num_SmoothingParam,'Visible','off')
 % set(handles.num_SmoothingParam,'Visible','off')
 % set(handles.num_MaxDiff,'Visible','off')
 % set(handles.thresh_text2,'Visible','off')
@@ -4866,10 +4866,10 @@ function StereoCheck_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 if isequal(get(handles.CheckStereo,'Value'),0)
     set(handles.num_SubdomainSize,'Visible','on')
-    set(handles.num_SmoothParam,'Visible','on')
+    set(handles.num_SmoothingParam,'Visible','on')
 else
     set(handles.num_SubdomainSize,'Visible','off')
-    set(handles.num_SmoothParam,'Visible','off')
+    set(handles.num_SmoothingParam,'Visible','off')
 end
 
 %------------------------------------------------------------------------
@@ -5348,13 +5348,13 @@ filename=regexprep(filename,'.nc','');
 if isunix
     cmd=[Param.xml.PatchBin...
         ' -f ' filename '.nc -m ' num2str(Param.(patchname).Nx)...
-        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothParam)...
+        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothingParam)...
         ' -nopt ' num2str(Param.(patchname).SubdomainSize) ...
         '  > ' filename '.' lower(patchname) '.log 2>&1']; % redirect standard output to the log file
 else
     cmd=['"' Param.xml.PatchBin...
         '" -f "' filename '.nc" -m ' num2str(Param.(patchname).Nx)...
-        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothParam)...
+        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothingParam)...
         ' -nopt ' num2str(Param.(patchname).SubdomainSize)...
         '  > "' filename '.' lower(patchname) '.log" 2>&1']; % redirect standard output to the log file
     cmd=regexprep(cmd,'\\','\\\\');
@@ -5425,4 +5425,3 @@ else
         '"' regexprep(Param.xml.Civ2Bin,'\\','\\\\') '" -f "' filename  '.cmx" >"' filename '.civ2.log" \n'...
         'del "' filename '.cmx" \n'];
 end
-

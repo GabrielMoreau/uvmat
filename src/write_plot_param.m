@@ -3,37 +3,37 @@ function write_plot_param(handles,PlotParam)
 %coordinates
 if isfield(PlotParam,'FixEqual')
     if PlotParam.FixEqual
-        set(handles.FixEqual,'Value',1)
-        set(handles.FixEqual,'BackgroundColor',[1 1 0])
+        set(handles.CheckFixEqual,'Value',1)
+        set(handles.CheckFixEqual,'BackgroundColor',[1 1 0])
     else
-        set(handles.FixEqual,'Value',0)
-        set(handles.FixEqual,'BackgroundColor',[0.7 0.7 0.7])
+        set(handles.CheckFixEqual,'Value',0)
+        set(handles.CheckFixEqual,'BackgroundColor',[0.7 0.7 0.7])
     end
 end
 if isfield(PlotParam,'MinX')
-set(handles.MinX,'String',num2str(PlotParam.MinX,4));
-set(handles.MaxX,'String',num2str(PlotParam.MaxX,4));
-set(handles.MinY,'String',num2str(PlotParam.MinY,4));
-set(handles.MaxY,'String',num2str(PlotParam.MaxY,4));
+    set(handles.num_MinX,'String',num2str(PlotParam.MinX,4));
+    set(handles.num_MaxX,'String',num2str(PlotParam.MaxX,4));
+    set(handles.num_MinY,'String',num2str(PlotParam.MinY,4));
+    set(handles.num_MaxY,'String',num2str(PlotParam.MaxY,4));
 else
-    set(handles.MinX,'String','');
-set(handles.MaxX,'String','');
-set(handles.MinY,'String','');
-set(handles.MaxY,'String','');
+    set(handles.num_MinX,'String','');
+    set(handles.num_MaxX,'String','');
+    set(handles.num_MinY,'String','');
+    set(handles.num_MaxY,'String','');
 end
 
 %scalar or image parameters
 if isfield(PlotParam,'Scalar')
     set_scal_display(handles,'on')
     if isfield(PlotParam.Scalar,'MaxA')
-        set(handles.MaxA,'String',num2str(PlotParam.Scalar.MaxA,3));
+        set(handles.num_MaxA,'String',num2str(PlotParam.Scalar.MaxA,3));
     end
     if isfield(PlotParam.Scalar,'MinA')
-        set(handles.MinA,'String',num2str(PlotParam.Scalar.MinA,3));
+        set(handles.num_MinA,'String',num2str(PlotParam.Scalar.MinA,3));
     end
 
     if isfield(PlotParam.Scalar,'IncrA')
-        set(handles.IncrA,'String',num2str(PlotParam.Scalar.IncrA,3))
+        set(handles.num_IncrA,'String',num2str(PlotParam.Scalar.IncrA,3))
     end
 else
     set_scal_display(handles,'off')
@@ -43,7 +43,7 @@ end
 if isfield(PlotParam,'Vectors')
     set_vect_display(handles,'on')
     if isfield(PlotParam.Vectors,'VecScale')
-        set(handles.VecScale,'String',num2str(PlotParam.Vectors.VecScale,3))
+        set(handles.num_VecScale,'String',num2str(PlotParam.Vectors.VecScale,3))
     end
     if isfield(PlotParam.Vectors,'MinC')&& isfield(PlotParam.Vectors,'MaxC')
         MinC=PlotParam.Vectors.MinC;
@@ -86,51 +86,49 @@ end
 %prepare interface for scalar display: state ='on' or 'off'
 function set_scal_display(handles,state)
 %------------------------------------------------------------------
-% set(handles.SCALAR_title,'Visible',state)
-set(handles.MaxA,'Visible',state)
-set(handles.MinA,'Visible',state)
-%set(handles.IncrA,'Visible',state)
-set(handles.FixScal,'Visible',state)
-set(handles.BW,'Visible',state)
-set(handles.Contours,'Visible',state)
-set(handles.min_title,'Visible',state)
-set(handles.max_title,'Visible',state)
-%set(handles.frame_scal,'Visible',state)
-set(handles.npx,'Visible',state)
-set(handles.npy,'Visible',state)
-set(handles.npx_title,'Visible',state)
-set(handles.npy_title,'Visible',state)
-%set(handles.makemask,'Visible',state)
+set(handles.Scalar,'Visible',state)
+% set(handles.num_MaxA,'Visible',state)
+% set(handles.num_MinA,'Visible',state)
+% %set(handles.IncrA,'Visible',state)
+% set(handles.CheckFixScalar,'Visible',state)
+% set(handles.CheckBW,'Visible',state)
+% set(handles.ListContour,'Visible',state)
+% set(handles.TitleMinA,'Visible',state)
+% set(handles.TitleMaxA,'Visible',state)
+% set(handles.num_Npx,'Visible',state)
+% set(handles.num_Npy,'Visible',state)
+% set(handles.TitleNpx,'Visible',state)
+% set(handles.TitleNpy,'Visible',state)
 
 %---------------------------------------------
 %prepare interface for vector display: state ='on' or 'off'
 function set_vect_display(handles,state)
 %------------------------------------------------------------------
-set(handles.frame_vect,'Visible',state)
+set(handles.Vectors,'Visible',state)
 % set(handles.VECT_title,'Visible',state)
-set(handles.VecScale,'Visible',state)
-set(handles.FixVec,'Visible',state)
-set(handles.HideFalse,'Visible',state)
-set(handles.HideWarning,'Visible',state)
-% if isfield(handles,'record')
-%     set(handles.record,'Visible',state)
+% set(handles.num_VecScale,'Visible',state)
+% set(handles.FixVec,'Visible',state)
+% set(handles.HideFalse,'Visible',state)
+% set(handles.HideWarning,'Visible',state)
+% % if isfield(handles,'record')
+% %     set(handles.record,'Visible',state)
+% % end
+% set(handles.num_ColCode1,'Visible',state)
+% set(handles.num_ColCode2,'Visible',state)
+% set(handles.num_MinVec,'Visible',state)
+% set(handles.num_MaxVec,'Visible',state)
+% set(handles.scale_title,'Visible',state)
+% set(handles.slider1,'Visible',state)
+% set(handles.slider2,'Visible',state)
+% set(handles.col_vec,'Visible',state)
+% set(handles.Color_title,'Visible',state)
+% set(handles.color_code,'Visible',state)
+% set(handles.vec_col_bar,'Visible',state)
+% % set(handles.record,'Visible',state)
+% set(handles.AutoVecColor,'Visible',state)
+% set(handles.decimate4,'Visible',state)
+% set(handles.min_C_title,'Visible',state)
+% set(handles.max_C_title,'Visible',state)
+% if isfield(handles,'MenuEditVectors')
+%     set(handles.MenuEditVectors,'Enable',state)
 % end
-set(handles.colcode1,'Visible',state)
-set(handles.colcode2,'Visible',state)
-set(handles.min_vec,'Visible',state)
-set(handles.max_vec,'Visible',state)
-set(handles.scale_title,'Visible',state)
-set(handles.slider1,'Visible',state)
-set(handles.slider2,'Visible',state)
-set(handles.col_vec,'Visible',state)
-set(handles.Color_title,'Visible',state)
-set(handles.color_code,'Visible',state)
-set(handles.vec_col_bar,'Visible',state)
-% set(handles.record,'Visible',state)
-set(handles.AutoVecColor,'Visible',state)
-set(handles.decimate4,'Visible',state)
-set(handles.min_C_title,'Visible',state)
-set(handles.max_C_title,'Visible',state)
-if isfield(handles,'MenuEditVectors')
-    set(handles.MenuEditVectors,'Enable',state)
-end

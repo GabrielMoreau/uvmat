@@ -42,7 +42,7 @@ else
     hhcurrentfig=guidata(currentfig);%the current figure is a GUI (uvmat or view_field)
     testsubplot=0;
 end
-test_zoom=get(hhcurrentfig.zoom,'Value');
+test_zoom=get(hhcurrentfig.CheckZoom,'Value');
 
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle
 if ~isempty(huvmat)
@@ -163,7 +163,8 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                     UvData.axes3=ProjData;
                     hh_plotfield=hhuvmat;
                 end
-                [PlotType,PlotParam]=plot_field(ProjData,hh_plotfield.axes3,read_plot_param(hh_plotfield));%update an existing field plot
+                %[PlotType,PlotParam]=plot_field(ProjData,hh_plotfield.axes3,read_plot_param(hh_plotfield));%update an existing field plot
+                [PlotType,PlotParam]=plot_field(ProjData,hh_plotfield.axes3,read_GUI(hview_field));%update an existing field plot
                 write_plot_param(hh_plotfield,PlotParam); %update the display of plotting parameters for the current object
             end
             set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
@@ -271,10 +272,10 @@ if test_zoom
             end
          % desactivate the zoom if the full field is visible within the axes
             if isequal(xlim,AxeData.RangeX) && isequal(ylim,AxeData.RangeY)
-                set(hhuvmat.zoom,'Value',0)
-                set(hhuvmat.zoom,'BackgroundColor',[0.7 0.7 0.7])
-                set(hhuvmat.FixLimits,'Value',0)
-                set(hhuvmat.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
+                set(hhuvmat.CheckZoom,'Value',0)
+                set(hhuvmat.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
+                set(hhuvmat.CheckFixLimits,'Value',0)
+                set(hhuvmat.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
             end
         end
         set(currentaxes,'XLim',xlim)
@@ -285,10 +286,10 @@ if test_zoom
         end
     end
     if isfield(AxeData,'LimEditBox')&& AxeData.LimEditBox% update display of the GUI containing the axis (uvmat or view_field)
-        set(hhcurrentfig.MinX,'String',num2str(xlim(1)))
-        set(hhcurrentfig.MaxX,'String',num2str(xlim(2)))
-        set(hhcurrentfig.MinY,'String',num2str(ylim(1)))
-        set(hhcurrentfig.MaxY,'String',num2str(ylim(2)))
+        set(hhcurrentfig.num_MinX,'String',num2str(xlim(1)))
+        set(hhcurrentfig.num_MaxX,'String',num2str(xlim(2)))
+        set(hhcurrentfig.num_MinY,'String',num2str(ylim(1)))
+        set(hhcurrentfig.num_MaxY,'String',num2str(ylim(2)))
     end
 end
 

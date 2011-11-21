@@ -35,7 +35,7 @@ list_fct={...
     'calc_field';...% defines fields (velocity, vort, div...) from civx data and calculate them
     'cell2tab';... %transform a Matlab cell in a character array suitable for display in a table
     'check_field_structure';...% check the validity of the field struture representation consistant with the netcdf format
-    'check_functions';...
+    'check_files';...
     'civ';...   %function associated with the interface 'civ.fig' for PIV and spline interpolation
     'civ.fig';...
     'civ_3D';... function associated with the interface 'civ_3D.fig' for PIV in volume (in progress)
@@ -77,7 +77,7 @@ list_fct={...
     'proj_field';...%project a field on a projection object (plane, line,...)
     'read_civxdata';...reads civx data from netcdf files
     'read_imatext';...%read .civ files (obsolete, but can be adapted to other text documentation files)
-    'read_plot_param';... %read the plotting option parameters on the uvmat interface
+    'read_GUI';... %read all parameters set by a GUI as a Matlab structure
     'read_set_object';...%read the data on the set_object interface
     'read_xls';...%read excel files containing the list of the experiments
     'reinit';...% suppress the personal parameter file 'uvmat_perso.mat'

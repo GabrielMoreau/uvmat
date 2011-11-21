@@ -3,10 +3,10 @@
 %
 %  This function is used by uvmat to plot fields. It automatically chooses the representation 
 % appropriate to the input field structure: 
-%     2D vector fields are represented by arrows, 2D scalar fiedlds by grey scale images or contour plots, 1D fields are represented by usual plot with (abscissa, ordinate).
+%     2D vector fields are represented by arrows, 2D scalar fields by grey scale images or contour plots, 1D fields are represented by usual plot with (abscissa, ordinate).
 %  The input field structure is first tested by check_field_structure.m,
 %  then split into blocks of related variables  by find_field_indices.m.
-%  The dimensionality of each block is obtained  by this fuction
+%  The dimensionality of each block is obtained  by this function
 %  considering the presence of variables with the attribute .Role='coord_x'
 %  and/or coord_y and/or coord_z (case of unstructured coordinates), or
 %  dimension variables (case of matrices). 
@@ -51,23 +51,23 @@
 
 %   haxes: handle of the plotting axes to update with the new plot. If this input is absent or not a valid axes handle, a new figure is created.
 %
-%   PlotParam: parameters for plotting, as read on the uvmat interface (by function 'read_plot_param.m')
-%     .FixLimits:=0 (default) adjust axes limit to the X,Y data, =1: preserves the previous axes limits
-%     .FixEqual: =0 (default):automatic adjustment of the graph, keep 1 to 1 aspect ratio for x and y scales. 
+%   PlotParam: parameters for plotting, as read on the uvmat or view_field interface (by function 'read_GUI.m')
+%     .Coordinates.CheckFixLimits:=0 (default) adjust axes limit to the X,Y data, =1: preserves the previous axes limits
+%     .Coordinates.CheckFixEqual: =0 (default):automatic adjustment of the graph, keep 1 to 1 aspect ratio for x and y scales. 
 %            --scalars--
 %    .Scalar.MaxA: upper bound (saturation color) for the scalar representation, max(field) by default
 %    .Scalar.MinA: lower bound (saturation) for the scalar representation, min(field) by default
-%    .Scalar.FixScal: =0 (default) lower and upper bounds of the scalar representation set to the min and max of the field
+%    .Scalar.CheckFixScal: =0 (default) lower and upper bounds of the scalar representation set to the min and max of the field
 %               =1 lower and upper bound imposed by .AMax and .MinA
-%    .Scalar.BW= 1 black and white representation imposed, =0 by default.
-%    .Scalar.Contours= 1: represent scalars by contour plots (Matlab function 'contour'); =0 by default
+%    .Scalar.CheckBW= 1 black and white representation imposed, =0 by default.
+%    .Scalar.CheckContours= 1: represent scalars by contour plots (Matlab function 'contour'); =0 by default
 %    .IncrA : contour interval
 %            -- vectors--
 %    .Vectors.VecScale: scale for the vector representation
-%    .Vectors.FixVec: =0 (default) automatic length for vector representation, =1: length set by .VecScale
-%    .Vectors.HideFalse= 0 (default) false vectors represented in magenta, =1: false vectors not represented;
-%    .Vectors.HideWarning= 0 (default) vectors marked by warnflag~=0 marked in black, 1: no warning representation;
-%    .Vectors.decimate4 = 0 (default) all vectors reprtesented, =1: half of  the vectors represented along each coordinate
+%    .Vectors.CheckFixVec: =0 (default) automatic length for vector representation, =1: length set by .VecScale
+%    .Vectors.CheckHideFalse= 0 (default) false vectors represented in magenta, =1: false vectors not represented;
+%    .Vectors.CheckHideWarning= 0 (default) vectors marked by warnflag~=0 marked in black, 1: no warning representation;
+%    .Vectors.CheckDecimate4 = 0 (default) all vectors reprtesented, =1: half of  the vectors represented along each coordinate
 %         -- vector color--
 %    .Vectors.ColorCode= 'black','white': imposed color  (default ='blue')
 %                        'rgb', : three colors red, blue, green depending
@@ -76,11 +76,10 @@
 %                        '64 colors': continuous color from blue to red (multijet)
 %    .Vectors.colcode1 : first threshold for rgb, first value for'continuous' 
 %    .Vectors.colcode2 : second threshold for rgb, last value (saturation) for 'continuous' 
-%    .Vectors.FixedCbounds;  =0 (default): the bounds on C representation are min and max, =1: they are fixed by .Minc and .MaxC
+%    .Vectors.CheckFixedCbounds;  =0 (default): the bounds on C representation are min and max, =1: they are fixed by .Minc and .MaxC
 %    .Vectors.MinC = imposed minimum of the scalar field used for vector color;
 %    .Vectors.MaxC = imposed maximum of the scalar field used for vector color;
 %
-% 
 % PosColorbar: if not empty, display a colorbar for B&W images
 %               imposed position of the colorbar (ex [0.821 0.471 0.019 0.445])
 
@@ -101,7 +100,6 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColorbar)
-% TODO:
 % use htext: handles of the text edit box (uicontrol)
 % introduce PlotParam.Hold: 'on' or 'off' (for curves)
 %default output
@@ -110,6 +108,10 @@ if ~exist('PlotParam','var'),PlotParam=[];end;
 if ~exist('PosColorbar','var'),PosColorbar=[];end;
 PlotType='text'; %default
 PlotParamOut=PlotParam;%default
+Coordinates=[];
+if isfield(PlotParam,'Coordinates')
+Coordinates=PlotParam.Coordinates;
+end
 
 %% test axes and figure
 testnewfig=1;%test to create a new figure (default)
@@ -174,17 +176,17 @@ if ~isempty(Data)
     index_0D=find(NbDim==0);
     
         %% set axes properties
-    if isfield(PlotParam,'FixLimits') && isequal(PlotParam.FixLimits,1)  %adjust the graph limits*
+    if isfield(Coordinates,'CheckFixLimits') && isequal(Coordinates.CheckFixLimits,1)  %adjust the graph limits*
         set(haxes,'XLimMode', 'manual')
         set(haxes,'YLimMode', 'manual')
     else
         set(haxes,'XLimMode', 'auto')
         set(haxes,'YLimMode', 'auto')
     end
-    if ~isfield(PlotParam,'FixEqual')&& isfield(Data,'CoordUnit')
-        PlotParam.FixEqual=1;
+    if ~isfield(Coordinates,'CheckFixEqual')&& isfield(Data,'CoordUnit')
+        Coordinates.CheckFixEqual=1;
     end
-    if isfield(PlotParam,'FixEqual') && isequal(PlotParam.FixEqual,1) 
+    if isfield(Coordinates,'CheckFixEqual') && isequal(Coordinates.CheckFixEqual,1) 
         set(haxes,'DataAspectRatioMode','manual')
        set(haxes,'DataAspectRatio',[1 1 1])
     else
@@ -221,10 +223,13 @@ end
 if isempty(index_1D)
      plot_profile([],[],[],haxes);%
 else
-        PlotParamOut=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,PlotParam);% 
+        Coordinates=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,PlotParam.Coordinates);% 
         if testzoomaxes
-            [zoomaxes,PlotParamOut]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam);
+            [zoomaxes,Coordinates]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam.Coordinates);
             AxeData.ZoomAxes=zoomaxes;
+        end
+        if ~isempty(Coordinates)
+            PlotParamOut.Coordinates=Coordinates;
         end
         PlotType='line';
 end
@@ -241,12 +246,6 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR', errormsg)
 end
 if isfield(PlotParamOut,'MinX')
-%     'TESTplot'
-%     haxes
-%     PlotParamOut.MinX
-%     PlotParamOut.MaxY
-%     set(haxes,'XLim',[PlotParamOut.MinX PlotParamOut.MaxX])
-%     set(haxes,'YLim',[PlotParamOut.MinY PlotParamOut.MaxY])
     AxeData.RangeX=[PlotParamOut.MinX PlotParamOut.MaxX];%'[PlotParamOut.MinX PlotParamOut.MaxX];
     AxeData.RangeY=[PlotParamOut.MinY PlotParamOut.MaxY];%[PlotParamOut.MinY PlotParamOut.MaxY]
 end
@@ -261,27 +260,17 @@ if isfield(FigData,tagaxes)
     eval(['FigData.' tagaxes '=Data;'])
     set(hfig,'UserData',FigData)
 end
-             
+
 %-------------------------------------------------------------------
 function errormsg=plot_text(FieldData,CellVarIndex,htext)
 %-------------------------------------------------------------------
-% if exist('hdisplay_in','var') && ~isempty(hdisplay_in) && ishandle(hdisplay_in) && isequal(get(hdisplay_in,'Type'),'uicontrol')
-%     hdisplay=hdisplay_in;
-% else
-%     figure;%create new figure
-%     hdisplay=uicontrol('Style','edit', 'Units','normalized','Position', [0 0 1 1],'Max',2,'FontName','monospaced');
-% end
 errormsg=[];
 txt_cell={};
 for icell=1:length(CellVarIndex)
     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list data.ListVarName
-% ff=fields(FieldData);%list of field names
-% vv=struct2cell(FieldData);%list of field values
-% 
-% for icell=1:length(vv)
     for ivar=1:length(VarIndex)
          VarName=FieldData.ListVarName{VarIndex(ivar)};
-         eval(['VarValue=FieldData.' VarName ';'])
+         VarValue=FieldData.(VarName);
          if size(VarValue,1)~=1
              VarValue=VarValue';
          end
@@ -289,63 +278,17 @@ for icell=1:length(CellVarIndex)
          txt_cell=[txt_cell;{txt}];
     end
 end
-
 set(htext,'String',txt_cell)
-%     txt_cell=[txt_cell {num2str(
-%     Tabcell{icell,1}=ff{icell};
-%     ss=vv{icell};
-%     sizss=size(ss);
-%     if isnumeric(ss)
-%         if sizss(1)<=1 && length(ss)<5
-%             displ{icell}=num2str(ss);
-%         else
-%             displ{icell}=[class(ss) ', size ' num2str(size(ss))];
-%         end
-%     elseif ischar(ss)
-%         displ{icell}=ss;
-%     elseif iscell(ss)
-%         sizcell=size(ss);
-%         if sizcell(1)==1 && length(sizcell)==2 %line cell
-%            ssline='{''';
-%            for icolumn=1:sizcell(2)
-%                if isnumeric(ss{icolumn})
-%                    if size(ss{icolumn},1)<=1 && length(ss{icolumn})<5
-%                       sscolumn=num2str(ss{icolumn});%line vector
-%                    else
-%                       sscolumn=[class(ss{icolumn}) ', size ' num2str(size(ss{icolumn}))];
-%                    end
-%                elseif ischar(ss{icolumn})
-%                    sscolumn=ss{icolumn};
-%                else
-%                    sscolumn=class(ss{icolumn});
-%                end
-%                if icolumn==1
-%                    ssline=[ssline sscolumn];
-%                else
-%                    ssline=[ssline ''',''' sscolumn];
-%                end
-%            end
-%            displ{icell}=[ssline '''}'];
-%         else
-%            displ{icell}=[class(ss) ', size ' num2str(sizcell)];
-%         end
-%     else
-%         displ{icell}=class(ss);
-%     end
-%     Tabcell{icell,2}=displ{icell};
-% end 
-% Tabchar=cell2tab(Tabcell,': '); 
-% set(hdisplay,'String', Tabchar)
-
+set(htext,'UserData',txt_cell)% for storage during mouse display
 
 %-------------------------------------------------------------------
-function PlotParamOut=plot_profile(data,CellVarIndex,VarType,haxes,PlotParam)
+function CoordinatesOut=plot_profile(data,CellVarIndex,VarType,haxes,Coordinates)
 %-------------------------------------------------------------------
 
-if ~exist('PlotParam','var')
-    PlotParam=[];
+if ~exist('Coordinates','var')
+    Coordinates=[];
 end
-PlotParamOut=PlotParam; %default
+CoordinatesOut=Coordinates; %default
 hfig=get(haxes,'parent');
 %suppress existing plot isf empty data
 if isempty(data)
@@ -360,20 +303,17 @@ if isempty(data)
     return
 end
 
-
 ColorOrder=[1 0 0;0 0.5 0;0 0 1;0 0.75 0.75;0.75 0 0.75;0.75 0.75 0;0.25 0.25 0.25];
 set(haxes,'ColorOrder',ColorOrder)
-if isfield(PlotParam,'NextPlot')
-    set(haxes,'NextPlot',PlotParam.NextPlot)
+if isfield(Coordinates,'NextPlot')
+    set(haxes,'NextPlot',Coordinates.NextPlot)
 end
 % adjust the size of the plot to include the whole field,
 
 legend_str={};
 
 %% prepare the string for plot command
-%initiate  the plot command
 plotstr='hhh=plot(';
-% textmean={};
 coord_x_index=[];
 xtitle='';
 ytitle='';
@@ -512,19 +452,19 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
 end
 
 %% determine axes bounds
-PlotParamOut.RangeX=[min(XMin) max(XMax)];
-PlotParamOut.RangeY=[min(YMin_cell) max(YMax_cell)];
-fix_lim=isfield(PlotParam,'FixLimits') && PlotParam.FixLimits;
+CoordinatesOut.RangeX=[min(XMin) max(XMax)];
+CoordinatesOut.RangeY=[min(YMin_cell) max(YMax_cell)];
+fix_lim=isfield(Coordinates,'FixLimits') && Coordinates.FixLimits;
 if fix_lim
-    if ~isfield(PlotParam,'MinX')||~isfield(PlotParam,'MaxX')||~isfield(PlotParam,'MinY')||~isfield(PlotParam,'MaxY')
+    if ~isfield(Coordinates,'MinX')||~isfield(Coordinates,'MaxX')||~isfield(Coordinates,'MinY')||~isfield(Coordinates,'MaxY')
         fix_lim=0; %free limits if lits are not set,
     end 
 end
 if ~fix_lim
-    PlotParamOut.MinX=min(XMin);
-    PlotParamOut.MaxX=max(XMax);
-    PlotParamOut.MinY=min(YMin_cell);
-    PlotParamOut.MaxY=max(YMax_cell);
+    CoordinatesOut.MinX=min(XMin);
+    CoordinatesOut.MaxX=max(XMax);
+    CoordinatesOut.MinY=min(YMin_cell);
+    CoordinatesOut.MaxY=max(YMax_cell);
 end
 
 %-------------------------------------------------------------------
@@ -718,7 +658,7 @@ end
 
 %%   image or scalar plot %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if ~isfield(PlotParam.Scalar,'Contours')
+if ~isfield(PlotParam.Scalar,'CheckContours')
     PlotParam.Scalar.Contours=0; %default
 end
 PlotParamOut=PlotParam; %default

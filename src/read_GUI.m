@@ -42,8 +42,8 @@ for ichild=1:numel(hchild)
                         check_input=0;
                 end
                 if check_input
-                    ['struct.' tag '=input;']
-                    eval(['struct.' tag '=input;'])
+                    struct.(tag)=input;
+                  %  eval(['struct.' tag '=input;'])
                 end
         end
     end

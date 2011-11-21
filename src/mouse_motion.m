@@ -35,7 +35,7 @@ else
     currentfig=hObject;%usual plot
 end
 hhcurrentfig=guidata(currentfig);
-test_zoom=get(hhcurrentfig.zoom,'Value');%test for zoom activated on the current figure
+test_zoom=get(hhcurrentfig.CheckZoom,'Value');%test for zoom activated on the current figure
 test_draw=0;%test for mouse drawing of object, =0 by default
 test_object=0; %test for object editing or creation 
 test_edit_object=0;% edit test for mouse shap: an arrow
@@ -278,10 +278,15 @@ for ichild=1:length(hchild)
         end
     end
 end
-set(handles.text_display_1,'String',text_displ_1);
-set(handles.text_display_2,'String',text_displ_2);
-set(handles.text_display_3,'String',text_displ_3);
-set(handles.text_display_4,'String',text_displ_4);
+if ~isempty(text_displ_1)
+set(handles.text_display,'String',[{text_displ_1};{text_displ_2};{text_displ_3};{text_displ_4}])
+else
+   set(handles.text_display,'String',get(handles.text_display,'UserData'))
+end
+% set(handles.text_display_1,'String',text_displ_1);
+% set(handles.text_display_2,'String',text_displ_2);
+% set(handles.text_display_3,'String',text_displ_3);
+% set(handles.text_display_4,'String',text_displ_4);
 
 %%%%%%%%%%%%%
 %% draw a zoom rectangle if no object creation is selected

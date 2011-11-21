@@ -39,7 +39,7 @@ end
     currentfig_pos=get(hcurrentfig,'Position');%position of the GUI series (in pixels)
     set(hcurrentfig,'Units','normalized')
 hhcurrentfig=guidata(hcurrentfig);
-test_zoom=get(hhcurrentfig.zoom,'Value');%test for zoom action, first priority
+test_zoom=get(hhcurrentfig.CheckZoom,'Value');%test for zoom action, first priority
 test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
 test_edit=get(hhuvmat.edit_object,'Value');%test for object editing, third priority
 test_edit_vect=get(hhuvmat.edit_vect,'Value');%test for vector editing,  priority 4
@@ -370,7 +370,7 @@ if test_edit_vect && ~isempty(ivec)
     else
         Field.FF(ivec)=0;
     end
-    PlotParam=read_plot_param(hhcurrentfig);
+    PlotParam=read_GUI(hcurrentfig);
     plot_field(Field,haxes,PlotParam);
     eval(['FigData.' tagaxes '=Field;'])%record the modified field in FigData
     set(hcurrentfig,'UserData',FigData);

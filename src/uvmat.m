@@ -146,11 +146,11 @@
 %                      = off: no current drawing action
 %                     = translate: translate an existing object
 %                    = calibration: move a calibration point
-%                    = zoom: isolate a subregion for zoom in=1 if an object is being currently drawn, 0 else (set to 0 by releasing mouse button)
+%                    = CheckZoom: isolate a subregion for CheckZoom in=1 if an object is being currently drawn, 0 else (set to 0 by releasing mouse button)
 %            .CurrentOrigin: Origin of a curently drawn edit_object
 %            .CurrentLine: currently drawn menuline (A REVOIR)
 %            .CurrentObject: handle of the currently drawn edit_object
-%            .CurrentRectZoom: current rectangle used for zoom
+%            .CurrentRectZoom: current rectangle used for CheckZoom
 
 % Properties attached to projection objects (create, menuline, menuplane...):
 %    'Tag'='proj_object': for all projection objects
@@ -713,17 +713,17 @@ elseif isfield(UvData,'MovieObject')
 end
 if isfield(imainfo,'Width') && isfield(imainfo,'Height')
     if length(imainfo)>1
-        set(handles.npx,'String',num2str(imainfo(1).Width));%fills nbre of pixels x box
-        set(handles.npy,'String',num2str(imainfo(1).Height));%fills nbre of pixels x box
+        set(handles.num_Npx,'String',num2str(imainfo(1).Width));%fills nbre of pixels x box
+        set(handles.num_Npy,'String',num2str(imainfo(1).Height));%fills nbre of pixels x box
     else
-        set(handles.npx,'String',num2str(imainfo.Width));%fills nbre of pixels x box
-        set(handles.npy,'String',num2str(imainfo.Height));%fills nbre of pixels x box
+        set(handles.num_Npx,'String',num2str(imainfo.Width));%fills nbre of pixels x box
+        set(handles.num_Npy,'String',num2str(imainfo.Height));%fills nbre of pixels x box
     end
 else
-    set(handles.npx,'String','');%fills nbre of pixels x box
-    set(handles.npy,'String','');%fills nbre of pixels x box
+    set(handles.num_Npx,'String','');%fills nbre of pixels x box
+    set(handles.num_Npy,'String','');%fills nbre of pixels x box
 end
-set(handles.BW,'Value',strcmp(ColorType,'grayscale'))% select handles.BW if grayscale image
+set(handles.CheckBW,'Value',strcmp(ColorType,'grayscale'))% select handles.CheckBW if grayscale image
 
 % read parameters (time, geometric calibration..) from a documentation file (.xml advised)
 filexml=[FileBase '.xml'];
@@ -782,8 +782,8 @@ elseif exist(fileciv,'file')% if .civ file found
     if error==2, warntext=['no file ' FileBase '.civ'];
     elseif error==1, warntext='inconsistent number of fields in the .civ file';
     end  
-    set(handles.npx,'String',num2str(npx));%fills nbre of pixels x box
-    set(handles.npy,'String',num2str(npy));%fills nbre of pixels y box
+    set(handles.num_Npx,'String',num2str(npx));%fills nbre of pixels x box
+    set(handles.num_Npy,'String',num2str(npy));%fills nbre of pixels y box
     set(handles.pxcm,'String',num2str(pxcmx));%fills scale x (pixel/cm) box
     set(handles.pycm,'String',num2str(pxcmy));%fills scale y (pixel/cm) box
     set(handles.pxcm,'Visible','on');%fills scale x (pixel/cm) box 
@@ -841,7 +841,7 @@ if isfield(XmlData,'GeometryCalib')
             set(handles.pxcm,'String',num2str(pixcmx))
             set(handles.pycm,'String',num2str(pixcmy))
         end
-        if ~get(handles.FixLimits,'Value')
+        if ~get(handles.CheckFixLimits,'Value')
             set(handles.transform_fct,'Value',2); % phys transform by default if fixedLimits is off
         end
         if isfield(GeometryCalib,'SliceCoord')
@@ -899,7 +899,7 @@ if ~testima
             set(handles.Fields,'String',{'get_field...'})
             col_vec={'get_field...'};
         end
-        set(handles.col_vec,'String',col_vec)
+        set(handles.ListColorScalar,'String',col_vec)
     end
 end
 set(handles.uvmat,'UserData',UvData)
@@ -1245,15 +1245,15 @@ elseif isfield(UvData,'MovieObject_1')
     UvData=rmfield(UvData,'MovieObject_1');
 end
 if ~isempty(imainfo)% (an image has been introduced as second fierld input)
-    if strcmp(get(handles.npx,'String'),'') || strcmp(get(handles.npy,'String'),'')%update npx and npy if it is not already filled by the first input field
+    if strcmp(get(handles.num_Npx,'String'),'') || strcmp(get(handles.num_Npy,'String'),'')%update npx and npy if it is not already filled by the first input field
         if  isfield(imainfo,'Width') && isfield(imainfo,'Height')
-            set(handles.npx,'String',num2str(imainfo.Width));%fills nbre of pixels x box
-            set(handles.npy,'String',num2str(imainfo.Height));%fills nbre of pixels x box
+            set(handles.num_Npx,'String',num2str(imainfo.Width));%fills nbre of pixels x box
+            set(handles.num_Npy,'String',num2str(imainfo.Height));%fills nbre of pixels x box
         else
-            set(handles.npx,'String','');%fills nbre of pixels x box
-            set(handles.npy,'String','');%fills nbre of pixels x box
+            set(handles.num_Npx,'String','');%fills nbre of pixels x box
+            set(handles.num_Npy,'String','');%fills nbre of pixels x box
         end
-        set(handles.BW,'Value',strcmp(ColorType,'grayscale'))% select handles.BW if grayscale image
+        set(handles.CheckBW,'Value',strcmp(ColorType,'grayscale'))% select handles.CheckBW if grayscale image
     end
 end
 % find scaling parameters
@@ -1289,8 +1289,8 @@ elseif exist(fileciv,'file')% if .civ file found
     elseif error==1, warntext='inconsistent number of fields in the .civ file';
     end
     
-    set(handles.npx,'String',num2str(npx));%fills nbre of pixels x box
-    set(handles.npy,'String',num2str(npy));%fills nbre of pixels y box
+    set(handles.num_Npx,'String',num2str(npx));%fills nbre of pixels x box
+    set(handles.num_Npy,'String',num2str(npy));%fills nbre of pixels y box
     set(handles.pxcm,'String',num2str(pxcmx));%fills scale x (pixel/cm) box
     set(handles.pycm,'String',num2str(pxcmy));%fills scale y (pixel/cm) box
     set(handles.pxcm,'Visible','on');%fills scale x (pixel/cm) box 
@@ -1682,7 +1682,6 @@ colorbar
 % --- the scan_i and scan_j check box (exclusive each other)
 function runplus_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-eventdata
 set(handles.runplus,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 %TODO: introduce the option: increment ='*' to move to the next available view
@@ -2114,11 +2113,11 @@ if ~isempty(filename)
            end
         end
         if strcmp(FieldName,'velocity')
-            list_code=get(handles.color_code,'String');% list menu fields
-            index_code=get(handles.color_code,'Value');% selected string index
+            list_code=get(handles.ListColorCode,'String');% list menu fields
+            index_code=get(handles.ListColorCode,'Value');% selected string index
             if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
-                list_code=get(handles.col_vec,'String');% list menu fields
-                index_code=get(handles.col_vec,'Value');% selected string index
+                list_code=get(handles.ListColorScalar,'String');% list menu fields
+                index_code=get(handles.ListColorScalar,'Value');% selected string index
                 ParamIn.ColorVar= list_code{index_code}; % selected field
             end
         end
@@ -2155,8 +2154,8 @@ if ~isempty(filename)
         return
     end        
     if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
-        set(handles.npx,'String',num2str(ParamOut.Npx));% display image size on the interface
-        set(handles.npy,'String',num2str(ParamOut.Npy));
+        set(handles.num_Npx,'String',num2str(ParamOut.Npx));% display image size on the interface
+        set(handles.num_Npy,'String',num2str(ParamOut.Npy));
     end
     if isfield(ParamOut,'TimeIndex')
         set(handles.i1,'String',num2str(ParamOut.TimeIndex))
@@ -2234,11 +2233,11 @@ if ~isempty(filename_1)
                 end
             end
             if strcmp(FieldName_1,'velocity')
-                list_code=get(handles.color_code,'String');% list menu fields
-                index_code=get(handles.color_code,'Value');% selected string index
+                list_code=get(handles.ListColorCode,'String');% list menu fields
+                index_code=get(handles.ListColorCode,'Value');% selected string index
                 if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
-                    list_code=get(handles.col_vec,'String');% list menu fields
-                    index_code=get(handles.col_vec,'Value');% selected string index
+                    list_code=get(handles.ListColorScalar,'String');% list menu fields
+                    index_code=get(handles.ListColorScalar,'Value');% selected string index
                     ParamIn.ColorVar= list_code{index_code}; % selected field
                 end
             end
@@ -2267,11 +2266,11 @@ end
 
 %% update uvmat interface
 if isfield(ParamOut,'Npx')
-    set(handles.npx,'String',num2str(ParamOut.Npx));% display image size on the interface
-    set(handles.npy,'String',num2str(ParamOut.Npy));
+    set(handles.num_Npx,'String',num2str(ParamOut.Npx));% display image size on the interface
+    set(handles.num_Npy,'String',num2str(ParamOut.Npy));
 elseif isfield(ParamOut_1,'Npx')
-    set(handles.npx,'String',num2str(ParamOut_1.Npx));% display image size on the interface
-    set(handles.npy,'String',num2str(ParamOut_1.Npy));
+    set(handles.num_Npx,'String',num2str(ParamOut_1.Npx));% display image size on the interface
+    set(handles.num_Npy,'String',num2str(ParamOut_1.Npy));
 end
 
 %% update the display menu for the first velocity type (first menuline)
@@ -2580,7 +2579,7 @@ else
     UvData.Object{1}.ProjMode='projection';%main plotting plane
     UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
     set(handles.list_object_1,'Value',1);
-    list_object=get(handles.list_object_1,'String')
+    list_object=get(handles.list_object_1,'String');
     if isempty(list_object)
         list_object={''};
     elseif ~isempty(list_object{1})
@@ -2598,8 +2597,8 @@ set(handles.uvmat,'UserData',UvData)
 
 %% reset the min and max of scalar if only the mask is displayed(TODO: check the need)
 if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
-    set(handles.MinA,'String','0')
-    set(handles.MaxA,'String','255')
+    set(handles.num_MinA,'String','0')
+    set(handles.num_MaxA,'String','255')
 end
 
 %% Plot the projections on the selected  projection objects
@@ -2624,8 +2623,9 @@ if isfield(UvData,'plotaxes')%case of movies
 else
     haxes(1)=handles.axes3;
 end
-PlotParam{1}=read_plot_param(handles);%read plotting parameters on the uvmat interfac
-keeplim(1)=get(handles.FixLimits,'Value');% test for fixed graph limits
+%PlotParam{1}=read_plot_param(handles);%read plotting parameters on the uvmat interfac
+PlotParam{1}=read_GUI(handles.uvmat);
+keeplim(1)=get(handles.CheckFixLimits,'Value');% test for fixed graph limits
 PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
 
 % second projection object (view_field display)
@@ -2639,8 +2639,9 @@ if isequal(get(handles.list_object_2,'Visible'),'on') && IndexObj_2 <= numel(UvD
     if ~isempty(view_field_handle)
         plot_handles{2}=guidata(view_field_handle);
         haxes(2)=plot_handles{2}.axes3;
-        PlotParam{2}=read_plot_param(plot_handles{2});%read plotting parameters on the uvmat interface
-        keeplim(2)=get(plot_handles{2}.FixLimits,'Value');
+        %PlotParam{2}=read_plot_param(plot_handles{2});%read plotting parameters on the viewinterface
+        PlotParam{2}=read_GUI(handles.uvmat);%read plotting parameters on the uvmat interface
+        keeplim(2)=get(plot_handles{2}.CheckFixLimits,'Value');
         PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
     end
 end
@@ -2649,8 +2650,8 @@ end
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);
     [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
-    if testnewseries && isfield(ObjectData,'CoordUnit')
-        PlotParam{imap}=rmfield(PlotParam{imap},'FixEqual'); %set FixEqual to depend on the field (=1 if Data.CoordUnit=1 in plot_field)
+    if testnewseries && isfield(ObjectData,'CoordUnit')&& isfield(PlotParam{imap},'Coordinates')
+        PlotParam{imap}=rmfield(PlotParam{imap}.Coordinates,'CheckFixEqual'); %set FixEqual to depend on the field (=1 if Data.CoordUnit=1 in plot_field)
     end 
     if ~isempty(errormsg)
         return
@@ -2871,27 +2872,27 @@ indx=1+round((nxy(2)-1)*(x0-rangx0(1))/(rangx0(2)-rangx0(1)));% index x of pixel
 indy=1+round((nxy(1)-1)*(y12-rangy0(1))/(rangy0(2)-rangy0(1)));% index y of pixel
 
 %-------------------------------------------------------------------
-% --- Executes on button press in 'FixLimits'.
+% --- Executes on button press in 'CheckFixLimits'.
 %-------------------------------------------------------------------
-function FixLimits_Callback(hObject, eventdata, handles)
-test=get(handles.FixLimits,'Value');
+function CheckFixLimits_Callback(hObject, eventdata, handles)
+test=get(handles.CheckFixLimits,'Value');
 if test
-    set(handles.FixLimits,'BackgroundColor',[1 1 0])
+    set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 else
-    set(handles.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
 end
 
 %-------------------------------------------------------------------
-% --- Executes on button press in FixEqual.
-function FixEqual_Callback(hObject, eventdata, handles)
-test=get(handles.FixEqual,'Value');
+% --- Executes on button press in CheckFixEqual.
+function CheckFixEqual_Callback(hObject, eventdata, handles)
+test=get(handles.CheckFixEqual,'Value');
 if test
-    set(handles.FixEqual,'BackgroundColor',[1 1 0])
+    set(handles.CheckFixEqual,'BackgroundColor',[1 1 0])
     cla(handles.axes3)
     update_plot(handles);
 else
-    set(handles.FixEqual,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckFixEqual,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
 %     axis(handles.axes3,'image')
 end
@@ -2900,16 +2901,16 @@ end
 %-------------------------------------------------------------------
 
 %-------------------------------------------------------------------
-% --- Executes on button press in 'zoom'.
+% --- Executes on button press in 'CheckZoom'.
 %-------------------------------------------------------------------
-function zoom_Callback(hObject, eventdata, handles)
+function CheckZoom_Callback(hObject, eventdata, handles)
 
-if (get(handles.zoom,'Value') == 1); 
-    set(handles.zoom,'BackgroundColor',[1 1 0])
-    set(handles.FixLimits,'Value',1)% propose by default fixed limits for the plotting axes
-    set(handles.FixLimits,'BackgroundColor',[1 1 0]) 
+if (get(handles.CheckZoom,'Value') == 1); 
+    set(handles.CheckZoom,'BackgroundColor',[1 1 0])
+    set(handles.CheckFixLimits,'Value',1)% propose by default fixed limits for the plotting axes
+    set(handles.CheckFixLimits,'BackgroundColor',[1 1 0]) 
 else
-    set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 
@@ -3257,15 +3258,15 @@ set(handles.FileIndex,'String',indices)
 set(handles.FileIndex,'UserData',NomTypeNew)
 %common to Fields_1_Callback
 if isequal(field,'image')||isequal(field_1,'image')
-    set(handles.npx_title,'Visible','on')% visible npx,pxcm... buttons
-    set(handles.npy_title,'Visible','on')
-    set(handles.npx,'Visible','on')
-    set(handles.npy,'Visible','on')
+    set(handles.TitleNpx,'Visible','on')% visible npx,pxcm... buttons
+    set(handles.TitleNpy,'Visible','on')
+    set(handles.num_Npx,'Visible','on')
+    set(handles.num_Npy,'Visible','on')
 else
-    set(handles.npx_title,'Visible','off')% visible npx,pxcm... buttons
-    set(handles.npy_title,'Visible','off')
-    set(handles.npx,'Visible','off')
-    set(handles.npy,'Visible','off')
+    set(handles.TitleNpx,'Visible','off')% visible npx,pxcm... buttons
+    set(handles.TitleNpy,'Visible','off')
+    set(handles.num_Npx,'Visible','off')
+    set(handles.num_Npy,'Visible','off')
 end
 setfield(handles);% update the field structure ('civ1'....)
 
@@ -3445,16 +3446,16 @@ set(handles.FileIndex_1,'UserData',NomTypeNew)
 
 %common to Fields_Callback
 if isequal(field,'image')||isequal(field_1,'image')
-    set(handles.npx_title,'Visible','on')% visible npx,pxcm... buttons
-    set(handles.npy_title,'Visible','on')
-    set(handles.npx,'Visible','on')
-    set(handles.npy,'Visible','on')
+    set(handles.TitleNpx,'Visible','on')% visible npx,pxcm... buttons
+    set(handles.TitleNpy,'Visible','on')
+    set(handles.num_Npx,'Visible','on')
+    set(handles.num_Npy,'Visible','on')
 %     set(handles.fix_pair,'Value',0)
 else
-    set(handles.npx_title,'Visible','off')% visible npx,pxcm... buttons
-    set(handles.npy_title,'Visible','off')
-    set(handles.npx,'Visible','off')
-    set(handles.npy,'Visible','off')
+    set(handles.TitleNpx,'Visible','off')% visible npx,pxcm... buttons
+    set(handles.TitleNpy,'Visible','off')
+    set(handles.num_Npx,'Visible','off')
+    set(handles.num_Npy,'Visible','off')
 %     set(handles.fix_pair,'Value',1)
 end
 if isequal(field,'velocity')||isequal(field_1,'velocity');
@@ -3573,8 +3574,8 @@ if ishandle(handles.UVMAT_title)
 end
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 if isequal(get(handles.VOLUME,'Value'),1)
-    set(handles.zoom,'Value',0)
-    set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckZoom,'Value',0)
+    set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
     set(handles.edit_vect,'Value',0)
     edit_vect_Callback(hObject, eventdata, handles)
     set(handles.edit_object,'Value',0)
@@ -3632,8 +3633,8 @@ if isequal(get(handles.edit_vect,'Value'),1)
     set(handles.record,'Visible','on')
     set(handles.edit_vect,'BackgroundColor',[1 1 0])
     set(handles.edit_object,'Value',0)
-    set(handles.zoom,'Value',0)
-    set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckZoom,'Value',0)
+    set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
 %     set(handles.create,'Value',0)
 %     set(handles.create,'BackgroundColor',[0 1 0])
     set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
@@ -3740,47 +3741,47 @@ image(imflag);
 
 
 %------------------------------------------------------------------
-% --- Executes on selection change in col_vec: choice of the color code.
+% --- Executes on selection change in ListColorScalar: choice of the color code.
 %
-function col_vec_Callback(hObject, eventdata, handles)
+function ListColorScalar_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------
 % edit the choice for color code
-list_code=get(handles.col_vec,'String');% list menu fields
-index_code=get(handles.col_vec,'Value');% selected string index
+list_code=get(handles.ListColorScalar,'String');% list menu fields
+index_code=get(handles.ListColorScalar,'Value');% selected string index
 col_code= list_code{index_code(1)}; % selected field
 if isequal(col_code,'black') || isequal(col_code,'white')
-   set(handles.slider1,'Visible','off')
-   set(handles.slider2,'Visible','off')
-   set(handles.colcode1,'Visible','off')
-   set(handles.colcode2,'Visible','off')
-   set(handles.AutoVecColor,'Visible','off')
+   set(handles.Slider1,'Visible','off')
+   set(handles.Slider2,'Visible','off')
+   set(handles.num_ColCode1,'Visible','off')
+   set(handles.num_ColCode2,'Visible','off')
+   set(handles.CheckFixVecColor,'Visible','off')
    set_vec_col_bar(handles)
 else
-   set(handles.slider1,'Visible','on')
-   set(handles.slider2,'Visible','on') 
-   set(handles.colcode1,'Visible','on')
-   set(handles.colcode2,'Visible','on')
-   set(handles.AutoVecColor,'Visible','on')  
+   set(handles.Slider1,'Visible','on')
+   set(handles.Slider2,'Visible','on') 
+   set(handles.num_ColCode1,'Visible','on')
+   set(handles.num_ColCode2,'Visible','on')
+   set(handles.CheckFixVecColor,'Visible','on')  
    if isequal(col_code,'ima_cor')
-       set(handles.AutoVecColor,'Value',0)%fixed scale by default
-       set(handles.vec_col_bar,'Value',0)% 3 colors r,g,b by default
-       set(handles.slider1,'Min',0);
-       set(handles.slider1,'Max',1);
-       set(handles.slider2,'Min',0);
-       set(handles.slider2,'Max',1);
+       set(handles.CheckFixVecColor,'Value',0)%fixed scale by default
+       set(handles.VecColBar,'Value',0)% 3 colors r,g,b by default
+       set(handles.Slider1,'Min',0);
+       set(handles.Slider1,'Max',1);
+       set(handles.Slider2,'Min',0);
+       set(handles.Slider2,'Max',1);
  %      set(handles.min_title_vec,'String','0')
-       set(handles.max_vec,'String','1')
-       set(handles.colcode1,'String','0.333')
+       set(handles.num_MaxVec,'String','1')
+       set(handles.num_ColCode1,'String','0.333')
        colcode1_Callback(hObject, eventdata, handles)
-       set(handles.colcode2,'String','0.666')
+       set(handles.num_ColCode2,'String','0.666')
        colcode2_Callback(hObject, eventdata, handles)
    else
-       set(handles.AutoVecColor,'Value',1)%auto scale between min,max by default
-       set(handles.vec_col_bar,'Value',1)% colormap 'jet' by default
-       minval=get(handles.slider1,'Min');
-       maxval=get(handles.slider1,'Max');
-       set(handles.slider1,'Value',minval)
-       set(handles.slider2,'Value',maxval)
+       set(handles.CheckFixVecColor,'Value',1)%auto scale between min,max by default
+       set(handles.VecColBar,'Value',1)% colormap 'jet' by default
+       minval=get(handles.Slider1,'Min');
+       maxval=get(handles.Slider1,'Max');
+       set(handles.Slider1,'Value',minval)
+       set(handles.Slider2,'Value',maxval)
        set_vec_col_bar(handles)
    end
 %    slider_update(handles)
@@ -3792,75 +3793,75 @@ run0_Callback(hObject, eventdata, handles)
 %----------------------------------------------------------------
 % -- Executes on slider movement to set the color code
 %
-function slider1_Callback(hObject, eventdata, handles)
+function Slider1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------
-slider1=get(handles.slider1,'Value');
-min_val=str2num(get(handles.min_vec,'String'));
-max_val=str2num(get(handles.max_vec,'String'));
+slider1=get(handles.Slider1,'Value');
+min_val=str2num(get(handles.num_MinVec,'String'));
+max_val=str2num(get(handles.num_MaxVec,'String'));
 col=min_val+(max_val-min_val)*slider1;
-set(handles.colcode1,'String',num2str(col))
-if(get(handles.slider2,'Value') < col)%move also the second slider at the same value if needed
-    set(handles.slider2,'Value',col)
-    set(handles.colcode2,'String',num2str(col))
+set(handles.num_ColCode1,'String',num2str(col))
+if(get(handles.Slider2,'Value') < col)%move also the second slider at the same value if needed
+    set(handles.Slider2,'Value',col)
+    set(handles.num_ColCode2,'String',num2str(col))
 end
 colcode1_Callback(hObject, eventdata, handles)
 
 %----------------------------------------------------------------
 % Executes on slider movement to set the color code
 %----------------------------------------------------------------
-function slider2_Callback(hObject, eventdata, handles)
-slider2=get(handles.slider2,'Value');
-min_val=str2num(get(handles.min_vec,'String'));
-max_val=str2num(get(handles.max_vec,'String'));
+function Slider2_Callback(hObject, eventdata, handles)
+slider2=get(handles.Slider2,'Value');
+min_val=str2num(get(handles.num_MinVec,'String'));
+max_val=str2num(get(handles.num_MaxVec,'String'));
 col=min_val+(max_val-min_val)*slider2;
-set(handles.colcode2,'String',num2str(col))
-if(get(handles.slider1,'Value') > col)%move also the first slider at the same value if needed
-    set(handles.slider1,'Value',col)
-    set(handles.colcode1,'String',num2str(col))
+set(handles.num_ColCode2,'String',num2str(col))
+if(get(handles.Slider1,'Value') > col)%move also the first slider at the same value if needed
+    set(handles.Slider1,'Value',col)
+    set(handles.num_ColCode1,'String',num2str(col))
 end
 colcode2_Callback(hObject, eventdata, handles)
 
 %----------------------------------------------------------------
 %execute on return carriage on the edit box corresponding to slider 1
 %----------------------------------------------------------------
-function colcode1_Callback(hObject, eventdata, handles)
-% col=str2num(get(handles.colcode1,'String'));
-% set(handles.slider1,'Value',col) 
+function num_ColCode1_Callback(hObject, eventdata, handles)
+% col=str2num(get(handles.num_ColCode1,'String'));
+% set(handles.Slider1,'Value',col) 
 set_vec_col_bar(handles)
 update_plot(handles);
 
 %----------------------------------------------------------------
 %execute on return carriage on the edit box corresponding to slider 2
 %----------------------------------------------------------------
-function colcode2_Callback(hObject, eventdata, handles)
-% col=str2num(get(handles.colcode2,'String'));
-% set(handles.slider2,'Value',col) 
+function num_ColCode2_Callback(hObject, eventdata, handles)
+% col=str2num(get(handles.num_ColCode2,'String'));
+% set(handles.Slider2,'Value',col) 
 % slider2_Callback(hObject, eventdata, handles)
 set_vec_col_bar(handles)
 update_plot(handles);
 %------------------------------------------------------------
 %update the slider values after displaying vectors
 %--------------------------------------------------------
-% function slider_update(handles,auto,minC,colcode1,colcode2,maxC)
-% set(handles.slider1,'Min',minC) 
-% set(handles.slider1,'Max',maxC)
-% set(handles.slider2,'Min',minC) 
-% set(handles.slider2,'Max',maxC)
+% function slider_update(handles,auto,minC,num_ColCode1,num_ColCode2,maxC)
+% set(handles.Slider1,'Min',minC) 
+% set(handles.Slider1,'Max',maxC)
+% set(handles.Slider2,'Min',minC) 
+% set(handles.Slider2,'Max',maxC)
 % set(handles.min_title_vec,'String',num2str(minC))
-% set(handles.max_vec,'String',num2str(maxC))
+% set(handles.num_MaxVec,'String',num2str(maxC))
 % if auto
-%         set(handles.colcode1,'String',num2str(colcode1,3))%update display
-%         set(handles.colcode2,'String',num2str(colcode2,3))
+%         set(handles.num_ColCode1,'String',num2str(num_ColCode1,3))%update display
+%         set(handles.num_ColCode2,'String',num2str(num_ColCode2,3))
 % end
-% set(handles.slider1,'Value',colcode1)%update slider with constant display
-% set(handles.slider2,'Value',colcode2)
+% set(handles.Slider1,'Value',num_ColCode1)%update slider with constant display
+% set(handles.Slider2,'Value',num_ColCode2)
 % set_vec_col_bar(handles)
 
 
 %-------------------------------------------------------
-% --- Executes on button press in AutoVecColor.
+% --- Executes on button press in CheckFixVecColor.
 %-------------------------------------------------------
-function vec_col_bar_Callback(hObject, eventdata, handles)
+function VecColBar_Callback(hObject, eventdata, handles)
 set_vec_col_bar(handles)
 
 %-------------------------------------------------------------
@@ -3923,8 +3924,8 @@ else
     set(handles.path_transform,'String','')
 end
 
-set(handles.FixLimits,'Value',0)
-set(handles.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
+set(handles.CheckFixLimits,'Value',0)
+set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
 
 %delete drawn objects
 hother=findobj('Tag','proj_object');%find all the proj objects
@@ -4040,7 +4041,7 @@ else
                 eval(['Histo.histo(:,col)=hist(C, Histo.' FieldName ');']);  %calculate histogram
             end
         end
-%         set(haxes,'XLimMode','auto')%reset auto mode (after zoom effect)
+%         set(haxes,'XLimMode','auto')%reset auto mode (after CheckZoom effect)
 %         set(haxes,'YLimMode','auto')
 %         PlotParam.Auto_xy=1;
         plot_field(Histo,haxes);
@@ -4052,197 +4053,197 @@ end
 %-------------------------------------------------
 
 %------------------------------------------------------------------------
-function MinX_Callback(hObject, eventdata, handles)
+function num_MinX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.FixLimits,'Value',1) %suppress auto mode
-set(handles.FixLimits,'BackgroundColor',[1 1 0])
+set(handles.CheckFixLimits,'Value',1) %suppress auto mode
+set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
-function MaxX_Callback(hObject, eventdata, handles)
+function num_MaxX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.FixLimits,'Value',1) %suppress auto mode
-set(handles.FixLimits,'BackgroundColor',[1 1 0])
+set(handles.CheckFixLimits,'Value',1) %suppress auto mode
+set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
-function MinY_Callback(hObject, eventdata, handles)
+function num_MinY_Callback(hObject, eventdata, handles)
 %------------------------------------------
-set(handles.FixLimits,'Value',1) %suppress auto mode
-set(handles.FixLimits,'BackgroundColor',[1 1 0])
+set(handles.CheckFixLimits,'Value',1) %suppress auto mode
+set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
-function MaxY_Callback(hObject, eventdata, handles)
+function num_MaxY_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.FixLimits,'Value',1) %suppress auto mode
-set(handles.FixLimits,'BackgroundColor',[1 1 0])
+set(handles.CheckFixLimits,'Value',1) %suppress auto mode
+set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
-function MinA_Callback(hObject, eventdata, handles)
+function num_MinA_Callback(hObject, eventdata, handles)
 %------------------------------------------
-set(handles.FixScal,'Value',1) %suppress auto mode
-set(handles.FixScal,'BackgroundColor',[1 1 0])
-MinA=str2double(get(handles.MinA,'String'));
-MaxA=str2double(get(handles.MaxA,'String'));
+set(handles.CheckFixScalar,'Value',1) %suppress auto mode
+set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
+MinA=str2double(get(handles.num_MinA,'String'));
+MaxA=str2double(get(handles.num_MaxA,'String'));
 if MinA>MaxA% switch minA and maxA in case of error
     MinA_old=MinA;
     MinA=MaxA;
     MaxA=MinA_old;
-    set(handles.MinA,'String',num2str(MinA,5));
-    set(handles.MaxA,'String',num2str(MaxA,5));
+    set(handles.num_MinA,'String',num2str(MinA,5));
+    set(handles.num_MaxA,'String',num2str(MaxA,5));
 end
 update_plot(handles);
 
 %------------------------------------------------------------------------
-function MaxA_Callback(hObject, eventdata, handles)
+function num_MaxA_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.FixScal,'Value',1) %suppress auto mode
-set(handles.FixScal,'BackgroundColor',[1 1 0])
-MinA=str2double(get(handles.MinA,'String'));
-MaxA=str2double(get(handles.MaxA,'String'));
+set(handles.CheckFixScalar,'Value',1) %suppress auto mode
+set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
+MinA=str2double(get(handles.num_MinA,'String'));
+MaxA=str2double(get(handles.num_MaxA,'String'));
 if MinA>MaxA% switch minA and maxA in case of error
         MinA_old=MinA;
     MinA=MaxA;
     MaxA=MinA_old;
-    set(handles.MinA,'String',num2str(MinA,5));
-    set(handles.MaxA,'String',num2str(MaxA,5));
+    set(handles.num_MinA,'String',num2str(MinA,5));
+    set(handles.num_MaxA,'String',num2str(MaxA,5));
 end
 update_plot(handles);
 
 %------------------------------------------------------------------------
-function FixScal_Callback(hObject, eventdata, handles)
+function CheckFixScalar_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-test=get(handles.FixScal,'Value');
+test=get(handles.CheckFixScalar,'Value');
 if test
-    set(handles.FixScal,'BackgroundColor',[1 1 0])
+    set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
 else
-    set(handles.FixScal,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckFixScalar,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
 end
 
 %-------------------------------------------------------------------
-function BW_Callback(hObject, eventdata, handles)
+function CheckBW_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 update_plot(handles);
 
 %-------------------------------------------------------------------
-function Contours_Callback(hObject, eventdata, handles)
+function ListContour_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-val=get(handles.Contours,'Value');
+val=get(handles.ListContour,'Value');
 if val==2
     set(handles.interval_txt,'Visible','on')
-    set(handles.IncrA,'Visible','on')
+    set(handles.num_IncrA,'Visible','on')
 else
     set(handles.interval_txt,'Visible','off')
-    set(handles.IncrA,'Visible','off')
+    set(handles.num_IncrA,'Visible','off')
 end
 update_plot(handles);
 
 %-------------------------------------------------------------------
-function IncrA_Callback(hObject, eventdata, handles)
+function num_IncrA_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 update_plot(handles);
 
 %-------------------------------------------------------------------
-function HideWarning_Callback(hObject, eventdata, handles)
+function CheckHideWarning_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 update_plot(handles);
 
 %-------------------------------------------------------------------
-function HideFalse_Callback(hObject, eventdata, handles)
+function CheckHideFalse_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 update_plot(handles);
 
 %-------------------------------------------------------------------
-function VecScale_Callback(hObject, eventdata, handles)
+function num_VecScale_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-set(handles.FixVec,'Value',1);
-set(handles.FixVec,'BackgroundColor',[1 1 0])
+set(handles.CheckFixVectors,'Value',1);
+set(handles.CheckFixVectors,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %-------------------------------------------------------------------
-function FixVec_Callback(hObject, eventdata, handles)
+function CheckFixVectors_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-test=get(handles.FixVec,'Value');
+test=get(handles.CheckFixVectors,'Value');
 if test
-    set(handles.FixVec,'BackgroundColor',[1 1 0])
+    set(handles.CheckFixVectors,'BackgroundColor',[1 1 0])
 else
     update_plot(handles);
-    %set(handles.VecScale,'String',num2str(ScalOut.VecScale,3))
-    set(handles.FixVec,'BackgroundColor',[0.7 0.7 0.7])
+    %set(handles.num_VecScale,'String',num2str(ScalOut.num_VecScale,3))
+    set(handles.CheckFixVectors,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in decimate4 (nb_vec/4).
-function decimate4_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in CheckDecimate4 (nb_vec/4).
+function CheckDecimate4_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 update_plot(handles);
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in color_code menu
-function color_code_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in ListColorCode menu
+function ListColorCode_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set_vec_col_bar(handles)
 update_plot(handles);
 
 %------------------------------------------------------------------------
-% --- Executes on button press in AutoVecColor.
-function AutoVecColor_Callback(hObject, eventdata, handles)
+% --- Executes on button press in CheckFixVecColor.
+function CheckFixVecColor_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-test=get(handles.AutoVecColor,'Value');
+test=get(handles.CheckFixVecColor,'Value');
 if test
-    set(handles.AutoVecColor,'BackgroundColor',[1 1 0])
+    set(handles.CheckFixVecColor,'BackgroundColor',[1 1 0])
 else
     update_plot(handles);
-    %set(handles.VecScale,'String',num2str(ScalOut.VecScale,3))
-    set(handles.AutoVecColor,'BackgroundColor',[0.7 0.7 0.7])
+    %set(handles.num_VecScale,'String',num2str(ScalOut.num_VecScale,3))
+    set(handles.CheckFixVecColor,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in max_vec.
-function min_vec_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in num_MaxVec.
+function num_MinVec_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 max_vec_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in max_vec.
-function max_vec_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in num_MaxVec.
+function num_MaxVec_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.AutoVecColor,'Value',1)
+set(handles.CheckFixVecColor,'Value',1)
 AutoVecColor_Callback(hObject, eventdata, handles)
-min_val=str2num(get(handles.min_vec,'String'));
-max_val=str2num(get(handles.max_vec,'String'));
-slider1=get(handles.slider1,'Value');
-slider2=get(handles.slider2,'Value');
+min_val=str2num(get(handles.num_MinVec,'String'));
+max_val=str2num(get(handles.num_MaxVec,'String'));
+slider1=get(handles.Slider1,'Value');
+slider2=get(handles.Slider2,'Value');
 colcode1=min_val+(max_val-min_val)*slider1;
 colcode2=min_val+(max_val-min_val)*slider2;
-set(handles.colcode1,'String',num2str(colcode1))
-set(handles.colcode2,'String',num2str(colcode2))
+set(handles.num_ColCode1,'String',num2str(colcode1))
+set(handles.num_ColCode2,'String',num2str(colcode2))
 update_plot(handles);
 
 %------------------------------------------------------------------------
 % --- update the display of color code for vectors
 function set_vec_col_bar(handles)
 %------------------------------------------------------------------------
-%get the image of the color display button 'vec_col_bar' in pixels
-set(handles.vec_col_bar,'Unit','pixel');
-pos_vert=get(handles.vec_col_bar,'Position');
-set(handles.vec_col_bar,'Unit','Normalized');
+%get the image of the color display button 'VecColBar' in pixels
+set(handles.VecColBar,'Unit','pixel');
+pos_vert=get(handles.VecColBar,'Position');
+set(handles.VecColBar,'Unit','Normalized');
 width=ceil(pos_vert(3));
 height=ceil(pos_vert(4));
 
 %get slider indications
-list=get(handles.color_code,'String');
-ichoice=get(handles.color_code,'Value');
+list=get(handles.ListColorCode,'String');
+ichoice=get(handles.ListColorCode,'Value');
 colcode.ColorCode=list{ichoice};
-colcode.MinC=str2num(get(handles.min_vec,'String'));
-colcode.MaxC=str2num(get(handles.max_vec,'String'));
+colcode.MinC=str2num(get(handles.num_MinVec,'String'));
+colcode.MaxC=str2num(get(handles.num_MaxVec,'String'));
 test3color=strcmp(colcode.ColorCode,'rgb') || strcmp(colcode.ColorCode,'bgr');
 if test3color
-    colcode.colcode1=str2num(get(handles.colcode1,'String'));
-    colcode.colcode2=str2num(get(handles.colcode2,'String'));
+    colcode.colcode1=str2num(get(handles.num_ColCode1,'String'));
+    colcode.colcode2=str2num(get(handles.num_ColCode2,'String'));
 end
 colcode.FixedCbounds=0;
 colcode.FixedCbounds=1;
@@ -4255,7 +4256,7 @@ A3=colorlist(col_vec,3)*oneheight;
 A(:,:,1)=A1';
 A(:,:,2)=A2';
 A(:,:,3)=A3';
-set(handles.vec_col_bar,'Cdata',A)
+set(handles.VecColBar,'Cdata',A)
 
 
 %-------------------------------------------------------------------
@@ -4264,7 +4265,8 @@ function update_plot(handles)
 haxes= handles.axes3;
 UvData=get(handles.uvmat,'UserData');
 AxeData=UvData.axes3;
-PlotParam=read_plot_param(handles);
+%PlotParam=read_plot_param(handles);
+PlotParam=read_GUI(handles.uvmat);
 [PP,PlotParamOut]= plot_field(AxeData,haxes,PlotParam);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
@@ -4282,7 +4284,7 @@ test=get(handles.edit_object,'Value');
 if test
     set(handles.edit_object,'BackgroundColor',[1,1,0])  
     %suppress the other options 
-    set(handles.zoom,'Value',0)
+    set(handles.CheckZoom,'Value',0)
     zoom_Callback(hObject, eventdata, handles)
     hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
     if ishandle(hgeometry_calib)
@@ -4395,7 +4397,8 @@ else
 end
 if option==1 ||option==2% lefet mouse selection, peroject the field:
     ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
-    plot_field(ProjData,PlotHandles.axes3,read_plot_param(PlotHandles));%read plotting parameters on the uvmat interfacPlotHandles);
+    %plot_field(ProjData,PlotHandles.axes3,read_plot_param(PlotHandles));%read plotting parameters on the uvmat interfacPlotHandles);
+    plot_field(ProjData,PlotHandles.axes3,read_GUI(get(PlotHandles.axes3,'Parent')));%read plotting parameters on the uvmat interfacPlotHandles);
     UvData.Object=update_obj(UvData,IndexObj,[]);
     set(handles.uvmat,'UserData',UvData)
 end
@@ -4586,8 +4589,8 @@ function MenuCalib_Callback(hObject, eventdata, handles)
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 
 %suppress competing options 
-set(handles.zoom,'Value',0)
-set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
+set(handles.CheckZoom,'Value',0)
+set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
 set(handles.list_object_1,'Value',1)      
 % initiate display of GUI geometry_calib
 data=[]; %default
@@ -5027,8 +5030,8 @@ end
 set_object(data,handles);% call the set_object interface
 set(handles.MenuObject,'checked','on')
 set(handles.uvmat,'UserData',UvData)
-set(handles.zoom,'Value',0)
-zoom_Callback(handles.uvmat, [], handles)
+set(handles.CheckZoom,'Value',0)
+CheckZoom_Callback(handles.uvmat, [], handles)
 set(handles.delete_object,'Visible','on')
 set(handles.uvmat_title,'Visible','on')
 set(handles.view_field_title,'Visible','on')
@@ -5036,8 +5039,8 @@ set(handles.view_field_title,'Visible','on')
 %------------------------------------------------------------------------
 function MenuRuler_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.zoom,'Value',0)
-zoom_Callback(handles.uvmat, [], handles)
+set(handles.CheckZoom,'Value',0)
+CheckZoom_Callback(handles.uvmat, [], handles)
 set(handles.MenuRuler,'checked','on')
 UvData=get(handles.uvmat,'UserData');
 UvData.MouseAction='ruler';
