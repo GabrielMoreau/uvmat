@@ -267,27 +267,26 @@ indy=1+round((nxy(1)-1)*(y12-rangy0(1))/(rangy0(2)-rangy0(1)));% index y of pixe
 %-------------------------------------------------------------------
 % --- Executes on button press in 'FixLimits'.
 %-------------------------------------------------------------------
-function FixLimits_Callback(hObject, eventdata, handles)
-test=get(handles.FixLimits,'Value');
+function CheckFixLimits_Callback(hObject, eventdata, handles)
+test=get(handles.CheckFixLimits,'Value');
 if test
-    set(handles.FixLimits,'BackgroundColor',[1 1 0])
+    set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 else
-    set(handles.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
 end
+update_plot(handles)
 
 %-------------------------------------------------------------------
 % --- Executes on button press in FixEqual.
-function FixEqual_Callback(hObject, eventdata, handles)
+function CheckFixEqual_Callback(hObject, eventdata, handles)
 test=get(handles.FixEqual,'Value');
 if test
-    set(handles.FixEqual,'BackgroundColor',[1 1 0])
+    set(handles.CheckFixEqual,'BackgroundColor',[1 1 0])
     cla(handles.axes3)
-    update_plot(handles)
 else
-    set(handles.FixEqual,'BackgroundColor',[0.7 0.7 0.7])
-    update_plot(handles)
+    set(handles.CheckFixEqual,'BackgroundColor',[0.7 0.7 0.7])
 end
-
+ update_plot(handles)
 
 %-------------------------------------------------------------------
 
@@ -496,67 +495,67 @@ set_vec_col_bar(handles)
 %-------------------------------------------------
 
 %------------------------------------------------------------------------
-function MinX_Callback(hObject, eventdata, handles)
+function num_MinX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.FixLimits,'Value',1) %suppress auto mode
-set(handles.FixLimits,'BackgroundColor',[1 1 0])
+set(handles.CheckFixLimits,'Value',1) %suppress auto mode
+set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
-function MaxX_Callback(hObject, eventdata, handles)
+function num_MaxX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.FixLimits,'Value',1) %suppress auto mode
-set(handles.FixLimits,'BackgroundColor',[1 1 0])
+set(handles.CheckFixLimits,'Value',1) %suppress auto mode
+set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
-function MinY_Callback(hObject, eventdata, handles)
+function num_MinY_Callback(hObject, eventdata, handles)
 %------------------------------------------
-set(handles.FixLimits,'Value',1) %suppress auto mode
-set(handles.FixLimits,'BackgroundColor',[1 1 0])
+set(handles.CheckFixLimits,'Value',1) %suppress auto mode
+set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
-function MaxY_Callback(hObject, eventdata, handles)
+function num_MaxY_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.FixLimits,'Value',1) %suppress auto mode
-set(handles.FixLimits,'BackgroundColor',[1 1 0])
+set(handles.CheckFixLimits,'Value',1) %suppress auto mode
+set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %-----------------------------------------------------------------
-function MinA_Callback(hObject, eventdata, handles)
+function num_MinA_Callback(hObject, eventdata, handles)
 %------------------------------------------
-set(handles.FixScal,'Value',1) %suppress auto mode
-set(handles.FixScal,'BackgroundColor',[1 1 0])
+set(handles.CheckFixScalar,'Value',1) %suppress auto mode
+set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
 update_plot(handles)
 
 %-----------------------------------------------------------------
-function MaxA_Callback(hObject, eventdata, handles)
+function num_MaxA_Callback(hObject, eventdata, handles)
 %--------------------------------------------
-set(handles.FixScal,'Value',1) %suppress auto mode
-set(handles.FixScal,'BackgroundColor',[1 1 0])
+set(handles.CheckFixScalar,'Value',1) %suppress auto mode
+set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
 update_plot(handles)
 
 %-----------------------------------------------
-function FixScal_Callback(hObject, eventdata, handles)
+function CheckFixScalar_Callback(hObject, eventdata, handles)
 %--------------------------------------------
-test=get(handles.FixScal,'Value');
+test=get(handles.CheckFixScalar,'Value');
 if test
-    set(handles.FixScal,'BackgroundColor',[1 1 0])
+    set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
 else
-    set(handles.FixScal,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckFixScalar,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
 %     set(handles.MinA,'String',num2str(ScalOut.MinA,3))
 %     set(handles.MaxA,'String',num2str(ScalOut.MaxA,3))
 end
 
 %-------------------------------------------------------------------
-function BW_Callback(hObject, eventdata, handles)
+function CheckBW_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 update_plot(handles)
 
 %-------------------------------------------------------------------
-function Contours_Callback(hObject, eventdata, handles)
+function ListContour_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 val=get(handles.Contours,'Value');
 if val==2
@@ -605,8 +604,7 @@ end
 %-------------------------------------------------------
 % --- Executes on selection change in decimate4 (nb_vec/4).
 %-------------------------------------------------------
-function decimate4_Callback(hObject, eventdata, handles)
-'TEST'
+function CheckDecimate4_Callback(hObject, eventdata, handles)
 update_plot(handles)
 
 
@@ -686,17 +684,26 @@ A(:,:,2)=A2';
 A(:,:,3)=A3';
 set(handles.vec_col_bar,'Cdata',A)
 
-%------------------------------------------------------------------------
-function PlotType=update_plot(handles)
-%------------------------------------------------------------------------
-haxes= handles.axes3;
+% %------------------------------------------------------------------------
+% function PlotType=update_plot(handles)
+% %------------------------------------------------------------------------
+% haxes= handles.axes3;
+% 
+% %ProjField=get(haxes,'UserData');
+% ViewFieldData=get(handles.view_field,'UserData');
+% ProjField=ViewFieldData.axes3;
+% %ProjField=get(haxes,'UserData');
+% PlotParam=read_GUI(handles.view_field);
+% [PlotType,PlotParamOut]= plot_field(ProjField,haxes,PlotParam,1);
+% write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
-%ProjField=get(haxes,'UserData');
-ViewFieldData=get(handles.view_field,'UserData');
-ProjField=ViewFieldData.axes3;
-%ProjField=get(haxes,'UserData');
+%-------------------------------------------------------------------
+function update_plot(handles)
+%-------------------------------------------------------------------
+Data=get(handles.view_field,'UserData');
+AxeData=Data.axes3;% retrieve the current plotted data
 PlotParam=read_GUI(handles.view_field);
-[PlotType,PlotParamOut]= plot_field(ProjField,haxes,PlotParam,1);
+[PP,PlotParamOut]= plot_field(AxeData,handles.axes3,PlotParam);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %------------------------------------------------------------------------
@@ -736,409 +743,3 @@ set(hhuvmat.list_object_2,'Value',1)%select the last value ('...')
 end
 delete(hObject)
 
-
-
-
-
-
-
-% --- Executes on button press in CheckZoom.
-function CheckZoom_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckZoom (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CheckZoom
-
-
-% --- Executes on button press in CheckFixLimits.
-function CheckFixLimits_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckFixLimits (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CheckFixLimits
-
-
-
-function num_MinY_Callback(hObject, eventdata, handles)
-% hObject    handle to num_MinY (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_MinY as text
-%        str2double(get(hObject,'String')) returns contents of num_MinY as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function num_MinY_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to num_MinY (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function num_MaxY_Callback(hObject, eventdata, handles)
-% hObject    handle to num_MaxY (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_MaxY as text
-%        str2double(get(hObject,'String')) returns contents of num_MaxY as a double
-
-
-% --- Executes on button press in CheckFixEqual.
-function CheckFixEqual_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckFixEqual (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CheckFixEqual
-
-
-
-function num_MinX_Callback(hObject, eventdata, handles)
-% hObject    handle to num_MinX (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_MinX as text
-%        str2double(get(hObject,'String')) returns contents of num_MinX as a double
-
-
-
-function num_MaxX_Callback(hObject, eventdata, handles)
-% hObject    handle to num_MaxX (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_MaxX as text
-%        str2double(get(hObject,'String')) returns contents of num_MaxX as a double
-
-
-% --- Executes on selection change in ListContour.
-function ListContour_Callback(hObject, eventdata, handles)
-% hObject    handle to ListContour (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns ListContour contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from ListContour
-
-
-% --- Executes on button press in checkbox49.
-function checkbox49_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox49 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox49
-
-
-
-function num_MaxA_Callback(hObject, eventdata, handles)
-% hObject    handle to num_MaxA (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_MaxA as text
-%        str2double(get(hObject,'String')) returns contents of num_MaxA as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function num_MaxA_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to num_MaxA (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function num_Npy_Callback(hObject, eventdata, handles)
-% hObject    handle to num_Npy (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_Npy as text
-%        str2double(get(hObject,'String')) returns contents of num_Npy as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function num_Npy_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to num_Npy (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function num_IncrA_Callback(hObject, eventdata, handles)
-% hObject    handle to num_IncrA (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_IncrA as text
-%        str2double(get(hObject,'String')) returns contents of num_IncrA as a double
-
-
-% --- Executes on button press in CheckBW.
-function CheckBW_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckBW (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CheckBW
-
-
-
-function num_MinA_Callback(hObject, eventdata, handles)
-% hObject    handle to num_MinA (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_MinA as text
-%        str2double(get(hObject,'String')) returns contents of num_MinA as a double
-
-
-
-function num_Npx_Callback(hObject, eventdata, handles)
-% hObject    handle to num_Npx (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_Npx as text
-%        str2double(get(hObject,'String')) returns contents of num_Npx as a double
-
-
-% --- Executes on button press in CheckFixVectors.
-function CheckFixVectors_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckFixVectors (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CheckFixVectors
-
-
-
-function num_VecScale_Callback(hObject, eventdata, handles)
-% hObject    handle to num_VecScale (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_VecScale as text
-%        str2double(get(hObject,'String')) returns contents of num_VecScale as a double
-
-
-% --- Executes on selection change in ListColorCode.
-function ListColorCode_Callback(hObject, eventdata, handles)
-% hObject    handle to ListColorCode (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns ListColorCode contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from ListColorCode
-
-
-% --- Executes on selection change in ListColorScalar.
-function ListColorScalar_Callback(hObject, eventdata, handles)
-% hObject    handle to ListColorScalar (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns ListColorScalar contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from ListColorScalar
-
-
-% --- Executes on button press in vecColBar.
-function vecColBar_Callback(hObject, eventdata, handles)
-% hObject    handle to vecColBar (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --- Executes on slider movement.
-function Slider1_Callback(hObject, eventdata, handles)
-% hObject    handle to Slider1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-
-% --- Executes during object creation, after setting all properties.
-function Slider1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Slider1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
-
-
-% --- Executes on slider movement.
-function Slider2_Callback(hObject, eventdata, handles)
-% hObject    handle to Slider2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
-
-% --- Executes during object creation, after setting all properties.
-function Slider2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Slider2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: slider controls usually have a light gray background.
-if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor',[.9 .9 .9]);
-end
-
-
-
-function num_ColCode1_Callback(hObject, eventdata, handles)
-% hObject    handle to num_ColCode1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_ColCode1 as text
-%        str2double(get(hObject,'String')) returns contents of num_ColCode1 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function num_ColCode1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to num_ColCode1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function num_MaxVec_Callback(hObject, eventdata, handles)
-% hObject    handle to num_MaxVec (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_MaxVec as text
-%        str2double(get(hObject,'String')) returns contents of num_MaxVec as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function num_MaxVec_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to num_MaxVec (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in checkbox52.
-function checkbox52_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox52 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox52
-
-
-
-function num_MinVec_Callback(hObject, eventdata, handles)
-% hObject    handle to num_MinVec (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_MinVec as text
-%        str2double(get(hObject,'String')) returns contents of num_MinVec as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function num_MinVec_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to num_MinVec (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in CheckDecimate4.
-function CheckDecimate4_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckDecimate4 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CheckDecimate4
-
-
-% --- Executes on button press in heckHideFalse.
-function heckHideFalse_Callback(hObject, eventdata, handles)
-% hObject    handle to heckHideFalse (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of heckHideFalse
-
-
-
-function num_Colcode2_Callback(hObject, eventdata, handles)
-% hObject    handle to num_Colcode2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of num_Colcode2 as text
-%        str2double(get(hObject,'String')) returns contents of num_Colcode2 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function num_Colcode2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to num_Colcode2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in CheckHideWarnin.
-function CheckHideWarnin_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckHideWarnin (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CheckHideWarnin

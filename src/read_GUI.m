@@ -14,6 +14,8 @@ for ichild=1:numel(hchild)
                 object_style=get(hchild(ichild),'Style');
                 check_input=1;%default
                 switch object_style
+                    case {'checkbox','pushbutton','radiobutton','togglebutton'}
+                        input=get(hchild(ichild),'Value');
                     case 'edit'
                         separator=regexp(tag,'_');
                         if isempty(separator)
@@ -35,9 +37,12 @@ for ichild=1:numel(hchild)
                                     input=get(hchild(ichild),'String');
                             end
                         end
-                    case 'checkbox'
-                        input=get(hchild(ichild),'Value');
+
                         %                         key=tag(7:end);
+                    case{'Listbox','popupmenu'}
+                        listinput=get(hchild(ichild),'String');
+                        value=get(hchild(ichild),'Value');
+                        input=listinput(value);        
                     otherwise
                         check_input=0;
                 end

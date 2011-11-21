@@ -2077,7 +2077,6 @@ if ~exist(filename,'file')
     errormsg=['input file ' filename ' does not exist'];
     return
 end
-%Ext=get(handles.FileExt,'String');
 NomType=get(handles.FileIndex,'UserData');
 %update the z position index
 nbslice_str=get(handles.nb_slice,'String');
@@ -2274,18 +2273,6 @@ elseif isfield(ParamOut_1,'Npx')
 end
 
 %% update the display menu for the first velocity type (first menuline)
-% veltype_handles=[handles.VelType handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
-% if ~isequal(FileType,'netcdf')|| isequal(FieldName,'get_field...')
-%     set(veltype_handles,'Visible','off')
-% else% if isempty(ParamOut.VelType) && ~isequal(FieldName,'get_field...')
-%     set_veltype_display(veltype_handles,ParamOut.CivStage)%update the display of available velocity types for the first field
-%     if isempty(ParamOut.VelType)
-%         reset_vel_type(veltype_handles)
-%     else
-%         handle1=eval(['handles.' ParamOut.VelType]);
-%         reset_vel_type(veltype_handles,handle1)
-%     end
-% end
 test_veltype=0;
 if ~isequal(FileType,'netcdf')|| isequal(FieldName,'get_field...')
     set(handles.VelType,'Visible','off')
@@ -2308,24 +2295,6 @@ set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
 set(handles.Fields,'Value',find(field_index,1))
 
 %% update the display menu for the second velocity type (second menuline)
-% if ~isempty(filename_1)
-%     veltype_handles_1=[handles.VelType_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
-%     if ~isequal(FileType_1,'netcdf')|| isequal(FieldName_1,'get_field...')
-%         set(veltype_handles_1,'Visible','off')
-%         %reset_vel_type(veltype_handles_1)
-%     else %if isempty(VelType_1) && ~isequal(FieldName_1,'get_field...')
-%         set_veltype_display(veltype_handles_1,ParamOut_1.CivStage)%update the display of available velocity types for the first field
-%         if isempty(ParamOut_1.VelType)
-%             reset_vel_type(veltype_handles_1)
-%         else
-%             handle1=eval(['handles.' ParamOut_1.VelType '_1']);
-%             reset_vel_type(veltype_handles_1,handle1)
-%         end
-%     end
-%     field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
-%     set(handles.Fields_1,'String',ParamOut_1.FieldList); %update the field menu
-%     set(handles.Fields_1,'Value',find(field_index,1))
-% end
 test_veltype_1=0;
 if isempty(filename_1)
     set(handles.Fields_1,'Value',1); %update the field menu
@@ -2456,16 +2425,13 @@ if ~isempty(VarType{imax}.coord_x)  && ~isempty(VarType{imax}.coord_y)    %unstr
     if ~isempty(VarType{imax}.coord_z)
         ZName=UvData.Field.ListVarName{VarType{imax}.coord_z};
     else
-       NbDim=2;
+        NbDim=2;
     end
-elseif numel(VarType)>=imax && numel(VarType{imax}.coord)>=NbDim && VarType{imax}.coord(NbDim)>0 %structured coordinate  
+elseif numel(VarType)>=imax && numel(VarType{imax}.coord)>=NbDim && VarType{imax}.coord(NbDim)>0 %structured coordinate
     XName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim)};
     if NbDim>1
         YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
     end
-else
-%     errormsg='input field coordinates not defined';
-%     return
 end
 if NbDim==3
     if ~test_x
@@ -2588,9 +2554,6 @@ else
     set(handles.list_object_1,'String',list_object);
     set(handles.list_object_2,'String',list_object);
 end
-% if ~isfield(UvData.Object{1},'plotaxes')
-%     UvData.Object{1}.plotaxes=handles.axes3;%default plotting axis 
-% end
 testnewseries=UvData.NewSeries;
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
 set(handles.uvmat,'UserData',UvData)
@@ -2602,7 +2565,6 @@ if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
 end
 
 %% Plot the projections on the selected  projection objects
-
 % main projection object (uvmat display)
 list_object=get(handles.list_object_1,'String');
 if isequal(list_object,{''})%refresh list of objects if the menu is empty
@@ -3157,23 +3119,21 @@ list_fields=get(handles.Fields,'String');% list menu fields
 index_fields=get(handles.Fields,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
 if isequal(field,'get_field...')
-     set(handles.FixVelType,'visible','off')
-      set(handles.VelType,'visible','off')
-       set(handles.VelType_1,'visible','off')
-%      veltype_handles=[handles.VelType handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
-%      set_veltype_display(veltype_handles,0) % unvisible civ buttons
-     filename=read_file_boxes(handles);
-     hget_field=findobj(allchild(0),'name','get_field');
-     if ~isempty(hget_field)
-         delete(hget_field)
-     end
-     hget_field=get_field(filename);
-     set(hget_field,'Name','get_field')        
-     hhget_field=guidata(hget_field);
-     set(hhget_field.list_fig,'Value',1)
-     set(hhget_field.list_fig,'String',{'uvmat'})
-     set(handles.transform_fct,'Value',1)% no transform by default
-     set(handles.path_transform,'String','')
+    set(handles.FixVelType,'visible','off')
+    set(handles.VelType,'visible','off')
+    set(handles.VelType_1,'visible','off')
+    filename=read_file_boxes(handles);
+    hget_field=findobj(allchild(0),'name','get_field');
+    if ~isempty(hget_field)
+        delete(hget_field)
+    end
+    hget_field=get_field(filename);
+    set(hget_field,'Name','get_field')
+    hhget_field=guidata(hget_field);
+    set(hhget_field.list_fig,'Value',1)
+    set(hhget_field.list_fig,'String',{'uvmat'})
+    set(handles.transform_fct,'Value',1)% no transform by default
+    set(handles.path_transform,'String','')
     return %no action
 end
 list_fields=get(handles.Fields_1,'String');% list menu fields
@@ -3185,73 +3145,43 @@ UvData=get(handles.uvmat,'UserData');
 [FileName,RootPath,FileBase,FileIndices,FileExt]=read_file_boxes(handles);
 [P,F,str1,str2,str_a,str_b,E,NomType]=name2display(['xxx' get(handles.FileIndex,'String') FileExt]);
 NomTypeNew=NomType;%default
-if isequal(field,'image') 
-    % transform netc type to the corresponding image type
-%     if isequal(NomType,'_i1-i2_j')||isequal(NomType,'_i_j1-j2')|| isequal(NomType,'#_ab')|| isequal(NomType,'_i1-i2')
-%         UvData.SubDir=get(handles.SubDir,'String'); %preserve the subdir in memory
-%         if ~isempty(UvData.SubDir) && (isequal(UvData.SubDir(1),'/')||isequal(UvData.SubDir(1),'/'))
-%             UvData.SubDir(1)=[];
-%         end
-%         set(handles.SubDir,'String','')
-%         set(handles.FileExt,'String','.png');
-        if isequal(NomType,'_i1-i2_j')||isequal(NomType,'_i_j1-j2')
-            NomTypeNew='_i_j';
-        elseif isequal(NomType,'#_ab')
-            NomTypeNew='#a';
-        elseif isequal(NomType,'_i1-i2')
-            NomTypeNew='_i';
-        end  
-        imagename=name_generator(FileBase,str2double(str1),str2double(str_a),'.png',NomTypeNew,1,str2double(str2),str2double(str_b),'');
-        if ~exist(imagename,'file')
-                [FileName,PathName] = uigetfile( ...
-           {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';
+if isequal(field,'image')
+    if isequal(NomType,'_i1-i2_j')||isequal(NomType,'_i_j1-j2')
+        NomTypeNew='_i_j';
+    elseif isequal(NomType,'#_ab')
+        NomTypeNew='#a';
+    elseif isequal(NomType,'_i1-i2')
+        NomTypeNew='_i';
+    end
+    imagename=name_generator(FileBase,str2double(str1),str2double(str_a),'.png',NomTypeNew,1,str2double(str2),str2double(str_b),'');
+    if ~exist(imagename,'file')
+        [FileName,PathName] = uigetfile( ...
+            {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';
             '*.jpg',' jpeg image files'; ...
             '*.png','.png image files'; ...
             '*.tif','.tif image files'; ...
             '*.avi;*.AVI','.avi movie files'; ...
             '*.vol','.volume images (png)'; ...
             '*.*',  'All Files (*.*)'}, ...
-            'Pick an image',imagename);           
-            % display the selected field and related information
-           imagename=[PathName FileName];
-        end
-        display_file_name(hObject, eventdata, handles,imagename)%display the image
-        return
-%     end
-%     veltype_handles=[handles.VelType handles.interp1 handles.filter1 handles.civ2 handles.interp2 handles.filter2];
-%     set_veltype_display(veltype_handles,0) % unvisible civ buttons
+            'Pick an image',imagename);   
+        imagename=[PathName FileName];
+    end
+     % display the selected field and related information
+    display_file_name(hObject, eventdata, handles,imagename)%display the image
+    return
 else
     ext=get(handles.FileExt,'String');
     if ~isequal(ext,'.nc') %find the new NomType if the previous display was not already a netcdf file
-                [FileName,PathName] = uigetfile( ...
-           {'*.nc', ' (*.nc)';
+        [FileName,PathName] = uigetfile( ...
+            {'*.nc', ' (*.nc)';
             '*.nc',' netcdf files'; ...
             '*.*',  'All Files (*.*)'}, ...
-            'Pick a netcdf file',FileBase);           
-            % display the selected field and related information
-           filename=[PathName FileName];
+            'Pick a netcdf file',FileBase);
+        filename=[PathName FileName];
+        % display the selected field and related information
         display_file_name(hObject, eventdata, handles,filename)
         return
-       %  MenuBrowse_Callback(hObject, eventdata, handles)
     end
-%     if isequal(field,'vort') || isequal(field,'div') || isequal(field,'strain')
-% %         set(handles.VelType,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
-% %         set(handles.civ2,'BackgroundColor',[0.702 0.702 0.702])
-% %         set(handles.interp1,'BackgroundColor',[0.702 0.702 0.702])
-% %         set(handles.interp2,'BackgroundColor',[0.702 0.702 0.702])
-%     elseif isequal(field,'more...'); 
-%         set(handles.VelType,'BackgroundColor',[0.702 0.702 0.702]) % put their color to grey
-%         set(handles.civ2,'BackgroundColor',[0.702 0.702 0.702])
-%         str=calc_field;%get the list of available scalars by the function calc_scal
-%         [ind_answer] = listdlg('PromptString','Select a file:',...
-%                 'SelectionMode','single',...
-%                 'ListString',str);
-%        % edit the choice in the field and action menu
-%         scalar=cell2mat(str(ind_answer));
-%         menu=update_menu(handles.Fields,scalar);
-%         menu=[{''};menu];
-%         set(handles.Fields_1,'String',menu);% store the selected scalar type
-%     end
 end
 indices=name_generator('',str2double(str1),str2double(str_a),'',NomTypeNew,1,str2double(str2),str2double(str_b),'');
 set(handles.FileIndex,'String',indices)
@@ -3269,7 +3199,6 @@ else
     set(handles.num_Npy,'Visible','off')
 end
 setfield(handles);% update the field structure ('civ1'....)
-
 if ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
     run0_Callback(hObject, eventdata, handles)
 end
@@ -3293,15 +3222,17 @@ UvData=get(handles.uvmat,'UserData');
 
 %read the rootfile input display
 [FileName,RootPath,FileBase,FileIndices,FileExt_1]=read_file_boxes_1(handles);
-[P,F,str1,str2,str_a,str_b,E,NomType]=name2display(['xxx' get(handles.FileIndex,'String') FileExt_1]);
+[P,F,str1,str2,str_a,str_b,E,NomType_1]=name2display(['xxx' get(handles.FileIndex,'String') FileExt_1]);
 % if isempty(FileExt_prev)|| strcmp(FileExt_prev,'')
 %     FileExt_1=get(handles.FileExt,'String');
 % else
 %     FileExt_1=FileExt_prev;
 % end
-NomType_1=get(handles.FileIndex_1,'UserData');
+% NomType_1=get(handles.FileIndex_1,'UserData');
 if isempty(NomType_1)|| strcmp(NomType_1,'')
-    NomType_1=get(handles.FileIndex,'UserData');
+    [FileName,RootPath,FileBase,FileIndices,FileExt_1]=read_file_boxes(handles);
+    [P,F,str1,str2,str_a,str_b,E,NomType_1]=name2display(['xxx' get(handles.FileIndex,'String') FileExt_1]);
+%     NomType_1=get(handles.FileIndex,'UserData');
 end
 NomTypeNew=NomType_1;%default
 
@@ -3371,8 +3302,6 @@ if isequal(field_1,'image')
 else
     set(handles.SubDir_1,'Visible','on')
     if ~isequal(FileExt_1,'.nc') %find the new NomType if the previous display was not already a netcdf file
-%         veltype_handles=[handles.VelType_1 handles.interp1_1 handles.filter1_1 handles.civ2_1 handles.interp2_1 handles.filter2_1];
-%         set_veltype_display(veltype_handles,6); % make all civ buttons visible
         RootPath_1=get(handles.RootPath_1,'String');
         RootFile_1=get(handles.RootFile_1,'String');
         if isempty(RootPath_1)||isequal(RootPath_1,'')
@@ -4258,16 +4187,13 @@ A(:,:,2)=A2';
 A(:,:,3)=A3';
 set(handles.VecColBar,'Cdata',A)
 
-
 %-------------------------------------------------------------------
 function update_plot(handles)
 %-------------------------------------------------------------------
-haxes= handles.axes3;
 UvData=get(handles.uvmat,'UserData');
-AxeData=UvData.axes3;
-%PlotParam=read_plot_param(handles);
+AxeData=UvData.axes3;% retrieve the current plotted data
 PlotParam=read_GUI(handles.uvmat);
-[PP,PlotParamOut]= plot_field(AxeData,haxes,PlotParam);
+[PP,PlotParamOut]= plot_field(AxeData,handles.axes3,PlotParam);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %-------------------------------------------------------------------
@@ -4648,7 +4574,7 @@ else
                         testphys=1;
                     end
                 end
-                if isfield(ObjectData,'Coord')& isfield(ObjectData,'Style')
+                if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Style')
                     if isequal(ObjectData.Style,'polygon')
                         X=ObjectData.Coord(:,1);
                         Y=ObjectData.Coord(:,2);
@@ -4721,8 +4647,6 @@ end
 %-- open the GUI set_grid.fig to create grid
 function MenuGrid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-%UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-
 %suppress the other options if grid is chosen
 set(handles.edit_vect,'Value',0)
 edit_vect_Callback(hObject, eventdata, handles)
@@ -4734,7 +4658,6 @@ FileName=read_file_boxes(handles);
 CoordList=get(handles.transform_fct,'String');
 val=get(handles.transform_fct,'Value');
 set_grid(FileName,CoordList{val});% call the set_object interface
-%set(handles.uvmat,'UserData',UvData);
 
 %------------------------------------------------------------------------
 % open the GUI 'series'
@@ -4773,19 +4696,8 @@ param.index_fields_1=get(handles.Fields_1,'Value')-1;% selected string index
 if param.index_fields_1>1
     param.index_fields_1=param.index_fields_1-1;
 end
-% if isequal(get(handles.VelType,'Visible'),'on')
-%     param.VelTypeMenu=get(handles.VelType,'String');
-%     param.VelTypeIndex=get(handles.VelType,'Value');
-% end
-% param.civ1=get(handles.VelType,'Value');
-% param.civ2=get(handles.civ2,'Value');
-% param.interp1=get(handles.interp1,'Value');
-% param.interp2=get(handles.interp2,'Value');
-% param.filter1=get(handles.filter1,'Value');
-% param.filter2=get(handles.filter2,'Value');
 param.menu_coord_str=get(handles.transform_fct,'String');
 param.menu_coord_val=get(handles.transform_fct,'Value');
-
 series(param); %run the series interface
 
 %------------------------------------------------------------------------
