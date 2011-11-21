@@ -1921,29 +1921,10 @@ for ifile=1:nbfield
         
         % CheckFix2
         if Param.CheckFix2==1
-            test_mask=get(handles.CheckMask,'Value');
-            if test_mask==0
-                maskname=''; %no mask used
-            else
-                maskdispl=get(handles.txt_MaskName,'String');
-                maskbase=[filecell.filebase '_' maskdispl]; %
-                nbslice_mask=str2double(maskdispl(1:end-4)); %
-                num1_mask=mod(num1_civ2(ifile)-1,nbslice_mask)+1;
-                maskname =name_generator(maskbase,num1_mask,1,'.png','_i');
-            end
             switch CivMode
                 case 'CivX'
-                    if isunix
-                        cmd_FIX=[Param.xml.FixBin ' -f ' filecell.nc.civ2{ifile,j} ' -fi1 ' num2str(flagindex2(1)) ...
-                            ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
-                            ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName ' maskname];
-                    else
-                        cmd_FIX=['"' Param.xml.FixBin '" -f "' filecell.nc.civ2{ifile,j} '" -fi1 ' num2str(flagindex2(1)) ...
-                            ' -fi2 ' num2str(flagindex2(2)) ' -fi3 ' num2str(flagindex2(3)) ...
-                            ' -threshC ' num2str(thresh_vec2C) ' -threshV ' num2str(thresh_vel2) ' -maskName "' maskname '"'];
-                        cmd_FIX=regexprep(cmd_FIX,'\\','\\\\');
-                    end
-                    cmd=[cmd cmd_FIX '\n'];
+                    cmd=[cmd...
+                        cmd_fix(filecell.nc.civ2{ifile,j},Param,'Fix2') '\n'];
                 case 'CivAll'
                     fix2.inputFileName=filecell.nc.civ2{ifile,j} ;
                     fix2.fi1=num2str(flagindex2(1));
@@ -1968,8 +1949,8 @@ for ifile=1:nbfield
         if Param.CheckPatch2==1
             switch CivMode
                 case 'CivX'
-                    cmd_PATCH=cmd_patch(filecell.nc.civ2{ifile,j},param.Patch2,Param.xml.PatchBin);
-                    cmd=[cmd cmd_PATCH '\n'];
+                    cmd=[cmd...
+                        cmd_patch(filecell.nc.civ1{ifile,j},Param,'Patch2') '\n'];
                 case 'CivAll'
                     patch2.inputFileName=filecell.nc.civ1{ifile,j} ;
                     patch2.nopt=subdomain_patch2;
@@ -5328,6 +5309,15 @@ end
 
 function cmd=cmd_fix(filename,Param,fixname)
 %%
+switch fixname
+    case 'Fix1'
+        fi2_value=num2str(Param.(fixname).CheckF2);
+    case 'Fix2'
+        fi2_value=num2str(Param.(fixname).CheckF4);%need to understand why...
+end
+
+
+
 filename=regexprep(filename,'.nc','');
 MaskName_string='';%default
 if Param.(fixname).CheckMask
@@ -5339,12 +5329,12 @@ if ~isempty(Param.(fixname).MaxVel)
 end
 if isunix
     cmd=[Param.xml.FixBin ' -f ' filename '.nc -fi1 ' num2str(Param.(fixname).CheckFmin2) ...
-        ' -fi2 ' num2str(Param.(fixname).CheckF2) ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
+        ' -fi2 ' fi2_value ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
         ' -threshC ' num2str(Param.(fixname).MinCorr) MaxVel_string MaskName_string...
         ' >' filename '.' lower(fixname) '.log 2>&1'];
 else
     cmd=['"' Param.xml.FixBin '" -f "' filename '.nc" -fi1 ' num2str(Param.(fixname).CheckFmin2)...
-        ' -fi2 ' num2str(Param.(fixname).CheckF2) ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
+        ' -fi2 ' fi2_value ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
         ' -threshC ' num2str(Param.(fixname).MinCorr) MaxVel_string MaskName_string...
         ' > "' filename '.' lower(fixname) '.log"'];
     cmd=regexprep(cmd,'\\','\\\\');
@@ -5358,13 +5348,13 @@ filename=regexprep(filename,'.nc','');
 if isunix
     cmd=[Param.xml.PatchBin...
         ' -f ' filename '.nc -m ' num2str(Param.(patchname).Nx)...
-        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothingParam)...
+        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothParam)...
         ' -nopt ' num2str(Param.(patchname).SubdomainSize) ...
         '  > ' filename '.' lower(patchname) '.log 2>&1']; % redirect standard output to the log file
 else
     cmd=['"' Param.xml.PatchBin...
         '" -f "' filename '.nc" -m ' num2str(Param.(patchname).Nx)...
-        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothingParam)...
+        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothParam)...
         ' -nopt ' num2str(Param.(patchname).SubdomainSize)...
         '  > "' filename '.' lower(patchname) '.log" 2>&1']; % redirect standard output to the log file
     cmd=regexprep(cmd,'\\','\\\\');
