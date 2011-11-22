@@ -35,9 +35,9 @@ if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is
 else
     hcurrentfig=hObject;%usual plot
 end
-    set(hcurrentfig,'Units','pixels')
-    currentfig_pos=get(hcurrentfig,'Position');%position of the GUI series (in pixels)
-    set(hcurrentfig,'Units','normalized')
+set(hcurrentfig,'Units','pixels')
+GUI_pos=get(hcurrentfig,'Position');%position of the GUI series (in pixels)
+set(hcurrentfig,'Units','normalized')
 hhcurrentfig=guidata(hcurrentfig);
 test_zoom=get(hhcurrentfig.CheckZoom,'Value');%test for zoom action, first priority
 test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
@@ -70,57 +70,87 @@ fig_tag=get(hcurrentfig,'Tag');
 tag_obj=get(gco,'Tag');%tag of the currently selected object
 xy=[];%default
 xy_fig=get(hObject,'CurrentPoint');% current point of the current figure (gcbo)
-hchild=get(hObject,'Children');%handles of all objects in the current figure
+hchildren=get(hObject,'Children');%handles of all objects in the current figure
 haxes=[];
 
 %% loop on all the objects in the current figure (selected by the last mouse click) 
-%CurrentOrigin=get(hObject,'CurrentPoint')
-for ichild=1:length(hchild)
-    obj_pos=get(hchild(ichild),'Position');%position of the object
+output_str='';
+for ichild=1:length(hchildren)
+    hchild=hchildren(ichild); %handle of the current object
+    obj_pos=get(hchild,'Position');%position of the object
     if xy_fig(1) >=obj_pos(1) & xy_fig(2) >= obj_pos(2)& xy_fig(1) <=obj_pos(1)+obj_pos(3) & xy_fig(2) <= obj_pos(2)+obj_pos(4);
-        htype=get(hchild(ichild),'Type');%type of object child of the current figure
-        %if the mouse is over an axis, look at the data
-        if isequal(htype,'axes')
-            y_lim=get(hchild(ichild),'YLim');
-            x_lim=get(hchild(ichild),'XLim');
-            haxes=hchild(ichild);
-            xy=get(haxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
-            if xy(1,1)>x_lim(1) && xy(1,1)<x_lim(2) && xy(1,2)>y_lim(1) && xy(1,2)<y_lim(2)
-                AxeData=get(haxes,'UserData');% data attached to the axis
-                AxeData.CurrentOrigin=[xy(1,1) xy(1,2)];% The current point set by the mouse becomes the current origin
-                if test_edit_vect && ~isequal(tag_obj,'proj_object') & ~test_create
-                    ivec=[];
-                    FigData=get(hcurrentfig,'UserData');
-                    tagaxes=get(haxes,'tag');
-                    if isfield(FigData,tagaxes)
-                        eval(['Field=FigData.' tagaxes ';'])
-                        [CellVarIndex,NbDim,VarType]=find_field_indices(Field);%analyse the physical fields contained in Field
-                        for icell=1:numel(CellVarIndex)%look for all physical fields
-                            if NbDim(icell)==2 % select 2D field
-                                if  isfield(Field,'Mesh') && ~isempty(Field.Mesh)&& ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
-                                    eval(['X=Field.' Field.ListVarName{VarType{icell}.coord_x} ';'])
-                                    eval(['Y=Field.' Field.ListVarName{VarType{icell}.coord_y} ';'])
-                                    flag_vec=(X<(xy(1,1)+Field.Mesh/4) & X>(xy(1,1)-Field.Mesh/4)) & ...%flagx=1 for the vectors with x position selected by the mouse
-                                        (Y<(xy(1,2)+Field.Mesh/4) & Y>(xy(1,2)-Field.Mesh/4));%f
-                                    ivec=find(flag_vec,1);% search the (first) selected vector index ivec
+        htype=get(hchild,'Type');%type of object child of the current figure
+
+        switch htype
+            %if the mouse is over an axis, look at the data
+            case 'axes'
+                y_lim=get(hchild,'YLim');
+                x_lim=get(hchild,'XLim');
+                haxes=hchild;
+                xy=get(hchild,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
+                if xy(1,1)>x_lim(1) && xy(1,1)<x_lim(2) && xy(1,2)>y_lim(1) && xy(1,2)<y_lim(2)
+                    AxeData=get(hchild,'UserData');% data attached to the axis
+                    AxeData.CurrentOrigin=[xy(1,1) xy(1,2)];% The current point set by the mouse becomes the current origin
+                    if test_edit_vect && ~isequal(tag_obj,'proj_object') & ~test_create
+                        ivec=[];
+                        FigData=get(hcurrentfig,'UserData');
+                        tagaxes=get(hchild,'tag');
+                        if isfield(FigData,tagaxes)
+                            eval(['Field=FigData.' tagaxes ';'])
+                            [CellVarIndex,NbDim,VarType]=find_field_indices(Field);%analyse the physical fields contained in Field
+                            for icell=1:numel(CellVarIndex)%look for all physical fields
+                                if NbDim(icell)==2 % select 2D field
+                                    if  isfield(Field,'Mesh') && ~isempty(Field.Mesh)&& ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
+                                        eval(['X=Field.' Field.ListVarName{VarType{icell}.coord_x} ';'])
+                                        eval(['Y=Field.' Field.ListVarName{VarType{icell}.coord_y} ';'])
+                                        flag_vec=(X<(xy(1,1)+Field.Mesh/4) & X>(xy(1,1)-Field.Mesh/4)) & ...%flagx=1 for the vectors with x position selected by the mouse
+                                            (Y<(xy(1,2)+Field.Mesh/4) & Y>(xy(1,2)-Field.Mesh/4));%f
+                                        ivec=find(flag_vec,1);% search the (first) selected vector index ivec
+                                    end
                                 end
                             end
                         end
                     end
+                else
+                    hchild=[];%mouse out of axes
                 end
-            else
-                haxes=[];%mouse out of axes
-            end
-            break
-        elseif isequal(get(hObject,'SelectionType'),'alt') && isequal(htype,'uicontrol') && isequal(get(hchild(ichild),'Visible'),'on') && ~isequal(get(hchild(ichild),'tag'),'frame_object')&&...
-             ~isequal(get(hchild(ichild),'tag'),'list_object_2') && ~isequal(get(hchild(ichild),'tag'),'list_object_1')
-                msg_pos(1:2)=currentfig_pos(1:2)+obj_pos(1:2).*currentfig_pos(3:4);
-                msgbox_uvmat(['uicontrol: ' get(hchild(ichild),'Tag')],'',get(hchild(ichild),'String'),msg_pos)
-            break
+                break
+            case 'uicontrol'  %if the mouse is over a uicontrol, duplicate the display  in an editable  zoom window
+                if isequal(get(hObject,'SelectionType'),'alt')  && isequal(get(hchild,'Visible'),'on') && ~isequal(get(hchild,'tag'),'frame_object')&&...
+                        ~isequal(get(hchild,'tag'),'list_object_2') && ~isequal(get(hchild,'tag'),'list_object_1')
+                    if strcmp(get(hchild,'Visible'),'on')
+                        msg_pos(1:2)=GUI_pos(1:2)+obj_pos(1:2).*GUI_pos(3:4);
+                        output_str=msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],'',get(hchild,'String'),msg_pos);
+                        break
+                    end
+                end
+            case 'uipanel'
+                panel_pos=obj_pos;%position of the panel
+                hhchildren=get(hchild,'Children');%handles of all objects in the current GUI
+                %% loop on all the objects in the current figure (selected by the last mouse click)
+                for iichild=1:length(hhchildren)
+                    hchild=hhchildren(iichild);
+                    rel_pos=get(hchild,'Position');%position of the object relative to the uipanel
+                    obj_pos(1:2)=panel_pos(1:2)+rel_pos(1:2).*panel_pos(3:4);
+                    obj_pos(3:4)=panel_pos(3:4).*rel_pos(3:4);
+                    if numel(obj_pos)>=4 && xy_fig(1) >=obj_pos(1) && xy_fig(2) >= obj_pos(2)&& xy_fig(1) <=obj_pos(1)+obj_pos(3) && xy_fig(2) <= obj_pos(2)+obj_pos(4);
+                        htype=get(hchild,'Type');%type of object child of the current figure
+                        %if the mouse is over a uicontrol, look at the data
+                        if strcmp(htype,'uicontrol') && strcmp(get(hchild,'Visible'),'on')
+                            msg_pos(1:2)=GUI_pos(1:2)+obj_pos(1:2).*GUI_pos(3:4);
+                            output_str=msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],'',get(hchild,'String'),msg_pos);
+                            break
+                        end
+                    end
+                end
         end
     end
 end
-
+if ~isempty(output_str)               
+    set(hObject,'Units','pixels')
+    set(hchild,'String',output_str)
+end
+    
 %% desable  object creation and vector editing if NbDim different from 2
 if ~(isfield(AxeData,'NbDim') && isequal(AxeData.NbDim,2))
     test_create=0;
@@ -137,7 +167,7 @@ end
 if test_zoom %&& ~test_create && ~test_edit && ~test_edit_vect && exist('xy','var')
      AxeData.Drawing='zoom'; %initiate drawing mode
      AxeData.CurrentObject=[];%unselect objects
-     set(haxes,'UserData',AxeData);
+     set(hchild,'UserData',AxeData);
      return
 end
 if isempty(huvmat)%further options require the uvmat GUI
@@ -150,7 +180,7 @@ if test_ruler
     AxeData.RulerCoord(1,2)=xy(1,2);
     AxeData.RulerHandle=line([xy(1,1) xy(1,1)],[xy(1,2) xy(1,2)],'Color','m','Tag','ruler');
     AxeData.Drawing='ruler';
-    set(haxes,'UserData',AxeData);
+    set(hchild,'UserData',AxeData);
     return
 end
 
@@ -218,7 +248,7 @@ if  test_edit && (isequal(tag_obj,'proj_object')||isequal(tag_obj,'DeformPoint')
                 delete(h_set_object)
             end
             set_object(UvData.Object{IndexObj})
-            axes(haxes);%set back the current axes haxes
+            axes(hchild);%set back the current axes haxes
             testdeform=0;
             set(gcbo,'Pointer','circle'); 
             AxeData.Drawing='deform';

@@ -59,6 +59,7 @@ set(handles.Cancel,'Units','pixels')
 set(handles.Cancel,'Position',[300 2 60 30])
 set(handles.Cancel,'FontSize',15)
 
+
 % Update handles structure
 guidata(hObject, handles);
 testNo=0;
@@ -177,6 +178,9 @@ if testNo
 else
     set(handles.No,'Visible','off')
 end   
+set(handles.figure1,'Units','normalized')
+set(handles.edit_box,'Units','normalized')
+
 set(handles.figure1,'WindowStyle','modal')% Make% Make the GUI modal 
 % UIWAIT makes msgbox_uvmat wait for user response (see UIRESUME)
 uiwait(handles.figure1);

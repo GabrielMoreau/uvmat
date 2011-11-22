@@ -267,25 +267,11 @@ rmpath(fullfile(path_uvmat,'transform_field'))
  profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmauvmat_perso.mat' in .matlab
  if exist(profil_perso,'file')
       h=load (profil_perso);
-      if isfield(h,'MenuFile_1')
-          set(handles.MenuFile_1,'Label',h.MenuFile_1);
-          set(handles.MenuFile_1_1,'Label',h.MenuFile_1);
-      end
-      if isfield(h,'MenuFile_2')
-          set(handles.MenuFile_2,'Label',h.MenuFile_2);
-          set(handles.MenuFile_2_1,'Label',h.MenuFile_2);
-      end
-      if isfield(h,'MenuFile_3')
-          set(handles.MenuFile_3,'Label',h.MenuFile_3);
-          set(handles.MenuFile_3_1,'Label',h.MenuFile_3);
-      end
-      if isfield(h,'MenuFile_4')
-          set(handles.MenuFile_4,'Label',h.MenuFile_4);
-          set(handles.MenuFile_4_1,'Label',h.MenuFile_4);
-      end
-      if isfield(h,'MenuFile_5')
-          set(handles.MenuFile_5,'Label',h.MenuFile_5);
-          set(handles.MenuFile_5_1,'Label',h.MenuFile_5);
+      if isfield(h,'MenuFile')
+          for ifile=1:min(length(h.MenuFile),5)
+              eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',h.MenuFile{ifile});'])
+               eval(['set(handles.MenuFile_' num2str(ifile) '_1,''Label'',h.MenuFile{ifile});'])
+          end
       end
       if isfield(h,'transform_fct') && iscell(h.transform_fct)
          for ilist=1:length(h.transform_fct);
@@ -310,8 +296,6 @@ fct_handle=fct_handle(testexist==1);
 menu_str=[menu_str;{'more...'}];
 set(handles.transform_fct,'String',menu_str)
 set(handles.transform_fct,'UserData',fct_handle)% store the list of path in UserData of ACTION
-
-
 
 %% case of an input argument for uvmat
 testinputfield=0;
@@ -445,37 +429,6 @@ if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
 % display the selected field and related information
 display_file_name(hObject, eventdata, handles,fileinput)
-
-%update list of recent files in the menubar
-MenuFile_1=fileinput;
-MenuFile_2=get(handles.MenuFile_1,'Label');
-MenuFile_3=get(handles.MenuFile_2,'Label');
-MenuFile_4=get(handles.MenuFile_3,'Label');
-MenuFile_5=get(handles.MenuFile_4,'Label');
-set(handles.MenuFile_1,'Label',MenuFile_1)
-set(handles.MenuFile_2,'Label',MenuFile_2)
-set(handles.MenuFile_3,'Label',MenuFile_3)
-set(handles.MenuFile_4,'Label',MenuFile_4)
-set(handles.MenuFile_5,'Label',MenuFile_5)
-set(handles.MenuFile_1_1,'Label',MenuFile_1)
-set(handles.MenuFile_2_1,'Label',MenuFile_2)
-set(handles.MenuFile_3_1,'Label',MenuFile_3)
-set(handles.MenuFile_4_1,'Label',MenuFile_4)
-set(handles.MenuFile_5_1,'Label',MenuFile_5)
-dir_perso=prefdir;
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-if exist(profil_perso,'file')
-    save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-append'); %store the file names for future opening of uvmat
-else
-    txt=ver('MATLAB');
-    Release=txt.Release;
-    relnumb=str2double(Release(3:4));
-    if relnumb >= 14
-        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-V6'); %store the file names for future opening of uvmat
-    else
-        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5'); %store the file names for future opening of uvmat
-    end
-end
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_1
@@ -908,6 +861,22 @@ set(handles.uvmat,'UserData',UvData)
 set(handles.RootPath,'BackgroundColor',[1 1 1])
 drawnow
 set_scan_options(hObject, eventdata, handles)
+
+%% update list of recent files in the menubar
+MenuFile=[{FileName};get(handles.MenuFile_1,'Label');get(handles.MenuFile_2,'Label');...
+    get(handles.MenuFile_3,'Label');get(handles.MenuFile_4,'Label');get(handles.MenuFile_5,'Label')];
+    
+for ifile=1:length(MenuFile)
+    eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',MenuFile{ifile});'])
+    eval(['set(handles.MenuFile_' num2str(ifile) '_1,''Label'',MenuFile{ifile});'])
+end
+dir_perso=prefdir;
+profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+if exist(profil_perso,'file')
+    save (profil_perso,'MenuFile','-append'); %store the file names for future opening of uvmat
+else
+    save (profil_perso,'MenuFile','-V6'); %store the file names for future opening of uvmat
+end
 
 %------------------------------------------------------------------------
 %--- Set index navigation options for new series input and refresh plot

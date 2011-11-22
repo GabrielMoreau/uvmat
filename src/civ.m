@@ -101,26 +101,15 @@ else
 end
 
 %% load the list of previously browsed files in menu Open
- dir_perso=prefdir; % path to the directory .matlab for personal data
- profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmauvmat_perso.mat' in .matlab
- if exist(profil_perso,'file')
-      h=load (profil_perso);
-      if isfield(h,'MenuFile')
-          set(handles.MenuFile_1,'Label',h.MenuFile{1})
-          %set(handles.MenuFile_1,'Label',h.MenuFile_1);
-      end
-%       if isfield(h,'MenuFile_2')
-%           set(handles.MenuFile_2,'Label',h.MenuFile_2);
-%       end
-%       if isfield(h,'MenuFile_3')
-%           set(handles.MenuFile_3,'Label',h.MenuFile_3);
-%       end
-%       if isfield(h,'MenuFile_4')
-%           set(handles.MenuFile_4,'Label',h.MenuFile_4);
-%       end
-%       if isfield(h,'MenuFile_5')
-%           set(handles.MenuFile_5,'Label',h.MenuFile_5);
-%       end
+dir_perso=prefdir; % path to the directory .matlab for personal data
+profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmauvmat_perso.mat' in .matlab
+if exist(profil_perso,'file')
+    h=load (profil_perso);
+    if isfield(h,'MenuFile')
+        for ifile=1:min(length(h.MenuFile),5)
+            eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',h.MenuFile{ifile});'])
+        end
+    end
 end
 
 %default input parameters:
@@ -201,7 +190,7 @@ elseif isequal(ind_opening,5)
 elseif isequal(ind_opening,6)
     set(handles.CheckPatch2,'Value',1)
     enable_patch2(handles,1)
-    set(handles.frame_subdirciv2,'BackgroundColor',[1 1 0])
+%     set(handles.frame_subdirciv2,'BackgroundColor',[1 1 0])
     set(handles.ListPairCiv2,'Enable','On')
     enable_pair1(handles,'off')
 end
@@ -1000,8 +989,8 @@ elseif isequal(mode,'displacement')%the pairs have the same indices
     end
 end
 set(handles.ListPairCiv1,'UserData',displ_num);
-find_netcpair_civ1(hObject, eventdata, handles)
-find_netcpair_civ2(hObject, eventdata, handles)
+find_netcpair_civ1( handles)
+find_netcpair_civ2(handles)
 
 %------------------------------------------------------------------------
 % determine the menu for checkciv1 pairs depending on existing netcdf file at the middle of
