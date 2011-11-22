@@ -2138,13 +2138,16 @@ if batch
 
                 for p=1:length(batch_file_list)
                     oar_command=['oarsub -n CIVX '...
+                   '-E ' regexprep(batch_file_list{p},'.bat','.errors') ' -O ' regexprep(batch_file_list{p},'.bat','.log ')...
                         '-l "/core=1,walltime=00:10:00"   ' batch_file_list{p}];
                     fprintf(fid,[oar_command '\n']);
                 end
                 fclose(fid);
-                walltime=datestr(length(batch_file_list)*10/24/60,13);
-                oar_command=['oarsub -t container -n civx-container -l /core=24,walltime=' walltime ' "/fsnet/data/legi/calcul9/home/gostiaux/Documents/MATLAB/uvmat_dev/oar-dispatch -f '...
-                    filename_joblist '"'];
+                ncores=36;
+                walltime=datestr(length(batch_file_list)*10/24/60/ncores,13);
+                oar_command=['oarsub -t container -n civx-container '...
+                    '-l /core=' num2str(ncores) ',walltime=' walltime...
+                    ' "oar-dispatch -f ' filename_joblist '"'];
                 filename_oarcommand=fullfile(Rootbat,'oar_command');
                 fid=fopen(filename_oarcommand,'w');
                 fprintf(fid,[oar_command '\n']);
