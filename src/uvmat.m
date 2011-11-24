@@ -302,9 +302,9 @@ testinputfield=0;
 inputfile=[];
 Field=[];
 if exist('input','var')
-    if ~isempty(errormsg)
-        msgbox_uvmat('WARNING',errormsg)
-    end
+%     if ~isempty(errormsg)
+%         msgbox_uvmat('WARNING',errormsg)
+%     end
     if ishandle(handles.UVMAT_title)
         delete(handles.UVMAT_title)
     end   
