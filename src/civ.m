@@ -44,28 +44,18 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes just before civ is made visible.
-function civ_OpeningFcn(hObject, eventdata, handles, param)
+function civ_OpeningFcn(hObject, eventdata, handles, fileinput)
 %------------------------------------------------------------------------
 % This function has no output args, see OutputFcn.
-%filebase: root name
-%nom_type: nomencalture used ('png_old','_i_j'...)
-%list of field numbers to process
-%subdir: subdirectory of the opened netcdf file
-%ind_opening: operation number advised for beginning (1=checkciv1,2=checkfix1,3=checkpatch1,4=checkciv2,5=checkfix2,6=checkpatch2),
-%ind_a_opening ind_b_opening chosen pair from the opened netcdf file
-% Choose default command line output for civ
-handles.output = hObject;
-% Update handles structure
-guidata(hObject, handles);
-set(hObject,'WindowButtonDownFcn',{'mouse_alt_gui',handles}) % allows mouse action with right button (zoom for uicontrol display)
-%default initial parameters
-filebase=''; % root file name ('filebase'.civ)
-ext=[];
 
-%% read names of the .exe file to adjust the interface according to available binaries
-%path_uvmat=which('uvmat');% check the path detected for source file uvmat
+%% General settings
+handles.output = hObject;
+guidata(hObject, handles); % Update handles structure
+set(hObject,'WindowButtonDownFcn',{'mouse_down',handles}) % allows mouse action with right button (zoom for uicontrol display)
+
+%% Adjust the GUI according to the binaries available in PARAM.xml
 path_civ=fileparts(which('civ')); %path to civ
-addpath (path_civ) ; %add the path to UVMAT, (useful in case of change of working directory after civ has been s opened in the working directory)
+addpath (path_civ) ; %add the path to civ, (useful in case of change of working directory after civ has been s opened in the working directory)
 errormsg=[];%default error message
 xmlfile='PARAM.xml';
 if exist(xmlfile,'file')
@@ -83,7 +73,6 @@ end
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg);
 end
-
 test_batch=0;%default: ,no batch mode available
 if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
     test_batch=strcmp(sparam.BatchParam.BatchMode,'sge'); %sge is currently the only implemented batch mod
@@ -100,7 +89,7 @@ else
     sparam.RunParam.CivBin='';
 end
 
-%% load the list of previously browsed files in menu Open
+%% load the list of previously browsed files in the upper bar menu Open/
 dir_perso=prefdir; % path to the directory .matlab for personal data
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmauvmat_perso.mat' in .matlab
 if exist(profil_perso,'file')
@@ -112,138 +101,141 @@ if exist(profil_perso,'file')
     end
 end
 
-%default input parameters:
-num_i1=1; % set of field i numbers
-num_i2=1; % set of field i numbers
-num_j1=1; % set of field j numbers (fields a)
-num_j2=1; % second set of field j numbers (fields b)
-%subdir='A'; % subdir for the netcdf result files
-ind_opening=0; % proposed operation number (1=civ1,2=fix1,3=patch1,4=civ2,5=fix2,6=patch2)
-%load the initial parameters if the interface is started from uvmat
-if exist('param','var')&&isstruct(param)% the interface is opened from uvmat
-    filebase=param.RootName;
-    nom_type_read=param.NomType;
-    num_i1=param.num1;
-    if isnan(num_i1),num_i1=1;end
-    num_i2=param.num2;
-    if isnan(num_i2),num_i2=num_i1;end
-    num_j1=param.num_a;
-    if isnan(num_j1),num_j1=1;end
-    num_j2=param.num_b;
-    if isnan(num_j2),num_j2=num_j1;end
-    subdir=param.SubDir;
-    ind_opening=param.IndOpening;
-    ext=param.ImaExt;
-end
-browse.num_i1=num_i1;
-browse.num_i2=num_i2;
-browse.num_j1=num_j1;
-browse.num_j2=num_j2;
-if ~isempty(ext) && (~isempty(imformats(ext(2:end)))||strcmpi(ext,'.avi'));%if an image file has been opened by uvmat
-    set(handles.ImaExt,'String',ext)
-    browse.ext_ima=ext;
-    if exist('nom_type_read','var')
-        browse.nom_type_ima=nom_type_read; % the image nomenclature is stored
-    end
-elseif isequal(ext,'.nc')
-    if exist('nom_type_read','var')
-        browse.nom_type_nc=nom_type_read;% the netcdf  nomenclature is stored
-    end
-end
-set(handles.RootName,'String',filebase);
-set(handles.ImaDoc,'String',ext)
+%% input parameters:
+% param
+% filebase=''; % root file name ('filebase'.civ)
+% ext=[];
+% num_i1=1; % set of field i numbers
+% num_i2=1; % set of field i numbers
+% num_j1=1; % set of field j numbers (fields a)
+% num_j2=1; % second set of field j numbers (fields b)
+% %subdir='A'; % subdir for the netcdf result files
+% ind_opening=0; % proposed operation number (1=civ1,2=fix1,3=patch1,4=civ2,5=fix2,6=patch2)
+% %load the initial parameters if the interface is started from uvmat
+% if exist('param','var')&&isstruct(param)% the interface is opened from uvmat
+%     filebase=param.RootName;
+%     nom_type_read=param.NomType;
+%     num_i1=param.num1;
+%     if isnan(num_i1),num_i1=1;end
+%     num_i2=param.num2;
+%     if isnan(num_i2),num_i2=num_i1;end
+%     num_j1=param.num_a;
+%     if isnan(num_j1),num_j1=1;end
+%     num_j2=param.num_b;
+%     if isnan(num_j2),num_j2=num_j1;end
+%     subdir=param.SubDir;
+%     ind_opening=param.IndOpening;
+%     ext=param.ImaExt;
+% end
+% browse.num_i1=num_i1;
+% browse.num_i2=num_i2;
+% browse.num_j1=num_j1;
+% browse.num_j2=num_j2;
+% if ~isempty(ext) && (~isempty(imformats(ext(2:end)))||strcmpi(ext,'.avi'));%if an image file has been opened by uvmat
+%     set(handles.ImaExt,'String',ext)
+% %     browse.ext_ima=ext;
+% %     if exist('nom_type_read','var')
+% %         browse.nom_type_ima=nom_type_read; % the image nomenclature is stored
+% %     end
+% % elseif isequal(ext,'.nc')
+% %     if exist('nom_type_read','var')
+% %         browse.nom_type_nc=nom_type_read;% the netcdf  nomenclature is stored
+% %     end
+% end
+% set(handles.RootName,'String',filebase);
+% set(handles.ImaDoc,'String',ext)
 
-%initiate advised operations
-enable_civ1(handles,0)
-enable_civ2(handles,0)
-%enable_pair1(handles,'on')
-enable_fix1(handles,0)
-enable_patch1(handles,0)
-enable_fix2(handles,0)
-enable_patch2(handles,0)
-set(handles.CheckCiv1,'Value',0)
-set(handles.CheckFix1,'Value',0)
-set(handles.CheckPatch1,'Value',0)
-set(handles.CheckCiv2,'Value',0)
-set(handles.CheckFix2,'Value',0)
-set(handles.CheckPatch2,'Value',0)
-%set(handles.frame_subdirciv2,'BackgroundColor',[0.831 0.816 0.784])
-if isequal(ind_opening,1)
-    set(handles.CheckCiv1,'Value',1)
-    enable_civ1(handles,1)
-elseif isequal(ind_opening,2)
-    set(handles.CheckFix1,'Value',1)
-    enable_fix1(handles,1)
-elseif isequal(ind_opening,3)
-    set(handles.CheckPatch1,'Value',1)
-    enable_patch1(handles,1)
-elseif isequal(ind_opening,4)
-    set(handles.CheckCiv2,'Value',1)
-    enable_civ2(handles,1)
-elseif isequal(ind_opening,5)
-    set(handles.CheckFix2,'Value',1)
-    enable_fix2(handles,1)
-    set(handles.frame_subdirciv2,'BackgroundColor',[1 1 0])
-    set(handles.ListPairCiv2,'Enable','On')
-    set(handles.ListPairCiv2,'Enable','On')
-    enable_pair1(handles,'off')
-elseif isequal(ind_opening,6)
-    set(handles.CheckPatch2,'Value',1)
-    enable_patch2(handles,1)
+
+%% prepare the GUI with parameters from the input file if opened from uvmat
+if exist('fileinput','var')% && isfield(param,'RootName') && ~isempty(param.RootName)
+    errormsg=display_file_name(handles,fileinput);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',errormsg)
+    end
+end
+
+% %initiate advised operations
+% enable_civ1(handles,0)
+% enable_civ2(handles,0)
+% %enable_pair1(handles,'on')
+% enable_fix1(handles,0)
+% enable_patch1(handles,0)
+% enable_fix2(handles,0)
+% enable_patch2(handles,0)
+% set(handles.CheckCiv1,'Value',0)
+% set(handles.CheckFix1,'Value',0)
+% set(handles.CheckPatch1,'Value',0)
+% set(handles.CheckCiv2,'Value',0)
+% set(handles.CheckFix2,'Value',0)
+% set(handles.CheckPatch2,'Value',0)
+% 
+% if isequal(ind_opening,1)
+%     set(handles.CheckCiv1,'Value',1)
+%     enable_civ1(handles,1)
+% elseif isequal(ind_opening,2)
+%     set(handles.CheckFix1,'Value',1)
+%     enable_fix1(handles,1)
+% elseif isequal(ind_opening,3)
+%     set(handles.CheckPatch1,'Value',1)
+%     enable_patch1(handles,1)
+% elseif isequal(ind_opening,4)
+%     set(handles.CheckCiv2,'Value',1)
+%     enable_civ2(handles,1)
+% elseif isequal(ind_opening,5)
+%     set(handles.CheckFix2,'Value',1)
+%     enable_fix2(handles,1)
 %     set(handles.frame_subdirciv2,'BackgroundColor',[1 1 0])
-    set(handles.ListPairCiv2,'Enable','On')
-    enable_pair1(handles,'off')
-end
-
-% set the range of fields (1:1 by default) and selected pair
-if isequal(num_i2,num_i1)
-    num_ref_i=num_i1;
-else
-    num_ref_i=floor((num_i1+num_i2)/2);
-    browse.incr_pair(1)=num_i2-num_i1;
-    browse.incr_pair(2)=0;
-end
-if isequal(num_j1,num_j2)
-    if isnan(num_j1)
-        num_ref_j=1;
-    else
-        num_ref_j=num_j1;
-    end
-else
-    num_ref_j=floor((num_j1+num_j2)/2);
-    browse.incr_pair(2)=num_j2-num_j1;
-end
-set(handles.first_i,'String',num2str(num_ref_i));
-set(handles.last_i,'String',num2str(num_ref_i));
-set(handles.first_j,'String',num2str(num_ref_j));
-set(handles.last_j,'String',num2str(num_ref_j));
-set(handles.ref_i,'String',num2str(num_ref_i));
-set(handles.ref_j,'String',num2str(num_ref_j));
-% set(handles.ref_i_civ2,'String',num2str(num_ref_i));
-% set(handles.ref_j_civ2,'String',num2str(num_ref_j));
-set(handles.RootName,'UserData',browse);
-if exist('param','var') && isfield(param,'RootName') && ~isempty(param.RootName)%varargin the interface is opened from uvmat
-    RootName_Callback(hObject, eventdata, handles);
-end
+%     set(handles.ListPairCiv2,'Enable','On')
+%     set(handles.ListPairCiv2,'Enable','On')
+%     enable_pair1(handles,'off')
+% elseif isequal(ind_opening,6)
+%     set(handles.CheckPatch2,'Value',1)
+%     enable_patch2(handles,1)
+%     set(handles.ListPairCiv2,'Enable','On')
+%     enable_pair1(handles,'off')
+% end
+% 
+% % set the range of fields (1:1 by default) and selected pair
+% if isequal(num_i2,num_i1)
+%     num_ref_i=num_i1;
+% else
+%     num_ref_i=floor((num_i1+num_i2)/2);
+%     browse.incr_pair(1)=num_i2-num_i1;
+%     browse.incr_pair(2)=0;
+% end
+% if isequal(num_j1,num_j2)
+%     if isnan(num_j1)
+%         num_ref_j=1;
+%     else
+%         num_ref_j=num_j1;
+%     end
+% else
+%     num_ref_j=floor((num_j1+num_j2)/2);
+%     browse.incr_pair(2)=num_j2-num_j1;
+% end
+% set(handles.first_i,'String',num2str(num_ref_i));
+% set(handles.last_i,'String',num2str(num_ref_i));
+% set(handles.first_j,'String',num2str(num_ref_j));
+% set(handles.last_j,'String',num2str(num_ref_j));
+% set(handles.ref_i,'String',num2str(num_ref_i));
+% set(handles.ref_j,'String',num2str(num_ref_j));
+% set(handles.RootName,'UserData',browse);
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = civ_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
-% --------------------------------------------------------------------
+%------------------------------------------------------------------------
+% --- function activated by the Open/Browse... option in the upper menu bar.
 function MenuBrowse_Callback(hObject, eventdata, handles)
-
-%get the input file properties
+%------------------------------------------------------------------------
+%get the current input root file name to initiate the browser
 filebase=get(handles.RootName,'String');
 oldfile=''; %default
-if isempty(filebase)|| isequal(filebase,'')%loads the previously stored file name and set it as default in the file_input box
+if isempty(filebase)|| isequal(filebase,'')%loads the previously stored root file name 
     dir_perso=prefdir;
     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
     if exist(profil_perso,'file')
@@ -273,198 +265,114 @@ menu={'*.xml;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.nc;', ' (*.xml,*.civ,*.png,*.
 fileinput=[PathName FileName];%complete file name
 sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
-[path,name,ext]=fileparts(fileinput);
-testeditxml=0;
-if isequal(ext,'.xml')
-    testeditxml=1;
-    t_browse=xmltree(fileinput);
-    head_element=get(t_browse,1);
-    if isfield(head_element,'name')&& isequal(head_element.name,'ImaDoc')
-        testeditxml=0;
-    end
-end
-if testeditxml==1 || isequal(ext,'.xls')
-    heditxml=editxml({fileinput});
-    set(heditxml,'Tag','browser')
-    waitfor(heditxml,'Tag','idle')
-    if ~ishandle(heditxml)
-        return
-    end
-    attr=findobj(get(heditxml,'children'),'Tag','CurrentAttributes');
-    set(handles.browse,'UserData',fileinput)% store for future opening with browser
-    fileinput=get(attr,'UserData');
-    if ~exist(fileinput,'file')
-        return
-    end
-end
-[RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput);
-filebase=fullfile(RootPath,RootFile);
-num_i1=str2double(str1);
-if isnan(num_i1),num_i1=1;end
-num_i2=str2double(str2);
-if isnan(num_i2),num_i2=num_i1;end
-num_j1=stra2num(str_a);
-if isnan(num_j1),num_j1=1;end
-num_j2=stra2num(str_b);
-if isnan(num_j2),num_j2=num_j1;end
-if isequal(get(handles.ListCompareMode,'Value'),1)
-    browse=[];%initialisation
-else
-    browse=get(handlesRootName,'UserData');
-end
-browse.num_i1=num_i1;
-browse.num_i2=num_i2;
-browse.num_j1=num_j1;
-browse.num_j2=num_j2;
-if length(ext)>1 && (~isempty(imformats(ext(2:end)))||strcmpi(ext,'.avi'));%if an image file has been opened by uvmat
-    browse.nom_type_ima=nom_type;
-    browse.ext_ima=ext;
-    set(handles.ImaExt,'String',ext)
-end
-set(handles.ImaDoc,'String',ext);
 
-%%%%% read the state of the selected netcdf file to advise default operation
-if isequal(ext,'.nc')
-    browse.nom_type_nc=nom_type;
-    ind_opening=2;% propose 'fix' as the default option
-    Data=nc2struct(fileinput,'ListGlobalAttribute','CivStage','absolut_time_T0','fix','patch','civ2','fix2');
-    if ~isempty(Data.CivStage)%test for civ files
-        ind_opening=Data.CivStage;
-        set(handles.ListPairMode,'Value',3)
+%% prepare the GUI with parameters from the input file if opened from uvmat
+errormsg=display_file_name(handles,fileinput);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',erromsg)
     end
-    if ~isempty(Data.absolut_time_T0)%test for civx files
-        set(handles.ListPairMode,'Value',1)
-        if isfield(Data,'fix') && isequal(Data.fix,1)
-            ind_opening=3;
-        end
-        if isequal(Data.patch,1)
-            ind_opening=4;
-        end
-        if isequal(Data.civ2,1)
-            ind_opening=5;
-        end
-        if  isequal(Data.fix2,1)
-            ind_opening=6;
-        end
-        testciv=1; %TO SUPPRESS WITH NEW VERSION OF CIVX
-    else
-        ind_opening=3; %GUI used only for patch
-        testciv=0;
-    end
-    set(handles.txt_SubdirCiv1,'String',subdir);%set the default subdir directories for installing the .nc results
-    set(handles.txt_SubdirCiv2,'String',subdir);
-    browse.testciv=testciv;
-    browse.ind_opening=ind_opening;
-end
-set(handles.RootName,'String',filebase);
-set(handles.ImaDoc,'String',ext);
-if ~isempty(num_i1)
-    ref_i=num_i1;
-    if ~isempty(num_i2)
-        ref_i=floor((ref_i+num_i2)/2);% reference image number corresponding to the file
-        browse.incr_pair(1)=num_i2-num_i1;
-        browse.incr_pair(2)=0;
-    end
-    set(handles.first_i,'String',num2str(ref_i));
-    set(handles.last_i,'String',num2str(ref_i));
-    set(handles.ref_i,'String',num2str(ref_i));
-%     set(handles.ref_i_civ2,'String',num2str(ref_i))
-end
-if isempty(num_j1)
-    set(handles.ref_j,'String','1');
-    set(handles.ref_j_civ2,'String','1');
-else
-    ref_j=num_j1;
-    if ~isempty(num_j2)
-        ref_j=floor((num_j1+num_j2)/2);
-        browse.incr_pair(2)=num_j2-num_j1;
-    end
-    set(handles.first_j,'String',num2str(ref_j));
-    set(handles.last_j,'String',num2str(ref_j));
-    set(handles.ref_j,'String',num2str(ref_j));
-%     set(handles.ref_j_civ2,'String',num2str(ref_j));
-end
 
-% set default operation options
-enable_civ1(handles,0)
-enable_civ2(handles,0')
-enable_pair1(handles,'on')
-enable_fix1(handles,0)
-enable_patch1(handles,0)
-enable_fix2(handles,0)
-enable_patch2(handles,0)
-set(handles.CheckCiv1,'Value',0)
-set(handles.CheckFix1,'Value',0)
-set(handles.CheckPatch1,'Value',0)
-set(handles.CheckCiv2,'Value',0)
-set(handles.CheckFix2,'Value',0)
-set(handles.CheckPatch2,'Value',0)
-% set(handles.frame_subdirciv2,'BackgroundColor',[0.831 0.816 0.784])
-if isequal(ind_opening,1)
-    set(handles.CheckCiv1,'Value',1)
-    enable_civ1(handles,'on')
-elseif isequal(ind_opening,2)
-    set(handles.CheckFix1,'Value',1)
-    enable_fix1(handles,'on')
-elseif isequal(ind_opening,3)
-    set(handles.CheckPatch1,'Value',1)
-    enable_patch1(handles)
-elseif isequal(ind_opening,4)
-    set(handles.CheckCiv2,'Value',1)
-    enable_civ2(handles,'on')
-elseif isequal(ind_opening,5)
-    enable_pair1(handles,'off')
-    set(handles.CheckFix2,'Value',1)
-    enable_fix2(handles)
-    set(handles.frame_subdirciv2,'BackgroundColor',[1 1 0])
-    set(handles.ListPairCiv2,'Enable','On')
-    set(handles.ListPairCiv2,'Enable','On')
-elseif isequal(ind_opening,6)
-    enable_pair1(handles,'off')
-    set(handles.CheckPatch2,'Value',1)
-    enable_patch2(handles)
-    set(handles.frame_subdirciv2,'BackgroundColor',[1 1 0])
-    set(handles.ListPairCiv2,'Enable','On')
-end
-set(handles.RootName,'UserData',browse);% store information from browser
-RootName_Callback(hObject, eventdata, handles);
-
+% 
+% [path,name,ext]=fileparts(fileinput);
+% testeditxml=0;
+% if isequal(ext,'.xml')
+%     testeditxml=1;
+%     t_browse=xmltree(fileinput);
+%     head_element=get(t_browse,1);
+%     if isfield(head_element,'name')&& isequal(head_element.name,'ImaDoc')
+%         testeditxml=0;
+%     end
+% end
+% if testeditxml==1 || isequal(ext,'.xls')
+%     heditxml=editxml({fileinput});
+%     set(heditxml,'Tag','browser')
+%     waitfor(heditxml,'Tag','idle')
+%     if ~ishandle(heditxml)
+%         return
+%     end
+%     attr=findobj(get(heditxml,'children'),'Tag','CurrentAttributes');
+%     set(handles.browse,'UserData',fileinput)% store for future opening with browser
+%     fileinput=get(attr,'UserData');
+%     if ~exist(fileinput,'file')
+%         return
+%     end
+% end
+% [RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput);
+% filebase=fullfile(RootPath,RootFile);
+% num_i1=str2double(str1);
+% if isnan(num_i1),num_i1=1;end
+% num_i2=str2double(str2);
+% if isnan(num_i2),num_i2=num_i1;end
+% num_j1=stra2num(str_a);
+% if isnan(num_j1),num_j1=1;end
+% num_j2=stra2num(str_b);
+% if isnan(num_j2),num_j2=num_j1;end
+% if isequal(get(handles.ListCompareMode,'Value'),1)
+%     browse=[];%initialisation
+% else
+%     browse=get(handlesRootName,'UserData');
+% end
+% browse.num_i1=num_i1;
+% browse.num_i2=num_i2;
+% browse.num_j1=num_j1;
+% browse.num_j2=num_j2;
+% if length(ext)>1 && (~isempty(imformats(ext(2:end)))||strcmpi(ext,'.avi'));%if an image file has been opened by uvmat
+%     browse.nom_type_ima=nom_type;
+%     browse.ext_ima=ext;
+%     set(handles.ImaExt,'String',ext)
+% end
+% set(handles.ImaDoc,'String',ext);
+% 
+% 
+% set(handles.RootName,'UserData',browse);% store information from browser
+% RootName_Callback(hObject, eventdata, handles);
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_1
 function MenuFile_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_1,'Label');
-display_file_name(hObject, eventdata, handles,fileinput)
+errormsg=display_file_name(handles,fileinput);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',erromsg)
+end
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_2
 function MenuFile_2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_2,'Label');
-display_file_name(hObject, eventdata, handles,fileinput)
-
+errormsg=display_file_name(handles,fileinput);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',erromsg)
+end
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_3
 function MenuFile_3_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_3,'Label');
-display_file_name(hObject, eventdata, handles,fileinput)
-
+errormsg=display_file_name(handles,fileinput);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',erromsg)
+end
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_4
 function MenuFile_4_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_4,'Label');
-display_file_name(hObject, eventdata, handles,fileinput)
-
+errormsg=display_file_name(handles,fileinput);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',erromsg)
+end
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_5
 function MenuFile_5_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_5,'Label');
-display_file_name(hObject, eventdata, handles,fileinput)
-
+errormsg=display_file_name(handles,fileinput);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',erromsg)
+end
 %------------------------------------------------------------------------
 function ImaDoc_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -475,113 +383,173 @@ RootName_Callback(hObject, eventdata, handles)
 function RootName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 filebase=get(handles.RootName,'String');
-display_file_name(hObject, eventdata, handles,filebase)
-
+errormsg=display_file_name(handles,filebase);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',erromsg)
+end
 %------------------------------------------------------------------------
-function display_file_name(hObject, eventdata, handles,filebase)
+function errormsg=display_file_name(handles,fileinput)
 %------------------------------------------------------------------------
 set(handles.ListCompareMode,'Visible','on')
+errormsg='';%default empty error message
+
+%% enable RUN, BATCH button and 'status' display
+set(handles.RUN, 'Enable','On')
+set(handles.RUN,'BackgroundColor',[1 0 0])%set RUN button to red color
+set(handles.BATCH,'Enable','On')
+set(handles.BATCH,'BackgroundColor',[1 0 0])%set BATCH button to red color
+if isfield(handles,'status')
+    set(handles.status,'Value',0);       %suppress the 'status' display
+    status_Callback([], [], handles)
+end
+
+% %% default first_i and j and increments
+% first_i=str2double(get(handles.first_i,'String'));%value possibly set by uvmat_Opening
+% if isnan(first_i)|| first_i < 1
+%     first_i=1; %default first_i
+% end
+% last_i=str2double(get(handles.last_i,'String'));
+% if isnan(last_i)|| last_i < first_i
+%     last_i=first_i;  %default last_i
+% end
+% first_j=str2double(get(handles.first_j,'String'));
+% if isnan(first_j)|| first_j < 1
+%     first_j=1; %default first_j
+% end
+% last_j=str2double(get(handles.last_j,'String'));
+% if isnan(last_j)|| last_j < first_j
+%     last_j=first_j; %default last_j
+% end
+% incr_i=str2double(get(handles.incr_i,'String'));
+% if isnan(incr_i) || incr_i < 1;
+%     set(handles.incr_i,'String','1') %default incr_i
+% end
+% incr_j=str2double(get(handles.incr_j,'String'));
+% if isnan(incr_j) || incr_j < 1;
+%     set(handles.incr_j,'String','1') %default incr_j
+% end
+
+%% determine nomenclature types and extension of the input files
 ext_ima='';%default
-nom_type_ima=[];%default
-field_count=1;%default
-nom_type_nc=[];
+nom_type_ima='';%default
+nom_type_nc='';
+[RootPath,FileName,i1_str,i2_str,j1_str,j2_str,ext_input,nom_type_input,subdir]=name2display(fileinput);
+RootName=fullfile(RootPath,FileName);
+set(handles.RootName,'String',RootName)
+num_ref_i=str2double(i1_str);
+num_ref_j=str2double(j1_str);
+browse=[];%default
+if ~isempty(imformats(ext_input(2:end)))||strcmp(lower(ext_input),'.avi')% if the extension corresponds to an image or movie format recognized by Matlab
+    ext_ima=ext_input;
+    nom_type_ima=nom_type_input;
+else %case of netcdf input file, look for corresponding images
+    nom_type_nc=nom_type_input;
+    %TODO: read the image name in the netcdf file (if documented)
+    dirima='';%default
+    %look for double image series '_i_j'
+    dirima=dir([RootName '_' i1_str '_' j1_str '.*']);
+    if isempty(dirima)
+        % look for images series  with sub marker '_'
+        dirima=dir([RootName '_*' i1_str  '.*']);
+        if isempty(dirima)
+            % look for other images series
+            dirima=dir([RootName '*' i1_str '.*']);
+            if isempty(dirima)
+                % look for other images series witth letter appendix
+                appendix=char(96+j1_str);
+                dirima=dir([RootName '*' i1_str appendix '.*']);
+            end
+        end
+    end
+    for ilist=1:numel(dirima)
+        [pp,ff,i1,i2,j1,j2,ext_list,nom_type_list]=name2display(dirima(ilist).name);
+        form=imformats(ext_list(2:end));
+        if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+            ext_ima=ext_list;
+            nom_type_ima=nom_type_list;
+            num_i1=str2double(i1);
+            num_j1=str2double(j1);
+            num_i2=str2double(i2);
+            num_j2=str2double(j2);
+            
+            % set the range of fields (1:1 by default) and selected pair
+            if isequal(num_i2,num_i1)||isnan(num_i2)
+                num_ref_i=num_i1;
+            else
+                num_ref_i=floor((num_i1+num_i2)/2);
+                browse.incr_pair(1)=num_i2-num_i1;
+                browse.incr_pair(2)=0;
+            end
+            if isequal(num_j1,num_j2)||isnan(num_j2)
+                if isnan(num_j1)
+                    num_ref_j=1;
+                else
+                    num_ref_j=num_j1;
+                end
+            else
+                num_ref_j=floor((num_j1+num_j2)/2);
+                browse.incr_pair(2)=num_j2-num_j1;
+            end 
+            break
+        end
+    end
+end
+set(handles.RootName,'UserData',browse);
+% ext_imadoc=get(handles.ImaDoc,'String');
+% browse=get(handles.RootName,'UserData');%default
+% if isfield(browse,'nom_type_ima')
+%     nom_type_ima=browse.nom_type_ima;% get an image nomenclature type already determined by an input image name
+% end 
+% if isfield(browse,'ext_ima')
+%     ext_ima=browse.ext_ima;
+% end
+% if isfield(browse,'nom_type_nc')
+%     nom_type_nc=browse.nom_type_nc;% get an image nomenclature type already determined by an input image name
+% end
+% if isfield(browse,'num_i1')
+%     field_count=browse.num_i1;% get an image index type already determined by an input file
+% end
+%set(handles.civ,'UserData',[]); %refresh list of previous civ files (for STATUS)
+
+
+%% look for an image documentation file
+ext_imadoc='';%default
+if exist([RootName '.xml'],'file')
+    ext_imadoc='.xml';
+elseif exist([RootName '.civxml'],'file')
+    ext_imadoc='.civxml';
+elseif exist([RootName '.civ'],'file')
+    ext_imadoc='.civ';
+elseif exist([RootName '.avi'],'file')
+    ext_imadoc='.avi';
+elseif exist([RootName '.AVI'],'file')
+    ext_imadoc='.AVI';
+end
+set(handles.ImaDoc,'String',ext_imadoc)% display the extension name for the image documentation file used
+set(handles.ImaDoc,'BackgroundColor',[1 1 0])
+drawnow
+%%%%%%%%   read image documentation file  %%%%%%%%%%%%%%%%%%%%%%%%%%%
+mode=''; %default
 time=[];
 TimeUnit='frame'; %default
 CoordUnit='px';%default
 pxcmx_search=[];%default
 pxcmy_search=[];%default
-
-ext_imadoc=get(handles.ImaDoc,'String');
-browse=get(handles.RootName,'UserData');%default
-if isfield(browse,'nom_type_ima')
-    nom_type_ima=browse.nom_type_ima;% get an image nomenclature type already determined by an input image name
-end 
-if isfield(browse,'ext_ima')
-    ext_ima=browse.ext_ima;
-end
-if isfield(browse,'nom_type_nc')
-    nom_type_nc=browse.nom_type_nc;% get an image nomenclature type already determined by an input image name
-end
-if isfield(browse,'num_i1')
-    field_count=browse.num_i1;% get an image index type already determined by an input file
-end
-set(handles.civ,'UserData',[]); %refresh list of previous civ files (for STATUS)
-
-%default first_i and j and increments
-first_i=str2double(get(handles.first_i,'String'));%value possibly set by uvmat_Opening
-if isnan(first_i)|| first_i < 1
-    first_i=1; %default first_i
-end
-last_i=str2double(get(handles.last_i,'String'));
-if isnan(last_i)|| last_i < first_i
-    last_i=first_i;  %default last_i
-end
-first_j=str2double(get(handles.first_j,'String'));
-if isnan(first_j)|| first_j < 1
-    first_j=1; %default first_j
-end
-last_j=str2double(get(handles.last_j,'String'));
-if isnan(last_j)|| last_j < first_j
-    last_j=first_j; %default last_j
-end
-incr_i=str2double(get(handles.incr_i,'String'));
-if isnan(incr_i) || incr_i < 1;
-    set(handles.incr_i,'String','1') %default incr_i
-end
-incr_j=str2double(get(handles.incr_j,'String'));
-if isnan(incr_j) || incr_j < 1;
-    set(handles.incr_j,'String','1') %default incr_j
-end
-dt=[];%default
-testmode=0;%default
-nbfield=[]; %default
-nburst=[];%default
-pxcmx=1;
-pxcmy=1;
-
-%look for an image documentation file
-if ~strcmp(ext_imadoc,'.xml') && ~strcmp(ext_imadoc,'.civ')&& ~strcmpi(ext_imadoc,'.avi')
-    if exist([filebase '.xml'],'file')
-        ext_imadoc='.xml';
-    elseif exist([filebase '.civxml'],'file')
-        ext_imadoc='.civxml';
-    elseif exist([filebase '.civ'],'file')
-        ext_imadoc='.civ';
-    elseif exist([filebase '.avi'],'file')
-        ext_imadoc='.avi';
-    elseif exist([filebase '.AVI'],'file')
-        ext_imadoc='.AVI';
-    end
-    set(handles.ImaDoc,'String',ext_imadoc)
-end
-
-%%%%%%%%   read image documentation file  %%%%%%%%%%%%%%%%%%%%%%%%%%%
-mode=''; %default
-set(handles.ImaDoc,'BackgroundColor',[1 1 0])
-drawnow
-if isequal(ext_imadoc,'.civxml') || isequal(ext_imadoc,'.xml')|| isequal(ext_imadoc,'.civ')
-    set(handles.ref_i,'Visible','On')%use a reference index
-    set(handles.ref_j,'Visible','On')
-elseif isequal(ext_imadoc,'.avi') || isequal(ext_imadoc,'.AVI')
-    set(handles.ref_j,'Visible','Off')
-else
-    set(handles.ref_i,'Visible','Off')
-    set(handles.ref_j,'Visible','Off')
-end
-testima_xml=0;
+% first_i=1;%default
+% last_i=1;%default   
 if isequal(ext_imadoc,'.civxml')%TO ABANDON
-    [nbfield,nbfield2,time]=read_civxml([filebase '.civxml']);
+    [nbfield,nbfield2,time]=read_civxml([RootName '.civxml']);
     mode='pair j1-j2';
     if isempty(nom_type_ima)% dtermine types by default if not already selected by browser or uvmat
         nom_type_ima='_i_j';
     end
 elseif isequal(ext_imadoc,'.xml')
-    [XmlData,warntext]=imadoc2struct([filebase '.xml']);
+    [XmlData,warntext]=imadoc2struct([RootName '.xml']);
     ext_ima_read=[];
     nom_type_read=[];
     if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
         [PP,FF,fc,str2,str_a,str_b,ext_ima_read,nom_type_read]=name2display(XmlData.Heading.ImageName);
-        fullname=fullfile(fileparts(filebase),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file,
+        fullname=fullfile(fileparts(RootName),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file,
         if ~exist(fullname,'file')
             msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
         end
@@ -602,10 +570,6 @@ elseif isequal(ext_imadoc,'.xml')
     if isfield(XmlData,'TimeUnit')
         TimeUnit=XmlData.TimeUnit;
     end
-    if isfield(XmlData,'Npx')
-        npx=XmlData.Npx;
-        npy=XmlData.Npy;
-    end
     pxcmx_search=1;
     pxcmy_search=1;
     if isfield(XmlData,'GeometryCalib')
@@ -620,8 +584,8 @@ elseif isequal(ext_imadoc,'.xml')
         end
     end
 elseif strcmp(ext_imadoc,'.civ')% case of .civ image documentation file
-    [error,time,TimeUnit,mode,npx,npy]=read_imatext([filebase '.civ']);
-    if error==2, msgbox_uvmat('WARNING',['no file ' filebase '.civ']);
+    [error,time,TimeUnit,mode,npx,npy]=read_imatext([RootName '.civ']);
+    if error==2, msgbox_uvmat('WARNING',['no file ' RootName '.civ']);
     elseif error==1, msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
     end
     nom_type_ima='001a';
@@ -631,8 +595,8 @@ elseif strcmpi(ext_imadoc,'.avi')
     set(handles.ListPairMode,'Value',1);
     set(handles.ListPairMode,'String',{'series(Di)'})
     dt=0.04;%default
-    if exist([filebase ext_imadoc],'file')==2
-        info=aviinfo([filebase ext_imadoc]);%read infos on the avi movie
+    if exist([RootName ext_imadoc],'file')==2
+        info=aviinfo([RootName ext_imadoc]);%read infos on the avi movie
         dt=1/info.FramesPerSecond;%time interval between successive frames
         nbfield=info.NumFrames;%number of frames
     end
@@ -641,110 +605,28 @@ end
 if isempty(time)
     set(handles.ImaDoc,'String',''); %xml file not used for timing
 end
-set(handles.ImaDoc,'BackgroundColor',[1 1 1])
+set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box to yellow color
 
-%get the imabe nomenclature type if not defined by the input file nor by the xml file
-dirima=[];%default
-if isempty(nom_type_ima)
-    %look for double image series '_i_j'
-    dirima=dir([filebase '_' num2str(first_i) '_' num2str(first_j) '.*']);
-    if isempty(dirima)
-        % look for images series  with sub marker '_'
-        dirima=dir([filebase '_*' num2str(first_i) '.*']);
-        if isempty(dirima)
-            % look for other images series
-            dirima=dir([filebase '*' num2str(first_i) '.*']);
-            if isempty(dirima)
-                % look for other images series witth letter appendix
-                appendix=char(96+first_j);
-                dirima=dir([filebase '*' num2str(first_i) appendix '.*']);
-            end
-        end
-    end
-end
-for ilist=1:numel(dirima)
-    [pp,ff,fc,str2,str_a,str_b,ext_list,nom_type_list]=name2display(dirima(ilist).name);
-    form=imformats(ext_list(2:end));
-    if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-        ext_ima=ext_list;
-        nom_type_ima=nom_type_list;
-            break
-    end
-end
-% no image documentation file found: look for a series of existing files,images by priority or .nc files
-if isempty(nom_type_ima)
-    ext_search=ext_imadoc;
-    nom_type_search=nom_type_nc;
-else
-    ext_search=ext_ima;
-    nom_type_search=nom_type_ima;
-end
-if isempty(time) && ~strcmp(nom_type_search,'none') && ~strcmp(nom_type_search,'') && ~strcmp(nom_type_search,'*')
-    subdir=get(handles.txt_SubdirCiv1,'String');
-    incr_pair=[0 0];%default
-    if isfield(browse,'incr_pair')
-        incr_pair=browse.incr_pair;
-    end
-    %     nbdetect=0;%test of detected images
-    field_i=browse.num_i2;
-    imagename=name_generator(filebase,field_i,1,ext_search,nom_type_search);
-    imagename_plus='';
-    idetect=1;
-    while idetect %look for the maximum file number in the series
-        imagename_plus=name_generator(filebase,field_i+1,1,ext_search,nom_type_search);
-        idetect=(exist(imagename_plus,'file')==2)&& ~strcmp(imagename,imagename_plus);
-        if idetect
-            field_i=field_i+1;
-        end
-        %SEE CASE OF NETCDF FILES
-        %             nbdetect=nbdetect+(exist(imagename,'file')==2);
-    end
-    nbfield=field_i;% last detected field number
-    field_i=browse.num_i1;%look for the minimum file number in the series
-    imagename_min='';
-    idetect=1;
-    while idetect==1
-        imagename_min=name_generator(filebase,field_i-1,1,ext_search,nom_type_search);
-        idetect=(exist(imagename_min,'file')==2)&& ~strcmp(imagename,imagename_min);
-        if idetect
-            field_i=field_i-1;
-        end
-    end
-    first_i=max(field_i,1); 
-    if numel(regexp(nom_type_search,'\D'))>=1%two indices i and j
-        field_i=browse.num_i1;
-        field_j=browse.num_j2;
-        imagename=name_generator(filebase,field_i,field_j,ext_search,nom_type_search);
-        imagename_plus='';
-        jdetect=1;
-        while jdetect==1 %look for the maximum file number in the series
-            imagename_plus=name_generator(filebase,field_i,field_j+1,ext_search,nom_type_search);
-            jdetect=(exist(imagename_plus,'file')==2)&& ~strcmp(imagename,imagename_plus);
-            if jdetect
-                field_j=field_j+1;
-            end
-            %SEE CASE OF NETCDF FILES
-            %             nbdetect=nbdetect+(exist(imagename,'file')==2);
-        end
-        nbfield2=field_j;% last detected field number
-     end
- 
-    %determine the set of times and possible intervals for CIV
-    %   dt=(1/1000)*str2double(get(handles.dt,'String'));
-    time=(0:nbfield-1)';% time=file index -1  by default
-    if numel(regexp(nom_type_search,'\D'))>=1%two indices i and j
-        [x,y]=meshgrid(0:nbfield2-1,0:nbfield-1);
-        time=x+y;
-    end
-end
 
-if exist('time','var')
+%% timing display
+%show the reference image edit box if relevant (not needed for movies or in the absence of time information
+% if isempty(time)|| strcmp(nom_type_ima,'*')||strcmp(nom_type_ima,'')
+% %     set(handles.ref_i,'Visible','Off')% do not use a reference index to display time intervals
+% %     set(handles.ref_j,'Visible','Off')
+%     first_i=1;
+%     last_i=1;
+% else
+% %     set(handles.ref_i,'Visible','On')%use a reference index
+% %     set(handles.ref_j,'Visible','On')
+%     set(handles.ref_i,'String',i1_str)
+%     set(handles.ref_j,'String',j1_str)
+% end
+if ~isempty(time)
     if size(time,1)+size(time,2)>=3 % if there are at least two time values to define dt
         nbfield=size(time,1);
         nbfield2=size(time,2);
         set(handles.ImaDoc,'UserData',time); %store the set of times
         set(handles.dt_unit,'String',['dt in m' TimeUnit]);
-%         set(handles.dt_unit_civ2,'String',['dt in m' TimeUnit]);
         set(handles.TimeUnit,'String',TimeUnit);
         set(handles.nb_field,'String',num2str(nbfield));
         set(handles.nb_field2,'String',num2str(nbfield2));
@@ -752,14 +634,36 @@ if exist('time','var')
 end
 set(handles.CoordUnit,'String',CoordUnit)
 set(handles.SearchRange,'UserData',[pxcmx_search pxcmy_search]);
-% npxy=[npy npx];
 set(handles.ImaExt,'String',ext_ima)
-set(handles.first_i,'String',num2str(first_i));
-set(handles.last_i,'String',num2str(last_i));%
-set(handles.first_j,'String',num2str(first_j));
-set(handles.last_j,'String',num2str(last_j));%
+set(handles.ref_i,'String',num2str(num_ref_i))
+set(handles.first_i,'String',num2str(num_ref_i));
+set(handles.last_i,'String',num2str(num_ref_i));%
+set(handles.ref_j,'String',num2str(num_ref_j))
+set(handles.first_j,'String',num2str(num_ref_j));
+set(handles.last_j,'String',num2str(num_ref_j));%
 browse.nom_type_ima=nom_type_ima;
 set(handles.RootName,'UserData',browse)% store the nomenclature type
+
+%% set the civ options depending on the input file content
+ind_opening=0;%default
+if isequal(ext_input,'.nc')
+    browse.nom_type_nc=nom_type_input;
+    ind_opening=2;% propose 'fix' as the default option
+    Data=nc2struct(fileinput,'ListGlobalAttribute','CivStage','absolut_time_T0','fix','patch','civ2','fix2');
+    if ~isempty(Data.CivStage)%test for civ files
+        ind_opening=Data.CivStage;
+        set(handles.ListPairMode,'Value',3)
+    end
+end
+ListOptions={'CheckCiv1', 'CheckFix1' 'CheckPatch1', 'CheckCiv2', 'CheckFix2', 'CheckPatch2'};
+for index = 1:ind_opening
+    set(handles.(ListOptions{index}),'value',0)
+end
+for index = ind_opening+1:length(ListOptions)
+    set(handles.(ListOptions{index}),'value',1)
+end
+update_CivOptions(handles)
+
 
 %%  set the menus of image pairs and default selection for civ   %%%%%%%%%%%%%%%%%%%
 test_ima_i=numel(nom_type_ima)>1 && isempty(regexp(nom_type_ima(2:end),'\D','once'));%images with single indexing
@@ -776,21 +680,55 @@ else
     end
 end
 
-
-%% desable status and RUN button
-set(handles.RUN, 'Enable','On')
-set(handles.RUN,'BackgroundColor',[1 0 0])
-set(handles.BATCH,'Enable','On')
-set(handles.BATCH,'BackgroundColor',[1 0 0])
-if isfield(handles,'status')
-set(handles.status,'Value',0);%suppress status display
-status_Callback(hObject, eventdata, handles)
+%% update the subdirectory display
+listot=dir(RootPath);
+idir=0;
+listdir={''};%default
+for ilist=1:length(listot)
+    if listot(ilist).isdir
+        name=listot(ilist).name;
+        if ~isequal(name,'.') && ~isequal(name,'..')
+            idir=idir+1;
+            listdir{idir,1}=listot(ilist).name;
+        end
+    end
 end
+Value=find(strcmp(subdir,listdir));%search the index of subdir in the cell listdir
+if isempty(Value)
+    ValueCiv1=get(handles.ListSubdirCiv1,'Value');
+    if ValueCiv1>numel(listdir)
+        ValueCiv1=1;
+    end
+    set(handles.ListSubdirCiv1,'Value',ValueCiv1)
+    ValueCiv2=get(handles.ListSubdirCiv2,'Value');
+    if ValueCiv2>numel(listdir)
+        ValueCiv2=1;
+    end
+    set(handles.ListSubdirCiv2,'Value',ValueCiv2)
+else
+    set(handles.ListSubdirCiv1,'Value',Value)
+    set(handles.ListSubdirCiv2,'Value',Value)
+end
+set(handles.ListSubdirCiv1,'Value',1)
+set(handles.ListSubdirCiv2,'Value',1)
+set(handles.ListSubdirCiv1,'String',[listdir;'new...'])
+set(handles.ListSubdirCiv2,'String',[listdir;'new...'])
+if isempty(listdir)
+    dirname='CIV';
+else
+    dirname=listdir{1}; %default civ directory name
+end
+set(handles.txt_SubdirCiv1,'String',dirname)
+set(handles.txt_SubdirCiv2,'String',dirname)
+
+
+%% list the possible index pairs, depending on the option set in ListPairMode
+ListPairMode_Callback([], [], handles)
 
 %% store the root input filename for future opening
 dir_perso=prefdir;
 profil_perso=fullfile(prefdir,'uvmat_perso.mat');
-RootPath=fileparts(filebase);
+% RootPath=fileparts(RootName);
 if exist(profil_perso,'file')
     save (profil_perso,'RootPath','-append'); %store the root name for future opening of uvmat
 else
@@ -803,37 +741,6 @@ else
         save (profil_perso,'RootPath'); %store the root name for future opening of uvmat
     end
 end
-
-%% update the subdir
-pathdir=fileparts(filebase);%path to the current xml file
-listot=dir(pathdir);
-idir=0;
-listdir={''};%default
-for ilist=1:length(listot)
-    if listot(ilist).isdir
-        name=listot(ilist).name;
-        if ~isequal(name,'.') && ~isequal(name,'..')
-            idir=idir+1;
-            listdir{idir,1}=listot(ilist).name;
-        end
-    end
-end
-set(handles.ListSubdirCiv1,'Value',1)
-set(handles.ListSubdirCiv2,'Value',1)
-set(handles.ListSubdirCiv1,'String',[listdir;'new...'])
-set(handles.ListSubdirCiv2,'String',[listdir;'new...'])
-if isempty(listdir)
-    dirname=listdir{1};
-else
-    dirname='CIV'; %default civ directory name
-end
-set(handles.txt_SubdirCiv1,'String',dirname)
-set(handles.txt_SubdirCiv2,'String',dirname)
-%check wether the current subdir exists:
-% txt_SubdirCiv1=get(handles.txt_SubdirCiv1,'String');
-% txt_SubdirCiv2=get(handles.txt_SubdirCiv2,'String');
-
-ListPairMode_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in ListPairMode.
@@ -1067,7 +974,7 @@ displ_pair={''};
 select=ones(size(1:nbpair));%flag for displayed pairs =1 for display
 testpair=0;
 % case with no checkciv1 operation, netcdf files need to exist for reading
-if get(handles.CheckCiv1,'Value')==0 %
+if ~get(handles.CheckCiv1,'Value') %
     if ~exist(fullfile(filepath,subdir_civ1,ext_dir),'dir')
         msgbox_uvmat('ERROR',['no civ1 file available: subdirectory ' subdir_civ1 ' does not exist']);
         set(handles.ListPairCiv1,'String',{});
@@ -1262,7 +1169,7 @@ nbpair=min(200,nbpair);%limit the number of displayed pairs to 200
 % be performed, while the result is needed for next steps.
 displ_pair={''}; %default
 select=ones(size(1:nbpair));%default =1 for numbers of displayed pairs
-if get(handles.CheckCiv2,'Value')==0 & get(handles.CheckCiv1,'Value')==0 & get(handles.CheckFix1,'Value')==0 & get(handles.CheckPatch1,'Value')==0%&...
+if ~get(handles.CheckCiv2,'Value') && ~get(handles.CheckCiv1,'Value') && ~get(handles.CheckFix1,'Value') && ~get(handles.CheckPatch1,'Value')
     if ~exist(fullfile(filepath,subdir_civ2,ext_dir),'dir')
         errordlg(['no civ2 file available: subdirectory ' subdir_civ2 ' does not exist'])
         set(handles.ListPairCiv2,'Value',1);
@@ -2293,7 +2200,7 @@ filecell=[];%default
 filebase=get(handles.RootName,'String');
 
 if isempty(filebase)||isequal(filebase,'')
-    msgbox_uvmat('ERROR','no input files')
+    msgbox_uvmat('ERROR','please open an image with the upper menu option Open/Browse...')
     return
 end
 
@@ -3169,7 +3076,7 @@ checkbox(2)=get(handles.CheckFix1,'Value');
 checkbox(3)=get(handles.CheckPatch1,'Value');
 checkbox(4)=get(handles.CheckCiv2,'Value');
 checkbox(5)=get(handles.CheckFix2,'Value');
-checkbox(6)=get(handles.CheckPatch2,'Value');
+checkbox(6)=get(handles.CheckPatch2,'Value')
 ind_selected=find(checkbox);
 if ~isempty(ind_selected)
   RootName=get(handles.RootName,'String');
@@ -3206,32 +3113,11 @@ for ilist=1:length(options)
     end
 end
 
-% end
-
-% set(handles.(operations(ind_selected)),'Visible','on')
-% 
-% if state
-%     RootName=get(handles.RootName,'String');
-%     if isempty(RootName)
-%          msgbox_uvmat('ERROR','No input file')
-%         return
-%     end
-%     set(handles.Civ1,'Visible','on')   
-%     set(handles.PairIndices,'Visible','on')
-% else
-%     set(handles.Civ1,'Visible','off')  
-% end
-
-
 %------------------------------------------------------------------------
 function first_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-% last_i_Callback(hObject, eventdata, handles)
 first_i=str2double(get(handles.first_i,'String'));
-% last_i=str2num(get(handles.last_i,'String'));
-% ref_i=ceil((first_i+last_i)/2);
 set(handles.ref_i,'String', num2str(first_i))% reference index for pair dt = first index
-%set(handles.ref_i_civ2,'String', num2str(first_i))% reference index for pair dt = first index
 ref_i_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in case of non constant dt)
 
 %------------------------------------------------------------------------

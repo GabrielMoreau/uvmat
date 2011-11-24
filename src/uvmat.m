@@ -866,7 +866,7 @@ set_scan_options(hObject, eventdata, handles)
 MenuFile=[{FileName};get(handles.MenuFile_1,'Label');get(handles.MenuFile_2,'Label');...
     get(handles.MenuFile_3,'Label');get(handles.MenuFile_4,'Label');get(handles.MenuFile_5,'Label')];
     
-for ifile=1:length(MenuFile)
+for ifile=1:min(length(MenuFile),5)
     eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',MenuFile{ifile});'])
     eval(['set(handles.MenuFile_' num2str(ifile) '_1,''Label'',MenuFile{ifile});'])
 end
@@ -4673,41 +4673,41 @@ series(param); %run the series interface
 % -- open the GUI civ.fig for civx (PIV)
 function MenuPIV_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
- 
-[FileName,RootPath,filebase,FileIndices,ext,SubDir]=read_file_boxes(handles);
-num1=stra2num(get(handles.i1,'String'));
-num2=stra2num(get(handles.i2,'String'));
-num_a=stra2num(get(handles.j1,'String'));
-num_b=stra2num(get(handles.j2,'String'));
-NomType=get(handles.FileIndex,'UserData');
-ind_opening=1; % default (images): will advice civ1 option by default in the civ interface
-if isequal(ext,'.nc') ||  isequal(ext,'.cdf')% netcdf files
-    ind_opening=2;% propose 'fix' as the default option
-% +read the current netcdf rootfile
-    Data=nc2struct(FileName,'ListGlobalAttribute','fix','patch','civ2','fix2');
-    if isfield(Data,'fix') && isequal(Data.fix,1)
-        ind_opening=3;
-    end
-    if isfield(Data,'patch') && isequal(Data.patch,1)
-        ind_opening=4;
-    end
-    if isfield(Data,'civ2') && isequal(Data.civ2,1)
-        ind_opening=5;
-    end
-    if isfield(Data,'fix2') && isequal(Data.fix2,1)
-        ind_opening=6;
-    end
-end      
-param.RootName=filebase;
-param.NomType=NomType;
-param.num1=num1;
-param.num2=num2;
-param.num_a=num_a;
-param.num_b=num_b;
-param.SubDir=SubDir;
-param.IndOpening=ind_opening;% A REVOIR +TRANSMETTRE IMADOC INFO
-param.ImaExt=ext;
-civ(param);% interface de civ(not in the uvmat file)
+ FileName=read_file_boxes(handles);
+%[FileName,RootPath,filebase,FileIndices,ext,SubDir]=read_file_boxes(handles)
+% num1=stra2num(get(handles.i1,'String'));
+% num2=stra2num(get(handles.i2,'String'));
+% num_a=stra2num(get(handles.j1,'String'));
+% num_b=stra2num(get(handles.j2,'String'));
+% NomType=get(handles.FileIndex,'UserData');
+% ind_opening=1; % default (images): will advice civ1 option by default in the civ interface
+% if isequal(ext,'.nc') ||  isequal(ext,'.cdf')% netcdf files
+%     ind_opening=2;% propose 'fix' as the default option
+% % +read the current netcdf rootfile
+%     Data=nc2struct(FileName,'ListGlobalAttribute','fix','patch','civ2','fix2');
+%     if isfield(Data,'fix') && isequal(Data.fix,1)
+%         ind_opening=3;
+%     end
+%     if isfield(Data,'patch') && isequal(Data.patch,1)
+%         ind_opening=4;
+%     end
+%     if isfield(Data,'civ2') && isequal(Data.civ2,1)
+%         ind_opening=5;
+%     end
+%     if isfield(Data,'fix2') && isequal(Data.fix2,1)
+%         ind_opening=6;
+%     end
+% end      
+% param.RootName=filebase;
+% param.NomType=NomType;
+% param.num1=num1;
+% param.num2=num2;
+% param.num_a=num_a;
+% param.num_b=num_b;
+% param.SubDir=SubDir;
+% param.IndOpening=ind_opening;% A REVOIR +TRANSMETTRE IMADOC INFO
+% param.ImaExt=ext;
+civ(FileName);% interface de civ(not in the uvmat file)
 
 %------------------------------------------------------------------------
 function MenuTools_Callback(hObject, eventdata, handles)
