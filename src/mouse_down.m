@@ -117,7 +117,7 @@ for ichild=1:length(hchildren)
                 break
             case 'uicontrol'  %if the mouse is over a uicontrol, duplicate the display  in an editable  zoom window
                 if isequal(get(hObject,'SelectionType'),'alt')  && isequal(get(hchild,'Visible'),'on') && ~isequal(get(hchild,'tag'),'frame_object')&&...
-                        ~isequal(get(hchild,'tag'),'list_object_2') && ~isequal(get(hchild,'tag'),'list_object_1')
+                        ~isequal(get(hchild,'tag'),'ListObject') 
                     if strcmp(get(hchild,'Visible'),'on')
                         msg_pos(1:2)=GUI_pos(1:2)+obj_pos(1:2).*GUI_pos(3:4);
                         output_str=msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],'',get(hchild,'String'),msg_pos);
@@ -235,12 +235,19 @@ if  test_edit && (isequal(tag_obj,'proj_object')||isequal(tag_obj,'DeformPoint')
             IndexObj=ObjectData.IndexObj;
                     %indicate on the list of the GUI uvmat which object has been selected
             if strcmp(get(hcurrentfig,'tag'),'uvmat') %if the uvmat graph has been selected, object projection is on the other frame view_field
-                set(hhuvmat.list_object_2,'Value',IndexObj);
-                list_str=get(hhuvmat.list_object_2,'String');
-                UvData.Object{IndexObj}.Name=list_str{IndexObj};
+                IndexObj_old=get(hhuvmat.ListObject,'Value');
+                if IndexObj>IndexObj_old(1)
+                    IndexObj=[IndexObj_old(1) IndexObj];
+                else
+                    IndexObj=[1 IndexObj];
+                end
+                set(hhuvmat.ListObject,'Value',IndexObj);
+                set(hhuvmat.ListObject,'UserData',IndexObj);
+%                 list_str=get(hhuvmat.list_object_2,'String');
+%                 UvData.Object{IndexObj(2)}.Name=list_str{IndexObj};
             else
-                set(hhuvmat.list_object_1,'Value',IndexObj);
-                list_str=get(hhuvmat.list_object_1,'String');
+                set(hhuvmat.ListObject,'Value',IndexObj);
+                list_str=get(hhuvmat.ListObject,'String');
                 UvData.Object{IndexObj}.Name=list_str{IndexObj};
             end
             h_set_object=findobj(allchild(0),'Tag','set_object');
@@ -292,7 +299,10 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
                 IndexObj=2;
             end  
             UvData.Object{IndexObj}=ObjectData;        
-            list_str=get(hhuvmat.list_object_1,'String');
+            list_str=get(hhuvmat.ListObject,'String');
+            IndexObj_old=get(hhuvmat.ListObject,'Value');
+            set(hhuvmat.ListObject,'Value',[IndexObj_old(1) IndexObj] );
+            UvData.Object{IndexObj}.DisplayHandle_uvmat=AxeData.CurrentObject;
             object_name=get(sethandles.TITLE,'String');
             if isempty(object_name)|| strcmp(object_name,'')
                 list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style]; 
@@ -300,18 +310,19 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
             else
                list_str{IndexObj}=object_name;
             end
-            set(hhuvmat.list_object_1,'String',list_str)
+            set(hhuvmat.ListObject,'String',list_str)
+            UvData.Object{IndexObj}.DisplayHandle_view_field=AxeData.CurrentObject;
             %list_str{end+1}='...';
-            set(hhuvmat.list_object_2,'String',list_str)
-            if strcmp(fig_tag,'view_field')%we are in view_field plot
-                  set(hhuvmat.list_object_1,'Value',IndexObj)% the projection field will be plotted in uvmat frame
-                  UvData.Object{IndexObj}.DisplayHandle_uvmat=[];
-                  UvData.Object{IndexObj}.DisplayHandle_view_field=AxeData.CurrentObject;        
-            else%we are in uvmat plot
-                set(hhuvmat.list_object_2,'Value',IndexObj)
-                UvData.Object{IndexObj}.DisplayHandle_uvmat=AxeData.CurrentObject;
-                UvData.Object{IndexObj}.DisplayHandle_view_field=[]; 
-            end
+%             set(hhuvmat.list_object_2,'String',list_str)
+%             if strcmp(fig_tag,'view_field')%we are in view_field plot
+%                   set(hhuvmat.list_object_1,'Value',IndexObj)% the projection field will be plotted in uvmat frame
+%                   UvData.Object{IndexObj}.DisplayHandle_uvmat=[];
+%                   UvData.Object{IndexObj}.DisplayHandle_view_field=AxeData.CurrentObject;        
+%             else%we are in uvmat plot
+%                 set(hhuvmat.list_object_2,'Value',IndexObj)
+%                 UvData.Object{IndexObj}.DisplayHandle_uvmat=AxeData.CurrentObject;
+%                 UvData.Object{IndexObj}.DisplayHandle_view_field=[]; 
+%             end
             set(huvmat,'UserData',UvData)
             PlotData=get(AxeData.CurrentObject,'UserData');
             PlotData.IndexObj=IndexObj;

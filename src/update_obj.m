@@ -1,6 +1,6 @@
 %'update_obj': update the object graph representation and its projection field, record it in the uvmat interface
 %-------------------------------------------------------------------
-%Object_out=update_obj(UvData,IndexObj,ObjectData,PlotHandles);
+%Object_out=update_obj(UvData,IndexObj_1,IndexObj_2);
 
 %OUTPUT:
 % Object_out= cell array of structures containing the properties of the existing objects     .
@@ -11,8 +11,8 @@
 %    .Field , the current input field to be projected on the object
 %    .Object{IndexObj}.DisplayHandle_uvmat: handles of the object plot on uvmat, =[] if it does not exist
 %    .Object{IndexObj}.DisplayHandle_view_field: handles of the object plot on view_field, =[] if it does not exist
-%IndexObj_1: index of  the object used for the uvmat plot
-%IndexObj_2: index of  the object used for the view_field plot 
+%IndexObj_1: index of  the object whose projection is plotted in the GUI uvmat 
+%IndexObj_2: index of  the object whose projection is plotted in te GUI view_field 
 %-------------------------------------
 
 function Object_out=update_obj(UvData,IndexObj_1,IndexObj_2)
@@ -29,6 +29,7 @@ for iobj=1:length(Object_out) %change the view of all existing objects on the up
         hobject=Object_out{iobj}.DisplayHandle_uvmat;%graphic handle of object #iobj in the uvmat plot
     end
     Object_out{iobj}.DisplayHandle_uvmat=plot_object(Object_out{iobj},Object_out{IndexObj_1},hobject,'m');%update the object representation of Object_out{iobj} on Object_out{IndexObj_1}
+    Object_out{iobj}.DisplayHandle_uvmat
 end
 % plot view_field
 if ~isempty(IndexObj_2)

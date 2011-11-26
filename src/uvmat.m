@@ -235,8 +235,8 @@ set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles})%set mouse action f
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
 set(hObject,'DeleteFcn',{@closefcn})%
-set(handles.list_object_1,'ButtonDownFcn',{@list_object_1_Callback,handles})% allows activation of lis_object_1_callback with right mouse click
-set(handles.list_object_2,'ButtonDownFcn',{@list_object_2_Callback,handles})
+%set(handles.ListObject,'ButtonDownFcn',{@list_object_1_Callback,handles})% allows activation of lis_object_1_callback with right mouse click
+%set(handles.list_object_2,'ButtonDownFcn',{@list_object_2_Callback,handles})
 
 %% refresh projection plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
@@ -365,7 +365,7 @@ if testinputfield
         set(handles.MenuTools,'Enable','on')
         set(handles.OBJECT_txt,'Visible','on')
         set(handles.edit_object,'Visible','on')
-        set(handles.list_object_1,'Visible','on')
+        set(handles.ListObject,'Visible','on')
         set(handles.frame_object,'Visible','on')
         if ~isempty(errormsg)
             msgbox_uvmat('ERROR',errormsg)
@@ -558,7 +558,7 @@ switch ext_test
         set(handles.MenuTools,'Enable','on')
         set(handles.OBJECT_txt,'Visible','on')
         set(handles.edit_object,'Visible','on')
-        set(handles.list_object_1,'Visible','on')
+        set(handles.ListObject,'Visible','on')
         set(handles.frame_object,'Visible','on')
          %%%%%% initiate input file: 
         update_rootinfo(hObject,eventdata,handles);  
@@ -863,9 +863,12 @@ drawnow
 set_scan_options(hObject, eventdata, handles)
 
 %% update list of recent files in the menubar
-MenuFile=[{FileName};get(handles.MenuFile_1,'Label');get(handles.MenuFile_2,'Label');...
-    get(handles.MenuFile_3,'Label');get(handles.MenuFile_4,'Label');get(handles.MenuFile_5,'Label')];
-    
+MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
+    {get(handles.MenuFile_3,'Label')};{get(handles.MenuFile_4,'Label')};{get(handles.MenuFile_5,'Label')}];
+str_find=strcmp(FileName,MenuFile);
+if isempty(find(str_find,1))
+    MenuFile=[{FileName};MenuFile];%insert the current file if not already in the list
+end
 for ifile=1:min(length(MenuFile),5)
     eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',MenuFile{ifile});'])
     eval(['set(handles.MenuFile_' num2str(ifile) '_1,''Label'',MenuFile{ifile});'])
@@ -2474,7 +2477,7 @@ if NbDim==3% && UvData.NewSeries
 %         end
     end
     if test_set_object% reinitiate the GUI set_object
-        delete_object(1);% delete the current projection object in the list UvData.Object, delete its graphic representations and update the list displayed in handles.list_object_1 and 2
+        delete_object(1);% delete the current projection object in the list UvData.Object, delete its graphic representations and update the list displayed in handles.ListObject and 2
         UvData.Object{1}.Style='plane';%main plotting plane
         UvData.Object{1}.ProjMode='projection';%main plotting plane
         UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
@@ -2489,8 +2492,8 @@ if NbDim==3% && UvData.NewSeries
         UvData.Object{1}.Name='1-PLANE';
         UvData.Object{1}.enable_plot=1;
         set_object(UvData.Object{1},handles,ZBounds);
-        set(handles.list_object_1,'Value',1);
-        set(handles.list_object_1,'String',{'1-PLANE'});
+        set(handles.ListObject,'Value',1);
+        set(handles.ListObject,'String',{'1-PLANE'});
         set(handles.edit_object,'Value',1)% put the plane in edit mode to enable the z cursor
         edit_object_Callback([],[], handles)
     end
@@ -2513,15 +2516,15 @@ else
     % create a default projection
     UvData.Object{1}.ProjMode='projection';%main plotting plane
     UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
-    set(handles.list_object_1,'Value',1);
-    list_object=get(handles.list_object_1,'String');
+    set(handles.ListObject,'Value',1);
+    list_object=get(handles.ListObject,'String');
     if isempty(list_object)
         list_object={''};
     elseif ~isempty(list_object{1})
         list_object=[{''};list_object];
     end
-    set(handles.list_object_1,'String',list_object);
-    set(handles.list_object_2,'String',list_object);
+    set(handles.ListObject,'String',list_object);
+%     set(handles.list_object_2,'String',list_object);
 end
 testnewseries=UvData.NewSeries;
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
@@ -2535,18 +2538,18 @@ end
 
 %% Plot the projections on the selected  projection objects
 % main projection object (uvmat display)
-list_object=get(handles.list_object_1,'String');
+list_object=get(handles.ListObject,'String');
 if isequal(list_object,{''})%refresh list of objects if the menu is empty
     UvData.Object={[]}; 
-    set(handles.list_object_1,'Value',1)
-    set(handles.list_object_2,'Value',1)
-    set(handles.list_object_2,'String',{''})
-    set(handles.list_object_2,'Visible','off')
+    set(handles.ListObject,'Value',1)
+%     set(handles.list_object_2,'Value',1)
+%     set(handles.list_object_2,'String',{''})
+%     set(handles.list_object_2,'Visible','off')
 end
-IndexObj(1)=get(handles.list_object_1,'Value');%selected projection object for main view
+IndexObj=get(handles.ListObject,'Value');%selected projection object for main view
 if IndexObj(1)> numel(UvData.Object)
     IndexObj(1)=1;%select the first object if the selected one does not exist
-    set(handles.list_object_1,'Value',1)
+    set(handles.ListObject,'Value',1)
 end
 plot_handles{1}=handles;
 if isfield(UvData,'plotaxes')%case of movies
@@ -2560,12 +2563,13 @@ keeplim(1)=get(handles.CheckFixLimits,'Value');% test for fixed graph limits
 PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
 
 % second projection object (view_field display)
-IndexObj_2=get(handles.list_object_2,'Value');%selected projection object for the second view
-if IndexObj_2==0
-    IndexObj_2=1;
-end
-if isequal(get(handles.list_object_2,'Visible'),'on') && IndexObj_2 <= numel(UvData.Object)&& ~isempty(UvData.Object{IndexObj_2})
-    IndexObj(2)=IndexObj_2;
+% IndexObj_2=get(handles.list_object_2,'Value');%selected projection object for the second view
+% if IndexObj_2==0
+%     IndexObj_2=1;
+% end
+%if isequal(get(handles.list_object_2,'Visible'),'on') && IndexObj_2 <= numel(UvData.Object)&& ~isempty(UvData.Object{IndexObj_2})
+ if length( IndexObj)>=2
+%      IndexObj(2)=IndexObj_2;
     view_field_handle=findobj(allchild(0),'tag','view_field');%handles of the view_field GUI
     if ~isempty(view_field_handle)
         plot_handles{2}=guidata(view_field_handle);
@@ -3845,12 +3849,12 @@ end
 if isfield(UvData,'Object')
      UvData.Object=UvData.Object(1);
 end 
-list_object=get(handles.list_object_1,'String');
-set(handles.list_object_1,'Value',1)
-set(handles.list_object_1,'String',{''})
-set(handles.list_object_2,'Value',1)
-set(handles.list_object_2,'String',{''})
-list_object_2_Callback(hObject, eventdata, handles)
+list_object=get(handles.ListObject,'String');
+set(handles.ListObject,'Value',1)
+set(handles.ListObject,'String',{''})
+%set(handles.list_object_2,'Value',1)
+%set(handles.list_object_2,'String',{''})
+%list_object_2_Callback(hObject, eventdata, handles)
 
 %delete mask if it is displayed 
 if isequal(get(handles.mask_test,'Value'),1)%if the mask option is on
@@ -4180,7 +4184,7 @@ if test
     set(handles.edit_object,'BackgroundColor',[1,1,0])  
     %suppress the other options 
     set(handles.CheckZoom,'Value',0)
-    zoom_Callback(hObject, eventdata, handles)
+    CheckZoom_Callback(hObject, eventdata, handles)
     hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
     if ishandle(hgeometry_calib)
         hhgeometry_calib=guidata(hgeometry_calib);
@@ -4190,10 +4194,10 @@ if test
 else 
     UvData.MouseAction='none';
     set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])   
-    hset_object=findobj(allchild(0),'tag','set_object');% look for the set_object GUI
-    if ~isempty(hset_object)
-        delete(hset_object)% delete the current GUI set_object
-    end
+%     hset_object=findobj(allchild(0),'tag','set_object');% look for the set_object GUI
+%     if ~isempty(hset_object)
+%         delete(hset_object)% delete the current GUI set_object
+%     end
 end
 set(handles.uvmat,'UserData',UvData);
 hset_object=findobj(allchild(0),'Tag','set_object');
@@ -4207,52 +4211,59 @@ if ~isempty(hset_object)
 end
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in list_object_1.
-function list_object_1_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in ListObject.
+function ListObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-list_str=get(handles.list_object_1,'String');
-IndexObj=get(handles.list_object_1,'Value');
-%IndexObj(2)=get(handles.list_object_2,'Value');
-update_object(handles,IndexObj,1,list_str{IndexObj})
 
-%------------------------------------------------------------------------
-% --- Executes on selection change in list_object_1.
-function list_object_2_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-list_str=get(handles.list_object_2,'String');
-IndexObj=get(handles.list_object_2,'Value');
-%IndexObj(2)=get(handles.list_object_2,'Value')-1;
-% if no projection object is selected, close view_field
-if ischar(list_str) || isempty(list_str{IndexObj})
-    hview_field=findobj(allchild(0),'Tag','view_field');
-    if ~isempty(hview_field)
-        delete(hview_field)
-    end
-    hset_object=findobj(allchild(0),'Tag','set_object');
-    if ~isempty(hset_object)
-        delete(hset_object)
-    end
-else
-    if isequal(get(handles.uvmat,'SelectionType'),'alt')
-        option=4;%will show object properties on the GUI set_object
-    else
-        option=2; % just update the projection
-    end
-    update_object(handles,IndexObj,option,list_str{IndexObj})   
+list_str=get(handles.ListObject,'String');
+IndexObj_old=get(handles.ListObject,'UserData');%retrieve previous selection
+IndexObj=get(handles.ListObject,'Value');
+if length(IndexObj)>2
+     IndexObj=[IndexObj(end-1) IndexObj(end)];%keeps only the last two selected items at most
 end
-
-%------------------------------------------------------------------------
-function update_object(handles,IndexObj,option,ObjectName)
-%------------------------------------------------------------------------
+if length(IndexObj)==1
+    if length(IndexObj_old)>=2 && isequal(IndexObj_old(1),IndexObj)       
+        IndexObj=IndexObj_old(2);
+    elseif length(IndexObj_old)>=2 && isequal(IndexObj_old(2),IndexObj)
+        IndexObj=IndexObj_old(1);
+    else
+        IndexObj=[IndexObj_old(1) IndexObj];
+    end
+end
+set(handles.ListObject,'Value',IndexObj); %keeps only the two first selected objects
+set(handles.ListObject,'UserData',IndexObj)
+ %desactivate the edit object mode
+set(handles.edit_object,'Value',0)
+edit_object_Callback(hObject, eventdata, handles)
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
 if numel(UvData.Object)<max(IndexObj);
+    msgbox_uvmat('ERROR','invalid object list')
     return
 end
-% if option==1 ||option==3
+UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));
+set(handles.uvmat,'UserData',UvData)
+
+%project on the selected object and update the corresponding plot
+hview_field=findobj(allchild(0),'tag','view_field');
+ViewObjectAxes=[];%default
+if ~isequal(IndexObj(1),IndexObj_old(1))
+update_object(handles,IndexObj(1),handles.axes3,list_str{IndexObj(1)})%plot the projection in uvmat
+end
+if length(IndexObj)==2 && (length(IndexObj_old)==1 || ~isequal(IndexObj(2),IndexObj_old(2)))
+    hview_field=findobj(allchild(0),'tag','view_field');
+    if isempty(hview_field)
+        hview_field=view_field;
+    end
+    PlotHandles=guidata(hview_field);
+    update_object(handles,IndexObj(2),PlotHandles.axes3,list_str{IndexObj(2)})%plot the projection in view_field
+end
+update_object_color(handles.axes3,PlotHandles.axes3,UvData.Object{IndexObj(2)}.DisplayHandle_uvmat)
+
+%------------------------------------------------------------------------
+function update_object(handles,IndexObj,ViewObjectAxes,ObjectName)
+%------------------------------------------------------------------------
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
 ObjectData=UvData.Object{IndexObj};
-% else
-%    ObjectData=UvData.Object{IndexObj}; 
-% end
 ObjectData.Name=ObjectName;
 if isequal(get(handles.edit_object,'Value'),1)
     ObjectData.enable_plot=1; % desable the PLOT option in the set_object GUI (editing mode
@@ -4265,6 +4276,7 @@ end
 hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
+    hset_object=set_object(ObjectData,[],ZBounds);
 end
 edit_test=get(handles.edit_object,'Value');
 if edit_test
@@ -4275,33 +4287,19 @@ else
     end
 end
 
-if option==3 ||option==4% right mouse selection, show the GUI set_object:
-    hset_object=set_object(ObjectData,[],ZBounds);
-end
-
-%project on the selected object and update the corresponding plot
-hview_field=findobj(allchild(0),'tag','view_field');
-% PlotHandles=guidata(hview_field);
-if option==1 ||  option==3%length(UvData.Object)>= IndexObj && isfield(UvData.Object{IndexObj},'plotaxes')&& ishandle(UvData.Object{IndexObj}.plotaxes)
-    PlotHandles=handles;
-else
-    if isempty(hview_field)
-        hview_field=view_field;
-    end
-    PlotHandles=guidata(hview_field);
-end
-if option==1 ||option==2% lefet mouse selection, peroject the field:
-    ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
-    %plot_field(ProjData,PlotHandles.axes3,read_plot_param(PlotHandles));%read plotting parameters on the uvmat interfacPlotHandles);
-    plot_field(ProjData,PlotHandles.axes3,read_GUI(get(PlotHandles.axes3,'Parent')));%read plotting parameters on the uvmat interfacPlotHandles);
-    UvData.Object=update_obj(UvData,IndexObj,[]);
-    set(handles.uvmat,'UserData',UvData)
-end
-
-
+uistack(ViewObjectAxes,'top')% display the plotting axes at the top
+ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
+plot_field(ProjData,ViewObjectAxes,read_GUI(get(ViewObjectAxes,'Parent')));%read plotting parameters on the uvmat interfacPlotHandles);
+% 
+% UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));
 % set(handles.uvmat,'UserData',UvData)
-hother=[findobj(handles.axes3,'Tag','proj_object') ;findobj(PlotHandles.axes3,'Tag','proj_object')] ;%find all the proj objects
-hother=[hother ;findobj(handles.axes3,'Tag','DeformPoint'); findobj(PlotHandles.axes3,'Tag','DeformPoint')];
+
+%------------------------------------------------------------------------
+%--- update the representation of objects
+function update_object_color(axes_uvmat,axes_view_field,DisplayHandle)
+%------------------------------------------------------------------------
+hother=[findobj(axes_uvmat,'Tag','proj_object') ;findobj(axes_view_field,'Tag','proj_object')] ;%find all the proj objects
+hother=[hother ;findobj(axes_uvmat,'Tag','DeformPoint'); findobj(axes_view_field,'Tag','DeformPoint')];
 for iobj=1:length(hother)
     if isequal(get(hother(iobj),'Type'),'rectangle')||isequal(get(hother(iobj),'Type'),'patch')
         set(hother(iobj),'EdgeColor','b')
@@ -4317,38 +4315,40 @@ for iobj=1:length(hother)
     end
     set(hother(iobj),'Selected','off')
 end
-if isfield(ObjectData,'DisplayHandle_uvmat')
-    if ishandle(ObjectData.DisplayHandle_uvmat)
-        uistack(ObjectData.DisplayHandle_uvmat,'top')
-        linetype=get(ObjectData.DisplayHandle_uvmat,'Type');
-        if isequal(linetype,'line')
-            set(ObjectData.DisplayHandle_uvmat,'Color','m'); %set the selected object to magenta color
-        elseif isequal(linetype,'rectangle')
-            set(ObjectData.DisplayHandle_uvmat,'EdgeColor','m'); %set the selected object to magenta color
-        elseif isequal(linetype,'patch')
-            set(ObjectData.DisplayHandle_uvmat,'FaceColor','m'); %set the selected object to magenta color
-        end
-        SubObjectData=get(ObjectData.DisplayHandle_uvmat,'UserData');
-        if isfield(SubObjectData,'SubObject') & ishandle(SubObjectData.SubObject)
-            uistack(SubObjectData.SubObject,'top')
-            for iobj=1:length(SubObjectData.SubObject)
-                hsub=SubObjectData.SubObject(iobj);
-                if isequal(get(hsub,'Type'),'rectangle')
-                    set(hsub,'EdgeColor','m'); %set the selected object to magenta color
-                elseif isequal(get(hsub,'Type'),'image')
-                    Acolor=get(hsub,'CData');
-                    Acolor(:,:,1)=Acolor(:,:,3);
-                    set(hsub,'CData',Acolor);
-                else
-                    set(hsub,'Color','m')
-                end
-            end
-        end
-        if isfield(SubObjectData,'DeformPoint') & ishandle(SubObjectData.DeformPoint)
-            set(SubObjectData.DeformPoint,'Color','m')
+linetype=get(DisplayHandle,'Type');
+if isequal(linetype,'line')
+    set(DisplayHandle,'Color','m'); %set the selected object to magenta color
+elseif isequal(linetype,'rectangle')
+    set(DisplayHandle,'EdgeColor','m'); %set the selected object to magenta color
+elseif isequal(linetype,'patch')
+    set(DisplayHandle,'FaceColor','m'); %set the selected object to magenta color
+end
+SubObjectData=get(DisplayHandle,'UserData');
+if isfield(SubObjectData,'SubObject') & ishandle(SubObjectData.SubObject)
+    for iobj=1:length(SubObjectData.SubObject)
+        hsub=SubObjectData.SubObject(iobj);
+        if isequal(get(hsub,'Type'),'rectangle')
+            set(hsub,'EdgeColor','m'); %set the selected object to magenta color
+        elseif isequal(get(hsub,'Type'),'image')
+            Acolor=get(hsub,'CData');
+            Acolor(:,:,1)=Acolor(:,:,3);
+            set(hsub,'CData',Acolor);
+        else
+            set(hsub,'Color','m')
         end
     end
 end
+if isfield(SubObjectData,'DeformPoint') & ishandle(SubObjectData.DeformPoint)
+    set(SubObjectData.DeformPoint,'Color','m')
+end
+
+%         SubObjectData=get(ObjectData.DisplayHandle_uvmat,'UserData');
+
+
+
+
+
+
 
 %------------------------------------------------------
 % --- Executes on button press in Menu/Export/field in workspace.
@@ -4486,7 +4486,7 @@ UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat
 %suppress competing options 
 set(handles.CheckZoom,'Value',0)
 set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.list_object_1,'Value',1)      
+set(handles.ListObject,'Value',1)      
 % initiate display of GUI geometry_calib
 data=[]; %default
 if isfield(UvData,'CoordType')
@@ -4523,8 +4523,8 @@ if isempty(val)
     msgbox_uvmat('ERROR','polygons must be first created by Projection object/mask polygon in the menu bar');
     return
 else
-    set(handles.list_object_1,'Max',2);%allow multiple selection
-    set(handles.list_object_1,'Value',val);
+    set(handles.ListObject,'Max',2);%allow multiple selection
+    set(handles.ListObject,'Value',val);
     flag=1;
     npx=size(UvData.Field.A,2);
     npy=size(UvData.Field.A,1);
@@ -4608,8 +4608,8 @@ else
         end
         imwrite(imflag,answer,'BitDepth',8);
     end
-    set(handles.list_object_1,'Value',1)
-    set(handles.list_object_1,'Max',1)
+    set(handles.ListObject,'Value',1)
+    set(handles.ListObject,'Max',1)
 end
 
 %------------------------------------------------------------------------
@@ -4620,7 +4620,7 @@ function MenuGrid_Callback(hObject, eventdata, handles)
 set(handles.edit_vect,'Value',0)
 edit_vect_Callback(hObject, eventdata, handles)
 set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.list_object_1,'Value',1)      
+set(handles.ListObject,'Value',1)      
 
 %prepare display of the set_grid GUI
 FileName=read_file_boxes(handles);
@@ -4914,8 +4914,8 @@ set(handles.uvmat,'UserData',UvData)
 set(handles.CheckZoom,'Value',0)
 CheckZoom_Callback(handles.uvmat, [], handles)
 set(handles.delete_object,'Visible','on')
-set(handles.uvmat_title,'Visible','on')
-set(handles.view_field_title,'Visible','on')
+% set(handles._title,'Visible','on')
+% set(handles.view_field_title,'Visible','on')
 
 %------------------------------------------------------------------------
 function MenuRuler_Callback(hObject, eventdata, handles)
@@ -4950,9 +4950,9 @@ end
 % --- Executes on button press in delete_object.
 function delete_object_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-IndexObj=get(handles.list_object_2,'Value');
-if IndexObj>1 
-    delete_object(IndexObj)
+IndexObj=get(handles.ListObject,'Value');
+if IndexObj(end)>1 
+    delete_object(IndexObj(end))
 end
 
 % --- Executes on button press in FixVelType.
@@ -4963,3 +4963,23 @@ if ~val
 end
 
 
+% --- Executes on button press in ViewObject.
+function ViewObject_Callback(hObject, eventdata, handles)
+IndexObj=get(handles.ListObject,'Value');
+IndexObj=IndexObj(end); %keeps only the secodn value
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
+if numel(UvData.Object)<IndexObj;% error in UvData
+    msgbox_uvmat('ERROR','invalid object list')
+    return
+end
+ObjectData=UvData.Object{IndexObj};
+ZBounds=0; % default
+if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
+    ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
+    ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
+end
+hset_object=findobj(allchild(0),'tag','set_object');
+if ~isempty(hset_object)
+    delete(hset_object)% delete existing version of set_object
+end
+hset_object=set_object(ObjectData,[],ZBounds);

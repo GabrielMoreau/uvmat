@@ -10,7 +10,7 @@ function delete_object(hObject)
 
 huvmat=findobj('tag','uvmat');%handles of the uvmat interface
 UvData=get(huvmat,'UserData');
-hlist_object=findobj(huvmat,'Tag','list_object_1');%handles of the object liçst in the uvmat interface
+hlist_object=findobj(huvmat,'Tag','ListObject');%handles of the object liçst in the uvmat interface
 list_str=get(hlist_object,'String');%objet list
 ObjectData=[];%default
 hdisplay=[];

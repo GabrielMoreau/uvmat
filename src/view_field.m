@@ -72,8 +72,8 @@ handles_mouse=handles;
 huvmat=findobj(allchild(0),'Name','uvmat');
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
-    set(hhuvmat.list_object_2,'Visible','on')
-    set(hhuvmat.view_field_title,'Visible','on')
+%     set(hhuvmat.list_object_2,'Visible','on')
+%     set(hhuvmat.view_field_title,'Visible','on')
     % handles_mouse.create=hhuvmat.create;
     handles_mouse.edit=hhuvmat.edit_object;
     pos_uvmat=get(huvmat,'Position');
@@ -738,8 +738,8 @@ function closefcn(hObject, eventdata, handles)
 huvmat=findobj(allchild(0),'Name','uvmat');
 if ~isempty(huvmat)
 hhuvmat=guidata(huvmat);
-list_object_2=get(hhuvmat.list_object_2,'String');
-set(hhuvmat.list_object_2,'Value',1)%select the last value ('...')
+% list_object_2=get(hhuvmat.list_object_2,'String');
+% set(hhuvmat.list_object_2,'Value',1)%select the last value ('...')
 end
 delete(hObject)
 
