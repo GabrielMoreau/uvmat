@@ -2044,18 +2044,18 @@ if batch
        case 'oar' %oar-dispatch.pl
                 filename_joblist=fullfile(Rootbat,'job_list.txt');
                 fid=fopen(filename_joblist,'w');
-
+                walltime_onejob=600;%seconds
                 for p=1:length(batch_file_list)
                     oar_command=['oarsub -n CIVX '...
                    '-E ' regexprep(batch_file_list{p},'\.bat\>','.errors') ' -O ' regexprep(batch_file_list{p},'\.bat\>','.log ')...
-                        '-l "/core=1,walltime=00:10:00"   ' batch_file_list{p}];
+                        '-l "/core=1,walltime=' datestr(walltime_onejob/86400,13) '"   ' batch_file_list{p}];
                     fprintf(fid,[oar_command '\n']);
                 end
                 fclose(fid);
                 ncores=36;
-                walltime=datestr(length(batch_file_list)*10/24/60/ncores,13);
                 oar_command=['oarsub -t container -n civx-container '...
-                    '-l /core=' num2str(ncores) ',walltime=' walltime...
+                    '-l /core=' num2str(ncores)...
+                    ',walltime=' datestr(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,13)...
                     ' "oar-dispatch -f ' filename_joblist '"'];
                 filename_oarcommand=fullfile(Rootbat,'oar_command');
                 fid=fopen(filename_oarcommand,'w');
