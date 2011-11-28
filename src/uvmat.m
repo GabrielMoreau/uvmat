@@ -4850,8 +4850,8 @@ set(handles.MenuObject,'checked','on')
 %UvData.MouseAction='create_object';
 % set(handles.uvmat,'UserData',UvData)
 set(handles.delete_object,'Visible','on')
-set(handles.uvmat_title,'Visible','on')
-set(handles.view_field_title,'Visible','on')
+% set(handles.uvmat_title,'Visible','on')
+% set(handles.view_field_title,'Visible','on')
 
 %------------------------------------------------------------------------
 % --- generic function used for the creation of a projection object

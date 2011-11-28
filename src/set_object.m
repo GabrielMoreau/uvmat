@@ -671,11 +671,14 @@ huvmat=findobj('tag','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
 hhuvmat=guidata(huvmat);%handles in the uvmat GUI
 ObjectName=get(handles.TITLE,'String');%name of the current object 
-ListObject=get(hhuvmat.list_object_1,'String');%position in the objet list
-IndexObj_1=get(hhuvmat.list_object_1,'Value');
-if isequal(get(hhuvmat.list_object_2,'Visible'),'on')
-    IndexObj_2=get(hhuvmat.list_object_2,'Value');
-    List2=get(hhuvmat.list_object_2,'String');
+ListObject=get(hhuvmat.ListObject,'String');%position in the objet list
+IndexObj=get(hhuvmat.ListObject,'Value');
+IndexObj_1=IndexObj(1);
+% if isequal(get(hhuvmat.list_object_2,'Visible'),'on')
+%     IndexObj_2=get(hhuvmat.list_object_2,'Value');
+%     List2=get(hhuvmat.list_object_2,'String');
+if numel(IndexObj)==2
+    IndexObj_2=IndexObj(2);
 else
     IndexObj_2=[];
 end
@@ -728,16 +731,19 @@ elseif ~get(hhuvmat.edit_object,'Value')%not in edit mode (new object created)
     ObjectName=ObjectNameNew;
 end
 ListObject{IndexObj,1}=ObjectName;
-set(hhuvmat.list_object_1,'String',ListObject)
-set(hhuvmat.list_object_2,'String',ListObject)
+set(hhuvmat.ListObject,'String',ListObject)
+% set(hhuvmat.list_object_2,'String',ListObject)
 
 %% update the object plot and projection field
 if testnew 
-    set(hhuvmat.list_object_2,'Value',IndexObj)
+   set(hhuvmat.ListObject,'Value',IndexObj) 
+%     set(hhuvmat.list_object_2,'Value',IndexObj)
     ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
     ObjectData.DisplayHandle_view_field=[];
 else
-    if isfield(UvData.Object{IndexObj},'DisplayHandle_uvmat')% save the previous object graph handles
+    IndexObj
+    UvData.Object{IndexObj}
+    if IndexObj<=length(UvData.Object) && isfield(UvData.Object{IndexObj},'DisplayHandle_uvmat')% save the previous object graph handles
         ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj}.DisplayHandle_uvmat;
     else
         ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;%there is no object handle, than the axes handles is used as input

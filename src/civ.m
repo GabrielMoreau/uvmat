@@ -226,104 +226,103 @@ function varargout = civ_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
-% %------------------------------------------------------------------------
-% % --- function activated by the Open/Browse... option in the upper menu bar.
-% function MenuBrowse_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% %get the current input root file name to initiate the browser
-% filebase=get(handles.RootName,'String');
-% oldfile=''; %default
-% if isempty(filebase)|| isequal(filebase,'')%loads the previously stored root file name 
-%     dir_perso=prefdir;
-%     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-%     if exist(profil_perso,'file')
-%         h=load (profil_perso);
-%         if isfield(h,'filebase')&& ischar(h.filebase)
-%             oldfile=h.filebase;
-%         end
-%         if isfield(h,'RootPath') && ischar(h.RootPath)
-%             oldfile=h.RootPath;
-%         end
-%     end
-% else
-%     oldfile=filebase;
-% end
-% ind_opening=1;%default
-% browse.incr_pair=[0 0]; %default
-% menu={'*.xml;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.nc;', ' (*.xml,*.civ,*.png,*.jpg ,.tif, *.avi,*.nc)';
-%        '*.xml',  '.xml files '; ...
-%         '*.civ',  '.civ files '; ...
-%         '*.png','.png image files'; ...
-%         '*.jpg',' jpeg image files'; ...
-%         '*.tif','.tif image files'; ...
-%         '*.avi;*.AVI','.avi movie files'; ...
-%         '*.nc','.netcdf files'; ...
-%         '*.*',  'All Files (*.*)'};
-% [FileName, PathName, filtindex] = uigetfile( menu, 'Pick a file',oldfile);
-% fileinput=[PathName FileName];%complete file name
-% sizf=size(fileinput);
-% if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
-% 
-% %% prepare the GUI with parameters from the input file if opened from uvmat
-% errormsg=display_file_name(handles,fileinput);
-%     if ~isempty(errormsg)
-%         msgbox_uvmat('ERROR',erromsg)
-%     end
+%------------------------------------------------------------------------
+% --- function activated by the Open/Browse... option in the upper menu bar.
+function MenuBrowse_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+%get the current input root file name to initiate the browser
+filebase=get(handles.RootName,'String');
+oldfile=''; %default
+if isempty(filebase)|| isequal(filebase,'')%loads the previously stored root file name 
+    dir_perso=prefdir;
+    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+    if exist(profil_perso,'file')
+        h=load (profil_perso);
+        if isfield(h,'filebase')&& ischar(h.filebase)
+            oldfile=h.filebase;
+        end
+        if isfield(h,'RootPath') && ischar(h.RootPath)
+            oldfile=h.RootPath;
+        end
+    end
+else
+    oldfile=filebase;
+end
+ind_opening=1;%default
+browse.incr_pair=[0 0]; %default
+menu={'*.xml;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.nc;', ' (*.xml,*.civ,*.png,*.jpg ,.tif, *.avi,*.nc)';
+       '*.xml',  '.xml files '; ...
+        '*.civ',  '.civ files '; ...
+        '*.png','.png image files'; ...
+        '*.jpg',' jpeg image files'; ...
+        '*.tif','.tif image files'; ...
+        '*.avi;*.AVI','.avi movie files'; ...
+        '*.nc','.netcdf files'; ...
+        '*.*',  'All Files (*.*)'};
+[FileName, PathName, filtindex] = uigetfile( menu, 'Pick a file',oldfile);
+fileinput=[PathName FileName];%complete file name
+sizf=size(fileinput);
+if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
 
-% 
-% [path,name,ext]=fileparts(fileinput);
-% testeditxml=0;
-% if isequal(ext,'.xml')
-%     testeditxml=1;
-%     t_browse=xmltree(fileinput);
-%     head_element=get(t_browse,1);
-%     if isfield(head_element,'name')&& isequal(head_element.name,'ImaDoc')
-%         testeditxml=0;
-%     end
-% end
-% if testeditxml==1 || isequal(ext,'.xls')
-%     heditxml=editxml({fileinput});
-%     set(heditxml,'Tag','browser')
-%     waitfor(heditxml,'Tag','idle')
-%     if ~ishandle(heditxml)
-%         return
-%     end
-%     attr=findobj(get(heditxml,'children'),'Tag','CurrentAttributes');
-%     set(handles.browse,'UserData',fileinput)% store for future opening with browser
-%     fileinput=get(attr,'UserData');
-%     if ~exist(fileinput,'file')
-%         return
-%     end
-% end
-% [RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput);
-% filebase=fullfile(RootPath,RootFile);
-% num_i1=str2double(str1);
-% if isnan(num_i1),num_i1=1;end
-% num_i2=str2double(str2);
-% if isnan(num_i2),num_i2=num_i1;end
-% num_j1=stra2num(str_a);
-% if isnan(num_j1),num_j1=1;end
-% num_j2=stra2num(str_b);
-% if isnan(num_j2),num_j2=num_j1;end
-% if isequal(get(handles.ListCompareMode,'Value'),1)
-%     browse=[];%initialisation
-% else
-%     browse=get(handlesRootName,'UserData');
-% end
-% browse.num_i1=num_i1;
-% browse.num_i2=num_i2;
-% browse.num_j1=num_j1;
-% browse.num_j2=num_j2;
-% if length(ext)>1 && (~isempty(imformats(ext(2:end)))||strcmpi(ext,'.avi'));%if an image file has been opened by uvmat
-%     browse.nom_type_ima=nom_type;
-%     browse.ext_ima=ext;
-%     set(handles.ImaExt,'String',ext)
-% end
-% set(handles.ImaDoc,'String',ext);
-% 
-% 
-% set(handles.RootName,'UserData',browse);% store information from browser
-% RootName_Callback(hObject, eventdata, handles);
+%% prepare the GUI with parameters from the input file if opened from uvmat
+errormsg=display_file_name(handles,fileinput);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',erromsg)
+    end
+
+
+[path,name,ext]=fileparts(fileinput);
+testeditxml=0;
+if isequal(ext,'.xml')
+    testeditxml=1;
+    t_browse=xmltree(fileinput);
+    head_element=get(t_browse,1);
+    if isfield(head_element,'name')&& isequal(head_element.name,'ImaDoc')
+        testeditxml=0;
+    end
+end
+if testeditxml==1 || isequal(ext,'.xls')
+    heditxml=editxml({fileinput});
+    set(heditxml,'Tag','browser')
+    waitfor(heditxml,'Tag','idle')
+    if ~ishandle(heditxml)
+        return
+    end
+    attr=findobj(get(heditxml,'children'),'Tag','CurrentAttributes');
+    set(handles.browse,'UserData',fileinput)% store for future opening with browser
+    fileinput=get(attr,'UserData');
+    if ~exist(fileinput,'file')
+        return
+    end
+end
+[RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput);
+filebase=fullfile(RootPath,RootFile);
+num_i1=str2double(str1);
+if isnan(num_i1),num_i1=1;end
+num_i2=str2double(str2);
+if isnan(num_i2),num_i2=num_i1;end
+num_j1=stra2num(str_a);
+if isnan(num_j1),num_j1=1;end
+num_j2=stra2num(str_b);
+if isnan(num_j2),num_j2=num_j1;end
+if isequal(get(handles.ListCompareMode,'Value'),1)
+    browse=[];%initialisation
+else
+    browse=get(handlesRootName,'UserData');
+end
+browse.num_i1=num_i1;
+browse.num_i2=num_i2;
+browse.num_j1=num_j1;
+browse.num_j2=num_j2;
+if length(ext)>1 && (~isempty(imformats(ext(2:end)))||strcmpi(ext,'.avi'));%if an image file has been opened by uvmat
+    browse.nom_type_ima=nom_type;
+    browse.ext_ima=ext;
+    set(handles.ImaExt,'String',ext)
+end
+set(handles.ImaDoc,'String',ext);
+
+set(handles.RootName,'UserData',browse);% store information from browser
+RootName_Callback(hObject, eventdata, handles);
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_1
@@ -415,7 +414,9 @@ num_j2=str2double(j2_str);
 num_ref_i=num_i1;%efaulmt ref index
 num_ref_j=num_j1;
 browse.incr_pair=[0 0];%default
-if ~isempty(imformats(ext_input(2:end)))||strcmpi(ext_input,'.avi')% if the extension corresponds to an image or movie format recognized by Matlab
+
+% form=imformats(ext_input(2:end));
+if ~isempty(ext_input)&&(~isempty(imformats(ext_input(2:end)))||strcmpi(ext_input,'.avi'))% if the extension corresponds to an image or movie format recognized by Matlab
     ext_ima=ext_input;
     nom_type_ima=nom_type_input;
 else %case of netcdf input file, look for corresponding images
@@ -966,7 +967,7 @@ nbpair=min(200,nbpair);%limit the number of displayed pairs to 200
 %look for existing processed pairs involving the field at the middle of the series if checkciv1 will not
 % be performed, while the result is needed for next steps.
 displ_pair={''};
-select=ones(size(1:nbpair))%flag for displayed pairs =1 for display
+select=ones(size(1:nbpair));%flag for displayed pairs =1 for display
 testpair=0;
 
 %% case with no Civ1 operation, netcdf files need to exist for reading
@@ -1060,9 +1061,9 @@ end
 set(handles.ListPairCiv1,'String',displ_pair');
 
 %% determine the default selection in the pair menu
-ichoice=find(select,1)% index of selected pair
+ichoice=find(select,1);% index of selected pair
 if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
-initial=get(handles.ListPairCiv1,'Value')%initial choice of pair
+initial=get(handles.ListPairCiv1,'Value');%initial choice of pair
 if initial>nbpair || (numel(select)>=initial && ~isequal(select(initial),1))
     set(handles.ListPairCiv1,'Value',ichoice);% first valid pair proposed by default in the menu
 end

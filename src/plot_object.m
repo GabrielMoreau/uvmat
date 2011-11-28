@@ -38,7 +38,7 @@
 function [hh]=plot_object(ObjectDataIn,ProjObject,hplot,col)
 %% default output
 hh=[];%default output
-if isequal(ProjObject,ObjectDataIn)% object representation does not appear in its own projection plot
+if ~isfield(ObjectDataIn,'Style')|| isequal(ProjObject,ObjectDataIn)% object representation does not appear in its own projection plot
     return
 end
 if ~isfield(ProjObject,'Style') 
