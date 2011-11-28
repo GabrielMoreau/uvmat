@@ -141,13 +141,13 @@ date_str=datestr(max(datnum));
 
 [status,~]=system('svn --help');
 if status==0
-    [~,result]=system('svn info');
+    [~,result]=system(['svn info ' dir_fct]);
     t=regexp(result,'R.vision\s:\s(?<rev>\d+)','names');
     svn_info.cur_rev=str2double(t.rev);
-    [~,result]=system('svn info -r ''HEAD''');
+    [~,result]=system(['svn info -r ''HEAD'' '  dir_fct]);
     t=regexp(result,'R.vision\s:\s(?<rev>\d+)','names');
     svn_info.rep_rev=str2double(t.rev);
-    [~,result]=system('svn status');    
+    [~,result]=system(['svn status'  dir_fct]);    
     svn_info.status=result;
     if svn_info.rep_rev>svn_info.cur_rev
         errormsg {length(errormsg)+1}=['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder'];
