@@ -143,10 +143,10 @@ date_str=datestr(max(datnum));
 if status==0
     [~,result]=system('svn info');
     t=regexp(result,'R.vision\s:\s(?<rev>\d+)','names');
-    svn_info.cur_rev=num2str(t.rev);
+    svn_info.cur_rev=str2double(t.rev);
     [~,result]=system('svn info -r ''HEAD''');
     t=regexp(result,'R.vision\s:\s(?<rev>\d+)','names');
-    svn_info.rep_rev=num2str(t.rev);
+    svn_info.rep_rev=str2double(t.rev);
     [~,result]=system('svn status');    
     svn_info.status=result;
     if svn_info.rep_rev>svn_info.cur_rev
