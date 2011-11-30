@@ -217,17 +217,22 @@ for ichild=1:length(hchild)
 %                     end
              % case of PIV correlation display
                     if test_piv
-                        par=civ('read_param_civ1',hhciv);
+                        %par=civ('read_param_civ1',hhciv);
+                        par=read_GUI(hhciv.Civ1);
                         [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
                         xround=Field.X(ind_pt);
                         yround=Field.Y(ind_pt);
+                        par.PointCoord=[xround size(Field.A,1)-yround+1];
                         % mark the correlation box with a rectangle
-                        ibx2=floor((str2double(par.ibx)-1)/2);
-                        iby2=floor((str2double(par.iby)-1)/2);
-                        isx2=floor((str2double(par.isx)-1)/2);
-                        isy2=floor((str2double(par.isy)-1)/2);
-                        shiftx=str2double(par.shiftx);
-                        shifty=str2double(par.shifty);
+                        par.filename_ima_a=Field.A;
+                        par.filename_ima_b=Field.B;
+                        Param.Civ1=par;
+                        ibx2=floor((par.Bx-1)/2);
+                        iby2=floor((par.By-1)/2);
+                        isx2=floor((par.Searchx-1)/2);
+                        isy2=floor((par.Searchy-1)/2);
+                        shiftx=par.Shiftx;
+                        shifty=par.Shifty;     
                         hhh=findobj(haxes,'Tag','PIV_box_marker');
                         hhhh=findobj(haxes,'Tag','PIV_search_marker');
                         if isempty(hhh)
@@ -243,7 +248,9 @@ for ichild=1:length(hchild)
                             set(hhh,'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2])
                             set(hhhh,'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2])
                         end
-                        [xtable ytable utable vtable ctable typevector result_conv] = pivlab (Field.A,Field.B,ibx2,iby2,isx2,isy2,shiftx,shifty,[xround size(Field.A,1)-yround+1], 1, []);
+                        %[xtable, ytable, utable, vtable, ctable, typevector, result_conv] = ...
+                         %               pivlab (Field.A,Field.B,ibx2,iby2,isx2,isy2,shiftx,shifty,[xround size(Field.A,1)-yround+1], 1, []);
+                        [Data,errormsg,result_conv]= civ_matlab(Param)
                         rangx(1)=-(isx2-ibx2)+shiftx;
                         rangx(2)=isx2-ibx2+shiftx;
                         rangy(1)=-(isy2-iby2)-shifty;
@@ -260,7 +267,7 @@ for ichild=1:length(hchild)
                             if ~isempty(corrfig)
                                 set(0,'CurrentFigure',corrfig(1))
                                 AxeData.CurrentCorrImage=imagesc(rangx,-rangy,result_conv,[0 1]);
-                                AxeData.CurrentVector=line([0 utable],[0 vtable],'Tag','vector');
+                                AxeData.CurrentVector=line([0 Data.Civ1_U],[0 -Data.Civ1_V],'Tag','vector');
                                 
                                 colorbar
                                 set(haxes,'UserData',AxeData)
@@ -270,7 +277,7 @@ for ichild=1:length(hchild)
                             set(AxeData.CurrentCorrImage,'CData',result_conv)
                             set(AxeData.CurrentCorrImage,'XData',rangx)
                             set(AxeData.CurrentCorrImage,'YData',-rangy)
-                            set(AxeData.CurrentVector,'XData',[0 utable],'YData',[0 -vtable])
+                            set(AxeData.CurrentVector,'XData',[0 Data.Civ1_U],'YData',[0 -Data.Civ1_V])
                         end
                     end
                 end

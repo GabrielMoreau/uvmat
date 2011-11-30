@@ -39,7 +39,11 @@ set(hcurrentfig,'Units','pixels')
 GUI_pos=get(hcurrentfig,'Position');%position of the GUI series (in pixels)
 set(hcurrentfig,'Units','normalized')
 hhcurrentfig=guidata(hcurrentfig);
+if isfield(hhcurrentfig,'CheckZoom')
 test_zoom=get(hhcurrentfig.CheckZoom,'Value');%test for zoom action, first priority
+else
+    test_zoom=0;
+end
 test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
 test_edit=get(hhuvmat.edit_object,'Value');%test for object editing, third priority
 test_edit_vect=get(hhuvmat.edit_vect,'Value');%test for vector editing,  priority 4
@@ -59,8 +63,6 @@ if test_cal% test for calibration popints,  priority 6
         test_cal=get(hh_calib.edit_append,'Value');
     end
 end
-xdisplay=[];%default
-ydisplay=[];%default
 AxeData=[];%default
 
 %% determine the currently selected items
@@ -75,8 +77,11 @@ haxes=[];
 
 %% loop on all the objects in the current figure (selected by the last mouse click) 
 output_str='';
+state_visible=get(hchildren,'Visible');
+check_visible=strcmp('on',state_visible);%=1 if visible='on', =0 otherwise
+hchildren=hchildren(find(check_visible)); %kkep only the visible children
 for ichild=1:length(hchildren)
-    hchild=hchildren(ichild); %handle of the current object
+    hchild=hchildren(ichild); %handle of the current obj
     obj_pos=get(hchild,'Position');%position of the object
     if xy_fig(1) >=obj_pos(1) & xy_fig(2) >= obj_pos(2)& xy_fig(1) <=obj_pos(1)+obj_pos(3) & xy_fig(2) <= obj_pos(2)+obj_pos(4);
         htype=get(hchild,'Type');%type of object child of the current figure
@@ -118,7 +123,8 @@ for ichild=1:length(hchildren)
             case 'uicontrol'  %if the mouse is over a uicontrol, duplicate the display  in an editable  zoom window
                 if isequal(get(hObject,'SelectionType'),'alt')  && isequal(get(hchild,'Visible'),'on') && ~isequal(get(hchild,'tag'),'frame_object')&&...
                         ~isequal(get(hchild,'tag'),'ListObject') 
-                    if strcmp(get(hchild,'Visible'),'on')
+%                     if strcmp(get(hchild,'Visible'),'on')
+                    if ~strcmp(get(hchild,'Style'),'frame')%do not visualisaze frames
                         msg_pos(1:2)=GUI_pos(1:2)+obj_pos(1:2).*GUI_pos(3:4);
                         output_str=msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],'',get(hchild,'String'),msg_pos);
                         break

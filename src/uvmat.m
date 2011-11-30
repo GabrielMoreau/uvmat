@@ -235,8 +235,6 @@ set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles})%set mouse action f
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
 set(hObject,'DeleteFcn',{@closefcn})%
-%set(handles.ListObject,'ButtonDownFcn',{@list_object_1_Callback,handles})% allows activation of lis_object_1_callback with right mouse click
-%set(handles.list_object_2,'ButtonDownFcn',{@list_object_2_Callback,handles})
 
 %% refresh projection plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
@@ -1328,10 +1326,10 @@ drawnow
 
 set_scan_options(hObject, eventdata, handles)
 
-%---------------------------------------------------
-% switch file index scanning options scan_i and scan_j in an exclusive way
+%------------------------------------------------------------------------
+% --- switch file index scanning options scan_i and scan_j in an exclusive way
 function scan_i_Callback(hObject, eventdata, handles)
-%---------------------------------------------------
+%------------------------------------------------------------------------
 if get(handles.scan_i,'Value')==1
     set(handles.scan_i,'BackgroundColor',[1 1 0])
     set(handles.scan_j,'Value',0)
@@ -1343,10 +1341,10 @@ else
 end
 scan_j_Callback(hObject, eventdata, handles)
 
-%-------------------------------------------------------------------
-% switch file index scanning options scan_i and scan_j in an exclusive way
+%------------------------------------------------------------------------
+% --- switch file index scanning options scan_i and scan_j in an exclusive way
 function scan_j_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 if get(handles.scan_j,'Value')==1
     set(handles.scan_j,'BackgroundColor',[1 1 0])
     set(handles.scan_i,'Value',0)
@@ -1365,9 +1363,9 @@ else
     set(handles.fix_pair,'Visible','off')
 end
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function i1_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 set(handles.i1,'BackgroundColor',[0.7 0.7 0.7])
 NomType=get(handles.FileIndex,'UserData');
 num1=stra2num(get(handles.i1,'String'));
@@ -1385,29 +1383,28 @@ if get(handles.SubField,'Value')==1
      set(handles.FileIndex_1,'String',indices)
      set(handles.FileIndex_1,'BackgroundColor',[0.7 0.7 0.7])
 end
-%Run0_Callback(hObject, eventdata, handles)
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function i2_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 set(handles.i2,'BackgroundColor',[0.7 0.7 0.7])
 i1_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function j1_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 set(handles.j1,'BackgroundColor',[0.7 0.7 0.7])
 i1_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function j2_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 set(handles.j2,'BackgroundColor',[0.7 0.7 0.7])
 i1_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function slices_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 if get(handles.slices,'Value')==1
     set(handles.slices,'BackgroundColor',[1 1 0])
     set(handles.nb_slice,'Visible','on')
@@ -1423,9 +1420,9 @@ else
     set(handles.masklevel,'String',{'1'})
 end
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function nb_slice_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 nb_slice_str=get(handles.nb_slice,'String');
 if isequal(nb_slice_str,'volume')
     num=stra2num(get(handles.j1,'String'));
@@ -1540,7 +1537,6 @@ else
           delete(MaskData.maskhandle)    
     end
     set(handles.mask_test,'UserData',[])    
-    %huvmat=get(handles.mask_test,'parent');
     UvData=get(handles.uvmat,'UserData');
     if isfield(UvData,'MaskName')
         UvData=rmfield(UvData,'MaskName');
@@ -1549,9 +1545,9 @@ else
     set(handles.mask_test,'BackgroundColor',[0.7 0.7 0.7])
 end
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function errormsg=update_mask(handles,num_i1,num_j1)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 errormsg=[];%default
 MaskData=get(handles.mask_test,'UserData');
 if isfield(MaskData,'maskhandle')&& ishandle(MaskData.maskhandle)
@@ -1632,28 +1628,27 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
 end
 
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function MenuExportFigure_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 huvmat=get(handles.MenuExport,'parent');
-%UvData=get(huvmat,'UserData');
 hfig=figure;
 copyobj(handles.axes3,hfig);
 map=colormap(handles.axes3);
 colormap(map);%transmit the current colormap to the zoom fig
 colorbar
 
-%-------------------------------------------------------------------
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
 % III - MAIN REFRESH FUNCTIONS : 'FRAME PLOT'
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in runplus: make one step forward and call
 % --- run0. The step forward is along the fields series 1 or 2 depending on 
 % --- the scan_i and scan_j check box (exclusive each other)
 function runplus_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 set(handles.runplus,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 %TODO: introduce the option: increment ='*' to move to the next available view
@@ -1668,12 +1663,12 @@ if ~isempty(errormsg)
 end
 set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button back to red
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in runmin: make one step backward and call
 % --- run0. The step backward is along the fields series 1 or 2 depending on 
 % --- the scan_i and scan_j check box (exclusive each other)
 function runmin_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 set(handles.runmin,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 increment=-str2double(get(handles.increment_scan,'String')); %get the field increment d
@@ -1687,10 +1682,10 @@ if ~isempty(errormsg)
 end
 set(handles.runmin,'BackgroundColor',[1 0 0])%paint the command button back to red
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % -- Executes on button press in Movie: make a series of +> steps
 function Movie_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
 set(handles.Movie,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 increment=str2double(get(handles.increment_scan,'String')); %get the field increment d
@@ -1718,10 +1713,10 @@ if isfield(UvData,'aviobj') && ~isempty( UvData.aviobj),
 end
 set(handles.Movie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % -- Executes on button press in Movie: make a series of <- steps
 function MovieBackward_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
 set(handles.MovieBackward,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 increment=-str2double(get(handles.increment_scan,'String')); %get the field increment d
@@ -1749,9 +1744,9 @@ if isfield(UvData,'aviobj') && ~isempty( UvData.aviobj),
 end
 set(handles.MovieBackward,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function STOP_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 set(handles.movie_pair,'BusyAction','Cancel')
 set(handles.movie_pair,'value',0)
 set(handles.Movie,'BusyAction','Cancel')
@@ -1761,16 +1756,15 @@ set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command buttonback t
 set(handles.Movie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 set(handles.MovieBackward,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 
-%------------------------------------------------------------------
+%------------------------------------------------------------------------
 function errormsg=runpm(hObject,eventdata,handles,increment)
-%------------------------------------------------------------------
-%check for m�ovie pair status
+%------------------------------------------------------------------------
+%check for movie pair status
 movie_status=get(handles.movie_pair,'Value');
 if isequal(movie_status,1)
     STOP_Callback(hObject, eventdata, handles)%interrupt movie pair if active
 end
 %read the data on the current input rootfile(s)
-
 [FileName,RootPath,filebase,FileIndices,FileExt,subdir]=read_file_boxes(handles);
 NomType=get(handles.FileIndex,'UserData');
 
@@ -1791,7 +1785,6 @@ if sub_value % a second input file has been entered
 else
     filename_1=[];
 end   
-
 comp_input=get(handles.fix_pair,'Value');
 
 %case of scanning along the first direction (rootfile numbers)
@@ -1842,11 +1835,10 @@ if isempty(errormsg)  %update the index counters
     end
 end
 
-
-%-------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in movie_pair: create an alternating movie with two view
-%-------------------------------------------------------
 function movie_pair_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 status=get(handles.movie_pair,'value');
 if isequal(status,0)
     set(handles.movie_pair,'BusyAction','Cancel')%stop movie pair if button is 'off'
@@ -3674,9 +3666,9 @@ else
  %      set(handles.min_title_vec,'String','0')
        set(handles.num_MaxVec,'String','1')
        set(handles.num_ColCode1,'String','0.333')
-       colcode1_Callback(hObject, eventdata, handles)
+       num_ColCode1_Callback(hObject, eventdata, handles)
        set(handles.num_ColCode2,'String','0.666')
-       colcode2_Callback(hObject, eventdata, handles)
+       num_ColCode2_Callback(hObject, eventdata, handles)
    else
        set(handles.CheckFixVecColor,'Value',1)%auto scale between min,max by default
        set(handles.VecColBar,'Value',1)% colormap 'jet' by default
@@ -3706,7 +3698,7 @@ if(get(handles.Slider2,'Value') < col)%move also the second slider at the same v
     set(handles.Slider2,'Value',col)
     set(handles.num_ColCode2,'String',num2str(col))
 end
-colcode1_Callback(hObject, eventdata, handles)
+num_ColCode1_Callback(hObject, eventdata, handles)
 
 %----------------------------------------------------------------
 % Executes on slider movement to set the color code
@@ -3721,45 +3713,22 @@ if(get(handles.Slider1,'Value') > col)%move also the first slider at the same va
     set(handles.Slider1,'Value',col)
     set(handles.num_ColCode1,'String',num2str(col))
 end
-colcode2_Callback(hObject, eventdata, handles)
+num_ColCode2_Callback(hObject, eventdata, handles)
 
 %----------------------------------------------------------------
-%execute on return carriage on the edit box corresponding to slider 1
+% --- Execute on return carriage on the edit box corresponding to slider 1
 %----------------------------------------------------------------
-function num_ColCode1_Callback(hObject, eventdata, handles)
-% col=str2num(get(handles.num_ColCode1,'String'));
-% set(handles.Slider1,'Value',col) 
+function num_ColCode1_Callback(hObject, eventdata, handles) 
 set_vec_col_bar(handles)
 update_plot(handles);
 
 %----------------------------------------------------------------
-%execute on return carriage on the edit box corresponding to slider 2
+% --- Execute on return carriage on the edit box corresponding to slider 2
 %----------------------------------------------------------------
 function num_ColCode2_Callback(hObject, eventdata, handles)
-% col=str2num(get(handles.num_ColCode2,'String'));
-% set(handles.Slider2,'Value',col) 
-% slider2_Callback(hObject, eventdata, handles)
 set_vec_col_bar(handles)
 update_plot(handles);
-%------------------------------------------------------------
-%update the slider values after displaying vectors
-%--------------------------------------------------------
-% function slider_update(handles,auto,minC,num_ColCode1,num_ColCode2,maxC)
-% set(handles.Slider1,'Min',minC) 
-% set(handles.Slider1,'Max',maxC)
-% set(handles.Slider2,'Min',minC) 
-% set(handles.Slider2,'Max',maxC)
-% set(handles.min_title_vec,'String',num2str(minC))
-% set(handles.num_MaxVec,'String',num2str(maxC))
-% if auto
-%         set(handles.num_ColCode1,'String',num2str(num_ColCode1,3))%update display
-%         set(handles.num_ColCode2,'String',num2str(num_ColCode2,3))
-% end
-% set(handles.Slider1,'Value',num_ColCode1)%update slider with constant display
-% set(handles.Slider2,'Value',num_ColCode2)
-% set_vec_col_bar(handles)
-
-
+%------------------------------------------------------------------------
 %-------------------------------------------------------
 % --- Executes on button press in CheckFixVecColor.
 %-------------------------------------------------------
@@ -3770,7 +3739,6 @@ set_vec_col_bar(handles)
 % --- Executes on selection change in transform_fct.
 function transform_fct_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------
-
 UvData=get(handles.uvmat,'UserData');
 menu=get(handles.transform_fct,'String');
 ind_coord=get(handles.transform_fct,'Value');

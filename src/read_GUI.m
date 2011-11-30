@@ -1,6 +1,7 @@
-% --------------------------------------------------------------------
+% -----------------------------------------------------------------------
 % --- read a GUI with handle 'handle' producing a structure 'struct'
 function struct=read_GUI(handle)
+%------------------------------------------------------------------------
 struct=[];%default
 hchild=get(handle,'children');
 for ichild=1:numel(hchild)
@@ -42,7 +43,12 @@ for ichild=1:numel(hchild)
                     case{'Listbox','popupmenu'}
                         listinput=get(hchild(ichild),'String');
                         value=get(hchild(ichild),'Value');
-                        input=listinput(value);        
+                        input=listinput(value);
+                        separator=regexp(tag,'_');
+                        if strcmp(tag(1:separator),'num_')
+                            input=str2double(input);% transform to numerical values if the uicontrol tag begins with 'num_'
+                            tag=tag(separator+1:end);
+                        end
                     otherwise
                         check_input=0;
                 end

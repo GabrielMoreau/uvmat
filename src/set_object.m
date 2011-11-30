@@ -83,7 +83,7 @@ if ~exist('ZBounds','var')
     ZBounds=0; %default 
 end
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function (allow action on uvmat when set_object is in front)
-set(hObject,'WindowButtonDownFcn',{'mouse_alt_gui',handles}) % allows mouse action with right button (zoom for uicontrol display)
+set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 enable_plot=0;%default: does not allow plot of object and projection
 
 % fill the interface as set in the input data:
@@ -643,12 +643,12 @@ else
 end
 set(handles.XObject,'String',XObject)
 set(handles.YObject,'String',YObject)
+
 %METTRA A JOUR ASPECT DE L'INTERFACE (COMME set_object_Opening
 %------------------------------------------------------------------------
 %----------------------------------------------------
 % executed when closing: set the parent interface button to value 0
 function closefcn(gcbo,eventdata,parent_button)
-
 huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
@@ -670,52 +670,21 @@ function PLOT_Callback(hObject, eventdata, handles)
 huvmat=findobj('tag','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
 hhuvmat=guidata(huvmat);%handles in the uvmat GUI
-ObjectName=get(handles.TITLE,'String');%name of the current object 
 ListObject=get(hhuvmat.ListObject,'String');%position in the objet list
-IndexObj=get(hhuvmat.ListObject,'Value');
-IndexObj_1=IndexObj(1);
-% if isequal(get(hhuvmat.list_object_2,'Visible'),'on')
-%     IndexObj_2=get(hhuvmat.list_object_2,'Value');
-%     List2=get(hhuvmat.list_object_2,'String');
-if numel(IndexObj)==2
-    IndexObj_2=IndexObj(2);
-else
-    IndexObj_2=[];
-end
-testnew=0;
+IndexObj=get(hhuvmat.ListObject,'Value')
+% name of the object
+ObjectName=get(handles.TITLE,'String');%name of the current object defiend in set_object
 ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
-if ~isempty(ListObject) && strcmp(ListObject{IndexObj_1},ObjectName)% we are editing the object whose projection is viewed in the uvmat frame
-    IndexObj=IndexObj_1;
-    projview='uvmat';
-elseif ~isempty(IndexObj_2) && IndexObj_2<=numel(ListObject)&& strcmp(ListObject{IndexObj_2},ObjectName)% we are editing the object whose projection is viewed in view_field  
-    IndexObj=IndexObj_2;
-    projview='view_field';
-else %new object 
-    testnew=1;
-    IndexObj=numel(ListObject)+1;
-    projview='view_field';
-end
-if strcmp(projview,'view_field')
-    hview_field=findobj(allchild(0),'tag','view_field');
-    if isempty(hview_field)
-        hview_field=view_field;
+if isempty(ObjectName)
+    if get(hhuvmat.edit_object,'Value')% edit mode
+        ObjectName=ListObject{IndexObj(end)};%take the name of the last (second) selected item
     end
-    PlotHandles=guidata(hview_field);
-    plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
-else
-    PlotHandles=hhuvmat;
-    plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
-
-end   
-
-%% naming the object
-if length(ObjectName)<1% name of object not defined in set_object
-    ObjectName=[num2str(IndexObj) '-' ObjectData.Style];%default name
-elseif ~get(hhuvmat.edit_object,'Value')%not in edit mode (new object created)
+end
+if ~get(hhuvmat.edit_object,'Value') %new object is being created
     detectname=1;
     ObjectNameNew=ObjectName;
     vers=0;
-    while detectname==1 
+    while detectname==1
         detectname=find(strcmp(ObjectNameNew,ListObject),1);%test the existence of the proposed name in the list
         if detectname% if the object name already exists
             indstr=regexp(ObjectNameNew,'\D');
@@ -724,38 +693,61 @@ elseif ~get(hhuvmat.edit_object,'Value')%not in edit mode (new object created)
                 ObjectNameNew=[ObjectNameNew(1:indstr(end)) num2str(vers)];
             else
                 vers=vers+1;
-                ObjectNameNew=[ObjectNameNew(1:indstr(end)) '_' num2str(vers)];      
+                ObjectNameNew=[ObjectNameNew(1:indstr(end)) '_' num2str(vers)];
             end
         end
     end
     ObjectName=ObjectNameNew;
+    ObjectName=[num2str(IndexObj(end)) '-' ObjectData.Style];%default name
 end
-ListObject{IndexObj,1}=ObjectName;
+% IndexObj_1=IndexObj(1);
+% % if isequal(get(hhuvmat.list_object_2,'Visible'),'on')
+% %     IndexObj_2=get(hhuvmat.list_object_2,'Value');
+% %     List2=get(hhuvmat.list_object_2,'String');
+% if numel(IndexObj)==2
+%     IndexObj_2=IndexObj(2);
+% else
+%     IndexObj_2=[];
+% end
+testnew=0;
+
+if numel(IndexObj)==1   % if only one object is selected, the projection is in uvmat
+        PlotHandles=hhuvmat;
+    plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
+else  % if a second object is selected, the projection is in view_field, and this second object is selected
+    hview_field=findobj(allchild(0),'tag','view_field');
+    if isempty(hview_field)
+        hview_field=view_field;
+    end
+    PlotHandles=guidata(hview_field);
+    plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
+end 
+
+%% naming the object
+ListObject{IndexObj(end),1}=ObjectName;
 set(hhuvmat.ListObject,'String',ListObject)
-% set(hhuvmat.list_object_2,'String',ListObject)
 
 %% update the object plot and projection field
-if testnew 
-   set(hhuvmat.ListObject,'Value',IndexObj) 
-%     set(hhuvmat.list_object_2,'Value',IndexObj)
+if testnew
+    set(hhuvmat.ListObject,'Value',IndexObj)
     ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
     ObjectData.DisplayHandle_view_field=[];
 else
-    IndexObj
-    UvData.Object{IndexObj}
-    if IndexObj<=length(UvData.Object) && isfield(UvData.Object{IndexObj},'DisplayHandle_uvmat')% save the previous object graph handles
-        ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj}.DisplayHandle_uvmat;
+    if IndexObj(end)<=length(UvData.Object) && isfield(UvData.Object{IndexObj(end)},'DisplayHandle_uvmat')% save the previous object graph handles
+        ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj(end)}.DisplayHandle_uvmat;
     else
         ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;%there is no object handle, than the axes handles is used as input
     end
-    if isfield(UvData.Object{IndexObj},'DisplayHandle_view_field')% save the previous object graph handles
-        ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj}.DisplayHandle_view_field;
+    if isfield(UvData.Object{IndexObj(end)},'DisplayHandle_view_field')% save the previous object graph handles
+        ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj(end)}.DisplayHandle_view_field;
     else
         ObjectData.DisplayHandle_view_field=[];
     end
 end
-UvData.Object{IndexObj}=ObjectData;%update the current object properties
-UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
+UvData.Object{IndexObj(end)}=ObjectData;%update the current object properties
+if numel(IndexObj)==2
+    UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));
+end
 set(huvmat,'UserData',UvData)
 
 %% plot the field projected on the object and store in the corresponding figue
@@ -764,17 +756,15 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR', errormsg)
     return
 end
-%PlotParam=read_plot_param(PlotHandles);
 fighandle=get(plotaxes,'parent');
 PlotParam=read_GUI(fighandle);
-[PlotType,Object_out{IndexObj}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
+[PlotType,Object_out{IndexObj(end)}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
 
 %% update the GUI uvmat
 hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI
 set(hhuvmat.MenuEditObject,'enable','on')
 set(hhuvmat.edit_object,'Value',1) % set uvmat to object edit mode to allow further object update
 set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
-%UvData.MouseAction='edit_object'; % set the edit button to 'on'
 
 %------------------------------------------------------------------------
 % --- Executes on button press in MenuCoord.
