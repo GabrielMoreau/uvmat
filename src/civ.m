@@ -924,7 +924,11 @@ while count<nbfiles
         end
     end
     set(hlist,'UserData',rootroot)
-    pause(10)% wait 10 seconds for next check
+    if count<10
+    pause(.5)% wait 0.5 seconds for next check
+    else
+        pause(10)% wait 10 seconds for next check
+    end
 end
 
 %------------------------------------------------------------------------
@@ -1494,17 +1498,17 @@ if batch
                 end   
        case 'oar' %oar-dispatch.pl
            oar_modes={'oar-dispatch','mpilauncher'};
-           text={'Batch processing on servcalcul3 LEGI',...
-               '\n',...
-               'Please choose one of the followint modes\n',...
-               ' * oar-dispatch : jobs in a container\n',...
-               ' * mpilauncher : one single job using several cores\n',...
+           text={'Batch processing on servcalcul3 LEGI';...
+               'Please choose one of the followint modes';...
+               '* oar-dispatch : jobs in a container';...
+               '* mpilauncher : one single job using several cores';...
+               '**********************************'...
                };
            [S,v]=listdlg('PromptString',text,'ListString',oar_modes,...
-               'SelectionMode','single');
-           switch oar_modes(S)
+               'SelectionMode','single','ListSize',[400 100],'Name','LEGI job mode');
+           switch oar_modes{S}
                
-               case 'oar_dispatch' %oar-dispatch.pl
+               case 'oar-dispatch' %oar-dispatch.pl
                    filename_joblist=fullfile(Rootbat,'job_list.txt');
                    fid=fopen(filename_joblist,'w');
                    walltime_onejob=600;%seconds
