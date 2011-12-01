@@ -1,21 +1,21 @@
 %'set_col_vec': sets the color code for vectors depending on a scalar vec_C and parameters given by the struct colcode
-%function [colorlist,col_vec,minC,colcode1,colcode2,maxC]=colvec(colcode,vec_C)
+%function [colorlist,col_vec,minC,ColCode1,ColCode2,maxC]=colvec(colcode,vec_C)
 %OUTPUT
 %colorlist(nb,3); %list of nb colors
 %col_vec, size=[length(vec_C),3)];%list of color indices corresponding to vec_C
 %minC, maxC: min and max of vec_C
-%colcode1, colcode2: absolute threshold in vec_C corresponding to colcode.colcode1 and colcode.colcode2
+%ColCode1, ColCode2: absolute threshold in vec_C corresponding to colcode.ColCode1 and colcode.ColCode2
 %INPUT
 % colcode: struture setting the colorcode for vectors
             % colcode.CName: 'ima_cor','black','white',...
-            % colcode.ColorCode ='black', 'white', 'rgb','brg', '64 colors'
+            % colcode.ListColorCode ='black', 'white', 'rgb','brg', '64 colors'
             % colcode.FixedCbounds =0; thresholds scaling relative to min and max, =1 fixed thresholds
             % colcode.MinC; min 
             % colcode.MaxC; max
-            % colcode.colcode1: first threshold for rgb, relative to min (0) and max (1)
-            % colcode.colcode2: second threshold for rgb, relative to min (0) and max (1), 
-            % rmq: we need min <= colcode1 <= colcode2 <= max, otherwise
-            % colcode1 and colcode2 are adjusted to the bounds
+            % colcode.ColCode1: first threshold for rgb, relative to min (0) and max (1)
+            % colcode.ColCode2: second threshold for rgb, relative to min (0) and max (1), 
+            % rmq: we need min <= ColCode1 <= ColCode2 <= max, otherwise
+            % ColCode1 and ColCode2 are adjusted to the bounds
 % vec_C: matlab vector representing the scalar setting the color
 function [colorlist,col_vec,colcode_out]=set_col_vec(colcode,vec_C)
 
@@ -26,9 +26,9 @@ if isempty(vec_C) || ~isnumeric(vec_C)
     col_vec=ones(size(vec_C));
     return
 end
-if (isfield(colcode,'FixedCbounds') && isequal(colcode.FixedCbounds,1))
-    minC=colcode.MinC;
-    maxC=colcode.MaxC;
+if (isfield(colcode,'CheckFixVecColor') && isequal(colcode.CheckFixVecColor,1))
+    minC=colcode.MinVec;
+    maxC=colcode.MaxVec;
 else
     minC=min(vec_C);
     maxC=max(vec_C);
@@ -36,38 +36,38 @@ end
 
 %default input parameters
 if ~isstruct(colcode),colcode=[];end;
-if ~isfield(colcode,'ColorCode') || isempty(colcode.ColorCode)
+if ~isfield(colcode,'ListColorCode') || isempty(colcode.ListColorCode)
     colorlist=[0 0 1]; %blue  
     col_vec=ones(size(vec_C));
     return
 end
-if  isfield(colcode,'colcode1')
-    colcode1=minC+colcode.colcode1*(maxC-minC);
+if  isfield(colcode,'ColCode1')
+    ColCode1=minC+colcode.ColCode1*(maxC-minC);
 else
-    colcode1=minC+(maxC-minC)/3;%default
+    ColCode1=minC+(maxC-minC)/3;%default
 end
-if isfield(colcode,'colcode2')
-    colcode2=minC+colcode.colcode2*(maxC-minC);
+if isfield(colcode,'ColCode2')
+    ColCode2=minC+colcode.ColCode2*(maxC-minC);
 else
-    colcode2=minC+2*(maxC-minC)/3;%default
+    ColCode2=minC+2*(maxC-minC)/3;%default
 end
 colcode_out.MinC=minC;
 colcode_out.MaxC=maxC;
-if strcmp(colcode.ColorCode,'black')
+if strcmp(colcode.ListColorCode,'black')
     colorlist(1,:)=[0 0 0];%black
     col_vec=ones(size(vec_C));%all vectors at color#1
-elseif strcmp(colcode.ColorCode,'white')
+elseif strcmp(colcode.ListColorCode,'white')
     colorlist(1,:)=[1 1 1];%white
     col_vec=ones(size(vec_C));%all vectors at color#1
-elseif strcmp(colcode.ColorCode,'rgb')|| strcmp(colcode.ColorCode,'bgr')% 3 color representation
-    ind1=find(vec_C < colcode1); % =1 for red vectors
-    ind_green=find((vec_C >= colcode1) & (vec_C < colcode2));% =1 for green vectors
-    ind3=find(vec_C >= colcode2);% =1 for blue vectors
+elseif strcmp(colcode.ListColorCode,'rgb')|| strcmp(colcode.ListColorCode,'bgr')% 3 color representation
+    ind1=find(vec_C < ColCode1); % =1 for red vectors
+    ind_green=find((vec_C >= ColCode1) & (vec_C < ColCode2));% =1 for green vectors
+    ind3=find(vec_C >= ColCode2);% =1 for blue vectors
     colorlist(2,:)=[0 1 0];%green
     col_vec(ind1)=1;
     col_vec(ind_green)=2;
     col_vec(ind3)=3;
-    if strcmp(colcode.ColorCode,'rgb')
+    if strcmp(colcode.ListColorCode,'rgb')
         colorlist(1,:)=[1 0 0];%red
         colorlist(3,:)=[0 0 1];%blue
     else

@@ -51,28 +51,28 @@ if isfield(PlotParam,'Vectors')
     if isfield(PlotParam.Vectors,'MinC')&& isfield(PlotParam.Vectors,'MaxC')
         MinC=PlotParam.Vectors.MinC;
         MaxC=PlotParam.Vectors.MaxC;
-        set(handles.min_vec,'String', num2str(MinC,3));
-        set(handles.max_vec,'String',num2str(MaxC,3));
-        list=get(handles.color_code,'String');
-        ichoice=get(handles.color_code,'Value');
+        set(handles.num_MinVec,'String', num2str(MinC,3));
+        set(handles.num_MaxVec,'String',num2str(MaxC,3));
+        list=get(handles.ListColorCode,'String');
+        ichoice=get(handles.ListColorCode,'Value');
         color_option=list{ichoice};
         test3color=strcmp(color_option,'rgb')||strcmp(color_option,'bgr');
         if test3color% need to update color thresholds
-            set(handles.colcode1,'Visible','on')
-            set(handles.colcode2,'Visible','on')
-            set(handles.slider1,'Visible','on')
-            set(handles.slider2,'Visible','on')
-            colcode1=MinC+(MaxC-MinC)*PlotParam.Vectors.colcode1;
-            colcode2=MinC+(MaxC-MinC)*PlotParam.Vectors.colcode2;
-            set(handles.colcode1,'String',num2str(colcode1,3))
-            set(handles.colcode2,'String',num2str(colcode2,3))
-            set(handles.slider1,'Value',PlotParam.Vectors.colcode1)
-            set(handles.slider2,'Value',PlotParam.Vectors.colcode2)
+            set(handles.num_ColCode1,'Visible','on')
+            set(handles.num_ColCode2,'Visible','on')
+            set(handles.Slider1,'Visible','on')
+            set(handles.Slider2,'Visible','on')
+            ColCode1=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode1;
+            ColCode2=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode2;
+            set(handles.num_ColCode1,'String',num2str(ColCode1,3))
+            set(handles.num_ColCode2,'String',num2str(ColCode2,3))
+            set(handles.Slider1,'Value',PlotParam.Vectors.ColCode1)
+            set(handles.Slider2,'Value',PlotParam.Vectors.ColCode2)
         else
-            set(handles.colcode1,'Visible','off')
-            set(handles.colcode2,'Visible','off')
-            set(handles.slider1,'Visible','off')
-            set(handles.slider2,'Visible','off')
+            set(handles.num_ColCode1,'Visible','off')
+            set(handles.num_ColCode2,'Visible','off')
+            set(handles.Slider1,'Visible','off')
+            set(handles.Slider2,'Visible','off')
         end
     end
 else

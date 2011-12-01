@@ -523,8 +523,8 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             return
         else
             test_vec=1;
-            eval(['vec_U=Data.' Data.ListVarName{ivar_U} ';']) 
-            eval(['vec_V=Data.' Data.ListVarName{ivar_V} ';']) 
+            vec_U=Data.(Data.ListVarName{ivar_U}); 
+            vec_V=Data.(Data.ListVarName{ivar_V});
             if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field (with unstructured coordinates or structured ones (then ivar_X and ivar_Y empty)
                 XName=Data.ListVarName{ivar_X};
                 YName=Data.ListVarName{ivar_Y};
@@ -551,7 +551,7 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             end
             if ~isempty(ivar_F)%~(isfield(PlotParam.Vectors,'HideWarning')&& isequal(PlotParam.Vectors.HideWarning,1)) 
                 if test_vec 
-                    eval(['vec_F=Data.' Data.ListVarName{ivar_F} ';']) % warning flags for  dubious vectors
+                    vec_F=Data.(Data.ListVarName{ivar_F}); % warning flags for  dubious vectors
                     if  ~(isfield(PlotParam.Vectors,'CheckHideWarning') && isequal(PlotParam.Vectors.CheckHideWarning,1)) 
                         test_black=1;
                     end
@@ -559,7 +559,7 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             end
             if ~isempty(ivar_FF) %&& ~test_false
                 if test_vec% TODO: deal with FF for structured coordinates
-                    eval(['vec_FF=Data.' Data.ListVarName{ivar_FF} ';']) % flags for false vectors
+                    vec_FF=Data.(Data.ListVarName{ivar_FF}); % flags for false vectors
                 end
             end
         end
