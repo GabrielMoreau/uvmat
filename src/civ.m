@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 30-Nov-2011 21:52:52
+% Last Modified by GUIDE v2.5 03-Dec-2011 16:08:25
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -532,6 +532,10 @@ if isequal(ext_input,'.nc')
     browse.nom_type_nc=nom_type_input;
     ind_opening=2;% propose 'fix' as the default option
     Data=nc2struct(fileinput,'ListGlobalAttribute','CivStage','absolut_time_T0','fix','patch','civ2','fix2');
+    if isfield(Data,'Txt')
+        msgbox_uvmat('ERROR',Data.Txt)
+        return
+    end
     if ~isempty(Data.CivStage)%test for civ files
         ind_opening=Data.CivStage;
         set(handles.ListPairMode,'Value',3)
@@ -958,13 +962,13 @@ end
 %% check mask if selecetd 
 %could be included in get_mask callback ?
 if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.txt_MaskName,'String');
+    maskname=get(handles.txt_Mask,'String');
     if ~exist(maskname,'file')
         get_mask_civ1_Callback(hObject, eventdata, handles);
     end
 end
 if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.txt_MaskName,'String');
+    maskname=get(handles.txt_Mask,'String');
     if ~exist(maskname,'file')
         get_mask_fix1_Callback(hObject, eventdata, handles);
     end
@@ -976,7 +980,7 @@ if isequal(get(handles.CheckMask,'Value'),1)
     end
 end
 if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.txt_MaskName,'String');
+    maskname=get(handles.txt_Mask,'String');
     if ~exist(maskname,'file')
         get_mask_fix2_Callback(hObject, eventdata, handles);
     end
@@ -1096,7 +1100,6 @@ nbslice=numel(j1_civ1);
 
 %% MAIN LOOP
 time=get(handles.ImaDoc,'UserData'); %get the set of times
-super_cmd=[];
 batch_file_list=[];
  
 for ifile=1:nbfield
@@ -1128,63 +1131,44 @@ for ifile=1:nbfield
         
         if Param.CheckCiv1
             % read image-dependent parameters
-            Param.Civ1.filename_ima_a=filecell.ima1.civ1{ifile,j};
-            Param.Civ1.filename_ima_b=filecell.ima2.civ1{ifile,j};
+            Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};
+            Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
             if size(time,1)>=i2_civ1(ifile) && size(time,2)>=j2_civ1(j)
                 Param.Civ1.Dt=(time(i2_civ1(ifile),j2_civ1(j))-time(i1_civ1(ifile),j1_civ1(j)));
-                Param.Civ1.T0=((time(i2_civ1(ifile),j2_civ1(j))+time(i1_civ1(ifile),j1_civ1(j)))/2);
+                Param.Civ1.Time=((time(i2_civ1(ifile),j2_civ1(j))+time(i1_civ1(ifile),j1_civ1(j)))/2);
             else
                 Param.Civ1.Dt=1;
-                Param.Civ1.T0=0;
+                Param.Civ1.Time=0;
             end
             Param.Civ1.term_a=num2stra(j1_civ1(j),nom_type_nc);%UTILITE?
-            Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%
-            Param.Civ1.pxcmx=1; %velocities are expressed in pixel dispalcement
-            Param.Civ1.pxcmy=1;      
-            Param.Civ1.ImageInfo=imfinfo(filecell.ima1.civ1{1,1});%read the first image to get the size
-            
-            %TODO : civ should not need npx and npy
-            
+            Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%    
+            ImageInfo=imfinfo(filecell.ima1.civ1{1,1});%read the first image to get the size
+            Param.Civ1.ImageWidth=ImageInfo.Width;
+            Param.Civ1.ImageHeight=ImageInfo.Height;
+            Param.Civ1.ImageBitDepth=ImageInfo.BitDepth;
             % read mask parameters
             if Param.Civ1.CheckMask % the lines below should be changed with the new gui
-                %matbe they when check_mask the Maskname is read
-                if exist(Param.Civ1.MaskName,'file')
-                    Param.Civ1.MaskFlag='y';
-                else
-                    maskbase=[filecell.filebase '_' Param.Civ1.MaskName]; %
-                    nbslice_mask=str2double(maskdispl(1:end-4)); %
+                if ~exist(Param.Civ1.Mask,'file')
+                    maskbase=[filecell.filebase '_' Param.Civ1.Mask]; %
+                    nbslice_mask=str2double(Param.Civ1.Mask(1:end-4)); %
                     i1_mask=mod(i1_civ1(ifile)-1,nbslice_mask)+1;
-                    Param.Civ1.MaskName=name_generator(maskbase,i1_mask,1,'.png','_i');
-                    if exist(Param.Civ1.MaskName,'file')
-                        Param.Civ1.maskflag='y';
-                    else
-                        Param.Civ1.MaskName='noFile use default';
-                        Param.Civ1.MaskFlag='n';
-                    end
+                    Param.Civ1.Mask=name_generator(maskbase,i1_mask,1,'.png','_i');
                 end
-            else
-                Param.Civ1.MaskName='noFile use default';
-                Param.Civ1.MaskFlag='n';
             end
-            
             % read grid parameters
             if Param.Civ1.CheckGrid
-%                 Param.Civ1.GridFlag='y';
-                if isequal(Param.Civ1.GridName(end-3:end),'grid')
-                    nbslice_grid=str2double(Param.Civ1.GridName(1:end-4)); %
+                if numel(Param.Civ1.Grid)>=4 && isequal(Param.Civ1.Grid(end-3:end),'grid')
+                    nbslice_grid=str2double(Param.Civ1.Grid(1:end-4)); %
                     if ~isnan(nbslice_grid)
                         i1_grid=mod(i1_civ1(ifile)-1,nbslice_grid)+1;
-                        Param.Civ1.GridName=[filecell.filebase '_' name_generator(Param.Civ1.GridName,i1_grid,1,'.grid','_i')];
+                        Param.Civ1.Grid=[filecell.filebase '_' name_generator(Param.Civ1.Grid,i1_grid,1,'.grid','_i')];
                         if ~exist(Param.Civ1.GridName,'file')
                             msgbox_uvmat('ERROR','grid file absent for civ1')
                         end
-                    elseif ~exist(Param.Civ1.GridName,'file')
+                    elseif ~exist(Param.Civ1.Grid,'file')
                         msgbox_uvmat('ERROR','grid file absent for civ1')
                     end
                 end
-%            else
-%                 Param.Civ1.GridName='noFile use default';
-%                 Param.Civ1.GridFlag='n';
             end
             
             % send command
@@ -1281,71 +1265,44 @@ for ifile=1:nbfield
             end
         end
         if Param.CheckCiv2==1
-            Param.Civ2.filename_ima_a=filecell.ima1.civ2{ifile,j};
-            Param.Civ2.filename_ima_b=filecell.ima2.civ2{ifile,j};
+            Param.Civ2.ImageA=filecell.ima1.civ2{ifile,j};
+            Param.Civ2.ImageB=filecell.ima2.civ2{ifile,j};
             if size(time,1)>=i2_civ2(ifile) && size(time,2)>=j2_civ2(j)
                 Param.Civ2.Dt=num2str(time(i2_civ2(ifile),j2_civ2(j))-time(i1_civ2(ifile),j1_civ2(j)));
-                Param.Civ2.T0=num2str((time(i2_civ2(ifile),j2_civ2(j))+time(i1_civ2(ifile),j1_civ2(j)))/2);
+                Param.Civ2.Time=num2str((time(i2_civ2(ifile),j2_civ2(j))+time(i1_civ2(ifile),j1_civ2(j)))/2);
             else
                 Param.Civ2.Dt=1;
-                Param.Civ2.T0=0;
+                Param.Civ2.Time=0;
             end
             Param.Civ2.term_a=num2stra(j1_civ2(j),nom_type_nc);
             Param.Civ2.term_b=num2stra(j2_civ2(j),nom_type_nc);
             Param.Civ2.filename_nc1=filecell.nc.civ1{ifile,j};
             Param.Civ2.filename_nc1(end-2:end)=[]; % remove '.nc'
-            Param.Civ2.pxcmx=1; %velocities are expressed in pixel dispalcement
-            Param.Civ2.pxcmy=1;
+            
+            % mask 
             if Param.Civ2.CheckMask
-                maskdispl=get(handles.txt_Mask,'String');
-                if exist(maskdispl,'file')
-                    Param.Civ2.MaskName=maskdispl;
-                    Param.Civ2.MaskFlag='y';
-                else
-                    maskbase=[filecell.filebase '_' maskdispl]; %
-                    nbslice_mask=str2double(maskdispl(1:end-4)); %
+                if ~exist(Param.Civ2.Mask,'file')
+                    maskbase=[filecell.filebase '_' Param.Civ2.Mask]; %
+                    nbslice_mask=str2double(Param.Civ2.Mask(1:end-4)); %
                     i1_mask=mod(i1_civ2(ifile)-1,nbslice_mask)+1;
-                    Param.Civ2.MaskName=name_generator(maskbase,i1_mask,1,'.png','_i');
-                    if exist(Param.Civ2.MaskName,'file')
-                        Param.Civ2.MaskFlag='y';
-                    else
-                        Param.Civ2.MaskName='noFile use default';
-                        Param.Civ2.MaskFlag='n';
+                    Param.Civ2.Mask=name_generator(maskbase,i1_mask,1,'.png','_i');
+                end
+            end
+            %grid
+            if Param.Civ2.CheckGrid
+                if numel(Param.Civ2.Grid)>=4 && isequal(Param.Civ2.Grid(end-3:end),'grid')
+                    nbslice_grid=str2double(Param.Civ2.Grid(1:end-4)); %
+                    if ~isnan(nbslice_grid)
+                        i1_grid=mod(i1_civ2(ifile)-1,nbslice_grid)+1;
+                        Param.Civ2.Grid=[filecell.filebase '_' name_generator(gridname,i1_grid,1,'.grid','_i')];
                     end
                 end
-            else
-                Param.Civ2.MaskName='noFile use default';
-                Param.Civ2.MaskFlag='n';
             end
-            gridname=get(handles.txt_GridName,'String');
-            if numel(gridname)>=4 && isequal(gridname(end-3:end),'grid')
-                nbslice_grid=str2double(gridname(1:end-4)); %
-                if ~isnan(nbslice_grid)
-                    Param.Civ2.GridFlag='y';
-                    i1_grid=mod(i1_civ2(ifile)-1,nbslice_grid)+1;
-                    Param.Civ2.GridName=[filecell.filebase '_' name_generator(gridname,i1_grid,1,'.grid','_i')];
-%                     if exist(Param.Civ2.GridName,'file')
-%                         Param.Civ2.GridFlag='y';
-%                     else
-%                         Param.Civ2.GridName='noFile use default';
-%                         Param.Civ2.GridFlag='n';
-%                     end
-                elseif exist(gridname,'file')
-%                     Param.Civ2.GridFlag='y';
-%                 else
-%                     Param.Civ2.GridName='noFile use default';
-%                     Param.Civ2.GridFlag='n';
-                end
-%             else
-%                 Param.Civ2.GridName='noFile use default';
-%                 Param.Civ2.GridFlag='n';
-            end
-%             A=imread(filecell.ima1.civ2{1,1});%read the first image to get the size
-%             sizim=size(A);
-            Param.Civ2.ImageInfo=imfinfo(filecell.ima1.civ2{1,1});%read the first image to get the size
-            % TODO: case of movie
-%             Param.Civ2.npx=(sizim(2));
-%             Param.Civ2.npy=(sizim(1));      
+            ImageInfo=imfinfo(filecell.ima1.civ2{1,1});%read the first image to get the size
+            Param.Civ2.ImageWidth=ImageInfo.Width;
+            Param.Civ2.ImageHeight=ImageInfo.Height;
+            Param.Civ2.ImageBitDepth=ImageInfo.BitDepth;
+            % TODO: case of movie   
             switch CivMode
                 case 'CivX'
                     cmd=[cmd...
@@ -3234,7 +3191,46 @@ end
 set(handles.ListPairCiv2,'String',displ_pair');
 set(gcf,'Pointer','arrow')
 
+%-------------------------------------------------------------------
+% --- 
+function closeview_field(gcbo,eventdata)
+hview_field=findobj(allchild(0),'tag','view_field');% look for view_field    
+    if ~isempty(hview_field)
+        delete(hview_field)
+    end
+    
+    
+%------------------------------------------------------------------------   
+% call 'view_field.fig' to display the  field selected in the list of 'status'
+function open_view_field(hObject, eventdata)
+%------------------------------------------------------------------------
+list=get(hObject,'String');
+index=get(hObject,'Value');
+rootroot=get(hObject,'UserData');
+filename=list{index};
+ind_dot=strfind(filename,'...');
+filename=filename(1:ind_dot-1);
+filename=fullfile(rootroot,filename);
+delete(get(hObject,'parent'))%delete the display figure to stop the check process
+if exist(filename,'file')%visualise the vel field if it exists
+    uvmat(filename)
+    set(gcbo,'Value',1)
+end
 
+%------------------------------------------------------------------------   
+% launched by pressing OK on the status figure
+function close_GUI(hObject, eventdata)
+%------------------------------------------------------------------------
+    delete(gcbf)
+    
+%------------------------------------------------------------------------   
+% launched by deleting the status figure
+function stop_status(hObject, eventdata)
+%------------------------------------------------------------------------
+hciv=findobj(allchild(0),'tag','civ');
+hhciv=guidata(hciv);
+set(hhciv.status,'value',0) %reset the status uicontrol in the GUI civ
+set(hhciv.status,'BackgroundColor',[0 1 0])
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3350,14 +3346,16 @@ if ~(isnan(umin)||isnan(umax)||isnan(vmin)||isnan(vmax))
     set(handles.num_Searchy,'String',num2str(isy));
 end
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Callbacks in the uipanel Fix1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckMask.
 function get_mask_fix1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 maskval=get(handles.CheckMask,'Value');
 if isequal(maskval,0)
-    set(handles.txt_MaskName,'String','')
+    set(handles.txt_Mask,'String','')
 else
     mask_displ='no mask'; %default
     filebase=get(handles.RootName,'String');
@@ -3390,9 +3388,9 @@ else
         %set(handles.CheckMask,'Value',1)
         set(handles.CheckMask,'Value',1)
     end
-    set(handles.txt_MaskName,'String',mask_displ)
     set(handles.txt_Mask,'String',mask_displ)
-    set(handles.txt_MaskName,'String',mask_displ)
+    set(handles.txt_Mask,'String',mask_displ)
+    set(handles.txt_Mask,'String',mask_displ)
 end
 
 %------------------------------------------------------------------------
@@ -3433,7 +3431,7 @@ else
         set(handles.CheckMask,'Value',1)
     end
     set(handles.txt_Mask,'String',mask_displ)
-    set(handles.txt_MaskName,'String',mask_displ)
+    set(handles.txt_Mask,'String',mask_displ)
 end
 
 %------------------------------------------------------------------------
@@ -3442,7 +3440,7 @@ function get_mask_fix2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 maskval=get(handles.CheckMask,'Value');
 if isequal(maskval,0)
-    set(handles.txt_MaskName,'String','')
+    set(handles.txt_Mask,'String','')
 else
     mask_displ='no mask'; %default
     filebase=get(handles.RootName,'String');
@@ -3470,7 +3468,7 @@ else
     if isequal(mask_displ,'no mask')
         set(handles.CheckMask,'Value',0)
     end
-    set(handles.txt_MaskName,'String',mask_displ)
+    set(handles.txt_Mask,'String',mask_displ)
 end
 
 %------------------------------------------------------------------------
@@ -3607,9 +3605,11 @@ function CheckGrid_Callback(hObject, eventdata, handles)
 value=get(hObject,'Value');
 hparent=get(hObject,'parent');
 hchildren=get(hparent,'children');
-handle_txtbox=findobj(hchildren,'tag','txt_GridName');
+handle_txtbox=findobj(hchildren,'tag','txt_Grid');
 handle_dx=findobj(hchildren,'tag','num_Dx');
 handle_dy=findobj(hchildren,'tag','num_Dy');
+handle_title_dx=findobj(hchildren,'tag','title_Dx');
+handle_title_dy=findobj(hchildren,'tag','title_Dy');
 testgrid=0;
 filegrid='';
 if value
@@ -3638,36 +3638,46 @@ end
 if testgrid
     set(handle_dx,'Visible','off');
     set(handle_dy,'Visible','off');
+    set(handle_title_dy,'Visible','off');
+    set(handle_title_dx,'Visible','off');
     set(handle_txtbox,'Visible','on')
     set(handle_txtbox,'String',filegrid)
 else
     set(hObject,'Value',0);
-    set(handle_dx,'Visible','on');
+    set(handle_dx,'Visible','on'); 
     set(handle_dy,'Visible','on');
+    set(handle_title_dy,'Visible','on');
+    set(handle_title_dx,'Visible','on');
     set(handle_txtbox,'Visible','off')
 end
 
 %% if hObject is on the checkciv1 frame, duplicate action for checkciv2 frame
-PanelName=get(hparent,'tag');
-if strcmp(PanelName,'panel_Civ1')
+PanelName=get(hparent,'tag')
+if strcmp(PanelName,'Civ1')
     hchildren=get(handles.Civ2,'children');
-    handle_checkbox=findobj(hchildren,'tag','check_Grid');
-    handle_txtbox=findobj(hchildren,'tag','txt_GridName');
+    handle_checkbox=findobj(hchildren,'tag','CheckGrid');
+    handle_txtbox=findobj(hchildren,'tag','txt_Grid');
     handle_dx=findobj(hchildren,'tag','num_Dx');
     handle_dy=findobj(hchildren,'tag','num_Dy');
+    handle_title_dx=findobj(hchildren,'tag','title_Dx');
+    handle_title_dy=findobj(hchildren,'tag','title_Dy');
     set(handle_checkbox,'UserData',filegrid);%store for future use
     if testgrid
         set(handle_checkbox,'Value',1);
         set(handle_dx,'Visible','off');
         set(handle_dy,'Visible','off');
+        set(handle_title_dx,'Visible','off');
+        set(handle_title_dy,'Visible','off');
         set(handle_txtbox,'Visible','on')
         set(handle_txtbox,'String',filegrid)
-    else
-        set(handle_checkbox,'Value',0);
-        set(handles.CheckGrid,'Value',0);
-        set(handle_dx,'Visible','on');
-        set(handle_dy,'Visible','on');
-        set(handle_txtbox,'Visible','off')
+%     else
+%         set(handle_checkbox,'Value',0);
+%         set(handles.CheckGrid,'Value',0);
+%         set(handle_dx,'Visible','on');
+%         set(handle_dy,'Visible','on');
+%          set(handle_title_dx,'Visible','on');
+%         set(handle_title_dy,'Visible','on');
+%         set(handle_txtbox,'Visible','off')
     end 
 end
 %------------------------------------------------------------------------
@@ -3675,6 +3685,12 @@ end
 function CheckMask_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 value=get(hObject,'Value');
+hparent=get(hObject,'parent');
+parent_tag=get(hparent,'Tag');
+hchildren=get(hparent,'children');
+handle_txtbox=findobj(hchildren,'tag','txt_Mask');
+% handle_dx=findobj(hchildren,'tag','num_Dx');
+% handle_dy=findobj(hchildren,'tag','num_Dy');
 testmask=0;
 if value
     filebase=get(handles.RootName,'String');
@@ -3683,37 +3699,38 @@ if value
         filemask=[num2str(nbslice) 'mask'];
         testmask=1;
     else % browse for a mask 
-        filemask=get(handles.CheckMask,'UserData');%look for previous mask name stored as UserData
+        filemask=get(hObject,'UserData');%look for previous mask name stored as UserData
         if exist(filemask,'file')
             filebase=filemask;
         end
-        [FileName, PathName, filterindex] = uigetfile( ...
+        [FileName, PathName] = uigetfile( ...
             {'*.png', ' (*.png)';
             '*.png',  '.png files '; ...
             '*.*', 'All Files (*.*)'}, ...
             'Pick a mask file *.png',filebase);
         filemask=fullfile(PathName,FileName);
-        set(handles.CheckMask,'UserData',filemask);%store for future use
+        set(hObject,'UserData',filemask);%store for future use
         if ~(isempty(FileName)||isempty(PathName)||isequal(FileName,0)||~exist(filemask,'file'))
             testmask=1;
         end
     end
 end
 if testmask
-    set(handles.num_Dx,'Visible','off');
-    set(handles.num_Dy,'Visible','off');
-    set(handles.num_Dx,'Visible','off');
-    set(handles.num_Dy,'Visible','off');
-    set(handles.txt_MaskName,'Visible','on')
-    set(handles.txt_MaskName,'String',filemask)
+    stage=1;%default
+    switch parent_tag
+%         case 'Fix1'
+%             stage=2;
+        case 'Civ2'
+             stage=3;
+%         case 'Fix2'
+%             stage=4;
+    end
+    set(handles.txt_Mask(stage:end),'Visible','on')
+    set(handles.txt_Mask(stage:end),'String',filemask)
+    set(handles.CheckMask(stage:end),'Value',1)
 else
-    set(handles.CheckMask,'Value',0);
-    set(handles.CheckGrid,'Value',0);
-    set(handles.num_Dx,'Visible','on');
-    set(handles.num_Dy,'Visible','on');
-    set(handles.num_Dx,'Visible','on');
-    set(handles.num_Dy,'Visible','on');
-    set(handles.txt_MaskName,'Visible','off')
+    set(hObject,'Value',0);
+    set(handle_txtbox,'Visible','off')
 end
 
 
@@ -3921,25 +3938,19 @@ if get(handles.TestCiv1,'Value')
     else
         ref_j=1;%default
     end
-    [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
+    [filecell,i1,i21,j1,j2,i1_civ2,i2_civ2,j1_civ2,j2_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
         set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);
     Data.ListVarName={'ny','nx','A'};
-    Data.VarDimName={'ny','nx',{'ny','nx'}};
+    Data.VarDimName= {'ny','nx',{'ny','nx'}};
     Data.A=imread(filecell.ima1.civ1{1});
     Data.ny=[size(Data.A,1) 1];
     Data.nx=[1 size(Data.A,2)];
     par_civ1=read_GUI(handles.Civ1);
-    par_civ1.filename_ima_a=filecell.ima1.civ1{1};
-    par_civ1.filename_ima_b=filecell.ima2.civ1{1};
-    par_civ1.T0=0;
-    par_civ1.Dt=1;
+    par_civ1.ImageWidth=size(Data.A,1);
+    par_civ1.ImageHeight=size(Data.A,2);
+    par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation
     Param.Civ1=par_civ1;
-    Data=civ_uvmat(Param);
-    Data.ListVarName=[Data.ListVarName {'ny','nx','A'}];
-    Data.VarDimName=[Data.VarDimName {'ny','nx',{'ny','nx'}}];
-    Data.A=imread(filecell.ima1.civ1{1});
-    Data.ny=[size(Data.A,1) 1];
-    Data.nx=[1 size(Data.A,2)];
+    Grid=civ_matlab(Param);% get the grid of x, y positions set for PIV 
     hview_field=view_field(Data);
     set(0,'CurrentFigure',hview_field)
     hhview_field=guihandles(hview_field);
@@ -3947,8 +3958,8 @@ if get(handles.TestCiv1,'Value')
     ViewData=get(hview_field,'UserData');
     ViewData.CivHandle=handles.civ;% indicate the handle of the civ GUI in view_field
     ViewData.axes3.B=imread(filecell.ima2.civ1{1});%store the second image in the UserData of the GUI view_field
-    ViewData.axes3.X=Data.Civ1_X; %keep the set of points in memeory
-    ViewData.axes3.Y=Data.Civ1_Y;
+    ViewData.axes3.X=Grid.Civ1_X; %keep the set of points in memeory
+    ViewData.axes3.Y=Grid.Civ1_Y;
     set(hview_field,'UserData',ViewData)
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
     if isempty(corrfig)
@@ -3969,46 +3980,21 @@ else
     end
 end
 
-%-------------------------------------------------------------------
-% --- 
-function closeview_field(gcbo,eventdata)
-hview_field=findobj(allchild(0),'tag','view_field');% look for view_field    
-    if ~isempty(hview_field)
-        delete(hview_field)
-    end
-    
-    
-%------------------------------------------------------------------------   
-% call 'view_field.fig' to display the  field selected in the list of 'status'
-function open_view_field(hObject, eventdata)
+
 %------------------------------------------------------------------------
-list=get(hObject,'String');
-index=get(hObject,'Value');
-rootroot=get(hObject,'UserData');
-filename=list{index};
-ind_dot=findstr(filename,'...');
-filename=filename(1:ind_dot-1);
-filename=fullfile(rootroot,filename);
-delete(get(hObject,'parent'))%delete the display figure to stop the check process
-if exist(filename,'file')%visualise the vel field if it exists
-    uvmat(filename)
-    set(gcbo,'Value',1)
+% --- Executes on button press in CheckThreshold.
+function CheckThreshold_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+huipanel=get(hObject,'parent');
+obj(1)=findobj(huipanel,'Tag','num_MinIma');
+obj(2)=findobj(huipanel,'Tag','num_MaxIma');
+obj(3)=findobj(huipanel,'Tag','title_Threshold');
+if get(hObject,'Value')
+    set(obj,'Visible','on')
+else
+    set(obj,'Visible','off')
 end
 
-%------------------------------------------------------------------------   
-% launched by pressing OK on the status figure
-function close_GUI(hObject, eventdata)
-%------------------------------------------------------------------------
-    delete(gcbf)
-    
-%------------------------------------------------------------------------   
-% launched by deleting the status figure
-function stop_status(hObject, eventdata)
-%------------------------------------------------------------------------
-hciv=findobj(allchild(0),'tag','civ');
-hhciv=guidata(hciv);
-set(hhciv.status,'value',0) %reset the status uicontrol in the GUI civ
-set(hhciv.status,'BackgroundColor',[0 1 0])
 
 %------------------------------------------------------------------------
 % % --- Executes on button press in ListPairMode.
@@ -4038,45 +4024,46 @@ set(hhciv.status,'BackgroundColor',[0 1 0])
 %        
 % end
 
-
-
-
 %------------------------------------------------------------------------
 function cmd=cmd_civ1(filename,Param)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
 %changes : filename_cmx -> filename ( no extension )
 filename=regexprep(filename,'.nc',''); %file name for the result 
-Param.Civ1
 if isequal(Param.Civ1.Dt,'0')
     Param.Civ1.Dt='1' ;%case of 'displacement' mode
 end
-Param.Civ1.filename_ima_a=regexprep(Param.Civ1.filename_ima_a,'.png','');
-Param.Civ1.filename_ima_b=regexprep(Param.Civ1.filename_ima_b,'.png','');
+Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'.png','');
+Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'.png','');
 fid=fopen([filename '.civ1.cmx'],'w');
 fprintf(fid,['##############   CMX file' '\n' ]);
-fprintf(fid,   ['FirstImage ' regexprep(Param.Civ1.filename_ima_a,'\\','\\\\') '\n' ]);% for windows compatibility
-fprintf(fid,   ['LastImage  ' regexprep(Param.Civ1.filename_ima_b,'\\','\\\\') '\n' ]);% for windows compatibility
+fprintf(fid,   ['FirstImage ' regexprep(Param.Civ1.ImageA,'\\','\\\\') '\n' ]);% for windows compatibility
+fprintf(fid,   ['LastImage  ' regexprep(Param.Civ1.ImageB,'\\','\\\\') '\n' ]);% for windows compatibility
 fprintf(fid,  ['XX' '\n' ]);
-fprintf(fid,  ['Mask ' Param.Civ1.MaskFlag '\n' ]);
-fprintf(fid,  ['MaskName ' regexprep(Param.Civ1.MaskName,'\\','\\\\') '\n' ]);
-fprintf(fid,   ['ImageSize ' num2str(Param.Civ1.ImageInfo.Width) ' ' num2str(Param.Civ1.ImageInfo.Height) '\n' ]);   %VERIFIER CAS GENERAL ?
+if isfield(Param.Civ1,'Mask')
+    fprintf(fid,  ['Mask ' 'y' '\n' ]);
+    fprintf(fid,  ['MaskName ' regexprep(Param.Civ1.Mask,'\\','\\\\') '\n' ]);
+else
+    fprintf(fid,  ['Mask ' 'n' '\n' ]);
+    fprintf(fid,  ['MaskName ' 'noFile use default' '\n' ]);
+end
+fprintf(fid,   ['ImageSize ' num2str(Param.Civ1.ImageWidth) ' ' num2str(Param.Civ1.ImageHeight) '\n' ]);   %VERIFIER CAS GENERAL ?
 fprintf(fid,   ['CorrelationBoxesSize ' num2str(Param.Civ1.Bx) ' ' num2str(Param.Civ1.By) '\n' ]);
 fprintf(fid,   ['SearchBoxeSize ' num2str(Param.Civ1.Searchx) ' ' num2str(Param.Civ1.Searchy) '\n' ]);
 fprintf(fid,   ['RO ' num2str(Param.Civ1.Rho) '\n' ]);
-if isfield(Param.Civ1,'GridName')
+if isfield(Param.Civ1,'Grid')
     fprintf(fid,   ['GridSpacing ' '25' ' ' '25' '\n' ]);
 else
     fprintf(fid,   ['GridSpacing ' num2str(Param.Civ1.Dx) ' ' num2str(Param.Civ1.Dy) '\n' ]);
 end
 fprintf(fid,   ['XX 1.0' '\n' ]);
-fprintf(fid,   ['Dt_TO ' num2str(Param.Civ1.Dt) ' ' num2str(Param.Civ1.T0) '\n' ]);
-fprintf(fid,  ['PixCmXY ' num2str(Param.Civ1.pxcmx) ' ' num2str(Param.Civ1.pxcmy) '\n' ]);
+fprintf(fid,   ['Dt_TO ' num2str(Param.Civ1.Dt) ' ' num2str(Param.Civ1.Time) '\n' ]);
+fprintf(fid,  ['PixCmXY ' '1' ' ' '1' '\n' ]);
 fprintf(fid,  ['XX 1' '\n' ]);
 fprintf(fid,   ['ShiftXY ' num2str(Param.Civ1.Shiftx) ' '  num2str(Param.Civ1.Shifty) '\n' ]);
-if isfield(Param.Civ1,'GridName')
+if isfield(Param.Civ1,'Grid')
     fprintf(fid,  ['Grid ' 'y' '\n' ]);
-    fprintf(fid,   ['GridName ' regexprep(Param.Civ1.GridName,'\\','\\\\') '\n' ]);
+    fprintf(fid,   ['GridName ' regexprep(Param.Civ1.Grid,'\\','\\\\') '\n' ]);
 else
     fprintf(fid,  ['Grid ' 'n' '\n' ]);
     fprintf(fid,   ['GridName ' 'noFile use default' '\n' ]);
@@ -4094,7 +4081,7 @@ if ~isfield(Param.Civ1,'MinIma')% Image threshold not activated
     fprintf(fid,   ['SeuilImageValues 0 4096' '\n' ]);%not used in principle
 else% Image threshold  activated
     if isempty(Param.Civ1.MaxIma)||isnan(Param.Civ1.MaxIma)
-        Param.Civ1.MaxIma=2^Param.Civ1.ImageInfo.BitDepth;%take the max image value as upper bound by default
+        Param.Civ1.MaxIma=2^Param.Civ1.ImageBitDepth;%take the max image value as upper bound by default
     end
     fprintf(fid,  ['SeuilImage y' '\n' ]);
     fprintf(fid,   ['SeuilImageValues ' num2str(Param.Civ1.MinIma) ' ' num2str(Param.Civ1.MaxIma) '\n' ]);
@@ -4175,8 +4162,8 @@ filename=regexprep(filename,'.nc','');
 if isequal(Param.Civ2.Dt,'0')
     Param.Civ2.Dt='1' ;%case of 'displacement' mode
 end
-Param.Civ2.filename_ima_a=regexprep(Param.Civ2.filename_ima_a,'.png','');
-Param.Civ2.filename_ima_b=regexprep(Param.Civ2.filename_ima_b,'.png','');% bug : .png appears two times ?
+Param.Civ2.ImageA=regexprep(Param.Civ2.ImageA,'.png','');
+Param.Civ2.ImageB=regexprep(Param.Civ2.ImageB,'.png','');% bug : .png appears two times ?
 [fid,errormsg]=fopen([filename '.civ2.cmx'],'w');
 if isequal(fid,-1)
     msgbox_uvmat('ERROR',errormsg)
@@ -4184,30 +4171,37 @@ if isequal(fid,-1)
     return
 end
 fprintf(fid,['##############   CMX file' '\n' ]);
-fprintf(fid,   ['FirstImage ' regexprep(Param.Civ2.filename_ima_a,'\\','\\\\') '\n' ]);% for windows compatibility
-fprintf(fid,   ['LastImage  ' regexprep(Param.Civ2.filename_ima_b,'\\','\\\\') '\n' ]);% for windows compatibility
+fprintf(fid,   ['FirstImage ' regexprep(Param.Civ2.ImageA,'\\','\\\\') '\n' ]);% for windows compatibility
+fprintf(fid,   ['LastImage  ' regexprep(Param.Civ2.ImageB,'\\','\\\\') '\n' ]);% for windows compatibility
 fprintf(fid,  ['XX' '\n' ]);
-fprintf(fid, ['Mask ' Param.Civ2.MaskFlag '\n' ]);
-fprintf(fid, ['MaskName ' regexprep(Param.Civ2.MaskName,'\\','\\\\') '\n' ]);% for windows compatibility
-fprintf(fid,   ['ImageSize ' num2str(Param.Civ2.ImageInfo.Width) ' ' num2str(Param.Civ2.ImageInfo.Height) '\n' ]);  
+if isfield(Param.Civ2,'Mask')
+    fprintf(fid,  ['Mask ' 'y' '\n' ]);
+    fprintf(fid,  ['MaskName ' regexprep(Param.Civ2.Mask,'\\','\\\\') '\n' ]);
+else
+    fprintf(fid,  ['Mask ' 'n' '\n' ]);
+    fprintf(fid,  ['MaskName ' 'noFile use default' '\n' ]);
+end
+% fprintf(fid, ['Mask ' Param.Civ2.MaskFlag '\n' ]);
+% fprintf(fid, ['MaskName ' regexprep(Param.Civ2.MaskName,'\\','\\\\') '\n' ]);% for windows compatibility
+fprintf(fid,   ['ImageSize ' num2str(Param.Civ2.ImageWidth) ' ' num2str(Param.Civ2.ImageHeight) '\n' ]);  
 % fprintf(fid, ['ImageSize ' num2str(Param.Civ2.npx) ' ' num2str(Param.Civ2.npy) '\n' ]);   %VERIFIER CAS GENERAL ?
 fprintf(fid, ['CorrelationBoxesSize ' num2str(Param.Civ2.Bx) ' ' num2str(Param.Civ2.By) '\n' ]);
 fprintf(fid, ['SearchBoxeSize ' num2str(Param.Civ2.Bx) ' ' num2str(Param.Civ2.By) '\n']);
 fprintf(fid, ['RO ' num2str(Param.Civ2.Rho) '\n']);
-if isfield(Param.Civ2,'GridName')
+if isfield(Param.Civ2,'Grid')
     fprintf(fid,   ['GridSpacing ' '25' ' ' '25' '\n' ]);
 else
     fprintf(fid,   ['GridSpacing ' num2str(Param.Civ2.Dx) ' ' num2str(Param.Civ2.Dy) '\n' ]);
 end
 % fprintf(fid, ['GridSpacing ' num2str(Param.Civ2.Dx) ' ' num2str(Param.Civ2.Dy) '\n']);
 fprintf(fid, ['XX 1.0' '\n' ]);
-fprintf(fid, ['Dt_TO ' num2str(Param.Civ2.Dt) ' ' num2str(Param.Civ2.T0) '\n' ]);
-fprintf(fid, ['PixCmXY ' num2str(Param.Civ2.pxcmx) ' ' num2str(Param.Civ2.pxcmy) '\n' ]);
+fprintf(fid, ['Dt_TO ' num2str(Param.Civ2.Dt) ' ' num2str(Param.Civ2.Time) '\n' ]);
+fprintf(fid, ['PixCmXY ' '1' ' ' '1' '\n' ]);
 fprintf(fid, ['XX 1' '\n' ]);
 fprintf(fid, 'ShiftXY 0 0\n');
-if isfield(Param.Civ2,'GridName')
+if isfield(Param.Civ2,'Grid')
     fprintf(fid,  ['Grid ' 'y' '\n' ]);
-    fprintf(fid,   ['GridName ' regexprep(Param.Civ2.GridName,'\\','\\\\') '\n' ]);
+    fprintf(fid,   ['GridName ' regexprep(Param.Civ2.Grid,'\\','\\\\') '\n' ]);
 else
     fprintf(fid,  ['Grid ' 'n' '\n' ]);
     fprintf(fid,   ['GridName ' 'noFile use default' '\n' ]);
@@ -4228,7 +4222,7 @@ if ~isfield(Param.Civ2,'MinIma')% Image threshold not activated
     fprintf(fid,   ['SeuilImageValues 0 4096' '\n' ]);%not used in principle
 else% Image threshold  activated
     if isempty(Param.Civ2.MaxIma)||isnan(Param.Civ2.MaxIma)
-        Param.Civ2.MaxIma=2^Param.Civ2.ImageInfo.BitDepth;%take the max image value as upper bound by default
+        Param.Civ2.MaxIma=2^Param.Civ2.ImageBitDepth;%take the max image value as upper bound by default
     end
     fprintf(fid,  ['SeuilImage y' '\n' ]);
     fprintf(fid,   ['SeuilImageValues ' num2str(Param.Civ2.MinIma) ' ' num2str(Param.Civ2.MaxIma) '\n' ]);
@@ -4249,28 +4243,14 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in CheckThreshold.
-function CheckThreshold_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-huipanel=get(hObject,'parent');
-obj(1)=findobj(huipanel,'Tag','num_MinIma');
-obj(2)=findobj(huipanel,'Tag','num_MaxIma');
-obj(3)=findobj(huipanel,'Tag','title_Threshold');
-if get(hObject,'Value')
-    set(obj,'Visible','on')
-else
-    set(obj,'Visible','off')
-end
-
-%------------------------------------------------------------------------
 % --- CheckCiv1  Unified: TO ABADON
 function xml_civ1_parameters=CIV1_CMD_Unified(filename,namelog,par)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
 %global CivBin%name of the executable for checkciv1 calculation
 
-civ1.image1=par.filename_ima_a;
-civ1.image2=par.filename_ima_b;
+civ1.image1=par.ImageA;
+civ1.image2=par.ImageB;
 civ1.imageSize_X=par.npx;
 civ1.imageSize_Y=par.npy;
 civ1.outputFileName=[filename '.nc'];
@@ -4294,9 +4274,9 @@ if isequal(par.maskflag,'y')
 end
 civ1.dt=par.Dt;
 civ1.unit='pixel';
-civ1.absolut_time_T0=par.T0;
-civ1.pixcmx=par.pxcmx;
-civ1.pixcmy=par.pxcmy;
+civ1.absolut_time_T0=par.Time;
+civ1.pixcmx='1';
+civ1.pixcmy='1';
 civ1.convectFlow='n';
 
 xml_civ1_parameters=civ1;
@@ -4310,8 +4290,8 @@ function civ2=CIV2_CMD_Unified(filename,namelog,par)
 
 filename=regexprep(filename,'.nc','');
 
-civ2.image1=par.filename_ima_a;
-civ2.image2=par.filename_ima_b;
+civ2.image1=par.ImageA;
+civ2.image2=par.ImageB;
 civ2.imageSize_X=par.npx;
 civ2.imageSize_Y=par.npy;
 civ2.inputFileName=[par.filename_nc1 '.nc'];
@@ -4347,10 +4327,7 @@ else
 end
 civ2.dt=par.Dt;
 civ2.unit='pixel';
-civ2.absolut_time_T0=par.T0;
-civ2.pixcmx=par.pxcmx;
-civ2.pixcmy=par.pxcmy;
-civ2.convectFlow='n';
-civ2.pixcmx=par.pxcmx;
-civ2.pixcmy=par.pxcmy;
+civ2.absolut_time_T0=par.Time;
+civ2.pixcmx='1';
+civ2.pixcmy='1';
 civ2.convectFlow='n';

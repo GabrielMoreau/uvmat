@@ -279,7 +279,7 @@ update_plot(handles)
 %-------------------------------------------------------------------
 % --- Executes on button press in FixEqual.
 function CheckFixEqual_Callback(hObject, eventdata, handles)
-test=get(handles.FixEqual,'Value');
+test=get(handles.CheckFixEqual,'Value');
 if test
     set(handles.CheckFixEqual,'BackgroundColor',[1 1 0])
     cla(handles.axes3)

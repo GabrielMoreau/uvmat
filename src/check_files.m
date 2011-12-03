@@ -40,7 +40,7 @@ list_fct={...
     'civ.fig';...
     'civ_3D';... function associated with the interface 'civ_3D.fig' for PIV in volume (in progress)
     'civ_3D.fig';...
-    'civ_uvmat';...% civ programs, Matlab version (called by civ.m, option Civuvmat)
+    'civ_matlab';...% civ programs, Matlab version (called by civ.m, option Civprogram/Matlab in the upper menu bar)
     'close_fig';...% function  activated when a figure is closed
     'copyfields';...% copy fields between two matlab structures
     'create_grid';...% called by the GUI geometry_calib to create a physical grid
@@ -70,7 +70,6 @@ list_fct={...
     'nc2struct';...% transform a netcdf file in a corresponding matlab structure
     'peaklock';...%
     'phys_XYZ';...% transform coordiantes from pixels to phys
-    'pivlab';...% PIV program (Civ1), called by civ_uvmat
     'px_XYZ';...% transform coordiantes from phys to pixels
     'plot_field';...%displays a vector field and/or scalar or images
     'plot_object';...%draws a projection object (points, line, plane...)

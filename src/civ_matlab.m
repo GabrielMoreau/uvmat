@@ -31,86 +31,56 @@
 %     GNU General Public License (open UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [Data,errormsg,result_conv]= civ_uvmat(Param,ncfile)
+function [Data,errormsg,result_conv]= civ_matlab(Param,ncfile)
 errormsg='';
 Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
 Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
-Data.Program='civ_uvmat';
+Data.Program='civ_matlab';
 Data.CivStage=0;%default
 ListVarCiv1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'}; %variables to read
 ListVarFix1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF'};
 mask='';
 maskname='';%default
-test_civx=0;%default
-test_civ1=0;%default
-test_patch1=0;%default
+check_civx=0;%default
+check_civ1=0;%default
+check_patch1=0;%default
 
 %% Civ1
 if isfield (Param,'Civ1')
-    test_civ1=1;% test for further use of civ1 results
-    par_civ1=Param.Civ1;
-    image1=imread(par_civ1.filename_ima_a);
-    image2=imread(par_civ1.filename_ima_b);
-    ibx2=ceil(par_civ1.Bx/2);
-    iby2=ceil(par_civ1.By/2);
-    isx2=ceil(par_civ1.Searchx/2);
-    isy2=ceil(par_civ1.Searchy/2);
-    shiftx=par_civ1.Shiftx;
-    shifty=par_civ1.Shifty;
-    miniy=max(1+isy2+shifty,1+iby2);
-    minix=max(1+isx2-shiftx,1+ibx2);
-    maxiy=min(size(image1,1)-isy2+shifty,size(image1,1)-iby2);
-    maxix=min(size(image1,2)-isx2-shiftx,size(image1,2)-ibx2);
-    if ~isfield(par_civ1,'PointCoord')    
-        [GridX,GridY]=meshgrid(minix:par_civ1.Dx:maxix,miniy:par_civ1.Dy:maxiy);
-        par_civ1.PointCoord(:,1)=reshape(GridX,[],1);
-        par_civ1.PointCoord(:,2)=reshape(GridY,[],1);
-    end
-    if par_civ1.CheckMask && isfield(par_civ1,'MaskName') && ~isempty(par_civ1.MaskName) 
-        maskname=par_civ1.MaskName;
-        mask=imread(maskname);
-    end
+    check_civ1=1;% test for further use of civ1 results
     % caluclate velocity data (y and v in indices, reverse to y component)
-    [xtable ytable utable vtable ctable F result_conv errormsg] = civ (image1,image2,ibx2,iby2,isx2,isy2,shiftx,-shifty,par_civ1.PointCoord,par_civ1.Rho, mask);
-    list_param=(fieldnames(par_civ1))';
-    list_remove={'pxcmx','pxcmy','npx','npy','gridflag','maskflag','term_a','term_b','T0'};
-    index_remove=zeros(size(list_param));
-    for name=list_remove %loop on the list of names
-        index_remove=index_remove +strcmp(name{1},list_param);%index of the current name = name{1} 
+    [xtable ytable utable vtable ctable F result_conv errormsg] = civ (Param.Civ1);
+    if ~isempty(errormsg)
+        return
     end
-    list_param(find(index_remove,1))=[];
-    Civ1_param=list_param;%initialisation
+    list_param=(fieldnames(Param.Civ1))';
+    Civ1_param=list_param;%default
     for ilist=1:length(list_param)
         Civ1_param{ilist}=['Civ1_' list_param{ilist}];
-        Data.(['Civ1_' list_param{ilist}])=par_civ1.(list_param{ilist});
+        %         eval(['Data.Civ1_' list_param{ilist} '=Param.Civ1.' list_param{ilist} ';'])
+        Data.(['Civ1_' list_param{ilist}])=Param.Civ1.(list_param{ilist});
     end
-    if isfield(Data,'Civ1_gridname') && strcmp(Data.Civ1_gridname(1:6),'noFile')
-        Data.Civ1_gridname='';
-    end
-    if isfield(Data,'Civ1_maskname') && strcmp(Data.Civ1_maskname(1:6),'noFile')
-        Data.Civ1_maskname='';
-    end
-    Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param {'Civ1_Time','Civ1_Dt'}];
-    Data.Civ1_Time=str2double(par_civ1.T0);
-    Data.Civ1_Dt=str2double(par_civ1.Dt);
-    Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'};%  cell array containing the names of the fields to record
-    Data.VarDimName={'nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1'};
-    Data.VarAttribute{1}.Role='coord_x';
-    Data.VarAttribute{2}.Role='coord_y';
-    Data.VarAttribute{3}.Role='vector_x';
-    Data.VarAttribute{4}.Role='vector_y';
-    Data.VarAttribute{5}.Role='warnflag';
+    Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];% {'Civ1_Time','Civ1_Dt'}];
+%     if exist('ncfile','var')% TEST for use interactively with mouse_motion (no file created)
+        Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'};%  cell array containing the names of the fields to record
+        Data.VarDimName={'nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1'};
+        Data.VarAttribute{1}.Role='coord_x';
+        Data.VarAttribute{2}.Role='coord_y';
+        Data.VarAttribute{3}.Role='vector_x';
+        Data.VarAttribute{4}.Role='vector_y';
+        Data.VarAttribute{5}.Role='warnflag';
     Data.Civ1_X=reshape(xtable,[],1);
-    Data.Civ1_Y=reshape(size(image1,1)-ytable+1,[],1);
+    Data.Civ1_Y=reshape(Param.Civ1.ImageHeight-ytable+1,[],1);
     Data.Civ1_U=reshape(utable,[],1);
     Data.Civ1_V=reshape(-vtable,[],1);
     Data.Civ1_C=reshape(ctable,[],1);
     Data.Civ1_F=reshape(F,[],1);
     Data.CivStage=1;
+
 else
     Data=nc2struct(ncfile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format 
     if ~isempty(Data.absolut_time_T0')%read civx file
-        test_civx=1;% test for old civx data format
+        check_civx=1;% test for old civx data format
         [Data,vardetect,ichoice]=nc2struct(ncfile);%read the variables in the netcdf file
     else
         if isfield(Param,'Fix1')
@@ -126,82 +96,6 @@ else
 end
 
 %% Fix1
-%                 if Param.CheckCiv1==1
-%                     Param.Civ1=Param.Civ1;
-%                 end
-%                 if Param.CheckFix1==1
-%                     Param.Fix1=Param.Fix1;
-%                     fix1.WarnFlags=[];
-%                     if get(handles.CheckFmin2,'Value')
-%                         fix1.WarnFlags=[fix1.WarnFlags -2];
-%                     end
-%                     if get(handles.CheckF3,'Value')
-%                         fix1.WarnFlags=[fix1.WarnFlags 3];
-%                     end
-%                     fix1.LowerBoundCorr=thresh_vecC1;
-%                     if get(handles.num_MinVel,'Value')
-%                         fix1.UppperBoundVel=thresh_vel1;
-%                     else
-%                         fix1.LowerBoundVel=thresh_vel1;
-%                     end
-%                     if get(handles.CheckMask,'Value')
-%                         fix1.MaskName=maskname;
-%                     end
-%                     Param.Fix1=fix1;
-%                 end
-%                 if Param.CheckPatch1==1
-%                     if strcmp(compare,'stereo PIV')
-%                         filebase_A=filecell.filebase;
-%                         [pp,ff]=fileparts(filebase_A);
-%                         filebase_B=fullfile(pp,get(handles.RootName_1,'String'));
-%                         %TO CHECK: filecell.nc.civ1{ifile,j},filecell.ncA.civ1{ifile,j} have been switched according to Matias Duran
-%                         RUN_STLIN(filecell.nc.civ1{ifile,j},filecell.ncA.civ1{ifile,j},'civ1',filecell.st{ifile,j},...
-%                             str2num(nx_patch1),str2num(ny_patch1),str2num(thresh_patch1),[filebase_A '.xml'],[filebase_B '.xml'])
-%                     else
-%                         Param.Patch1.Rho=rho_patch1;
-%                         Param.Patch1.Threshold=thresh_patch1;
-%                         Param.Patch1.SubDomain=subdomain_patch1;
-%                     end
-%                 end
-%                 if Param.CheckCiv2==1
-%                     Param.Civ2=Param.Civ2;
-%                 end
-%                 if Param.CheckFix2==1
-%                     fix2.WarnFlags=[];
-%                     if get(handles.CheckFmin2,'Value')
-%                         fix2.WarnFlags=[fix2.WarnFlags -2];
-%                     end
-%                     if get(handles.CheckF4,'Value')
-%                         fix2.WarnFlags=[fix2.WarnFlags 4];
-%                     end
-%                     if get(handles.CheckF3,'Value')
-%                         fix2.WarnFlags=[fix2.WarnFlags 3];
-%                     end
-%                     fix2.LowerBoundCorr=thresh_vec2C;
-%                     if get(handles.num_MinVel,'Value')
-%                         fix2.UppperBoundVel=thresh_vel2;
-%                     else
-%                         fix2.LowerBoundVel=thresh_vel2;
-%                     end
-%                     if get(handles.CheckMask,'Value')
-%                         fix2.MaskName=maskname;
-%                     end
-%                     Param.Fix2=fix2;
-%                 end
-%                 if Param.CheckPatch2==1
-%                     if strcmp(compare,'stereo PIV')
-%                         filebase_A=filecell.filebase;
-%                         [pp,ff]=fileparts(filebase_A);
-%                         filebase_B=fullfile(pp,get(handles.RootName_1,'String'));
-%                         RUN_STLIN(filecell.ncA.civ2{ifile,j},filecell.nc.civ2{ifile,j},'civ2',filecell.st{ifile,j},...
-%                             str2num(nx_patch2),str2num(ny_patch2),str2num(thresh_patch2),[filebase_A '.xml'],[filebase_B '.xml'])
-%                     else
-%                         Param.Patch2.Rho=rho_patch2;
-%                         Param.Patch2.Threshold=thresh_patch2;
-%                         Param.Patch2.SubDomain=subdomain_patch2;
-%                     end
-%                 end
-
 if isfield (Param,'Fix1')
     ListFixParam=fieldnames(Param.Fix1);
     for ilist=1:length(ListFixParam)
@@ -216,7 +110,7 @@ if isfield (Param,'Fix1')
 %     Data.Fix1_ThreshVel=Param.Fix1.ThreshVel;
 %     Data.Fix1_UpperBoundTest=Param.Fix1.UpperBoundTest;
 
-    if test_civx
+    if check_civx
         if ~isfield(Data,'fix')
             Data.ListGlobalAttribute=[Data.ListGlobalAttribute 'fix'];
             Data.fix=1;
@@ -235,7 +129,7 @@ if isfield (Param,'Fix1')
 end   
 %% Patch1
 if isfield (Param,'Patch1')
-    test_patch1=1;
+    check_patch1=1;
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch1_Rho','Patch1_Threshold','Patch1_SubDomain'}];
     Data.Patch1_Rho=str2double(Param.Patch1.Rho);
     Data.Patch1_Threshold=str2double(Param.Patch1.Threshold);
@@ -264,11 +158,11 @@ end
 %% Civ2
 if isfield (Param,'Civ2')
     par_civ2=Param.Civ2;
-    if ~test_civ1 || ~strcmp(par_civ1.filename_ima_a,par_civ2.filename_ima_a)
-            image1=imread(par_civ2.filename_ima_a);%read first image if not already done for civ1 
+    if ~check_civ1 || ~strcmp(par_civ1.filename_ima_a,par_civ2.filename_ima_a)
+            par_civ2.ImageA=imread(par_civ2.filename_ima_a);%read first image if not already done for civ1 
     end
-    if ~test_civ1|| ~strcmp(par_civ1.filename_ima_b,par_civ2.filename_ima_b)
-            image2=imread(par_civ2.filename_ima_b);%read second image if not already done for civ1 
+    if ~check_civ1|| ~strcmp(par_civ1.filename_ima_b,par_civ2.filename_ima_b)
+            par_civ2.ImageB=imread(par_civ2.filename_ima_b);%read second image if not already done for civ1 
     end
 %     stepx=str2double(par_civ2.dx);
 %     stepy=str2double(par_civ2.dy);
@@ -277,7 +171,7 @@ if isfield (Param,'Civ2')
     isx2=ibx2+2;
     isy2=iby2+2;
     %get the previous guess for displacement
-    if ~test_patch1
+    if ~check_patch1
         [Guess,VelType]=read_civdata(ObjectName,InputField,ParamIn.VelType);%TO DEVELOP
     else
         Data.Civ1_U_Diff=zeros(size(Data.Civ1_X));
@@ -296,8 +190,8 @@ if isfield (Param,'Civ2')
     % shiftx=velocity interpolated at position 
     miniy=max(1+isy2+shifty,1+iby2);
     minix=max(1+isx2-shiftx,1+ibx2);
-    maxiy=min(size(image1,1)-isy2+shifty,size(image1,1)-iby2);
-    maxix=min(size(image1,2)-isx2-shiftx,size(image1,2)-ibx2);
+    maxiy=min(size(par_civ2.ImageA,1)-isy2+shifty,size(par_civ2.ImageA,1)-iby2);
+    maxix=min(size(par_civ2.ImageA,2)-isx2-shiftx,size(par_civ2.ImageA,2)-ibx2);
     [GridX,GridY]=meshgrid(minix:par_civ2.Dx:maxix,miniy:par_civ2.Dy:maxiy);
     PointCoord(:,1)=reshape(GridX,[],1);
     PointCoord(:,2)=reshape(GridY,[],1);
@@ -305,7 +199,7 @@ if isfield (Param,'Civ2')
         mask=imread(par_civ2.maskname);
     end
     % caluclate velocity data (y and v in indices, reverse to y component)
-    [xtable ytable utable vtable ctable F] = civ (image1,image2,ibx2,iby2,isx2,isy2,shiftx,-shifty,PointCoord,str2num(par_civ1.rho),mask);
+    [xtable ytable utable vtable ctable F] = civ (par_civ2.ImageA,par_civ1.ImageB,ibx2,iby2,isx2,isy2,shiftx,-shifty,PointCoord,str2num(par_civ1.rho),mask);
     list_param=(fieldnames(par_civ1))';
     list_remove={'pxcmx','pxcmy','npx','npy','gridflag','maskflag','term_a','term_b','T0'};
     index=zeros(size(list_param));
@@ -336,7 +230,7 @@ if isfield (Param,'Civ2')
     Data.VarAttribute{4}.Role='vector_y';
     Data.VarAttribute{5}.Role='warnflag';
     Data.Civ1_X=reshape(xtable,[],1);
-    Data.Civ1_Y=reshape(size(image1,1)-ytable+1,[],1);
+    Data.Civ1_Y=reshape(size(par_civ2.ImageA,1)-ytable+1,[],1);
     Data.Civ1_U=reshape(utable,[],1);
     Data.Civ1_V=reshape(-vtable,[],1);
     Data.Civ1_C=reshape(ctable,[],1);
@@ -353,7 +247,7 @@ if isfield (Param,'Fix2')
         eval(['Data.ListGlobalAttribute=[Data.ListGlobalAttribute ''' ParamName '''];'])
         eval(['Data.' ListName '=Param.Fix2.' ParamName ';'])
     end
-    if test_civx
+    if check_civx
         if ~isfield(Data,'fix2')
             Data.ListGlobalAttribute=[Data.ListGlobalAttribute 'fix2'];
             Data.fix2=1;
@@ -404,6 +298,260 @@ if exist('ncfile','var')
     errormsg=struct2nc(ncfile,Data);
 end
 
+% 'civ': function piv.m adapted from PIVlab http://pivlab.blogspot.com/
+%--------------------------------------------------------------------------
+% function [xtable ytable utable vtable typevector] = civ (image1,image2,ibx,iby step, subpixfinder, mask, roi)
+%
+% OUTPUT:
+% xtable: set of x coordinates
+% ytable: set of y coordiantes
+% utable: set of u displacements (along x)
+% vtable: set of v displacements (along y)
+% ctable: max image correlation for each vector
+% typevector: set of flags, =1 for good, =0 for NaN vectors
+%
+%INPUT:
+% image1:first image (matrix)
+% image2: second image (matrix)
+% ibx2,iby2: half size of the correlation box along x and y, in px (size=(2*iby2+1,2*ibx2+1)
+% isx2,isy2: half size of the search box along x and y, in px (size=(2*isy2+1,2*isx2+1)
+% shiftx, shifty: shift of the search box (in pixel index, yshift reversed)
+% step: mesh of the measurement points (in px)
+% subpixfinder=1 or 2 controls the curve fitting of the image correlation
+% mask: =[] for no mask
+% roi: 4 element vector defining a region of interest: x position, y position, width, height, (in image indices), for the whole image, roi=[];
+function [xtable ytable utable vtable ctable F result_conv errormsg] = civ (par_civ)
+%this funtion performs the DCC PIV analysis. Recent window-deformation
+%methods perform better and will maybe be implemented in the future.
+
+%% prepare grid
+ibx2=ceil(par_civ.Bx/2);
+iby2=ceil(par_civ.By/2);
+isx2=ceil(par_civ.Searchx/2);
+isy2=ceil(par_civ.Searchy/2);
+shiftx=par_civ.Shiftx;
+shifty=-par_civ.Shifty;% sign minus because image j index increases when y decreases
+if isfield(par_civ,'Grid')
+    if ischar(par_civ.Grid)
+        par_civ.Grid;
+        par_civ.Grid=dlmread(par_civ.Grid);
+        par_civ.Grid(1,:)=[];%the first line must be removed (heading in the grid file)
+    end
+else% automatic measurement grid
+    ibx2=ceil(par_civ.Bx/2);
+    iby2=ceil(par_civ.By/2);
+    isx2=ceil(par_civ.Searchx/2);
+    isy2=ceil(par_civ.Searchy/2);
+    shiftx=par_civ.Shiftx;
+    shifty=-par_civ.Shifty;
+    miniy=max(1+isy2+shifty,1+iby2);
+    minix=max(1+isx2-shiftx,1+ibx2);
+    maxiy=min(par_civ.ImageHeight-isy2+shifty,par_civ.ImageHeight-iby2);
+    maxix=min(par_civ.ImageWidth-isx2-shiftx,par_civ.ImageWidth-ibx2);
+    [GridX,GridY]=meshgrid(minix:par_civ.Dx:maxix,miniy:par_civ.Dy:maxiy);
+    par_civ.Grid(:,1)=reshape(GridX,[],1);
+    par_civ.Grid(:,2)=reshape(GridY,[],1);
+end
+
+%% Default output
+nbvec=size(par_civ.Grid,1);
+xtable=par_civ.Grid(:,1);
+ytable=par_civ.Grid(:,2);
+utable=zeros(nbvec,1);
+vtable=zeros(nbvec,1);
+ctable=zeros(nbvec,1);
+F=zeros(nbvec,1);
+result_conv=[];
+errormsg='';
+
+%% prepare mask
+if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
+    if strcmp(par_civ.Mask,'all')
+        return    % get the grid only, no civ calculation
+    elseif ischar(par_civ.Mask)
+        par_civ.Mask=imread(par_civ.Mask);
+    end
+end
+check_MinIma=isfield(par_civ,'MinIma');% test for image luminosity threshold
+check_MaxIma=isfield(par_civ,'MaxIma') && ~isempty(par_civ.MaxIma);
+
+%% prepare images
+if ischar(par_civ.ImageA)
+    par_civ.ImageA=imread(par_civ.ImageA);
+end
+if ischar(par_civ.ImageB)
+    par_civ.ImageB=imread(par_civ.ImageB);
+end
+[npy_ima npx_ima]=size(par_civ.ImageA);
+if ~isequal(size(par_civ.ImageB),[npy_ima npx_ima])
+    errormsg='image pair with unequal size';
+    return
+end
+par_civ.ImageA=double(par_civ.ImageA);
+par_civ.ImageB=double(par_civ.ImageB);
+
+
+%% Apply mask
+    % Convention for mask
+    % mask >200 : velocity calculated
+    %  200 >=mask>150;velocity not calculated, interpolation allowed (bad spots)
+    % 150>=mask >100: velocity not calculated, nor interpolated
+    %  100>=mask> 20: velocity not calculated, impermeable (no flux through mask boundaries) TO IMPLEMENT
+    %  20>=mask: velocity=0
+checkmask=0;
+if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
+   checkmask=1;
+   if ~isequal(size(par_civ.Mask),[npy_ima npx_ima])
+        errormsg='mask must be an image with the same size as the images';
+        return
+   end
+  %  check_noflux=(par_civ.Mask<100) ;%TODO: to implement
+    check_undefined=(par_civ.Mask<200 & par_civ.Mask>=100 );
+    par_civ.ImageA(check_undefined)=min(min(par_civ.ImageA));% put image A to zero (i.e. the min image value) in the undefined  area
+    par_civ.ImageB(check_undefined)=min(min(par_civ.ImageB));% put image B to zero (i.e. the min image value) in the undefined  area
+end
+
+%% compute image correlations: MAINLOOP on velocity vectors
+% corrmax=0;
+% sum_square=1;% default
+% vector=[0 0];%default
+for ivec=1:nbvec
+    iref=par_civ.Grid(ivec,1);% xindex on the image A for the middle of the correlation box
+    jref=par_civ.Grid(ivec,2);% yindex on the image B for the middle of the correlation box
+%     xtable(ivec)=iref;
+%     ytable(ivec)=jref;%default
+    if ~(checkmask && par_civ.Mask(jref,iref)<=20) %velocity not set to zero by the black mask
+        if jref-iby2<1 || jref+iby2>par_civ.ImageHeight|| iref-ibx2<1 || iref+ibx2>par_civ.ImageWidth
+            F(ivec)=3;
+        else
+            image1_crop=par_civ.ImageA(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);%extract a subimage (correlation box) from image A
+            image2_crop=par_civ.ImageB(jref+shifty-isy2:jref+shifty+isy2,iref+shiftx-isx2:iref+shiftx+isx2);%extract a larger subimage (search box) from image B
+            image1_mean=mean(mean(image1_crop));
+            image2_mean=mean(mean(image2_crop));
+            %threshold on image minimum
+            if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
+                F(ivec)=3;
+            end
+        end
+        %threshold on image maximum
+        if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
+            F(ivec)=3;
+        end
+        if F(ivec)~=3
+            image1_crop=image1_crop-image1_mean;%substract the mean
+            image2_crop=image2_crop-image2_mean;
+            sum_square=sum(sum(image1_crop.*image1_crop));
+            %reference: Oliver Pust, PIV: Direct Cross-Correlation
+            result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
+            corrmax= max(max(result_conv));
+            result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
+            %Find the correlation max, at 255
+            [y,x] = find(result_conv==255,1);
+            if ~isempty(y) && ~isempty(x)
+                try
+                    if par_civ.Rho==1
+                        [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
+                    elseif par_civ.Rho==2
+                        [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
+                    end
+                    utable(ivec)=vector(1)+shiftx;
+                    vtable(ivec)=vector(2)+shifty;
+                    xtable(ivec)=iref+utable(ivec)/2;% convec flow (velocity taken at the point middle from imgae1 and 2)
+                    ytable(ivec)=jref+vtable(ivec)/2;
+                    iref=round(xtable(ivec));% image index for the middle of the vector
+                    jref=round(ytable(ivec));
+                    if checkmask && par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100
+                        utable(ivec)=0;
+                        vtable(ivec)=0;
+                        F(ivec)=3;
+                    end
+                    ctable(ivec)=corrmax/sum_square;% correlation value
+                catch ME
+                    %                     vector=[0 0]; %if something goes wrong with cross correlation.....
+                    F(ivec)=3;
+                end
+            else
+                F(ivec)=3;
+            end
+        end
+    end
+    
+    %Create the vector matrix x, y, u, v
+end
+result_conv=result_conv*corrmax/(255*sum_square);% keep the last correlation matrix for output
+
+%------------------------------------------------------------------------
+% --- Find the maximum of the correlation function after interpolation
+function [vector,F] = SUBPIXGAUSS (result_conv,x,y)
+%------------------------------------------------------------------------
+vector=[0 0]; %default
+F=0;
+[npy,npx]=size(result_conv);
+
+% if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) && (y >= 1)
+    %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion – Israel Institute of Technology
+    %http://urapiv.wordpress.com
+    peaky = y;
+    if y <= npy-1 && y >= 1
+        f0 = log(result_conv(y,x));
+        f1 = real(log(result_conv(y-1,x)));
+        f2 = real(log(result_conv(y+1,x)));
+        peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
+    else
+        F=-2; % warning flag for vector truncated by the limited search box
+    end
+    peakx=x;
+    if x <= npx-1 && x >= 1
+        f0 = log(result_conv(y,x));
+        f1 = real(log(result_conv(y,x-1)));
+        f2 = real(log(result_conv(y,x+1)));
+        peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
+    else
+        F=-2; % warning flag for vector truncated by the limited search box
+    end
+    vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
+
+%------------------------------------------------------------------------
+% --- Find the maximum of the correlation function after interpolation
+function [vector,F] = SUBPIX2DGAUSS (result_conv,x,y)
+%------------------------------------------------------------------------
+vector=[0 0]; %default
+F=-2;
+peaky=y;
+peakx=x;
+[npy,npx]=size(result_conv);
+if (x <= npx-1) && (y <= npy-1) && (x >= 1) && (y >= 1)
+    F=0;
+    for i=-1:1
+        for j=-1:1
+            %following 15 lines based on
+            %H. Nobach Æ M. Honkanen (2005)
+            %Two-dimensional Gaussian regression for sub-pixel displacement
+            %estimation in particle image velocimetry or particle position
+            %estimation in particle tracking velocimetry
+            %Experiments in Fluids (2005) 38: 511–515
+            c10(j+2,i+2)=i*log(result_conv(y+j, x+i));
+            c01(j+2,i+2)=j*log(result_conv(y+j, x+i));
+            c11(j+2,i+2)=i*j*log(result_conv(y+j, x+i));
+            c20(j+2,i+2)=(3*i^2-2)*log(result_conv(y+j, x+i));
+            c02(j+2,i+2)=(3*j^2-2)*log(result_conv(y+j, x+i));
+        end
+    end
+    c10=(1/6)*sum(sum(c10));
+    c01=(1/6)*sum(sum(c01));
+    c11=(1/4)*sum(sum(c11));
+    c20=(1/6)*sum(sum(c20));
+    c02=(1/6)*sum(sum(c02)); 
+    deltax=(c11*c01-2*c10*c02)/(4*c20*c02-c11^2);
+    deltay=(c11*c10-2*c01*c20)/(4*c20*c02-c11^2);
+    if abs(deltax)<1
+        peakx=x+deltax;
+    end
+    if abs(deltay)<1
+        peaky=y+deltay;
+    end
+end
+vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 
 %'RUN_FIX': function for fixing velocity fields:
 %-----------------------------------------------
@@ -434,8 +582,8 @@ Param
 %criterium on warn flags
 FlagName={'CheckFmin2','CheckF2','CheckF3','CheckF4'};
 FlagVal=[-2 2 3 4];
-for iflag=1:numel(FlagVal)
-    if Param.(CheckFlag(iflag))
+for iflag=1:numel(FlagName)
+    if isfield(Param,FlagName{iflag}) && Param.(FlagName{iflag})
         FF=(FF==1| F==FlagVal(iflag));
 % if isfield (Param,'WarnFlags')
 %     for iflag=1:numel(Param.WarnFlags)
@@ -448,48 +596,57 @@ end
 if isfield (Param,'MinCorr')
     FF=FF==1 | C<Param.MinCorr;
 end
+if isfield (Param,'MinVel')||(isfield (Param,'MaxVel')&&~isempty(Param.MaxVel))
+    Umod= U.*U+V.*V;
+    if isfield (Param,'MinVel')
+        FF=FF==1 | Umod<(Param.MinVel*Param.MinVel);
+    end
+    if isfield (Param,'MaxVel')&&~isempty(Param.MaxVel)
+        FF=FF==1 | Umod>(Param.MaxVel*Param.MaxVel);
+    end
+end
 return
 
-
-if isfield (Param,'LowerBoundVel')&& ~isequal(Param.LowerBoundVel,0)
-    thresh=Param.LowerBoundVel*Param.LowerBoundVel;
-    FF=FF==1 | (U.*U+V.*V)<thresh;
-end
-if isfield (Param,'UpperBoundVel')&& ~isequal(Param.UpperBoundVel,0)
-    thresh=Param.UpperBoundVel*Param.UpperBoundVel;
-    FF=FF==1 | (U.*U+V.*V)>thresh;
-end
-if isfield(Param,'MaskName')
-   M=imread(Param.MaskName);
-   nxy=size(M);
-   M=reshape(M,1,[]);
-   rangx0=[0.5 nxy(2)-0.5];
-   rangy0=[0.5 nxy(1)-0.5];
-   vec_x1=X-U/2;%beginning points
-   vec_x2=X+U/2;%end points of vectors
-   vec_y1=Y-V/2;%beginning points
-   vec_y2=Y+V/2;%end points of vectors
-   indx=1+round((nxy(2)-1)*(vec_x1-rangx0(1))/(rangx0(2)-rangx0(1)));% image index x at abcissa vec_x1
-   indy=1+round((nxy(1)-1)*(vec_y1-rangy0(1))/(rangy0(2)-rangy0(1)));% image index y at ordinate vec_y1   
-   test_in=~(indx < 1 |indy < 1 | indx > nxy(2) |indy > nxy(1)); %=0 out of the mask image, 1 inside
-   indx=indx.*test_in+(1-test_in); %replace indx by 1 out of the mask range
-   indy=indy.*test_in+(1-test_in); %replace indy by 1 out of the mask range
-   ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));%determine the indices in the image reshaped in a Matlab vector
-   Mvalues=M(ICOMB);
-   flag7b=((20 < Mvalues) & (Mvalues < 200))| ~test_in';
-   indx=1+round((nxy(2)-1)*(vec_x2-rangx0(1))/(rangx0(2)-rangx0(1)));% image index x at abcissa vec_x2
-   indy=1+round((nxy(1)-1)*(vec_y2-rangy0(1))/(rangy0(2)-rangy0(1)));% image index y at ordinate vec_y2
-   test_in=~(indx < 1 |indy < 1 | indx > nxy(2) |indy > nxy(1)); %=0 out of the mask image, 1 inside
-   indx=indx.*test_in+(1-test_in); %replace indx by 1 out of the mask range
-   indy=indy.*test_in+(1-test_in); %replace indy by 1 out of the mask range
-   ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));%determine the indices in the image reshaped in a Matlab vector
-   Mvalues=M(ICOMB);
-   flag7e=((Mvalues > 20) & (Mvalues < 200))| ~test_in';
-   FF=FF==1 |(flag7b|flag7e)';
-end
-%    flag7=0;
-% end   
-
+% 
+% if isfield (Param,'LowerBoundVel')&& ~isequal(Param.LowerBoundVel,0)
+%     thresh=Param.LowerBoundVel*Param.LowerBoundVel;
+%     FF=FF==1 | (U.*U+V.*V)<thresh;
+% end
+% if isfield (Param,'UpperBoundVel')&& ~isequal(Param.UpperBoundVel,0)
+%     thresh=Param.UpperBoundVel*Param.UpperBoundVel;
+%     FF=FF==1 | (U.*U+V.*V)>thresh;
+% end
+% if isfield(Param,'MaskName')
+%    M=imread(Param.MaskName);
+%    nxy=size(M);
+%    M=reshape(M,1,[]);
+%    rangx0=[0.5 nxy(2)-0.5];
+%    rangy0=[0.5 nxy(1)-0.5];
+%    vec_x1=X-U/2;%beginning points
+%    vec_x2=X+U/2;%end points of vectors
+%    vec_y1=Y-V/2;%beginning points
+%    vec_y2=Y+V/2;%end points of vectors
+%    indx=1+round((nxy(2)-1)*(vec_x1-rangx0(1))/(rangx0(2)-rangx0(1)));% image index x at abcissa vec_x1
+%    indy=1+round((nxy(1)-1)*(vec_y1-rangy0(1))/(rangy0(2)-rangy0(1)));% image index y at ordinate vec_y1   
+%    check_in=~(indx < 1 |indy < 1 | indx > nxy(2) |indy > nxy(1)); %=0 out of the mask image, 1 inside
+%    indx=indx.*check_in+(1-check_in); %replace indx by 1 out of the mask range
+%    indy=indy.*check_in+(1-check_in); %replace indy by 1 out of the mask range
+%    ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));%determine the indices in the image reshaped in a Matlab vector
+%    Mvalues=M(ICOMB);
+%    flag7b=((20 < Mvalues) & (Mvalues < 200))| ~check_in';
+%    indx=1+round((nxy(2)-1)*(vec_x2-rangx0(1))/(rangx0(2)-rangx0(1)));% image index x at abcissa vec_x2
+%    indy=1+round((nxy(1)-1)*(vec_y2-rangy0(1))/(rangy0(2)-rangy0(1)));% image index y at ordinate vec_y2
+%    check_in=~(indx < 1 |indy < 1 | indx > nxy(2) |indy > nxy(1)); %=0 out of the mask image, 1 inside
+%    indx=indx.*check_in+(1-check_in); %replace indx by 1 out of the mask range
+%    indy=indy.*check_in+(1-check_in); %replace indy by 1 out of the mask range
+%    ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));%determine the indices in the image reshaped in a Matlab vector
+%    Mvalues=M(ICOMB);
+%    flag7e=((Mvalues > 20) & (Mvalues < 200))| ~check_in';
+%    FF=FF==1 |(flag7b|flag7e)';
+% end
+% %    flag7=0;
+% % end   
+% 
 
 FF=double(FF);
 % 
@@ -574,7 +731,7 @@ V_smooth=zeros(length(X),1);
 
 nb_select=zeros(length(X),1);
 FF=zeros(length(X),1);
-test_empty=zeros(1,NbSubDomain);
+check_empty=zeros(1,NbSubDomain);
 for isub=1:NbSubDomain
     SubRangx(isub,:)=[CentreX(isub)-SizX/2 CentreX(isub)+SizX/2];
     SubRangy(isub,:)=[CentreY(isub)-SizY/2 CentreY(isub)+SizY/2];
@@ -585,7 +742,7 @@ for isub=1:NbSubDomain
         ind_sel=find(X>SubRangx(isub,1) & X<SubRangx(isub,2) & Y>SubRangy(isub,1) & Y<SubRangy(isub,2));
         % if no vector in the subdomain, skip the subdomain
         if isempty(ind_sel)
-            test_empty(isub)=1;    
+            check_empty(isub)=1;    
             U_tps(1,isub)=0;%define U_tps and V_tps by default
             V_tps(1,isub)=0;
             break
@@ -640,7 +797,7 @@ for isub=1:NbSubDomain
         end
     end
 end
-ind_empty=find(test_empty);
+ind_empty=find(check_empty);
 %remove empty subdomains
 if ~isempty(ind_empty)
     SubRangx(ind_empty,:)=[];
@@ -655,203 +812,6 @@ U_smooth=U_smooth./nb_select;
 V_smooth=V_smooth./nb_select;
 
 
-% 'civ': function piv.m adapted from PIVlab http://pivlab.blogspot.com/
-%--------------------------------------------------------------------------
-% function [xtable ytable utable vtable typevector] = civ (image1,image2,ibx,iby step, subpixfinder, mask, roi)
-%
-% OUTPUT:
-% xtable: set of x coordinates
-% ytable: set of y coordiantes
-% utable: set of u displacements (along x)
-% vtable: set of v displacements (along y)
-% ctable: max image correlation for each vector
-% typevector: set of flags, =1 for good, =0 for NaN vectors
-%
-%INPUT:
-% image1:first image (matrix)
-% image2: second image (matrix)
-% ibx2,iby2: half size of the correlation box along x and y, in px (size=(2*iby2+1,2*ibx2+1)
-% isx2,isy2: half size of the search box along x and y, in px (size=(2*isy2+1,2*isx2+1)
-% shiftx, shifty: shift of the search box (in pixel index, yshift reversed)
-% step: mesh of the measurement points (in px)
-% subpixfinder=1 or 2 controls the curve fitting of the image correlation
-% mask: =[] for no mask
-% roi: 4 element vector defining a region of interest: x position, y position, width, height, (in image indices), for the whole image, roi=[];
-function [xtable ytable utable vtable ctable F result_conv errormsg] = civ (image1,image2,ibx2,iby2,isx2,isy2,shiftx,shifty, GridIndices, subpixfinder,mask)
-%this funtion performs the DCC PIV analysis. Recent window-deformation
-%methods perform better and will maybe be implemented in the future.
-nbvec=size(GridIndices,1);
-xtable=zeros(nbvec,1);
-ytable=xtable;
-utable=xtable;
-vtable=xtable;
-ctable=xtable;
-F=xtable;
-result_conv=[];
-errormsg='';
-%warning off %MATLAB:log:logOfZero
-[npy_ima npx_ima]=size(image1);
-if ~isequal(size(image2),[npy_ima npx_ima])
-    errormsg='image pair with unequal size';
-    return
-end
 
-%% mask
-testmask=0;
-image1=double(image1);
-image2=double(image2);
-if exist('mask','var') && ~isempty(mask)
-   testmask=1;
-   if ~isequal(size(mask),[npy_ima npx_ima])
-        errormsg='mask must be an image with the same size as the images';
-        return
-   end
-    % Convention for mask
-    % mask >200 : velocity calculated
-    %  200 >=mask>150;velocity not calculated, interpolation allowed (bad spots)
-    % 150>=mask >100: velocity not calculated, nor interpolated
-    %  100>=mask> 20: velocity not calculated, impermeable (no flux through mask boundaries)
-    %  20>=mask: velocity=0
-    test_noflux=(mask<100) ;
-    test_undefined=(mask<200 & mask>=100 );
-    image1(test_undefined)=min(min(image1));% put image to zero in the undefined  area
-    image2(test_undefined)=min(min(image2));% put image to zero in the undefined  area
-end
-
-%% calculate correlations: MAINLOOP on velocity vectors
-corrmax=0;
-sum_square=1;% default
-for ivec=1:nbvec 
-    iref=GridIndices(ivec,1);
-    jref=GridIndices(ivec,2);
-    testmask_ij=0;
-    test0=0;
-    if testmask
-        if mask(jref,iref)<=20
-           vector=[0 0];
-           test0=1;
-        else
-            mask_crop1=mask(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);
-            mask_crop2=mask(jref+shifty-isy2:jref+shifty+isy2,iref+shiftx-isx2:iref+shiftx+isx2);
-            if ~isempty(find(mask_crop1<=200 & mask_crop1>100,1)) || ~isempty(find(mask_crop2<=200 & mask_crop2>100,1));
-                testmask_ij=1;
-            end
-        end
-    end
-    if ~test0    
-        image1_crop=image1(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);%extract a subimage (correlation box) from images 1  
-        image2_crop=image2(jref+shifty-isy2:jref+shifty+isy2,iref+shiftx-isx2:iref+shiftx+isx2);%extract a larger subimage (search box) from image 2
-        image1_crop=image1_crop-mean(mean(image1_crop));%substract the mean
-        image2_crop=image2_crop-mean(mean(image2_crop));
-        %reference: Oliver Pust, PIV: Direct Cross-Correlation
-        result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
-        corrmax= max(max(result_conv));
-        result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
-        %Find the correlation max, at 255
-        [y,x] = find(result_conv==255,1);
-        if ~isempty(y) && ~isempty(x)
-            try
-                if subpixfinder==1
-                    [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
-                elseif subpixfinder==2
-                    [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
-                end
-                sum_square=sum(sum(image1_crop.*image1_crop));
-                ctable(ivec)=corrmax/sum_square;% correlation value
-%                 if vector(1)>shiftx+isx2-ibx2+subpixfinder || vector(2)>shifty+isy2-iby2+subpixfinder
-%                     F(ivec)=-2;%vector reaches the border of the search zone
-%                 end
-            catch ME
-                vector=[0 0]; %if something goes wrong with cross correlation.....
-                F(ivec)=3;
-            end
-        else
-            vector=[0 0]; %if something goes wrong with cross correlation.....
-            F(ivec)=3;
-        end
-        if testmask_ij
-            F(ivec)=3;
-        end
-    end
-    
-    %Create the vector matrix x, y, u, v
-    xtable(ivec)=iref+vector(1)/2;% convec flow (velocity taken at the point middle from imgae1 and 2)
-    ytable(ivec)=jref+vector(2)/2;
-    utable(ivec)=vector(1)+shiftx;
-    vtable(ivec)=vector(2)+shifty;
-end
-result_conv=result_conv*corrmax/(255*sum_square);% keep the last correlation matrix for output
-
-
-function [vector,F] = SUBPIXGAUSS (result_conv,x,y)
-vector=[0 0]; %default
-F=0;
-[npy,npx]=size(result_conv);
-
-% if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) && (y >= 1)
-    %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion – Israel Institute of Technology
-    %http://urapiv.wordpress.com
-    peaky = y;
-    if y <= npy-1 && y >= 1
-        f0 = log(result_conv(y,x));
-        f1 = real(log(result_conv(y-1,x)));
-        f2 = real(log(result_conv(y+1,x)));
-        peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
-    else
-        F=-2; % warning flag for vector truncated by the limited search box
-    end
-    peakx=x;
-    if x <= npx-1 && x >= 1
-        f0 = log(result_conv(y,x));
-        f1 = real(log(result_conv(y,x-1)));
-        f2 = real(log(result_conv(y,x+1)));
-        peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
-    else
-        F=-2; % warning flag for vector truncated by the limited search box
-    end
-    vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
-% else
-%     vector=[NaN NaN];
-% end
-
-function [vector,F] = SUBPIX2DGAUSS (result_conv,x,y)
-vector=[0 0]; %default
-F=-2;
-peaky=y;
-peakx=x;
-[npy,npx]=size(result_conv);
-if (x <= npx-1) && (y <= npy-1) && (x >= 1) && (y >= 1)
-    F=0;
-    for i=-1:1
-        for j=-1:1
-            %following 15 lines based on
-            %H. Nobach Æ M. Honkanen (2005)
-            %Two-dimensional Gaussian regression for sub-pixel displacement
-            %estimation in particle image velocimetry or particle position
-            %estimation in particle tracking velocimetry
-            %Experiments in Fluids (2005) 38: 511–515
-            c10(j+2,i+2)=i*log(result_conv(y+j, x+i));
-            c01(j+2,i+2)=j*log(result_conv(y+j, x+i));
-            c11(j+2,i+2)=i*j*log(result_conv(y+j, x+i));
-            c20(j+2,i+2)=(3*i^2-2)*log(result_conv(y+j, x+i));
-            c02(j+2,i+2)=(3*j^2-2)*log(result_conv(y+j, x+i));
-            %c00(j+2,i+2)=(5-3*i^2-3*j^2)*log(result_conv_norm(maxY+j, maxX+i));
-        end
-    end
-    c10=(1/6)*sum(sum(c10));
-    c01=(1/6)*sum(sum(c01));
-    c11=(1/4)*sum(sum(c11));
-    c20=(1/6)*sum(sum(c20));
-    c02=(1/6)*sum(sum(c02)); 
-    deltax=(c11*c01-2*c10*c02)/(4*c20*c02-c11^2);
-    deltay=(c11*c10-2*c01*c20)/(4*c20*c02-c11^2);
-    if abs(deltax)<1
-        peakx=x+deltax;
-    end
-    if abs(deltay)<1
-        peaky=y+deltay;
-    end
-end
-vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 
 

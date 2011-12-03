@@ -9,16 +9,15 @@
 % colcode: struture setting the colorcode for vectors
             % colcode.CName: 'ima_cor','black','white',...
             % colcode.ListColorCode ='black', 'white', 'rgb','brg', '64 colors'
-            % colcode.FixedCbounds =0; thresholds scaling relative to min and max, =1 fixed thresholds
-            % colcode.MinC; min 
-            % colcode.MaxC; max
+            % colcode.CheckFixVecColor =0; thresholds scaling relative to min and max, =1 fixed thresholds
+            % colcode.MinVec; min 
+            % colcode.MaxVec; max
             % colcode.ColCode1: first threshold for rgb, relative to min (0) and max (1)
             % colcode.ColCode2: second threshold for rgb, relative to min (0) and max (1), 
             % rmq: we need min <= ColCode1 <= ColCode2 <= max, otherwise
             % ColCode1 and ColCode2 are adjusted to the bounds
 % vec_C: matlab vector representing the scalar setting the color
 function [colorlist,col_vec,colcode_out]=set_col_vec(colcode,vec_C)
-
 col_vec=[]; 
 colcode_out=colcode;%default
 if isempty(vec_C) || ~isnumeric(vec_C)
@@ -60,13 +59,13 @@ elseif strcmp(colcode.ListColorCode,'white')
     colorlist(1,:)=[1 1 1];%white
     col_vec=ones(size(vec_C));%all vectors at color#1
 elseif strcmp(colcode.ListColorCode,'rgb')|| strcmp(colcode.ListColorCode,'bgr')% 3 color representation
-    ind1=find(vec_C < ColCode1); % =1 for red vectors
+%    ind1=find(vec_C < ColCode1); % =1 for red vectors
     ind_green=find((vec_C >= ColCode1) & (vec_C < ColCode2));% =1 for green vectors
-    ind3=find(vec_C >= ColCode2);% =1 for blue vectors
+%     ind3=find(vec_C >= ColCode2);% =1 for blue vectors
     colorlist(2,:)=[0 1 0];%green
-    col_vec(ind1)=1;
+    col_vec(vec_C < ColCode1)=1;
     col_vec(ind_green)=2;
-    col_vec(ind3)=3;
+    col_vec(vec_C >= ColCode2)=3;
     if strcmp(colcode.ListColorCode,'rgb')
         colorlist(1,:)=[1 0 0];%red
         colorlist(3,:)=[0 0 1];%blue

@@ -931,13 +931,13 @@ end
 
 %% view the field  
 run0_Callback(hObject, eventdata, handles); %view field
-mask_test=get(handles.mask_test,'value');
+mask_test=get(handles.CheckMask,'value');
 if mask_test
-    MaskData=get(handles.mask_test,'UserData');
+    MaskData=get(handles.CheckMask,'UserData');
     if isfield(MaskData,'maskhandle') && ishandle(MaskData.maskhandle)
           delete(MaskData.maskhandle)    %delete old mask
     end
-    mask_test_Callback(hObject, eventdata, handles)
+    CheckMask_Callback(hObject, eventdata, handles)
 end
 
 %------------------------------------------------------------------------
@@ -1452,11 +1452,11 @@ if isequal(option,'view .xml')
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in mask_test.
-function mask_test_Callback(hObject, eventdata, handles)
+% --- Executes on button press in CheckMask.
+function CheckMask_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %case of view mask selection
-if isequal(get(handles.mask_test,'Value'),1)
+if isequal(get(handles.CheckMask,'Value'),1)
     [FF,RootPath,FileBase]=read_file_boxes(handles);
     num_i1=stra2num(get(handles.i1,'String'));
     num_j1=stra2num(get(handles.j1,'String'));
@@ -1498,8 +1498,8 @@ if isequal(get(handles.mask_test,'Value'),1)
             if mdetect
                 set(handles.nb_slice,'String',Name(i+1:ind_mask-1));
                 set(handles.nb_slice,'BackgroundColor',[1 1 0])
-                set(handles.mask_test,'UserData',Mask);
-                set(handles.mask_test,'BackgroundColor',[1 1 0])
+                set(handles.CheckMask,'UserData',Mask);
+                set(handles.CheckMask,'BackgroundColor',[1 1 0])
                 if nbslice > 1
                     set(handles.slices,'value',1)
                     slices_Callback(hObject, eventdata, handles)
@@ -1521,41 +1521,41 @@ if isequal(get(handles.mask_test,'Value'),1)
         [RootDir,RootFile,x1,x2,xa,xb,xext,Mask.NomType]=name2display(maskname);
         Mask.Base=fullfile(RootDir,RootFile);
         Mask.NbSlice=1;
-        set(handles.mask_test,'UserData',Mask);
-        set(handles.mask_test,'BackgroundColor',[1 1 0])
+        set(handles.CheckMask,'UserData',Mask);
+        set(handles.CheckMask,'BackgroundColor',[1 1 0])
     end
     if isempty(errormsg)
         errormsg=update_mask(handles,num_i1,num_j1);
     end
     if ~isempty(errormsg)
-            set(handles.mask_test,'Value',0)
-            set(handles.mask_test,'BackgroundColor',[0.7 0.7 0.7])
+            set(handles.CheckMask,'Value',0)
+            set(handles.CheckMask,'BackgroundColor',[0.7 0.7 0.7])
      end
-else 
-    MaskData=get(handles.mask_test,'UserData');
+else % desactivate mask display
+    MaskData=get(handles.CheckMask,'UserData');
     if isfield(MaskData,'maskhandle') && ishandle(MaskData.maskhandle)
           delete(MaskData.maskhandle)    
     end
-    set(handles.mask_test,'UserData',[])    
+    set(handles.CheckMask,'UserData',[])    
     UvData=get(handles.uvmat,'UserData');
     if isfield(UvData,'MaskName')
         UvData=rmfield(UvData,'MaskName');
         set(handles.uvmat,'UserData',UvData)
     end
-    set(handles.mask_test,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckMask,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 %------------------------------------------------------------------------
 function errormsg=update_mask(handles,num_i1,num_j1)
 %------------------------------------------------------------------------
 errormsg=[];%default
-MaskData=get(handles.mask_test,'UserData');
+MaskData=get(handles.CheckMask,'UserData');
 if isfield(MaskData,'maskhandle')&& ishandle(MaskData.maskhandle)
     uistack(MaskData.maskhandle,'top');
 end
 num_i1_mask=mod(num_i1-1,MaskData.NbSlice)+1;
 MaskName=name_generator(MaskData.Base,num_i1_mask,num_j1,'.png',MaskData.NomType);
-huvmat=get(handles.mask_test,'parent');
+huvmat=get(handles.CheckMask,'parent');
 UvData=get(huvmat,'UserData');
 
 %update mask image if the mask is new
@@ -1622,7 +1622,7 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
             hold on    
             MaskData.maskhandle=image(Mask.AX,Mask.AY,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*flagmask);
 %             set(MaskData.maskhandle,'AlphaData',0.6*flagmask)
-            set(handles.mask_test,'UserData',MaskData)
+            set(handles.CheckMask,'UserData',MaskData)
         end
     end
 end
@@ -2555,13 +2555,7 @@ keeplim(1)=get(handles.CheckFixLimits,'Value');% test for fixed graph limits
 PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
 
 % second projection object (view_field display)
-% IndexObj_2=get(handles.list_object_2,'Value');%selected projection object for the second view
-% if IndexObj_2==0
-%     IndexObj_2=1;
-% end
-%if isequal(get(handles.list_object_2,'Visible'),'on') && IndexObj_2 <= numel(UvData.Object)&& ~isempty(UvData.Object{IndexObj_2})
- if length( IndexObj)>=2
-%      IndexObj(2)=IndexObj_2;
+if length( IndexObj)>=2
     view_field_handle=findobj(allchild(0),'tag','view_field');%handles of the view_field GUI
     if ~isempty(view_field_handle)
         plot_handles{2}=guidata(view_field_handle);
@@ -2578,7 +2572,7 @@ for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);
     [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
     if testnewseries && isfield(ObjectData,'CoordUnit')&& isfield(PlotParam{imap},'Coordinates')
-        PlotParam{imap}=rmfield(PlotParam{imap}.Coordinates,'CheckFixEqual'); %set FixEqual to depend on the field (=1 if Data.CoordUnit=1 in plot_field)
+        PlotParam{imap}.Coordinates=rmfield(PlotParam{imap}.Coordinates,'CheckFixEqual'); %set FixEqual to depend on the field (=1 if Data.CoordUnit=1 in plot_field)
     end 
     if ~isempty(errormsg)
         return
@@ -2650,7 +2644,7 @@ for imap=1:numel(IndexObj)
 end
 
 %% update the mask
-if isequal(get(handles.mask_test,'Value'),1)%if the mask option is on
+if isequal(get(handles.CheckMask,'Value'),1)%if the mask option is on
    update_mask(handles,num_i1,num_i2);
 end
 
@@ -3817,7 +3811,7 @@ end
 if isfield(UvData,'Object')
      UvData.Object=UvData.Object(1);
 end 
-list_object=get(handles.ListObject,'String');
+%list_object=get(handles.ListObject,'String');
 set(handles.ListObject,'Value',1)
 set(handles.ListObject,'String',{''})
 %set(handles.list_object_2,'Value',1)
@@ -3825,13 +3819,13 @@ set(handles.ListObject,'String',{''})
 %list_object_2_Callback(hObject, eventdata, handles)
 
 %delete mask if it is displayed 
-if isequal(get(handles.mask_test,'Value'),1)%if the mask option is on
+if isequal(get(handles.CheckMask,'Value'),1)%if the mask option is on
    UvData=rmfield(UvData,'MaskName'); %will impose mask refresh  
 end
 set(handles.uvmat,'UserData',UvData)
 run0_Callback(hObject, eventdata, handles)
 
-%--------------------------------------------
+%------------------------------------------------------------------------
 function histo1_menu_Callback(hObject, eventdata, handles)
 %--------------------------------------------
 %plot first histo
@@ -3841,9 +3835,9 @@ histo_value=get(handles.histo1_menu,'Value');
 FieldName=histo_menu{histo_value};
 update_histo(handles.histo_u,huvmat,FieldName)
 
-%----------------------------------------------
+%------------------------------------------------------------------------
 function histo2_menu_Callback(hObject, eventdata, handles)
-%----------------------------------------------
+%------------------------------------------------------------------------
 %plot second histo
 huvmat=get(handles.histo2_menu,'parent');
 histo_menu=get(handles.histo2_menu,'String');
@@ -3851,10 +3845,10 @@ histo_value=get(handles.histo2_menu,'Value');
 FieldName=histo_menu{histo_value};
 update_histo(handles.histo_v,huvmat,FieldName)
 
-
-%--------------------------------------------
+%------------------------------------------------------------------------
 %read the field .Fieldname stored in UvData and plot its histogram
 function update_histo(haxes,huvmat,FieldName)
+%------------------------------------------------------------------------
 UvData=get(huvmat,'UserData');
 if ~isfield(UvData.Field,FieldName)
     msgbox_uvmat('ERROR',['no field  ' FieldName ' for histogram'])
@@ -4107,17 +4101,17 @@ height=ceil(pos_vert(4));
 %get slider indications
 list=get(handles.ListColorCode,'String');
 ichoice=get(handles.ListColorCode,'Value');
-colcode.ColorCode=list{ichoice};
-colcode.MinC=str2num(get(handles.num_MinVec,'String'));
-colcode.MaxC=str2num(get(handles.num_MaxVec,'String'));
-test3color=strcmp(colcode.ColorCode,'rgb') || strcmp(colcode.ColorCode,'bgr');
+colcode.ListColorCode=list{ichoice};
+colcode.MinVec=str2num(get(handles.num_MinVec,'String'));
+colcode.MaxVec=str2num(get(handles.num_MaxVec,'String'));
+test3color=strcmp(colcode.ListColorCode,'rgb') || strcmp(colcode.ListColorCode,'bgr');
 if test3color
-    colcode.colcode1=str2num(get(handles.num_ColCode1,'String'));
-    colcode.colcode2=str2num(get(handles.num_ColCode2,'String'));
+    colcode.ColCode1=str2num(get(handles.num_ColCode1,'String'));
+    colcode.ColCode2=str2num(get(handles.num_ColCode2,'String'));
 end
-colcode.FixedCbounds=0;
-colcode.FixedCbounds=1;
-vec_C=colcode.MinC+(colcode.MaxC-colcode.MinC)*(0.5:width-0.5)/width;%sample of vec_C values from min to max
+% colcode.FixedCbounds=0;
+%colcode.CheckFixVecColor=1;
+vec_C=colcode.MinVec+(colcode.MaxVec-colcode.MinVec)*(0.5:width-0.5)/width;%sample of vec_C values from min to max
 [colorlist,col_vec]=set_col_vec(colcode,vec_C);
 oneheight=ones(1,height);
 A1=colorlist(col_vec,1)*oneheight;
@@ -4137,9 +4131,9 @@ PlotParam=read_GUI(handles.uvmat);
 [PP,PlotParamOut]= plot_field(AxeData,handles.axes3,PlotParam);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
-%-------------------------------------------------------------------
-% --- Executes on button press in grid.
-function grid_Callback(hObject, eventdata, handles)
+% %-------------------------------------------------------------------
+% % --- Executes on button press in grid.
+% function grid_Callback(hObject, eventdata, handles)
 
 
 %-------------------------------------------------------------------
