@@ -2551,6 +2551,15 @@ else
 end
 %PlotParam{1}=read_plot_param(handles);%read plotting parameters on the uvmat interfac
 PlotParam{1}=read_GUI(handles.uvmat);
+if ~isfield(PlotParam{1},'Vectors')
+    PlotParam{1}.Vectors.MaxVec=1;
+    PlotParam{1}.Vectors.MinVec=0;
+    PlotParam{1}.Vectors.CheckFixVecColor=1;
+    PlotParam{1}.Vectors.ColCode1=0.33;
+    PlotParam{1}.Vectors.ColCode2=0.66;
+     PlotParam{1}.Vectors.ListColorScalar={'ima_cor'};
+     PlotParam{1}.Vectors.ListColorCode= {'rgb'};
+end
 keeplim(1)=get(handles.CheckFixLimits,'Value');% test for fixed graph limits
 PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
 
@@ -2571,11 +2580,15 @@ end
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);
     [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
-    if testnewseries && isfield(ObjectData,'CoordUnit')&& isfield(PlotParam{imap},'Coordinates')
-        PlotParam{imap}.Coordinates=rmfield(PlotParam{imap}.Coordinates,'CheckFixEqual'); %set FixEqual to depend on the field (=1 if Data.CoordUnit=1 in plot_field)
-    end 
+
     if ~isempty(errormsg)
         return
+    end
+    %     if testnewseries && isfield(ObjectData,'CoordUnit')&& isfield(PlotParam{imap},'Coordinates')
+%         PlotParam{imap}.Coordinates=rmfield(PlotParam{imap}.Coordinates,'CheckFixEqual'); %set FixEqual to depend on the field (=1 if Data.CoordUnit=1 in plot_field)
+%     end 
+    if testnewseries && isfield(ObjectData,'CoordUnit')
+        PlotParam{imap}.Coordinates.CheckFixEqual=1;
     end
     %use of mask (TODO: check)
     if isfield(ObjectData,'NbDim') && isequal(ObjectData.NbDim,2) && isfield(ObjectData,'Mask') && isfield(ObjectData,'A')
@@ -3869,7 +3882,8 @@ else
     Amin=double(min(min(min(FieldHisto))));%min of image
     Amax=double(max(max(max(FieldHisto))));%max of image
     if isequal(Amin,Amax)
-        msgbox_uvmat('WARNING',['uniform field =' num2str(Amin)]);
+        %msgbox_uvmat('WARNING',['uniform field =' num2str(Amin)]);
+        cla(haxes)
     else
         Histo.ListVarName={FieldName,'histo'};
         if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
@@ -4076,7 +4090,7 @@ max_vec_Callback(hObject, eventdata, handles)
 function num_MaxVec_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.CheckFixVecColor,'Value',1)
-AutoVecColor_Callback(hObject, eventdata, handles)
+CheckFixVecColor_Callback(hObject, eventdata, handles)
 min_val=str2num(get(handles.num_MinVec,'String'));
 max_val=str2num(get(handles.num_MaxVec,'String'));
 slider1=get(handles.Slider1,'Value');

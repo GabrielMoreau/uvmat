@@ -75,7 +75,7 @@ if vardetect(1)==0
      return
 end
 var_ind=find(vardetect);
-for ivar=1:length(var_ind)
+for ivar=1:min(numel(var_ind),numel(Field.VarAttribute))
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
     Field.VarAttribute{ivar}.Unit=units{var_ind(ivar)};
     Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel

@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 03-Dec-2011 16:08:25
+% Last Modified by GUIDE v2.5 04-Dec-2011 08:42:47
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -267,8 +267,8 @@ set(handles.MenuMatlab,'checked','off')
 set(handles.MenuCivX,'checked','on')
 %set(handles.thresh_patch1,'Visible','off')
 % set(handles.thresh_text1,'Visible','off')
-% set(handles.num_MaxDiff,'Visible','off')
-% set(handles.thresh_text2,'Visible','off')
+set(handles.num_MaxDiff,'Visible','off')
+set(handles.title_MaxDiff,'Visible','off')
 set(handles.num_Rho,'Style','edit')
 set(handles.num_Rho,'String','1')
 set(handles.BATCH,'Enable','on')
@@ -280,14 +280,11 @@ function MenuMatlab_Callback(hObject, eventdata, handles)
 % -----------------------------------------------------------------------
 set(handles.MenuMatlab,'checked','on')
 set(handles.MenuCivX,'checked','off')
-if get(handles.CheckPatch1,'Value')
-    set(handles.thresh_patch1,'Visible','on')
-    set(handles.thresh_text1,'Visible','on')
-end
-if get(handles.CheckPatch2,'Value')
-    set(handles.num_MaxDiff,'Visible','on')
-    set(handles.thresh_text2,'Visible','on')
-end
+% if get(handles.CheckPatch1,'Value')
+set(handles.num_MaxDiff,'Visible','on')
+set(handles.title_MaxDiff,'Visible','on')
+
+% end
 set(handles.num_Rho,'Style','popupmenu')
 set(handles.num_Rho,'Value',1)
 set(handles.num_Rho,'String',{'1';'2'})
@@ -867,26 +864,32 @@ while count<nbfiles
             filefound(ifile)={datfile.name};
             lastfield='';
             % check the content  netcdf file
-            Data=nc2struct(civ_files{ifile},'ListGlobalAttribute','patch2','fix2','civ2','patch','fix');
-            if ~isempty(Data.patch2) && isequal(Data.patch2,1)
-                option=6;
-                option_str='patch2';
-            elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
-                option=5;
-                option_str='fix2';
-            elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
-                option=4;
-                option_str='civ2';
-            elseif ~isempty(Data.patch) && isequal(Data.patch,1);
-                option=3;
-                option_str='patch1';
-            elseif ~isempty(Data.fix) && isequal(Data.fix,1);
-                option=2;
-                option_str='fix1';
+            Data=nc2struct(civ_files{ifile},'ListGlobalAttribute','CivStage','patch2','fix2','civ2','patch','fix');
+            option_list={'civ1','fix1','patch1','civ2','fix2','patch2'};
+            if ~isempty(Data.CivStage)
+                option=Data.CivStage;
             else
-                option=1;
-                option_str='civ1';
+                if ~isempty(Data.patch2) && isequal(Data.patch2,1)
+                    option=6;
+                    %                 option_str='patch2';
+                elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
+                    option=5;
+                    %                 option_str='fix2';
+                elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
+                    option=4;
+                    %                 option_str='civ2';
+                elseif ~isempty(Data.patch) && isequal(Data.patch,1);
+                    option=3;
+                    %                 option_str='patch1';
+                elseif ~isempty(Data.fix) && isequal(Data.fix,1);
+                    option=2;
+                    %                 option_str='fix1';
+                else
+                    option=1;
+                    %                 option_str='civ1';
+                end
             end
+            option_str=option_list{option};
         end
         if option >= option_civ
             count=count+1;
@@ -3716,18 +3719,23 @@ if value
     end
 end
 if testmask
-    stage=1;%default
-    switch parent_tag
-%         case 'Fix1'
-%             stage=2;
-        case 'Civ2'
-             stage=3;
-%         case 'Fix2'
-%             stage=4;
+%     stage=4;%default
+    if strcmp(parent_tag,'Civ1')
+            set(handles.txt_Mask,'Visible','on')
+        set(handles.txt_Mask,'String',filemask)
+    set(handles.CheckMask,'Value',1)
     end
-    set(handles.txt_Mask(stage:end),'Visible','on')
-    set(handles.txt_Mask(stage:end),'String',filemask)
-    set(handles.CheckMask(stage:end),'Value',1)
+%     switch parent_tag
+% %         case 'Fix1'
+% %             stage=2;
+%         case 'Civ2'
+%              stage=3;
+% %         case 'Fix2'
+% %             stage=4;
+%     end
+%     set(handles.txt_Mask(stage:end),'Visible','on')
+%     set(handles.txt_Mask(stage:end),'String',filemask)
+%     set(handles.CheckMask(stage:end),'Value',1)
 else
     set(hObject,'Value',0);
     set(handle_txtbox,'Visible','off')
@@ -4008,7 +4016,7 @@ end
 %         set(handles.thresh_patch1,'Visible','off')
 %         set(handles.thresh_text1,'Visible','off')
 %         set(handles.num_MaxDiff,'Visible','off')
-%         set(handles.thresh_text2,'Visible','off')
+%         set(handles.title_MaxDiff,'Visible','off')
 %         set(handles.num_Rho,'Style','edit')
 %         set(handles.num_Rho,'String','1')
 %         set(handles.BATCH,'Enable','on')
@@ -4113,9 +4121,9 @@ switch fixname
 end
 filename=regexprep(filename,'.nc','');
 MaskName_string='';%default
-if Param.(fixname).CheckMask
-    MaskName_string=[' -maskName "' Param.(fixname).MaskName '"'];
-end
+% if Param.(fixname).CheckMask
+%     MaskName_string=[' -maskName "' Param.(fixname).Mask '"'];
+% end
 MaxVel_string='';%default
 if ~isempty(Param.(fixname).MaxVel)
     MaxVel_string=[' -threshV ' num2str(Param.(fixname).MaxVel)];

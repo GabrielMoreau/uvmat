@@ -104,12 +104,6 @@ if isfield (Param,'Fix1')
         eval(['Data.ListGlobalAttribute=[Data.ListGlobalAttribute ''' ParamName '''];'])
         eval(['Data.' ListName '=Param.Fix1.' ParamName ';'])
     end
-%     Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Fix1_WarnFlags','Fix1_TreshCorr','Fix1_TreshVel','Fix1_UpperBoundTest'}];
-%     Data.Fix1_WarnFlags=Param.Fix1.WarnFlags;
-%     Data.Fix1_ThreshCorr=Param.Fix1.ThreshCorr;
-%     Data.Fix1_ThreshVel=Param.Fix1.ThreshVel;
-%     Data.Fix1_UpperBoundTest=Param.Fix1.UpperBoundTest;
-
     if check_civx
         if ~isfield(Data,'fix')
             Data.ListGlobalAttribute=[Data.ListGlobalAttribute 'fix'];
@@ -130,10 +124,11 @@ end
 %% Patch1
 if isfield (Param,'Patch1')
     check_patch1=1;
+    Param.Patch1
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch1_Rho','Patch1_Threshold','Patch1_SubDomain'}];
-    Data.Patch1_Rho=str2double(Param.Patch1.Rho);
-    Data.Patch1_Threshold=str2double(Param.Patch1.Threshold);
-    Data.Patch1_SubDomain=str2double(Param.Patch1.SubDomain);
+    Data.Patch1_Rho=Param.Patch1.SmoothingParam;
+    Data.Patch1_Threshold=Param.Patch1.MaxDiff;
+    Data.Patch1_SubDomain=Param.Patch1.SubdomainSize;
     Data.ListVarName=[Data.ListVarName {'Civ1_U_Diff','Civ1_V_Diff','Civ1_X_SubRange','Civ1_Y_SubRange','Civ1_NbSites','Civ1_X_tps','Civ1_Y_tps','Civ1_U_tps','Civ1_V_tps'}];
     Data.VarDimName=[Data.VarDimName {'NbVec1','NbVec1',{'NbSubDomain1','Two'},{'NbSubDomain1','Two'},'NbSubDomain1',...
              {'NbVec1Sub','NbSubDomain1'},{'NbVec1Sub','NbSubDomain1'},{'Nbtps1','NbSubDomain1'},{'Nbtps1','NbSubDomain1'}}];
@@ -145,6 +140,7 @@ if isfield (Param,'Patch1')
     if isfield(Data,'Civ1_FF')
         ind_good=find(Data.Civ1_FF==0);
     else
+        
         ind_good=1:numel(Data.Civ1_X);
     end
     [Data.Civ1_X_SubRange,Data.Civ1_Y_SubRange,Data.Civ1_NbSites,FFres,Ures, Vres,Data.Civ1_X_tps,Data.Civ1_Y_tps,Data.Civ1_U_tps,Data.Civ1_V_tps]=...
@@ -170,20 +166,24 @@ if isfield (Param,'Civ2')
     iby2=ceil(str2double(par_civ2.iby)/2);
     isx2=ibx2+2;
     isy2=iby2+2;
+
     %get the previous guess for displacement
+    
     if ~check_patch1
-        [Guess,VelType]=read_civdata(ObjectName,InputField,ParamIn.VelType);%TO DEVELOP
-    else
-        Data.Civ1_U_Diff=zeros(size(Data.Civ1_X));
-        Data.Civ1_V_Diff=zeros(size(Data.Civ1_X));
-        if isfield(Data,'Civ1_FF')
-            ind_good=find(Data.Civ1_FF==0);
-        else
-            ind_good=1:numel(Data.Civ1_X);
-        end
-            [Data.Civ1_X_SubRange,Data.Civ1_Y_SubRange,Data.Civ1_NbSites,FFres,Ures, Vres,Data.Civ1_X_tps,Data.Civ1_Y_tps,Data.Civ1_U_tps,Data.Civ1_V_tps]=...
-                                patch(Data.Civ1_X(ind_good)',Data.Civ1_Y(ind_good)',Data.Civ1_U(ind_good)',Data.Civ1_V(ind_good)',Data.Patch1_Rho,Data.Patch1_Threshold,Data.Patch1_SubDomain);
-        end 
+        [Data,VelType]=read_civdata(ObjectName,InputField,ParamIn.VelType);%TO DEVELOP
+    end
+    
+    Guess =interp_tps(Data,X,Y)
+%         Data.Civ1_U_Diff=zeros(size(Data.Civ1_X));
+%         Data.Civ1_V_Diff=zeros(size(Data.Civ1_X));
+%         if isfield(Data,'Civ1_FF')
+%             ind_good=find(Data.Civ1_FF==0);
+%         else
+%             ind_good=1:numel(Data.Civ1_X);
+%         end
+%             [Data.Civ1_X_SubRange,Data.Civ1_Y_SubRange,Data.Civ1_NbSites,FFres,Ures, Vres,Data.Civ1_X_tps,Data.Civ1_Y_tps,Data.Civ1_U_tps,Data.Civ1_V_tps]=...
+%                                 patch(Data.Civ1_X(ind_good)',Data.Civ1_Y(ind_good)',Data.Civ1_U(ind_good)',Data.Civ1_V(ind_good)',Data.Patch1_Rho,Data.Patch1_Threshold,Data.Patch1_SubDomain);
+%         end 
 %     shiftx=str2num(par_civ1.shiftx);
 %     shifty=str2num(par_civ1.shifty);
 % TO GET shift from par_civ2.filename_nc1
@@ -596,9 +596,9 @@ end
 if isfield (Param,'MinCorr')
     FF=FF==1 | C<Param.MinCorr;
 end
-if isfield (Param,'MinVel')||(isfield (Param,'MaxVel')&&~isempty(Param.MaxVel))
+if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&&~isempty(Param.MaxVel))
     Umod= U.*U+V.*V;
-    if isfield (Param,'MinVel')
+    if isfield (Param,'MinVel')&&~isempty(Param.MinVel)
         FF=FF==1 | Umod<(Param.MinVel*Param.MinVel);
     end
     if isfield (Param,'MaxVel')&&~isempty(Param.MaxVel)
@@ -721,8 +721,8 @@ SizY=RangY/NbSubDomainY;%height of subdomains
 CentreX=linspace(MinX+SizX/2,MaxX-SizX/2,NbSubDomainX);
 CentreY=linspace(MinY+SizY/2,MaxY-SizY/2,NbSubDomainY);
 [CentreX,CentreY]=meshgrid(CentreX,CentreY);
-CentreY=reshape(CentreY,1,[]);
-CentreX=reshape(CentreX,1,[]);
+CentreY=reshape(CentreY,1,[]);% Y positions of subdomain centres
+CentreX=reshape(CentreX,1,[]);% X positions of subdomain centres
 rho=SizX*SizY*Rho/1000000;%optimum rho increase as the area of the subdomain (division by 10^6 to reach good values with the default GUI input)
 U_tps_sub=zeros(length(X),NbSubDomain);%default spline
 V_tps_sub=zeros(length(X),NbSubDomain);%default spline
