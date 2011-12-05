@@ -78,7 +78,11 @@ if isfield (Param,'Civ1')
     Data.CivStage=1;
 
 else
-    Data=nc2struct(ncfile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format 
+    Data=nc2struct(ncfile,'ListGlobalAttribute','absolut_time_T0') %look for the constant 'absolut_time_T0' to detect old civx data format 
+    if isfield(Data,'Txt')
+            errormsg=Data.Txt;
+        return
+    end
     if ~isempty(Data.absolut_time_T0')%read civx file
         check_civx=1;% test for old civx data format
         [Data,vardetect,ichoice]=nc2struct(ncfile);%read the variables in the netcdf file
@@ -89,10 +93,7 @@ else
             Data=nc2struct(ncfile,ListVarFix1);%read civ1 and fix1 data in the existing netcdf file
         end
     end
-    if isfield(Data,'Txt')
-        msgbox_uvmat('ERROR',Data.Txt)
-        return
-    end
+
 end
 
 %% Fix1
@@ -294,7 +295,7 @@ if isfield (Param,'Patch2')
 end   
 
 %% write result in a netcdf file if requested
-if exist('ncfile','var')
+if exist('ncfile','var') && ~(isfield(Param,'CheckOuputFile')&&Param.CheckOuputFile)
     errormsg=struct2nc(ncfile,Data);
 end
 
@@ -412,8 +413,8 @@ if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
 end
 
 %% compute image correlations: MAINLOOP on velocity vectors
-% corrmax=0;
-% sum_square=1;% default
+corrmax=0;
+sum_square=1;% default
 % vector=[0 0];%default
 for ivec=1:nbvec
     iref=par_civ.Grid(ivec,1);% xindex on the image A for the middle of the correlation box

@@ -183,15 +183,15 @@ if testsub
 end
 
 %resolve ambigous nomenclature types when the number of 0 is unknown (type %0...):
-ind_zero=findstr('0',nom_type);
-nb_zero=numel(ind_zero);
-if ~isempty(ind_zero)
-    for itest=0:nb_zero-1
-        filename=name_generator(fullfile(RootPath,RootFile),1,1,ext,nom_type,1,1,1,subdir);
-        if exist(filename,'file')
-            break
-        else
-            nom_type(ind_zero(1))=[]; % remove a zero in nom_type
-        end
-    end
-end
+% ind_zero=findstr('0',nom_type);
+% nb_zero=numel(ind_zero);
+% if ~isempty(ind_zero)
+%     for itest=0:nb_zero-1
+%         filename=name_generator(fullfile(RootPath,RootFile),1,1,ext,nom_type,1,1,1,subdir)
+%         if exist(filename,'file')
+%             break
+%         else
+%             nom_type(ind_zero(1))=[]; % remove a zero in nom_type
+%         end
+%     end
+% end

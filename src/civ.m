@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 04-Dec-2011 08:42:47
+% Last Modified by GUIDE v2.5 04-Dec-2011 18:52:13
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -4339,3 +4339,41 @@ civ2.absolut_time_T0=par.Time;
 civ2.pixcmx='1';
 civ2.pixcmy='1';
 civ2.convectFlow='n';
+
+
+% --- Executes on button press in TestPatch1.
+function TestPatch1_Callback(hObject, eventdata, handles)
+set(handles.TestPatch1,'BackgroundColor',[1 1 0])
+drawnow
+if get(handles.TestPatch1,'Value')
+    ref_i=str2double(get(handles.ref_i,'String'));
+    if strcmp(get(handles.ref_j,'Visible'),'on')
+        ref_j=str2double(get(handles.ref_j,'String'));
+    else
+        ref_j=1;%default
+    end
+    [filecell,i1,i21,j1,j2,i1_civ2,i2_civ2,j1_civ2,j2_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
+        set_civ_filenames(handles,ref_i,ref_j,[0 0 1 0 0 0]);
+    
+    Data.ListVarName={'ny','nx','A'};
+    Data.VarDimName= {'ny','nx',{'ny','nx'}};
+
+    Param=read_GUI(handles.civ)
+    Param.CheckOutputFile=0;
+    [Data,errormsg]=civ_matlab(Param,filecell.nc.civ1{1})% get the grid of x, y positions set for PIV 
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',Data.Txt)
+        return
+    end
+    set(handles.TestCiv1,'BackgroundColor',[1 0 0])
+else
+    corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
+    if ~isempty(corrfig)
+        delete(corrfig)
+    end
+    hview_field=findobj(allchild(0),'tag','view_field');% look for view_field    
+    if ~isempty(hview_field)
+        delete(hview_field)
+    end
+end
+
