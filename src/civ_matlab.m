@@ -46,8 +46,7 @@ check_civ1=0;%default
 check_patch1=0;%default
 
 if ischar(Param)
-    t=xmltree(Param);
-    Param=convert(t);
+    Param=xml2struct(Param);
 end
 
 %% Civ1
