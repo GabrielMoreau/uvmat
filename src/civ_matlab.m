@@ -45,6 +45,11 @@ check_civx=0;%default
 check_civ1=0;%default
 check_patch1=0;%default
 
+if ischar(Param)
+    t=xmltree(Param);
+    Param=convert(t);
+end
+
 %% Civ1
 if isfield (Param,'Civ1')
     check_civ1=1;% test for further use of civ1 results
@@ -61,14 +66,14 @@ if isfield (Param,'Civ1')
         Data.(['Civ1_' list_param{ilist}])=Param.Civ1.(list_param{ilist});
     end
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];% {'Civ1_Time','Civ1_Dt'}];
-%     if exist('ncfile','var')% TEST for use interactively with mouse_motion (no file created)
-        Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'};%  cell array containing the names of the fields to record
-        Data.VarDimName={'nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1'};
-        Data.VarAttribute{1}.Role='coord_x';
-        Data.VarAttribute{2}.Role='coord_y';
-        Data.VarAttribute{3}.Role='vector_x';
-        Data.VarAttribute{4}.Role='vector_y';
-        Data.VarAttribute{5}.Role='warnflag';
+    %     if exist('ncfile','var')% TEST for use interactively with mouse_motion (no file created)
+    Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'};%  cell array containing the names of the fields to record
+    Data.VarDimName={'nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1'};
+    Data.VarAttribute{1}.Role='coord_x';
+    Data.VarAttribute{2}.Role='coord_y';
+    Data.VarAttribute{3}.Role='vector_x';
+    Data.VarAttribute{4}.Role='vector_y';
+    Data.VarAttribute{5}.Role='warnflag';
     Data.Civ1_X=reshape(xtable,[],1);
     Data.Civ1_Y=reshape(Param.Civ1.ImageHeight-ytable+1,[],1);
     Data.Civ1_U=reshape(utable,[],1);
@@ -76,24 +81,28 @@ if isfield (Param,'Civ1')
     Data.Civ1_C=reshape(ctable,[],1);
     Data.Civ1_F=reshape(F,[],1);
     Data.CivStage=1;
-
+    
 else
-    Data=nc2struct(ncfile,'ListGlobalAttribute','absolut_time_T0') %look for the constant 'absolut_time_T0' to detect old civx data format 
+    if exist('ncfile','var')
+        CivFile=ncfile;
+    elseif isfield(Param.Patch1,'CivFile')
+        CivFile=Param.Patch1.CivFile;
+    end
+    Data=nc2struct(CivFile,'ListGlobalAttribute','absolut_time_T0') %look for the constant 'absolut_time_T0' to detect old civx data format
     if isfield(Data,'Txt')
-            errormsg=Data.Txt;
+        errormsg=Data.Txt;
         return
     end
     if ~isempty(Data.absolut_time_T0')%read civx file
         check_civx=1;% test for old civx data format
-        [Data,vardetect,ichoice]=nc2struct(ncfile);%read the variables in the netcdf file
+        [Data,vardetect,ichoice]=nc2struct(CivFile);%read the variables in the netcdf file
     else
         if isfield(Param,'Fix1')
-            Data=nc2struct(ncfile,ListVarCiv1);%read civ1 data in the existing netcdf file
+            Data=nc2struct(CivFile,ListVarCiv1);%read civ1 data in the existing netcdf file
         else
-            Data=nc2struct(ncfile,ListVarFix1);%read civ1 and fix1 data in the existing netcdf file
+            Data=nc2struct(CivFile,ListVarFix1);%read civ1 and fix1 data in the existing netcdf file
         end
     end
-
 end
 
 %% Fix1
@@ -295,7 +304,7 @@ if isfield (Param,'Patch2')
 end   
 
 %% write result in a netcdf file if requested
-if exist('ncfile','var') && ~(isfield(Param,'CheckOuputFile')&&Param.CheckOuputFile)
+if exist('ncfile','var') 
     errormsg=struct2nc(ncfile,Data);
 end
 
@@ -419,10 +428,10 @@ sum_square=1;% default
 for ivec=1:nbvec
     iref=par_civ.Grid(ivec,1);% xindex on the image A for the middle of the correlation box
     jref=par_civ.Grid(ivec,2);% yindex on the image B for the middle of the correlation box
-%     xtable(ivec)=iref;
-%     ytable(ivec)=jref;%default
+    %     xtable(ivec)=iref;
+    %     ytable(ivec)=jref;%default
     if ~(checkmask && par_civ.Mask(jref,iref)<=20) %velocity not set to zero by the black mask
-        if jref-iby2<1 || jref+iby2>par_civ.ImageHeight|| iref-ibx2<1 || iref+ibx2>par_civ.ImageWidth
+        if jref-iby2<1 || jref+iby2>par_civ.ImageHeight|| iref-ibx2<1 || iref+ibx2>par_civ.ImageWidth% we are outside the image
             F(ivec)=3;
         else
             image1_crop=par_civ.ImageA(jref-iby2:jref+iby2,iref-ibx2:iref+ibx2);%extract a subimage (correlation box) from image A
@@ -433,11 +442,12 @@ for ivec=1:nbvec
             if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
                 F(ivec)=3;
             end
+            %threshold on image maximum
+            if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
+                F(ivec)=3;
+            end
         end
-        %threshold on image maximum
-        if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
-            F(ivec)=3;
-        end
+        
         if F(ivec)~=3
             image1_crop=image1_crop-image1_mean;%substract the mean
             image2_crop=image2_crop-image2_mean;

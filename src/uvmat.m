@@ -1768,19 +1768,19 @@ end
 [FileName,RootPath,filebase,FileIndices,FileExt,subdir]=read_file_boxes(handles);
 NomType=get(handles.FileIndex,'UserData');
 
-num1=stra2num(get(handles.i1,'String'));
-num2=stra2num(get(handles.i2,'String'));
-num_a=stra2num(get(handles.j1,'String'));
-num_b=stra2num(get(handles.j2,'String'));
+i1=stra2num(get(handles.i1,'String'));
+i2=stra2num(get(handles.i2,'String'));
+j1=stra2num(get(handles.j1,'String'));
+j2=stra2num(get(handles.j2,'String'));
 
 sub_value= get(handles.SubField,'Value');
 if sub_value % a second input file has been entered
     [FileName_1,RootPath_1,filebase_1,FileIndices_1,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
-    [pp,ff,str1,str2,str_a,str_b]=name2display(FileIndices_1);
-    num1_1=stra2num(str1);%current set of indices for the second field (may be set different than the main indices)
-    num2_1=stra2num(str2);
-    num_a_1=stra2num(str_a);
-    num_b_1=stra2num(str_b);
+    [pp,ff,i1_1_str,i2_1_str,j1_1_str,j2_1_str]=name2display(FileIndices_1);
+    i1_1=stra2num(i1_1_str);%current set of indices for the second field (may be set different than the main indices)
+    i2_1=stra2num(i2_1_str);
+    j1_1=stra2num(j1_1_str);
+    j2_1=stra2num(j2_1_str);
     NomType_1=get(handles.FileIndex_1,'UserData');
 else
     filename_1=[];
@@ -1789,46 +1789,58 @@ comp_input=get(handles.fix_pair,'Value');
 
 %case of scanning along the first direction (rootfile numbers)
 if get(handles.scan_i,'Value')==1% case of scanning along index i   
-     num1=num1+increment;
-     num2=num2+increment;
-     [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
+     i1=i1+increment;
+     i2=i2+increment;
+     [filename,i1,j1,i2,j2]=name_generator(filebase,i1,j1,FileExt,NomType,comp_input,i2,j2,subdir);
      if sub_value% set the second field name and indices
-        num1_1=num1_1+increment;
-        num2_1=num2_1+increment;
-        filename_1=name_generator(filebase_1,num1_1,num_a_1,FileExt_1,NomType_1,1,num2_1,num_b_1,SubDir_1);
+        i1_1=i1_1+increment;
+        i2_1=i2_1+increment;
+        filename_1=name_generator(filebase_1,i1_1,j1_1,FileExt_1,NomType_1,1,i2_1,j2_1,SubDir_1);
      end   
 else % case of scanning along index j (burst numbers)
-    num_a=num_a+increment;
-    num_b=num_b+increment;
-    [filename,num1,num_a,num2,num_b]=name_generator(filebase,num1,num_a,FileExt,NomType,comp_input,num2,num_b,subdir);
+    j1=j1+increment;
+    j2=j2+increment;
+    [filename,i1,j1,i2,j2]=name_generator(filebase,i1,j1,FileExt,NomType,comp_input,i2,j2,subdir);
     if sub_value 
-        num_a_1=num_a_1+increment;
-        num_b_1=num_b_1+increment;
-        filename_1=name_generator(filebase_1,num1_1,num_a_1,FileExt_1,NomType_1,1,num2_1,num_b_1,SubDir_1);
+        j1_1=j1_1+increment;
+        j2_1=j2_1+increment;
+        filename_1=name_generator(filebase_1,i1_1,j1_1,FileExt_1,NomType_1,1,i2_1,j2_1,SubDir_1);
     end    
 end
 
 % refresh plots
-errormsg=refresh_field(handles,filename,filename_1,num1,num2,num_a,num_b);
+errormsg=refresh_field(handles,filename,filename_1,i1,i2,j1,j2);
 if isempty(errormsg)  %update the index counters
-    set(handles.i1,'String',num2stra(num1,NomType,1)); 
-    if isequal(num2,num1)
-         set(handles.i2,'String','');
+    if strcmp(NomType,'*')%case of movies
+        set(handles.i1,'String',num2str(i1))%update the index display
     else
-        set(handles.i2,'String',num2stra(num2,NomType,1));
-    end 
-    set(handles.j1,'String',num2stra(num_a,NomType,2));
-    if isequal(num_b,num_a)
-         set(handles.j2,'String','');
-    else
-        set(handles.j2,'String',num2stra(num_b,NomType,2));
+        [~,~,i1_str,i2_str,j1_str,j2_str]=name2display(filename);
+        set(handles.i1,'String',i1_str)
+        set(handles.j1,'String',j1_str)
+        if ~isequal(movie_status,1)
+            set(handles.i2,'String',i2_str)
+            set(handles.j2,'String',j2_str)
+        end
+        [indices]=name_generator('',i1,j1,'',NomType,1,i2,j2,'');
+        set(handles.FileIndex,'String',indices);
+        if ~isempty(filename_1)
+            indices_1=name_generator('',i1_1,j1_1,'',NomType_1,1,i2_1,j2_1,'');
+            set(handles.FileIndex_1,'String',indices_1);
+        end
     end
-    [indices]=name_generator('',num1,num_a,'',NomType,1,num2,num_b,'');
-    set(handles.FileIndex,'String',indices);
-    if ~isempty(filename_1) 
-         indices_1=name_generator('',num1_1,num_a_1,'',NomType_1,1,num2_1,num_b_1,'');
-         set(handles.FileIndex_1,'String',indices_1);
-    end
+    %     set(handles.i1,'String',num2stra(i1,NomType,1));
+    %     if isequal(i2,i1)
+    %          set(handles.i2,'String','');
+    %     else
+    %         set(handles.i2,'String',num2stra(num2,NomType,1));
+    %     end
+    %     set(handles.j1,'String',num2stra(j1,NomType,2));
+    %     if isequal(j2,j1)
+    %          set(handles.j2,'String','');
+    %     else
+    %         set(handles.j2,'String',num2stra(j2,NomType,2));
+    %     end
+    
     if isequal(movie_status,1)
         set(handles.movie_pair,'Value',1)
         movie_pair_Callback(hObject, eventdata, handles); %reactivate moviepair if it was activated

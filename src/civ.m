@@ -195,7 +195,7 @@ if isnan(num_j2),num_j2=num_j1;end
 if isequal(get(handles.ListCompareMode,'Value'),1)
     browse=[];%initialisation
 else
-    browse=get(handlesRootName,'UserData');
+    browse=get(handles.RootName,'UserData');
 end
 browse.num_i1=num_i1;
 browse.num_i2=num_i2;
@@ -288,7 +288,7 @@ set(handles.title_MaxDiff,'Visible','on')
 set(handles.num_Rho,'Style','popupmenu')
 set(handles.num_Rho,'Value',1)
 set(handles.num_Rho,'String',{'1';'2'})
-set(handles.BATCH,'Enable','off')
+% set(handles.BATCH,'Enable','off')
 
 % -----------------------------------------------------------------------
 % --- Open the help html file 
@@ -344,6 +344,7 @@ j1=str2double(j1_str);
 j2=str2double(j2_str);
 num_ref_i=i1;%efaulmt ref index
 num_ref_j=j1;
+browse=get(handles.RootName,'UserData');
 browse.incr_pair=[0 0];%default
 
 % form=imformats(ext_input(2:end));
@@ -1179,6 +1180,10 @@ for ifile=1:nbfield
                 case 'CivX'
                     cmd=[cmd...
                         cmd_civ1(filecell.nc.civ1{ifile,j},Param) '\n'];
+                    if ~isempty(errormsg)
+                        msgbox_uvmat('ERROR',errormsg)
+                        return
+                    end
                 case 'CivAll'
                     CivAllCmd=[CivAllCmd ' civ1 '];
                     str=CIV1_CMD_Unified(filecell.nc.civ1{ifile,j},'',Param.Civ1);
@@ -1427,12 +1432,19 @@ for ifile=1:nbfield
             case 'Matlab'
                 drawnow
                 if ~strcmp(compare,'stereo PIV')
-                    [Data,erromsg]=civ_matlab(Param,filecell.nc.civ1{ifile,j});
-                    if isempty(errormsg)
-                        display([filecell.nc.civ1{ifile,j} ' written'])
+                    filename_xml=[OutputFile '.civ.xml'];
+                    t=struct2xml(Param);
+                    save(t,filename_xml)
+                    if batch   
+                        batch_file_list{length(batch_file_list)+1}=filename_xml;
                     else
-                        msgbox_uvmat('ERROR',errormsg)
-                    end                 
+                        [Data,erromsg]=civ_matlab(Param,filecell.nc.civ1{ifile,j});
+                        if isempty(errormsg)
+                            display([filecell.nc.civ1{ifile,j} ' written'])
+                        else
+                            msgbox_uvmat('ERROR',errormsg)
+                        end
+                    end
                 end
         end
     end
@@ -2470,11 +2482,11 @@ end
 function ListCompareMode_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 test=get(handles.ListCompareMode,'Value');
-if test==2 || test==3 % case 'dispalcemen' or 'stereo PIV'
+if test==2 || test==3 % case 'displacement' or 'stereo PIV'
     filebase=get(handles.RootName,'String');
-    browse=get(handlesRootName,'Userdata');
+    browse=get(handles.RootName,'Userdata');
     browse.nom_type_ima1=browse.nom_type_ima;
-    set(handlesRootName,'UserData',browse);
+    set(handles.RootName,'UserData',browse);
     set(handles.sub_txt,'Visible','on')
     set(handles.RootName_1,'Visible','On');%mkes the second file input window visible
     mode_store=get(handles.ListPairMode,'String');%get the present 'mode'
@@ -2518,9 +2530,9 @@ if test==2 || test==3 % case 'dispalcemen' or 'stereo PIV'
 %     set(handles.RootName_1,'String',name);
     [RootPath,RootFile,field_count,str2,str_a,str_b,xx,nom_type,subdir]=name2display(name);
     set(handles.RootName_1,'String',RootFile);
-    browse=get(handlesRootName,'UserData');
+    browse=get(handles.RootName,'UserData');
     browse.nom_type_ima_1=nom_type;
-    set(handlesRootName,'UserData',browse)
+    set(handles.RootName,'UserData',browse)
     
     %check image extension
     if ~strcmp(ext,get(handles.ImaExt,'String'))
@@ -2548,21 +2560,21 @@ else
     mode_store=get(handles.ListCompareMode,'UserData');
     set(handles.ListPairMode,'Value',1)
     set(handles.ListPairMode,'String',mode_store)
-    set(handles.test_stereo1,'Value',0)
+%     set(handles.test_stereo1,'Value',0)
     set(handles.CheckStereo,'Value',0)
     set(handles.ListPairMode,'Value',1) % mode 'civX' selected by default
 end
 if test==3 && get(handles.CheckPatch1,'Value')
-    set(handles.test_stereo1,'Visible','on')
+    set(handles.CheckStereo,'Visible','on')
 else
-    set(handles.test_stereo1,'Visible','off')
+    set(handles.CheckStereo,'Visible','off')
 end
 if test==3 && get(handles.CheckPatch2,'Value')
     set(handles.CheckStereo,'Visible','on')
 else
     set(handles.CheckStereo,'Visible','off')
 end
-mode_Callback(hObject, eventdata, handles)
+ListPairMode_Callback(hObject, eventdata, handles)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2700,7 +2712,7 @@ elseif isequal(mode,'displacement')%the pairs have the same indices
     displ_num(2,1)=0;
     displ_num(3,1)=0;
     displ_num(4,1)=0;
-    if nbfield > 1
+    if nbfield > 1 || nbfield==0
         set(handles.itext,'Visible','On')
         set(handles.first_i,'Visible','On')
         set(handles.last_i,'Visible','On')
@@ -3655,7 +3667,7 @@ else
 end
 
 %% if hObject is on the checkciv1 frame, duplicate action for checkciv2 frame
-PanelName=get(hparent,'tag')
+PanelName=get(hparent,'tag');
 if strcmp(PanelName,'Civ1')
     hchildren=get(handles.Civ2,'children');
     handle_checkbox=findobj(hchildren,'tag','CheckGrid');
@@ -4037,6 +4049,8 @@ function cmd=cmd_civ1(filename,Param)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
 %changes : filename_cmx -> filename ( no extension )
+cmd='';
+errormsg=''; %default
 filename=regexprep(filename,'.nc',''); %file name for the result 
 if isequal(Param.Civ1.Dt,'0')
     Param.Civ1.Dt='1' ;%case of 'displacement' mode
@@ -4044,6 +4058,10 @@ end
 Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'.png','');
 Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'.png','');
 fid=fopen([filename '.civ1.cmx'],'w');
+if isequal(fid,-1)
+    display(['cmd file ' filename ' cannot be created'])
+    return
+end
 fprintf(fid,['##############   CMX file' '\n' ]);
 fprintf(fid,   ['FirstImage ' regexprep(Param.Civ1.ImageA,'\\','\\\\') '\n' ]);% for windows compatibility
 fprintf(fid,   ['LastImage  ' regexprep(Param.Civ1.ImageB,'\\','\\\\') '\n' ]);% for windows compatibility
@@ -4357,21 +4375,31 @@ if get(handles.TestPatch1,'Value')
     
     Data.ListVarName={'ny','nx','A'};
     Data.VarDimName= {'ny','nx',{'ny','nx'}};
-
-    Param=read_GUI(handles.civ)
-    Param.CheckOutputFile=0;
-    [Data,errormsg]=civ_matlab(Param,filecell.nc.civ1{1})% get the grid of x, y positions set for PIV 
-    if ~isempty(errormsg)
-        msgbox_uvmat('ERROR',Data.Txt)
-        return
+    
+    param_patch1=read_GUI(handles.Patch1);
+    param_patch1.CivFile=filecell.nc.civ1{1};
+    Param.Patch1=param_patch1;
+    for irho=1:7
+        [Data,errormsg]=civ_matlab(Param);% get the grid of x, y positions set for PIV
+        if ~isempty(errormsg)
+            msgbox_uvmat('ERROR',Data.Txt)
+            return
+        end
+        SmoothingParam(irho)=Param.Patch1.SmoothingParam;
+        Data.Civ1_U_Diff=Data.Civ1_U_Diff(Data.Civ1_FF==0);
+        Data.Civ1_V_Diff=Data.Civ1_V_Diff(Data.Civ1_FF==0);
+        DiffVel(irho)=sqrt(mean(Data.Civ1_U_Diff.*Data.Civ1_U_Diff+Data.Civ1_V_Diff.*Data.Civ1_V_Diff))
+        Param.Patch1.SmoothingParam=2*Param.Patch1.SmoothingParam;
     end
-    set(handles.TestCiv1,'BackgroundColor',[1 0 0])
+    figure
+    plot(SmoothingParam,DiffVel)
+    set(handles.TestPatch1,'BackgroundColor',[1 0 0])
 else
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
     if ~isempty(corrfig)
         delete(corrfig)
     end
-    hview_field=findobj(allchild(0),'tag','view_field');% look for view_field    
+    hview_field=findobj(allchild(0),'tag','view_field');% look for view_field
     if ~isempty(hview_field)
         delete(hview_field)
     end
