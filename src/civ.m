@@ -1104,7 +1104,7 @@ nbslice=numel(j1_civ1);
 
 %% MAIN LOOP
 time=get(handles.ImaDoc,'UserData'); %get the set of times
-batch_file_list=[];
+batch_file_list=[];%should be renamed file_list, can be used for xml or bash files
  
 for ifile=1:nbfield
     for j=1:nbslice
@@ -1436,7 +1436,8 @@ for ifile=1:nbfield
                     t=struct2xml(Param);
                     save(t,filename_xml)
                     if batch   
-                        batch_file_list{length(batch_file_list)+1}=filename_xml;
+                        path_civ=fileparts(which('civ')); 
+                        batch_file_list{length(batch_file_list)+1}=['matlab -nodisplay -nosplash -r "cd ' path_civ ';civ_matlab(''' filename_xml ''');"'];
                     else
                         [Data,erromsg]=civ_matlab(Param,filecell.nc.civ1{ifile,j});
                         if isempty(errormsg)
@@ -1479,9 +1480,9 @@ if batch
             switch oar_modes{S}
                 
                 case 'oar-dispatch' %oar-dispatch.pl
+                    walltime_onejob=600;%seconds
                     filename_joblist=fullfile(Rootbat,'job_list.txt');
                     fid=fopen(filename_joblist,'w');
-                    walltime_onejob=600;%seconds
                     for p=1:length(batch_file_list)
                         oar_command=['oarsub -n CIVX '...
                             '-E ' regexprep(batch_file_list{p},'\.bat\>','.errors') ' -O ' regexprep(batch_file_list{p},'\.bat\>','.log ')...
