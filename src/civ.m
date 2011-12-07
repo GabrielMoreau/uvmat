@@ -1437,7 +1437,19 @@ for ifile=1:nbfield
                     save(t,filename_xml)
                     if batch   
                         path_civ=fileparts(which('civ')); 
-                        batch_file_list{length(batch_file_list)+1}=['matlab -nodisplay -nosplash -r "cd ' path_civ ';civ_matlab(''' filename_xml ''');"'];
+                        filename_bat=[OutputFile '.bat'];
+                        [fid,message]=fopen(filename_bat,'w');
+                        if isequal(fid,-1)
+                            msgbox_uvmat('ERROR', ['creation of .bat file: ' message])
+                            return
+                        end
+                        fprintf(fid,['/opt/matlab/R2011a/bin/matlab -nodisplay -nosplash -r "cd(''' path_civ ''');'...
+                            'civ_matlab(''' filename_xml ''',''' OutputFile '.nc'');exit"']);
+                        fclose(fid);
+                        if isunix
+                            system(['chmod +x ' filename_bat]);
+                        end
+                        batch_file_list{length(batch_file_list)+1}=filename_bat;
                     else
                         [Data,erromsg]=civ_matlab(Param,filecell.nc.civ1{ifile,j});
                         if isempty(errormsg)
