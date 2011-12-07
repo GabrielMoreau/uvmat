@@ -2,7 +2,7 @@ function s=xml2struct(filename)
 % structure parser, converts numeric character strings into numbers
 
 t=xmltree(filename);
-ss=convert(t)
+ss=convert(t);
 s=convert_string(ss);
 
 
