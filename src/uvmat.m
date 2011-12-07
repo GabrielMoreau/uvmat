@@ -521,7 +521,8 @@ switch ext_test
         indices=fileinput(length(rootname)+1:end);
         indices(end-length(ext)+1:end)=[]; %remove extension
         set(handles.FileIndex,'String',indices);        
-        set(handles.FileIndex,'UserData',NomType);
+%         set(handles.FileIndex,'UserData',NomType);
+set(handles.NomType,'String',NomType);
         set(handles.FileExt,'String',ext);
         % fill file index counters
         set(handles.i1,'String',i1);    
@@ -532,7 +533,8 @@ switch ext_test
         % synchronise indices of the second  input file if it exists
         if get(handles.SubField,'Value')==1% if the subfield button is activated, update the field numbers
             [ff,rr,FileBase_1,ii,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
-            NomType_1=get(handles.FileIndex_1,'UserData');     
+            NomType_1=get(handles.NomType_1,'String'); 
+%             NomType_1=get(handles.FileIndex_1,'UserData');     
             FileName_1=name_generator(FileBase_1,str2double(i1),str2double(i2),FileExt_1,NomType_1,1,stra2num(str_a),stra2num(str_b),SubDir_1);
             if exist(FileName_1,'file')
                 FileIndex_1=name_generator('',str2double(i1),str2double(i2),'',NomType_1,1,stra2num(str_a),stra2num(str_b),'');
@@ -751,7 +753,8 @@ if ~isempty(XmlData.Time)
     nburst=size(XmlData.Time,2);
     %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
     if isequal(nbfield,1) && ~isequal(nburst,1)% .Time is a line vector
-        NomType=get(handles.FileIndex,'UserData');
+        NomType=get(handles.NomType,'String');
+%         NomType=get(handles.FileIndex,'UserData');
         if numel(NomType)>=2 &&(strcmp(NomType,'_i')||strcmp(NomType(1:2),'%0')||strcmp(NomType(1:2),'_%'))
             XmlData.Time=(XmlData.Time)';
             nbfield=nburst;
@@ -885,8 +888,10 @@ end
 function set_scan_options(hObject, eventdata, handles)
 
 %  set the corresponding index navigation options 
-NomType=get(handles.FileIndex,'UserData');       
-NomType_1=get(handles.FileIndex_1,'UserData');
+ NomType=get(handles.NomType,'String');       
+ NomType_1=get(handles.NomType_1,'String');
+% NomType=get(handles.FileIndex,'UserData');       
+% NomType_1=get(handles.FileIndex_1,'UserData');
 last_i_str=get(handles.last_i,'String');
 nbfield=str2num(last_i_str{1});
 if numel(last_i_str)==2
@@ -1073,7 +1078,7 @@ switch ext_test
     case {'.xml','.xls'}                % edit xml or Excel files
        heditxml=editxml(fileinput);
        return
-    case {'.image','.nc','.cdf'}
+    case {'.image','.nc','.cdf'}       
 %         set(handles.FileIndex,'UserData',NomType_1);
     otherwise
         msgbox_uvmat(['invalid input file extension ' FileExt_1 ' for uvmat'],'ERROR')
@@ -1110,7 +1115,8 @@ else  % cases of data files
         end 
     end
 end
-set(handles.FileIndex_1,'UserData',NomType_1);
+set(handles.NomType_1,'String',NomType_1);
+% set(handles.FileIndex_1,'UserData',NomType_1);
 
 % make visible and fill the second raw of edit boxes
 set(handles.RootPath_1,'Visible','on')
@@ -1136,7 +1142,8 @@ end
 indices=filename_new(length(FileBaseSub_1)+1:end);
 indices(end-length(FileExt_1)+1:end)=[]; %remove extension
 set(handles.FileIndex_1,'String',indices)
-set(handles.FileIndex_1,'UserData',NomType_1)
+set(handles.NomType_1,'String',NomType_1)
+% set(handles.FileIndex_1,'UserData',NomType_1)
 set(handles.FileExt_1,'String',FileExt_1);
 
 % % default choice of fields
@@ -1349,7 +1356,8 @@ if get(handles.scan_j,'Value')==1
     set(handles.scan_j,'BackgroundColor',[1 1 0])
     set(handles.scan_i,'Value',0)
     set(handles.scan_i,'BackgroundColor',[0.831 0.816 0.784])
-    NomType=get(handles.FileIndex,'UserData');
+    NomType=get(handles.NomType,'String');
+%     NomType=get(handles.FileIndex,'UserData');
     switch NomType
     case {'_i_j1-j2','#_ab','%3dab'},% pair with j index
         set(handles.fix_pair,'Visible','on')% option fixed pair on/off made visible (choice of avaible pair with buttons + and - if ='off')
@@ -1367,7 +1375,8 @@ end
 function i1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.i1,'BackgroundColor',[0.7 0.7 0.7])
-NomType=get(handles.FileIndex,'UserData');
+NomType=get(handles.NomType,'String');
+% NomType=get(handles.FileIndex,'UserData');
 num1=stra2num(get(handles.i1,'String'));
 num2=stra2num(get(handles.i2,'String'));
 num_a=stra2num(get(handles.j1,'String'));
@@ -1757,22 +1766,35 @@ set(handles.Movie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 set(handles.MovieBackward,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 
 %------------------------------------------------------------------------
+% --- function activated by runplus and run minus
 function errormsg=runpm(hObject,eventdata,handles,increment)
 %------------------------------------------------------------------------
-%check for movie pair status
+%% check for movie pair status
 movie_status=get(handles.movie_pair,'Value');
 if isequal(movie_status,1)
     STOP_Callback(hObject, eventdata, handles)%interrupt movie pair if active
 end
-%read the data on the current input rootfile(s)
-[FileName,RootPath,filebase,FileIndices,FileExt,subdir]=read_file_boxes(handles);
-NomType=get(handles.FileIndex,'UserData');
 
-i1=stra2num(get(handles.i1,'String'));
+%% read the current input file name(s) and field indices
+InputFile=read_GUI(handles.InputFile);
+filebase=InputFile.RootPath; %default
+if ~isempty(InputFile.SubDir)
+    InputFile.SubDir=regexprep(InputFile.SubDir,'/|\','');
+%    FileName=fullfile(InputFile.RootPath,InputFile.SubDir);
+end
+if ~isempty(InputFile.RootFile)
+    InputFile.RootFile=regexprep(InputFile.RootFile,'/|\','');
+    filebase=fullfile(filebase,InputFile.RootFile);
+end
+FileExt=InputFile.FileExt;
+subdir=InputFile.SubDir;
+% [FileName,RootPath,filebase,FileIndices,FileExt,subdir]=read_file_boxes(handles);
+NomType=get(handles.NomType,'String');
+% NomType=get(handles.FileIndex,'UserData');
+i1=stra2num(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
 i2=stra2num(get(handles.i2,'String'));
 j1=stra2num(get(handles.j1,'String'));
 j2=stra2num(get(handles.j2,'String'));
-
 sub_value= get(handles.SubField,'Value');
 if sub_value % a second input file has been entered
     [FileName_1,RootPath_1,filebase_1,FileIndices_1,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
@@ -1781,13 +1803,14 @@ if sub_value % a second input file has been entered
     i2_1=stra2num(i2_1_str);
     j1_1=stra2num(j1_1_str);
     j2_1=stra2num(j2_1_str);
-    NomType_1=get(handles.FileIndex_1,'UserData');
+    NomType_1=get(handles.NomType_1,'String');
+%     NomType_1=get(handles.FileIndex_1,'UserData');
 else
     filename_1=[];
 end   
 comp_input=get(handles.fix_pair,'Value');
 
-%case of scanning along the first direction (rootfile numbers)
+%% increment (or decrement) the field indices and update the input filename(s)
 if get(handles.scan_i,'Value')==1% case of scanning along index i   
      i1=i1+increment;
      i2=i2+increment;
@@ -1808,39 +1831,29 @@ else % case of scanning along index j (burst numbers)
     end    
 end
 
-% refresh plots
+%% refresh plots
 errormsg=refresh_field(handles,filename,filename_1,i1,i2,j1,j2);
-if isempty(errormsg)  %update the index counters
-    if strcmp(NomType,'*')%case of movies
-        set(handles.i1,'String',num2str(i1))%update the index display
+
+%% update the index counters if the index move is successfull
+if isempty(errormsg) 
+    set(handles.i1,'String',num2stra(i1,NomType,1));
+    if isequal(i2,i1)
+        set(handles.i2,'String','');
     else
-        [~,~,i1_str,i2_str,j1_str,j2_str]=name2display(filename);
-        set(handles.i1,'String',i1_str)
-        set(handles.j1,'String',j1_str)
-        if ~isequal(movie_status,1)
-            set(handles.i2,'String',i2_str)
-            set(handles.j2,'String',j2_str)
-        end
-        [indices]=name_generator('',i1,j1,'',NomType,1,i2,j2,'');
-        set(handles.FileIndex,'String',indices);
-        if ~isempty(filename_1)
-            indices_1=name_generator('',i1_1,j1_1,'',NomType_1,1,i2_1,j2_1,'');
-            set(handles.FileIndex_1,'String',indices_1);
-        end
+        set(handles.i2,'String',num2stra(i2,NomType,1));
     end
-    %     set(handles.i1,'String',num2stra(i1,NomType,1));
-    %     if isequal(i2,i1)
-    %          set(handles.i2,'String','');
-    %     else
-    %         set(handles.i2,'String',num2stra(num2,NomType,1));
-    %     end
-    %     set(handles.j1,'String',num2stra(j1,NomType,2));
-    %     if isequal(j2,j1)
-    %          set(handles.j2,'String','');
-    %     else
-    %         set(handles.j2,'String',num2stra(j2,NomType,2));
-    %     end
-    
+    set(handles.j1,'String',num2stra(j1,NomType,2));
+    if isequal(j2,j1)
+        set(handles.j2,'String','');
+    else
+        set(handles.j2,'String',num2stra(j2,NomType,2));
+    end
+    [indices]=name_generator('',i1,j1,'',NomType,1,i2,j2,'');
+    set(handles.FileIndex,'String',indices);
+    if ~isempty(filename_1)
+        indices_1=name_generator('',i1_1,j1_1,'',NomType_1,1,i2_1,j2_1,'');
+        set(handles.FileIndex_1,'String',indices_1);
+    end
     if isequal(movie_status,1)
         set(handles.movie_pair,'Value',1)
         movie_pair_Callback(hObject, eventdata, handles); %reactivate moviepair if it was activated
@@ -1870,7 +1883,8 @@ UvData=get(handles.uvmat,'UserData');
 if isequal(FieldName,'image')
     test_1=0;
     [ff,rr,filebase,xx,Ext,SubDir]=read_file_boxes(handles);
-    NomType=get(handles.FileIndex,'UserData');
+    NomType=get(handles.NomType,'String');
+%     NomType=get(handles.FileIndex,'UserData');
 else
     list_fields=get(handles.Fields_1,'String');% list menu fields
     index_fields=get(handles.Fields_1,'Value');% selected string index
@@ -1878,7 +1892,8 @@ else
     if isequal(FieldName,'image')
         test_1=1;
         [ff,rr,filebase,xx,Ext,SubDir]=read_file_boxes_1(handles);
-        NomType=get(handles.FileIndex_1,'UserData');
+        NomType=get(handles.NomType_1,'String');
+%         NomType=get(handles.FileIndex_1,'UserData');
     else
         msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
         set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
@@ -2053,7 +2068,8 @@ if ~exist(filename,'file')
     errormsg=['input file ' filename ' does not exist'];
     return
 end
-NomType=get(handles.FileIndex,'UserData');
+NomType=get(handles.NomType,'String');
+% NomType=get(handles.FileIndex,'UserData');
 %update the z position index
 nbslice_str=get(handles.nb_slice,'String');
 if isequal(nbslice_str,'volume')%NOT USED
@@ -2157,7 +2173,8 @@ if ~isempty(filename_1)
         else
             Ext_1=get(handles.FileExt,'String');%read the file extension for the first series (case of veltype comparison within a single file)
         end
-        NomType_1=get(handles.FileIndex_1,'UserData');
+        NomType_1=get(handles.NomType_1,'String');
+%         NomType_1=get(handles.FileIndex_1,'UserData');
         if isequal(Ext_1,'.nc')||isequal(Ext_1,'.cdf')
             FileType_1='netcdf';
         elseif isfield(UvData,'MovieObject_1')
@@ -3030,29 +3047,39 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- read the data displayed for the input rootfile windows (new)
+% --- read the data displayed for the input rootfile windows (new): TODO use read_GUI
+
 function [FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes(handles)
 %------------------------------------------------------------------------
-RootPath=get(handles.RootPath,'String');
-FileName=RootPath; %default
-SubDir=get(handles.SubDir,'String');
-if ~isempty(SubDir) && ~isequal(SubDir,'')
-    if (isequal(SubDir(1),'/')|| isequal(SubDir(1),'\'))
-        SubDir(1)=[]; %suppress possible / or \ separator
-    end
-    FileName=fullfile(RootPath,SubDir);
+InputFile=read_GUI(handles.InputFile);
+RootPath=InputFile.RootPath;
+FileName=InputFile.RootPath; %default
+if ~isempty(InputFile.SubDir)
+    InputFile.SubDir=regexprep(InputFile.SubDir,'/|\','');
+    FileName=fullfile(InputFile.RootPath,InputFile.SubDir);
 end
-RootFile=get(handles.RootFile,'String');
-if ~isempty(RootFile) && ~isequal(RootFile,'')
-    if (isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
-        RootFile(1)=[]; %suppress possible / or \ separator
-    end
-    FileName=fullfile(FileName,RootFile);
+if ~isempty(InputFile.RootFile)
+    InputFile.RootFile=regexprep(InputFile.RootFile,'/|\','');
+    FileName=fullfile(FileName,InputFile.RootFile);
 end
-FileBase=fullfile(RootPath,RootFile);
-FileIndices=get(handles.FileIndex,'String');
-FileExt=get(handles.FileExt,'String');
-FileName=[FileName FileIndices FileExt];
+SubDir=InputFile.SubDir;
+% if ~isempty(SubDir) && ~isequal(SubDir,'')
+%     if (isequal(SubDir(1),'/')|| isequal(SubDir(1),'\'))
+%         SubDir(1)=[]; %suppress possible / or \ separator
+%     end
+%     FileName=fullfile(RootPath,SubDir);
+% end
+% RootFile=get(handles.RootFile,'String');
+% if ~isempty(RootFile) && ~isequal(RootFile,'')
+%     if (isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
+%         RootFile(1)=[]; %suppress possible / or \ separator
+%     end
+%     FileName=fullfile(FileName,RootFile);
+% end
+FileBase=fullfile(InputFile.RootPath,InputFile.RootFile);
+FileIndices=InputFile.FileIndex;
+FileExt=InputFile.FileExt;
+FileName=[FileName InputFile.FileIndex InputFile.FileExt];
 
 %------------------------------------------------------------------------
 % ---- read the data displayed for the second input rootfile windows
@@ -3169,7 +3196,8 @@ else
 end
 indices=name_generator('',str2double(str1),str2double(str_a),'',NomTypeNew,1,str2double(str2),str2double(str_b),'');
 set(handles.FileIndex,'String',indices)
-set(handles.FileIndex,'UserData',NomTypeNew)
+set(handles.NomType,'String',NomTypeNew)
+% set(handles.FileIndex,'UserData',NomTypeNew)
 %common to Fields_1_Callback
 if isequal(field,'image')||isequal(field_1,'image')
     set(handles.TitleNpx,'Visible','on')% visible npx,pxcm... buttons
@@ -3207,16 +3235,9 @@ UvData=get(handles.uvmat,'UserData');
 %read the rootfile input display
 [FileName,RootPath,FileBase,FileIndices,FileExt_1]=read_file_boxes_1(handles);
 [P,F,str1,str2,str_a,str_b,E,NomType_1]=name2display(['xxx' get(handles.FileIndex,'String') FileExt_1]);
-% if isempty(FileExt_prev)|| strcmp(FileExt_prev,'')
-%     FileExt_1=get(handles.FileExt,'String');
-% else
-%     FileExt_1=FileExt_prev;
-% end
-% NomType_1=get(handles.FileIndex_1,'UserData');
 if isempty(NomType_1)|| strcmp(NomType_1,'')
     [FileName,RootPath,FileBase,FileIndices,FileExt_1]=read_file_boxes(handles);
     [P,F,str1,str2,str_a,str_b,E,NomType_1]=name2display(['xxx' get(handles.FileIndex,'String') FileExt_1]);
-%     NomType_1=get(handles.FileIndex,'UserData');
 end
 NomTypeNew=NomType_1;%default
 
@@ -3355,7 +3376,8 @@ str_a=get(handles.j1,'String');
 str_b=get(handles.j2,'String');
 indices=name_generator('',str2num(str1),stra2num(str_a),'',NomTypeNew,1,str2num(str2),stra2num(str_b),'');
 set(handles.FileIndex_1,'String',indices)
-set(handles.FileIndex_1,'UserData',NomTypeNew)
+set(handles.NomType_1,'String',NomTypeNew)
+% set(handles.FileIndex_1,'UserData',NomTypeNew)
 
 %common to Fields_Callback
 if isequal(field,'image')||isequal(field_1,'image')
@@ -3413,26 +3435,23 @@ menu=menu(1:imax);
 %     set(handles(ibutton),'Value',0)%unactivate unvisible buttons
 % end
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in VelType.
 function VelType_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
-% if get(handles.VelType,'Value')==1
-%     reset_vel_type([handles.interp1 handles.civ2 handles.filter1 handles.interp1 handles.interp2 handles.filter2],handles.VelType)
-% else
-%     reset_vel_type([handles.VelType handles.filter1 handles.interp1 handles.civ2 handles.interp2 handles.filter2])
-% end
+%------------------------------------------------------------------------
 set(handles.FixVelType,'Value',1)
 run0_Callback(hObject, eventdata, handles)
 
-%---------------------------------------------
+%------------------------------------------------------------------------
+% --- Executes on button press in VelType.
 function VelType_1_Callback(hObject, eventdata, handles)
-%---------------------------------------------
+%------------------------------------------------------------------------
   
 set(handles.FixVelType,'Value',1)% the velocity type is now imposed by the GUI (not automatic)
 %refresh field with a second filename=first fiel name
 set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
-drawnow    
+drawnow   
+InputFile=read_GUI(handles.InputFile);
 filename=read_file_boxes(handles);
 
 index=get(handles.VelType_1,'Value');
@@ -4628,8 +4647,10 @@ if isequal(get(handles.SubField,'Value'),1)
         param.FileName_1=FileName_1;
     end
 end
-param.NomType=get(handles.FileIndex,'UserData');
-param.NomType_1=get(handles.FileIndex_1,'UserData');
+param.NomType=get(handles.NomType,'String');
+% param.NomType=get(handles.FileIndex,'UserData');
+param.NomType_1=get(handles.NomType_1,'String');
+% param.NomType_1=get(handles.FileIndex_1,'UserData');
 param.comp_input=get(handles.fix_pair,'Value');
 huvmat=get(handles.MenuSeries,'parent');
 UvData=get(huvmat,'UserData');
@@ -4971,3 +4992,11 @@ if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
 hset_object=set_object(ObjectData,[],ZBounds);
+
+
+
+function NomType_Callback(hObject, eventdata, handles)
+
+
+function NomType_1_Callback(hObject, eventdata, handles)
+

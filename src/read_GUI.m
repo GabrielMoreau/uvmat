@@ -20,7 +20,7 @@ for ichild=1:numel(hchild)
                     case 'edit'
                         separator=regexp(tag,'_');
                         if isempty(separator)
-                            input=get(hchild(ichild),'Value');
+                            input=get(hchild(ichild),'String');
                         else
                             switch(tag(1:separator))
                                 case 'num_'
@@ -43,7 +43,9 @@ for ichild=1:numel(hchild)
                     case{'Listbox','popupmenu'}
                         listinput=get(hchild(ichild),'String');
                         value=get(hchild(ichild),'Value');
+                        if ~isempty(listinput)
                         input=listinput(value);
+                        end
                         separator=regexp(tag,'_');
                         if strcmp(tag(1:separator),'num_')
                             input=str2double(input);% transform to numerical values if the uicontrol tag begins with 'num_'
