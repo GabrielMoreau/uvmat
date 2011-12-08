@@ -4395,17 +4395,18 @@ if get(handles.TestPatch1,'Value')
     for irho=1:7
         [Data,errormsg]=civ_matlab(Param);% get the grid of x, y positions set for PIV
         if ~isempty(errormsg)
-            msgbox_uvmat('ERROR',Data.Txt)
+            msgbox_uvmat('ERROR',errormsg)
             return
         end
         SmoothingParam(irho)=Param.Patch1.SmoothingParam;
         Data.Civ1_U_Diff=Data.Civ1_U_Diff(Data.Civ1_FF==0);
         Data.Civ1_V_Diff=Data.Civ1_V_Diff(Data.Civ1_FF==0);
         DiffVel(irho)=sqrt(mean(Data.Civ1_U_Diff.*Data.Civ1_U_Diff+Data.Civ1_V_Diff.*Data.Civ1_V_Diff))
+        NbSites(irho)=Data.Civ1_NbSites/numel(Data.Civ1_U_Diff);
         Param.Patch1.SmoothingParam=2*Param.Patch1.SmoothingParam;
     end
     figure
-    plot(SmoothingParam,DiffVel)
+    plot(SmoothingParam,DiffVel,'b',SmoothingParam,NbSites,'r')
     set(handles.TestPatch1,'BackgroundColor',[1 0 0])
 else
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display

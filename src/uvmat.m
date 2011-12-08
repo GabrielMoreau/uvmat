@@ -1777,17 +1777,14 @@ end
 
 %% read the current input file name(s) and field indices
 InputFile=read_GUI(handles.InputFile);
-filebase=InputFile.RootPath; %default
-if ~isempty(InputFile.SubDir)
-    InputFile.SubDir=regexprep(InputFile.SubDir,'/|\','');
-%    FileName=fullfile(InputFile.RootPath,InputFile.SubDir);
-end
-if ~isempty(InputFile.RootFile)
-    InputFile.RootFile=regexprep(InputFile.RootFile,'/|\','');
-    filebase=fullfile(filebase,InputFile.RootFile);
+InputFile.RootFile=regexprep(InputFile.RootFile,'\<[\\/]|[\\/]\>','');%suppress possible / or \ separator at the beginning or the end of the string
+InputFile.SubDir=regexprep(InputFile.SubDir,'\<[\\/]|[\\/]\>','');%suppress possible / or \ separator at the beginning or the end of the string
+if isempty(InputFile.RootFile)
+    filebase=InputFile.RootPath;
+else
+    filebase=fullfile(InputFile.RootPath,InputFile.RootFile);
 end
 FileExt=InputFile.FileExt;
-subdir=InputFile.SubDir;
 % [FileName,RootPath,filebase,FileIndices,FileExt,subdir]=read_file_boxes(handles);
 NomType=get(handles.NomType,'String');
 % NomType=get(handles.FileIndex,'UserData');
@@ -1814,7 +1811,7 @@ comp_input=get(handles.fix_pair,'Value');
 if get(handles.scan_i,'Value')==1% case of scanning along index i   
      i1=i1+increment;
      i2=i2+increment;
-     [filename,i1,j1,i2,j2]=name_generator(filebase,i1,j1,FileExt,NomType,comp_input,i2,j2,subdir);
+     [filename,i1,j1,i2,j2]=name_generator(filebase,i1,j1,FileExt,NomType,comp_input,i2,j2,InputFile.SubDir);
      if sub_value% set the second field name and indices
         i1_1=i1_1+increment;
         i2_1=i2_1+increment;
@@ -1823,7 +1820,7 @@ if get(handles.scan_i,'Value')==1% case of scanning along index i
 else % case of scanning along index j (burst numbers)
     j1=j1+increment;
     j2=j2+increment;
-    [filename,i1,j1,i2,j2]=name_generator(filebase,i1,j1,FileExt,NomType,comp_input,i2,j2,subdir);
+    [filename,i1,j1,i2,j2]=name_generator(filebase,i1,j1,FileExt,NomType,comp_input,i2,j2,InputFile.SubDir);
     if sub_value 
         j1_1=j1_1+increment;
         j2_1=j2_1+increment;
@@ -3094,20 +3091,14 @@ SubDir_1=get(handles.SubDir_1,'String');
 if isequal(get(handles.SubDir_1,'Visible'),'off')|| isequal(SubDir_1,'"')
     SubDir_1=get(handles.SubDir,'String');
 end
-if numel(SubDir_1)>=1
-    if (isequal(SubDir_1(1),'/')|| isequal(SubDir_1(1),'\'))
-        SubDir_1(1)=[]; %suppress possible / or \ separator
-    end
-    FileName_1=fullfile(RootPath_1,SubDir_1);
-end
 RootFile_1=get(handles.RootFile_1,'String');
+SubDir_1=regexprep(SubDir_1,'\<[\\/]|[\\/]\>','');%suppress possible / or \ separator at the beginning or the end of the string
+FileName_1=fullfile(RootPath_1,SubDir_1);
 if isequal(get(handles.RootFile_1,'Visible'),'off') || isequal(RootFile_1,'"')
     RootFile_1=get(handles.RootFile,'String'); 
 end
+RootFile_1=regexprep(RootFile_1,'\<[\\/]|[\\/]\>','');%suppress possible / or \ separator at the beginning or the end of the string
 if numel(RootFile_1)>=1
-    if ~(isequal(RootFile_1(1),'/')||isequal(RootFile_1(1),'\'))
-        RootFile_1(1)=[];%suppress possible / or \ separator
-    end
     FileName_1=fullfile(FileName_1,RootFile_1);
 end
 FileBase_1=fullfile(RootPath_1,RootFile_1);
@@ -3279,7 +3270,7 @@ end
 if isequal(field_1,'image') 
     % transform netc type to the corresponding image type
     if isequal(NomType_1,'_i1-i2_j')||isequal(NomType_1,'_i_j1-j2')|| isequal(NomType_1,'#_ab')|| isequal(NomType_1,'_i1-i2')
-        UvData.SubDir_1=get(handles.SubDir_1,'String'); %preserve the subdir in memory    
+        UvData.SubDir_1=get(handles.SubDir_1,'String'); %preserve the InputFile.SubDir in memory    
         if isequal(NomType_1,'_i1-i2_j')||isequal(NomType_1,'_i_j1-j2')
             NomTypeNew='_i_j';
         elseif isequal(NomType_1,'#_ab')
@@ -3641,9 +3632,7 @@ end
 %mask name
 RootPath=get(handles.RootPath,'String');
 RootFile=get(handles.RootFile,'String');
-if ~isempty(RootFile)&&(isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
-        RootFile(1)=[];
-end
+RootFile=regexprep(RootFile,'\<[\\/]|[\\/]\>','');%suppress possible / or \ separator at the beginning or the end of the string
 filebase=fullfile(RootPath,RootFile);
 list=get(handles.masklevel,'String');
 masknumber=num2str(length(list));
@@ -3656,7 +3645,6 @@ msgbox_uvmat('CONFIRMATION',[mask_name ' saved'])
 imwrite(imflag,mask_name,'BitDepth',8); 
 
 %display the mask
-%update_mask(handles,num_i1,num_j1)
 figure;
 vec=linspace(0,1,256);%define a linear greyscale colormap
 map=[vec' vec' vec'];
@@ -3670,11 +3658,8 @@ image(imflag);
 
 %------------------------------------------------------------------
 
-
-
 %------------------------------------------------------------------
 % --- Executes on selection change in ListColorScalar: choice of the color code.
-%
 function ListColorScalar_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------
 % edit the choice for color code

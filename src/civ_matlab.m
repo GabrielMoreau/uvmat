@@ -67,7 +67,7 @@ if isfield (Param,'Civ1')
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];% {'Civ1_Time','Civ1_Dt'}];
     %     if exist('ncfile','var')% TEST for use interactively with mouse_motion (no file created)
     Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'};%  cell array containing the names of the fields to record
-    Data.VarDimName={'nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1'};
+    Data.VarDimName={'NbVec1','NbVec1','NbVec1','NbVec1','NbVec1','NbVec1'};
     Data.VarAttribute{1}.Role='coord_x';
     Data.VarAttribute{2}.Role='coord_y';
     Data.VarAttribute{3}.Role='vector_x';
@@ -123,7 +123,7 @@ if isfield (Param,'Fix1')
         Data.vec_FixFlag=fix(Param.Fix1,Data.vec_F,Data.vec_C,Data.vec_U,Data.vec_V,Data.vec_X,Data.vec_Y);
     else
         Data.ListVarName=[Data.ListVarName {'Civ1_FF'}];
-        Data.VarDimName=[Data.VarDimName {'nbvec1'}];
+        Data.VarDimName=[Data.VarDimName {'NbVec1'}];
         nbvar=length(Data.ListVarName);
         Data.VarAttribute{nbvar}.Role='errorflag';    
         Data.Civ1_FF=fix(Param.Fix1,Data.Civ1_F,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V);
@@ -132,6 +132,10 @@ if isfield (Param,'Fix1')
 end   
 %% Patch1
 if isfield (Param,'Patch1')
+    if check_civx
+        errormsg='Civ Matlab input needed for patch';
+        return
+    end
     check_patch1=1;
     Param.Patch1
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch1_Rho','Patch1_Threshold','Patch1_SubDomain'}];
@@ -232,7 +236,7 @@ if isfield (Param,'Civ2')
     Data.Civ1_Time=str2double(par_civ1.T0);
     Data.Civ1_Dt=str2double(par_civ1.Dt);
     Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'};%  cell array containing the names of the fields to record
-    Data.VarDimName={'nbvec1','nbvec1','nbvec1','nbvec1','nbvec1','nbvec1'};
+    Data.VarDimName={'NbVec1','NbVec1','NbVec1','NbVec1','NbVec1','NbVec1'};
     Data.VarAttribute{1}.Role='coord_x';
     Data.VarAttribute{2}.Role='coord_y';
     Data.VarAttribute{3}.Role='vector_x';
@@ -595,11 +599,6 @@ FlagVal=[-2 2 3 4];
 for iflag=1:numel(FlagName)
     if isfield(Param,FlagName{iflag}) && Param.(FlagName{iflag})
         FF=(FF==1| F==FlagVal(iflag));
-% if isfield (Param,'WarnFlags')
-%     for iflag=1:numel(Param.WarnFlags)
-%         FF=(FF==1| F==Param.WarnFlags(iflag));
-%     end
-% end
     end
 end
 %criterium on correlation values
@@ -617,96 +616,27 @@ if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&
 end
 return
 
-% 
-% if isfield (Param,'LowerBoundVel')&& ~isequal(Param.LowerBoundVel,0)
-%     thresh=Param.LowerBoundVel*Param.LowerBoundVel;
-%     FF=FF==1 | (U.*U+V.*V)<thresh;
-% end
-% if isfield (Param,'UpperBoundVel')&& ~isequal(Param.UpperBoundVel,0)
-%     thresh=Param.UpperBoundVel*Param.UpperBoundVel;
-%     FF=FF==1 | (U.*U+V.*V)>thresh;
-% end
-% if isfield(Param,'MaskName')
-%    M=imread(Param.MaskName);
-%    nxy=size(M);
-%    M=reshape(M,1,[]);
-%    rangx0=[0.5 nxy(2)-0.5];
-%    rangy0=[0.5 nxy(1)-0.5];
-%    vec_x1=X-U/2;%beginning points
-%    vec_x2=X+U/2;%end points of vectors
-%    vec_y1=Y-V/2;%beginning points
-%    vec_y2=Y+V/2;%end points of vectors
-%    indx=1+round((nxy(2)-1)*(vec_x1-rangx0(1))/(rangx0(2)-rangx0(1)));% image index x at abcissa vec_x1
-%    indy=1+round((nxy(1)-1)*(vec_y1-rangy0(1))/(rangy0(2)-rangy0(1)));% image index y at ordinate vec_y1   
-%    check_in=~(indx < 1 |indy < 1 | indx > nxy(2) |indy > nxy(1)); %=0 out of the mask image, 1 inside
-%    indx=indx.*check_in+(1-check_in); %replace indx by 1 out of the mask range
-%    indy=indy.*check_in+(1-check_in); %replace indy by 1 out of the mask range
-%    ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));%determine the indices in the image reshaped in a Matlab vector
-%    Mvalues=M(ICOMB);
-%    flag7b=((20 < Mvalues) & (Mvalues < 200))| ~check_in';
-%    indx=1+round((nxy(2)-1)*(vec_x2-rangx0(1))/(rangx0(2)-rangx0(1)));% image index x at abcissa vec_x2
-%    indy=1+round((nxy(1)-1)*(vec_y2-rangy0(1))/(rangy0(2)-rangy0(1)));% image index y at ordinate vec_y2
-%    check_in=~(indx < 1 |indy < 1 | indx > nxy(2) |indy > nxy(1)); %=0 out of the mask image, 1 inside
-%    indx=indx.*check_in+(1-check_in); %replace indx by 1 out of the mask range
-%    indy=indy.*check_in+(1-check_in); %replace indy by 1 out of the mask range
-%    ICOMB=((indx-1)*nxy(1)+(nxy(1)+1-indy));%determine the indices in the image reshaped in a Matlab vector
-%    Mvalues=M(ICOMB);
-%    flag7e=((Mvalues > 20) & (Mvalues < 200))| ~check_in';
-%    FF=FF==1 |(flag7b|flag7e)';
-% end
-% %    flag7=0;
-% % end   
-% 
 
 FF=double(FF);
-% 
-% % criterium on velocity values
-% delta_u=Field.U;%default without ref file
-% delta_v=Field.V;
-% if exist('fileref','var') && ~isempty(fileref)
-%     if ~exist(fileref,'file')
-%         error='reference file not found in RUN_FIX.m';
-%         display(error);
-%         return
-%     end
-%     FieldRef=read_civxdata(fileref,[],fieldref);   
-%     if isfield(FieldRef,'FF')
-%         index_true=find(FieldRef.FF==0);
-%         FieldRef.X=FieldRef.X(index_true);
-%         FieldRef.Y=FieldRef.Y(index_true);
-%         FieldRef.U=FieldRef.U(index_true);
-%         FieldRef.V=FieldRef.V(index_true);
-%     end
-%     if ~isfield(FieldRef,'X') || ~isfield(FieldRef,'Y') || ~isfield(FieldRef,'U') || ~isfield(FieldRef,'V')
-%         error='reference file is not a velocity field in RUN_FIX.m '; %bad input file
-%         return
-%     end
-%     if length(FieldRef.X)<=1
-%         errordlg('reference field with one vector or less in RUN_FIX.m')
-%         return
-%     end
-%     vec_U_ref=griddata_uvmat(FieldRef.X,FieldRef.Y,FieldRef.U,Field.X,Field.Y);  %interpolate vectors in the ref field
-%     vec_V_ref=griddata_uvmat(FieldRef.X,FieldRef.Y,FieldRef.V,Field.X,Field.Y);  %interpolate vectors in the ref field to the positions  of the main field     
-%     delta_u=Field.U-vec_U_ref;%take the difference with the interpolated ref field
-%     delta_v=Field.V-vec_V_ref;
-% end
-% thresh_vel_x=thresh_vel; 
-% thresh_vel_y=thresh_vel; 
-% if isequal(inf_sup,1)
-%     flag5=abs(delta_u)<thresh_vel_x & abs(delta_v)<thresh_vel_y &(flag1~=1)&(flag2~=1)&(flag3~=1)&(flag4~=1);
-% elseif isequal(inf_sup,2)
-%     flag5=(abs(delta_u)>thresh_vel_x | abs(delta_v)>thresh_vel_y) &(flag1~=1)&(flag2~=1)&(flag3~=1)&(flag4~=1);
-% end
-% 
-%             % flag7 introduce a grey mask, matrix M
-
-% flagmagenta=flag1|flag2|flag3|flag4|flag5|flag7;
-% fixflag_unit=Field.FF-10*floor(Field.FF/10); %unity term of fix_flag
 
 
 
 %------------------------------------------------------------------------
 % patch function
+% OUTPUT:
+% SubRangx,SubRangy(NbSubdomain,2): range (min, max) of the coordiantes x and y respectively, for each subdomain
+% nbpoints(NbSubdomain): number of source points for each subdomain
+% FF: false flags
+% U_smooth, V_smooth: filtered velocity components at the positions of the initial data
+% X_tps,Y_tps,U_tps,V_tps: positions and weight of the tps for each subdomain
+%
+% INPUT:
+% X, Y: set of coordinates of the initial data
+% U,V: set of velocity components of the initial data
+% Rho: smoothing parameter
+% Threshold: max diff accepted between smoothed and initial data 
+% Subdomain: estimated number of data points in each subdomain
+
 function [SubRangx,SubRangy,nbpoints,FF,U_smooth,V_smooth,X_tps,Y_tps,U_tps,V_tps] =patch(X,Y,U,V,Rho,Threshold,SubDomain)
 %subdomain decomposition
 warning off
@@ -743,13 +673,13 @@ nb_select=zeros(length(X),1);
 FF=zeros(length(X),1);
 check_empty=zeros(1,NbSubDomain);
 for isub=1:NbSubDomain
-    SubRangx(isub,:)=[CentreX(isub)-SizX/2 CentreX(isub)+SizX/2];
-    SubRangy(isub,:)=[CentreY(isub)-SizY/2 CentreY(isub)+SizY/2];
+    SubRangx(isub,:)=[CentreX(isub)-0.55*SizX CentreX(isub)+0.55*SizX];
+    SubRangy(isub,:)=[CentreY(isub)-0.55*SizY CentreY(isub)+0.55*SizY];
     ind_sel_previous=[];
     ind_sel=0;
     while numel(ind_sel)>numel(ind_sel_previous) %increase the subdomain during four iterations at most
         ind_sel_previous=ind_sel;
-        ind_sel=find(X>SubRangx(isub,1) & X<SubRangx(isub,2) & Y>SubRangy(isub,1) & Y<SubRangy(isub,2));
+        ind_sel=find(X>=SubRangx(isub,1) & X<=SubRangx(isub,2) & Y>=SubRangy(isub,1) & Y<=SubRangy(isub,2));
         % if no vector in the subdomain, skip the subdomain
         if isempty(ind_sel)
             check_empty(isub)=1;    
