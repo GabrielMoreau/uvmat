@@ -124,11 +124,11 @@ if isfield(param,'list_fields')&& isfield(param,'index_fields') &&~isempty(param
     set(handles.FieldMenu,'Value',param.index_fields);% selected string index
     FieldCell{1}=param.list_fields{param.index_fields};
 end
-set(hObject,'WindowButtonDownFcn',{'mouse_alt_gui',handles}) % allows mouse action with right button (zoom for uicontrol display)
+set(hObject,'WindowButtonDownFcn',{'mouse_down'})%allows mouse action with right button (zoom for uicontrol display)
 NomType_Callback(hObject, eventdata, handles)
 
 %loads the information stored in prefdir to initiate  the list of ACTION functions
-fct_menu={'check_files';'aver_stat';'time_series';'merge_proj';'clean_civ_cmx'};
+fct_menu={'check_data_files';'aver_stat';'time_series';'merge_proj';'clean_civ_cmx'};
 transform_menu={'';'phys';'px';'phys_polar'};
 nb_builtin_ACTION=numel(fct_menu); %number of functions
 nb_transform=numel(transform_menu);
@@ -193,7 +193,7 @@ menu_str=[menu_str;{'more...'}];
 set(handles.transform_fct,'String',menu_str)
 set(handles.transform_fct,'UserData',fct_handle)% store the list of path in UserData of ACTION
 
-% display the GUI for the default action 'check_files'
+% display the GUI for the default action 'check_data_files'
 ACTION_Callback(hObject, eventdata, handles) 
 
 %--------------------------------------------------------------
@@ -215,15 +215,15 @@ RootPathCell=get(handles.RootPath,'String');
 SubDirCell=get(handles.SubDir,'String');  
 RootFileCell=get(handles.RootFile,'String');
 oldfile=''; %default
-if isempty(RootPathCell)|isequal(RootPathCell,{''})%loads the previously stored file name and set it as default in the file_input box
+if isempty(RootPathCell)||isequal(RootPathCell,{''})%loads the previously stored file name and set it as default in the file_input box
      dir_perso=prefdir;
      profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
      if exist(profil_perso,'file')
           h=load (profil_perso);
-         if isfield(h,'filebase')&ischar(h.filebase)
+         if isfield(h,'filebase')&&ischar(h.filebase)
                  oldfile=h.filebase;
          end
-         if isfield(h,'RootPath')&ischar(h.RootPath) 
+         if isfield(h,'RootPath')&&ischar(h.RootPath) 
                  oldfile=h.RootPath;
          end
      end
@@ -742,14 +742,16 @@ set(handles.PathCampaign,'String',SeriesData.PathCampaign)
 last_j_Callback(hObject, eventdata, handles)
 last_i_Callback(hObject, eventdata, handles)
 
-%------------------------------------------------------------
+%------------------------------------------------------------------------
 function RootPath_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 Val=get(handles.RootPath,'Value');
 synchronise_view(handles,Val)
 NomType_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------
 
+%------------------------------------------------------------------------
 function synchronise_view(handles,Val)
+%------------------------------------------------------------------------
 set(handles.RootPath,'Value',Val)
 set(handles.SubDir,'Value',Val)
 set(handles.RootFile,'Value',Val)
@@ -761,19 +763,18 @@ set(handles.time_first,'Value',Val)
 set(handles.time_last,'Value',Val)
 
 
-%---------------------------------------------------------
+%------------------------------------------------------------------------
 % Executes on carriage return on the subdir civ1 edit window
-%--------------------------------------------------------
 function SubDir_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 Val=get(handles.SubDir,'Value');
 synchronise_view(handles,Val)
 NomType_Callback(hObject, eventdata, handles)
 
-%--------------------------------------------------------------
-%function activated when a new filebase (image series) is introduced
-%------------------------------------------------------------
+%------------------------------------------------------------------------
+% --- function activated when a new filebase (image series) is introduced
 function RootFile_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 Val=get(handles.RootFile,'Value');
 synchronise_view(handles,Val)
 NomType_Callback(hObject, eventdata, handles)
@@ -812,10 +813,6 @@ synchronise_view(handles,Val)
 function time_last_Callback(hObject, eventdata, handles)
 Val=get(handles.time_last,'Value');
 synchronise_view(handles,Val)
-
-%--------------------------------------------------------------
-%function activated by NomType
-%------------------------------------------------------------
 NomType_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------

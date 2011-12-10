@@ -76,10 +76,11 @@ if ~isempty(huvmat)
 %     set(hhuvmat.view_field_title,'Visible','on')
     % handles_mouse.create=hhuvmat.create;
     handles_mouse.edit=hhuvmat.edit_object;
+    pos_view_field=get(hObject,'Position');
     pos_uvmat=get(huvmat,'Position');
     pos_view_field(1)=pos_uvmat(1)+pos_uvmat(3)/2;
     pos_view_field(2)=pos_uvmat(2)-pos_uvmat(3)/4;
-    pos_view_field(3:4)=pos_uvmat(3:4);
+%      pos_view_field(3:4)=pos_uvmat(3:4);
     set(hObject,'Position',pos_view_field)
 end
 

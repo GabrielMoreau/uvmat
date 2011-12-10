@@ -170,20 +170,12 @@ elseif  ~isequal(ObjectData.ProjMode,'interp')
 end
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 ProjData.NbDim=0;
-%ProjData.ListDimName= {'nb_points'};
-%ProjData.DimValue=siz(1);  %nbre of projection points  
-
-
-% idimvar=0;
-[CellVarIndex,NbDimCell,VarTypeCell,errormsg]=find_field_indices(FieldData)
+[CellVarIndex,NbDimCell,VarTypeCell,errormsg]=find_field_indices(FieldData);
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_points:' errormsg];
     return
 end
 %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
-% CellVarIndex=cells of variable index arrays
-% ivar_new=0; % index of the current variable in the projected field
-% icoord=0;
 for icell=1:length(CellVarIndex)
     if NbDimCell(icell)==1
         continue
@@ -193,19 +185,13 @@ for icell=1:length(CellVarIndex)
     ivar_X=VarType.coord_x;
     ivar_Y=VarType.coord_y;
     ivar_Z=VarType.coord_z;
-%     ivar_U=VarType.vector_x;
-%     ivar_V=VarType.vector_y;
-%     ivar_W=VarType.vector_z;
-%     ivar_C=VarType.scalar ;
     ivar_Anc=VarType.ancillary;
-%     test_anc=zeros(size(VarIndex));
     test_anc(ivar_Anc)=ones(size(ivar_Anc));
     ivar_F=VarType.warnflag;
     ivar_FF=VarType.errorflag;
     VarIndex([ivar_X ivar_Y ivar_Z ivar_Anc ivar_F ivar_FF])=[];% not projected variables removed frlom list
     if isempty(ivar_X)
-        test_grid=1;%test for input data on regular grid (e.g. image)coordinates
-      
+        test_grid=1;%test for input data on regular grid (e.g. image)coordinates      
     else
         if length(ivar_X)>1 || length(ivar_Y)>1 || length(ivar_Z)>1
                  errormsg='multiple coordinate input in proj_field.m';
