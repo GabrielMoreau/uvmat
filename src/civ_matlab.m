@@ -180,13 +180,7 @@ if isfield (Param,'Civ2')
     isx2=ibx2+2;
     isy2=iby2+2;
 
-    %get the previous guess for displacement
-    
-    if ~check_patch1
-        [Data,VelType]=read_civdata(ObjectName,InputField,ParamIn.VelType);%TO DEVELOP
-    end
-    
-    Guess =interp_tps(Data,X,Y)
+
 %         Data.Civ1_U_Diff=zeros(size(Data.Civ1_X));
 %         Data.Civ1_V_Diff=zeros(size(Data.Civ1_X));
 %         if isfield(Data,'Civ1_FF')
@@ -208,6 +202,11 @@ if isfield (Param,'Civ2')
     [GridX,GridY]=meshgrid(minix:par_civ2.Dx:maxix,miniy:par_civ2.Dy:maxiy);
     PointCoord(:,1)=reshape(GridX,[],1);
     PointCoord(:,2)=reshape(GridY,[],1);
+
+    Guess = tps_eval(PointCoord,[Data.Civ1_X_tps Data.Civ1_Y_tps])
+    Shiftx=Guess*Data.Civ1_U_tps;
+    Shifty=Guess*Data.Civ1_V_tps;
+    
     if ~isempty(par_civ2.maskname)&& ~strcmp(maskname,par_civ2.maskname)% mask exist, not already read in civ1
         mask=imread(par_civ2.maskname);
     end
@@ -672,6 +671,8 @@ V_smooth=zeros(length(X),1);
 nb_select=zeros(length(X),1);
 FF=zeros(length(X),1);
 check_empty=zeros(1,NbSubDomain);
+SubRangx=zeros(NbSubDomain,2);%initialise the positions of subdomains
+SubRangy=zeros(NbSubDomain,2);
 for isub=1:NbSubDomain
     SubRangx(isub,:)=[CentreX(isub)-0.55*SizX CentreX(isub)+0.55*SizX];
     SubRangy(isub,:)=[CentreY(isub)-0.55*SizY CentreY(isub)+0.55*SizY];
