@@ -274,8 +274,8 @@ if strcmp(answer,'Yes')
     if ~isempty(hhh)
         delete(hhh);
     end
-    set(hhuvmat.FixLimits,'Value',0)% put FixedLimits option to 'off'
-    set(hhuvmat.FixLimits,'BackgroundColor',[0.7 0.7 0.7])
+    set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off'
+    set(hhuvmat.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
     UserData=get(handles.geometry_calib,'UserData');
     UserData.XmlInputFile=outputfile;%save the current xml file name
     set(handles.geometry_calib,'UserData',UserData)
@@ -498,8 +498,8 @@ end
 if isempty(Calib.Cx)||isempty(Calib.Cy)
     huvmat=findobj(allchild(0),'Tag','uvmat');
     hhuvmat=guidata(huvmat);
-    Calib.Cx=str2num(get(hhuvmat.npx,'String'))/2;
-    Calib.Cx=str2num(get(hhuvmat.npy,'String'))/2;
+    Calib.Cx=str2num(get(hhuvmat.num_Npx,'String'))/2;
+    Calib.Cx=str2num(get(hhuvmat.num_Npy,'String'))/2;
 end   
 %tsai parameters
 Calib.dpx=0.012;%arbitrary
@@ -556,8 +556,8 @@ if isempty(coord_files{1}) || isequal(coord_files,{''})
 end
 %retrieve the calibration points stored in the files listed in the popup list coord_files
 x_1=Coord(:,4:5)';%px coordinates of the ref points
-nx=str2num(get(hhuvmat.npx,'String'));
-ny=str2num(get(hhuvmat.npy,'String'));
+nx=str2num(get(hhuvmat.num_Npx,'String'));
+ny=str2num(get(hhuvmat.num_Npy,'String'));
 x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
 X_1=Coord(:,1:3)';%phys coordinates of the ref points
 n_ima=numel(coord_files)+1;
@@ -628,8 +628,8 @@ end
 
 %retrieve the calibration points stored in the files listed in the popup list coord_files
 x_1=Coord(:,4:5)';%px coordinates of the ref points
-nx=str2num(get(hhuvmat.npx,'String'));
-ny=str2num(get(hhuvmat.npy,'String'));
+nx=str2num(get(hhuvmat.num_Npx,'String'));
+ny=str2num(get(hhuvmat.num_Npy,'String'));
 x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
 X_1=Coord(:,1:3)';%phys coordinates of the ref points
 n_ima=numel(coord_files)+1;
@@ -692,7 +692,7 @@ x_1=double(Coord(:,4:5)');%image coordiantes
 X_1=double(Coord(:,1:3)');% phys coordinates
 huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
-ny=str2double(get(hhuvmat.npy,'String'));
+ny=str2double(get(hhuvmat.num_Npy,'String'));
 x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
 n_ima=1;
 GeometryCalib.CalibrationType='3D_extrinsic';
@@ -1595,8 +1595,8 @@ CoordCell={};
 %     f1=1000;
 %     f2=1000;
 %     hhuvmat=guidata(findobj(allchild(0),'Name','uvmat'));
-%     Cx=str2num(get(hhuvmat.npx,'String'))/2;
-%     Cy=str2num(get(hhuvmat.npy,'String'))/2;
+%     Cx=str2num(get(hhuvmat.num_Npx,'String'))/2;
+%     Cy=str2num(get(hhuvmat.num_Npy,'String'))/2;
 Tabchar={};%default
 val_cal=1;%default
 if ~isempty(GeometryCalib)

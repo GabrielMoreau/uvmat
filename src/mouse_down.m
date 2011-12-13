@@ -23,12 +23,7 @@
 
 function xy=mouse_down(hObject,eventdata)
 
-huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle which controls theoption of  mouse action
-if isempty(huvmat)
-    return
-end
-hhuvmat=guidata(huvmat);%handles of elements in uvmat
-UvData=get(huvmat,'UserData');
+AxeData=[];%default
 FigData=get(hObject,'UserData');
 if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is stored in UserData, its parent is the plotting axes of the rectangle
     hcurrentfig=get(get(FigData,'parent'),'parent');
@@ -40,30 +35,39 @@ GUI_pos=get(hcurrentfig,'Position');%position of the GUI series (in pixels)
 set(hcurrentfig,'Units','normalized')
 hhcurrentfig=guidata(hcurrentfig);
 if isfield(hhcurrentfig,'CheckZoom')
-test_zoom=get(hhcurrentfig.CheckZoom,'Value');%test for zoom action, first priority
+    test_zoom=get(hhcurrentfig.CheckZoom,'Value');%test for zoom action, first priority
 else
     test_zoom=0;
 end
-test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
-test_edit=get(hhuvmat.edit_object,'Value');%test for object editing, third priority
-test_edit_vect=get(hhuvmat.edit_vect,'Value');%test for vector editing,  priority 4
-test_create=isequal(get(hhuvmat.MenuObject,'checked'),'on');% test for object creation,  priority 5
-if test_create
-    hset_object=findobj(allchild(0),'tag','set_object');
-    test_create=~isempty(hset_object)&&~test_edit;
-end
-test_cal=isequal(get(hhuvmat.MenuCalib,'checked'),'on');% test for calibration
-if test_cal% test for calibration popints,  priority 6
-    h_calib=findobj(allchild(0),'tag','geometry_calib');
-    if isempty(h_calib)
-        test_cal=0;
-        set(hhuvmat.MenuCalib,'checked','off');% test for calibration off
-    else
-        hh_calib=guidata(h_calib);
-        test_cal=get(hh_calib.edit_append,'Value');
+
+%% look for parameters set by the GUI uvmat
+test_ruler=0;
+test_edit=0;
+test_create=0;
+huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle which controls theoption of  mouse action
+if ~isempty(huvmat)
+    hhuvmat=guidata(huvmat);%handles of elements in uvmat
+    UvData=get(huvmat,'UserData');
+    test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
+    test_edit=get(hhuvmat.edit_object,'Value');%test for object editing, third priority
+    test_edit_vect=get(hhuvmat.edit_vect,'Value');%test for vector editing,  priority 4
+    test_create=isequal(get(hhuvmat.MenuObject,'checked'),'on');% test for object creation,  priority 5
+    if test_create
+        hset_object=findobj(allchild(0),'tag','set_object');
+        test_create=~isempty(hset_object)&&~test_edit;
+    end
+    test_cal=isequal(get(hhuvmat.MenuCalib,'checked'),'on');% test for calibration
+    if test_cal% test for calibration popints,  priority 6
+        h_calib=findobj(allchild(0),'tag','geometry_calib');
+        if isempty(h_calib)
+            test_cal=0;
+            set(hhuvmat.MenuCalib,'checked','off');% test for calibration off
+        else
+            hh_calib=guidata(h_calib);
+            test_cal=get(hh_calib.edit_append,'Value');
+        end
     end
 end
-AxeData=[];%default
 
 %% determine the currently selected items
 hcurrentobject=gco;% current object handle (selected by the mouse)

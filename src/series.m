@@ -64,7 +64,8 @@ drawnow
 set(hObject,'Units','pixels')
 % set(0,'Units','pixels')
 % screensize=get(0,'ScreenSize'); %screen size in pixels
-set(hObject,'Position',[150 100 1000 600] );%position and size in pixels (get adjusted to the screen size in case of excess)
+set(hObject,'WindowButtonDownFcn',{'mouse_down'})%allows mouse action with right button (zoom for uicontrol display)
+%set(hObject,'Position',[150 100 1000 600] );%position and size in pixels (get adjusted to the screen size in case of excess)
 %load the list of previously browsed files in menus Open and Open_1
 dir_perso=prefdir;
 test_profil_perso=0;
@@ -111,10 +112,10 @@ end
 
 if isfield(param,'FileName')
     if isfield(param,'FileName_1')
-        update_file(hObject, eventdata, handles,param.FileName_1,0)
-        update_file(hObject, eventdata, handles,param.FileName,1)
+        update_file(handles,param.FileName_1,0)
+        update_file(handles,param.FileName,1)
     else
-        update_file(hObject, eventdata, handles,param.FileName,0)
+        update_file(handles,param.FileName,0)
     end
 end  
 
@@ -124,7 +125,6 @@ if isfield(param,'list_fields')&& isfield(param,'index_fields') &&~isempty(param
     set(handles.FieldMenu,'Value',param.index_fields);% selected string index
     FieldCell{1}=param.list_fields{param.index_fields};
 end
-set(hObject,'WindowButtonDownFcn',{'mouse_down'})%allows mouse action with right button (zoom for uicontrol display)
 NomType_Callback(hObject, eventdata, handles)
 
 %loads the information stored in prefdir to initiate  the list of ACTION functions
@@ -134,7 +134,7 @@ nb_builtin_ACTION=numel(fct_menu); %number of functions
 nb_transform=numel(transform_menu);
 [path_series,name,ext]=fileparts(which('series'));
 path_series=fullfile(path_series,'series');%path of the function 'series'
-addpath path_series ; %add the path to UVMAT, (useful in case of change of working directory after civ has been s opened in the working directory)
+addpath (path_series) ; %add the path to UVMAT, (useful in case of change of working directory after civ has been s opened in the working directory)
 path_transform=fullfile(path_series,'transform_field');%path to the field transform functions 
 for ilist=1:length(fct_menu)
     fct_path{ilist,1}=path_series;%paths of the fuctions buil-in in 'series.m'
@@ -255,7 +255,7 @@ if isequal(ext,'.xml')
 elseif isequal(ext,'.xls')
     warndlg_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
 else
-    update_file(hObject, eventdata, handles,fileinput,0)
+    update_file(handles,fileinput,0)
      %update list of recent files in the menubar
     MenuFile_1=fileinput;
     MenuFile_2=get(handles.MenuFile_1,'Label');
@@ -292,27 +292,27 @@ end
 % --------------------------------------------------------------------
 function MenuFile_1_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_1,'Label');
-update_file(hObject, eventdata, handles,fileinput,0)
+update_file(handles,fileinput,0)
 
 % --------------------------------------------------------------------
 function MenuFile_2_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_2,'Label');
-update_file(hObject, eventdata, handles,fileinput,0)
+update_file(handles,fileinput,0)
 
 % --------------------------------------------------------------------
 function MenuFile_3_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_3,'Label');
-update_file(hObject, eventdata, handles,fileinput,0)
+update_file( handles,fileinput,0)
 
 % --------------------------------------------------------------------
 function MenuFile_4_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_4,'Label');
-update_file(hObject, eventdata, handles,fileinput,0)
+update_file(handles,fileinput,0)
 
 % --------------------------------------------------------------------
 function MenuFile_5_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_5,'Label');
-update_file(hObject, eventdata, handles,fileinput,0)
+update_file(handles,fileinput,0)
 
 % --------------------------------------------------------------------
 function MenuBrowse_insert_Callback(hObject, eventdata, handles)
@@ -359,7 +359,7 @@ if isequal(ext,'.xml')
 elseif isequal(ext,'.xls')
     msgbox_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
 else
-    update_file(hObject, eventdata, handles,fileinput,1)
+    update_file(handles,fileinput,1)
     %update list of recent files in the menubar
     MenuFile_1=fileinput;
     MenuFile_2=get(handles.MenuFile_1,'Label');
@@ -396,103 +396,102 @@ end
 % --------------------------------------------------------------------
 function MenuFile_insert_1_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_insert_1,'Label');
-update_file(hObject, eventdata, handles,fileinput,1)
+update_file(handles,fileinput,1)
 
 % --------------------------------------------------------------------
 function MenuFile_insert_2_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_insert_2,'Label');
-update_file(hObject, eventdata, handles,fileinput,1)
+update_file(handles,fileinput,1)
 
 % --------------------------------------------------------------------
 function MenuFile_insert_3_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_insert_3,'Label');
-update_file(hObject, eventdata, handles,fileinput,1)
+update_file( handles,fileinput,1)
 
 % --------------------------------------------------------------------
 function MenuFile_insert_4_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_insert_4,'Label');
-update_file(hObject, eventdata, handles,fileinput,1)
+update_file( handles,fileinput,1)
 
 % --------------------------------------------------------------------
 function MenuFile_insert_5_Callback(hObject, eventdata, handles)
 fileinput=get(handles.MenuFile_insert_5,'Label');
-update_file(hObject, eventdata, handles,fileinput,1)
+update_file(handles,fileinput,1)
 
 %------------------------------------------------------------------------
 % ---  refresh the GUI data after introduction of a new file series
-function update_file(hObject, eventdata, handles,fileinput,addtest)
+% INPUT:
+% handles: 
+% fileinput: name of the input file
+% addtest: =0 to refresh the list of file series, =1 to append a new series to the list (from the menu bar option 'Open_insert')
+function update_file(handles,fileinput,addtest)
 %------------------------------------------------------------------------  
+
+%% enable other menus and uicontrols
+set(handles.MenuOpen_insert,'Enable','on')
+set(handles.MenuFile_insert_1,'Enable','on')
+set(handles.MenuFile_insert_2,'Enable','on')
+set(handles.MenuFile_insert_3,'Enable','on')
+set(handles.MenuFile_insert_4,'Enable','on')
+set(handles.MenuFile_insert_5,'Enable','on')
+set(handles.RUN, 'Enable','On')
+set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
+set(handles.RootPath,'BackgroundColor',[1 1 0]) % set RootPath edit box  to yellow
+drawnow
+
+%% get the input root name, indices, file extension and nomenclature NomType
 if ~exist(fileinput,'file')
     msgbox_uvmat('ERROR',['input file ' fileinput  ' does not exist'])
     return
 end
+[RootPath,RootFile,i1,str2,str_a,str_b,FileExt,NomType,SubDir]=name2display(fileinput);
 
-% refresh input root name, indices, file extension and nomenclature
-[RootPath,RootFile,field_count,str2,str_a,str_b,FileExt,NomType,SubDir]=name2display(fileinput);
-
-%check for movie image files
-if ~isempty(FileExt)
-    if ~isempty(imformats(FileExt(2:end)))
-        imainfo=imfinfo(fileinput);
-        if length(imainfo) >1 %case of image with multiple frames
-            NomType='*';
-            [RootPath,RootFile]=fileparts(fileinput);
-        end
-    end
-end
-NcType='none';%default
-if isequal(FileExt,'.nc')
-   Data=nc2struct(fileinput,[]);
-   if isfield(Data,'absolut_time_T0')
-       NcType='civx'; % test for civx velocity fields
-   end
-end
-
-set(handles.RootPath,'Value',1)
-set(handles.SubDir,'Value',1)
-set(handles.RootFile,'Value',1)
-set(handles.NomType,'Value',1)
-set(handles.FileExt,'Value',1)
-set(handles.nb_field,'Value',1)
-set(handles.nb_field2,'Value',1)
-if addtest
-    SeriesData=get(handles.figure1,'UserData');
-    SeriesData.displ_num=[0 0 0 0;SeriesData.displ_num];
-    SeriesData.CurrentInputFile_1=SeriesData.CurrentInputFile;
-    RootPathCell=[{RootPath}; get(handles.RootPath,'String')] ; 
-    SubDirCell=[{SubDir}; get(handles.SubDir,'String')];
-    RootFileCell=[{RootFile}; get(handles.RootFile,'String')]; 
-    NomTypeCell=[{NomType}; SeriesData.NomType];
-    FileExtCell=[{FileExt}; get(handles.FileExt,'String')];
-    NcTypeCell=[{NcType};SeriesData.NcType];
-    set(handles.NomType,'String',[{};get(handles.NomType,'String')])
+%% look for min and max indices existing in the file series and update NomType
+[num_i1,num_i2,num_j1,num_j2,NomType,FileType,Object]=find_file_series(fileinput);
+ if strcmp(NomType,'*')
+     MinIndex_i=1;
+     MinIndex_j=1;
+     nb_field=num_i2;
+     nb_field2=1;
+ else
+    MinIndex_i=min(floor((min(num_i1)+min(num_i2))/2));
+    MinIndex_j=min(floor((min(num_j1)+min(num_j2))/2));
+    nb_field=max(floor((max(num_i1)+max(num_i2))/2));
+    nb_field2=max(floor((max(num_j1)+max(num_j2))/2));
+ end
+if isnan(nb_field)
+    nb_field_str='?';
+    nb_field_str2='?';
 else
-    SeriesData=[];%re-initialisation 
-    SeriesData.displ_num=[0 0 0 0];
-    RootPathCell={RootPath};
-    SubDirCell={SubDir};
-    RootFileCell={RootFile};   
-    NomTypeCell={NomType};
-    FileExtCell={FileExt};   
-    NcTypeCell={NcType};
+    MinIndex_i_str=num2str(MinIndex_i);
+    MinIndex_j_str=num2str(MinIndex_j);
+    nb_field_str=num2str(nb_field);
+    nb_field_str2=num2str(nb_field2);  
 end
+if addtest% case of insertion of a new series (menu bar option Open_insert)
+    MinIndex_i_cell=[{MinIndex_i_str} ;get(handles.MinIndex_i,'String')];
+    MinIndex_j_cell=[{MinIndex_j_str} ;get(handles.MinIndex_j,'String')];
+    nb_field_cell=[{nb_field_str} ;get(handles.nb_field,'String')];
+    nb_field2_cell=[{nb_field_str2} ;get(handles.nb_field2,'String')];
+else % refresh the list (menu bar option Open)
+    MinIndex_i_cell={MinIndex_i_str};
+    MinIndex_j_cell={MinIndex_j_str};
+    nb_field_cell={nb_field_str};
+    nb_field2_cell={nb_field_str2};
+end
+set(handles.MinIndex_i,'String',MinIndex_i_cell);
+set(handles.MinIndex_j,'String',MinIndex_j_cell);
+set(handles.nb_field,'String',nb_field_cell);
+set(handles.nb_field2,'String',nb_field2_cell);
 
-SeriesData.NomType=NomTypeCell;
-SeriesData.NcType=NcTypeCell;
-SeriesData.CurrentInputFile=fileinput;
-set(handles.RootPath,'String',RootPathCell);
-set(handles.SubDir,'String',SubDirCell);
-set(handles.RootFile,'String',RootFileCell);
-set(handles.NomType,'String',NomTypeCell);
-set(handles.FileExt,'String',FileExtCell);  
 
-%determine field indices
+%% determine reference field indices
 ref_i=1; %default ref_i is a reference frame index used to find existing pairs from PIV
-if ~isempty(str2num(field_count))
-    ref_i=str2num(field_count);
+if ~isempty(str2num(i1))
+    ref_i=str2num(i1);
     if ~isempty(str2num(str2))
         ref_i=floor((ref_i+str2num(str2))/2);% reference image number corresponding to the file
-        SeriesData.browse_Di=str2num(str2)-str2num(field_count);
+        SeriesData.browse_Di=str2num(str2)-str2num(i1);
     end
 end
 set(handles.ref_i,'String',num2str(ref_i));
@@ -510,18 +509,6 @@ set(handles.ref_j,'String',num2str(ref_j));
 set(handles.first_j,'String',num2str(ref_j))
 set(handles.last_j,'String',num2str(ref_j)); 
 
-%enable other menus and uicontrols
-set(handles.MenuOpen_insert,'Enable','on')
-set(handles.MenuFile_insert_1,'Enable','on')
-set(handles.MenuFile_insert_2,'Enable','on')
-set(handles.MenuFile_insert_3,'Enable','on')
-set(handles.MenuFile_insert_4,'Enable','on')
-set(handles.MenuFile_insert_5,'Enable','on')
-set(handles.RUN, 'Enable','On')
-set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
-set(handles.RootPath,'BackgroundColor',[1 1 0]) % set RootPath edit box  to yellow
-drawnow
-
 TimeUnit=''; %default
 time=[];%default
 GeometryCalib=[];%default
@@ -535,24 +522,66 @@ FileBase=fullfile(RootPath,RootFile);
 testima=0; %test for image input
 if isequal(lower(FileExt),'.avi') %.avi file
     testima=1;
-    info=aviinfo([FileBase FileExt]);
-    time=(0:1/info.FramesPerSecond:(info.NumFrames-1)/info.FramesPerSecond)';
-    nb_field=info.NumFrames;
-    nb_field2=1;
+%     info=aviinfo([FileBase FileExt]);
+%     time=(0:1/info.FramesPerSecond:(info.NumFrames-1)/info.FramesPerSecond)';
+%     nb_field=info.NumFrames;
+%     nb_field2=1;
 elseif ~isempty(imformats(FileExt(2:end))) 
     testima=1;
-    if isequal(NomType,'*')% multi-frame image
-        imainfo=imfinfo([FileBase FileExt]);     
-        if length(imainfo) >1 %case of image with multiple frames
-            nb_field=length(imainfo);
-            nb_field2=1;
-        end
-    end
+%     if isequal(NomType,'*')% multi-frame image
+%         imainfo=imfinfo([FileBase FileExt]);     
+%         if length(imainfo) >1 %case of image with multiple frames
+%             nb_field=length(imainfo);
+%             nb_field2=1;
+%         end
+%     end
 elseif isequal(FileExt,'.vol')
      testima=1;
 end
 
-% enable field and veltype menus
+
+%% fill the list of file series
+% select the first line in the list 
+set(handles.RootPath,'Value',1)
+set(handles.SubDir,'Value',1)
+set(handles.RootFile,'Value',1)
+set(handles.NomType,'Value',1)
+set(handles.FileExt,'Value',1)
+set(handles.nb_field,'Value',1)
+set(handles.nb_field2,'Value',1)
+% append the current file series to the list
+if addtest 
+    SeriesData=get(handles.series,'UserData');
+    SeriesData.displ_num=[0 0 0 0;SeriesData.displ_num];
+    SeriesData.CurrentInputFile_1=SeriesData.CurrentInputFile;
+    RootPathCell=[{RootPath}; get(handles.RootPath,'String')] ; 
+    SubDirCell=[{SubDir}; get(handles.SubDir,'String')];
+    RootFileCell=[{RootFile}; get(handles.RootFile,'String')]; 
+    NomTypeCell=[{NomType}; SeriesData.NomType];
+    FileExtCell=[{FileExt}; get(handles.FileExt,'String')];
+    FileTypeCell=[{FileType};SeriesData.FileType];
+    set(handles.NomType,'String',[{};get(handles.NomType,'String')])
+% or re-initialise the list of  input  file series   
+else 
+    SeriesData=[];%re-initialisation 
+    SeriesData.displ_num=[0 0 0 0];
+    RootPathCell={RootPath};
+    SubDirCell={SubDir};
+    RootFileCell={RootFile};   
+    NomTypeCell={NomType};
+    FileExtCell={FileExt};   
+    FileTypeCell={FileType};
+end
+SeriesData.NomType=NomTypeCell;
+SeriesData.FileType=FileTypeCell;
+SeriesData.CurrentInputFile=fileinput;
+set(handles.RootPath,'String',RootPathCell);
+set(handles.SubDir,'String',SubDirCell);
+set(handles.RootFile,'String',RootFileCell);
+set(handles.NomType,'String',NomTypeCell);
+set(handles.FileExt,'String',FileExtCell); 
+
+%% enable field and veltype menus
 testfield=isequal(get(handles.FieldMenu,'enable'),'on');
 testfield_1=isequal(get(handles.FieldMenu_1,'enable'),'on');
 testveltype=isequal(get(handles.VelTypeMenu,'enable'),'on');
@@ -567,15 +596,15 @@ if length(FileExtCell)==1 || length(FileExtCell)>2
         if isequal(FileExtCell{iview},'.nc')
             testnc=1;
         end
-        if isequal(NcTypeCell{iview},'civx')
+        if isequal(FileTypeCell{iview},'civx')
             testcivx=1;
         end
     end
 elseif length(FileExtCell)==2
     testnc=isequal(FileExtCell{1},'.nc');
     testnc_1=isequal(FileExtCell{2},'.nc');
-    testcivx=isequal(NcTypeCell{1},'civx');
-    testcivx_1=isequal(NcTypeCell{2},'civx');
+    testcivx=isequal(FileTypeCell{1},'civx');
+    testcivx_1=isequal(FileTypeCell{2},'civx');
 end
 if testfield && testnc 
     view_FieldMenu(handles,'on')
@@ -629,8 +658,7 @@ if ~isequal(FileExt,'.nc') && ~isequal(FileExt,'.cdf') && ~testima
     return
 end  
 
-%%%%%%%%   read image documentation file  if found%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      %look for the file existence
+%%  read image documentation file  if found%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ext_imadoc='';
 if isequal(FileExt,'.xml')||isequal(FileExt,'.civ')
     ext_imadoc=FileExt;
@@ -639,7 +667,7 @@ elseif exist([FileBase '.xml'],'file')
 elseif exist([FileBase '.civ'],'file')
     ext_imadoc='.civ';
 end
-      %read the ImaDoc file
+%read the ImaDoc file
 XmlData=[];
 NbSlice_calib={};
 if isequal(ext_imadoc,'.xml')
@@ -671,44 +699,19 @@ elseif isequal(ext_imadoc,'.civ')
     elseif error==1, warntext='inconsistent number of fields in the .civ file';
     end  
 end  
+
+
+
+%% display times
 if addtest
     SeriesData.Time=[{time} SeriesData.Time];
 else
    SeriesData.Time={time};
 end
-
-
-% if ~isempty(time)
-%     siztime=size(time);
-%     nb_field=siztime(1);
-%     nb_field2=siztime(2);
-% end   
 set(handles.TimeUnit,'String',TimeUnit)
-%look for max indices
-if ~strcmp(NomType,'*')
-    [num_i1,num_i2,num_j1,num_j2]=find_indexseries(fileinput);
-    nb_field=max(floor((max(num_i1)+max(num_i2))/2));
-    nb_field2=max(floor((max(num_j1)+max(num_j2))/2));
-end
-if isnan(nb_field)
-    nb_field_str='?';
-    nb_field_str2='?';
-else
-    nb_field_str=num2str(nb_field);
-    nb_field_str2=num2str(nb_field2);
-end
-if addtest
-    nb_field_cell=[{nb_field_str} ;get(handles.nb_field,'String')];
-    nb_field2_cell=[{nb_field_str2} ;get(handles.nb_field2,'String')];
-else
-    nb_field_cell={nb_field_str};
-    nb_field2_cell={nb_field_str2};
-end
-set(handles.nb_field,'String',nb_field_cell);
-set(handles.nb_field2,'String',nb_field2_cell);
-set(handles.figure1,'UserData',SeriesData);
+set(handles.series,'UserData',SeriesData);
 
-%number of slices
+%% number of slices
 if isfield(XmlData,'GeometryCalib') && isfield(XmlData.GeometryCalib,'SliceCoord')
        siz=size(XmlData.GeometryCalib.SliceCoord);
        if siz(1)>1
@@ -720,7 +723,7 @@ if isfield(XmlData,'GeometryCalib') && isfield(XmlData.GeometryCalib,'SliceCoord
 end
 
 % set menus of index pairs
-NomType_Callback(hObject, eventdata, handles)
+NomType_Callback([], [], handles)
 
 %store the root name for future opening of uvmat
 dir_perso=prefdir;
@@ -738,9 +741,9 @@ else
     end         
 end
 set(handles.RootPath,'BackgroundColor',[1 1 1])
-set(handles.PathCampaign,'String',SeriesData.PathCampaign)
-last_j_Callback(hObject, eventdata, handles)
-last_i_Callback(hObject, eventdata, handles)
+% set(handles.PathCampaign,'String',SeriesData.PathCampaign)
+last_j_Callback([], [], handles)
+last_i_Callback([], [], handles)
 
 %------------------------------------------------------------------------
 function RootPath_Callback(hObject, eventdata, handles)
@@ -818,8 +821,7 @@ NomType_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function NomType_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-hseries=get(handles.ProjObject,'Parent');
-SeriesData=get(hseries,'UserData');
+SeriesData=get(handles.series,'UserData');
 if isfield(SeriesData,'NomType')
     NomTypeCell=SeriesData.NomType;
 else
@@ -852,7 +854,7 @@ synchronise_view(handles,Val)
 if ~isempty(NomTypeCell)
     NomType=NomTypeCell{Val};
     switch NomType  
-            case {'_i1-i2_j', '_i1-i2'}
+            case {'_1-2_1', '_1-2'}
                 set(handles.mode,'String',{'series(Di)'})
                 set(handles.mode,'Value',1);
                 set(handles.mode,'Visible','on')
@@ -861,7 +863,7 @@ if ~isempty(NomTypeCell)
                 set(handles.mode,'String',{'bursts'})
                 set(handles.mode,'Value',1);
                 testpair=1;
-            case '_i_j1-j2'
+            case '_1_1-2'
                 set(handles.mode,'String',{'bursts';'series(Dj)'})%multiple choice
                 if ~isempty(nbfield) && ~isempty(nbfield2) && ((nbfield2>10) || (nbfield==1))
                     set(handles.mode,'Value',2);
@@ -872,7 +874,7 @@ if ~isempty(NomTypeCell)
                 testpair=1;
     end
     switch NomType   
-            case {'_1_1','_i_j1-j2','_i1-i2_j','1_ab','01_ab'},% two navigation indices
+            case {'_1_1','_1_1-2','_1-2_1','1_ab','01_ab'},% two navigation indices
                 state_j='on';
     end
 end 
@@ -880,10 +882,12 @@ if testpair
     mode_Callback(hObject, eventdata, handles)  
 else
     set(handles.NomType,'String',NomTypeCell)
+    set(handles.j_txt,'Visible',state_j)
+    set(handles.MinIndex_j,'Visible',state_j)
     set(handles.first_j,'Visible',state_j)
     set(handles.incr_j,'Visible',state_j)
     set(handles.last_j,'Visible',state_j)
-    set(handles.nb_field2,'Visible',state_j)
+    set(handles.nb_field2,'Visible',state_j) 
 end
 
 
@@ -891,9 +895,7 @@ end
 % --- Executes on button press in mode.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mode_Callback(hObject, eventdata, handles)
-%hseries=get(handles.mode,'parent');
-hseries=handles.figure1;
-SeriesData=get(hseries,'UserData');
+SeriesData=get(handles.series,'UserData');
 mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
@@ -903,7 +905,7 @@ if isfield(SeriesData,'NomType')
     NomTypeCell=SeriesData.NomType;
     Val=get(handles.NomType,'Value');
     NomType=NomTypeCell{Val};
-    test_find_pair=isequal(NomType,'_i_j1-j2')|| isequal(NomType,'_i1-i2_j')|| isequal(NomType,'_i1-i2')|| isequal(NomType,'#_ab');
+    test_find_pair=isequal(NomType,'_1_1-2')|| isequal(NomType,'_1-2_1')|| isequal(NomType,'_1-2')|| isequal(NomType,'#_ab');
 end
 time=[];
 if isfield(SeriesData,'Time')
@@ -916,7 +918,7 @@ indchosen=1;  %%first pair selected by default
 if isequal(mode,'bursts')
     enable_i(handles,'On')
     enable_j(handles,'Off') %do not display j index scanning in burst mode (j is fixed by the burst choice)  
-elseif  isequal(NomType,'_i_j1-j2')|| isequal(NomType,'_i1-i2_j')
+elseif  isequal(NomType,'_1_1-2')|| isequal(NomType,'_1-2_1')
     enable_i(handles,'On')
     enable_j(handles,'On') % allow both i and j index scanning
 else
@@ -924,7 +926,7 @@ else
     enable_j(handles,'Off') 
 end    
 set(handles.list_pair_civ,'Value',indchosen);%set the default choice of image pairs for civ1
-set(hseries,'UserData',SeriesData)
+set(handles.series,'UserData',SeriesData)
 
 %list pairs if relevant
 if test_find_pair
@@ -944,6 +946,7 @@ set(handles.ref_i_text,'Visible',state)
 %-----------------------------------
 function enable_j(handles,state)
 set(handles.j_txt,'Visible',state)
+set(handles.MinIndex_j,'Visible',state)
 set(handles.first_j,'Visible',state)
 set(handles.last_j,'Visible',state)
 set(handles.incr_j,'Visible',state)
@@ -973,8 +976,7 @@ set(handles.TRANSFORM_title,'Visible',state)
 % with the reference indices ref_i and ref_j
 %----------------------------------------------------------------
 function find_netcpair_civ(hObject, eventdata, handles,Val)
-%hseries=get(handles.list_pair_civ,'parent');
-SeriesData=get(handles.figure1,'UserData'); 
+SeriesData=get(handles.series,'UserData'); 
 % NomTypeCell=get(handles.NomType,'String');
 NomTypeCell=SeriesData.NomType;
 NomType=NomTypeCell{Val};
@@ -1079,8 +1081,8 @@ elseif isequal(mode,'series(Dj)')% series on the j index
 elseif isequal(mode,'bursts') %case of bursts
     for numod_a=1:nbfield2-1 %nbfield2 always >=2 for 'bursts' mode
         for numod_b=(numod_a+1):nbfield2
-            [filename]=name_generator(filebase,ref_i,numod_a,'.nc',NomType,1,ref_i,numod_b,subdir);
-            select=(exist(filename,'file')==2);
+            [filename]=name_generator(filebase,ref_i,numod_a,'.nc',NomType,1,ref_i,numod_b,subdir)
+            select=(exist(filename,'file')==2)
             if select==1
                 ind_exist=ind_exist+1;
                 numlist_a(ind_exist)=numod_a;
@@ -1103,7 +1105,7 @@ elseif isequal(mode,'bursts') %case of bursts
                     case {'#AB'}
                         nom_type_ima='#A';
                     otherwise
-                         nom_type_ima='_i_j';
+                         nom_type_ima='_1_1';
                 end
                displ_pair{ind_exist}=['j= ' num2stra(numod_a,nom_type_ima,2) '-' num2stra(numod_b,nom_type_ima,2) ...
                         ' :dt= ' num2str(dt(ind_exist)*1000)];
@@ -1144,7 +1146,7 @@ end
 iview=get(handles.NomType,'Value');
 SeriesData.displ_num(iview,:)=(displ_num(:,val))';
 SeriesData.ref_time=ref_time;
-set(handles.figure1,'UserData',SeriesData)
+set(handles.series,'UserData',SeriesData)
 list_pair_civ_Callback(hObject, eventdata, handles)
 
 %-------------------------------------------------------------
@@ -1156,8 +1158,7 @@ function list_pair_civ_Callback(hObject, eventdata, handles)
 testupdate=0;
 Val=get(handles.RootPath,'Value');
 IndexCell=get(handles.NomType,'String');
-%hseries=get(handles.list_pair_civ,'parent');
-SeriesData=get(handles.figure1,'UserData');
+SeriesData=get(handles.series,'UserData');
 NomType=SeriesData.NomType{Val};
 list_pair=get(handles.list_pair_civ,'String');%get the menu of image pairs
 index_pair=get(handles.list_pair_civ,'Value');
@@ -1183,7 +1184,7 @@ if ~isempty(ind_sep)&& ~strcmp(str_pair(ind_sep-1),'*')% if there is a pair sepa
         num2_str(end)=[];
     end
     switch NomType
-       case {'_i1-i2_j'}
+       case {'_1-2_1'}
            if isequal(num1_str(1),'0')
                IndexCell{Val}=['_(i-(i+' num2_str ')_j'];
            else
@@ -1191,7 +1192,7 @@ if ~isempty(ind_sep)&& ~strcmp(str_pair(ind_sep-1),'*')% if there is a pair sepa
            end
            displ_num(3)=num1;
            displ_num(4)=num2;
-       case {'_i1-i2'}
+       case {'_1-2'}
            if isequal(num1_str(1),'0')
                IndexCell{Val}=['_(i' num1_str ')-(i+' num2_str ')'];
            else
@@ -1199,7 +1200,7 @@ if ~isempty(ind_sep)&& ~strcmp(str_pair(ind_sep-1),'*')% if there is a pair sepa
            end
            displ_num(3)=num1;
            displ_num(4)=num2;
-       case '_i_j1-j2'
+       case '_1_1-2'
           if test_bursts
               IndexCell{Val}=['_i_' num1_str '-' num2_str ];
           else
@@ -1218,7 +1219,7 @@ if ~isempty(ind_sep)&& ~strcmp(str_pair(ind_sep-1),'*')% if there is a pair sepa
 end
 set(handles.NomType,'String',IndexCell)
 SeriesData.displ_num(Val,:)=displ_num;
-set(handles.figure1,'UserData',SeriesData)
+set(handles.series,'UserData',SeriesData)
 % set(handles.NomType,'Value',Val)
 
 if ~isequal(str_pair,'Dj=*|*')&~isequal(str_pair,'Di=*|*')
@@ -1269,15 +1270,14 @@ function RUN_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %read root name and field type
 set(handles.RUN,'BusyAction','queue');
-%hseries=get(handles.RUN,'parent');
-set(0,'CurrentFigure',handles.figure1)
+set(0,'CurrentFigure',handles.series)
 if isequal(get(handles.GetObject,'Visible'),'on') && isequal(get(handles.GetObject,'Value'),1) 
     Series.GetObject=1;
     GetObject_Callback(hObject, eventdata, handles)
 else
     Series.GetObject=0;
 end
-SeriesData=get(handles.figure1,'UserData');
+SeriesData=get(handles.series,'UserData');
 
 %reinitiate waitbar position
 Series.WaitbarPos=get(handles.waitbar_frame,'Position');%TO SUPPRESS
@@ -1323,7 +1323,7 @@ if isequal(menu_coord_state,'on')
     transform_list=get(handles.transform_fct,'UserData');
     Series.transform_fct=transform_list{menu_index};% transform function handles
 end
-Series.hseries=handles.figure1; % handles to the series GUI
+Series.hseries=handles.series; % handles to the series GUI
 
 %read the set of field numbers
 first_i=str2num(get(handles.first_i,'String'));
@@ -1386,7 +1386,7 @@ nbmissing=0;
 for iview=1:length(RootPath)
     %case of pairs (.nc files)
     
-    if isequal(NomType{iview},'_i_j1-j2')|| isequal(NomType{iview},'_i1-i2_j')|| isequal(NomType{iview},'_i1-i2')|| isequal(NomType{iview},'#_ab')
+    if isequal(NomType{iview},'_1_1-2')|| isequal(NomType{iview},'_1-2_1')|| isequal(NomType{iview},'_1-2')|| isequal(NomType{iview},'#_ab')
         ind_shift=SeriesData.displ_num(iview,:);
         if isequal(ind_shift,[0 0 0 0]) % undefined pairs
             if isequal(NomType{iview},'#_ab')
@@ -1489,13 +1489,7 @@ last_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function last_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-%     hseries=get(handles.last_i,'parent');
-% first_i=str2num(get(handles.first_i,'String'));
-% last_i=str2num(get(handles.last_i,'String'));
-% ref_i=ceil((first_i+last_i)/2);
-% set(handles.ref_i,'String', num2str(ref_i))
-% ref_i_Callback(hObject, eventdata, handles)
-SeriesData=get(handles.figure1,'UserData');
+SeriesData=get(handles.series,'UserData');
 if ~isfield(SeriesData,'Time')
     SeriesData.Time{1}=[];
 end
@@ -1514,7 +1508,7 @@ last_j=str2num(get(handles.last_j,'String'));
 ref_j=ceil((first_j+last_j)/2);
 set(handles.ref_j,'String', num2str(ref_j))
 ref_j_Callback(hObject, eventdata, handles)
-SeriesData=get(handles.figure1,'UserData');
+SeriesData=get(handles.series,'UserData');
 if ~isfield(SeriesData,'Time')
     SeriesData.Time{1}=[];
 end
@@ -1527,15 +1521,14 @@ function ref_i_Callback(hObject, eventdata, handles)
 mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
-%hseries=get(handles.ref_i,'parent');
-SeriesData=get(handles.figure1,'UserData');
+SeriesData=get(handles.series,'UserData');
 %NomTypeCell=get(handles.NomType,'String');
 NomTypeCell=SeriesData.NomType;
 if ~isempty(NomTypeCell)
 Val=get(handles.NomType,'Value');
 NomType=NomTypeCell{Val};
 % for ilist=1:length(NomType)
-    if isequal(NomType,'_i_j1-j2')|| isequal(NomType,'_i1-i2_j')|| isequal(NomType,'_i1-i2')
+    if isequal(NomType,'_1_1-2')|| isequal(NomType,'_1-2_1')|| isequal(NomType,'_1-2')
         if isequal(mode,'series(Di)') 
             find_netcpair_civ(hObject, eventdata, handles,Val);% update the menu of pairs depending on the available netcdf files
 %             break
@@ -1549,13 +1542,12 @@ function ref_j_Callback(hObject, eventdata, handles)
 mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
-%hseries=get(handles.ref_i,'parent');
-SeriesData=get(handles.figure1,'UserData');
+SeriesData=get(handles.series,'UserData');
 NomTypeCell=SeriesData.NomType;
 if ~isempty(NomTypeCell)
     Val=get(handles.NomType,'Value');
     NomType=NomTypeCell{Val};
-    if isequal(NomType,'_i_j1-j2')|| isequal(NomType,'_i1-i2_j')|| isequal(NomType,'_i1-i2')
+    if isequal(NomType,'_1_1-2')|| isequal(NomType,'_1-2_1')|| isequal(NomType,'_1-2')
         if isequal(mode,'series(Dj)') 
             find_netcpair_civ(hObject, eventdata, handles,Val);% update the menu of pairs depending on the available netcdf files
         end
@@ -1806,8 +1798,7 @@ if isequal(field,'get_field...')
      if ~isempty(hget_field)
          delete(hget_field)%delete opened versions of get_field
      end
-     %hseries=get(handles.FieldMenu,'parent');
-     SeriesData=get(handles.figure1,'UserData');
+     SeriesData=get(handles.series,'UserData');
      filename=SeriesData.CurrentInputFile;
      if exist(filename,'file')
         get_field(filename)
@@ -1834,8 +1825,7 @@ if isequal(field,'get_field...')
      if ~isempty(hget_field)
          delete(hget_field)
      end
-     %hseries=get(handles.FieldMenu,'parent');
-     SeriesData=get(handles.figure1,'UserData');
+     SeriesData=get(handles.series,'UserData');
      filename=SeriesData.CurrentInputFile_1;
      if exist(filename,'file')
         hget_field=get_field(filename);
@@ -1887,7 +1877,7 @@ num_j1=num_j;
 num_j2=num_j;
 num_i_out=num_i;
 num_j_out=num_j;
-if isequal (NomType,'_i1-i2_j') || isequal (NomType,'_i1-i2')
+if isequal (NomType,'_1-2_1') || isequal (NomType,'_1-2')
     num_i1_line=num_i+ind_shift(3);% set of first image numbers
     num_i2_line=num_i+ind_shift(4);
     % adjust the first and last field number
@@ -1899,7 +1889,7 @@ if isequal (NomType,'_i1-i2_j') || isequal (NomType,'_i1-i2')
     num_j2=meshgrid(num_j,ones(size(num_i1_line)));
     [xx,num_i1]=meshgrid(num_j,num_i1_line);
     [xx,num_i2]=meshgrid(num_j,num_i2_line);
-elseif isequal (NomType,'_i_j1-j2') || isequal (NomType,'#_ab')
+elseif isequal (NomType,'_1_1-2') || isequal (NomType,'#_ab')
     if isequal(mode,'bursts') %case of bursts (png_old or png_2D)
         num_j1=ind_shift(1)*ones(size(num_i));
         num_j2=ind_shift(2)*ones(size(num_i));
@@ -1920,19 +1910,15 @@ end
 % ---- find the times corresponding to the first and last indices of a series
 function displ_time(handles,times)
 %------------------------------------------------------------------------
-hseries=get(handles.last_i,'parent');
-SeriesData=get(hseries,'UserData');%
+SeriesData=get(handles.series,'UserData');%
 first_i=str2num(get(handles.first_i,'String'));
 first_j=str2num(get(handles.first_j,'String'));
 last_i=str2num(get(handles.last_i,'String'));
 last_j=str2num(get(handles.last_j,'String'));
-% index_civ=get(handles.list_pair_civ,'Value');
-% NomType=get(handles.NomType,'String');
 NomType=SeriesData.NomType;
 mode_list=get(handles.mode,'String');
 index_mode=get(handles.mode,'Value');
 mode=mode_list{index_mode};
-% ind_shift=0;%default
 
 time_first=[];
 time_last=[];
@@ -1943,7 +1929,7 @@ for iview=1:length(NomType)
     time_first_cell{iview}='?';
     time_last_cell{iview}='?';%default
     time=SeriesData.Time{iview};
-    if isequal(NomType{iview},'_i1-i2_j')|isequal(NomType{iview},'_i_j1-j2')|isequal(NomType{iview},'#_ab')|isequal(NomType{iview},'_i1-i2')
+    if isequal(NomType{iview},'_1-2_1')|isequal(NomType{iview},'_1_1-2')|isequal(NomType{iview},'#_ab')|isequal(NomType{iview},'_1-2')
         if isfield(SeriesData,'displ_num')& ~isempty(SeriesData.displ_num)
             ind_shift=SeriesData.displ_num(iview,:);
             if isequal(mode,'bursts')
@@ -2020,8 +2006,7 @@ set(handles.time_last,'String',time_last_cell);
 % --- Executes on button press in GetObject.
 function GetObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-hseries=get(handles.GetObject,'parent');
-SeriesData=get(hseries,'UserData');
+SeriesData=get(handles.series,'UserData');
 value=get(handles.GetObject,'Value');
 if value
      set(handles.GetObject,'BackgroundColor',[1 1 0])%put unactivated buttons to yellow
@@ -2074,7 +2059,7 @@ else
 %         close(SeriesData.hset_object)
 %     end
 end
-set(hseries,'UserData',SeriesData)
+set(handles.series,'UserData',SeriesData)
 
 %--------------------------------------------------------------
 function GetMask_Callback(hObject, eventdata, handles)
@@ -2113,7 +2098,6 @@ function transform_fct_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 global nb_transform
 
-% huvmat=get(handles.transform_fct,'parent');
 menu=get(handles.transform_fct,'String');
 ind_coord=get(handles.transform_fct,'Value');
 coord_option=menu{ind_coord};
@@ -2304,50 +2288,5 @@ elseif isequal(mode,'series(Dj)')
     nbmissing=nbline*nbcolumn-length(ind_ij);
 end
 
-%------------------------------------------------------------------------
-% --- generates series of file indices corresponding to a file fileinput
-function [num_i1,num_i2,num_j1,num_j2]=find_indexseries(fileinput)
-%------------------------------------------------------------------------
-num_i1=NaN;%default
-num_i2=NaN;%default
-num_j1=NaN;%default
-num_j2=NaN;%default
-% refresh input root name, indices, file extension and nomenclature
-[RootPath,RootFile,field_count,str2,str_a,str_b,FileExt,NomType,SubDir]=name2display(fileinput);
-if strcmp(SubDir,'')
-    filebasesub=fullfile(RootPath,RootFile);
-else
-    filebasesub=fullfile(RootPath,SubDir,RootFile);
-end
-dirpair=[]; %default
-switch NomType
-    case '_1'
-        dirpair=dir([filebasesub '_*' FileExt]);
-    case '_1_1'
-        dirpair=dir([filebasesub '_*_*' FileExt]);
-    case '_i1-i2'
-        dirpair=dir([filebasesub '_*-*' FileExt]);
-    case '1_ab'
-        dirpair=dir([filebasesub '*_*' FileExt]);
-    case '_i_j1-j2'
-        dirpair=dir([filebasesub '*_*-*' FileExt]);   
-    case '_i1-i2_j'
-        dirpair=dir([filebasesub '*-*_*' FileExt]);   
-end
-for ifile=1:length(dirpair)
-    [RootPath,RF,str_1,str_2,str_a,str_b]=name2display(dirpair(ifile).name);
-    num_i1(ifile)=str2double(str_1);
-    num_i2(ifile)=str2double(str_2);
-    if isnan(num_i2(ifile))
-        num_i2(ifile)=num_i1(ifile);
-    end
-    num_j1(ifile)=stra2num(str_a);
-    if isnan(num_j1(ifile))
-        num_j1(ifile)=1;
-    end
-    num_j2(ifile)=stra2num(str_b);
-    if isnan(num_j2(ifile))
-        num_j2(ifile)=num_j1(ifile);
-    end
-end
+
 

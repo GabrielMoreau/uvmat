@@ -551,7 +551,7 @@ update_CivOptions(handles)
 
 %%  set the menus of image pairs and default selection for civ   %%%%%%%%%%%%%%%%%%%
 test_ima_i=numel(nom_type_ima)>1 && isempty(regexp(nom_type_ima(2:end),'\D','once'));%images with single indexing
-if test_ima_i || isequal(nom_type_nc,'_i1-i2')||~(exist('nbfield2','var')&&(nbfield2~=1))
+if test_ima_i || isequal(nom_type_nc,'_1-2')||~(exist('nbfield2','var')&&(nbfield2~=1))
     set(handles.ListPairMode,'Value',1)
     set(handles.ListPairMode,'String',{'series(Di)'})   
 elseif (nbfield==1)% simple series in j
@@ -1694,7 +1694,7 @@ if isfield(browse,'nom_type_ima')
     nom_type_ima2=browse.nom_type_ima;
 end
 if isempty(nom_type_ima2),nom_type_ima2='1';end; %default
-if isempty(nom_type_nc),nom_type_nc='_i1-i2';end; %default
+if isempty(nom_type_nc),nom_type_nc='_1-2';end; %default
 [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2]=...
     find_pair_indices(handles,ref_i,ref_j,mode);
 %determine the new filebase for 'displacement' ListPairMode (comparison of two series)
@@ -3084,7 +3084,7 @@ nom_type_ima='ima_num';%default
 if isfield(browse,'nom_type_ima')
     nom_type_ima=browse.nom_type_ima;
 end
-nom_type_nc='_i1-i2';%default
+nom_type_nc='_1-2';%default
 if isfield(browse,'nom_type_nc')
     nom_type_nc=browse.nom_type_nc;
 end
@@ -3092,13 +3092,13 @@ if isequal(nom_type_ima,'png_old') || isequal(nom_type_ima,'netc_old')|| isequal
     nom_type_nc='netc_old';%nom_type for the netcdf files
 elseif isequal(nom_type_ima,'none')||isequal(nom_type_nc,'none')
     nom_type_nc='none';
-elseif isequal(nom_type_ima,'avi')||isequal(nom_type_ima,'_i')||isequal(nom_type_ima,'ima_num')||isequal(nom_type_nc,'_i1-i2')
-    nom_type_nc='_i1-i2';
+elseif isequal(nom_type_ima,'avi')||isequal(nom_type_ima,'_i')||isequal(nom_type_ima,'ima_num')||isequal(nom_type_nc,'_1-2')
+    nom_type_nc='_1-2';
 else
     if  isequal(mode,'series(Di)')%|isequal(mode,'st_series(Di)')
-        nom_type_nc='_i1-i2_j'; % PIV in volume
+        nom_type_nc='_1-2_1'; % PIV in volume
     else
-        nom_type_nc='_i_j1-j2';
+        nom_type_nc='_1_1-2';
     end
 end
 browse.nom_type_nc=nom_type_nc;

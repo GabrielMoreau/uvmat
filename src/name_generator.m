@@ -25,9 +25,9 @@
 %   nom_type='1a','1A','01a','01A',... with a numerical index and an index letter(e.g.'aa45b.png') (lower or upper case)
 %   nom_type='_1a','_1A','_01a','_01A',...: idem, with a separator '_' before the index
 %   nom_type='_1_1','_01_1',...: matrix of files with two indices i and j separated by '_'(e.g. 'aa_45_2.png')
-%   nom_type='_i1-i2': from pairs from a single index (e.g. 'aa_45-47.nc')
-%   nom_type='_i_j1-j2': pairs of j indices (e.g. 'aa_45_2-3.nc')
-%   nom_type='_i1-i2_j': pairs of i indices (e.g. 'aa_45-46_2.nc')
+%   nom_type='_1-2': from pairs from a single index (e.g. 'aa_45-47.nc')
+%   nom_type='_1_1-2': pairs of j indices (e.g. 'aa_45_2-3.nc')
+%   nom_type='_1-2_1': pairs of i indices (e.g. 'aa_45-46_2.nc')
 %   nom_type='_1_ab','1_ab','01_ab'..., from pairs of '#' images (e.g.'aa045bc.nc'), ext='.nc'
 %'comp_input' (for nom_type involving index pairs (e.g. netc))
 %       comp_input=1: the index pair is imposed, 
@@ -70,10 +70,10 @@ num_i1_out=num_i1;%default output
 num_j1_out=num_j1;%default output
 num_i2_out=num_i2;%default output
 num_j2_out=num_j2;%default output
-test_pairs=numel(nom_type)>=2 &&(strcmp(nom_type,'_i1-i2_j1-j2')|| strcmp(nom_type(end-1:end),'ab')|| strcmp(nom_type(end-1:end),'AB')||...
-                strcmp(nom_type,'_i_j1-j2')|| strcmp(nom_type,'_i1-i2_j')||strcmp(nom_type,'_i1-i2'));
-%test_2D= strcmp(nom_type(end-1:end),'ab')|| strcmp(nom_type(end-1:end),'AB') ||strcmp(nom_type,'_i_j1-j2');
-%test_3D=strcmp(nom_type,'_i1-i2_j')|| strcmp(nom_type,'_i1-i2');
+test_pairs=numel(nom_type)>=2 &&(strcmp(nom_type,'_1-2_1-2')|| strcmp(nom_type(end-1:end),'ab')|| strcmp(nom_type(end-1:end),'AB')||...
+                strcmp(nom_type,'_1_1-2')|| strcmp(nom_type,'_1-2_1')||strcmp(nom_type,'_1-2'));
+%test_2D= strcmp(nom_type(end-1:end),'ab')|| strcmp(nom_type(end-1:end),'AB') ||strcmp(nom_type,'_1_1-2');
+%test_3D=strcmp(nom_type,'_1-2_1')|| strcmp(nom_type,'_1-2');
 if ~isequal(subdir,'') && ~isequal(subdir,'?') 
       [Path,Name]=fileparts(filebase);
       filename=fullfile(Path,subdir,Name);
@@ -143,28 +143,28 @@ else
                 end
                 filename=[filename num2str(num_i1,numstr) num_j_str ext];
                 num_i2_out=num_i1;
-            elseif isequal(nom_type,'i_j1-j2')
+            elseif isequal(nom_type,'1_1-2')
                 if isequal(num2str(num_j1),num2str(num_j2))% case of displacements at the same time
                     filename=[filename num2str(num_i1) '_' num2str(num_j1) ext];
                 else
                     filename=[filename num2str(num_i1) '_' num2str(num_j1) '-' num2str(num_j2) ext];
                 end
                 num_i2_out=num_i1;
-            elseif  isequal(nom_type,'i1-i2_j')
+            elseif  isequal(nom_type,'1-2_1')
                 if isequal(num2str(num_i1),num2str(num_i2))% case of displacements at the same time
                       filename=[filename num2str(num_i1) '_' num2str(num_j1) ext];
                 else
                     filename=[filename num2str(num_i1) '-' num2str(num_i2) '_' num2str(num_j1) ext];
                 end
                 num_j2_out=num_j1;
-            elseif  isequal(nom_type,'i1-i2')
+            elseif  isequal(nom_type,'1-2')
                 if isequal(num2str(num_i1),num2str(num_i2))% case of displacements at the same time
                      filename=[filename num2str(num_i1) ext];
                 else
                     filename=[filename num2str(num_i1) '-' num2str(num_i2) ext];
                 end
                 num_j2_out=num_j1;
-            elseif isequal(nom_type,'i1-i2_j1-j2')
+            elseif isequal(nom_type,'1-2_1-2')
                 if isequal(num2str(num_i1),num2str(num_i2))% case of displacements at the same time
                     app1= num2str(num_i1);
                 else
@@ -214,11 +214,11 @@ else
         if (exist('comp_input','var') && isequal(comp_input,1)) 
             if isequal(nom_type,'#_ab')
                 filename=[filebasesub num2str(num_i1,'%03d') '_' num2stra(num_j1,nom_type) num2stra(num_j2,nom_type) ext];
-            elseif isequal(nom_type,'_i1_j1-j2')
+            elseif isequal(nom_type,'_1_1-2')
                 filename=[filebasesub '_' num2str(num_i1) '_' num2str(num_j1) '-' num2str(num_i2) ext];
-            elseif isequal(nom_type,'_i1-i2_j')
+            elseif isequal(nom_type,'_1-2_1')
                 filename=[filebasesub '_' num2str(num_i1) '-' num2str(num_i2) '_' num2str(num_j1) ext];
-            elseif isequal(nom_type,'_i1-i2')
+            elseif isequal(nom_type,'_1-2')
                 filename=[filebasesub '_' num2str(num_i1) '-' num2str(num_i2) ext];
             end
 %             idetect=(exist(filename,'file')==2);
@@ -245,11 +245,11 @@ function [filename,num_i1,num_j1,num_i2,num_j2,idetect]=search_pair(filebasesub,
 filename=[];num_j2=[];idetect=0;%default values
 if isequal(nom_type,'#_ab')
     dirpair=dir([filebasesub num2str(num_i1,'%03d') '_*.nc']);
-elseif isequal(nom_type,'_i_j1-j2')
+elseif isequal(nom_type,'_1_1-2')
     dirpair=dir([filebasesub '_' num2str(num_i1) '_*-*.nc']);
-elseif isequal(nom_type,'_i1-i2_j')
+elseif isequal(nom_type,'_1-2_1')
     dirpair=dir([filebasesub '_' num2str(num_i1) '-*_' num2str(num_j1) '.nc']);
-elseif isequal(nom_type,'_i1-i2')
+elseif isequal(nom_type,'_1-2')
     dirpair=dir([filebasesub '_' num2str(num_i1) '-*.nc']);
     if isempty(dirpair)
         dirpair=dir([filebasesub '_*-' num2str(num_i2) '.nc']);

@@ -17,9 +17,9 @@
 %   nom_type='1a','1A','01a','01A',... with a numerical index and an index letter(e.g.'aa45b.png') (lower or upper case)
 %   nom_type='_1a','_1A','_01a','_01A',...: idem, with a separator '_' before the index
 %   nom_type='_1_1','_01_1',...: matrix of files with two indices i and j separated by '_'(e.g. 'aa_45_2.png')
-%   nom_type='_i1-i2': from pairs from a single index (e.g. 'aa_45-47.nc')
-%   nom_type='_i_j1-j2': pairs of j indices (e.g. 'aa_45_2-3.nc')
-%   nom_type='_i1-i2_j': pairs of i indices (e.g. 'aa_45-46_2.nc')
+%   nom_type='_1-2': from pairs from a single index (e.g. 'aa_45-47.nc')
+%   nom_type='_1_1-2': pairs of j indices (e.g. 'aa_45_2-3.nc')
+%   nom_type='_1-2_j': pairs of i indices (e.g. 'aa_45-46_2.nc')
 %   nom_type='_1_ab','1_ab','01_ab'..., from pairs of '#' images (e.g.'aa045bc.nc'), ext='.nc'
 %subdir: name of the subdirectory for netcdf files
 %
@@ -68,14 +68,14 @@ last_str=RootFile(indcur);%last character in fileraw
 last=double(last_str);%corresponding ascii code
 penult=double(RootFile(indcur-1));%ascii code of the penultimate character
 testsub=0; %default 
-% case of an indexed series in a single file
-if strcmpi(ext,'.avi')
-     nom_type='*';
-%case of a numerical index follewed by a lower case letter (e.g. a,b,c):
-%the penultimate character is a number and the last one a letter (lower case: last >= 97 && last <= 122
-%                                                                 capital
-%                                                                 letter:  last >= 65 && last <= 90)  
-elseif  penult >= 48 && penult <= 57 && ((last >= 65 && last <= 90)||(last >= 97 && last <= 122))
+% % case of an indexed series in a single file
+% if strcmpi(ext,'.avi')
+%      nom_type='*';
+% %case of a numerical index follewed by a lower case letter (e.g. a,b,c):
+% %the penultimate character is a number and the last one a letter (lower case: last >= 97 && last <= 122
+% %                                                                 capital
+% %                                                                 letter:  last >= 65 && last <= 90)  
+if  penult >= 48 && penult <= 57 && ((last >= 65 && last <= 90)||(last >= 97 && last <= 122))
     str_a=last_str; %extract appendix a,b,c... or A,B,C... as output.
     ind_end=indcur-1; %current index just before the suffix letter
     indices_root=regexp(RootFile(1:indcur-1),'\D');%detect non digit characters
@@ -97,14 +97,14 @@ elseif strcmp(filelit(end-2:end),'-_-_')%new  nomenclature appendix num1-num2_nu
     str2=num1;
     str_a=num2;
     str_b=num3;
-    nom_type='_i1-i2_j1-j2';
+    nom_type='_1-2_1-2';
     testsub=1;
     indcur=separ0-1;
 elseif strcmp(filelit(end-2:end),'_-_')%new  nomenclature appendix num1-num2_num_a
     field_count=num1;
     str2=num2;
     str_a=num3;
-    nom_type='_i1-i2_j';
+    nom_type='_1-2_1';
     testsub=1;
     indcur=separ1-1;
 elseif strcmp(filelit(end-2:end),'__-')%new  nomenclature appendix num1_num2-num2 
@@ -112,14 +112,14 @@ elseif strcmp(filelit(end-2:end),'__-')%new  nomenclature appendix num1_num2-num
     field_count=num1;
     str_a=num2;
     str_b=num3;
-    nom_type='_i_j1-j2';
+    nom_type='_1_1-2';
     testsub=1;
 elseif strcmp(filelit(end-1:end),'_-')
     indcur=separ2-1;
     field_count=num2;
     str2=num3;
     str_a='';
-    nom_type='_i1-i2';
+    nom_type='_1-2';
     testsub=1;
 elseif strcmp(filelit(end-1:end),'__')
     indcur=separ2-1;

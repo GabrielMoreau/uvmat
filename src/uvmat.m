@@ -659,7 +659,7 @@ elseif ~isempty(FileExt(2:end))&&(~isempty(imformats(FileExt(2:end))) || isequal
         nburst=1;
     end 
 end
-if ~strcmp(hhh,'')&& mmreader.isPlatformSupported()% if the function is found (recent version of matlab)
+if ~strcmp(hhh,'')% if the function mmreader is found (recent version of matlab)
     UvData.MovieObject=mmreader([FileBase FileIndices FileExt]);
 elseif isfield(UvData,'MovieObject')
     UvData=rmfield(UvData,'MovieObject');
@@ -1359,7 +1359,7 @@ if get(handles.scan_j,'Value')==1
     NomType=get(handles.NomType,'String');
 %     NomType=get(handles.FileIndex,'UserData');
     switch NomType
-    case {'_i_j1-j2','#_ab','%3dab'},% pair with j index
+    case {'_1_1-2','#_ab','%3dab'},% pair with j index
         set(handles.fix_pair,'Visible','on')% option fixed pair on/off made visible (choice of avaible pair with buttons + and - if ='off')
     otherwise
         set(handles.fix_pair,'Visible','off')
@@ -1777,8 +1777,8 @@ end
 
 %% read the current input file name(s) and field indices
 InputFile=read_GUI(handles.InputFile);
-InputFile.RootFile=regexprep(InputFile.RootFile,'\<[\\/]|[\\/]\>','');%suppress possible / or \ separator at the beginning or the end of the string
-InputFile.SubDir=regexprep(InputFile.SubDir,'\<[\\/]|[\\/]\>','');%suppress possible / or \ separator at the beginning or the end of the string
+InputFile.RootFile=regexprep(InputFile.RootFile,'^[\\/]|[\\/]$','');%suppress possible / or \ separator at the beginning or the end of the string
+InputFile.SubDir=regexprep(InputFile.SubDir,'^[\\/]|[\\/]$','');%suppress possible / or \ separator at the beginning or the end of the string
 if isempty(InputFile.RootFile)
     filebase=InputFile.RootPath;
 else
@@ -3148,12 +3148,12 @@ UvData=get(handles.uvmat,'UserData');
 [P,F,str1,str2,str_a,str_b,E,NomType]=name2display(['xxx' get(handles.FileIndex,'String') FileExt]);
 NomTypeNew=NomType;%default
 if isequal(field,'image')
-    if isequal(NomType,'_i1-i2_j')||isequal(NomType,'_i_j1-j2')
-        NomTypeNew='_i_j';
+    if isequal(NomType,'_1-2_1')||isequal(NomType,'_1_1-2')
+        NomTypeNew='_1_1';
     elseif isequal(NomType,'#_ab')
         NomTypeNew='#a';
-    elseif isequal(NomType,'_i1-i2')
-        NomTypeNew='_i';
+    elseif isequal(NomType,'_1-2')
+        NomTypeNew='_1';
     end
     imagename=name_generator(FileBase,str2double(str1),str2double(str_a),'.png',NomTypeNew,1,str2double(str2),str2double(str_b),'');
     if ~exist(imagename,'file')
@@ -3269,14 +3269,14 @@ if isequal(field_1,'get_field...')
 end
 if isequal(field_1,'image') 
     % transform netc type to the corresponding image type
-    if isequal(NomType_1,'_i1-i2_j')||isequal(NomType_1,'_i_j1-j2')|| isequal(NomType_1,'#_ab')|| isequal(NomType_1,'_i1-i2')
+    if isequal(NomType_1,'_1-2_1')||isequal(NomType_1,'_1_1-2')|| isequal(NomType_1,'#_ab')|| isequal(NomType_1,'_1-2')
         UvData.SubDir_1=get(handles.SubDir_1,'String'); %preserve the InputFile.SubDir in memory    
-        if isequal(NomType_1,'_i1-i2_j')||isequal(NomType_1,'_i_j1-j2')
-            NomTypeNew='_i_j';
+        if isequal(NomType_1,'_1-2_1')||isequal(NomType_1,'_1_1-2')
+            NomTypeNew='_1_1';
         elseif isequal(NomType_1,'#_ab')
             NomTypeNew='#a';
-        elseif isequal(NomType_1,'_i1-i2')
-            NomTypeNew='_i';
+        elseif isequal(NomType_1,'_1-2')
+            NomTypeNew='_1';
         end  
     end
     imagename=name_generator(FileBase,str2double(str1),str2double(str_a),'.png',NomTypeNew,1,str2double(str2),str2double(str_b),'');
@@ -3320,21 +3320,21 @@ else
         end
         str1=get(handles.i1,'String');
         str_a=get(handles.j1,'String');
-        if isequal(NomType_1,'#_ab')||isequal(NomType_1,'_i1-i2_j')||isequal(NomType_1,'_i_j1-j2')||isequal(NomType_1,'_i1-i2')
+        if isequal(NomType_1,'#_ab')||isequal(NomType_1,'_1-2_1')||isequal(NomType_1,'_1_1-2')||isequal(NomType_1,'_1-2')
             NomTypeNew=NomType_1;
         elseif isequal(NomType_1,'#a')
              [filename, n1,na,n2,nb,SubDir_1]=name_generator(filebase_1, str2num(str1),stra2num(str_a),'.nc','#_ab',0,[],[],SubDir_1);
              NomTypeNew='#_ab';
-        elseif isequal(NomType_1,'_i_j')
-             [filename,n1,na,n2,nb,SubDir_1]=name_generator(filebase_1,str2num(str1),stra2num(str_a),'.nc','_i1-i2_j',0,str2num(str1),[],SubDir_1);
+        elseif isequal(NomType_1,'_1_1')
+             [filename,n1,na,n2,nb,SubDir_1]=name_generator(filebase_1,str2num(str1),stra2num(str_a),'.nc','_1-2_1',0,str2num(str1),[],SubDir_1);
             if idetect==1
-                NomTypeNew='_i1-i2_j';
+                NomTypeNew='_1-2_1';
             else
-                NomTypeNew='_i_j1-j2';
+                NomTypeNew='_1_1-2';
             end
         else %for instance avi files or any ima_num series
-            [filename,n1,na,n2,nb,SubDir_1]=name_generator(filebase_1,str2num(str1),stra2num(str_a),'.nc','_i1-i2',0,str2num(str1),[],SubDir_1);
-            NomTypeNew='_i1-i2';
+            [filename,n1,na,n2,nb,SubDir_1]=name_generator(filebase_1,str2num(str1),stra2num(str_a),'.nc','_1-2',0,str2num(str1),[],SubDir_1);
+            NomTypeNew='_1-2';
         end            
         [Path,Name]=fileparts(filebase_1);
         set(handles.FileExt_1,'String','.nc');
