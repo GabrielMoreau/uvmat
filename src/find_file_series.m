@@ -1,4 +1,4 @@
-%'find_file_series': check the content onf an input fiel and find the corresponding file series
+%'find_file_series': check the content onf an input field and find the corresponding file series
 %--------------------------------------------------------------------------
 % function [i1,i2,j1,j2,NomType,FileType,Object]=find_file_series(fileinput)
 %
@@ -35,50 +35,68 @@
 
 function [i1,i2,j1,j2,NomType,FileType,Object]=find_file_series(fileinput)
 %------------------------------------------------------------------------
-i1=NaN;%default
-i2=NaN;%default
-j1=NaN;%default
-j2=NaN;%default
+i1=[];%default
+i2=[];%default
+j1=[];%default
+j2=[];%default
 
 %% get input root name and nomenclature type
-[RootPath,RootFile,~,~,~,~,FileExt,NomType,SubDir]=name2display(fileinput);
+% [RootPath,RootFile,~,~,~,~,FileExt,NomType,SubDir]=name2display(fileinput);
+[RootPath,SubDir,RootFile,~,~,~,~,FileExt,NomType]=fileparts_uvmat(fileinput);
 
 %% check for particular file types: images, movies, civ data
 FileType='';
 Object=[];
-if ~isempty(FileExt)&& ~isempty(imformats(FileExt(2:end)))
-    imainfo=imfinfo(fileinput);
-    FileType='image';
-    if length(imainfo) >1 %case of image with multiple frames
-        NomType='*';
-        FileType='multimage';
-        i1=1;
-        i2=length(imainfo);
-        [RootPath,RootFile]=fileparts(fileinput);
-    end
-else
-    try
-        Data=nc2struct(fileinput,'ListGlobalAttribute',{'absolut_time_T0','Conventions'});
-        if ~isempty(Data,'absolut_time_T0')
-            FileType='civx'; % test for civx velocity fields
-        elseif strcmp(Data.Conventions','uvmat/civdata')
-            FileType='civdata'; % test for civx velocity fields
+switch FileExt
+    % ancillary files, no field indexing
+    case {'.civ','.log','.cmx','.cmx2','.txt','.bat'}
+        FileType='txt';
+        NomType='';
+    case '.fig'
+        FileType='figure';
+        NomType='';
+    case '.xml'
+        FileType='xml';
+        NomType='';
+    case '.xls'
+        FileType='xls';
+        NomType='';
+    otherwise
+        if ~isempty(FileExt)&& ~isempty(imformats(FileExt(2:end)))
+            imainfo=imfinfo(fileinput);
+            FileType='image';
+            if length(imainfo) >1 %case of image with multiple frames
+                NomType='*';
+                FileType='multimage';
+                i1=1;
+                i2=length(imainfo);
+                [RootPath,RootFile]=fileparts(fileinput);
+            end
         else
-            FileType='netcdf';
-        end     
-    end
-    try
-        Object=VideoReader(fileinput);
-        NomType='*';
-        FileType='video';
-        i1=1;
-        i2=get(Object,'NumberOfFrames');
-        [RootPath,RootFile]=fileparts(fileinput);
-    end
+            try
+                Data=nc2struct(fileinput,'ListGlobalAttribute','absolut_time_T0','Conventions');
+                if ~isempty(Data.absolut_time_T0')
+                    FileType='civx'; % test for civx velocity fields
+                elseif strcmp(Data.Conventions','uvmat/civdata')
+                    FileType='civdata'; % test for civx velocity fields
+                else
+                    FileType='netcdf';
+                end
+            end
+            try
+                Object=VideoReader(fileinput);
+                NomType='*';
+                FileType='video';
+                i1=1;
+                i2=get(Object,'NumberOfFrames');
+                [RootPath,RootFile]=fileparts(fileinput);
+            end
+        end
 end
-
+if strcmp(NomType,'')||strcmp(NomType,'*')
+    [RootPath,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
 %% get the list of existing files
-if ~strcmp(NomType,'*')
+else
     if strcmp(SubDir,'')
         filebasesub=fullfile(RootPath,RootFile);
     else
@@ -94,40 +112,38 @@ if ~strcmp(NomType,'*')
         detect_string=regexprep(detect_string,'**','*');
     end
     dirpair=dir([filebasesub detect_string FileExt]);
-    % switch NomType %TODO: complement for other cases
-    %     case '_0001'
-    %         dirpair=dir([filebasesub '_*' FileExt]);
-    %     case '_1'
-    %         dirpair=dir([filebasesub '_*' FileExt]);
-    %     case '_1_1'
-    %         dirpair=dir([filebasesub '_*_*' FileExt]);
-    %     case '_i1-i2'
-    %         dirpair=dir([filebasesub '_*-*' FileExt]);
-    %     case '1_ab'
-    %         dirpair=dir([filebasesub '*_*' FileExt]);
-    %     case '_i_j1-j2'
-    %         dirpair=dir([filebasesub '*_*-*' FileExt]);
-    %     case '_i1-i2_j'
-    %         dirpair=dir([filebasesub '*-*_*' FileExt]);
-    % end
     for ifile=1:length(dirpair)
-        [~,~,str_1,str_2,str_a,str_b]=name2display(dirpair(ifile).name);
-        i1(ifile)=str2double(str_1);
-        i2(ifile)=str2double(str_2);
-        if isnan(i2(ifile))
+       % [~,~,str_1,str_2,str_a,str_b]=name2display(dirpair(ifile).name);
+       dirpair(ifile).name
+        [~,~,~,i1_ifile,i2_ifile,j1_ifile,j2_ifile]=fileparts_uvmat(dirpair(ifile).name);  
+        if isempty(i1_ifile)
+            i1(ifile)=1;
+        else
+            i1(ifile)=i1_ifile;
+        end
+        if isempty(i2_ifile)
             i2(ifile)=i1(ifile);
+        else
+            i2(ifile)=i2_ifile;
         end
-        j1(ifile)=stra2num(str_a);
-        if isnan(j1(ifile))
+        end
+        if isempty(j1_ifile)
             j1(ifile)=1;
+        else
+            j1(ifile)=j1_ifile;
         end
-        j2(ifile)=stra2num(str_b);
-        if isnan(j2(ifile))
+        if isempty(j2_ifile)
             j2(ifile)=j1(ifile);
+        else
+            j2(ifile)=j2_ifile;
         end
-    end
-    
+    end  
+    % TODO : sort by reference index
     % update the NomType from the minimal index detected (to deal with number strings beginning by 0)
     [~,ifile]=min(i1);
-    [~,~,~,~,~,~,~,NomType]=name2display(dirpair(ifile).name);
+    %[~,~,~,~,~,~,~,NomType]=name2display(dirpair(ifile).name);
+    if ~isempty(i1)
+           [~,ifile]=min(i1);
+    [~,~,~,~,~,~,~,~,NomType]=fileparts_uvmat(dirpair(ifile).name);
+    end
 end

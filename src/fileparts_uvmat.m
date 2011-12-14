@@ -3,86 +3,86 @@
 %[RootPath,SubDir,RootFile,i1,i2,j1,j2,Ext,NomType]=fileparts_uvmat(FileInput)
 %
 %OUTPUT:
+%RootPath: path to the base file
+%SubDir: name of the SubDirectory for netcdf files (NomTypes with index pairs 1-2 or ab )
 %RootFile: FileName without appendix
 %i1: first number i
 %i2: second number i (only for .nc files)
 %j1: first number j
 %j2: second number j (only for .nc files)
-%Ext: file Extension
+%FileExt: file Extension
 %NomType: char chain characterizing the file nomenclature: with values
-%   NomType='': constant name [filebase Ext] (default output if 'NomType' is undefined)
+%   NomType='': constant name [filebase FileExt] (default output if 'NomType' is undefined)
 %   NomType='*':constant name for a file representing a series (e.g. avi movie)
 %   NomType='1','01',or '001'...': series of files with a single index i without separator(e.g. 'aa045.png').
 %   NomType='1a','1A','01a','01A','1_a','01_A',... with a numerical index and an index letter(e.g.'aa45b.png') (lower or upper case)
 %   NomType='1_1','01_1',...: matrix of files with two indices i and j separated by '_'(e.g. 'aa45_2.png')
 %   NomType='1-1': from pairs from a single index (e.g. 'aa_45-47.nc')
-%   NomType='1_1-1': pairs of j indices (e.g. 'aa_45_2-3.nc')
-%   NomType='1-1_1': pairs of i indices (e.g. 'aa_45-46_2.nc')
-%   NomType='1_ab','01_ab','01_a-b'..., from pairs of '#' images (e.g.'aa045bc.nc'), Ext='.nc'
+%   NomType='1_1-2': pairs of j indices (e.g. 'aa_45_2-3.nc')
+%   NomType='1-2_1': pairs of i indices (e.g. 'aa_45-46_2.nc')
+%   NomType='1_ab','01_ab','01ab'..., from pairs of '#' images (e.g.'aa045bc.nc'), FileExt='.nc'
 %SubDir: name of the SubDirectory for netcdf files
-
-%   OLD TYPES, not supported anymore
-%   NomType='_1','_01','_001'...':  series of files with a single index i with separator '_'(e.g. 'aa_045.png').
-%   NomType='_1a','_1A','_01a','_01A',...: idem, with a separator '_' before the index
-%   NomType='_1_1','_01_1',...: matrix of files with two indices i and j separated by '_'(e.g. 'aa_45_2.png')
-%   NomType='_i1-i2': from pairs from a single index (e.g. 'aa_45-47.nc')
-%   NomType='_i_j1-j2': pairs of j indices (e.g. 'aa_45_2-3.nc')
-%   NomType='_i1-i2_j': pairs of i indices (e.g. 'aa_45-46_2.nc')
-%   NomType='_1_ab','1_ab','01_ab'..., from pairs of '#' images (e.g.'aa045bc.nc'), Ext='.nc'
-
 %
 %INPUT:
 %FileInput: complete name of the file, including path
 
-function [RootPath,SubDir,RootFile,i1,i2,j1,j2,Ext,NomType]=fileparts_uvmat(FileInput)
-
+function [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomType]=fileparts_uvmat(FileInput)
+RootPath='';
+SubDir='';
+RootFile='';
 i1=[];
 i2=[];
 j1=[];
 j2=[];
+FileExt='';
 NomType='';
-SubDir='';
-RootFile='';
 
+
+
+%% display help and test function in the absence of input arument
 if ~exist('FileInput','var')
     help fileparts_uvmat;
     test();
     return
 end
 
-
-[RootPath,FileName,Ext]=fileparts(FileInput);
-
-switch Ext
-    case '.avi'
-        NomType='*';
-        return
-    case {'.tif','.tiff'}
-        if exist(FileInput,'file')
-            info=iminfo(FileInput);
-            if length(info)>1
-                NomType='*';
-                return
-            end
-        end 
-end
+[RootPath,FileName,FileExt]=fileparts(FileInput);
+RootFile=FileName;%default
+% switch FileExt
+%     case '.avi'
+%         NomType='*';
+%         return
+%     case {'.tif','.tiff'}
+%         if exist(FileInput,'file')
+%             info=iminfo(FileInput);
+%             if length(info)>1
+%                 NomType='*';
+%                 return
+%             end
+%         end 
+% end
 
 % \D not a digit
 % \d digit
 
 
-%% recursive test on FileName stqrting from the end
-
+%% recursive test on FileName starting from the end
+% case of pure number
+if ~isnan(str2double(FileName))
+    RootFile='';
+    i1=str2double(FileName);
+    return
+end
 % test whether FileName ends with a number or not
-r=regexp(FileName,'.*\D(?<num1>\d+)\>','names');
+r=regexp(FileName,'.*\D(?<num1>\d+)$','names');% \D = not a digit, \d =digit
 
 if ~isempty(r)% FileName end matches num1
     num1=r.num1;
-    r=regexp(FileName,['.*\D(?<num2>\d+)(?<delim1>[-_])' num1 '\>'],'names');
+    r=regexp(FileName,['.*\D(?<num2>\d+)(?<delim1>[-_])' num1 '$'],'names');
     if ~isempty(r)% FileName end matches num2+delim1+num1
         delim1=r.delim1;
         num2=r.num2;
-        r=regexp(FileName,['.*\D(?<num3>\d+)(?<delim2>[-_])' num2 delim1 num1 '\>'],'names');
+        r=regexp(FileName,['.*\D(?<num3>\d+)(?<delim2>[-_])' num2 delim1 num1 '$'],'names');
         if ~isempty(r) % FileName end matches delim2 num2 delim1 num1
             delim2=r.delim2;
             num3=r.num3;
@@ -116,66 +116,51 @@ if ~isempty(r)% FileName end matches num1
             NomType=[get_type(num2) delim1 get_type(num1)];
             RootFile=regexprep(FileName,[num2 delim1 num1],'');
         end
+        NomType=regexprep(NomType,'-1','-2'); %set 1-2 instead of 1-1
     else% only one number at the end
         i1=str2double(num1);
         NomType=get_type(num1);
         RootFile=regexprep(FileName,num1,'');
     end
 else% FileName ends with a letter
-    r=regexp(FileName,'.*[^a^b^A^B](?<end_string>ab|AB|[abAB])\>','names');
+    %r=regexp(FileName,'.*[^a^b^A^B](?<end_string>ab|AB|[abAB])\>','names');
+    NomType='';
+    r=regexp(RootFile,'\D(?<num1>\d+)(?<end_string>[a-z]|[A-Z]|[a-z][a-z]|[A-Z][A-Z])$','names');
     if ~isempty(r)
-        end_string=r.end_string;
-        r=regexp(FileName,['.+(?<delim1>[_-])' end_string '\>'],'names');
+        NomType=get_type(r.end_string);
+        RootFile=regexprep(RootFile,[r.num1 r.end_string '$'],'');
+    else % case with separator '_'
+        r=regexp(RootFile,'\D(?<num1>\d+)_(?<end_string>[a-z]|[A-Z]|[a-z][a-z]|[A-Z][A-Z])$','names');
         if ~isempty(r)
-            delim1=r.delim1;
-            r=regexp(FileName,['.*\D(?<num1>\d+)' delim1 end_string '\>'],'names');
-            if ~isempty(r)
-                num1=r.num1;
-                NomType=[get_type(num1) delim1 get_type(end_string)];
-                i1=str2double(num1);
-                [j1,j2]=get_value(end_string);
-                RootFile=regexprep(FileName,[num1 delim1 end_string],'');
-                
-            else
-                NomType=get_type(end_string);
-                [j1,j2]=get_value(end_string);
-                RootFile=regexprep(FileName,end_string,'');
-
-            end
-        else
-            r=regexp(FileName,['.*\D(?<num1>\d+)' end_string '\>'],'names');
-            if ~isempty(r)
-                num1=r.num1;
-                %                 r=regexp(FileName,['.+(?<delim1>[-_])' num1 end_string '\>'],'names');
-                %                 if ~isempty(r)
-                %                     delim1=r.delim1;
-                %                     i1=num1;
-                %                     str_a=end_string;
-                %                     NomType=[delim1 get_type(num1) get_type(end_string)];
-                %                     RootFile=regexprep(FileName,[delim1 num1 end_string],'');
-                %                 else
-                i1=str2double(num1);
-                [j1,j2]=get_value(end_string);
-                NomType=[get_type(num1) get_type(end_string)];
-                RootFile=regexprep(FileName,[num1 end_string],'');
-                %                 end
-            else
-            end
-            
-            
-   
-        end                
-    else
+            NomType=['_' get_type(r.end_string)];
+            RootFile=regexprep(RootFile,[r.num1 '_' r.end_string '$'],'');
+        end
+    end
+    if ~isempty(NomType)
+        [j1,j2]=get_value(r.end_string);
+        i1=str2double(r.num1);
+        NomType=[get_type(r.num1) NomType];
+        r=regexp(RootPath,'\<(?<newrootpath>.+)(\\|/)(?<subdir>[^\\^/]+)(\\|/)*\>','names');
+        if ~isempty(r)
+            SubDir=r.subdir;
+            RootPath=r.newrootpath;
+        end
     end
 end
 
-if ~isempty(regexp(NomType,'-|ab|AB'))
-    r=regexp(RootPath,'\<(?<newrootpath>.+)(\\|/)(?<subdir>[^\\^/]+)(\\|/)*\>','names');
-    if ~isempty(r)
-    SubDir=r.subdir;
-    RootPath=r.newrootpath;
-    end
+%% suppress '_' at the end of RootFile, put it on NomType
+if strcmp(RootFile(end),'_')
+    RootFile(end)=[];
+    NomType=['_' NomType];
 end
+
+% if ~isempty(regexp(NomType,'-|ab|AB'))
+%     r=regexp(RootPath,'\<(?<newrootpath>.+)(\\|/)(?<subdir>[^\\^/]+)(\\|/)*\>','names');
+%     if ~isempty(r)
+%     SubDir=r.subdir;
+%     RootPath=r.newrootpath;
+%     end
+% end
 
 
 
@@ -183,50 +168,49 @@ end
 function type=get_type(s)
 % returns the type of a label string:
 %   for numbers, whether filled with 0 or not.
-%   for letters, either a, A or ab, AB.
+type='';%default
 
-switch s
-    case {'a','b'}
-        type='a';
-    case {'A','B'}
-        type='A';
-    case 'ab'
-        type='ab';
-    case 'AB'
-        type='AB';
-    otherwise        
-        if ~isempty(regexp(s,'\<\d+\>','ONCE'))
-%             switch s(1)
-%                 case '0'
-                    type=num2str(1,['%0' num2str(length(s)) 'd']);
-%                 otherwise
-%                     type='1';
-%             end
-        else
-            type='';
-            return
+if ~isempty(regexp(s,'\<\d+\>','ONCE'))
+    type=num2str(1,['%0' num2str(length(s)) 'd']);
+else
+    code=double(s); % ascii code of the input string
+    if code >= 65 & code <= 90 % test on ascii code for capital letters
+        if length(s)==1
+            type='A';
+        elseif length(s)==2
+            type='AB';
         end
+    elseif  code >= 97 & code <= 122 % test on ascii code for small letters
+        if length(s)==1
+            type='a';
+        elseif length(s)==2
+            type='ab';
+        end
+    end
 end
 
 
+
 function [j1,j2]=get_value(s)
-% returns the type of a label string:
+% returns the value of a label string:
 %   for numbers, whether filled with 0 or not.
 %   for letters, either a, A or ab, AB.
 j1=[];
 j2=[];
-
-switch lower(s)
-    case {'a'}
-        j1=1;
-    case {'b','B'}
-        j1=2;
-    case 'ab'
-        j1=1;j2=2;
-    otherwise        
-            return
+code=double(s); % ascii code of the input string
+if code >= 65 & code <= 90 % test on ascii code for capital letters
+    index=double(s)-64; %change capital letters to corresponding number in the alphabet
+elseif code >= 97 & code <= 122 % test on ascii code for small letters 
+    index=double(s)-96; %change small letters to corresponding number in the alphabet
+else
+    index=str2num(s);
 end
-
+if ~isempty(index)
+    j1=index(1);
+    if length(index)==2
+        j2=index(2);
+    end
+end
 
 
 function test(name)
@@ -255,8 +239,8 @@ else
         'Image_3-4_2.jpg'...
         'Image_5_3-4.jpg'...
         'Image_3_ab.jpg'...
-        'Image005AB.jpg'...
-        'Image_3_ab.jpg'...
+        'Image005AD.jpg'...
+        'Image_3_ac.jpg'...
         'Image_3a-b.jpg'...
         'Image3_a.jpg'...
         'movie57.avi'...
@@ -264,8 +248,8 @@ else
 end
 
 for FileName=FileName_list
-%     [RootPath,RootFile,i1,i2,str_a,str_b,Ext,NomType,SubDir]=name2display(FileName{1});
-    [~,RootFile,i1,i2,j1,j2,~,NomType,SubDir]=...
+%     [RootPath,RootFile,i1,i2,str_a,str_b,FileExt,NomType,SubDir]=name2display(FileName{1});
+    [~,SubDir,RootFile,i1,i2,j1,j2,~,NomType]=...
         fileparts_uvmat(FileName{1});
     fprintf([...
         'File name  : ' FileName{1}  '\n'...

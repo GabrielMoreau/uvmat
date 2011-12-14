@@ -479,6 +479,9 @@ PlotType='plane';%default
 if ~exist('PlotParam','var')
     PlotParam=[];
 end
+if ~isfield(PlotParam,'Coordinates')
+    PlotParam.Coordinates=[];
+end
 if ~isfield(PlotParam,'Scalar')
     PlotParam.Scalar=[];
 end
@@ -1013,15 +1016,13 @@ if ~isempty(Data)
     XMax=[];
     YMin=[];
     YMax=[];
-    fix_lim=isfield(PlotParam,'CheckFixLimits') && PlotParam.CheckFixLimits;
+    fix_lim=isfield(PlotParam.Coordinates,'CheckFixLimits') && PlotParam.Coordinates.CheckFixLimits;
     if fix_lim
-        if ~isfield(PlotParam,'MinX')||~isfield(PlotParam,'MaxX')||~isfield(PlotParam,'MinY')||~isfield(PlotParam,'MaxY')
-            fix_lim=0; %free limits if limits are not set,
-        else
-            XMin=PlotParam.MinX
-            XMax=PlotParam.MaxX;
-            YMin=PlotParam.MinY;
-            YMax=PlotParam.MaxY;
+        if isfield(PlotParam.Coordinates,'MinX')&&isfield(PlotParam.Coordinates,'MaxX')&&isfield(PlotParam.Coordinates,'MinY')&&isfield(PlotParam.Coordinates,'MaxY')
+            XMin=PlotParam.Coordinates.MinX;
+            XMax=PlotParam.Coordinates.MaxX;
+            YMin=PlotParam.Coordinates.MinY;
+            YMax=PlotParam.Coordinates.MaxY;
         end  %else PlotParamOut.XMin =PlotParam.XMin...
     else
         if test_ima %both background image and vectors coexist, take the wider bound
@@ -1045,10 +1046,10 @@ if ~isempty(Data)
 %     PlotParamOut.RangeX=[XMin XMax]; %range of x, to be stored in the user data of the plot axes
 %     PlotParamOut.RangeY=[YMin YMax]; %range of x, to be stored in the user data of the plot axes
 %     if ~fix_lim
-        PlotParamOut.MinX=XMin;
-        PlotParamOut.MaxX=XMax;
-        PlotParamOut.MinY=YMin;
-        PlotParamOut.MaxY=YMax;
+        PlotParamOut.Coordinates.MinX=XMin;
+        PlotParamOut.Coordinates.MaxX=XMax;
+        PlotParamOut.Coordinates.MinY=YMin;
+        PlotParamOut.Coordinates.MaxY=YMax;
         if XMax>XMin
             set(haxes,'XLim',[XMin XMax]);% set x limits of frame in axes coordinates
         end
@@ -1059,8 +1060,8 @@ if ~isempty(Data)
     set(haxes,'YDir','normal')
     set(get(haxes,'XLabel'),'String',[XName ' (' x_units ')']);
     set(get(haxes,'YLabel'),'String',[YName ' (' y_units ')']);
-    PlotParamOut.x_units=x_units;
-    PlotParamOut.y_units=y_units;
+    PlotParamOut.Coordinates.x_units=x_units;
+    PlotParamOut.Coordinates.y_units=y_units;
 end
 %-------------------------------------------------------------------
 % --- function for plotting vectors
