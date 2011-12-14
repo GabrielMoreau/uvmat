@@ -328,7 +328,12 @@ for ifile=1:nbfield
             return
         end        
      % generating the name of the merged field
-        mergename=name_generator(filebase_merge,num_i1{iview}(ifile),num_j1{iview}(ifile),Series.FileExt{iview},Series.NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile));
+     if testima
+         ResultExt='.png';
+     else
+         ResultExt=Series.FileExt{iview};
+     end
+     mergename=name_generator(filebase_merge,num_i1{iview}(ifile),num_j1{iview}(ifile),ResultExt,Series.NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile));
         
      % time of the merged field:
         time_i=0;%default
