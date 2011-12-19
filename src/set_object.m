@@ -672,7 +672,8 @@ UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat
 hhuvmat=guidata(huvmat);%handles in the uvmat GUI
 ListObject=get(hhuvmat.ListObject,'String');%position in the objet list
 IndexObj=get(hhuvmat.ListObject,'Value')
-% name of the object
+
+%% read the object on the GUI set_object
 ObjectName=get(handles.TITLE,'String');%name of the current object defiend in set_object
 ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
 if isempty(ObjectName)

@@ -554,7 +554,7 @@ function RootPath_Callback(hObject,eventdata,handles)
 % read the current input file name:
 fileinput=read_file_boxes(handles);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[i1_series,i2_series,j1_series,j2_series,~,FileType,MovieObject]=find_file_series(fileinput);
+[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,~,FileType,MovieObject]=find_file_series(fileinput);
 % initiate the input file series and refresh the current field view: 
 update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject);
 
@@ -1039,8 +1039,8 @@ display_file_name_1(hObject,eventdata,handles,fileinput_1)
 function display_file_name_1(hObject,eventdata,handles,fileinput_1)
 
 %[path,name,ext]=fileparts(fileinput_1);
-[RootPath_1,SubDir_1,RootFile_1,i1,i2,j1,j2,FileExt_1]=fileparts_uvmat(fileinput_1);
-[i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject]=find_file_series(fileinput_1);
+[~,SubDir_1,~,i1,i2,j1,j2,FileExt_1]=fileparts_uvmat(fileinput_1);
+[RootPath_1,RootFile_1,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject]=find_file_series(fileinput_1);
 % [RootPath_1,RootFile_1,field_count,str2,str_a,str_b,FileExt_1,NomType_1,SubDir_1]=name2display(fileinput_1);
 switch FileType
     case ''

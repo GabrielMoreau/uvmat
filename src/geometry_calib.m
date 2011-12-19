@@ -98,12 +98,13 @@ end
 
 %set menu of calibration options
 set(handles.calib_type,'String',{'rescale';'linear';'3D_linear';'3D_quadr';'3D_extrinsic'})
-inputxml='';
+% inputxml='';
 if exist('inputfile','var')&& ~isempty(inputfile)
     struct.XmlInputFile=inputfile;
-    [Pathsub,RootFile,field_count,str2,str_a,str_b,ext]=name2display(inputfile);
-    if ~strcmp(ext,'.xml')
-        inputfile=[fullfile(Pathsub,RootFile) '.xml'];%xml file corresponding to the input file
+%     [Pathsub,RootFile,field_count,str2,str_a,str_b,ext]=name2display(inputfile);
+    [RootPath,~,RootFile,~,~,~,~,FileExt]=fileparts_uvmat(inputfile);
+    if ~strcmp(FileExt,'.xml')
+        inputfile=[fullfile(RootPath,RootFile) '.xml'];%xml file corresponding to the input file
     end
     set(handles.ListCoord,'String',{'......'})
     if exist(inputfile,'file')
@@ -133,11 +134,6 @@ function closefcn(gcbo,eventdata)
 huvmat=findobj(allchild(0),'Name','uvmat');
 if ~isempty(huvmat)
     handles=guidata(huvmat);
-%     set(handles.MenuMask,'enable','on')
-%     set(handles.MenuGrid,'enable','on')
-%     set(handles.MenuObject,'enable','on')
-%     set(handles.MenuEdit,'enable','on')
-%     set(handles.edit,'enable','on')
     hobject=findobj(handles.axes3,'tag','calib_points');
     if ~isempty(hobject)
         delete(hobject)
@@ -178,7 +174,7 @@ if ~isempty(Coord)
     [GeometryCalib.ErrorMax(1),index(1)]=max(abs(Xpoints-x_ima));
     GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
     [GeometryCalib.ErrorMax(2),index(2)]=max(abs(Ypoints-y_ima));
-    [EM,ind_dim]=max(GeometryCalib.ErrorMax);
+    [~,ind_dim]=max(GeometryCalib.ErrorMax);
     index=index(ind_dim);
     %set the Z position of the reference plane used for calibration
     if isequal(max(Z),min(Z))%Z constant
@@ -221,9 +217,9 @@ if isfield(UvData,'XmlData')
 end
 hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
 RootPath='';
-RootFile='';
+% RootFile='';
 if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
-    testhandle=1;
+%     testhandle=1;
     RootPath=get(hhuvmat.RootPath,'String');
     RootFile=get(hhuvmat.RootFile,'String');
     filebase=fullfile(RootPath,RootFile);
@@ -320,11 +316,10 @@ if ~isempty(Coord)
     y_ima=Coord(:,5);
     [Xpoints,Ypoints]=px_XYZ(GeometryCalib,X,Y,Z);
     GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
-    [GeometryCalib.ErrorMax(1),index(1)]=max(abs(Xpoints-x_ima));
+    [GeometryCalib.ErrorMax(1)]=max(abs(Xpoints-x_ima));
     GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
-    [GeometryCalib.ErrorMax(2),index(2)]=max(abs(Ypoints-y_ima));
-    [EM,ind_dim]=max(GeometryCalib.ErrorMax);
-%     index=index(ind_dim);
+    [GeometryCalib.ErrorMax(2)]=max(abs(Ypoints-y_ima));
+%     [EM,ind_dim]=max(GeometryCalib.ErrorMax);
     %set the Z position of the reference plane used for calibration
     Z_plane=[];
     if isequal(max(Z),min(Z))
@@ -359,7 +354,7 @@ if ~isempty(h_dataview)
     delete(h_dataview)
 end
 CalibData=get(handles.geometry_calib,'UserData');%read the calibration image source on the interface userdata
-InputFile='';
+% InputFile='';
 if isfield(CalibData,'XmlInputFile')
     InputDir=fileparts(CalibData.XmlInputFile);
     [InputDir,DirName]=fileparts(InputDir);
@@ -387,38 +382,6 @@ if strcmp(answer,'Cancel')
 end
 
 dataview(answer,SubCampaignTest,GeometryCalib);
-        
-%     if isfield(Heading,'Device') && isequal([filename ext],Heading.Device)
-%         [XmlInput,filename,ext]=fileparts(XmlInput);
-%         Device=Heading.Device;
-%     end
-%     if isfield(Heading,'Experiment') && isequal([filename ext],Heading.Experiment)
-%         [PP,filename,ext]=fileparts(XmlInput);
-%     end
-%     testinput=0;
-%     if isfield(Heading,'SubCampaign') && isequal([filename ext],Heading.SubCampaign)
-%         SubCampaignTest='y';
-%         testinput=1;
-%     elseif isfield(Heading,'Campaign') && isequal([filename ext],Heading.Campaign)
-%         testinput=1;
-% %     end 
-% end
-% if ~testinput
-%     filename='PROJETS';%default
-%     if isfield(CalibData,'XmlInputFile')
-%          [pp,filename]=fileparts(CalibData.XmlInputFile);
-%     end
-%     while ~isequal(filename,'PROJETS') && numel(filename)>1
-%         filename_1=filename;
-%         pp_1=pp;
-%         [pp,filename]=fileparts(pp);
-%     end
-%     XmlInput=fullfile(pp_1,filename_1);
-%     testinput=1;
-% end
-% if testinput
-%     outcome=dataview(XmlInput,SubCampaignTest,GeometryCalib);
-% end
 
 %------------------------------------------------------------------------
 % determine the parameters for a calibration by an affine function (rescaling and offset, no rotation)
@@ -428,15 +391,14 @@ X=Coord(:,1);
 Y=Coord(:,2);% Z not used
 x_ima=Coord(:,4);
 y_ima=Coord(:,5);
-[px,sx]=polyfit(X,x_ima,1);
-[py,sy]=polyfit(Y,y_ima,1);
-T_x=px(2);
-T_y=py(2);
+[px]=polyfit(X,x_ima,1);
+[py]=polyfit(Y,y_ima,1);
+% T_x=px(2);
+% T_y=py(2);
 GeometryCalib.CalibrationType='rescale';
 GeometryCalib.fx_fy=[px(1) py(1)];%.fx_fy corresponds to pxcm along x and y
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
 GeometryCalib.Tx_Ty_Tz=[px(2)/px(1) py(2)/py(1) 1];
-%GeometryCalib.R=[1,0,0;0,1,0;0,0,0];
 GeometryCalib.omc=[0 0 0];
 
 %------------------------------------------------------------------------
@@ -451,12 +413,7 @@ x_ima=Coord(:,4);
 y_ima=Coord(:,5);
 XY_mat=[ones(size(X)) X Y];
 a_X1=XY_mat\x_ima; %transformation matrix for X
-% x1=XY_mat*a_X1;%reconstruction
-% err_X1=max(abs(x1-x_ima));%error
 a_Y1=XY_mat\y_ima;%transformation matrix for X
-% y1=XY_mat*a_Y1;
-% err_Y1=max(abs(y1-y_ima));%error
-% R=[a_X1(2),a_X1(3),0;a_Y1(2),a_Y1(3),0;0,0,1];
 R=[a_X1(2),a_X1(3);a_Y1(2),a_Y1(3)];
 epsilon=sign(det(R));
 norm=abs(det(R));
@@ -468,7 +425,6 @@ else
 end
 GeometryCalib.fx_fy(2)=(a_Y1(3)/a_X1(2))*GeometryCalib.fx_fy(1);
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
-%GeometryCalib.Tx_Ty_Tz=[a_X1(1) a_Y1(1) 1]; 
 GeometryCalib.Tx_Ty_Tz=[a_X1(1)/GeometryCalib.fx_fy(1) a_Y1(1)/GeometryCalib.fx_fy(2) 1];
 R(1,:)=R(1,:)/GeometryCalib.fx_fy(1);
 R(2,:)=R(2,:)/GeometryCalib.fx_fy(2);
@@ -739,68 +695,6 @@ GeometryCalib.omc=(180/pi)*omc';
 % GeometryCalib.focal=par(2);
 
 
-%--------------------------------------------------------------------------
-function GeometryCalib=calib_tsai(Coord,handles)% OBSOLETE: old version using gauthier's bianry ccal_fo
-% NOT USED
-%------------------------------------------------------------------------
-%TSAI
-path_uvmat=which('uvmat');% check the path detected for source file uvmat
-path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-xmlfile=fullfile(path_UVMAT,'PARAM.xml');%name of the file containing names of binary executables
-if exist(xmlfile,'file')
-    t=xmltree(xmlfile);% read the (xml) file containing names of binary executables
-    sparam=convert(t);% convert to matlab structure
-end
-if ~isfield(sparam,'GeometryCalibBin')
-    msgbox_uvmat('ERROR',['calibration program <GeometryCalibBin> undefined in parameter file ' xmlfile])
-    return
-end
-Tsai_exe=sparam.GeometryCalibBin;
-if ~exist(Tsai_exe,'file')%the binary is defined in /bin, default setting
-     Tsai_exe=fullfile(path_UVMAT,Tsai_exe);
-end
-if ~exist(Tsai_exe,'file')
-    msgbox_uvmat('ERROR',['calibration program ' sparam.GeometryCalibBin ' defined in PARAM.xml does not exist'])
-    return
-end
-
-textcoord=num2str(Coord,4);
-dlmwrite('t.txt',textcoord,'');  
-% ['!' Tsai_exe ' -fx 0 -fy t.txt']
-eval(['!' Tsai_exe ' -f t.txt > tsaicalib.log']);
-if ~exist('calib.dat','file')
-    msgbox_uvmat('ERROR','no output from calibration program Tsai_exe: possibly too few points')
-end
-calibdat=dlmread('calib.dat');
-delete('calib.dat')
-%delete('t.txt')
-GeometryCalib.CalibrationType='tsai';
-GeometryCalib.focal=calibdat(10);
-GeometryCalib.dpx_dpy=[calibdat(5) calibdat(6)];
-GeometryCalib.Cx_Cy=[calibdat(7) calibdat(8)];
-GeometryCalib.sx=calibdat(9);
-GeometryCalib.kappa1=calibdat(11);
-GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
-GeometryCalib.Tx_Ty_Tz=[calibdat(12) calibdat(13) calibdat(14)];
-Rx_Ry_Rz=calibdat(15:17);
-sa = sin(Rx_Ry_Rz(1)) ; 
-ca=cos(Rx_Ry_Rz(1));
-sb=sin(Rx_Ry_Rz(2));
-cb =cos(Rx_Ry_Rz(2));
-sg =sin(Rx_Ry_Rz(3));
-cg =cos(Rx_Ry_Rz(3)); 
-r1 = cb * cg;
-r2 = cg * sa * sb - ca * sg;
-r3 = sa * sg + ca * cg * sb;
-r4 = cb * sg;
-r5 = sa * sb * sg + ca * cg;
-r6 = ca * sb * sg - cg * sa;
-r7 = -sb;
-r8 = cb * sa;
-r9 = ca * cb;
-%EN DEDUIRE MATRICE R ??
-GeometryCalib.R=[r1,r2,r3;r4,r5,r6;r7,r8,r9];
-
 %------------------------------------------------------------------------
 % --- determine the rms of calibration error
 function ErrorRms=error_calib(calib_param,Calib,Coord)
@@ -854,7 +748,7 @@ hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
 % RootPath='';
 % RootFile='';
 if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
-    testhandle=1;
+%     testhandle=1;
     RootPath=get(hhuvmat.RootPath,'String');
     RootFile=get(hhuvmat.RootFile,'String');
     filebase=fullfile(RootPath,RootFile);

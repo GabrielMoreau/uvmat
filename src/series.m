@@ -479,7 +479,7 @@ set(handles.num_MaxIndex_j,'String',nb_field2_cell);
 
 set(handles.waitbar_frame,'Units','pixels')
 pos=get(handles.waitbar_frame,'Position');
-xima=0.5:pos(3)-0.5;
+xima=0.5:pos(3)-0.5;% pixel positions on the image representing the existing file indices
 yima=0.5:pos(4)-0.5;
 [XIma,YIma]=meshgrid(xima,yima);
 nb_i=size(i1_series,1);
@@ -490,9 +490,13 @@ ind_j=(0.5:nb_j-0.5)*pos(4)/nb_j;
 CData=zeros([size(XIma) 3]);
 file_ima=double((i1_series(:,:,1)>0)');
 if size(file_ima,1)==1
-    file_ima=ones(pos(4),1)*file_ima;
+    CLine=interp1(ind_i,file_ima,xima,'nearest');
+    CData(:,:,2)=ones(size(yima'))*CLine;
+%     file_ima=ones(pos(4),1)*file_ima;
+%     Ind_i=
+else
+    CData(:,:,2)=interp2(Ind_i,Ind_j,file_ima,XIma,YIma,'nearest');
 end
-CData(:,:,2)=interp2(Ind_i,Ind_j,file_ima,XIma,YIma,'nearest');
 set(handles.waitbar_frame,'CData',CData)
 set(handles.waitbar_frame,'Units','normalized')
 % CData(:,1:floor(advance_ratio*size(CData,2)),1:2)=1;
@@ -1488,8 +1492,9 @@ waitbarpos(4)=0.005;%reinitialize waitbar to zero height
 waitbarpos(2)=Series.WaitbarPos(2)+Series.WaitbarPos(4)-0.005;
 % set(handles.waitbar,'Position',waitbarpos)
 
-
+if isfield(Series.IndexRange,'NbSlice')
 Series.NbSlice=Series.IndexRange.NbSlice;
+end
 if last_i < first_i | last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
     set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
 num_i=first_i:incr_i:last_i;
