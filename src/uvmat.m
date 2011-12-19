@@ -473,10 +473,10 @@ if ~exist(fileinput,'file')
     return
 end
 % detect root name, nomenclature and indices in the input file name:
-[RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt]=fileparts_uvmat(fileinput);
+[~,SubDir,~,i1,i2,j1,j2,FileExt]=fileparts_uvmat(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject]=find_file_series(fileinput);
-
+% [i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject]=find_file_series(fileinput);
+[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject]=find_file_series(fileinput);
 % open the file or fill the GUI uvmat according to the detected file type
 switch FileType
     case ''
@@ -821,7 +821,6 @@ if ~isequal(warntext,'')
 end
 
 % set default options in menu 'Fields'
-
 if ~testima
     testcivx=0;
     if isfield(UvData,'FieldsString') && isequal(UvData.FieldsString,{'get_field...'})% field menu defined as input (from get_field)
@@ -1908,8 +1907,9 @@ end
 % --- Executes on button press in movie_pair: create an alternating movie with two view
 function movie_pair_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-status=get(handles.movie_pair,'value');
-if isequal(status,0)
+
+%% stop movie action if the movie_pair button is off
+if ~get(handles.movie_pair,'value')
     set(handles.movie_pair,'BusyAction','Cancel')%stop movie pair if button is 'off'
     set(handles.i2,'String','')
     set(handles.j2,'String','')
@@ -1917,7 +1917,8 @@ if isequal(status,0)
 else
     set(handles.movie_pair,'BusyAction','queue')
 end
-%initialisation
+
+%% initialisation
 set(handles.movie_pair,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 list_fields=get(handles.Fields,'String');% list menu fields
@@ -1928,7 +1929,6 @@ if isequal(FieldName,'image')
     test_1=0;
     [ff,rr,filebase,xx,Ext,SubDir]=read_file_boxes(handles);
     NomType=get(handles.NomType,'String');
-%     NomType=get(handles.FileIndex,'UserData');
 else
     list_fields=get(handles.Fields_1,'String');% list menu fields
     index_fields=get(handles.Fields_1,'Value');% selected string index
@@ -1968,7 +1968,7 @@ if ~exist(imaname_1,'file')
       return
 end
 
-%read the second image
+%% read the second image
 Field.AName='image';
 if test_1
     Field_a=UvData.Field_1;
@@ -1983,7 +1983,8 @@ if ~isempty(nbslice)
     Field_b.ZIndex=mod(num_i2-1,nbslice)+1;
 end
 Field_b.CoordUnit='pixel';
-%determine the input file type
+
+%% determine the input file type
 if (test_1 && isfield(UvData,'MovieObject_1'))||(~test_1 && isfield(UvData,'MovieObject'))
     FileType='movie';
 elseif isequal(lower(Ext),'.avi')

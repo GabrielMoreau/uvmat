@@ -37,8 +37,6 @@ j2=[];
 FileExt='';
 NomType='';
 
-
-
 %% display help and test function in the absence of input arument
 if ~exist('FileInput','var')
     help fileparts_uvmat;
@@ -46,33 +44,18 @@ if ~exist('FileInput','var')
     return
 end
 
+%% default root name output
 [RootPath,FileName,FileExt]=fileparts(FileInput);
-RootFile=FileName;%default
-% switch FileExt
-%     case '.avi'
-%         NomType='*';
-%         return
-%     case {'.tif','.tiff'}
-%         if exist(FileInput,'file')
-%             info=iminfo(FileInput);
-%             if length(info)>1
-%                 NomType='*';
-%                 return
-%             end
-%         end 
-% end
+RootFile=FileName;
 
-% \D not a digit
-% \d digit
-
-
-%% recursive test on FileName starting from the end
-% case of pure number
+%% case of input file name which is a pure number
 if ~isnan(str2double(FileName))
     RootFile='';
     i1=str2double(FileName);
     return
 end
+
+%% recursive test on FileName starting from the end
 % test whether FileName ends with a number or not
 r=regexp(FileName,'.*\D(?<num1>\d+)$','names');% \D = not a digit, \d =digit
 
@@ -140,11 +123,6 @@ else% FileName ends with a letter
         [j1,j2]=get_value(r.end_string);
         i1=str2double(r.num1);
         NomType=[get_type(r.num1) NomType];
-        r=regexp(RootPath,'\<(?<newrootpath>.+)(\\|/)(?<subdir>[^\\^/]+)(\\|/)*\>','names');
-        if ~isempty(r)
-            SubDir=r.subdir;
-            RootPath=r.newrootpath;
-        end
     end
 end
 
@@ -154,6 +132,15 @@ if strcmp(RootFile(end),'_')
     NomType=['_' NomType];
 end
 
+%% extract subdirectory for pairs i1-i2 or j1-j2 (or ab, AB)
+if ~isempty(i2) || ~isempty(j2)
+    r=regexp(RootPath,'\<(?<newrootpath>.+)(\\|/)(?<subdir>[^\\^/]+)(\\|/)*\>','names');
+    if ~isempty(r)
+        SubDir=r.subdir;
+        RootPath=r.newrootpath;
+    end
+end
+
 % if ~isempty(regexp(NomType,'-|ab|AB'))
 %     r=regexp(RootPath,'\<(?<newrootpath>.+)(\\|/)(?<subdir>[^\\^/]+)(\\|/)*\>','names');
 %     if ~isempty(r)
@@ -161,8 +148,6 @@ end
 %     RootPath=r.newrootpath;
 %     end
 % end
-
-
 
 
 function type=get_type(s)

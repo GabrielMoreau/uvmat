@@ -182,31 +182,28 @@ if testeditxml==1 || isequal(ext,'.xls')
         return
     end
 end
-[RootPath,RootFile,str1,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileinput);
+%[RootPath,RootFile,str1,str2,str_a,str_b,FileExt,NomType,subdir]=name2display(fileinput);
+[~,~,~,i1,i2,j1,j2,FileExt,NomType]=fileparts_uvmat(fileinput);
 % filebase=fullfile(RootPath,RootFile);
-num_i1=str2double(str1);
-if isnan(num_i1),num_i1=1;end
-num_i2=str2double(str2);
-if isnan(num_i2),num_i2=num_i1;end
-num_j1=stra2num(str_a);
-if isnan(num_j1),num_j1=1;end
-num_j2=stra2num(str_b);
-if isnan(num_j2),num_j2=num_j1;end
+if isempty(i1),i1=1;end
+if isempty(i2),i2=i1;end
+if isempty(j1),j1=1;end
+if isempty(j2),j2=j1;end
 if isequal(get(handles.ListCompareMode,'Value'),1)
     browse=[];%initialisation
 else
     browse=get(handles.RootName,'UserData');
 end
-browse.num_i1=num_i1;
-browse.num_i2=num_i2;
-browse.num_j1=num_j1;
-browse.num_j2=num_j2;
-if length(ext)>1 && (~isempty(imformats(ext(2:end)))||strcmpi(ext,'.avi'));%if an image file has been opened by uvmat
-    browse.nom_type_ima=nom_type;
-    browse.ext_ima=ext;
-    set(handles.ImaExt,'String',ext)
+browse.num_i1=i1;
+browse.num_i2=i2;
+browse.num_j1=j1;
+browse.num_j2=j2;
+if length(FileExt)>1 && (~isempty(imformats(FileExt(2:end)))||strcmpi(FileExt,'.avi'));%if an image file has been opened by uvmat
+    browse.nom_type_ima=NomType;
+    browse.ext_ima=FileExt;
+    set(handles.ImaExt,'String',FileExt)
 end
-set(handles.ImaDoc,'String',ext);
+set(handles.ImaDoc,'String',FileExt);
 
 set(handles.RootName,'UserData',browse);% store information from browser
 
@@ -334,8 +331,9 @@ end
 ext_ima='';%default
 nom_type_ima='';%default
 nom_type_nc='';
-[RootPath,FileName,i1_str,i2_str,j1_str,j2_str,ext_input,nom_type_input,subdir]=name2display(fileinput);
-RootName=fullfile(RootPath,FileName);
+[RootPath,RootFile,i1_str,i2_str,j1_str,j2_str,ext_input,nom_type_input,subdir]=name2display(fileinput);
+%[RootPath,subdir,RootFile,i1,i2,j1,j2,ext_input,nom_type_input]=fileparts_uvmat(fileinput);TODO: use to replace name2display
+RootName=fullfile(RootPath,RootFile);
 set(handles.RootName,'String',RootName)
 set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
 i1=str2double(i1_str);
