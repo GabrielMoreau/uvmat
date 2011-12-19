@@ -97,10 +97,7 @@ end
 filebase{1}=fullfile(Series.RootPath{1},Series.RootFile{1});
 
 %% number of slices
-NbSlice=str2double(get(hseries.NbSlice,'String'));
-if isnan(NbSlice)
-    NbSlice=1;
-end
+NbSlice=Series.NbSlice;
 
 %% Field and velocity type (the same for the two views)
 if isfield(Series,'Field')

@@ -53,7 +53,7 @@ end
 for iview=1:length(Series.RootFile)
     hdir=dir(fullfile(Series.RootPath{iview},Series.SubDir{iview}));%list files
     for ilist=1:length(hdir)
-        update_waitbar(hseries.waitbar,WaitbarPos,ilist/length(hdir))
+%         update_waitbar(hseries.waitbar,WaitbarPos,ilist/length(hdir))
         FileName=hdir(ilist).name;
         [dd,ff,Ext]=fileparts(FileName);
         if isequal(Ext,'.log')||isequal(Ext,'.bat')||isequal(Ext,'.cmx')||isequal(Ext,'.cmx2')|| isequal(Ext,'.errors')

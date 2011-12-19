@@ -48,11 +48,11 @@ WaitbarPos=get(hseries.waitbar_frame,'Position');
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 % number of slices
-NbSlice=str2num(get(hseries.NbSlice,'String'));
-if isempty(NbSlice)
-    NbSlice=1;
-end
-NbSlice_name=num2str(NbSlice);
+% NbSlice=str2num(get(hseries.NbSlice,'String'));
+% if isempty(NbSlice)
+%     NbSlice=1;
+NbSlice=Series.IndexRange.NbSlice
+NbSlice_name=num2str(Series.IndexRange.NbSlice);
 if isequal(NbSlice,[]),NbSlice=1; end; %default
 
 % number of views
@@ -94,10 +94,11 @@ for iview=1:nbview
             for ifield=1:nbfield
                 indselect(:,ifield)=((ifield-1)*NbSlice+(i_slice-1))*nbfield2+[1:nbfield2]';%selected indices on the list of files of a slice
             end 
+            filefound={};
             for index=1:nbfield*nbfield2
                 stopstate=get(hseries.RUN,'BusyAction');
                 if isequal(stopstate,'queue')% enable STOP command
-                    update_waitbar(hseries.waitbar,WaitbarPos,index/(nbfield*nbfield2))
+                    update_waitbar(hseries.waitbar_frame,WaitbarPos,index/(nbfield*nbfield2))
                     ifile=indselect(index);               
                     file=...
                        name_generator(filebase,num_i1(ifile),num_j1(ifile),Series.FileExt{iview},Series.NomType{iview},1,num_i2(ifile),num_j2(ifile),Series.SubDir{iview});                
@@ -136,7 +137,8 @@ for iview=1:nbview
                 end
             end
         end
-        if isempty(datnum)
+%         if isempty(datnum)||isempty(filefound)
+        if isempty(filefound)
             if NbSlice>1
                 message=['no set of ' num2str(NbSlice) ' (NbSlices) files found'];
             else

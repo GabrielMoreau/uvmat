@@ -133,10 +133,7 @@ for iview=1:nbview
 end
 
 %% number of slices
-NbSlice=str2num(get(hseries.NbSlice,'String'));
-if isempty(NbSlice)
-    NbSlice=1;
-end
+NbSlice=Series.IndexRange.NbSlice;
 NbSlice_name=num2str(NbSlice);
 
 %% Field and velocity type (the same for the two views)
