@@ -263,8 +263,9 @@ txt=[Xchar blanc Ychar];
 textgrid={tete;txt};
 textout=char(textgrid);
 imageA=get(handles.image_1,'String');
-[Pathsub]=name2display(imageA);
-Answer = msgbox_uvmat('INPUT_TXT','grid file name (*.grid)',fullfile(Pathsub,'gridA.grid'));
+RootPath=fileparts_uvmat(imageA);
+%[Pathsub]=name2display(imageA);
+Answer = msgbox_uvmat('INPUT_TXT','grid file name (*.grid)',fullfile(RootPath,'gridA.grid'));
 % Answer = inputdlg('grid file name (*.grid)',' ',1,{fullfile(Pathsub,'gridA.grid')},'on');
 dlmwrite(Answer,textout,'');
 msgbox_uvmat('CONFIRMATION',[Answer ' written as ASCII text file']);
@@ -280,13 +281,13 @@ if ~isempty(grid_pix_B)
     txt=[Xchar blanc Ychar];
     textgrid={tete;txt};
     textout=char(textgrid);
-    Answer = msgbox_uvmat('INPUT_TXT','grid file name (*.grid)',fullfile(Pathsub,'gridB.grid'));
+    Answer = msgbox_uvmat('INPUT_TXT','grid file name (*.grid)',fullfile(RootPath,'gridB.grid'));
     dlmwrite(Answer,textout,'');
     msgbox_uvmat('CONFIRMATION',[Answer ' written as ASCII text file']);
 end
 
 %-------------------------
-function [grid_pix_A,grid_pix_B]=get_grid(handles);
+function [grid_pix_A,grid_pix_B]=get_grid(handles)
 %Object=read_set_object(handles);%read the set_grid interface;
 grid_pix_B=[];%default
 DX=str2num(get(handles.DX,'String'));
@@ -295,8 +296,8 @@ XMin=str2num(get(handles.XMin,'String'));
 XMax=str2num(get(handles.XMax,'String'));
 YMin=str2num(get(handles.YMin,'String'));
 YMax=str2num(get(handles.YMax,'String'));
-array_realx=[XMin:DX:XMax];
-array_realy=[YMin:DY:YMax];
+array_realx=XMin:DX:XMax;
+array_realy=YMin:DY:YMax;
 nx_patch=length(array_realx);
 ny_patch=length(array_realy);
 [grid_realx,grid_realy]=meshgrid(array_realx,array_realy);
@@ -324,13 +325,14 @@ if isequal(testexist,0)
     msgbox_uvmat('ERROR',['input image file' imageA 'does not exist'])
     return
 end
-[Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(imageA);
-form=imformats(ext(2:end));
+%[Pathsub,RootFile,field_count,str2,str_a,str_b,FileExt,NomType,SubDir]=name2display(imageA);
+[RootPath,~,RootFile,~,~,~,~,FileExt]=fileparts_uvmat(imageA);
+form=imformats(FileExt(2:end));
 if isempty(form)% if the extension corresponds to an image format recognized by Matlab
      msgbox_uvmat('ERROR',['error: ' imageA ' is not an image name recognized by Matlab '])
      return
 end
-fileAxml=[fullfile(Pathsub,RootFile) '.xml'];
+fileAxml=[fullfile(RootPath,RootFile) '.xml'];
 [XmlDataA,error]=imadoc2struct(fileAxml); 
 if isfield(XmlDataA,'GeometryCalib')
      tsaiA=XmlDataA.GeometryCalib;
@@ -359,30 +361,31 @@ if testB
         msgbox_uvmat('ERROR',['input image file' imageB 'does not exist'])
         return
     end
-    [Pathsub,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(imageB);
-    form=imformats(ext([2:end]));
+    %[RootPath,RootFile,field_count,str2,str_a,str_b,FileExt,NomType,SubDir]=name2display(imageB);
+    [RootPath,~,RootFile,~,~,~,~,FileExt]=fileparts_uvmat(imageB);
+    form=imformats(FileExt(2:end));
     if isempty(form)% if the extension corresponds to an image format recognized by Matlab
-         msgbox_uvmat('ERROR',['error: ' imageB ' is not an image name recognized by Matlab '])
-         return
+        msgbox_uvmat('ERROR',['error: ' imageB ' is not an image name recognized by Matlab '])
+        return
     end
-    fileBxml=[fullfile(Pathsub,RootFile) '.xml'];
-    [XmlDataB,error]=imadoc2struct(fileBxml); 
+    fileBxml=[fullfile(RootPath,RootFile) '.xml'];
+    [XmlDataB,error]=imadoc2struct(fileBxml);
     if isfield(XmlDataB,'GeometryCalib')
-     tsaiB=XmlDataB.GeometryCalib;
+        tsaiB=XmlDataB.GeometryCalib;
     else
-     msgbox_uvmat('WARNING','no geometric calibration available for image B')
-     tsaiB=[];
- end
-    %[error,Heading,nom_type_read,ext_ima_read,time,TimeUnit,mode,NbSlice,...
+        msgbox_uvmat('WARNING','no geometric calibration available for image B')
+        tsaiB=[];
+    end
+    %[error,Heading,NomType_read,ext_ima_read,time,TimeUnit,mode,NbSlice,...
     %     npxB,npyB,tsaiB]=read_imadoc(fileBxml,0);
     [grid_imaB(:,1),grid_imaB(:,2)]=px_XYZ(tsaiB,grid_real(:,1),grid_real(:,2),0);
-%     if isempty(npxB)|isempty(npyB)
-        B=imread(imageB);
-       siz=size(B);
-       npxB=siz(2);
-       npyB=siz(1);
-%     end
-    flagB=grid_imaB(:,1)>0 & grid_imaB(:,1)<npxB & grid_imaB(:,2)>0 & grid_imaB(:,2)<npyB; 
+    %     if isempty(npxB)|isempty(npyB)
+    B=imread(imageB);
+    siz=size(B);
+    npxB=siz(2);
+    npyB=siz(1);
+    %     end
+    flagB=grid_imaB(:,1)>0 & grid_imaB(:,1)<npxB & grid_imaB(:,2)>0 & grid_imaB(:,2)<npyB;
 end
 if testB
     ind_good=find(flagA==1&flagB==1);

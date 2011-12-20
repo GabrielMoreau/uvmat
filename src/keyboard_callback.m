@@ -32,11 +32,11 @@ switch xx
                 hfig=get(hfig,'parent');
             elseif isfield(AxeData,'LimEditBox')&& isequal(AxeData.LimEditBox,1)% update display of the GUI containing the axis (uvmat or view_field)
                 hh=guidata(hfig);
-                if isfield(hh,'MinX')
-                    set(hh.MinX,'String',num2str(xlimit(1)))
-                    set(hh.MaxX,'String',num2str(xlimit(2)))
-                    set(hh.MinY,'String',num2str(ylimit(1)))
-                    set(hh.MaxY,'String',num2str(ylimit(2)))
+                if isfield(hh,'num_MinX')
+                    set(hh.num_MinX,'String',num2str(xlimit(1)))
+                    set(hh.num_MaxX,'String',num2str(xlimit(2)))
+                    set(hh.num_MinY,'String',num2str(ylimit(1)))
+                    set(hh.num_MaxY,'String',num2str(ylimit(2)))
                 end
             end
         end

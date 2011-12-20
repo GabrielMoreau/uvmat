@@ -1985,7 +1985,7 @@ end
 Field_b.CoordUnit='pixel';
 
 %% determine the input file type
-if (test_1 && isfield(UvData,'MovieObject_1'))||(~test_1 && isfield(UvData,'MovieObject'))
+if (test_1 && isfield(UvData,'MovieObject_1'))||(~test_1 && ~isempty(UvData.MovieObject))
     FileType='movie';
 elseif isequal(lower(Ext),'.avi')
     FileType='avi';
@@ -4248,47 +4248,66 @@ function ListObject_Callback(hObject, eventdata, handles)
 
 list_str=get(handles.ListObject,'String');
 IndexObj_old=get(handles.ListObject,'UserData');%retrieve previous selection
-IndexObj=get(handles.ListObject,'Value');
+IndexObj=get(handles.ListObject,'Value');%present object selection
+
+%% we select two objects or more at once (using the Ctrl key), keep only the last two items: the first is projected on uvmat, the second on view_field
 if length(IndexObj)>2
      IndexObj=[IndexObj(end-1) IndexObj(end)];%keeps only the last two selected items at most
 end
-if length(IndexObj)==1
-    if length(IndexObj_old)>=2 && isequal(IndexObj_old(1),IndexObj)       
-        IndexObj=IndexObj_old(2);
-    elseif length(IndexObj_old)>=2 && isequal(IndexObj_old(2),IndexObj)
-        IndexObj=IndexObj_old(1);
-    else
-        IndexObj=[IndexObj_old(1) IndexObj];
+
+%% we select one object 
+if length(IndexObj)==1% 
+    if length(IndexObj_old)>=2 && isequal(IndexObj_old(1),IndexObj)   % we select the first previously selected object-> 
+        IndexObj=[1 IndexObj_old(2)];% it desactivates this object and selects the first object for uvmat
+    elseif length(IndexObj_old)>=2 && isequal(IndexObj_old(2),IndexObj) % we select the second previously selected object->
+        IndexObj=IndexObj_old(1);% it desactivates this object  and keeps only the first previously selected object (uvmat)
+    else % 
+        IndexObj=[IndexObj_old(1) IndexObj];% activates a second object while keeping the first previously selected one
     end
 end
-set(handles.ListObject,'Value',IndexObj); %keeps only the two first selected objects
-set(handles.ListObject,'UserData',IndexObj)
- %desactivate the edit object mode
-set(handles.edit_object,'Value',0)
+set(handles.ListObject,'Value',IndexObj); % marks the selected objects in the list
+set(handles.ListObject,'UserData',IndexObj)% keep the current object selection in memory for next time
+
+%% update the object representation
+set(handles.edit_object,'Value',0) % desactivate the edit object mode
 edit_object_Callback(hObject, eventdata, handles)
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
 if numel(UvData.Object)<max(IndexObj);
     msgbox_uvmat('ERROR','invalid object list')
     return
 end
-UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));
-set(handles.uvmat,'UserData',UvData)
-
-%project on the selected object and update the corresponding plot
-hview_field=findobj(allchild(0),'tag','view_field');
-ViewObjectAxes=[];%default
-if ~isequal(IndexObj(1),IndexObj_old(1))
-update_object(handles,IndexObj(1),handles.axes3,list_str{IndexObj(1)})%plot the projection in uvmat
+if numel(IndexObj)>=2
+    UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));%update the current object graphic representation
+    set(handles.uvmat,'UserData',UvData)
 end
+
+%% project on the selected object and update the corresponding plot
+% hview_field=findobj(allchild(0),'tag','view_field');
+% ViewObjectAxes=[];%default
+if ~isequal(IndexObj(1),IndexObj_old(1))
+    update_object(handles,IndexObj(1),handles.axes3,list_str{IndexObj(1)})%plot the projection in uvmat
+end
+hview_field=findobj(allchild(0),'tag','view_field');
 if length(IndexObj)==2 && (length(IndexObj_old)==1 || ~isequal(IndexObj(2),IndexObj_old(2)))
-    hview_field=findobj(allchild(0),'tag','view_field');
     if isempty(hview_field)
         hview_field=view_field;
     end
     PlotHandles=guidata(hview_field);
     update_object(handles,IndexObj(2),PlotHandles.axes3,list_str{IndexObj(2)})%plot the projection in view_field
+    update_object_color(handles.axes3,PlotHandles.axes3,UvData.Object{IndexObj(2)}.DisplayHandle_uvmat)
+else
+    if ~isempty(hview_field)
+        delete(hview_field)
+    end
+    hset_object=findobj(allchild(0),'tag','set_object');
+    if ~isempty(hset_object)
+        delete(hset_object)
+    end
+    update_object_color(handles.axes3,handles.axes3,[])
 end
-update_object_color(handles.axes3,PlotHandles.axes3,UvData.Object{IndexObj(2)}.DisplayHandle_uvmat)
+
+%% update the color of the gfraphic object representation: the selected object in magenta, others in blue
+% update_object_color(handles.axes3,PlotHandles.axes3,UvData.Object{IndexObj(2)}.DisplayHandle_uvmat)
 
 %------------------------------------------------------------------------
 function update_object(handles,IndexObj,ViewObjectAxes,ObjectName)
@@ -4307,8 +4326,9 @@ end
 hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
-    hset_object=set_object(ObjectData,[],ZBounds);
 end
+    hset_object=set_object(ObjectData,[],ZBounds);
+% end
 edit_test=get(handles.edit_object,'Value');
 if edit_test
     ObjectData.enable_plot=1;
@@ -4346,6 +4366,7 @@ for iobj=1:length(hother)
     end
     set(hother(iobj),'Selected','off')
 end
+if ~isempty(DisplayHandle)
 linetype=get(DisplayHandle,'Type');
 if isequal(linetype,'line')
     set(DisplayHandle,'Color','m'); %set the selected object to magenta color
@@ -4371,6 +4392,7 @@ if isfield(SubObjectData,'SubObject') & ishandle(SubObjectData.SubObject)
 end
 if isfield(SubObjectData,'DeformPoint') & ishandle(SubObjectData.DeformPoint)
     set(SubObjectData.DeformPoint,'Color','m')
+end
 end
 
 %         SubObjectData=get(ObjectData.DisplayHandle_uvmat,'UserData');

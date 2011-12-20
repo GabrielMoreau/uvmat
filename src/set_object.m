@@ -671,14 +671,19 @@ huvmat=findobj('tag','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
 hhuvmat=guidata(huvmat);%handles in the uvmat GUI
 ListObject=get(hhuvmat.ListObject,'String');%position in the objet list
-IndexObj=get(hhuvmat.ListObject,'Value')
+IndexObj=get(hhuvmat.ListObject,'Value');
 
 %% read the object on the GUI set_object
-ObjectName=get(handles.TITLE,'String');%name of the current object defiend in set_object
 ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
+ObjectName=get(handles.TITLE,'String');%name of the current object defiend in set_object
 if isempty(ObjectName)
     if get(hhuvmat.edit_object,'Value')% edit mode
         ObjectName=ListObject{IndexObj(end)};%take the name of the last (second) selected item
+    else %new object
+        StyleList=get(handles.ObjectStyle,'String');
+        StyleVal=get(handles.ObjectStyle,'Value');
+        ObjectName=StyleList{StyleVal};
+        %ObjectName=[num2str(numel(ListObject)+1) '-' StyleList{StyleVal}];% take the object style as default name
     end
 end
 if ~get(hhuvmat.edit_object,'Value') %new object is being created
@@ -699,7 +704,12 @@ if ~get(hhuvmat.edit_object,'Value') %new object is being created
         end
     end
     ObjectName=ObjectNameNew;
-    ObjectName=[num2str(IndexObj(end)) '-' ObjectData.Style];%default name
+%     ObjectName=[num2str(IndexObj(end)) '-' ObjectData.Style];%default name
+    set(handles.TITLE,'String',ObjectName)% display the default name in set_object
+    IndexObj(2)=numel(ListObject)+1;% append an object to the list in uvmat
+    set(hhuvmat.ListObject,'String',[ListObject;{ObjectName}]);%complement the object list
+    set(hhuvmat.ListObject,'Value',IndexObj)
+    UvData.Object{IndexObj(2)}=[];%initiate a new object (empty yet)
 end
 % IndexObj_1=IndexObj(1);
 % % if isequal(get(hhuvmat.list_object_2,'Visible'),'on')

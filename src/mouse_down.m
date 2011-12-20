@@ -352,8 +352,8 @@ if ~test_zoom && test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3')
         if ~(isequal(coord_value,1)||isequal(coord_value,3)); %active only with no transform or px (no phys)
             set(hhuvmat.transform_fct,'Value',1)
             uvmat('transform_fct_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
-            set(hhuvmat.FixedLimits,'Value',0)% put FixedLimits option to 'off'
-            set(hhuvmat.FixedLimits,'BackgroundColor',[0.7 0.7 0.7])
+            set(hhuvmat.CheckFixedLimits,'Value',0)% put FixedLimits option to 'off'
+            set(hhuvmat.CheckFixedLimits,'BackgroundColor',[0.7 0.7 0.7])
             return
         end
         Coord=get(h_ListCoord,'String');

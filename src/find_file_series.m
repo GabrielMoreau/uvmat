@@ -142,14 +142,18 @@ else
             if  ~isempty(j1)% invalid file name if j1 does not exist in the input file
                 break
             end
-        else
-            ref_j=j1;
-            if isempty(j2_input)
-                if  ~isempty(j2)% invalid file name if j2 does not exist in the input file
-                    break
-                end
+        else %j1_input is not empty
+            if isempty(j1)% the detected name does not fit with the input
+                break
             else
-                ref_j=floor((j1+j2)/2);
+                ref_j=j1;
+                if isempty(j2_input)
+                    if  ~isempty(j2)% invalid file name if j2 does not exist in the input file
+                        break
+                    end
+                else
+                    ref_j=floor((j1+j2)/2);
+                end
             end
         end
         % update the detected index series

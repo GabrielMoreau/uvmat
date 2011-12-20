@@ -489,6 +489,7 @@ ind_j=(0.5:nb_j-0.5)*pos(4)/nb_j;
 [Ind_i,Ind_j]=meshgrid(ind_i,ind_j);
 CData=zeros([size(XIma) 3]);
 file_ima=double((i1_series(:,:,1)>0)');
+if numel(file_ima)>=2
 if size(file_ima,1)==1
     CLine=interp1(ind_i,file_ima,xima,'nearest');
     CData(:,:,2)=ones(size(yima'))*CLine;
@@ -498,7 +499,9 @@ else
     CData(:,:,2)=interp2(Ind_i,Ind_j,file_ima,XIma,YIma,'nearest');
 end
 set(handles.waitbar_frame,'CData',CData)
+end
 set(handles.waitbar_frame,'Units','normalized')
+
 % CData(:,1:floor(advance_ratio*size(CData,2)),1:2)=1;
 % set(hwaitbar,'CData',CData)
 %update_waitbar(handles.waitbar_frame,[],0)
@@ -1672,7 +1675,7 @@ set(handles.RUN,'BackgroundColor',[1 0 0])
 %------------------------------------------------------------------------
 function num_first_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-last_i_Callback(hObject, eventdata, handles)
+num_last_i_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 function num_last_i_Callback(hObject, eventdata, handles)
@@ -1686,7 +1689,7 @@ displ_time(handles,SeriesData.Time{1});
 %------------------------------------------------------------------------
 function num_first_j_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
- last_j_Callback(hObject, eventdata, handles)
+ num_last_j_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 function num_last_j_Callback(hObject, eventdata, handles)
