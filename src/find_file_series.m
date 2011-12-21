@@ -4,7 +4,8 @@
 %
 % OUTPUT:
 % RootPath,RootFile: root path and root name detected in fileinput, possibly modified for movies (indexing is then done on image view, not file)
-% i1_series(ref_i, ref_j,pair),i2_series,j1_series,j2_series: set of indices (i1,i2,j1,j2) sorted by ref index ref_i, ref_j, and pairindex in case of multiple pairs with the same ref
+% i1_series(ref_i+1, ref_j+1,pair),i2_series,j1_series,j2_series: set of indices (i1,i2,j1,j2) sorted by ref index ref_i, ref_j, and pairindex in case of multiple pairs with the same ref
+%  (ref_i+1 is used to deal with the image index zero sometimes used)
 % NomType: nomenclature type corrected after checking the first file (problem of 0 before the number string)
 % FileType: type of file, =
 %       = 'image', usual image as recognised by Matlab
@@ -128,7 +129,6 @@ else
     end
     for ifile=1:nbpair
         [~,~,~,i1,i2,j1,j2]=fileparts_uvmat(dirpair(ifile).name);
-        %             i1_series(ifile)=i1;
         ref_i=i1;
         if isempty(i2_input)
             if ~isempty(i2)% invalid file name if i2 does not exist in the input file
@@ -161,20 +161,20 @@ else
         ref_j_list(ifile)=ref_j;
         nb_pairs=0;
         if ~isempty(i2_input)|| ~isempty(j2_input) %deals with  pairs
-            if size(i1_series,1)>=ref_i && size(i1_series,2)>=ref_j
-                nb_pairs=numel(find(i1_series(ref_i,ref_j,:)~=0));
+            if size(i1_series,1)>=ref_i+1 && size(i1_series,2)>=ref_j+1
+                nb_pairs=numel(find(i1_series(ref_i+1,ref_j+1,:)~=0));
             end
         end
-        i1_series(ref_i,ref_j,nb_pairs+1)=i1;
+        i1_series(ref_i+1,ref_j+1,nb_pairs+1)=i1;
         if ~isempty(i2_input)
-            i2_series(ref_i,ref_j,nb_pairs+1)=i2;
+            i2_series(ref_i+1,ref_j+1,nb_pairs+1)=i2;
         end
         if ~isempty(j1_input)
-            j1_series(ref_i,ref_j,nb_pairs+1)=j1;
+            j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
         end
         if ~isempty(j2_input)
-            j1_series(ref_i,ref_j,nb_pairs+1)=j1;
-            j2_series(ref_i,ref_j,nb_pairs+1)=j2;
+            j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
+            j2_series(ref_i+1,ref_j+1,nb_pairs+1)=j2;
         end
     end
     % look for the numerical string of the first files to update the NomType (take into account the 0 before the number)

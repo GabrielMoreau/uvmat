@@ -448,7 +448,7 @@ end
 
 
 %% look for min and max indices existing in the file series and update NomType
-[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(fileinput);
+[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(fileinput)
 MinIndex_i=min(i1_series(i1_series>0));
 if ~isempty(i2_series)
     MaxIndex_i=max(i2_series(i2_series>0));

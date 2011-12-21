@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 04-Dec-2011 18:52:13
+% Last Modified by GUIDE v2.5 21-Dec-2011 00:34:49
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -118,7 +118,7 @@ varargout{1} = handles.output;
 % --- Function activated by the Open/Browse... option in the upper menu bar.
 function MenuBrowse_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-%get the current input root file name to initiate the browser
+%% get the current input root file name to initiate the browser
 filebase=get(handles.RootName,'String');
 oldfile=''; %default
 if isempty(filebase)|| isequal(filebase,'')%loads the previously stored root file name
@@ -136,8 +136,9 @@ if isempty(filebase)|| isequal(filebase,'')%loads the previously stored root fil
 else
     oldfile=filebase;
 end
-ind_opening=1;%default
-browse.incr_pair=[0 0]; %default
+% ind_opening=1;%default
+% browse.incr_pair=[0 0]; %default
+%% get the new input fiel with the browser
 menu={'*.xml;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.nc;', ' (*.xml,*.civ,*.png,*.jpg ,.tif, *.avi,*.nc)';
     '*.xml',  '.xml files '; ...
     '*.civ',  '.civ files '; ...
@@ -152,12 +153,7 @@ fileinput=[PathName FileName];%complete file name
 sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
 
-%% prepare the GUI with parameters from the input file if opened from uvmat
-errormsg=display_file_name(handles,fileinput);
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',erromsg)
-end
-
+%% case of the xml file opened as input (TODO: check and see whether it is useful)
 [path,name,ext]=fileparts(fileinput);
 testeditxml=0;
 if isequal(ext,'.xml')
@@ -185,27 +181,34 @@ end
 %[RootPath,RootFile,str1,str2,str_a,str_b,FileExt,NomType,subdir]=name2display(fileinput);
 [~,~,~,i1,i2,j1,j2,FileExt,NomType]=fileparts_uvmat(fileinput);
 % filebase=fullfile(RootPath,RootFile);
-if isempty(i1),i1=1;end
-if isempty(i2),i2=i1;end
-if isempty(j1),j1=1;end
-if isempty(j2),j2=j1;end
-if isequal(get(handles.ListCompareMode,'Value'),1)
-    browse=[];%initialisation
-else
-    browse=get(handles.RootName,'UserData');
-end
-browse.num_i1=i1;
-browse.num_i2=i2;
-browse.num_j1=j1;
-browse.num_j2=j2;
-if length(FileExt)>1 && (~isempty(imformats(FileExt(2:end)))||strcmpi(FileExt,'.avi'));%if an image file has been opened by uvmat
-    browse.nom_type_ima=NomType;
-    browse.ext_ima=FileExt;
-    set(handles.ImaExt,'String',FileExt)
-end
-set(handles.ImaDoc,'String',FileExt);
 
-set(handles.RootName,'UserData',browse);% store information from browser
+%% record the information obtained from the input file
+% if isempty(i1),i1=1;end
+% if isempty(i2),i2=i1;end
+% if isempty(j1),j1=1;end
+% if isempty(j2),j2=j1;end
+% if isequal(get(handles.ListCompareMode,'Value'),1)
+%     browse=[];%initialisation
+% else
+%     browse=get(handles.RootName,'UserData');
+% end
+% browse.num_i1=i1;
+% browse.num_i2=i2;
+% browse.num_j1=j1;
+% browse.num_j2=j2;
+% if length(FileExt)>1 && (~isempty(imformats(FileExt(2:end)))||strcmpi(FileExt,'.avi'));%if an image file has been opened by uvmat
+%     browse.nom_type_ima=NomType;
+%     browse.ext_ima=FileExt;
+%     set(handles.ImaExt,'String',FileExt)
+% end
+% set(handles.RootName,'UserData',browse);% store information from browser
+
+%% prepare the GUI with parameters from the input file 
+errormsg=display_file_name(handles,fileinput);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',erromsg)
+end
+
 
 %------------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_1
@@ -331,15 +334,15 @@ end
 ext_ima='';%default
 nom_type_ima='';%default
 nom_type_nc='';
-[RootPath,RootFile,i1_str,i2_str,j1_str,j2_str,ext_input,nom_type_input,subdir]=name2display(fileinput);
-%[RootPath,subdir,RootFile,i1,i2,j1,j2,ext_input,nom_type_input]=fileparts_uvmat(fileinput);TODO: use to replace name2display
+%[RootPath,RootFile,i1_str,i2_str,j1_str,j2_str,ext_input,nom_type_input,SubDir]=name2display(fileinput);
+[RootPath,SubDir,RootFile,i1,i2,j1,j2,ext_input,nom_type_input]=fileparts_uvmat(fileinput);
 RootName=fullfile(RootPath,RootFile);
 set(handles.RootName,'String',RootName)
 set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
-i1=str2double(i1_str);
-i2=str2double(i2_str);
-j1=str2double(j1_str);
-j2=str2double(j2_str);
+% i1=str2double(i1_str);
+% i2=str2double(i2_str);
+% j1=str2double(j1_str);
+% j2=str2double(j2_str);
 num_ref_i=i1;%efaulmt ref index
 num_ref_j=j1;
 browse=get(handles.RootName,'UserData');
@@ -349,8 +352,12 @@ browse.incr_pair=[0 0];%default
 if ~isempty(ext_input)&&(~isempty(imformats(ext_input(2:end)))||strcmpi(ext_input,'.avi'))% if the extension corresponds to an image or movie format recognized by Matlab
     ext_ima=ext_input;
     nom_type_ima=nom_type_input;
+    imagename=fileinput;
 else %case of netcdf input file, look for corresponding images
     nom_type_nc=nom_type_input;
+    imagename=name_generator(fullfile(RootPath,RootFile),1,1,ext_ima,nom_type_ima);
+    i1_str='';
+    j1_str='';
     if ~isnan(i2)
         num_ref_i=floor((num_ref_i+i2)/2);% reference image number corresponding to the file
         browse.incr_pair(1)=i2-i1;
@@ -358,6 +365,24 @@ else %case of netcdf input file, look for corresponding images
     end
     %TODO: read the image name in the netcdf file (if documented)
     %look for double image series '_i_j'
+    check_letter=regexp(nom_type_nc,'[ab|AB]$');%detect pair label by letter
+    if ~isempty(check_letter)
+        j1_str=nom_type_nc(end-1);
+        r=regexp(nom_type_nc,'_(?<num1>\d+)','names');
+        if ~isempty(r)
+            i1_str=r.num1;
+        end
+    else
+        NomTypeIma=regexprep(nom_type_nc,'-\d','');%
+        r_end=regexp(NomTypeIma,'.\D(?<num2>\d+$','names');
+        if ~isempty(r_end)
+            j1_str=r.num2
+        end
+    end
+    r=regexp(NomTypeIma,'_(?<num1>\d+)','names');
+    if ~isempty(r)
+        i1_str=r.num1;
+    end  
     dirima=dir([RootName '_' i1_str '_' j1_str '.*']);
     if isempty(dirima)
         % look for images series  with sub marker '_'
@@ -373,25 +398,26 @@ else %case of netcdf input file, look for corresponding images
         end
     end
     for ilist=1:numel(dirima)
-        [pp,ff,i1_str,i2_str,j1_str,j2_str,ext_list,nom_type_list]=name2display(dirima(ilist).name);
+        %[pp,ff,i1_str,i2_str,j1_str,j2_str,ext_list,nom_type_list]=name2display(dirima(ilist).name);
+        [~,~,~,i1,i2,j1,j2,ext_list,nom_type_list]=fileparts_uvmat(dirima(ilist).name);
         form=imformats(ext_list(2:end));
         if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
             ext_ima=ext_list;
             nom_type_ima=nom_type_list;
-            i1=str2double(i1_str);
-            j1=str2double(j1_str);
-            i2=str2double(i2_str);
-            j2=str2double(j2_str);          
+%             i1=str2double(i1_str);
+%             j1=str2double(j1_str);
+%             i2=str2double(i2_str);
+%             j2=str2double(j2_str);          
             % set the range of fields (1:1 by default) and selected pair
-            if isequal(i2,i1)||isnan(i2)
+            if isempty(i2)
                 num_ref_i=i1;
             else
                 num_ref_i=floor((i1+i2)/2);
                 browse.incr_pair(1)=i2-i1;
                 browse.incr_pair(2)=0;
             end
-            if isequal(j1,j2)||isnan(j2)
-                if isnan(j1)
+            if isempty(j2)
+                if isempty(j1)
                     num_ref_j=1;
                 else
                     num_ref_j=j1;
@@ -404,6 +430,9 @@ else %case of netcdf input file, look for corresponding images
         end
     end
 end
+[RootPath,RootFile,i1_series,~,j1_series,~,NomType,FileType,Object]=find_file_series(imagename);
+MaxIndex_i=max(i1_series(i1_series>0));
+MaxIndex_j=max(j1_series(j1_series>0));
 
 %% look for an image documentation file
 ext_imadoc='';%default
@@ -419,99 +448,108 @@ elseif exist([RootName '.AVI'],'file')
     ext_imadoc='.AVI';
 end
 set(handles.ImaDoc,'String',ext_imadoc)% display the extension name for the image documentation file used
-set(handles.ImaDoc,'BackgroundColor',[1 1 0])
-drawnow
-%%%%%%%%   read image documentation file  %%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%  read the time in the image documentation file  
 mode=''; %default
 time=[];
-TimeUnit='frame'; %default
-CoordUnit='px';%default
+TimeUnit=''; %default
+CoordUnit='';%default
 pxcmx_search=[];%default
 pxcmy_search=[];%default
-if isequal(ext_imadoc,'.civxml')%TO ABANDON
-    [nbfield,nbfield2,time]=read_civxml([RootName '.civxml']);
-    mode='pair j1-j2';
-    if isempty(nom_type_ima)% dtermine types by default if not already selected by browser or uvmat
-        nom_type_ima='_i_j';
-    end
-elseif isequal(ext_imadoc,'.xml')
-    [XmlData,warntext]=imadoc2struct([RootName '.xml']);
-    ext_ima_read=[];
-    nom_type_read=[];
-    if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
-        [PP,FF,fc,str2,str_a,str_b,ext_ima_read,nom_type_read]=name2display(XmlData.Heading.ImageName);
-        fullname=fullfile(fileparts(RootName),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file,
-        if ~exist(fullname,'file')
-            msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
-        end
-    end
-    if isfield(XmlData,'Time')
-        time=XmlData.Time;
-        nbfield=size(time,1);
-        nbfield2=size(time,2);
-        %transform .Time to a column vector if it is a line vector thenomenclature uses a single index: correct possible bug in xml
-        if isequal(nbfield,1) && ~isequal(nbfield2,1)% .Time is a line vector
-            if numel(nom_type_read)>=2 && isempty(regexp(nom_type_read(2:end),'\D','once'))
-                time=time';
-                nbfield=nbfield2;
-                nbfield2=1;
+if ~isempty(ext_imadoc)
+    set(handles.ImaDoc,'BackgroundColor',[1 1 0]) % set edit box to yellow cloro to indicate that the file reading is beginning
+    drawnow
+    switch ext_imadoc
+        case '.civxml'%OBSOLETE
+            [~,~,time]=read_civxml([RootName '.civxml']);
+            mode='pair j1-j2';
+            if isempty(nom_type_ima)% dtermine types by default if not already selected by browser or uvmat
+                nom_type_ima='_i_j';
             end
-        end
+        case '.xml'
+            [XmlData,warntext]=imadoc2struct([RootName '.xml']);
+            ext_ima_read=[];
+            nom_type_read=[];
+            if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
+                %[PP,FF,fc,str2,str_a,str_b,ext_ima_read,nom_type_read]=name2display(XmlData.Heading.ImageName);
+                [~,~,~,~,~,~,~,~,nom_type_read]=fileparts_uvmat(XmlData.Heading.ImageName);
+                fullname=fullfile(fileparts(RootName),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file,
+                if ~exist(fullname,'file')
+                    msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
+                end
+            end
+            if isfield(XmlData,'Time')
+                time=XmlData.Time;
+                %transform .Time to a column vector if it is a line vector thenomenclature uses a single index: correct possible bug in xml
+                if isequal(MaxIndex_i,1) && ~isequal(MaxIndex_j,1)% .Time is a line vector
+                    if numel(nom_type_read)>=2 && isempty(regexp(nom_type_read(2:end),'\D','once'))
+                        time=time';
+                        MaxIndex_i=MaxIndex_j;
+                        MaxIndex_j=1;
+                    end
+                end
+            end
+            if isfield(XmlData,'TimeUnit')
+                TimeUnit=XmlData.TimeUnit;
+            end
+            pxcmx_search=1;
+            pxcmy_search=1;
+            if isfield(XmlData,'GeometryCalib')
+                tsai=XmlData.GeometryCalib;
+                if isfield(tsai,'f') && isfield(tsai,'Tz') && isfield(tsai,'dpx') && isfield(tsai,'dpy')&& isfield(tsai,'R')
+                    rot2D=tsai.R(1:2,[1,2]);
+                    pxcmx_search=tsai.f * sqrt(det(rot2D))/(tsai.Tz*tsai.dpx);
+                    pxcmy_search=tsai.f * sqrt(det(rot2D))/(tsai.Tz*tsai.dpy);
+                end
+                if isfield(tsai,'CoordUnit')
+                    CoordUnit=tsai.CoordUnit;
+                end
+            end
+        case '.civ'% OBSOLETE: case of .civ image documentation file
+            [error,time,TimeUnit,mode,npx,npy]=read_imatext([RootName '.civ']);
+            if error==2, msgbox_uvmat('WARNING',['no file ' RootName '.civ']);
+            elseif error==1, msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
+            end
+            nom_type_ima='001a';
+        case {'.avi','.AVI'}
+            nom_type_ima='*';
+            ext_ima=ext_imadoc;
+            set(handles.ListPairMode,'Value',1);
+            set(handles.ListPairMode,'String',{'series(Di)'})
+            dt=0.04;%default
+            if exist([RootName ext_imadoc],'file')==2
+                info=aviinfo([RootName ext_imadoc]);%read infos on the avi movie
+                dt=1/info.FramesPerSecond;%time interval between successive frames
+                MaxIndex_i=info.NumFrames;%number of frames
+            end
+            time=(dt*(0:MaxIndex_i-1))';%list of image times
+            TimeUnit='s';
     end
-    if isfield(XmlData,'TimeUnit')
-        TimeUnit=XmlData.TimeUnit;
-    end
-    pxcmx_search=1;
-    pxcmy_search=1;
-    if isfield(XmlData,'GeometryCalib')
-        tsai=XmlData.GeometryCalib;
-        if isfield(tsai,'f') && isfield(tsai,'Tz') && isfield(tsai,'dpx') && isfield(tsai,'dpy')&& isfield(tsai,'R')
-            rot2D=tsai.R(1:2,[1,2]);
-            pxcmx_search=tsai.f * sqrt(det(rot2D))/(tsai.Tz*tsai.dpx);
-            pxcmy_search=tsai.f * sqrt(det(rot2D))/(tsai.Tz*tsai.dpy);
-        end
-        if isfield(tsai,'CoordUnit')
-            CoordUnit=tsai.CoordUnit;
-        end
-    end
-elseif strcmp(ext_imadoc,'.civ')% case of .civ image documentation file
-    [error,time,TimeUnit,mode,npx,npy]=read_imatext([RootName '.civ']);
-    if error==2, msgbox_uvmat('WARNING',['no file ' RootName '.civ']);
-    elseif error==1, msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
-    end
-    nom_type_ima='001a';
-elseif strcmpi(ext_imadoc,'.avi')
-    nom_type_ima='*';
-    ext_ima=ext_imadoc;
-    set(handles.ListPairMode,'Value',1);
-    set(handles.ListPairMode,'String',{'series(Di)'})
-    dt=0.04;%default
-    if exist([RootName ext_imadoc],'file')==2
-        info=aviinfo([RootName ext_imadoc]);%read infos on the avi movie
-        dt=1/info.FramesPerSecond;%time interval between successive frames
-        nbfield=info.NumFrames;%number of frames
-    end
-    time=(dt*(0:nbfield-1))';%list of image times
+    set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box back to whiter
 end
-if isempty(time)
-    set(handles.ImaDoc,'String',''); %xml file not used for timing
-end
-set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box to yellow color
-
 
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
-if ~isempty(time)
-    if size(time,1)+size(time,2)>=3 % if there are at least two time values to define dt
-        nbfield=size(time,1);
-        nbfield2=size(time,2);
-        set(handles.ImaDoc,'UserData',time); %store the set of times
-        set(handles.dt_unit,'String',['dt in m' TimeUnit]);
-        set(handles.TimeUnit,'String',TimeUnit);
-        set(handles.nb_field,'String',num2str(nbfield));
-        set(handles.nb_field2,'String',num2str(nbfield2));
-    end
+if numel(time)>=2 % if there are at least two time values to define dt
+    MaxIndex_i=min(size(time,1),MaxIndex_i);
+    MaxIndex_j=min(size(time,2),MaxIndex_j);
+    time=[zeros(size(time,1),1) time]; %insert a vertical line of zeros (to deal with zero file indices)
+    time=[zeros(1,size(time,2)); time]; %insert a horizontal line of zeros
+    set(handles.ImaDoc,'UserData',time); %store the matrix of times
+    set(handles.dt_unit,'String',['dt in m' TimeUnit]);
+    set(handles.TimeUnit,'String',TimeUnit);
+else
+    set(handles.ImaDoc,'String',''); %xml file not used for timing
+    time=(i1_series(:,1)+0:size(i1_series,1)-1);% time=index i
+    time=time'*ones(1,size(i1_series,2),1); %makes a time matrix with the same time for all j indices
+    TimeUnit='frame';
 end
+set(handles.ImaDoc,'UserData',time); %store the matrix of times
+set(handles.dt_unit,'String',['dt in m' TimeUnit]);%display dt in unit 10-3 of the time (e.g ms)
+set(handles.TimeUnit,'String',TimeUnit);
+set(handles.nb_field,'String',num2str(MaxIndex_i));
+set(handles.nb_field2,'String',num2str(MaxIndex_j));
 set(handles.CoordUnit,'String',CoordUnit)
 set(handles.SearchRange,'UserData',[pxcmx_search pxcmy_search]);
 set(handles.ImaExt,'String',ext_ima)
@@ -544,21 +582,26 @@ end
 for index = ind_opening+1
     set(handles.(ListOptions{index}),'value',1)
 end
-update_CivOptions(handles)
+update_CivOptions(handles,1)
 
 
 %%  set the menus of image pairs and default selection for civ   %%%%%%%%%%%%%%%%%%%
-test_ima_i=numel(nom_type_ima)>1 && isempty(regexp(nom_type_ima(2:end),'\D','once'));%images with single indexing
-if test_ima_i || isequal(nom_type_nc,'_1-2')||~(exist('nbfield2','var')&&(nbfield2~=1))
+check_letter=~isempty(regexp(nom_type_ima,'[a|A]$'));
+check_separator=~isempty(regexp(nom_type_ima,'_'));
+% test_ima_i=numel(nom_type_ima)>1 && isempty(regexp(nom_type_ima(2:end),'\D','once'))%=1 for images with single indexing
+% TODO: determine MaxIndex_i and MaxIndex_j using find_file_series (in the absence of xml file)
+if (~check_letter&&~check_separator)|| isequal(nom_type_nc,'_1-2')|| (exist('MaxIndex_j','var')&&(MaxIndex_j==1))
     set(handles.ListPairMode,'Value',1)
     set(handles.ListPairMode,'String',{'series(Di)'})   
-elseif (nbfield==1)% simple series in j
-    set(handles.ListPairMode,'Value',1)
-    set(handles.ListPairMode,'String',{'series(Dj)'})
+elseif  MaxIndex_i==1 && MaxIndex_j% simple series in j
+    set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)'})
+    if  MaxIndex_j <= 10
+        set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
+    end
 else
     set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)';'series(Di)'})%multiple choice
-    if nbfield2 <= 10
-        set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' for small burst
+    if  MaxIndex_j <= 10
+        set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
     end
 end
 
@@ -576,7 +619,7 @@ for ilist=1:length(listot)
         end
     end
 end
-Value=find(strcmp(subdir,listdir));%search the index of subdir in the cell listdir
+Value=find(strcmp(SubDir,listdir));%search the index of subdir in the cell listdir
 if isempty(Value)% if the input subdir is not found
     ValueCiv1=get(handles.ListSubdirCiv1,'Value');%read the currrently selected dir name
     if ValueCiv1>numel(listdir)
@@ -609,6 +652,8 @@ set(handles.RootName,'UserData',browse)% store the nomenclature type
 
 %% list the possible index pairs, depending on the option set in ListPairMode
 ListPairMode_Callback([], [], handles)
+'TESTin'
+browse=get(handles.RootName,'UserData')
 
 %% store the root input filename for future opening
 profil_perso=fullfile(prefdir,'uvmat_perso.mat');
@@ -631,9 +676,9 @@ set(handles.RootName,'BackgroundColor',[1 1 1])
 % --- Executes on carriage return on the subdir checkciv1 edit window
 function txt_SubdirCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-subdir=get(handles.txt_SubdirCiv1,'String');
+SubDir=get(handles.txt_SubdirCiv1,'String');
 menu_str=get(handles.ListSubdirCiv1,'String');% read the list of subdirectories for update
-ichoice=find(strcmp(subdir,menu_str),1);
+ichoice=find(strcmp(SubDir,menu_str),1);
 if isempty(ichoice)
     ilist=numel(menu_str); %select 'new...' in the menu
 else
@@ -641,19 +686,19 @@ else
 end
 set(handles.ListSubdirCiv1,'Value',ilist)% select the selected subdir in the menu
 if get(handles.CheckCiv1,'Value')% if Civ1 is performed
-    set(handles.txt_SubdirCiv2,'String',subdir);% set by default civ2 directory the same as civ1 
+    set(handles.txt_SubdirCiv2,'String',SubDir);% set by default civ2 directory the same as civ1 
     set(handles.ListSubdirCiv2,'Value',ilist)
 else % if Civ1 data already exist
     find_netcpair_civ1(handles); %update the list of available pairs from netcdf files in the new directory
 end
 
 %------------------------------------------------------------------------
-% --- Executes on carriage return on the subdir checkciv1 edit window
+% --- Executes on carriage return on the SubDir checkciv1 edit window
 function txt_SubdirCiv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-subdir=get(handles.txt_SubdirCiv1,'String');
+SubDir=get(handles.txt_SubdirCiv1,'String');
 menu_str=get(handles.ListSubdirCiv2,'String');% read the list of subdirectories for update
-ichoice=find(strcmp(subdir,menu_str),1);
+ichoice=find(strcmp(SubDir,menu_str),1);
 if isempty(ichoice)
     ilist=numel(menu_str); %select 'new...' in the menu
 else
@@ -669,41 +714,41 @@ end
 % --- Executes on button press in CheckCiv1.
 function CheckCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-update_CivOptions(handles)
+update_CivOptions(handles,0)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckFix1.
 function CheckFix1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-update_CivOptions(handles)
+update_CivOptions(handles,0)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckPatch1.
 function CheckPatch1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-update_CivOptions(handles)
+update_CivOptions(handles,0)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckCiv2.
 function CheckCiv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-update_CivOptions(handles)
+update_CivOptions(handles,0)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckFix2.
 function CheckFix2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-update_CivOptions(handles)
+update_CivOptions(handles,0)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckPatch2.
 function CheckPatch2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-update_CivOptions(handles)
+update_CivOptions(handles,0)
 
 %------------------------------------------------------------------------
 % --- activated by any checkbox controling the selection of Civ1,Fix1,Patch1,Civ2,Fix2,Patch2
-function update_CivOptions(handles)
+function update_CivOptions(handles,opening)
 %------------------------------------------------------------------------
 checkbox=zeros(1,6);
 checkbox(1)=get(handles.CheckCiv1,'Value');
@@ -717,20 +762,24 @@ if ~isempty(ind_selected)
   RootName=get(handles.RootName,'String');
     if isempty(RootName)
          msgbox_uvmat('ERROR','Please open an image or PIV .nc file with the upper bar menu Open/Browse...')
-        return
+        returnopening
     end
 end
 set(handles.PairIndices,'Visible','on')
 set(handles.txt_SubdirCiv1,'Visible','on')
 set(handles.ListSubdirCiv1,'Visible','on')
+if ~opening
 find_netcpair_civ1(handles) % select the available netcdf files
+end
 if max(checkbox(4:6))% case of civ2 pair choice needed
     set(handles.TitlePairCiv2,'Visible','on')
     set(handles.TitleSubdirCiv2,'Visible','on')
     set(handles.txt_SubdirCiv2,'Visible','on')
     set(handles.ListSubdirCiv2,'Visible','on')
     set(handles.ListPairCiv2,'Visible','on')
+    if ~opening
     find_netcpair_civ2(handles) % select the available netcdf files
+    end
 else
     set(handles.TitleSubdirCiv2,'Visible','off')
     set(handles.txt_SubdirCiv2,'Visible','off')
@@ -828,12 +877,13 @@ else
     civ_files=filecell.nc.civ1;
 end
 [root,filename,ext]=fileparts(civ_files{1});
-[rootroot,subdir,extdir]=fileparts(root);
+[rootroot,SubDir,extdir]=fileparts(root);
 hfig=findobj(allchild(0),'name','civ_status');
 if isempty(hfig)
     hfig=figure('DeleteFcn',@stop_status);
     set(hfig,'name','civ_status')
-    hlist=uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', @open_view_field,'tag','list');
+    %hlist=uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', @open_view_field,'tag','list');
+     uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', {'open_uvmat'},'tag','list');
     uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','msgbox','Max',2,'String','checking files...');
     uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
     uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','OK','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@close_GUI);
@@ -894,7 +944,7 @@ while count<nbfiles
             count=count+1;
         end
         [rr,filename,ext]=fileparts(civ_files{ifile});
-        Tabchar{ifile,1}=[fullfile([subdir extdir],filename) ext  '...' option_str];
+        Tabchar{ifile,1}=[fullfile([SubDir extdir],filename) ext  '...' option_str];
     end
     datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
     if isempty(datnum) 
@@ -1102,6 +1152,8 @@ nbslice=numel(j1_civ1);
 
 %% MAIN LOOP
 time=get(handles.ImaDoc,'UserData'); %get the set of times
+TimeUnit=get(handles.TimeUnit,'String');
+checkframe=strcmp(TimeUnit,'frame');
 batch_file_list=[];%should be renamed file_list, can be used for xml or bash files
  
 for ifile=1:nbfield
@@ -1135,13 +1187,12 @@ for ifile=1:nbfield
             % read image-dependent parameters
             Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};
             Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
-            if size(time,1)>=i2_civ1(ifile) && size(time,2)>=j2_civ1(j)
-                Param.Civ1.Dt=(time(i2_civ1(ifile),j2_civ1(j))-time(i1_civ1(ifile),j1_civ1(j)));
-                Param.Civ1.Time=((time(i2_civ1(ifile),j2_civ1(j))+time(i1_civ1(ifile),j1_civ1(j)))/2);
+            if ~checkframe% && size(time,1)>=i2_civ1(ifile) && size(time,2)>=j2_civ1(j)
+                Param.Civ1.Dt=(time(i2_civ1(ifile)+1,j2_civ1(j)+1)-time(i1_civ1(ifile)+1,j1_civ1(j)+1));
             else
                 Param.Civ1.Dt=1;
-                Param.Civ1.Time=0;
             end
+            Param.Civ1.Time=((time(i2_civ1(ifile)+1,j2_civ1(j)+1)+time(i1_civ1(ifile)+1,j1_civ1(j)+1))/2);
             Param.Civ1.term_a=num2stra(j1_civ1(j),nom_type_nc);%UTILITE?
             Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%    
             ImageInfo=imfinfo(filecell.ima1.civ1{1,1});%read the first image to get the size
@@ -1273,13 +1324,12 @@ for ifile=1:nbfield
         if Param.CheckCiv2==1
             Param.Civ2.ImageA=filecell.ima1.civ2{ifile,j};
             Param.Civ2.ImageB=filecell.ima2.civ2{ifile,j};
-            if size(time,1)>=i2_civ2(ifile) && size(time,2)>=j2_civ2(j)
-                Param.Civ2.Dt=num2str(time(i2_civ2(ifile),j2_civ2(j))-time(i1_civ2(ifile),j1_civ2(j)));
-                Param.Civ2.Time=num2str((time(i2_civ2(ifile),j2_civ2(j))+time(i1_civ2(ifile),j1_civ2(j)))/2);
+            if ~checkframe %&& size(time,1)>=i2_civ2(ifile) && size(time,2)>=j2_civ2(j)
+                Param.Civ2.Dt=num2str(time(i2_civ2(ifile)+1,j2_civ2(j)+1)-time(i1_civ2(ifile)+1,j1_civ2(j)+1));
             else
                 Param.Civ2.Dt=1;
-                Param.Civ2.Time=0;
             end
+            Param.Civ2.Time=num2str((time(i2_civ2(ifile)+1,j2_civ2(j)+1)+time(i1_civ2(ifile)+1,j1_civ2(j)+1))/2);
             Param.Civ2.term_a=num2stra(j1_civ2(j),nom_type_nc);
             Param.Civ2.term_b=num2stra(j2_civ2(j),nom_type_nc);
             Param.Civ2.filename_nc1=filecell.nc.civ1{ifile,j};
@@ -1619,8 +1669,9 @@ if isfield(filecell,'nc')
         fileresu=filecell.nc.civ1{1,1};
     end
 end
-[RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fileresu);
-namedoc=fullfile(RootPath,subdir,RootFile);
+%[RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,SubDir]=name2display(fileresu);
+[RootPath,SubDir,RootFile]=fileparts_uvmat(fileresu);
+namedoc=fullfile(RootPath,SubDir,RootFile);
 detect=1;
 while detect==1
     namefigfull=[namedoc '.fig'];
@@ -2566,7 +2617,8 @@ if test==2 || test==3 % case 'displacement' or 'stereo PIV'
         return
      end
 %     set(handles.RootName_1,'String',name);
-    [RootPath,RootFile,field_count,str2,str_a,str_b,xx,nom_type,subdir]=name2display(name);
+    %[RootPath,RootFile,field_count,str2,str_a,str_b,xx,nom_type,SubDir]=name2display(name);
+    [~,~,RootFile,~,~,~,~,~,nom_type]=fileparts_uvmat(name);
     set(handles.RootName_1,'String',RootFile);
     browse=get(handles.RootName,'UserData');
     browse.nom_type_ima_1=nom_type;
@@ -2639,14 +2691,17 @@ displ_num=[];%default
 ref_i=str2double(get(handles.ref_i,'String'));
 % last_i=str2num(get(handles.last_i,'String'));
 time=get(handles.ImaDoc,'UserData'); %get the set of times
+TimeUnit=get(handles.TimeUnit,'String');
+checkframe=strcmp(TimeUnit,'frame');
 siztime=size(time);
-nbfield=siztime(1);
-nbfield2=siztime(2);
+nbfield=siztime(1)-1;
+nbfield2=siztime(2)-1;
 indchosen=1;  %%first pair selected by default
 %displ_num used to define the indices of the civ pairs
 % in mode 'pair j1-j2', j1 and j2 are the file indices, else the indices
 % are relative to the reference indices ref_i and ref_j respectively.
 if isequal(mode,'pair j1-j2')%| isequal(mode,'st_pair j1-j2')
+
     dt=1;
     displ='';
     index=0;
@@ -2660,8 +2715,8 @@ if isequal(mode,'pair j1-j2')%| isequal(mode,'st_pair j1-j2')
             index=index+1;
             numlist_a(index)=numod_a;
             numlist_b(index)=numod_b;
-            if ~isempty(time)
-                dt(numod_a,numod_b)=time(ref_i,numod_b)-time(ref_i,numod_a);%first time interval dt
+            if size(time,2)>1 && ~checkframe
+                dt(numod_a,numod_b)=time(ref_i+1,numod_b+1)-time(ref_i+1,numod_a+1);%first time interval dt
                 displ_dt(index)=dt(numod_a,numod_b);
             else
                 displ_dt(index)=1;
@@ -2698,21 +2753,21 @@ elseif isequal(mode,'series(Dj)') %| isequal(mode,'st_series(Dj)')
     set(handles.incr_j,'Visible','On')
     set(handles.nb_field2,'Visible','On')
     set(handles.ref_j,'Visible','On')
-    if nbfield > 1
-        set(handles.itext,'Visible','On')
-        set(handles.first_i,'Visible','On')
-        set(handles.last_i,'Visible','On')
-        set(handles.incr_i,'Visible','On')
-        set(handles.nb_field,'Visible','On')
-        set(handles.ref_i,'Visible','On')
-    else
-        set(handles.itext,'Visible','Off')
-        set(handles.first_i,'Visible','Off')
-        set(handles.last_i,'Visible','Off')
-        set(handles.incr_i,'Visible','Off')
-        set(handles.nb_field,'Visible','Off')
-        set(handles.ref_i,'Visible','Off')
-    end
+%     if nbfield > 1
+%         set(handles.itext,'Visible','On')
+%         set(handles.first_i,'Visible','On')
+%         set(handles.last_i,'Visible','On')
+%         set(handles.incr_i,'Visible','On')
+%         set(handles.nb_field,'Visible','On')
+%         set(handles.ref_i,'Visible','On')
+%     else
+%         set(handles.itext,'Visible','Off')
+%         set(handles.first_i,'Visible','Off')
+%         set(handles.last_i,'Visible','Off')
+%         set(handles.incr_i,'Visible','Off')
+%         set(handles.nb_field,'Visible','Off')
+%         set(handles.ref_i,'Visible','Off')
+%     end
 elseif isequal(mode,'series(Di)') %| isequal(mode,'st_series(Di)')
     index=1:200;
     displ_num(1:2,index)=zeros(2,200);
@@ -2784,6 +2839,8 @@ end
 set(handles.ListPairCiv1,'UserData',displ_num);
 find_netcpair_civ1( handles)
 find_netcpair_civ2(handles)
+'TESTin'
+browse=get(handles.RootName,'UserData')
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListPairCiv1.
@@ -2946,10 +3003,12 @@ else
     ref_j=str2double(get(handles.ref_j,'String'));
 end
 time=get(handles.ImaDoc,'UserData');%get the set of times
-if isempty(time)
-    time=[0 1];
-end
-dt_unit=1000;%default
+% if isempty(time)
+%     time=[0 1];
+% end
+TimeUnit=get(handles.TimeUnit,'String');
+checkframe=strcmp(TimeUnit,'frame');
+
 displ_num=get(handles.ListPairCiv1,'UserData');
 
 %eliminate the first pairs inconsistent with the position
@@ -3021,10 +3080,12 @@ if isequal(mode,'series(Di)')
         for ipair=1:nbpair
             if select(ipair)
                 displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2))];
-                if size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)
-                    dt=time(ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair));%time interval dt
-                    displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
+                if ~checkframe && size(time,1)>=ref_i+1+displ_num(4,ipair) && size(time,2)>=ref_j+1+displ_num(2,ipair)&&displ_num(2,ipair)>=1 &&displ_num(1,ipair)>=1
+                    dt=time(ref_i+1+displ_num(4,ipair),ref_j+1+displ_num(2,ipair))-time(ref_i+1+displ_num(3,ipair),ref_j+1+displ_num(1,ipair));%time interval dt
+                else
+                    dt=1;
                 end
+                 displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
             else
                 displ_pair{ipair}='...'; %pair not displayed in the menu
             end
@@ -3037,8 +3098,8 @@ elseif isequal(mode,'series(Dj)')
         for ipair=1:nbpair
             if select(ipair)
                 displ_pair{ipair}=['Dj= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2))];
-                if size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)
-                    dt=time(ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair));%time interval dt
+                if ~checkframe && size(time,1)>=ref_i+1+displ_num(4,ipair) && size(time,2)>=ref_j+1+displ_num(2,ipair)
+                    dt=time(ref_i+1+displ_num(4,ipair),ref_j+1+displ_num(2,ipair))-time(ref_i+1+displ_num(3,ipair),ref_j+1+displ_num(1,ipair));%time interval dt
                     displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
                 end
             else
@@ -3049,7 +3110,11 @@ elseif isequal(mode,'series(Dj)')
 elseif isequal(mode,'pair j1-j2')%case of pairs
     for ipair=1:nbpair
         if select(ipair)
-            dt=time(ref_i+displ_num(4,ipair),displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),displ_num(1,ipair));%time interval dt
+            if ~checkframe && size(time,2)>1 
+            dt=time(ref_i+1+displ_num(4,ipair),displ_num(2,ipair)+1)-time(ref_i+1+displ_num(3,ipair),displ_num(1,ipair)+1);%time interval dt
+            else % time set by default to i index
+                dt=1;
+            end
             displ_pair{ipair}=['j= ' num2stra(displ_num(1,ipair),nom_type_ima) '-' num2stra(displ_num(2,ipair),nom_type_ima) ...
                 ' :dt= ' num2str(dt*1000)];
         else
@@ -3139,9 +3204,11 @@ else
     ref_j=str2double(get(handles.ref_j,'String'));
 end
 time=get(handles.ImaDoc,'UserData'); %get the set of times
-if isempty(time)
-    time=[0 1];%default
-end
+TimeUnit=get(handles.TimeUnit,'String');
+checkframe=strcmp(TimeUnit,'frame');
+% if isempty(time)
+%     time=[0 1];%default
+% end
 displ_num=get(handles.ListPairCiv1,'UserData');
 
 %eliminate the first pairs inconsistent with the position
@@ -3197,8 +3264,8 @@ if isequal(mode,'series(Di)')
     for ipair=1:nbpair
         if select(ipair)
             displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
-            if size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)
-                dt=time(ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair));%time interval dt
+            if  ~checkframe && size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)
+                dt=time(ref_i+displ_num(4,ipair)+1,ref_j+displ_num(2,ipair)+1)-time(ref_i+displ_num(3,ipair)+1,ref_j+displ_num(1,ipair)+1);%time interval dt
                 displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
             end
         else
@@ -3209,10 +3276,12 @@ elseif isequal(mode,'series(Dj)') %| isequal(mode,'st_series(Dj)') % series on t
     for ipair=1:nbpair
         if select(ipair)
             displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
-            if size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)
-                dt=time(ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair));%time interval dt
-                displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
+            if ~checkframe && size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)&& displ_num(1,ipair)>=1 && displ_num(2,ipair)>=1
+                dt=time(ref_i+displ_num(4,ipair)+1,ref_j+displ_num(2,ipair)+1)-time(ref_i+displ_num(3,ipair)+1,ref_j+displ_num(1,ipair)+1);%time interval dt
+            else
+                dt=1;
             end
+                displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
         else
             displ_pair{ipair}='...'; %pair not displayed in the menu
         end
@@ -3220,9 +3289,14 @@ elseif isequal(mode,'series(Dj)') %| isequal(mode,'st_series(Dj)') % series on t
 elseif isequal(mode,'pair j1-j2')% | isequal(mode,'st_pair j1-j2') %case of pairs
     for ipair=1:nbpair
         if select(ipair)
-            dt=time(ref_i+displ_num(4,ipair),displ_num(2,ipair))-time(ref_i+displ_num(3,ipair),displ_num(1,ipair));%time interval dt
-            displ_pair{ipair}=['j= ' num2stra(displ_num(1,ipair),nom_type_ima) '-' num2stra(displ_num(2,ipair),nom_type_ima) ...
+            if  ~checkframe && size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair) && displ_num(1,ipair)>=1 && displ_num(2,ipair)>=1
+            dt=time(ref_i+displ_num(4,ipair)+1,displ_num(2,ipair)+1)-time(ref_i+displ_num(3,ipair)+1,displ_num(1,ipair)+1);%time interval dt
+            else
+                dt=1;
+            end
+            displ_pair{ipair}=['j= ' num2stra(displ_num(1,ipair)+1,nom_type_ima) '-' num2stra(displ_num(2,ipair)+1,nom_type_ima) ...
                 ' :dt= ' num2str(dt*1000)];
+                
         else
             displ_pair{ipair}='...'; %pair not displayed in the menu
         end
@@ -3622,16 +3696,16 @@ function ListSubdirCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 list_subdir_civ1=get(handles.ListSubdirCiv1,'String');
 val=get(handles.ListSubdirCiv1,'Value');
-subdir=list_subdir_civ1{val};
-if strcmp(subdir,'new...')
+SubDir=list_subdir_civ1{val};
+if strcmp(SubDir,'new...')
     if get(handles.CheckCiv1,'Value')
-        subdir='CIV'; %default subdirectory
+        SubDir='CIV'; %default subdirectory
     else
         msgbox_uvmat('ERROR','select CheckCiv1 to perform a new Civ operation')
         return
     end    
 end
-set(handles.txt_SubdirCiv1,'String',subdir);
+set(handles.txt_SubdirCiv1,'String',SubDir);
 find_netcpair_civ1(handles) 
 
 %------------------------------------------------------------------------
@@ -3640,16 +3714,16 @@ function ListSubdirCiv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 list_subdir_civ2=get(handles.ListSubdirCiv2,'String');
 val=get(handles.ListSubdirCiv2,'Value');
-subdir=list_subdir_civ2{val};
-if strcmp(subdir,'new...')
+SubDir=list_subdir_civ2{val};
+if strcmp(SubDir,'new...')
     if get(handles.CheckCiv2,'Value')
-        subdir='CIV'; %default subdirectory
+        SubDir='CIV'; %default subdirectory
     else
         msgbox_uvmat('ERROR','select CheckCiv2 to perform a new Civ operation')
         return
     end
 end
-set(handles.txt_SubdirCiv2,'String',subdir);
+set(handles.txt_SubdirCiv2,'String',SubDir);
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckGrid.
@@ -3859,12 +3933,13 @@ filebase=get(handles.RootName,'String');
 fileinput=[PathName FileName];
 sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
-[Path,File,field_count,str2,str_a,str_b,ref.ext,ref.nom_type,ref.subdir]=name2display(fileinput);
+%[Path,File,field_count,str2,str_a,str_b,ref.ext,ref.nom_type,ref.subdir]=name2display(fileinput);
+[Path,ref.subdir,File,ref.num1,ref.num2,ref.num_a,ref.num_b,ref.ext,ref.nom_type]=fileparts_uvmat(fileinput);
 ref.filebase=fullfile(Path,File);
-ref.num_a=stra2num(str_a);
-ref.num_b=stra2num(str_b);
-ref.num1=str2double(field_count);
-ref.num2=str2double(str2);
+% ref.num_a=stra2num(str_a);
+% ref.num_b=stra2num(str_b);
+% ref.num1=str2double(field_count);
+% ref.num2=str2double(str2);
 browse=[];%initialisation
 if ~isequal(ref.ext,'.nc')
     msgbox_uvmat('ERROR','the reference file must be in netcdf format (*.nc)')
@@ -3903,12 +3978,13 @@ if isequal(get(handles.get_ref_fix2,'Value'),1)
     fileinput=[PathName FileName];
     sizf=size(fileinput);
     if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
-    [Path,File,field_count,str2,str_a,str_b,ref.ext,ref.nom_type,ref.subdir]=name2display(fileinput);
+    %[Path,File,field_count,str2,str_a,str_b,ref.ext,ref.nom_type,ref.subdir]=name2display(fileinput);
+    [Path,ref.subdir,File,ref.num1,ref.num2,ref.num_a,ref.num_b,ref.ext,ref.nom_type]=fileparts_uvmat(fileinput);
     ref.filebase=fullfile(Path,File);
-    ref.num_a=stra2num(str_a);
-    ref.num_b=stra2num(str_b);
-    ref.num1=str2num(field_count);
-    ref.num2=str2num(str2);
+%     ref.num_a=stra2num(str_a);
+%     ref.num_b=stra2num(str_b);
+%     ref.num1=str2num(field_count);
+%     ref.num2=str2num(str2);
     browse=[];%initialisation
     if ~isequal(ref.ext,'.nc')
         msgbox_uvmat('ERROR','the reference file must be in netcdf format (*.nc)')
@@ -4090,8 +4166,8 @@ function cmd=cmd_civ1(filename,Param)
 cmd='';
 errormsg=''; %default
 filename=regexprep(filename,'.nc',''); %file name for the result 
-if isequal(Param.Civ1.Dt,'0')
-    Param.Civ1.Dt='1' ;%case of 'displacement' mode
+if isequal(Param.Civ1.Dt,0)
+    Param.Civ1.Dt=1 ;%case of 'displacement' mode
 end
 Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'.png','');
 Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'.png','');
@@ -4443,4 +4519,3 @@ else
         delete(hview_field)
     end
 end
-

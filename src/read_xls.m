@@ -184,7 +184,8 @@ else
                        t=attributes(t,'add',ImaDocElement,'source','file');
                        testrecord=0;%we have an image series without 'record' subdir
                     elseif isequal(Ext,'.png')
-                       [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                       %[Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                       [~,~,Root]=fileparts_uvmat(fname{ifile});
                        if ~isequal(Root,RootIma)%only one image recorded for each root name
                            [t,ImaDocElement]=add(t,DeviceElement,'element','Image');
                            t=add(t,ImaDocElement,'chardata',fname{ifile});
@@ -193,7 +194,8 @@ else
                        end
                        testrecord=0;%we have an image series without 'record' subdir
                     elseif isequal(Ext,'.nc')
-                       [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                       %[Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                       [~,~,Root]=fileparts_uvmat(fname{ifile});
                        if ~isequal(Root,RootNc)%only one image recorded for each root name
                            [t,ImaDocElement]=add(t,DeviceElement,'element','Ncdata');
                            t=add(t,ImaDocElement,'chardata',fname{ifile});
@@ -239,7 +241,8 @@ else
                                t=add(t,ImaDocElement,'chardata',fname{ifile});
                                t=attributes(t,'add',ImaDocElement,'source','file');
                             elseif isequal(Ext,'.png')
-                               [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                              % [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                                [~,~,Root]=fileparts_uvmat(fname{ifile});
                                if ~isequal(Root,RootIma)
                                    [t,ImaDocElement]=add(t,DeviceElement,'element','Image');
                                    t=add(t,ImaDocElement,'chardata',fname{ifile});
@@ -247,7 +250,8 @@ else
                                    RootIma=Root;
                                end
                             elseif isequal(Ext,'.nc')
-                               [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                               %[Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                               [~,~,Root]=fileparts_uvmat(fname{ifile});
                                if ~isequal(Root,RootNc)%only one image recorded for each root name
                                   [t,ImaDocElement]=add(t,DeviceElement,'element','Ncdata');
                                   t=add(t,ImaDocElement,'chardata',fname{ifile});
@@ -289,7 +293,8 @@ else
                         for ifile=1:nbfile;
                             [Path,Name,Ext]=fileparts(fname{ifile});
                             if isequal(Ext,'.xml')
-                               [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                               %[Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                               [~,~,Root]=fileparts_uvmat(fname{ifile});
                                if ~isequal(Root,RootXml)%only one image recorded for each root name
                                    [t,ImaDocElement]=add(t,RecordElement,'element','CivDoc');
                                    t=add(t,ImaDocElement,'chardata',fname{ifile});
@@ -297,7 +302,8 @@ else
                                    RootXml=Root;
                                end
                             elseif isequal(Ext,'.nc')
-                               [Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                               %[Path,Root,field_count,str2,str_a,str_b,ext,nom_type,subdir]=name2display(fname{ifile});
+                               [~,~,Root]=fileparts_uvmat(fname{ifile});
                                if ~isequal(Root,RootNc)%only one image recorded for each root name
                                   [t,ImaDocElement]=add(t,RecordElement,'element','Ncdata');
                                   t=add(t,ImaDocElement,'chardata',fname{ifile});
