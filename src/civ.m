@@ -339,6 +339,7 @@ nom_type_nc='';
 RootName=fullfile(RootPath,RootFile);
 set(handles.RootName,'String',RootName)
 set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
+drawnow
 % i1=str2double(i1_str);
 % i2=str2double(i2_str);
 % j1=str2double(j1_str);
@@ -586,11 +587,10 @@ update_CivOptions(handles,1)
 
 
 %%  set the menus of image pairs and default selection for civ   %%%%%%%%%%%%%%%%%%%
-check_letter=~isempty(regexp(nom_type_ima,'[a|A]$'));
-check_separator=~isempty(regexp(nom_type_ima,'_'));
 % test_ima_i=numel(nom_type_ima)>1 && isempty(regexp(nom_type_ima(2:end),'\D','once'))%=1 for images with single indexing
 % TODO: determine MaxIndex_i and MaxIndex_j using find_file_series (in the absence of xml file)
-if (~check_letter&&~check_separator)|| isequal(nom_type_nc,'_1-2')|| (exist('MaxIndex_j','var')&&(MaxIndex_j==1))
+try
+if (~check_letter&&~check_separator)|| isequal(nom_type_nc,'_1-2')|| (MaxIndex_j==1)
     set(handles.ListPairMode,'Value',1)
     set(handles.ListPairMode,'String',{'series(Di)'})   
 elseif  MaxIndex_i==1 && MaxIndex_j% simple series in j
@@ -603,6 +603,7 @@ else
     if  MaxIndex_j <= 10
         set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
     end
+end
 end
 
 %% update the subdirectory display
@@ -652,8 +653,7 @@ set(handles.RootName,'UserData',browse)% store the nomenclature type
 
 %% list the possible index pairs, depending on the option set in ListPairMode
 ListPairMode_Callback([], [], handles)
-'TESTin'
-browse=get(handles.RootName,'UserData')
+browse=get(handles.RootName,'UserData');
 
 %% store the root input filename for future opening
 profil_perso=fullfile(prefdir,'uvmat_perso.mat');
