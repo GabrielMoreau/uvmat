@@ -65,8 +65,8 @@ if ~isempty(r)% FileName end matches num1
     if ~isempty(r)% FileName end matches num2+delim1+num1
         delim1=r.delim1;
         num2=r.num2;
-        r=regexp(FileName,['.*\D(?<num3>\d+)(?<delim2>[-_])' num2 delim1 num1 '$'],'names');
-        if ~isempty(r) % FileName end matches delim2 num2 delim1 num1
+        r=regexp(FileName,['.*\D(?<num3>\d+)(?<delim2>[-_]&[^' delim1 '])' num2 delim1 num1 '$'],'names');
+        if ~isempty(r) % FileName end matches num3 delim2 num2 delim1 num1
             delim2=r.delim2;
             num3=r.num3;
             switch delim1
@@ -229,6 +229,7 @@ else
         'Image_3a-b.jpg'...
         'Image3_a.jpg'...
         'movie57.avi'...
+        'merged_20_12_1.png'...
         };
 end
 

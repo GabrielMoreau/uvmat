@@ -56,17 +56,17 @@ if isfield (Param,'Civ1')
     [xtable ytable utable vtable ctable F result_conv errormsg] = civ (Param.Civ1);
 
    % to try the reverse_pair method, uncomment below
-    [xtable1 ytable1 utable1 vtable1 ctable1 F1 result_conv1 errormsg1] = civ (Param.Civ1);
-    Param.Civ1.reverse_pair=1;
-    [xtable2 ytable2 utable2 vtable2 ctable2 F2 result_conv2 errormsg2] = civ (Param.Civ1);
-    xtable=[xtable1; xtable2];
-    ytable=[ytable1; ytable2];
-    utable=[utable1; -utable2];
-    vtable=[vtable1; -vtable2];
-    ctable=[ctable1; ctable2];
-    F=[F1; F2];
-    result_conv=[result_conv1; result_conv2];
-    errormsg=[errormsg1; errormsg2];
+%     [xtable1 ytable1 utable1 vtable1 ctable1 F1 result_conv1 errormsg1] = civ (Param.Civ1);
+%     Param.Civ1.reverse_pair=1;
+%     [xtable2 ytable2 utable2 vtable2 ctable2 F2 result_conv2 errormsg2] = civ (Param.Civ1);
+%     xtable=[xtable1; xtable2];
+%     ytable=[ytable1; ytable2];
+%     utable=[utable1; -utable2];
+%     vtable=[vtable1; -vtable2];
+%     ctable=[ctable1; ctable2];
+%     F=[F1; F2];
+%     result_conv=[result_conv1; result_conv2];
+%     errormsg=[errormsg1; errormsg2];
     
     
     if ~isempty(errormsg)
