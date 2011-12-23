@@ -58,6 +58,8 @@ for ichild=1:numel(hchild)
                     struct.(tag)=input;
                   %  eval(['struct.' tag '=input;'])
                 end
+            case 'uitable'
+                 struct.(tag)=get(hchild(ichild),'Data');
         end
     end
 end

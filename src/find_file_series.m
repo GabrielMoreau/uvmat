@@ -39,7 +39,6 @@ function [RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,File
 %------------------------------------------------------------------------
 
 %% get input root name and nomenclature type
-% [RootPath,RootFile,~,~,~,~,FileExt,NomType,SubDir]=name2display(fileinput);
 [RootPath,SubDir,RootFile,~,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fileinput);
 
 %% check for particular file types: images, movies, civ data
@@ -179,9 +178,19 @@ else
     end
     % look for the numerical string of the first files to update the NomType (take into account the 0 before the number)
     max_j=max(ref_j_list);
-    ref_ij=ref_i_list*max_j+ref_j_list; % ordered by index i, then by j for a given i.
+    if isempty(max_j)
+        ref_ij=ref_i_list;
+    else
+        ref_ij=ref_i_list*max_j+ref_j_list; % ordered by index i, then by j for a given i.
+    end
     [~,ifile]=min(ref_ij(ref_ij>0));
+    if isempty(ifile)
+        RootPath='';
+        RootFile='';
+        NomType='';
+    else
     [~,~,~,~,~,~,~,~,NomType]=fileparts_uvmat(dirpair(ifile).name);
+    end
 end
 
 %% set to empty array the irrelevant index series
