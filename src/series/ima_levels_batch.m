@@ -32,7 +32,7 @@ basename=fullfile(Series.RootPath,Series.RootFile) ;
 dircur=pwd;
 cd(path);
 mkdir([subdir_ima '_levels']);
-  [xx,msg2] = fileattrib(subdir_ima,'+w','g'); %yield writing access (+w) to user group (g)
+  [xx,msg2] = fileattrib([subdir_ima '_levels'],'+w','g'); %yield writing access (+w) to user group (g)
 if ~strcmp(msg2,'')
     msgbox_uvmat('ERROR',['pb of permission for ' subdir_ima ': ' msg2])%error message for directory creation
     cd(dircur)
@@ -87,19 +87,19 @@ end
 
 ncores=1;
 walltime_onejob=10;%seconds
-filename_joblist=fullfile(Rootbat,'job_list.txt');
-fid=fopen(filename_joblist,'w');
+filename_joblist=fullfile(path,[subdir_ima '_levels'],'job_list.txt')
+fid=fopen(filename_joblist,'w+')
 for p=1:length(batch_file_list)
     fprintf(fid,[batch_file_list{p} '\n']);
 end
-fclose(fid)
-oar_command=['oarsub -n test '...
+fclose(fid);
+oar_command=['oarsub -n ima_levels '...
     '-l /core=' num2str(ncores) ','...
     'walltime=' datestr(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,13) ' '...
     '-E ' regexprep(filename_joblist,'\.txt\>','.errors') ' '...
     '-O ' regexprep(filename_joblist,'\.txt\>','.log') ' '...
     '"oar-parexec -f ' filename_joblist ' -l ' filename_joblist '.log"'];
-filename_oarcommand=fullfile(Rootbat,'oar_command');
+filename_oarcommand=fullfile(path,[subdir_ima '_levels'],'oar_command');
 fid=fopen(filename_oarcommand,'w');
 fprintf(fid,[oar_command '\n']);
 fclose(fid);
