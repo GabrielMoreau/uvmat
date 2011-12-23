@@ -32,7 +32,7 @@ basename=fullfile(Series.RootPath,Series.RootFile) ;
 dircur=pwd;
 cd(path);
 mkdir([subdir_ima '_levels']);
-  [xx,msg2] = fileattrib(subdir_ima,'+w','g'); %yield writing access (+w) to user group (g)
+  [xx,msg2] = fileattrib([subdir_ima '_levels'],'+w','g') %yield writing access (+w) to user group (g)
 if ~strcmp(msg2,'')
     msgbox_uvmat('ERROR',['pb of permission for ' subdir_ima ': ' msg2])%error message for directory creation
     cd(dircur)
