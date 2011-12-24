@@ -515,7 +515,7 @@ if addtest
 %     SeriesData.j1_series=[SeriesData.j1_series;{j1_series}];
 %     SeriesData.j2_series=[SeriesData.j2_series;{j2_series}];
 InputTable=get(handles.InputTable,'Data');
- InputTable=[{RootPath},{RootFile},{SubDir},{NomType},{FileExt};InputTable];
+ InputTable=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt};InputTable];
 %     RootPathCell=[{RootPath}; InputTable{] ; 
 %     SubDirCell=[{SubDir}; get(handles.SubDir,'String')];
 %     RootFileCell=[{RootFile}; get(handles.RootFile,'String')]; 
@@ -526,7 +526,7 @@ InputTable=get(handles.InputTable,'Data');
     
 % or re-initialise the list of  input  file series   
 else 
-    InputTable=[{RootPath},{RootFile},{SubDir},{NomType},{FileExt}];
+    InputTable=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
 end
 set(handles.InputTable,'Data',InputTable)
 %     SeriesData=[];%re-initialisation 
@@ -1175,15 +1175,21 @@ end
 
 %% read input file parameters and set menus
 Series.PathProject=get(handles.PathCampaign,'String');
-RootPath=get(handles.RootPath,'String');% path of the root name of the first field series
-RootFile=get(handles.RootFile,'String');% root name of the first field series 
-SubDir=get(handles.SubDir,'String');% subdirectory for netcdf files
-FileExt=get(handles.FileExt,'String');%file extension
+% InputTable=get(handles.InputTable,'Data');
+RootPath=Series.InputTable(:,1);
+SubDir=Series.InputTable(:,2);
+RootFile=Series.InputTable(:,3);
+NomType=Series.InputTable(:,4);
+FileExt=Series.InputTable(:,5);
+% RootPath=get(handles.RootPath,'String');% path of the root name of the first field series
+% RootFile=get(handles.RootFile,'String');% root name of the first field series 
+% SubDir=get(handles.SubDir,'String');% subdirectory for netcdf files
+% FileExt=get(handles.FileExt,'String');%file extension
 if isempty(SeriesData)
     msgbox_uvmat('ERROR','no input file series')
     return
 end
-NomType=SeriesData.NomType;
+% NomType=SeriesData.NomType;
 if length(RootPath)==1 %string character input for user fct
     Series.RootPath=RootPath{1};
     Series.RootFile=RootFile{1};
@@ -1243,24 +1249,30 @@ if last_i < first_i | last_j < first_j , msgbox_uvmat('ERROR','last field number
     set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
 num_i=first_i:incr_i:last_i;
 num_j=first_j:incr_j:last_j;
-nbfield_cell=get(handles.num_MaxIndex_i,'String');
-nbfield=[]; %default
-for iview=1:length(nbfield_cell)
-    nb=str2num(nbfield_cell{iview});
-    if ~isempty(nb)
-        nbfield=[nbfield nb];
-    end
-end
-nbfield=min(nbfield);
-nbfield2_cell=get(handles.num_MaxIndex_j,'String');
-nbfield2=[]; %default
-for iview=1:length(nbfield2_cell)
-    nb=str2num(nbfield2_cell{iview});
-    if ~isempty(nb)
-        nbfield2=[nbfield2 nb];
-    end
-end
-nbfield2=min(nbfield2);
+% nbfield_cell=get(handles.num_MaxIndex_i,'String');
+nbfield=cell2mat(Series.IndexRange.MaxIndex);
+nb=min(nbfield,1);
+nbfield=nb(1);
+nbfield2=nb(2);
+% nbfield2=cell2mat(Series.IndexRange.MaxIndex);
+% nbfield=min(nbfield);
+% % nbfield=[]; %default
+% % for iview=1:length(nbfield_cell)
+% %     nb=nbfield_cell{iview};
+% %     if ~isempty(nb)
+% %         nbfield=[nbfield nb];
+% %     end
+% % end
+% % nbfield=min(nbfield);
+% nbfield2_cell=get(handles.num_MaxIndex_j,'String');
+% nbfield2=[]; %default
+% for iview=1:length(nbfield2_cell)
+%     nb=str2num(nbfield2_cell{iview});
+%     if ~isempty(nb)
+%         nbfield2=[nbfield2 nb];
+%     end
+% end
+% nbfield2=min(nbfield2);
 
 %get complementary information from the 'series' interface
 list_action=get(handles.ACTION,'String');% list menu action
@@ -1362,7 +1374,7 @@ for iview=1:length(RootPath)
     end
 end
 
-% defining the ACTION function handle
+%% defining the ACTION function handle
 path_series=which('series');
 list_path=get(handles.ACTION,'UserData');
 index=get(handles.ACTION,'Value');
@@ -1382,7 +1394,7 @@ if ~isequal(fct_path,path_series)
         rmpath(fct_path)% add the prescribed path if not the current one    
 end
 
-% RUN ACTION
+%% RUN ACTION
 Series.Action=action;%name of the processing programme
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
 if length(RootPath)>1
@@ -2265,6 +2277,7 @@ state_Pairs='off';
 state_InputFields='off';
 if ~isempty(SeriesData)
 for ilist=1:size(InputTable,1)
+    SeriesData.j1_series{ilist}
     if ~isempty(SeriesData.j1_series{ilist})
         state_j='on';
     end
@@ -2545,7 +2558,7 @@ end
 % end 
 set(handles.series,'UserData',SeriesData)
 if testpair
-    mode_Callback(hObject, eventdata, handles)  
+    mode_Callback([],[], handles)  
 else
 %     set(handles.NomType,'String',NomTypeCell)
 %     set(handles.j_txt,'Visible',state_j)
@@ -2555,4 +2568,41 @@ else
 %     set(handles.num_last_j,'Visible',state_j)
 %     set(handles.num_MaxIndex_j,'Visible',state_j) 
 end
+
+
+% --- Executes on button press in BATCH.
+function BATCH_Callback(hObject, eventdata, handles)
+% hObject    handle to BATCH (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+Series=read_GUI(handles.series);
+t=struct2xml(Series);
+save(t); %TODO: determine a xml file name
+
+% list_action=get(handles.ACTION,'String');% list menu action
+% index_action=get(handles.ACTION,'Value');% selected string index
+% action= list_action{index_action}; % selected string
+
+%% defining the ACTION function handle
+path_series=which('series');
+list_path=get(handles.ACTION,'UserData');
+index=get(handles.ACTION,'Value');
+fct_path=list_path{index}; %path stored for the function ACTION
+if ~isequal(fct_path,path_series)
+    eval(['spath=which(''' action ''');']) %spath = current path of the selected function ACTION
+    if ~exist(fct_path,'dir')
+        msgbox_uvmat('ERROR',['The prescibed function path ' fct_path ' does not exist'])
+        return
+    end
+    if ~isequal(spath,fct_path)
+        addpath(fct_path)% add the prescribed path if not the current one
+    end
+end
+eval(['h_fun=@' action ';'])%create a function handle for ACTION
+if ~isequal(fct_path,path_series)
+        rmpath(fct_path)% add the prescribed path if not the current one    
+end
+
+h_fun('BATCH');% TODO modify the called function to read the xml file as input parameter
+
 
