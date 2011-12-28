@@ -179,7 +179,7 @@ if testeditxml==1 || isequal(ext,'.xls')
     end
 end
 %[RootPath,RootFile,str1,str2,str_a,str_b,FileExt,NomType,subdir]=name2display(fileinput);
-[~,~,~,i1,i2,j1,j2,FileExt,NomType]=fileparts_uvmat(fileinput);
+[tild,tild,tild,i1,i2,j1,j2,FileExt,NomType]=fileparts_uvmat(fileinput);
 % filebase=fullfile(RootPath,RootFile);
 
 %% record the information obtained from the input file
@@ -350,13 +350,17 @@ browse=get(handles.RootName,'UserData');
 browse.incr_pair=[0 0];%default
 
 % form=imformats(ext_input(2:end));
+check_letter=0;
+check_separator=0;
 if ~isempty(ext_input)&&(~isempty(imformats(ext_input(2:end)))||strcmpi(ext_input,'.avi'))% if the extension corresponds to an image or movie format recognized by Matlab
     ext_ima=ext_input;
     nom_type_ima=nom_type_input;
     imagename=fileinput;
+    check_letter=~isempty(regexp(nom_type_ima,'[a|A]$'));%detect pair label by letter
 else %case of netcdf input file, look for corresponding images
     nom_type_nc=nom_type_input;
-    imagename=name_generator(fullfile(RootPath,RootFile),1,1,ext_ima,nom_type_ima);
+    imagename=fullfile_uvmat(RootPath,[],RootFile,ext_ima,nom_type_ima,1,[],1);
+    %imagename=name_generator(fullfile(RootPath,RootFile),1,1,ext_ima,nom_type_ima);
     i1_str='';
     j1_str='';
     if ~isnan(i2)
@@ -366,8 +370,8 @@ else %case of netcdf input file, look for corresponding images
     end
     %TODO: read the image name in the netcdf file (if documented)
     %look for double image series '_i_j'
-    check_letter=regexp(nom_type_nc,'[ab|AB]$');%detect pair label by letter
-    if ~isempty(check_letter)
+    check_letter=~isempty(regexp(nom_type_nc,'[ab|AB]$'));%detect pair label by letter
+    if check_letter
         j1_str=nom_type_nc(end-1);
         r=regexp(nom_type_nc,'_(?<num1>\d+)','names');
         if ~isempty(r)
@@ -377,7 +381,7 @@ else %case of netcdf input file, look for corresponding images
         NomTypeIma=regexprep(nom_type_nc,'-\d','');%
         r_end=regexp(NomTypeIma,'.\D(?<num2>\d+$','names');
         if ~isempty(r_end)
-            j1_str=r.num2
+            j1_str=r.num2;
         end
     end
     r=regexp(NomTypeIma,'_(?<num1>\d+)','names');
@@ -400,7 +404,7 @@ else %case of netcdf input file, look for corresponding images
     end
     for ilist=1:numel(dirima)
         %[pp,ff,i1_str,i2_str,j1_str,j2_str,ext_list,nom_type_list]=name2display(dirima(ilist).name);
-        [~,~,~,i1,i2,j1,j2,ext_list,nom_type_list]=fileparts_uvmat(dirima(ilist).name);
+        [tild,tild,tild,i1,i2,j1,j2,ext_list,nom_type_list]=fileparts_uvmat(dirima(ilist).name);
         form=imformats(ext_list(2:end));
         if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
             ext_ima=ext_list;
@@ -431,7 +435,7 @@ else %case of netcdf input file, look for corresponding images
         end
     end
 end
-[RootPath,RootFile,i1_series,~,j1_series,~,NomType,FileType,Object]=find_file_series(imagename);
+[RootPath,RootFile,i1_series,tild,j1_series,tild,NomType,FileType,Object]=find_file_series(imagename);
 MaxIndex_i=max(i1_series(i1_series>0));
 MaxIndex_j=max(j1_series(j1_series>0));
 
@@ -463,7 +467,7 @@ if ~isempty(ext_imadoc)
     drawnow
     switch ext_imadoc
         case '.civxml'%OBSOLETE
-            [~,~,time]=read_civxml([RootName '.civxml']);
+            [tild,tild,time]=read_civxml([RootName '.civxml']);
             mode='pair j1-j2';
             if isempty(nom_type_ima)% dtermine types by default if not already selected by browser or uvmat
                 nom_type_ima='_i_j';
@@ -474,7 +478,7 @@ if ~isempty(ext_imadoc)
             nom_type_read=[];
             if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
                 %[PP,FF,fc,str2,str_a,str_b,ext_ima_read,nom_type_read]=name2display(XmlData.Heading.ImageName);
-                [~,~,~,~,~,~,~,~,nom_type_read]=fileparts_uvmat(XmlData.Heading.ImageName);
+                [tild,tild,tild,tild,tild,tild,tild,tild,nom_type_read]=fileparts_uvmat(XmlData.Heading.ImageName);
                 fullname=fullfile(fileparts(RootName),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file,
                 if ~exist(fullname,'file')
                     msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
@@ -589,11 +593,11 @@ update_CivOptions(handles,1)
 %%  set the menus of image pairs and default selection for civ   %%%%%%%%%%%%%%%%%%%
 % test_ima_i=numel(nom_type_ima)>1 && isempty(regexp(nom_type_ima(2:end),'\D','once'))%=1 for images with single indexing
 % TODO: determine MaxIndex_i and MaxIndex_j using find_file_series (in the absence of xml file)
-try
-if (~check_letter&&~check_separator)|| isequal(nom_type_nc,'_1-2')|| (MaxIndex_j==1)
+% try
+if ~check_letter|| isequal(nom_type_nc,'_1-2')|| (MaxIndex_j==1)
     set(handles.ListPairMode,'Value',1)
     set(handles.ListPairMode,'String',{'series(Di)'})   
-elseif  MaxIndex_i==1 && MaxIndex_j% simple series in j
+elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
     set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)'})
     if  MaxIndex_j <= 10
         set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
@@ -604,7 +608,7 @@ else
         set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
     end
 end
-end
+% end
 
 %% update the subdirectory display
 listot=dir(RootPath);%directory of RootPath
@@ -1804,7 +1808,10 @@ else
     filebase_ima2=filebase_B;
     filebase_nc=filebase_B;
 end
-
+    [RootPath_ima1,RootFile_ima1]=fileparts(filebase_ima1);
+    [RootPath_ima2,RootFile_ima2]=fileparts(filebase_ima2);
+    [RootPath_nc,RootFile_ima1]=fileparts(filebase_nc);
+    
 %determine reference files for fix:
 file_ref_fix1={};%default
 file_ref_fix2={};
@@ -1823,7 +1830,7 @@ if checkbox(2)==1% fix1 performed
         num_j_ref=first_j:incr_j:last_j;
         if isequal(mode,'displacement')
             num_i1=num_i_ref;
-            num_i2=num_i_ref;
+ name_genna           num_i2=num_i_ref;
             num_j1=num_j_ref;
             num_j2=num_j_ref;
         elseif isequal(mode,'pair j1-j2')% isequal(mode,'st_pair j1-j2')
@@ -1851,7 +1858,9 @@ if checkbox(2)==1% fix1 performed
         end
         for ifile=1:nbfield
             for j=1:nbslice
-                file_ref=name_generator(ref.filebase,num_i1(ifile),num_j1(j),'.nc',ref.nom_type,1,num_i2(ifile),num_j2(j),ref.subdir);%
+                [RootPath,RootFile]=fileparts(ref.filebase);
+                file_ref=fullfile_uvmat(RootPath,ref.subdir,RootFile,'.nc',ref.nom_type,num_i1(ifile),num_i2(ifile),num_j1(j),num_j2(j));
+%                 file_ref=name_generator(ref.filebase,num_i1(ifile),num_j1(j),'.nc',ref.nom_type,1,num_i2(ifile),num_j2(j),ref.subdir);%
                 file_ref_fix1(ifile,j)={file_ref};
                 if ~exist(file_ref,'file')
                     msgbox_uvmat('ERROR',['reference file ' file_ref ' not found for fix1'])
@@ -1902,7 +1911,9 @@ if checkbox(5)==1% fix2 performed
         end
         for ifile=1:nbfield
             for j=1:nbslice
-                file_ref=name_generator(ref.filebase,num_i1(ifile),num_j1(j),'.nc',ref.nom_type,1,num_i2(ifile),num_j2(j),ref.subdir);%
+                [RootPath,RootFile]=fileparts(ref.filebase);
+                file_ref=fullfile_uvmat(RootPath,ref.subdir,RootFile,'.nc',ref.nom_type,num_i1(ifile),num_i2(ifile),num_j1(j),num_j2(j));
+                %file_ref=name_generator(ref.filebase,num_i1(ifile),num_j1(j),'.nc',ref.nom_type,1,num_i2(ifile),num_j2(j),ref.subdir);%
                 file_ref_fix2(ifile,j)={file_ref};
                 if ~exist(file_ref,'file')
                     msgbox_uvmat('ERROR',['reference file ' file_ref ' not found for fix2'])
@@ -1943,6 +1954,7 @@ if checkbox(1)==1;
     while detect==1 %create a new subdir if the netcdf files already exist
         for ifile=1:nbfield
             for j=1:nbslice
+                [RootPath,RootFile]=fileparts(ref.filebase_nc);
                 filename=name_generator(filebase_nc,num1_civ1(ifile),num_a_civ1(j),'.nc',nom_type_nc,1,num2_civ1(ifile),num_b_civ1(j),subdir_civ1_new);
                 detect=exist(filename,'file')==2;
                 if detect% if a netcdf file already exists
@@ -2203,8 +2215,9 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
     if checkbox(1)==0; %no civ1 performed
         for ifile=1:nbfield
             for j=1:nbslice
-                filename=name_generator(filebase_nc,num1_civ1(ifile),num_a_civ1(j),'.nc',...
-                    nom_type_nc,1,num2_civ1(ifile),num_b_civ1(j),subdir_civ1);%
+                filename=fullfile_uvmat(RootPath_nc,subdir_civ1,RootFile_nc,'.nc',nom_type_nc,num1_civ1(ifile),num2_civ1(ifile),num_a_civ1(j),num_b_civ1(j));
+                %filename=name_generator(filebase_nc,num1_civ1(ifile),num_a_civ1(j),'.nc',...
+%                     nom_type_nc,1,num2_civ1(ifile),num_b_civ1(j),subdir_civ1);%
                 filecell.nc.civ1(ifile,j)={filename};% name of the civ1 file
                 if ~exist(filename,'file')
                     msgbox_uvmat('ERROR',['input file ' filename ' not found'])
@@ -2243,8 +2256,9 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
         if strcmp(compare,'stereo PIV')
             for ifile=1:nbfield
                 for j=1:nbslice
-                    filename=name_generator(filebase_A,num1_civ2(ifile),num_a_civ2(j),'.nc',...
-                        nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);%
+                    filename=fullfile_uvmat(RootPath_A,subdir_civ2,RootFile_A,'.nc',nom_type_nc,num1_civ2(ifile),num2_civ2(ifile),num_a_civ2(j),num_b_civ2(j));
+%                     filename=name_generator(filebase_A,num1_civ2(ifile),num_a_civ2(j),'.nc',...
+%                         nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);%
                     filecell.ncA.civ2(ifile,j)={filename};
                     if ~exist(filename,'file')
                         msgbox_uvmat('ERROR',['input file ' filename ' not found'])
@@ -2261,8 +2275,9 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
     %     while detect==1%creates a new subdir if the netcdf files already contain checkciv2 data
     for ifile=1:nbfield
         for j=1:nbslice
-            filename=name_generator(filebase_nc,num1_civ2(ifile),num_a_civ2(j),'.nc',...
-                nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);
+            filename=fullfile_uvmat(RootPath_nc,subdir_civ2,RootFile_nc,'.nc',nom_type_nc,num1_civ2(ifile),num2_civ2(ifile),num_a_civ2(j),num_b_civ2(j));
+%             filename=name_generator(filebase_nc,num1_civ2(ifile),num_a_civ2(j),'.nc',...
+%                 nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);
             detect=exist(filename,'file')==2;
             filecell.nc.civ2(ifile,j)={filename};
         end
@@ -2273,7 +2288,8 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
     elseif checkbox(4)==1
         for ifile=1:nbfield
             for j=1:nbslice
-                filename=name_generator(filebase_ima1, num1_civ2(ifile),num_a_civ2(j),ext_ima,nom_type_ima1);
+                filename=fullfile_uvmat(RootPath_ima1,[],RootFile_ima1,ext_ima,nom_type_ima1,num1_civ2(ifile),num2_civ2(ifile),num_a_civ2(j),num_b_civ2(j));
+                %filename=name_generator(filebase_ima1, num1_civ2(ifile),num_a_civ2(j),ext_ima,nom_type_ima1);
                 idetect_2(j)=exist(filename,'file')==2;
                 filecell.ima1.civ2(ifile,j)={filename};%first image
             end
@@ -2292,7 +2308,8 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
     elseif checkbox(4)==1
         for ifile=1:nbfield
             for j=1:nbslice
-                filename=name_generator(filebase_ima2, num2_civ2(ifile),num_b_civ2(j),ext_ima,nom_type_ima2);
+                filename=fullfile_uvmat(RootPath_ima2,[],RootFile_ima2,ext_ima,nom_type_ima2,num1_civ2(ifile),num2_civ2(ifile),num_a_civ2(j),num_b_civ2(j));
+               % filename=name_generator(filebase_ima2, num2_civ2(ifile),num_b_civ2(j),ext_ima,nom_type_ima2);
                 idetect_3(j)=exist(filename,'file')==2;
                 filecell.ima2.civ2(ifile,j)={filename};%first image
             end
@@ -2311,8 +2328,9 @@ if (checkbox(5) || checkbox(6)) && ~checkbox(4)  % need to read an existing netc
     else     % check the civ2 files
         for ifile=1:nbfield
             for j=1:nbslice
-                filename=name_generator(filebase_nc,num1_civ2(ifile),num_a_civ2(j),'.nc',...
-                    nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);%
+                 filename=fullfile_uvmat(RootPath_nc,subdir_civ2,RootFile_nc,'.nc',nom_type_nc,num1_civ2(ifile),num2_civ2(ifile),num_a_civ2(j),num_b_civ2(j));
+%                 filename=name_generator(filebase_nc,num1_civ2(ifile),num_a_civ2(j),'.nc',...
+%                     nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);%
                 filecell.nc.civ2(ifile,j)={filename};
                 if ~exist(filename,'file')
                     msgbox_uvmat('ERROR',['input file ' filename ' not found'])
@@ -2340,8 +2358,9 @@ if strcmp(compare,'stereo PIV')
     if  checkbox(3) && isequal(get(handles.test_stereo1,'Value'),1)
         for ifile=1:nbfield
             for j=1:nbslice
-                filename=name_generator(filebase_AB,num1_civ1(ifile),num_a_civ1(j),'.nc',...
-                    nom_type_nc,1,num2_civ1(ifile),num_b_civ1(j),subdir_civ1);%
+                 filename=fullfile_uvmat(RootPath_AB,subdir_civ1,RootFile_AB,'.nc',nom_type_nc,num1_civ1(ifile),num2_civ1(ifile),num_a_civ1(j),num_b_civ1(j));
+%                 filename=name_generator(filebase_AB,num1_civ1(ifile),num_a_civ1(j),'.nc',...
+%                     nom_type_nc,1,num2_civ1(ifile),num_b_civ1(j),subdir_civ1);%
                 filecell.st(ifile,j)={filename};
             end
         end
@@ -2349,8 +2368,9 @@ if strcmp(compare,'stereo PIV')
     if  checkbox(6) && isequal(get(handles.CheckStereo,'Value'),1)
         for ifile=1:nbfield
             for j=1:nbslice
-                filename=name_generator(filebase_AB,num1_civ2(ifile),num_a_civ2(j),'.nc',...
-                    nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);%
+                 filename=fullfile_uvmat(RootPath_AB,subdir_civ2,RootFile_AB,'.nc',nom_type_nc,num1_civ2(ifile),num2_civ2(ifile),num_a_civ2(j),num_b_civ2(j));
+%                 filename=name_generator(filebase_AB,num1_civ2(ifile),num_a_civ2(j),'.nc',...
+%                     nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);%
                 filecell.st(ifile,j)={filename};
             end
         end
@@ -2429,13 +2449,15 @@ if ~isequal(ext_ima,'.png')
         for ifile=1:nbfield
             waitbar(ifile/nbfield);
             for j=1:nbslice
-                filename=name_generator(filebase_ima1,num1_civ1(ifile),num_a_civ1(j),'.png',nom_type_imanew1);
+                 filename=fullfile_uvmat(RootPath_ima1,[],RootFile_ima1,'.png',nom_type_imanew1,num1_civ1(ifile),num2_civ1(ifile),num_a_civ1(j),num_b_civ1(j));
+%                 filename=name_generator(filebase_ima1,num1_civ1(ifile),num_a_civ1(j),'.png',nom_type_imanew1);
                 if ~exist(filename,'file')
                     A=read_image(filecell.ima1.civ1{ifile,j},type_ima1,num1_civ1(ifile),movieobject1);
                     imwrite(A,filename,'BitDepth',16);
                 end
                 filecell.ima1.civ1(ifile,j)={filename};
-                filename=name_generator(filebase_ima2, num2_civ1(ifile),num_b_civ1(j),'.png',nom_type_imanew2);
+                filename=fullfile_uvmat(RootPath_ima2,[],RootFile_ima2,'.png',nom_type_imanew2,num2_civ1(ifile),num2_civ1(ifile),num_b_civ1(j),num_b_civ1(j));
+                %filename=name_generator(filebase_ima2, num2_civ1(ifile),num_b_civ1(j),'.png',nom_type_imanew2);
                 if ~exist(filename,'file')
                     A=read_image(filecell.ima2.civ1{ifile,j},type_ima2,num2_civ1(ifile),movieobject2);
                     imwrite(A,filename,'BitDepth',16);
@@ -2450,7 +2472,8 @@ if ~isequal(ext_ima,'.png')
         for ifile=1:nbfield
             waitbar(ifile/nbfield);
             for j=1:nbslice
-                filename=name_generator(filebase_ima1,num1_civ2(ifile),num_a_civ2(j),'.png',nom_type_imanew1);
+                filename=fullfile_uvmat(RootPath_ima1,[],RootFile_ima1,'.png',nom_type_imanew1,num1_civ2(ifile),[],num_a_civ1(j));
+                %filename=name_generator(filebase_ima1,num1_civ2(ifile),num_a_civ2(j),'.png',nom_type_imanew1);
                 if ~exist(filename,'file')
                     A=read_image(cell2mat(filecell.ima1.civ2(ifile,j)),type_ima2,num1_civ2(ifile));
                     imwrite(A,filename,'BitDepth',16);
@@ -2618,7 +2641,7 @@ if test==2 || test==3 % case 'displacement' or 'stereo PIV'
      end
 %     set(handles.RootName_1,'String',name);
     %[RootPath,RootFile,field_count,str2,str_a,str_b,xx,nom_type,SubDir]=name2display(name);
-    [~,~,RootFile,~,~,~,~,~,nom_type]=fileparts_uvmat(name);
+    [tild,tild,RootFile,tild,tild,tild,tild,tild,nom_type]=fileparts_uvmat(name);
     set(handles.RootName_1,'String',RootFile);
     browse=get(handles.RootName,'UserData');
     browse.nom_type_ima_1=nom_type;
@@ -2839,8 +2862,7 @@ end
 set(handles.ListPairCiv1,'UserData',displ_num);
 find_netcpair_civ1( handles)
 find_netcpair_civ2(handles)
-'TESTin'
-browse=get(handles.RootName,'UserData')
+browse=get(handles.RootName,'UserData');
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListPairCiv1.

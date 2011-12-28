@@ -39,7 +39,7 @@ function [RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,File
 %------------------------------------------------------------------------
 
 %% get input root name and nomenclature type
-[RootPath,SubDir,RootFile,~,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fileinput);
+[RootPath,SubDir,RootFile,tild,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fileinput);
 
 %% check for particular file types: images, movies, civ data
 FileType='';
@@ -127,7 +127,7 @@ else
         RootFile='';
     end
     for ifile=1:nbpair
-        [~,~,~,i1,i2,j1,j2]=fileparts_uvmat(dirpair(ifile).name);
+        [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(dirpair(ifile).name);
         ref_i=i1;
         if isempty(i2_input)
             if ~isempty(i2)% invalid file name if i2 does not exist in the input file
@@ -183,13 +183,13 @@ else
     else
         ref_ij=ref_i_list*max_j+ref_j_list; % ordered by index i, then by j for a given i.
     end
-    [~,ifile]=min(ref_ij(ref_ij>0));
+    [tild,ifile]=min(ref_ij(ref_ij>0));
     if isempty(ifile)
         RootPath='';
         RootFile='';
         NomType='';
     else
-    [~,~,~,~,~,~,~,~,NomType]=fileparts_uvmat(dirpair(ifile).name);
+    [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ifile).name);
     end
 end
 
@@ -202,7 +202,7 @@ if isequal(j2_series,0), j2_series=[]; end
 %% sort pairs by decreasing index differences in case of multiple pairs at the same reference index
 if size(i2_series,3)>1 %pairs i1 -i2
     diff_index=abs(i2_series-i1_series);
-    [~,ind_pair]=sort(diff_index,3,'descend');
+    [tild,ind_pair]=sort(diff_index,3,'descend');
     for ref_i=1:size(i1_series,1)
         for ref_j=1:size(j1_series,2)
             i1_series(ref_i,ref_j,:)=i1_series(ref_i,ref_j,ind_pair(ref_i,ref_j,:));
@@ -214,7 +214,7 @@ if size(i2_series,3)>1 %pairs i1 -i2
     end
 elseif size(j2_series,3)>1 %pairs j1 -j2
     diff_index=abs(j2_series-j1_series);
-    [~,ind_pair]=sort(diff_index,3,'descend');
+    [tild,ind_pair]=sort(diff_index,3,'descend');
     for ref_i=1:size(i1_series,1)
         for ref_j=1:size(j1_series,2)
             i1_series(ref_i,ref_j,:)=i1_series(ref_i,ref_j,ind_pair(ref_i,ref_j,:));

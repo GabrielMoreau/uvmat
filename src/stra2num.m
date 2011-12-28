@@ -11,7 +11,7 @@
 % see also num2stra, name_generator, name2display
 
 function numres=stra2num(str)
-numres=NaN; %default
+numres=[]; %default
 if double(str) >= 48 & double(str) <= 57 % = test for number strings
     numres=str2double(str);
 elseif double(str) >= 65 & double(str) <= 90 % test on ascii code for capital letters

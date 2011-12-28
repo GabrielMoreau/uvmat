@@ -473,7 +473,7 @@ if ~exist(fileinput,'file')
     return
 end
 % detect root name, nomenclature and indices in the input file name:
-[~,SubDir,~,i1,i2,j1,j2,FileExt]=fileparts_uvmat(fileinput);
+[ff,SubDir,ii,i1,i2,j1,j2,FileExt]=fileparts_uvmat(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % [i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject]=find_file_series(fileinput);
 [RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject]=find_file_series(fileinput);
@@ -509,15 +509,26 @@ switch FileType
         % fill file index counters
         set(handles.i1,'String',num2str(i1));    
         set(handles.i2,'String',num2str(i2));
-        set(handles.j1,'String',num2str(j1));
-        set(handles.j2,'String',num2str(j2));
+        set(handles.j1,'String',num2stra(j1,NomType));
+        set(handles.j2,'String',num2stra(j2,NomType));
         
         % synchronise indices of the second  input file if it exists
         if get(handles.SubField,'Value')==1% if the subfield button is activated, update the field numbers
-            [ff,rr,FileBase_1,ii,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
-            NomType_1=get(handles.NomType_1,'String'); 
+            Input=read_GUI(handles.InputFile);
+            if ~isfield(Input,'RootPath_1')
+                Input.RootPath_1=Input.RootPath;
+            end
+            if ~isfield(Input,'SubDir_1')
+                Input.SubDir_1=Input.SubDir;
+            end
+            if ~isfield(Input,'RootFile_1')
+                Input.SubDir_1=Input.RootFile;
+            end
+%             [ff,rr,FileBase_1,ii,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
+%             NomType_1=get(handles.NomType_1,'String'); 
 %             NomType_1=get(handles.FileIndex_1,'UserData');     
-            FileName_1=name_generator(FileBase_1,i1,i2,FileExt_1,NomType_1,1,j1,j2,SubDir_1);
+           % FileName_1=name_generator(FileBase_1,i1,i2,FileExt_1,NomType_1,1,j1,j2,SubDir_1);
+            FileName_1=fullfile_uvmat(Input.RootPath_1,Input.SubDir_1,Input.RootFile_1,Input.FileExt_1,Input.NomType_1,i1,i2,j1,j2);
             if exist(FileName_1,'file')
                 FileIndex_1=name_generator('',i1,i2,'',NomType_1,1,j1,j2,'');
                 set(handles.FileIndex_1,'String',FileIndex_1)
@@ -554,7 +565,7 @@ function RootPath_Callback(hObject,eventdata,handles)
 % read the current input file name:
 fileinput=read_file_boxes(handles);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,~,FileType,MovieObject]=find_file_series(fileinput);
+[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fileinput);
 % initiate the input file series and refresh the current field view: 
 update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject);
 
@@ -577,7 +588,7 @@ RootPath_Callback(hObject,eventdata,handles)
 % --- Called by action in FileIndex edit box
 function FileIndex_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-[~,~,~,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
+[tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
 set(handles.i1,'String',num2str(i1));
 set(handles.i2,'String',num2str(i2));
 set(handles.j1,'String',num2str(j1));
@@ -598,6 +609,10 @@ UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for run0: begin a new series
 UvData.TestInputFile=1;
 UvData.FileType=FileType;
+UvData.i1_series=i1_series;
+UvData.i2_series=i2_series;
+UvData.j1_series=j1_series;
+UvData.j2_series=j2_series;
 set(handles.fix_pair,'Value',1) % activate by default the comp_input '-'input window
 set(handles.FixVelType,'Value',0); %desactivate fixed veltype
 [FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes(handles);
@@ -730,13 +745,13 @@ else
 end
 
 %% store last index in handles.lat_i and .last_j
-nbfield=max(i2_series);
+nbfield=max(max(i2_series));
 if isempty(nbfield)
-    nbfield=max(i1_series);
+    nbfield=max(max(i1_series));
 end
-nbfield_j=max(j2_series);
+nbfield_j=max(max(j2_series));
 if isempty(nbfield_j)
-    nbfield_j=max(j1_series);
+    nbfield_j=max(max(j1_series));
 end
 if ~isempty(XmlData.Time)
     nbfield=size(XmlData.Time,1);
@@ -1039,7 +1054,7 @@ display_file_name_1(hObject,eventdata,handles,fileinput_1)
 function display_file_name_1(hObject,eventdata,handles,fileinput_1)
 
 %[path,name,ext]=fileparts(fileinput_1);
-[~,SubDir_1,~,i1,i2,j1,j2,FileExt_1]=fileparts_uvmat(fileinput_1);
+[tild,SubDir_1,tild,i1,i2,j1,j2,FileExt_1]=fileparts_uvmat(fileinput_1);
 [RootPath_1,RootFile_1,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject]=find_file_series(fileinput_1);
 % [RootPath_1,RootFile_1,field_count,str2,str_a,str_b,FileExt_1,NomType_1,SubDir_1]=name2display(fileinput_1);
 switch FileType
@@ -1520,9 +1535,9 @@ if isequal(get(handles.CheckMask,'Value'),1)
     if ~isempty(maskfiles)
         for ilist=1:length(maskfiles)
             maskname=maskfiles(ilist).name;% take the first mask file in the list
-            [~,~,~,~,~,~,~,MaskExt,Mask_NomType{ilist}]=fileparts_uvmat(maskname);
+            [tild,tild,tild,tild,tild,tild,tild,MaskExt,Mask_NomType{ilist}]=fileparts_uvmat(maskname);
 %             [rr,ff,x1,x2,xa,xb,xext,Mask_NomType{ilist}]=name2display(maskname);
-             [~,Name]=fileparts(maskname);
+             [tild,Name]=fileparts(maskname);
             Namedouble=double(Name);
             val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
             ind_mask=findstr('mask',Name);
@@ -1571,7 +1586,7 @@ if isequal(get(handles.CheckMask,'Value'),1)
         if ~exist(maskname,'file')
             errormsg='no file browsed';
         end
-        [RootDir,~,RootFile,~,~,~,~,~,Mask.NomType]=fileparts_uvmat(maskname);
+        [RootDir,tild,RootFile,tild,tild,tild,tild,tild,Mask.NomType]=fileparts_uvmat(maskname);
 %         [RootDir,RootFile,x1,x2,xa,xb,xext,Mask.NomType]=name2display(maskname);
         Mask.Base=fullfile(RootDir,RootFile);
         Mask.NbSlice=1;
@@ -1833,14 +1848,14 @@ FileExt=InputFile.FileExt;
 % [FileName,RootPath,filebase,FileIndices,FileExt,subdir]=read_file_boxes(handles);
 NomType=get(handles.NomType,'String');
 % NomType=get(handles.FileIndex,'UserData');
-i1=stra2num(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
-i2=stra2num(get(handles.i2,'String'));
+i1=str2num(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
+i2=str2num(get(handles.i2,'String'));
 j1=stra2num(get(handles.j1,'String'));
 j2=stra2num(get(handles.j2,'String'));
 sub_value= get(handles.SubField,'Value');
 if sub_value % a second input file has been entered
     [FileName_1,RootPath_1,filebase_1,FileIndices_1,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
-    [~,~,~,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(FileIndices_1);
+    [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(FileIndices_1);
   %  [pp,ff,i1_1_str,i2_1_str,j1_1_str,j2_1_str]=name2display(FileIndices_1);
 %     i1_1=stra2num(i1_1_str);%current set of indices for the second field (may be set different than the main indices)
 %     i2_1=stra2num(i2_1_str);
@@ -1854,24 +1869,51 @@ end
 comp_input=get(handles.fix_pair,'Value');
 
 %% increment (or decrement) the field indices and update the input filename(s)
-if get(handles.scan_i,'Value')==1% case of scanning along index i   
-     i1=i1+increment;
-     i2=i2+increment;
-     [filename,i1,j1,i2,j2]=name_generator(filebase,i1,j1,FileExt,NomType,comp_input,i2,j2,InputFile.SubDir);
-     if sub_value% set the second field name and indices
-        i1_1=i1_1+increment;
-        i2_1=i2_1+increment;
-        filename_1=name_generator(filebase_1,i1_1,j1_1,FileExt_1,NomType_1,1,i2_1,j2_1,SubDir_1);
-     end   
+if get(handles.scan_i,'Value')==1% case of scanning along index i
+    i1=i1+increment;
+    i2=i2+increment;
 else % case of scanning along index j (burst numbers)
     j1=j1+increment;
     j2=j2+increment;
-    [filename,i1,j1,i2,j2]=name_generator(filebase,i1,j1,FileExt,NomType,comp_input,i2,j2,InputFile.SubDir);
-    if sub_value 
-        j1_1=j1_1+increment;
-        j2_1=j2_1+increment;
-        filename_1=name_generator(filebase_1,i1_1,j1_1,FileExt_1,NomType_1,1,i2_1,j2_1,SubDir_1);
-    end    
+end
+if ~comp_input
+    UvData=get(handles.uvmat,'UserData');
+    ref_i=i1;
+    if ~isempty(i2)
+        ref_i=floor((i1+i2)/2);
+    end
+    ref_j=1;
+    if ~isempty(j1)
+        ref_j=j1;
+        if ~isempty(j2)
+            ref_j=floor((j1+j2)/2);
+        end
+    end
+    if ref_i+1>size(UvData.i1_series,1)
+        msgbox_uvmat('ERROR','maximum i index exceeded');
+        return
+    end
+    if ref_j+1>size(UvData.i1_series,2)
+        msgbox_uvmat('ERROR','maximum j index exceeded');
+        return
+    end
+    i1=UvData.i1_series(ref_i+1,ref_j+1,1);
+    if ~isempty(UvData.i2_series)
+        i2=UvData.i2_series(ref_i+1,ref_j+1,1);
+    end
+    if ~isempty(UvData.j1_series)
+        j1=UvData.j1_series(ref_i+1,ref_j+1,1);
+    end
+    if ~isempty(UvData.j2_series)
+        j2=UvData.j2_series(ref_i+1,ref_j+1,1);
+    end
+end
+filename=fullfile_uvmat(InputFile.RootPath,InputFile.SubDir,InputFile.RootFile,FileExt,NomType,i1,i2,j1,j2);
+% filename=name_generator(filebase,i1,j1,FileExt,NomType,comp_input,i2,j2,InputFile.SubDir);
+if sub_value
+    j1_1=j1_1+increment;
+    j2_1=j2_1+increment;
+    filename_1=name_generator(filebase_1,i1_1,j1_1,FileExt_1,NomType_1,1,i2_1,j2_1,SubDir_1);
 end
 
 %% refresh plots
@@ -1891,7 +1933,8 @@ if isempty(errormsg)
     else
         set(handles.j2,'String',num2stra(j2,NomType,2));
     end
-    [indices]=name_generator('',i1,j1,'',NomType,1,i2,j2,'');
+   % [indices]=name_generator('',i1,j1,'',NomType,1,i2,j2,'');
+    indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,j2);
     set(handles.FileIndex,'String',indices);
     if ~isempty(filename_1)
         indices_1=name_generator('',i1_1,j1_1,'',NomType_1,1,i2_1,j2_1,'');
@@ -2822,7 +2865,7 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData,'Time')
     end
 end
 if isfield(UvData,'XmlData_1') && isfield(UvData.XmlData_1,'Time')
-    [~,~,~,num_i1,num_i2,num_j1,num_j2]=fileparts_uvmat(['xx' get(handles.FileIndex_1,'String') get(handles.FileExt_1,'String')]);
+    [tild,tild,tild,num_i1,num_i2,num_j1,num_j2]=fileparts_uvmat(['xx' get(handles.FileIndex_1,'String') get(handles.FileExt_1,'String')]);
   %  [P,F,str1,str2,str_a,str_b,E]=name2display(['xx' get(handles.FileIndex_1,'String') get(handles.FileExt_1,'String')]);
     if isempty(num_i2)
         num_i2=num_i1;
@@ -3181,7 +3224,7 @@ UvData=get(handles.uvmat,'UserData');
 
 %read the rootfile input display
 [FileName,RootPath,FileBase,FileIndices,FileExt]=read_file_boxes(handles);
-[~,~,~,i1,i2,j1,j2,~,NomType]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt]);
+[tild,tild,tild,i1,i2,j1,j2,tild,NomType]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt]);
 % [P,F,str1,str2,str_a,str_b,E,NomType]=name2display(['xxx' get(handles.FileIndex,'String') FileExt]);
 NomTypeNew=NomType;%default
 if isequal(field,'image')
@@ -3222,7 +3265,8 @@ else
         return
     end
 end
-indices=name_generator('',i1,j1,'',NomTypeNew,1,i2,j2,'');
+% indices=name_generator('',i1,j1,'',NomTypeNew,1,i2,j2,'');
+indices=fullfile_uvmat('','','',FileExt,NomTypeNew,i1,i2,j1,j2);
 set(handles.FileIndex,'String',indices)
 set(handles.NomType,'String',NomTypeNew)
 % set(handles.FileIndex,'UserData',NomTypeNew)
@@ -3262,11 +3306,11 @@ UvData=get(handles.uvmat,'UserData');
 
 %read the rootfile input display
 [FileName,RootPath,FileBase,FileIndices,FileExt_1]=read_file_boxes_1(handles);
-[~,~,~,i1,i2,j1,j2,~,NomType_1]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt_1]);
+[tild,tild,tild,i1,i2,j1,j2,tild,NomType_1]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt_1]);
 % [P,F,str1,str2,str_a,str_b,E,NomType_1]=name2display(['xxx' get(handles.FileIndex,'String') FileExt_1]);
 if isempty(NomType_1)|| strcmp(NomType_1,'')
     [FileName,RootPath,FileBase,FileIndices,FileExt_1]=read_file_boxes(handles);
-    [~,~,~,i1,i2,j1,j2,~,NomType_1]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt_1]);
+    [tild,tild,tild,i1,i2,j1,j2,tild,NomType_1]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt_1]);
  %   [P,F,str1,str2,str_a,str_b,E,NomType_1]=name2display(['xxx' get(handles.FileIndex,'String') FileExt_1]);
 end
 NomTypeNew=NomType_1;%default
@@ -3318,7 +3362,8 @@ if isequal(field_1,'image')
             NomTypeNew='_1';
         end  
     end
-    imagename=name_generator(FileBase,i1,j1,'.png',NomTypeNew,1,i2,j2,'');
+%     imagename=name_generator(FileBase,i1,j1,'.png',NomTypeNew,1,i2,j2,'');
+    imagename=fullfile_uvmat(RootPath,SubDir,FileName,'.png',NomTypeNew,i1,i2,j1,j2);
     if ~exist(imagename,'file')
         [FileName,PathName] = uigetfile( ...
             {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';

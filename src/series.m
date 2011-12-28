@@ -1295,7 +1295,7 @@ for iview=1:length(RootPath)
        r=regexp(pair_string,'.*\D(?<num1>[\d+|*])(?<delim>[-||])(?<num2>[\d+|*])','names');
        if ~isempty(r)
            if strcmp(r.num1,'*')%free pairs
-               [~,RootFile,i1_series,i2_series,j1_series,j2_series,~,~,Object]=find_file_series(fileinput)% TODO: choice pair when multiple choice
+               [tild,RootFile,i1_series,i2_series,j1_series,j2_series,tild,tild,Object]=find_file_series(fileinput)% TODO: choice pair when multiple choice
  
                if isempty(i2_series) %j pairs
                    ind_sel=i1_series>=i1_series>=first_i & i1_series<=last_i & j1_series>first_j & j2_series<last_j;
@@ -2307,7 +2307,7 @@ if isempty(RootFile)&&isempty(i1_series)
     errormsg='not input file in the series';
     return
 end
-[~,~,FileExt]=fileparts(fileinput);
+[tild,tild,FileExt]=fileparts(fileinput);
 
 MinIndex=get(handles.MinIndex,'Data');
 MaxIndex=get(handles.MaxIndex,'Data');

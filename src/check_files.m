@@ -50,6 +50,7 @@ list_fct={...
     'delete_object';...%delete a projection object, defined by its index in the Uvmat list or by its graphic handle
     'editxml';...%display and edit xml files using a xls schema
     'editxml.fig';...%interface for editxml
+    'fileparts_uvmat';...% extracts the root name,field indexes and nomenclature type from an input filename
     'find_field_indices';...% group the variables of a nc-formated Matlab structure into 'fields' with common dimensions
     'geometry_calib';...%performs geometric calibration from a set of reference points
     'geometry_calib.fig';...%interface for geometry_calib
@@ -65,7 +66,6 @@ list_fct={...
     'mouse_up';... % function to be activated when the mouse button is released (callback for 'WindowButtonUpFcn')
     'msgbox_uvmat';... associated with GUI msgbox_uvmat.fig to display message boxes, for error, warning or input calls
     'msgbox_uvmat.fig';...
-    'name2display';...% extracts the root name and field numbers from an input filename
     'name_generator';...%creates a file name from a root name and indices.
     'nc2struct';...% transform a netcdf file in a corresponding matlab structure
     'peaklock';...%
@@ -137,16 +137,16 @@ for i=1:length(list_fct)
     end
 end
 date_str=datestr(max(datnum));
-
-[status,~]=system('svn --help');
+try
+[status]=system('svn --help');
 if status==0
-    [~,result]=system(['svn info ' dir_fct]);
+    [tild,result]=system(['svn info ' dir_fct]);
     t=regexp(result,'R.vision\s:\s(?<rev>\d+)','names');
     svn_info.cur_rev=str2double(t.rev);
-    [~,result]=system(['svn info -r ''HEAD'' '  dir_fct]);
+    [tild,result]=system(['svn info -r ''HEAD'' '  dir_fct]);
     t=regexp(result,'R.vision\s:\s(?<rev>\d+)','names');
     svn_info.rep_rev=str2double(t.rev);
-    [~,result]=system(['svn status'  dir_fct]);    
+    [tild,result]=system(['svn status'  dir_fct]);    
     svn_info.status=result;
     if svn_info.rep_rev>svn_info.cur_rev
         errormsg {length(errormsg)+1}=['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder'];
@@ -159,6 +159,7 @@ if status==0
             errormsg {length(errormsg)+1}=modifications{k};
         end
     end
+end
 end
 errormsg=errormsg';
 
