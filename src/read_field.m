@@ -28,7 +28,13 @@
 %     .Npx, .Npy: nbre of pixels along x and y (used for .vol input files)
 function [Field,ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num)
 Field=[];
-ParamOut=[];
+if ~exist('num','var')
+    num=1;
+end
+if ~exist('ParamIn','var')
+    ParamIn=[];
+end
+ParamOut=ParamIn;%default
 errormsg='';
 if isfield(ParamIn,'VelType')
 VelType=ParamIn.VelType;
@@ -37,7 +43,7 @@ A=[];
 %% distingush different input file types
 switch FileType
     case {'civx','civdata','netcdf'}  %read the first nc field
-        ParamOut.FieldName=ParamIn.FieldName;
+%         ParamOut.FieldName=ParamIn.FieldName;
         GUIName='get_field'; %default name of the GUI get_field
         if isfield(ParamIn,'GUIName')
             GUIName=ParamIn.GUIName;
@@ -139,23 +145,23 @@ switch FileType
             ParamOut.FieldList={'get_field...'};
         end
         
-    case 'movie'
+    case 'video'
         try
             A=read(ObjectName,num);
-            FieldName='image';
         catch ME
-            errormsg=ME.message;
+            errormsg=ME.message
             return
         end
-    case 'avi'
-        try
-            mov=aviread(ObjectName,num);
-        catch ME
-            errormsg=ME.message;
-            return
-        end
-        A=frame2im(mov(1));
         FieldName='image';
+%     case 'avi'
+%         try
+%             mov=aviread(ObjectName,num);
+%         catch ME
+%             errormsg=ME.message;
+%             return
+%         end
+%         A=frame2im(mov(1));
+%         FieldName='image';
     case 'vol'
         A=imread(ObjectName);
         Npz=size(A,1)/ParamIn.Npy;

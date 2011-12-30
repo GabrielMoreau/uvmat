@@ -132,7 +132,7 @@ if ~isempty(r)
         r=regexp(NomType,'-(?<num4>\d+)','names');
         if ~isempty(r)&& ~isempty(j2)
             sep4='-';
-            j2_str=num2str(j2,['%0' num2str(length(r.num4)) 'd'])
+            j2_str=num2str(j2,['%0' num2str(length(r.num4)) 'd']);
         end
     end
 end

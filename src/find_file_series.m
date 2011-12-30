@@ -70,7 +70,7 @@ switch FileExt
                 if length(imainfo) >1 %case of image with multiple frames
                     NomType='*';
                     FileType='multimage';
-                    i1_series=1:length(imainfo);
+                    i1_series=(1:length(imainfo))';
                     [RootPath,RootFile]=fileparts(fileinput);
                 end
             end
@@ -79,18 +79,21 @@ switch FileExt
                 Data=nc2struct(fileinput,'ListGlobalAttribute','absolut_time_T0','Conventions');
                 if ~isempty(Data.absolut_time_T0')
                     FileType='civx'; % test for civx velocity fields
-                elseif strcmp(Data.Conventions','uvmat/civdata')
+                elseif strcmp(Data.Conventions,'uvmat/civdata')
                     FileType='civdata'; % test for civx velocity fields
                 else
                     FileType='netcdf';
                 end
             end
             try
-                Object=VideoReader(fileinput);
+                if exist('VideoReader','file')%recent version of Matlab
+                    Object=VideoReader(fileinput);    
+                else
+                    Object=mmreader(fileinput);%older Matlab function for movies                
+                end
                 NomType='*';
-                FileType='video';
-                i1_series=[1:get(Object,'NumberOfFrames')];
-                [RootPath,RootFile]=fileparts(fileinput);
+                FileType='video';  
+                i1_series=(1:get(Object,'NumberOfFrames'))';
             end
         end
 end
