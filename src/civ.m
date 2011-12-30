@@ -101,10 +101,12 @@ end
 
 %% prepare the GUI with parameters from the input file if opened from uvmat
 if exist('fileinput','var')% && isfield(param,'RootName') && ~isempty(param.RootName)
+    set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
     errormsg=display_file_name(handles,fileinput);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',errormsg)
     end
+    set(handles.RootName,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 end
 
 %------------------------------------------------------------------------
@@ -204,62 +206,72 @@ end
 % set(handles.RootName,'UserData',browse);% store information from browser
 
 %% prepare the GUI with parameters from the input file 
+set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
 errormsg=display_file_name(handles,fileinput);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',erromsg)
 end
-
+set(handles.RootName,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 
 %------------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_1
 function MenuFile_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
 fileinput=get(handles.MenuFile_1,'Label');
 errormsg=display_file_name(handles,fileinput);
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',erromsg)
+    msgbox_uvmat('ERROR',errormsg)
 end
+set(handles.RootName,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_2
 function MenuFile_2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
 fileinput=get(handles.MenuFile_2,'Label');
 errormsg=display_file_name(handles,fileinput);
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',erromsg)
+    msgbox_uvmat('ERROR',errormsg)
 end
+set(handles.RootName,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_3
 function MenuFile_3_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
 fileinput=get(handles.MenuFile_3,'Label');
 errormsg=display_file_name(handles,fileinput);
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',erromsg)
+    msgbox_uvmat('ERROR',errormsg)
 end
+set(handles.RootName,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_4
 function MenuFile_4_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
 fileinput=get(handles.MenuFile_4,'Label');
 errormsg=display_file_name(handles,fileinput);
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',erromsg)
+    msgbox_uvmat('ERROR',errormsg)
 end
+set(handles.RootName,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_5
 function MenuFile_5_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
 fileinput=get(handles.MenuFile_5,'Label');
 errormsg=display_file_name(handles,fileinput);
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',erromsg)
+    msgbox_uvmat('ERROR',errormsg)
 end
-
+set(handles.RootName,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 % -----------------------------------------------------------------------
 % --- Prepare the GUI for the compiled CivX program
 function MenuCivX_Callback(hObject, eventdata, handles)
@@ -307,18 +319,20 @@ end
 % --- Function activated when a new filebase (image series) is introduced
 function RootName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
 filebase=get(handles.RootName,'String');
 errormsg=display_file_name(handles,filebase);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',erromsg)
 end
-
+set(handles.RootName,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 %------------------------------------------------------------------------
 % --- general function activated for an input file series
 function errormsg=display_file_name(handles,fileinput)
 %------------------------------------------------------------------------
 set(handles.ListCompareMode,'Visible','on')
 errormsg='';%default empty error message
+drawnow
 
 %% enable RUN, BATCH button and 'status' display
 set(handles.RUN, 'Enable','On')
@@ -332,112 +346,172 @@ end
 
 %% determine nomenclature types and extension of the input files
 ext_ima='';%default
-nom_type_ima='';%default
-nom_type_nc='';
+NomTypeIma='';%default
+NomTypeNc='';
 %[RootPath,RootFile,i1_str,i2_str,j1_str,j2_str,ext_input,nom_type_input,SubDir]=name2display(fileinput);
-[RootPath,SubDir,RootFile,i1,i2,j1,j2,ext_input,nom_type_input]=fileparts_uvmat(fileinput);
+[RootPath,SubDir,RootFile,i1,i2,j1,j2,ExtInput,NomTypeInput]=fileparts_uvmat(fileinput);
+[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomTypeInput,FileType,Object]=find_file_series(fileinput);
+if strcmp(NomTypeInput,'*')% movies will be opened at the first frame
+    i1=1;
+    i2=[];
+    j1=[];
+    j2=[];
+end  
+ind_opening=0;%default
+switch FileType
+    case 'civdata'
+        Data=nc2struct(fileinput,'ListGlobalAttribute','CivStage','Civ1_ImageA');
+        if isfield(Data,'Txt')
+            errormsg=Data.Txt;
+            return
+        end
+        if ~isempty(Data.CivStage)%test for civ files
+            ind_opening=Data.CivStage;
+        end
+        if ~isempty(Data.Civ1_ImageA)%test for civ files
+            imageinput=Data.Civ1_ImageA;
+            if ~exist(imageinput,'file')
+                errormsg=['the image ' imageinput ' does not exist, please enter an image'];
+                return
+            end
+        end
+        set(handles.MenuMatlab,'checked','on')
+        set(handles.MenuCivX,'checked','off')
+        NomTypeNc=NomTypeInput;
+    case 'civx'
+        Data=nc2struct(fileinput,'ListGlobalAttribute','fix','patch','civ2','fix2');
+        if ~isempty(Data.fix2)
+            ind_opening=5;
+        elseif ~isempty(Data.civ2)
+            ind_opening=4;
+        elseif ~isempty(Data.patch)
+            ind_opening=3;
+        elseif ~isempty(Data.fix)
+            ind_opening=2;
+        end
+        % look for the input images
+        check_letter=~isempty(regexp(NomTypeInput,'[ab|AB]$'));%detect pair label by letter
+        NomTypeIma=NomTypeInput;
+        if check_letter
+            NomTypeIma=NomTypeInput(1:end-1);
+        else
+            r=regexp(NomTypeIma,'.-(?<num2>\d+$','names');
+            if ~isempty(r)
+                NomTypeIma=regexprep(NomTypeIma,['-' r.num2],'');
+            end
+        end
+        imageinput=fullfile_uvmat(RootPath,'',RootFile,'.png',NomTypeIma,i1,[],j1);
+        if ~exist(imageinput,'file')
+            errormsg='no image corresponds to the input .nc file, please open an image';
+            return
+        end
+    case {'image','multimage','video'}
+         imageinput=fileinput;
+         NomTypeIma=NomTypeInput;
+         ext_ima=ExtInput;
+    otherwise
+        errormsg='invalid input file: enter an image, a movie or .nc file';
+end
+[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomTypeIma,ImageType,Object]=find_file_series(imageinput);
 RootName=fullfile(RootPath,RootFile);
 set(handles.RootName,'String',RootName)
-set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
-drawnow
-% i1=str2double(i1_str);
-% i2=str2double(i2_str);
-% j1=str2double(j1_str);
-% j2=str2double(j2_str);
+MaxIndex_i=max(i1_series(i1_series>0));
+MaxIndex_j=max(j1_series(j1_series>0));
+
 num_ref_i=i1;%efaulmt ref index
 num_ref_j=j1;
 browse=get(handles.RootName,'UserData');
+browse.nom_type_nc=NomTypeNc;
+browse.nom_type_ima=NomTypeInput;
 browse.incr_pair=[0 0];%default
 
-% form=imformats(ext_input(2:end));
-check_letter=0;
-check_separator=0;
-if ~isempty(ext_input)&&(~isempty(imformats(ext_input(2:end)))||strcmpi(ext_input,'.avi'))% if the extension corresponds to an image or movie format recognized by Matlab
-    ext_ima=ext_input;
-    nom_type_ima=nom_type_input;
-    imagename=fileinput;
-    check_letter=~isempty(regexp(nom_type_ima,'[a|A]$'));%detect pair label by letter
-else %case of netcdf input file, look for corresponding images
-    nom_type_nc=nom_type_input;
-    imagename=fullfile_uvmat(RootPath,[],RootFile,ext_ima,nom_type_ima,1,[],1);
-    %imagename=name_generator(fullfile(RootPath,RootFile),1,1,ext_ima,nom_type_ima);
-    i1_str='';
-    j1_str='';
-    if ~isnan(i2)
-        num_ref_i=floor((num_ref_i+i2)/2);% reference image number corresponding to the file
-        browse.incr_pair(1)=i2-i1;
-        browse.incr_pair(2)=0;
-    end
-    %TODO: read the image name in the netcdf file (if documented)
-    %look for double image series '_i_j'
-    check_letter=~isempty(regexp(nom_type_nc,'[ab|AB]$'));%detect pair label by letter
-    if check_letter
-        j1_str=nom_type_nc(end-1);
-        r=regexp(nom_type_nc,'_(?<num1>\d+)','names');
-        if ~isempty(r)
-            i1_str=r.num1;
-        end
-    else
-        NomTypeIma=regexprep(nom_type_nc,'-\d','');%
-        r_end=regexp(NomTypeIma,'.\D(?<num2>\d+$','names');
-        if ~isempty(r_end)
-            j1_str=r.num2;
-        end
-    end
-    r=regexp(NomTypeIma,'_(?<num1>\d+)','names');
-    if ~isempty(r)
-        i1_str=r.num1;
-    end  
-    dirima=dir([RootName '_' i1_str '_' j1_str '.*']);
-    if isempty(dirima)
-        % look for images series  with sub marker '_'
-        dirima=dir([RootName '_*' i1_str  '.*']);
-        if isempty(dirima)
-            % look for other images series
-            dirima=dir([RootName '*' i1_str '.*']);
-            if isempty(dirima)
-                % look for other images series witth letter appendix
-                appendix=char(96+j1_str);
-                dirima=dir([RootName '*' i1_str appendix '.*']);
-            end
-        end
-    end
-    for ilist=1:numel(dirima)
-        %[pp,ff,i1_str,i2_str,j1_str,j2_str,ext_list,nom_type_list]=name2display(dirima(ilist).name);
-        [tild,tild,tild,i1,i2,j1,j2,ext_list,nom_type_list]=fileparts_uvmat(dirima(ilist).name);
-        form=imformats(ext_list(2:end));
-        if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-            ext_ima=ext_list;
-            nom_type_ima=nom_type_list;
-%             i1=str2double(i1_str);
-%             j1=str2double(j1_str);
-%             i2=str2double(i2_str);
-%             j2=str2double(j2_str);          
-            % set the range of fields (1:1 by default) and selected pair
-            if isempty(i2)
-                num_ref_i=i1;
-            else
-                num_ref_i=floor((i1+i2)/2);
-                browse.incr_pair(1)=i2-i1;
-                browse.incr_pair(2)=0;
-            end
-            if isempty(j2)
-                if isempty(j1)
-                    num_ref_j=1;
-                else
-                    num_ref_j=j1;
-                end
-            else
-                num_ref_j=floor((j1+j2)/2);
-                browse.incr_pair(2)=j2-j1;
-            end 
-            break
-        end
-    end
-end
-[RootPath,RootFile,i1_series,tild,j1_series,tild,NomType,FileType,Object]=find_file_series(imagename);
-MaxIndex_i=max(i1_series(i1_series>0));
-MaxIndex_j=max(j1_series(j1_series>0));
+% % form=imformats(ext_input(2:end));
+% check_letter=0;
+% check_separator=0;
+% if ~isempty(ext_input)&&(~isempty(imformats(ext_input(2:end)))||strcmpi(ext_input,'.avi'))% if the extension corresponds to an image or movie format recognized by Matlab
+%     ext_ima=ext_input;
+%     nom_type_ima=nom_type_input;
+%     imagename=fileinput;
+%     check_letter=~isempty(regexp(nom_type_ima,'[a|A]$'));%detect pair label by letter
+% else %case of netcdf input file, look for corresponding images
+%     nom_type_nc=nom_type_input;
+%     imagename=fullfile_uvmat(RootPath,[],RootFile,ext_ima,nom_type_ima,1,[],1);
+%     %imagename=name_generator(fullfile(RootPath,RootFile),1,1,ext_ima,nom_type_ima);
+%     i1_str='';
+%     j1_str='';
+%     if ~isnan(i2)
+%         num_ref_i=floor((num_ref_i+i2)/2);% reference image number corresponding to the file
+%         browse.incr_pair(1)=i2-i1;
+%         browse.incr_pair(2)=0;
+%     end
+%     %TODO: read the image name in the netcdf file (if documented)
+%     %look for double image series '_i_j'
+%     check_letter=~isempty(regexp(nom_type_nc,'[ab|AB]$'));%detect pair label by letter
+%     if check_letter
+%         j1_str=nom_type_nc(end-1);
+%         r=regexp(nom_type_nc,'_(?<num1>\d+)','names');
+%         if ~isempty(r)
+%             i1_str=r.num1;
+%         end
+%     else
+%         NomTypeIma=regexprep(nom_type_nc,'-\d','');%
+%         r_end=regexp(NomTypeIma,'.\D(?<num2>\d+$','names');
+%         if ~isempty(r_end)
+%             j1_str=r.num2;
+%         end
+%     end
+%     r=regexp(NomTypeIma,'_(?<num1>\d+)','names');
+%     if ~isempty(r)
+%         i1_str=r.num1;
+%     end  
+%     dirima=dir([RootName '_' i1_str '_' j1_str '.*']);
+%     if isempty(dirima)
+%         % look for images series  with sub marker '_'
+%         dirima=dir([RootName '_*' i1_str  '.*']);
+%         if isempty(dirima)
+%             % look for other images series
+%             dirima=dir([RootName '*' i1_str '.*']);
+%             if isempty(dirima)
+%                 % look for other images series witth letter appendix
+%                 appendix=char(96+j1_str);
+%                 dirima=dir([RootName '*' i1_str appendix '.*']);
+%             end
+%         end
+%     end
+%     for ilist=1:numel(dirima)
+%         %[pp,ff,i1_str,i2_str,j1_str,j2_str,ext_list,nom_type_list]=name2display(dirima(ilist).name);
+%         [tild,tild,tild,i1,i2,j1,j2,ext_list,nom_type_list]=fileparts_uvmat(dirima(ilist).name);
+%         form=imformats(ext_list(2:end));
+%         if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+%             ext_ima=ext_list;
+%             nom_type_ima=nom_type_list;
+% %             i1=str2double(i1_str);
+% %             j1=str2double(j1_str);
+% %             i2=str2double(i2_str);
+% %             j2=str2double(j2_str);          
+%             % set the range of fields (1:1 by default) and selected pair
+%             if isempty(i2)
+%                 num_ref_i=i1;
+%             else
+%                 num_ref_i=floor((i1+i2)/2);
+%                 browse.incr_pair(1)=i2-i1;
+%                 browse.incr_pair(2)=0;
+%             end
+%             if isempty(j2)
+%                 if isempty(j1)
+%                     num_ref_j=1;
+%                 else
+%                     num_ref_j=j1;
+%                 end
+%             else
+%                 num_ref_j=floor((j1+j2)/2);
+%                 browse.incr_pair(2)=j2-j1;
+%             end 
+%             break
+%         end
+%     end
+% end
+
 
 %% look for an image documentation file
 ext_imadoc='';%default
@@ -566,20 +640,20 @@ set(handles.first_j,'String',num2str(num_ref_j));
 set(handles.last_j,'String',num2str(num_ref_j));%
 
 %% set the civ options depending on the input file content
-ind_opening=0;%default
-if isequal(ext_input,'.nc')
-    browse.nom_type_nc=nom_type_input;
-    ind_opening=2;% propose 'fix' as the default option
-    Data=nc2struct(fileinput,'ListGlobalAttribute','CivStage','absolut_time_T0','fix','patch','civ2','fix2');
-    if isfield(Data,'Txt')
-        msgbox_uvmat('ERROR',Data.Txt)
-        return
-    end
-    if ~isempty(Data.CivStage)%test for civ files
-        ind_opening=Data.CivStage;
-        set(handles.ListPairMode,'Value',3)
-    end
-end
+% ind_opening=0;%default
+% if isequal(ext_input,'.nc')
+%     browse.nom_type_nc=nom_type_input;
+%     ind_opening=2;% propose 'fix' as the default option
+%     Data=nc2struct(fileinput,'ListGlobalAttribute','CivStage','absolut_time_T0','fix','patch','civ2','fix2');
+%     if isfield(Data,'Txt')
+%         msgbox_uvmat('ERROR',Data.Txt)
+%         return
+%     end
+%     if ~isempty(Data.CivStage)%test for civ files
+%         ind_opening=Data.CivStage;
+%         set(handles.ListPairMode,'Value',3)
+%     end
+% end
 ListOptions={'CheckCiv1', 'CheckFix1' 'CheckPatch1', 'CheckCiv2', 'CheckFix2', 'CheckPatch2'};
 for index = 1:ind_opening
     set(handles.(ListOptions{index}),'value',0)
@@ -594,7 +668,8 @@ update_CivOptions(handles,1)
 % test_ima_i=numel(nom_type_ima)>1 && isempty(regexp(nom_type_ima(2:end),'\D','once'))%=1 for images with single indexing
 % TODO: determine MaxIndex_i and MaxIndex_j using find_file_series (in the absence of xml file)
 % try
-if ~check_letter|| isequal(nom_type_nc,'_1-2')|| (MaxIndex_j==1)
+check_letter=~isempty(regexp(NomTypeIma,'[ab|AB]$'));%detect pair label by letter
+if ~check_letter|| isequal(NomTypeNc,'_1-2')|| (MaxIndex_j==1)
     set(handles.ListPairMode,'Value',1)
     set(handles.ListPairMode,'String',{'series(Di)'})   
 elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
@@ -652,7 +727,7 @@ if isempty(listdir)
 end
 
 %% store info
-browse.nom_type_ima=nom_type_ima;
+% browse.nom_type_ima=nom_type_ima;
 set(handles.RootName,'UserData',browse)% store the nomenclature type
 
 %% list the possible index pairs, depending on the option set in ListPairMode
