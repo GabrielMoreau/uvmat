@@ -1208,7 +1208,7 @@ Tinput=[];%default
 if isfield(CalibData,'rotate')
     Tinput=CalibData.rotate;
 end
-T=rotate_points(Tinput);%display translate_points GUI and get shift parameters 
+T=rotate_points(Tinput);%display rotate_points GUI to introduce rotation parameters 
 CalibData.rotate=T;
 set(handles.geometry_calib,'UserData',CalibData)
 %-----------------------------------------------------

@@ -129,7 +129,9 @@ if isfield(MaskData,'maskhandle')&& ishandle(MaskData.maskhandle)
     uistack(MaskData.maskhandle,'top');
 end
 num_i1_mask=mod(num_i1-1,MaskData.NbSlice)+1;
-[MaskName,mdetect]=name_generator(MaskData.Base,num_i1_mask,num_j1,'.png',MaskData.NomType);
+[RootPath,RootFile]=fullfile(MaskData.Base);
+MaskName=fullfile_uvmat(RootPath,'',RootFile,'.png',MaskData.NomType,num_i1_mask,[],num_j1);
+%[MaskName,mdetect]=name_generator(MaskData.Base,num_i1_mask,num_j1,'.png',MaskData.NomType);
 huvmat=get(handles.mask_test,'parent');
 UvData=get(huvmat,'UserData');
 

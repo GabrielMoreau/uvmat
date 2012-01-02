@@ -1,21 +1,14 @@
-%'translate_points': associated with GUI translate_points.fig to display message boxes, for error, warning or input calls
-% translate_points(title,display)
-%
+%'translate_points': associated with GUI translate_points.fig to display translation parameters
+%------------------------------------------------------------------------
+% function T=translate_points(Tinput)
+%------------------------------------------------------------------------
 % OUTPUT:
-% answer  (text string)= 'yes', 'No', 'cancel', or the text string introduced as input
-%
+% T=vector size(1,3), representing the translation components along x,y,z
+
 %INPUT:
-% title: string indicating the type of message box:
-%          title= 'INPUT_TXT','CONFIMATION' ,'ERROR', 'WARNING', 'INPUT_Y-N', default = 'INPUT_TXT' (the title is displayed in the upper bar of the fig). 
-%          if title='INPUT_TXT', input data is asked in an edit box
-%          if title='CONFIMATION'', 'ERROR', 'WARNING', the figure remains  opened until a button 'OK' is pressed
-%          if title='INPUT_Y-N', an answer Yes/No is requested
-% display, displayed text
-% default_answer: default answer in the edit box (only used with title='INPUT_TXT')
+% Tinput: like T, used to prefil the GUI edit boxs
 
 function varargout = translate_points(varargin)
-
-% Last Modified by GUIDE v2.5 05-Jan-2010 19:31:33
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;

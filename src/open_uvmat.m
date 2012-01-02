@@ -1,5 +1,10 @@
-%------------------------------------------------------------------------   
-% open with uvmat the  field selected in the list of 'civ/status' or 'series/check_data_files'
+% 'open_uvmat': open with uvmat the  field selected in the list of 'civ/status' or 'series/check_data_files'
+%------------------------------------------------------------------------
+%function open_uvmat(hObject, eventdata)
+%
+% INPUT: 
+% hObject: handle of uicontrol object containing the list 
+% eventdata: not used
 function open_uvmat(hObject, eventdata)
 %------------------------------------------------------------------------
 list=get(hObject,'String');

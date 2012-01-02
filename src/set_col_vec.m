@@ -1,5 +1,7 @@
-%'set_col_vec': sets the color code for vectors depending on a scalar vec_C and parameters given by the struct colcode
+%'set_col_vec': % sets the color code for vectors depending on a scalar and input parameters (used for plot_field)
+%-----------------------------------------------------------------------
 %function [colorlist,col_vec,minC,ColCode1,ColCode2,maxC]=colvec(colcode,vec_C)
+%-----------------------------------------------------------------------
 %OUTPUT
 %colorlist(nb,3); %list of nb colors
 %col_vec, size=[length(vec_C),3)];%list of color indices corresponding to vec_C

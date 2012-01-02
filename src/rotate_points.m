@@ -1,21 +1,16 @@
-%'rotate_points': associated with GUI rotate_points.fig to display message boxes, for error, warning or input calls
-% rotate_points(title,display)
-%
+%'rotate_points': associated with GUI rotate_points.fig to introduce (2D) rotation parameters
+%------------------------------------------------------------------------
+% function T=rotate_points(Tinput)
 % OUTPUT:
-% answer  (text string)= 'yes', 'No', 'cancel', or the text string introduced as input
+% T=vector size(1,3)
+%     T(1): rotation angle
+%     T(2): x coordiante of rotation axis
+%     T(3): y coordiante of rotation axis
 %
 %INPUT:
-% title: string indicating the type of message box:
-%          title= 'INPUT_TXT','CONFIMATION' ,'ERROR', 'WARNING', 'INPUT_Y-N', default = 'INPUT_TXT' (the title is displayed in the upper bar of the fig). 
-%          if title='INPUT_TXT', input data is asked in an edit box
-%          if title='CONFIMATION'', 'ERROR', 'WARNING', the figure remains  opened until a button 'OK' is pressed
-%          if title='INPUT_Y-N', an answer Yes/No is requested
-% display, displayed text
-% default_answer: default answer in the edit box (only used with title='INPUT_TXT')
+% Tinput: like T, used to prefil the GUI edit boxs
 
 function varargout = rotate_points(varargin)
-
-% Last Modified by GUIDE v2.5 05-Jan-2010 15:10:10
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;

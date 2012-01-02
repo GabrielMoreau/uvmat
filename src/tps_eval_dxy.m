@@ -1,15 +1,20 @@
-% 'DXYMatrix': calculate the matrix of thin-plate shell derivatives
-% 
-% function DMXY = DXYMatrix(dsites,ctrs)
+%'tps_eval_dxy': calculate the derivatives of thin plate spline (tps) interpolation at a set of points (limited to the 2D case)
+%------------------------------------------------------------------------
+% function [DMX,DMY] = tps_eval_dxy(dsites,ctrs)
+%------------------------------------------------------------------------
+% OUTPUT:
+%     DMX: Mx(N+3) matrix representing the contributions to the X
+%     derivatives at the M sites from unit sources located at each of the N
+%     centers, + 3 columns representing the contribution of the linear gradient part.
+%     DMY: idem for Y derivatives
 %
 % INPUT:
-%   dsites: M x s matrix of interpolation site coordinates (s=space dimension)
+%   dsites: M x s matrix of interpolation site coordinates (s=space dimension=2 here)
 %   ctrs: N x s matrix of centre coordinates (initial data)
 %
-% OUTPUT:
-%     DMXY: Mx(N+1+s)xs matrix corresponding to M interpolation sites and
-%            N centres, with s=space dimension, DMXY(:,:,k) gives the derivatives
-%            along dimension k (=x, y,z) after multiplication by the N+1+s tps sources.
+% related functions:
+% tps_coeff, tps_eval
+
   function [DMX,DMY] = tps_eval_dxy(dsites,ctrs)
   %%  matrix declarations
   [M,s] = size(dsites); [N,s] = size(ctrs);

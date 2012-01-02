@@ -722,8 +722,9 @@ for isub=1:NbSubDomain
             SubRangy(isub,1)=SubRangy(isub,1)-SizY/4;
             SubRangy(isub,2)=SubRangy(isub,2)+SizY/4;
         else
-            [U_smooth_sub,U_tps_sub]=tps_coeff(X(ind_sel),Y(ind_sel),U(ind_sel),rho);
-            [V_smooth_sub,V_tps_sub]=tps_coeff(X(ind_sel),Y(ind_sel),V(ind_sel),rho);
+            
+            [U_smooth_sub,U_tps_sub]=tps_coeff([X(ind_sel) Y(ind_sel)],U(ind_sel),rho);
+            [V_smooth_sub,V_tps_sub]=tps_coeff([X(ind_sel) Y(ind_sel)],V(ind_sel),rho);
             UDiff=U_smooth_sub-U(ind_sel);
             VDiff=V_smooth_sub-V(ind_sel);
             NormDiff=UDiff.*UDiff+VDiff.*VDiff;
@@ -750,8 +751,8 @@ for isub=1:NbSubDomain
 %                 display('fewsmooth')
                 % interpolation-smoothing is done again with the selected vectors
             else
-                [U_smooth_sub,U_tps_sub]=tps_coeff(X(ind_sel(ind_ind_sel)),Y(ind_sel(ind_ind_sel)),U(ind_sel(ind_ind_sel)),rho);
-                [V_smooth_sub,V_tps_sub]=tps_coeff(X(ind_sel(ind_ind_sel)),Y(ind_sel(ind_ind_sel)),V(ind_sel(ind_ind_sel)),rho);
+                [U_smooth_sub,U_tps_sub]=tps_coeff([X(ind_sel(ind_ind_sel)) Y(ind_sel(ind_ind_sel))],U(ind_sel(ind_ind_sel)),rho);
+                [V_smooth_sub,V_tps_sub]=tps_coeff([X(ind_sel(ind_ind_sel)) Y(ind_sel(ind_ind_sel))],V(ind_sel(ind_ind_sel)),rho);
                 U_smooth(ind_sel(ind_ind_sel))=U_smooth(ind_sel(ind_ind_sel))+U_smooth_sub;
                 V_smooth(ind_sel(ind_ind_sel))=V_smooth(ind_sel(ind_ind_sel))+V_smooth_sub;
                 nbpoints(isub)=numel(ind_ind_sel);
