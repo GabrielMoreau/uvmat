@@ -145,25 +145,23 @@ for i=1:length(list_fct)
     end
 end
 date_str=datestr(max(datnum));
-try 
-    [status]=system('svn --help');
-    if status==0
-        [tild,result]=system(['svn info ' dir_fct]);
-        t=regexp(result,'R.vision\s:\s(?<rev>\d+)','names');
-        svn_info.cur_rev=str2double(t.rev);
-        [tild,result]=system(['svn info -r ''HEAD'' '  dir_fct]);
-        t=regexp(result,'R.vision\s:\s(?<rev>\d+)','names');
-        svn_info.rep_rev=str2double(t.rev);
-        [tild,result]=system(['svn status'  dir_fct]);
-        svn_info.status=result;
-        if svn_info.rep_rev>svn_info.cur_rev
-            errormsg {length(errormsg)+1}=['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder'];
-        end
-        modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');
-        if ~isempty(modifications)
-            for k=1:length(modifications)
-                errormsg {length(errormsg)+1}=modifications{k};
-            end
+[status,result]=system('svn --help');
+if status==0
+    [tild,result]=system(['svn info ' dir_fct]);
+    t=regexp(result,'R.vision\s:\s(?<rev>\d+)','names');
+    svn_info.cur_rev=str2double(t.rev);
+    [tild,result]=system(['svn info -r ''HEAD'' '  dir_fct]);
+    t=regexp(result,'R.vision\s:\s(?<rev>\d+)','names');
+    svn_info.rep_rev=str2double(t.rev);
+    [tild,result]=system(['svn status'  dir_fct]);
+    svn_info.status=result;
+    if svn_info.rep_rev>svn_info.cur_rev
+        errormsg {length(errormsg)+1}=['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder'];
+    end
+    modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');
+    if ~isempty(modifications)
+        for k=1:length(modifications)
+            errormsg {length(errormsg)+1}=modifications{k};
         end
     end
 end
