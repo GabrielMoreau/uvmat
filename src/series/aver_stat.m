@@ -12,7 +12,7 @@
 %num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
 %Series: Matlab structure containing information set by the series interface
 %
-function GUI_input=aver_stat(num_i1,num_i2,num_j1,num_j2,Series)
+function GUI_input=aver_stat(Param)
 %----------------------------------------------------------------------
 % --- make average on a series of files
 %----------------------------------------------------------------------
@@ -24,7 +24,7 @@ function GUI_input=aver_stat(num_i1,num_i2,num_j1,num_j2,Series)
 %OTHER INPUTS given by the structure Series
 %  Series.Time: 
 %  Series.GeometryCalib:%requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
-if ~exist('num_i1','var')
+if ~exist('Param','var')
     GUI_input={'RootPath';'two';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
         'SubDir';'on';... % subdirectory of derived files (PIV fields), ('on' by default)
         'RootFile';'on';... %root input file name ('on' by default)
@@ -42,9 +42,16 @@ if ~exist('num_i1','var')
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-hseries=guidata(Series.hseries);%handles of the GUI series
-WaitbarPos=get(hseries.waitbar_frame,'Position');
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Input parameters: read the xml file fior batch case
+if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
+    Param=xml2struct(Param);
+    else
+        hseries=guidata(Param.hseries);%handles of the GUI series
+    WaitbarPos=get(hseries.waitbar_frame,'Position');
+end
+Param
+Param.IndexRange
 
 %% projection object
 test_object=get(hseries.GetObject,'Value');
@@ -59,20 +66,25 @@ if test_object%isfield(Series,'sethandles')
 end
 
 %% root input file and type
-if ~iscell(Series.RootPath)% case of a single input field series
-    num_i1={num_i1};num_j1={num_j1};num_i2={num_i2};num_j2={num_j2};
-    RootPath={Series.RootPath};
-    RootFile={Series.RootFile};
-    SubDir={Series.SubDir};
-    FileExt={Series.FileExt};
-    NomType={Series.NomType};
-else
-    RootPath=Series.RootPath;
-    RootFile=Series.RootFile;
-    SubDir=Series.SubDir;
-    NomType=Series.NomType;
-    FileExt=Series.FileExt;
-end   
+% if ~iscell(Series.RootPath)% case of a single input field series
+%     num_i1={num_i1};num_j1={num_j1};num_i2={num_i2};num_j2={num_j2};
+%     RootPath={Series.RootPath};
+%     RootFile={Series.RootFile};
+%     SubDir={Series.SubDir};
+%     FileExt={Series.FileExt};
+%     NomType={Series.NomType};
+% else
+%     RootPath=Series.RootPath;
+%     RootFile=Series.RootFile;
+%     SubDir=Series.SubDir;
+%     NomType=Series.NomType;
+%     FileExt=Series.FileExt;
+% end   
+    RootPath=Param.InputTable(:,1);
+    RootFile=Param.InputTable(:,3);
+    SubDir=Param.InputTable(:,2);
+    NomType=Param.InputTable(:,4);
+    FileExt=Param.InputTable(:,5);
 ext=FileExt{1};
 form=imformats(ext([2:end]));%test valid Matlab image formats
 testima=0;
@@ -133,7 +145,7 @@ for iview=1:nbview
 end
 
 %% number of slices
-NbSlice=Series.IndexRange.NbSlice;
+NbSlice=Param.IndexRange.NbSlice;
 NbSlice_name=num2str(NbSlice);
 
 %% Field and velocity type (the same for the two views)
@@ -160,7 +172,7 @@ end
 
 %% get the velocity type
 testcivx=0;
-FileExt=get(hseries.FileExt,'String');
+% FileExt=get(hseries.FileExt,'String');
 if ~isequal(FieldName,{'get_field...'})
     testcivx=isequal(FileType{1},'netcdf');
 end
@@ -296,7 +308,7 @@ end
 %% coordinate transform or other user defined transform
 transform_fct=[];%default
 if isfield(Series,'transform_fct')
-    transform_fct=Series.transform_fct;
+    transform_fct=Param.transform_fct;
 end
 
 %% main loop
@@ -455,12 +467,12 @@ for i_slice=1:NbSlice
         end
         display([fileresult{i_slice} ' written']);
     else %case of netcdf input file , determine global attributes
-        DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {Series.Action}];
+        DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {Param.Action}];
         ActionKey='Action';
         while isfield(DataMean,ActionKey)
             ActionKey=[ActionKey '_1'];
         end
-        eval(['DataMean.' ActionKey '=Series.Action;'])
+        eval(['DataMean.' ActionKey '=Param.Action;'])
         DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {ActionKey}];
         if isfield(DataMean,'Time')
             DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {'Time','Time_end'}];

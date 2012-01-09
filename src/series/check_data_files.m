@@ -133,7 +133,7 @@ for iview=1:nbview
                         end 
                     end
                     Tabchar(1,i_slice)={['slice #' num2str(i_slice)]};
-                    Tabchar(index+1,i_slice)={[file '   ' lastfield]};
+                    Tabchar(index+1,i_slice)={[file '...' lastfield]};
                 end
             end
         end
@@ -164,6 +164,6 @@ for iview=1:nbview
     end
     set(hfig,'name',['view= ' num2str(iview)])
    
-    h=uicontrol('Style','listbox', 'Position', [20 20 500 300], 'String', Tabchar, 'Callback', @ncbrowser_uvmat);
+    h=uicontrol('Style','listbox', 'Position', [20 20 500 300], 'String', Tabchar, 'Callback', {'open_uvmat'});
     hh=uicontrol('Style','listbox', 'Position', [20 340 500 40], 'String', message);
 end
