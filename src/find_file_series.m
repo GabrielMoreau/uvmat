@@ -180,6 +180,7 @@ else
     % scan the list of relevant files, extract the indices
     for ifile=1:nbpair
         rr=regexp(dirpair(ifile).name,detect_string,'names');
+        if ~isempty(rr)
         i1=str2num(rr.i1);
         i2=str2num(rr.i2);
         j1=stra2num(rr.j1);
@@ -230,6 +231,7 @@ else
         if ~isempty(j2_input)
             j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
             j2_series(ref_i+1,ref_j+1,nb_pairs+1)=j2;
+        end
         end
     end
     % look for the numerical string of the first files to update the NomType (take into account the 0 before the number)

@@ -25,7 +25,7 @@ function [U_smooth,U_tps]=tps_coeff(ctrs,U,rho)
 %rho smoothing parameter
 % X=reshape(X,[],1);
 % Y=reshape(Y,[],1);
-% N=numel(X);
+N=size(ctrs,1);
 % rhs = reshape(U,[],1);
 U = [U; zeros(3,1)];
 % ctrs = [X Y];% coordinates of measurement sites, radial base functions are located at the measurement sites
