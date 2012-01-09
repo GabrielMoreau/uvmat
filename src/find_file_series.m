@@ -87,41 +87,89 @@ switch FileExt
             end
             try
                 if exist('VideoReader','file')%recent version of Matlab
-                    Object=VideoReader(fileinput);    
+                    Object=VideoReader(fileinput);
                 else
-                    Object=mmreader(fileinput);%older Matlab function for movies                
+                    Object=mmreader(fileinput);%older Matlab function for movies
                 end
                 NomType='*';
-                FileType='video';  
+                FileType='video';
                 i1_series=(1:get(Object,'NumberOfFrames'))';
             end
         end
 end
 
-%% get the list of existing files when relevant
 if strcmp(NomType,'')||strcmp(NomType,'*')
     if exist(fileinput,'file')
-    [RootPath,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
+        [RootPath,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
     else
-       RootPath='';
-       RootFile='';
+        RootPath='';
+        RootFile='';
     end
-else
-    if strcmp(SubDir,'')
-        filebasesub=fullfile(RootPath,RootFile);
-    else
-        filebasesub=fullfile(RootPath,SubDir,RootFile);
+else   
+    %% analyse the list of existing files when relevant
+    sep1='';
+    i1_str='(?<i1>)';
+    i1_star='';
+    sep2='';
+    i2_str='(?<i2>)';
+    i2_star='';
+    sep3='';
+    j1_str='(?<j1>)';
+    j1_star='';
+    sep4='';
+    j2_str='(?<j2>)';
+    j2_star='';
+    NomTypeStr=NomType;
+    if ~isempty(regexp(NomTypeStr,'^_\d'))
+        sep1='_';
+        NomTypeStr(1)=[];%remove '_' from the beginning of NomTypeStr
     end
-    detect_string=regexprep(NomType,'\d','*');%replace numbers by '*'
-    old_string='';
-    detect_string=regexprep(detect_string,'[ab]$','*');%suppress the possible letter ab at the end
-    detect_string=regexprep(detect_string,'[AB]$','*');%suppress the possible letter ab at the end
-    detect_string=regexprep(detect_string,'[a|A]$','*');%suppress a possible second letter a,A at the end
-    while ~strcmp(detect_string,old_string)%removes multiple '*'
-        old_string=detect_string;
-        detect_string=regexprep(detect_string,'**','*');
+    r=regexp(NomTypeStr,'^(?<num1>\d+)','names');%look for a number at the beginning of NomTypeStr
+    if ~isempty(r)
+        i1_str='(?<i1>\d+)';
+        i1_star='*';
+        NomTypeStr=regexprep(NomTypeStr,['^' r.num1],'');
+        r=regexp(NomTypeStr,'^-(?<num2>\d+)','names');%look for a pair i1-i2
+        if ~isempty(r)
+            sep2='-';
+            i2_str='(?<i2>\d+)';
+            i2_star='*';
+            NomTypeStr=regexprep(NomTypeStr,['^-' r.num2],'');
+        end
+        if ~isempty(regexp(NomTypeStr,'^_'));
+            sep3='_';
+            NomTypeStr(1)=[];%remove '_' from the beginning of NomTypeStr
+        end
+        if ~isempty(regexp(NomTypeStr,'^[a|A]'));
+            j1_str='(?<j1>[a-z]|[A-Z])';
+            j1_star='*';
+            if ~isempty(regexp(NomTypeStr,'[b|B]$'));
+                j2_str='(?<j1>[a-z]|[A-Z])';
+                j2_star='*';
+            end
+        else
+            r=regexp(NomTypeStr,'^(?<num3>\d+)','names');
+            if ~isempty(r)
+                j1_str='(?<j1>\d+)';
+                 j1_star='*';
+                NomTypeStr=regexprep(NomTypeStr,['^' r.num3],'');
+            end
+            r=regexp(NomTypeStr,'-(?<num4>\d+)','names');
+            if ~isempty(r)
+                sep4='-';
+                j2_str='(?<j2>\d+)';
+                 j2_star='*';
+            end
+        end
     end
-    dirpair=dir([filebasesub detect_string FileExt]);
+    detect_string=[sep1 i1_str sep2 i2_str sep3 j1_str sep4 j2_str];%string used in regexp to detect file indices
+    %find the string used to extract the relevant files with the command dir
+    star_string=['*' sep1 i1_star sep2 i2_star sep3 j1_star sep4 j2_star '*'];
+    wd=pwd;%current working directory
+    RR=fullfile(RootPath,SubDir);
+    cd (RR)% move to the local dir to save time in the operation dir.
+    dirpair=dir([RootFile star_string FileExt]);% look for relevant files in the file directory
+    cd(wd)
     nbpair=numel(dirpair);
     ref_i_list=zeros(1,nbpair);
     ref_j_list=zeros(1,nbpair);
@@ -129,8 +177,13 @@ else
         RootPath='';
         RootFile='';
     end
+    % scan the list of relevant files, extract the indices
     for ifile=1:nbpair
-        [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(dirpair(ifile).name);
+        rr=regexp(dirpair(ifile).name,detect_string,'names');
+        i1=str2num(rr.i1);
+        i2=str2num(rr.i2);
+        j1=stra2num(rr.j1);
+        j2=stra2num(rr.j2);
         ref_i=i1;
         if isempty(i2_input)
             if ~isempty(i2)% invalid file name if i2 does not exist in the input file
@@ -186,13 +239,13 @@ else
     else
         ref_ij=ref_i_list*max_j+ref_j_list; % ordered by index i, then by j for a given i.
     end
-    [tild,ifile]=min(ref_ij(ref_ij>0));
-    if isempty(ifile)
+    [tild,ifile_min]=min(ref_ij(ref_ij>0));
+    if isempty(ifile_min)
         RootPath='';
         RootFile='';
         NomType='';
     else
-    [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ifile).name);
+        [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ifile_min).name);
     end
 end
 

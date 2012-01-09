@@ -1086,6 +1086,10 @@ end
 % --- Executes on button press in RUN.
 function RUN_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+%% Read parameters from series
+Series=read_GUI(handles.series)%TODO: extend to all input param
+Series.hseries=handles.series; % handles to the series GUI
+
 %% read root name and field type
 set(handles.RUN,'BusyAction','queue');
 set(0,'CurrentFigure',handles.series)
@@ -1095,14 +1099,9 @@ if isequal(get(handles.GetObject,'Visible'),'on') && isequal(get(handles.GetObje
 else
     Series.GetObject=0;
 end
-SeriesData=get(handles.series,'UserData');
+% SeriesData=get(handles.series,'UserData');
 
 % Series.hseries=handles.series; % handles to the series GUI
-
-%% Read parameters from series
-Series=read_GUI(handles.series);%TODO: extend to all input param
-Series.hseries=handles.series; % handles to the series GUI
-
    first_i=1;
    last_i=1;
    incr_i=1;
@@ -1128,33 +1127,29 @@ SubDir=Series.InputTable(:,2);
 RootFile=Series.InputTable(:,3);
 NomType=Series.InputTable(:,4);
 FileExt=Series.InputTable(:,5);
-% RootPath=get(handles.RootPath,'String');% path of the root name of the first field series
-% RootFile=get(handles.RootFile,'String');% root name of the first field series 
-% SubDir=get(handles.SubDir,'String');% subdirectory for netcdf files
-% FileExt=get(handles.FileExt,'String');%file extension
-if isempty(SeriesData)
-    msgbox_uvmat('ERROR','no input file series')
-    return
-end
+% if isempty(SeriesData)
+%     msgbox_uvmat('ERROR','no input file series')
+%     return
+% end
 % NomType=SeriesData.NomType;
-if length(RootPath)==1 %string character input for user fct
-    Series.RootPath=RootPath{1};
-    Series.RootFile=RootFile{1};
-    Series.SubDir=SubDir{1};
-    Series.FileExt=FileExt{1};
-    Series.NomType=NomType{1};
-else %cell input for user fct
-    Series.RootPath=RootPath;
-    Series.RootFile=RootFile;
-    Series.SubDir=SubDir;
-    Series.FileExt=FileExt;
-    Series.NomType=NomType;
-end
-if isequal(get(handles.FieldMenu,'Visible'),'on')
-    FieldMenu=get(handles.FieldMenu,'String');
-    FieldValue=get(handles.FieldMenu,'Value');
-    Series.Field=FieldMenu(FieldValue);
-end
+% if length(RootPath)==1 %string character input for user fct
+%     Series.RootPath=RootPath{1};
+%     Series.RootFile=RootFile{1};
+%     Series.SubDir=SubDir{1};
+%     Series.FileExt=FileExt{1};
+%     Series.NomType=NomType{1};
+% else %cell input for user fct
+%     Series.RootPath=RootPath;
+%     Series.RootFile=RootFile;
+%     Series.SubDir=SubDir;
+%     Series.FileExt=FileExt;
+%     Series.NomType=NomType;
+% end
+% if isequal(get(handles.FieldMenu,'Visible'),'on')
+%     FieldMenu=get(handles.FieldMenu,'String');
+%     FieldValue=get(handles.FieldMenu,'Value');
+%     Series.Field=FieldMenu(FieldValue);
+% end
 menu_coord_state=get(handles.transform_fct,'Visible');
 Series.CoordType='';%default
 if isequal(menu_coord_state,'on')
@@ -1163,24 +1158,6 @@ if isequal(menu_coord_state,'on')
     transform_list=get(handles.transform_fct,'UserData');
     Series.transform_fct=transform_list{menu_index};% transform function handles
 end
-    
-%     
-% first_i=str2num(get(handles.num_first_i,'String'));
-% last_i=str2num(get(handles.num_last_i,'String'));
-% incr_i=str2num(get(handles.num_incr_i,'String'));
-% first_j=str2num(get(handles.num_first_j,'String'));
-% last_j=str2num(get(handles.num_last_j,'String'));
-% incr_j=str2num(get(handles.num_incr_j,'String'));
-% if ~isequal(get(handles.num_first_i,'Visible'),'on')
-%    first_i=1;
-%    last_i=1;
-%    incr_i=1;
-% end
-% if ~isequal(get(handles.num_first_j,'Visible'),'on')
-%     first_j=1;
-%     last_j=1;
-%     incr_j=1;
-% end
 
 %reinitiate waitbar position
 Series.WaitbarPos=get(handles.waitbar_frame,'Position');%TO SUPPRESS
@@ -1201,25 +1178,6 @@ nbfield=cell2mat(Series.IndexRange.MaxIndex);
 nb=min(nbfield,1);
 nbfield=nb(1);
 nbfield2=nb(2);
-% nbfield2=cell2mat(Series.IndexRange.MaxIndex);
-% nbfield=min(nbfield);
-% % nbfield=[]; %default
-% % for iview=1:length(nbfield_cell)
-% %     nb=nbfield_cell{iview};
-% %     if ~isempty(nb)
-% %         nbfield=[nbfield nb];
-% %     end
-% % end
-% % nbfield=min(nbfield);
-% nbfield2_cell=get(handles.num_MaxIndex_j,'String');
-% nbfield2=[]; %default
-% for iview=1:length(nbfield2_cell)
-%     nb=str2num(nbfield2_cell{iview});
-%     if ~isempty(nb)
-%         nbfield2=[nbfield2 nb];
-%     end
-% end
-% nbfield2=min(nbfield2);
 
 %get complementary information from the 'series' interface
 list_action=get(handles.ACTION,'String');% list menu action
@@ -1232,94 +1190,64 @@ ind_shift=0;%default
 
 %determine the list of input file names
 nbmissing=0;
-for iview=1:length(RootPath)
-    %case of pairs (.nc files)
-    fileinput=name_generator(fullfile(RootPath{iview},RootFile{iview}),first_i,first_j,FileExt{iview},NomType{iview},1,first_i+1,first_j+1,SubDir{iview});
-    if strcmp(get(handles.Pairs,'Visible'),'on')
-       pair_list=get(handles.list_pair_civ,'String');
-       val=get(handles.list_pair_civ,'Value');
-       pair_string=pair_list{val};
-       r=regexp(pair_string,'.*\D(?<num1>[\d+|*])(?<delim>[-||])(?<num2>[\d+|*])','names');
-       if ~isempty(r)
-           if strcmp(r.num1,'*')%free pairs
-               [tild,RootFile,i1_series,i2_series,j1_series,j2_series,tild,tild,Object]=find_file_series(fileinput)% TODO: choice pair when multiple choice
- 
-               if isempty(i2_series) %j pairs
-                   ind_sel=i1_series>=i1_series>=first_i & i1_series<=last_i & j1_series>first_j & j2_series<last_j;
-                   j2_series=j2_series(ind_sel);
-               else%i pairs
-                   if isempty(j1_series) %j pairs
-                        ind_sel=i1_series>=first_i & i2_series<=last_i ;
-                   else
-                       ind_sel=i1_series>=first_i & i2_series<=last_i& j1_series>first_j & j1_series<last_j; 
-                       j1_series=j1_series(ind_sel);
-                       i2_series=i2_series(ind_sel);
-                   end
-               end
-               i1_series=i1_series(ind_sel);             
-           else
-               if strcmp(r.delim,'-')
-                   ind_shift(1)=str2num(r.num1);
-                   ind_shift(2)=str2num(r.num2);
-               else
-                   ind_shift(1)=-str2num(r.num1);
-                   ind_shift(2)=str2num(r.num2);
-               end
-               [i1_series,i2_series,j1_series,j2_series,nbmissing]=find_file_indices(num_i,num_j,ind_shift,NomType{iview},mode);
-           end
-       end
-       if isempty(i1_series)
-           msgbox_uvmat('ERROR','no file in the considered range')
-           return
-       end
-       if isempty(i2_series)
-           i2_series=i1_series;
-       end
-       if isempty(j2_series)
-           j2_series=j1_series;
-       end 
-%     if isequal(NomType{iview},'_1_1-2')|| isequal(NomType{iview},'_1-2_1')|| isequal(NomType{iview},'_1-2')|| isequal(NomType{iview},'#_ab')
-%         ind_shift=SeriesData.displ_num(iview,:);
-%         if isequal(ind_shift,[0 0 0 0]) % undefined pairs
-%             if isequal(NomType{iview},'#_ab')
-%                 mode='#_ab';
-%             end
-%             [num_i1,i2_series,j1_series,num_j2,nbmissing]=netseries_generator(fullfile(RootPath{iview},RootFile{iview}),SubDir{iview},mode,num_first_i,num_incr_i,num_last_i,num_first_j,num_incr_j,num_last_j);
-%         else    
-%             [num_i1,num_i2,num_j1,num_j2,num_i,num_j]=find_file_indices(num_i,num_j,ind_shift,NomType{iview},mode);
-%             if isempty(num_i)
-%                 msgbox_uvmat('ERROR','ERROR: empty set of input files chosen')
-%                 return
-%             end
-%             if num_i(1)>num_first_i
-%                set(handles.num_first_i,'String',num2str(num_i(1)))%update the display of first field
-%                last_i_Callback(hObject, eventdata, handles)
-%             end
-%             if num_i(end)<num_last_i
-%                set(handles.num_last_i,'String',num2str(num_i(end)))%update the display of last field
-%                last_i_Callback(hObject, eventdata, handles)
-%             end
-%             if num_j(1)>num_first_j
-%                set(handles.num_first_j,'String',num2str(num_j(1)))%update the display of first field
-%                last_j_Callback(hObject, eventdata, handles)
-%             end
-%             if num_j(end)<num_last_j
-%                set(handles.num_last_j,'String',num2str(num_j(end)))%update the display of last field
-%                last_j_Callback(hObject, eventdata, handles)
-%             end 
-%         end
-    else%case of images
-        [i1_series,j1_series]=meshgrid(num_i,num_j);
-        i2_series=i1_series;
-        j2_series=j1_series;
-    end
-    if length(RootPath)>1
-        i1_series_cell{iview}=i1_series;
-        i2_series_cell{iview}=i2_series;
-        j1_series_cell{iview}=j1_series;
-        j2_series_cell{iview}=j2_series;
-    end
-end
+% for iview=1:length(RootPath)
+%     %case of pairs (.nc files)
+%     fileinput=name_generator(fullfile(RootPath{iview},RootFile{iview}),first_i,first_j,FileExt{iview},NomType{iview},1,first_i+1,first_j+1,SubDir{iview});
+%     if strcmp(get(handles.Pairs,'Visible'),'on')
+%        pair_list=get(handles.list_pair_civ,'String');
+%        val=get(handles.list_pair_civ,'Value');
+%        pair_string=pair_list{val};
+%        r=regexp(pair_string,'.*\D(?<num1>[\d+|*])(?<delim>[-||])(?<num2>[\d+|*])','names');
+%        if ~isempty(r)
+%            if strcmp(r.num1,'*')%free pairs
+%                [tild,RootFile,i1_series,i2_series,j1_series,j2_series,tild,tild,Object]=find_file_series(fileinput);% TODO: choice pair when multiple choice
+%  
+%                if isempty(i2_series) %j pairs
+%                    ind_sel=i1_series>=i1_series>=first_i & i1_series<=last_i & j1_series>first_j & j2_series<last_j;
+%                    j2_series=j2_series(ind_sel);
+%                else%i pairs
+%                    if isempty(j1_series) %j pairs
+%                         ind_sel=i1_series>=first_i & i2_series<=last_i ;
+%                    else
+%                        ind_sel=i1_series>=first_i & i2_series<=last_i& j1_series>first_j & j1_series<last_j; 
+%                        j1_series=j1_series(ind_sel);
+%                        i2_series=i2_series(ind_sel);
+%                    end
+%                end
+%                i1_series=i1_series(ind_sel);             
+%            else
+%                if strcmp(r.delim,'-')
+%                    ind_shift(1)=str2num(r.num1);
+%                    ind_shift(2)=str2num(r.num2);
+%                else
+%                    ind_shift(1)=-str2num(r.num1);
+%                    ind_shift(2)=str2num(r.num2);
+%                end
+%                [i1_series,i2_series,j1_series,j2_series,nbmissing]=find_file_indices(num_i,num_j,ind_shift,NomType{iview},mode);
+%            end
+%        end
+%        if isempty(i1_series)
+%            msgbox_uvmat('ERROR','no file in the considered range')
+%            return
+%        end
+%        if isempty(i2_series)
+%            i2_series=i1_series;
+%        end
+%        if isempty(j2_series)
+%            j2_series=j1_series;
+%        end 
+%     else%case of images
+%         [i1_series,j1_series]=meshgrid(num_i,num_j);
+%         i2_series=i1_series;
+%         j2_series=j1_series;
+%     end
+%     if length(RootPath)>1
+%         i1_series_cell{iview}=i1_series;
+%         i2_series_cell{iview}=i2_series;
+%         j1_series_cell{iview}=j1_series;
+%         j2_series_cell{iview}=j2_series;
+%     end
+% end
 
 %% defining the ACTION function handle
 path_series=which('series');
@@ -1343,12 +1271,14 @@ end
 
 %% RUN ACTION
 Series.Action=action;%name of the processing programme
+Series
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
-if length(RootPath)>1
-    h_fun(i1_series_cell,i2_series_cell,j1_series_cell,j2_series_cell,Series);
-else
-    h_fun(i1_series,i2_series,j1_series,j2_series,Series);
-end
+h_fun(Series);
+% if length(RootPath)>1
+%     h_fun(i1_series_cell,i2_series_cell,j1_series_cell,j2_series_cell,Series);
+% else
+%     h_fun(i1_series,i2_series,j1_series,j2_series,Series);
+% end
 set(handles.RUN,'BackgroundColor',[1 0 0])
 
 % %save the current interface setting as figure namefig, append .0 to the name if it already exists

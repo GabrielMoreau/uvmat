@@ -35,32 +35,6 @@
 % fileparts_uvmat, num2stra, stra2num.
 
 function filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1,i2,j1,j2)
-% sizf=size(filebase);
-% if (~ischar(filebase)||~isequal(sizf(1),1)),filebase='';end
-% if ~exist('ext','var')
-%     ext='';
-% end
-% if ~exist('nom_type','var')
-%     nom_type='';
-% end
-% if ~ischar(ext),ext='';end
-% % idetect=0;
-% if ~exist('i1','var') || isempty(i1) || isnan(i1)
-%     i1=1; %default
-% end
-% if ~exist('j1','var') ||  isempty(j1) || isnan(j1)
-%     j1=1; %default
-% end
-% if ~exist('i2','var') ||  isempty(i2) || isnan(i2)
-%     i2=i1; %default
-% end
-% if ~exist('j2','var') || isempty(j2) || isnan(j2)
-%     j2=j1; %default
-% end
-% if ~exist('subdir','var')|| isempty(subdir) 
-%     subdir='' ; %default
-% end
-
     
 %% display help and test function in the absence of input arument
 if ~exist('RootPath','var')
@@ -74,7 +48,7 @@ if ~exist('j2','var')
     j2=[];
 end
 if isequal(j1,j2)
-    j2=[];
+    j2=[];% suppress the secodn index if equal to the first
 end
 if ~exist('j1','var') 
     j1=1;
@@ -83,7 +57,7 @@ if ~exist('i2','var')
     i2=[];
 end
 if isequal(i1,i2)
-    i2=[];
+    i2=[];% suppress the secodn index if equal to the first
 end
 if ~exist('i1','var') 
     i1=1;
@@ -107,11 +81,13 @@ end
 r=regexp(NomType,'^(?<num1>\d+)','names');%look for a number at the beginning of NomType
 if ~isempty(r)
     i1_str=num2str(i1,['%0' num2str(length(r.num1)) 'd']);
-    NomType=regexprep(NomType,['^' r.num1],'');
+    NomType=regexprep(NomType,['^' r.num1],'');   
     r=regexp(NomType,'^-(?<num2>\d+)','names');%look for a pair i1-i2
     if ~isempty(r)
+         if ~isempty(i2)
         sep2='-';
          i2_str=num2str(i2,['%0' num2str(length(r.num2)) 'd']);
+         end
          NomType=regexprep(NomType,['^-' r.num2],'');
     end
     if ~isempty(regexp(NomType,'^_'));
@@ -120,7 +96,7 @@ if ~isempty(r)
     end
     if ~isempty(regexp(NomType,'^[a|A]'));
         j1_str=num2stra(j1,NomType);
-        if ~isempty(regexp(NomType,'[b|B]$'));
+        if ~isempty(regexp(NomType,'[b|B]$'))&& ~isempty(j2);
             j2_str=num2stra(j2,NomType);
         end
     else
@@ -129,10 +105,12 @@ if ~isempty(r)
             j1_str=num2str(j1,['%0' num2str(length(r.num3)) 'd']);
             NomType=regexprep(NomType,['^' r.num3],'');
         end
+        if ~isempty(j2) 
         r=regexp(NomType,'-(?<num4>\d+)','names');
-        if ~isempty(r)&& ~isempty(j2)
+        if ~isempty(r)
             sep4='-';
             j2_str=num2str(j2,['%0' num2str(length(r.num4)) 'd']);
+        end
         end
     end
 end

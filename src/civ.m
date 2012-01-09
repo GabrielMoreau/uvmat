@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 21-Dec-2011 00:34:49
+% Last Modified by GUIDE v2.5 08-Jan-2012 11:00:13
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -138,9 +138,8 @@ if isempty(filebase)|| isequal(filebase,'')%loads the previously stored root fil
 else
     oldfile=filebase;
 end
-% ind_opening=1;%default
-% browse.incr_pair=[0 0]; %default
-%% get the new input fiel with the browser
+
+%% get the new input file with the browser
 menu={'*.xml;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.nc;', ' (*.xml,*.civ,*.png,*.jpg ,.tif, *.avi,*.nc)';
     '*.xml',  '.xml files '; ...
     '*.civ',  '.civ files '; ...
@@ -158,52 +157,29 @@ if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a
 %% case of the xml file opened as input (TODO: check and see whether it is useful)
 [path,name,ext]=fileparts(fileinput);
 testeditxml=0;
-if isequal(ext,'.xml')
-    testeditxml=1;
-    t_browse=xmltree(fileinput);
-    head_element=get(t_browse,1);
-    if isfield(head_element,'name')&& isequal(head_element.name,'ImaDoc')
-        testeditxml=0;
-    end
-end
-if testeditxml==1 || isequal(ext,'.xls')
-    heditxml=editxml({fileinput});
-    set(heditxml,'Tag','browser')
-    waitfor(heditxml,'Tag','idle')
-    if ~ishandle(heditxml)
-        return
-    end
-    attr=findobj(get(heditxml,'children'),'Tag','CurrentAttributes');
-    set(handles.browse,'UserData',fileinput)% store for future opening with browser
-    fileinput=get(attr,'UserData');
-    if ~exist(fileinput,'file')
-        return
-    end
-end
-%[RootPath,RootFile,str1,str2,str_a,str_b,FileExt,NomType,subdir]=name2display(fileinput);
+% if isequal(ext,'.xml')
+%     testeditxml=1;
+%     t_browse=xmltree(fileinput);
+%     head_element=get(t_browse,1);
+%     if isfield(head_element,'name')&& isequal(head_element.name,'ImaDoc')
+%         testeditxml=0;
+%     end
+% end
+% if testeditxml==1 || isequal(ext,'.xls')
+%     heditxml=editxml({fileinput});
+%     set(heditxml,'Tag','browser')
+%     waitfor(heditxml,'Tag','idle')
+%     if ~ishandle(heditxml)
+%         return
+%     end
+%     attr=findobj(get(heditxml,'children'),'Tag','CurrentAttributes');
+%     set(handles.browse,'UserData',fileinput)% store for future opening with browser
+%     fileinput=get(attr,'UserData');
+%     if ~exist(fileinput,'file')
+%         return
+%     end
+% end
 [tild,tild,tild,i1,i2,j1,j2,FileExt,NomType]=fileparts_uvmat(fileinput);
-% filebase=fullfile(RootPath,RootFile);
-
-%% record the information obtained from the input file
-% if isempty(i1),i1=1;end
-% if isempty(i2),i2=i1;end
-% if isempty(j1),j1=1;end
-% if isempty(j2),j2=j1;end
-% if isequal(get(handles.ListCompareMode,'Value'),1)
-%     browse=[];%initialisation
-% else
-%     browse=get(handles.RootName,'UserData');
-% end
-% browse.num_i1=i1;
-% browse.num_i2=i2;
-% browse.num_j1=j1;
-% browse.num_j2=j2;
-% if length(FileExt)>1 && (~isempty(imformats(FileExt(2:end)))||strcmpi(FileExt,'.avi'));%if an image file has been opened by uvmat
-%     browse.nom_type_ima=NomType;
-%     browse.ext_ima=FileExt;
-%     set(handles.ImaExt,'String',FileExt)
-% end
-% set(handles.RootName,'UserData',browse);% store information from browser
 
 %% prepare the GUI with parameters from the input file 
 set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
@@ -320,10 +296,15 @@ end
 function RootName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.RootName,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
-filebase=get(handles.RootName,'String');
-errormsg=display_file_name(handles,filebase);
+[RootPath,RootFile]=fileparts(get(handles.RootName,'String'));
+ref_i=str2num(get(handles.ref_i,'String'));
+ref_j=str2num(get(handles.ref_j,'String'));
+NomType=get(handles.NomType,'String');
+ImaExt=get(handles.ImaExt,'String');
+fileinput=fullfile_uvmat(RootPath,'',RootFile,ImaExt,NomType,ref_i,[],ref_j)
+errormsg=display_file_name(handles,fileinput);
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',erromsg)
+    msgbox_uvmat('ERROR',errormsg)
 end
 set(handles.RootName,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 %------------------------------------------------------------------------
@@ -345,41 +326,37 @@ if isfield(handles,'status')
 end
 
 %% determine nomenclature types and extension of the input files
-ext_ima='';%default
-NomTypeIma='';%default
-NomTypeNc='';
-%[RootPath,RootFile,i1_str,i2_str,j1_str,j2_str,ext_input,nom_type_input,SubDir]=name2display(fileinput);
 [RootPath,SubDir,RootFile,i1,i2,j1,j2,ExtInput,NomTypeInput]=fileparts_uvmat(fileinput);
-[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomTypeInput,FileType,Object]=find_file_series(fileinput);
-if strcmp(NomTypeInput,'*')% movies will be opened at the first frame
-    i1=1;
-    i2=[];
-    j1=[];
-    j2=[];
-end  
+NomTypeNc='';%default
+
+%% case of netcdf file as input, look for a coresponding image
 ind_opening=0;%default
-switch FileType
-    case 'civdata'
-        Data=nc2struct(fileinput,'ListGlobalAttribute','CivStage','Civ1_ImageA');
-        if isfield(Data,'Txt')
-            errormsg=Data.Txt;
-            return
-        end
+if strcmp(ExtInput,'.xml')
+    Param=xml2struct(fileinput);
+    fill_GUI(Param,handles);%fill the GUI with the parameters retrieved from the xml file 
+    return
+end
+if strcmp(ExtInput,'.nc')
+    NomTypeNc=NomTypeInput;
+    Data=nc2struct(fileinput,'ListGlobalAttribute','Conventions','absolut_time_T0','CivStage','Civ2_ImageA','Civ1_ImageA','fix','patch','civ2','fix2');
+    if isfield(Data,'Txt')
+        errormsg=Data.Txt;
+        return
+    end
+    if strcmp(Data.Conventions,'uvmat/civdata')% case of new civ data,
+        set(handles.MenuMatlab,'checked','on') %select civ/Matlab by default
+        set(handles.MenuCivX,'checked','off')
         if ~isempty(Data.CivStage)%test for civ files
             ind_opening=Data.CivStage;
         end
-        if ~isempty(Data.Civ1_ImageA)%test for civ files
+        if ~isempty(Data.Civ2_ImageA)%get the corresponding input image in the netcdf file
             imageinput=Data.Civ1_ImageA;
-            if ~exist(imageinput,'file')
-                errormsg=['the image ' imageinput ' does not exist, please enter an image'];
-                return
-            end
+        elseif ~isempty(Data.Civ1_ImageA)
+            imageinput=Data.Civ1_ImageA;
         end
-        set(handles.MenuMatlab,'checked','on')
-        set(handles.MenuCivX,'checked','off')
-        NomTypeNc=NomTypeInput;
-    case 'civx'
-        Data=nc2struct(fileinput,'ListGlobalAttribute','fix','patch','civ2','fix2');
+    elseif ~isempty(Data.absolut_time_T0')% case of  civx data,
+        set(handles.MenuMatlab,'checked','off') %select Cix by default
+        set(handles.MenuCivX,'checked','on')
         if ~isempty(Data.fix2)
             ind_opening=5;
         elseif ~isempty(Data.civ2)
@@ -389,129 +366,81 @@ switch FileType
         elseif ~isempty(Data.fix)
             ind_opening=2;
         end
-        % look for the input images
+        % look for the corresponding input images
         check_letter=~isempty(regexp(NomTypeInput,'[ab|AB]$'));%detect pair label by letter
         NomTypeIma=NomTypeInput;
         if check_letter
             NomTypeIma=NomTypeInput(1:end-1);
         else
-            r=regexp(NomTypeIma,'.-(?<num2>\d+$','names');
+            r=regexp(NomTypeIma,'.-(?<num2>\d+)$','names');
+            if ~isempty(r)
+                NomTypeIma=regexprep(NomTypeIma,['-' r.num2],'');
+            end
+            r=regexp(NomTypeIma,'.-(?<num2>\d+)','names');
             if ~isempty(r)
                 NomTypeIma=regexprep(NomTypeIma,['-' r.num2],'');
             end
         end
         imageinput=fullfile_uvmat(RootPath,'',RootFile,'.png',NomTypeIma,i1,[],j1);
-        if ~exist(imageinput,'file')
-            errormsg='no image corresponds to the input .nc file, please open an image';
-            return
-        end
-    case {'image','multimage','video'}
-         imageinput=fileinput;
-         NomTypeIma=NomTypeInput;
-         ext_ima=ExtInput;
-    otherwise
-        errormsg='invalid input file: enter an image, a movie or .nc file';
+    else
+        errormsg='the input netcdf file is not civ data';
+        return
+    end
 end
-[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomTypeIma,ImageType,Object]=find_file_series(imageinput);
+
+%% scan the image series when a nc file has been opened
+ImaExt=ExtInput;
+if ~isempty(NomTypeNc)
+    %no corresponding image found, select manually with the browser
+    if ~exist(imageinput,'file')
+        menu={'*.png;*.jpg;*.tif;*.avi;*.AVI', '(*.png,*.jpg ,*.tif, *.avi,*.AVI)';
+            '*.png','.png image files'; ...
+            '*.jpg',' jpeg image files'; ...
+            '*.tif','.tif image files'; ...
+            '*.avi;*.AVI','.avi movie files'; ...
+            '*.*',  'All Files (*.*)'};
+        [FileName, PathName] = uigetfile( menu, 'Pick an input image file',fileparts(fileparts(fileinput)));
+        imageinput=[PathName FileName];%complete file name
+     
+    end    
+    fileinput=imageinput;
+    [tild, tild,ImaExt]=fileparts(imageinput);
+end
+[RootPath,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,Object]=find_file_series(fileinput);
+if strcmp(NomTypeInput,'*')% movies will be opened at the first frame
+    i1=1;
+    i2=[];
+    j1=[];
+    j2=[];
+end
+switch FileType
+    case {'image','multimage','video'}
+    otherwise
+        errormsg='invalid input file: enter an image, a movie or civ .nc file';
+        return
+end
 RootName=fullfile(RootPath,RootFile);
 set(handles.RootName,'String',RootName)
-MaxIndex_i=max(i1_series(i1_series>0));
-MaxIndex_j=max(j1_series(j1_series>0));
-
-num_ref_i=i1;%efaulmt ref index
-num_ref_j=j1;
 browse=get(handles.RootName,'UserData');
 browse.nom_type_nc=NomTypeNc;
-browse.nom_type_ima=NomTypeInput;
 browse.incr_pair=[0 0];%default
 
-% % form=imformats(ext_input(2:end));
-% check_letter=0;
-% check_separator=0;
-% if ~isempty(ext_input)&&(~isempty(imformats(ext_input(2:end)))||strcmpi(ext_input,'.avi'))% if the extension corresponds to an image or movie format recognized by Matlab
-%     ext_ima=ext_input;
-%     nom_type_ima=nom_type_input;
-%     imagename=fileinput;
-%     check_letter=~isempty(regexp(nom_type_ima,'[a|A]$'));%detect pair label by letter
-% else %case of netcdf input file, look for corresponding images
-%     nom_type_nc=nom_type_input;
-%     imagename=fullfile_uvmat(RootPath,[],RootFile,ext_ima,nom_type_ima,1,[],1);
-%     %imagename=name_generator(fullfile(RootPath,RootFile),1,1,ext_ima,nom_type_ima);
-%     i1_str='';
-%     j1_str='';
-%     if ~isnan(i2)
-%         num_ref_i=floor((num_ref_i+i2)/2);% reference image number corresponding to the file
-%         browse.incr_pair(1)=i2-i1;
-%         browse.incr_pair(2)=0;
-%     end
-%     %TODO: read the image name in the netcdf file (if documented)
-%     %look for double image series '_i_j'
-%     check_letter=~isempty(regexp(nom_type_nc,'[ab|AB]$'));%detect pair label by letter
-%     if check_letter
-%         j1_str=nom_type_nc(end-1);
-%         r=regexp(nom_type_nc,'_(?<num1>\d+)','names');
-%         if ~isempty(r)
-%             i1_str=r.num1;
-%         end
-%     else
-%         NomTypeIma=regexprep(nom_type_nc,'-\d','');%
-%         r_end=regexp(NomTypeIma,'.\D(?<num2>\d+$','names');
-%         if ~isempty(r_end)
-%             j1_str=r.num2;
-%         end
-%     end
-%     r=regexp(NomTypeIma,'_(?<num1>\d+)','names');
-%     if ~isempty(r)
-%         i1_str=r.num1;
-%     end  
-%     dirima=dir([RootName '_' i1_str '_' j1_str '.*']);
-%     if isempty(dirima)
-%         % look for images series  with sub marker '_'
-%         dirima=dir([RootName '_*' i1_str  '.*']);
-%         if isempty(dirima)
-%             % look for other images series
-%             dirima=dir([RootName '*' i1_str '.*']);
-%             if isempty(dirima)
-%                 % look for other images series witth letter appendix
-%                 appendix=char(96+j1_str);
-%                 dirima=dir([RootName '*' i1_str appendix '.*']);
-%             end
-%         end
-%     end
-%     for ilist=1:numel(dirima)
-%         %[pp,ff,i1_str,i2_str,j1_str,j2_str,ext_list,nom_type_list]=name2display(dirima(ilist).name);
-%         [tild,tild,tild,i1,i2,j1,j2,ext_list,nom_type_list]=fileparts_uvmat(dirima(ilist).name);
-%         form=imformats(ext_list(2:end));
-%         if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-%             ext_ima=ext_list;
-%             nom_type_ima=nom_type_list;
-% %             i1=str2double(i1_str);
-% %             j1=str2double(j1_str);
-% %             i2=str2double(i2_str);
-% %             j2=str2double(j2_str);          
-%             % set the range of fields (1:1 by default) and selected pair
-%             if isempty(i2)
-%                 num_ref_i=i1;
-%             else
-%                 num_ref_i=floor((i1+i2)/2);
-%                 browse.incr_pair(1)=i2-i1;
-%                 browse.incr_pair(2)=0;
-%             end
-%             if isempty(j2)
-%                 if isempty(j1)
-%                     num_ref_j=1;
-%                 else
-%                     num_ref_j=j1;
-%                 end
-%             else
-%                 num_ref_j=floor((j1+j2)/2);
-%                 browse.incr_pair(2)=j2-j1;
-%             end 
-%             break
-%         end
-%     end
-% end
+%% fill reference indices from the input file indices
+num_ref_i=i1;%efaulmt ref index
+if ~isempty(i2)
+    num_ref_i=floor((num_ref_i+i2)/2);
+end
+num_ref_j=j1;
+if ~isempty(j2)
+    num_ref_i=floor((num_ref_j+j2)/2);
+end
 
+%% scan the images if a civ file has been opened
+if ~isempty(NomTypeNc)
+[RootPath,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,ImageType,Object]=find_file_series(imageinput);
+end
+MaxIndex_i=max(i1_series(i1_series>0));
+MaxIndex_j=max(j1_series(j1_series>0));
 
 %% look for an image documentation file
 ext_imadoc='';%default
@@ -527,7 +456,6 @@ elseif exist([RootName '.AVI'],'file')
     ext_imadoc='.AVI';
 end
 set(handles.ImaDoc,'String',ext_imadoc)% display the extension name for the image documentation file used
-
 
 %%  read the time in the image documentation file  
 mode=''; %default
@@ -593,7 +521,7 @@ if ~isempty(ext_imadoc)
             nom_type_ima='001a';
         case {'.avi','.AVI'}
             nom_type_ima='*';
-            ext_ima=ext_imadoc;
+            ImaExt=ext_imadoc;
             set(handles.ListPairMode,'Value',1);
             set(handles.ListPairMode,'String',{'series(Di)'})
             dt=0.04;%default
@@ -631,29 +559,17 @@ set(handles.nb_field,'String',num2str(MaxIndex_i));
 set(handles.nb_field2,'String',num2str(MaxIndex_j));
 set(handles.CoordUnit,'String',CoordUnit)
 set(handles.SearchRange,'UserData',[pxcmx_search pxcmy_search]);
-set(handles.ImaExt,'String',ext_ima)
+set(handles.ImaExt,'String',ImaExt)
+set(handles.NomType,'String',NomTypeIma)
 set(handles.ref_i,'String',num2str(num_ref_i))
 set(handles.first_i,'String',num2str(num_ref_i));
 set(handles.last_i,'String',num2str(num_ref_i));%
 set(handles.ref_j,'String',num2str(num_ref_j))
 set(handles.first_j,'String',num2str(num_ref_j));
 set(handles.last_j,'String',num2str(num_ref_j));%
+% set(handles.civ,'UserData',CivData)
 
 %% set the civ options depending on the input file content
-% ind_opening=0;%default
-% if isequal(ext_input,'.nc')
-%     browse.nom_type_nc=nom_type_input;
-%     ind_opening=2;% propose 'fix' as the default option
-%     Data=nc2struct(fileinput,'ListGlobalAttribute','CivStage','absolut_time_T0','fix','patch','civ2','fix2');
-%     if isfield(Data,'Txt')
-%         msgbox_uvmat('ERROR',Data.Txt)
-%         return
-%     end
-%     if ~isempty(Data.CivStage)%test for civ files
-%         ind_opening=Data.CivStage;
-%         set(handles.ListPairMode,'Value',3)
-%     end
-% end
 ListOptions={'CheckCiv1', 'CheckFix1' 'CheckPatch1', 'CheckCiv2', 'CheckFix2', 'CheckPatch2'};
 for index = 1:ind_opening
     set(handles.(ListOptions{index}),'value',0)
@@ -663,11 +579,7 @@ for index = ind_opening+1
 end
 update_CivOptions(handles,1)
 
-
 %%  set the menus of image pairs and default selection for civ   %%%%%%%%%%%%%%%%%%%
-% test_ima_i=numel(nom_type_ima)>1 && isempty(regexp(nom_type_ima(2:end),'\D','once'))%=1 for images with single indexing
-% TODO: determine MaxIndex_i and MaxIndex_j using find_file_series (in the absence of xml file)
-% try
 check_letter=~isempty(regexp(NomTypeIma,'[ab|AB]$'));%detect pair label by letter
 if ~check_letter|| isequal(NomTypeNc,'_1-2')|| (MaxIndex_j==1)
     set(handles.ListPairMode,'Value',1)
@@ -679,11 +591,12 @@ elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
     end
 else
     set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)';'series(Di)'})%multiple choice
-    if  MaxIndex_j <= 10
+    if strcmp(NomTypeNc,'_1-2_1')
+        set(handles.ListPairMode,'Value',3)% advise 'series(Di)'
+    elseif  MaxIndex_j <= 10
         set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
     end
 end
-% end
 
 %% update the subdirectory display
 listot=dir(RootPath);%directory of RootPath
@@ -727,16 +640,13 @@ if isempty(listdir)
 end
 
 %% store info
-% browse.nom_type_ima=nom_type_ima;
 set(handles.RootName,'UserData',browse)% store the nomenclature type
 
 %% list the possible index pairs, depending on the option set in ListPairMode
 ListPairMode_Callback([], [], handles)
-browse=get(handles.RootName,'UserData');
 
 %% store the root input filename for future opening
 profil_perso=fullfile(prefdir,'uvmat_perso.mat');
-% RootPath=fileparts(RootName);
 if exist(profil_perso,'file')
     save (profil_perso,'RootPath','-append'); %store the root name for future opening of uvmat
 else
@@ -768,7 +678,7 @@ if get(handles.CheckCiv1,'Value')% if Civ1 is performed
     set(handles.txt_SubdirCiv2,'String',SubDir);% set by default civ2 directory the same as civ1 
     set(handles.ListSubdirCiv2,'Value',ilist)
 else % if Civ1 data already exist
-    find_netcpair_civ1(handles); %update the list of available pairs from netcdf files in the new directory
+    find_netcpair_civ(handles,1); %update the list of available pairs from netcdf files in the new directory
 end
 
 %------------------------------------------------------------------------
@@ -786,7 +696,7 @@ end
 set(handles.ListSubdirCiv2,'Value',ilist)% select the selected subdir in the menu
 %update the list of available pairs from netcdf files in the new directory
 if ~get(handles.CheckCiv2,'Value') && ~get(handles.CheckCiv1,'Value') && ~get(handles.CheckFix1,'Value') && ~get(handles.CheckPatch1,'Value')
-    find_netcpair_civ2(handles);
+    find_netcpair_civ(handles,2);
 end
 
 %------------------------------------------------------------------------
@@ -848,7 +758,7 @@ set(handles.PairIndices,'Visible','on')
 set(handles.txt_SubdirCiv1,'Visible','on')
 set(handles.ListSubdirCiv1,'Visible','on')
 if ~opening
-find_netcpair_civ1(handles) % select the available netcdf files
+find_netcpair_civ(handles,1) % select the available netcdf files
 end
 if max(checkbox(4:6))% case of civ2 pair choice needed
     set(handles.TitlePairCiv2,'Visible','on')
@@ -857,7 +767,7 @@ if max(checkbox(4:6))% case of civ2 pair choice needed
     set(handles.ListSubdirCiv2,'Visible','on')
     set(handles.ListPairCiv2,'Visible','on')
     if ~opening
-    find_netcpair_civ2(handles) % select the available netcdf files
+    find_netcpair_civ(handles,2) % select the available netcdf files
     end
 else
     set(handles.TitleSubdirCiv2,'Visible','off')
@@ -1756,7 +1666,6 @@ if isfield(filecell,'nc')
         fileresu=filecell.nc.civ1{1,1};
     end
 end
-%[RootPath,RootFile,field_count,str2,str_a,str_b,ext,nom_type,SubDir]=name2display(fileresu);
 [RootPath,SubDir,RootFile]=fileparts_uvmat(fileresu);
 namedoc=fullfile(RootPath,SubDir,RootFile);
 detect=1;
@@ -1770,6 +1679,8 @@ while detect==1
         detect=0;
     end
 end
+t=struct2xml(Param);
+save(t,[namedoc '.xml']); %save GUI  parameters as xml file
 saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
 
 %Save info in personal profile (initiate browser next time) TODO
@@ -1843,7 +1754,7 @@ browse=get(handles.RootName,'UserData');
 compare_list=get(handles.ListCompareMode,'String');
 val=get(handles.ListCompareMode,'Value');
 compare=compare_list{val};
-if strcmp(compare,'displacement')
+if strcmp(compare,'displacement')||strcmp(compare,'shift')
     mode='displacement';
 else
     mode_list=get(handles.ListPairMode,'String');
@@ -1852,19 +1763,18 @@ else
 end
 %time=get(handles.RootName,'UserData'); %get the set of times
 ext_ima=get(handles.ImaExt,'String');
-nom_type_nc=browse.nom_type_nc;
-if isfield(browse,'nom_type_ima')
-    nom_type_ima2=browse.nom_type_ima;
+if strcmp(compare,'displacement')
+    nom_type_ima1='*';
+else
+    nom_type_ima1=get(handles.NomType,'String');
 end
-if isempty(nom_type_ima2),nom_type_ima2='1';end; %default
-if isempty(nom_type_nc),nom_type_nc='_1-2';end; %default
+nom_type_nc=nomtype2pair(nom_type_ima1,mode);
+
 [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2]=...
     find_pair_indices(handles,ref_i,ref_j,mode);
 %determine the new filebase for 'displacement' ListPairMode (comparison of two series)
 filebase_B=filebase;% root name of the second field series for stereo
-if strcmp(compare,'displacement') || strcmp(compare,'stereo PIV')
-%     test_disp=1;
-    nom_type_ima1=browse.nom_type_ima_1; %nomenclature type of the second file series
+if ~strcmp(compare,'PIV') 
     [Path2,Name2]=fileparts(filebase_B);
     Path1=Path2;
     Name1=get(handles.RootName_1,'String');% root name of the first field series for stereo
@@ -1879,10 +1789,10 @@ if strcmp(compare,'displacement') || strcmp(compare,'stereo PIV')
 else
 %     test_disp=0;
     filebase_A=filebase;
-    nom_type_ima1=nom_type_ima2;
+    nom_type_ima2=nom_type_ima1;
     filebase_AB=filebase;
 end
-if strcmp(compare,'displacement')
+if strcmp(compare,'displacement')||strcmp(compare,'shift')
     filebase_ima1=filebase_A;
     filebase_ima2=filebase_B;
     filebase_nc=filebase_AB; %root name for the result of civ2
@@ -2352,8 +2262,6 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
             for ifile=1:nbfield
                 for j=1:nbslice
                     filename=fullfile_uvmat(RootPath_A,subdir_civ2,RootFile_A,'.nc',nom_type_nc,num1_civ2(ifile),num2_civ2(ifile),num_a_civ2(j),num_b_civ2(j));
-%                     filename=name_generator(filebase_A,num1_civ2(ifile),num_a_civ2(j),'.nc',...
-%                         nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);%
                     filecell.ncA.civ2(ifile,j)={filename};
                     if ~exist(filename,'file')
                         msgbox_uvmat('ERROR',['input file ' filename ' not found'])
@@ -2371,8 +2279,6 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
     for ifile=1:nbfield
         for j=1:nbslice
             filename=fullfile_uvmat(RootPath_nc,subdir_civ2,RootFile_nc,'.nc',nom_type_nc,num1_civ2(ifile),num2_civ2(ifile),num_a_civ2(j),num_b_civ2(j));
-%             filename=name_generator(filebase_nc,num1_civ2(ifile),num_a_civ2(j),'.nc',...
-%                 nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);
             detect=exist(filename,'file')==2;
             filecell.nc.civ2(ifile,j)={filename};
         end
@@ -2424,8 +2330,6 @@ if (checkbox(5) || checkbox(6)) && ~checkbox(4)  % need to read an existing netc
         for ifile=1:nbfield
             for j=1:nbslice
                  filename=fullfile_uvmat(RootPath_nc,subdir_civ2,RootFile_nc,'.nc',nom_type_nc,num1_civ2(ifile),num2_civ2(ifile),num_a_civ2(j),num_b_civ2(j));
-%                 filename=name_generator(filebase_nc,num1_civ2(ifile),num_a_civ2(j),'.nc',...
-%                     nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);%
                 filecell.nc.civ2(ifile,j)={filename};
                 if ~exist(filename,'file')
                     msgbox_uvmat('ERROR',['input file ' filename ' not found'])
@@ -2454,8 +2358,6 @@ if strcmp(compare,'stereo PIV')
         for ifile=1:nbfield
             for j=1:nbslice
                  filename=fullfile_uvmat(RootPath_AB,subdir_civ1,RootFile_AB,'.nc',nom_type_nc,num1_civ1(ifile),num2_civ1(ifile),num_a_civ1(j),num_b_civ1(j));
-%                 filename=name_generator(filebase_AB,num1_civ1(ifile),num_a_civ1(j),'.nc',...
-%                     nom_type_nc,1,num2_civ1(ifile),num_b_civ1(j),subdir_civ1);%
                 filecell.st(ifile,j)={filename};
             end
         end
@@ -2464,8 +2366,6 @@ if strcmp(compare,'stereo PIV')
         for ifile=1:nbfield
             for j=1:nbslice
                  filename=fullfile_uvmat(RootPath_AB,subdir_civ2,RootFile_AB,'.nc',nom_type_nc,num1_civ2(ifile),num2_civ2(ifile),num_a_civ2(j),num_b_civ2(j));
-%                 filename=name_generator(filebase_AB,num1_civ2(ifile),num_a_civ2(j),'.nc',...
-%                     nom_type_nc,1,num2_civ2(ifile),num_b_civ2(j),subdir_civ2);%
                 filecell.st(ifile,j)={filename};
             end
         end
@@ -2689,11 +2589,13 @@ end
 % --- Executes on button press in ListCompareMode.
 function ListCompareMode_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-test=get(handles.ListCompareMode,'Value');
-if test==2 || test==3 % case 'displacement' or 'stereo PIV'
+menu=get(handles.ListCompareMode,'String');
+val=get(handles.ListCompareMode,'Value');
+option=menu{val};
+if ~strcmp(option,'PIV') % case 'displacement' or 'stereo PIV'
     filebase=get(handles.RootName,'String');
     browse=get(handles.RootName,'Userdata');
-    browse.nom_type_ima1=browse.nom_type_ima;
+   % browse.nom_type_ima1=browse.nom_type_ima;
     set(handles.RootName,'UserData',browse);
     set(handles.sub_txt,'Visible','on')
     set(handles.RootName_1,'Visible','On');%mkes the second file input window visible
@@ -2734,13 +2636,11 @@ if test==2 || test==3 % case 'displacement' or 'stereo PIV'
     if ~strcmp(path1,path)
         msgbox_uvmat('ERROR','The second image series must be in the same directory as the first one')
         return
-     end
-%     set(handles.RootName_1,'String',name);
-    %[RootPath,RootFile,field_count,str2,str_a,str_b,xx,nom_type,SubDir]=name2display(name);
+    end
     [tild,tild,RootFile,tild,tild,tild,tild,tild,nom_type]=fileparts_uvmat(name);
     set(handles.RootName_1,'String',RootFile);
     browse=get(handles.RootName,'UserData');
-    browse.nom_type_ima_1=nom_type;
+    %browse.nom_type_ima_1=nom_type;
     set(handles.RootName,'UserData',browse)
     
     %check image extension
@@ -2748,19 +2648,7 @@ if test==2 || test==3 % case 'displacement' or 'stereo PIV'
         msgbox_uvmat('ERROR','The second image series must have the same extension name as the first one')
         return
     end
-    
-    %% check coincidence of image sizes
-%     ref_i=get(handles.ref_i,'string');
-%     ref_j=get(handles.ref_j,'string');
-%     [filecell,num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2,nom_type_nc]=set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);
-%     A=imread(filecell.ima1.checkciv1{1});
-%     A_1=imread(fileinput);
-%     npxy=size(A);
-%     npxy_1=size(A_1);
-%     if ~isequal(size(A),size(A_1))
-%         msgbox_uvmat('ERROR','The two input image series do not have the same size')
-%         return
-%     end
+
 else
     set(handles.ListPairMode,'Visible','on')
     set(handles.RootName_1,'Visible','Off');
@@ -2769,16 +2657,15 @@ else
     mode_store=get(handles.ListCompareMode,'UserData');
     set(handles.ListPairMode,'Value',1)
     set(handles.ListPairMode,'String',mode_store)
-%     set(handles.test_stereo1,'Value',0)
     set(handles.CheckStereo,'Value',0)
     set(handles.ListPairMode,'Value',1) % mode 'civX' selected by default
 end
-if test==3 && get(handles.CheckPatch1,'Value')
+if strcmp(option,'stereo PIV') && get(handles.CheckPatch1,'Value')
     set(handles.CheckStereo,'Visible','on')
 else
     set(handles.CheckStereo,'Visible','off')
 end
-if test==3 && get(handles.CheckPatch2,'Value')
+if strcmp(option,'stereo PIV') && get(handles.CheckPatch2,'Value')
     set(handles.CheckStereo,'Visible','on')
 else
     set(handles.CheckStereo,'Visible','off')
@@ -2796,7 +2683,7 @@ function ListPairMode_Callback(hObject, eventdata, handles)
 compare_list=get(handles.ListCompareMode,'String');
 val=get(handles.ListCompareMode,'Value');
 compare=compare_list{val};
-if strcmp(compare,'displacement')
+if strcmp(compare,'displacement')||strcmp(compare,'shift')
     mode='displacement';
 else
     mode_list=get(handles.ListPairMode,'String');
@@ -2820,7 +2707,6 @@ indchosen=1;  %%first pair selected by default
 % in mode 'pair j1-j2', j1 and j2 are the file indices, else the indices
 % are relative to the reference indices ref_i and ref_j respectively.
 if isequal(mode,'pair j1-j2')%| isequal(mode,'st_pair j1-j2')
-
     dt=1;
     displ='';
     index=0;
@@ -2849,75 +2735,23 @@ if isequal(mode,'pair j1-j2')%| isequal(mode,'st_pair j1-j2')
     end
     displ_num(3,:)=0;
     displ_num(4,:)=0;
-    set(handles.jtext,'Visible','Off')
-    set(handles.first_j,'Visible','Off')
-    set(handles.last_j,'Visible','Off')
-    set(handles.incr_j,'Visible','Off')
-    set(handles.nb_field2,'Visible','Off')
-    set(handles.ref_j,'Visible','Off')
+    enable_j(handles, 'off')
 elseif isequal(mode,'series(Dj)') %| isequal(mode,'st_series(Dj)')
     index=1:200;
     displ_num(1,index)=-floor(index/2);
     displ_num(2,index)=ceil(index/2);
     displ_num(3:4,index)=zeros(2,200);
-%     for index=1:min(nbfield2-1,200)
-%         displ_num(1,index)=-floor(index/2);
-%         displ_num(2,index)=ceil(index/2);
-%         displ_num(3,index)=0;
-%         displ_num(4,index)=0;
-%     end
-    set(handles.jtext,'Visible','On')
-    set(handles.first_j,'Visible','On')
-    set(handles.last_j,'Visible','On')
-    set(handles.incr_j,'Visible','On')
-    set(handles.nb_field2,'Visible','On')
-    set(handles.ref_j,'Visible','On')
-%     if nbfield > 1
-%         set(handles.itext,'Visible','On')
-%         set(handles.first_i,'Visible','On')
-%         set(handles.last_i,'Visible','On')
-%         set(handles.incr_i,'Visible','On')
-%         set(handles.nb_field,'Visible','On')
-%         set(handles.ref_i,'Visible','On')
-%     else
-%         set(handles.itext,'Visible','Off')
-%         set(handles.first_i,'Visible','Off')
-%         set(handles.last_i,'Visible','Off')
-%         set(handles.incr_i,'Visible','Off')
-%         set(handles.nb_field,'Visible','Off')
-%         set(handles.ref_i,'Visible','Off')
-%     end
+    enable_j(handles, 'on')
 elseif isequal(mode,'series(Di)') %| isequal(mode,'st_series(Di)')
     index=1:200;
     displ_num(1:2,index)=zeros(2,200);
     displ_num(3,index)=-floor(index/2);
     displ_num(4,index)=ceil(index/2);
-%     for index=1:200%min(nbfield-1,200)
-%         displ_num(1,index)=0;
-%         displ_num(2,index)=0;
-%         displ_num(3,index)=-floor(index/2);
-%         displ_num(4,index)=ceil(index/2);
-%     end
-    set(handles.itext,'Visible','On')
-    set(handles.first_i,'Visible','On')
-    set(handles.last_i,'Visible','On')
-    set(handles.incr_i,'Visible','On')
-    set(handles.nb_field,'Visible','On')
-    set(handles.ref_i,'Visible','On')
+    enable_i(handles, 'on')
     if nbfield2 > 1
-        set(handles.jtext,'Visible','On')
-        set(handles.first_j,'Visible','On')
-        set(handles.last_j,'Visible','On')
-        set(handles.incr_j,'Visible','On')
-        set(handles.nb_field2,'Visible','On')
-        set(handles.ref_j,'Visible','On')
+        enable_j(handles, 'on')
     else
-        set(handles.jtext,'Visible','Off')
-        set(handles.first_j,'Visible','Off')
-        set(handles.last_j,'Visible','Off')
-        set(handles.incr_j,'Visible','Off')
-        set(handles.nb_field2,'Visible','Off')
-        set(handles.ref_j,'Visible','Off')
+        enable_j(handles, 'off')
     end
 elseif isequal(mode,'displacement')%the pairs have the same indices
     displ_num(1,1)=0;
@@ -2925,40 +2759,36 @@ elseif isequal(mode,'displacement')%the pairs have the same indices
     displ_num(3,1)=0;
     displ_num(4,1)=0;
     if nbfield > 1 || nbfield==0
-        set(handles.itext,'Visible','On')
-        set(handles.first_i,'Visible','On')
-        set(handles.last_i,'Visible','On')
-        set(handles.incr_i,'Visible','On')
-        set(handles.nb_field,'Visible','On')
-        set(handles.ref_i,'Visible','On')
+        enable_i(handles, 'on')
     else
-        set(handles.itext,'Visible','Off')
-        set(handles.first_i,'Visible','Off')
-        set(handles.last_i,'Visible','Off')
-        set(handles.incr_i,'Visible','Off')
-        set(handles.nb_field,'Visible','Off')
-        set(handles.ref_i,'Visible','Off')
+        enable_j(handles, 'off')
     end
     if nbfield2 > 1
-        set(handles.jtext,'Visible','On')
-        set(handles.first_j,'Visible','On')
-        set(handles.last_j,'Visible','On')
-        set(handles.incr_j,'Visible','On')
-        set(handles.nb_field2,'Visible','On')
-        set(handles.ref_j,'Visible','On')
+        enable_j(handles, 'on')
     else
-        set(handles.jtext,'Visible','Off')
-        set(handles.first_j,'Visible','Off')
-        set(handles.last_j,'Visible','Off')
-        set(handles.incr_j,'Visible','Off')
-        set(handles.nb_field2,'Visible','Off')
-        set(handles.ref_j,'Visible','Off')
+        enable_j(handles, 'off')
     end
 end
 set(handles.ListPairCiv1,'UserData',displ_num);
-find_netcpair_civ1( handles)
-find_netcpair_civ2(handles)
-browse=get(handles.RootName,'UserData');
+find_netcpair_civ( handles,1)
+% find_netcpair_civ2(handles)
+
+function enable_i(handles, state)
+set(handles.itext,'Visible',state)
+set(handles.first_i,'Visible',state)
+set(handles.last_i,'Visible',state)
+set(handles.incr_i,'Visible',state)
+set(handles.nb_field,'Visible',state)
+set(handles.ref_i,'Visible',state)
+
+function enable_j(handles, state)
+set(handles.jtext,'Visible',state)
+set(handles.first_j,'Visible',state)
+set(handles.last_j,'Visible',state)
+set(handles.incr_j,'Visible',state)
+set(handles.nb_field2,'Visible',state)
+set(handles.ref_j,'Visible',state)
+
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListPairCiv1.
@@ -3051,10 +2881,10 @@ function ref_i_Callback(hObject, eventdata, handles)
 mode_list=get(handles.ListPairMode,'String');
 mode_value=get(handles.ListPairMode,'Value');
 mode=mode_list{mode_value};
-find_netcpair_civ1(handles);% update the menu of pairs depending on the available netcdf files
+find_netcpair_civ(handles,1);% update the menu of pairs depending on the available netcdf files
 if isequal(mode,'series(Di)') || ...% we do patch2 only
         (get(handles.CheckCiv2,'Value')==0 && get(handles.CheckCiv1,'Value')==0 && get(handles.CheckFix1,'Value')==0 && get(handles.CheckPatch1,'Value')==0)
-    find_netcpair_civ2( handles);
+    find_netcpair_civ( handles,2);
 end
 
 %------------------------------------------------------------------------
@@ -3064,20 +2894,20 @@ mode_list=get(handles.ListPairMode,'String');
 mode_value=get(handles.ListPairMode,'Value');
 mode=mode_list{mode_value};
 if isequal(get(handles.CheckCiv1,'Value'),0)|| isequal(mode,'series(Dj)')
-    find_netcpair_civ1(handles);% update the menu of pairs depending on the available netcdf files
+    find_netcpair_civ(handles,1);% update the menu of pairs depending on the available netcdf files
 end
 if isequal(mode,'series(Dj)') || ...
         (get(handles.CheckCiv2,'Value')==0 && get(handles.CheckCiv1,'Value')==0 && get(handles.CheckFix1,'Value')==0 && get(handles.CheckPatch1,'Value')==0)
-    find_netcpair_civ2(handles);
+    find_netcpair_civ(handles,2);
 end
 % 
+
 %------------------------------------------------------------------------
 % determine the menu for checkciv1 pairs depending on existing netcdf file at the middle of
 % the field series set by first_i, incr, last_i
-function find_netcpair_civ1(handles)
+function find_netcpair_civ(handles,index)
 %------------------------------------------------------------------------
 set(gcf,'Pointer','watch')
-%nomenclature types
 filebase=get(handles.RootName,'String');
 [filepath,Nme,ext_dir]=fileparts(filebase);
 browse=get(handles.RootName,'UserData');
@@ -3094,26 +2924,22 @@ else
     end
     mode=mode_list{mode_value};
 end
+nom_type_ima=get(handles.NomType,'String');
 
-% nomenclature type of the .nc files
-nom_type_ima=[];%default
-if isfield(browse,'nom_type_ima')
-    nom_type_ima=browse.nom_type_ima;
-end
-
-%determine nom_type_nc:
-nom_type_nc=[];%default
+%% determine nom_type_nc, nomenclature type of the .nc files:
+nom_type_nc='';%default
 if isfield(browse,'nom_type_nc')
     nom_type_nc=browse.nom_type_nc;
 end
 if isempty(nom_type_nc)
-    [nom_type_nc]=nomtype2pair(nom_type_ima,isequal(mode,'series(Di)'),isequal(mode,'series(Dj)'));
+    [nom_type_nc]=nomtype2pair(nom_type_ima,mode);
 end
 browse.nom_type_nc=nom_type_nc;
 set(handles.RootName,'UserData',browse)
 
 %reads .nc subdirectoy and image numbers from the interface
 subdir_civ1=get(handles.txt_SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf data
+subdir_civ2=get(handles.txt_SubdirCiv2,'String');%subdirectory subdir_civ2 for the netcdf data
 ref_i=str2double(get(handles.ref_i,'String'));
 if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
     ref_j=0;
@@ -3121,12 +2947,8 @@ else
     ref_j=str2double(get(handles.ref_j,'String'));
 end
 time=get(handles.ImaDoc,'UserData');%get the set of times
-% if isempty(time)
-%     time=[0 1];
-% end
 TimeUnit=get(handles.TimeUnit,'String');
 checkframe=strcmp(TimeUnit,'frame');
-
 displ_num=get(handles.ListPairCiv1,'UserData');
 
 %eliminate the first pairs inconsistent with the position
@@ -3150,6 +2972,7 @@ testpair=0;
 
 %% case with no Civ1 operation, netcdf files need to exist for reading
 [RootPath,RootFile]=fileparts(filebase);
+if index==1 % case civ1
 if ~get(handles.CheckCiv1,'Value') %
     if ~exist(fullfile(filepath,subdir_civ1,ext_dir),'dir')
         msgbox_uvmat('ERROR',['no civ1 file available: subdirectory ' subdir_civ1 ' does not exist']);
@@ -3159,8 +2982,6 @@ if ~get(handles.CheckCiv1,'Value') %
     for ipair=1:nbpair
         filename=fullfile_uvmat(RootPath,subdir_civ1,RootFile,'.nc',nom_type_nc,...
             ref_i+displ_num(3,ipair),ref_i+displ_num(4,ipair),ref_j+displ_num(1,ipair),ref_j+displ_num(2,ipair));
-      %  filename=name_generator(filebase,ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair),'.nc',nom_type_nc,1,...
-       %     ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair),subdir_civ1);
         select(ipair)=exist(filename,'file')==2;% put flag to 0 if the file does not exist
     end   
     % case of no displayed pair
@@ -3171,7 +2992,6 @@ if ~get(handles.CheckCiv1,'Value') %
             num_j1=ref_j-floor(browse.incr_pair(2)/2);
             num_j2=ref_j+ceil(browse.incr_pair(2)/2);
             filename=fullfile_uvmat(RootPath,subdir_civ1,RootFile,'.nc',nom_type_nc,num_i1,num_i2,num_j1,num_j2);
-            %filename=name_generator(filebase,num_i1,num_j1,'.nc',nom_type_nc,1,num_i2,num_j2,subdir_civ1);
             select(1)=exist(filename,'file')==2;
             testpair=1;
         else
@@ -3185,6 +3005,40 @@ if ~get(handles.CheckCiv1,'Value') %
             return
         end
     end
+end
+else %case civ2
+if ~get(handles.CheckCiv2,'Value') && ~get(handles.CheckCiv1,'Value') && ~get(handles.CheckFix1,'Value') && ~get(handles.CheckPatch1,'Value')
+    if ~exist(fullfile(filepath,subdir_civ2,ext_dir),'dir')
+        errordlg(['no civ2 file available: subdirectory ' subdir_civ2 ' does not exist'])
+        set(handles.ListPairCiv2,'Value',1);
+        set(handles.ListPairCiv2,'String',{''});
+        return
+    end
+    for ipair=1:nbpair
+        filename=fullfile_uvmat(RootPath,subdir_civ1,RootFile,'.nc',nom_type_nc,...
+            ref_i+displ_num(3,ipair),ref_i+displ_num(4,ipair),ref_j+displ_num(1,ipair),ref_j+displ_num(2,ipair));
+        select(ipair)=exist(filename,'file')==2;
+    end
+    if  isequal(select,zeros(size(1:nbpair)))
+        if isfield(browse,'incr_pair')
+            num_i1=ref_i-floor(browse.incr_pair(1)/2);
+            num_i2=ref_i+floor((browse.incr_pair(1)+1)/2);
+            num_j1=ref_j-floor(browse.incr_pair(2)/2);
+            num_j2=ref_j+floor((browse.incr_pair(2)+1)/2);
+            filename=fullfile_uvmat(RootPath,subdir_civ2,RootFile,'.nc',nom_type_nc,num_i1,num_i2,num_j1,num_j2);
+            select(1)=exist(filename,'file')==2;
+        else
+            if  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
+                msgbox_uvmat('ERROR',['no civ2 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ2])
+            else
+                msgbox_uvmat('ERROR',['no civ2 file available for the selected reference index i=' num2str(ref_i) ' and subdirectory ' subdir_civ2])
+            end
+            set(handles.ListPairCiv2,'Value',1);
+            set(handles.ListPairCiv2,'String',{''});
+            return
+        end
+    end
+end
 end
 
 %% determine the menu display in .ListPairCiv1
@@ -3269,180 +3123,178 @@ set(gcf,'Pointer','arrow')
 %------------------------------------------------------------------------
 % determine the menu for checkciv2 pairs depending on the existing netcdf file at the
 %middle of the series set by first_i, incr, last_i
-function find_netcpair_civ2(handles)
-%------------------------------------------------------------------------
-set(gcf,'Pointer','watch')
-%nomenclature types
-filebase=get(handles.RootName,'String');
-[filepath,Nme,ext_dir]=fileparts(filebase);
-browse=get(handles.RootName,'UserData');
-compare_list=get(handles.ListCompareMode,'String');
-val=get(handles.ListCompareMode,'Value');
-compare=compare_list{val};
-if strcmp(compare,'displacement')
-    mode='displacement';
-else
-    mode_list=get(handles.ListPairMode,'String');
-    if isempty(mode_list)
-        msgbox_uvmat('ERROR','please enter an input image or netcdf file')
-        return
-    end
-    mode_value=get(handles.ListPairMode,'Value');
-    mode=mode_list{mode_value};
-end
-
-% nomenclature type of the .nc files
-nom_type_ima='ima_num';%default
-if isfield(browse,'nom_type_ima')
-    nom_type_ima=browse.nom_type_ima;
-end
-nom_type_nc='_1-2';%default
-if isfield(browse,'nom_type_nc')
-    nom_type_nc=browse.nom_type_nc;
-end
-if isequal(nom_type_ima,'png_old') || isequal(nom_type_ima,'netc_old')|| isequal(nom_type_ima,'raw_SMD')|| isequal(nom_type_nc,'netc_old')
-    nom_type_nc='netc_old';%nom_type for the netcdf files
-elseif isequal(nom_type_ima,'none')||isequal(nom_type_nc,'none')
-    nom_type_nc='none';
-elseif isequal(nom_type_ima,'avi')||isequal(nom_type_ima,'_i')||isequal(nom_type_ima,'ima_num')||isequal(nom_type_nc,'_1-2')
-    nom_type_nc='_1-2';
-else
-    if  isequal(mode,'series(Di)')%|isequal(mode,'st_series(Di)')
-        nom_type_nc='_1-2_1'; % PIV in volume
-    else
-        nom_type_nc='_1_1-2';
-    end
-end
-browse.nom_type_nc=nom_type_nc;
-set(handles.RootName,'UserData',browse)
-
-%reads .nc subdirectory and image numbers from the interface
-subdir_civ1=get(handles.txt_SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf data
-subdir_civ2=get(handles.txt_SubdirCiv2,'String');%subdirectory subdir_civ2 for the netcdf data
-ref_i=str2double(get(handles.ref_i,'String'));
-if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
-    ref_j=0;
-else
-    ref_j=str2double(get(handles.ref_j,'String'));
-end
-time=get(handles.ImaDoc,'UserData'); %get the set of times
-TimeUnit=get(handles.TimeUnit,'String');
-checkframe=strcmp(TimeUnit,'frame');
-% if isempty(time)
-%     time=[0 1];%default
+% function find_netcpair_civ2(handles)
+% %------------------------------------------------------------------------
+% set(gcf,'Pointer','watch')
+% %nomenclature types
+% filebase=get(handles.RootName,'String');
+% [filepath,Nme,ext_dir]=fileparts(filebase);
+% browse=get(handles.RootName,'UserData');
+% compare_list=get(handles.ListCompareMode,'String');
+% val=get(handles.ListCompareMode,'Value');
+% compare=compare_list{val};
+% if strcmp(compare,'displacement')
+%     mode='displacement';
+% else
+%     mode_list=get(handles.ListPairMode,'String');
+%     if isempty(mode_list)
+%         msgbox_uvmat('ERROR','please enter an input image or netcdf file')
+%         return
+%     end
+%     mode_value=get(handles.ListPairMode,'Value');
+%     mode=mode_list{mode_value};
 % end
-displ_num=get(handles.ListPairCiv1,'UserData');
-
-%eliminate the first pairs inconsistent with the position
-if isempty(displ_num)
-    nbpair=0;
-else
-    nbpair=length(displ_num(1,:));%nbre of displayed pairs
-    if  isequal(mode,'series(Di)')% | isequal(mode,'st_series(Di)')
-        nbpair=min(2*ref_i-1,nbpair);%limit the number of pairs with positive first index
-    elseif  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
-        nbpair=min(2*ref_j-1,nbpair);%limit the number of pairs with positive first index
-    end
-end
-nbpair=min(200,nbpair);%limit the number of displayed pairs to 200
-
-%% look for existing processed pairs at the reference indices if Civ1 will not
-% be performed, while the result is needed for next steps.
-displ_pair={''}; %default
-select=ones(size(1:nbpair));%default =1 for numbers of displayed pairs
-[RootPath,RootFile]=fileparts(filebase);
-if ~get(handles.CheckCiv2,'Value') && ~get(handles.CheckCiv1,'Value') && ~get(handles.CheckFix1,'Value') && ~get(handles.CheckPatch1,'Value')
-    if ~exist(fullfile(filepath,subdir_civ2,ext_dir),'dir')
-        errordlg(['no civ2 file available: subdirectory ' subdir_civ2 ' does not exist'])
-        set(handles.ListPairCiv2,'Value',1);
-        set(handles.ListPairCiv2,'String',{''});
-        return
-    end
-    for ipair=1:nbpair
-        filename=fullfile_uvmat(RootPath,subdir_civ1,RootFile,'.nc',nom_type_nc,...
-            ref_i+displ_num(3,ipair),ref_i+displ_num(4,ipair),ref_j+displ_num(1,ipair),ref_j+displ_num(2,ipair));
-       % filename=name_generator(filebase,ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair),'.nc',nom_type_nc,1,...
-        %    ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair),subdir_civ1);
-        select(ipair)=exist(filename,'file')==2;
-    end
-    if  isequal(select,zeros(size(1:nbpair)))
-        if isfield(browse,'incr_pair')
-            num_i1=ref_i-floor(browse.incr_pair(1)/2);
-            num_i2=ref_i+floor((browse.incr_pair(1)+1)/2);
-            num_j1=ref_j-floor(browse.incr_pair(2)/2);
-            num_j2=ref_j+floor((browse.incr_pair(2)+1)/2);
-            filename=fullfile_uvmat(RootPath,subdir_civ2,RootFile,'.nc',nom_type_nc,num_i1,num_i2,num_j1,num_j2);
-            %filename=name_generator(filebase,num_i1,num_j1,'.nc',nom_type_nc,1,num_i2,num_j2,subdir_civ2);
-            select(1)=exist(filename,'file')==2;
-        else
-            if  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
-                msgbox_uvmat('ERROR',['no civ2 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ2])
-            else
-                msgbox_uvmat('ERROR',['no civ2 file available for the selected reference index i=' num2str(ref_i) ' and subdirectory ' subdir_civ2])
-            end
-            set(handles.ListPairCiv2,'Value',1);
-            set(handles.ListPairCiv2,'String',{''});
-            return
-        end
-    end
-end
-if isequal(mode,'series(Di)') 
-    for ipair=1:nbpair
-        if select(ipair)
-            displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
-            if  ~checkframe && size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)
-                dt=time(ref_i+displ_num(4,ipair)+1,ref_j+displ_num(2,ipair)+1)-time(ref_i+displ_num(3,ipair)+1,ref_j+displ_num(1,ipair)+1);%time interval dt
-                displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
-            end
-        else
-            displ_pair{ipair}='...'; %pair not displayed in the menu
-        end
-    end
-elseif isequal(mode,'series(Dj)') %| isequal(mode,'st_series(Dj)') % series on the j index
-    for ipair=1:nbpair
-        if select(ipair)
-            displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
-            if ~checkframe && size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)&& displ_num(1,ipair)>=1 && displ_num(2,ipair)>=1
-                dt=time(ref_i+displ_num(4,ipair)+1,ref_j+displ_num(2,ipair)+1)-time(ref_i+displ_num(3,ipair)+1,ref_j+displ_num(1,ipair)+1);%time interval dt
-            else
-                dt=1;
-            end
-                displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
-        else
-            displ_pair{ipair}='...'; %pair not displayed in the menu
-        end
-    end
-elseif isequal(mode,'pair j1-j2')% | isequal(mode,'st_pair j1-j2') %case of pairs
-    for ipair=1:nbpair
-        if select(ipair)
-            if  ~checkframe && size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair) && displ_num(1,ipair)>=1 && displ_num(2,ipair)>=1
-            dt=time(ref_i+displ_num(4,ipair)+1,displ_num(2,ipair)+1)-time(ref_i+displ_num(3,ipair)+1,displ_num(1,ipair)+1);%time interval dt
-            else
-                dt=1;
-            end
-            displ_pair{ipair}=['j= ' num2stra(displ_num(1,ipair)+1,nom_type_ima) '-' num2stra(displ_num(2,ipair)+1,nom_type_ima) ...
-                ' :dt= ' num2str(dt*1000)];
-                
-        else
-            displ_pair{ipair}='...'; %pair not displayed in the menu
-        end
-    end
-elseif isequal(mode,'displacement')
-    displ_pair={'Di=Dj=0'};
-end
-val=get(handles.ListPairCiv2,'Value');
-ichoice=find(select,1);
-if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
-if get(handles.CheckCiv2,'Value')==0 && get(handles.CheckCiv1,'Value')==0 && get(handles.CheckFix1,'Value')==0 && get(handles.CheckPatch1,'Value')==0
-    val=ichoice;% first valid pair proposed by default in the menu
-end
-if val>length(displ_pair')
-    set(handles.ListPairCiv2,'Value',1);% first valid pair proposed by default in the menu
-else
-    set(handles.ListPairCiv2,'Value',val);
-end
-set(handles.ListPairCiv2,'String',displ_pair');
-set(gcf,'Pointer','arrow')
+% 
+% % nomenclature type of the .nc files
+% nom_type_ima='ima_num';%default
+% NomTypeIma=get(handles.NomType,'String');
+% nom_type_nc='_1-2';%default
+% if isfield(browse,'nom_type_nc')
+%     nom_type_nc=browse.nom_type_nc;
+% end
+% if isequal(nom_type_ima,'png_old') || isequal(nom_type_ima,'netc_old')|| isequal(nom_type_ima,'raw_SMD')|| isequal(nom_type_nc,'netc_old')
+%     nom_type_nc='netc_old';%nom_type for the netcdf files
+% elseif isequal(nom_type_ima,'none')||isequal(nom_type_nc,'none')
+%     nom_type_nc='none';
+% elseif isequal(nom_type_ima,'avi')||isequal(nom_type_ima,'_i')||isequal(nom_type_ima,'ima_num')||isequal(nom_type_nc,'_1-2')
+%     nom_type_nc='_1-2';
+% else
+%     if  isequal(mode,'series(Di)')%|isequal(mode,'st_series(Di)')
+%         nom_type_nc='_1-2_1'; % PIV in volume
+%     else
+%         nom_type_nc='_1_1-2';
+%     end
+% end
+% browse.nom_type_nc=nom_type_nc;
+% set(handles.RootName,'UserData',browse)
+% 
+% %reads .nc subdirectory and image numbers from the interface
+% subdir_civ1=get(handles.txt_SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf data
+% subdir_civ2=get(handles.txt_SubdirCiv2,'String');%subdirectory subdir_civ2 for the netcdf data
+% ref_i=str2double(get(handles.ref_i,'String'));
+% if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
+%     ref_j=0;
+% else
+%     ref_j=str2double(get(handles.ref_j,'String'));
+% end
+% time=get(handles.ImaDoc,'UserData'); %get the set of times
+% TimeUnit=get(handles.TimeUnit,'String');
+% checkframe=strcmp(TimeUnit,'frame');
+% % if isempty(time)
+% %     time=[0 1];%default
+% % end
+% displ_num=get(handles.ListPairCiv1,'UserData');
+% 
+% %eliminate the first pairs inconsistent with the position
+% if isempty(displ_num)
+%     nbpair=0;
+% else
+%     nbpair=length(displ_num(1,:));%nbre of displayed pairs
+%     if  isequal(mode,'series(Di)')% | isequal(mode,'st_series(Di)')
+%         nbpair=min(2*ref_i-1,nbpair);%limit the number of pairs with positive first index
+%     elseif  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
+%         nbpair=min(2*ref_j-1,nbpair);%limit the number of pairs with positive first index
+%     end
+% end
+% nbpair=min(200,nbpair);%limit the number of displayed pairs to 200
+% 
+% %% look for existing processed pairs at the reference indices if Civ1 will not
+% % be performed, while the result is needed for next steps.
+% displ_pair={''}; %default
+% select=ones(size(1:nbpair));%default =1 for numbers of displayed pairs
+% [RootPath,RootFile]=fileparts(filebase);
+% if ~get(handles.CheckCiv2,'Value') && ~get(handles.CheckCiv1,'Value') && ~get(handles.CheckFix1,'Value') && ~get(handles.CheckPatch1,'Value')
+%     if ~exist(fullfile(filepath,subdir_civ2,ext_dir),'dir')
+%         errordlg(['no civ2 file available: subdirectory ' subdir_civ2 ' does not exist'])
+%         set(handles.ListPairCiv2,'Value',1);
+%         set(handles.ListPairCiv2,'String',{''});
+%         return
+%     end
+%     for ipair=1:nbpair
+%         filename=fullfile_uvmat(RootPath,subdir_civ1,RootFile,'.nc',nom_type_nc,...
+%             ref_i+displ_num(3,ipair),ref_i+displ_num(4,ipair),ref_j+displ_num(1,ipair),ref_j+displ_num(2,ipair));
+%        % filename=name_generator(filebase,ref_i+displ_num(3,ipair),ref_j+displ_num(1,ipair),'.nc',nom_type_nc,1,...
+%         %    ref_i+displ_num(4,ipair),ref_j+displ_num(2,ipair),subdir_civ1);
+%         select(ipair)=exist(filename,'file')==2;
+%     end
+%     if  isequal(select,zeros(size(1:nbpair)))
+%         if isfield(browse,'incr_pair')
+%             num_i1=ref_i-floor(browse.incr_pair(1)/2);
+%             num_i2=ref_i+floor((browse.incr_pair(1)+1)/2);
+%             num_j1=ref_j-floor(browse.incr_pair(2)/2);
+%             num_j2=ref_j+floor((browse.incr_pair(2)+1)/2);
+%             filename=fullfile_uvmat(RootPath,subdir_civ2,RootFile,'.nc',nom_type_nc,num_i1,num_i2,num_j1,num_j2);
+%             %filename=name_generator(filebase,num_i1,num_j1,'.nc',nom_type_nc,1,num_i2,num_j2,subdir_civ2);
+%             select(1)=exist(filename,'file')==2;
+%         else
+%             if  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
+%                 msgbox_uvmat('ERROR',['no civ2 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ2])
+%             else
+%                 msgbox_uvmat('ERROR',['no civ2 file available for the selected reference index i=' num2str(ref_i) ' and subdirectory ' subdir_civ2])
+%             end
+%             set(handles.ListPairCiv2,'Value',1);
+%             set(handles.ListPairCiv2,'String',{''});
+%             return
+%         end
+%     end
+% end
+% if isequal(mode,'series(Di)') 
+%     for ipair=1:nbpair
+%         if select(ipair)
+%             displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
+%             if  ~checkframe && size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)
+%                 dt=time(ref_i+displ_num(4,ipair)+1,ref_j+displ_num(2,ipair)+1)-time(ref_i+displ_num(3,ipair)+1,ref_j+displ_num(1,ipair)+1);%time interval dt
+%                 displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
+%             end
+%         else
+%             displ_pair{ipair}='...'; %pair not displayed in the menu
+%         end
+%     end
+% elseif isequal(mode,'series(Dj)') %| isequal(mode,'st_series(Dj)') % series on the j index
+%     for ipair=1:nbpair
+%         if select(ipair)
+%             displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2)) ];
+%             if ~checkframe && size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair)&& displ_num(1,ipair)>=1 && displ_num(2,ipair)>=1
+%                 dt=time(ref_i+displ_num(4,ipair)+1,ref_j+displ_num(2,ipair)+1)-time(ref_i+displ_num(3,ipair)+1,ref_j+displ_num(1,ipair)+1);%time interval dt
+%             else
+%                 dt=1;
+%             end
+%                 displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
+%         else
+%             displ_pair{ipair}='...'; %pair not displayed in the menu
+%         end
+%     end
+% elseif isequal(mode,'pair j1-j2')% | isequal(mode,'st_pair j1-j2') %case of pairs
+%     for ipair=1:nbpair
+%         if select(ipair)
+%             if  ~checkframe && size(time,1)>=ref_i+displ_num(4,ipair) && size(time,2)>=ref_j+displ_num(2,ipair) && displ_num(1,ipair)>=1 && displ_num(2,ipair)>=1
+%             dt=time(ref_i+displ_num(4,ipair)+1,displ_num(2,ipair)+1)-time(ref_i+displ_num(3,ipair)+1,displ_num(1,ipair)+1);%time interval dt
+%             else
+%                 dt=1;
+%             end
+%             displ_pair{ipair}=['j= ' num2stra(displ_num(1,ipair)+1,nom_type_ima) '-' num2stra(displ_num(2,ipair)+1,nom_type_ima) ...
+%                 ' :dt= ' num2str(dt*1000)];
+%                 
+%         else
+%             displ_pair{ipair}='...'; %pair not displayed in the menu
+%         end
+%     end
+% elseif isequal(mode,'displacement')
+%     displ_pair={'Di=Dj=0'};
+% end
+% val=get(handles.ListPairCiv2,'Value');
+% ichoice=find(select,1);
+% if (isempty(ichoice) || ichoice < 1); ichoice=1; end;
+% if get(handles.CheckCiv2,'Value')==0 && get(handles.CheckCiv1,'Value')==0 && get(handles.CheckFix1,'Value')==0 && get(handles.CheckPatch1,'Value')==0
+%     val=ichoice;% first valid pair proposed by default in the menu
+% end
+% if val>length(displ_pair')
+%     set(handles.ListPairCiv2,'Value',1);% first valid pair proposed by default in the menu
+% else
+%     set(handles.ListPairCiv2,'Value',val);
+% end
+% set(handles.ListPairCiv2,'String',displ_pair');
+% set(gcf,'Pointer','arrow')
 
 %-------------------------------------------------------------------
 % --- 
@@ -3832,7 +3684,7 @@ if strcmp(SubDir,'new...')
     end    
 end
 set(handles.txt_SubdirCiv1,'String',SubDir);
-find_netcpair_civ1(handles) 
+find_netcpair_civ(handles,1) 
 
 %------------------------------------------------------------------------
 % --- Executes on button press in ListSubdirCiv2.
@@ -4673,45 +4525,34 @@ end
 % Dti: ~=0 if i index pairs are used
 % Dtj: ~=0 if i index pairs are used
 
-function [nom_type_pair]=nomtype2pair(nom_type,Dti,Dtj)
+function NomTypeNc=nomtype2pair(NomTypeIma,mode)
 
 %determine nom_type_nc:
-nom_type_pair=[];%default
-if ischar(nom_type)
-    switch nom_type
-        case {'_i_j'}
-            if Dtj>0 || Dtj<0
-                nom_type_pair='_i_j1-j2';
-                if Dti>0 || Dti<0
-                    nom_type_pair='_i1-i2_j1-j2';
-                end
-                elseif Dti>0 || Dti<0
-                nom_type_pair='_i1-i21_j';   
-            else
-                 nom_type_pair='_i_j';
-            end
-        case {'_i1-i2_j'}
-            if Dtj>0 || Dtj<0
-               nom_type_pair='_i1-i2_j1-j2';
-            else
-                nom_type_pair='_i1-i2_j';
-            end
-        case {'i_j1-j2'}
-            if Dti>0 || Dti<0
-               nom_type_pair='_i1-i2_j1-j2';
-            else
-                nom_type_pair='_i1-i2_j';
-            end
-        case {'i1-i2_j1-j2'}
-             nom_type_pair='_i1-i2_j1-j2';
-        case '#a'
-            if Dtj>0 || Dtj<0
-                nom_type_pair='#_ab';
-            end
-        otherwise
-            if Dti>0 || Dti<0
-               nom_type_pair='_i1-i2'; 
-            end
+NomTypeNc='';%default
+switch mode
+    case 'pair j1-j2'      
+    if ~isempty(regexp(NomTypeIma,'a$'))
+        NomTypeNc=[NomTypeIma 'b'];
+    elseif ~isempty(regexp(NomTypeIma,'A$'))
+        NomTypeNc=[NomTypeIma 'B'];
+    else
+        r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
+        if ~isempty(r)
+            NomTypeNc='_1_1-2';
+        end
     end
+    case 'series(Dj)'  
+        r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
+        if ~isempty(r)
+            NomTypeNc='_1_1-2';
+        end
+   case 'series(Di)'
+        r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
+        if ~isempty(r)
+            NomTypeNc='_1-2_1';
+        else
+            NomTypeNc='_1-2';
+        end
 end
 
+function NomType_Callback(hObject, eventdata, handles)
