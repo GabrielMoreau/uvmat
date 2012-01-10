@@ -204,8 +204,8 @@ if isfield (Param,'Civ2')
     end
     ibx2=ceil(par_civ2.Bx/2);
     iby2=ceil(par_civ2.By/2);
-    isx2=ibx2+2;
-    isy2=iby2+2;
+    isx2=ibx2+3;
+    isy2=iby2+3;
     % shift from par_civ2.filename_nc1
     % shiftx=velocity interpolated at position
     miniy=max(1+isy2,1+iby2);
@@ -249,9 +249,9 @@ if isfield (Param,'Civ2')
     end
     par_civ2.Searchx=2*isx2+1;
     par_civ2.Searchy=2*isy2+1;
-    par_civ2.Shiftx=Shiftx./nbval;
-    par_civ2.Shifty=Shifty./nbval;
-    par_civ2.Grid=[GridX GridY];   
+    par_civ2.Shiftx=Shiftx(nbval>=1)./nbval(nbval>=1);
+    par_civ2.Shifty=Shifty(nbval>=1)./nbval(nbval>=1);
+    par_civ2.Grid=[GridX(nbval>=1) GridY(nbval>=1)];   
     if par_civ2.CheckDeformation
         DUDX=DUDX./nbval;
         DUDY=DUDY./nbval;
@@ -389,8 +389,8 @@ ibx2=ceil(par_civ.Bx/2);
 iby2=ceil(par_civ.By/2);
 isx2=ceil(par_civ.Searchx/2);
 isy2=ceil(par_civ.Searchy/2);
-shiftx=par_civ.Shiftx;
-shifty=-par_civ.Shifty;% sign minus because image j index increases when y decreases
+shiftx=round(par_civ.Shiftx);
+shifty=-round(par_civ.Shifty);% sign minus because image j index increases when y decreases
 if isfield(par_civ,'Grid')
     if ischar(par_civ.Grid)%read the drid file if the input is a file name
         par_civ.Grid=dlmread(par_civ.Grid);
@@ -411,8 +411,8 @@ else% automatic measurement grid
 end
 nbvec=size(par_civ.Grid,1);
 if numel(shiftx)==1
-    shiftx=round(shiftx)*ones(nbvec,1);
-    shifty=round(shifty)*ones(nbvec,1);
+    shiftx=shiftx*ones(nbvec,1);
+    shifty=shifty*ones(nbvec,1);
 end
 %% Default output
 xtable=par_civ.Grid(:,1);

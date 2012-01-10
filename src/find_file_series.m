@@ -144,7 +144,7 @@ else
             j1_str='(?<j1>[a-z]|[A-Z])';
             j1_star='*';
             if ~isempty(regexp(NomTypeStr,'[b|B]$'));
-                j2_str='(?<j1>[a-z]|[A-Z])';
+                j2_str='(?<j2>[a-z]|[A-Z])';
                 j2_star='*';
             end
         else
