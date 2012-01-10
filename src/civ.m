@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 08-Jan-2012 11:00:13
+% Last Modified by GUIDE v2.5 09-Jan-2012 20:42:45
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -618,25 +618,25 @@ if isempty(Value)% if the input subdir is not found
     if ValueCiv1>numel(listdir)
         ValueCiv1=1;
     end
-    set(handles.txt_SubdirCiv1,'String',listdir{ValueCiv1})
+    set(handles.SubdirCiv1,'String',listdir{ValueCiv1})
     ValueCiv2=get(handles.ListSubdirCiv2,'Value');
     if ValueCiv2>numel(listdir)
         ValueCiv2=1;
     end
-    set(handles.txt_SubdirCiv2,'String',listdir{ValueCiv2})
+    set(handles.SubdirCiv2,'String',listdir{ValueCiv2})
 else
     ValueCiv1=Value;
     ValueCiv2=Value;
-     set(handles.txt_SubdirCiv1,'String',listdir{Value})
-     set(handles.txt_SubdirCiv2,'String',listdir{Value})
+     set(handles.SubdirCiv1,'String',listdir{Value})
+     set(handles.SubdirCiv2,'String',listdir{Value})
 end
 set(handles.ListSubdirCiv1,'Value',ValueCiv1)
 set(handles.ListSubdirCiv2,'Value',ValueCiv2)
 set(handles.ListSubdirCiv1,'String',[listdir;'new...'])
 set(handles.ListSubdirCiv2,'String',[listdir;'new...'])
 if isempty(listdir)
-    set(handles.txt_SubdirCiv1,'String','CIV')
-    set(handles.txt_SubdirCiv2,'String','CIV')
+    set(handles.SubdirCiv1,'String','CIV')
+    set(handles.SubdirCiv2,'String','CIV')
 end
 
 %% store info
@@ -663,9 +663,9 @@ set(handles.RootName,'BackgroundColor',[1 1 1])
 
 %------------------------------------------------------------------------
 % --- Executes on carriage return on the subdir checkciv1 edit window
-function txt_SubdirCiv1_Callback(hObject, eventdata, handles)
+function SubdirCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-SubDir=get(handles.txt_SubdirCiv1,'String');
+SubDir=get(handles.SubdirCiv1,'String');
 menu_str=get(handles.ListSubdirCiv1,'String');% read the list of subdirectories for update
 ichoice=find(strcmp(SubDir,menu_str),1);
 if isempty(ichoice)
@@ -675,7 +675,7 @@ else
 end
 set(handles.ListSubdirCiv1,'Value',ilist)% select the selected subdir in the menu
 if get(handles.CheckCiv1,'Value')% if Civ1 is performed
-    set(handles.txt_SubdirCiv2,'String',SubDir);% set by default civ2 directory the same as civ1 
+    set(handles.SubdirCiv2,'String',SubDir);% set by default civ2 directory the same as civ1 
     set(handles.ListSubdirCiv2,'Value',ilist)
 else % if Civ1 data already exist
     errormsg=find_netcpair_civ(handles,1); %update the list of available pairs from netcdf files in the new directory
@@ -686,9 +686,9 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on carriage return on the SubDir checkciv1 edit window
-function txt_SubdirCiv2_Callback(hObject, eventdata, handles)
+function SubdirCiv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-SubDir=get(handles.txt_SubdirCiv1,'String');
+SubDir=get(handles.SubdirCiv1,'String');
 menu_str=get(handles.ListSubdirCiv2,'String');% read the list of subdirectories for update
 ichoice=find(strcmp(SubDir,menu_str),1);
 if isempty(ichoice)
@@ -761,7 +761,7 @@ if ~isempty(ind_selected)
     end
 end
 set(handles.PairIndices,'Visible','on')
-set(handles.txt_SubdirCiv1,'Visible','on')
+set(handles.SubdirCiv1,'Visible','on')
 set(handles.ListSubdirCiv1,'Visible','on')
 if ~opening
     errormsg=find_netcpair_civ(handles,1); % select the available netcdf files
@@ -772,7 +772,7 @@ end
 if max(checkbox(4:6))% case of civ2 pair choice needed
     set(handles.TitlePairCiv2,'Visible','on')
     set(handles.TitleSubdirCiv2,'Visible','on')
-    set(handles.txt_SubdirCiv2,'Visible','on')
+    set(handles.SubdirCiv2,'Visible','on')
     set(handles.ListSubdirCiv2,'Visible','on')
     set(handles.ListPairCiv2,'Visible','on')
     if ~opening
@@ -783,7 +783,7 @@ if max(checkbox(4:6))% case of civ2 pair choice needed
     end
 else
     set(handles.TitleSubdirCiv2,'Visible','off')
-    set(handles.txt_SubdirCiv2,'Visible','off')
+    set(handles.SubdirCiv2,'Visible','off')
     set(handles.ListSubdirCiv2,'Visible','off')
     set(handles.ListPairCiv2,'Visible','off')
 end
@@ -1691,7 +1691,10 @@ while detect==1
         detect=0;
     end
 end
+Param=rmfield(Param,'status');
+Param=rmfield(Param,'xml');
 t=struct2xml(Param);
+t=set(t,1,'Name','CivDoc');% set the head label
 save(t,[namedoc '.xml']); %save GUI  parameters as xml file
 saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
 
@@ -1933,8 +1936,8 @@ if checkbox(5)==1% fix2 performed
 end
 
 %check dir
-subdir_civ1=get(handles.txt_SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf output data
-subdir_civ2=get(handles.txt_SubdirCiv2,'String');
+subdir_civ1=get(handles.SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf output data
+subdir_civ2=get(handles.SubdirCiv2,'String');
 if isequal(subdir_civ1,''),subdir_civ1='CIV'; end% put default subdir
 if isequal(subdir_civ2,''),subdir_civ2=subdir_civ1; end% put default subdir
 % currentdir=pwd;%store the current working directory
@@ -1984,7 +1987,7 @@ if checkbox(1)==1;
             end
         end
   
-        %create the new txt_SubdirCiv1
+        %create the new SubdirCiv1
         if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
 %             cd(Path_ima);          
             [xx,msg1]=mkdir(fullfile(Path_ima,subdir_civ1_new));
@@ -2027,7 +2030,7 @@ if checkbox(1)==1;
                     break
                 end
             end
-            %create the new txt_SubdirCiv1
+            %create the new SubdirCiv1
             if ~exist(fullfile(Path_ima,subdir_civ1_new),'dir')
 %                    cd(Path_ima);          
                 [xx,msg1]=mkdir(fullfile(Path_ima,subdir_civ1_new));
@@ -2209,7 +2212,7 @@ if (checkbox(4)==1)&&...
                 end
             end
             subdir_civ2=subdir_civ2_new;
-            %create the new txt_SubdirCiv1
+            %create the new SubdirCiv1
             if ~exist(fullfile(Path_ima,subdir_civ2_new),'dir')
                 [xx,m2]=mkdir(subdir_civ2_new);
                  [xx,msg2] = fileattrib(fullfile(Path_ima,subdir_civ2_new),'+w','g'); %yield writing access (+w) to user group (g)
@@ -2383,8 +2386,8 @@ if strcmp(compare,'stereo PIV')
         end
     end
 end
-set(handles.txt_SubdirCiv1,'String',subdir_civ1);%update the edit box
-set(handles.txt_SubdirCiv2,'String',subdir_civ2);%update the edit box
+set(handles.SubdirCiv1,'String',subdir_civ1);%update the edit box
+set(handles.SubdirCiv2,'String',subdir_civ2);%update the edit box
 browse.nom_type_nc=nom_type_nc;
 set(handles.RootName,'UserData',browse); %update the nomenclature type for uvmat
 
@@ -2961,8 +2964,8 @@ nom_type_ima=get(handles.NomType,'String');
 % set(handles.RootName,'UserData',browse)
 
 %% reads .nc subdirectoy and image numbers from the interface
-subdir_civ1=get(handles.txt_SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf data
-subdir_civ2=get(handles.txt_SubdirCiv2,'String');%subdirectory subdir_civ2 for the netcdf data
+subdir_civ1=get(handles.SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf data
+subdir_civ2=get(handles.SubdirCiv2,'String');%subdirectory subdir_civ2 for the netcdf data
 ref_i=str2double(get(handles.ref_i,'String'));
 if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
     ref_j=0;
@@ -3192,8 +3195,8 @@ set(gcf,'Pointer','arrow')
 % set(handles.RootName,'UserData',browse)
 % 
 % %reads .nc subdirectory and image numbers from the interface
-% subdir_civ1=get(handles.txt_SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf data
-% subdir_civ2=get(handles.txt_SubdirCiv2,'String');%subdirectory subdir_civ2 for the netcdf data
+% subdir_civ1=get(handles.SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf data
+% subdir_civ2=get(handles.SubdirCiv2,'String');%subdirectory subdir_civ2 for the netcdf data
 % ref_i=str2double(get(handles.ref_i,'String'));
 % if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
 %     ref_j=0;
@@ -3610,7 +3613,7 @@ function [nbslice, flag_mask]=get_mask(filebase,handles)
 flag_mask=0;%default
 nbslice=1;
 
-% subdir=get(handles.txt_SubdirCiv1,'String');
+% subdir=get(handles.SubdirCiv1,'String');
 [Path,Name]=fileparts(filebase);
 if ~isdir(Path)
     msgbox_uvmat('ERROR','no path for input files')
@@ -3706,7 +3709,7 @@ if strcmp(SubDir,'new...')
         return
     end    
 end
-set(handles.txt_SubdirCiv1,'String',SubDir);
+set(handles.SubdirCiv1,'String',SubDir);
 errormsg=find_netcpair_civ(handles,1);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
@@ -3727,7 +3730,7 @@ if strcmp(SubDir,'new...')
         return
     end
 end
-set(handles.txt_SubdirCiv2,'String',SubDir);
+set(handles.SubdirCiv2,'String',SubDir);
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckGrid.

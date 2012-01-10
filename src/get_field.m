@@ -1074,9 +1074,10 @@ Tabcell=[];
 hselect_field=get(handles.variables,'parent');
 Field=get(handles.get_field,'UserData');
 index=get(handles.variables,'Value');%index in the list 'variables'
+
+%% list global TimeAttribute names and values if index=1 (blank TimeVariable display) is selected
 if isequal(index,1) 
     set(handles.attributes_txt,'String','global attributes')
-% list global TimeAttribute names and values if index=1 (blank TimeVariable display) is selected
     if isfield(Field,'ListGlobalAttribute') && ~isempty(Field.ListGlobalAttribute)
         for iline=1:length(Field.ListGlobalAttribute)
             Tabcell{iline,1}=Field.ListGlobalAttribute{iline};   
@@ -1091,8 +1092,8 @@ if isequal(index,1)
         end
         Tabchar=cell2tab(Tabcell,'=');
     end
+%% list Attribute names and values associated to the Variable # index-1   
 else
-%list TimeAttribute names and values associated to the TimeVariable # injdex-1   
     list_var=get(handles.variables,'String');
     var_select=list_var{index};
     set(handles.attributes_txt,'String', ['attributes of ' var_select])
@@ -1121,7 +1122,7 @@ end
 set(handles.attributes,'Value',1);% select the first item
 set(handles.attributes,'String',Tabchar);
 
-% update dimensions;
+%% update dimensions;
 if isfield(Field,'ListDimName')
     Tabdim={};%default
     if isequal(index,1)%list all dimensions
@@ -1138,7 +1139,6 @@ if isfield(Field,'ListDimName')
             dim_index=find(dim_index,1);
             dim_indices=[dim_indices dim_index];
         end
-        %dim_indices=find(dim_list) %removes 0 values
         set(handles.dimensions_txt,'String', ['dimensions of ' var_select])
     end
     for iline=1:length(dim_indices)
