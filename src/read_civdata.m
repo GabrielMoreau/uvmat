@@ -185,33 +185,48 @@ end
 switch vel_type
     case 'civ1'
         var={'X','Y','Z','U','V','W','C','F','FF';...
-              'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF'};
+            'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF'};
         role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
         units={'pixel','pixel','pixel','pixel','pixel','pixel',[],[],[]};
     case 'interp1'
-         var={'X','Y','Z','U','V','W','FF';...
-               'Civ1_X','Civ1_Y','','Civ1_U_Diff','Civ1_V_Diff','','Civ1_FF'};
-         role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','errorflag'};  
-         units={'pixel','pixel','pixel','pixel','pixel','pixel',[]};
+        var={'X','Y','Z','U','V','W','FF';...
+            'Civ1_X','Civ1_Y','','Civ1_U_Diff','Civ1_V_Diff','','Civ1_FF'};
+        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','errorflag'};
+        units={'pixel','pixel','pixel','pixel','pixel','pixel',[]};
     case 'filter1'
         var={'X_tps','Y_tps','Z_tps','U_tps','V_tps','W_tps','X_SubRange','Y_SubRange','NbSites';...
             'Civ1_X_tps','Civ1_Y_tps','','Civ1_U_tps','Civ1_V_tps','','Civ1_X_SubRange','Civ1_Y_SubRange','Civ1_NbSites'};
-         role={'','','','','','','','',''};  
-         units={'pixel','pixel','pixel','pixel','pixel','pixel','pixel','pixel',''};
-    otherwise % if VelType=[]
+        role={'','','','','','','','',''};
+        units={'pixel','pixel','pixel','pixel','pixel','pixel','pixel','pixel',''};
+    case 'civ2'
+        var={'X','Y','Z','U','V','W','C','F','FF';...
+            'Civ2_X','Civ2_Y','Civ2_Z','Civ2_U','Civ2_V','Civ2_W','Civ2_C','Civ2_F','Civ2_FF'};
+        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
+        units={'pixel','pixel','pixel','pixel','pixel','pixel',[],[],[]};
+    case 'interp2'
+        var={'X','Y','Z','U','V','W','FF';...
+            'Civ2_X','Civ2_Y','','Civ2_U_Diff','Civ2_V_Diff','','Civ2_FF'};
+        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','errorflag'};
+        units={'pixel','pixel','pixel','pixel','pixel','pixel',[]};
+    case 'filter2'
+        var={'X_tps','Y_tps','Z_tps','U_tps','V_tps','W_tps','X_SubRange','Y_SubRange','NbSites';...
+            'Civ2_X_tps','Civ2_Y_tps','','Civ2_U_tps','Civ2_V_tps','','Civ2_X_SubRange','Civ2_Y_SubRange','Civ2_NbSites'};
+        role={'','','','','','','','',''};
+        units={'pixel','pixel','pixel','pixel','pixel','pixel','pixel','pixel',''};
+    otherwise % if VelType=[], choose the best field, civ in priority, or patch2 for derivatives
         if testpatch
-           var={'X_tps','Y_tps','Z_tps','U_tps','V_tps','W_tps','X_SubRange','Y_SubRange','NbSites';...
-               'Civ2_X_tps','Civ2_Y_tps','','Civ2_U_tps','Civ2_V_tps','','Civ2_X_SubRange','Civ2_Y_SubRange','Civ2_NbSites';...
-               'Civ1_X_tps','Civ1_Y_tps','','Civ1_U_tps','Civ1_V_tps','','Civ1_X_SubRange','Civ1_Y_SubRange','Civ1_NbSites'};
-            role={'','','','','','','',''};  
+            var={'X_tps','Y_tps','Z_tps','U_tps','V_tps','W_tps','X_SubRange','Y_SubRange','NbSites';...
+                'Civ2_X_tps','Civ2_Y_tps','','Civ2_U_tps','Civ2_V_tps','','Civ2_X_SubRange','Civ2_Y_SubRange','Civ2_NbSites';...
+                'Civ1_X_tps','Civ1_Y_tps','','Civ1_U_tps','Civ1_V_tps','','Civ1_X_SubRange','Civ1_Y_SubRange','Civ1_NbSites'};
+            role={'','','','','','','',''};
             units={'pixel','pixel','pixel','pixel','pixel','pixel','pixel','pixel'};
         else
-             var={'X','Y','Z','U','V','W','C','F','FF';...
-              'Civ2_X','Civ2_Y','Civ2_Z','Civ2_U','Civ2_V','Civ2_W','Civ2_C','Civ2_F','Civ2_FF';...
-              'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF'};
+            var={'X','Y','Z','U','V','W','C','F','FF';...
+                'Civ2_X','Civ2_Y','Civ2_Z','Civ2_U','Civ2_V','Civ2_W','Civ2_C','Civ2_F','Civ2_FF';...
+                'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF'};
             role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
             units={'pixel','pixel','pixel','pixel','pixel','pixel',[],[],[]};
-        end   
+        end
 end
 if isempty(vel_type) || isequal(vel_type,'*') %undefined velocity type (civ1,civ2...)
     if testder

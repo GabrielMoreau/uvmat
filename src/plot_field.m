@@ -665,7 +665,7 @@ end
 %%   image or scalar plot %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if isfield(PlotParam.Scalar,'ListContour')
-    CheckContour=strcmp(PlotParam.Scalar.ListContour{1},'contours');
+    CheckContour=strcmp(PlotParam.Scalar.ListContour,'contours');
 else
     CheckContour=0; %default
 end

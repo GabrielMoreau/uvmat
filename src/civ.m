@@ -256,6 +256,10 @@ set(handles.MenuCivX,'checked','on')
 %set(handles.thresh_patch1,'Visible','off')
 % set(handles.thresh_text1,'Visible','off')
 set(handles.num_MaxDiff,'Visible','off')
+set(handles.num_Nx,'Visible','on')
+set(handles.num_Ny,'Visible','on')
+set(handles.title_Nx,'Visible','on')
+set(handles.title_Ny,'Visible','on')
 set(handles.title_MaxDiff,'Visible','off')
 set(handles.num_Rho,'Style','edit')
 set(handles.num_Rho,'String','1')
@@ -271,8 +275,10 @@ set(handles.MenuCivX,'checked','off')
 % if get(handles.CheckPatch1,'Value')
 set(handles.num_MaxDiff,'Visible','on')
 set(handles.title_MaxDiff,'Visible','on')
-
-% end
+set(handles.num_Nx,'Visible','off')
+set(handles.num_Ny,'Visible','off')
+set(handles.title_Nx,'Visible','off')
+set(handles.title_Ny,'Visible','off')
 set(handles.num_Rho,'Style','popupmenu')
 set(handles.num_Rho,'Value',1)
 set(handles.num_Rho,'String',{'1';'2'})
@@ -345,7 +351,7 @@ if strcmp(ExtInput,'.nc')
     end
     if strcmp(Data.Conventions,'uvmat/civdata')% case of new civ data,
         set(handles.MenuMatlab,'checked','on') %select civ/Matlab by default
-        set(handles.MenuCivX,'checked','off')
+        MenuMatlab_Callback([],[], handles)
         if ~isempty(Data.CivStage)%test for civ files
             ind_opening=Data.CivStage;
         end
@@ -355,8 +361,8 @@ if strcmp(ExtInput,'.nc')
             imageinput=Data.Civ1_ImageA;
         end
     elseif ~isempty(Data.absolut_time_T0')% case of  civx data,
-        set(handles.MenuMatlab,'checked','off') %select Cix by default
-        set(handles.MenuCivX,'checked','on')
+        set(handles.MenuCivX,'checked','on') %select Cix by default
+        MenuCivX_Callback([],[], handles)
         if ~isempty(Data.fix2)
             ind_opening=5;
         elseif ~isempty(Data.civ2)
@@ -574,9 +580,8 @@ ListOptions={'CheckCiv1', 'CheckFix1' 'CheckPatch1', 'CheckCiv2', 'CheckFix2', '
 for index = 1:ind_opening
     set(handles.(ListOptions{index}),'value',0)
 end
-for index = ind_opening+1
-    set(handles.(ListOptions{index}),'value',1)
-end
+set(handles.(ListOptions{min(ind_opening+1,6)}),'value',1)
+
 update_CivOptions(handles,1)
 
 %%  set the menus of image pairs and default selection for civ   %%%%%%%%%%%%%%%%%%%
@@ -1143,6 +1148,7 @@ if ~isempty(errormsg)
 end
 [filecell,i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_civ2,nom_type_nc,xx,yy,compare]=...
     set_civ_filenames(handles,ref_i,ref_j,box_test);
+
 Rootbat=fileparts(filecell.nc.civ1{1,1});%output netcdf file (without extention)
 set(handles.civ,'UserData',filecell);%store for futur use of status callback
 if isempty(filecell)% (error message displayed in fct set_civ_filenames)
@@ -2247,10 +2253,15 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
                 if ~testdiff % civ2 or patch2 are written in the same file as civ1
                     if checkbox(4)==0 ; %check the existence of civ2 if it is not calculated
                         Data=nc2struct(filename,'ListGlobalAttribute','CivStage','civ2');
-                        if ~isempty(Data.CivStage) && Data.CivStage<4 %test for civ files
+                        if isfield(Data,'Txt')
+                            msgbox_uvmat('ERROR',Data.Txt); 
+                            return
+                        elseif ~isempty(Data.CivStage)% case of new civ files
+                            if Data.CivStage<4 %test for civ files
                             msgbox_uvmat('ERROR',['no civ2 data in ' filename])
                             filecell=[];
                             return
+                            end
                         elseif isempty(Data.civ2)||isequal(Data.civ2,0)
                             msgbox_uvmat('ERROR',['no civ2 data in ' filename])
                             filecell=[];
