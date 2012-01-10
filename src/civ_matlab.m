@@ -204,8 +204,8 @@ if isfield (Param,'Civ2')
     end
     ibx2=ceil(par_civ2.Bx/2);
     iby2=ceil(par_civ2.By/2);
-    isx2=ibx2+3;
-    isy2=iby2+3;
+    isx2=ibx2+5;% search ara +-5 pixels around the guess
+    isy2=iby2+5;
     % shift from par_civ2.filename_nc1
     % shiftx=velocity interpolated at position
     miniy=max(1+isy2,1+iby2);
@@ -251,7 +251,7 @@ if isfield (Param,'Civ2')
     par_civ2.Searchy=2*isy2+1;
     par_civ2.Shiftx=Shiftx(nbval>=1)./nbval(nbval>=1);
     par_civ2.Shifty=Shifty(nbval>=1)./nbval(nbval>=1);
-    par_civ2.Grid=[GridX(nbval>=1) GridY(nbval>=1)];   
+    par_civ2.Grid=[GridX(nbval>=1)-par_civ2.Shiftx/2 GridY(nbval>=1)-par_civ2.Shifty/2];% grid taken at the extrapolated origin of the displacement vectors   
     if par_civ2.CheckDeformation
         DUDX=DUDX./nbval;
         DUDY=DUDY./nbval;
@@ -260,6 +260,8 @@ if isfield (Param,'Civ2')
     end
     % caluclate velocity data (y and v in indices, reverse to y component)
     [xtable ytable utable vtable ctable F] = civ (par_civ2);
+%     diff_squared=(utable-par_civ2.Shiftx).*(utable-par_civ2.Shiftx)+(vtable+par_civ2.Shifty).*(vtable+par_civ2.Shifty);
+%     F(diff_squared>=4)=4; %flag vectors whose distance to the guess exceeds 2 pixels
     list_param=(fieldnames(Param.Civ2))';
     list_remove={'pxcmx','pxcmy','npx','npy','gridflag','maskflag','term_a','term_b','T0'};
     for ilist=1:length(list_remove)
@@ -491,8 +493,6 @@ sum_square=1;% default
 for ivec=1:nbvec
     iref=par_civ.Grid(ivec,1);% xindex on the image A for the middle of the correlation box
     jref=par_civ.Grid(ivec,2);% yindex on the image B for the middle of the correlation box
-    %     xtable(ivec)=iref;
-    %     ytable(ivec)=jref;%default
     if ~(checkmask && par_civ.Mask(jref,iref)<=20) %velocity not set to zero by the black mask
         if jref-iby2<1 || jref+iby2>par_civ.ImageHeight|| iref-ibx2<1 || iref+ibx2>par_civ.ImageWidth||...
               jref+shifty(ivec)-isy2<1||jref+shifty(ivec)+isy2>par_civ.ImageHeight|| iref+shiftx(ivec)-isx2<1 || iref+shiftx(ivec)+isx2>par_civ.ImageWidth  % we are outside the image
@@ -510,8 +510,7 @@ for ivec=1:nbvec
             if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
                 F(ivec)=3;
             end
-        end
-        
+        end      
         if F(ivec)~=3
             image1_crop=image1_crop-image1_mean;%substract the mean
             image2_crop=image2_crop-image2_mean;
@@ -530,7 +529,7 @@ for ivec=1:nbvec
                         [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
                     end
                     utable(ivec)=vector(1)+shiftx(ivec);
-                    vtable(ivec)=vector(2)+shifty(ivec);
+                    vtable(ivec)=vector(2)+shifty(ivec);                 
                     xtable(ivec)=iref+utable(ivec)/2;% convec flow (velocity taken at the point middle from imgae1 and 2)
                     ytable(ivec)=jref+vtable(ivec)/2;
                     iref=round(xtable(ivec));% image index for the middle of the vector
