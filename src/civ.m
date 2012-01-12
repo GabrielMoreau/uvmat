@@ -307,7 +307,7 @@ ref_i=str2num(get(handles.ref_i,'String'));
 ref_j=str2num(get(handles.ref_j,'String'));
 NomType=get(handles.NomType,'String');
 ImaExt=get(handles.ImaExt,'String');
-fileinput=fullfile_uvmat(RootPath,'',RootFile,ImaExt,NomType,ref_i,[],ref_j)
+fileinput=fullfile_uvmat(RootPath,'',RootFile,ImaExt,NomType,ref_i,[],ref_j);
 errormsg=display_file_name(handles,fileinput);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
@@ -603,7 +603,7 @@ else
     end
 end
 
-%% update the subdirectory display
+%% scan files to update the subdirectory list display
 listot=dir(RootPath);%directory of RootPath
 idir=0;
 listdir={''};%default
@@ -617,28 +617,39 @@ for ilist=1:length(listot)
         end
     end
 end
-Value=find(strcmp(SubDir,listdir));%search the index of subdir in the cell listdir
-if isempty(Value)% if the input subdir is not found
-    ValueCiv1=get(handles.ListSubdirCiv1,'Value');%read the currrently selected dir name
-    if ValueCiv1>numel(listdir)
-        ValueCiv1=1;
+
+%% update the selection for civ1 and civ2 
+if ~isempty(SubDir)% subdir for civ1 and civ2 initiated by the input
+    SubdirCiv1=SubDir;
+    SubdirCiv2=SubDir;
+    set(SubdirCiv1,'String',SubDir)
+    set(SubdirCiv2,'String',SubDir)
+else% currently selected subdir preserved
+    SubDirCiv1=get(handles.SubdirCiv1,'String');
+    SubDirCiv2=get(handles.SubdirCiv2,'String');
+    if isempty(SubDirCiv1)% default subdir name='CIV'
+        set(handles.SubdirCiv1,'String','CIV');
+        SubDirCiv1='CIV';
     end
-    set(handles.SubdirCiv1,'String',listdir{ValueCiv1})
-    ValueCiv2=get(handles.ListSubdirCiv2,'Value');
-    if ValueCiv2>numel(listdir)
-        ValueCiv2=1;
+    if isempty(SubDirCiv2)% default subdir name='CIV'
+        set(handles.SubdirCiv2,'String','CIV');
+        SubDirCiv2='CIV';
     end
-    set(handles.SubdirCiv2,'String',listdir{ValueCiv2})
-else
-    ValueCiv1=Value;
-    ValueCiv2=Value;
-     set(handles.SubdirCiv1,'String',listdir{Value})
-     set(handles.SubdirCiv2,'String',listdir{Value})
 end
-set(handles.ListSubdirCiv1,'Value',ValueCiv1)
-set(handles.ListSubdirCiv2,'Value',ValueCiv2)
+
+%% update the subdirectory menus
+ValueCiv1=find(strcmp(SubDirCiv1,listdir));%search the index of subdir in the cell listdir
+if isempty(ValueCiv1)% if the input subdir is not found
+    ValueCiv1=numel(listdir)+1;%new subdirectory requested for civ1
+end
+ValueCiv2=find(strcmp(SubDirCiv2,listdir));%search the index of subdir in the cell listdir
+if isempty(ValueCiv2)% if the input subdir is not found
+    ValueCiv2=numel(listdir)+1;%new subdirectory requested for civ2
+end
 set(handles.ListSubdirCiv1,'String',[listdir;'new...'])
 set(handles.ListSubdirCiv2,'String',[listdir;'new...'])
+set(handles.ListSubdirCiv1,'Value',ValueCiv1)
+set(handles.ListSubdirCiv2,'Value',ValueCiv2)
 if isempty(listdir)
     set(handles.SubdirCiv1,'String','CIV')
     set(handles.SubdirCiv2,'String','CIV')
@@ -1496,7 +1507,7 @@ for ifile=1:nbfield
                 drawnow
                 if ~strcmp(compare,'stereo PIV')
                     filename_xml=[OutputFile '.civ.xml'];
-                    t=struct2xml(Param);
+                    t=struct2xml(Param);           
                     save(t,filename_xml)
                     if batch   
                         path_civ=fileparts(which('civ')); 

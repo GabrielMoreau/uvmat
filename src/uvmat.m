@@ -1651,16 +1651,45 @@ else
     if ~isempty(errormsg)
         return
     end
-    i1=UvData.i1_series{1}(ref_i+1,ref_j+1,1);
+    if get(handles.scan_i,'Value')==1% case of scanning along index i
+        i1_subseries=UvData.i1_series{1}(ref_i+1,:,:);
+    else
+        i1_subseries=UvData.i1_series{1}(:,ref_j+1,:);
+    end
+    i1_subseries=i1_subseries(i1_subseries>0);
+    if isempty(i1_subseries)
+        errormsg='no next file';
+        return
+    end
+    i1=i1_subseries(end);
     if ~isempty(UvData.i2_series{1})
-        i2=UvData.i2_series{1}(ref_i+1,ref_j+1,1);
+        if get(handles.scan_i,'Value')==1% case of scanning along index i
+            i2_subseries=UvData.i2_series{1}(ref_i+1,:,:);
+        else
+            i2_subseries=UvData.i2_series{1}(:,ref_j+1,:);
+        end
+        i2_subseries=i2_subseries(i2_subseries>0);
+        i2=i2_subseries(end);
     end
     if ~isempty(UvData.j1_series{1})
-        j1=UvData.j1_series{1}(ref_i+1,ref_j+1,1);
+        if get(handles.scan_i,'Value')==1% case of scanning along index i
+            j1_subseries=UvData.j1_series{1}(ref_i+1,:,:)
+        else
+            j1_subseries=UvData.j1_series{1}(:,ref_j+1,:)
+        end
+        j1_subseries=j1_subseries(j1_subseries>0);
+        j1=j1_subseries(end);
     end
     if ~isempty(UvData.j2_series{1})
-        j2=UvData.j2_series{1}(ref_i+1,ref_j+1,1);
+        if get(handles.scan_i,'Value')==1% case of scanning along index i
+            j2_subseries=UvData.j2_series{1}(ref_i+1,:,:)
+        else
+            j2_subseries=UvData.j2_series{1}(:,ref_j+1,:)
+        end
+        j2_subseries=j2_subseries(j2_subseries>0);
+        j2=j2_subseries(end);
     end
+    
 end
 filename=fullfile_uvmat(InputFile.RootPath,InputFile.SubDir,InputFile.RootFile,FileExt,NomType,i1,i2,j1,j2);
 if sub_value

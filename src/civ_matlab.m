@@ -489,6 +489,11 @@ end
 %% compute image correlations: MAINLOOP on velocity vectors
 corrmax=0;
 sum_square=1;% default
+mesh=1;% default
+CheckDecimal=isfield(par_civ,'CheckDecimal')&& par_civ.CheckDecimal==1;
+if CheckDecimal
+    mesh=0.2;%mesh in pixels for subpixel image interpolation
+end
 % vector=[0 0];%default
 for ivec=1:nbvec
     iref=par_civ.Grid(ivec,1);% xindex on the image A for the middle of the correlation box
@@ -514,6 +519,12 @@ for ivec=1:nbvec
         if F(ivec)~=3
             image1_crop=image1_crop-image1_mean;%substract the mean
             image2_crop=image2_crop-image2_mean;
+            if isfield(par_civ,'CheckDecimal')&& par_civ.CheckDecimal==1
+                xi=(1:mesh:size(image1_crop,2));
+                yi=(1:mesh:size(image1_crop,1))';
+                image1_crop=interp2(image1_crop,xi,yi);
+                image2_crop=interp2(image2_crop,xi,yi);
+            end
             sum_square=sum(sum(image1_crop.*image1_crop));
             %reference: Oliver Pust, PIV: Direct Cross-Correlation
             result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
@@ -528,8 +539,8 @@ for ivec=1:nbvec
                     elseif par_civ.Rho==2
                         [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
                     end
-                    utable(ivec)=vector(1)+shiftx(ivec);
-                    vtable(ivec)=vector(2)+shifty(ivec);                 
+                    utable(ivec)=vector(1)*mesh+shiftx(ivec);
+                    vtable(ivec)=vector(2)*mesh+shifty(ivec);                 
                     xtable(ivec)=iref+utable(ivec)/2;% convec flow (velocity taken at the point middle from imgae1 and 2)
                     ytable(ivec)=jref+vtable(ivec)/2;
                     iref=round(xtable(ivec));% image index for the middle of the vector

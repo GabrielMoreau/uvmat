@@ -23,7 +23,7 @@ switch info.class
             out.(names{k})=convert_string(s.(names{k}));
         end
     case 'char'
-        if isempty(regexp(s,'\<\d+\>'))
+        if isempty(regexp(s,'^\d+$'))
             out=s;
         else
             out=str2num(s);

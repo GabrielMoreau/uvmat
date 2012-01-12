@@ -2,6 +2,7 @@
 % --- read a GUI with handle 'handle' producing a structure 'struct'
 function errormsg=fill_GUI(Param,handles)
 %------------------------------------------------------------------------
+
 errormsg='';
 fields=fieldnames(Param);
 for ifield=1:numel(fields)
@@ -28,8 +29,7 @@ for ifield=1:numel(fields)
         end
         if ~isempty(hh)
             set(hh,'Visible','on')
-            get(hh,'style')
-            input_data
+%             input_data
             switch get(hh,'style')
                 case {'checkbox','radiobutton','togglebutton'}
                     if isnumeric(input_data)
