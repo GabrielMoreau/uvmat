@@ -523,6 +523,8 @@ for ivec=1:nbvec
                 xi=(1:mesh:size(image1_crop,2));
                 yi=(1:mesh:size(image1_crop,1))';
                 image1_crop=interp2(image1_crop,xi,yi);
+                xi=(1:mesh:size(image2_crop,2));
+                yi=(1:mesh:size(image2_crop,1))';
                 image2_crop=interp2(image2_crop,xi,yi);
             end
             sum_square=sum(sum(image1_crop.*image1_crop));
