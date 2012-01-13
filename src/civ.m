@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 09-Jan-2012 20:42:45
+% Last Modified by GUIDE v2.5 13-Jan-2012 08:01:20
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -248,42 +248,8 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
 end
 set(handles.RootName,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
-% -----------------------------------------------------------------------
-% --- Prepare the GUI for the compiled CivX program
-function MenuCivX_Callback(hObject, eventdata, handles)
-set(handles.MenuMatlab,'checked','off')
-set(handles.MenuCivX,'checked','on')
-%set(handles.thresh_patch1,'Visible','off')
-% set(handles.thresh_text1,'Visible','off')
-set(handles.num_MaxDiff,'Visible','off')
-set(handles.num_Nx,'Visible','on')
-set(handles.num_Ny,'Visible','on')
-set(handles.title_Nx,'Visible','on')
-set(handles.title_Ny,'Visible','on')
-set(handles.title_MaxDiff,'Visible','off')
-set(handles.num_Rho,'Style','edit')
-set(handles.num_Rho,'String','1')
-set(handles.BATCH,'Enable','on')
-% -----------------------------------------------------------------------
 
 % -----------------------------------------------------------------------
-% --- Prepare the GUI for the Matlab PIV program
-function MenuMatlab_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-set(handles.MenuMatlab,'checked','on')
-set(handles.MenuCivX,'checked','off')
-% if get(handles.CheckPatch1,'Value')
-set(handles.num_MaxDiff,'Visible','on')
-set(handles.title_MaxDiff,'Visible','on')
-set(handles.num_Nx,'Visible','off')
-set(handles.num_Ny,'Visible','off')
-set(handles.title_Nx,'Visible','off')
-set(handles.title_Ny,'Visible','off')
-set(handles.num_Rho,'Style','popupmenu')
-set(handles.num_Rho,'Value',1)
-set(handles.num_Rho,'String',{'1';'2'})
-% set(handles.BATCH,'Enable','off')
-
 % -----------------------------------------------------------------------
 % --- Open the help html file 
 function MenuHelp_Callback(hObject, eventdata, handles)
@@ -350,8 +316,8 @@ if strcmp(ExtInput,'.nc')
         return
     end
     if strcmp(Data.Conventions,'uvmat/civdata')% case of new civ data,
-        set(handles.MenuMatlab,'checked','on') %select civ/Matlab by default
-        MenuMatlab_Callback([],[], handles)
+        set(handles.ListProgram,'Value',2) %select civ/Matlab by default
+        ListProgram_Callback([],[], handles)
         if ~isempty(Data.CivStage)%test for civ files
             ind_opening=Data.CivStage;
         end
@@ -361,8 +327,8 @@ if strcmp(ExtInput,'.nc')
             imageinput=Data.Civ1_ImageA;
         end
     elseif ~isempty(Data.absolut_time_T0')% case of  civx data,
-        set(handles.MenuCivX,'checked','on') %select Cix by default
-        MenuCivX_Callback([],[], handles)
+        set(handles.ListProgram,'Value',1) %select Cix by default
+        ListProgram_Callback([],[], handles)
         if ~isempty(Data.fix2)
             ind_opening=5;
         elseif ~isempty(Data.civ2)
@@ -443,8 +409,10 @@ end
 
 %% scan the images if a civ file has been opened
 if ~isempty(NomTypeNc)
-[RootPath,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,ImageType,Object]=find_file_series(imageinput);
+[RootPath,tild,i1_series,tild,j1_series,tild,NomTypeIma,ImageType,Object]=find_file_series(imageinput);
 end
+MinIndex_i=min(i1_series(i1_series>0));
+MinIndex_j=min(j1_series(j1_series>0));
 MaxIndex_i=max(i1_series(i1_series>0));
 MaxIndex_j=max(j1_series(j1_series>0));
 
@@ -568,20 +536,36 @@ set(handles.SearchRange,'UserData',[pxcmx_search pxcmy_search]);
 set(handles.ImaExt,'String',ImaExt)
 set(handles.NomType,'String',NomTypeIma)
 set(handles.ref_i,'String',num2str(num_ref_i))
+set(handles.ref_j,'String',num2str(num_ref_j))
+
+%% update i and j index range if a nc file has been opened or pb withmin max image indices: 
+% then set first and last to the inputfile index by default
+first_i=str2num(get(handles.first_i,'String'));
+last_i=str2num(get(handles.last_i,'String'));
+if ind_opening~=0 || first_i<MinIndex_i || last_i>MaxIndex_i
 set(handles.first_i,'String',num2str(num_ref_i));
 set(handles.last_i,'String',num2str(num_ref_i));%
-set(handles.ref_j,'String',num2str(num_ref_j))
+end
+
+%j index range 
+first_j=str2num(get(handles.first_j,'String'));
+last_j=str2num(get(handles.last_i,'String'));
+if ind_opening~=0 || first_j<MinIndex_j || last_j>MaxIndex_j
 set(handles.first_j,'String',num2str(num_ref_j));
 set(handles.last_j,'String',num2str(num_ref_j));%
-% set(handles.civ,'UserData',CivData)
+end
 
-%% set the civ options depending on the input file content
-ListOptions={'CheckCiv1', 'CheckFix1' 'CheckPatch1', 'CheckCiv2', 'CheckFix2', 'CheckPatch2'};
-for index = 1:ind_opening
-    set(handles.(ListOptions{index}),'value',0)
+%% set the civ options depending on the input file content when a nc file has been opened
+ ListOptions={'CheckCiv1', 'CheckFix1' 'CheckPatch1', 'CheckCiv2', 'CheckFix2', 'CheckPatch2'};
+if ind_opening~=0
+    for index = 1:ind_opening
+        set(handles.(ListOptions{index}),'value',0)
+    end
+    for index = ind_opening+2:6
+        set(handles.(ListOptions{index}),'value',0)
+    end
 end
 set(handles.(ListOptions{min(ind_opening+1,6)}),'value',1)
-
 update_CivOptions(handles,1)
 
 %%  set the menus of image pairs and default selection for civ   %%%%%%%%%%%%%%%%%%%
@@ -622,27 +606,27 @@ end
 if ~isempty(SubDir)% subdir for civ1 and civ2 initiated by the input
     SubdirCiv1=SubDir;
     SubdirCiv2=SubDir;
-    set(SubdirCiv1,'String',SubDir)
-    set(SubdirCiv2,'String',SubDir)
+    set(handles.SubdirCiv1,'String',SubDir)
+    set(handles.SubdirCiv2,'String',SubDir)
 else% currently selected subdir preserved
-    SubDirCiv1=get(handles.SubdirCiv1,'String');
-    SubDirCiv2=get(handles.SubdirCiv2,'String');
-    if isempty(SubDirCiv1)% default subdir name='CIV'
+    SubdirCiv1=get(handles.SubdirCiv1,'String');
+    SubdirCiv2=get(handles.SubdirCiv2,'String');
+    if isempty(SubdirCiv1)% default subdir name='CIV'
         set(handles.SubdirCiv1,'String','CIV');
-        SubDirCiv1='CIV';
+        SubdirCiv1='CIV';
     end
-    if isempty(SubDirCiv2)% default subdir name='CIV'
+    if isempty(SubdirCiv2)% default subdir name='CIV'
         set(handles.SubdirCiv2,'String','CIV');
-        SubDirCiv2='CIV';
+        SubdirCiv2='CIV';
     end
 end
 
 %% update the subdirectory menus
-ValueCiv1=find(strcmp(SubDirCiv1,listdir));%search the index of subdir in the cell listdir
+ValueCiv1=find(strcmp(SubdirCiv1,listdir));%search the index of subdir in the cell listdir
 if isempty(ValueCiv1)% if the input subdir is not found
     ValueCiv1=numel(listdir)+1;%new subdirectory requested for civ1
 end
-ValueCiv2=find(strcmp(SubDirCiv2,listdir));%search the index of subdir in the cell listdir
+ValueCiv2=find(strcmp(SubdirCiv2,listdir));%search the index of subdir in the cell listdir
 if isempty(ValueCiv2)% if the input subdir is not found
     ValueCiv2=numel(listdir)+1;%new subdirectory requested for civ2
 end
@@ -1111,11 +1095,13 @@ if batch
 end
 
 %% check if the binaries exist
-if isequal(get(handles.MenuMatlab,'checked'),'on')
-    CivMode='Matlab';
-else
-    CivMode='CivX';
-end
+% if isequal(get(handles.ListProgram,'Value'),2)
+%     CivMode='Matlab';
+% else
+%     CivMode='CivX';
+% end
+ListProgram=get(handles.ListProgram,'String');
+CivMode=ListProgram{get(handles.ListProgram,'Value')};
 binary_list={};
 switch CivMode
     case 'CivX'
@@ -4165,35 +4151,6 @@ else
     set(obj,'Visible','off')
 end
 
-
-%------------------------------------------------------------------------
-% % --- Executes on button press in ListPairMode.
-% function CivMode_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% Listprog=get(handles.ListPairMode,'String');
-% index=get(handles.ListPairMode,'Value');
-% prog=Listprog{index};
-% switch prog
-%     case 'MenuCivX'
-%         set(handles.thresh_patch1,'Visible','off')
-%         set(handles.thresh_text1,'Visible','off')
-%         set(handles.num_MaxDiff,'Visible','off')
-%         set(handles.title_MaxDiff,'Visible','off')
-%         set(handles.num_Rho,'Style','edit')
-%         set(handles.num_Rho,'String','1')
-%         set(handles.BATCH,'Enable','on')
-%     case 'CivAll'
-%         if get(handles.CheckPatch1,'Value')
-%             set(handles.thresh_patch1,'Visible','on')
-%             set(handles.thresh_text1,'Visible','on')
-%         end
-%         set(handles.num_Rho,'Style','edit')
-%         set(handles.num_Rho,'String','1')
-%         set(handles.BATCH,'Enable','on')
-%     case 'CivUvmat'
-%        
-% end
-
 %------------------------------------------------------------------------
 function cmd=cmd_civ1(filename,Param)
 %------------------------------------------------------------------------
@@ -4614,3 +4571,35 @@ switch mode
 end
 
 function NomType_Callback(hObject, eventdata, handles)
+
+
+% --- Executes on selection change in ListProgram.
+function ListProgram_Callback(hObject, eventdata, handles)
+ListProgram=get(handles.ListProgram,'String');
+Program=ListProgram{get(handles.ListProgram,'value')};
+switch Program
+    case 'CivX'
+        set(handles.num_MaxDiff,'Visible','off')
+        set(handles.num_Nx,'Visible','on')
+        set(handles.num_Ny,'Visible','on')
+        set(handles.title_Nx,'Visible','on')
+        set(handles.title_Ny,'Visible','on')
+        set(handles.title_MaxDiff,'Visible','off')
+        set(handles.num_Rho,'Style','edit')
+        set(handles.num_Rho,'String','1')
+        set(handles.BATCH,'Enable','on')
+    case 'Matlab'
+        set(handles.num_MaxDiff,'Visible','on')
+        set(handles.title_MaxDiff,'Visible','on')
+        set(handles.num_Nx,'Visible','off')
+        set(handles.num_Ny,'Visible','off')
+        set(handles.title_Nx,'Visible','off')
+        set(handles.title_Ny,'Visible','off')
+        set(handles.num_Rho,'Style','popupmenu')
+        set(handles.num_Rho,'Value',1)
+        set(handles.num_Rho,'String',{'1';'2'})
+end
+
+
+% --- Executes on button press in TestCiv2.
+function TestCiv2_Callback(hObject, eventdata, handles)

@@ -214,7 +214,7 @@ if isfield (Param,'Civ2')
     maxix=min(size(par_civ2.ImageA,2)-isx2,size(par_civ2.ImageA,2)-ibx2);
     [GridX,GridY]=meshgrid(minix:par_civ2.Dx:maxix,miniy:par_civ2.Dy:maxiy);
     GridX=reshape(GridX,[],1);
-    GridY=reshape(GridY,[],1);
+    GridY=reshape(GridY,[],1); 
     Shiftx=zeros(size(GridX));% shift expected from civ1 data
     Shifty=zeros(size(GridX));
     nbval=zeros(size(GridX));
@@ -253,10 +253,10 @@ if isfield (Param,'Civ2')
     par_civ2.Shifty=Shifty(nbval>=1)./nbval(nbval>=1);
     par_civ2.Grid=[GridX(nbval>=1)-par_civ2.Shiftx/2 GridY(nbval>=1)-par_civ2.Shifty/2];% grid taken at the extrapolated origin of the displacement vectors   
     if par_civ2.CheckDeformation
-        DUDX=DUDX./nbval;
-        DUDY=DUDY./nbval;
-        DVDX=DVDX./nbval;
-        DVDY=DVDY./nbval;
+        par_civ2.DUDX=DUDX./nbval;
+        par_civ2.DUDY=DUDY./nbval;
+        par_civ2.DVDX=DVDX./nbval;
+        par_civ2.DVDY=DVDY./nbval;
     end
     % caluclate velocity data (y and v in indices, reverse to y component)
     [xtable ytable utable vtable ctable F] = civ (par_civ2);
@@ -493,11 +493,12 @@ mesh=1;% default
 CheckDecimal=isfield(par_civ,'CheckDecimal')&& par_civ.CheckDecimal==1;
 if CheckDecimal
     mesh=0.2;%mesh in pixels for subpixel image interpolation
+    CheckDeformation=isfield(par_civ,'CheckDeformation')&& par_civ.CheckDeformation==1;
 end
 % vector=[0 0];%default
 for ivec=1:nbvec
-    iref=par_civ.Grid(ivec,1);% xindex on the image A for the middle of the correlation box
-    jref=par_civ.Grid(ivec,2);% yindex on the image B for the middle of the correlation box
+    iref=round(par_civ.Grid(ivec,1)+0.5);% xindex on the image A for the middle of the correlation box
+    jref=round(par_civ.ImageHeight-par_civ.Grid(ivec,2)+0.5);% yindex on the image B for the middle of the correlation box
     if ~(checkmask && par_civ.Mask(jref,iref)<=20) %velocity not set to zero by the black mask
         if jref-iby2<1 || jref+iby2>par_civ.ImageHeight|| iref-ibx2<1 || iref+ibx2>par_civ.ImageWidth||...
               jref+shifty(ivec)-isy2<1||jref+shifty(ivec)+isy2>par_civ.ImageHeight|| iref+shiftx(ivec)-isx2<1 || iref+shiftx(ivec)+isx2>par_civ.ImageWidth  % we are outside the image
@@ -519,10 +520,17 @@ for ivec=1:nbvec
         if F(ivec)~=3
             image1_crop=image1_crop-image1_mean;%substract the mean
             image2_crop=image2_crop-image2_mean;
-            if isfield(par_civ,'CheckDecimal')&& par_civ.CheckDecimal==1
+            if CheckDecimal
                 xi=(1:mesh:size(image1_crop,2));
                 yi=(1:mesh:size(image1_crop,1))';
-                image1_crop=interp2(image1_crop,xi,yi);
+                if CheckDeformation
+                    [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
+                    XIant=XI-par_civ.DUDX(ivec)*XI-par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
+                    YIant=YI-par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
+                    image1_crop=interp2(image1_crop,XIant,YIant);
+                else
+                    image1_crop=interp2(image1_crop,xi,yi);
+                end
                 xi=(1:mesh:size(image2_crop,2));
                 yi=(1:mesh:size(image2_crop,1))';
                 image2_crop=interp2(image2_crop,xi,yi);
@@ -543,8 +551,8 @@ for ivec=1:nbvec
                     end
                     utable(ivec)=vector(1)*mesh+shiftx(ivec);
                     vtable(ivec)=vector(2)*mesh+shifty(ivec);                 
-                    xtable(ivec)=iref+utable(ivec)/2;% convec flow (velocity taken at the point middle from imgae1 and 2)
-                    ytable(ivec)=jref+vtable(ivec)/2;
+                    xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
+                    ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
                     iref=round(xtable(ivec));% image index for the middle of the vector
                     jref=round(ytable(ivec));
                     if checkmask && par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100
