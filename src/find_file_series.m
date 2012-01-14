@@ -3,7 +3,7 @@
 % function [RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(fileinput)
 %
 % OUTPUT:
-% RootPath,RootFile: root path and root name detected in fileinput, possibly modified for movies (indexing is then done on image view, not file)
+% RootFile: root file detected in fileinput, possibly modified for movies (indexing is then done on image view, not file)
 % i1_series(ref_i+1, ref_j+1,pair),i2_series,j1_series,j2_series: set of indices (i1,i2,j1,j2) sorted by ref index ref_i, ref_j, and pairindex in case of multiple pairs with the same ref
 %  (ref_i+1 is used to deal with the image index zero sometimes used)
 % NomType: nomenclature type corrected after checking the first file (problem of 0 before the number string)
@@ -17,7 +17,8 @@
 % Object: video object (=[] otherwise)
 %
 %INPUT
-% fileinput: name (including path)  of the input file
+% RootPath: path to the directory to be scanned
+% fileinput: name (without path) of the input file sample 
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright  2011, LEGI / CNRS-UJF-INPG, joel.sommeria@legi.grenoble-inp.fr
@@ -35,11 +36,12 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(fileinput)
+function [RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(RootPath,fileinput)
 %------------------------------------------------------------------------
 
 %% get input root name and nomenclature type
-[RootPath,SubDir,RootFile,tild,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fileinput);
+[tild,tild,RootFile,tild,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fileinput);
+fullfileinput=fullfile(RootPath,fileinput);
 
 %% check for particular file types: images, movies, civ data
 FileType='';
@@ -48,6 +50,7 @@ i1_series=zeros(1,1,1);
 i2_series=zeros(1,1,1);
 j1_series=zeros(1,1,1);
 j2_series=zeros(1,1,1);
+
 switch FileExt
     % ancillary files, no field indexing
     case {'.civ','.log','.cmx','.cmx2','.txt','.bat'}
@@ -63,20 +66,21 @@ switch FileExt
         FileType='xls';
         NomType='';
     otherwise
+      
         if ~isempty(FileExt)&& ~isempty(imformats(FileExt(2:end)))
             try
-                imainfo=imfinfo(fileinput);
+                imainfo=imfinfo(fullfileinput);
                 FileType='image';
                 if length(imainfo) >1 %case of image with multiple frames
                     NomType='*';
                     FileType='multimage';
                     i1_series=(1:length(imainfo))';
-                    [RootPath,RootFile]=fileparts(fileinput);
+                    [RootPath,RootFile]=fileparts(fullfileinput);
                 end
             end
         else
             try
-                Data=nc2struct(fileinput,'ListGlobalAttribute','absolut_time_T0','Conventions');
+                Data=nc2struct(fullfileinput,'ListGlobalAttribute','absolut_time_T0','Conventions');
                 if ~isempty(Data.absolut_time_T0')
                     FileType='civx'; % test for civx velocity fields
                 elseif strcmp(Data.Conventions,'uvmat/civdata')
@@ -87,9 +91,9 @@ switch FileExt
             end
             try
                 if exist('VideoReader','file')%recent version of Matlab
-                    Object=VideoReader(fileinput);
+                    Object=VideoReader(fullfileinput);
                 else
-                    Object=mmreader(fileinput);%older Matlab function for movies
+                    Object=mmreader(fullfileinput);%older Matlab function for movies
                 end
                 NomType='*';
                 FileType='video';
@@ -99,10 +103,9 @@ switch FileExt
 end
 
 if strcmp(NomType,'')||strcmp(NomType,'*')
-    if exist(fileinput,'file')
-        [RootPath,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
-    else
-        RootPath='';
+    if exist(fullfileinput,'file')
+        [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
+    else     
         RootFile='';
     end
 else   
@@ -162,13 +165,13 @@ else
             end
         end
     end
-    detect_string=[sep1 i1_str sep2 i2_str sep3 j1_str sep4 j2_str];%string used in regexp to detect file indices
+    detect_string=['^' RootFile sep1 i1_str sep2 i2_str sep3 j1_str sep4 j2_str FileExt '$'];%string used in regexp to detect file indices
     %find the string used to extract the relevant files with the command dir
-    star_string=['*' sep1 i1_star sep2 i2_star sep3 j1_star sep4 j2_star '*'];
+    star_string=[RootFile sep1 i1_star sep2 i2_star sep3 j1_star sep4 j2_star '*'];
     wd=pwd;%current working directory
-    RR=fullfile(RootPath,SubDir);
-    cd (RR)% move to the local dir to save time in the operation dir.
-    dirpair=dir([RootFile star_string FileExt]);% look for relevant files in the file directory
+    %RR=fullfile(RootPath,SubDir);
+    cd (RootPath)% move to the local dir to save time in the operation dir.
+    dirpair=dir([star_string FileExt]);% look for relevant files in the file directory
     cd(wd)
     nbpair=numel(dirpair);
     ref_i_list=zeros(1,nbpair);

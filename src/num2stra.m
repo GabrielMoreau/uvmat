@@ -24,14 +24,10 @@ switch index
            str=num2str(num); 
 %         end
     case 2
-        if isequal(nom_type(end),'a')||isequal(nom_type(end),'b')
+        if ~isempty(nom_type) && (isequal(nom_type(end),'a')||isequal(nom_type(end),'b'))
             str=char(96+num);
-        elseif isequal(nom_type(end),'A')|isequal(nom_type(end),'B')
+        elseif ~isempty(nom_type) && (isequal(nom_type(end),'A')||isequal(nom_type(end),'B'))
             str=char(64+num);
-%         elseif isequal(nom_type,'series_i')|isequal(nom_type,'netc_series')...
-%                 |isequal(nom_type,'ima_num')| isequal(nom_type,'avi')| isequal(nom_type,'none')...
-%                 isequal(nom_type,'_i')|isequal(nom_type,'_i1-i2')
-%             str='';
         else
             str=num2str(num);
         end

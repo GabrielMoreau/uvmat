@@ -508,9 +508,10 @@ elseif index==2
 end
 
 %% detect root name, nomenclature and indices in the input file name:
-[tild,SubDir,tild,i1,i2,j1,j2,FileExt]=fileparts_uvmat(fileinput);
+[RootPath,SubDir,tild,i1,i2,j1,j2]=fileparts_uvmat(fileinput);
+[tild,FileName,FileExt]=fileparts(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject]=find_file_series(fileinput);
+[RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[FileName FileExt]);
 if strcmp(NomType,'*')% movies will be opened at the first frame
     i1=1;
     i2=[];
@@ -607,9 +608,9 @@ function RootPath_Callback(hObject,eventdata,handles)
 %------------------------------------------------------------------------
 % read the current input file name:
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-fileinput=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+%fileinput=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fileinput);
+[tild,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 % initiate the input file series and refresh the current field view: 
 update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject);
 
@@ -1098,9 +1099,9 @@ function RootPath_1_Callback(hObject,eventdata,handles)
 % -----------------------------------------------------------------------
 % update_rootinfo_1(hObject,eventdata,handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
-fileinput=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+%fileinput=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[tild,tild,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fileinput);
+[tild,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 % initiate the input file series and refresh the current field view: 
 update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,2);
 %-----------------------------------------------------------------------

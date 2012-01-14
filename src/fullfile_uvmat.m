@@ -114,11 +114,11 @@ if ~isempty(r)
         end
     end
 end
-if ~isempty(i2_str)||~isempty(j2_str)
+% if ~isempty(i2_str)||~isempty(j2_str)
     filename=fullfile(RootPath,SubDir,RootFile);
-else
-    filename=fullfile(RootPath,RootFile);
-end
+% else
+%     filename=fullfile(RootPath,RootFile);
+% end
 filename=[filename sep1 i1_str sep2 i2_str sep3 j1_str sep4 j2_str FileExt];
 
 

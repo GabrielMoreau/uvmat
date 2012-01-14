@@ -1176,8 +1176,8 @@ num_j=first_j:incr_j:last_j;
 % nbfield_cell=get(handles.num_MaxIndex_i,'String');
 nbfield=cell2mat(Series.IndexRange.MaxIndex);
 nb=min(nbfield,1);
-nbfield=nb(1);
-nbfield2=nb(2);
+% nbfield=nb(1);
+% nbfield2=nb(2);
 
 %get complementary information from the 'series' interface
 list_action=get(handles.ACTION,'String');% list menu action
@@ -2193,7 +2193,8 @@ function [RootPath,RootFile,NomType,errormsg]=update_indices(handles,fileinput,i
 
 %% look for min and max indices existing in the file series and update SeriesData
 errormsg='';
-[RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(fileinput);
+[RootPath,FileName,FileExt]=fileparts(fileinput);
+[RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(RootPath,[FileName FileExt]);
 if isempty(RootFile)&&isempty(i1_series)
     errormsg='no input file in the series';
     return
