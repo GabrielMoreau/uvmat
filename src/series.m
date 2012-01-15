@@ -453,55 +453,57 @@ if ~exist(fileinput,'file')
 end
 [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomType]=fileparts_uvmat(fileinput);
 
-%% determine reference field indices
+%% determine the selected reference field indices for pair dispaly
 ref_i=1; %default ref_i is a reference frame index used to find existing pairs from PIV
 if ~isempty(i1)
     ref_i=i1;
     if ~isempty(i2)
         ref_i=floor((ref_i+i2)/2);% reference image number corresponding to the file
-%         SeriesData.browse_Di=i2-i1;
     end
 end
 set(handles.ref_i,'String',num2str(ref_i));
-set(handles.num_first_i,'String',num2str(ref_i));
-set(handles.num_last_i,'String',num2str(ref_i));
 ref_j=1; %default  ref_j is a reference frame index used to find existing pairs from PIV
 if ~isempty(j1)
     ref_j=j1;
     if ~isempty(j2)
         ref_j=floor((j1+j2)/2);
-%         SeriesData.browse_Dj=j2-j1; 
     end          
 end
 set(handles.ref_j,'String',num2str(ref_j)); 
+ref_i_Callback([],[], handles)
+ref_j_Callback([],[], handles)
+
+%% update the first and last reference indices if empty
+first_i=str2num(get(handles.num_first_i,'String'));
+if isempty(first_i)
+set(handles.num_first_i,'String',num2str(ref_i));
+set(handles.num_last_i,'String',num2str(ref_i));
 set(handles.num_first_j,'String',num2str(ref_j))
 set(handles.num_last_j,'String',num2str(ref_j)); 
-TimeUnit=''; %default
-time=[];%default
-
-% read timing and total frame number from the current file (movie files) !! may be overrid by xml file
-FileBase=fullfile(RootPath,RootFile);
-
-testima=0; %test for image input
-if isequal(lower(FileExt),'.avi') %.avi file
-    testima=1;
-elseif ~isempty(imformats(FileExt(2:end))) 
-    testima=1;
-elseif isequal(FileExt,'.vol')
-     testima=1;
 end
 
-%% fill the list of file series
+% 
+% % FileBase=fullfile(RootPath,RootFile);
+% TimeUnit=''; %default
+% time=[];%default
+% testima=0; %test for image input
+% if isequal(lower(FileExt),'.avi') %.avi file
+%     testima=1;
+% elseif ~isempty(imformats(FileExt(2:end))) 
+%     testima=1;
+% elseif isequal(FileExt,'.vol')
+%      testima=1;
+% end
 
-% insert the current file series at the head of the list
+%% fill the list of file series
 InputTable=get(handles.InputTable,'Data');
-if addtest %insert the new data at the first line of the table
+if addtest % display the input data as a new line in the table
      val=size(InputTable,1)+1;
      InputTable(val,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
     check_lines=get(handles.REFRESH_INDICES,'UserData');
 else % or re-initialise the list of  input  file series
     val=1;
-    InputTable=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}]
+    InputTable=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
     set(handles.TimeTable,'Data',[{[]},{[]},{[]},{[]}]) 
     set(handles.MinIndex,'Data',[{[]},{[]}])
     set(handles.MaxIndex,'Data',[{[]},{[]}])
@@ -509,9 +511,11 @@ end
 set(handles.InputTable,'Data',InputTable)
 check_lines(val)=1; %select the edited line for refresh
 set(handles.REFRESH_INDICES,'UserData',check_lines);
+
+%% refresh menus with info fromthe new series
 REFRESH_INDICES_Callback([],[], handles)
 
-%store the root name for future opening of uvmat
+%% store the root name for future opening of uvmat
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
 if exist(profil_perso,'file')
@@ -1087,7 +1091,7 @@ end
 function RUN_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %% Read parameters from series
-Series=read_GUI(handles.series)%TODO: extend to all input param
+Series=read_GUI(handles.series);%TODO: extend to all input param
 Series.hseries=handles.series; % handles to the series GUI
 
 %% read root name and field type
@@ -1271,7 +1275,6 @@ end
 
 %% RUN ACTION
 Series.Action=action;%name of the processing programme
-Series
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
 h_fun(Series);
 % if length(RootPath)>1
@@ -1343,17 +1346,9 @@ mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
 SeriesData=get(handles.series,'UserData');
-%NomTypeCell=get(handles.NomType,'String');
-NomTypeCell=SeriesData.NomType;
-if ~isempty(NomTypeCell)
-Val=get(handles.NomType,'Value');
-NomType=NomTypeCell{Val};
-% for ilist=1:length(NomType)
-    if isequal(NomType,'_1_1-2')|| isequal(NomType,'_1-2_1')|| isequal(NomType,'_1-2')
-        if isequal(mode,'series(Di)') 
-            find_netcpair_civ(handles,Val);% update the menu of pairs depending on the available netcdf files
-%             break
-        end
+if ~isempty(SeriesData.i2_series)||~isempty(SeriesData.j2_series)
+    if isequal(mode,'series(Di)') 
+        find_netcpair_civ(handles,Val);% update the menu of pairs depending on the available netcdf files
     end
 end
 
@@ -1364,16 +1359,21 @@ mode_list=get(handles.mode,'String');
 mode_value=get(handles.mode,'Value');
 mode=mode_list{mode_value};
 SeriesData=get(handles.series,'UserData');
-NomTypeCell=SeriesData.NomType;
-if ~isempty(NomTypeCell)
-    Val=get(handles.NomType,'Value');
-    NomType=NomTypeCell{Val};
-    if isequal(NomType,'_1_1-2')|| isequal(NomType,'_1-2_1')|| isequal(NomType,'_1-2')
-        if isequal(mode,'series(Dj)') 
-            find_netcpair_civ(handles,Val);% update the menu of pairs depending on the available netcdf files
-        end
+if ~isempty(SeriesData.i2_series)||~isempty(SeriesData.j2_series)
+    if isequal(mode,'series(Di)') 
+        find_netcpair_civ(handles,Val);% update the menu of pairs depending on the available netcdf files
     end
 end
+% NomTypeCell=SeriesData.NomType;
+% if ~isempty(NomTypeCell)
+%     Val=get(handles.NomType,'Value');
+%     NomType=NomTypeCell{Val};
+%     if isequal(NomType,'_1_1-2')|| isequal(NomType,'_1-2_1')|| isequal(NomType,'_1-2')
+%         if isequal(mode,'series(Dj)') 
+%             find_netcpair_civ(handles,Val);% update the menu of pairs depending on the available netcdf files
+%         end
+%     end
+% end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ACTION.
@@ -1496,20 +1496,18 @@ Param_list={};
 %nb_series=length(RootFile);
 % FileExt=get(handles.FileExt,'String');
 % nb_series=length(FileExt);
-InputFiles=get(handles.InputTable,'Data')
-FileExt=InputFiles(:,5);
-checkcell=find(cellfun('isempty',FileExt)~=0);
-nb_series=0;
-if ~isempty(checkcell)
-nb_series=checkcell(end);
-end
+InputTable=get(handles.InputTable,'Data');
+nb_series=size(InputTable,1);
+% if ~isempty(checkcell)
+% nb_series=checkcell(end);
+% end
 % nb_series=size(InputFiles,1)
 testima_series=1; %test for a list of images only
 testima=1;
 testima_1=1;
 testciv_series=1;
 for iview=1:nb_series
-     ext=FileExt{iview};
+     ext=InputTable{iview,5};
     if length(ext)<2
         ext='.none';
     end
@@ -1526,6 +1524,7 @@ for iview=1:nb_series
 end
 for ilist=1:length(varargout)-1
     switch varargout{ilist}
+
                        %RootFile always visible
 %          case 'RootPath'   %visible by default
 %             value=lower(varargout{ilist+1});
@@ -1558,14 +1557,14 @@ for ilist=1:length(varargout)-1
                 set(handles.NbSlice_title,'Visible','on')
             end
         case 'VelTypeMenu'   %hidden by default
-            if isequal(lower(varargout{ilist+1}),'one') || isequal(lower(varargout{ilist+1}),'two')
+             if isequal(lower(varargout{ilist+1}),'one') || isequal(lower(varargout{ilist+1}),'two')
                 set(handles.VelTypeMenu,'Enable','on')
                 if nb_series >=1 && ~testima_series
                     set(handles.VelTypeMenu,'Visible','on')
                     set(handles.VelType_text,'Visible','on');
-                    set(handles.Field_frame,'Visible','on')
+%                     set(handles.Field_frame,'Visible','on')
                 end
-            end
+             end
             if isequal(lower(varargout{ilist+1}),'two')
                 set(handles.VelTypeMenu_1,'Enable','on')
                 if nb_series >=2 && ~testima_series
@@ -2145,7 +2144,7 @@ for ind_list=1:length(check_lines)
         fileinput=fullfile_uvmat(InputLine{1},InputLine{2},InputLine{3},InputLine{5},InputLine{4},1,2,1,2);
         %fileinput=name_generator(fullfile(InputLine{1},InputLine{3}),1,1,InputLine{5},InputLine{4},1,2,2,InputLine{2})
         %update file series defined by the selected line
-        [InputTable{ind_list,1},InputTable{ind_list,3},InputTable{(ind_list),4},errormsg]=update_indices(handles,fileinput,ind_list);
+        [InputTable{ind_list,3},InputTable{(ind_list),4},errormsg]=update_indices(handles,fileinput,ind_list);
         if ~isempty(errormsg)
                 msgbox_uvmat('ERROR',errormsg)
                 return
@@ -2183,18 +2182,24 @@ set(handles.ListView,'String',ListViewString)
 if strcmp(state_Pairs,'on')
     ListView_Callback(hObject,eventdata,handles)
 end
-set(handles.Pairs,'Visible',state_InputFields)
+set(handles.Pairs,'Visible',state_Pairs)
 enable_j(handles,state_j)
 set(handles.REFRESH_INDICES,'BackgroundColor',[1 0 0])
 set(handles.REFRESH_INDICES,'visible','off')
 
-% update min and max indices for a series
-function [RootPath,RootFile,NomType,errormsg]=update_indices(handles,fileinput,iview)
-
+% -----------------------------------------------------------------------
+% --- Update min and max indices of a file series by scanning with find_file_series
+% --- which also changes the root file and NomType in case of movie. Also adjust the string representation of indices (e.g;
+% --- 1 or 001 by the function find_file_series
+% --- This function also dispaly the set of availbale files in the series
+% --- and the menus appropriate to the file type as well as timing possibly set
+% --- by an xml image documentation file
+function [RootFile,NomType,errormsg]=update_indices(handles,fileinput,iview)
+% -----------------------------------------------------------------------
 %% look for min and max indices existing in the file series and update SeriesData
 errormsg='';
-[RootPath,FileName,FileExt]=fileparts(fileinput);
-[RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(RootPath,[FileName FileExt]);
+[RootPathSub,FileName,FileExt]=fileparts(fileinput);
+[RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(RootPathSub,[FileName FileExt]);
 if isempty(RootFile)&&isempty(i1_series)
     errormsg='no input file in the series';
     return
@@ -2228,7 +2233,7 @@ SeriesData.j1_series{iview}=j1_series;
 SeriesData.j2_series{iview}=j2_series;
 SeriesData.FileType{iview}=FileType;
 
-%% represents the set of existing files as an image
+%% display the set of existing files as an image
 set(handles.waitbar_frame,'Units','pixels')
 pos=get(handles.waitbar_frame,'Position');
 xima=0.5:pos(3)-0.5;% pixel positions on the image representing the existing file indices
@@ -2258,10 +2263,18 @@ testfield_1=isequal(get(handles.FieldMenu_1,'enable'),'on');
 testveltype=isequal(get(handles.VelTypeMenu,'enable'),'on');
 testveltype_1=isequal(get(handles.VelTypeMenu_1,'enable'),'on');
 testtransform=isequal(get(handles.transform_fct,'Enable'),'on');
-testnc=0;
-testnc_1=0;
-testcivx=0;
-testcivx_1=0;
+% testnc=0;
+% testnc_1=0;
+% testcivx=0;
+% testcivx_1=0;
+% testima=0; %test for image input
+% if isequal(lower(FileExt),'.avi') %.avi file
+%     testima=1;
+% elseif ~isempty(imformats(FileExt(2:end))) 
+%     testima=1;
+% elseif isequal(FileExt,'.vol')
+%      testima=1;
+% end
 %TODO: update
 % if length(FileExtCell)==1 || length(FileExtCell)>2
 %     for iview=1:length(FileExtCell)
@@ -2278,55 +2291,44 @@ testcivx_1=0;
 %     testcivx=isequal(FileTypeCell{1},'civx');
 %     testcivx_1=isequal(FileTypeCell{2},'civx');
 % end
-if testfield && testnc 
+switch FileType
+    case {'civx','civdata'}
     view_FieldMenu(handles,'on')
-    if testcivx
-        menustr=get(handles.FieldMenu,'String');
-        if isequal(menustr,{'get_field...'})
-            set(handles.FieldMenu,'String',{'get_field...';'velocity';'vort';'div';'more...'})
-        end
-    else
-        set(handles.FieldMenu,'Value',1)
-        set(handles.FieldMenu,'String',{'get_field...'}) 
+    menustr=get(handles.FieldMenu,'String');
+    if isequal(menustr,{'get_field...'})
+        set(handles.FieldMenu,'String',{'get_field...';'velocity';'vort';'div';'more...'})
     end
-else
-    view_FieldMenu(handles,'off')
-end
-if testfield_1 && testnc_1
-    view_FieldMenu_1(handles,'on')
-    if testcivx_1
-        menustr=get(handles.FieldMenu_1,'String');
-        if isequal(menustr,{'get_field...'})
-            set(handles.FieldMenu_1,'String',{'get_field...';'velocity';'vort';'div';'more...'})
-        end
-    else
-        set(handles.FieldMenu_1,'Value',1)
-        set(handles.FieldMenu_1,'String',{'get_field...'}) 
-    end
-else
-    view_FieldMenu_1(handles,'off')
-end
-if testveltype && testcivx
     set(handles.VelTypeMenu,'Visible','on')
-    set(handles.VelType_text,'Visible','on');
-else
+    set(handles.FieldTransform,'Visible','on')
+    %      view_TRANSFORM(handles,'on')
+    %     TODO: second menu
+    %           view_FieldMenu_1(handles,'on')
+    %     if testcivx_1
+    %         menustr=get(handles.FieldMenu_1,'String');
+    %         if isequal(menustr,{'get_field...'})
+    %             set(handles.FieldMenu_1,'String',{'get_field...';'velocity';'vort';'div';'more...'})
+    %         end
+    %     else
+    %         set(handles.FieldMenu_1,'Value',1)
+    %         set(handles.FieldMenu_1,'String',{'get_field...'})
+    %     set(handles.VelTypeMenu_1,'Visible','on')
+    %     set(handles.VelType_text_1,'Visible','on');
+    %     end
+    %     view_FieldMenu_1(handles,'off')
+    case 'netcdf'
+    view_FieldMenu(handles,'on')
+    set(handles.FieldMenu,'Value',1)
+    set(handles.FieldMenu,'String',{'get_field...'})
+    set(handles.FieldTransform,'Visible','off')
+    %     view_TRANSFORM(handles,'off')
+    case {'image','multimage','video'}
+    view_FieldMenu(handles,'off')
+    view_FieldMenu_1(handles,'off')
     set(handles.VelTypeMenu,'Visible','off')
     set(handles.VelType_text,'Visible','off');
 end
-if testveltype_1 && testcivx_1
-    set(handles.VelTypeMenu_1,'Visible','on')
-    set(handles.VelType_text_1,'Visible','on');
-else
-    set(handles.VelTypeMenu_1,'Visible','off')
-    set(handles.VelType_text_1,'Visible','off');
-end
-if testtransform && (testcivx || testima)
-    set(handles.FieldTransform,'Visible','on')
-%      view_TRANSFORM(handles,'on')
-else
-    set(handles.FieldTransform,'Visible','off')
-%     view_TRANSFORM(handles,'off')
-end
+
+
 %TODO:update
 % if ~isequal(FileExt,'.nc') && ~isequal(FileExt,'.cdf') && ~testima
 %     msgbox_uvmat('ERROR',['invalid input file extension ' FileExt])
@@ -2335,7 +2337,7 @@ end
 
 %%  read image documentation file  if found%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ext_imadoc='';
-FileBase=fullfile(RootPath,RootFile);
+FileBase=fullfile(RootPathSub,RootFile);
 if isequal(FileExt,'.xml')||isequal(FileExt,'.civ')
     ext_imadoc=FileExt;
 elseif exist([FileBase '.xml'],'file')

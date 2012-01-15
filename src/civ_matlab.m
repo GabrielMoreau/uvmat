@@ -281,8 +281,8 @@ if isfield (Param,'Civ2')
         Data.Civ2_maskname='';
     end
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ2_param {'Civ2_Time','Civ2_Dt'}];
-    Data.Civ2_Time=str2double(par_civ2.Time);
-    Data.Civ2_Dt=str2double(par_civ2.Dt);
+%     Data.Civ2_Time=par_civ2.Time;
+%     Data.Civ2_Dt=par_civ2.Dt;
     nbvar=numel(Data.ListVarName);
     Data.ListVarName=[Data.ListVarName {'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_F','Civ2_C'}];%  cell array containing the names of the fields to record
     Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2','NbVec2','NbVec2','NbVec2','NbVec2'}];

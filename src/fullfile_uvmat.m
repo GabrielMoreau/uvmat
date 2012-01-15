@@ -47,11 +47,11 @@ end
 if ~exist('j2','var') 
     j2=[];
 end
+if ~exist('j1','var') 
+    j1=[];
+end
 if isequal(j1,j2)
     j2=[];% suppress the secodn index if equal to the first
-end
-if ~exist('j1','var') 
-    j1=1;
 end
 if ~exist('i2','var') 
     i2=[];

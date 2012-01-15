@@ -74,6 +74,13 @@ if vardetect(1)==0
      errormsg=[ 'requested field not available in ' filename '/' VelType];
      return
 end
+switch vel_type_out_cell{ichoice}
+    case{'civ1','fix1','patch1'}
+        Field.dt=Field.Civ1_Dt;
+    case{'civ2','fix2','patch2'}
+        Field.dt=Field.Civ2_Dt;
+end
+Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'dt'}];
 var_ind=find(vardetect);
 for ivar=1:min(numel(var_ind),numel(Field.VarAttribute))
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};

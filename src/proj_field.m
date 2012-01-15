@@ -248,7 +248,7 @@ for icell=1:length(CellVarIndex)
                     eval(['Var=FieldData.' VarName '(indsel);'])
                     eval(['ProjData.' VarName '(ipoint,1)=mean(Var);'])
                     if isequal(ObjectData.ProjMode,'interp')
-                         eval(['ProjData.' VarName '(ipoint,1)=griddata_uvmat(coord_x(indsel),coord_y(indsel),Var,Xpoint(1),Xpoint(2)))';])
+                         ProjData.(VarName)(ipoint,1)=griddata_uvmat(coord_x(indsel),coord_y(indsel),Var,Xpoint(1),Xpoint(2));
                     end
                end
             end
@@ -1555,8 +1555,6 @@ for icell=1:length(CellVarIndex)
         end
     end
 end
-ProjData
-ProjData.VarDimName{3}
 
 %-----------------------------------------------------------------
 %projection in a volume 

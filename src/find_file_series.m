@@ -36,9 +36,11 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(RootPath,fileinput)
+function [RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(RootPath,fileinput,option)
 %------------------------------------------------------------------------
-
+if ~exist('option','var')
+    option='all';
+end
 %% get input root name and nomenclature type
 [tild,tild,RootFile,tild,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fileinput);
 fullfileinput=fullfile(RootPath,fileinput);
@@ -102,7 +104,7 @@ switch FileExt
         end
 end
 
-if strcmp(NomType,'')||strcmp(NomType,'*')
+if strcmp(NomType,'')||strcmp(NomType,'*')||strcmp(option,'filetype')
     if exist(fullfileinput,'file')
         [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
     else     
@@ -250,8 +252,15 @@ else
         RootFile='';
         NomType='';
     else
-        [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ifile_min).name);
+        [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ifile_min).name);% update the representation of indices (number of 0 before the number)
     end
+end
+
+%% update the file type if the input file does not exist (pb of 0001)
+if strcmp(option,'filetype')
+    return
+elseif isempty(FileType)
+    [tild,tild, tild,tild,tild,tild,FileType,Object]=find_file_series(RootPath,dirpair(ifile_min).name,'filetype');
 end
 
 %% set to empty array the irrelevant index series

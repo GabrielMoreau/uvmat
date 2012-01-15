@@ -1347,11 +1347,11 @@ for ifile=1:nbfield
             Param.Civ2.ImageA=filecell.ima1.civ2{ifile,j};
             Param.Civ2.ImageB=filecell.ima2.civ2{ifile,j};
             if ~checkframe %&& size(time,1)>=i2_civ2(ifile) && size(time,2)>=j2_civ2(j)
-                Param.Civ2.Dt=num2str(time(i2_civ2(ifile)+1,j2_civ2(j)+1)-time(i1_civ2(ifile)+1,j1_civ2(j)+1));
+                Param.Civ2.Dt=time(i2_civ2(ifile)+1,j2_civ2(j)+1)-time(i1_civ2(ifile)+1,j1_civ2(j)+1);
             else
                 Param.Civ2.Dt=1;
             end
-            Param.Civ2.Time=num2str((time(i2_civ2(ifile)+1,j2_civ2(j)+1)+time(i1_civ2(ifile)+1,j1_civ2(j)+1))/2);
+            Param.Civ2.Time=(time(i2_civ2(ifile)+1,j2_civ2(j)+1)+time(i1_civ2(ifile)+1,j1_civ2(j)+1))/2;
             Param.Civ2.term_a=num2stra(j1_civ2(j),nom_type_nc);
             Param.Civ2.term_b=num2stra(j2_civ2(j),nom_type_nc);
             Param.Civ2.filename_nc1=filecell.nc.civ1{ifile,j};
