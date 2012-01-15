@@ -1,25 +1,22 @@
 %'aver_stat': calculate field average, used with series.fig
 %------------------------------------------------------------------------
-% function GUI_input=aver_stat(num_i1,num_i2,num_j1,num_j2,Series)
+% function GUI_input=aver_stat(Param)
 %
 %OUTPUT
 % GUI_input=list of options in the GUI series.fig needed for the function
 %
 %INPUT:
-%num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_i2: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_j1: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
-%num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
-%Series: Matlab structure containing information set by the series interface
+% Param: structure containing all the parameters read on the GUI series
+%  or name of the xml file containing these parameters (BATCH case)
 %
 function GUI_input=aver_stat(Param)
 %----------------------------------------------------------------------
 % --- make average on a series of files
 %----------------------------------------------------------------------
 %INPUT: 
-%num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
+%i1_series: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
 %num_i2: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_j1: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
+%j1_series: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
 %num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
 %OTHER INPUTS given by the structure Series
 %  Series.Time: 
@@ -43,15 +40,21 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Input parameters: read the xml file fior batch case
+%% input parameters
+% read the xml file for batch case
 if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
     Param=xml2struct(Param);
-    else
-        hseries=guidata(Param.hseries);%handles of the GUI series
+else %  RUN case: parameters introduced as the input structure Param
+    hseries=guidata(Param.hseries);%handles of the GUI series
     WaitbarPos=get(hseries.waitbar_frame,'Position');
 end
-Param
-Param.IndexRange
+[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+
+%% coordinate transform or other user defined transform (TODO: case BATCH ?)
+transform_fct='';%default
+if isfield(Param,'transform_fct') % transform function handle
+    transform_fct=Param.transform_fct;
+end
 
 %% projection object
 test_object=get(hseries.GetObject,'Value');
@@ -66,20 +69,6 @@ if test_object%isfield(Series,'sethandles')
 end
 
 %% root input file and type
-% if ~iscell(Series.RootPath)% case of a single input field series
-%     num_i1={num_i1};num_j1={num_j1};num_i2={num_i2};num_j2={num_j2};
-%     RootPath={Series.RootPath};
-%     RootFile={Series.RootFile};
-%     SubDir={Series.SubDir};
-%     FileExt={Series.FileExt};
-%     NomType={Series.NomType};
-% else
-%     RootPath=Series.RootPath;
-%     RootFile=Series.RootFile;
-%     SubDir=Series.SubDir;
-%     NomType=Series.NomType;
-%     FileExt=Series.FileExt;
-% end   
     RootPath=Param.InputTable(:,1);
     RootFile=Param.InputTable(:,3);
     SubDir=Param.InputTable(:,2);
@@ -102,6 +91,7 @@ if length(FileExt)>=2
         return
     end
 end
+
 
 %% Number of input series: this function  accepts two input file series at most (then it operates on the difference of fields)
 nbview=length(RootPath);
@@ -161,7 +151,7 @@ if isequal(testfield,'on')
             delete(hget_field(2:end))
         elseif isempty(hget_field)
            filename=...
-                 name_generator(fullfile(RootPath{1},RootFile{1}),num_i1{1}(1),num_j1{1}(1),FileExt{1},NomType{1},1,num_i2{1}(1),num_j2{1}(1),SubDir{1}); 
+                 name_generator(fullfile(RootPath{1},RootFile{1}),i1_series{1}(1),j1_series{1}(1),FileExt{1},NomType{1},1,i2_series{1}(1),num_j2{1}(1),SubDir{1}); 
            get_field(filename);
            return
         end
@@ -257,7 +247,7 @@ if multitime
         msgbox_uvmat('WARNING',['times of series differ by more than ' num2str(diff_time)])
     end   
 end
-if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array absent or too short in ImaDoc xml file' 
+if size(time,2) < i2_series{1}(end) || size(time,3) < num_j2{1}(end)% ime array absent or too short in ImaDoc xml file' 
     time=[];
 end
 
@@ -275,13 +265,17 @@ testexist=1;
 while testexist
     pathdir=fullfile(RootPath{1},subdir_result);% full subdirectory name, including path
     if NbSlice==1% keep track of the first and lsat indices of the input files
-        NomTypeOut=nomtype2pair(NomType{1},num_i2{end}(end)-num_i1{1}(1),num_j2{end}(end)-num_j1{1}(1));
-        fileresult{1}=name_generator(filebase_out,num_i1{1}(1),num_j1{1}(1),ext_out,NomTypeOut,1,num_i2{end}(end),num_j2{end}(end),subdir_result);
+        %NomTypeOut=nomtype2pair(Param.InputTable{1,4},i2_series{end}(end)-i1_series{1}(1),j2_series{end}(end)-j1_series{1}(1));
+        NomTypeOut='_1-2';
+%         RootPath,SubDir,RootFile,FileExt,NomType,i1,i2,j1,j2)
+        fileresult{1}=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},ext_out,NomTypeOut,i1_series{1}(1),[],[],[]);
+%         fileresult{1}=name_generator(filebase_out,i1_series{1}(1),j1_series{1}(1),ext_out,NomTypeOut,1,i2_series{end}(end),j2_series{end}(end),subdir_result);
         testexist=exist(fileresult{1},'file');
     else % simplified indexing with i_slice for multiple slices
         testexist=0;
         for i_slice=1:NbSlice
-            fileresult{i_slice}=name_generator(filebase_out,i_slice,[],ext_out,'_1',1,i_slice,[],subdir_result);
+            fileresult{1}=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},ext_out,NomTypeOut,i_slice,[],[],[]);
+            %fileresult{i_slice}=name_generator(filebase_out,i_slice,[],ext_out,'_1',1,i_slice,[],subdir_result);
             if exist(fileresult{i_slice},'file')
                 testexist=1;
                 break
@@ -306,13 +300,13 @@ if ~strcmp(msg2,'')
 end
 
 %% coordinate transform or other user defined transform
-transform_fct=[];%default
-if isfield(Series,'transform_fct')
-    transform_fct=Param.transform_fct;
+transform_fct='';%default
+if isfield(Param,'FieldTransform')&&isfield(Param.FieldTransform,'transform_fct')
+    transform_fct=Param.FieldTransform.transform_fct;
 end
 
 %% main loop
-siz=size(num_i1{1});
+siz=size(i1_series{1});
 nbfield2=siz(1); %nb of consecutive fields at each level(burst
 nbfield=siz(1)*siz(2);
 nbfield=floor(nbfield/(nbfield2*NbSlice));%total number of i indexes (adjusted to an integer number of slices)
@@ -327,27 +321,28 @@ for i_slice=1:NbSlice
     nbmissing=0;
     % averaging loop
     for index=1:nbfield*nbfield2
-        stopstate=get(hseries.RUN,'BusyAction');
-        if isequal(stopstate,'queue') % enable STOP command
-            update_waitbar(hseries.waitbar,WaitbarPos,index/(nbfield*nbfield2))
+ %       stopstate=get(hseries.RUN,'BusyAction');
+ %       if isequal(stopstate,'queue') % enable STOP command
+         %   update_waitbar(hseries.waitbar,WaitbarPos,index/(nbfield*nbfield2))
             ifile=indselect(index);
             % reading input file(s)
             for iview=1:nbview
-                [filename]=...
-                    name_generator(filebase{iview},num_i1{iview}(ifile),num_j1{iview}(ifile),FileExt{iview},NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile),SubDir{iview});
-                if ~isequal(FileType{iview},'netcdf')
+%                 [filename]=...
+%                     name_generator(filebase{iview},num_i1{iview}(ifile),num_j1{iview}(ifile),FileExt{iview},NomType{iview},1,num_i2{iview}(ifile),j2_series{iview}(ifile),SubDir{iview});
+                    filename=filecell{iview,index};
+                    if ~isequal(FileType{iview},'netcdf')
                     Data{iview}.ListVarName={'A'};
                     Data{iview}.AName='image';
                     switch FileType{iview}
                         case 'movie'
-                            A=read(MovieObject{iview},num_i1{iview}(ifile));
+                            A=read(MovieObject{iview},i1_series{iview}(ifile));
                         case 'avi'
-                            mov=aviread(filename,num_i1{iview}(ifile));
+                            mov=aviread(filename,i1_series{iview}(ifile));
                             A=frame2im(mov(1));
                         case 'vol'
                             A=imread(filename);
                         case 'multimage'
-                            A=imread(filename,num_i1{iview}(ifile));
+                            A=imread(filename,i1_series{iview}(ifile));
                         case 'image'
                             A=imread(filename);
                     end
@@ -380,7 +375,7 @@ for i_slice=1:NbSlice
             % coordinate transform (or other user defined transform)
             if ~isempty(transform_fct)
                 if ~isempty(NbSlice_calib)
-                    Data{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;%Zindex for phys transform
+                    Data{iview}.ZIndex=mod(i1_series{iview}(ifile)-1,NbSlice_calib{1})+1;%Zindex for phys transform
                 end
                 if nbview==2
                     [Data{1},Data{2}]=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
@@ -434,7 +429,7 @@ for i_slice=1:NbSlice
                     end
                 end
             end
-        end
+%         end
     end
     %end averaging loop
     for ivar=1:length(Field.ListVarName)
@@ -454,8 +449,8 @@ for i_slice=1:NbSlice
             end
         end
     else  % time from ImaDoc prevails
-        DataMean.Time=time(1,num_i1{1}(1),num_j1{1}(1));
-        DataMean.Time_end=time(end,num_i1{end}(end),num_j1{end}(end));
+        DataMean.Time=time(1,i1_series{1}(1),j1_series{1}(1));
+        DataMean.Time_end=time(end,i1_series{end}(end),j1_series{end}(end));
     end
     
     %writing the result file
@@ -467,12 +462,16 @@ for i_slice=1:NbSlice
         end
         display([fileresult{i_slice} ' written']);
     else %case of netcdf input file , determine global attributes
+        if isempty(strcmp('Conventions',DataMean.ListGlobalAttribute))
+            DataMean.ListGlobalAttribute=['Conventions' DataMean.ListGlobalAttribute];
+        end
+        DataMean.Conventions='uvmat';
         DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {Param.Action}];
         ActionKey='Action';
         while isfield(DataMean,ActionKey)
             ActionKey=[ActionKey '_1'];
         end
-        eval(['DataMean.' ActionKey '=Param.Action;'])
+        DataMean.(ActionKey)=Param.Action;
         DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {ActionKey}];
         if isfield(DataMean,'Time')
             DataMean.ListGlobalAttribute=[DataMean.ListGlobalAttribute {'Time','Time_end'}];

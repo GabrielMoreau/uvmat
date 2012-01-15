@@ -1,6 +1,6 @@
 %'sub_background': substract background to an image series, used with series.fig
 %------------------------------------------------------------------------
-% function GUI_input=aver_stat(num_i1,num_i2,num_j1,num_j2,Series)
+% function GUI_input=sub_background(Param)
 %
 %OUTPUT
 % GUI_input=list of options in the GUI series.fig needed for the function
@@ -31,11 +31,11 @@
     % nbfield2 successive images for a given slice (mode 'multilevel')
     % In the mode 'volume', nbfield2=1 (1 image at each level)
 %
-function GUI_input=sub_background (num_i1,num_i2,num_j1,num_j2,Series)
+function GUI_input=sub_background (Param)
 
 %------------------------------------------------------------------------
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
-if ~exist('num_i1','var')
+if ~exist('Param','var')
     GUI_input={'RootPath';'on';...
         'SubDir';'off';... % subdirectory of derived files (PIV fields), ('on' by default)
         'RootFile';'on';... %root input file name ('on' by default)
@@ -56,16 +56,20 @@ if ~exist('num_i1','var')
     return %exit the function 
 end
 
-%----------------------------------------------------------------
-%% initiate the waitbar
-hseries=guidata(Series.hseries);%handles of the GUI series
-WaitbarPos=get(hseries.waitbar_frame,'Position');
-%-----------------------------------------------------------------
-if iscell(Series.RootPath)
+%% input parameters
+% read the xml file for batch case
+if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
+    Param=xml2struct(Param);
+else %  RUN case: parameters introduced as the input structure Param
+    hseries=guidata(Param.hseries);%handles of the GUI series
+    WaitbarPos=get(hseries.waitbar_frame,'Position');
+end
+[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+if size(filecell,1)>1
     msgbox_uvmat('ERROR','This function use only one input image series')
     return
 end
-
+%%% TODO: update with the new conventions%%%%%%%%%%%%%%%%%
 %% determine input image type
 FileType=[];%default
 MovieObject=[];

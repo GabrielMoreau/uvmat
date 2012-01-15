@@ -1,6 +1,6 @@
 %'check_files': check the existence and status of the files selected by series.fig
 %------------------------------------------------------------------------
-% function GUI_input=check_files(num_i1,num_i2,num_j1,num_j2,Series)
+% function GUI_input=check_data_files(num_i1,num_i2,num_j1,num_j2,Series)
 %
 %OUTPUT
 % GUI_input=list of options in the GUI series.fig needed for the function
@@ -12,7 +12,7 @@
 %num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
 %Series: Matlab structure containing information set by the series interface
 %
-function GUI_input=check_files(num_i1_cell,num_i2_cell,num_j1_cell,num_j2_cell,Series) %(filecell,filecell_1,num_i,num_j,vel_type,field,param);
+function GUI_input=check_data_files(Param) %(filecell,filecell_1,num_i,num_j,vel_type,field,param);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  %detect the chosen series of files and check their date of modification:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,31 +41,33 @@ if ~exist('num_i1_cell','var')
     return %exit the function 
 end
 
-%standard parameters for waitbar and STOP action (do not modify)
-hseries=guidata(Series.hseries);%handles of the GUI series
-WaitbarPos=get(hseries.waitbar_frame,'Position');
+%% input parameters
+% read the xml file for batch case
+if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
+    Param=xml2struct(Param);
+else %  RUN case: parameters introduced as the input structure Param
+    hseries=guidata(Param.hseries);%handles of the GUI series
+    WaitbarPos=get(hseries.waitbar_frame,'Position');
+end
+[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 
 % number of slices
-% NbSlice=str2num(get(hseries.NbSlice,'String'));
-% if isempty(NbSlice)
-%     NbSlice=1;
-NbSlice=Series.IndexRange.NbSlice
-NbSlice_name=num2str(Series.IndexRange.NbSlice);
-if isequal(NbSlice,[]),NbSlice=1; end; %default
+NbSlice=Param.NbSlice;
+if isempty(NbSlice),NbSlice=1; end; %default
 
+%% root input file and type
+    RootPath=Param.InputTable(:,1);
+    RootFile=Param.InputTable(:,3);
+    SubDir=Param.InputTable(:,2);
+    NomType=Param.InputTable(:,4);
+    FileExt=Param.InputTable(:,5);
 % number of views
-count=0; 
-testcell=iscell(Series.RootFile);
-if ~testcell
-    Series.RootPath={Series.RootPath};
-    Series.RootFile={Series.RootFile};
-    Series.SubDir={Series.SubDir};
-    Series.FileExt={Series.FileExt};
-    Series.NomType={Series.NomType};
-end    
-nbview=length(Series.RootFile);
+count=0;  
+nbview=length(RootFile);
+
 for iview=1:nbview
     filebase=fullfile(Series.RootPath{iview},Series.RootFile{iview});%root file name
     if testcell

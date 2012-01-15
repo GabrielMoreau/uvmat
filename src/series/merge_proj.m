@@ -1,22 +1,21 @@
 
+
+
 %'merge_proj': project and concatene fields, used with series.fig
 %------------------------------------------------------------------------
-% function GUI_input=merge_proj(num_i1,num_i2,num_j1,num_j2,Series)
+% function GUI_input=merge_proj(Param)
 %
 %OUTPUT
 % GUI_input=list of options in the GUI series.fig needed for the function
 %
 %INPUT:
-%num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_i2: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_j1: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
-%num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
-%Series: Matlab structure containing information set by the series interface
+% Param: structure containing all the parameters read on the GUI series
+%  or name of the xml file containing these parameters (BATCH case)
 %
-function GUI_input=merge_proj(num_i1,num_i2,num_j1,num_j2,Series)
+function GUI_input=merge_proj(Param)
 
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
-if ~exist('num_i1','var')
+if ~exist('Param','var')
     GUI_input={'RootPath';'two';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
         'SubDir';'on';... % subdirectory of derived files (PIV fields), ('on' by default)
         'RootFile';'on';... %root input file name ('on' by default)
@@ -33,11 +32,21 @@ if ~exist('num_i1','var')
     return %exit the function 
 end
 
-%-------------------------------------------------
-hseries=guidata(Series.hseries);%handles of the GUI series
-WaitbarPos=get(hseries.waitbar_frame,'Position'); %positiopn of waitbar frame
-%-------------------------------------------------
+%% input parameters: 
+% read the xml file for batch case
+if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
+    Param=xml2struct(Param);
+else % RUN case : parameters introduced as the input structure Param
+    hseries=guidata(Param.hseries);%handles of the GUI series
+    WaitbarPos=get(hseries.waitbar_frame,'Position');% info for the waitbar
+end
+[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 
+%% coordinate transform or other user defined transform (TODO: case BATCH ?)
+transform_fct='';%default
+if isfield(Param,'transform_fct') % transform function handle
+    transform_fct=Param.transform_fct;
+end
 
 %% projection object
 test_object=get(hseries.GetObject,'Value');
@@ -58,30 +67,24 @@ if test_object
     end
 end
 
-%% numbers of view fields (nbre of inputs in RootPath)
-testcell=iscell(Series.RootFile);
-if ~testcell
-    Series.RootPath={Series.RootPath};
-    Series.RootFile={Series.RootFile};
-    Series.SubDir={Series.SubDir};
-    Series.FileExt={Series.FileExt};
-    Series.NomType={Series.NomType};
-    num_i1={num_i1};
-    num_i2={num_i2};
-    num_j1={num_j1};
-    num_j2={num_j2};
-end 
-nbview=length(Series.RootFile);%number of views (file series to merge)
-nbfield=size(num_i1{1},1)*size(num_i1{1},2);%number of fields in the time series
+%% features of the input fields
+RootPath=Param.InputTable(:,1);
+RootFile=Param.InputTable(:,3);
+SubDir=Param.InputTable(:,2);
+NomType=Param.InputTable(:,4);
+FileExt=Param.InputTable(:,5);
+
+nbview=length(RootFile);%number of views (file series to merge)
+nbfield=size(i1_series{1},1)*size(i1_series{1},2);%number of fields in the time series
 hhh=which('mmreader');
 for iview=1:nbview
     test_movie(iview)=0;
     if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
-        if isequal(lower(Series.FileExt{iview}),'.avi')
-            MovieObject{iview}=mmreader(fullfile(Series.RootPath{iview},[Series.RootFile{iview} Series.FileExt{iview}]));
+        if isequal(lower(FileExt{iview}),'.avi')
+            MovieObject{iview}=mmreader(fullfile(RootPath{iview},[RootFile{iview} FileExt{iview}]));
             test_movie(iview)=1;
         end
-    end 
+    end
 end
 
 %% Calibration data and timing: read the ImaDoc files
@@ -90,7 +93,7 @@ itime=0;
 NbSlice_calib={}; %test for z index 
 for iview=1:nbview%Loop on views
     XmlData{iview}=[];%default
-    filebase{iview}=fullfile(Series.RootPath{iview},Series.RootFile{iview});
+    filebase{iview}=fullfile(RootPath{iview},RootFile{iview});
     if exist([filebase{iview} '.xml'],'file')
         [XmlData{iview},error]=imadoc2struct([filebase{iview} '.xml']); 
         if isfield(XmlData{iview},'Time')
@@ -153,38 +156,35 @@ if multitime
         msgbox_uvmat('WARNING',['times of series differ by more than ' num2str(diff_time)])
     end   
 end
-if size(time,2) < num_i2{1}(end) || size(time,3) < num_j2{1}(end)% ime array absent or too short in ImaDoc xml file' 
-    time=[];
-end
-
-%% coordinate transform or other user defined transform
-transform_fct=[];%default
-if isfield(Series,'transform_fct')
-    transform_fct=Series.transform_fct;
-end
+% if size(time,2) < i2_series{1}(end) || size(time,3) < j2_series{1}(end)% ime array absent or too short in ImaDoc xml file' 
+%     time=[];
+% end
 
 %% Field and velocity type (the same for all views)
 FieldName='';
-if strcmp(get(hseries.FieldMenu,'Visible'),'on')
-Field_str=get(hseries.FieldMenu,'String');
-val=get(hseries.FieldMenu,'Value');
-FieldName=Field_str(val);%the same set of fields for all views
-VelType_str=get(hseries.VelTypeMenu,'String');
-VelType_val=get(hseries.VelTypeMenu,'Value');
-VelType=VelType_str{VelType_val}; %the same for all views
-if strcmp(FieldName,'')
-    msgbox_uvmat('ERROR','no input field defined in FieldMenu')
-elseif strcmp(FieldName,'get_field...')
-    hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
-    SubField=get_field('read_get_field',hObject,eventdata,hget_field); %read the names of the variables to plot in the get_field GUI
+if isfield(Param,'InputFields')&&isfield(Param.InputFields,'FieldMenu')  
+    FieldName=Param.InputFields.FieldMenu;%the same set of fields for all views
+    VelType=Param.InputFields.VelTypeMenu;
 end
-end
+% if strcmp(get(hseries.FieldMenu,'Visible'),'on')
+%     Field_str=get(hseries.FieldMenu,'String');
+%     val=get(hseries.FieldMenu,'Value');
+%     FieldName=Field_str(val);%the same set of fields for all views
+%     VelType_str=get(hseries.VelTypeMenu,'String');
+%     VelType_val=get(hseries.VelTypeMenu,'Value');
+%     VelType=VelType_str{VelType_val}; %the same for all views
+    if strcmp(FieldName,'')
+        msgbox_uvmat('ERROR','no input field defined in FieldMenu')
+    elseif strcmp(FieldName,'get_field...')
+        hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
+        SubField=get_field('read_get_field',hObject,eventdata,hget_field); %read the names of the variables to plot in the get_field GUI
+    end
+% end
 %detect whether all the files are 'images' or 'netcdf'
 testima=0;
 testvol=0;
 testcivx=0;
 testnc=0;
-FileExt=get(hseries.FileExt,'String');
 for iview=1:nbview
      ext=FileExt{iview};
      form=imformats(ext(2:end));
@@ -209,10 +209,10 @@ if ~isequal(FieldName,'get_field...')
 end
 
 %% name of output files and directory:
-ProjectDir=fileparts(fileparts(Series.RootPath{1}));% preoject directory (GERK)
+ProjectDir=fileparts(fileparts(RootPath{1}));% preoject directory (GERK)
 prompt={['result directory (in' ProjectDir ')']};
-RootPath=get(hseries.RootPath,'String');
-SubDir=get(hseries.SubDir,'String');
+% RootPath=get(hseries.RootPath,'String');
+% SubDir=get(hseries.SubDir,'String');
 if isequal(length(RootPath),1)
     fulldir=RootPath{1};
     subdir='merge_proj';
@@ -224,7 +224,7 @@ else
     answer=msgbox_uvmat('INPUT_TXT',dlgTitle,def);
     fulldir=answer{1};
     subdir=[];
-    dirlist=sort(Series.RootFile);
+    dirlist=sort(RootFile);
     for iview=1:nbview
         if ~isempty(subdir)
             subdir=[subdir '-'];
@@ -255,8 +255,8 @@ if ~exist(res_subdir,'dir')
         return
     end
 end
-filebasesub=fullfile(res_subdir,Series.RootFile{1});
-filebase_merge=fullfile(res_subdir,'merged');%root name for the merged files
+filebasesub=fullfile(res_subdir,RootFile{1});
+%filebase_merge=fullfile(res_subdir,'merged');%root name for the merged files
 
 %% MAIN LOOP
 for ifile=1:nbfield                
@@ -268,15 +268,17 @@ for ifile=1:nbfield
         nbtime=0;
         for iview=1:nbview
          %name of the current file
-            filename=name_generator(filebase{iview},num_i1{iview}(ifile),num_j1{iview}(ifile),Series.FileExt{iview},Series.NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile),SubDir{iview});
+         filename=filecell{iview,ifile};
+          %  filename=name_generator(filebase{iview},i1_series{iview}(ifile),j1_series{iview}(ifile),FileExt{iview},NomType{iview},1,i2_series{iview}(ifile),j2_series{iview}(ifile),SubDir{iview});
             if ~exist(filename,'file')
                 msgbox_uvmat('ERROR',['missing input file' filename])
                 break
             end
+            timeread(iview)=0;
          %reading the current file
             if testima
                 if test_movie(iview)
-                    Field{iview}.A=read(MovieObject{iview},num_i1{iview}(ifile));
+                    Field{iview}.A=read(MovieObject{iview},i1_series{iview}(ifile));
                 else
                     Field{iview}.A=imread(filename); 
                 end % TODO: introduce ListVarName
@@ -287,7 +289,6 @@ for ifile=1:nbfield
                 Field{iview}.AY=[npxy(1)-0.5 0.5];
                 Field{iview}.CoordUnit='pixel'; 
                 Field{iview}.AName='image';
-                timeread(iview)=0;
             else
                 if testcivx
                     [Field{iview},VelTypeOut]=read_civxdata(filename,FieldName,VelType);
@@ -305,7 +306,7 @@ for ifile=1:nbfield
                 end
             end
             if ~isempty(NbSlice_calib)
-                Field{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;
+                Field{iview}.ZIndex=mod(i1_series{iview}(ifile)-1,NbSlice_calib{1})+1;
             end
          %transform the input field (e.g; phys) if requested
             if ~isempty(transform_fct)
@@ -331,16 +332,34 @@ for ifile=1:nbfield
      if testima
          ResultExt='.png';
      else
-         ResultExt=Series.FileExt{iview};
+         ResultExt=FileExt{iview};
      end
-     mergename=name_generator(filebase_merge,num_i1{iview}(ifile),num_j1{iview}(ifile),ResultExt,Series.NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile));
+     i1=i1_series{iview}(ifile);
+     if ~isempty(i2_series{iview})
+         i2=i2_series{iview}(ifile);
+     else
+         i2=i1;
+     end
+     j1=1;
+     j2=1;
+     if ~isempty(j1_series{iview})
+         j1=j1_series{iview}(ifile);
+          if ~isempty(j2_series{iview})
+              j2=j2_series{iview}(ifile);
+          else
+              j2=j1;
+          end
+     end
+     mergename=fullfile_uvmat(res_subdir,'','merged',ResultExt,NomType{iview},i1,i2,j1,j2);
+    % mergename=name_generator(filebase_merge,i1,j1_series{iview}(ifile),ResultExt,NomType{iview},1,i2_series{iview}(ifile),j2_series{iview}(ifile));
         
      % time of the merged field:
         time_i=0;%default
         if isempty(time)% time from ImaDoc prevails
             time_i=sum(timeread)/nbtime;
         else
-            time_i=(time(iview,num_i1{iview}(ifile),num_j1{iview}(ifile))+time(iview,num_i2{iview}(ifile),num_j2{iview}(ifile)))/2;
+            time_i=i1;
+            %time_i=(time(iview,i1,j1)+time(iview,i2,j2))/2; TODO: upgrade
         end
         
      % recording the merged field

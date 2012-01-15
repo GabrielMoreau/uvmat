@@ -1,21 +1,21 @@
 %'time_series': extract a time series, used with series.fig
 %------------------------------------------------------------------------
-% function GUI_input=time_series(num_i1,num_i2,num_j1,num_j2,Series)
+% function GUI_input=time_series(Param)
 %
 %OUTPUT
 % GUI_input=list of options in the GUI series.fig needed for the function
 %
 %INPUT:
 %num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_i2: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
+%i2_series: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
 %num_j1: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
 %num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
 %Series: Matlab structure containing information set by the series interface
 %
-function GUI_input=time_series(num_i1,num_i2,num_j1,num_j2,Series) 
+function GUI_input=time_series(Param) 
 
 %% requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
-if ~exist('num_i1','var')
+if ~exist('Param','var')
     GUI_input={'RootPath';'two';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
         'SubDir';'on';... % subdirectory of derived files (PIV fields), ('on' by default)
         'RootFile';'on';... %root input file name ('on' by default)
@@ -32,9 +32,22 @@ if ~exist('num_i1','var')
     return %exit the function 
 end
 
-%------------------------------------------------------
-hseries=guidata(Series.hseries);%handles in the GUI series
-WaitbarPos=get(hseries.waitbar_frame,'Position'); %position of the waitbar frame
+%% input parameters
+% read the xml file for batch case
+if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
+    Param=xml2struct(Param);
+else %  RUN case: parameters introduced as the input structure Param
+    hseries=guidata(Param.hseries);%handles of the GUI series
+    WaitbarPos=get(hseries.waitbar_frame,'Position');
+end
+[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+
+
+%% coordinate transform or other user defined transform (TODO: case BATCH ?)
+transform_fct='';%default
+if isfield(Param,'transform_fct') % transform function handle
+    transform_fct=Param.transform_fct;
+end
 
 %% projection object
 test_object=get(hseries.GetObject,'Value');
@@ -50,43 +63,37 @@ else
     return
 end
 
-%% root names: transform input to cell in case of a single input series
-if ischar(Series.RootPath)
-    Series.RootPath={Series.RootPath};
-    Series.RootFile={Series.RootFile};
-    Series.SubDir={Series.SubDir};
-    Series.FileExt={Series.FileExt};
-    Series.NomType={Series.NomType};
-    num_i1={num_i1};
-    num_i2={num_i2};
-    num_j1={num_j1};
-    num_j2={num_j2};
-end
-ext=Series.FileExt{1};
+%% features of the input fields 
+    RootPath=Param.InputTable(:,1);
+    RootFile=Param.InputTable(:,3);
+    SubDir=Param.InputTable(:,2);
+    NomType=Param.InputTable(:,4);
+    FileExt=Param.InputTable(:,5);
+ext=FileExt{1};
 form=imformats(ext(2:end));%test valid Matlab image formats
-nbfield=size(num_i1{1},1)*size(num_i1{1},2); %number of fields in the time series
+nbfield=size(i1_series{1},1)*size(i1_series{1},2); %number of fields in the time series
 
 %% determine image type
 hhh=which('mmreader');
 testnetcdf=0;
-nbview=length(Series.RootPath);%Number of input series: this function  accepts only one or two input file series (sub_field is used in the latter case)
+nbview=length(RootPath);%Number of input series: this function  accepts only one or two input file series (sub_field is used in the latter case)
 for iview=1:nbview
-    if isequal(Series.FileExt{iview},'.nc')||isequal(Series.FileExt{iview},'.cdf')
+    if isequal(FileExt{iview},'.nc')||isequal(FileExt{iview},'.cdf')
         FileType{iview}='netcdf';
         testnetcdf=1;
-    elseif isequal(lower(Series.FileExt{iview}),'.avi')
+    elseif isequal(lower(FileExt{iview}),'.avi')
         if ~isequal(hhh,'')%&& mmreader.isPlatformSupported()
-            MovieObject{iview}=mmreader(fullfile(Series.RootPath{iview},[Series.RootFile{iview} Series.FileExt{iview}]));
+            MovieObject{iview}=mmreader(fullfile(RootPath{iview},[RootFile{iview} FileExt{iview}]));
             FileType{iview}='movie';
         else
             FileType{iview}='avi';
         end
-    elseif isequal(lower(Series.FileExt{iview}),'.vol')
+    elseif isequal(lower(FileExt{iview}),'.vol')
         FileType{iview}='vol';
     else 
-       form=imformats(Series.FileExt{iview}(2:end));
+       form=imformats(FileExt{iview}(2:end));
        if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-           if isequal(Series.NomType{iview},'*');
+           if isequal(NomType{iview},'*');
                FileType{iview}='multimage';
            else
                FileType{iview}='image';
@@ -94,27 +101,29 @@ for iview=1:nbview
        end
     end
 end
-filebase{1}=fullfile(Series.RootPath{1},Series.RootFile{1});
+filebase{1}=fullfile(RootPath{1},RootFile{1});
 
 %% number of slices
-NbSlice=Series.NbSlice;
+NbSlice=Param.NbSlice;
 
 %% Field and velocity type (the same for the two views)
-if isfield(Series,'Field')
-    FieldName=Series.Field;%the same set of fields for all views
-else
-    FieldName={''};
+FieldName={''};
+
+if isfield(Param,'InputFields')&&isfield(Param.InputFields,'FieldMenu')  
+    FieldName=Param.InputFields.FieldMenu;%the same set of fields for all views
+    VelType{1}=Param.InputFields.VelTypeMenu;
 end
-if isequal(FieldName,{''}) && testnetcdf
+if isempty(FieldName) && testnetcdf
     msgbox_uvmat('ERROR','A field must be defined as input')
     return
 end
-if isequal(FieldName,{'get_field...'})
+if isequal(FieldName,'get_field...')
     hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
     if numel(hget_field)>1
         delete(hget_field(2:end)) % delete multiple occurerence of the GUI get_fioeld
     elseif isempty(hget_field)
-       filename=name_generator(filebase{1},num_i1{1}(1),num_j1{1}(1),Series.FileExt{1},Series.NomType{1},1,num_i2{1}(1),num_j2{1}(1),Series.SubDir{1}); 
+        filename=filecell{1,1};
+      % filename=name_generator(filebase{1},i1_series{1}(1),j1_series{1}(1),FileExt{1},NomType{1},1,i2_series{1}(1),num_j2{1}(1),SubDir{1}); 
        idetect(iview)=exist(filename,'file');
        hget_field=get_field(filename);
        return
@@ -122,7 +131,8 @@ if isequal(FieldName,{'get_field...'})
     SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
     if isempty(SubField)
         delete(hget_field)
-       filename=name_generator(filebase{1},num_i1{1}(1),num_j1{1}(1),Series.FileExt{1},Series.NomType{1},1,num_i2{1}(1),num_j2{1}(1),Series.SubDir{1});
+        filename=filecell{1,1};
+       %filename=name_generator(filebase{1},i1_series{1}(1),j1_series{1}(1),FileExt{1},NomType{1},1,i2_series{1}(1),j2_series{1}(1),SubDir{1});
         hget_field=get_field(filename);
         SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
     end
@@ -134,14 +144,14 @@ testcivx=0;
 if ~isequal(FieldName,{'get_field...'})
     testcivx=isequal(FileType{1},'netcdf');
 end
-VelType_str=get(hseries.VelTypeMenu,'String');
-VelType_val=get(hseries.VelTypeMenu,'Value');
-VelType{1}=VelType_str{VelType_val};
-if nbview==2
-    VelType_str=get(hseries.VelTypeMenu_1,'String');
-    VelType_val=get(hseries.VelTypeMenu_1,'Value');
-    VelType{2}=VelType_str{VelType_val};
-end
+% VelType_str=get(hseries.VelTypeMenu,'String');
+% VelType_val=get(hseries.VelTypeMenu,'Value');
+% VelType{1}=VelType_str{VelType_val};
+% if nbview==2
+%     VelType_str=get(hseries.VelTypeMenu_1,'String');
+%     VelType_val=get(hseries.VelTypeMenu_1,'Value');
+%     VelType{2}=VelType_str{VelType_val};
+% end
 
 %% Calibration data and timing: read the ImaDoc files
 % mode=''; %default
@@ -151,7 +161,7 @@ itime=0;
 NbSlice_calib={};
 for iview=1:nbview%Loop on views
     XmlData{iview}=[];%default
-    filebase{iview}=fullfile(Series.RootPath{iview},Series.RootFile{iview});
+    filebase{iview}=fullfile(RootPath{iview},RootFile{iview});
     if exist([filebase{iview} '.xml'],'file')
         [XmlData{iview},error]=imadoc2struct([filebase{iview} '.xml']); 
         if isfield(XmlData{iview},'Time')
@@ -217,10 +227,10 @@ end
 
 %%  Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
 subdir_result='time_series';
-pathdir=fullfile(Series.RootPath{1},subdir_result);
+pathdir=fullfile(RootPath{1},subdir_result);
 while exist(pathdir,'dir')
     subdir_result=[subdir_result '.0'];
-    pathdir=fullfile(Series.RootPath{1},subdir_result);
+    pathdir=fullfile(RootPath{1},subdir_result);
 end
 [m1,m2,m3]=mkdir(pathdir);
 if ~isequal(m2,'')
@@ -232,13 +242,19 @@ if ~strcmp(msg2,'')
     return
 end
 filebase_out=filebase{1}; 
-NomTypeOut=nomtype2pair(Series.NomType{1},num_i2{end}(end)-num_i1{1}(1),num_j2{end}(end)-num_j1{1}(1));
+ i21=i1_series{end}(end);
+ if ~isempty(i2_series{end})
+     i21=i2_series{end}(end)-i1_series{1}(1);
+ end
+ j21=1;
+ if ~isempty(j1_series{1})
+     j21=j1_series{end}(end);
+      if ~isempty(j2_series{end})
+          j21=j2_series{end}(end)-j21;
+      end
+ end
+NomTypeOut=nomtype2pair(NomType{1},i21,j21);
 
-%% coordinate transform or other user defined transform
-transform_fct=[];%default
-if isfield(Series,'transform_fct')
-    transform_fct=Series.transform_fct;
-end
 
 %% velocity type
 VelType_str=get(hseries.VelTypeMenu,'String');
@@ -263,8 +279,9 @@ for i_slice=1:NbSlice
             update_waitbar(hseries.waitbar,WaitbarPos,ifile/nbfield) % update the waitbar
             % loop on views (in case of multiple input series)
             for iview=1:nbview
-                filename=name_generator(filebase{iview},...
-                    num_i1{iview}(ifile),num_j1{iview}(ifile),Series.FileExt{iview},Series.NomType{iview},1,num_i2{iview}(ifile),num_j2{iview}(ifile),Series.SubDir{iview});
+                filename=filecell{iview,ifile};
+               % filename=name_generator(filebase{iview},...
+                %    i1_series{iview}(ifile),j1_series{iview}(ifile),FileExt{iview},NomType{iview},1,i2_series{iview}(ifile),j2_series{iview}(ifile),SubDir{iview});
                 if exist(filename,'file')
                     try
                         Data{iview}=[]; %default
@@ -273,14 +290,14 @@ for i_slice=1:NbSlice
                             Data{iview}.AName='image';
                             switch FileType{iview}
                                 case 'movie'
-                                    A=read(MovieObject{iview},num_i1{iview}(ifile));
+                                    A=read(MovieObject{iview},i1_series{iview}(ifile));
                                 case 'avi'
-                                    mov=aviread(filename,num_i1{iview}(ifile));
+                                    mov=aviread(filename,i1_series{iview}(ifile));
                                     A=frame2im(mov(1));
                                 case 'vol'
                                     A=imread(filename);
                                 case 'multimage'
-                                    A=imread(filename,num_i1{iview}(ifile));
+                                    A=imread(filename,i1_series{iview}(ifile));
                                 case 'image'
                                     A=imread(filename);
                             end
@@ -307,7 +324,7 @@ for i_slice=1:NbSlice
                             Data{iview}.VarAttribute=SubField.VarAttribute;
                         end
                         if ~isempty(NbSlice_calib)  % z index
-                            Data{iview}.ZIndex=mod(num_i1{iview}(ifile)-1,NbSlice_calib{1})+1;
+                            Data{iview}.ZIndex=mod(i1_series{iview}(ifile)-1,NbSlice_calib{1})+1;
                         end
                     catch ME
                         errormsg=ME.message;
@@ -396,7 +413,7 @@ for i_slice=1:NbSlice
                         if isempty(errormsg)
                             if isequal(ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
                                 if isempty(VarVal)
-                                    msgbox_uvmat('ERROR',['empty result at frame index ' num2str(num_i1{iview}(ifile))])
+                                    msgbox_uvmat('ERROR',['empty result at frame index ' num2str(i1_series{iview}(ifile))])
                                     return
                                 end
                                 VarVal=mean(VarVal,1);
@@ -422,8 +439,9 @@ for i_slice=1:NbSlice
                     else
                         RecordData.Time(filecounter,1)=ifile;%default
                     end
-                else % time from ImaDoc prevails
-                    RecordData.Time(filecounter,1)=(time(1,num_i1{1}(ifile),num_j1{1}(ifile))+time(end,num_i2{end}(ifile),num_j2{end}(ifile)))/2;
+                else % time from ImaDoc prevails  TODO: correct 
+                  %  RecordData.Time(filecounter,1)=time{1}(i1_series{1})(ifile),j1_series{1}(ifile))+time(end,i2_series{end}(ifile),j2_series{end}(ifile)))/2;
+                  RecordData.Time(filecounter,1)=i1_series{1}(ifile);% TODO : generalise
                 end
                 
                 % record the number of missing input fields
@@ -471,7 +489,7 @@ for i_slice=1:NbSlice
         RecordData.VarAttribute=[{[]} RecordData.VarAttribute];
     end
     RecordData.VarDimName=[{'Time'} RecordData.VarDimName];
-    RecordData.Action=Series.Action;%name of the processing programme
+    RecordData.Action=Param.Action;%name of the processing programme
     test_time=diff(RecordData.Time)>0;% test that the readed time is increasing (not constant)
     if ~test_time
         RecordData.Time=[1:filecounter];
@@ -483,8 +501,9 @@ for i_slice=1:NbSlice
     end
     
     %name of result file
-    [filemean]=...
-        name_generator(filebase_out,num_i1{1}(i_slice),num_j1{1}(i_slice),'.nc','_i1-i2_j1-j2',1,num_i2{end}(ifile),num_j2{end}(ifile),subdir_result);
+   % [filemean]=...
+    %    name_generator(filebase_out,i1_series{1}(i_slice),j1_series{1}(i_slice),'.nc','_i1-i2_j1-j2',1,i2_series{end}(ifile),j2_series{end}(ifile),subdir_result);
+    filemean=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},'.nc','_1',i1_series{1}(i_slice));
     errormsg=struct2nc(filemean,RecordData); %save result file
     if isempty(errormsg)
         display([filemean ' written'])
