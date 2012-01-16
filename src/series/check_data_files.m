@@ -24,7 +24,7 @@ function GUI_input=check_data_files(Param) %(filecell,filecell_1,num_i,num_j,vel
 %OTHER INPUTS given by the structure Series
 
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
-if ~exist('num_i1_cell','var')
+if ~exist('Param','var')
     GUI_input={'RootPath';'many';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
         'SubDir';'on';... % subdirectory of derived files (PIV fields), ('on' by default)
         'RootFile';'on';... %root input file name ('on' by default)
@@ -66,21 +66,22 @@ if isempty(NbSlice),NbSlice=1; end; %default
     FileExt=Param.InputTable(:,5);
 % number of views
 count=0;  
-nbview=length(RootFile);
+nbview=numel(RootFile);
 
 for iview=1:nbview
-    filebase=fullfile(Series.RootPath{iview},Series.RootFile{iview});%root file name
-    if testcell
-        num_i1=num_i1_cell{iview}; num_i2=num_i2_cell{iview}; num_j1=num_j1_cell{iview}; num_j2=num_j2_cell{iview};
-    else
-        num_i1=num_i1_cell; num_i2=num_i2_cell; num_j1=num_j1_cell; num_j2=num_j2_cell;
-    end
-    siz=size(num_i1);
-    nbfield2=siz(1); %nb of consecutive fields at each level(burst
-    nbfield=siz(1)*siz(2);
+    filebase=fullfile(RootPath{iview},RootFile{iview});%root file name
+%     if testcell
+%         num_i1=num_i1_cell{iview}; num_i2=num_i2_cell{iview}; num_j1=num_j1_cell{iview}; num_j2=num_j2_cell{iview};
+%     else
+%         num_i1=num_i1_cell; num_i2=num_i2_cell; num_j1=num_j1_cell; num_j2=num_j2_cell;
+%     end
+%     siz=size(num_i1);
+    nbfield=size(i1_series{iview},1);
+    nbfield2=size(i1_series{iview},2); %nb of consecutive fields at each level(burst
+    nbfield=numel(i1_series{iview});
     nbfield=floor(nbfield/(nbfield2*NbSlice));%total number of i indexes (adjusted to an integer number of slices)
-    if isequal(lower(Series.FileExt{iview}),'.avi')
-        info=aviinfo([filebase Series.FileExt{iview}]);
+    if isequal(lower(FileExt{iview}),'.avi')
+        info=aviinfo([filebase FileExt{iview}]);
         message{1}=info.Filename;
         message{2}=info.FileModDate;
         message{3}=[num2str(info.FramesPerSecond) ' frames/s '];
@@ -102,8 +103,9 @@ for iview=1:nbview
                 if isequal(stopstate,'queue')% enable STOP command
                     update_waitbar(hseries.waitbar_frame,WaitbarPos,index/(nbfield*nbfield2))
                     ifile=indselect(index);               
-                    file=...
-                       name_generator(filebase,num_i1(ifile),num_j1(ifile),Series.FileExt{iview},Series.NomType{iview},1,num_i2(ifile),num_j2(ifile),Series.SubDir{iview});                
+%                     file=...
+%                        name_generator(filebase,num_i1(ifile),num_j1(ifile),FileExt{iview},NomType{iview},1,num_i2(ifile),num_j2(ifile),SubDir{iview});                
+                    file=filecell{iview,ifile};
                     [Path,Name,ext]=fileparts(file);
                     detect=exist(file,'file'); % check the existence of the file
                     if detect==0
@@ -116,23 +118,14 @@ for iview=1:nbview
                         end
                         filefound(ifile)={datfile.name};
                         lastfield='';
-                        if isequal(Series.FileExt{iview},'.nc') || isequal(Series.FileExt{iview},'.cdf')
-                            % check the content  netcdf file
-                            Data=nc2struct(file,'ListGlobalAttribute','patch2','fix2','civ2','patch','fix','absolut_time_T0','hart');
-                            if ~isempty(Data.patch2) && isequal(Data.patch2,1) 
-                                lastfield='patch2';
-                            elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
-                                lastfield='fix2';
-                            elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
-                                lastfield='civ2';
-                            elseif ~isempty(Data.patch) && isequal(Data.patch,1);
-                                lastfield='patch1';
-                            elseif ~isempty(Data.fix) && isequal(Data.fix,1);
-                                lastfield='fix1';
-                            elseif ~isempty(Data.absolut_time_T0) && ~isempty(Data.hart)
-                                lastfield='civ1'; 
-                            end                          
-                        end 
+                        [FileType,FileInfo,Object]=get_file_type(file);
+                        if strcmp(FileType,'civx')||strcmp(FileType,'civdata')
+                            if isfield(FileInfo,'CivStage')
+                            liststage={'civ1','fix1','patch1','civ2','fix2','patch2'};
+                            lastfield=liststage{FileInfo.CivStage};
+                            end
+                        end
+                        lastfield=[FileType ', ' lastfield];                   
                     end
                     Tabchar(1,i_slice)={['slice #' num2str(i_slice)]};
                     Tabchar(index+1,i_slice)={[file '...' lastfield]};
