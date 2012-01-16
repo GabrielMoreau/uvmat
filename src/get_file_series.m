@@ -1,5 +1,16 @@
+%'get_file_series': determine the list of file names and file indices for functions called by 'series'. 
+%------------------------------------------------------------------------
+% [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param)
+%
+% OUTPUT:
+% filecell{i,j}: cell array with the two reference indices i and j representing the list of file names
+% i1_series,i2_series,j1_series,j2_series: corresponding arrays of indices i1,i2,j1,j2.
+%
+% INPUT:
+% Param: structure of input parameters as read from the GUI series (by the function read_GUI)
+
 function [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param)
-Param
+
 filecell={};
 InputTable=Param.InputTable;
 first_i=Param.IndexRange.first_i;

@@ -36,7 +36,7 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(RootPath,fileinput,option)
+function [RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(RootPath,fileinput)
 %------------------------------------------------------------------------
 if ~exist('option','var')
     option='all';
@@ -46,62 +46,14 @@ end
 fullfileinput=fullfile(RootPath,fileinput);
 
 %% check for particular file types: images, movies, civ data
-FileType='';
-Object=[];
 i1_series=zeros(1,1,1);
 i2_series=zeros(1,1,1);
 j1_series=zeros(1,1,1);
 j2_series=zeros(1,1,1);
-
-switch FileExt
-    % ancillary files, no field indexing
-    case {'.civ','.log','.cmx','.cmx2','.txt','.bat'}
-        FileType='txt';
-        NomType='';
-    case '.fig'
-        FileType='figure';
-        NomType='';
-    case '.xml'
-        FileType='xml';
-        NomType='';
-    case '.xls'
-        FileType='xls';
-        NomType='';
-    otherwise
-      
-        if ~isempty(FileExt)&& ~isempty(imformats(FileExt(2:end)))
-            try
-                imainfo=imfinfo(fullfileinput);
-                FileType='image';
-                if length(imainfo) >1 %case of image with multiple frames
-                    NomType='*';
-                    FileType='multimage';
-                    i1_series=(1:length(imainfo))';
-                    [RootPath,RootFile]=fileparts(fullfileinput);
-                end
-            end
-        else
-            try
-                Data=nc2struct(fullfileinput,'ListGlobalAttribute','absolut_time_T0','Conventions');
-                if ~isempty(Data.absolut_time_T0')
-                    FileType='civx'; % test for civx velocity fields
-                elseif strcmp(Data.Conventions,'uvmat/civdata')
-                    FileType='civdata'; % test for civx velocity fields
-                else
-                    FileType='netcdf';
-                end
-            end
-            try
-                if exist('VideoReader','file')%recent version of Matlab
-                    Object=VideoReader(fullfileinput);
-                else
-                    Object=mmreader(fullfileinput);%older Matlab function for movies
-                end
-                NomType='*';
-                FileType='video';
-                i1_series=(1:get(Object,'NumberOfFrames'))';
-            end
-        end
+[FileType,FileInfo,Object]=get_file_type(fullfileinput);
+if strcmp( FileType,'multimage')||strcmp( FileType,'video')
+        NomType='*';
+        i1_series=(1:FileInfo.NbFrame)'
 end
 
 if strcmp(NomType,'')||strcmp(NomType,'*')||strcmp(option,'filetype')
@@ -171,7 +123,6 @@ else
     %find the string used to extract the relevant files with the command dir
     star_string=[RootFile sep1 i1_star sep2 i2_star sep3 j1_star sep4 j2_star '*'];
     wd=pwd;%current working directory
-    %RR=fullfile(RootPath,SubDir);
     cd (RootPath)% move to the local dir to save time in the operation dir.
     dirpair=dir([star_string FileExt]);% look for relevant files in the file directory
     cd(wd)
@@ -257,10 +208,8 @@ else
 end
 
 %% update the file type if the input file does not exist (pb of 0001)
-if strcmp(option,'filetype')
-    return
-elseif isempty(FileType)
-    [tild,tild, tild,tild,tild,tild,FileType,Object]=find_file_series(RootPath,dirpair(ifile_min).name,'filetype');
+if isempty(FileType)
+    [FileType,tild,Object]=get_file_type(dirpair(ifile_min).name);
 end
 
 %% set to empty array the irrelevant index series
