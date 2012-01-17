@@ -1547,9 +1547,12 @@ end
 if batch  
     switch batch_mode    
         
-        case 'sge'
+        case 'sge' %at the moment only psmn ENS Lyon uses it
             for p=1:length(batch_file_list)
-                cmd=['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' batch_file_list{p}];
+                %cmd=['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' batch_file_list{p}];
+                cmd=['!qsub -q piv1,piv2,piv3 '...
+                    '-e ' regexprep(batch_file_list{p},'.bat','.errors') ' -o ' regexprep(batch_file_list{p},'.bat','.log ')...
+                    ' -v ' 'LD_LIBRARY_PATH=/home/sjoubaud/matlab_sylvain/civx/lib ' batch_file_list{p}];               
                 display(cmd);eval(cmd);
             end            
         case 'oar_old'
