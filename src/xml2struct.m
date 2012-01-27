@@ -22,12 +22,15 @@ switch info.class
         for k=1:length(names)
             out.(names{k})=convert_string(s.(names{k}));
         end
-    case 'char'
-        
-        if isempty(regexp(s,'^\d+\.*\d*$'))% if the string contains numerical characters and decimal . only
+    case 'char'   
+        if isempty(regexp(s,'^(-*\d+\.*\d*\ *)+$'))% if the string contains a set of numbers (with possible sign and decimal) separated by blanks
             out=s;
         else
             out=str2num(s);
+        end
+    case 'cell'
+        for ilist=1:numel(s)
+            out(ilist,:)=str2num(s{ilist});
         end
     otherwise
         out=s;

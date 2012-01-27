@@ -16,9 +16,9 @@
 %
 %INPUT
 % ObjectData: structure characterizing the projection object
-%    .Style : style of projection object
-%    .ProjMode=type of projection ;
-%    .CoordType: 'px' or 'phys' type of coordinates defining the object position
+%    .Type : type of projection object
+%    .ProjMode=mode of projection ;
+%    .CoordUnit: 'px', 'cm' units for the coordinates defining the object
 %    .Phi  angle of rotation (=0 by default)
 %    .ProjAngle=angle of projection;
 %    .DX,.DY,.DZ=increments along each coordinate
@@ -87,13 +87,13 @@ if isfield(ObjectData,'ProjMode') && (isequal(ObjectData.ProjMode,'none')||isequ
     return
 end
 
-%% in the absence of object Style or projection mode, or object coordinaes, the input field is just tranfered without change
-if ~isfield(ObjectData,'Style')||~isfield(ObjectData,'ProjMode')
+%% in the absence of object Type or projection mode, or object coordinaes, the input field is just tranfered without change
+if ~isfield(ObjectData,'Type')||~isfield(ObjectData,'ProjMode')
     ProjData=FieldData;
     return
 end
 if ~isfield(ObjectData,'Coord')
-    if strcmp(ObjectData.Style,'plane')
+    if strcmp(ObjectData.Type,'plane')
         ObjectData.Coord=[0 0 0];%default
     else
         ProjData=FieldData;
@@ -123,7 +123,7 @@ end
 %%%%%%%%%%
 
 %% apply projection depending on the object style
-switch ObjectData.Style
+switch ObjectData.Type
     case 'points'
     [ProjData,errormsg]=proj_points(FieldData,ObjectData);
     case {'line','polyline'}
@@ -479,7 +479,7 @@ for icell=1:length(CellVarIndex)
     end
 %select the indices in the range of action
     testin=[];%default
-    if isequal(ObjectData.Style,'rectangle')
+    if isequal(ObjectData.Type,'rectangle')
 %            if ~isfield(ObjectData,'RangeX')|~isfield(ObjectData,'RangeY')
 %                 errormsg='rectangle half sides RangeX and RangeY needed'
 %                 return
@@ -493,7 +493,7 @@ for icell=1:length(CellVarIndex)
            distY=abs(Yi-ObjectData.Coord(1,2));
            testin=distX<widthx & distY<widthy;
        end
-    elseif isequal(ObjectData.Style,'polygon')
+    elseif isequal(ObjectData.Type,'polygon')
         if testX
             testin=inpolygon(coord_x,coord_y,ObjectData.Coord(:,1),ObjectData.Coord(:,2));
         elseif test_Amat
@@ -501,7 +501,7 @@ for icell=1:length(CellVarIndex)
        else%calculate the scalar
            testin=[]; %A REVOIR
        end
-    elseif isequal(ObjectData.Style,'ellipse')
+    elseif isequal(ObjectData.Type,'ellipse')
        X2Max=widthx*widthx;
        Y2Max=(widthy)*(widthy);
        if testX
@@ -566,10 +566,10 @@ ProjData.NbDim=1;
 %initialisation of the input parameters and defaultoutput
 ProjMode='projection';%direct projection on the line by default
 if isfield(ObjectData,'ProjMode'),ProjMode=ObjectData.ProjMode; end; 
-ProjAngle=90; %90 degrees projection by default
-if isfield(FieldData,'ProjAngle'),ProjAngle=ObjectData.ProjAngle; end; 
+% ProjAngle=90; %90 degrees projection by default
+% if isfield(FieldData,'ProjAngle'),ProjAngle=ObjectData.ProjAngle; end; 
 width=0;%default width of the projection band
-if isfield(ObjectData,'Range')&size(ObjectData.Range,2)>=2
+if isfield(ObjectData,'Range')&&size(ObjectData.Range,2)>=2
     width=abs(ObjectData.Range(1,2));
 end
 if isfield(ObjectData,'RangeY')
@@ -776,8 +776,8 @@ for icell=1:length(CellVarIndex)
     
     %case of structured coordinates
     elseif  numel(VarType.coord)>=2 & VarType.coord(1:2) > 0;
-        if ~isequal(ObjectData.Style,'line')% exclude polyline
-            errormsg=['no  projection available on ' ObjectData.Style 'for structured coordinates']; % 
+        if ~isequal(ObjectData.Type,'line')% exclude polyline
+            errormsg=['no  projection available on ' ObjectData.Type 'for structured coordinates']; % 
         else
             test_Amat=1;%image or 2D matrix
             test_interp2=0;%default
@@ -948,31 +948,13 @@ if isfield(ObjectData,'Angle')&& isequal(size(ObjectData.Angle),[1 3])&& ~isequa
 end
 testangle=~isequal(PlaneAngle,[0 0 0]);% && ~test90y && ~test90x;%=1 for slanted plane 
 
-% Phi=0;%default
-% Theta=0;
-% Psi=0;
-% if isfield(ObjectData,'Phi')&& ~isempty(ObjectData.Phi)
-%     Phi=(pi/180)*ObjectData.Phi;%first Euler angle in radian
-% end
-% if isfield(ObjectData,'Theta')&& ~isempty(ObjectData.Theta)
-%     Theta=(pi/180)*ObjectData.Theta;%second Euler angle in radian
-% end
-% if isfield(ObjectData,'Psi')&& ~isempty(ObjectData.Psi)
-%     Psi=(pi/180)*ObjectData.Psi;%third Euler angle in radian
-% end
-
-%components of the unity vector normal to the projection plane
-% NormVec_X=-sin(Phi)*sin(Theta);
-% NormVec_Y=cos(Phi)*sin(Theta);
-% NormVec_Z=cos(Theta);
-
 %mesh sizes DX and DY
 DX=0;
 DY=0; %default 
-if isfield(ObjectData,'DX')&~isempty(ObjectData.DX)
+if isfield(ObjectData,'DX') && ~isempty(ObjectData.DX)
      DX=abs(ObjectData.DX);%mesh of interpolation points 
 end
-if isfield(ObjectData,'DY')&~isempty(ObjectData.DY)
+if isfield(ObjectData,'DY') && ~isempty(ObjectData.DY)
      DY=abs(ObjectData.DY);%mesh of interpolation points 
 end
 if  ~strcmp(ProjMode,'projection') && (DX==0||DY==0)
@@ -2186,8 +2168,8 @@ end
 
 %% transfer coordinate unit
 if isfield(FieldData,'CoordUnit')
-    if isfield(ObjectData,'CoordUnit')&~isequal(FieldData.CoordUnit,ObjectData.CoordUnit)
-        errormsg=[ObjectData.Style ' in ' ObjectData.CoordUnit ' coordinates, while field in ' FieldData.CoordUnit ];
+    if isfield(ObjectData,'CoordUnit') && ~strcmp(FieldData.CoordUnit,ObjectData.CoordUnit)
+        errormsg=[ObjectData.Type ' in ' ObjectData.CoordUnit ' coordinates, while field in ' FieldData.CoordUnit ];
         return
     else
          ProjData.CoordUnit=FieldData.CoordUnit;
@@ -2195,7 +2177,7 @@ if isfield(FieldData,'CoordUnit')
 end
 
 %% store the properties of the projection object
-ListObject={'Style','ProjMode','RangeX','RangeY','RangeZ','Phi','Theta','Psi','Coord'};
+ListObject={'Type','ProjMode','RangeX','RangeY','RangeZ','Phi','Theta','Psi','Coord'};
 for ilist=1:length(ListObject)
     if isfield(ObjectData,ListObject{ilist})
         eval(['val=ObjectData.' ListObject{ilist} ';'])

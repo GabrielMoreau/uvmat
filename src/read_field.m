@@ -1,3 +1,4 @@
+
 %'read_field': read input fields in different formats
 %--------------------------------------------------------------------------
 %  function [Field,ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn)
@@ -60,7 +61,7 @@ switch FileType
                     ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
                     ParamOut.ColorVar='ima_cor';
                     InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
-                    [Field,ParamOut.VelType]=read_civdata(ObjectName,InputField,ParamIn.VelType);
+                    [Field,ParamOut.VelType,errormsg]=read_civdata(ObjectName,InputField,ParamIn.VelType);
                     test_civx=Field.CivStage;
                     %case of old civx conventions
                 elseif ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)

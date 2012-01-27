@@ -89,7 +89,6 @@ for ichild=1:length(hchildren)
     obj_pos=get(hchild,'Position');%position of the object
     if xy_fig(1) >=obj_pos(1) & xy_fig(2) >= obj_pos(2)& xy_fig(1) <=obj_pos(1)+obj_pos(3) & xy_fig(2) <= obj_pos(2)+obj_pos(4);
         htype=get(hchild,'Type');%type of object child of the current figure
-
         switch htype
             %if the mouse is over an axis, look at the data
             case 'axes'
@@ -168,7 +167,7 @@ if ~(isfield(AxeData,'NbDim') && isequal(AxeData.NbDim,2))
 end
 
 %% delete the current zoom rectangle
-if isfield(AxeData,'CurrentRectZoom') & ishandle(AxeData.CurrentRectZoom)
+if isfield(AxeData,'CurrentRectZoom') && ishandle(AxeData.CurrentRectZoom)
     delete(AxeData.CurrentRectZoom)
     AxeData.CurrentRectZoom=[];
 end    
@@ -293,12 +292,12 @@ end
 if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeData.Drawing,'create'))
         hset_object=findobj(allchild(0),'tag','set_object');
         if ~isempty(hset_object)
-            sethandles=guidata(hset_object);
-            ObjectData=read_set_object(sethandles); %read object features in the GUI set_object
+            %ObjectData=read_set_object(sethandles); %read object features in the GUI set_object
+            ObjectData=read_GUI(hset_object);
             ObjectData.Coord=[]; %reset previous object coordinates
             ObjectData.Coord(1,1)=xy(1,1);
             ObjectData.Coord(1,2)=xy(1,2);
-            ObjectData.Coord(1,3)=0;
+%             ObjectData.Coord(1,3)=0;
             if isfield(AxeData,'ObjectCoord') & size(AxeData.ObjectCoord,2)==3
                  ObjectData.Coord(1,3)=AxeData.ObjectCoord(1,3); %generaliser au cas avec angle
             end
@@ -313,10 +312,11 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
             IndexObj_old=get(hhuvmat.ListObject,'Value');
             set(hhuvmat.ListObject,'Value',[IndexObj_old(1) IndexObj] );
             UvData.Object{IndexObj}.DisplayHandle_uvmat=AxeData.CurrentObject;
-            object_name=get(sethandles.TITLE,'String');
-            if isempty(object_name)|| strcmp(object_name,'')
-                list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Style]; 
-                set(sethandles.TITLE,'String',list_str{IndexObj})
+            object_name=ObjectData.Name;
+            sethandles=guidata(hset_object);
+            if isempty(object_name)
+                list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Type]; 
+                set(sethandles.Name,'String',list_str{IndexObj})
             else
                list_str{IndexObj}=object_name;
             end

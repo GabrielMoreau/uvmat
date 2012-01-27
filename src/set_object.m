@@ -11,7 +11,7 @@
 %    .Style=...
 %    .ProjMode
 %    .CoordType: 'phys' or 'px'
-%    .DX,.DY,.DZ : mesh along each dirction
+%    .num_DX,.num_DY,.num_DZ : mesh along each dirction
 %    .RangeX, RangeY
 %    .Coord(j,i), i=1, 2, 3,  components x, y, z of j=1...n position(s) characterizing the object components
 % PlotHandles: handles for projection plots NO MORE USED
@@ -35,7 +35,7 @@
 
 function varargout = set_object(varargin)
 
-% Last Modified by GUIDE v2.5 24-Nov-2008 14:29:06
+% Last Modified by GUIDE v2.5 26-Jan-2012 22:00:47
 
 % Begin initialization code - DO NOT PLOT
 gui_Singleton = 1;
@@ -64,8 +64,8 @@ end
 %        if =[] or absent: index still undefined (create mode in uvmat)
 %        if=0; no associated object (used for series), the button 'PLOT' is  then unvisible
 %'data': read from an existing object selected in the interface
-%      .TITLE : class of object ('POINTS','LINE',....)
-%      .DX,DY,DZ; meshes for regular grids
+%      .Name : class of object ('POINTS','LINE',....)
+%      .num_DX,num_DY,num_DZ; meshes for regular grids
 %      .Coord: object position coordinates
 %      .ParentButton: handle of the uicontrol object calling the interface
 % PlotHandles: set of handles of the elements contolling the plotting of the projected field:
@@ -91,91 +91,84 @@ if exist('data','var')
     if isfield(data,'enable_plot')
         enable_plot=data.enable_plot;%test to desable button PLOT (display mode)
     end
-    if isfield(data,'Name')
-        set(handles.TITLE,'String',data.Name)
-    end
-    if ~isfield(data,'NbDim')||~isequal(data.NbDim,3)%2D case
-        set(handles.ZObject,'Visible','off')
-        set(handles.z_slider,'Visible','off')
-    else
-        set(handles.ZObject,'Visible','on')
+    if isfield(data,'Coord') &&size(data.Coord,2)==3
         set(handles.z_slider,'Visible','on')
-        if isfield(data,'Coord') && size(data.Coord,2)==3
-            set(handles.ZObject,'String',num2str(data.Coord(1,3),4))
-        end
+    else
+        set(handles.z_slider,'Visible','off')
     end
-    if isfield(data,'StyleMenu')
-        set(handles.ObjectStyle,'String',data.StyleMenu);
-    end
-    if isfield(data,'Style')
-        menu=get(handles.ObjectStyle,'String');
-        for iline=1:length(menu)
-            if isequal(menu{iline},data.Style)
-                set(handles.ObjectStyle,'Value',iline)
-                break
-            end
-        end
-    end
-    ObjectStyle_Callback(hObject, eventdata, handles)
-    if isfield(data,'ProjMenu')
-        set(handles.ProjMode,'String',data.ProjMenu);%overset the standard menu
-    end
-    if isfield(data,'ProjMode')
-        menu=get(handles.ProjMode,'String');
-        for iline=1:length(menu)
-            if isequal(menu{iline},data.ProjMode)
-                set(handles.ProjMode,'Value',iline)
-                break
-            end
-        end
-    end
-    ProjMode_Callback(hObject, eventdata, handles)
-    if isfield(data,'Coord')
-        if ischar(data.Coord)
-            data.Coord=str2num(data.Coord);
-        elseif iscell(data.Coord)
-            CoordCell=data.Coord;
-            data.Coord=zeros(numel(CoordCell),3);
-            data.Coord(:,3)=zeros(numel(CoordCell),1); % z component set to 0 by default
-            for iline=1:numel(CoordCell)
-                line_vec=str2num(CoordCell{iline});
-                if numel(line_vec)==2
-                    data.Coord(iline,1:2)=str2num(CoordCell{iline});
-                else
-                    data.Coord(iline,:)=str2num(CoordCell{iline});
-                end
-            end
-        end
-        if size(data.Coord,2)>=2
-            sizcoord=size(data.Coord);
-            for i=1:sizcoord(1)
-                XObject{i}=num2str(data.Coord(i,1),4);
-                YObject{i}=num2str(data.Coord(i,2),4);
-            end
-            set(handles.XObject,'String',XObject)
-            set(handles.YObject,'String',YObject)
-            if sizcoord(2)>3
-                for i=1:sizcoord(1)
-                    ZObject{i}=num2str(data.Coord(i,3),4);
-                end
-                set(handles.ZObject,'String',ZObject)
-            end
-        end
-    end
-    if isfield(data,'DX')
-        if ~ischar(handles.DX)
-            data.DX=num2str(data.DX,3);
-        end
-        set(handles.DX,'String',data.DX)
-    end
-    if isfield(data,'DY')
-        if ~ischar(handles.DY)
-            data.DY=num2str(data.DY,3);
-        end
-        set(handles.DY,'String',data.DX)
-    end
+    errormsg=fill_GUI(data,handles);
+%     if isfield(data,'StyleMenu')
+%         set(handles.Type,'String',data.StyleMenu);
+%     end
+%     if isfield(data,'Type')
+%         menu=get(handles.Type,'String');
+%         for iline=1:length(menu)
+%             if isequal(menu{iline},data.Style)
+%                 set(handles.Type,'Value',iline)
+%                 break
+%             end
+%         end
+%     end
+    Type_Callback(hObject, eventdata, handles)
+%     if isfield(data,'ProjMenu')
+%         set(handles.ProjMode,'String',data.ProjMenu);%overset the standard menu
+%     end
+%     if isfield(data,'ProjMode')
+%         menu=get(handles.ProjMode,'String');
+%         for iline=1:length(menu)
+%             if isequal(menu{iline},data.ProjMode)
+%                 set(handles.ProjMode,'Value',iline)
+%                 break
+%             end
+%         end
+%     end
+%    ProjMode_Callback(hObject, eventdata, handles)
+%     if isfield(data,'Coord')
+%         if ischar(data.Coord)
+%             data.Coord=str2num(data.Coord);
+%         elseif iscell(data.Coord)
+%             CoordCell=data.Coord;
+%             data.Coord=zeros(numel(CoordCell),3);
+%             data.Coord(:,3)=zeros(numel(CoordCell),1); % z component set to 0 by default
+%             for iline=1:numel(CoordCell)
+%                 line_vec=str2num(CoordCell{iline});
+%                 if numel(line_vec)==2
+%                     data.Coord(iline,1:2)=str2num(CoordCell{iline});
+%                 else
+%                     data.Coord(iline,:)=str2num(CoordCell{iline});
+%                 end
+%             end
+%         end
+%         if size(data.Coord,2)>=2
+%             sizcoord=size(data.Coord);
+%             for i=1:sizcoord(1)
+%                 XObject{i}=num2str(data.Coord(i,1),4);
+%                 YObject{i}=num2str(data.Coord(i,2),4);
+%             end
+% %             set(handles.XObject,'String',XObject)
+% %             set(handles.YObject,'String',YObject)
+%             if sizcoord(2)>3
+%                 for i=1:sizcoord(1)
+%                     ZObject{i}=num2str(data.Coord(i,3),4);
+%                 end
+%                 set(handles.ZObject,'String',ZObject)
+%             end
+%         end
+%     end
+%     if isfield(data,'DX')
+%         if ~ischar(handles.num_DX)
+%             data.DX=num2str(data.DX,3);
+%         end
+%         set(handles.num_DX,'String',data.DX)
+%     end
+%     if isfield(data,'DY')
+%         if ~ischar(handles.num_DY)
+%             data.DY=num2str(data.DY,3);
+%         end
+%         set(handles.num_DY,'String',data.DX)
+%     end
     if isfield(data,'RangeZ') && length(ZBounds) >= 2
-        set(handles.ZMax,'String',num2str(max(data.RangeZ),3))
+        set(handles.num_RangeZ_2,'String',num2str(max(data.RangeZ),3))
         DZ=max(data.RangeZ);%slider step
         if ~isnan(ZBounds(1)) && ZBounds(2)~=ZBounds(1)
             rel_step(1)=min(DZ/(ZBounds(2)-ZBounds(1)),0.2);%must be smaller than 1
@@ -191,39 +184,39 @@ if exist('data','var')
         if ischar(data.RangeX)
             data.RangeX=str2num(data.RangeX);
         end
-        set(handles.XMax,'String',num2str(max(data.RangeX),3))
-        set(handles.XMin,'String',num2str(min(data.RangeX),3))
+        set(handles.num_RangeX_2,'String',num2str(max(data.RangeX),3))
+        set(handles.num_RangeX_1,'String',num2str(min(data.RangeX),3))
     end
     if isfield(data,'RangeY')
         if ischar(data.RangeY)
             data.RangeY=str2num(data.RangeY);
         end
-        set(handles.YMax,'String',num2str(max(data.RangeY),3))
-        set(handles.YMin,'String',num2str(min(data.RangeY),3))
+        set(handles.num_RangeY_2,'String',num2str(max(data.RangeY),3))
+        set(handles.num_RangeY_1,'String',num2str(min(data.RangeY),3))
     end
     if isfield(data,'RangeZ')
         if ischar(data.RangeZ)
             data.RangeZ=str2num(data.RangeZ);
         end
-        set(handles.ZMax,'String',num2str(max(data.RangeZ),3))
+        set(handles.num_RangeZ_2,'String',num2str(max(data.RangeZ),3))
         if numel(data.RangeZ)>=2
-            set(handles.ZMin,'String',num2str(min(data.RangeZ),3))
+            set(handles.num_RangeZ_1,'String',num2str(min(data.RangeZ),3))
         end
     end  
     if isfield(data,'Angle') && isequal(numel(data.Angle),3)
-         set(handles.Phi,'String',num2str(data.Angle(1)))
-         set(handles.Theta,'String',num2str(data.Angle(2)))
-         set(handles.Psi,'String',num2str(data.Angle(3)))
+         set(handles.num_Angle_1,'String',num2str(data.Angle(1)))
+         set(handles.num_Angle_2,'String',num2str(data.Angle(2)))
+         set(handles.num_Angle_3,'String',num2str(data.Angle(3)))
     end
-    if isfield(data,'DZ')
-        if ~ischar(handles.DZ)
-            data.DY=num2str(data.DZ,3);
-        end
-        set(handles.DZ,'String',data.DZ)
-    end
-    if isfield(data,'CoordUnit')
-        set(handles.CoordUnit,'String',data.CoordUnit)
-    end
+%     if isfield(data,'DZ')
+%         if ~ischar(handles.num_DZ)
+%             data.DY=num2str(data.DZ,3);
+%         end
+%         set(handles.num_DZ,'String',data.DZ)
+%     end
+%     if isfield(data,'CoordUnit')
+%         set(handles.CoordUnit,'String',data.CoordUnit)
+%     end
 end
 if enable_plot
    set(handles.PLOT,'enable','on')
@@ -240,6 +233,7 @@ if isfield(UvData,'SetObjectOrigin')
     set(hObject,'Position',pos_set_object)
 end
 
+
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = set_object_OutputFcn(hObject, eventdata, handles)
@@ -249,68 +243,92 @@ varargout{1} = handles.output;
 varargout{2}=handles;
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in ObjectStyle.
-function ObjectStyle_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in Type.
+function Type_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-style_prev=get(handles.ObjectStyle,'UserData');%previous object style
-str=get(handles.ObjectStyle,'String');
-val=get(handles.ObjectStyle,'Value');
-style=str{val};
+%style_prev=get(handles.Type,'UserData');%previous object style
+ListType=get(handles.Type,'String');
+Type=ListType{get(handles.Type,'Value')};
 % make correspondance between different object styles
-Xcolumn=get(handles.XObject,'String');
-Ycolumn=get(handles.YObject,'String');
-if ischar(Xcolumn)
-    sizchar=size(Xcolumn);
-    for icol=1:sizchar(1)
-        Xcolumn_cell{icol}=Xcolumn(icol,:);
-    end
-    Xcolumn=Xcolumn_cell;
-end
-if ischar(Ycolumn)
-    sizchar=size(Ycolumn);
-    for icol=1:sizchar(1)
-        Ycolumn_cell{icol}=Ycolumn(icol,:);
-    end
-    Ycolumn=Ycolumn_cell;
-end
-Zcolumn={};%default
-z_new={};
-if isequal(get(handles.ZObject,'Visible'),'on')
-    %data.NbDim=3; %test 3D object
-    Zcolumn=get(handles.ZObject,'String');
-    if ischar(Zcolumn)
-        Zcolumn={Zcolumn};
-    end
-end
-x_new{1}=Xcolumn{1};
-y_new{1}=Ycolumn{1};
-if ~isempty(Zcolumn)
-    z_new{1}=Zcolumn{1};
-end
-if isequal(style,'line')
-    if strcmp(style_prev,'rectangle')||strcmp(style_prev,'ellipse')
-        XMax=get(handles.XMax,'String');
-        YMax=get(handles.YMax,'String');
-        x_new{2}=num2str(XMax,4);
-        y_new{2}=num2str(YMax,4);
-        set(handles.XObject,'String',x_new)
-        set(handles.YObject,'String',y_new)
-        set(handles.ZObject,'String',z_new)
-    end
-elseif isequal(style,'polyline')
-elseif strcmp(style,'rectangle')|| strcmp(style,'ellipse')
-     set(handles.XObject,'String',x_new)
-     set(handles.YObject,'String',y_new)
-     set(handles.ZObject,'String',z_new)
-end
+Coord=get(handles.Coord,'Data');
+% 
+% Xcolumn=get(handles.XObject,'String');
+% Ycolumn=get(handles.YObject,'String');
+% if ischar(Xcolumn)
+%     sizchar=size(Xcolumn);
+%     for icol=1:sizchar(1)
+%         Xcolumn_cell{icol}=Xcolumn(icol,:);
+%     end
+%     Xcolumn=Xcolumn_cell;
+% end
+% if ischar(Ycolumn)
+%     sizchar=size(Ycolumn);
+%     for icol=1:sizchar(1)
+%         Ycolumn_cell{icol}=Ycolumn(icol,:);
+%     end
+%     Ycolumn=Ycolumn_cell;
+% end
+% Zcolumn={};%default
+% z_new={};
+% if isequal(get(handles.ZObject,'Visible'),'on')
+%     %data.NbDim=3; %test 3D object
+%     Zcolumn=get(handles.ZObject,'String');
+%     if ischar(Zcolumn)
+%         Zcolumn={Zcolumn};
+%     end
+% end
+% x_new{1}=Xcolumn{1};
+% y_new{1}=Ycolumn{1};
+% x_new{1}=Coord(1,1);
+% y_new{1}=Coord(1,2);
+% z_new{1}=Coord(1,3);
+% if ~isempty(Zcolumn)
+%     z_new{1}=Zcolumn{1};
+% end
+% if isequal(style,'line')
+%     if strcmp(style_prev,'rectangle')||strcmp(style_prev,'ellipse')
+%         num_RangeX_2=get(handles.num_RangeX_2,'String');
+%         num_RangeY_2=get(handles.num_RangeY_2,'String');
+%         x_new{2}=num2str(num_RangeX_2,4);
+%         y_new{2}=num2str(num_RangeY_2,4);
+%         set(handles.XObject,'String',x_new)
+%         set(handles.YObject,'String',y_new)
+%         set(handles.ZObject,'String',z_new)
+%     end
+% elseif isequal(style,'polyline')
+% elseif strcmp(style,'rectangle')|| strcmp(style,'ellipse')
+%      set(handles.XObject,'String',x_new)
+%      set(handles.YObject,'String',y_new)
+%      set(handles.ZObject,'String',z_new)
+% end
 
-switch style
+%% set the number of lines in the Coord table depending on object type
+switch Type
+    case{'line'}
+        if size(Coord,1)<2
+            if isequal(size(Coord,2),3)
+                Coord=[Coord; 0 0 0];%add a line for edition (3D case)
+            else
+                Coord=[Coord; 0 0]; %add a line for edition (2D case)
+            end
+        else
+            Coord=Coord(1:2,:);
+        end
+    case{'rectangle','ellipse','plane','volume'}
+        Coord=Coord(1,:);
+end
+set(handles.Coord,'Data',Coord)
+
+%% set the projection menu and the corresponding options
+switch Type
     case {'points','line','polyline','plane'}
         menu_proj={'projection';'interp';'filter';'none'}; 
     case {'polygon','rectangle','ellipse'}
         menu_proj={'inside';'outside';'mask_inside';'mask_outside'};
     case 'volume'
         menu_proj={'interp';'none'};
+    otherwise
+        menu_proj={'projection';'interp';'filter';'none'};%default
 end   
 proj_index=get(handles.ProjMode,'Value');
 if proj_index<numel(menu_proj)
@@ -318,10 +336,11 @@ if proj_index<numel(menu_proj)
 end
 set(handles.ProjMode,'String',menu_proj)
 ProjMode_Callback(hObject, eventdata, handles)
+
 %store the current option
-str=get(handles.ObjectStyle,'String');
-val=get(handles.ObjectStyle,'Value');
-set(handles.ObjectStyle,'UserData',style)
+% str=get(handles.Type,'String');
+% val=get(handles.Type,'Value');
+% set(handles.Type,'UserData',style)
 
 %------------------------------------------------------------------------
 function xObject_Callback(hObject, eventdata, handles)
@@ -340,115 +359,116 @@ function ProjMode_Callback(hObject, eventdata, handles)
 menu=get(handles.ProjMode,'String');
 value=get(handles.ProjMode,'Value');
 ProjMode=menu{value};
-menu=get(handles.ObjectStyle,'String');
-value=get(handles.ObjectStyle,'Value');
+menu=get(handles.Type,'String');
+value=get(handles.Type,'Value');
 ObjectStyle=menu{value};
-test3D=isequal(get(handles.ZObject,'Visible'),'on');%3D case
-
+%%%%%%%%% TODO
+test3D=0; %TODO: update  test3D=isequal(get(handles.ZObject,'Visible'),'on');%3D case
+%%%%%%%%%
 %default setting
-set(handles.Phi,'Visible','off')
-set(handles.Theta,'Visible','off')
-set(handles.Psi,'Visible','off')
-set(handles.XMin,'Visible','off')
-set(handles.XMax,'Visible','off')
-set(handles.YMin,'Visible','off')
+set(handles.num_Angle_1,'Visible','off')
+set(handles.num_Angle_2,'Visible','off')
+set(handles.num_Angle_3,'Visible','off')
+set(handles.num_RangeX_1,'Visible','off')
+set(handles.num_RangeX_2,'Visible','off')
+set(handles.num_RangeY_1,'Visible','off')
 if isequal(ProjMode,'interp')
-    set(handles.YMax,'Visible','off')
+    set(handles.num_RangeY_2,'Visible','off')
 else
-    set(handles.YMax,'Visible','on')
+    set(handles.num_RangeY_2,'Visible','on')
 end
 if strcmp(ObjectStyle,'rectangle')||strcmp(ObjectStyle,'ellipse')
-    set(handles.XMax,'Visible','on')
+    set(handles.num_RangeX_2,'Visible','on')
 else
-   set(handles.XMax,'Visible','off')
+   set(handles.num_RangeX_2,'Visible','off')
 end
-set(handles.ZMin,'Visible','off')
-set(handles.ZMax,'Visible','off')
-set(handles.DX,'Visible','off')
-set(handles.DY,'Visible','off')
-set(handles.DZ,'Visible','off')
+set(handles.num_RangeZ_1,'Visible','off')
+set(handles.num_RangeZ_2,'Visible','off')
+set(handles.num_DX,'Visible','off')
+set(handles.num_DY,'Visible','off')
+set(handles.num_DZ,'Visible','off')
 
 switch ObjectStyle
     case 'points'
-        set(handles.YMax,'TooltipString','YMax: range of averaging around each point') 
-        set(handles.XObject,'TooltipString','XObject: set of x coordinates of the points')
-        set(handles.YObject,'TooltipString','YObject: set of y coordinates of the points')
-        set(handles.ZObject,'TooltipString','ZObject: set of z coordinates of the points')
+        set(handles.num_RangeY_2,'TooltipString','num_YMax: range of projection around each point') 
+%         set(handles.XObject,'TooltipString','XObject: set of x coordinates of the points')
+%         set(handles.YObject,'TooltipString','YObject: set of y coordinates of the points')
+%         set(handles.ZObject,'TooltipString','ZObject: set of z coordinates of the points')
     case {'line','polyline','polygon'}
-        set(handles.YMax,'TooltipString','YMax: range of averaging around the line')
-        set(handles.XObject,'TooltipString','XObject: set of x coordinates defining the line')
-        set(handles.YObject,'TooltipString','YObject: set of y coordinates defining the line')
-        set(handles.ZObject,'TooltipString','ZObject: set of z coordinates defining the line')
+        set(handles.num_RangeY_2,'TooltipString','num_YMax: range of projection around the line')
+         set(handles.Coord,'TooltipString','Coord: table of x,y, z coordinates defining the line')
+%         set(handles.YObject,'TooltipString','YObject: set of y coordinates defining the line')
+%         set(handles.ZObject,'TooltipString','ZObject: set of z coordinates defining the line')
         if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
-            set(handles.DX,'Visible','on')
-            set(handles.DX,'TooltipString','DX: mesh for the interpolated field along the line')
+            set(handles.num_DX,'Visible','on')
+            set(handles.num_DX,'TooltipString','num_DX: mesh for the interpolated field along the line')
         end       
     case {'rectangle','ellipse'}
-        set(handles.XMax,'TooltipString',['XMax: half length of the ' ObjectStyle])
-        set(handles.YMax,'TooltipString',['YMax: half width of the ' ObjectStyle])
-        set(handles.XObject,'TooltipString',['XObject:  x coordinate of the ' ObjectStyle ' centre'])
-        set(handles.YObject,'TooltipString',['YObject:  y coordinate of the ' ObjectStyle ' centre'])
+        set(handles.num_RangeX_2,'TooltipString',['num_XMax: half length of the ' ObjectStyle])
+        set(handles.num_RangeY_2,'TooltipString',['num_YMax: half width of the ' ObjectStyle])
+%         set(handles.XObject,'TooltipString',['XObject:  x coordinate of the ' Type ' centre'])
+%         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the ' Type ' centre'])
     case {'plane'}  
-        set(handles.Psi,'Visible','on')
-        set(handles.XMin,'Visible','on')
-        set(handles.XMax,'Visible','on')
-        set(handles.YMin,'Visible','on')
-        set(handles.YMax,'Visible','on')
-        set(handles.XObject,'TooltipString',['XObject:  x coordinate of the axis origin for the ' ObjectStyle])
-        set(handles.YObject,'TooltipString',['YObject:  y coordinate of the axis origin for the ' ObjectStyle])
-        set(handles.ZMax,'TooltipString','ZMax: range of projection normal to the plane')
+        set(handles.num_Angle_3,'Visible','on')
+        set(handles.num_RangeX_1,'Visible','on')
+        set(handles.num_RangeX_2,'Visible','on')
+        set(handles.num_RangeY_1,'Visible','on')
+        set(handles.num_RangeY_2,'Visible','on')
+%         set(handles.XObject,'TooltipString',['XObject:  x coordinate of the axis origin for the ' Type])
+%         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the axis origin for the ' Type])
+        set(handles.num_RangeZ_2,'TooltipString','num_ZMax: range of projection normal to the plane')
         if test3D
-            set(handles.Theta,'Visible','on')
-            set(handles.Phi,'Visible','on')
-            set(handles.ZMax,'Visible','on')
+            set(handles.num_Angle_2,'Visible','on')
+            set(handles.num_Angle_1,'Visible','on')
+            set(handles.num_RangeZ_2,'Visible','on')
         end
         if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
-            set(handles.DX,'Visible','on')
-            set(handles.DY,'Visible','on')
+            set(handles.num_DX,'Visible','on')
+            set(handles.num_DY,'Visible','on')
         else
-            set(handles.DX,'Visible','off')
-            set(handles.DY,'Visible','off')
+            set(handles.num_DX,'Visible','off')
+            set(handles.num_DY,'Visible','off')
         end
         if  isequal(ProjMode,'interp')
-            set(handles.DZ,'Visible','on')  
+            set(handles.num_DZ,'Visible','on')  
         end
      case {'volume'}  
-        set(handles.XMin,'Visible','on')
-        set(handles.XMax,'Visible','on')
-        set(handles.YMin,'Visible','on')
-        set(handles.YMax,'Visible','on')
+        set(handles.num_RangeX_1,'Visible','on')
+        set(handles.num_RangeX_2,'Visible','on')
+        set(handles.num_RangeY_1,'Visible','on')
+        set(handles.num_RangeY_2,'Visible','on')
         set(handles.XObject,'TooltipString',['XObject:  x coordinate of the axis origin for the ' ObjectStyle])
         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the axis origin for the ' ObjectStyle])
-        set(handles.Phi,'Visible','on')
-        set(handles.Theta,'Visible','on')
-        set(handles.Psi,'Visible','on')
-        set(handles.ZMin,'Visible','on')
-        set(handles.ZMax,'Visible','on')
+        set(handles.num_Angle_1,'Visible','on')
+        set(handles.num_Angle_2,'Visible','on')
+        set(handles.num_Angle_3,'Visible','on')
+        set(handles.num_RangeZ_1,'Visible','on')
+        set(handles.num_RangeZ_2,'Visible','on')
         if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
-            set(handles.DX,'Visible','on')
-            set(handles.DY,'Visible','on')
-            set(handles.DZ,'Visible','on')
+            set(handles.num_DX,'Visible','on')
+            set(handles.num_DY,'Visible','on')
+            set(handles.num_DZ,'Visible','on')
         else
-            set(handles.DX,'Visible','off')
-            set(handles.DY,'Visible','off')
-            set(handles.DZ,'Visible','off')
+            set(handles.num_DX,'Visible','off')
+            set(handles.num_DY,'Visible','off')
+            set(handles.num_DZ,'Visible','off')
         end
 end
 %------------------------------------------------------------------------
 
 %------------------------------------------------------------------------
-function Phi_Callback(hObject, eventdata, handles)
+function num_Angle_1_Callback(hObject, eventdata, handles)
 update_slider(hObject, eventdata,handles)
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
-function Theta_Callback(hObject, eventdata, handles)
+function num_Angle_2_Callback(hObject, eventdata, handles)
 update_slider(hObject, eventdata,handles)
 %------------------------------------------------------------------------
 function update_slider(hObject, eventdata,handles)
 %rotation angles
-PlaneAngle(1)=str2num(get(handles.Phi,'String'));%first  angle in degrees
-PlaneAngle(2)=str2num(get(handles.Theta,'String'));%second  angle in degrees
-PlaneAngle(3)=str2num(get(handles.Psi,'String'));%second  angle in degrees
+PlaneAngle(1)=str2num(get(handles.num_Angle_1,'String'));%first  angle in degrees
+PlaneAngle(2)=str2num(get(handles.num_Angle_2,'String'));%second  angle in degrees
+PlaneAngle(3)=str2num(get(handles.num_Angle_3,'String'));%second  angle in degrees
 om=norm(PlaneAngle);%norm of rotation angle in radians
 OmAxis=PlaneAngle/om; %unit vector marking the rotation axis
 cos_om=cos(pi*om/180);
@@ -467,184 +487,16 @@ if isfield(UvData,'X') & isfield(UvData,'Y') & isfield(UvData,'Z')
     ZMax_Callback(hObject, eventdata, handles)
 end
 %------------------------------------------------------------------------
-function DX_Callback(hObject, eventdata, handles)
+function num_DX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
-function DY_Callback(hObject, eventdata, handles)
+function num_DY_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
-function DZ_Callback(hObject, eventdata, handles)
+function num_DZ_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 
 %------------------------------------------------------------------------
-%-----------------------------------------------------
-% --- Executes on button press in OPEN: DESACTIVATED use uvmat browser
-function OPEN_Callback(hObject, eventdata, handles)
-%get the object file 
-oldfile=' ';
-huvmat=findobj('Tag','uvmat');
-hchild=get(huvmat,'Children');
-hrootpath=findobj(hchild,'Tag','RootPath');
-if ~isempty(hrootpath)
-    oldfile=get(hrootpath,'String');
-    if iscell(oldfile)
-        oldfile=oldfile{1};
-    end
-end
-[FileName, PathName, filterindex] = uigetfile( ...
-       {'*.xml;*.mat', ' (*.xml,*.mat)';
-       '*.xml',  '.xml files '; ...
-        '*.mat',  '.mat matlab files '}, ...
-        'Pick a file',oldfile);
-fileinput=[PathName FileName];%complete file name 
-testblank=findstr(fileinput,' ');%look for blanks
-if ~isempty(testblank)
-    msgbox_uvmat('ERROR','forbidden input file name: contain blanks')
-    return
-end
-sizf=size(fileinput);
-if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
-
-%read the file
- t=xmltree(fileinput);
- s=convert(t);
- if ~isfield(s,'Style')
-     s.Style='points';
- end
- if ~isfield(s,'ProjMode')
-     s.ProjMode='none';
- end
-teststyle=0;
-
-switch s.Style
-    case {'points','line','polyline','plane'}
-        menu_proj={'projection';'interp';'filter';'none'}; 
-    case {'polygon','rectangle','ellipse'}
-        menu_proj={'inside';'outside';'mask_inside';'mask_outside'};
-    case 'volume'
-        menu_proj={'none'};
-end
-set(handles.ObjectStyle,'String',menu_proj)
-menu=get(handles.ObjectStyle,'String');
-for iline=1:length(menu)
-    if isequal(menu{iline},s.Style)
-        set(handles.ObjectStyle,'Value',iline)
-        teststyle=1;
-        break
-    end
-end
-testmode=0;
-%menu=get(handles.ProjMode,'String');
-for iline=1:length(menu_proj)
-    if isequal(menu_proj{iline},s.ProjMode)
-        set(handles.ProjMode,'Value',iline)
-        testmode=1;
-        break
-    end
-end
-
-ProjMode_Callback(hObject, eventdata, handles);%visualize the appropriate edit boxes
-if isfield(s,'XMax')
-    set(handles.XMax,'String',s.XMax)
-end
-if isfield(s,'XMin')
-    set(handles.XMin,'String',s.XMin)
-end
-if isfield(s,'YMax')
-    set(handles.YMax,'String',s.YMax)
-end
-if isfield(s,'YMin')
-    set(handles.YMin,'String',s.YMin)
-end
-Range=0;
-if isfield(s,'Range')
-    if ischar(s.Range)
-        Range=str2num(s.Range);
-    else
-        Range(1,:)=str2num(s.Range{1});
-        Range(2,:)=str2num(s.Range{2});
-    end
-end
-if size(Range,2)>=3
-    if size(Range,1)>=2
-       set(handles.ZMin,'String',num2str(Range(2,3),3))
-    end
-    if size(Range,1)>=2
-       set(handles.ZMax,'String',num2str(Range(1,3),3))
-    end
-end
-if size(Range,2)>=2
-    if size(Range,1)>=2
-       set(handles.YMin,'String',num2str(Range(2,2),3))
-    end
-    if size(Range,1)>=2
-       set(handles.YMax,'String',num2str(Range(1,2),3))
-    end
-end
-if size(Range,2)>=1
-    if size(Range,1)>=2
-       set(handles.XMin,'String',num2str(Range(2,1),3))
-    end
-    if size(Range,1)>=2
-       set(handles.XMax,'String',num2str(Range(1,1),3))
-    end
-end
-if isfield(s,'RangeX') & ischar(s.RangeX)
-     RangeX=str2num(s.RangeX);
-    set(handles.XMax,'String',num2str(max(RangeX),3))
-    set(handles.XMin,'String',num2str(min(RangeX),3))
-end
-
-if isfield(s,'RangeY')
-    if ischar(s.RangeY)
-        RangeY=str2num(s.RangeY);
-        set(handles.YMax,'String',num2str(max(RangeY),3))
-        set(handles.YMin,'String',num2str(min(RangeY),3))
-    end
-end
-if isfield(s,'RangeZ')
-    if ischar(s.RangeZ)
-        RangeZ=str2num(s.RangeZ);
-        set(handles.ZMax,'String',num2str(max(RangeZ),3))
-        set(handles.ZMin,'String',num2str(min(RangeZ),3))
-    end
-end
-if isfield(s,'Phi')
-    set(handles.Psi,'String',s.Phi)%old definition
-end
-if isfield(s,'Angle')&& isequal(numel(s.Angle),3)
-    set(handles.Phi,'String',s.Angle(1))
-    set(handles.Theta,'String',s.Angle(2))
-    set(handles.Psi,'String',s.Angle(3))
-end
-% if isfield(s,'Psi')
-%     set(handles.Psi,'String',s.Psi)
-% end
-
-if isfield(s,'DX')
-    set(handles.DX,'String',s.DX)
-end
-if isfield(s,'DY')
-    set(handles.DY,'String',s.DY)
-end
-if ~isfield(s,'Coord')
-    XObject='0';%default
-    YObject='0';
-elseif ischar(s.Coord)
-    line=str2num(s.Coord);
-    XObject=num2str(line(1),4);
-    YObject=num2str(line(2),4);
-else
-    for i=1:length(s.Coord)
-        line=str2num(s.Coord{i});
-        XObject{i}=num2str(line(1),4);
-        YObject{i}=num2str(line(2),4);
-    end
-end
-set(handles.XObject,'String',XObject)
-set(handles.YObject,'String',YObject)
-
-%METTRA A JOUR ASPECT DE L'INTERFACE (COMME set_object_Opening
 %------------------------------------------------------------------------
 %----------------------------------------------------
 % executed when closing: set the parent interface button to value 0
@@ -674,16 +526,17 @@ ListObject=get(hhuvmat.ListObject,'String');%position in the objet list
 IndexObj=get(hhuvmat.ListObject,'Value');
 
 %% read the object on the GUI set_object
-ObjectData=read_set_object(handles);%read the input parameters defining the object in the GUI set_object
-ObjectName=get(handles.TITLE,'String');%name of the current object defiend in set_object
+%ObjectData=read_set_object(handles.set_object);%read the input parameters defining the object in the GUI set_object
+ObjectData=read_GUI(handles.set_object);%read the input parameters defining the object in the GUI set_object
+%ObjectData.Coord=cell2mat(ObjectData.Coord);
+ObjectName=ObjectData.Name;%name of the current object defiend in set_object
 if isempty(ObjectName)
     if get(hhuvmat.edit_object,'Value')% edit mode
         ObjectName=ListObject{IndexObj(end)};%take the name of the last (second) selected item
     else %new object
-        StyleList=get(handles.ObjectStyle,'String');
-        StyleVal=get(handles.ObjectStyle,'Value');
+        StyleList=get(handles.Type,'String');
+        StyleVal=get(handles.Type,'Value');
         ObjectName=StyleList{StyleVal};
-        %ObjectName=[num2str(numel(ListObject)+1) '-' StyleList{StyleVal}];% take the object style as default name
     end
 end
 if ~get(hhuvmat.edit_object,'Value') %new object is being created
@@ -704,26 +557,15 @@ if ~get(hhuvmat.edit_object,'Value') %new object is being created
         end
     end
     ObjectName=ObjectNameNew;
-%     ObjectName=[num2str(IndexObj(end)) '-' ObjectData.Style];%default name
-    set(handles.TITLE,'String',ObjectName)% display the default name in set_object
+    set(handles.Name,'String',ObjectName)% display the default name in set_object
     IndexObj(2)=numel(ListObject)+1;% append an object to the list in uvmat
     set(hhuvmat.ListObject,'String',[ListObject;{ObjectName}]);%complement the object list
     set(hhuvmat.ListObject,'Value',IndexObj)
     UvData.Object{IndexObj(2)}=[];%initiate a new object (empty yet)
 end
-% IndexObj_1=IndexObj(1);
-% % if isequal(get(hhuvmat.list_object_2,'Visible'),'on')
-% %     IndexObj_2=get(hhuvmat.list_object_2,'Value');
-% %     List2=get(hhuvmat.list_object_2,'String');
-% if numel(IndexObj)==2
-%     IndexObj_2=IndexObj(2);
-% else
-%     IndexObj_2=[];
-% end
 testnew=0;
-
 if numel(IndexObj)==1   % if only one object is selected, the projection is in uvmat
-        PlotHandles=hhuvmat;
+ %       PlotHandles=hhuvmat;
     plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
 else  % if a second object is selected, the projection is in view_field, and this second object is selected
     hview_field=findobj(allchild(0),'tag','view_field');
@@ -782,14 +624,14 @@ set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yell
 function MenuCoord_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %----------------------------------------------------
-function YMin_Callback(hObject, eventdata, handles)
+function num_RangeY_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 
-function ZMin_Callback(hObject, eventdata, handles)
+function num_RangeZ_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 
-function ZMax_Callback(hObject, eventdata, handles)
-DZ=str2num(get(handles.ZMax,'String'));
+function num_RangeZ_2_Callback(hObject, eventdata, handles)
+DZ=str2num(get(handles.num_RangeZ_2,'String'));
 ZMin=get(handles.z_slider,'Min');
 ZMax=get(handles.z_slider,'Max');
 if ~isequal(ZMax-ZMin,0)
@@ -798,18 +640,19 @@ if ~isequal(ZMax-ZMin,0)
     set(handles.z_slider,'SliderStep',rel_step)
 end
 %------------------------------------------------------------------------
-function YMax_Callback(hObject, eventdata, handles)
+function num_RangeY_2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 
-function XMin_Callback(hObject, eventdata, handles)
+function num_RangeX_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 
-function XMax_Callback(hObject, eventdata, handles)
+function num_RangeX_2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
 function SAVE_Callback(hObject, eventdata, handles)
 % ------------------------------------------------------
-Object=read_set_object(handles);
+%Object=read_set_object(handles);
+Object=read_GUI(handles.set_object);
 huvmat=findobj('Tag','uvmat');
 % UvData=get(huvmat,'UserData');
 if isempty(huvmat)
@@ -827,7 +670,7 @@ else
 end
 title={'object name'};
 dir_save=uigetdir(RootPath);
-ObjectName=get(handles.TITLE,'String');
+ObjectName=get(handles.Name,'String');
 if ~isempty(ObjectName)&&~strcmp(ObjectName,'')
     def={fullfile(dir_save,[ObjectName '.xml'])};
 else
@@ -858,9 +701,9 @@ norm_plane=[0 0 1];
 cos_om=1;
 sin_om=0;
 
-PlaneAngle(1)=str2double(get(handles.Phi,'String'));%first  angle in degrees
-PlaneAngle(2)=str2double(get(handles.Theta,'String'));%second  angle in degrees
-PlaneAngle(3)=str2double(get(handles.Psi,'String'));%second  angle in degrees
+PlaneAngle(1)=str2double(get(handles.num_Angle_1,'String'));%first  angle in degrees
+PlaneAngle(2)=str2double(get(handles.num_Angle_2,'String'));%second  angle in degrees
+PlaneAngle(3)=str2double(get(handles.num_Angle_3,'String'));%second  angle in degrees
 PlaneAngle=(pi/180)*PlaneAngle;
 om=norm(PlaneAngle);%norm of rotation angle in radians
 if isequal(om,0)
@@ -877,9 +720,9 @@ else
 end
 
 %set new plane position and update graph
-set(handles.XObject,'String',num2str(norm_plane(1)*Z_value,4))
-set(handles.YObject,'String',num2str(norm_plane(2)*Z_value,4))
-set(handles.ZObject,'String',num2str(norm_plane(3)*Z_value,4))
+% set(handles.XObject,'String',num2str(norm_plane(1)*Z_value,4))
+% set(handles.YObject,'String',num2str(norm_plane(2)*Z_value,4))
+% set(handles.ZObject,'String',num2str(norm_plane(3)*Z_value,4))
 PLOT_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
@@ -896,4 +739,38 @@ else
 end
 %------------------------------------------------------------------------
 
+function Name_Callback(hObject, eventdata, handles)
+% hObject    handle to Name (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 
+% Hints: get(hObject,'String') returns contents of Name as text
+%        str2double(get(hObject,'String')) returns contents of Name as a double
+
+%------------------------------------------------------------------------
+% --- Executes when entered data in editable cell(s) in Coord.
+function Coord_CellEditCallback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+ListType=get(handles.Type,'String');
+Type=ListType{get(handles.Type,'Value')};
+switch Type
+    % add lines if multi line input needed
+    case{'points','polyline','polygon'}
+        Coord=get(handles.Coord,'Data');
+        if isequal(size(Coord,2),3)
+            Coord=[Coord;{[]} {[]} {[]}];%add a line for edition (3D case)
+        else
+            Coord=[Coord;{[]} {[]}]; %add a line for edition (2D case)
+        end
+        set(handles.Coord,'Data',Coord)
+end
+
+
+
+function num_Angle_3_Callback(hObject, eventdata, handles)
+% hObject    handle to num_Angle_3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of num_Angle_3 as text
+%        str2double(get(hObject,'String')) returns contents of num_Angle_3 as a double

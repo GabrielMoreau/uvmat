@@ -53,7 +53,7 @@ j2_series=zeros(1,1,1);
 [FileType,FileInfo,Object]=get_file_type(fullfileinput);
 if strcmp( FileType,'multimage')||strcmp( FileType,'video')
         NomType='*';
-        i1_series=(1:FileInfo.NbFrame)'
+        i1_series=(1:FileInfo.NbFrame)';
 end
 
 if strcmp(NomType,'')||strcmp(NomType,'*')||strcmp(option,'filetype')

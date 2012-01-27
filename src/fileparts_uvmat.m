@@ -103,7 +103,7 @@ if ~isempty(r)% FileName end matches num1
                     i2=str2double(num1);
             end
             NomType=[get_type(num2) delim1 get_type(num1)];
-            RootFile=regexprep(FileName,[num2 delim1 num1],'');
+            RootFile=regexprep(FileName,[num2 delim1 num1 '$'],'');
         end
         NomType=regexprep(NomType,'-1','-2'); %set 1-2 instead of 1-1
     else% only one number at the end

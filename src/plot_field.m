@@ -40,15 +40,6 @@
 %            = 'errorflag': provides an error flag marking false data,
 %                   default=0, no error. Different non zero values can represent different criteria of elimination.
 %
-%
-%         additional elements characterizing the projection object (should not be necessary)--
-%            Data.Style : style of projection object
-%            Data.XObject,.YObject: set of coordinates defining the object position;
-%            Data.ProjMode=type of projection ;
-%            Data.ProjAngle=angle of projection;
-%            Data.DX,.DY,.DZ=increments;
-%            Data.MaxY,MinY: min and max Y
-
 %   haxes: handle of the plotting axes to update with the new plot. If this input is absent or not a valid axes handle, a new figure is created.
 %
 %   PlotParam: structure containing the parameters for plotting, as read on the uvmat or view_field GUI (by function 'read_GUI.m').

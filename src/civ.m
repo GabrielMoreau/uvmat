@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 14-Jan-2012 00:46:29
+% Last Modified by GUIDE v2.5 27-Jan-2012 00:32:33
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -4415,6 +4415,3 @@ function TestCiv2_Callback(hObject, eventdata, handles)
 
 
 function RootFile_Callback(hObject, eventdata, handles)
-
-
-

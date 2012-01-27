@@ -14,159 +14,50 @@
 % handles: structure describing the tags of the edit boxes and menus
 function data=read_set_object(handles)
 %menus 
-if isfield(handles,'ObjectStyle')%case of the set_object interface
-	menu=get(handles.ObjectStyle,'String');
-	value=get(handles.ObjectStyle,'Value');
-	data.Style=menu{value};
-	menu=get(handles.ProjMode,'String');
-	value=get(handles.ProjMode,'Value');
-	data.ProjMode=menu{value};
-	data.CoordUnit=get(handles.CoordUnit,'String');
-    testcalib=0;
-else %default
-    data.Style='points';
-    testcalib=1;
-end
+data=read_GUI(handles);
 
-%Euler angles and projection ranges
-if ~testcalib
-    if isequal(get(handles.Phi,'Visible'),'on')
-        data.Angle(1)=str2double(get(handles.Phi,'String'));
-    end
-    if isequal(get(handles.Theta,'Visible'),'on')
-        data.Angle(2)=str2double(get(handles.Theta,'String'));
-    end
-    if isequal(get(handles.Psi,'Visible'),'on')
-        data.Angle(3)=str2double(get(handles.Psi,'String'));
-    end
-    if isequal(get(handles.DX,'Visible'),'on')
-        data.DX=str2num(get(handles.DX,'String'));
-    end
-    if isequal(get(handles.DY,'Visible'),'on')
-        data.DY=str2num(get(handles.DY,'String'));
-    end
-    if isequal(get(handles.DZ,'Visible'),'on')
-        data.DZ=str2num(get(handles.DZ,'String'));
-    end
-    dimrange=[1 1];%default
-    if isequal(get(handles.ZMin,'Visible'),'on')
-        ZMin=str2num(get(handles.ZMin,'String'));
-        if ~isempty(ZMin)
-            data.RangeZ(1)=ZMin;
-            dimrange=[2 3];
-        end
-    end
-    if isequal(get(handles.ZMax,'Visible'),'on')
-        ZMax=str2double(get(handles.ZMax,'String'));
-        if isnan(ZMax)
-            if dimrange(1)>1
-                data.RangeZ(1)=ZMax;
-            end
-        else
-            data.RangeZ(2)=ZMax;
-            dimrange=[dimrange(1) 3];
-        end
-    end
-    if isequal(get(handles.YMin,'Visible'),'on')
-        YMin=str2double(get(handles.YMin,'String'));
-        if ~isnan(YMin)
-            data.RangeY(2)=YMin;
-            dimrange=[2 max(dimrange(2),2)];
-        end
-    end
-    if isequal(get(handles.YMax,'Visible'),'on')
-        YMax=str2double(get(handles.YMax,'String'));
-        if ~isnan(YMax)
-            data.RangeY(1)=YMax;
-            dimrange=[dimrange(1) max(dimrange(2),2)];
-        end
-    end
-    if isequal(get(handles.XMin,'Visible'),'on')
-        XMin=str2double(get(handles.XMin,'String'));
-        if ~isnan(XMin)
-            data.RangeX(2)=XMin;
-        end
-    end
-    if isequal(get(handles.XMax,'Visible'),'on')
-        XMax=str2double(get(handles.XMax,'String'));
-        if ~isnan(XMax)
-            data.RangeX(1)=XMax;
-        end
-    end
-end
-
-
-%positions x,y,z
-Xcolumn=get(handles.XObject,'String');
-Ycolumn=get(handles.YObject,'String');
-if ischar(Xcolumn)
-    sizchar=size(Xcolumn);
-    for icol=1:sizchar(1)
-        Xcolumn_cell{icol}=Xcolumn(icol,:);
-    end
-    Xcolumn=Xcolumn_cell;
-end
-if ischar(Ycolumn)
-    sizchar=size(Ycolumn);
-    for icol=1:sizchar(1)
-        Ycolumn_cell{icol}=Ycolumn(icol,:);
-    end
-    Ycolumn=Ycolumn_cell;
-end
-Zcolumn={};%default
-if isequal(get(handles.ZObject,'Visible'),'on')
-    data.NbDim=3; %test 3D object
-    Zcolumn=get(handles.ZObject,'String');
-    if ischar(Zcolumn)
-        Zcolumn={Zcolumn};
-    end
-end
-nb_points=min(length(Xcolumn),length(Ycolumn));%number of point positions needed to define the object position
-if isequal (data.Style,'line');
-    nb_defining_points=2;
-elseif isequal(data.Style,'plane')|isequal(data.Style,'rectangle')|isequal(data.Style,'ellipse')
-    nb_defining_points=1;
-else
-    nb_defining_points=nb_points;
-end
-data_XObject=[];
-data_YObject=[];
-data_ZObject=[];
-for i=1:nb_points
-    Xnumber=str2num(Xcolumn{i});
-    Ynumber=str2num(Ycolumn{i});
-    if isempty(Xnumber)|isempty(Ynumber)
-        break
-    else
-        data_XObject=[data_XObject; Xnumber(1)];
-        data_YObject=[data_YObject; Ynumber(1)];
-    end
-    if length(Zcolumn)<i | isempty(str2num(Zcolumn{i}))
-        data_ZObject=[data_ZObject; 0];
-    else
-        data_ZObject=[data_ZObject; str2num(Zcolumn{i})];
-    end
-end
-if nb_defining_points > nb_points
-    for i=nb_points+1:nb_defining_points
-        data_XObject=[0;data_XObject];
-        data_YObject=[0;data_YObject];
-        data_ZObject=[0;data_ZObject];
-    end
-end
-if isempty(data_XObject)
-    data_XObject=0;
-end
-if isempty(data_YObject)
-    data_YObject=0;
-end
-if isempty(data_ZObject)
-    data_ZObject=0;
-end
-data.Coord=[data_XObject data_YObject data_ZObject];
-
-set(handles.XObject,'String',mat2cell(data_XObject,length(data_XObject)))%correct the interface display
-set(handles.YObject,'String',mat2cell(data_YObject,length(data_XObject)))
-set(handles.ZObject,'String',mat2cell(data_ZObject,length(data_XObject)))
-
-
+% %Euler angles and projection ranges
+% if isfield(data,'Angle_x')
+%     data.Angle(1)=data.Angle_x;
+%     data=rmfield(data,'Angle_x');
+% end
+% if isfield(data,'Angle_y')
+%     data.Angle(2)=data.Angle_y;
+%     data=rmfield(data,'Angle_y');
+% end
+% if isfield(data,'Angle_z')
+%     data.Angle(3)=data.Angle_z;
+%     data=rmfield(data,'Angle_z');
+% end
+% % ranges of projection
+% data.RangeZ=[];
+% data.RangeY=[];
+% data.RangeX=[];
+% if isfield(data,'ZMin')&& ~isempty(data.ZMin)
+%     data.RangeZ=data.ZMin;
+%     data=rmfield(data,'ZMin');
+% end
+% if isfield(data,'ZMax')&& ~isempty(data.ZMax)
+%     data.RangeZ=[data.RangeZ data.ZMax];
+%     data=rmfield(data,'ZMax');
+% end
+% if isfield(data,'YMin')&& ~isempty(data.YMin)
+%     data.RangeY=data.YMin;
+%     data=rmfield(data,'YMin');
+% end
+% if isfield(data,'YMax')&& ~isempty(data.YMax)
+%     data.RangeY=[data.RangeY data.YMax];
+%     data=rmfield(data,'YMax');
+% end
+% if isfield(data,'XMin')&& ~isempty(data.XMin)
+%     data.RangeX=data.XMin;
+%     data=rmfield(data,'XMin');
+% end
+% if isfield(data,'XMax')&& ~isempty(data.XMax)
+%     data.RangeX=[data.RangeX data.XMax];
+%     data=rmfield(data,'XMax');
+% end
+% 
+% 
+% 
+% 

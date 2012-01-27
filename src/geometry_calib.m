@@ -148,7 +148,22 @@ end
 % --- Executes on button press in calibrate_lin.
 function APPLY_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-%read the current calibration points
+%% look for the GUI uvmat and check for an image as input
+huvmat=findobj(allchild(0),'Name','uvmat');
+hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
+FileExt=get(hhuvmat.FileExt,'String');
+check_input=0;
+if ~isempty(FileExt)
+    if ~isempty(imformats(FileExt(2:end))) ||strcmpi(FileExt,'.avi')
+        check_input=1;
+    end
+end
+if ~check_input
+    msgbox_uvmat('ERROR','open an image with uvmat to perform calibration')
+    return
+end
+
+%% read the current calibration points
 Coord_cell=get(handles.ListCoord,'String');
 Object=read_geometry_calib(Coord_cell);
 Coord=Object.Coord;
@@ -199,15 +214,13 @@ set(handles.Phi,'String',num2str(GeometryCalib.omc(1),4))
 set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
 set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
 
-% store the calibration data, by default in the xml file of the currently displayed image
-huvmat=findobj(allchild(0),'Name','uvmat');
+%% store the calibration data, by default in the xml file of the currently displayed image
 UvData=get(huvmat,'UserData');
 NbSlice_j=1;%default
 ZStart=Z_plane;
 ZEnd=Z_plane;
 volume_scan='n';
 if isfield(UvData,'XmlData')
-    UvData.XmlData
     if isfield(UvData.XmlData,'TranslationMotor')
         NbSlice_j=UvData.XmlData.TranslationMotor.Nbslice;
         ZStart=UvData.XmlData.TranslationMotor.ZStart/10;
@@ -215,7 +228,6 @@ if isfield(UvData,'XmlData')
         volume_scan='y';
     end
 end
-hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
 RootPath='';
 % RootFile='';
 if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)

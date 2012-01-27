@@ -71,7 +71,7 @@ if isfield(Field,'Txt')
     return
 end
 if vardetect(1)==0
-     errormsg=[ 'requested field not available in ' filename '/' VelType];
+     errormsg=[ 'requested field not available in ' filename '/' VelType ': need to run patch'];
      return
 end
 switch vel_type_out_cell{ichoice}

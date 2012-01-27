@@ -154,7 +154,7 @@
 
 % Properties attached to projection objects (create, menuline, menuplane...):
 %    'Tag'='proj_object': for all projection objects
-%    ObjectData.Style=...: style of projection object:
+%    ObjectData.Type=...: style of projection object:
 %              .ProjMode
 %              .Coord: defines the position of the object
 %              .XMin,YMin....
@@ -814,15 +814,15 @@ if isempty(nbfield_j)
     nbfield_j=max(max(j1_series));
 end
 if ~isempty(XmlData.Time)
-    nbfield=size(XmlData.Time,1);
-    nbfield_j=size(XmlData.Time,2);
+%     nbfield=size(XmlData.Time,1);
+%     nbfield_j=size(XmlData.Time,2);
     %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
     if isequal(nbfield,1) && ~isequal(nbfield_j,1)% .Time is a line vector
         NomType=get(handles.NomType,'String');
         if numel(NomType)>=2 &&(strcmp(NomType,'_i')||strcmp(NomType(1:2),'%0')||strcmp(NomType(1:2),'_%'))
             XmlData.Time=(XmlData.Time)';
-            nbfield=nbfield_j;
-            nbfield_j=1;
+%             nbfield=nbfield_j;
+%             nbfield_j=1;
         end
     end
 end
@@ -2103,12 +2103,16 @@ if (strcmp(FileType,'civx')||strcmp(FileType,'civdata'))&& ~strcmp(FieldName,'ge
     set(handles.VelType_1,'Visible','on')
     set(handles.FixVelType,'Visible','on')
     menu=set_veltype_display(ParamOut.CivStage);
-    index_menu=strcmp(ParamOut.VelType,menu);
-    set(handles.VelType,'Value',find(index_menu,1))
+    index_menu=strcmp(ParamOut.VelType,menu);%look for VelType in  the menu
+    index_val=find(index_menu,1);
+    if isempty(index_val)
+        index_val=1;
+    end
+    set(handles.VelType,'Value',index_val)
     if ~get(handles.SubField,'value')
-    set(handles.VelType,'String',menu)
-     set(handles.VelType_1,'Value',1)
-     set(handles.VelType_1,'String',[{''};menu])
+        set(handles.VelType,'String',menu)
+        set(handles.VelType_1,'Value',1)
+        set(handles.VelType_1,'String',[{''};menu])
     end
 else
     set(handles.VelType,'Visible','off')
@@ -2331,7 +2335,7 @@ if NbDim==3% && UvData.NewSeries
     end
     if test_set_object% reinitiate the GUI set_object
         delete_object(1);% delete the current projection object in the list UvData.Object, delete its graphic representations and update the list displayed in handles.ListObject and 2
-        UvData.Object{1}.Style='plane';%main plotting plane
+        UvData.Object{1}.Type='plane';%main plotting plane
         UvData.Object{1}.ProjMode='projection';%main plotting plane
         UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
         UvData.Object{1}.NbDim=NbDim;%test for 3D objects
@@ -3153,7 +3157,7 @@ if isequal(get(handles.VOLUME,'Value'),1)
     set(handles.edit_vect,'Value',0)
     edit_vect_Callback(hObject, eventdata, handles)
     %initiate set_object GUI
-    data.TITLE='VOLUME';
+    data.Name='VOLUME';
     if isfield(UvData,'CoordType')
         data.CoordType=UvData.CoordType;
     end
@@ -3239,14 +3243,14 @@ if isfield(UvData,'Object')
                 end
             end
             if isfield(ObjectData,'Coord')& isfield(ObjectData,'Style') 
-                if isequal(ObjectData.Style,'polygon') 
+                if isequal(ObjectData.Type,'polygon') 
                     X=ObjectData.Coord(:,1);
                     Y=ObjectData.Coord(:,2);
                     if testphys
                         [X,Y]=px_XYZ(Calib,X,Y,0);% to generalise with 3D cases
                     end
                     flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside                  
-                elseif isequal(ObjectData.Style,'ellipse')
+                elseif isequal(ObjectData.Type,'ellipse')
                     if testphys
                         %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
                     end
@@ -3257,7 +3261,7 @@ if isfield(UvData,'Object')
                     distX=(Xi-ObjectData.Coord(1,1));
                     distY=(Yi-ObjectData.Coord(1,2));
                     flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
-                elseif isequal(ObjectData.Style,'rectangle')
+                elseif isequal(ObjectData.Type,'rectangle')
                     if testphys
                         %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
                     end
@@ -4177,14 +4181,14 @@ else
                     end
                 end
                 if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Style')
-                    if isequal(ObjectData.Style,'polygon')
+                    if isequal(ObjectData.Type,'polygon')
                         X=ObjectData.Coord(:,1);
                         Y=ObjectData.Coord(:,2);
                         if testphys
                             [X,Y]=px_XYZ(Calib,X,Y,0);% to generalise with 3D cases
                         end
                         flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
-                    elseif isequal(ObjectData.Style,'ellipse')
+                    elseif isequal(ObjectData.Type,'ellipse')
                         if testphys
                             %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
                         end
@@ -4195,7 +4199,7 @@ else
                         distX=(Xi-ObjectData.Coord(1,1));
                         distY=(Yi-ObjectData.Coord(1,2));
                         flagobj=(distX.*distX/X2Max+distY.*distY/Y2Max)>1;
-                    elseif isequal(ObjectData.Style,'rectangle')
+                    elseif isequal(ObjectData.Type,'rectangle')
                         if testphys
                             %[X,Y]=px_XYZ(Calib,X,Y,0);% TODO:create a polygon boundary and transform to phys
                         end
@@ -4349,50 +4353,50 @@ edit_vect_Callback(hObject, eventdata, handles)
 % -----------------------------------------------------------------------
 function Menupoints_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-data.Style='points';
+data.Type='points';
 data.ProjMode='projection';%default
 create_object(data,handles)
 
 % -----------------------------------------------------------------------
 function Menuline_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-data.Style='line';
+data.Type='line';
 data.ProjMode='projection';%default
 create_object(data,handles)
 
 %------------------------------------------------------------------------
 function Menupolyline_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-data.Style='polyline';
+data.Type='polyline';
 data.ProjMode='projection';%default
 create_object(data,handles)
 
 %------------------------------------------------------------------------
 function Menupolygon_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-data.Style='polygon';
+data.Type='polygon';
 data.ProjMode='inside';%default
 create_object(data,handles)
 
 %------------------------------------------------------------------------
 function Menurectangle_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-data.Style='rectangle';
+data.Type='rectangle';
 data.ProjMode='inside';%default
 create_object(data,handles)
 
 %------------------------------------------------------------------------
 function Menuellipse_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-data.Style='ellipse';
+data.Type='ellipse';
 data.ProjMode='inside';%default
 create_object(data,handles)
 
 %------------------------------------------------------------------------
 function MenuMaskObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-data.Style='polygon';
-data.StyleMenu={'polygon'};
+data.Type='polygon';
+data.TypeMenu={'polygon'};
 data.ProjMode='mask_inside';%default
 data.ProjMenu={'mask_inside';'mask_outside'};
 create_object(data,handles)
@@ -4400,7 +4404,7 @@ create_object(data,handles)
 %------------------------------------------------------------------------
 function Menuplane_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-data.Style='plane';
+data.Type='plane';
 data.ProjMode='projection';%default
 
 create_object(data,handles)
@@ -4408,7 +4412,7 @@ create_object(data,handles)
 %------------------------------------------------------------------------
 function Menuvolume_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-data.Style='volume';
+data.Type='volume';
 data.ProjMode='interp';%default
 % set(handles.create,'Visible','on')
 % set(handles.create,'Value',1)
@@ -4429,8 +4433,9 @@ sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
 %read the file
-t=xmltree(fileinput);
-data=convert(t);
+% t=xmltree(fileinput);
+% data=convert(t);
+data=xml2struct(fileinput);
 data.enable_plot=1;
 [pp,data.Name]=fileparts(FileName);
 %PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
@@ -4465,6 +4470,7 @@ data.enable_plot=1;
 transform_list=get(handles.transform_fct,'String');
 val=get(handles.transform_fct,'Value');
 %data.CoordType=transform_list{val};
+data.Coord=[0 0]; %default
 if isfield(UvData,'Field')
     Field=UvData.Field;
     if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
@@ -4480,21 +4486,20 @@ if isfield(UvData,'Field')
         data.RangeX=max(meshx,meshy);
         data.DX=max(meshx,meshy);
     end
-    if isfield(Field,'NbDim')
-        data.NbDim=Field.NbDim;
+    if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
+         data.Coord=[0 0 0]; %default
     end
     if isfield(Field,'CoordUnit')
         data.CoordUnit=Field.CoordUnit;
     end
 end
-data.Coord=[0 0 0]; %default
-if isfield(data,'Style') && isequal(data.Style,'line')
-    if isfield(data,'DX')
-        data.Coord=[[0 0 0];[data.DX 0 0]]; %default 
-    else
-        data.Coord=[[0 0 0];[1 0 0]]; %default 
-    end
-end
+% if isfield(data,'Type') && isequal(data.Type,'line')
+%     if isfield(data,'DX')
+%         data.Coord=[[0 0 0];[data.DX 0 0]]; %default 
+%     else
+%         data.Coord=[[0 0 0];[1 0 0]]; %default 
+%     end
+% end
 if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
 end

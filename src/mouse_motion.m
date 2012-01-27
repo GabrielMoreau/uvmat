@@ -41,7 +41,7 @@ test_object=0; %test for object editing or creation
 test_edit_object=0;% edit test for mouse shap: an arrow
 test_zoom_draw=0; % test for zoom drawing 
 test_ruler=0;%test for active ruler 
-test_piv=0;% test for PIV correlation display
+% test_piv=0;% test for PIV correlation display
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
@@ -57,11 +57,6 @@ if isfield(FigData,'CivHandle')
     hhciv=guidata(FigData.CivHandle);
     test_piv=1;
 end
-% hciv=findobj(allchild(0),'tag','civ');%find the civ interface handle
-% if ~isempty(hciv) && strcmp(get(currentfig,'tag'),'view_field')
-%     hhciv=guidata(hciv);
-%     test_piv =get(hhciv.TestCiv1,'Value');
-% end
 
 %find the current axe 'haxes' and display the current mouse position or uicontrol tag
 text_displ_1='';
@@ -326,16 +321,15 @@ if ~isempty(huvmat) && test_object
         ObjectData=UvData.Object{PlotData.IndexObj};
         XYData=AxeData.CurrentOrigin;
         if isequal(AxeData.Drawing,'create') && isfield(AxeData,'CurrentOrigin') && ~isempty(AxeData.CurrentOrigin)
-           if strcmp(ObjectData.Style,'line')||strcmp(ObjectData.Style,'polyline')||strcmp(ObjectData.Style,'polygon')||strcmp(ObjectData.Style,'points')
-              xy(1,3)=0;
-              ObjectData.Coord=[ObjectData.Coord ;xy(1,:)];
+           if strcmp(ObjectData.Type,'line')||strcmp(ObjectData.Type,'polyline')||strcmp(ObjectData.Type,'polygon')||strcmp(ObjectData.Type,'points')
+              ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];
              % ObjectData.Coord(end,:)=xy(1,:);
-           elseif strcmp(ObjectData.Style,'rectangle')||strcmp(ObjectData.Style,'ellipse')||strcmp(ObjectData.Style,'volume')
+           elseif strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')||strcmp(ObjectData.Type,'volume')
               ObjectData.Coord(1,1)=(xy(1,1)+XYData(1))/2;%origin rectangle, x coordinate
               ObjectData.Coord(1,2)=(xy(1,2)+XYData(2))/2;
               ObjectData.RangeX=abs(xy(1,1)-XYData(1))/2;%rectangle width
               ObjectData.RangeY=abs(xy(1,2)-XYData(2))/2;%rectangle height
-           elseif isequal(ObjectData.Style,'plane') %case of 'plane'
+           elseif isequal(ObjectData.Type,'plane') %case of 'plane'
                 DX=(xy(1,1)-ObjectData.Coord(1,1));
                 DY=(xy(1,2)-ObjectData.Coord(1,2));
                 ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle widt

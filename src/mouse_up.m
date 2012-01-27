@@ -77,23 +77,23 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
         
     %creating object   
     else   
-        if strcmp(ObjectData.Style,'line')||strcmp(ObjectData.Style,'polyline')||...
-                strcmp(ObjectData.Style,'polygon')||strcmp(ObjectData.Style,'points')
+        if strcmp(ObjectData.Type,'line')||strcmp(ObjectData.Type,'polyline')||...
+                strcmp(ObjectData.Type,'polygon')||strcmp(ObjectData.Type,'points')
             if isfield(AxeData,'ObjectCoord') && size(AxeData.ObjectCoord,2)==3
               xy(1,3)=AxeData.ObjectCoord(1,3); % z coordinate of the mouse: to generalise ...
             else
                  xy(1,3)=0; % z coordinate set to 0 by default
             end
             if ~isequal(ObjectData.Coord,xy(1,:))
-                ObjectData.Coord=[ObjectData.Coord ;xy(1,:)];% append the coordiantes marked by the mouse to the eobject
+                ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordiantes marked by the mouse to the eobject
             end
-        elseif isequal(ObjectData.Style,'rectangle')||isequal(ObjectData.Style,'ellipse')||isequal(ObjectData.Style,'volume')
+        elseif isequal(ObjectData.Type,'rectangle')||isequal(ObjectData.Type,'ellipse')||isequal(ObjectData.Type,'volume')
             XYData=AxeData.CurrentOrigin;
             ObjectData.Coord(1,1)=(xy(1,1)+XYData(1))/2;%origin rectangle, x coordinate
             ObjectData.Coord(1,2)=(xy(1,2)+XYData(2))/2;
             ObjectData.RangeX=abs(xy(1,1)-XYData(1))/2;%rectangle width
             ObjectData.RangeY=abs(xy(1,2)-XYData(2))/2;%rectangle height
-        elseif isequal(ObjectData.Style,'plane') %case of 'plane'
+        elseif isequal(ObjectData.Type,'plane') %case of 'plane'
             DX=(xy(1,1)-ObjectData.Coord(1,1));
             DY=(xy(1,2)-ObjectData.Coord(1,2));
             ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle width
@@ -105,9 +105,9 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
             end
         end
     end
-    if strcmp(ObjectData.Style,'rectangle')||strcmp(ObjectData.Style,'ellipse')
+    if strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')
         NbDefPoint=1;  
-    elseif strcmp(ObjectData.Style,'line')|| strcmp(ObjectData.Style,'plane');
+    elseif strcmp(ObjectData.Type,'line')|| strcmp(ObjectData.Type,'plane');
         NbDefPoint=2; 
     else
          NbDefPoint=3;
@@ -116,17 +116,18 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     %show object coordinates in the GUI set_object
     h_set_object=findobj(allchild(0),'Tag','set_object');
     hh_set_object=guidata(h_set_object);
-    set(hh_set_object.XObject,'String',num2str(ObjectData.Coord(:,1),4)); 
-    set(hh_set_object.YObject,'String',num2str(ObjectData.Coord(:,2),4)); 
-    set(hh_set_object.ZObject,'String',num2str(ObjectData.Coord(:,3),4));
-    if strcmp(ObjectData.Style,'rectangle')||strcmp(ObjectData.Style,'ellipse')
+    set(hh_set_object.Coord,'Data',ObjectData.Coord);
+%     set(hh_set_object.XObject,'String',num2str(ObjectData.Coord(:,1),4)); 
+%     set(hh_set_object.YObject,'String',num2str(ObjectData.Coord(:,2),4)); 
+%     set(hh_set_object.ZObject,'String',num2str(ObjectData.Coord(:,3),4));
+    if strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')
         set(hh_set_object.XMax,'String',num2str(ObjectData.RangeX,4));
         set(hh_set_object.YMax,'String',num2str(ObjectData.RangeY,4));
     end
     if NbDefPoint<=2 || isequal(get(currentfig,'SelectionType'),'alt') ||...
               strcmp(AxeData.Drawing,'translate') || strcmp(AxeData.Drawing,'deform');%stop drawing
         AxeData.CurrentOrigin=[]; %suppress the current origin
-       if isequal(ObjectData.Style,'line') && size(ObjectData.Coord,1)<=1
+       if isequal(ObjectData.Type,'line') && size(ObjectData.Coord,1)<=1
            AxeData.Drawing='off';
            set(currentaxes,'UserData',AxeData);
             return % line needs at leqst two points

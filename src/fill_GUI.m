@@ -2,7 +2,6 @@
 % --- read a GUI with handle 'handle' producing a structure 'struct'
 function errormsg=fill_GUI(Param,handles)
 %------------------------------------------------------------------------
-
 errormsg='';
 fields=fieldnames(Param);
 for ifield=1:numel(fields)
@@ -18,19 +17,21 @@ for ifield=1:numel(fields)
     else
         hh=[];
         input_data=Param.(fields{ifield});
+        check_done=0;
         if isfield(handles,fields{ifield})
             hh=handles.(fields{ifield});
             if strcmp(get(hh,'Type'),'uitable')
+                set(hh,'Visible','on')
                 set(hh,'Data',input_data)
-                break
+                check_done=1;
             end
         elseif isnumeric(input_data) && isfield(handles,['num_' fields{ifield}])
             hh=handles.(['num_' fields{ifield}]);
         end
-        if ~isempty(hh)
+        if ~isempty(hh)&& ~check_done
             set(hh,'Visible','on')
 %             input_data
-            switch get(hh,'style')
+            switch get(hh,'Style')
                 case {'checkbox','radiobutton','togglebutton'}
                     if isnumeric(input_data)
                         set(hh,'Value',input_data)
