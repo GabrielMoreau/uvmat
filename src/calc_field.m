@@ -63,7 +63,8 @@ else
     ValueList={};
     RoleList={};
     units_cell={};
-    % new civ data
+    
+    %% interpolation with new civ data 
     if isfield(DataIn,'X_SubRange')
         XMax=max(max(DataIn.X_SubRange));
         YMax=max(max(DataIn.Y_SubRange));
@@ -87,6 +88,7 @@ else
         DataOut.U=zeros(size(XI));
         DataOut.V=zeros(size(XI));
         DataOut.vort=zeros(size(XI));
+        
         DataOut.div=zeros(size(XI));
         nbval=zeros(size(XI));
         [NbSubDomain,xx]=size(DataIn.X_SubRange);
@@ -125,22 +127,10 @@ else
                     case 'vort'
                         ListFields={'vort'};
                         VarAttributes{1}.Role='scalar';
-%                         EMX = [DMXY(:,:,1) PM];
-%                         EMY = [DMXY(:,:,2) PM];
-%                         DataIn.U_tps(nbvec_sub+1,isub)=0;%constant value suppressed by spatial derivatives
-%                         DataIn.V_tps(nbvec_sub+1,isub)=0;%constant value suppressed by spatial derivatives
-%                         DataIn.V_tps(nbvec_sub+2,isub)=0;% X coefficient suppressed for x wise derivatives
-%                         DataIn.U_tps(nbvec_sub+3,isub)=0;% Y coefficient suppressed for x wise derivatives
                         DataOut.vort(ind_sel)=DataOut.vort(ind_sel)+EMDY *DataIn.U_tps(1:nbvec_sub+3,isub)-EMDX *DataIn.V_tps(1:nbvec_sub+3,isub);
                     case 'div'
                         ListFields={'div'};
                         VarAttributes{1}.Role='scalar';
-%                         EMX = [DMXY(:,:,1) PM];
-%                         EMY = [DMXY(:,:,2) PM];
-%                         DataIn.U_tps(nbvec_sub+1,isub)=0;%constant value suppressed by spatial derivatives
-%                         DataIn.V_tps(nbvec_sub+1,isub)=0;%constant value suppressed by spatial derivatives
-%                         DataIn.V_tps(nbvec_sub+2,isub)=0;% X coefficient suppressed for x wise derivatives
-%                         DataIn.U_tps(nbvec_sub+3,isub)=0;% Y coefficient suppressed for x wise derivatives
                         DataOut.div(ind_sel)=DataOut.div(ind_sel)+EMDX*DataIn.U_tps(1:nbvec_sub+3,isub)+EMDY *DataIn.V_tps(1:nbvec_sub+3,isub);
                 end
         end
@@ -160,8 +150,10 @@ else
         end
         DataOut.VarAttribute={[],[]};
         DataOut.VarAttribute{3}.Role='errorflag';
-        DataOut.VarAttribute=[DataOut.VarAttribute VarAttributes];      
+        DataOut.VarAttribute=[DataOut.VarAttribute VarAttributes];   
     else   
+        
+    %% civx data    
         DataOut=DataIn;
         for ilist=1:length(FieldName)
             if ~isempty(FieldName{ilist})

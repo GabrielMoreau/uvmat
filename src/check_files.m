@@ -51,6 +51,7 @@ list_fct={...
     'editxml';...%display and edit xml files using a xls schema
     'editxml.fig';...%interface for editxml
     'fileparts_uvmat';...% extracts the root name,field indexes and nomenclature type from an input filename
+    'fill_GUI';...% fill a GUI with handles 'handles' from input data Param 
     'find_field_indices';...% group the variables of a nc-formated Matlab structure into 'fields' with common dimensions
     'find_file_series';...%check the content of an input file and find the corresponding file series
     'fullfile_uvmat';...%creates a file name from a root name and indices.
@@ -58,6 +59,8 @@ list_fct={...
     'geometry_calib.fig';...%interface for geometry_calib
     'get_field';...% choose and plot a field from a Netcdf file
     'get_field.fig';...%interface for get_field
+    'get_file_series';...% determine the list of file names and file indices for functions called by 'series'.
+    'get_file_type';...% determine info about a file (image, multimage, civdata,...) .
     'griddata_uvmat';...%make 2D linear interpolation using griddata, with input appropriate for both Matlab 6.5 and 7
     'hist_update';...%  update of a current global histogram by inclusion of a new field
     'imadoc2struct';...%convert the image documentation file ImaDoc into a Matlab structure
@@ -82,7 +85,6 @@ list_fct={...
     'read_get_field';... read the list of selected variables from the GUI get_field (TODO: use read_GUI)
     'read_GUI';... %read all parameters set by a GUI as a Matlab structure
     'read_imatext';...%read .civ files (obsolete, but can be adapted to other text documentation files) 
-    'read_set_object';...%read the data on the set_object interface, TODO: use instead the general function read_GUI
     'read_xls';...%read excel files containing the list of the experiments
     'reinit';...% suppress the personal parameter file 'uvmat_perso.mat'
     'rotate_points';...%'rotate_points': associated with GUI rotate_points.fig to introduce (2D) rotation parameters

@@ -1,5 +1,5 @@
+%'fill_GUI': fill a GUI with handles 'handles' from input data Param 
 % -----------------------------------------------------------------------
-% --- read a GUI with handle 'handle' producing a structure 'struct'
 function errormsg=fill_GUI(Param,handles)
 %------------------------------------------------------------------------
 errormsg='';

@@ -55,13 +55,13 @@ switch FileType
             ParamOut.ColorVar='';%default
             field_index=strcmp(ParamIn.FieldName,FieldList);%look for ParamIn.FieldName in the list of possible fields for Civx data
             if isempty(find(field_index,1))% ParamIn.FieldName is not in the list, check whether Civx data exist
-                Data=nc2struct(ObjectName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ');
+                Data=nc2struct(ObjectName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ','CivStage');
                 % case of new civdata conventions
                 if isequal(Data.Conventions,'uvmat/civdata')
                     ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
                     ParamOut.ColorVar='ima_cor';
                     InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
-                    [Field,ParamOut.VelType,errormsg]=read_civdata(ObjectName,InputField,ParamIn.VelType);
+                    [Field,ParamOut.VelType,errormsg]=read_civdata(ObjectName,InputField,ParamIn.VelType,Data.CivStage);
                     test_civx=Field.CivStage;
                     %case of old civx conventions
                 elseif ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)

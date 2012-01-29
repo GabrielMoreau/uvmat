@@ -1,6 +1,6 @@
-  %'get_file_series': determine the list of file names and file indices for functions called by 'series'. 
+%'get_file_type': determine info about a file (image, multimage, civdata,...) . 
 %------------------------------------------------------------------------
-% [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param)
+% [FileType,FileInfo,Object]=get_file_type(fileinput)
 %
 % OUTPUT:
 % FileType: type of file

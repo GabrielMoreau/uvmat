@@ -2102,7 +2102,7 @@ if (strcmp(FileType,'civx')||strcmp(FileType,'civdata'))&& ~strcmp(FieldName,'ge
     set(handles.VelType,'Visible','on')
     set(handles.VelType_1,'Visible','on')
     set(handles.FixVelType,'Visible','on')
-    menu=set_veltype_display(ParamOut.CivStage);
+    menu=set_veltype_display(ParamOut.CivStage,FileType);
     index_menu=strcmp(ParamOut.VelType,menu);%look for VelType in  the menu
     index_val=find(index_menu,1);
     if isempty(index_val)
@@ -2192,8 +2192,6 @@ if isfield(UvData,'XmlData')%use geometry calib recorded from the ImaDoc xml fil
         XmlData_1=UvData.XmlData{2};
     end
 end
-
-% menu_transform=get(handles.transform_fct,'String');
 choice_value=get(handles.transform_fct,'Value');
 transform_list=get(handles.transform_fct,'UserData');
 transform=transform_list{choice_value};%selected function handles
@@ -2806,8 +2804,6 @@ if get(handles.SubField,'Value')==0% if the subfield button is desactivated
     if ~strcmp(get(handles.VelType,'Visible'),'on')
         set(handles.VelType_1,'Visible','off')
     end
-%     set_veltype_display([handles.VelType_1 handles.interp1_1 handles.filter1_1 ...
-%             handles.civ2_1 handles.interp2_1 handles.filter2_1],0)
     if isfield(UvData,'XmlData_1')
         UvData=rmfield(UvData,'XmlData_1');
     end 
@@ -3055,7 +3051,7 @@ end
 
 %------------------------------------------------------------------------
 % --- set the visibility of relevant velocity type menus: 
-function menu=set_veltype_display(Civ)
+function menu=set_veltype_display(Civ,FileType)
 %------------------------------------------------------------------------
 if isequal(Civ,0)
     imax=0;
@@ -3068,7 +3064,15 @@ elseif isequal(Civ,4) || isequal(Civ,5)
 elseif isequal(Civ,6) %patch2
     imax=6;
 end
+if ~exist('FileType','var')
+    FileType='civx';
+end
+switch FileType
+    case 'civx'
 menu={'civ1';'interp1';'filter1';'civ2';'interp2';'filter2'};
+    case 'civdata'
+    menu={'civ1';'civ-filter1';'filter1';'civ2';'civ-filter2';'filter2'};   
+end
 menu=menu(1:imax);
 
 %------------------------------------------------------------------------
