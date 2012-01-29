@@ -37,7 +37,8 @@ transform_fct=Series.transform_fct;%handles of phys transform function
 test_object=get(hseries.GetObject,'Value');
 if test_object%isfield(Series,'sethandles')
     hset_object=findobj(allchild(0),'tag','set_object');
-    ProjObject=read_set_object(guidata(hset_object));
+%     ProjObject=read_set_object(guidata(hset_object));
+    ProjObject=read_GUI(hset_object);
     if ~strcmp(ProjObject.Style,'volume')&&~strcmp(ProjObject.ProjMode,'interp')
         msgbox_uvmat('ERROR',['a volume with projection mode interp must be defined']);
         return
