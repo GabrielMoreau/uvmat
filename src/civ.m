@@ -31,7 +31,7 @@ gui_State = struct('gui_Name',       mfilename, ...
     'gui_OutputFcn',  @civ_OutputFcn, ...
     'gui_LayoutFcn',  [] , ...
     'gui_Callback',   []);
-if nargin && ischar(varargin{1})
+if nargin && ischar(varargin{1}) && ~isempty(regexp(varargin{1},'_Callback$','once'))
     gui_State.gui_Callback = str2func(varargin{1});
 end
 
@@ -1532,7 +1532,7 @@ for ifile=1:nbfield
                         end
                         batch_file_list{length(batch_file_list)+1}=filename_bat;
                     else
-                        [Data,erromsg]=civ_matlab(Param,filecell.nc.civ1{ifile,j});
+                        [tild,errormsg]=civ_matlab(Param,filecell.nc.civ1{ifile,j});
                         if isempty(errormsg)
                             display([filecell.nc.civ1{ifile,j} ' written'])
                         else

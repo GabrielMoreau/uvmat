@@ -79,7 +79,7 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [ProjData,errormsg]=proj_field(FieldData,ObjectData)
+function [ProjData,errormsg]=proj_field(FieldData,ObjectData,FieldName)
 errormsg='';%default
 %% case of no projection (object is used only as graph display)
 if isfield(ObjectData,'ProjMode') && (isequal(ObjectData.ProjMode,'none')||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'))
@@ -912,7 +912,7 @@ end
 %-----------------------------------------------------------------
 %project on a plane 
 % AJOUTER flux,circul,error
- function  [ProjData,errormsg] = proj_plane(FieldData, ObjectData)
+ function  [ProjData,errormsg] = proj_plane(FieldData, ObjectData,FieldName)
 %-----------------------------------------------------------------
 
 %% initialisation of the input parameters of the projection plane
@@ -1163,6 +1163,11 @@ for icell=1:length(CellVarIndex)
             end
             coord_x_proj=XMin:DX:XMax;
             coord_y_proj=YMin:DY:YMax;
+            if isfield(FieldData,[VarName '_tps'])
+                [XI,YI]=meshgrid(coord_x_proj,coord_y_proj');
+                XI=reshape(XI,[],1);
+                YI=reshape(YI,[],1);         
+            end
             DimCell={'coord_y','coord_x'};
             ProjData.ListVarName={'coord_y','coord_x'};
             ProjData.VarDimName={'coord_y','coord_x'};
@@ -1185,6 +1190,9 @@ for icell=1:length(CellVarIndex)
             end
             FF=zeros(1,length(coord_y_proj)*length(coord_x_proj));
             testFF=0;
+            if ~isempty(FieldName)
+                FieldData=calc_field(FieldName,FieldData,XI,YI);
+            end
             for ivar=VarIndex
                 VarName=FieldData.ListVarName{ivar};
                 if ~( ivar==ivar_X || ivar==ivar_Y || ivar==ivar_Z || ivar==ivar_F || ivar==ivar_FF || test_anc(ivar)==1)
@@ -1195,15 +1203,22 @@ for icell=1:length(CellVarIndex)
                         ProjData.VarAttribute{ivar_new+nbcoord}=FieldData.VarAttribute{ivar};
                     end
                     if  ~isequal(ivar_FF,0)
-                        eval(['FieldData.' VarName '=FieldData.' VarName '(indsel);'])
+                        FieldData.(VarName)=FieldData.(VarName)(indsel);
                     end
-                    eval(['ProjData.' VarName '=griddata_uvmat(double(coord_X),double(coord_Y),double(FieldData.' VarName '),coord_x_proj,coord_y_proj'',rho);'])
-                    eval(['varline=reshape(ProjData.' VarName ',1,length(coord_y_proj)*length(coord_x_proj));'])
+%                     if isfield(FieldData,[VarName '_tps'])
+%                         [XI,YI]=meshgrid(coord_x_proj,coord_y_proj');
+%                         XI=reshape(XI,[],1);
+%                         YI=reshape(YI,[],1);
+%                         
+                   if ~isempty(FieldName)
+                        ProjData.(VarName)=griddata_uvmat(double(coord_X),double(coord_Y),double(FieldData.(VarName)),coord_x_proj,coord_y_proj',rho);
+                    end
+                    varline=reshape(ProjData.(VarName),1,length(coord_y_proj)*length(coord_x_proj));
                     FFlag= isnan(varline); %detect undefined values NaN
                     indnan=find(FFlag);
                     if~isempty(indnan)
                         varline(indnan)=zeros(size(indnan));
-                        eval(['ProjData.' VarName '=reshape(varline,length(coord_y_proj),length(coord_x_proj));'])
+                        ProjData.(VarName)=reshape(varline,length(coord_y_proj),length(coord_x_proj));
                         FF(indnan)=ones(size(indnan));
                         testFF=1;
                     end

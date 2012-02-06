@@ -1674,18 +1674,18 @@ else
     end
     if ~isempty(UvData.j1_series{1})
         if get(handles.scan_i,'Value')==1% case of scanning along index i
-            j1_subseries=UvData.j1_series{1}(ref_i+1,:,:)
+            j1_subseries=UvData.j1_series{1}(ref_i+1,:,:);
         else
-            j1_subseries=UvData.j1_series{1}(:,ref_j+1,:)
+            j1_subseries=UvData.j1_series{1}(:,ref_j+1,:);
         end
         j1_subseries=j1_subseries(j1_subseries>0);
         j1=j1_subseries(end);
     end
     if ~isempty(UvData.j2_series{1})
         if get(handles.scan_i,'Value')==1% case of scanning along index i
-            j2_subseries=UvData.j2_series{1}(ref_i+1,:,:)
+            j2_subseries=UvData.j2_series{1}(ref_i+1,:,:);
         else
-            j2_subseries=UvData.j2_series{1}(:,ref_j+1,:)
+            j2_subseries=UvData.j2_series{1}(:,ref_j+1,:);
         end
         j2_subseries=j2_subseries(j2_subseries>0);
         j2=j2_subseries(end);
@@ -1995,6 +1995,7 @@ if ~isempty(filename)
                 ParamIn.Npy=UvData.XmlData.Npy;
                 ParamIn.Npx=UvData.XmlData.Npx;
             else
+                
                 errormsg='Npx and Npy need to be defined in the xml file for volume images .vol';
                 return
             end
@@ -2006,7 +2007,7 @@ if ~isempty(filename)
     if ~isempty(errormsg)
         errormsg=['error in reading ' filename ': ' errormsg];
         return
-    end        
+    end  
     if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
         set(handles.num_Npx,'String',num2str(ParamOut.Npx));% display image size on the interface
         set(handles.num_Npy,'String',num2str(ParamOut.Npy));
@@ -2212,12 +2213,18 @@ if ~isempty(transform)
     end
 end 
 
+
+%% update tps in phys coordinates if needed
+if (strcmp(VelType,'filter1')||strcmp(VelType,'filter2'))&& isfield(Field{1},'U')&& isfield(Field{1},'V')
+    [Field{1}.SubRange,Field{1}.NbSites,Field{1}.Coord_tps,Field{1}.U_tps,Field{1}.V_tps]=filter_tps([Field{1}.X Field{1}.Y],Field{1}.U,Field{1}.V,[],1500,0);
+end
+
 %% calculate scalar
 if strcmp(FileType(1:3),'civ') && ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
-    Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
+    Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1},VelType);
 end
 if numel(Field)==2 && ~test_keepdata_1 && isequal(FileType_1(1:3),'civ') && ~isequal(ParamOut_1.FieldName,'get_field...')%&&~isempty(FieldName_1)
-    Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
+    Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2},VelType_1);
 end
 
 %% combine the two input fields (e.g. substract velocity fields)

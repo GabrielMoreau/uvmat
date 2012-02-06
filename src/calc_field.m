@@ -22,7 +22,7 @@
 % varname_generator.m: determines the field names to read in the netcdf
 % file, depending on the scalar
 
-function [DataOut,errormsg]=calc_field(FieldName,DataIn)
+function [DataOut,errormsg]=calc_field(FieldName,DataIn,VelType,XI,YI)
 
 %list of defined scalars to display in menus (in addition to 'ima_cor').
 % a type is associated to each scalar:
@@ -65,17 +65,20 @@ else
     units_cell={};
     
     %% interpolation with new civ data 
-    if isfield(DataIn,'X_SubRange')
-        XMax=max(max(DataIn.X_SubRange));
-        YMax=max(max(DataIn.Y_SubRange));
-        XMin=min(min(DataIn.X_SubRange));
-        YMin=min(min(DataIn.Y_SubRange));
-        Mesh=sqrt((YMax-YMin)*(XMax-XMin)/numel(DataIn.X_tps));%2D
-        xI=XMin:Mesh:XMax;
-        yI=YMin:Mesh:YMax;
-        [XI,YI]=meshgrid(xI,yI);
-        XI=reshape(XI,[],1);
-        YI=reshape(YI,[],1);
+    %if isfield(DataIn,'X_SubRange')
+    if strcmp(VelType,'filter1')||strcmp(VelType,'filter2')
+        XMax=max(max(DataIn.SubRange(1,:,:)));
+        YMax=max(max(DataIn.SubRange(2,:,:)));
+        XMin=min(min(DataIn.SubRange(1,:,:)));
+        YMin=min(min(DataIn.SubRange(2,:,:)));
+        if ~(exist('XI','var')&&exist('YI','var'))
+            Mesh=sqrt((YMax-YMin)*(XMax-XMin)/numel(DataIn.Coord_tps(:,1,:)));%2D
+            xI=XMin:Mesh:XMax;
+            yI=YMin:Mesh:YMax;
+            [XI,YI]=meshgrid(xI,yI);
+            XI=reshape(XI,[],1);
+            YI=reshape(YI,[],1);
+        end
         DataOut.ListGlobalAttribute=DataIn.ListGlobalAttribute; %reproduce global attribute
         for ilist=1:numel(DataOut.ListGlobalAttribute)
             eval(['DataOut.' DataOut.ListGlobalAttribute{ilist} '=DataIn.' DataIn.ListGlobalAttribute{ilist} ';'])
@@ -87,17 +90,20 @@ else
         DataOut.coord_x=[xI(1) xI(end)];
         DataOut.U=zeros(size(XI));
         DataOut.V=zeros(size(XI));
-        DataOut.vort=zeros(size(XI));
-        
+        DataOut.vort=zeros(size(XI));       
         DataOut.div=zeros(size(XI));
         nbval=zeros(size(XI));
-        [NbSubDomain,xx]=size(DataIn.X_SubRange);
+        NbSubDomain=size(DataIn.SubRange,3);
         for isub=1:NbSubDomain
-            nbvec_sub=DataIn.NbSites(isub);         
-                ind_sel=find(XI>=DataIn.X_SubRange(isub,1) & XI<=DataIn.X_SubRange(isub,2) & YI>=DataIn.Y_SubRange(isub,1) & YI<=DataIn.Y_SubRange(isub,2));
+            if isfield(DataIn,'NbSites')
+                nbvec_sub=DataIn.NbSites(isub); 
+            else
+                nbvec_sub=numel(find(DataIn.Indices_tps(:,isub))); 
+            end
+                ind_sel=find(XI>=DataIn.SubRange(1,1,isub) & XI<=DataIn.SubRange(1,2,isub) & YI>=DataIn.SubRange(2,1,isub) & YI<=DataIn.SubRange(2,2,isub));
                 %rho smoothing parameter
                 epoints = [XI(ind_sel) YI(ind_sel)];% coordinates of interpolation sites
-                ctrs=[DataIn.X_tps(1:nbvec_sub,isub) DataIn.Y_tps(1:nbvec_sub,isub)];%(=initial points) ctrs
+                ctrs=DataIn.Coord_tps(1:nbvec_sub,:,isub);%(=initial points) ctrs
                 nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
 %                 PM = [ones(size(epoints,1),1) epoints];
                 switch FieldName{1}

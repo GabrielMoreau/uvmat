@@ -57,13 +57,14 @@ for ivar=1:nbfield
         errormsg=['the listed variable ' VarName ' is not found'];
         return
     end
-    eval(['sizvar=size(Data.' VarName ');'])% sizvar = dimension of variable
+    sizvar=size(Data.(VarName));% sizvar = dimension of variable
     DimCell=Data.VarDimName{ivar};
     if ischar(DimCell)
         DimCell={DimCell};%case of a single dimension name, defined by a string
     elseif ~iscell(DimCell)
         errormsg=['wrong format for .VarDimName{' num2str(ivar) ' (must be the cell of dimension names of the variable ' VarName];
         return
+        
     end
     nbcoord=numel(sizvar);%nbre of coordinates for variable named VarName
     testrange=0;
@@ -90,14 +91,16 @@ for ivar=1:nbfield
         end
     else
         if numel(DimCell)>nbcoord
-            DimCell=DimCell(end-nbcoord+1:end);%first singleton diemensions omitted,
+            sizvar(nbcoord+1:numel(DimCell))=1;% case of singleton dimensions (not seen by the function size)
+           % DimCell=DimCell(end-nbcoord+1:end)%first singleton diemensions omitted,
         elseif nbcoord > numel(DimCell)
             errormsg=['nbre of declared dimensions in .VarDimName{' num2str(ivar) '} smaller than the nbre of dimensions =' num2str(nbcoord) ' of the variable ' VarName];
             return
         end
     end
     DimIndex=[];
-    for idim=1:nbcoord %loop on the coordinates of variable #ivar
+    %for idim=1:nbcoord
+    for idim=1:numel(DimCell) %loop on the coordinates of variable #ivar
         DimName=DimCell{idim};
         iprev=find(strcmp(DimName,Data.ListDimName),1);%look for dimension name DimName in the current list
         if isempty(iprev)% append the dimension name to the current list
@@ -111,6 +114,8 @@ for ivar=1:nbfield
             DimIndex=[DimIndex nbdim];
         else % DimName is detected in the current list of dimension names
             if ~isequal(Data.DimValue(iprev),sizvar(idim))
+                Data.DimValue(iprev)
+                sizvar(idim)
                 if isequal(Data.DimValue(iprev),2)&& RangeTest(iprev)  % the dimension has been already detected as a range [min max]
                     Data.DimValue(iprev)=sizvar(idim); %update with actual value
                 elseif ~testrange                

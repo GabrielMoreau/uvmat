@@ -2,7 +2,7 @@
 % --- call the sub-functions:
 %   civ: PIV function itself
 %   fix: removes false vectors after detection by various criteria
-%   patch: make interpolation-smoothing 
+%   filter_tps: make interpolation-smoothing 
 %------------------------------------------------------------------------
 % function [Data,errormsg,result_conv]= civ_uvmat(Param,ncfile)
 %
@@ -168,9 +168,9 @@ if isfield (Param,'Patch1')
     Data.Patch1_Rho=Param.Patch1.SmoothingParam;
     Data.Patch1_Threshold=Param.Patch1.MaxDiff;
     Data.Patch1_SubDomain=Param.Patch1.SubdomainSize;
-    Data.ListVarName=[Data.ListVarName {'Civ1_U_Diff','Civ1_V_Diff','Civ1_X_SubRange','Civ1_Y_SubRange','Civ1_NbSites','Civ1_X_tps','Civ1_Y_tps','Civ1_U_tps','Civ1_V_tps'}];
-    Data.VarDimName=[Data.VarDimName {'NbVec1','NbVec1',{'NbSubDomain1','Two'},{'NbSubDomain1','Two'},'NbSubDomain1',...
-             {'NbVec1Sub','NbSubDomain1'},{'NbVec1Sub','NbSubDomain1'},{'Nbtps1','NbSubDomain1'},{'Nbtps1','NbSubDomain1'}}];
+    Data.ListVarName=[Data.ListVarName {'Civ1_U_Diff','Civ1_V_Diff','Civ1_SubRange','Civ1_NbSites','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
+    Data.VarDimName=[Data.VarDimName {'NbVec1','NbVec1',{'NbCoord','Two','NbSubDomain1'},{'NbSubDomain1'},...
+             {'NbVec1Sub','NbCoord','NbSubDomain1'},{'Nbtps1','NbSubDomain1'},{'Nbtps1','NbSubDomain1'}}];
     nbvar=length(Data.ListVarName);
     Data.VarAttribute{nbvar-1}.Role='vector_x';
     Data.VarAttribute{nbvar}.Role='vector_y';
@@ -181,8 +181,9 @@ if isfield (Param,'Patch1')
     else 
         ind_good=1:numel(Data.Civ1_X);
     end
-    [Data.Civ1_X_SubRange,Data.Civ1_Y_SubRange,Data.Civ1_NbSites,FFres,Ures, Vres,Data.Civ1_X_tps,Data.Civ1_Y_tps,Data.Civ1_U_tps,Data.Civ1_V_tps]=...
-                            patch(Data.Civ1_X(ind_good)',Data.Civ1_Y(ind_good)',Data.Civ1_U(ind_good)',Data.Civ1_V(ind_good)',Data.Patch1_Rho,Data.Patch1_Threshold,Data.Patch1_SubDomain); 
+%     [SubRange,NbPoints,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF]
+    [Data.Civ1_SubRange,Data.Civ1_NbSites,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
+                            filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomain,Data.Patch1_Threshold,Data.Patch1_Rho); 
       Data.Civ1_U_Diff(ind_good)=Data.Civ1_U(ind_good)-Ures;
       Data.Civ1_V_Diff(ind_good)=Data.Civ1_V(ind_good)-Vres;
       Data.Civ1_FF(ind_good)=FFres;
@@ -334,9 +335,9 @@ if isfield (Param,'Patch2')
     Data.Patch2_Rho=Param.Patch2.SmoothingParam;
     Data.Patch2_Threshold=Param.Patch2.MaxDiff;
     Data.Patch2_SubDomain=Param.Patch2.SubdomainSize;
-    Data.ListVarName=[Data.ListVarName {'Civ2_U_Diff','Civ2_V_Diff','Civ2_X_SubRange','Civ2_Y_SubRange','Civ2_NbSites','Civ2_X_tps','Civ2_Y_tps','Civ2_U_tps','Civ2_V_tps'}];
-    Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2',{'NbSubDomain2','Two'},{'NbSubDomain2','Two'},'NbSubDomain2',...
-             {'NbVec2Sub','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'Nbtps2','NbSubDomain2'}}];
+    Data.ListVarName=[Data.ListVarName {'Civ2_U_Diff','Civ2_V_Diff','Civ2_X_SubRange','Civ2_Y_SubRange','Civ2_X_tps','Civ2_Y_tps','Civ2_U_tps','Civ2_V_tps','Civ2_Indices_tps'}];
+    Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2',{'NbSubDomain2','Two'},{'NbSubDomain2','Two'},...
+             {'NbVec2Sub','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'}}];
     nbvar=length(Data.ListVarName);
     Data.VarAttribute{nbvar-1}.Role='vector_x';
     Data.VarAttribute{nbvar}.Role='vector_y';
@@ -347,8 +348,8 @@ if isfield (Param,'Patch2')
     else
         ind_good=1:numel(Data.Civ2_X);
     end
-    [Data.Civ2_X_SubRange,Data.Civ2_Y_SubRange,Data.Civ2_NbSites,FFres,Ures, Vres,Data.Civ2_X_tps,Data.Civ2_Y_tps,Data.Civ2_U_tps,Data.Civ2_V_tps]=...
-                            patch(Data.Civ2_X(ind_good)',Data.Civ2_Y(ind_good)',Data.Civ2_U(ind_good)',Data.Civ2_V(ind_good)',Data.Patch2_Rho,Data.Patch2_Threshold,Data.Patch2_SubDomain); 
+    [Data.Civ2_SubRange,Data.Civ2_NbSites,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures, Vres,tild,FFres]=...
+                            filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),Data.Patch2_SubDomain,Data.Patch2_Rho,Data.Patch2_Threshold); 
       Data.Civ2_U_Diff(ind_good)=Data.Civ2_U(ind_good)-Ures;
       Data.Civ2_V_Diff(ind_good)=Data.Civ2_V(ind_good)-Vres;
       Data.Civ2_FF(ind_good)=FFres;
@@ -695,139 +696,6 @@ if (isfield(Param,'MinVel')&&~isempty(Param.MinVel))||(isfield (Param,'MaxVel')&
 end
 
 
-
-%------------------------------------------------------------------------
-% patch function
-% OUTPUT:
-% SubRangx,SubRangy(NbSubdomain,2): range (min, max) of the coordiantes x and y respectively, for each subdomain
-% nbpoints(NbSubdomain): number of source points for each subdomain
-% FF: false flags
-% U_smooth, V_smooth: filtered velocity components at the positions of the initial data
-% X_tps,Y_tps,U_tps,V_tps: positions and weight of the tps for each subdomain
-%
-% INPUT:
-% X, Y: set of coordinates of the initial data
-% U,V: set of velocity components of the initial data
-% Rho: smoothing parameter
-% Threshold: max diff accepted between smoothed and initial data 
-% Subdomain: estimated number of data points in each subdomain
-
-function [SubRangx,SubRangy,nbpoints,FF,U_smooth,V_smooth,X_tps,Y_tps,U_tps,V_tps] =patch(X,Y,U,V,Rho,Threshold,SubDomain)
-%subdomain decomposition
-warning off
-U=reshape(U,[],1);
-V=reshape(V,[],1);
-X=reshape(X,[],1);
-Y=reshape(Y,[],1);
-nbvec=numel(X);
-NbSubDomain=ceil(nbvec/SubDomain);
-MinX=min(X);
-MinY=min(Y);
-MaxX=max(X);
-MaxY=max(Y);
-RangX=MaxX-MinX;
-RangY=MaxY-MinY;
-AspectRatio=RangY/RangX;
-NbSubDomainX=max(floor(sqrt(NbSubDomain/AspectRatio)),1);
-NbSubDomainY=max(floor(sqrt(NbSubDomain*AspectRatio)),1);
-NbSubDomain=NbSubDomainX*NbSubDomainY;
-SizX=RangX/NbSubDomainX;%width of subdomains
-SizY=RangY/NbSubDomainY;%height of subdomains
-CentreX=linspace(MinX+SizX/2,MaxX-SizX/2,NbSubDomainX);
-CentreY=linspace(MinY+SizY/2,MaxY-SizY/2,NbSubDomainY);
-[CentreX,CentreY]=meshgrid(CentreX,CentreY);
-CentreY=reshape(CentreY,1,[]);% Y positions of subdomain centres
-CentreX=reshape(CentreX,1,[]);% X positions of subdomain centres
-rho=SizX*SizY*Rho/1000000;%optimum rho increase as the area of the subdomain (division by 10^6 to reach good values with the default GUI input)
-U_tps_sub=zeros(length(X),NbSubDomain);%default spline
-V_tps_sub=zeros(length(X),NbSubDomain);%default spline
-U_smooth=zeros(length(X),1);
-V_smooth=zeros(length(X),1);
-
-nb_select=zeros(length(X),1);
-FF=zeros(length(X),1);
-check_empty=zeros(1,NbSubDomain);
-SubRangx=zeros(NbSubDomain,2);%initialise the positions of subdomains
-SubRangy=zeros(NbSubDomain,2);
-for isub=1:NbSubDomain
-    SubRangx(isub,:)=[CentreX(isub)-0.55*SizX CentreX(isub)+0.55*SizX];
-    SubRangy(isub,:)=[CentreY(isub)-0.55*SizY CentreY(isub)+0.55*SizY];
-    ind_sel_previous=[];
-    ind_sel=0;
-    while numel(ind_sel)>numel(ind_sel_previous) %increase the subdomain during four iterations at most
-        ind_sel_previous=ind_sel;
-        ind_sel=find(X>=SubRangx(isub,1) & X<=SubRangx(isub,2) & Y>=SubRangy(isub,1) & Y<=SubRangy(isub,2));
-        % if no vector in the subdomain, skip the subdomain
-        if isempty(ind_sel)
-            check_empty(isub)=1;    
-            U_tps(1,isub)=0;%define U_tps and V_tps by default
-            V_tps(1,isub)=0;
-            break
-            % if too few selected vectors, increase the subrange for next iteration
-        elseif numel(ind_sel)<SubDomain/4 && ~isequal( ind_sel,ind_sel_previous);
-            SubRangx(isub,1)=SubRangx(isub,1)-SizX/4;
-            SubRangx(isub,2)=SubRangx(isub,2)+SizX/4;
-            SubRangy(isub,1)=SubRangy(isub,1)-SizY/4;
-            SubRangy(isub,2)=SubRangy(isub,2)+SizY/4;
-        else
-            
-            [U_smooth_sub,U_tps_sub]=tps_coeff([X(ind_sel) Y(ind_sel)],U(ind_sel),rho);
-            [V_smooth_sub,V_tps_sub]=tps_coeff([X(ind_sel) Y(ind_sel)],V(ind_sel),rho);
-            UDiff=U_smooth_sub-U(ind_sel);
-            VDiff=V_smooth_sub-V(ind_sel);
-            NormDiff=UDiff.*UDiff+VDiff.*VDiff;
-            FF(ind_sel)=20*(NormDiff>Threshold);%put FF value to 20 to identify the criterium of elimmination
-            ind_ind_sel=find(FF(ind_sel)==0); % select the indices of ind_sel corresponding to the remaining vectors
-            % no value exceeds threshold, the result is recorded
-            if isequal(numel(ind_ind_sel),numel(ind_sel))
-                U_smooth(ind_sel)=U_smooth(ind_sel)+U_smooth_sub;
-                V_smooth(ind_sel)=V_smooth(ind_sel)+V_smooth_sub;
-                nbpoints(isub)=numel(ind_sel);
-                X_tps(1:nbpoints(isub),isub)=X(ind_sel);
-                Y_tps(1:nbpoints(isub),isub)=Y(ind_sel);
-                U_tps(1:nbpoints(isub)+3,isub)=U_tps_sub;
-                V_tps(1:nbpoints(isub)+3,isub)=V_tps_sub;         
-                nb_select(ind_sel)=nb_select(ind_sel)+1;
-                 display('good')
-                break
-                % too few selected vectors, increase the subrange for next iteration
-            elseif numel(ind_ind_sel)<SubDomain/4 && ~isequal( ind_sel,ind_sel_previous);
-                SubRangx(isub,1)=SubRangx(isub,1)-SizX/4;
-                SubRangx(isub,2)=SubRangx(isub,2)+SizX/4;
-                SubRangy(isub,1)=SubRangy(isub,1)-SizY/4;
-                SubRangy(isub,2)=SubRangy(isub,2)+SizY/4;
-%                 display('fewsmooth')
-                % interpolation-smoothing is done again with the selected vectors
-            else
-                [U_smooth_sub,U_tps_sub]=tps_coeff([X(ind_sel(ind_ind_sel)) Y(ind_sel(ind_ind_sel))],U(ind_sel(ind_ind_sel)),rho);
-                [V_smooth_sub,V_tps_sub]=tps_coeff([X(ind_sel(ind_ind_sel)) Y(ind_sel(ind_ind_sel))],V(ind_sel(ind_ind_sel)),rho);
-                U_smooth(ind_sel(ind_ind_sel))=U_smooth(ind_sel(ind_ind_sel))+U_smooth_sub;
-                V_smooth(ind_sel(ind_ind_sel))=V_smooth(ind_sel(ind_ind_sel))+V_smooth_sub;
-                nbpoints(isub)=numel(ind_ind_sel);
-                X_tps(1:nbpoints(isub),isub)=X(ind_sel(ind_ind_sel));
-                Y_tps(1:nbpoints(isub),isub)=Y(ind_sel(ind_ind_sel));
-                U_tps(1:nbpoints(isub)+3,isub)=U_tps_sub;
-                V_tps(1:nbpoints(isub)+3,isub)=V_tps_sub;
-                nb_select(ind_sel(ind_ind_sel))=nb_select(ind_sel(ind_ind_sel))+1;
-                display('good2')
-                break
-            end
-        end
-    end
-end
-ind_empty=find(check_empty);
-%remove empty subdomains
-if ~isempty(ind_empty)
-    SubRangx(ind_empty,:)=[];
-    SubRangy(ind_empty,:)=[];
-    X_tps(:,ind_empty)=[];
-    Y_tps(:,ind_empty)=[];
-    U_tps(:,ind_empty)=[];
-    V_tps(:,ind_empty)=[];
-end
-nb_select(nb_select==0)=1;%ones(size(find(nb_select==0)));
-U_smooth=U_smooth./nb_select;
-V_smooth=V_smooth./nb_select;
 
 
 

@@ -52,7 +52,7 @@ if ~isequal(hhh,'')
     end
     [Data,errormsg]=check_field_structure(Data);%check the validity of the input field structure
     if ~isempty(errormsg)
-        errormsg=['invalid input structure:' errormsg];
+        errormsg=['error in struct2nc:invalid input structure_' errormsg];
         return
     end
     ListVarName=Data.ListVarName;
@@ -111,7 +111,8 @@ if ~isequal(hhh,'')
     netcdf.endDef(nc); %put in data mode
     for ivar=1:length(ListVarName)
         if isfield(Data,ListVarName{ivar})
-            eval(['VarVal=Data.' ListVarName{ivar} ';'])%varval=values of the current variable 
+            VarVal=Data.(ListVarName{ivar}); 
+            %varval=values of the current variable 
             VarDimIndex=Data.VarDimIndex{ivar}; %indices of the variable dimensions in the list of dimensions
             VarDimName=Data.VarDimName{ivar};
             if ischar(VarDimName)
@@ -121,10 +122,10 @@ if ~isequal(hhh,'')
             testrange=(numel(VarDimName)==1 && strcmp(VarDimName{1},ListVarName{ivar}) && numel(VarVal)==2);% case of a coordinate defined on a regular mesh by the first and last values.
             testline=isequal(length(siz),2) && isequal(siz(1),1)&& isequal(siz(2), Data.DimValue(VarDimIndex));%matlab vector
             testcolumn=isequal(length(siz),2) && isequal(siz(1), Data.DimValue(VarDimIndex))&& isequal(siz(2),1);%matlab column vector
-            if ~testrange && ~testline && ~testcolumn && ~isequal(siz,Data.DimValue(VarDimIndex))
-                errormsg=['wrong dimensions declared for ' ListVarName{ivar} ' in struct2nc.m'];
-                break
-            end 
+%             if ~testrange && ~testline && ~testcolumn && ~isequal(siz,Data.DimValue(VarDimIndex))
+%                 errormsg=['wrong dimensions declared for ' ListVarName{ivar} ' in struct2nc.m'];
+%                 break
+%             end 
             if testline || testrange
                 if testrange
                     VarVal=linspace(VarVal(1),VarVal(2),Data.DimValue(VarDimIndex));% restitute the whole array of coordinate values
