@@ -66,7 +66,7 @@ else
     
     %% interpolation with new civ data 
     %if isfield(DataIn,'X_SubRange')
-    if strcmp(VelType,'filter1')||strcmp(VelType,'filter2')
+    if isfield(DataIn,'SubRange') &&(strcmp(VelType,'filter1')||strcmp(VelType,'filter2'))
         XMax=max(max(DataIn.SubRange(1,:,:)));
         YMax=max(max(DataIn.SubRange(2,:,:)));
         XMin=min(min(DataIn.SubRange(1,:,:)));

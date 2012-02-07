@@ -2215,7 +2215,7 @@ end
 
 
 %% update tps in phys coordinates if needed
-if (strcmp(VelType,'filter1')||strcmp(VelType,'filter2'))&& isfield(Field{1},'U')&& isfield(Field{1},'V')
+if (strcmp(VelType,'filter1')||strcmp(VelType,'filter2'))&& strcmp(FileType,'civdata')&&isfield(Field{1},'U')&& isfield(Field{1},'V')
     [Field{1}.SubRange,Field{1}.NbSites,Field{1}.Coord_tps,Field{1}.U_tps,Field{1}.V_tps]=filter_tps([Field{1}.X Field{1}.Y],Field{1}.U,Field{1}.V,[],1500,0);
 end
 
@@ -2224,6 +2224,10 @@ if strcmp(FileType(1:3),'civ') && ~isequal(ParamOut.CivStage,0)%&&~isempty(Field
     Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1},VelType);
 end
 if numel(Field)==2 && ~test_keepdata_1 && isequal(FileType_1(1:3),'civ') && ~isequal(ParamOut_1.FieldName,'get_field...')%&&~isempty(FieldName_1)
+    %update tps in phys coordinates if needed
+    if (strcmp(VelType_1,'filter1')||strcmp(VelType_1,'filter2'))&& strcmp(FileType_1,'civdata')&&isfield(Field{2},'U')&& isfield(Field{2},'V')
+        [Field{2}.SubRange,Field{2}.NbSites,Field{2}.Coord_tps,Field{2}.U_tps,Field{2}.V_tps]=filter_tps([Field{2}.X Field{2}.Y],Field{2}.U,Field{2}.V,[],1500,0);
+    end
     Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2},VelType_1);
 end
 

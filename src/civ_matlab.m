@@ -181,9 +181,8 @@ if isfield (Param,'Patch1')
     else 
         ind_good=1:numel(Data.Civ1_X);
     end
-%     [SubRange,NbPoints,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF]
     [Data.Civ1_SubRange,Data.Civ1_NbSites,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
-                            filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomain,Data.Patch1_Threshold,Data.Patch1_Rho); 
+            filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomain,Data.Patch1_Rho,Data.Patch1_Threshold); 
       Data.Civ1_U_Diff(ind_good)=Data.Civ1_U(ind_good)-Ures;
       Data.Civ1_V_Diff(ind_good)=Data.Civ1_V(ind_good)-Vres;
       Data.Civ1_FF(ind_good)=FFres;
@@ -225,13 +224,13 @@ if isfield (Param,'Civ2')
         DVDX=zeros(size(GridX));
         DVDY=zeros(size(GridX));
     end
-    [NbSubDomain,xx]=size(Data.Civ1_X_SubRange);
+    NbSubDomain=size(Data.Civ1_SubRange,3);
     % get the guess from patch1
     for isub=1:NbSubDomain
         nbvec_sub=Data.Civ1_NbSites(isub);
-        ind_sel=find(GridX>=Data.Civ1_X_SubRange(isub,1) & GridX<=Data.Civ1_X_SubRange(isub,2) & GridY>=Data.Civ1_Y_SubRange(isub,1) & GridY<=Data.Civ1_Y_SubRange(isub,2));
+        ind_sel=find(GridX>=Data.Civ1_SubRange(1,1,isub) & GridX<=Data.Civ1_SubRange(1,2,isub) & GridY>=Data.Civ1_SubRange(2,1,isub) & GridY<=Data.Civ1_SubRange(2,2,isub));
         epoints = [GridX(ind_sel) GridY(ind_sel)];% coordinates of interpolation sites
-        ctrs=[Data.Civ1_X_tps(1:nbvec_sub,isub) Data.Civ1_Y_tps(1:nbvec_sub,isub)];%(=initial points) ctrs
+        ctrs=Data.Civ1_Coord_tps(1:nbvec_sub,:,isub) ;%(=initial points) ctrs
         nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
         EM = tps_eval(epoints,ctrs);
         Shiftx(ind_sel)=Shiftx(ind_sel)+EM*Data.Civ1_U_tps(1:nbvec_sub+3,isub);
@@ -335,9 +334,12 @@ if isfield (Param,'Patch2')
     Data.Patch2_Rho=Param.Patch2.SmoothingParam;
     Data.Patch2_Threshold=Param.Patch2.MaxDiff;
     Data.Patch2_SubDomain=Param.Patch2.SubdomainSize;
-    Data.ListVarName=[Data.ListVarName {'Civ2_U_Diff','Civ2_V_Diff','Civ2_X_SubRange','Civ2_Y_SubRange','Civ2_X_tps','Civ2_Y_tps','Civ2_U_tps','Civ2_V_tps','Civ2_Indices_tps'}];
-    Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2',{'NbSubDomain2','Two'},{'NbSubDomain2','Two'},...
-             {'NbVec2Sub','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'}}];
+    Data.ListVarName=[Data.ListVarName {'Civ2_U_Diff','Civ2_V_Diff','Civ2_SubRange','Civ2_NbSites','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
+    Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2',{'NbCoord','Two','NbSubDomain2'},{'NbSubDomain2'},...
+             {'NbVec2Sub','NbCoord','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'Nbtps2','NbSubDomain2'}}];
+%     Data.ListVarName=[Data.ListVarName {'Civ2_U_Diff','Civ2_V_Diff','Civ2_X_SubRange','Civ2_Y_SubRange','Civ2_X_tps','Civ2_Y_tps','Civ2_U_tps','Civ2_V_tps','Civ2_Indices_tps'}];
+%     Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2',{'NbSubDomain2','Two'},{'NbSubDomain2','Two'},...
+%              {'NbVec2Sub','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'}}];
     nbvar=length(Data.ListVarName);
     Data.VarAttribute{nbvar-1}.Role='vector_x';
     Data.VarAttribute{nbvar}.Role='vector_y';
@@ -347,9 +349,9 @@ if isfield (Param,'Patch2')
         ind_good=find(Data.Civ2_FF==0);
     else
         ind_good=1:numel(Data.Civ2_X);
-    end
+    end 
     [Data.Civ2_SubRange,Data.Civ2_NbSites,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures, Vres,tild,FFres]=...
-                            filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),Data.Patch2_SubDomain,Data.Patch2_Rho,Data.Patch2_Threshold); 
+         filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomain,Data.Patch2_Rho,Data.Patch2_Threshold); 
       Data.Civ2_U_Diff(ind_good)=Data.Civ2_U(ind_good)-Ures;
       Data.Civ2_V_Diff(ind_good)=Data.Civ2_V(ind_good)-Vres;
       Data.Civ2_FF(ind_good)=FFres;
