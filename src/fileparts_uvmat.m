@@ -92,7 +92,7 @@ if ~isempty(r)% FileName end matches num1
                     end
             end
             NomType=[get_type(num3) delim2 get_type(num2) delim1 get_type(num1)];
-            RootFile=regexprep(FileName,[num3 delim2 num2 delim1 num1],'');
+            RootFile=regexprep(FileName,[num3 delim2 num2 delim1 num1 '$'],'');
         else
             switch delim1
                 case '_'
@@ -109,7 +109,7 @@ if ~isempty(r)% FileName end matches num1
     else% only one number at the end
         i1=str2double(num1);
         NomType=get_type(num1);
-        RootFile=regexprep(FileName,num1,'');
+        RootFile=regexprep(FileName,[num1 '$'],'');
     end
 else% FileName ends with a letter
     %r=regexp(FileName,'.*[^a^b^A^B](?<end_string>ab|AB|[abAB])\>','names');

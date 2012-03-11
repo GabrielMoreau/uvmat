@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 27-Jan-2012 00:32:33
+% Last Modified by GUIDE v2.5 10-Mar-2012 22:32:10
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -280,6 +280,7 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
 end
 set(handles.RootPath,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
+
 %------------------------------------------------------------------------
 % --- general function activated for an input file series
 function errormsg=display_file_name(handles,fileinput)
@@ -1034,25 +1035,25 @@ end
 %% check mask if selecetd 
 %could be included in get_mask callback ?
 if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.txt_Mask,'String');
+    maskname=get(handles.Mask,'String');
     if ~exist(maskname,'file')
         get_mask_civ1_Callback(hObject, eventdata, handles);
     end
 end
 if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.txt_Mask,'String');
+    maskname=get(handles.Mask,'String');
     if ~exist(maskname,'file')
         get_mask_fix1_Callback(hObject, eventdata, handles);
     end
 end
 if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.txt_Mask,'String');
+    maskname=get(handles.Mask,'String');
     if ~exist(maskname,'file')
         get_mask_civ2_Callback(hObject, eventdata, handles);
     end
 end
 if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.txt_Mask,'String');
+    maskname=get(handles.Mask,'String');
     if ~exist(maskname,'file')
         get_mask_fix2_Callback(hObject, eventdata, handles);
     end
@@ -3309,7 +3310,7 @@ function get_mask_fix1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 maskval=get(handles.CheckMask,'Value');
 if isequal(maskval,0)
-    set(handles.txt_Mask,'String','')
+    set(handles.Mask,'String','')
 else
     mask_displ='no mask'; %default
     filebase=get(handles.RootPath,'String');
@@ -3342,9 +3343,9 @@ else
         %set(handles.CheckMask,'Value',1)
         set(handles.CheckMask,'Value',1)
     end
-    set(handles.txt_Mask,'String',mask_displ)
-    set(handles.txt_Mask,'String',mask_displ)
-    set(handles.txt_Mask,'String',mask_displ)
+    set(handles.Mask,'String',mask_displ)
+    set(handles.Mask,'String',mask_displ)
+    set(handles.Mask,'String',mask_displ)
 end
 
 %------------------------------------------------------------------------
@@ -3353,7 +3354,7 @@ function get_mask_civ2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 maskval=get(handles.CheckMask,'Value');
 if isequal(maskval,0)
-    set(handles.txt_Mask,'String','')
+    set(handles.Mask,'String','')
 else
     mask_displ='no mask'; %default
     filebase=get(handles.RootPath,'String');
@@ -3384,8 +3385,8 @@ else
     else
         set(handles.CheckMask,'Value',1)
     end
-    set(handles.txt_Mask,'String',mask_displ)
-    set(handles.txt_Mask,'String',mask_displ)
+    set(handles.Mask,'String',mask_displ)
+    set(handles.Mask,'String',mask_displ)
 end
 
 %------------------------------------------------------------------------
@@ -3394,7 +3395,7 @@ function get_mask_fix2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 maskval=get(handles.CheckMask,'Value');
 if isequal(maskval,0)
-    set(handles.txt_Mask,'String','')
+    set(handles.Mask,'String','')
 else
     mask_displ='no mask'; %default
     filebase=get(handles.RootPath,'String');
@@ -3422,7 +3423,7 @@ else
     if isequal(mask_displ,'no mask')
         set(handles.CheckMask,'Value',0)
     end
-    set(handles.txt_Mask,'String',mask_displ)
+    set(handles.Mask,'String',mask_displ)
 end
 
 %------------------------------------------------------------------------
@@ -3675,8 +3676,8 @@ end
 if testmask
 %     stage=4;%default
     if strcmp(parent_tag,'Civ1')
-            set(handles.txt_Mask,'Visible','on')
-        set(handles.txt_Mask,'String',filemask)
+            set(handles.Mask,'Visible','on')
+        set(handles.Mask,'String',filemask)
     set(handles.CheckMask,'Value',1)
     end
 %     switch parent_tag
@@ -3687,8 +3688,8 @@ if testmask
 % %         case 'Fix2'
 % %             stage=4;
 %     end
-%     set(handles.txt_Mask(stage:end),'Visible','on')
-%     set(handles.txt_Mask(stage:end),'String',filemask)
+%     set(handles.Mask(stage:end),'Visible','on')
+%     set(handles.Mask(stage:end),'String',filemask)
 %     set(handles.CheckMask(stage:end),'Value',1)
 else
     set(hObject,'Value',0);
@@ -4379,7 +4380,19 @@ switch mode
 end
 
 function NomType_Callback(hObject, eventdata, handles)
-
+set(handles.RootPath,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
+RootPath=get(handles.RootPath,'String');
+RootFile=get(handles.RootFile,'String');
+ref_i=str2num(get(handles.ref_i,'String'));
+ref_j=str2num(get(handles.ref_j,'String'));
+NomType=get(handles.NomType,'String');
+ImaExt=get(handles.ImaExt,'String');
+fileinput=fullfile_uvmat(RootPath,'',RootFile,ImaExt,NomType,ref_i,[],ref_j);
+errormsg=display_file_name(handles,fileinput);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+end
+set(handles.RootPath,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 
 % --- Executes on selection change in ListProgram.
 function ListProgram_Callback(hObject, eventdata, handles)

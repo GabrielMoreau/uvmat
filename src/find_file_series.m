@@ -62,7 +62,30 @@ if strcmp(NomType,'')||strcmp(NomType,'*')||strcmp(option,'filetype')
     else     
         RootFile='';
     end
-else   
+else 
+    %% possibly include the first index in the root name, if there exists a   corresponding xml file   
+    NomTypePref='';
+    RootFileNew=RootFile;
+    if ~isempty(regexp(NomType,['^_']))
+        NomTypePref='_';
+        RootFileNew=[RootFileNew '_'];
+    end
+    r=regexp(NomType,['^' NomTypePref '(?<num1>\d+)'],'names');%look for a number at the beginning of NomTypeSt
+    if ~isempty(r)
+        NomTypePref=[NomTypePref r.num1];
+        fileinput_end=regexprep(fileinput,['^' RootFileNew],'');
+        r=regexp(fileinput_end,'^(?<num1>\d+)','names');
+        if ~isempty(r)            
+            RootFileNew=[RootFileNew r.num1];
+        end
+        if exist(fullfile(RootPath,[RootFileNew '.xml']),'file')
+            RootFile=RootFileNew;
+            NomType=regexprep(NomType,['^' NomTypePref],'');
+            i2_input=j2_input;
+            j1_input=[];
+            j2_input=[];
+        end
+    end
     %% analyse the list of existing files when relevant
     sep1='';
     i1_str='(?<i1>)';
@@ -204,6 +227,7 @@ else
         NomType='';
     else
         [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ifile_min).name);% update the representation of indices (number of 0 before the number)
+        NomType=regexprep(NomType,['^' NomTypePref],'');
     end
 end
 

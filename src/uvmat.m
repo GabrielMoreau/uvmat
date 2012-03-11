@@ -1353,13 +1353,12 @@ num_i1_mask=mod(num_i1-1,MaskData.NbSlice)+1;
 [RootPath,RootFile]=fileparts(MaskData.Base);
 MaskName=fullfile_uvmat(RootPath,'',RootFile,'.png',MaskData.NomType,num_i1_mask,[],num_j1);
 %MaskName=name_generator(MaskData.Base,num_i1_mask,num_j1,'.png',MaskData.NomType);
-huvmat=get(handles.CheckMask,'parent');
-UvData=get(huvmat,'UserData');
-
+% huvmat=get(handles.CheckMask,'parent');
+UvData=get(handles.uvmat,'UserData');
 %update mask image if the mask is new
 if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName)) 
     UvData.MaskName=MaskName; %update the recorded name on UvData
-    set(huvmat,'UserData',UvData);
+    set(handles.uvmat,'UserData',UvData);
     if ~exist(MaskName,'file')
         if isfield(MaskData,'maskhandle')&& ishandle(MaskData.maskhandle)
             delete(MaskData.maskhandle)    
@@ -1429,7 +1428,7 @@ end
 %------------------------------------------------------------------------
 function MenuExportFigure_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-huvmat=get(handles.MenuExport,'parent');
+% huvmat=get(handles.MenuExport,'parent');
 hfig=figure;
 copyobj(handles.axes3,hfig);
 map=colormap(handles.axes3);
@@ -1569,8 +1568,14 @@ FileExt=InputFile.FileExt;
 NomType=get(handles.NomType,'String');
 i1=str2num(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
 i2=str2num(get(handles.i2,'String'));
-j1=stra2num(get(handles.j1,'String'));
-j2=stra2num(get(handles.j2,'String'));
+j1=1;
+if strcmp(get(handles.j1,'Visible'),'on')
+    j1=stra2num(get(handles.j1,'String'));
+end
+j2=j1;
+if strcmp(get(handles.j2,'Visible'),'on')
+    j2=stra2num(get(handles.j2,'String'));
+end
 sub_value= get(handles.SubField,'Value');
 if sub_value % a second input file has been entered 
     [FileName_1,RootPath_1,filebase_1,FileIndices_1,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
@@ -3194,7 +3199,7 @@ if isequal(get(handles.VOLUME,'Value'),1)
     [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface with action on haxes,
                                                       % associate the set_object interface handle to the plotting axes
     if isfield(UvData.OpenParam,'SetObjectOrigin')                                                
-    pos_uvmat=get(huvmat,'Position');
+    pos_uvmat=get(handles.uvmat,'Position');
     pos_set_object(1:2)=UvData.OpenParam.SetObjectOrigin + pos_uvmat(1:2);
     pos_set_object(3:4)=UvData.OpenParam.SetObjectSize .* pos_uvmat(3:4);  
     set(hset_object,'Position',pos_set_object)
@@ -3204,7 +3209,7 @@ else
     set(handles.VOLUME,'BackgroundColor',[0 1 0])
     UvData.MouseAction='none';
 end
-set(huvmat,'UserData',UvData)
+set(handles.uvmat,'UserData',UvData)
 
 %-------------------------------------------------------
 function edit_vect_Callback(hObject, eventdata, handles)
@@ -3519,21 +3524,21 @@ run0_Callback(hObject, eventdata, handles)
 function histo1_menu_Callback(hObject, eventdata, handles)
 %--------------------------------------------
 %plot first histo
-huvmat=get(handles.histo1_menu,'parent');
+%huvmat=get(handles.histo1_menu,'parent');
 histo_menu=get(handles.histo1_menu,'String');
 histo_value=get(handles.histo1_menu,'Value');
 FieldName=histo_menu{histo_value};
-update_histo(handles.histo_u,huvmat,FieldName)
+update_histo(handles.histo_u,handles.uvmat,FieldName)
 
 %------------------------------------------------------------------------
 function histo2_menu_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %plot second histo
-huvmat=get(handles.histo2_menu,'parent');
+%huvmat=get(handles.histo2_menu,'parent');
 histo_menu=get(handles.histo2_menu,'String');
 histo_value=get(handles.histo2_menu,'Value');
 FieldName=histo_menu{histo_value};
-update_histo(handles.histo_v,huvmat,FieldName)
+update_histo(handles.histo_v,handles.uvmat,FieldName)
 
 %------------------------------------------------------------------------
 %read the field .Fieldname stored in UvData and plot its histogram
