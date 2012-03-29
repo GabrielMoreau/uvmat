@@ -66,13 +66,14 @@ else
     %% possibly include the first index in the root name, if there exists a   corresponding xml file   
     NomTypePref='';
     RootFileNew=RootFile;
-    if ~isempty(regexp(NomType,['^_']))
-        NomTypePref='_';
-        RootFileNew=[RootFileNew '_'];
-    end
-    r=regexp(NomType,['^' NomTypePref '(?<num1>\d+)'],'names');%look for a number at the beginning of NomTypeSt
+%     if ~isempty(regexp(NomType,['^_']))
+%         NomTypePref='_';
+%         RootFileNew=[RootFileNew '_'];
+%     end       RootPath='';
+    r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
+%     r=regexp(NomType,['^' NomTypePref '(?<num1>\d+)'],'names');%look for a number at the beginning of NomTypeSt
     if ~isempty(r)
-        NomTypePref=[NomTypePref r.num1];
+        NomTypePref=r.tiretnum;
         fileinput_end=regexprep(fileinput,['^' RootFileNew],'');
         r=regexp(fileinput_end,'^(?<num1>\d+)','names');
         if ~isempty(r)            
@@ -84,6 +85,8 @@ else
             i2_input=j2_input;
             j1_input=[];
             j2_input=[];
+        else
+            NomTypePref='';
         end
     end
     %% analyse the list of existing files when relevant
@@ -153,7 +156,7 @@ else
     ref_i_list=zeros(1,nbpair);
     ref_j_list=zeros(1,nbpair);
     if nbpair==0% no detected file
-        RootPath='';
+%         RootPath='';
         RootFile='';
     end
     % scan the list of relevant files, extract the indices
@@ -222,7 +225,7 @@ else
     end
     [tild,ifile_min]=min(ref_ij(ref_ij>0));
     if isempty(ifile_min)
-        RootPath='';
+%         RootPath='';
         RootFile='';
         NomType='';
     else

@@ -114,8 +114,6 @@ for ivar=1:nbfield
             DimIndex=[DimIndex nbdim];
         else % DimName is detected in the current list of dimension names
             if ~isequal(Data.DimValue(iprev),sizvar(idim))
-                Data.DimValue(iprev)
-                sizvar(idim)
                 if isequal(Data.DimValue(iprev),2)&& RangeTest(iprev)  % the dimension has been already detected as a range [min max]
                     Data.DimValue(iprev)=sizvar(idim); %update with actual value
                 elseif ~testrange                
