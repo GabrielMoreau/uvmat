@@ -46,8 +46,8 @@
 %           .FieldName: (char string) main field selected('image', 'velocity'...)
 %           .FieldName_1:(char string) second field selected('image', 'velocity'...)
 %           .CName: (char string)name of the scalar used for vector colors
-%          .MovieObject: movie object representing an input movie
-%          .MovieObject_1: idem for a second input series (_1)
+%          .MovieObject{1}: movie object representing an input movie
+%          .MovieObject{2}: idem for a second input series (_1)
 %          .filename_1 : last second input file name (to deal with a constant second input without reading again the file)
 %          .VelType_1: last velocity type (VelType, civ2...) for the second input series
 %          .FieldName_1: last field name(velocity, vorticity...) for the second input series
@@ -1567,8 +1567,11 @@ InputFile.SubDir=regexprep(InputFile.SubDir,'^[\\/]|[\\/]$','');%suppress possib
 FileExt=InputFile.FileExt;
 NomType=get(handles.NomType,'String');
 i1=str2num(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
-i2=str2num(get(handles.i2,'String'));
-j1=1;
+i2=[];%default
+if strcmp(get(handles.i2,'Visible'),'on')
+    i2=str2num(get(handles.i2,'String'));
+end
+j1=[];
 if strcmp(get(handles.j1,'Visible'),'on')
     j1=stra2num(get(handles.j1,'String'));
 end
@@ -1591,7 +1594,7 @@ if isempty(increment)
     CheckSearch=1;% search for the next available file
     set(handles.CheckFixPair,'Value',0)
 end
-CheckFixPair=get(handles.CheckFixPair,'Value');
+CheckFixPair=get(handles.CheckFixPair,'Value')||(isempty(i2)&&isempty(j2));
 if CheckFixPair
     if get(handles.scan_i,'Value')==1% case of scanning along index i
         i1=i1+increment;
@@ -1999,8 +2002,7 @@ if ~isempty(filename)
             if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
                 ParamIn.Npy=UvData.XmlData.Npy;
                 ParamIn.Npx=UvData.XmlData.Npx;
-            else
-                
+            else            
                 errormsg='Npx and Npy need to be defined in the xml file for volume images .vol';
                 return
             end

@@ -35,39 +35,46 @@ switch FileExt
                 end
             end
         else
+            error_nc=0;
             try
                 Data=nc2struct(fileinput,'ListGlobalAttribute','absolut_time_T0','Conventions',...
                     'CivStage','patch2','fix2','civ2','patch','fix');
-                if ~isempty(Data.absolut_time_T0')
-                    FileType='civx'; % test for civx velocity fields
-                    if ~isempty(Data.patch2) && isequal(Data.patch2,1)
-                        FileInfo.CivStage=6;
-                    elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
-                        FileInfo.CivStage=5;
-                    elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
-                        FileInfo.CivStage=4;
-                    elseif ~isempty(Data.patch) && isequal(Data.patch,1);
-                        FileInfo.CivStage=3;
-                    elseif ~isempty(Data.fix) && isequal(Data.fix,1);
-                        FileInfo.CivStage=2;
-                    elseif ~isempty(Data.absolut_time_T0) && ~isempty(Data.hart)
-                        FileInfo.CivStage=1;
+                if ~isempty(Data.Txt)
+                    error_nc=1;
+                else
+                    if ~isempty(Data.absolut_time_T0')
+                        FileType='civx'; % test for civx velocity fields
+                        if ~isempty(Data.patch2) && isequal(Data.patch2,1)
+                            FileInfo.CivStage=6;
+                        elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
+                            FileInfo.CivStage=5;
+                        elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
+                            FileInfo.CivStage=4;
+                        elseif ~isempty(Data.patch) && isequal(Data.patch,1);
+                            FileInfo.CivStage=3;
+                        elseif ~isempty(Data.fix) && isequal(Data.fix,1);
+                            FileInfo.CivStage=2;
+                        elseif ~isempty(Data.absolut_time_T0) && ~isempty(Data.hart)
+                            FileInfo.CivStage=1;
+                        end
+                    elseif strcmp(Data.Conventions,'uvmat/civdata')
+                        FileType='civdata'; % test for civx velocity fields
+                        FileInfo.CivStage=Data.CivStage;
+                    else
+                        FileType='netcdf';
                     end
-                elseif strcmp(Data.Conventions,'uvmat/civdata')
-                    FileType='civdata'; % test for civx velocity fields
-                    FileInfo.CivStage=Data.CivStage;
-                else
-                    FileType='netcdf';
                 end
+            catch ME
+                error_nc=1;
             end
-            try
-                if exist('VideoReader','file')%recent version of Matlab
-                    Object=VideoReader(fullfileinput);
-                else
-                    Object=mmreader(fullfileinput);%older Matlab function for movies
-                end
-                FileType='video';
-                FileInfo.NbFrame=get(Object,'NumberOfFrames');
+            if error_nc
+                    if exist('VideoReader','file')%recent version of Matlab
+                        Object=VideoReader(fileinput);
+                    else
+                        Object=mmreader(fileinput);%older Matlab function for movies
+                    end
+                    FileType='video';
+                    FileInfo.NbFrame=get(Object,'NumberOfFrames');
             end
         end
 end

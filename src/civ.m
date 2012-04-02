@@ -2424,10 +2424,9 @@ if ~isequal(ext_ima,'.png')
     type_ima1='none';%default
     movieobject1=[];%default
     if strcmpi(ext_ima,'.avi')
-        hhh=which('mmreader');
-        if ~isequal(hhh,'')&& mmreader.isPlatformSupported()% if the mmreader function is found (recent version of matlab)
+        if ~isempty(which('mmreader'))% if the mmreader function is found (recent version of matlab)
             type_ima1='movie';
-            movieobject1=mmreader([filebase_ima2 ext_ima]);
+            movieobject1=mmreader([filecell.filebase ext_ima]);
         else
             type_ima1='avi';
         end
@@ -2444,10 +2443,9 @@ if ~isequal(ext_ima,'.png')
     type_ima2='none';%default
     movieobject2=[];
     if strcmpi(ext_ima,'.avi')
-        hhh=which('mmreader');
-        if ~isequal(hhh,'')&& mmreader.isPlatformSupported()% if the mmreader function is found (recent version of matlab)
+        if ~isempty(which('mmreader'))% if the mmreader function is found (recent version of matlab)
             type_ima2='movie';
-            movieobject2=mmreader([filebase_ima2 ext_ima]);
+            movieobject2=mmreader([filecell.filebase ext_ima]);
         else
             type_ima2='avi';
         end

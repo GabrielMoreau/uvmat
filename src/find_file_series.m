@@ -50,6 +50,7 @@ i1_series=zeros(1,1,1);
 i2_series=zeros(1,1,1);
 j1_series=zeros(1,1,1);
 j2_series=zeros(1,1,1);
+% ifile_min=1;%default
 [FileType,FileInfo,Object]=get_file_type(fullfileinput);
 if strcmp( FileType,'multimage')||strcmp( FileType,'video')
         NomType='*';
@@ -232,12 +233,13 @@ else
         [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ifile_min).name);% update the representation of indices (number of 0 before the number)
         NomType=regexprep(NomType,['^' NomTypePref],'');
     end
+    %% update the file type if the input file does not exist (pb of 0001)
+    if isempty(FileType)
+        [FileType,tild,Object]=get_file_type(dirpair(ifile_min).name);
+    end
 end
 
-%% update the file type if the input file does not exist (pb of 0001)
-if isempty(FileType)
-    [FileType,tild,Object]=get_file_type(dirpair(ifile_min).name);
-end
+
 
 %% set to empty array the irrelevant index series
 if isequal(i1_series,0), i1_series=[]; end

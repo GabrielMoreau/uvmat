@@ -58,18 +58,18 @@ if isfield (Param,'Civ1')
         if par_civ1.reverse_pair
             if ischar(par_civ1.ImageB)
                 temp=par_civ1.ImageA;
-                par_civ1.ImageA=imread(par_civ1.ImageB);
+                par_civ1.ImageA=sum(imread(par_civ1.ImageB),3);
             end
             if ischar(temp)
-                par_civ1.ImageB=imread(temp);
+                par_civ1.ImageB=sum(imread(temp),3);
             end
         end
     else
         if ischar(par_civ1.ImageA)
-            par_civ1.ImageA=imread(par_civ1.ImageA);
+            par_civ1.ImageA=sum(imread(par_civ1.ImageA),3);
         end
         if ischar(par_civ1.ImageB)
-            par_civ1.ImageB=imread(par_civ1.ImageB);
+            par_civ1.ImageB=sum(imread(par_civ1.ImageB),3);
         end
     end
     
