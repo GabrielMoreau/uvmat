@@ -39,7 +39,7 @@ switch FileExt
             try
                 Data=nc2struct(fileinput,'ListGlobalAttribute','absolut_time_T0','Conventions',...
                     'CivStage','patch2','fix2','civ2','patch','fix');
-                if ~isempty(Data.Txt)
+                if isfield(Data,'Txt') && ~isempty(Data.Txt)
                     error_nc=1;
                 else
                     if ~isempty(Data.absolut_time_T0')
@@ -68,6 +68,7 @@ switch FileExt
                 error_nc=1;
             end
             if error_nc
+                try
                     if exist('VideoReader','file')%recent version of Matlab
                         Object=VideoReader(fileinput);
                     else
@@ -75,6 +76,7 @@ switch FileExt
                     end
                     FileType='video';
                     FileInfo.NbFrame=get(Object,'NumberOfFrames');
+                end
             end
         end
 end

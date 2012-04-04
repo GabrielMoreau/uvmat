@@ -244,32 +244,36 @@ for ichild=1:length(hchild)
                             set(hhhh,'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2])
                         end
                         [Data,errormsg,result_conv]= civ_matlab(Param);
-                        rangx(1)=-(isx2-ibx2)+shiftx;
-                        rangx(2)=isx2-ibx2+shiftx;
-                        rangy(1)=-(isy2-iby2)-shifty;
-                        rangy(2)=(isy2-iby2)-shifty;
-                        hcorr=[];
-                        if isfield(AxeData,'CurrentCorrImage')
-                            hcorr=AxeData.CurrentCorrImage;
-                            if ~ishandle(hcorr)
-                                hcorr=[];
-                            end
-                        end
-                        if isempty(hcorr)
-                            corrfig=findobj(allchild(0),'tag','corrfig');
-                            if ~isempty(corrfig)
-                                set(0,'CurrentFigure',corrfig(1))
-                                AxeData.CurrentCorrImage=imagesc(rangx,-rangy,result_conv,[0 1]);
-                                AxeData.CurrentVector=line([0 Data.Civ1_U],[0 Data.Civ1_V],'Tag','vector');               
-                                colorbar
-                                set(haxes,'UserData',AxeData)
-                                set(get(AxeData.CurrentCorrImage,'parent'),'YDir','normal')
-                            end
+                        if ~isempty(errormsg)
+                            text_displ_4=errormsg;
                         else
-                            set(AxeData.CurrentCorrImage,'CData',result_conv)
-                            set(AxeData.CurrentCorrImage,'XData',rangx)
-                            set(AxeData.CurrentCorrImage,'YData',-rangy)
-                            set(AxeData.CurrentVector,'XData',[0 Data.Civ1_U],'YData',[0 Data.Civ1_V])
+                            rangx(1)=-(isx2-ibx2)+shiftx;
+                            rangx(2)=isx2-ibx2+shiftx;
+                            rangy(1)=-(isy2-iby2)-shifty;
+                            rangy(2)=(isy2-iby2)-shifty;
+                            hcorr=[];
+                            if isfield(AxeData,'CurrentCorrImage')
+                                hcorr=AxeData.CurrentCorrImage;
+                                if ~ishandle(hcorr)
+                                    hcorr=[];
+                                end
+                            end
+                            if isempty(hcorr)
+                                corrfig=findobj(allchild(0),'tag','corrfig');
+                                if ~isempty(corrfig)
+                                    set(0,'CurrentFigure',corrfig(1))
+                                    AxeData.CurrentCorrImage=imagesc(rangx,-rangy,result_conv,[0 1]);
+                                    AxeData.CurrentVector=line([0 Data.Civ1_U],[0 Data.Civ1_V],'Tag','vector');
+                                    colorbar
+                                    set(haxes,'UserData',AxeData)
+                                    set(get(AxeData.CurrentCorrImage,'parent'),'YDir','normal')
+                                end
+                            else
+                                set(AxeData.CurrentCorrImage,'CData',result_conv)
+                                set(AxeData.CurrentCorrImage,'XData',rangx)
+                                set(AxeData.CurrentCorrImage,'YData',-rangy)
+                                set(AxeData.CurrentVector,'XData',[0 Data.Civ1_U],'YData',[0 Data.Civ1_V])
+                            end
                         end
                     end
                 end

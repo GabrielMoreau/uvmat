@@ -96,77 +96,16 @@ if exist('data','var')
     else
         set(handles.z_slider,'Visible','off')
     end
+    if isfield(data,'TypeMenu')
+        set(handles.Type,'String',data.TypeMenu)
+    end
+    if isfield(data,'ProjModeMenu')
+%         set(handles.ProjMode,'String',data.ProjModeMenu) % data.ProjModeMenu as projMode menu
+        set(handles.ProjMode,'UserData',data.ProjModeMenu)% data.ProjModeMenu as default menu (used in Type_Callback)
+    end
     errormsg=fill_GUI(data,handles);
-%     if isfield(data,'StyleMenu')
-%         set(handles.Type,'String',data.StyleMenu);
-%     end
-%     if isfield(data,'Type')
-%         menu=get(handles.Type,'String');
-%         for iline=1:length(menu)
-%             if isequal(menu{iline},data.Style)
-%                 set(handles.Type,'Value',iline)
-%                 break
-%             end
-%         end
-%     end
-    Type_Callback(hObject, eventdata, handles)
-%     if isfield(data,'ProjMenu')
-%         set(handles.ProjMode,'String',data.ProjMenu);%overset the standard menu
-%     end
-%     if isfield(data,'ProjMode')
-%         menu=get(handles.ProjMode,'String');
-%         for iline=1:length(menu)
-%             if isequal(menu{iline},data.ProjMode)
-%                 set(handles.ProjMode,'Value',iline)
-%                 break
-%             end
-%         end
-%     end
-%    ProjMode_Callback(hObject, eventdata, handles)
-%     if isfield(data,'Coord')
-%         if ischar(data.Coord)
-%             data.Coord=str2num(data.Coord);
-%         elseif iscell(data.Coord)
-%             CoordCell=data.Coord;
-%             data.Coord=zeros(numel(CoordCell),3);
-%             data.Coord(:,3)=zeros(numel(CoordCell),1); % z component set to 0 by default
-%             for iline=1:numel(CoordCell)
-%                 line_vec=str2num(CoordCell{iline});
-%                 if numel(line_vec)==2
-%                     data.Coord(iline,1:2)=str2num(CoordCell{iline});
-%                 else
-%                     data.Coord(iline,:)=str2num(CoordCell{iline});
-%                 end
-%             end
-%         end
-%         if size(data.Coord,2)>=2
-%             sizcoord=size(data.Coord);
-%             for i=1:sizcoord(1)
-%                 XObject{i}=num2str(data.Coord(i,1),4);
-%                 YObject{i}=num2str(data.Coord(i,2),4);
-%             end
-% %             set(handles.XObject,'String',XObject)
-% %             set(handles.YObject,'String',YObject)
-%             if sizcoord(2)>3
-%                 for i=1:sizcoord(1)
-%                     ZObject{i}=num2str(data.Coord(i,3),4);
-%                 end
-%                 set(handles.ZObject,'String',ZObject)
-%             end
-%         end
-%     end
-%     if isfield(data,'DX')
-%         if ~ischar(handles.num_DX)
-%             data.DX=num2str(data.DX,3);
-%         end
-%         set(handles.num_DX,'String',data.DX)
-%     end
-%     if isfield(data,'DY')
-%         if ~ischar(handles.num_DY)
-%             data.DY=num2str(data.DY,3);
-%         end
-%         set(handles.num_DY,'String',data.DX)
-%     end
+    Type_Callback(hObject, eventdata, handles)% update the GUI set_object depending on the object type   
+
     if isfield(data,'RangeZ') && length(ZBounds) >= 2
         set(handles.num_RangeZ_2,'String',num2str(max(data.RangeZ),3))
         DZ=max(data.RangeZ);%slider step
@@ -208,15 +147,6 @@ if exist('data','var')
          set(handles.num_Angle_2,'String',num2str(data.Angle(2)))
          set(handles.num_Angle_3,'String',num2str(data.Angle(3)))
     end
-%     if isfield(data,'DZ')
-%         if ~ischar(handles.num_DZ)
-%             data.DY=num2str(data.DZ,3);
-%         end
-%         set(handles.num_DZ,'String',data.DZ)
-%     end
-%     if isfield(data,'CoordUnit')
-%         set(handles.CoordUnit,'String',data.CoordUnit)
-%     end
 end
 if enable_plot
    set(handles.PLOT,'enable','on')
@@ -232,7 +162,6 @@ if isfield(UvData,'SetObjectOrigin')
     pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
     set(hObject,'Position',pos_set_object)
 end
-
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
@@ -251,56 +180,6 @@ ListType=get(handles.Type,'String');
 Type=ListType{get(handles.Type,'Value')};
 % make correspondance between different object styles
 Coord=get(handles.Coord,'Data');
-% 
-% Xcolumn=get(handles.XObject,'String');
-% Ycolumn=get(handles.YObject,'String');
-% if ischar(Xcolumn)
-%     sizchar=size(Xcolumn);
-%     for icol=1:sizchar(1)
-%         Xcolumn_cell{icol}=Xcolumn(icol,:);
-%     end
-%     Xcolumn=Xcolumn_cell;
-% end
-% if ischar(Ycolumn)
-%     sizchar=size(Ycolumn);
-%     for icol=1:sizchar(1)
-%         Ycolumn_cell{icol}=Ycolumn(icol,:);
-%     end
-%     Ycolumn=Ycolumn_cell;
-% end
-% Zcolumn={};%default
-% z_new={};
-% if isequal(get(handles.ZObject,'Visible'),'on')
-%     %data.NbDim=3; %test 3D object
-%     Zcolumn=get(handles.ZObject,'String');
-%     if ischar(Zcolumn)
-%         Zcolumn={Zcolumn};
-%     end
-% end
-% x_new{1}=Xcolumn{1};
-% y_new{1}=Ycolumn{1};
-% x_new{1}=Coord(1,1);
-% y_new{1}=Coord(1,2);
-% z_new{1}=Coord(1,3);
-% if ~isempty(Zcolumn)
-%     z_new{1}=Zcolumn{1};
-% end
-% if isequal(style,'line')
-%     if strcmp(style_prev,'rectangle')||strcmp(style_prev,'ellipse')
-%         num_RangeX_2=get(handles.num_RangeX_2,'String');
-%         num_RangeY_2=get(handles.num_RangeY_2,'String');
-%         x_new{2}=num2str(num_RangeX_2,4);
-%         y_new{2}=num2str(num_RangeY_2,4);
-%         set(handles.XObject,'String',x_new)
-%         set(handles.YObject,'String',y_new)
-%         set(handles.ZObject,'String',z_new)
-%     end
-% elseif isequal(style,'polyline')
-% elseif strcmp(style,'rectangle')|| strcmp(style,'ellipse')
-%      set(handles.XObject,'String',x_new)
-%      set(handles.YObject,'String',y_new)
-%      set(handles.ZObject,'String',z_new)
-% end
 
 %% set the number of lines in the Coord table depending on object type
 switch Type
@@ -320,18 +199,22 @@ end
 set(handles.Coord,'Data',Coord)
 
 %% set the projection menu and the corresponding options
-switch Type
-    case {'points','line','polyline','plane'}
-        menu_proj={'projection';'interp';'filter';'none'}; 
-    case {'polygon','rectangle','ellipse'}
-        menu_proj={'inside';'outside';'mask_inside';'mask_outside'};
-    case 'volume'
-        menu_proj={'interp';'none'};
-    otherwise
-        menu_proj={'projection';'interp';'filter';'none'};%default
-end   
+if isempty(get(handles.ProjMode,'UserData'))
+    switch Type
+        case {'points','line','polyline','plane'}
+            menu_proj={'projection';'interp';'filter';'none'};
+        case {'polygon','rectangle','ellipse'}
+            menu_proj={'inside';'outside';'mask_inside';'mask_outside'};
+        case 'volume'
+            menu_proj={'interp';'none'};
+        otherwise
+            menu_proj={'projection';'interp';'filter';'none'};%default
+    end
+else
+    menu_proj=get(handles.ProjMode,'UserData');
+end
 proj_index=get(handles.ProjMode,'Value');
-if proj_index<numel(menu_proj)
+if proj_index>numel(menu_proj)
     set(handles.ProjMode,'Value',1);% value index must not exceed the menu length
 end
 set(handles.ProjMode,'String',menu_proj)

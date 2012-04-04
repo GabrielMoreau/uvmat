@@ -13,6 +13,12 @@
 %
 %INPUT:
 % Param: input images and processing parameters
+%     .Civ1: for civ1
+%     .Fix1: 
+%     .Patch1: 
+%     .Civ2: for civ2
+%     .Fix2: 
+%     .Patch2:
 % ncfile: name of a netcdf file to be created for the result (extension .nc)
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -46,7 +52,7 @@ check_civ1=0;%default
 check_patch1=0;%default
 
 if ischar(Param)
-    Param=xml2struct(Param);
+    Param=xml2struct(Param); %if Param is the name of an xml file, read this file as a Matlab structure
 end
 
 %% Civ1
@@ -65,10 +71,10 @@ if isfield (Param,'Civ1')
             end
         end
     else
-        if ischar(par_civ1.ImageA)
+        if isfield(par_civ1,'ImageA') && ischar(par_civ1.ImageA) % case with no image: only the PIV grid is calculated
             par_civ1.ImageA=sum(imread(par_civ1.ImageA),3);
         end
-        if ischar(par_civ1.ImageB)
+        if isfield(par_civ1,'ImageB')&& ischar(par_civ1.ImageB)
             par_civ1.ImageB=sum(imread(par_civ1.ImageB),3);
         end
     end
@@ -244,8 +250,8 @@ if isfield (Param,'Civ2')
         end
     end
     mask='';
-    if par_civ2.CheckMask&&~isempty(par_civ2.maskname)&& ~strcmp(maskname,par_civ2.maskname)% mask exist, not already read in civ1
-        mask=imread(par_civ2.maskname);
+    if par_civ2.CheckMask&&~isempty(par_civ2.Mask)&& ~strcmp(maskname,par_civ2.Mask)% mask exist, not already read in civ1
+        mask=imread(par_civ2.Mask);
     end
     par_civ2.Searchx=2*isx2+1;
     par_civ2.Searchy=2*isy2+1;

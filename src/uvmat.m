@@ -2646,7 +2646,7 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
             num_j2=num_j1;
         end
         siz=size(UvData.XmlData{2}.Time);
-        if siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
+        if ~isempty(num_i1) && siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
             abstime_1=(UvData.XmlData{2}.Time(num_i1,num_j1)+UvData.XmlData{2}.Time(num_i2,num_j2))/2;%overset the time read from files
         end
     end
@@ -4202,7 +4202,7 @@ else
                         testphys=1;
                     end
                 end
-                if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Style')
+                if isfield(ObjectData,'Coord')&& isfield(ObjectData,'Type')
                     if isequal(ObjectData.Type,'polygon')
                         X=ObjectData.Coord(:,1);
                         Y=ObjectData.Coord(:,2);
@@ -4247,7 +4247,7 @@ else
     list=get(handles.masklevel,'String');
     masknumber=num2str(length(list));
     maskindex=get(handles.masklevel,'Value');
-    mask_name=fullfile_uvmat(RootPath,SubDir,[RootFile '_' masknumber 'mask'],'.png','_1',maskindex);
+    mask_name=fullfile_uvmat(RootPath,'',[RootFile '_' masknumber 'mask'],'.png','_1',maskindex);
     %mask_name=name_generator([filebase '_' masknumber 'mask'],maskindex,1,'.png','_i');
     imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
     imflag=flipdim(imflag,1);
@@ -4269,7 +4269,7 @@ else
         imwrite(imflag,answer,'BitDepth',8);
     end
     set(handles.ListObject,'Value',1)
-    set(handles.ListObject,'Max',1)
+%     set(handles.ListObject,'Max',1)
 end
 
 %------------------------------------------------------------------------
@@ -4420,7 +4420,7 @@ function MenuMaskObject_Callback(hObject, eventdata, handles)
 data.Type='polygon';
 data.TypeMenu={'polygon'};
 data.ProjMode='mask_inside';%default
-data.ProjMenu={'mask_inside';'mask_outside'};
+data.ProjModeMenu={'mask_inside';'mask_outside'};
 create_object(data,handles)
 
 %------------------------------------------------------------------------

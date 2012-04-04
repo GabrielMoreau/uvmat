@@ -72,8 +72,8 @@ for isub=1:NbSubDomain
             break
             % if too few selected vectors, increase the subrange for next iteration
         elseif numel(ind_sel)<SubDomain/4 && ~isequal( ind_sel,ind_sel_previous);
-            SubRange(:,1,isub)=SubRange(:,1,isub)-Siz/4;
-            SubRange(:,2,isub)=SubRange(:,2,isub)+Siz/4;
+            SubRange(:,1,isub)=SubRange(:,1,isub)-Siz'/4;
+            SubRange(:,2,isub)=SubRange(:,2,isub)+Siz'/4;
 %             SubRangy(isub,1)=SubRangy(isub,1)-Siz(2)/4;
 %             SubRangy(isub,2)=SubRangy(isub,2)+Siz(2)/4;
         else
@@ -88,30 +88,25 @@ for isub=1:NbSubDomain
             FF(ind_sel)=20*(NormDiff>Threshold);%put FF value to 20 to identify the criterium of elimmination
             ind_ind_sel=find(FF(ind_sel)==0); % select the indices of ind_sel corresponding to the remaining vectors
             end
-            % no value exceeds threshold, the result is recorded
+            % if no value exceeds threshold, the result is recorded
             if isequal(numel(ind_ind_sel),numel(ind_sel))
                 U_smooth(ind_sel)=U_smooth(ind_sel)+U_smooth_sub;
                 V_smooth(ind_sel)=V_smooth(ind_sel)+V_smooth_sub;
                 NbSites(isub)=numel(ind_sel);
-%                 Indices_tps(1:NbSites(isub),isub)=ind_sel;
                 Coord_tps(1:NbSites(isub),:,isub)=Coord(ind_sel,:);
-%                 Y_tps(1:NbSites(isub),:,isub)=Coord(ind_sel,2);
                 U_tps(1:NbSites(isub)+3,isub)=U_tps_sub;
                 V_tps(1:NbSites(isub)+3,isub)=V_tps_sub;         
                 nb_select(ind_sel)=nb_select(ind_sel)+1;
-                 display('good')
+                display('good')
                 break
-                % too few selected vectors, increase the subrange for next iteration
+            % if too few selected vectors, increase the subrange for next iteration
             elseif numel(ind_ind_sel)<SubDomain/4 && ~isequal( ind_sel,ind_sel_previous);
-                SubRange(:,1,isub)=SubRange(:,1,isub)-Siz/4;
-                SubRange(:,2,isub)=SubRange(:,2,isub)+Siz/4;
-%                 SubRange(2,isub,1)=SubRangy(2,isub,1)-Siz(2)/4;
-%                 SubRange(2,isub,2)=SubRangy(2,isub,2)+Siz(2)/4;
-%                 display('fewsmooth')
-                % interpolation-smoothing is done again with the selected vectors
+                SubRange(:,1,isub)=SubRange(:,1,isub)-Siz'/4;
+                SubRange(:,2,isub)=SubRange(:,2,isub)+Siz'/4;
+            % else interpolation-smoothing is done again with the selected vectors
             else
-                [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel)),U(ind_sel(ind_ind_sel)),rho);
-                [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel)),V(ind_sel(ind_ind_sel)),rho);
+                [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),U(ind_sel(ind_ind_sel)),rho);
+                [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),V(ind_sel(ind_ind_sel)),rho);
                 U_smooth(ind_sel(ind_ind_sel))=U_smooth(ind_sel(ind_ind_sel))+U_smooth_sub;
                 V_smooth(ind_sel(ind_ind_sel))=V_smooth(ind_sel(ind_ind_sel))+V_smooth_sub;
                 NbSites(isub)=numel(ind_ind_sel);

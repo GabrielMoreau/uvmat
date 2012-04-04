@@ -1094,7 +1094,7 @@ else % run
     if isfield(s,'RunParam')
         Param.xml=s.RunParam;
     else
-        msgbox_uvmat('ERROR','no run civ binaries defined in PARAM.xml')
+        errormsg='no run civ binaries defined in PARAM.xml';
         return
     end
 end
@@ -1109,7 +1109,7 @@ if batch
     end   
     [s,w]=system(test_command);
     if ~isequal(s,0)
-        msgbox_uvmat('ERROR',[batch_mode ' batch system not available'])
+        errormsg=[batch_mode ' batch system not available'];
         return
     end
 end
@@ -1136,7 +1136,7 @@ for bin_name=binary_list %loop on the list of binaries
             if exist(fullname,'file')
                 Param.xml.(bin_name{1})=fullname;
             else
-                msgbox_uvmat('ERROR',['Binary ' Param.xml.(bin_name{1}) ' defined in PARAM.xml does not exist'])
+                errormsg=['Binary ' Param.xml.(bin_name{1}) ' defined in PARAM.xml does not exist'];
                 return
             end
         else
@@ -1238,10 +1238,12 @@ for ifile=1:nbfield
                         Param.Civ1.Grid=[filecell.filebase '_' fullfile_uvmat('','',Param.Civ1.Grid,'.grid','_1',i1_grid)];
 %                         Param.Civ1.Grid=[filecell.filebase '_' name_generator(Param.Civ1.Grid,i1_grid,1,'.grid','_i')];
                         if ~exist(Param.Civ1.GridName,'file')
-                            msgbox_uvmat('ERROR','grid file absent for civ1')
+                            errormsg='grid file absent for civ1';
+                            return
                         end
                     elseif ~exist(Param.Civ1.Grid,'file')
-                        msgbox_uvmat('ERROR','grid file absent for civ1')
+                        errormsg='grid file absent for civ1';
+                        return
                     end
                 end
             end
@@ -1249,10 +1251,9 @@ for ifile=1:nbfield
             % send command
             switch CivMode
                 case 'CivX'
-                    cmd=[cmd...
-                        cmd_civ1(filecell.nc.civ1{ifile,j},Param) '\n'];
+                    [cmd_civ,errormsg]=cmd_civ1(filecell.nc.civ1{ifile,j},Param);
+                    cmd=[cmd cmd_civ '\n'];
                     if ~isempty(errormsg)
-                        msgbox_uvmat('ERROR',errormsg)
                         return
                     end
                 case 'CivAll'
@@ -1317,12 +1318,14 @@ for ifile=1:nbfield
                                 patch1.gridPatch=[filecell.filebase '_' fullfile_uvmat('','',gridname,'.grid','_1',i1_grid)];
 %                                 patch1.gridPatch=[filecell.filebase '_' name_generator(gridname,i1_grid,1,'.grid','_i')];
                                 if ~exist(patch1.gridPatch,'file')
-                                    msgbox_uvmat('ERROR','grid file absent for patch1')
+                                    errormsg='grid file absent for patch1';
+                                    return
                                 end
                             elseif exist(gridname,'file')
                                 patch1.gridPatch=gridname;
                             else
-                                msgbox_uvmat('ERROR','grid file absent for patch1')
+                                errormsg='grid file absent for patch1';
+                                return
                             end
                         end
                     else
@@ -1455,12 +1458,14 @@ for ifile=1:nbfield
                                 patch2.gridPatch=[filecell.filebase '_' fullfile_uvmat('','',gridname,'.grid','_1',i1_grid)];
 %                                 patch2.gridPatch=[filecell.filebase '_' name_generator(gridname,i1_grid,1,'.grid','_i')];
                                 if ~exist(patch2.gridPatch,'file')
-                                    msgbox_uvmat('ERROR','grid file absent for patch2')
+                                    errormsg='grid file absent for patch2';
+                                    return
                                 end
                             elseif exist(gridname,'file')
                                 patch2.gridPatch=gridname;
                             else
-                                msgbox_uvmat('ERROR','grid file absent for patch2')
+                                errormsg='grid file absent for patch2';
+                                return
                             end
                         end
                     else
@@ -1494,7 +1499,7 @@ for ifile=1:nbfield
                 filename_bat=[OutputFile '.bat'];
                 [fid,message]=fopen(filename_bat,'w');
                 if isequal(fid,-1)
-                    msgbox_uvmat('ERROR', ['creation of .bat file: ' message])
+                    errormsg=['creation of .bat file: ' message];
                     return
                 end
                 fprintf(fid,cmd);
@@ -1515,7 +1520,7 @@ for ifile=1:nbfield
                         filename_bat=[OutputFile '.bat'];
                         [fid,message]=fopen(filename_bat,'w');
                         if isequal(fid,-1)
-                            msgbox_uvmat('ERROR', ['creation of .bat file: ' message])
+                            errormsg= ['creation of .bat file: ' message];
                             return
                         end
                         text_matlabscript=[...
@@ -1536,8 +1541,8 @@ for ifile=1:nbfield
                         [tild,errormsg]=civ_matlab(Param,filecell.nc.civ1{ifile,j});
                         if isempty(errormsg)
                             display([filecell.nc.civ1{ifile,j} ' written'])
-                        else
-                            msgbox_uvmat('ERROR',errormsg)
+%                         else
+%                             msgbox_uvmat('ERROR',errormsg)
                         end
                     end
                 end
@@ -3030,7 +3035,7 @@ if index==1 % case civ1
     end
 else %case civ2 alone
     if ~get(handles.CheckCiv2,'Value') && ~get(handles.CheckCiv1,'Value') && ~get(handles.CheckFix1,'Value') && ~get(handles.CheckPatch1,'Value')
-        if ~exist(fullfile(filepath,subdir_civ2,ext_dir),'dir')
+        if ~exist(fullfile(RootPath,subdir_civ2,ext_dir),'dir')
             errordlg(['no civ2 file available: subdirectory ' subdir_civ2 ' does not exist'])
             set(handles.ListPairCiv2,'Value',1);
             set(handles.ListPairCiv2,'String',{''});
@@ -3636,17 +3641,16 @@ if strcmp(PanelName,'Civ1')
 %         set(handle_txtbox,'Visible','off')
     end 
 end
+
 %------------------------------------------------------------------------
-% --- Executes on button press in CheckMask.
+% --- Executes on button press in CheckMask: common to all panels (civ1, Civ2..)
 function CheckMask_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 value=get(hObject,'Value');
 hparent=get(hObject,'parent');
 parent_tag=get(hparent,'Tag');
 hchildren=get(hparent,'children');
-handle_txtbox=findobj(hchildren,'tag','txt_Mask');
-% handle_dx=findobj(hchildren,'tag','num_Dx');
-% handle_dy=findobj(hchildren,'tag','num_Dy');
+handle_txtbox=findobj(hchildren,'tag','Mask');% look for the mask name box in the same panel
 testmask=0;
 if value
     filebase=get(handles.RootPath,'String');
@@ -3672,9 +3676,8 @@ if value
     end
 end
 if testmask
-%     stage=4;%default
     if strcmp(parent_tag,'Civ1')
-            set(handles.Mask,'Visible','on')
+        set(handles.Mask,'Visible','on')
         set(handles.Mask,'String',filemask)
     set(handles.CheckMask,'Value',1)
     end
@@ -3906,6 +3909,9 @@ if get(handles.TestCiv1,'Value')
     Data.ListVarName={'ny','nx','A'};
     Data.VarDimName= {'ny','nx',{'ny','nx'}};
     Data.A=imread(filecell.ima1.civ1{1});
+    if ndims(Data.A)==3 %case of color image
+        Data.VarDimName= {'ny','nx',{'ny','nx','rgb'}};
+    end
     Data.ny=[size(Data.A,1) 1];
     Data.nx=[1 size(Data.A,2)];
     par_civ1=read_GUI(handles.Civ1);
@@ -3914,7 +3920,7 @@ if get(handles.TestCiv1,'Value')
     par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation
     Param.Civ1=par_civ1;
     Grid=civ_matlab(Param);% get the grid of x, y positions set for PIV 
-    hview_field=view_field(Data);
+    hview_field=view_field(Data); %view the image in the GUI view_field
     set(0,'CurrentFigure',hview_field)
     hhview_field=guihandles(hview_field);
     set(hview_field,'CurrentAxes',hhview_field.axes3)
@@ -3959,21 +3965,20 @@ else
 end
 
 %------------------------------------------------------------------------
-function cmd=cmd_civ1(filename,Param)
+function [cmd,errormsg]=cmd_civ1(filename,Param)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
 %changes : filename_cmx -> filename ( no extension )
 cmd='';
-errormsg=''; %default
 filename=regexprep(filename,'.nc',''); %file name for the result 
 if isequal(Param.Civ1.Dt,0)
     Param.Civ1.Dt=1 ;%case of 'displacement' mode
 end
 Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'.png','');
 Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'.png','');
-fid=fopen([filename '.civ1.cmx'],'w');
+[fid,errormsg]=fopen([filename '.civ1.cmx'],'w');
 if isequal(fid,-1)
-    display(['cmd file ' filename ' cannot be created'])
+    errormsg=['cmd file ' filename ' cannot be created: ' errormsg];
     return
 end
 fprintf(fid,['##############   CMX file' '\n' ]);
@@ -4053,9 +4058,6 @@ switch fixname
 end
 filename=regexprep(filename,'.nc','');
 MaskName_string='';%default
-% if Param.(fixname).CheckMask
-%     MaskName_string=[' -maskName "' Param.(fixname).Mask '"'];
-% end
 MaxVel_string='';%default
 if ~isempty(Param.(fixname).MaxVel)
     MaxVel_string=[' -threshV ' num2str(Param.(fixname).MaxVel)];
@@ -4094,10 +4096,11 @@ end
 
 %------------------------------------------------------------------------
 % --- CheckCiv2  CheckCiv2  CheckCiv2 CheckCiv2
-function cmd=cmd_civ2(filename,Param)
+function [cmd,errormsg]=cmd_civ2(filename,Param)
 %------------------------------------------------------------------------
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
 % global civ2Bin sge%name of the executable for checkciv1 calculation
+ cmd='';
 filename=regexprep(filename,'.nc','');
 if isequal(Param.Civ2.Dt,'0')
     Param.Civ2.Dt='1' ;%case of 'displacement' mode
@@ -4106,8 +4109,6 @@ Param.Civ2.ImageA=regexprep(Param.Civ2.ImageA,'.png','');
 Param.Civ2.ImageB=regexprep(Param.Civ2.ImageB,'.png','');% bug : .png appears two times ?
 [fid,errormsg]=fopen([filename '.civ2.cmx'],'w');
 if isequal(fid,-1)
-    msgbox_uvmat('ERROR',errormsg)
-    cmd='';
     return
 end
 fprintf(fid,['##############   CMX file' '\n' ]);

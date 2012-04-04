@@ -72,9 +72,6 @@ handles_mouse=handles;
 huvmat=findobj(allchild(0),'Name','uvmat');
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
-%     set(hhuvmat.list_object_2,'Visible','on')
-%     set(hhuvmat.view_field_title,'Visible','on')
-    % handles_mouse.create=hhuvmat.create;
     handles_mouse.edit=hhuvmat.edit_object;
     pos_view_field=get(hObject,'Position');
     pos_uvmat=get(huvmat,'Position');
