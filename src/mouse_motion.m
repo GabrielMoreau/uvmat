@@ -101,7 +101,6 @@ for ichild=1:length(hchild)
                 eval(['Field=FigData.' tagaxes ';'])
                 if isfield(Field,'ListVarName')
                     [CellVarIndex,NbDim,VarType]=find_field_indices(Field);%analyse the physical fields contained in Field
-                    %                     if isfield(Field,'Mesh') && ~isempty(Field.Mesh)
                     text_displ_1='';
                     text_displ_2='';
                     text_displ_3='';
@@ -206,11 +205,7 @@ for ichild=1:length(hchild)
                     if ~isempty(z)
                         text_displ_1=[text_displ_1 ' z=' num2str(z,3)];
                     end
-                    %coordinate transform if proj_coord differs from menu_coord A REVOIR
-%                     if isfield(Field,'CoordUnit')
-%                         mouse.CoordUnit=Field.CoordUnit;
-%                     end
-             % case of PIV correlation display
+               % case of PIV correlation display
                     if test_piv
                         par=read_GUI(hhciv.Civ1);
                         [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
@@ -220,7 +215,8 @@ for ichild=1:length(hchild)
                         % mark the correlation box with a rectangle
                         par.ImageA=Field.A;
                         par.ImageB=Field.B;
-                        [par.ImageHeight,par.ImageWidth]=size(par.ImageA);
+                        par.ImageHeight=size(par.ImageA,1);
+                        par.ImageWidth=size(par.ImageA,2);
                         Param.Civ1=par;
                         ibx2=floor((par.Bx-1)/2);
                         iby2=floor((par.By-1)/2);
@@ -286,10 +282,6 @@ set(handles.text_display,'String',[{text_displ_1};{text_displ_2};{text_displ_3};
 else
    set(handles.text_display,'String',get(handles.text_display,'UserData'))
 end
-% set(handles.text_display_1,'String',text_displ_1);
-% set(handles.text_display_2,'String',text_displ_2);
-% set(handles.text_display_3,'String',text_displ_3);
-% set(handles.text_display_4,'String',text_displ_4);
 
 %%%%%%%%%%%%%
 %% draw a zoom rectangle if no object creation is selected

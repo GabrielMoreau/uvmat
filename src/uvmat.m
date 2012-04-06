@@ -1630,7 +1630,7 @@ else
         else % case of scanning along index j (burst numbers)
             ref_j=ref_j+increment;
         end
-    else% free increment
+    else % free increment
         if isequal(get(handles.runplus,'BackgroundColor'),[1 1 0])% if runplus is activated
             step=1;
         else
@@ -1661,9 +1661,9 @@ else
         return
     end
     if get(handles.scan_i,'Value')==1% case of scanning along index i
-        i1_subseries=UvData.i1_series{1}(ref_i+1,:,:);
+        i1_subseries=UvData.i1_series{1}(ref_i+1,ref_j+1,:);
     else
-        i1_subseries=UvData.i1_series{1}(:,ref_j+1,:);
+        i1_subseries=UvData.i1_series{1}(ref_i+1,ref_j+1,:);
     end
     i1_subseries=i1_subseries(i1_subseries>0);
     if isempty(i1_subseries)
@@ -1673,27 +1673,27 @@ else
     i1=i1_subseries(end);
     if ~isempty(UvData.i2_series{1})
         if get(handles.scan_i,'Value')==1% case of scanning along index i
-            i2_subseries=UvData.i2_series{1}(ref_i+1,:,:);
+            i2_subseries=UvData.i2_series{1}(ref_i+1,ref_j+1,:);
         else
-            i2_subseries=UvData.i2_series{1}(:,ref_j+1,:);
+            i2_subseries=UvData.i2_series{1}(ref_i+1,ref_j+1,:);
         end
         i2_subseries=i2_subseries(i2_subseries>0);
         i2=i2_subseries(end);
     end
     if ~isempty(UvData.j1_series{1})
         if get(handles.scan_i,'Value')==1% case of scanning along index i
-            j1_subseries=UvData.j1_series{1}(ref_i+1,:,:);
+            j1_subseries=UvData.j1_series{1}(ref_i+1,ref_j+1,:);
         else
-            j1_subseries=UvData.j1_series{1}(:,ref_j+1,:);
+            j1_subseries=UvData.j1_series{1}(ref_i+1,ref_j+1,:);
         end
         j1_subseries=j1_subseries(j1_subseries>0);
         j1=j1_subseries(end);
     end
     if ~isempty(UvData.j2_series{1})
         if get(handles.scan_i,'Value')==1% case of scanning along index i
-            j2_subseries=UvData.j2_series{1}(ref_i+1,:,:);
+            j2_subseries=UvData.j2_series{1}(ref_i+1,ref_j+1,:);
         else
-            j2_subseries=UvData.j2_series{1}(:,ref_j+1,:);
+            j2_subseries=UvData.j2_series{1}(ref_i+1,ref_j+1,:);
         end
         j2_subseries=j2_subseries(j2_subseries>0);
         j2=j2_subseries(end);

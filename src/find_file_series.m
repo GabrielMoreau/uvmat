@@ -53,168 +53,166 @@ j2_series=zeros(1,1,1);
 % ifile_min=1;%default
 [FileType,FileInfo,Object]=get_file_type(fullfileinput);
 if strcmp( FileType,'multimage')||strcmp( FileType,'video')
-        NomType='*';
-        i1_series=(1:FileInfo.NbFrame)';
+    NomType='*';
+    i1_series=(1:FileInfo.NbFrame)';
 end
 
 if strcmp(NomType,'')||strcmp(NomType,'*')||strcmp(option,'filetype')
     if exist(fullfileinput,'file')
         [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
-    else     
+    else
         RootFile='';
     end
-else 
-    %% possibly include the first index in the root name, if there exists a   corresponding xml file   
+else
+    %% possibly include the first index in the root name, if there exists a   corresponding xml file
+    %   RootFileNew=RootFile;
+    %     if ~isempty(regexp(NomType,['^_']))
+    %         NomTypePref='_';
+    %         RootFileNew=[RootFileNew '_'];
+    %     end       RootPath='';
     NomTypePref='';
-    RootFileNew=RootFile;
-%     if ~isempty(regexp(NomType,['^_']))
-%         NomTypePref='_';
-%         RootFileNew=[RootFileNew '_'];
-%     end       RootPath='';
     r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
-%     r=regexp(NomType,['^' NomTypePref '(?<num1>\d+)'],'names');%look for a number at the beginning of NomTypeSt
+    %     r=regexp(NomType,['^' NomTypePref '(?<num1>\d+)'],'names');%look for a number at the beginning of NomTypeSt
     if ~isempty(r)
-        NomTypePref=r.tiretnum;
-        fileinput_end=regexprep(fileinput,['^' RootFileNew],'');
-        r=regexp(fileinput_end,'^(?<num1>\d+)','names');
-        if ~isempty(r)            
-            RootFileNew=[RootFileNew r.num1];
+        fileinput_end=regexprep(fileinput,['^' RootFile],'');%remove RootFile at the beginning of fileinput
+        if isempty(regexp(r.tiretnum,'^_'))% if a separator '_' is not  detected
+            rr=regexp(fileinput_end,'^(?<i1>\d+)','names');
+        else% if a separator '_' is  detected
+            rr=regexp(fileinput_end,'^(?<i1>_\d+)','names');
         end
-        if exist(fullfile(RootPath,[RootFileNew '.xml']),'file')
-            RootFile=RootFileNew;
-            NomType=regexprep(NomType,['^' NomTypePref],'');
-            i2_input=j2_input;
-            j1_input=[];
-            j2_input=[];
-        else
-            NomTypePref='';
+        if ~isempty(rr)
+            RootFileNew=[RootFile rr.i1];
+            if exist(fullfile(RootPath,[RootFileNew '.xml']),'file')
+                RootFile=RootFileNew;
+                NomType=regexprep(NomType,['^'  NomTypePref],'');
+                NomTypePref=r.tiretnum;
+                i2_input=j2_input;
+                j1_input=[];
+                j2_input=[];
+            end
         end
     end
     %% analyse the list of existing files when relevant
     sep1='';
-    i1_str='(?<i1>)';
+    i1_str='(?<i1>)';%will set i1=[];
     i1_star='';
-    sep2='';
-    i2_str='(?<i2>)';
+    %     r.sep2='';
+    i2_str='(?<i2>)';%will set i2=[];
     i2_star='';
-    sep3='';
-    j1_str='(?<j1>)';
+    %     sep3='';
+    j1_str='(?<j1>)';%will set j1=[];
     j1_star='';
-    sep4='';
-    j2_str='(?<j2>)';
+    %     sep4='';
+    j2_str='(?<j2>)';%will set j2=[];
     j2_star='';
-    NomTypeStr=NomType;
-    if ~isempty(regexp(NomTypeStr,'^_\d'))
-        sep1='_';
-        NomTypeStr(1)=[];%remove '_' from the beginning of NomTypeStr
-    end
-    r=regexp(NomTypeStr,'^(?<num1>\d+)','names');%look for a number at the beginning of NomTypeStr
+    %   NomTypeStr=NomType;
+    %Look for cases with letter indexing for the second index
+    r=regexp(NomType,'^(?<sep1>_?)(?<i1>\d+)(?<j1>[a|A])(?<j2>[b|B]?)$','names');
     if ~isempty(r)
-        i1_str='(?<i1>\d+)';
-        i1_star='*';
-        NomTypeStr=regexprep(NomTypeStr,['^' r.num1],'');
-        r=regexp(NomTypeStr,'^-(?<num2>\d+)','names');%look for a pair i1-i2
-        if ~isempty(r)
-            sep2='-';
-            i2_str='(?<i2>\d+)';
-            i2_star='*';
-            NomTypeStr=regexprep(NomTypeStr,['^-' r.num2],'');
-        end
-        if ~isempty(regexp(NomTypeStr,'^_'));
-            sep3='_';
-            NomTypeStr(1)=[];%remove '_' from the beginning of NomTypeStr
-        end
-        if ~isempty(regexp(NomTypeStr,'^[a|A]'));
-            j1_str='(?<j1>[a-z]|[A-Z])';
-            j1_star='*';
-            if ~isempty(regexp(NomTypeStr,'[b|B]$'));
-                j2_str='(?<j2>[a-z]|[A-Z])';
-                j2_star='*';
-            end
+        sep1=r.sep1;
+        if strcmp(lower(r.j1),r.j1)
+            j1_str='(?<j1>[a-z])';
         else
-            r=regexp(NomTypeStr,'^(?<num3>\d+)','names');
-            if ~isempty(r)
-                j1_str='(?<j1>\d+)';
-                 j1_star='*';
-                NomTypeStr=regexprep(NomTypeStr,['^' r.num3],'');
+           j1_str='(?<j1>[A-Z])'; 
+        end
+        j1_star='*';
+        if ~isempty(r.j2)
+           if strcmp(lower(r.j1),r.j1)
+            j2_str='(?<j2>[a-z])';
+            else
+           j2_str='(?<j2>[A-Z])'; 
+           end
+            j2_star='*';
+        end
+    else %numerical indexing
+        r=regexp(NomType,'^(?<sep1>_?)(?<i1>\d+)(?<i2>(-\d+)?)(?<j1>(_\d+)?)(?<j2>(-\d+)?)$','names');
+        if ~isempty(r)
+            sep1=r.sep1;
+            i1_str='(?<i1>\d+)';
+            i1_star='*';
+            if ~isempty(r.i2)
+                i2_str='(?<i2>-\d+)';
+                i2_star='-*';
             end
-            r=regexp(NomTypeStr,'-(?<num4>\d+)','names');
-            if ~isempty(r)
-                sep4='-';
-                j2_str='(?<j2>\d+)';
-                 j2_star='*';
+            if ~isempty(r.j1)
+                j1_str='(?<j1>_\d+)';
+                j1_star='_*';
+            end
+            if ~isempty(r.j2)
+                j2_str='(?<j2>-\d+)';
+                j2_star='-*';
             end
         end
     end
-    detect_string=['^' RootFile sep1 i1_str sep2 i2_str sep3 j1_str sep4 j2_str FileExt '$'];%string used in regexp to detect file indices
+    detect_string=['^' RootFile sep1 i1_str i2_str j1_str j2_str FileExt '$'];%string used in regexp to detect file indices
     %find the string used to extract the relevant files with the command dir
-    star_string=[RootFile sep1 i1_star sep2 i2_star sep3 j1_star sep4 j2_star '*'];
+    star_string=[RootFile sep1 i1_star i2_star  j1_star j2_star FileExt];
     wd=pwd;%current working directory
     cd (RootPath)% move to the local dir to save time in the operation dir.
-    dirpair=dir([star_string FileExt]);% look for relevant files in the file directory
+    dirpair=dir(star_string);% look for relevant files in the file directory
     cd(wd)
     nbpair=numel(dirpair);
     ref_i_list=zeros(1,nbpair);
     ref_j_list=zeros(1,nbpair);
     if nbpair==0% no detected file
-%         RootPath='';
+        %         RootPath='';
         RootFile='';
     end
     % scan the list of relevant files, extract the indices
     for ifile=1:nbpair
         rr=regexp(dirpair(ifile).name,detect_string,'names');
         if ~isempty(rr)
-        i1=str2num(rr.i1);
-        i2=str2num(rr.i2);
-        j1=stra2num(rr.j1);
-        j2=stra2num(rr.j2);
-        ref_i=i1;
-        if isempty(i2_input)
-            if ~isempty(i2)% invalid file name if i2 does not exist in the input file
-                break
-            end
-        else
-            ref_i=floor((i1+i2)/2);
-        end
-        ref_j=1;
-        if isempty(j1_input)
-            if  ~isempty(j1)% invalid file name if j1 does not exist in the input file
-                break
-            end
-        else %j1_input is not empty
-            if isempty(j1)% the detected name does not fit with the input
-                break
+            i1=str2num(rr.i1);
+            i2=str2num(regexprep(rr.i2,'^-',''));
+            j1=stra2num(regexprep(rr.j1,'^_',''));
+            j2=stra2num(regexprep(rr.j2,'^-',''));
+            ref_i=i1;
+            if isempty(i2_input)
+                if ~isempty(i2)% invalid file name if i2 does not exist in the input file
+                    break
+                end
             else
-                ref_j=j1;
-                if isempty(j2_input)
-                    if  ~isempty(j2)% invalid file name if j2 does not exist in the input file
-                        break
-                    end
+                ref_i=floor((i1+i2)/2);
+            end
+            ref_j=1;
+            if isempty(j1_input)
+                if  ~isempty(j1)% invalid file name if j1 does not exist in the input file
+                    break
+                end
+            else %j1_input is not empty
+                if isempty(j1)% the detected name does not fit with the input
+                    break
                 else
-                    ref_j=floor((j1+j2)/2);
+                    ref_j=j1;
+                    if isempty(j2_input)
+                        if  ~isempty(j2)% invalid file name if j2 does not exist in the input file
+                            break
+                        end
+                    else
+                        ref_j=floor((j1+j2)/2);
+                    end
                 end
             end
-        end
-        % update the detected index series
-        ref_i_list(ifile)=ref_i;
-        ref_j_list(ifile)=ref_j;
-        nb_pairs=0;
-        if ~isempty(i2_input)|| ~isempty(j2_input) %deals with  pairs
-            if size(i1_series,1)>=ref_i+1 && size(i1_series,2)>=ref_j+1
-                nb_pairs=numel(find(i1_series(ref_i+1,ref_j+1,:)~=0));
+            % update the detected index series
+            ref_i_list(ifile)=ref_i;
+            ref_j_list(ifile)=ref_j;
+            nb_pairs=0;
+            if ~isempty(i2_input)|| ~isempty(j2_input) %deals with  pairs
+                if size(i1_series,1)>=ref_i+1 && size(i1_series,2)>=ref_j+1
+                    nb_pairs=numel(find(i1_series(ref_i+1,ref_j+1,:)~=0));
+                end
             end
-        end
-        i1_series(ref_i+1,ref_j+1,nb_pairs+1)=i1;
-        if ~isempty(i2_input)
-            i2_series(ref_i+1,ref_j+1,nb_pairs+1)=i2;
-        end
-        if ~isempty(j1_input)
-            j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
-        end
-        if ~isempty(j2_input)
-            j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
-            j2_series(ref_i+1,ref_j+1,nb_pairs+1)=j2;
-        end
+            i1_series(ref_i+1,ref_j+1,nb_pairs+1)=i1;
+            if ~isempty(i2_input)
+                i2_series(ref_i+1,ref_j+1,nb_pairs+1)=i2;
+            end
+            if ~isempty(j1_input)
+                j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
+            end
+            if ~isempty(j2_input)
+                j1_series(ref_i+1,ref_j+1,nb_pairs+1)=j1;
+                j2_series(ref_i+1,ref_j+1,nb_pairs+1)=j2;
+            end
         end
     end
     % look for the numerical string of the first files to update the NomType (take into account the 0 before the number)
@@ -226,7 +224,7 @@ else
     end
     [tild,ifile_min]=min(ref_ij(ref_ij>0));
     if isempty(ifile_min)
-%         RootPath='';
+        %         RootPath='';
         RootFile='';
         NomType='';
     else
@@ -238,8 +236,6 @@ else
         [FileType,tild,Object]=get_file_type(dirpair(ifile_min).name);
     end
 end
-
-
 
 %% set to empty array the irrelevant index series
 if isequal(i1_series,0), i1_series=[]; end

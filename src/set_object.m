@@ -220,22 +220,6 @@ end
 set(handles.ProjMode,'String',menu_proj)
 ProjMode_Callback(hObject, eventdata, handles)
 
-%store the current option
-% str=get(handles.Type,'String');
-% val=get(handles.Type,'Value');
-% set(handles.Type,'UserData',style)
-
-%------------------------------------------------------------------------
-function xObject_Callback(hObject, eventdata, handles)
-
-%------------------------------------------------------------------------
-function yObject_Callback(hObject, eventdata, handles)
-
-%------------------------------------------------------------------------
-% --- Executes on selection change in zObject.
-function zObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-
 %------------------------------------------------------------------------
 % --- Executes on selection change in ProjMode.
 function ProjMode_Callback(hObject, eventdata, handles)
@@ -402,17 +386,20 @@ end
 function PLOT_Callback(hObject, eventdata, handles)
 
 %% reading the object parameters on the GUI uvmat
-huvmat=findobj('tag','uvmat');%find the current uvmat interface handle
+huvmat=findobj('tag','uvmat');%find the current uvmat GUI handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
-hhuvmat=guidata(huvmat);%handles in the uvmat GUI
-ListObject=get(hhuvmat.ListObject,'String');%position in the objet list
-IndexObj=get(hhuvmat.ListObject,'Value');
+hhuvmat=guidata(huvmat);%handles of the objects children of the  GUI uvmat
+ListObject=get(hhuvmat.ListObject,'String');% list of objects displyed in uvmat
+IndexObj=get(hhuvmat.ListObject,'Value');% index(indices) of the selected object(s) in uvmat
+                                        % (the first one is plotted in uvmat axis, the second one in view_field)
 
 %% read the object on the GUI set_object
-%ObjectData=read_set_object(handles.set_object);%read the input parameters defining the object in the GUI set_object
-ObjectData=read_GUI(handles.set_object);%read the input parameters defining the object in the GUI set_object
-%ObjectData.Coord=cell2mat(ObjectData.Coord);
-ObjectName=ObjectData.Name;%name of the current object defiend in set_object
+ObjectData=read_GUI(handles.set_object);%read the parameters defining the object in the GUI set_object
+ObjectName=ObjectData.Name;%name of the current object defined in set_object
+checknan=isnan(sum(ObjectData.Coord,2));%check for NaN lines
+if ~isempty(checknan)
+    ObjectData.Coord(checknan,:)=[];%remove the NaN lines
+end
 if isempty(ObjectName)
     if get(hhuvmat.edit_object,'Value')% edit mode
         ObjectName=ListObject{IndexObj(end)};%take the name of the last (second) selected item
@@ -448,12 +435,11 @@ if ~get(hhuvmat.edit_object,'Value') %new object is being created
 end
 testnew=0;
 if numel(IndexObj)==1   % if only one object is selected, the projection is in uvmat
- %       PlotHandles=hhuvmat;
     plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
 else  % if a second object is selected, the projection is in view_field, and this second object is selected
     hview_field=findobj(allchild(0),'tag','view_field');
     if isempty(hview_field)
-        hview_field=view_field;
+        hview_field=view_field;%open the GUI view_field if it is not found
     end
     PlotHandles=guidata(hview_field);
     plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
@@ -463,7 +449,7 @@ end
 ListObject{IndexObj(end),1}=ObjectName;
 set(hhuvmat.ListObject,'String',ListObject)
 
-%% update the object plot and projection field
+%% update the object plot 
 if testnew
     set(hhuvmat.ListObject,'Value',IndexObj)
     ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
@@ -487,15 +473,26 @@ end
 set(huvmat,'UserData',UvData)
 
 %% plot the field projected on the object and store in the corresponding figue
-[ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR', errormsg)
-    return
+if strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')||strcmp(ObjectData.ProjMode,'none')
+    PlotType='text';
+    
+else
+    [ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current field of uvmat on ObjectData
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR', errormsg)
+        return
+    end
+    fighandle=get(plotaxes,'parent');
+    PlotParam=read_GUI(fighandle);
+    PlotType=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
 end
-fighandle=get(plotaxes,'parent');
-PlotParam=read_GUI(fighandle);
-[PlotType,Object_out{IndexObj(end)}.PlotParam,plotaxes]=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
-
+if strcmp(PlotType,'text')
+    hview_field=findobj(allchild(0),'tag','view_field'); %case of no projection (pure object display)
+    if ~isempty(hview_field)
+        delete(hview_field)
+    end
+end
+    
 %% update the GUI uvmat
 hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI
 set(hhuvmat.MenuEditObject,'enable','on')
@@ -602,10 +599,7 @@ else
     norm_plane(3)=OmAxis(3)*coeff+cos_om;
 end
 
-%set new plane position and update graph
-% set(handles.XObject,'String',num2str(norm_plane(1)*Z_value,4))
-% set(handles.YObject,'String',num2str(norm_plane(2)*Z_value,4))
-% set(handles.ZObject,'String',num2str(norm_plane(3)*Z_value,4))
+% update graph
 PLOT_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
@@ -615,8 +609,7 @@ function HELP_Callback(hObject, eventdata, handles)
 path_to_uvmat=which ('uvmat');% check the path of uvmat
 pathelp=fileparts(path_to_uvmat);
 helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
-if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
-else
+if ~isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
     addpath (fullfile(pathelp,'uvmat_doc'))
     web([helpfile '#set_object']) 
 end
@@ -640,12 +633,15 @@ switch Type
     % add lines if multi line input needed
     case{'points','polyline','polygon'}
         Coord=get(handles.Coord,'Data');
-        if isequal(size(Coord,2),3)
-            Coord=[Coord;{[]} {[]} {[]}];%add a line for edition (3D case)
-        else
-            Coord=[Coord;{[]} {[]}]; %add a line for edition (2D case)
+        if ~isnan(Coord(end,1))
+            if isequal(size(Coord,2),3)
+                %Coord=[Coord;{[]} {[]} {[]}];%add a line for edition (3D case)
+                Coord=[Coord;NaN NaN NaN]; %add a line for edition (3D case)
+            else
+                Coord=[Coord;NaN NaN]; %add a line for edition (2D case)
+            end
+            set(handles.Coord,'Data',Coord)
         end
-        set(handles.Coord,'Data',Coord)
 end
 
 

@@ -64,18 +64,20 @@ if isfield (Param,'Civ1')
         if par_civ1.reverse_pair
             if ischar(par_civ1.ImageB)
                 temp=par_civ1.ImageA;
-                par_civ1.ImageA=sum(imread(par_civ1.ImageB),3);
+                par_civ1.ImageA=imread(par_civ1.ImageB);
             end
             if ischar(temp)
-                par_civ1.ImageB=sum(imread(temp),3);
+                par_civ1.ImageB=imread(temp);
             end
         end
     else
         if isfield(par_civ1,'ImageA') && ischar(par_civ1.ImageA) % case with no image: only the PIV grid is calculated
-            par_civ1.ImageA=sum(imread(par_civ1.ImageA),3);
+            [Field,ParamOut,errormsg] = read_field(par_civ1.ImageA,par_civ1.FileTypeA,[],par_civ1.i1);
+            par_civ1.ImageA=Field.A;%imread(par_civ1.ImageA);%[Field,ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num)
         end
         if isfield(par_civ1,'ImageB')&& ischar(par_civ1.ImageB)
-            par_civ1.ImageB=sum(imread(par_civ1.ImageB),3);
+            [Field,ParamOut,errormsg] = read_field(par_civ1.ImageB,par_civ1.FileTypeB,[],par_civ1.i2);
+            par_civ1.ImageB=Field.A;%=imread(par_civ1.ImageB);
         end
     end
     
@@ -465,15 +467,13 @@ check_MaxIma=isfield(par_civ,'MaxIma') && ~isempty(par_civ.MaxIma);
 %         par_civ.ImageB=imread(par_civ.ImageB);
 %     end
 % end
-
+par_civ.ImageA=sum(double(par_civ.ImageA),3);%sum over rgb component for color images
+par_civ.ImageB=sum(double(par_civ.ImageB),3);
 [npy_ima npx_ima]=size(par_civ.ImageA);
 if ~isequal(size(par_civ.ImageB),[npy_ima npx_ima])
     errormsg='image pair with unequal size';
     return
 end
-par_civ.ImageA=double(par_civ.ImageA);
-par_civ.ImageB=double(par_civ.ImageB);
-
 
 %% Apply mask
     % Convention for mask

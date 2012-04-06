@@ -918,7 +918,6 @@ if isempty(hfig)
     hwaitbar=uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
     drawnow
 end
-% datnum=[];
 Tabchar={};
 nbfiles=numel(civ_files);
 count=0;
@@ -1168,6 +1167,10 @@ if isempty(filecell)% (error message displayed in fct set_civ_filenames)
 end
 nbfield=numel(i1_civ1);
 nbslice=numel(j1_civ1);
+if ~strcmp(CivMode,'CivX')
+    [Param.Civ1.FileTypeA,FileInfo,Param.Civ1.ImageA]=get_file_type(filecell.ima1.civ1{1});
+    [Param.Civ1.FileTypeB,FileInfo,Param.Civ1.ImageB]=get_file_type(filecell.ima2.civ1{1});
+end
 
 %% MAIN LOOP
 time=get(handles.ImaDoc,'UserData'); %get the set of times
@@ -1218,6 +1221,8 @@ for ifile=1:nbfield
             Param.Civ1.ImageWidth=ImageInfo.Width;
             Param.Civ1.ImageHeight=ImageInfo.Height;
             Param.Civ1.ImageBitDepth=ImageInfo.BitDepth;
+            Param.Civ1.i1=i1_civ1;
+            Param.Civ1.i2=i2_civ1;
             % read mask parameters
             if Param.Civ1.CheckMask % the lines below should be changed with the new gui
                 if ~exist(Param.Civ1.Mask,'file')
@@ -1226,7 +1231,6 @@ for ifile=1:nbfield
                     i1_mask=mod(i1_civ1(ifile)-1,nbslice_mask)+1;
                     [RootPathMask,RootFileMask]=fileparts(maskbase);
                     Param.Civ1.Mask=fullfile_uvmat(RootPathMask,[],RootFileMask,'.png','_1',i1_mask);
-                   % Param.Civ1.Mask=name_generator(maskbase,i1_mask,1,'.png','_i');
                 end
             end
             % read grid parameters
@@ -1387,6 +1391,8 @@ for ifile=1:nbfield
             Param.Civ2.ImageWidth=ImageInfo.Width;
             Param.Civ2.ImageHeight=ImageInfo.Height;
             Param.Civ2.ImageBitDepth=ImageInfo.BitDepth;
+            Param.Civ2.i1=i1_civ2;
+            Param.Civ2.i2=i2_civ2;
             % TODO: case of movie   
             switch CivMode
                 case 'CivX'
@@ -1795,6 +1801,8 @@ function [filecell,i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_ci
     set_civ_filenames(handles,ref_i,ref_j,checkbox)
 %------------------------------------------------------------------------
 filecell=[];%default
+ListProgram=get(handles.ListProgram,'String');
+CivMode=ListProgram{get(handles.ListProgram,'Value')};%Program to use , CivX or Matlab
 
 %% get the root name and check dir
 RootPath=get(handles.RootPath,'String');
@@ -1808,7 +1816,7 @@ if ~exist(RootPath,'dir')
     msgbox_uvmat('ERROR',['path to images ' RootPath ' not found'])
     return
 end
-[xx,message]=fileattrib(RootPath);
+[tild,message]=fileattrib(RootPath);
 if ~isempty(message) && ~isequal(message.UserWrite,1)
     msgbox_uvmat('ERROR',['No writting access to ' RootPath])
     return
@@ -2413,98 +2421,100 @@ end
 set(handles.SubdirCiv1,'String',subdir_civ1);%update the edit box
 set(handles.SubdirCiv2,'String',subdir_civ2);%update the edit box
 
-%COPY IMAGES TO THE FORMAT .png IF NEEDED
-if isequal(NomType_ima1,'*')%case of movie files
-    NomType_imanew1='_i';
-else
-    NomType_imanew1=NomType_ima1;
-end
-if isequal(NomType_ima2,'*')%case of movie files
-    NomType_imanew2='_i';
-else
-    NomType_imanew2=NomType_ima2;
-end
-if ~isequal(ext_ima,'.png')
-    %%type of image file
-    type_ima1='none';%default
-    movieobject1=[];%default
-    if strcmpi(ext_ima,'.avi')
-        if ~isempty(which('mmreader'))% if the mmreader function is found (recent version of matlab)
-            type_ima1='movie';
-            movieobject1=mmreader([filecell.filebase ext_ima]);
-        else
-            type_ima1='avi';
-        end
-    elseif ischar(ext_ima) && ~isempty(ext_ima(2:end))
-        form=imformats(ext_ima(2:end));
-        if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-            if isequal(NomType_ima1,'*');
-                type_ima1='multimage';%image series in a single image file
+% For CivX COPY IMAGES TO THE FORMAT .png IF NEEDED 
+if strcmp(CivMode,'CivX')
+    if isequal(NomType_ima1,'*')%case of movie files
+        NomType_imanew1='_i';
+    else
+        NomType_imanew1=NomType_ima1;
+    end
+    if isequal(NomType_ima2,'*')%case of movie files
+        NomType_imanew2='_i';
+    else
+        NomType_imanew2=NomType_ima2;
+    end
+    if ~isequal(ext_ima,'.png')
+        %%type of image file
+        type_ima1='none';%default
+        movieobject1=[];%default
+        if strcmpi(ext_ima,'.avi')
+            if ~isempty(which('mmreader'))% if the mmreader function is found (recent version of matlab)
+                type_ima1='movie';
+                movieobject1=mmreader([filecell.filebase ext_ima]);
             else
-                type_ima1='image';
+                type_ima1='avi';
+            end
+        elseif ischar(ext_ima) && ~isempty(ext_ima(2:end))
+            form=imformats(ext_ima(2:end));
+            if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+                if isequal(NomType_ima1,'*');
+                    type_ima1='multimage';%image series in a single image file
+                else
+                    type_ima1='image';
+                end
             end
         end
-    end
-    type_ima2='none';%default
-    movieobject2=[];
-    if strcmpi(ext_ima,'.avi')
-        if ~isempty(which('mmreader'))% if the mmreader function is found (recent version of matlab)
-            type_ima2='movie';
-            movieobject2=mmreader([filecell.filebase ext_ima]);
-        else
-            type_ima2='avi';
-        end
-    elseif ischar(ext_ima) && ~isempty(ext_ima(2:end))
-        form=imformats(ext_ima(2:end));
-        if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-            if isequal(NomType_ima1,'*');
-                type_ima2='multimage';%image series in a single image file
+        type_ima2='none';%default
+        movieobject2=[];
+        if strcmpi(ext_ima,'.avi')
+            if ~isempty(which('mmreader'))% if the mmreader function is found (recent version of matlab)
+                type_ima2='movie';
+                movieobject2=mmreader([filecell.filebase ext_ima]);
             else
-                type_ima2='image';
+                type_ima2='avi';
+            end
+        elseif ischar(ext_ima) && ~isempty(ext_ima(2:end))
+            form=imformats(ext_ima(2:end));
+            if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+                if isequal(NomType_ima1,'*');
+                    type_ima2='multimage';%image series in a single image file
+                else
+                    type_ima2='image';
+                end
             end
         end
-    end
-    if checkbox(1) %if civ1 is performed
-        h = waitbar(0,'copy images to the .png format for civ1');% display a wait bar
-        for ifile=1:nbfield
-            waitbar(ifile/nbfield);
-            for j=1:nbslice
-                filename=fullfile_uvmat(RootPath,[],RootFile_ima1,'.png',NomType_imanew1,i1_civ1(ifile),[],j1_civ1(j));
-                if ~exist(filename,'file')
-                    A=read_image(filecell.ima1.civ1{ifile,j},type_ima1,i1_civ1(ifile),movieobject1);
-                    imwrite(A,filename,'BitDepth',16);
+        if checkbox(1) %if civ1 is performed
+            h = waitbar(0,'copy images to the .png format for civ1');% display a wait bar
+            for ifile=1:nbfield
+                waitbar(ifile/nbfield);
+                for j=1:nbslice
+                    filename=fullfile_uvmat(RootPath,[],RootFile_ima1,'.png',NomType_imanew1,i1_civ1(ifile),[],j1_civ1(j));
+                    if ~exist(filename,'file')
+                        A=read_image(filecell.ima1.civ1{ifile,j},type_ima1,i1_civ1(ifile),movieobject1);
+                        imwrite(A,filename,'BitDepth',16);
+                    end
+                    filecell.ima1.civ1(ifile,j)={filename};
+                    filename=fullfile_uvmat(RootPath,[],RootFile_ima2,'.png',NomType_imanew2,i2_civ1(ifile),[],j2_civ1(j));
+                    if ~exist(filename,'file')
+                        A=read_image(filecell.ima2.civ1{ifile,j},type_ima2,i2_civ1(ifile),movieobject2);
+                        imwrite(A,filename,'BitDepth',16);
+                    end
+                    filecell.ima2.civ1(ifile,j)={filename};
                 end
-                filecell.ima1.civ1(ifile,j)={filename};
-                filename=fullfile_uvmat(RootPath,[],RootFile_ima2,'.png',NomType_imanew2,i2_civ1(ifile),[],j2_civ1(j));
-                if ~exist(filename,'file')
-                    A=read_image(filecell.ima2.civ1{ifile,j},type_ima2,i2_civ1(ifile),movieobject2);
-                    imwrite(A,filename,'BitDepth',16);
-                end
-                filecell.ima2.civ1(ifile,j)={filename};
             end
+            close(h)
         end
-        close(h)
-    end
-    if checkbox(4) %if civ2 is performed
-        h = waitbar(0,'copy images to the .png format for civ2');% display a wait bar
-        for ifile=1:nbfield
-            waitbar(ifile/nbfield);
-            for j=1:nbslice
-                filename=fullfile_uvmat(RootPath,[],RootFile_ima1,'.png',NomType_imanew1,i1_civ2(ifile),[],j1_civ2(j));
-                if ~exist(filename,'file')
-                    A=read_image(cell2mat(filecell.ima1.civ2(ifile,j)),type_ima2,i1_civ2(ifile));
-                    imwrite(A,filename,'BitDepth',16);
+        if checkbox(4) %if civ2 is performed
+            h = waitbar(0,'copy images to the .png format for civ2');% display a wait bar
+            for ifile=1:nbfield
+                waitbar(ifile/nbfield);
+                for j=1:nbslice
+                    filename=fullfile_uvmat(RootPath,[],RootFile_ima1,'.png',NomType_imanew1,i1_civ2(ifile),[],j1_civ2(j));
+                    if ~exist(filename,'file')
+                        A=read_image(cell2mat(filecell.ima1.civ2(ifile,j)),type_ima2,i1_civ2(ifile));
+                        imwrite(A,filename,'BitDepth',16);
+                    end
+                    filecell.ima1.civ2(ifile,j)={filename};
+                    filename=fullfile_uvmat(RootPath,[],RootFile_ima2,'.png',NomType_imanew2,i2_civ2(ifile),[],j2_civ2(j));
+                    if ~exist(filename,'file')
+                        A=read_image(cell2mat(filecell.ima2.civ2(ifile,j)),type_ima2,i2_civ2(ifile));
+                        imwrite(A,filename,'BitDepth',16);
+                    end
+                    filecell.ima2.civ2(ifile,j)={filename};
                 end
-                filecell.ima1.civ2(ifile,j)={filename};
-                filename=fullfile_uvmat(RootPath,[],RootFile_ima2,'.png',NomType_imanew2,i2_civ2(ifile),[],j2_civ2(j));
-                if ~exist(filename,'file')
-                    A=read_image(cell2mat(filecell.ima2.civ2(ifile,j)),type_ima2,i2_civ2(ifile));
-                    imwrite(A,filename,'BitDepth',16);
-                end
-                filecell.ima2.civ2(ifile,j)={filename};
             end
+            close(h);
         end
-        close(h);
     end
 end
 
@@ -3915,9 +3925,11 @@ if get(handles.TestCiv1,'Value')
     Data.ny=[size(Data.A,1) 1];
     Data.nx=[1 size(Data.A,2)];
     par_civ1=read_GUI(handles.Civ1);
-    par_civ1.ImageWidth=size(Data.A,1);
-    par_civ1.ImageHeight=size(Data.A,2);
+    par_civ1.ImageWidth=size(Data.A,2);
+    par_civ1.ImageHeight=size(Data.A,1);
     par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation
+    par_civ1.i1=i1_civ1;
+    par_civ1.i2=i2_civ1;
     Param.Civ1=par_civ1;
     Grid=civ_matlab(Param);% get the grid of x, y positions set for PIV 
     hview_field=view_field(Data); %view the image in the GUI view_field

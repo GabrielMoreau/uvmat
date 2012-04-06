@@ -181,7 +181,7 @@ for icell=1:length(CellVarIndex)
         continue
     end
     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list FieldData.ListVarName
-    VarType=VarTypeCell{icell};
+    VarType=VarTypeCell{icell};% structure defining the types of variables in the cell
     ivar_X=VarType.coord_x;
     ivar_Y=VarType.coord_y;
     ivar_Z=VarType.coord_z;
@@ -210,8 +210,8 @@ for icell=1:length(CellVarIndex)
     ProjData.VarAttribute{3}.Role='ancillary';
     for ivar=VarIndex        
         VarName=FieldData.ListVarName{ivar};
-        ProjData.ListVarName=[ProjData.ListVarName {VarName}];
-        ProjData.VarDimName=[ProjData.VarDimName {'nb_points'}];
+        ProjData.ListVarName=[ProjData.ListVarName {VarName}];% add the current variable to the list of projected variables
+        ProjData.VarDimName=[ProjData.VarDimName {'nb_points'}]; % projected VarName has a single dimension called 'nb_points' (set of projection points)
     end
     if ~test_grid
         eval(['coord_x=FieldData.' FieldData.ListVarName{ivar_X} ';'])
@@ -235,85 +235,57 @@ for icell=1:length(CellVarIndex)
            ProjData.Y(ipoint,1)=Xpoint(2);
            if isequal(length(ivar_FF),1)
                FFName=FieldData.ListVarName{ivar_FF};
-               eval(['FF=FieldData.' FFName '(indsel);'])
-               %ind_indsel=find(~FF);
+               FF=FieldData.(FFName)(indsel);
                indsel=indsel(~FF);
            end
            ProjData.NbVal(ipoint,1)=length(indsel);
             for ivar=VarIndex 
                VarName=FieldData.ListVarName{ivar};
                if isempty(indsel)
-                    eval(['ProjData.' VarName '(ipoint,1)=NaN;'])
+                    ProjData.(VarName)(ipoint,1)=NaN;
                else
-                    eval(['Var=FieldData.' VarName '(indsel);'])
-                    eval(['ProjData.' VarName '(ipoint,1)=mean(Var);'])
+                    Var=FieldData.(VarName)(indsel);
+                    ProjData.(VarName)(ipoint,1)=mean(Var);
                     if isequal(ObjectData.ProjMode,'interp')
                          ProjData.(VarName)(ipoint,1)=griddata_uvmat(coord_x(indsel),coord_y(indsel),Var,Xpoint(1),Xpoint(2));
                     end
                end
             end
         end
-    else 
-        %DimIndices=FieldData.VarDimIndex{VarIndex(1)};%indices of the dimensions of the first variable (common to all variables in the cell)
-        %case of structured coordinates
+    else    %case of structured coordinates
         if  numel(VarType.coord)>=2 & VarType.coord(1:2) > 0;
             AYName=FieldData.ListVarName{VarType.coord(1)};
             AXName=FieldData.ListVarName{VarType.coord(2)};
             eval(['AX=FieldData.' AXName ';']);% set of x positions
             eval(['AY=FieldData.' AYName ';']);% set of y positions  
-            AName=FieldData.ListVarName{VarIndex(1)};
+            AName=FieldData.ListVarName{VarIndex(1)};% a single variable assumed in the current cell
             eval(['A=FieldData.' AName ';']);% scalar
-            npxy=size(A);
-
-% %             nbcolor=1; %default
-%             for idim=1:length(ListDimName)
-%                 DimName=ListDimName{idim};
-%                 if isequal(DimName,'rgb')|isequal(DimName,'nb_coord')|isequal(DimName,'nb_coord_i')
-%                    nbcolor=npxy(idim);
-%                    DimIndices(idim)=[];
-%                    npxy(idim)=[];
-%                 end
-%                 if isequal(DimName,'nb_coord_j')% NOTE: CASE OF TENSOR NOT TREATED
-%                     DimIndices(idim)=[];
-%                     npxy(idim)=[];
-%                 end
-%             end  
-            ind_1=find(npxy==1);
-            %DimIndices(ind_1)=[]; %suppress singleton dimensions 
-%             indxy=find(DimVarIndex(DimIndices));%select dimension variables (DimIndices non zero)
-            %NbDim=length(DimIndices)%number of space dimensions
-            NbDim=numel(VarType.coord);
-            Coord_z=[];
-            Coord_y=[];
-            Coord_x=[];   
+            npxy=size(A);        
+            NbDim=numel(VarType.coord(VarType.coord>0));%number of space dimensions 
+            %update VarDimName in case of components (non coordinate dimensions e;g. color components)
+            if numel(npxy)>NbDim
+                ProjData.VarDimName{end}={'nb_points','component'};
+            end
             for idim=1:NbDim %loop on space dimensions
                 test_interp(idim)=0;%test for coordiate interpolation (non regular grid), =0 by default
                 test_coord(idim)=0;%test for defined coordinates, =0 by default
-                %ivar=DimVarIndex(DimIndices(idim));% index of the variable corresponding to the current dimension
                 ivar=VarType.coord(idim);
-%                 if ~isequal(ivar,0)%  a variable corresponds to the current dimension
-                    eval(['Coord{idim}=FieldData.' FieldData.ListVarName{ivar} ';']) ;% position for the first index
-                    if numel(Coord{idim})==2
-                       DCoord_min(idim)= (Coord{idim}(2)-Coord{idim}(1))/(npxy(idim)-1);
-                    else
-                        DCoord=diff(Coord{idim});
-                        DCoord_min(idim)=min(DCoord);
-                        DCoord_max=max(DCoord);
-                        test_direct(idim)=DCoord_max>0;% =1 for increasing values, 0 otherwise
-                        test_direct_min=DCoord_min(idim)>0;% =1 for increasing values, 0 otherwise
-                        if ~isequal(test_direct(idim),test_direct_min)
-                            errormsg=['non monotonic dimension variable # ' num2str(idim)  ' in proj_field.m'];
-                                    return
-                        end               
-                        test_interp(idim)=(DCoord_max-DCoord_min(idim))> 0.0001*abs(DCoord_max);% test grid regularity
-                        test_coord(idim)=1;
+                Coord{idim}=FieldData.(FieldData.ListVarName{ivar}); % position for the first index
+                if numel(Coord{idim})==2
+                    DCoord_min(idim)= (Coord{idim}(2)-Coord{idim}(1))/(npxy(idim)-1);
+                else
+                    DCoord=diff(Coord{idim});
+                    DCoord_min(idim)=min(DCoord);
+                    DCoord_max=max(DCoord);
+                    test_direct(idim)=DCoord_max>0;% =1 for increasing values, 0 otherwise
+                    test_direct_min=DCoord_min(idim)>0;% =1 for increasing values, 0 otherwise
+                    if ~isequal(test_direct(idim),test_direct_min)
+                        errormsg=['non monotonic dimension variable # ' num2str(idim)  ' in proj_field.m'];
+                        return
                     end
-%                 else  % no variable associated with the first dimension, look fo variable  attributes Coord_1, _2 or _3
-%                     Coord_i_str=['Coord_' num2str(idim)];
-%                     DCoord_min(idim)=1;%default
-%                     Coord{idim}=[0.5 npxy(idim)];
-%                     test_direct(idim)=1;
-%                 end
+                    test_interp(idim)=(DCoord_max-DCoord_min(idim))> 0.0001*abs(DCoord_max);% test grid regularity
+                    test_coord(idim)=1;
+                end
             end
             DX=DCoord_min(2);
             DY=DCoord_min(1);
@@ -342,8 +314,8 @@ for icell=1:length(CellVarIndex)
                     %TODO: introduce circle in the selected subregion
                     %[I,J]=meshgrid([1:j_int],[1:i_int]);
                     for ivar=VarIndex   
-                        eval(['Avalue=FieldData.' FieldData.ListVarName{ivar} '(j_int,i_int,:);']);
-                        eval(['ProjData.' FieldData.ListVarName{ivar} '(ipoint,:)=mean(mean(Avalue));']);
+                        Avalue=FieldData.(FieldData.ListVarName{ivar})(j_int,i_int,:);
+                        ProjData.(FieldData.ListVarName{ivar})(ipoint,:)=mean(mean(Avalue));
                     end
                 end
             end
@@ -444,7 +416,7 @@ for icell=1:length(CellVarIndex)
         eval(['AX=FieldData.' AXName ';'])% x coordinate
         eval(['AY=FieldData.' AYName ';'])% y coordinate
         VarName=FieldData.ListVarName{VarIndex(1)};
-        eval(['DimValue=size(FieldData.' VarName ');'])
+        DimValue=size(FieldData.(VarName));
        if length(AX)==2
            AX=linspace(AX(1),AX(end),DimValue(2));
        end
@@ -459,7 +431,7 @@ for icell=1:length(CellVarIndex)
 %         end
 %         AX=linspace(Coord{2}(1),Coord{2}(2),DimValue(2));
 %         AY=linspace(Coord{1}(1),Coord{1}(2),DimValue(1));  %TODO : 3D case 
-        testcolor=find(numel(DimValue)==3);
+%         testcolor=find(numel(DimValue)==3);
         if length(DimValue)==3
             testcolor=1;
             npxy(3)=3;
@@ -474,7 +446,7 @@ for icell=1:length(CellVarIndex)
         Yi=reshape(Yi,npxy(1)*npxy(2),1);
         for ivar=1:length(VarIndex)
             VarName=FieldData.ListVarName{VarIndex(ivar)};
-            eval(['FieldData.' VarName '=reshape(FieldData.' VarName ',npxy(1)*npxy(2),npxy(3));']); % keep only non false vectors 
+            FieldData.(VarName)=reshape(FieldData.(VarName),npxy(1)*npxy(2),npxy(3)); % keep only non false vectors 
         end
     end
 %select the indices in the range of action
@@ -525,20 +497,20 @@ for icell=1:length(CellVarIndex)
     for ivar=VarIndex
         if testproj(ivar)
             VarName=FieldData.ListVarName{ivar};
-            eval(['ProjData.' VarName 'Mean=mean(mean(double(FieldData.' VarName '(indsel,:))));']); % keep only non false vectors
-            eval(['ProjData.' VarName 'Min=min(min(double(FieldData.' VarName '(indsel,:))));']); % keep only non false vectors
-            eval(['ProjData.' VarName 'Max=max(max(double(FieldData.' VarName '(indsel,:))));']); % keep only non false vectors
+            ProjData.([VarName 'Mean'])=mean(double(FieldData.(VarName)(indsel,:))); % take the mean in the selected region, for each color component 
+            ProjData.([VarName 'Min'])=min(double(FieldData.(VarName)(indsel,:))); % take the min in the selected region , for each color component  
+            ProjData.([VarName 'Max'])=max(double(FieldData.(VarName)(indsel,:))); % take the max in the selected region , for each color component
             if isequal(Mesh(ivar),0)
-                eval(['[ProjData.' VarName 'Histo,ProjData.' VarName ']=hist(double(FieldData.' VarName '(indsel,:)),100);']); % default histogram with 100 bins
+                eval(['[ProjData.' VarName 'Histo,ProjData.' VarName ']=hist(double(FieldData.' VarName '(indsel,:,:)),100);']); % default histogram with 100 bins
             else
                 eval(['ProjData.' VarName '=(ProjData.' VarName 'Min+Mesh(ivar)/2:Mesh(ivar):ProjData.' VarName 'Max);']); % list of bin values
                 eval(['ProjData.' VarName 'Histo=hist(double(FieldData.' VarName '(indsel,:)),ProjData.' VarName ');']); % histogram at predefined bin positions
             end
             ProjData.ListVarName=[ProjData.ListVarName {VarName} {[VarName 'Histo']} {[VarName 'Mean']} {[VarName 'Min']} {[VarName 'Max']}];
             if test_Amat && testcolor
-                 ProjData.VarDimName=[ProjData.VarDimName  {VarName} {{VarName,'rgb'}} {'rgb'}];%{{'nb_point','rgb'}};
+                 ProjData.VarDimName=[ProjData.VarDimName  {VarName} {{VarName,'rgb'}} {'rgb'} {'rgb'} {'rgb'}];%{{'nb_point','rgb'}};
             else
-               ProjData.VarDimName=[ProjData.VarDimName {VarName} {VarName} {'nbpoint'} {'nbpoint'} {'nbpoint'}];
+               ProjData.VarDimName=[ProjData.VarDimName {VarName} {VarName} {'one'} {'one'} {'one'}];
             end
             ProjData.VarAttribute=[ProjData.VarAttribute FieldData.VarAttribute{ivar} {[]} {[]} {[]} {[]}];
         end

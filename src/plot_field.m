@@ -93,10 +93,8 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColorbar)
-% use htext: handles of the text edit box (uicontrol)
-% introduce PlotParam.Hold: 'on' or 'off' (for curves)
-%default output
 
+%% default input and output
 if ~exist('PlotParam','var'),PlotParam=[];end;
 if ~exist('PosColorbar','var'),PosColorbar=[];end;
 PlotType='text'; %default
@@ -106,68 +104,95 @@ if isfield(PlotParam,'Coordinates')
 Coordinates=PlotParam.Coordinates;
 end
 
+%% check input structure
+index_2D=[];
+index_1D=[];
+index_0D=[];
+[Data,errormsg]=check_field_structure(Data);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',['input of plot_field/check_field_structure: ' errormsg])
+    display(['input of plot_field/check_field_structure: ' errormsg])
+    return
+end
+% check the cells of fields :
+[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',['input of plot_field/find_field_indices: ' errormsg]);
+    return
+end
+index_2D=find(NbDim==2,2);%find 2D fields (at most 2)
+index_3D=find(NbDim>2,1);
+if ~isempty(index_3D)
+    if isfield(Data,'NbDim')&& isequal(Data.NbDim,2)
+        index_2D=[index_2D index_3D];
+    else
+        msgbox_uvmat('ERROR','volume plot not implemented yet');
+        return
+    end
+end
+index_1D=find(NbDim==1);
+index_0D=find(NbDim==0);
+%remove coordinates variables from 1D plot
+if ~isempty(index_2D)
+    for ivar=1:length(index_1D)
+        if isequal(CellVarIndex{index_1D(ivar)},VarType{index_1D(ivar)}.coord)
+            index_1D(ivar)=0;
+        end
+    end
+    index_1D=index_1D(index_1D>0);
+end
+
+%% pure text display
+if isempty(index_2D) && isempty(index_1D)% no plot
+    hfig=findobj(allchild(0),'Tag','fig_text_display');
+    if isempty(hfig)
+        hfig=figure('name','text_display','Tag','fig_text_display');
+    end
+    htext=findobj(hfig,'Tag','text_display');
+    if isempty(htext)
+        htext=uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71],'Tag','text_display');
+    end
+    if isempty(index_0D)
+        set(htext,'String',{''})
+    else
+        [errormsg]=plot_text(Data,CellVarIndex(index_0D),htext);
+    end
+    haxes=[];
+end
+
 %% test axes and figure
-testnewfig=1;%test to create a new figure (default)
-testzoomaxes=0;%test for the existence of a zoom secondary figure attached to the plotting axes
-if exist('haxes','var')
-    if ishandle(haxes)
-        if isequal(get(haxes,'Type'),'axes')
-            testnewfig=0;
-            AxeData=get(haxes,'UserData');
-            if isfield(AxeData,'ZoomAxes')&& ishandle(AxeData.ZoomAxes)
-                if isequal(get(AxeData.ZoomAxes,'Type'),'axes') 
-                    testzoomaxes=1;
-                    zoomaxes=AxeData.ZoomAxes;
+if ~isempty(index_2D)|| ~isempty(index_1D)%  plot
+    testnewfig=1;%test to create a new figure (default)
+    testzoomaxes=0;%test for the existence of a zoom secondary figure attached to the plotting axes
+    if exist('haxes','var')
+        if ishandle(haxes)
+            if isequal(get(haxes,'Type'),'axes')
+                testnewfig=0;
+                AxeData=get(haxes,'UserData');
+                if isfield(AxeData,'ZoomAxes')&& ishandle(AxeData.ZoomAxes)
+                    if isequal(get(AxeData.ZoomAxes,'Type'),'axes')
+                        testzoomaxes=1;
+                        zoomaxes=AxeData.ZoomAxes;
+                    end
                 end
             end
         end
     end
-end
-
-% create a new figure and axes if the plotting axes does not exist
-if testnewfig
-    hfig=figure;
-    set(hfig,'Units','normalized')
-    haxes=axes;
-    set(haxes,'position',[0.13,0.2,0.775,0.73])
-     PlotParam.NextPlot='add'; %parameter for plot_profile and plot_his
-else
-    hfig=get(haxes,'parent');
-    set(0,'CurrentFigure',hfig)% the parent of haxes becomes the current figure
-    set(hfig,'CurrentAxes',haxes)%  haxes becomes the current axes of the parent figure 
-end
-
-%% check input structure
-if ~isempty(Data)
-    [Data,errormsg]=check_field_structure(Data);
-    if ~isempty(errormsg)
-        msgbox_uvmat('ERROR',['input of plot_field/check_field_structure: ' errormsg])
-        display(['input of plot_field/check_field_structure:: ' errormsg])
-        return
+    % create a new figure and axes if the plotting axes does not exist
+    if testnewfig
+        hfig=figure;
+        set(hfig,'Units','normalized')
+        haxes=axes;
+        set(haxes,'position',[0.13,0.2,0.775,0.73])
+        PlotParam.NextPlot='add'; %parameter for plot_profile and plot_his
+    else
+        hfig=get(haxes,'parent');
+        set(0,'CurrentFigure',hfig)% the parent of haxes becomes the current figure
+        set(hfig,'CurrentAxes',haxes)%  haxes becomes the current axes of the parent figure
     end
-
-    %% check the cells of fields :
-    [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data);
-    if ~isempty(errormsg)
-        msgbox_uvmat('ERROR',['input of plot_field/find_field_indices: ' errormsg]);
-        return
-    end
-    index_2D=find(NbDim==2,2);%find 2D fields (at most 2)
-    index_3D=find(NbDim>2,1);
-    if ~isempty(index_3D)
-        if isfield(Data,'NbDim')&& isequal(Data.NbDim,2)
-            index_2D=[index_2D index_3D];
-        else
-        msgbox_uvmat('ERROR','volume plot not implemented yet');
-        return
-        end
-    end
-   
-    index_1D=find(NbDim==1);
-    index_0D=find(NbDim==0);
     
     %% set axes properties
-    if isfield(Coordinates,'CheckFixLimits') && isequal(Coordinates.CheckFixLimits,1)  %adjust the graph limits*
+    if isfield(Coordinates,'CheckFixLimits') && isequal(Coordinates.CheckFixLimits,1)  %adjust the graph limits
         set(haxes,'XLimMode', 'manual')
         set(haxes,'YLimMode', 'manual')
     else
@@ -183,72 +208,69 @@ if ~isempty(Data)
     else
         set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
     end
-else
-    index_2D=[];
-    index_1D=[];
-    index_0D=[];
-end
-
-%% plot if the input field is valid
-PlotType='text';
-errormsg=[];
-AxeData=get(haxes,'UserData');
-if isempty(index_2D)
-    plot_plane([],[],[],haxes);%removes images or vector plots if any
-else
-    [xx,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),haxes,PlotParam,PosColorbar);
-    AxeData.NbDim=2;
-    if testzoomaxes && isempty(errormsg)
-        [zoomaxes,PlotParamOut,xx,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),zoomaxes,PlotParam,PosColorbar);
-        AxeData.ZoomAxes=zoomaxes;
-    end
-    %remove coordinates variables from 1D plot
-    for ivar=1:length(index_1D)
-        if isequal(CellVarIndex{index_1D(ivar)},VarType{index_1D(ivar)}.coord)
-            index_1D(ivar)=0;
+    errormsg='';
+    
+    %% plot if the input field is valid
+    AxeData=get(haxes,'UserData');
+    if isempty(index_2D)
+        plot_plane([],[],[],haxes);%removes images or vector plots if any
+    else
+        [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),haxes,PlotParam,PosColorbar);
+        AxeData.NbDim=2;
+        if testzoomaxes && isempty(errormsg)
+            [zoomaxes,PlotParamOut,tild,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),zoomaxes,PlotParam,PosColorbar);
+            AxeData.ZoomAxes=zoomaxes;
         end
     end
-    index_1D=find(index_1D);
-end
-
-if isempty(index_1D)
-    plot_profile([],[],[],haxes);%
-else
-    Coordinates=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,Coordinates);%
-    if testzoomaxes
-        [zoomaxes,Coordinates]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam.Coordinates);
-        AxeData.ZoomAxes=zoomaxes;
-    end
-    if ~isempty(Coordinates)
-        PlotParamOut.Coordinates=Coordinates;
-    end
-    PlotType='line';
-end
-htext=findobj(hfig,'Tag','text_display');
-if ~isempty(htext)
-    if isempty(index_0D)
-        set(htext,'String',{''})
+    if isempty(index_1D)
+        if ~isempty(haxes)
+            plot_profile([],[],[],haxes);%
+        end
     else
-        [errormsg]=plot_text(Data,CellVarIndex(index_0D),htext);
+        Coordinates=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,Coordinates);%
+        if testzoomaxes
+            [zoomaxes,Coordinates]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam.Coordinates);
+            AxeData.ZoomAxes=zoomaxes;
+        end
+        if ~isempty(Coordinates)
+            PlotParamOut.Coordinates=Coordinates;
+        end
+        PlotType='line';
+    end
+    % text display
+    htext=findobj(hfig,'Tag','text_display');
+    if ~isempty(htext)
+        if isempty(index_0D)
+            set(htext,'String',{''})
+        else
+            [errormsg]=plot_text(Data,CellVarIndex(index_0D),htext);
+        end
     end
 end
 
+%% display error message
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR', errormsg)
 end
-if isfield(PlotParamOut,'MinX')
-    AxeData.RangeX=[PlotParamOut.MinX PlotParamOut.MaxX];%'[PlotParamOut.MinX PlotParamOut.MaxX];
-    AxeData.RangeY=[PlotParamOut.MinY PlotParamOut.MaxY];%[PlotParamOut.MinY PlotParamOut.MaxY]
-end
 
 %% update the parameters stored in AxeData
-set(haxes,'UserData',AxeData)
+if ishandle(haxes)
+    if isfield(PlotParamOut,'MinX')
+        AxeData.RangeX=[PlotParamOut.MinX PlotParamOut.MaxX];%'[PlotParamOut.MinX PlotParamOut.MaxX];
+        AxeData.RangeY=[PlotParamOut.MinY PlotParamOut.MaxY];%[PlotParamOut.MinY PlotParamOut.MaxY]
+    end
+    set(haxes,'UserData',AxeData)
+end
 
 %% update the plotted field stored in parent figure
+
 FigData=get(hfig,'UserData');
-tagaxes=get(haxes,'tag');
+if strcmp(get(hfig,'tag'),'view_field')
+    set(hfig,'UserData',[]); % refresh user data in view_field (set by civ/TestCiv )
+end
+tagaxes=get(haxes,'tag');% tag of the current plot axis
 if isfield(FigData,tagaxes)
-    eval(['FigData.' tagaxes '=Data;'])
+    FigData.(tagaxes)=Data;
     set(hfig,'UserData',FigData)
 end
 
