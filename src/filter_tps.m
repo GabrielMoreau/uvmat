@@ -27,13 +27,10 @@ nbvec=size(Coord,1);
 W_tps=[];%default
 W_smooth=[];
 NbCoord=size(Coord,2);
-NbSubDomain=ceil(nbvec/SubDomain);
+NbSubDomain=nbvec/SubDomain;
 MinCoord=min(Coord,[],1);
-% MinY=min(Y,);
 MaxCoord=max(Coord,[],1);
-% MaxY=max(Y);
 Range=MaxCoord-MinCoord;
-% RangY=MaxY-MinY;
 AspectRatio=Range(2)/Range(1);
 NbSubDomainX=max(floor(sqrt(NbSubDomain/AspectRatio)),1);
 NbSubDomainY=max(floor(sqrt(NbSubDomain*AspectRatio)),1);
@@ -74,10 +71,7 @@ for isub=1:NbSubDomain
         elseif numel(ind_sel)<SubDomain/4 && ~isequal( ind_sel,ind_sel_previous);
             SubRange(:,1,isub)=SubRange(:,1,isub)-Siz'/4;
             SubRange(:,2,isub)=SubRange(:,2,isub)+Siz'/4;
-%             SubRangy(isub,1)=SubRangy(isub,1)-Siz(2)/4;
-%             SubRangy(isub,2)=SubRangy(isub,2)+Siz(2)/4;
-        else
-            
+        else          
             [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel,:),U(ind_sel),rho);
             [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel,:),V(ind_sel),rho);
             UDiff=U_smooth_sub-U(ind_sel);
@@ -108,11 +102,9 @@ for isub=1:NbSubDomain
                 [U_smooth_sub,U_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),U(ind_sel(ind_ind_sel)),rho);
                 [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),V(ind_sel(ind_ind_sel)),rho);
                 U_smooth(ind_sel(ind_ind_sel))=U_smooth(ind_sel(ind_ind_sel))+U_smooth_sub;
-                V_smooth(ind_sel(ind_ind_sel))=V_smooth(ind_sel(ind_ind_sel))+V_smooth_sub;
+                V_smooth(ind_sel(ind_ind_sel))=V_smooth(ind_sel(ind_ind_sel))+V_smooth_sub;   
                 NbSites(isub)=numel(ind_ind_sel);
-                %Indices_tps(1:NbSites(isub),isub)=ind_sel(ind_ind_sel);
                 Coord_tps(1:NbSites(isub),:,isub)=Coord(ind_sel(ind_ind_sel),:);
-%                 Y_tps(1:NbSites(isub),:,isub)=Coord(ind_sel(ind_ind_sel),2);
                 U_tps(1:NbSites(isub)+3,isub)=U_tps_sub;
                 V_tps(1:NbSites(isub)+3,isub)=V_tps_sub;
                 nb_select(ind_sel(ind_ind_sel))=nb_select(ind_sel(ind_ind_sel))+1;
@@ -126,10 +118,7 @@ ind_empty=find(check_empty);
 %remove empty subdomains
 if ~isempty(ind_empty)
     SubRange(:,:,ind_empty)=[];
-%     SubRangy(ind_empty,:)=[];
-%     Indices_tps(:,ind_empty)=[];
     Coord_tps(:,:,ind_empty)=[];
-%     Y_tps(:,ind_empty)=[];
     U_tps(:,ind_empty)=[];
     V_tps(:,ind_empty)=[];
 end

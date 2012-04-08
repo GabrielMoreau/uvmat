@@ -41,16 +41,11 @@
 %     - Information defined from the interface:
 %           .NewSeries: =1 when the first view of a new field series is displayed, else 0
 %           .filename:(char string)
-%           .VelType:(char string) type of velocity field selected
-%           .VelType_1:(char string)  REMPLACER LE CELL ACTUEL
 %           .FieldName: (char string) main field selected('image', 'velocity'...)
-%           .FieldName_1:(char string) second field selected('image', 'velocity'...)
 %           .CName: (char string)name of the scalar used for vector colors
 %          .MovieObject{1}: movie object representing an input movie
 %          .MovieObject{2}: idem for a second input series (_1)
 %          .filename_1 : last second input file name (to deal with a constant second input without reading again the file)
-%          .VelType_1: last velocity type (VelType, civ2...) for the second input series
-%          .FieldName_1: last field name(velocity, vorticity...) for the second input series
 %          .ZMin, .ZMax: range of the z coordinate
 %..... to complement
 %     - Information on  projection objects
@@ -1891,14 +1886,12 @@ function run0_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-%filename=read_file_boxes(handles);
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 filename=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 filename_1=[];%default
 if get(handles.SubField,'Value')
     [RootPath_1,SubDir_1,RootFile_1,FileIndices_1,FileExt_1]=read_file_boxes_1(handles);
     filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndices_1 FileExt_1];
-   % filename_1=read_file_boxes_1(handles);
 end
 num_i1=stra2num(get(handles.i1,'String'));
 num_i2=stra2num(get(handles.i2,'String'));
@@ -1982,9 +1975,10 @@ if ~isempty(filename)
             index_fields=get(handles.Fields,'Value');% selected string index
             FieldName= list_fields{index_fields}; % selected field
             if ~strcmp(FieldName,'get_field...')
-                TestVelType=get(handles.FixVelType,'Value');
-                if TestVelType
-                    VelType=setfield(handles);% read the velocity type.
+                if get(handles.FixVelType,'Value')
+                    VelTypeList=get(handles.VelType,'String');
+                    VelType=VelTypeList{get(handles.VelType,'Value')};
+%                     VelType=setfield(handles);% read the velocity type.
                 end
             end
             if strcmp(FieldName,'velocity')
@@ -2042,12 +2036,12 @@ if ~isempty(filename_1)
         %     if strcmp(Ext,'.nc')||strcmp(Ext,'.cdf')
         case {'civx','civdata','netcdf'};
             list_fields=get(handles.Fields_1,'String');% list menu fields
-            index_fields=get(handles.Fields_1,'Value');% selected string index
-            FieldName_1= list_fields{index_fields}; % selected field
+            FieldName_1= list_fields{get(handles.Fields_1,'Value')}; % selected field
             if ~strcmp(FieldName,'get_field...')
-                TestVelType=get(handles.FixVelType,'Value');
-                if TestVelType
-                    VelType_1=setfield(handles);% read the velocity type.
+                if get(handles.FixVelType,'Value')
+                    VelTypeList=get(handles.VelType_1,'String');
+                    VelType_1=VelTypeList{get(handles.VelType_1,'Value')};% read the velocity type.
+%                     VelType_1=setfield(handles);% read the velocity type.
                 end
             end
             if strcmp(FieldName_1,'velocity')
@@ -2073,12 +2067,12 @@ if ~isempty(filename_1)
     NomType_1=get(handles.NomType_1,'String');
     test_keepdata_1=0;% test for keeping the previous stored data if the input files are unchanged
     if ~isequal(NomType_1,'*')%in case of a series of files (not avi movie)
-        if isfield(UvData,'filename_1')&& isfield(UvData,'VelType_1') && isfield(UvData,'FieldName_1')
-            test_keepdata_1= strcmp(filename_1,UvData.filename_1) && strcmp(VelType_1,UvData.VelType_1) && strcmp(FieldName_1,UvData.FieldName_1);
+        if isfield(UvData,'filename_1')%&& isfield(UvData,'VelType_1') && isfield(UvData,'FieldName_1')
+            test_keepdata_1= strcmp(filename_1,UvData.filename_1) ;%&& strcmp(FieldName_1,UvData.FieldName_1);
         end
     end
     if test_keepdata_1
-        Field{2}=UvData.Field_1;
+        Field{2}=UvData.Field_1;% keep the stored field
     else
         ParamIn.FieldName=FieldName_1;
         ParamIn.VelType=VelType_1;
@@ -2135,7 +2129,7 @@ if isempty(filename_1)
     set(handles.Fields_1,'Value',1); %update the field menu
     set(handles.Fields_1,'String',[{''};ParamOut.FieldList]); %update the field menu
 else
-    if ~isequal(FileType_1,'netcdf')|| isequal(FieldName_1,'get_field...')
+    if (~strcmp(FileType_1,'netcdf')&&~strcmp(FileType_1,'civdata')&&~strcmp(FileType_1,'civx'))|| isequal(FieldName_1,'get_field...')
         set(handles.VelType_1,'Visible','off')
     else 
         test_veltype_1=1;
@@ -2161,12 +2155,10 @@ end
 %put W as background image by default if NbDim=2:
 if  UvData.NewSeries && isequal(get(handles.SubField,'Value'),0) && isfield(Field{1},'W') && ~isempty(Field{1}.W) && ~isequal(Field{1}.NbDim,3);
         set(handles.SubField,'Value',1);
-        %menu=update_menu(handles.Fields_1,'w');%update the menu for the background scalar nd set the choice to 'w'
         set(handles.RootPath_1,'String','"')
         set(handles.RootFile_1,'String','"')
         set(handles.SubDir_1,'String','"');
          indices=fullfile_uvmat('','','','',NomType,num_i1,num_i2,num_j1,num_j2);
-        %[indices]=name_generator('',num_i1,num_j1,'',NomType,1,num_i2,num_j2,'');
         set(handles.FileIndex_1,'String',indices)
         set(handles.FileExt_1,'String','"');
         set(handles.Fields_1,'Visible','on');
@@ -2182,14 +2174,6 @@ end
 
 %% store the current open names, fields and vel types in uvmat interface 
 UvData.filename_1=filename_1;
-UvData.VelType_1=[];%default
-UvData.FieldName_1=[];
-if isfield(ParamOut_1,VelType)
-    UvData.VelType_1=ParamOut_1.VelType;
-end
-if isfield(ParamOut_1,FieldName)
-    UvData.FieldName_1=ParamOut_1.FieldName;
-end
 
 %% apply coordinate transform or other user fct
 XmlData=[];%default
@@ -2208,7 +2192,7 @@ if ~isempty(filename)
     Field{1}.ZIndex=z_index;
 end
 %px to phys or other transform on field
-if ~isempty(transform) 
+if ~isempty(transform)
     if length(Field)>=2
         Field{2}.ZIndex=z_index;
         [Field{1},Field{2}]=transform(Field{1},XmlData,Field{2},XmlData_1);
@@ -2218,24 +2202,32 @@ if ~isempty(transform)
     else
         Field{1}=transform(Field{1},XmlData);
     end
-end 
-
-
-%% update tps in phys coordinates if needed
-if (strcmp(VelType,'filter1')||strcmp(VelType,'filter2'))&& strcmp(FileType,'civdata')&&isfield(Field{1},'U')&& isfield(Field{1},'V')
-    [Field{1}.SubRange,Field{1}.NbSites,Field{1}.Coord_tps,Field{1}.U_tps,Field{1}.V_tps]=filter_tps([Field{1}.X Field{1}.Y],Field{1}.U,Field{1}.V,[],1500,0);
+    %% update tps in phys coordinates if needed
+    if (strcmp(VelType,'filter1')||strcmp(VelType,'filter2'))&& strcmp(FileType,'civdata')&&isfield(Field{1},'U')&& isfield(Field{1},'V')
+        Field{1}.X=Field{1}.X(Field{1}.FF==0);
+        Field{1}.Y=Field{1}.Y(Field{1}.FF==0);
+        Field{1}.U=Field{1}.U(Field{1}.FF==0);
+        Field{1}.V=Field{1}.V(Field{1}.FF==0);
+        [Field{1}.SubRange,Field{1}.NbSites,Field{1}.Coord_tps,Field{1}.U_tps,Field{1}.V_tps]=filter_tps([Field{1}.X Field{1}.Y],Field{1}.U,Field{1}.V,[],Field{1}.Patch1_SubDomain,0);
+    end
+    if numel(Field)==2 && ~test_keepdata_1 && isequal(FileType_1(1:3),'civ') && ~isequal(ParamOut_1.FieldName,'get_field...')%&&~isempty(FieldName_1)
+        %update tps in phys coordinates if needed
+        if (strcmp(VelType_1,'filter1')||strcmp(VelType_1,'filter2'))&& strcmp(FileType_1,'civdata')&&isfield(Field{2},'U')&& isfield(Field{2},'V')
+            Field{2}.X=Field{2}.X(Field{2}.FF==0);
+            Field{2}.Y=Field{1}.Y(Field{2}.FF==0);
+            Field{2}.U=Field{1}.U(Field{2}.FF==0);
+            Field{2}.V=Field{1}.V(Field{2}.FF==0);
+            [Field{2}.SubRange,Field{2}.NbSites,Field{2}.Coord_tps,Field{2}.U_tps,Field{2}.V_tps]=filter_tps([Field{2}.X Field{2}.Y],Field{2}.U,Field{2}.V,[],1500,0);
+        end
+    end
 end
 
 %% calculate scalar
-if strcmp(FileType(1:3),'civ') && ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
-    Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1},VelType);
+if (strcmp(FileType,'civdata')||strcmp(FileType,'civx'))&&~strcmp(ParamOut.FieldName,'velocity')&& ~strcmp(ParamOut.FieldName,'get_field...');% ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
+    Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1},ParamOut.VelType);
 end
-if numel(Field)==2 && ~test_keepdata_1 && isequal(FileType_1(1:3),'civ') && ~isequal(ParamOut_1.FieldName,'get_field...')%&&~isempty(FieldName_1)
-    %update tps in phys coordinates if needed
-    if (strcmp(VelType_1,'filter1')||strcmp(VelType_1,'filter2'))&& strcmp(FileType_1,'civdata')&&isfield(Field{2},'U')&& isfield(Field{2},'V')
-        [Field{2}.SubRange,Field{2}.NbSites,Field{2}.Coord_tps,Field{2}.U_tps,Field{2}.V_tps]=filter_tps([Field{2}.X Field{2}.Y],Field{2}.U,Field{2}.V,[],1500,0);
-    end
-    Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2},VelType_1);
+if numel(Field)==2 && ~test_keepdata_1 && (strcmp(FileType,'civdata')||strcmp(FileType,'civx'))  &&~strcmp(ParamOut.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
+     Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2},ParamOut_1.VelType);
 end
 
 %% combine the two input fields (e.g. substract velocity fields)
@@ -2386,18 +2378,18 @@ elseif isfield(UvData,'Z')
         UvData.Object{1}.ZObject=UvData.ZIndex;
     end
 else
-    % create a default projection
-    UvData.Object{1}.ProjMode='projection';%main plotting plane
-    UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
-    set(handles.ListObject,'Value',1);
-    list_object=get(handles.ListObject,'String');
-    if isempty(list_object)
-        list_object={''};
-    elseif ~isempty(list_object{1})
-        list_object=[{''};list_object];
-    end
-    set(handles.ListObject,'String',list_object);
-%     set(handles.list_object_2,'String',list_object);
+%     % create a default projection
+%     UvData.Object{1}.ProjMode='projection';%main plotting plane
+%     UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
+%     set(handles.ListObject,'Value',1);
+%     list_object=get(handles.ListObject,'String');
+%     if isempty(list_object)
+%         list_object={''};
+%     elseif ~isempty(list_object{1})
+%         list_object=[{''};list_object];
+%     end
+%     set(handles.ListObject,'String',list_object);
+% %     set(handles.list_object_2,'String',list_object);
 end
 testnewseries=UvData.NewSeries;
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
@@ -2783,22 +2775,6 @@ var_FixFlag=ncvar(flagname,nc);% var_FixFlag will be written as the netcdf varia
 var_FixFlag(1:nb_vectors)=AxeData.FF;% 
 fin=close(nc);
 
-%-------------------------------------------------------------------
-%determines the fields to read from the interface
-%------------------------------------------------------------------
-function VelType=setfield(handles)
-VelTypeList=get(handles.VelType,'String');
-index=get(handles.VelType,'Value');
-VelType=VelTypeList{index};
-
-%-------------------------------------------------------------------
-%determines the veltype of the second field to read from the iinterface
-%------------------------------------------------------------------
-function VelType=setfield_1(handles)
-VelTypeList=get(handles.VelType_1,'String');
-index=get(handles.VelType_1,'Value');
-VelType=VelTypeList{index};
-
 %---------------------------------------------------
 % --- Executes on button press in SubField
 function SubField_Callback(hObject, eventdata, handles)
@@ -2965,7 +2941,6 @@ else
     set(handles.num_Npx,'Visible','off')
     set(handles.num_Npy,'Visible','off')
 end
-setfield(handles);% update the field structure ('civ1'....)
 if ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
     run0_Callback(hObject, eventdata, handles)
 end
@@ -2979,6 +2954,9 @@ check_new=~get(handles.SubField,'Value'); %check_new=1 if a second field was not
 UvData=get(handles.uvmat,'UserData');
 if check_new && isfield(UvData,'XmlData')
     UvData.XmlData{2}=UvData.XmlData{1};
+end
+if isfield(UvData,'Field_1')
+    UvData=rmfield(UvData,'Field_1');% remove the stored second field (a new one needs to be read)
 end
 list_fields=get(handles.Fields,'String');% list menu fields
 index_fields=get(handles.Fields,'Value');% selected string index
@@ -3061,7 +3039,7 @@ switch field_1
             set(handles.num_Npy,'Visible','off')
         end
         set(handles.uvmat,'UserData',UvData)
-        setfield(handles);% update the field structure ('civ1'....)
+%         setfield(handles);% update the field structure ('civ1'....)
         if ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
             run0_Callback(hObject, eventdata, handles)
         end
@@ -3071,26 +3049,40 @@ end
 % --- set the visibility of relevant velocity type menus: 
 function menu=set_veltype_display(Civ,FileType)
 %------------------------------------------------------------------------
-if isequal(Civ,0)
-    imax=0;
-elseif isequal(Civ,1) || isequal(Civ,2)
-   imax=1;
-elseif isequal(Civ,3) 
-    imax=3;
-elseif isequal(Civ,4) || isequal(Civ,5)
-    imax=4;
-elseif isequal(Civ,6) %patch2
-    imax=6;
-end
 if ~exist('FileType','var')
     FileType='civx';
 end
 switch FileType
     case 'civx'
-menu={'civ1';'interp1';'filter1';'civ2';'interp2';'filter2'};
+        menu={'civ1';'interp1';'filter1';'civ2';'interp2';'filter2'};
+        if isequal(Civ,0)
+            imax=0;
+        elseif isequal(Civ,1) || isequal(Civ,2)
+            imax=1;
+        elseif isequal(Civ,3)
+            imax=3;
+        elseif isequal(Civ,4) || isequal(Civ,5)
+            imax=4;
+        elseif isequal(Civ,6) %patch2
+            imax=6;
+        end
     case 'civdata'
-    menu={'civ1';'civ-filter1';'filter1';'civ2';'civ-filter2';'filter2'};   
+        menu={'civ1';'filter1';'civ2';'filter2'};
+        if isequal(Civ,0)
+            imax=0;
+        elseif isequal(Civ,1) || isequal(Civ,2)
+            imax=1;
+        elseif isequal(Civ,3)
+            imax=2;
+        elseif isequal(Civ,4) || isequal(Civ,5)
+            imax=3;
+        elseif isequal(Civ,6) %patch2
+            imax=4;
+        end
 end
+
+
+
 menu=menu(1:imax);
 
 %------------------------------------------------------------------------
@@ -3106,28 +3098,33 @@ function VelType_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
   
 set(handles.FixVelType,'Value',1)% the velocity type is now imposed by the GUI (not automatic)
+UvData=get(handles.uvmat,'UserData');
 %refresh field with a second filename=first fiel name
 set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow   
 InputFile=read_GUI(handles.InputFile);
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 filename=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-%filename=read_file_boxes(handles);
-
-index=get(handles.VelType_1,'Value');
-if index==1
+% VelTypeList=get(handles.VelType_1,'String');
+% VelType_1=VelTypeList{get(handles.VelType_1,'Value')};
+if isempty(InputFile.VelType_1)
         filename_1='';% we plot the current field without the second field
         set(handles.SubField,'Value',0)
         SubField_Callback(hObject, eventdata, handles)
 elseif get(handles.SubField,'Value')% if subfield is already 'on'
       [RootPath_1,SubDir_1,RootFile_1,FileIndices_1,FileExt_1]=read_file_boxes_1(handles);
      filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndices_1 FileExt_1];
-    %filename_1=read_file_boxes_1(handles); %read the current second field
+%       UvData.VelType{2}=InputFile.VelType_1;
 else
      filename_1=filename;% we compare two fields in the same file
+     UvData.FileType{2}=UvData.FileType{1};
+%      UvData.VelType{2}=InputFile.VelType_1;
      set(handles.SubField,'Value',1)
 end
-
+if isfield(UvData,'Field_1')
+    UvData=rmfield(UvData,'Field_1');% removes the stored second field if it exists
+end
+set(handles.uvmat,'UserData',UvData)
 num_i1=stra2num(get(handles.i1,'String'));
 num_i2=stra2num(get(handles.i2,'String'));
 num_j1=stra2num(get(handles.j1,'String'));
@@ -4455,12 +4452,9 @@ sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
 %read the file
-% t=xmltree(fileinput);
-% data=convert(t);
 data=xml2struct(fileinput);
 data.enable_plot=1;
-[pp,data.Name]=fileparts(FileName);
-%PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
+[tild,data.Name]=fileparts(FileName);
 hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
@@ -4489,17 +4483,22 @@ UvData=get(handles.uvmat,'UserData');
 set(handles.edit_object,'Value',0); %suppress the object edit mode
 set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
 data.enable_plot=1;
-transform_list=get(handles.transform_fct,'String');
-val=get(handles.transform_fct,'Value');
-%data.CoordType=transform_list{val};
 data.Coord=[0 0]; %default
 if isfield(UvData,'Field')
     Field=UvData.Field;
     if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
-        data.RangeX=Field.Mesh;
-        data.RangeY=Field.Mesh;
-        data.DX=Field.Mesh;
-        data.DY=Field.Mesh;
+        ord=10^(floor(log10(Field.Mesh)));%order of magnitude
+        if Field.Mesh/ord>=5
+            mesh=5*ord;
+        elseif Field.Mesh/ord>=2
+            mesh=2*ord;
+        else
+            mesh=ord;
+        end
+        data.RangeX=mesh;
+        data.RangeY=mesh;
+        data.DX=mesh;
+        data.DY=mesh;
     elseif isfield(Field,'AX')&& isfield(Field,'AY')&& isfield(Field,'A')%only image
         np=size(Field.A);
         meshx=(Field.AX(end)-Field.AX(1))/np(2);
@@ -4515,25 +4514,15 @@ if isfield(UvData,'Field')
         data.CoordUnit=Field.CoordUnit;
     end
 end
-% if isfield(data,'Type') && isequal(data.Type,'line')
-%     if isfield(data,'DX')
-%         data.Coord=[[0 0 0];[data.DX 0 0]]; %default 
-%     else
-%         data.Coord=[[0 0 0];[1 0 0]]; %default 
-%     end
-% end
 if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
 end
-%PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
 set_object(data,handles);% call the set_object interface
 set(handles.MenuObject,'checked','on')
 set(handles.uvmat,'UserData',UvData)
 set(handles.CheckZoom,'Value',0)
 CheckZoom_Callback(handles.uvmat, [], handles)
 set(handles.delete_object,'Visible','on')
-% set(handles._title,'Visible','on')
-% set(handles.view_field_title,'Visible','on')
 
 %------------------------------------------------------------------------
 function MenuRuler_Callback(hObject, eventdata, handles)

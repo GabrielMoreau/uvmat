@@ -171,19 +171,19 @@ if isfield (Param,'Patch1')
         errormsg='Civ Matlab input needed for patch';
         return
     end
-    check_patch1=1;
+    
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch1_Rho','Patch1_Threshold','Patch1_SubDomain'}];
     Data.Patch1_Rho=Param.Patch1.SmoothingParam;
     Data.Patch1_Threshold=Param.Patch1.MaxDiff;
     Data.Patch1_SubDomain=Param.Patch1.SubdomainSize;
-    Data.ListVarName=[Data.ListVarName {'Civ1_U_Diff','Civ1_V_Diff','Civ1_SubRange','Civ1_NbSites','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
+    Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbSites','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
     Data.VarDimName=[Data.VarDimName {'NbVec1','NbVec1',{'NbCoord','Two','NbSubDomain1'},{'NbSubDomain1'},...
              {'NbVec1Sub','NbCoord','NbSubDomain1'},{'Nbtps1','NbSubDomain1'},{'Nbtps1','NbSubDomain1'}}];
     nbvar=length(Data.ListVarName);
     Data.VarAttribute{nbvar-1}.Role='vector_x';
     Data.VarAttribute{nbvar}.Role='vector_y';
-    Data.Civ1_U_Diff=zeros(size(Data.Civ1_X));
-    Data.Civ1_V_Diff=zeros(size(Data.Civ1_X));
+    Data.Civ1_U_smooth=zeros(size(Data.Civ1_X));
+    Data.Civ1_V_smooth=zeros(size(Data.Civ1_X));
     if isfield(Data,'Civ1_FF')
         ind_good=find(Data.Civ1_FF==0);
     else 
@@ -191,8 +191,10 @@ if isfield (Param,'Patch1')
     end
     [Data.Civ1_SubRange,Data.Civ1_NbSites,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
             filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomain,Data.Patch1_Rho,Data.Patch1_Threshold); 
-      Data.Civ1_U_Diff(ind_good)=Data.Civ1_U(ind_good)-Ures;
-      Data.Civ1_V_Diff(ind_good)=Data.Civ1_V(ind_good)-Vres;
+%       Data.Civ1_U_Diff(ind_good)=Data.Civ1_U(ind_good)-Ures;
+%       Data.Civ1_V_Diff(ind_good)=Data.Civ1_V(ind_good)-Vres;
+      Data.Civ1_U_smooth(ind_good)=Ures;
+      Data.Civ1_V_smooth(ind_good)=Vres;
       Data.Civ1_FF(ind_good)=FFres;
       Data.CivStage=3;                             
 end   
@@ -212,8 +214,8 @@ if isfield (Param,'Civ2')
     end
     ibx2=ceil(par_civ2.Bx/2);
     iby2=ceil(par_civ2.By/2);
-    isx2=ibx2+5;% search ara +-5 pixels around the guess
-    isy2=iby2+5;
+    isx2=ibx2+4;% search ara +-4 pixels around the guess
+    isy2=iby2+4;
     % shift from par_civ2.filename_nc1
     % shiftx=velocity interpolated at position
     miniy=max(1+isy2,1+iby2);

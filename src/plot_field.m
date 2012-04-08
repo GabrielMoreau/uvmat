@@ -155,7 +155,7 @@ if isempty(index_2D) && isempty(index_1D)% no plot
     if isempty(index_0D)
         set(htext,'String',{''})
     else
-        [errormsg]=plot_text(Data,CellVarIndex(index_0D),htext);
+        [errormsg]=plot_text(Data,CellVarIndex(index_0D),VarType(index_0D),htext);
     end
     haxes=[];
 end
@@ -243,7 +243,7 @@ if ~isempty(index_2D)|| ~isempty(index_1D)%  plot
         if isempty(index_0D)
             set(htext,'String',{''})
         else
-            [errormsg]=plot_text(Data,CellVarIndex(index_0D),htext);
+            [errormsg]=plot_text(Data,CellVarIndex(index_0D),VarType(index_0D),htext);
         end
     end
 end
@@ -275,20 +275,29 @@ if isfield(FigData,tagaxes)
 end
 
 %-------------------------------------------------------------------
-function errormsg=plot_text(FieldData,CellVarIndex,htext)
+function errormsg=plot_text(FieldData,CellVarIndex,VarTypeCell,htext)
 %-------------------------------------------------------------------
 errormsg=[];
 txt_cell={};
 for icell=1:length(CellVarIndex)
     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list data.ListVarName
     for ivar=1:length(VarIndex)
-         VarName=FieldData.ListVarName{VarIndex(ivar)};
-         VarValue=FieldData.(VarName);
-         if size(VarValue,1)~=1
-             VarValue=VarValue';
-         end
-         txt=[VarName '=' num2str(VarValue)];
-         txt_cell=[txt_cell;{txt}];
+        checkancillary=0;
+        if length(FieldData.VarAttribute)>=VarIndex(ivar)
+            VarAttribute=FieldData.VarAttribute{VarIndex(ivar)};
+            if isfield(VarAttribute,'Role')&&strcmp(VarAttribute.Role,'ancillary')
+                checkancillary=1;
+            end
+        end
+        if ~checkancillary% does not display variables with attribute '.Role=ancillary'
+            VarName=FieldData.ListVarName{VarIndex(ivar)};
+            VarValue=FieldData.(VarName);
+            if size(VarValue,1)~=1
+                VarValue=VarValue';
+            end
+            txt=[VarName '=' num2str(VarValue)];
+            txt_cell=[txt_cell;{txt}];
+        end
     end
 end
 set(htext,'String',txt_cell)
@@ -1177,7 +1186,6 @@ ord=10^(floor(log10(maxabs)));%order of magnitude
 div=1;
 siz2=1;
 while siz2<2
-%     values=[-9:div:9];
     values=-10:div:10;
     ind=find((ord*values-MaxA)<0 & (ord*values-MinA)>0);%indices of 'values' such that MinA<ord*values<MaxA
     siz=size(ind);
@@ -1186,18 +1194,15 @@ while siz2<2
         ind=find((ord*values-MaxA)<0 & (ord*values-MinA)>0);
     end
     siz2=size(ind,2);
-%     siz2=siz(2)
     div=div/10;
 end
 YTick=ord*values(ind);
 end
 
-%'proj_grid': project  fields with unstructured coordinantes on a regular grid
 % -------------------------------------------------------------------------
-% function [A,rangx,rangy]=proj_grid(vec_X,vec_Y,vec_A,rgx_in,rgy_in,npxy_in)
-
-
+% --- 'proj_grid': project  fields with unstructured coordinantes on a regular grid
 function [A,rangx,rangy]=proj_grid(vec_X,vec_Y,vec_A,rgx_in,rgy_in,npxy_in)
+% -------------------------------------------------------------------------
 if length(vec_Y)<2
     msgbox_uvmat('ERROR','less than 2 points in proj_grid.m');
     return; 
@@ -1211,7 +1216,6 @@ if max(abs(diff2))>0.001*abs(diffy(index(1))) % if max(diff2) is larger than 1/1
     if exist('rgx_in','var') & ~isempty (rgx_in) & isnumeric(rgx_in) & length(rgx_in)==2%  positions imposed from input
         rangx=rgx_in; % first and last positions
         rangy=rgy_in;
-%             npxy=npxy_in;
         dxy(1)=1/(npxy_in(1)-1);%grid mesh in y
         dxy(2)=1/(npxy_in(2)-1);%grid mesh in x
         dxy(1)=(rangy(2)-rangy(1))/(npxy_in(1)-1);%grid mesh in y
@@ -1226,7 +1230,6 @@ if max(abs(diff2))>0.001*abs(diffy(index(1))) % if max(diff2) is larger than 1/1
     end
     xi=[rangx(1):dxy(2):rangx(2)];
     yi=[rangy(1):dxy(1):rangy(2)];
-    [XI,YI]=meshgrid(xi,yi);% creates the matrix of regular coordinates
     A=griddata_uvmat(vec_X,vec_Y,vec_A,xi,yi'); 
     A=reshape(A,length(yi),length(xi));
 else
@@ -1234,7 +1237,6 @@ else
     indexend=index(end);% last vector index of line change
     ymax=vec_Y(indexend+1);% y coordinate AFTER line change
     ymin=vec_Y(index(1));
-    %y=[vec_Y(index) ymax]; % the set of y ordinates including the last one
     y=vec_Y(index);
     y(length(y)+1)=ymax;
     nx=length(x);   %number of grid points in x
@@ -1251,7 +1253,6 @@ else
         npxy=npxy_in;
     else        
         rangx=[vec_X(1) vec_X(nx)];% first and last position found for x
-%             rangy=[ymin ymax];
           rangy=[max(ymax,ymin) min(ymax,ymin)];
         if max(nx,ny) <= 64 & isequal(npxy_in,'np>256')
             npxy=[8*ny 8*nx];% increase the resolution 8 times
@@ -1271,7 +1272,5 @@ else
         A = interp2(X,Y,B,XI,YI);
     else %no interpolation for a resolution higher than 256
         A=B;
-        XI=X;
-        YI=Y;
     end
 end

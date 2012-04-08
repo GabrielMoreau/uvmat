@@ -1168,8 +1168,14 @@ end
 nbfield=numel(i1_civ1);
 nbslice=numel(j1_civ1);
 if ~strcmp(CivMode,'CivX')
+    if Param.CheckCiv1
     [Param.Civ1.FileTypeA,FileInfo,Param.Civ1.ImageA]=get_file_type(filecell.ima1.civ1{1});
     [Param.Civ1.FileTypeB,FileInfo,Param.Civ1.ImageB]=get_file_type(filecell.ima2.civ1{1});
+    end
+    if Param.CheckCiv2
+    [Param.Civ2.FileTypeA,FileInfo,Param.Civ2.ImageA]=get_file_type(filecell.ima1.civ2{1});
+    [Param.Civ2.FileTypeB,FileInfo,Param.Civ2.ImageB]=get_file_type(filecell.ima2.civ2{1});
+    end
 end
 
 %% MAIN LOOP
@@ -2940,14 +2946,14 @@ end
 %------------------------------------------------------------------------
 % determine the menu for checkciv1 pairs depending on existing netcdf file at the middle of
 % the field series set by first_i, incr, last_i
+% index=1: look for pairs for civ1
+% index=2: look for pairs for civ2
 function errormsg=find_netcpair_civ(handles,index)
 %------------------------------------------------------------------------
 set(gcf,'Pointer','watch')% set the mouse pointer to 'watch' (clock)
 
 %% initialisation
 errormsg='';
-% filebase=get(handles.RootPath,'String');
-% [filepath,Nme,ext_dir]=fileparts(filebase);
 browse=get(handles.RootPath,'UserData');
 compare_list=get(handles.ListCompareMode,'String');
 val=get(handles.ListCompareMode,'Value');
@@ -2965,15 +2971,7 @@ end
 nom_type_ima=get(handles.NomType,'String');
 
 %% determine nom_type_nc, nomenclature type of the .nc files:
-% nom_type_nc='';%default
-% if isfield(browse,'nom_type_nc')
-%     nom_type_nc=browse.nom_type_nc;
-% end
-% if isempty(nom_type_nc)
-    [nom_type_nc]=nomtype2pair(nom_type_ima,mode);
-% end
-% browse.nom_type_nc=nom_type_nc;
-% set(handles.RootPath,'UserData',browse)
+[nom_type_nc]=nomtype2pair(nom_type_ima,mode);
 
 %% reads .nc subdirectoy and image numbers from the interface
 subdir_civ1=get(handles.SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf data
@@ -3003,7 +3001,6 @@ end
 nbpair=min(200,nbpair);%limit the number of displayed pairs to 200
 
 %% case with no Civ1 operation, netcdf files need to exist for reading
-% be performed, while the result is needed for next steps.
 displ_pair={''};
 select=ones(size(1:nbpair));%flag for displayed pairs =1 for display
 testpair=0;
@@ -3035,7 +3032,7 @@ if index==1 % case civ1
                 if  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
                     errormsg=['no civ1 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ1];
                 else
-                    errormsg=['no civ1 file available for the selected reference index i=' num2str(ref_i) ' and subdirectory ' subdir_civ1];
+                    errormsg=['no civ1 file available for the selected reference indices (i,j)= ' num2str(ref_i) ', ' num2str(ref_j) ' and subdirectory ' subdir_civ1];
                 end
                 set(handles.ListPairCiv1,'String',{''});
                 %COMPLETER CAS STEREO
@@ -3093,8 +3090,10 @@ if isequal(mode,'series(Di)')
         for ipair=1:nbpair
             if select(ipair)
                 displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2))];
-                if ~checkframe && size(time,1)>=ref_i+1+displ_num(4,ipair) && size(time,2)>=ref_j+1+displ_num(2,ipair)&&displ_num(2,ipair)>=1 &&displ_num(1,ipair)>=1
-                    dt=time(ref_i+1+displ_num(4,ipair),ref_j+1+displ_num(2,ipair))-time(ref_i+1+displ_num(3,ipair),ref_j+1+displ_num(1,ipair));%time interval dt
+                %if ~checkframe && size(time,1)>=ref_i+1+displ_num(4,ipair) && size(time,2)>=ref_j+1+displ_num(2,ipair)&&displ_num(2,ipair)>=1 &&displ_num(1,ipair)>=1
+                 %   dt=time(ref_i+1+displ_num(4,ipair),ref_j+1+displ_num(2,ipair))-time(ref_i+1+displ_num(3,ipair),ref_j+1+displ_num(1,ipair));%time interval dt
+               if ~checkframe && size(time,1)>=ref_i+1+ceil(ipair/2) && size(time,2)>=ref_j+1&& ref_i-floor(ipair/2)>=0 && ref_j>=0
+                 dt=time(ref_i+1+ceil(ipair/2),ref_j+1)-time(ref_i+1-floor(ipair/2),ref_j+1);%time interval dtref_j+1
                 else
                     dt=1;
                 end

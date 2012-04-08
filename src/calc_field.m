@@ -64,10 +64,9 @@ else
     RoleList={};
     units_cell={};
     
-    %% interpolation with new civ data 
-    %if isfield(DataIn,'X_SubRange')
+    %% interpolation with new civ data
     if isfield(DataIn,'SubRange') &&(strcmp(VelType,'filter1')||strcmp(VelType,'filter2'))
-        XMax=max(max(DataIn.SubRange(1,:,:)));
+        XMax=max(max(DataIn.SubRange(1,:,:)));% extrema of the coordinates
         YMax=max(max(DataIn.SubRange(2,:,:)));
         XMin=min(min(DataIn.SubRange(1,:,:)));
         YMin=min(min(DataIn.SubRange(2,:,:)));
@@ -75,91 +74,102 @@ else
             Mesh=sqrt((YMax-YMin)*(XMax-XMin)/numel(DataIn.Coord_tps(:,1,:)));%2D
             xI=XMin:Mesh:XMax;
             yI=YMin:Mesh:YMax;
-            [XI,YI]=meshgrid(xI,yI);
+            [XI,YI]=meshgrid(xI,yI);% interpolation grid
             XI=reshape(XI,[],1);
             YI=reshape(YI,[],1);
         end
         DataOut.ListGlobalAttribute=DataIn.ListGlobalAttribute; %reproduce global attribute
         for ilist=1:numel(DataOut.ListGlobalAttribute)
-            eval(['DataOut.' DataOut.ListGlobalAttribute{ilist} '=DataIn.' DataIn.ListGlobalAttribute{ilist} ';'])
+            DataOut.(DataOut.ListGlobalAttribute{ilist})=DataIn.(DataIn.ListGlobalAttribute{ilist});
         end
         DataOut.ListVarName={'coord_y','coord_x','FF'};
         DataOut.VarDimName{1}='coord_y';
         DataOut.VarDimName{2}='coord_x';
         DataOut.coord_y=[yI(1) yI(end)];
         DataOut.coord_x=[xI(1) xI(end)];
-        DataOut.U=zeros(size(XI));
-        DataOut.V=zeros(size(XI));
-        DataOut.vort=zeros(size(XI));       
-        DataOut.div=zeros(size(XI));
+        switch FieldName{1}
+            case {'velocity','u','v'}
+                DataOut.U=zeros(size(XI));
+                DataOut.V=zeros(size(XI));
+            case 'vort'
+                DataOut.vort=zeros(size(XI));
+            case 'div'
+                DataOut.div=zeros(size(XI));
+            case 'strain'
+                DataOut.strain=zeros(size(XI));
+        end
         nbval=zeros(size(XI));
         NbSubDomain=size(DataIn.SubRange,3);
         for isub=1:NbSubDomain
             if isfield(DataIn,'NbSites')
-                nbvec_sub=DataIn.NbSites(isub); 
+                nbvec_sub=DataIn.NbSites(isub);
             else
-                nbvec_sub=numel(find(DataIn.Indices_tps(:,isub))); 
+                nbvec_sub=numel(find(DataIn.Indices_tps(:,isub)));
             end
-                ind_sel=find(XI>=DataIn.SubRange(1,1,isub) & XI<=DataIn.SubRange(1,2,isub) & YI>=DataIn.SubRange(2,1,isub) & YI<=DataIn.SubRange(2,2,isub));
-                %rho smoothing parameter
-                epoints = [XI(ind_sel) YI(ind_sel)];% coordinates of interpolation sites
-                ctrs=DataIn.Coord_tps(1:nbvec_sub,:,isub);%(=initial points) ctrs
-                nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
-%                 PM = [ones(size(epoints,1),1) epoints];
-                switch FieldName{1}
-                    case {'velocity','u','v'}
-                       % DM_eval = DistanceMatrix(epoints,ctrs);%2D matrix of distances between extrapolation points epoints and spline centres (=site points) ctrs
-                       % EM = tps(1,DM_eval);%values of thin plate
-                        EM = tps_eval(epoints,ctrs);
-                    case{'vort','div'}
-                        [EMDX,EMDY] = tps_eval_dxy(epoints,ctrs);%2D matrix of distances between extrapolation points epoints and spline centres (=site points) ctrs
-     
-                end
-                switch FieldName{1}
-                    case 'velocity'
-                        ListFields={'U', 'V'};
-                        VarAttributes{1}.Role='vector_x';
-                        VarAttributes{2}.Role='vector_y';
-                        DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *DataIn.U_tps(1:nbvec_sub+3,isub);
-                        DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *DataIn.V_tps(1:nbvec_sub+3,isub);
-                    case 'u'
-                        ListFields={'U'};
-                        VarAttributes{1}.Role='scalar';
-                        DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *DataIn.U_tps(1:nbvec_sub+3,isub);
-                    case 'v'
-                        ListFields={'V'};
-                        VarAttributes{1}.Role='scalar';
-                        DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *DataIn.V_tps(1:nbvec_sub+3,isub);
-                    case 'vort'
-                        ListFields={'vort'};
-                        VarAttributes{1}.Role='scalar';
-                        DataOut.vort(ind_sel)=DataOut.vort(ind_sel)+EMDY *DataIn.U_tps(1:nbvec_sub+3,isub)-EMDX *DataIn.V_tps(1:nbvec_sub+3,isub);
-                    case 'div'
-                        ListFields={'div'};
-                        VarAttributes{1}.Role='scalar';
-                        DataOut.div(ind_sel)=DataOut.div(ind_sel)+EMDX*DataIn.U_tps(1:nbvec_sub+3,isub)+EMDY *DataIn.V_tps(1:nbvec_sub+3,isub);
-                end
+            ind_sel=find(XI>=DataIn.SubRange(1,1,isub) & XI<=DataIn.SubRange(1,2,isub) & YI>=DataIn.SubRange(2,1,isub) & YI<=DataIn.SubRange(2,2,isub));
+            %rho smoothing parameter
+            epoints = [XI(ind_sel) YI(ind_sel)];% coordinates of interpolation sites
+            ctrs=DataIn.Coord_tps(1:nbvec_sub,:,isub);%(=initial points) ctrs
+            nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
+            switch FieldName{1}
+                case {'velocity','u','v'}
+                    EM = tps_eval(epoints,ctrs);%kernels for calculating the velocity from tps 'sources'
+                case{'vort','div','strain'}
+                    [EMDX,EMDY] = tps_eval_dxy(epoints,ctrs);%kernels for calculating the spatial derivatives from tps 'sources'
+            end
+            switch FieldName{1}
+                case 'velocity'
+                    ListFields={'U', 'V'};
+                    VarAttributes{1}.Role='vector_x';
+                    VarAttributes{2}.Role='vector_y';
+                    DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *DataIn.U_tps(1:nbvec_sub+3,isub);
+                    DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *DataIn.V_tps(1:nbvec_sub+3,isub);
+                case 'u'
+                    ListFields={'U'};
+                    VarAttributes{1}.Role='scalar';
+                    DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *DataIn.U_tps(1:nbvec_sub+3,isub);
+                case 'v'
+                    ListFields={'V'};
+                    VarAttributes{1}.Role='scalar';
+                    DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *DataIn.V_tps(1:nbvec_sub+3,isub);
+                case 'vort'
+                    ListFields={'vort'};
+                    VarAttributes{1}.Role='scalar';
+                    DataOut.vort(ind_sel)=DataOut.vort(ind_sel)+EMDY *DataIn.U_tps(1:nbvec_sub+3,isub)-EMDX *DataIn.V_tps(1:nbvec_sub+3,isub);
+                case 'div'
+                    ListFields={'div'};
+                    VarAttributes{1}.Role='scalar';
+                    DataOut.div(ind_sel)=DataOut.div(ind_sel)+EMDX*DataIn.U_tps(1:nbvec_sub+3,isub)+EMDY *DataIn.V_tps(1:nbvec_sub+3,isub);
+                case 'strain'
+                    ListFields={'strain'};
+                    VarAttributes{1}.Role='scalar';
+                    DataOut.strain(ind_sel)=DataOut.strain(ind_sel)+EMDY*DataIn.U_tps(1:nbvec_sub+3,isub)+EMDX *DataIn.V_tps(1:nbvec_sub+3,isub);
+            end
         end
-        DataOut.FF=nbval==0; %put errorflag to 1 for points outside the interpolation rang  
-        
+        DataOut.FF=nbval==0; %put errorflag to 1 for points outside the interpolation rang      
         DataOut.FF=reshape(DataOut.FF,numel(yI),numel(xI));
         nbval(nbval==0)=1;
-        DataOut.U=DataOut.U ./nbval;
-        DataOut.V=DataOut.V ./nbval;
-        DataOut.U=reshape(DataOut.U,numel(yI),numel(xI));
-        DataOut.V=reshape(DataOut.V,numel(yI),numel(xI));
+        switch FieldName{1}
+              case {'velocity','u','v'}
+        DataOut.U=reshape(DataOut.U./nbval,numel(yI),numel(xI));
+        DataOut.V=reshape(DataOut.V./nbval,numel(yI),numel(xI));
+            case 'vort'
         DataOut.vort=reshape(DataOut.vort,numel(yI),numel(xI));
+            case 'div'
         DataOut.div=reshape(DataOut.div,numel(yI),numel(xI));
+            case 'strain'
+           DataOut.strain=reshape(DataOut.strain,numel(yI),numel(xI));
+        end
         DataOut.ListVarName=[DataOut.ListVarName ListFields];
         for ilist=3:numel(DataOut.ListVarName)
             DataOut.VarDimName{ilist}={'coord_y','coord_x'};
         end
         DataOut.VarAttribute={[],[]};
         DataOut.VarAttribute{3}.Role='errorflag';
-        DataOut.VarAttribute=[DataOut.VarAttribute VarAttributes];   
-    else   
+        DataOut.VarAttribute=[DataOut.VarAttribute VarAttributes];
+    else
         
-    %% civx data    
+        %% civx data
         DataOut=DataIn;
         for ilist=1:length(FieldName)
             if ~isempty(FieldName{ilist})
