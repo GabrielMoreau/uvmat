@@ -66,31 +66,22 @@ end
 
 function [i1_series,i2_series,j1_series,j2_series]=find_file_indices(ref_i,ref_j,num1,num2,mode)
 i1_series=ref_i;%default
-i2_series=[];
-j2_series=[];
-if isempty(mode)
-    i1_series=ref_i;
-    j1_series=ref_j;
-    return
-end
 j1_series=[];
 if ~isempty(ref_j)
     i1_series=meshgrid(ref_i,ones(size(ref_j)));
     j1_series=meshgrid(ref_i,ones(size(ref_j)));
 end
+i2_series=i1_series;
+j2_series=j1_series;
 
 switch mode
-    case 'Di='  % ='series(Di)')
-        i2_series=i1_series;
+    case 'Di='  %  case 'series(Di)')
         i1_series=i1_series-num1;
         i2_series=i2_series+num2;
-    case {'Dj=','-'}            %(mode,'series(Dj)')||isequal (mode,'bursts')
-        if isequal(mode,'-') %case of bursts (png_old or png_2D)
-           j1_series=num1*ones(size(i1_series));
-           j2_series=num2*ones(size(i1_series));
-        else
-            j2_series=j1_series;
-            j1_series=j1_series-num1;
-            j2_series=j2_series+num2;
-        end
+    case 'Dj='  %  case 'series(Dj)'
+        j1_series=j1_series-num1;
+        j2_series=j2_series+num2;
+    case '-'  % case 'bursts'
+        j1_series=num1*ones(size(i1_series));
+        j2_series=num2*ones(size(i1_series));
 end

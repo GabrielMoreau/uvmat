@@ -890,11 +890,11 @@ end
 %% read input file parameters and set menus
 Series.PathProject=get(handles.PathCampaign,'String');
 % InputTable=get(handles.InputTable,'Data');
-RootPath=Series.InputTable(:,1);
-SubDir=Series.InputTable(:,2);
-RootFile=Series.InputTable(:,3);
-NomType=Series.InputTable(:,4);
-FileExt=Series.InputTable(:,5);
+% RootPath=Series.InputTable(:,1);
+% SubDir=Series.InputTable(:,2);
+% RootFile=Series.InputTable(:,3);
+% NomType=Series.InputTable(:,4);
+% FileExt=Series.InputTable(:,5);
 % if isempty(SeriesData)
 %     msgbox_uvmat('ERROR','no input file series')
 %     return
@@ -924,7 +924,7 @@ if isequal(menu_coord_state,'on')
 %     menu_coord=get(handles.transform_fct,'String');
     menu_index=get(handles.transform_fct,'Value');
     transform_list=get(handles.transform_fct,'UserData');
-    Series.transform_fct=transform_list{menu_index};% transform function handles
+    Series.FieldTransform.fct_handle=transform_list{menu_index};% transform function handles
 end
 
 %reinitiate waitbar position
