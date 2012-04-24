@@ -24,16 +24,21 @@ if isfield(Param,'first_j')
     last_j=Param.IndexRange.last_j;
     ref_j=first_j:incr_j:last_j;
 end
-Pairs=Param.Pairs;
+% Pairs=Param.Pairs;
 r.mode='';
-if isfield (Pairs,'list_pair_civ')
-    r=regexp(Pairs.list_pair_civ,'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
+if isfield(Param,'Pairs') && isfield (Param.Pairs,'list_pair_civ')
+    r=regexp(Param.Pairs.list_pair_civ,'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
     if isempty(r)
-        r=regexp(Pairs.list_pair_civ,'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');
+        r=regexp(Param.Pairs.list_pair_civ,'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');
     end
+
     % TODO case of free pairs:
     %r=regexp(pair_string,'.*\D(?<num1>[\d+|*])(?<delim>[-||])(?<num2>[\d+|*])','names');
 end
+    if isempty(r.mode)
+        r.num1='';
+        r.num2='';
+    end
 
 %% determine the list of input file names
 nbmissing=0;
@@ -61,13 +66,19 @@ end
 
 function [i1_series,i2_series,j1_series,j2_series]=find_file_indices(ref_i,ref_j,num1,num2,mode)
 i1_series=ref_i;%default
+i2_series=[];
+j2_series=[];
+if isempty(mode)
+    i1_series=ref_i;
+    j1_series=ref_j;
+    return
+end
 j1_series=[];
 if ~isempty(ref_j)
     i1_series=meshgrid(ref_i,ones(size(ref_j)));
     j1_series=meshgrid(ref_i,ones(size(ref_j)));
 end
-i2_series=[];
-j2_series=[];
+
 switch mode
     case 'Di='  % ='series(Di)')
         i2_series=i1_series;

@@ -84,8 +84,8 @@ else
             RootFileNew=[RootFile rr.i1];
             if exist(fullfile(RootPath,[RootFileNew '.xml']),'file')
                 RootFile=RootFileNew;
-                NomType=regexprep(NomType,['^'  NomTypePref],'');
                 NomTypePref=r.tiretnum;
+                NomType=regexprep(NomType,['^'  NomTypePref],'');
                 i2_input=j2_input;
                 j1_input=[];
                 j2_input=[];
