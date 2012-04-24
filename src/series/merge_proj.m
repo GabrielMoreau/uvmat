@@ -58,11 +58,11 @@ if test_object
             msgbox_uvmat('ERROR','Undefined projection object style')
             return
     end
-    if ~isequal(ProjObject.Style,'plane')|| isequal(ProjObject.ProjMode,'projection')
+    if ~isequal(ProjObject.Type,'plane')|| isequal(ProjObject.ProjMode,'projection')
             msgbox_uvmat('ERROR','The projection object must be a plane with projection mode interp or filter')
             return
     end
-    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Style]);
+    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Type]);
     if ~isequal(answeryes,'Yes')
         return
     end

@@ -52,9 +52,8 @@ end
 test_object=get(hseries.GetObject,'Value');
 if test_object
     hset_object=findobj(allchild(0),'tag','set_object');
-%     ProjObject=read_set_object(guidata(hset_object));
     ProjObject=read_GUI(hset_object);
-    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Style]);
+    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Type]);
     if ~isequal(answeryes,'Yes')
         return
     end
@@ -64,13 +63,13 @@ else
 end
 
 %% features of the input fields 
-    RootPath=Param.InputTable(:,1);
-    RootFile=Param.InputTable(:,3);
-    SubDir=Param.InputTable(:,2);
-    NomType=Param.InputTable(:,4);
-    FileExt=Param.InputTable(:,5);
-ext=FileExt{1};
-form=imformats(ext(2:end));%test valid Matlab image formats
+RootPath=Param.InputTable(:,1);
+RootFile=Param.InputTable(:,3);
+% SubDir=Param.InputTable(:,2);
+NomType=Param.InputTable(:,4);
+FileExt=Param.InputTable(:,5);
+% ext=FileExt{1};
+% form=imformats(ext(2:end));%test valid Matlab image formats
 nbfield=size(i1_series{1},1)*size(i1_series{1},2); %number of fields in the time series
 
 %% determine image type
