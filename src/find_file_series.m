@@ -43,7 +43,7 @@ if ~exist('option','var')
 end
 %% get input root name and nomenclature type
 [tild,tild,RootFile,tild,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fileinput);
-fullfileinput=fullfile(RootPath,fileinput);
+fullfileinput=fullfile(RootPath,fileinput);% input file name with path
 
 %% check for particular file types: images, movies, civ data
 i1_series=zeros(1,1,1);
@@ -59,12 +59,13 @@ end
 
 if strcmp(NomType,'')||strcmp(NomType,'*')||strcmp(option,'filetype')
     if exist(fullfileinput,'file')
-        [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
+        RootFile=fileinput;% case of constant name (no indexing)
+       % [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
     else
         RootFile='';
     end
 else
-    %% possibly include the first index in the root name, if there exists a   corresponding xml file
+    %% possibly include the first index in the root name, if there exists a corresponding xml file
     %   RootFileNew=RootFile;
     %     if ~isempty(regexp(NomType,['^_']))
     %         NomTypePref='_';
@@ -75,21 +76,22 @@ else
     %     r=regexp(NomType,['^' NomTypePref '(?<num1>\d+)'],'names');%look for a number at the beginning of NomTypeSt
     if ~isempty(r)
         fileinput_end=regexprep(fileinput,['^' RootFile],'');%remove RootFile at the beginning of fileinput
-        if isempty(regexp(r.tiretnum,'^_'))% if a separator '_' is not  detected
+        if isempty(regexp(r.tiretnum,'^_','once'))% if a separator '_' is not  detected
             rr=regexp(fileinput_end,'^(?<i1>\d+)','names');
         else% if a separator '_' is  detected
             rr=regexp(fileinput_end,'^(?<i1>_\d+)','names');
         end
         if ~isempty(rr)
             RootFileNew=[RootFile rr.i1];
-            if exist(fullfile(RootPath,[RootFileNew '.xml']),'file')
+            checkpair=~isempty(regexp(NomType,'-','once'))||~isempty(regexp(NomType,'ab$','once'))||~isempty(regexp(NomType,'AB$','once'));%case of PIV results
+            if exist(fullfile(RootPath,[RootFileNew '.xml']),'file') || (checkpair && exist(fullfile(fileparts(RootPath),[RootFileNew '.xml']),'file'))
                 RootFile=RootFileNew;
                 NomTypePref=r.tiretnum;
                 NomType=regexprep(NomType,['^'  NomTypePref],'');
                 i2_input=j2_input;
                 j1_input=[];
                 j2_input=[];
-            end
+            end       
         end
     end
     %% analyse the list of existing files when relevant

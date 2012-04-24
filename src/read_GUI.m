@@ -1,5 +1,17 @@
 % -----------------------------------------------------------------------
 % --- read a GUI with handle 'handle' producing a structure 'struct'
+%
+% The output Matlab structure 'struct' contains the information displayed on
+% the GUI or a panel with handle 'handle'
+% The content of a panel with tag 'tag' is displayed as a substructure struct.(tag) (recursive use of read_GUI)
+% Output of an element with tag 'tag':
+%     'checkbox','radiobutton','togglebutton': struct.(tag)=value
+%     'edit': struct.(tag)=string,  
+%         or, if the tag is in the form by 'num_tag',
+%         struct.(tag)=str2double(string). If the result is empty the  'UserData' is taken as the default input.
+%     'listbox','popupmenu': struct.(tag)=selected string, or, if the tag is in the form by 'num_tag', struct.(tag)=str2double(string)
+%     'table': struct.(tag)=data of the table
+% 
 function struct=read_GUI(handle)
 %------------------------------------------------------------------------
 struct=[];%default
@@ -54,10 +66,10 @@ for ichild=1:numel(hchild)
                     otherwise
                         check_input=0;
                 end
-                if check_input
+                if check_input% 
                     if index==0
                        struct.(tag)=input;
-                    else
+                    elseif ~isempty(input)
                        struct.(tag)(index)=input;
                     end
                 end
