@@ -133,8 +133,11 @@ else% FileName ends with a letter
 end
 
 %% suppress '_' at the end of RootFile, put it on NomType
-if strcmp(RootFile(end),'_')
-    RootFile(end)=[];
+% if strcmp(RootFile(end),'_')
+%     RootFile(end)=[];
+detect=regexp(RootFile,'_$'); %detect '_' at the end of RootFILE
+if ~isempty(detect)
+    RootFile=regexprep(RootFile,'_$','');
     NomType=['_' NomType];
 end
 
