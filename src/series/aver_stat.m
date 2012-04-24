@@ -50,19 +50,12 @@ else %  RUN case: parameters introduced as the input structure Param
 end
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 
-%% coordinate transform or other user defined transform (TODO: case BATCH ?)
-transform_fct='';%default
-if isfield(Param,'transform_fct') % transform function handle
-    transform_fct=Param.transform_fct;
-end
-
 %% projection object
 test_object=get(hseries.GetObject,'Value');
 if test_object%isfield(Series,'sethandles')
     hset_object=findobj(allchild(0),'tag','set_object');
     %ProjObject=read_set_object(guidata(hset_object));
     ProjObject=read_GUI(hset_object);
-    %answeryes=questdlg({['field series projected on ' Series.ProjObject.Style]});
     answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Style ' before averaging']);
     if ~isequal(answeryes,'Yes')
         return
@@ -137,7 +130,6 @@ end
 
 %% number of slices
 NbSlice=Param.IndexRange.NbSlice;
-NbSlice_name=num2str(NbSlice);
 
 %% Field and velocity type (the same for the two views)
 Field_str=get(hseries.FieldMenu,'String');
@@ -156,14 +148,12 @@ if isequal(testfield,'on')
            get_field(filename);
            return
         end
-        %hhget_field=guidata(hget_field);%handles of GUI elements in get_field
         SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
     end
 end
 
 %% get the velocity type
 testcivx=0;
-% FileExt=get(hseries.FileExt,'String');
 if ~isequal(FieldName,{'get_field...'})
     testcivx=isequal(FileType{1},'netcdf');
 end
@@ -222,7 +212,7 @@ for iview=1:nbview%Loop on views
     end
 end
 
-%% check coincidence in time
+%% check coincidence in time for several input file series
 multitime=0;
 if isempty(timecell)
     time=[];
@@ -248,7 +238,7 @@ if multitime
         msgbox_uvmat('WARNING',['times of series differ by more than ' num2str(diff_time)])
     end   
 end
-if size(time,2) < i2_series{1}(end) || size(time,3) < num_j2{1}(end)% ime array absent or too short in ImaDoc xml file' 
+if size(time,2) < i2_series{1}(end) || size(time,3) < num_j2{1}(end)% time array absent or too short in ImaDoc xml file' 
     time=[];
 end
 
@@ -268,15 +258,12 @@ while testexist
     if NbSlice==1% keep track of the first and lsat indices of the input files
         %NomTypeOut=nomtype2pair(Param.InputTable{1,4},i2_series{end}(end)-i1_series{1}(1),j2_series{end}(end)-j1_series{1}(1));
         NomTypeOut='_1-2';
-%         RootPath,SubDir,RootFile,FileExt,NomType,i1,i2,j1,j2)
-        fileresult{1}=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},ext_out,NomTypeOut,i1_series{1}(1),[],[],[]);
-%         fileresult{1}=name_generator(filebase_out,i1_series{1}(1),j1_series{1}(1),ext_out,NomTypeOut,1,i2_series{end}(end),j2_series{end}(end),subdir_result);
+        fileresult{1}=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},ext_out,NomTypeOut,i1_series{1}(1),i1_series{1}(end),[],[]);
         testexist=exist(fileresult{1},'file');
     else % simplified indexing with i_slice for multiple slices
         testexist=0;
         for i_slice=1:NbSlice
             fileresult{1}=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},ext_out,NomTypeOut,i_slice,[],[],[]);
-            %fileresult{i_slice}=name_generator(filebase_out,i_slice,[],ext_out,'_1',1,i_slice,[],subdir_result);
             if exist(fileresult{i_slice},'file')
                 testexist=1;
                 break
@@ -302,8 +289,8 @@ end
 
 %% coordinate transform or other user defined transform
 transform_fct='';%default
-if isfield(Param,'FieldTransform')&&isfield(Param.FieldTransform,'transform_fct')
-    transform_fct=Param.FieldTransform.transform_fct;
+if isfield(Param,'FieldTransform')&&isfield(Param.FieldTransform,'fct_handle')
+    transform_fct=Param.FieldTransform.fct_handle;
 end
 
 %% main loop
@@ -328,8 +315,6 @@ for i_slice=1:NbSlice
             ifile=indselect(index);
             % reading input file(s)
             for iview=1:nbview
-%                 [filename]=...
-%                     name_generator(filebase{iview},num_i1{iview}(ifile),num_j1{iview}(ifile),FileExt{iview},NomType{iview},1,num_i2{iview}(ifile),j2_series{iview}(ifile),SubDir{iview});
                     filename=filecell{iview,index};
                     if ~isequal(FileType{iview},'netcdf')
                     Data{iview}.ListVarName={'A'};
@@ -441,7 +426,6 @@ for i_slice=1:NbSlice
         msgbox_uvmat('WARNING',[num2str(nbmissing) ' input files are missing or skipted'])
     end
     if isempty(time) % time read from files  prevails
-        time_end=[];
         if isfield(Field,'Time')
             time_end=Field.Time(1);%last time read
             if ~isempty(time_1)
@@ -489,8 +473,8 @@ end % end loop on slices
 
 %% reproduce ImaDoc/GeometryCalib for image series
 if isfield(XmlData{1},'GeometryCalib') && ~isempty(XmlData{1}.GeometryCalib) 
-    [pp,RootFile]=fileparts(filebase_out);
-    outputxml=fullfile(pathdir,[RootFile '.xml'])
+    [tild,RootFile]=fileparts(filebase_out);
+    outputxml=fullfile(pathdir,[RootFile '.xml']);
     errormsg=update_imadoc(XmlData{1}.GeometryCalib,outputxml);% introduce the calibration data in the xml file
     if strcmp(errormsg,'')
         display(['GeometryCalib transferred to ' outputxml])

@@ -42,11 +42,10 @@ else %  RUN case: parameters introduced as the input structure Param
 end
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 
-
-%% coordinate transform or other user defined transform (TODO: case BATCH ?)
+%% coordinate transform or other user defined transform
 transform_fct='';%default
-if isfield(Param,'transform_fct') % transform function handle
-    transform_fct=Param.transform_fct;
+if isfield(Param,'FieldTransform')&&isfield(Param.FieldTransform,'fct_handle')
+    transform_fct=Param.FieldTransform.fct_handle;
 end
 
 %% projection object
