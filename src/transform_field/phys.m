@@ -3,8 +3,8 @@
 % [DataOut,DataOut_1]=phys(Data,CalibData,Data_1,CalibData_1), transform two input fields
 
 % OUTPUT: 
-% DataOut:   structure representing the modified field
-% DataOut_1: structure representing the second modified field
+% DataOut:   structure representing the first field in phys coordinates
+% DataOut_1: structure representing the second  field in phys coordinates
 
 %INPUT:
 % Data:  structure of input data 
@@ -13,6 +13,7 @@
 %       .ZIndex: index of plane in multilevel case 
 %       .CoordType='phys' or 'px', The function ACTS ONLY IF .CoordType='px'
 % CalibData: structure containing calibration parameters or a subtree Calib.GeometryCalib =calibration data (tsai parameters)
+% Data_1, CalibData_1: same as Data, CalibData for the second field.
 
 function [DataOut,DataOut_1]=phys(varargin)
 % A FAIRE: 1- verifier si DataIn est une 'field structure'(.ListVarName'):
@@ -23,69 +24,109 @@ function [DataOut,DataOut_1]=phys(varargin)
 %   (default='coord' if .Role='coord_x,_y..., 
 %            'D_i' if '.Role='vector_x,...',
 %              'scalar', else (thenno change except scale factor)
-Calib{1}=[];
-if nargin==2||nargin==4 % nargin =nbre of input variables
-    Data=varargin{1};
-    DataOut=Data;%default
-    DataOut_1=[];%default
-    CalibData=varargin{2};
-    if isfield(CalibData,'GeometryCalib')
-        Calib{1}=CalibData.GeometryCalib;
+%% analyse input and set default output
+DataOut=varargin{1};%default first output field
+DataOut_1=[]; %default second  output field
+if nargin>=2 % nargin =nbre of input variables
+    if isfield(varargin{2},'GeometryCalib')
+        Calib{1}=varargin{2}.GeometryCalib;
+    else
+        Calib{1}=[];
     end
-    Calib{2}=Calib{1};
-else
-    DataOut.Txt='wrong input: need two or four structures';
-end
-test_1=0;
-if nargin==4
-    test_1=1;
-    Data_1=varargin{3};
-    DataOut_1=Data_1;%default
-    CalibData_1=varargin{4};
-    if isfield(CalibData_1,'GeometryCalib')
-        Calib{2}=CalibData_1.GeometryCalib;
+    if nargin>=3  %two input fields
+        DataOut_1=varargin{3};%default second output field
+        if nargin>=4 && isfield(varargin{4},'GeometryCalib')
+            Calib{2}=CalibData_1.GeometryCalib;
+        else
+            Calib{2}=Calib{1}; 
+        end
     end
 end
-iscalar=0;
-if  ~isempty(Calib{1})
-    DataOut=phys_1(Data,Calib{1});
-    %case of images or scalar: in case of two input fields, we need to project the transform of on the same regular grid
-    if isfield(Data,'A') && isfield(Data,'AX') && ~isempty(Data.AX) && isfield(Data,'AY')&&...
-                                           ~isempty(Data.AY) && length(Data.A)>1
-        iscalar=1;
-        A{1}=Data.A;
-    end
-end
-%transform of X,Y coordinates for vector fields
-if isfield(Data,'ZIndex')&&~isempty(Data.ZIndex)&&~isnan(Data.ZIndex)
-    ZIndex=Data.ZIndex;
+
+%% get the z index defining the section plane
+if isfield(varargin{1},'ZIndex')&&~isempty(varargin{1}.ZIndex)&&~isnan(varargin{1}.ZIndex)
+    ZIndex=varargin{1}.ZIndex;
 else
     ZIndex=1;
 end
-if test_1
-    DataOut_1=phys_1(Data_1,Calib{2});
-    if isfield(Data_1,'A')&&isfield(Data_1,'AX')&&~isempty(Data_1.AX) && isfield(Data_1,'AY')&&...
-                                       ~isempty(Data_1.AY)&&length(Data_1.A)>1
-          iscalar=iscalar+1;
-          Calib{iscalar}=Calib{2};
-          A{iscalar}=Data_1.A;
-          if isfield(Data_1,'ZIndex') && ~isequal(Data_1.ZIndex,ZIndex)
-              DataOut.Txt='inconsistent plane indexes in the two input fields';
-          end
-          if iscalar==1% case for which only the second field is a scalar
-               [A,AX,AY]=phys_Ima(A,Calib,ZIndex);
-               DataOut_1.A=A{1};
-               DataOut_1.AX=AX; 
-               DataOut_1.AY=AY;
-               return
-          end
+
+%% transform first field
+iscalar=0;% counter of scalar fields
+if  ~isempty(Calib{1})
+    if ~isfield(Calib{1},'CalibrationType')||~isfield(Calib{1},'CoordUnit')
+        return %bad calib parameter input
+    end
+    if ~(isfield(varargin{1},'CoordUnit')&& strcmp(varargin{1}.CoordUnit,'pixel'))
+        return % transform only fields in pixel coordinates
+    end
+    DataOut=phys_1(varargin{1},Calib{1},ZIndex);% transform coordiantes and velocity components
+    %case of images or scalar: in case of two input fields, we need to project the transform  on the same regular grid
+    if isfield(varargin{1},'A') && isfield(varargin{1},'AX') && ~isempty(varargin{1}.AX) && isfield(varargin{1},'AY')&&...
+                                           ~isempty(varargin{1}.AY) && length(varargin{1}.A)>1
+        iscalar=1;
+        A{1}=varargin{1}.A;
     end
 end
+
+%% document the selected  plane position and angle if relevant
+if isfield(Calib{1},'SliceCoord')&&size(Calib{1}.SliceCoord,1)>=ZIndex
+    DataOut.PlaneCoord=Calib{1}.SliceCoord(ZIndex,:);% transfer the slice position corresponding to index ZIndex
+    if isfield(Calib{1},'SliceAngle') % transfer the slice rotation angles
+        if isequal(size(Calib{1}.SliceAngle,1),1)% case of a unique angle
+            DataOut.PlaneAngle=Calib{1}.SliceAngle;
+        else  % case of multiple planes with different angles: select the plane with index ZIndex
+            DataOut.PlaneAngle=Calib{1}.SliceAngle(ZIndex,:);
+        end
+    end
+end
+
+%% transform second field if relevant
+if ~isempty(DataOut_1)
+    if isfield(varargin{3},'ZIndex') && ~isequal(varargin{3}.ZIndex,ZIndex)
+        DataOut_1.Txt='different plane indices for the two input fields';
+        return
+    end
+    if ~isfield(Calib{2},'CalibrationType')||~isfield(Calib{2},'CoordUnit')
+        return %bad calib parameter input
+    end
+    if ~(isfield(varargin{3},'CoordUnit')&& strcmp(varargin{3}.CoordUnit,'pixel'))
+        return % transform only fields in pixel coordinates
+    end
+    DataOut_1=phys_1(Data_1,Calib{2},ZIndex);
+    if isfield(Calib{1},'SliceCoord')
+        if ~(isfield(Calib{2},'SliceCoord') && isequal(Calib{2}.SliceCoord,Calib{1}.SliceCoord))
+            DataOut_1.Txt='different plane positions for the two input fields';
+            return
+        end        
+        DataOut_1.PlaneCoord=DataOut.PlaneCoord;% same plane position for the two input fields
+        if isfield(Calib{1},'SliceAngle')
+            if ~(isfield(Calib{2},'SliceAngle') && isequal(Calib{2}.SliceAngle,Calib{1}.SliceAngle))
+                DataOut_1.Txt='different plane angles for the two input fields';
+                return
+            end
+            DataOut_1.PlaneAngle=DataOut.PlaneAngle; % same plane angle for the two input fields
+        end
+    end
+    if isfield(varargin{3},'A')&&isfield(varargin{3},'AX')&&~isempty(varargin{3}.AX) && isfield(varargin{3},'AY')&&...
+            ~isempty(varargin{3}.AY)&&length(varargin{3}.A)>1
+        iscalar=iscalar+1;
+        Calib{iscalar}=Calib{2};
+        A{iscalar}=varargin{3}.A;
+    end
+end
+
+%% transform the scalar(s) or image(s)
 if iscalar~=0
     [A,AX,AY]=phys_Ima(A,Calib,ZIndex);%TODO : introduire interp2_uvmat ds phys_ima
-    DataOut.A=A{1};
-    DataOut.AX=AX; 
-    DataOut.AY=AY;
+    if iscalar==1 && ~isempty(DataOut_1) % case for which only the second field is a scalar
+         DataOut_1.A=A{1};
+         DataOut_1.AX=AX; 
+         DataOut_1.AY=AY;
+    else
+        DataOut.A=A{1};
+        DataOut.AX=AX; 
+        DataOut.AY=AY;
+    end
     if iscalar==2
         DataOut_1.A=A{2};
         DataOut_1.AX=AX; 
@@ -93,93 +134,58 @@ if iscalar~=0
     end
 end
 
-% DataOut.VarDimName{2}
-% DataOut.VarDimName{3}
-% DataOut.VarDimName{4}
-% DataOut.VarDimName{5}
-% DataOut.VarDimName{6}
-% DataOut.VarDimName{7}
-% DataOut.VarAttribute{1}
-% DataOut.VarAttribute{2}
-% DataOut.VarAttribute{3}
-% DataOut.VarAttribute{4}
-% DataOut.VarAttribute{5}
-% DataOut.VarAttribute{6}
-% DataOut.VarAttribute{7}
 %------------------------------------------------
-function DataOut=phys_1(Data,Calib)
-% for icell=1:length(Data)
-
+%--- transform a single field
+function DataOut=phys_1(Data,Calib,ZIndex)
+%------------------------------------------------
+%% set default output
 DataOut=Data;%default
-% DataOut.CoordUnit=Calib.CoordUnit; %put flag for physical coordinates
-if isfield(Calib,'SliceCoord') && isfield(Data,'ZIndex')&&~isempty(Data.ZIndex)&&~isnan(Data.ZIndex)
-    DataOut.PlaneCoord=Calib.SliceCoord(Data.ZIndex,:);% transfer the slice position
-    if isfield(Calib,'SliceAngle') % transfer the slice rotation angles
-        if isequal(size(Calib.SliceAngle,1),1)
-             DataOut.PlaneAngle=Calib.SliceAngle;
-        else
-            DataOut.PlaneAngle=Calib.SliceAngle(Data.ZIndex,:);
-        end
+DataOut.CoordUnit=Calib.CoordUnit;% the output coord unit is set by the calibration parameters
+
+%% transform  X,Y coordinates for velocity fields (transform of an image or scalar done in phys_ima)
+if isfield(Data,'X') &&isfield(Data,'Y')&&~isempty(Data.X) && ~isempty(Data.Y)
+  [DataOut.X,DataOut.Y]=phys_XYZ(Calib,Data.X,Data.Y,ZIndex);
+    Dt=1; %default
+    if isfield(Data,'dt')&&~isempty(Data.dt)
+        Dt=Data.dt;
+    end
+    if isfield(Data,'Dt')&&~isempty(Data.Dt)
+        Dt=Data.Dt;
+    end
+    if isfield(Data,'U')&&isfield(Data,'V')&&~isempty(Data.U) && ~isempty(Data.V)
+        [XOut_1,YOut_1]=phys_XYZ(Calib,Data.X-Data.U/2,Data.Y-Data.V/2,ZIndex);
+        [XOut_2,YOut_2]=phys_XYZ(Calib,Data.X+Data.U/2,Data.Y+Data.V/2,ZIndex);
+        DataOut.U=(XOut_2-XOut_1)/Dt;
+        DataOut.V=(YOut_2-YOut_1)/Dt;
+    end
+    if ~strcmp(Calib.CalibrationType,'rescale') && isfield(Data,'X_tps') && isfield(Data,'Y_tps') 
+        [DataOut.X_tps,DataOut.Y_tps]=phys_XYZ(Calib,Data.X,Data.Y,ZIndex);
     end
 end
-% The transform ACTS ONLY IF .CoordType='px'and Calib defined
-if isfield(Data,'CoordUnit')%&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
-    if isfield(Calib,'CoordUnit')
-        DataOut.CoordUnit=Calib.CoordUnit;
-    else
-        DataOut.CoordUnit='cm'; %default
-    end
-    DataOut.TimeUnit='s';
-    %transform of X,Y coordinates for vector fields
-    test_z=0;
-    if isfield(Data,'ZIndex') && ~isempty(Data.ZIndex)&&~isnan(Data.ZIndex)
-        Z=Data.ZIndex;
-        test_z=1;
-    else
-        Z=0;
-    end
-    if isfield(Data,'X') &&isfield(Data,'Y')&&~isempty(Data.X) && ~isempty(Data.Y)
-        [DataOut.X,DataOut.Y,DataOut.Z]=phys_XYZ(Calib,Data.X,Data.Y,Z); 
-        if test_z
-             DataOut.ListVarName=[DataOut.ListVarName(1:2) {'Z'} DataOut.ListVarName(3:end)];
-             DataOut.VarDimName=[DataOut.VarDimName(1:2) DataOut.VarDimName(1) DataOut.VarDimName(3:end)];
-             ZAttribute{1}.Role='coord_z';
-             DataOut.VarAttribute=[DataOut.VarAttribute(1:2) ZAttribute DataOut.VarAttribute(3:end)];
+
+%% transform of spatial derivatives: TODO check the case with plane angles
+if isfield(Data,'X') && ~isempty(Data.X) && isfield(Data,'DjUi') && ~isempty(Data.DjUi)...
+      && isfield(Data,'dt')    
+    if ~isempty(Data.dt)
+        % estimate the Jacobian matrix DXpx/DXphys 
+        for ip=1:length(Data.X) 
+            [Xp1,Yp1]=phys_XYZ(Calib,Data.X(ip)+0.5,Data.Y(ip),ZIndex);
+            [Xm1,Ym1]=phys_XYZ(Calib,Data.X(ip)-0.5,Data.Y(ip),ZIndex);
+            [Xp2,Yp2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)+0.5,ZIndex);
+            [Xm2,Ym2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)-0.5,ZIndex); 
+        %Jacobian matrix DXpphys/DXpx
+           DjXi(1,1)=(Xp1-Xm1);
+           DjXi(2,1)=(Yp1-Ym1);
+           DjXi(1,2)=(Xp2-Xm2);
+           DjXi(2,2)=(Yp2-Ym2);
+           DjUi(:,:)=Data.DjUi(ip,:,:);
+           DjUi=(DjXi*DjUi')/DjXi;% =J-1*M*J , curvature effects (derivatives of J) neglected
+           DataOut.DjUi(ip,:,:)=DjUi';
         end
-        if isfield(Data,'U')&&isfield(Data,'V')&&~isempty(Data.U) && ~isempty(Data.V)&& isfield(Data,'dt') 
-            if ~isempty(Data.dt)
-            [XOut_1,YOut_1]=phys_XYZ(Calib,Data.X-Data.U/2,Data.Y-Data.V/2,Z);
-            [XOut_2,YOut_2]=phys_XYZ(Calib,Data.X+Data.U/2,Data.Y+Data.V/2,Z);
-            DataOut.U=(XOut_2-XOut_1)/Data.dt;
-            DataOut.V=(YOut_2-YOut_1)/Data.dt;
-            end
-        end
-    end
-    %transform of an image or scalar: done in phys_ima
-      
-    %transform of spatial derivatives
-    if isfield(Data,'X') && ~isempty(Data.X) && isfield(Data,'DjUi') && ~isempty(Data.DjUi)...
-          && isfield(Data,'dt')    
-        if ~isempty(Data.dt)
-            % estimate the Jacobian matrix DXpx/DXphys 
-            for ip=1:length(Data.X) 
-                [Xp1,Yp1]=phys_XYZ(Calib,Data.X(ip)+0.5,Data.Y(ip),Z);
-                [Xm1,Ym1]=phys_XYZ(Calib,Data.X(ip)-0.5,Data.Y(ip),Z);
-                [Xp2,Yp2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)+0.5,Z);
-                [Xm2,Ym2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)-0.5,Z); 
-            %Jacobian matrix DXpphys/DXpx
-               DjXi(1,1)=(Xp1-Xm1);
-               DjXi(2,1)=(Yp1-Ym1);
-               DjXi(1,2)=(Xp2-Xm2);
-               DjXi(2,2)=(Yp2-Ym2);
-               DjUi(:,:)=Data.DjUi(ip,:,:);
-               DjUi=(DjXi*DjUi')/DjXi;% =J-1*M*J , curvature effects (derivatives of J) neglected
-               DataOut.DjUi(ip,:,:)=DjUi';
-            end
-            DataOut.DjUi =  DataOut.DjUi/Data.dt;   %     min(Data.DjUi(:,1,1))=DUDX                          
-        end
+        DataOut.DjUi =  DataOut.DjUi/Dt;   %     min(Data.DjUi(:,1,1))=DUDX                          
     end
 end
+
 
 %%%%%%%%%%%%%%%%%%%%
 function [A_out,Rangx,Rangy]=phys_Ima(A,CalibIn,ZIndex)
@@ -216,7 +222,15 @@ vec_B=[];
 A_out={};
 for icell=1:length(A) 
     Calib=CalibIn{icell};
-    if isfield(Calib,'R') || isfield(Calib,'kc')|| test_multi ||~isequal(Calib,CalibIn{1})% the image needs to be interpolated to the new coordinates
+    % rescaling of the image coordinates without change of the image array
+    if strcmp(Calib.CalibrationType,'rescale') && isequal(Calib,CalibIn{1})
+        A_out{icell}=A{icell};%no transform
+        Rangx=[0.5 npx-0.5];%image coordiantes of corners
+        Rangy=[npy-0.5 0.5];
+        [Rangx]=phys_XYZ(Calib,Rangx,[0.5 0.5],ZIndex);%case of translations without rotation and quadratic deformation
+        [xx,Rangy]=phys_XYZ(Calib,[0.5 0.5],Rangy,ZIndex);
+    else         
+        % the image needs to be interpolated to the new coordinates
         zphys=0; %default
         if isfield(Calib,'SliceCoord') %.Z= index of plane
            SliceCoord=Calib.SliceCoord(ZIndex,:);
@@ -262,13 +276,7 @@ for icell=1:length(A)
         end
         if testuint16
             A_out{icell}=uint16(A_out{icell});
-        end
-    else%      
-        A_out{icell}=A{icell};%no transform
-        Rangx=[0.5 npx-0.5];%image coordiantes of corners
-        Rangy=[npy-0.5 0.5];
-        [Rangx]=phys_XYZ(Calib,Rangx,[0.5 0.5],ZIndex);%case of translations without rotation and quadratic deformation
-        [xx,Rangy]=phys_XYZ(Calib,[0.5 0.5],Rangy,ZIndex);
+        end      
     end
 end
 
