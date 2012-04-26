@@ -394,14 +394,19 @@ if ~isempty(NomTypeNc)
 end
 
 %% scan the image file series 
-[RootPath,FileName,ImaExt]=fileparts(fileinput);
-[RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,Object]=find_file_series(RootPath,[FileName ImaExt]);
-if strcmp(NomTypeInput,'*')% movies will be opened at the first frame
-    i1=1;
-    i2=[];
-    j1=[];
-    j2=[];
-end
+[FilePath,FileName,ImaExt]=fileparts(fileinput);
+% detect the file type, get the movie object if relevant, and look for the corresponding file series:
+% the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomTypeIma,FileType,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName ImaExt]);
+
+% [RootPath,FileName,ImaExt]=fileparts(fileinput);
+% [RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,Object]=find_file_series(RootPath,[FileName ImaExt]);
+% if strcmp(NomTypeInput,'*')% movies will be opened at the first frame
+%     i1=1;
+%     i2=[];
+%     j1=[];
+%     j2=[];
+% end
 switch FileType
     case {'image','multimage','video'}
     otherwise
@@ -426,9 +431,6 @@ if ~isempty(j2)
 end
 
 %% scan the images if a civ file has been opened
-% if ~isempty(NomTypeNc)
-% [tild,i1_series,tild,j1_series,tild,NomTypeIma,ImageType,Object]=find_file_series(RootPath,RootFile);
-% end
 MinIndex_i=min(i1_series(i1_series>0));
 MinIndex_j=min(j1_series(j1_series>0));
 MaxIndex_i=max(i1_series(i1_series>0));
@@ -2694,8 +2696,13 @@ if ~strcmp(option,'PIV') % case 'displacement' or 'stereo PIV'
     if strcmp(option,'displacement')
         [tild,RootFile_1]=fileparts(name);
     else
-        [tild,tild,RootFile_1,tild,tild,tild,tild,tild,nom_type_1]=fileparts_uvmat(fileinput);
-        [RootFile_1,i1_series,tild,j1_series,tild,nom_type_1,FileType,Object]=find_file_series(PathName,FileName);
+        [FilePath,FileName,Ext]=fileparts(fileinput);
+% detect the file type, get the movie object if relevant, and look for the corresponding file series:
+% the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
+[RootPath,SubDir,RootFile_1,i1_series,i2_series,j1_series,j2_series,nom_type_1,FileType,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName Ext]);
+        
+       % [tild,tild,RootFile_1,tild,tild,tild,tild,tild,nom_type_1]=fileparts_uvmat(fileinput);
+        %[RootFile_1,i1_series,tild,j1_series,tild,nom_type_1,FileType,Object]=find_file_series(PathName,FileName);
         %check image nom type 
         if ~strcmp(nom_type_1,get(handles.NomType,'String'))
         msgbox_uvmat('ERROR','The second image series must have the same indexing type as the first one, or use the option displacement for a fixed image')

@@ -956,66 +956,6 @@ index_mode=get(handles.mode,'Value');
 mode=mode_list{index_mode};
 ind_shift=0;%default
 
-%determine the list of input file names
-nbmissing=0;
-% for iview=1:length(RootPath)
-%     %case of pairs (.nc files)
-%     fileinput=name_generator(fullfile(RootPath{iview},RootFile{iview}),first_i,first_j,FileExt{iview},NomType{iview},1,first_i+1,first_j+1,SubDir{iview});
-%     if strcmp(get(handles.Pairs,'Visible'),'on')
-%        pair_list=get(handles.list_pair_civ,'String');
-%        val=get(handles.list_pair_civ,'Value');
-%        pair_string=pair_list{val};
-%        r=regexp(pair_string,'.*\D(?<num1>[\d+|*])(?<delim>[-||])(?<num2>[\d+|*])','names');
-%        if ~isempty(r)
-%            if strcmp(r.num1,'*')%free pairs
-%                [tild,RootFile,i1_series,i2_series,j1_series,j2_series,tild,tild,Object]=find_file_series(fileinput);% TODO: choice pair when multiple choice
-%  
-%                if isempty(i2_series) %j pairs
-%                    ind_sel=i1_series>=i1_series>=first_i & i1_series<=last_i & j1_series>first_j & j2_series<last_j;
-%                    j2_series=j2_series(ind_sel);
-%                else%i pairs
-%                    if isempty(j1_series) %j pairs
-%                         ind_sel=i1_series>=first_i & i2_series<=last_i ;
-%                    else
-%                        ind_sel=i1_series>=first_i & i2_series<=last_i& j1_series>first_j & j1_series<last_j; 
-%                        j1_series=j1_series(ind_sel);
-%                        i2_series=i2_series(ind_sel);
-%                    end
-%                end
-%                i1_series=i1_series(ind_sel);             
-%            else
-%                if strcmp(r.delim,'-')
-%                    ind_shift(1)=str2num(r.num1);
-%                    ind_shift(2)=str2num(r.num2);
-%                else
-%                    ind_shift(1)=-str2num(r.num1);
-%                    ind_shift(2)=str2num(r.num2);
-%                end
-%                [i1_series,i2_series,j1_series,j2_series,nbmissing]=find_file_indices(num_i,num_j,ind_shift,NomType{iview},mode);
-%            end
-%        end
-%        if isempty(i1_series)
-%            msgbox_uvmat('ERROR','no file in the considered range')
-%            return
-%        end
-%        if isempty(i2_series)
-%            i2_series=i1_series;
-%        end
-%        if isempty(j2_series)
-%            j2_series=j1_series;
-%        end 
-%     else%case of images
-%         [i1_series,j1_series]=meshgrid(num_i,num_j);
-%         i2_series=i1_series;
-%         j2_series=j1_series;
-%     end
-%     if length(RootPath)>1
-%         i1_series_cell{iview}=i1_series;
-%         i2_series_cell{iview}=i2_series;
-%         j1_series_cell{iview}=j1_series;
-%         j2_series_cell{iview}=j2_series;
-%     end
-% end
 
 %% defining the ACTION function handle
 path_series=which('series');
@@ -1828,13 +1768,19 @@ function [RootFile,NomType,errormsg]=update_indices(handles,fileinput,iview)
 % -----------------------------------------------------------------------
 %% look for min and max indices existing in the file series and update SeriesData
 errormsg='';
-[RootPathSub,FileName,FileExt]=fileparts(fileinput);
-[RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(RootPathSub,[FileName FileExt]);
+[FilePath,FileName,FileExt]=fileparts(fileinput);
+% detect the file type, get the movie object if relevant, and look for the corresponding file series:
+% the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
+
+% 
+% [RootPathSub,FileName,FileExt]=fileparts(fileinput);
+% [RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(RootPathSub,[FileName FileExt]);
 if isempty(RootFile)&&isempty(i1_series)
     errormsg='no input file in the series';
     return
 end
-[tild,tild,FileExt]=fileparts(fileinput);
+% [tild,tild,FileExt]=fileparts(fileinput);
 
 MinIndex=get(handles.MinIndex,'Data');
 MaxIndex=get(handles.MaxIndex,'Data');
@@ -1967,7 +1913,7 @@ end
 
 %%  read image documentation file  if found%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ext_imadoc='';
-FileBase=fullfile(RootPathSub,RootFile);
+FileBase=fullfile(RootPath,RootFile);
 if isequal(FileExt,'.xml')||isequal(FileExt,'.civ')
     ext_imadoc=FileExt;
 elseif exist([FileBase '.xml'],'file')

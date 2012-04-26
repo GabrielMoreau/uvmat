@@ -503,16 +503,17 @@ elseif index==2
 end
 
 %% detect root name, nomenclature and indices in the input file name:
-[RootPath,SubDir,tild,i1,i2,j1,j2]=fileparts_uvmat(fileinput);
-[tild,FileName,FileExt]=fileparts(fileinput);
+%[RootPath,SubDir]=fileparts_uvmat(fileinput);
+[FilePath,FileName,FileExt]=fileparts(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[FileName FileExt]);
-if strcmp(NomType,'*')% movies will be opened at the first frame
-    i1=1;
-    i2=[];
-    j1=[];
-    j2=[];
-end  
+% the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
+% if strcmp(NomType,'*')% movies will be opened at the first frame
+%     i1=1;
+%     i2=[];
+%     j1=[];
+%     j2=[];
+% end  
 
 %% open the file or fill the GUI uvmat according to the detected file type
 switch FileType
@@ -605,7 +606,7 @@ function RootPath_Callback(hObject,eventdata,handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 %fileinput=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[tild,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 % initiate the input file series and refresh the current field view: 
 update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject);
 
@@ -1091,7 +1092,7 @@ function RootPath_1_Callback(hObject,eventdata,handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
 %fileinput=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[tild,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 % initiate the input file series and refresh the current field view: 
 update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,2);
 %-----------------------------------------------------------------------
@@ -2445,7 +2446,7 @@ end
 %loop on the projection objects: one or two
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);
-    [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj})% project field on the object
+    [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
 
     if ~isempty(errormsg)
         return

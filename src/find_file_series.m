@@ -1,6 +1,6 @@
 %'find_file_series': check the content of an input file and find the corresponding file series
 %--------------------------------------------------------------------------
-% function [RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(fileinput)
+% function [RootPath,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object,i1_input,i2_input,j1_input,j2_input]=find_file_series(fileinput)
 %
 % OUTPUT:
 % RootFile: root file detected in fileinput, possibly modified for movies (indexing is then done on image view, not file)
@@ -36,14 +36,13 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object]=find_file_series(RootPath,fileinput)
+function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput)
 %------------------------------------------------------------------------
-if ~exist('option','var')
-    option='all';
-end
+
 %% get input root name and nomenclature type
-[tild,tild,RootFile,tild,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fileinput);
-fullfileinput=fullfile(RootPath,fileinput);% input file name with path
+fullfileinput=fullfile(FilePath,fileinput);% input file name with path
+[RootPath,SubDir,RootFile,i1_input,i2_input,j1_input,j2_input,FileExt,NomType]=fileparts_uvmat(fullfileinput);
+
 
 %% check for particular file types: images, movies, civ data
 i1_series=zeros(1,1,1);
@@ -57,23 +56,20 @@ if strcmp( FileType,'multimage')||strcmp( FileType,'video')
     i1_series=(1:FileInfo.NumberOfFrames)';
 end
 
-if strcmp(NomType,'')||strcmp(NomType,'*')||strcmp(option,'filetype')
+if strcmp(NomType,'')||strcmp(NomType,'*')
     if exist(fullfileinput,'file')
-      %  RootFile=fileinput;% case of constant name (no indexing)
-        [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
+        [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing), get the filename without its extension
     else
         RootFile='';
     end
+    i1_input=1;% the index now refer to the frame in the movie, choose 1 at opening
+    i2_input=[];
+    j1_input=[];
+    j2_input=[];
 else
     %% possibly include the first index in the root name, if there exists a corresponding xml file
-    %   RootFileNew=RootFile;
-    %     if ~isempty(regexp(NomType,['^_']))
-    %         NomTypePref='_';
-    %         RootFileNew=[RootFileNew '_'];
-    %     end       RootPath='';
     NomTypePref='';
     r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
-    %     r=regexp(NomType,['^' NomTypePref '(?<num1>\d+)'],'names');%look for a number at the beginning of NomTypeSt
     if ~isempty(r)
         fileinput_end=regexprep(fileinput,['^' RootFile],'');%remove RootFile at the beginning of fileinput
         if isempty(regexp(r.tiretnum,'^_','once'))% if a separator '_' is not  detected
@@ -84,10 +80,11 @@ else
         if ~isempty(rr)
             RootFileNew=[RootFile rr.i1];
             checkpair=~isempty(regexp(NomType,'-','once'))||~isempty(regexp(NomType,'ab$','once'))||~isempty(regexp(NomType,'AB$','once'));%case of PIV results
-            if exist(fullfile(RootPath,[RootFileNew '.xml']),'file') || (checkpair && exist(fullfile(fileparts(RootPath),[RootFileNew '.xml']),'file'))
+            if exist(fullfile(RootPath,[RootFileNew '.xml']),'file') %|| (checkpair && exist(fullfile(fileparts(RootPath),[RootFileNew '.xml']),'file'))
                 RootFile=RootFileNew;
                 NomTypePref=r.tiretnum;
                 NomType=regexprep(NomType,['^'  NomTypePref],'');
+                i1_input=j1_input;
                 i2_input=j2_input;
                 j1_input=[];
                 j2_input=[];
@@ -150,14 +147,13 @@ else
     %find the string used to extract the relevant files with the command dir
     star_string=[RootFile sep1 i1_star i2_star  j1_star j2_star FileExt];
     wd=pwd;%current working directory
-    cd (RootPath)% move to the local dir to save time in the operation dir.
+    cd (FilePath)% move to the local dir to save time in the operation dir.
     dirpair=dir(star_string);% look for relevant files in the file directory
     cd(wd)
     nbpair=numel(dirpair);
     ref_i_list=zeros(1,nbpair);
     ref_j_list=zeros(1,nbpair);
     if nbpair==0% no detected file
-        %         RootPath='';
         RootFile='';
     end
     % scan the list of relevant files, extract the indices
