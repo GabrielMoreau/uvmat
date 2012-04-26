@@ -640,7 +640,7 @@ run0_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
 %     calibration from an xml file, then refresh current plots
-function update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,index)
+function update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,VideoObject,index)
 %------------------------------------------------------------------------
 %% define the relevant handles depending on the index (1=first file series, 2= second file series)
 if ~exist('index','var')
@@ -688,21 +688,21 @@ TimeUnit=[];%default
 testima=0; %test for image input
 imainfo=[];
 ColorType='falsecolor'; %default
-hhh='';
-if isequal(lower(FileExt),'.avi') %.avi file
+hhh=[];
+UvData.MovieObject{index}=VideoObject;
+if ~isempty(VideoObject)
+    imainfo=get(VideoObject);
     testima=1;
-    imainfo=aviinfo([FileName]);
-    nbfield=imainfo.NumFrames;
     nbfield_j=1;
-    set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FramesPerSecond) 'ms']);%display the elementary time interval in millisec
-    XmlData.Time=(0:1/imainfo.FramesPerSecond:(imainfo.NumFrames-1)/imainfo.FramesPerSecond)';
     TimeUnit='s';
-    hhh=which('mmreader');
-    ColorType=imainfo.ImageType;%='truecolor' for color images
+    XmlData.Time=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames-1)/imainfo.FrameRate)';
+    % %         nbfield=imainfo.NumberOfFrames;
+    set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
+    ColorType='truecolor';
 elseif ~isempty(FileExt(2:end))&&(~isempty(imformats(FileExt(2:end))) || isequal(FileExt,'.vol'))%&& isequal(NomType,'*')% multi-frame image
     testima=1;
     if ~isequal(SubDir,'')
-       RootFile=get(handles.RootFile,'String');
+        RootFile=get(handles.RootFile,'String');
         imainfo=imfinfo([fullfile(RootPath,SubDir,RootFile) FileIndices FileExt]);
     else
         imainfo=imfinfo([FileBase FileIndices FileExt]);
@@ -711,12 +711,7 @@ elseif ~isempty(FileExt(2:end))&&(~isempty(imformats(FileExt(2:end))) || isequal
     if length(imainfo) >1 %case of image with multiple frames
         nbfield=length(imainfo);
         nbfield_j=1;
-    end 
-end
-if ~strcmp(hhh,'')% if the function mmreader is found (recent version of matlab)
-    UvData.MovieObject{index}=mmreader([FileBase FileIndices FileExt]);
-else
-    UvData.MovieObject{index}=[];
+    end
 end
 if isfield(imainfo,'Width') && isfield(imainfo,'Height')
     if length(imainfo)>1
@@ -1922,6 +1917,7 @@ set(handles.run0,'BackgroundColor',[1 0 0])
 % filename_1: second input file (=[] in the asbsenc of secodn input file) 
 % num_i1,num_i2,num_j1,num_j2; frame indices
 % Field: structure describing an optional input field (then replace the input file)
+
 function errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,Field)
 %------------------------------------------------------------------------
 
@@ -2223,12 +2219,12 @@ if ~isempty(transform)
 end
 
 %% calculate scalar
-if (strcmp(FileType,'civdata')||strcmp(FileType,'civx'))&&~strcmp(ParamOut.FieldName,'velocity')&& ~strcmp(ParamOut.FieldName,'get_field...');% ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
-    Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1},ParamOut.VelType);
-end
-if numel(Field)==2 && ~test_keepdata_1 && (strcmp(FileType,'civdata')||strcmp(FileType,'civx'))  &&~strcmp(ParamOut.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
-     Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2},ParamOut_1.VelType);
-end
+% if (strcmp(FileType,'civdata')||strcmp(FileType,'civx'))&&~strcmp(ParamOut.FieldName,'velocity')&& ~strcmp(ParamOut.FieldName,'get_field...');% ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
+%     Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
+% end
+% if numel(Field)==2 && ~test_keepdata_1 && (strcmp(FileType,'civdata')||strcmp(FileType,'civx'))  &&~strcmp(ParamOut.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
+%      Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
+% end
 
 %% combine the two input fields (e.g. substract velocity fields)
 if numel(Field)==2
@@ -2449,7 +2445,7 @@ end
 %loop on the projection objects: one or two
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);
-    [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
+    [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj})% project field on the object
 
     if ~isempty(errormsg)
         return
@@ -4588,7 +4584,14 @@ hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
+if ~isfield(ObjectData,'Type')% default plane
+    ObjectData.Type='plane';
+end
 hset_object=set_object(ObjectData,[],ZBounds);
+if get(handles.edit_object,'Value')% edit mode
+    hhset_object=guidata(hset_object);
+    set(hhset_object.PLOT,'Enable','on')
+end
 
 
 function NomType_Callback(hObject, eventdata, handles)

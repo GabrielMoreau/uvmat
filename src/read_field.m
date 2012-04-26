@@ -154,15 +154,6 @@ switch FileType
             return
         end
         FieldName='image';
-%     case 'avi'
-%         try
-%             mov=aviread(ObjectName,num);
-%         catch ME
-%             errormsg=ME.message;
-%             return
-%         end
-%         A=frame2im(mov(1));
-%         FieldName='image';
     case 'vol'
         A=imread(ObjectName);
         Npz=size(A,1)/ParamIn.Npy;
@@ -182,8 +173,8 @@ if ~isempty(A)
     ParamOut.FieldList={'image'};
     Npz=1;%default
     npxy=size(A);
-    Rangx=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
-    Rangy=[npxy(1)-0.5 0.5]; %
+%     Rangx=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
+%     Rangy=[npxy(1)-0.5 0.5]; %
     Field.NbDim=2;%default
     Field.AName='image';
     Field.ListVarName={'AY','AX','A'}; %

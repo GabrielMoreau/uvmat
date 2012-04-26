@@ -285,7 +285,8 @@ for icell=1:length(CellVarIndex)
         checkancillary=0;
         if length(FieldData.VarAttribute)>=VarIndex(ivar)
             VarAttribute=FieldData.VarAttribute{VarIndex(ivar)};
-            if isfield(VarAttribute,'Role')&&strcmp(VarAttribute.Role,'ancillary')
+            if isfield(VarAttribute,'Role')&&(strcmp(VarAttribute.Role,'ancillary')||strcmp(VarAttribute.Role,'coord_tps')...
+                    ||strcmp(VarAttribute.Role,'vector_x_tps')||strcmp(VarAttribute.Role,'vector_y_tps'))
                 checkancillary=1;
             end
         end
@@ -295,8 +296,10 @@ for icell=1:length(CellVarIndex)
             if size(VarValue,1)~=1
                 VarValue=VarValue';
             end
+            if size(VarValue,1)==1
             txt=[VarName '=' num2str(VarValue)];
             txt_cell=[txt_cell;{txt}];
+            end
         end
     end
 end

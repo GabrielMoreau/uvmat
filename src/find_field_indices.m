@@ -101,7 +101,7 @@ end
 
 % find the spatial dimensions and vector components 
 ListRole={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','warnflag','errorflag',...
-    'ancillary','image','color','discrete','scalar'};
+    'ancillary','image','color','discrete','scalar','coord_tps'};
 for icell=1:length(CellVarIndex)
     for ilist=1:numel(ListRole)
         eval(['ivar_' ListRole{ilist} '=[];'])

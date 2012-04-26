@@ -9,10 +9,10 @@
 %
 % INPUT:
 % fileinput: name, including path, of the file to analyse
-function [FileType,FileInfo,Object]=get_file_type(fileinput)
+function [FileType,FileInfo,VideoObject]=get_file_type(fileinput)
 FileType='';
 FileInfo=[];
-Object=[];
+VideoObject=[];
 [tild,tild,FileExt]=fileparts(fileinput);
 
 switch FileExt
@@ -69,13 +69,11 @@ switch FileExt
             end
             if error_nc
                 try
-                    if exist('VideoReader','file')%recent version of Matlab
-                        Object=VideoReader(fileinput);
-                    else
-                        Object=mmreader(fileinput);%older Matlab function for movies
-                    end
-                    FileType='video';
-                    FileInfo.NbFrame=get(Object,'NumberOfFrames');
+                    if exist('VideoReader.m','file')%recent version of Matlab
+                        VideoObject=VideoReader(fileinput);
+                        FileInfo.NumberOfFrames=get(VideoObject,'NumberOfFrames');
+                        FileType='video';
+                    end             
                 end
             end
         end

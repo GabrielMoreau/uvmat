@@ -54,13 +54,13 @@ j2_series=zeros(1,1,1);
 [FileType,FileInfo,Object]=get_file_type(fullfileinput);
 if strcmp( FileType,'multimage')||strcmp( FileType,'video')
     NomType='*';
-    i1_series=(1:FileInfo.NbFrame)';
+    i1_series=(1:FileInfo.NumberOfFrames)';
 end
 
 if strcmp(NomType,'')||strcmp(NomType,'*')||strcmp(option,'filetype')
     if exist(fullfileinput,'file')
-        RootFile=fileinput;% case of constant name (no indexing)
-       % [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
+      %  RootFile=fileinput;% case of constant name (no indexing)
+        [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing)
     else
         RootFile='';
     end

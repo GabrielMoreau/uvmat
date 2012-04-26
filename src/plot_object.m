@@ -167,7 +167,7 @@ if test_line
         xline=[xline; ObjectData.Coord(1,1)];%closing the line
         yline=[yline; ObjectData.Coord(1,2)];
     elseif isequal(ObjectData.Type,'plane')|| isequal(ObjectData.Type,'volume') 
-        phi=ObjectData.Phi*pi/180;%angle in radians
+        phi=ObjectData.Angle(3)*pi/180;%angle in radians
         Xend_x=xline(1)+XMax*cos(phi);
         Xend_y=yline(1)+XMax*sin(phi);
         Xbeg_x=xline(1)+XMin*cos(phi);

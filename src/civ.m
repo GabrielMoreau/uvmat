@@ -519,16 +519,31 @@ if ~isempty(ext_imadoc)
             set(handles.ListPairMode,'String',{'series(Di)'})
             dt=0.04;%default
             if exist([RootName ext_imadoc],'file')==2
-                info=aviinfo([RootName ext_imadoc]);%read infos on the avi movie
-                dt=1/info.FramesPerSecond;%time interval between successive frames
-                MaxIndex_i=info.NumFrames;%number of frames
+                hhh=which('videoreader');
+                if isempty(hhh)%use old video function of matlab
+                    imainfo=aviinfo([RootName ext_imadoc]);%read infos on the avi movie
+                    dt=1/imainfo.FramesPerSecond;%time interval between successive frames
+                    MaxIndex_i=imainfo.NumFrames;%number of frames
+                    %         XmlData.Time=(0:1/imainfo.FramesPerSecond:(imainfo.NumFrames-1)/imainfo.FramesPerSecond)';
+                    %         nbfield=imainfo.NumFrames;
+                    %         set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FramesPerSecond) 'ms']);%display the elementary time interval in millisec
+                    %         ColorType=imainfo.ImageType;%='truecolor' for color images
+                else %use video function videoreader of matlab
+                    imainfo=get(videoreader([RootName ext_imadoc]));%read infos on the avi movie
+                    dt=1/imainfo.FrameRate;%time interval between successive frames
+                    MaxIndex_i=imainfo.NumberOfFrames;%number of frames
+                    %         XmlData.Time=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames-1)/imainfo.FrameRate)';
+                    %         nbfield=imainfo.NumberOfFrames;
+                    %         set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
+                    %         ColorType='truecolor';
+                end
+                
+                time=(dt*(0:MaxIndex_i-1))';%list of image times
+                TimeUnit='s';
             end
-            time=(dt*(0:MaxIndex_i-1))';%list of image times
-            TimeUnit='s';
+            set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box back to whiter
     end
-    set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box back to whiter
 end
-
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
 if numel(time)>=2 % if there are at least two time values to define dt
@@ -1222,11 +1237,17 @@ for ifile=1:nbfield
             end
             Param.Civ1.Time=((time(i2_civ1(ifile)+1,j2_civ1(j)+1)+time(i1_civ1(ifile)+1,j1_civ1(j)+1))/2);
             Param.Civ1.term_a=num2stra(j1_civ1(j),nom_type_nc);%UTILITE?
-            Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%    
-            ImageInfo=imfinfo(filecell.ima1.civ1{1,1});%read the first image to get the size
+            Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%
+            form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
+            if isempty(form)
+                ImageInfo=get(VideoReader(filecell.ima1.civ1{1,1}));
+                Param.Civ1.ImageBitDepth=ImageInfo.BitsPerPixel/3;
+            else
+                ImageInfo=imfinfo(filecell.ima1.civ1{1,1});%read the first image to get the size
+                Param.Civ1.ImageBitDepth=ImageInfo.BitDepth;
+            end
             Param.Civ1.ImageWidth=ImageInfo.Width;
             Param.Civ1.ImageHeight=ImageInfo.Height;
-            Param.Civ1.ImageBitDepth=ImageInfo.BitDepth;
             Param.Civ1.i1=i1_civ1;
             Param.Civ1.i2=i2_civ1;
             % read mask parameters
@@ -1393,13 +1414,18 @@ for ifile=1:nbfield
                     end
                 end
             end
-            ImageInfo=imfinfo(filecell.ima1.civ2{1,1});%read the first image to get the size
+            form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
+            if isempty(form)
+                ImageInfo=get(VideoReader(filecell.ima1.civ2{1,1}));
+                Param.Civ2.ImageBitDepth=ImageInfo.BitsPerPixel/3;
+            else
+                ImageInfo=imfinfo(filecell.ima1.civ2{1,1});%read the first image to get the size
+                Param.Civ2.ImageBitDepth=ImageInfo.BitDepth;
+            end
             Param.Civ2.ImageWidth=ImageInfo.Width;
             Param.Civ2.ImageHeight=ImageInfo.Height;
-            Param.Civ2.ImageBitDepth=ImageInfo.BitDepth;
             Param.Civ2.i1=i1_civ2;
             Param.Civ2.i2=i2_civ2;
-            % TODO: case of movie   
             switch CivMode
                 case 'CivX'
                     cmd=[cmd...
@@ -3927,8 +3953,8 @@ if get(handles.TestCiv1,'Value')
     par_civ1.ImageWidth=size(Data.A,2);
     par_civ1.ImageHeight=size(Data.A,1);
     par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation
-    par_civ1.i1=i1_civ1;
-    par_civ1.i2=i2_civ1;
+    par_civ1.i1=1;%i1_civ1;
+    par_civ1.i2=2;%i2_civ1;
     Param.Civ1=par_civ1;
     Grid=civ_matlab(Param);% get the grid of x, y positions set for PIV 
     hview_field=view_field(Data); %view the image in the GUI view_field

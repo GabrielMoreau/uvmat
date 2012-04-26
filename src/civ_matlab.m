@@ -71,11 +71,11 @@ if isfield (Param,'Civ1')
             end
         end
     else
-        if isfield(par_civ1,'ImageA') && ischar(par_civ1.ImageA) % case with no image: only the PIV grid is calculated
+        if isfield(par_civ1,'ImageA')&&(ischar(par_civ1.ImageA)||strcmp(class(par_civ1.ImageA),'VideoReader')) % case with no image: only the PIV grid is calculated
             [Field,ParamOut,errormsg] = read_field(par_civ1.ImageA,par_civ1.FileTypeA,[],par_civ1.i1);
             par_civ1.ImageA=Field.A;%imread(par_civ1.ImageA);%[Field,ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num)
         end
-        if isfield(par_civ1,'ImageB')&& ischar(par_civ1.ImageB)
+        if isfield(par_civ1,'ImageB')&& (ischar(par_civ1.ImageB)||strcmp(class(par_civ1.ImageA),'VideoReader'))
             [Field,ParamOut,errormsg] = read_field(par_civ1.ImageB,par_civ1.FileTypeB,[],par_civ1.i2);
             par_civ1.ImageB=Field.A;%=imread(par_civ1.ImageB);
         end
@@ -176,12 +176,15 @@ if isfield (Param,'Patch1')
     Data.Patch1_Rho=Param.Patch1.SmoothingParam;
     Data.Patch1_Threshold=Param.Patch1.MaxDiff;
     Data.Patch1_SubDomain=Param.Patch1.SubdomainSize;
+    nbvar=length(Data.ListVarName);
     Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbSites','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
     Data.VarDimName=[Data.VarDimName {'NbVec1','NbVec1',{'NbCoord','Two','NbSubDomain1'},{'NbSubDomain1'},...
              {'NbVec1Sub','NbCoord','NbSubDomain1'},{'Nbtps1','NbSubDomain1'},{'Nbtps1','NbSubDomain1'}}];
-    nbvar=length(Data.ListVarName);
-    Data.VarAttribute{nbvar-1}.Role='vector_x';
-    Data.VarAttribute{nbvar}.Role='vector_y';
+    Data.VarAttribute{nbvar+1}.Role='vector_x';
+    Data.VarAttribute{nbvar+2}.Role='vector_y';
+    Data.VarAttribute{nbvar+5}.Role='coord_tps';
+    Data.VarAttribute{nbvar+6}.Role='vector_x_tps';
+    Data.VarAttribute{nbvar+7}.Role='vector_y_tps';
     Data.Civ1_U_smooth=zeros(size(Data.Civ1_X));
     Data.Civ1_V_smooth=zeros(size(Data.Civ1_X));
     if isfield(Data,'Civ1_FF')
@@ -203,13 +206,19 @@ end
 if isfield (Param,'Civ2')
     par_civ2=Param.Civ2;
     if ~isfield (Param,'Civ1') || ~strcmp(Param.Civ1.ImageA,par_civ2.ImageA)
-        par_civ2.ImageA=imread(Param.Civ2.ImageA);%read first image if not already done for civ1
+        %read first image if not already done for civ1
+        [Field,ParamOut,errormsg] = read_field(par_civ2.ImageA,par_civ2.FileTypeA,[],par_civ2.i1);
+        par_civ2.ImageA=Field.A;
+        %      par_civ2.ImageA=imread(Param.Civ2.ImageA);
     else
         par_civ2.ImageA=par_civ1.ImageA;
     end
     if ~isfield (Param,'Civ1') || ~strcmp(Param.Civ1.ImageB,par_civ2.ImageB)
-        par_civ2.ImageB=imread(Param.Civ2.ImageB);%read second image if not already done for civ1
-         else
+        %read first image if not already done for civ1
+        [Field,ParamOut,errormsg] = read_field(par_civ2.ImageB,par_civ2.FileTypeB,[],par_civ2.i2);
+        par_civ2.ImageB=Field.A;
+        %      par_civ2.ImageB=imread(Param.Civ2.ImageB);
+    else
         par_civ2.ImageB=par_civ1.ImageB;
     end
     ibx2=ceil(par_civ2.Bx/2);
@@ -329,7 +338,7 @@ if isfield (Param,'Fix2')
         Data.vec_FixFlag=fix(Param.Fix2,Data.vec2_F,Data.vec2_C,Data.vec2_U,Data.vec2_V,Data.vec2_X,Data.vec2_Y);
     else
         Data.ListVarName=[Data.ListVarName {'Civ2_FF'}];
-        Data.VarDimName=[Data.VarDimName {'nbvec2'}];
+        Data.VarDimName=[Data.VarDimName {'NbVec2'}];
         nbvar=length(Data.ListVarName);
         Data.VarAttribute{nbvar}.Role='errorflag';    
         Data.Civ2_FF=fix(Param.Fix2,Data.Civ2_F,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V);
@@ -344,17 +353,21 @@ if isfield (Param,'Patch2')
     Data.Patch2_Rho=Param.Patch2.SmoothingParam;
     Data.Patch2_Threshold=Param.Patch2.MaxDiff;
     Data.Patch2_SubDomain=Param.Patch2.SubdomainSize;
-    Data.ListVarName=[Data.ListVarName {'Civ2_U_Diff','Civ2_V_Diff','Civ2_SubRange','Civ2_NbSites','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
+    nbvar=length(Data.ListVarName);
+    Data.ListVarName=[Data.ListVarName {'Civ2_U_smooth','Civ2_V_smooth','Civ2_SubRange','Civ2_NbSites','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
     Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2',{'NbCoord','Two','NbSubDomain2'},{'NbSubDomain2'},...
              {'NbVec2Sub','NbCoord','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'Nbtps2','NbSubDomain2'}}];
 %     Data.ListVarName=[Data.ListVarName {'Civ2_U_Diff','Civ2_V_Diff','Civ2_X_SubRange','Civ2_Y_SubRange','Civ2_X_tps','Civ2_Y_tps','Civ2_U_tps','Civ2_V_tps','Civ2_Indices_tps'}];
 %     Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2',{'NbSubDomain2','Two'},{'NbSubDomain2','Two'},...
 %              {'NbVec2Sub','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'}}];
-    nbvar=length(Data.ListVarName);
-    Data.VarAttribute{nbvar-1}.Role='vector_x';
-    Data.VarAttribute{nbvar}.Role='vector_y';
-    Data.Civ2_U_Diff=zeros(size(Data.Civ2_X));
-    Data.Civ2_V_Diff=zeros(size(Data.Civ2_X));
+
+        Data.VarAttribute{nbvar+1}.Role='vector_x';
+    Data.VarAttribute{nbvar+2}.Role='vector_y';
+    Data.VarAttribute{nbvar+5}.Role='coord_tps';
+    Data.VarAttribute{nbvar+6}.Role='vector_x_tps';
+    Data.VarAttribute{nbvar+7}.Role='vector_y_tps';
+    Data.Civ2_U_smooth=zeros(size(Data.Civ2_X));
+    Data.Civ2_V_smooth=zeros(size(Data.Civ2_X));
     if isfield(Data,'Civ2_FF')
         ind_good=find(Data.Civ2_FF==0);
     else
@@ -362,10 +375,10 @@ if isfield (Param,'Patch2')
     end 
     [Data.Civ2_SubRange,Data.Civ2_NbSites,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures, Vres,tild,FFres]=...
          filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomain,Data.Patch2_Rho,Data.Patch2_Threshold); 
-      Data.Civ2_U_Diff(ind_good)=Data.Civ2_U(ind_good)-Ures;
-      Data.Civ2_V_Diff(ind_good)=Data.Civ2_V(ind_good)-Vres;
-      Data.Civ2_FF(ind_good)=FFres;
-      Data.CivStage=Data.CivStage+1;                             
+    Data.Civ2_U_smooth(ind_good)=Ures;
+    Data.Civ2_V_smooth(ind_good)=Vres;
+    Data.Civ2_FF(ind_good)=FFres;
+    Data.CivStage=Data.CivStage+1;                             
 end  
 
 %% write result in a netcdf file if requested

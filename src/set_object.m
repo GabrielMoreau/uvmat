@@ -396,13 +396,22 @@ IndexObj=get(hhuvmat.ListObject,'Value');% index(indices) of the selected object
 %% read the object on the GUI set_object
 ObjectData=read_GUI(handles.set_object);%read the parameters defining the object in the GUI set_object
 ObjectName=ObjectData.Name;%name of the current object defined in set_object
+if iscell(ObjectData.Coord)%check for empty line
+    ObjectData.Coord=[0 0 0];
+    hhset_object=guidata(handles.set_object);
+    set(hhset_object.Coord,'Data',ObjectData.Coord)
+end
 checknan=isnan(sum(ObjectData.Coord,2));%check for NaN lines
 if ~isempty(checknan)
     ObjectData.Coord(checknan,:)=[];%remove the NaN lines
 end
 if isempty(ObjectName)
     if get(hhuvmat.edit_object,'Value')% edit mode
+        if isempty(ListObject)
+            ObjectName='Plane';
+        else
         ObjectName=ListObject{IndexObj(end)};%take the name of the last (second) selected item
+        end
     else %new object
         StyleList=get(handles.Type,'String');
         StyleVal=get(handles.Type,'Value');

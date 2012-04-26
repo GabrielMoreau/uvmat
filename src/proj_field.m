@@ -1,6 +1,6 @@
 %'proj_field': projects the field on a projection object
 %--------------------------------------------------------------------------
-%  function [ProjData,errormsg]=proj_field(FieldData,ObjectData)
+%  function [ProjData,errormsg]=proj_field(FieldData,ObjectData,FieldName)
 %
 % OUTPUT:
 % ProjData structure containing the fields of the input field FieldData,
@@ -19,7 +19,7 @@
 %    .Type : type of projection object
 %    .ProjMode=mode of projection ;
 %    .CoordUnit: 'px', 'cm' units for the coordinates defining the object
-%    .Phi  angle of rotation (=0 by default)
+%    .Angle (  angles of rotation (=[0 0 0] by default)
 %    .ProjAngle=angle of projection;
 %    .DX,.DY,.DZ=increments along each coordinate
 %    .Coord(nbpoints,3): set of coordinates defining the object position;
@@ -81,9 +81,16 @@
 
 function [ProjData,errormsg]=proj_field(FieldData,ObjectData,FieldName)
 errormsg='';%default
+if ~exist('FieldName','var')
+    FieldName='';
+end
 %% case of no projection (object is used only as graph display)
 if isfield(ObjectData,'ProjMode') && (isequal(ObjectData.ProjMode,'none')||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'))
+    if ~isempty(FieldName)
+        [ProjData,errormsg]=calc_field(FieldName,FieldData);
+    else
     ProjData=[];
+    end
     return
 end
 
@@ -122,7 +129,7 @@ if isfield(ObjectData,'ZMin') && ~isempty(ObjectData.ZMin)
 end
 %%%%%%%%%%
 
-%% apply projection depending on the object style
+%% apply projection depending on the object type
 switch ObjectData.Type
     case 'points'
     [ProjData,errormsg]=proj_points(FieldData,ObjectData);
@@ -135,7 +142,7 @@ switch ObjectData.Type
             [ProjData,errormsg] = proj_line(FieldData,ObjectData);
         end
     case 'plane'
-            [ProjData,errormsg] = proj_plane(FieldData,ObjectData);
+            [ProjData,errormsg] = proj_plane(FieldData,ObjectData,FieldName);
     case 'volume'
         [ProjData,errormsg] = proj_volume(FieldData,ObjectData);
 end
@@ -891,14 +898,14 @@ end
 ProjMode='projection';%direct projection by default
 if isfield(ObjectData,'ProjMode'),ProjMode=ObjectData.ProjMode; end;
 
-%axis origin
+%% axis origin
 if isempty(ObjectData.Coord)
     ObjectData.Coord(1,1)=0;%origin of the plane set to [0 0] by default
     ObjectData.Coord(1,2)=0;
     ObjectData.Coord(1,3)=0;
 end
 
-%rotation angles 
+%% rotation angles 
 PlaneAngle=[0 0 0]; 
 norm_plane=[0 0 1];
 cos_om=1;
@@ -920,7 +927,7 @@ if isfield(ObjectData,'Angle')&& isequal(size(ObjectData.Angle),[1 3])&& ~isequa
 end
 testangle=~isequal(PlaneAngle,[0 0 0]);% && ~test90y && ~test90x;%=1 for slanted plane 
 
-%mesh sizes DX and DY
+%% mesh sizes DX and DY
 DX=0;
 DY=0; %default 
 if isfield(ObjectData,'DX') && ~isempty(ObjectData.DX)
@@ -935,7 +942,7 @@ if  ~strcmp(ProjMode,'projection') && (DX==0||DY==0)
         return
 end
 
-%extrema along each axis
+%% extrema along each axis
 testXMin=0;
 testXMax=0;
 testYMin=0;
@@ -957,7 +964,7 @@ if isfield(ObjectData,'RangeZ')
         width=max(ObjectData.RangeZ);
 end
 
-% initiate Matlab  structure for physical field
+%% initiate Matlab  structure for physical field
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 ProjData.NbDim=2;
 ProjData.ListVarName={};
@@ -967,7 +974,6 @@ if ~isequal(DX,0)&& ~isequal(DY,0)
 elseif isfield(FieldData,'Mesh')
     ProjData.Mesh=FieldData.Mesh;
 end
-
 error=0;%default
 flux=0;
 testfalse=0;
@@ -1016,14 +1022,15 @@ for icell=1:length(CellVarIndex)
     end
     
     %% case of input fields with unstructured coordinates
+    coord_z=0;%default
     if testX
         XName=FieldData.ListVarName{ivar_X};
         YName=FieldData.ListVarName{ivar_Y};
-        eval(['coord_x=FieldData.' XName ';'])
-        eval(['coord_y=FieldData.' YName ';'])
+        coord_x=FieldData.(XName);
+        coord_y=FieldData.(YName);
         if length(ivar_Z)==1
             ZName=FieldData.ListVarName{ivar_Z};
-            eval(['coord_z=FieldData.' ZName ';'])
+            coord_z=FieldData.(ZName);
         end
         
         % translate  initial coordinates
@@ -1050,21 +1057,15 @@ for icell=1:length(CellVarIndex)
         end
         
         %rotate coordinates if needed: 
+        Psi=PlaneAngle(1);
+        Theta=PlaneAngle(2);
+        Phi=PlaneAngle(3);
         if testangle && ~test90y && ~test90x;%=1 for slanted plane
-            %             coord_X=coord_x;
-            %             coord_Y=coord_y;
-            %             if ~isequal(Theta,0)
-            %                 coord_Y=coord_Y *cos(Theta);
-            %             end
-            %         else
             coord_X=(coord_x *cos(Phi) + coord_y* sin(Phi));
             coord_Y=(-coord_x *sin(Phi) + coord_y *cos(Phi))*cos(Theta);
-            %         end
-            %         if ~isempty(ivar_Z)
             coord_Y=coord_Y+coord_z *sin(Theta);
-            %         end
-            %         if testangle
             coord_X=(coord_X *cos(Psi) - coord_Y* sin(Psi));%A VERIFIER
+
             coord_Y=(coord_X *sin(Psi) + coord_Y* cos(Psi));
         else
             coord_X=coord_x;
@@ -1162,54 +1163,54 @@ for icell=1:length(CellVarIndex)
             end
             FF=zeros(1,length(coord_y_proj)*length(coord_x_proj));
             testFF=0;
+            FieldName
             if ~isempty(FieldName)
-                FieldData=calc_field(FieldName,FieldData,XI,YI);
-            end
-            for ivar=VarIndex
-                VarName=FieldData.ListVarName{ivar};
-                if ~( ivar==ivar_X || ivar==ivar_Y || ivar==ivar_Z || ivar==ivar_F || ivar==ivar_FF || test_anc(ivar)==1)
-                    ivar_new=ivar_new+1;
-                    ProjData.ListVarName=[ProjData.ListVarName {VarName}];
-                    ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
-                    if isfield(FieldData,'VarAttribute') && length(FieldData.VarAttribute) >=ivar
-                        ProjData.VarAttribute{ivar_new+nbcoord}=FieldData.VarAttribute{ivar};
-                    end
-                    if  ~isequal(ivar_FF,0)
-                        FieldData.(VarName)=FieldData.(VarName)(indsel);
-                    end
-%                     if isfield(FieldData,[VarName '_tps'])
-%                         [XI,YI]=meshgrid(coord_x_proj,coord_y_proj');
-%                         XI=reshape(XI,[],1);
-%                         YI=reshape(YI,[],1);
-%                         
-                   if ~isempty(FieldName)
+                ProjData=calc_field(FieldName,FieldData,[XI YI]);
+            else
+                for ivar=VarIndex
+                    VarName=FieldData.ListVarName{ivar};
+                    if ~( ivar==ivar_X || ivar==ivar_Y || ivar==ivar_Z || ivar==ivar_F || ivar==ivar_FF || test_anc(ivar)==1)
+                        ivar_new=ivar_new+1;
+                        ProjData.ListVarName=[ProjData.ListVarName {VarName}];
+                        ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
+                        if isfield(FieldData,'VarAttribute') && length(FieldData.VarAttribute) >=ivar
+                            ProjData.VarAttribute{ivar_new+nbcoord}=FieldData.VarAttribute{ivar};
+                        end
+                        if  ~isequal(ivar_FF,0)
+                            FieldData.(VarName)=FieldData.(VarName)(indsel);
+                        end
+                        %                     if isfield(FieldData,[VarName '_tps'])
+                        %                         [XI,YI]=meshgrid(coord_x_proj,coord_y_proj');
+                        %                         XI=reshape(XI,[],1);
+                        %                         YI=reshape(YI,[],1);
+                        %
                         ProjData.(VarName)=griddata_uvmat(double(coord_X),double(coord_Y),double(FieldData.(VarName)),coord_x_proj,coord_y_proj',rho);
-                    end
-                    varline=reshape(ProjData.(VarName),1,length(coord_y_proj)*length(coord_x_proj));
-                    FFlag= isnan(varline); %detect undefined values NaN
-                    indnan=find(FFlag);
-                    if~isempty(indnan)
-                        varline(indnan)=zeros(size(indnan));
-                        ProjData.(VarName)=reshape(varline,length(coord_y_proj),length(coord_x_proj));
-                        FF(indnan)=ones(size(indnan));
-                        testFF=1;
-                    end
-                    if ivar==ivar_U
-                        ivar_U=ivar_new;
-                    end
-                    if ivar==ivar_V
-                        ivar_V=ivar_new;
-                    end
-                    if ivar==ivar_W
-                        ivar_W=ivar_new;
+                        varline=reshape(ProjData.(VarName),1,length(coord_y_proj)*length(coord_x_proj));
+                        FFlag= isnan(varline); %detect undefined values NaN
+                        indnan=find(FFlag);
+                        if~isempty(indnan)
+                            varline(indnan)=zeros(size(indnan));
+                            ProjData.(VarName)=reshape(varline,length(coord_y_proj),length(coord_x_proj));
+                            FF(indnan)=ones(size(indnan));
+                            testFF=1;
+                        end
+                        if ivar==ivar_U
+                            ivar_U=ivar_new;
+                        end
+                        if ivar==ivar_V
+                            ivar_V=ivar_new;
+                        end
+                        if ivar==ivar_W
+                            ivar_W=ivar_new;
+                        end
                     end
                 end
-            end
-            if testFF
-                ProjData.FF=reshape(FF,length(coord_y_proj),length(coord_x_proj));
-                ProjData.ListVarName=[ProjData.ListVarName {'FF'}];
-                ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
-                ProjData.VarAttribute{ivar_new+1+nbcoord}.Role='errorflag';
+                if testFF
+                    ProjData.FF=reshape(FF,length(coord_y_proj),length(coord_x_proj));
+                    ProjData.ListVarName=[ProjData.ListVarName {'FF'}];
+                    ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
+                    ProjData.VarAttribute{ivar_new+1+nbcoord}.Role='errorflag';
+                end
             end
         end
         
