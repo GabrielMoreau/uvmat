@@ -54,8 +54,8 @@ if test_object
     hset_object=findobj(allchild(0),'tag','set_object');
     %ProjObject=read_set_object(guidata(hset_object));
     ProjObject=read_GUI(hset_object);
-    if ~isfield(ProjObject,'Style')
-            msgbox_uvmat('ERROR','Undefined projection object style')
+    if ~isfield(ProjObject,'Type')
+            msgbox_uvmat('ERROR','Undefined projection object type')
             return
     end
     if ~isequal(ProjObject.Type,'plane')|| isequal(ProjObject.ProjMode,'projection')
