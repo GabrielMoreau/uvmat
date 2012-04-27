@@ -18,7 +18,7 @@ incr_i=Param.IndexRange.incr_i;
 last_i=Param.IndexRange.last_i;
 ref_i=first_i:incr_i:last_i;
 ref_j=[];
-if isfield(Param,'first_j')
+if isfield(Param.IndexRange,'first_j')
     first_j=Param.IndexRange.first_j;
     incr_j=Param.IndexRange.incr_j;
     last_j=Param.IndexRange.last_j;
@@ -68,8 +68,10 @@ function [i1_series,i2_series,j1_series,j2_series]=find_file_indices(ref_i,ref_j
 i1_series=ref_i;%default
 j1_series=[];
 if ~isempty(ref_j)
-    i1_series=meshgrid(ref_i,ones(size(ref_j)));
-    j1_series=meshgrid(ref_i,ones(size(ref_j)));
+%      i1_series=meshgrid(ref_i,ones(size(ref_j)));
+% %     j1_series=meshgrid(ref_i,ones(size(ref_j)));
+%     j1_series=meshgrid(ones(size(ref_i)),ref_j);
+    [i1_series,j1_series]=meshgrid(ref_i,ref_j);
 end
 i2_series=i1_series;
 j2_series=j1_series;
