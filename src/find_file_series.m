@@ -109,10 +109,11 @@ else
     r=regexp(NomType,'^(?<sep1>_?)(?<i1>\d+)(?<j1>[a|A])(?<j2>[b|B]?)$','names');
     if ~isempty(r)
         sep1=r.sep1;
-        if strcmp(lower(r.j1),r.j1)
+        i1_str='(?<i1>\d+)';
+        if strcmp(lower(r.j1),r.j1)% lower case index
             j1_str='(?<j1>[a-z])';
         else
-           j1_str='(?<j1>[A-Z])'; 
+           j1_str='(?<j1>[A-Z])'; % upper case index
         end
         j1_star='*';
         if ~isempty(r.j2)

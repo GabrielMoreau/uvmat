@@ -309,7 +309,6 @@ if exist('input','var')
             set(handles.i1,num2str(input.TimeIndex))
         end
         if isfield(input,'FieldsString')
-%             set(handles.Fields,'Value',1)
             UvData.FieldsString=input.FieldsString;
         end
     elseif ischar(input)% file name introduced as input
@@ -485,7 +484,7 @@ if index==1
     handles_FileIndex=handles.FileIndex;
     handles_NomType=handles.NomType;
     handles_FileExt=handles.FileExt;
-    handles_Fields=handles.Fields;
+%     handles_Fields=handles.Fields;
 elseif index==2
     handles_RootPath=handles.RootPath_1;
     handles_SubDir=handles.SubDir_1;
@@ -493,7 +492,7 @@ elseif index==2
     handles_FileIndex=handles.FileIndex_1;
     handles_NomType=handles.NomType_1;
     handles_FileExt=handles.FileExt_1;
-    handles_Fields=handles.Fields_1;
+%     handles_Fields=handles.Fields_1;
     set(handles.RootPath_1,'Visible','on')
     set(handles.RootFile_1,'Visible','on')
     set(handles.SubDir_1,'Visible','on');
@@ -503,17 +502,10 @@ elseif index==2
 end
 
 %% detect root name, nomenclature and indices in the input file name:
-%[RootPath,SubDir]=fileparts_uvmat(fileinput);
 [FilePath,FileName,FileExt]=fileparts(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
-% if strcmp(NomType,'*')% movies will be opened at the first frame
-%     i1=1;
-%     i2=[];
-%     j1=[];
-%     j2=[];
-% end  
 
 %% open the file or fill the GUI uvmat according to the detected file type
 switch FileType
@@ -1963,7 +1955,7 @@ if ~isempty(filename)
     ObjectName=filename;
     FieldName=[];%default
     VelType=[];%default
-    FileExt=get(handles.FileExt,'String');
+   % FileExt=get(handles.FileExt,'String');
     FileType=UvData.FileType{1};
     switch FileType
         %     if strcmp(Ext,'.nc')||strcmp(Ext,'.cdf')
@@ -2233,6 +2225,7 @@ if numel(Field)==2
 else
    UvData.Field=Field{1};
 end
+UvData.Field.FieldList={FieldName}; % TODO: to generalise, used for proj_field with tps interpolation
 
 %% get bounds and mesh (needed for mouse action and to open set_object)
 test_x=0;
@@ -3817,7 +3810,7 @@ function update_plot(handles)
 UvData=get(handles.uvmat,'UserData');
 AxeData=UvData.axes3;% retrieve the current plotted data
 PlotParam=read_GUI(handles.uvmat);
-[PP,PlotParamOut]= plot_field(AxeData,handles.axes3,PlotParam);
+[tild,PlotParamOut]= plot_field(AxeData,handles.axes3,PlotParam);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %-------------------------------------------------------------------
@@ -3825,8 +3818,7 @@ write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 function edit_object_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-test=get(handles.edit_object,'Value');
-if test
+if get(handles.edit_object,'Value')
     set(handles.edit_object,'BackgroundColor',[1,1,0])  
     %suppress the other options 
     set(handles.CheckZoom,'Value',0)
@@ -3837,18 +3829,20 @@ if test
         set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
         set(hhgeometry_calib.edit_append,'BackgroundColor',[0.7 0.7 0.7])
     end
+    hset_object=findobj(allchild(0),'Tag','set_object');
+    if isempty(hset_object)% open the GUI set_object with data of the currently selected object
+        ViewObject_Callback(hObject, eventdata, handles)
+        hset_object=findobj(allchild(0),'Tag','set_object');
+    end
+    hhset_object=guidata(hset_object);
+    set(hhset_object.PLOT,'enable','on');
 else 
     UvData.MouseAction='none';
-    set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])   
-end
-set(handles.uvmat,'UserData',UvData);
-hset_object=findobj(allchild(0),'Tag','set_object');
-if ~isempty(hset_object)
-    hhset_object=guidata(hset_object);
-    if test
-        set(hhset_object.PLOT,'enable','on');
-    else
-       set(hhset_object.PLOT,'enable','off'); 
+    set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
+    hset_object=findobj(allchild(0),'Tag','set_object');
+    if ~isempty(hset_object)% open the 
+        hhset_object=guidata(hset_object);
+        set(hhset_object.PLOT,'enable','off'); 
     end
 end
 
@@ -4566,8 +4560,10 @@ if ~val
     run0_Callback(hObject, eventdata, handles)
 end
 
+%------------------------------------------------------------------------
 % --- Executes on button press in ViewObject.
 function ViewObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 IndexObj=get(handles.ListObject,'Value');
 IndexObj=IndexObj(end); %keeps only the secodn value
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface

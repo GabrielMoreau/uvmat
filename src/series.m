@@ -1053,7 +1053,7 @@ SeriesData=get(handles.series,'UserData');
 % if ~isempty(SeriesData)
 if ~isempty(SeriesData.i2_series)||~isempty(SeriesData.j2_series)
     if isequal(mode,'series(Di)') 
-        find_netcpair_civ(handles,Val);% update the menu of pairs depending on the available netcdf files
+        find_netcpair_civ(handles);% update the menu of pairs depending on the available netcdf files
     end
 end
 % end
@@ -1068,7 +1068,7 @@ SeriesData=get(handles.series,'UserData');
 if ~isempty(SeriesData)
 if ~isempty(SeriesData.i2_series)||~isempty(SeriesData.j2_series)
     if isequal(mode,'series(Di)') 
-        find_netcpair_civ(handles,Val);% update the menu of pairs depending on the available netcdf files
+        find_netcpair_civ(handles);% update the menu of pairs depending on the available netcdf files
     end
 end
 end

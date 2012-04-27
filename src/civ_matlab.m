@@ -107,7 +107,7 @@ if isfield (Param,'Civ1')
     end
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];% {'Civ1_Time','Civ1_Dt'}];
     Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_F','Civ1_C'};%  cell array containing the names of the fields to record
-    Data.VarDimName={'NbVec1','NbVec1','NbVec1','NbVec1','NbVec1','NbVec1'};
+    Data.VarDimName={'nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1'};
     Data.VarAttribute{1}.Role='coord_x';
     Data.VarAttribute{2}.Role='coord_y';
     Data.VarAttribute{3}.Role='vector_x';
@@ -158,7 +158,7 @@ if isfield (Param,'Fix1')
         Data.vec_FixFlag=fix(Param.Fix1,Data.vec_F,Data.vec_C,Data.vec_U,Data.vec_V,Data.vec_X,Data.vec_Y);
     else
         Data.ListVarName=[Data.ListVarName {'Civ1_FF'}];
-        Data.VarDimName=[Data.VarDimName {'NbVec1'}];
+        Data.VarDimName=[Data.VarDimName {'nb_vec_1'}];
         nbvar=length(Data.ListVarName);
         Data.VarAttribute{nbvar}.Role='errorflag';    
         Data.Civ1_FF=fix(Param.Fix1,Data.Civ1_F,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V);
@@ -178,8 +178,8 @@ if isfield (Param,'Patch1')
     Data.Patch1_SubDomain=Param.Patch1.SubdomainSize;
     nbvar=length(Data.ListVarName);
     Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbSites','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
-    Data.VarDimName=[Data.VarDimName {'NbVec1','NbVec1',{'NbCoord','Two','NbSubDomain1'},{'NbSubDomain1'},...
-             {'NbVec1Sub','NbCoord','NbSubDomain1'},{'Nbtps1','NbSubDomain1'},{'Nbtps1','NbSubDomain1'}}];
+        Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},{'nb_subdomain_1'},...
+             {'nb_tps_1','nb_coord','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'}}];
     Data.VarAttribute{nbvar+1}.Role='vector_x';
     Data.VarAttribute{nbvar+2}.Role='vector_y';
     Data.VarAttribute{nbvar+5}.Role='coord_tps';
@@ -194,8 +194,8 @@ if isfield (Param,'Patch1')
     end
     [Data.Civ1_SubRange,Data.Civ1_NbSites,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
             filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomain,Data.Patch1_Rho,Data.Patch1_Threshold); 
-%       Data.Civ1_U_Diff(ind_good)=Data.Civ1_U(ind_good)-Ures;
-%       Data.Civ1_V_Diff(ind_good)=Data.Civ1_V(ind_good)-Vres;
+      fill=zeros(3,2,size(Data.Civ1_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
+      Data.Civ1_Coord_tps=cat(1,Data.Civ1_Coord_tps,fill);
       Data.Civ1_U_smooth(ind_good)=Ures;
       Data.Civ1_V_smooth(ind_good)=Vres;
       Data.Civ1_FF(ind_good)=FFres;
@@ -304,7 +304,7 @@ if isfield (Param,'Civ2')
 %     Data.Civ2_Dt=par_civ2.Dt;
     nbvar=numel(Data.ListVarName);
     Data.ListVarName=[Data.ListVarName {'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_F','Civ2_C'}];%  cell array containing the names of the fields to record
-    Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2','NbVec2','NbVec2','NbVec2','NbVec2'}];
+    Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2'}];
     Data.VarAttribute{nbvar+1}.Role='coord_x';
     Data.VarAttribute{nbvar+2}.Role='coord_y';
     Data.VarAttribute{nbvar+3}.Role='vector_x';
@@ -338,7 +338,7 @@ if isfield (Param,'Fix2')
         Data.vec_FixFlag=fix(Param.Fix2,Data.vec2_F,Data.vec2_C,Data.vec2_U,Data.vec2_V,Data.vec2_X,Data.vec2_Y);
     else
         Data.ListVarName=[Data.ListVarName {'Civ2_FF'}];
-        Data.VarDimName=[Data.VarDimName {'NbVec2'}];
+        Data.VarDimName=[Data.VarDimName {'nb_vec_2'}];
         nbvar=length(Data.ListVarName);
         Data.VarAttribute{nbvar}.Role='errorflag';    
         Data.Civ2_FF=fix(Param.Fix2,Data.Civ2_F,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V);
@@ -355,11 +355,8 @@ if isfield (Param,'Patch2')
     Data.Patch2_SubDomain=Param.Patch2.SubdomainSize;
     nbvar=length(Data.ListVarName);
     Data.ListVarName=[Data.ListVarName {'Civ2_U_smooth','Civ2_V_smooth','Civ2_SubRange','Civ2_NbSites','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
-    Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2',{'NbCoord','Two','NbSubDomain2'},{'NbSubDomain2'},...
-             {'NbVec2Sub','NbCoord','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'Nbtps2','NbSubDomain2'}}];
-%     Data.ListVarName=[Data.ListVarName {'Civ2_U_Diff','Civ2_V_Diff','Civ2_X_SubRange','Civ2_Y_SubRange','Civ2_X_tps','Civ2_Y_tps','Civ2_U_tps','Civ2_V_tps','Civ2_Indices_tps'}];
-%     Data.VarDimName=[Data.VarDimName {'NbVec2','NbVec2',{'NbSubDomain2','Two'},{'NbSubDomain2','Two'},...
-%              {'NbVec2Sub','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'Nbtps2','NbSubDomain2'},{'NbVec2Sub','NbSubDomain2'}}];
+    Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2',{'nb_coord','nb_bounds','nb_subdomain_2'},{'nb_subdomain_2'},...
+             {'nb_tps_2','nb_coord','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'}}];
 
         Data.VarAttribute{nbvar+1}.Role='vector_x';
     Data.VarAttribute{nbvar+2}.Role='vector_y';
@@ -375,6 +372,8 @@ if isfield (Param,'Patch2')
     end 
     [Data.Civ2_SubRange,Data.Civ2_NbSites,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures, Vres,tild,FFres]=...
          filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomain,Data.Patch2_Rho,Data.Patch2_Threshold); 
+           fill=zeros(3,2,size(Data.Civ2_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
+      Data.Civ2_Coord_tps=cat(1,Data.Civ2_Coord_tps,fill);
     Data.Civ2_U_smooth(ind_good)=Ures;
     Data.Civ2_V_smooth(ind_good)=Vres;
     Data.Civ2_FF(ind_good)=FFres;

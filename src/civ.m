@@ -1238,8 +1238,10 @@ for ifile=1:nbfield
                 Param.Civ1.Dt=1;
             end
             Param.Civ1.Time=((time(i2_civ1(ifile)+1,j2_civ1(j)+1)+time(i1_civ1(ifile)+1,j1_civ1(j)+1))/2);
+            if strcmp(CivMode,'CivX')
             Param.Civ1.term_a=num2stra(j1_civ1(j),nom_type_nc);%UTILITE?
             Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%
+            end
             form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
             if isempty(form)
                 ImageInfo=get(VideoReader(filecell.ima1.civ1{1,1}));
@@ -1389,8 +1391,10 @@ for ifile=1:nbfield
                 Param.Civ2.Dt=1;
             end
             Param.Civ2.Time=(time(i2_civ2(ifile)+1,j2_civ2(j)+1)+time(i1_civ2(ifile)+1,j1_civ2(j)+1))/2;
+            if strcmp(CivMode,'CivX')
             Param.Civ2.term_a=num2stra(j1_civ2(j),nom_type_nc);
             Param.Civ2.term_b=num2stra(j2_civ2(j),nom_type_nc);
+            end
             Param.Civ2.filename_nc1=filecell.nc.civ1{ifile,j};
             Param.Civ2.filename_nc1(end-2:end)=[]; % remove '.nc'
             

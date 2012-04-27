@@ -57,13 +57,12 @@ icell=0;
 ivardim=0;
 VarDimIndex=[];
 VarDimName={};
-
 if ~isfield(Data,'VarDimName')
     errormsg='missing .VarDimName';
     return
 end
 
-%loop on the list of variables
+%% loop on the list of variables, group them by common dimensions
 for ivar=1:nbvar
     DimCell=Data.VarDimName{ivar}; %dimensions associated with the variable #ivar
     if ischar(DimCell)
@@ -84,7 +83,7 @@ for ivar=1:nbvar
         icell=icell+1;
         CellVarIndex{icell}=ivar;%put the current variabl index in the new cell 
     end
-    
+   
     %look for dimension variables
     if numel(DimCell)==1% if the variable has a single dimension 
         Role='';
@@ -99,9 +98,10 @@ for ivar=1:nbvar
     end
 end
 
-% find the spatial dimensions and vector components 
+%% find the spatial dimensions and vector components 
 ListRole={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','warnflag','errorflag',...
     'ancillary','image','color','discrete','scalar','coord_tps'};
+NbDim=zeros(size(CellVarIndex));%default
 for icell=1:length(CellVarIndex)
     for ilist=1:numel(ListRole)
         eval(['ivar_' ListRole{ilist} '=[];'])
@@ -141,15 +141,6 @@ for icell=1:length(CellVarIndex)
         errormsg='multiply defined coordinates  in the same cell';
         return
     end
-%     if ivar_vector_x>1
-%         ivar_vector_x=ivar_vector_x(1);
-%     end
-%     if ivar_vector_y>1
-%         ivar_vector_y=ivar_vector_y(1);
-%     end
-%     if ivar_vector_z>1
-%         ivar_vector_z=ivar_vector_z(1);
-%     end
     if numel(ivar_errorflag)>1
         errormsg='multiply defined error flag in the same cell';
         return
@@ -158,9 +149,6 @@ for icell=1:length(CellVarIndex)
         errormsg='multiply defined warning flag in the same cell';
         return
     end
-    %NbDim(icell)=0;% nbre of space dimensions 
-%     NbDim(icell)=numel(DimCell);
-    NbDim(icell)=0;
     test_coord=0;
     if numel(VarIndex)>1      
         if ~isempty(ivar_coord_z)
@@ -192,4 +180,21 @@ for icell=1:length(CellVarIndex)
     if NbDim(icell)==0 && test_2D %look at attributes Coord_1, coord_2 (obsolete convention)
         NbDim(icell)=2;
     end
+    %look for tps data
+    if ~isempty(VarType{icell}.coord_tps)
+        VarType{icell}.var_tps=[];
+        tps_dimnames=Data.VarDimName{VarType{icell}.coord_tps};
+        if length(tps_dimnames)==3
+            for ilist=1:length(Data.VarDimName)
+                if strcmp(tps_dimnames{1},Data.VarDimName{ilist}{1}) && strcmp(tps_dimnames{3},Data.VarDimName{ilist}{2})% identify the variables corresponding to the tps site coordinates coord_tps
+                    VarType{icell}.var_tps=[VarType{icell}.var_tps ilist];
+                elseif length(Data.VarDimName{ilist})==1 && strcmp(tps_dimnames{3},Data.VarDimName{ilist}{1})% identify the variable corresponding to nbsites
+                    VarType{icell}.nbsites_tps= ilist;
+                elseif length(Data.VarDimName{ilist})==3 && strcmp(tps_dimnames{2},Data.VarDimName{ilist}{1})&& strcmp(tps_dimnames{3},Data.VarDimName{ilist}{3})% identify the variable subrange
+                    VarType{icell}.subrange_tps= ilist;
+                end
+            end
+        end
+        NbDim(icell)=2;
+    end  
 end

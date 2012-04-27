@@ -150,7 +150,7 @@ for ichild=1:length(hchild)
                                         set(hhh,'Visible','off')
                                     end
                                 end
-                            elseif numel(VarType{icell}.coord) >=2 %structured coordinates
+                            elseif numel(VarType{icell}.coord) >=2 & VarType{icell}.coord > 0 %structured coordinates
                                 yName=Field.ListVarName{VarType{icell}.coord(1)};
                                 xName=Field.ListVarName{VarType{icell}.coord(2)};
                                  eval(['y=Field.' yName ';'])

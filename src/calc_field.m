@@ -1,6 +1,6 @@
 %'calc_field': defines fields (velocity, vort, div...) from civx data and calculate them
 %---------------------------------------------------------------------
-% [DataOut,errormsg]=calc_field(FieldName,DataIn)
+% [DataOut,errormsg]=calc_field(FieldList,DataIn,Coord_interp)
 %
 % OUTPUT:
 % Scal: matlab vector representing the scalar values (length nbvec defined by var_read)
@@ -15,14 +15,15 @@
 %      error = 1; the prescribed scalar cannot be read or calculated from available fields
 %
 % INPUT:
-% FieldName: string representing the name of the field
+% FieldList: cell array of strings representing the name(s) of the field(s) to calculate
 % DataIn: structure representing the field, as defined in check_field_srtructure.m
+% Coord_interp(:,nb_coord) optional set of coordinates to interpolate the field (use with thin plate shell)
 %
 % FUNCTION related
 % varname_generator.m: determines the field names to read in the netcdf
 % file, depending on the scalar
 
-function [DataOut,errormsg]=calc_field(FieldName,DataIn,Coord_interp)
+function [DataOut,errormsg]=calc_field(FieldList,DataIn,Coord_interp)
 
 %list of defined scalars to display in menus (in addition to 'ima_cor').
 % a type is associated to each scalar:
@@ -45,14 +46,14 @@ list_field={'velocity';...%image correlation corresponding to a vel vector
     'w_normal';... %w velocity component normal to the plane
     'error'}; %error associated to a vector (for stereo or patch)
 errormsg=[]; %default error message
-if ~exist('FieldName','var')
+if ~exist('FieldList','var')
     DataOut=list_field;% gives the list of possible fields in the absence of input
 else
     if ~exist('DataIn','var')
         DataIn=[];
     end
-    if ischar(FieldName)
-        FieldName={FieldName};%convert a string input to a cell with one string element
+    if ischar(FieldList)
+        FieldList={FieldList};%convert a string input to a cell with one string element
     end
     if isfield(DataIn,'Z')&& isequal(size(DataIn.Z),size(DataIn.X))
         nbcoord=3;
@@ -77,53 +78,43 @@ else
         YMax=max(max(DataIn.SubRange(2,:,:)));
         XMin=min(min(DataIn.SubRange(1,:,:)));
         YMin=min(min(DataIn.SubRange(2,:,:)));
-        %         if ~exist('Coord_interp','var')
-        %             Mesh=sqrt((YMax-YMin)*(XMax-XMin)/numel(DataIn.Coord_tps(:,1,:)));%2D
-        %             xI=XMin:Mesh:XMax;
-        %             yI=YMin:Mesh:YMax;
-        %             [XI,YI]=meshgrid(xI,yI);% interpolation grid
-        %             Coord_interp(:,1)=reshape(XI,[],1);
-        %             Coord_interp(:,2)=reshape(YI,[],1);
-        %             DataOut.coord_y=[yI(1) yI(end)];
-        %             DataOut.coord_x=[xI(1) xI(end)];
-        %      end
         check_der=0;
         check_val=0;
-        for ilist=1:length(FieldName)
-            switch FieldName{ilist}
+        nb_sites=size(Coord_interp,1);
+        nb_coord=size(Coord_interp,2);
+        for ilist=1:length(FieldList)
+            switch FieldList{ilist}
                 case 'velocity'
                     check_val=1;
-                    DataOut.U=zeros(size(Coord_interp,1));
-                    DataOut.V=zeros(size(Coord_interp,1));
+                    DataOut.U=zeros(nb_sites,1);
+                    DataOut.V=zeros(nb_sites,1);
                 case{'vort','div','strain'}% case of spatial derivatives
                     check_der=1;
-                    DataOut.(FieldName{ilist})=zeros(size(Coord_interp,1));
-                otherwise % case of a scalar
-                    check_val=1;
-                    DataOut.(FieldName{ilist})=zeros(size(Coord_interp,1));
+                    DataOut.(FieldList{ilist})=zeros(nb_sites,1);
+%                 otherwise % case of a scalar
+%                     check_val=1;
+%                     DataOut.(FieldList{ilist})=zeros(size(Coord_interp,1));
             end
         end
-        nbval=zeros(size(Coord_interp,1));
+        nbval=zeros(nb_sites,1);
         NbSubDomain=size(DataIn.SubRange,3);
+        %DataIn.Coord_tps=DataIn.Coord_tps(1:end-3,:,:);% suppress the 3 zeros used to fit with the dimensions of variables
         for isub=1:NbSubDomain
-            if isfield(DataIn,'NbSites')
-                nbvec_sub=DataIn.NbSites(isub);
-            else
-                nbvec_sub=numel(find(DataIn.Indices_tps(:,isub)));
-            end
-            ind_sel=find(Coord_interp>=DataIn.SubRange(:,1,isub) & Coord_interp<=DataIn.SubRange(:,2,isub));
+            nbvec_sub=DataIn.NbSites(isub);
+            check_range=(Coord_interp >=ones(nb_sites,1)*DataIn.SubRange(:,1,isub)' & Coord_interp<=ones(nb_sites,1)*DataIn.SubRange(:,2,isub)');
+            ind_sel=find(sum(check_range,2)==nb_coord);
             %rho smoothing parameter
             %                 epoints = Coord_interp(ind_sel) ;% coordinates of interpolation sites
             %                 ctrs=DataIn.Coord_tps(1:nbvec_sub,:,isub);%(=initial points) ctrs
             nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
             if check_val
-                EM = tps_eval(Coord_interp(ind_sel),DataIn.Coord_tps(1:nbvec_sub,:,isub));%kernels for calculating the velocity from tps 'sources'
+                EM = tps_eval(Coord_interp(ind_sel,:),DataIn.Coord_tps(1:nbvec_sub,:,isub));%kernels for calculating the velocity from tps 'sources'
             end
             if check_der
-                [EMDX,EMDY] = tps_eval_dxy(Coord_interp(ind_sel),DataIn.Coord_tps(1:nbvec_sub,:,isub));%kernels for calculating the spatial derivatives from tps 'sources'
+                [EMDX,EMDY] = tps_eval_dxy(Coord_interp(ind_sel,:),DataIn.Coord_tps(1:nbvec_sub,:,isub));%kernels for calculating the spatial derivatives from tps 'sources'
             end
-            for ilist=1:length(FieldName)
-                switch FieldName{ilist}
+            for ilist=1:length(FieldList)
+                switch FieldList{ilist}
                     case 'velocity'
                         ListFields={'U', 'V'};
                         VarAttributes{1}.Role='vector_x';
@@ -153,19 +144,19 @@ else
                 end
             end
             DataOut.FF=nbval==0; %put errorflag to 1 for points outside the interpolation rang
-            DataOut.FF=reshape(DataOut.FF,numel(yI),numel(xI));
+%            DataOut.FF=reshape(DataOut.FF,numel(yI),numel(xI));
             nbval(nbval==0)=1;
-            switch FieldName{1}
-                case {'velocity','u','v'}
-                    DataOut.U=reshape(DataOut.U./nbval,numel(yI),numel(xI));
-                    DataOut.V=reshape(DataOut.V./nbval,numel(yI),numel(xI));
-                case 'vort'
-                    DataOut.vort=reshape(DataOut.vort,numel(yI),numel(xI));
-                case 'div'
-                    DataOut.div=reshape(DataOut.div,numel(yI),numel(xI));
-                case 'strain'
-                    DataOut.strain=reshape(DataOut.strain,numel(yI),numel(xI));
-            end
+%             switch FieldList{1}
+%                 case {'velocity','u','v'}
+%                     DataOut.U=reshape(DataOut.U./nbval,numel(yI),numel(xI));
+%                     DataOut.V=reshape(DataOut.V./nbval,numel(yI),numel(xI));
+%                 case 'vort'
+%                     DataOut.vort=reshape(DataOut.vort,numel(yI),numel(xI));
+%                 case 'div'
+%                     DataOut.div=reshape(DataOut.div,numel(yI),numel(xI));
+%                 case 'strain'
+%                     DataOut.strain=reshape(DataOut.strain,numel(yI),numel(xI));
+%             end
             DataOut.ListVarName=[DataOut.ListVarName ListFields];
             for ilist=3:numel(DataOut.ListVarName)
                 DataOut.VarDimName{ilist}={'coord_y','coord_x'};
@@ -178,9 +169,9 @@ else
         
         %% civx data
         DataOut=DataIn;
-        for ilist=1:length(FieldName)
-            if ~isempty(FieldName{ilist})
-                [VarName,Value,Role,units]=feval(FieldName{ilist},DataIn);%calculate field with appropriate function named FieldName{ilist}
+        for ilist=1:length(FieldList)
+            if ~isempty(FieldList{ilist})
+                [VarName,Value,Role,units]=feval(FieldList{ilist},DataIn);%calculate field with appropriate function named FieldList{ilist}
                 ListVarName=[ListVarName VarName];
                 ValueList=[ValueList Value];
                 RoleList=[RoleList Role];
