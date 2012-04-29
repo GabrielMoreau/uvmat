@@ -233,7 +233,7 @@ set(hObject,'DeleteFcn',{@closefcn})%
 
 %% refresh projection plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
-set(handles.ListObject,'Value',1)% default: empty projection object
+set(handles.ListObject,'Value',1)% default: empty projection objectproj_field
 set(handles.ListObject,'String',{''})
 set(handles.Fields,'Value',1)
 set(handles.Fields,'string',{''})
@@ -2478,24 +2478,24 @@ end
 %loop on the projection objects: one or two
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);
-    if iobj==1 && ~isfield(UvData.Object{iobj},'Type')% case with no projection (only for the first empty object)
-        ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
-        if UvData.Field.Mesh/ord>=5
-            mesh=5*ord;
-        elseif UvData.Field.Mesh/ord>=2
-            mesh=2*ord;
-        else
-            mesh=ord;
-        end
-        coord_x=UvData.Field.XMin:mesh:UvData.Field.XMax;
-        coord_y=UvData.Field.YMin:mesh:UvData.Field.YMax;
-        [XI,YI]=meshgrid(coord_x,coord_y);
-        XI=reshape(XI,[],1);
-        YI=reshape(YI,[],1);
-        [ObjectData,errormsg]=calc_field({FieldName},UvData.Field,[XI YI]);
-    else
+%     if iobj==1 && ~isfield(UvData.Object{iobj},'Type')% case with no projection (only for the first empty object)
+%         ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
+%         if UvData.Field.Mesh/ord>=5
+%             mesh=5*ord;
+%         elseif UvData.Field.Mesh/ord>=2
+%             mesh=2*ord;
+%         else
+%             mesh=ord;
+%         end
+%         coord_x=UvData.Field.XMin:mesh:UvData.Field.XMax;
+%         coord_y=UvData.Field.YMin:mesh:UvData.Field.YMax;
+%         [XI,YI]=meshgrid(coord_x,coord_y);
+%         XI=reshape(XI,[],1);
+%         YI=reshape(YI,[],1);
+%         [ObjectData,errormsg]=calc_field({FieldName},UvData.Field,[XI YI]);
+%     else
         [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
-    end
+%     end
     if ~isempty(errormsg)
         return
     end
