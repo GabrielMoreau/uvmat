@@ -252,8 +252,6 @@ if  test_edit && (isequal(tag_obj,'proj_object')||isequal(tag_obj,'DeformPoint')
                 end
                 set(hhuvmat.ListObject,'Value',IndexObj);
                 set(hhuvmat.ListObject,'UserData',IndexObj);
-%                 list_str=get(hhuvmat.list_object_2,'String');
-%                 UvData.Object{IndexObj(2)}.Name=list_str{IndexObj};
             else
                 set(hhuvmat.ListObject,'Value',IndexObj);
                 list_str=get(hhuvmat.ListObject,'String');
@@ -290,45 +288,64 @@ end
 
 %%  create new projection  object
 if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeData.Drawing,'create'))
-        hset_object=findobj(allchild(0),'tag','set_object');
-        if ~isempty(hset_object)
-            %ObjectData=read_set_object(sethandles); %read object features in the GUI set_object
-            ObjectData=read_GUI(hset_object);
-            ObjectData.Coord=[]; %reset previous object coordinates
-            ObjectData.Coord(1,1)=xy(1,1);
-            ObjectData.Coord(1,2)=xy(1,2);
-%             ObjectData.Coord(1,3)=0;
-            if isfield(AxeData,'ObjectCoord') & size(AxeData.ObjectCoord,2)==3
-                 ObjectData.Coord(1,3)=AxeData.ObjectCoord(1,3); %generaliser au cas avec angle
-            end
-            AxeData.CurrentObject=plot_object(ObjectData,[],haxes,'m');%draw the object and its handle becomes AxeData.CurrentObject
-            if isfield(UvData,'Object')
-                IndexObj=length(UvData.Object)+1;% add the object as index IndexObj on the list of the interface
-            else
-                IndexObj=2;
-            end  
-            UvData.Object{IndexObj}=ObjectData;        
-            list_str=get(hhuvmat.ListObject,'String');
-            IndexObj_old=get(hhuvmat.ListObject,'Value');
-%             set(hhuvmat.ListObject,'Value',[IndexObj_old(1) IndexObj] );
-            UvData.Object{IndexObj}.DisplayHandle_uvmat=AxeData.CurrentObject;
-            object_name=ObjectData.Name;
-            sethandles=guidata(hset_object);
-            if isempty(object_name)
-                list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Type]; 
-                set(sethandles.Name,'String',list_str{IndexObj})
-            else
-               list_str{IndexObj}=object_name;
-            end
-            set(hhuvmat.ListObject,'String',list_str)
-            set(hhuvmat.ListObject,'Value',[IndexObj_old(1) IndexObj] );
-            UvData.Object{IndexObj}.DisplayHandle_view_field=AxeData.CurrentObject;
-            set(huvmat,'UserData',UvData)
-            PlotData=get(AxeData.CurrentObject,'UserData');
-            PlotData.IndexObj=IndexObj;
-            set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph
-            AxeData.Drawing='create';
+    hset_object=findobj(allchild(0),'tag','set_object');
+    if ~isempty(hset_object)
+        sethandles=guidata(hset_object);
+        ObjectData=read_GUI(hset_object); %read object features in the GUI set_object
+        ObjectData.Coord=[]; %reset previous object coordinates
+        ObjectData.Coord(1,1)=xy(1,1);
+        ObjectData.Coord(1,2)=xy(1,2);
+        if isfield(AxeData,'ObjectCoord') & size(AxeData.ObjectCoord,2)==3
+            ObjectData.Coord(1,3)=AxeData.ObjectCoord(1,3); %generaliser au cas avec angle
         end
+        AxeData.CurrentObject=plot_object(ObjectData,[],haxes,'m');%draw the object and its handle becomes AxeData.CurrentObject
+        if isfield(UvData,'Object')
+            IndexObj=length(UvData.Object)+1;% add the object as index IndexObj on the list of the interface
+        else
+            IndexObj=2;
+        end
+        UvData.Object{IndexObj}=ObjectData;
+        ListObject=get(hhuvmat.ListObject,'String');
+        IndexObj_old=get(hhuvmat.ListObject,'Value');
+        UvData.Object{IndexObj}.DisplayHandle_uvmat=AxeData.CurrentObject;
+        ObjectNameNew=ObjectData.Name;
+        if isempty(ObjectNameNew)
+             ObjectNameNew=ObjectData.Type;
+        end
+        vers=0;% index of the name
+        detectname=1;
+        while detectname==1
+            detectname=find(strcmp(ObjectNameNew,ListObject),1);%test the existence of the proposed name in the list
+            if detectname% if the object name already exists
+                indstr=regexp(ObjectNameNew,'\D');
+                if indstr(end)<length(ObjectNameNew) %object name ends by a number
+                    vers=str2double(ObjectNameNew(indstr(end)+1:end))+1;
+                    ObjectNameNew=[ObjectNameNew(1:indstr(end)) num2str(vers)];
+                else
+                    vers=vers+1;
+                    ObjectNameNew=[ObjectNameNew(1:indstr(end)) '_' num2str(vers)];
+                end
+            end
+        end
+        ObjectName=ObjectNameNew;
+        set(sethandles.Name,'String',ObjectName)% display the default name in set_object
+        IndexObj=numel(ListObject)+1;% append an object to the list in uvmat
+        set(hhuvmat.ListObject,'String',[ListObject;{ObjectName}]);%complement the object list
+        set(hhuvmat.ListObject,'Value',[IndexObj_old(1) IndexObj])
+        %             if isempty(object_name)
+        %                 list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Type];
+        %                 set(sethandles.Name,'String',list_str{IndexObj})
+        %             else
+        %                list_str{IndexObj}=object_name;
+        %             end
+        %             set(hhuvmat.ListObject,'String',list_str)
+        UvData.Object{IndexObj}.DisplayHandle_view_field=AxeData.CurrentObject;
+        set(huvmat,'UserData',UvData)
+        PlotData=get(AxeData.CurrentObject,'UserData');
+        PlotData.IndexObj=IndexObj;
+        set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph
+        AxeData.Drawing='create';
+    end
 end
 
 % create calibration points if the GUI geometry_calib is opened, if the main axes axes3 of uvmat has ben selected

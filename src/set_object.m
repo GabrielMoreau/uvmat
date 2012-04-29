@@ -84,13 +84,14 @@ if ~exist('ZBounds','var')
 end
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function (allow action on uvmat when set_object is in front)
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
+set(hObject,'DeleteFcn',{@closefcn})
 enable_plot=0;%default: does not allow plot of object and projection
 
 % fill the interface as set in the input data:
 if exist('data','var') 
-    if isfield(data,'enable_plot')
-        enable_plot=data.enable_plot;%test to desable button PLOT (display mode)
-    end
+%     if isfield(data,'enable_plot')
+%         enable_plot=data.enable_plot;%test to desable button PLOT (display mode)
+%     end
     if isfield(data,'Coord') &&size(data.Coord,2)==3
         set(handles.z_slider,'Visible','on')
     else
@@ -148,11 +149,12 @@ if exist('data','var')
          set(handles.num_Angle_3,'String',num2str(data.Angle(3)))
     end
 end
-if enable_plot
-   set(handles.PLOT,'enable','on')
-else
+% if enable_plot
+%    set(handles.PLOT,'enable','on')
+% else
+% enable the PLOT (REFRESH) button by default
    set(handles.PLOT,'enable','off') 
-end
+% end
 huvmat=findobj(allchild(0),'tag','uvmat');
 UvData=get(huvmat,'UserData');
 pos_uvmat=get(huvmat,'Position');
@@ -170,6 +172,47 @@ function varargout = set_object_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 varargout{2}=handles;
+
+%------------------------------------------------------------------------
+% executed when closing the GUI set_object
+function closefcn(gcbo,eventdata)
+%------------------------------------------------------------------------
+huvmat=findobj(allchild(0),'Tag','uvmat');%find the current uvmat interface handle
+if ~isempty(huvmat)
+    hhuvmat=guidata(huvmat);
+    set(hhuvmat.edit_object,'Value',0)
+    set(hhuvmat.edit_object,'BackgroundColor',[0.7 0.7 0.7])%put unactivated buttons to gree
+    % deselect the object in ListObject when view_field is closed
+    if isempty(findobj(allchild(0),'Tag','view_field'))
+        ObjIndex=get(hhuvmat.ListObject,'Value');
+        ObjIndex=ObjIndex(1);%keep only the first object selected
+        set(hhuvmat.ListObject,'Value',ObjIndex)
+        % draw all object colors in blue (unselected) in uvmat
+        hother=[findobj(hhuvmat.axes3,'Tag','proj_object');findobj(hhuvmat.axes3,'Tag','DeformPoint')];%find all the proj object and deform point representations
+        for iobj=1:length(hother)
+            if isequal(get(hother(iobj),'Type'),'rectangle')||isequal(get(hother(iobj),'Type'),'patch')
+                set(hother(iobj),'EdgeColor','b')
+                if isequal(get(hother(iobj),'FaceColor'),'m')
+                    set(hother(iobj),'FaceColor','b')
+                end
+            elseif isequal(get(hother(iobj),'Type'),'image')
+                Acolor=get(hother(iobj),'CData');
+                Acolor(:,:,1)=zeros(size(Acolor,1),size(Acolor,2));
+                set(hother(iobj),'CData',Acolor);
+            else
+                set(hother(iobj),'Color','b')
+            end
+            set(hother(iobj),'Selected','off')
+        end
+    end
+end
+hseries=findobj(allchild(0),'Name','series');%find the current series interface handle
+if ~isempty(hseries)
+    hhseries=guidata(hseries);
+    set(hhseries.GetObject,'Value',0)
+    set(hhseries.GetObject,'BackgroundColor',[0 1 0])%put unactivated buttons to green
+end
+
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in Type.
@@ -363,23 +406,6 @@ function num_DY_Callback(hObject, eventdata, handles)
 function num_DZ_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 
-%------------------------------------------------------------------------
-%------------------------------------------------------------------------
-%----------------------------------------------------
-% executed when closing: set the parent interface button to value 0
-function closefcn(gcbo,eventdata,parent_button)
-huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
-if ~isempty(huvmat)
-    hhuvmat=guidata(huvmat);
-    set(hhuvmat.edit,'Value',0)
-    set(hhuvmat.edit,'BackgroundColor',[0.7 0.7 0.7])%put unactivated buttons to gree
-end
-hseries=findobj(allchild(0),'Name','series');%find the current series interface handle
-if ~isempty(hseries)
-    hhseries=guidata(hseries);
-    set(hhseries.GetObject,'Value',0)
-    set(hhseries.GetObject,'BackgroundColor',[0 1 0])%put unactivated buttons to green
-end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in PLOT: PLOT the defined object and its projected field
@@ -395,7 +421,6 @@ IndexObj=get(hhuvmat.ListObject,'Value');% index(indices) of the selected object
 
 %% read the object on the GUI set_object
 ObjectData=read_GUI(handles.set_object);%read the parameters defining the object in the GUI set_object
-ObjectName=ObjectData.Name;%name of the current object defined in set_object
 if iscell(ObjectData.Coord)%check for empty line
     ObjectData.Coord=[0 0 0];
     hhset_object=guidata(handles.set_object);
@@ -405,23 +430,22 @@ checknan=isnan(sum(ObjectData.Coord,2));%check for NaN lines
 if ~isempty(checknan)
     ObjectData.Coord(checknan,:)=[];%remove the NaN lines
 end
+ObjectName=ObjectData.Name;%name of the current object defined in set_object
 if isempty(ObjectName)
     if get(hhuvmat.edit_object,'Value')% edit mode
         if isempty(ListObject)
             ObjectName='Plane';
         else
-        ObjectName=ListObject{IndexObj(end)};%take the name of the last (second) selected item
+            ObjectName=ListObject{IndexObj(end)};%take the name of the last (second) selected item
         end
     else %new object
-        StyleList=get(handles.Type,'String');
-        StyleVal=get(handles.Type,'Value');
-        ObjectName=StyleList{StyleVal};
+        ObjectName=ObjectData.Type;
     end
 end
 if ~get(hhuvmat.edit_object,'Value') %new object is being created
     detectname=1;
     ObjectNameNew=ObjectName;
-    vers=0;
+    vers=0;% index of the name
     while detectname==1
         detectname=find(strcmp(ObjectNameNew,ListObject),1);%test the existence of the proposed name in the list
         if detectname% if the object name already exists

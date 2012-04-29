@@ -81,9 +81,9 @@
 
 function [ProjData,errormsg]=proj_field(FieldData,ObjectData)
 errormsg='';%default
-if ~exist('FieldName','var')
-    FieldName='';
-end
+% if ~exist('FieldName','var')
+%     FieldName='';
+% end
 %% case of no projection (object is used only as graph display)
 if isfield(ObjectData,'ProjMode') && (isequal(ObjectData.ProjMode,'none')||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'))
     ProjData=[];
@@ -1194,14 +1194,15 @@ for icell=1:length(CellVarIndex)
                 end
             case 'filter'
                 if ~isempty(VarType.coord_tps)
-                    VarType.coord_tps
+                     %Coord_tps=FieldData.ListVarName{VarType.coord_tps};
+                     %TODO: possibly translate and rotate coordiantes translate  initial coordinates
                     coord_x_proj=XMin:DX:XMax;
                     coord_y_proj=YMin:DY:YMax;
                     np_x=numel(coord_x_proj);
                     np_y=numel(coord_y_proj);
                     [XI,YI]=meshgrid(coord_x_proj,coord_y_proj');
-                    XI=reshape(XI,[],1);
-                    YI=reshape(YI,[],1);
+                    XI=reshape(XI,[],1)+ObjectData.Coord(1,1);
+                    YI=reshape(YI,[],1)+ObjectData.Coord(1,2);
                     ProjData=calc_field(FieldData.FieldList,FieldData,[XI YI]);
                     for ilist=3:length(ProjData.ListVarName)% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
                         VarName=ProjData.ListVarName{ilist};

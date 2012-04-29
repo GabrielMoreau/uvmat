@@ -167,7 +167,7 @@
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
-%  I - MAIN FUNCTION UVMAT (DO NOT MODIFY)
+%  I - MAIN FUNCTION UVMAT 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
 function varargout = uvmat(varargin)
@@ -233,6 +233,8 @@ set(hObject,'DeleteFcn',{@closefcn})%
 
 %% refresh projection plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
+set(handles.ListObject,'Value',1)% default: empty projection object
+set(handles.ListObject,'String',{''})
 set(handles.Fields,'Value',1)
 set(handles.Fields,'string',{''})
 
@@ -373,6 +375,24 @@ function varargout = uvmat_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;% the only output argument is the handle to the GUI figure
 
 %------------------------------------------------------------------------
+% --- executed when closing uvmat: delete or desactivate the associated figures if exist
+function closefcn(gcbo,eventdata)
+%------------------------------------------------------------------------
+hh=findobj(allchild(0),'tag','view_field');
+if ~isempty(hh)
+    delete(hh)
+end
+hh=findobj(allchild(0),'tag','geometry_calib');
+if ~isempty(hh)
+    delete(hh)
+end
+hh=findobj(allchild(0),'tag','set_object');
+if ~isempty(hh)
+    hhh=findobj(hh,'tag','PLOT');
+    set(hhh,'enable','off')
+end
+
+%------------------------------------------------------------------------
 %------------------------------------------------------------------------
 %  II - FUNCTIONS FOR INTRODUCING THE INPUT FILES
 % automatically sets the global properties when the rootfile name is introduced
@@ -457,6 +477,199 @@ function MenuFile_5_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_5,'Label');
 display_file_name(hObject, eventdata, handles,fileinput)
+
+%------------------------------------------------------------------------
+% --- Executes on the menu Open/Browse_1 for the second input field,
+%     search the files, recognize their type according to their name and fill the rootfile input windows
+function MenuBrowse_1_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+% huvmat=get(handles.run0,'parent');
+UvData=get(handles.uvmat,'UserData');
+
+RootPath=get(handles.RootPath,'String');
+[FileName, PathName, filterindex] = uigetfile( ...
+       {'*.xml;*.xls;*.civ;*.jpg;*.png;*.avi;*.AVI;*.nc;*.cmx;*.fig;*.log;*.dat', ' (*.xml,*.xls,*.civ, *.jpg,*.png, *.avi,*.nc,*.cmx ,*.fig,*.log,*.dat)';
+       '*.xml',  '.xml files '; ...
+        '*.xls',  '.xls files '; ...
+        '*.civ',  '.civ files '; ...
+        '*.jpg','.jpg image files'; ...
+        '*.png','.png image files'; ...
+        '*.avi;*.AVI','.avi movie files'; ...
+        '*.nc','.netcdf files'; ...
+        '*.cdf','.netcdf files'; ...
+        '*.cmx','.cmx text files';...
+        '*.cmx2','.cmx2 text files';...
+        '*.fig','.fig files (matlab fig)';...
+        '*.log','.log text files ';...
+        '*.dat','.dat text files ';...
+        '*.*',  'All Files (*.*)'}, ...
+        'Pick a second file for comparison',RootPath);
+fileinput_1=[PathName FileName];%complete file name 
+sizf=size(fileinput_1);
+if (~ischar(fileinput_1)||~isequal(sizf(1),1)),return;end
+
+% refresh the current displayed field
+set(handles.SubField,'Value',1)
+display_file_name(hObject,eventdata,handles,fileinput_1,2)
+
+%update list of recent files in the menubar
+MenuFile_1=fileinput_1;
+MenuFile_2=get(handles.MenuFile_1,'Label');
+MenuFile_3=get(handles.MenuFile_2,'Label');
+MenuFile_4=get(handles.MenuFile_3,'Label');
+MenuFile_5=get(handles.MenuFile_4,'Label');
+set(handles.MenuFile_1,'Label',MenuFile_1)
+set(handles.MenuFile_2,'Label',MenuFile_2)
+set(handles.MenuFile_3,'Label',MenuFile_3)
+set(handles.MenuFile_4,'Label',MenuFile_4)
+set(handles.MenuFile_5,'Label',MenuFile_5)
+set(handles.MenuFile_1_1,'Label',MenuFile_1)
+set(handles.MenuFile_2_1,'Label',MenuFile_2)
+set(handles.MenuFile_3_1,'Label',MenuFile_3)
+set(handles.MenuFile_4_1,'Label',MenuFile_4)
+set(handles.MenuFile_5_1,'Label',MenuFile_5)
+dir_perso=prefdir;
+profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+if exist(profil_perso,'file')
+    save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-append'); %store the file names for future opening of uvmat
+else
+    txt=ver('MATLAB');
+    Release=txt.Release;
+    relnumb=str2double(Release(3:4));
+    if relnumb >= 14
+        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-V6'); %store the file names for future opening of uvmat
+    else
+        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5'); %store the file names for future opening of uvmat
+    end
+end
+
+% -----------------------------------------------------------------------
+% --- Open again as second field the file whose name has been recorded in MenuFile_1
+function MenuFile_1_1_Callback(hObject, eventdata, handles)
+% -----------------------------------------------------------------------
+fileinput_1=get(handles.MenuFile_1_1,'Label');
+set(handles.SubField,'Value',1)
+display_file_name(hObject,eventdata,handles,fileinput_1,2)
+
+% -----------------------------------------------------------------------
+% --- Open again as second field the file whose name has been recorded in MenuFile_2
+function MenuFile_2_1_Callback(hObject, eventdata, handles)
+% -----------------------------------------------------------------------
+fileinput_1=get(handles.MenuFile_2_1,'Label');
+set(handles.SubField,'Value',1)
+display_file_name(hObject,eventdata,handles,fileinput_1,2)
+
+% -----------------------------------------------------------------------
+% --- Open again as second field the file whose name has been recorded in MenuFile_3
+function MenuFile_3_1_Callback(hObject, eventdata, handles)
+% -----------------------------------------------------------------------
+fileinput_1=get(handles.MenuFile_3_1,'Label');
+set(handles.SubField,'Value',1)
+display_file_name(hObject,eventdata,handles,fileinput_1,2)
+
+% -----------------------------------------------------------------------
+% --- Open again as second field the file whose name has been recorded in MenuFile_4
+function MenuFile_4_1_Callback(hObject, eventdata, handles)
+% -----------------------------------------------------------------------
+fileinput_1=get(handles.MenuFile_4_1,'Label');
+set(handles.SubField,'Value',1)
+display_file_name(hObject,eventdata,handles,fileinput_1,2)
+
+% -----------------------------------------------------------------------
+% --- Open again as second field the file whose name has been recorded in MenuFile_5
+function MenuFile_5_1_Callback(hObject, eventdata, handles)
+% -----------------------------------------------------------------------
+fileinput_1=get(handles.MenuFile_5_1,'Label');
+set(handles.SubField,'Value',1)
+display_file_name(hObject,eventdata,handles,fileinput_1,2)
+
+%------------------------------------------------------------------------
+% --- Called by action in RootPath edit box
+function RootPath_Callback(hObject,eventdata,handles)
+%------------------------------------------------------------------------
+% read the current input file name:
+[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+% detect the file type, get the movie object if relevant, and look for the corresponding file series:
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+% initiate the input file series and refresh the current field view: 
+update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject);
+
+%-----------------------------------------------------------------------
+% --- Called by action in RootPath_1 edit box
+function RootPath_1_Callback(hObject,eventdata,handles)
+% -----------------------------------------------------------------------
+% update_rootinfo_1(hObject,eventdata,handles)
+[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
+% detect the file type, get the movie object if relevant, and look for the corresponding file series:
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+% initiate the input file series and refresh the current field view: 
+update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,2);
+
+%------------------------------------------------------------------------
+% --- Called by action in RootFile edit box
+function SubDir_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+%refresh the menu of input fields
+Fields_Callback(hObject, eventdata, handles);
+% refresh the current field view
+run0_Callback(hObject, eventdata, handles); 
+
+%------------------------------------------------------------------------
+% --- Called by action in RootFile edit box
+function RootFile_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+RootPath_Callback(hObject,eventdata,handles)
+
+%-----------------------------------------------------------------------
+% --- Called by action in RootFile_1 edit box
+function RootFile_1_Callback(hObject, eventdata, handles)
+% -----------------------------------------------------------------------
+RootPath_1_Callback(hObject,eventdata,handles)
+
+%------------------------------------------------------------------------
+% --- Called by action in FileIndex edit box
+function FileIndex_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+[tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
+set(handles.i1,'String',num2str(i1));
+set(handles.i2,'String',num2str(i2));
+set(handles.j1,'String',num2str(j1));
+set(handles.j2,'String',num2str(j2));
+
+% refresh the current field view
+run0_Callback(hObject, eventdata, handles)
+
+%------------------------------------------------------------------------
+% --- Called by action in FileIndex_1 edit box
+function FileIndex_1_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+run0_Callback(hObject, eventdata, handles)
+
+%------------------------------------------------------------------------
+% --- Called by action in NomType edit box
+function NomType_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+i1=str2num(get(handles.i1,'String'));
+i2=str2num(get(handles.i2,'String'));
+j1=str2num(get(handles.j1,'String'));
+j2=str2num(get(handles.j2,'String'));
+FileIndex=fullfile_uvmat('','','','',get(handles.NomType,'String'),i1,i2,j1,j2);
+set(handles.FileIndex,'String',FileIndex)
+% refresh the current settings and refresh the field view
+RootPath_Callback(hObject,eventdata,handles)
+
+%------------------------------------------------------------------------
+% --- Called by action in NomType edit box
+function NomType_1_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+i1=str2num(get(handles.i1,'String'));
+i2=str2num(get(handles.i2,'String'));
+j1=str2num(get(handles.j1,'String'));
+j2=str2num(get(handles.j2,'String'));
+FileIndex=fullfile_uvmat('','','','',get(handles.NomType_1,'String'),i1,i2,j1,j2);
+set(handles.FileIndex_1,'String',FileIndex)
+% refresh the current settings and refresh the field view
+RootPath_1_Callback(hObject,eventdata,handles)
 
 %------------------------------------------------------------------------ 
 % --- Fills the edit boxes RootPath, RootFile,NomType...from an input file name 'fileinput'
@@ -590,45 +803,6 @@ end
 %% set back the mouse pointer to arrow
 set(handles.uvmat,'Pointer','arrow')
 
-%------------------------------------------------------------------------
-% --- Called by action in RootPath edit box
-function RootPath_Callback(hObject,eventdata,handles)
-%------------------------------------------------------------------------
-% read the current input file name:
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-%fileinput=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-% detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
-% initiate the input file series and refresh the current field view: 
-update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject);
-
-%------------------------------------------------------------------------
-% --- Called by action in RootFile edit box
-function SubDir_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-%refresh the menu of input fields
-Fields_Callback(hObject, eventdata, handles);
-% refresh the current field view
-run0_Callback(hObject, eventdata, handles); 
-
-%------------------------------------------------------------------------
-% --- Called by action in RootFile edit box
-function RootFile_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-RootPath_Callback(hObject,eventdata,handles)
-
-%------------------------------------------------------------------------
-% --- Called by action in FileIndex edit box
-function FileIndex_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-[tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
-set(handles.i1,'String',num2str(i1));
-set(handles.i2,'String',num2str(i2));
-set(handles.j1,'String',num2str(j1));
-set(handles.j2,'String',num2str(j2));
-
-% refresh the current field view
-run0_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
@@ -972,134 +1146,6 @@ end
 
 
 %------------------------------------------------------------------------
-% --- Executes on the menu Open/Browse_1 for the second input field,
-%     search the files, recognize their type according to their name and fill the rootfile input windows
-function MenuBrowse_1_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-% huvmat=get(handles.run0,'parent');
-UvData=get(handles.uvmat,'UserData');
-
-RootPath=get(handles.RootPath,'String');
-[FileName, PathName, filterindex] = uigetfile( ...
-       {'*.xml;*.xls;*.civ;*.jpg;*.png;*.avi;*.AVI;*.nc;*.cmx;*.fig;*.log;*.dat', ' (*.xml,*.xls,*.civ, *.jpg,*.png, *.avi,*.nc,*.cmx ,*.fig,*.log,*.dat)';
-       '*.xml',  '.xml files '; ...
-        '*.xls',  '.xls files '; ...
-        '*.civ',  '.civ files '; ...
-        '*.jpg','.jpg image files'; ...
-        '*.png','.png image files'; ...
-        '*.avi;*.AVI','.avi movie files'; ...
-        '*.nc','.netcdf files'; ...
-        '*.cdf','.netcdf files'; ...
-        '*.cmx','.cmx text files';...
-        '*.cmx2','.cmx2 text files';...
-        '*.fig','.fig files (matlab fig)';...
-        '*.log','.log text files ';...
-        '*.dat','.dat text files ';...
-        '*.*',  'All Files (*.*)'}, ...
-        'Pick a second file for comparison',RootPath);
-fileinput_1=[PathName FileName];%complete file name 
-sizf=size(fileinput_1);
-if (~ischar(fileinput_1)||~isequal(sizf(1),1)),return;end
-
-% refresh the current displayed field
-set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
-
-%update list of recent files in the menubar
-MenuFile_1=fileinput_1;
-MenuFile_2=get(handles.MenuFile_1,'Label');
-MenuFile_3=get(handles.MenuFile_2,'Label');
-MenuFile_4=get(handles.MenuFile_3,'Label');
-MenuFile_5=get(handles.MenuFile_4,'Label');
-set(handles.MenuFile_1,'Label',MenuFile_1)
-set(handles.MenuFile_2,'Label',MenuFile_2)
-set(handles.MenuFile_3,'Label',MenuFile_3)
-set(handles.MenuFile_4,'Label',MenuFile_4)
-set(handles.MenuFile_5,'Label',MenuFile_5)
-set(handles.MenuFile_1_1,'Label',MenuFile_1)
-set(handles.MenuFile_2_1,'Label',MenuFile_2)
-set(handles.MenuFile_3_1,'Label',MenuFile_3)
-set(handles.MenuFile_4_1,'Label',MenuFile_4)
-set(handles.MenuFile_5_1,'Label',MenuFile_5)
-dir_perso=prefdir;
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-if exist(profil_perso,'file')
-    save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-append'); %store the file names for future opening of uvmat
-else
-    txt=ver('MATLAB');
-    Release=txt.Release;
-    relnumb=str2double(Release(3:4));
-    if relnumb >= 14
-        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-V6'); %store the file names for future opening of uvmat
-    else
-        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5'); %store the file names for future opening of uvmat
-    end
-end
-
-% -----------------------------------------------------------------------
-% --- Open again as second field the file whose name has been recorded in MenuFile_1
-function MenuFile_1_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput_1=get(handles.MenuFile_1_1,'Label');
-set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
-
-% -----------------------------------------------------------------------
-% --- Open again as second field the file whose name has been recorded in MenuFile_2
-function MenuFile_2_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput_1=get(handles.MenuFile_2_1,'Label');
-set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
-
-% -----------------------------------------------------------------------
-% --- Open again as second field the file whose name has been recorded in MenuFile_3
-function MenuFile_3_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput_1=get(handles.MenuFile_3_1,'Label');
-set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
-
-% -----------------------------------------------------------------------
-% --- Open again as second field the file whose name has been recorded in MenuFile_4
-function MenuFile_4_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput_1=get(handles.MenuFile_4_1,'Label');
-set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
-
-% -----------------------------------------------------------------------
-% --- Open again as second field the file whose name has been recorded in MenuFile_5
-function MenuFile_5_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput_1=get(handles.MenuFile_5_1,'Label');
-set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
-
-%-----------------------------------------------------------------------
-% --- Called by action in RootPath_1 edit box
-function RootPath_1_Callback(hObject,eventdata,handles)
-% -----------------------------------------------------------------------
-% update_rootinfo_1(hObject,eventdata,handles)
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
-%fileinput=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-% detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
-% initiate the input file series and refresh the current field view: 
-update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,2);
-%-----------------------------------------------------------------------
-% --- Called by action in RootFile_1 edit box
-function RootFile_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-RootPath_1_Callback(hObject,eventdata,handles)
-
-%------------------------------------------------------------------------
-% --- Called by action in FileIndex_1 edit box
-function FileIndex_1_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-run0_Callback(hObject, eventdata, handles)
-
-%------------------------------------------------------------------------
 % --- switch file index scanning options scan_i and scan_j in an exclusive way
 function scan_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -1406,17 +1452,6 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
         end
     end
 end
-
-
-%------------------------------------------------------------------------
-function MenuExportFigure_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-% huvmat=get(handles.MenuExport,'parent');
-hfig=figure;
-copyobj(handles.axes3,hfig);
-map=colormap(handles.axes3);
-colormap(map);%transmit the current colormap to the zoom fig
-colorbar
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -2221,9 +2256,13 @@ end
 
 %% combine the two input fields (e.g. substract velocity fields)
 if numel(Field)==2
-   UvData.Field=sub_field(Field{1},Field{2});  
+   [UvData.Field,errormsg]=sub_field(Field{1},Field{2});  
 else
    UvData.Field=Field{1};
+end
+if ~isempty(errormsg)
+    errormsg=['error in uvmat/refresh_field/sub_field:' errormsg];
+    return
 end
 UvData.Field.FieldList={FieldName}; % TODO: to generalise, used for proj_field with tps interpolation
 
@@ -2439,14 +2478,30 @@ end
 %loop on the projection objects: one or two
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);
-    [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
-
+    if iobj==1 && ~isfield(UvData.Object{iobj},'Type')% case with no projection (only for the first empty object)
+        ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
+        if UvData.Field.Mesh/ord>=5
+            mesh=5*ord;
+        elseif UvData.Field.Mesh/ord>=2
+            mesh=2*ord;
+        else
+            mesh=ord;
+        end
+        coord_x=UvData.Field.XMin:mesh:UvData.Field.XMax;
+        coord_y=UvData.Field.YMin:mesh:UvData.Field.YMax;
+        [XI,YI]=meshgrid(coord_x,coord_y);
+        XI=reshape(XI,[],1);
+        YI=reshape(YI,[],1);
+        [ObjectData,errormsg]=calc_field({FieldName},UvData.Field,[XI YI]);
+    else
+        [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
+    end
     if ~isempty(errormsg)
         return
     end
     %     if testnewseries && isfield(ObjectData,'CoordUnit')&& isfield(PlotParam{imap},'Coordinates')
-%         PlotParam{imap}.Coordinates=rmfield(PlotParam{imap}.Coordinates,'CheckFixEqual'); %set FixEqual to depend on the field (=1 if Data.CoordUnit=1 in plot_field)
-%     end 
+    %         PlotParam{imap}.Coordinates=rmfield(PlotParam{imap}.Coordinates,'CheckFixEqual'); %set FixEqual to depend on the field (=1 if Data.CoordUnit=1 in plot_field)
+    %     end
     if testnewseries && isfield(ObjectData,'CoordUnit')
         PlotParam{imap}.Coordinates.CheckFixEqual=1;
     end
@@ -2493,7 +2548,7 @@ for imap=1:numel(IndexObj)
             ObjectData.ListDimName(ind_off)=[];
             ObjectData.DimValue(ind_off)=[];
         end
-    end   
+    end
     if ~isempty(ObjectData)
         PlotType='none'; %default
         if imap==2 && isempty(view_field_handle)
@@ -2948,6 +3003,7 @@ end
 if isfield(UvData,'Field_1')
     UvData=rmfield(UvData,'Field_1');% remove the stored second field (a new one needs to be read)
 end
+UvData.filename_1='';% desactivate the use of a constant second file
 list_fields=get(handles.Fields,'String');% list menu fields
 index_fields=get(handles.Fields,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
@@ -3076,6 +3132,15 @@ end
 menu=menu(1:imax);
 
 %------------------------------------------------------------------------
+% --- Executes on button press in FixVelType.
+function FixVelType_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+val=get(handles.FixVelType,'Value');
+if ~val
+    run0_Callback(hObject, eventdata, handles)
+end
+
+%------------------------------------------------------------------------
 % --- Executes on button press in VelType.
 function VelType_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -3083,7 +3148,7 @@ set(handles.FixVelType,'Value',1)
 run0_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
-% --- Executes on button press in VelType.
+% --- Executes on button press in VelType_1.
 function VelType_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
   
@@ -3114,6 +3179,7 @@ end
 if isfield(UvData,'Field_1')
     UvData=rmfield(UvData,'Field_1');% removes the stored second field if it exists
 end
+UvData.filename_1='';% desactivate the use of a constant second file
 set(handles.uvmat,'UserData',UvData)
 num_i1=stra2num(get(handles.i1,'String'));
 num_i2=stra2num(get(handles.i2,'String'));
@@ -3813,6 +3879,189 @@ PlotParam=read_GUI(handles.uvmat);
 [tild,PlotParamOut]= plot_field(AxeData,handles.axes3,PlotParam);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
+%   SELECTION AND EDITION OF PROJECTION OBJECTS
+%------------------------------------------------------------------------
+%------------------------------------------------------------------------
+
+%------------------------------------------------------------------------
+% --- Executes on selection change in ListObject.
+function ListObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+list_str=get(handles.ListObject,'String');
+IndexObj_old=get(handles.ListObject,'UserData');%retrieve previous selection
+IndexObj=get(handles.ListObject,'Value');%present object selection
+
+%% we select two objects or more at once (using the Ctrl key), keep only the last two items: the first is projected on uvmat, the second on view_field
+if length(IndexObj)>2
+     IndexObj=[IndexObj(end-1) IndexObj(end)];%keeps only the last two selected items at most
+end
+
+%% we select one object 
+if length(IndexObj)==1% 
+    if length(IndexObj_old)>=2 && isequal(IndexObj_old(1),IndexObj)   % we select the first previously selected object-> 
+        IndexObj=[1 IndexObj_old(2)];% it desactivates this object and selects the first object for uvmat
+    elseif length(IndexObj_old)>=2 && isequal(IndexObj_old(2),IndexObj) % we select the second previously selected object->
+        IndexObj=IndexObj_old(1);% it desactivates this object  and keeps only the first previously selected object (uvmat)
+    else % 
+        IndexObj=[IndexObj_old(1) IndexObj];% activates a second object while keeping the first previously selected one
+    end
+end
+ 
+%% The second object is selected, it is displayed in set_object if this GUI is already opened
+UvData=get(handles.uvmat,'UserData');
+ObjectData=UvData.Object{IndexObj(end)};
+hset_object=findobj(allchild(0),'tag','set_object');
+if ~isempty(hset_object)
+    delete(hset_object)% delete to refesh the content
+    ZBounds=0; % default
+    if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
+        ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
+        ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
+    end
+    ObjectData.Name=list_str{IndexObj(end)};
+    set_object(ObjectData,[],ZBounds);
+end
+%  desactivate the edit object mode
+set(handles.edit_object,'Value',0) 
+set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
+
+%% update the object value stored in ListObject
+set(handles.ListObject,'Value',IndexObj); % marks the selected objects in the list
+set(handles.ListObject,'UserData',IndexObj)% keep the current object selection in memory for next time
+% 
+% UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
+% if numel(UvData.Object)<max(IndexObj);
+%     msgbox_uvmat('ERROR','invalid object list')
+%     return
+% end
+% if numel(IndexObj)>=2
+%     UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));%update the current object graphic representation
+%     set(handles.uvmat,'UserData',UvData)
+% end
+
+%% update the main plot (on uvmat) if the first selected object has been changed
+if ~isequal(IndexObj(1),IndexObj_old(1))
+    ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on UvData.Object{IndexObj(1)}
+    plot_field(ProjData,handles.axes3,read_GUI(handles.uvmat));%read plotting parameters on the uvmat interfacPlotHandles);
+end
+
+%% update the second plot (on view_field) if view_field is already openened
+axes_view_field=[];%default
+if length(IndexObj)==2 && (length(IndexObj_old)==1 || ~isequal(IndexObj(2),IndexObj_old(2)))
+    hview_field=findobj(allchild(0),'tag','view_field');
+    if ~isempty(hview_field)
+        PlotHandles=guidata(hview_field);     
+        ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
+        axes_view_field=PlotHandles.axes3;
+        plot_field(ProjData,axes_view_field,read_GUI(hview_field));%read plotting parameters on the uvmat interfacPlotHandles);
+    end
+end
+
+%% update the color of the graphic object representation: the selected object in magenta, others in blue
+update_object_color(handles.axes3,axes_view_field,UvData.Object{IndexObj(end)}.DisplayHandle_uvmat)
+
+%------------------------------------------------------------------------
+%--- update the color representation of objects (indicating the selected ones)
+function update_object_color(axes_uvmat,axes_view_field,DisplayHandle)
+%------------------------------------------------------------------------
+if isempty(axes_view_field)% case with no view_field plot
+hother=[findobj(axes_uvmat,'Tag','proj_object');findobj(axes_uvmat,'Tag','DeformPoint')];%find all the proj object and deform point representations
+else
+hother=[findobj(axes_uvmat,'Tag','proj_object') ;findobj(axes_view_field,'Tag','proj_object');... %find all the proj object representations
+findobj(axes_uvmat,'Tag','DeformPoint'); findobj(axes_view_field,'Tag','DeformPoint')];%find all the deform point representations
+end
+for iobj=1:length(hother)
+    if isequal(get(hother(iobj),'Type'),'rectangle')||isequal(get(hother(iobj),'Type'),'patch')
+        set(hother(iobj),'EdgeColor','b')
+        if isequal(get(hother(iobj),'FaceColor'),'m')
+            set(hother(iobj),'FaceColor','b')
+        end
+    elseif isequal(get(hother(iobj),'Type'),'image')
+        Acolor=get(hother(iobj),'CData');
+        Acolor(:,:,1)=zeros(size(Acolor,1),size(Acolor,2));
+        set(hother(iobj),'CData',Acolor);
+    else
+        set(hother(iobj),'Color','b')
+    end
+    set(hother(iobj),'Selected','off')
+end
+if ~isempty(DisplayHandle)
+    linetype=get(DisplayHandle,'Type');
+    if isequal(linetype,'line')
+        set(DisplayHandle,'Color','m'); %set the selected object to magenta color
+    elseif isequal(linetype,'rectangle')
+        set(DisplayHandle,'EdgeColor','m'); %set the selected object to magenta color
+    elseif isequal(linetype,'patch')
+        set(DisplayHandle,'FaceColor','m'); %set the selected object to magenta color
+    end
+    SubObjectData=get(DisplayHandle,'UserData');
+    if isfield(SubObjectData,'SubObject') & ishandle(SubObjectData.SubObject)
+        for iobj=1:length(SubObjectData.SubObject)
+            hsub=SubObjectData.SubObject(iobj);
+            if isequal(get(hsub,'Type'),'rectangle')
+                set(hsub,'EdgeColor','m'); %set the selected object to magenta color
+            elseif isequal(get(hsub,'Type'),'image')
+                Acolor=get(hsub,'CData');
+                Acolor(:,:,1)=Acolor(:,:,3);
+                set(hsub,'CData',Acolor);
+            else
+                set(hsub,'Color','m')
+            end
+        end
+    end
+    if isfield(SubObjectData,'DeformPoint') & ishandle(SubObjectData.DeformPoint)
+        set(SubObjectData.DeformPoint,'Color','m')
+    end
+end
+
+%------------------------------------------------------------------------
+% --- Executes on button press in ViewObject.
+function ViewObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+IndexObj=get(handles.ListObject,'Value');
+% IndexObj=IndexObj(end); %keeps only the second value
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
+if numel(UvData.Object)<IndexObj(end);% error in UvData
+    msgbox_uvmat('ERROR','invalid object list')
+    return
+end
+% ObjectData=UvData.Object{IndexObj(};
+ZBounds=0; % default
+if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
+    ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
+    ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
+end
+hset_object=findobj(allchild(0),'tag','set_object');
+if ~isempty(hset_object)
+    delete(hset_object)% delete existing version of set_object
+end
+set(handles.ListObject,'Value',IndexObj);%restore ListObject selection after set_object deletion 
+if ~isfield(UvData.Object{IndexObj(1)},'Type')% default plane
+    UvData.Object{IndexObj(1)}.Type='plane';
+end
+list_object=get(handles.ListObject,'String');
+UvData.Object{IndexObj(end)}.Name=list_object{IndexObj(end)};
+hset_object=set_object(UvData.Object{IndexObj(end)},[],ZBounds);
+hhset_object=guidata(hset_object);
+if get(handles.edit_object,'Value')% edit mode
+    set(hhset_object.PLOT,'Enable','on')
+else
+    set(hhset_object.PLOT,'Enable','off')
+end
+
+%% show the second plot (on view_field) 
+if length(IndexObj)==2 
+    ProjData= proj_field(UvData.Field,UvData.Object{IndexObj(2)});%project the current field on ObjectData
+    hview_field=findobj(allchild(0),'tag','view_field');
+    if isempty(hview_field)
+        hview_field=view_field;
+    end
+    PlotHandles=guidata(hview_field);     
+    plot_field(ProjData,PlotHandles.axes3,read_GUI(hview_field));%read plotting parameters on the uvmat interfacPlotHandles);
+end
+
 %-------------------------------------------------------------------
 % --- Executes on selection change in edit_object.
 function edit_object_Callback(hObject, eventdata, handles)
@@ -3837,7 +4086,6 @@ if get(handles.edit_object,'Value')
     hhset_object=guidata(hset_object);
     set(hhset_object.PLOT,'enable','on');
 else 
-    UvData.MouseAction='none';
     set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
     hset_object=findobj(allchild(0),'Tag','set_object');
     if ~isempty(hset_object)% open the 
@@ -3847,160 +4095,27 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in ListObject.
-function ListObject_Callback(hObject, eventdata, handles)
+% --- Executes on button press in delete_object.
+function delete_object_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-
-list_str=get(handles.ListObject,'String');
-IndexObj_old=get(handles.ListObject,'UserData');%retrieve previous selection
-IndexObj=get(handles.ListObject,'Value');%present object selection
-
-%% we select two objects or more at once (using the Ctrl key), keep only the last two items: the first is projected on uvmat, the second on view_field
-if length(IndexObj)>2
-     IndexObj=[IndexObj(end-1) IndexObj(end)];%keeps only the last two selected items at most
+IndexObj=get(handles.ListObject,'Value');
+if IndexObj(end)>1 
+    delete_object(IndexObj(end))
 end
-
-%% we select one object 
-if length(IndexObj)==1% 
-    if length(IndexObj_old)>=2 && isequal(IndexObj_old(1),IndexObj)   % we select the first previously selected object-> 
-        IndexObj=[1 IndexObj_old(2)];% it desactivates this object and selects the first object for uvmat
-    elseif length(IndexObj_old)>=2 && isequal(IndexObj_old(2),IndexObj) % we select the second previously selected object->
-        IndexObj=IndexObj_old(1);% it desactivates this object  and keeps only the first previously selected object (uvmat)
-    else % 
-        IndexObj=[IndexObj_old(1) IndexObj];% activates a second object while keeping the first previously selected one
-    end
-end
-set(handles.ListObject,'Value',IndexObj); % marks the selected objects in the list
-set(handles.ListObject,'UserData',IndexObj)% keep the current object selection in memory for next time
-
-%% update the object representation
-set(handles.edit_object,'Value',0) % desactivate the edit object mode
-edit_object_Callback(hObject, eventdata, handles)
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
-if numel(UvData.Object)<max(IndexObj);
-    msgbox_uvmat('ERROR','invalid object list')
-    return
-end
-if numel(IndexObj)>=2
-    UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));%update the current object graphic representation
-    set(handles.uvmat,'UserData',UvData)
-end
-
-%% project on the selected object and update the corresponding plot
-% hview_field=findobj(allchild(0),'tag','view_field');
-% ViewObjectAxes=[];%default
-if ~isequal(IndexObj(1),IndexObj_old(1))
-    update_object(handles,IndexObj(1),handles.axes3,list_str{IndexObj(1)})%plot the projection in uvmat
-end
-hview_field=findobj(allchild(0),'tag','view_field');
-if length(IndexObj)==2 && (length(IndexObj_old)==1 || ~isequal(IndexObj(2),IndexObj_old(2)))
-    if isempty(hview_field)
-        hview_field=view_field;
-    end
-    PlotHandles=guidata(hview_field);
-    update_object(handles,IndexObj(2),PlotHandles.axes3,list_str{IndexObj(2)})%plot the projection in view_field
-    update_object_color(handles.axes3,PlotHandles.axes3,UvData.Object{IndexObj(2)}.DisplayHandle_uvmat)
-else
-    if ~isempty(hview_field)
-        delete(hview_field)
-    end
-    hset_object=findobj(allchild(0),'tag','set_object');
-    if ~isempty(hset_object)
-        delete(hset_object)
-    end
-    update_object_color(handles.axes3,handles.axes3,[])
-end
-
-%% update the color of the gfraphic object representation: the selected object in magenta, others in blue
-% update_object_color(handles.axes3,PlotHandles.axes3,UvData.Object{IndexObj(2)}.DisplayHandle_uvmat)
 
 %------------------------------------------------------------------------
-function update_object(handles,IndexObj,ViewObjectAxes,ObjectName)
 %------------------------------------------------------------------------
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
-ObjectData=UvData.Object{IndexObj};
-ObjectData.Name=ObjectName;
-if isequal(get(handles.edit_object,'Value'),1)
-    ObjectData.enable_plot=1; % desable the PLOT option in the set_object GUI (editing mode
-end
-ZBounds=0; % default
-if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
-    ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
-    ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
-end
-hset_object=findobj(allchild(0),'tag','set_object');
-if ~isempty(hset_object)
-    delete(hset_object)% delete existing version of set_object
-end
-    hset_object=set_object(ObjectData,[],ZBounds);
-% end
-edit_test=get(handles.edit_object,'Value');
-if edit_test
-    ObjectData.enable_plot=1;
-else
-    if isfield(ObjectData,'enable_plot')
-        ObjectData=rmfield(ObjectData,'enable_plot');
-    end
-end
-
-uistack(ViewObjectAxes,'top')% display the plotting axes at the top
-ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
-plot_field(ProjData,ViewObjectAxes,read_GUI(get(ViewObjectAxes,'Parent')));%read plotting parameters on the uvmat interfacPlotHandles);
-
+%  II - TOOLS FROM THE UPPER MENU BAR
 %------------------------------------------------------------------------
-%--- update the representation of objects
-function update_object_color(axes_uvmat,axes_view_field,DisplayHandle)
 %------------------------------------------------------------------------
-hother=[findobj(axes_uvmat,'Tag','proj_object') ;findobj(axes_view_field,'Tag','proj_object')] ;%find all the proj objects
-hother=[hother ;findobj(axes_uvmat,'Tag','DeformPoint'); findobj(axes_view_field,'Tag','DeformPoint')];
-for iobj=1:length(hother)
-    if isequal(get(hother(iobj),'Type'),'rectangle')||isequal(get(hother(iobj),'Type'),'patch')
-        set(hother(iobj),'EdgeColor','b')
-        if isequal(get(hother(iobj),'FaceColor'),'m')
-            set(hother(iobj),'FaceColor','b')
-        end
-    elseif isequal(get(hother(iobj),'Type'),'image')
-        Acolor=get(hother(iobj),'CData');
-        Acolor(:,:,1)=zeros(size(Acolor,1),size(Acolor,2));
-        set(hother(iobj),'CData',Acolor);
-    else
-        set(hother(iobj),'Color','b')
-    end
-    set(hother(iobj),'Selected','off')
-end
-if ~isempty(DisplayHandle)
-linetype=get(DisplayHandle,'Type');
-if isequal(linetype,'line')
-    set(DisplayHandle,'Color','m'); %set the selected object to magenta color
-elseif isequal(linetype,'rectangle')
-    set(DisplayHandle,'EdgeColor','m'); %set the selected object to magenta color
-elseif isequal(linetype,'patch')
-    set(DisplayHandle,'FaceColor','m'); %set the selected object to magenta color
-end
-SubObjectData=get(DisplayHandle,'UserData');
-if isfield(SubObjectData,'SubObject') & ishandle(SubObjectData.SubObject)
-    for iobj=1:length(SubObjectData.SubObject)
-        hsub=SubObjectData.SubObject(iobj);
-        if isequal(get(hsub,'Type'),'rectangle')
-            set(hsub,'EdgeColor','m'); %set the selected object to magenta color
-        elseif isequal(get(hsub,'Type'),'image')
-            Acolor=get(hsub,'CData');
-            Acolor(:,:,1)=Acolor(:,:,3);
-            set(hsub,'CData',Acolor);
-        else
-            set(hsub,'Color','m')
-        end
-    end
-end
-if isfield(SubObjectData,'DeformPoint') & ishandle(SubObjectData.DeformPoint)
-    set(SubObjectData.DeformPoint,'Color','m')
-end
-end
 
-%------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Export  Menu Callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%------------------------------------------------------------------------
 % --- Executes on button press in Menu/Export/field in workspace.
-%------------------------------------------------------
 function MenuExportField_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 global Data_uvmat
 Data_uvmat=get(handles.uvmat,'UserData');
 evalin('base','global Data_uvmat')%make CurData global in the workspace
@@ -4008,34 +4123,33 @@ display('current field :')
 evalin('base','Data_uvmat') %display CurData in the workspace
 commandwindow; %brings the Matlab command window to the front
 
-%------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in Menu/Export/extract figure.
-%------------------------------------------------------
-function MenuExport_plot_Callback(hObject, eventdata, handles)
-huvmat=get(handles.MenuExport_plot,'parent');
-UvData=get(huvmat,'UserData');
+function MenuExportFigure_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+% huvmat=get(handles.MenuExport,'parent');
 hfig=figure;
-newaxes=copyobj(handles.axes3,hfig);
+copyobj(handles.axes3,hfig);
 map=colormap(handles.axes3);
 colormap(map);%transmit the current colormap to the zoom fig
 colorbar
 
+% %------------------------------------------------------
+% % --- Executes on button press in Menu/Export/extract figure.
+% %------------------------------------------------------
+% function MenuExport_plot_Callback(hObject, eventdata, handles)
+% huvmat=get(handles.MenuExport_plot,'parent');
+% UvData=get(huvmat,'UserData');
+% hfig=figure;
+% newaxes=copyobj(handles.axes3,hfig);
+% map=colormap(handles.axes3);
+% colormap(map);%transmit the current colormap to the zoom fig
+% colorbar
 
-% --------------------------------------------------------------------
-function Insert_Callback(hObject, eventdata, handles)
-
-
-% --------------------------------------------------------------------
-function MenuHelp_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------
-path_to_uvmat=which ('uvmat');% check the path of uvmat
-pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
-if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
-else
-    addpath (fullfile(pathelp,'uvmat_doc'))
-    web(helpfile);
-end
+% 
+% % --------------------------------------------------------------------
+% function Insert_Callback(hObject, eventdata, handles)
+% 
 
 %------------------------------------------------------------------------
 % --------------------------------------------------------------------
@@ -4122,6 +4236,202 @@ UvData=rmfield(UvData,'plotaxes');
 set(huvmat,'UserData',UvData);
 msgbox_uvmat('CONFIRMATION',{['movie ' aviname ' created '];['with ' num2str(imax) ' frames']})
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Projection Objects Menu Callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% -----------------------------------------------------------------------
+function Menupoints_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='points';
+data.ProjMode='projection';%default
+create_object(data,handles)
+
+% -----------------------------------------------------------------------
+function Menuline_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='line';
+data.ProjMode='projection';%default
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menupolyline_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='polyline';
+data.ProjMode='projection';%default
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menupolygon_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='polygon';
+data.ProjMode='inside';%default
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menurectangle_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='rectangle';
+data.ProjMode='inside';%default
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menuellipse_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='ellipse';
+data.ProjMode='inside';%default
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function MenuMaskObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='polygon';
+data.TypeMenu={'polygon'};
+data.ProjMode='mask_inside';%default
+data.ProjModeMenu={'mask_inside';'mask_outside'};
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menuplane_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='plane';
+data.ProjMode='projection';%default
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+function Menuvolume_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+data.Type='volume';
+data.ProjMode='interp';%default
+% set(handles.create,'Visible','on')
+% set(handles.create,'Value',1)
+% VOLUME_Callback(hObject,eventdata,handles)
+create_object(data,handles)
+
+%------------------------------------------------------------------------
+% --- generic function used for the creation of a projection object
+function create_object(data,handles)
+%------------------------------------------------------------------------
+
+hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
+if ishandle(hgeometry_calib)
+    hhgeometry_calib=guidata(hgeometry_calib);
+    set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
+    set(hhgeometry_calib.edit_append,'BackgroundColor',[0.7 0.7 0.7])
+end
+UvData=get(handles.uvmat,'UserData');
+set(handles.edit_object,'Value',0); %suppress the object edit mode
+set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
+% data.enable_plot=1;
+data.Coord=[0 0]; %default
+if isfield(UvData,'Field')
+    Field=UvData.Field;
+    if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
+        ord=10^(floor(log10(Field.Mesh)));%order of magnitude
+        if Field.Mesh/ord>=5
+            mesh=5*ord;
+        elseif Field.Mesh/ord>=2
+            mesh=2*ord;
+        else
+            mesh=ord;
+        end
+        data.RangeX=mesh;
+        data.RangeY=mesh;
+        data.DX=mesh;
+        data.DY=mesh;
+    elseif isfield(Field,'AX')&& isfield(Field,'AY')&& isfield(Field,'A')%only image
+        np=size(Field.A);
+        meshx=(Field.AX(end)-Field.AX(1))/np(2);
+        meshy=abs(Field.AY(end)-Field.AY(1))/np(1);
+        data.RangeY=max(meshx,meshy);
+        data.RangeX=max(meshx,meshy);
+        data.DX=max(meshx,meshy);
+    end
+    if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
+         data.Coord=[0 0 0]; %default
+    end
+    if isfield(Field,'CoordUnit')
+        data.CoordUnit=Field.CoordUnit;
+    end
+end
+if ishandle(handles.UVMAT_title)
+    delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
+end
+hset_object=findobj(allchild(0),'tag','set_object');
+IndexObj=get(handles.ListObject,'Value')
+if ~isempty(hset_object)
+    delete(hset_object)% delete existing version of set_object
+end
+set(handles.ListObject,'Value',IndexObj)
+hset_object=set_object(data,handles);% call the set_object interface
+hhset_object=guidata(hset_object);
+set(hhset_object.PLOT,'enable','on')% activate the refresh button
+set(handles.MenuObject,'checked','on')
+set(handles.uvmat,'UserData',UvData)
+set(handles.CheckZoom,'Value',0)
+CheckZoom_Callback(handles.uvmat, [], handles)
+set(handles.delete_object,'Visible','on')
+
+
+%------------------------------------------------------------------------
+function MenuBrowseObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+%get the object file 
+[FileName, PathName, filterindex] = uigetfile( ...
+       {'*.xml;*.mat', ' (*.xml,*.mat)';
+       '*.xml',  '.xml files '; ...
+        '*.mat',  '.mat matlab files '}, ...
+        'Pick an xml Object file',get(handles.RootPath,'String'));
+fileinput=[PathName FileName];%complete file name 
+sizf=size(fileinput);
+if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
+
+%read the file
+data=xml2struct(fileinput);
+data.enable_plot=1;
+[tild,data.Name]=fileparts(FileName);
+hset_object=findobj(allchild(0),'tag','set_object');
+if ~isempty(hset_object)
+    delete(hset_object)% delete existing version of set_object
+end
+set_object(data);% call the set_object interface
+set(handles.edit_object,'Value',0); %suppress the object edit mode
+set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
+set(handles.MenuObject,'checked','on')
+set(handles.delete_object,'Visible','on')
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MenuEdit Callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%------------------------------------------------------------------------
+function MenuEditObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+set(handles.edit_object,'Value',1)
+edit_Callback(hObject, eventdata, handles)
+
+% %------------------------------------------------------------------------
+% function enable_transform(handles,state)
+% %------------------------------------------------------------------------
+% set(handles.transform_fct,'Visible',state)
+% set(handles.TRANSFORM_txt,'Visible',state)    
+% set(handles.transform_fct,'Visible',state)  
+% set(handles.path_transform,'Visible',state)
+% set(handles.pxcmx_txt,'Visible',state)
+% set(handles.pxcmy_txt,'Visible',state)
+% set(handles.pxcm,'Visible',state)
+% set(handles.pycm,'Visible',state)
+
+%------------------------------------------------------------------------
+function MenuEditVectors_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+set(handles.edit_vect,'Visible','on')
+set(handles.edit_vect,'Value',1)
+edit_vect_Callback(hObject, eventdata, handles)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MenuTools Callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
 function MenuCalib_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -4140,7 +4450,6 @@ end
 pos=get(handles.uvmat,'Position');
 pos(1)=pos(1)+pos(3)-0.311+0.04; %0.311= width of the geometry_calib interface (units relative to the srcreen)
 pos(2)=pos(2)-0.02;
-%[FileName,RootPath,FileBase,FileIndices,FileExt,SubDir]=read_file_boxes(handles);
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 set(handles.view_xml,'Backgroundcolor',[1 1 0])%indicate the reading of the current xml file by geometry_calib
@@ -4277,6 +4586,21 @@ CoordList=get(handles.transform_fct,'String');
 val=get(handles.transform_fct,'Value');
 set_grid(FileName,CoordList{val});% call the set_object interface
 
+
+%------------------------------------------------------------------------
+function MenuRuler_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+set(handles.CheckZoom,'Value',0)
+CheckZoom_Callback(handles.uvmat, [], handles)
+set(handles.MenuRuler,'checked','on')
+UvData=get(handles.uvmat,'UserData');
+UvData.MouseAction='ruler';
+set(handles.uvmat,'UserData',UvData);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MenuRun Callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %------------------------------------------------------------------------
 % open the GUI 'series'
 function MenuSeries_Callback(hObject, eventdata, handles)
@@ -4287,15 +4611,12 @@ param.FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 if isequal(get(handles.SubField,'Value'),1)
     [RootPath_1,SubDir_1,RootFile_1,FileIndices_1,FileExt_1]=read_file_boxes_1(handles);
     FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndices_1 FileExt_1];
-    %FileName_1=read_file_boxes_1(handles);%
     if ~isequal(FileName_1,param.FileName)
         param.FileName_1=FileName_1;
     end
 end
 param.NomType=get(handles.NomType,'String');
-% param.NomType=get(handles.FileIndex,'UserData');
 param.NomType_1=get(handles.NomType_1,'String');
-% param.NomType_1=get(handles.FileIndex_1,'UserData');
 param.CheckFixPair=get(handles.CheckFixPair,'Value');
 huvmat=get(handles.MenuSeries,'parent');
 UvData=get(huvmat,'UserData');
@@ -4324,275 +4645,25 @@ param.menu_coord_val=get(handles.transform_fct,'Value');
 series(param); %run the series interface
 
 %------------------------------------------------------------------------
-% -- open the GUI civ.fig for civx (PIV)
+% -- open the GUI civ.fig for PIV
 function MenuPIV_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
  [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
  FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 civ(FileName);% interface de civ(not in the uvmat file)
 
-%------------------------------------------------------------------------
-function MenuTools_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-
-%------------------------------------------------------------------------
-function MenuEditObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-set(handles.edit_object,'Value',1)
-edit_Callback(hObject, eventdata, handles)
-
-%------------------------------------------------------------------------
-function enable_transform(handles,state)
-%------------------------------------------------------------------------
-set(handles.transform_fct,'Visible',state)
-set(handles.TRANSFORM_txt,'Visible',state)    
-set(handles.transform_fct,'Visible',state)  
-set(handles.path_transform,'Visible',state)
-set(handles.pxcmx_txt,'Visible',state)
-set(handles.pxcmy_txt,'Visible',state)
-set(handles.pxcm,'Visible',state)
-set(handles.pycm,'Visible',state)
-
-%------------------------------------------------------------------------
-function MenuEditVectors_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-set(handles.edit_vect,'Visible','on')
-set(handles.edit_vect,'Value',1)
-edit_vect_Callback(hObject, eventdata, handles)
-
-% -----------------------------------------------------------------------
-function Menupoints_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='points';
-data.ProjMode='projection';%default
-create_object(data,handles)
-
-% -----------------------------------------------------------------------
-function Menuline_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='line';
-data.ProjMode='projection';%default
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menupolyline_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='polyline';
-data.ProjMode='projection';%default
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menupolygon_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='polygon';
-data.ProjMode='inside';%default
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menurectangle_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='rectangle';
-data.ProjMode='inside';%default
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menuellipse_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='ellipse';
-data.ProjMode='inside';%default
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function MenuMaskObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='polygon';
-data.TypeMenu={'polygon'};
-data.ProjMode='mask_inside';%default
-data.ProjModeMenu={'mask_inside';'mask_outside'};
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menuplane_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='plane';
-data.ProjMode='projection';%default
-
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function Menuvolume_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-data.Type='volume';
-data.ProjMode='interp';%default
-% set(handles.create,'Visible','on')
-% set(handles.create,'Value',1)
-% VOLUME_Callback(hObject,eventdata,handles)
-create_object(data,handles)
-
-%------------------------------------------------------------------------
-function MenuBrowseObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-%get the object file 
-[FileName, PathName, filterindex] = uigetfile( ...
-       {'*.xml;*.mat', ' (*.xml,*.mat)';
-       '*.xml',  '.xml files '; ...
-        '*.mat',  '.mat matlab files '}, ...
-        'Pick an xml Object file',get(handles.RootPath,'String'));
-fileinput=[PathName FileName];%complete file name 
-sizf=size(fileinput);
-if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
-
-%read the file
-data=xml2struct(fileinput);
-data.enable_plot=1;
-[tild,data.Name]=fileparts(FileName);
-hset_object=findobj(allchild(0),'tag','set_object');
-if ~isempty(hset_object)
-    delete(hset_object)% delete existing version of set_object
-end
-set_object(data);% call the set_object interface
-set(handles.edit_object,'Value',0); %suppress the object edit mode
-set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
-set(handles.MenuObject,'checked','on')
-set(handles.delete_object,'Visible','on')
-
-%------------------------------------------------------------------------
-% --- generic function used for the creation of a projection object
-function create_object(data,handles)
-%------------------------------------------------------------------------
-hset_object=findobj(allchild(0),'tag','set_object');
-if ~isempty(hset_object)
-    delete(hset_object)% delete existing version of set_object
-end
-hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
-if ishandle(hgeometry_calib)
-    hhgeometry_calib=guidata(hgeometry_calib);
-    set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
-    set(hhgeometry_calib.edit_append,'BackgroundColor',[0.7 0.7 0.7])
-end
-UvData=get(handles.uvmat,'UserData');
-set(handles.edit_object,'Value',0); %suppress the object edit mode
-set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
-data.enable_plot=1;
-data.Coord=[0 0]; %default
-if isfield(UvData,'Field')
-    Field=UvData.Field;
-    if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
-        ord=10^(floor(log10(Field.Mesh)));%order of magnitude
-        if Field.Mesh/ord>=5
-            mesh=5*ord;
-        elseif Field.Mesh/ord>=2
-            mesh=2*ord;
-        else
-            mesh=ord;
-        end
-        data.RangeX=mesh;
-        data.RangeY=mesh;
-        data.DX=mesh;
-        data.DY=mesh;
-    elseif isfield(Field,'AX')&& isfield(Field,'AY')&& isfield(Field,'A')%only image
-        np=size(Field.A);
-        meshx=(Field.AX(end)-Field.AX(1))/np(2);
-        meshy=abs(Field.AY(end)-Field.AY(1))/np(1);
-        data.RangeY=max(meshx,meshy);
-        data.RangeX=max(meshx,meshy);
-        data.DX=max(meshx,meshy);
-    end
-    if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
-         data.Coord=[0 0 0]; %default
-    end
-    if isfield(Field,'CoordUnit')
-        data.CoordUnit=Field.CoordUnit;
-    end
-end
-if ishandle(handles.UVMAT_title)
-    delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
-end
-set_object(data,handles);% call the set_object interface
-set(handles.MenuObject,'checked','on')
-set(handles.uvmat,'UserData',UvData)
-set(handles.CheckZoom,'Value',0)
-CheckZoom_Callback(handles.uvmat, [], handles)
-set(handles.delete_object,'Visible','on')
-
-%------------------------------------------------------------------------
-function MenuRuler_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-set(handles.CheckZoom,'Value',0)
-CheckZoom_Callback(handles.uvmat, [], handles)
-set(handles.MenuRuler,'checked','on')
-UvData=get(handles.uvmat,'UserData');
-UvData.MouseAction='ruler';
-set(handles.uvmat,'UserData',UvData);
-
-%------------------------------------------------------------------------
-% --- executed when closing: set the parent interface button to value 0
-function closefcn(gcbo,eventdata)
-%------------------------------------------------------------------------
-%delete all the associated figures if exist
-hh=findobj(allchild(0),'tag','view_field');
-if ~isempty(hh)
-    delete(hh)
-end
-hh=findobj(allchild(0),'tag','geometry_calib');
-if ~isempty(hh)
-    delete(hh)
-end
-hh=findobj(allchild(0),'tag','set_object');
-if ~isempty(hh)
-    hhh=findobj(hh,'tag','PLOT');
-    set(hhh,'enable','off')
-end
-
-%------------------------------------------------------------------------
-% --- Executes on button press in delete_object.
-function delete_object_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-IndexObj=get(handles.ListObject,'Value');
-if IndexObj(end)>1 
-    delete_object(IndexObj(end))
-end
-
-% --- Executes on button press in FixVelType.
-function FixVelType_Callback(hObject, eventdata, handles)
-val=get(handles.FixVelType,'Value');
-if ~val
-    run0_Callback(hObject, eventdata, handles)
-end
-
-%------------------------------------------------------------------------
-% --- Executes on button press in ViewObject.
-function ViewObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-IndexObj=get(handles.ListObject,'Value');
-IndexObj=IndexObj(end); %keeps only the secodn value
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
-if numel(UvData.Object)<IndexObj;% error in UvData
-    msgbox_uvmat('ERROR','invalid object list')
-    return
-end
-ObjectData=UvData.Object{IndexObj};
-ZBounds=0; % default
-if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
-    ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
-    ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
-end
-hset_object=findobj(allchild(0),'tag','set_object');
-if ~isempty(hset_object)
-    delete(hset_object)% delete existing version of set_object
-end
-if ~isfield(ObjectData,'Type')% default plane
-    ObjectData.Type='plane';
-end
-hset_object=set_object(ObjectData,[],ZBounds);
-if get(handles.edit_object,'Value')% edit mode
-    hhset_object=guidata(hset_object);
-    set(hhset_object.PLOT,'Enable','on')
+% --------------------------------------------------------------------
+function MenuHelp_Callback(hObject, eventdata, handles)
+% --------------------------------------------------------------------
+path_to_uvmat=which ('uvmat');% check the path of uvmat
+pathelp=fileparts(path_to_uvmat);
+helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
+if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
+else
+    addpath (fullfile(pathelp,'uvmat_doc'))
+    web(helpfile);
 end
 
 
-function NomType_Callback(hObject, eventdata, handles)
 
-
-function NomType_1_Callback(hObject, eventdata, handles)
 

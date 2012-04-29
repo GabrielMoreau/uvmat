@@ -71,9 +71,21 @@ if ~isempty(errormsg)
     return
 end
 iselect=find(NbDim==2);
+for icell=iselect
+    if ~isempty(VarTypeCell{icell}.coord_tps)
+        NbDim(icell)=0;
+    end
+end
+iselect=find(NbDim==2);
 if ~isequal(numel(iselect),1)
     errormsg='invalid  first input to sub_field: it must  contain a single 2D field cell';
     return
+end
+iselect_1=find(NbDim_1==2);
+for icell=iselect_1
+    if ~isempty(VarTypeCell_1{icell}.coord_tps)
+        NbDim_1(icell)=0;
+    end
 end
 iselect_1=find(NbDim_1==2);
 if ~isequal(numel(iselect_1),1)

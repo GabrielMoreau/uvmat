@@ -530,6 +530,9 @@ YName='';
 y_units='';
 for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the calling function)
     VarType=VarTypeCell{icell};
+    if ~isempty(VarType.coord_tps)
+        continue
+    end
     ivar_X=VarType.coord_x; % defines (unique) index for the variable representing unstructured x coordinate (default =[])
     ivar_Y=VarType.coord_y; % defines (unique)index for the variable representing unstructured y coordinate (default =[])
     ivar_U=VarType.vector_x; % defines (unique) index for the variable representing x vector component (default =[])

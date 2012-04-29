@@ -101,11 +101,45 @@ if isfield(PlotParamOut,'Vectors')
 end
 write_plot_param(handles,PlotParamOut);% update the display of the plotting parameters
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command menuline.
 function varargout = view_field_OutputFcn(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 varargout{1} = handles.output;% the only output argument is the handle to the GUI figure
 
+%------------------------------------------------------------------------
+%--- activated when closing the GUI view_field
+function closefcn(gcbo,eventdata)
+%------------------------------------------------------------------------
+huvmat=findobj(allchild(0),'Tag','uvmat');%find the current uvmat interface handle
+if ~isempty(huvmat)
+    hhuvmat=guidata(huvmat);
+    set(hhuvmat.edit_object,'Value',0)
+    set(hhuvmat.edit_object,'BackgroundColor',[0.7 0.7 0.7])%put unactivated buttons to gree
+    % deselect the object in ListObject when view_field is closed
+    if isempty(findobj(allchild(0),'Tag','set_object'))
+        ObjIndex=get(hhuvmat.ListObject,'Value');
+        ObjIndex=ObjIndex(1);%keep only the first object selected
+        set(hhuvmat.ListObject,'Value',ObjIndex)
+        % draw all object colors in blue (unselected) in uvmat
+        hother=[findobj(hhuvmat.axes3,'Tag','proj_object');findobj(hhuvmat.axes3,'Tag','DeformPoint')];%find all the proj object and deform point representations
+        for iobj=1:length(hother)
+            if isequal(get(hother(iobj),'Type'),'rectangle')||isequal(get(hother(iobj),'Type'),'patch')
+                set(hother(iobj),'EdgeColor','b')
+                if isequal(get(hother(iobj),'FaceColor'),'m')
+                    set(hother(iobj),'FaceColor','b')
+                end
+            elseif isequal(get(hother(iobj),'Type'),'image')
+                Acolor=get(hother(iobj),'CData');
+                Acolor(:,:,1)=zeros(size(Acolor,1),size(Acolor,2));
+                set(hother(iobj),'CData',Acolor);
+            else
+                set(hother(iobj),'Color','b')
+            end
+            set(hother(iobj),'Selected','off')
+        end
+    end
+end
 
 %-------------------------------------------------------------------
 %-------------------------------------------------------------------
@@ -732,14 +766,4 @@ map=colormap(handles.axes3);
 colormap(map);%transmit the current colormap to the zoom fig
 colorbar
 
-%------------------------------------------------------------------------
-function closefcn(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-huvmat=findobj(allchild(0),'Name','uvmat');
-if ~isempty(huvmat)
-hhuvmat=guidata(huvmat);
-% list_object_2=get(hhuvmat.list_object_2,'String');
-% set(hhuvmat.list_object_2,'Value',1)%select the last value ('...')
-end
-delete(hObject)
 

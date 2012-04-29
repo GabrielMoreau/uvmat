@@ -449,13 +449,11 @@ if test_vector
     end
 end 
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% get the input field
 inputfield=get(handles.inputfile,'String');
 if exist(inputfield,'file')% read the input data corresponding to the list of selected varaibles
-    SubField=nc2struct(inputfield,ListVarName);
+    SubField=nc2struct(inputfield,ListVarName);%read the list of variables ListVarName from the input file
 else  % subfield stored in memory
     SubField.ListGlobalAttribute={};
     SubField.ListVarName=ListVarName;
@@ -638,7 +636,8 @@ end
 if test_vector
     VarNameU=Field.ListVarName{VarIndexU}; % name of u component variable
     DimCellU=Field.VarDimName{VarIndexU}; % list of dimensions for u component  
-    eval(['npxy=size(SubField.' VarNameU ');']) % npxy= dimension values for the u component
+  % eval(['npxy=size(SubField.' VarNameU ');']) % npxy= dimension values for the u component
+   npxy=size(SubField.(VarNameU)); % npxy= dimension values for the u componen
     SingleCellU={};
     if numel(npxy) < numel(DimCellU)
         SingleCellU=DimCellU(1:end-numel(npxy));
