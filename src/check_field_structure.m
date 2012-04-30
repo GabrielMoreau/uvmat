@@ -3,13 +3,7 @@
 % function [DataOut,errormsg]=check_field_structure(Data)
 %
 % OUTPUT:
-% DataOut: structure reproducing the input structure Data, with the additional elements:
-%           with fields:
-%
-%            .ListDimName: cell listing the names of the array dimensions
-%             .DimValue: array dimension values (Matlab vector with the same length as .ListDimName
-%            .VarDimIndex: cell containing the set of dimension indices (in list .ListDimName) for each variable of .ListVarName
-%            .VarDimName: cell containing a cell of dimension names (in list .ListDimName) for each variable of .ListVarName
+% DataOut: structure reproducing the input structure Data (TODO: suppress this output)
 % errormsg: error message which is not empty when the input structure does not have the right form
 %
 % INPUT:
@@ -21,7 +15,7 @@
 %         (requested) .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
 
 
-function [DataOut,errormsg]=check_field_structure(Data)
+function [errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(Data)
 DataOut=[]; %default
 errormsg=[];
 if ~isstruct(Data)
@@ -44,11 +38,11 @@ else
     errormsg='input field does not contain the  cell array of dimension names .VarDimName';
     return
 end
-if isfield(Data,'DimValue')
-    Data=rmfield(Data,'DimValue');
-end
+% if isfield(Data,'DimValue')
+%     Data=rmfield(Data,'DimValue');
+% end
 nbdim=0;
-Data.ListDimName={};
+ListDimName={};
 
 %% main loop on the list of variables
 for ivar=1:nbfield
@@ -102,20 +96,20 @@ for ivar=1:nbfield
     %for idim=1:nbcoord
     for idim=1:numel(DimCell) %loop on the coordinates of variable #ivar
         DimName=DimCell{idim};
-        iprev=find(strcmp(DimName,Data.ListDimName),1);%look for dimension name DimName in the current list
+        iprev=find(strcmp(DimName,ListDimName),1);%look for dimension name DimName in the current list
         if isempty(iprev)% append the dimension name to the current list
             nbdim=nbdim+1;
             RangeTest(nbdim)=0; %default
             if sizvar(idim)==2 && strcmp(DimName,VarName)%case of a coordinate defined by the two end values (regular spacing)
                 RangeTest(nbdim)=1; %to be updated for a later variable  
             end
-            Data.DimValue(nbdim)=sizvar(idim);
-            Data.ListDimName{nbdim}=DimName;
+            DimValue(nbdim)=sizvar(idim);
+            ListDimName{nbdim}=DimName;
             DimIndex=[DimIndex nbdim];
         else % DimName is detected in the current list of dimension names
-            if ~isequal(Data.DimValue(iprev),sizvar(idim))
-                if isequal(Data.DimValue(iprev),2)&& RangeTest(iprev)  % the dimension has been already detected as a range [min max]
-                    Data.DimValue(iprev)=sizvar(idim); %update with actual value
+            if ~isequal(DimValue(iprev),sizvar(idim))
+                if isequal(DimValue(iprev),2)&& RangeTest(iprev)  % the dimension has been already detected as a range [min max]
+                    DimValue(iprev)=sizvar(idim); %update with actual value
                 elseif ~testrange                
                     errormsg=['dimension declaration inconsistent with the size =[' num2str(sizvar) '] for ' VarName];
                     return
@@ -124,7 +118,7 @@ for ivar=1:nbfield
             DimIndex=[DimIndex iprev];
         end
     end
-    Data.VarDimIndex{ivar}=DimIndex;
+    VarDimIndex{ivar}=DimIndex;
 end
 DataOut=Data;
     

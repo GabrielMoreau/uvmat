@@ -108,7 +108,7 @@ end
 index_2D=[];
 index_1D=[];
 index_0D=[];
-[Data,errormsg]=check_field_structure(Data);
+errormsg=check_field_structure(Data);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['input of plot_field/check_field_structure: ' errormsg])
     display(['input of plot_field/check_field_structure: ' errormsg])

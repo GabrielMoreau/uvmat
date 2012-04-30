@@ -49,7 +49,7 @@ switch FileType
         if isfield(ParamIn,'GUIName')
             GUIName=ParamIn.GUIName;
         end
-        test_civx=0;
+        CivStage=0;
         if ~strcmp(ParamIn.FieldName,'get_field...')% if get_field is not requested, look for Civx data
             FieldList=calc_field;%list of possible fields for Civx data
             ParamOut.ColorVar='';%default
@@ -62,14 +62,14 @@ switch FileType
                     ParamOut.ColorVar='ima_cor';
                     InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
                     [Field,ParamOut.VelType,errormsg]=read_civdata(ObjectName,InputField,ParamIn.VelType,Data.CivStage);
-                    test_civx=Field.CivStage;
+                    CivStage=Field.CivStage;
                     %case of old civx conventions
                 elseif ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)
                     ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
                     ParamOut.ColorVar='ima_cor';
                     InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
                     [Field,ParamOut.VelType]=read_civxdata(ObjectName,InputField,ParamIn.VelType);
-                    test_civx=Field.CivStage;
+                    CivStage=Field.CivStage;
                     ParamOut.CivStage=Field.CivStage;
                     % not cvix file, fields will be chosen through the GUI get_field
                 else
@@ -89,11 +89,12 @@ switch FileType
                 if ~isempty(errormsg)
                     return
                 end
-                test_civx=Field.CivStage;
+                CivStage=Field.CivStage;
                 ParamOut.CivStage=Field.CivStage;
             end
         end
-        if ~test_civx% read the field names on the interface get_field.
+        ParamOut.FieldList=[{'image'};FieldList;{'get_field...'}];
+        if CivStage==0% read the field names on the interface get_field.
             hget_field=findobj(allchild(0),'Name',GUIName);%find the get_field... GUI
             if isempty(hget_field)% open the GUI get_field if it is not found
                 hget_field= get_field(ObjectName);%open the get_field GUI
@@ -139,13 +140,13 @@ switch FileType
             if isfield(Field,'TimeValue')
                 ParamOut.TimeValue=Field.TimeValue;
             end
-        end
-        if test_civx
-            ParamOut.FieldList=[{'image'};FieldList;{'get_field...'}];
-        else
             ParamOut.FieldList={'get_field...'};
         end
-        
+%         if CivStage~=0
+%             ParamOut.FieldList=[{'image'};FieldList;{'get_field...'}];
+%         else
+% %             ParamOut.FieldList={'get_field...'};
+%         end    
     case 'video'
         try
             A=read(ObjectName,num);

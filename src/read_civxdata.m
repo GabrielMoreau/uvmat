@@ -95,8 +95,9 @@ end
 
 %% adjust for Djui:
 if isfield(Field,'DjUi')
+    Field.ListVarName{end-3}='DjUi';
+    Field.VarDimName{end-3}=[Field.VarDimName{end-3} {'nb_coord'} {'nb-coord'}];
     Field.ListVarName(end-2:end)=[];
-    Field.ListVarName{end}='DjUi';
     Field.VarDimName(end-2:end)=[];
     Field.VarAttribute(end-2:end)=[];
 end

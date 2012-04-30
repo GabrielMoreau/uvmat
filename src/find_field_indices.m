@@ -22,9 +22,11 @@
 %   
 % INPUT:
 % Data: structure representing fields, output of check_field_structure
-%            .ListDimName: cell listing the names of the array dimensions
-%            .ListVarName: cell listing the names of the variables
-%            .VarDimIndex: cell containing the set of dimension indices (in list .ListDimName) for each variable of .ListVarName
+%            .ListVarName: cell array listing the names (cahr strings) of the variables
+%            .VarDimName: cell array of cells containing the set of dimension names for each variable of .ListVarName
+%            .VarAttribute: cell array of structures containing the variable attributes: 
+%                     .VarAttribute{ilist}.key=value, where ilist is the variable
+%                     index, key is the name of the attribute, value its value (char string or number)
 %
 % HELP: 
 % to get the dimensions of arrays common to the field #icell

@@ -48,7 +48,6 @@
 
 function [Field,VelTypeOut,errormsg]=read_civdata(filename,FieldNames,VelType,CivStage)
 errormsg='';
-VelTypeOut=VelType;%default
 %% default input
 if ~exist('VelType','var')
     VelType='';

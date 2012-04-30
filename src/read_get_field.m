@@ -30,6 +30,7 @@ test_vector=get(handles.check_vector,'Value');
 nbvar=0;
 empty_coord_x=0;
 empty_coord_y=0;
+empty_coord_z=0;
 %dimname_y={};
 ListVarName={};
 VarDimName={};

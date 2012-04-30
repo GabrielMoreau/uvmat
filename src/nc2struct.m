@@ -12,8 +12,8 @@
 %                    .ListVarName: list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
 %                    .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)                         
 %                    .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
-%                    .ListDimName=list of dimension (added information, not requested for field description)
-%                    .DimValue= vlalues of dimensions (added information, not requested for field description)
+%                  ListDimName=list of dimension (added information, not requested for field description)
+%                  DimValue= vlalues of dimensions (added information, not requested for field description)
 %  var_detect: vector with same length as the cell array ListVarName, = 1 for each detected variable and 0 else.
 %            var_detect=[] in the absence of input cell array 
 %  ichoice: index of the selected line in the case of multiple choice 
@@ -107,10 +107,7 @@ if ~isequal(hhh,'')
         end
         try
             if ischar(valuestr) %& length(valuestr)<200 & double(valuestr)<=122 & double(valuestr)>=48 %usual characters
-               % valuestr=regexprep(valuestr,{'\\','\/','\.','\-',' '},{'_','_','_','_','_'})%remove  '\','.' or '-' if exists
                 eval(['Data.' keystr '=''' valuestr ''';'])
-%             elseif isempty(valuestr)
-%                 eval(['Data.' keystr '=[];'])
             elseif isnumeric(valuestr)
                 eval(['Data.' keystr '=valuestr;'])
             else
@@ -206,8 +203,8 @@ if ~isequal(hhh,'')
     %% select the dimensions used for the set of input variables
     if ~isempty(var_index)      
         dim_index=find(flag_used);%list of netcdf dimensions indices corresponding to used dimensions 
-        Data.ListDimName=ListDimNameNetcdf(dim_index); 
-        Data.DimValue=dim_value(dim_index);
+        ListDimName=ListDimNameNetcdf(dim_index); 
+        DimValue=dim_value(dim_index);
     end
     
     %% get the values of the input variables

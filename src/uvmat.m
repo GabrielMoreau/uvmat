@@ -1988,21 +1988,18 @@ end
 %% read the first input field if a filename has been introduced
 if ~isempty(filename)
     ObjectName=filename;
-    FieldName=[];%default
-    VelType=[];%default
-   % FileExt=get(handles.FileExt,'String');
-    FileType=UvData.FileType{1};
-    switch FileType
-        %     if strcmp(Ext,'.nc')||strcmp(Ext,'.cdf')
+    FieldName='';%default
+    VelType='';%default
+%     FileType=UvData.FileType{1};
+    switch UvData.FileType{1}
         case {'civx','civdata','netcdf'};
             list_fields=get(handles.Fields,'String');% list menu fields
-            index_fields=get(handles.Fields,'Value');% selected string index
-            FieldName= list_fields{index_fields}; % selected field
+  %          index_fields=get(handles.Fields,'Value');% selected string index
+            FieldName= list_fields{get(handles.Fields,'Value')}; % selected field
             if ~strcmp(FieldName,'get_field...')
                 if get(handles.FixVelType,'Value')
                     VelTypeList=get(handles.VelType,'String');
                     VelType=VelTypeList{get(handles.VelType,'Value')};
-%                     VelType=setfield(handles);% read the velocity type.
                 end
             end
             if strcmp(FieldName,'velocity')
@@ -2028,7 +2025,7 @@ if ~isempty(filename)
     ParamIn.FieldName=FieldName;
     ParamIn.VelType=VelType;
     ParamIn.GUIName='get_field';
-    [Field{1},ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num_i1);
+    [Field{1},ParamOut,errormsg] = read_field(ObjectName,UvData.FileType{1},ParamIn,num_i1);
     if ~isempty(errormsg)
         errormsg=['error in reading ' filename ': ' errormsg];
         return
@@ -2055,9 +2052,8 @@ if ~isempty(filename_1)
         return
     end
     Name=filename_1;
-    FileType_1=UvData.FileType{2};
-    switch FileType_1
-        %     if strcmp(Ext,'.nc')||strcmp(Ext,'.cdf')
+%     FileType_1=UvData.FileType{2};
+    switch UvData.FileType{2}
         case {'civx','civdata','netcdf'};
             list_fields=get(handles.Fields_1,'String');% list menu fields
             FieldName_1= list_fields{get(handles.Fields_1,'Value')}; % selected field
@@ -2065,7 +2061,6 @@ if ~isempty(filename_1)
                 if get(handles.FixVelType,'Value')
                     VelTypeList=get(handles.VelType_1,'String');
                     VelType_1=VelTypeList{get(handles.VelType_1,'Value')};% read the velocity type.
-%                     VelType_1=setfield(handles);% read the velocity type.
                 end
             end
             if strcmp(FieldName_1,'velocity')
@@ -2101,7 +2096,7 @@ if ~isempty(filename_1)
         ParamIn.FieldName=FieldName_1;
         ParamIn.VelType=VelType_1;
         ParamIn.GUIName='get_field_1';
-        [Field{2},ParamOut_1,errormsg] = read_field(Name,FileType_1,ParamIn,num_i1);
+        [Field{2},ParamOut_1,errormsg] = read_field(Name,UvData.FileType{2},ParamIn,num_i1);
         if ~isempty(errormsg)
             errormsg=['error in reading ' FieldName_1 ' in ' filename_1 ': ' errormsg];
             return
@@ -2123,12 +2118,12 @@ end
 %% update the display menu for the first velocity type (first menuline)
 test_veltype=0;
 % if ~isequal(FileType,'netcdf')|| isequal(FieldName,'get_field...')
-if (strcmp(FileType,'civx')||strcmp(FileType,'civdata'))&& ~strcmp(FieldName,'get_field...')
+if (strcmp(UvData.FileType{1},'civx')||strcmp(UvData.FileType{1},'civdata'))&& ~strcmp(FieldName,'get_field...')
     test_veltype=1;
     set(handles.VelType,'Visible','on')
     set(handles.VelType_1,'Visible','on')
     set(handles.FixVelType,'Visible','on')
-    menu=set_veltype_display(ParamOut.CivStage,FileType);
+    menu=set_veltype_display(ParamOut.CivStage,UvData.FileType{1});
     index_menu=strcmp(ParamOut.VelType,menu);%look for VelType in  the menu
     index_val=find(index_menu,1);
     if isempty(index_val)
@@ -2153,7 +2148,7 @@ if isempty(filename_1)
     set(handles.Fields_1,'Value',1); %update the field menu
     set(handles.Fields_1,'String',[{''};ParamOut.FieldList]); %update the field menu
 else
-    if (~strcmp(FileType_1,'netcdf')&&~strcmp(FileType_1,'civdata')&&~strcmp(FileType_1,'civx'))|| isequal(FieldName_1,'get_field...')
+    if (~strcmp(UvData.FileType{2},'netcdf')&&~strcmp(UvData.FileType{2},'civdata')&&~strcmp(UvData.FileType{2},'civx'))|| isequal(FieldName_1,'get_field...')
         set(handles.VelType_1,'Visible','off')
     else 
         test_veltype_1=1;
@@ -2227,16 +2222,16 @@ if ~isempty(transform)
         Field{1}=transform(Field{1},XmlData);
     end
     %% update tps in phys coordinates if needed
-    if (strcmp(VelType,'filter1')||strcmp(VelType,'filter2'))&& strcmp(FileType,'civdata')&&isfield(Field{1},'U')&& isfield(Field{1},'V')
+    if (strcmp(VelType,'filter1')||strcmp(VelType,'filter2'))&& strcmp(UvData.FileType{1},'civdata')&&isfield(Field{1},'U')&& isfield(Field{1},'V')
         Field{1}.X=Field{1}.X(Field{1}.FF==0);
         Field{1}.Y=Field{1}.Y(Field{1}.FF==0);
         Field{1}.U=Field{1}.U(Field{1}.FF==0);
         Field{1}.V=Field{1}.V(Field{1}.FF==0);
         [Field{1}.SubRange,Field{1}.NbSites,Field{1}.Coord_tps,Field{1}.U_tps,Field{1}.V_tps]=filter_tps([Field{1}.X Field{1}.Y],Field{1}.U,Field{1}.V,[],Field{1}.Patch1_SubDomain,0);
     end
-    if numel(Field)==2 && ~test_keepdata_1 && isequal(FileType_1(1:3),'civ') && ~isequal(ParamOut_1.FieldName,'get_field...')%&&~isempty(FieldName_1)
+    if numel(Field)==2 && ~test_keepdata_1 && isequal(UvData.FileType{2}(1:3),'civ') && ~isequal(ParamOut_1.FieldName,'get_field...')%&&~isempty(FieldName_1)
         %update tps in phys coordinates if needed
-        if (strcmp(VelType_1,'filter1')||strcmp(VelType_1,'filter2'))&& strcmp(FileType_1,'civdata')&&isfield(Field{2},'U')&& isfield(Field{2},'V')
+        if (strcmp(VelType_1,'filter1')||strcmp(VelType_1,'filter2'))&& strcmp(UvData.FileType{2},'civdata')&&isfield(Field{2},'U')&& isfield(Field{2},'V')
             Field{2}.X=Field{2}.X(Field{2}.FF==0);
             Field{2}.Y=Field{1}.Y(Field{2}.FF==0);
             Field{2}.U=Field{1}.U(Field{2}.FF==0);
@@ -2255,7 +2250,9 @@ end
 % end
 
 %% combine the two input fields (e.g. substract velocity fields)
+Field{1}.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
 if numel(Field)==2
+    Field{2}.FieldList=[{ParamOut_1.FieldName} {ParamOut_1.ColorVar}];
    [UvData.Field,errormsg]=sub_field(Field{1},Field{2});  
 else
    UvData.Field=Field{1};
@@ -2264,12 +2261,13 @@ if ~isempty(errormsg)
     errormsg=['error in uvmat/refresh_field/sub_field:' errormsg];
     return
 end
-UvData.Field.FieldList={FieldName}; % TODO: to generalise, used for proj_field with tps interpolation
+%UvData.Field.FieldList={FieldName}; % TODO: to generalise, used for proj_field with tps interpolation
+
 
 %% get bounds and mesh (needed for mouse action and to open set_object)
 test_x=0;
 test_z=0;% test for unstructured z coordinate
-[UvData.Field,errormsg]=check_field_structure(UvData.Field);
+[errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(UvData.Field);
 if ~isempty(errormsg)
     errormsg=['error in uvmat/refresh_field/check_field_structure: ' errormsg];
     return
@@ -2335,15 +2333,15 @@ if exist('XName','var')
         end
     else
         VarIndex=CellVarIndex{imax}; % list of variable indices
-        DimIndex=UvData.Field.VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
-        nbpoints_x=UvData.Field.DimValue(DimIndex(NbDim));
+        DimIndex=VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
+        nbpoints_x=DimValue(DimIndex(NbDim));
         DX=(XMax-XMin)/(nbpoints_x-1);
         if NbDim >1
-            nbpoints_y=UvData.Field.DimValue(DimIndex(NbDim-1));
+            nbpoints_y=DimValue(DimIndex(NbDim-1));
             DY=(YMax-YMin)/(nbpoints_y-1);
         end
         if NbDim==3
-            nbpoints_z=UvData.Field.DimValue(DimIndex(1));
+            nbpoints_z=DimValue(DimIndex(1));
             DZ=(ZMax-ZMin)/(nbpoints_z-1);
             UvData.Field.Mesh=(DX*DY*DZ)^(1/3);
             UvData.Field.ZMax=ZMax;
@@ -2351,6 +2349,15 @@ if exist('XName','var')
         else
             UvData.Field.Mesh=DX;%sqrt(DX*DY);
         end
+    end
+    % adjust the mesh to a value 1, 2 , 5 *10^n
+    ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
+    if UvData.Field.Mesh/ord>=5
+        UvData.Field.Mesh=5*ord;
+    elseif UvData.Field.Mesh/ord>=2
+        UvData.Field.Mesh=2*ord;
+    else
+        UvData.Field.Mesh=ord;
     end
 end
 
@@ -2361,14 +2368,7 @@ if NbDim==3% && UvData.NewSeries
     ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
     ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
     if ~isempty(hset_object) %if set_object is detected
-%         hhset_object=guidata(hset_object);
-% %         ZBounds_old(1)=get(hhset_object.z_slider,'Min');
-% %         ZBounds_old(2)=get(hhset_object.z_slider,'Max');
-% %         if isequal(ZBounds_old,ZBounds)
-%             test_set_object=0;% do not refresh the GUI set_object
-%         else
-            delete(hset_object);% delete the GUI set_object if it does not fit 
-%         end
+          delete(hset_object);% delete the GUI set_object if it does not fit 
     end
     if test_set_object% reinitiate the GUI set_object
         delete_object(1);% delete the current projection object in the list UvData.Object, delete its graphic representations and update the list displayed in handles.ListObject and 2
@@ -2379,10 +2379,7 @@ if NbDim==3% && UvData.NewSeries
         UvData.Object{1}.RangeZ=UvData.Field.Mesh;%main plotting plane
         UvData.Object{1}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
         UvData.Object{1}.Angle=[0 0 0];
-%         UvData.Object{1}.Theta=0;
-%         UvData.Object{1}.Psi=0;
         UvData.Object{1}.HandlesDisplay=plot(0,0,'Tag','proj_object');% A REVOIR
-%         PlotHandles=get_plot_handles(handles);
         UvData.Object{1}.Name='1-PLANE';
         UvData.Object{1}.enable_plot=1;
         set_object(UvData.Object{1},handles,ZBounds);
@@ -2459,7 +2456,7 @@ if ~isfield(PlotParam{1},'Vectors')
      PlotParam{1}.Vectors.ListColorScalar={'ima_cor'};
      PlotParam{1}.Vectors.ListColorCode= {'rgb'};
 end
-keeplim(1)=get(handles.CheckFixLimits,'Value');% test for fixed graph limits
+%keeplim(1)=get(handles.CheckFixLimits,'Value');% test for fixed graph limits
 PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
 
 % second projection object (view_field display)
@@ -2470,7 +2467,7 @@ if length( IndexObj)>=2
         haxes(2)=plot_handles{2}.axes3;
         %PlotParam{2}=read_plot_param(plot_handles{2});%read plotting parameters on the viewinterface
         PlotParam{2}=read_GUI(handles.uvmat);%read plotting parameters on the uvmat interface
-        keeplim(2)=get(plot_handles{2}.CheckFixLimits,'Value');
+       % keeplim(2)=get(plot_handles{2}.CheckFixLimits,'Value');
         PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
     end
 end
@@ -2478,24 +2475,11 @@ end
 %loop on the projection objects: one or two
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);
-%     if iobj==1 && ~isfield(UvData.Object{iobj},'Type')% case with no projection (only for the first empty object)
-%         ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
-%         if UvData.Field.Mesh/ord>=5
-%             mesh=5*ord;
-%         elseif UvData.Field.Mesh/ord>=2
-%             mesh=2*ord;
-%         else
-%             mesh=ord;
-%         end
-%         coord_x=UvData.Field.XMin:mesh:UvData.Field.XMax;
-%         coord_y=UvData.Field.YMin:mesh:UvData.Field.YMax;
-%         [XI,YI]=meshgrid(coord_x,coord_y);
-%         XI=reshape(XI,[],1);
-%         YI=reshape(YI,[],1);
-%         [ObjectData,errormsg]=calc_field({FieldName},UvData.Field,[XI YI]);
-%     else
+     if iobj==1 && ~isfield(UvData.Object{iobj},'Type')% case with no projection (only for the first empty object)
+         [ObjectData,errormsg]=calc_field(UvData.Field.FieldList,UvData.Field);
+     else
         [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
-%     end
+     end
     if ~isempty(errormsg)
         return
     end
@@ -2538,18 +2522,19 @@ for imap=1:numel(IndexObj)
                 end
             end
             ObjectData.ListVarName(ind_off)=[];
-            ObjectData.VarDimIndex(ind_off)=[];
+            VarDimIndex(ind_off)=[];
             ind_off=[];
-            for ilist=1:length(ObjectData.ListDimName)
-                if isequal(ObjectData.ListDimName{ilist},'MaskX') || isequal(ObjectData.ListDimName{ilist},'MaskY')
+            for ilist=1:length(ListDimName)
+                if isequal(ListDimName{ilist},'MaskX') || isequal(ListDimName{ilist},'MaskY')
                     ind_off=[ind_off ilist];
                 end
             end
-            ObjectData.ListDimName(ind_off)=[];
-            ObjectData.DimValue(ind_off)=[];
+            ListDimName(ind_off)=[];
+            DimValue(ind_off)=[];
         end
     end
     if ~isempty(ObjectData)
+        
         PlotType='none'; %default
         if imap==2 && isempty(view_field_handle)
             view_field(ObjectData)
@@ -3236,11 +3221,11 @@ if isequal(get(handles.VOLUME,'Value'),1)
     if isfield(UvData,'CoordType')
         data.CoordType=UvData.CoordType;
     end
-    if isfield(UvData,'Mesh')&~isempty(UvData.Mesh)
-        data.RangeY=UvData.Mesh;
-        data.RangeX=UvData.Mesh;
-        data.DX=UvData.Mesh;
-        data.DY=UvData.Mesh;
+    if isfield(UvData.Field,'Mesh')&~isempty(UvData.Field.Mesh)
+        data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
+        data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
+        data.DX=UvData.Field.Mesh;
+        data.DY=UvData.Field.Mesh;
     elseif isfield(UvData.Field,'AX')&isfield(UvData.Field,'AY')& isfield(UvData.Field,'A')%only image
         np=size(UvData.Field.A);
         meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/np(2);
@@ -4327,26 +4312,18 @@ set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])
 data.Coord=[0 0]; %default
 if isfield(UvData,'Field')
     Field=UvData.Field;
-    if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
-        ord=10^(floor(log10(Field.Mesh)));%order of magnitude
-        if Field.Mesh/ord>=5
-            mesh=5*ord;
-        elseif Field.Mesh/ord>=2
-            mesh=2*ord;
-        else
-            mesh=ord;
-        end
-        data.RangeX=mesh;
-        data.RangeY=mesh;
-        data.DX=mesh;
-        data.DY=mesh;
-    elseif isfield(Field,'AX')&& isfield(Field,'AY')&& isfield(Field,'A')%only image
-        np=size(Field.A);
-        meshx=(Field.AX(end)-Field.AX(1))/np(2);
-        meshy=abs(Field.AY(end)-Field.AY(1))/np(1);
-        data.RangeY=max(meshx,meshy);
-        data.RangeX=max(meshx,meshy);
-        data.DX=max(meshx,meshy);
+    if isfield(UvData.Field,'Mesh')&&~isempty(UvData.Field.Mesh)
+        data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
+        data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
+        data.DX=UvData.Field.Mesh;
+        data.DY=UvData.Field.Mesh;
+%     elseif isfield(Field,'AX')&& isfield(Field,'AY')&& isfield(Field,'A')%only image
+%         np=size(Field.A);
+%         meshx=(Field.AX(end)-Field.AX(1))/np(2);
+%         meshy=abs(Field.AY(end)-Field.AY(1))/np(1);
+%         data.RangeY=max(meshx,meshy);
+%         data.RangeX=max(meshx,meshy);
+%         data.DX=max(meshx,meshy);
     end
     if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
          data.Coord=[0 0 0]; %default
@@ -4359,7 +4336,7 @@ if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
 end
 hset_object=findobj(allchild(0),'tag','set_object');
-IndexObj=get(handles.ListObject,'Value')
+IndexObj=get(handles.ListObject,'Value');
 if ~isempty(hset_object)
     delete(hset_object)% delete existing version of set_object
 end
