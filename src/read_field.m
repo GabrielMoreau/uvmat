@@ -63,6 +63,7 @@ switch FileType
                     InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
                     [Field,ParamOut.VelType,errormsg]=read_civdata(ObjectName,InputField,ParamIn.VelType,Data.CivStage);
                     CivStage=Field.CivStage;
+                    ParamOut.CivStage=Field.CivStage;
                     %case of old civx conventions
                 elseif ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)
                     ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default

@@ -114,7 +114,7 @@ if ~isempty(r)% FileName end matches num1
 else% FileName ends with a letter
     %r=regexp(FileName,'.*[^a^b^A^B](?<end_string>ab|AB|[abAB])\>','names');
     NomType='';
-    r=regexp(RootFile,'\D(?<num1>\d+)(?<end_string>[a-z]|[A-Z]|[a-z][a-z]|[A-Z][A-Z])$','names');
+    r=regexp(RootFile,'\D*(?<num1>\d+)(?<end_string>[a-z]|[A-Z]|[a-z][a-z]|[A-Z][A-Z])$','names');
     if ~isempty(r)
         NomType=get_type(r.end_string);
         RootFile=regexprep(RootFile,[r.num1 r.end_string '$'],'');

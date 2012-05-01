@@ -16,12 +16,14 @@
 % Field_1:matlab structure representing the second field
 
 function [SubData,errormsg]=sub_field(Field,Field_1)
+
+%% global attributes
 test_attr=0;
 if isfield(Field,'ListGlobalAttribute')
     SubData.ListGlobalAttribute=Field.ListGlobalAttribute;
     for ilist=1:numel(Field.ListGlobalAttribute)
         AttrName=Field.ListGlobalAttribute{ilist};
-        eval(['SubData.' AttrName '=Field.' AttrName ';'])
+        SubData.(AttrName)=Field.(AttrName);
     end
     test_attr=1;
 end
@@ -48,18 +50,20 @@ if isfield(Field_1,'ListGlobalAttribute')
         end
     end
 end
+
+%% variables
 SubData.ListVarName=Field.ListVarName;
 SubData.VarDimName=Field.VarDimName;
 if isfield(Field,'VarAttribute')
     SubData.VarAttribute=Field.VarAttribute;
 end
-%reproduce Field by default
+%reproduce the first field Field by default
 for ivar=1:numel(Field.ListVarName)
    VarName=Field.ListVarName{ivar};
-   eval(['SubData.' VarName '=Field.' VarName ';']) 
+   SubData.(VarName)=Field.(VarName);
 end
 
-%fields     
+%% check the two input fields     
 [CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_indices(Field);
 if ~isempty(errormsg)
     errormsg=['invalid  first input to sub_field:' errormsg];
@@ -110,15 +114,15 @@ if numel(ivar_C_1)>1
     return
 end
 
-%substract two vector fields or two scalars
+%% substract two vector fields or two scalars
 if (testU && testU_1) || (~testU && ~testU_1)
    %check coincidence in positions
    %unstructured coordinates for the first field
    if testX  
        XName=Field.ListVarName{VarType.coord_x};
        YName=Field.ListVarName{VarType.coord_y};
-       eval(['vec_X=Field.' XName ';']) 
-       eval(['vec_Y=Field.' YName ';'])
+       vec_X=Field.(XName);
+       vec_Y=Field.(YName);
        nbpoints=numel(vec_X);
        vec_X=reshape(vec_X,nbpoints,1);
        vec_Y=reshape(vec_Y,nbpoints,1);
@@ -360,7 +364,8 @@ if ~testU && testU_1
             case VName_1
                 VName_1_1=[VName_1 '_1']; 
         end
-    end     
+    end    
+    
     if ~testX_1
           DimCell=[{XName_1_1} {YName_1_1}];
     end
@@ -375,9 +380,9 @@ if ~testU && testU_1
         end
         SubData.VarAttribute=[SubData.VarAttribute {XAttr} {YAttr} {UAttr} {VAttr}];
     end
-    eval(['SubData.' XName_1_1 '=Field_1.' XName_1 ';'])
-    eval(['SubData.' YName_1_1 '=Field_1.' YName_1 ';'])
-    eval(['SubData.' UName_1_1 '=Field_1.' UName_1 ';'])
-    eval(['SubData.' VName_1_1 '=Field_1.' VName_1 ';'])  
+    SubData.(XName_1_1)=Field_1.(XName_1);
+    SubData.(YName_1_1)=Field_1.(YName_1);
+    SubData.(UName_1_1)=Field_1.(UName_1);
+    SubData.(VName_1_1)=Field_1.(VName_1); 
 end
   

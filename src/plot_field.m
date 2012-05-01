@@ -879,6 +879,12 @@ if test_ima
             set(hima,'XData',AX);
             set(hima,'YData',AY);
         end
+        % set the transparency to 0.5 if vectors are also plotted
+        if test_vec
+            set(hima,'AlphaData',0.5)
+        else
+            set(hima,'AlphaData',1)
+        end
     end
     test_ima=1;
     

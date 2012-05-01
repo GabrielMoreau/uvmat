@@ -53,8 +53,8 @@ if isfield(PlotParam,'Vectors')
         MaxC=PlotParam.Vectors.MaxC;
         set(handles.num_MinVec,'String', num2str(MinC,3));
         set(handles.num_MaxVec,'String',num2str(MaxC,3));
-        list=get(handles.ListColorCode,'String');
-        ichoice=get(handles.ListColorCode,'Value');
+        list=get(handles.ColorCode,'String');
+        ichoice=get(handles.ColorCode,'Value');
         color_option=list{ichoice};
         test3color=strcmp(color_option,'rgb')||strcmp(color_option,'bgr');
         if test3color% need to update color thresholds
@@ -62,12 +62,14 @@ if isfield(PlotParam,'Vectors')
             set(handles.num_ColCode2,'Visible','on')
             set(handles.Slider1,'Visible','on')
             set(handles.Slider2,'Visible','on')
-            ColCode1=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode1;
-            ColCode2=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode2;
-            set(handles.num_ColCode1,'String',num2str(ColCode1,3))
-            set(handles.num_ColCode2,'String',num2str(ColCode2,3))
-            set(handles.Slider1,'Value',PlotParam.Vectors.ColCode1)
-            set(handles.Slider2,'Value',PlotParam.Vectors.ColCode2)
+            %ColCode1=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode1;
+            %ColCode2=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode2;
+%             ColCode1=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode1;
+            %ColCode2=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode2;
+            set(handles.num_ColCode1,'String',num2str(PlotParam.Vectors.ColCode1,3))
+            set(handles.num_ColCode2,'String',num2str(PlotParam.Vectors.ColCode2,3))
+            set(handles.Slider1,'Value',(PlotParam.Vectors.ColCode1-MinC)/(MaxC-MinC))
+            set(handles.Slider2,'Value',(PlotParam.Vectors.ColCode2-MinC)/(MaxC-MinC))
         else
             set(handles.num_ColCode1,'Visible','off')
             set(handles.num_ColCode2,'Visible','off')

@@ -767,3 +767,23 @@ colormap(map);%transmit the current colormap to the zoom fig
 colorbar
 
 
+
+
+% --- Executes on selection change in ColorCode.
+function ColorCode_Callback(hObject, eventdata, handles)
+% hObject    handle to ColorCode (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns ColorCode contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from ColorCode
+
+
+% --- Executes on selection change in ColorScalar.
+function ColorScalar_Callback(hObject, eventdata, handles)
+% hObject    handle to ColorScalar (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns ColorScalar contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from ColorScalar

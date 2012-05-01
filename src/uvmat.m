@@ -768,6 +768,12 @@ switch FileType
             if ~isfield(Input,'RootFile_1')||strcmp(Input.RootFile_1,'"')
                 Input.RootFile_1=Input.RootFile;
             end
+            if ~isfield(Input,'FileExt_1')||strcmp(Input.FileExt_1,'"')
+                Input.FileExt_1=Input.FileExt;
+            end
+            if ~isfield(Input,'NomType_1')||strcmp(Input.NomType_1,'"')
+                Input.NomType_1=Input.NomType;
+            end
             %updtate the indices of the second field series to correspond to the newly opened one
             FileName_1=fullfile_uvmat(Input.RootPath_1,Input.SubDir_1,Input.RootFile_1,Input.FileExt_1,Input.NomType_1,i1,i2,j1,j2);
             if exist(FileName_1,'file')
@@ -1073,7 +1079,7 @@ if ~testima
             set(handles_Fields,'String',{'get_field...'})
             col_vec={'get_field...'};
         end
-        set(handles.ListColorScalar,'String',col_vec)
+        set(handles.ColorScalar,'String',col_vec)
     end
 end
 set(handles.uvmat,'UserData',UvData)
@@ -2003,11 +2009,11 @@ if ~isempty(filename)
                 end
             end
             if strcmp(FieldName,'velocity')
-                list_code=get(handles.ListColorCode,'String');% list menu fields
-                index_code=get(handles.ListColorCode,'Value');% selected string index
+                list_code=get(handles.ColorCode,'String');% list menu fields
+                index_code=get(handles.ColorCode,'Value');% selected string index
                 if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
-                    list_code=get(handles.ListColorScalar,'String');% list menu fields
-                    index_code=get(handles.ListColorScalar,'Value');% selected string index
+                    list_code=get(handles.ColorScalar,'String');% list menu fields
+                    index_code=get(handles.ColorScalar,'Value');% selected string index
                     ParamIn.ColorVar= list_code{index_code}; % selected field
                 end
             end
@@ -2042,7 +2048,7 @@ if ~isempty(filename)
     end
 end
 
-%% choose a second field filename_1 if defined
+%% choose and read a second field filename_1 if defined
 VelType_1=[];%default
 FieldName_1=[];
 ParamOut_1=[];
@@ -2052,7 +2058,6 @@ if ~isempty(filename_1)
         return
     end
     Name=filename_1;
-%     FileType_1=UvData.FileType{2};
     switch UvData.FileType{2}
         case {'civx','civdata','netcdf'};
             list_fields=get(handles.Fields_1,'String');% list menu fields
@@ -2063,21 +2068,21 @@ if ~isempty(filename_1)
                     VelType_1=VelTypeList{get(handles.VelType_1,'Value')};% read the velocity type.
                 end
             end
-            if strcmp(FieldName_1,'velocity')
-                list_code=get(handles.ListColorCode,'String');% list menu fields
-                index_code=get(handles.ListColorCode,'Value');% selected string index
+            if strcmp(FieldName_1,'velocity')&& strcmp(get(handles.ColorCode,'Visible'),'on')
+                list_code=get(handles.ColorCode,'String');% list menu fields
+                index_code=get(handles.ColorCode,'Value');% selected string index
                 if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
-                    list_code=get(handles.ListColorScalar,'String');% list menu fields
-                    index_code=get(handles.ListColorScalar,'Value');% selected string index
-                    ParamIn.ColorVar= list_code{index_code}; % selected field
+                    list_code=get(handles.ColorScalar,'String');% list menu fields
+                    index_code=get(handles.ColorScalar,'Value');% selected string index
+                    ParamIn_1.ColorVar= list_code{index_code}; % selected field for vector color display                  
                 end
             end
         case 'video'
             Name=UvData.MovieObject{2};
         case 'vol' %TODO: update
             if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
-                ParamIn.Npy=UvData.XmlData.Npy;
-                ParamIn.Npx=UvData.XmlData.Npx;
+                ParamIn_1.Npy=UvData.XmlData.Npy;
+                ParamIn_1.Npx=UvData.XmlData.Npx;
             else
                 errormsg='Npx and Npy need to be defined in the xml file for volume images .vol';
                 return
@@ -2093,17 +2098,16 @@ if ~isempty(filename_1)
     if test_keepdata_1
         Field{2}=UvData.Field_1;% keep the stored field
     else
-        ParamIn.FieldName=FieldName_1;
-        ParamIn.VelType=VelType_1;
-        ParamIn.GUIName='get_field_1';
-        [Field{2},ParamOut_1,errormsg] = read_field(Name,UvData.FileType{2},ParamIn,num_i1);
+        ParamIn_1.FieldName=FieldName_1;
+        ParamIn_1.VelType=VelType_1;
+        ParamIn_1.GUIName='get_field_1';
+        [Field{2},ParamOut_1,errormsg] = read_field(Name,UvData.FileType{2},ParamIn_1,num_i1);
         if ~isempty(errormsg)
             errormsg=['error in reading ' FieldName_1 ' in ' filename_1 ': ' errormsg];
             return
         end
-        UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
+%         UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
     end
-    %     end
 end
 
 %% update uvmat interface
@@ -2138,34 +2142,52 @@ if (strcmp(UvData.FileType{1},'civx')||strcmp(UvData.FileType{1},'civdata'))&& ~
 else
     set(handles.VelType,'Visible','off')
 end
+% display the Fields menu from the input file and pick the selected one: 
 field_index=strcmp(ParamOut.FieldName,ParamOut.FieldList);
 set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
 set(handles.Fields,'Value',find(field_index,1))
 
 %% update the display menu for the second velocity type (second menuline)
+
 test_veltype_1=0;
 if isempty(filename_1)
     set(handles.Fields_1,'Value',1); %update the field menu
     set(handles.Fields_1,'String',[{''};ParamOut.FieldList]); %update the field menu
-else
+elseif ~test_keepdata_1
     if (~strcmp(UvData.FileType{2},'netcdf')&&~strcmp(UvData.FileType{2},'civdata')&&~strcmp(UvData.FileType{2},'civx'))|| isequal(FieldName_1,'get_field...')
         set(handles.VelType_1,'Visible','off')
-    else 
+    else
         test_veltype_1=1;
         set(handles.VelType_1,'Visible','on')
-        if ~get(handles.FixVelType,'Value')
+%         if ~get(handles.FixVelType,'Value')
             menu=set_veltype_display(ParamOut_1.CivStage);
             index_menu=strcmp(ParamOut_1.VelType,menu);
             set(handles.VelType_1,'Value',1+find(index_menu,1))
             set(handles.VelType_1,'String',[{''};menu])
-        end
+%         end
     end
+    % update the second field menu: the same quantity
+    set(handles.Fields_1,'String',[{''};ParamOut_1.FieldList]); %update the field menu
+    % display the Fields menu from the input file and pick the selected one: 
+    field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
+    set(handles.Fields_1,'Value',find(field_index,1)+1)  
+%     % synchronise  with the first menu if the first selection is not 'velocity'
+%     if ~strcmp(ParamOut.FieldName,'velocity')
+%         field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
+%         set(handles.Fields_1,'Value',field_index); %update the field menu
+%         ParamOut_1.FieldName=ParamOut.FieldName;
+%         set(handles.Fields_1,'String',ParamOut_1.FieldList)
+%     end
 end
 if test_veltype||test_veltype_1
      set(handles.FixVelType,'Visible','on')
 else
      set(handles.FixVelType,'Visible','off')
 end
+
+% field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
+% set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
+% set(handles.Fields,'Value',find(field_index,1))
     
 %% introduce w as background image by default for a new series (only for nbdim=2)
 if ~isfield(UvData,'NewSeries')
@@ -2210,7 +2232,6 @@ transform=transform_list{choice_value};%selected function handles
 if ~isempty(filename)
     Field{1}.ZIndex=z_index;
 end
-%px to phys or other transform on field
 if ~isempty(transform)
     if length(Field)>=2
         Field{2}.ZIndex=z_index;
@@ -2242,18 +2263,19 @@ if ~isempty(transform)
 end
 
 %% calculate scalar
-% if (strcmp(FileType,'civdata')||strcmp(FileType,'civx'))&&~strcmp(ParamOut.FieldName,'velocity')&& ~strcmp(ParamOut.FieldName,'get_field...');% ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
-%     Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
-% end
-% if numel(Field)==2 && ~test_keepdata_1 && (strcmp(FileType,'civdata')||strcmp(FileType,'civx'))  &&~strcmp(ParamOut.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
-%      Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
-% end
+if (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))%&&~strcmp(ParamOut.FieldName,'velocity')&& ~strcmp(ParamOut.FieldName,'get_field...');% ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
+    Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
+end
+if numel(Field)==2 && ~test_keepdata_1 && (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))  &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
+     Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
+end
 
 %% combine the two input fields (e.g. substract velocity fields)
-Field{1}.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
+%Field{1}.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
 if numel(Field)==2
-    Field{2}.FieldList=[{ParamOut_1.FieldName} {ParamOut_1.ColorVar}];
+%    Field{2}.FieldList=[{ParamOut_1.FieldName} {ParamOut_1.ColorVar}];
    [UvData.Field,errormsg]=sub_field(Field{1},Field{2});  
+   UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
 else
    UvData.Field=Field{1};
 end
@@ -2422,10 +2444,10 @@ UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_c
 set(handles.uvmat,'UserData',UvData)
 
 %% reset the min and max of scalar if only the mask is displayed(TODO: check the need)
-if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
-    set(handles.num_MinA,'String','0')
-    set(handles.num_MaxA,'String','255')
-end
+% if isfield(UvData,'Mask')&& ~isfield(UvData,'A')
+%     set(handles.num_MinA,'String','0')
+%     set(handles.num_MaxA,'String','255')
+% end
 
 %% Plot the projections on the selected  projection objects
 % main projection object (uvmat display)
@@ -2447,14 +2469,15 @@ else
 end
 %PlotParam{1}=read_plot_param(handles);%read plotting parameters on the uvmat interfac
 PlotParam{1}=read_GUI(handles.uvmat);
+%default settings if vectors not visible (should not be needed)
 if ~isfield(PlotParam{1},'Vectors')
     PlotParam{1}.Vectors.MaxVec=1;
     PlotParam{1}.Vectors.MinVec=0;
     PlotParam{1}.Vectors.CheckFixVecColor=1;
     PlotParam{1}.Vectors.ColCode1=0.33;
     PlotParam{1}.Vectors.ColCode2=0.66;
-     PlotParam{1}.Vectors.ListColorScalar={'ima_cor'};
-     PlotParam{1}.Vectors.ListColorCode= {'rgb'};
+    PlotParam{1}.Vectors.ColorScalar={'ima_cor'};
+    PlotParam{1}.Vectors.ColorCode= {'rgb'};
 end
 %keeplim(1)=get(handles.CheckFixLimits,'Value');% test for fixed graph limits
 PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
@@ -2465,21 +2488,19 @@ if length( IndexObj)>=2
     if ~isempty(view_field_handle)
         plot_handles{2}=guidata(view_field_handle);
         haxes(2)=plot_handles{2}.axes3;
-        %PlotParam{2}=read_plot_param(plot_handles{2});%read plotting parameters on the viewinterface
         PlotParam{2}=read_GUI(handles.uvmat);%read plotting parameters on the uvmat interface
-       % keeplim(2)=get(plot_handles{2}.CheckFixLimits,'Value');
         PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
     end
 end
 
-%loop on the projection objects: one or two
+%% loop on the projection objects: one or two
 for imap=1:numel(IndexObj)
     iobj=IndexObj(imap);
-     if iobj==1 && ~isfield(UvData.Object{iobj},'Type')% case with no projection (only for the first empty object)
-         [ObjectData,errormsg]=calc_field(UvData.Field.FieldList,UvData.Field);
-     else
+%      if imap==2 || check_proj==0  % field not yet projected) && ~isfield(UvData.Object{iobj},'Type')% case with no projection (only for the first empty object)
+% %          [ObjectData,errormsg]=calc_field(UvData.Field.FieldList,UvData.Field);
+% %      else
         [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
-     end
+%      end
     if ~isempty(errormsg)
         return
     end
@@ -2990,27 +3011,26 @@ if isfield(UvData,'Field_1')
 end
 UvData.filename_1='';% desactivate the use of a constant second file
 list_fields=get(handles.Fields,'String');% list menu fields
-index_fields=get(handles.Fields,'Value');% selected string index
-field= list_fields{index_fields(1)}; % selected string
+field= list_fields{get(handles.Fields,'Value')}; % selected string
 list_fields=get(handles.Fields_1,'String');% list menu fields
-index_fields=get(handles.Fields_1,'Value');% selected string index
-field_1= list_fields{index_fields(1)}; % selected string for the second field
-if isequal(field_1,'')||(numel(UvData.FileType)>=2 && strcmp(UvData.FileType{2},'image'))
+field_1= list_fields{get(handles.Fields_1,'Value')}; % selected string for the second field
+if isempty(field_1)%||(numel(UvData.FileType)>=2 && strcmp(UvData.FileType{2},'image'))
     set(handles.SubField,'Value',0)
-    check_new=1;
+%     check_new=1;
     SubField_Callback(hObject, eventdata, handles)
-    if isempty(field_1)%remove second field if 'blank' field is selected
+%     if isempty(field_1)%remove second field if 'blank' field is selected
         return
-    end
+%     end
+else
+    set(handles.SubField,'Value',1)%state that a second field is now entered
 end
-set(handles.SubField,'Value',1)%state that a second field is now entered
 
 %% read the rootfile input display
-[RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1,NomTYpe_1]=read_file_boxes_1(handles);
+[RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
 filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
-set(handles.FileIndex_1,'Visible','on')
-set(handles.FileExt_1,'Visible','on')
+% set(handles.FileIndex_1,'Visible','on')
+% set(handles.FileExt_1,'Visible','on')
 switch field_1
     case 'get_field...'
         set_veltype_display(0) % no veltype display
@@ -3026,20 +3046,9 @@ switch field_1
         set(handles.transform_fct,'Value',1)% no transform by default
         set(handles.path_transform,'String','')
     case 'image'
-        % transform netc type to the corresponding image type
-        NomType=get(handles.NomType,'string');
-        check_letter=~isempty(regexp(NomType,'[ab|AB]$'));%detect pair label by letter
-%         NomType_1=NomType;
-%         if check_letter
-%             NomType_1=NomType_1(1:end-1);
-%         else
-%             r=regexp(NomType_1,'.-(?<num2>\d+$','names');
-%             if ~isempty(r)
-%                 NomType_1=regexprep(NomType_1,['-' r.num2],'');
-%             end
-%         end
-        imagename=fullfile_uvmat(RootPath_1,'',RootFile_1,'.png',NomType,i1,[],j1);
-        if ~exist(imagename,'file')
+        % guess the image name corresponding to the current netcdf name (no unique correspondance)
+        imagename=fullfile_uvmat(RootPath_1,'',RootFile_1,'.png',get(handles.NomType,'String'),i1,[],j1);
+        if ~exist(imagename,'file') % browse for images if it is not found
             [FileName,PathName] = uigetfile( ...
                 {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';
                 '*.jpg',' jpeg image files'; ...
@@ -3049,14 +3058,17 @@ switch field_1
                 '*.vol','.volume images (png)'; ...
                 '*.*',  'All Files (*.*)'}, ...
                 'Pick an image',imagename);
-            % display the selected field and related information
             imagename=[PathName FileName];
         end
-        set(handles.TitleNpx,'Visible','on')% visible npx,pxcm... buttons
-        set(handles.TitleNpy,'Visible','on')
-        set(handles.num_Npx,'Visible','on')
-        set(handles.num_Npy,'Visible','on')
-        display_file_name(hObject, eventdata, handles,imagename,2)%display the imag
+        if ~ischar(imagename)% quit if the browser has  been closed
+            set(handles.SubField,'Value',0)
+        else %valid browser input:  display the selected image
+            set(handles.TitleNpx,'Visible','on')% visible npx,pxcm... buttons
+            set(handles.TitleNpy,'Visible','on')
+            set(handles.num_Npx,'Visible','on')
+            set(handles.num_Npy,'Visible','on')
+            display_file_name(hObject, eventdata, handles,imagename,2)%display the imag
+        end
     otherwise
         if check_new
             UvData.FileType{2}=UvData.FileType{1};
@@ -3070,7 +3082,6 @@ switch field_1
             set(handles.num_Npy,'Visible','off')
         end
         set(handles.uvmat,'UserData',UvData)
-%         setfield(handles);% update the field structure ('civ1'....)
         if ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
             run0_Callback(hObject, eventdata, handles)
         end
@@ -3111,17 +3122,14 @@ switch FileType
             imax=4;
         end
 end
-
-
-
 menu=menu(1:imax);
 
 %------------------------------------------------------------------------
 % --- Executes on button press in FixVelType.
 function FixVelType_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-val=get(handles.FixVelType,'Value');
-if ~val
+% refresh the current plot if the fixed  veltype is unselected
+if ~get(handles.FixVelType,'Value')
     run0_Callback(hObject, eventdata, handles)
 end
 
@@ -3136,17 +3144,15 @@ run0_Callback(hObject, eventdata, handles)
 % --- Executes on button press in VelType_1.
 function VelType_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-  
 set(handles.FixVelType,'Value',1)% the velocity type is now imposed by the GUI (not automatic)
 UvData=get(handles.uvmat,'UserData');
-%refresh field with a second filename=first fiel name
+%refresh field with a second filename=first file name
 set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow   
 InputFile=read_GUI(handles.InputFile);
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 filename=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-% VelTypeList=get(handles.VelType_1,'String');
-% VelType_1=VelTypeList{get(handles.VelType_1,'Value')};
+
 if isempty(InputFile.VelType_1)
         filename_1='';% we plot the current field without the second field
         set(handles.SubField,'Value',0)
@@ -3154,11 +3160,9 @@ if isempty(InputFile.VelType_1)
 elseif get(handles.SubField,'Value')% if subfield is already 'on'
       [RootPath_1,SubDir_1,RootFile_1,FileIndices_1,FileExt_1]=read_file_boxes_1(handles);
      filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndices_1 FileExt_1];
-%       UvData.VelType{2}=InputFile.VelType_1;
 else
-     filename_1=filename;% we compare two fields in the same file
+     filename_1=filename;% we compare two fields in the same file by default
      UvData.FileType{2}=UvData.FileType{1};
-%      UvData.VelType{2}=InputFile.VelType_1;
      set(handles.SubField,'Value',1)
 end
 if isfield(UvData,'Field_1')
@@ -3368,105 +3372,7 @@ image(imflag);
 
 %------------------------------------------------------------------
 
-%------------------------------------------------------------------
-% --- Executes on selection change in ListColorScalar: choice of the color code.
-function ListColorScalar_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------
-% edit the choice for color code
-list_code=get(handles.ListColorScalar,'String');% list menu fields
-index_code=get(handles.ListColorScalar,'Value');% selected string index
-col_code= list_code{index_code(1)}; % selected field
-if isequal(col_code,'black') || isequal(col_code,'white')
-   set(handles.Slider1,'Visible','off')
-   set(handles.Slider2,'Visible','off')
-   set(handles.num_ColCode1,'Visible','off')
-   set(handles.num_ColCode2,'Visible','off')
-   set(handles.CheckFixVecColor,'Visible','off')
-   set_vec_col_bar(handles)
-else
-   set(handles.Slider1,'Visible','on')
-   set(handles.Slider2,'Visible','on') 
-   set(handles.num_ColCode1,'Visible','on')
-   set(handles.num_ColCode2,'Visible','on')
-   set(handles.CheckFixVecColor,'Visible','on')  
-   if isequal(col_code,'ima_cor')
-       set(handles.CheckFixVecColor,'Value',0)%fixed scale by default
-       set(handles.VecColBar,'Value',0)% 3 colors r,g,b by default
-       set(handles.Slider1,'Min',0);
-       set(handles.Slider1,'Max',1);
-       set(handles.Slider2,'Min',0);
-       set(handles.Slider2,'Max',1);
- %      set(handles.min_title_vec,'String','0')
-       set(handles.num_MaxVec,'String','1')
-       set(handles.num_ColCode1,'String','0.333')
-       num_ColCode1_Callback(hObject, eventdata, handles)
-       set(handles.num_ColCode2,'String','0.666')
-       num_ColCode2_Callback(hObject, eventdata, handles)
-   else
-       set(handles.CheckFixVecColor,'Value',1)%auto scale between min,max by default
-       set(handles.VecColBar,'Value',1)% colormap 'jet' by default
-       minval=get(handles.Slider1,'Min');
-       maxval=get(handles.Slider1,'Max');
-       set(handles.Slider1,'Value',minval)
-       set(handles.Slider2,'Value',maxval)
-       set_vec_col_bar(handles)
-   end
-%    slider_update(handles)
-end
-%replot the current graph
-run0_Callback(hObject, eventdata, handles)
 
-
-%----------------------------------------------------------------
-% -- Executes on slider movement to set the color code
-%
-function Slider1_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------
-slider1=get(handles.Slider1,'Value');
-min_val=str2num(get(handles.num_MinVec,'String'));
-max_val=str2num(get(handles.num_MaxVec,'String'));
-col=min_val+(max_val-min_val)*slider1;
-set(handles.num_ColCode1,'String',num2str(col))
-if(get(handles.Slider2,'Value') < col)%move also the second slider at the same value if needed
-    set(handles.Slider2,'Value',col)
-    set(handles.num_ColCode2,'String',num2str(col))
-end
-num_ColCode1_Callback(hObject, eventdata, handles)
-
-%----------------------------------------------------------------
-% Executes on slider movement to set the color code
-%----------------------------------------------------------------
-function Slider2_Callback(hObject, eventdata, handles)
-slider2=get(handles.Slider2,'Value');
-min_val=str2num(get(handles.num_MinVec,'String'));
-max_val=str2num(get(handles.num_MaxVec,'String'));
-col=min_val+(max_val-min_val)*slider2;
-set(handles.num_ColCode2,'String',num2str(col))
-if(get(handles.Slider1,'Value') > col)%move also the first slider at the same value if needed
-    set(handles.Slider1,'Value',col)
-    set(handles.num_ColCode1,'String',num2str(col))
-end
-num_ColCode2_Callback(hObject, eventdata, handles)
-
-%----------------------------------------------------------------
-% --- Execute on return carriage on the edit box corresponding to slider 1
-%----------------------------------------------------------------
-function num_ColCode1_Callback(hObject, eventdata, handles) 
-set_vec_col_bar(handles)
-update_plot(handles);
-
-%----------------------------------------------------------------
-% --- Execute on return carriage on the edit box corresponding to slider 2
-%----------------------------------------------------------------
-function num_ColCode2_Callback(hObject, eventdata, handles)
-set_vec_col_bar(handles)
-update_plot(handles);
-%------------------------------------------------------------------------
-%-------------------------------------------------------
-% --- Executes on button press in CheckFixVecColor.
-%-------------------------------------------------------
-function VecColBar_Callback(hObject, eventdata, handles)
-set_vec_col_bar(handles)
 
 %-------------------------------------------------------------
 % --- Executes on selection change in transform_fct.
@@ -3648,7 +3554,9 @@ end
 %------------------------------------------------
 %CALLBACKS FOR PLOTTING PARAMETERS
 %-------------------------------------------------
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Plot coordinates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
 function num_MinX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -3677,6 +3585,9 @@ set(handles.CheckFixLimits,'Value',1) %suppress auto mode
 set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Scalar or image representation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
 function num_MinA_Callback(hObject, eventdata, handles)
 %------------------------------------------
@@ -3743,6 +3654,10 @@ function num_IncrA_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 update_plot(handles);
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Vector representation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %-------------------------------------------------------------------
 function CheckHideWarning_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
@@ -3779,23 +3694,127 @@ function CheckDecimate4_Callback(hObject, eventdata, handles)
 update_plot(handles);
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in ListColorCode menu
-function ListColorCode_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in ColorCode menu
+function ColorCode_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+% edit the choice for color code
+update_color_code_boxes(handles);
+update_plot(handles);
+
+%------------------------------------------------------------------------
+function update_color_code_boxes(handles)
+%------------------------------------------------------------------------
+list_code=get(handles.ColorCode,'String');% list menu fields
+colcode= list_code{get(handles.ColorCode,'Value')}; % selected field
+enable_slider='off';%default
+enable_bounds='off';%default
+enable_scalar='off';%default
+switch colcode
+    case {'rgb','bgr'}
+        enable_slider='on';
+        enable_bounds='on';
+        enable_scalar='on';
+    case '64 colors'
+        enable_bounds='on';
+        enable_scalar='on';
+end
+set(handles.Slider1,'Visible',enable_slider)
+set(handles.Slider2,'Visible', enable_slider)
+set(handles.num_ColCode1,'Visible',enable_slider)
+set(handles.num_ColCode2,'Visible',enable_slider)
+set(handles.TitleColCode1,'Visible',enable_slider)
+set(handles.TitleColCode2,'Visible',enable_slider)
+set(handles.CheckFixVecColor,'Visible',enable_bounds)
+set(handles.num_MinVec,'Visible',enable_bounds)
+set(handles.num_MaxVec,'Visible',enable_bounds)
+set(handles.ColorScalar,'Visible',enable_scalar)
+set_vec_col_bar(handles)
+
+%------------------------------------------------------------------
+% --- Executes on selection change in ColorScalar: choice of the color code.
+function ColorScalar_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------
+% edit the choice for color code
+list_scalar=get(handles.ColorScalar,'String');% list menu fields
+col_scalar= list_scalar{get(handles.ColorScalar,'Value')}; % selected field
+if isequal(col_scalar,'ima_cor')
+    set(handles.CheckFixVecColor,'Value',1)%fixed scale by default
+    ColorCode='rgb';
+    set(handles.num_MinVec,'String','0')
+    set(handles.num_MaxVec,'String','1')
+    set(handles.num_ColCode1,'String','0.333')
+    set(handles.num_ColCode2,'String','0.666')
+else
+    set(handles.CheckFixVecColor,'Value',0)%auto scale between min,max by default
+    ColorCode='64 colors';
+end
+ColorCodeList=get(handles.ColorCode,'String');
+ichoice=find(strcmp(ColorCode,ColorCodeList),1);
+set(handles.ColorCode,'Value',ichoice)% set color code in the menu
+
+update_color_code_boxes(handles);
+%replot the current graph
+run0_Callback(hObject, eventdata, handles)
+
+%----------------------------------------------------------------
+% -- Executes on slider movement to set the color code
+%
+function Slider1_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------
+slider1=get(handles.Slider1,'Value');
+min_val=str2num(get(handles.num_MinVec,'String'));
+max_val=str2num(get(handles.num_MaxVec,'String'));
+col=min_val+(max_val-min_val)*slider1;
+set(handles.num_ColCode1,'String',num2str(col))
+if(get(handles.Slider2,'Value') < col)%move also the second slider at the same value if needed
+    set(handles.Slider2,'Value',col)
+    set(handles.num_ColCode2,'String',num2str(col))
+end
 set_vec_col_bar(handles)
 update_plot(handles);
+
+%----------------------------------------------------------------
+% Executes on slider movement to set the color code
+%----------------------------------------------------------------
+function Slider2_Callback(hObject, eventdata, handles)
+slider2=get(handles.Slider2,'Value');
+min_val=str2num(get(handles.num_MinVec,'String'));
+max_val=str2num(get(handles.num_MaxVec,'String'));
+col=min_val+(max_val-min_val)*slider2;
+set(handles.num_ColCode2,'String',num2str(col))
+if(get(handles.Slider1,'Value') > col)%move also the first slider at the same value if needed
+    set(handles.Slider1,'Value',col)
+    set(handles.num_ColCode1,'String',num2str(col))
+end
+set_vec_col_bar(handles)
+update_plot(handles);
+
+%----------------------------------------------------------------
+% --- Execute on return carriage on the edit box corresponding to slider 1
+%----------------------------------------------------------------
+function num_ColCode1_Callback(hObject, eventdata, handles) 
+set_vec_col_bar(handles)
+update_plot(handles);
+
+%----------------------------------------------------------------
+% --- Execute on return carriage on the edit box corresponding to slider 2
+%----------------------------------------------------------------
+function num_ColCode2_Callback(hObject, eventdata, handles)
+set_vec_col_bar(handles)
+update_plot(handles);
+%------------------------------------------------------------------------
+%-------------------------------------------------------
+% --- Executes on button press in CheckFixVecColor.
+%-------------------------------------------------------
+function VecColBar_Callback(hObject, eventdata, handles)
+set_vec_col_bar(handles)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckFixVecColor.
 function CheckFixVecColor_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-test=get(handles.CheckFixVecColor,'Value');
-if test
-    set(handles.CheckFixVecColor,'BackgroundColor',[1 1 0])
-else
+if ~get(handles.CheckFixVecColor,'Value')
     update_plot(handles);
-    %set(handles.num_VecScale,'String',num2str(ScalOut.num_VecScale,3))
-    set(handles.CheckFixVecColor,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 %------------------------------------------------------------------------
@@ -3821,7 +3840,7 @@ set(handles.num_ColCode2,'String',num2str(colcode2))
 update_plot(handles);
 
 %------------------------------------------------------------------------
-% --- update the display of color code for vectors
+% --- update the display of color code for vectors (on vecColBar)
 function set_vec_col_bar(handles)
 %------------------------------------------------------------------------
 %get the image of the color display button 'VecColBar' in pixels
@@ -3832,18 +3851,16 @@ width=ceil(pos_vert(3));
 height=ceil(pos_vert(4));
 
 %get slider indications
-list=get(handles.ListColorCode,'String');
-ichoice=get(handles.ListColorCode,'Value');
-colcode.ListColorCode=list{ichoice};
+list=get(handles.ColorCode,'String');
+ichoice=get(handles.ColorCode,'Value');
+colcode.ColorCode=list{ichoice};
 colcode.MinVec=str2num(get(handles.num_MinVec,'String'));
 colcode.MaxVec=str2num(get(handles.num_MaxVec,'String'));
-test3color=strcmp(colcode.ListColorCode,'rgb') || strcmp(colcode.ListColorCode,'bgr');
+test3color=strcmp(colcode.ColorCode,'rgb') || strcmp(colcode.ColorCode,'bgr');
 if test3color
     colcode.ColCode1=str2num(get(handles.num_ColCode1,'String'));
     colcode.ColCode2=str2num(get(handles.num_ColCode2,'String'));
 end
-% colcode.FixedCbounds=0;
-%colcode.CheckFixVecColor=1;
 vec_C=colcode.MinVec+(colcode.MaxVec-colcode.MinVec)*(0.5:width-0.5)/width;%sample of vec_C values from min to max
 [colorlist,col_vec]=set_col_vec(colcode,vec_C);
 oneheight=ones(1,height);
@@ -4640,7 +4657,3 @@ else
     addpath (fullfile(pathelp,'uvmat_doc'))
     web(helpfile);
 end
-
-
-
-

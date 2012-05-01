@@ -76,10 +76,10 @@ for ilist=1:length(FieldList)
     end
 end
 FieldList=FieldList(check_calc==1);
-if isempty(FieldList)
-    DataOut=DataIn;
-    return
-end
+% if isempty(FieldList)
+%     DataOut=DataIn;
+%     return
+% end
 if isfield(DataIn,'Z')&& isequal(size(DataIn.Z),size(DataIn.X))
     nbcoord=3;
 else
@@ -92,15 +92,7 @@ units_cell={};
 
 %% interpolation with new civ data
 if isfield(DataIn,'SubRange') && isfield(DataIn,'Coord_tps') && (exist('Coord_interp','var') || check_grid ||check_der)
-    %create a default grid if needed
-    if  ~exist('Coord_interp','var')
-        coord_x=DataIn.XMin:DataIn.Mesh:DataIn.XMax;
-        coord_y=DataIn.XMin:DataIn.Mesh:DataIn.YMax;
-        [XI,YI]=meshgrid(coord_x,coord_y);
-        XI=reshape(XI,[],1);
-        YI=reshape(YI,[],1);
-        Coord_interp=[XI YI];
-    end
+    
     DataOut.ListGlobalAttribute=DataIn.ListGlobalAttribute; %reproduce global attribute
     for ilist=1:numel(DataOut.ListGlobalAttribute)
         DataOut.(DataOut.ListGlobalAttribute{ilist})=DataIn.(DataIn.ListGlobalAttribute{ilist});
@@ -112,8 +104,27 @@ if isfield(DataIn,'SubRange') && isfield(DataIn,'Coord_tps') && (exist('Coord_in
     YMax=max(max(DataIn.SubRange(2,:,:)));
     XMin=min(min(DataIn.SubRange(1,:,:)));
     YMin=min(min(DataIn.SubRange(2,:,:)));
-%     check_der=0;
-%     check_val=0;
+    %create a default grid if needed
+    if  ~exist('Coord_interp','var')
+        if ~isfield(DataIn,'Mesh')
+            DataIn.Mesh=sqrt(2*(XMax-XMin)*(YMax-YMin)/numel(DataIn.Coord_tps));
+            % adjust the mesh to a value 1, 2 , 5 *10^n
+            ord=10^(floor(log10(DataIn.Mesh)));%order of magnitude
+            if DataIn.Mesh/ord>=5
+                DataIn.Mesh=5*ord;
+            elseif DataIn.Mesh/ord>=2
+                DataIn.Mesh=2*ord;
+            else
+                DataIn.Mesh=ord;
+            end
+        end
+        coord_x=XMin:DataIn.Mesh:XMax;
+        coord_y=YMin:DataIn.Mesh:YMax;
+        [XI,YI]=meshgrid(coord_x,coord_y);
+        XI=reshape(XI,[],1);
+        YI=reshape(YI,[],1);
+        Coord_interp=[XI YI];
+    end
     nb_sites=size(Coord_interp,1);
     nb_coord=size(Coord_interp,2);
     %initialise output
@@ -123,11 +134,11 @@ if isfield(DataIn,'SubRange') && isfield(DataIn,'Coord_tps') && (exist('Coord_in
                 DataOut.U=zeros(nb_sites,1);
                 DataOut.V=zeros(nb_sites,1);
             otherwise
-  %          case{'vort','div','strain'}% case of spatial derivatives
+                %          case{'vort','div','strain'}% case of spatial derivatives
                 DataOut.(FieldList{ilist})=zeros(nb_sites,1);
-%                 otherwise % case of a scalar
-%                     check_val=1;
-%                     DataOut.(FieldList{ilist})=zeros(size(Coord_interp,1));
+                %                 otherwise % case of a scalar
+                %                     check_val=1;
+                %                     DataOut.(FieldList{ilist})=zeros(size(Coord_interp,1));
         end
     end
     nbval=zeros(nb_sites,1);
@@ -141,7 +152,7 @@ if isfield(DataIn,'SubRange') && isfield(DataIn,'Coord_tps') && (exist('Coord_in
         %                 epoints = Coord_interp(ind_sel) ;% coordinates of interpolation sites
         %                 ctrs=DataIn.Coord_tps(1:nbvec_sub,:,isub);%(=initial points) ctrs
         nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)
-        if check_val
+        if check_grid
             EM = tps_eval(Coord_interp(ind_sel,:),DataIn.Coord_tps(1:nbvec_sub,:,isub));%kernels for calculating the velocity from tps 'sources'
         end
         if check_der
@@ -163,7 +174,7 @@ if isfield(DataIn,'SubRange') && isfield(DataIn,'Coord_tps') && (exist('Coord_in
                     ListFields={'V'};
                     VarAttributes{1}.Role='scalar';
                     DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *DataIn.V_tps(1:nbvec_sub+3,isub);
-                case 'norm_vel' 
+                case 'norm_vel'
                     ListFields={'norm_vel'};
                     VarAttributes{1}.Role='scalar';
                     V=DataOut.U(ind_sel)+EM *DataIn.U_tps(1:nbvec_sub+3,isub);
