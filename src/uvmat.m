@@ -4333,7 +4333,7 @@ if isfield(UvData,'Field')
     Field=UvData.Field;
     if isfield(UvData.Field,'Mesh')&&~isempty(UvData.Field.Mesh)
         data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
-        if strcmp(data.Type,'line')||rcmp(data.Type,'polyline')
+        if strcmp(data.Type,'line')||strcmp(data.Type,'polyline')
             data.RangeY=UvData.Field.Mesh;
         else
             data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
