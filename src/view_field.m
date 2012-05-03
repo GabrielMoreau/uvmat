@@ -86,7 +86,7 @@ set(hObject,'KeyPressFcn',{'keyboard_callback',handles_mouse})%set keyboard acti
 set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles_mouse})%set mouse action functio
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse}) 
-set(hObject,'CloseRequestFcn',{@closefcn})%
+set(hObject,'DeleteFcn',{@closefcn})%
 ViewFieldData.axes3=[];%initiates the record of the current field (will be updated by plot_field)
 set(handles.view_field,'UserData',ViewFieldData);%store the current field
 AxeData.LimEditBox=1; %initialise AxeData, the parent figure sets plot parameters

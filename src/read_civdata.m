@@ -47,7 +47,7 @@
 % 'nc2struct': reads a netcdf file 
 
 function [Field,VelTypeOut,errormsg]=read_civdata(filename,FieldNames,VelType,CivStage)
-errormsg='';
+
 %% default input
 if ~exist('VelType','var')
     VelType='';
@@ -61,10 +61,16 @@ end
 if ~exist('FieldNames','var') 
     FieldNames=[]; %default
 end
+errormsg='';
 
 %% reading data
 [varlist,role,units,VelTypeOut]=varcivx_generator(FieldNames,VelType,CivStage);
-[Field,vardetect]=nc2struct(filename,varlist);%read the variables in the netcdf file
+if isempty(varlist)
+    erromsg=['error in read_civdata: unknow velocity type ' VelType];
+    return
+else
+    [Field,vardetect]=nc2struct(filename,varlist);%read the variables in the netcdf file
+end
 if isfield(Field,'Txt')
     errormsg=Field.Txt;
     return
@@ -105,13 +111,14 @@ Field.CoordUnit='pixel';
 % vel_type: character string indicating the types of velocity fields to read ('civ1','civ2'...)
 %            if vel_type=[] or'*', a  priority choice is done, civ2 considered better than civ1 )
 
-function [var,role,units,vel_type_out]=varcivx_generator(FieldNames,vel_type,CivStage) 
+function [var,role,units,vel_type_out,errormsg]=varcivx_generator(FieldNames,vel_type,CivStage) 
 
 %% default input values
 if ~exist('vel_type','var'),vel_type='';end;
 if iscell(vel_type),vel_type=vel_type{1}; end;%transform cell to string if needed
 if ~exist('FieldNames','var'),FieldNames={'ima_cor'};end;%default scalar 
 if ischar(FieldNames), FieldNames={FieldNames}; end;
+errormsg='';
 
 %% select the priority order for automatic vel_type selection
 testder=0;
@@ -126,7 +133,7 @@ for ilist=1:length(FieldNames)
         end
     end
 end
-if isempty(vel_type)
+if isempty(vel_type)||strcmp(vel_type,'*')
     switch CivStage
         case {6} %filter2 available
             vel_type='civ2';
@@ -145,7 +152,7 @@ if strcmp(vel_type,'civ2') && testder
 elseif strcmp(vel_type,'civ1') && testder
     vel_type='filter1';
 end
-
+var={};
 switch vel_type
     case 'civ1'
         var={'X','Y','Z','U','V','W','C','F','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbSites';...

@@ -1252,8 +1252,8 @@ for ifile=1:nbfield
             end
             Param.Civ1.ImageWidth=ImageInfo.Width;
             Param.Civ1.ImageHeight=ImageInfo.Height;
-            Param.Civ1.i1=i1_civ1;
-            Param.Civ1.i2=i2_civ1;
+            Param.Civ1.i1=i1_civ1(ifile,j);
+            Param.Civ1.i2=i2_civ1(ifile,j);
             % read mask parameters
             if Param.Civ1.CheckMask % the lines below should be changed with the new gui
                 if ~exist(Param.Civ1.Mask,'file')
@@ -1430,8 +1430,8 @@ for ifile=1:nbfield
             end
             Param.Civ2.ImageWidth=ImageInfo.Width;
             Param.Civ2.ImageHeight=ImageInfo.Height;
-            Param.Civ2.i1=i1_civ2;
-            Param.Civ2.i2=i2_civ2;
+            Param.Civ2.i1=i1_civ2(ifile,j);
+            Param.Civ2.i2=i2_civ2(ifile,j);
             switch CivMode
                 case 'CivX'
                     cmd=[cmd...
@@ -1585,8 +1585,6 @@ for ifile=1:nbfield
                         [tild,errormsg]=civ_matlab(Param,filecell.nc.civ1{ifile,j});
                         if isempty(errormsg)
                             display([filecell.nc.civ1{ifile,j} ' written'])
-%                         else
-%                             msgbox_uvmat('ERROR',errormsg)
                         end
                     end
                 end

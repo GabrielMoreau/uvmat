@@ -57,7 +57,7 @@ end
 
 %% Civ1
 if isfield (Param,'Civ1')
-    check_civ1=1;% test for further use of civ1 results
+%     check_civ1=1;% test for further use of civ1 results
     % %% prepare images
     par_civ1=Param.Civ1;
     if isfield(par_civ1,'reverse_pair')
@@ -101,6 +101,7 @@ if isfield (Param,'Civ1')
     end
     list_param=(fieldnames(Param.Civ1))';
     Civ1_param=list_param;%default
+    %set the values of all the global attributes in list_param
     for ilist=1:length(list_param)
         Civ1_param{ilist}=['Civ1_' list_param{ilist}];
         Data.(['Civ1_' list_param{ilist}])=Param.Civ1.(list_param{ilist});

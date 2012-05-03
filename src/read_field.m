@@ -93,8 +93,9 @@ switch FileType
                 CivStage=Field.CivStage;
                 ParamOut.CivStage=Field.CivStage;
             end
+            ParamOut.FieldList=[{'image'};FieldList;{'get_field...'}];
         end
-        ParamOut.FieldList=[{'image'};FieldList;{'get_field...'}];
+%         ParamOut.FieldList=[{'image'};FieldList;{'get_field...'}];
         if CivStage==0% read the field names on the interface get_field.
             hget_field=findobj(allchild(0),'Name',GUIName);%find the get_field... GUI
             if isempty(hget_field)% open the GUI get_field if it is not found

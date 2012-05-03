@@ -16,8 +16,10 @@
 
 
 function [errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(Data)
-DataOut=[]; %default
-errormsg=[];
+errormsg='';
+ListDimName={};
+DimValue=[]; %default
+VarDimIndex={};
 if ~isstruct(Data)
     errormsg='input field is not a structure';
     return

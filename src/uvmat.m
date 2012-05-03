@@ -78,10 +78,14 @@
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   DATA FLOW  (for run0_Callback) %%%%%%%%%%%%%%%%%%%%:
 %
-% fields are opened and visualised by the sub-function refresh_field.m
-% (called by uvmat_opening, RUN0, runp and runm)
+%
+% 1) Input filenames are determined by MenuBrowse (first field), MenuBrowse_1
+% (second field), or by the stored file names under  Browse, or as an input of uvmat. 
+% 2) These functions call 'display_file_name.m' which detects the file series, and fills the file index boxes
+% 3) Then 'update_rootinfo.m' Updates information about a new field series (indices to scan, timing, calibration from an xml file)
+% 4) Then fields are opened and visualised by the main sub-function 'refresh_field.m'
 % The function first reads the name of the input file from the edit boxes  of the GUI
-% A second input file can be introduced for filed comparison
+% A second input file can be introduced for file comparison
 % It then reads the input file(s) with the appropriate function, read for
 % images, read_civxdata.m for CIVx PIV data, nc2struct for other netcdf
 % files.
@@ -167,7 +171,7 @@
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
-%  I - MAIN FUNCTION UVMAT 
+%  I - MAIN FUNCTION uvmat
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
 function varargout = uvmat(varargin)
@@ -342,7 +346,7 @@ end
 set(handles.uvmat,'UserData',UvData)
 if ~isempty(inputfile)
     %%%%% display the input field %%%%%%%
-    display_file_name(hObject, eventdata, handles,inputfile)
+    display_file_name(handles,inputfile)
     %%%%%%%
     testinputfield=1;
 end
@@ -441,42 +445,42 @@ sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
 % display the selected field and related information
-display_file_name(hObject, eventdata, handles,fileinput)
+display_file_name( handles,fileinput)
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_1
 function MenuFile_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_1,'Label');
-display_file_name(hObject, eventdata, handles,fileinput)
+display_file_name( handles,fileinput)
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_2
 function MenuFile_2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_2,'Label');
-display_file_name(hObject, eventdata, handles,fileinput)
+display_file_name(handles,fileinput)
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_3
 function MenuFile_3_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_3,'Label');
-display_file_name(hObject, eventdata, handles,fileinput)
+display_file_name(handles,fileinput)
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_4
 function MenuFile_4_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_4,'Label');
-display_file_name(hObject, eventdata, handles,fileinput)
+display_file_name(handles,fileinput)
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_5
 function MenuFile_5_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(handles.MenuFile_5,'Label');
-display_file_name(hObject, eventdata, handles,fileinput)
+display_file_name(handles,fileinput)
 
 %------------------------------------------------------------------------
 % --- Executes on the menu Open/Browse_1 for the second input field,
@@ -510,7 +514,7 @@ if (~ischar(fileinput_1)||~isequal(sizf(1),1)),return;end
 
 % refresh the current displayed field
 set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
+display_file_name(handles,fileinput_1,2)
 
 %update list of recent files in the menubar
 MenuFile_1=fileinput_1;
@@ -549,7 +553,7 @@ function MenuFile_1_1_Callback(hObject, eventdata, handles)
 % -----------------------------------------------------------------------
 fileinput_1=get(handles.MenuFile_1_1,'Label');
 set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
+display_file_name(handles,fileinput_1,2)
 
 % -----------------------------------------------------------------------
 % --- Open again as second field the file whose name has been recorded in MenuFile_2
@@ -557,7 +561,7 @@ function MenuFile_2_1_Callback(hObject, eventdata, handles)
 % -----------------------------------------------------------------------
 fileinput_1=get(handles.MenuFile_2_1,'Label');
 set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
+display_file_name(handles,fileinput_1,2)
 
 % -----------------------------------------------------------------------
 % --- Open again as second field the file whose name has been recorded in MenuFile_3
@@ -565,7 +569,7 @@ function MenuFile_3_1_Callback(hObject, eventdata, handles)
 % -----------------------------------------------------------------------
 fileinput_1=get(handles.MenuFile_3_1,'Label');
 set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
+display_file_name(handles,fileinput_1,2)
 
 % -----------------------------------------------------------------------
 % --- Open again as second field the file whose name has been recorded in MenuFile_4
@@ -573,7 +577,7 @@ function MenuFile_4_1_Callback(hObject, eventdata, handles)
 % -----------------------------------------------------------------------
 fileinput_1=get(handles.MenuFile_4_1,'Label');
 set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
+display_file_name(handles,fileinput_1,2)
 
 % -----------------------------------------------------------------------
 % --- Open again as second field the file whose name has been recorded in MenuFile_5
@@ -581,7 +585,7 @@ function MenuFile_5_1_Callback(hObject, eventdata, handles)
 % -----------------------------------------------------------------------
 fileinput_1=get(handles.MenuFile_5_1,'Label');
 set(handles.SubField,'Value',1)
-display_file_name(hObject,eventdata,handles,fileinput_1,2)
+display_file_name(handles,fileinput_1,2)
 
 %------------------------------------------------------------------------
 % --- Called by action in RootPath edit box
@@ -592,7 +596,7 @@ function RootPath_Callback(hObject,eventdata,handles)
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 % initiate the input file series and refresh the current field view: 
-update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject);
+update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,1);
 
 %-----------------------------------------------------------------------
 % --- Called by action in RootPath_1 edit box
@@ -673,7 +677,7 @@ RootPath_1_Callback(hObject,eventdata,handles)
 
 %------------------------------------------------------------------------ 
 % --- Fills the edit boxes RootPath, RootFile,NomType...from an input file name 'fileinput'
-function display_file_name(hObject, eventdata, handles,fileinput,index)
+function display_file_name(handles,fileinput,index)
 %------------------------------------------------------------------------
 %% look for the input file existence
 if ~exist(fileinput,'file')
@@ -686,7 +690,7 @@ set(handles.uvmat,'Pointer','watch')
 set(handles.RootPath,'BackgroundColor',[1 1 0])
 drawnow
 
-%% define the relevant handles for the first fiel series (index=1) or the second file series (index=2)
+%% define the relevant handles for the first field series (index=1) or the second file series (index=2)
 if ~exist('index','var')
     index=1;
 end
@@ -697,7 +701,6 @@ if index==1
     handles_FileIndex=handles.FileIndex;
     handles_NomType=handles.NomType;
     handles_FileExt=handles.FileExt;
-%     handles_Fields=handles.Fields;
 elseif index==2
     handles_RootPath=handles.RootPath_1;
     handles_SubDir=handles.SubDir_1;
@@ -705,7 +708,6 @@ elseif index==2
     handles_FileIndex=handles.FileIndex_1;
     handles_NomType=handles.NomType_1;
     handles_FileExt=handles.FileExt_1;
-%     handles_Fields=handles.Fields_1;
     set(handles.RootPath_1,'Visible','on')
     set(handles.RootFile_1,'Visible','on')
     set(handles.SubDir_1,'Visible','on');
@@ -781,7 +783,7 @@ switch FileType
                 set(handles.FileIndex_1,'String',FileIndex_1)
             else
                 set(handles.SubField,'Value',0)
-                SubField_Callback(hObject, eventdata, handles)
+                SubField_Callback([], [], handles)
             end
         end
         
@@ -1131,7 +1133,7 @@ if mask_test
     CheckMask_Callback([],[],handles)
 end
 
-%% update list of recent files in the menubar
+%% update list of recent files in the menubar and save it for future opening
 MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
     {get(handles.MenuFile_3,'Label')};{get(handles.MenuFile_4,'Label')};{get(handles.MenuFile_5,'Label')}];
 str_find=strcmp(FileName,MenuFile);
@@ -2960,7 +2962,7 @@ if isequal(field,'image')
         imagename=[PathName FileName];
     end
      % display the selected field and related information
-    display_file_name(hObject, eventdata, handles,imagename)%display the image
+    display_file_name(handles,imagename)%display the image
     return
 else
     ext=get(handles.FileExt,'String');
@@ -2972,7 +2974,7 @@ else
             'Pick a netcdf file',FileBase);
         filename=[PathName FileName];
         % display the selected field and related information
-        display_file_name(hObject, eventdata, handles,filename)
+        display_file_name( handles,filename)
         return
     end
 end
@@ -3067,7 +3069,7 @@ switch field_1
             set(handles.TitleNpy,'Visible','on')
             set(handles.num_Npx,'Visible','on')
             set(handles.num_Npy,'Visible','on')
-            display_file_name(hObject, eventdata, handles,imagename,2)%display the imag
+            display_file_name(handles,imagename,2)%display the imag
         end
     otherwise
         if check_new
@@ -4331,9 +4333,14 @@ if isfield(UvData,'Field')
     Field=UvData.Field;
     if isfield(UvData.Field,'Mesh')&&~isempty(UvData.Field.Mesh)
         data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
-        data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
+        if strcmp(data.Type,'line')||rcmp(data.Type,'polyline')
+            data.RangeY=UvData.Field.Mesh;
+        else
+            data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
+        end
         data.DX=UvData.Field.Mesh;
         data.DY=UvData.Field.Mesh;
+        
 %     elseif isfield(Field,'AX')&& isfield(Field,'AY')&& isfield(Field,'A')%only image
 %         np=size(Field.A);
 %         meshx=(Field.AX(end)-Field.AX(1))/np(2);
