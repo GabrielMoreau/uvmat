@@ -787,3 +787,13 @@ function ColorScalar_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns ColorScalar contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from ColorScalar
+
+
+
+function num_ColCode2_Callback(hObject, eventdata, handles)
+% hObject    handle to num_colcode2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of num_colcode2 as text
+%        str2double(get(hObject,'String')) returns contents of num_colcode2 as a double

@@ -25,25 +25,25 @@ if isfield(Param.IndexRange,'first_j')
     ref_j=first_j:incr_j:last_j;
 end
 % Pairs=Param.Pairs;
-r.mode='';
-if isfield(Param,'Pairs') && isfield (Param.Pairs,'list_pair_civ')
-    r=regexp(Param.Pairs.list_pair_civ,'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
-    if isempty(r)
-        r=regexp(Param.Pairs.list_pair_civ,'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');
-    end
 
-    % TODO case of free pairs:
-    %r=regexp(pair_string,'.*\D(?<num1>[\d+|*])(?<delim>[-||])(?<num2>[\d+|*])','names');
-end
-    if isempty(r.mode)
-        r.num1='';
-        r.num2='';
-    end
 
 %% determine the list of input file names
 nbmissing=0;
 
 for iview=1:size(InputTable,1)
+    r.mode='';
+    if isfield (Param.IndexRange,'PairString')
+        r=regexp(Param.IndexRange.PairString{iview,1},'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
+        if isempty(r)
+            r=regexp(Param.IndexRange.PairString{iview,1},'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');
+        end        
+        % TODO case of free pairs:
+        %r=regexp(pair_string,'.*\D(?<num1>[\d+|*])(?<delim>[-||])(?<num2>[\d+|*])','names');
+    end
+    if isempty(r.mode)
+        r.num1='';
+        r.num2='';
+    end
     [i1_series{iview},i2_series{iview},j1_series{iview},j2_series{iview}]=find_file_indices(ref_i,ref_j,str2num(r.num1),str2num(r.num2),r.mode);
     %case of pairs (.nc files)
     i2=[];j1=[];j2=[];

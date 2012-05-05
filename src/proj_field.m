@@ -81,15 +81,19 @@
 
 function [ProjData,errormsg]=proj_field(FieldData,ObjectData)
 errormsg='';%default
-% if ~exist('FieldName','var')
-%     FieldName='';
-% end
+ProjData=[];
+
 %% case of no projection (object is used only as graph display)
 if isfield(ObjectData,'ProjMode') && (isequal(ObjectData.ProjMode,'none')||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'))
-    ProjData=[];
     return
 end
 
+%% check coincidence of coordinate units
+if isfield(FieldData,'CoordUnit') && isfield(ObjectData,'CoordUnit')&&~strcmp(FieldData.CoordUnit,ObjectData.CoordUnit)
+    errormsg='inconsistent coord units for field and projection object';
+    return
+end
+    
 %% in the absence of object Type or projection mode, or object coordinaes, the input field is just tranfered without change
 if ~isfield(ObjectData,'Type')||~isfield(ObjectData,'ProjMode')
     ProjData=FieldData;
@@ -1090,6 +1094,10 @@ for icell=1:length(CellVarIndex)
             end
             if testbound
                 indcut=find(testin);
+                if isempty(indcut)
+                    errormsg='data outside the bounds of the projection object';
+                    return
+                end
                 for ivar=VarIndex
                     VarName=FieldData.ListVarName{ivar};
                     eval(['FieldData.' VarName '=FieldData.' VarName '(indcut);'])
@@ -1104,11 +1112,6 @@ for icell=1:length(CellVarIndex)
         % different cases of projection
         switch ObjectData.ProjMode
             case 'projection'
-                %the list of dimension
-                %ProjData.ListDimName=[ProjData.ListDimName FieldData.VarDimName(VarIndex(1))];%add the point index to the list of dimensions
-                %ProjData.DimValue=[ProjData.
-                %length(coord_X)];
-                
                 for ivar=VarIndex %transfer variables to the projection plane
                     VarName=FieldData.ListVarName{ivar};
                     if ivar==ivar_X %x coordinate
@@ -1146,7 +1149,7 @@ for icell=1:length(CellVarIndex)
                 if isempty(ivar_FF), ivar_FF=0; end;
                 if ~isequal(ivar_FF,0)
                     VarName_FF=FieldData.ListVarName{ivar_FF};
-                    eval(['indsel=find(FieldData.' VarName_FF '==0);'])
+                    indsel=find(FieldData.(VarName_FF)==0);
                     coord_X=coord_X(indsel);
                     coord_Y=coord_Y(indsel);
                 end

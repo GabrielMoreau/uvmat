@@ -782,8 +782,9 @@ switch FileType
                 FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1,i2,j1,j2);
                 set(handles.FileIndex_1,'String',FileIndex_1)
             else
-                set(handles.SubField,'Value',0)
-                SubField_Callback([], [], handles)
+                msgbox_uvmat('WARNING','unable to synchronise the indices of the two series')
+%                 set(handles.SubField,'Value',0)
+%                 SubField_Callback([], [], handles)
             end
         end
         

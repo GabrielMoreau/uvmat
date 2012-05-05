@@ -70,7 +70,7 @@ for ilist=1:length(FieldList)
             check_grid=1;% needs a regular grid
         case{'vort','div','strain'}% needs spatial derivatives spatial derivatives
             check_der=1;
-        case {'velocity','norm_vel'};
+        case {'velocity','norm_vel','ima_cor'};
         otherwise
             check_calc(ilist)=0;
     end
