@@ -42,10 +42,10 @@ else % RUN case : parameters introduced as the input structure Param
 end
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 
-%% coordinate transform or other user defined transform (TODO: case BATCH ?)
+%% coordinate transform or other user defined transform
 transform_fct='';%default
-if isfield(Param,'transform_fct') % transform function handle
-    transform_fct=Param.transform_fct;
+if isfield(Param,'FieldTransform')&&isfield(Param.FieldTransform,'fct_handle')
+    transform_fct=Param.FieldTransform.fct_handle;
 end
 
 %% projection object
@@ -80,7 +80,7 @@ nbfield=size(i1_series{1},1)*size(i1_series{1},2);%number of fields in the time 
 hhh=which('mmreader');
 for iview=1:nbview
     test_movie(iview)=0;
-    if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
+    if ~isempty(hhh)
         if isequal(lower(FileExt{iview}),'.avi')
             MovieObject{iview}=mmreader(fullfile(RootPath{iview},[RootFile{iview} FileExt{iview}]));
             test_movie(iview)=1;
@@ -318,7 +318,11 @@ for ifile=1:nbfield
             end
          %projection on object (gridded plane)
             if test_object
-                Field{iview}=proj_field(Field{iview},ProjObject);
+                [Field{iview},errormsg]=proj_field(Field{iview},ProjObject);
+                if ~isempty(errormsg)
+                    msgbox_uvmat('ERROR',['error in merge_proge/proj_field: ' errormsg])
+                    return
+                end
             end
         end    
         %----------END LOOP ON VIEWS----------------------
