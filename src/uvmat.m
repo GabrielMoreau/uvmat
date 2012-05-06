@@ -237,8 +237,8 @@ set(hObject,'DeleteFcn',{@closefcn})%
 
 %% refresh projection plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
-set(handles.ListObject,'Value',1)% default: empty projection objectproj_field
-set(handles.ListObject,'String',{''})
+set(handles.ListObject_1,'Value',1)% default: empty projection objectproj_field
+set(handles.ListObject_1,'String',{''})
 set(handles.Fields,'Value',1)
 set(handles.Fields,'string',{''})
 
@@ -363,7 +363,7 @@ if testinputfield
         set(handles.MenuTools,'Enable','on')
         set(handles.OBJECT_txt,'Visible','on')
         set(handles.edit_object,'Visible','on')
-        set(handles.ListObject,'Visible','on')
+%         set(handles.ListObject_1,'Visible','on')
         set(handles.frame_object,'Visible','on')
         if ~isempty(errormsg)
             msgbox_uvmat('ERROR',errormsg)
@@ -801,7 +801,8 @@ switch FileType
         set(handles.MenuTools,'Enable','on')
         set(handles.OBJECT_txt,'Visible','on')
         set(handles.edit_object,'Visible','on')
-        set(handles.ListObject,'Visible','on')
+         set(handles.ListObject_1,'Visible','on')
+         set(handles.ViewObject_1,'Visible','on')
         set(handles.frame_object,'Visible','on')
         
         % initiate input file series and refresh the current field view:     
@@ -3890,67 +3891,60 @@ write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
 
-%------------------------------------------------------------------------
-% --- Executes on selection change in ListObject.
-function ListObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-list_str=get(handles.ListObject,'String');
-IndexObj_old=get(handles.ListObject,'UserData');%retrieve previous selection
-IndexObj=get(handles.ListObject,'Value');%present object selection
-
-%% we select two objects or more at once (using the Ctrl key), keep only the last two items: the first is projected on uvmat, the second on view_field
-if length(IndexObj)>2
-     IndexObj=[IndexObj(end-1) IndexObj(end)];%keeps only the last two selected items at most
-end
-
-%% we select one object 
-if length(IndexObj)==1% 
-    if length(IndexObj_old)>=2 && isequal(IndexObj_old(1),IndexObj)   % we select the first previously selected object-> 
-        IndexObj=[1 IndexObj_old(2)];% it desactivates this object and selects the first object for uvmat
-    elseif length(IndexObj_old)>=2 && isequal(IndexObj_old(2),IndexObj) % we select the second previously selected object->
-        IndexObj=IndexObj_old(1);% it desactivates this object  and keeps only the first previously selected object (uvmat)
-    else % 
-        IndexObj=[IndexObj_old(1) IndexObj];% activates a second object while keeping the first previously selected one
-    end
-end
- 
-%% The second object is selected, it is displayed in set_object if this GUI is already opened
+% --- Executes on selection change in ListObject_1.
+function ListObject_1_Callback(hObject, eventdata, handles)
+list_str=get(handles.ListObject_1,'String');
+IndexObj=get(handles.ListObject_1,'Value');
 UvData=get(handles.uvmat,'UserData');
-ObjectData=UvData.Object{IndexObj(end)};
+ObjectData=UvData.Object{get(handles.ListObject_1,'Value')};
+
+%% update the projection plot on uvmat
+ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on UvData.Object{IndexObj(1)}
+plot_field(ProjData,handles.axes3,read_GUI(handles.uvmat));%read plotting parameters on the uvmat interfacPlotHandles);
+
+%% display the object parameters if the GUI set_object is already opened
 hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
-    delete(hset_object)% delete to refesh the content
+%     delete(hset_object)% delete to refesh the content
     ZBounds=0; % default
     if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
         ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
         ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
     end
-    ObjectData.Name=list_str{IndexObj(end)};
+    ObjectData.Name=list_str{IndexObj};
     set_object(ObjectData,[],ZBounds);
+    set(handles.ViewObject_1,'Value',1)% show that the selected object in ListObject_1 is currently visualised
 end
 %  desactivate the edit object mode
 set(handles.edit_object,'Value',0) 
 set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
 
-%% update the object value stored in ListObject
-set(handles.ListObject,'Value',IndexObj); % marks the selected objects in the list
-set(handles.ListObject,'UserData',IndexObj)% keep the current object selection in memory for next time
-% 
-% UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
-% if numel(UvData.Object)<max(IndexObj);
-%     msgbox_uvmat('ERROR','invalid object list')
-%     return
-% end
-% if numel(IndexObj)>=2
-%     UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));%update the current object graphic representation
-%     set(handles.uvmat,'UserData',UvData)
-% end
+%------------------------------------------------------------------------
+% --- Executes on selection change in ListObject.
 
-%% update the main plot (on uvmat) if the first selected object has been changed
-if ~isequal(IndexObj(1),IndexObj_old(1))
-    ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on UvData.Object{IndexObj(1)}
-    plot_field(ProjData,handles.axes3,read_GUI(handles.uvmat));%read plotting parameters on the uvmat interfacPlotHandles);
+function ListObject_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+list_str=get(handles.ListObject,'String');
+IndexObj=get(handles.ListObject,'Value');%present object selection
+
+%% The object  is displayed in set_object if this GUI is already opened
+UvData=get(handles.uvmat,'UserData');
+ObjectData=UvData.Object{IndexObj};
+hset_object=findobj(allchild(0),'tag','set_object');
+if ~isempty(hset_object)
+%     delete(hset_object)% delete to refesh the content
+    ZBounds=0; % default
+    if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
+        ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
+        ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
+    end
+    ObjectData.Name=list_str{IndexObj};
+    set_object(ObjectData,[],ZBounds);
+    set(handles.ViewObject,'Value',1)% show that the selected object in ListObject is currently visualised
 end
+%  desactivate the edit object mode
+set(handles.edit_object,'Value',0) 
+set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
 
 %% update the second plot (on view_field) if view_field is already openened
 axes_view_field=[];%default
@@ -4022,51 +4016,111 @@ if ~isempty(DisplayHandle)
 end
 
 %------------------------------------------------------------------------
+% --- Executes on button press in ViewObject_1.
+function ViewObject_1_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+check_view=get(handles.ViewObject_1,'Value');
+
+if check_view %activate set_object    
+    set(handles.ViewObject,'Value',0)% deselect ViewObject 
+    IndexObj=get(handles.ListObject_1,'Value');
+    list_object=get(handles.ListObject_1,'String');
+    UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
+    UvData.Object{IndexObj}.Name=list_object{IndexObj};
+    if numel(UvData.Object)<IndexObj;% error in UvData
+        msgbox_uvmat('ERROR','invalid object list')
+        return
+    end
+    ZBounds=0; % default
+    if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
+        ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
+        ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
+    end
+    set(handles.ListObject_1,'Value',IndexObj);%restore ListObject selection after set_object deletion
+    data=UvData.Object{IndexObj};
+    if ~isfield(data,'Type')% default plane
+        data.Type='plane';
+    end
+    if isfield(UvData,'Field')
+        Field=UvData.Field;
+        if isfield(UvData.Field,'Mesh')&&~isempty(UvData.Field.Mesh)
+            data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
+            if strcmp(data.Type,'line')||strcmp(data.Type,'polyline')
+                data.RangeY=UvData.Field.Mesh;
+            else
+                data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
+            end
+            data.DX=UvData.Field.Mesh;
+            data.DY=UvData.Field.Mesh;
+        end
+        if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
+            data.Coord=[0 0 0]; %default
+        end
+        if isfield(Field,'CoordUnit')
+            data.CoordUnit=Field.CoordUnit;
+        end
+    end
+    hset_object=set_object(data,[],ZBounds);
+    hhset_object=guidata(hset_object);
+    if get(handles.edit_object,'Value')% edit mode
+        set(hhset_object.PLOT,'Enable','on')
+    else
+        set(hhset_object.PLOT,'Enable','off')
+    end
+else
+    hset_object=findobj(allchild(0),'tag','set_object');
+    if ~isempty(hset_object)
+        delete(hset_object)% delete existing version of set_object
+    end
+end
+  
+%------------------------------------------------------------------------
 % --- Executes on button press in ViewObject.
 function ViewObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-IndexObj=get(handles.ListObject,'Value');
-% IndexObj=IndexObj(end); %keeps only the second value
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
-if numel(UvData.Object)<IndexObj(end);% error in UvData
-    msgbox_uvmat('ERROR','invalid object list')
-    return
-end
-% ObjectData=UvData.Object{IndexObj(};
-ZBounds=0; % default
-if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
-    ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
-    ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
-end
-hset_object=findobj(allchild(0),'tag','set_object');
-if ~isempty(hset_object)
-    delete(hset_object)% delete existing version of set_object
-end
-set(handles.ListObject,'Value',IndexObj);%restore ListObject selection after set_object deletion 
-if ~isfield(UvData.Object{IndexObj(1)},'Type')% default plane
-    UvData.Object{IndexObj(1)}.Type='plane';
-end
-list_object=get(handles.ListObject,'String');
-UvData.Object{IndexObj(end)}.Name=list_object{IndexObj(end)};
-hset_object=set_object(UvData.Object{IndexObj(end)},[],ZBounds);
-hhset_object=guidata(hset_object);
-if get(handles.edit_object,'Value')% edit mode
-    set(hhset_object.PLOT,'Enable','on')
-else
-    set(hhset_object.PLOT,'Enable','off')
-end
+check_view=get(handles.ViewObject,'Value');
 
-%% show the second plot (on view_field) 
-if length(IndexObj)==2 
-    ProjData= proj_field(UvData.Field,UvData.Object{IndexObj(2)});%project the current field on ObjectData
+if check_view
+    set(handles.ViewObject_1,'Value',0)% unselect ViewObject_1 
+    IndexObj=get(handles.ListObject,'Value');
+    UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
+    if numel(UvData.Object)<IndexObj(end);% error in UvData
+        msgbox_uvmat('ERROR','invalid object list')
+        return
+    end
+    ZBounds=0; % default
+    if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
+        ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
+        ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
+    end
+    set(handles.ListObject,'Value',IndexObj);%restore ListObject selection after set_object deletion
+    if ~isfield(UvData.Object{IndexObj(1)},'Type')% default plane
+        UvData.Object{IndexObj(1)}.Type='plane';
+    end
+    list_object=get(handles.ListObject,'String');
+    UvData.Object{IndexObj(end)}.Name=list_object{IndexObj(end)};
+    hset_object=set_object(UvData.Object{IndexObj(end)},[],ZBounds);
+    hhset_object=guidata(hset_object);
+    if get(handles.edit_object,'Value')% edit mode
+        set(hhset_object.PLOT,'Enable','on')
+    else
+        set(hhset_object.PLOT,'Enable','off')
+    end
+    
+    %% show the second plot (on view_field)
+    ProjData= proj_field(UvData.Field,UvData.Object{IndexObj});%project the current field on ObjectData
     hview_field=findobj(allchild(0),'tag','view_field');
     if isempty(hview_field)
         hview_field=view_field;
     end
-    PlotHandles=guidata(hview_field);     
+    PlotHandles=guidata(hview_field);
     plot_field(ProjData,PlotHandles.axes3,read_GUI(hview_field));%read plotting parameters on the uvmat interfacPlotHandles);
+else
+    hset_object=findobj(allchild(0),'tag','set_object');
+    if ~isempty(hset_object)
+        delete(hset_object)% delete existing version of set_object
+    end
 end
-
 %-------------------------------------------------------------------
 % --- Executes on selection change in edit_object.
 function edit_object_Callback(hObject, eventdata, handles)
@@ -4104,8 +4158,10 @@ end
 function delete_object_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 IndexObj=get(handles.ListObject,'Value');
-if IndexObj(end)>1 
-    delete_object(IndexObj(end))
+IndexObj_1=get(handles.ListObject_1,'Value');
+
+if IndexObj>1 && ~isequal(IndexObj,IndexObj_1)
+    delete_object(IndexObj)
 end
 
 %------------------------------------------------------------------------
@@ -4251,6 +4307,7 @@ function Menupoints_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='points';
 data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 % -----------------------------------------------------------------------
@@ -4258,6 +4315,7 @@ function Menuline_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='line';
 data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 %------------------------------------------------------------------------
@@ -4265,6 +4323,7 @@ function Menupolyline_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='polyline';
 data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 %------------------------------------------------------------------------
@@ -4272,6 +4331,7 @@ function Menupolygon_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='polygon';
 data.ProjMode='inside';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 %------------------------------------------------------------------------
@@ -4279,6 +4339,7 @@ function Menurectangle_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='rectangle';
 data.ProjMode='inside';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 %------------------------------------------------------------------------
@@ -4286,6 +4347,7 @@ function Menuellipse_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='ellipse';
 data.ProjMode='inside';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 %------------------------------------------------------------------------
@@ -4302,6 +4364,7 @@ function Menuplane_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='plane';
 data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 %------------------------------------------------------------------------
@@ -4309,46 +4372,39 @@ function Menuvolume_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='volume';
 data.ProjMode='interp';%default
+data.ProjModeMenu={};
 % set(handles.create,'Visible','on')
 % set(handles.create,'Value',1)
-% VOLUME_Callback(hObject,eventdata,handles)
+% VOLUME_Callback(hObject,eventdata,handles)data.ProjModeMenu={};
 create_object(data,handles)
 
 %------------------------------------------------------------------------
 % --- generic function used for the creation of a projection object
 function create_object(data,handles)
 %------------------------------------------------------------------------
-
+% desactivate geometric calibration if opened
 hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
 if ishandle(hgeometry_calib)
     hhgeometry_calib=guidata(hgeometry_calib);
     set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
     set(hhgeometry_calib.edit_append,'BackgroundColor',[0.7 0.7 0.7])
 end
-UvData=get(handles.uvmat,'UserData');
 set(handles.edit_object,'Value',0); %suppress the object edit mode
 set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
-% data.enable_plot=1;
+UvData=get(handles.uvmat,'UserData');
+data.Name=data.Type;% default name=type
 data.Coord=[0 0]; %default
 if isfield(UvData,'Field')
     Field=UvData.Field;
     if isfield(UvData.Field,'Mesh')&&~isempty(UvData.Field.Mesh)
         data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
-        if strcmp(data.Type,'line')||strcmp(data.Type,'polyline')
+        if strcmp(data.Type,'line')||strcmp(data.Type,'polyline')||strcmp(data.Type,'points')
             data.RangeY=UvData.Field.Mesh;
         else
             data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
         end
         data.DX=UvData.Field.Mesh;
         data.DY=UvData.Field.Mesh;
-        
-%     elseif isfield(Field,'AX')&& isfield(Field,'AY')&& isfield(Field,'A')%only image
-%         np=size(Field.A);
-%         meshx=(Field.AX(end)-Field.AX(1))/np(2);
-%         meshy=abs(Field.AY(end)-Field.AY(1))/np(1);
-%         data.RangeY=max(meshx,meshy);
-%         data.RangeX=max(meshx,meshy);
-%         data.DX=max(meshx,meshy);
     end
     if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
          data.Coord=[0 0 0]; %default
@@ -4360,18 +4416,16 @@ end
 if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
 end
-hset_object=findobj(allchild(0),'tag','set_object');
-IndexObj=get(handles.ListObject,'Value');
-if ~isempty(hset_object)
-    delete(hset_object)% delete existing version of set_object
-end
-set(handles.ListObject,'Value',IndexObj)
+set(handles.ListObject,'Visible','on')
+set(handles.ViewObject,'Visible','on')
+set(handles.ViewObject,'Value',1) % indicate that the object selected in ListObject (projection oin view_field) is visualised
+set(handles.ViewObject_1,'Value',0)% then the object selected in ListObject_1 is not visualised
 hset_object=set_object(data,handles);% call the set_object interface
 hhset_object=guidata(hset_object);
 set(hhset_object.PLOT,'enable','on')% activate the refresh button
 set(handles.MenuObject,'checked','on')
 set(handles.uvmat,'UserData',UvData)
-set(handles.CheckZoom,'Value',0)
+set(handles.CheckZoom,'Value',0) %desactivate the zoom for object creation by the mouse
 CheckZoom_Callback(handles.uvmat, [], handles)
 set(handles.delete_object,'Visible','on')
 
@@ -4481,7 +4535,7 @@ if isempty(val)
     msgbox_uvmat('ERROR','polygons must be first created by Projection object/mask polygon in the menu bar');
     return
 else
-    set(handles.ListObject,'Max',2);%allow multiple selection
+%     set(handles.ListObject,'Max',2);%allow multiple selection
     set(handles.ListObject,'Value',val);
     flag=1;
     npx=size(UvData.Field.A,2);

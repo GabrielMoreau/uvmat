@@ -210,7 +210,6 @@ if isfield (Param,'Civ2')
         %read first image if not already done for civ1
         [Field,ParamOut,errormsg] = read_field(par_civ2.ImageA,par_civ2.FileTypeA,[],par_civ2.i1);
         par_civ2.ImageA=Field.A;
-        %      par_civ2.ImageA=imread(Param.Civ2.ImageA);
     else
         par_civ2.ImageA=par_civ1.ImageA;
     end
@@ -218,7 +217,6 @@ if isfield (Param,'Civ2')
         %read first image if not already done for civ1
         [Field,ParamOut,errormsg] = read_field(par_civ2.ImageB,par_civ2.FileTypeB,[],par_civ2.i2);
         par_civ2.ImageB=Field.A;
-        %      par_civ2.ImageB=imread(Param.Civ2.ImageB);
     else
         par_civ2.ImageB=par_civ1.ImageB;
     end

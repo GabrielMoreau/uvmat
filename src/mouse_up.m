@@ -144,10 +144,8 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
             ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj}.DisplayHandle_view_field;
             UvData.Object{IndexObj}=ObjectData;%update the current object properties
             hhuvmat=guidata(huvmat);
-            IndexObj=get(hhuvmat.ListObject,'Value');
-            IndexObj_1=IndexObj(1);
-            IndexObj_2=IndexObj(2);
-            %IndexObj_2=get(hhuvmat.list_object_2,'Value');
+            IndexObj_1=get(hhuvmat.ListObject_1,'Value');
+            IndexObj_2=get(hhuvmat.ListObject,'Value');
             UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
 
             %% plot the field projected on the object 

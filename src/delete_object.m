@@ -10,10 +10,8 @@ function delete_object(hObject)
 
 huvmat=findobj('tag','uvmat');%handles of the uvmat interface
 UvData=get(huvmat,'UserData');
-hlist_object=findobj(huvmat,'Tag','ListObject');%handles of the object liçst in the uvmat interface
+hlist_object=findobj(huvmat,'Tag','ListObject');%handles of the object list in the uvmat interface
 list_str=get(hlist_object,'String');%objet list
-ObjectData=[];%default
-hdisplay=[];
 if isequal(floor(hObject),hObject) %case of an index
     if  ~isempty(UvData) & isfield(UvData, 'Object') & length(UvData.Object)>=hObject 
         if isfield(UvData.Object{hObject},'DisplayHandle_uvmat') 
@@ -75,6 +73,12 @@ end
 set(huvmat,'UserData',UvData);
 set(hlist_object,'String',list_str)
 set(hlist_object,'Value',length(list_str))
-hlist_object=findobj(huvmat,'Tag','list_object_2');%handles of the object liçst in the uvmat interface
-set(hlist_object,'String',[list_str;{'...'}])
-set(hlist_object,'Value',length(list_str)+1)
+hlist_object_1=findobj(huvmat,'Tag','ListObject_1');%handles of the first object list in the uvmat interface
+old_index=get(hlist_object_1,'Value');
+set(hlist_object_1,'String',list_str)
+if hObject<=old_index
+    set(hlist_object_1,'Value',old_index-1)
+end
+% hlist_object=findobj(huvmat,'Tag','list_object_2');%handles of the object liçst in the uvmat interface
+% set(hlist_object,'String',[list_str;{'...'}])
+% set(hlist_object,'Value',length(list_str)+1)

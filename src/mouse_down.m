@@ -244,17 +244,17 @@ if  test_edit && (isequal(tag_obj,'proj_object')||isequal(tag_obj,'DeformPoint')
             IndexObj=ObjectData.IndexObj;
                     %indicate on the list of the GUI uvmat which object has been selected
             if strcmp(get(hcurrentfig,'tag'),'uvmat') %if the uvmat graph has been selected, object projection is on the other frame view_field
-                IndexObj_old=get(hhuvmat.ListObject,'Value');
-                if IndexObj>IndexObj_old(1)
-                    IndexObj=[IndexObj_old(1) IndexObj];
-                else
-                    IndexObj=[1 IndexObj];
-                end
+%                 IndexObj=get(hhuvmat.ListObject,'Value');
+%                 if IndexObj>IndexObj_old(1)
+%                     IndexObj=[IndexObj_old(1) IndexObj];
+%                 else
+%                     IndexObj=[1 IndexObj];
+%                 end
                 set(hhuvmat.ListObject,'Value',IndexObj);
-                set(hhuvmat.ListObject,'UserData',IndexObj);
+%                 set(hhuvmat.ListObject,'UserData',IndexObj);
             else
-                set(hhuvmat.ListObject,'Value',IndexObj);
-                list_str=get(hhuvmat.ListObject,'String');
+                set(hhuvmat.ListObject_1,'Value',IndexObj);
+                list_str=get(hhuvmat.ListObject_1,'String');
                 UvData.Object{IndexObj}.Name=list_str{IndexObj};
             end
             h_set_object=findobj(allchild(0),'Tag','set_object');
@@ -289,29 +289,30 @@ end
 %%  create new projection  object
 if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeData.Drawing,'create'))
     hset_object=findobj(allchild(0),'tag','set_object');
+    % activate this option if the GUI set_object is opened
     if ~isempty(hset_object)
-        sethandles=guidata(hset_object);
-        ObjectData=read_GUI(hset_object); %read object features in the GUI set_object
+        sethandles=guidata(hset_object);% handles of the elements in set_object
+        ObjectData=read_GUI(hset_object); %read object parameters in the GUI set_object
         ObjectData.Coord=[]; %reset previous object coordinates
-        ObjectData.Coord(1,1)=xy(1,1);
+        ObjectData.Coord(1,1)=xy(1,1); % the object first coordinate is set by the mouse position
         ObjectData.Coord(1,2)=xy(1,2);
-        if isfield(AxeData,'ObjectCoord') & size(AxeData.ObjectCoord,2)==3
+        if isfield(AxeData,'ObjectCoord') && size(AxeData.ObjectCoord,2)==3
             ObjectData.Coord(1,3)=AxeData.ObjectCoord(1,3); %generaliser au cas avec angle
         end
         AxeData.CurrentObject=plot_object(ObjectData,[],haxes,'m');%draw the object and its handle becomes AxeData.CurrentObject
         if isfield(UvData,'Object')
             IndexObj=length(UvData.Object)+1;% add the object as index IndexObj on the list of the interface
         else
-            IndexObj=2;
+            IndexObj=2;% the first object is used for uvmat display or blank
         end
         UvData.Object{IndexObj}=ObjectData;
-        ListObject=get(hhuvmat.ListObject,'String');
-        IndexObj_old=get(hhuvmat.ListObject,'Value');
+        ListObject=get(hhuvmat.ListObject_1,'String');
         UvData.Object{IndexObj}.DisplayHandle_uvmat=AxeData.CurrentObject;
         ObjectNameNew=ObjectData.Name;
         if isempty(ObjectNameNew)
              ObjectNameNew=ObjectData.Type;
         end
+        % add an index to the object name if the proposed name already exists
         vers=0;% index of the name
         detectname=1;
         while detectname==1
@@ -329,9 +330,11 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
         end
         ObjectName=ObjectNameNew;
         set(sethandles.Name,'String',ObjectName)% display the default name in set_object
-        IndexObj=numel(ListObject)+1;% append an object to the list in uvmat
+%         IndexObj=numel(ListObject)+1;% append an object to the list in uvmat
         set(hhuvmat.ListObject,'String',[ListObject;{ObjectName}]);%complement the object list
-        set(hhuvmat.ListObject,'Value',[IndexObj_old(1) IndexObj])
+        set(hhuvmat.ListObject_1,'String',[ListObject;{ObjectName}]);%complement the object list
+        %set(hhuvmat.ListObject,'Value',[IndexObj_old(1) IndexObj])
+        set(hhuvmat.ListObject,'Value',IndexObj)
         %             if isempty(object_name)
         %                 list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Type];
         %                 set(sethandles.Name,'String',list_str{IndexObj})
@@ -343,8 +346,8 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
         set(huvmat,'UserData',UvData)
         PlotData=get(AxeData.CurrentObject,'UserData');
         PlotData.IndexObj=IndexObj;
-        set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph
-        AxeData.Drawing='create';
+        set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph (memory used for mouse motion)
+        AxeData.Drawing='create';% flag for mouse motion
     end
 end
 

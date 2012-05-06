@@ -85,13 +85,9 @@ end
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function (allow action on uvmat when set_object is in front)
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'DeleteFcn',{@closefcn})
-enable_plot=0;%default: does not allow plot of object and projection
 
 % fill the interface as set in the input data:
 if exist('data','var') 
-%     if isfield(data,'enable_plot')
-%         enable_plot=data.enable_plot;%test to desable button PLOT (display mode)
-%     end
     if isfield(data,'Coord') &&size(data.Coord,2)==3
         set(handles.z_slider,'Visible','on')
     else
@@ -101,10 +97,13 @@ if exist('data','var')
         set(handles.Type,'String',data.TypeMenu)
     end
     if isfield(data,'ProjModeMenu')
-%         set(handles.ProjMode,'String',data.ProjModeMenu) % data.ProjModeMenu as projMode menu
         set(handles.ProjMode,'UserData',data.ProjModeMenu)% data.ProjModeMenu as default menu (used in Type_Callback)
     end
     errormsg=fill_GUI(data,handles);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR','bad data input in set_object')
+        return
+    end
     Type_Callback(hObject, eventdata, handles)% update the GUI set_object depending on the object type   
 
     if isfield(data,'RangeZ') && length(ZBounds) >= 2
@@ -180,7 +179,9 @@ function closefcn(gcbo,eventdata)
 huvmat=findobj(allchild(0),'Tag','uvmat');%find the current uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
-    set(hhuvmat.edit_object,'Value',0)
+    set(hhuvmat.ViewObject_1,'value',0)% desactivate the two view buttons
+    set(hhuvmat.ViewObject,'value',0)% 
+    set(hhuvmat.edit_object,'Value',0)% desactivate the edit option
     set(hhuvmat.edit_object,'BackgroundColor',[0.7 0.7 0.7])%put unactivated buttons to gree
     % deselect the object in ListObject when view_field is closed
     if isempty(findobj(allchild(0),'Tag','view_field'))
@@ -256,10 +257,12 @@ if isempty(get(handles.ProjMode,'UserData'))
 else
     menu_proj=get(handles.ProjMode,'UserData');
 end
-proj_index=get(handles.ProjMode,'Value');
-if proj_index>numel(menu_proj)
-    set(handles.ProjMode,'Value',1);% value index must not exceed the menu length
+ProjModeList=get(handles.ProjMode,'String');
+menu_index=find(strcmp(ProjModeList{get(handles.ProjMode,'Value')},menu_proj));
+if isempty(menu_index)
+    menu_index=1;% 
 end
+set(handles.ProjMode,'Value',menu_index);% value index must not exceed the menu length
 set(handles.ProjMode,'String',menu_proj)
 ProjMode_Callback(hObject, eventdata, handles)
 
@@ -411,15 +414,17 @@ function num_DZ_Callback(hObject, eventdata, handles)
 % --- Executes on button press in PLOT: PLOT the defined object and its projected field
 function PLOT_Callback(hObject, eventdata, handles)
 
-%% reading the object parameters on the GUI uvmat
+%% reading the object selection in the GUI uvmat
 huvmat=findobj('tag','uvmat');%find the current uvmat GUI handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
 hhuvmat=guidata(huvmat);%handles of the objects children of the  GUI uvmat
 ListObject=get(hhuvmat.ListObject,'String');% list of objects displyed in uvmat
-IndexObj=get(hhuvmat.ListObject,'Value');% index(indices) of the selected object(s) in uvmat
-                                        % (the first one is plotted in uvmat axis, the second one in view_field)
+IndexObj(1)=get(hhuvmat.ListObject_1,'Value');% index of the selected object for display in uvmat
+if get(hhuvmat.ViewObject,'Value') 
+    IndexObj(2)=get(hhuvmat.ListObject,'Value');% index of the object, possibly selected for display in view_field 
+end
 
-%% read the object on the GUI set_object
+%% read the object parameters in the GUI set_object
 ObjectData=read_GUI(handles.set_object);%read the parameters defining the object in the GUI set_object
 if iscell(ObjectData.Coord)%check for empty line
     ObjectData.Coord=[0 0 0];
@@ -432,15 +437,15 @@ if ~isempty(checknan)
 end
 ObjectName=ObjectData.Name;%name of the current object defined in set_object
 if isempty(ObjectName)
-    if get(hhuvmat.edit_object,'Value')% edit mode
-        if isempty(ListObject)
-            ObjectName='Plane';
-        else
-            ObjectName=ListObject{IndexObj(end)};%take the name of the last (second) selected item
-        end
-    else %new object
+%     if get(hhuvmat.edit_object,'Value')% edit mode
+%         if isempty(ListObject)
+%             ObjectName='Plane';
+%         else
+%             ObjectName=ListObject{IndexObj(end)};%take the name of the last (second) selected item
+%         end
+%     else %new object
         ObjectName=ObjectData.Type;
-    end
+%     end
 end
 if ~get(hhuvmat.edit_object,'Value') %new object is being created
     detectname=1;
@@ -463,7 +468,8 @@ if ~get(hhuvmat.edit_object,'Value') %new object is being created
     set(handles.Name,'String',ObjectName)% display the default name in set_object
     IndexObj(2)=numel(ListObject)+1;% append an object to the list in uvmat
     set(hhuvmat.ListObject,'String',[ListObject;{ObjectName}]);%complement the object list
-    set(hhuvmat.ListObject,'Value',IndexObj)
+    set(hhuvmat.ListObject_1,'String',[ListObject;{ObjectName}]);%complement the object list
+    set(hhuvmat.ListObject,'Value',IndexObj(2))
     UvData.Object{IndexObj(2)}=[];%initiate a new object (empty yet)
 end
 testnew=0;
@@ -481,13 +487,14 @@ end
 %% naming the object
 ListObject{IndexObj(end),1}=ObjectName;
 set(hhuvmat.ListObject,'String',ListObject)
+set(hhuvmat.ListObject_1,'String',ListObject)
 
 %% update the object plot 
-if testnew
-    set(hhuvmat.ListObject,'Value',IndexObj)
-    ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
-    ObjectData.DisplayHandle_view_field=[];
-else
+% if testnew
+%     set(hhuvmat.ListObject,'Value',IndexObj)
+%     ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
+%     ObjectData.DisplayHandle_view_field=[];
+% else
     if IndexObj(end)<=length(UvData.Object) && isfield(UvData.Object{IndexObj(end)},'DisplayHandle_uvmat')% save the previous object graph handles
         ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj(end)}.DisplayHandle_uvmat;
     else
@@ -498,17 +505,16 @@ else
     else
         ObjectData.DisplayHandle_view_field=[];
     end
-end
+% end
 UvData.Object{IndexObj(end)}=ObjectData;%update the current object properties
-if numel(IndexObj)==2
+ if numel(IndexObj)==2
     UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));
-end
+ end
 set(huvmat,'UserData',UvData)
 
 %% plot the field projected on the object and store in the corresponding figue
 if strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')||strcmp(ObjectData.ProjMode,'none')
     PlotType='text';
-    
 else
     [ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current field of uvmat on ObjectData
     if ~isempty(errormsg)
