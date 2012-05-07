@@ -99,9 +99,8 @@ if ~exist('PlotParam','var'),PlotParam=[];end;
 if ~exist('PosColorbar','var'),PosColorbar=[];end;
 PlotType='text'; %default
 PlotParamOut=PlotParam;%default
-Coordinates=[];
-if isfield(PlotParam,'Coordinates')
-Coordinates=PlotParam.Coordinates;
+if ~isfield(PlotParam,'Coordinates')
+    PlotParam.Coordinates=[];
 end
 
 %% check input structure
@@ -192,17 +191,17 @@ if ~isempty(index_2D)|| ~isempty(index_1D)%  plot
     end
     
     %% set axes properties
-    if isfield(Coordinates,'CheckFixLimits') && isequal(Coordinates.CheckFixLimits,1)  %adjust the graph limits
+    if isfield(PlotParam.Coordinates,'CheckFixLimits') && isequal(PlotParam.Coordinates.CheckFixLimits,1)  %adjust the graph limits
         set(haxes,'XLimMode', 'manual')
         set(haxes,'YLimMode', 'manual')
     else
         set(haxes,'XLimMode', 'auto')
         set(haxes,'YLimMode', 'auto')
     end
-    if ~isfield(Coordinates,'CheckFixEqual')&& isfield(Data,'CoordUnit')
-        Coordinates.CheckFixEqual=1;
+    if ~isfield(PlotParam.Coordinates,'CheckFixEqual')&& isfield(Data,'CoordUnit')
+        PlotParam.Coordinates.CheckFixEqual=1;% if CoordUnit is defined, the two coordiantes should be plotted with equal scale by default
     end
-    if isfield(Coordinates,'CheckFixEqual') && isequal(Coordinates.CheckFixEqual,1)
+    if isfield(PlotParam.Coordinates,'CheckFixEqual') && isequal(PlotParam.Coordinates.CheckFixEqual,1)
         set(haxes,'DataAspectRatioMode','manual')
         set(haxes,'DataAspectRatio',[1 1 1])
     else
@@ -227,7 +226,7 @@ if ~isempty(index_2D)|| ~isempty(index_1D)%  plot
             plot_profile([],[],[],haxes);%
         end
     else
-        Coordinates=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,Coordinates);%
+        Coordinates=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,PlotParam.Coordinates);%
         if testzoomaxes
             [zoomaxes,Coordinates]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam.Coordinates);
             AxeData.ZoomAxes=zoomaxes;
@@ -498,15 +497,14 @@ end
 %-------------------------------------------------------------------
 function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex,VarTypeCell,haxes,PlotParam,PosColorbar)
 %-------------------------------------------------------------------
-grid(haxes, 'off')
+
+grid(haxes, 'off')% remove grid (possibly remaining from other graphs)
 %default plotting parameters
 PlotType='plane';%default
 if ~exist('PlotParam','var')
     PlotParam=[];
 end
-if ~isfield(PlotParam,'Coordinates')
-    PlotParam.Coordinates=[];
-end
+
 if ~isfield(PlotParam,'Scalar')
     PlotParam.Scalar=[];
 end
@@ -865,7 +863,14 @@ if test_ima
             else % to deal with uniform field
                 hima=imagesc(AX,AY,B,[MaxA-1 MaxA]);
             end
-            set(hima,'Tag','ima','HitTest','off')
+            % the function imagesc reset the axes 'DataAspectRatioMode'='auto', change if .CheckFixEqual is
+            % requested:
+           if isfield(PlotParam.Coordinates,'CheckFixEqual') && isequal(PlotParam.Coordinates.CheckFixEqual,1)
+                set(haxes,'DataAspectRatioMode','manual')
+                set(haxes,'DataAspectRatio',[1 1 1])
+           end 
+            set(hima,'Tag','ima')
+            set(hima,'HitTest','off')
             set(haxes,'Tag',tag);%preserve the axes tag (removed by image fct !!!)     
             uistack(hima, 'bottom')
         % update an existing image

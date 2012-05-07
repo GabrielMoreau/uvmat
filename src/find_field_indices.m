@@ -51,6 +51,7 @@
 
 function [CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data)
 CellVarIndex={};
+
 NbDim=[];
 VarType=[];
 errormsg=[];
@@ -104,17 +105,17 @@ end
 ListRole={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','warnflag','errorflag',...
     'ancillary','image','color','discrete','scalar','coord_tps'};
 NbDim=zeros(size(CellVarIndex));%default
+if isfield(Data,'VarAttribute');
+    VarAttribute=Data.VarAttribute;
+else
+    VarAttribute={};
+end
 for icell=1:length(CellVarIndex)
     for ilist=1:numel(ListRole)
         eval(['ivar_' ListRole{ilist} '=[];'])
     end
     VarIndex=CellVarIndex{icell};%set of variable indices with the same dim 
     DimCell=Data.VarDimName{VarIndex(1)};% list of dimensions for each variable in the cell #icell
-    if isfield(Data,'VarAttribute');
-        VarAttribute=Data.VarAttribute;
-    else
-        VarAttribute={};
-    end
     test_2D=0;
     for ivar=VarIndex
         if length(VarAttribute)>=ivar
@@ -180,7 +181,7 @@ for icell=1:length(CellVarIndex)
     end  
     VarType{icell}.coord=coord; 
     if NbDim(icell)==0 && test_2D %look at attributes Coord_1, coord_2 (obsolete convention)
-        NbDim(icell)=2;
+        NbDim(icell)=2;     
     end
     %look for tps data
     if ~isempty(VarType{icell}.coord_tps)

@@ -167,50 +167,54 @@ if isfield(DataIn,'SubRange') && isfield(DataIn,'Coord_tps') && (exist('Coord_in
             switch FieldList{ilist}
                 case 'velocity'
                     ListFields={'U', 'V'};
-                    VarAttributes{var_count+1}.Role='vector_x';
-                    VarAttributes{var_count+2}.Role='vector_y';
+                    VarAttribute{var_count+1}.Role='vector_x';
+                    VarAttribute{var_count+2}.Role='vector_y';
                     DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *DataIn.U_tps(1:nbvec_sub+3,isub);
                     DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *DataIn.V_tps(1:nbvec_sub+3,isub);
                 case 'u'
                     ListFields={'u'};
-                    VarAttributes{var_count+1}.Role='scalar';
+                    VarAttribute{var_count+1}.Role='scalar';
                     DataOut.u(ind_sel)=DataOut.u(ind_sel)+EM *DataIn.U_tps(1:nbvec_sub+3,isub);
                 case 'v'
                     ListFields={'v'};
-                    VarAttributes{var_count+1}.Role='scalar';
+                    VarAttribute{var_count+1}.Role='scalar';
                     DataOut.v(ind_sel)=DataOut.v(ind_sel)+EM *DataIn.V_tps(1:nbvec_sub+3,isub);
                 case 'norm_vel'
                     ListFields={'norm_vel'};
-                    VarAttributes{var_count+1}.Role='scalar';
-                    V=DataOut.U(ind_sel)+EM *DataIn.U_tps(1:nbvec_sub+3,isub);
+                    VarAttribute{var_count+1}.Role='scalar';
+                    U=DataOut.U(ind_sel)+EM *DataIn.U_tps(1:nbvec_sub+3,isub);
                     V=DataOut.V(ind_sel)+EM *DataIn.V_tps(1:nbvec_sub+3,isub);
                     DataOut.norm_vel(ind_sel)=sqrt(U.*U+V.*V);
                 case 'vort'
                     ListFields={'vort'};
-                    VarAttributes{var_count+1}.Role='scalar';
-                    DataOut.vort(ind_sel)=DataOut.vort(ind_sel)+EMDY *DataIn.U_tps(1:nbvec_sub+3,isub)-EMDX *DataIn.V_tps(1:nbvec_sub+3,isub);
+                    VarAttribute{var_count+1}.Role='scalar';
+                    DataOut.vort(ind_sel)=DataOut.vort(ind_sel)-EMDY *DataIn.U_tps(1:nbvec_sub+3,isub)+EMDX *DataIn.V_tps(1:nbvec_sub+3,isub);
                 case 'div'
                     ListFields={'div'};
-                    VarAttributes{var_count+1}.Role='scalar';
+                    VarAttribute{var_count+1}.Role='scalar';
                     DataOut.div(ind_sel)=DataOut.div(ind_sel)+EMDX*DataIn.U_tps(1:nbvec_sub+3,isub)+EMDY *DataIn.V_tps(1:nbvec_sub+3,isub);
                 case 'strain'
                     ListFields={'strain'};
-                    VarAttributes{var_count+1}.Role='scalar';
+                    VarAttribute{var_count+1}.Role='scalar';
                     DataOut.strain(ind_sel)=DataOut.strain(ind_sel)+EMDY*DataIn.U_tps(1:nbvec_sub+3,isub)+EMDX *DataIn.V_tps(1:nbvec_sub+3,isub);
             end
-            DataOut.FF=nbval==0; %put errorflag to 1 for points outside the interpolation rang
-            nbval(nbval==0)=1;
-            DataOut.ListVarName=[DataOut.ListVarName ListFields {'FF'}];
-            for ilist=1:numel(ListFields)
-                VarDimName{ilist}={'coord_y','coord_x'};
-                DataOut.(ListFields{ilist})=reshape(DataOut.(ListFields{ilist}),npy,npx);
-            end
-            DataOut.FF=reshape(DataOut.FF,npy,npx);
-            DataOut.VarDimName=[DataOut.VarDimName VarDimName {{'coord_y','coord_x'}}] ;
-            VarAttributes{length(ListFields)+1}.Role='errorflag';
-            DataOut.VarAttribute=[DataOut.VarAttribute VarAttributes];
         end
     end
+    DataOut.FF=nbval==0; %put errorflag to 1 for points outside the interpolation rang
+    nbval(nbval==0)=1;
+    if isempty(find(strcmp('FF',DataOut.ListVarName),1))% if FF is not already listed
+        DataOut.ListVarName=[DataOut.ListVarName {'FF'}];
+        DataOut.VarDimName=[DataOut.VarDimName {{'coord_y','coord_x'}}];
+        DataOut.VarAttribute{length(DataOut.ListVarName)}.Role='errorflag';
+    end
+    DataOut.ListVarName=[DataOut.ListVarName ListFields];
+    for ifield=1:numel(ListFields)
+        VarDimName{ifield}={'coord_y','coord_x'};
+        DataOut.(ListFields{ifield})=reshape(DataOut.(ListFields{ifield}),npy,npx);
+    end
+    DataOut.FF=reshape(DataOut.FF,npy,npx);
+    DataOut.VarDimName=[DataOut.VarDimName VarDimName];     
+    DataOut.VarAttribute=[DataOut.VarAttribute VarAttribute];
 else
 
     %% civx data

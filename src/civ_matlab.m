@@ -489,11 +489,11 @@ if ~isequal(size(par_civ.ImageB),[npy_ima npx_ima])
 end
 
 %% Apply mask
-    % Convention for mask
+    % Convention for mask IDEAS TO IMPLEMENT ?
     % mask >200 : velocity calculated
     %  200 >=mask>150;velocity not calculated, interpolation allowed (bad spots)
     % 150>=mask >100: velocity not calculated, nor interpolated
-    %  100>=mask> 20: velocity not calculated, impermeable (no flux through mask boundaries) TO IMPLEMENT
+    %  100>=mask> 20: velocity not calculated, impermeable (no flux through mask boundaries) 
     %  20>=mask: velocity=0
 checkmask=0;
 if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
@@ -503,7 +503,7 @@ if isfield(par_civ,'Mask') && ~isempty(par_civ.Mask)
         return
    end
   %  check_noflux=(par_civ.Mask<100) ;%TODO: to implement
-    check_undefined=(par_civ.Mask<200 & par_civ.Mask>=100 );
+    check_undefined=(par_civ.Mask<200 & par_civ.Mask>=20 );
     par_civ.ImageA(check_undefined)=min(min(par_civ.ImageA));% put image A to zero (i.e. the min image value) in the undefined  area
     par_civ.ImageB(check_undefined)=min(min(par_civ.ImageB));% put image B to zero (i.e. the min image value) in the undefined  area
 end

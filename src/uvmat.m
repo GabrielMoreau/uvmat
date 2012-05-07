@@ -2455,15 +2455,19 @@ set(handles.uvmat,'UserData',UvData)
 
 %% Plot the projections on the selected  projection objects
 % main projection object (uvmat display)
-list_object=get(handles.ListObject,'String');
+list_object=get(handles.ListObject_1,'String');
 if isequal(list_object,{''})%refresh list of objects if the menu is empty
     UvData.Object={[]}; 
-    set(handles.ListObject,'Value',1)
+    set(handles.ListObject_1,'Value',1)
 end
-IndexObj=get(handles.ListObject,'Value');%selected projection object for main view
+IndexObj(1)=get(handles.ListObject_1,'Value');%selected projection object for main view
 if IndexObj(1)> numel(UvData.Object)
     IndexObj(1)=1;%select the first object if the selected one does not exist
-    set(handles.ListObject,'Value',1)
+    set(handles.ListObject_1,'Value',1)
+end
+IndexObj(2)=get(handles.ListObject,'Value');%selected projection object for main view
+if isequal(IndexObj(2),IndexObj(1))
+    IndexObj(2)=[];
 end
 plot_handles{1}=handles;
 if isfield(UvData,'plotaxes')%case of movies
@@ -2743,15 +2747,12 @@ end
 %-------------------------------------------------------------------
 % --- Executes on button press in CheckFixEqual.
 function CheckFixEqual_Callback(hObject, eventdata, handles)
-test=get(handles.CheckFixEqual,'Value');
-if test
+if get(handles.CheckFixEqual,'Value')
     set(handles.CheckFixEqual,'BackgroundColor',[1 1 0])
-    cla(handles.axes3)
     update_plot(handles);
 else
     set(handles.CheckFixEqual,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
-%     axis(handles.axes3,'image')
 end
 
 %-------------------------------------------------------------------
@@ -3464,9 +3465,9 @@ set(handles.ListObject,'Value',1)
 set(handles.ListObject,'String',{''})
 
 %delete mask if it is displayed 
-if isequal(get(handles.CheckMask,'Value'),1)%if the mask option is on
-   UvData=rmfield(UvData,'MaskName'); %will impose mask refresh  
-end
+% if isequal(get(handles.CheckMask,'Value'),1)%if the mask option is on
+%    UvData=rmfield(UvData,'MaskName'); %will impose mask refresh  
+% end
 set(handles.uvmat,'UserData',UvData)
 run0_Callback(hObject, eventdata, handles)
 
