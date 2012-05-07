@@ -1252,8 +1252,8 @@ for ifile=1:nbfield
             end
             Param.Civ1.ImageWidth=ImageInfo.Width;
             Param.Civ1.ImageHeight=ImageInfo.Height;
-            Param.Civ1.i1=i1_civ1(ifile,j);
-            Param.Civ1.i2=i2_civ1(ifile,j);
+            Param.Civ1.i1=i1_civ1(ifile);
+            Param.Civ1.i2=i2_civ1(ifile);
             % read mask parameters
             if Param.Civ1.CheckMask % the lines below should be changed with the new gui
                 if ~exist(Param.Civ1.Mask,'file')
