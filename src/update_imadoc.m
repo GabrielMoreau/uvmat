@@ -46,7 +46,7 @@ if ~testappend
     t=set(t,1,'name','ImaDoc');
     % in case of movie (avi file), copy timing info in the new xml file
     [pp,outputroot]=fileparts(outputfile);
-    imainfo=[];
+    %     imainfo=[];
     if exist(fullfile(pp,[outputroot '.avi']),'file')
         FileName=fullfile(pp,[outputroot '.avi']);
         hhh=which('videoreader');
@@ -65,8 +65,8 @@ if ~testappend
             Camera.BurstTiming.NbDti=imainfo.NumberOfFrames-1;
             t=struct2xml(Camera,t,uid_camera);
         end
-        [t,uid_calib]=add(t,1,'element','GeometryCalib');
     end
+    [t,uid_calib]=add(t,1,'element','GeometryCalib');
 end
 t=struct2xml(GeometryCalib,t,uid_calib); 
 save(t,outputfile);

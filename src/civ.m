@@ -1430,8 +1430,8 @@ for ifile=1:nbfield
             end
             Param.Civ2.ImageWidth=ImageInfo.Width;
             Param.Civ2.ImageHeight=ImageInfo.Height;
-            Param.Civ2.i1=i1_civ2(ifile,j);
-            Param.Civ2.i2=i2_civ2(ifile,j);
+            Param.Civ2.i1=i1_civ2(ifile);
+            Param.Civ2.i2=i2_civ2(ifile);
             switch CivMode
                 case 'CivX'
                     cmd=[cmd...
@@ -3016,6 +3016,9 @@ if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
     ref_j=0;
 else
     ref_j=str2double(get(handles.ref_j,'String'));
+    if isnan(ref_j)
+        ref_j=1;
+    end
 end
 time=get(handles.ImaDoc,'UserData');%get the set of times
 TimeUnit=get(handles.TimeUnit,'String');
