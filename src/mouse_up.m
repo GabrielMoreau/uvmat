@@ -151,22 +151,26 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
             %% plot the field projected on the object 
             ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
             if ~isempty(ProjData)
-                if strcmp(tagfig,'uvmat')% uvmat plot selected, projection plot seen on view_field
+                if strcmp(tagfig,'uvmat')% uvmat plot selected, projection plot seen in view_field
                     hview_field=findobj(allchild(0),'tag','view_field');
                     if isempty(hview_field)
-                        hview_field=view_field;
+                        hview_field=view_field(ProjData);
+                    else
+                       hhview_field=guidata(hview_field);
+                       [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%update an existing field plot
+                        write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
                     end
                     ViewFieldData=get(hview_field,'UserData');
                     ViewFieldData.axes3=ProjData;
                     set(hview_field,'UserData',ViewFieldData)
-                    hh_plotfield=guidata(hview_field);
+ 
                 else
                     UvData.axes3=ProjData;
-                    hh_plotfield=hhuvmat;
+                    [PlotType,PlotParam]=plot_field(ProjData,hhuvmat.axes3,read_GUI(hhuvmat));%update an existing field plot
+                    write_plot_param(hhuvmat,PlotParam); %update the display of plotting parameters for the current object
                 end
                 %[PlotType,PlotParam]=plot_field(ProjData,hh_plotfield.axes3,read_plot_param(hh_plotfield));%update an existing field plot
-                [PlotType,PlotParam]=plot_field(ProjData,hh_plotfield.axes3,read_GUI(hview_field));%update an existing field plot
-                write_plot_param(hh_plotfield,PlotParam); %update the display of plotting parameters for the current object
+
             end
             set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
             set(hhuvmat.edit_object,'Value',1);%

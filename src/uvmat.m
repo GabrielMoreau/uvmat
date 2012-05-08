@@ -2512,11 +2512,8 @@ for imap=1:numel(IndexObj)
     if ~isempty(errormsg)
         return
     end
-    %     if testnewseries && isfield(ObjectData,'CoordUnit')&& isfield(PlotParam{imap},'Coordinates')
-    %         PlotParam{imap}.Coordinates=rmfield(PlotParam{imap}.Coordinates,'CheckFixEqual'); %set FixEqual to depend on the field (=1 if Data.CoordUnit=1 in plot_field)
-    %     end
     if testnewseries && isfield(ObjectData,'CoordUnit')
-        PlotParam{imap}.Coordinates.CheckFixEqual=1;
+        PlotParam{imap}.Coordinates.CheckFixEqual=1;% set x and y scaling equal if CoordUnit is defined (common unit for x and y)
     end
     %use of mask (TODO: check)
     if isfield(ObjectData,'NbDim') && isequal(ObjectData.NbDim,2) && isfield(ObjectData,'Mask') && isfield(ObjectData,'A')
@@ -4424,7 +4421,7 @@ set(handles.ViewObject_1,'Value',0)% then the object selected in ListObject_1 is
 hset_object=set_object(data,handles);% call the set_object interface
 hhset_object=guidata(hset_object);
 set(hhset_object.PLOT,'enable','on')% activate the refresh button
-set(handles.MenuObject,'checked','on')
+%set(handles.MenuObject,'checked','on')
 set(handles.uvmat,'UserData',UvData)
 set(handles.CheckZoom,'Value',0) %desactivate the zoom for object creation by the mouse
 CheckZoom_Callback(handles.uvmat, [], handles)
@@ -4455,7 +4452,7 @@ end
 set_object(data);% call the set_object interface
 set(handles.edit_object,'Value',0); %suppress the object edit mode
 set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
-set(handles.MenuObject,'checked','on')
+%set(handles.MenuObject,'checked','on')
 set(handles.delete_object,'Visible','on')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

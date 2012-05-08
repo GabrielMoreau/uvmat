@@ -3936,34 +3936,36 @@ end
 % end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in TestCiv1: display image correlation function
+% --- Executes on button press in TestCiv1: prepare the image correlation function
+% activated by mouse motion
 function TestCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.TestCiv1,'BackgroundColor',[1 1 0])
 drawnow
 if get(handles.TestCiv1,'Value')
-    ref_i=str2double(get(handles.ref_i,'String'));
+    set(handles.TestCiv1,'BackgroundColor',[0.7 0.7 0.7])% paint TestCiv1 button to grey to confirm civ launch
+    ref_i=str2double(get(handles.ref_i,'String'));% read reference i index
     if strcmp(get(handles.ref_j,'Visible'),'on')
-        ref_j=str2double(get(handles.ref_j,'String'));
+        ref_j=str2double(get(handles.ref_j,'String'));% read reference j index if relevant
     else
-        ref_j=1;%default
+        ref_j=1;%default j index
     end
-    [filecell,i1,i21,j1,j2,i1_civ2,i2_civ2,j1_civ2,j2_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
-        set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);
+    [filecell,i1,i2,j1,j2,i1_civ2,i2_civ2,j1_civ2,j2_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
+        set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);% get the corresponding file name and indices
     Data.ListVarName={'ny','nx','A'};
     Data.VarDimName= {'ny','nx',{'ny','nx'}};
-    Data.A=imread(filecell.ima1.civ1{1});
+    Data.A=imread(filecell.ima1.civ1{1}); % read the first image
     if ndims(Data.A)==3 %case of color image
         Data.VarDimName= {'ny','nx',{'ny','nx','rgb'}};
     end
     Data.ny=[size(Data.A,1) 1];
     Data.nx=[1 size(Data.A,2)];
+    Data.CoordUnit='pixel';% used to set equal scaling for x and y in image dispaly
     par_civ1=read_GUI(handles.Civ1);
     par_civ1.ImageWidth=size(Data.A,2);
     par_civ1.ImageHeight=size(Data.A,1);
     par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation
-    par_civ1.i1=1;%i1_civ1;
-    par_civ1.i2=2;%i2_civ1;
+    par_civ1.i1=i1;
+    par_civ1.i2=i2;
     Param.Civ1=par_civ1;
     Grid=civ_matlab(Param);% get the grid of x, y positions set for PIV 
     hview_field=view_field(Data); %view the image in the GUI view_field
@@ -3985,6 +3987,7 @@ if get(handles.TestCiv1,'Value')
     end
     set(handles.TestCiv1,'BackgroundColor',[1 0 0])
 else
+    set(handles.TestCiv1,'BackgroundColor',[1 0 0])% paint button to red
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
     if ~isempty(corrfig)
         delete(corrfig)

@@ -211,7 +211,8 @@ for ichild=1:length(hchild)
                         [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
                         xround=Field.X(ind_pt);
                         yround=Field.Y(ind_pt);
-                        par.Grid=[xround size(Field.A,1)-yround+1];
+%                         par.Grid=[xround size(Field.A,1)-yround+1];
+                        par.Grid=[xround yround];
                         % mark the correlation box with a rectangle
                         par.ImageA=Field.A;
                         par.ImageB=Field.B;
@@ -257,9 +258,10 @@ for ichild=1:length(hchild)
                             if isempty(hcorr)
                                 corrfig=findobj(allchild(0),'tag','corrfig');
                                 if ~isempty(corrfig)
-                                    set(0,'CurrentFigure',corrfig(1))
+                                    set(0,'CurrentFigure',corrfig(1))         
                                     AxeData.CurrentCorrImage=imagesc(rangx,-rangy,result_conv,[0 1]);
                                     AxeData.CurrentVector=line([0 Data.Civ1_U],[0 Data.Civ1_V],'Tag','vector');
+                                   AxeData.TitleHandle=title(num2str(par.Grid));
                                     colorbar
                                     set(haxes,'UserData',AxeData)
                                     set(get(AxeData.CurrentCorrImage,'parent'),'YDir','normal')
@@ -269,6 +271,7 @@ for ichild=1:length(hchild)
                                 set(AxeData.CurrentCorrImage,'XData',rangx)
                                 set(AxeData.CurrentCorrImage,'YData',-rangy)
                                 set(AxeData.CurrentVector,'XData',[0 Data.Civ1_U],'YData',[0 Data.Civ1_V])
+                                set(AxeData.TitleHandle,'String',num2str(par.Grid))
                             end
                         end
                     end

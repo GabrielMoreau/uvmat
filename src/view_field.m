@@ -91,16 +91,14 @@ ViewFieldData.axes3=[];%initiates the record of the current field (will be updat
 set(handles.view_field,'UserData',ViewFieldData);%store the current field
 AxeData.LimEditBox=1; %initialise AxeData, the parent figure sets plot parameters
 set(handles.axes3,'UserData',AxeData)
-if ~exist('Field','var')
-    return
+if exist('Field','var')
+    [PlotType,PlotParamOut]= plot_field(Field,handles.axes3);%,PlotParam,KeepLim,PosColorbar)
+    set(handles.Coordinates,'Visible','on')
+    if isfield(PlotParamOut,'Vectors')
+        set(handles.Vectors,'Visible','on')
+    end
+    write_plot_param(handles,PlotParamOut);% update the display of the plotting parameters
 end
-[PlotType,PlotParamOut]= plot_field(Field,handles.axes3);%,PlotParam,KeepLim,PosColorbar)
-
-if isfield(PlotParamOut,'Vectors')
-    set(handles.Vectors,'Visible','on')
-end
-write_plot_param(handles,PlotParamOut);% update the display of the plotting parameters
-
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command menuline.
 function varargout = view_field_OutputFcn(hObject, eventdata, handles)
@@ -139,6 +137,16 @@ if ~isempty(huvmat)
             set(hother(iobj),'Selected','off')
         end
     end
+end
+hciv=findobj(allchild(0),'Tag','civ');%find the current civ GUI
+if ~isempty(hciv)
+    hhciv=guidata(hciv);
+    set(hhciv.TestCiv1,'Value',0)% desactivate  TestCiv1 if on
+    set(hhciv.TestCiv1,'BackgroundColor',[1 0 0])% 
+end
+corrfig=findobj(allchild(0),'tag','corrfig');% look for a civ correlation window used with TesCiv1
+if ~isempty(corrfig)
+    delete(corrfig)
 end
 
 %-------------------------------------------------------------------
@@ -316,7 +324,6 @@ function CheckFixEqual_Callback(hObject, eventdata, handles)
 test=get(handles.CheckFixEqual,'Value');
 if test
     set(handles.CheckFixEqual,'BackgroundColor',[1 1 0])
-    cla(handles.axes3)
 else
     set(handles.CheckFixEqual,'BackgroundColor',[0.7 0.7 0.7])
 end
@@ -327,70 +334,70 @@ end
 %-------------------------------------------------------------------
 % --- Executes on button press in 'zoom'.
 %-------------------------------------------------------------------
-function zoom_Callback(hObject, eventdata, handles)
-if (get(handles.zoom,'Value') == 1); 
-    set(handles.zoom,'BackgroundColor',[1 1 0])
-    set(handles.FixLimits,'Value',1)% propose by default fixed limits for the plotting axes
-    set(handles.FixLimits,'BackgroundColor',[1 1 0])
+function CheckZoom_Callback(hObject, eventdata, handles)
+if (get(handles.CheckZoom,'Value') == 1); 
+    set(handles.CheckZoom,'BackgroundColor',[1 1 0])
+    set(handles.CheckFixLimits,'Value',1)% propose by default fixed limits for the plotting axes
+    set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 else
-    set(handles.zoom,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
 end
 
-%-------------------------------------------------------------------
-%----Executes on button press in 'record': records the current flags of manual correction.
-%-------------------------------------------------------------------
-function record_Callback(hObject, eventdata, handles)
-% [filebase,num_i1,num_j1,num_i2,num_j2,Ext,NomType,SubDir]=read_input_file(handles);
-filename=read_file_boxes(handles);
-AxeData=get(gca,'UserData');
-[erread,message]=fileattrib(filename);
-if ~isempty(message) && ~isequal(message.UserWrite,1)
-     msgbox_view_field('ERROR',['no writting access to ' filename])
-     return
-end
-test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
-test_civ1=isequal(get(handles.civ1,'BackgroundColor'),[1 1 0]);
-if ~test_civ2 && ~test_civ1
-    msgbox_view_field('ERROR','manual correction only possible for CIV1 or CIV2 velocity fields')
-end 
-if test_civ2
-    nbname='nb_vectors2';
-   flagname='vec2_FixFlag';
-   attrname='fix2';
-end
-if test_civ1
-    nbname='nb_vectors';
-   flagname='vec_FixFlag';
-   attrname='fix';
-end
-%write fix flags in the netcdf file
-hhh=which('netcdf.open');% look for built-in matlab netcdf library
-if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
-    nc=netcdf.open(filename,'NC_WRITE'); 
-    netcdf.reDef(nc)
-    netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),attrname,1)
-    dimid = netcdf.inqDimID(nc,nbname); 
-    try
-        varid = netcdf.inqVarID(nc,flagname);% look for already existing fixflag variable
-    catch
-        varid=netcdf.defVar(nc,flagname,'double',dimid);%create fixflag variable if it does not exist
-    end
-    netcdf.endDef(nc)
-    netcdf.putVar(nc,varid,AxeData.FF);
-    netcdf.close(nc)  
-else %old netcdf library
-    netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
-end
-
-function netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
-nc=netcdf(filename,'write'); %open netcdf file
-result=redef(nc);
-eval(['nc.' attrname '=1;']);
-theDim=nc(nbname) ;% get the number of velocity vectors
-nb_vectors=size(theDim);
-var_FixFlag=ncvar(flagname,nc);% var_FixFlag will be written as the netcdf variable vec_FixFlag
-var_FixFlag(1:nb_vectors)=AxeData.FF;% 
-fin=close(nc);
+% %-------------------------------------------------------------------
+% %----Executes on button press in 'record': records the current flags of manual correction.
+% %-------------------------------------------------------------------
+% function record_Callback(hObject, eventdata, handles)
+% % [filebase,num_i1,num_j1,num_i2,num_j2,Ext,NomType,SubDir]=read_input_file(handles);
+% filename=read_file_boxes(handles);
+% AxeData=get(gca,'UserData');
+% [erread,message]=fileattrib(filename);
+% if ~isempty(message) && ~isequal(message.UserWrite,1)
+%      msgbox_view_field('ERROR',['no writting access to ' filename])
+%      return
+% end
+% test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
+% test_civ1=isequal(get(handles.civ1,'BackgroundColor'),[1 1 0]);
+% if ~test_civ2 && ~test_civ1
+%     msgbox_view_field('ERROR','manual correction only possible for CIV1 or CIV2 velocity fields')
+% end 
+% if test_civ2
+%     nbname='nb_vectors2';
+%    flagname='vec2_FixFlag';
+%    attrname='fix2';
+% end
+% if test_civ1
+%     nbname='nb_vectors';
+%    flagname='vec_FixFlag';
+%    attrname='fix';
+% end
+% %write fix flags in the netcdf file
+% hhh=which('netcdf.open');% look for built-in matlab netcdf library
+% if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
+%     nc=netcdf.open(filename,'NC_WRITE'); 
+%     netcdf.reDef(nc)
+%     netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),attrname,1)
+%     dimid = netcdf.inqDimID(nc,nbname); 
+%     try
+%         varid = netcdf.inqVarID(nc,flagname);% look for already existing fixflag variable
+%     catch
+%         varid=netcdf.defVar(nc,flagname,'double',dimid);%create fixflag variable if it does not exist
+%     end
+%     netcdf.endDef(nc)
+%     netcdf.putVar(nc,varid,AxeData.FF);
+%     netcdf.close(nc)  
+% else %old netcdf library
+%     netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
+% end
+% 
+% function netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
+% nc=netcdf(filename,'write'); %open netcdf file
+% result=redef(nc);
+% eval(['nc.' attrname '=1;']);
+% theDim=nc(nbname) ;% get the number of velocity vectors
+% nb_vectors=size(theDim);
+% var_FixFlag=ncvar(flagname,nc);% var_FixFlag will be written as the netcdf variable vec_FixFlag
+% var_FixFlag(1:nb_vectors)=AxeData.FF;% 
+% fin=close(nc);
 
 
 %-------------------------------------------------------------------
@@ -499,24 +506,6 @@ function colcode2_Callback(hObject, eventdata, handles)
 % slider2_Callback(hObject, eventdata, handles)
 set_vec_col_bar(handles)
 update_plot(handles)
-%------------------------------------------------------------
-%update the slider values after displaying vectors
-%--------------------------------------------------------
-% function slider_update(handles,auto,minC,colcode1,colcode2,maxC)
-% set(handles.slider1,'Min',minC) 
-% set(handles.slider1,'Max',maxC)
-% set(handles.slider2,'Min',minC) 
-% set(handles.slider2,'Max',maxC)
-% set(handles.min_C_title_vec,'String',num2str(minC))
-% set(handles.max_vec,'String',num2str(maxC))
-% if auto
-%         set(handles.colcode1,'String',num2str(colcode1,3))%update display
-%         set(handles.colcode2,'String',num2str(colcode2,3))
-% end
-% set(handles.slider1,'Value',colcode1)%update slider with constant display
-% set(handles.slider2,'Value',colcode2)
-% set_vec_col_bar(handles)
-
 
 %-------------------------------------------------------
 % --- Executes on button press in AutoVecColor.
@@ -718,19 +707,6 @@ A(:,:,2)=A2';
 A(:,:,3)=A3';
 set(handles.vec_col_bar,'Cdata',A)
 
-% %------------------------------------------------------------------------
-% function PlotType=update_plot(handles)
-% %------------------------------------------------------------------------
-% haxes= handles.axes3;
-% 
-% %ProjField=get(haxes,'UserData');
-% ViewFieldData=get(handles.view_field,'UserData');
-% ProjField=ViewFieldData.axes3;
-% %ProjField=get(haxes,'UserData');
-% PlotParam=read_GUI(handles.view_field);
-% [PlotType,PlotParamOut]= plot_field(ProjField,haxes,PlotParam,1);
-% write_plot_param(handles,PlotParamOut); %update the auto plot parameters
-
 %-------------------------------------------------------------------
 function update_plot(handles)
 %-------------------------------------------------------------------
@@ -765,8 +741,6 @@ newaxes=copyobj(handles.axes3,hfig);
 map=colormap(handles.axes3);
 colormap(map);%transmit the current colormap to the zoom fig
 colorbar
-
-
 
 
 % --- Executes on selection change in ColorCode.

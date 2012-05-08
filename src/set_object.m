@@ -414,16 +414,6 @@ function num_DZ_Callback(hObject, eventdata, handles)
 % --- Executes on button press in PLOT: PLOT the defined object and its projected field
 function PLOT_Callback(hObject, eventdata, handles)
 
-%% reading the object selection in the GUI uvmat
-huvmat=findobj('tag','uvmat');%find the current uvmat GUI handle
-UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
-hhuvmat=guidata(huvmat);%handles of the objects children of the  GUI uvmat
-ListObject=get(hhuvmat.ListObject,'String');% list of objects displyed in uvmat
-IndexObj(1)=get(hhuvmat.ListObject_1,'Value');% index of the selected object for display in uvmat
-if get(hhuvmat.ViewObject,'Value') 
-    IndexObj(2)=get(hhuvmat.ListObject,'Value');% index of the object, possibly selected for display in view_field 
-end
-
 %% read the object parameters in the GUI set_object
 ObjectData=read_GUI(handles.set_object);%read the parameters defining the object in the GUI set_object
 if iscell(ObjectData.Coord)%check for empty line
@@ -437,15 +427,17 @@ if ~isempty(checknan)
 end
 ObjectName=ObjectData.Name;%name of the current object defined in set_object
 if isempty(ObjectName)
-%     if get(hhuvmat.edit_object,'Value')% edit mode
-%         if isempty(ListObject)
-%             ObjectName='Plane';
-%         else
-%             ObjectName=ListObject{IndexObj(end)};%take the name of the last (second) selected item
-%         end
-%     else %new object
-        ObjectName=ObjectData.Type;
-%     end
+     ObjectName=ObjectData.Type;
+end
+
+%% read the object selection in the GUI uvmat
+huvmat=findobj('tag','uvmat');%find the current uvmat GUI handle
+UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
+hhuvmat=guidata(huvmat);%handles of the objects children of the  GUI uvmat
+ListObject=get(hhuvmat.ListObject_1,'String');% list of objects displayed in uvmat
+IndexObj(1)=get(hhuvmat.ListObject_1,'Value');% index of the selected object for display in uvmat
+if get(hhuvmat.ViewObject,'Value') && get(hhuvmat.edit_object,'Value')
+    IndexObj(2)=get(hhuvmat.ListObject,'Value');% index of the object, possibly selected for display in view_field 
 end
 if ~get(hhuvmat.edit_object,'Value') %new object is being created
     detectname=1;
@@ -472,47 +464,30 @@ if ~get(hhuvmat.edit_object,'Value') %new object is being created
     set(hhuvmat.ListObject,'Value',IndexObj(2))
     UvData.Object{IndexObj(2)}=[];%initiate a new object (empty yet)
 end
-testnew=0;
-if numel(IndexObj)==1   % if only one object is selected, the projection is in uvmat
-    plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
-else  % if a second object is selected, the projection is in view_field, and this second object is selected
-    hview_field=findobj(allchild(0),'tag','view_field');
-    if isempty(hview_field)
-        hview_field=view_field;%open the GUI view_field if it is not found
-    end
-    PlotHandles=guidata(hview_field);
-    plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
-end 
 
 %% naming the object
-ListObject{IndexObj(end),1}=ObjectName;
-set(hhuvmat.ListObject,'String',ListObject)
-set(hhuvmat.ListObject_1,'String',ListObject)
+% ListObject{IndexObj(end),1}=ObjectName;
+% set(hhuvmat.ListObject,'String',ListObject)
+% set(hhuvmat.ListObject_1,'String',ListObject)
 
 %% update the object plot 
-% if testnew
-%     set(hhuvmat.ListObject,'Value',IndexObj)
-%     ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;
-%     ObjectData.DisplayHandle_view_field=[];
-% else
-    if IndexObj(end)<=length(UvData.Object) && isfield(UvData.Object{IndexObj(end)},'DisplayHandle_uvmat')% save the previous object graph handles
-        ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj(end)}.DisplayHandle_uvmat;
-    else
-        ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;%there is no object handle, than the axes handles is used as input
-    end
-    if isfield(UvData.Object{IndexObj(end)},'DisplayHandle_view_field')% save the previous object graph handles
-        ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj(end)}.DisplayHandle_view_field;
-    else
-        ObjectData.DisplayHandle_view_field=[];
-    end
-% end
+if IndexObj(end)<=length(UvData.Object) && isfield(UvData.Object{IndexObj(end)},'DisplayHandle_uvmat')% save the previous object graph handles
+    ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj(end)}.DisplayHandle_uvmat;
+else
+    ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;%there is no object handle, than the axes handles is used as input
+end
+if isfield(UvData.Object{IndexObj(end)},'DisplayHandle_view_field')% save the previous object graph handles
+    ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj(end)}.DisplayHandle_view_field;
+else
+    ObjectData.DisplayHandle_view_field=[];
+end
 UvData.Object{IndexObj(end)}=ObjectData;%update the current object properties
- if numel(IndexObj)==2
+if numel(IndexObj)==2
     UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));
- end
+end
 set(huvmat,'UserData',UvData)
 
-%% plot the field projected on the object and store in the corresponding figue
+%% plot the field projected on the object
 if strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')||strcmp(ObjectData.ProjMode,'none')
     PlotType='text';
 else
@@ -520,10 +495,26 @@ else
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR', errormsg)
         return
+    end   
+    if numel(IndexObj)==1   % if only one object is selected, the projection is in uvmat
+%         plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
+        PlotType=plot_field(ProjData,hhuvmat.axes3,read_GUI(get(hhuvmat.axes3,'parent')));%update the current uvmat plot
+    else  % if a second object is selected, the projection is in view_field, and this second object is selected
+        hview_field=findobj(allchild(0),'tag','view_field');
+        if isempty(hview_field)
+            PlotType=view_field(ProjData); %open the view_field GUI for plot
+          %  hview_field=view_field;%open the GUI view_field if it is not found
+        else
+            hhview_field=guidata(hview_field);
+            [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%update an existing  plot in view_field
+            write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
+        end
+%         PlotHandles=guidata(hview_field);
+%         plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
     end
-    fighandle=get(plotaxes,'parent');
-    PlotParam=read_GUI(fighandle);
-    PlotType=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
+%     fighandle=get(plotaxes,'parent');
+%     PlotParam=read_GUI(fighandle);
+   % PlotType=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
 end
 if strcmp(PlotType,'text')
     hview_field=findobj(allchild(0),'tag','view_field'); %case of no projection (pure object display)

@@ -39,6 +39,7 @@ if isfield(hhcurrentfig,'CheckZoom')
 else
     test_zoom=0;
 end
+test_piv=isfield(FigData,'CivHandle');
 
 %% look for parameters set by the GUI uvmat
 test_ruler=0;
@@ -51,11 +52,16 @@ if ~isempty(huvmat)
     test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
     test_edit=get(hhuvmat.edit_object,'Value');%test for object editing, third priority
     test_edit_vect=get(hhuvmat.edit_vect,'Value');%test for vector editing,  priority 4
-    test_create=isequal(get(hhuvmat.MenuObject,'checked'),'on');% test for object creation,  priority 5
-    if test_create
-        hset_object=findobj(allchild(0),'tag','set_object');
-        test_create=~isempty(hset_object)&&~test_edit;
+    %     test_create=isequal(get(hhuvmat.MenuObject,'checked'),'on');% test for object creation,  priority 5
+    %     if test_create
+    test_create=0;
+    hset_object=findobj(allchild(0),'tag','set_object');
+    if ~isempty(hset_object)
+        hPLOT=findobj(hset_object,'tag','PLOT');
+        test_create=strcmp(get(hPLOT,'enable'),'on') &&~test_edit;
     end
+    %         test_create=~isempty(hset_object)&&~test_edit;
+    
     test_cal=isequal(get(hhuvmat.MenuCalib,'checked'),'on');% test for calibration
     if test_cal% test for calibration popints,  priority 6
         h_calib=findobj(allchild(0),'tag','geometry_calib');
@@ -191,6 +197,17 @@ if test_ruler
     AxeData.Drawing='ruler';
     set(hchild,'UserData',AxeData);
     return
+end
+
+%% PIV test
+if test_piv
+    figure
+    newaxes=axes;
+    copyobj(AxeData.CurrentCorrImage,newaxes);
+    set(newaxes,'CLim',[0 1])
+    copyobj(AxeData.CurrentVector,newaxes)
+    copyobj(AxeData.TitleHandle,newaxes)
+    colorbar
 end
 
 %% selection of an existing projection object (third priority)
