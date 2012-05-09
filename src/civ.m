@@ -453,12 +453,10 @@ end
 set(handles.ImaDoc,'String',ext_imadoc)% display the extension name for the image documentation file used
 
 %%  read the time in the image documentation file  
-mode=''; %default
 time=[];
 TimeUnit=''; %default
 CoordUnit='';%default
-pxcmx_search=[];%default
-pxcmy_search=[];%default
+pxcm_search=1;
 if ~isempty(ext_imadoc)
     set(handles.ImaDoc,'BackgroundColor',[1 1 0]) % set edit box to yellow cloro to indicate that the file reading is beginning
     drawnow
@@ -495,7 +493,7 @@ if ~isempty(ext_imadoc)
             if isfield(XmlData,'TimeUnit')
                 TimeUnit=XmlData.TimeUnit;
             end
-            pxcm_search=1;
+
             if isfield(XmlData,'GeometryCalib')
                 tsai=XmlData.GeometryCalib;
                 if isfield(tsai,'fx_fy')  
