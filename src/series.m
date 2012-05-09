@@ -672,7 +672,7 @@ if isempty(MinIndex_j)
     TimeTable{iview,2}=time(first_i);
     TimeTable{iview,3}=time(last_i);
     TimeTable{iview,4}=time(MaxIndex_i);
-else
+elseif ~isempty(time)
     TimeTable{iview,1}=time(MinIndex_i,MinIndex_j);
     TimeTable{iview,2}=time(first_i,first_j);
     TimeTable{iview,3}=time(last_i,last_j);
@@ -1076,8 +1076,8 @@ if isempty(j2_series)% no pair menu to display
         set(handles.mode,'String',{'series(Di)'})
     end
 else
-    nbfield=size(j2_series{View},1);
-    nbfield2=size(j2_series{View},2);
+    nbfield=size(j2_series,1);
+    nbfield2=size(j2_series,2);
     set(handles.mode,'String',{'bursts';'series(Dj)'})
     if nbfield2>10 || nbfield==1
         set(handles.mode,'Value',2);
@@ -1189,7 +1189,7 @@ displ_pair_list=get(handles.ListPairs,'String');
 NewVal=[];
 if ~isempty(displ_pair_list)
 Val=get(handles.ListPairs,'Value');
-NewVal=find(strcmp(displ_pair_list{Val},displ_pair),1);% look at the previous display in the new menu displ_pâir
+NewVal=find(strcmp(displ_pair_list{Val},displ_pair),1);% look at the previous display in the new menu displ_pï¿½ir
 end
 if ~isempty(NewVal)
     set(handles.ListPairs,'Value',NewVal)
