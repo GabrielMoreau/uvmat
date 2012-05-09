@@ -129,19 +129,19 @@ Field.TimeUnit='s';
 if test_civ1
     if isfield(Field,'absolut_time_T0')
         Field.Time=double(Field.absolut_time_T0);
-        Field.dt=double(Field.dt);
+        Field.Dt=double(Field.dt);
     else
        errormsg='the input file is not civx'; 
        Field.CivStage=0;
-       Field.dt=0;
+       Field.Dt=0;
     end
 elseif test_civ2
     Field.Time=double(Field.absolut_time_T0_2);
-    Field.dt=double(Field.dt2);
+    Field.Dt=double(Field.dt2);
 else
     errormsg='the input file is not civx';
     Field.CivStage=0;
-    Field.dt=0;
+    Field.Dt=0;
 end
 
 
@@ -171,13 +171,13 @@ List=Field.ListGlobalAttribute;
 ind_remove=[];
 for ilist=1:length(List)
     switch(List{ilist})
-        case {'patch2','fix2','civ2','patch','fix','dt2','absolut_time_T0','absolut_time_T0_2','nb_coord','nb_dim','pixcmx','pixcmy'}
+        case {'patch2','fix2','civ2','patch','fix','dt','dt2','absolut_time_T0','absolut_time_T0_2','nb_coord','nb_dim','pixcmx','pixcmy'}
             ind_remove=[ind_remove ilist];
             Field=rmfield(Field,List{ilist});
     end
 end
 List(ind_remove)=[];
-Field.ListGlobalAttribute=[{'NbCoord'},{'NbDim'} List {'Time','TimeUnit','CivStage','CoordUnit'}];
+Field.ListGlobalAttribute=[{'NbCoord'},{'NbDim'} List {'Time','Dt','TimeUnit','CivStage','CoordUnit'}];
 Field.CoordUnit='pixel';
 
 

@@ -2044,11 +2044,11 @@ if ~isempty(filename)
         set(handles.num_Npx,'String',num2str(ParamOut.Npx));% display image size on the interface
         set(handles.num_Npy,'String',num2str(ParamOut.Npy));
     end
-    if isfield(ParamOut,'TimeIndex')
+    if isfield(ParamOut,'TimeIndex')% case of time obtained from get_field
         set(handles.i1,'String',num2str(ParamOut.TimeIndex))
     end
     if isfield(ParamOut,'TimeValue')
-        Field{1}.Time=ParamOut.TimeValue;
+        Field{1}.Time=ParamOut.TimeValue;% case of time obtained from get_field
     end
 end
 
@@ -2216,6 +2216,88 @@ if  UvData.NewSeries && isequal(get(handles.SubField,'Value'),0) && isfield(Fiel
         set(handles.Fields_1,'Visible','on');
         Field{1}.AName='w';
 end           
+
+
+
+%% display time
+testimedoc=0;
+TimeUnit='';
+if isfield(Field{1},'Time')
+    abstime=Field{1}.Time;%time read from the netcdf input file 
+end
+if numel(Field)==2 && isfield(Field{2},'Time')
+    abstime_1=Field{2}.Time;%time read from the netcdf input file 
+end
+if isfield(Field{1},'Dt')
+    dt=Field{1}.Dt;%dt read from the netcdf input file
+    if isfield(Field{1},'TimeUnit')
+       TimeUnit=Field{1}.TimeUnit;
+    end
+elseif numel(Field)==2 && isfield(Field{2},'Dt')%dt obtained from the second field if not defined in the first
+    dt=Field{2}.Dt;%dt read from the netcdf input file
+    if isfield(Field{2},'TimeUnit')
+       TimeUnit=Field{2}.TimeUnit;
+    end
+end
+% time from xml file overset previous result
+if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
+    if isempty(num_i2)||isnan(num_i2)
+        num_i2=num_i1;
+    end
+    if isempty(num_j1)||isnan(num_j1)
+        num_j1=1;
+    end
+    if isempty(num_j2)||isnan(num_j2)
+        num_j2=num_j1;
+    end
+    siz=size(UvData.XmlData{1}.Time);
+    if siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
+        abstime=(UvData.XmlData{1}.Time(num_i1,num_j1)+UvData.XmlData{1}.Time(num_i2,num_j2))/2;%overset the time read from files
+        dt=(UvData.XmlData{1}.Time(num_i2,num_j2)-UvData.XmlData{1}.Time(num_i1,num_j1));
+        Field{1}.Dt=dt;
+        if isfield(UvData.XmlData{1},'TimeUnit')
+            TimeUnit=UvData.XmlData{1}.TimeUnit;
+        end
+    end
+    if numel(UvData.XmlData)==2
+        [tild,tild,tild,num_i1,num_i2,num_j1,num_j2]=fileparts_uvmat(['xx' get(handles.FileIndex_1,'String') get(handles.FileExt_1,'String')]);
+        if isempty(num_i2)
+            num_i2=num_i1;
+        end
+        if isempty(num_j1)
+            num_j1=1;
+        end
+        if isempty(num_j2)
+            num_j2=num_j1;
+        end
+        siz=size(UvData.XmlData{2}.Time);
+        if ~isempty(num_i1) && siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
+            abstime_1=(UvData.XmlData{2}.Time(num_i1,num_j1)+UvData.XmlData{2}.Time(num_i2,num_j2))/2;%overset the time read from files
+            Field{2}.Dt=(UvData.XmlData{2}.Time(num_i2,num_j2)-UvData.XmlData{2}.Time(num_i1,num_j1));
+        end
+    end
+end
+if ~isequal(numel(abstime),1)
+    abstime=[];
+end
+if ~isequal(numel(abstime_1),1)
+      abstime_1=[];
+end  
+set(handles.abs_time,'String',num2str(abstime,4))
+set(handles.abs_time_1,'String',num2str(abstime_1,4))
+% if testimedoc && isfield(UvData,'dt')
+%     dt=UvData.dt;
+% end 
+if isempty(dt)||isequal(dt,0)
+    set(handles.Dt_txt,'String','')
+else
+    if  isempty(TimeUnit)
+        set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  10^(-3)'] )
+    else
+        set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' TimeUnit] )
+    end
+end
+
 
 %% store the current open names, fields and vel types in uvmat interface 
 UvData.filename_1=filename_1;
@@ -2641,85 +2723,7 @@ if ~test_v
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% display time
-testimedoc=0;
-TimeUnit='';
-if isfield(UvData.Field,'Time')
-    abstime=UvData.Field.Time;%time read from the netcdf input file 
-end
-if isfield(UvData,'Field_1') && isfield(UvData.Field_1,'Time')
-    abstime_1=UvData.Field_1.Time;%time read from the netcdf input file 
-end
-if isfield(UvData.Field,'dt')
-    dt=UvData.Field.dt;%dt read from the netcdf input file
-    if isfield(UvData.Field,'TimeUnit')
-       TimeUnit=UvData.Field.TimeUnit;
-    end
-elseif isfield(UvData,'Field_1') && isfield(UvData.Field_1,'dt')%dt obtained from the second field if not defined in the first
-    dt=UvData.Field_1.dt;%dt read from the netcdf input file
-    if isfield(UvData.Field_1,'TimeUnit')
-       TimeUnit=UvData.Field_1.TimeUnit;
-    end
-end
-% time from xml file overset previous result
-if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
-    if isempty(num_i2)||isnan(num_i2)
-        num_i2=num_i1;
-    end
-    if isempty(num_j1)||isnan(num_j1)
-        num_j1=1;
-    end
-    if isempty(num_j2)||isnan(num_j2)
-        num_j2=num_j1;
-    end
-    siz=size(UvData.XmlData{1}.Time);
-    if siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
-        abstime=(UvData.XmlData{1}.Time(num_i1,num_j1)+UvData.XmlData{1}.Time(num_i2,num_j2))/2;%overset the time read from files
-        dt=(UvData.XmlData{1}.Time(num_i2,num_j2)-UvData.XmlData{1}.Time(num_i1,num_j1));
-        testimedoc=1;
-        if isfield(UvData.XmlData{1},'TimeUnit')
-            TimeUnit=UvData.XmlData{1}.TimeUnit;
-        end
-    end
-    if numel(UvData.XmlData)==2
-        [tild,tild,tild,num_i1,num_i2,num_j1,num_j2]=fileparts_uvmat(['xx' get(handles.FileIndex_1,'String') get(handles.FileExt_1,'String')]);
-        %  [P,F,str1,str2,str_a,str_b,E]=name2display(['xx' get(handles.FileIndex_1,'String') get(handles.FileExt_1,'String')]);
-        if isempty(num_i2)
-            num_i2=num_i1;
-        end
-        if isempty(num_j1)
-            num_j1=1;
-        end
-        if isempty(num_j2)
-            num_j2=num_j1;
-        end
-        siz=size(UvData.XmlData{2}.Time);
-        if ~isempty(num_i1) && siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
-            abstime_1=(UvData.XmlData{2}.Time(num_i1,num_j1)+UvData.XmlData{2}.Time(num_i2,num_j2))/2;%overset the time read from files
-        end
-    end
-end
 
-if ~isequal(numel(abstime),1)
-    abstime=[];
-end
-if ~isequal(numel(abstime_1),1)
-      abstime_1=[];
-end  
-set(handles.abs_time,'String',num2str(abstime,4))
-set(handles.abs_time_1,'String',num2str(abstime_1,4))
-if testimedoc && isfield(UvData,'dt')
-    dt=UvData.dt;
-end 
-if isempty(dt)||isequal(dt,0)
-    set(handles.Dt_txt,'String','')
-else
-    if  isempty(TimeUnit)
-        set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  10^(-3)'] )
-    else
-        set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' TimeUnit] )
-    end
-end
 
 
 %-------------------------------------------------------------------

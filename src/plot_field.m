@@ -807,6 +807,10 @@ if test_ima
             hold off
             caxis([abscontmin abscontmax]) 
             colormap(map);
+                       if isfield(PlotParam.Coordinates,'CheckFixEqual') && isequal(PlotParam.Coordinates.CheckFixEqual,1)
+                set(haxes,'DataAspectRatioMode','manual')
+                set(haxes,'DataAspectRatio',[1 1 1])
+           end 
         end
         
         % set  colormap for  image display

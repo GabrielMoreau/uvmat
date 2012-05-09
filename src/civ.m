@@ -22,7 +22,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 10-Mar-2012 22:32:10
+% Last Modified by GUIDE v2.5 08-May-2012 22:14:39
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -495,14 +495,11 @@ if ~isempty(ext_imadoc)
             if isfield(XmlData,'TimeUnit')
                 TimeUnit=XmlData.TimeUnit;
             end
-            pxcmx_search=1;
-            pxcmy_search=1;
+            pxcm_search=1;
             if isfield(XmlData,'GeometryCalib')
                 tsai=XmlData.GeometryCalib;
-                if isfield(tsai,'f') && isfield(tsai,'Tz') && isfield(tsai,'dpx') && isfield(tsai,'dpy')&& isfield(tsai,'R')
-                    rot2D=tsai.R(1:2,[1,2]);
-                    pxcmx_search=tsai.f * sqrt(det(rot2D))/(tsai.Tz*tsai.dpx);
-                    pxcmy_search=tsai.f * sqrt(det(rot2D))/(tsai.Tz*tsai.dpy);
+                if isfield(tsai,'fx_fy')  
+                    pxcm_search=max(tsai.fx_fy(1),tsai.fx_fy(2));%pixels:cm estimated for the search range 
                 end
                 if isfield(tsai,'CoordUnit')
                     CoordUnit=tsai.CoordUnit;
@@ -568,7 +565,7 @@ set(handles.TimeUnit,'String',TimeUnit);
 set(handles.nb_field,'String',num2str(MaxIndex_i));
 set(handles.nb_field2,'String',num2str(MaxIndex_j));
 set(handles.CoordUnit,'String',CoordUnit)
-set(handles.SearchRange,'UserData',[pxcmx_search pxcmy_search]);
+set(handles.SearchRange,'UserData', pxcm_search);
 set(handles.ImaExt,'String',ImaExt)
 set(handles.NomType,'String',NomTypeIma)
 set(handles.ref_i,'String',num2str(num_ref_i))
@@ -3196,31 +3193,24 @@ end
 set(handles.ListPairCiv2,'String',displ_pair');
 set(gcf,'Pointer','arrow')
 
-%-------------------------------------------------------------------
-% --- 
-function closeview_field(gcbo,eventdata)
-hview_field=findobj(allchild(0),'tag','view_field');% look for view_field    
-    if ~isempty(hview_field)
-        delete(hview_field)
-    end
+
     
-    
-%------------------------------------------------------------------------   
-% call 'view_field.fig' to display the  field selected in the list of 'status'
-function open_view_field(hObject, eventdata)
-%------------------------------------------------------------------------
-list=get(hObject,'String');
-index=get(hObject,'Value');
-rootroot=get(hObject,'UserData');
-filename=list{index};
-ind_dot=strfind(filename,'...');
-filename=filename(1:ind_dot-1);
-filename=fullfile(rootroot,filename);
-delete(get(hObject,'parent'))%delete the display figure to stop the check process
-if exist(filename,'file')%visualise the vel field if it exists
-    uvmat(filename)
-    set(gcbo,'Value',1)
-end
+% %------------------------------------------------------------------------   
+% % call 'view_field.fig' to display the  field selected in the list of 'status'
+% function open_view_field(hObject, eventdata)
+% %------------------------------------------------------------------------
+% list=get(hObject,'String');
+% index=get(hObject,'Value');
+% rootroot=get(hObject,'UserData');
+% filename=list{index};
+% ind_dot=strfind(filename,'...');
+% filename=filename(1:ind_dot-1);
+% filename=fullfile(rootroot,filename);
+% delete(get(hObject,'parent'))%delete the display figure to stop the check process
+% if exist(filename,'file')%visualise the vel field if it exists
+%     uvmat(filename)
+%     set(gcbo,'Value',1)
+% end
 
 %------------------------------------------------------------------------   
 % launched by pressing OK on the status figure
@@ -3263,13 +3253,13 @@ ref_j_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in 
 function SearchRange_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %determine pair numbers
-if strcmp(get(handles.umin,'Visible'),'off')
+if strcmp(get(handles.num_UMin,'Visible'),'off')
     set(handles.u_title,'Visible','on')
     set(handles.v_title,'Visible','on')
-    set(handles.umin,'Visible','on')
-    set(handles.umax,'Visible','on')
-    set(handles.vmin,'Visible','on')
-    set(handles.vmax,'Visible','on')
+    set(handles.num_UMin,'Visible','on')
+    set(handles.num_UMax,'Visible','on')
+    set(handles.num_VMin,'Visible','on')
+    set(handles.num_VMax,'Visible','on')
     set(handles.CoordUnit,'Visible','on')
     set(handles.TimeUnit,'Visible','on')
     set(handles.slash_title,'Visible','on')
@@ -3283,36 +3273,36 @@ end
 %------------------------------------------------------------------------
 % ---  determine the search range num_Searchx,num_Searchy and shift
 function get_search_range(hObject, eventdata, handles)
-umin=str2double(get(handles.umin,'String'));
-umax=str2double(get(handles.umax,'String'));
-vmin=str2double(get(handles.umin,'String'));
-vmax=str2double(get(handles.vmax,'String'));
+%------------------------------------------------------------------------
+param_civ1=read_GUI(handles.Civ1);
+umin=param_civ1.UMin;
+umax=param_civ1.UMax;
+vmin=param_civ1.VMin;
+vmax=param_civ1.VMax;
 %switch min_title and max_title in case of error
 if umax<=umin
     umin_old=umin;
     umin=umax;
     umax=umin_old;
-    set(handles.umin,'String', num2str(umin))
-    set(handles.umax,'String', num2str(umax))
+    set(handles.num_UMin,'String', num2str(umin))
+    set(handles.num_UMax,'String', num2str(umax))
 end
 if vmax<=vmin
     vmin_old=vmin;
     vmin=vmax;
     vmax=vmin_old;
-    set(handles.vmin,'String', num2str(vmin))
-    set(handles.vmax,'String', num2str(vmax))
+    set(handles.num_VMin,'String', num2str(vmin))
+    set(handles.num_VMax,'String', num2str(vmax))
 end   
-if ~(isnan(umin)||isnan(umax)||isnan(vmin)||isnan(vmax))
+if ~(isempty(umin)||isempty(umax)||isempty(vmin)||isempty(vmax))
     list_pair=get(handles.ListPairCiv1,'String');%get the menu of image pairs
     index=get(handles.ListPairCiv1,'Value');
-    displ_num=get(handles.ListPairCiv1,'UserData');
+    pair_string=list_pair{index};
     time=get(handles.ImaDoc,'UserData'); %get the set of times
-    pxcm_xy=get(handles.SearchRange,'UserData');
-    pxcmx=pxcm_xy(1);
-    pxcmy=pxcm_xy(2);
+    pxcm=get(handles.SearchRange,'UserData');
     mode_list=get(handles.ListPairMode,'String');
     mode_value=get(handles.ListPairMode,'Value');
-    mode=mode_list{mode_value};
+    mode=mode_list{mode_value};      
     if isequal (mode, 'series(Di)' )
         ref_i=str2double(get(handles.ref_i,'String'));
         num1=ref_i-floor(index/2);%  first image numbers
@@ -3325,25 +3315,29 @@ if ~(isnan(umin)||isnan(umax)||isnan(vmin)||isnan(vmax))
         ref_j=str2double(get(handles.ref_j,'String'));
         num_a=ref_j-floor(index/2);%  first image numbers
         num_b=ref_j+ceil(index/2);
-    elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)
+    elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)     
         ref_i=str2double(get(handles.ref_i,'String'));
         num1=ref_i;
         num2=ref_i;
-        num_a=displ_num(1,index);
-        num_b=displ_num(2,index);
+                r=regexp(pair_string,'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
+        if isempty(r)
+            r=regexp(pair_string,'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');
+        end  
+        num_a=str2num(r.num1);
+        num_b=str2num(r.num2);
     end
-    dt=time(num2,num_b)-time(num1,num_a);
+    dt=time(num2+1,num_b+1)-time(num1+1,num_a+1);
     ibx=str2double(get(handles.num_Bx,'String'));
     iby=str2double(get(handles.num_By,'String'));
-    umin=dt*pxcmx*umin;
-    umax=dt*pxcmx*umax;
-    vmin=dt*pxcmy*vmin;
-    vmax=dt*pxcmy*vmax;
+    umin=dt*pxcm*umin;
+    umax=dt*pxcm*umax;
+    vmin=dt*pxcm*vmin;
+    vmax=dt*pxcm*vmax;
     shiftx=round((umin+umax)/2);
     shifty=round((vmin+vmax)/2);
-    isx=(umax+2-shiftx)*2+ibx;
+    isx=(umax+2-shiftx)*2+param_civ1.Bx;
     isx=2*ceil(isx/2)+1;
-    isy=(vmax+2-shifty)*2+iby;
+    isy=(vmax+2-shifty)*2+param_civ1.Bx;
     isy=2*ceil(isy/2)+1;
     set(handles.num_Shiftx,'String',num2str(shiftx));
     set(handles.num_Shifty,'String',num2str(shifty));
@@ -4001,6 +3995,14 @@ else
     end
 end
 
+%------------------------------------------------------------------------ 
+%----function introduced for the correlation window figure, activated by deleting this window
+function closeview_field(gcbo,eventdata)
+%------------------------------------------------------------------------
+hview_field=findobj(allchild(0),'tag','view_field');% look for view_field
+if ~isempty(hview_field)
+    delete(hview_field)
+end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckThreshold.
@@ -4460,6 +4462,9 @@ switch Program
         set(handles.num_Rho,'Style','edit')
         set(handles.num_Rho,'String','1')
         set(handles.BATCH,'Enable','on')
+        set(handles.CheckThreshold,'Visible','off')
+        set(handles.CheckDeformation,'Value',1)
+        set(handles.CheckDecimal,'Value',1)
     case 'Matlab'
         set(handles.num_MaxDiff,'Visible','on')
         set(handles.title_MaxDiff,'Visible','on')
@@ -4470,6 +4475,9 @@ switch Program
         set(handles.num_Rho,'Style','popupmenu')
         set(handles.num_Rho,'Value',1)
         set(handles.num_Rho,'String',{'1';'2'})
+        set(handles.CheckThreshold,'Visible','on')
+        set(handles.CheckDeformation,'Value',0)% desactivate (work in progress)
+        set(handles.CheckDecimal,'Value',0)% desactivate (work in progress)
 end
 
 
