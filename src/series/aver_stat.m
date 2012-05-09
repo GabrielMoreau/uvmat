@@ -346,7 +346,11 @@ for i_slice=1:NbSlice
                     Data{iview}.A=double(A);
                     Data{iview}.CoordUnit='pixel';
                 elseif testcivx
-                    [Data{iview},VelTypeOut]=read_civxdata(filename,FieldName,VelType);
+                    [Data{iview},VelTypeOut,errormsg]=read_civxdata(filename,FieldName,VelType);
+                    if ~isempty(errormsg)
+                          msgbox_uvmat('ERROR',['error of input reading: ' errormsg])
+                    return
+                    end
                 else
                     [Data{iview},var_detect]=nc2struct(filename,SubField.ListVarName); %read the corresponding input data
                     Data{iview}.VarAttribute=SubField.VarAttribute;
