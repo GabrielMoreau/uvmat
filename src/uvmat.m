@@ -227,7 +227,7 @@ AxeData.LimEditBox=1; %initialise AxeData
 set(handles.axes3,'UserData',AxeData)
 
 %% set functions for the mouse and keyboard
-set(handles.histo_u,'NextPlot','replacechildren');
+% set(handles.histo_u,'NextPlot','replacechildren');
 set(handles.histo_v,'NextPlot','replacechildren');
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
 set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles})%set mouse action functio
@@ -4742,3 +4742,14 @@ else
     addpath (fullfile(pathelp,'uvmat_doc'))
     web(helpfile);
 end
+
+
+% --- Executes on slider movement.
+function slider7_Callback(hObject, eventdata, handles)
+% hObject    handle to slider7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
