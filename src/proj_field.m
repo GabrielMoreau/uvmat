@@ -838,33 +838,33 @@ for icell=1:length(CellVarIndex)
             ProjData.ListVarName=[ProjData.ListVarName {AXName}];
             ProjData.VarDimName=[ProjData.VarDimName {AXName}];
             for ivar=VarIndex
-                VarName{ivar}=FieldData.ListVarName{ivar};
+                %VarName{ivar}=FieldData.ListVarName{ivar};
                 if test_interp2% interpolate on new grid
-                    eval(['FieldData.' VarName{ivar} '=interp2(FieldData.' AXName ',FieldData.' AYName ',FieldData.' VarName{ivar} ',AXI,AYI'');']) %TO TEST
+                    FieldData.(FieldData.ListVarName{ivar})=interp2(FieldData.(AXName),FieldData.(AYName),FieldData.(FieldData.ListVarName{ivar}),AXI,AYI);%TO TEST
                 end
-                eval(['vec_A=reshape(squeeze(FieldData.' VarName{ivar} '),npx*npy,nbcolor);']) %put the original image in colum
+                vec_A=reshape(squeeze(FieldData.(FieldData.ListVarName{ivar})),npx*npy,nbcolor); %put the original image in colum
                 if nbcolor==1
                     vec_B(ind_in)=vec_A(ICOMB);
                     vec_B(ind_out)=zeros(size(ind_out));
                     A_out=reshape(vec_B,npY,npX);
-                    eval(['ProjData.' VarName{ivar} '=((sum(A_out,1)/npY))'';']);
+                    ProjData.(FieldData.ListVarName{ivar}) =sum(A_out,1)/npY;
                 elseif nbcolor==3
                     vec_B(ind_in,1:3)=vec_A(ICOMB,:);
                     vec_B(ind_out,1)=zeros(size(ind_out));
                     vec_B(ind_out,2)=zeros(size(ind_out));
                     vec_B(ind_out,3)=zeros(size(ind_out));
                     A_out=reshape(vec_B,npY,npX,nbcolor);
-                    eval(['ProjData.' VarName{ivar} '=squeeze(sum(A_out,1)/npY);']);
+                    ProjData.(FieldData.ListVarName{ivar})=squeeze(sum(A_out,1)/npY);
                 end  
-                ProjData.ListVarName=[ProjData.ListVarName VarName{ivar} ];
+                ProjData.ListVarName=[ProjData.ListVarName FieldData.ListVarName{ivar}];
                 ProjData.VarDimName=[ProjData.VarDimName {AXName}];%to generalize with the initial name of the x coordinate
                 ProjData.VarAttribute{ivar}.Role='continuous';% for plot with continuous line
             end
             if testU
-                 eval(['vector_x =ProjData.' VarName{VarType.vector_x} ';'])
-                 eval(['vector_y =ProjData.' VarName{VarType.vector_y} ';'])
-                 eval(['ProjData.' VarName{VarType.vector_x} '=cos(theta)*vector_x+sin(theta)*vector_y;'])
-                 eval(['ProjData.' VarName{VarType.vector_y} '=-sin(theta)*vector_x+cos(theta)*vector_y;'])
+                 vector_x =ProjData.(FieldData.ListVarName{VarType.vector_x});
+                 vector_y =ProjData.(FieldData.ListVarName{VarType.vector_y});
+                 ProjData.(FieldData.ListVarName{VarType.vector_x}) =cos(theta)*vector_x+sin(theta)*vector_y;
+                 ProjData.(FieldData.ListVarName{VarType.vector_y}) =-sin(theta)*vector_x+cos(theta)*vector_y;
             end
             ProjData.VarAttribute{nbvar+1}.long_name='abscissa along line';
             if nbcolor==3

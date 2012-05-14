@@ -52,7 +52,8 @@
 %    .Scalar.MinA: lower bound (saturation) for the scalar representation, min(field) by default
 %    .Scalar.CheckFixScal: =0 (default) lower and upper bounds of the scalar representation set to the min and max of the field
 %               =1 lower and upper bound imposed by .AMax and .MinA
-%    .Scalar.CheckBW= 1 black and white representation imposed, =0 by default.
+%    .Scalar.CheckBW= 1: black and white representation imposed, =0 color imposed (color scale or rgb),
+%                   =[]: automatic (B/W for integer positive scalars, color  else)
 %    .Scalar.CheckContours= 1: represent scalars by contour plots (Matlab function 'contour'); =0 by default
 %    .IncrA : contour interval
 %            -- vectors--
@@ -213,7 +214,7 @@ if ~isempty(index_2D)|| ~isempty(index_1D)%  plot
     AxeData=get(haxes,'UserData');
     if isempty(index_2D)
         plot_plane([],[],[],haxes);%removes images or vector plots if any
-    else
+    else  %plot 2D field
         [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),haxes,PlotParam,PosColorbar);
         AxeData.NbDim=2;
         if testzoomaxes && isempty(errormsg)
@@ -225,7 +226,7 @@ if ~isempty(index_2D)|| ~isempty(index_1D)%  plot
         if ~isempty(haxes)
             plot_profile([],[],[],haxes);%
         end
-    else
+    else %plot 1D field (usual graph y vs x)
         Coordinates=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,PlotParam.Coordinates);%
         if testzoomaxes
             [zoomaxes,Coordinates]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam.Coordinates);
@@ -716,12 +717,12 @@ if test_ima
     end
     
     %set the color map
-    if isfield(PlotParam.Scalar,'CheckBW')
-        BW=PlotParam.Scalar.CheckBW; %test for BW gray scale images
-    else
+    if isfield(PlotParam.Scalar,'CheckBW') && ~isempty(PlotParam.Scalar.CheckBW)
+        BW=PlotParam.Scalar.CheckBW; %BW=0 color imposed, else gray scale imposed.
+    else % BW imposed automatically chosen
         BW=(siz==2) && (isa(A,'uint8')|| isa(A,'uint16'));% non color images represented in gray scale by default
-    end
-    
+        PlotParamOut.Scalar.CheckBW=BW;
+    end 
     %case of grey level images or contour plot
     if siz==2 
         if ~isfield(PlotParam.Scalar,'CheckFixScalar')
@@ -1144,10 +1145,8 @@ for icolor=1:ncolor
     n=size(xc);
     xN=NaN*ones(size(xc));
     matx=[xc(:)-uc(:)/2 xc(:)+uc(:)/2 xN(:)]';
-    %     matx=[xc(:) xc(:)+uc(:) xN(:)]';
     matx=reshape(matx,1,3*n(2));
     maty=[yc(:)-vc(:)/2 yc(:)+vc(:)/2 xN(:)]';
-    %     maty=[yc(:) yc(:)+vc(:) xN(:)]';
     maty=reshape(maty,1,3*n(2));
     
     %determine arrow heads
@@ -1164,7 +1163,7 @@ for icolor=1:ncolor
     matyar=[y1(:) y2(:) y3(:) xN(:)]';
     matyar=reshape(matyar,1,4*n(2));
     %draw the line or modify the existing ones
-    tri=reshape(1:3*length(uc),3,[])';   
+%     tri=reshape(1:3*length(uc),3,[])';   
     isn=isnan(colorlist(icolor,:));%test if color NaN
     if 2*icolor > sizh(1) %if icolor exceeds the number of existing ones
         if ~isn(1) %if the vectors are visible color not nan

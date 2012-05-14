@@ -37,7 +37,7 @@ end
 % End initialization code - DO NOT EDIT
 
 % --- Executes just before msgbox_uvmat is made visible.
-function msgbox_uvmat_OpeningFcn(hObject, eventdata, handles,title,display,default_answer,Position)
+function msgbox_uvmat_OpeningFcn(hObject, eventdata, handles,title,display_str,default_answer,Position)
 % This function has no output args, see OutputFcn.
 
 % Choose default command line output for msgbox_uvmat
@@ -73,6 +73,9 @@ if exist('title','var')
             icontype='';
         case 'ERROR'
             icontype='error';
+            if exist('display_str','var')
+                disp(display_str); %display the error message in the Matlab command window
+            end
         case 'WARNING'
             icontype='warn';
         case 'INPUT_Y-N'
@@ -91,8 +94,8 @@ if exist('title','var')
             testinputstring=exist('default_answer','var');
     end
 end
-if exist('display','var')
-    set(handles.text1, 'String', display);
+if exist('display_str','var')
+    set(handles.text1, 'String', display_str);
 end
 % if testinputstring
 %     set(handles.edit_box, 'Visible', 'on');

@@ -1570,17 +1570,20 @@ ref_j=[str2num(get(handles.num_first_j,'String')) str2num(get(handles.num_last_j
 % last_i=str2num(get(handles.num_last_i,'String'));
 % last_j=str2num(get(handles.num_last_j,'String'));
 TimeTable=get(handles.TimeTable,'Data');
-
+Pairs=get(handles.PairString,'Data');
 for iview=1:size(TimeTable,1)
-    Pairs=get(handles.PairString,'Data');
+    if size(SeriesData.Time,1)<iview
+        break
+    end
     i1=ref_i;
     j1=ref_j;
     i2=ref_i;
     j2=ref_j;
+    % case of pairs
     if ~isempty(Pairs{iview,1})
-        r=regexp(Param.Pairs.list_pair_civ,'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
+        r=regexp(Pairs{iview,1},'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
         if isempty(r)
-            r=regexp(Param.Pairs.list_pair_civ,'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');
+            r=regexp(Pairs.list_pair_civ,'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');
         end
         switch r.mode
             case 'Di='  %  case 'series(Di)')
@@ -1594,105 +1597,109 @@ for iview=1:size(TimeTable,1)
                 j2=str2num(r.num2)*ones(size(ref_i));
         end
     end
-    if isempty(ref_j)
-    time_first=(SeriesData.Time{iview}(i1(1))+SeriesData.Time{iview}(i2(1)))/2;
-    time_last=(SeriesData.Time{iview}(i1(2))+SeriesData.Time{iview}(i2(2)))/2;
-    else
-        time_first=(SeriesData.Time{iview}(i1(1),j1(1))+SeriesData.Time{iview}(i2(1),j2(1)))/2;
-        time_last=(SeriesData.Time{iview}(i1(2),j1(2))+SeriesData.Time{iview}(i2(2),j2(2)))/2;
+    TimeTable{iview,2}=[];
+    TimeTable{iview,3}=[];
+    if size(SeriesData.Time{iview},1)>=i2(2)&&size(SeriesData.Time{iview},1)>=j2(2)
+        if isempty(ref_j)
+            time_first=(SeriesData.Time{iview}(i1(1))+SeriesData.Time{iview}(i2(1)))/2;
+            time_last=(SeriesData.Time{iview}(i1(2))+SeriesData.Time{iview}(i2(2)))/2;
+        else
+            time_first=(SeriesData.Time{iview}(i1(1),j1(1))+SeriesData.Time{iview}(i2(1),j2(1)))/2;
+            time_last=(SeriesData.Time{iview}(i1(2),j1(2))+SeriesData.Time{iview}(i2(2),j2(2)))/2;
+        end
+        TimeTable{iview,2}=time_first; %TODO: take into account pairs
+        TimeTable{iview,3}=time_last; %TODO: take into account pairs
     end
-    TimeTable{iview,2}=time_first; %TODO: take into account pairs
-    TimeTable{iview,3}=time_last; %TODO: take into account pairs
 end
 set(handles.TimeTable,'Data',TimeTable)
-return
 
 
-NomType=InputTable(:,4);
-mode_list=get(handles.mode,'String');
-index_mode=get(handles.mode,'Value');
-
-mode=mode_list{index_mode};
-
-time_first=[];
-time_last=[];
-if ~isfield(SeriesData,'Time')
-    SeriesData.Time{1}=[];
-end
-TimeTable=get(handles.TimeTable,'Data');
-for iview=1:size(TimeTable,1)
-    time_first_cell{iview}='?';
-    time_last_cell{iview}='?';%default
-    time=SeriesData.Time{iview};
-    if isequal(NomType{iview},'_1-2_1')|isequal(NomType{iview},'_1_1-2')|isequal(NomType{iview},'#_ab')|isequal(NomType{iview},'_1-2')
-        if isfield(SeriesData,'displ_num')& ~isempty(SeriesData.displ_num)
-            ind_shift=SeriesData.displ_num(iview,:);
-            if isequal(mode,'bursts')
-                first_j=0;
-                last_j=0;
-            end
-            first_i1=first_i +ind_shift(3);
-            first_i2 =first_i +ind_shift(4);
-            first_j1 =first_j +ind_shift(1);
-            first_j2 =first_j +ind_shift(2);
-            last_i1=last_i +ind_shift(3);
-            last_i2 =last_i +ind_shift(4);    
-            last_j1 =last_j +ind_shift(1);
-            last_j2 =last_j +ind_shift(2);
-            siz=size(SeriesData.Time{1});
-            if first_i1>=1 && first_j1>=1 && siz(1)>=last_i2 && siz(2)>=last_j2
-                time_first=(time(first_i1,first_j1)+time(first_i2,first_j2))/2;
-                time_last=(time(last_i1,last_j1)+time(last_i2,last_j2))/2;
-            else%read the time in the nc files
-                RootPath=get(handles.RootPath,'String');
-                RootFile=get(handles.RootFile,'String');
-                SubDir=get(handles.SubDir,'String');
-                %VelType=get(handles.VelType,'String');
-                VelType_str=get(handles.VelTypeMenu,'String');
-                VelType_val=get(handles.VelTypeMenu,'Value');
-                VelType=VelType_str{VelType_val};
-                filebase=fullfile(RootPath{1},RootFile{1});
-                [filefirst]=name_generator(filebase,first_i1,first_j1,'.nc',NomType{iview},1,first_i2,first_j2,SubDir{iview});
-                if  exist(filefirst,'file')
-                    Attrib=nc2struct(filefirst,[]);
-                    if isfield(Attrib,'Time')
-                        time_first=Attrib.Time;
-                    else
-                        if isfield(Attrib,'absolut_time_T0')
-                            time_first=Attrib.absolut_time_T0;
-                        end
-                        if isfield(Attrib,'absolut_time_T0_2')&&~(isequal(VelType,'civ1')||isequal(VelType,'interp1')||isequal(VelType,'filter1'))
-                            time_first=Attrib.absolut_time_T0_2;
-                        end
-                    end 
-                end
-                [filelast]=name_generator(filebase,last_i1,last_j1,'.nc',NomType{iview},1,last_i2,last_j2,SubDir{iview});
-                if exist(filelast,'file')
-                   Attrib=nc2struct(filelast,[]);
-                    if isfield(Attrib,'Time')
-                        time_last=Attrib.Time;
-                    else
-                        if isfield(Attrib,'absolut_time_T0')
-                            time_last=Attrib.absolut_time_T0;
-                        end
-                        if isfield(Attrib,'absolut_time_T0_2')&&~(isequal(VelType,'civ1')||isequal(VelType,'interp1')||isequal(VelType,'filter1'))
-                            time_last=Attrib.absolut_time_T0_2;
-                        end
-                    end 
-                end
-            end
-        end
-    else
-        siz=size(time);
-        if siz(1)>=last_i && siz(2)>=last_j && first_i>=1 && first_j>=1
-            time_first=times(first_i,first_j);
-            time_last=times(last_i,last_j); 
-        end
-    end
-    time_first_cell{iview}=num2str(time_first,4);
-    time_last_cell{iview}=num2str(time_last,4);
-end
-
+% 
+% NomType=InputTable(:,4);
+% mode_list=get(handles.mode,'String');
+% index_mode=get(handles.mode,'Value');
+% 
+% mode=mode_list{index_mode};
+% 
+% time_first=[];
+% time_last=[];
+% if ~isfield(SeriesData,'Time')
+%     SeriesData.Time{1}=[];
+% end
+% TimeTable=get(handles.TimeTable,'Data');
+% for iview=1:size(TimeTable,1)
+%     time_first_cell{iview}='?';
+%     time_last_cell{iview}='?';%default
+%     time=SeriesData.Time{iview};
+%     if isequal(NomType{iview},'_1-2_1')|isequal(NomType{iview},'_1_1-2')|isequal(NomType{iview},'#_ab')|isequal(NomType{iview},'_1-2')
+%         if isfield(SeriesData,'displ_num')& ~isempty(SeriesData.displ_num)
+%             ind_shift=SeriesData.displ_num(iview,:);
+%             if isequal(mode,'bursts')
+%                 first_j=0;
+%                 last_j=0;
+%             end
+%             first_i1=first_i +ind_shift(3);
+%             first_i2 =first_i +ind_shift(4);
+%             first_j1 =first_j +ind_shift(1);
+%             first_j2 =first_j +ind_shift(2);
+%             last_i1=last_i +ind_shift(3);
+%             last_i2 =last_i +ind_shift(4);    
+%             last_j1 =last_j +ind_shift(1);
+%             last_j2 =last_j +ind_shift(2);
+%             siz=size(SeriesData.Time{1});
+%             if first_i1>=1 && first_j1>=1 && siz(1)>=last_i2 && siz(2)>=last_j2
+%                 time_first=(time(first_i1,first_j1)+time(first_i2,first_j2))/2;
+%                 time_last=(time(last_i1,last_j1)+time(last_i2,last_j2))/2;
+%             else%read the time in the nc files
+%                 RootPath=get(handles.RootPath,'String');
+%                 RootFile=get(handles.RootFile,'String');
+%                 SubDir=get(handles.SubDir,'String');
+%                 %VelType=get(handles.VelType,'String');
+%                 VelType_str=get(handles.VelTypeMenu,'String');
+%                 VelType_val=get(handles.VelTypeMenu,'Value');
+%                 VelType=VelType_str{VelType_val};
+%                 filebase=fullfile(RootPath{1},RootFile{1});
+%                 [filefirst]=name_generator(filebase,first_i1,first_j1,'.nc',NomType{iview},1,first_i2,first_j2,SubDir{iview});
+%                 if  exist(filefirst,'file')
+%                     Attrib=nc2struct(filefirst,[]);
+%                     if isfield(Attrib,'Time')
+%                         time_first=Attrib.Time;
+%                     else
+%                         if isfield(Attrib,'absolut_time_T0')
+%                             time_first=Attrib.absolut_time_T0;
+%                         end
+%                         if isfield(Attrib,'absolut_time_T0_2')&&~(isequal(VelType,'civ1')||isequal(VelType,'interp1')||isequal(VelType,'filter1'))
+%                             time_first=Attrib.absolut_time_T0_2;
+%                         end
+%                     end 
+%                 end
+%                 [filelast]=name_generator(filebase,last_i1,last_j1,'.nc',NomType{iview},1,last_i2,last_j2,SubDir{iview});
+%                 if exist(filelast,'file')
+%                    Attrib=nc2struct(filelast,[]);
+%                     if isfield(Attrib,'Time')
+%                         time_last=Attrib.Time;
+%                     else
+%                         if isfield(Attrib,'absolut_time_T0')
+%                             time_last=Attrib.absolut_time_T0;
+%                         end
+%                         if isfield(Attrib,'absolut_time_T0_2')&&~(isequal(VelType,'civ1')||isequal(VelType,'interp1')||isequal(VelType,'filter1'))
+%                             time_last=Attrib.absolut_time_T0_2;
+%                         end
+%                     end 
+%                 end
+%             end
+%         end
+%     else
+%         siz=size(time);
+%         if siz(1)>=last_i && siz(2)>=last_j && first_i>=1 && first_j>=1
+%             time_first=times(first_i,first_j);
+%             time_last=times(last_i,last_j); 
+%         end
+%     end
+%     time_first_cell{iview}=num2str(time_first,4);
+%     time_last_cell{iview}=num2str(time_last,4);
+% end
+% 
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ACTION.
@@ -2068,16 +2075,13 @@ SeriesData=get(handles.series,'UserData');
 value=get(handles.GetObject,'Value');
 if value
      set(handles.GetObject,'BackgroundColor',[1 1 0])%put unactivated buttons to yellow
-%      DataInit.ParentButton=handles.GetObject;
      hset_object=findobj(allchild(0),'tag','set_object');%find the set_object interface handle
      if ishandle(hset_object)
-         uistack(hset_object,'top')
-        %[SeriesData.hset_object,SeriesData.sethandles]=set_object(DataInit); %open the set_object interface
+         uistack(hset_object,'top')% show the GUI set_object if opened
      else
          %get the object file 
          InputTable=get(handles.InputTable,'Data');
          defaultname=InputTable{1,1};
-%          defaultname=get(handles.RootPath,'String');
          if isempty(defaultname)
             defaultname={''};
          end
@@ -2087,11 +2091,6 @@ if value
         '*.mat',  '.mat matlab files '}, ...
         'Pick an xml object file (or use uvmat to create it)',defaultname{1});
         fileinput=[PathName FileName];%complete file name 
-        testblank=findstr(fileinput,' ');%look for blanks
-        if ~isempty(testblank)
-            msgbox_uvmat('ERROR','forbidden input file name: contain blanks')
-            return
-        end
         sizf=size(fileinput);
         if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
         %read the file
@@ -2103,21 +2102,11 @@ if value
         if ~isfield(data,'ProjMode')
              data.ProjMode='projection';
         end
-        transform_menu=get(handles.transform_fct,'String');
-        ichoice=get(handles.transform_fct,'Value');
-%         if isequal(transform_menu{ichoice},'px');
-%             data.CoordType='px';
-%         else
-%             data.CoordType='phys';
-%         end
-        data.desable_plot=1;
+%         data.desable_plot=1;
         [SeriesData.hset_object,SeriesData.sethandles]=set_object(data);% call the set_object interface
      end 
 else
     set(handles.GetObject,'BackgroundColor',[0.7 0.7 0.7])%put activated buttons to green
-%     if isfield(SeriesData,'hset_object')&& ishandle(SeriesData.hset_object)
-%         close(SeriesData.hset_object)
-%     end
 end
 set(handles.series,'UserData',SeriesData)
 

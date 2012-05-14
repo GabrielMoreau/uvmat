@@ -203,8 +203,8 @@ if ~isequal(hhh,'')
     %% select the dimensions used for the set of input variables
     if ~isempty(var_index)      
         dim_index=find(flag_used);%list of netcdf dimensions indices corresponding to used dimensions 
-        ListDimName=ListDimNameNetcdf(dim_index); 
-        DimValue=dim_value(dim_index);
+        Data.ListDimName=ListDimNameNetcdf(dim_index); 
+        Data.DimValue=dim_value(dim_index);
     end
     
     %% get the values of the input variables

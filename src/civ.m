@@ -921,20 +921,41 @@ end
 hfig=findobj(allchild(0),'name','civ_status');
 if isempty(hfig)
     hfig=figure('DeleteFcn',@stop_status);
+    set(hfig,'MenuBar','none')% suppress the menu bar
+    set(hfig,'NumberTitle','off')%suppress the fig number in the title
     set(hfig,'name','civ_status')
-     uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', {'open_uvmat'},'tag','list');
+    set(hfig,'tag','civ_status')
+    set(hfig,'UserData',civ_files)
+    hlist= uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', {'open_uvmat'},'tag','list');
     uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','msgbox','Max',2,'String','checking files...');
     uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
-    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','OK','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@close_GUI);
+    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@close_GUI);
+    hrefresh=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@refresh_GUI);
     BarPosition=[0.05 0.81 0.01 0.05];
-    hwaitbar=uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
-    drawnow
+    uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
+    drawnow 
 end
+set(hrefresh,'UserData',option_civ)
+        filepath=fileparts(civ_files{1});
+set(hlist,'UserData',fileparts(filepath))
+refresh_GUI(hrefresh,[])
+
+%------------------------------------------------------------------------   
+% launched by refreshing the status figure
+function refresh_GUI(hObject, eventdata)
+%------------------------------------------------------------------------
 Tabchar={};
+BarPosition=[0.05 0.81 0.01 0.05];
+hfig=get(hObject,'parent');
+civ_files=get(hfig,'UserData');
+        [filepath,filename,ext]=fileparts(civ_files{1});
+        [tild,SubDir,extdir]=fileparts(filepath);
+        SubDir=[SubDir extdir];
+option_civ=get(hObject,'UserData');
 nbfiles=numel(civ_files);
 count=0;
 testrecent=0;
-while count<nbfiles
+% while count<nbfiles
     count=0;
     datnum=zeros(1,nbfiles);
     for ifile=1:nbfiles
@@ -975,8 +996,8 @@ while count<nbfiles
         if option >= option_civ
             count=count+1;
         end
-        [rr,filename,ext]=fileparts(civ_files{ifile});
-        Tabchar{ifile,1}=[fullfile([SubDir extdir],filename) ext  '...' option_str];
+        [filepath,filename,ext]=fileparts(civ_files{ifile});
+        Tabchar{ifile,1}=[fullfile(SubDir,filename) ext  '...' option_str];
     end
     datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
     if isempty(datnum) 
@@ -989,34 +1010,53 @@ while count<nbfiles
         datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
         [first,ind]=min(datnum);
         [last,indlast]=max(datnum);
-        if test_new
-            message='existing file status, no processing launched yet';
-        else
+%         if test_new
+%             message='existing file status, no processing launched yet';
+%         else
         message={[num2str(count) ' file(s) done over ' num2str(nbfiles)] ;['oldest modification:  ' cell2mat(filefound(ind)) ' : ' datestr(first)];...
             ['latest modification:  ' cell2mat(filefound(indlast)) ' : ' datestr(last)]};
-        end
+%         end
     end
-    hfig=findobj(allchild(0),'name','civ_status');
-    if isempty(hfig)% the status list has been deleted
-        return
-    else
+    %hfig=findobj(allchild(0),'name','civ_status');
+%     if isempty(hfig)% the status list has been deleted
+%         return
+%     else
         hlist=findobj(hfig,'tag','list');
         hmsgbox=findobj(hfig,'tag','msgbox');
         hwaitbar=findobj(hfig,'tag','waitbar');
         set(hlist,'String',Tabchar)
         set(hmsgbox,'String', message)
-        if count>0 && ~test_new
+        if count>0 %&& ~test_new
             BarPosition(3)=0.9*count/nbfiles;
             set(hwaitbar,'Position',BarPosition)
         end
-    end
-    set(hlist,'UserData',rootroot)
-    if count<10||(nbfiles-count)<10
-    pause(.5)% wait 0.5 seconds for next check
-    else
-        pause(10)% wait 10 seconds for next check
-    end
-end
+%     end
+%     [root,filename,ext]=fileparts(civ_files{1});
+% [rootroot,SubDir,extdir]=fileparts(root);
+% 
+%     set(hlist,'UserData',rootroot)
+%     if count<10||(nbfiles-count)<10
+%     pause(.5)% wait 0.5 seconds for next check
+%     else
+%         pause(10)% wait 10 seconds for next check
+%     end
+% end
+
+%------------------------------------------------------------------------   
+% launched by deleting the status figure
+function stop_status(hObject, eventdata)
+%------------------------------------------------------------------------
+hciv=findobj(allchild(0),'tag','civ');
+hhciv=guidata(hciv);
+set(hhciv.status,'value',0) %reset the status uicontrol in the GUI civ
+set(hhciv.status,'BackgroundColor',[0 1 0])
+
+%------------------------------------------------------------------------   
+% launched by pressing OK on the status figure
+function close_GUI(hObject, eventdata)
+%------------------------------------------------------------------------
+    delete(gcbf)
+
 
 %------------------------------------------------------------------------
 % --- Main lauch command, called by RUN and BATCH
@@ -1142,7 +1182,19 @@ switch CivMode
 end
 for bin_name=binary_list %loop on the list of binaries
     if isfield(Param.xml,bin_name{1})% bin_name{1} =current name in the list
-        if ~exist(Param.xml.(bin_name{1}),'file')%look for the full path if the file name has been defined with a relative path in PARAM.xml
+        if exist(Param.xml.(bin_name{1}),'file')
+            [path,name,ext]=fileparts(Param.xml.(bin_name{1}));
+            currentdir=pwd;
+            if exist(path,'dir')
+                cd(path);
+                binpath=pwd;%path of the binary
+                Param.xml.(bin_name{1})=fullfile(binpath,[name ext]);
+                cd(currentdir)
+            else
+                errormsg=['path ' path ' for binaries defined in PARAM.xml does not exist'];
+                return
+            end
+        else  %look for the full path if the file name has been defined with a relative path in PARAM.xm
             fullname=fullfile(path_civ,Param.xml.(bin_name{1}));
             if exist(fullname,'file')
                 Param.xml.(bin_name{1})=fullname;
@@ -1150,15 +1202,7 @@ for bin_name=binary_list %loop on the list of binaries
                 errormsg=['Binary ' Param.xml.(bin_name{1}) ' defined in PARAM.xml does not exist'];
                 return
             end
-        else
-            [path,name,ext]=fileparts(Param.xml.(bin_name{1}));
-            currentdir=pwd;
-            cd(path);
-            binpath=pwd;%path of the binary
-            Param.xml.(bin_name{1})=fullfile(binpath,[name ext]);
-            cd(currentdir);
         end
-        
     end
 end
 display('files OK, processing...')
@@ -3213,21 +3257,6 @@ set(gcf,'Pointer','arrow')
 %     uvmat(filename)
 %     set(gcbo,'Value',1)
 % end
-
-%------------------------------------------------------------------------   
-% launched by pressing OK on the status figure
-function close_GUI(hObject, eventdata)
-%------------------------------------------------------------------------
-    delete(gcbf)
-    
-%------------------------------------------------------------------------   
-% launched by deleting the status figure
-function stop_status(hObject, eventdata)
-%------------------------------------------------------------------------
-hciv=findobj(allchild(0),'tag','civ');
-hhciv=guidata(hciv);
-set(hhciv.status,'value',0) %reset the status uicontrol in the GUI civ
-set(hhciv.status,'BackgroundColor',[0 1 0])
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -38,6 +38,7 @@ if isfield(PlotParam,'Scalar')
     if isfield(PlotParam.Scalar,'IncrA')
         set(handles.num_IncrA,'String',num2str(PlotParam.Scalar.IncrA,3))
     end
+    set(handles.CheckBW,'Value',PlotParam.Scalar.CheckBW)
 else
     set(handles.Scalar,'Visible','off')
 end

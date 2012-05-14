@@ -410,7 +410,6 @@ end
 function MenuBrowse_Callback(hObject, eventdata, handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-% oldfile=read_file_box,es(handles);
 if isempty(oldfile)||isequal(oldfile,'') %loads the previously stored file name and set it as default in the file_input box
          dir_perso=prefdir;
          profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
@@ -421,25 +420,27 @@ if isempty(oldfile)||isequal(oldfile,'') %loads the previously stored file name 
              end
          end
 end
-[FileName, PathName] = uigetfile( ...
-       {'*.xml;*.xls;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol;*.nc;*.cmx;*.fig;*.log;*.dat;*.bat;', ' (*.xml,*.xls,*.civ,*.jpg ,*.png, .tif, *.avi,*.vol,*.nc,*.cmx,*.fig,*.log,*.dat,*.bat)';
-       '*.xml',  '.xml files '; ...
-        '*.xls',  '.xls files '; ...
-        '*.civ',  '.civ files '; ...
-        '*.jpg',' jpeg image files'; ...
-        '*.png','.png image files'; ...
-        '*.tif','.tif image files'; ...
-        '*.avi;*.AVI','.avi movie files'; ...
-        '*.vol','.volume images (png)'; ...
-        '*.nc','.netcdf files'; ...
-        '*.cdf','.netcdf files'; ...
-        '*.cmx','.cmx text files ';...
-        '*.fig','.fig files (matlab fig)';...
-        '*.log','.log text files ';...
-        '*.dat','.dat text files ';...
-        '*.bat','.bat system command text files';...
-        '*.*',  'All Files (*.*)'}, ...
-        'Pick a file',oldfile);
+% [FileName, PathName] = uigetfile( ...
+%        {'*.xml;*.xls;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol;*.nc;*.cmx;*.fig;*.log;*.dat;*.bat;', ' (*.xml,*.xls,*.civ,*.jpg ,*.png, .tif, *.avi,*.vol,*.nc,*.cmx,*.fig,*.log,*.dat,*.bat)';
+%        '*.xml',  '.xml files '; ...
+%         '*.xls',  '.xls files '; ...
+%         '*.civ',  '.civ files '; ...
+%         '*.jpg',' jpeg image files'; ...
+%         '*.png','.png image files'; ...
+%         '*.tif','.tif image files'; ...
+%         '*.avi;*.AVI','.avi movie files'; ...
+%         '*.vol','.volume images (png)'; ...
+%         '*.nc','.netcdf files'; ...
+%         '*.cdf','.netcdf files'; ...
+%         '*.cmx','.cmx text files ';...
+%         '*.fig','.fig files (matlab fig)';...
+%         '*.log','.log text files ';...
+%         '*.dat','.dat text files ';...
+%         '*.bat','.bat system command text files';...
+%         '*.*',  'All Files (*.*)'}, ...
+%         'Pick a file',oldfile);
+
+[FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',oldfile);
 fileinput=[PathName FileName];%complete file name 
 sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
@@ -487,27 +488,25 @@ display_file_name(handles,fileinput)
 %     search the files, recognize their type according to their name and fill the rootfile input windows
 function MenuBrowse_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-% huvmat=get(handles.run0,'parent');
-UvData=get(handles.uvmat,'UserData');
-
 RootPath=get(handles.RootPath,'String');
-[FileName, PathName, filterindex] = uigetfile( ...
-       {'*.xml;*.xls;*.civ;*.jpg;*.png;*.avi;*.AVI;*.nc;*.cmx;*.fig;*.log;*.dat', ' (*.xml,*.xls,*.civ, *.jpg,*.png, *.avi,*.nc,*.cmx ,*.fig,*.log,*.dat)';
-       '*.xml',  '.xml files '; ...
-        '*.xls',  '.xls files '; ...
-        '*.civ',  '.civ files '; ...
-        '*.jpg','.jpg image files'; ...
-        '*.png','.png image files'; ...
-        '*.avi;*.AVI','.avi movie files'; ...
-        '*.nc','.netcdf files'; ...
-        '*.cdf','.netcdf files'; ...
-        '*.cmx','.cmx text files';...
-        '*.cmx2','.cmx2 text files';...
-        '*.fig','.fig files (matlab fig)';...
-        '*.log','.log text files ';...
-        '*.dat','.dat text files ';...
-        '*.*',  'All Files (*.*)'}, ...
-        'Pick a second file for comparison',RootPath);
+% [FileName, PathName, filterindex] = uigetfile( ...
+%        {'*.xml;*.xls;*.civ;*.jpg;*.png;*.avi;*.AVI;*.nc;*.cmx;*.fig;*.log;*.dat', ' (*.xml,*.xls,*.civ, *.jpg,*.png, *.avi,*.nc,*.cmx ,*.fig,*.log,*.dat)';
+%        '*.xml',  '.xml files '; ...
+%         '*.xls',  '.xls files '; ...
+%         '*.civ',  '.civ files '; ...
+%         '*.jpg','.jpg image files'; ...
+%         '*.png','.png image files'; ...
+%         '*.avi;*.AVI','.avi movie files'; ...
+%         '*.nc','.netcdf files'; ...
+%         '*.cdf','.netcdf files'; ...
+%         '*.cmx','.cmx text files';...
+%         '*.cmx2','.cmx2 text files';...
+%         '*.fig','.fig files (matlab fig)';...
+%         '*.log','.log text files ';...
+%         '*.dat','.dat text files ';...
+%         '*.*',  'All Files (*.*)'}, ...
+%         'Pick a second file for comparison',RootPath);
+[FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',RootPath);
 fileinput_1=[PathName FileName];%complete file name 
 sizf=size(fileinput_1);
 if (~ischar(fileinput_1)||~isequal(sizf(1),1)),return;end
@@ -1996,6 +1995,7 @@ if length(masknumber)>=z_index
 end
 
 %% read the first input field if a filename has been introduced
+ParamIn.ColorVar='';%default variable name for vector color
 if ~isempty(filename)
     ObjectName=filename;
     FieldName='';%default
@@ -2349,10 +2349,10 @@ if ~isempty(transform)
 end
 
 %% calculate scalar
-if (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))%&&~strcmp(ParamOut.FieldName,'velocity')&& ~strcmp(ParamOut.FieldName,'get_field...');% ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
+if ~strcmp(ParamOut.FieldName,'get_field...')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))%&&~strcmp(ParamOut.FieldName,'velocity')&& ~strcmp(ParamOut.FieldName,'get_field...');% ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
     Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
 end
-if numel(Field)==2 && ~test_keepdata_1 && (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))  &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
+if numel(Field)==2 && ~strcmp(ParamOut_1.FieldName,'get_field...')&& ~test_keepdata_1 && (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))  &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
      Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
 end
 
@@ -2385,14 +2385,16 @@ if ~isempty(errormsg)
     errormsg=['error in uvmat/refresh_field/find_field_indices: ' errormsg];
     return
 end
-[NbDim,imax]=max(NbDim);
+[NbDim,imax]=max(NbDim);% spatial dimension of the input field
 if isfield(UvData.Field,'NbDim')
     NbDim=UvData.Field.NbDim;% deal with plane fields containing z coordinates
 end
+XName=''; %default
+YName='';
 if ~isempty(VarType{imax}.coord_x)  && ~isempty(VarType{imax}.coord_y)    %unstructured coordinates
     XName=UvData.Field.ListVarName{VarType{imax}.coord_x};
     YName=UvData.Field.ListVarName{VarType{imax}.coord_y};
-    eval(['nbvec=length(UvData.Field.' XName ');'])%nbre of measurement points (e.g. vectors)
+    nbvec=length(UvData.Field.(XName));%nbre of measurement points (e.g. vectors)
     test_x=1;%test for unstructured coordinates
     if ~isempty(VarType{imax}.coord_z)
         ZName=UvData.Field.ListVarName{VarType{imax}.coord_z};
@@ -2401,9 +2403,14 @@ if ~isempty(VarType{imax}.coord_x)  && ~isempty(VarType{imax}.coord_y)    %unstr
     end
 elseif numel(VarType)>=imax && numel(VarType{imax}.coord)>=NbDim && VarType{imax}.coord(NbDim)>0 %structured coordinate
     XName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim)};
-    if NbDim>1
+    if NbDim> 1 && VarType{imax}.coord(NbDim-1)>0
         YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
     end
+    VarIndex=CellVarIndex{imax}; % list of variable indices
+DimIndex=VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
+nbpoints_x=DimValue(DimIndex(NbDim));
+XMax=nbpoints_x;%default
+XMin=1;%default
 end
 if NbDim==3
     if ~test_x
@@ -2419,19 +2426,20 @@ if NbDim==3
         test_z=0;
     end
 end
-if exist('XName','var')
-    eval(['XMax=max(max(UvData.Field.' XName '));'])
-    eval(['XMin=min(min(UvData.Field.' XName '));'])
+
+if ~isempty (XName)
+    XMax=max(max(UvData.Field.(XName)));
+    XMin=min(min(UvData.Field.(XName)));
     UvData.Field.NbDim=NbDim;
     UvData.Field.XMax=XMax;
     UvData.Field.XMin=XMin;
-    if NbDim >1
-        eval(['YMax=max(max(UvData.Field.' YName '));'])
-        eval(['YMin=min(min(UvData.Field.' YName '));'])
+    if NbDim >1&& ~isempty(YName)
+        YMax=max(max(UvData.Field.(YName)));
+        YMin=min(min(UvData.Field.(YName)));
         UvData.Field.YMax=YMax;
-        UvData.Field.YMin=YMin;
+        UvData.Field.YMin=YMin; 
     end
-    eval(['nbvec=length(UvData.Field.' XName ');'])
+    nbvec=length(UvData.Field.(XName));
     if test_x %unstructured coordinates
         if test_z
             UvData.Field.Mesh=((XMax-XMin)*(YMax-YMin)*(ZMax-ZMin))/nbvec;% volume per vector
@@ -2439,35 +2447,43 @@ if exist('XName','var')
         else
             UvData.Field.Mesh=sqrt((XMax-XMin)*(YMax-YMin)/nbvec);%2D
         end
-    else
-        VarIndex=CellVarIndex{imax}; % list of variable indices
-        DimIndex=VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
-        nbpoints_x=DimValue(DimIndex(NbDim));
-        DX=(XMax-XMin)/(nbpoints_x-1);
-        if NbDim >1
-            nbpoints_y=DimValue(DimIndex(NbDim-1));
-            DY=(YMax-YMin)/(nbpoints_y-1);
-        end
-        if NbDim==3
-            nbpoints_z=DimValue(DimIndex(1));
-            DZ=(ZMax-ZMin)/(nbpoints_z-1);
-            UvData.Field.Mesh=(DX*DY*DZ)^(1/3);
-            UvData.Field.ZMax=ZMax;
-            UvData.Field.ZMin=ZMin;
-        else
-            UvData.Field.Mesh=DX;%sqrt(DX*DY);
-        end
-    end
-    % adjust the mesh to a value 1, 2 , 5 *10^n
-    ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
-    if UvData.Field.Mesh/ord>=5
-        UvData.Field.Mesh=5*ord;
-    elseif UvData.Field.Mesh/ord>=2
-        UvData.Field.Mesh=2*ord;
-    else
-        UvData.Field.Mesh=ord;
     end
 end
+if ~test_x
+    %         VarIndex=CellVarIndex{imax}; % list of variable indices
+    %         DimIndex=VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
+    %         nbpoints_x=DimValue(DimIndex(NbDim));
+    DX=(XMax-XMin)/(nbpoints_x-1);
+    if NbDim >1
+        nbpoints_y=DimValue(DimIndex(NbDim-1));
+        if isempty(YName)% if the y coordinate is not expressed, it is taken as the matrix index
+            DY=1;
+            UvData.Field.YMax=nbpoints_y;
+            UvData.Field.YMin=1;
+        else
+            DY=(YMax-YMin)/(nbpoints_y-1);
+        end
+    end
+    if NbDim==3
+        nbpoints_z=DimValue(DimIndex(1));
+        DZ=(ZMax-ZMin)/(nbpoints_z-1);
+        UvData.Field.Mesh=(DX*DY*DZ)^(1/3);
+        UvData.Field.ZMax=ZMax;
+        UvData.Field.ZMin=ZMin;
+    else
+        UvData.Field.Mesh=DX;%sqrt(DX*DY);
+    end
+end
+% adjust the mesh to a value 1, 2 , 5 *10^n
+ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
+if UvData.Field.Mesh/ord>=5
+    UvData.Field.Mesh=5*ord;
+elseif UvData.Field.Mesh/ord>=2
+    UvData.Field.Mesh=2*ord;
+else
+    UvData.Field.Mesh=ord;
+end
+
 
 %% 3D case (menuvolume)
 if NbDim==3% && UvData.NewSeries
@@ -2559,7 +2575,7 @@ else
 end
 %PlotParam{1}=read_plot_param(handles);%read plotting parameters on the uvmat interfac
 PlotParam{1}=read_GUI(handles.uvmat);
-%default settings if vectors not visible (should not be needed)
+%default settings if vectors not visible 
 if ~isfield(PlotParam{1},'Vectors')
     PlotParam{1}.Vectors.MaxVec=1;
     PlotParam{1}.Vectors.MinVec=0;
@@ -2594,8 +2610,11 @@ for imap=1:numel(IndexObj)
     if ~isempty(errormsg)
         return
     end
-    if testnewseries && isfield(ObjectData,'CoordUnit')
+    if testnewseries 
+        PlotParam{imap}.Scalar.CheckBW=[]; %B/W option depends on the input field (image or scalar)
+        if isfield(ObjectData,'CoordUnit')
         PlotParam{imap}.Coordinates.CheckFixEqual=1;% set x and y scaling equal if CoordUnit is defined (common unit for x and y)
+        end
     end
     %use of mask (TODO: check)
     if isfield(ObjectData,'NbDim') && isequal(ObjectData.NbDim,2) && isfield(ObjectData,'Mask') && isfield(ObjectData,'A')
@@ -4424,7 +4443,9 @@ set(handles.ViewObject,'Value',1) % indicate that the object selected in ListObj
 set(handles.ViewObject_1,'Value',0)% then the object selected in ListObject_1 is not visualised
 hset_object=set_object(data,handles);% call the set_object interface
 hhset_object=guidata(hset_object);
-set(hhset_object.PLOT,'enable','on')% activate the refresh button
+hchild=get(hset_object,'children');
+set(hchild,'enable','on')
+%set(hhset_object.PLOT,'enable','on')% activate the refresh button
 %set(handles.MenuObject,'checked','on')
 set(handles.uvmat,'UserData',UvData)
 set(handles.CheckZoom,'Value',0) %desactivate the zoom for object creation by the mouse

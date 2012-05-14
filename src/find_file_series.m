@@ -221,7 +221,8 @@ else
     else
         ref_ij=ref_i_list*max_j+ref_j_list; % ordered by index i, then by j for a given i.
     end
-    [tild,ifile_min]=min(ref_ij(ref_ij>0));
+    %[tild,ifile_min]=min(ref_ij(ref_ij>0));
+    ifile_min=find(ref_ij>0 , 1);
     if isempty(ifile_min)
         %         RootPath='';
         RootFile='';
