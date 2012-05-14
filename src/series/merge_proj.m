@@ -402,7 +402,8 @@ for ifile=1:nbfield
             save(t,[filebase_merge '.xml'])     
             display([filebase_merge '.xml saved'])
         else
-            MergeData.ListGlobalAttribute={'Project','InputFile_1','InputFile_end','nb_coord','nb_dim','dt','Time','civ'};        
+            MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','nb_coord','nb_dim','dt','Time','civ'};        
+            MergeData.Conventions='uvmat';
             MergeData.nb_coord=2;
             MergeData.nb_dim=2;
             dt=[];

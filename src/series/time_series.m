@@ -454,12 +454,17 @@ for i_slice=1:NbSlice
     %%%%%%% END OF LOOP WITHIN A SLICE
    
     %remove time for global attributes if exists
-    for iattr=1:numel(RecordData.ListGlobalAttribute)
-        if strcmp(RecordData.ListGlobalAttribute{iattr},'Time')
-            RecordData.ListGlobalAttribute(iattr)=[];
-            break
-        end
+    Time_index=find(strcmp('Time',RecordData.ListGlobalAttribute));
+    if ~isempty(Time_search)
+        RecordData.ListGlobalAttribute(Time_index)=[];
     end
+    RecordData.Conventions='uvmat';
+%     for iattr=1:numel(RecordData.ListGlobalAttribute)
+%         if strcmp(RecordData.ListGlobalAttribute{iattr},'Time')
+%             RecordData.ListGlobalAttribute(iattr)=[];
+%             break
+%         end
+%     end
     for ivar=1:numel(RecordData.ListVarName)
         VarName=RecordData.ListVarName{ivar};
         eval(['RecordData.' VarName '=squeeze(RecordData.' VarName ');']) %remove singletons
