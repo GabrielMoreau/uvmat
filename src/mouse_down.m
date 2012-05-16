@@ -274,10 +274,10 @@ if  test_edit && (isequal(tag_obj,'proj_object')||isequal(tag_obj,'DeformPoint')
                 list_str=get(hhuvmat.ListObject_1,'String');
                 UvData.Object{IndexObj}.Name=list_str{IndexObj};
             end
-            h_set_object=findobj(allchild(0),'Tag','set_object');
-            if ~isempty(h_set_object)
-                delete(h_set_object)
-            end
+%             h_set_object=findobj(allchild(0),'Tag','set_object');
+%             if ~isempty(h_set_object)
+%                 delete(h_set_object)
+%             end
             set_object(UvData.Object{IndexObj})
             axes(hchild);%set back the current axes haxes
             testdeform=0;

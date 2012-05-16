@@ -179,7 +179,7 @@ function closefcn(gcbo,eventdata)
 huvmat=findobj(allchild(0),'Tag','uvmat');%find the current uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
-    set(hhuvmat.ViewObject_1,'value',0)% desactivate the two view buttons
+%     set(hhuvmat.ViewObject_1,'value',0)% desactivate the two view buttons
     set(hhuvmat.ViewObject,'value',0)% 
     set(hhuvmat.edit_object,'Value',0)% desactivate the edit option
     set(hhuvmat.edit_object,'BackgroundColor',[0.7 0.7 0.7])%put unactivated buttons to gree

@@ -228,7 +228,7 @@ set(handles.axes3,'UserData',AxeData)
 
 %% set functions for the mouse and keyboard
 % set(handles.histo_u,'NextPlot','replacechildren');
-set(handles.histo_v,'NextPlot','replacechildren');
+% set(handles.histo_v,'NextPlot','replacechildren');
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
 set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles})%set mouse action functio
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
@@ -237,8 +237,10 @@ set(hObject,'DeleteFcn',{@closefcn})%
 
 %% refresh projection plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
+set(handles.ListObject,'Value',1)% default: empty projection objectproj_field
+set(handles.ListObject,'String',{'plane_0'})
 set(handles.ListObject_1,'Value',1)% default: empty projection objectproj_field
-set(handles.ListObject_1,'String',{''})
+set(handles.ListObject_1,'String',{'plane_0'})
 set(handles.Fields,'Value',1)
 set(handles.Fields,'string',{''})
 
@@ -798,11 +800,11 @@ switch FileType
         set(handles.MenuExportFigure,'Enable','on')
         set(handles.MenuExportMovie,'Enable','on')
         set(handles.MenuTools,'Enable','on')
-        set(handles.OBJECT_txt,'Visible','on')
-        set(handles.edit_object,'Visible','on')
-         set(handles.ListObject_1,'Visible','on')
-         set(handles.ViewObject_1,'Visible','on')
-        set(handles.frame_object,'Visible','on')
+%         set(handles.OBJECT_txt,'Visible','on')
+%         set(handles.edit_object,'Visible','on')
+%          set(handles.ListObject_1,'Visible','on')
+%          set(handles.ViewObject,'Visible','on')
+%         set(handles.frame_object,'Visible','on')
         
         % initiate input file series and refresh the current field view:     
         update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,index);
@@ -2407,10 +2409,20 @@ elseif numel(VarType)>=imax && numel(VarType{imax}.coord)>=NbDim && VarType{imax
         YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
     end
     VarIndex=CellVarIndex{imax}; % list of variable indices
-DimIndex=VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
-nbpoints_x=DimValue(DimIndex(NbDim));
-XMax=nbpoints_x;%default
-XMin=1;%default
+    DimIndex=VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
+    nbpoints_x=DimValue(DimIndex(NbDim));
+    XMax=nbpoints_x;%default
+    XMin=1;%default
+end
+%% object visibility
+if NbDim>=2
+    set(handles.Objects,'Visible','on')
+    set(handles.ListObject_1_title,'Visible','on')
+    set(handles.ListObject_1,'Visible','on')
+else% usual (x,y) plots: no projection object
+    set(handles.Objects,'Visible','off')
+    set(handles.ListObject_title,'Visible','off')
+    set(handles.ListObject_1,'Visible','off')
 end
 if NbDim==3
     if ~test_x
@@ -2690,18 +2702,23 @@ end
 
 %% prepare the menus of histograms and plot them (histogram of the whole volume in 3D case)
 menu_histo=(UvData.Field.ListVarName)';%list of field variables to be displayed for the menu of histogram display
-ind_bad=[];
-nb_histo=1;
-
+ind_skip=[];
+% nb_histo=1;
+Ustring='';
+Vstring='';
 % suppress coordinates from the histogram menu
-for ivar=1:numel(menu_histo)%l loop on field variables: 
+for ivar=1:numel(menu_histo)%l loop on field variables:
     if isfield(UvData.Field,'VarAttribute') && numel(UvData.Field.VarAttribute)>=ivar && isfield(UvData.Field.VarAttribute{ivar},'Role')
         Role=UvData.Field.VarAttribute{ivar}.Role;
         switch Role
             case {'coord_x','coord_y','coord_z','dimvar'}
-                ind_bad=[ind_bad ivar];
+                ind_skip=[ind_skip ivar];
+            case {'vector_x'}
+                Ustring=UvData.Field.ListVarName{ivar};
+                ind_skip=[ind_skip ivar];
             case {'vector_y'}
-                nb_histo=nb_histo+1;
+                Vstring=UvData.Field.ListVarName{ivar};
+                ind_skip=[ind_skip ivar];
         end
     end
     DimCell=UvData.Field.VarDimName{ivar};
@@ -2712,10 +2729,13 @@ for ivar=1:numel(menu_histo)%l loop on field variables:
         DimName=DimCell{1};
     end
     if strcmp(DimName,menu_histo{ivar})
-        ind_bad=[ind_bad ivar];
+        ind_skip=[ind_skip ivar];
     end
 end
-menu_histo(ind_bad)=[];
+menu_histo(ind_skip)=[];% remove skipped items
+if ~isempty(Ustring)
+    menu_histo=[{[Ustring ',' Vstring]};menu_histo];% add U, V at the beginning if they exist
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % display menus and plot histograms
@@ -2725,25 +2745,114 @@ if ~isempty(menu_histo)
     set(handles.histo1_menu,'String',menu_histo)
     histo1_menu_Callback(handles.histo1_menu, [], handles)% plot first histogram 
     % case of more than one variables (eg vector components)
-    if nb_histo > 1 
-        test_v=1;
-        set(handles.histo2_menu,'Visible','on')
-        set(handles.histo_v,'Visible','on')
-        set(handles.histo2_menu,'String',menu_histo)
-        set(handles.histo2_menu,'Value',2)
-        histo2_menu_Callback(handles.histo2_menu,[], handles)% plot second histogram 
+%     if nb_histo > 1 
+%         test_v=1;
+%         set(handles.histo2_menu,'Visible','on')
+%         set(handles.histo_v,'Visible','on')
+%         set(handles.histo2_menu,'String',menu_histo)
+%         set(handles.histo2_menu,'Value',2)
+%         histo2_menu_Callback(handles.histo2_menu,[], handles)% plot second histogram 
+%     end
+end
+% if ~test_v
+%     set(handles.histo2_menu,'Visible','off')
+%     set(handles.histo_v,'Visible','off')
+%     cla(handles.histo_v)
+%     set(handles.histo2_menu,'Value',1)
+% end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%------------------------------------------------------------------------
+function histo1_menu_Callback(hObject, eventdata, handles)
+%--------------------------------------------
+%plot first histo
+%huvmat=get(handles.histo1_menu,'parent');
+histo_menu=get(handles.histo1_menu,'String');
+histo_value=get(handles.histo1_menu,'Value');
+FieldName=histo_menu{histo_value};
+% update_histo(handles.histo_u,handles.uvmat,FieldName)
+% 
+% %------------------------------------------------------------------------
+% function histo2_menu_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% %plot second histo
+% %huvmat=get(handles.histo2_menu,'parent');
+% histo_menu=get(handles.histo2_menu,'String');
+% histo_value=get(handles.histo2_menu,'Value');
+% FieldName=histo_menu{histo_value};
+% update_histo(handles.histo_v,handles.uvmat,FieldName)
+% 
+% %------------------------------------------------------------------------
+% %read the field .Fieldname stored in UvData and plot its histogram
+% function update_histo(haxes,huvmat,FieldName)
+%------------------------------------------------------------------------
+UvData=get(handles.uvmat,'UserData');
+Field=UvData.Field;
+r=regexp(FieldName,'(?<var1>.*)(?<sep>,)(?<var2>.*)','names');
+FieldName_2='';
+if ~isempty(r)
+    FieldName=r.var1;
+    FieldName_2=r.var2;
+end
+if ~isfield(UvData.Field,FieldName)
+    msgbox_uvmat('ERROR',['no field  ' FieldName ' for histogram'])
+    return
+end
+FieldHisto=Field.(FieldName);
+if isfield(Field,'FF') && ~isempty(Field.FF) && isequal(size(Field.FF),size(FieldHisto))
+    indsel=find(Field.FF==0);%find values marked as false
+    if ~isempty(indsel)
+        FieldHisto=FieldHisto(indsel);
+        if ~isempty(FieldName_2)
+            FieldHisto(:,:,2)=Field.(FieldName_2)(indsel);
+        end
     end
 end
-if ~test_v
-    set(handles.histo2_menu,'Visible','off')
-    set(handles.histo_v,'Visible','off')
-    cla(handles.histo_v)
-    set(handles.histo2_menu,'Value',1)
+if isempty(Field)
+    msgbox_uvmat('ERROR',['empty field ' FieldName])
+else
+    nxy=size(FieldHisto);
+    Amin=double(min(min(min(FieldHisto))));%min of field value
+    Amax=double(max(max(max(FieldHisto))));%max of field value
+    if isequal(Amin,Amax)
+        cla(handles.histo_u)
+    else
+        Histo.ListVarName={FieldName,'histo'};
+        if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
+            Histo.VarDimName={FieldName,FieldName}; %dimensions for the histogram
+        else
+            if numel(nxy)==2
+                Histo.VarDimName={FieldName,FieldName}; %dimensions for the histogram
+            else
+                Histo.VarDimName={FieldName,{FieldName,'component'}}; %dimensions for the histogram
+            end
+        end
+        %unit
+        units=[]; %default
+        for ivar=1:numel(Field.ListVarName)
+            if strcmp(Field.ListVarName{ivar},FieldName)
+                if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'units')
+                    units=Field.VarAttribute{ivar}.units;
+                    break
+                end
+            end
+        end
+        if ~isempty(units)
+            Histo.VarAttribute{1}.units=units;
+        end
+        eval(['Histo.' FieldName '=linspace(Amin,Amax,50);'])%absissa values for histo
+        if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
+            C=reshape(double(FieldHisto),1,[]);% reshape in a vector
+            Histo.histo(:,1)=hist(C, Histo.(FieldName));  %calculate histogram
+        else
+            for col=1:size(FieldHisto,3)
+                B=FieldHisto(:,:,col);
+                C=reshape(double(B),1,nxy(1)*nxy(2));% reshape in a vector
+                Histo.histo(:,col)=hist(C, Histo.(FieldName));  %calculate histogram
+            end
+        end
+        plot_field(Histo,handles.histo_u);
+    end
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
 
 %-------------------------------------------------------------------
 % --- translate coordinate to matrix index
@@ -3491,90 +3600,7 @@ set(handles.ListObject,'String',{''})
 set(handles.uvmat,'UserData',UvData)
 run0_Callback(hObject, eventdata, handles)
 
-%------------------------------------------------------------------------
-function histo1_menu_Callback(hObject, eventdata, handles)
-%--------------------------------------------
-%plot first histo
-%huvmat=get(handles.histo1_menu,'parent');
-histo_menu=get(handles.histo1_menu,'String');
-histo_value=get(handles.histo1_menu,'Value');
-FieldName=histo_menu{histo_value};
-update_histo(handles.histo_u,handles.uvmat,FieldName)
 
-%------------------------------------------------------------------------
-function histo2_menu_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-%plot second histo
-%huvmat=get(handles.histo2_menu,'parent');
-histo_menu=get(handles.histo2_menu,'String');
-histo_value=get(handles.histo2_menu,'Value');
-FieldName=histo_menu{histo_value};
-update_histo(handles.histo_v,handles.uvmat,FieldName)
-
-%------------------------------------------------------------------------
-%read the field .Fieldname stored in UvData and plot its histogram
-function update_histo(haxes,huvmat,FieldName)
-%------------------------------------------------------------------------
-UvData=get(huvmat,'UserData');
-if ~isfield(UvData.Field,FieldName)
-    msgbox_uvmat('ERROR',['no field  ' FieldName ' for histogram'])
-    return
-end
-Field=UvData.Field;
-FieldHisto=eval(['Field.' FieldName]);
-if isfield(Field,'FF') && ~isempty(Field.FF) && isequal(size(Field.FF),size(FieldHisto))
-    indsel=find(Field.FF==0);%find values marked as false
-    if ~isempty(indsel)
-        FieldHisto=FieldHisto(indsel);
-    end
-end
-if isempty(Field)
-    msgbox_uvmat('ERROR',['empty field ' FieldName])
-else
-    nxy=size(FieldHisto);
-    Amin=double(min(min(min(FieldHisto))));%min of image
-    Amax=double(max(max(max(FieldHisto))));%max of image
-    if isequal(Amin,Amax)
-        %msgbox_uvmat('WARNING',['uniform field =' num2str(Amin)]);
-        cla(haxes)
-    else
-        Histo.ListVarName={FieldName,'histo'};
-        if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
-            Histo.VarDimName={FieldName,FieldName}; %dimensions for the histogram
-        else
-            if numel(nxy)==2
-                Histo.VarDimName={FieldName,FieldName}; %dimensions for the histogram
-            else
-                Histo.VarDimName={FieldName,{FieldName,'rgb'}}; %dimensions for the histogram
-            end
-        end
-        %unit
-        units=[]; %default
-        for ivar=1:numel(Field.ListVarName)
-            if strcmp(Field.ListVarName{ivar},FieldName)
-                if isfield(Field,'VarAttribute') && numel(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'units')
-                    units=Field.VarAttribute{ivar}.units;
-                    break
-                end
-            end
-        end
-        if ~isempty(units)
-            Histo.VarAttribute{1}.units=units;
-        end
-        eval(['Histo.' FieldName '=linspace(Amin,Amax,50);'])%absissa values for histo
-        if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
-            C=reshape(double(FieldHisto),1,[]);% reshape in a vector
-            eval(['Histo.histo(:,1)=hist(C, Histo.' FieldName ');']);  %calculate histogram
-        else
-            for col=1:size(FieldHisto,3)
-                B=FieldHisto(:,:,col);
-                C=reshape(double(B),1,nxy(1)*nxy(2));% reshape in a vector
-                eval(['Histo.histo(:,col)=hist(C, Histo.' FieldName ');']);  %calculate histogram
-            end
-        end
-        plot_field(Histo,haxes);
-    end
-end
 
 %------------------------------------------------
 %CALLBACKS FOR PLOTTING PARAMETERS
@@ -3934,7 +3960,7 @@ if ~isempty(hset_object)
     end
     ObjectData.Name=list_str{IndexObj};
     set_object(ObjectData,[],ZBounds);
-    set(handles.ViewObject_1,'Value',1)% show that the selected object in ListObject_1 is currently visualised
+    set(handles.ViewObject,'Value',1)% show that the selected object in ListObject_1 is currently visualised
 end
 %  desactivate the edit object mode
 set(handles.edit_object,'Value',0) 
@@ -3961,7 +3987,7 @@ if ~isempty(hset_object)
     end
     ObjectData.Name=list_str{IndexObj};
     set_object(ObjectData,[],ZBounds);
-    set(handles.ViewObject,'Value',1)% show that the selected object in ListObject is currently visualised
+    set(handles.ViewField,'Value',1)% show that the selected object in ListObject is currently visualised
 end
 %  desactivate the edit object mode
 set(handles.edit_object,'Value',0) 
@@ -4037,15 +4063,14 @@ if ~isempty(DisplayHandle)
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in ViewObject_1.
-function ViewObject_1_Callback(hObject, eventdata, handles)
+% --- Executes on button press in ViewObject.
+function ViewObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-check_view=get(handles.ViewObject_1,'Value');
+check_view=get(handles.ViewObject,'Value');
 
 if check_view %activate set_object    
-    set(handles.ViewObject,'Value',0)% deselect ViewObject 
-    IndexObj=get(handles.ListObject_1,'Value');
-    list_object=get(handles.ListObject_1,'String');
+    IndexObj=get(handles.ListObject,'Value');
+    list_object=get(handles.ListObject,'String');
     UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
     UvData.Object{IndexObj}.Name=list_object{IndexObj};
     if numel(UvData.Object)<IndexObj;% error in UvData
@@ -4057,7 +4082,7 @@ if check_view %activate set_object
         ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
         ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
     end
-    set(handles.ListObject_1,'Value',IndexObj);%restore ListObject selection after set_object deletion
+%     set(handles.ListObject_1,'Value',IndexObj);%restore ListObject selection after set_object deletion
     data=UvData.Object{IndexObj};
     if ~isfield(data,'Type')% default plane
         data.Type='plane';
@@ -4085,8 +4110,10 @@ if check_view %activate set_object
     hhset_object=guidata(hset_object);
     if get(handles.edit_object,'Value')% edit mode
         set(hhset_object.PLOT,'Enable','on')
+        set(get(hset_object,'children'),'enable','on')
     else
         set(hhset_object.PLOT,'Enable','off')
+        set(get(hset_object,'children'),'enable','off')
     end
 else
     hset_object=findobj(allchild(0),'tag','set_object');
@@ -4095,14 +4122,50 @@ else
     end
 end
   
+%-------------------------------------------------------------------
+% --- Executes on selection change in edit_object.
+function edit_object_Callback(hObject, eventdata, handles)
+%-------------------------------------------------------------------
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
+hset_object=findobj(allchild(0),'Tag','set_object');
+if get(handles.edit_object,'Value')
+    set(handles.edit_object,'BackgroundColor',[1,1,0])  
+    %suppress the other options 
+    set(handles.CheckZoom,'Value',0)
+    CheckZoom_Callback(hObject, eventdata, handles)
+    hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
+    if ishandle(hgeometry_calib)
+        hhgeometry_calib=guidata(hgeometry_calib);
+        set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
+        set(hhgeometry_calib.edit_append,'BackgroundColor',[0.7 0.7 0.7])
+    end
+    set(handles.ViewObject,'value',1)
+    ViewObject_Callback(hObject, eventdata, handles)
+%     if isempty(hset_object)% open the GUI set_object with data of the currently selected object
+%         ViewObject_Callback(hObject, eventdata, handles)
+%         %         hset_object=findobj(allchild(0),'Tag','set_object');
+%     else
+%         hhset_object=guidata(hset_object);
+%         set(hhset_object.PLOT,'enable','on');
+%         set(get(hset_object,'children'),'enable','on')
+%     end
+else % desctivate object edit mode
+    set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
+    if ~isempty(hset_object)% open the 
+        hhset_object=guidata(hset_object);
+        set(hhset_object.PLOT,'enable','off'); 
+        set(get(hset_object,'children'),'enable','inactive')
+    end
+end
+
 %------------------------------------------------------------------------
-% --- Executes on button press in ViewObject.
-function ViewObject_Callback(hObject, eventdata, handles)
+% --- Executes on button press in ViewField.
+function ViewField_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-check_view=get(handles.ViewObject,'Value');
+check_view=get(handles.ViewField,'Value');
 
 if check_view
-    set(handles.ViewObject_1,'Value',0)% unselect ViewObject_1 
+%     set(handles.ViewObject,'Value',0)% unselect ViewObject_1 
     IndexObj=get(handles.ListObject,'Value');
     UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
     if numel(UvData.Object)<IndexObj(end);% error in UvData
@@ -4120,16 +4183,18 @@ if check_view
     end
     list_object=get(handles.ListObject,'String');
     UvData.Object{IndexObj(end)}.Name=list_object{IndexObj(end)};
-    hset_object=set_object(UvData.Object{IndexObj(end)},[],ZBounds);
-    hhset_object=guidata(hset_object);
-    if get(handles.edit_object,'Value')% edit mode
-        set(hhset_object.PLOT,'Enable','on')
-    else
-        set(hhset_object.PLOT,'Enable','off')
-    end
+%     hset_object=set_object(UvData.Object{IndexObj(end)},[],ZBounds);
+%     hhset_object=guidata(hset_object);
+%     if get(handles.edit_object,'Value')% edit mode
+%         set(hhset_object.PLOT,'Enable','on')
+%         set(get(hset_object,'children'),'enable','on')
+%     else
+%         set(hhset_object.PLOT,'Enable','off')
+%         set(get(hset_object,'children'),'enable','inactive')
+%     end
     
     %% show the second plot (on view_field)
-    ProjData= proj_field(UvData.Field,UvData.Object{IndexObj});%project the current field on ObjectData
+        ProjData= proj_field(UvData.Field,UvData.Object{IndexObj});%project the current field on ObjectData
     hview_field=findobj(allchild(0),'tag','view_field');
     if isempty(hview_field)
         hview_field=view_field;
@@ -4137,42 +4202,12 @@ if check_view
     PlotHandles=guidata(hview_field);
     plot_field(ProjData,PlotHandles.axes3,read_GUI(hview_field));%read plotting parameters on the uvmat interfacPlotHandles);
 else
-    hset_object=findobj(allchild(0),'tag','set_object');
-    if ~isempty(hset_object)
-        delete(hset_object)% delete existing version of set_object
+    hview_field=findobj(allchild(0),'tag','view_field');
+    if ~isempty(hview_field)
+        delete(hview_field)% delete existing version of set_object
     end
 end
-%-------------------------------------------------------------------
-% --- Executes on selection change in edit_object.
-function edit_object_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-if get(handles.edit_object,'Value')
-    set(handles.edit_object,'BackgroundColor',[1,1,0])  
-    %suppress the other options 
-    set(handles.CheckZoom,'Value',0)
-    CheckZoom_Callback(hObject, eventdata, handles)
-    hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
-    if ishandle(hgeometry_calib)
-        hhgeometry_calib=guidata(hgeometry_calib);
-        set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
-        set(hhgeometry_calib.edit_append,'BackgroundColor',[0.7 0.7 0.7])
-    end
-    hset_object=findobj(allchild(0),'Tag','set_object');
-    if isempty(hset_object)% open the GUI set_object with data of the currently selected object
-        ViewObject_Callback(hObject, eventdata, handles)
-        hset_object=findobj(allchild(0),'Tag','set_object');
-    end
-    hhset_object=guidata(hset_object);
-    set(hhset_object.PLOT,'enable','on');
-else 
-    set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
-    hset_object=findobj(allchild(0),'Tag','set_object');
-    if ~isempty(hset_object)% open the 
-        hhset_object=guidata(hset_object);
-        set(hhset_object.PLOT,'enable','off'); 
-    end
-end
+
 
 %------------------------------------------------------------------------
 % --- Executes on button press in delete_object.
@@ -4438,9 +4473,9 @@ if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
 end
 set(handles.ListObject,'Visible','on')
-set(handles.ViewObject,'Visible','on')
-set(handles.ViewObject,'Value',1) % indicate that the object selected in ListObject (projection oin view_field) is visualised
-set(handles.ViewObject_1,'Value',0)% then the object selected in ListObject_1 is not visualised
+set(handles.ViewField,'Visible','on')
+set(handles.ViewField,'Value',1) % indicate that the object selected in ListObject (projection oin view_field) is visualised
+set(handles.ViewObject,'Value',0)% then the object selected in ListObject_1 is not visualised
 hset_object=set_object(data,handles);% call the set_object interface
 hhset_object=guidata(hset_object);
 hchild=get(hset_object,'children');
@@ -4752,4 +4787,3 @@ function slider7_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
-
