@@ -323,7 +323,7 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
             IndexObj=2;% the first object is used for uvmat display or blank
         end
         UvData.Object{IndexObj}=ObjectData;
-        ListObject=get(hhuvmat.ListObject_1,'String');
+        ListObject=get(hhuvmat.ListObject,'String');
         UvData.Object{IndexObj}.DisplayHandle_uvmat=AxeData.CurrentObject;
         ObjectNameNew=ObjectData.Name;
         if isempty(ObjectNameNew)
@@ -352,6 +352,7 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
         set(hhuvmat.ListObject_1,'String',[ListObject;{ObjectName}]);%complement the object list
         %set(hhuvmat.ListObject,'Value',[IndexObj_old(1) IndexObj])
         set(hhuvmat.ListObject,'Value',IndexObj)
+        set(hhuvmat.ViewObject,'Value',1)
         %             if isempty(object_name)
         %                 list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Type];
         %                 set(sethandles.Name,'String',list_str{IndexObj})

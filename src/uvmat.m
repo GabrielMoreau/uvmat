@@ -3941,24 +3941,25 @@ write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 % --- Executes on selection change in ListObject_1.
 function ListObject_1_Callback(hObject, eventdata, handles)
 list_str=get(handles.ListObject_1,'String');
-IndexObj=get(handles.ListObject_1,'Value');
 UvData=get(handles.uvmat,'UserData');
 ObjectData=UvData.Object{get(handles.ListObject_1,'Value')};
 
 %% update the projection plot on uvmat
 ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on UvData.Object{IndexObj(1)}
 plot_field(ProjData,handles.axes3,read_GUI(handles.uvmat));%read plotting parameters on the uvmat interfacPlotHandles);
+Object_out=update_obj(UvData,get(handles.ListObject_1,'Value'),[])
 
 %% display the object parameters if the GUI set_object is already opened
-hset_object=findobj(allchild(0),'tag','set_object');
-if ~isempty(hset_object)
+% hset_object=findobj(allchild(0),'tag','set_object');
+%if ~isempty(hset_object)
+if ~get(handles.ViewObject,'Value')
 %     delete(hset_object)% delete to refesh the content
     ZBounds=0; % default
     if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
         ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
         ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
     end
-    ObjectData.Name=list_str{IndexObj};
+    ObjectData.Name=list_str{get(handles.ListObject_1,'Value')};
     set_object(ObjectData,[],ZBounds);
     set(handles.ViewObject,'Value',1)% show that the selected object in ListObject_1 is currently visualised
 end
@@ -4472,10 +4473,9 @@ end
 if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
 end
-set(handles.ListObject,'Visible','on')
-set(handles.ViewField,'Visible','on')
-set(handles.ViewField,'Value',1) % indicate that the object selected in ListObject (projection oin view_field) is visualised
-set(handles.ViewObject,'Value',0)% then the object selected in ListObject_1 is not visualised
+
+%set(handles.ViewField,'Value',1) % indicate that the object selected in ListObject (projection oin view_field) is visualised
+%set(handles.ViewObject,'Value',1)% then the object selected in ListObject_1 is not visualised
 hset_object=set_object(data,handles);% call the set_object interface
 hhset_object=guidata(hset_object);
 hchild=get(hset_object,'children');

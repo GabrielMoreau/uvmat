@@ -24,11 +24,16 @@ Object_out=UvData.Object;
 %%  representation of the different objects in the plots uvmat and view_field
 %plot uvmat
 for iobj=1:length(Object_out) %change the view of all existing objects on the updated current object #IndexObj_1
-     hobject=[];
+    hobject=[];
     if isfield(Object_out{iobj},'DisplayHandle_uvmat') && ~isempty(Object_out{iobj}.DisplayHandle_uvmat) && ishandle(Object_out{iobj}.DisplayHandle_uvmat)
         hobject=Object_out{iobj}.DisplayHandle_uvmat;%graphic handle of object #iobj in the uvmat plot
     end
-    Object_out{iobj}.DisplayHandle_uvmat=plot_object(Object_out{iobj},Object_out{IndexObj_1},hobject,'m');%update the object representation of Object_out{iobj} on Object_out{IndexObj_1}
+    if ~isequal(iobj,IndexObj_1)% object not visible when projected on itself
+        Object_out{iobj}.DisplayHandle_uvmat=plot_object(Object_out{iobj},Object_out{IndexObj_1},hobject,'m');%update the object representation of Object_out{iobj} on Object_out{IndexObj_1}
+        if isempty(Object_out{iobj}.DisplayHandle_uvmat)&&~isempty(hobject)
+            delete(hobject)
+        end
+    end
 end
 % plot view_field
 if ~isempty(IndexObj_2)

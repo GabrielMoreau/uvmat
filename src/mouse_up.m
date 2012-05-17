@@ -172,6 +172,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                 %[PlotType,PlotParam]=plot_field(ProjData,hh_plotfield.axes3,read_plot_param(hh_plotfield));%update an existing field plot
 
             end
+            set(hhuvmat.ViewField,'Value',1);%
             set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
             set(hhuvmat.edit_object,'Value',1);%
             set(hhuvmat.edit_object,'Enable','on');%
