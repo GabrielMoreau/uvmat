@@ -2851,6 +2851,15 @@ else
             end
         end
         plot_field(Histo,handles.histo_u);
+        hlegend=legend;
+        if isempty(FieldName_2)
+        set(hlegend,'String',FieldName)
+        else
+            set(hlegend,'String',{FieldName;FieldName_2})
+        end
+%         hh=get(handles.histo_u,'children');
+%         get(hh(1))
+%         get(hh(2))
     end
 end
 

@@ -357,14 +357,16 @@ for icell=1:length(CellVarIndex)
         coord_x_index=coord_x_index_cell;
     end
     testplot=ones(size(data.ListVarName));%default test for plotted variables
-    xtitle=[xtitle data.ListVarName{coord_x_index}];
-    eval(['coord_x{icell}=data.' data.ListVarName{coord_x_index} ';']);%coordinate variable set as coord_x
-    if isfield(data,'VarAttribute')&& numel(data.VarAttribute)>=coord_x_index && isfield(data.VarAttribute{coord_x_index},'units')
-        xtitle=[xtitle '(' data.VarAttribute{coord_x_index}.units '), '];
-    else
-        xtitle=[xtitle ', '];
+    coord_x_name{icell}=data.ListVarName{coord_x_index};
+    coord_x{icell}=data.(data.ListVarName{coord_x_index});%coordinate variable set as coord_x
+    if isempty(find(strcmp(coord_x_name{icell},coord_x_name(1:end-1)))) %xtitle not already selected
+        xtitle=[xtitle coord_x_name{icell}];
+        if isfield(data,'VarAttribute')&& numel(data.VarAttribute)>=coord_x_index && isfield(data.VarAttribute{coord_x_index},'units')
+            xtitle=[xtitle '(' data.VarAttribute{coord_x_index}.units '), '];
+        else
+            xtitle=[xtitle ', '];
+        end
     end
-    eval(['coord_x{icell}=data.' data.ListVarName{coord_x_index} ';']);%coordinate variable set as coord_x
     XMin(icell)=min(coord_x{icell});
     XMax(icell)=max(coord_x{icell});
     testplot(coord_x_index)=0;
