@@ -4151,8 +4151,8 @@ end
 filename=regexprep(filename,'.nc','');
 MaskName_string='';%default
 MaxVel_string='';%default
-if ~isempty(Param.(fixname).MaxVel)
-    MaxVel_string=[' -threshV ' num2str(Param.(fixname).MaxVel)];
+if ~isempty(Param.(fixname).MinVel)
+    MaxVel_string=[' -threshV ' num2str(Param.(fixname).MinVel)];
 end
 if isunix
     cmd=[Param.xml.FixBin ' -f ' filename '.nc -fi1 ' num2str(Param.(fixname).CheckFmin2) ...
@@ -4492,6 +4492,8 @@ Program=ListProgram{get(handles.ListProgram,'value')};
 switch Program
     case 'CivX'
         set(handles.num_MaxDiff,'Visible','off')
+        set(handles.num_MaxVel,'Visible','off')
+        set(handles.title_MaxVel,'Visible','off')
         set(handles.num_Nx,'Visible','on')
         set(handles.num_Ny,'Visible','on')
         set(handles.title_Nx,'Visible','on')
@@ -4505,6 +4507,8 @@ switch Program
         set(handles.CheckDecimal,'Value',1)
     case 'Matlab'
         set(handles.num_MaxDiff,'Visible','on')
+        set(handles.num_MaxVel,'Visible','on')
+        set(handles.title_MaxVel,'Visible','on')
         set(handles.title_MaxDiff,'Visible','on')
         set(handles.num_Nx,'Visible','off')
         set(handles.num_Ny,'Visible','off')

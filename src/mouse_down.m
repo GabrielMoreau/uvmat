@@ -332,7 +332,7 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
         % add an index to the object name if the proposed name already exists
         vers=0;% index of the name
         detectname=1;
-        while detectname==1
+        while ~isempty(detectname)
             detectname=find(strcmp(ObjectNameNew,ListObject),1);%test the existence of the proposed name in the list
             if detectname% if the object name already exists
                 indstr=regexp(ObjectNameNew,'\D');
@@ -347,19 +347,10 @@ if  test_create && ~isempty(xy) && ~(isfield(AxeData,'Drawing')&& isequal(AxeDat
         end
         ObjectName=ObjectNameNew;
         set(sethandles.Name,'String',ObjectName)% display the default name in set_object
-%         IndexObj=numel(ListObject)+1;% append an object to the list in uvmat
         set(hhuvmat.ListObject,'String',[ListObject;{ObjectName}]);%complement the object list
         set(hhuvmat.ListObject_1,'String',[ListObject;{ObjectName}]);%complement the object list
-        %set(hhuvmat.ListObject,'Value',[IndexObj_old(1) IndexObj])
         set(hhuvmat.ListObject,'Value',IndexObj)
         set(hhuvmat.ViewObject,'Value',1)
-        %             if isempty(object_name)
-        %                 list_str{IndexObj}=[num2str(IndexObj) '-' ObjectData.Type];
-        %                 set(sethandles.Name,'String',list_str{IndexObj})
-        %             else
-        %                list_str{IndexObj}=object_name;
-        %             end
-        %             set(hhuvmat.ListObject,'String',list_str)
         UvData.Object{IndexObj}.DisplayHandle_view_field=AxeData.CurrentObject;
         set(huvmat,'UserData',UvData)
         PlotData=get(AxeData.CurrentObject,'UserData');

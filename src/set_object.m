@@ -152,6 +152,8 @@ end
 %    set(handles.PLOT,'enable','on')
 % else
 % enable the PLOT (REFRESH) button by default
+%defaul settings
+set(get(handles.set_object,'children'),'enable','on')
    set(handles.PLOT,'enable','off') 
 % end
 huvmat=findobj(allchild(0),'tag','uvmat');
@@ -443,10 +445,10 @@ if ~get(hhuvmat.edit_object,'Value') %new object is being created
     detectname=1;
     ObjectNameNew=ObjectName;
     vers=0;% index of the name
-    while detectname==1
+    while ~isempty(detectname)
         detectname=find(strcmp(ObjectNameNew,ListObject),1);%test the existence of the proposed name in the list
         if detectname% if the object name already exists
-            indstr=regexp(ObjectNameNew,'\D');
+            indstr=regexp(ObjectNameNew,'\D');%indices of non number characters
             if indstr(end)<length(ObjectNameNew) %object name ends by a number
                 vers=str2double(ObjectNameNew(indstr(end)+1:end))+1;
                 ObjectNameNew=[ObjectNameNew(1:indstr(end)) num2str(vers)];
@@ -462,6 +464,7 @@ if ~get(hhuvmat.edit_object,'Value') %new object is being created
     set(hhuvmat.ListObject,'String',[ListObject;{ObjectName}]);%complement the object list
     set(hhuvmat.ListObject_1,'String',[ListObject;{ObjectName}]);%complement the object list
     set(hhuvmat.ListObject,'Value',IndexObj(2))
+    set(hhuvmat.ViewObject,'Value',1)% indicate that the currently selected objected is viewed on set_object
     UvData.Object{IndexObj(2)}=[];%initiate a new object (empty yet)
 end
 
@@ -528,6 +531,7 @@ hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI
 set(hhuvmat.MenuEditObject,'enable','on')
 set(hhuvmat.edit_object,'Value',1) % set uvmat to object edit mode to allow further object update
 set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
+set(hhuvmat.ViewField,'Value',1)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in MenuCoord.

@@ -1,6 +1,8 @@
 
 
 
+
+
 %'merge_proj': project and concatene fields, used with series.fig
 %------------------------------------------------------------------------
 % function GUI_input=merge_proj(Param)
@@ -156,6 +158,7 @@ if multitime
     if diff_time>0
         msgbox_uvmat('WARNING',['times of series differ by more than ' num2str(diff_time)])
     end   
+    time=sqeeze(mean(time,1));
 end
 % if size(time,2) < i2_series{1}(end) || size(time,3) < j2_series{1}(end)% ime array absent or too short in ImaDoc xml file' 
 %     time=[];
@@ -363,8 +366,8 @@ for ifile=1:nbfield
         if isempty(time)% time from ImaDoc prevails
             time_i=sum(timeread)/nbtime;
         else
-            time_i=i1;
-            %time_i=(time(iview,i1,j1)+time(iview,i2,j2))/2; TODO: upgrade
+           % time_i=i1;
+            time_i=(time(i1,j1)+time(i2,j2))/2; %TODO: upgrade
         end
         
      % recording the merged field

@@ -2,16 +2,17 @@
 %adapt the input of the matlab function griddata to the appropriate version of Matlab
 function ZI = griddata_uvmat(X,Y,Z,XI,YI)
 % if ~exist('rho','var')|| isequal(rho,0)
-    txt=ver('MATLAB');
-    Release=txt.Release;
-    relnumb=str2num(Release(3:4));
-    if relnumb >= 20
-        ZI=griddata(double(X),double(Y),double(Z),double(XI),double(YI),'linear',{'QJ'});
-    elseif relnumb >=14
-        ZI=griddata(X,Y,Z,XI,YI,'linear',{'QJ'});
-    else
-        ZI=griddata(X,Y,Z,XI,YI,'linear');
-    end
+ZI=griddata(X,Y,Z,XI,YI,'linear');
+%     txt=ver('MATLAB');
+%     Release=txt.Release;
+%     relnumb=str2num(Release(3:4));
+%     if relnumb >= 20
+%         ZI=griddata(double(X),double(Y),double(Z),double(XI),double(YI),'linear',{'QJ'});
+%     elseif relnumb >=14
+%         ZI=griddata(X,Y,Z,XI,YI,'linear',{'QJ'});
+%     else
+%         ZI=griddata(X,Y,Z,XI,YI,'linear');
+%     end
 % else %smooth with thin plate spline
 %     [ZI,Z_diff]=patch_uvmat(X,Y,Z,XI,YI,rho);
 %     diff_norm=mean(Z_diff.*Z_diff)

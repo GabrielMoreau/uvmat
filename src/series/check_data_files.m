@@ -157,8 +157,9 @@ for iview=1:nbview
         pos(1)=pos(1)+(iview-1)*pos(1)/nbview;
         set(hfig,'Position',pos)
     end
-    set(hfig,'name',['view= ' num2str(iview)])
-   
+    set(hfig,'name',['check_data_files:view= ' num2str(iview)])
+    set(hfig,'MenuBar','none')% suppress the menu bar
+    set(hfig,'NumberTitle','off')%suppress the fig number in the title
     h=uicontrol('Style','listbox', 'Position', [20 20 500 300], 'String', Tabchar, 'Callback', {'open_uvmat'});
     hh=uicontrol('Style','listbox', 'Position', [20 340 500 40], 'String', message);
 end

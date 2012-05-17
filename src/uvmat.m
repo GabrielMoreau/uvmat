@@ -1624,6 +1624,8 @@ if isempty(increment)
     set(handles.CheckFixPair,'Value',0)
 end
 CheckFixPair=get(handles.CheckFixPair,'Value')||(isempty(i2)&&isempty(j2));
+
+% the pair i1-i2 or j1-j2 is imposed (check box CheckFixPair selected)
 if CheckFixPair
     if get(handles.scan_i,'Value')==1% case of scanning along index i
         i1=i1+increment;
@@ -1640,24 +1642,27 @@ if CheckFixPair
             j2_1=j2_1+increment;
         end
     end
+    
+% the pair i1-i2 or j1-j2 is free (check box CheckFixPair not selected): 
+% the list of existing indices recorded in UvData is used
 else
     UvData=get(handles.uvmat,'UserData');
     ref_i=i1;
     if ~isempty(i2)
-        ref_i=floor((i1+i2)/2);
+        ref_i=floor((i1+i2)/2);% current reference index i
     end
     ref_j=1;
     if ~isempty(j1)
         ref_j=j1;
         if ~isempty(j2)
-            ref_j=floor((j1+j2)/2);
+            ref_j=floor((j1+j2)/2);% current reference index j
         end
     end
     if ~isempty(increment)
         if get(handles.scan_i,'Value')==1% case of scanning along index i
-            ref_i=ref_i+increment;
+            ref_i=ref_i+increment;% increment the current reference index i
         else % case of scanning along index j (burst numbers)
-            ref_j=ref_j+increment;
+            ref_j=ref_j+increment;% increment the current reference index j if scan_j option is used
         end
     else % free increment
         if isequal(get(handles.runplus,'BackgroundColor'),[1 1 0])% if runplus is activated
@@ -1689,45 +1694,50 @@ else
     if ~isempty(errormsg)
         return
     end
-    if get(handles.scan_i,'Value')==1% case of scanning along index i
-        i1_subseries=UvData.i1_series{1}(ref_i+1,ref_j+1,:);
-    else
-        i1_subseries=UvData.i1_series{1}(ref_i+1,ref_j+1,:);
-    end
+    i1_subseries=UvData.i1_series{1}(ref_i+1,ref_j+1,:);
     i1_subseries=i1_subseries(i1_subseries>0);
     if isempty(i1_subseries)
         errormsg='no next file';
         return
+    else
+        i1=i1_subseries(end);
     end
-    i1=i1_subseries(end);
     if ~isempty(UvData.i2_series{1})
-        if get(handles.scan_i,'Value')==1% case of scanning along index i
-            i2_subseries=UvData.i2_series{1}(ref_i+1,ref_j+1,:);
-        else
-            i2_subseries=UvData.i2_series{1}(ref_i+1,ref_j+1,:);
-        end
+        i2_subseries=UvData.i2_series{1}(ref_i+1,ref_j+1,:);
         i2_subseries=i2_subseries(i2_subseries>0);
         i2=i2_subseries(end);
     end
     if ~isempty(UvData.j1_series{1})
-        if get(handles.scan_i,'Value')==1% case of scanning along index i
-            j1_subseries=UvData.j1_series{1}(ref_i+1,ref_j+1,:);
-        else
-            j1_subseries=UvData.j1_series{1}(ref_i+1,ref_j+1,:);
-        end
+        j1_subseries=UvData.j1_series{1}(ref_i+1,ref_j+1,:);
         j1_subseries=j1_subseries(j1_subseries>0);
         j1=j1_subseries(end);
     end
     if ~isempty(UvData.j2_series{1})
-        if get(handles.scan_i,'Value')==1% case of scanning along index i
-            j2_subseries=UvData.j2_series{1}(ref_i+1,ref_j+1,:);
-        else
-            j2_subseries=UvData.j2_series{1}(ref_i+1,ref_j+1,:);
-        end
+        j2_subseries=UvData.j2_series{1}(ref_i+1,ref_j+1,:);
         j2_subseries=j2_subseries(j2_subseries>0);
         j2=j2_subseries(end);
+    end  
+    % case of a second file series
+    if numel(UvData.i1_series)>=2
+        i1_subseries=UvData.i1_series{2}(ref_i+1,ref_j+1,:);
+        i1_subseries=i1_subseries(i1_subseries>0);
+        i1_1=i1_subseries(end);
+        if ~isempty(UvData.i2_series{2})
+            i2_subseries=UvData.i2_series{2}(ref_i+1,ref_j+1,:);
+            i2_subseries=i2_subseries(i2_subseries>0);
+            i2_1=i2_subseries(end);
+        end
+        if ~isempty(UvData.j1_series{2})
+            j1_subseries=UvData.j1_series{2}(ref_i+1,ref_j+1,:);
+            j1_subseries=j1_subseries(j1_subseries>0);
+            j1_1=j1_subseries(end);
+        end
+        if ~isempty(UvData.j2_series{2})
+            j2_subseries=UvData.j2_series{2}(ref_i+1,ref_j+1,:);
+            j2_subseries=j2_subseries(j2_subseries>0);
+            j2_1=j2_subseries(end);
+        end
     end
-    
 end
 filename=fullfile_uvmat(InputFile.RootPath,InputFile.SubDir,InputFile.RootFile,FileExt,NomType,i1,i2,j1,j2);
 if sub_value
@@ -2103,6 +2113,7 @@ if ~isempty(filename_1)
     end
     if test_keepdata_1
         Field{2}=UvData.Field_1;% keep the stored field
+        ParamOut_1=UvData.ParamOut_1;
     else
         ParamIn_1.FieldName=FieldName_1;
         ParamIn_1.VelType=VelType_1;
@@ -2364,6 +2375,7 @@ if numel(Field)==2
 %    Field{2}.FieldList=[{ParamOut_1.FieldName} {ParamOut_1.ColorVar}];
    [UvData.Field,errormsg]=sub_field(Field{1},Field{2});  
    UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
+   UvData.ParamOut_1=ParamOut_1;
 else
    UvData.Field=Field{1};
 end
@@ -3956,13 +3968,10 @@ ObjectData=UvData.Object{get(handles.ListObject_1,'Value')};
 %% update the projection plot on uvmat
 ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on UvData.Object{IndexObj(1)}
 plot_field(ProjData,handles.axes3,read_GUI(handles.uvmat));%read plotting parameters on the uvmat interfacPlotHandles);
-Object_out=update_obj(UvData,get(handles.ListObject_1,'Value'),[])
+Object_out=update_obj(UvData,get(handles.ListObject_1,'Value'),[]);
 
 %% display the object parameters if the GUI set_object is already opened
-% hset_object=findobj(allchild(0),'tag','set_object');
-%if ~isempty(hset_object)
 if ~get(handles.ViewObject,'Value')
-%     delete(hset_object)% delete to refesh the content
     ZBounds=0; % default
     if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
         ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
@@ -3978,7 +3987,6 @@ set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListObject.
-
 function ListObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 list_str=get(handles.ListObject,'String');
@@ -3989,7 +3997,6 @@ UvData=get(handles.uvmat,'UserData');
 ObjectData=UvData.Object{IndexObj};
 hset_object=findobj(allchild(0),'tag','set_object');
 if ~isempty(hset_object)
-%     delete(hset_object)% delete to refesh the content
     ZBounds=0; % default
     if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
         ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
@@ -4072,6 +4079,43 @@ if ~isempty(DisplayHandle)
     end
 end
 
+%-------------------------------------------------------------------
+% --- Executes on selection change in edit_object.
+function edit_object_Callback(hObject, eventdata, handles)
+%-------------------------------------------------------------------
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
+hset_object=findobj(allchild(0),'Tag','set_object');
+if get(handles.edit_object,'Value')
+    set(handles.edit_object,'BackgroundColor',[1,1,0])  
+    %suppress the other options 
+    set(handles.CheckZoom,'Value',0)
+    CheckZoom_Callback(hObject, eventdata, handles)
+    hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
+    if ishandle(hgeometry_calib)
+        hhgeometry_calib=guidata(hgeometry_calib);
+        set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
+        set(hhgeometry_calib.edit_append,'BackgroundColor',[0.7 0.7 0.7])
+    end
+    set(handles.ViewObject,'value',1)
+    ViewObject_Callback(hObject, eventdata, handles)
+%     if isempty(hset_object)% open the GUI set_object with data of the currently selected object
+%         ViewObject_Callback(hObject, eventdata, handles)
+%         %         hset_object=findobj(allchild(0),'Tag','set_object');
+%     else
+%         hhset_object=guidata(hset_object);
+%         set(hhset_object.PLOT,'enable','on');
+%         set(get(hset_object,'children'),'enable','on')
+%     end
+else % desctivate object edit mode
+    set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
+    if ~isempty(hset_object)% open the 
+        hhset_object=guidata(hset_object);
+        set(hhset_object.PLOT,'enable','off'); 
+        set(get(hset_object,'children'),'enable','inactive')
+    end
+end
+
+
 %------------------------------------------------------------------------
 % --- Executes on button press in ViewObject.
 function ViewObject_Callback(hObject, eventdata, handles)
@@ -4123,7 +4167,8 @@ if check_view %activate set_object
         set(get(hset_object,'children'),'enable','on')
     else
         set(hhset_object.PLOT,'Enable','off')
-        set(get(hset_object,'children'),'enable','off')
+        set(get(hset_object,'children'),'enable','inactive')% deactivate the GUI except SAVE
+        set(hhset_object.SAVE,'Enable','on')
     end
 else
     hset_object=findobj(allchild(0),'tag','set_object');
@@ -4132,41 +4177,6 @@ else
     end
 end
   
-%-------------------------------------------------------------------
-% --- Executes on selection change in edit_object.
-function edit_object_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
-hset_object=findobj(allchild(0),'Tag','set_object');
-if get(handles.edit_object,'Value')
-    set(handles.edit_object,'BackgroundColor',[1,1,0])  
-    %suppress the other options 
-    set(handles.CheckZoom,'Value',0)
-    CheckZoom_Callback(hObject, eventdata, handles)
-    hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
-    if ishandle(hgeometry_calib)
-        hhgeometry_calib=guidata(hgeometry_calib);
-        set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
-        set(hhgeometry_calib.edit_append,'BackgroundColor',[0.7 0.7 0.7])
-    end
-    set(handles.ViewObject,'value',1)
-    ViewObject_Callback(hObject, eventdata, handles)
-%     if isempty(hset_object)% open the GUI set_object with data of the currently selected object
-%         ViewObject_Callback(hObject, eventdata, handles)
-%         %         hset_object=findobj(allchild(0),'Tag','set_object');
-%     else
-%         hhset_object=guidata(hset_object);
-%         set(hhset_object.PLOT,'enable','on');
-%         set(get(hset_object,'children'),'enable','on')
-%     end
-else % desctivate object edit mode
-    set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
-    if ~isempty(hset_object)% open the 
-        hhset_object=guidata(hset_object);
-        set(hhset_object.PLOT,'enable','off'); 
-        set(get(hset_object,'children'),'enable','inactive')
-    end
-end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in ViewField.
@@ -4175,7 +4185,6 @@ function ViewField_Callback(hObject, eventdata, handles)
 check_view=get(handles.ViewField,'Value');
 
 if check_view
-%     set(handles.ViewObject,'Value',0)% unselect ViewObject_1 
     IndexObj=get(handles.ListObject,'Value');
     UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface
     if numel(UvData.Object)<IndexObj(end);% error in UvData
@@ -4193,15 +4202,6 @@ if check_view
     end
     list_object=get(handles.ListObject,'String');
     UvData.Object{IndexObj(end)}.Name=list_object{IndexObj(end)};
-%     hset_object=set_object(UvData.Object{IndexObj(end)},[],ZBounds);
-%     hhset_object=guidata(hset_object);
-%     if get(handles.edit_object,'Value')% edit mode
-%         set(hhset_object.PLOT,'Enable','on')
-%         set(get(hset_object,'children'),'enable','on')
-%     else
-%         set(hhset_object.PLOT,'Enable','off')
-%         set(get(hset_object,'children'),'enable','inactive')
-%     end
     
     %% show the second plot (on view_field)
         ProjData= proj_field(UvData.Field,UvData.Object{IndexObj});%project the current field on ObjectData
@@ -4225,7 +4225,6 @@ function delete_object_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 IndexObj=get(handles.ListObject,'Value');
 IndexObj_1=get(handles.ListObject_1,'Value');
-
 if IndexObj>1 && ~isequal(IndexObj,IndexObj_1)
     delete_object(IndexObj)
 end
@@ -4512,16 +4511,16 @@ if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
 %read the file
 data=xml2struct(fileinput);
-data.enable_plot=1;
-[tild,data.Name]=fileparts(FileName);
-hset_object=findobj(allchild(0),'tag','set_object');
-if ~isempty(hset_object)
-    delete(hset_object)% delete existing version of set_object
-end
-set_object(data);% call the set_object interface
+% data.enable_plot=1;
+[tild,data.Name]=fileparts(FileName);% object name set as file name
+% hset_object=findobj(allchild(0),'tag','set_object');
+% if ~isempty(hset_object)
+%     delete(hset_object)% delete existing version of set_object
+% end
+hset_object=set_object(data);% call the set_object interface
+set(get(hset_object,'children'),'enable','on')% enable edit action on elements on GUI set_object
 set(handles.edit_object,'Value',0); %suppress the object edit mode
 set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
-%set(handles.MenuObject,'checked','on')
 set(handles.delete_object,'Visible','on')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

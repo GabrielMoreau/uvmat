@@ -2089,13 +2089,14 @@ if value
        {'*.xml;*.mat', ' (*.xml,*.mat)';
        '*.xml',  '.xml files '; ...
         '*.mat',  '.mat matlab files '}, ...
-        'Pick an xml object file (or use uvmat to create it)',defaultname{1});
+        'Pick an xml object file (or use uvmat to create it)',defaultname);
         fileinput=[PathName FileName];%complete file name 
         sizf=size(fileinput);
         if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
         %read the file
-        t=xmltree(fileinput);
-        data=convert(t);
+        data=xml2struct(fileinput);
+%         t=xmltree(fileinput);
+%         data=convert(t);
         if ~isfield(data,'Style')
              data.Style='points';
         end
