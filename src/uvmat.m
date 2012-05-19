@@ -1610,9 +1610,9 @@ if strcmp(get(handles.j2,'Visible'),'on')
 end
 sub_value= get(handles.SubField,'Value');
 if sub_value % a second input file has been entered 
-    [FileName_1,RootPath_1,filebase_1,FileIndices_1,FileExt_1,SubDir_1]=read_file_boxes_1(handles);
-    [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(FileIndices_1);
-    NomType_1=get(handles.NomType_1,'String');
+     [InputFile.RootPath_1,InputFile.SubDir_1,InputFile.RootFile_1,InputFile.FileIndex_1,InputFile.FileExt_1,InputFile.NomType_1]=read_file_boxes_1(handles);   
+    [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(InputFile.FileIndex_1);
+%     InputFile.NomType_1=get(handles.NomType_1,'String');
 else
     filename_1=[];
 end   
@@ -1741,7 +1741,7 @@ else
 end
 filename=fullfile_uvmat(InputFile.RootPath,InputFile.SubDir,InputFile.RootFile,FileExt,NomType,i1,i2,j1,j2);
 if sub_value
-    filename_1=fullfile_uvmat(InputFile.RootPath_1,InputFile.SubDir_1,InputFile.RootFile_1,FileExt_1,NomType_1,i1_1,i2_1,j1_1,j2_1);
+    filename_1=fullfile_uvmat(InputFile.RootPath_1,InputFile.SubDir_1,InputFile.RootFile_1,InputFile.FileExt_1,InputFile.NomType_1,i1_1,i2_1,j1_1,j2_1);
 end
 
 %% refresh plots
@@ -1761,12 +1761,10 @@ if isempty(errormsg)
     else
         set(handles.j2,'String',num2stra(j2,NomType,2));
     end
-   % [indices]=name_generator('',i1,j1,'',NomType,1,i2,j2,'');
     indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,j2);
     set(handles.FileIndex,'String',indices);
     if ~isempty(filename_1)
-        indices_1=fullfile_uvmat('','','','',NomType_1,i1_1,i2_1,j1_1,j2_1);
-        %indices_1=name_generator('',i1_1,j1_1,'',NomType_1,1,i2_1,j2_1,'');
+        indices_1=fullfile_uvmat('','','','',InputFile.NomType_1,i1_1,i2_1,j1_1,j2_1);
         set(handles.FileIndex_1,'String',indices_1);
     end
     if isequal(movie_status,1)
@@ -2104,7 +2102,11 @@ if ~isempty(filename_1)
                 return
             end
     end
+    if isequal(get(handles.NomType_1,'Visible'),'on')
     NomType_1=get(handles.NomType_1,'String');
+    else
+        NomType_1=get(handles.NomType,'String');
+    end
     test_keepdata_1=0;% test for keeping the previous stored data if the input files are unchanged
     if ~isequal(NomType_1,'*')%in case of a series of files (not avi movie)
         if isfield(UvData,'filename_1')%&& isfield(UvData,'VelType_1') && isfield(UvData,'FieldName_1')
@@ -2637,7 +2639,8 @@ for imap=1:numel(IndexObj)
     if testnewseries 
         PlotParam{imap}.Scalar.CheckBW=[]; %B/W option depends on the input field (image or scalar)
         if isfield(ObjectData,'CoordUnit')
-        PlotParam{imap}.Coordinates.CheckFixEqual=1;% set x and y scaling equal if CoordUnit is defined (common unit for x and y)
+        PlotParam{imap}.Coordinates.CheckFixAspectRatio=1;% set x and y scaling equal if CoordUnit is defined (common unit for x and y)
+        PlotParam{imap}.Coordinates.AspectRatio=1; %set aspect ratio to 1
         end
     end
     %use of mask (TODO: check)
@@ -2882,30 +2885,6 @@ function [indx,indy]=pos2ind(x0,rangx0,nxy)
 indx=1+round((nxy(2)-1)*(x0-rangx0(1))/(rangx0(2)-rangx0(1)));% index x of pixel  
 indy=1+round((nxy(1)-1)*(y12-rangy0(1))/(rangy0(2)-rangy0(1)));% index y of pixel
 
-%-------------------------------------------------------------------
-% --- Executes on button press in 'CheckFixLimits'.
-%-------------------------------------------------------------------
-function CheckFixLimits_Callback(hObject, eventdata, handles)
-test=get(handles.CheckFixLimits,'Value');
-if test
-    set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
-else
-    set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
-    update_plot(handles);
-end
-
-%-------------------------------------------------------------------
-% --- Executes on button press in CheckFixEqual.
-function CheckFixEqual_Callback(hObject, eventdata, handles)
-if get(handles.CheckFixEqual,'Value')
-    set(handles.CheckFixEqual,'BackgroundColor',[1 1 0])
-    update_plot(handles);
-else
-    set(handles.CheckFixEqual,'BackgroundColor',[0.7 0.7 0.7])
-    update_plot(handles);
-end
-
-%-------------------------------------------------------------------
 
 %-------------------------------------------------------------------
 % --- Executes on button press in 'CheckZoom'.
@@ -2919,6 +2898,42 @@ if (get(handles.CheckZoom,'Value') == 1);
 else
     set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
 end
+
+%-------------------------------------------------------------------
+% --- Executes on button press in 'CheckFixLimits'.
+%-------------------------------------------------------------------
+function CheckFixLimits_Callback(hObject, eventdata, handles)
+test=get(handles.CheckFixLimits,'Value');
+if test
+    set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
+else
+    set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
+    update_plot(handles);
+end
+
+%-------------------------------------------------------------------
+% --- Executes on button press in CheckFixAspectRatio.
+function CheckFixAspectRatio_Callback(hObject, eventdata, handles)
+%-------------------------------------------------------------------
+if get(handles.CheckFixAspectRatio,'Value')
+    set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])
+    update_plot(handles);
+else
+    set(handles.CheckFixAspectRatio,'BackgroundColor',[0.7 0.7 0.7])
+    update_plot(handles);
+end
+
+%-------------------------------------------------------------------
+function num_AspectRatio_Callback(hObject, eventdata, handles)
+%-------------------------------------------------------------------
+set(handles.CheckFixAspectRatio,'Value',1)% select the fixed aspect ratio button
+set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])% mark in yellow
+update_plot(handles);
+%-------------------------------------------------------------------
+
+%-------------------------------------------------------------------
+
+
 
 %-------------------------------------------------------------------
 %----Executes on button press in 'record': records the current flags of manual correction.
@@ -2981,10 +2996,10 @@ var_FixFlag=ncvar(flagname,nc);% var_FixFlag will be written as the netcdf varia
 var_FixFlag(1:nb_vectors)=AxeData.FF;% 
 fin=close(nc);
 
-%---------------------------------------------------
+%-------------------------------------------------------------------
 % --- Executes on button press in SubField
 function SubField_Callback(hObject, eventdata, handles)
-% huvmat=get(handles.run0,'parent');
+%-------------------------------------------------------------------
 UvData=get(handles.uvmat,'UserData');
 if get(handles.SubField,'Value')==0% if the subfield button is desactivated   
     set(handles.RootPath_1,'String','')
@@ -3001,6 +3016,7 @@ if get(handles.SubField,'Value')==0% if the subfield button is desactivated
     set(handles.FileExt_1,'Visible','off');
     set(handles.Fields_1,'Value',1);%set to blank state
     set(handles.VelType_1,'Value',1);%set to blank state
+    set(handles.num_Opacity,'String','')% desactivate opacity setting
     if ~strcmp(get(handles.VelType,'Visible'),'on')
         set(handles.VelType_1,'Visible','off')
     end
@@ -3171,11 +3187,8 @@ list_fields=get(handles.Fields_1,'String');% list menu fields
 field_1= list_fields{get(handles.Fields_1,'Value')}; % selected string for the second field
 if isempty(field_1)%||(numel(UvData.FileType)>=2 && strcmp(UvData.FileType{2},'image'))
     set(handles.SubField,'Value',0)
-%     check_new=1;
     SubField_Callback(hObject, eventdata, handles)
-%     if isempty(field_1)%remove second field if 'blank' field is selected
-        return
-%     end
+    return
 else
     set(handles.SubField,'Value',1)%state that a second field is now entered
 end
@@ -3200,6 +3213,12 @@ switch field_1
         set(hhget_field.list_fig,'String',{'uvmat'})
         set(handles.transform_fct,'Value',1)% no transform by default
         set(handles.path_transform,'String','')
+        if check_new
+            UvData.FileType{2}=UvData.FileType{1};
+            set(handles.FileIndex_1,'String',get(handles.FileIndex,'String'))
+%             set(handles.FileExt_1,'String',get(handles.FileExt,'String'))
+              set(handles.uvmat,'UserData',UvData)
+        end
     case 'image'
         % guess the image name corresponding to the current netcdf name (no unique correspondance)
         imagename=fullfile_uvmat(RootPath_1,'',RootFile_1,'.png',get(handles.NomType,'String'),i1,[],j1);
@@ -3707,6 +3726,11 @@ end
 function CheckBW_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 update_plot(handles);
+
+%-------------------------------------------------------------------
+function num_Opacity_Callback(hObject, eventdata, handles)
+update_plot(handles);
+%-------------------------------------------------------------------
 
 %-------------------------------------------------------------------
 function ListContour_Callback(hObject, eventdata, handles)
@@ -4785,13 +4809,3 @@ else
     addpath (fullfile(pathelp,'uvmat_doc'))
     web(helpfile);
 end
-
-
-% --- Executes on slider movement.
-function slider7_Callback(hObject, eventdata, handles)
-% hObject    handle to slider7 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'Value') returns position of slider
-%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider

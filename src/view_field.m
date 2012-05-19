@@ -307,31 +307,6 @@ indx=1+round((nxy(2)-1)*(x0-rangx0(1))/(rangx0(2)-rangx0(1)));% index x of pixel
 indy=1+round((nxy(1)-1)*(y12-rangy0(1))/(rangy0(2)-rangy0(1)));% index y of pixel
 
 %-------------------------------------------------------------------
-% --- Executes on button press in 'FixLimits'.
-%-------------------------------------------------------------------
-function CheckFixLimits_Callback(hObject, eventdata, handles)
-test=get(handles.CheckFixLimits,'Value');
-if test
-    set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
-else
-    set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
-end
-update_plot(handles)
-
-%-------------------------------------------------------------------
-% --- Executes on button press in FixEqual.
-function CheckFixEqual_Callback(hObject, eventdata, handles)
-test=get(handles.CheckFixEqual,'Value');
-if test
-    set(handles.CheckFixEqual,'BackgroundColor',[1 1 0])
-else
-    set(handles.CheckFixEqual,'BackgroundColor',[0.7 0.7 0.7])
-end
- update_plot(handles)
-
-%-------------------------------------------------------------------
-
-%-------------------------------------------------------------------
 % --- Executes on button press in 'zoom'.
 %-------------------------------------------------------------------
 function CheckZoom_Callback(hObject, eventdata, handles)
@@ -342,6 +317,39 @@ if (get(handles.CheckZoom,'Value') == 1);
 else
     set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
 end
+
+%-------------------------------------------------------------------
+% --- Executes on button press in 'FixLimits'.
+%-------------------------------------------------------------------
+function CheckFixLimits_Callback(hObject, eventdata, handles)
+test=get(handles.CheckFixLimits,'Value');
+if test
+    set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
+else
+    set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
+end
+update_plot(handles)
+ 
+ %-------------------------------------------------------------------
+% --- Executes on button press in CheckFixAspectRatio.
+function CheckFixAspectRatio_Callback(hObject, eventdata, handles)
+%-------------------------------------------------------------------
+if get(handles.CheckFixAspectRatio,'Value')
+    set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])
+    update_plot(handles);
+else
+    set(handles.CheckFixAspectRatio,'BackgroundColor',[0.7 0.7 0.7])
+    update_plot(handles);
+end
+
+%-------------------------------------------------------------------
+function num_AspectRatio_Callback(hObject, eventdata, handles)
+%-------------------------------------------------------------------
+set(handles.CheckFixAspectRatio,'Value',1)% select the fixed aspect ratio button
+set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])% mark in yellow
+update_plot(handles);
+
+%-------------------------------------------------------------------
 
 % %-------------------------------------------------------------------
 % %----Executes on button press in 'record': records the current flags of manual correction.
@@ -745,29 +753,13 @@ colorbar
 
 % --- Executes on selection change in ColorCode.
 function ColorCode_Callback(hObject, eventdata, handles)
-% hObject    handle to ColorCode (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns ColorCode contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from ColorCode
 
 
 % --- Executes on selection change in ColorScalar.
 function ColorScalar_Callback(hObject, eventdata, handles)
-% hObject    handle to ColorScalar (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns ColorScalar contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from ColorScalar
-
 
 
 function num_ColCode2_Callback(hObject, eventdata, handles)
-% hObject    handle to num_colcode2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of num_colcode2 as text
-%        str2double(get(hObject,'String')) returns contents of num_colcode2 as a double
+
+

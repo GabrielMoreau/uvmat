@@ -46,7 +46,7 @@
 %      Contains three substructures:
 %     .Coordinates: coordinate parameters:
 %           .CheckFixLimits:=0 (default) adjust axes limit to the X,Y data, =1: preserves the previous axes limits
-%     .Coordinates.CheckFixEqual: =0 (default):automatic adjustment of the graph, keep 1 to 1 aspect ratio for x and y scales. 
+%     .Coordinates.CheckFixAspectRatio: =0 (default):automatic adjustment of the graph, keep 1 to 1 aspect ratio for x and y scales. 
 %            --scalars--
 %    .Scalar.MaxA: upper bound (saturation color) for the scalar representation, max(field) by default
 %    .Scalar.MinA: lower bound (saturation) for the scalar representation, min(field) by default
@@ -199,15 +199,15 @@ if ~isempty(index_2D)|| ~isempty(index_1D)%  plot
         set(haxes,'XLimMode', 'auto')
         set(haxes,'YLimMode', 'auto')
     end
-    if ~isfield(PlotParam.Coordinates,'CheckFixEqual')&& isfield(Data,'CoordUnit')
-        PlotParam.Coordinates.CheckFixEqual=1;% if CoordUnit is defined, the two coordiantes should be plotted with equal scale by default
+    if ~isfield(PlotParam.Coordinates,'CheckFixAspectRatio')&& isfield(Data,'CoordUnit')
+        PlotParam.Coordinates.CheckFixAspectRatio=1;% if CoordUnit is defined, the two coordiantes should be plotted with equal scale by default
     end
-    if isfield(PlotParam.Coordinates,'CheckFixEqual') && isequal(PlotParam.Coordinates.CheckFixEqual,1)
-        set(haxes,'DataAspectRatioMode','manual')
-        set(haxes,'DataAspectRatio',[1 1 1])
-    else
-        set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
-    end
+%     if isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
+%         set(haxes,'DataAspectRatioMode','manual')
+%         set(haxes,'DataAspectRatio',[1 1 1])
+%     else
+%         set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
+%     end
     errormsg='';
     
     %% plot if the input field is valid
@@ -470,12 +470,12 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
         title_str=[title_str data.Action];
     end
     htitle=title(title_str);
-    txt=ver('MATLAB');
-    Release=txt.Release;
-    relnumb=str2double(Release(3:4));
-    if relnumb >= 14
-        set(htitle,'Interpreter','none')% desable tex interpreter
-    end
+%     txt=ver('MATLAB');
+%     Release=txt.Release;
+%     relnumb=str2double(Release(3:4));
+%     if relnumb >= 14
+    set(htitle,'Interpreter','none')% desable tex interpreter
+%     end
 end
 
 %% determine axes bounds
@@ -495,6 +495,16 @@ else
     CoordinatesOut.MaxX=max(XMax);
     CoordinatesOut.MinY=min(YMin_cell);
     CoordinatesOut.MaxY=max(YMax_cell);
+end
+
+%% determine plot aspect ratio
+if isequal(Coordinates.CheckFixAspectRatio,1)&&isfield(Coordinates,'AspectRatio')
+    set(haxes,'DataAspectRatioMode','manual')
+    set(haxes,'DataAspectRatio',[Coordinates.AspectRatio 1 1])
+else
+    set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
+    AspectRatio=get(haxes,'DataAspectRatio')
+    CoordinatesOut.AspectRatio=AspectRatio(1)/AspectRatio(2);
 end
 
 %-------------------------------------------------------------------
@@ -704,8 +714,8 @@ if test_ima
     np=size(A);%size of image
     siz=numel(np);
     if siz>3
-       errormsg=['unrecognized scalar type: ' num2str(siz) ' dimensions'];
-            return
+        errormsg=['unrecognized scalar type: ' num2str(siz) ' dimensions'];
+        return
     end
     if siz==3
         if np(3)==1
@@ -724,9 +734,9 @@ if test_ima
     else % BW imposed automatically chosen
         BW=(siz==2) && (isa(A,'uint8')|| isa(A,'uint16'));% non color images represented in gray scale by default
         PlotParamOut.Scalar.CheckBW=BW;
-    end 
+    end
     %case of grey level images or contour plot
-    if siz==2 
+    if siz==2
         if ~isfield(PlotParam.Scalar,'CheckFixScalar')
             PlotParam.Scalar.CheckFixScalar=0;%default
         end
@@ -741,26 +751,26 @@ if test_ima
             Aline=reshape(A,1,[]);
             Aline=Aline(~isnan(A));
             if isempty(Aline)
-                 errormsg='NaN input scalar or image in plot_field';
+                errormsg='NaN input scalar or image in plot_field';
                 return
             end
             MinA=double(min(Aline));
         else
             MinA=PlotParam.Scalar.MinA;
-        end; 
+        end;
         if ~PlotParam.Scalar.CheckFixScalar||isempty(PlotParam.Scalar.MaxA)||~isa(PlotParam.Scalar.MaxA,'double') %correct if there is no numerical data in edit box
             if isempty(Aline)
-               Aline=reshape(A,1,[]);
-               Aline=Aline(~isnan(A));
-               if isempty(Aline)
-                 errormsg='NaN input scalar or image in plot_field';
-                return
-               end
+                Aline=reshape(A,1,[]);
+                Aline=Aline(~isnan(A));
+                if isempty(Aline)
+                    errormsg='NaN input scalar or image in plot_field';
+                    return
+                end
             end
             MaxA=double(max(Aline));
         else
-            MaxA=PlotParam.Scalar.MaxA;  
-        end; 
+            MaxA=PlotParam.Scalar.MaxA;
+        end;
         PlotParamOut.Scalar.MinA=MinA;
         PlotParamOut.Scalar.MaxA=MaxA;
         % case of contour plot
@@ -776,9 +786,9 @@ if test_ima
                 intercont=cont(2)-cont(1);%default
                 PlotParamOut.Scalar.IncrA=intercont;
             else
-               intercont=PlotParam.Scalar.IncrA;
+                intercont=PlotParam.Scalar.IncrA;
             end
-            B=A;            
+            B=A;
             abscontmin=intercont*floor(MinA/intercont);
             abscontmax=intercont*ceil(MaxA/intercont);
             contmin=intercont*floor(min(min(B))/intercont);
@@ -788,17 +798,17 @@ if test_ima
             cont_pos=[cont_pos_min cont_pos_plus];
             sizpx=(AX(end)-AX(1))/(np(2)-1);
             sizpy=(AY(1)-AY(end))/(np(1)-1);
-            x_cont=AX(1):sizpx:AX(end); % pixel x coordinates for image display 
+            x_cont=AX(1):sizpx:AX(end); % pixel x coordinates for image display
             y_cont=AY(1):-sizpy:AY(end); % pixel x coordinates for image display
-           % axes(haxes)% set the input axes handle as current axis
-    txt=ver('MATLAB');
-    Release=txt.Release;
+            % axes(haxes)% set the input axes handle as current axis
+            txt=ver('MATLAB');
+            Release=txt.Release;
             relnumb=str2double(Release(3:4));
             if relnumb >= 14
-                    vec=linspace(0,1,(abscontmax-abscontmin)/intercont);%define a greyscale colormap with steps intercont
+                vec=linspace(0,1,(abscontmax-abscontmin)/intercont);%define a greyscale colormap with steps intercont
                 map=[vec' vec' vec'];
                 colormap(map);
-                [var,hcontour]=contour(x_cont,y_cont,B,cont_pos);        
+                [var,hcontour]=contour(x_cont,y_cont,B,cont_pos);
                 set(hcontour,'Fill','on')
                 set(hcontour,'LineStyle','none')
                 hold on
@@ -808,12 +818,16 @@ if test_ima
             [var_m,hcontour_m]=contour(x_cont,y_cont,B,cont_pos_min,':');
             set(hcontour_m,'LineColor',[1 1 1])
             hold off
-            caxis([abscontmin abscontmax]) 
+            caxis([abscontmin abscontmax])
             colormap(map);
-                       if isfield(PlotParam.Coordinates,'CheckFixEqual') && isequal(PlotParam.Coordinates.CheckFixEqual,1)
+            if isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
                 set(haxes,'DataAspectRatioMode','manual')
-                set(haxes,'DataAspectRatio',[1 1 1])
-           end 
+                if isfield(PlotParam.Coordinates,'AspectRatio')
+                    set(haxes,'DataAspectRatio',[PlotParam.Coordinates.AspectRatio PlotParam.Coordinates.AspectRatio PlotParam.Coordinates.AspectRatio])
+                else
+                    set(haxes,'DataAspectRatio',[1 1 1])
+                end
+            end
         end
         
         % set  colormap for  image display
@@ -823,14 +837,14 @@ if test_ima
             if BW
                 vec=linspace(0,1,255);%define a linear greyscale colormap
                 map=[vec' vec' vec'];
-                colormap(map);  %grey scale color map 
+                colormap(map);  %grey scale color map
             else
-                colormap('default'); % standard faulse colors for div, vort , scalar fields 
+                colormap('default'); % standard faulse colors for div, vort , scalar fields
             end
         end
         
-    % case of color images 
-    else 
+        % case of color images
+    else
         if BW
             B=uint16(sum(A,3));
         else
@@ -841,46 +855,46 @@ if test_ima
     end
     
     % display usual image
-    if ~CheckContour      
+    if ~CheckContour
         % interpolate field to increase resolution of image display
         test_interp=1;
-        if max(np) <= 64 
+        if max(np) <= 64
             npxy=8*np;% increase the resolution 8 times
-        elseif max(np) <= 128 
+        elseif max(np) <= 128
             npxy=4*np;% increase the resolution 4 times
-        elseif max(np) <= 256 
+        elseif max(np) <= 256
             npxy=2*np;% increase the resolution 2 times
         else
             npxy=np;
             test_interp=0; % no interpolation done
         end
-        if test_interp==1%if we interpolate    
+        if test_interp==1%if we interpolate
             x=linspace(AX(1),AX(2),np(2));
             y=linspace(AY(1),AY(2),np(1));
             [X,Y]=meshgrid(x,y);
             xi=linspace(AX(1),AX(2),npxy(2));
             yi=linspace(AY(1),AY(2),npxy(1));
             B = interp2(X,Y,double(B),xi,yi');
-        end           
+        end
         % create new image if there  no image handle is found
-        if isempty(hima) 
+        if isempty(hima)
             tag=get(haxes,'Tag');
             if MinA<MaxA
                 hima=imagesc(AX,AY,B,[MinA MaxA]);
             else % to deal with uniform field
                 hima=imagesc(AX,AY,B,[MaxA-1 MaxA]);
             end
-            % the function imagesc reset the axes 'DataAspectRatioMode'='auto', change if .CheckFixEqual is
+            % the function imagesc reset the axes 'DataAspectRatioMode'='auto', change if .CheckFixAspectRatio is
             % requested:
-           if isfield(PlotParam.Coordinates,'CheckFixEqual') && isequal(PlotParam.Coordinates.CheckFixEqual,1)
+            if isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
                 set(haxes,'DataAspectRatioMode','manual')
                 set(haxes,'DataAspectRatio',[1 1 1])
-           end 
+            end
             set(hima,'Tag','ima')
             set(hima,'HitTest','off')
-            set(haxes,'Tag',tag);%preserve the axes tag (removed by image fct !!!)     
+            set(haxes,'Tag',tag);%preserve the axes tag (removed by image fct !!!)
             uistack(hima, 'bottom')
-        % update an existing image
+            % update an existing image
         else
             set(hima,'CData',B);
             if MinA<MaxA
@@ -892,10 +906,15 @@ if test_ima
             set(hima,'YData',AY);
         end
         % set the transparency to 0.5 if vectors are also plotted
-        if test_vec
-            set(hima,'AlphaData',0.5)
+        if isfield(PlotParam.Scalar,'Opacity')&& ~isempty(PlotParam.Scalar.Opacity)
+            set(hima,'AlphaData',PlotParam.Scalar.Opacity)
         else
-            set(hima,'AlphaData',1)
+            if test_vec
+                set(hima,'AlphaData',0.5)%set opacity to 0.5 by default in the presence of vectors
+                PlotParamOut.Scalar.Opacity=0.5;
+            else
+                set(hima,'AlphaData',1)% full opacity (no transparency) by default
+            end
         end
     end
     test_ima=1;
@@ -903,16 +922,16 @@ if test_ima
     %display the colorbar code for B/W images if Poscolorbar not empty
     if siz==2 && exist('PosColorbar','var')&& ~isempty(PosColorbar)
         if isempty(hcol)||~ishandle(hcol)
-             hcol=colorbar;%create new colorbar
+            hcol=colorbar;%create new colorbar
         end
         if length(PosColorbar)==4
-                 set(hcol,'Position',PosColorbar)           
-        end 
+            set(hcol,'Position',PosColorbar)
+        end
         %YTick=0;%default
         if MaxA>MinA
             if CheckContour
                 colbarlim=get(hcol,'YLim');
-                scale_bar=(colbarlim(2)-colbarlim(1))/(abscontmax-abscontmin);                
+                scale_bar=(colbarlim(2)-colbarlim(1))/(abscontmax-abscontmin);
                 YTick=cont_pos(2:end-1);
                 YTick_scaled=colbarlim(1)+scale_bar*(YTick-abscontmin);
                 set(hcol,'YTick',YTick_scaled);
@@ -925,7 +944,7 @@ if test_ima
                 set(hi,'CData',(1:256)')
                 set(hcol,'YLim',[MinA MaxA])
                 YTick=colbartick(MinA,MaxA);
-                set(hcol,'YTick',YTick)                
+                set(hcol,'YTick',YTick)
             else
                 hi=get(hcol,'children');
                 if iscell(hi)%multiple images in colorbar
@@ -933,21 +952,21 @@ if test_ima
                 end
                 set(hi,'YData',[MinA MaxA])
                 set(hi,'CData',(1:64)')
-                YTick=colbartick(MinA,MaxA); 
+                YTick=colbartick(MinA,MaxA);
                 set(hcol,'YLim',[MinA MaxA])
                 set(hcol,'YTick',YTick)
             end
             set(hcol,'Yticklabel',num2str(YTick'));
         end
     elseif ishandle(hcol)
-        delete(hcol); %erase existing colorbar if not needed 
+        delete(hcol); %erase existing colorbar if not needed
     end
 else%no scalar plot
-    if ~isempty(hima) && ishandle(hima) 
+    if ~isempty(hima) && ishandle(hima)
         delete(hima)
     end
     if ~isempty(hcol)&& ishandle(hcol)
-       delete(hcol)
+        delete(hcol)
     end
     PlotParamOut=rmfield(PlotParamOut,'Scalar');
 end

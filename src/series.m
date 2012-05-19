@@ -1953,10 +1953,9 @@ if isequal(field,'get_field...')
      if ~isempty(hget_field)
          delete(hget_field)%delete opened versions of get_field
      end
-     SeriesData=get(handles.series,'UserData');
-     filename=SeriesData.CurrentInputFile;
-     if exist(filename,'file')
-        get_field(filename)
+     [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(read_GUI(handles.series));
+     if exist(filecell{1,1},'file')
+        get_field(filecell{1,1})
      end
 elseif isequal(field,'more...')
     str=calc_field;

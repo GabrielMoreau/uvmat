@@ -3,15 +3,18 @@ function write_plot_param(handles,PlotParam)
 %% coordinates
 if isfield(PlotParam,'Coordinates')
     Coordinates=PlotParam.Coordinates;
-    if isfield(Coordinates,'CheckFixEqual')
-        if Coordinates.CheckFixEqual
-            set(handles.CheckFixEqual,'Value',1)
-            set(handles.CheckFixEqual,'BackgroundColor',[1 1 0])
+    if isfield(Coordinates,'CheckFixAspectRatio')
+        if Coordinates.CheckFixAspectRatio
+            set(handles.CheckFixAspectRatio,'Value',1)
+            set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])
         else
-            set(handles.CheckFixEqual,'Value',0)
-            set(handles.CheckFixEqual,'BackgroundColor',[0.7 0.7 0.7])
+            set(handles.CheckFixAspectRatio,'Value',0)
+            set(handles.CheckFixAspectRatio,'BackgroundColor',[0.7 0.7 0.7])
         end
     end
+    if isfield(Coordinates,'AspectRatio')
+        set(handles.num_AspectRatio,'String',num2str(Coordinates.AspectRatio))
+    end   
     if isfield(Coordinates,'MinX')
         set(handles.num_MinX,'String',num2str(Coordinates.MinX,4));
         set(handles.num_MaxX,'String',num2str(Coordinates.MaxX,4));
@@ -33,12 +36,14 @@ if isfield(PlotParam,'Scalar')
     end
     if isfield(PlotParam.Scalar,'MinA')
         set(handles.num_MinA,'String',num2str(PlotParam.Scalar.MinA,3));
-    end
-    
+    end   
     if isfield(PlotParam.Scalar,'IncrA')
         set(handles.num_IncrA,'String',num2str(PlotParam.Scalar.IncrA,3))
     end
     set(handles.CheckBW,'Value',PlotParam.Scalar.CheckBW)
+    if isfield(PlotParam.Scalar,'Opacity')&&isfield(handles,'num_Opacity')
+        set(handles.num_Opacity,'String',num2str(PlotParam.Scalar.Opacity)) 
+    end
 else
     set(handles.Scalar,'Visible','off')
 end

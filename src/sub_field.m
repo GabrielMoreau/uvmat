@@ -299,18 +299,20 @@ if testU && ~testU_1
                 AName_1_1=[AName_1 '_1']; 
         end
     end     
-    if ~testX_1
-          DimCell=[{XName_1_1} {YName_1_1}];
+    if ~testX_1% if the second field has structured coordinates
+          DimCell={XName_1_1,YName_1_1, {YName_1_1,XName_1_1}};
+    else
+        DimCell=[DimCell Field_1.VarDimName(ivar_C_1)];
     end
     SubData.ListVarName=[SubData.ListVarName {XName_1_1} {YName_1_1} {AName_1_1}];
-    DimCell=[DimCell Field_1.VarDimName(ivar_C_1)]; %(TODO: check for dimension names)
-    if testX_1
+    % check that a  different dimension name is used for the two fields
+     if testX_1% if the second field has unstructured coordinates
         for icell=1:numel(DimCell)
             if isequal(DimCell{icell}{1},SubData.VarDimName{1}{1})
                 DimCell{icell}{1}=[DimCell{icell}{1} '_1'];
             end
         end
-    end
+     end
     SubData.VarDimName=[SubData.VarDimName DimCell];
     if isfield(Field_1,'VarAttribute')
         SubData.VarAttribute=[SubData.VarAttribute {AAttr}];
