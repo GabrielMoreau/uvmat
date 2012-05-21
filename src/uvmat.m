@@ -238,9 +238,9 @@ set(hObject,'DeleteFcn',{@closefcn})%
 %% refresh projection plane
 UvData.Object{1}.ProjMode='projection';%main plotting plane
 set(handles.ListObject,'Value',1)% default: empty projection objectproj_field
-set(handles.ListObject,'String',{'plane_0'})
+set(handles.ListObject,'String',{'plane'})
 set(handles.ListObject_1,'Value',1)% default: empty projection objectproj_field
-set(handles.ListObject_1,'String',{'plane_0'})
+set(handles.ListObject_1,'String',{'plane'})
 set(handles.Fields,'Value',1)
 set(handles.Fields,'string',{''})
 
@@ -3545,9 +3545,6 @@ image(imflag);
 %  - FUNCTIONS FOR SETTING PLOTTING PARAMETERS
 
 %------------------------------------------------------------------
-
-
-
 %-------------------------------------------------------------
 % --- Executes on selection change in transform_fct.
 function transform_fct_Callback(hObject, eventdata, handles)
@@ -3599,7 +3596,7 @@ if isequal(coord_option,'more...');
    end   
 end
 
-%check the current path to the selected function
+%% check the current path to the selected function
 if isa(list_transform{ind_coord},'function_handle')
     func=functions(list_transform{ind_coord});
     set(handles.path_transform,'String',fileparts(func.file)); %show the path to the senlected function
@@ -3610,7 +3607,7 @@ end
 set(handles.CheckFixLimits,'Value',0)
 set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
 
-%delete drawn objects
+%% delete drawn objects
 hother=findobj('Tag','proj_object');%find all the proj objects
 for iobj=1:length(hother)
     delete_object(hother(iobj))
@@ -3631,7 +3628,9 @@ if isfield(UvData,'Object')
      UvData.Object=UvData.Object(1);
 end 
 set(handles.ListObject,'Value',1)
-set(handles.ListObject,'String',{''})
+set(handles.ListObject,'String',{'plane'})
+set(handles.ListObject_1,'Value',1)
+set(handles.ListObject_1,'String',{'plane'})
 
 %delete mask if it is displayed 
 % if isequal(get(handles.CheckMask,'Value'),1)%if the mask option is on
@@ -4030,24 +4029,37 @@ if ~isempty(hset_object)
     set_object(ObjectData,[],ZBounds);
     set(handles.ViewField,'Value',1)% show that the selected object in ListObject is currently visualised
 end
-%  desactivate the edit object mode
+
+%%  desactivate the edit object mode
 set(handles.edit_object,'Value',0) 
 set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
 
-%% update the second plot (on view_field) if view_field is already openened
-axes_view_field=[];%default
-if length(IndexObj)==2 && (length(IndexObj_old)==1 || ~isequal(IndexObj(2),IndexObj_old(2)))
-    hview_field=findobj(allchild(0),'tag','view_field');
-    if ~isempty(hview_field)
-        PlotHandles=guidata(hview_field);     
-        ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
-        axes_view_field=PlotHandles.axes3;
-        plot_field(ProjData,axes_view_field,read_GUI(hview_field));%read plotting parameters on the uvmat interfacPlotHandles);
+%% update the  plot on view_field if view_field is already openened
+hview_field=findobj(allchild(0),'tag','view_field');
+if isempty(hview_field)
+    hhview_field.axes3=[];
+else
+    Data=get(hview_field,'UserData');
+    hhview_field=guidata(hview_field);
+    ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
+    [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%read plotting parameters on the uvmat interfachhview_fiel
+    write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
+    haxes=findobj(hview_field,'tag','axes3');
+    pos=get(hview_field,'Position');  
+    if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Coordinates)% case of no plot display (pure text table)
+        h_TableDisplay=findobj(hview_field,'tag','TableDisplay');
+        pos_table=get(h_TableDisplay,'Position');
+        set(hview_field,'Position',[pos(1)+pos(3)-pos_table(3) pos(2)+pos(4)-pos_table(4) pos_table(3) pos_table(4)])
+        drawnow% needed to change position before the next command
+        set(hview_field,'UserData',Data);% restore the previously stored GUI position after GUI resizing
+    else
+        set(hview_field,'Position',Data.GUISize)% return to the previously stored GUI position and size
     end
 end
 
 %% update the color of the graphic object representation: the selected object in magenta, others in blue
-update_object_color(handles.axes3,axes_view_field,UvData.Object{IndexObj(end)}.DisplayHandle_uvmat)
+update_object_color(handles.axes3,hhview_field.axes3,UvData.Object{IndexObj(end)}.DisplayHandle_uvmat)
+hview_field=findobj(allchild(0),'tag','view_field');
 
 %------------------------------------------------------------------------
 %--- update the color representation of objects (indicating the selected ones)
@@ -4227,14 +4239,25 @@ if check_view
     list_object=get(handles.ListObject,'String');
     UvData.Object{IndexObj(end)}.Name=list_object{IndexObj(end)};
     
-    %% show the second plot (on view_field)
-        ProjData= proj_field(UvData.Field,UvData.Object{IndexObj});%project the current field on ObjectData
+    %% show the projection of the selected object on view_field
+    ProjData= proj_field(UvData.Field,UvData.Object{IndexObj});%project the current field on ObjectData
     hview_field=findobj(allchild(0),'tag','view_field');
     if isempty(hview_field)
         hview_field=view_field;
     end
-    PlotHandles=guidata(hview_field);
-    plot_field(ProjData,PlotHandles.axes3,read_GUI(hview_field));%read plotting parameters on the uvmat interfacPlotHandles);
+    hhview_field=guidata(hview_field);
+    [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%read plotting parameters on the GUI view_field);
+    write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
+    haxes=findobj(hview_field,'tag','axes3');
+    pos=get(hview_field,'Position');
+    if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Coordinates)% case of no plot display (pure text table)
+        h_TableDisplay=findobj(hview_field,'tag','TableDisplay');
+        pos_table=get(h_TableDisplay,'Position');
+        set(hview_field,'Position',[pos(1)+pos(3)-pos_table(3) pos(2)+pos(4)-pos_table(4) pos_table(3) pos_table(4)])
+    else
+        Data=get(hview_field,'UserData');
+        set(hview_field,'Position',Data.GUISize)
+    end
 else
     hview_field=findobj(allchild(0),'tag','view_field');
     if ~isempty(hview_field)
@@ -4480,7 +4503,15 @@ if ishandle(hgeometry_calib)
 end
 set(handles.edit_object,'Value',0); %suppress the object edit mode
 set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
+ListObject=get(handles.ListObject,'String');
+if ~strcmp(ListObject{end},'')
+    ListObject=[ListObject;{''}]; %append a blank to the list (if nort already done) to indicate the creation of a new object
+    set(handles.ListObject,'String',ListObject)
+end
+IndexObj=length(ListObject);
+set(handles.ListObject,'Value',IndexObj)
 UvData=get(handles.uvmat,'UserData');
+UvData.Object{IndexObj}=[]; %create a new empty object
 data.Name=data.Type;% default name=type
 data.Coord=[0 0]; %default
 if isfield(UvData,'Field')
@@ -4505,20 +4536,14 @@ end
 if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)%delete the initial display of uvmat if no field has been entered
 end
-
-%set(handles.ViewField,'Value',1) % indicate that the object selected in ListObject (projection oin view_field) is visualised
-%set(handles.ViewObject,'Value',1)% then the object selected in ListObject_1 is not visualised
 hset_object=set_object(data,handles);% call the set_object interface
 hhset_object=guidata(hset_object);
 hchild=get(hset_object,'children');
 set(hchild,'enable','on')
-%set(hhset_object.PLOT,'enable','on')% activate the refresh button
-%set(handles.MenuObject,'checked','on')
 set(handles.uvmat,'UserData',UvData)
 set(handles.CheckZoom,'Value',0) %desactivate the zoom for object creation by the mouse
 CheckZoom_Callback(handles.uvmat, [], handles)
 set(handles.delete_object,'Visible','on')
-
 
 %------------------------------------------------------------------------
 function MenuBrowseObject_Callback(hObject, eventdata, handles)
@@ -4535,12 +4560,14 @@ if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
 %read the file
 data=xml2struct(fileinput);
-% data.enable_plot=1;
+
 [tild,data.Name]=fileparts(FileName);% object name set as file name
-% hset_object=findobj(allchild(0),'tag','set_object');
-% if ~isempty(hset_object)
-%     delete(hset_object)% delete existing version of set_object
-% end
+ListObject=get(handles.ListObject,'String');
+if ~strcmp(ListObject{end},'')
+    ListObject=[ListObject;{''}]; %append a blank to the list (if not already done) to indicate the creation of a new object
+    set(handles.ListObject,'String',ListObject)
+end
+set(handles.ListObject,'Value',length(ListObject))
 hset_object=set_object(data);% call the set_object interface
 set(get(hset_object,'children'),'enable','on')% enable edit action on elements on GUI set_object
 set(handles.edit_object,'Value',0); %suppress the object edit mode

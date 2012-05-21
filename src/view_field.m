@@ -87,8 +87,11 @@ set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles_mouse})%set mouse ac
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse}) 
 set(hObject,'DeleteFcn',{@closefcn})%
+set(hObject,'ResizeFcn',{@ResizeFcn,handles})%
 ViewFieldData.axes3=[];%initiates the record of the current field (will be updated by plot_field)
-set(handles.view_field,'UserData',ViewFieldData);%store the current field
+set(handles.view_field,'Units','pixels')
+ViewFieldData.GUISize=get(handles.view_field,'Position');
+set(handles.view_field,'UserData',ViewFieldData);%store the initial fig size in UserData
 AxeData.LimEditBox=1; %initialise AxeData, the parent figure sets plot parameters
 set(handles.axes3,'UserData',AxeData)
 if exist('Field','var')
@@ -99,11 +102,72 @@ if exist('Field','var')
     end
     write_plot_param(handles,PlotParamOut);% update the display of the plotting parameters
 end
+
+%------------------------------------------------------------------------
+%--- activated when resizing the GUI view_field
+ function ResizeFcn(gcbo,eventdata,handles)
+%------------------------------------------------------------------------     
+set(handles.view_field,'Units','pixels')
+size_fig=get(handles.view_field,'Position');
+Data=get(handles.view_field,'UserData');
+Data.GUISize=size_fig;
+set(handles.view_field,'UserData',Data)
+
+%% reset position of text_display or TableDisplay
+if strcmp(get(handles.TableDisplay,'Visible'),'off')
+    pos_1=get(handles.text_display,'Position');
+    pos_1(1)=size_fig(3)-pos_1(3);
+    pos_1(2)=size_fig(4)-pos_1(4);
+    set(handles.text_display,'Position',pos_1)
+    % reset position of TableDisplay
+else
+    pos_1=get(handles.TableDisplay,'Position');
+    pos_1(1)=size_fig(3)-pos_1(3);
+    pos_1(2)=size_fig(4)-pos_1(4);
+    set(handles.TableDisplay,'Position',pos_1)
+end
+
+%% reset position of Coordinates
+pos_2=get(handles.Coordinates,'Position');
+pos_2(1)=size_fig(3)-pos_1(3);
+pos_2(2)=pos_1(2)-pos_2(4);
+set(handles.Coordinates,'Position',pos_2)
+
+%% reset position of  Scalar
+pos_3=get(handles.Scalar,'Position');
+pos_3(1)=size_fig(3)-pos_3(3);
+if strcmp(get(handles.Scalar,'visible'),'on')
+    pos_3(2)=pos_2(2)-pos_3(4);
+else
+    pos_3(2)=pos_2(2);
+end
+set(handles.Scalar,'Position',pos_3)
+
+%% reset position of  Vectors
+pos_4=get(handles.Vectors,'Position');
+pos_4(1)=size_fig(3)-pos_4(3);
+if strcmp(get(handles.Vectors,'visible'),'on')
+    pos_4(2)=pos_3(2)-pos_4(4);
+else
+    pos_4(2)=pos_3(2);
+end
+set(handles.Vectors,'Position',pos_4)
+
+%% reset position and scale of axis
+bord=[50 40 30 60]; %bordure left,inf, right,sup
+pos(1)=bord(1);
+pos(2)=bord(2);
+pos(3)=max(1,pos_1(1)-pos(1)-bord(3));
+pos(4)=max(1,size_fig(4)-bord(4));
+set(handles.axes3,'Position',pos)
+
+%------------------------------------------------------------------------
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command menuline.
 function varargout = view_field_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 varargout{1} = handles.output;% the only output argument is the handle to the GUI figure
+varargout{2} = strcmp(get(handles.axes3,'Visible'),'on');% check active plot axis
 
 %------------------------------------------------------------------------
 %--- activated when closing the GUI view_field
@@ -270,33 +334,32 @@ function runmin_Callback(hObject, eventdata, handles)
 increment=-str2num(get(handles.increment_scan,'String')); %get the field increment d
 runpm(hObject,eventdata,handles,increment)
 
-%-------------------------------------------------------------------
-%Executes on button press in runmin: make one step backward and call
-%run0. The step backward is along the fields series 1 or 2 depending on 
-%the scan_i and scan_j check box (exclusive each other)
-%-------------------------------------------------------------------
-function RunMovie_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------
-set(handles.RunMovie,'BackgroundColor',[1 1 0])%paint the command button in yellow
-drawnow
-increment=str2num(get(handles.increment_scan,'String')); %get the field increment d
-set(handles.STOP,'Visible','on')
-set(handles.speed,'Visible','on')
-set(handles.speed_txt,'Visible','on')
-set(handles.RunMovie,'BusyAction','queue')
-testavi=0;
-UvData=get(handles.view_field,'UserData');
-
-while get(handles.speed,'Value')~=0 & isequal(get(handles.RunMovie,'BusyAction'),'queue') % enable STOP command
-        runpm(hObject,eventdata,handles,increment)
-        pause(1.02-get(handles.speed,'Value'))% wait for next image
-end
-if isfield(UvData,'aviobj') && ~isempty( UvData.aviobj),
-    UvData.aviobj=close(UvData.aviobj);
-   set(handles.view_field,'UserData',UvData);
-end
-set(handles.RunMovie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
-
+% %-------------------------------------------------------------------
+% %Executes on button press in runmin: make one step backward and call
+% %run0. The step backward is along the fields series 1 or 2 depending on 
+% %the scan_i and scan_j check box (exclusive each other)
+% %-------------------------------------------------------------------
+% function RunMovie_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------
+% set(handles.RunMovie,'BackgroundColor',[1 1 0])%paint the command button in yellow
+% drawnow
+% increment=str2num(get(handles.increment_scan,'String')); %get the field increment d
+% set(handles.STOP,'Visible','on')
+% set(handles.speed,'Visible','on')
+% set(handles.speed_txt,'Visible','on')
+% set(handles.RunMovie,'BusyAction','queue')
+% testavi=0;
+% UvData=get(handles.view_field,'UserData');
+% 
+% while get(handles.speed,'Value')~=0 & isequal(get(handles.RunMovie,'BusyAction'),'queue') % enable STOP command
+%         runpm(hObject,eventdata,handles,increment)
+%         pause(1.02-get(handles.speed,'Value'))% wait for next image
+% end
+% if isfield(UvData,'aviobj') && ~isempty( UvData.aviobj),
+%     UvData.aviobj=close(UvData.aviobj);
+%    set(handles.view_field,'UserData',UvData);
+% end
+% set(handles.RunMovie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 
 
 %-------------------------------------------------------------------

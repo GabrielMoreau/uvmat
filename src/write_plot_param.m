@@ -1,7 +1,18 @@
-%'write_plot_param': update the plotting parameters on the uvmat interface after a plotting operation
+%'write_plot_param': update the plotting parameters on the uvmat or view_field interface after a plotting operation
 function write_plot_param(handles,PlotParam)
 %% coordinates
-if isfield(PlotParam,'Coordinates')
+if isempty(PlotParam.Coordinates)
+    set(handles.Coordinates,'Visible','off')
+    set(handles.axes3,'Visible','off')
+    set(handles.text_display,'Visible','off')
+    set(handles.TableDisplay,'Visible','on')
+else
+    set(handles.Coordinates,'Visible','on')
+    set(handles.axes3,'Visible','on')
+    set(handles.text_display,'Visible','on')
+    if isfield(handles,'TableDisplay')
+    set(handles.TableDisplay,'Visible','off')
+    end
     Coordinates=PlotParam.Coordinates;
     if isfield(Coordinates,'CheckFixAspectRatio')
         if Coordinates.CheckFixAspectRatio
@@ -14,7 +25,7 @@ if isfield(PlotParam,'Coordinates')
     end
     if isfield(Coordinates,'AspectRatio')
         set(handles.num_AspectRatio,'String',num2str(Coordinates.AspectRatio))
-    end   
+    end
     if isfield(Coordinates,'MinX')
         set(handles.num_MinX,'String',num2str(Coordinates.MinX,4));
         set(handles.num_MaxX,'String',num2str(Coordinates.MaxX,4));

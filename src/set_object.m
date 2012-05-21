@@ -500,32 +500,31 @@ else
         return
     end   
     if numel(IndexObj)==1   % if only one object is selected, the projection is in uvmat
-%         plotaxes=hhuvmat.axes3;%handle of axes3 in view_field
         PlotType=plot_field(ProjData,hhuvmat.axes3,read_GUI(get(hhuvmat.axes3,'parent')));%update the current uvmat plot
     else  % if a second object is selected, the projection is in view_field, and this second object is selected
         hview_field=findobj(allchild(0),'tag','view_field');
         if isempty(hview_field)
-            PlotType=view_field(ProjData); %open the view_field GUI for plot
-          %  hview_field=view_field;%open the GUI view_field if it is not found
+            hview_field=view_field(ProjData); %open the view_field GUI for plot
         else
             hhview_field=guidata(hview_field);
             [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%update an existing  plot in view_field
             write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
         end
-%         PlotHandles=guidata(hview_field);
-%         plotaxes=PlotHandles.axes3;%handle of axes3 in view_field
+        haxes=findobj(hview_field,'tag','axes3');
+        Data=get(hview_field,'UserData');
+        if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Coordinates)% case of no plot display (pure text table)
+            h_TableDisplay=findobj(hview_field,'tag','TableDisplay');
+            pos_table=get(h_TableDisplay,'Position');
+            pos=get(hview_field,'Position');
+            set(hview_field,'Position',[pos(1)+pos(3)-pos_table(3) pos(2)+pos(4)-pos_table(4) pos_table(3) pos_table(4)])
+            drawnow
+            set(hview_field,'UserData',Data);% restore the previously stored GUI position after GUI resizing
+        else
+            set(hview_field,'Position',Data.GUISize)
+        end
     end
-%     fighandle=get(plotaxes,'parent');
-%     PlotParam=read_GUI(fighandle);
-   % PlotType=plot_field(ProjData,plotaxes,PlotParam);%update an existing field plot
 end
-if strcmp(PlotType,'text')
-    hview_field=findobj(allchild(0),'tag','view_field'); %case of no projection (pure object display)
-    if ~isempty(hview_field)
-        delete(hview_field)
-    end
-end
-    
+
 %% update the GUI uvmat
 hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI
 set(hhuvmat.MenuEditObject,'enable','on')

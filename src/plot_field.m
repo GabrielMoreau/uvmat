@@ -47,6 +47,7 @@
 %     .Coordinates: coordinate parameters:
 %           .CheckFixLimits:=0 (default) adjust axes limit to the X,Y data, =1: preserves the previous axes limits
 %     .Coordinates.CheckFixAspectRatio: =0 (default):automatic adjustment of the graph, keep 1 to 1 aspect ratio for x and y scales. 
+%     .Coordinates.AspectRatio: imposed aspect ratio y/x of axis unit plots
 %            --scalars--
 %    .Scalar.MaxA: upper bound (saturation color) for the scalar representation, max(field) by default
 %    .Scalar.MinA: lower bound (saturation) for the scalar representation, min(field) by default
@@ -142,109 +143,92 @@ if ~isempty(index_2D)
     index_1D=index_1D(index_1D>0);
 end
 
-%% pure text display
-if isempty(index_2D) && isempty(index_1D)% no plot
-    hfig=findobj(allchild(0),'Tag','fig_text_display');
-    if isempty(hfig)
-        hfig=figure('name','text_display','Tag','fig_text_display');
-    end
-    htext=findobj(hfig,'Tag','text_display');
-    if isempty(htext)
-        htext=uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71],'Tag','text_display');
-    end
-    if isempty(index_0D)
-        set(htext,'String',{''})
-    else
-        [errormsg]=plot_text(Data,CellVarIndex(index_0D),VarType(index_0D),htext);
-    end
-    haxes=[];
-end
-
 %% test axes and figure
-if ~isempty(index_2D)|| ~isempty(index_1D)%  plot
-    testnewfig=1;%test to create a new figure (default)
-    testzoomaxes=0;%test for the existence of a zoom secondary figure attached to the plotting axes
-    if exist('haxes','var')
-        if ishandle(haxes)
-            if isequal(get(haxes,'Type'),'axes')
-                testnewfig=0;
-                AxeData=get(haxes,'UserData');
-                if isfield(AxeData,'ZoomAxes')&& ishandle(AxeData.ZoomAxes)
-                    if isequal(get(AxeData.ZoomAxes,'Type'),'axes')
-                        testzoomaxes=1;
-                        zoomaxes=AxeData.ZoomAxes;
-                    end
+testnewfig=1;%test to create a new figure (default)
+testzoomaxes=0;%test for the existence of a zoom secondary figure attached to the plotting axes
+if exist('haxes','var')
+    if ishandle(haxes)
+        if isequal(get(haxes,'Type'),'axes')
+            testnewfig=0;
+            AxeData=get(haxes,'UserData');
+            if isfield(AxeData,'ZoomAxes')&& ishandle(AxeData.ZoomAxes)
+                if isequal(get(AxeData.ZoomAxes,'Type'),'axes')
+                    testzoomaxes=1;
+                    zoomaxes=AxeData.ZoomAxes;
                 end
             end
         end
     end
-    % create a new figure and axes if the plotting axes does not exist
-    if testnewfig
-        hfig=figure;
-        set(hfig,'Units','normalized')
-        haxes=axes;
-        set(haxes,'position',[0.13,0.2,0.775,0.73])
-        PlotParam.NextPlot='add'; %parameter for plot_profile and plot_his
-    else
-        hfig=get(haxes,'parent');
-        set(0,'CurrentFigure',hfig)% the parent of haxes becomes the current figure
-        set(hfig,'CurrentAxes',haxes)%  haxes becomes the current axes of the parent figure
+end
+
+%% create a new figure and axes if the plotting axes does not exist
+if testnewfig
+    hfig=figure;
+    set(hfig,'Units','normalized')
+    haxes=axes;
+    set(haxes,'position',[0.13,0.2,0.775,0.73])
+    PlotParam.NextPlot='add'; %parameter for plot_profile and plot_his
+else
+    hfig=get(haxes,'parent');
+    set(0,'CurrentFigure',hfig)% the parent of haxes becomes the current figure
+    set(hfig,'CurrentAxes',haxes)%  haxes becomes the current axes of the parent figure
+end
+
+%% set axes properties
+if isfield(PlotParam.Coordinates,'CheckFixLimits') && isequal(PlotParam.Coordinates.CheckFixLimits,1)  %adjust the graph limits
+    set(haxes,'XLimMode', 'manual')
+    set(haxes,'YLimMode', 'manual')
+else
+    set(haxes,'XLimMode', 'auto')
+    set(haxes,'YLimMode', 'auto')
+end
+% if ~isfield(PlotParam.Coordinates,'CheckFixAspectRatio')&& isfield(Data,'CoordUnit')
+%     PlotParam.Coordinates.CheckFixAspectRatio=1;% if CoordUnit is defined, the two coordiantes should be plotted with equal scale by default
+% end
+errormsg='';
+PlotParamOut.Coordinates=[]; %default output 
+AxeData=get(haxes,'UserData');
+
+%% 2D plots 
+if isempty(index_2D)
+    plot_plane([],[],[],haxes);%removes images or vector plots in the absence of 2D field plot
+else  %plot 2D field
+    [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),haxes,PlotParam,PosColorbar);
+    AxeData.NbDim=2;
+    if testzoomaxes && isempty(errormsg)
+        [zoomaxes,PlotParamOut,tild,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),zoomaxes,PlotParam,PosColorbar);
+        AxeData.ZoomAxes=zoomaxes;
     end
-    
-    %% set axes properties
-    if isfield(PlotParam.Coordinates,'CheckFixLimits') && isequal(PlotParam.Coordinates.CheckFixLimits,1)  %adjust the graph limits
-        set(haxes,'XLimMode', 'manual')
-        set(haxes,'YLimMode', 'manual')
-    else
-        set(haxes,'XLimMode', 'auto')
-        set(haxes,'YLimMode', 'auto')
+end
+
+%% 1D plot (usual graph y vs x)
+if isempty(index_1D)
+    if ~isempty(haxes)
+        plot_profile([],[],[],haxes);%removes usual praphs y vs x in the absence of 1D field plot
     end
-    if ~isfield(PlotParam.Coordinates,'CheckFixAspectRatio')&& isfield(Data,'CoordUnit')
-        PlotParam.Coordinates.CheckFixAspectRatio=1;% if CoordUnit is defined, the two coordiantes should be plotted with equal scale by default
+else %plot 1D field (usual graph y vs x)
+    Coordinates=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,PlotParam.Coordinates);%
+    if testzoomaxes
+        [zoomaxes,Coordinates]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam.Coordinates);
+        AxeData.ZoomAxes=zoomaxes;
     end
-%     if isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
-%         set(haxes,'DataAspectRatioMode','manual')
-%         set(haxes,'DataAspectRatio',[1 1 1])
-%     else
-%         set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
-%     end
-    errormsg='';
-    
-    %% plot if the input field is valid
-    AxeData=get(haxes,'UserData');
-    if isempty(index_2D)
-        plot_plane([],[],[],haxes);%removes images or vector plots if any
-    else  %plot 2D field
-        [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),haxes,PlotParam,PosColorbar);
-        AxeData.NbDim=2;
-        if testzoomaxes && isempty(errormsg)
-            [zoomaxes,PlotParamOut,tild,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),zoomaxes,PlotParam,PosColorbar);
-            AxeData.ZoomAxes=zoomaxes;
-        end
+    if ~isempty(Coordinates)
+        PlotParamOut.Coordinates=Coordinates;
     end
-    if isempty(index_1D)
-        if ~isempty(haxes)
-            plot_profile([],[],[],haxes);%
-        end
-    else %plot 1D field (usual graph y vs x)
-        Coordinates=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,PlotParam.Coordinates);%
-        if testzoomaxes
-            [zoomaxes,Coordinates]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam.Coordinates);
-            AxeData.ZoomAxes=zoomaxes;
-        end
-        if ~isempty(Coordinates)
-            PlotParamOut.Coordinates=Coordinates;
-        end
-        PlotType='line';
-    end
-    % text display
+    PlotType='line';
+end
+
+%% text display
+if isempty(index_2D) && isempty(index_1D)%text display alone
+    htext=findobj(hfig,'Tag','TableDisplay');
+else  %text display added to plot
     htext=findobj(hfig,'Tag','text_display');
-    if ~isempty(htext)
-        if isempty(index_0D)
-            set(htext,'String',{''})
-        else
-            [errormsg]=plot_text(Data,CellVarIndex(index_0D),VarType(index_0D),htext);
-        end
+end
+if ~isempty(htext)
+    if isempty(index_0D)
+        set(htext,'String',{''})
+    else
+        [errormsg]=plot_text(Data,CellVarIndex(index_0D),VarType(index_0D),htext);
     end
 end
 
@@ -254,7 +238,8 @@ if ~isempty(errormsg)
 end
 
 %% update the parameters stored in AxeData
-if ishandle(haxes)
+if ishandle(haxes)&&( ~isempty(index_2D)|| ~isempty(index_1D))
+%     AxeData=[];
     if isfield(PlotParamOut,'MinX')
         AxeData.RangeX=[PlotParamOut.MinX PlotParamOut.MaxX];%'[PlotParamOut.MinX PlotParamOut.MaxX];
         AxeData.RangeY=[PlotParamOut.MinY PlotParamOut.MaxY];%[PlotParamOut.MinY PlotParamOut.MaxY]
@@ -263,15 +248,16 @@ if ishandle(haxes)
 end
 
 %% update the plotted field stored in parent figure
-
-FigData=get(hfig,'UserData');
-if strcmp(get(hfig,'tag'),'view_field')
-    set(hfig,'UserData',[]); % refresh user data in view_field (set by civ/TestCiv )
-end
-tagaxes=get(haxes,'tag');% tag of the current plot axis
-if isfield(FigData,tagaxes)
-    FigData.(tagaxes)=Data;
-    set(hfig,'UserData',FigData)
+if ~isempty(index_2D)|| ~isempty(index_1D)
+    FigData=get(hfig,'UserData');
+%     if strcmp(get(hfig,'tag'),'view_field')
+%         set(hfig,'UserData',[]); % refresh user data in view_field (set by civ/TestCiv )
+%     end
+    tagaxes=get(haxes,'tag');% tag of the current plot axis
+    if isfield(FigData,tagaxes)
+        FigData.(tagaxes)=Data;
+        set(hfig,'UserData',FigData)
+    end
 end
 
 %-------------------------------------------------------------------
@@ -279,6 +265,7 @@ function errormsg=plot_text(FieldData,CellVarIndex,VarTypeCell,htext)
 %-------------------------------------------------------------------
 errormsg=[];
 txt_cell={};
+Data={};
 for icell=1:length(CellVarIndex)
     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list data.ListVarName
     for ivar=1:length(VarIndex)
@@ -293,8 +280,9 @@ for icell=1:length(CellVarIndex)
         if ~checkancillary% does not display variables with attribute '.Role=ancillary'
             VarName=FieldData.ListVarName{VarIndex(ivar)};
             VarValue=FieldData.(VarName);
+            Data =[Data [{VarName}; num2cell(VarValue)]];
             if size(VarValue,1)~=1
-                VarValue=VarValue';
+                VarValue=VarValue';% put the different values on a line
             end
             if size(VarValue,1)==1
             txt=[VarName '=' num2str(VarValue)];
@@ -303,8 +291,15 @@ for icell=1:length(CellVarIndex)
         end
     end
 end
-set(htext,'String',txt_cell)
-set(htext,'UserData',txt_cell)% for storage during mouse display
+if strcmp(get(htext,'Type'),'uitable')
+    get(htext,'ColumnName')
+    set(htext,'ColumnName',Data(1,:))
+    set(htext,'Data',Data(2:end,:))
+else
+    set(htext,'String',txt_cell)
+    set(htext,'UserData',txt_cell)% for storage during mouse display
+end
+
 
 %-------------------------------------------------------------------
 function CoordinatesOut=plot_profile(data,CellVarIndex,VarType,haxes,Coordinates)
@@ -498,12 +493,12 @@ else
 end
 
 %% determine plot aspect ratio
-if isequal(Coordinates.CheckFixAspectRatio,1)&&isfield(Coordinates,'AspectRatio')
+if isfield(Coordinates,'CheckFixAspectRatio') && isequal(Coordinates.CheckFixAspectRatio,1)&&isfield(Coordinates,'AspectRatio')
     set(haxes,'DataAspectRatioMode','manual')
     set(haxes,'DataAspectRatio',[Coordinates.AspectRatio 1 1])
 else
     set(haxes,'DataAspectRatioMode','auto')%automatic aspect ratio
-    AspectRatio=get(haxes,'DataAspectRatio')
+    AspectRatio=get(haxes,'DataAspectRatio');
     CoordinatesOut.AspectRatio=AspectRatio(1)/AspectRatio(2);
 end
 
@@ -823,7 +818,7 @@ if test_ima
             if isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
                 set(haxes,'DataAspectRatioMode','manual')
                 if isfield(PlotParam.Coordinates,'AspectRatio')
-                    set(haxes,'DataAspectRatio',[PlotParam.Coordinates.AspectRatio PlotParam.Coordinates.AspectRatio PlotParam.Coordinates.AspectRatio])
+                    set(haxes,'DataAspectRatio',[PlotParam.Coordinates.AspectRatio 1 1])
                 else
                     set(haxes,'DataAspectRatio',[1 1 1])
                 end
@@ -886,10 +881,6 @@ if test_ima
             end
             % the function imagesc reset the axes 'DataAspectRatioMode'='auto', change if .CheckFixAspectRatio is
             % requested:
-            if isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
-                set(haxes,'DataAspectRatioMode','manual')
-                set(haxes,'DataAspectRatio',[1 1 1])
-            end
             set(hima,'Tag','ima')
             set(hima,'HitTest','off')
             set(haxes,'Tag',tag);%preserve the axes tag (removed by image fct !!!)
@@ -905,6 +896,7 @@ if test_ima
             set(hima,'XData',AX);
             set(hima,'YData',AY);
         end
+
         % set the transparency to 0.5 if vectors are also plotted
         if isfield(PlotParam.Scalar,'Opacity')&& ~isempty(PlotParam.Scalar.Opacity)
             set(hima,'AlphaData',PlotParam.Scalar.Opacity)
@@ -1128,6 +1120,14 @@ if ~isempty(Data)
     PlotParamOut.Coordinates.x_units=x_units;
     PlotParamOut.Coordinates.y_units=y_units;
 end
+        if isfield(PlotParam,'Coordinates') && isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
+            set(haxes,'DataAspectRatioMode','manual')
+            if isfield(PlotParam.Coordinates,'AspectRatio')
+                set(haxes,'DataAspectRatio',[PlotParam.Coordinates.AspectRatio 1 1])
+            end
+        else
+            set(haxes,'DataAspectRatioMode','auto')
+        end
 %-------------------------------------------------------------------
 % --- function for plotting vectors
 %INPUT:

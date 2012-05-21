@@ -59,8 +59,14 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     PlotData=get(AxeData.CurrentObject,'UserData');%get data attached to the current projection object  
     IndexObj=PlotData.IndexObj;
     ObjectData=UvData.Object{IndexObj};    
-    ObjectData.enable_plot=1;
-    
+%     ObjectData.enable_plot=1;
+    if strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')
+        NbDefPoint=1;  
+    elseif strcmp(ObjectData.Type,'line')|| strcmp(ObjectData.Type,'plane');
+        NbDefPoint=2; 
+    else
+         NbDefPoint=3;
+    end
     % ending translation
     if isequal(AxeData.Drawing,'translate')
         XYData=AxeData.CurrentOrigin;
@@ -77,49 +83,41 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
         
     %creating object   
     else   
-        if strcmp(ObjectData.Type,'line')||strcmp(ObjectData.Type,'polyline')||...
-                strcmp(ObjectData.Type,'polygon')||strcmp(ObjectData.Type,'points')
-            if isfield(AxeData,'ObjectCoord') && size(AxeData.ObjectCoord,2)==3
-              xy(1,3)=AxeData.ObjectCoord(1,3); % z coordinate of the mouse: to generalise ...
-            else
-                 xy(1,3)=0; % z coordinate set to 0 by default
-            end
-            if ~isequal(ObjectData.Coord,xy(1,:))
-                ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordiantes marked by the mouse to the eobject
-            end
-        elseif isequal(ObjectData.Type,'rectangle')||isequal(ObjectData.Type,'ellipse')||isequal(ObjectData.Type,'volume')
-            XYData=AxeData.CurrentOrigin;
-            ObjectData.Coord(1,1)=(xy(1,1)+XYData(1))/2;%origin rectangle, x coordinate
-            ObjectData.Coord(1,2)=(xy(1,2)+XYData(2))/2;
-            ObjectData.RangeX=abs(xy(1,1)-XYData(1))/2;%rectangle width
-            ObjectData.RangeY=abs(xy(1,2)-XYData(2))/2;%rectangle height
-        elseif isequal(ObjectData.Type,'plane') %case of 'plane'
-            DX=(xy(1,1)-ObjectData.Coord(1,1));
-            DY=(xy(1,2)-ObjectData.Coord(1,2));
-            ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle width
-            if isfield(ObjectData,'RangeX')
-                XMax=sqrt(DX*DX+DY*DY);
-                if XMax>max(ObjectData.RangeX)
-                    ObjectData.RangeX=[min(ObjectData.RangeX) XMax];
+        switch ObjectData.Type
+            case {'line'}
+                if isfield(AxeData,'ObjectCoord') && size(AxeData.ObjectCoord,2)==3
+                    xy(1,3)=AxeData.ObjectCoord(1,3); % z coordinate of the mouse: to generalise ...
+                else
+                    xy(1,3)=0; % z coordinate set to 0 by default
                 end
-            end
+%                 if ~isequal(ObjectData.Coord,xy(1,:))
+                     if ~isequal(ObjectData.Coord(end,1:2),xy(1,1:2))
+                    ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the second point of the line if different from the first one
+                     end
+%                 end
+            case {'rectangle','ellipse','volume'}
+                XYData=AxeData.CurrentOrigin;
+                ObjectData.Coord(1,1)=(xy(1,1)+XYData(1))/2;%origin rectangle, x coordinate
+                ObjectData.Coord(1,2)=(xy(1,2)+XYData(2))/2;
+                ObjectData.RangeX=abs(xy(1,1)-XYData(1))/2;%rectangle width
+                ObjectData.RangeY=abs(xy(1,2)-XYData(2))/2;%rectangle height
+            case 'plane' %case of 'plane'
+                DX=(xy(1,1)-ObjectData.Coord(1,1));
+                DY=(xy(1,2)-ObjectData.Coord(1,2));
+                ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle width
+                if isfield(ObjectData,'RangeX')
+                    XMax=sqrt(DX*DX+DY*DY);
+                    if XMax>max(ObjectData.RangeX)
+                        ObjectData.RangeX=[min(ObjectData.RangeX) XMax];
+                    end
+                end
         end
-    end
-    if strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')
-        NbDefPoint=1;  
-    elseif strcmp(ObjectData.Type,'line')|| strcmp(ObjectData.Type,'plane');
-        NbDefPoint=2; 
-    else
-         NbDefPoint=3;
     end
     
     %show object coordinates in the GUI set_object
     h_set_object=findobj(allchild(0),'Tag','set_object');
     hh_set_object=guidata(h_set_object);
     set(hh_set_object.Coord,'Data',ObjectData.Coord);
-%     set(hh_set_object.XObject,'String',num2str(ObjectData.Coord(:,1),4)); 
-%     set(hh_set_object.YObject,'String',num2str(ObjectData.Coord(:,2),4)); 
-%     set(hh_set_object.ZObject,'String',num2str(ObjectData.Coord(:,3),4));
     if strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')
         set(hh_set_object.num_RangeX_2,'String',num2str(ObjectData.RangeX,4));
         set(hh_set_object.num_RangeY_2,'String',num2str(ObjectData.RangeY,4));
@@ -127,10 +125,10 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     if NbDefPoint<=2 || isequal(get(currentfig,'SelectionType'),'alt') ||...
               strcmp(AxeData.Drawing,'translate') || strcmp(AxeData.Drawing,'deform');%stop drawing
         AxeData.CurrentOrigin=[]; %suppress the current origin
-       if isequal(ObjectData.Type,'line') && size(ObjectData.Coord,1)<=1
+       if isequal(ObjectData.Type,'line') && size(ObjectData.Coord,1)>=2
            AxeData.Drawing='off';
            set(currentaxes,'UserData',AxeData);
-            return % line needs at leqst two points
+%             return % line needs at leqst two points
        end
        if  ~isempty(ObjectData)
 %              testmask=0;
@@ -152,18 +150,39 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
             ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
             if ~isempty(ProjData)
                 if strcmp(tagfig,'uvmat')% uvmat plot selected, projection plot seen in view_field
-                    hview_field=findobj(allchild(0),'tag','view_field');
+                     hview_field=findobj(allchild(0),'tag','view_field');
                     if isempty(hview_field)
-                        hview_field=view_field(ProjData);
+                        hview_field=view_field(ProjData); %open the view_field GUI for plot
                     else
-                       hhview_field=guidata(hview_field);
-                       [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%update an existing field plot
+                        hhview_field=guidata(hview_field);
+                        [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%update an existing  plot in view_field
                         write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
                     end
                     ViewFieldData=get(hview_field,'UserData');
-                    ViewFieldData.axes3=ProjData;
-                    set(hview_field,'UserData',ViewFieldData)
- 
+%                     ViewFieldData.axes3=ProjData;
+                    haxes=findobj(hview_field,'tag','axes3');
+                    if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Coordinates)% case of no plot display (pure text table)
+                        h_TableDisplay=findobj(hview_field,'tag','TableDisplay');
+                        pos_table=get(h_TableDisplay,'Position');
+                        pos=get(hview_field,'Position');
+                        set(hview_field,'Position',[pos(1)+pos(3)-pos_table(3) pos(2)+pos(4)-pos_table(4) pos_table(3) pos_table(4)])
+                        drawnow
+                        set(hview_field,'UserData',ViewFieldData);% restore the previously stored GUI position after GUI resizing
+                    else
+                        set(hview_field,'Position',ViewFieldData.GUISize)
+                    end
+                    
+%                     Data=get(hview_field,'UserData');
+%                     if isempty(hview_field)
+%                         hview_field=view_field(ProjData);
+%                     else
+%                        hhview_field=guidata(hview_field);
+%                        [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%update an existing field plot
+%                         write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
+%                     end
+%                     ViewFieldData=get(hview_field,'UserData');
+%                     ViewFieldData.axes3=ProjData;
+%                     set(hview_field,'UserData',ViewFieldData)
                 else
                     UvData.axes3=ProjData;
                     [PlotType,PlotParam]=plot_field(ProjData,hhuvmat.axes3,read_GUI(hhuvmat));%update an existing field plot
