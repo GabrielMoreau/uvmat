@@ -28,23 +28,21 @@ if ~exist('handles','var')
     return
 end
 FigData=get(hObject,'UserData');
-
 if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is stored in UserData, its parent is the plotting axes of the rectangle
-    currentfig=get(get(FigData,'parent'),'parent');
+    CurrentFig=get(get(FigData,'parent'),'parent');
 else
-    currentfig=hObject;%usual plot
+    CurrentFig=hObject;%usual plot
 end
-hhcurrentfig=guidata(currentfig);
-test_zoom=get(hhcurrentfig.CheckZoom,'Value');%test for zoom activated on the current figure
+hhCurrentFig=guidata(CurrentFig);%handles of the elements in the GUI containing the current figure (uvmat or view_field)
+test_zoom=get(hhCurrentFig.CheckZoom,'Value');%test for zoom activated on the current figure
 test_draw=0;%test for mouse drawing of object, =0 by default
 test_object=0; %test for object editing or creation 
 test_edit_object=0;% edit test for mouse shap: an arrow
 test_zoom_draw=0; % test for zoom drawing 
 test_ruler=0;%test for active ruler 
-% test_piv=0;% test for PIV correlation display
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle
 if ~isempty(huvmat)
-    hhuvmat=guidata(huvmat);
+    hhuvmat=guidata(huvmat);%handles of the elements in uvma
     test_edit_object=get(hhuvmat.edit_object,'Value');
     test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');
 end
@@ -58,7 +56,7 @@ if isfield(FigData,'CivHandle')
     test_piv=1;
 end
 
-%find the current axe 'haxes' and display the current mouse position or uicontrol tag
+%find the current axe 'CurrentAxes' and display the current mouse position or uicontrol tag
 text_displ_1='';
 text_displ_2='';
 text_displ_3='';
@@ -73,8 +71,8 @@ pointershape='arrow';% default pointer is an arrow
 xy_fig=get(hObject,'CurrentPoint');% current point of the current figure (gcbo)
 hchild=get(hObject,'Children');%handles of all objects in the current figure
 
-%% loop on all the objects in the current figure and detect whether the mouse is over a plot  axes
-haxes=[];
+%% loop on all the objects in the current figure, detect whether the mouse is over a plot  axes
+CurrentAxes=[];
 for ichild=1:length(hchild)
     obj_pos=get(hchild(ichild),'Position');
     if numel(obj_pos)~=4% for some versions of matlab a uicontextmenu appears
@@ -84,9 +82,9 @@ for ichild=1:length(hchild)
         htype=get(hchild(ichild),'Type');%type of the crrent child
         %if the mouse is over an axis, look at the data
         if strcmp(htype,'axes')
-            haxes=hchild(ichild);
-            xy=get(haxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
-            AxeData=get(haxes,'UserData');% data attached to the axis
+            CurrentAxes=hchild(ichild);
+            xy=get(CurrentAxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
+            AxeData=get(CurrentAxes,'UserData');% data attached to the axis
             if isfield(AxeData,'Drawing')&& ~isempty(AxeData.Drawing)
                 test_draw=~isequal(AxeData.Drawing,'off');%=1 if mouse drawing of object is active
             end
@@ -95,8 +93,8 @@ for ichild=1:length(hchild)
             if ~test_edit_object && ~test_zoom_draw && ~test_ruler
                 pointershape='crosshair';%set pointer with cross shape (default when mouse is over an axis)
             end
-            FigData=get(currentfig,'UserData');
-            tagaxes=get(haxes,'tag');
+            FigData=get(CurrentFig,'UserData');
+            tagaxes=get(CurrentAxes,'tag');
             if isfield(FigData,tagaxes)
                 eval(['Field=FigData.' tagaxes ';'])
                 if isfield(Field,'ListVarName')
@@ -116,14 +114,14 @@ for ichild=1:length(hchild)
                                 flag_vec=(X<(xy(1,1)+Field.Mesh/3) & X>(xy(1,1)-Field.Mesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
                                     (Y<(xy(1,2)+Field.Mesh/3) & Y>(xy(1,2)-Field.Mesh/3));%f
                                 ivec=find(flag_vec,1);% search the (first) selected vector index ivec
-                                hhh=findobj(haxes,'Tag','vector_marker');
+                                hhh=findobj(CurrentAxes,'Tag','vector_marker');
                                 if ~isempty(ivec)
                                     % mark the vectors with a circle in the absence of other operations
                                     if ~test_object && ~test_edit_object && ~test_ruler
                                         pointershape='arrow'; %mouse indicates  the detection of a vector
                                         if isempty(hhh)
-                                            set(0,'CurrentFigure',currentfig)
-                                            set(currentfig,'CurrentAxes',haxes)
+                                            set(0,'CurrentFigure',CurrentFig)
+                                            set(CurrentFig,'CurrentAxes',CurrentAxes)
                                             rectangle('Curvature',[1 1],...
                                                 'Position',[X(ivec)-Field.Mesh/2 Y(ivec)-Field.Mesh/2 Field.Mesh Field.Mesh],'EdgeColor','m',...
                                                 'LineStyle','-','Tag','vector_marker');
@@ -225,11 +223,11 @@ for ichild=1:length(hchild)
                         isy2=floor((par.Searchy-1)/2);
                         shiftx=par.Shiftx;
                         shifty=par.Shifty;     
-                        hhh=findobj(haxes,'Tag','PIV_box_marker');
-                        hhhh=findobj(haxes,'Tag','PIV_search_marker');
+                        hhh=findobj(CurrentAxes,'Tag','PIV_box_marker');
+                        hhhh=findobj(CurrentAxes,'Tag','PIV_search_marker');
                         if isempty(hhh)
-                            set(0,'CurrentFigure',currentfig)
-                            set(currentfig,'CurrentAxes',haxes)
+                            set(0,'CurrentFigure',CurrentFig)
+                            set(CurrentFig,'CurrentAxes',CurrentAxes)
                             rectangle('Curvature',[0 0],...
                                 'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2],'EdgeColor','m',...
                                 'LineStyle','-','Tag','PIV_box_marker');
@@ -263,7 +261,7 @@ for ichild=1:length(hchild)
                                     AxeData.CurrentVector=line([0 Data.Civ1_U],[0 Data.Civ1_V],'Tag','vector');
                                    AxeData.TitleHandle=title(num2str(par.Grid));
                                     colorbar
-                                    set(haxes,'UserData',AxeData)
+                                    set(CurrentAxes,'UserData',AxeData)
                                     set(get(AxeData.CurrentCorrImage,'parent'),'YDir','normal')
                                 end
                             else
@@ -300,7 +298,7 @@ if test_zoom_draw
                 set(AxeData.CurrentRectZoom,'Position',rect);%update the rectangle position
             else
                 AxeData.CurrentRectZoom=rectangle('Position',rect,'LineStyle',':','Tag','rect_zoom');
-                set(haxes,'UserData',AxeData)
+                set(CurrentAxes,'UserData',AxeData)
             end
         end
    end
@@ -310,53 +308,56 @@ end
 %%%%%%%%%%%%%%%%%
 %% create or modify an object
 if ~isempty(huvmat) && test_object
+    UvData=get(huvmat,'UserData');
     PlotData=get(AxeData.CurrentObject,'UserData');
-    huvmat=findobj(allchild(0),'Name','uvmat');%find the uvmat interface handle
-    if ~isempty(huvmat)
-        UvData=get(huvmat,'UserData');
-        if ~isfield(PlotData,'IndexObj')
-             return
-        end
-        ObjectData=UvData.Object{PlotData.IndexObj};
-        XYData=AxeData.CurrentOrigin;
-        if isequal(AxeData.Drawing,'create') && isfield(AxeData,'CurrentOrigin') && ~isempty(AxeData.CurrentOrigin)
-           if strcmp(ObjectData.Type,'line')||strcmp(ObjectData.Type,'polyline')||strcmp(ObjectData.Type,'polygon')||strcmp(ObjectData.Type,'points')
-              ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];
-             % ObjectData.Coord(end,:)=xy(1,:);
-           elseif strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')||strcmp(ObjectData.Type,'volume')
-              ObjectData.Coord(1,1)=(xy(1,1)+XYData(1))/2;%origin rectangle, x coordinate
-              ObjectData.Coord(1,2)=(xy(1,2)+XYData(2))/2;
-              ObjectData.RangeX=abs(xy(1,1)-XYData(1))/2;%rectangle width
-              ObjectData.RangeY=abs(xy(1,2)-XYData(2))/2;%rectangle height
-           elseif isequal(ObjectData.Type,'plane') %case of 'plane'
-                DX=(xy(1,1)-ObjectData.Coord(1,1));
-                DY=(xy(1,2)-ObjectData.Coord(1,2));
-                ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle widt
-                if isfield(ObjectData,'RangeX')
-                    XMax=sqrt(DX*DX+DY*DY);
-                    if XMax>max(ObjectData.RangeX)
-                        ObjectData.RangeX=[min(ObjectData.RangeX) XMax];
-                    end
-                end
-           end
-            plot_object(ObjectData,[],AxeData.CurrentObject,'m');
-            pointershape='crosshair';
-        elseif  isequal(AxeData.Drawing,'translate')
-            DX=xy(1,1)-XYData(1);%translation from initial position
-            DY=xy(1,2)-XYData(2);
-            ObjectData.Coord(:,1)=ObjectData.Coord(:,1)+DX;
-            ObjectData.Coord(:,2)=ObjectData.Coord(:,2)+DY;
-            plot_object(ObjectData,[],AxeData.CurrentObject,'m');
-            pointershape='fleur';
-        elseif  isequal(AxeData.Drawing,'deform')
-            ind_move=AxeData.CurrentIndex;
-            ObjectData.Coord(ind_move,1)=xy(1,1);
-            ObjectData.Coord(ind_move,2)=xy(1,2);
-            plot_object(ObjectData,[],AxeData.CurrentObject,'m');
-            pointershape='circle';
-        end
+    if ~isfield(PlotData,'IndexObj')
+        return
     end
-end    
+    ObjectData=UvData.Object{PlotData.IndexObj};
+    ProjObject=[];% object (plane) whose projection is represented on the current axes
+    if isequal(hObject,huvmat)% if the mouse ifs over the GUI uvmat
+        ProjObject=UvData.Object{get(hhuvmat.ListObject_1,'Value')};
+    else
+        ProjObject=UvData.Object{get(hhuvmat.ListObject,'Value')};
+    end
+    XYData=AxeData.CurrentOrigin;
+    if isequal(AxeData.Drawing,'create') && isfield(AxeData,'CurrentOrigin') && ~isempty(AxeData.CurrentOrigin)
+        if strcmp(ObjectData.Type,'line')||strcmp(ObjectData.Type,'polyline')||strcmp(ObjectData.Type,'polygon')||strcmp(ObjectData.Type,'points')
+            ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];
+            % ObjectData.Coord(end,:)=xy(1,:);
+        elseif strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')||strcmp(ObjectData.Type,'volume')
+            ObjectData.Coord(1,1)=(xy(1,1)+XYData(1))/2;%origin rectangle, x coordinate
+            ObjectData.Coord(1,2)=(xy(1,2)+XYData(2))/2;
+            ObjectData.RangeX=abs(xy(1,1)-XYData(1))/2;%rectangle width
+            ObjectData.RangeY=abs(xy(1,2)-XYData(2))/2;%rectangle height
+        elseif isequal(ObjectData.Type,'plane') %case of 'plane'
+            DX=(xy(1,1)-ObjectData.Coord(1,1));
+            DY=(xy(1,2)-ObjectData.Coord(1,2));
+            ObjectData.Phi=(angle(DX+i*DY))*180/pi;%rectangle widt
+            if isfield(ObjectData,'RangeX')
+                XMax=sqrt(DX*DX+DY*DY);
+                if XMax>max(ObjectData.RangeX)
+                    ObjectData.RangeX=[min(ObjectData.RangeX) XMax];
+                end
+            end
+        end
+        plot_object(ObjectData,ProjObject,AxeData.CurrentObject,'m');
+        pointershape='crosshair';
+    elseif  isequal(AxeData.Drawing,'translate')
+        DX=xy(1,1)-XYData(1);%translation from initial position
+        DY=xy(1,2)-XYData(2);
+        ObjectData.Coord(:,1)=ObjectData.Coord(:,1)+DX;
+        ObjectData.Coord(:,2)=ObjectData.Coord(:,2)+DY;
+        plot_object(ObjectData,ProjObject,AxeData.CurrentObject,'m');
+        pointershape='fleur';
+    elseif  isequal(AxeData.Drawing,'deform')
+        ind_move=AxeData.CurrentIndex;
+        ObjectData.Coord(ind_move,1)=xy(1,1);
+        ObjectData.Coord(ind_move,2)=xy(1,2);
+        plot_object(ObjectData,ProjObject,AxeData.CurrentObject,'m');
+        pointershape='circle';
+    end
+end
 
 %% detect calibration points if the GUI geometry_calib is opened
 h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
@@ -370,11 +371,11 @@ if ~test_zoom && ~isempty(h_geometry_calib)
         if size(data.Coord,2)>=5
             XCoord=(data.Coord(:,4));
             YCoord=(data.Coord(:,5));
-            xy=get(haxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
+            xy=get(CurrentAxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
             if ~isempty(xy)
-                xlim=get(haxes,'XLim');
+                xlim=get(CurrentAxes,'XLim');
                 ind_range_x=abs((xlim(2)-xlim(1))/50);
-                ylim=get(haxes,'YLim');
+                ylim=get(CurrentAxes,'YLim');
                 ind_range_y=abs((ylim(2)-ylim(1))/50);
                 ind_range=sqrt(ind_range_x*ind_range_y);
                 index_point=find((XCoord<xy(1,1)+ind_range) & (XCoord>xy(1,1)-ind_range) & ...%flagx=1 for the vectors with x position selected by the mouse
@@ -413,4 +414,4 @@ if test_ruler && isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'ruler')
 end
 
 %% update the mouse pointer
-set(currentfig,'Pointer',pointershape);
+set(CurrentFig,'Pointer',pointershape);

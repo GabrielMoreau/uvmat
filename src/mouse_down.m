@@ -310,16 +310,14 @@ if  test_create && ~isempty(xy) %&& ~(isfield(AxeData,'Drawing')&& isequal(AxeDa
         sethandles=guidata(hset_object);% handles of the elements in the GUI set_object
         ObjectData=read_GUI(hset_object); %read object parameters in the GUI set_object
         IndexObj=length(UvData.Object);
-        %initiate a new object
-        if isempty(UvData.Object{IndexObj});
+        %initiate a new object (no data .Coord yet recorded)
+        if ~isfield(UvData.Object{IndexObj},'Coord');
             ObjectData.Coord=[];
             ObjectNameNew=ObjectData.Name;
             if isempty(ObjectNameNew)
                 ObjectNameNew=ObjectData.Type;
             end
-            % add an index to the object name if the proposed name already exists
-            
-            
+            % add an index to the object name if the proposed name already exists          
             vers=0;% index of the name
             ListObject=get(hhuvmat.ListObject,'String');
             detectname=1;
@@ -344,31 +342,16 @@ if  test_create && ~isempty(xy) %&& ~(isfield(AxeData,'Drawing')&& isequal(AxeDa
             set(hhuvmat.ListObject,'Value',IndexObj)
             set(hhuvmat.ViewObject,'Value',1)
         end
-        % ObjectData.Coord=[]; %reset previous object coordinates
-        %         ObjectData.Coord(1,1)=xy(1,1); % the object first coordinate is set by the mouse position
-        %         ObjectData.Coord(1,2)=xy(1,2);
-        %         if isfield(AxeData,'ObjectCoord') && size(AxeData.ObjectCoord,2)==3
-        %             ObjectData.Coord(1,3)=AxeData.ObjectCoord(1,3); %generaliser au cas avec angle
-        %         end
         ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordinates marked by the mouse to the object
-        %                 if isfield(AxeData,'ObjectCoord') && size(AxeData.ObjectCoord,2)==3
-        %                     xy(1,3)=AxeData.ObjectCoord(1,3); % z coordinate of the mouse: to generalise ...
-        %                 else
-        %                     xy(1,3)=0; % z coordinate set to 0 by default
-        %                 end
-        %                 if ~isequal(ObjectData.Coord,xy(1,:))
-        %                     ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordinates marked by the mouse to the object
-        %                 end
-        
-        AxeData.CurrentObject=plot_object(ObjectData,[],haxes,'m');%draw the object and its handle becomes AxeData.CurrentObject
-        %         if isfield(UvData,'Object')
-        %             IndexObj=length(UvData.Object)+1;% add the object as index IndexObj on the list of the interface
-        %         else
-        %             IndexObj=2;% the first object is used for uvmat display or blank
-        %         end
+        hobject=UvData.Object{IndexObj}.DisplayHandle.(fig_tag);
+        if isempty(hobject)
+            hobject=haxes;
+        end
+        ProjObject=UvData.Object{get(hhuvmat.ListObject_1,'Value')};
+        AxeData.CurrentObject=plot_object(ObjectData,ProjObject,hobject,'m');%draw the object and its handle becomes AxeData.CurrentObject
         UvData.Object{IndexObj}=ObjectData;      
-        UvData.Object{IndexObj}.DisplayHandle_uvmat=AxeData.CurrentObject;      
-        UvData.Object{IndexObj}.DisplayHandle_view_field=AxeData.CurrentObject;
+        UvData.Object{IndexObj}.DisplayHandle.(fig_tag)=AxeData.CurrentObject;% attribute the current plot object handle to the Object      
+        %UvData.Object{IndexObj}.DisplayHandle_view_field=AxeData.CurrentObject;
         set(huvmat,'UserData',UvData)
         PlotData=get(AxeData.CurrentObject,'UserData');
         PlotData.IndexObj=IndexObj;

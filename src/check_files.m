@@ -107,7 +107,6 @@ list_fct={...
     'translate_points';...% associated with GUI translate_points.fig to display translation parameters
     'translate_points.fig';...
     'update_imadoc';...  %update the ImaDoc xml file
-    'update_obj';... update the object representation graph and its projection field, record it in the uvmat interface
     'update_waitbar';... update the waitbar display, used for ACTION functions in the GUI 'series'
     'uvmat';...% master function for file scanning and visualisation of 2D fields
     'uvmat.fig';...  %interface for uvmat

@@ -63,29 +63,11 @@ handles.output = handles.view_field;
 % Update handles structure
 guidata(hObject, handles);
 
-dircur=pwd; %current working directory
-dir_opening=dircur;
-
-% set the position of colorbar and ancillary GUIs:
-set(hObject,'Units','Normalized')
-handles_mouse=handles;
-huvmat=findobj(allchild(0),'Name','uvmat');
-if ~isempty(huvmat)
-    hhuvmat=guidata(huvmat);
-    handles_mouse.edit=hhuvmat.edit_object;
-    pos_view_field=get(hObject,'Position');
-    pos_uvmat=get(huvmat,'Position');
-    pos_view_field(1)=pos_uvmat(1)+pos_uvmat(3)/2;
-    pos_view_field(2)=pos_uvmat(2)-pos_uvmat(3)/4;
-%      pos_view_field(3:4)=pos_uvmat(3:4);
-    set(hObject,'Position',pos_view_field)
-end
-
 %functions for the mouse and keyboard
-set(hObject,'KeyPressFcn',{'keyboard_callback',handles_mouse})%set keyboard action function
-set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles_mouse})%set mouse action functio
+set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
+set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles})%set mouse action functio
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
-set(hObject,'WindowButtonUpFcn',{'mouse_up',handles_mouse}) 
+set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
 set(hObject,'DeleteFcn',{@closefcn})%
 set(hObject,'ResizeFcn',{@ResizeFcn,handles})%
 ViewFieldData.axes3=[];%initiates the record of the current field (will be updated by plot_field)
@@ -102,6 +84,13 @@ if exist('Field','var')
     end
     write_plot_param(handles,PlotParamOut);% update the display of the plotting parameters
 end
+
+%put the GUI on the lower right of the sceen
+pos_view_field=get(hObject,'Position');
+ScreenSize=get(0,'ScreenSize');
+pos_view_field(1)=ScreenSize(1)+ScreenSize(3)-pos_view_field(3);
+pos_view_field(2)=ScreenSize(2);
+set(hObject,'Position',pos_view_field)
 
 %------------------------------------------------------------------------
 %--- activated when resizing the GUI view_field
@@ -826,3 +815,10 @@ function num_ColCode2_Callback(hObject, eventdata, handles)
 
 
 
+% 
+% 
+% % --- Executes when view_field is resized.
+% function view_field_ResizeFcn(hObject, eventdata, handles)
+% % hObject    handle to view_field (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)

@@ -413,7 +413,7 @@ function num_DZ_Callback(hObject, eventdata, handles)
 
 
 %------------------------------------------------------------------------
-% --- Executes on button press in PLOT: PLOT the defined object and its projected field
+% --- Executes on button press in PLOT: refresh the current object , plot the object and its projected field
 function PLOT_Callback(hObject, eventdata, handles)
 
 %% read the object parameters in the GUI set_object
@@ -429,18 +429,15 @@ if ~isempty(checknan)
 end
 ObjectName=ObjectData.Name;%name of the current object defined in set_object
 if isempty(ObjectName)
-     ObjectName=ObjectData.Type;
+     ObjectName=ObjectData.Type;% name the object by the object type type by default
 end
 
-%% read the object selection in the GUI uvmat
+%% read the current object selection in the GUI uvmat
 huvmat=findobj('tag','uvmat');%find the current uvmat GUI handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
 hhuvmat=guidata(huvmat);%handles of the objects children of the  GUI uvmat
-ListObject=get(hhuvmat.ListObject_1,'String');% list of objects displayed in uvmat
-IndexObj(1)=get(hhuvmat.ListObject_1,'Value');% index of the selected object for display in uvmat
-if get(hhuvmat.ViewObject,'Value') && get(hhuvmat.edit_object,'Value')
-    IndexObj(2)=get(hhuvmat.ListObject,'Value');% index of the object, possibly selected for display in view_field 
-end
+ListObject=get(hhuvmat.ListObject,'String');% list of objects displayed in uvmat
+IndexObj=get(hhuvmat.ListObject,'Value');% index of the selected object for display in uvmat
 if ~get(hhuvmat.edit_object,'Value') %new object is being created
     detectname=1;
     ObjectNameNew=ObjectName;
@@ -460,37 +457,17 @@ if ~get(hhuvmat.edit_object,'Value') %new object is being created
     end
     ObjectName=ObjectNameNew;
     set(handles.Name,'String',ObjectName)% display the default name in set_object
-    IndexObj(2)=numel(ListObject)+1;% append an object to the list in uvmat
+    IndexObj=numel(ListObject)+1;% append an object to the list in uvmat
     set(hhuvmat.ListObject,'String',[ListObject;{ObjectName}]);%complement the object list
     set(hhuvmat.ListObject_1,'String',[ListObject;{ObjectName}]);%complement the object list
-    set(hhuvmat.ListObject,'Value',IndexObj(2))
+    set(hhuvmat.ListObject,'Value',IndexObj)
     set(hhuvmat.ViewObject,'Value',1)% indicate that the currently selected objected is viewed on set_object
-    UvData.Object{IndexObj(2)}=[];%initiate a new object (empty yet)
+    UvData.Object{IndexObj}=[];%initiate a new object (empty yet)
+    UvData.Object{IndexObj}.DisplayHandle.uvmat=hhuvmat.axes3; %axes taken as object display handle by defualt
 end
-
-%% naming the object
-% ListObject{IndexObj(end),1}=ObjectName;
-% set(hhuvmat.ListObject,'String',ListObject)
-% set(hhuvmat.ListObject_1,'String',ListObject)
-
-%% update the object plot 
-if IndexObj(end)<=length(UvData.Object) && isfield(UvData.Object{IndexObj(end)},'DisplayHandle_uvmat')% save the previous object graph handles
-    ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj(end)}.DisplayHandle_uvmat;
-else
-    ObjectData.DisplayHandle_uvmat=hhuvmat.axes3;%there is no object handle, than the axes handles is used as input
-end
-if isfield(UvData.Object{IndexObj(end)},'DisplayHandle_view_field')% save the previous object graph handles
-    ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj(end)}.DisplayHandle_view_field;
-else
-    ObjectData.DisplayHandle_view_field=[];
-end
-UvData.Object{IndexObj(end)}=ObjectData;%update the current object properties
-if numel(IndexObj)==2
-    UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));
-end
-set(huvmat,'UserData',UvData)
 
 %% plot the field projected on the object
+hview_field=[];%default
 if strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')||strcmp(ObjectData.ProjMode,'none')
     PlotType='text';
 else
@@ -499,7 +476,8 @@ else
         msgbox_uvmat('ERROR', errormsg)
         return
     end   
-    if numel(IndexObj)==1   % if only one object is selected, the projection is in uvmat
+    IndexObj_1=get(hhuvmat.ListObject_1,'Value')
+    if isequal(IndexObj_1,IndexObj) % if only one object is selected, the projection is in uvmat
         PlotType=plot_field(ProjData,hhuvmat.axes3,read_GUI(get(hhuvmat.axes3,'parent')));%update the current uvmat plot
     else  % if a second object is selected, the projection is in view_field, and this second object is selected
         hview_field=findobj(allchild(0),'tag','view_field');
@@ -524,6 +502,36 @@ else
         end
     end
 end
+
+%% update the object plot 
+% if IndexObj(end)<=length(UvData.Object) && isfield(UvData.Object{IndexObj(end)},'DisplayHandle')% save the previous object graph handles
+%     ObjectData.DisplayHandle.uvmat=UvData.Object{IndexObj(end)}.DisplayHandle.uvmat;
+% else
+%     ObjectData.DisplayHandle.uvmat=hhuvmat.axes3;%there is no object handle, than the axes handles is used as input
+% end
+% if isfield(UvData.Object{IndexObj},'DisplayHandle')% save the previous object graph handles
+%     ObjectData.DisplayHandle.view_field=UvData.Object{IndexObj(end)}.DisplayHandle.view_field;
+% else
+%     ObjectData.DisplayHandle.view_field=[];
+% end
+% UvData.Object{IndexObj}=ObjectData;%update the current object properties
+% if numel(IndexObj)==2
+hobject=UvData.Object{IndexObj}.DisplayHandle.uvmat;
+if isempty(hobject)
+    hobject=hhuvmat.axes3;
+end
+UvData.Object{IndexObj}.DisplayHandle.uvmat=plot_object(ObjectData,[],hobject,'m');%draw the object in uvmat
+if ~isempty(hview_field)
+    if isfield(UvData.Object{IndexObj}.DisplayHandle,'view_field')
+    hobject=UvData.Object{IndexObj}.DisplayHandle.view_field;
+    end
+    if isempty(hobject)
+        hobject=haxes;
+    end
+    UvData.Object{IndexObj}.DisplayHandle.view_field=plot_object(ObjectData,[],hobject,'m');%draw the object in view_field
+    %     UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));
+end
+set(huvmat,'UserData',UvData)
 
 %% update the GUI uvmat
 hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI

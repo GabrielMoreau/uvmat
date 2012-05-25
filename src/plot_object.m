@@ -1,13 +1,13 @@
 %'plot_object': draws a projection object (points, line, plane...)
 %-------------------------------------------------------------------
-% function [ObjectData_out,hh]=plot_object(ObjectData,hplot,col)
+% function hh=plot_object(ObjectData,ProjObject,hplot,col)
 %
 %OUTPUT
 %             hh: handles of the graphic object (core part)
 %
 %INPUT:
 %
-% ObjectDataIn: structure representing the object properties:
+% ObjectData: structure representing the object properties:
 %        .Type : style of projection object
 %        .Coord: set of coordinates defining the object position;
 %        .ProjMode=type of projection ;
@@ -35,26 +35,23 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [hh]=plot_object(ObjectDataIn,ProjObject,hplot,col)
+function [hh]=plot_object(ObjectData,ProjObject,hplot,col)
+
 %% default output
 hh=[];%default output
-if ~isfield(ObjectDataIn,'Type')|| isequal(ProjObject,ObjectDataIn)% object representation does not appear in its own projection plot
-    return
-end
-if ~isfield(ProjObject,'Type') 
-    ObjectData=ObjectDataIn;
-elseif isequal(ProjObject.Type,'plane')
-    ObjectData=ObjectDataIn;% TODO: modify take into account rotation of axis
-else
-    return % object representation only  available in a plane
-end
-if ~isfield(ObjectData,'Type')||isempty(ObjectData.Type)||~ischar(ObjectData.Type)
-    msgbox_uvmat('ERROR','undefined ObjectData.Type in plot_object.m')
-    return
-end
-if ~isfield(ObjectData,'Type')||isempty(ObjectData.Type)||~ischar(ObjectData.Type)
-    msgbox_uvmat('ERROR','undefined ObjectData.Type in plot_object.m')
-    return
+% object representation is canceled if the field is not projected on a plane or is the same as the represented object 
+if ~isfield(ObjectData,'Type')|| isequal(ProjObject,ObjectData)|| ~strcmp(ProjObject.Type,'plane')
+    if ~isempty(hplot) && ishandle(hplot) && ~strcmp(get(hplot,'Type'),'axes')
+        ObjectPlotData=get(hplot,'UserData');
+        if isfield(ObjectPlotData,'SubObject') & ishandle(ObjectPlotData.SubObject)
+            delete(ObjectPlotData.SubObject);
+        end
+        if isfield(ObjectPlotData,'DeformPoint') & ishandle(ObjectPlotData.DeformPoint)
+            delete(ObjectPlotData.DeformPoint);
+        end
+        delete(hplot)
+    end
+    return 
 end
 XMin=0;%default
 XMax=0;
@@ -73,15 +70,11 @@ if ishandle(hplot)
     elseif isequal(get(hplot,'Type'),'axes')% hplot is the handle of an axis 
         haxes=hplot;
         currentfig=get(hplot,'parent');
-%         set(0,'CurrentFigure',currentfig)
-      
-%         set(currentfig,'CurrentAxes',haxes);
     elseif isequal(get(hplot,'Type'),'figure')% hplot is the handle of a figure 
         set(0,'CurrentFigure',hplot);%set the input figure as the current one
         haxes=findobj(hplot,'Type','axes');%look for axes in the figure
         haxes=haxes(1);
         currentfig=hplot;
-       % set(hplot,'CurrentAxes',haxes);%set the first found axis as the current one
     else
         currentfig=figure; %create new figure
         hplot=axes;%create new axes
@@ -102,20 +95,6 @@ end
 if ~isfield(ObjectData,'Coord')||isempty(ObjectData.Coord)
      ObjectData.Coord=[0 0 0];%default
 end
-% if ~isfield(ObjectData,'Phi')||isempty(ObjectData.Phi)
-%      ObjectData.Phi=0;%default
-% end
-% if ~isfield(ObjectData,'Range')
-%     ObjectData.Range(1,1)=0; %edfault
-% end
-% if size(ObjectData.Range,2)>=2
-%     YMax=ObjectData.Range(1,2);%default
-% end
-% if size(ObjectData.Range,2)>=2 & size(ObjectData.Range,1)>=2
-%     YMin=ObjectData.Range(2,2);
-% else
-%     YMin=0;
-% end
 if isfield(ObjectData,'RangeX') && ~isempty(ObjectData.RangeX)
     XMax=max(ObjectData.RangeX);
     XMin=min(ObjectData.RangeX);

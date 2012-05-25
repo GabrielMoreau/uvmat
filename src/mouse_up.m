@@ -58,7 +58,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
     PlotData=get(AxeData.CurrentObject,'UserData');%get data attached to the current projection object  
     IndexObj=PlotData.IndexObj;
-    ObjectData=UvData.Object{IndexObj};    
+    ObjectData=UvData.Object{IndexObj};   
 %     ObjectData.enable_plot=1;
     if strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')
         NbDefPoint=1;  
@@ -138,13 +138,13 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
 %              end
 
             %% update the object representation
-            ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj}.DisplayHandle_uvmat;
-            ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj}.DisplayHandle_view_field;
-            UvData.Object{IndexObj}=ObjectData;%update the current object properties
-            hhuvmat=guidata(huvmat);
-            IndexObj_1=get(hhuvmat.ListObject_1,'Value');
-            IndexObj_2=get(hhuvmat.ListObject,'Value');
-            UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
+%             ObjectData.DisplayHandle_uvmat=UvData.Object{IndexObj}.DisplayHandle_uvmat;
+%             ObjectData.DisplayHandle_view_field=UvData.Object{IndexObj}.DisplayHandle_view_field;
+%             UvData.Object{IndexObj}=ObjectData;%update the current object properties
+%             hhuvmat=guidata(huvmat);
+%             IndexObj_1=get(hhuvmat.ListObject_1,'Value');
+%             IndexObj_2=get(hhuvmat.ListObject,'Value');
+%             UvData.Object=update_obj(UvData,IndexObj_1,IndexObj_2);
 
             %% plot the field projected on the object 
             ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
@@ -198,11 +198,11 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
             set(hhuvmat.MenuEditObject,'Enable','on');%
             set(hhuvmat.MenuEdit,'Enable','on');%
         end
-    else
+    end    
        AxeData.CurrentOrigin=[xy(1,1) xy(1,2)]; %the current point becomes the new current origin
        test_drawing=1;%allow continuation of drawing object
        UvData.Object{IndexObj}=ObjectData;
-    end
+%     end
     hother=findobj('Tag','deformpoint');%find all the deformpoints
     set(hother,'Color','b');%reset all the deformpoints in 'blue' 
 else

@@ -236,7 +236,9 @@ set(hObject,'WindowButtonUpFcn',{'mouse_up',handles})
 set(hObject,'DeleteFcn',{@closefcn})%
 
 %% refresh projection plane
-UvData.Object{1}.ProjMode='projection';%main plotting plane
+% UvData.Object{1}.ProjMode='projection';%main plotting plane
+% UvData.Object{1}.DisplayHandle.uvmat=handles.axes3;
+% UvData.Object{1}.DisplayHandle.view_field=[];
 set(handles.ListObject,'Value',1)% default: empty projection objectproj_field
 set(handles.ListObject,'String',{'plane'})
 set(handles.ListObject_1,'Value',1)% default: empty projection objectproj_field
@@ -2509,7 +2511,10 @@ elseif UvData.Field.Mesh/ord>=2
 else
     UvData.Field.Mesh=ord;
 end
-
+        UvData.Object{1}.Type='plane';%main plotting plane
+        UvData.Object{1}.ProjMode='projection';%main plotting plane
+        UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
+        UvData.Object{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
 
 %% 3D case (menuvolume)
 if NbDim==3% && UvData.NewSeries
@@ -2522,9 +2527,10 @@ if NbDim==3% && UvData.NewSeries
     end
     if test_set_object% reinitiate the GUI set_object
         delete_object(1);% delete the current projection object in the list UvData.Object, delete its graphic representations and update the list displayed in handles.ListObject and 2
-        UvData.Object{1}.Type='plane';%main plotting plane
-        UvData.Object{1}.ProjMode='projection';%main plotting plane
-        UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
+%         UvData.Object{1}.Type='plane';%main plotting plane
+%         UvData.Object{1}.ProjMode='projection';%main plotting plane
+%         UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
+%         UvData.Object{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
         UvData.Object{1}.NbDim=NbDim;%test for 3D objects
         UvData.Object{1}.RangeZ=UvData.Field.Mesh;%main plotting plane
         UvData.Object{1}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
@@ -3984,14 +3990,28 @@ write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 % --- Executes on selection change in ListObject_1.
 function ListObject_1_Callback(hObject, eventdata, handles)
-list_str=get(handles.ListObject_1,'String');
+list_str=get(handles.ListObject,'String');
 UvData=get(handles.uvmat,'UserData');
 ObjectData=UvData.Object{get(handles.ListObject_1,'Value')};
 
 %% update the projection plot on uvmat
-ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on UvData.Object{IndexObj(1)}
-plot_field(ProjData,handles.axes3,read_GUI(handles.uvmat));%read plotting parameters on the uvmat interfacPlotHandles);
-Object_out=update_obj(UvData,get(handles.ListObject_1,'Value'),[]);
+ProjData= proj_field(UvData.Field,ObjectData);%project the current input field on object ObjectData
+plot_field(ProjData,handles.axes3,read_GUI(handles.uvmat));% plot the projected field;
+%replot all the objects within the new projected field
+for IndexObj=1:numel(list_str)
+    IndexObj
+        hobject=UvData.Object{IndexObj}.DisplayHandle.uvmat
+        if isempty(hobject) || ~ishandle(hobject)
+            hobject=handles.axes3
+        end
+        if isequal(IndexObj,get(handles.ListObject,'Value'))
+            objectcolor='m'; %paint in magenta the currently selected object in ListObject
+        else
+            objectcolor='b';
+        end
+        UvData.Object{IndexObj}.DisplayHandle.uvmat=plot_object(UvData.Object{IndexObj},ObjectData,hobject,objectcolor);%draw the object in uvmat      
+end
+set(handles.uvmat,'UserData',UvData)
 
 %% display the object parameters if the GUI set_object is already opened
 if ~get(handles.ViewObject,'Value')
@@ -4004,6 +4024,7 @@ if ~get(handles.ViewObject,'Value')
     set_object(ObjectData,[],ZBounds);
     set(handles.ViewObject,'Value',1)% show that the selected object in ListObject_1 is currently visualised
 end
+
 %  desactivate the edit object mode
 set(handles.edit_object,'Value',0) 
 set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
@@ -4058,8 +4079,7 @@ else
 end
 
 %% update the color of the graphic object representation: the selected object in magenta, others in blue
-update_object_color(handles.axes3,hhview_field.axes3,UvData.Object{IndexObj(end)}.DisplayHandle_uvmat)
-hview_field=findobj(allchild(0),'tag','view_field');
+update_object_color(handles.axes3,hhview_field.axes3,UvData.Object{IndexObj}.DisplayHandle.uvmat)
 
 %------------------------------------------------------------------------
 %--- update the color representation of objects (indicating the selected ones)
@@ -4086,7 +4106,7 @@ for iobj=1:length(hother)
     end
     set(hother(iobj),'Selected','off')
 end
-if ~isempty(DisplayHandle)
+if ishandle(DisplayHandle)
     linetype=get(DisplayHandle,'Type');
     if isequal(linetype,'line')
         set(DisplayHandle,'Color','m'); %set the selected object to magenta color
@@ -4256,7 +4276,7 @@ if check_view
         set(hview_field,'Position',[pos(1)+pos(3)-pos_table(3) pos(2)+pos(4)-pos_table(4) pos_table(3) pos_table(4)])
     else
         Data=get(hview_field,'UserData');
-        set(hview_field,'Position',Data.GUISize)
+        set(hview_field,'Position',Data.GUISize)% restore the size of view_field for plots
     end
 else
     hview_field=findobj(allchild(0),'tag','view_field');
@@ -4512,6 +4532,8 @@ IndexObj=length(ListObject);
 set(handles.ListObject,'Value',IndexObj)
 UvData=get(handles.uvmat,'UserData');
 UvData.Object{IndexObj}=[]; %create a new empty object
+UvData.Object{IndexObj}.DisplayHandle.uvmat=handles.axes3; % axes for plot_object
+UvData.Object{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
 data.Name=data.Type;% default name=type
 data.Coord=[0 0]; %default
 if isfield(UvData,'Field')
@@ -4567,12 +4589,18 @@ if ~strcmp(ListObject{end},'')
     ListObject=[ListObject;{''}]; %append a blank to the list (if not already done) to indicate the creation of a new object
     set(handles.ListObject,'String',ListObject)
 end
+UvData=get(handles.uvmat,'UserData');
+UvData.Object{IndexObj}=[]; %create a new empty object
+UvData.Object{IndexObj}.DisplayHandle.uvmat=[]; %no plot handle before plot_field operation
+UvData.Object{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
+set(handles.uvmat,'UserData',UvData)
 set(handles.ListObject,'Value',length(ListObject))
 hset_object=set_object(data);% call the set_object interface
 set(get(hset_object,'children'),'enable','on')% enable edit action on elements on GUI set_object
 set(handles.edit_object,'Value',0); %suppress the object edit mode
 set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
 set(handles.delete_object,'Visible','on')
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MenuEdit Callbacks
