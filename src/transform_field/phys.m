@@ -36,7 +36,7 @@ if nargin>=2 % nargin =nbre of input variables
     if nargin>=3  %two input fields
         DataOut_1=varargin{3};%default second output field
         if nargin>=4 && isfield(varargin{4},'GeometryCalib')
-            Calib{2}=CalibData_1.GeometryCalib;
+            Calib{2}=varargin{4}.GeometryCalib;
         else
             Calib{2}=Calib{1}; 
         end
@@ -92,7 +92,7 @@ if ~isempty(DataOut_1)
     if ~(isfield(varargin{3},'CoordUnit')&& strcmp(varargin{3}.CoordUnit,'pixel'))
         return % transform only fields in pixel coordinates
     end
-    DataOut_1=phys_1(Data_1,Calib{2},ZIndex);
+    DataOut_1=phys_1(DataOut_1,Calib{2},ZIndex);
     if isfield(Calib{1},'SliceCoord')
         if ~(isfield(Calib{2},'SliceCoord') && isequal(Calib{2}.SliceCoord,Calib{1}.SliceCoord))
             DataOut_1.Txt='different plane positions for the two input fields';
