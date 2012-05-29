@@ -767,12 +767,12 @@ end
 if test_1Dplot 
     for ilist=1:numel(VarIndex_y)
         VarName=Field.ListVarName{VarIndex_y(ilist)};
-        eval(['npxy=size(SubField.' VarName ');'])
+        npxy=size(SubField.(VarName));
         ind_select=find(npxy~=1);
         SubField.VarDimName{subvarindex(ilist)}=SubField.VarDimName{subvarindex(ilist)}(ind_select);
-        eval(['SubField.' VarName '=squeeze(SubField.' VarName ');'])%remove singleton dimensions
+        SubField.(VarName)=squeeze(SubField.(VarName));%remove singleton dimensions
         if testpermute(ilist)
-            eval(['SubField.' VarName '=permute(SubField.' VarName ',[2 1]);'])
+            SubField.(VarName)=permute(SubField.(VarName),[2 1]);
             SubField.VarDimName{subvarindex(ilist)}=SubField.VarDimName{subvarindex(ilist)}([2 1]);
         end
     end

@@ -2169,7 +2169,6 @@ set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
 set(handles.Fields,'Value',find(field_index,1))
 
 %% update the display menu for the second velocity type (second menuline)
-
 test_veltype_1=0;
 if isempty(filename_1)
     set(handles.Fields_1,'Value',1); %update the field menu
@@ -2233,8 +2232,6 @@ if  UvData.NewSeries && isequal(get(handles.SubField,'Value'),0) && isfield(Fiel
         set(handles.Fields_1,'Visible','on');
         Field{1}.AName='w';
 end           
-
-
 
 %% display time
 testimedoc=0;
@@ -2389,63 +2386,61 @@ if ~isempty(errormsg)
 end
 %UvData.Field.FieldList={FieldName}; % TODO: to generalise, used for proj_field with tps interpolation
 
-
-%% get bounds and mesh (needed for mouse action and to open set_object)
+%% analyse input field
 test_x=0;
 test_z=0;% test for unstructured z coordinate
-[errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(UvData.Field);
+[errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(UvData.Field);% check the input field structure
 if ~isempty(errormsg)
-    errormsg=['error in uvmat/refresh_field/check_field_structure: ' errormsg];
+    errormsg=['error in uvmat/refresh_field/check_field_structure: ' errormsg];% display error
     return
 end
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(UvData.Field);
+[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(UvData.Field);% analyse  the input field structure
 if ~isempty(errormsg)
-    errormsg=['error in uvmat/refresh_field/find_field_indices: ' errormsg];
+    errormsg=['error in uvmat/refresh_field/find_field_indices: ' errormsg];% display error
     return
 end
 [NbDim,imax]=max(NbDim);% spatial dimension of the input field
 if isfield(UvData.Field,'NbDim')
     NbDim=UvData.Field.NbDim;% deal with plane fields containing z coordinates
 end
+
+%% get bounds and mesh (needed for mouse action and to open set_object)
 XName=''; %default
 YName='';
-if ~isempty(VarType{imax}.coord_x)  && ~isempty(VarType{imax}.coord_y)    %unstructured coordinates
+if ~isempty(VarType{imax}.coord_x)
     XName=UvData.Field.ListVarName{VarType{imax}.coord_x};
-    YName=UvData.Field.ListVarName{VarType{imax}.coord_y};
-    nbvec=length(UvData.Field.(XName));%nbre of measurement points (e.g. vectors)
-    test_x=1;%test for unstructured coordinates
-    if ~isempty(VarType{imax}.coord_z)
-        ZName=UvData.Field.ListVarName{VarType{imax}.coord_z};
-    else
-        NbDim=2;
+    DimIndex=VarDimIndex{CellVarIndex{imax}(1)}; %list of dim indices for the variable
+    nbpoints_x=DimValue(DimIndex(NbDim));
+      %unstructured coordinates
+    if ~isempty(VarType{imax}.coord_y)  
+        YName=UvData.Field.ListVarName{VarType{imax}.coord_y};
+        %nbvec=length(UvData.Field.(XName));%nbre of measurement points (e.g. vectors)
+        test_x=1;%test for unstructured coordinates
+        if ~isempty(VarType{imax}.coord_z)
+            ZName=UvData.Field.ListVarName{VarType{imax}.coord_z};
+        else
+            NbDim=2;
+        end
     end
-elseif numel(VarType)>=imax && numel(VarType{imax}.coord)>=NbDim && VarType{imax}.coord(NbDim)>0 %structured coordinate
+%structured coordinate   
+elseif numel(VarType)>=imax && numel(VarType{imax}.coord)>=NbDim && VarType{imax}.coord(NbDim)>0 
     XName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim)};
     if NbDim> 1 && VarType{imax}.coord(NbDim-1)>0
         YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
     end
-    VarIndex=CellVarIndex{imax}; % list of variable indices
-    DimIndex=VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
+   % VarIndex=CellVarIndex{imax}; % list of variable indices
+    DimIndex=VarDimIndex{CellVarIndex{imax}(1)}; %list of dim indices for the variable
     nbpoints_x=DimValue(DimIndex(NbDim));
     XMax=nbpoints_x;%default
     XMin=1;%default
 end
-%% object visibility
-if NbDim>=2
-    set(handles.Objects,'Visible','on')
-    set(handles.ListObject_1_title,'Visible','on')
-    set(handles.ListObject_1,'Visible','on')
-else% usual (x,y) plots: no projection object
-    set(handles.Objects,'Visible','off')
-    set(handles.ListObject_title,'Visible','off')
-    set(handles.ListObject_1,'Visible','off')
-end
+
 if NbDim==3
     if ~test_x
         ZName=UvData.Field.ListVarName{VarType{imax}.coord(1)};%structured coordinates in 3D
     end
-    eval(['ZMax=max(UvData.Field.' ZName ');'])
-    eval(['ZMin=min(UvData.Field.' ZName ');'])
+    ZMax=max(UvData.Field.(ZName));
+    ZMin=min(UvData.Field.(ZName));
     UvData.Field.ZMax=ZMax;
     UvData.Field.ZMin=ZMin;
     test_z=1;
@@ -2454,7 +2449,6 @@ if NbDim==3
         test_z=0;
     end
 end
-
 if ~isempty (XName)
     XMax=max(max(UvData.Field.(XName)));
     XMin=min(min(UvData.Field.(XName)));
@@ -2477,10 +2471,8 @@ if ~isempty (XName)
         end
     end
 end
+% case of structured coordinates
 if ~test_x
-    %         VarIndex=CellVarIndex{imax}; % list of variable indices
-    %         DimIndex=VarDimIndex{VarIndex(1)}; %list of dim indices for the variable
-    %         nbpoints_x=DimValue(DimIndex(NbDim));
     DX=(XMax-XMin)/(nbpoints_x-1);
     if NbDim >1
         nbpoints_y=DimValue(DimIndex(NbDim-1));
@@ -2511,10 +2503,10 @@ elseif UvData.Field.Mesh/ord>=2
 else
     UvData.Field.Mesh=ord;
 end
-        UvData.Object{1}.Type='plane';%main plotting plane
-        UvData.Object{1}.ProjMode='projection';%main plotting plane
-        UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
-        UvData.Object{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
+UvData.Object{1}.Type='plane';%main plotting plane
+UvData.Object{1}.ProjMode='projection';%main plotting plane
+UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
+UvData.Object{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
 
 %% 3D case (menuvolume)
 if NbDim==3% && UvData.NewSeries
@@ -2527,10 +2519,6 @@ if NbDim==3% && UvData.NewSeries
     end
     if test_set_object% reinitiate the GUI set_object
         delete_object(1);% delete the current projection object in the list UvData.Object, delete its graphic representations and update the list displayed in handles.ListObject and 2
-%         UvData.Object{1}.Type='plane';%main plotting plane
-%         UvData.Object{1}.ProjMode='projection';%main plotting plane
-%         UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
-%         UvData.Object{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
         UvData.Object{1}.NbDim=NbDim;%test for 3D objects
         UvData.Object{1}.RangeZ=UvData.Field.Mesh;%main plotting plane
         UvData.Object{1}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
@@ -2559,19 +2547,6 @@ elseif isfield(UvData,'Z')
     elseif isfield(UvData,'ZIndex')
         UvData.Object{1}.ZObject=UvData.ZIndex;
     end
-else
-%     % create a default projection
-%     UvData.Object{1}.ProjMode='projection';%main plotting plane
-%     UvData.Object{1}.DisplayHandle_uvmat=[]; %plane not visible in uvmat
-%     set(handles.ListObject,'Value',1);
-%     list_object=get(handles.ListObject,'String');
-%     if isempty(list_object)
-%         list_object={''};
-%     elseif ~isempty(list_object{1})
-%         list_object=[{''};list_object];
-%     end
-%     set(handles.ListObject,'String',list_object);
-% %     set(handles.list_object_2,'String',list_object);
 end
 testnewseries=UvData.NewSeries;
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
@@ -2583,205 +2558,206 @@ set(handles.uvmat,'UserData',UvData)
 %     set(handles.num_MaxA,'String','255')
 % end
 
-%% Plot the projections on the selected  projection objects
-% main projection object (uvmat display)
-list_object=get(handles.ListObject_1,'String');
-if isequal(list_object,{''})%refresh list of objects if the menu is empty
-    UvData.Object={[]}; 
-    set(handles.ListObject_1,'Value',1)
-end
-IndexObj(1)=get(handles.ListObject_1,'Value');%selected projection object for main view
-if IndexObj(1)> numel(UvData.Object)
-    IndexObj(1)=1;%select the first object if the selected one does not exist
-    set(handles.ListObject_1,'Value',1)
-end
-IndexObj(2)=get(handles.ListObject,'Value');%selected projection object for main view
-if isequal(IndexObj(2),IndexObj(1))
-    IndexObj(2)=[];
-end
-plot_handles{1}=handles;
-if isfield(UvData,'plotaxes')%case of movies
-    haxes(1)=UvData.plotaxes;
+%% usual 1D (x,y) plots
+if NbDim<=1
+    set(handles.Objects,'Visible','off')
+    set(handles.ListObject_1_title,'Visible','off')
+    set(handles.ListObject_1,'Visible','off')
+    [PlotType,PlotParamOut]=plot_field(UvData.Field,handles.axes3,read_GUI(handles.uvmat));
+    write_plot_param(handles,PlotParamOut) %update the auto plot parameters
+%     if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
+%         ObjectData.Mesh=Field.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
+%     end
+    
+%% 2D or 3D fields are generally projected
 else
-    haxes(1)=handles.axes3;
-end
-%PlotParam{1}=read_plot_param(handles);%read plotting parameters on the uvmat interfac
-PlotParam{1}=read_GUI(handles.uvmat);
-%default settings if vectors not visible 
-if ~isfield(PlotParam{1},'Vectors')
-    PlotParam{1}.Vectors.MaxVec=1;
-    PlotParam{1}.Vectors.MinVec=0;
-    PlotParam{1}.Vectors.CheckFixVecColor=1;
-    PlotParam{1}.Vectors.ColCode1=0.33;
-    PlotParam{1}.Vectors.ColCode2=0.66;
-    PlotParam{1}.Vectors.ColorScalar={'ima_cor'};
-    PlotParam{1}.Vectors.ColorCode= {'rgb'};
-end
-%keeplim(1)=get(handles.CheckFixLimits,'Value');% test for fixed graph limits
-PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
-
-% second projection object (view_field display)
-if length( IndexObj)>=2
-    view_field_handle=findobj(allchild(0),'tag','view_field');%handles of the view_field GUI
-    if ~isempty(view_field_handle)
-        plot_handles{2}=guidata(view_field_handle);
-        haxes(2)=plot_handles{2}.axes3;
-        PlotParam{2}=read_GUI(handles.uvmat);%read plotting parameters on the uvmat interface
-        PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
+    set(handles.Objects,'Visible','on')
+    set(handles.ListObject_1_title,'Visible','on')
+    set(handles.ListObject_1,'Visible','on')
+    
+    %% Plot the projections on the selected  projection objects
+    % main projection object (uvmat display)
+    list_object=get(handles.ListObject_1,'String');
+    if isequal(list_object,{''})%refresh list of objects if the menu is empty
+        UvData.Object={[]};
+        set(handles.ListObject_1,'Value',1)
     end
-end
-
-%% loop on the projection objects: one or two
-for imap=1:numel(IndexObj)
-    iobj=IndexObj(imap);
-%      if imap==2 || check_proj==0  % field not yet projected) && ~isfield(UvData.Object{iobj},'Type')% case with no projection (only for the first empty object)
-% %          [ObjectData,errormsg]=calc_field(UvData.Field.FieldList,UvData.Field);
-% %      else
+    IndexObj(1)=get(handles.ListObject_1,'Value');%selected projection object for main view
+    if IndexObj(1)> numel(UvData.Object)
+        IndexObj(1)=1;%select the first object if the selected one does not exist
+        set(handles.ListObject_1,'Value',1)
+    end
+    IndexObj(2)=get(handles.ListObject,'Value');%selected projection object for main view
+    if isequal(IndexObj(2),IndexObj(1))
+        IndexObj(2)=[];
+    end
+    plot_handles{1}=handles;
+    if isfield(UvData,'plotaxes')%case of movies
+        haxes(1)=UvData.plotaxes;
+    else
+        haxes(1)=handles.axes3;
+    end
+    PlotParam{1}=read_GUI(handles.uvmat);
+    %default settings if vectors not visible
+    if ~isfield(PlotParam{1},'Vectors')
+        PlotParam{1}.Vectors.MaxVec=1;
+        PlotParam{1}.Vectors.MinVec=0;
+        PlotParam{1}.Vectors.CheckFixVecColor=1;
+        PlotParam{1}.Vectors.ColCode1=0.33;
+        PlotParam{1}.Vectors.ColCode2=0.66;
+        PlotParam{1}.Vectors.ColorScalar={'ima_cor'};
+        PlotParam{1}.Vectors.ColorCode= {'rgb'};
+    end
+    PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
+    
+    %% second projection object (view_field display)
+    if length( IndexObj)>=2
+        view_field_handle=findobj(allchild(0),'tag','view_field');%handles of the view_field GUI
+        if ~isempty(view_field_handle)
+            plot_handles{2}=guidata(view_field_handle);
+            haxes(2)=plot_handles{2}.axes3;
+            PlotParam{2}=read_GUI(handles.uvmat);%read plotting parameters on the uvmat interface
+            PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
+        end
+    end
+    
+    %% loop on the projection objects: one or two
+    
+    for imap=1:numel(IndexObj)
+        iobj=IndexObj(imap);
+        %      if imap==2 || check_proj==0  % field not yet projected) && ~isfield(UvData.Object{iobj},'Type')% case with no projection (only for the first empty object)
+        % %          [ObjectData,errormsg]=calc_field(UvData.Field.FieldList,UvData.Field);
+        % %      else
         [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
-%      end
-    if ~isempty(errormsg)
-        return
-    end
-    if testnewseries 
-        PlotParam{imap}.Scalar.CheckBW=[]; %B/W option depends on the input field (image or scalar)
-        if isfield(ObjectData,'CoordUnit')
-        PlotParam{imap}.Coordinates.CheckFixAspectRatio=1;% set x and y scaling equal if CoordUnit is defined (common unit for x and y)
-        PlotParam{imap}.Coordinates.AspectRatio=1; %set aspect ratio to 1
-        end
-    end
-    %use of mask (TODO: check)
-    if isfield(ObjectData,'NbDim') && isequal(ObjectData.NbDim,2) && isfield(ObjectData,'Mask') && isfield(ObjectData,'A')
-        flag_mask=double(ObjectData.Mask>200);%=0 for masked regions
-        AX=ObjectData.AX;%x coordiantes for the scalar field
-        AY=ObjectData.AY;%y coordinates for the scalar field
-        MaskX=ObjectData.MaskX;%x coordiantes for the mask
-        MaskY=ObjectData.MaskY;%y coordiantes for the mask
-        if ~isequal(MaskX,AX)||~isequal(MaskY,AY)
-            nxy=size(flag_mask);
-            sizpx=(ObjectData.MaskX(end)-ObjectData.MaskX(1))/(nxy(2)-1);%size of a mask pixel
-            sizpy=(ObjectData.MaskY(1)-ObjectData.MaskY(end))/(nxy(1)-1);
-            x_mask=ObjectData.MaskX(1):sizpx:ObjectData.MaskX(end); % pixel x coordinates for image display
-            y_mask=ObjectData.MaskY(1):-sizpy:ObjectData.MaskY(end);% pixel x coordinates for image display
-            %project on the positions of the scalar
-            npxy=size(ObjectData.A);
-            dxy(1)=(ObjectData.AY(end)-ObjectData.AY(1))/(npxy(1)-1);%grid mesh in y
-            dxy(2)=(ObjectData.AX(end)-ObjectData.AX(1))/(npxy(2)-1);%grid mesh in x
-            xi=ObjectData.AX(1):dxy(2):ObjectData.AX(end);
-            yi=ObjectData.AY(1):dxy(1):ObjectData.AY(end);
-            [XI,YI]=meshgrid(xi,yi);% creates the matrix of regular coordinates
-            flag_mask = interp2(x_mask,y_mask,flag_mask,XI,YI);
-        end
-        AClass=class(ObjectData.A);
-        ObjectData.A=flag_mask.*double(ObjectData.A);
-        ObjectData.A=feval(AClass,ObjectData.A);
-        ind_off=[];
-        if isfield(ObjectData,'ListVarName')
-            for ilist=1:length(ObjectData.ListVarName)
-                if isequal(ObjectData.ListVarName{ilist},'Mask')||isequal(ObjectData.ListVarName{ilist},'MaskX')||isequal(ObjectData.ListVarName{ilist},'MaskY')
-                    ind_off=[ind_off ilist];
-                end
-            end
-            ObjectData.ListVarName(ind_off)=[];
-            VarDimIndex(ind_off)=[];
-            ind_off=[];
-            for ilist=1:length(ListDimName)
-                if isequal(ListDimName{ilist},'MaskX') || isequal(ListDimName{ilist},'MaskY')
-                    ind_off=[ind_off ilist];
-                end
-            end
-            ListDimName(ind_off)=[];
-            DimValue(ind_off)=[];
-        end
-    end
-    if ~isempty(ObjectData)
-        
-        PlotType='none'; %default
-        if imap==2 && isempty(view_field_handle)
-            view_field(ObjectData)
-        else
-            [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},PosColorbar{imap});
-            write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
-            if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
-                ObjectData.Mesh=Field.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
-            end
-        end
-        if isequal(PlotType,'none')
-            hget_field=findobj(allchild(0),'name','get_field');
-            if isempty(hget_field)
-                get_field(filename)% the projected field cannot be automatically plotted: use get_field to specify the variablesdelete(hget_field)
-            end
-            errormsg='The field defined by get_field cannot be plotted';
+        %      end
+        if ~isempty(errormsg)
             return
         end
-    end
-end
-
-%% update the mask
-if isequal(get(handles.CheckMask,'Value'),1)%if the mask option is on
-   update_mask(handles,num_i1,num_i2);
-end
-
-%% prepare the menus of histograms and plot them (histogram of the whole volume in 3D case)
-menu_histo=(UvData.Field.ListVarName)';%list of field variables to be displayed for the menu of histogram display
-ind_skip=[];
-% nb_histo=1;
-Ustring='';
-Vstring='';
-% suppress coordinates from the histogram menu
-for ivar=1:numel(menu_histo)%l loop on field variables:
-    if isfield(UvData.Field,'VarAttribute') && numel(UvData.Field.VarAttribute)>=ivar && isfield(UvData.Field.VarAttribute{ivar},'Role')
-        Role=UvData.Field.VarAttribute{ivar}.Role;
-        switch Role
-            case {'coord_x','coord_y','coord_z','dimvar'}
-                ind_skip=[ind_skip ivar];
-            case {'vector_x'}
-                Ustring=UvData.Field.ListVarName{ivar};
-                ind_skip=[ind_skip ivar];
-            case {'vector_y'}
-                Vstring=UvData.Field.ListVarName{ivar};
-                ind_skip=[ind_skip ivar];
+        if testnewseries
+            PlotParam{imap}.Scalar.CheckBW=[]; %B/W option depends on the input field (image or scalar)
+            if isfield(ObjectData,'CoordUnit')
+                PlotParam{imap}.Coordinates.CheckFixAspectRatio=1;% set x and y scaling equal if CoordUnit is defined (common unit for x and y)
+                PlotParam{imap}.Coordinates.AspectRatio=1; %set aspect ratio to 1
+            end
+        end
+        %use of mask (TODO: check)
+        if isfield(ObjectData,'NbDim') && isequal(ObjectData.NbDim,2) && isfield(ObjectData,'Mask') && isfield(ObjectData,'A')
+            flag_mask=double(ObjectData.Mask>200);%=0 for masked regions
+            AX=ObjectData.AX;%x coordiantes for the scalar field
+            AY=ObjectData.AY;%y coordinates for the scalar field
+            MaskX=ObjectData.MaskX;%x coordiantes for the mask
+            MaskY=ObjectData.MaskY;%y coordiantes for the mask
+            if ~isequal(MaskX,AX)||~isequal(MaskY,AY)
+                nxy=size(flag_mask);
+                sizpx=(ObjectData.MaskX(end)-ObjectData.MaskX(1))/(nxy(2)-1);%size of a mask pixel
+                sizpy=(ObjectData.MaskY(1)-ObjectData.MaskY(end))/(nxy(1)-1);
+                x_mask=ObjectData.MaskX(1):sizpx:ObjectData.MaskX(end); % pixel x coordinates for image display
+                y_mask=ObjectData.MaskY(1):-sizpy:ObjectData.MaskY(end);% pixel x coordinates for image display
+                %project on the positions of the scalar
+                npxy=size(ObjectData.A);
+                dxy(1)=(ObjectData.AY(end)-ObjectData.AY(1))/(npxy(1)-1);%grid mesh in y
+                dxy(2)=(ObjectData.AX(end)-ObjectData.AX(1))/(npxy(2)-1);%grid mesh in x
+                xi=ObjectData.AX(1):dxy(2):ObjectData.AX(end);
+                yi=ObjectData.AY(1):dxy(1):ObjectData.AY(end);
+                [XI,YI]=meshgrid(xi,yi);% creates the matrix of regular coordinates
+                flag_mask = interp2(x_mask,y_mask,flag_mask,XI,YI);
+            end
+            AClass=class(ObjectData.A);
+            ObjectData.A=flag_mask.*double(ObjectData.A);
+            ObjectData.A=feval(AClass,ObjectData.A);
+            ind_off=[];
+            if isfield(ObjectData,'ListVarName')
+                for ilist=1:length(ObjectData.ListVarName)
+                    if isequal(ObjectData.ListVarName{ilist},'Mask')||isequal(ObjectData.ListVarName{ilist},'MaskX')||isequal(ObjectData.ListVarName{ilist},'MaskY')
+                        ind_off=[ind_off ilist];
+                    end
+                end
+                ObjectData.ListVarName(ind_off)=[];
+                VarDimIndex(ind_off)=[];
+                ind_off=[];
+                for ilist=1:length(ListDimName)
+                    if isequal(ListDimName{ilist},'MaskX') || isequal(ListDimName{ilist},'MaskY')
+                        ind_off=[ind_off ilist];
+                    end
+                end
+                ListDimName(ind_off)=[];
+                DimValue(ind_off)=[];
+            end
+        end
+        if ~isempty(ObjectData)
+            PlotType='none'; %default
+            if imap==2 && isempty(view_field_handle)
+                view_field(ObjectData)
+            else
+                [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},PosColorbar{imap});
+                write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
+                if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
+                    ObjectData.Mesh=Field.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
+                end
+            end
+            if isequal(PlotType,'none')
+                hget_field=findobj(allchild(0),'name','get_field');
+                if isempty(hget_field)
+                    get_field(filename)% the projected field cannot be automatically plotted: use get_field to specify the variablesdelete(hget_field)
+                end
+                errormsg='The field defined by get_field cannot be plotted';
+                return
+            end
         end
     end
-    DimCell=UvData.Field.VarDimName{ivar};
-    DimName='';
-    if ischar(DimCell)
-        DimName=DimCell;
-    elseif iscell(DimCell)&& numel(DimCell)==1
-        DimName=DimCell{1};
+    
+    %% update the mask
+    if isequal(get(handles.CheckMask,'Value'),1)%if the mask option is on
+        update_mask(handles,num_i1,num_i2);
     end
-    if strcmp(DimName,menu_histo{ivar})
-        ind_skip=[ind_skip ivar];
+    
+    %% prepare the menus of histograms and plot them (histogram of the whole volume in 3D case)
+    menu_histo=(UvData.Field.ListVarName)';%list of field variables to be displayed for the menu of histogram display
+    ind_skip=[];
+    % nb_histo=1;
+    Ustring='';
+    Vstring='';
+    % suppress coordinates from the histogram menu
+    for ivar=1:numel(menu_histo)%l loop on field variables:
+        if isfield(UvData.Field,'VarAttribute') && numel(UvData.Field.VarAttribute)>=ivar && isfield(UvData.Field.VarAttribute{ivar},'Role')
+            Role=UvData.Field.VarAttribute{ivar}.Role;
+            switch Role
+                case {'coord_x','coord_y','coord_z','dimvar'}
+                    ind_skip=[ind_skip ivar];
+                case {'vector_x'}
+                    Ustring=UvData.Field.ListVarName{ivar};
+                    ind_skip=[ind_skip ivar];
+                case {'vector_y'}
+                    Vstring=UvData.Field.ListVarName{ivar};
+                    ind_skip=[ind_skip ivar];
+            end
+        end
+        DimCell=UvData.Field.VarDimName{ivar};
+        DimName='';
+        if ischar(DimCell)
+            DimName=DimCell;
+        elseif iscell(DimCell)&& numel(DimCell)==1
+            DimName=DimCell{1};
+        end
+        if strcmp(DimName,menu_histo{ivar})
+            ind_skip=[ind_skip ivar];
+        end
     end
-end
-menu_histo(ind_skip)=[];% remove skipped items
-if ~isempty(Ustring)
-    menu_histo=[{[Ustring ',' Vstring]};menu_histo];% add U, V at the beginning if they exist
+    menu_histo(ind_skip)=[];% remove skipped items
+    if ~isempty(Ustring)
+        menu_histo=[{[Ustring ',' Vstring]};menu_histo];% add U, V at the beginning if they exist
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % display menus and plot histograms
+    test_v=0;
+    if ~isempty(menu_histo)
+        set(handles.histo1_menu,'Value',1)
+        set(handles.histo1_menu,'String',menu_histo)
+        histo1_menu_Callback(handles.histo1_menu, [], handles)% plot first histogram
+    end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% display menus and plot histograms
-test_v=0;
-if ~isempty(menu_histo)
-    set(handles.histo1_menu,'Value',1)
-    set(handles.histo1_menu,'String',menu_histo)
-    histo1_menu_Callback(handles.histo1_menu, [], handles)% plot first histogram 
-    % case of more than one variables (eg vector components)
-%     if nb_histo > 1 
-%         test_v=1;
-%         set(handles.histo2_menu,'Visible','on')
-%         set(handles.histo_v,'Visible','on')
-%         set(handles.histo2_menu,'String',menu_histo)
-%         set(handles.histo2_menu,'Value',2)
-%         histo2_menu_Callback(handles.histo2_menu,[], handles)% plot second histogram 
-%     end
-end
-% if ~test_v
-%     set(handles.histo2_menu,'Visible','off')
-%     set(handles.histo_v,'Visible','off')
-%     cla(handles.histo_v)
-%     set(handles.histo2_menu,'Value',1)
-% end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
 function histo1_menu_Callback(hObject, eventdata, handles)
 %--------------------------------------------

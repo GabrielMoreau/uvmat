@@ -30,14 +30,14 @@
   %       the d-th coordinate of the N centers)
   
 [Dsites,Ctrs] = ndgrid(dsites(:,1),ctrs(:,1));%d coordinates of interpolation points (Dsites) and initial points (Ctrs)
-DX=Dsites-Ctrs;
+DX=Dsites-Ctrs;% set of x wise distances between sites and centres
 [Dsites,Ctrs] = ndgrid(dsites(:,2),ctrs(:,2));%d coordinates of interpolation points (Dsites) and initial points (Ctrs)
-DY=Dsites-Ctrs;
+DY=Dsites-Ctrs;% set of y wise distances between sites and centres
 DM = DX.*DX + DY.*DY;% add d component squared 
 
  %% calculate matrix of tps derivatives
 DM(DM~=0) = log(DM(DM~=0))+1; %=2 log(r)+1 derivative of the tps r^2 log(r)
 
 DMX=[DX.*DM zeros(M,1)  ones(M,1) zeros(M,1)];% effect of mean gradient
-DMY=[DY.*DM zeros(M,1)  ones(M,1) zeros(M,1)];% effect of mean gradient
+DMY=[DY.*DM zeros(M,1)  zeros(M,1) ones(M,1)];% effect of mean gradient
 

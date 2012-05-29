@@ -226,7 +226,11 @@ else  %text display added to plot
 end
 if ~isempty(htext)
     if isempty(index_0D)
-        set(htext,'String',{''})
+        if strcmp(get(htext,'Type'),'uitable')
+            set(htext,'Data',{})
+        else
+            set(htext,'String',{''})
+        end
     else
         [errormsg]=plot_text(Data,CellVarIndex(index_0D),VarType(index_0D),htext);
     end

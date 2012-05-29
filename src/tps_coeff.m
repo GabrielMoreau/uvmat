@@ -8,21 +8,21 @@
 % The spatial derivatives are obtained as EMDX*U_tps and EMDY*U_tps, where
 % EMDX and EMDY are obtained from the function tps_eval_dxy.
 %------------------------------------------------------------------------
-% [U_smooth,U_tps]=tps_coeff(ctrs,U,rho)
+% [U_smooth,U_tps]=tps_coeff(ctrs,U,Smoothing)
 %------------------------------------------------------------------------
 % OUPUT:
 % U_smooth: values of the quantity U at the N centres after smoothing
 % U_tps: tps weights of the centres
 
 %INPUT:
-% ctrs: Nxs matrix  representing the postions of the M centers, sources of the tps (s=space dimension)
-% U: Nx1 column vector representing the initial values of the considered scalar at the centres ctrs
-% rho: smoothing parameter: the result is smoother for larger rho.
+% ctrs: Nxs matrix  representing the postions of the N centers, sources of the tps (s=space dimension)
+% U: Nx1 column vector representing the values of the considered scalar measured at the centres ctrs
+% Smoothing: smoothing parameter: the result is smoother for larger Smoothing.
 
 
-function [U_smooth,U_tps]=tps_coeff(ctrs,U,rho)
+function [U_smooth,U_tps]=tps_coeff(ctrs,U,Smoothing)
 %------------------------------------------------------------------------
-%rho smoothing parameter
+%Smoothing smoothing parameter
 % X=reshape(X,[],1);
 % Y=reshape(Y,[],1);
 N=size(ctrs,1);
@@ -30,9 +30,9 @@ N=size(ctrs,1);
 U = [U; zeros(3,1)];
 % ctrs = [X Y];% coordinates of measurement sites, radial base functions are located at the measurement sites
 EM = tps_eval(ctrs,ctrs);
-RhoMat=rho*eye(N,N);%  rho=1/(2*omega) , omega given by fasshauer;
-RhoMat=[RhoMat zeros(N,3)];
+SmoothingMat=Smoothing*eye(N,N);%  Smoothing=1/(2*omega) , omega given by fasshauer;
+SmoothingMat=[SmoothingMat zeros(N,3)];
 PM=[ones(N,1) ctrs];
-IM=[EM+RhoMat; [PM' zeros(3,3)]];
+IM=[EM+SmoothingMat; [PM' zeros(3,3)]];
 U_tps=(IM\U);
 U_smooth=EM *U_tps;

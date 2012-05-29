@@ -55,9 +55,7 @@ handles.output = hObject;
 
 %% Update handles structure
 guidata(hObject, handles);
-
-%%activate the mouse action function: visualise the current field on work space by right click action
-%set(hObject,'WindowButtonUpFcn',{@mouse_up_gui,handles})
+set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with right button (zoom for uicontrol display)
 
 %% prepare the list of RUN fcts and set their paths
 % functions included by default in 'get_field.m
@@ -143,6 +141,13 @@ if exist(profil_perso,'file')
         set(handles.MenuFile_5,'Label',h.MenuFile_5);
     end
 end
+
+%% put the GUI on the lower right of the sceen
+pos_view_field=get(hObject,'Position');
+ScreenSize=get(0,'ScreenSize');
+pos_view_field(1)=ScreenSize(1)+ScreenSize(3)-pos_view_field(3);
+pos_view_field(2)=ScreenSize(2);
+set(hObject,'Position',pos_view_field)
 
 %% remove already opened get_field GUI with name get_field
 if ~(exist('multiple','var') && isequal(multiple,1)) %set single occurrence
