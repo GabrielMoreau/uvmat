@@ -1,3 +1,4 @@
+
 %'civ': function associated with the interface 'civ.fig' for PIV, spline interpolation and stereo PIV (patch)
 %------------------------------------------------------------------------
 %  provides an interface for the software menucivx
@@ -62,8 +63,8 @@ if exist(xmlfile,'file')
     try
         t=xmltree(xmlfile);
         sparam=convert(t);
-    catch
-        errormsg={' Unable to read the file PARAM.xml defining the civx binaries:'; lasterr};
+    catch ME
+        errormsg={' Unable to read the file PARAM.xml defining the civx binaries:';ME.message};
     end
 else
     errormsg=[xmlfile ' not found: path to civx binaries undefined'];
@@ -408,7 +409,7 @@ end
 %     j2=[];
 % end
 switch FileType
-    case {'image','multimage','video'}
+    case {'image','multimage','video','mmreader'}
     otherwise
         errormsg='invalid input file: enter an image, a movie or civ .nc file';
         return
@@ -1058,7 +1059,7 @@ function close_GUI(hObject, eventdata)
     delete(gcbf)
 
 
-%------------------------------------------------------------------------
+%--------------orm----------------------------------------------------------
 % --- Main lauch command, called by RUN and BATCH
 function errormsg=launch_jobs(hObject, eventdata, handles, batch)
 %-----------------------------------------------------------------------
@@ -1226,12 +1227,12 @@ nbfield=numel(i1_civ1);
 nbslice=numel(j1_civ1);
 if ~strcmp(CivMode,'CivX')
     if Param.CheckCiv1
-    [Param.Civ1.FileTypeA,FileInfo,Param.Civ1.ImageA]=get_file_type(filecell.ima1.civ1{1});
-    [Param.Civ1.FileTypeB,FileInfo,Param.Civ1.ImageB]=get_file_type(filecell.ima2.civ1{1});
+        [Param.Civ1.FileTypeA,FileInfo,Param.Civ1.ImageA]=get_file_type(filecell.ima1.civ1{1});
+        [Param.Civ1.FileTypeB,FileInfo,Param.Civ1.ImageB]=get_file_type(filecell.ima2.civ1{1});
     end
     if Param.CheckCiv2
-    [Param.Civ2.FileTypeA,FileInfo,Param.Civ2.ImageA]=get_file_type(filecell.ima1.civ2{1});
-    [Param.Civ2.FileTypeB,FileInfo,Param.Civ2.ImageB]=get_file_type(filecell.ima2.civ2{1});
+        [Param.Civ2.FileTypeA,FileInfo,Param.Civ2.ImageA]=get_file_type(filecell.ima1.civ2{1});
+        [Param.Civ2.FileTypeB,FileInfo,Param.Civ2.ImageB]=get_file_type(filecell.ima2.civ2{1});
     end
 end
 
@@ -1270,8 +1271,7 @@ for ifile=1:nbfield
         
         if Param.CheckCiv1
             % read image-dependent parameters
-            Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};
-            Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
+            
             if ~checkframe% && size(time,1)>=i2_civ1(ifile) && size(time,2)>=j2_civ1(j)
                 Param.Civ1.Dt=(time(i2_civ1(ifile)+1,j2_civ1(j)+1)-time(i1_civ1(ifile)+1,j1_civ1(j)+1));
             else
@@ -1279,22 +1279,32 @@ for ifile=1:nbfield
             end
             Param.Civ1.Time=((time(i2_civ1(ifile)+1,j2_civ1(j)+1)+time(i1_civ1(ifile)+1,j1_civ1(j)+1))/2);
             if strcmp(CivMode,'CivX')
-            Param.Civ1.term_a=num2stra(j1_civ1(j),nom_type_nc);%UTILITE?
-            Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%
+                Param.Civ1.term_a=num2stra(j1_civ1(j),nom_type_nc);%UTILITE?
+                Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%
             end
-            form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
-            if isempty(form)
-                ImageInfo=get(VideoReader(filecell.ima1.civ1{1,1}));
+            if strcmp(Param.Civ1.FileTypeA,'video')|| strcmp(Param.Civ1.FileTypeA,'mmreader')
+                %   ImageInfo=get(VideoReader(fullfile(Param.RootPath,[Param.RootFile Param.ImaExt])));
+                ImageInfo=get(Param.Civ1.ImageA);
+                %                 elseif strcmp(Param.Civ1.FileTypeA,'mmreader')
+                %                     ImageInfo=get(mmreader(fullfile(Param.RootPath,[Param.RootFile Param.ImaExt])));
                 Param.Civ1.ImageBitDepth=ImageInfo.BitsPerPixel/3;
+                if batch
+                    Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};%file name must be used for batch instead of video object
+                    Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
+                end
             else
+                Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};
+                Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
+                form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
                 ImageInfo=imfinfo(filecell.ima1.civ1{1,1});%read the first image to get the size
                 Param.Civ1.ImageBitDepth=ImageInfo.BitDepth;
             end
+            
             Param.Civ1.ImageWidth=ImageInfo.Width;
             Param.Civ1.ImageHeight=ImageInfo.Height;
-            Param.Civ1.i1=i1_civ1(ifile);
-            Param.Civ1.i2=i2_civ1(ifile);
-            % read mask parameters
+            Param.Civ1.FrameIndexA=i1_civ1(ifile);
+            Param.Civ1.FrameIndexB=i2_civ1(ifile);
+            % read mask )parameters
             if Param.Civ1.CheckMask % the lines below should be changed with the new gui
                 if ~exist(Param.Civ1.Mask,'file')
                     maskbase=[filecell.filebase '_' Param.Civ1.Mask]; %
@@ -1311,7 +1321,7 @@ for ifile=1:nbfield
                     if ~isnan(nbslice_grid)
                         i1_grid=mod(i1_civ1(ifile)-1,nbslice_grid)+1;
                         Param.Civ1.Grid=[filecell.filebase '_' fullfile_uvmat('','',Param.Civ1.Grid,'.grid','_1',i1_grid)];
-%                         Param.Civ1.Grid=[filecell.filebase '_' name_generator(Param.Civ1.Grid,i1_grid,1,'.grid','_i')];
+                        %                         Param.Civ1.Grid=[filecell.filebase '_' name_generator(Param.Civ1.Grid,i1_grid,1,'.grid','_i')];
                         if ~exist(Param.Civ1.GridName,'file')
                             errormsg='grid file absent for civ1';
                             return
@@ -1423,8 +1433,24 @@ for ifile=1:nbfield
             end
         end
         if Param.CheckCiv2==1
-            Param.Civ2.ImageA=filecell.ima1.civ2{ifile,j};
-            Param.Civ2.ImageB=filecell.ima2.civ2{ifile,j};
+            if strcmp(Param.Civ2.FileTypeA,'video')|| strcmp(Param.Civ2.FileTypeA,'mmreader')
+                %   ImageInfo=get(VideoReader(fullfile(Param.RootPath,[Param.RootFile Param.ImaExt])));
+                ImageInfo=get(Param.Civ2.ImageA);
+                %                 elseif strcmp(Param.Civ1.FileTypeA,'mmreader')
+                %                     ImageInfo=get(mmreader(fullfile(Param.RootPath,[Param.RootFile Param.ImaExt])));
+                Param.Civ2.ImageBitDepth=ImageInfo.BitsPerPixel/3;
+                if batch
+                    Param.Civ2.ImageA=filecell.ima1.civ2{ifile,j};%file name must be used for batch instead of video object
+                    Param.Civ2.ImageB=filecell.ima2.civ2{ifile,j};
+                end
+            else
+                Param.Civ2.ImageA=filecell.ima1.civ2{ifile,j};
+                Param.Civ2.ImageB=filecell.ima2.civ2{ifile,j};
+                form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
+                ImageInfo=imfinfo(filecell.ima1.civ2{1,1});%read the first image to get the size
+                Param.Civ2.ImageBitDepth=ImageInfo.BitDepth;
+            end
+            
             if ~checkframe %&& size(time,1)>=i2_civ2(ifile) && size(time,2)>=j2_civ2(j)
                 Param.Civ2.Dt=time(i2_civ2(ifile)+1,j2_civ2(j)+1)-time(i1_civ2(ifile)+1,j1_civ2(j)+1);
             else
@@ -1462,7 +1488,7 @@ for ifile=1:nbfield
             end
             form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
             if isempty(form)
-                ImageInfo=get(VideoReader(filecell.ima1.civ2{1,1}));
+               % ImageInfo=get(VideoReader(fullfile());
                 Param.Civ2.ImageBitDepth=ImageInfo.BitsPerPixel/3;
             else
                 ImageInfo=imfinfo(filecell.ima1.civ2{1,1});%read the first image to get the size
@@ -1470,8 +1496,10 @@ for ifile=1:nbfield
             end
             Param.Civ2.ImageWidth=ImageInfo.Width;
             Param.Civ2.ImageHeight=ImageInfo.Height;
-            Param.Civ2.i1=i1_civ2(ifile);
-            Param.Civ2.i2=i2_civ2(ifile);
+            Param.Civ2.FrameIndexA=i1_civ2(ifile);
+             Param.Civ2.FrameIndexB=i2_civ2(ifile);
+%             Param.Civ2.i1=i1_civ2(ifile);
+%             Param.Civ2.i2=i2_civ2(ifile);
             switch CivMode
                 case 'CivX'
                     cmd=[cmd...
@@ -3999,8 +4027,8 @@ if get(handles.TestCiv1,'Value')
     par_civ1.ImageWidth=size(Data.A,2);
     par_civ1.ImageHeight=size(Data.A,1);
     par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation
-    par_civ1.i1=i1;
-    par_civ1.i2=i2;
+    par_civ1.FrameIndexA=num2str(i1);
+    par_civ1.FrameIndexB=num2str(i2);
     Param.Civ1=par_civ1;
     Grid=civ_matlab(Param);% get the grid of x, y positions set for PIV 
     hview_field=view_field(Data); %view the image in the GUI view_field

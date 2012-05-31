@@ -73,6 +73,10 @@ switch FileExt
                         VideoObject=VideoReader(fileinput);
                         FileInfo.NumberOfFrames=get(VideoObject,'NumberOfFrames');
                         FileType='video';
+                    elseif exist('mmreader.m','file')% Matlab 2009a
+                        VideoObject=mmreader(fileinput);
+                        FileInfo.NumberOfFrames=get(VideoObject,'NumberOfFrames');
+                        FileType='mmreader';
                     end             
                 end
             end

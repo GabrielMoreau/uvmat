@@ -51,13 +51,38 @@ check_civx=0;%default
 check_civ1=0;%default
 check_patch1=0;%default
 
+% case of input Param set by an xml file (batch mode)
 if ischar(Param)
     Param=xml2struct(Param); %if Param is the name of an xml file, read this file as a Matlab structure
+    if isfield(Param,'Civ1')
+        if strcmp(Param.Civ1.FileTypeA,'video')
+            Param.Civ1.ImageA=VideoReader(Param.Civ1.ImageA);
+        elseif strcmp(Param.Civ1.FileTypeA,'mmreader')
+            Param.Civ1.ImageA=mmreader(Param.Civ1.ImageA);
+        end
+        if strcmp(Param.Civ1.FileTypeB,'video')
+            Param.Civ1.ImageB=VideoReader(Param.Civ1.ImageB);
+        elseif strcmp(Param.Civ1.FileTypeB,'mmreader')
+            Param.Civ1.ImageB=mmreader(Param.Civ1.ImageB);
+        end
+    end
+    if isfield(Param,'Civ2')
+        if strcmp(Param.Civ2.FileTypeA,'video')
+            Param.Civ2.ImageA=VideoReader(Param.Civ2.ImageA);
+        elseif strcmp(Param.Civ2.FileTypeA,'mmreader')
+            Param.Civ2.ImageA=mmreader(Param.Civ2.ImageA);
+        end
+         if strcmp(Param.Civ2.FileTypeB,'video')
+            Param.Civ2.ImageB=VideoReader(Param.Civ2.ImageB);
+        elseif strcmp(Param.Civ2.FileTypeB,'mmreader')
+            Param.Civ2.ImageB=mmreader(Param.Civ2.ImageB);
+        end
+    end
 end
 
 %% Civ1
 if isfield (Param,'Civ1')
-%     check_civ1=1;% test for further use of civ1 results
+    %     check_civ1=1;% test for further use of civ1 results
     % %% prepare images
     par_civ1=Param.Civ1;
     if isfield(par_civ1,'reverse_pair')
@@ -71,13 +96,22 @@ if isfield (Param,'Civ1')
             end
         end
     else
-        if isfield(par_civ1,'ImageA')&&(ischar(par_civ1.ImageA)||strcmp(class(par_civ1.ImageA),'VideoReader')) % case with no image: only the PIV grid is calculated
-            [Field,ParamOut,errormsg] = read_field(par_civ1.ImageA,par_civ1.FileTypeA,[],par_civ1.i1);
-            par_civ1.ImageA=Field.A;%imread(par_civ1.ImageA);%[Field,ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num)
+        if isfield(par_civ1,'ImageA')%&&(ischar(par_civ1.ImageA)||strcmp(class(par_civ1.ImageA),'VideoReader')) % case with no image: only the PIV grid is calculated
+            
+            [Field,ParamOut,errormsg] = read_field(par_civ1.ImageA,par_civ1.FileTypeA,[],par_civ1.FrameIndexA);
+            if ~isempty(errormsg)
+                errormsg=['error in civ_matlab/read_field:' errormsg];
+                return
+            end
+            par_civ1.ImageA=Field.A;%= image matrix A in the first input field 
         end
-        if isfield(par_civ1,'ImageB')&& (ischar(par_civ1.ImageB)||strcmp(class(par_civ1.ImageA),'VideoReader'))
-            [Field,ParamOut,errormsg] = read_field(par_civ1.ImageB,par_civ1.FileTypeB,[],par_civ1.i2);
-            par_civ1.ImageB=Field.A;%=imread(par_civ1.ImageB);
+        if isfield(par_civ1,'ImageB')%&& (ischar(par_civ1.ImageB)||strcmp(class(par_civ1.ImageA),'VideoReader'))
+            [Field,ParamOut,errormsg] = read_field(par_civ1.ImageB,par_civ1.FileTypeB,[],par_civ1.FrameIndexB);
+            if ~isempty(errormsg)
+                errormsg=['error in civ_matlab/read_field:' errormsg];
+                return
+            end
+            par_civ1.ImageB=Field.A;%= image matrix A in the second input field 
         end
     end
     
@@ -120,7 +154,7 @@ if isfield (Param,'Civ1')
     Data.Civ1_V=reshape(-vtable,[],1);
     Data.Civ1_C=reshape(ctable,[],1);
     Data.Civ1_F=reshape(F,[],1);
-    Data.CivStage=1;  
+    Data.CivStage=1;
 else
     if exist('ncfile','var')
         CivFile=ncfile;
@@ -161,11 +195,11 @@ if isfield (Param,'Fix1')
         Data.ListVarName=[Data.ListVarName {'Civ1_FF'}];
         Data.VarDimName=[Data.VarDimName {'nb_vec_1'}];
         nbvar=length(Data.ListVarName);
-        Data.VarAttribute{nbvar}.Role='errorflag';    
+        Data.VarAttribute{nbvar}.Role='errorflag';
         Data.Civ1_FF=fix(Param.Fix1,Data.Civ1_F,Data.Civ1_C,Data.Civ1_U,Data.Civ1_V);
-        Data.CivStage=2;    
+        Data.CivStage=2;
     end
-end   
+end
 %% Patch1
 if isfield (Param,'Patch1')
     if check_civx
@@ -179,8 +213,8 @@ if isfield (Param,'Patch1')
     Data.Patch1_SubDomain=Param.Patch1.SubdomainSize;
     nbvar=length(Data.ListVarName);
     Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbSites','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
-        Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},{'nb_subdomain_1'},...
-             {'nb_tps_1','nb_coord','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'}}];
+    Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},{'nb_subdomain_1'},...
+        {'nb_tps_1','nb_coord','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'}}];
     Data.VarAttribute{nbvar+1}.Role='vector_x';
     Data.VarAttribute{nbvar+2}.Role='vector_y';
     Data.VarAttribute{nbvar+5}.Role='coord_tps';
@@ -190,32 +224,40 @@ if isfield (Param,'Patch1')
     Data.Civ1_V_smooth=zeros(size(Data.Civ1_X));
     if isfield(Data,'Civ1_FF')
         ind_good=find(Data.Civ1_FF==0);
-    else 
+    else
         ind_good=1:numel(Data.Civ1_X);
     end
     [Data.Civ1_SubRange,Data.Civ1_NbSites,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
-            filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomain,Data.Patch1_Rho,Data.Patch1_Threshold); 
-      fill=zeros(3,2,size(Data.Civ1_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
-      Data.Civ1_Coord_tps=cat(1,Data.Civ1_Coord_tps,fill);
-      Data.Civ1_U_smooth(ind_good)=Ures;
-      Data.Civ1_V_smooth(ind_good)=Vres;
-      Data.Civ1_FF(ind_good)=FFres;
-      Data.CivStage=3;                             
-end   
+        filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomain,Data.Patch1_Rho,Data.Patch1_Threshold);
+    fill=zeros(3,2,size(Data.Civ1_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
+    Data.Civ1_Coord_tps=cat(1,Data.Civ1_Coord_tps,fill);
+    Data.Civ1_U_smooth(ind_good)=Ures;
+    Data.Civ1_V_smooth(ind_good)=Vres;
+    Data.Civ1_FF(ind_good)=FFres;
+    Data.CivStage=3;
+end
 
 %% Civ2
 if isfield (Param,'Civ2')
     par_civ2=Param.Civ2;
     if ~isfield (Param,'Civ1') || ~strcmp(Param.Civ1.ImageA,par_civ2.ImageA)
         %read first image if not already done for civ1
-        [Field,ParamOut,errormsg] = read_field(par_civ2.ImageA,par_civ2.FileTypeA,[],par_civ2.i1);
+        [Field,ParamOut,errormsg] = read_field(par_civ2.ImageA,par_civ2.FileTypeA,[],par_civ2.FrameIndexA);
+                    if ~isempty(errormsg)
+                errormsg=['error in civ_matlab/read_field:' errormsg];
+                return
+            end
         par_civ2.ImageA=Field.A;
     else
         par_civ2.ImageA=par_civ1.ImageA;
     end
     if ~isfield (Param,'Civ1') || ~strcmp(Param.Civ1.ImageB,par_civ2.ImageB)
         %read first image if not already done for civ1
-        [Field,ParamOut,errormsg] = read_field(par_civ2.ImageB,par_civ2.FileTypeB,[],par_civ2.i2);
+        [Field,ParamOut,errormsg] = read_field(par_civ2.ImageB,par_civ2.FileTypeB,[],par_civ2.FrameIndexB);
+         if ~isempty(errormsg)
+                errormsg=['error in civ_matlab/read_field:' errormsg];
+                return
+            end
         par_civ2.ImageB=Field.A;
     else
         par_civ2.ImageB=par_civ1.ImageB;
@@ -232,7 +274,7 @@ if isfield (Param,'Civ2')
     maxix=min(size(par_civ2.ImageA,2)-isx2,size(par_civ2.ImageA,2)-ibx2);
     [GridX,GridY]=meshgrid(minix:par_civ2.Dx:maxix,miniy:par_civ2.Dy:maxiy);
     GridX=reshape(GridX,[],1);
-    GridY=reshape(GridY,[],1); 
+    GridY=reshape(GridY,[],1);
     Shiftx=zeros(size(GridX));% shift expected from civ1 data
     Shifty=zeros(size(GridX));
     nbval=zeros(size(GridX));
@@ -269,7 +311,7 @@ if isfield (Param,'Civ2')
     par_civ2.Searchy=2*isy2+1;
     par_civ2.Shiftx=Shiftx(nbval>=1)./nbval(nbval>=1);
     par_civ2.Shifty=Shifty(nbval>=1)./nbval(nbval>=1);
-    par_civ2.Grid=[GridX(nbval>=1)-par_civ2.Shiftx/2 GridY(nbval>=1)-par_civ2.Shifty/2];% grid taken at the extrapolated origin of the displacement vectors   
+    par_civ2.Grid=[GridX(nbval>=1)-par_civ2.Shiftx/2 GridY(nbval>=1)-par_civ2.Shifty/2];% grid taken at the extrapolated origin of the displacement vectors
     if par_civ2.CheckDeformation
         par_civ2.DUDX=DUDX./nbval;
         par_civ2.DUDY=DUDY./nbval;
@@ -278,8 +320,8 @@ if isfield (Param,'Civ2')
     end
     % caluclate velocity data (y and v in indices, reverse to y component)
     [xtable ytable utable vtable ctable F] = civ (par_civ2);
-%     diff_squared=(utable-par_civ2.Shiftx).*(utable-par_civ2.Shiftx)+(vtable+par_civ2.Shifty).*(vtable+par_civ2.Shifty);
-%     F(diff_squared>=4)=4; %flag vectors whose distance to the guess exceeds 2 pixels
+    %     diff_squared=(utable-par_civ2.Shiftx).*(utable-par_civ2.Shiftx)+(vtable+par_civ2.Shifty).*(vtable+par_civ2.Shifty);
+    %     F(diff_squared>=4)=4; %flag vectors whose distance to the guess exceeds 2 pixels
     list_param=(fieldnames(Param.Civ2))';
     list_remove={'pxcmx','pxcmy','npx','npy','gridflag','maskflag','term_a','term_b','T0'};
     for ilist=1:length(list_remove)
@@ -299,8 +341,8 @@ if isfield (Param,'Civ2')
         Data.Civ2_maskname='';
     end
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ2_param {'Civ2_Time','Civ2_Dt'}];
-%     Data.Civ2_Time=par_civ2.Time;
-%     Data.Civ2_Dt=par_civ2.Dt;
+    %     Data.Civ2_Time=par_civ2.Time;
+    %     Data.Civ2_Dt=par_civ2.Dt;
     nbvar=numel(Data.ListVarName);
     Data.ListVarName=[Data.ListVarName {'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_F','Civ2_C'}];%  cell array containing the names of the fields to record
     Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2'}];
@@ -339,12 +381,12 @@ if isfield (Param,'Fix2')
         Data.ListVarName=[Data.ListVarName {'Civ2_FF'}];
         Data.VarDimName=[Data.VarDimName {'nb_vec_2'}];
         nbvar=length(Data.ListVarName);
-        Data.VarAttribute{nbvar}.Role='errorflag';    
+        Data.VarAttribute{nbvar}.Role='errorflag';
         Data.Civ2_FF=fix(Param.Fix2,Data.Civ2_F,Data.Civ2_C,Data.Civ2_U,Data.Civ2_V);
-        Data.CivStage=Data.CivStage+1;    
+        Data.CivStage=Data.CivStage+1;
     end
     
-end   
+end
 
 %% Patch2
 if isfield (Param,'Patch2')
@@ -355,9 +397,9 @@ if isfield (Param,'Patch2')
     nbvar=length(Data.ListVarName);
     Data.ListVarName=[Data.ListVarName {'Civ2_U_smooth','Civ2_V_smooth','Civ2_SubRange','Civ2_NbSites','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
     Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2',{'nb_coord','nb_bounds','nb_subdomain_2'},{'nb_subdomain_2'},...
-             {'nb_tps_2','nb_coord','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'}}];
-
-        Data.VarAttribute{nbvar+1}.Role='vector_x';
+        {'nb_tps_2','nb_coord','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'}}];
+    
+    Data.VarAttribute{nbvar+1}.Role='vector_x';
     Data.VarAttribute{nbvar+2}.Role='vector_y';
     Data.VarAttribute{nbvar+5}.Role='coord_tps';
     Data.VarAttribute{nbvar+6}.Role='vector_x_tps';
@@ -368,16 +410,16 @@ if isfield (Param,'Patch2')
         ind_good=find(Data.Civ2_FF==0);
     else
         ind_good=1:numel(Data.Civ2_X);
-    end 
+    end
     [Data.Civ2_SubRange,Data.Civ2_NbSites,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures, Vres,tild,FFres]=...
-         filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomain,Data.Patch2_Rho,Data.Patch2_Threshold); 
-           fill=zeros(3,2,size(Data.Civ2_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
-      Data.Civ2_Coord_tps=cat(1,Data.Civ2_Coord_tps,fill);
+        filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomain,Data.Patch2_Rho,Data.Patch2_Threshold);
+    fill=zeros(3,2,size(Data.Civ2_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
+    Data.Civ2_Coord_tps=cat(1,Data.Civ2_Coord_tps,fill);
     Data.Civ2_U_smooth(ind_good)=Ures;
     Data.Civ2_V_smooth(ind_good)=Vres;
     Data.Civ2_FF(ind_good)=FFres;
-    Data.CivStage=Data.CivStage+1;                             
-end  
+    Data.CivStage=Data.CivStage+1;
+end
 
 %% write result in a netcdf file if requested
 if exist('ncfile','var') 

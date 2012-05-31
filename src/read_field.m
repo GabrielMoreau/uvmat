@@ -149,11 +149,11 @@ switch FileType
 %         else
 % %             ParamOut.FieldList={'get_field...'};
 %         end    
-    case 'video'
+    case {'video','mmreader'}
         try
             A=read(ObjectName,num);
         catch ME
-            errormsg=ME.message
+            errormsg=ME.message;
             return
         end
         FieldName='image';

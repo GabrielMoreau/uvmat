@@ -1527,7 +1527,7 @@ set(handles.speed_txt,'Visible','on')
 set(handles.Movie,'BusyAction','queue')
 UvData=get(handles.uvmat,'UserData');
 
-while get(handles.speed,'Value')~=0 && isequal(get(handles.Movie,'BusyAction'),'queue') % enable STOP command
+while get(handles.Movie,'Value')==1 && get(handles.speed,'Value')~=0 && isequal(get(handles.Movie,'BusyAction'),'queue') % enable STOP command
         errormsg=runpm(hObject,eventdata,handles,increment);
         if ~isempty(errormsg)
             set(handles.Movie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
@@ -1554,7 +1554,7 @@ set(handles.speed_txt,'Visible','on')
 set(handles.MovieBackward,'BusyAction','queue')
 UvData=get(handles.uvmat,'UserData');
 
-while get(handles.speed,'Value')~=0 && isequal(get(handles.MovieBackward,'BusyAction'),'queue') % enable STOP command
+while get(handles.MovieBackward,'Value')==1 && get(handles.speed,'Value')~=0 && isequal(get(handles.MovieBackward,'BusyAction'),'queue') % enable STOP command
         errormsg=runpm(hObject,eventdata,handles,increment);
         if ~isempty(errormsg)
             set(handles.MovieBackward,'BackgroundColor',[1 0 0])%paint the command buttonback to red
@@ -2033,7 +2033,7 @@ if ~isempty(filename)
                     ParamIn.ColorVar= list_code{index_code}; % selected field
                 end
             end
-        case 'video'
+        case {'video','mmreader'}
             ObjectName=UvData.MovieObject{1};         
         case 'vol' %TODO: update
             if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
@@ -2093,7 +2093,7 @@ if ~isempty(filename_1)
                     ParamIn_1.ColorVar= list_code{index_code}; % selected field for vector color display                  
                 end
             end
-        case 'video'
+        case {'video','mmreader'}
             Name=UvData.MovieObject{2};
         case 'vol' %TODO: update
             if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
@@ -2405,14 +2405,12 @@ if isfield(UvData.Field,'NbDim')
 end
 
 %% get bounds and mesh (needed for mouse action and to open set_object)
-XName=''; %default
-YName='';
-if ~isempty(VarType{imax}.coord_x)
-    XName=UvData.Field.ListVarName{VarType{imax}.coord_x};
-    DimIndex=VarDimIndex{CellVarIndex{imax}(1)}; %list of dim indices for the variable
-    nbpoints_x=DimValue(DimIndex(NbDim));
-      %unstructured coordinates
-    if ~isempty(VarType{imax}.coord_y)  
+if NbDim>1
+    XName=''; %default
+    YName='';
+    %unstructured coordinates
+    if ~isempty(VarType{imax}.coord_x)&&~isempty(VarType{imax}.coord_y)
+        XName=UvData.Field.ListVarName{VarType{imax}.coord_x};
         YName=UvData.Field.ListVarName{VarType{imax}.coord_y};
         %nbvec=length(UvData.Field.(XName));%nbre of measurement points (e.g. vectors)
         test_x=1;%test for unstructured coordinates
@@ -2421,133 +2419,134 @@ if ~isempty(VarType{imax}.coord_x)
         else
             NbDim=2;
         end
-    end
-%structured coordinate   
-elseif numel(VarType)>=imax && numel(VarType{imax}.coord)>=NbDim && VarType{imax}.coord(NbDim)>0 
-    XName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim)};
-    if NbDim> 1 && VarType{imax}.coord(NbDim-1)>0
-        YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
-    end
-   % VarIndex=CellVarIndex{imax}; % list of variable indices
-    DimIndex=VarDimIndex{CellVarIndex{imax}(1)}; %list of dim indices for the variable
-    nbpoints_x=DimValue(DimIndex(NbDim));
-    XMax=nbpoints_x;%default
-    XMin=1;%default
-end
-
-if NbDim==3
-    if ~test_x
-        ZName=UvData.Field.ListVarName{VarType{imax}.coord(1)};%structured coordinates in 3D
-    end
-    ZMax=max(UvData.Field.(ZName));
-    ZMin=min(UvData.Field.(ZName));
-    UvData.Field.ZMax=ZMax;
-    UvData.Field.ZMin=ZMin;
-    test_z=1;
-    if isequal(ZMin,ZMax)%no z dependency
-        NbDim=2;
-        test_z=0;
-    end
-end
-if ~isempty (XName)
-    XMax=max(max(UvData.Field.(XName)));
-    XMin=min(min(UvData.Field.(XName)));
-    UvData.Field.NbDim=NbDim;
-    UvData.Field.XMax=XMax;
-    UvData.Field.XMin=XMin;
-    if NbDim >1&& ~isempty(YName)
-        YMax=max(max(UvData.Field.(YName)));
-        YMin=min(min(UvData.Field.(YName)));
-        UvData.Field.YMax=YMax;
-        UvData.Field.YMin=YMin; 
-    end
-    nbvec=length(UvData.Field.(XName));
-    if test_x %unstructured coordinates
-        if test_z
-            UvData.Field.Mesh=((XMax-XMin)*(YMax-YMin)*(ZMax-ZMin))/nbvec;% volume per vector
-            UvData.Field.Mesh=(UvData.Field.Mesh)^(1/3);
-        else
-            UvData.Field.Mesh=sqrt((XMax-XMin)*(YMax-YMin)/nbvec);%2D
+        %structured coordinate
+    elseif numel(VarType)>=imax && numel(VarType{imax}.coord)>=NbDim && VarType{imax}.coord(NbDim)>0
+        XName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim)};
+        if NbDim> 1 && VarType{imax}.coord(NbDim-1)>0
+            YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
         end
+        % VarIndex=CellVarIndex{imax}; % list of variable indices
+        DimIndex=VarDimIndex{CellVarIndex{imax}(1)}; %list of dim indices for the variable
+        nbpoints_x=DimValue(DimIndex(NbDim));
+        XMax=nbpoints_x;%default
+        XMin=1;%default
     end
-end
-% case of structured coordinates
-if ~test_x
-    DX=(XMax-XMin)/(nbpoints_x-1);
-    if NbDim >1
-        nbpoints_y=DimValue(DimIndex(NbDim-1));
-        if isempty(YName)% if the y coordinate is not expressed, it is taken as the matrix index
-            DY=1;
-            UvData.Field.YMax=nbpoints_y;
-            UvData.Field.YMin=1;
-        else
-            DY=(YMax-YMin)/(nbpoints_y-1);
-        end
-    end
+    
     if NbDim==3
-        nbpoints_z=DimValue(DimIndex(1));
-        DZ=(ZMax-ZMin)/(nbpoints_z-1);
-        UvData.Field.Mesh=(DX*DY*DZ)^(1/3);
+        if ~test_x
+            ZName=UvData.Field.ListVarName{VarType{imax}.coord(1)};%structured coordinates in 3D
+        end
+        ZMax=max(UvData.Field.(ZName));
+        ZMin=min(UvData.Field.(ZName));
         UvData.Field.ZMax=ZMax;
         UvData.Field.ZMin=ZMin;
+        test_z=1;
+        if isequal(ZMin,ZMax)%no z dependency
+            NbDim=2;
+            test_z=0;
+        end
+    end
+    if ~isempty (XName)
+        XMax=max(max(UvData.Field.(XName)));
+        XMin=min(min(UvData.Field.(XName)));
+        UvData.Field.NbDim=NbDim;
+        UvData.Field.XMax=XMax;
+        UvData.Field.XMin=XMin;
+        if NbDim >1&& ~isempty(YName)
+            YMax=max(max(UvData.Field.(YName)));
+            YMin=min(min(UvData.Field.(YName)));
+            UvData.Field.YMax=YMax;
+            UvData.Field.YMin=YMin;
+        end
+        nbvec=length(UvData.Field.(XName));
+        if test_x %unstructured coordinates
+            if test_z
+                UvData.Field.Mesh=((XMax-XMin)*(YMax-YMin)*(ZMax-ZMin))/nbvec;% volume per vector
+                UvData.Field.Mesh=(UvData.Field.Mesh)^(1/3);
+            else
+                UvData.Field.Mesh=sqrt((XMax-XMin)*(YMax-YMin)/nbvec);%2D
+            end
+        end
+    end
+    % case of structured coordinates
+    if ~test_x
+        DX=(XMax-XMin)/(nbpoints_x-1);
+        if NbDim >1
+            nbpoints_y=DimValue(DimIndex(NbDim-1));
+            if isempty(YName)% if the y coordinate is not expressed, it is taken as the matrix index
+                DY=1;
+                UvData.Field.YMax=nbpoints_y;
+                UvData.Field.YMin=1;
+            else
+                DY=(YMax-YMin)/(nbpoints_y-1);
+            end
+        end
+        if NbDim==3
+            nbpoints_z=DimValue(DimIndex(1));
+            DZ=(ZMax-ZMin)/(nbpoints_z-1);
+            UvData.Field.Mesh=(DX*DY*DZ)^(1/3);
+            UvData.Field.ZMax=ZMax;
+            UvData.Field.ZMin=ZMin;
+        else
+            UvData.Field.Mesh=DX;%sqrt(DX*DY);
+        end
+    end
+    % adjust the mesh to a value 1, 2 , 5 *10^n
+    ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
+    if UvData.Field.Mesh/ord>=5
+        UvData.Field.Mesh=5*ord;
+    elseif UvData.Field.Mesh/ord>=2
+        UvData.Field.Mesh=2*ord;
     else
-        UvData.Field.Mesh=DX;%sqrt(DX*DY);
+        UvData.Field.Mesh=ord;
+    end
+    UvData.Object{1}.Type='plane';%main plotting plane
+    UvData.Object{1}.ProjMode='projection';%main plotting plane
+    UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
+    UvData.Object{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
+    
+    %% 3D case (menuvolume)
+    if NbDim==3% && UvData.NewSeries
+        test_set_object=1;
+        hset_object=findobj(allchild(0),'tag','set_object');% look for the set_object GUI
+        ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
+        ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
+        if ~isempty(hset_object) %if set_object is detected
+            delete(hset_object);% delete the GUI set_object if it does not fit
+        end
+        if test_set_object% reinitiate the GUI set_object
+            delete_object(1);% delete the current projection object in the list UvData.Object, delete its graphic representations and update the list displayed in handles.ListObject and 2
+            UvData.Object{1}.NbDim=NbDim;%test for 3D objects
+            UvData.Object{1}.RangeZ=UvData.Field.Mesh;%main plotting plane
+            UvData.Object{1}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
+            UvData.Object{1}.Angle=[0 0 0];
+            UvData.Object{1}.HandlesDisplay=plot(0,0,'Tag','proj_object');% A REVOIR
+            UvData.Object{1}.Name='1-PLANE';
+            UvData.Object{1}.enable_plot=1;
+            set_object(UvData.Object{1},handles,ZBounds);
+            set(handles.ListObject,'Value',1);
+            set(handles.ListObject,'String',{'1-PLANE'});
+            set(handles.edit_object,'Value',1)% put the plane in edit mode to enable the z cursor
+            edit_object_Callback([],[], handles)
+        end
+        %multilevel case (single menuplane in a 3D space)
+    elseif isfield(UvData,'Z')
+        if isfield(UvData,'CoordType')&& isequal(UvData.CoordType,'phys') && isfield(UvData,'XmlData')
+            XmlData=UvData.XmlData{1};
+            if isfield(XmlData,'PlanePos')
+                UvData.Object{1}.Coord=XmlData.PlanePos(UvData.ZIndex,:);
+            end
+            if isfield(XmlData,'PlaneAngle')
+                siz=size(XmlData.PlaneAngle);
+                indangle=min(siz(1),UvData.ZIndex);%take first angle if a single angle is defined (translating scanning)
+                UvData.Object{1}.PlaneAngle=XmlData.PlaneAngle(indangle,:);
+            end
+        elseif isfield(UvData,'ZIndex')
+            UvData.Object{1}.ZObject=UvData.ZIndex;
+        end
     end
 end
-% adjust the mesh to a value 1, 2 , 5 *10^n
-ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
-if UvData.Field.Mesh/ord>=5
-    UvData.Field.Mesh=5*ord;
-elseif UvData.Field.Mesh/ord>=2
-    UvData.Field.Mesh=2*ord;
-else
-    UvData.Field.Mesh=ord;
-end
-UvData.Object{1}.Type='plane';%main plotting plane
-UvData.Object{1}.ProjMode='projection';%main plotting plane
-UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
-UvData.Object{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
 
-%% 3D case (menuvolume)
-if NbDim==3% && UvData.NewSeries
-    test_set_object=1;
-    hset_object=findobj(allchild(0),'tag','set_object');% look for the set_object GUI
-    ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
-    ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
-    if ~isempty(hset_object) %if set_object is detected
-          delete(hset_object);% delete the GUI set_object if it does not fit 
-    end
-    if test_set_object% reinitiate the GUI set_object
-        delete_object(1);% delete the current projection object in the list UvData.Object, delete its graphic representations and update the list displayed in handles.ListObject and 2
-        UvData.Object{1}.NbDim=NbDim;%test for 3D objects
-        UvData.Object{1}.RangeZ=UvData.Field.Mesh;%main plotting plane
-        UvData.Object{1}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
-        UvData.Object{1}.Angle=[0 0 0];
-        UvData.Object{1}.HandlesDisplay=plot(0,0,'Tag','proj_object');% A REVOIR
-        UvData.Object{1}.Name='1-PLANE';
-        UvData.Object{1}.enable_plot=1;
-        set_object(UvData.Object{1},handles,ZBounds);
-        set(handles.ListObject,'Value',1);
-        set(handles.ListObject,'String',{'1-PLANE'});
-        set(handles.edit_object,'Value',1)% put the plane in edit mode to enable the z cursor
-        edit_object_Callback([],[], handles)
-    end
-    %multilevel case (single menuplane in a 3D space)
-elseif isfield(UvData,'Z')
-    if isfield(UvData,'CoordType')&& isequal(UvData.CoordType,'phys') && isfield(UvData,'XmlData')
-        XmlData=UvData.XmlData{1};
-        if isfield(XmlData,'PlanePos')
-            UvData.Object{1}.Coord=XmlData.PlanePos(UvData.ZIndex,:);
-        end
-        if isfield(XmlData,'PlaneAngle')
-            siz=size(XmlData.PlaneAngle);
-            indangle=min(siz(1),UvData.ZIndex);%take first angle if a single angle is defined (translating scanning)
-            UvData.Object{1}.PlaneAngle=XmlData.PlaneAngle(indangle,:);
-        end
-    elseif isfield(UvData,'ZIndex')
-        UvData.Object{1}.ZObject=UvData.ZIndex;
-    end
-end
 testnewseries=UvData.NewSeries;
 UvData.NewSeries=0;% put to 0 the test for a new field series (set by RootPath_callback)
 set(handles.uvmat,'UserData',UvData)
