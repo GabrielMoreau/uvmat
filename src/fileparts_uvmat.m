@@ -142,21 +142,14 @@ if ~isempty(detect)
 end
 
 %% extract subdirectory for pairs i1-i2 or j1-j2 (or ab, AB)
-if ~isempty(i2) || ~isempty(j2)
+% if ~isempty(i2) || ~isempty(j2)
     r=regexp(RootPath,'\<(?<newrootpath>.+)(\\|/)(?<subdir>[^\\^/]+)(\\|/)*\>','names');
     if ~isempty(r)
         SubDir=r.subdir;
         RootPath=r.newrootpath;
     end
-end
-
-% if ~isempty(regexp(NomType,'-|ab|AB'))
-%     r=regexp(RootPath,'\<(?<newrootpath>.+)(\\|/)(?<subdir>[^\\^/]+)(\\|/)*\>','names');
-%     if ~isempty(r)
-%     SubDir=r.subdir;
-%     RootPath=r.newrootpath;
-%     end
 % end
+
 
 
 function type=get_type(s)

@@ -208,7 +208,7 @@ if isfield (Param,'Patch1')
     end
     
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch1_Rho','Patch1_Threshold','Patch1_SubDomain'}];
-    Data.Patch1_Rho=Param.Patch1.SmoothingParam;
+    Data.Patch1_Rho=Param.Patch1.FieldSmooth;
     Data.Patch1_Threshold=Param.Patch1.MaxDiff;
     Data.Patch1_SubDomain=Param.Patch1.SubdomainSize;
     nbvar=length(Data.ListVarName);
@@ -262,8 +262,8 @@ if isfield (Param,'Civ2')
     else
         par_civ2.ImageB=par_civ1.ImageB;
     end
-    ibx2=ceil(par_civ2.Bx/2);
-    iby2=ceil(par_civ2.By/2);
+    ibx2=ceil(par_civ2.CorrBoxSize(1)/2);
+    iby2=ceil(par_civ2.CorrBoxSize(2)/2);
     isx2=ibx2+4;% search ara +-4 pixels around the guess
     isy2=iby2+4;
     % shift from par_civ2.filename_nc1
@@ -307,11 +307,11 @@ if isfield (Param,'Civ2')
     if par_civ2.CheckMask&&~isempty(par_civ2.Mask)&& ~strcmp(maskname,par_civ2.Mask)% mask exist, not already read in civ1
         mask=imread(par_civ2.Mask);
     end
-    par_civ2.Searchx=2*isx2+1;
-    par_civ2.Searchy=2*isy2+1;
-    par_civ2.Shiftx=Shiftx(nbval>=1)./nbval(nbval>=1);
-    par_civ2.Shifty=Shifty(nbval>=1)./nbval(nbval>=1);
-    par_civ2.Grid=[GridX(nbval>=1)-par_civ2.Shiftx/2 GridY(nbval>=1)-par_civ2.Shifty/2];% grid taken at the extrapolated origin of the displacement vectors
+    par_civ2.SearchBoxSize(1)=2*isx2+1;
+    par_civ2.SearchBoxSize(2)=2*isy2+1;
+    par_civ2.SearchBoxShift=[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
+%     par_civ2.SearchBoxShift(2)=Shifty(nbval>=1)./nbval(nbval>=1);
+    par_civ2.Grid=[GridX(nbval>=1)-par_civ2.SearchBoxShift(:,1)/2 GridY(nbval>=1)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
     if par_civ2.CheckDeformation
         par_civ2.DUDX=DUDX./nbval;
         par_civ2.DUDY=DUDY./nbval;
@@ -391,7 +391,7 @@ end
 %% Patch2
 if isfield (Param,'Patch2')
     Data.ListGlobalAttribute=[Data.ListGlobalAttribute {'Patch2_Rho','Patch2_Threshold','Patch2_SubDomain'}];
-    Data.Patch2_Rho=Param.Patch2.SmoothingParam;
+    Data.Patch2_Rho=Param.Patch2.FieldSmooth;
     Data.Patch2_Threshold=Param.Patch2.MaxDiff;
     Data.Patch2_SubDomain=Param.Patch2.SubdomainSize;
     nbvar=length(Data.ListVarName);
@@ -453,22 +453,22 @@ function [xtable ytable utable vtable ctable F result_conv errormsg] = civ (par_
 %methods perform better and will maybe be implemented in the future.
 
 %% prepare grid
-ibx2=ceil(par_civ.Bx/2);
-iby2=ceil(par_civ.By/2);
-isx2=ceil(par_civ.Searchx/2);
-isy2=ceil(par_civ.Searchy/2);
-shiftx=round(par_civ.Shiftx);
-shifty=-round(par_civ.Shifty);% sign minus because image j index increases when y decreases
+ibx2=ceil(par_civ.CorrBoxSize(1)/2);
+iby2=ceil(par_civ.CorrBoxSize(2)/2);
+isx2=ceil(par_civ.SearchBoxSize(1)/2);
+isy2=ceil(par_civ.SearchBoxSize(2)/2);
+shiftx=round(par_civ.SearchBoxShift(:,1));
+shifty=-round(par_civ.SearchBoxShift(:,2));% sign minus because image j index increases when y decreases
 if isfield(par_civ,'Grid')
     if ischar(par_civ.Grid)%read the drid file if the input is a file name
         par_civ.Grid=dlmread(par_civ.Grid);
         par_civ.Grid(1,:)=[];%the first line must be removed (heading in the grid file)
     end
 else% automatic measurement grid
-    ibx2=ceil(par_civ.Bx/2);
-    iby2=ceil(par_civ.By/2);
-    isx2=ceil(par_civ.Searchx/2);
-    isy2=ceil(par_civ.Searchy/2);
+%     ibx2=ceil(par_civ.Bx/2);
+%     iby2=ceil(par_civ.By/2);
+%     isx2=ceil(par_civ.Searchx/2);
+%     isy2=ceil(par_civ.Searchy/2);
     miniy=max(1+isy2+shifty,1+iby2);
     minix=max(1+isx2-shiftx,1+ibx2);
     maxiy=min(par_civ.ImageHeight-isy2+shifty,par_civ.ImageHeight-iby2);
@@ -608,9 +608,9 @@ for ivec=1:nbvec
             [y,x] = find(result_conv==255,1);
             if ~isempty(y) && ~isempty(x)
                 try
-                    if par_civ.Rho==1
+                    if par_civ.CorrSmooth==1
                         [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
-                    elseif par_civ.Rho==2
+                    elseif par_civ.CorrSmooth==2
                         [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
                     end
                     utable(ivec)=vector(1)*mesh+shiftx(ivec);

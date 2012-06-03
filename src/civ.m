@@ -23,7 +23,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 08-May-2012 22:14:39
+% Last Modified by GUIDE v2.5 03-Jun-2012 22:16:42
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -270,12 +270,13 @@ function RootPath_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.RootPath,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
 RootPath=get(handles.RootPath,'String');
+SubdirImages=get(handles.SubdirImages,'String');
 RootFile=get(handles.RootFile,'String');
 ref_i=str2num(get(handles.ref_i,'String'));
 ref_j=str2num(get(handles.ref_j,'String'));
 NomType=get(handles.NomType,'String');
 ImaExt=get(handles.ImaExt,'String');
-fileinput=fullfile_uvmat(RootPath,'',RootFile,ImaExt,NomType,ref_i,[],ref_j);
+fileinput=fullfile_uvmat(RootPath,SubdirImages,RootFile,ImaExt,NomType,ref_i,[],ref_j);
 errormsg=display_file_name(handles,fileinput);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
@@ -398,27 +399,19 @@ end
 [FilePath,FileName,ImaExt]=fileparts(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomTypeIma,FileType,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName ImaExt]);
+[RootPath,SubDir,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName ImaExt]);
 
-% [RootPath,FileName,ImaExt]=fileparts(fileinput);
-% [RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,Object]=find_file_series(RootPath,[FileName ImaExt]);
-% if strcmp(NomTypeInput,'*')% movies will be opened at the first frame
-%     i1=1;
-%     i2=[];
-%     j1=[];
-%     j2=[];
-% end
 switch FileType
     case {'image','multimage','video','mmreader'}
     otherwise
         errormsg='invalid input file: enter an image, a movie or civ .nc file';
         return
 end
-% RootName=fullfile(RootPath,RootFile);
 set(handles.RootPath,'String',RootPath)
+set(handles.SubdirImages,'String',SubDir)
 set(handles.RootFile,'String',RootFile)
+set(handles.SubdirCiv1,'String',[SubDir '.civ'])
 browse=get(handles.RootPath,'UserData');
-% browse.nom_type_nc=NomTypeNc;
 browse.incr_pair=[0 0];%default
 
 %% fill reference indices from the input file indices
@@ -642,41 +635,41 @@ for ilist=1:length(listot)
 end
 
 %% update the selection for civ1 and civ2 
-if ~isempty(SubDir)% subdir for civ1 and civ2 initiated by the input
-    SubdirCiv1=SubDir;
-    SubdirCiv2=SubDir;
-    set(handles.SubdirCiv1,'String',SubDir)
-    set(handles.SubdirCiv2,'String',SubDir)
-else% currently selected subdir preserved
-    SubdirCiv1=get(handles.SubdirCiv1,'String');
-    SubdirCiv2=get(handles.SubdirCiv2,'String');
-    if isempty(SubdirCiv1)% default subdir name='CIV'
-        set(handles.SubdirCiv1,'String','CIV');
-        SubdirCiv1='CIV';
-    end
-    if isempty(SubdirCiv2)% default subdir name='CIV'
-        set(handles.SubdirCiv2,'String','CIV');
-        SubdirCiv2='CIV';
-    end
-end
+% if ~isempty(SubDir)% subdir for civ1 and civ2 initiated by the input
+%     SubdirCiv1=SubDir;
+%     SubdirCiv2=SubDir;
+%     set(handles.SubdirCiv1,'String',SubDir)
+%     set(handles.SubdirCiv2,'String',SubDir)
+% else% currently selected subdir preserved
+%     SubdirCiv1=get(handles.SubdirCiv1,'String');
+%     SubdirCiv2=get(handles.SubdirCiv2,'String');
+%     if isempty(SubdirCiv1)% default subdir name='CIV'
+%         set(handles.SubdirCiv1,'String','CIV');
+%         SubdirCiv1='CIV';
+%     end
+%     if isempty(SubdirCiv2)% default subdir name='CIV'
+%         set(handles.SubdirCiv2,'String','CIV');
+%         SubdirCiv2='CIV';
+%     end
+% end
 
 %% update the subdirectory menus
-ValueCiv1=find(strcmp(SubdirCiv1,listdir));%search the index of subdir in the cell listdir
-if isempty(ValueCiv1)% if the input subdir is not found
-    ValueCiv1=numel(listdir)+1;%new subdirectory requested for civ1
-end
-ValueCiv2=find(strcmp(SubdirCiv2,listdir));%search the index of subdir in the cell listdir
-if isempty(ValueCiv2)% if the input subdir is not found
-    ValueCiv2=numel(listdir)+1;%new subdirectory requested for civ2
-end
-set(handles.ListSubdirCiv1,'String',[listdir;'new...'])
-set(handles.ListSubdirCiv2,'String',[listdir;'new...'])
-set(handles.ListSubdirCiv1,'Value',ValueCiv1)
-set(handles.ListSubdirCiv2,'Value',ValueCiv2)
-if isempty(listdir)
-    set(handles.SubdirCiv1,'String','CIV')
-    set(handles.SubdirCiv2,'String','CIV')
-end
+% ValueCiv1=find(strcmp(SubdirCiv1,listdir));%search the index of subdir in the cell listdir
+% if isempty(ValueCiv1)% if the input subdir is not found
+%     ValueCiv1=numel(listdir)+1;%new subdirectory requested for civ1
+% end
+% ValueCiv2=find(strcmp(SubdirCiv2,listdir));%search the index of subdir in the cell listdir
+% if isempty(ValueCiv2)% if the input subdir is not found
+%     ValueCiv2=numel(listdir)+1;%new subdirectory requested for civ2
+% end
+% set(handles.ListSubdirCiv1,'String',[listdir;'new...'])
+% set(handles.ListSubdirCiv2,'String',[listdir;'new...'])
+% set(handles.ListSubdirCiv1,'Value',ValueCiv1)
+% set(handles.ListSubdirCiv2,'Value',ValueCiv2)
+% if isempty(listdir)
+%     set(handles.SubdirCiv1,'String','CIV')
+%     set(handles.SubdirCiv2,'String','CIV')
+% end
 
 %% store info
 set(handles.RootPath,'UserData',browse)% store the nomenclature type
@@ -801,7 +794,7 @@ if ~isempty(ind_selected)
 end
 set(handles.PairIndices,'Visible','on')
 set(handles.SubdirCiv1,'Visible','on')
-set(handles.ListSubdirCiv1,'Visible','on')
+%set(handles.ListSubdirCiv1,'Visible','on')
 set(handles.TitleSubdirCiv1,'Visible','on')
 if ~opening
     errormsg=find_netcpair_civ(handles,1); % select the available netcdf files
@@ -813,7 +806,7 @@ if max(checkbox(4:6))% case of civ2 pair choice needed
     set(handles.TitlePairCiv2,'Visible','on')
     set(handles.TitleSubdirCiv2,'Visible','on')
     set(handles.SubdirCiv2,'Visible','on')
-    set(handles.ListSubdirCiv2,'Visible','on')
+    %set(handles.ListSubdirCiv2,'Visible','on')
     set(handles.ListPairCiv2,'Visible','on')
     if ~opening
         errormsg=find_netcpair_civ(handles,2); % select the available netcdf files
@@ -824,7 +817,7 @@ if max(checkbox(4:6))% case of civ2 pair choice needed
 else
     set(handles.TitleSubdirCiv2,'Visible','off')
     set(handles.SubdirCiv2,'Visible','off')
-    set(handles.ListSubdirCiv2,'Visible','off')
+   % set(handles.ListSubdirCiv2,'Visible','off')
     set(handles.ListPairCiv2,'Visible','off')
 end
 options={'Civ1','Fix1','Patch1','Civ2','Fix2','Patch2'};
@@ -1215,14 +1208,16 @@ display('checking the files...')
 if ~isempty(errormsg)
     return
 end
-[filecell,i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_civ2,nom_type_nc,xx,yy,compare]=...
+[filecell,i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_civ2,nom_type_nc,tild,tild,compare,errormsg]=...
     set_civ_filenames(handles,ref_i,ref_j,box_test);
-
-Rootbat=fileparts(filecell.nc.civ1{1,1});%output netcdf file (without extention)
-set(handles.civ,'UserData',filecell);%store for futur use of status callback
-if isempty(filecell)% (error message displayed in fct set_civ_filenames)
+if ~isempty(errormsg)
     return
 end
+% if isempty(filecell)% (error message displayed in fct set_civ_filenames)
+%     return
+% end
+Rootbat=fileparts(filecell.nc.civ1{1,1});%output netcdf file (without extention)
+set(handles.civ,'UserData',filecell);%store for futur use of status callback
 nbfield=numel(i1_civ1);
 nbslice=numel(j1_civ1);
 if ~strcmp(CivMode,'CivX')
@@ -1282,7 +1277,7 @@ for ifile=1:nbfield
                 Param.Civ1.term_a=num2stra(j1_civ1(j),nom_type_nc);%UTILITE?
                 Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%
             end
-            if strcmp(Param.Civ1.FileTypeA,'video')|| strcmp(Param.Civ1.FileTypeA,'mmreader')
+            if isfield(Param.Civ1,'FileTypeA')&&(strcmp(Param.Civ1.FileTypeA,'video')|| strcmp(Param.Civ1.FileTypeA,'mmreader'))
                 %   ImageInfo=get(VideoReader(fullfile(Param.RootPath,[Param.RootFile Param.ImaExt])));
                 ImageInfo=get(Param.Civ1.ImageA);
                 %                 elseif strcmp(Param.Civ1.FileTypeA,'mmreader')
@@ -1295,11 +1290,10 @@ for ifile=1:nbfield
             else
                 Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};
                 Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
-                form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
+               % form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
                 ImageInfo=imfinfo(filecell.ima1.civ1{1,1});%read the first image to get the size
                 Param.Civ1.ImageBitDepth=ImageInfo.BitDepth;
             end
-            
             Param.Civ1.ImageWidth=ImageInfo.Width;
             Param.Civ1.ImageHeight=ImageInfo.Height;
             Param.Civ1.FrameIndexA=i1_civ1(ifile);
@@ -1433,7 +1427,7 @@ for ifile=1:nbfield
             end
         end
         if Param.CheckCiv2==1
-            if strcmp(Param.Civ2.FileTypeA,'video')|| strcmp(Param.Civ2.FileTypeA,'mmreader')
+            if isfield(Param.Civ2,'FileTypeA') &&(strcmp(Param.Civ2.FileTypeA,'video')|| strcmp(Param.Civ2.FileTypeA,'mmreader'))
                 %   ImageInfo=get(VideoReader(fullfile(Param.RootPath,[Param.RootFile Param.ImaExt])));
                 ImageInfo=get(Param.Civ2.ImageA);
                 %                 elseif strcmp(Param.Civ1.FileTypeA,'mmreader')
@@ -1847,8 +1841,8 @@ end
 Param=rmfield(Param,'status');
 Param=rmfield(Param,'xml');
 t=struct2xml(Param);
-t=set(t,1,'Name','CivDoc');% set the head label
-save(t,[namedoc '.CivDoc.xml']); %save GUI  parameters as xml file
+t=set(t,1,'name','Civ');% set the head label
+save(t,[namedoc '.civ.xml']); %save GUI  parameters as xml file
 saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
 
 %Save info in personal profile (initiate browser next time) TODO
@@ -1911,28 +1905,30 @@ end
 %       .ima2.civ1,.ima2.civ2: second image for civ1 and civ2 respectively (possibly different)
 %       .nc.civ1,.nc.civ2: netcdf files containing civ1 and civ2 data respectively (possibly different)
 % i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_civ2: arrays of files indices, needed for timing records
-function [filecell,i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_civ2,NomType_nc,file_ref_fix1,file_ref_fix2,compare]=...
+function [filecell,i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_civ2,NomType_nc,file_ref_fix1,file_ref_fix2,compare,errormsg]=...
     set_civ_filenames(handles,ref_i,ref_j,checkbox)
 %------------------------------------------------------------------------
 filecell=[];%default
+errormsg='';
 ListProgram=get(handles.ListProgram,'String');
 CivMode=ListProgram{get(handles.ListProgram,'Value')};%Program to use , CivX or Matlab
 
 %% get the root name and check dir
 RootPath=get(handles.RootPath,'String');
+SubdirImages=get(handles.SubdirImages,'String');
 RootFile=get(handles.RootFile,'String');
-filecell.filebase=fullfile(RootPath,RootFile);
+filecell.filebase=fullfile(RootPath,SubdirImages,RootFile);
 if isempty(filecell.filebase)
-    msgbox_uvmat('ERROR','please open an image with the upper menu option Open/Browse...')
+    errormsg='please open an image with the upper menu option Open/Browse...';
     return
 end
 if ~exist(RootPath,'dir')
-    msgbox_uvmat('ERROR',['path to images ' RootPath ' not found'])
+    errormsg=['path to images ' RootPath ' not found'];
     return
 end
 [tild,message]=fileattrib(RootPath);
 if ~isempty(message) && ~isequal(message.UserWrite,1)
-    msgbox_uvmat('ERROR',['No writting access to ' RootPath])
+    errormsg=['No writting access to ' RootPath];
     return
 end
 %check result directory
@@ -2060,8 +2056,7 @@ if checkbox(2)==1% fix1 performed
                 file_ref=fullfile_uvmat(RootPathRef,ref.subdir,RootFile,'.nc',ref.NomType,num_i1(ifile),num_i2(ifile),num_j1(j),num_j2(j));
                 file_ref_fix1(ifile,j)={file_ref};
                 if ~exist(file_ref,'file')
-                    msgbox_uvmat('ERROR',['reference file ' file_ref ' not found for fix1'])
-                    filecell=[];
+                    errormsg=['reference file ' file_ref ' not found for fix1'];
                     return
                 end
             end
@@ -2112,8 +2107,7 @@ if checkbox(5)==1% fix2 performed
                 file_ref=fullfile_uvmat(RootPathRef,ref.subdir,RootFile,'.nc',ref.NomType,num_i1(ifile),num_i2(ifile),num_j1(j),num_j2(j));
                 file_ref_fix2(ifile,j)={file_ref};
                 if ~exist(file_ref,'file')
-                    msgbox_uvmat('ERROR',['reference file ' file_ref ' not found for fix2'])
-                    filecell={};
+                    errormsg=['reference file ' file_ref ' not found for fix2'];
                     return
                 end
             end
@@ -2154,16 +2148,13 @@ if checkbox(1)==1;
         %create the new SubdirCiv1
         if ~exist(fullfile(RootPath,subdir_civ1_new),'dir')     
             [xx,msg1]=mkdir(fullfile(RootPath,subdir_civ1_new));
-
             if ~strcmp(msg1,'')
-                msgbox_uvmat('ERROR',['cannot create ' subdir_civ1_new ': ' msg1])%error message for directory creation
-                filecell={};
+                errormsg=['cannot create ' subdir_civ1_new ': ' msg1];%error message for directory creation
                 return
             elseif isunix          
                 [xx,msg2] = fileattrib(fullfile(RootPath,subdir_civ1_new),'+w','g'); %yield writing access (+w) to user group (g)
                 if ~strcmp(msg2,'')
-                    msgbox_uvmat('ERROR',['pb of permission for  ' fullfile(RootPath,subdir_civ1_new) ': ' msg2])%error message for directory creation
-                    filecell={};
+                    errormsg=['pb of permission for  ' fullfile(RootPath,subdir_civ1_new) ': ' msg2];%error message for directory creation
                     return
                 end
             end
@@ -2196,14 +2187,12 @@ if checkbox(1)==1;
             if ~exist(fullfile(RootPath,subdir_civ1_new),'dir')        
                 [xx,msg1]=mkdir(fullfile(RootPath,subdir_civ1_new));
                 if ~strcmp(msg1,'')
-                    msgbox_uvmat('ERROR',['cannot create ' subdir_civ1_new ': ' msg1])
-                    filecell={};
+                    errormsg=['cannot create ' subdir_civ1_new ': ' msg1];
                     return
                 else
                     [xx,msg2] = fileattrib(fullfile(RootPath,subdir_civ1_new),'+w','g'); %yield writing access (+w) to user group (g)
                     if ~strcmp(msg2,'')
-                        msgbox_uvmat('ERROR',['pb of permission for ' subdir_civ1_new ': ' msg2])%error message for directory creation
-                        filecell={};
+                        errormsg=['pb of permission for ' subdir_civ1_new ': ' msg2];%error message for directory creation
                         return
                     end
                 end
@@ -2214,23 +2203,21 @@ if checkbox(1)==1;
     % get image names
     for ifile=1:nbfield
         for j=1:nbslice
-             filename=fullfile_uvmat(RootPath,'',RootFile_ima1,ext_ima,NomType_ima1,i1_civ1(ifile),[],j1_civ1(j));
+             filename=fullfile_uvmat(RootPath,SubdirImages,RootFile_ima1,ext_ima,NomType_ima1,i1_civ1(ifile),[],j1_civ1(j));
             idetect(j)=exist(filename,'file')==2;
             filecell.ima1.civ1(ifile,j)={filename}; %first image
-            filename=fullfile_uvmat(RootPath,'',RootFile_ima2,ext_ima,NomType_ima2,i2_civ1(ifile),[],j2_civ1(j));
+            filename=fullfile_uvmat(RootPath,SubdirImages,RootFile_ima2,ext_ima,NomType_ima2,i2_civ1(ifile),[],j2_civ1(j));
             idetect_1(j)=exist(filename,'file')==2;
             filecell.ima2.civ1(ifile,j)={filename};%second image
         end
         [idetectmin,indexj]=min(idetect);
         if idetectmin==0,
-            msgbox_uvmat('ERROR',[filecell.ima1.civ1{ifile,indexj} ' not found'])
-            filecell={};
+            errormsg=[filecell.ima1.civ1{ifile,indexj} ' not found'];
             return
         end
         [idetectmin,indexj]=min(idetect_1);
         if idetectmin==0,
-            msgbox_uvmat('ERROR',[filecell.ima2.civ1{ifile,indexj} ' not found'])
-            filecell={};
+            errormsg=[filecell.ima2.civ1{ifile,indexj} ' not found'];
             return
         end
     end
@@ -2246,16 +2233,12 @@ if checkbox(1)==1;
             end
             [idetectmin,indexj]=min(idetect);
             if idetectmin==0,
-                msgbox_uvmat('ERROR',[filecell.imaA1.civ1{ifile,indexj} ' not found'])
-                filecell={};
-               % cd(currentdir)
+                errormsg=[filecell.imaA1.civ1{ifile,indexj} ' not found'];
                 return
             end
             [idetectmin,indexj]=min(idetect_1);
             if idetectmin==0,
-                msgbox_uvmat('ERROR',[filecell.imaA2.civ1{ifile,indexj} ' not found'])
-                filecell={};
-               % cd(currentdir)
+                errormsg=[filecell.imaA2.civ1{ifile,indexj} ' not found'];
                 return
             end
         end
@@ -2268,9 +2251,7 @@ elseif (checkbox(2)==1 || checkbox(3)==1);
             filename=fullfile_uvmat(RootPath,subdir_civ1,RootFile_nc,'.nc',NomType_nc,i1_civ1(ifile),i2_civ1(ifile),j1_civ1(j),j2_civ1(j));
             detect=exist(filename,'file')==2;
             if detect==0
-                msgbox_uvmat('ERROR',[filename ' not found'])
-                filecell={};
-               % cd(currentdir)
+                errormsg=[filename ' not found'];
                 return
             end
             filecell.nc.civ1(ifile,j)={filename};
@@ -2282,11 +2263,7 @@ elseif (checkbox(2)==1 || checkbox(3)==1);
                 filename=fullfile_uvmat(RootPath,subdir_civ1,RootFile_A,'.nc',NomType_nc,i1_civ1(ifile),i2_civ1(ifile),j1_civ1(j),j2_civ1(j));
                 filecell.ncA.civ1(ifile,j)={filename};
                 if ~exist(filename,'file')
-                    msgbox_uvmat('ERROR',['input file ' filename ' not found'])
-                    set(handles.RUN, 'Enable','On')
-                    set(handles.RUN,'BackgroundColor',[1 0 0])
-                    filecell={};
-                    %cd(currentdir)
+                    errormsg=['input file ' filename ' not found'];
                     return
                 end
             end
@@ -2329,8 +2306,7 @@ if (checkbox(4)==1)&&...
             [xx,m2]=mkdir(fullfile(RootPath,subdir_civ2_new));
             [xx,msg2] = fileattrib(fullfile(RootPath,subdir_civ2_new),'+w','g'); %yield writing access (+w) to user group (g)
             if ~isequal(m2,'')
-                msgbox_uvmat('ERROR',['cannot create ' fullfile(RootPath,subdir_civ2_new) ': ' m2])
-                filecell={};
+                errormsg=['cannot create ' fullfile(RootPath,subdir_civ2_new) ': ' m2];
                 return
             end
         end
@@ -2362,9 +2338,7 @@ if (checkbox(4)==1)&&...
                 [xx,m2]=mkdir(subdir_civ2_new);
                  [xx,msg2] = fileattrib(fullfile(RootPath,subdir_civ2_new),'+w','g'); %yield writing access (+w) to user group (g)
                 if ~isequal(m2,'')
-                    msgbox_uvmat('ERROR', ['cannot create ' fullfile(RootPath,subdir_civ2_new) ': ' m2])%error message for directory creation
-                  %  cd(currentdir)
-                    filecell={};
+                    errormsg= ['cannot create ' fullfile(RootPath,subdir_civ2_new) ': ' m2];%error message for directory creation
                     return
                 end
             end
@@ -2372,7 +2346,6 @@ if (checkbox(4)==1)&&...
     end
     subdir_civ2=subdir_civ2_new;
 end
-%cd(currentdir);%come back to the current working directory
 
 %%%%%%%%%%%%%  if checkciv2 results are obtained or used  %%%%%%%%%%%%%
 if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
@@ -2383,38 +2356,36 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
                 filename=fullfile_uvmat(RootPath,subdir_civ1,RootFile_nc,'.nc',NomType_nc,i1_civ1(ifile),i2_civ1(ifile),j1_civ1(j),j2_civ1(j));%
                 filecell.nc.civ1(ifile,j)={filename};% name of the civ1 file
                 if ~exist(filename,'file')
-                    msgbox_uvmat('ERROR',['input file ' filename ' not found'])
-                    filecell={};
+                    errormsg=['input file ' filename ' not found'];
                     return
                 end
                 if ~testdiff % civ2 or patch2 are written in the same file as civ1
                     if checkbox(4)==0 ; %check the existence of civ2 if it is not calculated
                         Data=nc2struct(filename,'ListGlobalAttribute','CivStage','civ2');
                         if isfield(Data,'Txt')
-                            msgbox_uvmat('ERROR',Data.Txt); 
+                            errormsg=Data.Txt; 
                             return
                         elseif ~isempty(Data.CivStage)% case of new civ files
                             if Data.CivStage<4 %test for civ files
-                            msgbox_uvmat('ERROR',['no civ2 data in ' filename])
-                            filecell=[];
+                            errormsg=['no civ2 data in ' filename];
                             return
                             end
                         elseif isempty(Data.civ2)||isequal(Data.civ2,0)
-                            msgbox_uvmat('ERROR',['no civ2 data in ' filename])
-                            filecell=[];
+                            errormsg=['no civ2 data in ' filename];
                             return
                         end
                     elseif checkbox(3)==0; %check the existence of patch if it is not calculated
                         Data=nc2struct(filename,'ListGlobalAttribute','CivStage','patch');
-                        if ~isempty(Data.CivStage)
+                        if isfield(Data,'Txt')
+                            errormsg=Data.Txt;
+                            return
+                        elseif ~isempty(Data.CivStage)
                             if Data.CivStage<3 %test for civ files
-                                msgbox_uvmat('ERROR',['no patch data in ' filename])
-                                filecell=[];
+                                errormsg=['no patch data in ' filename];
                                 return
                             end
                         elseif isempty(Data.patch)||isequal(Data.patch,0)
-                            msgbox_uvmat('ERROR',['no patch data in ' filename])
-                            filecell=[];
+                            errormsg=['no patch data in ' filename];
                             return
                         end
                     end
@@ -2427,9 +2398,7 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
                     filename=fullfile_uvmat(RootPath,subdir_civ2,RootFile_A,'.nc',NomType_nc,i1_civ2(ifile),i2_civ2(ifile),j1_civ2(j),j2_civ2(j));
                     filecell.ncA.civ2(ifile,j)={filename};
                     if ~exist(filename,'file')
-                        msgbox_uvmat('ERROR',['input file ' filename ' not found'])
-                        set(handles.RUN, 'Enable','On')
-                        set(handles.RUN,'BackgroundColor',[1 0 0])
+                        errormsg=['input file ' filename ' not found'];
                         return
                     end
                 end
@@ -2458,8 +2427,7 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
             end
             [idetectmin,indexj]=min(idetect_2);
             if idetectmin==0,
-                msgbox_uvmat('ERROR',['input image ' filecell.ima1.civ2{ifile,indexj} ' not found'])
-                filecell=[];
+               errormsg=['input image ' filecell.ima1.civ2{ifile,indexj} ' not found'];
                 return
             end
         end
@@ -2477,8 +2445,7 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
             end
             [idetectmin,indexj]=min(idetect_3);
             if idetectmin==0,
-                msgbox_uvmat('ERROR',['input image ' filecell.ima2.civ2{ifile,indexj} ' not found'])
-                filecell=[];
+                errormsg=['input image ' filecell.ima2.civ2{ifile,indexj} ' not found'];
                 return
             end
         end
@@ -2493,18 +2460,15 @@ if (checkbox(5) || checkbox(6)) && ~checkbox(4)  % need to read an existing netc
                  filename=fullfile_uvmat(RootPath,subdir_civ2,RootFile_nc,'.nc',NomType_nc,i1_civ2(ifile),i2_civ2(ifile),j1_civ2(j),j2_civ2(j));
                 filecell.nc.civ2(ifile,j)={filename};
                 if ~exist(filename,'file')
-                    msgbox_uvmat('ERROR',['input file ' filename ' not found'])
-                    filecell=[];
+                    errormsg=['input file ' filename ' not found'];
                     return
                 else
                     Data=nc2struct(filename,'ListGlobalAttribute','CivStage','civ2');
                     if ~isempty(Data.CivStage) && Data.CivStage<4 %test for civ files
-                            msgbox_uvmat('ERROR',['no civ2 data in ' filename])
-                            filecell=[];
+                            errormsg=['no civ2 data in ' filename];
                             return
                     elseif isempty(Data.civ2)||isequal(Data.civ2,0)
-                        msgbox_uvmat('ERROR',['no civ2 data in ' filename])
-                        filecell=[];
+                        errormsg=['no civ2 data in ' filename];
                         return
                     end
                 end
@@ -3315,7 +3279,7 @@ ref_j_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in 
 % Callbacks in the uipanel Civ1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
-% --- Executes on button press in SearchRange: determine the search range num_Searchx,num_Searchy
+% --- Executes on button press in SearchRange: determine the search range num_SearchBoxSize_1,num_SearchBoxSize_2
 function SearchRange_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %determine pair numbers
@@ -3337,7 +3301,7 @@ else
 end
 
 %------------------------------------------------------------------------
-% ---  determine the search range num_Searchx,num_Searchy and shift
+% ---  determine the search range num_SearchBoxSize_1,num_SearchBoxSize_2 and shift
 function get_search_range(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 param_civ1=read_GUI(handles.Civ1);
@@ -3393,8 +3357,8 @@ if ~(isempty(umin)||isempty(umax)||isempty(vmin)||isempty(vmax))
         num_b=str2num(r.num2);
     end
     dt=time(num2+1,num_b+1)-time(num1+1,num_a+1);
-    ibx=str2double(get(handles.num_Bx,'String'));
-    iby=str2double(get(handles.num_By,'String'));
+    ibx=str2double(get(handles.num_CorrBoxSize_1,'String'));
+    iby=str2double(get(handles.num_CorrBoxSize_2,'String'));
     umin=dt*pxcm*umin;
     umax=dt*pxcm*umax;
     vmin=dt*pxcm*vmin;
@@ -3405,10 +3369,10 @@ if ~(isempty(umin)||isempty(umax)||isempty(vmin)||isempty(vmax))
     isx=2*ceil(isx/2)+1;
     isy=(vmax+2-shifty)*2+param_civ1.Bx;
     isy=2*ceil(isy/2)+1;
-    set(handles.num_Shiftx,'String',num2str(shiftx));
-    set(handles.num_Shifty,'String',num2str(shifty));
-    set(handles.num_Searchx,'String',num2str(isx));
-    set(handles.num_Searchy,'String',num2str(isy));
+    set(handles.num_SearchBoxShift_1,'String',num2str(shiftx));
+    set(handles.num_SearchBoxShift_2,'String',num2str(shifty));
+    set(handles.num_SearchBoxSize_1,'String',num2str(isx));
+    set(handles.num_SearchBoxSize_2,'String',num2str(isy));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3980,10 +3944,10 @@ hchildren=get(hparent,'children');
 handle_txtbox=findobj(hchildren,'tag','txt_Mask');
 if isequal(get(hObject,'Value'),0)
     set(handles.num_SubdomainSize,'Visible','on')
-    set(handles.num_SmoothingParam,'Visible','on')
+    set(handles.num_FieldSmooth,'Visible','on')
 else
     set(handles.num_SubdomainSize,'Visible','off')
-    set(handles.num_SmoothingParam,'Visible','off')
+    set(handles.num_FieldSmooth,'Visible','off')
 end
 
 % %------------------------------------------------------------------------
@@ -3992,10 +3956,10 @@ end
 % %------------------------------------------------------------------------
 % if isequal(get(handles.CheckStereo,'Value'),0)
 %     set(handles.num_SubdomainSize,'Visible','on')
-%     set(handles.num_SmoothingParam,'Visible','on')
+%     set(handles.num_FieldSmooth,'Visible','on')
 % else
 %     set(handles.num_SubdomainSize,'Visible','off')
-%     set(handles.num_SmoothingParam,'Visible','off')
+%     set(handles.num_FieldSmooth,'Visible','off')
 % end
 
 %------------------------------------------------------------------------
@@ -4012,8 +3976,7 @@ if get(handles.TestCiv1,'Value')
     else
         ref_j=1;%default j index
     end
-    [filecell,i1,i2,j1,j2,i1_civ2,i2_civ2,j1_civ2,j2_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
-        set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);% get the corresponding file name and indices
+    [filecell,i1,i2]=set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);% get the corresponding file name and indices
     Data.ListVarName={'ny','nx','A'};
     Data.VarDimName= {'ny','nx',{'ny','nx'}};
     Data.A=imread(filecell.ima1.civ1{1}); % read the first image
@@ -4113,9 +4076,9 @@ else
     fprintf(fid,  ['MaskName ' 'noFile use default' '\n' ]);
 end
 fprintf(fid,   ['ImageSize ' num2str(Param.Civ1.ImageWidth) ' ' num2str(Param.Civ1.ImageHeight) '\n' ]);   %VERIFIER CAS GENERAL ?
-fprintf(fid,   ['CorrelationBoxesSize ' num2str(Param.Civ1.Bx) ' ' num2str(Param.Civ1.By) '\n' ]);
-fprintf(fid,   ['SearchBoxeSize ' num2str(Param.Civ1.Searchx) ' ' num2str(Param.Civ1.Searchy) '\n' ]);
-fprintf(fid,   ['RO ' num2str(Param.Civ1.Rho) '\n' ]);
+fprintf(fid,   ['CorrelationBoxesSize ' num2str(Param.Civ1.CorrBoxSize(1)) ' ' num2str(Param.Civ1.CorrBoxSize(2)) '\n' ]);
+fprintf(fid,   ['SearchBoxeSize ' num2str(Param.Civ1.SearchBoxSize(1)) ' ' num2str(Param.Civ1.SearchBoxSize(2)) '\n' ]);
+fprintf(fid,   ['RO ' num2str(Param.Civ1.CorrSmooth) '\n' ]);
 if isfield(Param.Civ1,'Grid')
     fprintf(fid,   ['GridSpacing ' '25' ' ' '25' '\n' ]);
 else
@@ -4125,7 +4088,7 @@ fprintf(fid,   ['XX 1.0' '\n' ]);
 fprintf(fid,   ['Dt_TO ' num2str(Param.Civ1.Dt) ' ' num2str(Param.Civ1.Time) '\n' ]);
 fprintf(fid,  ['PixCmXY ' '1' ' ' '1' '\n' ]);
 fprintf(fid,  ['XX 1' '\n' ]);
-fprintf(fid,   ['ShiftXY ' num2str(Param.Civ1.Shiftx) ' '  num2str(Param.Civ1.Shifty) '\n' ]);
+fprintf(fid,   ['ShiftXY ' num2str(Param.Civ1.SearchBoxShift(1)) ' '  num2str(Param.Civ1.SearchBoxShift(2)) '\n' ]);
 if isfield(Param.Civ1,'Grid')
     fprintf(fid,  ['Grid ' 'y' '\n' ]);
     fprintf(fid,   ['GridName ' regexprep(Param.Civ1.Grid,'\\','\\\\') '\n' ]);
@@ -4202,13 +4165,13 @@ filename=regexprep(filename,'.nc','');
 if isunix
     cmd=[Param.xml.PatchBin...
         ' -f ' filename '.nc -m ' num2str(Param.(patchname).Nx)...
-        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothingParam)...
+        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).FieldSmooth)...
         ' -nopt ' num2str(Param.(patchname).SubdomainSize) ...
         '  > ' filename '.' lower(patchname) '.log 2>&1']; % redirect standard output to the log file
 else
     cmd=['"' Param.xml.PatchBin...
         '" -f "' filename '.nc" -m ' num2str(Param.(patchname).Nx)...
-        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).SmoothingParam)...
+        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).FieldSmooth)...
         ' -nopt ' num2str(Param.(patchname).SubdomainSize)...
         '  > "' filename '.' lower(patchname) '.log" 2>&1']; % redirect standard output to the log file
     cmd=regexprep(cmd,'\\','\\\\');
@@ -4246,9 +4209,9 @@ end
 % fprintf(fid, ['MaskName ' regexprep(Param.Civ2.MaskName,'\\','\\\\') '\n' ]);% for windows compatibility
 fprintf(fid,   ['ImageSize ' num2str(Param.Civ2.ImageWidth) ' ' num2str(Param.Civ2.ImageHeight) '\n' ]);  
 % fprintf(fid, ['ImageSize ' num2str(Param.Civ2.npx) ' ' num2str(Param.Civ2.npy) '\n' ]);   %VERIFIER CAS GENERAL ?
-fprintf(fid, ['CorrelationBoxesSize ' num2str(Param.Civ2.Bx) ' ' num2str(Param.Civ2.By) '\n' ]);
-fprintf(fid, ['SearchBoxeSize ' num2str(Param.Civ2.Bx) ' ' num2str(Param.Civ2.By) '\n']);
-fprintf(fid, ['RO ' num2str(Param.Civ2.Rho) '\n']);
+fprintf(fid, ['CorrelationBoxesSize ' num2str(Param.Civ2.CorrBoxSize(1)) ' ' num2str(Param.Civ2.CorrBoxSize(2)) '\n' ]);
+fprintf(fid, ['SearchBoxeSize ' num2str(Param.Civ2.CorrBoxSize(1)) ' ' num2str(Param.Civ2.CorrBoxSize(2)) '\n']);
+fprintf(fid, ['RO ' num2str(Param.Civ2.CorrSmooth) '\n']);
 if isfield(Param.Civ2,'Grid')
     fprintf(fid,   ['GridSpacing ' '25' ' ' '25' '\n' ]);
 else
@@ -4405,12 +4368,9 @@ if get(handles.TestPatch1,'Value')
     else
         ref_j=1;%default
     end
-    [filecell,i1,i21,j1,j2,i1_civ2,i2_civ2,j1_civ2,j2_civ2,nom_type_nc,file_ref_fix1,file_ref_fix2]=...
-        set_civ_filenames(handles,ref_i,ref_j,[0 0 1 0 0 0]);
-    
+    filecell=set_civ_filenames(handles,ref_i,ref_j,[0 0 1 0 0 0]);    
     Data.ListVarName={'ny','nx','A'};
-    Data.VarDimName= {'ny','nx',{'ny','nx'}};
-    
+    Data.VarDimName= {'ny','nx',{'ny','nx'}};   
     param_patch1=read_GUI(handles.Patch1);
     param_patch1.CivFile=filecell.nc.civ1{1};
     Param.Patch1=param_patch1;
@@ -4420,12 +4380,12 @@ if get(handles.TestPatch1,'Value')
             msgbox_uvmat('ERROR',errormsg)
             return
         end
-        SmoothingParam(irho)=Param.Patch1.SmoothingParam;
+        SmoothingParam(irho)=Param.Patch1.FieldSmooth;
         Data.Civ1_U_Diff=Data.Civ1_U_Diff(Data.Civ1_FF==0);
         Data.Civ1_V_Diff=Data.Civ1_V_Diff(Data.Civ1_FF==0);
         DiffVel(irho)=sqrt(mean(Data.Civ1_U_Diff.*Data.Civ1_U_Diff+Data.Civ1_V_Diff.*Data.Civ1_V_Diff))
         NbSites(irho,:)=Data.Civ1_NbSites*numel(Data.Civ1_NbSites)/numel(Data.Civ1_U_Diff);
-        Param.Patch1.SmoothingParam=2*Param.Patch1.SmoothingParam;
+        Param.Patch1.SmoothingParam=2*Param.Patch1.FieldSmooth;
     end
     figure
     plot(SmoothingParam,DiffVel,'b',SmoothingParam,NbSites,'r')
@@ -4527,8 +4487,8 @@ switch Program
         set(handles.title_Nx,'Visible','on')
         set(handles.title_Ny,'Visible','on')
         set(handles.title_MaxDiff,'Visible','off')
-        set(handles.num_Rho,'Style','edit')
-        set(handles.num_Rho,'String','1')
+        set(handles.num_CorrSmooth,'Style','edit')
+        set(handles.num_CorrSmooth,'String','1')
         set(handles.BATCH,'Enable','on')
         set(handles.CheckThreshold,'Visible','off')
         set(handles.CheckDeformation,'Value',1)
@@ -4542,9 +4502,9 @@ switch Program
         set(handles.num_Ny,'Visible','off')
         set(handles.title_Nx,'Visible','off')
         set(handles.title_Ny,'Visible','off')
-        set(handles.num_Rho,'Style','popupmenu')
-        set(handles.num_Rho,'Value',1)
-        set(handles.num_Rho,'String',{'1';'2'})
+        set(handles.num_CorrSmooth,'Style','popupmenu')
+        set(handles.num_CorrSmooth,'Value',1)
+        set(handles.num_CorrSmooth,'String',{'1';'2'})
         set(handles.CheckThreshold,'Visible','on')
         set(handles.CheckDeformation,'Value',0)% desactivate (work in progress)
         set(handles.CheckDecimal,'Value',0)% desactivate (work in progress)
@@ -4557,3 +4517,7 @@ function TestCiv2_Callback(hObject, eventdata, handles)
 
 
 function RootFile_Callback(hObject, eventdata, handles)
+
+
+
+function SubdirImages_Callback(hObject, eventdata, handles)
