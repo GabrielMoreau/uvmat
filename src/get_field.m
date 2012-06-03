@@ -21,7 +21,7 @@
 
 function varargout = get_field(varargin)
 
-% Last Modified by GUIDE v2.5 27-Mar-2011 19:13:26
+% Last Modified by GUIDE v2.5 31-May-2012 22:52:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -1757,6 +1757,3 @@ function TimeVarValue_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in check_rgb.
 function check_rgb_Callback(hObject, eventdata, handles)
-
-
-
