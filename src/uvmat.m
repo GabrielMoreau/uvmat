@@ -1832,7 +1832,7 @@ if isempty(num_i2)
     num_i2=num_i1;%repeat the index i1 by default
 end
 % imaname_1=name_generator(filebase,num_i2,num_j2,Ext,NomType);
-imaname_1=fullfile_uvmat(RootPath,'',RootFile,Ext,NomType,num_i2,[],num_j2);
+imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,Ext,NomType,num_i2,[],num_j2);
 if ~exist(imaname_1,'file')
       msgbox_uvmat('ERROR',['second input open (-)  ' imaname_1 ' not found']);
       set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red

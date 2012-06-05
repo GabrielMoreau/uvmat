@@ -51,10 +51,18 @@ j1_series=zeros(1,1,1);
 j2_series=zeros(1,1,1);
 % ifile_min=1;%default
 [FileType,FileInfo,Object]=get_file_type(fullfileinput);
-if strcmp( FileType,'multimage')||strcmp( FileType,'video')||strcmp( FileType,'mmreader')
+switch FileType
+    case 'multimage'
+    NomType='*';
+    i1_series=(1:FileInfo.NbFrame)';
+    case {'video','mmreader'}
     NomType='*';
     i1_series=(1:FileInfo.NumberOfFrames)';
-end
+end 
+% if strcmp( FileType,'multimage')||strcmp( FileType,'video')||strcmp( FileType,'mmreader')
+%     NomType='*';
+%     i1_series=(1:FileInfo.NumberOfFrames)';
+% end
 
 if strcmp(NomType,'')||strcmp(NomType,'*')
     if exist(fullfileinput,'file')
