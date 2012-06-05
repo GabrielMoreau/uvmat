@@ -1067,7 +1067,7 @@ num_ref_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function update_mode(handles,i1_series,i2_series,j1_series,j2_series,time)
 %------------------------------------------------------------------------    
-check_burst=1;
+check_burst=0;
 if isempty(j2_series)% no pair menu to display
     if isempty(i2_series)
         set(handles.mode,'String',{''})
@@ -1080,7 +1080,7 @@ else
     nbfield2=size(j2_series,2);
     set(handles.mode,'String',{'bursts';'series(Dj)'})
     if nbfield2>10 || nbfield==1
-        set(handles.mode,'Value',2);
+        set(handles.mode,'Value',2);%set mode to series(Dj) if more than 10 j values
     else
         set(handles.mode,'Value',1);
         check_burst=1;
@@ -1091,7 +1091,7 @@ if check_burst
     enable_j(handles,'Off') %do not display j index scanning in burst mode (j is fixed by the burst choice)
 else
     enable_i(handles,'On')
-    enable_j(handles,'Off')
+    enable_j(handles,'On')
 end
 fill_ListPair(handles,i1_series,i2_series,j1_series,j2_series,time)
 ListPairs_Callback([],[],handles)
@@ -1198,7 +1198,7 @@ else
 end
 set(handles.ListPairs,'String',displ_pair)
 if isempty(displ_pair)
-    msgbox_uvmat('ERROR',['no file available for the selected subdirectory ' subdir])
+    msgbox_uvmat('ERROR',['no file available for the selected subdirectory ' SubDir])
 end
 
 

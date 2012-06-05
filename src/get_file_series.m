@@ -40,9 +40,10 @@ for iview=1:size(InputTable,1)
         % TODO case of free pairs:
         %r=regexp(pair_string,'.*\D(?<num1>[\d+|*])(?<delim>[-||])(?<num2>[\d+|*])','names');
     end
-    if isempty(r.mode)
-        r.num1='';
-        r.num2='';
+    if isempty(r)||isempty(r.mode)
+        r(1).num1='';
+        r(1).num2='';
+        r(1).mode='';
     end
     [i1_series{iview},i2_series{iview},j1_series{iview},j2_series{iview}]=find_file_indices(ref_i,ref_j,str2num(r.num1),str2num(r.num2),r.mode);
     %case of pairs (.nc files)

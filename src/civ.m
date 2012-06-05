@@ -767,7 +767,7 @@ end
 set(handles.PairIndices,'Visible','on')
 set(handles.SubdirCiv1,'Visible','on')
 set(handles.TitleSubdirCiv1,'Visible','on')
-if ~opening
+if opening==0
     errormsg=find_netcpair_civ(handles,1); % select the available netcdf files
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',errormsg)
