@@ -908,8 +908,11 @@ end
 set(handles.CheckBW,'Value',strcmp(ColorType,'grayscale'))% select handles.CheckBW if grayscale image
 
 %% read parameters (time, geometric calibration..) from a documentation file (.xml advised)
-filexml=[FileBase '.xml'];
-fileciv=[FileBase '.civ'];
+SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
+filexml=fullfile(RootPath,[SubDirBase '.xml']);% new convention: xml above the image dir
+if ~exist(filexml,'file')
+    filexml=fullfile(RootPath,SubDir,[RootFile '.xml']);%old convention: xml within the image directroy
+end
 warntext='';%default warning message
 NbSlice=1;%default
 set(handles.RootPath,'BackgroundColor',[1 1 1])
@@ -944,34 +947,37 @@ if exist(filexml,'file')
             end
         end
     end  
-elseif exist(fileciv,'file')% if .civ file found 
-    [error,XmlData.Time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext([FileBase '.civ']);
-    GeometryCalib.R=[pxcmx 0 0; 0 pxcmy 0;0 0 0];
-    GeometryCalib.Tx=0;
-    GeometryCalib.Ty=0;
-    GeometryCalib.Tz=1;
-    GeometryCalib.dpx=1;
-    GeometryCalib.dpy=1;
-    GeometryCalib.sx=1;
-    GeometryCalib.Cx=0;
-    GeometryCalib.Cy=0;
-    GeometryCalib.f=1;
-    GeometryCalib.kappa1=0;
-    GeometryCalib.CoordUnit='cm';
-    XmlData.GeometryCalib=GeometryCalib;
-    if error==2, warntext=['no file ' FileBase '.civ'];
-    elseif error==1, warntext='inconsistent number of fields in the .civ file';
-    end  
-    set(handles.num_Npx,'String',num2str(npx));%fills nbre of pixels x box
-    set(handles.num_Npy,'String',num2str(npy));%fills nbre of pixels y box
-    set(handles.pxcm,'String',num2str(pxcmx));%fills scale x (pixel/cm) box
-    set(handles.pycm,'String',num2str(pxcmy));%fills scale y (pixel/cm) box
-    set(handles.pxcm,'Visible','on');%fills scale x (pixel/cm) box 
-    set(handles.pycm,'Visible','on');%fills scale y (pixel/cm) box 
-    set(handles.view_xml,'Visible','on')   
-    set(handles.view_xml,'String','view .civ')
 else
-    set(handles.view_xml,'Visible','off')
+    fileciv=fullfile(RootPath,SubDir,[RootFile '.civ']);
+    if exist(fileciv,'file')% if .civ file found (very old convention)
+        [error,XmlData.Time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext(fileciv);
+        GeometryCalib.R=[pxcmx 0 0; 0 pxcmy 0;0 0 0];
+        GeometryCalib.Tx=0;
+        GeometryCalib.Ty=0;
+        GeometryCalib.Tz=1;
+        GeometryCalib.dpx=1;
+        GeometryCalib.dpy=1;
+        GeometryCalib.sx=1;
+        GeometryCalib.Cx=0;
+        GeometryCalib.Cy=0;
+        GeometryCalib.f=1;
+        GeometryCalib.kappa1=0;
+        GeometryCalib.CoordUnit='cm';
+        XmlData.GeometryCalib=GeometryCalib;
+        if error==2, warntext=['no file ' fileciv];
+        elseif error==1, warntext='inconsistent number of fields in the .civ file';
+        end
+        set(handles.num_Npx,'String',num2str(npx));%fills nbre of pixels x box
+        set(handles.num_Npy,'String',num2str(npy));%fills nbre of pixels y box
+        set(handles.pxcm,'String',num2str(pxcmx));%fills scale x (pixel/cm) box
+        set(handles.pycm,'String',num2str(pxcmy));%fills scale y (pixel/cm) box
+        set(handles.pxcm,'Visible','on');%fills scale x (pixel/cm) box
+        set(handles.pycm,'Visible','on');%fills scale y (pixel/cm) box
+        set(handles.view_xml,'Visible','on')
+        set(handles.view_xml,'String','view .civ')
+    else
+        set(handles.view_xml,'Visible','off')
+    end
 end
 
 %% store last index in handles.lat_i and .last_j
@@ -984,16 +990,13 @@ if isempty(nbfield_j)
     nbfield_j=max(max(j1_series));
 end
 if ~isempty(XmlData.Time)
-%     nbfield=size(XmlData.Time,1);
-%     nbfield_j=size(XmlData.Time,2);
     %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
-    if isequal(nbfield,1) && ~isequal(nbfield_j,1)% .Time is a line vector
+    if isequal(size(XmlData.Time,1),1)
+%     if isequal(nbfield,1) && ~isequal(nbfield_j,1)% .Time is a line vector
         NomType=get(handles.NomType,'String');
-        if numel(NomType)>=2 &&(strcmp(NomType,'_i')||strcmp(NomType(1:2),'%0')||strcmp(NomType(1:2),'_%'))
+%         if isempty(nbfield_j)
+%         if numel(NomType)>=2 &&(strcmp(NomType,'_i')||strcmp(NomType(1:2),'%0')||strcmp(NomType(1:2),'_%'))
             XmlData.Time=(XmlData.Time)';
-%             nbfield=nbfield_j;
-%             nbfield_j=1;
-        end
     end
 end
 last_i_cell=get(handles.last_i,'String');

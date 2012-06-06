@@ -19,8 +19,8 @@
 %     = netcdf : netcdf file 
 %     = image : usual image as recognised by Matlab
 %     = multimage: image series stored in a single file
-%     = movie: movie read with mmreader
-%     = avi: avi movie read with aviread (OBSOLETE, used only when mmreader is not available, old versions of Matlab)
+%     = mmreader: movie read with mmreader
+%     = video: movie read with VideoReader (recent versions of Matlab)
 %     = vol: images representing scanned volume (images concatened in the y direction)
 % ParamIn: Matlab structure of input parameters
 %     .FieldName: name of the input field (for Civx data)

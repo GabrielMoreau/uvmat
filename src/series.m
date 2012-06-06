@@ -692,11 +692,14 @@ if isfield(XmlData,'GeometryCalib') && isfield(XmlData.GeometryCalib,'SliceCoord
 end
 
 %% update pair menus
+set(handles.Pairs,'Visible','on')
+set(handles.PairString,'Visible','on')
 ListView=get(handles.ListView,'String');
 ListView{iview}=num2str(iview);
 set(handles.ListView,'String');
 set(handles.ListView,'Value',iview)
 update_mode(handles,i1_series,i2_series,j1_series,j2_series,time)
+
 
 %% display the set of existing files as an image
 set(handles.waitbar_frame,'Units','pixels')
@@ -850,7 +853,6 @@ set(handles.FieldMenu_1,'String',{'get_field...'})
 
 
 %% store the series info in 'UserData'
-
 SeriesData.i1_series{iview}=i1_series;
 SeriesData.i2_series{iview}=i2_series;
 SeriesData.j1_series{iview}=j1_series;
@@ -859,7 +861,20 @@ SeriesData.FileType{iview}=FileType;
 SeriesData.Time{iview}=time;
 set(handles.series,'UserData',SeriesData)
 
-
+%% check for pair display
+check_pairs=0;
+for iview=1:numel(SeriesData.i2_series)
+    if ~isempty(SeriesData.i2_series{iview})||~isempty(SeriesData.j2_series{iview})
+        check_pairs=1;
+    end
+end
+if check_pairs
+    set(handles.Pairs,'Visible','on')
+    set(handles.PairString,'Visible','on')
+else
+    set(handles.Pairs,'Visible','off')
+    set(handles.PairString,'Visible','off')
+end
 
 return
 
@@ -1040,8 +1055,12 @@ ListPairs_Callback([],[],handles)
 function ListPairs_Callback(hObject,eventdata,handles)
 %------------------------------------------------------------
 list_pair=get(handles.ListPairs,'String');%get the menu of image pairs
-string=list_pair{get(handles.ListPairs,'Value')};
-string=regexprep(string,',.*','');%removes time indication (after ',')
+if isempty(list_pair)
+    string='';
+else
+    string=list_pair{get(handles.ListPairs,'Value')};
+    string=regexprep(string,',.*','');%removes time indication (after ',')
+end
 PairString=get(handles.PairString,'Data');
 iview=get(handles.ListView,'Value');
 PairString{iview,1}=string;
@@ -1197,9 +1216,9 @@ else
     set(handles.ListPairs,'Value',1)
 end
 set(handles.ListPairs,'String',displ_pair)
-if isempty(displ_pair)
-    msgbox_uvmat('ERROR',['no file available for the selected subdirectory ' SubDir])
-end
+% if isempty(displ_pair)
+%     msgbox_uvmat('ERROR',['no file available for the selected subdirectory' ])
+% end
 
 
 
@@ -1542,7 +1561,7 @@ first_j=str2num(get(handles.num_first_j,'String'));
 last_j=str2num(get(handles.num_last_j,'String'));
 ref_j=ceil((first_j+last_j)/2);
 set(handles.num_ref_j,'String', num2str(ref_j))
-ref_j_Callback(hObject, eventdata, handles)
+num_ref_j_Callback(hObject, eventdata, handles)
 SeriesData=get(handles.series,'UserData');
 if ~isfield(SeriesData,'Time')
     SeriesData.Time{1}=[];

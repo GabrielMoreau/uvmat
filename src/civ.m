@@ -414,9 +414,9 @@ set(handles.RootPath,'String',RootPath)
 set(handles.SubdirImages,'String',SubdirImages)
 set(handles.RootFile,'String',RootFile)
 if strcmp(ExtInput,'.nc')
-    SubDirCiv=SubDir;
+    SubDirCiv=regexprep(SubDir,[SuddirImages '^'],'');%suppress the root  SuddirImages;
 else
-    SubDirCiv=[SubDir '.civ'];
+    SubDirCiv= '.civ';
 end
 set(handles.SubdirCiv1,'String',SubDirCiv)
 set(handles.SubdirCiv2,'String',SubDirCiv)
@@ -441,13 +441,17 @@ MaxIndex_j=max(j1_series(j1_series>0));
 
 %% look for an image documentation file
 ext_imadoc='';%default
+SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
+filexml=fullfile(RootPath,[SubDirBase '.xml']);% new convention: xml above the image dir
+if ~exist(filexml,'file')
+    filexml=fullfile(RootPath,SubDir,[RootFile '.xml']);%old convention: xml within the image directroy
+end
 RootName=fullfile(RootPath,RootFile);
-if exist([RootName '.xml'],'file')
+if exist(filexml,'file')
     ext_imadoc='.xml';
-elseif exist([RootName '.civxml'],'file')
-    ext_imadoc='.civxml';
-elseif exist([RootName '.civ'],'file')
+elseif exist(fullfile(RootPath,SubDir,[RootFile '.civ']),'file')
     ext_imadoc='.civ';
+    fileciv=fullfile(RootPath,SubDir,[RootFile '.civ']);
 elseif exist([RootName '.avi'],'file')
     ext_imadoc='.avi';
 elseif exist([RootName '.AVI'],'file')
@@ -464,14 +468,8 @@ if ~isempty(ext_imadoc)
     set(handles.ImaDoc,'BackgroundColor',[1 1 0]) % set edit box to yellow cloro to indicate that the file reading is beginning
     drawnow
     switch ext_imadoc
-        case '.civxml'%OBSOLETE
-            [tild,tild,time]=read_civxml([RootName '.civxml']);
-            mode='pair j1-j2';
-            if isempty(nom_type_ima)% dtermine types by default if not already selected by browser or uvmat
-                nom_type_ima='_i_j';
-            end
         case '.xml'
-            [XmlData,warntext]=imadoc2struct([RootName '.xml']);
+            [XmlData,warntext]=imadoc2struct(filexml);
             ext_ima_read=[];
             nom_type_read=[];
             if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
@@ -507,8 +505,8 @@ if ~isempty(ext_imadoc)
                 end
             end
         case '.civ'% OBSOLETE: case of .civ image documentation file
-            [error,time,TimeUnit,mode,npx,npy]=read_imatext([RootName '.civ']);
-            if error==2, msgbox_uvmat('WARNING',['no file ' RootName '.civ']);
+            [error,time,TimeUnit,mode,npx,npy]=read_imatext(fileciv);
+            if error==2, msgbox_uvmat('WARNING',['no file ' fileciv]);
             elseif error==1, msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
             end
             nom_type_ima='001a';
@@ -521,7 +519,7 @@ if ~isempty(ext_imadoc)
             if exist([RootName ext_imadoc],'file')==2
                 hhh=which('videoreader');
                 if isempty(hhh)%use old video function of matlab
-                    imainfo=aviinfo([RootName ext_imadoc]);%read infos on the avi movie
+                    imainfo=aviinfo([RootName ext_imadoc]);%read infos on the avi movie TO REPLACE mmreader
                     dt=1/imainfo.FramesPerSecond;%time interval between successive frames
                     MaxIndex_i=imainfo.NumFrames;%number of frames
                     %         XmlData.Time=(0:1/imainfo.FramesPerSecond:(imainfo.NumFrames-1)/imainfo.FramesPerSecond)';
@@ -680,7 +678,7 @@ end
 set(handles.ListSubdirCiv1,'Value',ilist)% select the selected subdir in the menu
 if get(handles.CheckCiv1,'Value')% if Civ1 is performed
     set(handles.SubdirCiv2,'String',SubDir);% set by default civ2 directory the same as civ1 
-    set(handles.ListSubdirCiv2,'Value',ilist)
+%     set(handles.ListSubdirCiv2,'Value',ilist)
 else % if Civ1 data already exist
     errormsg=find_netcpair_civ(handles,1); %update the list of available pairs from netcdf files in the new directory
     if ~isempty(errormsg)
@@ -1902,10 +1900,14 @@ if ~isempty(message) && ~isequal(message.UserWrite,1)
     return
 end
 %check result directory
-subdir_civ1=get(handles.SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf output data
-subdir_civ2=get(handles.SubdirCiv2,'String');
-if isequal(subdir_civ1,''),subdir_civ1='CIV'; end% put default subdir
+subdir_civ1=regexprep(get(handles.SubdirCiv1,'String'),'^.','');%subdirectory subdir_civ1 for the netcdf output data
+subdir_civ2=regexprep(get(handles.SubdirCiv2,'String'),'^.','');
+if isequal(subdir_civ1,''),subdir_civ1='civ'; end% put default subdir
+% subdir_civ1=[ '.' subdir_civ1];
+% subdir_civ2=[ '.' subdir_civ2];
 if isequal(subdir_civ2,''),subdir_civ2=subdir_civ1; end% put default subdir
+subdir_civ1=[SubdirImages '.' subdir_civ1];
+subdir_civ2=[SubdirImages '.' subdir_civ2];
 
 %% choose root names depending on ListCompareMode =displacement, shift, PIV or stereo PIV
 ListCompareMode=get(handles.ListCompareMode,'String');
@@ -2097,14 +2099,20 @@ if checkbox(1)==1;
                 filename=fullfile_uvmat(RootPath,subdir_civ1_new,RootFile_nc,'.nc',NomType_nc,i1_civ1(ifile),i2_civ1(ifile),j1_civ1(j),j2_civ1(j));
                 detect=exist(filename,'file')==2;
                 if detect% if a netcdf file already exists
-                    indstr=regexp(subdir_civ1_new,'\D');
-                    if indstr(end)<length(subdir_civ1_new) %subdir_civ1 ends by a number
-                        vers=str2double(subdir_civ1_new(indstr(end)+1:end))+1;
-                        subdir_civ1_new=[subdir_civ1_new(1:indstr(end)) num2str(vers)];
-                    else
-                        vers=vers+1;
-                        subdir_civ1_new=[subdir_civ1_new(1:indstr(end)) '_' num2str(vers)];       
+                    r=regexp(subdir_civ1_new,'(?<root>.*\D)(?<num1>\d+)$','names');%detect whether name ends by a number
+                    if isempty(r)
+                        r(1).root=[subdir_civ1_new '_'];
+                        r(1).num1='0';
                     end
+                    subdir_civ1_new=[r(1).root num2str(str2num(r(1).num1)+1)];%increment the index by 1 or put 1
+%                     indstr=regexp(subdir_civ1_new,'\D');
+%                     if indstr(end)<length(subdir_civ1_new) %subdir_civ1 ends by a number
+%                         vers=str2double(subdir_civ1_new(indstr(end)+1:end))+1;
+%                         subdir_civ1_new=[subdir_civ1_new(1:indstr(end)) num2str(vers)];
+%                     else
+%                         vers=vers+1;
+%                         subdir_civ1_new=[subdir_civ1_new(1:indstr(end)) '_' num2str(vers)];       
+%                     end
                     subdir_civ2=subdir_civ1_new;
                     break
                 end
@@ -2466,8 +2474,8 @@ if strcmp(compare,'stereo PIV')
         end
     end
 end
-set(handles.SubdirCiv1,'String',subdir_civ1);%update the edit box
-set(handles.SubdirCiv2,'String',subdir_civ2);%update the edit box
+set(handles.SubdirCiv1,'String',regexprep(subdir_civ1,['^' SubdirImages],''));%suppress the root  SuddirImages;);%update the edit box
+set(handles.SubdirCiv2,'String',regexprep(subdir_civ2,['^' SubdirImages],''));%update the edit box
 
 % For CivX COPY IMAGES TO THE FORMAT .png IF NEEDED 
 if strcmp(CivMode,'CivX')
@@ -3562,43 +3570,43 @@ else
     str=num2str(num);
 end
 
+% %------------------------------------------------------------------------
+% % --- Executes on button press in ListSubdirCiv1.
+% function ListSubdirCiv1_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% list_subdir_civ1=get(handles.ListSubdirCiv1,'String');
+% val=get(handles.ListSubdirCiv1,'Value');
+% SubDir=list_subdir_civ1{val};
+% if strcmp(SubDir,'new...')
+%     if get(handles.CheckCiv1,'Value')
+%         SubDir='CIV'; %default subdirectory
+%     else
+%         msgbox_uvmat('ERROR','select CheckCiv1 to perform a new Civ operation')
+%         return
+%     end    
+% end
+% set(handles.SubdirCiv1,'String',SubDir);
+% errormsg=find_netcpair_civ(handles,1);
+% if ~isempty(errormsg)
+%     msgbox_uvmat('ERROR',errormsg)
+% end
+%     
 %------------------------------------------------------------------------
-% --- Executes on button press in ListSubdirCiv1.
-function ListSubdirCiv1_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-list_subdir_civ1=get(handles.ListSubdirCiv1,'String');
-val=get(handles.ListSubdirCiv1,'Value');
-SubDir=list_subdir_civ1{val};
-if strcmp(SubDir,'new...')
-    if get(handles.CheckCiv1,'Value')
-        SubDir='CIV'; %default subdirectory
-    else
-        msgbox_uvmat('ERROR','select CheckCiv1 to perform a new Civ operation')
-        return
-    end    
-end
-set(handles.SubdirCiv1,'String',SubDir);
-errormsg=find_netcpair_civ(handles,1);
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',errormsg)
-end
-    
-%------------------------------------------------------------------------
-% --- Executes on button press in ListSubdirCiv2.
-function ListSubdirCiv2_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-list_subdir_civ2=get(handles.ListSubdirCiv2,'String');
-val=get(handles.ListSubdirCiv2,'Value');
-SubDir=list_subdir_civ2{val};
-if strcmp(SubDir,'new...')
-    if get(handles.CheckCiv2,'Value')
-        SubDir='CIV'; %default subdirectory
-    else
-        msgbox_uvmat('ERROR','select CheckCiv2 to perform a new Civ operation')
-        return
-    end
-end
-set(handles.SubdirCiv2,'String',SubDir);
+% % --- Executes on button press in ListSubdirCiv2.
+% function ListSubdirCiv2_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% list_subdir_civ2=get(handles.ListSubdirCiv2,'String');
+% val=get(handles.ListSubdirCiv2,'Value');
+% SubDir=list_subdir_civ2{val};
+% if strcmp(SubDir,'new...')
+%     if get(handles.CheckCiv2,'Value')
+%         SubDir='CIV'; %default subdirectory
+%     else
+%         msgbox_uvmat('ERROR','select CheckCiv2 to perform a new Civ operation')
+%         return
+%     end
+% end
+% set(handles.SubdirCiv2,'String',SubDir);
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckGrid.

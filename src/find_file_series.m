@@ -88,7 +88,7 @@ else
         if ~isempty(rr)
             RootFileNew=[RootFile rr.i1];
             checkpair=~isempty(regexp(NomType,'-','once'))||~isempty(regexp(NomType,'ab$','once'))||~isempty(regexp(NomType,'AB$','once'));%case of PIV results
-            if exist(fullfile(RootPath,[RootFileNew '.xml']),'file') %|| (checkpair && exist(fullfile(fileparts(RootPath),[RootFileNew '.xml']),'file'))
+            if exist(fullfile(RootPath,SubDir,[RootFileNew '.xml']),'file') %|| (checkpair && exist(fullfile(fileparts(RootPath),[RootFileNew '.xml']),'file'))
                 RootFile=RootFileNew;
                 NomTypePref=r.tiretnum;
                 NomType=regexprep(NomType,['^'  NomTypePref],'');
