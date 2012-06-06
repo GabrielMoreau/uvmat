@@ -36,9 +36,11 @@ end
 % read the xml file for batch case
 if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
     Param=xml2struct(Param);
+    checkrun=0;
 else %  RUN case: parameters introduced as the input structure Param
     hseries=guidata(Param.hseries);%handles of the GUI series
     WaitbarPos=get(hseries.waitbar_frame,'Position');
+    checkrun=1;
 end
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 
@@ -272,10 +274,14 @@ for i_slice=1:NbSlice
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%  LOOP ON FIELDS WITHIN  A SLICE
     filecounter=0;
     for ifile=i_slice:NbSlice:nbfield
-        stopstate=get(hseries.RUN,'BusyAction');
+        if checkrun
+            update_waitbar(hseries.waitbar_frame,WaitbarPos,ifile/nbfield)
+            stopstate=get(hseries.RUN,'BusyAction');
+        else
+            stopstate='queue';
+        end
         errormsg='';
         if isequal(stopstate,'queue')% enable STOP command
-            update_waitbar(hseries.waitbar,WaitbarPos,ifile/nbfield) % update the waitbar
             % loop on views (in case of multiple input series)
             for iview=1:nbview
                 filename=filecell{iview,ifile};

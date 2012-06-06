@@ -44,9 +44,11 @@ end
 % read the xml file for batch case
 if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
     Param=xml2struct(Param);
+    checkrun=0;
 else %  RUN case: parameters introduced as the input structure Param
     hseries=guidata(Param.hseries);%handles of the GUI series
     WaitbarPos=get(hseries.waitbar_frame,'Position');
+    checkrun=1;
 end
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 
@@ -249,40 +251,54 @@ if testima %case of images
 else
     ext_out='.nc';
 end
-subdir_result='aver_stat';%subdirectory for the results
-pathdir=fullfile(RootPath{1},subdir_result);% full subdirectory name, including path
-testexist=1;
-while testexist
-    pathdir=fullfile(RootPath{1},subdir_result);% full subdirectory name, including path
-    if NbSlice==1% keep track of the first and lsat indices of the input files
-        %NomTypeOut=nomtype2pair(Param.InputTable{1,4},i2_series{end}(end)-i1_series{1}(1),j2_series{end}(end)-j1_series{1}(1));
-        NomTypeOut='_1-2';
-        fileresult{1}=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},ext_out,NomTypeOut,i1_series{1}(1),i1_series{1}(end),[],[]);
-        testexist=exist(fileresult{1},'file');
-    else % simplified indexing with i_slice for multiple slices
-        testexist=0;
-        for i_slice=1:NbSlice
-            fileresult{1}=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},ext_out,NomTypeOut,i_slice,[],[],[]);
-            if exist(fileresult{i_slice},'file')
-                testexist=1;
-                break
-            end
+subdir_result=[SubDir{1} '.stat'];%subdirectory for the results
+pathdir=RootPath{1};% full subdirectory name, including path
+checkdetect=1;
+while checkdetect %create a new subdir if the netcdf files already exist
+    checkdetect=exist(fullfile(pathdir,subdir_result));
+    if checkdetect% if a nesult dir already exists
+        r=regexp(subdir_result,'(?<root>.*\D)(?<num1>\d+)$','names');%detect whether name ends by a number
+        if isempty(r)
+            r(1).root=[subdir_result '_'];
+            r(1).num1='0';
         end
-    end
-    if testexist
-        subdir_result=[subdir_result '.0'];
+        subdir_result=[r(1).root num2str(str2num(r(1).num1)+1)];%increment the index by 1 or put 1
     end
 end
+NomTypeOut='_1-2';
+fileresult{1}=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},ext_out,NomTypeOut,i1_series{1}(1),i1_series{1}(end),[],[]);
+
+% A REPRNDRE CAS MULTI-NIVEAU:
+%     pathdir=fullfile(RootPath{1},subdir_result);% full subdirectory name, including path
+%     if NbSlice==1% keep track of the first and lsat indices of the input files
+%         %NomTypeOut=nomtype2pair(Param.InputTable{1,4},i2_series{end}(end)-i1_series{1}(1),j2_series{end}(end)-j1_series{1}(1));
+%         NomTypeOut='_1-2';
+%         fileresult{1}=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},ext_out,NomTypeOut,i1_series{1}(1),i1_series{1}(end),[],[]);
+%         testexist=exist(fileresult{1},'file');
+%     else % simplified indexing with i_slice for multiple slices
+%         testexist=0;
+%         for i_slice=1:NbSlice
+%             fileresult{1}=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},ext_out,NomTypeOut,i_slice,[],[],[]);
+%             if exist(fileresult{i_slice},'file')
+%                 testexist=1;
+%                 break
+%             end
+%         end
+%     end
+%     if testexist
+%         subdir_result=[subdir_result '.0'];
+%     end
+% end
 % create result directory if needed
-if ~exist(pathdir,'dir')
-    [m1,m2,m3]=mkdir(pathdir);
+if ~exist(fullfile(RootPath{1},subdir_result),'dir')
+    [m1,m2,m3]=mkdir(fullfile(RootPath{1},subdir_result));
     if ~isequal(m2,'')
         msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
     end
 end
-[xx,msg2] = fileattrib(pathdir,'+w','g'); %yield writing access (+w) to user group (g)
+[xx,msg2] = fileattrib(fullfile(RootPath{1},subdir_result),'+w','g'); %yield writing access (+w) to user group (g)
 if ~strcmp(msg2,'')
-    msgbox_uvmat('ERROR',['pb of permission for ' pathdir ': ' msg2])%error message for writting access
+    msgbox_uvmat('ERROR',['pb of permission for ' fullfile(RootPath{1},subdir_result) ': ' msg2])%error message for writting access
     return
 end
 
@@ -311,6 +327,12 @@ for i_slice=1:NbSlice
  %       stopstate=get(hseries.RUN,'BusyAction');
  %       if isequal(stopstate,'queue') % enable STOP command
          %   update_waitbar(hseries.waitbar,WaitbarPos,index/(nbfield*nbfield2))
+         if checkrun
+             update_waitbar(hseries.waitbar_frame,WaitbarPos,index/(nbfield*nbfield2))
+             stopstate=get(hseries.RUN,'BusyAction');
+         else
+             stopstate='queue';
+         end
             ifile=indselect(index);
             % reading input file(s)
             for iview=1:nbview

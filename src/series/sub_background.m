@@ -60,21 +60,23 @@ end
 % read the xml file for batch case
 if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
     Param=xml2struct(Param);
+    checkrun=0;
 else %  RUN case: parameters introduced as the input structure Param
     hseries=guidata(Param.hseries);%handles of the GUI series
     WaitbarPos=get(hseries.waitbar_frame,'Position');
+    checkrun=1;
 end
-filebase=fullfile(Param.InputTable{1,1},Param.InputTable{1,3});
+filebase=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3});
 dir_images=Param.InputTable{1,1};
 NomType=Param.InputTable{1,4};
 FileExt=Param.InputTable{1,5};
-[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+[filecell,i1_series,tild,j1_series]=get_file_series(Param);%generates the set
+of input file names
 if size(filecell,1)>1
     msgbox_uvmat('WARNING','This function uses only the first input image series')
     return
 end
 
-%%% TODO: update with the new conventions%%%%%%%%%%%%%%%%%
 %% determine input image type
 FileType=[];%default
 MovieObject=[];
@@ -83,7 +85,7 @@ MovieObject=[];
 if isequal(lower(FileExt),'.avi')
     hhh=which('mmreader');
     if ~isequal(hhh,'')&& mmreader.isPlatformSupported()
-        MovieObject=mmreader(fullfile(RootPath,[RootFile FileExt]));
+        MovieObject=mmreader(fullfile(RootPath,SubDir,[RootFile FileExt]));
         FileType='movie';
     else
         FileType='avi';
@@ -124,30 +126,28 @@ if siz(2)~=1
 end
 
 %% create dir of the new images
-% [dir_images,namebase]=fileparts(filebase);
 if test_level
-    term='_b_levels';
+    term='.sbk.lev';
 else
-    term='_b';
+    term='.sbk';
 end
-[pp,subdir_ima]=fileparts(Param.InputTable{1,1});
+SubdirResult=[Param.InputTable{1,2} term];
 try
-    mkdir([dir_images term]);
+    mkdir(fullfile(Param.InputTable{1,1},SubdirResult));
 catch ME
-    msgbox_uvmat('ERROR',ME.message);
+    msgbox_uvmat('ERROR',['error in creating result directory: ' ME.message]);
     return
 end
-[xx,msg2] = fileattrib([dir_images term],'+w','g'); %yield writing access (+w) to user group (g)
+[xx,msg2] = fileattrib(fullfile(Param.InputTable{1,1},SubdirResult),'+w','g'); %yield writing access (+w) to user group (g)
 if ~strcmp(msg2,'')
-    msgbox_uvmat('ERROR',['pb of permission for ' subdir_ima term ': ' msg2])%error message for directory creation
+    msgbox_uvmat('ERROR',['pb of permission for ' fullfile(Param.InputTable{1,1},SubdirResult) ': ' msg2])%error message for directory creation
     return
 end
-filebase_b=fullfile([dir_images term],Param.InputTable{1,3});
 
 %% set processing parameters
 prompt = {'Number of images for the sliding background (MUST FIT IN COMPUETER MEMORY)';'The number of positions (laser slices)';'volume scan mode (Yes/No)';...
     'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles'};
-dlg_title = ['get (slice by slice) a sliding background and substract to each image, result in subdir ' subdir_ima term];
+dlg_title = ['get (slice by slice) a sliding background and substract to each image, result in subdir ' SubdirResult];
 num_lines= 3;
 def     = { num2str(nbaver_init);num2str(nbslice_i);'No';'0.1'};
 answer = inputdlg(prompt,dlg_title,num_lines,def);
@@ -208,11 +208,14 @@ catch ME
     return
 end
 
-%% copy the xml file
-if exist([filebase '.xml'],'file')
-    copyfile([filebase '.xml'],[filebase_b '.xml']);% copy the .civ file
-    t=xmltree([filebase_b '.xml']);
-    
+%% update the xml file
+SubDirBase=regexprep(Param.InputTable{1,2},'\..*','');%take the root part of SubDir, before the first dot '.'
+filexml=fulfille(Param.InputTable{1,1},[SubDirBase '.xml']);
+if ~exist(filexml,'file') && exist([filebase '.xml'],'file')% xml inside the image directory
+    copyfile([filebase '.xml'],filexml);% copy the .xml file
+end
+if exist(filexml,'file')
+    t=xmltree([filexml '.xml']);  
     %update information on the first image name in the series
     uid_Heading=find(t,'ImaDoc/Heading');
     if isempty(uid_Heading)
@@ -250,17 +253,14 @@ if exist([filebase '.xml'],'file')
     [t]=add(t,NbSlidingImages_uid,'chardata',num2str(nbaver));
     [t,LuminosityRank_uid]=add(t,new_uid,'element','RankBackground');
     [t]=add(t,LuminosityRank_uid,'chardata',num2str(rank));% luminosity rank almong the nbaver sliding images
-    save(t,[filebase_b '.xml'])
-elseif exist([filebase '.civ'],'file')
-    copyfile([filebase '.civ'],[filebase_b '.civ']);% copy the .civ file
+    save(t,filexml)
 end
 %copy the mask
-if exist([filebase '_1mask_1'],'file')
-    copyfile([filebase '_1mask_1'],[filebase_b '_1mask_1']);% copy the mask file
-end
+% if exist([filebase '_1mask_1'],'file')
+%     copyfile([filebase '_1mask_1'],[filebase_b '_1mask_1']);% copy the mask file
+% end
 
 %MAIN LOOP ON SLICES
-
 for islice=1:nbslice_i
     %% select the series of image indices at the level islice
     for ifield=1:nbfield
@@ -289,7 +289,7 @@ for islice=1:nbslice_i
         if ~isempty(j1_series{1})
             j1=j1_series{1}(ifile);
         end
-        newname=fullfile_uvmat([dir_images term],'',Param.InputTable{1,3},'.png',NomType,i1_series{1}(ifile),[],j1);
+        newname=fullfile_uvmat(Param.InputTable{1,1},SubdirResult,Param.InputTable{1,3},'.png',NomType,i1_series{1}(ifile),[],j1);
         %newname=name_generator(filebase_b,i1_series{1}(ifile),j1_series{1}(ifile),'.png',NomType);% makes the new file name
         if test_level
             C=levels(C);
@@ -303,15 +303,20 @@ for islice=1:nbslice_i
     display('sliding background image will be substracted')
     if nbfield_slice > nbaver_ima
         for ifield = step*ceil(nbaver/2)+1:step:nbfield_slice-step*floor(nbaver/2)
-            stopstate=get(hseries.RUN,'BusyAction');
-            if isequal(stopstate,'queue')% enable STOP command
+            if checkrun
+                stopstate=get(hseries.RUN,'BusyAction');
                 update_waitbar(hseries.waitbar,WaitbarPos,(ifield+(islice-1)*nbfield_slice)/(nbfield_slice*nbslice_i))
                 display((ifield+(islice-1)*nbfield_slice)/(nbfield_slice*nbslice_i))
+            else
+                stopstate='queue';
+            end
+            if isequal(stopstate,'queue')% enable STOP command
                 Ak(:,:,1:nbaver_ima-step)=Ak(:,:,1+step:nbaver_ima);% shift the current image series by one burst (step)
                 %incorporate next burst in the current image series
                 for iburst=1:step
                     ifile=indselect(ifield+step*floor(nbaver/2)+iburst-1);
-                    filename=name_generator(filebase,num_i1(ifile),num_j1(ifile),FileExt,NomType);
+                    filename=fullfile_uvmat(Param.InputTable{1,1},Subdir,Param.InputTable{1,3},FileExt,NomType,num_i1(ifile),[],num_j1(ifile));
+                    %filename=name_generator(filebase,num_i1(ifile),num_j1(ifile),FileExt,NomType);
                     Aread=read_image(filename,FileType,num_i1(ifile),MovieObject);
                     Ak(:,:,nbaver_ima-step+iburst)=Aread;
                 end
@@ -326,7 +331,7 @@ for islice=1:nbslice_i
                     if ~isempty(j1_series{1})
                         j1=j1_series{1}(ifile);
                     end
-                    newname=fullfile_uvmat([dir_images term],'',Param.InputTable{1,3},'.png',NomType,i1_series{1}(ifile),[],j1);
+                    newname=fullfile_uvmat(Param.InputTable{1,1},SubdirResult,Param.InputTable{1,3},'.png',NomType,i1_series{1}(ifile),[],j1);
                     %[newname]=name_generator(filebase_b,num_i1(ifile),num_j1(ifile),'.png',NomType) % makes the new file name
                     if test_level
                         C=levels(C);
@@ -353,8 +358,7 @@ for islice=1:nbslice_i
         if ~isempty(j1_series{1})
             j1=j1_series{1}(ifile);
         end
-        newname=fullfile_uvmat([dir_images term],'',Param.InputTable{1,3},'.png',NomType,i1_series{1}(ifile),[],j1);
-        %newname=name_generator(filebase_b,num_i1(ifile),num_j1(ifile),'.png',NomType);% makes the new file name
+        newname=fullfile_uvmat(Param.InputTable{1,1},SubdirResult,Param.InputTable{1,3},'.png',NomType,i1_series{1}(ifile),[],j1);
         if test_level
             C=levels(C);
             imwrite(C,newname,'BitDepth',8); % save the new image
@@ -365,8 +369,9 @@ for islice=1:nbslice_i
 end
 
 %finish the waitbar
-update_waitbar(hseries.waitbar,WaitbarPos,1)
-
+if checkrun
+    update_waitbar(hseries.waitbar,WaitbarPos,1)
+end
 
 %------------------------------------------------------------------------
 %--read images and convert them to the uint16 format used for PIV
