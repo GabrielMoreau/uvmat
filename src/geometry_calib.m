@@ -233,9 +233,10 @@ RootPath='';
 if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
 %     testhandle=1;
     RootPath=get(hhuvmat.RootPath,'String');
-    RootFile=get(hhuvmat.RootFile,'String');
-    filebase=fullfile(RootPath,RootFile);
-    outputfile=[filebase '.xml'];%xml file associated with the currently displayed image
+    SubDir=get(hhuvmat.SubDir,'String');
+%     RootFile=get(hhuvmat.RootFile,'String');
+%     filebase=fullfile(RootPath,RootFile);
+    outputfile=[fullfile(RootPath,SubDir) '.xml'];%xml file associated with the currently displayed image
 else
     question={'save the calibration data and point coordinates in'};
     def={fullfile(RootPath,'ObjectCalib.xml')};

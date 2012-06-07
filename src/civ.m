@@ -3957,6 +3957,7 @@ if get(handles.TestCiv1,'Value')
     [filecell,i1,i2]=set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);% get the corresponding file name and indices
     Data.ListVarName={'ny','nx','A'};
     Data.VarDimName= {'ny','nx',{'ny','nx'}};
+
     Data.A=imread(filecell.ima1.civ1{1}); % read the first image
     if ndims(Data.A)==3 %case of color image
         Data.VarDimName= {'ny','nx',{'ny','nx','rgb'}};
@@ -3965,6 +3966,7 @@ if get(handles.TestCiv1,'Value')
     Data.nx=[1 size(Data.A,2)];
     Data.CoordUnit='pixel';% used to set equal scaling for x and y in image dispaly
     par_civ1=read_GUI(handles.Civ1);
+    par_civ1.FileTypeA=get_file_type(filecell.ima1.civ1{1});
     par_civ1.ImageWidth=size(Data.A,2);
     par_civ1.ImageHeight=size(Data.A,1);
     par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation

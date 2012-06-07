@@ -96,8 +96,7 @@ if isfield (Param,'Civ1')
             end
         end
     else
-        if isfield(par_civ1,'ImageA')%&&(ischar(par_civ1.ImageA)||strcmp(class(par_civ1.ImageA),'VideoReader')) % case with no image: only the PIV grid is calculated
-            
+        if isfield(par_civ1,'ImageA')&&(ischar(par_civ1.ImageA)||strcmp(class(par_civ1.ImageA),'VideoReader')) % case with no image: only the PIV grid is calculated           
             [Field,ParamOut,errormsg] = read_field(par_civ1.ImageA,par_civ1.FileTypeA,[],par_civ1.FrameIndexA);
             if ~isempty(errormsg)
                 errormsg=['error in civ_matlab/read_field:' errormsg];
@@ -105,7 +104,7 @@ if isfield (Param,'Civ1')
             end
             par_civ1.ImageA=Field.A;%= image matrix A in the first input field 
         end
-        if isfield(par_civ1,'ImageB')%&& (ischar(par_civ1.ImageB)||strcmp(class(par_civ1.ImageA),'VideoReader'))
+        if isfield(par_civ1,'ImageB')&& (ischar(par_civ1.ImageB)||strcmp(class(par_civ1.ImageA),'VideoReader'))
             [Field,ParamOut,errormsg] = read_field(par_civ1.ImageB,par_civ1.FileTypeB,[],par_civ1.FrameIndexB);
             if ~isempty(errormsg)
                 errormsg=['error in civ_matlab/read_field:' errormsg];

@@ -1358,9 +1358,8 @@ if isequal(get(handles.CheckMask,'Value'),1)
         if ~exist(maskname,'file')
             errormsg='no file browsed';
         end
-        [RootDir,tild,RootFile,tild,tild,tild,tild,tild,Mask.NomType]=fileparts_uvmat(maskname);
-%         [RootDir,RootFile,x1,x2,xa,xb,xext,Mask.NomType]=name2display(maskname);
-        Mask.Base=fullfile(RootDir,RootFile);
+        [RootDir,SubDir,RootFile,tild,tild,tild,tild,tild,Mask.NomType]=fileparts_uvmat(maskname);
+        Mask.Base=fullfile(RootDir,SubDir,RootFile);
         Mask.NbSlice=1;
         set(handles.CheckMask,'UserData',Mask);
         set(handles.CheckMask,'BackgroundColor',[1 1 0])
@@ -1397,8 +1396,6 @@ end
 num_i1_mask=mod(num_i1-1,MaskData.NbSlice)+1;
 [RootPath,RootFile]=fileparts(MaskData.Base);
 MaskName=fullfile_uvmat(RootPath,'',RootFile,'.png',MaskData.NomType,num_i1_mask,[],num_j1);
-%MaskName=name_generator(MaskData.Base,num_i1_mask,num_j1,'.png',MaskData.NomType);
-% huvmat=get(handles.CheckMask,'parent');
 UvData=get(handles.uvmat,'UserData');
 %update mask image if the mask is new
 if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName)) 
@@ -4715,16 +4712,17 @@ else
     end 
     %mask name
     RootPath=get(handles.RootPath,'String');
+    SubDir=get(handles.SubDir,'String');
     RootFile=get(handles.RootFile,'String');
     if ~isempty(RootFile)&&(isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
         RootFile(1)=[];
     end
-    filebase=fullfile(RootPath,RootFile);
+   % filebase=fullfile(RootPath,RootFile);
     list=get(handles.masklevel,'String');
     masknumber=num2str(length(list));
     maskindex=get(handles.masklevel,'Value');
-    mask_name=fullfile_uvmat(RootPath,'',[RootFile '_' masknumber 'mask'],'.png','_1',maskindex);
-    %mask_name=name_generator([filebase '_' masknumber 'mask'],maskindex,1,'.png','_i');
+   % mask_name=fullfile_uvmat(RootPath,'',[RootFile '_' masknumber 'mask'],'.png','_1',maskindex);
+    mask_name=fullfile_uvmat(RootPath,[SubDir '.mask'],'mask','.png','_1',maskindex);
     imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
     imflag=flipdim(imflag,1);
 
@@ -4739,13 +4737,15 @@ else
     if ~strcmp(answer,'Cancel')
         mask_dir=fileparts(answer);
         if ~exist(mask_dir,'dir')
-            msgbox_uvmat('ERROR',['directory ' mask_dir ' does not exist'])
-            return
+            [xx,msg1]=mkdir(mask_dir);
+            if ~strcmp(msg1,'')
+                errormsg=['cannot create ' mask_dir ': ' msg1];%error message for directory creation
+                return
+            end
         end
         imwrite(imflag,answer,'BitDepth',8);
     end
     set(handles.ListObject,'Value',1)
-%     set(handles.ListObject,'Max',1)
 end
 
 %------------------------------------------------------------------------
