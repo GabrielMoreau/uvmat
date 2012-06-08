@@ -1158,7 +1158,8 @@ for icell=1:length(CellVarIndex)
                 testFF=0;
                 for ivar=VarIndex
                     VarName=FieldData.ListVarName{ivar};
-                    if ~( ivar==ivar_X || ivar==ivar_Y || ivar==ivar_Z || ivar==ivar_F || ivar==ivar_FF || test_anc(ivar)==1)
+                    if ~( ivar==ivar_X || ivar==ivar_Y || ivar==ivar_Z || ivar==ivar_F || ivar==ivar_FF ||...
+                           ( numel(test_anc)>=ivar && test_anc(ivar)==1))
                         ivar_new=ivar_new+1;
                         ProjData.ListVarName=[ProjData.ListVarName {VarName}];
                         ProjData.VarDimName=[ProjData.VarDimName {DimCell}];

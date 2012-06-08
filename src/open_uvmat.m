@@ -19,5 +19,5 @@ filename=fullfile(rootroot,filename);
 if exist(filename,'file')%visualise the vel field if it exists
     uvmat(filename)
     set(gcbo,'Value',1)
-    delete(get(hObject,'parent'))%delete the display figure to stop the check process
+%    delete(get(hObject,'parent'))%delete the display figure to stop the check process
 end

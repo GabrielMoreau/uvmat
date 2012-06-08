@@ -6,7 +6,7 @@
 % OUTPUT:
 % hset_object: handle of the GUI figure
 % 
-% INPUT:
+% INPUT:u
 % data: structure describing the object properties
 %    .Style=...
 %    .ProjMode
@@ -438,36 +438,55 @@ UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat
 hhuvmat=guidata(huvmat);%handles of the objects children of the  GUI uvmat
 ListObject=get(hhuvmat.ListObject,'String');% list of objects displayed in uvmat
 IndexObj=get(hhuvmat.ListObject,'Value');% index of the selected object for display in uvmat
-if ~get(hhuvmat.edit_object,'Value') %new object is being created
-    detectname=1;
-    ObjectNameNew=ObjectName;
-    vers=0;% index of the name
-    while ~isempty(detectname)
-        detectname=find(strcmp(ObjectNameNew,ListObject),1);%test the existence of the proposed name in the list
-        if detectname% if the object name already exists
-            indstr=regexp(ObjectNameNew,'\D');%indices of non number characters
-            if indstr(end)<length(ObjectNameNew) %object name ends by a number
-                vers=str2double(ObjectNameNew(indstr(end)+1:end))+1;
-                ObjectNameNew=[ObjectNameNew(1:indstr(end)) num2str(vers)];
-            else
-                vers=vers+1;
-                ObjectNameNew=[ObjectNameNew(1:indstr(end)) '_' num2str(vers)];
-            end
+%set or modify(edit mode) the nameof the currently selected object
+detectname=1;
+ObjectNameNew=ObjectName;
+vers=0;% index of the name
+ListOther=ListObject;
+ListOther(IndexObj)=[];
+while ~isempty(detectname)
+    detectname=find(strcmp(ObjectNameNew,ListOther),1);%test the existence of the proposed name in the list
+    if detectname% if the object name already exists
+        indstr=regexp(ObjectNameNew,'\D');%indices of non number characters
+        if indstr(end)<length(ObjectNameNew) %object name ends by a number
+            vers=str2double(ObjectNameNew(indstr(end)+1:end))+1;
+            ObjectNameNew=[ObjectNameNew(1:indstr(end)) num2str(vers)];
+        else
+            vers=vers+1;
+            ObjectNameNew=[ObjectNameNew(1:indstr(end)) '_' num2str(vers)];
         end
     end
-    ObjectName=ObjectNameNew;
-    set(handles.Name,'String',ObjectName)% display the default name in set_object
-    IndexObj=numel(ListObject)+1;% append an object to the list in uvmat
-    set(hhuvmat.ListObject,'String',[ListObject;{ObjectName}]);%complement the object list
-    set(hhuvmat.ListObject_1,'String',[ListObject;{ObjectName}]);%complement the object list
-    set(hhuvmat.ListObject,'Value',IndexObj)
-    set(hhuvmat.ViewObject,'Value',1)% indicate that the currently selected objected is viewed on set_object
-    UvData.Object{IndexObj}=[];%initiate a new object (empty yet)
+end
+ObjectName=ObjectNameNew;
+set(handles.Name,'String',ObjectName)% display the default name in set_object
+ListObject{IndexObj}=ObjectName;
+set(hhuvmat.ListObject,'String',ListObject);%complement the object list
+set(hhuvmat.ViewObject,'Value',1)% indicate that the currently selected objected is viewed on set_object
+check_handle=isfield(UvData.Object{IndexObj},'DisplayHandle') && isfield(UvData.Object{IndexObj}.DisplayHandle,'uvmat')...
+    && ~isempty(UvData.Object{IndexObj}.DisplayHandle.uvmat) && ishandle(UvData.Object{IndexObj}.DisplayHandle.uvmat);
+if check_handle
+    obj_handle=UvData.Object{IndexObj}.DisplayHandle.uvmat;
+end
+UvData.Object{IndexObj}=ObjectData;
+if check_handle
+    UvData.Object{IndexObj}.DisplayHandle.uvmat=obj_handle; %preserve the object plot handle if valid
+else
     UvData.Object{IndexObj}.DisplayHandle.uvmat=hhuvmat.axes3; %axes taken as object display handle by defualt
 end
+set(hhuvmat.edit_object,'Value',1)% set the current object to edit mode
+%     %IndexObj=numel(ListObject)+1;% append an object to the list in uvmat
+%     
+%     set(hhuvmat.ListObject,'String',[ListObject;{ObjectName}]);%complement the object list
+%     set(hhuvmat.ListObject_1,'String',[ListObject;{ObjectName}]);%complement the object list
+%     set(hhuvmat.ListObject,'Value',IndexObj)
+%     set(hhuvmat.ViewObject,'Value',1)% indicate that the currently selected objected is viewed on set_object
+%     UvData.Object{IndexObj}=[];%initiate a new object (empty yet)
+%     UvData.Object{IndexObj}.DisplayHandle.uvmat=hhuvmat.axes3; %axes taken as object display handle by defualt
+% end
 
 %% plot the field projected on the object
 hview_field=[];%default
+IndexObj_1=get(hhuvmat.ListObject_1,'Value');
 if strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')||strcmp(ObjectData.ProjMode,'none')
     PlotType='text';
 else
@@ -476,10 +495,9 @@ else
         msgbox_uvmat('ERROR', errormsg)
         return
     end   
-    IndexObj_1=get(hhuvmat.ListObject_1,'Value')
-    if isequal(IndexObj_1,IndexObj) % if only one object is selected, the projection is in uvmat
+    if isequal(IndexObj_1,IndexObj) % if  the projection is in uvmat
         PlotType=plot_field(ProjData,hhuvmat.axes3,read_GUI(get(hhuvmat.axes3,'parent')));%update the current uvmat plot
-    else  % if a second object is selected, the projection is in view_field, and this second object is selected
+    else  % if the projection is in veiw_field
         hview_field=findobj(allchild(0),'tag','view_field');
         if isempty(hview_field)
             hview_field=view_field(ProjData); %open the view_field GUI for plot
@@ -500,37 +518,51 @@ else
         else
             set(hview_field,'Position',Data.GUISize)
         end
+        set(hhuvmat.ViewField,'Value',1)% indicate that the field projection on the current object is plotted in view_field
     end
 end
 
 %% update the object plot 
-% if IndexObj(end)<=length(UvData.Object) && isfield(UvData.Object{IndexObj(end)},'DisplayHandle')% save the previous object graph handles
-%     ObjectData.DisplayHandle.uvmat=UvData.Object{IndexObj(end)}.DisplayHandle.uvmat;
-% else
-%     ObjectData.DisplayHandle.uvmat=hhuvmat.axes3;%there is no object handle, than the axes handles is used as input
-% end
-% if isfield(UvData.Object{IndexObj},'DisplayHandle')% save the previous object graph handles
-%     ObjectData.DisplayHandle.view_field=UvData.Object{IndexObj(end)}.DisplayHandle.view_field;
-% else
-%     ObjectData.DisplayHandle.view_field=[];
-% end
-% UvData.Object{IndexObj}=ObjectData;%update the current object properties
-% if numel(IndexObj)==2
 hobject=UvData.Object{IndexObj}.DisplayHandle.uvmat;
-if isempty(hobject)
-    hobject=hhuvmat.axes3;
-end
-UvData.Object{IndexObj}.DisplayHandle.uvmat=plot_object(ObjectData,[],hobject,'m');%draw the object in uvmat
-if ~isempty(hview_field)
-    if isfield(UvData.Object{IndexObj}.DisplayHandle,'view_field')
-    hobject=UvData.Object{IndexObj}.DisplayHandle.view_field;
+% if we are editing the object used for projection in uvmat
+if isequal(IndexObj_1,IndexObj)
+    %update the representation of the current object for projection field represented in view_field
+    %     UvData.Object{iobj}.DisplayHandle.view_field=...
+    %                       plot_object(UvData.Object{IndexObj},UvData.Object{IndexObj_1},UvData.Object{iobj}.DisplayHandle.uvmat,'m');
+    % update the representation of all objects in uvmat
+    for iobj=1:numel(UvData.Object)
+        UvData.Object{iobj}.DisplayHandle.uvmat=...
+            plot_object(UvData.Object{iobj},UvData.Object{IndexObj_1},UvData.Object{iobj}.DisplayHandle.uvmat,'b');
     end
-    if isempty(hobject)
-        hobject=haxes;
+else %  we are editing the object used for projection field represented in view_field
+    %update the representation of the current object in uvmat
+    UvData.Object{IndexObj}.DisplayHandle.uvmat=...
+             plot_object(UvData.Object{IndexObj},UvData.Object{IndexObj_1},UvData.Object{IndexObj}.DisplayHandle.uvmat,'m');
+    %indicate the object index in the user data of the object plot (needed for further mouse editing)
+    ObjectInfo=get(UvData.Object{IndexObj}.DisplayHandle.uvmat,'UserData');
+    ObjectInfo.IndexObj=IndexObj;
+    set(UvData.Object{IndexObj}.DisplayHandle.uvmat,'UserData',ObjectInfo)
+    % update the representation of all objects in view_field
+    for iobj=1:numel(UvData.Object)
+        if isfield(UvData.Object{iobj}.DisplayHandle,'view_field')
+            UvData.Object{iobj}.DisplayHandle.view_field=...
+                plot_object(UvData.Object{iobj},UvData.Object{iobj},UvData.Object{iobj}.DisplayHandle.view_field,'b');
+        end
     end
-    UvData.Object{IndexObj}.DisplayHandle.view_field=plot_object(ObjectData,[],hobject,'m');%draw the object in view_field
-    %     UvData.Object=update_obj(UvData,IndexObj(1),IndexObj(2));
 end
+% UvData.Object{IndexObj}.DisplayHandle.uvmat=plot_object(ObjectData,UvData.Object{IndexObj_1},hobject,'m');%draw the object in uvmat
+% if ~isempty(hview_field)
+%     if isfield(UvData.Object{IndexObj}.DisplayHandle,'view_field')
+%         hobject=UvData.Object{IndexObj}.DisplayHandle.view_field;
+%     end
+%     if isempty(hobject)
+%         hobject=haxes;
+%     end   
+%     %draw the object in view_field
+%     if ~isequal(IndexObj_1,IndexObj) % if  the projection is in uvmat
+%     UvData.Object{IndexObj}.DisplayHandle.view_field=plot_object(ObjectData,UvData.Object{IndexObj},hobject,'m');
+%     end
+% end
 set(huvmat,'UserData',UvData)
 
 %% update the GUI uvmat

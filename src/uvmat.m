@@ -2008,6 +2008,7 @@ end
 
 %% read the first input field if a filename has been introduced
 ParamIn.ColorVar='';%default variable name for vector color
+frame_index=1;%default
 if ~isempty(filename)
     ObjectName=filename;
     FieldName='';%default
@@ -2034,7 +2035,18 @@ if ~isempty(filename)
                 end
             end
         case {'video','mmreader'}
-            ObjectName=UvData.MovieObject{1};         
+            ObjectName=UvData.MovieObject{1};      
+            if ~strcmp(NomType,'*')
+                frame_index=num_j1;%frame index for movies or multimage
+            else
+                frame_index=num_i1;
+            end
+        case 'multimage'
+            if ~strcmp(NomType,'*')
+                frame_index=num_j1;%frame index for movies or multimage
+            else
+                frame_index=num_i1;
+            end
         case 'vol' %TODO: update
             if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
                 ParamIn.Npy=UvData.XmlData.Npy;
@@ -2047,7 +2059,7 @@ if ~isempty(filename)
     ParamIn.FieldName=FieldName;
     ParamIn.VelType=VelType;
     ParamIn.GUIName='get_field';
-    [Field{1},ParamOut,errormsg] = read_field(ObjectName,UvData.FileType{1},ParamIn,num_i1);
+    [Field{1},ParamOut,errormsg] = read_field(ObjectName,UvData.FileType{1},ParamIn,frame_index);
     if ~isempty(errormsg)
         errormsg=['error in reading ' filename ': ' errormsg];
         return
@@ -2068,6 +2080,7 @@ end
 VelType_1=[];%default
 FieldName_1=[];
 ParamOut_1=[];
+frame_index_1=1;
 if ~isempty(filename_1)
     if ~exist(filename_1,'file')
         errormsg=['second file ' filename_1 ' does not exist'];
@@ -2095,6 +2108,17 @@ if ~isempty(filename_1)
             end
         case {'video','mmreader'}
             Name=UvData.MovieObject{2};
+                        if ~strcmp(NomType_1,'*')
+                frame_index_1=num_j1;%frame index for movies or multimage
+            else
+                frame_index_1=num_i1;
+            end  
+         case 'multimage'
+            if ~strcmp(NomType_1,'*')
+                frame_index_1=num_j1;%frame index for movies or multimage
+            else
+                frame_index_1=num_i1;
+            end   
         case 'vol' %TODO: update
             if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
                 ParamIn_1.Npy=UvData.XmlData.Npy;
@@ -2122,7 +2146,7 @@ if ~isempty(filename_1)
         ParamIn_1.FieldName=FieldName_1;
         ParamIn_1.VelType=VelType_1;
         ParamIn_1.GUIName='get_field_1';
-        [Field{2},ParamOut_1,errormsg] = read_field(Name,UvData.FileType{2},ParamIn_1,num_i1);
+        [Field{2},ParamOut_1,errormsg] = read_field(Name,UvData.FileType{2},ParamIn_1,frame_index_1);
         if ~isempty(errormsg)
             errormsg=['error in reading ' FieldName_1 ' in ' filename_1 ': ' errormsg];
             return
@@ -4564,12 +4588,15 @@ if ~strcmp(ListObject{end},'')
     ListObject=[ListObject;{''}]; %append a blank to the list (if not already done) to indicate the creation of a new object
     set(handles.ListObject,'String',ListObject)
 end
+
+IndexObj=length(ListObject);
+
 UvData=get(handles.uvmat,'UserData');
 UvData.Object{IndexObj}=[]; %create a new empty object
 UvData.Object{IndexObj}.DisplayHandle.uvmat=[]; %no plot handle before plot_field operation
 UvData.Object{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
 set(handles.uvmat,'UserData',UvData)
-set(handles.ListObject,'Value',length(ListObject))
+set(handles.ListObject,'Value',IndexObj)
 hset_object=set_object(data);% call the set_object interface
 set(get(hset_object,'children'),'enable','on')% enable edit action on elements on GUI set_object
 set(handles.edit_object,'Value',0); %suppress the object edit mode

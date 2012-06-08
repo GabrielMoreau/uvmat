@@ -104,7 +104,7 @@ if isfield (Param,'Civ1')
             end
             par_civ1.ImageA=Field.A;%= image matrix A in the first input field 
         end
-        if isfield(par_civ1,'ImageB')&& (ischar(par_civ1.ImageB)||strcmp(class(par_civ1.ImageA),'VideoReader'))
+        if isfield(par_civ1,'ImageB')&& (ischar(par_civ1.ImageB)||strcmp(class(par_civ1.ImageB),'VideoReader'))
             [Field,ParamOut,errormsg] = read_field(par_civ1.ImageB,par_civ1.FileTypeB,[],par_civ1.FrameIndexB);
             if ~isempty(errormsg)
                 errormsg=['error in civ_matlab/read_field:' errormsg];

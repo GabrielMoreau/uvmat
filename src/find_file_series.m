@@ -51,19 +51,24 @@ j1_series=zeros(1,1,1);
 j2_series=zeros(1,1,1);
 % ifile_min=1;%default
 [FileType,FileInfo,Object]=get_file_type(fullfileinput);
+NbFrame=1;
+
 switch FileType
     case 'multimage'
-    NomType='*';
-    i1_series=(1:FileInfo.NbFrame)';
+%    NomType='*';
+%    i1_series=(1:FileInfo.NbFrame)';
+    NbFrame=FileInfo.NbFrame;
     case {'video','mmreader'}
     NomType='*';
-    i1_series=(1:FileInfo.NumberOfFrames)';
+    NbFrame=FileInfo.NumberOfFrames;
+%     i1_series=(1:FileInfo.NumberOfFrames)';
 end 
 % if strcmp( FileType,'multimage')||strcmp( FileType,'video')||strcmp( FileType,'mmreader')
 %     NomType='*';
 %     i1_series=(1:FileInfo.NumberOfFrames)';
 % end
-
+RootFile_i='';
+NomTypePref='';
 if strcmp(NomType,'')||strcmp(NomType,'*')
     if exist(fullfileinput,'file')
         [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing), get the filename without its extension
@@ -76,7 +81,6 @@ if strcmp(NomType,'')||strcmp(NomType,'*')
     j2_input=[];
 else
     %% possibly include the first index in the root name, if there exists a corresponding xml file
-    NomTypePref='';
     r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
     if ~isempty(r)
         fileinput_end=regexprep(fileinput,['^' RootFile],'');%remove RootFile at the beginning of fileinput
@@ -86,10 +90,10 @@ else
             rr=regexp(fileinput_end,'^(?<i1>_\d+)','names');
         end
         if ~isempty(rr)
-            RootFileNew=[RootFile rr.i1];
-            checkpair=~isempty(regexp(NomType,'-','once'))||~isempty(regexp(NomType,'ab$','once'))||~isempty(regexp(NomType,'AB$','once'));%case of PIV results
-            if exist(fullfile(RootPath,SubDir,[RootFileNew '.xml']),'file') %|| (checkpair && exist(fullfile(fileparts(RootPath),[RootFileNew '.xml']),'file'))
-                RootFile=RootFileNew;
+            RootFile_i=[RootFile rr.i1];
+           % checkpair=~isempty(regexp(NomType,'-','once'))||~isempty(regexp(NomType,'ab$','once'))||~isempty(regexp(NomType,'AB$','once'));%case of PIV results
+            if exist(fullfile(RootPath,SubDir,[RootFile_i '.xml']),'file') %|| (checkpair && exist(fullfile(fileparts(RootPath),[RootFile_i '.xml']),'file'))
+                RootFile=RootFile_i;
                 NomTypePref=r.tiretnum;
                 NomType=regexprep(NomType,['^'  NomTypePref],'');
                 i1_input=j1_input;
@@ -251,6 +255,17 @@ if isequal(i2_series,0), i2_series=[]; end
 if isequal(j1_series,0), j1_series=[]; end
 if isequal(j2_series,0), j2_series=[]; end
 
+%% introduce the frame index in case of movies or multimage type
+if NbFrame>1
+    if isempty(i1_series)
+        i1_series=(1:NbFrame)';
+        i1_input=1;
+    else
+       j1_series=(1:NbFrame)'; 
+       j1_input=1;
+    end
+end
+
 %% sort pairs by decreasing index differences in case of multiple pairs at the same reference index
 if size(i2_series,3)>1 %pairs i1 -i2
     diff_index=abs(i2_series-i1_series);
@@ -278,4 +293,14 @@ elseif size(j2_series,3)>1 %pairs j1 -j2
         end
     end
 end
+
+% %% deals with frame index in movies
+% switch FileType
+%     case 'multimage'
+%    NomType='*';
+%    i1_series=(1:FileInfo.NbFrame)';
+%     case {'video','mmreader'}
+%     NomType='*';
+%     i1_series=(1:FileInfo.NumberOfFrames)';
+% end 
 
