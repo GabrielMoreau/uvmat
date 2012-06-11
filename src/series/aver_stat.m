@@ -51,7 +51,7 @@ end
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 %% get input parameters, file names and indices
 % BATCH  case: read the xml file for batch case
-if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
+if ischar(Param) && ~isempty(find(regexp(Param,'.xml$')))
     Param=xml2struct(Param);
     checkrun=0;
 % RUN case: parameters introduced as the input structure Param  
