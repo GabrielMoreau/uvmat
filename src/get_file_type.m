@@ -31,7 +31,10 @@ switch FileExt
                 imainfo=imfinfo(fileinput);
                 if length(imainfo) >1 %case of image with multiple frames
                     FileType='multimage';
+                    FileInfo=imainfo{1};%take info from the first frame
                     FileInfo.NbFrame=length(imainfo);
+                else
+                    FileInfo=imainfo;
                 end
             end
         else

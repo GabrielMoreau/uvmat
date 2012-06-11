@@ -1020,10 +1020,10 @@ function close_GUI(hObject, eventdata)
     delete(gcbf)
 
 
-%--------------orm----------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Main lauch command, called by RUN and BATCH
 function errormsg=launch_jobs(hObject, eventdata, handles, batch)
-%-----------------------------------------------------------------------
+%------------------------------------------------------------------------
 errormsg='';%default
 
 %% read the input parameters from the  GUI civ
@@ -1075,7 +1075,7 @@ end
 %% reinitialise status callback 
 if isfield(handles,'status')
     set(handles.status,'Value',0);%suppress status display
-    status_Callback(hObject, eventdata, handles)
+    status_Callback([], [], handles)
 end
 
 %% read the PARAM.xml file to get the binaries (and batch_mode if batch)
@@ -2099,21 +2099,16 @@ if checkbox(1)==1;
                 filename=fullfile_uvmat(RootPath,subdir_civ1_new,RootFile_nc,'.nc',NomType_nc,i1_civ1(ifile),i2_civ1(ifile),j1_civ1(j),j2_civ1(j));
                 detect=exist(filename,'file')==2;
                 if detect% if a netcdf file already exists
-                    r=regexp(subdir_civ1_new,'(?<root>.*\D)(?<num1>\d+)$','names');%detect whether name ends by a number
-                    if isempty(r)
-                        r(1).root=[subdir_civ1_new '_'];
-                        r(1).num1='0';
+                    answer=msgbox_uvmat('INPUT_Y-N',['delete files in ' subdir_civ1_new]);
+                    if ~strcmp(answer,'Yes')
+                        r=regexp(subdir_civ1_new,'(?<root>.*\D)(?<num1>\d+)$','names');%detect whether name ends by a number
+                        if isempty(r)
+                            r(1).root=[subdir_civ1_new '_'];
+                            r(1).num1='0';
+                        end
+                        subdir_civ1_new=[r(1).root num2str(str2num(r(1).num1)+1)];%increment the index by 1 or put 1
+                        subdir_civ2=subdir_civ1_new;
                     end
-                    subdir_civ1_new=[r(1).root num2str(str2num(r(1).num1)+1)];%increment the index by 1 or put 1
-%                     indstr=regexp(subdir_civ1_new,'\D');
-%                     if indstr(end)<length(subdir_civ1_new) %subdir_civ1 ends by a number
-%                         vers=str2double(subdir_civ1_new(indstr(end)+1:end))+1;
-%                         subdir_civ1_new=[subdir_civ1_new(1:indstr(end)) num2str(vers)];
-%                     else
-%                         vers=vers+1;
-%                         subdir_civ1_new=[subdir_civ1_new(1:indstr(end)) '_' num2str(vers)];       
-%                     end
-                    subdir_civ2=subdir_civ1_new;
                     break
                 end
                 filecell.nc.civ1(ifile,j)={filename};

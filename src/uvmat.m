@@ -2289,7 +2289,7 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
         num_j2=num_j1;
     end
     siz=size(UvData.XmlData{1}.Time);
-    if siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
+    if ~isempty(num_i1)&& ~isempty(num_i2)&&siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
         abstime=(UvData.XmlData{1}.Time(num_i1,num_j1)+UvData.XmlData{1}.Time(num_i2,num_j2))/2;%overset the time read from files
         dt=(UvData.XmlData{1}.Time(num_i2,num_j2)-UvData.XmlData{1}.Time(num_i1,num_j1));
         Field{1}.Dt=dt;
