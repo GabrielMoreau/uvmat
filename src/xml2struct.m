@@ -14,26 +14,34 @@ ss=convert(t);
 s=convert_string(ss);
 
 
-function out=convert_string(s)
-info=whos('s');
+function out=convert_string(ss)
+info=whos('ss');
 switch info.class
     case 'struct'
-        names = fieldnames(s);
+        names = fieldnames(ss);
         for k=1:length(names)
-            out.(names{k})=convert_string(s.(names{k}));
+            out.(names{k})=convert_string(ss.(names{k}));
         end
     case 'char'   
-        if isempty(regexp(s,'^(-*\d+\.*\d*\ *)+$'))% if the string contains a set of numbers (with possible sign and decimal) separated by blanks
-            out=s;
+        if isempty(regexp(ss,'^(-*\d+\.*\d*\ *)+$'))% if the string does not contains a set of numbers (with possible sign and decimal) separated by blanks
+            sep_ind=regexp(ss,'\s&\s');% check for separator ' & ' which indicates column separation in tables
+            if ~isempty(sep_ind)
+                sep_ind=[-2 sep_ind length(ss)+1];
+                for icolumn=1:length(sep_ind)-1
+                    out{1,icolumn}=ss(sep_ind(icolumn)+3:sep_ind(icolumn+1)-1);
+                end
+            else
+                out=ss; %reproduce the input string
+            end
         else
-            out=str2num(s);
+            out=str2num(ss);
         end
     case 'cell'
-        for ilist=1:numel(s)
-            out(ilist,:)=str2num(s{ilist});
+        for ilist=1:numel(ss)
+            out(ilist,:)=str2num(ss{ilist});
         end
     otherwise
-        out=s;
+        out=ss;
 end
 
     

@@ -40,12 +40,12 @@
 %               .GeometryCalib: [1x1 struct]
 %     - Information defined from the interface:
 %           .NewSeries: =1 when the first view of a new field series is displayed, else 0
-%           .filename:(char string)
+%           .FileName:(char string)
 %           .FieldName: (char string) main field selected('image', 'velocity'...)
 %           .CName: (char string)name of the scalar used for vector colors
 %          .MovieObject{1}: movie object representing an input movie
 %          .MovieObject{2}: idem for a second input series (_1)
-%          .filename_1 : last second input file name (to deal with a constant second input without reading again the file)
+%          .FileName_1 : last second input file name (to deal with a constant second input without reading again the file)
 %          .ZMin, .ZMax: range of the z coordinate
 %..... to complement
 %     - Information on  projection objects
@@ -786,8 +786,6 @@ switch FileType
                 set(handles.FileIndex_1,'String',FileIndex_1)
             else
                 msgbox_uvmat('WARNING','unable to synchronise the indices of the two series')
-%                 set(handles.SubField,'Value',0)
-%                 SubField_Callback([], [], handles)
             end
         end
         
@@ -845,7 +843,6 @@ UvData.i1_series{index}=i1_series;
 UvData.i2_series{index}=i2_series;
 UvData.j1_series{index}=j1_series;
 UvData.j2_series{index}=j2_series;
-% set(handles.CheckFixPair,'Value',1) % activate by default the comp_input '-'input window
 set(handles.FixVelType,'Value',0); %desactivate fixed veltype
 if index==1
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
@@ -923,7 +920,8 @@ if exist(filexml,'file')
     drawnow
     [XmlData,warntext]=imadoc2struct(filexml);
     if ~isempty(warntext)
-        msgbox_uvmat('WARNING',warntext)
+        display(warntext)
+%         msgbox_uvmat('WARNING',warntext)
     end
     if isfield(XmlData,'TimeUnit')
         if isfield(XmlData,'TimeUnit')&& ~isempty(XmlData.TimeUnit)
@@ -1967,7 +1965,7 @@ set(handles.run0,'BackgroundColor',[1 0 0])
 % num_i1,num_i2,num_j1,num_j2; frame indices
 % Field: structure describing an optional input field (then replace the input file)
 
-function errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,Field)
+function errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1,num_j2,Field)
 %------------------------------------------------------------------------
 
 %% initialisation
@@ -1984,8 +1982,8 @@ end
 
 %% determine the main input file information for action
 FileType=[];%default
-if ~exist(filename,'file')
-    errormsg=['input file ' filename ' does not exist'];
+if ~exist(FileName,'file')
+    errormsg=['input file ' FileName ' does not exist'];
     return
 end
 NomType=get(handles.NomType,'String');
@@ -2009,8 +2007,7 @@ end
 %% read the first input field if a filename has been introduced
 ParamIn.ColorVar='';%default variable name for vector color
 frame_index=1;%default
-if ~isempty(filename)
-    ObjectName=filename;
+if ~isempty(FileName)
     FieldName='';%default
     VelType='';%default
 %     FileType=UvData.FileType{1};
@@ -2035,7 +2032,7 @@ if ~isempty(filename)
                 end
             end
         case {'video','mmreader'}
-            ObjectName=UvData.MovieObject{1};      
+            ParamIn=UvData.MovieObject{1};      
             if ~strcmp(NomType,'*')
                 frame_index=num_j1;%frame index for movies or multimage
             else
@@ -2059,9 +2056,9 @@ if ~isempty(filename)
     ParamIn.FieldName=FieldName;
     ParamIn.VelType=VelType;
     ParamIn.GUIName='get_field';
-    [Field{1},ParamOut,errormsg] = read_field(ObjectName,UvData.FileType{1},ParamIn,frame_index);
+    [Field{1},ParamOut,errormsg] = read_field(FileName,UvData.FileType{1},ParamIn,frame_index);
     if ~isempty(errormsg)
-        errormsg=['error in reading ' filename ': ' errormsg];
+        errormsg=['error in reading ' FileName ': ' errormsg];
         return
     end  
     if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
@@ -2076,17 +2073,17 @@ if ~isempty(filename)
     end
 end
 
-%% choose and read a second field filename_1 if defined
+%% choose and read a second field FileName_1 if defined
 VelType_1=[];%default
 FieldName_1=[];
 ParamOut_1=[];
 frame_index_1=1;
-if ~isempty(filename_1)
-    if ~exist(filename_1,'file')
-        errormsg=['second file ' filename_1 ' does not exist'];
+if ~isempty(FileName_1)
+    if ~exist(FileName_1,'file')
+        errormsg=['second file ' FileName_1 ' does not exist'];
         return
     end
-    Name=filename_1;
+    Name=FileName_1;
     switch UvData.FileType{2}
         case {'civx','civdata','netcdf'};
             list_fields=get(handles.Fields_1,'String');% list menu fields
@@ -2107,7 +2104,7 @@ if ~isempty(filename_1)
                 end
             end
         case {'video','mmreader'}
-            Name=UvData.MovieObject{2};
+            ParamIn_1=UvData.MovieObject{2};
                         if ~strcmp(NomType_1,'*')
                 frame_index_1=num_j1;%frame index for movies or multimage
             else
@@ -2135,8 +2132,8 @@ if ~isempty(filename_1)
     end
     test_keepdata_1=0;% test for keeping the previous stored data if the input files are unchanged
     if ~isequal(NomType_1,'*')%in case of a series of files (not avi movie)
-        if isfield(UvData,'filename_1')%&& isfield(UvData,'VelType_1') && isfield(UvData,'FieldName_1')
-            test_keepdata_1= strcmp(filename_1,UvData.filename_1) ;%&& strcmp(FieldName_1,UvData.FieldName_1);
+        if isfield(UvData,'FileName_1')%&& isfield(UvData,'VelType_1') && isfield(UvData,'FieldName_1')
+            test_keepdata_1= strcmp(FileName_1,UvData.FileName_1) ;%&& strcmp(FieldName_1,UvData.FieldName_1);
         end
     end
     if test_keepdata_1
@@ -2148,7 +2145,7 @@ if ~isempty(filename_1)
         ParamIn_1.GUIName='get_field_1';
         [Field{2},ParamOut_1,errormsg] = read_field(Name,UvData.FileType{2},ParamIn_1,frame_index_1);
         if ~isempty(errormsg)
-            errormsg=['error in reading ' FieldName_1 ' in ' filename_1 ': ' errormsg];
+            errormsg=['error in reading ' FieldName_1 ' in ' FileName_1 ': ' errormsg];
             return
         end
 %         UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
@@ -2194,7 +2191,7 @@ set(handles.Fields,'Value',find(field_index,1))
 
 %% update the display menu for the second velocity type (second menuline)
 test_veltype_1=0;
-if isempty(filename_1)
+if isempty(FileName_1)
     set(handles.Fields_1,'Value',1); %update the field menu
     set(handles.Fields_1,'String',[{''};ParamOut.FieldList]); %update the field menu
 elseif ~test_keepdata_1
@@ -2338,7 +2335,7 @@ end
 
 
 %% store the current open names, fields and vel types in uvmat interface 
-UvData.filename_1=filename_1;
+UvData.FileName_1=FileName_1;
 
 %% apply coordinate transform or other user fct
 XmlData=[];%default
@@ -2353,7 +2350,7 @@ choice_value=get(handles.transform_fct,'Value');
 transform_list=get(handles.transform_fct,'UserData');
 transform=transform_list{choice_value};%selected function handles
 % z index
-if ~isempty(filename)
+if ~isempty(FileName)
     Field{1}.ZIndex=z_index;
 end
 if ~isempty(transform)
@@ -2721,7 +2718,7 @@ else
             if isequal(PlotType,'none')
                 hget_field=findobj(allchild(0),'name','get_field');
                 if isempty(hget_field)
-                    get_field(filename)% the projected field cannot be automatically plotted: use get_field to specify the variablesdelete(hget_field)
+                    get_field(FileName)% the projected field cannot be automatically plotted: use get_field to specify the variablesdelete(hget_field)
                 end
                 errormsg='The field defined by get_field cannot be plotted';
                 return
@@ -2946,11 +2943,11 @@ update_plot(handles);
 function record_Callback(hObject, eventdata, handles)
 % [filebase,num_i1,num_j1,num_i2,num_j2,Ext,NomType,SubDir]=read_input_file(handles);
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-filename=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-%filename=read_file_boxes(handles);
-[erread,message]=fileattrib(filename);
+FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+%FileName=read_file_boxes(handles);
+[erread,message]=fileattrib(FileName);
 if ~isempty(message) && ~isequal(message.UserWrite,1)
-     msgbox_uvmat('ERROR',['no writting access to ' filename])
+     msgbox_uvmat('ERROR',['no writting access to ' FileName])
      return
 end
 test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
@@ -2972,7 +2969,7 @@ end
 UvData=get(handles.uvmat,'UserData');
 hhh=which('netcdf.open');% look for built-in matlab netcdf library
 if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
-    nc=netcdf.open(filename,'NC_WRITE'); 
+    nc=netcdf.open(FileName,'NC_WRITE'); 
     netcdf.reDef(nc);
     netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),attrname,1);
     dimid = netcdf.inqDimID(nc,nbname); 
@@ -2985,14 +2982,14 @@ if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
     netcdf.putVar(nc,varid,UvData.axes3.FF);
     netcdf.close(nc);  
 else %old netcdf library
-    netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
+    netcdf_toolbox(FileName,AxeData,attrname,nbname,flagname)
 end
 
 %-------------------------------------------------------------------
 %----Correct the netcdf file, using toolbox (old versions of Matlab).
 %-------------------------------------------------------------------
-function netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
-nc=netcdf(filename,'write'); %open netcdf file
+function netcdf_toolbox(FileName,AxeData,attrname,nbname,flagname)
+nc=netcdf(FileName,'write'); %open netcdf file
 result=redef(nc);
 eval(['nc.' attrname '=1;']);
 theDim=nc(nbname) ;% get the number of velocity vectors
@@ -3089,13 +3086,13 @@ if isequal(field,'get_field...')
     set(handles.VelType,'visible','off')
     set(handles.VelType_1,'visible','off')
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-    filename=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-    %filename=read_file_boxes(handles);
+    FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+    %FileName=read_file_boxes(handles);
     hget_field=findobj(allchild(0),'name','get_field');
     if ~isempty(hget_field)
         delete(hget_field)
     end
-    hget_field=get_field(filename);
+    hget_field=get_field(FileName);
     set(hget_field,'Name','get_field')
     hhget_field=guidata(hget_field);
     set(hhget_field.list_fig,'Value',1)
@@ -3146,9 +3143,9 @@ else
             '*.nc',' netcdf files'; ...
             '*.*',  'All Files (*.*)'}, ...
             'Pick a netcdf file',FileBase);
-        filename=[PathName FileName];
+        FullFileName=[PathName FileName];
         % display the selected field and related information
-        display_file_name( handles,filename)
+        display_file_name( handles,FullFileName)
         return
     end
 end
@@ -3185,7 +3182,7 @@ end
 if isfield(UvData,'Field_1')
     UvData=rmfield(UvData,'Field_1');% remove the stored second field (a new one needs to be read)
 end
-UvData.filename_1='';% desactivate the use of a constant second file
+UvData.FileName_1='';% desactivate the use of a constant second file
 list_fields=get(handles.Fields,'String');% list menu fields
 field= list_fields{get(handles.Fields,'Value')}; % selected string
 list_fields=get(handles.Fields_1,'String');% list menu fields
@@ -3200,7 +3197,7 @@ end
 
 %% read the rootfile input display
 [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
-filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
+FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
 % set(handles.FileIndex_1,'Visible','on')
 % set(handles.FileExt_1,'Visible','on')
@@ -3211,7 +3208,7 @@ switch field_1
         if ~isempty(hget_field)
             delete(hget_field)
         end
-        hget_field=get_field(filename_1);
+        hget_field=get_field(FileName_1);
         set(hget_field,'name','get_field_1')
         hhget_field=guidata(hget_field);
         set(hhget_field.list_fig,'Value',1)
@@ -3325,36 +3322,36 @@ function VelType_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.FixVelType,'Value',1)% the velocity type is now imposed by the GUI (not automatic)
 UvData=get(handles.uvmat,'UserData');
-%refresh field with a second filename=first file name
+%refresh field with a second FileName=first file name
 set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow   
 InputFile=read_GUI(handles.InputFile);
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-filename=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 
 if isempty(InputFile.VelType_1)
-        filename_1='';% we plot the current field without the second field
+        FileName_1='';% we plot the current field without the second field
         set(handles.SubField,'Value',0)
         SubField_Callback(hObject, eventdata, handles)
 elseif get(handles.SubField,'Value')% if subfield is already 'on'
       [RootPath_1,SubDir_1,RootFile_1,FileIndices_1,FileExt_1]=read_file_boxes_1(handles);
-     filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndices_1 FileExt_1];
+     FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndices_1 FileExt_1];
 else
-     filename_1=filename;% we compare two fields in the same file by default
+     FileName_1=FileName;% we compare two fields in the same file by default
      UvData.FileType{2}=UvData.FileType{1};
      set(handles.SubField,'Value',1)
 end
 if isfield(UvData,'Field_1')
     UvData=rmfield(UvData,'Field_1');% removes the stored second field if it exists
 end
-UvData.filename_1='';% desactivate the use of a constant second file
+UvData.FileName_1='';% desactivate the use of a constant second file
 set(handles.uvmat,'UserData',UvData)
 num_i1=stra2num(get(handles.i1,'String'));
 num_i2=stra2num(get(handles.i2,'String'));
 num_j1=stra2num(get(handles.j1,'String'));
 num_j2=stra2num(get(handles.j2,'String'));
 
-errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2);
+errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1,num_j2);
 
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg);

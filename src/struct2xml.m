@@ -23,7 +23,7 @@ if ~exist('root_uid','var')
 end
 fieldnames=fields(Object);
 for ilist=1:length(fieldnames)
-   eval(['val=Object.' fieldnames{ilist} ';'])
+   val=Object.(fieldnames{ilist});
    if isstruct(val)
       [t,uid]=add(t,root_uid,'element',fieldnames{ilist});
       fieldnames_sub=fields(val);
@@ -59,4 +59,17 @@ function t=add_element(t,uid,key,val)
                 [t]=add(t,new_uid,'chardata',val_str);
            end
        end
+ elseif iscell(val)
+      siz=size(val);
+      if length(siz)<=2 %do not translate cell matrices with more than 2 indices
+          separator='   '; %mark the separation of columns
+          for iline=1:siz(1)
+                val_str=cell2mat(cell2tab(val(iline,:),' & ')); % produce a line string with column separator ' & '
+                [t,new_uid]=add(t,uid,'element',key);
+                if siz(1)>1
+                    t = attributes(t,'add',new_uid,'i',num2str(iline));
+                end
+                [t]=add(t,new_uid,'chardata',val_str);
+          end
+      end
  end   

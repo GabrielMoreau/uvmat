@@ -34,6 +34,9 @@ nbmissing=0;
 for iview=1:size(InputTable,1)
     r.mode='';
     if isfield (Param.IndexRange,'PairString')
+        if ischar(Param.IndexRange.PairString)
+            Param.IndexRange.PairString={Param.IndexRange.PairString};
+        end
         r=regexp(Param.IndexRange.PairString{iview,1},'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
         if isempty(r)
             r=regexp(Param.IndexRange.PairString{iview,1},'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');

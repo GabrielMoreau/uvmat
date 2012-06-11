@@ -1,7 +1,7 @@
 
 %'read_field': read input fields in different formats
 %--------------------------------------------------------------------------
-%  function [Field,ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn)
+%  function [Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,num)
 %
 % OUTPUT:
 % Field: matlab structure representing the field
@@ -22,12 +22,12 @@
 %     = mmreader: movie read with mmreader
 %     = video: movie read with VideoReader (recent versions of Matlab)
 %     = vol: images representing scanned volume (images concatened in the y direction)
-% ParamIn: Matlab structure of input parameters
+% ParamIn: movie object or Matlab structure of input parameters
 %     .FieldName: name (char string) of the input field (for Civx data)
 %     .VelType: char string giving the type of velocity data ('civ1', 'filter1', 'civ2'...)
 %     .ColorVar: variable used for vector color
 %     .Npx, .Npy: nbre of pixels along x and y (used for .vol input files)
-function [Field,ParamOut,errormsg] = read_field(ObjectName,FileType,ParamIn,num)
+function [Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,num)
 Field=[];
 if ~exist('num','var')
     num=1;
@@ -56,13 +56,13 @@ try
                 ParamOut.ColorVar='';%default
                 field_index=strcmp(ParamIn.FieldName,FieldList);%look for ParamIn.FieldName in the list of possible fields for Civx data
                 if isempty(find(field_index,1))% ParamIn.FieldName is not in the list, check whether Civx data exist
-                    Data=nc2struct(ObjectName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ','CivStage');
+                    Data=nc2struct(FileName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ','CivStage');
                     % case of new civdata conventions
                     if isequal(Data.Conventions,'uvmat/civdata')
                         ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
                         ParamOut.ColorVar='ima_cor';
                         InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
-                        [Field,ParamOut.VelType,errormsg]=read_civdata(ObjectName,InputField,ParamIn.VelType,Data.CivStage);
+                        [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType,Data.CivStage);
                         CivStage=Field.CivStage;
                         ParamOut.CivStage=Field.CivStage;
                         %case of old civx conventions
@@ -70,7 +70,7 @@ try
                         ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
                         ParamOut.ColorVar='ima_cor';
                         InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
-                        [Field,ParamOut.VelType]=read_civxdata(ObjectName,InputField,ParamIn.VelType);
+                        [Field,ParamOut.VelType]=read_civxdata(FileName,InputField,ParamIn.VelType);
                         CivStage=Field.CivStage;
                         ParamOut.CivStage=Field.CivStage;
                         % not cvix file, fields will be chosen through the GUI get_field
@@ -87,7 +87,7 @@ try
                         ParamOut.ColorVar=ParamIn.ColorVar;
                         InputField=[InputField {ParamOut.ColorVar}];
                     end
-                    [Field,ParamOut.VelType,errormsg]=read_civxdata(ObjectName,InputField,ParamIn.VelType);
+                    [Field,ParamOut.VelType,errormsg]=read_civxdata(FileName,InputField,ParamIn.VelType);
                     if ~isempty(errormsg)
                         return
                     end
@@ -99,12 +99,12 @@ try
             if CivStage==0% read the field names on the interface get_field.
                 hget_field=findobj(allchild(0),'Name',GUIName);%find the get_field... GUI
                 if isempty(hget_field)% open the GUI get_field if it is not found
-                    hget_field= get_field(ObjectName);%open the get_field GUI
+                    hget_field= get_field(FileName);%open the get_field GUI
                     set(hget_field,'Name',GUIName)%update the name of get_field (e.g. get_field_1)
                 end
                 hhget_field=guidata(hget_field);
                 %% update  the get_field GUI
-                set(hhget_field.inputfile,'String',ObjectName)
+                set(hhget_field.inputfile,'String',FileName)
                 set(hhget_field.list_fig,'Value',1)
                 if exist('num','var')&&~isnan(num)
                     set(hhget_field.TimeIndexValue,'String',num2str(num))
@@ -115,7 +115,7 @@ try
                 Field=funct(hget_field); %%activate the current action selected in get_field, e;g.read the names of the variables to plot
                 Tabchar={''};%default
                 Tabcell=[];
-                set(hhget_field.inputfile,'String',ObjectName)
+                set(hhget_field.inputfile,'String',FileName)
                 if isfield(Field,'ListGlobalAttribute')&& ~isempty(Field.ListGlobalAttribute)
                     for iline=1:length(Field.ListGlobalAttribute)
                         Tabcell{iline,1}=Field.ListGlobalAttribute{iline};
@@ -144,17 +144,17 @@ try
                 ParamOut.FieldList={'get_field...'};
             end
         case {'video','mmreader'}
-            A=read(ObjectName,num);
+            A=read(ParamIn,num);
         case 'vol'
-            A=imread(ObjectName);
+            A=imread(FileName);
             Npz=size(A,1)/ParamIn.Npy;
             A=reshape(A',ParamIn.Npx,ParamIn.Npy,Npz);
             A=permute(A,[3 2 1]);
         case 'multimage'
             warning 'off'
-            A=imread(ObjectName,num);
+            A=imread(FileName,num);
         case 'image'
-            A=imread(ObjectName);
+            A=imread(FileName);
     end
 catch ME
     errormsg=ME.message;

@@ -664,16 +664,15 @@ end
 set(handles.TimeTable,'Data',TimeTable)
 
 %% number of slices
+NbSlice=MaxIndex_j-MinIndex_j+1;%default
 if isfield(XmlData,'GeometryCalib') && isfield(XmlData.GeometryCalib,'SliceCoord')
     siz=size(XmlData.GeometryCalib.SliceCoord);
     if siz(1)>1
         NbSlice=siz(1);
-    else
-        NbSlice=1;
     end
-    set(handles.num_NbSlice,'String',num2str(NbSlice))
 end
-
+set(handles.num_NbSlice,'String',num2str(NbSlice))
+   
 %% update pair menus
 set(handles.Pairs,'Visible','on')
 set(handles.PairString,'Visible','on')
@@ -1416,6 +1415,7 @@ if isfield(Series,'OutputSubDir')
         Series.InputTable=Series.InputTable(iview,:);
     end
     detect=exist(fullfile(Series.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exist
+    check_create=1; %need to create the result directory by default
     while detect
         answer=msgbox_uvmat('INPUT_Y-N',['use existing ouput directory: ' fullfile(Series.InputTable{1,1},SubDirOutNew) ', possibly delete previous data']);
         if isequal(answer,'Yes')
@@ -1437,7 +1437,11 @@ if isfield(Series,'OutputSubDir')
     Series.OutputDir=fullfile(Series.InputTable{1,1},Series.OutputSubDir);%directory set for output results
     Series.OutputRootFile=Series.InputTable{1,3};% the first sorted RootFile taken for output
     set(handles.OutputDirExt,'String',Series.OutputDirExt)
-    Series=rmfield(Series,'OutputDirExt');%removes redondant information
+    %removes redondant information
+    Series=rmfield(Series,'OutputDirExt');
+    Series.IndexRange=rmfield(Series.IndexRange,'TimeTable');
+    Series.IndexRange=rmfield(Series.IndexRange,'MinIndex');
+    Series.IndexRange=rmfield(Series.IndexRange,'MaxIndex');
     % create output directory 
     if check_create
         [tild,msg1]=mkdir(Series.OutputDir);
@@ -1448,6 +1452,7 @@ if isfield(Series,'OutputSubDir')
     end
     filexml=fullfile(Series.OutputDir,[Series.InputTable{1,3} '.xml']);% name of the parameter xml file set in this directory
     t=struct2xml(Series);
+    t=set(t,1,'name','Series');
     save(t,filexml);
 end
 
