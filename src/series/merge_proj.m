@@ -28,6 +28,7 @@ if ~exist('Param','var')
         'FieldMenu';'one';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
         'CoordType';'on';...%can use a transform function 'off' by default
         'GetObject';'on';...%can use projection object ,'off' by default
+        'OutputDirExt';'.proj';...
         %'GetMask';'on'...%can use mask option   ,'off' by default
         %'PARAMETER'; options: name of the user defined parameter',repeat a line for each parameter 
                ''};

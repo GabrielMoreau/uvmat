@@ -1,87 +1,110 @@
-%'check_files': check the existence and status of the files selected by series.fig
+%%'check_files': check the existence, type and status of the files selected by series.fig
 %------------------------------------------------------------------------
-% function GUI_input=check_data_files(num_i1,num_i2,num_j1,num_j2,Series)
+% function GUI_input=check_data_files(Param)
 %
+%%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %OUTPUT
 % GUI_input=list of options in the GUI series.fig needed for the function
 %
 %INPUT:
-%num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_i2: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_j1: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
-%num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
-%Series: Matlab structure containing information set by the series interface
+% In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
+% In batch mode, Param is the name of the corresponding xml file containing the same information
+% In the absence of input (as activated when the current Action is selected
+% in series), the function ouput GUI_input set the activation of the needed GUI elements
 %
-function GUI_input=check_data_files(Param) %(filecell,filecell_1,num_i,num_j,vel_type,field,param);
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- %detect the chosen series of files and check their date of modification:
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%INPUT: 
-%num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_i2: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_j1: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
-%num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
-%OTHER INPUTS given by the structure Series
+% Param contains the elements:(use the menu bar command 'export/GUI config' in series to see the current structure Param)
+%    .InputTable: cell of input file names, (several lines for multiple input)
+%                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
+%    .OutputSubDir: name of the subdirectory for data outputs
+%    .OutputDir: directory for data outputs, including path
+%    .Action: .ActionName: name of the current activated function
+%             .ActionPath:   path of the current activated function
+%    .IndexRange: set the file or frame indices on which the action must be performed
+%    .FieldTransform: .TransformName: name of the selected transform function
+%                     .TransformPath:   path  of the selected transform function
+%                     .TransformHandle: corresponding function handle
+%    .InputFields: sub structure describing the input fields withfields
+%              .FieldName: name of the field
+%              .VelType: velocity type
+%              .FieldName_1: name of the second field in case of two input series
+%              .VelType_1: velocity type of the second field in case of two input series
+%    .ProjObject: %sub structure describing a projection object (read from ancillary GUI set_object)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
-if ~exist('Param','var')
-    GUI_input={'RootPath';'many';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
-        'SubDir';'on';... % subdirectory of derived files (PIV fields), ('on' by default)
-        'RootFile';'on';... %root input file name ('on' by default)
-        'FileExt';'on';... %input file extension ('on' by default)
-        'NomType';'on';...%type of file indexing ('on' by default)
+function GUI_input=check_data_files(Param)
+
+%% set the input elements needed on the GUI series when the action is selected in the menu ActionName
+if ~exist('Param','var') % case with no input parameter 
+    GUI_input={'NbViewMax';'';...% max nbre of input file series (default='' , no limitation)
+        'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
-        %'VelTypeMenu';'on';...% menu for selecting the velocity type (civ1,..) 'off' by default)
-        %'FieldMenu';'on';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-        %'CoordType';'on'...%can use a transform function 'off' by default
-        %'GetObject';'on'...%can use projection object ,'off' by default
-        %'GetMask';'on'...%can use mask option   ,'off' by default
-        %'PARAMETER'; options: name of the user defined parameter',repeat a line for each parameter 
+        'VelType';'off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+        'FieldName';'off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+        'FieldTransform'; 'off';...%can use a transform function
+        'ProjObject';'off';...%can use projection object(option 'off'/'on',
+        'Mask';'off';...%can use mask option   (option 'off'/'on', 'off' by default)
+        'OutputDirExt';'';...%set the output dir extension
                ''};
-    return %exit the function 
+        return
 end
 
-%% input parameters
-% read the xml file for batch case
+%% get input parameters, file names and indices
+% BATCH  case: read the xml file for batch case
 if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
     Param=xml2struct(Param);
-else %  RUN case: parameters introduced as the input structure Param
+    checkrun=0;
+% RUN case: parameters introduced as the input structure Param  
+else 
     hseries=guidata(Param.hseries);%handles of the GUI series
-    WaitbarPos=get(hseries.waitbar_frame,'Position');
+    WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
+    checkrun=1; % indicate the RUN option is used
 end
+% get the set of input file names (cell array filecell), and the lists of
+% input file or frame indices i1_series,i2_series,j1_series,j2_series
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+% filecell{iview,fileindex}: cell array representing the list of file names
+%        iview: line in the table corresponding to a given file series
+%        fileindex: file index within  the file series, 
+% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
+% i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
+% set of frame indices used for movie or multimage input 
+if ~isempty(j1_series)
+    frame_index=j1_series;
+else
+    frame_index=i1_series;
+end
 
+%% root input file(s) and type
+RootPath=Param.InputTable(:,1);
+RootFile=Param.InputTable(:,3);
+SubDir=Param.InputTable(:,2);
+NomType=Param.InputTable(:,4);
+FileExt=Param.InputTable(:,5);
 
-%%%%%%%%%%%%%%%%%%%%%%%%
+% numbers of slices and file indices
+NbSlice=1;%default
+if isfield(Param.IndexRange,'NbSlice')
+    NbSlice=Param.IndexRange.NbSlice;
+end
+nbview=size(i1_series,1);%number of input file series (lines in InputTable)
+nbfield_j=size(i1_series,2); %nb of consecutive fields at each level(burst
+nbfield=nbfield_j*size(i1_series,3); %total number of files or frames
+nbfield_i=floor(nbfield/NbSlice);%total number of i indexes (adjusted to an integer number of slices)
+nbfield=nbfield_i*nbfield_j; %total number of fields after adjustement
 
-% number of slices
-NbSlice=Param.NbSlice;
-if isempty(NbSlice),NbSlice=1; end; %default
-
-%% root input file and type
-    RootPath=Param.InputTable(:,1);
-    RootFile=Param.InputTable(:,3);
-    SubDir=Param.InputTable(:,2);
-    NomType=Param.InputTable(:,4);
-    FileExt=Param.InputTable(:,5);
-% number of views
-count=0;  
-nbview=numel(RootFile);
-
+%determine the file type on each line from the first input file 
+ImageTypeOptions={'image','multimage','mmreader','video'};
+NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:nbview
-    filebase=fullfile(RootPath{iview},RootFile{iview});%root file name
-%     if testcell
-%         num_i1=num_i1_cell{iview}; num_i2=num_i2_cell{iview}; num_j1=num_j1_cell{iview}; num_j2=num_j2_cell{iview};
-%     else
-%         num_i1=num_i1_cell; num_i2=num_i2_cell; num_j1=num_j1_cell; num_j2=num_j2_cell;
-%     end
-%     siz=size(num_i1);
-    nbfield=size(i1_series{iview},1);
-    nbfield2=size(i1_series{iview},2); %nb of consecutive fields at each level(burst
-    nbfield=numel(i1_series{iview});
-    nbfield=floor(nbfield/(nbfield2*NbSlice));%total number of i indexes (adjusted to an integer number of slices)
-    if isequal(lower(FileExt{iview}),'.avi')
-        info=aviinfo([filebase FileExt{iview}]);
+    [FileType{iview},FileInfo{iview},Object{iview}]=get_file_type(filecell{iview,1});
+    CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
+    CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
+end
+
+%% MAIN LOOP ON VIEWS (INPUT LINES)
+for iview=1:nbview
+    if isequal(FileType{iview},'mmreader')||isequal(FileType{iview},'video')
+        info=aviinfo(filecell{iview,1});
         message{1}=info.Filename;
         message{2}=info.FileModDate;
         message{3}=[num2str(info.FramesPerSecond) ' frames/s '];
@@ -94,18 +117,14 @@ for iview=1:nbview
         Tabchar={};
         %LOOP ON SLICES
         for i_slice=1:NbSlice
-            for ifield=1:nbfield
-                indselect(:,ifield)=((ifield-1)*NbSlice+(i_slice-1))*nbfield2+[1:nbfield2]';%selected indices on the list of files of a slice
-            end 
+            index_slice=i_slice:NbSlice:nbfield;
             filefound={};
-            for index=1:nbfield*nbfield2
+            for ifile=1:nbfield_i
+%                 index(ifile)=index_slice(ifile);
                 stopstate=get(hseries.RUN,'BusyAction');
                 if isequal(stopstate,'queue')% enable STOP command
-                    update_waitbar(hseries.waitbar_frame,WaitbarPos,index/(nbfield*nbfield2))
-                    ifile=indselect(index);               
-%                     file=...
-%                        name_generator(filebase,num_i1(ifile),num_j1(ifile),FileExt{iview},NomType{iview},1,num_i2(ifile),num_j2(ifile),SubDir{iview});                
-                    file=filecell{iview,ifile};
+                    update_waitbar(hseries.waitbar_frame,WaitbarPos,ifile/nbfield_i)         
+                    file=filecell{iview,index_slice(ifile)};
                     [Path,Name,ext]=fileparts(file);
                     detect=exist(file,'file'); % check the existence of the file
                     if detect==0
@@ -128,7 +147,7 @@ for iview=1:nbview
                         lastfield=[FileType ', ' lastfield];                   
                     end
                     Tabchar(1,i_slice)={['slice #' num2str(i_slice)]};
-                    Tabchar(index+1,i_slice)={[file '...' lastfield]};
+                    Tabchar(ifile+1,i_slice)={[file '...' lastfield]};
                 end
             end
         end
@@ -147,7 +166,7 @@ for iview=1:nbview
                 ['latest modification:  ' cell2mat(filefound(indlast)) ' : ' datestr(last)]};
         end 
         if ~isempty(Tabchar)
-          Tabchar=reshape(Tabchar,NbSlice*(nbfield*nbfield2+1),1);
+          Tabchar=reshape(Tabchar,NbSlice*(nbfield_i+1),1);
         end
     end
     hfig=figure(iview);

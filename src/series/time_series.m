@@ -26,6 +26,7 @@ if ~exist('Param','var')
         'FieldMenu';'two';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
         'CoordType';'on';...%can use a transform function 'off' by default
         'GetObject';'on';...%can use projection object ,'off' by default
+        'OutputDirExt';'.series'...
         %'GetMask';'on'...%can use mask option   ,'off' by default
         %'PARAMETER'; options: name of the user defined parameter',repeat a line for each parameter 
                ''};
@@ -461,16 +462,10 @@ for i_slice=1:NbSlice
    
     %remove time for global attributes if exists
     Time_index=find(strcmp('Time',RecordData.ListGlobalAttribute));
-    if ~isempty(Time_search)
+    if ~isempty(Time_index)
         RecordData.ListGlobalAttribute(Time_index)=[];
     end
     RecordData.Conventions='uvmat';
-%     for iattr=1:numel(RecordData.ListGlobalAttribute)
-%         if strcmp(RecordData.ListGlobalAttribute{iattr},'Time')
-%             RecordData.ListGlobalAttribute(iattr)=[];
-%             break
-%         end
-%     end
     for ivar=1:numel(RecordData.ListVarName)
         VarName=RecordData.ListVarName{ivar};
         eval(['RecordData.' VarName '=squeeze(RecordData.' VarName ');']) %remove singletons

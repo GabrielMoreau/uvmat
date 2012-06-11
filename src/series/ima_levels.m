@@ -15,7 +15,7 @@
 function GUI_input=ima_levels(Param)
 %requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
 if ~exist('Param','var')
-    GUI_input={};
+    GUI_input={'OutputDirExt';'.lev'};
     return %exit the function 
 end
 
@@ -89,13 +89,27 @@ for ifile=1:nbfield
             switch FileType
                 case {'video','mmreader'}
                     A=read(MovieObject,i1_series{1}(jfile,ifile));
+                    if strcmp(NomType,'*')
+                        A=read(MovieObject,i1_series{1}(jfile,ifile));
+                        NomType_out='_1';
+                    else
+                        A=imread(filename,j1_series{1}(jfile,ifile));
+                        NomType_out='_1_1';
+                    end
                 case {'vol','image'}
                     A=imread(filename);
+                    NomType_out='_1';
                 case 'multimage'
-                    A=imread(filename,i1_series{1}(jfile,ifile));
+                    if strcmp(NomType,'*')
+                        A=imread(filename,i1_series{1}(jfile,ifile));
+                        NomType_out='_1';
+                    else
+                        A=imread(filename,j1_series{1}(jfile,ifile));
+                        NomType_out='_1_1';
+                    end
             end
             C=levels(A);
-            filename_new=fullfile_uvmat(RootPath,SubdirResult,RootFile,'.png',NomType,i1_series{1}(jfile,ifile),[],j1_series{1}(jfile,ifile));
+            filename_new=fullfile_uvmat(RootPath,SubdirResult,RootFile,'.png',NomType_out,i1_series{1}(jfile,ifile),[],j1_series{1}(jfile,ifile));
             imwrite(C,filename_new)
             display([filename_new ' written'])
         end

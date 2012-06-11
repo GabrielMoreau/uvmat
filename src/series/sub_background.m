@@ -42,6 +42,7 @@ if ~exist('Param','var')
         'FileExt';'on';... %inputf file extension ('on' by default)
         'NomType';'on';...%type of file indexing ('on' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
+        'OutputDirExt';'.sbk';...
         %'VelTypeMenu';'on';...% menu for selecting the velocity type (civ1,..)('off' by default)
         %'FieldMenu';'on';...% menu for selecting the velocity field (s) in the input file ('off' by default)
         %'VelTypeMenu_1';'on';...% menu for selecting the velocity type (civ1,..)('off' by default)
@@ -69,9 +70,9 @@ end
 filebase=fullfile(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3});
 dir_images=Param.InputTable{1,1};
 NomType=Param.InputTable{1,4};
+SubDir=Param.InputTable{1,2};
 FileExt=Param.InputTable{1,5};
-[filecell,i1_series,tild,j1_series]=get_file_series(Param);%generates the set
-of input file names
+[filecell,i1_series,tild,j1_series]=get_file_series(Param);%generates the set of input file names
 if size(filecell,1)>1
     msgbox_uvmat('WARNING','This function uses only the first input image series')
     return
@@ -210,12 +211,12 @@ end
 
 %% update the xml file
 SubDirBase=regexprep(Param.InputTable{1,2},'\..*','');%take the root part of SubDir, before the first dot '.'
-filexml=fulfille(Param.InputTable{1,1},[SubDirBase '.xml']);
+filexml=fullfile(Param.InputTable{1,1},[SubDirBase '.xml']);
 if ~exist(filexml,'file') && exist([filebase '.xml'],'file')% xml inside the image directory
     copyfile([filebase '.xml'],filexml);% copy the .xml file
 end
 if exist(filexml,'file')
-    t=xmltree([filexml '.xml']);  
+    t=xmltree(filexml);  
     %update information on the first image name in the series
     uid_Heading=find(t,'ImaDoc/Heading');
     if isempty(uid_Heading)
@@ -305,8 +306,7 @@ for islice=1:nbslice_i
         for ifield = step*ceil(nbaver/2)+1:step:nbfield_slice-step*floor(nbaver/2)
             if checkrun
                 stopstate=get(hseries.RUN,'BusyAction');
-                update_waitbar(hseries.waitbar,WaitbarPos,(ifield+(islice-1)*nbfield_slice)/(nbfield_slice*nbslice_i))
-                display((ifield+(islice-1)*nbfield_slice)/(nbfield_slice*nbslice_i))
+                update_waitbar(hseries.waitbar_frame,WaitbarPos,(ifield+(islice-1)*nbfield_slice)/(nbfield_slice*nbslice_i))
             else
                 stopstate='queue';
             end
@@ -315,9 +315,9 @@ for islice=1:nbslice_i
                 %incorporate next burst in the current image series
                 for iburst=1:step
                     ifile=indselect(ifield+step*floor(nbaver/2)+iburst-1);
-                    filename=fullfile_uvmat(Param.InputTable{1,1},Subdir,Param.InputTable{1,3},FileExt,NomType,num_i1(ifile),[],num_j1(ifile));
+                    filename=fullfile_uvmat(Param.InputTable{1,1},SubDir,Param.InputTable{1,3},FileExt,NomType,i1_series{1}(ifile),[],j1_series{1}(ifile));
                     %filename=name_generator(filebase,num_i1(ifile),num_j1(ifile),FileExt,NomType);
-                    Aread=read_image(filename,FileType,num_i1(ifile),MovieObject);
+                    Aread=read_image(filename,FileType,i1_series{1}(ifile),MovieObject);
                     Ak(:,:,nbaver_ima-step+iburst)=Aread;
                 end
                 Asort=sort(Ak,3);%sort the new current image series by luminosity
