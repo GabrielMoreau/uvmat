@@ -96,13 +96,18 @@ nbfield=nbfield_i*nbfield_j; %total number of fields after adjustement
 %determine the file type on each line from the first input file 
 ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
+    
 for iview=1:nbview
-    [FileType{iview},FileInfo{iview},Object{iview}]=get_file_type(filecell{iview,1});
+    if ~exist(filecell{iview,1}','file')
+        msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
+        return
+    end
+    [FileType{iview},FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
     CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
     CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
 end
 
-%% Calibration data and timing: read the ImaDoc files
+%% calibration data and timing: read the ImaDoc files
 mode=''; %default
 timecell={};
 itime=0;
@@ -320,6 +325,8 @@ for i_slice=1:NbSlice
             else
                 Field=Data{1};
             end
+            
+            %field projection on an object
             if Param.CheckObject
                 [Field,errormsg]=proj_field(Field,ProjObject);
                 if ~isempty(errormsg)
@@ -392,19 +399,9 @@ for i_slice=1:NbSlice
 end
 %%%%%%%%%%%%%%%% end loop on slices %%%%%%%%%%%%%%%%
 
-%% reproduce ImaDoc/GeometryCalib for image series
-% if isfield(XmlData{1},'GeometryCalib') && ~isempty(XmlData{1}.GeometryCalib) 
-%     [tild,RootFile]=fileparts(filebase_out);
-%     outputxml=fullfile(pathdir,[RootFile '.xml']);
-%     errormsg=update_imadoc(XmlData{1}.GeometryCalib,outputxml);% introduce the calibration data in the xml file
-%     if strcmp(errormsg,'')
-%         display(['GeometryCalib transferred to ' outputxml])
-%     else
-%         msgbox_uvmat('ERROR',errormsg);
-%     end
-% end
-
-%% open the result file with uvmat
-hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
-delete(hget_field)
-uvmat(OutputFile)% open the last result file with uvmat
+%% open the result file with uvmat (in RUN mode)
+if checkrun
+    hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
+    delete(hget_field)
+    uvmat(OutputFile)% open the last result file with uvmat
+end

@@ -113,14 +113,13 @@ for iview=1:nbview
         message{6}=[ 'quality ' num2str(info.Quality)];   
         Tabchar=message;
     else
-        datnum=zeros(1,nbfield);
         Tabchar={};
         %LOOP ON SLICES
         for i_slice=1:NbSlice
             index_slice=i_slice:NbSlice:nbfield;
             filefound={};
+            datnum=zeros(1,nbfield_j);
             for ifile=1:nbfield_i
-%                 index(ifile)=index_slice(ifile);
                 stopstate=get(hseries.RUN,'BusyAction');
                 if isequal(stopstate,'queue')% enable STOP command
                     update_waitbar(hseries.waitbar_frame,WaitbarPos,ifile/nbfield_i)         
@@ -128,14 +127,14 @@ for iview=1:nbview
                     [Path,Name,ext]=fileparts(file);
                     detect=exist(file,'file'); % check the existence of the file
                     if detect==0
-                        count=count+1;
+%                         count=count+1;
                         lastfield='not found';
                     else
                         datfile=dir(file);
                         if isfield(datfile,'datenum')
                             datnum(ifile)=datfile.datenum;
-                        end
-                        filefound(ifile)={datfile.name};
+                            filefound(ifile)={datfile.name};
+                        end                     
                         lastfield='';
                         [FileType,FileInfo,Object]=get_file_type(file);
                         if strcmp(FileType,'civx')||strcmp(FileType,'civdata')
@@ -151,7 +150,6 @@ for iview=1:nbview
                 end
             end
         end
-%         if isempty(datnum)||isempty(filefound)
         if isempty(filefound)
             if NbSlice>1
                 message=['no set of ' num2str(NbSlice) ' (NbSlices) files found'];
@@ -160,10 +158,11 @@ for iview=1:nbview
             end
         else
             datnum=datnum(find(datnum));%keep the non zero values corresponding to existing files
+            filefound=filefound(find(datnum));
             [first,ind]=min(datnum);
             [last,indlast]=max(datnum);
-            message={['oldest modification:  ' cell2mat(filefound(ind)) ' : ' datestr(first)];...
-                ['latest modification:  ' cell2mat(filefound(indlast)) ' : ' datestr(last)]};
+            message={['oldest modification:  ' filefound{ind} ' : ' datestr(first)];...
+                ['latest modification:  ' filefound{indlast} ' : ' datestr(last)]};
         end 
         if ~isempty(Tabchar)
           Tabchar=reshape(Tabchar,NbSlice*(nbfield_i+1),1);
