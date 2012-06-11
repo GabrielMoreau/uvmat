@@ -1274,6 +1274,8 @@ function STOP_Callback(hObject, eventdata, handles)
 set(handles.RUN, 'BusyAction','cancel')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 set(handles.RUN,'enable','on')
+set(handles.BATCH,'BackgroundColor',[1 0 0])
+set(handles.BATCH,'enable','on')
 
 %------------------------------------------------------------------------
 % --- Executes on button press in BATCH.
@@ -1281,22 +1283,25 @@ function BATCH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------    
 set(handles.BATCH, 'Enable','Off')
 set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])
-[h_fun,errormsg]=prepare_jobs(handles);
-set(handles.BATCH, 'Enable','On')
-set(handles.BATCH,'BackgroundColor',[1 0 0])
-path_civ=fileparts(which('civ'));
-filename_bat=[OutputFile '.bat'];
+[h_fun,Series,errormsg]=prepare_jobs(handles);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+    return
+end
+path_series=fileparts(which('series'));
+filename_xml=fullfile(Series.OutputDir,[Series.OutputRootFile '.xml']);
+filename_bat=fullfile(Series.OutputDir,[Series.OutputRootFile '.bat']);
 [fid,message]=fopen(filename_bat,'w');
 if isequal(fid,-1)
-    errormsg= ['creation of .bat file: ' message];
+    msgbox_uvmat('ERROR', ['creation of .bat file: ' message]);
     return
 end
 text_matlabscript=[...
     '#!/bin/bash \n'...
     '. /etc/sysprofile \n'...
     'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n'...
-    'cd(''' path_civ '''); \n'...
-    'civ_matlab(''' filename_xml ''',''' OutputFile '.nc''); \n'...
+    'cd(''' path_series '''); \n'...
+    '' Series.Action  '( ''' filename_xml '''); \n'...
     'exit \n'...
     'END_MATLAB \n'];
 fprintf(fid,text_matlabscript);
@@ -1304,7 +1309,8 @@ fclose(fid);
 if isunix
     system(['chmod +x ' filename_bat]);
 end
-
+set(handles.BATCH, 'Enable','On')
+set(handles.BATCH,'BackgroundColor',[1 0 0])
 %------------------------------------------------------------------------
 % --- Executes on button press in BIN.
 function BIN_Callback(hObject, eventdata, handles)
@@ -1409,26 +1415,31 @@ if isfield(Series,'OutputSubDir')
         [tild,iview]=sort(Series.InputTable(:,2)); %subdirectories sorted in alphabetical order
         Series.InputTable=Series.InputTable(iview,:);
     end
-    detect=exist(fullfile(Series.InputTable{1,1},SubDirOutNew),'file')==2;% test if  the dir  already exist
+    detect=exist(fullfile(Series.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exist
     while detect
-        r=regexp(SubDirOut,'(?<root>.*\D)(?<num1>\d+)$','names');%detect whether name ends by a number
-        if isempty(r)
-            r(1).root=[SubDirOut '_'];
-            r(1).num1='0';
+        answer=msgbox_uvmat('INPUT_Y-N',['use existing ouput directory: ' fullfile(Series.InputTable{1,1},SubDirOutNew) ', possibly delete previous data']);
+        if isequal(answer,'Yes')
+            detect=0;
+            check_create=0;
+        else
+            r=regexp(SubDirOutNew,'(?<root>.*\D)(?<num1>\d+)$','names');%detect whether name ends by a number
+            if isempty(r)
+                r(1).root=[SubDirOutNew '_'];
+                r(1).num1='0';
+            end
+            SubDirOutNew=[r(1).root num2str(str2num(r(1).num1)+1)];%increment the index by 1 or put 1
+            detect=exist(fullfile(Series.InputTable{1,1},SubDirOutNew),'dir');% test if  the dir  already exists   
+            check_create=1;
         end
-        SubDirOutNew=[r(1).root num2str(str2num(r(1).num1)+1)];%increment the index by 1 or put 1
-        detect=exist(fullfile(Series.InputTable{1,1},SubDirOutNew),'file')==2;% test if  the dir  already exists
     end
+    Series.OutputDirExt=regexprep(SubDirOutNew,Series.OutputSubDir,'');
     Series.OutputSubDir=SubDirOutNew;
     Series.OutputDir=fullfile(Series.InputTable{1,1},Series.OutputSubDir);%directory set for output results
     Series.OutputRootFile=Series.InputTable{1,3};% the first sorted RootFile taken for output
+    set(handles.OutputDirExt,'String',Series.OutputDirExt)
     Series=rmfield(Series,'OutputDirExt');%removes redondant information
     % create output directory 
-    answer='No';
-    if exist(Series.OutputDir,'dir')
-        answer=msgbox_uvmat('INPUT_Y-N',['use existing ouput directory: ' Series.OutputDir ', possibly delete previous data']);
-    end
-    if ~isequal(answer,'Yes')
+    if check_create
         [tild,msg1]=mkdir(Series.OutputDir);
         if ~strcmp(msg1,'')
             errormsg=['cannot create ' Series.OutputDir ': ' msg1];%error message for directory creation
