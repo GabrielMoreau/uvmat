@@ -1457,7 +1457,9 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
         else
             axes(handles.axes3)
             hold on    
-            MaskData.maskhandle=image(Mask.AX,Mask.AY,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*flagmask);
+            size(flagmask)
+           % MaskData.maskhandle=image(Mask.AX,Mask.AY,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*flagmask);
+            MaskData.maskhandle=image(Mask.AX,Mask.AY,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*ones(size(flagmask)));
 %             set(MaskData.maskhandle,'AlphaData',0.6*flagmask)
             set(handles.CheckMask,'UserData',MaskData)
         end
@@ -2053,9 +2055,11 @@ if ~isempty(FileName)
                 return
             end
     end
+    if isstruct (ParamIn)
     ParamIn.FieldName=FieldName;
     ParamIn.VelType=VelType;
     ParamIn.GUIName='get_field';
+    end
     [Field{1},ParamOut,errormsg] = read_field(FileName,UvData.FileType{1},ParamIn,frame_index);
     if ~isempty(errormsg)
         errormsg=['error in reading ' FileName ': ' errormsg];
@@ -2185,15 +2189,19 @@ else
     set(handles.VelType,'Visible','off')
 end
 % display the Fields menu from the input file and pick the selected one: 
+if isstruct(ParamOut)
 field_index=strcmp(ParamOut.FieldName,ParamOut.FieldList);
 set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
 set(handles.Fields,'Value',find(field_index,1))
+end
 
 %% update the display menu for the second velocity type (second menuline)
 test_veltype_1=0;
 if isempty(FileName_1)
     set(handles.Fields_1,'Value',1); %update the field menu
+    if isstruct(ParamOut)
     set(handles.Fields_1,'String',[{''};ParamOut.FieldList]); %update the field menu
+    end
 elseif ~test_keepdata_1
     if (~strcmp(UvData.FileType{2},'netcdf')&&~strcmp(UvData.FileType{2},'civdata')&&~strcmp(UvData.FileType{2},'civx'))|| isequal(FieldName_1,'get_field...')
         set(handles.VelType_1,'Visible','off')
@@ -2384,10 +2392,10 @@ if ~isempty(transform)
 end
 
 %% calculate scalar
-if ~strcmp(ParamOut.FieldName,'get_field...')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))%&&~strcmp(ParamOut.FieldName,'velocity')&& ~strcmp(ParamOut.FieldName,'get_field...');% ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
+if isstruct(ParamOut)&&~strcmp(ParamOut.FieldName,'get_field...')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))%&&~strcmp(ParamOut.FieldName,'velocity')&& ~strcmp(ParamOut.FieldName,'get_field...');% ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
     Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
 end
-if numel(Field)==2 && ~strcmp(ParamOut_1.FieldName,'get_field...')&& ~test_keepdata_1 && (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))  &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
+if isstruct(ParamOut_1)&& numel(Field)==2 && ~strcmp(ParamOut_1.FieldName,'get_field...')&& ~test_keepdata_1 && (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))  &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
      Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
 end
 

@@ -163,8 +163,10 @@ end
 
 %% case of image
 if ~isempty(A)
+    if isstruct(ParamOut)
     ParamOut.FieldName='image';
     ParamOut.FieldList={'image'};
+    end
     Npz=1;%default
     npxy=size(A);
 %     Rangx=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
@@ -177,8 +179,10 @@ if ~isempty(A)
             Field.VarDimName={'AY','AX',{'AY','AX','rgb'}}; %
             Field.AY=[npxy(1)-0.5 0.5];
             Field.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
+            if isstruct(ParamOut)
             ParamOut.Npx=npxy(2);% display image size on the interface
             ParamOut.Npy=npxy(1);
+            end
             Field.VarAttribute{3}.Mesh=1;
         else
             Field.NbDim=3;
@@ -187,8 +191,10 @@ if ~isempty(A)
             Field.AZ=[npxy(1)-0.5 0.5];
             Field.AY=[npxy(2)-0.5 0.5];
             Field.AX=[0.5 npxy(3)-0.5]; % coordinates of the first and last pixel centers
+            if isstruct(ParamOut)
             ParamOut.Npx=npxy(3);% display image size on the interface
             ParamOut.Npy=npxy(2);
+             end
             Field.VarAttribute{4}.Mesh=1;
         end
     else

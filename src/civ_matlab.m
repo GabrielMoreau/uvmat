@@ -50,7 +50,12 @@ maskname='';%default
 check_civx=0;%default
 check_civ1=0;%default
 check_patch1=0;%default
-
+        ImageFileA=Param.Civ1.ImageA;
+        ImageFileB=Param.Civ1.ImageB;
+        if isfield(Param,'Civ2')
+            ImageFileA_civ2=Param.Civ2.ImageA;
+             ImageFileB_civ2=Param.Civ2.ImageB;
+        end
 % case of input Param set by an xml file (batch mode)
 if ischar(Param)
     Param=xml2struct(Param); %if Param is the name of an xml file, read this file as a Matlab structure
@@ -97,7 +102,7 @@ if isfield (Param,'Civ1')
         end
     else
         if isfield(par_civ1,'ImageA')&&(ischar(par_civ1.ImageA)||strcmp(class(par_civ1.ImageA),'VideoReader')) % case with no image: only the PIV grid is calculated           
-            [Field,ParamOut,errormsg] = read_field(par_civ1.ImageA,par_civ1.FileTypeA,[],par_civ1.FrameIndexA);
+            [Field,ParamOut,errormsg] = read_field(ImageFileA,par_civ1.FileTypeA,par_civ1.ImageA,par_civ1.FrameIndexA);
             if ~isempty(errormsg)
                 errormsg=['error in civ_matlab/read_field:' errormsg];
                 return
@@ -105,7 +110,7 @@ if isfield (Param,'Civ1')
             par_civ1.ImageA=Field.A;%= image matrix A in the first input field 
         end
         if isfield(par_civ1,'ImageB')&& (ischar(par_civ1.ImageB)||strcmp(class(par_civ1.ImageB),'VideoReader'))
-            [Field,ParamOut,errormsg] = read_field(par_civ1.ImageB,par_civ1.FileTypeB,[],par_civ1.FrameIndexB);
+            [Field,ParamOut,errormsg] = read_field(ImageFileB,par_civ1.FileTypeB,par_civ1.ImageB,par_civ1.FrameIndexB);
             if ~isempty(errormsg)
                 errormsg=['error in civ_matlab/read_field:' errormsg];
                 return
@@ -241,7 +246,7 @@ if isfield (Param,'Civ2')
     par_civ2=Param.Civ2;
     if ~isfield (Param,'Civ1') || ~strcmp(Param.Civ1.ImageA,par_civ2.ImageA)
         %read first image if not already done for civ1
-        [Field,ParamOut,errormsg] = read_field(par_civ2.ImageA,par_civ2.FileTypeA,[],par_civ2.FrameIndexA);
+        [Field,ParamOut,errormsg] = read_field(ImageFileA_civ2,par_civ2.FileTypeA,par_civ2.ImageA,par_civ2.FrameIndexA);
                     if ~isempty(errormsg)
                 errormsg=['error in civ_matlab/read_field:' errormsg];
                 return
@@ -252,7 +257,7 @@ if isfield (Param,'Civ2')
     end
     if ~isfield (Param,'Civ1') || ~strcmp(Param.Civ1.ImageB,par_civ2.ImageB)
         %read first image if not already done for civ1
-        [Field,ParamOut,errormsg] = read_field(par_civ2.ImageB,par_civ2.FileTypeB,[],par_civ2.FrameIndexB);
+        [Field,ParamOut,errormsg] = read_field(ImageFileB_civ2,par_civ2.FileTypeB,par_civ2.ImageB,par_civ2.FrameIndexB);
          if ~isempty(errormsg)
                 errormsg=['error in civ_matlab/read_field:' errormsg];
                 return

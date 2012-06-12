@@ -2099,8 +2099,11 @@ if checkbox(1)==1;
                 filename=fullfile_uvmat(RootPath,subdir_civ1_new,RootFile_nc,'.nc',NomType_nc,i1_civ1(ifile),i2_civ1(ifile),j1_civ1(j),j2_civ1(j));
                 detect=exist(filename,'file')==2;
                 if detect% if a netcdf file already exists
-                    answer=msgbox_uvmat('INPUT_Y-N',['delete files in ' subdir_civ1_new]);
-                    if ~strcmp(answer,'Yes')
+                    answer=msgbox_uvmat('INPUT_Y-N',['overwrite existing civ files in ' subdir_civ1_new]);
+                    if strcmp(answer,'Yes')
+                        detect=0;
+                        filecell.nc.civ1(ifile,j)={filename};
+                    else
                         r=regexp(subdir_civ1_new,'(?<root>.*\D)(?<num1>\d+)$','names');%detect whether name ends by a number
                         if isempty(r)
                             r(1).root=[subdir_civ1_new '_'];
