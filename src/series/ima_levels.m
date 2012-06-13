@@ -1,121 +1,162 @@
-%'ima_levels': rescale the image intensity to reduce strong luminosity peaks
+%'ima_levels': rescale the image intensity to reduce strong luminosity peaks (their blinking effects often perturbs PIV))
+% this function can be used as a template for applying a transform (here 'levels.m') on each image of a series
 %------------------------------------------------------------------------
-% function GUI_input=ima_levels(num_i1,num_i2,num_j1,num_j2,Series)
+% function GUI_input=ima_levels(Param)
 %
+%%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %OUTPUT
 % GUI_input=list of options in the GUI series.fig needed for the function
 %
 %INPUT:
-%num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_i2:  series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_j1:  series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
-%num_j2:  series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
-%Series: Matlab structure containing information set by the series interface% relabel_i_j: relabel an image series with two indices, according to the time matrix given by ImaDoc
-%----------------------------------------------------------------------
-function GUI_input=ima_levels(Param)
-%requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
-if ~exist('Param','var')
-    GUI_input={'OutputDirExt';'.lev'};
-    return %exit the function 
+% In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
+% In batch mode, Param is the name of the corresponding xml file containing the same information
+% In the absence of input (as activated when the current Action is selected
+% in series), the function ouput GUI_input set the activation of the needed GUI elements
+%
+% Param contains the elements:(use the menu bar command 'export/GUI config' in series to see the current structure Param)
+%    .InputTable: cell of input file names, (several lines for multiple input)
+%                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
+%    .OutputSubDir: name of the subdirectory for data outputs
+%    .OutputDir: directory for data outputs, including path
+%    .Action: .ActionName: name of the current activated function
+%             .ActionPath:   path of the current activated function
+%    .IndexRange: set the file or frame indices on which the action must be performed
+%    .FieldTransform: .TransformName: name of the selected transform function
+%                     .TransformPath:   path  of the selected transform function
+%                     .TransformHandle: corresponding function handle
+%    .InputFields: sub structure describing the input fields withfields
+%              .FieldName: name of the field
+%              .VelType: velocity type
+%              .FieldName_1: name of the second field in case of two input series
+%              .VelType_1: velocity type of the second field in case of two input series
+%    .ProjObject: %sub structure describing a projection object (read from ancillary GUI set_object)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+function GUI_input=ima_levels (Param)
+
+%% set the input elements needed on the GUI series when the action is selected in the menu ActionName
+if ~exist('Param','var') % case with no input parameter 
+    GUI_input={'NbViewMax';1;...% max nbre of input file series (default='' , no limitation)
+        'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
+        'NbSlice';'off'; ...%nbre of slices ('off' by default)
+        'VelType';'off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+        'FieldName';'off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+        'FieldTransform'; 'off';...%can use a transform function
+        'ProjObject';'off';...%can use projection object(option 'off'/'on',
+        'Mask';'off';...%can use mask option   (option 'off'/'on', 'off' by default)
+        'OutputDirExt';'.lev';...%set the output dir extension
+               ''};
+        return
 end
 
-%% input parameters
-% read the xml file for batch case
-if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
+%% get input parameters, file names and indices
+% BATCH  case: read the xml file for batch case
+if ischar(Param) && ~isempty(find(regexp(Param,'.xml$')))
     Param=xml2struct(Param);
     checkrun=0;
-else %  RUN case: parameters introduced as the input structure Param
+% RUN case: parameters introduced as the input structure Param  
+else 
     hseries=guidata(Param.hseries);%handles of the GUI series
-    WaitbarPos=get(hseries.waitbar_frame,'Position');
-    checkrun=1;
+    WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
+    checkrun=1; % indicate the RUN option is used
 end
-%filebase=fullfile(Param.InputTable{1,1},Param.InputTable{1,3});
-RootPath=Param.InputTable{1,1};
-Subdir=Param.InputTable{1,2};
-RootFile=Param.InputTable{1,3};
-NomType=Param.InputTable{1,4};
-FileExt=Param.InputTable{1,5};
-[filecell,i1_series,i2_series,j1_series]=get_file_series(Param);% list of input files and indices
-if size(filecell,1)>1
-    msgbox_uvmat('WARNING','This function uses only the first input image series')
+
+% get the set of input file names (cell array filecell), and the lists of
+[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+
+%% root input file(s) and type
+RootPath=Param.InputTable(:,1);
+RootFile=Param.InputTable(:,3);
+SubDir=Param.InputTable(:,2);
+NomType=Param.InputTable(:,4);
+FileExt=Param.InputTable(:,5);
+
+% numbers of slices and file indices
+NbSlice=1;%default
+if isfield(Param.IndexRange,'NbSlice')
+    NbSlice=Param.IndexRange.NbSlice;
+end
+nbview=numel(i1_series);%number of input file series (lines in InputTable)
+nbfield_j=size(i1_series{1},1); %nb of consecutive fields for the j index (bursts or volume slices)
+nbfield_i=size(i1_series{1},2); %nb of consecutive fields for the i index
+nbfield=nbfield_j*nbfield_i; %total number of files or frames
+nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices) 
+nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
+
+%determine the file type on each line from the first input file 
+ImageTypeOptions={'image','multimage','mmreader','video'};%allowed input file types(images)
+[FileType{1},FileInfo{1},MovieObject{1}]=get_file_type(filecell{1,1});
+CheckImage{1}=~isempty(find(strcmp(FileType,ImageTypeOptions)));% =1 for images
+if ~isempty(j1_series{1})
+    frame_index{1}=j1_series{1};
+else
+    frame_index{1}=i1_series{1};
+end
+
+%% calibration data and timing: read the ImaDoc files
+%not relevant for this function
+
+%% check coincidence in time for several input file series
+%not relevant for this function
+
+%% coordinate transform or other user defined transform
+%not relevant for this function
+
+%%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
+ % EDIT FROM HERE
+
+ %% check the validity of  input file types
+if CheckImage{1}
+    FileExtOut='.png'; % write result as .png images for image inputs
+    if strcmp(lower(NomType{1}(end)),'a')
+        NomTypeOut=NomType{1};
+    else
+        NomTypeOut='_1_1';
+    end
+else 
+    msgbox_uvmat('ERROR',['invalid file type input: ' FileType{1} ' not an image'])
     return
 end
 
-%% determine input image type
-[FileType,FileInfo,MovieObject]=get_file_type(filecell{1,1});
-ListTypes={'image','multimage','mmreader','video'};
+%% Set field names and velocity types
+%not relevant for this function
 
-if isempty(strcmp(FileType,ListTypes))% if the detected FileType is not in the list for images
-    msgbox_uvmat('ERROR',['invalid file extension ' FileExt ': this function only accepts image or movie input'])
-    return
-end
+%% Initiate output fields
+%not relevant for this function
 
-%% create dir of the new images
-SubdirResult=[Param.InputTable{1,2} '.lev'];% add the suffix '.lev' to the name of the image folder
-try
-    mkdir(fullfile(Param.InputTable{1,1},SubdirResult));
-catch ME
-    msgbox_uvmat('ERROR',['error in creating result directory: ' ME.message]);%display error msg for directory creation if fails
-    return
-end
-[xx,msg2] = fileattrib(fullfile(Param.InputTable{1,1},SubdirResult),'+w','g'); %yield writing access (+w) to user group (g)
-if ~strcmp(msg2,'')
-    msgbox_uvmat('ERROR',['pb of permission for ' fullfile(Param.InputTable{1,1},SubdirResult) ': ' msg2])%error message for directory creation
-    return
-end
-msgbox_uvmat('CONFIRMATION','apply image rescaling function levels.m ');
+%% set processing parameters
+% not needed for this function
 
-%copy the xml file
-% if exist([basename '.xml'],'file')
-%     copyfile([basename '.xml'],[basename_new '.xml']);% copy the .civ file
-% end
+%% update the xml file
+% not needed for this function
 
-%% main loop
-nbfield=size(i1_series{1},2);
-nbfield2=size(i1_series{1},1);
+%% main loop on images
+j1=[];%default
 for ifile=1:nbfield
     if checkrun
-%         update_waitbar(hseries.waitbar,WaitbarPos,ifile/nbfield)
         update_waitbar(hseries.waitbar_frame,WaitbarPos,ifile/nbfield)
         stopstate=get(hseries.RUN,'BusyAction');
     else
         stopstate='queue';
     end
     if isequal(stopstate,'queue') % enable STOP command
-        for jfile=1:nbfield2
-            %filename=name_generator(basename,num_i1(jfile,ifile),num_j1(jfile,ifile),Series.FileExt,Series.NomType);
-            %filename_new=name_generator(basename_new,num_i1(jfile,ifile),num_j1(jfile,ifile),'.png',Series.NomType);
-            filename=fullfile_uvmat(RootPath,Subdir,RootFile,FileExt,NomType,i1_series{1}(jfile,ifile),[],j1_series{1}(jfile,ifile));
-            switch FileType
-                case {'video','mmreader'}
-                    A=read(MovieObject,i1_series{1}(jfile,ifile));
-                    if strcmp(NomType,'*')
-                        A=read(MovieObject,i1_series{1}(jfile,ifile));
-                        NomType_out='_1';
-                    else
-                        A=imread(filename,j1_series{1}(jfile,ifile));
-                        NomType_out='_1_1';
-                    end
-                case {'vol','image'}
-                    A=imread(filename);
-                    NomType_out='_1';
-                case 'multimage'
-                    if strcmp(NomType,'*')
-                        A=imread(filename,i1_series{1}(jfile,ifile));
-                        NomType_out='_1';
-                    else
-                        A=imread(filename,j1_series{1}(jfile,ifile));
-                        NomType_out='_1_1';
-                    end
-            end
-            C=levels(A);
-            filename_new=fullfile_uvmat(RootPath,SubdirResult,RootFile,'.png',NomType_out,i1_series{1}(jfile,ifile),[],j1_series{1}(jfile,ifile));
-            imwrite(C,filename_new)
-            display([filename_new ' written'])
+        if ~isempty(j1_series)
+            j1=j1_series{1}(ifile);
         end
+        filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile),[],j1);
+        A=read_image(filename,FileType{1},MovieObject{1},frame_index{1}(ifile));
+        if ndims(A)==3;%color images
+            A=sum(double(Aread),3);% take the sum of color components
+        end
+        % operation on images
+        A=levels(A);
+        filename_new=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
+        imwrite(A,filename_new)
+        display([filename_new ' written'])
     end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 function C=levels(A)
 %whos A;

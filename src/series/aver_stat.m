@@ -62,18 +62,16 @@ else
 end
 % get the set of input file names (cell array filecell), and the lists of
 % input file or frame indices i1_series,i2_series,j1_series,j2_series
+
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+
 % filecell{iview,fileindex}: cell array representing the list of file names
 %        iview: line in the table corresponding to a given file series
 %        fileindex: file index within  the file series, 
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 % set of frame indices used for movie or multimage input 
-if ~isempty(j1_series)
-    frame_index=j1_series;
-else
-    frame_index=i1_series;
-end
+
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -87,11 +85,12 @@ NbSlice=1;%default
 if isfield(Param.IndexRange,'NbSlice')
     NbSlice=Param.IndexRange.NbSlice;
 end
-nbview=size(i1_series,1);%number of input file series (lines in InputTable)
-nbfield_j=size(i1_series,2); %nb of consecutive fields at each level(burst
-nbfield=nbfield_j*size(i1_series,3); %total number of files or frames
-nbfield_i=floor(nbfield/NbSlice);%total number of i indexes (adjusted to an integer number of slices)
-nbfield=nbfield_i*nbfield_j; %total number of fields after adjustement
+nbview=numel(i1_series);%number of input file series (lines in InputTable)
+nbfield_j=size(i1_series{1},1); %nb of consecutive fields for the j index (bursts or volume slices)
+nbfield_i=size(i1_series{1},2); %nb of consecutive fields for the i index
+nbfield=nbfield_j*nbfield_i; %total number of files or frames
+nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices) 
+nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 
 %determine the file type on each line from the first input file 
 ImageTypeOptions={'image','multimage','mmreader','video'};
@@ -105,6 +104,11 @@ for iview=1:nbview
     [FileType{iview},FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
     CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
     CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
+    if ~isempty(j1_series{iview})
+        frame_index{iview}=j1_series{iview};
+    else
+        frame_index{iview}=i1_series{iview};
+    end
 end
 
 %% calibration data and timing: read the ImaDoc files
@@ -177,7 +181,7 @@ if multitime
         msgbox_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)])
     end   
 end
-if size(time,2) < i2_series(1,end) || size(time,3) < j2_series(1,end)% time array absent or too short in ImaDoc xml file' 
+if size(time,2) < i2_series{1}(end) || size(time,3) < j2_series{1}(end)% time array absent or too short in ImaDoc xml file' 
     time=[];
 end
 
@@ -278,15 +282,16 @@ for i_slice=1:NbSlice
         end
         
         %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
+        index
         for iview=1:nbview
             % reading input file(s)
-            [Data{iview},ParamOut,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index(iview,index));
+            [Data{iview},ParamOut,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
             if ~isempty(errormsg)
                 errormsg=['error of input reading: ' errormsg];
                 break
             end
             if ~isempty(NbSlice_calib)
-                Data{iview}.ZIndex=mod(i1_series(iview,index)-1,NbSlice_calib{1})+1;%Zindex for phys transform
+                Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
             end
         end
         Field=[]; % initiate the current input field structure
@@ -372,12 +377,12 @@ for i_slice=1:NbSlice
             end
         end
     else  % time from ImaDoc prevails
-        DataOut.Time=time(1,i1_series(1,1),j1_series(1,1));
-        DataOut.Time_end=time(end,i1_series(end,end),j1_series(end,end));
+        DataOut.Time=time(1,i1_series{1}(1),j1_series{1}(1));
+        DataOut.Time_end=time(end,i1_series{end}(end),j1_series{end}(end));
     end
     
     %writing the result file
-    OutputFile=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series(1,1),i1_series(1,end),i_slice,[]);
+    OutputFile=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),i_slice,[]);
     if CheckImage{1} %case of images
         if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
             DataOut.A=uint16(DataOut.A);
