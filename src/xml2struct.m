@@ -38,7 +38,9 @@ switch info.class
         end
     case 'cell'
         for ilist=1:numel(ss)
+            if ~isempty(str2num(ss{ilist}))
             out(ilist,:)=str2num(ss{ilist});
+            end
         end
     otherwise
         out=ss;

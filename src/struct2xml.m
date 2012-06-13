@@ -47,7 +47,7 @@ function t=add_element(t,uid,key,val)
  if ischar(val)
      [t,new_uid]=add(t,uid,'element',key);
      [t]=add(t,new_uid,'chardata',val);
- elseif isnumeric(val)
+ elseif isnumeric(val)||islogical(val)
        siz=size(val);
        if length(siz)<=2 %do not translate matrices with more than 2 indices
            for iline=1:siz(1)

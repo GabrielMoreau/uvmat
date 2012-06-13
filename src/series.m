@@ -1258,10 +1258,14 @@ set(handles.RUN,'BusyAction','queue');
 set(0,'CurrentFigure',handles.series)
 set(handles.RUN, 'Enable','Off')
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
-[h_fun,Series,errormsg]=prepare_jobs(handles);
+[h_fun,Series,filexml,errormsg]=prepare_jobs(handles);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
 else
+   Series.Specific=h_fun(Series,0);   
+   t=struct2xml(Series);
+    t=set(t,1,'name','Series');
+    save(t,filexml);
     h_fun(Series);
 end
 set(handles.RUN, 'Enable','On')
@@ -1282,11 +1286,16 @@ function BATCH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------    
 set(handles.BATCH, 'Enable','Off')
 set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])
-[h_fun,Series,errormsg]=prepare_jobs(handles);
+[h_fun,Series,filexml,errormsg]=prepare_jobs(handles);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
 end
+% update the xml file after interactive input with the function
+Series.Specific=h_fun(Series,0);   
+t=struct2xml(Series);
+t=set(t,1,'name','Series');
+save(t,filexml);
 path_series=fileparts(which('series'));
 filename_xml=fullfile(Series.OutputDir,[Series.OutputRootFile '.xml']);
 filename_bat=fullfile(Series.OutputDir,[Series.OutputRootFile '.bat']);
@@ -1295,11 +1304,13 @@ if isequal(fid,-1)
     msgbox_uvmat('ERROR', ['creation of .bat file: ' message]);
     return
 end
+fctpath=get(handles.ActionPath,'String');
 text_matlabscript=[...
     '#!/bin/bash \n'...
     '. /etc/sysprofile \n'...
     'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n'...
     'cd(''' path_series '''); \n'...
+    'addpath(''' fctpath '''); \n'...
     '' Series.Action  '( ''' filename_xml '''); \n'...
     'exit \n'...
     'END_MATLAB \n'];
@@ -1322,7 +1333,7 @@ function BIN_Callback(hObject, eventdata, handles)
     
 %------------------------------------------------------------------------
 % --- Main lauch command, called by RUN and BATCH
-function [h_fun,Series,errormsg]=prepare_jobs(handles)
+function [h_fun,Series,filexml,errormsg]=prepare_jobs(handles)
 %------------------------------------------------------------------------
 errormsg='';
 %% Read parameters from series
@@ -1687,7 +1698,7 @@ if isequal(field,'get_field...')
      if ~isempty(hget_field)
          delete(hget_field)%delete opened versions of get_field
      end
-     [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(read_GUI(handles.series));
+     filecell=get_file_series(read_GUI(handles.series));
      if exist(filecell{1,1},'file')
         get_field(filecell{1,1})
      end
