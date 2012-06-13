@@ -86,9 +86,9 @@ NbSlice=1;%default
 if isfield(Param.IndexRange,'NbSlice')
     NbSlice=Param.IndexRange.NbSlice;
 end
-nbview=size(i1_series,1);%number of input file series (lines in InputTable)
-nbfield_j=size(i1_series,2); %nb of consecutive fields at each level(burst
-nbfield=nbfield_j*size(i1_series,3); %total number of files or frames
+nbview=numel(i1_series);%number of input file series (lines in InputTable)
+nbfield_j=size(i1_series{1},1); %nb of consecutive fields at each level(burst
+nbfield=nbfield_j*size(i1_series{1},2); %total number of files or frames
 nbfield_i=floor(nbfield/NbSlice);%total number of i indexes (adjusted to an integer number of slices)
 nbfield=nbfield_i*nbfield_j; %total number of fields after adjustement
 
@@ -103,14 +103,15 @@ end
 
 %% MAIN LOOP ON VIEWS (INPUT LINES)
 for iview=1:nbview
-    if isequal(FileType{iview},'mmreader')||isequal(FileType{iview},'video')
-        info=aviinfo(filecell{iview,1});
-        message{1}=info.Filename;
-        message{2}=info.FileModDate;
-        message{3}=[num2str(info.FramesPerSecond) ' frames/s '];
-        message{4}=info.ImageType;
-        message{5}=['  compression' info.VideoCompression];
-        message{6}=[ 'quality ' num2str(info.Quality)];   
+    if isequal(FileType{iview},'mmreader')||isequal(FileType{iview},'video')||isequal(FileType{iview},'multimage')
+        [tild,FileInfo]=get_file_type(filecell{iview,1})
+      %  info=aviinfo(filecell{iview,1});
+        message{1}=filecell{iview,1};%info.Filename;
+        message{2}=FileInfo.FileModDate;
+        message{3}=[num2str(FileInfo.FramesPerSecond) ' frames/s '];
+        message{4}=FileInfo.ImageType;
+        message{5}=['  compression' FileInfo.VideoCompression];
+        message{6}=[ 'quality ' num2str(FileInfo.Quality)];   
         Tabchar=message;
     else
         Tabchar={};

@@ -45,7 +45,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     
-function GUI_config=sub_background (Param,get_param)
+function GUI_config=sub_background (Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if ~exist('Param','var') % case with no input parameter 
@@ -65,9 +65,7 @@ end
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 %% get input parameters, file names and indices
 % BATCH  case: read the xml file for batch case
-if exist('get_param','var') && isequal(get_param,0)
-    checkrun=-1; %the function is just used to define to complement the input parameters
-elseif ischar(Param) && ~isempty(find(regexp(Param,'.xml$'))) %batch mode
+if ischar(Param) && ~isempty(find(regexp(Param,'.xml$'))) %batch mode
         Param=xml2struct(Param);
         checkrun=0;
     % RUN case: parameters introduced as the input structure Param
@@ -164,7 +162,7 @@ if nbfield_i~=1
 end
 
 %% set processing parameters
-if checkrun ==-1
+if ~isfield(Param,'Specific')
     prompt = {'volume scan mode (Yes/No)';'Number of images for the sliding background (MUST FIT IN COMPUTER MEMORY)';...
         'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles'};
     dlg_title = ['get (slice by slice) a sliding background and substract to each image, result in subdir ' Param.OutputDir];
@@ -202,10 +200,10 @@ if checkrun ==-1
     answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m after sub_background');
     GUI_config.CheckLevelTransform=strcmp(answer,'Yes');
     
-    % return to BATCH mode
-    if checkrun==-1
+%     % return to BATCH mode
+%     if checkrun==-1
         return %transfer to BATCH mode
-    end
+%     end
 else
     GUI_config=Param.Specific;
     if isequal(GUI_config.CheckVolume,1)
