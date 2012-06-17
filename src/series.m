@@ -538,10 +538,14 @@ enable_j(handles,state)
 %% display the min and max indices for all the file series
 MinIndex=get(handles.MinIndex,'Data');%retrieve the min indices in the table MinIndex
 MaxIndex=get(handles.MaxIndex,'Data');%retrieve the max indices in the table MaxIndex
-i_sum=sum(sum(i1_series,2),3);
+i_sum=sum(sum(i1_series,2),3);%sum of i1_series on the last index
 MaxIndex_i=max(find(i_sum>0))-1;
-MinIndex_i=min(find(i_sum>0))-1;
-j_sum=sum(sum(i1_series,1),3);
+if isequal(i1_series(1),0)
+    MinIndex_i=0;
+else
+    MinIndex_i=min(find(i_sum>0))-1;
+end
+j_sum=sum(sum(j1_series,1),3);
 MaxIndex_j=max(find(j_sum>0))-1;
 MinIndex_j=min(find(j_sum>0))-1;
 MinIndex{iview,1}=MinIndex_i;
@@ -649,19 +653,25 @@ elseif isequal(ext_imadoc,'.civ')
 end
 
 %% update time table
+if ~isempty(time)
 TimeTable=get(handles.TimeTable,'Data');
 if isempty(MinIndex_j)
+    if MinIndex_i>0
     TimeTable{iview,1}=time(MinIndex_i);
+    end
     TimeTable{iview,2}=time(first_i);
     TimeTable{iview,3}=time(last_i);
     TimeTable{iview,4}=time(MaxIndex_i);
 elseif ~isempty(time)
+    if MinIndex_i>0
     TimeTable{iview,1}=time(MinIndex_i,MinIndex_j);
+    end
     TimeTable{iview,2}=time(first_i,first_j);
     TimeTable{iview,3}=time(last_i,last_j);
     TimeTable{iview,4}=time(MaxIndex_i,MaxIndex_j);
 end
 set(handles.TimeTable,'Data',TimeTable)
+end
 
 %% number of slices
 NbSlice=MaxIndex_j-MinIndex_j+1;%default
@@ -1107,7 +1117,11 @@ if check_burst
     enable_j(handles,'Off') %do not display j index scanning in burst mode (j is fixed by the burst choice)
 else
     enable_i(handles,'On')
-    enable_j(handles,'On')
+    if isempty(j1_series)
+         enable_j(handles,'Off')
+    else
+        enable_j(handles,'On')
+    end
 end
 fill_ListPair(handles,i1_series,i2_series,j1_series,j2_series,time)
 ListPairs_Callback([],[],handles)
@@ -1258,15 +1272,17 @@ set(handles.RUN,'BusyAction','queue');
 set(0,'CurrentFigure',handles.series)
 set(handles.RUN, 'Enable','Off')
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
+drawnow
 [h_fun,Series,filexml,errormsg]=prepare_jobs(handles);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
 else
-   Series.Specific=h_fun(Series,0);   
+  %Series.Specific=h_fun(Series);   
+   Series=h_fun(Series);  
    t=struct2xml(Series);
     t=set(t,1,'name','Series');
     save(t,filexml);
-    h_fun(Series);
+%     h_fun(Series);
 end
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
@@ -1292,7 +1308,7 @@ if ~isempty(errormsg)
     return
 end
 % update the xml file after interactive input with the function
-Series.Specific=h_fun(Series,0);   
+Series.Specific=h_fun('input?');   
 t=struct2xml(Series);
 t=set(t,1,'name','Series');
 save(t,filexml);
@@ -1304,23 +1320,25 @@ if isequal(fid,-1)
     msgbox_uvmat('ERROR', ['creation of .bat file: ' message]);
     return
 end
-fctpath=get(handles.ActionPath,'String');
+path_fct=get(handles.ActionPath,'String');
 text_matlabscript=[...
     '#!/bin/bash \n'...
     '. /etc/sysprofile \n'...
     'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n'...
     'cd(''' path_series '''); \n'...
-    'addpath(''' fctpath '''); \n'...
+    'addpath(''' path_fct '''); \n'...
     '' Series.Action  '( ''' filename_xml '''); \n'...
     'exit \n'...
     'END_MATLAB \n'];
 fprintf(fid,text_matlabscript);
 fclose(fid);
 if isunix
-    system(['chmod +x ' filename_bat]);
+    system(['chmod +x ' filename_bat]);% set the file to executable
+    system(['. ' filename_bat]);%execute fct
 end
 set(handles.BATCH, 'Enable','On')
 set(handles.BATCH,'BackgroundColor',[1 0 0])
+
 %------------------------------------------------------------------------
 % --- Executes on button press in BIN.
 function BIN_Callback(hObject, eventdata, handles)
@@ -1332,9 +1350,10 @@ function BIN_Callback(hObject, eventdata, handles)
         Param.xml.CivmBin ' ' Param.xml.RunTime ' ' filename_xml ' ' OutputFile '.nc'];
     
 %------------------------------------------------------------------------
-% --- Main lauch command, called by RUN and BATCH
+% --- Main launch command, called by RUN and BATCH
 function [h_fun,Series,filexml,errormsg]=prepare_jobs(handles)
 %------------------------------------------------------------------------
+filexml='';
 errormsg='';
 %% Read parameters from series
 Series=read_GUI(handles.series);
@@ -1342,7 +1361,7 @@ if isfield(Series,'Pairs')
 Series=rmfield(Series,'Pairs'); %info Pairs not needed for output
 end
 
-%% read root name and field type
+%% read index ranges
 first_i=1;
 last_i=1;
 incr_i=1;
@@ -1462,9 +1481,9 @@ if isfield(Series,'OutputSubDir')
         end
     end
     filexml=fullfile(Series.OutputDir,[Series.InputTable{1,3} '.xml']);% name of the parameter xml file set in this directory
-    t=struct2xml(Series);
-    t=set(t,1,'name','Series');
-    save(t,filexml);
+%     t=struct2xml(Series);
+%     t=set(t,1,'name','Series');
+%     save(t,filexml);
 end
 
 %------------------------------------------------------------------------
@@ -1572,7 +1591,7 @@ try
     [fid,errormsg] =fopen([ACTION '.m']);
     InputText=textscan(fid,'%s',1,'delimiter','\n');
     fclose(fid)
-    set(handles.ActionName,'ToolTipString',InputText{1}{1})
+    set(handles.ActionName,'ToolTipString',InputText{1}{1})% put the first line of the selected function as tooltip help
 end
 if ~isequal(path_series,PathName)
     rmpath(PathName)
@@ -1616,7 +1635,22 @@ for ilist=1:length(varargout)-1
                 SeriesData=get(handles.series,'UserData');
                 SeriesData.AllowInputSort=1;
                 set(handles.series,'UserData',SeriesData)
-            end              
+            end                      
+        case 'WholeIndexRange'
+            if isequal(lower(varargout{ilist+1}),'on')% sort the input table by alphabetical order of the SubDir
+                MinIndex=get(handles.MinIndex,'Data');
+                MaxIndex=get(handles.MaxIndex,'Data');
+                if ~isempty(MinIndex)
+                    set(handles.num_first_i,'String',num2str(MinIndex{1}))
+                    set(handles.num_last_i,'String',num2str(MaxIndex{1}))
+                    set(handles.num_incr_i,'String','1')
+                    if size(MinIndex,2)>=2
+                        set(handles.num_first_j,'String',num2str(MinIndex{1,2}))
+                        set(handles.num_last_j,'String',num2str(MaxIndex{1,2}))
+                        set(handles.num_incr_j,'String','1')
+                    end
+                end
+            end            
         case 'NbSlice'   %hidden by default
             if isequal(lower(varargout{ilist+1}),'on')
                 set(handles.num_NbSlice,'Visible','on')

@@ -596,6 +596,10 @@ function RootPath_Callback(hObject,eventdata,handles)
 %------------------------------------------------------------------------
 % read the current input file name:
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+if ~exist(fullfile(RootPath,SubDir),'dir')
+    msgbox_uvmat('ERROR',['directory ' fullfile(RootPath,SubDir) ' does not exist'])
+    return
+end
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 % initiate the input file series and refresh the current field view: 
@@ -607,6 +611,10 @@ function RootPath_1_Callback(hObject,eventdata,handles)
 % -----------------------------------------------------------------------
 % update_rootinfo_1(hObject,eventdata,handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
+if ~exist(fullfile(RootPath,SubDir),'dir')
+    msgbox_uvmat('ERROR',['directory ' fullfile(RootPath,SubDir) ' does not exist'])
+    return
+end
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 % initiate the input file series and refresh the current field view: 
@@ -907,74 +915,57 @@ set(handles.CheckBW,'Value',strcmp(ColorType,'grayscale'))% select handles.Check
 %% read parameters (time, geometric calibration..) from a documentation file (.xml advised)
 SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
 filexml=fullfile(RootPath,[SubDirBase '.xml']);% new convention: xml above the image dir
+DocExt='.xml';
 if ~exist(filexml,'file')
     filexml=fullfile(RootPath,SubDir,[RootFile '.xml']);%old convention: xml within the image directroy
+    if ~exist(filexml,'file')
+        filexml=fullfile(RootPath,SubDir,[RootFile '.civ']); % very old convention: .civ file
+        if ~exist(filexml,'file')
+            DocExt='.civ';
+        else
+            filexml='';
+        end
+    end
 end
 warntext='';%default warning message
 NbSlice=1;%default
 set(handles.RootPath,'BackgroundColor',[1 1 1])
-if exist(filexml,'file')
+if ~isempty(filexml)
     set(handles.view_xml,'Visible','on')
     set(handles.view_xml,'BackgroundColor',[1 1 0])
     set(handles.view_xml,'String','view .xml')
     drawnow
-    [XmlData,warntext]=imadoc2struct(filexml);
+    [XmlDataRead,warntext]=imadoc2struct(filexml);
     if ~isempty(warntext)
-        display(warntext)
-%         msgbox_uvmat('WARNING',warntext)
+        msgbox_uvmat('WARNING',warntext)
     end
-    if isfield(XmlData,'TimeUnit')
-        if isfield(XmlData,'TimeUnit')&& ~isempty(XmlData.TimeUnit)
-            TimeUnit=XmlData.TimeUnit;
+    if isempty(XmlDataRead)
+        set(handles.view_xml,'Visible','off')
+    else
+        set(handles.view_xml,'String',['view ' DocExt])   
+        XmlData=XmlDataRead;
+        if isfield(XmlData,'TimeUnit')
+            if isfield(XmlData,'TimeUnit')&& ~isempty(XmlData.TimeUnit)
+                TimeUnit=XmlData.TimeUnit;
+            end
         end
-    end
-    set(handles.view_xml,'BackgroundColor',[1 1 1])
-    drawnow
-    if isfield(XmlData, 'GeometryCalib') && ~isempty(XmlData.GeometryCalib)
-        if isfield(XmlData.GeometryCalib,'VolumeScan') && isequal(XmlData.GeometryCalib.VolumeScan,'y')
-            set (handles.nb_slice,'String','volume')
-        end
-        hgeometry_calib=findobj('tag','geometry_calib');
-        if ~isempty(hgeometry_calib)
-            GUserData=get(hgeometry_calib,'UserData');
-            if ~(isfield(GUserData,'XmlInputFile') && strcmp(GUserData.XmlInputFile,filexml))
-                answer=msgbox_uvmat('INPUT_Y-N','replace the display of geometry_calib with the new input data?');
-                if strcmp(answer,'Yes')
-                    geometry_calib(filexml);%diplay the new calibration points and parameters in geometry_calib
+        set(handles.view_xml,'BackgroundColor',[1 1 1])
+        drawnow
+        if isfield(XmlData, 'GeometryCalib') && ~isempty(XmlData.GeometryCalib)
+            if isfield(XmlData.GeometryCalib,'VolumeScan') && isequal(XmlData.GeometryCalib.VolumeScan,'y')
+                set (handles.nb_slice,'String','volume')
+            end
+            hgeometry_calib=findobj('tag','geometry_calib');
+            if ~isempty(hgeometry_calib)
+                GUserData=get(hgeometry_calib,'UserData');
+                if ~(isfield(GUserData,'XmlInputFile') && strcmp(GUserData.XmlInputFile,filexml))
+                    answer=msgbox_uvmat('INPUT_Y-N','replace the display of geometry_calib with the new input data?');
+                    if strcmp(answer,'Yes')
+                        geometry_calib(filexml);%diplay the new calibration points and parameters in geometry_calib
+                    end
                 end
             end
         end
-    end  
-else
-    fileciv=fullfile(RootPath,SubDir,[RootFile '.civ']);
-    if exist(fileciv,'file')% if .civ file found (very old convention)
-        [error,XmlData.Time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext(fileciv);
-        GeometryCalib.R=[pxcmx 0 0; 0 pxcmy 0;0 0 0];
-        GeometryCalib.Tx=0;
-        GeometryCalib.Ty=0;
-        GeometryCalib.Tz=1;
-        GeometryCalib.dpx=1;
-        GeometryCalib.dpy=1;
-        GeometryCalib.sx=1;
-        GeometryCalib.Cx=0;
-        GeometryCalib.Cy=0;
-        GeometryCalib.f=1;
-        GeometryCalib.kappa1=0;
-        GeometryCalib.CoordUnit='cm';
-        XmlData.GeometryCalib=GeometryCalib;
-        if error==2, warntext=['no file ' fileciv];
-        elseif error==1, warntext='inconsistent number of fields in the .civ file';
-        end
-        set(handles.num_Npx,'String',num2str(npx));%fills nbre of pixels x box
-        set(handles.num_Npy,'String',num2str(npy));%fills nbre of pixels y box
-        set(handles.pxcm,'String',num2str(pxcmx));%fills scale x (pixel/cm) box
-        set(handles.pycm,'String',num2str(pxcmy));%fills scale y (pixel/cm) box
-        set(handles.pxcm,'Visible','on');%fills scale x (pixel/cm) box
-        set(handles.pycm,'Visible','on');%fills scale y (pixel/cm) box
-        set(handles.view_xml,'Visible','on')
-        set(handles.view_xml,'String','view .civ')
-    else
-        set(handles.view_xml,'Visible','off')
     end
 end
 
@@ -990,11 +981,8 @@ end
 if ~isempty(XmlData.Time)
     %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
     if isequal(size(XmlData.Time,1),1)
-%     if isequal(nbfield,1) && ~isequal(nbfield_j,1)% .Time is a line vector
         NomType=get(handles.NomType,'String');
-%         if isempty(nbfield_j)
-%         if numel(NomType)>=2 &&(strcmp(NomType,'_i')||strcmp(NomType(1:2),'%0')||strcmp(NomType(1:2),'_%'))
-            XmlData.Time=(XmlData.Time)';
+        XmlData.Time=(XmlData.Time)';
     end
 end
 last_i_cell=get(handles.last_i,'String');
@@ -2326,8 +2314,8 @@ end
 if ~isequal(numel(abstime_1),1)
       abstime_1=[];
 end  
-set(handles.abs_time,'String',num2str(abstime,4))
-set(handles.abs_time_1,'String',num2str(abstime_1,4))
+set(handles.abs_time,'String',num2str(abstime,5))
+set(handles.abs_time_1,'String',num2str(abstime_1,5))
 % if testimedoc && isfield(UvData,'dt')
 %     dt=UvData.dt;
 % end 

@@ -131,7 +131,6 @@ for ichild=1:length(hchildren)
             case 'uicontrol'  %if the mouse is over a uicontrol, duplicate the display  in an editable  zoom window
                 if isequal(get(hObject,'SelectionType'),'alt')  && isequal(get(hchild,'Visible'),'on') && ~isequal(get(hchild,'tag'),'frame_object')&&...
                         ~isequal(get(hchild,'tag'),'ListObject') 
-%                     if strcmp(get(hchild,'Visible'),'on')
                     if ~strcmp(get(hchild,'Style'),'frame')%do not visualisaze frames
                         msg_pos(1:2)=GUI_pos(1:2)+obj_pos(1:2).*GUI_pos(3:4);
                         output_str=msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],'',get(hchild,'String'),msg_pos);
@@ -157,6 +156,9 @@ for ichild=1:length(hchildren)
                         end
                     end
                 end
+        end
+        if ~isempty(output_str)
+            break   %leave the current loop if a uicontrol has been selected
         end
     end
 end

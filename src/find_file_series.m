@@ -234,12 +234,13 @@ else
         ref_ij=ref_i_list*max_j+ref_j_list; % ordered by index i, then by j for a given i.
     end
     %[tild,ifile_min]=min(ref_ij(ref_ij>0));
-    ifile_min=find(ref_ij>0 , 1);
-    if isempty(ifile_min)
+    ind_select=find(ref_ij>0);
+    if isempty(ind_select)
         %         RootPath='';
         RootFile='';
         NomType='';
     else
+        [tild,ifile_min]=min(ref_ij(ind_select));
         [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ifile_min).name);% update the representation of indices (number of 0 before the number)
         NomType=regexprep(NomType,['^' NomTypePref],'');
     end
