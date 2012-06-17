@@ -1,8 +1,22 @@
 %'aver_stat': calculate field average, used with series.fig
+% this function can be used as a template for applying a global operation (here averaging) on a series of input fields
 %------------------------------------------------------------------------
-% function GUI_input=aver_stat(Param)
+% function ParamOut=aver_stat(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This function is used in four modes by the GUI series:
+%           1) config GUI: with no input argument, the function determine the suitable GUI configuration
+%           2) interactive input: the function is used to interactively introduce input parameters, and then stops
+%           3) RUN: the function itself runs, when an appropriate input  structure Param has been introduced. 
+%           4) BATCH: the function itself proceeds in BATCH mode, using an xml file 'Param' as input.
+%
+% This function is used in four modes by the GUI series:
+%           1) config GUI: with no input argument, the function determine the suitable GUI configuration
+%           2) interactive input: the function is used to interactively introduce input parameters, and then stops
+%           3) RUN: the function itself runs, when an appropriate input  structure Param has been introduced. 
+%           4) BATCH: the function itself proceeds in BATCH mode, using an xml file 'Param' as input.
+%
 %OUTPUT
 % GUI_input=list of options in the GUI series.fig needed for the function
 %
@@ -31,12 +45,13 @@
 %    .ProjObject: %sub structure describing a projection object (read from ancillary GUI set_object)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function GUI_input=aver_stat(Param)
+function ParamOut=aver_stat(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if ~exist('Param','var') % case with no input parameter 
-    GUI_input={'NbViewMax';2;...% max nbre of input file series (default='' , no limitation)
+    ParamOut={'NbViewMax';2;...% max nbre of input file series (default='' , no limitation)
         'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
+        'WholeIndexRange';'off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
         'VelType';'two';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
         'FieldName';'two';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
@@ -49,29 +64,22 @@ if ~exist('Param','var') % case with no input parameter
 end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-%% get input parameters, file names and indices
+%% select different modes,  RUN, parameter input, BATCH
 % BATCH  case: read the xml file for batch case
-if ischar(Param) && ~isempty(find(regexp(Param,'.xml$')))
-    Param=xml2struct(Param);
-    checkrun=0;
-% RUN case: parameters introduced as the input structure Param  
-else 
+ParamOut=Param; %default output
+if ischar(Param)
+    if strcmp(Param,'input?')
+        checkrun=1;% will inly search input parameters (preparation of BATCH mode)
+    else
+        Param=xml2struct(Param);
+        checkrun=0;
+    end
+% RUN case: parameters introduced as the input structure Param
+else
     hseries=guidata(Param.hseries);%handles of the GUI series
     WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
-    checkrun=1; % indicate the RUN option is used
+    checkrun=2; % indicate the RUN option is used
 end
-% get the set of input file names (cell array filecell), and the lists of
-% input file or frame indices i1_series,i2_series,j1_series,j2_series
-
-[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-
-% filecell{iview,fileindex}: cell array representing the list of file names
-%        iview: line in the table corresponding to a given file series
-%        fileindex: file index within  the file series, 
-% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
-% i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-% set of frame indices used for movie or multimage input 
-
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -80,22 +88,31 @@ SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
 
+% get the set of input file names (cell array filecell), and the lists of
+% input file or frame indices i1_series,i2_series,j1_series,j2_series
+[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+% filecell{iview,fileindex}: cell array representing the list of file names
+%        iview: line in the table corresponding to a given file series
+%        fileindex: file index within  the file series, 
+% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
+% i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
+% set of frame indices used for movie or multimage input 
 % numbers of slices and file indices
+
 NbSlice=1;%default
-if isfield(Param.IndexRange,'NbSlice')
+if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
     NbSlice=Param.IndexRange.NbSlice;
 end
 nbview=numel(i1_series);%number of input file series (lines in InputTable)
-nbfield_j=size(i1_series{1},1); %nb of consecutive fields for the j index (bursts or volume slices)
-nbfield_i=size(i1_series{1},2); %nb of consecutive fields for the i index
-nbfield=nbfield_j*nbfield_i; %total number of files or frames
+nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
+nbfield_i=size(i1_series{1},2); %nb of fields for the i index
+nbfield=nbfield_j*nbfield_i; %total number of fields
 nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices) 
 nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 
 %determine the file type on each line from the first input file 
 ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
-    
 for iview=1:nbview
     if ~exist(filecell{iview,1}','file')
         msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
@@ -116,41 +133,30 @@ mode=''; %default
 timecell={};
 itime=0;
 NbSlice_calib={};
+XmlData=cell(1,nbview);%initiate the structures containing the data from the xml file (calibration and timing)
 for iview=1:nbview%Loop on views
-    XmlData{iview}=[];%default
-    filebase{iview}=fullfile(RootPath{iview},RootFile{iview});
-    if exist([filebase{iview} '.xml'],'file')
-        [XmlData{iview},error]=imadoc2struct([filebase{iview} '.xml']); 
-        if isfield(XmlData{iview},'Time')
-            itime=itime+1;
-            timecell{itime}=XmlData{iview}.Time;
-        end
-        if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
-            NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
-            if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
-                msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
+    SubDirBase=regexprep(SubDir{iview},'\..*','');%take the root part of SubDir, before the first dot '.'
+    filexml=[fullfile(RootPath{iview},SubDirBase) '.xml'];%new convention: xml at the level of the image folder
+    if ~exist(filexml,'file')
+        filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.xml']; % old convention: xml inside the image folder
+        if ~exist(filexml,'file')
+            filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.civ']; % very old convention: .civ file
+            if ~exist(filexml,'file')
+                filexml='';
             end
-        end 
-    elseif exist([filebase{iview} '.civ'],'file')
-        [error,time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext([filebase{iview} '.civ']);
+        end
+    end
+    if ~isempty(filexml)
+        [XmlData{iview},error]=imadoc2struct(filexml);
+    end
+    if isfield(XmlData{iview},'Time')
         itime=itime+1;
-        timecell{itime}=time;
-        XmlData{iview}.Time=time;
-        GeometryCalib.R=[pxcmx 0 0; 0 pxcmy 0;0 0 0];
-        GeometryCalib.Tx=0;
-        GeometryCalib.Ty=0;
-        GeometryCalib.Tz=1;
-        GeometryCalib.dpx=1;
-        GeometryCalib.dpy=1;
-        GeometryCalib.sx=1;
-        GeometryCalib.Cx=0;
-        GeometryCalib.Cy=0;
-        GeometryCalib.f=1;
-        GeometryCalib.kappa1=0;
-        GeometryCalib.CoordUnit='cm';
-        XmlData{iview}.GeometryCalib=GeometryCalib;
-        if error==1
-            msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
+        timecell{itime}=XmlData{iview}.Time;
+    end
+    if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
+        NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
+        if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
+            msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
         end
     end
 end
@@ -181,7 +187,7 @@ if multitime
         msgbox_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)])
     end   
 end
-if size(time,2) < i2_series{1}(end) || size(time,3) < j2_series{1}(end)% time array absent or too short in ImaDoc xml file' 
+if size(time,2) < i2_series{1}(end) ||( ~isempty(j2_series{1}) && size(time,3) < j2_series{1}(end))% time array absent or too short in ImaDoc xml file' 
     time=[];
 end
 
@@ -282,7 +288,6 @@ for i_slice=1:NbSlice
         end
         
         %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
-        index
         for iview=1:nbview
             % reading input file(s)
             [Data{iview},ParamOut,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
@@ -368,7 +373,7 @@ for i_slice=1:NbSlice
     if nbmissing~=0
         msgbox_uvmat('WARNING',[num2str(nbmissing) ' input files are missing or skipted'])
     end
-    if isempty(time) % time read from files  prevails
+    if isempty(time) % time is read from files  
         if isfield(Field,'Time')
             time_end=Field.Time(1);%last time read
             if ~isempty(time_1)
@@ -376,8 +381,12 @@ for i_slice=1:NbSlice
                 DataOut.Time_end=time_end;
             end
         end
-    else  % time from ImaDoc prevails
-        DataOut.Time=time(1,i1_series{1}(1),j1_series{1}(1));
+    else  % time from ImaDoc prevails if it exists
+        j1=1;%default
+        if ~isempty(j1_series{1})
+            j1=j1_series{1};
+        end
+        DataOut.Time=time(1,i1_series{1}(1),j1filexml);
         DataOut.Time_end=time(end,i1_series{end}(end),j1_series{end}(end));
     end
     

@@ -1,9 +1,16 @@
 %'ima_levels': rescale the image intensity to reduce strong luminosity peaks (their blinking effects often perturbs PIV))
-% this function can be used as a template for applying a transform (here 'levels.m') on each image of a series
+% this function can be used as a template for applying a transform (here 'levels.m') to each image of a series
 %------------------------------------------------------------------------
 % function GUI_input=ima_levels(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This function is used in four modes by the GUI series:
+%           1) config GUI: with no input argument, the function determine the suitable GUI configuration
+%           2) interactive input: the function is used to interactively introduce input parameters, and then stops
+%           3) RUN: the function itself runs, when an appropriate input  structure Param has been introduced. 
+%           4) BATCH: the function itself proceeds in BATCH mode, using an xml file 'Param' as input.
+%
 %OUTPUT
 % GUI_input=list of options in the GUI series.fig needed for the function
 %
@@ -49,20 +56,22 @@ if ~exist('Param','var') % case with no input parameter
         return
 end
 
-%% get input parameters, file names and indices
+%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
+%% select different modes,  RUN, parameter input, BATCH
 % BATCH  case: read the xml file for batch case
-if ischar(Param) && ~isempty(find(regexp(Param,'.xml$')))
-    Param=xml2struct(Param);
-    checkrun=0;
-% RUN case: parameters introduced as the input structure Param  
-else 
+if ischar(Param)
+    if strcmp(Param,'input?')
+        checkrun=1;% will inly search input parameters (preparation of BATCH mode)
+    else
+        Param=xml2struct(Param);
+        checkrun=0;
+    end
+% RUN case: parameters introduced as the input structure Param
+else
     hseries=guidata(Param.hseries);%handles of the GUI series
     WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
-    checkrun=1; % indicate the RUN option is used
+    checkrun=2; % indicate the RUN option is used
 end
-
-% get the set of input file names (cell array filecell), and the lists of
-[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -71,20 +80,31 @@ SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
 
+% get the set of input file names (cell array filecell), and the lists of
+% input file or frame indices i1_series,i2_series,j1_series,j2_series
+[filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+% filecell{iview,fileindex}: cell array representing the list of file names
+%        iview: line in the table corresponding to a given file series
+%        fileindex: file index within  the file series, 
+% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
+% i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
+% set of frame indices used for movie or multimage input 
 % numbers of slices and file indices
+
 NbSlice=1;%default
 if isfield(Param.IndexRange,'NbSlice')
     NbSlice=Param.IndexRange.NbSlice;
 end
 nbview=numel(i1_series);%number of input file series (lines in InputTable)
-nbfield_j=size(i1_series{1},1); %nb of consecutive fields for the j index (bursts or volume slices)
-nbfield_i=size(i1_series{1},2); %nb of consecutive fields for the i index
-nbfield=nbfield_j*nbfield_i; %total number of files or frames
+nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
+nbfield_i=size(i1_series{1},2); %nb of fields for the i index
+nbfield=nbfield_j*nbfield_i; %total number of fields
 nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices) 
 nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 
 %determine the file type on each line from the first input file 
 ImageTypeOptions={'image','multimage','mmreader','video'};%allowed input file types(images)
+
 [FileType{1},FileInfo{1},MovieObject{1}]=get_file_type(filecell{1,1});
 CheckImage{1}=~isempty(find(strcmp(FileType,ImageTypeOptions)));% =1 for images
 if ~isempty(j1_series{1})

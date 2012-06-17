@@ -31,11 +31,11 @@
 %    .ProjObject: %sub structure describing a projection object (read from ancillary GUI set_object)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function GUI_input=check_data_files(Param)
+function ParamOut=check_data_files(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if ~exist('Param','var') % case with no input parameter 
-    GUI_input={'NbViewMax';'';...% max nbre of input file series (default='' , no limitation)
+    ParamOut={'NbViewMax';'';...% max nbre of input file series (default='' , no limitation)
         'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
         'VelType';'off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
@@ -50,6 +50,7 @@ end
 
 %% get input parameters, file names and indices
 % BATCH  case: read the xml file for batch case
+ParamOut=Param; %default output
 if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
     Param=xml2struct(Param);
     checkrun=0;

@@ -1,4 +1,5 @@
-%'sub_background': substract background to an image series, used with series.fig
+%'sub_background': substract a sliding background to an image series
+% This is an example of action on a series of input images
 %------------------------------------------------------------------------
 % Method: 
     %calculate the background image by sorting the luminosity of each point
@@ -13,9 +14,16 @@
     % In the mode 'volume', nbfield2=1 (1 image at each level)and NbSlice (=nbfield_j)
     % Else nbfield2=nbfield_j =nbre of images in a burst (j index)
     
-% function GUI_series_config=sub_background(Param)
+% function GUI_config=sub_background(Param)
 %
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This function is used in four modes by the GUI series:
+%           1) config GUI: with no input argument, the function determine the suitable GUI configuration
+%           2) interactive input: the function is used to interactively introduce input parameters, and then stops
+%           3) RUN: the function itself runs, when an appropriate input  structure Param has been introduced. 
+%           4) BATCH: the function itself proceeds in BATCH mode, using an xml file 'Param' as input.
+%
 %OUTPUT
 % GUI_series_config=list of options in the GUI series.fig needed for the function
 %
@@ -51,6 +59,7 @@ function GUI_config=sub_background (Param)
 if ~exist('Param','var') % case with no input parameter 
     GUI_config={'NbViewMax';1;...% max nbre of input file series (default='' , no limitation)
         'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
+        'WholeIndexRange';'on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
         'VelType';'off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
         'FieldName';'off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
@@ -63,17 +72,29 @@ if ~exist('Param','var') % case with no input parameter
 end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-%% get input parameters, file names and indices
+%% select different modes,  RUN, parameter input, BATCH
 % BATCH  case: read the xml file for batch case
-if ischar(Param) && ~isempty(find(regexp(Param,'.xml$'))) %batch mode
+if ischar(Param)
+    if strcmp(Param,'input?')
+        checkrun=1;% will inly search input parameters (preparation of BATCH mode)
+    else
         Param=xml2struct(Param);
         checkrun=0;
-    % RUN case: parameters introduced as the input structure Param
+    end
+% RUN case: parameters introduced as the input structure Param
 else
     hseries=guidata(Param.hseries);%handles of the GUI series
     WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
-    checkrun=1; % indicate the RUN option is used
+    checkrun=2; % indicate the RUN option is used
 end
+
+%% root input file(s) and type
+RootPath=Param.InputTable(:,1);
+RootFile=Param.InputTable(:,3);
+SubDir=Param.InputTable(:,2);
+NomType=Param.InputTable(:,4);
+FileExt=Param.InputTable(:,5);
+
 % get the set of input file names (cell array filecell), and the lists of
 % input file or frame indices i1_series,i2_series,j1_series,j2_series
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
@@ -83,18 +104,10 @@ end
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 % set of frame indices used for movie or multimage input 
-
-
-%% root input file(s) and type
-RootPath=Param.InputTable(:,1);
-RootFile=Param.InputTable(:,3);
-SubDir=Param.InputTable(:,2);
-NomType=Param.InputTable(:,4);
-FileExt=Param.InputTable(:,5);
-
 % numbers of slices and file indices
+
 NbSlice=1;%default
-if isfield(Param.IndexRange,'NbSlice')
+if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
     NbSlice=Param.IndexRange.NbSlice;
 end
 nbview=numel(i1_series);%number of input file series (lines in InputTable)
@@ -161,8 +174,8 @@ if nbfield_i~=1
     nbaver_init=nbaver*nbfield_j;%propose by default an integer number of bursts
 end
 
-%% set processing parameters
-if ~isfield(Param,'Specific')
+%% input of specific parameters
+if checkrun %get specific parameters interactively
     prompt = {'volume scan mode (Yes/No)';'Number of images for the sliding background (MUST FIT IN COMPUTER MEMORY)';...
         'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles'};
     dlg_title = ['get (slice by slice) a sliding background and substract to each image, result in subdir ' Param.OutputDir];
@@ -199,11 +212,10 @@ if ~isfield(Param,'Specific')
     % apply the image rescaling function 'level' (avoid the blinking effects of bright particles)
     answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m after sub_background');
     GUI_config.CheckLevelTransform=strcmp(answer,'Yes');
-    
-%     % return to BATCH mode
-%     if checkrun==-1
-        return %transfer to BATCH mode
-%     end
+    if checkrun==2
+         return 
+    end
+    %%%%%%%%%%%%%%%%%%%%%%  STOP HERE FOR PAMETER INPUT MODE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else
     GUI_config=Param.Specific;
     if isequal(GUI_config.CheckVolume,1)

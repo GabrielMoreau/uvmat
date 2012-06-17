@@ -1,22 +1,55 @@
 %'time_series': extract a time series, used with series.fig
+% this function can be used as a template for applying a global operation on a series of input fields
 %------------------------------------------------------------------------
 % function GUI_input=time_series(Param)
+%
+%%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This function is used in four modes by the GUI series:
+%           1) config GUI: with no input argument, the function determine the suitable GUI configuration
+%           2) interactive input: the function is used to interactively introduce input parameters, and then stops
+%           3) RUN: the function itself runs, when an appropriate input  structure Param has been introduced. 
+%           4) BATCH: the function itself proceeds in BATCH mode, using an xml file 'Param' as input.
+%
+% This function is used in four modes by the GUI series:
+%           1) config GUI: with no input argument, the function determine the suitable GUI configuration
+%           2) interactive input: the function is used to interactively introduce input parameters, and then stops
+%           3) RUN: the function itself runs, when an appropriate input  structure Param has been introduced. 
+%           4) BATCH: the function itself proceeds in BATCH mode, using an xml file 'Param' as input.
 %
 %OUTPUT
 % GUI_input=list of options in the GUI series.fig needed for the function
 %
 %INPUT:
-%num_i1: series of first indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%i2_series: series of second indices i (given from the series interface as first_i:incr_i:last_i, mode and list_pair_civ)
-%num_j1: series of first indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ )
-%num_j2: series of second indices j (given from the series interface as first_j:incr_j:last_j, mode and list_pair_civ)
-%Series: Matlab structure containing information set by the series interface
+% In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
+% In batch mode, Param is the name of the corresponding xml file containing the same information
+% In the absence of input (as activated when the current Action is selected
+% in series), the function ouput GUI_input set the activation of the needed GUI elements
 %
-function GUI_input=time_series(Param) 
+% Param contains the elements:(use the menu bar command 'export/GUI config' in series to see the current structure Param)
+%    .InputTable: cell of input file names, (several lines for multiple input)
+%                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
+%    .OutputSubDir: name of the subdirectory for data outputs
+%    .OutputDir: directory for data outputs, including path
+%    .Action: .ActionName: name of the current activated function
+%             .ActionPath:   path of the current activated function
+%    .IndexRange: set the file or frame indices on which the action must be performed
+%    .FieldTransform: .TransformName: name of the selected transform function
+%                     .TransformPath:   path  of the selected transform function
+%                     .TransformHandle: corresponding function handle
+%    .InputFields: sub structure describing the input fields withfields
+%              .FieldName: name of the field
+%              .VelType: velocity type
+%              .FieldName_1: name of the second field in case of two input series
+%              .VelType_1: velocity type of the second field in case of two input series
+%    .ProjObject: %sub structure describing a projection object (read from ancillary GUI set_object)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+function ParamOut=time_series(Param) 
 
 %% requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
 if ~exist('Param','var')
-    GUI_input={'RootPath';'two';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
+    ParamOut={'RootPath';'two';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
         'SubDir';'on';... % subdirectory of derived files (PIV fields), ('on' by default)
         'RootFile';'on';... %root input file name ('on' by default)
         'FileExt';'on';... %input file extension ('on' by default)
@@ -33,92 +66,181 @@ if ~exist('Param','var')
     return %exit the function 
 end
 
-%% input parameters
-% read the xml file for batch case
-if ischar(Param) && ~isempty(find(regexp('Param','.xml$')))
-    Param=xml2struct(Param);
-    checkrun=0;
-else %  RUN case: parameters introduced as the input structure Param
+%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
+%% select different modes,  RUN, parameter input, BATCH
+% BATCH  case: read the xml file for batch case
+ParamOut=Param; %default output
+if ischar(Param)
+    if strcmp(Param,'input?')
+        checkrun=1;% will inly search input parameters (preparation of BATCH mode)
+    else
+        Param=xml2struct(Param);
+        checkrun=0;
+    end
+% RUN case: parameters introduced as the input structure Param
+else
     hseries=guidata(Param.hseries);%handles of the GUI series
-    WaitbarPos=get(hseries.waitbar_frame,'Position');
-    checkrun=1;
+    WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
+    checkrun=2; % indicate the RUN option is used
 end
+
+%% root input file(s) and type
+RootPath=Param.InputTable(:,1);
+RootFile=Param.InputTable(:,3);
+SubDir=Param.InputTable(:,2);
+NomType=Param.InputTable(:,4);
+FileExt=Param.InputTable(:,5);
+
+% get the set of input file names (cell array filecell), and the lists of
+% input file or frame indices i1_series,i2_series,j1_series,j2_series
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+% filecell{iview,fileindex}: cell array representing the list of file names
+%        iview: line in the table corresponding to a given file series
+%        fileindex: file index within  the file series, 
+% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
+% i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
+% set of frame indices used for movie or multimage input 
+% numbers of slices and file indices
+
+NbSlice=1;%default
+if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
+    NbSlice=Param.IndexRange.NbSlice;
+end
+nbview=numel(i1_series);%number of input file series (lines in InputTable)
+nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
+nbfield_i=size(i1_series{1},2); %nb of fields for the i index
+nbfield=nbfield_j*nbfield_i; %total number of fields
+nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices) 
+nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
+
+%determine the file type on each line from the first input file 
+ImageTypeOptions={'image','multimage','mmreader','video'};
+NcTypeOptions={'netcdf','civx','civdata'};
+for iview=1:nbview
+    if ~exist(filecell{iview,1}','file')
+        msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
+        return
+    end
+    [FileType{iview},FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
+    CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
+    CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
+    if ~isempty(j1_series{iview})
+        frame_index{iview}=j1_series{iview};
+    else
+        frame_index{iview}=i1_series{iview};
+    end
+end
+
+%% calibration data and timing: read the ImaDoc files
+mode=''; %default
+timecell={};
+itime=0;
+NbSlice_calib={};
+XmlData=cell(1,nbview);%initiate the structures containing the data from the xml file (calibration and timing)
+for iview=1:nbview%Loop on views
+    SubDirBase=regexprep(SubDir{iview},'\..*','');%take the root part of SubDir, before the first dot '.'
+    filexml=[fullfile(RootPath{iview},SubDirBase) '.xml'];%new convention: xml at the level of the image folder
+    if ~exist(filexml,'file')
+        filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.xml']; % old convention: xml inside the image folder
+        if ~exist(filexml,'file')
+            filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.civ']; % very old convention: .civ file
+            if ~exist(filexml,'file')
+                filexml='';
+            end
+        end
+    end
+    if ~isempty(filexml)
+        [XmlData{iview},error]=imadoc2struct(filexml);
+    end
+    if isfield(XmlData{iview},'Time')
+        itime=itime+1;
+        timecell{itime}=XmlData{iview}.Time;
+    end
+    if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
+        NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
+        if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
+            msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
+        end
+    end
+end
+
+%% check coincidence in time for several input file series
+multitime=0;
+if isempty(timecell)
+    time=[];
+elseif length(timecell)==1
+    time=timecell{1};
+elseif length(timecell)>1
+    multitime=1;
+    for icell=1:length(timecell)
+        if ~isequal(size(timecell{icell}),size(timecell{1}))
+            msgbox_uvmat('WARNING','inconsistent time array dimensions in ImaDoc fields, the time for the first series is used')
+            time=timecell{1};
+            multitime=0;
+            break
+        end
+    end
+end
+if multitime
+    for icell=1:length(timecell)
+        time(icell,:,:)=timecell{icell};
+    end
+    diff_time=max(max(diff(time)));
+    if diff_time>0
+        msgbox_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)])
+    end   
+end
+if size(time,2) < i2_series{1}(end) ||( ~isempty(j2_series{1}) && size(time,3) < j2_series{1}(end))% time array absent or too short in ImaDoc xml file' 
+    time=[];
+end
 
 %% coordinate transform or other user defined transform
 transform_fct='';%default
-if isfield(Param,'FieldTransform')&&isfield(Param.FieldTransform,'fct_handle')
-    transform_fct=Param.FieldTransform.fct_handle;
+if isfield(Param,'FieldTransform')&&isfield(Param.FieldTransform,'TransformHandle')
+    transform_fct=Param.FieldTransform.TransformHandle;
 end
+%%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
+ % EDIT FROM HERE
 
-%% projection object
-test_object=get(hseries.GetObject,'Value');
-if test_object
-    hset_object=findobj(allchild(0),'tag','set_object');
-    ProjObject=read_GUI(hset_object);
-    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Type]);
-    if ~isequal(answeryes,'Yes')
+%% check the validity of  input file types
+if CheckImage{1}
+    FileExtOut='.png'; % write result as .png images for image inputs
+elseif CheckNc{1}
+    FileExtOut='.nc';% write result as .nc files for netcdf inputs
+else 
+    msgbox_uvmat('ERROR',['invalid file type input ' FileType{1}])
+    return
+end
+if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
+        msgbox_uvmat('ERROR','input must be two image series or two netcdf file series')
+    return
+end
+NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
+if NbSlice~=nbfield_j
+    answer=msgbox_uvmat('INPUT_Y-N',['will not average slice by slice: for so cancel and set NbSlice= ' num2str(nbfield_j)]);
+    if ~strcmp(answer,'Yes')
         return
     end
-else
-    msgbox_uvmat('ERROR','a projection object is needed');
-    return
 end
 
-%% features of the input fields 
-RootPath=Param.InputTable(:,1);
-RootFile=Param.InputTable(:,3);
-% SubDir=Param.InputTable(:,2);
-NomType=Param.InputTable(:,4);
-FileExt=Param.InputTable(:,5);
-% ext=FileExt{1};
-% form=imformats(ext(2:end));%test valid Matlab image formats
-nbfield=size(i1_series{1},1)*size(i1_series{1},2); %number of fields in the time series
-
-%% determine image type
-hhh=which('mmreader');
-testnetcdf=0;
-nbview=length(RootPath);%Number of input series: this function  accepts only one or two input file series (sub_field is used in the latter case)
-for iview=1:nbview
-    if isequal(FileExt{iview},'.nc')||isequal(FileExt{iview},'.cdf')
-        FileType{iview}='netcdf';
-        testnetcdf=1;
-    elseif isequal(lower(FileExt{iview}),'.avi')
-        if ~isequal(hhh,'')%&& mmreader.isPlatformSupported()
-            MovieObject{iview}=mmreader(fullfile(RootPath{iview},[RootFile{iview} FileExt{iview}]));
-            FileType{iview}='movie';
-        else
-            FileType{iview}='avi';
+%% Set field names and velocity types
+InputFields{1}=[];%default (case of images)
+if isfield(Param,'InputFields')
+    InputFields{1}=Param.InputFields;
+end
+if nbview==2
+    InputFields{2}=[];%default (case of images)
+    if isfield(Param,'InputFields')
+        InputFields{2}=Param.InputFields{1};%default
+        if isfield(Param.InputFields,'FieldName_1')
+            InputFields{2}.FieldName=Param.InputFields.FieldName_1;
+            if isfield(Param.InputFields,'VelType_1')
+                InputFields{2}.VelType=Param.InputFields.VelType_1;
+            end
         end
-    elseif isequal(lower(FileExt{iview}),'.vol')
-        FileType{iview}='vol';
-    else 
-       form=imformats(FileExt{iview}(2:end));
-       if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-           if isequal(NomType{iview},'*');
-               FileType{iview}='multimage';
-           else
-               FileType{iview}='image';
-           end
-       end
     end
 end
-filebase{1}=fullfile(RootPath{1},RootFile{1});
-
-%% number of slices
-NbSlice=Param.NbSlice;
-
-%% Field and velocity type (the same for the two views)
-FieldName={''};
-
-if isfield(Param,'InputFields')&&isfield(Param.InputFields,'FieldMenu')  
-    FieldName=Param.InputFields.FieldMenu;%the same set of fields for all views
-    VelType{1}=Param.InputFields.VelTypeMenu;
-end
-if isempty(FieldName) && testnetcdf
-    msgbox_uvmat('ERROR','A field must be defined as input')
-    return
-end
+%%% TO UPDATE
 if isequal(FieldName,'get_field...')
     hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
     if numel(hget_field)>1
@@ -139,6 +261,38 @@ if isequal(FieldName,'get_field...')
         SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
     end
 end
+%%%%%%%
+
+%% Initiate output fields
+%initiate the output structure as a copy of the first input one (reproduce fields)
+[DataOut,ParamOut,errormsg] = read_field(filecell{1,1},FileType{1},InputFields{1},1);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg])
+    return
+end
+time_1=[];
+if isfield(DataOut,'Time')
+    time_1=DataOut.Time(1);
+end
+if CheckNc{iview}
+    if isempty(strcmp('Conventions',DataOut.ListGlobalAttribute))
+        DataOut.ListGlobalAttribute=['Conventions' DataOut.ListGlobalAttribute];
+    end
+    DataOut.Conventions='uvmat';
+    DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {Param.Action}];
+    ActionKey='Action';
+    while isfield(DataOut,ActionKey)
+        ActionKey=[ActionKey '_1'];
+    end
+    DataOut.(ActionKey)=Param.Action;
+    DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {ActionKey}];
+    if isfield(DataOut,'Time')
+        DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {'Time','Time_end'}];
+    end
+end
+
+
+
 
 %% detect whether the two files are 'images' or 'netcdf'
 testcivx=0;
@@ -154,119 +308,6 @@ end
 %     VelType_val=get(hseries.VelTypeMenu_1,'Value');
 %     VelType{2}=VelType_str{VelType_val};
 % end
-
-%% Calibration data and timing: read the ImaDoc files
-% mode=''; %default
-timecell={};
-XmlData={};
-itime=0;
-NbSlice_calib={};
-for iview=1:nbview%Loop on views
-    XmlData{iview}=[];%default
-    filebase{iview}=fullfile(RootPath{iview},RootFile{iview});
-    if exist([filebase{iview} '.xml'],'file')
-        [XmlData{iview},error]=imadoc2struct([filebase{iview} '.xml']); 
-        if isfield(XmlData{iview},'Time')
-            itime=itime+1;
-            timecell{itime}=XmlData{iview}.Time;
-        end
-        if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
-            NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
-            if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
-                msgbox_uvmat('WARNING','inconsistent number of Z indices for the field series');
-            end
-        end 
-    elseif exist([filebase{iview} '.civ'],'file')%old convention .civ text file
-        [error,time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext([filebase{iview} '.civ']);
-        itime=itime+1;
-        timecell{itime}=time;
-        XmlData{iview}.Time=time;
-        GeometryCalib.R=[pxcmx 0 0; 0 pxcmy 0;0 0 0];
-        GeometryCalib.Tx=0;
-        GeometryCalib.Ty=0;
-        GeometryCalib.Tz=1;
-        GeometryCalib.dpx=1;
-        GeometryCalib.dpy=1;
-        GeometryCalib.sx=1;
-        GeometryCalib.Cx=0;
-        GeometryCalib.Cy=0;
-        GeometryCalib.f=1;
-        GeometryCalib.kappa1=0;
-        GeometryCalib.CoordUnit='cm';
-        XmlData{iview}.GeometryCalib=GeometryCalib;
-        if error==1
-            msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
-        end
-    end
-end
-time=[];%default
-if ~isempty(timecell)
-    if numel(timecell{1})<nbfield
-       msgbox_uvmat('WARNING','time array from ImaDoc to short')
-    else
-        time=timecell{1}; %time defined from ImaDoc file (image series)
-    end
-end
-
-%% check coincidence in time
-if length(timecell)>1
-    for icell=2:length(timecell)
-        if isequal(size(timecell{icell}),size(time))
-            diff_time=max(abs(timecell{icell}-time));
-            if diff_time>0
-                msgbox_uvmat('WARNING',['times of series differ by more than ' num2str(diff_time)])
-                break
-            end 
-        else
-            msgbox_uvmat('WARNING','inconsistent time array dimensions in ImaDoc fields, the time for the first series is used')
-            break
-        end
-    end
-end
-if ~isempty(time)
-    display(['time is read from ' filebase{iview} '.xml'])
-end
-
-%%  Root name of output files (TO GENERALISE FOR TWO INPUT SERIES)
-subdir_result='time_series';
-pathdir=fullfile(RootPath{1},subdir_result);
-while exist(pathdir,'dir')
-    subdir_result=[subdir_result '.0'];
-    pathdir=fullfile(RootPath{1},subdir_result);
-end
-[m1,m2,m3]=mkdir(pathdir);
-if ~isequal(m2,'')
-     msgbox_uvmat('CONFIRMATION',m2);%error message for directory creation
-end
-[xx,msg2] = fileattrib(pathdir,'+w','g'); %yield writing access (+w) to user group (g)
-if ~strcmp(msg2,'')
-    msgbox_uvmat('ERROR',['pb of permission for ' pathdir ': ' msg2])%error message for directory creation
-    return
-end
-filebase_out=filebase{1}; 
- i21=i1_series{end}(end);
- if ~isempty(i2_series{end})
-     i21=i2_series{end}(end)-i1_series{1}(1);
- end
- j21=1;
- if ~isempty(j1_series{1})
-     j21=j1_series{end}(end);
-      if ~isempty(j2_series{end})
-          j21=j2_series{end}(end)-j21;
-      end
- end
-NomTypeOut=nomtype2pair(NomType{1},i21,j21);
-
-
-%% velocity type
-VelType_str=get(hseries.VelTypeMenu,'String');
-VelType_val=get(hseries.VelTypeMenu,'Value');
-VelType{1}=VelType_str{VelType_val};
-if nbview==2
-    VelType_str=get(hseries.VelTypeMenu_1,'String');
-    VelType_val=get(hseries.VelTypeMenu_1,'Value');
-    VelType{2}=VelType_str{VelType_val};
-end
 
 %% LOOP ON SLICES
 nbmissing=0; %number of undetected files
