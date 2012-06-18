@@ -1395,7 +1395,7 @@ if isfield(Series,'CheckObject')
     if Series.CheckObject
         hset_object=findobj(allchild(0),'tag','set_object');
         Series.ProjObject=read_GUI(hset_object);
-        GetObject_Callback([], [], handles)
+        CheckObject_Callback([], [], handles)
     end
 else
     Series.CheckObject=0;
