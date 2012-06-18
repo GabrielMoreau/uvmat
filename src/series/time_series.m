@@ -47,23 +47,20 @@
 %
 function ParamOut=time_series(Param) 
 
-%% requests for the visibility of input windows in the GUI series  (activated directly by the selection in the menu ACTION)
-if ~exist('Param','var')
-    ParamOut={'RootPath';'two';...%nbre of possible input series (options 'on'/'two'/'many', default:'one')
-        'SubDir';'on';... % subdirectory of derived files (PIV fields), ('on' by default)
-        'RootFile';'on';... %root input file name ('on' by default)
-        'FileExt';'on';... %input file extension ('on' by default)
-        'NomType';'on';...%type of file indexing ('on' by default)
+%% set the input elements needed on the GUI series when the action is selected in the menu ActionName
+if ~exist('Param','var') % case with no input parameter 
+    ParamOut={'NbViewMax';2;...% max nbre of input file series (default='' , no limitation)
+        'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
+        'WholeIndexRange';'off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
-        'VelTypeMenu';'two';...% menu for selecting the velocity type (civ1,..) options 'off'/'one'/'two', 'off' by default)
-        'FieldMenu';'two';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-        'CoordType';'on';...%can use a transform function 'off' by default
-        'GetObject';'on';...%can use projection object ,'off' by default
-        'OutputDirExt';'.series'...
-        %'GetMask';'on'...%can use mask option   ,'off' by default
-        %'PARAMETER'; options: name of the user defined parameter',repeat a line for each parameter 
+        'VelType';'two';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+        'FieldName';'two';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+        'FieldTransform'; 'on';...%can use a transform function
+        'ProjObject';'on';...%can use projection object(option 'off'/'on',
+        'Mask';'off';...%can use mask option   (option 'off'/'on', 'off' by default)
+        'OutputDirExt';'.tseries';...%set the output dir extension
                ''};
-    return %exit the function 
+        return
 end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
@@ -241,7 +238,7 @@ if nbview==2
     end
 end
 %%% TO UPDATE
-if isequal(FieldName,'get_field...')
+if isequal(InputFields{1},'get_field...')
     hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
     if numel(hget_field)>1
         delete(hget_field(2:end)) % delete multiple occurerence of the GUI get_fioeld
@@ -290,24 +287,6 @@ if CheckNc{iview}
         DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {'Time','Time_end'}];
     end
 end
-
-
-
-
-%% detect whether the two files are 'images' or 'netcdf'
-testcivx=0;
-% FileExt=get(hseries.FileExt,'String');
-if ~isequal(FieldName,{'get_field...'})
-    testcivx=isequal(FileType{1},'netcdf');
-end
-% VelType_str=get(hseries.VelTypeMenu,'String');
-% VelType_val=get(hseries.VelTypeMenu,'Value');
-% VelType{1}=VelType_str{VelType_val};
-% if nbview==2
-%     VelType_str=get(hseries.VelTypeMenu_1,'String');
-%     VelType_val=get(hseries.VelTypeMenu_1,'Value');
-%     VelType{2}=VelType_str{VelType_val};
-% end
 
 %% LOOP ON SLICES
 nbmissing=0; %number of undetected files
@@ -396,8 +375,8 @@ for i_slice=1:NbSlice
                     else
                         Field=Data{1};
                     end
-                    if test_object
-                        [Field,errormsg]=proj_field(Field,ProjObject);
+                    if Param.CheckObject
+                        [Field,errormsg]=proj_field(Field,Param.ProjObject);
                     end
                 end
                 filecounter=filecounter+1;
@@ -409,8 +388,8 @@ for i_slice=1:NbSlice
                         msgbox_uvmat('ERROR',['error in time_series/sub_field:' errormsg])
                         return
                     end
-                    RecordData=Field;%default
-                    RecordData.NbDim=Field.NbDim+1; %add the time dimension for plots
+                    DataOut=Field;%default
+                    DataOut.NbDim=Field.NbDim+1; %add the time dimension for plots
                     nbvar=length(Field.ListVarName);
                     if nbvar==0
                         msgbox_uvmat('ERROR','no input variable selected in get_field')
@@ -427,7 +406,7 @@ for i_slice=1:NbSlice
                                 end
                                 if isequal(var_role,'warnflag')
                                     testsum(ivar)=0;  % not recorded variable
-                                    eval(['RecordData=rmfield(RecordData,''' Field.ListVarName{ivar} ''');']);%remove variable
+                                    eval(['DataOut=rmfield(DataOut,''' Field.ListVarName{ivar} ''');']);%remove variable
                                 end
                                 if isequal(var_role,'coord_x')| isequal(var_role,'coord_y')|...
                                         isequal(var_role,'coord_z')|isequal(var_role,'coord')
@@ -446,10 +425,10 @@ for i_slice=1:NbSlice
                     end
                     for ivar=1:nbvar
                         if testsum(ivar)==2
-                            eval(['RecordData.' Field.ListVarName{ivar} '=[];'])
+                            eval(['DataOut.' Field.ListVarName{ivar} '=[];'])
                         end
                     end
-                    RecordData.ListVarName=[{'Time'} RecordData.ListVarName];
+                    DataOut.ListVarName=[{'Time'} DataOut.ListVarName];
                 end
                 
                 % add data to the current field
@@ -458,7 +437,7 @@ for i_slice=1:NbSlice
                     VarVal=Field.(VarName);
                     if testsum(ivar)==2% test for recorded variable
                         if isempty(errormsg)
-                            if isequal(ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
+                            if isequal(Param.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
                                 if isempty(VarVal)
                                     msgbox_uvmat('ERROR',['empty result at frame index ' num2str(i1_series{iview}(ifile))])
                                     return
@@ -466,12 +445,12 @@ for i_slice=1:NbSlice
                                 VarVal=mean(VarVal,1);
                             end
                             VarVal=shiftdim(VarVal,-1); %shift dimension
-                            RecordData.(VarName)=cat(1,RecordData.(VarName),VarVal);%concanete the current field to the time series
+                            DataOut.(VarName)=cat(1,DataOut.(VarName),VarVal);%concanete the current field to the time series
                         else
-                            RecordData.(VarName)=cat(1,RecordData.(VarName),0);% put each variable to 0 in case of input reading error
+                            DataOut.(VarName)=cat(1,DataOut.(VarName),0);% put each variable to 0 in case of input reading error
                         end
                     elseif testsum(ivar)==1% variable representing fixed coordinates
-                        eval(['VarInit=RecordData.' VarName ';']);
+                        eval(['VarInit=DataOut.' VarName ';']);
                         if isempty(errormsg) && ~isequal(VarVal,VarInit)
                             msgbox_uvmat('ERROR',['time series requires constant coordinates ' VarName])
                             return
@@ -482,13 +461,13 @@ for i_slice=1:NbSlice
                 % record the time:
                 if isempty(time)% time read in ncfiles
                     if isfield(Field,'Time')
-                        RecordData.Time(filecounter,1)=Field.Time;
+                        DataOut.Time(filecounter,1)=Field.Time;
                     else
-                        RecordData.Time(filecounter,1)=ifile;%default
+                        DataOut.Time(filecounter,1)=ifile;%default
                     end
                 else % time from ImaDoc prevails  TODO: correct 
-                  %  RecordData.Time(filecounter,1)=time{1}(i1_series{1})(ifile),j1_series{1}(ifile))+time(end,i2_series{end}(ifile),j2_series{end}(ifile)))/2;
-                  RecordData.Time(filecounter,1)=i1_series{1}(ifile);% TODO : generalise
+                  %  DataOut.Time(filecounter,1)=time{1}(i1_series{1})(ifile),j1_series{1}(ifile))+time(end,i2_series{end}(ifile),j2_series{end}(ifile)))/2;
+                  DataOut.Time(filecounter,1)=i1_series{1}(ifile);% TODO : generalise
                 end
                 
                 % record the number of missing input fields
@@ -502,43 +481,43 @@ for i_slice=1:NbSlice
     %%%%%%% END OF LOOP WITHIN A SLICE
    
     %remove time for global attributes if exists
-    Time_index=find(strcmp('Time',RecordData.ListGlobalAttribute));
+    Time_index=find(strcmp('Time',DataOut.ListGlobalAttribute));
     if ~isempty(Time_index)
-        RecordData.ListGlobalAttribute(Time_index)=[];
+        DataOut.ListGlobalAttribute(Time_index)=[];
     end
-    RecordData.Conventions='uvmat';
-    for ivar=1:numel(RecordData.ListVarName)
-        VarName=RecordData.ListVarName{ivar};
-        eval(['RecordData.' VarName '=squeeze(RecordData.' VarName ');']) %remove singletons
+    DataOut.Conventions='uvmat';
+    for ivar=1:numel(DataOut.ListVarName)
+        VarName=DataOut.ListVarName{ivar};
+        eval(['DataOut.' VarName '=squeeze(DataOut.' VarName ');']) %remove singletons
     end
     
     % add time dimension 
     for ivar=1:length(Field.ListVarName)
         DimCell=Field.VarDimName(ivar);
         if testsum(ivar)==2%variable used as time series
-            RecordData.VarDimName{ivar}=[{'Time'} DimCell];
+            DataOut.VarDimName{ivar}=[{'Time'} DimCell];
         elseif testsum(ivar)==1
-            RecordData.VarDimName{ivar}=DimCell;
+            DataOut.VarDimName{ivar}=DimCell;
         end
     end
     indexremove=find(~testsum);
     if ~isempty(indexremove)
-        RecordData.ListVarName(1+indexremove)=[];
-        RecordData.VarDimName(indexremove)=[];
-        if isfield(RecordData,'Role') && ~isempty(RecordData.Role{1})%generaliser aus autres attributs
-            RecordData.Role(1+indexremove)=[];
+        DataOut.ListVarName(1+indexremove)=[];
+        DataOut.VarDimName(indexremove)=[];
+        if isfield(DataOut,'Role') && ~isempty(DataOut.Role{1})%generaliser aus autres attributs
+            DataOut.Role(1+indexremove)=[];
         end
     end
     
     %shift variable attributes
-    if isfield(RecordData,'VarAttribute')
-        RecordData.VarAttribute=[{[]} RecordData.VarAttribute];
+    if isfield(DataOut,'VarAttribute')
+        DataOut.VarAttribute=[{[]} DataOut.VarAttribute];
     end
-    RecordData.VarDimName=[{'Time'} RecordData.VarDimName];
-    RecordData.Action=Param.Action;%name of the processing programme
-    test_time=diff(RecordData.Time)>0;% test that the readed time is increasing (not constant)
+    DataOut.VarDimName=[{'Time'} DataOut.VarDimName];
+    DataOut.Action=Param.Action;%name of the processing programme
+    test_time=diff(DataOut.Time)>0;% test that the readed time is increasing (not constant)
     if ~test_time
-        RecordData.Time=[1:filecounter];
+        DataOut.Time=[1:filecounter];
     end
     
     % display nbmissing
@@ -547,12 +526,11 @@ for i_slice=1:NbSlice
     end
     
     %name of result file
-   % [filemean]=...
-    %    name_generator(filebase_out,i1_series{1}(i_slice),j1_series{1}(i_slice),'.nc','_i1-i2_j1-j2',1,i2_series{end}(ifile),j2_series{end}(ifile),subdir_result);
-    filemean=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},'.nc','_1',i1_series{1}(i_slice));
-    errormsg=struct2nc(filemean,RecordData); %save result file
+%     filemean=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},'.nc','_1',i1_series{1}(i_slice));
+    OutputFile=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),i_slice,[]);
+    errormsg=struct2nc(OutputFile,DataOut); %save result file
     if isempty(errormsg)
-        display([filemean ' written'])
+        display([OutputFile ' written'])
     else
         msgbox_uvmat('ERROR',['error in Series/struct2nc: ' errormsg])
     end
@@ -561,61 +539,14 @@ end
 %% plot the time series (the last one in case of multislices)
 figure
 haxes=axes;
-plot_field(RecordData,haxes)
+plot_field(DataOut,haxes)
 
 %% display the result file using the GUI get_field
 hget_field=findobj(allchild(0),'name','get_field');
 if ~isempty(hget_field)
     delete(hget_field)
 end
-get_field(filemean,RecordData)
+get_field(OutputFile,DataOut)
     
-%------------------------------------------------------------------------
-% --- Executes on selection change in CoordType.
-function CoordType_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-menu_str=get(handles.CoordType,'String');
-ind_coord=get(handles.CoordType,'Value');
-coord_option=menu_str{ind_coord};
-if isequal(coord_option,'more...'); 
-    fct_name='';
-    if exist('./TMP/current_usr_fct.mat','file')% if a file is found
-        h=load('./TMP/current_usr_fct.mat');
-        if isfield(h,'fct_name'); 
-            fct_name=h.fct_name;
-        end
-    end
-    prompt = {'Enter the name of the transform function'};
-    dlg_title = 'user defined transform';
-    num_lines= 1;
-    [FileName, PathName, filterindex] = uigetfile( ...
-       {'*.m', ' (*.m)';
-        '*.m',  '.m files '; ...
-        '*.*', 'All Files (*.*)'}, ...
-        'Pick a file', fct_name);
-    fct_name=fullfile(PathName,FileName);
-    addpath(PathName);%add the path to the selected fct
-    [errormsg,date_str]=check_functions;%check whether new functions can oversed the uvmat package A UTILISER
-    if ~exist(fct_name,'file')
-           warndlg(['image procesing fct ' fct_name ' not found'])
-    else
-        transform=FileName(1:end-2);% 
-        update_menu(handles.CoordType,transform)%add the selected fct to the menu
-  %      set(handles.mouse_coord,'String',menu([1:end-1])')%update the mouse coord menu 
-      %save ('./TMP/current_usr_fct.mat','fct_name');
-    end   
-end
-ind_coord=get(handles.CoordType,'Value');   
 
-%---------------------------------------------------------------------
-% % --- Executes on selection change in ProjObject.
-% function ProjObject_Callback(hObject, eventdata, handles)
-% 
-% list_object=get(handles.ProjObject,'String');
-% index=get(handles.ProjObject,'Value');
-% hseries=get(handles.ProjObject,'Parent');
-% SeriesData=get(hseries,'UserData');
-% Obj=SeriesData.ProjObject{index};
-% [SeriesData.hset_object,SeriesData.sethandles]=set_object(SeriesData.ProjObject{index});
-% set(hseries,'UserData',SeriesData);
 

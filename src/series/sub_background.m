@@ -53,11 +53,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     
-function GUI_config=sub_background (Param)
+function ParamOut=sub_background (Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if ~exist('Param','var') % case with no input parameter 
-    GUI_config={'NbViewMax';1;...% max nbre of input file series (default='' , no limitation)
+    ParamOut={'NbViewMax';1;...% max nbre of input file series (default='' , no limitation)
         'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
         'WholeIndexRange';'on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
@@ -74,9 +74,10 @@ end
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 %% select different modes,  RUN, parameter input, BATCH
 % BATCH  case: read the xml file for batch case
+ParamOut=Param; %default output
 if ischar(Param)
     if strcmp(Param,'input?')
-        checkrun=1;% will inly search input parameters (preparation of BATCH mode)
+        checkrun=1;% will search input parameters (preparation of BATCH mode)
     else
         Param=xml2struct(Param);
         checkrun=0;
@@ -205,25 +206,24 @@ if checkrun %get specific parameters interactively
         msgbox_uvmat('ERROR','number of images in a slice smaller than the proposed number of images for the sliding average')
         return
     end
-    GUI_config.CheckVolume=strcmp(answer{1},'Yes');
-    GUI_config.SlidingSequenceSize=nbaver_ima;
-    GUI_config.BrightnessRankThreshold=str2num(answer{3});
+    ParamOut.Specific.CheckVolume=strcmp(answer{1},'Yes');
+    ParamOut.Specific.SlidingSequenceSize=nbaver_ima;
+    ParamOut.Specific.BrightnessRankThreshold=str2num(answer{3});
     
     % apply the image rescaling function 'level' (avoid the blinking effects of bright particles)
     answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m after sub_background');
-    GUI_config.CheckLevelTransform=strcmp(answer,'Yes');
-    if checkrun==2
+    ParamOut.Specific.CheckLevelTransform=strcmp(answer,'Yes');
+    if checkrun==1
          return 
     end
     %%%%%%%%%%%%%%%%%%%%%%  STOP HERE FOR PAMETER INPUT MODE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else
-    GUI_config=Param.Specific;
-    if isequal(GUI_config.CheckVolume,1)
+    if isequal(Param.Specific.CheckVolume,1)
         step=1;
     else
         step=nbfield_j;%case of bursts: the sliding background is shifted by the length of one burst
     end
-    nbaver_ima=GUI_config.SlidingSequenceSize;%number of images for the sliding background
+    nbaver_ima=Param.Specific.SlidingSequenceSize;%number of images for the sliding background
     nbaver=ceil(nbaver_ima/step);%number of bursts for the sliding background
     if isequal(floor(nbaver/2),nbaver)
         nbaver=nbaver+1;%set the number of bursts to an odd number (so the middle burst is defined)
@@ -236,7 +236,7 @@ else
 end
 
 % calculate absolute brightness rank
-rank=floor(GUI_config.BrightnessRankThreshold*nbaver_ima);
+rank=floor(ParamOut.Specific.BrightnessRankThreshold*nbaver_ima);
 if rank==0
     rank=1;%rank selected in the sorted image series
 end
@@ -340,7 +340,7 @@ for islice=1:NbSlice
         newname=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
         
         %write result file
-        if GUI_config.CheckLevelTransform
+        if ParamOut.Specific.CheckLevelTransform
             C=levels(Acor);
             imwrite(C,newname,'BitDepth',8); % save the new image
         else
@@ -389,7 +389,7 @@ for islice=1:NbSlice
                     end
                     newname=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
                     %write result file
-                    if GUI_config.CheckLevelTransform
+                    if ParamOut.Specific.CheckLevelTransform
                         C=levels(Acor);
                         imwrite(C,newname,'BitDepth',8); % save the new image
                     else
@@ -424,7 +424,7 @@ for islice=1:NbSlice
         newname=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
         
         %write result file
-        if GUI_config.CheckLevelTransform
+        if ParamOut.Specific.CheckLevelTransform
             C=levels(Acor);
             imwrite(C,newname,'BitDepth',8); % save the new image
         else
