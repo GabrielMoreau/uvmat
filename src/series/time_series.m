@@ -66,20 +66,20 @@ end
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 %% select different modes,  RUN, parameter input, BATCH
 % BATCH  case: read the xml file for batch case
-ParamOut=Param; %default output
 if ischar(Param)
-    if strcmp(Param,'input?')
-        checkrun=1;% will inly search input parameters (preparation of BATCH mode)
-    else
         Param=xml2struct(Param);
         checkrun=0;
-    end
 % RUN case: parameters introduced as the input structure Param
 else
     hseries=guidata(Param.hseries);%handles of the GUI series
     WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
-    checkrun=2; % indicate the RUN option is used
+    if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
+        checkrun=1;% will only search interactive input parameters (preparation of BATCH mode)
+    else
+        checkrun=2; % indicate the RUN option is used
+    end
 end
+ParamOut=Param; %default output
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);

@@ -66,20 +66,20 @@ end
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 %% select different modes,  RUN, parameter input, BATCH
 % BATCH  case: read the xml file for batch case
-ParamOut=Param; %default output
 if ischar(Param)
-    if strcmp(Param,'input?')
-        checkrun=1;% will inly search input parameters (preparation of BATCH mode)
-    else
         Param=xml2struct(Param);
         checkrun=0;
-    end
 % RUN case: parameters introduced as the input structure Param
 else
     hseries=guidata(Param.hseries);%handles of the GUI series
     WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
-    checkrun=2; % indicate the RUN option is used
+    if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
+        checkrun=1;% will only search interactive input parameters (preparation of BATCH mode)
+    else
+        checkrun=2; % indicate the RUN option is used
+    end
 end
+ParamOut=Param; %default output
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -239,32 +239,32 @@ if nbview==2
 end
 
 %% Initiate output fields
-%initiate the output structure as a copy of the first input one (reproduce fields)
-[DataOut,ParamOut,errormsg] = read_field(filecell{1,1},FileType{1},InputFields{1},1);
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg])
-    return
-end
-time_1=[];
-if isfield(DataOut,'Time')
-    time_1=DataOut.Time(1);
-end
-if CheckNc{iview}
-    if isempty(strcmp('Conventions',DataOut.ListGlobalAttribute))
-        DataOut.ListGlobalAttribute=['Conventions' DataOut.ListGlobalAttribute];
-    end
-    DataOut.Conventions='uvmat';
-    DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {Param.Action}];
-    ActionKey='Action';
-    while isfield(DataOut,ActionKey)
-        ActionKey=[ActionKey '_1'];
-    end
-    DataOut.(ActionKey)=Param.Action;
-    DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {ActionKey}];
-    if isfield(DataOut,'Time')
-        DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {'Time','Time_end'}];
-    end
-end
+% %initiate the output structure as a copy of the first input one (reproduce fields)
+% [DataOut,ParamOut,errormsg] = read_field(filecell{1,1},FileType{1},InputFields{1},1);
+% if ~isempty(errormsg)
+%     msgbox_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg])
+%     return
+% end
+% time_1=[];
+% if isfield(DataOut,'Time')
+%     time_1=DataOut.Time(1);
+% end
+% if CheckNc{iview}
+%     if isempty(strcmp('Conventions',DataOut.ListGlobalAttribute))
+%         DataOut.ListGlobalAttribute=['Conventions' DataOut.ListGlobalAttribute];
+%     end
+%     DataOut.Conventions='uvmat';
+%     DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {Param.Action}];
+%     ActionKey='Action';
+%     while isfield(DataOut,ActionKey)
+%         ActionKey=[ActionKey '_1'];
+%     end
+%     DataOut.(ActionKey)=Param.Action;
+%     DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {ActionKey}];
+%     if isfield(DataOut,'Time')
+%         DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {'Time','Time_end'}];
+%     end
+% end
 
 %% MAIN LOOP ON SLICES
 %%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
@@ -273,11 +273,11 @@ for i_slice=1:NbSlice
     nbfiles=0;
     nbmissing=0;
     
-   %initiate result fields
-   for ivar=1:length(DataOut.ListVarName)
-       DataOut.(DataOut.ListVarName{ivar})=0; % initialise all fields to zero
-   end
-
+    %initiate result fields
+%     for ivar=1:length(DataOut.ListVarName)
+%         DataOut.(DataOut.ListVarName{ivar})=0; % initialise all fields to zero
+%     end
+    
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
     for index=index_slice
         if checkrun
@@ -303,8 +303,8 @@ for i_slice=1:NbSlice
         %%%%%%%%%%%%%%%% end loop on views (input lines) %%%%%%%%%%%%%%%%
         %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
         % EDIT FROM HERE
-
-        if isempty(errormsg)     
+        
+        if isempty(errormsg)
             % coordinate transform (or other user defined transform)
             if ~isempty(transform_fct)
                 if nbview==2
@@ -338,7 +338,7 @@ for i_slice=1:NbSlice
             
             %field projection on an object
             if Param.CheckObject
-                [Field,errormsg]=proj_field(Field,ProjObject);
+                [Field,errormsg]=proj_field(Field,Param.ProjObject);
                 if ~isempty(errormsg)
                     msgbox_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg])
                     return
@@ -348,20 +348,32 @@ for i_slice=1:NbSlice
             
             %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
             %update sum
-            for ivar=1:length(Field.ListVarName)
-                VarName=Field.ListVarName{ivar};
-                sizmean=size(DataOut.(VarName));
-                siz=size(Field.(VarName));
-                if ~isequal(DataOut.(VarName),0)&& ~isequal(siz,sizmean)
-                    msgbox_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'])
-                    return
-                else
-                    DataOut.(VarName)=DataOut.(VarName)+ double(Field.(VarName)); % update the sum
+            if nbfiles==1 %first field
+                time_1=[];
+                if isfield(Field,'Time')
+                    time_1=Field.Time(1);
+                end
+                DataOut=Field;%default
+                for ivar=1:length(Field.ListVarName)
+                    VarName=Field.ListVarName{ivar};
+                    DataOut.(VarName)=double(DataOut.(VarName));
+                end
+            else   %current field
+                for ivar=1:length(Field.ListVarName)
+                    VarName=Field.ListVarName{ivar};
+                    sizmean=size(DataOut.(VarName));
+                    siz=size(Field.(VarName));
+                    if ~isequal(DataOut.(VarName),0)&& ~isequal(siz,sizmean)
+                        msgbox_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'])
+                        return
+                    else
+                        DataOut.(VarName)=DataOut.(VarName)+ double(Field.(VarName)); % update the sum
+                    end
                 end
             end
             %%%%%%%%%%%%   END MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
         else
-            display(errormsg)  
+            display(errormsg)
         end
     end
     %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
@@ -373,7 +385,7 @@ for i_slice=1:NbSlice
     if nbmissing~=0
         msgbox_uvmat('WARNING',[num2str(nbmissing) ' input files are missing or skipted'])
     end
-    if isempty(time) % time is read from files  
+    if isempty(time) % time is read from files
         if isfield(Field,'Time')
             time_end=Field.Time(1);%last time read
             if ~isempty(time_1)

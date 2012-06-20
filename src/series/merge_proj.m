@@ -46,19 +46,20 @@
 %    .ProjObject: %sub structure describing a projection object (read from ancillary GUI set_object)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function GUI_input=merge_proj(Param)
+function ParamOut=merge_proj(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if ~exist('Param','var') % case with no input parameter 
-    GUI_input={'NbViewMax';2;...% max nbre of input file series (default='' , no limitation)
+    ParamOut={'NbViewMax';'';...% max nbre of input file series (default='' , no limitation)
         'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
+        'WholeIndexRange';'off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
-        'VelType';'two';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-        'FieldName';'two';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+        'VelType';'one';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+        'FieldName';'one';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
         'FieldTransform'; 'on';...%can use a transform function
         'ProjObject';'on';...%can use projection object(option 'off'/'on',
-        'Mask';'on';...%can use mask option   (option 'off'/'on', 'off' by default)
-        'OutputDirExt';'.proj';...%set the output dir extension
+        'Mask';'off';...%can use mask option   (option 'off'/'on', 'off' by default)
+        'OutputDirExt';'.mproj';...%set the output dir extension
                ''};
         return
 end
@@ -67,18 +68,19 @@ end
 %% select different modes,  RUN, parameter input, BATCH
 % BATCH  case: read the xml file for batch case
 if ischar(Param)
-    if strcmp(Param,'input?')
-        checkrun=1;% will inly search input parameters (preparation of BATCH mode)
-    else
         Param=xml2struct(Param);
         checkrun=0;
-    end
 % RUN case: parameters introduced as the input structure Param
 else
     hseries=guidata(Param.hseries);%handles of the GUI series
     WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
-    checkrun=2; % indicate the RUN option is used
+    if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
+        checkrun=1;% will only search interactive input parameters (preparation of BATCH mode)
+    else
+        checkrun=2; % indicate the RUN option is used
+    end
 end
+ParamOut=Param; %default output
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -99,7 +101,7 @@ FileExt=Param.InputTable(:,5);
 % numbers of slices and file indices
 
 NbSlice=1;%default
-if isfield(Param.IndexRange,'NbSlice')
+if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
     NbSlice=Param.IndexRange.NbSlice;
 end
 nbview=numel(i1_series);%number of input file series (lines in InputTable)
@@ -110,14 +112,21 @@ nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted 
 nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 
 %determine the file type on each line from the first input file 
-ImageTypeOptions={'image','multimage','mmreader','video'};%allowed input file types(images)
-
-[FileType{1},FileInfo{1},MovieObject{1}]=get_file_type(filecell{1,1});
-CheckImage{1}=~isempty(find(strcmp(FileType,ImageTypeOptions)));% =1 for images
-if ~isempty(j1_series{1})
-    frame_index{1}=j1_series{1};
-else
-    frame_index{1}=i1_series{1};
+ImageTypeOptions={'image','multimage','mmreader','video'};
+NcTypeOptions={'netcdf','civx','civdata'};
+for iview=1:nbview
+    if ~exist(filecell{iview,1}','file')
+        msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
+        return
+    end
+    [FileType{iview},FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
+    CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
+    CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
+    if ~isempty(j1_series{iview})
+        frame_index{iview}=j1_series{iview};
+    else
+        frame_index{iview}=i1_series{iview};
+    end
 end
 
 %% calibration data and timing: read the ImaDoc files
@@ -125,41 +134,30 @@ mode=''; %default
 timecell={};
 itime=0;
 NbSlice_calib={};
+XmlData=cell(1,nbview);%initiate the structures containing the data from the xml file (calibration and timing)
 for iview=1:nbview%Loop on views
-    XmlData{iview}=[];%default
-    filebase{iview}=fullfile(RootPath{iview},RootFile{iview});
-    if exist([filebase{iview} '.xml'],'file')
-        [XmlData{iview},error]=imadoc2struct([filebase{iview} '.xml']); 
-        if isfield(XmlData{iview},'Time')
-            itime=itime+1;
-            timecell{itime}=XmlData{iview}.Time;
-        end
-        if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
-            NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
-            if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
-                msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
+    SubDirBase=regexprep(SubDir{iview},'\..*','');%take the root part of SubDir, before the first dot '.'
+    filexml=[fullfile(RootPath{iview},SubDirBase) '.xml'];%new convention: xml at the level of the image folder
+    if ~exist(filexml,'file')
+        filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.xml']; % old convention: xml inside the image folder
+        if ~exist(filexml,'file')
+            filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.civ']; % very old convention: .civ file
+            if ~exist(filexml,'file')
+                filexml='';
             end
-        end 
-    elseif exist([filebase{iview} '.civ'],'file')
-        [error,time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext([filebase{iview} '.civ']);
+        end
+    end
+    if ~isempty(filexml)
+        [XmlData{iview},error]=imadoc2struct(filexml);
+    end
+    if isfield(XmlData{iview},'Time')
         itime=itime+1;
-        timecell{itime}=time;
-        XmlData{iview}.Time=time;
-        GeometryCalib.R=[pxcmx 0 0; 0 pxcmy 0;0 0 0];
-        GeometryCalib.Tx=0;
-        GeometryCalib.Ty=0;
-        GeometryCalib.Tz=1;
-        GeometryCalib.dpx=1;
-        GeometryCalib.dpy=1;
-        GeometryCalib.sx=1;
-        GeometryCalib.Cx=0;
-        GeometryCalib.Cy=0;
-        GeometryCalib.f=1;
-        GeometryCalib.kappa1=0;
-        GeometryCalib.CoordUnit='cm';
-        XmlData{iview}.GeometryCalib=GeometryCalib;
-        if error==1
-            msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
+        timecell{itime}=XmlData{iview}.Time;
+    end
+    if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
+        NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
+        if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
+            msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
         end
     end
 end
@@ -190,7 +188,7 @@ if multitime
         msgbox_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)])
     end   
 end
-if size(time,2) < i2_series{1}(end) || size(time,3) < j2_series{1}(end)% time array absent or too short in ImaDoc xml file' 
+if size(time,2) < i2_series{1}(end) ||( ~isempty(j2_series{1}) && size(time,3) < j2_series{1}(end))% time array absent or too short in ImaDoc xml file' 
     time=[];
 end
 
@@ -211,39 +209,19 @@ else
     msgbox_uvmat('ERROR',['invalid file type input ' FileType{1}])
     return
 end
-if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
-        msgbox_uvmat('ERROR','input must be two image series or two netcdf file series')
+for iview=1:nbview
+	if ~isequal(CheckImage{iview},CheckImage{1})||~isequal(CheckNc{iview},CheckNc{1})
+        msgbox_uvmat('ERROR','input set of input series: need  either netcdf either image series')
     return
 end
-NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
-if NbSlice~=nbfield_j
-    answer=msgbox_uvmat('INPUT_Y-N',['will not average slice by slice: for so cancel and set NbSlice= ' num2str(nbfield_j)]);
-    if ~strcmp(answer,'Yes')
-        return
-    end
-end
+NomTypeOut=NomType;% output file index will indicate the first and last ref index in the series
 
 %% Set field names and velocity types
-InputFields{1}=[];%default (case of images)
-if isfield(Param,'InputFields')
-    InputFields{1}=Param.InputFields;
-end
-if nbview==2
-    InputFields{2}=[];%default (case of images)
-    if isfield(Param,'InputFields')
-        InputFields{2}=Param.InputFields{1};%default
-        if isfield(Param.InputFields,'FieldName_1')
-            InputFields{2}.FieldName=Param.InputFields.FieldName_1;
-            if isfield(Param.InputFields,'VelType_1')
-                InputFields{2}.VelType=Param.InputFields.VelType_1;
-            end
-        end
-    end
-end
+%use Param.InputFields for all views
 
 %% Initiate output fields
 %initiate the output structure as a copy of the first input one (reproduce fields)
-[DataOut,ParamOut,errormsg] = read_field(filecell{1,1},FileType{1},InputFields{1},1);
+[DataOut,ParamOut,errormsg] = read_field(filecell{1,1},FileType{1},Param.InputFields,1);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg])
     return
@@ -277,6 +255,7 @@ for i_slice=1:NbSlice
     nbmissing=0;
     
    %initiate result fields
+   
    for ivar=1:length(DataOut.ListVarName)
        DataOut.(DataOut.ListVarName{ivar})=0; % initialise all fields to zero
    end
@@ -289,287 +268,31 @@ for i_slice=1:NbSlice
         else
             stopstate='queue';
         end
-%OUTPUT
-% GUI_input=list of options in the GUI series.fig needed for the function
-%
-%INPUT:
-% Param: structure containing all the parameters read on the GUI series
-%  or name of the xml file containing these parameters (BATCH case)
-%
-
-
-%% projection object
-test_object=get(hseries.GetObject,'Value');
-if test_object
-    hset_object=findobj(allchild(0),'tag','set_object');
-    %ProjObject=read_set_object(guidata(hset_object));
-    ProjObject=read_GUI(hset_object);
-    if ~isfield(ProjObject,'Type')
-            msgbox_uvmat('ERROR','Undefined projection object type')
-            return
-    end
-    if ~isequal(ProjObject.Type,'plane')|| isequal(ProjObject.ProjMode,'projection')
-            msgbox_uvmat('ERROR','The projection object must be a plane with projection mode interp or filter')
-            return
-    end
-    answeryes=msgbox_uvmat('INPUT_Y-N',['field series projected on ' ProjObject.Type]);
-    if ~isequal(answeryes,'Yes')
-        return
-    end
-end
-
-%% features of the input fields
-RootPath=Param.InputTable(:,1);
-RootFile=Param.InputTable(:,3);
-SubDir=Param.InputTable(:,2);
-NomType=Param.InputTable(:,4);
-FileExt=Param.InputTable(:,5);
-
-nbview=length(RootFile);%number of views (file series to merge)
-nbfield=size(i1_series{1},1)*size(i1_series{1},2);%number of fields in the time series
-hhh=which('mmreader');
-for iview=1:nbview
-    test_movie(iview)=0;
-    if ~isempty(hhh)
-        if isequal(lower(FileExt{iview}),'.avi')
-            MovieObject{iview}=mmreader(fullfile(RootPath{iview},[RootFile{iview} FileExt{iview}]));
-            test_movie(iview)=1;
-        end
-    end
-end
-
-%% Calibration data and timing: read the ImaDoc files
-timecell={};
-itime=0;
-NbSlice_calib={}; %test for z index 
-for iview=1:nbview%Loop on views
-    XmlData{iview}=[];%default
-    filebase{iview}=fullfile(RootPath{iview},RootFile{iview});
-    if exist([filebase{iview} '.xml'],'file')
-        [XmlData{iview},error]=imadoc2struct([filebase{iview} '.xml']); 
-        if isfield(XmlData{iview},'Time')
-            itime=itime+1;
-            timecell{itime}=XmlData{iview}.Time;
-        end
-        if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
-            NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);
-            if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
-                msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
-            end
-        end    
-    elseif exist([filebase{iview} '.civ'],'file')
-        [error,time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext([filebase{iview} '.civ']);
-        itime=itime+1;
-        timecell{itime}=time;
-        XmlData{iview}.Time=time;
-        GeometryCalib.R=[pxcmx 0 0; 0 pxcmy 0;0 0 0];
-        GeometryCalib.Tx=0;
-        GeometryCalib.Ty=0;
-        GeometryCalib.Tz=1;
-        GeometryCalib.dpx=1;
-        GeometryCalib.dpy=1;
-        GeometryCalib.sx=1;
-        GeometryCalib.Cx=0;
-        GeometryCalib.Cy=0;
-        GeometryCalib.f=1;
-        GeometryCalib.kappa1=0;
-        GeometryCalib.CoordUnit='cm';
-        XmlData{iview}.GeometryCalib=GeometryCalib;
-        if error==1
-            msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
-        end
-    end
-end
-
-%% check coincidence in time
-multitime=0;
-if isempty(timecell)
-    time=[];
-elseif length(timecell)==1
-    time=timecell{1};
-elseif length(timecell)>1
-    multitime=1;
-    for icell=1:length(timecell)
-        if ~isequal(size(timecell{icell}),size(timecell{1}))
-            msgbox_uvmat('WARNING','inconsistent time array dimensions in ImaDoc fields, the time for the first series is used')
-            time=timecell{1};
-            multitime=0;
-            break
-        end
-    end
-end
-if multitime
-    for icell=1:length(timecell)
-        time(icell,:,:)=timecell{icell};
-    end
-    diff_time=max(max(diff(time)));
-    if diff_time>0
-        msgbox_uvmat('WARNING',['times of series differ by more than ' num2str(diff_time)])
-    end   
-    time=sqeeze(mean(time,1));
-end
-% if size(time,2) < i2_series{1}(end) || size(time,3) < j2_series{1}(end)% ime array absent or too short in ImaDoc xml file' 
-%     time=[];
-% end
-
-%% Field and velocity type (the same for all views)
-FieldName='';
-if isfield(Param,'InputFields')&&isfield(Param.InputFields,'FieldMenu')  
-    FieldName=Param.InputFields.FieldMenu;%the same set of fields for all views
-    VelType=Param.InputFields.VelTypeMenu;
-end
-% if strcmp(get(hseries.FieldMenu,'Visible'),'on')
-%     Field_str=get(hseries.FieldMenu,'String');
-%     val=get(hseries.FieldMenu,'Value');
-%     FieldName=Field_str(val);%the same set of fields for all views
-%     VelType_str=get(hseries.VelTypeMenu,'String');
-%     VelType_val=get(hseries.VelTypeMenu,'Value');
-%     VelType=VelType_str{VelType_val}; %the same for all views
-    if strcmp(FieldName,'')
-        msgbox_uvmat('ERROR','no input field defined in FieldMenu')
-    elseif strcmp(FieldName,'get_field...')
-        hget_field=findobj(allchild(0),'Name','get_field');%find the get_field... GUI
-        SubField=get_field('read_get_field',hObject,eventdata,hget_field); %read the names of the variables to plot in the get_field GUI
-    end
-% end
-%detect whether all the files are 'images' or 'netcdf'
-testima=0;
-testvol=0;
-testcivx=0;
-testnc=0;
-for iview=1:nbview
-     ext=FileExt{iview};
-     form=imformats(ext(2:end));
-     if isequal(lower(ext),'.vol')
-         testvol=testvol+1;
-     elseif ~isempty(form)||isequal(lower(ext),'.avi')% if the extension corresponds to an image format recognized by Matlab
-         testima=testima+1;
-     elseif isequal(ext,'.nc')
-         testnc=testnc+1;
-     end
-end
-if testvol
-    msgbox_uvmat('ERROR','volume images not implemented yet')
-    return
-end
-if testnc~=nbview && testima~=nbview && testvol~=nbview
-    msgbox_uvmat('ERROR','need a set of images or a set of netcdf files with the same fields as input')
-    return
-end
-if ~isequal(FieldName,'get_field...')
-    testcivx=testnc;
-end
-
-%% name of output files and directory:
-ProjectDir=fileparts(fileparts(RootPath{1}));% preoject directory (GERK)
-prompt={['result directory (in' ProjectDir ')']};
-% RootPath=get(hseries.RootPath,'String');
-% SubDir=get(hseries.SubDir,'String');
-if isequal(length(RootPath),1)
-    fulldir=RootPath{1};
-    subdir='merge_proj';
-    res_subdir=fullfile(fulldir,subdir);
-else
-    def={fullfile(ProjectDir,'0_RESULTS')};
-    dlgTitle='result directory';
-    lineNo=1;
-    answer=msgbox_uvmat('INPUT_TXT',dlgTitle,def);
-    fulldir=answer{1};
-    subdir=[];
-    dirlist=sort(RootFile);
-    for iview=1:nbview
-        if ~isempty(subdir)
-            subdir=[subdir '-'];
-        end
-        subdir=[subdir dirlist{iview}];
-    end  
-    res_subdir=fullfile(fulldir,subdir);
-end
-ext=FileExt{1};
-if ~exist(fulldir,'dir')
-    msgbox_uvmat('ERROR',['directory ' fulldir ' needs to be created'])
-    return
-end
-if ~exist(res_subdir,'dir')
-    dircur=pwd;
-    cd(fulldir);
-    succeed=mkdir(subdir);
-    if succeed
-        [xx,msg2] = fileattrib(res_subdir,'+w','g'); %yield writing access (+w) to user group (g)
-        if ~strcmp(msg2,'')
-            msgbox_uvmat('ERROR',['pb of permission for ' res_subdir ': ' msg2])%error message for directory creation
-            cd(dircur)
-            return
-        end
-        cd(dircur);
-    else
-        msgbox_uvmat('ERROR',['Cannot create directory ' fulldir])
-        return
-    end
-end
-filebasesub=fullfile(res_subdir,RootFile{1});
-%filebase_merge=fullfile(res_subdir,'merged');%root name for the merged files
-
-%% MAIN LOOP
-for ifile=1:nbfield                
-    stopstate=get(hseries.RUN,'BusyAction');
-    if isequal(stopstate,'queue')% enable STOP command from the 'series' interface
-         update_waitbar(hseries.waitbar,WaitbarPos,ifile/nbfield)
-         
-        %% ----------LOOP ON VIEWS----------------------
-        nbtime=0;
+        
+        %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
+        Data=cell(1,nbview);%initiate the set Data
         for iview=1:nbview
-         %name of the current file
-         filename=filecell{iview,ifile};
-          %  filename=name_generator(filebase{iview},i1_series{iview}(ifile),j1_series{iview}(ifile),FileExt{iview},NomType{iview},1,i2_series{iview}(ifile),j2_series{iview}(ifile),SubDir{iview});
-            if ~exist(filename,'file')
-                msgbox_uvmat('ERROR',['missing input file' filename])
+            % reading input file(s)
+            [Data{iview},ParamOut,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
+            if ~isempty(errormsg)
+                errormsg=['error of input reading: ' errormsg];
                 break
             end
-            timeread(iview)=0;
-         %reading the current file
-            if testima
-                if test_movie(iview)
-                    Field{iview}.A=read(MovieObject{iview},i1_series{iview}(ifile));
-                else
-                    Field{iview}.A=imread(filename); 
-                end % TODO: introduce ListVarName
-                npxy=size(Field{iview}.A);
-                Field{iview}.ListVarName={'AX','AY','A'};
-                Field{iview}.VarDimName={'AX','AY',{'AY','AX'}};
-                Field{iview}.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
-                Field{iview}.AY=[npxy(1)-0.5 0.5];
-                Field{iview}.CoordUnit='pixel'; 
-                Field{iview}.AName='image';
-            else
-                if testcivx
-                    [Field{iview},VelTypeOut]=read_civxdata(filename,FieldName,VelType);
-                else
-                    [Field{iview},var_detect]=nc2struct(filename,SubField.ListVarName); %read the corresponding input data                
-                    Field{iview}.VarAttribute=SubField.VarAttribute;
-                end
-                if isfield(Field{iview},'Txt')
-                    msgbox_uvmat('ERROR',Field{iview}.Txt)
-                    return
-                end
-                if isfield(Field{iview},'Time')
-                    timeread(iview)=Field{iview}.Time;
-                    nbtime=nbtime+1;
-                end
-            end
             if ~isempty(NbSlice_calib)
-                Field{iview}.ZIndex=mod(i1_series{iview}(ifile)-1,NbSlice_calib{1})+1;
+                Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
             end
          %transform the input field (e.g; phys) if requested
             if ~isempty(transform_fct)
-                Field{iview}=transform_fct(Field{iview},XmlData{iview});  %transform to phys if requested
+                Data{iview}=transform_fct(Data{iview},XmlData{iview});  %transform to phys if requested
             end
-            if testcivx
-                Field{iview}=calc_field(FieldName,Field{iview});
+                        % field calculation (vort, div...)
+            if strcmp(FileType{1},'civx')||strcmp(FileType{1},'civ')
+                Data{iview}=calc_field(Param.InputFields.FieldName,Data{iview});%calculate field (vort..)
             end
+           
          %projection on object (gridded plane)
             if test_object
-                [Field{iview},errormsg]=proj_field(Field{iview},ProjObject);
+                [Data{iview},errormsg]=proj_field(Data{iview},ProjObject);
                 if ~isempty(errormsg)
                     msgbox_uvmat('ERROR',['error in merge_proge/proj_field: ' errormsg])
                     return
@@ -579,36 +302,30 @@ for ifile=1:nbfield
         %----------END LOOP ON VIEWS----------------------
          
         %% merge the nbview fields
-        MergeData=merge_field(Field);
+        MergeData=merge_field(Data);
         if isfield(MergeData,'Txt')
             msgbox_uvmat('ERROR',MergeData.Txt)
             return
         end        
      % generating the name of the merged field
-     if testima
-         ResultExt='.png';
-     else
-         ResultExt=FileExt{iview};
-     end
-     i1=i1_series{iview}(ifile);
+     i1=i1_series{iview}(index);
      if ~isempty(i2_series{iview})
-         i2=i2_series{iview}(ifile);
+         i2=i2_series{iview}(index);
      else
          i2=i1;
      end
      j1=1;
      j2=1;
      if ~isempty(j1_series{iview})
-         j1=j1_series{iview}(ifile);
+         j1=j1_series{iview}(index);
           if ~isempty(j2_series{iview})
-              j2=j2_series{iview}(ifile);
+              j2=j2_series{iview}(index);
           else
               j2=j1;
           end
      end
-     mergename=fullfile_uvmat(res_subdir,'','merged',ResultExt,NomType{iview},i1,i2,j1,j2);
-    % mergename=name_generator(filebase_merge,i1,j1_series{iview}(ifile),ResultExt,NomType{iview},1,i2_series{iview}(ifile),j2_series{iview}(ifile));
-        
+     OutputFile=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomType{1},i1,i2,j1,j2);
+           
      % time of the merged field:
         time_i=0;%default
         if isempty(time)% time from ImaDoc prevails
@@ -625,7 +342,7 @@ for ifile=1:nbfield
             elseif isa(MergeData.A,'uint16')
                 bitdepth=16;
             end
-            imwrite(MergeData.A,mergename,'BitDepth',bitdepth); 
+            imwrite(MergeData.A,OutputFile,'BitDepth',bitdepth); 
             %write xml calibration file
             siz=size(MergeData.A);
             npy=siz(1);
@@ -658,11 +375,11 @@ for ifile=1:nbfield
             MergeData.nb_coord=2;
             MergeData.nb_dim=2;
             dt=[];
-            if isfield(Field{1},'dt')&& isnumeric(Field{1}.dt)
-                dt=Field{1}.dt;
+            if isfield(Data{1},'dt')&& isnumeric(Data{1}.dt)
+                dt=Data{1}.dt;
             end
-            for iview =2:numel(Field)
-                if ~(isfield(Field{iview},'dt')&& isequal(Field{iview}.dt,dt))
+            for iview =2:numel(Data)
+                if ~(isfield(Data{iview},'dt')&& isequal(Data{iview}.dt,dt))
                     dt=[];%dt not the same for all fields
                 end
             end
@@ -672,9 +389,9 @@ for ifile=1:nbfield
                MergeData.dt=dt;
             end
             MergeData.Time=time_i;
-            error=struct2nc(mergename,MergeData);%save result file
+            error=struct2nc(OutputFile,MergeData);%save result file
             if isempty(error)
-                display(['output file ' mergename ' written'])
+                display(['output file ' OutputFile ' written'])
             else
                 display(error)
             end
