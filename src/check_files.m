@@ -82,9 +82,10 @@ list_fct={...
     'proj_field';...%project a field on a projection object (plane, line,...)
     'read_civxdata';...reads civx data from netcdf files
     'read_civdata';... reads new civ data from netcdf files
+    'read_image';... read images or video objects
     'read_get_field';... read the list of selected variables from the GUI get_field (TODO: use read_GUI)
     'read_GUI';... %read all parameters set by a GUI as a Matlab structure
-    'read_imatext';...%read .civ files (obsolete, but can be adapted to other text documentation files) 
+    'read_image';...%read .civ files (obsolete, but can be adapted to other text documentation files) 
     'read_xls';...%read excel files containing the list of the experiments
     'reinit';...% suppress the personal parameter file 'uvmat_perso.mat'
     'rotate_points';...%'rotate_points': associated with GUI rotate_points.fig to introduce (2D) rotation parameters

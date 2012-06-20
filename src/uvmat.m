@@ -227,8 +227,6 @@ AxeData.LimEditBox=1; %initialise AxeData
 set(handles.axes3,'UserData',AxeData)
 
 %% set functions for the mouse and keyboard
-% set(handles.histo_u,'NextPlot','replacechildren');
-% set(handles.histo_v,'NextPlot','replacechildren');
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
 set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles})%set mouse action functio
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
@@ -236,9 +234,6 @@ set(hObject,'WindowButtonUpFcn',{'mouse_up',handles})
 set(hObject,'DeleteFcn',{@closefcn})%
 
 %% refresh projection plane
-% UvData.Object{1}.ProjMode='projection';%main plotting plane
-% UvData.Object{1}.DisplayHandle.uvmat=handles.axes3;
-% UvData.Object{1}.DisplayHandle.view_field=[];
 set(handles.ListObject,'Value',1)% default: empty projection objectproj_field
 set(handles.ListObject,'String',{'plane'})
 set(handles.ListObject_1,'Value',1)% default: empty projection objectproj_field
@@ -305,9 +300,6 @@ testinputfield=0;
 inputfile=[];
 Field=[];
 if exist('input','var')
-%     if ~isempty(errormsg)
-%         msgbox_uvmat('WARNING',errormsg)
-%     end
     if ishandle(handles.UVMAT_title)
         delete(handles.UVMAT_title)
     end   
@@ -920,7 +912,7 @@ if ~exist(filexml,'file')
     filexml=fullfile(RootPath,SubDir,[RootFile '.xml']);%old convention: xml within the image directroy
     if ~exist(filexml,'file')
         filexml=fullfile(RootPath,SubDir,[RootFile '.civ']); % very old convention: .civ file
-        if ~exist(filexml,'file')
+        if exist(filexml,'file')
             DocExt='.civ';
         else
             filexml='';

@@ -29,7 +29,7 @@ tsai=[];%default
 %% opening the xml file
 [tild,tild,FileExt]=fileparts(ImaDoc);
 if strcmp(FileExt,'.civ')
-    [errormsg,time,TimeUnit,mode,npx,npy,XmlData{iview}.GeometryCalib]=read_imatext(ImaDoc);
+    [errormsg,time,TimeUnit,mode,npx,npy,s.GeometryCalib]=read_imatext(ImaDoc);
     return
 end
 try
@@ -294,15 +294,14 @@ end
 %pxcmy: scale along y in pixels/cm
 function [error,time,TimeUnit,mode,npx,npy,GeometryCalib]=read_imatext(fileinput)
 %------------------------------------------------------------------------
-error=0;%default
+error='';%default
 time=[]; %default
 TimeUnit='s';
 mode='pairs';
 npx=[]; %default
 npy=[]; %default
-pxcmx=1;%default
-pxcmy=1;%default
-if exist(fileinput,'file')~=2, error=2, return;end;%input file does not exist
+GeometryCalib=[];
+if ~exist(fileinput,'file'), error=['image doc file ' fileinput ' does not exist']; return;end;%input file does not exist
 dotciv=textread(fileinput);
 sizdot=size(dotciv);
 if ~isequal(sizdot(1)-8,dotciv(1,1));

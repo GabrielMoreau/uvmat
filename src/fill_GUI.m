@@ -23,7 +23,7 @@ for ifield=1:numel(fields)
             if strcmp(get(hh,'Type'),'uitable')
                 set(hh,'Visible','on')
                 if ischar(input_data)
-                    input_data={input_data}% transform string to a single cell if needed
+                    input_data={input_data};% transform string to a single cell if needed
                 end
                 set(hh,'Data',input_data)
                 check_done=1;
