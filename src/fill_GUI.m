@@ -3,7 +3,7 @@
 function errormsg=fill_GUI(Param,handles)
 %------------------------------------------------------------------------
 errormsg='';
-fields=fieldnames(Param);
+fields=fieldnames(Param);%list of fields in Param
 for ifield=1:numel(fields)
     if isstruct(Param.(fields{ifield}))
         if isfield(handles,fields{ifield})

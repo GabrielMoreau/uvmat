@@ -484,7 +484,19 @@ set(handles.InputTable,'Data',InputTable)
 i_sum=sum(sum(i1_series,2),3);%sum of i1_series on the last index
 MaxIndex_i=max(find(i_sum>0))-1;
 MinIndex_i=min(find(i_sum>0))-1;
-if isequal(MinIndex_i,1) && exist (fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,0,i2_series(2,2),j1_series(2,2),j2_series(2,2)),'file')
+i2_min=[];
+if ~isempty(i2_series)
+    i2_min=i2_series(1,2);
+end
+j1_min=[];
+if ~isempty(j1_series)
+    j1_min=j1_series(1,2);
+end
+j2_min=[];
+if ~isempty(j2_series)
+    j2_min=j2_series(1,2);
+end
+if isequal(MinIndex_i,1) && exist (fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,0,i2_min, j1_min,j2_min),'file')
     MinIndex_i=0;
 end
 j_sum=sum(sum(j1_series,1),3);
@@ -1366,10 +1378,14 @@ function BIN_Callback(hObject, eventdata, handles)
     
 %------------------------------------------------------------------------
 % --- Main launch command, called by RUN and BATCH
-function [h_fun,Series,filexml,errormsg]=prepare_jobs(handles)
+function [h_fun,Series,filexml,errormsg]=prepare_jobs(handles,run)
 %------------------------------------------------------------------------
+h_fun=[];
 filexml='';
 errormsg='';
+if ~exist('run','var')
+    run=1;
+end
 %% Read parameters from series
 Series=read_GUI(handles.series);
 if isfield(Series,'Pairs')
@@ -1424,11 +1440,15 @@ if isfield(Series,'InputFields')&&isfield(Series.InputFields,'Field')
     end
 end
 
+if ~run
+    return
+end
+
 %% defining the ActionName function handle
 list_action=get(handles.ActionName,'String');% list menu action
 index=get(handles.ActionName,'Value');
 action= list_action{index}; % selected string
-Series.Action=action;%name of the processing programme
+%Series.Action=action;%name of the processing programme
 Series.hseries=handles.series; % handles to the series GUI
 path_series=which('series');
 list_path=get(handles.ActionName,'UserData');
@@ -1436,7 +1456,7 @@ fct_path=list_path{index}; %path stored for the function ACTION
 if ~isequal(fct_path,path_series)
     eval(['spath=which(''' action ''');']) %spath = current path of the selected function ACTION
     if ~exist(fct_path,'dir')
-        errormsg=['The prescibed function path ' fct_path ' does not exist'];
+        errormsg=['The prescribed function path ' fct_path ' does not exist'];
         return
     end
     if ~isequal(spath,fct_path)
@@ -2286,7 +2306,7 @@ set(handles.series,'UserData',SeriesData)
 % --------------------------------------------------------------------
 function MenuExportConfig_Callback(hObject, eventdata, handles)
 global Series
-[tild,Series,errormsg]=prepare_jobs(handles);
+[tild,Series,errormsg]=prepare_jobs(handles,0);
 % Series=read_GUI(handles.series);
 
 evalin('base','global Series')%make CurData global in the workspace

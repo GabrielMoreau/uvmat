@@ -4437,19 +4437,19 @@ switch mode
 end
 
 function NomType_Callback(hObject, eventdata, handles)
-set(handles.RootPath,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
-RootPath=get(handles.RootPath,'String');
-RootFile=get(handles.RootFile,'String');
-ref_i=str2num(get(handles.ref_i,'String'));
-ref_j=str2num(get(handles.ref_j,'String'));
-NomType=get(handles.NomType,'String');
-ImaExt=get(handles.ImaExt,'String');
-fileinput=fullfile_uvmat(RootPath,'',RootFile,ImaExt,NomType,ref_i,[],ref_j);
-errormsg=display_file_name(handles,fileinput);
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',errormsg)
-end
-set(handles.RootPath,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
+% set(handles.RootPath,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
+% RootPath=get(handles.RootPath,'String');
+% RootFile=get(handles.RootFile,'String');
+% ref_i=str2num(get(handles.ref_i,'String'));
+% ref_j=str2num(get(handles.ref_j,'String'));
+% NomType=get(handles.NomType,'String');
+% ImaExt=get(handles.ImaExt,'String');
+% fileinput=fullfile_uvmat(RootPath,'',RootFile,ImaExt,NomType,ref_i,[],ref_j);
+% errormsg=display_file_name(handles,fileinput);
+% if ~isempty(errormsg)
+%     msgbox_uvmat('ERROR',errormsg)
+% end
+% set(handles.RootPath,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 
 % --- Executes on selection change in ListProgram.
 function ListProgram_Callback(hObject, eventdata, handles)
