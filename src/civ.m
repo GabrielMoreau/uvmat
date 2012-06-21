@@ -23,7 +23,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 03-Jun-2012 22:16:42
+% Last Modified by GUIDE v2.5 21-Jun-2012 20:22:39
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -76,9 +76,16 @@ test_batch=0;%default: ,no batch mode available
 if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
     test_batch=strcmp(sparam.BatchParam.BatchMode,'sge'); %sge is currently the only implemented batch mod
 end
+RUNVal=get(handles.RunMode,'Value');
 if test_batch==0
-    set(handles.BATCH,'Enable','off')% put the BATCH button in grey (unactivated)
-    set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])% put the BATCH button in grey (unactivated)
+   if RUNVal>2
+       set(handles.RunMode,'Value',1)
+   end
+   set(handles.RunMode,'String',{'local';'background'})
+else
+    set(handles.RunMode,'String',{'local';'background';'cluster'})
+%     set(handles.BATCH,'Enable','off')% put the BATCH button in grey (unactivated)
+%     set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])% put the BATCH button in grey (unactivated)
 end
 if isfield(sparam.RunParam,'CivBin')
     if ~exist(sparam.RunParam.CivBin,'file')
@@ -803,7 +810,8 @@ function RUN_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.RUN, 'Enable','Off')
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
-batch=0;
+batch=get(handles.RunMode,'Value');
+% batch=0;
 errormsg=launch_jobs(hObject, eventdata, handles,batch);
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
@@ -816,26 +824,26 @@ elseif  isfield(handles,'status') %&& ~isequal(get(handles.ListPairMode,'Value')
     set(handles.status,'Value',1);%suppress status display
     status_Callback(hObject, eventdata, handles)
 end
-
-%------------------------------------------------------------------------
-% --- Executes on button press in BATCH: remote processing
-function BATCH_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-set(handles.BATCH, 'Enable','Off')
-set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])
-batch=1;
-errormsg=launch_jobs(hObject, eventdata, handles, batch);
-set(handles.BATCH, 'Enable','On')
-set(handles.BATCH,'BackgroundColor',[1 0 0])
-
-% display errors or start status callback to visualise results
-if ~isempty(errormsg)
-    display(errormsg)
-    msgbox_uvmat('ERROR',errormsg)
-elseif isfield(handles,'status')
-    set(handles.status,'Value',1);%suppress status display
-    status_Callback(hObject, eventdata, handles)
-end
+% 
+% %------------------------------------------------------------------------
+% % --- Executes on button press in BATCH: remote processing
+% function BATCH_Callback(hObject, eventdata, handles)
+% % -----------------------------------------------------------------------
+% set(handles.BATCH, 'Enable','Off')
+% set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])
+% batch=1;
+% errormsg=launch_jobs(hObject, eventdata, handles, batch);
+% set(handles.BATCH, 'Enable','On')
+% set(handles.BATCH,'BackgroundColor',[1 0 0])
+% 
+% % display errors or start status callback to visualise results
+% if ~isempty(errormsg)
+%     display(errormsg)
+%     msgbox_uvmat('ERROR',errormsg)
+% elseif isfield(handles,'status')
+%     set(handles.status,'Value',1);%suppress status display
+%     status_Callback(hObject, eventdata, handles)
+% end
 
 %-------------------------------------------------------------------
 % --- Executes on button press in status.
@@ -1089,7 +1097,7 @@ else
     return
 end
 test_interp=0; %eviter les variables test_ (LG)
-if batch
+if batch==3 %computation dispatched on a cluster
     if isfield(s,'BatchParam')
         Param.xml=s.BatchParam;
         if isfield(Param.xml,'BatchMode')
@@ -1113,7 +1121,7 @@ else % run
 end
 
 %% check batch mode supported
-if batch
+if batch==3 %computation dispatched on a cluster
     switch batch_mode
         case 'sge'
             test_command='qstat';
@@ -1186,8 +1194,8 @@ set(handles.civ,'UserData',filecell);%store for futur use of status callback
 
 
 %% create subfolders for log, cmx, nml, xml, bat
-RootBat=fileparts(filecell.nc.civ1{1,1})
-dir_list={'0_BAT','0_CMX','0_XML','0_LOG',}
+RootBat=fileparts(filecell.nc.civ1{1,1});
+dir_list={'0_BAT','0_CMX','0_XML','0_LOG'};
 for k=1:length(dir_list)
     if ~exist(fullfile(RootBat,dir_list{k}),'dir')
         mkdir(fullfile(RootBat,dir_list{k}));
@@ -1395,7 +1403,7 @@ end
 
 %% start calculation
 
-if batch  
+if batch ==3 
     switch batch_mode    
         case 'sge' %at the moment only psmn ENS Lyon uses it
             for p=1:length(batch_file_list)
@@ -1539,6 +1547,12 @@ else
                     msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
                     return
                 end
+                
+                fprintf(fid,['#!/bin/bash \n' ...
+                 '/etc/sysprofile \n'...
+                'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n']);
+ 
+                
                 fprintf(fid,['addpath(''' path_civ ''');\n']);
                 for p=1:length(batch_file_list)
                     %                 if isunix
@@ -1549,8 +1563,11 @@ else
                     fprintf(fid,['run ' batch_file_list{p} '\n']);
                     
                 end
+                fprintf(fid, 'exit \n END_MATLAB \n');
+
                 fclose(fid);
-                 eval(['run ' filename_superbat]);                     
+                 eval(['run ' filename_superbat]);                
+                 
             else
                 for p=1:length(batch_file_list)
                     fid=fopen( batch_file_list{p});
@@ -4373,7 +4390,7 @@ if isequal(Param.CivMode,'CivAll')
 end
 
 if isequal(Param.CivMode,'Matlab')
-    if batch
+    if batch>1
         cmd=['#!/bin/bash \n '...
             '#$ -cwd \n '...
             'hostname && date \n '...
@@ -4572,4 +4589,5 @@ civ2.pixcmy='1';
 civ2.convectFlow='n';
 
 
-
+% --- Executes on selection change in RunMode.
+function RunMode_Callback(hObject, eventdata, handles)
