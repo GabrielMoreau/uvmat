@@ -290,7 +290,7 @@ for i_slice=1:NbSlice
         %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
         for iview=1:nbview
             % reading input file(s)
-            [Data{iview},ParamOut,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
+            [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
             if ~isempty(errormsg)
                 errormsg=['error of input reading: ' errormsg];
                 break

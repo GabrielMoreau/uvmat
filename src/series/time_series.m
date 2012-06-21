@@ -262,7 +262,7 @@ end
 
 %% Initiate output fields
 %initiate the output structure as a copy of the first input one (reproduce fields)
-[DataOut,ParamOut,errormsg] = read_field(filecell{1,1},FileType{1},InputFields{1},1);
+[DataOut,tild,errormsg] = read_field(filecell{1,1},FileType{1},InputFields{1},1);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg])
     return

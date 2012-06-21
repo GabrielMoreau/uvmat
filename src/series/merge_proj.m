@@ -1,7 +1,7 @@
 %'merge_proj': project and concatene fieldsmerge_proj
 % can be used as a template for applying an operation (here projection and concateantion) on each field of an input series
 %------------------------------------------------------------------------
-% function GUI_config=merge_proj(Param)
+% function ParamOut=merge_proj(Param)
 %------------------------------------------------------------------------
 
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -135,6 +135,7 @@ timecell={};
 itime=0;
 NbSlice_calib={};
 XmlData=cell(1,nbview);%initiate the structures containing the data from the xml file (calibration and timing)
+
 for iview=1:nbview%Loop on views
     SubDirBase=regexprep(SubDir{iview},'\..*','');%take the root part of SubDir, before the first dot '.'
     filexml=[fullfile(RootPath{iview},SubDirBase) '.xml'];%new convention: xml at the level of the image folder
@@ -161,6 +162,7 @@ for iview=1:nbview%Loop on views
         end
     end
 end
+
 
 %% check coincidence in time for several input file series
 multitime=0;
@@ -213,6 +215,7 @@ for iview=1:nbview
 	if ~isequal(CheckImage{iview},CheckImage{1})||~isequal(CheckNc{iview},CheckNc{1})
         msgbox_uvmat('ERROR','input set of input series: need  either netcdf either image series')
     return
+    end
 end
 NomTypeOut=NomType;% output file index will indicate the first and last ref index in the series
 
@@ -221,7 +224,7 @@ NomTypeOut=NomType;% output file index will indicate the first and last ref inde
 
 %% Initiate output fields
 %initiate the output structure as a copy of the first input one (reproduce fields)
-[DataOut,ParamOut,errormsg] = read_field(filecell{1,1},FileType{1},Param.InputFields,1);
+[DataOut,tild,errormsg] = read_field(filecell{1,1},FileType{1},Param.InputFields,1);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg])
     return
@@ -254,12 +257,12 @@ for i_slice=1:NbSlice
     nbfiles=0;
     nbmissing=0;
     
-   %initiate result fields
-   
-   for ivar=1:length(DataOut.ListVarName)
-       DataOut.(DataOut.ListVarName{ivar})=0; % initialise all fields to zero
-   end
-
+    %initiate result fields
+    
+    for ivar=1:length(DataOut.ListVarName)
+        DataOut.(DataOut.ListVarName{ivar})=0; % initialise all fields to zero
+    end
+    
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
     for index=index_slice
         if checkrun
@@ -271,78 +274,91 @@ for i_slice=1:NbSlice
         
         %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
         Data=cell(1,nbview);%initiate the set Data
+        nbtime=0;
         for iview=1:nbview
             % reading input file(s)
-            [Data{iview},ParamOut,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
+            [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
             if ~isempty(errormsg)
                 errormsg=['error of input reading: ' errormsg];
                 break
             end
+            timeread(iview)=0;
+            if isfield(Data{iview},'Time')
+                    timeread(iview)=Field{iview}.Time;
+                    nbtime=nbtime+1;
+                end
             if ~isempty(NbSlice_calib)
                 Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
             end
-         %transform the input field (e.g; phys) if requested
+            %transform the input field (e.g; phys) if requested
             if ~isempty(transform_fct)
                 Data{iview}=transform_fct(Data{iview},XmlData{iview});  %transform to phys if requested
             end
-                        % field calculation (vort, div...)
-            if strcmp(FileType{1},'civx')||strcmp(FileType{1},'civ')
+            % field calculation (vort, div...)
+            if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civ')
                 Data{iview}=calc_field(Param.InputFields.FieldName,Data{iview});%calculate field (vort..)
             end
-           
-         %projection on object (gridded plane)
-            if test_object
-                [Data{iview},errormsg]=proj_field(Data{iview},ProjObject);
+            
+            %projection on object (gridded plane)
+            if Param.CheckObject
+                [Data{iview},errormsg]=proj_field(Data{iview},Param.ProjObject);
                 if ~isempty(errormsg)
                     msgbox_uvmat('ERROR',['error in merge_proge/proj_field: ' errormsg])
                     return
                 end
             end
-        end    
+        end
         %----------END LOOP ON VIEWS----------------------
-         
+        
         %% merge the nbview fields
         MergeData=merge_field(Data);
         if isfield(MergeData,'Txt')
             msgbox_uvmat('ERROR',MergeData.Txt)
             return
-        end        
-     % generating the name of the merged field
-     i1=i1_series{iview}(index);
-     if ~isempty(i2_series{iview})
-         i2=i2_series{iview}(index);
-     else
-         i2=i1;
-     end
-     j1=1;
-     j2=1;
-     if ~isempty(j1_series{iview})
-         j1=j1_series{iview}(index);
-          if ~isempty(j2_series{iview})
-              j2=j2_series{iview}(index);
-          else
-              j2=j1;
-          end
-     end
-     OutputFile=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomType{1},i1,i2,j1,j2);
-           
-     % time of the merged field:
+        end
+             % time of the merged field:
         time_i=0;%default
         if isempty(time)% time from ImaDoc prevails
             time_i=sum(timeread)/nbtime;
         else
-           % time_i=i1;
+            time_i=(time(i1,j1)+time(i2,j2))/2; %TODO: upgrade
+        end
+        % generating the name of the merged field
+        i1=i1_series{iview}(index);
+        if ~isempty(i2_series{iview})
+            i2=i2_series{iview}(index);
+        else
+            i2=i1;
+        end
+        j1=1;
+        j2=1;
+        if ~isempty(j1_series{iview})
+            j1=j1_series{iview}(index);
+            if ~isempty(j2_series{iview})
+                j2=j2_series{iview}(index);
+            else
+                j2=j1;
+            end
+        end
+        OutputFile=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomType{1},i1,i2,j1,j2);
+        
+        % time of the merged field:
+        time_i=0;%default
+        if isempty(time)% time from ImaDoc prevails 
+            time_i=sum(timeread)/nbtime;
+        else
+            % time_i=i1;
             time_i=(time(i1,j1)+time(i2,j2))/2; %TODO: upgrade
         end
         
-     % recording the merged field
-        if testima    %in case of input images an image is produced   
+        % recording the merged field
+        if CheckImage{1}    %in case of input images an image is produced
             if isa(MergeData.A,'uint8')
                 bitdepth=8;
             elseif isa(MergeData.A,'uint16')
                 bitdepth=16;
             end
-            imwrite(MergeData.A,OutputFile,'BitDepth',bitdepth); 
+            imwrite(MergeData.A,OutputFile,'BitDepth',bitdepth);
             %write xml calibration file
             siz=size(MergeData.A);
             npy=siz(1);
@@ -367,10 +383,10 @@ for i_slice=1:NbSlice
             ImaDoc.GeometryCalib=GeometryCal;
             t=struct2xml(ImaDoc);
             t=set(t,1,'name','ImaDoc');
-            save(t,[filebase_merge '.xml'])     
+            save(t,[filebase_merge '.xml'])
             display([filebase_merge '.xml saved'])
         else
-            MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','nb_coord','nb_dim','dt','Time','civ'};        
+            MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','nb_coord','nb_dim','dt','Time','civ'};
             MergeData.Conventions='uvmat';
             MergeData.nb_coord=2;
             MergeData.nb_dim=2;
@@ -386,7 +402,7 @@ for i_slice=1:NbSlice
             if isempty(dt)
                 MergeData.ListGlobalAttribute(6)=[];
             else
-               MergeData.dt=dt;
+                MergeData.dt=dt;
             end
             MergeData.Time=time_i;
             error=struct2nc(OutputFile,MergeData);%save result file
