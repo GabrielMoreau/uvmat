@@ -271,6 +271,9 @@ SeriesData=[];%dfault
 if isequal(ext,'.xml')
      Param=xml2struct(fileinput);
     fill_GUI(Param,handles);%fill the GUI with the parameters retrieved from the xml file 
+    if isfield(Param,'CheckObject')&& Param.CheckObject
+        set_object(Param.ProjObject)
+    end
     return
 elseif isequal(ext,'.xls')
     msg_box_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
