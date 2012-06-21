@@ -14,7 +14,7 @@
 % errormsg: error message, ='' by default
 %
 %INPUT
-% ObjectName: name of the input file, or movie object when the Matlab function mmreader is used
+% FileName: name of the input file
 % FileType: type of file
 %     = netcdf : netcdf file 
 %     = image : usual image as recognised by Matlab
@@ -27,6 +27,8 @@
 %     .VelType: char string giving the type of velocity data ('civ1', 'filter1', 'civ2'...)
 %     .ColorVar: variable used for vector color
 %     .Npx, .Npy: nbre of pixels along x and y (used for .vol input files)
+% num: frame number for movies
+
 function [Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,num)
 Field=[];
 if ~exist('num','var')
@@ -37,9 +39,9 @@ if ~exist('ParamIn','var')
 end
 ParamOut=ParamIn;%default
 errormsg='';
-if isfield(ParamIn,'VelType')
-VelType=ParamIn.VelType;
-end
+% if isfield(ParamIn,'VelType')
+% VelType=ParamIn.VelType;
+% end
 A=[];
 %% distingush different input file types
 try
