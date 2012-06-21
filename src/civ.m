@@ -481,13 +481,13 @@ if ~isempty(ext_imadoc)
             nom_type_read=[];
             if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
                 %[PP,FF,fc,str2,str_a,str_b,ext_ima_read,nom_type_read]=name2display(XmlData.Heading.ImageName);
-                [tild,tild,tild,tild,tild,tild,tild,tild,nom_type_read]=fileparts_uvmat(XmlData.Heading.ImageName);
+                [~,tild,tild,tild,tild,tild,tild,tild,nom_type_read]=fileparts_uvmat(XmlData.Heading.ImageName);
                 fullname=fullfile(fileparts(RootName),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file,
                 if ~exist(fullname,'file')
                     msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
                 end
             end
-            if isfield(XmlData,'Time')
+            if isfield(XmlData,'Time') && ~isempty(XmlData.Time)
                 time=XmlData.Time;
                 %transform .Time to a column vector if it is a line vector thenomenclature uses a single index: correct possible bug in xml
                 if isequal(MaxIndex_i,1) && ~isequal(MaxIndex_j,1)% .Time is a line vector
@@ -501,11 +501,11 @@ if ~isempty(ext_imadoc)
             if isfield(XmlData,'TimeUnit')
                 TimeUnit=XmlData.TimeUnit;
             end
-
+            
             if isfield(XmlData,'GeometryCalib')
                 tsai=XmlData.GeometryCalib;
-                if isfield(tsai,'fx_fy')  
-                    pxcm_search=max(tsai.fx_fy(1),tsai.fx_fy(2));%pixels:cm estimated for the search range 
+                if isfield(tsai,'fx_fy')
+                    pxcm_search=max(tsai.fx_fy(1),tsai.fx_fy(2));%pixels:cm estimated for the search range
                 end
                 if isfield(tsai,'CoordUnit')
                     CoordUnit=tsai.CoordUnit;
@@ -517,36 +517,26 @@ if ~isempty(ext_imadoc)
             elseif error==1, msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
             end
             nom_type_ima='001a';
-        case {'.avi','.AVI'}
-            nom_type_ima='*';
-            ImaExt=ext_imadoc;
-            set(handles.ListPairMode,'Value',1);
-            set(handles.ListPairMode,'String',{'series(Di)'})
-            dt=0.04;%default
-            if exist([RootName ext_imadoc],'file')==2
-                hhh=which('videoreader');
-                if isempty(hhh)%use old video function of matlab
-                    imainfo=aviinfo([RootName ext_imadoc]);%read infos on the avi movie TO REPLACE mmreader
-                    dt=1/imainfo.FramesPerSecond;%time interval between successive frames
-                    MaxIndex_i=imainfo.NumFrames;%number of frames
-                    %         XmlData.Time=(0:1/imainfo.FramesPerSecond:(imainfo.NumFrames-1)/imainfo.FramesPerSecond)';
-                    %         nbfield=imainfo.NumFrames;
-                    %         set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FramesPerSecond) 'ms']);%display the elementary time interval in millisec
-                    %         ColorType=imainfo.ImageType;%='truecolor' for color images
-                else %use video function videoreader of matlab
-                    imainfo=get(videoreader([RootName ext_imadoc]));%read infos on the avi movie
-                    dt=1/imainfo.FrameRate;%time interval between successive frames
-                    MaxIndex_i=imainfo.NumberOfFrames;%number of frames
-                    %         XmlData.Time=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames-1)/imainfo.FrameRate)';
-                    %         nbfield=imainfo.NumberOfFrames;
-                    %         set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
-                    %         ColorType='truecolor';
-                end
-                
-                time=(dt*(0:MaxIndex_i-1))';%list of image times
-                TimeUnit='s';
-            end
-            set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box back to whiter
+    end
+    if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
+        nom_type_ima='*';
+        %ImaExt=ext_imadoc;
+        set(handles.ListPairMode,'Value',1);
+        set(handles.ListPairMode,'String',{'series(Di)'})
+        dt=0.04;%default
+        hhh=which('videoreader');
+        if strcmp(FileType,'mmreader')%use old video function of matlab
+            imainfo=aviinfo(fileinput);%read infos on the avi movie TO REPLACE mmreader
+            dt=1/imainfo.FramesPerSecond;%time interval between successive frames
+            MaxIndex_i=imainfo.NumFrames;%number of frames
+        else %use video function videoreader of matlab
+            imainfo=get(videoreader(fileinput));%read infos on the avi movie
+            dt=1/imainfo.FrameRate;%time interval between successive frames
+            MaxIndex_i=imainfo.NumberOfFrames;%number of frames
+        end       
+        time=(dt*(0:MaxIndex_i-1))';%list of image times
+        TimeUnit='s';
+        set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box back to whiter
     end
 end
 %% timing display

@@ -682,6 +682,16 @@ end
 %% update time table
 if ~isempty(time)
 TimeTable=get(handles.TimeTable,'Data');
+first_i=str2num(get(handles.num_first_i,'String'));
+last_i=str2num(get(handles.num_last_i,'String'));
+first_j=str2num(get(handles.num_first_i,'String'));
+last_j=str2num(get(handles.num_last_i,'String'));
+MinIndexTable=get(handles.MinIndex,'Data');
+MinIndex_i=MinIndexTable{iview,1};
+MinIndex_j=MinIndexTable{iview,2};
+MaxIndexTable=get(handles.MaxIndex,'Data');
+MaxIndex_i=MaxIndexTable{iview,1};
+MaxIndex_j=MaxIndexTable{iview,2};
 if isempty(MinIndex_j)
     if MinIndex_i>0
     TimeTable{iview,1}=time(MinIndex_i);
