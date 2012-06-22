@@ -18,6 +18,7 @@ function out=convert_string(ss)
 info=whos('ss');
 switch info.class
     case 'struct'
+        out=[];%default
         names = fieldnames(ss);
         for k=1:length(names)
             out.(names{k})=convert_string(ss.(names{k}));
@@ -37,6 +38,7 @@ switch info.class
             out=str2num(ss);
         end
     case 'cell'
+        out=[];%default
         for ilist=1:numel(ss)
             if ~isempty(str2num(ss{ilist}))
             out(ilist,:)=str2num(ss{ilist});

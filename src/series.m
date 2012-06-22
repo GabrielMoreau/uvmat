@@ -1619,8 +1619,8 @@ set(handles.ProjObject,'Visible','off');
 set(handles.CheckMask,'Visible','off')
 set(handles.Mask,'Visible','off')
 % set(handles.OutputDirExt,'Visible','off');
-set(handles.ParamKey,'Visible','off')
-set(handles.ParamVal,'Visible','off')
+% set(handles.ParamKey,'Visible','off')
+% set(handles.ParamVal,'Visible','off')
 ParamKey={};
 set(handles.FieldName,'Enable','off')
 set(handles.VelType,'Enable','off')
