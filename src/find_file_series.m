@@ -55,18 +55,12 @@ NbFrame=1;
 
 switch FileType
     case 'multimage'
-%    NomType='*';
-%    i1_series=(1:FileInfo.NbFrame)';
-    NbFrame=FileInfo.NbFrame;
+    NbFrame=FileInfo.NumberOfFrames;
     case {'video','mmreader'}
     NomType='*';
     NbFrame=FileInfo.NumberOfFrames;
-%     i1_series=(1:FileInfo.NumberOfFrames)';
 end 
-% if strcmp( FileType,'multimage')||strcmp( FileType,'video')||strcmp( FileType,'mmreader')
-%     NomType='*';
-%     i1_series=(1:FileInfo.NumberOfFrames)';
-% end
+
 RootFile_i='';
 NomTypePref='';
 if strcmp(NomType,'')||strcmp(NomType,'*')
@@ -90,9 +84,8 @@ else
             rr=regexp(fileinput_end,'^(?<i1>_\d+)','names');
         end
         if ~isempty(rr)
-            RootFile_i=[RootFile rr.i1];
-           % checkpair=~isempty(regexp(NomType,'-','once'))||~isempty(regexp(NomType,'ab$','once'))||~isempty(regexp(NomType,'AB$','once'));%case of PIV results
-            if exist(fullfile(RootPath,SubDir,[RootFile_i '.xml']),'file') || exist(fullfile(RootPath,[RootFile_i '.xml']),'file')
+            RootFile_i=[RootFile rr.i1];% new root file
+            if exist(fullfile(RootPath,SubDir,[RootFile_i '.xml']),'file') || (strcmp(FileExt,'.nc') && exist(fullfile(RootPath,[RootFile_i '.xml']),'file'))
                 RootFile=RootFile_i;
                 NomTypePref=r.tiretnum;
                 NomType=regexprep(NomType,['^'  NomTypePref],'');

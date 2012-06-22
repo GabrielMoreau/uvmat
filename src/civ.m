@@ -23,7 +23,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 21-Jun-2012 20:22:39
+% Last Modified by GUIDE v2.5 21-Jun-2012 23:37:47
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -301,8 +301,8 @@ drawnow
 %% enable RUN, BATCH button and 'status' display
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])%set RUN button to red color
-set(handles.BATCH,'Enable','On')
-set(handles.BATCH,'BackgroundColor',[1 0 0])%set BATCH button to red color
+% set(handles.BATCH,'Enable','On')
+% set(handles.BATCH,'BackgroundColor',[1 0 0])%set BATCH button to red color
 if isfield(handles,'status')
     set(handles.status,'Value',0);       %suppress the 'status' display
     status_Callback([], [], handles)
@@ -338,7 +338,7 @@ if strcmp(ExtInput,'.nc')
     end
     % settings for  new civ data,
     if strcmp(Data.Conventions,'uvmat/civdata')% case of new civ data,
-        set(handles.ListProgram,'Value',2) %select civ/Matlab by default
+        set(handles.Program,'Value',2) %select civ/Matlab by default
         ListProgram_Callback([],[], handles)
         if ~isempty(Data.CivStage)%test for civ files
             ind_opening=Data.CivStage;
@@ -354,7 +354,7 @@ if strcmp(ExtInput,'.nc')
         end
         % settings for civx data,
     elseif ~isempty(Data.absolut_time_T0')% case of  civx data,
-        set(handles.ListProgram,'Value',1) %select Cix by default
+        set(handles.Program,'Value',1) %select Cix by default
         ListProgram_Callback([],[], handles)
         if ~isempty(Data.fix2)
             ind_opening=5;
@@ -387,7 +387,7 @@ if strcmp(ExtInput,'.nc')
     imageinput=fullfile_uvmat(RootPath,regexprep(SubDir,'.civ(_?)(\d*)$',''),RootFile,'.png',NomTypeIma,i1,[],j1);
 end
 
-%no corresponding image found, select manually with the browser
+%% no corresponding image found, select manually with the browser
 ImaExt=ExtInput;
 if ~isempty(NomTypeNc)
     %no corresponding image found, select manually with the browser
@@ -399,18 +399,19 @@ if ~isempty(NomTypeNc)
             '*.avi;*.AVI','.avi movie files'; ...
             '*.*',  'All Files (*.*)'};
         [FileName, PathName] = uigetfile( menu, 'Pick an input image file',fileparts(fileparts(fileinput)));
-        imageinput=[PathName FileName];%complete file name
-     
+        fileinput=[PathName FileName];%complete file name
+        if ~exist(fileinput,'file')
+            return %abandon of the browser is cancelled
+        end
     end    
-    fileinput=imageinput;
+    %fileinput=imageinput;
 end
 
 %% scan the image file series 
 [FilePath,FileName,ImaExt]=fileparts(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubdirImages,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName ImaExt]);
-
+[RootPath,SubdirImages,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName ImaExt]);
 switch FileType
     case {'image','multimage','video','mmreader'}
     otherwise
@@ -447,22 +448,26 @@ MaxIndex_i=max(i1_series(i1_series>0));
 MaxIndex_j=max(j1_series(j1_series>0));
 
 %% look for an image documentation file
-ext_imadoc='';%default
-SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-filexml=fullfile(RootPath,[SubDirBase '.xml']);% new convention: xml above the image dir
-if ~exist(filexml,'file')
-    filexml=fullfile(RootPath,SubDir,[RootFile '.xml']);%old convention: xml within the image directroy
-end
-RootName=fullfile(RootPath,RootFile);
-if exist(filexml,'file')
-    ext_imadoc='.xml';
-elseif exist(fullfile(RootPath,SubDir,[RootFile '.civ']),'file')
-    ext_imadoc='.civ';
-    fileciv=fullfile(RootPath,SubDir,[RootFile '.civ']);
-elseif exist([RootName '.avi'],'file')
-    ext_imadoc='.avi';
-elseif exist([RootName '.AVI'],'file')
-    ext_imadoc='.AVI';
+XmlFileName=find_imadoc(RootPath,SubDir,RootFile,FileExt);
+% SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
+% filexml=fullfile(RootPath,[SubDirBase '.xml']);% new convention: xml above the image dir
+% if ~exist(filexml,'file')
+%     filexml=fullfile(RootPath,SubDir,[RootFile '.xml']);%old convention: xml within the image directroy
+%     if ~exist(filexml,'file')
+%         filexml=fullfile(RootPath,SubDir,[RootFile '.civ']);%very old convention: .civ file
+%         if ~exist(filexml,'file')
+%             filexml='';
+%         end
+%     end
+% end
+if isempty(XmlFileName)
+    if (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
+        ext_imadoc=ImaExt;% the timing from the video movie is used
+    else
+        ext_imadoc='';
+    end
+else
+    [tild,tild,ext_imadoc]=fileparts(XmlFileName);
 end
 set(handles.ImaDoc,'String',ext_imadoc)% display the extension name for the image documentation file used
 
@@ -471,74 +476,52 @@ time=[];
 TimeUnit=''; %default
 CoordUnit='';%default
 pxcm_search=1;
-if ~isempty(ext_imadoc)
+if ~isempty(XmlFileName)
     set(handles.ImaDoc,'BackgroundColor',[1 1 0]) % set edit box to yellow cloro to indicate that the file reading is beginning
     drawnow
-    switch ext_imadoc
-        case '.xml'
-            [XmlData,warntext]=imadoc2struct(filexml);
-            ext_ima_read=[];
-            nom_type_read=[];
-            if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
-                %[PP,FF,fc,str2,str_a,str_b,ext_ima_read,nom_type_read]=name2display(XmlData.Heading.ImageName);
-                [~,tild,tild,tild,tild,tild,tild,tild,nom_type_read]=fileparts_uvmat(XmlData.Heading.ImageName);
-                fullname=fullfile(fileparts(RootName),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file,
-                if ~exist(fullname,'file')
-                    msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
-                end
-            end
-            if isfield(XmlData,'Time') && ~isempty(XmlData.Time)
-                time=XmlData.Time;
-                %transform .Time to a column vector if it is a line vector thenomenclature uses a single index: correct possible bug in xml
-                if isequal(MaxIndex_i,1) && ~isequal(MaxIndex_j,1)% .Time is a line vector
-                    if numel(nom_type_read)>=2 && isempty(regexp(nom_type_read(2:end),'\D','once'))
-                        time=time';
-                        MaxIndex_i=MaxIndex_j;
-                        MaxIndex_j=1;
-                    end
-                end
-            end
-            if isfield(XmlData,'TimeUnit')
-                TimeUnit=XmlData.TimeUnit;
-            end
-            
-            if isfield(XmlData,'GeometryCalib')
-                tsai=XmlData.GeometryCalib;
-                if isfield(tsai,'fx_fy')
-                    pxcm_search=max(tsai.fx_fy(1),tsai.fx_fy(2));%pixels:cm estimated for the search range
-                end
-                if isfield(tsai,'CoordUnit')
-                    CoordUnit=tsai.CoordUnit;
-                end
-            end
-        case '.civ'% OBSOLETE: case of .civ image documentation file
-            [error,time,TimeUnit,mode,npx,npy]=read_imatext(fileciv);
-            if error==2, msgbox_uvmat('WARNING',['no file ' fileciv]);
-            elseif error==1, msgbox_uvmat('WARNING','inconsistent number of fields in the .civ file');
-            end
-            nom_type_ima='001a';
+    [XmlData,warntext]=imadoc2struct(XmlFileName);
+    nom_type_read=[];
+    if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
+        [~,tild,tild,tild,tild,tild,tild,tild,nom_type_read]=fileparts_uvmat(XmlData.Heading.ImageName);
+        fullname=fullfile(fileparts(RootName),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file,
+        if ~exist(fullname,'file')
+            msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
+        end
     end
-    if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
-        nom_type_ima='*';
-        %ImaExt=ext_imadoc;
-        set(handles.ListPairMode,'Value',1);
-        set(handles.ListPairMode,'String',{'series(Di)'})
-        dt=0.04;%default
-        hhh=which('videoreader');
-        if strcmp(FileType,'mmreader')%use old video function of matlab
-            imainfo=aviinfo(fileinput);%read infos on the avi movie TO REPLACE mmreader
-            dt=1/imainfo.FramesPerSecond;%time interval between successive frames
-            MaxIndex_i=imainfo.NumFrames;%number of frames
-        else %use video function videoreader of matlab
-            imainfo=get(videoreader(fileinput));%read infos on the avi movie
-            dt=1/imainfo.FrameRate;%time interval between successive frames
-            MaxIndex_i=imainfo.NumberOfFrames;%number of frames
-        end       
-        time=(dt*(0:MaxIndex_i-1))';%list of image times
-        TimeUnit='s';
-        set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box back to whiter
+    if isfield(XmlData,'Time') && ~isempty(XmlData.Time)
+        time=XmlData.Time;
+        %transform .Time to a column vector if it is a line vector thenomenclature uses a single index: correct possible bug in xml
+        if isequal(MaxIndex_i,1) && ~isequal(MaxIndex_j,1)% .Time is a line vector
+            if numel(nom_type_read)>=2 && isempty(regexp(nom_type_read(2:end),'\D','once'))
+                time=time';
+                MaxIndex_i=MaxIndex_j;
+                MaxIndex_j=1;
+            end
+        end
+    end
+    if isfield(XmlData,'TimeUnit')
+        TimeUnit=XmlData.TimeUnit;
+    end
+    if isfield(XmlData,'GeometryCalib')
+        tsai=XmlData.GeometryCalib;
+        if isfield(tsai,'fx_fy')
+            pxcm_search=max(tsai.fx_fy(1),tsai.fx_fy(2));%pixels:cm estimated for the search range
+        end
+        if isfield(tsai,'CoordUnit')
+            CoordUnit=tsai.CoordUnit;
+        end
     end
 end
+if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
+    set(handles.ListPairMode,'Value',1);
+    set(handles.ListPairMode,'String',{'series(Di)'})
+    dt=1/get(MovieObject,'FrameRate');%time interval between successive frames
+    MaxIndex_i=get(MovieObject,'NumberOfFrames');
+    time=(dt*(0:MaxIndex_i-1))';%list of image times
+    TimeUnit='s';
+    set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box back to whiter
+end
+
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
 if numel(time)>=2 % if there are at least two time values to define dt
@@ -546,9 +529,6 @@ if numel(time)>=2 % if there are at least two time values to define dt
     MaxIndex_j=min(size(time,2),MaxIndex_j);
     time=[zeros(size(time,1),1) time]; %insert a vertical line of zeros (to deal with zero file indices)
     time=[zeros(1,size(time,2)); time]; %insert a horizontal line of zeros
-    set(handles.ImaDoc,'UserData',time); %store the matrix of times
-    set(handles.dt_unit,'String',['dt in m' TimeUnit]);
-    set(handles.TimeUnit,'String',TimeUnit);
 else
     set(handles.ImaDoc,'String',''); %xml file not used for timing
     time=(i1_series(:,1)+0:size(i1_series,1)-1);% time=index i
@@ -800,9 +780,9 @@ function RUN_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.RUN, 'Enable','Off')
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
-batch=get(handles.RunMode,'Value');
+%batch=get(handles.RunMode,'Value');
 % batch=0;
-errormsg=launch_jobs(hObject, eventdata, handles,batch);
+errormsg=launch_jobs(hObject, eventdata, handles);
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 
@@ -1020,7 +1000,7 @@ function close_GUI(hObject, eventdata)
 
 %------------------------------------------------------------------------
 % --- Main lauch command, called by RUN and BATCH
-function errormsg=launch_jobs(hObject, eventdata, handles, batch)
+function errormsg=launch_jobs(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 errormsg='';%default
 
@@ -1086,8 +1066,8 @@ else
     errormsg=['no file ' xmlfile];
     return
 end
-test_interp=0; %eviter les variables test_ (LG)
-if batch==3 %computation dispatched on a cluster
+% test_interp=0; %eviter les variables test_ (LG)
+if strcmp(Param.RunMode,'cluster') %computation dispatched on a cluster
     if isfield(s,'BatchParam')
         Param.xml=s.BatchParam;
         if isfield(Param.xml,'BatchMode')
@@ -1111,7 +1091,7 @@ else % run
 end
 
 %% check batch mode supported
-if batch==3 %computation dispatched on a cluster
+if strcmp(Param.RunMode,'cluster') %computation dispatched on a cluster 
     switch batch_mode
         case 'sge'
             test_command='qstat';
@@ -1126,15 +1106,15 @@ if batch==3 %computation dispatched on a cluster
 end
 
 %% check if the binaries exist
-ListProgram=get(handles.ListProgram,'String');
-Param.CivMode=ListProgram{get(handles.ListProgram,'Value')};
+% ListProgram=get(handles.Program,'String');
+% Param.CivMode=ListProgram{get(handles.Program,'Value')};
 binary_list={};
-switch Param.CivMode
+switch Param.Program
     case 'CivX'
         binary_list={'Civ1Bin','Civ2Bin','PatchBin','FixBin'};
     case 'CivAll'% desactivated option
         binary_list={'Civ'};
-    case 'Matlab'
+    case 'civ_matlab.sh'% compiled version of civ_matlab 
         if batch
             binary_list={'CivmBin'};
             % verifier MenuMatlab installe sur le cluster
@@ -1193,20 +1173,19 @@ for k=1:length(dir_list)
 end
 
     
-%% PARTIE A VERIFIER
-%output netcdf file (without extention) Joel what does this mean ?
+%% get information on input images or movies
 nbfield=numel(i1_civ1);
 nbslice=numel(j1_civ1);
-if ~strcmp(Param.CivMode,'CivX')
+% if strcmp(Param.Program,'civ_matlab')
     if Param.CheckCiv1
-        [Param.Civ1.FileTypeA,FileInfo,Param.Civ1.ImageA]=get_file_type(filecell.ima1.civ1{1});
-        [Param.Civ1.FileTypeB,FileInfo,Param.Civ1.ImageB]=get_file_type(filecell.ima2.civ1{1});
+        [Param.Civ1.FileTypeA,ImageInfoA_civ1,Param.Civ1.ImageA]=get_file_type(filecell.ima1.civ1{1});
+        [Param.Civ1.FileTypeB,ImageInfoB_civ1,Param.Civ1.ImageB]=get_file_type(filecell.ima2.civ1{1});
     end
     if Param.CheckCiv2
-        [Param.Civ2.FileTypeA,FileInfo,Param.Civ2.ImageA]=get_file_type(filecell.ima1.civ2{1});
-        [Param.Civ2.FileTypeB,FileInfo,Param.Civ2.ImageB]=get_file_type(filecell.ima2.civ2{1});
+        [Param.Civ2.FileTypeA,FileInfoA_civ2,Param.Civ2.ImageA]=get_file_type(filecell.ima1.civ2{1});
+        [Param.Civ2.FileTypeB,FileInfoB_civ2,Param.Civ2.ImageB]=get_file_type(filecell.ima2.civ2{1});
     end
-end
+% end
 
 %% MAIN LOOP
 time=get(handles.ImaDoc,'UserData'); %get the set of times
@@ -1216,7 +1195,6 @@ batch_file_list=[];%should be renamed file_list, can be used for xml or bash fil
  
 for ifile=1:nbfield
     for j=1:nbslice
-
             
         % define output file name
         if Param.CheckCiv2==1 || Param.CheckFix2==1 || Param.CheckPatch2==1
@@ -1235,29 +1213,15 @@ for ifile=1:nbfield
                 Param.Civ1.Dt=1;
             end
             Param.Civ1.Time=((time(i2_civ1(ifile)+1,j2_civ1(j)+1)+time(i1_civ1(ifile)+1,j1_civ1(j)+1))/2);
-            if strcmp(Param.CivMode,'CivX')
+            if strcmp(Param.Program,'CivX')
                 Param.Civ1.term_a=num2stra(j1_civ1(j),nom_type_nc);%UTILITE?
                 Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%
             end
-            if isfield(Param.Civ1,'FileTypeA')&&(strcmp(Param.Civ1.FileTypeA,'video')|| strcmp(Param.Civ1.FileTypeA,'mmreader'))
-                %   ImageInfo=get(VideoReader(fullfile(Param.RootPath,[Param.RootFile Param.ImaExt])));
-                ImageInfo=get(Param.Civ1.ImageA);
-                %                 elseif strcmp(Param.Civ1.FileTypeA,'mmreader')
-                %                     ImageInfo=get(mmreader(fullfile(Param.RootPath,[Param.RootFile Param.ImaExt])));
-                Param.Civ1.ImageBitDepth=ImageInfo.BitsPerPixel/3;
-                if batch
-                    Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};%file name must be used for batch instead of video object
-                    Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
-                end
-            else
-                Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};
-                Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
-               % form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
-                ImageInfo=imfinfo(filecell.ima1.civ1{1,1});%read the first image to get the size
-                Param.Civ1.ImageBitDepth=ImageInfo.BitDepth;
-            end
-            Param.Civ1.ImageWidth=ImageInfo.Width;
-            Param.Civ1.ImageHeight=ImageInfo.Height;
+            Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};
+            Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
+            Param.Civ1.ImageBitDepth=FileInfoA_civ1.BitDepth;
+            Param.Civ1.ImageWidth=FileInfoA_civ1.Width;
+            Param.Civ1.ImageHeight=FileInfoA_civ1.Height;
             Param.Civ1.FrameIndexA=i1_civ1(ifile);
             Param.Civ1.FrameIndexB=i2_civ1(ifile);
             % read mask )parameters
@@ -1277,7 +1241,6 @@ for ifile=1:nbfield
                     if ~isnan(nbslice_grid)
                         i1_grid=mod(i1_civ1(ifile)-1,nbslice_grid)+1;
                         Param.Civ1.Grid=[filecell.filebase '_' fullfile_uvmat('','',Param.Civ1.Grid,'.grid','_1',i1_grid)];
-                        %                         Param.Civ1.Grid=[filecell.filebase '_' name_generator(Param.Civ1.Grid,i1_grid,1,'.grid','_i')];
                         if ~exist(Param.Civ1.GridName,'file')
                             errormsg='grid file absent for civ1';
                             return
@@ -1292,31 +1255,15 @@ for ifile=1:nbfield
         end
         
         if Param.CheckCiv2==1
-            if isfield(Param.Civ2,'FileTypeA') &&(strcmp(Param.Civ2.FileTypeA,'video')|| strcmp(Param.Civ2.FileTypeA,'mmreader'))
-                %   ImageInfo=get(VideoReader(fullfile(Param.RootPath,[Param.RootFile Param.ImaExt])));
-                ImageInfo=get(Param.Civ2.ImageA);
-                %                 elseif strcmp(Param.Civ1.FileTypeA,'mmreader')
-                %                     ImageInfo=get(mmreader(fullfile(Param.RootPath,[Param.RootFile Param.ImaExt])));
-                Param.Civ2.ImageBitDepth=ImageInfo.BitsPerPixel/3;
-                if batch
-                    Param.Civ2.ImageA=filecell.ima1.civ2{ifile,j};%file name must be used for batch instead of video object
-                    Param.Civ2.ImageB=filecell.ima2.civ2{ifile,j};
-                end
-            else
-                Param.Civ2.ImageA=filecell.ima1.civ2{ifile,j};
-                Param.Civ2.ImageB=filecell.ima2.civ2{ifile,j};
-                form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
-                ImageInfo=imfinfo(filecell.ima1.civ2{1,1});%read the first image to get the size
-                Param.Civ2.ImageBitDepth=ImageInfo.BitDepth;
-            end
-            
+            Param.Civ2.ImageA=filecell.ima1.civ2{ifile,j};
+            Param.Civ2.ImageB=filecell.ima2.civ2{ifile,j};          
             if ~checkframe %&& size(time,1)>=i2_civ2(ifile) && size(time,2)>=j2_civ2(j)
                 Param.Civ2.Dt=time(i2_civ2(ifile)+1,j2_civ2(j)+1)-time(i1_civ2(ifile)+1,j1_civ2(j)+1);
             else
                 Param.Civ2.Dt=1;
             end
             Param.Civ2.Time=(time(i2_civ2(ifile)+1,j2_civ2(j)+1)+time(i1_civ2(ifile)+1,j1_civ2(j)+1))/2;
-            if strcmp(Param.CivMode,'CivX')
+            if strcmp(Param.Program,'CivX')
                 Param.Civ2.term_a=num2stra(j1_civ2(j),nom_type_nc);
                 Param.Civ2.term_b=num2stra(j2_civ2(j),nom_type_nc);
             end
@@ -1345,31 +1292,21 @@ for ifile=1:nbfield
                     end
                 end
             end
-            form=imformats(regexprep(get(handles.ImaExt,'String'),'^.',''));%look for image formats
-            if isempty(form)
-                % ImageInfo=get(VideoReader(fullfile());
-                Param.Civ2.ImageBitDepth=ImageInfo.BitsPerPixel/3;
-            else
-                ImageInfo=imfinfo(filecell.ima1.civ2{1,1});%read the first image to get the size
-                Param.Civ2.ImageBitDepth=ImageInfo.BitDepth;
-            end
-            Param.Civ2.ImageWidth=ImageInfo.Width;
-            Param.Civ2.ImageHeight=ImageInfo.Height;
-            Param.Civ2.FrameIndexA=i1_civ2(ifile);
-            Param.Civ2.FrameIndexB=i2_civ2(ifile);
-            
-        end
-        
-        
-        % write the command and eventually the cmx, xml or nml files
-        cmd=write_cmd(Param,batch);
-        write_param(Param);
-        
 
-        
+            Param.Civ2.ImageBitDepth=FileInfoA_civ2.BitDepth;
+            Param.Civ2.ImageWidth=FileInfoA_civ2.Width;
+            Param.Civ2.ImageHeight=FileInfoA_civ2.Height;
+            Param.Civ2.FrameIndexA=i1_civ2(ifile);
+            Param.Civ2.FrameIndexB=i2_civ2(ifile);           
+        end
+       
+        % write the command and eventually the cmx, xml or nml files
+        cmd=write_cmd(Param);
+        write_param(Param);
+              
         % create the file used in run or batch
-        switch Param.CivMode
-            case 'Matlab'
+        switch Param.Program
+            case {'civ_matlab','civ_matlab.sh'}
                 filename_bat=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_BAT$2$3.m');
             case {'CivX','CivAll'}
                 filename_bat=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_BAT$2$3.bat');
@@ -1392,8 +1329,9 @@ for ifile=1:nbfield
 end
 
 %% start calculation
-
-if batch ==3 
+%computation on cluster
+%if batch ==3
+ if  strcmp(Param.RunMode,'cluster') 
     switch batch_mode    
         case 'sge' %at the moment only psmn ENS Lyon uses it
             for p=1:length(batch_file_list)
@@ -1525,12 +1463,12 @@ if batch ==3
                     eval(['!oarsub -S ' filename_oarscript]);
             end
     end
-else
-    switch Param.CivMode
-        case 'Matlab'
-            
-            background=1;
-            if background
+ else %computation on local computer 
+    switch Param.Program
+        case {'civ_matlab','civ_matlab.sh'}
+%             
+%             background=1;
+            if strcmp(Param.RunMode,'background')
                 filename_superbat=fullfile(RootBat,'job_list.m');
                 fid=fopen(filename_superbat,'w');
                 if fid==-1
@@ -1688,8 +1626,8 @@ function [filecell,i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_ci
 %------------------------------------------------------------------------
 filecell=[];%default
 errormsg='';
-ListProgram=get(handles.ListProgram,'String');
-CivMode=ListProgram{get(handles.ListProgram,'Value')};%Program to use , CivX or Matlab
+ListProgram=get(handles.Program,'String');
+CivMode=ListProgram{get(handles.Program,'Value')};%Program to use , CivX or Matlab
 
 %% get the root name and check dir
 RootPath=get(handles.RootPath,'String');
@@ -3890,10 +3828,10 @@ if ~isempty(errormsg)
 end
 set(handles.RootPath,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 
-% --- Executes on selection change in ListProgram.
-function ListProgram_Callback(hObject, eventdata, handles)
-ListProgram=get(handles.ListProgram,'String');
-Program=ListProgram{get(handles.ListProgram,'value')};
+% --- Executes on selection change in Program.
+function Program_Callback(hObject, eventdata, handles)
+ListProgram=get(handles.Program,'String');
+Program=ListProgram{get(handles.Program,'value')};
 switch Program
     case 'CivX'
         set(handles.num_MaxDiff,'Visible','off')
@@ -3910,7 +3848,7 @@ switch Program
         set(handles.CheckThreshold,'Visible','off')
         set(handles.CheckDeformation,'Value',1)
         set(handles.CheckDecimal,'Value',1)
-    case 'Matlab'
+    case {'civ_matlab','civ_matlab.sh'}
         set(handles.num_MaxDiff,'Visible','on')
         set(handles.num_MaxVel,'Visible','on')
         set(handles.title_MaxVel,'Visible','on')
@@ -3986,7 +3924,7 @@ function errormsg=write_param(Param)
 %pixels per cm and matrix of the image times, read from the .civ file by uvmat
 %changes : filename_cmx -> filename ( no extension )
 errormsg='';
-switch Param.CivMode
+switch Param.Program
     case 'CivX'
         if Param.CheckCiv1
             filename=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_CMX$2$3.civ1.cmx');
@@ -4128,18 +4066,18 @@ switch Param.CivMode
             fprintf(fid, ['ImageUsedBefore ' regexprep(Param.Civ2.filename_nc1,'\\','\\\\') '\n']);
             fclose(fid);
         end
-    case 'Matlab'
+    case {'civ_matlab','civ_matlab.sh'}
         filename=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_XML$2$3.xml');
         save(struct2xml(Param),filename);
 end
 
 
-function cmd=write_cmd(Param,batch)
+function cmd=write_cmd(Param)
 
 % initiate system command
 cmd=[];
 
-switch Param.CivMode
+switch Param.Program
     case 'CivX'
         if isunix % check: necessaire aussi en RUN?
             cmd=[cmd '#!/bin/bash \n '...
@@ -4159,7 +4097,7 @@ end
 filename=regexprep(Param.OutputFile,'.nc','');
 
 if Param.CheckCiv1
-    switch Param.CivMode
+    switch Param.Program
         case 'CivX'
             if(isunix) %unix (or Mac) system
                 cmd=[cmd 'cp -f ' regexprep(filename,'(\w+)/(\w+$)','$1/0_CMX/$2.civ1.cmx ') regexprep(filename,'(\w+)/(\w+$)','$1/$2.cmx \n')...% the cmx file gives the name to the nc file
@@ -4188,7 +4126,7 @@ if Param.CheckCiv1
 end
 
 if Param.CheckFix1
-    switch Param.CivMode
+    switch Param.Program
         case 'CivX'
             cmd=[cmd...
                 cmd_fix(Param,'Fix1') '\n'];
@@ -4215,7 +4153,7 @@ end
 
 %CheckPatch1
 if Param.CheckPatch1
-    switch Param.CivMode
+    switch Param.Program
         case 'CivX'
             cmd=[cmd...
                 cmd_patch(Param,'Patch1') '\n'];
@@ -4266,7 +4204,7 @@ if Param.CheckPatch1
 end
 
 if Param.CheckCiv2
-    switch Param.CivMode
+    switch Param.Program
         case 'CivX'
             if(isunix)
                 cmd=[cmd 'cp -f '  regexprep(filename,'(\w+)/(\w+$)','$1/0_CMX/$2.civ2.cmx ') regexprep(filename,'(\w+)/(\w+$)','$1/$2.cmx \n')...
@@ -4296,7 +4234,7 @@ end
 
 % CheckFix2
 if Param.CheckFix2==1
-    switch Param.CivMode
+    switch Param.Program
         case 'CivX'
             cmd=[cmd...
                 cmd_fix(Param,'Fix2') '\n'];
@@ -4323,7 +4261,7 @@ end
 %CheckPatch2
 if Param.CheckPatch2==1
     
-    switch Param.CivMode
+    switch Param.Program
         
         case 'CivX'
             cmd=[cmd...
@@ -4374,13 +4312,13 @@ if Param.CheckPatch2==1
     end
 end
 
-if isequal(Param.CivMode,'CivAll')
+if isequal(Param.Program,'CivAll')
     save(CivAllxml,[Param.OutputFile '.xml']);
     cmd=[cmd sparam.CivBin ' -f ' Param.OutputFile '.xml '  CivAllCmd ' >' Param.OutputFile '.log' '\n'];
 end
 
-if isequal(Param.CivMode,'Matlab')
-    if batch>1
+if isequal(Param.Program,'civ_matlab')
+    if strcmp(Param.RunMode,'cluster')||strcmp(Param.RunMode,'background')
         cmd=['#!/bin/bash \n '...
             '#$ -cwd \n '...
             'hostname && date \n '...
@@ -4401,7 +4339,7 @@ if isequal(Param.CivMode,'Matlab')
 end
    
 
-if isequal(Param.CivMode,'MatlabCompile')
+if isequal(Param.Program,'civ_matlab.sh')
         cmd=['#!/bin/bash \n '...
             '#$ -cwd \n '...
             'hostname && date \n '...
@@ -4410,7 +4348,7 @@ if isequal(Param.CivMode,'MatlabCompile')
 end
 
 
-if isequal(Param.CivMode,'MatlabNonCompile')
+if isequal(Param.Program,'MatlabNonCompile')
 %         cmd=[regexprep(which(civ_matlab),'.m$','')...
 %             '(' regexprep(filename,'(\w+)/(\w+$)','$1/0_XML$2.xml,')...
 %             filename '.nc);'];

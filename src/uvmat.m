@@ -905,29 +905,17 @@ end
 set(handles.CheckBW,'Value',strcmp(ColorType,'grayscale'))% select handles.CheckBW if grayscale image
 
 %% read parameters (time, geometric calibration..) from a documentation file (.xml advised)
-SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-filexml=fullfile(RootPath,[SubDirBase '.xml']);% new convention: xml above the image dir
-DocExt='.xml';
-if ~exist(filexml,'file')
-    filexml=fullfile(RootPath,SubDir,[RootFile '.xml']);%old convention: xml within the image directroy
-    if ~exist(filexml,'file')
-        filexml=fullfile(RootPath,SubDir,[RootFile '.civ']); % very old convention: .civ file
-        if exist(filexml,'file')
-            DocExt='.civ';
-        else
-            filexml='';
-        end
-    end
-end
+XmlFileName=find_imadoc(RootPath,SubDir,RootFile,FileExt);
+[tild,tild,DocExt]=fileparts(XmlFileName);
 warntext='';%default warning message
 NbSlice=1;%default
 set(handles.RootPath,'BackgroundColor',[1 1 1])
-if ~isempty(filexml)
+if ~isempty(XmlFileName)
     set(handles.view_xml,'Visible','on')
     set(handles.view_xml,'BackgroundColor',[1 1 0])
     set(handles.view_xml,'String','view .xml')
     drawnow
-    [XmlDataRead,warntext]=imadoc2struct(filexml);
+    [XmlDataRead,warntext]=imadoc2struct(XmlFileName);
     if ~isempty(warntext)
         msgbox_uvmat('WARNING',warntext)
     end
@@ -950,10 +938,10 @@ if ~isempty(filexml)
             hgeometry_calib=findobj('tag','geometry_calib');
             if ~isempty(hgeometry_calib)
                 GUserData=get(hgeometry_calib,'UserData');
-                if ~(isfield(GUserData,'XmlInputFile') && strcmp(GUserData.XmlInputFile,filexml))
+                if ~(isfield(GUserData,'XmlInputFile') && strcmp(GUserData.XmlInputFile,XmlFileName))
                     answer=msgbox_uvmat('INPUT_Y-N','replace the display of geometry_calib with the new input data?');
                     if strcmp(answer,'Yes')
-                        geometry_calib(filexml);%diplay the new calibration points and parameters in geometry_calib
+                        geometry_calib(XmlFileName);%diplay the new calibration points and parameters in geometry_calib
                     end
                 end
             end

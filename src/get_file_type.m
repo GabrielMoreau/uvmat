@@ -4,7 +4,13 @@
 %
 % OUTPUT:
 % FileType: type of file
-% FileInfo: structure containing info on the file (case of images)
+% FileInfo: structure containing info on the file (case of images or video), in particular
+%      .Height: image height in pixels
+%      .Width:  image width in pixels
+%      .BitDepth: nbre of bits per pixel  (8 of 16)
+%      .ColorType: 'greyscale' or 'color'
+%      .NumberOfFrames
+%      .FrameRate: nbre of frames per second, =[] for images
 % Object: in case of video
 %
 % INPUT:
@@ -25,16 +31,17 @@ switch FileExt
     case '.xls'
         FileType='xls';
     otherwise
-        if ~isempty(FileExt)&& ~isempty(imformats(FileExt(2:end)))
+        if ~isempty(imformats(regexprep(FileExt,'^.','')))
             try
-                FileType='image';
                 imainfo=imfinfo(fileinput);
                 if length(imainfo) >1 %case of image with multiple frames
                     FileType='multimage';
-                    FileInfo=imainfo{1};%take info from the first frame
-                    FileInfo.NbFrame=length(imainfo);
+                    FileInfo=imainfo(1);%take info from the first frame
+                    FileInfo.NumberOfFrames=length(imainfo);
                 else
+                    FileType='image';
                     FileInfo=imainfo;
+                    FileInfo.NumberOfFrames=1;
                 end
             end
         else
@@ -74,13 +81,14 @@ switch FileExt
                 try
                     if exist('VideoReader.m','file')%recent version of Matlab
                         VideoObject=VideoReader(fileinput);
-                        FileInfo.NumberOfFrames=get(VideoObject,'NumberOfFrames');
+                        FileInfo=get(VideoObject);
                         FileType='video';
                     elseif exist('mmreader.m','file')% Matlab 2009a
                         VideoObject=mmreader(fileinput);
-                        FileInfo.NumberOfFrames=get(VideoObject,'NumberOfFrames');
+                        FileInfo=get(VideoObject);
                         FileType='mmreader';
-                    end             
+                    end  
+                    FileInfo.BitDepth=FileInfo.BitsPerPixel/3;
                 end
             end
         end
