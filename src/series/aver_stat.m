@@ -129,66 +129,12 @@ for iview=1:nbview
 end
 
 %% calibration data and timing: read the ImaDoc files
-mode=''; %default
-timecell={};
-itime=0;
-NbSlice_calib={};
-XmlData=cell(1,nbview);%initiate the structures containing the data from the xml file (calibration and timing)
-for iview=1:nbview%Loop on views
-    SubDirBase=regexprep(SubDir{iview},'\..*','');%take the root part of SubDir, before the first dot '.'
-    filexml=[fullfile(RootPath{iview},SubDirBase) '.xml'];%new convention: xml at the level of the image folder
-    if ~exist(filexml,'file')
-        filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.xml']; % old convention: xml inside the image folder
-        if ~exist(filexml,'file')
-            filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.civ']; % very old convention: .civ file
-            if ~exist(filexml,'file')
-                filexml='';
-            end
-        end
-    end
-    if ~isempty(filexml)
-        [XmlData{iview},error]=imadoc2struct(filexml);
-    end
-    if isfield(XmlData{iview},'Time')
-        itime=itime+1;
-        timecell{itime}=XmlData{iview}.Time;
-    end
-    if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
-        NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
-        if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
-            msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
-        end
-    end
-end
-
-%% check coincidence in time for several input file series
-multitime=0;
-if isempty(timecell)
-    time=[];
-elseif length(timecell)==1
-    time=timecell{1};
-elseif length(timecell)>1
-    multitime=1;
-    for icell=1:length(timecell)
-        if ~isequal(size(timecell{icell}),size(timecell{1}))
-            msgbox_uvmat('WARNING','inconsistent time array dimensions in ImaDoc fields, the time for the first series is used')
-            time=timecell{1};
-            multitime=0;
-            break
-        end
-    end
-end
-if multitime
-    for icell=1:length(timecell)
-        time(icell,:,:)=timecell{icell};
-    end
+[XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
+if size(time,1)>1
     diff_time=max(max(diff(time)));
     if diff_time>0
         msgbox_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)])
     end   
-end
-if size(time,2) < i2_series{1}(end) ||( ~isempty(j2_series{1}) && size(time,3) < j2_series{1}(end))% time array absent or too short in ImaDoc xml file' 
-    time=[];
 end
 
 %% coordinate transform or other user defined transform

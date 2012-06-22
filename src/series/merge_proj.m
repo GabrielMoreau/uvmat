@@ -129,70 +129,16 @@ for iview=1:nbview
     end
 end
 
+
 %% calibration data and timing: read the ImaDoc files
-mode=''; %default
-timecell={};
-itime=0;
-NbSlice_calib={};
-XmlData=cell(1,nbview);%initiate the structures containing the data from the xml file (calibration and timing)
-
-for iview=1:nbview%Loop on views
-    SubDirBase=regexprep(SubDir{iview},'\..*','');%take the root part of SubDir, before the first dot '.'
-    filexml=[fullfile(RootPath{iview},SubDirBase) '.xml'];%new convention: xml at the level of the image folder
-    if ~exist(filexml,'file')
-        filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.xml']; % old convention: xml inside the image folder
-        if ~exist(filexml,'file')
-            filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.civ']; % very old convention: .civ file
-            if ~exist(filexml,'file')
-                filexml='';
-            end
-        end
-    end
-    if ~isempty(filexml)
-        [XmlData{iview},error]=imadoc2struct(filexml);
-    end
-    if isfield(XmlData{iview},'Time')
-        itime=itime+1;
-        timecell{itime}=XmlData{iview}.Time;
-    end
-    if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
-        NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
-        if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
-            msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
-        end
-    end
-end
-
-
-%% check coincidence in time for several input file series
-multitime=0;
-if isempty(timecell)
-    time=[];
-elseif length(timecell)==1
-    time=timecell{1};
-elseif length(timecell)>1
-    multitime=1;
-    for icell=1:length(timecell)
-        if ~isequal(size(timecell{icell}),size(timecell{1}))
-            msgbox_uvmat('WARNING','inconsistent time array dimensions in ImaDoc fields, the time for the first series is used')
-            time=timecell{1};
-            multitime=0;
-            break
-        end
-    end
-end
-if multitime
-    for icell=1:length(timecell)
-        time(icell,:,:)=timecell{icell};
-    end
+[XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
+if size(time,1)>1
     diff_time=max(max(diff(time)));
     if diff_time>0
         msgbox_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)])
     end   
 end
-if size(time,2) < i2_series{1}(end) ||( ~isempty(j2_series{1}) && size(time,3) < j2_series{1}(end))% time array absent or too short in ImaDoc xml file' 
-    time=[];
-end
+
 
 %% coordinate transform or other user defined transform
 transform_fct='';%default
@@ -265,6 +211,7 @@ for i_slice=1:NbSlice
     
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
     for index=index_slice
+  
         if checkrun
             update_waitbar(hseries.waitbar_frame,WaitbarPos,index/(nbfield))
             stopstate=get(hseries.RUN,'BusyAction');
@@ -284,7 +231,7 @@ for i_slice=1:NbSlice
             end
             timeread(iview)=0;
             if isfield(Data{iview},'Time')
-                    timeread(iview)=Field{iview}.Time;
+                    timeread(iview)=Data{iview}.Time;
                     nbtime=nbtime+1;
                 end
             if ~isempty(NbSlice_calib)
@@ -316,13 +263,13 @@ for i_slice=1:NbSlice
             msgbox_uvmat('ERROR',MergeData.Txt)
             return
         end
-             % time of the merged field:
-        time_i=0;%default
-        if isempty(time)% time from ImaDoc prevails
-            time_i=sum(timeread)/nbtime;
-        else
-            time_i=(time(i1,j1)+time(i2,j2))/2; %TODO: upgrade
+        
+        % time of the merged field:
+        if ~isempty(time)% time defined from ImaDoc
+            timeread=time(:,index);
         end
+        timeread=mean(timeread);
+        
         % generating the name of the merged field
         i1=i1_series{iview}(index);
         if ~isempty(i2_series{iview})
@@ -341,15 +288,6 @@ for i_slice=1:NbSlice
             end
         end
         OutputFile=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomType{1},i1,i2,j1,j2);
-        
-        % time of the merged field:
-        time_i=0;%default
-        if isempty(time)% time from ImaDoc prevails 
-            time_i=sum(timeread)/nbtime;
-        else
-            % time_i=i1;
-            time_i=(time(i1,j1)+time(i2,j2))/2; %TODO: upgrade
-        end
         
         % recording the merged field
         if CheckImage{1}    %in case of input images an image is produced
@@ -404,7 +342,7 @@ for i_slice=1:NbSlice
             else
                 MergeData.dt=dt;
             end
-            MergeData.Time=time_i;
+            MergeData.Time=timeread;
             error=struct2nc(OutputFile,MergeData);%save result file
             if isempty(error)
                 display(['output file ' OutputFile ' written'])

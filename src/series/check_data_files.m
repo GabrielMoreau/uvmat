@@ -105,15 +105,13 @@ end
 %% MAIN LOOP ON VIEWS (INPUT LINES)
 for iview=1:nbview
     if isequal(FileType{iview},'mmreader')||isequal(FileType{iview},'video')||isequal(FileType{iview},'multimage')
-        [tild,FileInfo]=get_file_type(filecell{iview,1})
-      %  info=aviinfo(filecell{iview,1});
-        message{1}=filecell{iview,1};%info.Filename;
-        message{2}=FileInfo.FileModDate;
-        message{3}=[num2str(FileInfo.FramesPerSecond) ' frames/s '];
-        message{4}=FileInfo.ImageType;
-        message{5}=['  compression' FileInfo.VideoCompression];
-        message{6}=[ 'quality ' num2str(FileInfo.Quality)];   
-        Tabchar=message;
+        [tild,FileInfo]=get_file_type(filecell{iview,1});
+        Tabchar{1}=filecell{iview,1};%info.Filename;
+        Tabchar{2}=FileInfo.FileModDate;
+        Tabchar{3}=[num2str(FileInfo.FramesPerSecond) ' frames/s '];
+        Tabchar{4}=FileInfo.ImageType;
+        Tabchar{5}=['  compression' FileInfo.VideoCompression];
+        Tabchar{6}=[ 'quality ' num2str(FileInfo.Quality)];   
     else
         Tabchar={};
         %LOOP ON SLICES
@@ -129,7 +127,6 @@ for iview=1:nbview
                     [Path,Name,ext]=fileparts(file);
                     detect=exist(file,'file'); % check the existence of the file
                     if detect==0
-%                         count=count+1;
                         lastfield='not found';
                     else
                         datfile=dir(file);
@@ -138,14 +135,14 @@ for iview=1:nbview
                             filefound(ifile)={datfile.name};
                         end                     
                         lastfield='';
-                        [FileType,FileInfo,Object]=get_file_type(file);
-                        if strcmp(FileType,'civx')||strcmp(FileType,'civdata')
+                        [FileType{iview},FileInfo,Object]=get_file_type(file);
+                        if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
                             if isfield(FileInfo,'CivStage')
                             liststage={'civ1','fix1','patch1','civ2','fix2','patch2'};
                             lastfield=liststage{FileInfo.CivStage};
                             end
                         end
-                        lastfield=[FileType ', ' lastfield];                   
+                        lastfield=[FileType{iview} ', ' lastfield];                   
                     end
                     Tabchar(1,i_slice)={['slice #' num2str(i_slice)]};
                     Tabchar(ifile+1,i_slice)={[file '...' lastfield]};
