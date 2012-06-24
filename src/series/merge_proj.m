@@ -1,5 +1,5 @@
-%'merge_proj': project and concatene fieldsmerge_proj
-% can be used as a template for applying an operation (here projection and concateantion) on each field of an input series
+%'merge_proj': project and concatene fields
+% can be used as a template for applying an operation (here projection and concatenation) on each field of an input series
 %------------------------------------------------------------------------
 % function ParamOut=merge_proj(Param)
 %------------------------------------------------------------------------
@@ -31,7 +31,7 @@
 %    .InputTable: cell of input file names, (several lines for multiple input)
 %                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
 %    .OutputSubDir: name of the subdirectory for data outputs
-%    .OutputDir: directory for data outputs, including path
+%    .OutputDirExt: directory extension for data outputs
 %    .Action: .ActionName: name of the current activated function
 %             .ActionPath:   path of the current activated function
 %    .IndexRange: set the file or frame indices on which the action must be performed
@@ -50,8 +50,7 @@ function ParamOut=merge_proj(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if ~exist('Param','var') % case with no input parameter 
-    ParamOut={'NbViewMax';'';...% max nbre of input file series (default='' , no limitation)
-        'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
+    ParamOut={'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
         'WholeIndexRange';'off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
         'VelType';'one';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
@@ -81,6 +80,7 @@ else
     end
 end
 ParamOut=Param; %default output
+OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -88,18 +88,15 @@ RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
-
-% get the set of input file names (cell array filecell), and the lists of
-% input file or frame indices i1_series,i2_series,j1_series,j2_series
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-% filecell{iview,fileindex}: cell array representing the list of file names
+%%%%%%%%%%%%
+% The cell array filecell is the list of input file names, while
+% filecell{iview,fileindex}:
 %        iview: line in the table corresponding to a given file series
 %        fileindex: file index within  the file series, 
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-% set of frame indices used for movie or multimage input 
-% numbers of slices and file indices
-
+%%%%%%%%%%%%
 NbSlice=1;%default
 if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
     NbSlice=Param.IndexRange.NbSlice;
@@ -116,7 +113,7 @@ ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:nbview
     if ~exist(filecell{iview,1}','file')
-        msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
+        displ_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
         return
     end
     [FileType{iview},FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
@@ -134,17 +131,19 @@ end
 [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
 if size(time,1)>1
     diff_time=max(max(diff(time)));
-    if diff_time>0
-        msgbox_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)])
+    if diff_time>0 
+        displ_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)],checkrun)
     end   
 end
 
-
 %% coordinate transform or other user defined transform
 transform_fct='';%default
-if isfield(Param,'FieldTransform')&&isfield(Param.FieldTransform,'TransformHandle')
-    transform_fct=Param.FieldTransform.TransformHandle;
+if isfield(Param,'FieldTransform')
+    addpath(Param.FieldTransform.TransformPath)
+    transform_fct=str2func(Param.FieldTransform.TransformName);
+    rmpath(Param.FieldTransform.TransformPath)
 end
+
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE
 
@@ -153,48 +152,24 @@ if CheckImage{1}
     FileExtOut='.png'; % write result as .png images for image inputs
 elseif CheckNc{1}
     FileExtOut='.nc';% write result as .nc files for netcdf inputs
-else 
-    msgbox_uvmat('ERROR',['invalid file type input ' FileType{1}])
+else
+    displ_uvmat('ERROR',['invalid file type input ' FileType{1}],checkrun)
     return
 end
 for iview=1:nbview
 	if ~isequal(CheckImage{iview},CheckImage{1})||~isequal(CheckNc{iview},CheckNc{1})
-        msgbox_uvmat('ERROR','input set of input series: need  either netcdf either image series')
+        displ_uvmat('ERROR','input set of input series: need  either netcdf either image series',checkrun)
     return
     end
 end
 NomTypeOut=NomType;% output file index will indicate the first and last ref index in the series
+if checkrun==1
+    ParamOut.Specific=[];%no specific parameter
+    return %stop here for interactive input (option Param.Specific='?')
+end
 
 %% Set field names and velocity types
 %use Param.InputFields for all views
-
-%% Initiate output fields
-%initiate the output structure as a copy of the first input one (reproduce fields)
-[DataOut,tild,errormsg] = read_field(filecell{1,1},FileType{1},Param.InputFields,1);
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg])
-    return
-end
-time_1=[];
-if isfield(DataOut,'Time')
-    time_1=DataOut.Time(1);
-end
-if CheckNc{iview}
-    if isempty(strcmp('Conventions',DataOut.ListGlobalAttribute))
-        DataOut.ListGlobalAttribute=['Conventions' DataOut.ListGlobalAttribute];
-    end
-    DataOut.Conventions='uvmat';
-    DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {Param.Action}];
-    ActionKey='Action';
-    while isfield(DataOut,ActionKey)
-        ActionKey=[ActionKey '_1'];
-    end
-    DataOut.(ActionKey)=Param.Action;
-    DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {ActionKey}];
-    if isfield(DataOut,'Time')
-        DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {'Time','Time_end'}];
-    end
-end
 
 %% MAIN LOOP ON SLICES
 %%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
@@ -202,13 +177,7 @@ for i_slice=1:NbSlice
     index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
     nbfiles=0;
     nbmissing=0;
-    
-    %initiate result fields
-    
-    for ivar=1:length(DataOut.ListVarName)
-        DataOut.(DataOut.ListVarName{ivar})=0; % initialise all fields to zero
-    end
-    
+
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
     for index=index_slice
   
@@ -226,7 +195,8 @@ for i_slice=1:NbSlice
             % reading input file(s)
             [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
             if ~isempty(errormsg)
-                errormsg=['error of input reading: ' errormsg];
+                errormsg=['merge_proj/read_field/' errormsg];
+                display(errormsg)
                 break
             end
             timeread(iview)=0;
@@ -250,7 +220,7 @@ for i_slice=1:NbSlice
             if Param.CheckObject
                 [Data{iview},errormsg]=proj_field(Data{iview},Param.ProjObject);
                 if ~isempty(errormsg)
-                    msgbox_uvmat('ERROR',['error in merge_proge/proj_field: ' errormsg])
+                    displ_uvmat('ERROR',['error in merge_proge/proj_field: ' errormsg],checkrun)
                     return
                 end
             end
@@ -260,7 +230,7 @@ for i_slice=1:NbSlice
         %% merge the nbview fields
         MergeData=merge_field(Data);
         if isfield(MergeData,'Txt')
-            msgbox_uvmat('ERROR',MergeData.Txt)
+            displ_uvmat('ERROR',MergeData.Txt,checkrun)
             return
         end
         
@@ -287,7 +257,7 @@ for i_slice=1:NbSlice
                 j2=j1;
             end
         end
-        OutputFile=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomType{1},i1,i2,j1,j2);
+        OutputFile=fullfile_uvmat(RootPath{1},OutputSubDir,RootFile{1},FileExtOut,NomType{1},i1,i2,j1,j2);
         
         % recording the merged field
         if CheckImage{1}    %in case of input images an image is produced
@@ -386,7 +356,7 @@ for icell=1:length(CellVarIndex)
         test_grid=1;%test for input data on regular grid (e.g. image)coordinates
     else
         if length(ivar_Y)~=1
-                msgbox_uvmat('ERROR','y coordinate missing in proj_field.m')
+                displ_uvmat('ERROR','y coordinate missing in proj_field.m',checkrun)
                 return
         end
         test_grid=0;

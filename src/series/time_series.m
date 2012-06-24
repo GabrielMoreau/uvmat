@@ -30,7 +30,7 @@
 %    .InputTable: cell of input file names, (several lines for multiple input)
 %                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
 %    .OutputSubDir: name of the subdirectory for data outputs
-%    .OutputDir: directory for data outputs, including path
+%    .OutputDirExt: directory extension for data outputs
 %    .Action: .ActionName: name of the current activated function
 %             .ActionPath:   path of the current activated function
 %    .IndexRange: set the file or frame indices on which the action must be performed
@@ -49,8 +49,7 @@ function ParamOut=time_series(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if ~exist('Param','var') % case with no input parameter 
-    ParamOut={'NbViewMax';2;...% max nbre of input file series (default='' , no limitation)
-        'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
+    ParamOut={'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
         'WholeIndexRange';'off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
         'VelType';'two';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
@@ -80,6 +79,7 @@ else
     end
 end
 ParamOut=Param; %default output
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -115,7 +115,7 @@ ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:nbview
     if ~exist(filecell{iview,1}','file')
-        msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
+        displ_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
         return
     end
     [FileType{iview},FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
@@ -133,15 +133,18 @@ end
 if size(time,1)>1
     diff_time=max(max(diff(time)));
     if diff_time>0
-        msgbox_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)])
+        displ_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)],checkrun)
     end   
 end
 
 %% coordinate transform or other user defined transform
 transform_fct='';%default
-if isfield(Param,'FieldTransform')&&isfield(Param.FieldTransform,'TransformHandle')
-    transform_fct=Param.FieldTransform.TransformHandle;
+if isfield(Param,'FieldTransform')
+    addpath(Param.FieldTransform.TransformPath)
+    transform_fct=str2func(Param.FieldTransform.TransformName);
+    rmpath(Param.FieldTransform.TransformPath)
 end
+
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE
 
@@ -151,20 +154,20 @@ if CheckImage{1}
 elseif CheckNc{1}
     FileExtOut='.nc';% write result as .nc files for netcdf inputs
 else 
-    msgbox_uvmat('ERROR',['invalid file type input ' FileType{1}])
+    displ_uvmat('ERROR',['invalid file type input ' FileType{1}],checkrun)
     return
 end
 if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
-        msgbox_uvmat('ERROR','input must be two image series or two netcdf file series')
+        displ_uvmat('ERROR','input must be two image series or two netcdf file series',checkrun)
     return
 end
 NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
-if NbSlice~=nbfield_j
-    answer=msgbox_uvmat('INPUT_Y-N',['will not average slice by slice: for so cancel and set NbSlice= ' num2str(nbfield_j)]);
-    if ~strcmp(answer,'Yes')
-        return
-    end
-end
+% if NbSlice~=nbfield_j
+%     answer=_uvmat('INPUT_Y-N',['will not average slice by slice: for so cancel and set NbSlice= ' num2str(nbfield_j)]);
+%     if ~strcmp(answer,'Yes')
+%         return
+%     end
+% end
 
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
@@ -210,7 +213,7 @@ end
 %initiate the output structure as a copy of the first input one (reproduce fields)
 [DataOut,tild,errormsg] = read_field(filecell{1,1},FileType{1},InputFields{1},1);
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg])
+    displ_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg],checkrun)
     return
 end
 time_1=[];
@@ -237,195 +240,161 @@ end
 %% LOOP ON SLICES
 nbmissing=0; %number of undetected files
 for i_slice=1:NbSlice
-    dt=[];
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%  LOOP ON FIELDS WITHIN  A SLICE
-    filecounter=0;
-    for ifile=i_slice:NbSlice:nbfield
+    index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
+    nbfiles=0;
+    nbmissing=0;
+    
+    %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
+    for index=index_slice       
         if checkrun
-            update_waitbar(hseries.waitbar_frame,WaitbarPos,ifile/nbfield)
+            update_waitbar(hseries.waitbar_frame,WaitbarPos,index/(nbfield))
             stopstate=get(hseries.RUN,'BusyAction');
         else
             stopstate='queue';
         end
-        errormsg='';
+        
+        %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
+        Data=cell(1,nbview);%initiate the set Data
+        nbtime=0;
+        dt=[];
         if isequal(stopstate,'queue')% enable STOP command
             % loop on views (in case of multiple input series)
             for iview=1:nbview
-                filename=filecell{iview,ifile};
-               % filename=name_generator(filebase{iview},...
-                %    i1_series{iview}(ifile),j1_series{iview}(ifile),FileExt{iview},NomType{iview},1,i2_series{iview}(ifile),j2_series{iview}(ifile),SubDir{iview});
-                if exist(filename,'file')
-                    try
-                        Data{iview}=[]; %default
-                        if ~isequal(FileType{iview},'netcdf')
-                            Data{iview}.ListVarName={'A'};
-                            Data{iview}.AName='image';
-                            switch FileType{iview}
-                                case 'movie'
-                                    A=read(MovieObject{iview},i1_series{iview}(ifile));
-                                case 'avi'
-                                    mov=aviread(filename,i1_series{iview}(ifile));
-                                    A=frame2im(mov(1));
-                                case 'vol'
-                                    A=imread(filename);
-                                case 'multimage'
-                                    A=imread(filename,i1_series{iview}(ifile));
-                                case 'image'
-                                    A=imread(filename);
-                            end
-                            Data{iview}.ListVarName={'AY','AX','A'}; %
-                            npy=size(A,1);
-                            npx=size(A,2);
-                            nbcolor=size(A,3);
-                            if nbcolor==3
-                                Data{iview}.VarDimName={'AY','AX',{'AY','AX','rgb'}};
-                            else
-                                Data{iview}.VarDimName={'AY','AX',{'AY','AX'}};
-                            end
-                            Data{iview}.AY=[npy-0.5 0.5];
-                            Data{iview}.AX=[0.5 npx-0.5];
-                            Data{iview}.A=double(A);
-                            Data{iview}.CoordUnit='pixel';
-                        elseif testcivx
-                            [Data{iview},VelTypeOut]=read_civxdata(filename,FieldName,VelType);
-                            if ~isequal(FieldName,{''})
-                                Data{iview}=calc_field(FieldName,Data{iview});%calculate field (vort..)
-                            end
-                        else
-                            [Data{iview},var_detect]=nc2struct(filename,SubField.ListVarName); %read the corresponding input data
-                            Data{iview}.VarAttribute=SubField.VarAttribute;
-                        end
-                        if ~isempty(NbSlice_calib)  % z index
-                            Data{iview}.ZIndex=mod(i1_series{iview}(ifile)-1,NbSlice_calib{1})+1;
-                        end
-                    catch ME
-                        errormsg=ME.message;
+                % reading input file(s)
+                [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
+                if ~isempty(errormsg)
+                    errormsg=['time_series/read_field/' errormsg];
+                    display(errormsg)
+                    break
+                end
+                timeread(iview)=0;
+                if isfield(Data{iview},'Time')
+                    timeread(iview)=Data{iview}.Time;
+                    nbtime=nbtime+1;
+                end
+                if ~isempty(NbSlice_calib)
+                    Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
+                end
+            end
+            % coordinate transform (or other user defined transform)
+            if ~isempty(transform_fct)
+                if nbview==2
+                    [Data{1},Data{2}]=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
+                    if isempty(Data{2})
+                        Data(2)=[];
                     end
                 else
-                    errormsg=[filename ' is missing'];
+                    Data{1}=transform_fct(Data{1},XmlData{1});
                 end
-                if isempty(errormsg)
-                    % coordinate transform (or other user defined transform)
-                    if ~isempty(transform_fct)
-                        if nbview==2
-                            [Data{1},Data{2}]=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
-                            if isempty(Data{2})
-                                Data(2)=[];
-                            end
-                        else
-                            Data{1}=transform_fct(Data{1},XmlData{1});
-                        end
-                    end
-                    if length(Data)==2
-                        [Field,errormsg]=sub_field(Data{1},Data{2}); %substract the two fields
-                    else
-                        Field=Data{1};
-                    end
-                    if Param.CheckObject
-                        [Field,errormsg]=proj_field(Field,Param.ProjObject);
-                    end
-                end
-                filecounter=filecounter+1;
-                
-                % initiate the time series at the first iteration
-                if filecounter==1
-                    % stop program if the first field reading is in error
-                    if ~isempty(errormsg)
-                        msgbox_uvmat('ERROR',['error in time_series/sub_field:' errormsg])
-                        return
-                    end
-                    DataOut=Field;%default
-                    DataOut.NbDim=Field.NbDim+1; %add the time dimension for plots
-                    nbvar=length(Field.ListVarName);
-                    if nbvar==0
-                        msgbox_uvmat('ERROR','no input variable selected in get_field')
-                        return
-                    end
-                    testsum=2*ones(1,nbvar);%initiate flag for action on each variable
-                    if isfield(Field,'VarAttribute') % look for coordinate and flag variables
-                        for ivar=1:nbvar
-                            if length(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'Role')
-                                var_role=Field.VarAttribute{ivar}.Role;%'role' of the variable
-                                if isequal(var_role,'errorflag')
-                                    msgbox_uvmat('ERROR','do not handle error flags in time series')
-                                    return
-                                end
-                                if isequal(var_role,'warnflag')
-                                    testsum(ivar)=0;  % not recorded variable
-                                    eval(['DataOut=rmfield(DataOut,''' Field.ListVarName{ivar} ''');']);%remove variable
-                                end
-                                if isequal(var_role,'coord_x')| isequal(var_role,'coord_y')|...
-                                        isequal(var_role,'coord_z')|isequal(var_role,'coord')
-                                    testsum(ivar)=1; %constant coordinates, record without time evolution
-                                end
-                            end
-                            % check whether the variable ivar is a dimension variable
-                            DimCell=Field.VarDimName{ivar};
-                            if ischar(DimCell)
-                                DimCell={DimCell};
-                            end
-                            if numel(DimCell)==1 && isequal(Field.ListVarName{ivar},DimCell{1})%detect dimension variables
-                                testsum(ivar)=1;
-                            end
-                        end
-                    end
-                    for ivar=1:nbvar
-                        if testsum(ivar)==2
-                            eval(['DataOut.' Field.ListVarName{ivar} '=[];'])
-                        end
-                    end
-                    DataOut.ListVarName=[{'Time'} DataOut.ListVarName];
-                end
-                
-                % add data to the current field
-                for ivar=1:length(Field.ListVarName)
-                    VarName=Field.ListVarName{ivar};
-                    VarVal=Field.(VarName);
-                    if testsum(ivar)==2% test for recorded variable
-                        if isempty(errormsg)
-                            if isequal(Param.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
-                                if isempty(VarVal)
-                                    msgbox_uvmat('ERROR',['empty result at frame index ' num2str(i1_series{iview}(ifile))])
-                                    return
-                                end
-                                VarVal=mean(VarVal,1);
-                            end
-                            VarVal=shiftdim(VarVal,-1); %shift dimension
-                            DataOut.(VarName)=cat(1,DataOut.(VarName),VarVal);%concanete the current field to the time series
-                        else
-                            DataOut.(VarName)=cat(1,DataOut.(VarName),0);% put each variable to 0 in case of input reading error
-                        end
-                    elseif testsum(ivar)==1% variable representing fixed coordinates
-                        eval(['VarInit=DataOut.' VarName ';']);
-                        if isempty(errormsg) && ~isequal(VarVal,VarInit)
-                            msgbox_uvmat('ERROR',['time series requires constant coordinates ' VarName])
-                            return
-                        end
-                    end
-                end
-                
-                % record the time:
-                if isempty(time)% time read in ncfiles
-                    if isfield(Field,'Time')
-                        DataOut.Time(filecounter,1)=Field.Time;
-                    else
-                        DataOut.Time(filecounter,1)=ifile;%default
-                    end
-                else % time from ImaDoc prevails  TODO: correct 
-                  %  DataOut.Time(filecounter,1)=time{1}(i1_series{1})(ifile),j1_series{1}(ifile))+time(end,i2_series{end}(ifile),j2_series{end}(ifile)))/2;
-                  DataOut.Time(filecounter,1)=i1_series{1}(ifile);% TODO : generalise
-                end
-                
-                % record the number of missing input fields
+            end
+            if length(Data)==2
+                [Field,errormsg]=sub_field(Data{1},Data{2}); %substract the two fields
+            else
+                Field=Data{1};
+            end
+            if Param.CheckObject
+                [Field,errormsg]=proj_field(Field,Param.ProjObject);
+            end
+            nbtime=nbtime+1;
+            
+            % initiate the time series at the first iteration
+            if nbtime==1
+                % stop program if the first field reading is in error
                 if ~isempty(errormsg)
-                    nbmissing=nbmissing+1;
-                    display(['ifile=' num2str(ifile) ':' errormsg])
+                    displ_uvmat('ERROR',['error in time_series/sub_field:' errormsg],checkrun)
+                    return
                 end
+                DataOut=Field;%default
+                DataOut.NbDim=Field.NbDim+1; %add the time dimension for plots
+                nbvar=length(Field.ListVarName);
+                if nbvar==0
+                    displ_uvmat('ERROR','no input variable selected in get_field',checkrun)
+                    return
+                end
+                testsum=2*ones(1,nbvar);%initiate flag for action on each variable
+                if isfield(Field,'VarAttribute') % look for coordinate and flag variables
+                    for ivar=1:nbvar
+                        if length(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'Role')
+                            var_role=Field.VarAttribute{ivar}.Role;%'role' of the variable
+                            if isequal(var_role,'errorflag')
+                                displ_uvmat('ERROR','do not handle error flags in time series',checkrun)
+                                return
+                            end
+                            if isequal(var_role,'warnflag')
+                                testsum(ivar)=0;  % not recorded variable
+                                eval(['DataOut=rmfield(DataOut,''' Field.ListVarName{ivar} ''');']);%remove variable
+                            end
+                            if isequal(var_role,'coord_x')| isequal(var_role,'coord_y')|...
+                                    isequal(var_role,'coord_z')|isequal(var_role,'coord')
+                                testsum(ivar)=1; %constant coordinates, record without time evolution
+                            end
+                        end
+                        % check whether the variable ivar is a dimension variable
+                        DimCell=Field.VarDimName{ivar};
+                        if ischar(DimCell)
+                            DimCell={DimCell};
+                        end
+                        if numel(DimCell)==1 && isequal(Field.ListVarName{ivar},DimCell{1})%detect dimension variables
+                            testsum(ivar)=1;
+                        end
+                    end
+                end
+                for ivar=1:nbvar
+                    if testsum(ivar)==2
+                        eval(['DataOut.' Field.ListVarName{ivar} '=[];'])
+                    end
+                end
+                DataOut.ListVarName=[{'Time'} DataOut.ListVarName];
+            end
+            
+            % add data to the current field
+            for ivar=1:length(Field.ListVarName)
+                VarName=Field.ListVarName{ivar};
+                VarVal=Field.(VarName);
+                if testsum(ivar)==2% test for recorded variable
+                    if isempty(errormsg)
+                        if isequal(Param.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
+                            if isempty(VarVal)
+                                displ_uvmat('ERROR',['empty result at frame index ' num2str(i1_series{iview}(ifile))],checkrun)
+                                return
+                            end
+                            VarVal=mean(VarVal,1);
+                        end
+                        VarVal=shiftdim(VarVal,-1); %shift dimension
+                        DataOut.(VarName)=cat(1,DataOut.(VarName),VarVal);%concanete the current field to the time series
+                    else
+                        DataOut.(VarName)=cat(1,DataOut.(VarName),0);% put each variable to 0 in case of input reading error
+                    end
+                elseif testsum(ivar)==1% variable representing fixed coordinates
+                    eval(['VarInit=DataOut.' VarName ';']);
+                    if isempty(errormsg) && ~isequal(VarVal,VarInit)
+                        displ_uvmat('ERROR',['time series requires constant coordinates ' VarName],checkrun)
+                        return
+                    end
+                end
+            end
+            
+            % record the time:
+            if isempty(time)% time read in ncfiles
+                if isfield(Field,'Time')
+                    DataOut.Time(filecounter,1)=Field.Time;
+                else
+                    DataOut.Time(filecounter,1)=ifile;%default
+                end
+            else % time from ImaDoc prevails  TODO: correct
+                %  DataOut.Time(filecounter,1)=time{1}(i1_series{1})(ifile),j1_series{1}(ifile))+time(end,i2_series{end}(ifile),j2_series{end}(ifile)))/2;
+                DataOut.Time(filecounter,1)=i1_series{1}(ifile);% TODO : generalise
+            end
+            
+            % record the number of missing input fields
+            if ~isempty(errormsg)
+                nbmissing=nbmissing+1;
+                display(['ifile=' num2str(ifile) ':' errormsg])
             end
         end
     end
     %%%%%%% END OF LOOP WITHIN A SLICE
-   
+    
     %remove time for global attributes if exists
     Time_index=find(strcmp('Time',DataOut.ListGlobalAttribute));
     if ~isempty(Time_index)
@@ -437,7 +406,7 @@ for i_slice=1:NbSlice
         eval(['DataOut.' VarName '=squeeze(DataOut.' VarName ');']) %remove singletons
     end
     
-    % add time dimension 
+    % add time dimension
     for ivar=1:length(Field.ListVarName)
         DimCell=Field.VarDimName(ivar);
         if testsum(ivar)==2%variable used as time series
@@ -468,24 +437,25 @@ for i_slice=1:NbSlice
     
     % display nbmissing
     if ~isequal(nbmissing,0)
-        msgbox_uvmat('WARNING',[num2str(nbmissing) ' files skipped: missing files or bad input, see command window display'])
+        displ_uvmat('WARNING',[num2str(nbmissing) ' files skipped: missing files or bad input, see command window display'],checkrun)
     end
     
     %name of result file
-%     filemean=fullfile_uvmat(RootPath{1},subdir_result,RootFile{1},'.nc','_1',i1_series{1}(i_slice));
-    OutputFile=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),i_slice,[]);
+    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),i_slice,[]);
     errormsg=struct2nc(OutputFile,DataOut); %save result file
     if isempty(errormsg)
         display([OutputFile ' written'])
     else
-        msgbox_uvmat('ERROR',['error in Series/struct2nc: ' errormsg])
+        displ_uvmat('ERROR',['error in Series/struct2nc: ' errormsg],checkrun)
     end
 end
 
 %% plot the time series (the last one in case of multislices)
 figure
 haxes=axes;
+if checkrun
 plot_field(DataOut,haxes)
+end
 
 %% display the result file using the GUI get_field
 hget_field=findobj(allchild(0),'name','get_field');

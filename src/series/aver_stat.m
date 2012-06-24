@@ -30,7 +30,7 @@
 %    .InputTable: cell of input file names, (several lines for multiple input)
 %                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
 %    .OutputSubDir: name of the subdirectory for data outputs
-%    .OutputDir: directory for data outputs, including path
+%    .OutputDirExt: directory extension for data outputs
 %    .Action: .ActionName: name of the current activated function
 %             .ActionPath:   path of the current activated function
 %    .IndexRange: set the file or frame indices on which the action must be performed
@@ -49,8 +49,7 @@ function ParamOut=aver_stat(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if ~exist('Param','var') % case with no input parameter 
-    ParamOut={'NbViewMax';2;...% max nbre of input file series (default='' , no limitation)
-        'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
+    ParamOut={'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
         'WholeIndexRange';'off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
         'VelType';'two';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
@@ -63,7 +62,7 @@ if ~exist('Param','var') % case with no input parameter
         return
 end
 
-%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
+%%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%
 %% select different modes,  RUN, parameter input, BATCH
 % BATCH  case: read the xml file for batch case
 if ischar(Param)
@@ -80,25 +79,23 @@ else
     end
 end
 ParamOut=Param; %default output
-
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];
+    
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
 RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
-
-% get the set of input file names (cell array filecell), and the lists of
-% input file or frame indices i1_series,i2_series,j1_series,j2_series
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-% filecell{iview,fileindex}: cell array representing the list of file names
+%%%%%%%%%%%%
+% The cell array filecell is the list of input file names, while
+% filecell{iview,fileindex}:
 %        iview: line in the table corresponding to a given file series
 %        fileindex: file index within  the file series, 
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-% set of frame indices used for movie or multimage input 
-% numbers of slices and file indices
-
+%%%%%%%%%%%%
 NbSlice=1;%default
 if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
     NbSlice=Param.IndexRange.NbSlice;
@@ -139,9 +136,12 @@ end
 
 %% coordinate transform or other user defined transform
 transform_fct='';%default
-if isfield(Param,'FieldTransform')&&isfield(Param.FieldTransform,'TransformHandle')
-    transform_fct=Param.FieldTransform.TransformHandle;
+if isfield(Param,'FieldTransform')
+    addpath(Param.FieldTransform.TransformPath)
+    transform_fct=str2func(Param.FieldTransform.TransformName);
+    rmpath(Param.FieldTransform.TransformPath)
 end
+
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE
 
@@ -159,11 +159,8 @@ if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
     return
 end
 NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
-if NbSlice~=nbfield_j
-    answer=msgbox_uvmat('INPUT_Y-N',['will not average slice by slice: for so cancel and set NbSlice= ' num2str(nbfield_j)]);
-    if ~strcmp(answer,'Yes')
-        return
-    end
+if checkrun==1
+    return % stop here for input checks
 end
 
 %% Set field names and velocity types
@@ -184,46 +181,13 @@ if nbview==2
     end
 end
 
-%% Initiate output fields
-% %initiate the output structure as a copy of the first input one (reproduce fields)
-% [DataOut,ParamOut,errormsg] = read_field(filecell{1,1},FileType{1},InputFields{1},1);
-% if ~isempty(errormsg)
-%     msgbox_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg])
-%     return
-% end
-% time_1=[];
-% if isfield(DataOut,'Time')
-%     time_1=DataOut.Time(1);
-% end
-% if CheckNc{iview}
-%     if isempty(strcmp('Conventions',DataOut.ListGlobalAttribute))
-%         DataOut.ListGlobalAttribute=['Conventions' DataOut.ListGlobalAttribute];
-%     end
-%     DataOut.Conventions='uvmat';
-%     DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {Param.Action}];
-%     ActionKey='Action';
-%     while isfield(DataOut,ActionKey)
-%         ActionKey=[ActionKey '_1'];
-%     end
-%     DataOut.(ActionKey)=Param.Action;
-%     DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {ActionKey}];
-%     if isfield(DataOut,'Time')
-%         DataOut.ListGlobalAttribute=[DataOut.ListGlobalAttribute {'Time','Time_end'}];
-%     end
-% end
-
 %% MAIN LOOP ON SLICES
 %%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 for i_slice=1:NbSlice
     index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
     nbfiles=0;
     nbmissing=0;
-    
-    %initiate result fields
-%     for ivar=1:length(DataOut.ListVarName)
-%         DataOut.(DataOut.ListVarName{ivar})=0; % initialise all fields to zero
-%     end
-    
+
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
     for index=index_slice
         if checkrun
@@ -349,7 +313,7 @@ for i_slice=1:NbSlice
     end
     
     %writing the result file
-    OutputFile=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),i_slice,[]);
+    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),i_slice,[]);
     if CheckImage{1} %case of images
         if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
             DataOut.A=uint16(DataOut.A);

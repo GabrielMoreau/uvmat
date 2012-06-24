@@ -37,7 +37,7 @@
 %    .InputTable: cell of input file names, (several lines for multiple input)
 %                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
 %    .OutputSubDir: name of the subdirectory for data outputs
-%    .OutputDir: directory for data outputs, including path
+%    .OutputDirExt: extension for the directory for data outputs
 %    .Action: .ActionName: name of the current activated function
 %             .ActionPath:   path of the current activated function
 %    .IndexRange: set the file or frame indices on which the action must be performed
@@ -57,8 +57,7 @@ function ParamOut=sub_background (Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if ~exist('Param','var') % case with no input parameter 
-    ParamOut={'NbViewMax';1;...% max nbre of input file series (default='' , no limitation)
-        'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
+    ParamOut={'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
         'WholeIndexRange';'on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
         'NbSlice';'on'; ...%nbre of slices ('off' by default)
         'VelType';'off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
@@ -88,6 +87,7 @@ else
     end
 end
 ParamOut=Param; %default output
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -95,18 +95,15 @@ RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
-
-% get the set of input file names (cell array filecell), and the lists of
-% input file or frame indices i1_series,i2_series,j1_series,j2_series
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-% filecell{iview,fileindex}: cell array representing the list of file names
+%%%%%%%%%%%%
+% The cell array filecell is the list of input file names, while
+% filecell{iview,fileindex}:
 %        iview: line in the table corresponding to a given file series
 %        fileindex: file index within  the file series, 
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-% set of frame indices used for movie or multimage input 
-% numbers of slices and file indices
-
+%%%%%%%%%%%%
 NbSlice=1;%default
 if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
     NbSlice=Param.IndexRange.NbSlice;
@@ -339,7 +336,7 @@ for islice=1:NbSlice
         if ~isempty(j1_series{1})
             j1=j1_series{1}(ifile);
         end
-        newname=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
+        newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
         
         %write result file
         if ParamOut.Specific.CheckLevelTransform
@@ -389,7 +386,7 @@ for islice=1:NbSlice
                     if ~isempty(j1_series{1})
                         j1=j1_series{1}(ifile);
                     end
-                    newname=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
+                    newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
                     %write result file
                     if ParamOut.Specific.CheckLevelTransform
                         C=levels(Acor);
@@ -423,7 +420,7 @@ for islice=1:NbSlice
         if ~isempty(j1_series{1})
             j1=j1_series{1}(ifile);
         end
-        newname=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
+        newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
         
         %write result file
         if ParamOut.Specific.CheckLevelTransform
