@@ -56,7 +56,12 @@ try
             if ~strcmp(ParamIn.FieldName,'get_field...')% if get_field is not requested, look for Civx data
                 FieldList=calc_field;%list of possible fields for Civx data
                 ParamOut.ColorVar='';%default
-                field_index=strcmp(ParamIn.FieldName,FieldList);%look for ParamIn.FieldName in the list of possible fields for Civx data
+                if ischar(ParamIn.FieldName)
+                    FieldName=ParamIn.FieldName;
+                else
+                    FieldName=ParamIn.FieldName{1};
+                end
+                field_index=strcmp(FieldName,FieldList);%look for ParamIn.FieldName in the list of possible fields for Civx data
                 if isempty(find(field_index,1))% ParamIn.FieldName is not in the list, check whether Civx data exist
                     Data=nc2struct(FileName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ','CivStage');
                     % case of new civdata conventions
@@ -65,6 +70,7 @@ try
                         ParamOut.ColorVar='ima_cor';
                         InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
                         [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType,Data.CivStage);
+                        if ~isempty(errormsg),errormsg=['read_civdata:' errormsg];return,end
                         CivStage=Field.CivStage;
                         ParamOut.CivStage=Field.CivStage;
                         %case of old civx conventions
@@ -73,6 +79,7 @@ try
                         ParamOut.ColorVar='ima_cor';
                         InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
                         [Field,ParamOut.VelType]=read_civxdata(FileName,InputField,ParamIn.VelType);
+                        if ~isempty(errormsg),errormsg=['read_civxdata:' errormsg];return,end
                         CivStage=Field.CivStage;
                         ParamOut.CivStage=Field.CivStage;
                         % not cvix file, fields will be chosen through the GUI get_field
@@ -83,16 +90,17 @@ try
                             delete(hget_field)%delete  get_field for reinitialisation
                         end
                     end
-                else
-                    InputField={ParamOut.FieldName};
+                else              
+                    InputField=ParamOut.FieldName;
+                    if ischar(InputField)
+                        InputField={InputField};
+                    end
                     if isfield(ParamIn,'ColorVar')
                         ParamOut.ColorVar=ParamIn.ColorVar;
                         InputField=[InputField {ParamOut.ColorVar}];
                     end
                     [Field,ParamOut.VelType,errormsg]=read_civxdata(FileName,InputField,ParamIn.VelType);
-                    if ~isempty(errormsg)
-                        return
-                    end
+                    if ~isempty(errormsg),errormsg=['read_civxdata:' errormsg];return,end
                     CivStage=Field.CivStage;
                     ParamOut.CivStage=Field.CivStage;
                 end
@@ -122,7 +130,7 @@ try
                     for iline=1:length(Field.ListGlobalAttribute)
                         Tabcell{iline,1}=Field.ListGlobalAttribute{iline};
                         if isfield(Field, Field.ListGlobalAttribute{iline})
-                            eval(['val=Field.' Field.ListGlobalAttribute{iline} ';'])
+                            val=Field.(Field.ListGlobalAttribute{iline});
                             if ischar(val);
                                 Tabcell{iline,2}=val;
                             else
@@ -159,7 +167,7 @@ try
             A=imread(FileName);
     end
 catch ME
-    errormsg=ME.message;
+    errormsg=[FileType ' input: ' ME.message];
     return
 end
 

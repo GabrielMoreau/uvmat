@@ -44,7 +44,7 @@ function msgbox_uvmat_OpeningFcn(hObject, eventdata, handles,title,display_str,d
 handles.output = 'Cancel';
 set(handles.figure1,'Units','pixels')
 FigPos=[100 150 500 50];%default position
-if exist('Position','var')
+if exist('Position','var') && numel(Position)>=2
     FigPos(1)=Position(1);
     FigPos(2)=Position(2)-FigPos(4);% upper left corner set by input Position
     set(handles.figure1,'Position',FigPos)

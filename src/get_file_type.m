@@ -31,7 +31,7 @@ switch FileExt
     case '.xls'
         FileType='xls';
     otherwise
-        if ~isempty(imformats(regexprep(FileExt,'^.','')))
+        if ~isempty(FileExt) && ~isempty(imformats(regexprep(FileExt,'^.','')))
             try
                 imainfo=imfinfo(fileinput);
                 if length(imainfo) >1 %case of image with multiple frames

@@ -14,7 +14,7 @@
 %       = 'civdata', civ data with new convention
 %       = 'netcdf' other netcdf files
 %       = 'video': movie recognised by VideoReader (e;g. avi)
-% Object: video object (=[] otherwise)
+% MovieObject: video object (=[] otherwise)
 %
 %INPUT
 % RootPath: path to the directory to be scanned
@@ -36,7 +36,7 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput)
+function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput)
 %------------------------------------------------------------------------
 
 %% get input root name and nomenclature type
@@ -49,19 +49,20 @@ i1_series=zeros(1,1,1);
 i2_series=zeros(1,1,1);
 j1_series=zeros(1,1,1);
 j2_series=zeros(1,1,1);
-% ifile_min=1;%default
-[FileType,FileInfo,Object]=get_file_type(fullfileinput);
-NbFrame=1;
+[FileType,FileInfo,MovieObject]=get_file_type(fullfileinput);
+if ~exist(FilePath,'dir')
+    return % don't go further if the dir path does not exist
+end
+% NbFrame=1;
+% switch FileType
+%     case 'multimage'
+%     NbFrame=FileInfo.NumberOfFrames;
+%     case {'video','mmreader'}
+%     NomType='*';
+%     NbFrame=FileInfo.NumberOfFrames;
+% end 
 
-switch FileType
-    case 'multimage'
-    NbFrame=FileInfo.NumberOfFrames;
-    case {'video','mmreader'}
-    NomType='*';
-    NbFrame=FileInfo.NumberOfFrames;
-end 
-
-RootFile_i='';
+% RootFile_i='';
 NomTypePref='';
 if strcmp(NomType,'')||strcmp(NomType,'*')
     if exist(fullfileinput,'file')
@@ -69,10 +70,10 @@ if strcmp(NomType,'')||strcmp(NomType,'*')
     else
         RootFile='';
     end
-    i1_input=1;% the index now refer to the frame in the movie, choose 1 at opening
-    i2_input=[];
-    j1_input=[];
-    j2_input=[];
+%     i1_input=1;% the index now refer to the frame in the movie, choose 1 at opening
+%     i2_input=[];
+%     j1_input=[];
+%     j2_input=[];
 else
     %% possibly include the first index in the root name, if there exists a corresponding xml file
     r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
@@ -100,16 +101,12 @@ else
     sep1='';
     i1_str='(?<i1>)';%will set i1=[];
     i1_star='';
-    %     r.sep2='';
     i2_str='(?<i2>)';%will set i2=[];
     i2_star='';
-    %     sep3='';
     j1_str='(?<j1>)';%will set j1=[];
     j1_star='';
-    %     sep4='';
     j2_str='(?<j2>)';%will set j2=[];
     j2_star='';
-    %   NomTypeStr=NomType;
     %Look for cases with letter indexing for the second index
     r=regexp(NomType,'^(?<sep1>_?)(?<i1>\d+)(?<j1>[a|A])(?<j2>[b|B]?)$','names');
     if ~isempty(r)
@@ -239,7 +236,7 @@ else
     end
     %% update the file type if the input file does not exist (pb of 0001)
     if isempty(FileType)
-        [FileType,tild,Object]=get_file_type(dirpair(ifile_min).name);
+        [FileType,tild,MovieObject]=get_file_type(fullfile(FilePath,dirpair(ifile_min).name));
     end
 end
 
@@ -250,12 +247,12 @@ if isequal(j1_series,0), j1_series=[]; end
 if isequal(j2_series,0), j2_series=[]; end
 
 %% introduce the frame index in case of movies or multimage type
-if NbFrame>1
+if isfield(FileInfo,'NumberOfFrames')>1 && FileInfo.NumberOfFrames >1
     if isempty(i1_series)
-        i1_series=(1:NbFrame)';
+        i1_series=(1:FileInfo.NumberOfFrames)';
         i1_input=1;
     else
-       j1_series=(1:NbFrame)'; 
+       j1_series=(1:FileInfo.NumberOfFrames)'; 
        j1_input=1;
     end
 end
@@ -288,13 +285,4 @@ elseif size(j2_series,3)>1 %pairs j1 -j2
     end
 end
 
-% %% deals with frame index in movies
-% switch FileType
-%     case 'multimage'
-%    NomType='*';
-%    i1_series=(1:FileInfo.NbFrame)';
-%     case {'video','mmreader'}
-%     NomType='*';
-%     i1_series=(1:FileInfo.NumberOfFrames)';
-% end 
 

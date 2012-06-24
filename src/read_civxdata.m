@@ -52,13 +52,11 @@ Field=[];
 VelTypeOut=[];
 DataTest=nc2struct(filename,'ListGlobalAttribute','Conventions','CivStage');
 if isfield(DataTest,'Txt')
-    errormsg=DataTest.Txt; 
+    errormsg=['nc2struct:' DataTest.Txt]; 
     return
 elseif isequal(DataTest.Conventions,'uvmat/civdata')%test for new civ format
      [Field,VelTypeOut,errormsg]=read_civdata(filename,FieldNames,VelType,DataTest.CivStage);
-%      if ~isempty(errormsg)
-%          msgbox_uvmat('ERROR',errormsg)
-%      end
+      if ~isempty(errormsg),errormsg=['read_civdata:' errormsg];end
      return
 end
     
@@ -78,7 +76,7 @@ VelTypeOut=VelType;%default
 [var,role,units,vel_type_out_cell]=varcivx_generator(FieldNames,VelType);%determine the names of constants and variables to read
 [Field,vardetect,ichoice]=nc2struct(filename,var);%read the variables in the netcdf file
 if isfield(Field,'Txt')
-    errormsg=Field.Txt;
+    errormsg=['nc2struct:' Field.Txt];
     return
 end
 if vardetect(1)==0

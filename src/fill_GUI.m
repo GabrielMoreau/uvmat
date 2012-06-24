@@ -4,22 +4,23 @@ function errormsg=fill_GUI(Param,handles)
 %------------------------------------------------------------------------
 errormsg='';
 fields=fieldnames(Param);%list of fields in Param
+% loop on the elements of the input structure Param
 for ifield=1:numel(fields)
-    if isstruct(Param.(fields{ifield}))
+    if isstruct(Param.(fields{ifield}))% case of sa sub-structure
         if isfield(handles,fields{ifield})
             set(handles.(fields{ifield}),'Visible','on')
             children=get(handles.(fields{ifield}),'children');
             for ichild=1:numel(children)
                 hchild.(get(children(ichild),'tag'))=children(ichild);
             end
-            errormsg=fill_GUI(Param.(fields{ifield}),hchild);
+            errormsg=fill_GUI(Param.(fields{ifield}),hchild);% apply the function to the substructure
         end
     else
         hh=[];
-        input_data=Param.(fields{ifield});
+        input_data=Param.(fields{ifield})
         check_done=0;
         if isfield(handles,fields{ifield})
-            hh=handles.(fields{ifield});
+            hh=handles.(fields{ifield})
             if strcmp(get(hh,'Type'),'uitable')
                 set(hh,'Visible','on')
                 if ischar(input_data)
@@ -44,17 +45,27 @@ for ifield=1:numel(fields)
                         input_data=num2str(input_data);
                     end
                     set(hh,'String',input_data)
-                case{'Listbox','popupmenu'}
+                case{'listbox','popupmenu'}
+                    input_data
                     if isnumeric(input_data)
                         input_data=num2str(input_data);
                     end
                     menu=get(hh,'String');
-                    iline=find(strcmp(input_data,menu));
-                    if isempty(iline)
-                        iline=numel(menu)+1;
-                        set(hh,'String',[menu;{input_data}])
+                    if ischar(input_data)
+                        input_data={input_data};
                     end
-                    set(hh,'Value',iline)
+                    values=zeros(size(input_data));
+                    for idata=1:numel(input_data)
+                        iline=find(strcmp(input_data{idata},menu));
+                        if isempty(iline)
+                            values(idata)=numel(menu)+1;
+                            menu=[menu;input_data(idata)];
+                        else
+                            values(idata)=iline;
+                        end
+                    end
+                    set(hh,'String',[menu;input_data(idata)])
+                    set(hh,'Value',values)
             end
         end
     end
