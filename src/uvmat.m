@@ -206,12 +206,6 @@ handles.output = hObject;
 %% Update handles structure (standard GUI)
 guidata(hObject, handles);
 
-%% check the path and date of modification of all functions in uvmat
-path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
-[errormsg,date_str,svn_info]=check_files;%check the path of the functions called by uvmat.m
-date_str=['last modification: ' date_str];
-
-
 %% set the position of colorbar and ancillary GUIs:
 set(hObject,'Units','Normalized')
 movegui(hObject,'center')
@@ -329,15 +323,18 @@ if exist('input','var')
         testinputfield=1;
     end
 else
-   if ishandle(handles.UVMAT_title)
-       set(handles.UVMAT_title,'String',...
-           [{'Copyright  LEGI UMR 5519 /CNRS-UJF-Grenoble INP, 2010'};...
-           {'GNU General Public License'};...
-           {path_to_uvmat};...
-           {date_str};...
-           {['SVN revision : ' num2str(svn_info.cur_rev)]};...
-           errormsg]);
-   end
+    %% check the path and date of modification of all functions in uvmat
+    path_to_uvmat=which ('uvmat');% check the path detected for source file uvmat
+    [infomsg,date_str,svn_info]=check_files;%check the path of the functions called by uvmat.m   
+    date_str=['last modification: ' date_str];
+    if ishandle(handles.UVMAT_title)
+        set(handles.UVMAT_title,'String',...
+            [{'Copyright  LEGI UMR 5519 /CNRS-UJF-Grenoble INP, 2010'};...
+            {'GNU General Public License'};...
+            {path_to_uvmat};...
+            {date_str};...
+            infomsg]);
+    end
 end
 set(handles.uvmat,'UserData',UvData)
 if ~isempty(inputfile)
@@ -4126,14 +4123,6 @@ if get(handles.edit_object,'Value')
     end
     set(handles.ViewObject,'value',1)
     ViewObject_Callback(hObject, eventdata, handles)
-%     if isempty(hset_object)% open the GUI set_object with data of the currently selected object
-%         ViewObject_Callback(hObject, eventdata, handles)
-%         %         hset_object=findobj(allchild(0),'Tag','set_object');
-%     else
-%         hhset_object=guidata(hset_object);
-%         set(hhset_object.PLOT,'enable','on');
-%         set(get(hset_object,'children'),'enable','on')
-%     end
 else % desctivate object edit mode
     set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
     if ~isempty(hset_object)% open the 
@@ -4585,18 +4574,6 @@ function MenuEditObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.edit_object,'Value',1)
 edit_Callback(hObject, eventdata, handles)
-
-% %------------------------------------------------------------------------
-% function enable_transform(handles,state)
-% %------------------------------------------------------------------------
-% set(handles.transform_fct,'Visible',state)
-% set(handles.TRANSFORM_txt,'Visible',state)    
-% set(handles.transform_fct,'Visible',state)  
-% set(handles.path_transform,'Visible',state)
-% set(handles.pxcmx_txt,'Visible',state)
-% set(handles.pxcmy_txt,'Visible',state)
-% set(handles.pxcm,'Visible',state)
-% set(handles.pycm,'Visible',state)
 
 %------------------------------------------------------------------------
 function MenuEditVectors_Callback(hObject, eventdata, handles)

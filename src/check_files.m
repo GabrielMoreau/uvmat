@@ -53,6 +53,7 @@ list_fct={...
     'editxml.fig';...%interface for editxml
     'fileparts_uvmat';...% extracts the root name,field indexes and nomenclature type from an input filename
     'fill_GUI';...% fill a GUI with handles 'handles' from input data Param 
+    'filter_tps';...% find the thin plate spline coefficients for interpolation-smoothing
     'find_field_indices';...% group the variables of a nc-formated Matlab structure into 'fields' with common dimensions
     'find_file_series';...%check the content of an input file and find the corresponding file series
     'fullfile_uvmat';...%creates a file name from a root name and indices.
@@ -127,7 +128,6 @@ end
 
 
 %% loop on the list of functions in the uvmat package
-
 icount=0;
 datnum=zeros(1,length(list_fct));
 for i=1:length(list_fct)
@@ -159,18 +159,20 @@ try
         svn_info.rep_rev=str2double(t.rev);
         [tild,result]=system(['svn status'  dir_fct]);
         svn_info.status=result;
+        errormsg =[errormsg {['SVN revision : ' num2str(svn_info.cur_rev)]}];
         if svn_info.rep_rev>svn_info.cur_rev
-            errormsg {length(errormsg)+1}=['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder'];
+            errormsg =[errormsg ...
+                {['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder']}];
         end
         modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');
         if ~isempty(modifications)
-            for k=1:length(modifications)
-                errormsg {length(errormsg)+1}=modifications{k};
-            end
+            errormsg=[errormsg modifications];
         end
+    else
+        errormsg=[errormsg {'SVN not available'}];
     end
 catch ME
-    errormsg=ME.message;
+    errormsg=[errormsg {'SVN not available'}];
 end
 errormsg=errormsg';
 

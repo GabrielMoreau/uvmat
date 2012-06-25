@@ -46,7 +46,6 @@ for ifield=1:numel(fields)
                     end
                     set(hh,'String',input_data)
                 case{'listbox','popupmenu'}
-                    input_data
                     if isnumeric(input_data)
                         input_data=num2str(input_data);
                     end
@@ -58,13 +57,13 @@ for ifield=1:numel(fields)
                     for idata=1:numel(input_data)
                         iline=find(strcmp(input_data{idata},menu));
                         if isempty(iline)
-                            values(idata)=numel(menu)+1;
-                            menu=[menu;input_data(idata)];
+                            values(idata)=1;
+                            menu=[input_data(idata);menu];
                         else
-                            values(idata)=iline;
+                            values(idata)=iline(1);
                         end
                     end
-                    set(hh,'String',[menu;input_data(idata)])
+                    set(hh,'String',menu)
                     set(hh,'Value',values)
             end
         end

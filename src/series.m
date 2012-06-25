@@ -100,14 +100,14 @@ else
      set(handles.TransformName,'Value',1);%default
 end
 if isfield(param,'FileName')
+    InputTable={'','','','',''};
+    set(handles.InputTable,'Data',InputTable)
     if isfield(param,'FileName_1')
         display_file_name(handles,param.FileName_1,0)
         display_file_name(handles,param.FileName,1)
     else
         display_file_name(handles,param.FileName,0)
     end
-    InputTable={'','','','',''};
-    set(handles.InputTable,'Data',InputTable)
 end  
 
 %% fields input initialisation

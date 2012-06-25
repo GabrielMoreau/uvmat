@@ -355,7 +355,7 @@ if strcmp(ExtInput,'.nc')
         % settings for civx data,
     elseif ~isempty(Data.absolut_time_T0')% case of  civx data,
         set(handles.Program,'Value',1) %select Cix by default
-        ListProgram_Callback([],[], handles)
+        Program_Callback([],[], handles)
         if ~isempty(Data.fix2)
             ind_opening=5;
         elseif ~isempty(Data.civ2)
@@ -422,7 +422,7 @@ set(handles.RootPath,'String',RootPath)
 set(handles.SubdirImages,'String',SubdirImages)
 set(handles.RootFile,'String',RootFile)
 if strcmp(ExtInput,'.nc')
-    SubDirCiv=regexprep(SubDir,[SuddirImages '^'],'');%suppress the root  SuddirImages;
+    SubDirCiv=regexprep(SubDir,[SubdirImages '^'],'');%suppress the root  SuddirImages;
 else
     SubDirCiv= '.civ';
 end
@@ -448,7 +448,7 @@ MaxIndex_i=max(i1_series(i1_series>0));
 MaxIndex_j=max(j1_series(j1_series>0));
 
 %% look for an image documentation file
-XmlFileName=find_imadoc(RootPath,SubDir,RootFile,FileExt);
+XmlFileName=find_imadoc(RootPath,SubDir,RootFile,ImaExt);
 % SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
 % filexml=fullfile(RootPath,[SubDirBase '.xml']);% new convention: xml above the image dir
 % if ~exist(filexml,'file')
@@ -481,13 +481,13 @@ if ~isempty(XmlFileName)
     drawnow
     [XmlData,warntext]=imadoc2struct(XmlFileName);
     nom_type_read=[];
-    if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
-        [~,tild,tild,tild,tild,tild,tild,tild,nom_type_read]=fileparts_uvmat(XmlData.Heading.ImageName);
-        fullname=fullfile(fileparts(RootName),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file,
-        if ~exist(fullname,'file')
-            msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
-        end
-    end
+%     if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
+%         [~,tild,tild,tild,tild,tild,tild,tild,nom_type_read]=fileparts_uvmat(XmlData.Heading.ImageName);
+%         fullname=fullfile(fileparts(RootName),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file,
+%         if ~exist(fullname,'file')
+%             msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
+%         end
+%     end
     if isfield(XmlData,'Time') && ~isempty(XmlData.Time)
         time=XmlData.Time;
         %transform .Time to a column vector if it is a line vector thenomenclature uses a single index: correct possible bug in xml
@@ -1182,8 +1182,8 @@ nbslice=numel(j1_civ1);
         [Param.Civ1.FileTypeB,ImageInfoB_civ1,Param.Civ1.ImageB]=get_file_type(filecell.ima2.civ1{1});
     end
     if Param.CheckCiv2
-        [Param.Civ2.FileTypeA,FileInfoA_civ2,Param.Civ2.ImageA]=get_file_type(filecell.ima1.civ2{1});
-        [Param.Civ2.FileTypeB,FileInfoB_civ2,Param.Civ2.ImageB]=get_file_type(filecell.ima2.civ2{1});
+        [Param.Civ2.FileTypeA,ImageInfoA_civ2,Param.Civ2.ImageA]=get_file_type(filecell.ima1.civ2{1});
+        [Param.Civ2.FileTypeB,ImageInfoB_civ2,Param.Civ2.ImageB]=get_file_type(filecell.ima2.civ2{1});
     end
 % end
 
@@ -1205,8 +1205,7 @@ for ifile=1:nbfield
         Param.OutputFile=regexprep(Param.OutputFile,'.nc','');
 
         if Param.CheckCiv1
-            % read image-dependent parameters
-            
+            % read image-dependent parameters          
             if ~checkframe% && size(time,1)>=i2_civ1(ifile) && size(time,2)>=j2_civ1(j)
                 Param.Civ1.Dt=(time(i2_civ1(ifile)+1,j2_civ1(j)+1)-time(i1_civ1(ifile)+1,j1_civ1(j)+1));
             else
@@ -1219,9 +1218,9 @@ for ifile=1:nbfield
             end
             Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};
             Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
-            Param.Civ1.ImageBitDepth=FileInfoA_civ1.BitDepth;
-            Param.Civ1.ImageWidth=FileInfoA_civ1.Width;
-            Param.Civ1.ImageHeight=FileInfoA_civ1.Height;
+            Param.Civ1.ImageBitDepth=ImageInfoA_civ1.BitDepth;
+            Param.Civ1.ImageWidth=ImageInfoA_civ1.Width;
+            Param.Civ1.ImageHeight=ImageInfoA_civ1.Height;
             Param.Civ1.FrameIndexA=i1_civ1(ifile);
             Param.Civ1.FrameIndexB=i2_civ1(ifile);
             % read mask )parameters
@@ -1293,9 +1292,9 @@ for ifile=1:nbfield
                 end
             end
 
-            Param.Civ2.ImageBitDepth=FileInfoA_civ2.BitDepth;
-            Param.Civ2.ImageWidth=FileInfoA_civ2.Width;
-            Param.Civ2.ImageHeight=FileInfoA_civ2.Height;
+            Param.Civ2.ImageBitDepth=ImageInfoA_civ2.BitDepth;
+            Param.Civ2.ImageWidth=ImageInfoA_civ2.Width;
+            Param.Civ2.ImageHeight=ImageInfoA_civ2.Height;
             Param.Civ2.FrameIndexA=i1_civ2(ifile);
             Param.Civ2.FrameIndexB=i2_civ2(ifile);           
         end
@@ -1498,7 +1497,8 @@ end
                  
             else
                 for p=1:length(batch_file_list)
-                    fid=fopen( batch_file_list{p});
+%                     civ_matlab([batch_file_list{p} '.xml'], [batch_file_list{p} '.nc'])
+                    fid=fopen(batch_file_list{p});
                     eval(fscanf(fid,'%s'));
                     fclose(fid);
                 end

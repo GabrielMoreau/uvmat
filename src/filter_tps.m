@@ -1,5 +1,7 @@
+%'filter_tps': find the thin plate spline coefficients for interpolation-smoothing
 %------------------------------------------------------------------------
-% patch function
+% [SubRange,NbSites,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomain,Rho,Threshold)
+%
 % OUTPUT:
 % SubRange(NbCoord,NbSubdomain,2): range (min, max) of the coordiantes x and y respectively, for each subdomain
 % NbSites(NbSubdomain): number of source points for each subdomain
@@ -9,20 +11,15 @@
 % U_tps,V_tps: weight of the tps for each subdomain
 %
 % INPUT:
-% X, Y: set of coordinates of the initial data
+% coord=[X Y]: matrix whose first column is the x coordinates of the initial data, the second column the y coordiantes
 % U,V: set of velocity components of the initial data
 % Rho: smoothing parameter
 % Threshold: max diff accepted between smoothed and initial data 
 % Subdomain: estimated number of data points in each subdomain
 
-%function [SubRangx,SubRangy,nbpoints,FF,U_smooth,V_smooth,X_tps,Y_tps,U_tps,V_tps,Indices_tps] =filter_tps(Coord,U,V,W,SubDomain,Rho,Threshold)
 function [SubRange,NbSites,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomain,Rho,Threshold)
 %subdomain decomposition
 warning off
-% U=reshape(U,[],1);
-% V=reshape(V,[],1);
-% X=reshape(X,[],1);
-% Y=reshape(Y,[],1);
 nbvec=size(Coord,1);
 W_tps=[];%default
 W_smooth=[];
@@ -42,7 +39,7 @@ CentreY=linspace(MinCoord(2)+Siz(2)/2,MaxCoord(2)-Siz(2)/2,NbSubDomainY);
 [CentreX,CentreY]=meshgrid(CentreX,CentreY);
 CentreY=reshape(CentreY,1,[]);% Y positions of subdomain centres
 CentreX=reshape(CentreX,1,[]);% X positions of subdomain centres
-rho=Siz(1)*Siz(2)*Rho/1000000;%optimum rho increase as the area of the subdomain (division by 10^6 to reach good values with the default GUI input)
+rho=Siz(1)*Siz(2)*Rho/1000;%optimum rho increase as the area of the subdomain (division by 10^6 to reach good values with the default GUI input)
 U_tps_sub=zeros(nbvec,NbSubDomain);%default spline
 V_tps_sub=zeros(nbvec,NbSubDomain);%default spline
 Indices_tps=zeros(nbvec,NbSubDomain);%default indices
