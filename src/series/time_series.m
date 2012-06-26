@@ -71,7 +71,6 @@ if ischar(Param)
 % RUN case: parameters introduced as the input structure Param
 else
     hseries=guidata(Param.hseries);%handles of the GUI series
-    WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
     if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
         checkrun=1;% will only search interactive input parameters (preparation of BATCH mode)
     else
@@ -139,7 +138,7 @@ end
 
 %% coordinate transform or other user defined transform
 transform_fct='';%default
-if isfield(Param,'FieldTransform')
+if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
     addpath(Param.FieldTransform.TransformPath)
     transform_fct=str2func(Param.FieldTransform.TransformName);
     rmpath(Param.FieldTransform.TransformPath)
@@ -168,6 +167,9 @@ NomTypeOut='_1-2_1';% output file index will indicate the first and last ref ind
 %         return
 %     end
 % end
+if checkrun==1
+    return % stop here for input checks
+end
 
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
@@ -241,23 +243,23 @@ end
 nbmissing=0; %number of undetected files
 for i_slice=1:NbSlice
     index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
-    nbfiles=0;
+    nbfile=0;
     nbmissing=0;
     
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
     for index=index_slice       
         if checkrun
-            update_waitbar(hseries.waitbar_frame,WaitbarPos,index/(nbfield))
+            update_waitbar(hseries.Waitbar,index/(nbfield))
             stopstate=get(hseries.RUN,'BusyAction');
         else
             stopstate='queue';
         end
         
         %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
-        Data=cell(1,nbview);%initiate the set Data
-        nbtime=0;
-        dt=[];
         if isequal(stopstate,'queue')% enable STOP command
+            Data=cell(1,nbview);%initiate the set Data
+            nbtime=0;
+            dt=[];
             % loop on views (in case of multiple input series)
             for iview=1:nbview
                 % reading input file(s)
@@ -276,6 +278,7 @@ for i_slice=1:NbSlice
                     Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
                 end
             end
+            
             % coordinate transform (or other user defined transform)
             if ~isempty(transform_fct)
                 if nbview==2
@@ -287,6 +290,13 @@ for i_slice=1:NbSlice
                     Data{1}=transform_fct(Data{1},XmlData{1});
                 end
             end
+            
+            % field calculation (vort, div...)
+            if strcmp(FileType{1},'civx')||strcmp(FileType{1},'civdata')
+                Data{1}=calc_field(InputFields{1}.FieldName,Data{1});%calculate field (vort..)
+            end
+            
+            % field substration (for two input file series)
             if length(Data)==2
                 [Field,errormsg]=sub_field(Data{1},Data{2}); %substract the two fields
             else
@@ -295,10 +305,10 @@ for i_slice=1:NbSlice
             if Param.CheckObject
                 [Field,errormsg]=proj_field(Field,Param.ProjObject);
             end
-            nbtime=nbtime+1;
+            nbfile=nbfile+1;
             
             % initiate the time series at the first iteration
-            if nbtime==1
+            if nbfile==1
                 % stop program if the first field reading is in error
                 if ~isempty(errormsg)
                     displ_uvmat('ERROR',['error in time_series/sub_field:' errormsg],checkrun)
@@ -355,7 +365,7 @@ for i_slice=1:NbSlice
                     if isempty(errormsg)
                         if isequal(Param.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
                             if isempty(VarVal)
-                                displ_uvmat('ERROR',['empty result at frame index ' num2str(i1_series{iview}(ifile))],checkrun)
+                                displ_uvmat('ERROR',['empty result at frame index ' num2str(i1_series{iview}(index))],checkrun)
                                 return
                             end
                             VarVal=mean(VarVal,1);
@@ -377,19 +387,18 @@ for i_slice=1:NbSlice
             % record the time:
             if isempty(time)% time read in ncfiles
                 if isfield(Field,'Time')
-                    DataOut.Time(filecounter,1)=Field.Time;
+                    DataOut.Time(nbfile,1)=Field.Time;
                 else
-                    DataOut.Time(filecounter,1)=ifile;%default
+                    DataOut.Time(nbfile,1)=index;%default
                 end
             else % time from ImaDoc prevails  TODO: correct
-                %  DataOut.Time(filecounter,1)=time{1}(i1_series{1})(ifile),j1_series{1}(ifile))+time(end,i2_series{end}(ifile),j2_series{end}(ifile)))/2;
-                DataOut.Time(filecounter,1)=i1_series{1}(ifile);% TODO : generalise
+                DataOut.Time(nbtime,1)=i1_series{1}(index);% TODO : generalise
             end
             
             % record the number of missing input fields
             if ~isempty(errormsg)
                 nbmissing=nbmissing+1;
-                display(['ifile=' num2str(ifile) ':' errormsg])
+                display(['index=' num2str(index) ':' errormsg])
             end
         end
     end
@@ -451,18 +460,17 @@ for i_slice=1:NbSlice
 end
 
 %% plot the time series (the last one in case of multislices)
-figure
-haxes=axes;
 if checkrun
-plot_field(DataOut,haxes)
+    figure
+    haxes=axes;
+    plot_field(DataOut,haxes)
+       
+    %% display the result file using the GUI get_field
+    hget_field=findobj(allchild(0),'name','get_field');
+    if ~isempty(hget_field)
+        delete(hget_field)
+    end
+    get_field(OutputFile,DataOut)
 end
-
-%% display the result file using the GUI get_field
-hget_field=findobj(allchild(0),'name','get_field');
-if ~isempty(hget_field)
-    delete(hget_field)
-end
-get_field(OutputFile,DataOut)
-    
 
 

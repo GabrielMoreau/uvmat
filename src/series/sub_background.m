@@ -79,7 +79,6 @@ if ischar(Param)
 % RUN case: parameters introduced as the input structure Param
 else
     hseries=guidata(Param.hseries);%handles of the GUI series
-    WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
     if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
         checkrun=1;% will search input parameters (preparation of BATCH mode)
     else
@@ -178,7 +177,7 @@ end
 if checkrun %get specific parameters interactively
     prompt = {'volume scan mode (Yes/No)';'Number of images for the sliding background (MUST FIT IN COMPUTER MEMORY)';...
         'the luminosity rank chosen to define the background (0.1=for dense particle seeding, 0.5 (median) for sparse particles'};
-    dlg_title = ['get (slice by slice) a sliding background and substract to each image, result in subdir ' Param.OutputDir];
+    dlg_title = ['get (slice by slice) a sliding background and substract to each image, result in subdir ' OutputDir];
     num_lines= 3;
     def     = { 'No';num2str(nbaver_init);'0.1'};
     answer = inputdlg(prompt,dlg_title,num_lines,def);
@@ -360,7 +359,7 @@ for islice=1:NbSlice
         for ifield = step*ceil(nbaver/2)+1:step:nbfield_i-step*floor(nbaver/2)
             if checkrun
                 stopstate=get(hseries.RUN,'BusyAction');
-                update_waitbar(hseries.waitbar_frame,WaitbarPos,(ifield+(islice-1)*nbfield_i)/(nbfield_i*NbSlice))
+                update_waitbar(hseries.Waitbar,(ifield+(islice-1)*nbfield_i)/(nbfield_i*NbSlice))
             else
                 stopstate='queue';
             end
@@ -439,11 +438,6 @@ for islice=1:NbSlice
     end
 end
 
-%finish the waitbar
-if checkrun
-    update_waitbar(hseries.waitbar,WaitbarPos,1)
-end
-    
 
 function C=levels(A)
 %whos A;

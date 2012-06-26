@@ -70,13 +70,12 @@ if ischar(Param)
         checkrun=0;
 % RUN case: parameters introduced as the input structure Param
 else
-    hseries=guidata(Param.hseries);%handles of the GUI series
-    WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
     if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
         checkrun=1;% will only search interactive input parameters (preparation of BATCH mode)
     else
         checkrun=2; % indicate the RUN option is used
     end
+    hseries=guidata(Param.hseries);%handles of the GUI series
 end
 ParamOut=Param; %default output
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
@@ -136,7 +135,7 @@ end
 
 %% coordinate transform or other user defined transform
 transform_fct='';%default
-if isfield(Param,'FieldTransform')
+if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
     addpath(Param.FieldTransform.TransformPath)
     transform_fct=str2func(Param.FieldTransform.TransformName);
     rmpath(Param.FieldTransform.TransformPath)
@@ -191,7 +190,7 @@ for i_slice=1:NbSlice
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
     for index=index_slice
         if checkrun
-            update_waitbar(hseries.waitbar_frame,WaitbarPos,index/(nbfield))
+            update_waitbar(hseries.Waitbar,index/(nbfield))
             stopstate=get(hseries.RUN,'BusyAction');
         else
             stopstate='queue';
@@ -228,7 +227,7 @@ for i_slice=1:NbSlice
             end
             
             % field calculation (vort, div...)
-            if strcmp(FileType{1},'civx')||strcmp(FileType{1},'civ')
+            if strcmp(FileType{1},'civx')||strcmp(FileType{1},'civdata')
                 Data{1}=calc_field(InputFields{1}.FieldName,Data{1});%calculate field (vort..)
             end
             

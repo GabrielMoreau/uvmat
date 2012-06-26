@@ -72,7 +72,6 @@ if ischar(Param)
 % RUN case: parameters introduced as the input structure Param
 else
     hseries=guidata(Param.hseries);%handles of the GUI series
-    WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
     if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
         checkrun=1;% will only search interactive input parameters (preparation of BATCH mode)
     else
@@ -138,7 +137,7 @@ end
 
 %% coordinate transform or other user defined transform
 transform_fct='';%default
-if isfield(Param,'FieldTransform')
+if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
     addpath(Param.FieldTransform.TransformPath)
     transform_fct=str2func(Param.FieldTransform.TransformName);
     rmpath(Param.FieldTransform.TransformPath)
@@ -182,7 +181,7 @@ for i_slice=1:NbSlice
     for index=index_slice
   
         if checkrun
-            update_waitbar(hseries.waitbar_frame,WaitbarPos,index/(nbfield))
+            update_waitbar(hseries.Waitbar,index/(nbfield))
             stopstate=get(hseries.RUN,'BusyAction');
         else
             stopstate='queue';
@@ -212,7 +211,7 @@ for i_slice=1:NbSlice
                 Data{iview}=transform_fct(Data{iview},XmlData{iview});  %transform to phys if requested
             end
             % field calculation (vort, div...)
-            if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civ')
+            if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
                 Data{iview}=calc_field(Param.InputFields.FieldName,Data{iview});%calculate field (vort..)
             end
             

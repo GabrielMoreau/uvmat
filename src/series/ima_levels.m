@@ -69,7 +69,6 @@ if ischar(Param)
 % RUN case: parameters introduced as the input structure Param
 else
     hseries=guidata(Param.hseries);%handles of the GUI series
-    WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
     checkrun=2; % indicate the RUN option is used
 end
 
@@ -154,7 +153,7 @@ end
 j1=[];%default
 for ifile=1:nbfield
     if checkrun
-        update_waitbar(hseries.waitbar_frame,WaitbarPos,ifile/nbfield)
+        update_waitbar(hseries.Waitbar,ifile/nbfield)
         stopstate=get(hseries.RUN,'BusyAction');
     else
         stopstate='queue';

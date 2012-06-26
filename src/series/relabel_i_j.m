@@ -72,7 +72,6 @@ if ischar(Param)
 % RUN case: parameters introduced as the input structure Param
 else
     hseries=guidata(Param.hseries);%handles of the GUI series
-    WaitbarPos=get(hseries.waitbar_frame,'Position');%position of the waitbar on the GUI series
     if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
         checkrun=1;% will only search interactive input parameters (preparation of BATCH mode)
     else
@@ -321,7 +320,7 @@ end
 nbfield2=size(XmlData{1}.Time,2);
 for ifile=1:nbfield
     if checkrun
-        update_waitbar(hseries.waitbar_frame,WaitbarPos,ifile/nbfield)
+        update_waitbar(hseries.Waitbar,ifile/nbfield)
         stopstate=get(hseries.RUN,'BusyAction');
     else
         stopstate='queue';
