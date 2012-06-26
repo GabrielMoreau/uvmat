@@ -72,9 +72,21 @@ end
 if ~isempty(errormsg)
     msgbox_uvmat('WARNING',errormsg);
 end
+
+
 test_batch=0;%default: ,no batch mode available
 if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
-    test_batch=strcmp(sparam.BatchParam.BatchMode,'sge'); %sge is currently the only implemented batch mod
+    batch_mode=sparam.BatchParam.BatchMode; %sge is currently the only implemented batch mod
+    switch batch_mode
+        case 'sge'
+            test_command='qstat';
+        case 'oar'
+            test_command='oarstat';
+    end
+    [s,w]=system(test_command);
+    if isequal(s,0)
+        test_batch=1;
+    end
 end
 RUNVal=get(handles.RunMode,'Value');
 if test_batch==0
@@ -1090,22 +1102,8 @@ else % run
     end
 end
 
-%% check batch mode supported
-if strcmp(Param.RunMode,'cluster') %computation dispatched on a cluster 
-    switch batch_mode
-        case 'sge'
-            test_command='qstat';
-        case 'oar'
-            test_command='oarstat';
-    end   
-    [s,w]=system(test_command);
-    if ~isequal(s,0)
-        errormsg=[batch_mode ' batch system not available'];
-        return
-    end
-end
 
-%% check if the binaries exist
+%% check if the binaries exist : to move in civ_opening
 % ListProgram=get(handles.Program,'String');
 % Param.CivMode=ListProgram{get(handles.Program,'Value')};
 binary_list={};
@@ -1115,22 +1113,21 @@ switch Param.Program
     case 'CivAll'% desactivated option
         binary_list={'Civ'};
     case 'civ_matlab.sh'% compiled version of civ_matlab 
-        if batch
-            binary_list={'CivmBin'};
-            % verifier MenuMatlab installe sur le cluster
-            % difficile a faire a priori
-        end          
+        binary_list={'CivmBin'};         
 end
 for bin_name=binary_list %loop on the list of binaries
     if isfield(Param.xml,bin_name{1})% bin_name{1} =current name in the list
         if exist(Param.xml.(bin_name{1}),'file')
             [path,name,ext]=fileparts(Param.xml.(bin_name{1}));
             currentdir=pwd;
+            if isempty(path)
+                path=fileparts(which('civ.m'));
+            end
             if exist(path,'dir')
                 cd(path);
                 binpath=pwd;%path of the binary
                 Param.xml.(bin_name{1})=fullfile(binpath,[name ext]);
-                cd(currentdir)
+                cd(currentdir);
             else
                 errormsg=['path ' path ' for binaries defined in PARAM.xml does not exist'];
                 return
@@ -1305,10 +1302,15 @@ for ifile=1:nbfield
               
         % create the file used in run or batch
         switch Param.Program
-            case {'civ_matlab','civ_matlab.sh'}
+            case {'civ_matlab'}
                 filename_bat=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_BAT$2$3.m');
-            case {'CivX','CivAll'}
-                filename_bat=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_BAT$2$3.bat');
+            case {'CivX','CivAll','civ_matlab.sh'}
+                switch computer
+                    case {'PCWIN','PCWIN64'}
+                        filename_bat=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_BAT$2$3.bat');
+                    case {'GLNX86','GLNXA64','MACI64'}
+                        filename_bat=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_BAT$2$3.sh');
+                end
         end
         
         % print the command in the file
@@ -1319,217 +1321,261 @@ for ifile=1:nbfield
         end
         fprintf(fid,cmd);
         fclose(fid);
-        if isunix
-            system(['chmod +x ' filename_bat]);
-        end
-        batch_file_list{length(batch_file_list)+1}=filename_bat;
         
+        % special case for civ_matlab on cluster
+        if strcmp(Param.Program,'civ_matlab') && strcmp(Param.RunMode,'cluster')
+            filename_bat2=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_BAT$2$3.sh');
+            [fid,message]=fopen(filename_bat2,'w');
+            if isequal(fid,-1)
+                errormsg=['creation of .bat file: ' message];
+                return
+            end
+            fprintf(fid,['#!/bin/bash \n' ...
+                '/etc/sysprofile \n'...
+                'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n'...
+                'addpath(''' path_civ ''');\n']);
+            for p=1:length(batch_file_list)
+                fprintf(fid,['run ' filename_bat '\n']);
+            end
+            fprintf(fid, 'exit \n END_MATLAB \n');
+            fclose(fid);
+            filename_bat=filename_bat2;
+        end
+        
+        switch computer
+            case {'GLNX86','GLNXA64','MACI64'}
+                system(['chmod +x ' filename_bat]);
+        end
+        batch_file_list{length(batch_file_list)+1}=filename_bat; 
     end
 end
 
 %% start calculation
 %computation on cluster
 %if batch ==3
- if  strcmp(Param.RunMode,'cluster') 
-    switch batch_mode    
-        case 'sge' %at the moment only psmn ENS Lyon uses it
-            for p=1:length(batch_file_list)
-                %cmd=['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' batch_file_list{p}];
-                cmd=['!qsub -q piv1,piv2,piv3 '...
-                    '-e ' regexprep(batch_file_list{p},'.bat','.errors') ' -o ' regexprep(batch_file_list{p},'.bat','.log ')...
-                    ' -v ' 'LD_LIBRARY_PATH=/home/sjoubaud/matlab_sylvain/civx/lib ' batch_file_list{p}];               
-                display(cmd);eval(cmd);
-            end            
-        case 'oar_old'
+switch Param.RunMode,
+    case 'cluster'
+        switch batch_mode
+            case 'sge' %at the moment only psmn ENS Lyon uses it
+                for p=1:length(batch_file_list)
+                    %cmd=['!qsub -p ' pvalue ' -q civ.q -e ' flname '.errors -o ' flname '.log' ' ' batch_file_list{p}];
+                    cmd=['!qsub -q piv1,piv2,piv3 '...
+                        '-e ' regexprep(batch_file_list{p},'.bat','.errors') ' -o ' regexprep(batch_file_list{p},'.bat','.log ')...
+                        ' -v ' 'LD_LIBRARY_PATH=/home/sjoubaud/matlab_sylvain/civx/lib ' batch_file_list{p}];
+                    display(cmd);eval(cmd);
+                end
+            case 'oar_old' % to remove
                 for p=1:length(batch_file_list)
                     oar_command=['!oarsub -n CIVX -q nicejob '...
-                   '-E ' regexprep(batch_file_list{p},'.bat','.errors') ' -O ' regexprep(batch_file_list{p},'.bat','.log ')...
-                    '-l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:60:00"   ' batch_file_list{p}];
-                display(oar_command);eval(oar_command);
-                end                
-        case 'oar'
-            
-            max_walltime=3600*12; % 12h max
-            oar_modes={'oar-parexec','oar-dispatch','mpilauncher'};
-            text={'Batch processing on servcalcul3 LEGI';...
-                'Please choose one of the followint modes';...
-                '* oar-parexec : default and best choice';...
-                '* oar-dispatch : jobs in a container of several cores';...
-                '* mpilauncher : one single parallel mpi job using several cores';...
-                '**********************************'...
-                };
-            [S,v]=listdlg('PromptString',text,'ListString',oar_modes,...
-                'SelectionMode','single','ListSize',[400 100],'Name','LEGI job mode');
-            switch oar_modes{S}
-                case 'oar-parexec' %oar-dispatch.pl
-                    answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
-                    ncores=str2double(answer{1});
-                    extra_oar=answer{2};
-                    walltime_onejob=600;%seconds
-                    filename_joblist=fullfile(RootBat,'job_list.txt');
-                    fid=fopen(filename_joblist,'w');
-                    for p=1:length(batch_file_list)
-                        fprintf(fid,[batch_file_list{p} '\n']);
-                    end
-                    fclose(fid)
-                    oar_command=['oarsub -n CIVX '...
-                        '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
-                        '-l /core=' num2str(ncores) ','...
-                            'walltime=' datestr(min(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,max_walltime/86400),13) ' '...
-                        '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
-                        '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
-                        extra_oar ' '...
-                        '"oar-parexec -s -f ' filename_joblist ' '...
-                            '-l ' filename_joblist '.log"'];
-                    filename_oarcommand=fullfile(RootBat,'oar_command');
-                    fid=fopen(filename_oarcommand,'w');
-                    fprintf(fid,[oar_command '\n']);
-                    fclose(fid);
-                    display(oar_command);
-                    eval(['! . ' filename_oarcommand])
-                case 'oar-dispatch' %oar-dispatch.pl
-                    ncores=str2double(...
-                        inputdlg('Number of cores (max 36)','oarsub parameter',1,{'6'})...
-                        );
-                    walltime_onejob=600;%seconds
-                    filename_joblist=fullfile(RootBat,'job_list.txt');
-                    fid=fopen(filename_joblist,'w');
-                    for p=1:length(batch_file_list)
+                        '-E ' regexprep(batch_file_list{p},'.bat','.errors') ' -O ' regexprep(batch_file_list{p},'.bat','.log ')...
+                        '-l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:60:00"   ' batch_file_list{p}];
+                    display(oar_command);eval(oar_command);
+                end
+            case 'oar'
+                max_walltime=3600*12; % 12h max
+                oar_modes={'oar-parexec','oar-dispatch','mpilauncher'};
+                text={'Batch processing on servcalcul3 LEGI';...
+                    'Please choose one of the followint modes';...
+                    '* oar-parexec : default and best choice';...
+                    '* oar-dispatch : jobs in a container of several cores';...
+                    '* mpilauncher : one single parallel mpi job using several cores';...
+                    '**********************************'...
+                    };
+                [S,v]=listdlg('PromptString',text,'ListString',oar_modes,...
+                    'SelectionMode','single','ListSize',[400 100],'Name','LEGI job mode');
+                switch oar_modes{S}
+                    case 'oar-parexec' %oar-dispatch.pl
+                        answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
+                        ncores=str2double(answer{1});
+                        if strcmp(Param.Program,'civ_matlab')
+                            ncores=1;
+                        end
+                        extra_oar=answer{2};
+                        walltime_onejob=600;%seconds
+                        filename_joblist=fullfile(RootBat,'job_list.txt');
+                        fid=fopen(filename_joblist,'w');
+                        for p=1:length(batch_file_list)
+                            fprintf(fid,[batch_file_list{p} '\n']);
+                        end
+                        fclose(fid);
                         oar_command=['oarsub -n CIVX '...
-                            '-E ' regexprep(batch_file_list{p},'\.bat\>','.stderr') ' -O ' regexprep(batch_file_list{p},'\.bat\>','.stdout ')...
-                            '-l "/core=1,walltime=' datestr(walltime_onejob/86400,13) '"   ' batch_file_list{p}];
+                            '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
+                            '-l /core=' num2str(ncores) ','...
+                            'walltime=' datestr(min(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,max_walltime/86400),13) ' '...
+                            '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
+                            '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
+                            extra_oar ' '...
+                            '"oar-parexec -s -f ' filename_joblist ' '...
+                            '-l ' filename_joblist '.log"\n'];
+                        filename_oarcommand=fullfile(RootBat,'oar_command');
+                        fid=fopen(filename_oarcommand,'w');
+                        fprintf(fid,oar_command);
+                        fclose(fid);
+                        fprintf(oar_command);% display in command line
+                        system(oar_command);
+%                         eval(['! . ' filename
+%                             _oarcommand])
+                    case 'oar-dispatch' %oar-dispatch.pl
+                        ncores=str2double(...
+                            inputdlg('Number of cores (max 36)','oarsub parameter',1,{'6'})...
+                            );
+                        walltime_onejob=600;%seconds
+                        filename_joblist=fullfile(RootBat,'job_list.txt');
+                        fid=fopen(filename_joblist,'w');
+                        for p=1:length(batch_file_list)
+                            oar_command=['oarsub -n CIVX '...
+                                '-E ' regexprep(batch_file_list{p},'\.bat\>','.stderr') ' -O ' regexprep(batch_file_list{p},'\.bat\>','.stdout ')...
+                                '-l "/core=1,walltime=' datestr(walltime_onejob/86400,13) '"   ' batch_file_list{p}];
+                            fprintf(fid,[oar_command '\n']);
+                        end
+                        fclose(fid);
+                        oar_command=['oarsub -t container -n civx-container '...
+                            '-l /core=' num2str(ncores)...
+                            ',walltime=' datestr(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,13) ' '...
+                            '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
+                            '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
+                            '"oar-dispatch -f ' filename_joblist '"'];
+                        filename_oarcommand=fullfile(RootBat,'oar_command');
+                        fid=fopen(filename_oarcommand,'w');
                         fprintf(fid,[oar_command '\n']);
+                        fclose(fid);
+                        display(oar_command);
+                        eval(['! . ' filename_oarcommand])
+                    case 'mpilauncher'
+                        filename_joblist=fullfile(RootBat,'job_list.txt');
+                        fid=fopen(filename_joblist,'w');
+                        
+                        for p=1:length(batch_file_list)
+                            fprintf(fid,[batch_file_list{p} '\n']);
+                        end
+                        fclose(fid)
+                        text_oarscript=[...
+                            '#!/bin/bash \n'...
+                            '#OAR -n Mylauncher \n'...
+                            '#OAR -l node=4/core=5,walltime=0:15:00 \n'...
+                            '#OAR -E ' fullfile(RootBat,'stderrfile.log') ' \n'...
+                            '#OAR -O ' fullfile(RootBat,'stdoutfile.log') ' \n'...
+                            '# ========================================================= \n'...
+                            '# This simple program launch a multinode parallel OpenMPI mpilauncher \n'...
+                            '# application for coriolis PIV post-processing. \n'...
+                            '# OAR uses oarshmost wrapper to propagate the user environement. \n'...
+                            '# This wrapper assert that the user has the same environment on all the \n'...
+                            '# allocated nodes (basic behavior needed by most MPI applications).  \n'...
+                            '# \n'...
+                            '# REQUIREMENT: \n'...
+                            '# the oarshmost wrapper should be installed in $HOME/bin directory. \n'...
+                            '# If a different location is used, change the line following the comment "Bidouille" \n'...
+                            '# ========================================================= \n'...
+                            '#   USER should only modify these 2 lines  \n'...
+                            'WORKDIR=' pwd ' \n'...
+                            'COMMANDE="mpilauncher  -f ' filename_joblist '" \n'...
+                            '# ========================================================= \n'...
+                            '# DO NOT MODIFY the FOLOWING LINES. (or be carefull) \n'...
+                            'echo "job starting on: "`hostname` \n'...
+                            'MPINODES="-host `tr [\\\\\\n] [,] <$OAR_NODEFILE |sed -e "s/,$/ /"`" \n'...
+                            'NCPUS=`cat $OAR_NODEFILE |wc -l` \n'...
+                            '#========== Bidouille ============== \n'...
+                            'export OMPI_MCA_plm_rsh_agent=oar-envsh \n'...%                     'cd $WORKDIR \n'...
+                            'CMD="mpirun -np $NCPUS -wdir $WORKDIR $MPINODES $COMMANDE" \n'...
+                            'echo "I run: $CMD"  \n'...
+                            '$CMD \n'...
+                            'echo "job ending" \n'...
+                            ];
+                        %                 oarsub -S ./oar.sub
+                        filename_oarscript=fullfile(RootBat,'oar_command');
+                        fid=fopen(filename_oarscript,'w');
+                        fprintf(fid,[text_oarscript]);
+                        fclose(fid);
+                        eval(['!chmod +x  ' filename_oarscript]);
+                        eval(['!oarsub -S ' filename_oarscript]);
+                end
+        end
+    case {'background','local'}
+        switch Param.Program
+            case {'civ_matlab'}
+                switch Param.RunMode
+                    case 'background'
+                        switch computer
+                            case {'PCWIN','PCWIN64'}
+                                filename_superbat=fullfile(RootBat,'job_list.bat');
+                                fid=fopen(filename_superbat,'w');
+                                if fid==-1
+                                    msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+                                    return
+                                end
+                                    %%% TODO FOR WINDOWS : TRANSLATE
+                                    %%% COMMANDS BELOW
+%                                 fprintf(fid,['#!/bin/bash \n' ...
+%                                     '/etc/sysprofile \n'...
+%                                     'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n'...
+%                                     'addpath(''' path_civ ''');\n']);
+%                                 for p=1:length(batch_file_list)
+%                                     fprintf(fid,['run ' batch_file_list{p} '\n']);
+%                                 end
+%                                 fprintf(fid, 'exit \n END_MATLAB \n');
+                                fclose(fid);
+%                                 system(['chmod +x ' filename_superbat]);
+%                                 system([filename_superbat ' &']);
+                            case {'GLNX86','GLNXA64','MACI64'}
+                                filename_superbat=fullfile(RootBat,'job_list.sh');
+                                fid=fopen(filename_superbat,'w');
+                                if fid==-1
+                                    msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+                                    return
+                                end
+                                fprintf(fid,['#!/bin/bash \n' ...
+                                    '/etc/sysprofile \n'...
+                                    'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n'...
+                                    'addpath(''' path_civ ''');\n']);
+                                for p=1:length(batch_file_list)
+                                    fprintf(fid,['run ' batch_file_list{p} '\n']);
+                                end
+                                fprintf(fid, 'exit \n END_MATLAB \n');
+                                fclose(fid);
+                                system(['chmod +x ' filename_superbat]);
+                                system([filename_superbat ' &']);
+                        end
+                    case 'local'
+                        for p=1:length(batch_file_list)
+                            fid=fopen(batch_file_list{p});
+                            eval(fscanf(fid,'%s'));
+                            fclose(fid);
+                        end
+                end
+            case {'CivX','CivAll','civ_matlab.sh'}
+                    switch computer
+                        case {'PCWIN','PCWIN64'}
+                            filename_superbat=fullfile(RootBat,'job_list.bat');
+                            fid=fopen(filename_superbat,'w');
+                            if fid==-1
+                                msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+                                return
+                            end
+                            for p=1:length(batch_file_list)
+                                fprintf(fid,['@call "' regexprep(batch_file_list{p},'\\','\\\\') '"' '\n']);
+                            end
+                            fclose(fid);
+                            system(['chmod +x ' filename_superbat]);
+                        case {'GLNX86','GLNXA64','MACI64'}
+                            filename_superbat=fullfile(RootBat,'job_list.bat');
+                            fid=fopen(filename_superbat,'w');
+                            if fid==-1
+                                msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+                                return
+                            end
+                            for p=1:length(batch_file_list)
+                                fprintf(fid,['sh ' batch_file_list{p} '\n']);
+                            end
+                            fclose(fid);
+                            system(['chmod +x ' filename_superbat]);
                     end
-                    fclose(fid);
-                    oar_command=['oarsub -t container -n civx-container '...
-                        '-l /core=' num2str(ncores)...
-                        ',walltime=' datestr(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,13) ' '...
-                        '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
-                        '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
-                        '"oar-dispatch -f ' filename_joblist '"'];
-                    filename_oarcommand=fullfile(RootBat,'oar_command');
-                    fid=fopen(filename_oarcommand,'w');
-                    fprintf(fid,[oar_command '\n']);
-                    fclose(fid);
-                    display(oar_command);
-                    eval(['! . ' filename_oarcommand])
-                case 'mpilauncher'
-                    filename_joblist=fullfile(RootBat,'job_list.txt');
-                    fid=fopen(filename_joblist,'w');
-                    
-                    for p=1:length(batch_file_list)
-                        fprintf(fid,[batch_file_list{p} '\n']);
-                    end
-                    fclose(fid)
-                    text_oarscript=[...
-                        '#!/bin/bash \n'...
-                        '#OAR -n Mylauncher \n'...
-                        '#OAR -l node=4/core=5,walltime=0:15:00 \n'...
-                        '#OAR -E ' fullfile(RootBat,'stderrfile.log') ' \n'...
-                        '#OAR -O ' fullfile(RootBat,'stdoutfile.log') ' \n'...
-                        '# ========================================================= \n'...
-                        '# This simple program launch a multinode parallel OpenMPI mpilauncher \n'...
-                        '# application for coriolis PIV post-processing. \n'...
-                        '# OAR uses oarshmost wrapper to propagate the user environement. \n'...
-                        '# This wrapper assert that the user has the same environment on all the \n'...
-                        '# allocated nodes (basic behavior needed by most MPI applications).  \n'...
-                        '# \n'...
-                        '# REQUIREMENT: \n'...
-                        '# the oarshmost wrapper should be installed in $HOME/bin directory. \n'...
-                        '# If a different location is used, change the line following the comment "Bidouille" \n'...
-                        '# ========================================================= \n'...
-                        '#   USER should only modify these 2 lines  \n'...
-                        'WORKDIR=' pwd ' \n'...
-                        'COMMANDE="mpilauncher  -f ' filename_joblist '" \n'...
-                        '# ========================================================= \n'...
-                        '# DO NOT MODIFY the FOLOWING LINES. (or be carefull) \n'...
-                        'echo "job starting on: "`hostname` \n'...
-                        'MPINODES="-host `tr [\\\\\\n] [,] <$OAR_NODEFILE |sed -e "s/,$/ /"`" \n'...
-                        'NCPUS=`cat $OAR_NODEFILE |wc -l` \n'...
-                        '#========== Bidouille ============== \n'...
-                        'export OMPI_MCA_plm_rsh_agent=oar-envsh \n'...%                     'cd $WORKDIR \n'...
-                        'CMD="mpirun -np $NCPUS -wdir $WORKDIR $MPINODES $COMMANDE" \n'...
-                        'echo "I run: $CMD"  \n'...
-                        '$CMD \n'...
-                        'echo "job ending" \n'...
-                        ];
-                    %                 oarsub -S ./oar.sub
-                    filename_oarscript=fullfile(RootBat,'oar_command');
-                    fid=fopen(filename_oarscript,'w');
-                    fprintf(fid,[text_oarscript]);
-                    fclose(fid);
-                    eval(['!chmod +x  ' filename_oarscript]);
-                    eval(['!oarsub -S ' filename_oarscript]);
-            end
-    end
- else %computation on local computer 
-    switch Param.Program
-        case {'civ_matlab','civ_matlab.sh'}
-%             
-%             background=1;
-            if strcmp(Param.RunMode,'background')
-                filename_superbat=fullfile(RootBat,'job_list.m');
-                fid=fopen(filename_superbat,'w');
-                if fid==-1
-                    msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
-                    return
+                switch Param.RunMode
+                    case 'background'
+                        system([filename_superbat ' &']);% execute main commmand see what it does in dos ?
+                    case 'local'
+                        system(filename_superbat);
                 end
-                
-                fprintf(fid,['#!/bin/bash \n' ...
-                 '/etc/sysprofile \n'...
-                'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n']);
- 
-                
-                fprintf(fid,['addpath(''' path_civ ''');\n']);
-                for p=1:length(batch_file_list)
-                    %                 if isunix
-                    %                     fprintf(fid,['sh ' batch_file_list{p} '\n']);
-                    %                 else
-                    %                     fprintf(fid,['@call "' regexprep(batch_file_list{p},'\\','\\\\') '"' '\n']);
-                    %                 end
-                    fprintf(fid,['run ' batch_file_list{p} '\n']);
-                    
-                end
-                fprintf(fid, 'exit \n END_MATLAB \n');
-
-                fclose(fid);
-                 eval(['run ' filename_superbat]);                
-                 
-            else
-                for p=1:length(batch_file_list)
-%                     civ_matlab([batch_file_list{p} '.xml'], [batch_file_list{p} '.nc'])
-                    fid=fopen(batch_file_list{p});
-                    eval(fscanf(fid,'%s'));
-                    fclose(fid);
-                end
-            end
-            
-            
-        case {'CivX','CivAll'}
-            filename_superbat=fullfile(RootBat,'job_list.bat');
-            fid=fopen(filename_superbat,'w');
-            if fid==-1
-                msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
-                return
-            end
-            for p=1:length(batch_file_list)
-                if isunix
-                    fprintf(fid,['sh ' batch_file_list{p} '\n']);
-                else
-                    fprintf(fid,['@call "' regexprep(batch_file_list{p},'\\','\\\\') '"' '\n']);
-                end
-            end
-            fclose(fid);
-            if(isunix)
-                system(['chmod +x ' filename_superbat]);
-            end
-            background=0;
-            if background
-                system([filename_superbat ' &']);% execute main commmand
-            else
-                system(filename_superbat);
-            end
-    end 
+        end
 end
 
 
@@ -1841,13 +1887,16 @@ if checkbox(1)==1;
     detect=1;
     vers=0;
     subdir_civ1_new=subdir_civ1;
+    answer='No';
     while detect==1 %create a new subdir if the netcdf files already exist
         for ifile=1:nbfield
             for j=1:nbslice
                 filename=fullfile_uvmat(RootPath,subdir_civ1_new,RootFile_nc,'.nc',NomType_nc,i1_civ1(ifile),i2_civ1(ifile),j1_civ1(j),j2_civ1(j));
                 detect=exist(filename,'file')==2;
                 if detect% if a netcdf file already exists
-                    answer=msgbox_uvmat('INPUT_Y-N',['overwrite existing civ files in ' subdir_civ1_new]);
+                    if strcmp(answer,'No')
+                        answer=msgbox_uvmat('INPUT_Y-N',['overwrite existing civ files in ' subdir_civ1_new]);
+                    end
                     if strcmp(answer,'Yes')
                         detect=0;
                         filecell.nc.civ1(ifile,j)={filename};
@@ -4312,52 +4361,20 @@ if Param.CheckPatch2==1
     end
 end
 
-if isequal(Param.Program,'CivAll')
-    save(CivAllxml,[Param.OutputFile '.xml']);
-    cmd=[cmd sparam.CivBin ' -f ' Param.OutputFile '.xml '  CivAllCmd ' >' Param.OutputFile '.log' '\n'];
-end
-
-if isequal(Param.Program,'civ_matlab')
-    if strcmp(Param.RunMode,'cluster')||strcmp(Param.RunMode,'background')
-        cmd=['#!/bin/bash \n '...
-            '#$ -cwd \n '...
-            'hostname && date \n '...
-            'umask 002 \n'...
-            Param.xml.CivmBin ' ' Param.xml.RunTime ' ' filename_xml ' ' Param.OutputFile '.nc'];%allow writting access to created files for user group
-        
-        fprintf(fid,cmd);
-        fclose(fid);
-        if isunix
-            system(['chmod +x ' filename_bat]);
-        end
-        batch_file_list{length(batch_file_list)+1}=filename_bat;
-    else
+switch Param.Program
+    case 'CivAll'
+        save(CivAllxml,[Param.OutputFile '.xml']);
+        cmd=[cmd sparam.CivBin ' -f ' Param.OutputFile '.xml '  CivAllCmd ' >' Param.OutputFile '.log' '\n'];
+    case 'civ_matlab'
         cmd=['civ_matlab(''' regexprep(filename,'(\w+)([/\\])(\w+$)','$1$20_XML$2$3.xml') ''','''...
-            filename '.nc'');']
-%         [tild,errormsg]=civ_matlab(Param,filecell.nc.civ1{ifile,j});
-    end
-end
-   
-
-if isequal(Param.Program,'civ_matlab.sh')
+            filename '.nc'');'];
+    case 'civ_matlab.sh'
         cmd=['#!/bin/bash \n '...
             '#$ -cwd \n '...
             'hostname && date \n '...
             'umask 002 \n'...
-            Param.xml.CivmBin ' ' Param.xml.RunTime ' ' filename_xml ' ' Param.OutputFile '.nc'];%allow writting access to created files for user group
-end
-
-
-if isequal(Param.Program,'MatlabNonCompile')
-%         cmd=[regexprep(which(civ_matlab),'.m$','')...
-%             '(' regexprep(filename,'(\w+)/(\w+$)','$1/0_XML$2.xml,')...
-%             filename '.nc);'];
-%         [tild,errormsg]=civ_matlab(Param,filecell.nc.civ1{ifile,j});
-end
-
-
-
-    
+            Param.xml.CivmBin ' ' Param.xml.RunTime ' ' regexprep(filename,'(\w+)([/\\])(\w+$)','$1$20_XML$2$3.xml') ' ' Param.OutputFile '.nc'];%allow writting access to created files for user group
+end    
     
 
 function cmd=cmd_fix(Param,fixname)
