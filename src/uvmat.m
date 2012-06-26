@@ -3083,16 +3083,9 @@ UvData=get(handles.uvmat,'UserData');
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 [tild,tild,tild,i1,i2,j1,j2,tild,NomType]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt]);
-% NomTypeNew=NomType;%default
 if isequal(field,'image')
-%     if isequal(NomType,'_1-2_1')||isequal(NomType,'_1_1-2')
-%         NomTypeNew='_1_1';
-%     elseif isequal(NomType,'#_ab')
-%         NomTypeNew='#a';
-%     elseif isequal(NomType,'_1-2')
-%         NomTypeNew='_1';
-%     end
-    imagename=fullfile_uvmat(RootPath,SubDir,RootFile,'.png',NomType,i1,[],j1,[]);
+    SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
+    imagename=fullfile_uvmat(RootPath,SubDirBase,RootFile,'.png',NomType,i1,[],j1,[]);
     if ~exist(imagename,'file')
         [FileName,PathName] = uigetfile( ...
             {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';
@@ -3196,7 +3189,8 @@ switch field_1
         end
     case 'image'
         % guess the image name corresponding to the current netcdf name (no unique correspondance)
-        imagename=fullfile_uvmat(RootPath_1,'',RootFile_1,'.png',get(handles.NomType,'String'),i1,[],j1);
+        SubDirBase=regexprep(SubDir_1,'\..*','');%take the root part of SubDir, before the first dot '.'
+        imagename=fullfile_uvmat(RootPath_1,SubDirBase,RootFile_1,'.png',get(handles.NomType,'String'),i1,[],j1);
         if ~exist(imagename,'file') % browse for images if it is not found
             [FileName,PathName] = uigetfile( ...
                 {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';

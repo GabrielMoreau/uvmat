@@ -243,15 +243,22 @@ if test_zoom
     xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
     xlim=get(currentaxes,'XLim');
     ylim=get(currentaxes,'YLim');
- % if left mouse button has been pressed, zoom in by a factor of 2
+    % if left mouse button has been pressed, zoom in by a factor of 2
     if  isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed, zoom in by a factor of 2
-        xlim(1)=0.5*xy(1,1)+0.5*xlim(1);
-        xlim(2)=0.5*xy(1,1)+0.5*xlim(2);%double the field whith the middle at the selected points
-        set(currentaxes,'XLim',xlim)
-        ylim(2)=0.5*xy(1,2)+0.5*ylim(2);
-        ylim(1)=0.5*xy(1,2)+0.5*ylim(1);
-        set(currentaxes,'YLim',ylim)
- % if right mouse button has been pressed, zoom out by a factor of 2
+        PlotBoxAspectRatio=get(currentaxes,'PlotBoxAspectRatio');
+        yoverx=PlotBoxAspectRatio(2)/PlotBoxAspectRatio(1);
+        if yoverx <2
+            xlim(1)=0.5*xy(1,1)+0.5*xlim(1);
+            xlim(2)=0.5*xy(1,1)+0.5*xlim(2);%double the field whith the middle at the selected points
+            set(currentaxes,'XLim',xlim)
+        end
+        if yoverx >0.5
+            ylim(2)=0.5*xy(1,2)+0.5*ylim(2);
+            ylim(1)=0.5*xy(1,2)+0.5*ylim(1);
+            set(currentaxes,'YLim',ylim)
+        end
+        
+        % if right mouse button has been pressed, zoom out by a factor of 2
     else
         xlim(1)=2*xlim(1)-xy(1,1);% reverse of the zoom on action
         xlim(2)=2*xlim(2)-xy(1,1);
@@ -266,7 +273,7 @@ if test_zoom
                 xlim=AxeData.RangeX;
                 ylim=AxeData.RangeY;
             end
-         % desactivate the zoom if the full field is visible within the axes
+            % desactivate the zoom if the full field is visible within the axes
             if isequal(xlim,AxeData.RangeX) && isequal(ylim,AxeData.RangeY)
                 set(hhuvmat.CheckZoom,'Value',0)
                 set(hhuvmat.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
@@ -322,9 +329,9 @@ end
 
 %% finalising ruler
 if test_ruler
-    set(hhuvmat.MenuRuler,'checked','off')%desable the ruler option in uvmat  
-    xy=get(currentaxes,'CurrentPoint');% get the current mouse coordinates 
-    RulerCoord=[AxeData.RulerCoord ;xy(1,1:2)];% append the recorded ruler origin to the current mouse coordinates 
+    set(hhuvmat.MenuRuler,'checked','off')%desable the ruler option in uvmat
+    xy=get(currentaxes,'CurrentPoint');% get the current mouse coordinates
+    RulerCoord=[AxeData.RulerCoord ;xy(1,1:2)];% append the recorded ruler origin to the current mouse coordinates
     RulerCoord=diff(RulerCoord,1);% coordiante difference between segment end and beginning
     RulerCoord=RulerCoord(1)+i*RulerCoord(2);
     distance=abs(RulerCoord);

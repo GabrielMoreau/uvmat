@@ -59,22 +59,26 @@ path_civ=fileparts(which('civ')); %path to civ
 addpath (path_civ) ; %add the path to civ, (useful in case of change of working directory after civ has been s opened in the working directory)
 errormsg=[];%default error message
 xmlfile='PARAM.xml';
+test_batch=0;%default: ,no batch mode available
+sparam=[];
 if exist(xmlfile,'file')
     try
         t=xmltree(xmlfile);
         sparam=convert(t);
     catch ME
         errormsg={' Unable to read the file PARAM.xml defining the civx binaries:';ME.message};
+         msgbox_uvmat('WARNING',errormsg);
     end
 else
-    errormsg=[xmlfile ' not found: path to civx binaries undefined'];
+    %errormsg=[xmlfile ' not found: path to civx binaries undefined'];
+    [s,w]=system('oarstat');
+    if ~isequal(s,0)
+        [s,w]=system('qstat');
+    end
+    if isequal(s,0)
+        test_batch=1;
+    end           
 end
-if ~isempty(errormsg)
-    msgbox_uvmat('WARNING',errormsg);
-end
-
-
-test_batch=0;%default: ,no batch mode available
 if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
     batch_mode=sparam.BatchParam.BatchMode; %sge is currently the only implemented batch mod
     switch batch_mode
@@ -99,13 +103,13 @@ else
 %     set(handles.BATCH,'Enable','off')% put the BATCH button in grey (unactivated)
 %     set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])% put the BATCH button in grey (unactivated)
 end
-if isfield(sparam.RunParam,'CivBin')
-    if ~exist(sparam.RunParam.CivBin,'file')
-        sparam.RunParam.CivBin=fullfile(path_civ,sparam.RunParam.CivBin);
-    end
-else
-    sparam.RunParam.CivBin='';
-end
+% if isfield(sparam.RunParam,'CivBin')
+%     if ~exist(sparam.RunParam.CivBin,'file')
+%         sparam.RunParam.CivBin=fullfile(path_civ,sparam.RunParam.CivBin);
+%     end
+% else
+%     sparam.RunParam.CivBin='';
+% end
 
 %% load the list of previously browsed files in the upper bar menu Open/
 dir_perso=prefdir; % path to the directory .matlab for personal data
@@ -887,8 +891,10 @@ if isempty(hfig)
     uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
     drawnow 
 end
-set(hrefresh,'UserData',option_civ)
-        filepath=fileparts(civ_files{1});
+StatusData.time_ref=now;% store the current time
+StatusData.option_civ=option_civ;
+set(hrefresh,'UserData',StatusData)
+filepath=fileparts(civ_files{1});
 set(hlist,'UserData',fileparts(filepath))
 refresh_GUI(hrefresh,[])
 
@@ -899,100 +905,85 @@ function refresh_GUI(hObject, eventdata)
 Tabchar={};
 BarPosition=[0.05 0.81 0.01 0.05];
 hfig=get(hObject,'parent');
+StatusData=get(hObject,'UserData');
 civ_files=get(hfig,'UserData');
-        [filepath,filename,ext]=fileparts(civ_files{1});
-        [tild,SubDir,extdir]=fileparts(filepath);
-        SubDir=[SubDir extdir];
-option_civ=get(hObject,'UserData');
+[filepath,filename,ext]=fileparts(civ_files{1});
+[tild,SubDir,extdir]=fileparts(filepath);
+SubDir=[SubDir extdir];
+option_civ=StatusData.option_civ;
 nbfiles=numel(civ_files);
-count=0;
 testrecent=0;
-% while count<nbfiles
-    count=0;
-    datnum=zeros(1,nbfiles);
-    for ifile=1:nbfiles
-        detect=exist(civ_files{ifile},'file'); % check the existence of the file
-        option=0;
-        if detect==0
-            option_str='not created';
-        else
-            datfile=dir(civ_files{ifile});
-            if isfield(datfile,'datenum')
-                datnum(ifile)=datfile.datenum;%only available in recent matlab versions
-                testrecent=1;
-            end
-            filefound(ifile)={datfile.name};
-            lastfield='';
-            % check the content  netcdf file
-            Data=nc2struct(civ_files{ifile},'ListGlobalAttribute','CivStage','patch2','fix2','civ2','patch','fix');
-            option_list={'civ1','fix1','patch1','civ2','fix2','patch2'};
-            if ~isempty(Data.CivStage)
-                option=Data.CivStage;%case of Matlab civ
-            else
-                if ~isempty(Data.patch2) && isequal(Data.patch2,1)
-                    option=6;
-                elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
-                    option=5;
-                elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
-                    option=4;
-                elseif ~isempty(Data.patch) && isequal(Data.patch,1);
-                    option=3;
-                elseif ~isempty(Data.fix) && isequal(Data.fix,1);
-                    option=2;
-                else
-                    option=1;
-                end
-            end
-            option_str=option_list{option};
-        end
-        if option >= option_civ
-            count=count+1;
-        end
-        [filepath,filename,ext]=fileparts(civ_files{ifile});
-        Tabchar{ifile,1}=[fullfile(SubDir,filename) ext  '...' option_str];
-    end
-    datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
-    if isempty(datnum) 
-        if testrecent
-            message='no civ result created yet';
-        else
-            message='';
-        end
+count=0;
+datnum=zeros(1,nbfiles);
+filefound=cell(1,nbfiles);
+for ifile=1:nbfiles
+    detect=exist(civ_files{ifile},'file'); % check the existence of the file
+    option=0;
+    if detect==0
+        option_str='not created';
     else
-        datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
-        [first,ind]=min(datnum);
-        [last,indlast]=max(datnum);
-%         if test_new
-%             message='existing file status, no processing launched yet';
-%         else
-        message={[num2str(count) ' file(s) done over ' num2str(nbfiles)] ;['oldest modification:  ' cell2mat(filefound(ind)) ' : ' datestr(first)];...
-            ['latest modification:  ' cell2mat(filefound(indlast)) ' : ' datestr(last)]};
-%         end
-    end
-    %hfig=findobj(allchild(0),'name','civ_status');
-%     if isempty(hfig)% the status list has been deleted
-%         return
-%     else
-        hlist=findobj(hfig,'tag','list');
-        hmsgbox=findobj(hfig,'tag','msgbox');
-        hwaitbar=findobj(hfig,'tag','waitbar');
-        set(hlist,'String',Tabchar)
-        set(hmsgbox,'String', message)
-        if count>0 %&& ~test_new
-            BarPosition(3)=0.9*count/nbfiles;
-            set(hwaitbar,'Position',BarPosition)
+        datfile=dir(civ_files{ifile});
+        if isfield(datfile,'datenum')
+            datnum(ifile)=datfile.datenum;%only available in recent matlab versions
+            testrecent=1;
         end
-%     end
-%     [root,filename,ext]=fileparts(civ_files{1});
-% [rootroot,SubDir,extdir]=fileparts(root);
-% 
-%     set(hlist,'UserData',rootroot)
-%     if count<10||(nbfiles-count)<10
-%     pause(.5)% wait 0.5 seconds for next check
-%     else
-%         pause(10)% wait 10 seconds for next check
-%     end
-% end
+        filefound(ifile)={datfile.name};
+        
+        % check the content  netcdf file
+        Data=nc2struct(civ_files{ifile},'ListGlobalAttribute','CivStage','patch2','fix2','civ2','patch','fix');
+        option_list={'civ1','fix1','patch1','civ2','fix2','patch2'};
+        if ~isempty(Data.CivStage)
+            option=Data.CivStage;%case of Matlab civ
+        else
+            if ~isempty(Data.patch2) && isequal(Data.patch2,1)
+                option=6;
+            elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
+                option=5;
+            elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
+                option=4;
+            elseif ~isempty(Data.patch) && isequal(Data.patch,1);
+                option=3;
+            elseif ~isempty(Data.fix) && isequal(Data.fix,1);
+                option=2;
+            else
+                option=1;
+            end
+        end
+        option_str=option_list{option};
+        if datnum(ifile)<StatusData.time_ref
+            option_str=[option_str '  --OLD--'];
+        end
+    end
+    if option >= option_civ
+        count=count+1;
+    end
+    [filepath,filename,ext]=fileparts(civ_files{ifile});
+    Tabchar{ifile,1}=[fullfile(SubDir,filename) ext  '...' option_str];
+end
+datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
+if isempty(datnum)
+    if testrecent
+        message='no civ result created yet';
+    else
+        message='';
+    end
+else
+    datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
+    [first,ind]=min(datnum);
+    [last,indlast]=max(datnum);
+    message={[num2str(count) ' file(s) done over ' num2str(nbfiles)] ;['oldest modification:  ' cell2mat(filefound(ind)) ' : ' datestr(first)];...
+        ['latest modification:  ' cell2mat(filefound(indlast)) ' : ' datestr(last)]};
+end
+hlist=findobj(hfig,'tag','list');
+hmsgbox=findobj(hfig,'tag','msgbox');
+hwaitbar=findobj(hfig,'tag','waitbar');
+set(hlist,'String',Tabchar)
+set(hmsgbox,'String', message)
+if count>0 %&& ~test_new
+    BarPosition(3)=0.9*count/nbfiles;
+    set(hwaitbar,'Position',BarPosition)
+end
+
 
 %------------------------------------------------------------------------   
 % launched by deleting the status figure
@@ -1071,14 +1062,18 @@ end
 %% read the PARAM.xml file to get the binaries (and batch_mode if batch)
 path_civ=fileparts(which('civ')); %path to the source directory of uvmat
 xmlfile='PARAM.xml';
+s=[];
 if exist(xmlfile,'file')% search parameter xml file in the whole matlab path
     t=xmltree(xmlfile);
     s=convert(t);
-else
-    errormsg=['no file ' xmlfile];
-    return
+end% default configuration
+if ~isfield(s,'RunParam')
+    s.RunParam.Civ1Bin='bin/civ1';
+    s.RunParam.Civ2Bin='bin/civ2';
+    s.RunParam.FixBin='bin/fix_flag';
+    s.RunParam.PatchBin='bin/patch_up';
+    s.RunParam.CivmBin='bin/civ_matlab';
 end
-% test_interp=0; %eviter les variables test_ (LG)
 if strcmp(Param.RunMode,'cluster') %computation dispatched on a cluster
     if isfield(s,'BatchParam')
         Param.xml=s.BatchParam;
@@ -1090,18 +1085,25 @@ if strcmp(Param.RunMode,'cluster') %computation dispatched on a cluster
             end
         end
     else
-        errormsg='no batch civ binaries defined in PARAM.xml';
-        return
+        %standard configuration
+        Param.xml.Civ1Bin='bin/civ1';
+        Param.xml.Civ2Bin='bin/civ2';
+        Param.xml.FixBin='bin/fix_flag';
+        Param.xml.PatchBin='bin/patch_up';
+        s.RunParam.CivmBin='bin/civ_matlab';
+        Param.xml.BatchMode='oar';% TODO : allow choice for sge
     end
 else % run
     if isfield(s,'RunParam')
         Param.xml=s.RunParam;
-    else
-        errormsg='no run civ binaries defined in PARAM.xml';
-        return
+    else %standard default configuration
+        s.RunParam.Civ1Bin='bin/civ1';
+        s.RunParam.Civ2Bin='bin/civ2';
+        s.RunParam.FixBin='bin/fix_flag';
+        s.RunParam.PatchBin='bin/patch_up';
+        s.RunParam.CivmBin='bin/civ_matlab';
     end
 end
-
 
 %% check if the binaries exist : to move in civ_opening
 % ListProgram=get(handles.Program,'String');

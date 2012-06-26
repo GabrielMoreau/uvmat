@@ -53,27 +53,13 @@ j2_series=zeros(1,1,1);
 if ~exist(FilePath,'dir')
     return % don't go further if the dir path does not exist
 end
-% NbFrame=1;
-% switch FileType
-%     case 'multimage'
-%     NbFrame=FileInfo.NumberOfFrames;
-%     case {'video','mmreader'}
-%     NomType='*';
-%     NbFrame=FileInfo.NumberOfFrames;
-% end 
-
-% RootFile_i='';
 NomTypePref='';
-if strcmp(NomType,'')||strcmp(NomType,'*')
+if isempty(NomType)
     if exist(fullfileinput,'file')
         [tild,RootFile]=fileparts(fileinput);% case of constant name (no indexing), get the filename without its extension
     else
         RootFile='';
     end
-%     i1_input=1;% the index now refer to the frame in the movie, choose 1 at opening
-%     i2_input=[];
-%     j1_input=[];
-%     j2_input=[];
 else
     %% possibly include the first index in the root name, if there exists a corresponding xml file
     r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
@@ -223,10 +209,8 @@ else
     else
         ref_ij=ref_i_list*max_j+ref_j_list; % ordered by index i, then by j for a given i.
     end
-    %[tild,ifile_min]=min(ref_ij(ref_ij>0));
     ind_select=find(ref_ij>0);
     if isempty(ind_select)
-        %         RootPath='';
         RootFile='';
         NomType='';
     else
@@ -251,9 +235,28 @@ if isfield(FileInfo,'NumberOfFrames')>1 && FileInfo.NumberOfFrames >1
     if isempty(i1_series)
         i1_series=(1:FileInfo.NumberOfFrames)';
         i1_input=1;
+        NomType='*';
     else
-       j1_series=(1:FileInfo.NumberOfFrames)'; 
-       j1_input=1;
+        j1_series=(1:FileInfo.NumberOfFrames)';
+        %  include the first index in the root name
+        r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
+        if ~isempty(r)
+            fileinput_end=regexprep(fileinput,['^' RootFile],'');%remove RootFile at the beginning of fileinput
+            if isempty(regexp(r.tiretnum,'^_','once'))% if a separator '_' is not  detected
+                rr=regexp(fileinput_end,'^(?<i1>\d+)','names');
+            else% if a separator '_' is  detected
+                rr=regexp(fileinput_end,'^(?<i1>_\d+)','names');
+            end
+            if ~isempty(rr)
+                RootFile=[RootFile rr.i1];% new root file
+                NomTypePref=r.tiretnum;
+                NomType=regexprep(NomType,['^'  NomTypePref],'');
+                i1_input=j1_input;
+                i2_input=j2_input;
+                j1_input=1;
+                j2_input=[];
+            end
+        end
     end
 end
 
