@@ -81,15 +81,18 @@ else
 end
 if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
     batch_mode=sparam.BatchParam.BatchMode; %sge is currently the only implemented batch mod
+    test_command='';
     switch batch_mode
         case 'sge'
             test_command='qstat';
         case 'oar'
             test_command='oarstat';
     end
+    if ~isempty(test_command)
     [s,w]=system(test_command);
     if isequal(s,0)
         test_batch=1;
+    end
     end
 end
 RUNVal=get(handles.RunMode,'Value');

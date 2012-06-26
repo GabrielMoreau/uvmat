@@ -852,8 +852,8 @@ if ~exist(FileName,'file')
    msgbox_uvmat('ERROR',['input file ' FileName ' not found']);
     return
 end
-nbfield=[];%default
-nbfield_j=[];%default
+% nbfield=[];%default
+% nbfield_j=[];%default
 
 %% read timing and total frame number from the current file (movie files) !! may be overrid by xml file
 XmlData.Time=[];%default
@@ -867,10 +867,10 @@ UvData.MovieObject{index}=VideoObject;
 if ~isempty(VideoObject)
     imainfo=get(VideoObject);
     testima=1;
-    nbfield_j=1;
+%     nbfield_j=1;
     TimeUnit='s';
     XmlData.Time=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames-1)/imainfo.FrameRate)';
-    % %         nbfield=imainfo.NumberOfFrames;
+    %nbfield=imainfo.NumberOfFrames;
     set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
     ColorType='truecolor';
 elseif ~isempty(FileExt(2:end))&&(~isempty(imformats(FileExt(2:end))) || isequal(FileExt,'.vol'))%&& isequal(NomType,'*')% multi-frame image
@@ -883,8 +883,8 @@ elseif ~isempty(FileExt(2:end))&&(~isempty(imformats(FileExt(2:end))) || isequal
     end
     ColorType=imainfo.ColorType;%='truecolor' for color images
     if length(imainfo) >1 %case of image with multiple frames
-        nbfield=length(imainfo);
-        nbfield_j=1;
+       % nbfield=length(imainfo);
+       % nbfield_j=1;
     end
 end
 if isfield(imainfo,'Width') && isfield(imainfo,'Height')

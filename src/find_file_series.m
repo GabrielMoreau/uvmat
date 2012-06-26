@@ -231,7 +231,8 @@ if isequal(j1_series,0), j1_series=[]; end
 if isequal(j2_series,0), j2_series=[]; end
 
 %% introduce the frame index in case of movies or multimage type
-if isfield(FileInfo,'NumberOfFrames')>1 && FileInfo.NumberOfFrames >1
+if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
+    'TEST'
     if isempty(i1_series)
         i1_series=(1:FileInfo.NumberOfFrames)';
         i1_input=1;
