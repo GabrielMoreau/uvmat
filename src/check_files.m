@@ -88,6 +88,7 @@ list_fct={...
     'read_get_field';... read the list of selected variables from the GUI get_field (TODO: use read_GUI)
     'read_GUI';... %read all parameters set by a GUI as a Matlab structure
     'read_image';...%read .civ files (obsolete, but can be adapted to other text documentation files) 
+    'read_multimadoc';... %read a set of Imadoc files and compare their timing of different file series
     'read_xls';...%read excel files containing the list of the experiments
     'reinit';...% suppress the personal parameter file 'uvmat_perso.mat'
     'rotate_points';...%'rotate_points': associated with GUI rotate_points.fig to introduce (2D) rotation parameters

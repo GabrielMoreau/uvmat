@@ -4542,15 +4542,16 @@ sizf=size(fileinput);
 if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
 
 %read the file
-data=xml2struct(fileinput);
-
+[data,heading]=xml2struct(fileinput);
+if ~strcmp(heading,'ProjObject')
+    msgbox_uvmat('WARNING','The xml file does not have the heading ProjObject for projection objects')
+end
 [tild,data.Name]=fileparts(FileName);% object name set as file name
 ListObject=get(handles.ListObject,'String');
 if ~strcmp(ListObject{end},'')
     ListObject=[ListObject;{''}]; %append a blank to the list (if not already done) to indicate the creation of a new object
     set(handles.ListObject,'String',ListObject)
 end
-
 IndexObj=length(ListObject);
 
 UvData=get(handles.uvmat,'UserData');

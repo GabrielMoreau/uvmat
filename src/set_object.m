@@ -639,6 +639,7 @@ end
 answer=msgbox_uvmat('INPUT_TXT','save object as an .xml file',def);
 if ~isempty(answer)
     t=struct2xml(Object);
+    t=set(t,1,'name','ProjObject');
     save(t,answer{1})
 end
 msgbox_uvmat('CONFIRMATION',[answer{1}  ' saved'])

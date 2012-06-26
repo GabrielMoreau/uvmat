@@ -462,11 +462,11 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
        [Path, title_str, ext]=fileparts(data.filename);
        title_str=[title_str ext];
     end
-    if isfield(data,'Action')
+    if isfield(data,'Action')&&isfield(data.Action,'ActionName')
         if ~isequal(title_str,'')
             title_str=[title_str ', '];
         end
-        title_str=[title_str data.Action];
+        title_str=[title_str data.Action.ActionName];
     end
     htitle=title(title_str);
 %     txt=ver('MATLAB');

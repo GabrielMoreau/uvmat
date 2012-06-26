@@ -40,10 +40,12 @@ switch info.class
         end
     case 'cell'
         out=[];%default
-        if isequal(cellfun(@isnumeric,ss),ones(size(ss)))% if the all the cell content is  numeric
-            out=cell2mat(ss);
-        else
-            for ilist=1:numel(ss)
+        check_numeric=zeros(size(ss));
+        for ilist=1:numel(ss)
+            if ~isempty(str2num(ss{ilist}))
+                out{ilist,1}=str2num(ss{ilist});
+                check_numeric(ilist)=1;
+            else
                 sep_ind=regexp(ss{ilist},'\s&\s');% check for separator ' & ' which indicates column separation in tables
                 if ~isempty(sep_ind)
                     sep_ind=[-2 sep_ind length(ss{ilist})+1];
@@ -55,11 +57,9 @@ switch info.class
                 end
             end
         end
-%         for ilist=1:numel(ss)
-%             if ~isempty(str2num(ss{ilist}))
-%             out(ilist,:)=str2num(ss{ilist});% convert to numeric
-%             end
-%         end
+        if isequal(check_numeric,ones(size(ss)))
+            out=cell2mat(out);
+        end
     otherwise
         out=ss;
 end

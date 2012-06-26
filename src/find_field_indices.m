@@ -139,7 +139,7 @@ for icell=1:length(CellVarIndex)
     end
     for ilist=1:numel(ListRole)
         eval(['VarType{icell}.' ListRole{ilist} '=ivar_' ListRole{ilist} ';'])
-    end    
+    end
     if numel(ivar_coord_x)>1 || numel(ivar_coord_y)>1 || numel(ivar_coord_z)>1
         errormsg='multiply defined coordinates  in the same cell';
         return

@@ -766,32 +766,6 @@ set(handles.ListView,'String',ListView);
 set(handles.ListView,'Value',iview)
 update_mode(handles,i1_series,i2_series,j1_series,j2_series,time)
 
-
-%% display the set of existing files as an image
-set(handles.waitbar_frame,'Units','pixels')
-pos=get(handles.waitbar_frame,'Position');
-xima=0.5:pos(3)-0.5;% pixel positions on the image representing the existing file indices
-yima=0.5:pos(4)-0.5;
-[XIma,YIma]=meshgrid(xima,yima);
-nb_i=size(i1_series,1);
-nb_j=size(i1_series,2);
-ind_i=(0.5:nb_i-0.5)*pos(3)/nb_i;
-ind_j=(0.5:nb_j-0.5)*pos(4)/nb_j;
-[Ind_i,Ind_j]=meshgrid(ind_i,ind_j);
-CData=zeros([size(XIma) 3]);
-file_ima=double((i1_series(:,:,1)>0)');
-if numel(file_ima)>=2
-if size(file_ima,1)==1
-    CLine=interp1(ind_i,file_ima,xima,'nearest');
-    CData(:,:,2)=ones(size(yima'))*CLine;
-else
-    CData(:,:,2)=interp2(Ind_i,Ind_j,file_ima,XIma,YIma,'nearest');
-end
-set(handles.waitbar_frame,'CData',CData)
-end
-set(handles.waitbar_frame,'Units','normalized')
-
-
 %% update the series info in 'UserData'
 SeriesData=get(handles.series,'UserData');
 SeriesData.i1_series{iview}=i1_series;
@@ -811,6 +785,60 @@ else
     enable_j(handles,'on')
 end
 
+%% display the set of existing files as an image
+set(handles.FileStatus,'Units','pixels')
+Position=get(handles.FileStatus,'Position');
+set(handles.FileStatus,'Units','normalized')
+xI=0.5:Position(3)-0.5;
+nbview=numel(SeriesData.i1_series);
+for iview=1:nbview
+    index_min(iview)=min(find(SeriesData.i1_series{iview}(2:end,2:end,1)>0));
+    index_max(iview)=max(find(SeriesData.i1_series{iview}(2:end,2:end,1)>0));
+end
+index_min=min(index_min);
+index_max=max(index_max);
+range_index=index_max-index_min+1;
+scale_y=Position(4)/nbview;
+scale_x=Position(3)/range_index;
+x=(0.5:range_index-0.5)*Position(3)/range_index;
+% y=(0.5:nbview-0.5)*Position(4)/nbview;
+range_y=max(1,floor(Position(4)/nbview));
+CData=zeros(nbview*range_y,Position(3));
+for iview=1:nbview
+    ind_y=1+(iview-1)*range_y:iview*range_y;
+    LineData=zeros(1,range_index);
+    x_index=find(SeriesData.i1_series{iview}(2:end,2:end,1)>0)-index_min+1;
+    LineData(x_index)=1;
+    LineData=interp1(x,LineData,xI,'nearest');
+    CData(ind_y,:)=ones(size(ind_y'))*LineData;
+end
+CData=cat(3,zeros(size(CData)),CData,zeros(size(CData)));
+set(handles.FileStatus,'CData',CData);
+
+% 
+% 
+% xima=0.5:pos(3)-0.5;% pixel positions on the image representing the existing file indices
+% yima=0.5:pos(4)-0.5;
+% [XIma,YIma]=meshgrid(xima,yima);
+% nb_i=size(i1_series,1);
+% nb_j=size(i1_series,2);
+% ind_i=(0.5:nb_i-0.5)*pos(3)/nb_i;
+% ind_j=(0.5:nb_j-0.5)*pos(4)/nb_j;
+% [Ind_i,Ind_j]=meshgrid(ind_i,ind_j);
+% CData=zeros([size(XIma) 3]);%black color
+% file_ima=double((i1_series(:,:,1)>0)');
+% if numel(file_ima)>=2
+% if size(file_ima,1)==1
+%     CLine=interp1(ind_i,file_ima,xima,'nearest');
+%     CData(:,:,2)=ones(size(yima'))*CLine;
+% else
+%     CData(:,:,2)=interp2(Ind_i,Ind_j,file_ima,XIma,YIma,'nearest');
+% end
+% set(handles.FileStatus,'CData',CData)
+% end
+% set(handles.FileStatus,'Units','normalized')
+
+
 %% enable field and veltype menus, in accordance with the current action
 ActionName_Callback([],[], handles)
 
@@ -828,6 +856,10 @@ else
     set(handles.Pairs,'Visible','off')
     set(handles.PairString,'Visible','off')
 end
+
+%% set length of waitbar
+displ_time(handles)
+
 
 % %% set default options in menu 'Fields'%% TODO: check VelType 
 % if ~testima
@@ -986,6 +1018,7 @@ if ~isfield(SeriesData,'Time')
 end
 displ_time(handles);
 
+
 %------------------------------------------------------------------------
 % ---- find the times corresponding to the first and last indices of a series
 function displ_time(handles)
@@ -993,8 +1026,6 @@ function displ_time(handles)
 SeriesData=get(handles.series,'UserData');%
 ref_i=[str2num(get(handles.num_first_i,'String')) str2num(get(handles.num_last_i,'String'))];
 ref_j=[str2num(get(handles.num_first_j,'String')) str2num(get(handles.num_last_j,'String'))];
-% last_i=str2num(get(handles.num_last_i,'String'));
-% last_j=str2num(get(handles.num_last_j,'String'));
 TimeTable=get(handles.TimeTable,'Data');
 Pairs=get(handles.PairString,'Data');
 for iview=1:size(TimeTable,1)
@@ -1038,6 +1069,29 @@ for iview=1:size(TimeTable,1)
     end
 end
 set(handles.TimeTable,'Data',TimeTable)
+
+%% set the waitbar position with respect to the min and max in the series
+% for iview=1:numel(SeriesData.i1_series)
+% [tild,index_min(iview)]=min(SeriesData.i1_series{iview}(SeriesData.i1_series{iview}>0));
+% [tild,index_max(iview)]=max(SeriesData.i1_series{iview}(SeriesData.i1_series{iview}>0));
+% end
+for iview=1:numel(SeriesData.i1_series)
+    index_min(iview)=min(find(SeriesData.i1_series{iview}(2:end,2:end,1)>0));
+    index_max(iview)=max(find(SeriesData.i1_series{iview}(2:end,2:end,1)>0));
+end
+[index_min,iview_min]=min(index_min);
+[index_max,iview_max]=min(index_max);
+index_first=(ref_i(1)-1)*(size(SeriesData.i1_series{iview_min},2)-1)+ref_j(1);
+index_last=(ref_i(2)-1)*(size(SeriesData.i1_series{iview_max},2)-1)+ref_j(2);
+range=index_max-index_min+1;
+coeff_min=(index_first-index_min)/range;
+coeff_max=(index_last-index_min+1)/range;
+Position=get(handles.Waitbar,'Position');
+Position_status=get(handles.FileStatus,'Position');
+Position(1)=coeff_min*Position_status(3)+Position_status(1);
+Position(3)=Position_status(3)*(coeff_max-coeff_min);
+set(handles.Waitbar,'Position',Position)
+update_waitbar(handles.Waitbar,0)
 
 %------------------------------------------------------------------------
 % --- Executes when selected cell(s) is changed in PairString.
@@ -1334,40 +1388,41 @@ switch RunMode
         if isempty(filexml)
             Series=h_fun(Series);% no background in the absence of output file
         else
-        % update the xml file after interactive input with the function
-        Series.Specific='?';
-        Series=h_fun(Series);
-        t=struct2xml(Series);
-        t=set(t,1,'name','Series');
-        save(t,filexml);
-        path_uvmat=fileparts(which('uvmat'));
-        
-        filename_bat=regexprep(filexml,'.xml$','.bat');
-        [fid,message]=fopen(filename_bat,'w');
-        if isequal(fid,-1)
-            msgbox_uvmat('ERROR', ['creation of .bat file: ' message]);
-            return
+            % update the xml file after interactive input with the function
+            Series.Specific='?';
+            Series=h_fun(Series);
+            t=struct2xml(Series);
+            t=set(t,1,'name','Series');
+            save(t,filexml);
+            path_uvmat=fileparts(which('uvmat'));
+            
+            filename_bat=regexprep(filexml,'.xml$','.bat');
+            [fid,message]=fopen(filename_bat,'w');
+            if isequal(fid,-1)
+                msgbox_uvmat('ERROR', ['creation of .bat file: ' message]);
+                return
+            end
+            path_fct=get(handles.ActionPath,'String');
+            filelog=regexprep(filexml,'.xml$','.log');
+            text_matlabscript=[...
+                '#!/bin/bash \n'...
+                '. /etc/sysprofile \n'...
+                'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog ''' <<END_MATLAB \n'...
+                'addpath(''' path_uvmat '''); \n'...
+                'addpath(''' Series.Action.ActionPath '''); \n'...
+                '' Series.Action.ActionName  '( ''' filexml '''); \n'...
+                'exit \n'...
+                'END_MATLAB \n'];
+            fprintf(fid,text_matlabscript);
+            fclose(fid);
+            if isunix
+                system(['chmod +x ' filename_bat]);% set the file to executable
+                system(['. ' filename_bat ' &']);%execute fct
+            else
+                system(filename_bat);
+            end
         end
-        path_fct=get(handles.ActionPath,'String');
-        filelog=regexprep(filexml,'.xml$','.log');
-        text_matlabscript=[...
-            '#!/bin/bash \n'...
-            '. /etc/sysprofile \n'...
-            'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog ''' <<END_MATLAB \n'...
-            'addpath(''' path_uvmat '''); \n'...
-            'addpath(''' Series.Action.ActionPath '''); \n'...
-            '' Series.Action.ActionName  '( ''' filexml '''); \n'...
-            'exit \n'...
-            'END_MATLAB \n'];
-        fprintf(fid,text_matlabscript);
-        fclose(fid);
-        if isunix
-            system(['chmod +x ' filename_bat]);% set the file to executable
-            system(['. ' filename_bat ' &']);%execute fct
-        else
-            system(filename_bat);
-        end
-        end
+        update_waitbar(handles.Waitbar,1); % put the waitbar to end position to indicate lounching is finished
 end
 
 set(handles.RUN, 'Enable','On')
@@ -1620,6 +1675,9 @@ end
 %check the current ActionPath to the selected function
 PathName=list_path{index_ACTION};%current recorded path
 set(handles.ActionPath,'String',PathName); %show the path to the senlected function
+
+%reinitialise the waitbar
+update_waitbar(handles.Waitbar,0)
 
 %default setting for the visibility of the GUI elements
 set(handles.num_NbSlice,'Visible','off')
@@ -2111,8 +2169,8 @@ SeriesData.j2_series{iview}=j2_series;
 SeriesData.FileType{iview}=FileType;
 
 %% display the set of existing files as an image
-set(handles.waitbar_frame,'Units','pixels')
-pos=get(handles.waitbar_frame,'Position');
+set(handles.Waitbar,'Units','pixels')
+pos=get(handles.Waitbar,'Position');
 xima=0.5:pos(3)-0.5;% pixel positions on the image representing the existing file indices
 yima=0.5:pos(4)-0.5;
 [XIma,YIma]=meshgrid(xima,yima);
@@ -2130,9 +2188,9 @@ if size(file_ima,1)==1
 else
     CData(:,:,2)=interp2(Ind_i,Ind_j,file_ima,XIma,YIma,'nearest');
 end
-set(handles.waitbar_frame,'CData',CData)
+set(handles.Waitbar,'CData',CData)
 end
-set(handles.waitbar_frame,'Units','normalized')
+set(handles.Waitbar,'Units','normalized')
 
 %% enable field and veltype menus
 % testfield=isequal(get(handles.FieldName,'enable'),'on');

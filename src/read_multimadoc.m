@@ -1,8 +1,18 @@
+%'read_multimadoc': read a set of Imadoc files and compare their timing of different file series
+%------------------------------------------------------------------------
+% [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series)
+%
+% OUTPUT:
+% 
+%
+% INPUT:
+% 
 function [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series)
+errormsg='';
 nbview=numel(RootPath);
+XmlData=cell(1,nbview);%initiate the structures containing the data from the xml file (calibration and timing)
 NbSlice_calib=cell(1,nbview);
 timecell=cell(1,nbview);
-XmlData=cell(1,nbview);%initiate the structures containing the data from the xml file (calibration and timing)
 for iview=1:nbview%Loop on views
     XmlFileName=find_imadoc(RootPath{iview},SubDir{iview},RootFile{iview},FileExt{iview});
     if ~isempty(XmlFileName)
