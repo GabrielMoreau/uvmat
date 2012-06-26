@@ -176,7 +176,5 @@ if status==0
 else
     errormsg=[errormsg {'SVN not available'}];
 end
-catch ME
-    errormsg=[errormsg {'SVN not available'}];
-    errormsg=errormsg';
+errormsg=errormsg';
 
