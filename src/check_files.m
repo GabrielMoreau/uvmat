@@ -149,31 +149,34 @@ for i=1:length(list_fct)
     end
 end
 date_str=datestr(max(datnum));
-try
-    [status,result]=system('svn --help');
-    if status==0
-        [tild,result]=system(['svn info ' dir_fct]);
-        t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');
+[status,result]=system('svn --help');
+if status==0
+    svn_info.rep_rev=0;svn_info.cur_rev=0;
+    [tild,result]=system(['svn info ' dir_fct]);
+    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');
+    if ~isempty(t)
         svn_info.cur_rev=str2double(t.rev);
-        [tild,result]=system(['svn info -r ''HEAD'' '  dir_fct]);
-        t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');
-        svn_info.rep_rev=str2double(t.rev);
-        [tild,result]=system(['svn status'  dir_fct]);
-        svn_info.status=result;
-        errormsg =[errormsg {['SVN revision : ' num2str(svn_info.cur_rev)]}];
-        if svn_info.rep_rev>svn_info.cur_rev
-            errormsg =[errormsg ...
-                {['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder']}];
-        end
-        modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');
-        if ~isempty(modifications)
-            errormsg=[errormsg modifications];
-        end
-    else
-        errormsg=[errormsg {'SVN not available'}];
     end
-catch ME
+    [tild,result]=system(['svn info -r ''HEAD'' '  dir_fct]);
+    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');
+    if ~isempty(t)
+    svn_info.rep_rev=str2double(t.rev);
+    end
+    [tild,result]=system(['svn status'  dir_fct]);
+    svn_info.status=result;
+    errormsg =[errormsg {['SVN revision : ' num2str(svn_info.cur_rev)]}];
+    if svn_info.rep_rev>svn_info.cur_rev
+        errormsg =[errormsg ...
+            {['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder']}];
+    end
+    modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');
+    if ~isempty(modifications)
+        errormsg=[errormsg modifications];
+    end
+else
     errormsg=[errormsg {'SVN not available'}];
 end
-errormsg=errormsg';
+catch ME
+    errormsg=[errormsg {'SVN not available'}];
+    errormsg=errormsg';
 
