@@ -1324,6 +1324,9 @@ for ifile=1:nbfield
             errormsg=['creation of .bat file: ' message];
             return
         end
+        if ~isunix
+            cmd=regexprep(cmd,'\\','\\\\');
+        end
         fprintf(fid,cmd);
         fclose(fid);
         

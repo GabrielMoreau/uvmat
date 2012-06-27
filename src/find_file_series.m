@@ -232,7 +232,6 @@ if isequal(j2_series,0), j2_series=[]; end
 
 %% introduce the frame index in case of movies or multimage type
 if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
-    'TEST'
     if isempty(i1_series)
         i1_series=(1:FileInfo.NumberOfFrames)';
         i1_input=1;
@@ -249,11 +248,11 @@ if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
                 rr=regexp(fileinput_end,'^(?<i1>_\d+)','names');
             end
             if ~isempty(rr)
-                RootFile=[RootFile rr.i1];% new root file
-                NomTypePref=r.tiretnum;
-                NomType=regexprep(NomType,['^'  NomTypePref],'');
-                i1_input=j1_input;
-                i2_input=j2_input;
+%                 RootFile=[RootFile rr.i1];% new root file
+%                 NomTypePref=r.tiretnum;
+%                 NomType=regexprep(NomType,['^'  NomTypePref],'');
+              %  i1_input=j1_input;
+              %  i2_input=j2_input;
                 j1_input=1;
                 j2_input=[];
             end
