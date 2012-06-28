@@ -799,8 +799,7 @@ function RUN_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.RUN, 'Enable','Off')
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
-%batch=get(handles.RunMode,'Value');
-% batch=0;
+set(handles.RUN,'UserData',now)% record the time of launch
 errormsg=launch_jobs(hObject, eventdata, handles);
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
@@ -894,7 +893,7 @@ if isempty(hfig)
     uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
     drawnow 
 end
-StatusData.time_ref=now;% store the current time
+StatusData.time_ref=get(handles.RUN,'UserData');% get the time of launch
 StatusData.option_civ=option_civ;
 set(hrefresh,'UserData',StatusData)
 filepath=fileparts(civ_files{1});
@@ -1318,14 +1317,11 @@ for ifile=1:nbfield
                 end
         end
         
-        % print the command in the file
+        % print the command in the bat file
         [fid,message]=fopen(filename_bat,'w');
         if isequal(fid,-1)
             errormsg=['creation of .bat file: ' message];
             return
-        end
-        if ~isunix
-            cmd=regexprep(cmd,'\\','\\\\');
         end
         fprintf(fid,cmd);
         fclose(fid);
@@ -4374,14 +4370,25 @@ switch Param.Program
         save(CivAllxml,[Param.OutputFile '.xml']);
         cmd=[cmd sparam.CivBin ' -f ' Param.OutputFile '.xml '  CivAllCmd ' >' Param.OutputFile '.log' '\n'];
     case 'civ_matlab'
+                    switch computer
+                        case {'PCWIN','PCWIN64'}                     
+                            filename=regexprep(filename,'\\','\\\\');% add '\' so that '\' are left as characters
+                        case {'GLNX86','GLNXA64','MACI64'}
+                    end
         cmd=['civ_matlab(''' regexprep(filename,'(\w+)([/\\])(\w+$)','$1$20_XML$2$3.xml') ''','''...
             filename '.nc'');'];
     case 'civ_matlab.sh'
-        cmd=['#!/bin/bash \n '...
-            '#$ -cwd \n '...
-            'hostname && date \n '...
-            'umask 002 \n'...
-            Param.xml.CivmBin ' ' Param.xml.RunTime ' ' regexprep(filename,'(\w+)([/\\])(\w+$)','$1$20_XML$2$3.xml') ' ' Param.OutputFile '.nc'];%allow writting access to created files for user group
+        switch computer
+            case {'PCWIN','PCWIN64'}
+                filename=regexprep(filename,'\\','\\\\');% add '\' so that '\' are left as characters
+                % TODO launch command in DOS
+            case {'GLNX86','GLNXA64','MACI64'}
+                cmd=['#!/bin/bash \n '...
+                    '#$ -cwd \n '...
+                    'hostname && date \n '...
+                    'umask 002 \n'...
+                    Param.xml.CivmBin ' ' Param.xml.RunTime ' ' regexprep(filename,'(\w+)([/\\])(\w+$)','$1$20_XML$2$3.xml') ' ' Param.OutputFile '.nc'];%allow writting access to created files for user group
+        end
 end    
     
 
