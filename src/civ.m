@@ -1307,13 +1307,14 @@ for ifile=1:nbfield
         % create the file used in run or batch
         switch Param.Program
             case {'civ_matlab'}
-                filename_bat=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_BAT$2$3.m');
+                filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.m');
+                filename_bat=regexprep(filename_bat,'-','__');
             case {'CivX','CivAll','civ_matlab.sh'}
                 switch computer
                     case {'PCWIN','PCWIN64'}
-                        filename_bat=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_BAT$2$3.bat');
+                        filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.bat');
                     case {'GLNX86','GLNXA64','MACI64'}
-                        filename_bat=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_BAT$2$3.sh');
+                        filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.sh');
                 end
         end
         
@@ -1328,7 +1329,7 @@ for ifile=1:nbfield
         
         % special case for civ_matlab on cluster
         if strcmp(Param.Program,'civ_matlab') && strcmp(Param.RunMode,'cluster')
-            filename_bat2=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_BAT$2$3.sh');
+            filename_bat2=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.sh');
             [fid,message]=fopen(filename_bat2,'w');
             if isequal(fid,-1)
                 errormsg=['creation of .bat file: ' message];
@@ -3980,7 +3981,7 @@ errormsg='';
 switch Param.Program
     case 'CivX'
         if Param.CheckCiv1
-            filename=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_CMX$2$3.civ1.cmx');
+            filename=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_CMX$2$3.civ1.cmx');
             if isequal(Param.Civ1.Dt,0)
                 Param.Civ1.Dt=1 ;%case of 'displacement' mode
             end
@@ -4047,7 +4048,7 @@ switch Param.Program
         end
         
         if Param.CheckCiv2
-            filename=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_CMX$2$3.civ2.cmx');
+            filename=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_CMX$2$3.civ2.cmx');
 
             if isequal(Param.Civ2.Dt,'0')
                 Param.Civ2.Dt='1' ;%case of 'displacement' mode
@@ -4120,7 +4121,7 @@ switch Param.Program
             fclose(fid);
         end
     case {'civ_matlab','civ_matlab.sh'}
-        filename=regexprep(Param.OutputFile,'(\w+)([/\\])(\w+$)','$1$20_XML$2$3.xml');
+        filename=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml');
         save(struct2xml(Param),filename);
 end
 
@@ -4133,16 +4134,16 @@ cmd=[];
 switch Param.Program
     case 'CivX'
         if isunix % check: necessaire aussi en RUN?
-            cmd=[cmd '#!/bin/bash \n '...
-                '#$ -cwd \n '...
-                'hostname && date \n '...
+            cmd=[cmd '#!/bin/bash \n'...
+                '#$ -cwd \n'...
+                'hostname && date \n'...
                 'umask 002 \n'];%allow writting access to created files for user group
         end
     case 'CivAll'
         if isunix % check: necessaire aussi en RUN?
-            cmd=[cmd '#!/bin/bash \n '...
-                '#$ -cwd \n '...
-                'hostname && date \n '...
+            cmd=[cmd '#!/bin/bash \n'...
+                '#$ -cwd \n'...
+                'hostname && date \n'...
                 'umask 002 \n'];%allow writting access to created files for user group
         end
 end
@@ -4153,15 +4154,15 @@ if Param.CheckCiv1
     switch Param.Program
         case 'CivX'
             if(isunix) %unix (or Mac) system
-                cmd=[cmd 'cp -f ' regexprep(filename,'(\w+)/(\w+$)','$1/0_CMX/$2.civ1.cmx ') regexprep(filename,'(\w+)/(\w+$)','$1/$2.cmx \n')...% the cmx file gives the name to the nc file
-                    Param.xml.Civ1Bin ' -f ' regexprep(filename,'(\w+)/(\w+$)','$1/$2.cmx >') regexprep(filename,'(\w+)/(\w+$)','$1/0_LOG/$2.civ1.log \n')... % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
-                    'rm ' regexprep(filename,'(\w+)/(\w+$)','$1/$2.cmx \n')];
+                cmd=[cmd 'cp -f ' regexprep(filename,'(.+)/(.+$)','$1/0_CMX/$2.civ1.cmx ') regexprep(filename,'(.+)/(.+$)','$1/$2.cmx \n')...% the cmx file gives the name to the nc file
+                    Param.xml.Civ1Bin ' -f ' regexprep(filename,'(.+)/(.+$)','$1/$2.cmx >') regexprep(filename,'(.+)/(.+$)','$1/0_LOG/$2.civ1.log \n')... % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
+                    'rm ' regexprep(filename,'(.+)/(.+$)','$1/$2.cmx \n')];
             else %Windows system
                 filename=regexprep(filename,'\\','\\\\');
-                cmd=['copy /Y ' regexprep(filename,'(\w+)\\\\(\w+$)','"$1\\\\0_CMX\\\\$2.civ1.cmx" ') regexprep(filename,'(\w+)\\\\(\w+$)','"$1\\\\$2.civ1.cmx" \n')...
-                    '"' regexprep(Param.xml.Civ1Bin,'\\','\\\\') '" -f ' regexprep(filename,'(\w+)\\\\(\w+$)','"$1\\\\$2.cmx" > ')...
-                    regexprep(filename,'(\w+)\\\\(\w+$)','"$1\\\\0_LOG\\\\$2.civ1.log" \n')... % redirect standard output to the log file
-                    'del ' regexprep(filename,'(\w+)\\\\(\w+$)','"$1\\\\$2.cmx" \n')];
+                cmd=['copy /Y ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_CMX\\\\$2.civ1.cmx" ') regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.civ1.cmx" \n')...
+                    '"' regexprep(Param.xml.Civ1Bin,'\\','\\\\') '" -f ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" > ')...
+                    regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_LOG\\\\$2.civ1.log" \n')... % redirect standard output to the log file
+                    'del ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')];
             end
         case 'CivAll'
             CivAllCmd=[CivAllCmd ' civ1 '];
@@ -4260,15 +4261,15 @@ if Param.CheckCiv2
     switch Param.Program
         case 'CivX'
             if(isunix)
-                cmd=[cmd 'cp -f '  regexprep(filename,'(\w+)/(\w+$)','$1/0_CMX/$2.civ2.cmx ') regexprep(filename,'(\w+)/(\w+$)','$1/$2.cmx \n')...
-                    Param.xml.Civ2Bin ' -f ' regexprep(filename,'(\w+)/(\w+$)','$1/$2.cmx >') regexprep(filename,'(\w+)/(\w+$)','$1/0_LOG/$2.civ2.log \n')...% redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
-                    'rm ' regexprep(filename,'(\w+)/(\w+$)','$1/$2.cmx \n')];%rename .cmx as .checkciv2.cmx, the result file is named [filename '.nc'] by CIVx
+                cmd=[cmd 'cp -f '  regexprep(filename,'(.+)/(.+$)','$1/0_CMX/$2.civ2.cmx ') regexprep(filename,'(.+)/(.+$)','$1/$2.cmx \n')...
+                    Param.xml.Civ2Bin ' -f ' regexprep(filename,'(.+)/(.+$)','$1/$2.cmx >') regexprep(filename,'(.+)/(.+$)','$1/0_LOG/$2.civ2.log \n')...% redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
+                    'rm ' regexprep(filename,'(.+)/(.+$)','$1/$2.cmx \n')];%rename .cmx as .checkciv2.cmx, the result file is named [filename '.nc'] by CIVx
             else
                 filename=regexprep(filename,'\\','\\\\');
-                cmd=[cmd 'copy /Y ' regexprep(filename,'(\w+)\\\\(\w+$)','"$1\\\\0_CMX\\\\$2.civ2.cmx" ') regexprep(filename,'(\w+)\\\\(\w+$)','"$1\\\\$2.cmx" \n')...
-                    '"' regexprep(Param.xml.Civ2Bin,'\\','\\\\') '" -f "' regexprep(filename,'(\w+)\\\\(\w+$)','"$1\\\\$2.cmx" > ')...
-                     regexprep(filename,'(\w+)\\\\(\w+$)','"$1\\\\0_LOG\\\\$2.civ2.log" \n')... % redirect standard output to the log file
-                    'del ' regexprep(filename,'(\w+)\\\\(\w+$)','"$1\\\\$2.cmx" \n')];
+                cmd=[cmd 'copy /Y ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_CMX\\\\$2.civ2.cmx" ') regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')...
+                    '"' regexprep(Param.xml.Civ2Bin,'\\','\\\\') '" -f "' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" > ')...
+                     regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_LOG\\\\$2.civ2.log" \n')... % redirect standard output to the log file
+                    'del ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')];
             end
         case 'CivAll'
             CivAllCmd=[CivAllCmd ' civ2 '];
@@ -4375,7 +4376,7 @@ switch Param.Program
                             filename=regexprep(filename,'\\','\\\\');% add '\' so that '\' are left as characters
                         case {'GLNX86','GLNXA64','MACI64'}
                     end
-        cmd=['civ_matlab(''' regexprep(filename,'(\w+)([/\\])(\w+$)','$1$20_XML$2$3.xml') ''','''...
+        cmd=['civ_matlab(''' regexprep(filename,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml') ''','''...
             filename '.nc'');'];
     case 'civ_matlab.sh'
         switch computer
@@ -4387,7 +4388,7 @@ switch Param.Program
                     '#$ -cwd \n '...
                     'hostname && date \n '...
                     'umask 002 \n'...
-                    Param.xml.CivmBin ' ' Param.xml.RunTime ' ' regexprep(filename,'(\w+)([/\\])(\w+$)','$1$20_XML$2$3.xml') ' ' Param.OutputFile '.nc'];%allow writting access to created files for user group
+                    Param.xml.CivmBin ' ' Param.xml.RunTime ' ' regexprep(filename,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml') ' ' Param.OutputFile '.nc'];%allow writting access to created files for user group
         end
 end    
     
@@ -4413,7 +4414,7 @@ if isunix
     cmd=[Param.xml.FixBin ' -f ' filename '.nc -fi1 ' num2str(Param.(fixname).CheckFmin2) ...
         ' -fi2 ' fi2_value ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
         ' -threshC ' num2str(Param.(fixname).MinCorr) MaxVel_string MaskName_string...
-        ' >' regexprep(filename,'(\w+)/(\w+$)','$1/0_LOG/$2.')  lower(fixname) '.log 2>&1'];
+        ' >' regexprep(filename,'(.+)/(.+$)','$1/0_LOG/$2.')  lower(fixname) '.log 2>&1'];
 else
     cmd=['"' Param.xml.FixBin '" -f "' filename '.nc" -fi1 ' num2str(Param.(fixname).CheckFmin2)...
         ' -fi2 ' fi2_value ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
@@ -4437,7 +4438,7 @@ if isunix
         ' -f ' filename '.nc -m ' num2str(Param.(patchname).Nx)...
         ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).FieldSmooth)...
         ' -nopt ' num2str(Param.(patchname).SubdomainSize) ...
-        '  > ' regexprep(filename,'(\w+)/(\w+$)','$1/0_LOG/$2.')  lower(patchname) '.log 2>&1']; % redirect standard output to the log file
+        '  > ' regexprep(filename,'(.+)/(.+$)','$1/0_LOG/$2.')  lower(patchname) '.log 2>&1']; % redirect standard output to the log file
 else
     cmd=['"' Param.xml.PatchBin...
         '" -f "' filename '.nc" -m ' num2str(Param.(patchname).Nx)...
