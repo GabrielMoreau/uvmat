@@ -26,8 +26,6 @@ m (relative or absolute path)--></CivmBin>
 <PatchBin>bin/patch_up</PatchBin>
 <PatchNewBin></PatchNewBin>
 </BatchParam>
-<GeometryCalibBin><!--executable for Tsai calibration--></GeometryCalibB
-in>
 <SchemaPath>XML_SCHEMAS <!--directory of xml schemas(relative or absolut
 e path)--></SchemaPath>
 </UvmatParam>
