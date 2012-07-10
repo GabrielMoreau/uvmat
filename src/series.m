@@ -721,8 +721,8 @@ if ~isempty(time)
 TimeTable=get(handles.TimeTable,'Data');
 first_i=str2num(get(handles.num_first_i,'String'));
 last_i=str2num(get(handles.num_last_i,'String'));
-first_j=str2num(get(handles.num_first_i,'String'));
-last_j=str2num(get(handles.num_last_i,'String'));
+first_j=str2num(get(handles.num_first_j,'String'));
+last_j=str2num(get(handles.num_last_j,'String'));
 MinIndexTable=get(handles.MinIndex,'Data');
 MinIndex_i=MinIndexTable{iview,1};
 MinIndex_j=MinIndexTable{iview,2};
