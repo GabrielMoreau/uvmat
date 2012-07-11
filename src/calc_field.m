@@ -66,11 +66,11 @@ check_der=0;
 check_calc=ones(size(FieldList));
 for ilist=1:length(FieldList)
     switch FieldList{ilist}
-        case {'u','v'}
+        case {'u','v','velocity','norm_vel','ima_cor'}
             check_grid=1;% needs a regular grid
         case{'vort','div','strain'}% needs spatial derivatives spatial derivatives
             check_der=1;
-        case {'velocity','norm_vel','ima_cor'};
+%         case {'velocity','norm_vel','ima_cor'};
         otherwise
             check_calc(ilist)=0;
     end
@@ -118,16 +118,19 @@ if isfield(DataIn,'SubRange') && isfield(DataIn,'Coord_tps') && (exist('Coord_in
         end
         coord_x=XMin:DataIn.Mesh:XMax;
         coord_y=YMin:DataIn.Mesh:YMax;
-        npx=length(coord_x);
-        npy=length(coord_y);
+%         npx=length(coord_x);
+%         npy=length(coord_y);
         DataOut.coord_x=[XMin XMax];
         DataOut.coord_y=[YMin YMax];
         [XI,YI]=meshgrid(coord_x,coord_y);
-        XI=reshape(XI,[],1);
-        YI=reshape(YI,[],1);
-        Coord_interp=[XI YI];
+%         XI=reshape(XI,[],1);
+%         YI=reshape(YI,[],1);
+        Coord_interp=cat(3,XI,YI);%[XI YI];
     end
-    
+    npx=size(Coord_interp,2);
+    npy=size(Coord_interp,1);
+    Coord_interp=reshape(Coord_interp,npx*npy,size(Coord_interp,3));
+%         npy=length(coord_y);
     %initialise output
     nb_sites=size(Coord_interp,1);
     nb_coord=size(Coord_interp,2);

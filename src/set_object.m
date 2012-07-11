@@ -467,22 +467,13 @@ check_handle=isfield(UvData.Object{IndexObj},'DisplayHandle') && isfield(UvData.
 if check_handle
     obj_handle=UvData.Object{IndexObj}.DisplayHandle.uvmat;
 end
-UvData.Object{IndexObj}=ObjectData;
+UvData.Object{IndexObj}=ObjectData;%record the current object properties in uvmat
 if check_handle
     UvData.Object{IndexObj}.DisplayHandle.uvmat=obj_handle; %preserve the object plot handle if valid
 else
     UvData.Object{IndexObj}.DisplayHandle.uvmat=hhuvmat.axes3; %axes taken as object display handle by defualt
 end
-set(hhuvmat.edit_object,'Value',1)% set the current object to edit mode
-%     %IndexObj=numel(ListObject)+1;% append an object to the list in uvmat
-%     
-%     set(hhuvmat.ListObject,'String',[ListObject;{ObjectName}]);%complement the object list
-%     set(hhuvmat.ListObject_1,'String',[ListObject;{ObjectName}]);%complement the object list
-%     set(hhuvmat.ListObject,'Value',IndexObj)
-%     set(hhuvmat.ViewObject,'Value',1)% indicate that the currently selected objected is viewed on set_object
-%     UvData.Object{IndexObj}=[];%initiate a new object (empty yet)
-%     UvData.Object{IndexObj}.DisplayHandle.uvmat=hhuvmat.axes3; %axes taken as object display handle by defualt
-% end
+%set(hhuvmat.edit_object,'Value',1)% set the current object to edit mode
 
 %% plot the field projected on the object
 hview_field=[];%default
@@ -496,8 +487,8 @@ else
         return
     end   
     if isequal(IndexObj_1,IndexObj) % if  the projection is in uvmat
-        PlotType=plot_field(ProjData,hhuvmat.axes3,read_GUI(get(hhuvmat.axes3,'parent')));%update the current uvmat plot
-    else  % if the projection is in veiw_field
+         PlotType=plot_field(ProjData,hhuvmat.axes3,read_GUI(get(hhuvmat.axes3,'parent')));%update the current uvmat plot
+    else  % if the projection is in view_field
         hview_field=findobj(allchild(0),'tag','view_field');
         if isempty(hview_field)
             hview_field=view_field(ProjData); %open the view_field GUI for plot
@@ -518,7 +509,7 @@ else
         else
             set(hview_field,'Position',Data.GUISize)
         end
-        set(hhuvmat.ViewField,'Value',1)% indicate that the field projection on the current object is plotted in view_field
+      %  set(hhuvmat.ViewField,'Value',1)% indicate that the field projection on the current object is plotted in view_field
     end
 end
 
@@ -527,9 +518,6 @@ hobject=UvData.Object{IndexObj}.DisplayHandle.uvmat;
 % if we are editing the object used for projection in uvmat
 if isequal(IndexObj_1,IndexObj)
     %update the representation of the current object for projection field represented in view_field
-    %     UvData.Object{iobj}.DisplayHandle.view_field=...
-    %                       plot_object(UvData.Object{IndexObj},UvData.Object{IndexObj_1},UvData.Object{iobj}.DisplayHandle.uvmat,'m');
-    % update the representation of all objects in uvmat
     for iobj=1:numel(UvData.Object)
         UvData.Object{iobj}.DisplayHandle.uvmat=...
             plot_object(UvData.Object{iobj},UvData.Object{IndexObj_1},UvData.Object{iobj}.DisplayHandle.uvmat,'b');
@@ -550,23 +538,9 @@ else %  we are editing the object used for projection field represented in view_
         end
     end
 end
-% UvData.Object{IndexObj}.DisplayHandle.uvmat=plot_object(ObjectData,UvData.Object{IndexObj_1},hobject,'m');%draw the object in uvmat
-% if ~isempty(hview_field)
-%     if isfield(UvData.Object{IndexObj}.DisplayHandle,'view_field')
-%         hobject=UvData.Object{IndexObj}.DisplayHandle.view_field;
-%     end
-%     if isempty(hobject)
-%         hobject=haxes;
-%     end   
-%     %draw the object in view_field
-%     if ~isequal(IndexObj_1,IndexObj) % if  the projection is in uvmat
-%     UvData.Object{IndexObj}.DisplayHandle.view_field=plot_object(ObjectData,UvData.Object{IndexObj},hobject,'m');
-%     end
-% end
 set(huvmat,'UserData',UvData)
 
 %% update the GUI uvmat
-hhuvmat=guidata(huvmat);%handles of elements in the uvmat GUI
 set(hhuvmat.MenuEditObject,'enable','on')
 set(hhuvmat.edit_object,'Value',1) % set uvmat to object edit mode to allow further object update
 set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow

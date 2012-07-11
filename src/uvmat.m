@@ -2357,17 +2357,25 @@ if ~isempty(transform)
 end
 
 %% calculate scalar
-if isstruct(ParamOut)&&~strcmp(ParamOut.FieldName,'get_field...')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))%&&~strcmp(ParamOut.FieldName,'velocity')&& ~strcmp(ParamOut.FieldName,'get_field...');% ~isequal(ParamOut.CivStage,0)%&&~isempty(FieldName)%
+if isstruct(ParamOut)&&~strcmp(ParamOut.FieldName,'get_field...')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx')) 
+    if isfield(Field{1},'Coord_tps')
+        Field{1}.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
+    else
     Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
+    end
 end
-if isstruct(ParamOut_1)&& numel(Field)==2 && ~strcmp(ParamOut_1.FieldName,'get_field...')&& ~test_keepdata_1 && (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))  &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
+if isstruct(ParamOut_1)&& numel(Field)==2 && ~strcmp(ParamOut_1.FieldName,'get_field...')&& ~test_keepdata_1 && (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))...
+        &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...') 
+    if isfield(Field{2},'Coord_tps')
+        Field{2}.FieldList=[{ParamOut_1.FieldName} {ParamOut_1.ColorVar}];
+    else
      Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
+    end
 end
 
 %% combine the two input fields (e.g. substract velocity fields)
 %Field{1}.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
 if numel(Field)==2
-%    Field{2}.FieldList=[{ParamOut_1.FieldName} {ParamOut_1.ColorVar}];
    [UvData.Field,errormsg]=sub_field(Field{1},Field{2});  
    UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
    UvData.ParamOut_1=ParamOut_1;
@@ -2494,11 +2502,13 @@ if NbDim>1
     else
         UvData.Field.Mesh=ord;
     end
-    UvData.Object{1}.Type='plane';%main plotting plane
-    UvData.Object{1}.ProjMode='projection';%main plotting plane
-    UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
-    UvData.Object{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
-    
+    % default projection plane
+    if ~isfield(UvData,'Object')
+        UvData.Object{1}.Type='plane';%main plotting plane
+        UvData.Object{1}.ProjMode='projection';%main plotting plane
+        UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
+        UvData.Object{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
+    end
     %% 3D case (menuvolume)
     if NbDim==3% && UvData.NewSeries
         test_set_object=1;
