@@ -222,8 +222,8 @@ if isfield (Param,'Patch1')
     Data.VarAttribute{nbvar+1}.Role='vector_x';
     Data.VarAttribute{nbvar+2}.Role='vector_y';
     Data.VarAttribute{nbvar+5}.Role='coord_tps';
-    Data.VarAttribute{nbvar+6}.Role='vector_x_tps';
-    Data.VarAttribute{nbvar+7}.Role='vector_y_tps';
+    Data.VarAttribute{nbvar+6}.Role='vector_x';
+    Data.VarAttribute{nbvar+7}.Role='vector_y';
     Data.Civ1_U_smooth=zeros(size(Data.Civ1_X));
     Data.Civ1_V_smooth=zeros(size(Data.Civ1_X));
     if isfield(Data,'Civ1_FF')
@@ -406,8 +406,8 @@ if isfield (Param,'Patch2')
     Data.VarAttribute{nbvar+1}.Role='vector_x';
     Data.VarAttribute{nbvar+2}.Role='vector_y';
     Data.VarAttribute{nbvar+5}.Role='coord_tps';
-    Data.VarAttribute{nbvar+6}.Role='vector_x_tps';
-    Data.VarAttribute{nbvar+7}.Role='vector_y_tps';
+    Data.VarAttribute{nbvar+6}.Role='vector_x';
+    Data.VarAttribute{nbvar+7}.Role='vector_y';
     Data.Civ2_U_smooth=zeros(size(Data.Civ2_X));
     Data.Civ2_V_smooth=zeros(size(Data.Civ2_X));
     if isfield(Data,'Civ2_FF')

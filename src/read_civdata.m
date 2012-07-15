@@ -133,54 +133,53 @@ for ilist=1:length(FieldNames)
         end
     end
 end
-if isempty(vel_type)||strcmp(vel_type,'*')
-    switch CivStage
-        case {6} %filter2 available
-            vel_type='civ2';
-        case {4,5}% civ2 available but not filter2
-            if testder% derivatives needed
-                vel_type='civ1';
-            else
-                vel_type='civ2';
-            end
-        case {1,2,3}% civ1 available but not civ2
-            vel_type='civ1';
-    end
-end
 if strcmp(vel_type,'civ2') && testder
     vel_type='filter2';
 elseif strcmp(vel_type,'civ1') && testder
     vel_type='filter1';
 end
+if isempty(vel_type)||strcmp(vel_type,'*')
+    switch CivStage
+        case {6} %filter2 available
+            vel_type='filter2';
+        case {4,5}% civ2 available but not filter2
+            if testder% derivatives needed
+                vel_type='filter1';
+            else
+                vel_type='civ2';
+            end
+        case 3
+            vel_type='filter1';
+        case {1,2}% civ1 available but not filter1
+            vel_type='civ1';
+    end
+end
+
 var={};
 switch vel_type
     case 'civ1'
-        var={'X','Y','Z','U','V','W','C','F','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbSites';...
-            'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF',...
-            'Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps','Civ1_W_tps','Civ1_SubRange','Civ1_NbSites'};
-        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag','coord_tps','vector_x_tps',...
-            'vector_y_tps','vector_z_tps','ancillary','ancillary'};
-        units={'pixel','pixel','pixel','pixel','pixel','pixel','','','','pixel','pixel','pixel','pixel','pixel',''};
+        var={'X','Y','Z','U','V','W','C','F','FF';...
+            'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF'};
+        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
+        units={'pixel','pixel','pixel','pixel','pixel','pixel','','',''};
     case 'filter1'
         var={'X','Y','Z','U','V','W','C','F','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbSites';...
             'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U_smooth','Civ1_V_smooth','Civ1_W','Civ1_C','Civ1_F','Civ1_FF',...
             'Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps','Civ1_W_tps','Civ1_SubRange','Civ1_NbSites'};
-        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag','coord_tps','vector_x_tps',...
-            'vector_y_tps','vector_z_tps','ancillary','ancillary'};
+        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag','coord_tps','vector_x',...
+            'vector_y','vector_z','ancillary','ancillary'};
         units={'pixel','pixel','pixel','pixel','pixel','pixel','','','','pixel','pixel','pixel','pixel','pixel',''};
     case 'civ2'
-        var={'X','Y','Z','U','V','W','C','F','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbSites';...
-            'Civ2_X','Civ2_Y','Civ2_Z','Civ2_U','Civ2_V','Civ2_W','Civ2_C','Civ2_F','Civ2_FF',...
-            'Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps','','Civ2_SubRange','Civ2_NbSites'};
-        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag','coord_tps','vector_x_tps',...
-            'vector_y_tps','vector_z_tps','ancillary','ancillary'};
-        units={'pixel','pixel','pixel','pixel','pixel','pixel','','','','pixel','pixel','pixel','pixel','pixel',''};
+        var={'X','Y','Z','U','V','W','C','F','FF';...
+            'Civ2_X','Civ2_Y','Civ2_Z','Civ2_U','Civ2_V','Civ2_W','Civ2_C','Civ2_F','Civ2_FF'};
+        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
+        units={'pixel','pixel','pixel','pixel','pixel','pixel','','',''};
     case 'filter2'
         var={'X','Y','Z','U','V','W','C','F','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbSites';...
             'Civ2_X','Civ2_Y','Civ2_Z','Civ2_U_smooth','Civ2_V_smooth','Civ2_W','Civ2_C','Civ2_F','Civ2_FF',...
             'Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps','','Civ2_SubRange','Civ2_NbSites'};
-        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag','coord_tps','vector_x_tps',...
-            'vector_y_tps','vector_z_tps','ancillary','ancillary'};
+        role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag','coord_tps','vector_x',...
+            'vector_y','vector_z','ancillary','ancillary'};
         units={'pixel','pixel','pixel','pixel','pixel','pixel','','','','pixel','pixel','pixel','pixel','pixel',''};
 end
 vel_type_out=vel_type;

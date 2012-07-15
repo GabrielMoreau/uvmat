@@ -535,6 +535,9 @@ end
 %-----------------------------------------------------------------
 %project on a line
 % AJOUTER flux,circul,error
+% OUTPUT: 
+% ProjData: projected field
+% 
 function  [ProjData,errormsg] = proj_line(FieldData, ObjectData)
 %-----------------------------------------------------------------
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);%transfer global attributes
@@ -546,7 +549,7 @@ ProjData.NbDim=1;
 ProjMode='projection';%direct projection on the line by default
 if isfield(ObjectData,'ProjMode'),ProjMode=ObjectData.ProjMode; end; 
 % ProjAngle=90; %90 degrees projection by default
-% if isfield(FieldData,'ProjAngle'),ProjAngle=ObjectData.ProjAngle; end; 
+
 width=0;%default width of the projection band
 if isfield(ObjectData,'Range')&&size(ObjectData.Range,2)>=2
     width=abs(ObjectData.Range(1,2));
@@ -568,12 +571,13 @@ end
 testfalse=0;
 ListIndex={};
 
-%angles of the polyline and boundaries of action
+%% angles of the polyline and boundaries of action
 dlinx=diff(ObjectData.Coord(:,1));
 dliny=diff(ObjectData.Coord(:,2));
-theta=angle(dlinx+i*dliny);%angle of each segment
+theta=angle(dlinx+1i*dliny);%angle of each segment
 theta(siz_line(1))=theta(siz_line(1)-1);
 % determine a rectangles at +-width from the line (only used for the ProjMode='projection or 'filter')
+xsup=zeros(1,siz_line(1)); xinf=zeros(1,siz_line(1)); ysup=zeros(1,siz_line(1)); yinf=zeros(1,siz_line(1));
 if isequal(ProjMode,'projection') || isequal(ProjMode,'filter')
     xsup(1)=ObjectData.Coord(1,1)-width*sin(theta(1));
     xinf(1)=ObjectData.Coord(1,1)+width*sin(theta(1));
@@ -587,16 +591,17 @@ if isequal(ProjMode,'projection') || isequal(ProjMode,'filter')
     end
 end
 
-%group the variables (fields of 'FieldData') in cells of variables with the same dimensions
+%% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 [CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_indices(FieldData);
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_line:' errormsg];
     return
 end
 
-% loop on variable cells with the same space dimension
+%% loop on variable cells with the same space dimension
 ProjData.ListVarName={};
 ProjData.VarDimName={};
+testproj=zeros(size(FieldData.ListVarName));
 for icell=1:length(CellVarIndex)
     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list FieldData.ListVarName
     VarType=VarTypeCell{icell}; %types of variables
@@ -604,28 +609,25 @@ for icell=1:length(CellVarIndex)
         continue
     end
     testX=~isempty(VarType.coord_x) && ~isempty(VarType.coord_y);% test for unstructured coordinates
+    test_tps=~isempty(VarType.coord_tps);
     testU=~isempty(VarType.vector_x) && ~isempty(VarType.vector_y);% test for vectors
     testfalse=~isempty(VarType.errorflag);% test for error flag
     testproj(VarIndex)=zeros(size(VarIndex));% test =1 for simply projected variables, default =0
                                              %=0 for vector components, treated separately
-    testproj(VarType.scalar)=1;
-    testproj(VarType.image)=1;
-    testproj(VarType.color)=1;
+    testproj([VarType.scalar VarType.image VarType.color VarType.vector_x VarType.vector_y])=1;
     VarIndex=VarIndex(find(testproj(VarIndex)));%select only the projected variables
-    if testU
-         VarIndex=[VarIndex VarType.vector_x VarType.vector_y];%append u and v at the end of the list of variables
-    end
+
     %identify vector components   
     if testU
         UName=FieldData.ListVarName{VarType.vector_x};
         VName=FieldData.ListVarName{VarType.vector_y};
-        eval(['vector_x=FieldData.' UName ';'])
-        eval(['vector_y=FieldData.' VName ';'])
+        vector_x=FieldData.(UName);
+        vector_y=FieldData.(VName);
     end  
     %identify error flag
     if testfalse
         FFName=FieldData.ListVarName{VarType.errorflag};
-        eval(['errorflag=FieldData.' FFName ';'])
+        errorflag=FieldData.(FFName);
     end   
     % check needed object properties for unstructured positions (position given by the variables with role coord_x, coord_y
     if testX
@@ -647,8 +649,8 @@ for icell=1:length(CellVarIndex)
         end
         XName= FieldData.ListVarName{VarType.coord_x};
         YName= FieldData.ListVarName{VarType.coord_y};
-        eval(['coord_x=FieldData.' XName ';'])    
-        eval(['coord_y=FieldData.' YName ';'])
+        coord_x=FieldData.(XName);    
+        coord_y=FieldData.(YName);
     end   
     %initiate projection
     for ivar=1:length(VarIndex)
@@ -736,7 +738,6 @@ for icell=1:length(CellVarIndex)
             %     flux=flux+(sum(V_sel))*linelength/npoint;
         end
         ProjData.X=XLine';
-        cur_index=1;
         ProjData.ListVarName=[ProjData.ListVarName {XName}];
         ProjData.VarDimName=[ProjData.VarDimName {XName}];
         ProjData.VarAttribute{1}.long_name='abscissa along line';
@@ -870,7 +871,28 @@ for icell=1:length(CellVarIndex)
             if nbcolor==3
                 ProjData.VarDimName{end}={AXName,'rgb'};
             end
-        end      
+        end
+    elseif test_tps
+         if isfield(ObjectData,'DX')&~isempty(ObjectData.DX)
+                DX=abs(ObjectData.DX);%mesh of interpolation points along the line
+                Xproj=linelength/(2*npoint):linelength/npoint:linelength-linelength/(2*npoint);
+                xreg=cos(theta(ip))*Xproj+ObjectData.Coord(ip,1)
+                yreg=sin(theta(ip))*Xproj+ObjectData.Coord(ip,2)
+%                 coord_x_proj=XMin:DX:XMax;
+%                 coord_y_proj=YMin:DY:YMax;
+                DataOut=calc_field(FieldData.FieldList,FieldData,cat(3,xreg,yreg));
+                ProjData.ListVarName=[ProjData.ListVarName DataOut.ListVarName];
+                ProjData.VarDimName=[ProjData.VarDimName DataOut.VarDimName];
+                ProjData.VarAttribute=[ProjData.VarAttribute DataOut.VarAttribute];   
+                DataOut.ListVarName(1)=[];
+                DataOut.VarDimName(1)=[];
+                DataOut.VarAttribute(1)=[];
+                for ilist=2:length(DataOut.ListVarName)% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
+                    VarName=DataOut.ListVarName{ilist};
+                     ProjData.(VarName)=DataOut.(VarName);
+                end
+                ProjData.coord_x=Xproj;
+         end
     end
 end
 

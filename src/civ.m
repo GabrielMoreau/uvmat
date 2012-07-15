@@ -23,7 +23,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 21-Jun-2012 23:37:47
+% Last Modified by GUIDE v2.5 13-Jul-2012 15:11:00
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -532,11 +532,19 @@ if ~isempty(XmlFileName)
     end
 end
 if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
-    set(handles.ListPairMode,'Value',1);
-    set(handles.ListPairMode,'String',{'series(Di)'})
+               set(handles.ListPairMode,'Value',1);
     dt=1/get(MovieObject,'FrameRate');%time interval between successive frames
-    MaxIndex_i=get(MovieObject,'NumberOfFrames');
-    time=(dt*(0:MaxIndex_i-1))';%list of image times
+    if strcmp(NomTypeIma,'*')
+        set(handles.ListPairMode,'String',{'series(Di)'})
+        MaxIndex_i=get(MovieObject,'NumberOfFrames');
+        time=(dt*(0:MaxIndex_i-1))';%list of image times
+    else
+        set(handles.ListPairMode,'String',[{'series(Dj)'};{'series(Di)'}])
+        MaxIndex_i=max(i1_series(i1_series>0));
+        MaxIndex_j=get(MovieObject,'NumberOfFrames');    
+        time=ones(MaxIndex_i,1)*(dt*(0:MaxIndex_j-1));%list of image times
+        enable_j(handles,'on')
+    end 
     TimeUnit='s';
     set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box back to whiter
 end
@@ -613,7 +621,7 @@ elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
     if  MaxIndex_j <= 10
         set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
     end
-else
+elseif ~(strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
     set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)';'series(Di)'})%multiple choice
     if strcmp(NomTypeNc,'_1-2_1')
         set(handles.ListPairMode,'Value',3)% advise 'series(Di)'
@@ -2548,16 +2556,6 @@ else
     set(handles.CheckStereo,'Value',0)
     set(handles.ListPairMode,'Value',1) % mode 'civX' selected by default
 end
-% if strcmp(option,'stereo PIV') && get(handles.CheckPatch1,'Value')
-%     set(handles.CheckStereo,'Visible','on')
-% else
-%     set(handles.CheckStereo,'Visible','off')
-% end
-% if strcmp(option,'stereo PIV') && get(handles.CheckPatch2,'Value')
-%     set(handles.CheckStereo,'Visible','on')
-% else
-%     set(handles.CheckStereo,'Visible','off')
-% end
 ListPairMode_Callback(hObject, eventdata, handles)
 
 
@@ -3854,10 +3852,10 @@ switch mode
         end
     end
     case 'series(Dj)'  
-        r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
-        if ~isempty(r)
+%         r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
+%         if ~isempty(r)
             NomTypeNc='_1_1-2';
-        end
+%         end
    case 'series(Di)'
         r=regexp(NomTypeIma,'(?<num1>\d+)_(?<num2>\d+)$','names');
         if ~isempty(r)
@@ -4374,10 +4372,14 @@ switch Param.Program
                     switch computer
                         case {'PCWIN','PCWIN64'}                     
                             filename=regexprep(filename,'\\','\\\\');% add '\' so that '\' are left as characters
-                        case {'GLNX86','GLNXA64','MACI64'}
-                    end
-        cmd=['civ_matlab(''' regexprep(filename,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml') ''','''...
+                                    cmd=['civ_matlab(''' regexprep(filename,'(.+)([/\\])(.+$)','$1$20_XML\\$2$3.xml') ''','''...
             filename '.nc'');'];
+                        case {'GLNX86','GLNXA64','MACI64'}
+                                    cmd=['civ_matlab(''' regexprep(filename,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml') ''','''...
+            filename '.nc'');'];
+                    end
+
+        
     case 'civ_matlab.sh'
         switch computer
             case {'PCWIN','PCWIN64'}
@@ -4552,3 +4554,33 @@ civ2.convectFlow='n';
 
 % --- Executes on selection change in RunMode.
 function RunMode_Callback(hObject, eventdata, handles)
+
+
+
+function nb_field2_Callback(hObject, eventdata, handles)
+% hObject    handle to nb_field2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of nb_field2 as text
+%        str2double(get(hObject,'String')) returns contents of nb_field2 as a double
+
+
+
+function last_j_Callback(hObject, eventdata, handles)
+% hObject    handle to last_j (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of last_j as text
+%        str2double(get(hObject,'String')) returns contents of last_j as a double
+
+
+
+function last_i_Callback(hObject, eventdata, handles)
+% hObject    handle to last_i (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of last_i as text
+%        str2double(get(hObject,'String')) returns contents of last_i as a double
