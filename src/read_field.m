@@ -153,8 +153,20 @@ try
                 end
                 ParamOut.FieldList={'get_field...'};
             end
-        case {'video','mmreader'}
-            A=read(ParamIn,num);
+        case 'video'
+            if strcmp(class(ParamIn),'VideoReader')
+                A=read(ParamIn,num);
+            else
+                ParamOut=VideoReader(FileName);
+                A=read(ParamOut,num);
+            end
+        case 'mmreader'
+            if strcmp(class(ParamIn),'mmreader')
+                A=read(ParamIn,num);
+            else
+                ParamOut=mmreader(FileName);
+                A=read(ParamOut,num);
+            end
         case 'vol'
             A=imread(FileName);
             Npz=size(A,1)/ParamIn.Npy;

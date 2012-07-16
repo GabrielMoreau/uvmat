@@ -340,6 +340,7 @@ if strcmp(ExtInput,'.xml')
 end
 
 %% case of netcdf file as input, get the civ processing stage and look for a coresponding image
+imageinput=fileinput;%default
 if strcmp(ExtInput,'.nc')
     NomTypeNc=NomTypeInput;
     if isempty(regexp(NomTypeInput,'[ab|AB|-]'))
@@ -350,6 +351,7 @@ if strcmp(ExtInput,'.nc')
         set(handles.ListCompareMode,'Value',1)
         set(handles.RootFile_1,'Visible','Off');
     end
+    imageinput='';
     Data=nc2struct(fileinput,'ListGlobalAttribute','Conventions','absolut_time_T0','CivStage','Civ2_ImageA','Civ1_ImageA','Civ2_ImageB','Civ1_ImageB','fix','patch','civ2','fix2');
     if isfield(Data,'Txt')
         errormsg=Data.Txt;
@@ -358,7 +360,7 @@ if strcmp(ExtInput,'.nc')
     % settings for  new civ data,
     if strcmp(Data.Conventions,'uvmat/civdata')% case of new civ data,
         set(handles.Program,'Value',2) %select civ/Matlab by default
-        ListProgram_Callback([],[], handles)
+        Program_Callback([],[], handles)
         if ~isempty(Data.CivStage)%test for civ files
             ind_opening=Data.CivStage;
         end
@@ -403,7 +405,9 @@ if strcmp(ExtInput,'.nc')
             NomTypeIma=regexprep(NomTypeIma,['-' r.num2],'');
         end
     end
+    if ~exist(imageinput,'file')
     imageinput=fullfile_uvmat(RootPath,regexprep(SubDir,'.civ(_?)(\d*)$',''),RootFile,'.png',NomTypeIma,i1,[],j1);
+    end
 end
 
 %% no corresponding image found, select manually with the browser
@@ -418,8 +422,8 @@ if ~isempty(NomTypeNc)
             '*.avi;*.AVI','.avi movie files'; ...
             '*.*',  'All Files (*.*)'};
         [FileName, PathName] = uigetfile( menu, 'Pick an input image file',fileparts(fileparts(fileinput)));
-        fileinput=[PathName FileName];%complete file name
-        if ~exist(fileinput,'file')
+        imageinput=[PathName FileName];%complete file name
+        if ~exist(imageinput,'file')
             return %abandon of the browser is cancelled
         end
     end    
@@ -427,10 +431,10 @@ if ~isempty(NomTypeNc)
 end
 
 %% scan the image file series 
-[FilePath,FileName,ImaExt]=fileparts(fileinput);
+[FilePath,FileName,ImaExt]=fileparts(imageinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubdirImages,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName ImaExt]);
+[RootPath,SubdirImages,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,MovieObject]=find_file_series(FilePath,[FileName ImaExt]);
 switch FileType
     case {'image','multimage','video','mmreader'}
     otherwise
@@ -441,7 +445,7 @@ set(handles.RootPath,'String',RootPath)
 set(handles.SubdirImages,'String',SubdirImages)
 set(handles.RootFile,'String',RootFile)
 if strcmp(ExtInput,'.nc')
-    SubDirCiv=regexprep(SubDir,[SubdirImages '^'],'');%suppress the root  SuddirImages;
+    SubDirCiv=regexprep(SubDir,['^' SubdirImages],'');%suppress the root  SuddirImages;
 else
     SubDirCiv= '.civ';
 end
@@ -450,35 +454,29 @@ set(handles.SubdirCiv2,'String',SubDirCiv)
 browse=get(handles.RootPath,'UserData');
 browse.incr_pair=[0 0];%default
 
-%% fill reference indices from the input file indices
-num_ref_i=i1;%efaulmt ref index
-if ~isempty(i2)
-    num_ref_i=floor((num_ref_i+i2)/2);
-end
-num_ref_j=j1;
-if ~isempty(j2)
-    num_ref_j=floor((num_ref_j+j2)/2);
-end
-
 %% scan the images if a civ file has been opened
 MinIndex_i=min(i1_series(i1_series>0));
 MinIndex_j=min(j1_series(j1_series>0));
 MaxIndex_i=max(i1_series(i1_series>0));
 MaxIndex_j=max(j1_series(j1_series>0));
 
+%% fill reference indices from the input file indices
+num_ref_i=str2num(get(handles.ref_i,'String'));
+num_ref_j=str2num(get(handles.ref_j,'String'));
+% for movies don't modify except if the current ref is outside index bounds
+if strcmp(ExtInput,'.nc')|| ~(strcmp(FileType,'mmreader')||strcmp(FileType,'VideoReader') && num_ref_i<=MaxIndex_i && num_ref_j<=MaxIndex_j)
+    num_ref_i=i1;%default ref index
+    if ~isempty(i2)
+        num_ref_i=floor((num_ref_i+i2)/2);
+    end
+    num_ref_j=j1;
+    if ~isempty(j2)
+        num_ref_j=floor((num_ref_j+j2)/2);
+    end
+end
+
 %% look for an image documentation file
 XmlFileName=find_imadoc(RootPath,SubDir,RootFile,ImaExt);
-% SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-% filexml=fullfile(RootPath,[SubDirBase '.xml']);% new convention: xml above the image dir
-% if ~exist(filexml,'file')
-%     filexml=fullfile(RootPath,SubDir,[RootFile '.xml']);%old convention: xml within the image directroy
-%     if ~exist(filexml,'file')
-%         filexml=fullfile(RootPath,SubDir,[RootFile '.civ']);%very old convention: .civ file
-%         if ~exist(filexml,'file')
-%             filexml='';
-%         end
-%     end
-% end
 if isempty(XmlFileName)
     if (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
         ext_imadoc=ImaExt;% the timing from the video movie is used
@@ -500,13 +498,6 @@ if ~isempty(XmlFileName)
     drawnow
     [XmlData,warntext]=imadoc2struct(XmlFileName);
     nom_type_read=[];
-%     if isfield(XmlData,'Heading')&&isfield(XmlData.Heading','ImageName')&&ischar(XmlData.Heading.ImageName)% get image nom type and extension from the xml file
-%         [~,tild,tild,tild,tild,tild,tild,tild,nom_type_read]=fileparts_uvmat(XmlData.Heading.ImageName);
-%         fullname=fullfile(fileparts(RootName),XmlData.Heading.ImageName); %full name (including path) of the first image defined by the xmle file,
-%         if ~exist(fullname,'file')
-%             msgbox_uvmat('WARNING',['FirstImage ' fullname ' defined in the xml file does not exist'])
-%         end
-%     end
     if isfield(XmlData,'Time') && ~isempty(XmlData.Time)
         time=XmlData.Time;
         %transform .Time to a column vector if it is a line vector thenomenclature uses a single index: correct possible bug in xml
@@ -1078,11 +1069,11 @@ if exist(xmlfile,'file')% search parameter xml file in the whole matlab path
     s=convert(t);
 end% default configuration
 if ~isfield(s,'RunParam')
-    s.RunParam.Civ1Bin='bin/civ1';
-    s.RunParam.Civ2Bin='bin/civ2';
-    s.RunParam.FixBin='bin/fix_flag';
-    s.RunParam.PatchBin='bin/patch_up';
-    s.RunParam.CivmBin='bin/civ_matlab';
+    Param.xml.Civ1Bin=fullfile('bin','civ1');
+    Param.xml.Civ2Bin=fullfile('bin','civ2');
+    Param.xml.FixBin=fullfile('bin','fix_flag');
+    Param.xml.PatchBin=fullfile('bin','patch_up');
+    Param.xml.CivmBin=fullfile('bin','civ_matlab');
 end
 if strcmp(Param.RunMode,'cluster') %computation dispatched on a cluster
     if isfield(s,'BatchParam')
@@ -1095,29 +1086,27 @@ if strcmp(Param.RunMode,'cluster') %computation dispatched on a cluster
             end
         end
     else
-        %standard configuration
-        Param.xml.Civ1Bin='bin/civ1';
-        Param.xml.Civ2Bin='bin/civ2';
-        Param.xml.FixBin='bin/fix_flag';
-        Param.xml.PatchBin='bin/patch_up';
-        s.RunParam.CivmBin='bin/civ_matlab';
+        %default configuration
+        Param.xml.Civ1Bin=fullfile('bin','civ1');
+        Param.xml.Civ2Bin=fullfile('bin','civ2');
+        Param.xml.FixBin=fullfile('bin','fix_flag');
+        Param.xml.PatchBin=fullfile('bin','patch_up');
+        Param.xml.CivmBin=fullfile('bin','civ_matlab');
         Param.xml.BatchMode='oar';% TODO : allow choice for sge
     end
 else % run
     if isfield(s,'RunParam')
         Param.xml=s.RunParam;
-    else %standard default configuration
-        s.RunParam.Civ1Bin='bin/civ1';
-        s.RunParam.Civ2Bin='bin/civ2';
-        s.RunParam.FixBin='bin/fix_flag';
-        s.RunParam.PatchBin='bin/patch_up';
-        s.RunParam.CivmBin='bin/civ_matlab';
+    else %default configuration
+        Param.xml.Civ1Bin=fullfile('bin','civ1');
+        Param.xml.Civ2Bin=fullfile('bin','civ2');
+        Param.xml.FixBin=fullfile('bin','fix_flag');
+        Param.xml.PatchBin=fullfile('bin','patch_up');
+        Param.xml.CivmBin=fullfile('bin','civ_matlab');
     end
 end
 
 %% check if the binaries exist : to move in civ_opening
-% ListProgram=get(handles.Program,'String');
-% Param.CivMode=ListProgram{get(handles.Program,'Value')};
 binary_list={};
 switch Param.Program
     case 'CivX'
@@ -1949,7 +1938,6 @@ if checkbox(1)==1;
             for ifile=1:nbfield
                 for j=1:nbslice
                      filename=fullfile_uvmat(RootPath,subdir_civ1_new,RootFile_A,'.nc',NomType_nc,i1_civ1(ifile),i2_civ1(ifile),j1_civ1(j),j2_civ1(j));
-                   % filename=name_generator(filebase_A,i1_civ1(ifile),j1_civ1(j),'.nc',NomType_nc,1,i2_civ1(ifile),j2_civ1(j),subdir_civ1_new);%
                     detect=exist(filename,'file')==2;
                     if detect% if a netcdf file already exists
                        indstr=regexp(subdir_civ1_new,'\D');
@@ -2827,8 +2815,9 @@ nom_type_ima=get(handles.NomType,'String');
 [nom_type_nc]=nomtype2pair(nom_type_ima,mode);
 
 %% reads .nc subdirectoy and image numbers from the interface
-subdir_civ1=get(handles.SubdirCiv1,'String');%subdirectory subdir_civ1 for the netcdf data
-subdir_civ2=get(handles.SubdirCiv2,'String');%subdirectory subdir_civ2 for the netcdf data
+SubDirImages=get(handles.SubdirImages,'String');
+subdir_civ1=[SubDirImages get(handles.SubdirCiv1,'String')];%subdirectory subdir_civ1 for the netcdf data
+subdir_civ2=[SubDirImages get(handles.SubdirCiv2,'String')];%subdirectory subdir_civ2 for the netcdf data
 ref_i=str2double(get(handles.ref_i,'String'));
 if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
     ref_j=0;

@@ -46,6 +46,7 @@ end
 function t=add_element(t,uid,key,val)
  if ischar(val)
      [t,new_uid]=add(t,uid,'element',key);
+     val=regexprep(val,'\','\\');
      [t]=add(t,new_uid,'chardata',val);
  elseif isnumeric(val)||islogical(val)
        siz=size(val);

@@ -59,36 +59,37 @@ check_patch1=0;%default
 % case of input Param set by an xml file (batch mode)
 if ischar(Param)
     Param=xml2struct(Param); %if Param is the name of an xml file, read this file as a Matlab structure
-    if isfield(Param,'Civ1')
-        if strcmp(Param.Civ1.FileTypeA,'video')
-            Param.Civ1.ImageA=VideoReader(Param.Civ1.ImageA);
-        elseif strcmp(Param.Civ1.FileTypeA,'mmreader')
-            Param.Civ1.ImageA=mmreader(Param.Civ1.ImageA);
-        end
-        if strcmp(Param.Civ1.FileTypeB,'video')
-            Param.Civ1.ImageB=VideoReader(Param.Civ1.ImageB);
-        elseif strcmp(Param.Civ1.FileTypeB,'mmreader')
-            Param.Civ1.ImageB=mmreader(Param.Civ1.ImageB);
-        end
-    end
-    if isfield(Param,'Civ2')
-        if strcmp(Param.Civ2.FileTypeA,'video')
-            Param.Civ2.ImageA=VideoReader(Param.Civ2.ImageA);
-        elseif strcmp(Param.Civ2.FileTypeA,'mmreader')
-            Param.Civ2.ImageA=mmreader(Param.Civ2.ImageA);
-        end
-         if strcmp(Param.Civ2.FileTypeB,'video')
-            Param.Civ2.ImageB=VideoReader(Param.Civ2.ImageB);
-        elseif strcmp(Param.Civ2.FileTypeB,'mmreader')
-            Param.Civ2.ImageB=mmreader(Param.Civ2.ImageB);
-        end
-    end
+%     if isfield(Param,'Civ1')
+%         if strcmp(Param.Civ1.FileTypeA,'video')
+%             Param.Civ1.ImageA=VideoReader(regexprep(Param.Civ1.ImageA,'''','\'));% remove spurious ' appearing in Windows;
+%         elseif strcmp(Param.Civ1.FileTypeA,'mmreader')
+%             Param.Civ1.ImageA=mmreader(regexprep(Param.Civ1.ImageA,'''','\'));% remove spurious ' appearing in Windows
+%         end
+%         if strcmp(Param.Civ1.FileTypeB,'video')
+%             Param.Civ1.ImageB=VideoReader(regexprep(Param.Civ1.ImageB,'''','\'));% remove spurious ' appearing in Windows
+%         elseif strcmp(Param.Civ1.FileTypeB,'mmreader')
+%             Param.Civ1.ImageB=mmreader(regexprep(Param.Civ1.ImageB,'''','\'));% remove spurious ' appearing in Windows
+%         end
+%     end
+%     if isfield(Param,'Civ2')
+%         if strcmp(Param.Civ2.FileTypeA,'video')
+%             Param.Civ2.ImageA=VideoReader(regexprep(Param.Civ2.ImageA,'''','\'));% remove spurious ' appearing in Windows;
+%         elseif strcmp(Param.Civ2.FileTypeA,'mmreader')
+%             Param.Civ2.ImageA=mmreader(regexprep(Param.Civ2.ImageA,'''','\'));% remove spurious ' appearing in Windows
+%             if strcmp(Param.Civ2.FileTypeB,'video')
+%                 Param.Civ2.ImageB=VideoReader(regexprep(Param.Civ2.ImageB,'''','\'));% remove spurious ' appearing in Windows
+%             elseif strcmp(Param.Civ2.FileTypeB,'mmreader')
+%                 Param.Civ2.ImageB=mmreader(regexprep(Param.Civ2.ImageB,'''','\'));% remove spurious ' appearing in Windows
+%             end;
+%         end
+%     end
 end
 
 %% Civ1
 if isfield (Param,'Civ1')
     %     check_civ1=1;% test for further use of civ1 results
     % %% prepare images
+
     par_civ1=Param.Civ1;
     if isfield(par_civ1,'reverse_pair')
         if par_civ1.reverse_pair
@@ -101,21 +102,25 @@ if isfield (Param,'Civ1')
             end
         end
     else
-        if isfield(par_civ1,'ImageA')&&(ischar(par_civ1.ImageA)||strcmp(class(par_civ1.ImageA),'VideoReader')) % case with no image: only the PIV grid is calculated           
-            [Field,ParamOut,errormsg] = read_field(Param.Civ1.ImageA,par_civ1.FileTypeA,par_civ1.ImageA,par_civ1.FrameIndexA);
-            if ~isempty(errormsg)
-                errormsg=['error in civ_matlab/read_field:' errormsg];
-                return
-            end
-            par_civ1.ImageA=Field.A;%= image matrix A in the first input field 
+        if isfield(par_civ1,'ImageA')%&&...
+            %    (ischar(par_civ1.ImageA)||strcmp(class(par_civ1.ImageA),'VideoReader')||strcmp(class(par_civ1.ImageA),'mmreader')) % case with no image: only the PIV grid is calculated           
+             Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'''','\');
+            [par_civ1.ImageA,ParamOut] = read_image(Param.Civ1.ImageA,par_civ1.FileTypeA,par_civ1.ImageA,par_civ1.FrameIndexA);
+%             if ~isempty(errormsg)
+%                 errormsg=['error in civ_matlab/read_field:' errormsg];
+%                 return
+%             end
+            %par_civ1.ImageA=Field.A;%= image matrix A in the first input field 
         end
-        if isfield(par_civ1,'ImageB')&& (ischar(par_civ1.ImageB)||strcmp(class(par_civ1.ImageB),'VideoReader'))
-            [Field,ParamOut,errormsg] = read_field(Param.Civ1.ImageB,par_civ1.FileTypeB,par_civ1.ImageB,par_civ1.FrameIndexB);
-            if ~isempty(errormsg)
-                errormsg=['error in civ_matlab/read_field:' errormsg];
-                return
-            end
-            par_civ1.ImageB=Field.A;%= image matrix A in the second input field 
+        if isfield(par_civ1,'ImageB')%&& ...
+              %  (ischar(par_civ1.ImageB)||strcmp(class(par_civ1.ImageB),'VideoReader')||strcmp(class(par_civ1.ImageB),'mmreader'))
+             Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'''','\');
+            [par_civ1.ImageB,ParamOut] = read_image(Param.Civ1.ImageB,par_civ1.FileTypeB,par_civ1.ImageB,par_civ1.FrameIndexB);
+%             if ~isempty(errormsg)
+%                 errormsg=['error in civ_matlab/read_field:' errormsg];
+%                 return
+%             end
+           % par_civ1.ImageB=Field.A;%= image matrix A in the second input field 
         end
     end
     
@@ -443,7 +448,18 @@ end
 % typevector: set of flags, =1 for good, =0 for NaN vectors
 %
 %INPUT:
-% image1:first image (matrix)
+% par_civ: structure of input parameters, with fields:
+%  .CorrBoxSize
+%  .SearchBoxSize
+%  .SearchBoxShift
+%  .ImageHeight
+%  .ImageWidth
+%  .Dx, Dy
+%  .Grid
+%  .Mask
+%  .MinIma
+%  .MaxIma
+%  .image1:first image (matrix)
 % image2: second image (matrix)
 % ibx2,iby2: half size of the correlation box along x and y, in px (size=(2*iby2+1,2*ibx2+1)
 % isx2,isy2: half size of the search box along x and y, in px (size=(2*isy2+1,2*isx2+1)
