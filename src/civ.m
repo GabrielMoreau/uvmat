@@ -1533,20 +1533,15 @@ switch Param.RunMode,
                                     msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
                                     return
                                 end
-                                    %%% TODO FOR WINDOWS : TRANSLATE
-                                    %%% COMMANDS BELOW
-%                                 fprintf(fid,['#!/bin/bash \n' ...
-%                                     '/etc/sysprofile \n'...
-%                                     'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n'...
-%                                     'addpath(''' path_civ ''');\n']);
-%                                 for p=1:length(batch_file_list)
-%                                     fprintf(fid,['run ' batch_file_list{p} '\n']);
-%                                 end
-%                                 fprintf(fid, 'exit \n END_MATLAB \n');
+                                 fprintf(fid,['matlab -automation '...
+                                     '-r "addpath(''' regexprep(path_civ,'\\','\\\\') ''');']);
+                                for p=1:length(batch_file_list)
+                                    fprintf(fid,['run ' regexprep(batch_file_list{p},'\\','\\\\') ';']);
+                                end
+                                 fprintf(fid, 'exit"');
                                 fclose(fid);
-%                                 system(['chmod +x ' filename_superbat]);
-%                                 system([filename_superbat ' &']);
-                            case {'GLNX86','GLNXA64','MACI64'}
+                                dos([filename_superbat ' &']);
+                            case {'GLNX86','GLNXA64','MACI64'} 
                                 filename_superbat=fullfile(RootBat,'job_list.sh');
                                 fid=fopen(filename_superbat,'w');
                                 if fid==-1
