@@ -158,10 +158,26 @@ if isfield(Data,'X') &&isfield(Data,'Y')&&~isempty(Data.X) && ~isempty(Data.Y)
         DataOut.U=(XOut_2-XOut_1)/Dt;
         DataOut.V=(YOut_2-YOut_1)/Dt;
     end
-    if ~strcmp(Calib.CalibrationType,'rescale') && isfield(Data,'X_tps') && isfield(Data,'Y_tps') 
-        [DataOut.X_tps,DataOut.Y_tps]=phys_XYZ(Calib,Data.X,Data.Y,ZIndex);
+%     if ~strcmp(Calib.CalibrationType,'rescale') && isfield(Data,'X_tps') && isfield(Data,'Y_tps') 
+%         [DataOut.X_tps,DataOut.Y_tps]=phys_XYZ(Calib,Data.X,Data.Y,ZIndex);
+%     end
+end
+
+%% suppress tps
+list_tps={'Coord_tps'  'U_tps'  'V_tps'  'SubRange'  'NbSites'};
+ind_remove=[];
+for ilist=1:numel(list_tps)
+    ind_tps=find(strcmp(list_tps{ilist},Data.ListVarName));
+    if ~isempty(ind_tps)
+        ind_remove=[ind_remove ind_tps];
+        DataOut=rmfield(DataOut,list_tps{ilist});
     end
 end
+DataOut.ListVarName(ind_remove)=[];
+DataOut.VarDimName(ind_remove)=[];
+DataOut.VarAttribute(ind_remove)=[];
+    
+    
 
 %% transform of spatial derivatives: TODO check the case with plane angles
 if isfield(Data,'X') && ~isempty(Data.X) && isfield(Data,'DjUi') && ~isempty(Data.DjUi)...

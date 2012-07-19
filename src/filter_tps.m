@@ -9,6 +9,7 @@
 % U_smooth, V_smooth: filtered velocity components at the positions of the initial data
 % Coord_tps(NbSites,NbCoord,NbSubdomain): positions of the tps centres
 % U_tps,V_tps: weight of the tps for each subdomain
+% to get the interpolated field values, use the function calc_field.m
 %
 % INPUT:
 % coord=[X Y]: matrix whose first column is the x coordinates of the initial data, the second column the y coordiantes
@@ -122,3 +123,6 @@ end
 nb_select(nb_select==0)=1;%ones(size(find(nb_select==0)));
 U_smooth=U_smooth./nb_select;
 V_smooth=V_smooth./nb_select;
+fill=zeros(NbCoord+1,NbCoord,size(SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
+Coord_tps=cat(1,Coord_tps,fill);
+

@@ -215,7 +215,7 @@ else
         NomType='';
     else
         [tild,ifile_min]=min(ref_ij(ind_select));
-        [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ifile_min).name);% update the representation of indices (number of 0 before the number)
+        [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ind_select(ifile_min)).name);% update the representation of indices (number of 0 before the number)
         NomType=regexprep(NomType,['^' NomTypePref],'');
     end
     %% update the file type if the input file does not exist (pb of 0001)
@@ -237,7 +237,9 @@ if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
         i1_input=1;
         NomType='*';
     else
-        j1_series=(1:FileInfo.NumberOfFrames)';
+        i1_series=i1_series(:,2)*ones(1,FileInfo.NumberOfFrames);
+        i1_series=[i1_series(:,1) i1_series];
+        j1_series=ones(size(i1_series,1),1)*(0:FileInfo.NumberOfFrames);
         %  include the first index in the root name
         r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
         if ~isempty(r)

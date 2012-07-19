@@ -858,7 +858,8 @@ end
 %% read timing and total frame number from the current file (movie files) !! may be overrid by xml file
 XmlData.Time=[];%default
 XmlData.GeometryCalib=[];%default
-TimeUnit=[];%default
+TimeUnit='';%default
+Time=[];
 testima=0; %test for image input
 imainfo=[];
 ColorType='falsecolor'; %default
@@ -869,7 +870,11 @@ if ~isempty(VideoObject)
     testima=1;
 %     nbfield_j=1;
     TimeUnit='s';
-    XmlData.Time=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames-1)/imainfo.FrameRate)';
+    if isempty(j1_series); %frame index along i
+        Time=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
+    else
+    Time=ones(size(i1_series,1),1)*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
+    end
     %nbfield=imainfo.NumberOfFrames;
     set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
     ColorType='truecolor';
@@ -944,6 +949,9 @@ if ~isempty(XmlFileName)
             end
         end
     end
+end
+if ~(isfield(XmlData,'Time')&& ~isempty(XmlData.Time))
+    XmlData.Time=Time; %time set by video
 end
 
 %% store last index in handles.lat_i and .last_j
@@ -1062,22 +1070,39 @@ scan_option='i';%default
 state_j='off'; %default
 if index==2
     if get(handles.scan_j,'Value')
-        scan_option='j'; %keep the scan option for the second fiel series
+        scan_option='j'; %keep the scan option for the second file series
     end
     if strcmp(get(handles.j1,'Visible'),'on')
         state_j='on';
     end
 end
+[ref_i,ref_j]=find(i1_series);
 if ~isempty(j1_series) 
         state_j='on';
-        if isequal(nbfield,1) &&index==1
-            scan_option='j'; %scan j index by default if nbfield=1                
-        end 
+        if index==1
+            if isequal(ref_i,ref_i(1)*ones(size(ref_j)))% if ref_i is always equal to its first vzlue
+                scan_option='j'; %scan j indext               
+            end 
+        end
 end
 if isequal(scan_option,'i')
+    diff_ref_i=diff(ref_i,1);
+    if isempty(diff_ref_i)
+        diff_ref_i=1;
+    end
+    if isequal (diff_ref_i,diff_ref_i(1)*ones(size(diff_ref_i)))
+        set(handles.increment_scan,'String',num2str(diff_ref_i(1)))
+    end
      set(handles.scan_i,'Value',1)
      scan_i_Callback([],[], handles); 
 else
+    diff_ref_j=diff(ref_j);
+    if isempty(diff_ref_j)
+        diff_ref_j=1;
+    end
+    if isequal (diff_ref_j,diff_ref_j(1)*ones(size(diff_ref_j)))
+        set(handles.increment_scan,'String',num2str(diff_ref_j(1)))
+    end
      set(handles.scan_j,'Value',1)
      scan_j_Callback([],[], handles); 
 end
@@ -1245,7 +1270,10 @@ function view_xml_Callback(hObject, eventdata, handles)
 FileBase=fullfile(RootPath,RootFile);
 option=get(handles.view_xml,'String');
 if isequal(option,'view .xml')
-    FileXml=[FileBase '.xml'];
+    FileXml=fullfile(RootPath,[SubDir '.xml']);
+    if ~exist(FileXml,'file')% case of civ files , removes the extension for subdir
+        FileXml=fullfile(RootPath,[regexprep(SubDir,'\..+$','') '.xml']);
+    end
     heditxml=editxml(FileXml);
 end
 
@@ -1255,7 +1283,6 @@ function CheckMask_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %case of view mask selection
 if isequal(get(handles.CheckMask,'Value'),1)
-   % [FF,RootPath,FileBase]=read_file_boxes(handles);
      [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
      FileBase=fullfile(RootPath,RootFile);
     num_i1=stra2num(get(handles.i1,'String'));
@@ -1269,7 +1296,6 @@ if isequal(get(handles.CheckMask,'Value'),1)
         for ilist=1:length(maskfiles)
             maskname=maskfiles(ilist).name;% take the first mask file in the list
             [tild,tild,tild,tild,tild,tild,tild,MaskExt,Mask_NomType{ilist}]=fileparts_uvmat(maskname);
-%             [rr,ff,x1,x2,xa,xb,xext,Mask_NomType{ilist}]=name2display(maskname);
              [tild,Name]=fileparts(maskname);
             Namedouble=double(Name);
             val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
@@ -1954,6 +1980,10 @@ if ~exist(FileName,'file')
     return
 end
 NomType=get(handles.NomType,'String');
+NomType_1='';
+if strcmp(get(handles.NomType_1,'Visible'),'on')
+    NomType_1=get(handles.NomType_1,'String');
+end
 % NomType=get(handles.FileIndex,'UserData');
 %update the z position index
 nbslice_str=get(handles.nb_slice,'String');
@@ -2109,9 +2139,11 @@ if ~isempty(FileName_1)
         Field{2}=UvData.Field_1;% keep the stored field
         ParamOut_1=UvData.ParamOut_1;
     else
+        if isstruct(ParamIn_1)
         ParamIn_1.FieldName=FieldName_1;
         ParamIn_1.VelType=VelType_1;
         ParamIn_1.GUIName='get_field_1';
+        end
         [Field{2},ParamOut_1,errormsg] = read_field(Name,UvData.FileType{2},ParamIn_1,frame_index_1);
         if ~isempty(errormsg)
             errormsg=['error in reading ' FieldName_1 ' in ' FileName_1 ': ' errormsg];
@@ -2173,25 +2205,19 @@ elseif ~test_keepdata_1
     else
         test_veltype_1=1;
         set(handles.VelType_1,'Visible','on')
-%         if ~get(handles.FixVelType,'Value')
-            menu=set_veltype_display(ParamOut_1.CivStage);
-            index_menu=strcmp(ParamOut_1.VelType,menu);
-            set(handles.VelType_1,'Value',1+find(index_menu,1))
-            set(handles.VelType_1,'String',[{''};menu])
-%         end
+        menu=set_veltype_display(ParamOut_1.CivStage);
+        index_menu=strcmp(ParamOut_1.VelType,menu);
+        set(handles.VelType_1,'Value',1+find(index_menu,1))
+        set(handles.VelType_1,'String',[{''};menu])
     end
     % update the second field menu: the same quantity
+    if isstruct(ParamOut_1)
     set(handles.Fields_1,'String',[{''};ParamOut_1.FieldList]); %update the field menu
     % display the Fields menu from the input file and pick the selected one: 
     field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
     set(handles.Fields_1,'Value',find(field_index,1)+1)  
-%     % synchronise  with the first menu if the first selection is not 'velocity'
-%     if ~strcmp(ParamOut.FieldName,'velocity')
-%         field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
-%         set(handles.Fields_1,'Value',field_index); %update the field menu
-%         ParamOut_1.FieldName=ParamOut.FieldName;
-%         set(handles.Fields_1,'String',ParamOut_1.FieldList)
-%     end
+    end
+    
 end
 if test_veltype||test_veltype_1
      set(handles.FixVelType,'Visible','on')
@@ -2336,22 +2362,45 @@ if ~isempty(transform)
     else
         Field{1}=transform(Field{1},XmlData);
     end
-    %% update tps in phys coordinates if needed
-    if (strcmp(VelType,'filter1')||strcmp(VelType,'filter2'))&& strcmp(UvData.FileType{1},'civdata')&&isfield(Field{1},'U')&& isfield(Field{1},'V')
-        Field{1}.X=Field{1}.X(Field{1}.FF==0);
-        Field{1}.Y=Field{1}.Y(Field{1}.FF==0);
-        Field{1}.U=Field{1}.U(Field{1}.FF==0);
-        Field{1}.V=Field{1}.V(Field{1}.FF==0);
-        [Field{1}.SubRange,Field{1}.NbSites,Field{1}.Coord_tps,Field{1}.U_tps,Field{1}.V_tps]=filter_tps([Field{1}.X Field{1}.Y],Field{1}.U,Field{1}.V,[],Field{1}.Patch1_SubDomain,0);
+    
+    %% check whether tps is needed, then calculate tps coefficients if needed
+    check_tps=0;
+    if strcmp(UvData.FileType{1},'civdata')|| strcmp(UvData.FileType{1},'civx')
+        switch ParamOut.FieldName
+            case {'vort','div','strain'}
+                check_tps=1;
+            otherwise
+                check_tps=0;
+                if isfield(UvData,'Object')
+                for iobj=1:numel(UvData.Object)
+                    UvData.Object{iobj}
+                    if isfield(UvData.Object{iobj},'ProjMode')&& strcmp(UvData.Object{iobj}.ProjMode,'filter')
+                        check_tps=1;
+                        break
+                    end
+                end
+                end
+        end
     end
-    if numel(Field)==2 && ~test_keepdata_1 && isequal(UvData.FileType{2}(1:3),'civ') && ~isequal(ParamOut_1.FieldName,'get_field...')%&&~isempty(FieldName_1)
-        %update tps in phys coordinates if needed
-        if (strcmp(VelType_1,'filter1')||strcmp(VelType_1,'filter2'))&& strcmp(UvData.FileType{2},'civdata')&&isfield(Field{2},'U')&& isfield(Field{2},'V')
-            Field{2}.X=Field{2}.X(Field{2}.FF==0);
-            Field{2}.Y=Field{1}.Y(Field{2}.FF==0);
-            Field{2}.U=Field{1}.U(Field{2}.FF==0);
-            Field{2}.V=Field{1}.V(Field{2}.FF==0);
-            [Field{2}.SubRange,Field{2}.NbSites,Field{2}.Coord_tps,Field{2}.U_tps,Field{2}.V_tps]=filter_tps([Field{2}.X Field{2}.Y],Field{2}.U,Field{2}.V,[],1500,0);
+    if check_tps
+        SubDomain=1500; %default, estimated nbre of vectors in a subdomain used for tps
+        if isfield(Field{1},'SubDomain')
+            SubDomain=Field{1}.SubDomain;% 
+        end
+        [Field{1}.SubRange,Field{1}.NbSites,Field{1}.Coord_tps,Field{1}.U_tps,Field{1}.V_tps,tild,U_smooth,V_smooth,W_smooth,FF] =...
+           filter_tps([Field{1}.X(Field{1}.FF==0) Field{1}.Y(Field{1}.FF==0)],Field{1}.U(Field{1}.FF==0),Field{1}.V(Field{1}.FF==0),[],SubDomain,0);
+        nbvar=numel(Field{1}.ListVarName);
+        Field{1}.ListVarName=[Field{1}.ListVarName {'SubRange','NbSites','Coord_tps','U_tps','V_tps'}];
+        Field{1}.VarDimName=[Field{1}.VarDimName {{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
+            {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
+        Field{1}.VarAttribute{nbvar+3}.Role='coord_tps';
+        Field{1}.VarAttribute{nbvar+4}.Role='vector_x';
+        Field{1}.VarAttribute{nbvar+5}.Role='vector_y';
+        if isfield(Field{1},'ListDimName')%cleaning 
+            Field{1}=rmfield(Field{1},'ListDimName');
+        end
+        if isfield(Field{1},'DimValue')%cleaning 
+            Field{1}=rmfield(Field{1},'DimValue');
         end
     end
 end
@@ -3094,8 +3143,14 @@ UvData=get(handles.uvmat,'UserData');
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 [tild,tild,tild,i1,i2,j1,j2,tild,NomType]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt]);
 if isequal(field,'image')
-    SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-    imagename=fullfile_uvmat(RootPath,SubDirBase,RootFile,'.png',NomType,i1,[],j1,[]);
+    if  isfield(UvData.Field,'Civ2_ImageA')%get the corresponding input image in the netcdf file
+        imagename=UvData.Field.Civ2_ImageA;
+    elseif isfield(UvData.Field,'Civ1_ImageA')%
+        imagename=UvData.Field.Civ1_ImageA;
+    else
+        SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
+        imagename=fullfile_uvmat(RootPath,SubDirBase,RootFile,'.png',NomType,i1,[],j1,[]);
+    end
     if ~exist(imagename,'file')
         [FileName,PathName] = uigetfile( ...
             {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';
@@ -3198,9 +3253,15 @@ switch field_1
               set(handles.uvmat,'UserData',UvData)
         end
     case 'image'
-        % guess the image name corresponding to the current netcdf name (no unique correspondance)
-        SubDirBase=regexprep(SubDir_1,'\..*','');%take the root part of SubDir, before the first dot '.'
-        imagename=fullfile_uvmat(RootPath_1,SubDirBase,RootFile_1,'.png',get(handles.NomType,'String'),i1,[],j1);
+        % get the image name corresponding to the current netcdf name (no unique correspondance)
+        if  isfield(UvData.Field,'Civ2_ImageA')%get the corresponding input image in the netcdf file
+            imagename=UvData.Field.Civ2_ImageA;
+        elseif isfield(UvData.Field,'Civ1_ImageA')%
+            imagename=UvData.Field.Civ1_ImageA;
+        else
+            SubDirBase=regexprep(SubDir_1,'\..*','');%take the root part of SubDir, before the first dot '.'
+            imagename=fullfile_uvmat(RootPath_1,SubDirBase,RootFile_1,'.png',get(handles.NomType,'String'),i1,[],j1);
+        end
         if ~exist(imagename,'file') % browse for images if it is not found
             [FileName,PathName] = uigetfile( ...
                 {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';

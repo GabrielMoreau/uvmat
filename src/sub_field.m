@@ -300,7 +300,13 @@ if testU && ~testU_1
         end
     end     
     if ~testX_1% if the second field has structured coordinates
+        ilist_1=find(strcmp(AName_1,Field_1.ListVarName));
+        DimCell_1=Field_1.VarDimName{ilist_1};
+        if numel(DimCell_1)>2
+             DimCell={XName_1_1,YName_1_1, [{YName_1_1,XName_1_1} DimCell_1(3:end)]};
+        else
           DimCell={XName_1_1,YName_1_1, {YName_1_1,XName_1_1}};
+        end
     else
         DimCell=[DimCell Field_1.VarDimName(ivar_C_1)];
     end

@@ -87,11 +87,8 @@ end
 
 %% Civ1
 if isfield (Param,'Civ1')
-    %     check_civ1=1;% test for further use of civ1 results
-    % %% prepare images
-
     par_civ1=Param.Civ1;
-    if isfield(par_civ1,'reverse_pair')
+    if isfield(par_civ1,'reverse_pair')% A REVOIR
         if par_civ1.reverse_pair
             if ischar(par_civ1.ImageB)
                 temp=par_civ1.ImageA;
@@ -102,25 +99,17 @@ if isfield (Param,'Civ1')
             end
         end
     else
-        if isfield(par_civ1,'ImageA')%&&...
-            %    (ischar(par_civ1.ImageA)||strcmp(class(par_civ1.ImageA),'VideoReader')||strcmp(class(par_civ1.ImageA),'mmreader')) % case with no image: only the PIV grid is calculated           
+        if isfield(Param.Civ1,'ImageA')%&&...    
              Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'''','\');
-            [par_civ1.ImageA,ParamOut] = read_image(Param.Civ1.ImageA,par_civ1.FileTypeA,par_civ1.ImageA,par_civ1.FrameIndexA);
-%             if ~isempty(errormsg)
-%                 errormsg=['error in civ_matlab/read_field:' errormsg];
-%                 return
-%             end
-            %par_civ1.ImageA=Field.A;%= image matrix A in the first input field 
+            [par_civ1.ImageA,VideoObject] = read_image(Param.Civ1.ImageA,par_civ1.FileTypeA,[],par_civ1.FrameIndexA);
         end
-        if isfield(par_civ1,'ImageB')%&& ...
-              %  (ischar(par_civ1.ImageB)||strcmp(class(par_civ1.ImageB),'VideoReader')||strcmp(class(par_civ1.ImageB),'mmreader'))
+        if isfield(Param.Civ1,'ImageB')%&& ...
              Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'''','\');
-            [par_civ1.ImageB,ParamOut] = read_image(Param.Civ1.ImageB,par_civ1.FileTypeB,par_civ1.ImageB,par_civ1.FrameIndexB);
-%             if ~isempty(errormsg)
-%                 errormsg=['error in civ_matlab/read_field:' errormsg];
-%                 return
-%             end
-           % par_civ1.ImageB=Field.A;%= image matrix A in the second input field 
+             if strcmp(Param.Civ1.ImageA,Param.Civ1.ImageB)% use the same movie object
+                 [par_civ1.ImageB,VideoObject] = read_image(Param.Civ1.ImageB,par_civ1.FileTypeB,VideoObject,par_civ1.FrameIndexB);
+             else
+            [par_civ1.ImageB,VideoObject] = read_image(Param.Civ1.ImageB,par_civ1.FileTypeB,par_civ1.ImageB,par_civ1.FrameIndexB);
+             end
         end
     end
     
@@ -238,8 +227,8 @@ if isfield (Param,'Patch1')
     end
     [Data.Civ1_SubRange,Data.Civ1_NbSites,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
         filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomain,Data.Patch1_Rho,Data.Patch1_Threshold);
-    fill=zeros(3,2,size(Data.Civ1_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
-    Data.Civ1_Coord_tps=cat(1,Data.Civ1_Coord_tps,fill);
+%     fill=zeros(3,2,size(Data.Civ1_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
+%     Data.Civ1_Coord_tps=cat(1,Data.Civ1_Coord_tps,fill);
     Data.Civ1_U_smooth(ind_good)=Ures;
     Data.Civ1_V_smooth(ind_good)=Vres;
     Data.Civ1_FF(ind_good)=FFres;
@@ -249,27 +238,39 @@ end
 %% Civ2
 if isfield (Param,'Civ2')
     par_civ2=Param.Civ2;
-    if ~isfield (Param,'Civ1') || ~strcmp(Param.Civ1.ImageA,par_civ2.ImageA)
-        %read first image if not already done for civ1
-        [Field,ParamOut,errormsg] = read_field(Param.Civ2.ImageA,par_civ2.FileTypeA,par_civ2.ImageA,par_civ2.FrameIndexA);
-                    if ~isempty(errormsg)
-                errormsg=['error in civ_matlab/read_field:' errormsg];
-                return
+    par_civ2.ImageA=[];
+    par_civ2.ImageB=[];
+    if isfield(Param.Civ2,'ImageA') && isfield(Param.Civ2,'ImageB')
+        Param.Civ2.ImageA=regexprep(Param.Civ2.ImageA,'''','\');
+        Param.Civ2.ImageB=regexprep(Param.Civ2.ImageB,'''','\');
+        if isfield (Param,'Civ1')
+            Param.Civ2.ImageA=regexprep(Param.Civ2.ImageA,'''','\');
+            if strcmp(Param.Civ1.ImageA,Param.Civ2.ImageA)
+                if isequal(Param.Civ1.FrameIndexA,Param.Civ2.FrameIndexA)
+                    par_civ2.ImageA=par_civ1.ImageA;
+                else % read another frame of the same movie object
+                    par_civ2.ImageA = read_image(Param.Civ2.ImageA,Param.Civ2.FileTypeA,VideoObject,Param.Civ2.FrameIndexA);
+                end
             end
-        par_civ2.ImageA=Field.A;
-    else
-        par_civ2.ImageA=par_civ1.ImageA;
-    end
-    if ~isfield (Param,'Civ1') || ~strcmp(Param.Civ1.ImageB,par_civ2.ImageB)
-        %read first image if not already done for civ1
-        [Field,ParamOut,errormsg] = read_field(Param.Civ2.ImageB,par_civ2.FileTypeB,par_civ2.ImageB,par_civ2.FrameIndexB);
-         if ~isempty(errormsg)
-                errormsg=['error in civ_matlab/read_field:' errormsg];
-                return
+            Param.Civ2.ImageB=regexprep(Param.Civ2.ImageB,'''','\');
+            if strcmp(Param.Civ1.ImageB,Param.Civ2.ImageB)
+                if isequal(Param.Civ1.FrameIndexB,Param.Civ2.FrameIndexB)
+                    par_civ2.ImageB=par_civ1.ImageB;
+                else % read another frame of the same movie object
+                    par_civ2.ImageB = read_image(Param.Civ2.ImageB,Param.Civ2.FileTypeB,VideoObject,Param.Civ2.FrameIndexB);
+                end
             end
-        par_civ2.ImageB=Field.A;
-    else
-        par_civ2.ImageB=par_civ1.ImageB;
+        end
+        if isempty(par_civ2.ImageA) && isfield(Param.Civ2,'ImageA')
+            [par_civ2.ImageA,VideoObject] = read_image(Param.Civ2.ImageA,Param.Civ2.FileTypeA,[],Param.Civ2.FrameIndexA);
+        end
+        if isempty(par_civ2.ImageB)&& isfield(Param.Civ2,'ImageB')
+            if strcmp(Param.Civ2.ImageA,Param.Civ2.ImageB)
+                par_civ2.ImageB = read_image(Param.Civ2.ImageB,Param.Civ2.FileTypeB,VideoObject,Param.Civ2.FrameIndexB);
+            else
+                par_civ2.ImageB = read_image(Param.Civ2.ImageB,Param.Civ2.FileTypeB,[],Param.Civ2.FrameIndexB);
+            end
+        end
     end
     ibx2=ceil(par_civ2.CorrBoxSize(1)/2);
     iby2=ceil(par_civ2.CorrBoxSize(2)/2);
@@ -422,8 +423,8 @@ if isfield (Param,'Patch2')
     end
     [Data.Civ2_SubRange,Data.Civ2_NbSites,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures, Vres,tild,FFres]=...
         filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomain,Data.Patch2_Rho,Data.Patch2_Threshold);
-    fill=zeros(3,2,size(Data.Civ2_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
-    Data.Civ2_Coord_tps=cat(1,Data.Civ2_Coord_tps,fill);
+%     fill=zeros(3,2,size(Data.Civ2_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
+%     Data.Civ2_Coord_tps=cat(1,Data.Civ2_Coord_tps,fill);
     Data.Civ2_U_smooth(ind_good)=Ures;
     Data.Civ2_V_smooth(ind_good)=Vres;
     Data.Civ2_FF(ind_good)=FFres;
@@ -433,6 +434,11 @@ end
 %% write result in a netcdf file if requested
 if exist('ncfile','var') 
     errormsg=struct2nc(ncfile,Data);
+    if isempty(errormsg)
+        disp([ncfile ' written'])
+    else
+        disp(errormsg)
+    end
 end
 
 % 'civ': function piv.m adapted from PIVlab http://pivlab.blogspot.com/

@@ -90,25 +90,29 @@ set(hObject,'WindowButtonDownFcn',{'mouse_alt_gui',handles}) % allows mouse acti
 
 %set the position of the interface
 if exist('pos','var')&& length(pos)>=4
-%     %pos_gui=get(hObject,'Position');
-%     pos_gui(1)=pos(1);
-%     pos_gui(2)=pos(2);
     set(hObject,'Position',pos);
 end
 
 %set menu of calibration options
 set(handles.calib_type,'String',{'rescale';'linear';'3D_linear';'3D_quadr';'3D_extrinsic'})
-% inputxml='';
 if exist('inputfile','var')&& ~isempty(inputfile)
     struct.XmlInputFile=inputfile;
-%     [Pathsub,RootFile,field_count,str2,str_a,str_b,ext]=name2display(inputfile);
-    [RootPath,~,RootFile,~,~,~,~,FileExt]=fileparts_uvmat(inputfile);
+    [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(inputfile);
     if ~strcmp(FileExt,'.xml')
-        inputfile=[fullfile(RootPath,RootFile) '.xml'];%xml file corresponding to the input file
+        inputfile=fullfile(RootPath,[SubDir '.xml']);%xml file corresponding to the input file
+        if ~exist(inputfile,'file')% case of civ files , removes the extension for subdir
+            inputfile=fullfile(RootPath,[regexprep(SubDir,'\..+$','') '.xml']);
+            if ~exist(inputfile,'file')
+                inputfile=[fullfile(RootPath,SubDir,RootFile) '.xml'];%old convention
+                if ~exist(inputfile,'file')
+                    inputfile='';
+                end
+            end
+        end
     end
     set(handles.ListCoord,'String',{'......'})
     if exist(inputfile,'file')
-        Heading=loadfile(handles,inputfile);% load the point coordiantes existing in the xml file
+        Heading=loadfile(handles,inputfile);% load the point coordinates existing in the xml file
         if isfield(Heading,'Campaign')&& ischar(Heading.Campaign)
             struct.Campaign=Heading.Campaign;
         end
@@ -189,7 +193,7 @@ if ~isempty(Coord)
     [GeometryCalib.ErrorMax(1),index(1)]=max(abs(Xpoints-x_ima));
     GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
     [GeometryCalib.ErrorMax(2),index(2)]=max(abs(Ypoints-y_ima));
-    [~,ind_dim]=max(GeometryCalib.ErrorMax);
+    [tild,ind_dim]=max(GeometryCalib.ErrorMax);
     index=index(ind_dim);
     %set the Z position of the reference plane used for calibration
     if isequal(max(Z),min(Z))%Z constant
@@ -1255,137 +1259,6 @@ Tabchar=cell2tab(Coord,' | ');
 Tabchar=[Tabchar;{'......'}];
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
-
-
-% %------------------------------------------------------------------------
-% % --- Executes on button press in rotation.
-% function rotation_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% angle_rot=(pi/180)*str2num(get(handles.Phi,'String'));
-% Coord_cell=get(handles.ListCoord,'String');
-% data=read_geometry_calib(Coord_cell);
-% data.Coord(:,1)=cos(angle_rot)*data.Coord(:,1)+sin(angle_rot)*data.Coord(:,2);
-% data.Coord(:,1)=-sin(angle_rot)*data.Coord(:,1)+cos(angle_rot)*data.Coord(:,2);
-% set(handles.XObject,'String',num2str(data.Coord(:,1),4));
-% set(handles.YObject,'String',num2str(data.Coord(:,2),4));
-
-
-%------------------------------------------------------------------------
-% image transform from px to phys 
-%INPUT:
-%Zindex: index of plane
-% function [A_out,Rangx,Rangy]=phys_Ima(A,Calib,ZIndex)
-% %------------------------------------------------------------------------
-% xcorner=[];
-% ycorner=[];
-% npx=[];
-% npy=[];
-% siz=size(A)
-% npx=[npx siz(2)];
-% npy=[npy siz(1)]
-% xima=[0.5 siz(2)-0.5 0.5 siz(2)-0.5];%image coordinates of corners
-% yima=[0.5 0.5 siz(1)-0.5 siz(1)-0.5];
-% [xcorner,ycorner]=phys_XYZ(Calib,xima,yima,ZIndex);%corresponding physical coordinates
-% Rangx(1)=min(xcorner);
-% Rangx(2)=max(xcorner);
-% Rangy(2)=min(ycorner);
-% Rangy(1)=max(ycorner);
-% test_multi=(max(npx)~=min(npx)) | (max(npy)~=min(npy)); 
-% npx=max(npx);
-% npy=max(npy);
-% x=linspace(Rangx(1),Rangx(2),npx);
-% y=linspace(Rangy(1),Rangy(2),npy);
-% [X,Y]=meshgrid(x,y);%grid in physical coordiantes
-% vec_B=[];
-% 
-% zphys=0; %default
-% if isfield(Calib,'SliceCoord') %.Z= index of plane
-%    SliceCoord=Calib.SliceCoord(ZIndex,:);
-%    zphys=SliceCoord(3); %to generalize for non-parallel planes
-% end
-% [XIMA,YIMA]=px_XYZ(Calib,X,Y,zphys);%corresponding image indices for each point in the real space grid
-% XIMA=reshape(round(XIMA),1,npx*npy);%indices reorganized in 'line'
-% YIMA=reshape(round(YIMA),1,npx*npy);
-% flagin=XIMA>=1 & XIMA<=npx & YIMA >=1 & YIMA<=npy;%flagin=1 inside the original image
-% testuint8=isa(A,'uint8');
-% testuint16=isa(A,'uint16');
-% if numel(siz)==2 %(B/W images)
-%     vec_A=reshape(A,1,npx*npy);%put the original image in line
-%     ind_in=find(flagin);
-%     ind_out=find(~flagin);
-%     ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
-%     ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
-%     vec_B(ind_in)=vec_A(ICOMB);
-%     vec_B(ind_out)=zeros(size(ind_out));
-%     A_out=reshape(vec_B,npy,npx);%new image in real coordinates
-% elseif numel(siz)==3     
-%     for icolor=1:siz(3)
-%         vec_A=reshape(A{icell}(:,:,icolor),1,npx*npy);%put the original image in line
-%         ind_in=find(flagin);
-%         ind_out=find(~flagin);
-%         ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
-%         ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
-%         vec_B(ind_in)=vec_A(ICOMB);
-%         vec_B(ind_out)=zeros(size(ind_out));
-%         A_out(:,:,icolor)=reshape(vec_B,npy,npx);%new image in real coordinates
-%     end
-% end
-% if testuint8
-%     A_out=uint8(A_out);
-% end
-% if testuint16
-%     A_out=uint16(A_out);
-% end
-
-%------------------------------------------------------------------------
-% pointwise transform from px to phys
-%INPUT:
-%Z: index of plane
-% function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Z)
-% %------------------------------------------------------------------------
-% if exist('Z','var')& isequal(Z,round(Z))& Z>0 & isfield(Calib,'SliceCoord')&length(Calib.SliceCoord)>=Z
-%     Zindex=Z;
-%     Zphys=Calib.SliceCoord(Zindex,3);%GENERALISER AUX CAS AVEC ANGLE
-% else
-%     Zphys=0;
-% end
-% if ~exist('X','var')||~exist('Y','var')
-%     Xphys=[];
-%     Yphys=[];%default
-%     return
-% end
-% Xphys=X;%default
-% Yphys=Y;
-% %image transform
-% if isfield(Calib,'R')
-%     R=(Calib.R)';
-%     Dx=R(5)*R(7)-R(4)*R(8);
-%     Dy=R(1)*R(8)-R(2)*R(7);
-%     D0=Calib.f*(R(2)*R(4)-R(1)*R(5));
-%     Z11=R(6)*R(8)-R(5)*R(9);
-%     Z12=R(2)*R(9)-R(3)*R(8);  
-%     Z21=R(4)*R(9)-R(6)*R(7);
-%     Z22=R(3)*R(7)-R(1)*R(9);
-%     Zx0=R(3)*R(5)-R(2)*R(6);
-%     Zy0=R(1)*R(6)-R(3)*R(4);
-%     A11=R(8)*Calib.Ty-R(5)*Calib.Tz+Z11*Zphys;
-%     A12=R(2)*Calib.Tz-R(8)*Calib.Tx+Z12*Zphys;
-%     A21=-R(7)*Calib.Ty+R(4)*Calib.Tz+Z21*Zphys;
-%     A22=-R(1)*Calib.Tz+R(7)*Calib.Tx+Z11*Zphys;
-%     X0=Calib.f*(R(5)*Calib.Tx-R(2)*Calib.Ty+Zx0*Zphys);
-%     Y0=Calib.f*(-R(4)*Calib.Tx+R(1)*Calib.Ty+Zy0*Zphys);
-%         %px to camera:
-%     Xd=(Calib.dpx/Calib.sx)*(X-Calib.Cx); % sensor coordinates
-%     Yd=Calib.dpy*(Y-Calib.Cy);
-%     dist_fact=1+Calib.kappa1*(Xd.*Xd+Yd.*Yd); %distortion factor
-%     Xu=dist_fact.*Xd;%undistorted sensor coordinates
-%     Yu=dist_fact.*Yd;
-%     denom=Dx*Xu+Dy*Yu+D0;
-%     % denom2=denom.*denom;
-%     Xphys=(A11.*Xu+A12.*Yu+X0)./denom;%world coordinates
-%     Yphys=(A21.*Xu+A22.*Yu+Y0)./denom;
-% end
-
 
 % --------------------------------------------------------------------
 function MenuImportPoints_Callback(hObject, eventdata, handles)

@@ -257,7 +257,12 @@ for icell=1:length(CellVarIndex)
                 CellVarType{icell}.coord_tps=VarType.coord_tps(ilist);
                 CellVarType{icell}.nbsites_tps=VarType.nbsites_tps(ilist);
                 CellVarType{icell}.subrange_tps=VarType.subrange_tps(ilist);
+                if isfield(Data,'ListDimName')
+                    dim_index=find(strcmp(tps_dimnames{2},Data.ListDimName));
+                    NbDim(icell)=Data.DimValue(dim_index);
+                else
                 NbDim(icell)=size(Data.(Data.ListVarName{VarType.coord_tps(ilist)}),2);
+                end
             end
             end
         end

@@ -1775,6 +1775,7 @@ for ilist=1:length(varargout)-1
             if isequal(lower(varargout{ilist+1}),'on') 
                 set(handles.TransformName,'Enable','on')
                 set(handles.FieldTransform,'Visible','on')
+                TransformName_Callback([],[], handles)
             end
         case 'ProjObject'   %hidden by default
             if isequal(lower(varargout{ilist+1}),'on')   
@@ -2047,10 +2048,10 @@ end
 
 %check the current ActionPath to the selected function
 if ~isempty(list_transform{ind_coord})
-func=functions(list_transform{ind_coord});
-set(handles.TransformPath,'String',fileparts(func.file)); %show the path to the senlected function
+    func=functions(list_transform{ind_coord});
+    set(handles.TransformPath,'String',fileparts(func.file)); %show the path to the senlected function
 else
-   set(handles.TransformPath,'String',''); %show the path to the senlected function 
+    set(handles.TransformPath,'String',''); %show the path to the senlected function
 end
 
 % %------------------------------------------------------------------------

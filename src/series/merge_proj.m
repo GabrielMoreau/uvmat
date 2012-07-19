@@ -192,6 +192,7 @@ for i_slice=1:NbSlice
         nbtime=0;
         for iview=1:nbview
             % reading input file(s)
+            filecell{iview,index}
             [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
             if ~isempty(errormsg)
                 errormsg=['merge_proj/read_field/' errormsg];
@@ -206,13 +207,55 @@ for i_slice=1:NbSlice
             if ~isempty(NbSlice_calib)
                 Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
             end
+            
             %transform the input field (e.g; phys) if requested
             if ~isempty(transform_fct)
                 Data{iview}=transform_fct(Data{iview},XmlData{iview});  %transform to phys if requested
             end
-            % field calculation (vort, div...)
+            
+            %% check whether tps is needed, then calculate tps coefficients if needed
+            check_tps=0;
+            if ischar(Param.InputFields.FieldName)
+                Param.InputFields.FieldName={Param.InputFields.FieldName};
+            end
+            for ilist=1:numel(Param.InputFields.FieldName)
+                switch Param.InputFields.FieldName{ilist}
+                    case {'vort','div','strain'}
+                        check_tps=1;
+                end
+            end
+            if strcmp(Param.ProjObject.ProjMode,'filter')
+                check_tps=1;
+            end
+            if check_tps
+                SubDomain=1500; %default, estimated nbre of vectors in a subdomain used for tps
+                if isfield(Data{iview},'SubDomain')
+                    SubDomain=Data{iview}.SubDomain;%
+                end
+                [Data{iview}.SubRange,Data{iview}.NbSites,Data{iview}.Coord_tps,Data{iview}.U_tps,Data{iview}.V_tps,tild,U_smooth,V_smooth,W_smooth,FF] =...
+                    filter_tps([Data{iview}.X(Data{iview}.FF==0) Data{iview}.Y(Data{iview}.FF==0)],Data{iview}.U(Data{iview}.FF==0),Data{iview}.V(Data{iview}.FF==0),[],SubDomain,0);
+                nbvar=numel(Data{iview}.ListVarName);
+                Data{iview}.ListVarName=[Data{iview}.ListVarName {'SubRange','NbSites','Coord_tps','U_tps','V_tps'}];
+                Data{iview}.VarDimName=[Data{iview}.VarDimName {{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
+                    {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
+                Data{iview}.VarAttribute{nbvar+3}.Role='coord_tps';
+                Data{iview}.VarAttribute{nbvar+4}.Role='vector_x';
+                Data{iview}.VarAttribute{nbvar+5}.Role='vector_y';
+                if isfield(Data{iview},'ListDimName')%cleaning
+                    Data{iview}=rmfield(Data{iview},'ListDimName');
+                end
+                if isfield(Data{iview},'DimValue')%cleaning
+                    Data{iview}=rmfield(Data{iview},'DimValue');
+                end
+            end
+                 
+            % field calculation (vort, div...)    
             if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
-                Data{iview}=calc_field(Param.InputFields.FieldName,Data{iview});%calculate field (vort..)
+                if isfield(Data{iview},'Coord_tps')
+                    Data{iview}.FieldList=Param.InputFields.FieldName;
+                else
+                    Data{iview}=calc_field(Param.InputFields.FieldName,Data{iview});%calculate field (vort..)
+                end
             end
             
             %projection on object (gridded plane)

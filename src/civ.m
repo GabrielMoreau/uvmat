@@ -23,7 +23,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 13-Jul-2012 15:11:00
+% Last Modified by GUIDE v2.5 18-Jul-2012 23:20:12
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -296,13 +296,13 @@ function RootPath_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.RootPath,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
 RootPath=get(handles.RootPath,'String');
-SubdirImages=get(handles.SubdirImages,'String');
+SubDirImages=get(handles.SubDirImages,'String');
 RootFile=get(handles.RootFile,'String');
 ref_i=str2num(get(handles.ref_i,'String'));
 ref_j=str2num(get(handles.ref_j,'String'));
 NomType=get(handles.NomType,'String');
 ImaExt=get(handles.ImaExt,'String');
-fileinput=fullfile_uvmat(RootPath,SubdirImages,RootFile,ImaExt,NomType,ref_i,[],ref_j);
+fileinput=fullfile_uvmat(RootPath,SubDirImages,RootFile,ImaExt,NomType,ref_i,[],ref_j);
 errormsg=display_file_name(handles,fileinput);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
@@ -343,7 +343,7 @@ end
 imageinput=fileinput;%default
 if strcmp(ExtInput,'.nc')
     NomTypeNc=NomTypeInput;
-    if isempty(regexp(NomTypeInput,'[ab|AB|-]'))
+    if isempty(regexp(NomTypeInput,'[ab|AB|-]', 'once'))
         set(handles.ListCompareMode,'Value',2) %mode displacement advised if the nomencalture does not involve index pairs
       %  [RootPath,SubDir]=fileparts(RootPath);
         set(handles.RootFile_1,'Visible','On');
@@ -434,7 +434,7 @@ end
 [FilePath,FileName,ImaExt]=fileparts(imageinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubdirImages,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,MovieObject]=find_file_series(FilePath,[FileName ImaExt]);
+[RootPath,SubDirImages,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,MovieObject]=find_file_series(FilePath,[FileName ImaExt]);
 switch FileType
     case {'image','multimage','video','mmreader'}
     otherwise
@@ -442,10 +442,10 @@ switch FileType
         return
 end
 set(handles.RootPath,'String',RootPath)
-set(handles.SubdirImages,'String',SubdirImages)
+set(handles.SubDirImages,'String',SubDirImages)
 set(handles.RootFile,'String',RootFile)
 if strcmp(ExtInput,'.nc')
-    SubDirCiv=regexprep(SubDir,['^' SubdirImages],'');%suppress the root  SuddirImages;
+    SubDirCiv=regexprep(SubDir,['^' SubDirImages],'');%suppress the root  SuddirImages;
 else
     SubDirCiv= '.civ';
 end
@@ -459,21 +459,6 @@ MinIndex_i=min(i1_series(i1_series>0));
 MinIndex_j=min(j1_series(j1_series>0));
 MaxIndex_i=max(i1_series(i1_series>0));
 MaxIndex_j=max(j1_series(j1_series>0));
-
-%% fill reference indices from the input file indices
-num_ref_i=str2num(get(handles.ref_i,'String'));
-num_ref_j=str2num(get(handles.ref_j,'String'));
-% for movies don't modify except if the current ref is outside index bounds
-if strcmp(ExtInput,'.nc')|| ~(strcmp(FileType,'mmreader')||strcmp(FileType,'VideoReader') && num_ref_i<=MaxIndex_i && num_ref_j<=MaxIndex_j)
-    num_ref_i=i1;%default ref index
-    if ~isempty(i2)
-        num_ref_i=floor((num_ref_i+i2)/2);
-    end
-    num_ref_j=j1;
-    if ~isempty(j2)
-        num_ref_j=floor((num_ref_j+j2)/2);
-    end
-end
 
 %% look for an image documentation file
 XmlFileName=find_imadoc(RootPath,SubDir,RootFile,ImaExt);
@@ -523,7 +508,7 @@ if ~isempty(XmlFileName)
     end
 end
 if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
-               set(handles.ListPairMode,'Value',1);
+    set(handles.ListPairMode,'Value',1);
     dt=1/get(MovieObject,'FrameRate');%time interval between successive frames
     if strcmp(NomTypeIma,'*')
         set(handles.ListPairMode,'String',{'series(Di)'})
@@ -532,10 +517,10 @@ if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
     else
         set(handles.ListPairMode,'String',[{'series(Dj)'};{'series(Di)'}])
         MaxIndex_i=max(i1_series(i1_series>0));
-        MaxIndex_j=get(MovieObject,'NumberOfFrames');    
+        MaxIndex_j=get(MovieObject,'NumberOfFrames');
         time=ones(MaxIndex_i,1)*(dt*(0:MaxIndex_j-1));%list of image times
         enable_j(handles,'on')
-    end 
+    end
     TimeUnit='s';
     set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box back to whiter
 end
@@ -543,7 +528,7 @@ end
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
 if numel(time)>=2 % if there are at least two time values to define dt
-    MaxIndex_i=min(size(time,1),MaxIndex_i);
+    MaxIndex_i=min(size(time,1),MaxIndex_i);%possibly adjust the max index according to time data
     MaxIndex_j=min(size(time,2),MaxIndex_j);
     time=[zeros(size(time,1),1) time]; %insert a vertical line of zeros (to deal with zero file indices)
     time=[zeros(1,size(time,2)); time]; %insert a horizontal line of zeros
@@ -562,32 +547,64 @@ set(handles.CoordUnit,'String',CoordUnit)
 set(handles.SearchRange,'UserData', pxcm_search);
 set(handles.ImaExt,'String',ImaExt)
 set(handles.NomType,'String',NomTypeIma)
-set(handles.ref_i,'String',num2str(num_ref_i))
-set(handles.ref_j,'String',num2str(num_ref_j))
+
+%% set the reference indices from the input file indices
+num_ref_i=str2num(get(handles.ref_i,'String'));
+num_ref_j=str2num(get(handles.ref_j,'String'));
+% for movies don't modify except if the current ref is outside index bounds
+%if strcmp(ExtInput,'.nc')|| ~(strcmp(FileType,'mmreader')||strcmp(FileType,'VideoReader') && num_ref_i<=MaxIndex_i && num_ref_j<=MaxIndex_j)
+if ~isempty(i1)% if i1 has been selected by the input
+    num_ref_i=i1;%default ref index
+    if ~isempty(i2)
+        num_ref_i=floor((num_ref_i+i2)/2);
+    end
+    if ~isempty(j1)
+    num_ref_j=j1;
+    if ~isempty(j2)
+        num_ref_j=floor((num_ref_j+j2)/2);
+    end
+    end
+end
+if num_ref_i>MaxIndex_i||num_ref_i<MinIndex_i
+    num_ref_i=round((MinIndex_i+MaxIndex_i)/2);
+end
+if ~isempty(num_ref_j)&&~isempty(MaxIndex_j)&& ~isempty(MinIndex_j)
+    if (num_ref_j>MaxIndex_j||num_ref_j<MinIndex_j)
+        num_ref_j=round((MinIndex_j+MaxIndex_j)/2);
+    end
+end
+if isempty(num_ref_j)
+    num_ref_j=1;
+end
 
 %% update i and j index range if a nc file has been opened or pb withmin max image indices: 
 % then set first and last to the inputfile index by default
 first_i=str2num(get(handles.first_i,'String'));
 last_i=str2num(get(handles.last_i,'String'));
-if isempty(first_i) || isempty(last_i)||isempty(MinIndex_i)||isempty(MaxIndex_i)
-    set(handles.first_i,'String',num2str(num_ref_i));
-    set(handles.last_i,'String',num2str(num_ref_i));%
-end
-if ind_opening~=0 || isempty(first_i) || isempty(last_i)|| first_i<MinIndex_i || last_i>MaxIndex_i
-    set(handles.first_i,'String',num2str(num_ref_i));
-    set(handles.last_i,'String',num2str(num_ref_i));%
+if isempty(first_i) || isempty(last_i)||isempty(MinIndex_i)||isempty(MaxIndex_i)||ind_opening~=0 || isempty(first_i) || isempty(last_i)|| first_i<MinIndex_i || last_i>MaxIndex_i
+   first_i=num_ref_i;
+   last_i=num_ref_i;
+    set(handles.first_i,'String',num2str(first_i));
+    set(handles.last_i,'String',num2str(last_i));%
 end
 
 %j index range 
 first_j=str2num(get(handles.first_j,'String'));
-last_j=str2num(get(handles.last_i,'String'));
-if isempty(first_j) || isempty(last_j)||isempty(MinIndex_j)||isempty(MaxIndex_j)
-    set(handles.first_j,'String',num2str(num_ref_j));
-    set(handles.last_j,'String',num2str(num_ref_j));%
-elseif ind_opening~=0 || first_j<MinIndex_j || last_j>MaxIndex_j
-    set(handles.first_j,'String',num2str(num_ref_j));
-set(handles.last_j,'String',num2str(num_ref_j));%
+last_j=str2num(get(handles.last_j,'String'));
+if isempty(first_j) || isempty(last_j)||isempty(MinIndex_j)||isempty(MaxIndex_j)||ind_opening~=0 || first_j<MinIndex_j || last_j>MaxIndex_j
+       first_j=num_ref_j;
+   last_j=num_ref_j;
+    set(handles.first_j,'String',num2str(first_j));
+    set(handles.last_j,'String',num2str(last_j));%
 end
+if num_ref_i>last_i || num_ref_i<first_i 
+    num_ref_i=round((first_i+last_i)/2);
+end
+if num_ref_j>last_j || num_ref_j<first_j
+    num_ref_j=round((first_j+last_j)/2);
+end
+set(handles.ref_i,'String',num2str(num_ref_i))
+set(handles.ref_j,'String',num2str(num_ref_j))
 
 %% set the civ options depending on the input file content when a nc file has been opened
 ListOptions={'CheckCiv1', 'CheckFix1' 'CheckPatch1', 'CheckCiv2', 'CheckFix2', 'CheckPatch2'};
@@ -1118,6 +1135,9 @@ switch Param.Program
 end
 for bin_name=binary_list %loop on the list of binaries
     if isfield(Param.xml,bin_name{1})% bin_name{1} =current name in the list
+        if ~isunix
+        Param.xml.(bin_name{1})=[regexprep(Param.xml.(bin_name{1}),'/','\') '.exe'];
+        end
         if exist(Param.xml.(bin_name{1}),'file')
             [path,name,ext]=fileparts(Param.xml.(bin_name{1}));
             currentdir=pwd;
@@ -1145,7 +1165,6 @@ for bin_name=binary_list %loop on the list of binaries
         end
     end
 end
-display('files OK, processing...')
 
 %% set the list of files and check them
 display('checking the files...')
@@ -1159,7 +1178,7 @@ if ~isempty(errormsg)
     return
 end
 set(handles.civ,'UserData',filecell);%store for futur use of status callback
-
+display('files OK, processing...')
 
 %% create subfolders for log, cmx, nml, xml, bat
 RootBat=fileparts(filecell.nc.civ1{1,1});
@@ -1170,7 +1189,6 @@ for k=1:length(dir_list)
     end
 end
 
-    
 %% get information on input images or movies
 nbfield=numel(i1_civ1);
 nbslice=numel(j1_civ1);
@@ -1190,7 +1208,7 @@ time=get(handles.ImaDoc,'UserData'); %get the set of times
 TimeUnit=get(handles.TimeUnit,'String');
 checkframe=strcmp(TimeUnit,'frame');
 batch_file_list=[];%should be renamed file_list, can be used for xml or bash files
- 
+NomTypeIma=get(handles.NomType,'String');
 for ifile=1:nbfield
     for j=1:nbslice
             
@@ -1219,8 +1237,13 @@ for ifile=1:nbfield
             Param.Civ1.ImageBitDepth=ImageInfoA_civ1.BitDepth;
             Param.Civ1.ImageWidth=ImageInfoA_civ1.Width;
             Param.Civ1.ImageHeight=ImageInfoA_civ1.Height;
-            Param.Civ1.FrameIndexA=i1_civ1(ifile);
-            Param.Civ1.FrameIndexB=i2_civ1(ifile);
+            if strcmp(NomTypeIma,'*')
+                Param.Civ1.FrameIndexA=i1_civ1(ifile);
+                Param.Civ1.FrameIndexB=i2_civ1(ifile);
+            else% case of movies indexed with i, the frame index is then in j
+                Param.Civ1.FrameIndexA=j1_civ1(j);
+                Param.Civ1.FrameIndexB=j2_civ1(j);
+            end
             % read mask )parameters
             if Param.Civ1.CheckMask % the lines below should be changed with the new gui
                 if ~exist(Param.Civ1.Mask,'file')
@@ -1293,8 +1316,13 @@ for ifile=1:nbfield
             Param.Civ2.ImageBitDepth=ImageInfoA_civ2.BitDepth;
             Param.Civ2.ImageWidth=ImageInfoA_civ2.Width;
             Param.Civ2.ImageHeight=ImageInfoA_civ2.Height;
-            Param.Civ2.FrameIndexA=i1_civ2(ifile);
-            Param.Civ2.FrameIndexB=i2_civ2(ifile);           
+            if strcmp(NomTypeIma,'*')
+                Param.Civ2.FrameIndexA=i1_civ2(ifile,j);
+                Param.Civ2.FrameIndexB=i2_civ2(ifile,j);
+            else% case of movies indexed with i, the frame index is then in j
+                Param.Civ2.FrameIndexA=j1_civ2(ifile,j);
+                Param.Civ2.FrameIndexB=j2_civ2(ifile,j);
+            end
         end
        
         % write the command and eventually the cmx, xml or nml files
@@ -1679,9 +1707,9 @@ CivMode=ListProgram{get(handles.Program,'Value')};%Program to use , CivX or Matl
 
 %% get the root name and check dir
 RootPath=get(handles.RootPath,'String');
-SubdirImages=get(handles.SubdirImages,'String');
+SubDirImages=get(handles.SubDirImages,'String');
 RootFile=get(handles.RootFile,'String');
-filecell.filebase=fullfile(RootPath,SubdirImages,RootFile);
+filecell.filebase=fullfile(RootPath,SubDirImages,RootFile);
 if isempty(filecell.filebase)
     errormsg='please open an image with the upper menu option Open/Browse...';
     return
@@ -1702,8 +1730,8 @@ if isequal(subdir_civ1,''),subdir_civ1='civ'; end% put default subdir
 % subdir_civ1=[ '.' subdir_civ1];
 % subdir_civ2=[ '.' subdir_civ2];
 if isequal(subdir_civ2,''),subdir_civ2=subdir_civ1; end% put default subdir
-subdir_civ1=[SubdirImages '.' subdir_civ1];
-subdir_civ2=[SubdirImages '.' subdir_civ2];
+subdir_civ1=[SubDirImages '.' subdir_civ1];
+subdir_civ2=[SubDirImages '.' subdir_civ2];
 
 %% choose root names depending on ListCompareMode =displacement, shift, PIV or stereo PIV
 ListCompareMode=get(handles.ListCompareMode,'String');
@@ -1977,10 +2005,10 @@ if checkbox(1)==1;
     % get image names
     for ifile=1:nbfield
         for j=1:nbslice
-             filename=fullfile_uvmat(RootPath,SubdirImages,RootFile_ima1,ext_ima,NomType_ima1,i1_civ1(ifile),[],j1_civ1(j));
+             filename=fullfile_uvmat(RootPath,SubDirImages,RootFile_ima1,ext_ima,NomType_ima1,i1_civ1(ifile),[],j1_civ1(j));
             idetect(j)=exist(filename,'file')==2;
             filecell.ima1.civ1(ifile,j)={filename}; %first image
-            filename=fullfile_uvmat(RootPath,SubdirImages,RootFile_ima2,ext_ima,NomType_ima2,i2_civ1(ifile),[],j2_civ1(j));
+            filename=fullfile_uvmat(RootPath,SubDirImages,RootFile_ima2,ext_ima,NomType_ima2,i2_civ1(ifile),[],j2_civ1(j));
             idetect_1(j)=exist(filename,'file')==2;
             filecell.ima2.civ1(ifile,j)={filename};%second image
         end
@@ -2195,7 +2223,7 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
     elseif checkbox(4)==1
         for ifile=1:nbfield
             for j=1:nbslice
-                filename=fullfile_uvmat(RootPath,[],RootFile_ima1,ext_ima,NomType_ima1,i1_civ2(ifile),[],j1_civ2(j));
+                filename=fullfile_uvmat(RootPath,SubDirImages,RootFile_ima1,ext_ima,NomType_ima1,i1_civ2(ifile),[],j1_civ2(j));
                 idetect_2(j)=exist(filename,'file')==2;
                 filecell.ima1.civ2(ifile,j)={filename};%first image
             end
@@ -2213,7 +2241,7 @@ if checkbox(4)==1 || checkbox(5)==1 || checkbox(6)==1 %civ2
     elseif checkbox(4)==1
         for ifile=1:nbfield
             for j=1:nbslice
-                filename=fullfile_uvmat(RootPath,[],RootFile_ima2,ext_ima,NomType_ima2,i2_civ2(ifile),[],j2_civ2(j));
+                filename=fullfile_uvmat(RootPath,SubDirImages,RootFile_ima2,ext_ima,NomType_ima2,i2_civ2(ifile),[],j2_civ2(j));
                 idetect_3(j)=exist(filename,'file')==2;
                 filecell.ima2.civ2(ifile,j)={filename};%first image
             end
@@ -2270,76 +2298,47 @@ if strcmp(compare,'stereo PIV')
         end
     end
 end
-set(handles.SubdirCiv1,'String',regexprep(subdir_civ1,['^' SubdirImages],''));%suppress the root  SuddirImages;);%update the edit box
-set(handles.SubdirCiv2,'String',regexprep(subdir_civ2,['^' SubdirImages],''));%update the edit box
+set(handles.SubdirCiv1,'String',regexprep(subdir_civ1,['^' SubDirImages],''));%suppress the root  SuddirImages;);%update the edit box
+set(handles.SubdirCiv2,'String',regexprep(subdir_civ2,['^' SubDirImages],''));%update the edit box
 
 % For CivX COPY IMAGES TO THE FORMAT .png IF NEEDED 
 if strcmp(CivMode,'CivX')
-    if isequal(NomType_ima1,'*')%case of movie files
-        NomType_imanew1='_i';
-    else
-        NomType_imanew1=NomType_ima1;
-    end
-    if isequal(NomType_ima2,'*')%case of movie files
-        NomType_imanew2='_i';
-    else
-        NomType_imanew2=NomType_ima2;
-    end
+    NomType_imanew1=NomType_ima1;
+    NomType_imanew2=NomType_ima2;
     if ~isequal(ext_ima,'.png')
-        %%type of image file
-        type_ima1='none';%default
-        movieobject1=[];%default
-        if strcmpi(ext_ima,'.avi')
-            if ~isempty(which('mmreader'))% if the mmreader function is found (recent version of matlab)
-                type_ima1='movie';
-                movieobject1=mmreader([filecell.filebase ext_ima]);
-            else
-                type_ima1='avi';
-            end
-        elseif ischar(ext_ima) && ~isempty(ext_ima(2:end))
-            form=imformats(ext_ima(2:end));
-            if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-                if isequal(NomType_ima1,'*');
-                    type_ima1='multimage';%image series in a single image file
-                else
-                    type_ima1='image';
-                end
-            end
-        end
-        type_ima2='none';%default
-        movieobject2=[];
-        if strcmpi(ext_ima,'.avi')
-            if ~isempty(which('mmreader'))% if the mmreader function is found (recent version of matlab)
-                type_ima2='movie';
-                movieobject2=mmreader([filecell.filebase ext_ima]);
-            else
-                type_ima2='avi';
-            end
-        elseif ischar(ext_ima) && ~isempty(ext_ima(2:end))
-            form=imformats(ext_ima(2:end));
-            if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-                if isequal(NomType_ima1,'*');
-                    type_ima2='multimage';%image series in a single image file
-                else
-                    type_ima2='image';
-                end
-            end
-        end
         if checkbox(1) %if civ1 is performed
+             [FileType,FileInfo,MovieObject]=get_file_type(filecell.ima1.civ1{1});
+            check_j=0;
+            if strcmp(FileType,'mmreader')||strcmp(FileType,'VideoReader')||strcmp(FileType,'multimage')
+                if max(j1_civ1)>1
+                    check_j=1;
+                    NomType_imanew1='_1_1';
+                else
+                    NomType_imanew1='_1';
+                end
+            end
             h = waitbar(0,'copy images to the .png format for civ1');% display a wait bar
             for ifile=1:nbfield
                 waitbar(ifile/nbfield);
                 for j=1:nbslice
-                    filename=fullfile_uvmat(RootPath,[],RootFile_ima1,'.png',NomType_imanew1,i1_civ1(ifile),[],j1_civ1(j));
+                    filename=fullfile_uvmat(RootPath,SubDirImages,RootFile_ima1,'.png',NomType_imanew1,i1_civ1(ifile),[],j1_civ1(j));
                     if ~exist(filename,'file')
-                        A=read_image(filecell.ima1.civ1{ifile,j},type_ima1,i1_civ1(ifile),movieobject1);
-                        imwrite(A,filename,'BitDepth',16);
+                        if check_j
+                        A=read_image(filecell.ima1.civ1{ifile,j},FileType,MovieObject,j1_civ1(j));
+                        else
+                            A=read_image(filecell.ima1.civ1{ifile,j},FileType,MovieObject,i1_civ1(ifile));
+                        end
+                        imwrite(uint16(sum(A,3)),filename,'BitDepth',16);
                     end
                     filecell.ima1.civ1(ifile,j)={filename};
-                    filename=fullfile_uvmat(RootPath,[],RootFile_ima2,'.png',NomType_imanew2,i2_civ1(ifile),[],j2_civ1(j));
+                    filename=fullfile_uvmat(RootPath,SubDirImages,RootFile_ima2,'.png',NomType_imanew1,i2_civ1(ifile),[],j2_civ1(j));
                     if ~exist(filename,'file')
-                        A=read_image(filecell.ima2.civ1{ifile,j},type_ima2,i2_civ1(ifile),movieobject2);
-                        imwrite(A,filename,'BitDepth',16);
+                         if check_j
+                            A=read_image(filecell.ima1.civ1{ifile,j},FileType,MovieObject,j2_civ1(j));
+                        else
+                            A=read_image(filecell.ima1.civ1{ifile,j},FileType,MovieObject,i2_civ1(ifile));
+                         end
+                        imwrite(uint16(sum(A,3)),filename,'BitDepth',16);
                     end
                     filecell.ima2.civ1(ifile,j)={filename};
                 end
@@ -2347,20 +2346,38 @@ if strcmp(CivMode,'CivX')
             close(h)
         end
         if checkbox(4) %if civ2 is performed
+             [FileType,FileInfo,MovieObject]=get_file_type(filecell.ima1.civ2{1});
+            check_j=0;
+            if strcmp(FileType,'mmreader')||strcmp(FileType,'VideoReader')||strcmp(FileType,'multimage')
+                if max(j1_civ2)>1
+                    check_j=1;
+                    NomType_imanew1='_1_1';
+                else
+                    NomType_imanew1='_1';
+                end
+            end
             h = waitbar(0,'copy images to the .png format for civ2');% display a wait bar
             for ifile=1:nbfield
                 waitbar(ifile/nbfield);
                 for j=1:nbslice
-                    filename=fullfile_uvmat(RootPath,[],RootFile_ima1,'.png',NomType_imanew1,i1_civ2(ifile),[],j1_civ2(j));
+                    filename=fullfile_uvmat(RootPath,SubDirImages,RootFile_ima1,'.png',NomType_imanew1,i1_civ2(ifile),[],j1_civ2(j));
                     if ~exist(filename,'file')
-                        A=read_image(cell2mat(filecell.ima1.civ2(ifile,j)),type_ima2,i1_civ2(ifile));
-                        imwrite(A,filename,'BitDepth',16);
+                        if check_j
+                        A=read_image(filecell.ima1.civ1{ifile,j},FileType,MovieObject,j1_civ2(j));
+                        else
+                            A=read_image(filecell.ima1.civ1{ifile,j},FileType,MovieObject,i1_civ2(ifile));
+                        end
+                        imwrite(uint16(sum(A,3)),filename,'BitDepth',16);
                     end
                     filecell.ima1.civ2(ifile,j)={filename};
-                    filename=fullfile_uvmat(RootPath,[],RootFile_ima2,'.png',NomType_imanew2,i2_civ2(ifile),[],j2_civ2(j));
+                    filename=fullfile_uvmat(RootPath,SubDirImages,RootFile_ima2,'.png',NomType_imanew2,i2_civ2(ifile),[],j2_civ2(j));
                     if ~exist(filename,'file')
-                        A=read_image(cell2mat(filecell.ima2.civ2(ifile,j)),type_ima2,i2_civ2(ifile));
-                        imwrite(A,filename,'BitDepth',16);
+                        if check_j
+                        A=read_image(filecell.ima1.civ1{ifile,j},FileType,MovieObject,j1_civ2(j));
+                        else
+                            A=read_image(filecell.ima1.civ1{ifile,j},FileType,MovieObject,i1_civ2(ifile));
+                        end
+                        imwrite(uint16(sum(A,3)),filename,'BitDepth',16);
                     end
                     filecell.ima2.civ2(ifile,j)={filename};
                 end
@@ -2372,7 +2389,7 @@ end
 
 %------------------------------------------------------------------------
 % --- determine the list of index pairs of processing file
-function [num1_civ1,num2_civ1,num_a_civ1,num_b_civ1,num1_civ2,num2_civ2,num_a_civ2,num_b_civ2]=...
+function [i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_civ2]=...
     find_pair_indices(handles,ref_i,ref_j,mode)
 %------------------------------------------------------------------------
 
@@ -2393,21 +2410,21 @@ str_civ2=list_civ2{index_civ2};%string defining the image pairs for civ2
 
 if isequal (mode,'series(Di)')
     lastfield=str2double(get(handles.nb_field,'String'));
-    num1_civ1=ref_i-floor(index_civ1/2)*ones(size(ref_i));% set of first image numbers
-    num2_civ1=ref_i+ceil(index_civ1/2)*ones(size(ref_i));
-    num_a_civ1=ref_j;
-    num_b_civ1=ref_j;
-    num1_civ2=ref_i-floor(index_civ2/2)*ones(size(ref_i));
-    num2_civ2=ref_i+ceil(index_civ2/2)*ones(size(ref_i));
-    num_a_civ2=ref_j;
-    num_b_civ2=ref_j;   
+    i1_civ1=ref_i-floor(index_civ1/2)*ones(size(ref_i));% set of first image numbers
+    i2_civ1=ref_i+ceil(index_civ1/2)*ones(size(ref_i));
+    j1_civ1=ref_j;
+    j2_civ1=ref_j;
+    i1_civ2=ref_i-floor(index_civ2/2)*ones(size(ref_i));
+    i2_civ2=ref_i+ceil(index_civ2/2)*ones(size(ref_i));
+    j1_civ2=ref_j;
+    j2_civ2=ref_j;   
     
     % adjust the first and last field number
     lastfield=str2double(get(handles.nb_field,'String'));
     if isnan(lastfield)
-        indsel=find((num1_civ1 >= 1)&(num1_civ2 >= 1));
+        indsel=find((i1_civ1 >= 1)&(i1_civ2 >= 1));
     else
-        indsel=find((num2_civ1 <= lastfield)&(num2_civ2 <= lastfield)&(num1_civ1 >= 1)&(num1_civ2 >= 1));
+        indsel=find((i2_civ1 <= lastfield)&(i2_civ2 <= lastfield)&(i1_civ1 >= 1)&(i1_civ2 >= 1));
     end
     if length(indsel)>=1
         firstind=indsel(1);
@@ -2415,26 +2432,26 @@ if isequal (mode,'series(Di)')
         set(handles.first_i,'String',num2str(ref_i(firstind)))%update the display of first and last fields
         set(handles.last_i,'String',num2str(ref_i(lastind)))
         ref_i=ref_i(indsel);
-        num1_civ1=num1_civ1(indsel);
-        num1_civ2=num1_civ2(indsel);
-        num2_civ1=num2_civ1(indsel);
-        num2_civ2=num2_civ2(indsel);
+        i1_civ1=i1_civ1(indsel);
+        i1_civ2=i1_civ2(indsel);
+        i2_civ1=i2_civ1(indsel);
+        i2_civ2=i2_civ2(indsel);
     end
 elseif isequal (mode,'series(Dj)')
     lastfield_j=str2double(get(handles.nb_field2,'String'));
-    num1_civ1=ref_i;% set of first image numbers
-    num2_civ1=ref_i;
-    num_a_civ1=ref_j-floor(index_civ1/2)*ones(size(ref_j));
-    num_b_civ1=ref_j+ceil(index_civ1/2)*ones(size(ref_j));
-    num1_civ2=ref_i;
-    num2_civ2=ref_i;
-    num_a_civ2=ref_j-floor(index_civ2/2)*ones(size(ref_j));
-    num_b_civ2=ref_j+ceil(index_civ2/2)*ones(size(ref_j));
+    i1_civ1=ref_i;% set of first image numbers
+    i2_civ1=ref_i;
+    j1_civ1=ref_j-floor(index_civ1/2)*ones(size(ref_j));
+    j2_civ1=ref_j+ceil(index_civ1/2)*ones(size(ref_j));
+    i1_civ2=ref_i;
+    i2_civ2=ref_i;
+    j1_civ2=ref_j-floor(index_civ2/2)*ones(size(ref_j));
+    j2_civ2=ref_j+ceil(index_civ2/2)*ones(size(ref_j));
     % adjust the first and last field number
     if isnan(lastfield_j)
-        indsel=find((num_a_civ1 >= 1)&(num_a_civ2 >= 1));
+        indsel=find((j1_civ1 >= 1)&(j1_civ2 >= 1));
     else
-        indsel=find((num_b_civ1 <= lastfield_j)&(num_b_civ2 <= lastfield_j)&(num_a_civ1 >= 1)&(num_a_civ2 >= 1));
+        indsel=find((j2_civ1 <= lastfield_j)&(j2_civ2 <= lastfield_j)&(j1_civ1 >= 1)&(j1_civ2 >= 1));
     end
     if length(indsel)>=1
         firstind=indsel(1);
@@ -2442,30 +2459,30 @@ elseif isequal (mode,'series(Dj)')
         set(handles.first_j,'String',num2str(ref_j(firstind)))%update the display of first and last fields
         set(handles.last_j,'String',num2str(ref_j(lastind)))
         ref_j=ref_j(indsel);
-        num_a_civ1=num_a_civ1(indsel);
-        num_b_civ1=num_b_civ1(indsel);
-        num_a_civ2=num_a_civ2(indsel);
-        num_b_civ2=num_b_civ2(indsel);
+        j1_civ1=j1_civ1(indsel);
+        j2_civ1=j2_civ1(indsel);
+        j1_civ2=j1_civ2(indsel);
+        j2_civ2=j2_civ2(indsel);
     end
 elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)
     displ_num=get(handles.ListPairCiv1,'UserData');
-    num1_civ1=ref_i;
-    num2_civ1=ref_i;
-    num_a_civ1=displ_num(1,index_civ1);
-    num_b_civ1=displ_num(2,index_civ1);
-    num1_civ2=ref_i;
-    num2_civ2=ref_i;
-    num_a_civ2=displ_num(1,index_civ2);
-    num_b_civ2=displ_num(2,index_civ2);
+    i1_civ1=ref_i;
+    i2_civ1=ref_i;
+    j1_civ1=displ_num(1,index_civ1);
+    j2_civ1=displ_num(2,index_civ1);
+    i1_civ2=ref_i;
+    i2_civ2=ref_i;
+    j1_civ2=displ_num(1,index_civ2);
+    j2_civ2=displ_num(2,index_civ2);
 elseif isequal(mode,'displacement')
-    num1_civ1=ref_i;
-    num2_civ1=ref_i;
-    num_a_civ1=ref_j;
-    num_b_civ1=ref_j;
-    num1_civ2=ref_i;
-    num2_civ2=ref_i;
-    num_a_civ2=ref_j;
-    num_b_civ2=ref_j;
+    i1_civ1=ref_i;
+    i2_civ1=ref_i;
+    j1_civ1=ref_j;
+    j2_civ1=ref_j;
+    i1_civ2=ref_i;
+    i2_civ2=ref_i;
+    j1_civ2=ref_j;
+    j2_civ2=ref_j;
 end
 
 %------------------------------------------------------------------------
@@ -2675,8 +2692,6 @@ function ListPairCiv1_Callback(hObject, eventdata, handles)
 list_pair=get(handles.ListPairCiv1,'String');%get the menu of image pairs
 index_pair=get(handles.ListPairCiv1,'Value');
 displ_num=get(handles.ListPairCiv1,'UserData');
-% num_a=displ_num(1,index_pair);
-% num_b=displ_num(2,index_pair);
 list_pair2=get(handles.ListPairCiv2,'String');%get the menu of image pairs
 if index_pair<=length(list_pair2)
     set(handles.ListPairCiv2,'Value',index_pair);
@@ -2815,17 +2830,18 @@ nom_type_ima=get(handles.NomType,'String');
 [nom_type_nc]=nomtype2pair(nom_type_ima,mode);
 
 %% reads .nc subdirectoy and image numbers from the interface
-SubDirImages=get(handles.SubdirImages,'String');
+SubDirImages=get(handles.SubDirImages,'String');
 subdir_civ1=[SubDirImages get(handles.SubdirCiv1,'String')];%subdirectory subdir_civ1 for the netcdf data
 subdir_civ2=[SubDirImages get(handles.SubdirCiv2,'String')];%subdirectory subdir_civ2 for the netcdf data
 ref_i=str2double(get(handles.ref_i,'String'));
+ref_j=[];
 if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
     ref_j=0;
-else
+elseif strcmp(get(handles.ref_j,'Visible'),'on')
     ref_j=str2double(get(handles.ref_j,'String'));
-    if isnan(ref_j)
-        ref_j=1;
-    end
+end
+if isempty(ref_j)
+    ref_j=1;
 end
 time=get(handles.ImaDoc,'UserData');%get the set of times
 TimeUnit=get(handles.TimeUnit,'String');
@@ -2874,11 +2890,11 @@ if index==1 % case civ1
                 select(1)=exist(filename,'file')==2;
                 testpair=1;
             else
-                if  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
-                    errormsg=['no civ1 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ1];
-                else
+%                 if  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
+%                     errormsg=['no civ1 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ1];
+%                 else
                     errormsg=['no civ1 file available for the selected reference indices (i,j)= ' num2str(ref_i) ', ' num2str(ref_j) ' and subdirectory ' subdir_civ1];
-                end
+%                 end
                 set(handles.ListPairCiv1,'String',{''});
                 %COMPLETER CAS STEREO
                 return
@@ -3560,27 +3576,27 @@ namelog=[filename_nc(1:end-3) '_stinterp.log'];
 cmd=[stinterpBin ' -f1 ' filename_A_nc  ' -f2 ' filename_B_nc ' -f  ' filename_nc ...
     ' -m ' nx_patch  ' -n ' ny_patch ' -ro ' rho_patch ' -nopt ' subdomain_patch ' -c1 ' xmlA ' -c2 ' xmlB '  -xy  x -Nfy 1024 > ' namelog ' 2>&1']; % redirect standard output to the log file
 
-%------------------------------------------------------------------------
-%--read images and convert them to the uint16 format used for PIV
-function A=read_image(filename,type_ima,num,movieobject)
-%------------------------------------------------------------------------
-%num is the view number needed for an avi movie
-switch type_ima
-    case 'movie'
-        A=read(movieobject,num);
-    case 'avi'
-        mov=aviread(filename,num);
-        A=frame2im(mov(1));
-    case 'multimage'
-        A=imread(filename,num);
-    case 'image'
-        A=imread(filename);
-end
-siz=size(A);
-if length(siz)==3;%color images
-    A=sum(double(A),3);
-    A=uint16(A);
-end
+% %------------------------------------------------------------------------
+% %--read images and convert them to the uint16 format used for PIV
+% function A=read_image(filename,type_ima,num,movieobject)
+% %------------------------------------------------------------------------
+% %num is the view number needed for an avi movie
+% switch type_ima
+%     case 'movie'
+%         A=read(movieobject,num);
+%     case 'avi'
+%         mov=aviread(filename,num);
+%         A=frame2im(mov(1));
+%     case 'multimage'
+%         A=imread(filename,num);
+%     case 'image'
+%         A=imread(filename);
+% end
+% siz=size(A);
+% if length(siz)==3;%color images
+%     A=sum(double(A),3);
+%     A=uint16(A);
+% end
 
 
 %------------------------------------------------------------------------
@@ -3858,11 +3874,12 @@ function NomType_Callback(hObject, eventdata, handles)
 set(handles.RootPath,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
 RootPath=get(handles.RootPath,'String');
 RootFile=get(handles.RootFile,'String');
+SubDirImages=get(handles.SubDirImages,'String');
 ref_i=str2num(get(handles.ref_i,'String'));
 ref_j=str2num(get(handles.ref_j,'String'));
 NomType=get(handles.NomType,'String');
 ImaExt=get(handles.ImaExt,'String');
-fileinput=fullfile_uvmat(RootPath,'',RootFile,ImaExt,NomType,ref_i,[],ref_j);
+fileinput=fullfile_uvmat(RootPath,SubDirImages,RootFile,ImaExt,NomType,ref_i,[],ref_j);
 errormsg=display_file_name(handles,fileinput);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
@@ -3956,7 +3973,7 @@ function TestCiv2_Callback(hObject, eventdata, handles)
 
 function RootFile_Callback(hObject, eventdata, handles)
 
-function SubdirImages_Callback(hObject, eventdata, handles)
+function SubDirImages_Callback(hObject, eventdata, handles)
 
 
 
@@ -4146,7 +4163,7 @@ if Param.CheckCiv1
                     'rm ' regexprep(filename,'(.+)/(.+$)','$1/$2.cmx \n')];
             else %Windows system
                 filename=regexprep(filename,'\\','\\\\');
-                cmd=['copy /Y ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_CMX\\\\$2.civ1.cmx" ') regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.civ1.cmx" \n')...
+                cmd=['copy /Y ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_CMX\\\\$2.civ1.cmx" ') regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')...
                     '"' regexprep(Param.xml.Civ1Bin,'\\','\\\\') '" -f ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" > ')...
                     regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_LOG\\\\$2.civ1.log" \n')... % redirect standard output to the log file
                     'del ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')];
@@ -4252,12 +4269,14 @@ if Param.CheckCiv2
                     Param.xml.Civ2Bin ' -f ' regexprep(filename,'(.+)/(.+$)','$1/$2.cmx >') regexprep(filename,'(.+)/(.+$)','$1/0_LOG/$2.civ2.log \n')...% redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
                     'rm ' regexprep(filename,'(.+)/(.+$)','$1/$2.cmx \n')];%rename .cmx as .checkciv2.cmx, the result file is named [filename '.nc'] by CIVx
             else
+                filename=regexprep(Param.OutputFile,'.nc','');
                 filename=regexprep(filename,'\\','\\\\');
                 cmd=[cmd 'copy /Y ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_CMX\\\\$2.civ2.cmx" ') regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')...
-                    '"' regexprep(Param.xml.Civ2Bin,'\\','\\\\') '" -f "' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" > ')...
+                    '"' regexprep(Param.xml.Civ2Bin,'\\','\\\\') '" -f ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" > ')...
                      regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_LOG\\\\$2.civ2.log" \n')... % redirect standard output to the log file
-                    'del ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')];
+                    'del ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')];                       
             end
+                 
         case 'CivAll'
             CivAllCmd=[CivAllCmd ' civ2 '];
             str=CIV2_CMD_Unified(filecell.nc.civ2{ifile,j},'',Param.Civ2);
@@ -4440,15 +4459,9 @@ else
 end
 
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % USELESS FUNCTIONS BELOW HERE,  TO CLEAN
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-
 
 %------------------------------------------------------------------------
 % --- CheckCiv1  Unified: TO ABADON
@@ -4545,31 +4558,11 @@ civ2.convectFlow='n';
 function RunMode_Callback(hObject, eventdata, handles)
 
 
-
 function nb_field2_Callback(hObject, eventdata, handles)
-% hObject    handle to nb_field2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of nb_field2 as text
-%        str2double(get(hObject,'String')) returns contents of nb_field2 as a double
-
 
 
 function last_j_Callback(hObject, eventdata, handles)
-% hObject    handle to last_j (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of last_j as text
-%        str2double(get(hObject,'String')) returns contents of last_j as a double
-
 
 
 function last_i_Callback(hObject, eventdata, handles)
-% hObject    handle to last_i (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of last_i as text
-%        str2double(get(hObject,'String')) returns contents of last_i as a double

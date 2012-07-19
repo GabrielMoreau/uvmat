@@ -109,12 +109,12 @@ set(handles.ACTION,'Value',1)% PLOT option selected
 %% settings for 'slave' mode, called by uvamt, or 'master' mode
 if exist('filename','var') && ischar(filename) %transfer input file name in slave mode
     set(handles.inputfile,'String',filename)% prefill the input file name
-    Field=nc2struct(filename,[]);% reads the whole field
+    Field=nc2struct(filename,[]);% reads the  field structure, without variables
     if isfield(Field,'Txt')
         msgbox_uvmat('ERROR',Field.Txt)
     else
         set(handles.get_field,'UserData',Field);
-        Field_input(eventdata,handles,Field);
+        Field_input(handles,Field);
     end
 else  %master mode
     set(handles.inputfile,'String','')
@@ -176,7 +176,7 @@ if isfield(Field,'Txt')
     msgbox_uvmat('ERROR',Field.Txt)
 else
 set(handles.get_field,'UserData',Field);
-Field_input(eventdata,handles,Field);
+Field_input(handles,Field);
 end
 huvmat=findobj(allchild(0),'tag','uvmat');
 if ~isempty(huvmat)
@@ -185,7 +185,7 @@ end
 
 %------------------------------------------------------------------------
 % --- update the display when a new field is introduced.
-function Field_input(eventdata,handles,Field)
+function Field_input(handles,Field)
 %------------------------------------------------------------------------
 if isfield(Field,'ListDimName')&&~isempty(Field.ListDimName)
     Tabcell(:,1)=Field.ListDimName;
@@ -281,9 +281,9 @@ if maxdim>=2
             end
         end
     end
-    check_1Dplot_Callback(handles.check_1Dplot, eventdata, handles)
-    check_scalar_Callback(handles.check_scalar, eventdata, handles)
-    check_vector_Callback(handles.check_vector, eventdata, handles)
+    check_1Dplot_Callback(handles.check_1Dplot, [], handles)
+    check_scalar_Callback(handles.check_scalar, [], handles)
+    check_vector_Callback(handles.check_vector, [], handles)
 end
 %scalar_Callback(handles.get_field, eventdata, handles)
 %vector_x_Callback(handles.get_field, eventdata, handles)

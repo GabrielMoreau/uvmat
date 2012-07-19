@@ -226,15 +226,59 @@ for i_slice=1:NbSlice
                 end
             end
             
-            % field calculation (vort, div...)
-            if strcmp(FileType{1},'civx')||strcmp(FileType{1},'civdata')
-                Data{1}=calc_field(InputFields{1}.FieldName,Data{1});%calculate field (vort..)
+            %% check whether tps is needed, then calculate tps coefficients if needed
+            check_tps=0;
+            if ischar(Param.InputFields.FieldName)
+                Param.InputFields.FieldName={Param.InputFields.FieldName};
             end
-            
+            for ilist=1:numel(Param.InputFields.FieldName)
+                switch Param.InputFields.FieldName{ilist}
+                    case {'vort','div','strain'}
+                        check_tps=1;
+                end
+            end
+            if strcmp(Param.ProjObject.ProjMode,'filter')
+                check_tps=1;
+            end
+            if check_tps
+                SubDomain=1500; %default, estimated nbre of vectors in a subdomain used for tps
+                if isfield(Data{iview},'SubDomain')
+                    SubDomain=Data{iview}.SubDomain;%
+                end
+                [Data{iview}.SubRange,Data{iview}.NbSites,Data{iview}.Coord_tps,Data{iview}.U_tps,Data{iview}.V_tps,tild,U_smooth,V_smooth,W_smooth,FF] =...
+                    filter_tps([Data{iview}.X(Data{iview}.FF==0) Data{iview}.Y(Data{iview}.FF==0)],Data{iview}.U(Data{iview}.FF==0),Data{iview}.V(Data{iview}.FF==0),[],SubDomain,0);
+                nbvar=numel(Data{iview}.ListVarName);
+                Data{iview}.ListVarName=[Data{iview}.ListVarName {'SubRange','NbSites','Coord_tps','U_tps','V_tps'}];
+                Data{iview}.VarDimName=[Data{iview}.VarDimName {{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
+                    {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
+                Data{iview}.VarAttribute{nbvar+3}.Role='coord_tps';
+                Data{iview}.VarAttribute{nbvar+4}.Role='vector_x';
+                Data{iview}.VarAttribute{nbvar+5}.Role='vector_y';
+                if isfield(Data{iview},'ListDimName')%cleaning
+                    Data{iview}=rmfield(Data{iview},'ListDimName');
+                end
+                if isfield(Data{iview},'DimValue')%cleaning
+                    Data{iview}=rmfield(Data{iview},'DimValue');
+                end
+            end
+                 
+            % field calculation (vort, div...)    
+            if strcmp(FileType{1},'civx')||strcmp(FileType{1},'civdata')
+                if isfield(Data{1},'Coord_tps')
+                    Data{1}.FieldList=Param.InputFields.FieldName;
+                else
+                    Data{1}=calc_field(Param.InputFields.FieldName,Data{1});%calculate field (vort..)
+                end
+            end
+         
             % field substration (for two input file series)
             if length(Data)==2
-                if strcmp(FileType{2},'civx')||strcmp(FileType{2},'civ')
-                    Data{2}=calc_field(InputFields{2}.FieldName,Data{2});%calculate field (vort..)
+                if strcmp(FileType{2},'civx')||strcmp(FileType{2},'civdata')
+                    if isfield(Data{2},'Coord_tps')
+                        Data{2}.FieldList=Param.InputFields.FieldName;
+                    else
+                        Data{2}=calc_field(Param.InputFields.FieldName,Data{2});%calculate field (vort..)
+                    end
                 end
                 [Field,errormsg]=sub_field(Data{1},Data{2}); %substract the two fields
                 if ~isempty(errormsg)

@@ -1237,6 +1237,9 @@ for icell=1:length(CellVarIndex)
                         ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
                         ProjData.VarAttribute{ivar_new+1+nbcoord}.Role='errorflag';
                     end
+%                     case 'filter'%interpolate data on a regular grid
+%                         errormsg='tps required for filter option'
+                        
             end
             
             %% case of tps interpolation (applies only in filter mode)
@@ -2075,7 +2078,7 @@ for icell=1:length(CellVarIndex)
                 eval(['ProjData.' AYName '=[Ybound(1) Ybound(2)];']) %record the new (projected ) y coordinates
                 eval(['ProjData.' AXName '=[Xbound(1) Xbound(2)];']) %record the new (projected ) x coordinates
             end
-        else       % case with rotation and/or interpolation
+        elseif isfield(FieldData,'A') %TO GENERALISE       % case with rotation and/or interpolation
             if NbDim==2 %2D case
                 [X,Y]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
                 XIMA=ObjectData.Coord(1,1)+(X)*cos(Phi)-Y*sin(Phi);%corresponding coordinates in the original image
@@ -2103,9 +2106,9 @@ for icell=1:length(CellVarIndex)
                     %filter the field (image) if option 'filter' is used
                     if test_filter  
                          Aclass=class(FieldData.A);
-                         eval(['ProjData.' VarName '=filter2(Mfilter,FieldData.' VarName ',''valid'');'])
+                         ProjData.(VarName)=filter2(Mfilter,FieldData.(VarName),'valid');
                          if ~isequal(Aclass,'double')
-                             eval(['ProjData.' VarName '=' Aclass '(FieldData.' VarName ');'])%revert to integer values
+                             ProjData.(VarName)=Aclass(FieldData.(VarName));%revert to integer values
                          end
                     end
                     eval(['vec_A=reshape(FieldData.' VarName ',[],nbcolor);'])%put the original image in line              

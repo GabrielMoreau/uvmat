@@ -80,19 +80,28 @@ if vardetect(1)==0
      return
 end
 switch VelTypeOut
-    case{'civ1','civ-filter1','filter1'}
+    case{'civ1','filter1'}
+        if isfield(Field,'Patch1_SubDomain')
+            Field.SubDomain=Field.Patch1_SubDomain;
+            Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'SubDomain'}];
+        end     
         Field.Dt=Field.Civ1_Dt;
-    case{'civ2','civ-filter2','filter2'}
+        Field.Time=Field.Civ1_Time;
+    case{'civ2','filter2'}
+        if isfield(Field,'Patch2_SubDomain')
+            Field.SubDomain=Field.Patch2_SubDomain;
+            Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'SubDomain'}];
+        end
         Field.Dt=Field.Civ2_Dt;
+        Field.Time=Field.Civ2_Time;
 end
-Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'Dt'}];
+Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'Dt','Time'}];
 var_ind=find(vardetect);
 for ivar=1:numel(var_ind)
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
     Field.VarAttribute{ivar}.Unit=units{var_ind(ivar)};
     Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
 end
-
 Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'NbCoord','NbDim','TimeUnit','CoordUnit'}];
 % %% update list of global attributes
 Field.NbCoord=2;
