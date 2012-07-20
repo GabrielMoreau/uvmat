@@ -955,13 +955,13 @@ if ~(isfield(XmlData,'Time')&& ~isempty(XmlData.Time))
 end
 
 %% store last index in handles.lat_i and .last_j
-nbfield=max(max(i2_series));
+nbfield=max(max(max(i2_series)));
 if isempty(nbfield)
-    nbfield=max(max(i1_series));
+    nbfield=max(max(max(i1_series)));
 end
-nbfield_j=max(max(j2_series));
+nbfield_j=max(max(max(j2_series)));
 if isempty(nbfield_j)
-    nbfield_j=max(max(j1_series));
+    nbfield_j=max(max(max(j2_series)));
 end
 if ~isempty(XmlData.Time)
     %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
@@ -2075,6 +2075,7 @@ end
 %% choose and read a second field FileName_1 if defined
 VelType_1=[];%default
 FieldName_1=[];
+ParamIn_1=[];
 ParamOut_1=[];
 frame_index_1=1;
 if ~isempty(FileName_1)
@@ -2139,7 +2140,7 @@ if ~isempty(FileName_1)
         Field{2}=UvData.Field_1;% keep the stored field
         ParamOut_1=UvData.ParamOut_1;
     else
-        if isstruct(ParamIn_1)
+        if isempty(ParamIn_1) || isstruct(ParamIn_1)
         ParamIn_1.FieldName=FieldName_1;
         ParamIn_1.VelType=VelType_1;
         ParamIn_1.GUIName='get_field_1';
@@ -2149,7 +2150,6 @@ if ~isempty(FileName_1)
             errormsg=['error in reading ' FieldName_1 ' in ' FileName_1 ': ' errormsg];
             return
         end
-%         UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
     end
 end
 
@@ -2362,60 +2362,55 @@ if ~isempty(transform)
     else
         Field{1}=transform(Field{1},XmlData);
     end
-    
+end   
     %% check whether tps is needed, then calculate tps coefficients if needed
-    check_tps=0;
-    if strcmp(UvData.FileType{1},'civdata')|| strcmp(UvData.FileType{1},'civx')
-        switch ParamOut.FieldName
-            case {'vort','div','strain'}
-                check_tps=1;
-            otherwise
-                check_tps=0;
-                if isfield(UvData,'Object')
-                for iobj=1:numel(UvData.Object)
-                    UvData.Object{iobj}
-                    if isfield(UvData.Object{iobj},'ProjMode')&& strcmp(UvData.Object{iobj}.ProjMode,'filter')
-                        check_tps=1;
-                        break
-                    end
-                end
-                end
+check_proj_tps=0;
+if isfield(UvData,'Object')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))
+    for iobj=1:numel(UvData.Object)
+        if isfield(UvData.Object{iobj},'ProjMode')&& strcmp(UvData.Object{iobj}.ProjMode,'filter')
+            check_proj_tps=1;
+            break
         end
     end
-    if check_tps
-        SubDomain=1500; %default, estimated nbre of vectors in a subdomain used for tps
-        if isfield(Field{1},'SubDomain')
-            SubDomain=Field{1}.SubDomain;% 
-        end
-        [Field{1}.SubRange,Field{1}.NbSites,Field{1}.Coord_tps,Field{1}.U_tps,Field{1}.V_tps,tild,U_smooth,V_smooth,W_smooth,FF] =...
-           filter_tps([Field{1}.X(Field{1}.FF==0) Field{1}.Y(Field{1}.FF==0)],Field{1}.U(Field{1}.FF==0),Field{1}.V(Field{1}.FF==0),[],SubDomain,0);
-        nbvar=numel(Field{1}.ListVarName);
-        Field{1}.ListVarName=[Field{1}.ListVarName {'SubRange','NbSites','Coord_tps','U_tps','V_tps'}];
-        Field{1}.VarDimName=[Field{1}.VarDimName {{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
-            {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
-        Field{1}.VarAttribute{nbvar+3}.Role='coord_tps';
-        Field{1}.VarAttribute{nbvar+4}.Role='vector_x';
-        Field{1}.VarAttribute{nbvar+5}.Role='vector_y';
-        if isfield(Field{1},'ListDimName')%cleaning 
-            Field{1}=rmfield(Field{1},'ListDimName');
-        end
-        if isfield(Field{1},'DimValue')%cleaning 
-            Field{1}=rmfield(Field{1},'DimValue');
-        end
+end
+check_tps=0;         
+if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamOut.FieldName,'velocity')&&~strcmp(ParamOut.FieldName,'get_field...')
+       check_tps=1;
+end
+if (check_tps ||check_proj_tps)&&~isfield(Field{1},'Coord_tps')
+    SubDomain=1500; %default, estimated nbre of vectors in a subdomain used for tps
+    if isfield(Field{1},'SubDomain')
+        SubDomain=Field{1}.SubDomain;% 
+    end
+    [Field{1}.SubRange,Field{1}.NbSites,Field{1}.Coord_tps,Field{1}.U_tps,Field{1}.V_tps,tild,U_smooth,V_smooth,W_smooth,FF] =...
+       filter_tps([Field{1}.X(Field{1}.FF==0) Field{1}.Y(Field{1}.FF==0)],Field{1}.U(Field{1}.FF==0),Field{1}.V(Field{1}.FF==0),[],SubDomain,0);
+    nbvar=numel(Field{1}.ListVarName);
+    Field{1}.ListVarName=[Field{1}.ListVarName {'SubRange','NbSites','Coord_tps','U_tps','V_tps'}];
+    Field{1}.VarDimName=[Field{1}.VarDimName {{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
+        {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
+    Field{1}.VarAttribute{nbvar+3}.Role='coord_tps';
+    Field{1}.VarAttribute{nbvar+4}.Role='vector_x';
+    Field{1}.VarAttribute{nbvar+5}.Role='vector_y';
+    if isfield(Field{1},'ListDimName')%cleaning 
+        Field{1}=rmfield(Field{1},'ListDimName');
+    end
+    if isfield(Field{1},'DimValue')%cleaning 
+        Field{1}=rmfield(Field{1},'DimValue');
     end
 end
 
 %% calculate scalar
-if isstruct(ParamOut)&&~strcmp(ParamOut.FieldName,'get_field...')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx')) 
-    if isfield(Field{1},'Coord_tps')
+if isstruct(ParamOut)&&~strcmp(ParamOut.FieldName,'get_field...')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))...
+         &&~strcmp(ParamOut.FieldName,'velocity') && ~strcmp(ParamOut.FieldName,'get_field...') 
+    if check_proj_tps
         Field{1}.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
     else
-    Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
+        Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
     end
 end
 if isstruct(ParamOut_1)&& numel(Field)==2 && ~strcmp(ParamOut_1.FieldName,'get_field...')&& ~test_keepdata_1 && (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))...
         &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...') 
-    if isfield(Field{2},'Coord_tps')
+    if check_proj_tps
         Field{2}.FieldList=[{ParamOut_1.FieldName} {ParamOut_1.ColorVar}];
     else
      Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
@@ -4384,7 +4379,6 @@ FileBase=fullfile(RootPath,RootFile);
 prompt = {'movie file name';'frames per second';'frame resolution (*[512x384] pixels)';'axis position relative to the frame';'total frame number (starting from the current uvmat display)'};
 dlg_title = 'select properties of the output avi movie';
 num_lines= 1;
-% nbfield_cell=get(handles.last_i,'String');
 def     = {[FileBase '_out.avi'];'10';'1';'[0.03 0.05 0.95 0.92]';'10'};
 answer = inputdlg(prompt,dlg_title,num_lines,def,'on');
 aviname=answer{1};
