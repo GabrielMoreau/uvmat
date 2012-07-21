@@ -2,10 +2,10 @@
 %  function in the toolbox UVMAT. Called at the opening of uvmat. Adds the
 %  uvmat path to the Matlab path if needed.
 %----------------------------------------------------------------------
-% function [errormsg,date_str,ver]=check_files
+% function [checkmsg,date_str,ver]=check_files
 %
 % OUTPUT:
-% errormsg: error message listing functions whose paths are not in the directory of uvmat.m
+% checkmsg: error message listing functions whose paths are not in the directory of uvmat.m
 % date_str: date of the most recent modification of a file in the toolbox
 % ver : svn version in case this is a  svn repository
 
@@ -25,9 +25,8 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [errormsg,date_str,svn_info]=check_files
-errormsg={};%default
-date_str='';
+function [checkmsg,date_str,svn_info]=check_files
+checkmsg={};%default
 svn_info.rep_rev=[];
 svn_info.cur_rev=[];
 svn_info.status=[];
@@ -52,7 +51,7 @@ list_fct={...
     'editxml';...%display and edit xml files using a xls schema
     'editxml.fig';...%interface for editxml
     'fileparts_uvmat';...% extracts the root name,field indexes and nomenclature type from an input filename
-    'fill_GUI';...% fill a GUI with handles 'handles' from input data Param 
+    'fill_GUI';...%  fill a GUI with a set of parameters from a Matlab structure 
     'filter_tps';...% find the thin plate spline coefficients for interpolation-smoothing
     'find_field_indices';...% group the variables of a nc-formated Matlab structure into 'fields' with common dimensions
     'find_file_series';...%check the content of an input file and find the corresponding file series
@@ -86,7 +85,7 @@ list_fct={...
     'read_civdata';... reads new civ data from netcdf files
     'read_image';... read images or video objects
     'read_get_field';... read the list of selected variables from the GUI get_field (TODO: use read_GUI)
-    'read_GUI';... %read all parameters set by a GUI as a Matlab structure
+    'read_GUI';... %read a GUI and provide the data as a Matlab structure
     'read_image';...%read .civ files (obsolete, but can be adapted to other text documentation files) 
     'read_multimadoc';... %read a set of Imadoc files and compare their timing of different file series
     'read_xls';...%read excel files containing the list of the experiments
@@ -120,7 +119,7 @@ list_fct={...
     'xml2struct';...% read an xml file as a Matlab structure, converts numeric character strings into numbers
     };
 dir_fct=which('uvmat');% path to uvmat
-[pathuvmat,name,ext]=fileparts(dir_fct);
+pathuvmat=fileparts(dir_fct);
 
 %% add the uvmat path to matlab if needed
 if isempty(regexp(path,[pathuvmat '(:|\>)'],'once'))
@@ -135,12 +134,12 @@ for i=1:length(list_fct)
     dir_fct=which(list_fct{i});% path to fct
     if isempty(dir_fct)
         icount=icount+1;
-        errormsg{icount}=[list_fct{i} ' not found'];% test for function not found
+        checkmsg{icount}=[list_fct{i} ' not found'];% test for function not found
     else
-        [pth,name,ext]=fileparts(dir_fct);
-        if ~isequal(pathuvmat,pth)&~isequal(fullfile(pathuvmat,'private'),pth)
+        pth=fileparts(dir_fct);
+        if ~isequal(pathuvmat,pth) && ~isequal(fullfile(pathuvmat,'private'),pth)
             icount=icount+1;
-            errormsg{icount}=[dir_fct ' overrides the package UVMAT'];% bad path for the function
+            checkmsg{icount}=[dir_fct ' overrides the package UVMAT'];% bad path for the function
         end
         datfile=dir(dir_fct);
         if isfield(datfile,'datenum')
@@ -149,6 +148,8 @@ for i=1:length(list_fct)
     end
 end
 date_str=datestr(max(datnum));
+
+%% check svn status
 [status,result]=system('svn --help');
 if status==0
     svn_info.rep_rev=0;svn_info.cur_rev=0;
@@ -157,24 +158,27 @@ if status==0
     if ~isempty(t)
         svn_info.cur_rev=str2double(t.rev);
     end
-    [tild,result]=system(['svn info -r ''HEAD'' '  dir_fct]);
+    [tild,result]=system(['svn info -r ''HEAD'' '  pathuvmat]);
     t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');
     if ~isempty(t)
-    svn_info.rep_rev=str2double(t.rev);
+        svn_info.rep_rev=str2double(t.rev);
     end
-    [tild,result]=system(['svn status'  dir_fct]);
+    [tild,result]=system(['svn status '  pathuvmat]);
     svn_info.status=result;
-    errormsg =[errormsg {['SVN revision : ' num2str(svn_info.cur_rev)]}];
+    checkmsg =[checkmsg {['SVN revision : ' num2str(svn_info.cur_rev)]}];
     if svn_info.rep_rev>svn_info.cur_rev
-        errormsg =[errormsg ...
+        checkmsg =[checkmsg ...
             {['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder']}];
     end
     modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');
     if ~isempty(modifications)
-        errormsg=[errormsg modifications];
+        for ilist=1:numel(modifications)
+            [tild,FileName,FileExt]=fileparts(modifications{ilist});
+            checkmsg=[checkmsg {[FileName FileExt ' modified']}];
+        end
     end
 else
-    errormsg=[errormsg {'SVN not available'}];
+    checkmsg=[checkmsg {'SVN not available'}];
 end
-errormsg=errormsg';
+checkmsg=checkmsg';
 

@@ -128,12 +128,14 @@ for ichild=1:length(hchildren)
                     hchild=[];%mouse out of axes
                 end
                 break
-            case 'uicontrol'  %if the mouse is over a uicontrol, duplicate the display  in an editable  zoom window
+            %if the mouse is over a uicontrol, duplicate the display  in an editable  zoom window
+            case 'uicontrol' 
                 if isequal(get(hObject,'SelectionType'),'alt')  && isequal(get(hchild,'Visible'),'on') && ~isequal(get(hchild,'tag'),'frame_object')&&...
                         ~isequal(get(hchild,'tag'),'ListObject') 
                     if ~strcmp(get(hchild,'Style'),'frame')%do not visualisaze frames
                         msg_pos(1:2)=GUI_pos(1:2)+obj_pos(1:2).*GUI_pos(3:4);
-                        output_str=msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],'',get(hchild,'String'),msg_pos);
+                        display_str=get(hchild,'TooltipString');
+                        output_str=msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],display_str,get(hchild,'String'),msg_pos);
                         break
                     end
                 end
@@ -151,7 +153,8 @@ for ichild=1:length(hchildren)
                         %if the mouse is over a uicontrol, look at the data
                         if strcmp(htype,'uicontrol') && strcmp(get(hchild,'Visible'),'on')
                             msg_pos(1:2)=GUI_pos(1:2)+obj_pos(1:2).*GUI_pos(3:4);
-                            output_str=msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],'',get(hchild,'String'),msg_pos);
+                            display_str=get(hchild,'TooltipString');
+                            output_str=msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],display_str,get(hchild,'String'),msg_pos);
                             break
                         end
                     end
@@ -164,7 +167,9 @@ for ichild=1:length(hchildren)
 end
 if ~isempty(output_str)               
     set(hObject,'Units','pixels')
+    if strcmp(get(hchild,'enable'),'on')
     set(hchild,'String',output_str)
+    end
 end
     
 %% desable  object creation and vector editing if NbDim different from 2

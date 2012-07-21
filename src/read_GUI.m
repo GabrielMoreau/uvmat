@@ -1,16 +1,17 @@
-% -----------------------------------------------------------------------
-% --- read a GUI with handle 'handle' producing a structure 'struct'
+% 'read_GUI':read a GUI and provide the data as a Matlab structure
+%----------------------------------------------------------------------
+% function struct=read_GUI(handle)
 %
-% The output Matlab structure 'struct' contains the information displayed on
-% the GUI or a panel with handle 'handle'
+% OUTPUT:
+% struct: matlab structure containing the information displayed in the GUI
 % The content of a panel with tag 'tag' is displayed as a substructure struct.(tag) (recursive use of read_GUI)
-% Output of an element with tag 'tag':
-%     'checkbox','radiobutton','togglebutton': struct.(tag)=value
-%     'edit': struct.(tag)=string,  
+% Output of a GUI element with tag 'tag':
+%     -case 'checkbox','radiobutton','togglebutton': struct.(tag)=value
+%     -case'edit': struct.(tag)=string,  
 %         or, if the tag is in the form by 'num_tag',
 %         struct.(tag)=str2double(string). If the result is empty the  'UserData' is taken as the default input.
-%     'listbox','popupmenu': struct.(tag)=selected string, or, if the tag is in the form by 'num_tag', struct.(tag)=str2double(string)
-%     'table': struct.(tag)=data of the table
+%     -case 'listbox','popupmenu': struct.(tag)=selected string, or, if the tag is in the form by 'num_tag', struct.(tag)=str2double(string)
+%     -case 'table': struct.(tag)=data of the table
 % 
 function struct=read_GUI(handle)
 %------------------------------------------------------------------------

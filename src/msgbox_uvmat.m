@@ -111,21 +111,21 @@ if testinputstring
     set(handles.edit_box, 'String', default_answer);
     if exist('Position','var')
     if iscell(default_answer)
-        widthstring=max(cellfun('length',default_answer));
+        widthstring=max(cellfun('length',default_answer),length(display_str));
         heightstring=size(default_answer,1);
         set(handles.edit_box,'Max',2);
     else
-        widthstring=length(default_answer);
+        widthstring=max(length(default_answer),length(display_str));
         heightstring=1;
     end
-    widthstring=max(widthstring,length(title));
+    widthstring=max(widthstring,length(title)+20);
     boxsize=[10*widthstring 20*heightstring];%size of the display edit box 
     set(handles.edit_box,'Units','pixels')
     set(handles.edit_box,'FontUnits','pixels')
     set(handles.edit_box,'FontSize',12)  
    set(handles.edit_box,'Position',[5,34,boxsize(1),boxsize(2)])
    FigPos(3)=10+boxsize(1);
-   FigPos(4)=36+boxsize(2);
+   FigPos(4)=56+boxsize(2);
    FigPos(2)=Position(2)-FigPos(4)-25;
    set(handles.figure1,'Position',FigPos)
     end

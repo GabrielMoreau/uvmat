@@ -227,8 +227,6 @@ if isfield (Param,'Patch1')
     end
     [Data.Civ1_SubRange,Data.Civ1_NbSites,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
         filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomain,Data.Patch1_Rho,Data.Patch1_Threshold);
-%     fill=zeros(3,2,size(Data.Civ1_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
-%     Data.Civ1_Coord_tps=cat(1,Data.Civ1_Coord_tps,fill);
     Data.Civ1_U_smooth(ind_good)=Ures;
     Data.Civ1_V_smooth(ind_good)=Vres;
     Data.Civ1_FF(ind_good)=FFres;
@@ -423,8 +421,6 @@ if isfield (Param,'Patch2')
     end
     [Data.Civ2_SubRange,Data.Civ2_NbSites,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures, Vres,tild,FFres]=...
         filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomain,Data.Patch2_Rho,Data.Patch2_Threshold);
-%     fill=zeros(3,2,size(Data.Civ2_SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
-%     Data.Civ2_Coord_tps=cat(1,Data.Civ2_Coord_tps,fill);
     Data.Civ2_U_smooth(ind_good)=Ures;
     Data.Civ2_V_smooth(ind_good)=Vres;
     Data.Civ2_FF(ind_good)=FFres;

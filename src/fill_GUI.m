@@ -1,5 +1,15 @@
-%'fill_GUI': fill a GUI with handles 'handles' from input data Param 
+%'fill_GUI': fill a GUI with a set of parameters from a Matlab structure 
 % -----------------------------------------------------------------------
+% function errormsg=fill_GUI(Param,handles)
+% OUPUT:
+% errormsg: error message, ='' by default
+%
+% INPUT:
+% Param: matlab structure containing the information to display in the GUI
+% handles: Matlab structure containing the handles of the GUI elements
+%
+% see also the reverse function read_GUI.m
+%
 function errormsg=fill_GUI(Param,handles)
 %------------------------------------------------------------------------
 errormsg='';
@@ -17,10 +27,10 @@ for ifield=1:numel(fields)
         end
     else
         hh=[];
-        input_data=Param.(fields{ifield})
+        input_data=Param.(fields{ifield});
         check_done=0;
         if isfield(handles,fields{ifield})
-            hh=handles.(fields{ifield})
+            hh=handles.(fields{ifield});
             if strcmp(get(hh,'Type'),'uitable')
                 set(hh,'Visible','on')
                 if ischar(input_data)

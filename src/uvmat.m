@@ -935,7 +935,7 @@ if ~isempty(XmlFileName)
         drawnow
         if isfield(XmlData, 'GeometryCalib') && ~isempty(XmlData.GeometryCalib)
             if isfield(XmlData.GeometryCalib,'VolumeScan') && isequal(XmlData.GeometryCalib.VolumeScan,'y')
-                set (handles.nb_slice,'String','volume')
+                set (handles.num_NbSlice,'String','volume')
             end
             hgeometry_calib=findobj('tag','geometry_calib');
             if ~isempty(hgeometry_calib)
@@ -1015,9 +1015,9 @@ if isfield(XmlData,'GeometryCalib')
                set(handles.slices,'Value',1)
            end
            if isfield(GeometryCalib,'VolumeScan') && isequal(GeometryCalib.VolumeScan,'y')
-               set(handles.nb_slice,'String','volume')
+               set(handles.num_NbSlice,'String','volume')
            else
-               set(handles.nb_slice,'String',num2str(NbSlice))
+               set(handles.num_NbSlice,'String',num2str(NbSlice))
            end
            slices_Callback([],[], handles)
         end           
@@ -1228,12 +1228,12 @@ function slices_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 if get(handles.slices,'Value')==1
     set(handles.slices,'BackgroundColor',[1 1 0])
-    set(handles.nb_slice,'Visible','on')
+    set(handles.num_NbSlice,'Visible','on')
     set(handles.z_text,'Visible','on')
     set(handles.z_index,'Visible','on')
-    nb_slice_Callback(hObject, eventdata, handles)
+    num_NbSlice_Callback(hObject, eventdata, handles)
 else
-    set(handles.nb_slice,'Visible','off')
+    set(handles.num_NbSlice,'Visible','off')
     set(handles.slices,'BackgroundColor',[0.7 0.7 0.7])
     set(handles.z_text,'Visible','off')
     set(handles.z_index,'Visible','off') 
@@ -1242,16 +1242,16 @@ else
 end
 
 %------------------------------------------------------------------------
-function nb_slice_Callback(hObject, eventdata, handles)
+function num_NbSlice_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-nb_slice_str=get(handles.nb_slice,'String');
+nb_slice_str=get(handles.num_NbSlice,'String');
 if isequal(nb_slice_str,'volume')
     num=stra2num(get(handles.j1,'String'));
     last_j=get(handles.last_j,'String');
     nbslice=str2double(last_j{1});
 else
     num=str2double(get(handles.i1,'String'));
-    nbslice=str2double(get(handles.nb_slice,'String'));
+    nbslice=str2double(get(handles.num_NbSlice,'String'));
 end
 z=mod(num-1,nbslice)+1;
 set(handles.z_index,'String',num2str(z))
@@ -1325,8 +1325,8 @@ if isequal(get(handles.CheckMask,'Value'),1)
             %maskname=name_generator(Mask.Base,num_i1,num_j1,'.png',Mask.NomType);%
             mdetect=exist(maskname,'file');
             if mdetect
-                set(handles.nb_slice,'String',Name(i+1:ind_mask-1));
-                set(handles.nb_slice,'BackgroundColor',[1 1 0])
+                set(handles.num_NbSlice,'String',Name(i+1:ind_mask-1));
+                set(handles.num_NbSlice,'BackgroundColor',[1 1 0])
                 set(handles.CheckMask,'UserData',Mask);
                 set(handles.CheckMask,'BackgroundColor',[1 1 0])
                 if nbslice > 1
@@ -1411,7 +1411,7 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
         Mask.AY=[npxy(1)-0.5 0.5 ];
         Mask.CoordUnit='pixel';
         if isequal(get(handles.slices,'Value'),1)
-           NbSlice=str2num(get(handles.nb_slice,'String'));
+           NbSlice=str2num(get(handles.num_NbSlice,'String'));
            num_i1=str2num(get(handles.i1,'String')); 
            Mask.ZIndex=mod(num_i1-1,NbSlice)+1;
         end
@@ -1841,7 +1841,7 @@ end
 Field_b.AX=Field_a.AX;
 Field_b.AY=Field_a.AY;
 % z index
-nbslice=str2double(get(handles.nb_slice,'String'));
+nbslice=str2double(get(handles.num_NbSlice,'String'));
 if ~isempty(nbslice)
     Field_b.ZIndex=mod(num_i2-1,nbslice)+1;
 end
@@ -1986,7 +1986,7 @@ if strcmp(get(handles.NomType_1,'Visible'),'on')
 end
 % NomType=get(handles.FileIndex,'UserData');
 %update the z position index
-nbslice_str=get(handles.nb_slice,'String');
+nbslice_str=get(handles.num_NbSlice,'String');
 if isequal(nbslice_str,'volume')%NOT USED
     z_index=num_j1;
     set(handles.z_index,'String',num2str(z_index))
@@ -2389,8 +2389,8 @@ if (check_tps ||check_proj_tps)&&~isfield(Field{1},'Coord_tps')
     Field{1}.VarDimName=[Field{1}.VarDimName {{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
         {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
     Field{1}.VarAttribute{nbvar+3}.Role='coord_tps';
-    Field{1}.VarAttribute{nbvar+4}.Role='vector_x';
-    Field{1}.VarAttribute{nbvar+5}.Role='vector_y';
+    Field{1}.VarAttribute{nbvar+4}.Role='vector_x_tps';
+    Field{1}.VarAttribute{nbvar+5}.Role='vector_y_tps';
     if isfield(Field{1},'ListDimName')%cleaning 
         Field{1}=rmfield(Field{1},'ListDimName');
     end
@@ -4879,3 +4879,4 @@ else
     addpath (fullfile(pathelp,'uvmat_doc'))
     web(helpfile);
 end
+

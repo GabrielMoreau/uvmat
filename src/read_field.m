@@ -1,5 +1,4 @@
-
-%'read_field': read input fields in different formats
+%'read_field': read the fields from files in different formats (netcdf files, images, video)
 %--------------------------------------------------------------------------
 %  function [Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,num)
 %
@@ -15,19 +14,15 @@
 %
 %INPUT
 % FileName: name of the input file
-% FileType: type of file
-%     = netcdf : netcdf file 
-%     = image : usual image as recognised by Matlab
-%     = multimage: image series stored in a single file
-%     = mmreader: movie read with mmreader
-%     = video: movie read with VideoReader (recent versions of Matlab)
-%     = vol: images representing scanned volume (images concatened in the y direction)
+% FileType: type of file, as determined by the function get_file_type.m
 % ParamIn: movie object or Matlab structure of input parameters
 %     .FieldName: name (char string) of the input field (for Civx data)
 %     .VelType: char string giving the type of velocity data ('civ1', 'filter1', 'civ2'...)
 %     .ColorVar: variable used for vector color
 %     .Npx, .Npy: nbre of pixels along x and y (used for .vol input files)
 % num: frame number for movies
+%
+% see also read_image.m,read_civxdata.m,read_civdata.m,
 
 function [Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,num)
 Field=[];

@@ -217,10 +217,10 @@ else
         [tild,ifile_min]=min(ref_ij(ind_select));
         [tild,tild,tild,tild,tild,tild,tild,tild,NomType]=fileparts_uvmat(dirpair(ind_select(ifile_min)).name);% update the representation of indices (number of 0 before the number)
         NomType=regexprep(NomType,['^' NomTypePref],'');
-    end
-    %% update the file type if the input file does not exist (pb of 0001)
-    if isempty(FileType)
-        [FileType,tild,MovieObject]=get_file_type(fullfile(FilePath,dirpair(ifile_min).name));
+        %% update the file type if the input file does not exist (pb of 0001)
+        if isempty(FileType)
+            [FileType,tild,MovieObject]=get_file_type(fullfile(FilePath,dirpair(ifile_min).name));
+        end
     end
 end
 
