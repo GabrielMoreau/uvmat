@@ -155,14 +155,14 @@ if isfield(Field,'pixcmx')
     Field.X=Field.X*Field.pixcmx;
     Field.Y=Field.Y*Field.pixcmy;
 end
-if ~isequal(Field.dt,0)
-    Field.U=Field.U*Field.dt;%translate in px displacement
-    Field.V=Field.V*Field.dt;
+if ~isequal(Field.Dt,0)
+    Field.U=Field.U*Field.Dt;%translate in px displacement
+    Field.V=Field.V*Field.Dt;
     if isfield(Field,'DjUi')
-       Field.DjUi(:,1,1)=Field.dt*Field.DjUi(:,1,1);
-       Field.DjUi(:,2,2)=Field.dt*Field.DjUi(:,2,2);
-       Field.DjUi(:,1,2)=(Field.pixcmy/Field.pixcmx)*Field.dt*Field.DjUi(:,1,2);
-       Field.DjUi(:,2,1)=(Field.pixcmx/Field.pixcmy)*Field.dt*Field.DjUi(:,2,1);
+       Field.DjUi(:,1,1)=Field.Dt*Field.DjUi(:,1,1);
+       Field.DjUi(:,2,2)=Field.Dt*Field.DjUi(:,2,2);
+       Field.DjUi(:,1,2)=(Field.pixcmy/Field.pixcmx)*Field.Dt*Field.DjUi(:,1,2);
+       Field.DjUi(:,2,1)=(Field.pixcmx/Field.pixcmy)*Field.Dt*Field.DjUi(:,2,1);
     end
 end
 

@@ -1317,11 +1317,11 @@ for ifile=1:nbfield
             Param.Civ2.ImageWidth=ImageInfoA_civ2.Width;
             Param.Civ2.ImageHeight=ImageInfoA_civ2.Height;
             if strcmp(NomTypeIma,'*')
-                Param.Civ2.FrameIndexA=i1_civ2(ifile,j);
-                Param.Civ2.FrameIndexB=i2_civ2(ifile,j);
+                Param.Civ2.FrameIndexA=i1_civ2(ifile);
+                Param.Civ2.FrameIndexB=i2_civ2(ifile);
             else% case of movies indexed with i, the frame index is then in j
-                Param.Civ2.FrameIndexA=j1_civ2(ifile,j);
-                Param.Civ2.FrameIndexB=j2_civ2(ifile,j);
+                Param.Civ2.FrameIndexA=j1_civ2(j);
+                Param.Civ2.FrameIndexB=j2_civ2(j);
             end
         end
        
@@ -1550,7 +1550,7 @@ switch Param.RunMode,
                                 end
                                 fprintf(fid,['#!/bin/bash \n' ...
                                     '/etc/sysprofile \n'...
-                                    'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n'...
+                                    'matlab -nodisplay -nosplash -nojvm -logfile  <<END_MATLAB \n'...
                                     'addpath(''' path_civ ''');\n']);
                                 for p=1:length(batch_file_list)
                                     fprintf(fid,['run ' batch_file_list{p} '\n']);

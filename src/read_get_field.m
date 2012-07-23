@@ -178,7 +178,7 @@ if test_scalar
                 end
             end
             test_xdimvar=1;
-            SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
+%             SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
         else
             SubVarAttribute{nbvar}.Role='coord_x';%abcissa with unstructured coordinates
         end
@@ -213,7 +213,7 @@ if test_scalar
                 end
              end
             test_ydimvar=1;
-            SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
+%             SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
         else
             SubVarAttribute{nbvar}.Role='coord_y';%abcissa with unstructured coordinates
         end
@@ -246,7 +246,7 @@ if test_scalar
                     end
                 end
                 test_zdimvar=1;
-                SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
+%                 SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
             else
                 SubVarAttribute{nbvar}.Role='coord_z';%abcissa with unstructured coordinates
             end
@@ -330,7 +330,7 @@ if test_vector
                 end
             end
              test_vec_x_dimvar=1;
-            SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
+%             SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
         else
             SubVarAttribute{nbvar}.Role='coord_x';%abcissa with unstructured coordinates
         end
@@ -363,7 +363,7 @@ if test_vector
                 end
             end
              test_vec_y_dimvar=1;
-            SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
+%             SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
         else
             SubVarAttribute{nbvar}.Role='coord_y';%abcissa with unstructured coordinates
         end
@@ -397,7 +397,7 @@ if test_vector
                     end
                 end
 %                 test_vec_z_dimvar=1;
-                SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
+%                 SubVarAttribute{nbvar}.Role='dimvar';% dimension variable
             else
                 SubVarAttribute{nbvar}.Role='coord_z';%abcissa with unstructured coordinates
             end

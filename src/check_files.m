@@ -53,8 +53,9 @@ list_fct={...
     'fileparts_uvmat';...% extracts the root name,field indexes and nomenclature type from an input filename
     'fill_GUI';...%  fill a GUI with a set of parameters from a Matlab structure 
     'filter_tps';...% find the thin plate spline coefficients for interpolation-smoothing
-    'find_field_indices';...% group the variables of a nc-formated Matlab structure into 'fields' with common dimensions
+    'find_field_indices';...% group the variables of a 'field object' into 'field cells' and specify their structure
     'find_file_series';...%check the content of an input file and find the corresponding file series
+    'find_imadoc';...% find the ImaDoc xml file associated with a given input file
     'fullfile_uvmat';...%creates a file name from a root name and indices.
     'geometry_calib';...%performs geometric calibration from a set of reference points
     'geometry_calib.fig';...%interface for geometry_calib
@@ -83,10 +84,10 @@ list_fct={...
     'proj_field';...%project a field on a projection object (plane, line,...)
     'read_civxdata';...reads civx data from netcdf files
     'read_civdata';... reads new civ data from netcdf files
-    'read_image';... read images or video objects
+    'read_field';...% read the fields from files in different formats (netcdf files, images, video)
     'read_get_field';... read the list of selected variables from the GUI get_field (TODO: use read_GUI)
     'read_GUI';... %read a GUI and provide the data as a Matlab structure
-    'read_image';...%read .civ files (obsolete, but can be adapted to other text documentation files) 
+    'read_image';...%read images or video objects
     'read_multimadoc';... %read a set of Imadoc files and compare their timing of different file series
     'read_xls';...%read excel files containing the list of the experiments
     'reinit';...% suppress the personal parameter file 'uvmat_perso.mat'

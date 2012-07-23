@@ -2742,14 +2742,14 @@ else
                     ObjectData.Mesh=Field.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
                 end
             end
-            if isequal(PlotType,'none')
-                hget_field=findobj(allchild(0),'name','get_field');
-                if isempty(hget_field)
-                    get_field(FileName)% the projected field cannot be automatically plotted: use get_field to specify the variablesdelete(hget_field)
-                end
-                errormsg='The field defined by get_field cannot be plotted';
-                return
-            end
+%             if isequal(PlotType,'none')
+%                 hget_field=findobj(allchild(0),'name','get_field');
+%                 if isempty(hget_field)
+%                     get_field(FileName)% the projected field cannot be automatically plotted: use get_field to specify the variablesdelete(hget_field)
+%                 end
+%                 errormsg='The field defined by get_field cannot be plotted';
+%                 return
+%             end
         end
     end
     

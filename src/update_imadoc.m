@@ -9,38 +9,36 @@
 function errormsg=update_imadoc(GeometryCalib,outputfile)
 errormsg='';
 testappend=0;
-if exist(outputfile,'file');%=1 if the output file already exists, 0 else  
+%% backup the output file if it already exist, and read it
+if exist(outputfile,'file');%=1 if the output file already exists, 0 else
     testappend=1;
-    t=xmltree(outputfile); %read the file
     backupfile=outputfile;
     testexist=2;
     while testexist==2
-       backupfile=[backupfile '~'];
-       testexist=exist(backupfile,'file');
+        backupfile=[backupfile '~'];
+        testexist=exist(backupfile,'file');
     end
     [success,message]=copyfile(outputfile,backupfile);%make backup
-    if success==0
-        errormsg=message;
-    end
-    uid=find(t,'ImaDoc');
-    if ~isequal(uid,1)
+    if success~=1
+        errormsg=['errror in xml file backup: ' message];
         return
-    end       
-    %if the xml file is  ImaDoc
-    uid_calib=find(t,'ImaDoc/GeometryCalib');
-    if isempty(uid_calib)  %if GeometryCalib does not already exists, create it
-        [t,uid_calib]=add(t,1,'element','GeometryCalib');
-    else %if GeometryCalib already exists, delete its content
-        if isequal(success,1)
-            delete(outputfile)
-        else
-            return
+    end
+    t=xmltree(outputfile); %read the file
+    title=get(t,1,'name');
+    if strcmp(title,'ImaDoc'))
+        testappend=1;
+        %if the xml file is  ImaDoc
+        uid_calib=find(t,'ImaDoc/GeometryCalib');
+        if isempty(uid_calib)  %if GeometryCalib does not already exists, create it
+            [t,uid_calib]=add(t,1,'element','GeometryCalib');
+        else %if GeometryCalib already exists, delete its content
+            uid_child=children(t,uid_calib);
+            t=delete(t,uid_child);
         end
-        uid_child=children(t,uid_calib);
-        t=delete(t,uid_child);
     end
 end
-%create a new xml file
+
+%% create a new xml file
 if ~testappend
     t=xmltree;
     t=set(t,1,'name','ImaDoc');
@@ -68,5 +66,7 @@ if ~testappend
     end
     [t,uid_calib]=add(t,1,'element','GeometryCalib');
 end
+
+%% save the output file
 t=struct2xml(GeometryCalib,t,uid_calib); 
 save(t,outputfile);

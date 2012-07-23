@@ -112,7 +112,7 @@ if exist('inputfile','var')&& ~isempty(inputfile)
     end
     set(handles.ListCoord,'String',{'......'})
     if exist(inputfile,'file')
-        Heading=loadfile(handles,inputfile);% load the point coordinates existing in the xml file
+        Heading=loadfile(handles,inputfile);% load data from the xml file
         if isfield(Heading,'Campaign')&& ischar(Heading.Campaign)
             struct.Campaign=Heading.Campaign;
         end
@@ -273,6 +273,10 @@ if strcmp(answer,'Yes')
         GeometryCalib.InterfaceCoord=[0 0 str2double(answer{3})];
         GeometryCalib.RefractionIndex=str2double(answer{4});     
     end
+    UserData=get(handles.geometry_calib,'UserData');
+    if isfield(UserData,'XmlInputFile')&&~strcmp(UserData.XmlInputFile, outputfile)&&~exist(outputfile,'file')
+     [success,message]=copyfile(UserData.XmlInputFile,outputfile);%copy the old xml file to a new one with the new convention 
+    end
     errormsg=update_imadoc(GeometryCalib,outputfile);% introduce the calibration data in the xml file
     if ~strcmp(errormsg,'')
         msgbox_uvmat('ERROR',errormsg);
@@ -289,7 +293,7 @@ if strcmp(answer,'Yes')
     end
     set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off'
     set(hhuvmat.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
-    UserData=get(handles.geometry_calib,'UserData');
+    
     UserData.XmlInputFile=outputfile;%save the current xml file name
     set(handles.geometry_calib,'UserData',UserData)
     uvmat('RootPath_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
@@ -1369,14 +1373,7 @@ end
     
 GeometryCalib=s.GeometryCalib;
 fx=1;fy=1;Cx=0;Cy=0;kc=0; %default
-%     Tabchar={};
 CoordCell={};
-%     kc=0;%default
-%     f1=1000;
-%     f2=1000;
-%     hhuvmat=guidata(findobj(allchild(0),'Name','uvmat'));
-%     Cx=str2num(get(hhuvmat.num_Npx,'String'))/2;
-%     Cy=str2num(get(hhuvmat.num_Npy,'String'))/2;
 Tabchar={};%default
 val_cal=1;%default
 if ~isempty(GeometryCalib)
