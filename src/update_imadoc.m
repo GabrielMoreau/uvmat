@@ -25,7 +25,7 @@ if exist(outputfile,'file');%=1 if the output file already exists, 0 else
     end
     t=xmltree(outputfile); %read the file
     title=get(t,1,'name');
-    if strcmp(title,'ImaDoc'))
+    if strcmp(title,'ImaDoc')
         testappend=1;
         %if the xml file is  ImaDoc
         uid_calib=find(t,'ImaDoc/GeometryCalib');

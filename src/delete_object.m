@@ -13,11 +13,11 @@ UvData=get(huvmat,'UserData');
 hlist_object=findobj(huvmat,'Tag','ListObject');%handles of the object list in the uvmat interface
 list_str=get(hlist_object,'String');%objet list
 if isequal(floor(hObject),hObject) %case of an index
-    if  ~isempty(UvData) & isfield(UvData, 'Object') & length(UvData.Object)>=hObject 
-        if isfield(UvData.Object{hObject},'DisplayHandle_uvmat') 
-            hdisplay=UvData.Object{hObject}.DisplayHandle_uvmat;
+    if  ~isempty(UvData) && isfield(UvData, 'Object') && length(UvData.Object)>=hObject 
+        if isfield(UvData.Object{hObject},'DisplayHandle') && isfield(UvData.Object{hObject}.DisplayHandle,'uvmat')
+            hdisplay=UvData.Object{hObject}.DisplayHandle.uvmat;
             for iview=1:length(hdisplay)
-                if ishandle(hdisplay(iview)) & ~isequal(hdisplay(iview),0)
+                if ishandle(hdisplay(iview)) && ~isequal(hdisplay(iview),0)
                     ObjectData=get(hdisplay(iview),'UserData');
                     if isfield(ObjectData,'SubObject') & ishandle(ObjectData.SubObject)
                         delete(ObjectData.SubObject);
@@ -29,14 +29,14 @@ if isequal(floor(hObject),hObject) %case of an index
                 end
                 ishandle(hdisplay(iview))
             end
-        end   
-        for iobj=hObject+1:length(UvData.Object)
-            hdisplay=UvData.Object{iobj}.DisplayHandle_uvmat;
-            for iview=1:length(hdisplay)
-                if ishandle(hdisplay(iview)) && ~isequal(hdisplay(iview),0)
-                    PlotData=get(hdisplay(iview),'UserData');
-                    PlotData.IndexObj=iobj-1;
-                    set(hdisplay(iview),'UserData',PlotData);
+            for iobj=hObject+1:length(UvData.Object)
+                hdisplay=UvData.Object{iobj}.DisplayHandle.uvmat;
+                for iview=1:length(hdisplay)
+                    if ishandle(hdisplay(iview)) && ~isequal(hdisplay(iview),0)
+                        PlotData=get(hdisplay(iview),'UserData');
+                        PlotData.IndexObj=iobj-1;
+                        set(hdisplay(iview),'UserData',PlotData);
+                    end
                 end
             end
         end
@@ -79,6 +79,6 @@ set(hlist_object_1,'String',list_str)
 if hObject<=old_index
     set(hlist_object_1,'Value',old_index-1)
 end
-% hlist_object=findobj(huvmat,'Tag','list_object_2');%handles of the object liçst in the uvmat interface
+% hlist_object=findobj(huvmat,'Tag','list_object_2');%handles of the object liï¿½st in the uvmat interface
 % set(hlist_object,'String',[list_str;{'...'}])
 % set(hlist_object,'Value',length(list_str)+1)

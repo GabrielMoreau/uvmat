@@ -4311,9 +4311,9 @@ end
 % --- Executes on button press in delete_object.
 function delete_object_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-IndexObj=get(handles.ListObject,'Value');
-IndexObj_1=get(handles.ListObject_1,'Value');
-if IndexObj>1 && ~isequal(IndexObj,IndexObj_1)
+IndexObj=get(handles.ListObject,'Value');%projection object selected for view_field
+IndexObj_1=get(handles.ListObject_1,'Value');%projection object selected for uvmat plot
+if IndexObj>1 && ~isequal(IndexObj,IndexObj_1) % do not delete the object used for the uvmat plot
     delete_object(IndexObj)
 end
 

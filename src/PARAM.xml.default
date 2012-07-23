@@ -2,12 +2,15 @@
 <UvmatParam>
 <RunParam>
 <MaxCivProcesses>20</MaxCivProcesses>
+<RunTime>${MCRROOT712}</RunTime>
 <CivBin>bin/civ<!--binary for the new civx version (relative or
 absolute path)--></CivBin>
 <Civ1Bin>bin/civ1<!--binary for civ1 (relative or absolute path)
 --></Civ1Bin>
 <Civ2Bin>bin/civ2<!--binary for civ2 (relative or absolute path)
 --></Civ2Bin>
+<CivmBin>bin/run_civ_matlab.sh<!--binary from compilation of civ_matlab.
+m (relative or absolute path)--></CivmBin>
 <Civ3D3CBin>bin/civ3d3c</Civ3D3CBin>
 <FixBin>bin/fix_flag</FixBin>
 <PatchBin>bin/patch_up</PatchBin>
