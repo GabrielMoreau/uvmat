@@ -23,7 +23,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 18-Jul-2012 23:20:12
+% Last Modified by GUIDE v2.5 24-Jul-2012 13:14:00
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -58,9 +58,12 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with rig
 path_civ=fileparts(which('civ')); %path to civ
 addpath (path_civ) ; %add the path to civ, (useful in case of change of working directory after civ has been s opened in the working directory)
 errormsg=[];%default error message
-xmlfile='PARAM.xml';
+xmlfile=fullfile(path_civ,'PARAM.xml');
 test_batch=0;%default: ,no batch mode available
 sparam=[];
+if ~exist(xmlfile,'file')
+    [success,message]=copyfile(fullfile(path_civ,'PARAM.xml.default'),xmlfile)
+end
 if exist(xmlfile,'file')
     try
         t=xmltree(xmlfile);
@@ -70,7 +73,6 @@ if exist(xmlfile,'file')
          msgbox_uvmat('WARNING',errormsg);
     end
 else
-    %errormsg=[xmlfile ' not found: path to civx binaries undefined'];
     [s,w]=system('oarstat');
     if ~isequal(s,0)
         [s,w]=system('qstat');
@@ -89,10 +91,10 @@ if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
             test_command='oarstat';
     end
     if ~isempty(test_command)
-    [s,w]=system(test_command);
-    if isequal(s,0)
-        test_batch=1;
-    end
+        [s,w]=system(test_command);
+        if isequal(s,0)
+            test_batch=1;
+        end
     end
 end
 RUNVal=get(handles.RunMode,'Value');
@@ -359,7 +361,7 @@ if strcmp(ExtInput,'.nc')
     end
     % settings for  new civ data,
     if strcmp(Data.Conventions,'uvmat/civdata')% case of new civ data,
-        set(handles.Program,'Value',2) %select civ/Matlab by default
+        set(handles.Program,'Value',1) %select civ/Matlab by default
         Program_Callback([],[], handles)
         if ~isempty(Data.CivStage)%test for civ files
             ind_opening=Data.CivStage;
@@ -375,7 +377,7 @@ if strcmp(ExtInput,'.nc')
         end
         % settings for civx data,
     elseif ~isempty(Data.absolut_time_T0')% case of  civx data,
-        set(handles.Program,'Value',1) %select Cix by default
+        set(handles.Program,'Value',3) %select Cix by default
         Program_Callback([],[], handles)
         if ~isempty(Data.fix2)
             ind_opening=5;
@@ -1079,7 +1081,7 @@ end
 
 %% read the PARAM.xml file to get the binaries (and batch_mode if batch)
 path_civ=fileparts(which('civ')); %path to the source directory of uvmat
-xmlfile='PARAM.xml';
+xmlfile=fullfile(path_civ,'PARAM.xml');
 s=[];
 if exist(xmlfile,'file')% search parameter xml file in the whole matlab path
     t=xmltree(xmlfile);
@@ -1151,19 +1153,22 @@ for bin_name=binary_list %loop on the list of binaries
                 cd(currentdir);
             else
                 errormsg=['path ' path ' for binaries defined in PARAM.xml does not exist'];
-                return
-            end
-            
+            end          
         else  %look for the full path if the file name has been defined with a relative path in PARAM.xm
             fullname=fullfile(path_civ,Param.xml.(bin_name{1}));
             if exist(fullname,'file')
                 Param.xml.(bin_name{1})=fullname;
             else
                 errormsg=['Binary ' Param.xml.(bin_name{1}) ' defined in PARAM.xml does not exist'];
-                return
             end
         end
     end
+end
+if ~isempty(errormsg)
+    if strcmp(Param.Program,'civ_matlab.sh')
+        errormsg=[{errormsg}; {'run compile_functions.m to create it by compiling civ_matlab.m'}];
+    end
+    return
 end
 
 %% set the list of files and check them
@@ -4560,4 +4565,3 @@ function last_j_Callback(hObject, eventdata, handles)
 
 
 function last_i_Callback(hObject, eventdata, handles)
-

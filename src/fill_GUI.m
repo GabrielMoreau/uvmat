@@ -16,7 +16,8 @@ errormsg='';
 fields=fieldnames(Param);%list of fields in Param
 % loop on the elements of the input structure Param
 for ifield=1:numel(fields)
-    if isstruct(Param.(fields{ifield}))% case of sa sub-structure
+    % case of a sub-structure --> fill a panel
+    if isstruct(Param.(fields{ifield}))% case of a sub-structure
         if isfield(handles,fields{ifield})
             set(handles.(fields{ifield}),'Visible','on')
             children=get(handles.(fields{ifield}),'children');
@@ -25,9 +26,12 @@ for ifield=1:numel(fields)
             end
             errormsg=fill_GUI(Param.(fields{ifield}),hchild);% apply the function to the substructure
         end
+    % case of an element
     else
         hh=[];
         input_data=Param.(fields{ifield});
+                    display(fields{ifield})
+                    display(input_data)
         check_done=0;
         if isfield(handles,fields{ifield})
             hh=handles.(fields{ifield});
@@ -39,27 +43,41 @@ for ifield=1:numel(fields)
                 set(hh,'Data',input_data)
                 check_done=1;
             end
-        elseif isnumeric(input_data) && isfield(handles,['num_' fields{ifield}])
-            hh=handles.(['num_' fields{ifield}]);
+        elseif isnumeric(input_data) 
+            if numel(input_data)>1 
+                %deals with array displayed in multiple boxes labeled by an index
+                for ibox=1:numel(input_data)
+                    if isfield(handles,['num_' fields{ifield} '_' num2str(ibox)])
+                        hh(ibox)=handles.(['num_' fields{ifield} '_' num2str(ibox)]);
+                    end
+                end
+            else % single box (usual case)
+               if isfield(handles,['num_' fields{ifield}])
+                   hh=handles.(['num_' fields{ifield}]);
+               end
+            end
         end
-        if ~isempty(hh)&& ~check_done
-            set(hh,'Visible','on')
+        for ibox=1:numel(hh)
+        if ~isempty(hh(ibox))&& ~check_done
+            set(hh(ibox),'Visible','on')
 %             input_data
-            switch get(hh,'Style')
+            switch get(hh(ibox),'Style')
                 case {'checkbox','radiobutton','togglebutton'}
                     if isnumeric(input_data)
-                        set(hh,'Value',input_data)
+                        set(hh(ibox),'Value',input_data(ibox))
                     end
                 case 'edit'
                     if isnumeric(input_data)
-                        input_data=num2str(input_data);
+                        input_string=num2str(input_data(ibox));
+                    else
+                        input_string=input_data;
                     end
-                    set(hh,'String',input_data)
+                    set(hh(ibox),'String',input_string)
                 case{'listbox','popupmenu'}
                     if isnumeric(input_data)
                         input_data=num2str(input_data);
                     end
-                    menu=get(hh,'String');
+                    menu=get(hh(ibox),'String');
                     if ischar(input_data)
                         input_data={input_data};
                     end
@@ -73,9 +91,10 @@ for ifield=1:numel(fields)
                             values(idata)=iline(1);
                         end
                     end
-                    set(hh,'String',menu)
-                    set(hh,'Value',values)
+                    set(hh(ibox),'String',menu)
+                    set(hh(ibox),'Value',values)
             end
+        end
         end
     end
 end
