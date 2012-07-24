@@ -131,17 +131,17 @@ if ~isempty(index_3D)
         return
     end
 end
-index_1D=find(NbDim==1);
+index_1D=find(NbDim==1&~cellfun(@isempty,VarType));
 index_0D=find(NbDim==0);
 %remove coordinates variables from 1D plot
-if ~isempty(index_2D)
-    for ivar=1:length(index_1D)
-        if isequal(CellVarIndex{index_1D(ivar)},VarType{index_1D(ivar)}.coord)
-            index_1D(ivar)=0;
-        end
-    end
-    index_1D=index_1D(index_1D>0);
-end
+% if ~isempty(index_2D)
+%     for ivar=1:length(index_1D)
+%         if isequal(CellVarIndex{index_1D(ivar)},VarType{index_1D(ivar)}.coord)
+%             index_1D(ivar)=0;
+%         end
+%     end
+%     index_1D=index_1D(index_1D>0);
+% end
 
 %% test axes and figure
 testnewfig=1;%test to create a new figure (default)
@@ -345,6 +345,9 @@ test_newplot=1;
 
 %loop on input  fields
 for icell=1:length(CellVarIndex)
+    if isempty(VarType{icell})% coordiante variable
+        continue
+    end
     VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list data.ListVarName
     if ~isempty(VarType{icell}.coord_x)
         coord_x_index=VarType{icell}.coord_x;

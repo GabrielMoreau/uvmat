@@ -2378,7 +2378,7 @@ if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamOut.FieldName,'velocity')&
        check_tps=1;
 end
 if (check_tps ||check_proj_tps)&&~isfield(Field{1},'Coord_tps')
-    SubDomain=1500; %default, estimated nbre of vectors in a subdomain used for tps
+    SubDomain=1000; %default, estimated nbre of vectors in a subdomain used for tps
     if isfield(Field{1},'SubDomain')
         SubDomain=Field{1}.SubDomain;% 
     end

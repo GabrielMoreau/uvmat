@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <UvmatParam>
 <RunParam>
-<MaxCivProcesses>20</MaxCivProcesses>
 <RunTime>${MCRROOT712}</RunTime>
 <CivBin>bin/civ<!--binary for the new civx version (relative or
 absolute path)--></CivBin>
@@ -9,12 +8,9 @@ absolute path)--></CivBin>
 --></Civ1Bin>
 <Civ2Bin>bin/civ2<!--binary for civ2 (relative or absolute path)
 --></Civ2Bin>
-<CivmBin>civ_matlab.sh<!--binary from compilation of civ_matlab.
-m (relative or absolute path)--></CivmBin>
 <Civ3D3CBin>bin/civ3d3c</Civ3D3CBin>
 <FixBin>bin/fix_flag</FixBin>
 <PatchBin>bin/patch_up</PatchBin>
-<PatchNewBin></PatchNewBin>
 </RunParam>
 <BatchParam>
 <BatchMode>oar</BatchMode>
@@ -22,12 +18,9 @@ m (relative or absolute path)--></CivmBin>
 <CivBin>bin/civ</CivBin>
 <Civ1Bin>bin/civ1</Civ1Bin>
 <Civ2Bin>bin/civ2</Civ2Bin>
-<CivmBin>civ_matlab.sh<!--binary from compilation of civ_matlab.
-m (relative or absolute path)--></CivmBin>
 <Civ3D3CBin>bin/civ3d3c</Civ3D3CBin>
 <FixBin>bin/fix_flag</FixBin>
 <PatchBin>bin/patch_up</PatchBin>
-<PatchNewBin></PatchNewBin>
 </BatchParam>
 <SchemaPath>XML_SCHEMAS <!--directory of xml schemas(relative or absolut
 e path)--></SchemaPath>

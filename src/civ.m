@@ -336,7 +336,14 @@ NomTypeNc='';%default
 %% case of xml file as input, read the civ parameters
 ind_opening=0;%default
 if strcmp(ExtInput,'.xml')
-    Param=xml2struct(fileinput);
+    %reinitialise menus
+        set(handles.ListPairMode,'Value',1)
+    set(handles.ListPairMode,'String',{''})
+    set(handles.ListPairCiv1,'Value',1)
+    set(handles.ListPairCiv1,'String',{''})
+        set(handles.ListPairCiv2,'Value',1)
+    set(handles.ListPairCiv2,'String',{''}) 
+    Param=xml2struct(fileinput);  %read parameters from the xml input file
     fill_GUI(Param,handles);%fill the GUI with the parameters retrieved from the xml file 
     return
 end
@@ -610,15 +617,25 @@ set(handles.ref_j,'String',num2str(num_ref_j))
 
 %% set the civ options depending on the input file content when a nc file has been opened
 ListOptions={'CheckCiv1', 'CheckFix1' 'CheckPatch1', 'CheckCiv2', 'CheckFix2', 'CheckPatch2'};
-if ind_opening~=0
-    for index = 1:ind_opening
+if ind_opening==0
+    for index=1:numel(ListOptions)
+        checkbox(index)=get(handles.(ListOptions{index}),'Value');
+    end
+    for index=1:max(1,max(find(checkbox)))
+        set(handles.(ListOptions{index}),'Value',1)% select all operations starting from CIV1
+    end
+else
+    for index = 1:min(ind_opening,5)
+        set(handles.(ListOptions{index}),'value',0)
+    end
+    set(handles.(ListOptions{min(ind_opening+1,6)}),'value',1)
+    for index = ind_opening+2:6
         set(handles.(ListOptions{index}),'value',0)
     end
 end
-for index = ind_opening+2:6
-    set(handles.(ListOptions{index}),'value',0)
-end
-set(handles.(ListOptions{min(ind_opening+1,6)}),'value',1)
+%list_operation={'CheckCiv1','CheckFix1','CheckPatch1','CheckCiv2','CheckFix2','CheckPatch2'};
+
+%set(handles.(ListOptions{min(ind_opening+1,6)}),'value',1)
 update_CivOptions(handles,ind_opening)
 
 %%  set the menus of image pairs and default selection for civ   %%%%%%%%%%%%%%%%%%%
@@ -1092,7 +1109,6 @@ if ~isfield(s,'RunParam')
     Param.xml.Civ2Bin=fullfile('bin','civ2');
     Param.xml.FixBin=fullfile('bin','fix_flag');
     Param.xml.PatchBin=fullfile('bin','patch_up');
-    Param.xml.CivmBin=fullfile('bin','civ_matlab');
 end
 if strcmp(Param.RunMode,'cluster') %computation dispatched on a cluster
     if isfield(s,'BatchParam')
@@ -1110,7 +1126,7 @@ if strcmp(Param.RunMode,'cluster') %computation dispatched on a cluster
         Param.xml.Civ2Bin=fullfile('bin','civ2');
         Param.xml.FixBin=fullfile('bin','fix_flag');
         Param.xml.PatchBin=fullfile('bin','patch_up');
-        Param.xml.CivmBin=fullfile('bin','civ_matlab');
+   %     Param.xml.CivmBin=fullfile('bin','civ_matlab');
         Param.xml.BatchMode='oar';% TODO : allow choice for sge
     end
 else % run
@@ -1121,9 +1137,9 @@ else % run
         Param.xml.Civ2Bin=fullfile('bin','civ2');
         Param.xml.FixBin=fullfile('bin','fix_flag');
         Param.xml.PatchBin=fullfile('bin','patch_up');
-        Param.xml.CivmBin=fullfile('bin','civ_matlab');
     end
 end
+%Param.xml.CivmBin=fullfile('bin','civ_matlab');
 
 %% check if the binaries exist : to move in civ_opening
 binary_list={};
@@ -1132,8 +1148,8 @@ switch Param.Program
         binary_list={'Civ1Bin','Civ2Bin','PatchBin','FixBin'};
     case 'CivAll'% desactivated option
         binary_list={'Civ'};
-    case 'civ_matlab.sh'% compiled version of civ_matlab 
-        binary_list={'CivmBin'};         
+%     case 'civ_matlab.sh'% compiled version of civ_matlab 
+%         binary_list={'CivmBin'};         
 end
 for bin_name=binary_list %loop on the list of binaries
     if isfield(Param.xml,bin_name{1})% bin_name{1} =current name in the list
@@ -1152,21 +1168,23 @@ for bin_name=binary_list %loop on the list of binaries
                 Param.xml.(bin_name{1})=fullfile(binpath,[name ext]);
                 cd(currentdir);
             else
-                errormsg=['path ' path ' for binaries defined in PARAM.xml does not exist'];
+                errormsg=['path ' path ' for binaries specified in PARAM.xml does not exist'];
+                return
             end          
         else  %look for the full path if the file name has been defined with a relative path in PARAM.xm
             fullname=fullfile(path_civ,Param.xml.(bin_name{1}));
             if exist(fullname,'file')
                 Param.xml.(bin_name{1})=fullname;
             else
-                errormsg=['Binary ' Param.xml.(bin_name{1}) ' defined in PARAM.xml does not exist'];
+                errormsg=['Binary ' Param.xml.(bin_name{1}) ' specified in PARAM.xml does not exist'];
+                return
             end
         end
     end
 end
-if ~isempty(errormsg)
-    if strcmp(Param.Program,'civ_matlab.sh')
-        errormsg=[{errormsg}; {'run compile_functions.m to create it by compiling civ_matlab.m'}];
+if strcmp(Param.Program,'civ_matlab.sh')
+    if ~exist(fullfile(path_civ,'civ_matlab.sh'),'file')
+        errormsg=[{'no file civ_matlab.sh found'}; {'run compile_functions.m to create it by compiling civ_matlab.m'}];
     end
     return
 end
@@ -1187,7 +1205,12 @@ display('files OK, processing...')
 
 %% create subfolders for log, cmx, nml, xml, bat
 RootBat=fileparts(filecell.nc.civ1{1,1});
-dir_list={'0_BAT','0_CMX','0_XML','0_LOG'};
+switch(Param.Program)
+    case {'CivX','CivAll'}
+dir_list={'0_BAT','0_CMX','0_LOG'};
+    case {'civ_matlab','civ_matlab.sh'}
+        dir_list={'0_BAT','0_XML'};
+end
 for k=1:length(dir_list)
     if ~exist(fullfile(RootBat,dir_list{k}),'dir')
         mkdir(fullfile(RootBat,dir_list{k}));

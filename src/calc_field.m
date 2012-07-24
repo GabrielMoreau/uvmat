@@ -116,7 +116,7 @@ if isfield(DataIn,'SubRange') && isfield(DataIn,'Coord_tps') && (exist('Coord_in
                 DataIn.Mesh=ord;
             end
         end
-        coord_x=XMin:DataIn.Mesh:XMax;
+        coord_x=XMin:DataIn.Mesh:XMax;% increase the recommanded mesh to  visualisation
         coord_y=YMin:DataIn.Mesh:YMax;
 %         npx=length(coord_x);
 %         npy=length(coord_y);

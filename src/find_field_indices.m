@@ -116,7 +116,7 @@ if ~isfield(Data,'VarDimName')
 end
 
 %% role of variables
-Role=mat2cell(blanks(nbvar),1,ones(1,nbvar));%initialize a cell array of nbvar blanks
+Role=num2cell(blanks(nbvar));%initialize a cell array of nbvar blanks
 Role=regexprep(Role,' ','scalar'); % Role set to 'scalar' by default
 if isfield(Data,'VarAttribute')
     for ivar=1:numel(Data.VarAttribute)
@@ -128,16 +128,15 @@ end
 
 %% loop on the list of variables, group them by common dimensions
 for ivar=1:nbvar
-    DimCell=Data.VarDimName{ivar}; %dimensions associated with the variable #ivar
-    if ischar(DimCell)
-        DimCell={DimCell};
-        Data.VarDimName{ivar}={Data.VarDimName{ivar}};%transform char chain into cell
+    if ischar(Data.VarDimName{ivar})
+        Data.VarDimName{ivar}=Data.VarDimName(ivar);%transform char chain into cell
     end
+    DimCell=Data.VarDimName{ivar}; %dimensions associated with the variable #ivar
     testnewcell=1;
     for icell_prev=1:numel(CellVarIndex)%detect whether the dimensions of ivar fit with an existing cell
         PrevVarIndex=CellVarIndex{icell_prev};%list of variable indices in cell # icell_prev
-        PrevDimName=Data.VarDimName{PrevVarIndex(1)};%list of corresponding variable names
-        if isequal(PrevDimName,DimCell)
+        PrevDimCell=Data.VarDimName{PrevVarIndex(1)};%list of corresponding variable names
+        if isequal(PrevDimCell,DimCell)
             CellVarIndex{icell_prev}=[CellVarIndex{icell_prev} ivar];% add variable index #ivar to the cell #icell_prev
             testnewcell=0; %existing cell detected
             break
@@ -145,23 +144,33 @@ for ivar=1:nbvar
     end
     if testnewcell
         icell=icell+1;
-        CellVarIndex{icell}=ivar;%put the current variabl index in the new cell 
+        CellVarIndex{icell}=ivar;%put the current variable index in the new cell 
+        NbDim(icell)=numel(DimCell);%default
     end
    
     %look for dimension variables
-    if numel(DimCell)==1% if the variable has a single dimension 
-        if strcmp(DimCell{1},Data.ListVarName{ivar}) || strcmp(Role{ivar},'dimvar')
-            ivardim=ivardim+1;
-            VarDimIndex(ivardim)=ivar;%index of the variable
-            VarDimName{ivardim}=DimCell{1};%name of the dimension
-        end
-    end
+%     if numel(DimCell)==1% if the variable has a single dimension 
+%         if strcmp(DimCell{1},Data.ListVarName{ivar}) %|| strcmp(Role{ivar},'dimvar')
+%             ivardim=ivardim+1;
+%             VarDimIndex(ivardim)=ivar;%index of the variable
+%             VarDimName{ivardim}=DimCell{1};%name of the dimension
+%         end
+%     end
+end
+
+%% find dimension variables
+checksinglecell=cellfun(@numel,CellVarIndex)==1 & NbDim==1;% find isolated cells with a single dimension
+ind_dim_var_cell=find(checksinglecell);
+%CoordType(ind_dim_var_cell)='dim_var';% to be used in output
+for icoord=1:numel(ind_dim_var_cell)
+VarDimIndex(icoord)=CellVarIndex{ind_dim_var_cell(icoord)};
+VarDimName{icoord}=Data.VarDimName{VarDimIndex(icoord)}{1};
 end
 
 %% find the spatial dimensions and vector components 
 ListRole={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','vector_x_tps','vector_y_tps','warnflag','errorflag',...
     'ancillary','image','color','discrete','scalar','coord_tps'};% rmq vector_x_tps and vector_y_tps to be replaced by vector_x and vector_y
-NbDim=zeros(size(CellVarIndex));%default
+% NbDim=zeros(size(CellVarIndex));%default
 
 for ilist=1:numel(ListRole)
     VarType.(ListRole{ilist})=find(strcmp(ListRole{ilist},Role));
@@ -170,8 +179,8 @@ end
 if ~isempty(VarType.coord_tps)
     VarType.subrange_tps=[];
     VarType.nbsites_tps=[];
+    select=zeros(1,numel(VarType.coord_tps));
     for ifield=1:numel(VarType.coord_tps)
-        select(ifield)=0;
         DimCell=Data.VarDimName{VarType.coord_tps(ifield)};
         if numel(DimCell)==3
             for ivardim=1:numel(Data.VarDimName)
@@ -193,6 +202,9 @@ end
 index_remove=[];
 CellVarType=cell(1,length(CellVarIndex));
 for icell=1:length(CellVarIndex)
+    if checksinglecell(icell)
+        continue
+    end
     VarIndex=CellVarIndex{icell};%set of variable indices with the same dim
     check_remove=0;
     for ifield=1:numel(VarType.coord_tps)
@@ -211,6 +223,13 @@ for icell=1:length(CellVarIndex)
             errormsg='multiply defined coordinates  in the same cell';
             return
         end
+        % case of x cordinate marked as a dimension variable (var name=dimension name)
+        if isempty(CellVarType{icell}.coord_x)
+            var_dim_index=find(strcmp(DimCell{1},Data.ListVarName(VarIndex)));
+            if ~isempty(var_dim_index)
+                CellVarType{icell}.coord_x=VarIndex(var_dim_index);
+            end
+        end         
         if numel(CellVarType{icell}.errorflag)>1
             errormsg='multiply defined error flag in the same cell';
             return
@@ -238,12 +257,16 @@ for icell=1:length(CellVarIndex)
         %     if NbDim(icell)==0 && ~isempty(VarDimName)% no unstructured coordinate found
         if  ~test_coord && ~isempty(VarDimName)
             for idim=1:numel(DimCell)   %loop on the dimensions of the variables in cell #icell
-                for ivardim=1:numel(VarDimName)
-                    if strcmp(VarDimName{ivardim},DimCell{idim})
-                        coord(idim)=VarDimIndex(ivardim);
-                        break
-                    end
+                ind_coord=find(strcmp(DimCell{idim},VarDimName));
+                if ~isempty(ind_coord)
+                    coord(idim)=VarDimIndex(ind_coord);
                 end
+%                 for ivardim=1:numel(VarDimName)
+%                     if strcmp(VarDimName{ivardim},DimCell{idim})
+%                         coord(idim)=VarDimIndex(ivardim);
+%                         break
+%                     end
+%                 end
             end
             NbDim(icell)=numel(find(coord));
         end
