@@ -156,16 +156,16 @@ function APPLY_Callback(hObject, eventdata, handles)
 huvmat=findobj(allchild(0),'Name','uvmat');
 hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
 FileExt=get(hhuvmat.FileExt,'String');
-check_input=0;
-if ~isempty(FileExt)
-    if ~isempty(imformats(FileExt(2:end))) ||strcmpi(FileExt,'.avi')
-        check_input=1;
-    end
-end
-if ~check_input
-    msgbox_uvmat('ERROR','open an image with uvmat to perform calibration')
-    return
-end
+% check_input=0;
+% if ~isempty(FileExt)
+%     if ~isempty(imformats(FileExt(2:end))) ||strcmpi(FileExt,'.avi')
+%         check_input=1;
+%     end
+% end
+% % if ~check_input
+%     msgbox_uvmat('ERROR','open an image with uvmat to perform calibration')
+%     return
+% end
 
 %% read the current calibration points
 Coord_cell=get(handles.ListCoord,'String');
@@ -235,13 +235,11 @@ end
 RootPath='';
 % RootFile='';
 if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
-%     testhandle=1;
     RootPath=get(hhuvmat.RootPath,'String');
-    SubDir=get(hhuvmat.SubDir,'String');
-%     RootFile=get(hhuvmat.RootFile,'String');
-%     filebase=fullfile(RootPath,RootFile);
-    outputfile=[fullfile(RootPath,SubDir) '.xml'];%xml file associated with the currently displayed image
+    SubDirBase=regexprep(get(hhuvmat.SubDir,'String'),'\..+$','');
+    outputfile=[fullfile(RootPath,SubDirBase) '.xml'];%xml file associated with the currently displayed image
 else
+    SubDirBase='';
     question={'save the calibration data and point coordinates in'};
     def={fullfile(RootPath,'ObjectCalib.xml')};
     options.Resize='on';
@@ -274,9 +272,14 @@ if strcmp(answer,'Yes')
         GeometryCalib.RefractionIndex=str2double(answer{4});     
     end
     UserData=get(handles.geometry_calib,'UserData');
-    if isfield(UserData,'XmlInputFile')&&~strcmp(UserData.XmlInputFile, outputfile)&&~exist(outputfile,'file')
-     [success,message]=copyfile(UserData.XmlInputFile,outputfile);%copy the old xml file to a new one with the new convention 
-    end
+    
+    % get the timing from the xml file using the old convention if appropriate
+    if ~exist(outputfile,'file') && ~isempty(SubDirBase)     
+        oldxml=[fullfile(RootPath,SubDirBase,get(hhuvmat.RootFile,'String')) '.xml'];
+        if exist(oldxml,'file')
+        [success,message]=copyfile(oldxml,outputfile);%copy the old xml file to a new one with the new convention
+        end
+    end   
     errormsg=update_imadoc(GeometryCalib,outputfile);% introduce the calibration data in the xml file
     if ~strcmp(errormsg,'')
         msgbox_uvmat('ERROR',errormsg);
@@ -1364,7 +1367,7 @@ function Heading=loadfile(handles,fileinput)
 Heading=[];%default
 [s,errormsg]=imadoc2struct(fileinput,'GeometryCalib');
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['Error for reading ' fileinput ': '  errormsg])
+    msgbox_uvmat('ERROR',errormsg)
     return
 end
 if ~isempty(s.Heading)
