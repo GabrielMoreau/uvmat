@@ -62,7 +62,7 @@ xmlfile=fullfile(path_civ,'PARAM.xml');
 test_batch=0;%default: ,no batch mode available
 sparam=[];
 if ~exist(xmlfile,'file')
-    [success,message]=copyfile(fullfile(path_civ,'PARAM.xml.default'),xmlfile)
+    [success,message]=copyfile(fullfile(path_civ,'PARAM.xml.default'),xmlfile);
 end
 if exist(xmlfile,'file')
     try
@@ -105,8 +105,6 @@ if test_batch==0
    set(handles.RunMode,'String',{'local';'background'})
 else
     set(handles.RunMode,'String',{'local';'background';'cluster'})
-%     set(handles.BATCH,'Enable','off')% put the BATCH button in grey (unactivated)
-%     set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])% put the BATCH button in grey (unactivated)
 end
 % if isfield(sparam.RunParam,'CivBin')
 %     if ~exist(sparam.RunParam.CivBin,'file')
@@ -322,8 +320,6 @@ drawnow
 %% enable RUN, BATCH button and 'status' display
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])%set RUN button to red color
-% set(handles.BATCH,'Enable','On')
-% set(handles.BATCH,'BackgroundColor',[1 0 0])%set BATCH button to red color
 if isfield(handles,'status')
     set(handles.status,'Value',0);       %suppress the 'status' display
     status_Callback([], [], handles)
@@ -617,11 +613,14 @@ set(handles.ref_j,'String',num2str(num_ref_j))
 
 %% set the civ options depending on the input file content when a nc file has been opened
 ListOptions={'CheckCiv1', 'CheckFix1' 'CheckPatch1', 'CheckCiv2', 'CheckFix2', 'CheckPatch2'};
-if ind_opening==0
+checkbox=zeros(size(ListOptions));%default
+if ind_opening==0%case of image opening, start with Civ1
     for index=1:numel(ListOptions)
         checkbox(index)=get(handles.(ListOptions{index}),'Value');
     end
-    for index=1:max(1,max(find(checkbox)))
+    index_max=find(checkbox, 1, 'last' );
+    if isempty(index_max),index_max=1;end        
+    for index=1:index_max
         set(handles.(ListOptions{index}),'Value',1)% select all operations starting from CIV1
     end
 else
@@ -847,26 +846,6 @@ elseif  isfield(handles,'status') %&& ~isequal(get(handles.ListPairMode,'Value')
     set(handles.status,'Value',1);%suppress status display
     status_Callback(hObject, eventdata, handles)
 end
-% 
-% %------------------------------------------------------------------------
-% % --- Executes on button press in BATCH: remote processing
-% function BATCH_Callback(hObject, eventdata, handles)
-% % -----------------------------------------------------------------------
-% set(handles.BATCH, 'Enable','Off')
-% set(handles.BATCH,'BackgroundColor',[0.831 0.816 0.784])
-% batch=1;
-% errormsg=launch_jobs(hObject, eventdata, handles, batch);
-% set(handles.BATCH, 'Enable','On')
-% set(handles.BATCH,'BackgroundColor',[1 0 0])
-% 
-% % display errors or start status callback to visualise results
-% if ~isempty(errormsg)
-%     display(errormsg)
-%     msgbox_uvmat('ERROR',errormsg)
-% elseif isfield(handles,'status')
-%     set(handles.status,'Value',1);%suppress status display
-%     status_Callback(hObject, eventdata, handles)
-% end
 
 %-------------------------------------------------------------------
 % --- Executes on button press in status.
@@ -1185,8 +1164,8 @@ end
 if strcmp(Param.Program,'civ_matlab.sh')
     if ~exist(fullfile(path_civ,'civ_matlab.sh'),'file')
         errormsg=[{'no file civ_matlab.sh found'}; {'run compile_functions.m to create it by compiling civ_matlab.m'}];
+            return
     end
-    return
 end
 
 %% set the list of files and check them
@@ -1360,8 +1339,10 @@ for ifile=1:nbfield
         % create the file used in run or batch
         switch Param.Program
             case {'civ_matlab'}
-                filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.m');
-                filename_bat=regexprep(filename_bat,'-','__');
+                filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.m');           
+                [BatRoot,BatFile]=fileparts(filename_bat);
+                 BatFile=regexprep(BatFile,'-','__');%transform name to suppress'-' (not valid for .m files)
+                 filename_bat=[fullfile(BatRoot,BatFile) '.m'];
             case {'CivX','CivAll','civ_matlab.sh'}
                 switch computer
                     case {'PCWIN','PCWIN64'}
@@ -4412,6 +4393,7 @@ switch Param.Program
 
         
     case 'civ_matlab.sh'
+        CivmBin=fullfile(fileparts(which('civ')),'civ_matlab.sh'); %path to the source directory of uvmat
         switch computer
             case {'PCWIN','PCWIN64'}
                 filename=regexprep(filename,'\\','\\\\');% add '\' so that '\' are left as characters
@@ -4421,7 +4403,7 @@ switch Param.Program
                     '#$ -cwd \n '...
                     'hostname && date \n '...
                     'umask 002 \n'...
-                    Param.xml.CivmBin ' ' Param.xml.RunTime ' ' regexprep(filename,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml') ' ' Param.OutputFile '.nc'];%allow writting access to created files for user group
+                    CivmBin ' ' Param.xml.RunTime ' ' regexprep(filename,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml') ' ' Param.OutputFile '.nc'];%allow writting access to created files for user group
         end
 end    
     
