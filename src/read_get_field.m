@@ -23,9 +23,9 @@ else
 end
 
 % select the indices of field variables for 2D plots
-test_1Dplot=get(handles.check_1Dplot,'Value');
-test_scalar=get(handles.check_scalar,'Value');
-test_vector=get(handles.check_vector,'Value');
+test_1Dplot=get(handles.CheckPlot1D,'Value');
+test_scalar=get(handles.CheckScalar,'Value');
+test_vector=get(handles.CheckVector,'Value');
 
 nbvar=0;
 empty_coord_x=0;

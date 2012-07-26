@@ -413,32 +413,13 @@ if isempty(oldfile)||isequal(oldfile,'') %loads the previously stored file name 
              end
          end
 end
-% [FileName, PathName] = uigetfile( ...
-%        {'*.xml;*.xls;*.civ;*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol;*.nc;*.cmx;*.fig;*.log;*.dat;*.bat;', ' (*.xml,*.xls,*.civ,*.jpg ,*.png, .tif, *.avi,*.vol,*.nc,*.cmx,*.fig,*.log,*.dat,*.bat)';
-%        '*.xml',  '.xml files '; ...
-%         '*.xls',  '.xls files '; ...
-%         '*.civ',  '.civ files '; ...
-%         '*.jpg',' jpeg image files'; ...
-%         '*.png','.png image files'; ...
-%         '*.tif','.tif image files'; ...
-%         '*.avi;*.AVI','.avi movie files'; ...
-%         '*.vol','.volume images (png)'; ...
-%         '*.nc','.netcdf files'; ...
-%         '*.cdf','.netcdf files'; ...
-%         '*.cmx','.cmx text files ';...
-%         '*.fig','.fig files (matlab fig)';...
-%         '*.log','.log text files ';...
-%         '*.dat','.dat text files ';...
-%         '*.bat','.bat system command text files';...
-%         '*.*',  'All Files (*.*)'}, ...
-%         'Pick a file',oldfile);
-
 [FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',oldfile);
 fileinput=[PathName FileName];%complete file name 
-sizf=size(fileinput);
-if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
+if ~exist(fileinput,'file')
+    return %abandon of the browser is cancelled
+end
 
-% display the selected field and related information
+%% display the selected field and related information
 display_file_name( handles,fileinput)
 
 % -----------------------------------------------------------------------
@@ -482,27 +463,11 @@ display_file_name(handles,fileinput)
 function MenuBrowse_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 RootPath=get(handles.RootPath,'String');
-% [FileName, PathName, filterindex] = uigetfile( ...
-%        {'*.xml;*.xls;*.civ;*.jpg;*.png;*.avi;*.AVI;*.nc;*.cmx;*.fig;*.log;*.dat', ' (*.xml,*.xls,*.civ, *.jpg,*.png, *.avi,*.nc,*.cmx ,*.fig,*.log,*.dat)';
-%        '*.xml',  '.xml files '; ...
-%         '*.xls',  '.xls files '; ...
-%         '*.civ',  '.civ files '; ...
-%         '*.jpg','.jpg image files'; ...
-%         '*.png','.png image files'; ...
-%         '*.avi;*.AVI','.avi movie files'; ...
-%         '*.nc','.netcdf files'; ...
-%         '*.cdf','.netcdf files'; ...
-%         '*.cmx','.cmx text files';...
-%         '*.cmx2','.cmx2 text files';...
-%         '*.fig','.fig files (matlab fig)';...
-%         '*.log','.log text files ';...
-%         '*.dat','.dat text files ';...
-%         '*.*',  'All Files (*.*)'}, ...
-%         'Pick a second file for comparison',RootPath);
 [FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',RootPath);
 fileinput_1=[PathName FileName];%complete file name 
-sizf=size(fileinput_1);
-if (~ischar(fileinput_1)||~isequal(sizf(1),1)),return;end
+if ~exist(fileinput_1,'file')
+    return %abandon of the browser is cancelled
+end
 
 % refresh the current displayed field
 set(handles.SubField,'Value',1)
@@ -733,7 +698,23 @@ switch FileType
         set(hfig,'WindowButtonMotionFcn','mouse_motion')%set mouse action functio
         set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse click action function
         set(hfig,'WindowButtonUpFcn','mouse_down')%set mouse click action function
-    case {'xml','xls'}                % edit xml or Excel files
+    case 'xml'                % edit xml files
+        if ~isempty(regexp(fileinput,'.project.xml$'))
+            datatree_browser(fileinput)
+        else
+            editxml(fileinput);
+        end
+        %             if exist(regexprep(fileinput,'.project.xml$','.link'),'dir')
+        %                 datatree_browser(regexprep(fileinput,'.project.xml$','.link'))
+        %                 check_project=1;
+        %         elseif exist(regexprep(fileinput,'.project.xml$',''),'dir')
+        %                 datatree_browser(regexprep(fileinput,'.project.xml$',''))
+        %                 check_project=1;
+        %             end
+        %         end
+        %         if ~check_project
+        %         editxml(fileinput);
+    case 'xls'
         editxml(fileinput);
     otherwise
         set(handles_RootPath,'String',RootPath);
@@ -797,15 +778,29 @@ switch FileType
         set(handles.MenuExportFigure,'Enable','on')
         set(handles.MenuExportMovie,'Enable','on')
         set(handles.MenuTools,'Enable','on')
-%         set(handles.OBJECT_txt,'Visible','on')
-%         set(handles.edit_object,'Visible','on')
-%          set(handles.ListObject_1,'Visible','on')
-%          set(handles.ViewObject,'Visible','on')
-%         set(handles.frame_object,'Visible','on')
-        
+
         % initiate input file series and refresh the current field view:     
         update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,index);
 
+end
+
+%% update list of recent files in the menubar and save it for future opening
+MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
+    {get(handles.MenuFile_3,'Label')};{get(handles.MenuFile_4,'Label')};{get(handles.MenuFile_5,'Label')}];
+str_find=strcmp(fileinput,MenuFile);
+if isempty(find(str_find,1))
+    MenuFile=[{fileinput};MenuFile];%insert the current file if not already in the list
+end
+for ifile=1:min(length(MenuFile),5)
+    eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',MenuFile{ifile});'])
+    eval(['set(handles.MenuFile_' num2str(ifile) '_1,''Label'',MenuFile{ifile});'])
+end
+dir_perso=prefdir;
+profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+if exist(profil_perso,'file')
+    save (profil_perso,'MenuFile','-append'); %store the file names for future opening of uvmat
+else
+    save (profil_perso,'MenuFile','-V6'); %store the file names for future opening of uvmat
 end
 
 %% set back the mouse pointer to arrow
@@ -1128,26 +1123,6 @@ if mask_test
     end
     CheckMask_Callback([],[],handles)
 end
-
-%% update list of recent files in the menubar and save it for future opening
-MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
-    {get(handles.MenuFile_3,'Label')};{get(handles.MenuFile_4,'Label')};{get(handles.MenuFile_5,'Label')}];
-str_find=strcmp(FileName,MenuFile);
-if isempty(find(str_find,1))
-    MenuFile=[{FileName};MenuFile];%insert the current file if not already in the list
-end
-for ifile=1:min(length(MenuFile),5)
-    eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',MenuFile{ifile});'])
-    eval(['set(handles.MenuFile_' num2str(ifile) '_1,''Label'',MenuFile{ifile});'])
-end
-dir_perso=prefdir;
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-if exist(profil_perso,'file')
-    save (profil_perso,'MenuFile','-append'); %store the file names for future opening of uvmat
-else
-    save (profil_perso,'MenuFile','-V6'); %store the file names for future opening of uvmat
-end
-
 
 %------------------------------------------------------------------------
 % --- switch file index scanning options scan_i and scan_j in an exclusive way

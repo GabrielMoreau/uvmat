@@ -21,7 +21,7 @@
 
 function varargout = get_field(varargin)
 
-% Last Modified by GUIDE v2.5 31-May-2012 22:52:28
+% Last Modified by GUIDE v2.5 26-Jul-2012 09:11:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 0;
@@ -240,10 +240,10 @@ else
     set(handles.coord_z_scalar,'Visible','off')
 end
 if maxdim>=2 
-    set(handles.check_1Dplot,'Value',0)
+    set(handles.CheckPlot1D,'Value',0)
     if ~isempty(VarType{imax}.vector_x) && ~isempty(VarType{imax}.vector_y)      
-        set(handles.check_vector,'Value',1)
-        set(handles.check_scalar,'Value',0)
+        set(handles.CheckVector,'Value',1)
+        set(handles.CheckScalar,'Value',0)
         set(handles.vector_x,'Value',VarType{imax}.vector_x(1))
         set(handles.vector_y,'Value',VarType{imax}.vector_y(1))
         if ~isempty(VarType{imax}.coord_x) && ~isempty(VarType{imax}.coord_y)
@@ -257,8 +257,8 @@ if maxdim>=2
             end
         end
     else
-        set(handles.check_scalar,'Value',1)
-        set(handles.check_vector,'Value',0)
+        set(handles.CheckScalar,'Value',1)
+        set(handles.CheckVector,'Value',0)
         if isfield(VarType{imax},'scalar') && length(VarType{imax}.scalar)>=1
             set(handles.scalar,'Value',VarType{imax}.scalar(1))
             if ~isempty(VarType{imax}.coord_x) && ~isempty(VarType{imax}.coord_y)
@@ -281,9 +281,9 @@ if maxdim>=2
             end
         end
     end
-    check_1Dplot_Callback(handles.check_1Dplot, [], handles)
-    check_scalar_Callback(handles.check_scalar, [], handles)
-    check_vector_Callback(handles.check_vector, [], handles)
+    CheckPlot1D_Callback(handles.CheckPlot1D, [], handles)
+    CheckScalar_Callback(handles.CheckScalar, [], handles)
+    CheckVector_Callback(handles.CheckVector, [], handles)
 end
 %scalar_Callback(handles.get_field, eventdata, handles)
 %vector_x_Callback(handles.get_field, eventdata, handles)
@@ -322,8 +322,8 @@ function abscissa_Callback(hObject, eventdata, handles)
  hselect_field=get(handles.inputfile,'parent');
  Field=get(hselect_field,'UserData');%current input field
  xdispindex=get(handles.abscissa,'Value');%index in the list of abscissa
-% test_2D=get(handles.check_vector,'Value');% =1 for vector fields
-% test_scalar=get(handles.check_scalar,'Value');% =1 for scalar fields
+% test_2D=get(handles.CheckVector,'Value');% =1 for vector fields
+% test_scalar=get(handles.CheckScalar,'Value');% =1 for scalar fields
 %if isequal(xdispindex,1)% blank selection, no selected TimeVariable for abscissa
 %     Txt=Field.ListVarName;
 %     set(handles.ordinate,'String',[{''} Txt ])% display all the varaibles in the list of ordinates
@@ -583,9 +583,9 @@ end
 
 
 % select the indices of field variables for 2D plots
-test_check_1Dplot=get(handles.check_1Dplot,'Value');
-test_scalar=get(handles.check_scalar,'Value');
-test_vector=get(handles.check_vector,'Value');
+test_CheckPlot1D=get(handles.CheckPlot1D,'Value');
+test_scalar=get(handles.CheckScalar,'Value');
+test_vector=get(handles.CheckVector,'Value');
 
 %transform if needed (calibration)
 list=get(handles.menu_coord,'String');
@@ -748,7 +748,7 @@ else
 end
 if isempty(index_detect)
     VarIndex_tot=[VarIndex_tot VarIndex.x]; 
-elseif ~test_check_1Dplot
+elseif ~test_CheckPlot1D
     VarIndex.x=[];
     set(handles.abscissa,'Value',1)%vchosen abscissa already chosen, suppres it as abscissa
 end
@@ -1157,10 +1157,10 @@ if isfield(Field,'ListDimName')
 end  
 
 %------------------------------------------------------------------------
-% --- Executes on button press in check_1Dplot.
-function check_1Dplot_Callback(hObject, eventdata, handles)
+% --- Executes on button press in CheckPlot1D.
+function CheckPlot1D_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-val=get(handles.check_1Dplot,'Value');
+val=get(handles.CheckPlot1D,'Value');
 if isequal(val,0)
     set(handles.Panel1Dplot,'Visible','off')
 else
@@ -1168,10 +1168,10 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in check_scalar.
-function check_scalar_Callback(hObject, eventdata, handles)
+% --- Executes on button press in CheckScalar.
+function CheckScalar_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-val=get(handles.check_scalar,'Value');
+val=get(handles.CheckScalar,'Value');
 if isequal(val,0)
     set(handles.PanelScalar,'Visible','off')
 else
@@ -1179,10 +1179,10 @@ else
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in check_vector.
-function check_vector_Callback(hObject, eventdata, handles)
+% --- Executes on button press in CheckVector.
+function CheckVector_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-val=get(handles.check_vector,'Value');
+val=get(handles.CheckVector,'Value');
 if isequal(val,0)
     set(handles.PanelVectors,'Visible','off')
 else
@@ -1287,24 +1287,24 @@ test_1Dplot=0;
 test_scalar=0;
 test_vector=0;
 if iscell(GUI_input)
-    for ilist=1:length(GUI_input)
-        switch GUI_input{ilist}
+    for ilist=1:size(GUI_input,1)
+        switch GUI_input{ilist,1}
                            %RootFile always visible
-            case 'check_1Dplot'   
-                 test_1Dplot=1;
-            case 'check_scalar'
-                 test_scalar=1;   
-            case 'check_vector'   
-                 test_vector=1; 
+            case 'CheckPlot1D'   
+                 test_1Dplot=isequal(GUI_input{ilist,2},'on');
+            case 'CheckScalar'
+                 test_scalar=isequal(GUI_input{ilist,2},'on');   
+            case 'CheckVector'   
+                 test_vector=isequal(GUI_input{ilist,2},'on'); 
         end
     end
 end
-set(handles.check_1Dplot,'Value',test_1Dplot);
-set(handles.check_scalar,'Value',test_scalar); 
-set(handles.check_vector,'Value',test_vector);
-check_1Dplot_Callback(hObject, eventdata, handles)
-check_scalar_Callback(hObject, eventdata, handles)
-check_vector_Callback(hObject, eventdata, handles)
+set(handles.CheckPlot1D,'Value',test_1Dplot);
+set(handles.CheckScalar,'Value',test_scalar); 
+set(handles.CheckVector,'Value',test_vector);
+CheckPlot1D_Callback(hObject, eventdata, handles)
+CheckScalar_Callback(hObject, eventdata, handles)
+CheckVector_Callback(hObject, eventdata, handles)
 
 
 %-----------------------------------------------------

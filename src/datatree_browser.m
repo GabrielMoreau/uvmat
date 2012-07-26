@@ -1,7 +1,7 @@
-%'dataview': function for scanning directories in a campaign 
+%'datatree_browser': function for scanning directories in a campaign 
 %------------------------------------------------------------------------
 % function varargout = series(varargin)
-% associated with the GUI dataview.fig
+% associated with the GUI datatree_browser.fig
 
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
@@ -19,16 +19,16 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function varargout = dataview(varargin)
+function varargout = datatree_browser(varargin)
 
-% Last Modified by GUIDE v2.5 13-Jan-2010 07:28:19
+% Last Modified by GUIDE v2.5 26-Jul-2012 08:24:26
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @dataview_OpeningFcn, ...
-                   'gui_OutputFcn',  @dataview_OutputFcn, ...
+                   'gui_OpeningFcn', @datatree_browser_OpeningFcn, ...
+                   'gui_OutputFcn',  @datatree_browser_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1}) && ~isempty(regexp(varargin{1},'_Callback','once'))              
@@ -43,10 +43,10 @@ end
 % End initialization code - DO NOT EDIT
 
 %------------------------------------------------------------------------
-% --- Executes just before dataview is made visible.
-function dataview_OpeningFcn(hObject, eventdata, handles, RootDir, SubCampaignTst,GeometryCalib)
+% --- Executes just before datatree_browser is made visible.
+function datatree_browser_OpeningFcn(hObject, eventdata, handles, projectxml)
 %------------------------------------------------------------------------
-% Choose default command line output for dataview
+% Choose default command line output for datatree_browser
 handles.output = 'Cancel';
 
 % Update handles structure
@@ -86,71 +86,143 @@ set(hObject, 'Units', OldUnits);
 %     'XLim'   , get(Img,'XData'), ...
 %     'YLim'   , get(Img,'YData')  ...
 %     );
-if exist('GeometryCalib','var')
-    DataviewData.GeometryCalib=GeometryCalib;
-    set(hObject,'UserData',DataviewData)
+% if exist('GeometryCalib','var')
+%     DataviewData.GeometryCalib=GeometryCalib;
+%     set(hObject,'UserData',DataviewData)
+% end
+% if exist('SubCampaignTst','var') && isequal(SubCampaignTst,'y')
+%    set(handles.SubCampaignTest,'Value',1);
+% end
+if ~isempty(regexp(projectxml,'.project.xml$')) 
+            if exist(regexprep(projectxml,'.project.xml$','.link'),'dir')
+                
+                set(handles.LinkDir,'String',regexprep(projectxml,'.project.xml$','.link'))
+                XmlContent=xml2struct(projectxml);
+                set(handles.SourceDir,'String',XmlContent.SourceDir)
+                set(handles.UpdateLink,'String','UpdateLink')
+%                 datatree_browser(regexprep(fileinput,'.project.xml$','.link'))
+
+        elseif exist(regexprep(projectxml,'.project.xml$',''),'dir')
+                set(handles.SourceDir,'String',regexprep(projectxml,'.project.xml$',''))
+                set(handles.LinkDir,'Visible','off')
+                set(handles.UpdateLink,'String','CreateLink')
+        end
+    set(handles.OK,'Visible','on')
+    set(handles.Cancel,'Visible','on')
+    set(handles.figure,'WindowStyle','modal')% Make% Make the GUI modal 
+    drawnow
+ uiwait(handles.figure);
 end
-if exist('SubCampaignTst','var') && isequal(SubCampaignTst,'y')
-   set(handles.SubCampaignTest,'Value',1);
-end
-if exist('RootDir','var') 
-   set(handles.RootDirectory,'String',RootDir);
-   set(handles.clean_civ_cmx,'Visible','off')
-   set(handles.edit_xml,'Visible','off')
-   set(handles.HELP,'Visible','off')
-   set(handles.OK,'Visible','on')
-   set(handles.Cancel,'Visible','on')
-   set(handles.figure,'WindowStyle','modal')% Make% Make the GUI modal 
-   set(hObject,'Visible','on')
-   drawnow
-   RootDirectory_Callback(hObject, eventdata, handles)
-   % UIWAIT makes translate_points wait for user response (see UIRESUME)
-   uiwait(handles.figure);
-end
+% if exist('RootDir','var') 
+%    set(handles.SourceDir,'String',RootDir);
+% %    set(handles.clean_civ_cmx,'Visible','off')
+%    set(handles.edit_xml,'Visible','off')
+%    set(handles.HELP,'Visible','off')
+%    set(handles.OK,'Visible','on')
+%    set(handles.Cancel,'Visible','on')
+%    set(handles.figure,'WindowStyle','modal')% Make% Make the GUI modal 
+%    set(hObject,'Visible','on')
+%    drawnow
+%    %RootDirectory_Callback(hObject, eventdata, handles)
+%    % UIWAIT makes translate_points wait for user response (see UIRESUME)
+%    uiwait(handles.figure);
+% end
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
-function varargout = dataview_OutputFcn(hObject, eventdata, handles)
+function varargout = datatree_browser_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 %delete(handles.figure)
 
 %------------------------------------------------------------------------
-% --- Executes on button press in browser.
-function browser_Callback(hObject, eventdata, handles)
+% --- Executes on button press in UpdateLink.
+function UpdateLink_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-CurrentFile=fileparts(get(handles.RootDirectory,'String'));
-if ~exist(CurrentFile,'dir')
-    CurrentFile='/fsnet/project/coriolis';
+InputString=get(handles.UpdateLink,'String')
+switch InputString
+    case 'CreateLink'
+        CurrentDir=fileparts(get(handles.SourceDir,'String'));
+        if ~exist(CurrentDir,'dir')
+            CurrentDir='';
+        end
+        SourceDir=uigetdir(CurrentDir,'pick up the source project directory'); %file browser
+        if isequal(SourceDir,0)
+            return
+        else
+            set(handles.SourceDir,'String',SourceDir)
+        end
+        drawnow
+        [SourcePath,ProjectName]=fileparts(SourceDir);
+        MirrorRoot=uigetdir(CurrentDir,'path to the link directory'); %file browser
+        if isempty(MirrorRoot)
+            return
+        else
+            MirrorDir=fullfile(MirrorRoot,[ProjectName '.link']);
+        end
+        if ~exist(MirrorDir,'dir')
+            mkdir(MirrorDir)
+        end
+        MirrorDoc.SourceDir=SourceDir;
+        t=struct2xml(MirrorDoc);
+        set(t,1,'name','DataTree');
+        save(t,fullfile(MirrorDir,[ProjectName '.xml']))
+        set(handles.LinkDir,'String',MirrorDir)
+        
+        %update_link(SourceDir,LinkDir)
+        SourceDir_Callback([],[], handles)
+    case 'UpDateLink'
+        %      MirrorDir=get(handles.LinkDir,'String');
+        % menu={'*.xml', ' (*.xml)';
+        %     '*.xml',  '.xml files '; ...
+        %     '*.*',  'All Files (*.*)'};
+        % [MirrorXml, PathName] = uigetfile( menu, 'Pick the head xml file in the link directory',MirrorDir);
+        [MirrorXml, PathName]=fileparts(get(handles.LinkDir,'String'));
+        %set(handles.LinkDir,'String',fullfile(PathName,regexprep(MirrorXml,'.xml$','.link')))
+        LinkDir_Callback(hObject, eventdata, handles)
 end
-set(handles.SubCampaignTest,'Value',0)
-CampaignDir=uigetdir(CurrentFile,'Open the Campaign directory'); %file browser
-set(handles.RootDirectory,'String',CampaignDir)
-RootDirectory_Callback(hObject, eventdata, handles)
 
+% RootDirectory_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % --- Executes on button press in open_SubCampaign.
-function OpenSubCampaign_Callback(hObject, eventdata, handles)
+function UpdateMirror_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-CurrentFile=get(handles.RootDirectory,'String');
-if ~exist(CurrentFile,'dir')
-    CurrentFile='/fsnet/project/coriolis';
-end
-set(handles.SubCampaignTest,'Value',1)
-CampaignDir=uigetdir(CurrentFile,'Open the Campaign directory'); %file browser
-set(handles.RootDirectory,'String',CampaignDir)
-RootDirectory_Callback(hObject, eventdata, handles)
+% MirrorDir=get(handles.LinkDir,'String');
+% menu={'*.xml', ' (*.xml)';
+%     '*.xml',  '.xml files '; ...
+%     '*.*',  'All Files (*.*)'};
+% [MirrorXml, PathName] = uigetfile( menu, 'Pick the head xml file in the link directory',MirrorDir);
+% set(handles.LinkDir,'String',fullfile(PathName,regexprep(MirrorXml,'.xml$','.link')))
+% MirrorDir_Callback(hObject, eventdata, handles)
+
 
 %------------------------------------------------------------------------
-function RootDirectory_Callback(hObject, eventdata, handles)
+function LinkDir_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------   
+MirrorDir=get(handles.LinkDir,'String');
+[tild,MirrorName]=fileparts(MirrorDir);
+s=xml2struct(fullfile(MirrorDir,[MirrorName '.xml']));
+set(handles.SourceDir,'String',s.SourceDir)
+SourceDir_Callback([],[], handles)
+%update_link(s.SourceDir, LinkDir)
+
+
+% %------------------------------------------------------------------------
+% function update_link(SourceDir,LinkDir,handles)
+% %------------------------------------------------------------------------
+% SourceDir_Callback([],[], handles)
+
 %------------------------------------------------------------------------
-set(handles.RootDirectory,'BackgroundColor',[1 1 0])
+function SourceDir_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+set(handles.SourceDir,'BackgroundColor',[1 1 0])
 drawnow
-CampaignDir=get(handles.RootDirectory,'String');
+SourceDir=get(handles.SourceDir,'String');
+MirrorDir=get(handles.LinkDir,'String');
 ExpName={''};
-if exist(CampaignDir,'dir')
-    hdir=dir(CampaignDir); %list files and dirs
+if exist(SourceDir,'dir')
+    hdir=dir(SourceDir); %list files and dirs
     idir=0;
     for ilist=1:length(hdir)
         if hdir(ilist).isdir
@@ -158,6 +230,10 @@ if exist(CampaignDir,'dir')
             if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')
                 idir=idir+1;
                 ExpName{idir}=hdir(ilist).name;
+                link=fullfile(MirrorDir,ExpName{idir})
+                if ~exist(link,'dir')
+                   mkdir(link)
+                end
             end
             % look for the list of 'devices'
         else
@@ -168,16 +244,19 @@ if exist(CampaignDir,'dir')
     set(handles.ListExperiments,'Value',1)
     ListExperiments_Callback(hObject, eventdata, handles)
 else
-    msgbox_uvmat('ERROR',['The input ' CampaignDir ' is not a directory'])
+    msgbox_uvmat('ERROR',['The input ' SourceDir ' is not a directory'])
 end
-set(handles.RootDirectory,'BackgroundColor',[1 1 1])
+set(handles.SourceDir,'BackgroundColor',[1 1 1])
+
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListExperiments.
  function ListExperiments_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-CurrentPath=get(handles.RootDirectory,'String');
+SourcePath=get(handles.SourceDir,'String');
+MirrorPath=get(handles.LinkDir,'String');
 ListExperiments=get(handles.ListExperiments,'String');
+ListDevices={};
 list_val=get(handles.ListExperiments,'Value');
 if isequal(list_val(1),1)
     ListExperiments=ListExperiments(2:end); %choose all experiments
@@ -187,25 +266,63 @@ else
     ListExperiments=ListExperiments(list_val);%choose selected experiments
     testList=0;
 end
-set(handles.ListDevices,'Value',1)
-set(handles.ListRecords,'Value',1)
-set(handles.ListXml,'Value',1)
-[ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,{},{});
-set(handles.ListRecords,'String',[{'*'};ListRecords'])
-set(handles.ListDevices,'String',[{'*'};ListDevices'])
-set(handles.ListXml,'String',[{'*'};ListXml'])
-if testList
-    DataviewData=get(handles.figure,'UserData');
-    DataviewData.List=List;
-    set(handles.figure,'UserData',DataviewData)
+for iexp=1:numel(ListExperiments)
+    hdir=dir(fullfile(SourcePath,ListExperiments{iexp})); %list files and dirs
+    idir=0;
+    for ilist=1:length(hdir)
+         if ~isequal(hdir(ilist).name(1),'.')
+        source=fullfile(SourcePath,ListExperiments{iexp},hdir(ilist).name);
+        link=fullfile(MirrorPath,ListExperiments{iexp},hdir(ilist).name);
+        if ~exist(link)
+            system(['ln -s ' source ' ' link])
+        end
+        check_list=strcmp(hdir(ilist).name,ListDevices);
+        if isempty(find(check_list))
+            ListDevices=[ListDevices;hdir(ilist).name];
+        end    
+         end
+    end
 end
-set(handles.CampaignDoc,'Visible','on')
+set(handles.ListDevices,'String',ListDevices)
+%         if hdir(ilist).isdir
+%             dirname=hdir(ilist).name;
+%             if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')
+%                 idir=idir+1;
+%                 ExpName{idir}=hdir(ilist).name;
+%                 link=fullfile(LinkDir,ExpName{idir});
+%                 if ~exist(link,'dir')
+%                    mkdir(link)
+%                 end
+%             end
+%             % look for the list of 'devices'
+%         else
+%             %warning for isolated files
+%         end
+%     end
+%     set(handles.ListExperiments,'String',[{'*'};ExpName'])
+%     set(handles.ListExperiments,'Value',1)
+%     ListExperiments_Callback(hObject, eventdata, handles)
+    
+    
+% set(handles.ListDevices,'Value',1)
+% set(handles.ListRecords,'Value',1)
+% set(handles.ListXml,'Value',1)
+% [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,{},{});
+% set(handles.ListRecords,'String',[{'*'};ListRecords'])
+% set(handles.ListDevices,'String',[{'*'};ListDevices'])
+% set(handles.ListXml,'String',[{'*'};ListXml'])
+% if testList
+%     DataviewData=get(handles.figure,'UserData');
+%     DataviewData.List=List;
+%     set(handles.figure,'UserData',DataviewData)
+% end
+% set(handles.CampaignDoc,'Visible','on')
 % set(handles.edit_xml,'Visible','on')
 
 %------------------------------------------------------------------------
 % --- Executes on button press in update_headings.
 function ListDevices_Callback(hObject, eventdata, handles)
-CurrentPath=get(handles.RootDirectory,'String');
+CurrentPath=get(handles.SourceDir,'String');
 ListExperiments=get(handles.ListExperiments,'String');
 list_val=get(handles.ListExperiments,'Value');
 if isequal(list_val,1)
@@ -251,7 +368,7 @@ set(handles.ListExperiments,'Value',1)
 ListExperiments_Callback(hObject, eventdata, handles)%update the overview of the experiment directories
 DataviewData=get(handles.figure,'UserData');
 List=DataviewData.List;
-Currentpath=get(handles.RootDirectory,'String');
+Currentpath=get(handles.SourceDir,'String');
 [Currentpath,Campaign,DirExt]=fileparts(Currentpath);
 Campaign=[Campaign DirExt];
 t=xmltree;
@@ -314,7 +431,7 @@ for iexp=1:length(List.Experiment)
     end
 end
 set(handles.ListExperiments,'Value',1)
-outputdir=get(handles.RootDirectory,'String');
+outputdir=get(handles.SourceDir,'String');
 [path,dirname]=fileparts(outputdir);
 outputfile=fullfile(outputdir,[dirname '.xml']);
 %campaigndoc(t);
@@ -324,7 +441,7 @@ save(t,outputfile)
 % --- Executes on button press in CampaignDoc.
 function edit_xml_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-CurrentPath=get(handles.RootDirectory,'String');
+CurrentPath=get(handles.SourceDir,'String');
 %[CurrentPath,Name,Ext]=fileparts(CurrentDir);
 ListExperiments=get(handles.ListExperiments,'String');
 Value=get(handles.ListExperiments,'Value');
@@ -519,7 +636,7 @@ set(handles.ListExperiments,'Value',1)
 ListExperiments_Callback(hObject, eventdata, handles)%update the overview of the experiment directories
 DataviewData=get(handles.figure,'UserData')
 List=DataviewData.List;
-Currentpath=get(handles.RootDirectory,'String');
+Currentpath=get(handles.SourceDir,'String');
 [Currentpath,Campaign,DirExt]=fileparts(Currentpath);
 Campaign=[Campaign DirExt];
 SubCampaignTest=get(handles.SubCampaignTest,'Value');
@@ -574,7 +691,7 @@ set(handles.ListExperiments,'Value',1)
 % --- Executes on button press in OK.
 function OK_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-CurrentPath=get(handles.RootDirectory,'String');
+CurrentPath=get(handles.SourceDir,'String');
 ListExperiments=get(handles.ListExperiments,'String');
 IndicesExp=get(handles.ListExperiments,'Value');
 if ~isequal(IndicesExp,1)
@@ -663,7 +780,7 @@ set(handles.ListXml,'Value',Value)
 %     
 %     
 %     
-% CurrentPath=get(handles.RootDirectory,'String');%= get(hObject,'String');
+% CurrentPath=get(handles.SourceDir,'String');%= get(hObject,'String');
 % ListExperiments=get(handles.ListExperiments,'String');
 % Value=get(handles.ListExperiments,'Value');
 % if ~isequal(Value,1)
@@ -672,7 +789,7 @@ set(handles.ListXml,'Value',Value)
 % ListDevices=get(handles.ListDevices,'String');
 % Value=get(handles.ListDevices,'Value');
 % if isequal(Value,1)
-%     msgbox_uvmat('ERROR','manually select in the GUI dataview the device being calibrated')
+%     msgbox_uvmat('ERROR','manually select in the GUI datatree_browser the device being calibrated')
 %     return
 % else 
 %     ListDevices=ListDevices(Value);
@@ -686,7 +803,7 @@ set(handles.ListXml,'Value',Value)
 % ListXml=get(handles.ListXml,'String');
 % Value=get(handles.ListXml,'Value');
 % if isequal(Value,1)
-%     msgbox_uvmat('ERROR','you need to select in the GUI dataview the xml files to edit')
+%     msgbox_uvmat('ERROR','you need to select in the GUI datatree_browser the xml files to edit')
 %     return
 % else
 %     ListXml=ListXml(Value);
@@ -710,13 +827,13 @@ uiresume(handles.figure);
 
 % --- Executes when user attempts to close figure.
 function figure_CloseRequestFcn(hObject, eventdata, handles)
-if isequal(get(handles.figure, 'waitstatus'), 'waiting')
-    % The GUI is still in UIWAIT, us UIRESUME
-    uiresume(handles.figure);
-else
-    % The GUI is no longer waiting, just close it
-    delete(handles.figure);
-end
+% if isequal(get(handles.figure, 'waitstatus'), 'waiting')
+%     % The GUI is still in UIWAIT, us UIRESUME
+%     uiresume(handles.figure);
+% else
+%     % The GUI is no longer waiting, just close it
+%     delete(handles.figure);
+% end
 
 % --- Executes on key press over figure1 with no controls selected.
 function figure_KeyPressFcn(hObject, eventdata, handles)
