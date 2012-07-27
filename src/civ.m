@@ -106,13 +106,6 @@ if test_batch==0
 else
     set(handles.RunMode,'String',{'local';'background';'cluster'})
 end
-% if isfield(sparam.RunParam,'CivBin')
-%     if ~exist(sparam.RunParam.CivBin,'file')
-%         sparam.RunParam.CivBin=fullfile(path_civ,sparam.RunParam.CivBin);
-%     end
-% else
-%     sparam.RunParam.CivBin='';
-% end
 
 %% load the list of previously browsed files in the upper bar menu Open/
 dir_perso=prefdir; % path to the directory .matlab for personal data
@@ -135,6 +128,7 @@ if exist('fileinput','var')% && isfield(param,'RootName') && ~isempty(param.Root
     end
     set(handles.RootPath,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
 end
+Program_Callback([],[], handles)
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
@@ -350,7 +344,6 @@ if strcmp(ExtInput,'.nc')
     NomTypeNc=NomTypeInput;
     if isempty(regexp(NomTypeInput,'[ab|AB|-]', 'once'))
         set(handles.ListCompareMode,'Value',2) %mode displacement advised if the nomencalture does not involve index pairs
-      %  [RootPath,SubDir]=fileparts(RootPath);
         set(handles.RootFile_1,'Visible','On');
     else
         set(handles.ListCompareMode,'Value',1)

@@ -44,8 +44,8 @@ list_fct={...
     'copyfields';...% copy fields between two matlab structures
     'create_grid';...% called by the GUI geometry_calib to create a physical grid
     'create_grid.fig';...% GUI corresponding to create_grid.m
-    'dataview';...% function for scanning directories in a campaign
-    'dataview.fig';...% GUI corresponding to dataview
+    'datatree_browser';...% function for scanning directories in a project
+    'datatree_browser.fig';...% GUI corresponding to dataview
     'delete_object';...%delete a projection object, defined by its index in the Uvmat list or by its graphic handle
     'displ_uvmat';...
     'editxml';...%display and edit xml files using a xls schema
