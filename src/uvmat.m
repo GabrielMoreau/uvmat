@@ -206,6 +206,9 @@ handles.output = hObject;
 %% Update handles structure (standard GUI)
 guidata(hObject, handles);
 
+%% add the path to uvmat (useful if uvmat has been opened in the working directory and a working directory change occured)
+path_uvmat=fileparts(which('uvmat'));
+
 %% set the position of colorbar and ancillary GUIs:
 set(hObject,'Units','Normalized')
 movegui(hObject,'center')
@@ -236,58 +239,39 @@ set(handles.Fields,'Value',1)
 set(handles.Fields,'string',{''})
 
 %% TRANSFORM menu: builtin fcts
-menu_str={'';'phys';'px';'phys_polar'};
-UvData.OpenParam.NbBuiltin=numel(menu_str); %number of functions
-path_uvmat=fileparts(which('uvmat'));
-addpath (path_uvmat) ; %add the path to UVMAT, (useful in case of change of working directory after civ has been s opened in the working directory)
-addpath(fullfile(path_uvmat,'transform_field'))%add the path to transform functions,
-fct_handle{1,1}=[];
-testexist=zeros(size(menu_str'));%default
-testexist(1)=1;
-for ilist=2:length(menu_str)
-    if exist(menu_str{ilist},'file')
-        fct_handle{ilist,1}=str2func(menu_str{ilist});
-        testexist(ilist)=1;
-    else
-        testexist(ilist)=0;
-    end
-end
-rmpath(fullfile(path_uvmat,'transform_field'))
+transform_menu={'';'phys';'px';'phys_polar'};
+UvData.OpenParam.NbBuiltin=numel(transform_menu); %number of functions
+path_list=(num2cell(blanks(UvData.OpenParam.NbBuiltin)))';%initialize a cell array of nbvar blanks
+transform_path=fullfile(path_uvmat,'transform_field');
+path_list{1}='';
+path_list(2:end)=regexprep(path_list(2:end),' ',transform_path); % set transform_path to the path_list
 
-%% load the list of previously browsed files in menus Open and Open_1
+%% load the list of previously browsed files in menus Open, Open_1 and transform_fct
  dir_perso=prefdir; % path to the directory .matlab for personal data
  profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmauvmat_perso.mat' in .matlab
  if exist(profil_perso,'file')
-      h=load (profil_perso);
-      if isfield(h,'MenuFile')
-          for ifile=1:min(length(h.MenuFile),5)
-              eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',h.MenuFile{ifile});'])
-               eval(['set(handles.MenuFile_' num2str(ifile) '_1,''Label'',h.MenuFile{ifile});'])
-          end
-      end
-      if isfield(h,'transform_fct') && iscell(h.transform_fct)
+     h=load (profil_perso);
+     if isfield(h,'MenuFile')
+         for ifile=1:min(length(h.MenuFile),5)
+             eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',h.MenuFile{ifile});'])
+             eval(['set(handles.MenuFile_' num2str(ifile) '_1,''Label'',h.MenuFile{ifile});'])
+         end
+     end
+     if isfield(h,'transform_fct') && iscell(h.transform_fct)
          for ilist=1:length(h.transform_fct);
              if exist(h.transform_fct{ilist},'file')
-                [path,file]=fileparts(h.transform_fct{ilist});
-                addpath(path)
-                h_func=str2func(file);
-                rmpath(path)
-                testexist=[testexist 1]; 
-             else
-                file='';
-                h_func=[];
-                testexist=[testexist 0]; 
+                 [path,file]=fileparts(h.transform_fct{ilist});
+                 transform_menu=[transform_menu; {file}];
+                 path_list=[path_list; {path}];
              end
-             fct_handle=[fct_handle; {h_func}]; %concatene the list of paths
-             menu_str=[menu_str; {file}]; 
          end
-      end
+     end
  end
-menu_str=menu_str(testexist==1);%=menu_str(testexist~=0)
-fct_handle=fct_handle(testexist==1);
-menu_str=[menu_str;{'more...'}];
-set(handles.transform_fct,'String',menu_str)
-set(handles.transform_fct,'UserData',fct_handle)% store the list of path in UserData of ACTION
+transform_menu=[transform_menu;{'more...'}];
+set(handles.transform_fct,'String',transform_menu)
+set(handles.transform_fct,'UserData',path_list)% store the list of path in UserData of ACTION
+set(handles.path_transform,'String','')
+set(handles.path_transform,'UserData',[])
 
 %% case of an input argument for uvmat
 testinputfield=0;
@@ -699,7 +683,8 @@ switch FileType
         set(hfig,'WindowButtonUpFcn','mouse_up')%set mouse click action function
         set(hfig,'WindowButtonUpFcn','mouse_down')%set mouse click action function
     case 'xml'                % edit xml files
-        if ~isempty(regexp(fileinput,'.project.xml$'))
+        t=xmltree(fileinput);
+        if strcmp(get(t,1,'name'),'Project')&& exist(regexprep(fileinput,'.xml$',''),'dir')
             datatree_browser(fileinput)
         else
             editxml(fileinput);
@@ -1976,76 +1961,77 @@ if length(masknumber)>=z_index
     set(handles.masklevel,'Value',z_index)
 end
 
-%% read the first input field if a filename has been introduced
+%% read the first input field 
 ParamIn.ColorVar='';%default variable name for vector color
 frame_index=1;%default
-if ~isempty(FileName)
-    FieldName='';%default
-    VelType='';%default
+% if ~isempty(FileName)
+FieldName='';%default
+VelType='';%default
 %     FileType=UvData.FileType{1};
-    switch UvData.FileType{1}
-        case {'civx','civdata','netcdf'};
-            list_fields=get(handles.Fields,'String');% list menu fields
-  %          index_fields=get(handles.Fields,'Value');% selected string index
-            FieldName= list_fields{get(handles.Fields,'Value')}; % selected field
-            if ~strcmp(FieldName,'get_field...')
-                if get(handles.FixVelType,'Value')
-                    VelTypeList=get(handles.VelType,'String');
-                    VelType=VelTypeList{get(handles.VelType,'Value')};
-                end
+switch UvData.FileType{1}
+    case {'civx','civdata','netcdf'};
+        list_fields=get(handles.Fields,'String');% list menu fields
+%          index_fields=get(handles.Fields,'Value');% selected string index
+        FieldName= list_fields{get(handles.Fields,'Value')}; % selected field
+        if ~strcmp(FieldName,'get_field...')
+            if get(handles.FixVelType,'Value')
+                VelTypeList=get(handles.VelType,'String');
+                VelType=VelTypeList{get(handles.VelType,'Value')};
             end
-            if strcmp(FieldName,'velocity')
-                list_code=get(handles.ColorCode,'String');% list menu fields
-                index_code=get(handles.ColorCode,'Value');% selected string index
-                if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
-                    list_code=get(handles.ColorScalar,'String');% list menu fields
-                    index_code=get(handles.ColorScalar,'Value');% selected string index
-                    ParamIn.ColorVar= list_code{index_code}; % selected field
-                end
+        end
+        if strcmp(FieldName,'velocity')
+            list_code=get(handles.ColorCode,'String');% list menu fields
+            index_code=get(handles.ColorCode,'Value');% selected string index
+            if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
+                list_code=get(handles.ColorScalar,'String');% list menu fields
+                index_code=get(handles.ColorScalar,'Value');% selected string index
+                ParamIn.ColorVar= list_code{index_code}; % selected field
             end
-        case {'video','mmreader'}
-            ParamIn=UvData.MovieObject{1};      
-            if ~strcmp(NomType,'*')
-                frame_index=num_j1;%frame index for movies or multimage
-            else
-                frame_index=num_i1;
-            end
-        case 'multimage'
-            if ~strcmp(NomType,'*')
-                frame_index=num_j1;%frame index for movies or multimage
-            else
-                frame_index=num_i1;
-            end
-        case 'vol' %TODO: update
-            if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
-                ParamIn.Npy=UvData.XmlData.Npy;
-                ParamIn.Npx=UvData.XmlData.Npx;
-            else            
-                errormsg='Npx and Npy need to be defined in the xml file for volume images .vol';
-                return
-            end
-    end
-    if isstruct (ParamIn)
-    ParamIn.FieldName=FieldName;
-    ParamIn.VelType=VelType;
-    ParamIn.GUIName='get_field';
-    end
-    [Field{1},ParamOut,errormsg] = read_field(FileName,UvData.FileType{1},ParamIn,frame_index);
-    if ~isempty(errormsg)
-        errormsg=['error in reading ' FileName ': ' errormsg];
-        return
-    end  
-    if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
-        set(handles.num_Npx,'String',num2str(ParamOut.Npx));% display image size on the interface
-        set(handles.num_Npy,'String',num2str(ParamOut.Npy));
-    end
-    if isfield(ParamOut,'TimeIndex')% case of time obtained from get_field
-        set(handles.i1,'String',num2str(ParamOut.TimeIndex))
-    end
-    if isfield(ParamOut,'TimeValue')
-        Field{1}.Time=ParamOut.TimeValue;% case of time obtained from get_field
-    end
+        end
+    case {'video','mmreader'}
+        ParamIn=UvData.MovieObject{1};      
+        if ~strcmp(NomType,'*')
+            frame_index=num_j1;%frame index for movies or multimage
+        else
+            frame_index=num_i1;
+        end
+    case 'multimage'
+        if ~strcmp(NomType,'*')
+            frame_index=num_j1;%frame index for movies or multimage
+        else
+            frame_index=num_i1;
+        end
+    case 'vol' %TODO: update
+        if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
+            ParamIn.Npy=UvData.XmlData.Npy;
+            ParamIn.Npx=UvData.XmlData.Npx;
+        else            
+            errormsg='Npx and Npy need to be defined in the xml file for volume images .vol';
+            return
+        end
 end
+if isstruct (ParamIn)
+ParamIn.FieldName=FieldName;
+ParamIn.VelType=VelType;
+ParamIn.GUIName='get_field';
+end
+[Field{1},ParamOut,errormsg] = read_field(FileName,UvData.FileType{1},ParamIn,frame_index);
+if ~isempty(errormsg)
+    errormsg=['error in reading ' FileName ': ' errormsg];
+    return
+end  
+if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
+    set(handles.num_Npx,'String',num2str(ParamOut.Npx));% display image size on the interface
+    set(handles.num_Npy,'String',num2str(ParamOut.Npy));
+end
+if isfield(ParamOut,'TimeIndex')% case of time obtained from get_field
+    set(handles.i1,'String',num2str(ParamOut.TimeIndex))
+end
+if isfield(ParamOut,'TimeValue')
+    Field{1}.Time=ParamOut.TimeValue;% case of time obtained from get_field
+end
+Field{1}.ZIndex=z_index; %used for multiplane 3D calibration
+% end
 
 %% choose and read a second field FileName_1 if defined
 VelType_1=[];%default
@@ -2126,6 +2112,7 @@ if ~isempty(FileName_1)
             return
         end
     end
+    Field{2}.ZIndex=z_index;%used for multi-plane 3D calibration
 end
 
 %% update uvmat interface
@@ -2312,32 +2299,33 @@ end
 UvData.FileName_1=FileName_1;
 
 %% apply coordinate transform or other user fct
-XmlData=[];%default
-XmlData_1=[];%default
-if isfield(UvData,'XmlData')%use geometry calib recorded from the ImaDoc xml file as first priority
-    XmlData=UvData.XmlData{1};
-    if numel(UvData.XmlData)==2
-        XmlData_1=UvData.XmlData{2};
-    end
-end
-choice_value=get(handles.transform_fct,'Value');
-transform_list=get(handles.transform_fct,'UserData');
-transform=transform_list{choice_value};%selected function handles
-% z index
-if ~isempty(FileName)
-    Field{1}.ZIndex=z_index;
-end
+transform=get(handles.path_transform,'UserData');
 if ~isempty(transform)
-    if length(Field)>=2
-        Field{2}.ZIndex=z_index;
-        [Field{1},Field{2}]=transform(Field{1},XmlData,Field{2},XmlData_1);
-        if isempty(Field{2})
+    XmlData=[];%default
+    XmlData_1=[];%default
+    if isfield(UvData,'XmlData')%use geometry calib recorded from the ImaDoc xml file as first priority
+        XmlData=UvData.XmlData{1};
+        if numel(UvData.XmlData)==2
+            XmlData_1=UvData.XmlData{2};
+        end
+    end
+    transform=get(handles.path_transform,'UserData');
+    nbre_arg=nargin(transform);
+    if length(Field)==2
+        if nbre_arg==4
+            [Field{1},Field{2}]=transform(Field{1},XmlData,Field{2},XmlData_1);
+        else
+            Field{1}=transform(Field{1},XmlData);
             Field(2)=[];
         end
     else
-        Field{1}=transform(Field{1},XmlData);
+        if nbre_arg==1
+            Field{1}=transform(Field{1});%transform which does not need input parameter
+        else
+            Field{1}=transform(Field{1},XmlData);
+        end
     end
-end   
+end
     %% check whether tps is needed, then calculate tps coefficients if needed
 check_proj_tps=0;
 if isfield(UvData,'Object')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))
@@ -3099,8 +3087,8 @@ if isequal(field,'get_field...')
     hhget_field=guidata(hget_field);
     set(hhget_field.list_fig,'Value',1)
     set(hhget_field.list_fig,'String',{'uvmat'})
-    set(handles.transform_fct,'Value',1)% no transform by default
-    set(handles.path_transform,'String','')
+  %  set(handles.transform_fct,'Value',1)% no transform by default
+  %  set(handles.path_transform,'String','')
     return %no action
 end
 list_fields=get(handles.Fields_1,'String');% list menu fields
@@ -3214,8 +3202,8 @@ switch field_1
         hhget_field=guidata(hget_field);
         set(hhget_field.list_fig,'Value',1)
         set(hhget_field.list_fig,'String',{'uvmat'})
-        set(handles.transform_fct,'Value',1)% no transform by default
-        set(handles.path_transform,'String','')
+%         set(handles.transform_fct,'Value',1)% no transform by default
+%         set(handles.path_transform,'String','')
         if check_new
             UvData.FileType{2}=UvData.FileType{1};
             set(handles.FileIndex_1,'String',get(handles.FileIndex,'String'))
@@ -3561,61 +3549,90 @@ function transform_fct_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------
 UvData=get(handles.uvmat,'UserData');
 menu=get(handles.transform_fct,'String');
-ind_coord=get(handles.transform_fct,'Value');
-coord_option=menu{ind_coord};
-list_transform=get(handles.transform_fct,'UserData');
-ff=functions(list_transform{end});  
-if isequal(coord_option,'more...'); 
-    coord_fct='';
-    prompt = {'Enter the name of the transform function'};
-    dlg_title = 'user defined transform';
-    num_lines= 1;
+ichoice=get(handles.transform_fct,'Value');%item number in the menu
+transform_name=menu{ichoice};% choice of the transform fct
+list_path=get(handles.transform_fct,'UserData');
+
+%% add a new item to the menu if the option 'more...' has been selected
+if strcmp(transform_name,'more...');
     [FileName, PathName] = uigetfile( ...
-       {'*.m', ' (*.m)';
+        {'*.m', ' (*.m)';
         '*.m',  '.m files '; ...
         '*.*', 'All Files (*.*)'}, ...
-        'Pick a file', ff.file);
-    if isequal(PathName(end),'/')||isequal(PathName(end),'\')
-        PathName(end)=[];
+        'Pick the transform function', get(handles.path_transform,'String'));
+    path_transform_fct =fullfile(PathName,FileName);
+    if ~exist(path_transform_fct,'file')% cancel has been activated
+        return
     end
-    transform_selected =fullfile(PathName,FileName);
-    if ~exist(transform_selected,'file')
-           return
-    end
-   [ppp,transform,ext_fct]=fileparts(FileName);% removes extension .m
-   if ~isequal(ext_fct,'.m')
+    if isempty(regexp(FileName,'.m$'))% detect file extension .m
         msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
         return
-   end
-   menu=update_menu(handles.transform_fct,transform);%add the selected fct to the menu
-   ind_coord=get(handles.transform_fct,'Value');
-   addpath(PathName)
-   list_transform{ind_coord}=str2func(transform);% create the function handle corresponding to the newly seleced function
-   set(handles.transform_fct,'UserData',list_transform)
-   rmpath(PathName)
-   % save the new menu in the personal file 'uvmat_perso.mat' 
-   dir_perso=prefdir;%personal Matalb directory
-   profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-   if exist(profil_perso,'file')
-       nb_builtin=UvData.OpenParam.NbBuiltin;
-       for ilist=nb_builtin+1:numel(list_transform)
-           ff=functions(list_transform{ilist});
-           transform_fct{ilist-nb_builtin}=ff.file;
-       end 
+    else
+        transform_name=regexprep(FileName,'.m','');
+    end
+    ichoice=find(strcmp(transform_name,menu),1);%look for the selected fct in the existing menu
+    if isempty(ichoice)% if the item is not found, add it to the menu (before 'more...' and select it)
+        menu=[menu(1:end-1);{transform_name};{'more...'}];
+        ichoice=numel(menu)-1;    
+    end
+    list_path{ichoice}=PathName;%update the list fo fct paths
+    
+    % save the new menu in the personal file 'uvmat_perso.mat'
+    dir_perso=prefdir;%personal Matalb directory
+    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+    if exist(profil_perso,'file')
+        nb_builtin=UvData.OpenParam.NbBuiltin;% number of 'builtin' (basic) transform fcts in uvmat
+        for ilist=nb_builtin+1:numel(list_path)
+            transform_fct{ilist-nb_builtin}=fullfile(list_path{ilist},menu{ilist});
+        end
         save (profil_perso,'transform_fct','-append'); %store the root name for future opening of uvmat
-   end   
+    end
 end
 
-%% check the current path to the selected function
-if isa(list_transform{ind_coord},'function_handle')
-    func=functions(list_transform{ind_coord});
-    set(handles.path_transform,'String',fileparts(func.file)); %show the path to the senlected function
+%% create the function handle of the selected fct
+if isempty(list_path{ichoice})% case of no selected fct
+    transform_handle=[];
 else
-    set(handles.path_transform,'String','')
+    if ~exist(list_path{ichoice},'dir')
+        msgbox_uvmat('ERROR','invalid fct path: select the transform fct again with the option more...')
+        return
+    end
+    current_dir=pwd;%current working dir
+    cd(list_path{ichoice})
+    transform_handle=str2func(transform_name);
+    cd(current_dir)
+end
+set(handles.path_transform,'UserData',transform_handle)
+
+%% update the ToolTip string of the menu transform_fct with the first line of the selected fct file
+if isempty(list_path{ichoice})% case of no selected fct
+    set(handles.transform_fct,'ToolTipString','transform_fct:choose a transform function')
+else
+    try
+        [fid,errormsg] =fopen([fullfile(list_path{ichoice},transform_name) '.m']);
+        InputText=textscan(fid,'%s',1,'delimiter','\n');
+        fclose(fid)
+        set(handles.transform_fct,'ToolTipString',['transform_fct: ' InputText{1}{1}])% put the first line of the selected function as tooltip help
+    end
+end
+
+%% adapt the GUI to the input/output conditions of the selected transform fct
+if isempty(list_path{ichoice})% case of no selected fct
+    DataOut=[];
+else
+    if nargin(transform_handle)>1
+        if isfield(UvData,'XmlData')&&~isempty(UvData.XmlData)
+            XmlData=UvData.XmlData{1};
+            DataOut=feval(transform_handle,'*',XmlData);
+        end
+    end
 end
 
 set(handles.CheckFixLimits,'Value',0)
 set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
+
+%% execute the function to set input an output conditions
+
 
 %% delete drawn objects
 hother=findobj('Tag','proj_object');%find all the proj objects
@@ -4855,3 +4872,9 @@ else
     web(helpfile);
 end
 
+
+% --------------------------------------------------------------------
+function MenuSetProject_Callback(hObject, eventdata, handles)
+RootPath=get(handles.RootPath,'String');
+ProjectDir = uigetdir(fileparts(fileparts(RootPath)), 'select the project source directory');
+datatree_browser(ProjectDir)

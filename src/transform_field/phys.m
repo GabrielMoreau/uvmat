@@ -15,7 +15,7 @@
 % CalibData: structure containing calibration parameters or a subtree Calib.GeometryCalib =calibration data (tsai parameters)
 % Data_1, CalibData_1: same as Data, CalibData for the second field.
 
-function [DataOut,DataOut_1]=phys(varargin)
+function [DataOut,DataOut_1]=phys(DataIn,XmlData,DataIn_1,XmlData_1)
 % A FAIRE: 1- verifier si DataIn est une 'field structure'(.ListVarName'):
 % chercher ListVarAttribute, for each field (cell of variables):
 %   .CoordType: 'phys' or 'px'   (default==phys, no transform)
@@ -24,19 +24,28 @@ function [DataOut,DataOut_1]=phys(varargin)
 %   (default='coord' if .Role='coord_x,_y..., 
 %            'D_i' if '.Role='vector_x,...',
 %              'scalar', else (thenno change except scale factor)
-%% analyse input and set default output
-DataOut=varargin{1};%default first output field
+%% set GUI config
+DataOut=[];
 DataOut_1=[]; %default second  output field
+if strcmp(DataIn,'*')
+    if isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
+        DataOut.CoordUnit=XmlData.GeometryCalib.CoordUnit;
+    end
+    return
+end
+
+%% analyse input and set default output
+DataOut=DataIn;%default first output field
 if nargin>=2 % nargin =nbre of input variables
-    if isfield(varargin{2},'GeometryCalib')
-        Calib{1}=varargin{2}.GeometryCalib;
+    if isfield(XmlData,'GeometryCalib')
+        Calib{1}=XmlData.GeometryCalib;
     else
         Calib{1}=[];
     end
     if nargin>=3  %two input fields
-        DataOut_1=varargin{3};%default second output field
-        if nargin>=4 && isfield(varargin{4},'GeometryCalib')
-            Calib{2}=varargin{4}.GeometryCalib;
+        DataOut_1=DataIn_1;%default second output field
+        if nargin>=4 && isfield(XmlData_1,'GeometryCalib')
+            Calib{2}=XmlData_1.GeometryCalib;
         else
             Calib{2}=Calib{1}; 
         end
@@ -44,8 +53,8 @@ if nargin>=2 % nargin =nbre of input variables
 end
 
 %% get the z index defining the section plane
-if isfield(varargin{1},'ZIndex')&&~isempty(varargin{1}.ZIndex)&&~isnan(varargin{1}.ZIndex)
-    ZIndex=varargin{1}.ZIndex;
+if isfield(DataIn,'ZIndex')&&~isempty(DataIn.ZIndex)&&~isnan(DataIn.ZIndex)
+    ZIndex=DataIn.ZIndex;
 else
     ZIndex=1;
 end
@@ -56,15 +65,15 @@ if  ~isempty(Calib{1})
     if ~isfield(Calib{1},'CalibrationType')||~isfield(Calib{1},'CoordUnit')
         return %bad calib parameter input
     end
-    if ~(isfield(varargin{1},'CoordUnit')&& strcmp(varargin{1}.CoordUnit,'pixel'))
+    if ~(isfield(DataIn,'CoordUnit')&& strcmp(DataIn.CoordUnit,'pixel'))
         return % transform only fields in pixel coordinates
     end
-    DataOut=phys_1(varargin{1},Calib{1},ZIndex);% transform coordiantes and velocity components
+    DataOut=phys_1(DataIn,Calib{1},ZIndex);% transform coordiantes and velocity components
     %case of images or scalar: in case of two input fields, we need to project the transform  on the same regular grid
-    if isfield(varargin{1},'A') && isfield(varargin{1},'AX') && ~isempty(varargin{1}.AX) && isfield(varargin{1},'AY')&&...
-                                           ~isempty(varargin{1}.AY) && length(varargin{1}.A)>1
+    if isfield(DataIn,'A') && isfield(DataIn,'AX') && ~isempty(DataIn.AX) && isfield(DataIn,'AY')&&...
+                                           ~isempty(DataIn.AY) && length(DataIn.A)>1
         iscalar=1;
-        A{1}=varargin{1}.A;
+        A{1}=DataIn.A;
     end
 end
 
@@ -82,14 +91,14 @@ end
 
 %% transform second field if relevant
 if ~isempty(DataOut_1)
-    if isfield(varargin{3},'ZIndex') && ~isequal(varargin{3}.ZIndex,ZIndex)
+    if isfield(DataIn_1,'ZIndex') && ~isequal(DataIn_1.ZIndex,ZIndex)
         DataOut_1.Txt='different plane indices for the two input fields';
         return
     end
     if ~isfield(Calib{2},'CalibrationType')||~isfield(Calib{2},'CoordUnit')
         return %bad calib parameter input
     end
-    if ~(isfield(varargin{3},'CoordUnit')&& strcmp(varargin{3}.CoordUnit,'pixel'))
+    if ~(isfield(DataIn_1,'CoordUnit')&& strcmp(DataIn_1.CoordUnit,'pixel'))
         return % transform only fields in pixel coordinates
     end
     DataOut_1=phys_1(DataOut_1,Calib{2},ZIndex);
@@ -107,11 +116,11 @@ if ~isempty(DataOut_1)
             DataOut_1.PlaneAngle=DataOut.PlaneAngle; % same plane angle for the two input fields
         end
     end
-    if isfield(varargin{3},'A')&&isfield(varargin{3},'AX')&&~isempty(varargin{3}.AX) && isfield(varargin{3},'AY')&&...
-            ~isempty(varargin{3}.AY)&&length(varargin{3}.A)>1
+    if isfield(DataIn_1,'A')&&isfield(DataIn_1,'AX')&&~isempty(DataIn_1.AX) && isfield(DataIn_1,'AY')&&...
+            ~isempty(DataIn_1.AY)&&length(DataIn_1.A)>1
         iscalar=iscalar+1;
         Calib{iscalar}=Calib{2};
-        A{iscalar}=varargin{3}.A;
+        A{iscalar}=DataIn_1.A;
     end
 end
 

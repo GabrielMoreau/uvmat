@@ -111,8 +111,8 @@ if testinputstring
     set(handles.edit_box, 'String', default_answer);
     if exist('Position','var')
     if iscell(default_answer)
-        widthstring=max(cellfun('length',default_answer),length(display_str));
-        heightstring=size(default_answer,1);
+        widthstring=max(max(cellfun('length',default_answer)),length(display_str));
+        heightstring=size(default_answer,1);%nbre of expected lines
         set(handles.edit_box,'Max',2);
     else
         widthstring=max(length(default_answer),length(display_str));

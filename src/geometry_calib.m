@@ -49,7 +49,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 05-Oct-2010 13:47:00
+% Last Modified by GUIDE v2.5 29-Jul-2012 08:46:09
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -1449,3 +1449,11 @@ set(handles.Cy,'String',num2str(Cx_Cy(2),'%1.1f'))
 set(handles.kc,'String',num2str(kc,'%1.4f'))
 
 
+% --- Executes when user attempts to close geometry_calib.
+function geometry_calib_CloseRequestFcn(hObject, eventdata, handles)
+% hObject    handle to geometry_calib (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: delete(hObject) closes the figure
+delete(hObject);

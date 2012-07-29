@@ -1,5 +1,5 @@
 % check 
-if isempty(which('mcc')
+if isempty(which('mcc'))
     msgbox_uvmat('no Matlab compiler toolbox mcc installed')
     return
 end
