@@ -1,0 +1,710 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--Created with Liquid XML Studio - FREE Community Edition 7.1.1.1206 (http://www.liquid-technologies.com)-->
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="ImaDoc">
+    <xs:annotation>
+      <xs:documentation>Document for an image series</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Heading">
+          <xs:annotation>
+            <xs:documentation>recall the Installation/Campaign/(SubCampaign)/Experiment/Device/(Record), which must fit with the position of the document in the data tree.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" name="Campaign" type="xs:string">
+                <xs:annotation>
+                  <xs:documentation>Name (dir) of the associated campaign</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" name="SubCampaign" type="xs:string">
+                <xs:annotation>
+                  <xs:documentation>Name (dir) of the associated        subcampaign</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" name="Experiment" type="xs:string" />
+              <xs:element minOccurs="0" name="Device" type="xs:string" />
+              <xs:element minOccurs="0" name="Record" type="xs:string" />
+              <xs:element name="ImageName">
+                <xs:annotation>
+                  <xs:documentation>name of the fist image in the series. Generic file names are formed with the root  xxx= name of this xml file (without .xml ext), the image indices i and j, and the extension .ext=FileType. ='xxx_i.ext  for ScanMode='series', ='xxx_i_j.ext else.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:string">
+                      <xs:attribute fixed="file" name="source" type="xs:string" use="required" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="DateExp">
+                <xs:annotation>
+                  <xs:documentation>date of the image record</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:date" />
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="source" type="ProgType">
+              <xs:annotation>
+                <xs:documentation>program which generates the images and creates this xml file</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Camera">
+          <xs:annotation>
+            <xs:documentation>Parameters of the camera used and times of images</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="CameraName" type="CameraType">
+                <xs:annotation>
+                  <xs:documentation>Name of the camera</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" name="ImageSize" type="xs:string">
+                <xs:annotation>
+                  <xs:documentation>width x height x nbre of bits</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" name="Objective" type="ObjectiveType">
+                <xs:annotation>
+                  <xs:documentation>Name of the camera objective lens</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" name="Aperture" type="xs:decimal">
+                <xs:annotation>
+                  <xs:documentation>Angular aperture of the objective lens (as defined in photography)
+</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" name="OpticalFilter" type="OpticalFilterType">
+                <xs:annotation>
+                  <xs:documentation>Type of optical filter used on the camera (default='none')</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" default="1" name="ImageGain" type="xs:positiveInteger">
+                <xs:annotation>
+                  <xs:documentation>Gain of the camera</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" name="TriggerMode">
+                <xs:annotation>
+                  <xs:documentation>trigger mode for the image acquisition, 'manual' or 'auto' (external signal)</xs:documentation>
+                </xs:annotation>
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:enumeration value="manual" />
+                    <xs:enumeration value="DalsaMode4Stereo" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="TimeUnit" type="TimeUnit">
+                <xs:annotation>
+                  <xs:documentation>unit of time in the 'Camera' item (s)</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" name="ExposureTime">
+                <xs:annotation>
+                  <xs:documentation>exposure time for each image (unit=TimeUnit)</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="TimeUnit" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element maxOccurs="unbounded" name="BurstTiming">
+                <xs:annotation>
+                  <xs:documentation>describes the times of a sub-set of images</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="0" name="FrameFrequency">
+                      <xs:annotation>
+                        <xs:documentation> frame frequency of the camera (unit=inverse of TimeUnit)</xs:documentation>
+                      </xs:annotation>
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:decimal">
+                            <xs:attribute fixed="1/TimeUnit" name="unit" />
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element minOccurs="0" name="Dtj">
+                      <xs:annotation>
+                        <xs:documentation>time intervals  between images inside each burst, unit=frame (inverse of FrameFrequency). For ScanMode='series', Dtj=[]; for 'ScanMode='burst' or 'multilevel'; format [xx,yy,zz], vector with dimension=NbFramePerBurst-1; for ScanMode='volume' , Dtj=cte (generally =1). </xs:documentation>
+                      </xs:annotation>
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="Vector">
+                            <xs:attribute fixed="TimeUnit" name="unit" />
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element minOccurs="0" name="NbDtj" type="xs:positiveInteger">
+                      <xs:annotation>
+                        <xs:documentation>(optional) number of repetion of Dtj, useful for volume ScanMode</xs:documentation>
+                      </xs:annotation>
+                    </xs:element>
+                    <xs:element maxOccurs="unbounded" name="Time">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:decimal">
+                            <xs:attribute name="i" type="xs:positiveInteger" use="optional">
+                              <xs:annotation>
+                                <xs:documentation>image index i, incremented from the first image at DateOrigin</xs:documentation>
+                              </xs:annotation>
+                            </xs:attribute>
+                            <xs:attribute fixed="TimeUnit" name="unit" />
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element minOccurs="0" name="Dti">
+                      <xs:annotation>
+                        <xs:documentation>Fixed time interval between successive images i, then only the first 'Time' is needed</xs:documentation>
+                      </xs:annotation>
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="Vector">
+                            <xs:attribute fixed="TimeUnit" name="unit" />
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element minOccurs="0" name="NbDti" type="xs:positiveInteger">
+                      <xs:annotation>
+                        <xs:documentation>number of repetion  iin the sequence with time interval 'Dti'(needed with Dti)</xs:documentation>
+                      </xs:annotation>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="k" type="xs:positiveInteger" />
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" form="qualified" name="FrameFrequencyMeasured">
+                <xs:annotation>
+                  <xs:documentation>Frame frequency measured at the end of the image acquisition process</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="1/TimeUnit" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" form="qualified" name="TimeOrigin" type="xs:dateTime">
+                <xs:annotation>
+                  <xs:documentation>date corresponding to Time=0</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="source" type="ProgType" use="required">
+              <xs:annotation>
+                <xs:documentation>program which generates the images (same as for 'Heading')</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" name="TranslationMotor">
+          <xs:annotation>
+            <xs:documentation>parameters of the motor used for translating the laser sheet</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="NbSlice">
+                <xs:annotation>
+                  <xs:documentation>[n1,n2,...] number of slices</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element name="DeltaZ">
+                <xs:annotation>
+                  <xs:documentation>[n1,n2,...] number of steps for each successive displacement</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element name="StepLength">
+                <xs:annotation>
+                  <xs:documentation>motion length corresponding to a motor step (in units given by ImaDoc/GeometryCalib/CoordUnit)</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" name="Oscillator">
+          <xs:annotation>
+            <xs:documentation>properties of the oscillator used for angular scanning of the laser sheet</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Frequency" type="xs:decimal">
+                <xs:annotation>
+                  <xs:documentation>unit=inverse of TimeUnit</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element name="Amplitude">
+                <xs:annotation>
+                  <xs:documentation>Amplitude of laser sweep (volt)</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="volt" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="Offset">
+                <xs:annotation>
+                  <xs:documentation>Offset of laser sweep (volt)</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="volt" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="DegreePerVolt">
+                <xs:annotation>
+                  <xs:documentation>calibration for laser deviation angle (degrees/volts)</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" name="GeometryCalib">
+          <xs:annotation>
+            <xs:documentation>Parameters for image calibration</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" name="CalibrationType" type="xs:string" />
+              <xs:element minOccurs="0" default="1" name="focal">
+                <xs:annotation>
+                  <xs:documentation>focal length of the objective, ajusted by the calibrationn program</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="mm" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="dpx_dpy">
+                <xs:annotation>
+                  <xs:documentation>pixels per mm along each direction on the camera captor</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:string">
+                      <xs:attribute fixed="mm/pixel" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="Cx_Cy" type="Vector">
+                <xs:annotation>
+                  <xs:documentation>unit used for all spatial coordinates, velocity in CoordUnit/TimeUnit</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" default="0" name="kappa1">
+                <xs:annotation>
+                  <xs:documentation>radial deformation of the objective</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:float" />
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="CoordUnit" type="CoordUnit">
+                <xs:annotation>
+                  <xs:documentation>unit used for all spatial coordinates, velocity in CoordUnit/TimeUnit</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" name="Tx_Ty_Tz" type="Vector">
+                <xs:annotation>
+                  <xs:documentation>translation parameters (in pixels)</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" maxOccurs="3" name="R">
+                <xs:annotation>
+                  <xs:documentation>matrix of rotation parameters</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="Vector">
+                      <xs:attribute name="i" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="ErrorRms" type="Vector" />
+              <xs:element minOccurs="0" name="ErrorMax" type="Vector" />
+              <xs:element minOccurs="0" name="SourceCalib">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="0" name="ImageCalib">
+                      <xs:annotation>
+                        <xs:documentation>file name of the image used for calibration</xs:documentation>
+                      </xs:annotation>
+                    </xs:element>
+                    <xs:element maxOccurs="unbounded" name="PointCoord">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="Vector">
+                            <xs:attribute name="i" />
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="NbSlice" type="xs:positiveInteger">
+                <xs:annotation>
+                  <xs:documentation>Number of slices</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" maxOccurs="unbounded" default="[0,0,0]" name="SliceCoord" type="Vector">
+                <xs:annotation>
+                  <xs:documentation>physical coordinates [x0,y0,z0] of the first laser plane, or of each laser plane in case of NbSlice occurrences.  For an angular scanning, it must be on the oscillation axis.  Else use the default value [0,0,0].</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" maxOccurs="unbounded" default="0" name="SlicePhi">
+                <xs:annotation>
+                  <xs:documentation>first Euler angle (in degrees) defining the orientation  of the first laser plane: azimuth of the rotation axis. Default value 0. In case of NbSlice occurences, angle of each plane</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="degree" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" maxOccurs="unbounded" default="0" name="SliceTheta">
+                <xs:annotation>
+                  <xs:documentation>second Euler angle (in degrees) defining the orientation  of  the first laser plane: inclination (90 for a vertical plane). Default value 0. In case of NbSlice occurences, angle of each plane</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="degree" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" default="0" name="SliceDZ">
+                <xs:annotation>
+                  <xs:documentation>distance  between  successive slices (translation normal to the laser planes). For multiple occurrence, set of NbSlice-1 distances [DZ1 DZ2...]. Default value 0</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:float">
+                      <xs:attribute fixed="CoordUnit" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="SliceDPhi">
+                <xs:annotation>
+                  <xs:documentation>interval of azimuth between  successive slices (for angular scan with axis along z). For multiple occurrence, set of NbSlice -1 angle intervals [DTheta1,DTheta2..]. Default value 0.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="degree" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="SliceDTheta">
+                <xs:annotation>
+                  <xs:documentation>constant interval of inclination angles between  successive slices (for angular scan with horizontal axis). Or set of NbSlice -1 angle intervals [DTheta1,DTheta2..]. Default value 0.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="degree" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="RayCurvatureZ" type="xs:float">
+                <xs:annotation>
+                  <xs:documentation>curvature of rays (dTheta/dY) due to refraction, assumed constant along the ray path. Default value 0</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" name="PolarCentre" type="Vector">
+                <xs:annotation>
+                  <xs:documentation>Centre [x,y] of the polar coordinates (axis assumed along z)</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element minOccurs="0" name="PolarReferenceRadius" type="xs:float" />
+              <xs:element minOccurs="0" name="PolarReferenceAngle">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="degree" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="source">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:enumeration value="manual" />
+                  <xs:enumeration value="tsai" />
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" name="Illumination">
+          <xs:annotation>
+            <xs:documentation>Properties of the illumination</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="SourceName" type="LightSource">
+                <xs:annotation>
+                  <xs:documentation>name of the light source (laser)</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element name="SourcePower">
+                <xs:annotation>
+                  <xs:documentation>power of the light source (in watts)</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="watt" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="SourceFilter" type="OpticalFilterType">
+                <xs:annotation>
+                  <xs:documentation>optical filter for light source</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element default="[0,0,0]" name="SourceOrigin" type="Vector">
+                <xs:annotation>
+                  <xs:documentation>origin of the laser source in physical coordinates [x,y,z]</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element name="SheetType">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:enumeration value="cylindrical lens" />
+                    <xs:enumeration value="oscillating mirror" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="SheetThickness" type="xs:decimal">
+                <xs:annotation>
+                  <xs:documentation>thickness of the laser sheet (width of the band with luminosity smaller than max/2), unit =GeometryCalib/CoordUnit</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element name="SheetAperture">
+                <xs:annotation>
+                  <xs:documentation>angle of aperture of the laser  sheet, in degrees</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="degree" name="unit" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="SheetProfile">
+                <xs:complexType>
+                  <xs:attribute name="source" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute fixed="manual" name="source" use="required" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" name="Tracor">
+          <xs:annotation>
+            <xs:documentation>Properties of the flow tracor</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="DyeName" type="DyeType" />
+              <xs:element minOccurs="0" name="DyeConcentration" type="xs:float" />
+              <xs:element minOccurs="0" name="DyeFlowRate" type="xs:float" />
+              <xs:element name="ParticleName" type="ParticleType" />
+              <xs:element name="ParticleDiameter">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute fixed="micron" name="unit" use="required" />
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="ParticleDensity" type="xs:float">
+                <xs:annotation>
+                  <xs:documentation>density of particles in kg/liter</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute fixed="manual" name="source" use="required" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="ImageTransform">
+          <xs:annotation>
+            <xs:documentation>Parameters used for image pre-processing (e.g. sub background)</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="ProgName">
+                <xs:annotation>
+                  <xs:documentation>Name of the pre-processing program</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element name="SlidingImageNumber">
+                <xs:annotation>
+                  <xs:documentation>number of images used to find the background</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element name="RankBackground">
+                <xs:annotation>
+                  <xs:documentation>relative rank in image luminosity considered as background (cf. 'sub_background' function)</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!--<xs:include schemaLocation="D:\JOEL\XMLSchemas\XMLSchemas\Coriolis.xsd"/> not supported by home edition-->
+  <!--xs:include schemaLocation="CameraList.xsd" />-->
+  <xs:simpleType name="CameraType">
+    <xs:annotation>
+      <xs:documentation>list of cameras used</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="" />
+      <xs:enumeration value="SMD" />
+      <xs:enumeration value="Camrecorder CanonXL1S" />
+      <xs:enumeration value="Dalsa 1M60 Panthera" />
+      <xs:enumeration value="Dalsa 2M8 pco" />
+      <xs:enumeration value="Mikrotron mc1310" />
+      <xs:enumeration value="pixelink" />
+      <xs:enumeration value="Pulnix" />
+      <xs:enumeration value="AVT Pike F421B" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="OpticalFilterType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Filtrepassband532PIV;" />
+      <xs:enumeration value="Filtrepasshaut532LIF" />
+      <xs:enumeration value="Filtreemission488LIF" />
+      <xs:enumeration value="Fitrereception514LIF" />
+      <xs:enumeration value="none" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="LightSource">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="laser argon 6W" />
+      <xs:enumeration value="laser HeNe 0.15W" />
+      <xs:enumeration value="Laser solide 6W" />
+      <xs:enumeration value="Laser solide 2W" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="DyeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="fluoresceine" />
+      <xs:enumeration value="Rhodamine6G" />
+      <xs:enumeration value="none" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="CoordUnit">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="cm" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TimeUnit">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="s" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ModeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="series" />
+      <xs:enumeration value="burst" />
+      <xs:enumeration value="multilevel" />
+      <xs:enumeration value="volume" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ObjectiveType">
+    <xs:annotation>
+      <xs:documentation>liste of camera objectives </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Fujinon12.5" />
+      <xs:enumeration value="Schneider17" />
+      <xs:enumeration value="Sigma20" />
+      <xs:enumeration value="Fujinon25" />
+      <xs:enumeration value="Schneider25" />
+      <xs:enumeration value="Nikon35" />
+      <xs:enumeration value="Olympus35" />
+      <xs:enumeration value="Nikon50" />
+      <xs:enumeration value="Olympus50" />
+      <xs:enumeration value="Nikon85" />
+      <xs:enumeration value="Nikon105" />
+      <xs:enumeration value="Olympus135" />
+      <xs:enumeration value="Nikon180" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ParticleType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Orgasol30micron" />
+      <xs:enumeration value="Orgasol60micron" />
+      <xs:enumeration value="Polystyrene300micron" />
+      <xs:enumeration value="Polystyrene700micron" />
+      <xs:enumeration value="chemigum P83" />
+      <xs:enumeration value="PlioliteDF01" />
+      <xs:enumeration value="Optimage" />
+      <xs:enumeration value="Purolite1.2" />
+      <xs:enumeration value="none" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ProgType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="manual" />
+      <xs:enumeration value="acquix" />
+      <xs:enumeration value="davis" />
+      <xs:enumeration value="RDVision" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ExpNameType">
+    <xs:restriction base="xs:string" />
+  </xs:simpleType>
+  <xs:simpleType name="Vector">
+    <xs:annotation>
+      <xs:documentation>represents a vector as a set of decimal numbers or floats separated by blanks
+</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string" />
+  </xs:simpleType>
+</xs:schema>

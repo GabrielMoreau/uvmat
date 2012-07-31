@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Created with Liquid XML Studio - FREE Community Edition 7.0.5.906 (http://www.liquid-technologies.com) -->
+<ImaDoc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="D:\SCHEMAS\ImaDoc.xsd">
+  <Heading source="RDvision"><!-- a remplir au moment du transfert d'images: rangees sous la forme path/campaign(/subcampaign)/experiment(/record)/image-->
+	<Campaign>campaign</Campaign> <!-- nom du projet-->
+    <SubCampaign>subcampaign</SubCampaign>
+    <Experiment>experiment</Experiment>
+    <Record>record</Record>
+    <ImageName source="file">image</ImageName><!-- nom de la premiere image de la serie -->
+    <DateExp>2003-07-06</DateExp>
+  </Heading>
+  <Camera source="RDvision"><!-- nom du programme d'acquisition -->
+    <CameraName>Dalsa 1M60 Panthera</CameraName> <!-- nom de la camera, distinguer chaque exemplaire -->
+    <ImageSize>1024x1024x12</ImageSize> <!-- taille de l'image nbpixel x nbpixel x nbre de bits -->
+    <Objective>Olympus35</Objective>  <!-- a pouvoir entrer manuellement -->
+    <Aperture>5.6</Aperture>      <!-- a pouvoir entrer manuellement -->
+    <OpticalFilter>none</OpticalFilter>  <!-- a pouvoir entrer manuellement -->
+    <ImageGain>1</ImageGain>
+    <TriggerMode>manual</TriggerMode><!--type de declenchement de la serie d'images-->
+    <TimeUnit>s</TimeUnit>
+    <ExposureTime unit="TimeUnit">0.010</ExposureTime>
+    <BurstTiming>
+      <FrameFrequency unit="1/TimeUnit">50</FrameFrequency>
+      <Time unit="TimeUnit" >0</Time> <!--temps de la premiere image (par rapport à l'origine des temps definie pour l'experience (un trigger)-->
+      <Dti unit="frame">1</Dti>
+      <NbDti>50</NbDti> <!--Nbe d'intervals Dti (nre de frames-1)-->
+    </BurstTiming>
+    <FrameFrequencyMeasured unit="1/TimeUnit">50.0001</FrameFrequencyMeasured><!--verification de la frequence (eventuellement)-->
+    <TimeOrigin>2010-06-17T16:44:28.93</TimeOrigin><!--date-temps absolu pour l'origine des temps definie pour l'experience-->
+  </Camera>
+  <Oscillator><!--propriete du miroir oscillant, a discuter comment entrer ces donneee-->
+    <Frequency>3194.454905803945093</Frequency>
+    <Amplitude unit="volt">2547.234905803945093</Amplitude>
+    <Offset unit="volt">-3734.265094196054907</Offset>
+    <DegreePerVolt />
+  </Oscillator>
+</ImaDoc>
