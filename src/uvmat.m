@@ -231,10 +231,10 @@ set(hObject,'WindowButtonUpFcn',{'mouse_up',handles})
 set(hObject,'DeleteFcn',{@closefcn})%
 
 %% refresh projection plane
-set(handles.ListObject,'Value',1)% default: empty projection objectproj_field
-set(handles.ListObject,'String',{'plane'})
-set(handles.ListObject_1,'Value',1)% default: empty projection objectproj_field
-set(handles.ListObject_1,'String',{'plane'})
+% set(handles.ListObject,'Value',1)% default: empty projection objectproj_field
+% set(handles.ListObject,'String',{''})
+% set(handles.ListObject_1,'Value',1)% default: empty projection objectproj_field
+% set(handles.ListObject_1,'String',{''})
 set(handles.Fields,'Value',1)
 set(handles.Fields,'string',{''})
 
@@ -684,22 +684,13 @@ switch FileType
         set(hfig,'WindowButtonUpFcn','mouse_down')%set mouse click action function
     case 'xml'                % edit xml files
         t=xmltree(fileinput);
+        % the xml file marks a project or project link, open datatree_browser
         if strcmp(get(t,1,'name'),'Project')&& exist(regexprep(fileinput,'.xml$',''),'dir')
             datatree_browser(fileinput)
-        else
+        else % other xml file, open the xml editor
             editxml(fileinput);
         end
-        %             if exist(regexprep(fileinput,'.project.xml$','.link'),'dir')
-        %                 datatree_browser(regexprep(fileinput,'.project.xml$','.link'))
-        %                 check_project=1;
-        %         elseif exist(regexprep(fileinput,'.project.xml$',''),'dir')
-        %                 datatree_browser(regexprep(fileinput,'.project.xml$',''))
-        %                 check_project=1;
-        %             end
-        %         end
-        %         if ~check_project
-        %         editxml(fileinput);
-    case 'xls'
+    case 'xls'% Excel file opended by editxml
         editxml(fileinput);
     otherwise
         set(handles_RootPath,'String',RootPath);
@@ -832,8 +823,6 @@ if ~exist(FileName,'file')
    msgbox_uvmat('ERROR',['input file ' FileName ' not found']);
     return
 end
-% nbfield=[];%default
-% nbfield_j=[];%default
 
 %% read timing and total frame number from the current file (movie files) !! may be overrid by xml file
 XmlData.Time=[];%default
@@ -848,7 +837,6 @@ UvData.MovieObject{index}=VideoObject;
 if ~isempty(VideoObject)
     imainfo=get(VideoObject);
     testima=1;
-%     nbfield_j=1;
     TimeUnit='s';
     if isempty(j1_series); %frame index along i
         Time=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
@@ -986,8 +974,7 @@ if isfield(XmlData,'GeometryCalib')
         if ~get(handles.CheckFixLimits,'Value')
             set(handles.transform_fct,'Value',2); % phys transform by default if fixedLimits is off
         end
-        if isfield(GeometryCalib,'SliceCoord')
-            
+        if isfield(GeometryCalib,'SliceCoord')            
            siz=size(GeometryCalib.SliceCoord);
            if siz(1)>1
                NbSlice=siz(1);
@@ -1098,8 +1085,9 @@ elseif index==1
     set(handles.CheckFixPair,'Visible','off')
 end
 
-%% view the field  
-run0_Callback([],[], handles); %view field
+%% apply the effect of the transform fct and view the field  
+transform_fct_Callback([],[],handles)
+%run0_Callback([],[], handles); %view field
 mask_test=get(handles.CheckMask,'value');
 if mask_test
     MaskData=get(handles.CheckMask,'UserData');
@@ -1934,7 +1922,7 @@ if ishandle(handles.UVMAT_title) %remove title panel on uvmat
 end
 
 %% determine the main input file information for action
-FileType=[];%default
+% UvData.FileType{1}=[];%default
 if ~exist(FileName,'file')
     errormsg=['input file ' FileName ' does not exist'];
     return
@@ -1944,7 +1932,6 @@ NomType_1='';
 if strcmp(get(handles.NomType_1,'Visible'),'on')
     NomType_1=get(handles.NomType_1,'String');
 end
-% NomType=get(handles.FileIndex,'UserData');
 %update the z position index
 nbslice_str=get(handles.num_NbSlice,'String');
 if isequal(nbslice_str,'volume')%NOT USED
@@ -1971,7 +1958,6 @@ VelType='';%default
 switch UvData.FileType{1}
     case {'civx','civdata','netcdf'};
         list_fields=get(handles.Fields,'String');% list menu fields
-%          index_fields=get(handles.Fields,'Value');% selected string index
         FieldName= list_fields{get(handles.Fields,'Value')}; % selected field
         if ~strcmp(FieldName,'get_field...')
             if get(handles.FixVelType,'Value')
@@ -2281,9 +2267,6 @@ if ~isequal(numel(abstime_1),1)
 end  
 set(handles.abs_time,'String',num2str(abstime,5))
 set(handles.abs_time_1,'String',num2str(abstime_1,5))
-% if testimedoc && isfield(UvData,'dt')
-%     dt=UvData.dt;
-% end 
 if isempty(dt)||isequal(dt,0)
     set(handles.Dt_txt,'String','')
 else
@@ -2326,7 +2309,8 @@ if ~isempty(transform)
         end
     end
 end
-    %% check whether tps is needed, then calculate tps coefficients if needed
+
+%% check whether tps is needed, then calculate tps coefficients if needed
 check_proj_tps=0;
 if isfield(UvData,'Object')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))
     for iobj=1:numel(UvData.Object)
@@ -2338,36 +2322,17 @@ if isfield(UvData,'Object')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvDa
 end
 check_tps=0;         
 if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamOut.FieldName,'velocity')&&~strcmp(ParamOut.FieldName,'get_field...')
-       check_tps=1;
+       check_tps=1;%tps needed to get the requested field
 end
 if (check_tps ||check_proj_tps)&&~isfield(Field{1},'Coord_tps')
-    SubDomain=1000; %default, estimated nbre of vectors in a subdomain used for tps
-    if isfield(Field{1},'SubDomain')
-        SubDomain=Field{1}.SubDomain;% 
-    end
-    [Field{1}.SubRange,Field{1}.NbSites,Field{1}.Coord_tps,Field{1}.U_tps,Field{1}.V_tps,tild,U_smooth,V_smooth,W_smooth,FF] =...
-       filter_tps([Field{1}.X(Field{1}.FF==0) Field{1}.Y(Field{1}.FF==0)],Field{1}.U(Field{1}.FF==0),Field{1}.V(Field{1}.FF==0),[],SubDomain,0);
-    nbvar=numel(Field{1}.ListVarName);
-    Field{1}.ListVarName=[Field{1}.ListVarName {'SubRange','NbSites','Coord_tps','U_tps','V_tps'}];
-    Field{1}.VarDimName=[Field{1}.VarDimName {{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
-        {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
-    Field{1}.VarAttribute{nbvar+3}.Role='coord_tps';
-    Field{1}.VarAttribute{nbvar+4}.Role='vector_x_tps';
-    Field{1}.VarAttribute{nbvar+5}.Role='vector_y_tps';
-    if isfield(Field{1},'ListDimName')%cleaning 
-        Field{1}=rmfield(Field{1},'ListDimName');
-    end
-    if isfield(Field{1},'DimValue')%cleaning 
-        Field{1}=rmfield(Field{1},'DimValue');
-    end
+    Field{1}=calc_tps(Field{1});
 end
+Field{1}.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
 
 %% calculate scalar
 if isstruct(ParamOut)&&~strcmp(ParamOut.FieldName,'get_field...')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))...
          &&~strcmp(ParamOut.FieldName,'velocity') && ~strcmp(ParamOut.FieldName,'get_field...') 
-    if check_proj_tps
-        Field{1}.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
-    else
+    if ~check_proj_tps
         Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
     end
 end
@@ -2381,7 +2346,6 @@ if isstruct(ParamOut_1)&& numel(Field)==2 && ~strcmp(ParamOut_1.FieldName,'get_f
 end
 
 %% combine the two input fields (e.g. substract velocity fields)
-%Field{1}.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
 if numel(Field)==2
    [UvData.Field,errormsg]=sub_field(Field{1},Field{2});  
    UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
@@ -2510,7 +2474,7 @@ if NbDim>1
         UvData.Field.Mesh=ord;
     end
     % default projection plane
-    if ~isfield(UvData,'Object')
+    if ~isfield(UvData,'Object')||isempty(UvData.Object{1})
         UvData.Object{1}.Type='plane';%main plotting plane
         UvData.Object{1}.ProjMode='projection';%main plotting plane
         UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
@@ -2575,9 +2539,6 @@ if NbDim<=1
     set(handles.ListObject_1,'Visible','off')
     [PlotType,PlotParamOut]=plot_field(UvData.Field,handles.axes3,read_GUI(handles.uvmat));
     write_plot_param(handles,PlotParamOut) %update the auto plot parameters
-%     if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
-%         ObjectData.Mesh=Field.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
-%     end
     
 %% 2D or 3D fields are generally projected
 else
@@ -2589,8 +2550,14 @@ else
     % main projection object (uvmat display)
     list_object=get(handles.ListObject_1,'String');
     if isequal(list_object,{''})%refresh list of objects if the menu is empty
-        UvData.Object={[]};
+        set(handles.ListObject,'Value',1)
+        set(handles.ListObject,'String',{'plane'})
+        UvData.Object{1}.Type='plane';%main plotting plane
+        UvData.Object{1}.ProjMode='projection';%main plotting plane
+        UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
+        UvData.Object{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
         set(handles.ListObject_1,'Value',1)
+        set(handles.ListObject_1,'String',{'plane'})
     end
     IndexObj(1)=get(handles.ListObject_1,'Value');%selected projection object for main view
     if IndexObj(1)> numel(UvData.Object)
@@ -2635,11 +2602,7 @@ else
     
     for imap=1:numel(IndexObj)
         iobj=IndexObj(imap);
-        %      if imap==2 || check_proj==0  % field not yet projected) && ~isfield(UvData.Object{iobj},'Type')% case with no projection (only for the first empty object)
-        % %          [ObjectData,errormsg]=calc_field(UvData.Field.FieldList,UvData.Field);
-        % %      else
         [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
-        %      end
         if ~isempty(errormsg)
             return
         end
@@ -2705,14 +2668,6 @@ else
                     ObjectData.Mesh=Field.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
                 end
             end
-%             if isequal(PlotType,'none')
-%                 hget_field=findobj(allchild(0),'name','get_field');
-%                 if isempty(hget_field)
-%                     get_field(FileName)% the projected field cannot be automatically plotted: use get_field to specify the variablesdelete(hget_field)
-%                 end
-%                 errormsg='The field defined by get_field cannot be plotted';
-%                 return
-%             end
         end
     end
     
@@ -3423,7 +3378,7 @@ if isequal(get(handles.VOLUME,'Value'),1)
     UvData.MouseAction='create_object';
 else
     set(handles.VOLUME,'BackgroundColor',[0 1 0])
-    UvData.MouseAction='none';
+%     UvData.MouseAction='none';
 end
 set(handles.uvmat,'UserData',UvData)
 
@@ -3451,9 +3406,7 @@ if isequal(get(handles.edit_vect,'Value'),1)
 else
     set(handles.record,'Visible','off')
     set(handles.edit_vect,'BackgroundColor',[0.7 0.7 0.7])
-%     UvData.MouseAction='none';
 end
-% set(handles.uvmat,'UserData',UvData)
 
 %----------------------------------------------
 function save_mask_Callback(hObject, eventdata, handles)
@@ -3545,21 +3498,26 @@ image(imflag);
 %------------------------------------------------------------------
 %-------------------------------------------------------------
 % --- Executes on selection change in transform_fct.
+
 function transform_fct_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------
 UvData=get(handles.uvmat,'UserData');
-menu=get(handles.transform_fct,'String');
+menu=get(handles.transform_fct,'String');refresh
 ichoice=get(handles.transform_fct,'Value');%item number in the menu
 transform_name=menu{ichoice};% choice of the transform fct
 list_path=get(handles.transform_fct,'UserData');
 
 %% add a new item to the menu if the option 'more...' has been selected
+prev_path=fullfile(get(handles.path_transform,'String'));
+if ~exist(prev_path,'dir')
+    prev_path=fullfile(fileparts(which('uvmat')),'transform_field');
+end
 if strcmp(transform_name,'more...');
     [FileName, PathName] = uigetfile( ...
         {'*.m', ' (*.m)';
         '*.m',  '.m files '; ...
         '*.*', 'All Files (*.*)'}, ...
-        'Pick the transform function', get(handles.path_transform,'String'));
+        'Pick the transform function', prev_path);
     path_transform_fct =fullfile(PathName,FileName);
     if ~exist(path_transform_fct,'file')% cancel has been activated
         return
@@ -3576,6 +3534,8 @@ if strcmp(transform_name,'more...');
         ichoice=numel(menu)-1;    
     end
     list_path{ichoice}=PathName;%update the list fo fct paths
+    set(handles.transform_fct,'String',menu)
+    set(handles.transform_fct,'Value',ichoice)
     
     % save the new menu in the personal file 'uvmat_perso.mat'
     dir_perso=prefdir;%personal Matalb directory
@@ -3583,7 +3543,7 @@ if strcmp(transform_name,'more...');
     if exist(profil_perso,'file')
         nb_builtin=UvData.OpenParam.NbBuiltin;% number of 'builtin' (basic) transform fcts in uvmat
         for ilist=nb_builtin+1:numel(list_path)
-            transform_fct{ilist-nb_builtin}=fullfile(list_path{ilist},menu{ilist});
+            transform_fct{ilist-nb_builtin}=[fullfile(list_path{ilist},menu{ilist}) '.m'];
         end
         save (profil_perso,'transform_fct','-append'); %store the root name for future opening of uvmat
     end
@@ -3602,6 +3562,7 @@ else
     transform_handle=str2func(transform_name);
     cd(current_dir)
 end
+set(handles.path_transform,'String',list_path{ichoice})
 set(handles.path_transform,'UserData',transform_handle)
 
 %% update the ToolTip string of the menu transform_fct with the first line of the selected fct file
@@ -3617,53 +3578,66 @@ else
 end
 
 %% adapt the GUI to the input/output conditions of the selected transform fct
-if isempty(list_path{ichoice})% case of no selected fct
-    DataOut=[];
-else
-    if nargin(transform_handle)>1
-        if isfield(UvData,'XmlData')&&~isempty(UvData.XmlData)
-            XmlData=UvData.XmlData{1};
-            DataOut=feval(transform_handle,'*',XmlData);
+DataOut=[];
+CoordUnit='';
+CoordUnitPrev='';
+if isfield(UvData,'Field')&&isfield(UvData.Field,'CoordUnit')
+    CoordUnitPrev=UvData.Field.CoordUnit;
+end
+if ~isempty(list_path{ichoice}) 
+    if nargin(transform_handle)>1 && isfield(UvData,'XmlData')&&~isempty(UvData.XmlData)
+        XmlData=UvData.XmlData{1};
+        DataOut=feval(transform_handle,'*',XmlData);
+        if isfield(DataOut,'CoordUnit')
+            CoordUnit=DataOut.CoordUnit;
         end
+        if isfield(DataOut,'InputFieldType')
+            UvData.InputFieldType=DataOut.InputFieldType;
+        end
+    else
+        DataOut=feval(transform_handle,'*');
     end
 end
 
 set(handles.CheckFixLimits,'Value',0)
 set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
 
-%% execute the function to set input an output conditions
-
-
-%% delete drawn objects
-hother=findobj('Tag','proj_object');%find all the proj objects
-for iobj=1:length(hother)
-    delete_object(hother(iobj))
+%% delete drawn objects if the output CooordUnit is different from the previous one
+if ~strcmp(CoordUnit,CoordUnitPrev)
+    hother=findobj('Tag','proj_object');%find all the proj objects
+    for iobj=1:length(hother)
+        delete_object(hother(iobj))
+    end
+    hother=findobj('Tag','DeformPoint');%find all the proj objects
+    for iobj=1:length(hother)
+        delete_object(hother(iobj))
+    end
+    hh=findobj('Tag','calib_points');
+    if ~isempty(hh)
+        delete(hh)
+    end
+    hhh=findobj('Tag','calib_marker');
+    if ~isempty(hhh)
+        delete(hhh)
+    end
+%     if isfield(UvData,'Object')
+%         UvData.Object=UvData.Object(1);
+%     end
+    set(handles.ListObject,'Value',1)
+    set(handles.ListObject,'String',{''})
+    set(handles.ListObject_1,'Value',1)
+    set(handles.ListObject_1,'String',{''})
+    set(handles.ViewObject,'value',0)
+    ViewObject_Callback(hObject, eventdata, handles)
+    set(handles.ViewField,'value',0)
+    ViewField_Callback(hObject, eventdata, handles)
+    set(handles.edit_object,'Value',0)
+    edit_object_Callback(hObject, eventdata, handles)
+    UvData.Object={[]};
 end
-hother=findobj('Tag','DeformPoint');%find all the proj objects
-for iobj=1:length(hother)
-    delete_object(hother(iobj))
-end
-hh=findobj('Tag','calib_points');
-if ~isempty(hh)
-    delete(hh)
-end
-hhh=findobj('Tag','calib_marker');
-if ~isempty(hhh)
-    delete(hhh)
-end
-if isfield(UvData,'Object')
-     UvData.Object=UvData.Object(1);
-end 
-set(handles.ListObject,'Value',1)
-set(handles.ListObject,'String',{'plane'})
-set(handles.ListObject_1,'Value',1)
-set(handles.ListObject_1,'String',{'plane'})
-
-%delete mask if it is displayed 
-% if isequal(get(handles.CheckMask,'Value'),1)%if the mask option is on
-%    UvData=rmfield(UvData,'MaskName'); %will impose mask refresh  
-% end
 set(handles.uvmat,'UserData',UvData)
+
+%% refresh the current plot
 run0_Callback(hObject, eventdata, handles)
 
 
@@ -4340,22 +4314,13 @@ map=colormap(handles.axes3);
 colormap(map);%transmit the current colormap to the zoom fig
 colorbar
 
-% %------------------------------------------------------
-% % --- Executes on button press in Menu/Export/extract figure.
-% %------------------------------------------------------
-% function MenuExport_plot_Callback(hObject, eventdata, handles)
-% huvmat=get(handles.MenuExport_plot,'parent');
-% UvData=get(huvmat,'UserData');
-% hfig=figure;
-% newaxes=copyobj(handles.axes3,hfig);
-% map=colormap(handles.axes3);
-% colormap(map);%transmit the current colormap to the zoom fig
-% colorbar
-
-% 
-% % --------------------------------------------------------------------
-% function Insert_Callback(hObject, eventdata, handles)
-% 
+% --------------------------------------------------------------------
+function MenuExportAxis_Callback(hObject, eventdata, handles)
+answer=msgbox_uvmat('CONFIRMATION','select a figure/axis on which the current uvmat plot will be exported')
+if strcmp(answer,'Yes')
+hchild=get(handles.axes3,'children');
+copyobj(hchild,gca);
+end
 
 %------------------------------------------------------------------------
 % --------------------------------------------------------------------
@@ -4878,3 +4843,6 @@ function MenuSetProject_Callback(hObject, eventdata, handles)
 RootPath=get(handles.RootPath,'String');
 ProjectDir = uigetdir(fileparts(fileparts(RootPath)), 'select the project source directory');
 datatree_browser(ProjectDir)
+
+
+

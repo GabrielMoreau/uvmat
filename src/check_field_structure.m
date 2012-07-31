@@ -27,7 +27,7 @@ end
 if isfield(Data,'ListVarName') && iscell(Data.ListVarName)
     nbfield=numel(Data.ListVarName); 
 else
-    errormsg='input field does not contain the cell array of variable names .ListVarNames';
+    errormsg='input field does not contain the cell array of variable names .ListVarName';
     return
 end
 %check dimension names

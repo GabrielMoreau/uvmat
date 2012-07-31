@@ -416,6 +416,9 @@ function num_DZ_Callback(hObject, eventdata, handles)
 % --- Executes on button press in PLOT: refresh the current object , plot the object and its projected field
 function PLOT_Callback(hObject, eventdata, handles)
 
+set(handles.PLOT,'BackgroundColor',[1 1 0])
+drawnow
+
 %% read the object parameters in the GUI set_object
 ObjectData=read_GUI(handles.set_object);%read the parameters defining the object in the GUI set_object
 if iscell(ObjectData.Coord)%check for empty line
@@ -481,9 +484,14 @@ IndexObj_1=get(hhuvmat.ListObject_1,'Value');
 if strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')||strcmp(ObjectData.ProjMode,'none')
     PlotType='text';
 else
+    % create tps coeff if needed for ProjMode 'filter'
+    if strcmp(ObjectData.ProjMode,'filter')&&~isfield(UvData.Field,'Coord_tps')     
+        UvData.Field=calc_tps(UvData.Field);
+    end
     [ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current field of uvmat on ObjectData
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR', errormsg)
+        set(handles.PLOT,'enable','on')
         return
     end   
     if isequal(IndexObj_1,IndexObj) % if  the projection is in uvmat
@@ -545,7 +553,8 @@ set(hhuvmat.MenuEditObject,'enable','on')
 set(hhuvmat.edit_object,'Value',1) % set uvmat to object edit mode to allow further object update
 set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
 set(hhuvmat.ViewField,'Value',1)
-
+% set(handles.PLOT,'enable','on')
+set(handles.PLOT,'BackgroundColor',[1 0 0])
 %------------------------------------------------------------------------
 % --- Executes on button press in MenuCoord.
 function MenuCoord_Callback(hObject, eventdata, handles)

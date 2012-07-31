@@ -79,7 +79,7 @@ if exist('InputName','var')
         set(handles.LinkDir,'Visible','off')
         set(handles.UpdateLink,'String','create_link')
         set(handles.MarkupDir,'Visible','on')
-
+        
     else% opening by uvmat/Open
         InputDir=regexprep(InputName,'.xml$','');
         if exist(InputDir,'dir')
@@ -93,12 +93,11 @@ if exist('InputName','var')
                 set(handles.LinkDir,'Visible','off')
                 set(handles.MarkupDir,'String','CreateLink')
             end
-        end
-                FillExperiments(handles)
-        set(handles.OK,'Visible','on')
-        drawnow
-        
+        end      
     end
+    FillExperiments(handles)
+    set(handles.OK,'Visible','on')
+    drawnow
 end
 
 
@@ -195,24 +194,27 @@ ListExperiments_Callback([],[], handles)
 SourcePath=get(handles.SourceDir,'String');
 MirrorPath='';
 if strcmp(get(handles.LinkDir,'Visible'),'on')
-MirrorPath=get(handles.LinkDir,'String');
+    MirrorPath=get(handles.LinkDir,'String');
 end
 ListExperiments=get(handles.ListExperiments,'String');
 if isequal(get(handles.ListExperiments,'Value'),1)
-    ListExperiments=ListExperiments(2:end); %choose all experiments
+    ListExperiments=ListExperiments(2:end); %choose all experiments if the first line '*' has been selected
 else
     ListExperiments=ListExperiments(get(handles.ListExperiments,'Value'));
 end
 ListDevices={};
 
+%% loop on the list of selected experiments
 for iexp=1:numel(ListExperiments)
-    hdir=dir(fullfile(SourcePath,ListExperiments{iexp})); %list files and dirs
+    
+    % update the directory of the sources and update the links in the case of a link dir
+    hdir=dir(fullfile(SourcePath,ListExperiments{iexp})); %list files and folders in the source
     for ilist=1:length(hdir)
         Device=hdir(ilist).name;
         if ~isequal(Device(1),'.')
             if ~isempty(MirrorPath)% we list the links to the data directories of files
                 link=fullfile(MirrorPath,ListExperiments{iexp},Device);
-                if ~exist(link)
+                if ~exist(link)% create a link if it does not exist
                     source=fullfile(SourcePath,ListExperiments{iexp},Device);
                     system(['ln -s ' source ' ' link])%TODO translate for DOS
                 end
@@ -227,7 +229,36 @@ for iexp=1:numel(ListExperiments)
             end
         end
     end
+    
+    % check for dir and files in the link dir which do not exist in the source dir
+    if ~isempty(MirrorPath)
+        hdir=dir(fullfile(MirrorPath,ListExperiments{iexp})); %list files and folders in the link dir
+        for ilist=1:length(hdir)
+            Device=hdir(ilist).name;
+            if ~isequal(Device(1),'.')
+                if hdir(ilist).isdir
+                    Device=[Device '/'];
+                end
+                check_list=strcmp(Device,ListDevices) | strcmp(['@' Device],ListDevices);
+                if isempty(find(check_list))
+                    ListDevices=[ListDevices;Device];
+                end
+            end
+        end
+    end
 end
+
+%% display the updated list, keeping track of the previously selected item
+PreviousList=get(handles.ListDevices,'String');
+NewValue=[];
+if ~isempty(PreviousList)&&iscell(PreviousList)
+    PreviousDevice=PreviousList{get(handles.ListDevices,'Value')};
+    NewValue=find(strcmp(PreviousDevice,ListDevices));
+end
+if isempty(NewValue)
+    NewValue=1;
+end
+set(handles.ListDevices,'Value',NewValue)
 set(handles.ListDevices,'String',ListDevices)
 
 
@@ -236,8 +267,8 @@ set(handles.ListDevices,'String',ListDevices)
 function ListDevices_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------    
 list_val=get(handles.ListExperiments,'Value');
-if numel(list_val)~=1
-    msgbox_uvmat('ERROR','select a single experiment')
+if isequal(list_val,1) || numel(list_val)~=1
+    msgbox_uvmat('ERROR','select a single experiment in the column ''Experiments''')
     return
 end
 ListExperiments=get(handles.ListExperiments,'String');
@@ -252,31 +283,35 @@ end
 ListDevices=get(handles.ListDevices,'String');
 Device=ListDevices{get(handles.ListDevices,'Value')};
 Device=regexprep(Device,'^@','');
+
+%% open the selected file
+% case of a directory, open a file inside
 if strcmp(Device(end),'/')
     DataDir=fullfile(RootPath,Experiment,Device(1:end-1));
     DirList=dir(DataDir);
     for ilist=1:numel(DirList)
-        [tild,tild,FileExt]=fileparts(DirList(ilist).name);
-        FileExt=regexprep(FileExt,'^.','');
-        if ~isempty(FileExt) && (~isempty(imformats(FileExt))||strcmp(lower(FileExt),'avi')||strcmp(lower(FileExt),'nc'))
-            uvmat(fullfile(DataDir,DirList(ilist).name))
-            return
+        if ~DirList(ilist).isdir
+            [tild,tild,FileExt]=fileparts(DirList(ilist).name);
+            FileExt=regexprep(FileExt,'^.','');
+            if ~isempty(FileExt) && (~isempty(imformats(FileExt))||strcmp(lower(FileExt),'avi')||strcmp(lower(FileExt),'nc'))
+                uvmat(fullfile(DataDir,DirList(ilist).name))
+                return
+            end
         end
     end
+    % open browser if no valid input file has been detected
+    [FileName, PathName] = uigetfile( ...
+            { '*.*', 'All Files (*.*)'}, ...
+            'Pick a mask file *.png',DataDir);
+    if ~isempty(FileName)
+        uvmat(fullfile(PathName,FileName));
+        return
+    end
+else %case of a file
+    uvmat(fullfile(RootPath,Experiment,Device))
+    return
 end
-% 
-% set(handles.ListRecords,'Value',1)
-% set(handles.ListXml,'Value',1)
-% ListDevices=get(handles.ListDevices,'String');
-% list_val=get(handles.ListDevices,'Value');
-% if isequal(list_val,1)
-%     ListDevices=ListDevices(2:end);
-% else
-%     ListDevices=ListDevices(list_val);
-% end
-% [ListDevices,ListRecords,ListXml]=ListDir(CurrentPath,ListExperiments,ListDevices,{});
-% set(handles.ListRecords,'String',[{'*'};ListRecords'])
-% set(handles.ListXml,'String',[{'*'};ListXml'])
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
