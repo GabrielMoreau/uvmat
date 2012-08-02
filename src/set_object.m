@@ -191,7 +191,7 @@ if ~isempty(huvmat)
         ObjIndex=ObjIndex(1);%keep only the first object selected
         set(hhuvmat.ListObject,'Value',ObjIndex)
         % draw all object colors in blue (unselected) in uvmat
-        hother=[findobj(hhuvmat.axes3,'Tag','proj_object');findobj(hhuvmat.axes3,'Tag','DeformPoint')];%find all the proj object and deform point representations
+        hother=[findobj(hhuvmat.PlotAxes,'Tag','proj_object');findobj(hhuvmat.PlotAxes,'Tag','DeformPoint')];%find all the proj object and deform point representations
         for iobj=1:length(hother)
             if isequal(get(hother(iobj),'Type'),'rectangle')||isequal(get(hother(iobj),'Type'),'patch')
                 set(hother(iobj),'EdgeColor','b')
@@ -474,7 +474,7 @@ UvData.Object{IndexObj}=ObjectData;%record the current object properties in uvma
 if check_handle
     UvData.Object{IndexObj}.DisplayHandle.uvmat=obj_handle; %preserve the object plot handle if valid
 else
-    UvData.Object{IndexObj}.DisplayHandle.uvmat=hhuvmat.axes3; %axes taken as object display handle by defualt
+    UvData.Object{IndexObj}.DisplayHandle.uvmat=hhuvmat.PlotAxes; %axes taken as object display handle by defualt
 end
 %set(hhuvmat.edit_object,'Value',1)% set the current object to edit mode
 
@@ -495,14 +495,14 @@ else
         return
     end   
     if isequal(IndexObj_1,IndexObj) % if  the projection is in uvmat
-         PlotType=plot_field(ProjData,hhuvmat.axes3,read_GUI(get(hhuvmat.axes3,'parent')));%update the current uvmat plot
+         PlotType=plot_field(ProjData,hhuvmat.PlotAxes,read_GUI(get(hhuvmat.PlotAxes,'parent')));%update the current uvmat plot
     else  % if the projection is in view_field
         hview_field=findobj(allchild(0),'tag','view_field');
         if isempty(hview_field)
             hview_field=view_field(ProjData); %open the view_field GUI for plot
         else
             hhview_field=guidata(hview_field);
-            [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%update an existing  plot in view_field
+            [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%update an existing  plot in view_field
             write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
         end
         haxes=findobj(hview_field,'tag','axes3');

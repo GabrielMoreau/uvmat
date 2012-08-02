@@ -142,11 +142,11 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                         hview_field=view_field(ProjData); %open the view_field GUI for plot
                     else
                         hhview_field=guidata(hview_field);
-                        [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%update an existing  plot in view_field
+                        [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%update an existing  plot in view_field
                         write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
                     end
                     ViewFieldData=get(hview_field,'UserData');
-                    %                     ViewFieldData.axes3=ProjData;
+                    %                     ViewFieldData.PlotAxes=ProjData;
                     haxes=findobj(hview_field,'tag','axes3');
                     if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Coordinates)% case of no plot display (pure text table)
                         h_TableDisplay=findobj(hview_field,'tag','TableDisplay');
@@ -159,8 +159,8 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                         set(hview_field,'Position',ViewFieldData.GUISize)
                     end
                 else
-                    UvData.axes3=ProjData;
-                    [PlotType,PlotParam]=plot_field(ProjData,hhuvmat.axes3,read_GUI(hhuvmat));%update an existing field plot
+                    UvData.PlotAxes=ProjData;
+                    [PlotType,PlotParam]=plot_field(ProjData,hhuvmat.PlotAxes,read_GUI(hhuvmat));%update an existing field plot
                     write_plot_param(hhuvmat,PlotParam); %update the display of plotting parameters for the current object
                 end
             end

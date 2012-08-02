@@ -254,12 +254,8 @@ end
 %% update the plotted field stored in parent figure
 if ~isempty(index_2D)|| ~isempty(index_1D)
     FigData=get(hfig,'UserData');
-%     if strcmp(get(hfig,'tag'),'view_field')
-%         set(hfig,'UserData',[]); % refresh user data in view_field (set by civ/TestCiv )
-%     end
-    tagaxes=get(haxes,'tag');% tag of the current plot axis
-    if isfield(FigData,tagaxes)
-        FigData.(tagaxes)=Data;
+    if strcmp(get(hfig,'tag'),'view_field')||strcmp(get(hfig,'tag'),'uvmat')
+        FigData.(get(haxes,'tag'))=Data;
         set(hfig,'UserData',FigData)
     end
 end

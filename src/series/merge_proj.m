@@ -224,29 +224,8 @@ for i_slice=1:NbSlice
                         check_tps=1;
                 end
             end
-            if strcmp(Param.ProjObject.ProjMode,'filter')
-                check_tps=1;
-            end
-            if check_tps
-                SubDomain=1500; %default, estimated nbre of vectors in a subdomain used for tps
-                if isfield(Data{iview},'SubDomain')
-                    SubDomain=Data{iview}.SubDomain;%
-                end
-                [Data{iview}.SubRange,Data{iview}.NbSites,Data{iview}.Coord_tps,Data{iview}.U_tps,Data{iview}.V_tps,tild,U_smooth,V_smooth,W_smooth,FF] =...
-                    filter_tps([Data{iview}.X(Data{iview}.FF==0) Data{iview}.Y(Data{iview}.FF==0)],Data{iview}.U(Data{iview}.FF==0),Data{iview}.V(Data{iview}.FF==0),[],SubDomain,0);
-                nbvar=numel(Data{iview}.ListVarName);
-                Data{iview}.ListVarName=[Data{iview}.ListVarName {'SubRange','NbSites','Coord_tps','U_tps','V_tps'}];
-                Data{iview}.VarDimName=[Data{iview}.VarDimName {{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
-                    {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
-                Data{iview}.VarAttribute{nbvar+3}.Role='coord_tps';
-                Data{iview}.VarAttribute{nbvar+4}.Role='vector_x';
-                Data{iview}.VarAttribute{nbvar+5}.Role='vector_y';
-                if isfield(Data{iview},'ListDimName')%cleaning
-                    Data{iview}=rmfield(Data{iview},'ListDimName');
-                end
-                if isfield(Data{iview},'DimValue')%cleaning
-                    Data{iview}=rmfield(Data{iview},'DimValue');
-                end
+            if ~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'filter')&&~isfield(Data{iview},'Coord_tps')
+                Data{iview}=calc_tps(Data{iview});
             end
                  
             % field calculation (vort, div...)    

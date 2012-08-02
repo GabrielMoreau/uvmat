@@ -75,9 +75,9 @@ set(handles.view_field,'Units','pixels')
 ViewFieldData.GUISize=get(handles.view_field,'Position');
 set(handles.view_field,'UserData',ViewFieldData);%store the initial fig size in UserData
 AxeData.LimEditBox=1; %initialise AxeData, the parent figure sets plot parameters
-set(handles.axes3,'UserData',AxeData)
+set(handles.PlotAxes,'UserData',AxeData)
 if exist('Field','var')
-    [PlotType,PlotParamOut]= plot_field(Field,handles.axes3);%,PlotParam,KeepLim,PosColorbar)
+    [PlotType,PlotParamOut]= plot_field(Field,handles.PlotAxes);%,PlotParam,KeepLim,PosColorbar)
     set(handles.Coordinates,'Visible','on')
     if isfield(PlotParamOut,'Vectors')
         set(handles.Vectors,'Visible','on')
@@ -148,7 +148,7 @@ pos(1)=bord(1);
 pos(2)=bord(2);
 pos(3)=max(1,pos_1(1)-pos(1)-bord(3));
 pos(4)=max(1,size_fig(4)-bord(4));
-set(handles.axes3,'Position',pos)
+set(handles.PlotAxes,'Position',pos)
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -156,7 +156,7 @@ set(handles.axes3,'Position',pos)
 function varargout = view_field_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 varargout{1} = handles.output;% the only output argument is the handle to the GUI figure
-varargout{2} = strcmp(get(handles.axes3,'Visible'),'on');% check active plot axis
+varargout{2} = strcmp(get(handles.PlotAxes,'Visible'),'on');% check active plot axis
 
 %------------------------------------------------------------------------
 %--- activated when closing the GUI view_field
@@ -279,7 +279,7 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
             set(hmask,'YData',Mask.AY);
 %             uistack(hmask,'top')
         else
-            axes(handles.axes3)
+            axes(handles.PlotAxes)
             hold on    
             MaskData.maskhandle=image(Mask.AX,Mask.AY,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*flagmask);
 %             set(MaskData.maskhandle,'AlphaData',0.6*flagmask)
@@ -295,8 +295,8 @@ function MenuExportFigure_Callback(hObject, eventdata, handles)
 huvmat=get(handles.MenuExport,'parent');
 UvData=get(huvmat,'UserData');
 hfig=figure;
-newaxes=copyobj(handles.axes3,hfig);
-map=colormap(handles.axes3);
+newaxes=copyobj(handles.PlotAxes,hfig);
+map=colormap(handles.PlotAxes);
 colormap(map);%transmit the current colormap to the zoom fig
 colorbar
 
@@ -773,7 +773,7 @@ function update_plot(handles)
 Data=get(handles.view_field,'UserData');
 AxeData=Data.axes3;% retrieve the current plotted data
 PlotParam=read_GUI(handles.view_field);
-[PP,PlotParamOut]= plot_field(AxeData,handles.axes3,PlotParam);
+[PP,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %------------------------------------------------------------------------
@@ -797,8 +797,8 @@ function MenuExport_plot_Callback(hObject, eventdata, handles)
 huvmat=get(handles.MenuExport_plot,'parent');
 UvData=get(huvmat,'UserData');
 hfig=figure;
-newaxes=copyobj(handles.axes3,hfig);
-map=colormap(handles.axes3);
+newaxes=copyobj(handles.PlotAxes,hfig);
+map=colormap(handles.PlotAxes);
 colormap(map);%transmit the current colormap to the zoom fig
 colorbar
 

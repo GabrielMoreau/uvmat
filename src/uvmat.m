@@ -27,54 +27,24 @@
 %     GNU General Public License (open UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %
-% Information stored on the interface:
-%    'Strings' of all edit boxes and menus: get(handles.Tag,'String')
-%    'Values' of all menus and toggle buttons: get(handles.Tag,'Value')
-%     Matlab structure called UvData stored as 'UserData' of the figure uvmat.fig,(can be obtained by right mouse click on the interface).
-%          It contains the following fields:
-%     - Fixed specifiacation of plotting figures and axes (defined bu uvmat_OpeningFcn) 
-%          .PosColorbar: [0.8210 0.4710 0.0190 0.4450]; specified position of the colorbar on figures
-%     - Information read in the documentation open of a series (activated by RootPath_Callback) :
-%          .XmlData, with fields:
-%               .Time: matrix of times of the images with index i and j
-%               .GeometryCalib: [1x1 struct]
-%     - Information defined from the interface:
-%           .NewSeries: =1 when the first view of a new field series is displayed, else 0
-%           .FileName:(char string)
-%           .FieldName: (char string) main field selected('image', 'velocity'...)
-%           .CName: (char string)name of the scalar used for vector colors
-%          .MovieObject{1}: movie object representing an input movie
-%          .MovieObject{2}: idem for a second input series (_1)
-%          .FileName_1 : last second input file name (to deal with a constant second input without reading again the file)
-%          .ZMin, .ZMax: range of the z coordinate
-%..... to complement
-%     - Information on  projection objects
-%           .Object: {[1x1 struct]}
-%           .CurrentObjectIndex: index of the projection object .Object currently selected for editing
-%     -Information on the current field (Field{i})
-%            .Txt : text information to display (e.g. error message)
-%            .NbDim: number of dimensions (=0 by default)
-%            .NbCoord: number of vector components
-%            .CoordType: expresses the type of coordinate ('px' for image, 'sig' for instruments, or 'phys')
-%            .dt: time interval for the corresponding image pair
-%            .Mesh: estimated typical distance between vectors
-%            .ZMax:
-%            .ZMin: 
-%            .X, .Y, .Z: set of vector coordinates 
-%            .U,.V,.W: corresponding set of vector components
-%            .F: corresponding set of warning flags
-%            .FF: corresponding set of false flags, =0 for good vectors
-%            .C: corresponding values of the scalar used for vector color
-%             (.X, .Y, .Z,.U,.V,.W,.F,.FF,.C are matlab vectors of the same length,
-%                     equal to the number of vectors stored in the input open)
-%            .CName: name of the scalar .C
-%            .CType: type of the scalar .C, setting how the scalar is obtained (see 'Scalars' below)
-%            .A image or scalar 
-%            .AX: vector of dimension 2 representing the first and last values
-%              of the X coordinates for the image or scalar known on a regular grid,
-%              or vector of dimension .A for a scaler defined on irregular grid.
-%            .AY: same as .AX along the Y direction
-%            .AName: name of the scalar, ='image' for an image
+% Information stored on the interface:(use 'Export/field in workspace' in
+% the menu bar of uvmat to retrieve it)
+%          .OpenParam: structure containing parameters defined when uvmat is opened
+%                       .PosColorbar: position (1x4 vector)of the colorbar (relative to the fig uvmat)
+%                       .PosSetObject: position of set_object
+%                       .PosGeometryCalib: size of set_object
+%                       .NbBuiltin: nbre of functions always displayed in transform_fct menu
+%          .Object: cell array of structures representing the current projection objects, as produced by 'set_object.m'={[]} by default
+%          .NewSeries: =0/1 flag telling whether a new field series has been opened
+%          .FileName_1: name of the current second field (used to detect a  constant field during file scanning)
+%          .FileType: current file type, as defined by the fct  get_file_type.m)
+%          .i1_series,.i2_series,.j1_series,.j1_series: series of i1,i2,j1,j2 indices detected in the input dir,set by  the fct find_file_series
+%          .MovieObject: current movie object
+%          .TimeUnit: unit for time
+%          .XmlData: cell array of 1 or 2 structures representing the xml files associated with the input fields (containing timing  and geometry calibration)
+%          .Field: cell array of 1 or 2 structures representing the current  input field(s)
+%          .PlotAxes: field structure representing the current field plotted  on the main axes  (used for mouse operations)
+%          .HistoAxes: idem for histogram axes
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   DATA FLOW  (for run0_Callback) %%%%%%%%%%%%%%%%%%%%:
 %
@@ -110,7 +80,7 @@
 %                                                                ObjectData
 %                                                                    |
 % plot_field.m: plot the projected fields and store them as          |
-% UvData.axes3                                        |
+% UvData.PlotAxes                                        |
 %                                                                    |
 %                                                                AxeData
 %
@@ -213,15 +183,14 @@ path_uvmat=fileparts(which('uvmat'));
 set(hObject,'Units','Normalized')
 movegui(hObject,'center')
 UvData.OpenParam.PosColorbar=[0.805 0.022 0.019 0.445];
-UvData.OpenParam.SetObjectOrigin=[-0.05 -0.03]; %position for set_object
-UvData.OpenParam.SetObjectSize=[0.3 0.7];
-UvData.OpenParam.CalOrigin=[0.95 -0.03];%position for geometry_calib (TO IMPROVE)
-UvData.OpenParam.CalSize=[0.28 1];
-UvData.axes3=[];%initiate the record of plotted field
-UvData.axes2=[];
-UvData.axes1=[];
+UvData.OpenParam.PosSetObject=[-0.05 -0.03 0.3 0.7]; %position for set_object
+UvData.OpenParam.PosGeometryCalic=[0.95 -0.03 0.28 1 ];%position for geometry_calib (TO IMPROVE)
+% UvData.OpenParam.CalSize=[0.28 1];
+% UvData.PlotAxes=[];%initiate the record of plotted field
+% UvData.axes2=[];
+% UvData.axes1=[];
 AxeData.LimEditBox=1; %initialise AxeData
-set(handles.axes3,'UserData',AxeData)
+set(handles.PlotAxes,'UserData',AxeData)
 
 %% set functions for the mouse and keyboard
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
@@ -230,13 +199,14 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action functio
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
 set(hObject,'DeleteFcn',{@closefcn})%
 
-%% refresh projection plane
+%% initialisation
 % set(handles.ListObject,'Value',1)% default: empty projection objectproj_field
 % set(handles.ListObject,'String',{''})
 % set(handles.ListObject_1,'Value',1)% default: empty projection objectproj_field
 % set(handles.ListObject_1,'String',{''})
 set(handles.Fields,'Value',1)
 set(handles.Fields,'string',{''})
+UvData.Object={[]};
 
 %% TRANSFORM menu: builtin fcts
 transform_menu={'';'phys';'px';'phys_polar'};
@@ -331,7 +301,7 @@ end
 %% plot input field if exists
 if testinputfield
     %delete drawn objects
-    hother=findobj(handles.axes3,'Tag','proj_object');%find all the proj objects
+    hother=findobj(handles.PlotAxes,'Tag','proj_object');%find all the proj objects
     for iobj=1:length(hother)
         delete_object(hother(iobj))
     end  
@@ -805,7 +775,7 @@ drawnow
 set(handles.Fields,'UserData',[])% reinialize data from uvmat opening
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for run0: begin a new series
-UvData.TestInputFile=1;
+UvData.FileName_1='';% name of the current second field (used to detect a  constant field during file scanning)
 UvData.FileType{index}=FileType;
 UvData.i1_series{index}=i1_series;
 UvData.i2_series{index}=i2_series;
@@ -1058,7 +1028,7 @@ if isequal(scan_option,'i')
         diff_ref_i=1;
     end
     if isequal (diff_ref_i,diff_ref_i(1)*ones(size(diff_ref_i)))
-        set(handles.increment_scan,'String',num2str(diff_ref_i(1)))
+        set(handles.num_IndexIncrement,'String',num2str(diff_ref_i(1)))
     end
      set(handles.scan_i,'Value',1)
      scan_i_Callback([],[], handles); 
@@ -1068,7 +1038,7 @@ else
         diff_ref_j=1;
     end
     if isequal (diff_ref_j,diff_ref_j(1)*ones(size(diff_ref_j)))
-        set(handles.increment_scan,'String',num2str(diff_ref_j(1)))
+        set(handles.num_IndexIncrement,'String',num2str(diff_ref_j(1)))
     end
      set(handles.scan_j,'Value',1)
      scan_j_Callback([],[], handles); 
@@ -1394,7 +1364,7 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
             set(hmask,'YData',Mask.AY);
 %             uistack(hmask,'top')
         else
-            axes(handles.axes3)
+            axes(handles.PlotAxes)
             hold on    
             size(flagmask)
            % MaskData.maskhandle=image(Mask.AX,Mask.AY,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*flagmask);
@@ -1419,9 +1389,9 @@ function runplus_Callback(hObject, eventdata, handles)
 set(handles.runplus,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 %TODO: introduce the option: increment ='*' to move to the next available view
-increment=str2num(get(handles.increment_scan,'String')); %get the field increment d
+increment=str2num(get(handles.num_IndexIncrement,'String')); %get the field increment d
 % if isnan(increment)
-%     set(handles.increment_scan,'String','1')%default value
+%     set(handles.num_IndexIncrement,'String','1')%default value
 %     increment=1;
 % end
 errormsg=runpm(hObject,eventdata,handles,increment);
@@ -1438,9 +1408,9 @@ function runmin_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.runmin,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-increment=-str2num(get(handles.increment_scan,'String')); %get the field increment d
+increment=-str2num(get(handles.num_IndexIncrement,'String')); %get the field increment d
 % if isnan(increment)
-%     set(handles.increment_scan,'String','1')%default value
+%     set(handles.num_IndexIncrement,'String','1')%default value
 %     increment=1;
 % end
 errormsg=runpm(hObject,eventdata,handles,increment);
@@ -1455,9 +1425,9 @@ function Movie_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.Movie,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-increment=str2num(get(handles.increment_scan,'String')); %get the field increment d
+increment=str2num(get(handles.num_IndexIncrement,'String')); %get the field increment d
 % if isnan(increment)
-%     set(handles.increment_scan,'String','1')%default value
+%     set(handles.num_IndexIncrement,'String','1')%default value
 %     increment=1;
 % end
 set(handles.STOP,'Visible','on')
@@ -1486,7 +1456,7 @@ function MovieBackward_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.MovieBackward,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-increment=-str2num(get(handles.increment_scan,'String')); %get the field increment d
+increment=-str2num(get(handles.num_IndexIncrement,'String')); %get the field increment d
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
@@ -1553,7 +1523,6 @@ sub_value= get(handles.SubField,'Value');
 if sub_value % a second input file has been entered 
      [InputFile.RootPath_1,InputFile.SubDir_1,InputFile.RootFile_1,InputFile.FileIndex_1,InputFile.FileExt_1,InputFile.NomType_1]=read_file_boxes_1(handles);   
     [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(InputFile.FileIndex_1);
-%     InputFile.NomType_1=get(handles.NomType_1,'String');
 else
     filename_1=[];
 end   
@@ -1584,8 +1553,7 @@ if CheckFixPair
         end
     end
     
-% the pair i1-i2 or j1-j2 is free (check box CheckFixPair not selected): 
-% the list of existing indices recorded in UvData is used
+% the pair i1-i2 or j1-j2 is free (check box CheckFixPair not selected): the list of existing indices recorded in UvData is used
 else
     UvData=get(handles.uvmat,'UserData');
     ref_i=i1;
@@ -1606,7 +1574,8 @@ else
             ref_j=ref_j+increment;% increment the current reference index j if scan_j option is used
         end
     else % free increment
-        if isequal(get(handles.runplus,'BackgroundColor'),[1 1 0])% if runplus is activated
+        runaction=get(gcbo,'tag');
+        if strcmp(runaction,'runplus')||strcmp(runaction,'Movie')% if runplus or movie is activated
             step=1;
         else
             step=-1;
@@ -1628,18 +1597,17 @@ else
     elseif ref_j<0
         errormsg='minimum j index reached';
     elseif ref_i+1>size(UvData.i1_series{1},1)
-        errormsg='maximum i index reached';
+        errormsg='maximum i index reached (reload the input file to update the index bound)';
     elseif ref_j+1>size(UvData.i1_series{1},2)
-        errormsg='maximum j index reached';
+        errormsg='maximum j index reached (reload the input file to update the index bound)';
     end
-    if ~isempty(errormsg)
-        return
-    end
+    if ~isempty(errormsg),return,end
     i1_subseries=UvData.i1_series{1}(ref_i+1,ref_j+1,:);
     i1_subseries=i1_subseries(i1_subseries>0);
-    if isempty(i1_subseries)
-        errormsg='no next file';
-        return
+    if isempty(i1_subseries)% case of pairs
+        i1_subseries=UvData.i1_series{1}(ref_i+1,:,:);
+    end
+    if isempty(i1_subseries),errormsg='no next frame: set num_IndexIncrement =''*'' to reach the next existing file';return
     else
         i1=i1_subseries(end);
     end
@@ -1849,7 +1817,7 @@ if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
 end
 
  % make movie until movie speed is set to 0 or STOP is activated
-hima=findobj(handles.axes3,'Tag','ima');% %handles.axes3 =main plotting window (A GENERALISER)
+hima=findobj(handles.PlotAxes,'Tag','ima');% %handles.PlotAxes =main plotting window (A GENERALISER)
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
@@ -2312,7 +2280,7 @@ end
 
 %% check whether tps is needed, then calculate tps coefficients if needed
 check_proj_tps=0;
-if isfield(UvData,'Object')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))
+if  (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))
     for iobj=1:numel(UvData.Object)
         if isfield(UvData.Object{iobj},'ProjMode')&& strcmp(UvData.Object{iobj}.ProjMode,'filter')
             check_proj_tps=1;
@@ -2474,7 +2442,7 @@ if NbDim>1
         UvData.Field.Mesh=ord;
     end
     % default projection plane
-    if ~isfield(UvData,'Object')||isempty(UvData.Object{1})
+    if isempty(UvData.Object{1})
         UvData.Object{1}.Type='plane';%main plotting plane
         UvData.Object{1}.ProjMode='projection';%main plotting plane
         UvData.Object{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
@@ -2537,7 +2505,7 @@ if NbDim<=1
     set(handles.Objects,'Visible','off')
     set(handles.ListObject_1_title,'Visible','off')
     set(handles.ListObject_1,'Visible','off')
-    [PlotType,PlotParamOut]=plot_field(UvData.Field,handles.axes3,read_GUI(handles.uvmat));
+    [PlotType,PlotParamOut]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
     write_plot_param(handles,PlotParamOut) %update the auto plot parameters
     
 %% 2D or 3D fields are generally projected
@@ -2572,7 +2540,7 @@ else
     if isfield(UvData,'plotaxes')%case of movies
         haxes(1)=UvData.plotaxes;
     else
-        haxes(1)=handles.axes3;
+        haxes(1)=handles.PlotAxes;
     end
     PlotParam{1}=read_GUI(handles.uvmat);
     %default settings if vectors not visible
@@ -2592,7 +2560,7 @@ else
         view_field_handle=findobj(allchild(0),'tag','view_field');%handles of the view_field GUI
         if ~isempty(view_field_handle)
             plot_handles{2}=guidata(view_field_handle);
-            haxes(2)=plot_handles{2}.axes3;
+            haxes(2)=plot_handles{2}.PlotAxes;
             PlotParam{2}=read_GUI(handles.uvmat);%read plotting parameters on the uvmat interface
             PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
         end
@@ -2731,7 +2699,7 @@ function histo1_menu_Callback(hObject, eventdata, handles)
 histo_menu=get(handles.histo1_menu,'String');
 histo_value=get(handles.histo1_menu,'Value');
 FieldName=histo_menu{histo_value};
-% update_histo(handles.histo_u,handles.uvmat,FieldName)
+% update_histo(handles.HistoAxes,handles.uvmat,FieldName)
 % 
 % %------------------------------------------------------------------------
 % function histo2_menu_Callback(hObject, eventdata, handles)
@@ -2776,7 +2744,7 @@ else
     Amin=double(min(min(min(FieldHisto))));%min of field value
     Amax=double(max(max(max(FieldHisto))));%max of field value
     if isequal(Amin,Amax)
-        cla(handles.histo_u)
+        cla(handles.HistoAxes)
     else
         Histo.ListVarName={FieldName,'histo'};
         if isfield(Field,'NbDim') && isequal(Field.NbDim,3)
@@ -2812,14 +2780,14 @@ else
                 Histo.histo(:,col)=hist(C, Histo.(FieldName));  %calculate histogram
             end
         end
-        plot_field(Histo,handles.histo_u);
+        plot_field(Histo,handles.HistoAxes);
         hlegend=legend;
         if isempty(FieldName_2)
         set(hlegend,'String',FieldName)
         else
             set(hlegend,'String',{FieldName;FieldName_2})
         end
-%         hh=get(handles.histo_u,'children');
+%         hh=get(handles.HistoAxes,'children');
 %         get(hh(1))
 %         get(hh(2))
     end
@@ -2924,7 +2892,7 @@ if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
         varid=netcdf.defVar(nc,flagname,'double',dimid);%create fixflag variable if it does not exist
     end
     netcdf.endDef(nc);
-    netcdf.putVar(nc,varid,UvData.axes3.FF);
+    netcdf.putVar(nc,varid,UvData.PlotAxes.FF);
     netcdf.close(nc);  
 else %old netcdf library
     netcdf_toolbox(FileName,AxeData,attrname,nbname,flagname)
@@ -3369,16 +3337,10 @@ if isequal(get(handles.VOLUME,'Value'),1)
     PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
     [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface with action on haxes,
                                                       % associate the set_object interface handle to the plotting axes
-    if isfield(UvData.OpenParam,'SetObjectOrigin')                                                
-    pos_uvmat=get(handles.uvmat,'Position');
-    pos_set_object(1:2)=UvData.OpenParam.SetObjectOrigin + pos_uvmat(1:2);
-    pos_set_object(3:4)=UvData.OpenParam.SetObjectSize .* pos_uvmat(3:4);  
-    set(hset_object,'Position',pos_set_object)
-    end
+    set(hset_object,'Position',get(handles.uvmat,'Position')+UvData.OpenParam.PosSetObject)
     UvData.MouseAction='create_object';
 else
     set(handles.VOLUME,'BackgroundColor',[0 1 0])
-%     UvData.MouseAction='none';
 end
 set(handles.uvmat,'UserData',UvData)
 
@@ -3972,9 +3934,9 @@ set(handles.VecColBar,'Cdata',A)
 function update_plot(handles)
 %-------------------------------------------------------------------
 UvData=get(handles.uvmat,'UserData');
-AxeData=UvData.axes3;% retrieve the current plotted data
+AxeData=UvData.PlotAxes;% retrieve the current plotted data
 PlotParam=read_GUI(handles.uvmat);
-[tild,PlotParamOut]= plot_field(AxeData,handles.axes3,PlotParam);
+[tild,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %------------------------------------------------------------------------
@@ -3991,13 +3953,13 @@ ObjectData=UvData.Object{get(handles.ListObject_1,'Value')};
 
 %% update the projection plot on uvmat
 ProjData= proj_field(UvData.Field,ObjectData);%project the current input field on object ObjectData
-plot_field(ProjData,handles.axes3,read_GUI(handles.uvmat));% plot the projected field;
+plot_field(ProjData,handles.PlotAxes,read_GUI(handles.uvmat));% plot the projected field;
 %replot all the objects within the new projected field
 for IndexObj=1:numel(list_str)
     IndexObj
         hobject=UvData.Object{IndexObj}.DisplayHandle.uvmat
         if isempty(hobject) || ~ishandle(hobject)
-            hobject=handles.axes3
+            hobject=handles.PlotAxes
         end
         if isequal(IndexObj,get(handles.ListObject,'Value'))
             objectcolor='m'; %paint in magenta the currently selected object in ListObject
@@ -4053,12 +4015,12 @@ set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])
 %% update the  plot on view_field if view_field is already openened
 hview_field=findobj(allchild(0),'tag','view_field');
 if isempty(hview_field)
-    hhview_field.axes3=[];
+    hhview_field.PlotAxes=[];
 else
     Data=get(hview_field,'UserData');
     hhview_field=guidata(hview_field);
     ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
-    [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%read plotting parameters on the uvmat interfachhview_fiel
+    [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%read plotting parameters on the uvmat interfachhview_fiel
     write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
     haxes=findobj(hview_field,'tag','axes3');
     pos=get(hview_field,'Position');  
@@ -4074,7 +4036,7 @@ else
 end
 
 %% update the color of the graphic object representation: the selected object in magenta, others in blue
-update_object_color(handles.axes3,hhview_field.axes3,UvData.Object{IndexObj}.DisplayHandle.uvmat)
+update_object_color(handles.PlotAxes,hhview_field.PlotAxes,UvData.Object{IndexObj}.DisplayHandle.uvmat)
 
 %------------------------------------------------------------------------
 %--- update the color representation of objects (indicating the selected ones)
@@ -4253,7 +4215,7 @@ if check_view
         hview_field=view_field;
     end
     hhview_field=guidata(hview_field);
-    [PlotType,PlotParam]=plot_field(ProjData,hhview_field.axes3,read_GUI(hview_field));%read plotting parameters on the GUI view_field);
+    [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%read plotting parameters on the GUI view_field);
     write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
     haxes=findobj(hview_field,'tag','axes3');
     pos=get(hview_field,'Position');
@@ -4309,8 +4271,8 @@ function MenuExportFigure_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % huvmat=get(handles.MenuExport,'parent');
 hfig=figure;
-copyobj(handles.axes3,hfig);
-map=colormap(handles.axes3);
+copyobj(handles.PlotAxes,hfig);
+map=colormap(handles.PlotAxes);
 colormap(map);%transmit the current colormap to the zoom fig
 colorbar
 
@@ -4318,7 +4280,7 @@ colorbar
 function MenuExportAxis_Callback(hObject, eventdata, handles)
 answer=msgbox_uvmat('CONFIRMATION','select a figure/axis on which the current uvmat plot will be exported')
 if strcmp(answer,'Yes')
-hchild=get(handles.axes3,'children');
+hchild=get(handles.PlotAxes,'children');
 copyobj(hchild,gca);
 end
 
@@ -4361,18 +4323,18 @@ aviobj=avifile(aviname,'Compression','None','fps',fps);
 
 %display first view for tests
 newfig=figure;
-newaxes=copyobj(handles.axes3,newfig);%new plotting axes in the new figure
+newaxes=copyobj(handles.PlotAxes,newfig);%new plotting axes in the new figure
 set(newaxes,'Tag','movieaxes')
 nbpix=[512 384]*str2double(answer{3});
 set(gcf,'Position',[1 1 nbpix])% resolution XVGA 
 set(newaxes,'Position',eval(answer{4}));
-map=colormap(handles.axes3);
+map=colormap(handles.PlotAxes);
 colormap(map);%transmit the current colormap to the zoom fig
 msgbox_uvmat('INPUT_Y-N',{['adjust figure ' num2str(newfig) ' with its matlab edit menu '] ;...
         ['then press OK to get the avi movie as a copy of figure ' num2str(newfig) ' display']});
 UvData.plotaxes=newaxes;% the axis in the new figure becomes the current main plotting axes
 set(huvmat,'UserData',UvData);
-increment=str2num(get(handles.increment_scan,'String')); %get the field increment d
+increment=str2num(get(handles.num_IndexIncrement,'String')); %get the field increment d
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
@@ -4402,7 +4364,7 @@ for i=1:imax
 end
 aviobj=close(aviobj);
 UvData=rmfield(UvData,'plotaxes');
-%UvData.Object{1}.plotaxes=handles.axes3;
+%UvData.Object{1}.plotaxes=handles.PlotAxes;
 set(huvmat,'UserData',UvData);
 msgbox_uvmat('CONFIRMATION',{['movie ' aviname ' created '];['with ' num2str(imax) ' frames']})
 
@@ -4509,7 +4471,7 @@ IndexObj=length(ListObject);
 set(handles.ListObject,'Value',IndexObj)
 UvData=get(handles.uvmat,'UserData');
 UvData.Object{IndexObj}=[]; %create a new empty object
-UvData.Object{IndexObj}.DisplayHandle.uvmat=handles.axes3; % axes for plot_object
+UvData.Object{IndexObj}.DisplayHandle.uvmat=handles.PlotAxes; % axes for plot_object
 UvData.Object{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
 data.Name=data.Type;% default name=type
 data.Coord=[0 0]; %default
@@ -4625,9 +4587,9 @@ FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 set(handles.view_xml,'Backgroundcolor',[1 1 0])%indicate the reading of the current xml file by geometry_calib
 if isfield(UvData.OpenParam,'CalOrigin')
     pos_uvmat=get(handles.uvmat,'Position');
-    pos_cal(1)=pos_uvmat(1)+UvData.OpenParam.CalOrigin(1)*pos_uvmat(3);
-    pos_cal(2)=pos_uvmat(2)+UvData.OpenParam.CalOrigin(2)*pos_uvmat(4);
-    pos_cal(3:4)=UvData.OpenParam.CalSize .* pos_uvmat(3:4);
+    pos_cal(1)=pos_uvmat(1)+UvData.OpenParam.PosGeometryCalib(1)*pos_uvmat(3);
+    pos_cal(2)=pos_uvmat(2)+UvData.OpenParam.PosGeometryCalib(2)*pos_uvmat(4);
+    pos_cal(3:4)=UvData.OpenParam.PosGeometryCalib(3:4).* pos_uvmat(3:4);
 end
 geometry_calib(FileName,pos_cal);% call the geometry_calib interface	
 set(handles.view_xml,'Backgroundcolor',[1 1 1])%indicate the end of reading of the current xml file by geometry_calib
@@ -4797,9 +4759,9 @@ if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'Time')
     param.Time=UvData.XmlData{1}.Time;
 end
 if isequal(get(handles.scan_i,'Value'),1)
-    param.incr_i=str2num(get(handles.increment_scan,'String'));
+    param.incr_i=str2num(get(handles.num_IndexIncrement,'String'));
 elseif isequal(get(handles.scan_j,'Value'),1)
-    param.incr_j=str2num(get(handles.increment_scan,'String'));
+    param.incr_j=str2num(get(handles.num_IndexIncrement,'String'));
 end
 param.list_fields=get(handles.Fields,'String');% list menu fields
 param.list_fields(1)=[]; %suppress  'image' option 
@@ -4843,6 +4805,3 @@ function MenuSetProject_Callback(hObject, eventdata, handles)
 RootPath=get(handles.RootPath,'String');
 ProjectDir = uigetdir(fileparts(fileparts(RootPath)), 'select the project source directory');
 datatree_browser(ProjectDir)
-
-
-
