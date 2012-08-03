@@ -1,7 +1,7 @@
 %'find_file_indices': test field structure for input in proj_field and plot_field
 %    group the variables  into 'fields' with common dimensions
 %------------------------------------------------------------------------
-% function  [CellVarIndex,NbDim,CellVarType,errormsg]=find_field_indices(Data)
+% function  [CellVarIndex,NbDim,CellVarType,errormsg]=find_field_cells(Data)
 %
 % OUTPUT:
 % CellVaxIndex: cell whose elements are arrays of indices in the list data.ListVarName  
@@ -49,7 +49,7 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.for input in proj_field and plot_field
 %    group the variables  into 'fields' with common dimensions
 %------------------------------------------------------------------------
-% function  [CellVarIndex,NbDim,CellVarType,errormsg]=find_field_indices(Data)
+% function  [CellVarIndex,NbDim,CellVarType,errormsg]=find_field_cells(Data)
 %
 % OUTPUT:
 % CellVaxIndex: cell whose elements are arrays of indices in the list data.ListVarName  
@@ -97,7 +97,7 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [CellVarIndex,NbDim,CellVarType,errormsg]=find_field_indices(Data)
+function [CellVarIndex,NbDim,CellVarType,errormsg]=find_field_cells(Data)
 CellVarIndex={};
 
 NbDim=[];
