@@ -16,7 +16,7 @@ if strcmp(DataIn,'*')
     return
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%
-[CellVarIndex,NbDim,CellVarType,errormsg]=find_field_indices(DataIn);
+[CellVarIndex,NbDim,CellVarType,errormsg]=find_field_cells(DataIn);
 if ~isempty(errormsg)
     DataOut.Txt=errormsg;
     return
