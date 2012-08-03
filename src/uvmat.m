@@ -50,39 +50,38 @@
 %
 %
 % 1) Input filenames are determined by MenuBrowse (first field), MenuBrowse_1
-% (second field), or by the stored file names under  Browse, or as an input of uvmat. 
-% 2) These functions call 'display_file_name.m' which detects the file series, and fills the file index boxes
-% 3) Then 'update_rootinfo.m' Updates information about a new field series (indices to scan, timing, calibration from an xml file)
-% 4) Then fields are opened and visualised by the main sub-function 'refresh_field.m'
-% The function first reads the name of the input file from the edit boxes  of the GUI
-% A second input file can be introduced for file comparison
-% It then reads the input file(s) with the appropriate function, read for
-% images, read_civxdata.m for CIVx PIV data, nc2struct for other netcdf
-% files.
-%               Main input open   second input open(_1)        second image (pair animation) 
-%            |                 |                             
-%            |                 |                                                
-%                     Field{1}         Field{2}               
-%                                                                         |
-% coord transform (phys.m) or other user defined  fct acting on Field{i}  |
-%                                                                   Field{i}
-%                                                                    |
-% calc_field.m: calculate scalar or other derived fields (vort, div..).
+% (second field), or by the stored file name .FileName_1, or as an input of uvmat. 
+% 2) These functions call 'uvmat/display_file_name.m' which detects the file series, and fills the file index boxes
+% 3) Then 'uvmat/update_rootinfo.m' Updates information about a new field series (indices to scan, timing, calibration from an xml file)
+% 4) Then fields are opened and visualised by the main sub-function 'uvmat/refresh_field.m'
+% The function first reads the name of the input file(s) (one or two) from the edit boxes  of the GUI
+% It then reads the input file(s) with the function read_field.m and perform the following list of operations:
 %
-% sub_field.m: combine the input Field{i} in a single set of fields (vector + scalar):
-%              Field{i=1->3}.X --> UvData.X                          |
-%                                                                    |
-%                                                                 UvData
-%                                                                    |
-% plot histograms of the whole  field
-% proj_field.m: project the set of fields on the current projection objects defined by UvData.Object
-%                                                                    |                                                                          |
-%                                                                ObjectData
-%                                                                    |
-% plot_field.m: plot the projected fields and store them as          |
-% UvData.PlotAxes                                        |
-%                                                                    |
-%                                                                AxeData
+%    %%%%%%%%  structure of uvmat/refresh_field.m %%%%%%%%
+%
+%           Main input open       second input open_1        
+%                    |                   |  
+%             read_field.m            read_field.m
+%                    |                   |
+%                 Field{1}            Field{2}               
+%                    |                   |                                  
+%                    --->transform fct<---             transform (e.g. phys.m) and combine input fields  
+%                            |                                    
+%                        (calc_tps.m)               calculate tps coefficients (for filter projection or spatial derivatives).
+%                            |
+%                       (calc_field.m)               calculate field 
+%                            |
+%                       UvData.Field-------------->histogram
+%               _____________|____________
+%              |                          |                    
+%        proj_field.m               proj_field.m       project the field on the projection objects              
+%              |                          |
+%         UvData.PlotAxes          ViewData.PlotAxes (on view_field)
+%              |                          |
+%       plot_field.m (uvmat)       plot_field.m (view_field)      plot the projected fields
+%
+% rmq: calc_field can be performed instead at the level of proj_field when needed 
+%
 %
 %%%%%%%%%%%%%%    SCALARS: %%%%%%%%%%%%??%%%
 % scalars are displayed either as an image or countour plot, either as a color of
@@ -356,7 +355,8 @@ end
 % search the files, recognize their type according to their name and fill the rootfile input windows
 function MenuBrowse_Callback(hObject, eventdata, handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+%oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+oldfile=fullfile(RootPath,SubDir);
 if isempty(oldfile)||isequal(oldfile,'') %loads the previously stored file name and set it as default in the file_input box
          dir_perso=prefdir;
          profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
@@ -370,7 +370,7 @@ end
 [FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',oldfile);
 fileinput=[PathName FileName];%complete file name 
 if ~exist(fileinput,'file')
-    return %abandon of the browser is cancelled
+    return %abandon if the browser is cancelled
 end
 
 %% display the selected field and related information
@@ -1013,7 +1013,7 @@ if index==2
         state_j='on';
     end
 end
-[ref_i,ref_j]=find(i1_series);
+[ref_j,ref_i]=find(i1_series);
 if ~isempty(j1_series) 
         state_j='on';
         if index==1
@@ -1582,12 +1582,12 @@ else
         end
         if get(handles.scan_i,'Value')==1% case of scanning along index i
             ref_i=ref_i+step;
-            while ref_i>=0  && size(UvData.i1_series{1},1)>=ref_i+1 && UvData.i1_series{1}(ref_i+1,ref_j+1,1)==0
+            while ref_i>=0  && size(UvData.i1_series{1},3)>=ref_i+1 && UvData.i1_series{1}(1,ref_j+1,ref_i+1)==0
                 ref_i=ref_i+step;
             end
         else % case of scanning along index j (burst numbers)
             ref_j=ref_j+step;
-            while ref_j>=0  && size(UvData.i1_series{1},2)>=ref_j+1 && UvData.i1_series{1}(ref_i+1,ref_j+1,1)==0
+            while ref_j>=0  && size(UvData.i1_series{1},2)>=ref_j+1 && UvData.i1_series{1}(1,ref_j+1,ref_i+1)==0
                 ref_j=ref_j+step;
             end
         end
@@ -1596,37 +1596,34 @@ else
         errormsg='minimum i index reached';
     elseif ref_j<0
         errormsg='minimum j index reached';
-    elseif ref_i+1>size(UvData.i1_series{1},1)
+    elseif ref_i+1>size(UvData.i1_series{1},3)
         errormsg='maximum i index reached (reload the input file to update the index bound)';
     elseif ref_j+1>size(UvData.i1_series{1},2)
         errormsg='maximum j index reached (reload the input file to update the index bound)';
     end
     if ~isempty(errormsg),return,end
-    i1_subseries=UvData.i1_series{1}(ref_i+1,ref_j+1,:);
-    i1_subseries=i1_subseries(i1_subseries>0);
-    if isempty(i1_subseries)% case of pairs
-        i1_subseries=UvData.i1_series{1}(ref_i+1,:,:);
+    siz=size(UvData.i1_series{1});
+    ref_indices=ref_i*siz(1)*siz(2)+ref_j*siz(1)+1:ref_i*siz(1)*siz(2)+(ref_j+1)*siz(1);   
+    i1_subseries=UvData.i1_series{1}(ref_indices);
+    ref_indices=ref_indices(i1_subseries>0);
+    if isempty(ref_indices)% case of pairs (free index i)
+        ref_indices=ref_i*siz(1)*siz(2)+1:(ref_i+1)*siz(1)*siz(2); 
+        i1_subseries=UvData.i1_series{1}(ref_indices);
+        ref_indices=ref_indices(i1_subseries>0);
     end
-    if isempty(i1_subseries),errormsg='no next frame: set num_IndexIncrement =''*'' to reach the next existing file';return
-    else
-        i1=i1_subseries(end);
+    if isempty(ref_indices),errormsg='no next frame: set num_IndexIncrement =''*'' to reach the next existing file';return
     end
+    i1=UvData.i1_series{1}(ref_indices(end));
     if ~isempty(UvData.i2_series{1})
-        i2_subseries=UvData.i2_series{1}(ref_i+1,ref_j+1,:);
-        i2_subseries=i2_subseries(i2_subseries>0);
-        i2=i2_subseries(end);
+        i2=UvData.i2_series{1}(ref_indices(end));
     end
     if ~isempty(UvData.j1_series{1})
-        j1_subseries=UvData.j1_series{1}(ref_i+1,ref_j+1,:);
-        j1_subseries=j1_subseries(j1_subseries>0);
-        j1=j1_subseries(end);
+        j1=UvData.j1_series{1}(ref_indices(end));
     end
     if ~isempty(UvData.j2_series{1})
-        j2_subseries=UvData.j2_series{1}(ref_i+1,ref_j+1,:);
-        j2_subseries=j2_subseries(j2_subseries>0);
-        j2=j2_subseries(end);
+        j2=UvData.j2_series{1}(ref_indices(end));
     end  
-    % case of a second file series
+    % case of a second file series (TODO:revise)
     if numel(UvData.i1_series)>=2
         i1_subseries=UvData.i1_series{2}(ref_i+1,ref_j+1,:);
         i1_subseries=i1_subseries(i1_subseries>0);
@@ -1704,7 +1701,7 @@ index_fields=get(handles.Fields,'Value');% selected string index
 FieldName=list_fields{index_fields}; % selected field
 UvData=get(handles.uvmat,'UserData');
 if isequal(FieldName,'image')
-    test_1=0;
+    index=1;
     [RootPath,SubDir,RootFile,FileIndices,Ext]=read_file_boxes(handles);
     NomType=get(handles.NomType,'String');
 else
@@ -1712,7 +1709,7 @@ else
     index_fields=get(handles.Fields_1,'Value');% selected string index
     FieldName=list_fields{index_fields}; % selected field
     if isequal(FieldName,'image')
-        test_1=1;
+        index=2;
         [RootPath,tild,RootFile,FileIndex_1,Ext,NomType]=read_file_boxes_1(handles);
     else
         msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
@@ -1738,8 +1735,12 @@ end
 if isempty(num_i2)
     num_i2=num_i1;%repeat the index i1 by default
 end
-% imaname_1=name_generator(filebase,num_i2,num_j2,Ext,NomType);
 imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,Ext,NomType,num_i2,[],num_j2);
+if strcmp(NomType,'*')
+    num_frame=num_i2;
+else
+    num_frame=num_j2;
+end
 if ~exist(imaname_1,'file')
       msgbox_uvmat('ERROR',['second input open (-)  ' imaname_1 ' not found']);
       set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
@@ -1747,72 +1748,79 @@ if ~exist(imaname_1,'file')
       return
 end
 
-%% read the second image
-Field.AName='image';
-if test_1
-    Field_a=UvData.Field_1;
+%% get the first image
+%Field.AName='image';
+if index==1
+    Field_a=UvData.Field;% movie on the second field
 else
-    Field_a=UvData.Field;
+    Field_a=UvData.Field_1;% movie on the first field
 end
-Field_b.AX=Field_a.AX;
-Field_b.AY=Field_a.AY;
-% z index
-nbslice=str2double(get(handles.num_NbSlice,'String'));
-if ~isempty(nbslice)
-    Field_b.ZIndex=mod(num_i2-1,nbslice)+1;
-end
-Field_b.CoordUnit='pixel';
 
-%% determine the input file type
-if (test_1 && isfield(UvData,'MovieObject')&& numel(UvData.MovieObject>=2))||(~test_1 && ~isempty(UvData.MovieObject{1}))
-    FileType='movie';
-elseif isequal(lower(Ext),'.avi')
-    FileType='avi';
-elseif isequal(lower(Ext),'.vol')
-    FileType='vol';
-else 
-   form=imformats(Ext(2:end));
-   if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
-       if isequal(NomType,'*');
-           FileType='multimage';
-       else
-           FileType='image';
-       end
-   end
+%% read the second image
+MovieObject=[];
+if numel(UvData.MovieObject)>=index
+    MovieObject=UvData.MovieObject{index};
 end
-switch FileType
-        case 'movie'
-            if test_1
-                Field_b.A=read(UvData.MovieObject{2},num_i2);
-            else
-                Field_b.A=read(UvData.MovieObject{1},num_i2);
-            end
-        case 'avi'
-            mov=aviread(imaname_1,num_i2);
-            Field_b.A=frame2im(mov(1));
-        case 'vol'
-            Field_b.A=imread(imaname_1);
-        case 'multimage'
-            Field_b.A=imread(imaname_1,num_i2);
-        case 'image'
-            Field_b.A=imread(imaname_1);
-end 
-if get(handles.slices,'Value')
-    Field.ZIndex=str2double(get(handles.z_index,'String'));
-end
+[Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileType{index},MovieObject,num_frame)
+% Field_b.AX=Field_a.AX;
+% Field_b.AY=Field_a.AY;
+% % z index
+% nbslice=str2double(get(handles.num_NbSlice,'String'));
+% if ~isempty(nbslice)
+%     Field_b.ZIndex=mod(num_i2-1,nbslice)+1;
+% end
+% Field_b.CoordUnit='pixel';
+% 
+% %% determine the input file type
+% if (test_1 && isfield(UvData,'MovieObject')&& numel(UvData.MovieObject>=2))||(~test_1 && ~isempty(UvData.MovieObject{1}))
+%     FileType='movie';
+% elseif isequal(lower(Ext),'.avi')
+%     FileType='avi';
+% elseif isequal(lower(Ext),'.vol')
+%     FileType='vol';
+% else 
+%    form=imformats(Ext(2:end));
+%    if ~isempty(form)% if the extension corresponds to an image format recognized by Matlab
+%        if isequal(NomType,'*');
+%            FileType='multimage';
+%        else
+%            FileType='image';
+%        end
+%    end
+% end
+% switch FileType
+%         case 'movie'
+%             if test_1
+%                 Field_b.A=read(UvData.MovieObject{2},num_i2);
+%             else
+%                 Field_b.A=read(UvData.MovieObject{1},num_i2);
+%             end
+%         case 'avi'
+%             mov=aviread(imaname_1,num_i2);
+%             Field_b.A=frame2im(mov(1));
+%         case 'vol'
+%             Field_b.A=imread(imaname_1);
+%         case 'multimage'
+%             Field_b.A=imread(imaname_1,num_i2);
+%         case 'image'
+%             Field_b.A=imread(imaname_1);
+% end 
+% if get(handles.slices,'Value')
+%     Field.ZIndex=str2double(get(handles.z_index,'String'));
+% end
 
 %px to phys or other transform on field
-menu_transform=get(handles.transform_fct,'String');
-choice_value=get(handles.transform_fct,'Value');
-transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
-transform_list=get(handles.transform_fct,'UserData');
-transform=transform_list{choice_value};
-if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
-    if test_1 && isfield(UvData,'XmlData') && numel(UvData.XmlData)==2 && isfield(UvData.XmlData{2},'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
-        Field_a=transform(Field_a,UvData.XmlData{2});%the first field has been stored without transform
-        Field_b=transform(Field_b,UvData.XmlData{2});
-    elseif ~test_1 && isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'GeometryCalib')%use geometry calib
-        Field_b=transform(Field_b,UvData.XmlData{1});
+% menu_transform=get(handles.transform_fct,'String');
+% choice_value=get(handles.transform_fct,'Value');
+% transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
+% transform_list=get(handles.transform_fct,'UserData');
+transform=get(handles.path_transform,'UserData');
+if  ~isempty(transform)
+    if isfield(UvData,'XmlData') && numel(UvData.XmlData)>=index %use geometry calib recorded from the ImaDoc xml file as first priority
+        if index==2
+        Field_a=transform(Field_a,UvData.XmlData{index});%the first field has been stored without transform
+        end
+        Field_b=transform(Field_b,UvData.XmlData{index});
     end
 end
 
@@ -2248,6 +2256,10 @@ end
 
 %% store the current open names, fields and vel types in uvmat interface 
 UvData.FileName_1=FileName_1;
+UvData.ParamOut_1=ParamOut_1;
+if numel(Field)==2
+UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
+end
 
 %% apply coordinate transform or other user fct
 transform=get(handles.path_transform,'UserData');
@@ -2261,20 +2273,23 @@ if ~isempty(transform)
         end
     end
     transform=get(handles.path_transform,'UserData');
-    nbre_arg=nargin(transform);
-    if length(Field)==2
-        if nbre_arg==4
-            [Field{1},Field{2}]=transform(Field{1},XmlData,Field{2},XmlData_1);
-        else
-            Field{1}=transform(Field{1},XmlData);
-            Field(2)=[];
-        end
-    else
-        if nbre_arg==1
-            Field{1}=transform(Field{1});%transform which does not need input parameter
-        else
-            Field{1}=transform(Field{1},XmlData);
-        end
+    switch nargin(transform)
+        case 4
+            if length(Field)==2
+                UvData.Field=transform(Field{1},XmlData,Field{2},XmlData_1);
+            else
+                UvData.Field=transform(Field{1},XmlData);
+            end
+        case 3
+            if length(Field)==2
+                UvData.Field=transform(Field{1},XmlData,Field{2});
+            else
+                UvData.Field=transform(Field{1},XmlData);
+            end
+        case 2
+            UvData.Field=transform(Field{1},XmlData);
+        case 1
+            UvData.Field=transform(Field{1});
     end
 end
 
@@ -2292,16 +2307,16 @@ check_tps=0;
 if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamOut.FieldName,'velocity')&&~strcmp(ParamOut.FieldName,'get_field...')
        check_tps=1;%tps needed to get the requested field
 end
-if (check_tps ||check_proj_tps)&&~isfield(Field{1},'Coord_tps')
-    Field{1}=calc_tps(Field{1});
+if (check_tps ||check_proj_tps)&&~isfield(UvData.Field,'Coord_tps')
+    UvData.Field=calc_tps(UvData.Field);
 end
-Field{1}.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
+UvData.Field.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
 
 %% calculate scalar
 if isstruct(ParamOut)&&~strcmp(ParamOut.FieldName,'get_field...')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))...
          &&~strcmp(ParamOut.FieldName,'velocity') && ~strcmp(ParamOut.FieldName,'get_field...') 
     if ~check_proj_tps
-        Field{1}=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],Field{1});
+        UvData.Field=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],UvData.Field);
     end
 end
 if isstruct(ParamOut_1)&& numel(Field)==2 && ~strcmp(ParamOut_1.FieldName,'get_field...')&& ~test_keepdata_1 && (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))...
@@ -2313,19 +2328,6 @@ if isstruct(ParamOut_1)&& numel(Field)==2 && ~strcmp(ParamOut_1.FieldName,'get_f
     end
 end
 
-%% combine the two input fields (e.g. substract velocity fields)
-if numel(Field)==2
-   [UvData.Field,errormsg]=sub_field(Field{1},Field{2});  
-   UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
-   UvData.ParamOut_1=ParamOut_1;
-else
-   UvData.Field=Field{1};
-end
-if ~isempty(errormsg)
-    errormsg=['error in uvmat/refresh_field/sub_field:' errormsg];
-    return
-end
-%UvData.Field.FieldList={FieldName}; % TODO: to generalise, used for proj_field with tps interpolation
 
 %% analyse input field
 test_x=0;
@@ -2335,9 +2337,9 @@ if ~isempty(errormsg)
     errormsg=['error in uvmat/refresh_field/check_field_structure: ' errormsg];% display error
     return
 end
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(UvData.Field);% analyse  the input field structure
+[CellVarIndex,NbDim,VarType,errormsg]=find_field_cells(UvData.Field);% analyse  the input field structure
 if ~isempty(errormsg)
-    errormsg=['error in uvmat/refresh_field/find_field_indices: ' errormsg];% display error
+    errormsg=['error in uvmat/refresh_field/find_field_cells: ' errormsg];% display error
     return
 end
 [NbDim,imax]=max(NbDim);% spatial dimension of the input field
@@ -3512,6 +3514,7 @@ if strcmp(transform_name,'more...');
 end
 
 %% create the function handle of the selected fct
+
 if isempty(list_path{ichoice})% case of no selected fct
     transform_handle=[];
 else
@@ -3526,6 +3529,7 @@ else
 end
 set(handles.path_transform,'String',list_path{ichoice})
 set(handles.path_transform,'UserData',transform_handle)
+set(handles.transform_fct,'UserData',list_path)
 
 %% update the ToolTip string of the menu transform_fct with the first line of the selected fct file
 if isempty(list_path{ichoice})% case of no selected fct
@@ -4804,4 +4808,11 @@ end
 function MenuSetProject_Callback(hObject, eventdata, handles)
 RootPath=get(handles.RootPath,'String');
 ProjectDir = uigetdir(fileparts(fileparts(RootPath)), 'select the project source directory');
+datatree_browser(ProjectDir)
+
+
+% --------------------------------------------------------------------
+function MenuBrowseProject_Callback(hObject, eventdata, handles)
+RootPath=get(handles.RootPath,'String');
+ProjectDir = uigetdir(fileparts(fileparts(RootPath)), 'select the project directory');
 datatree_browser(ProjectDir)

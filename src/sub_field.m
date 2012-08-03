@@ -64,12 +64,12 @@ for ivar=1:numel(Field.ListVarName)
 end
 
 %% check the two input fields     
-[CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_indices(Field);
+[CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_cells(Field);
 if ~isempty(errormsg)
     errormsg=['invalid  first input to sub_field:' errormsg];
     return
 end
-[CellVarIndex_1,NbDim_1,VarTypeCell_1,errormsg]=find_field_indices(Field_1);
+[CellVarIndex_1,NbDim_1,VarTypeCell_1,errormsg]=find_field_cells(Field_1);
 if ~isempty(errormsg)
     errormsg=['invalid second input to sub_field:' errormsg];
     return

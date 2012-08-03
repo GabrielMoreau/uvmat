@@ -289,5 +289,7 @@ elseif size(j2_series,3)>1 %pairs j1 -j2
         end
     end
 end
-
-
+i1_series=permute(i1_series,[3 2 1]);% permute dimensions 
+i2_series=permute(i2_series,[3 2 1]);% permute dimensions
+j1_series=permute(j1_series,[3 2 1]);% permute dimensions 
+j2_series=permute(j2_series,[3 2 1]);% permute dimensions

@@ -217,9 +217,9 @@ set(handles.coord_z_vectors,'String',[{''} Txt ])
 set(handles.scalar,'Value',1)
 
 set(handles.scalar,'String', Txt )
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Field);
+[CellVarIndex,NbDim,VarType,errormsg]=find_field_cells(Field);
 if ~isempty(errormsg)  
-    msgbox_uvmat('ERROR',['error in get_field/Field_input/find_field_indices: ' errormsg])
+    msgbox_uvmat('ERROR',['error in get_field/Field_input/find_field_cells: ' errormsg])
     return
 end  
 for icell=1:numel(CellVarIndex)
@@ -300,7 +300,7 @@ if ~isempty(yindex)
     set(handles.variables,'Value',yindex+1)
     variables_Callback(hObject, eventdata, handles)
 end
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Field);
+[CellVarIndex,NbDim,VarType,errormsg]=find_field_cells(Field);
 for icell=1:numel(CellVarIndex)
     VarIndex=CellVarIndex{icell};
     if ~isempty(find(VarIndex==yindex,1)) && (isempty(VarType{icell}.coord_x)||~isequal(VarType{icell}.coord_x,VarIndex))

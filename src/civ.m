@@ -532,7 +532,7 @@ if numel(time)>=2 % if there are at least two time values to define dt
     time=[zeros(1,size(time,2)); time]; %insert a horizontal line of zeros
 else
     set(handles.ImaDoc,'String',''); %xml file not used for timing
-    time=(i1_series(:,1)+0:size(i1_series,1)-1);% time=index i
+    time=(i1_series(:,1)+0:size(i1_series,3)-1);% time=index i
     time=time'*ones(1,size(i1_series,2),1); %makes a time matrix with the same time for all j indices
     TimeUnit='frame';
 end
@@ -2532,9 +2532,7 @@ if ~strcmp(option,'PIV') % case 'displacement' or 'stereo PIV'
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
 [RootPath,SubDir,RootFile_1,i1_series,i2_series,j1_series,j2_series,nom_type_1,FileType,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName Ext]);
-        
-       % [tild,tild,RootFile_1,tild,tild,tild,tild,tild,nom_type_1]=fileparts_uvmat(fileinput);
-        %[RootFile_1,i1_series,tild,j1_series,tild,nom_type_1,FileType,Object]=find_file_series(PathName,FileName);
+
         %check image nom type 
         if ~strcmp(nom_type_1,get(handles.NomType,'String'))
         msgbox_uvmat('ERROR','The second image series must have the same indexing type as the first one, or use the option displacement for a fixed image')

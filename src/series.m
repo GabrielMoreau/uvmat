@@ -587,26 +587,26 @@ end
 set(handles.OutputSubDir,'String',SubDirOut)
 
 %% display the min and max indices for all the file series
-i_sum=sum(sum(i1_series,2),3);%sum of i1_series on the last index
+i_sum=sum(sum(i1_series,2),1);%sum of i1_series on the last index
 MaxIndex_i=max(find(i_sum>0))-1;% max ref index i
 MinIndex_i=min(find(i_sum>0))-1;% min ref index i
 i2_min=[];
 if ~isempty(i2_series)
-    i2_min=i2_series(1,2);
+    i2_min=i2_series(1,2,2);
 end
 j1_min=[];
 if ~isempty(j1_series)
-    j1_min=j1_series(1,2);
+    j1_min=j1_series(1,2,2);
 end
 j2_min=[];
 if ~isempty(j2_series)
-    j2_min=j2_series(1,2);
+    j2_min=j2_series(1,2,2);
 end
 if isequal(MinIndex_i,1) &&...
         exist (fullfile_uvmat(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},0,i2_min, j1_min,j2_min),'file')
     MinIndex_i=0;
 end
-j_sum=sum(sum(j1_series,1),3);
+j_sum=sum(sum(j1_series,1),1);
 MaxIndex_j=max(find(j_sum>0))-1;
 MinIndex_j=min(find(j_sum>0))-1;
 MinIndex=get(handles.MinIndex,'Data');%retrieve the min indices in the table MinIndex
@@ -792,8 +792,8 @@ set(handles.FileStatus,'Units','normalized')
 xI=0.5:Position(3)-0.5;
 nbview=numel(SeriesData.i1_series);
 for iview=1:nbview
-    index_min(iview)=min(find(SeriesData.i1_series{iview}(2:end,2:end,1)>0));
-    index_max(iview)=max(find(SeriesData.i1_series{iview}(2:end,2:end,1)>0));
+    index_min(iview)=min(find(SeriesData.i1_series{iview}(1,2:end,2:end)>0));
+    index_max(iview)=max(find(SeriesData.i1_series{iview}(1,2:end,2:end)>0));
 end
 index_min=min(index_min);
 index_max=max(index_max);
@@ -807,36 +807,13 @@ CData=zeros(nbview*range_y,Position(3));
 for iview=1:nbview
     ind_y=1+(iview-1)*range_y:iview*range_y;
     LineData=zeros(1,range_index);
-    x_index=find(SeriesData.i1_series{iview}(2:end,2:end,1)>0)-index_min+1;
+    x_index=find(SeriesData.i1_series{iview}(1,2:end,2:end)>0)-index_min+1;
     LineData(x_index)=1;
     LineData=interp1(x,LineData,xI,'nearest');
     CData(ind_y,:)=ones(size(ind_y'))*LineData;
 end
 CData=cat(3,zeros(size(CData)),CData,zeros(size(CData)));
 set(handles.FileStatus,'CData',CData);
-
-% 
-% 
-% xima=0.5:pos(3)-0.5;% pixel positions on the image representing the existing file indices
-% yima=0.5:pos(4)-0.5;
-% [XIma,YIma]=meshgrid(xima,yima);
-% nb_i=size(i1_series,1);
-% nb_j=size(i1_series,2);
-% ind_i=(0.5:nb_i-0.5)*pos(3)/nb_i;
-% ind_j=(0.5:nb_j-0.5)*pos(4)/nb_j;
-% [Ind_i,Ind_j]=meshgrid(ind_i,ind_j);
-% CData=zeros([size(XIma) 3]);%black color
-% file_ima=double((i1_series(:,:,1)>0)');
-% if numel(file_ima)>=2
-% if size(file_ima,1)==1
-%     CLine=interp1(ind_i,file_ima,xima,'nearest');
-%     CData(:,:,2)=ones(size(yima'))*CLine;
-% else
-%     CData(:,:,2)=interp2(Ind_i,Ind_j,file_ima,XIma,YIma,'nearest');
-% end
-% set(handles.FileStatus,'CData',CData)
-% end
-% set(handles.FileStatus,'Units','normalized')
 
 
 %% enable field and veltype menus, in accordance with the current action
@@ -1076,8 +1053,8 @@ set(handles.TimeTable,'Data',TimeTable)
 % [tild,index_max(iview)]=max(SeriesData.i1_series{iview}(SeriesData.i1_series{iview}>0));
 % end
 for iview=1:numel(SeriesData.i1_series)
-    index_min(iview)=min(find(SeriesData.i1_series{iview}(2:end,2:end,1)>0));
-    index_max(iview)=max(find(SeriesData.i1_series{iview}(2:end,2:end,1)>0));
+    index_min(iview)=min(find(SeriesData.i1_series{iview}(1,2:end,2:end)>0));
+    index_max(iview)=max(find(SeriesData.i1_series{iview}(1,2:end,2:end)>0));
 end
 [index_min,iview_min]=min(index_min);
 [index_max,iview_max]=min(index_max);
@@ -2184,7 +2161,7 @@ pos=get(handles.Waitbar,'Position');
 xima=0.5:pos(3)-0.5;% pixel positions on the image representing the existing file indices
 yima=0.5:pos(4)-0.5;
 [XIma,YIma]=meshgrid(xima,yima);
-nb_i=size(i1_series,1);
+nb_i=size(i1_series,3);
 nb_j=size(i1_series,2);
 ind_i=(0.5:nb_i-0.5)*pos(3)/nb_i;
 ind_j=(0.5:nb_j-0.5)*pos(4)/nb_j;

@@ -35,7 +35,7 @@
 %            .ListVarName: cell listing the names of the variables
 %           .VarAttribute: cell of structures s containing names and values of variable attributes (s.name=value) for each variable of .ListVarName
 %        .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
-% The variables are grouped in 'fields', made of a set of variables with common dimensions (using the function find_field_indices)
+% The variables are grouped in 'fields', made of a set of variables with common dimensions (using the function find_field_cells)
 % The variable attribute 'Role' is used to define the role for plotting:
 %       Role = 'scalar':  (default) represents a scalar field
 %            = 'coord':  represents a set of unstructured coordinates, whose
@@ -177,7 +177,7 @@ elseif  ~isequal(ObjectData.ProjMode,'interp')
 end
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 ProjData.NbDim=0;
-[CellVarIndex,NbDimCell,VarTypeCell,errormsg]=find_field_indices(FieldData);
+[CellVarIndex,NbDimCell,VarTypeCell,errormsg]=find_field_cells(FieldData);
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_points:' errormsg];
     return
@@ -371,7 +371,7 @@ testfalse=0;
 ListIndex={};
 % DimVarIndex=0;%initilise list of indices for dimension variables
 idimvar=0;
-[CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_indices(FieldData);
+[CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_cells(FieldData);
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_patch:' errormsg];
     return
@@ -592,7 +592,7 @@ if isequal(ProjMode,'projection') || isequal(ProjMode,'filter')
 end
 
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
-[CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_indices(FieldData);
+[CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_cells(FieldData);
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_line:' errormsg];
     return
@@ -1007,7 +1007,7 @@ ListIndex={};
 %-----------------------------------------------------------------
 idimvar=0;
 
-[CellVarIndex,NbDimVec,VarTypeCell,errormsg]=find_field_indices(FieldData);
+[CellVarIndex,NbDimVec,VarTypeCell,errormsg]=find_field_cells(FieldData);
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_plane:' errormsg];
     return
@@ -1678,7 +1678,7 @@ ListIndex={};
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 %-----------------------------------------------------------------
 idimvar=0;
-[CellVarIndex,NbDimVec,VarTypeCell,errormsg]=find_field_indices(FieldData);
+[CellVarIndex,NbDimVec,VarTypeCell,errormsg]=find_field_cells(FieldData);
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_plane:' errormsg];
     return

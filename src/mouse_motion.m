@@ -96,9 +96,9 @@ for ichild=1:length(hchild)
             FigData=get(CurrentFig,'UserData');
             tagaxes=get(CurrentAxes,'tag');
             if isfield(FigData,tagaxes)
-                eval(['Field=FigData.' tagaxes ';'])
+                Field=FigData.(tagaxes);
                 if isfield(Field,'ListVarName')
-                    [CellVarIndex,NbDim,VarType]=find_field_indices(Field);%analyse the physical fields contained in Field
+                    [CellVarIndex,NbDim,VarType]=find_field_cells(Field);%analyse the physical fields contained in Field
                     text_displ_1='';
                     text_displ_2='';
                     text_displ_3='';

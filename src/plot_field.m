@@ -5,7 +5,7 @@
 % appropriate to the input field structure: 
 %     2D vector fields are represented by arrows, 2D scalar fields by grey scale images or contour plots, 1D fields are represented by usual plot with (abscissa, ordinate).
 %  The input field structure is first tested by check_field_structure.m,
-%  then split into blocks of related variables  by find_field_indices.m.
+%  then split into blocks of related variables  by find_field_cells.m.
 %  The dimensionality of each block is obtained  by this function
 %  considering the presence of variables with the attribute .Role='coord_x'
 %  and/or coord_y and/or coord_z (case of unstructured coordinates), or
@@ -116,9 +116,9 @@ if ~isempty(errormsg)
     return
 end
 % check the cells of fields :
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_indices(Data);
+[CellVarIndex,NbDim,VarType,errormsg]=find_field_cells(Data);
 if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['input of plot_field/find_field_indices: ' errormsg]);
+    msgbox_uvmat('ERROR',['input of plot_field/find_field_cells: ' errormsg]);
     return
 end
 index_2D=find(NbDim==2,2);%find 2D fields (at most 2)

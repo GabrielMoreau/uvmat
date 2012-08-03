@@ -109,8 +109,8 @@ for ichild=1:length(hchildren)
                         FigData=get(hcurrentfig,'UserData');
                         tagaxes=get(hchild,'tag');
                         if isfield(FigData,tagaxes)
-                            eval(['Field=FigData.' tagaxes ';'])
-                            [CellVarIndex,NbDim,VarType]=find_field_indices(Field);%analyse the physical fields contained in Field
+                            Field=FigData.(tagaxes);
+                            [CellVarIndex,NbDim,VarType]=find_field_cells(Field);%analyse the physical fields contained in Field
                             for icell=1:numel(CellVarIndex)%look for all physical fields
                                 if NbDim(icell)==2 % select 2D field
                                     if  isfield(Field,'Mesh') && ~isempty(Field.Mesh)&& ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
