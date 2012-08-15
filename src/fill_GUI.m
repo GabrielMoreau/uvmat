@@ -30,8 +30,8 @@ for ifield=1:numel(fields)
     else
         hh=[];
         input_data=Param.(fields{ifield});
-                    display(fields{ifield})
-                    display(input_data)
+%                     display(fields{ifield})
+%                     display(input_data)
         check_done=0;
         if isfield(handles,fields{ifield})
             hh=handles.(fields{ifield});
@@ -67,8 +67,11 @@ for ifield=1:numel(fields)
                         set(hh(ibox),'Value',input_data(ibox))
                     end
                 case 'edit'
+                    input_string='';
                     if isnumeric(input_data)
+                        if numel(input_data)>0
                         input_string=num2str(input_data(ibox));
+                        end
                     else
                         input_string=input_data;
                     end

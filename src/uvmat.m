@@ -69,18 +69,14 @@
 %                            |                                    
 %                        (calc_tps.m)               calculate tps coefficients (for filter projection or spatial derivatives).
 %                            |
-%                       (calc_field.m)               calculate field 
-%                            |
 %                       UvData.Field-------------->histogram
 %               _____________|____________
 %              |                          |                    
-%        proj_field.m               proj_field.m       project the field on the projection objects              
+%        proj_field.m               proj_field.m       project the field on the projection objects (use calc_field.m)           
 %              |                          |
 %         UvData.PlotAxes          ViewData.PlotAxes (on view_field)
 %              |                          |
 %       plot_field.m (uvmat)       plot_field.m (view_field)      plot the projected fields
-%
-% rmq: calc_field can be performed instead at the level of proj_field when needed 
 %
 %
 %%%%%%%%%%%%%%    SCALARS: %%%%%%%%%%%%??%%%
@@ -208,7 +204,7 @@ set(handles.Fields,'string',{''})
 UvData.Object={[]};
 
 %% TRANSFORM menu: builtin fcts
-transform_menu={'';'phys';'px';'phys_polar'};
+transform_menu={'';'sub_field';'phys';'phys_polar'};
 UvData.OpenParam.NbBuiltin=numel(transform_menu); %number of functions
 path_list=(num2cell(blanks(UvData.OpenParam.NbBuiltin)))';%initialize a cell array of nbvar blanks
 transform_path=fullfile(path_uvmat,'transform_field');
@@ -298,24 +294,24 @@ if ~isempty(inputfile)
 end
 
 %% plot input field if exists
-if testinputfield
-    %delete drawn objects
-    hother=findobj(handles.PlotAxes,'Tag','proj_object');%find all the proj objects
-    for iobj=1:length(hother)
-        delete_object(hother(iobj))
-    end  
-    if isempty(inputfile)
-        errormsg=refresh_field(handles,[],[],[],[],[],[],{Field});
-        set(handles.MenuTools,'Enable','on')
-        set(handles.OBJECT_txt,'Visible','on')
-        set(handles.edit_object,'Visible','on')
-%         set(handles.ListObject_1,'Visible','on')
-        set(handles.frame_object,'Visible','on')
-        if ~isempty(errormsg)
-            msgbox_uvmat('ERROR',errormsg)
-        end
-    end
-end
+% if testinputfield
+%     %delete drawn objects
+%     hother=findobj(handles.PlotAxes,'Tag','proj_object');%find all the proj objects
+%     for iobj=1:length(hother)
+%         delete_object(hother(iobj))
+%     end  
+%     if isempty(inputfile)
+%         errormsg=refresh_field(handles,[],[],[],[],[],[],{Field});
+%         set(handles.MenuTools,'Enable','on')
+%         set(handles.OBJECT_txt,'Visible','on')
+%         set(handles.edit_object,'Visible','on')
+% %         set(handles.ListObject_1,'Visible','on')
+%         set(handles.frame_object,'Visible','on')
+%         if ~isempty(errormsg)
+%             msgbox_uvmat('ERROR',errormsg)
+%         end
+%     end
+% end
 
 set_vec_col_bar(handles) %update the display of color code for vectors
 
@@ -678,11 +674,26 @@ switch FileType
             set(handles.i2,'String',num2str(i2));
             set(handles.j1,'String',num2stra(j1,NomType));
             set(handles.j2,'String',num2stra(j2,NomType));
-        else %read the current field index if the second file series is opened
-            i1=str2num(get(handles.i1,'String'));
-            i2=str2num(get(handles.i2,'String'));
-            j1=stra2num(get(handles.j1,'String'));
-            j2=stra2num(get(handles.j2,'String'));
+        else %read the current field index to synchronise with the first series
+            i1_s=str2num(get(handles.i1,'String'));
+            i2_0=str2num(get(handles.i2,'String'));
+            if ~isempty(i2_0)
+                i2_s=i2_0;
+            else
+               i2_s=i2; 
+            end
+            j1_0=stra2num(get(handles.j1,'String'));
+            if ~isempty(j1_0)
+                j1_s=j1_0;
+            else
+                j1_s=j1;
+            end
+            j2_0=stra2num(get(handles.j2,'String'));
+            if ~isempty(j2_0)
+                j2_s=j2_0;
+            else
+                j2_s=j2;
+            end
         end
         
         % synchronise indices of the second  input file if it exists
@@ -704,13 +715,14 @@ switch FileType
                 Input.NomType_1=Input.NomType;
             end
             %updtate the indices of the second field series to correspond to the newly opened one
-            FileName_1=fullfile_uvmat(Input.RootPath_1,Input.SubDir_1,Input.RootFile_1,Input.FileExt_1,Input.NomType_1,i1,i2,j1,j2);
+            FileName_1=fullfile_uvmat(Input.RootPath_1,Input.SubDir_1,Input.RootFile_1,Input.FileExt_1,Input.NomType_1,i1_s,i2_s,j1_s,j2_s);
             if exist(FileName_1,'file')
-                FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1,i2,j1,j2);
-                set(handles.FileIndex_1,'String',FileIndex_1)
+                FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1_s,i2_s,j1_s,j2_s);
             else
+                FileIndex_1=fullfile_uvmat('','','','',Input.NomType_1,i1,i2,j1,j2);
                 msgbox_uvmat('WARNING','unable to synchronise the indices of the two series')
             end
+            set(handles.FileIndex_1,'String',FileIndex_1)
         end
         
         %enable other menus
@@ -756,6 +768,7 @@ set(handles.uvmat,'Pointer','arrow')
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
 %     calibration from an xml file, then refresh current plots
+
 function update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,VideoObject,index)
 %------------------------------------------------------------------------
 %% define the relevant handles depending on the index (1=first file series, 2= second file series)
@@ -942,7 +955,7 @@ if isfield(XmlData,'GeometryCalib')
             set(handles.pycm,'String',num2str(pixcmy))
         end
         if ~get(handles.CheckFixLimits,'Value')
-            set(handles.transform_fct,'Value',2); % phys transform by default if fixedLimits is off
+            set(handles.transform_fct,'Value',3); % phys transform by default if fixedLimits is off
         end
         if isfield(GeometryCalib,'SliceCoord')            
            siz=size(GeometryCalib.SliceCoord);
@@ -1013,11 +1026,11 @@ if index==2
         state_j='on';
     end
 end
-[ref_j,ref_i]=find(i1_series);
+[ref_j,ref_i]=find(squeeze(i1_series(1,:,:)));
 if ~isempty(j1_series) 
         state_j='on';
         if index==1
-            if isequal(ref_i,ref_i(1)*ones(size(ref_j)))% if ref_i is always equal to its first vzlue
+            if isequal(ref_i,ref_i(1)*ones(size(ref_j)))% if ref_i is always equal to its first value
                 scan_option='j'; %scan j indext               
             end 
         end
@@ -1056,8 +1069,11 @@ elseif index==1
 end
 
 %% apply the effect of the transform fct and view the field  
+transform=get(handles.path_transform,'UserData');
+if index==2 && (~isa(transform,'function_handle')||nargin(transform)<3)
+    set(handles.transform_fct,'value',2); % set transform to sub_field if the current fct doe not accept two input fields
+end
 transform_fct_Callback([],[],handles)
-%run0_Callback([],[], handles); %view field
 mask_test=get(handles.CheckMask,'value');
 if mask_test
     MaskData=get(handles.CheckMask,'UserData');
@@ -1105,41 +1121,65 @@ end
 %------------------------------------------------------------------------
 function i1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.i1,'BackgroundColor',[0.7 0.7 0.7])
-NomType=get(handles.NomType,'String');
-i1=stra2num(get(handles.i1,'String'));
-i2=stra2num(get(handles.i2,'String'));
-j1=stra2num(get(handles.j1,'String'));
-j2=stra2num(get(handles.j2,'String'));
-indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,j2);
-%indices=name_generator('',num1,num_a,'',NomType,1,num2,num_b,'');
-set(handles.FileIndex,'String',indices)
-set(handles.FileIndex,'BackgroundColor',[0.7 0.7 0.7])
-if get(handles.SubField,'Value')==1
-    NomType_1=get(handles.NomType_1,'String');
-    indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,j2);
-     %indices=name_generator('',num1,num_a,'',NomType_1,1,num2,num_b,'');
-     set(handles.FileIndex_1,'String',indices)
-     set(handles.FileIndex_1,'BackgroundColor',[0.7 0.7 0.7])
-end
+update_ij(handles,1)
 
 %------------------------------------------------------------------------
 function i2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.i2,'BackgroundColor',[0.7 0.7 0.7])
-i1_Callback(hObject, eventdata, handles)
+update_ij(handles,2)
 
 %------------------------------------------------------------------------
 function j1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.j1,'BackgroundColor',[0.7 0.7 0.7])
-i1_Callback(hObject, eventdata, handles)
+update_ij(handles,3)
 
 %------------------------------------------------------------------------
 function j2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.j2,'BackgroundColor',[0.7 0.7 0.7])
-i1_Callback(hObject, eventdata, handles)
+update_ij(handles,4)
+
+%------------------------------------------------------------------------
+%--- update the index display after action on edit boxes i1, i2, j1 or j2
+function update_ij(handles,index_rank)
+NomType=get(handles.NomType,'String');
+indices=get(handles.FileIndex,'String');
+[tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(indices);% the indices for the second series taken from FileIndex
+switch index_rank
+    case 1
+        indices=fullfile_uvmat('','','','',NomType,stra2num(get(handles.i1,'String')),i2,j1,j2);
+        set(handles.i1,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+    case 2
+        indices=fullfile_uvmat('','','','',NomType,i1,stra2num(get(handles.i2,'String')),j1,j2);
+        set(handles.i2,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+    case 3
+        indices=fullfile_uvmat('','','','',NomType,i1,i2,stra2num(get(handles.j1,'String')),j2);
+        set(handles.j1,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+    case 4
+        indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,stra2num(get(handles.j2,'String')));
+        set(handles.j2,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+end
+set(handles.FileIndex,'String',indices)
+set(handles.FileIndex,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+% update the second index if relevant
+if strcmp(get(handles.FileIndex_1,'Visible'),'on')
+    NomType_1=get(handles.NomType_1,'String');
+    indices_1=get(handles.FileIndex_1,'String');
+    [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(indices_1);% the indices for the second series taken from FileIndex_1
+    switch index_rank
+        case 1
+            indices_1=fullfile_uvmat('','','','',NomType_1,stra2num(get(handles.i1,'String')),i2_1,j1_1,j2_1);
+        case 2
+            indices_1=fullfile_uvmat('','','','',NomType_1,i1_1,stra2num(get(handles.i2,'String')),j1_1,j2_1);
+        case 3
+            indices_1=fullfile_uvmat('','','','',NomType_1,i1_1,i2_1,stra2num(get(handles.j1,'String')),j2_1);
+        case 4
+            indices_1=fullfile_uvmat('','','','',NomType_1,i1_1,i2_1,j1_1,stra2num(get(handles.j2,'String')));
+    end
+    set(handles.FileIndex_1,'String',indices_1)
+    set(handles.FileIndex_1,'BackgroundColor',[0.7 0.7 0.7])% mark the edit box in grey, then RUN0 will mark it in white for confirmation
+end
+    
+%------------------------------------------------------------------------
 
 %------------------------------------------------------------------------
 function slices_Callback(hObject, eventdata, handles)
@@ -1522,15 +1562,13 @@ end
 sub_value= get(handles.SubField,'Value');
 if sub_value % a second input file has been entered 
      [InputFile.RootPath_1,InputFile.SubDir_1,InputFile.RootFile_1,InputFile.FileIndex_1,InputFile.FileExt_1,InputFile.NomType_1]=read_file_boxes_1(handles);   
-    [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(InputFile.FileIndex_1);
+    [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(InputFile.FileIndex_1);% the indices for the second series taken from FileIndex_1
 else
     filename_1=[];
 end   
 
 %% increment (or decrement) the field indices and update the input filename(s)
-CheckSearch=0;
 if isempty(increment)
-    CheckSearch=1;% search for the next available file
     set(handles.CheckFixPair,'Value',0)
 end
 CheckFixPair=get(handles.CheckFixPair,'Value')||(isempty(i2)&&isempty(j2));
@@ -1544,6 +1582,7 @@ if CheckFixPair
             i1_1=i1_1+increment;
             i2_1=i2_1+increment;
         end
+        
     else % case of scanning along index j (burst numbers)
         j1=j1+increment;
         j2=j2+increment;
@@ -1603,11 +1642,11 @@ else
     end
     if ~isempty(errormsg),return,end
     siz=size(UvData.i1_series{1});
-    ref_indices=ref_i*siz(1)*siz(2)+ref_j*siz(1)+1:ref_i*siz(1)*siz(2)+(ref_j+1)*siz(1);   
+    ref_indices=ref_i*siz(1)*siz(2)+ref_j*siz(1)+1:ref_i*siz(1)*siz(2)+(ref_j+1)*siz(1);
     i1_subseries=UvData.i1_series{1}(ref_indices);
     ref_indices=ref_indices(i1_subseries>0);
     if isempty(ref_indices)% case of pairs (free index i)
-        ref_indices=ref_i*siz(1)*siz(2)+1:(ref_i+1)*siz(1)*siz(2); 
+        ref_indices=ref_i*siz(1)*siz(2)+1:(ref_i+1)*siz(1)*siz(2);
         i1_subseries=UvData.i1_series{1}(ref_indices);
         ref_indices=ref_indices(i1_subseries>0);
     end
@@ -1622,27 +1661,71 @@ else
     end
     if ~isempty(UvData.j2_series{1})
         j2=UvData.j2_series{1}(ref_indices(end));
-    end  
-    % case of a second file series (TODO:revise)
-    if numel(UvData.i1_series)>=2
-        i1_subseries=UvData.i1_series{2}(ref_i+1,ref_j+1,:);
-        i1_subseries=i1_subseries(i1_subseries>0);
-        i1_1=i1_subseries(end);
+    end
+    
+    % case of a second file series 
+    if sub_value
+        ref_i_1=i1_1;
+        if ~isempty(i2_1)
+            ref_i_1=floor((i1_1+i2_1)/2);% current reference index i
+        end
+        ref_j_1=1;
+        if ~isempty(j1_1)
+            ref_j_1=j1_1;
+            if ~isempty(j2_1)
+                ref_j_1=floor((j1_1+j2_1)/2);% current reference index j
+            end
+        end
+        if ~isempty(increment)
+            if get(handles.scan_i,'Value')==1% case of scanning along index i
+                ref_i_1=ref_i_1+increment;% increment the current reference index i
+            else % case of scanning along index j (burst numbers)
+                ref_j_1=ref_j_1+increment;% increment the current reference index j if scan_j option is used
+            end
+        else % free increment, synchronise the ref indices with the first series
+            ref_i_1=ref_i;
+            ref_j_1=ref_j; 
+        end
+        if numel(UvData.i1_series)==1
+            UvData.i1_series{2}=UvData.i1_series{1};
+            UvData.j1_series{2}=UvData.j1_series{1};
+            UvData.i2_series{2}=UvData.i2_series{1};
+            UvData.j2_series{2}=UvData.j2_series{1};
+        end
+        if ref_i_1<0
+            errormsg='minimum i index reached';
+        elseif ref_j_1<0
+            errormsg='minimum j index reached';
+        elseif ref_i_1+1>size(UvData.i1_series{2},3)
+            errormsg='maximum i index reached for the second series (reload the input file to update the index bound)';
+        elseif ref_j_1+1>size(UvData.i1_series{2},2)
+            errormsg='maximum j index reached for the second series(reload the input file to update the index bound)';
+        end
+        if ~isempty(errormsg),return,end
+        siz=size(UvData.i1_series{2});
+        ref_indices=ref_i_1*siz(1)*siz(2)+ref_j_1*siz(1)+1:ref_i_1*siz(1)*siz(2)+(ref_j_1+1)*siz(1);
+        i1_subseries=UvData.i1_series{2}(ref_indices);
+        ref_indices=ref_indices(i1_subseries>0);
+        if isempty(ref_indices)% case of pairs (free index i)
+            ref_indices=ref_i_1*siz(1)*siz(2)+1:(ref_i_1+1)*siz(1)*siz(2);
+            i1_subseries=UvData.i1_series{2}(ref_indices);
+            ref_indices=ref_indices(i1_subseries>0);
+        end
+        i1_1=UvData.i1_series{2}(ref_indices(end));
         if ~isempty(UvData.i2_series{2})
-            i2_subseries=UvData.i2_series{2}(ref_i+1,ref_j+1,:);
-            i2_subseries=i2_subseries(i2_subseries>0);
-            i2_1=i2_subseries(end);
+            i2_1=UvData.i2_series{2}(ref_indices(end));
         end
         if ~isempty(UvData.j1_series{2})
-            j1_subseries=UvData.j1_series{2}(ref_i+1,ref_j+1,:);
-            j1_subseries=j1_subseries(j1_subseries>0);
-            j1_1=j1_subseries(end);
+            j1_1=UvData.j1_series{2}(ref_indices(end));
         end
         if ~isempty(UvData.j2_series{2})
-            j2_subseries=UvData.j2_series{2}(ref_i+1,ref_j+1,:);
-            j2_subseries=j2_subseries(j2_subseries>0);
-            j2_1=j2_subseries(end);
-        end
+            j2_1=UvData.j2_series{1}(ref_indices(end));
+        end   
+    else% the second series (if needed) is the same file as the first
+        i1_1=i1;
+        i2_1=i2;
+        j1_1=j1;
+        j2_1=j2;
     end
 end
 filename=fullfile_uvmat(InputFile.RootPath,InputFile.SubDir,InputFile.RootFile,FileExt,NomType,i1,i2,j1,j2);
@@ -1651,7 +1734,7 @@ if sub_value
 end
 
 %% refresh plots
-errormsg=refresh_field(handles,filename,filename_1,i1,i2,j1,j2);
+errormsg=refresh_field(handles,filename,filename_1,i1,i2,j1,j2,i1_1,i2_1,j1_1,j2_1);
 
 %% update the index counters if the index move is successfull
 if isempty(errormsg) 
@@ -1845,19 +1928,21 @@ function run0_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-filename=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-filename_1=[];%default
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+filename=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
+filename_1='';%default
+FileIndex_1='';
 if get(handles.SubField,'Value')
-    [RootPath_1,SubDir_1,RootFile_1,FileIndices_1,FileExt_1]=read_file_boxes_1(handles);
-    filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndices_1 FileExt_1];
+    [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
+    filename_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
 end
 num_i1=stra2num(get(handles.i1,'String'));
 num_i2=stra2num(get(handles.i2,'String'));
 num_j1=stra2num(get(handles.j1,'String'));
 num_j2=stra2num(get(handles.j2,'String'));
+[tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(FileIndex_1);
 
-errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2);
+errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,i1_1,i2_1,j1_1,j2_1);
 
 if ~isempty(errormsg)
       msgbox_uvmat('ERROR',errormsg);
@@ -1882,7 +1967,7 @@ set(handles.run0,'BackgroundColor',[1 0 0])
 % num_i1,num_i2,num_j1,num_j2; frame indices
 % Field: structure describing an optional input field (then replace the input file)
 
-function errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1,num_j2,Field)
+function errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1,num_j2,i1_1,i2_1,j1_1,j2_1)
 %------------------------------------------------------------------------
 
 %% initialisation
@@ -1922,6 +2007,17 @@ end
 masknumber=get(handles.masklevel,'String');
 if length(masknumber)>=z_index
     set(handles.masklevel,'Value',z_index)
+end
+
+%% test for need of tps
+check_proj_tps=0;
+if  (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))
+    for iobj=1:numel(UvData.Object)
+        if isfield(UvData.Object{iobj},'ProjMode')&& strcmp(UvData.Object{iobj}.ProjMode,'filter')
+            check_proj_tps=1;
+            break
+        end
+    end
 end
 
 %% read the first input field 
@@ -1977,6 +2073,10 @@ ParamIn.FieldName=FieldName;
 ParamIn.VelType=VelType;
 ParamIn.GUIName='get_field';
 end
+check_tps=0;         
+if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamIn.FieldName,'velocity')&&~strcmp(ParamIn.FieldName,'get_field...') 
+       check_tps=1;%tps needed to get the requested field
+end
 [Field{1},ParamOut,errormsg] = read_field(FileName,UvData.FileType{1},ParamIn,frame_index);
 if ~isempty(errormsg)
     errormsg=['error in reading ' FileName ': ' errormsg];
@@ -2029,15 +2129,15 @@ if ~isempty(FileName_1)
         case {'video','mmreader'}
             ParamIn_1=UvData.MovieObject{2};
                         if ~strcmp(NomType_1,'*')
-                frame_index_1=num_j1;%frame index for movies or multimage
+                frame_index_1=j1_1;%frame index for movies or multimage
             else
-                frame_index_1=num_i1;
+                frame_index_1=i1_1;
             end  
          case 'multimage'
             if ~strcmp(NomType_1,'*')
-                frame_index_1=num_j1;%frame index for movies or multimage
+                frame_index_1=j1_1;%frame index for movies or multimage
             else
-                frame_index_1=num_i1;
+                frame_index_1=i1_1;
             end   
         case 'vol' %TODO: update
             if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
@@ -2054,10 +2154,8 @@ if ~isempty(FileName_1)
         NomType_1=get(handles.NomType,'String');
     end
     test_keepdata_1=0;% test for keeping the previous stored data if the input files are unchanged
-    if ~isequal(NomType_1,'*')%in case of a series of files (not avi movie)
-        if isfield(UvData,'FileName_1')%&& isfield(UvData,'VelType_1') && isfield(UvData,'FieldName_1')
-            test_keepdata_1= strcmp(FileName_1,UvData.FileName_1) ;%&& strcmp(FieldName_1,UvData.FieldName_1);
-        end
+    if ~isequal(NomType_1,'*')&& isfield(UvData,'FileName_1')
+           test_keepdata_1= strcmp(FileName_1,UvData.FileName_1) ;%&& strcmp(FieldName_1,UvData.FieldName_1);
     end
     if test_keepdata_1
         Field{2}=UvData.Field_1;% keep the stored field
@@ -2067,11 +2165,17 @@ if ~isempty(FileName_1)
         ParamIn_1.FieldName=FieldName_1;
         ParamIn_1.VelType=VelType_1;
         ParamIn_1.GUIName='get_field_1';
-        end
+        end  
         [Field{2},ParamOut_1,errormsg] = read_field(Name,UvData.FileType{2},ParamIn_1,frame_index_1);
         if ~isempty(errormsg)
             errormsg=['error in reading ' FieldName_1 ' in ' FileName_1 ': ' errormsg];
             return
+        end
+        if isstruct(ParamOut_1)&&~strcmp(ParamOut_1.FieldName,'get_field...')&& (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))...
+                &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
+            if ~check_proj_tps
+             %   Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
+            end
         end
     end
     Field{2}.ZIndex=z_index;%used for multi-plane 3D calibration
@@ -2129,7 +2233,7 @@ elseif ~test_keepdata_1
     else
         test_veltype_1=1;
         set(handles.VelType_1,'Visible','on')
-        menu=set_veltype_display(ParamOut_1.CivStage);
+        menu=set_veltype_display(ParamOut_1.CivStage,UvData.FileType{2});
         index_menu=strcmp(ParamOut_1.VelType,menu);
         set(handles.VelType_1,'Value',1+find(index_menu,1))
         set(handles.VelType_1,'String',[{''};menu])
@@ -2218,20 +2322,19 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
         end
     end
     if numel(UvData.XmlData)==2
-        [tild,tild,tild,num_i1,num_i2,num_j1,num_j2]=fileparts_uvmat(['xx' get(handles.FileIndex_1,'String') get(handles.FileExt_1,'String')]);
-        if isempty(num_i2)
-            num_i2=num_i1;
+        if isempty(i2_1)
+            i2_1=num_i1;
         end
-        if isempty(num_j1)
-            num_j1=1;
+        if isempty(j1_1)
+            j1_1=1;
         end
-        if isempty(num_j2)
-            num_j2=num_j1;
+        if isempty(j2_1)
+            j2_1=j1_1;
         end
         siz=size(UvData.XmlData{2}.Time);
-        if ~isempty(num_i1) && siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
-            abstime_1=(UvData.XmlData{2}.Time(num_i1,num_j1)+UvData.XmlData{2}.Time(num_i2,num_j2))/2;%overset the time read from files
-            Field{2}.Dt=(UvData.XmlData{2}.Time(num_i2,num_j2)-UvData.XmlData{2}.Time(num_i1,num_j1));
+        if ~isempty(i1_1) && siz(1)>=max(i1_1,i2_1) && siz(2)>=max(j1_1,j2_1)
+            abstime_1=(UvData.XmlData{2}.Time(i1_1,j1_1)+UvData.XmlData{2}.Time(i2_1,j2_1))/2;%overset the time read from files
+            Field{2}.Dt=(UvData.XmlData{2}.Time(i2_1,j2_1)-UvData.XmlData{2}.Time(i1_1,j1_1));
         end
     end
 end
@@ -2263,7 +2366,9 @@ end
 
 %% apply coordinate transform or other user fct
 transform=get(handles.path_transform,'UserData');
-if ~isempty(transform)
+if isempty(transform)
+    UvData.Field=Field{1};
+else
     XmlData=[];%default
     XmlData_1=[];%default
     if isfield(UvData,'XmlData')%use geometry calib recorded from the ImaDoc xml file as first priority
@@ -2293,41 +2398,8 @@ if ~isempty(transform)
     end
 end
 
-%% check whether tps is needed, then calculate tps coefficients if needed
-check_proj_tps=0;
-if  (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))
-    for iobj=1:numel(UvData.Object)
-        if isfield(UvData.Object{iobj},'ProjMode')&& strcmp(UvData.Object{iobj}.ProjMode,'filter')
-            check_proj_tps=1;
-            break
-        end
-    end
-end
-check_tps=0;         
-if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamOut.FieldName,'velocity')&&~strcmp(ParamOut.FieldName,'get_field...')
-       check_tps=1;%tps needed to get the requested field
-end
-if (check_tps ||check_proj_tps)&&~isfield(UvData.Field,'Coord_tps')
-    UvData.Field=calc_tps(UvData.Field);
-end
-UvData.Field.FieldList=[{ParamOut.FieldName} {ParamOut.ColorVar}];
-
-%% calculate scalar
-if isstruct(ParamOut)&&~strcmp(ParamOut.FieldName,'get_field...')&& (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))...
-         &&~strcmp(ParamOut.FieldName,'velocity') && ~strcmp(ParamOut.FieldName,'get_field...') 
-    if ~check_proj_tps
-        UvData.Field=calc_field([{ParamOut.FieldName} {ParamOut.ColorVar}],UvData.Field);
-    end
-end
-if isstruct(ParamOut_1)&& numel(Field)==2 && ~strcmp(ParamOut_1.FieldName,'get_field...')&& ~test_keepdata_1 && (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))...
-        &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...') 
-    if check_proj_tps
-        Field{2}.FieldList=[{ParamOut_1.FieldName} {ParamOut_1.ColorVar}];
-    else
-     Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
-    end
-end
-
+%% calculate tps coefficients if needed
+UvData.Field=calc_tps(UvData.Field,check_proj_tps);
 
 %% analyse input field
 test_x=0;
@@ -2941,7 +3013,14 @@ if get(handles.SubField,'Value')==0% if the subfield button is desactivated
         UvData=rmfield(UvData,'XmlData_1');
     end 
     set(handles.uvmat,'UserData',UvData);
-    run0_Callback(hObject, eventdata, handles); %run
+    transform_fct_list=get(handles.transform_fct,'String');
+    transform_fct=transform_fct_list(get(handles.transform_fct,'Value'));
+    if strcmp(transform_fct,'sub_field')
+        set(handles.transform_fct,'Value',1)%suppress the sub_field transform
+        transform_fct_Callback(hObject, eventdata, handles); 
+    else
+        run0_Callback(hObject, eventdata, handles)
+    end  
 else
     MenuBrowse_1_Callback(hObject, eventdata, handles)
 end
@@ -3113,8 +3192,6 @@ end
 [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
 FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
-% set(handles.FileIndex_1,'Visible','on')
-% set(handles.FileExt_1,'Visible','on')
 switch field_1
     case 'get_field...'
         set_veltype_display(0) % no veltype display
@@ -3127,12 +3204,9 @@ switch field_1
         hhget_field=guidata(hget_field);
         set(hhget_field.list_fig,'Value',1)
         set(hhget_field.list_fig,'String',{'uvmat'})
-%         set(handles.transform_fct,'Value',1)% no transform by default
-%         set(handles.path_transform,'String','')
         if check_new
             UvData.FileType{2}=UvData.FileType{1};
             set(handles.FileIndex_1,'String',get(handles.FileIndex,'String'))
-%             set(handles.FileExt_1,'String',get(handles.FileExt,'String'))
               set(handles.uvmat,'UserData',UvData)
         end
     case 'image'
@@ -3238,53 +3312,62 @@ set(handles.FixVelType,'Value',1)
 run0_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
-% --- Executes on button press in VelType_1.
+% --- Executes on choice selection in VelType_1.
 function VelType_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.FixVelType,'Value',1)% the velocity type is now imposed by the GUI (not automatic)
 UvData=get(handles.uvmat,'UserData');
-%refresh field with a second FileName=first file name
-set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
+set(handles.run0,'BackgroundColor',[1 1 0])%paint run0 button in yellow to indicate its activation
 drawnow   
-InputFile=read_GUI(handles.InputFile);
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+InputFile=read_GUI(handles.InputFile);% read the input file parameters
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+[RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
+FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];% name of the first input file
 
+check_refresh=0;
 if isempty(InputFile.VelType_1)
-        FileName_1='';% we plot the current field without the second field
+        FileName_1='';% we plot the first input field without the second field
         set(handles.SubField,'Value',0)
-        SubField_Callback(hObject, eventdata, handles)
+        SubField_Callback(hObject, eventdata, handles)% activate SubField_Callback and refresh current display, removing the second field
 elseif get(handles.SubField,'Value')% if subfield is already 'on'
-      [RootPath_1,SubDir_1,RootFile_1,FileIndices_1,FileExt_1]=read_file_boxes_1(handles);
-     FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndices_1 FileExt_1];
-else
-     FileName_1=FileName;% we compare two fields in the same file by default
+     FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];% name of the second input file
+     check_refresh=1;%will refresh the current display
+else% we introduce the same file (with a different field) for the second series
+     FileName_1=FileName;% we compare two fields in the same file 
      UvData.FileType{2}=UvData.FileType{1};
+     UvData.XmlData{2}= UvData.XmlData{1};
      set(handles.SubField,'Value',1)
+     transform=get(handles.path_transform,'UserData');
+     if (~isa(transform,'function_handle')||nargin(transform)<3)
+        set(handles.transform_fct,'value',2); % set transform to sub_field if the current fct doe not accept two input fields
+        transform_fct_Callback(hObject, eventdata, handles)% activate transform_fct_Callback and refresh current display
+     else
+         check_refresh=1;
+     end  
 end
-if isfield(UvData,'Field_1')
-    UvData=rmfield(UvData,'Field_1');% removes the stored second field if it exists
-end
-UvData.FileName_1='';% desactivate the use of a constant second file
-set(handles.uvmat,'UserData',UvData)
-num_i1=stra2num(get(handles.i1,'String'));
-num_i2=stra2num(get(handles.i2,'String'));
-num_j1=stra2num(get(handles.j1,'String'));
-num_j2=stra2num(get(handles.j2,'String'));
 
-errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1,num_j2);
-
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',errormsg);
-else
-    set(handles.i1,'BackgroundColor',[1 1 1])
-    set(handles.i2,'BackgroundColor',[1 1 1])
-    set(handles.j1,'BackgroundColor',[1 1 1])
-    set(handles.j2,'BackgroundColor',[1 1 1])
-    set(handles.FileIndex,'BackgroundColor',[1 1 1])
-    set(handles.FileIndex_1,'BackgroundColor',[1 1 1])
+% refresh the current display if it has not been done previously
+if check_refresh
+    UvData.FileName_1='';% desactivate the use of a constant second file
+    set(handles.uvmat,'UserData',UvData)
+    num_i1=stra2num(get(handles.i1,'String'));
+    num_i2=stra2num(get(handles.i2,'String'));
+    num_j1=stra2num(get(handles.j1,'String'));
+    num_j2=stra2num(get(handles.j2,'String'));
+    [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(['xx' FileIndex_1]);
+    errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1,num_j2,i1_1,i2_1,j1_1,j2_1);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',errormsg);
+    else
+        set(handles.i1,'BackgroundColor',[1 1 1])
+        set(handles.i2,'BackgroundColor',[1 1 1])
+        set(handles.j1,'BackgroundColor',[1 1 1])
+        set(handles.j2,'BackgroundColor',[1 1 1])
+        set(handles.FileIndex,'BackgroundColor',[1 1 1])
+        set(handles.FileIndex_1,'BackgroundColor',[1 1 1])
+    end
+    set(handles.run0,'BackgroundColor',[1 0 0])
 end
-set(handles.run0,'BackgroundColor',[1 0 0])
 
 %-----------------------------------------------
 % --- reset civ buttons
@@ -3604,9 +3687,12 @@ end
 set(handles.uvmat,'UserData',UvData)
 
 %% refresh the current plot
-run0_Callback(hObject, eventdata, handles)
-
-
+if isempty(list_path{ichoice}) || nargin(transform_handle)<3
+    set(handles.SubField,'Value',0)
+    SubField_Callback(hObject, eventdata, handles)
+else
+    run0_Callback(hObject, eventdata, handles)
+end
 
 %------------------------------------------------
 %CALLBACKS FOR PLOTTING PARAMETERS
@@ -3960,10 +4046,9 @@ ProjData= proj_field(UvData.Field,ObjectData);%project the current input field o
 plot_field(ProjData,handles.PlotAxes,read_GUI(handles.uvmat));% plot the projected field;
 %replot all the objects within the new projected field
 for IndexObj=1:numel(list_str)
-    IndexObj
-        hobject=UvData.Object{IndexObj}.DisplayHandle.uvmat
+        hobject=UvData.Object{IndexObj}.DisplayHandle.uvmat;
         if isempty(hobject) || ~ishandle(hobject)
-            hobject=handles.PlotAxes
+            hobject=handles.PlotAxes;
         end
         if isequal(IndexObj,get(handles.ListObject,'Value'))
             objectcolor='m'; %paint in magenta the currently selected object in ListObject
@@ -4150,25 +4235,25 @@ if check_view %activate set_object
     if ~isfield(data,'Type')% default plane
         data.Type='plane';
     end
-    if isfield(UvData,'Field')
-        Field=UvData.Field;
-        if isfield(UvData.Field,'Mesh')&&~isempty(UvData.Field.Mesh)
-            data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
-            if strcmp(data.Type,'line')||strcmp(data.Type,'polyline')
-                data.RangeY=UvData.Field.Mesh;
-            else
-                data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
-            end
-            data.DX=UvData.Field.Mesh;
-            data.DY=UvData.Field.Mesh;
-        end
-        if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
-            data.Coord=[0 0 0]; %default
-        end
-        if isfield(Field,'CoordUnit')
-            data.CoordUnit=Field.CoordUnit;
-        end
-    end
+%     if isfield(UvData,'Field')
+%         Field=UvData.Field;
+%         if isfield(UvData.Field,'Mesh')&&~isempty(UvData.Field.Mesh)
+%             data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
+%             if strcmp(data.Type,'line')||strcmp(data.Type,'polyline')
+%                 data.RangeY=UvData.Field.Mesh;
+%             else
+%                 data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
+%             end
+%             data.DX=UvData.Field.Mesh;
+%             data.DY=UvData.Field.Mesh;
+%         end
+%         if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
+%             data.Coord=[0 0 0]; %default
+%         end
+%         if isfield(Field,'CoordUnit')
+%             data.CoordUnit=Field.CoordUnit;
+%         end
+%     end
     hset_object=set_object(data,[],ZBounds);
     hhset_object=guidata(hset_object);
     if get(handles.edit_object,'Value')% edit mode
@@ -4296,7 +4381,7 @@ set(handles.MenuExportMovie,'BusyAction','queue')% activate the button
 huvmat=get(handles.run0,'parent');
 UvData=get(huvmat,'UserData');
 %[xx,xx,FileBase]=read_file_boxes(handles);
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileBase=fullfile(RootPath,RootFile);
  %read the current input file name
 prompt = {'movie file name';'frames per second';'frame resolution (*[512x384] pixels)';'axis position relative to the frame';'total frame number (starting from the current uvmat display)'};
@@ -4586,8 +4671,8 @@ end
 pos=get(handles.uvmat,'Position');
 pos(1)=pos(1)+pos(3)-0.311+0.04; %0.311= width of the geometry_calib interface (units relative to the srcreen)
 pos(2)=pos(2)-0.02;
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 set(handles.view_xml,'Backgroundcolor',[1 1 0])%indicate the reading of the current xml file by geometry_calib
 if isfield(UvData.OpenParam,'CalOrigin')
     pos_uvmat=get(handles.uvmat,'Position');
@@ -4719,8 +4804,8 @@ set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
 set(handles.ListObject,'Value',1)      
 
 %prepare display of the set_grid GUI
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 CoordList=get(handles.transform_fct,'String');
 val=get(handles.transform_fct,'Value');
 set_grid(FileName,CoordList{val});% call the set_object interface
@@ -4745,11 +4830,11 @@ set(handles.uvmat,'UserData',UvData);
 function MenuSeries_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 series; %first display of the GUI to fill waiting time
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-param.FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+param.FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 if isequal(get(handles.SubField,'Value'),1)
-    [RootPath_1,SubDir_1,RootFile_1,FileIndices_1,FileExt_1]=read_file_boxes_1(handles);
-    FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndices_1 FileExt_1];
+    [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
+    FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
     if ~isequal(FileName_1,param.FileName)
         param.FileName_1=FileName_1;
     end
@@ -4787,8 +4872,8 @@ series(param); %run the series interface
 % -- open the GUI civ.fig for PIV
 function MenuPIV_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
- [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
- FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+ [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+ FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 civ(FileName);% interface de civ(not in the uvmat file)
 
 % --------------------------------------------------------------------

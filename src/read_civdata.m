@@ -9,7 +9,7 @@
 %            .ListGlobalAttribute: list of global attributes containing:
 %                    .NbCoord: number of vector components
 %                    .NbDim: number of dimensions (=2 or 3)
-%                    .dt: time interval for the corresponding image pair
+%                    .Dt: time interval for the corresponding image pair
 %                    .Time: absolute time (average of the initial image pair)
 %                    .CivStage: =0, 
 %                       =1, civ1 has been performed only
@@ -62,9 +62,21 @@ if ~exist('FieldNames','var')
     FieldNames=[]; %default
 end
 errormsg='';
+if ischar(FieldNames), FieldNames={FieldNames}; end;
+FieldRequest='vec';
+for ilist=1:length(FieldNames)
+    if ~isempty(FieldNames{ilist})
+        switch FieldNames{ilist}
+            case{'U','V','norm(U,V)'}
+                FieldRequest='interp';
+            case {'curl(U,V)','div(U,V)','strain(U,V)'}
+                FieldRequest='derivatives';
+        end
+    end
+end
 
 %% reading data
-[varlist,role,units,VelTypeOut]=varcivx_generator(FieldNames,VelType,CivStage);
+[varlist,role,VelTypeOut]=varcivx_generator(FieldRequest,VelType,CivStage);
 if isempty(varlist)
     erromsg=['error in read_civdata: unknow velocity type ' VelType];
     return
@@ -96,12 +108,33 @@ switch VelTypeOut
         Field.Time=Field.Civ2_Time;
 end
 Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'Dt','Time'}];
+ivar_U_tps=[];
 var_ind=find(vardetect);
 for ivar=1:numel(var_ind)
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
-    Field.VarAttribute{ivar}.Unit=units{var_ind(ivar)};
+    Field.VarAttribute{ivar}.FieldRequest=FieldRequest;
+    if strcmp(role{var_ind(ivar)},'vector_x')
+        Field.VarAttribute{ivar}.Operation=FieldNames;
+        ivar_U=ivar;
+    end
+    if strcmp(role{var_ind(ivar)},'vector_x_tps')
+        Field.VarAttribute{ivar}.Operation=FieldNames;
+        ivar_U_tps=ivar;
+    end
+%     Field.VarAttribute{ivar}.Unit=units{var_ind(ivar)};
     Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
 end
+if ~isempty(ivar_U_tps)
+    Field.VarAttribute{ivar_U}.VarIndex_tps=ivar_U_tps;
+end
+% if strcmp(FieldRequest,'derivatives')% fields will be calculated from the tps
+%     Field.VarAttribute{ivar_U_tps}.FieldRequest=FieldRequest;
+%     Field.VarAttribute{ivar_U_tps}.Operation=FieldNames;
+% else% fields will be calculated from the initial fields
+%     Field.VarAttribute{ivar_U}.FieldRequest=FieldRequest;%
+%     Field.VarAttribute{ivar_U}.Operation=FieldNames;
+% end
+
 Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'NbCoord','NbDim','TimeUnit','CoordUnit'}];
 % %% update list of global attributes
 Field.NbCoord=2;
@@ -120,31 +153,17 @@ Field.CoordUnit='pixel';
 % vel_type: character string indicating the types of velocity fields to read ('civ1','civ2'...)
 %            if vel_type=[] or'*', a  priority choice is done, civ2 considered better than civ1 )
 
-function [var,role,units,vel_type_out,errormsg]=varcivx_generator(FieldNames,vel_type,CivStage) 
+function [var,role,vel_type_out,errormsg]=varcivx_generator(FieldRequest,vel_type,CivStage) 
 
 %% default input values
 if ~exist('vel_type','var'),vel_type='';end;
 if iscell(vel_type),vel_type=vel_type{1}; end;%transform cell to string if needed
-if ~exist('FieldNames','var'),FieldNames={'ima_cor'};end;%default scalar 
-if ischar(FieldNames), FieldNames={FieldNames}; end;
 errormsg='';
 
 %% select the priority order for automatic vel_type selection
-testder=0;
-testpatch=0;
-for ilist=1:length(FieldNames)
-    if ~isempty(FieldNames{ilist})
-        switch FieldNames{ilist}
-            case{'u','v'}
-                testpatch=1;
-            case {'vort','div','strain'}
-                testder=1;
-        end
-    end
-end
-if strcmp(vel_type,'civ2') && testder
+if strcmp(vel_type,'civ2') && strcmp(FieldRequest,'derivatives')
     vel_type='filter2';
-elseif strcmp(vel_type,'civ1') && testder
+elseif strcmp(vel_type,'civ1') && strcmp(FieldRequest,'derivatives')
     vel_type='filter1';
 end
 if isempty(vel_type)||strcmp(vel_type,'*')
@@ -152,7 +171,7 @@ if isempty(vel_type)||strcmp(vel_type,'*')
         case {6} %filter2 available
             vel_type='filter2';
         case {4,5}% civ2 available but not filter2
-            if testder% derivatives needed
+            if strcmp(FieldRequest,'derivatives')% derivatives needed
                 vel_type='filter1';
             else
                 vel_type='civ2';
@@ -170,26 +189,29 @@ switch vel_type
         var={'X','Y','Z','U','V','W','C','F','FF';...
             'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U','Civ1_V','Civ1_W','Civ1_C','Civ1_F','Civ1_FF'};
         role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
-        units={'pixel','pixel','pixel','pixel','pixel','pixel','','',''};
+    %    units={'pixel','pixel','pixel','pixel','pixel','pixel','','',''};
     case 'filter1'
         var={'X','Y','Z','U','V','W','C','F','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbSites';...
             'Civ1_X','Civ1_Y','Civ1_Z','Civ1_U_smooth','Civ1_V_smooth','Civ1_W','Civ1_C','Civ1_F','Civ1_FF',...
             'Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps','Civ1_W_tps','Civ1_SubRange','Civ1_NbSites'};
         role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag','coord_tps','vector_x_tps',...
             'vector_y_tps','vector_z_tps','ancillary','ancillary'};
-        units={'pixel','pixel','pixel','pixel','pixel','pixel','','','','pixel','pixel','pixel','pixel','pixel',''};
+     %   units={'pixel','pixel','pixel','pixel','pixel','pixel','','','','pixel','pixel','pixel','pixel','pixel',''};
     case 'civ2'
         var={'X','Y','Z','U','V','W','C','F','FF';...
             'Civ2_X','Civ2_Y','Civ2_Z','Civ2_U','Civ2_V','Civ2_W','Civ2_C','Civ2_F','Civ2_FF'};
         role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag'};
-        units={'pixel','pixel','pixel','pixel','pixel','pixel','','',''};
+      %  units={'pixel','pixel','pixel','pixel','pixel','pixel','','',''};
     case 'filter2'
         var={'X','Y','Z','U','V','W','C','F','FF','Coord_tps','U_tps','V_tps','W_tps','SubRange','NbSites';...
             'Civ2_X','Civ2_Y','Civ2_Z','Civ2_U_smooth','Civ2_V_smooth','Civ2_W','Civ2_C','Civ2_F','Civ2_FF',...
             'Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps','','Civ2_SubRange','Civ2_NbSites'};
         role={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','ancillary','warnflag','errorflag','coord_tps','vector_x_tps',...
             'vector_y_tps','vector_z_tps','ancillary','ancillary'};
-        units={'pixel','pixel','pixel','pixel','pixel','pixel','','','','pixel','pixel','pixel','pixel','pixel',''};
+       % units={'pixel','pixel','pixel','pixel','pixel','pixel','','','','pixel','pixel','pixel','pixel','pixel',''};
+end
+if ~strcmp(FieldRequest,'derivatives')
+    var=var(:,1:9);%suppress tps if not needed
 end
 vel_type_out=vel_type;
 

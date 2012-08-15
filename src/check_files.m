@@ -31,7 +31,8 @@ svn_info.rep_rev=[];
 svn_info.cur_rev=[];
 svn_info.status=[];
 list_fct={...
-    'calc_field';...% defines fields (velocity, vort, div...) from civx data and calculate them
+    'calc_field_interp';...% defines fields (velocity, vort, div...) from civx data and calculate them
+    'calc_field_tps';...% defines fields (velocity, vort, div...) and calculate them
     'cell2tab';... %transform a Matlab cell in a character array suitable for display in a table
     'check_field_structure';...% check the validity of the field struture representation consistant with the netcdf format
     'check_files';...
@@ -63,7 +64,6 @@ list_fct={...
     'get_field.fig';...%interface for get_field
     'get_file_series';...% determine the list of file names and file indices for functions called by 'series'.
     'get_file_type';...% determine info about a file (image, multimage, civdata,...) .
-    'griddata_uvmat';...%make 2D linear interpolation using griddata, with input appropriate for both Matlab 6.5 and 7
     'hist_update';...%  update of a current global histogram by inclusion of a new field
     'imadoc2struct';...%convert the image documentation file ImaDoc into a Matlab structure
     'keyboard_callback';... % function activated when a key is pressed on the keyboard

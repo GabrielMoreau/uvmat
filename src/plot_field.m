@@ -121,7 +121,7 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['input of plot_field/find_field_cells: ' errormsg]);
     return
 end
-index_2D=find(NbDim==2,2);%find 2D fields (at most 2)
+index_2D=find(NbDim==2);%find 2D fields
 index_3D=find(NbDim>2,1);
 if ~isempty(index_3D)
     if isfield(Data,'NbDim')&& isequal(Data.NbDim,2)
@@ -559,7 +559,7 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
     end
     if ~isempty(ivar_U) && ~isempty(ivar_V)% vector components detected
         if test_vec
-            errormsg='error in plot_field: attempt to plot two vector fields';
+            errormsg='error in plot_field: attempt to plot two vector fields: to get the difference project on a plane with mode interp';
             return
         else
             test_vec=1;

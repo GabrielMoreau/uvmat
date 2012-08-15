@@ -1,21 +1,67 @@
-function DataOut=calc_tps(DataIn)     
+function DataOut=calc_tps(DataIn,checkall)     
 DataOut=DataIn;%default
 SubDomain=1000; %default, estimated nbre of vectors in a subdomain used for tps
 if isfield(DataIn,'SubDomain')
     SubDomain=DataIn.SubDomain;%
 end
-[DataOut.SubRange,DataOut.NbSites,DataOut.Coord_tps,DataOut.U_tps,DataOut.V_tps] =...
-    filter_tps([DataIn.X(DataIn.FF==0) DataIn.Y(DataIn.FF==0)],DataIn.U(DataIn.FF==0),DataIn.V(DataIn.FF==0),[],SubDomain,0);
-nbvar=numel(DataIn.ListVarName);
-DataOut.ListVarName=[DataIn.ListVarName {'SubRange','NbSites','Coord_tps','U_tps','V_tps'}];
-DataOut.VarDimName=[DataIn.VarDimName {{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
-    {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
-DataOut.VarAttribute{nbvar+3}.Role='coord_tps';
-DataOut.VarAttribute{nbvar+4}.Role='vector_x';
-DataOut.VarAttribute{nbvar+5}.Role='vector_y';
-if isfield(DataOut,'ListDimName')%cleaning
-    DataOut=rmfield(DataOut,'ListDimName');
-end
-if isfield(DataOut,'DimValue')%cleaning
-    DataOut=rmfield(DataOut,'DimValue');
+[CellVarIndex,NbDimVec,VarTypeCell,errormsg]=find_field_cells(DataIn);
+nbtps=0;
+for icell=1:numel(CellVarIndex);
+    VarType=VarTypeCell{icell};
+    if NbDimVec(icell)>=2 && ~isempty(VarType.coord_x)
+        nbtps=nbtps+1;
+        X=DataIn.(DataIn.ListVarName{VarType.coord_x});
+        Y=DataIn.(DataIn.ListVarName{VarType.coord_y});
+        if ~isempty(VarType.vector_x)&&~isempty(VarType.vector_y)
+            Attr=DataIn.VarAttribute{VarType.vector_x};
+            if ~isfield(Attr,'VarIndex_tps')&& (checkall || (isfield(Attr,'FieldRequest')&&strcmp(Attr.FieldRequest,'derivatives')))               
+                U=DataIn.(DataIn.ListVarName{VarType.vector_x});
+                V=DataIn.(DataIn.ListVarName{VarType.vector_y});
+            else
+                continue
+            end
+        end
+        if ~isempty(VarType.errorflag)
+            FF=DataIn.(DataIn.ListVarName{VarType.errorflag});
+            X=X(FF==0);
+            Y=Y(FF==0);
+            U=U(FF==0);
+            V=V(FF==0);
+        end
+        if nbtps==1
+            ListNewVar={'SubRange','NbSites','Coord_tps','U_tps','V_tps'};
+            ListNewDim={'nb_tps','nb_subdomain'};
+            DataOut.VarDimName=[DataIn.VarDimName {{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
+                {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
+        else
+            ListNewVar={['SubRange_' num2str(nbtps-1)],['NbSites_' num2str(nbtps-1)],['Coord_tps_' num2str(nbtps-1)],['U_tps_' num2str(nbtps-1)] ,['V_tps_' num2str(nbtps-1)]};
+            ListNewDim={['nb_tps_' num2str(nbtps-1)],['nb_subdomain_' num2str(nbtps-1)]};
+            DataOut.VarDimName=[DataIn.VarDimName {{'nb_coord','nb_bounds',ListNewDim{2}},ListNewDim(2),...
+                {ListNewDim{1},'nb_coord',ListNewDim{2}},ListNewDim,ListNewDim}];
+        end
+        DataOut.ListVarName=[DataIn.ListVarName ListNewVar];
+        
+        [DataOut.(ListNewVar{1}),DataOut.(ListNewVar{2}),DataOut.(ListNewVar{3}),DataOut.(ListNewVar{4}),DataOut.(ListNewVar{5})] =...
+            filter_tps([X Y],U,V,[],SubDomain,0);
+        nbvar=numel(DataIn.ListVarName);
+        
+        DataOut.VarAttribute{nbvar+3}.Role='coord_tps';
+        DataOut.VarAttribute{nbvar+4}=DataIn.VarAttribute{VarType.vector_x};%reproduce attributes of velocity
+         DataOut.VarAttribute{nbvar+4}.Role='vector_x_tps';
+         DataIn.VarAttribute{VarType.vector_x}.VarIndex_tps=nbvar+4;% indicte the correspondance with initial data
+        DataOut.VarAttribute{nbvar+5}=DataIn.VarAttribute{VarType.vector_y};%reproduce attributes of velocity 
+         DataOut.VarAttribute{nbvar+5}.Role='vector_y_tps';
+%          if isfield(DataOut.VarAttribute{VarType.vector_x},'FieldRequest')
+%              DataOut.VarAttribute{VarType.vector_x}=rmfield(DataOut.VarAttribute{VarType.vector_x},'FieldRequest');
+%          end
+%          if isfield(DataOut.VarAttribute{VarType.vector_x},'Operation')
+%              DataOut.VarAttribute{VarType.vector_x}=rmfield(DataOut.VarAttribute{VarType.vector_x},'Operation');
+%          end
+        if isfield(DataOut,'ListDimName')%cleaning'FieldRequest'
+            DataOut=rmfield(DataOut,'ListDimName');
+        end
+        if isfield(DataOut,'DimValue')%cleaning
+            DataOut=rmfield(DataOut,'DimValue');
+        end
+    end
 end
