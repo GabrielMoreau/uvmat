@@ -979,9 +979,9 @@ for icell=1:numel(VarTypeCell)% TODO: recalculate coordinates here to get the bo
     ProjMode{icell}=ObjectData.ProjMode;
     if isfield(VarTypeCell{icell},'FieldRequest')
         switch VarTypeCell{icell}.FieldRequest
-            case 'interp'
+            case 'interp_lin'
                 ProjMode{icell}='interp';
-            case 'derivatives'
+            case 'interp_tps'
                 ProjMode{icell}='filter';
         end
     end
@@ -1224,13 +1224,6 @@ for icell=1:length(CellVarIndex)
                     ProjData.(VarName)=DataOut.(VarName);
                     VarDimName{ilist}={'coord_y','coord_x'};
                 end
-%                 if ~isfield(ProjData,'coord_x')
-%                 ProjData.coord_x=[XMin XMax];
-%                 ProjData.coord_y=[YMin YMax];
-%                 ListFieldProj=[{'coord_x','coord_y'} ListFieldProj'];
-%                 VarDimName=[{'coord_x','coord_y'} VarDimName];
-%                 VarAttribute=[{[],[]} VarAttribute];
-%                 end
                 ProjData.ListVarName=[ProjData.ListVarName ListFieldProj];
                 ProjData.VarDimName=[ProjData.VarDimName VarDimName];
                 ProjData.VarAttribute=[ProjData.VarAttribute VarAttribute];
@@ -1275,6 +1268,7 @@ for icell=1:length(CellVarIndex)
             ListDimName=FieldData.VarDimName{VarIndex(1)};
             ProjData.ListVarName=[ProjData.ListVarName {AYProjName} {AXProjName}]; %TODO: check if it already exists in Projdata (several cells)
             ProjData.VarDimName=[ProjData.VarDimName {AYProjName} {AXProjName}];
+            ProjData.VarAttribute=[ProjData.VarAttribute {[]} {[]}];
             Coord_z=[];
             Coord_y=[];
             Coord_x=[];

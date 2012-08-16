@@ -2215,9 +2215,9 @@ else
 end
 % display the Fields menu from the input file and pick the selected one: 
 if isstruct(ParamOut)
-field_index=strcmp(ParamOut.FieldName,ParamOut.FieldList);
-set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
-set(handles.Fields,'Value',find(field_index,1))
+    field_index=strcmp(ParamOut.FieldName,ParamOut.FieldList);
+    set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
+    set(handles.Fields,'Value',find(field_index,1))
 end
 
 %% update the display menu for the second velocity type (second menuline)

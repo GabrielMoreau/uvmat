@@ -14,7 +14,7 @@ for icell=1:numel(CellVarIndex);
         Y=DataIn.(DataIn.ListVarName{VarType.coord_y});
         if ~isempty(VarType.vector_x)&&~isempty(VarType.vector_y)
             Attr=DataIn.VarAttribute{VarType.vector_x};
-            if ~isfield(Attr,'VarIndex_tps')&& (checkall || (isfield(Attr,'FieldRequest')&&strcmp(Attr.FieldRequest,'derivatives')))               
+            if ~isfield(Attr,'VarIndex_tps')&& (checkall || (isfield(Attr,'FieldRequest')&&strcmp(Attr.FieldRequest,'interp_tps')))               
                 U=DataIn.(DataIn.ListVarName{VarType.vector_x});
                 V=DataIn.(DataIn.ListVarName{VarType.vector_y});
             else
@@ -51,13 +51,7 @@ for icell=1:numel(CellVarIndex);
          DataIn.VarAttribute{VarType.vector_x}.VarIndex_tps=nbvar+4;% indicte the correspondance with initial data
         DataOut.VarAttribute{nbvar+5}=DataIn.VarAttribute{VarType.vector_y};%reproduce attributes of velocity 
          DataOut.VarAttribute{nbvar+5}.Role='vector_y_tps';
-%          if isfield(DataOut.VarAttribute{VarType.vector_x},'FieldRequest')
-%              DataOut.VarAttribute{VarType.vector_x}=rmfield(DataOut.VarAttribute{VarType.vector_x},'FieldRequest');
-%          end
-%          if isfield(DataOut.VarAttribute{VarType.vector_x},'Operation')
-%              DataOut.VarAttribute{VarType.vector_x}=rmfield(DataOut.VarAttribute{VarType.vector_x},'Operation');
-%          end
-        if isfield(DataOut,'ListDimName')%cleaning'FieldRequest'
+        if isfield(DataOut,'ListDimName')%cleaning'
             DataOut=rmfield(DataOut,'ListDimName');
         end
         if isfield(DataOut,'DimValue')%cleaning

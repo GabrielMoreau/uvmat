@@ -16,17 +16,6 @@
 
 function [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp(Coord,FieldVar,Operation,XI,YI)
 
-%% nbre of subdomains
-% if ndims(Coord_interp)==3
-%     nb_coord=size(Coord_interp,3);
-%     npx=size(Coord_interp,2);
-%     npy=size(Coord_interp,1);
-%     nb_sites=npx*npy;
-%     Coord_interp=reshape(Coord_interp,nb_sites,nb_coord);
-% else
-%     nb_coord=size(Coord_interp,2);
-%     nb_sites=size(Coord_interp,1);
-% end
 VarVal=[];
 ListVarName={};
 VarAttribute={};

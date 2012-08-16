@@ -63,14 +63,14 @@ if ~exist('FieldNames','var')
 end
 errormsg='';
 if ischar(FieldNames), FieldNames={FieldNames}; end;
-FieldRequest='vec';
+FieldRequest='';
 for ilist=1:length(FieldNames)
     if ~isempty(FieldNames{ilist})
         switch FieldNames{ilist}
             case{'U','V','norm(U,V)'}
-                FieldRequest='interp';
+                FieldRequest='interp_lin';
             case {'curl(U,V)','div(U,V)','strain(U,V)'}
-                FieldRequest='derivatives';
+                FieldRequest='interp_tps';
         end
     end
 end
@@ -127,13 +127,6 @@ end
 if ~isempty(ivar_U_tps)
     Field.VarAttribute{ivar_U}.VarIndex_tps=ivar_U_tps;
 end
-% if strcmp(FieldRequest,'derivatives')% fields will be calculated from the tps
-%     Field.VarAttribute{ivar_U_tps}.FieldRequest=FieldRequest;
-%     Field.VarAttribute{ivar_U_tps}.Operation=FieldNames;
-% else% fields will be calculated from the initial fields
-%     Field.VarAttribute{ivar_U}.FieldRequest=FieldRequest;%
-%     Field.VarAttribute{ivar_U}.Operation=FieldNames;
-% end
 
 Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'NbCoord','NbDim','TimeUnit','CoordUnit'}];
 % %% update list of global attributes
@@ -210,7 +203,7 @@ switch vel_type
             'vector_y_tps','vector_z_tps','ancillary','ancillary'};
        % units={'pixel','pixel','pixel','pixel','pixel','pixel','','','','pixel','pixel','pixel','pixel','pixel',''};
 end
-if ~strcmp(FieldRequest,'derivatives')
+if ~strcmp(FieldRequest,'interp_tps')
     var=var(:,1:9);%suppress tps if not needed
 end
 vel_type_out=vel_type;

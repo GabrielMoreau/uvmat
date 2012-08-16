@@ -19,7 +19,7 @@
 %      .scalar: scalar field (default)
 %      .coord: vector of indices of coordinate variables corresponding to matrix dimensions
 %
-%      .FieldRequest= 'interp', 'derivatives' indicate whether interpolation  or derivatives (tps) is needed to calculate the requested field
+%      .FieldRequest= 'interp_lin', 'interp_tps' indicate whether lin interpolation  or derivatives (tps) is needed to calculate the requested field
 %      .FieldNames = cell of fields to calculate from the fied cell
 %
 % errormsg: error message

@@ -42,7 +42,6 @@ A=[];
 try
     switch FileType
         case {'civx','civdata','netcdf'}  %read the first nc field
-            %         ParamOut.FieldName=ParamIn.FieldName;
             GUIName='get_field'; %default name of the GUI get_field
             if isfield(ParamIn,'GUIName')
                 GUIName=ParamIn.GUIName;
@@ -114,10 +113,11 @@ try
                 if exist('num','var')&&~isnan(num)
                     set(hhget_field.TimeIndexValue,'String',num2str(num))
                 end
-                funct_list=get(hhget_field.ACTION,'UserData');
-                funct_index=get(hhget_field.ACTION,'Value');
-                funct=funct_list{funct_index};%select  the current action in get_field, e;g. PLOT
-                Field=funct(hget_field); %%activate the current action selected in get_field, e;g.read the names of the variables to plot
+%                 funct_list=get(hhget_field.ACTION,'UserData');
+%                 funct_index=get(hhget_field.ACTION,'Value');
+%                 funct=funct_list{funct_index};%select  the current action in get_field, e;g. PLOT
+%                 Field=funct(hget_field); %%activate the current action selected in get_field, e;g.read the names of the variables to plot
+                [Field,errormsg]=read_get_field(hget_field);
                 Tabchar={''};%default
                 Tabcell=[];
                 set(hhget_field.inputfile,'String',FileName)

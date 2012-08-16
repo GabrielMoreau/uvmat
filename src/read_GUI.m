@@ -56,7 +56,11 @@ for ichild=1:numel(hchild)
                         value=get(hchild(ichild),'Value');
                         if ~isempty(listinput)
                             if numel(value)==1% single selection
+                                if ischar(listinput)
+                                    input=listinput;
+                                else
                             input=listinput{value};
+                                end
                             else % multiple selection
                               input=listinput(value);  
                             end
