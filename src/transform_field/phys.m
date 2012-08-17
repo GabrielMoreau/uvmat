@@ -15,7 +15,7 @@
 % CalibData: structure containing calibration parameters or a subtree Calib.GeometryCalib =calibration data (tsai parameters)
 % Data_1, CalibData_1: same as Data, CalibData for the second field.
 
-function [DataOut,DataOut_1]=phys(DataIn,XmlData,DataIn_1,XmlData_1)
+function DataOut=phys(DataIn,XmlData,DataIn_1,XmlData_1)
 % A FAIRE: 1- verifier si DataIn est une 'field structure'(.ListVarName'):
 % chercher ListVarAttribute, for each field (cell of variables):
 %   .CoordType: 'phys' or 'px'   (default==phys, no transform)
@@ -143,6 +143,10 @@ if iscalar~=0
     end
 end
 
+% subtract fields
+if ~isempty(DataOut_1)
+DataOut=sub_field(DataOut,[],DataOut_1);
+end
 %------------------------------------------------
 %--- transform a single field
 function DataOut=phys_1(Data,Calib,ZIndex)
@@ -182,33 +186,34 @@ for ilist=1:numel(list_tps)
         DataOut=rmfield(DataOut,list_tps{ilist});
     end
 end
-DataOut.ListVarName(ind_remove)=[];
-DataOut.VarDimName(ind_remove)=[];
-DataOut.VarAttribute(ind_remove)=[];
-    
-    
+if isfield(DataOut.VarAttribute{3},'VarIndex_tps')
+    DataOut.VarAttribute{3}=rmfield(DataOut.VarAttribute{3},'VarIndex_tps');
+end
 
+if ~isempty(ind_remove)
+    DataOut.ListVarName(ind_remove)=[];
+    DataOut.VarDimName(ind_remove)=[];
+    DataOut.VarAttribute(ind_remove)=[];
+end
+    
 %% transform of spatial derivatives: TODO check the case with plane angles
-if isfield(Data,'X') && ~isempty(Data.X) && isfield(Data,'DjUi') && ~isempty(Data.DjUi)...
-      && isfield(Data,'dt')    
-    if ~isempty(Data.dt)
-        % estimate the Jacobian matrix DXpx/DXphys 
-        for ip=1:length(Data.X) 
-            [Xp1,Yp1]=phys_XYZ(Calib,Data.X(ip)+0.5,Data.Y(ip),ZIndex);
-            [Xm1,Ym1]=phys_XYZ(Calib,Data.X(ip)-0.5,Data.Y(ip),ZIndex);
-            [Xp2,Yp2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)+0.5,ZIndex);
-            [Xm2,Ym2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)-0.5,ZIndex); 
+if isfield(Data,'X') && ~isempty(Data.X) && isfield(Data,'DjUi') && ~isempty(Data.DjUi)
+    % estimate the Jacobian matrix DXpx/DXphys
+    for ip=1:length(Data.X)
+        [Xp1,Yp1]=phys_XYZ(Calib,Data.X(ip)+0.5,Data.Y(ip),ZIndex);
+        [Xm1,Ym1]=phys_XYZ(Calib,Data.X(ip)-0.5,Data.Y(ip),ZIndex);
+        [Xp2,Yp2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)+0.5,ZIndex);
+        [Xm2,Ym2]=phys_XYZ(Calib,Data.X(ip),Data.Y(ip)-0.5,ZIndex);
         %Jacobian matrix DXpphys/DXpx
-           DjXi(1,1)=(Xp1-Xm1);
-           DjXi(2,1)=(Yp1-Ym1);
-           DjXi(1,2)=(Xp2-Xm2);
-           DjXi(2,2)=(Yp2-Ym2);
-           DjUi(:,:)=Data.DjUi(ip,:,:);
-           DjUi=(DjXi*DjUi')/DjXi;% =J-1*M*J , curvature effects (derivatives of J) neglected
-           DataOut.DjUi(ip,:,:)=DjUi';
-        end
-        DataOut.DjUi =  DataOut.DjUi/Dt;   %     min(Data.DjUi(:,1,1))=DUDX                          
+        DjXi(1,1)=(Xp1-Xm1);
+        DjXi(2,1)=(Yp1-Ym1);
+        DjXi(1,2)=(Xp2-Xm2);
+        DjXi(2,2)=(Yp2-Ym2);
+        DjUi(:,:)=Data.DjUi(ip,:,:);
+        DjUi=(DjXi*DjUi')/DjXi;% =J-1*M*J , curvature effects (derivatives of J) neglected
+        DataOut.DjUi(ip,:,:)=DjUi';
     end
+    DataOut.DjUi =  DataOut.DjUi/Dt;   %     min(Data.DjUi(:,1,1))=DUDX
 end
 
 
