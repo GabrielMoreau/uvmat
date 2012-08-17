@@ -44,14 +44,22 @@ try
         case 'civdata'
 %             ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
 %                         ParamOut.ColorVar='ima_cor';
+                        if isfield(ParamIn,'ColorVar')
                         InputField=[{ParamIn.FieldName} {ParamIn.ColorVar}];
+                        else
+                           InputField= {ParamIn.FieldName};
+                        end
                         [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType);
                         if ~isempty(errormsg),errormsg=['read_civdata:' errormsg];return,end
                         ParamOut.CivStage=Field.CivStage;
          case 'civx'
             ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
-                        ParamOut.ColorVar='ima_cor';
-                        InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
+                       % ParamOut.ColorVar='ima_cor';
+                       if isfield(ParamIn,'ColorVar')
+                        InputField=[{ParamIn.FieldName} {ParamIn.ColorVar}];
+                        else
+                           InputField= {ParamIn.FieldName};
+                        end
                         [Field,ParamOut.VelType]=read_civxdata(FileName,InputField,ParamIn.VelType);
                         if ~isempty(errormsg),errormsg=['read_civxdata:' errormsg];return,end
                         ParamOut.CivStage=Field.CivStage;

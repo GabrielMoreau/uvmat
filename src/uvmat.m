@@ -2121,6 +2121,7 @@ if ~isempty(FileName_1)
     switch UvData.FileType{2}
         case {'civx','civdata','netcdf'};
             list_fields=get(handles.Fields_1,'String');% list menu fields
+            if ischar(list_fields),list_fields={list_fields};end
             FieldName_1= list_fields{get(handles.Fields_1,'Value')}; % selected field
             if ~strcmp(FieldName,'get_field...')
                 if get(handles.FixVelType,'Value')
@@ -4864,17 +4865,28 @@ elseif isequal(get(handles.scan_j,'Value'),1)
     param.incr_j=str2num(get(handles.num_IndexIncrement,'String'));
 end
 param.list_fields=get(handles.Fields,'String');% list menu fields
-param.list_fields(1)=[]; %suppress  'image' option 
-param.index_fields=get(handles.Fields,'Value');% selected string index
-if param.index_fields>1
-    param.index_fields=param.index_fields-1;
+FieldName=param.list_fields{get(handles.Fields,'Value')};
+ind_image=find(strcmp('image',param.list_fields));
+if ~isempty(ind_image) && numel(param.list_fields)>1
+param.list_fields(ind_image)=[]; %suppress  'image' option 
 end
+param.index_fields=find(strcmp(FieldName,param.list_fields));% selected string index
+% if param.index_fields>1
+%     param.index_fields=param.index_fields-1;
+% end
 param.list_fields_1=get(handles.Fields_1,'String');% list menu fields
-param.list_fields_1(1)=[]; %suppress  'image' option
-param.index_fields_1=get(handles.Fields_1,'Value')-1;% selected string index
-if param.index_fields_1>1
-    param.index_fields_1=param.index_fields_1-1;
+if ischar(param.list_fields_1),param.list_fields_1={param.list_fields_1};end
+FieldName_1=param.list_fields_1{get(handles.Fields_1,'Value')};
+ind_image=find(strcmp('image',param.list_fields_1));
+if ~isempty(ind_image) && numel(param.list_fields_1)>1
+param.list_fields_1(ind_image)=[]; %suppress  'image' option 
 end
+param.index_fields_1=find(strcmp(FieldName_1,param.list_fields_1));% selected string index
+%param.index_fields=find(strcmp(FieldName,param.list_fields));% selected string index
+% param.index_fields_1=get(handles.Fields_1,'Value')-1;% selected string index
+% if param.index_fields_1>1
+%     param.index_fields_1=param.index_fields_1-1;
+% end
 param.menu_coord_str=get(handles.transform_fct,'String');
 param.menu_coord_val=get(handles.transform_fct,'Value');
 series(param); %run the series interface

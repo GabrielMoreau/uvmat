@@ -177,5 +177,10 @@ end
 SubData.ListVarName(find(ind_remove))=[];
 SubData.VarDimName(find(ind_remove))=[];
 SubData.VarAttribute(find(ind_remove))=[];
+
+function OutputCell=regexprep_r(InputCell,dimname,dimname_new)
+for icell=1:numel(InputCell)
+    OutputCell{icell}=regexprep(InputCell{icell},['^' dimname '$'],dimname_new);
+end
         
     
