@@ -539,7 +539,7 @@ YName='';
 y_units='';
 for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the calling function)
     VarType=VarTypeCell{icell};
-    if ~isempty(VarType.coord_tps)
+    if ~isempty(VarType.coord_tps) %do not plot directly tps data (used for projection only)
         continue
     end
     ivar_X=VarType.coord_x; % defines (unique) index for the variable representing unstructured x coordinate (default =[])
@@ -565,14 +565,14 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             test_vec=1;
             vec_U=Data.(Data.ListVarName{ivar_U}); 
             vec_V=Data.(Data.ListVarName{ivar_V});
-            if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field (with unstructured coordinates or structured ones (then ivar_X and ivar_Y empty)
+            if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field with unstructured coordinates 
                 XName=Data.ListVarName{ivar_X};
                 YName=Data.ListVarName{ivar_Y};
-                eval(['vec_X=reshape(Data.' XName ',[],1);']) 
-                eval(['vec_Y=reshape(Data.' YName ',[],1);'])
+                vec_X=reshape(Data.(XName),[],1); %transform vectors in column matlab vectors
+                vec_Y=reshape(Data.(YName),[],1);
             elseif numel(VarType.coord)==2 && ~isequal(VarType.coord,[0 0]);%coordinates defines by dimension variables
-                eval(['y=Data.' Data.ListVarName{VarType.coord(1)} ';']) 
-                eval(['x=Data.' Data.ListVarName{VarType.coord(2)} ';'])
+                y=Data.(Data.ListVarName{VarType.coord(1)});
+                x=Data.(Data.ListVarName{VarType.coord(2)});
                 if numel(y)==2 % y defined by first and last values on aregular mesh
                     y=linspace(y(1),y(2),size(vec_U,1));
                 end
@@ -584,10 +584,14 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
                 errormsg='error in plot_field: invalid coordinate definition for vector field';
                 return
             end
-            if ~isempty(ivar_C)
-                 eval(['vec_C=Data.' Data.ListVarName{ivar_C} ';']) ;
-                 vec_C=reshape(vec_C,1,numel(vec_C));
+            if isfield(PlotParam.Vectors,'ColorScalar') && ~isempty(PlotParam.Vectors.ColorScalar)
+                [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp([],Data,PlotParam.Vectors.ColorScalar);
+%             if ~isempty(ivar_C)
+                 %vec_C=Data.(Data.ListVarName{ivar_C});
+                 if ~isempty(VarVal)
+                 vec_C=reshape(VarVal{1},1,numel(VarVal{1}));
                  test_C=1;
+                 end
             end
             if ~isempty(ivar_F)%~(isfield(PlotParam.Vectors,'HideWarning')&& isequal(PlotParam.Vectors.HideWarning,1)) 
                 if test_vec 

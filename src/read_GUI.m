@@ -59,10 +59,10 @@ for ichild=1:numel(hchild)
                                 if ischar(listinput)
                                     input=listinput;
                                 else
-                            input=listinput{value};
+                                    input=listinput{value};
                                 end
                             else % multiple selection
-                              input=listinput(value);  
+                                input=listinput(value);
                             end
                         else
                             check_input=0;

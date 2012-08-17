@@ -144,6 +144,15 @@ if ~isequal(hhh,'')
         var_index=1:nvars; %all the variables are selected in the netcdf file 
         Data.ListVarName=ListVarNameNetcdf;
     else   %select input variables, if requested by the input ListVarName
+        ind_remove=[];
+        for ivar=1:numel(ListVarName) % check redondancy
+            if ~isempty(find(strcmp(ListVarName{ivar},ListVarName(1:ivar-1))))
+                ind_remove=[ind_remove ivar];
+            end
+        end
+        if ~isempty(ind_remove)
+            ListVarName(ind_remove)=[];
+        end           
         sizvar=size(ListVarName);
         testmulti=(sizvar(1)>1);%test for multiple choice of variable ranked by order of priority
         var_index=zeros(1,sizvar(2));%default

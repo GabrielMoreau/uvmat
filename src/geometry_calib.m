@@ -999,7 +999,7 @@ if ~isempty(ObjectData.Coord)
 end
 %axes(hhuvmat.axes3)
 set(0,'CurrentFigure',huvmat)
-set(huvmat,'CurrentAxes',hhuvmat.axes3)
+set(huvmat,'CurrentAxes',hhuvmat.PlotAxes)
 hh=findobj('Tag','calib_points');
 if  ~isempty(ObjectData.Coord) && isempty(hh)
     hh=line(ObjectData.Coord(:,1),ObjectData.Coord(:,2),'Color','m','Tag','calib_points','LineStyle','.','Marker','+');

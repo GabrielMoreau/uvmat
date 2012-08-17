@@ -24,8 +24,8 @@
 % FUNCTION related
 % varname_generator.m: determines the field names to read in the netcdf
 % file, depending on the scalar
-
-function [DataOut,errormsg]=calc_field(FieldList,DataIn,Coord_interp)
+function [FieldOptions,ColorList]=calc_field
+%function [DataOut,errormsg]=calc_field(FieldList,DataIn,Coord_interp)
 
 %list of defined scalars to display in menus (in addition to 'ima_cor').
 % a type is associated to each scalar:
@@ -48,12 +48,17 @@ FieldOptions={'vec(U,V)';...%image correlation corresponding to a vel vector
     'w';... %w velocity component
     'w_normal';... %w velocity component normal to the plane
     'error'}; %error associated to a vector (for stereo or patch)
-errormsg=[]; %default error message
-if ~exist('FieldList','var')
-    DataOut=FieldOptions;% gives the list of possible field inputs in the absence of input
-    return
-end
-
+ColorList={'C';...%image correlation corresponding to a vel vector
+    'norm(U,V)';...%norm of the velocity
+    'U';... %u velocity component
+    'V';... %v velocity component
+    }
+% errormsg=[]; %default error message
+% if ~exist('FieldList','var')
+%     DataOut=FieldOptions;% gives the list of possible field inputs in the absence of input
+%     return
+% end
+return
 %% check input
 if ~exist('DataIn','var')
     DataIn=[];

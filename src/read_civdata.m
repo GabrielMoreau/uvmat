@@ -46,7 +46,7 @@
 % 'varcivx_generator':, sets the names of vaiables to read in the netcdf file 
 % 'nc2struct': reads a netcdf file 
 
-function [Field,VelTypeOut,errormsg]=read_civdata(filename,FieldNames,VelType,CivStage)
+function [Field,VelTypeOut,errormsg]=read_civdata(filename,FieldNames,VelType)
 
 %% default input
 if ~exist('VelType','var')
@@ -76,7 +76,8 @@ for ilist=1:length(FieldNames)
 end
 
 %% reading data
-[varlist,role,VelTypeOut]=varcivx_generator(FieldRequest,VelType,CivStage);
+Data=nc2struct(filename,'ListGlobalAttribute','CivStage');
+[varlist,role,VelTypeOut]=varcivx_generator(FieldRequest,VelType,Data.CivStage);
 if isempty(varlist)
     erromsg=['error in read_civdata: unknow velocity type ' VelType];
     return

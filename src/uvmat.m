@@ -179,7 +179,7 @@ set(hObject,'Units','Normalized')
 movegui(hObject,'center')
 UvData.OpenParam.PosColorbar=[0.805 0.022 0.019 0.445];
 UvData.OpenParam.PosSetObject=[-0.05 -0.03 0.3 0.7]; %position for set_object
-UvData.OpenParam.PosGeometryCalic=[0.95 -0.03 0.28 1 ];%position for geometry_calib (TO IMPROVE)
+UvData.OpenParam.PosGeometryCalib=[0.95 -0.03 0.28 1 ];%position for geometry_calib (TO IMPROVE)
 % UvData.OpenParam.CalSize=[0.28 1];
 % UvData.PlotAxes=[];%initiate the record of plotted field
 % UvData.axes2=[];
@@ -989,29 +989,37 @@ if ~isequal(warntext,'')
 end
 
 %% set default options in menu 'Fields'
-if ~testima
-    testcivx=0;
-    if isfield(UvData,'FieldsString') && isequal(UvData.FieldsString,{'get_field...'})% field menu defined as input (from get_field)
+switch FileType
+    case {'civx','civdata'}
+            [FieldList,ColorList]=calc_field;
+            set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
+            set(handles_Fields,'Value',2) % set menu to 'velocity
+          %  col_vec=FieldList;
+           % col_vec(1)=[];%remove 'velocity' option for vector color (must be a scalar)
+           set(handles.ColorScalar,'Value',1)
+            set(handles.ColorScalar,'String',ColorList)
+            set(handles.Coord_x,'Value',1);
+           set(handles.Coord_x,'String',{'X'});
+           set(handles.Coord_y,'Value',1);
+           set(handles.Coord_y,'String',{'Y'});
+    case 'netcdf'
         set(handles_Fields,'Value',1)
         set(handles_Fields,'String',{'get_field...'})
-        UvData=rmfield(UvData,'FieldsString');
-    else
-        Data=nc2struct(FileName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ');
-        if strcmp(Data.Conventions,'uvmat/civdata') ||( ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0))%if the new input is Civx
-            FieldList=calc_field;
-            set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
-            set(handles_Fields,'Value',2) % set menu to 'velocity'
-            col_vec=FieldList;
-            col_vec(1)=[];%remove 'velocity' option for vector color (must be a scalar)
-            testcivx=1;
-        end
-        if ~testcivx
-            set(handles_Fields,'Value',1) % set menu to 'get_field...
-            set(handles_Fields,'String',{'get_field...'})
-            col_vec={'get_field...'};
-        end
-        set(handles.ColorScalar,'String',col_vec)
-    end
+        hget_field=get_field(FileName);
+        hhget_field=guidata(hget_field);
+        get_field('RUN_Callback',hhget_field.RUN,[],hhget_field); 
+%             set(handles_Fields,'Value',1) % set menu to 'get_field...
+%             set(handles_Fields,'String',{'get_field...'})
+%             col_vec={'get_field...'};
+% 
+%         set(handles.ColorScalar,'String',col_vec)
+    otherwise
+        set(handles_Fields,'Value',1) % set menu to 'image'
+        set(handles_Fields,'String',{'image'})
+                    set(handles.Coord_x,'Value',1);
+           set(handles.Coord_x,'String',{'AX'});
+           set(handles.Coord_y,'Value',1);
+           set(handles.Coord_y,'String',{'AY'});
 end
 set(handles.uvmat,'UserData',UvData)
 
@@ -2037,7 +2045,7 @@ switch UvData.FileType{1}
                 VelType=VelTypeList{get(handles.VelType,'Value')};
             end
         end
-        if strcmp(FieldName,'velocity')
+        if ~isempty(regexp(FieldName,'^vec('))
             list_code=get(handles.ColorCode,'String');% list menu fields
             index_code=get(handles.ColorCode,'Value');% selected string index
             if  ~strcmp(list_code{index_code},'black') &&  ~strcmp(list_code{index_code},'white')
@@ -2069,11 +2077,14 @@ switch UvData.FileType{1}
         end
 end
 if isstruct (ParamIn)
-ParamIn.FieldName=FieldName;
-ParamIn.VelType=VelType;
-ParamIn.GUIName='get_field';
+    ParamIn.FieldName=FieldName;
+    ParamIn.VelType=VelType;
+    XNameMenu=get(handles.Coord_x,'String');
+    ParamIn.CoordName=XNameMenu{get(handles.Coord_x,'Value')};
+    YNameMenu=get(handles.Coord_y,'String');
+    ParamIn.CoordName={ParamIn.CoordName, YNameMenu{get(handles.Coord_y,'Value')}};
 end
-check_tps=0;         
+check_tps = 0;         
 if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamIn.FieldName,'velocity')&&~strcmp(ParamIn.FieldName,'get_field...') 
        check_tps=1;%tps needed to get the requested field
 end
@@ -2214,19 +2225,19 @@ else
     set(handles.VelType,'Visible','off')
 end
 % display the Fields menu from the input file and pick the selected one: 
-if isstruct(ParamOut)
-    field_index=strcmp(ParamOut.FieldName,ParamOut.FieldList);
-    set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
-    set(handles.Fields,'Value',find(field_index,1))
-end
+% if isstruct(ParamOut)
+%     field_index=strcmp(ParamOut.FieldName,ParamOut.FieldList);
+%     set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
+%     set(handles.Fields,'Value',find(field_index,1))
+% end
 
 %% update the display menu for the second velocity type (second menuline)
 test_veltype_1=0;
 if isempty(FileName_1)
-    set(handles.Fields_1,'Value',1); %update the field menu
-    if isstruct(ParamOut)
-    set(handles.Fields_1,'String',[{''};ParamOut.FieldList]); %update the field menu
-    end
+%     set(handles.Fields_1,'Value',1); %update the field menu
+%     if isstruct(ParamOut)
+%     set(handles.Fields_1,'String',[{''};ParamOut.FieldList]); %update the field menu
+%     end
 elseif ~test_keepdata_1
     if (~strcmp(UvData.FileType{2},'netcdf')&&~strcmp(UvData.FileType{2},'civdata')&&~strcmp(UvData.FileType{2},'civx'))|| isequal(FieldName_1,'get_field...')
         set(handles.VelType_1,'Visible','off')
@@ -2624,7 +2635,7 @@ else
         PlotParam{1}.Vectors.CheckFixVecColor=1;
         PlotParam{1}.Vectors.ColCode1=0.33;
         PlotParam{1}.Vectors.ColCode2=0.66;
-        PlotParam{1}.Vectors.ColorScalar={'ima_cor'};
+        PlotParam{1}.Vectors.ColorScalar={''};
         PlotParam{1}.Vectors.ColorCode= {'rgb'};
     end
     PosColorbar{1}=UvData.OpenParam.PosColorbar;%prescribe the colorbar position on the uvmat interface
@@ -3081,23 +3092,20 @@ if isequal(field,'get_field...')
     set(handles.VelType_1,'visible','off')
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
     FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-    %FileName=read_file_boxes(handles);
     hget_field=findobj(allchild(0),'name','get_field');
     if ~isempty(hget_field)
         delete(hget_field)
     end
     hget_field=get_field(FileName);
-    set(hget_field,'Name','get_field')
-    hhget_field=guidata(hget_field);
-    set(hhget_field.list_fig,'Value',1)
-    set(hhget_field.list_fig,'String',{'uvmat'})
+%     set(hget_field,'Name','get_field')
+%     hhget_field=guidata(hget_field);
+%     set(hhget_field.list_fig,'Value',1)
+%     set(hhget_field.list_fig,'String',{'uvmat'})
   %  set(handles.transform_fct,'Value',1)% no transform by default
   %  set(handles.path_transform,'String','')
-    return %no action
+    return %no further action
 end
-list_fields=get(handles.Fields_1,'String');% list menu fields
-index_fields=get(handles.Fields_1,'Value');% selected string index
-field_1= list_fields{index_fields(1)}; % selected string
+
 UvData=get(handles.uvmat,'UserData');
 
 %read the rootfile input display
@@ -3147,6 +3155,11 @@ set(handles.FileIndex,'String',indices)
 % set(handles.NomType,'String',NomType)
 
 %common to Fields_1_Callback
+list_fields_1=get(handles.Fields_1,'String');% list menu fields
+field_1='';
+if ~isempty(list_fields_1)
+field_1= list_fields_1{get(handles.Fields_1,'Value')}; % selected string
+end
 if isequal(field,'image')||isequal(field_1,'image')
     set(handles.TitleNpx,'Visible','on')% visible npx,pxcm... buttons
     set(handles.TitleNpy,'Visible','on')
@@ -4668,18 +4681,16 @@ data=[]; %default
 if isfield(UvData,'CoordType')
     data.CoordType=UvData.CoordType;
 end
-pos=get(handles.uvmat,'Position');
-pos(1)=pos(1)+pos(3)-0.311+0.04; %0.311= width of the geometry_calib interface (units relative to the srcreen)
-pos(2)=pos(2)-0.02;
+% pos=get(handles.uvmat,'Position');
+% pos(1)=pos(1)+pos(3)-0.311+0.04; %0.311= width of the geometry_calib interface (units relative to the srcreen)
+% pos(2)=pos(2)-0.02;
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 set(handles.view_xml,'Backgroundcolor',[1 1 0])%indicate the reading of the current xml file by geometry_calib
-if isfield(UvData.OpenParam,'CalOrigin')
-    pos_uvmat=get(handles.uvmat,'Position');
-    pos_cal(1)=pos_uvmat(1)+UvData.OpenParam.PosGeometryCalib(1)*pos_uvmat(3);
-    pos_cal(2)=pos_uvmat(2)+UvData.OpenParam.PosGeometryCalib(2)*pos_uvmat(4);
-    pos_cal(3:4)=UvData.OpenParam.PosGeometryCalib(3:4).* pos_uvmat(3:4);
-end
+pos_uvmat=get(handles.uvmat,'Position');
+pos_cal(1)=pos_uvmat(1)+UvData.OpenParam.PosGeometryCalib(1)*pos_uvmat(3);
+pos_cal(2)=pos_uvmat(2)+UvData.OpenParam.PosGeometryCalib(2)*pos_uvmat(4);
+pos_cal(3:4)=UvData.OpenParam.PosGeometryCalib(3:4).* pos_uvmat(3:4);
 geometry_calib(FileName,pos_cal);% call the geometry_calib interface	
 set(handles.view_xml,'Backgroundcolor',[1 1 1])%indicate the end of reading of the current xml file by geometry_calib
 set(handles.MenuCalib,'checked','on')% indicate that MenuCalib is activated, test used by mouse action
@@ -4901,3 +4912,10 @@ function MenuBrowseProject_Callback(hObject, eventdata, handles)
 RootPath=get(handles.RootPath,'String');
 ProjectDir = uigetdir(fileparts(fileparts(RootPath)), 'select the project directory');
 datatree_browser(ProjectDir)
+
+
+% --- Executes on selection change in Coord_y.
+function Coord_y_Callback(hObject, eventdata, handles)
+
+% --- Executes on selection change in Coord_x.
+function Coord_x_Callback(hObject, eventdata, handles)

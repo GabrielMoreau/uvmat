@@ -1180,7 +1180,7 @@ for icell=1:length(CellVarIndex)
                         end
                         FieldVar=FieldData.(VarName_scalar);
                     end
-                    [VarVal,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldVar,VarType.Operation,XI,YI);
+                    [VarVal,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,VarType.Operation,XI,YI);
                     if isfield(VarType,'CheckSub') && VarType.CheckSub && ~isempty(vector_x_proj)
                         ProjData.(ProjData.ListVarName{vector_x_proj})=ProjData.(ProjData.ListVarName{vector_x_proj})-VarVal{1};
                         ProjData.(ProjData.ListVarName{vector_y_proj})=ProjData.(ProjData.ListVarName{vector_y_proj})-VarVal{2};

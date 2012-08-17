@@ -20,22 +20,17 @@
             % ColCode1 and ColCode2 are adjusted to the bounds
 % vec_C: matlab vector representing the scalar setting the color
 function [colorlist,col_vec,colcode_out]=set_col_vec(colcode,vec_C)
-col_vec=[]; 
+col_vec=ones(size(vec_C));%all vectors at color#1 by default
+
 if ~isstruct(colcode),colcode=[];end;
 colcode_out=colcode;%default
 if isempty(vec_C) || ~isnumeric(vec_C)
     colorlist=[0 0 1]; %blue
-    col_vec=ones(size(vec_C));
     return
 end
 
-
-
-% colcode_out.ColCode1=ColCode1;
-% colcode_out.ColCode2=ColCode2;
 %% uniform color plot
 check_multicolors=0;
-col_vec=ones(size(vec_C));%all vectors at color#1 by default
 %default input parameters
 if ~isfield(colcode,'ColorCode') || isempty(colcode.ColorCode)
     colorlist=[0 0 1]; %blue

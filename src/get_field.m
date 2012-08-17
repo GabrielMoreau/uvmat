@@ -59,52 +59,52 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with rig
 
 %% prepare the list of RUN fcts and set their paths
 % functions included by default in 'get_field.m
-menu_str={'PLOT';'FFT';'filter_band'}; 
-nb_builtin=numel(menu_str);
-path_uvmat=fileparts(which('uvmat'));%path of the function 'uvmat'
-addpath(fullfile(path_uvmat,'get_field'))
-testexist=zeros(size(menu_str'));%default
-for ilist=1:length(menu_str)
-    if exist(menu_str{ilist},'file')
-        fct_handle{ilist,1}=str2func(menu_str{ilist});
-        testexist(ilist)=1;
-    else
-        fct_handle{ilist,1}=[];
-        testexist(ilist)=0;
-    end
-end
-rmpath(fullfile(path_uvmat,'get_field'))
-dir_perso=prefdir;
+% menu_str={'PLOT';'FFT';'filter_band'}; 
+% nb_builtin=numel(menu_str);
+% path_uvmat=fileparts(which('uvmat'));%path of the function 'uvmat'
+% addpath(fullfile(path_uvmat,'get_field'))
+% testexist=zeros(size(menu_str'));%default
+% for ilist=1:length(menu_str)
+%     if exist(menu_str{ilist},'file')
+%         fct_handle{ilist,1}=str2func(menu_str{ilist});
+%         testexist(ilist)=1;
+%     else
+%         fct_handle{ilist,1}=[];
+%         testexist(ilist)=0;
+%     end
+% end
+% rmpath(fullfile(path_uvmat,'get_field'))
+% dir_perso=prefdir;
 
 % look for functions previously used (names and paths saved in the personal file uvmat_perso.mat):
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-if exist(profil_perso,'file')
-      h=load (profil_perso);
-     if isfield(h,'get_field_fct') && iscell(h.get_field_fct)
-         for ilist=1:length(h.get_field_fct)
-            [path,file]=fileparts(h.get_field_fct{ilist});
-            addpath(path)        
-            if exist(file,'file')
-                h_func=str2func(file);
-                testexist=[testexist 1]; 
-             else
-                h_func=[];
-                testexist=[testexist 0]; 
-             end
-             fct_handle=[fct_handle; {h_func}]; %concatene the list of paths
-             rmpath(path)
-             menu_str=[menu_str; {file}]; 
-         end
-     end
-end
+% profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+% if exist(profil_perso,'file')
+%       h=load (profil_perso);
+%      if isfield(h,'get_field_fct') && iscell(h.get_field_fct)
+%          for ilist=1:length(h.get_field_fct)
+%             [path,file]=fileparts(h.get_field_fct{ilist});
+%             addpath(path)        
+%             if exist(file,'file')
+%                 h_func=str2func(file);
+%                 testexist=[testexist 1]; 
+%              else
+%                 h_func=[];
+%                 testexist=[testexist 0]; 
+%              end
+%              fct_handle=[fct_handle; {h_func}]; %concatene the list of paths
+%              rmpath(path)
+%              menu_str=[menu_str; {file}]; 
+%          end
+%      end
+% end
 
-menu_str=menu_str(testexist==1);%=menu_str(testexist~=0)
-fct_handle=fct_handle(testexist==1);
-menu_str=[menu_str;{'more...'}];
-set(handles.ACTION,'String',menu_str)
-set(handles.ACTION,'UserData',fct_handle)% store the list of path in UserData of ACTION
-set(handles.path_action,'String',fullfile(path_uvmat,'get_field'))
-set(handles.ACTION,'Value',1)% PLOT option selected
+% menu_str=menu_str(testexist==1);%=menu_str(testexist~=0)
+% fct_handle=fct_handle(testexist==1);
+% menu_str=[menu_str;{'more...'}];
+% set(handles.ACTION,'String',menu_str)
+% set(handles.ACTION,'UserData',fct_handle)% store the list of path in UserData of ACTION
+% set(handles.path_action,'String',fullfile(path_uvmat,'get_field'))
+% set(handles.ACTION,'Value',1)% PLOT option selected
 
 %% settings for 'slave' mode, called by uvamt, or 'master' mode
 if exist('filename','var') && ischar(filename) %transfer input file name in slave mode
@@ -121,26 +121,26 @@ else  %master mode
 end
 
 %% load the list of previously browsed files for the upper bar menu Open
-dir_perso=prefdir;
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');%
-if exist(profil_perso,'file')
-    h=load (profil_perso);
-    if isfield(h,'MenuFile_1')
-        set(handles.MenuFile_1,'Label',h.MenuFile_1);
-    end
-    if isfield(h,'MenuFile_1')
-        set(handles.MenuFile_2,'Label',h.MenuFile_2);
-    end
-    if isfield(h,'MenuFile_1')
-        set(handles.MenuFile_3,'Label',h.MenuFile_3);
-    end
-    if isfield(h,'MenuFile_1')
-        set(handles.MenuFile_4,'Label',h.MenuFile_4);
-    end
-    if isfield(h,'MenuFile_1')
-        set(handles.MenuFile_5,'Label',h.MenuFile_5);
-    end
-end
+% dir_perso=prefdir;
+% profil_perso=fullfile(dir_perso,'uvmat_perso.mat');%
+% if exist(profil_perso,'file')
+%     h=load (profil_perso);
+%     if isfield(h,'MenuFile_1')
+%         set(handles.MenuFile_1,'Label',h.MenuFile_1);
+%     end
+%     if isfield(h,'MenuFile_1')
+%         set(handles.MenuFile_2,'Label',h.MenuFile_2);
+%     end
+%     if isfield(h,'MenuFile_1')
+%         set(handles.MenuFile_3,'Label',h.MenuFile_3);
+%     end
+%     if isfield(h,'MenuFile_1')
+%         set(handles.MenuFile_4,'Label',h.MenuFile_4);
+%     end
+%     if isfield(h,'MenuFile_1')
+%         set(handles.MenuFile_5,'Label',h.MenuFile_5);
+%     end
+% end
 
 %% put the GUI on the lower right of the sceen
 pos_view_field=get(hObject,'Position');
@@ -830,42 +830,78 @@ set(hselect_field,'UserData',Field)
 
 function RUN_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
-set(handles.RUN,'BackgroundColor',[1 1 0])% mark use of RUN action
-test_fig=get(handles.SelectFigure,'Value');
-
-% plot requested in uvmat
-if ~test_fig
-    inputfile=get(handles.inputfile,'String');
-    huvmat=findobj(allchild(0),'tag','uvmat');
-    if isempty(huvmat)
-        input.InputFile=inputfile;
-        input.FieldsString={'get_field...'};
-        uvmat(input)
-    else
-        set(huvmat,'Visible','on')%make uvmat visible (bugs can hide it in some cases)
-        hhuvmat=guidata(huvmat);
-        set(hhuvmat.Fields,'Value',1)
-        set(hhuvmat.Fields,'String',{'get_field...'})
-        uvmat('run0_Callback',hObject,eventdata,hhuvmat); % display field in uvmat
-    end
-   
-% other kind of plot
-else  %TODO: check and update: add plot on an existing axes
-    figcell=get(handles.list_fig,'String');
-    index=get(handles.list_fig,'value');
-    figstring=figcell{index};
-    index=get(handles.ACTION,'Value');
-    list_func=get(handles.ACTION,'UserData');
-    h_fun=list_func{index};
-    set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
-    drawnow
-    SubField=h_fun(handles.get_field);%handles.figure1 =handles of the GUI get_field
-    if ~isempty(SubField)
-        plot_get_field(SubField,handles)
-    end
-    browse_fig(handles.list_fig); %update the list of new existing figures
+% set(handles.RUN,'BackgroundColor',[1 1 0])% mark use of RUN action
+% test_fig=get(handles.SelectFigure,'Value');
+% 
+% % plot requested in uvmat
+% if ~test_fig
+%     inputfile=get(handles.inputfile,'String');
+%     huvmat=findobj(allchild(0),'tag','uvmat');
+%     if isempty(huvmat)
+%         input.InputFile=inputfile;
+%         input.FieldsString={'get_field...'};
+%         uvmat(input)
+%     else
+%         set(huvmat,'Visible','on')%make uvmat visible (bugs can hide it in some cases)
+%         hhuvmat=guidata(huvmat);
+%         set(hhuvmat.Fields,'Value',1)
+%         set(hhuvmat.Fields,'String',{'get_field...'})
+%         uvmat('run0_Callback',hObject,eventdata,hhuvmat); % display field in uvmat
+%     end
+%    
+% % other kind of plot
+% else  %TODO: check and update: add plot on an existing axes
+%     figcell=get(handles.list_fig,'String');
+%     index=get(handles.list_fig,'value');
+%     figstring=figcell{index};
+%     index=get(handles.ACTION,'Value');
+%     list_func=get(handles.ACTION,'UserData');
+%     h_fun=list_func{index};
+%     set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
+%     drawnow
+%     SubField=h_fun(handles.get_field);%handles.figure1 =handles of the GUI get_field
+%     if ~isempty(SubField)
+%         plot_get_field(SubField,handles)
+%     end
+%     browse_fig(handles.list_fig); %update the list of new existing figures
+% end
+% set(handles.RUN,'BackgroundColor',[1 0 0])
+huvmat=findobj(allchild(0),'tag','uvmat');
+if ~isempty(huvmat)
+         set(huvmat,'Visible','on')%make uvmat visible (bugs can hide it in some cases)
+         hhuvmat=guidata(huvmat);
+         get_field_GUI=read_GUI(handles.get_field);
+         if isfield(get_field_GUI,'PanelVectors')
+             set(hhuvmat.Coord_x,'value',1)
+             set(hhuvmat.Coord_y,'value',1)
+             set(hhuvmat.Coord_x,'String',{get_field_GUI.PanelVectors.coord_x_vectors})
+             set(hhuvmat.Coord_y,'String',{get_field_GUI.PanelVectors.coord_y_vectors})
+             UName=get_field_GUI.PanelVectors.vector_x;
+             VName=get_field_GUI.PanelVectors.vector_y;
+             menu_str=[{['vec(' UName ',' VName ')']};{UName};{VName};{['norm(' UName ',' VName ')']};{'get_field...'}];
+             menu_color=[{''};{UName};{VName};{['norm(' UName ',' VName ')']}];
+             FieldsMenu=get(hhuvmat.Fields,'String');
+             Fields=FieldsMenu{get(hhuvmat.Fields,'Value')};
+             if strcmp(Fields,'get_field...')
+                  set(hhuvmat.Fields,'Value',1)
+                 set(hhuvmat.Fields,'String',menu_str)
+             else %get_field has been called by Fields_1
+                  set(hhuvmat.Fields_1,'Value',1)
+                 set(hhuvmat.Fields_1,'String',menu_str)
+             end
+             ind_menu=find(strcmp(get_field_GUI.PanelVectors.vec_color,menu_color));
+             if ~isempty(ind_menu)
+             set(hhuvmat.ColorScalar,'Value',ind_menu)
+             else
+                 set(hhuvmat.ColorScalar,'Value',1)
+             end
+               set(hhuvmat.ColorScalar,'String',menu_color)
+         end
 end
-set(handles.RUN,'BackgroundColor',[1 0 0])
+delete(handles.get_field)
+%         set(hhuvmat.Fields,'String',{'get_field...'})
+%         uvmat('run0_Callback',hObject,eventdata,hhuvmat); % display field in uvmat
+%     end
 
 %------------------------------------------------------------------------
 % --- Function for plotting the current subfield
