@@ -867,9 +867,11 @@ function RUN_Callback(hObject, eventdata, handles)
 % end
 % set(handles.RUN,'BackgroundColor',[1 0 0])
 huvmat=findobj(allchild(0),'tag','uvmat');
+hhuvmat=guidata(huvmat);
+FieldsMenu=get(hhuvmat.Fields,'String');
+Fields=FieldsMenu{get(hhuvmat.Fields,'Value')};
+check_first=strcmp(Fields,'get_field...'); % =1 if the first field sereis is selected, =0 else
 if ~isempty(huvmat)
-         set(huvmat,'Visible','on')%make uvmat visible (bugs can hide it in some cases)
-         hhuvmat=guidata(huvmat);
          get_field_GUI=read_GUI(handles.get_field);
          if isfield(get_field_GUI,'PanelVectors')
              set(hhuvmat.Coord_x,'value',1)
@@ -880,9 +882,7 @@ if ~isempty(huvmat)
              VName=get_field_GUI.PanelVectors.vector_y;
              menu_str=[{['vec(' UName ',' VName ')']};{UName};{VName};{['norm(' UName ',' VName ')']};{'get_field...'}];
              menu_color=[{''};{UName};{VName};{['norm(' UName ',' VName ')']}];
-             FieldsMenu=get(hhuvmat.Fields,'String');
-             Fields=FieldsMenu{get(hhuvmat.Fields,'Value')};
-             if strcmp(Fields,'get_field...')
+             if check_first
                   set(hhuvmat.Fields,'Value',1)
                  set(hhuvmat.Fields,'String',menu_str)
              else %get_field has been called by Fields_1
@@ -896,6 +896,32 @@ if ~isempty(huvmat)
                  set(hhuvmat.ColorScalar,'Value',1)
              end
                set(hhuvmat.ColorScalar,'String',menu_color)
+         elseif isfield(get_field_GUI,'PanelScalar')
+             set(hhuvmat.Coord_x,'value',1)
+             set(hhuvmat.Coord_y,'value',1)
+             set(hhuvmat.Coord_x,'String',{get_field_GUI.PanelScalar.coord_x_scalar})
+             set(hhuvmat.Coord_y,'String',{get_field_GUI.PanelScalar.coord_y_scalar})
+             AName=get_field_GUI.PanelScalar.scalar;
+             if check_first
+                menu=get(hhuvmat.Fields,'String');
+             else
+                menu=get(hhuvmat.Fields_1,'String'); 
+             end
+             ind_select=find(strcmp(AName,menu));
+             if isempty(ind_select)
+                 menu=[menu(1:end-1);{AName};{'get_field...'}];
+                 ind_select=numel(menu)-1;
+             end   
+             if check_first
+                set(hhuvmat.Fields,'Value',ind_select);
+                set(hhuvmat.Fields,'String',menu);
+             else
+                set(hhuvmat.Fields_1,'Value',ind_select);
+                set(hhuvmat.Fields_1,'String',menu);
+             end
+         end
+         if ~strcmp(get(gcbf,'tag'),'uvmat')%if uvmat is not already active
+         uvmat('run0_Callback',hObject,eventdata,hhuvmat); %refresh uvmat
          end
 end
 delete(handles.get_field)
@@ -1201,6 +1227,10 @@ if isequal(val,0)
     set(handles.Panel1Dplot,'Visible','off')
 else
     set(handles.Panel1Dplot,'Visible','on')
+    set(handles.PanelScalar,'Visible','off')
+    set(handles.CheckScalar,'Value',0)
+    set(handles.PanelVectors,'Visible','off')
+    set(handles.CheckVector,'Value',0)
 end
 
 %------------------------------------------------------------------------
@@ -1211,7 +1241,11 @@ val=get(handles.CheckScalar,'Value');
 if isequal(val,0)
     set(handles.PanelScalar,'Visible','off')
 else
+    set(handles.Panel1Dplot,'Visible','off')
+    set(handles.CheckPlot1D,'Value',0)
     set(handles.PanelScalar,'Visible','on')
+    set(handles.PanelVectors,'Visible','off')
+    set(handles.CheckVector,'Value',0)
 end
 
 %------------------------------------------------------------------------
@@ -1222,6 +1256,10 @@ val=get(handles.CheckVector,'Value');
 if isequal(val,0)
     set(handles.PanelVectors,'Visible','off')
 else
+    set(handles.Panel1Dplot,'Visible','off')
+    set(handles.CheckPlot1D,'Value',0)
+    set(handles.PanelScalar,'Visible','off')
+    set(handles.CheckScalar,'Value',0)
     set(handles.PanelVectors,'Visible','on')
 end
 

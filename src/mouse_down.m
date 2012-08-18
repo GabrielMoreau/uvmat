@@ -128,6 +128,7 @@ for ichild=1:length(hchildren)
                     hchild=[];%mouse out of axes
                 end
                 break
+                
             %if the mouse is over a uicontrol, duplicate the display  in an editable  zoom window
             case 'uicontrol' 
                 if isequal(get(hObject,'SelectionType'),'alt')  && isequal(get(hchild,'Visible'),'on') && ~isequal(get(hchild,'tag'),'frame_object')&&...
@@ -168,7 +169,7 @@ end
 if ~isempty(output_str)               
     set(hObject,'Units','pixels')
     if strcmp(get(hchild,'enable'),'on')
-    set(hchild,'String',output_str)
+    set(hchild,'String',output_str)% fill the parent uicontrol with the sttring edited in the msgbox
     end
 end
     

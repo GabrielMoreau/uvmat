@@ -22,23 +22,33 @@ VarAttribute={};
 errormsg='';
 InputVarList={};
 if ischar(Operation),Operation={Operation};end
+check_skipped=zeros(size(Operation));
+Operator=cell(size(Operation));
 for ilist=1:numel(Operation)
     r=regexp(Operation{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
     if isempty(r) % the operation is the variable
-        if isempty(find(strcmp(Operation{ilist},InputVarList)));
-            InputVarList=[InputVarList Operation{ilist}];
+        if ~isfield(Data,Operation{ilist})
+            check_skipped(ilist)=1;
+        else
+            if isempty(find(strcmp(Operation{ilist},InputVarList)));
+                InputVarList=[InputVarList Operation{ilist}];% the variable is added to the list if it is not already in the list
+            end
+            Operator{ilist}='';
         end
-        Operator{ilist}='';
     else
-        UName{ilist}=r.UName;
-        VName{ilist}=r.VName;
-        if isempty(find(strcmp(r.UName,InputVarList)));
-            InputVarList=[InputVarList UName{ilist}];
+        if ~isfield(Data,r.UName)||~isfield(Data,r.VName)
+            check_skipped(ilist)=1;
+        else
+            UName{ilist}=r.UName;
+            VName{ilist}=r.VName;
+            if isempty(find(strcmp(r.UName,InputVarList)));
+                InputVarList=[InputVarList UName{ilist}]; %the variable is added to the list if it is not already in the list
+            end
+            if isempty(find(strcmp(r.VName,InputVarList)));
+                InputVarList=[InputVarList VName{ilist}]; %the variable is added to the list if it is not already in the list
+            end
+            Operator{ilist}=r.Operator;
         end
-        if isempty(find(strcmp(r.VName,InputVarList)));
-            InputVarList=[InputVarList VName{ilist}];
-        end
-        Operator{ilist}=r.Operator;
     end
 end
 %create interpolator for linear interpolation
@@ -48,6 +58,7 @@ if exist('XI','var')
     end
 end
 for ilist=1:numel(Operation)
+    if ~check_skipped(ilist)
     nbvar=numel(ListVarName);
     switch Operator{ilist}
         case 'vec'
@@ -62,14 +73,6 @@ for ilist=1:numel(Operation)
             ListVarName{nbvar+2}=VName{ilist};
             VarAttribute{nbvar+1}.Role='vector_x';
             VarAttribute{nbvar+2}.Role='vector_y';
-            %         case 'U'
-            %             VarVal{nbvar+1}=F_u(XI,YI);
-            %             ListVarName{nbvar+1}='U';
-            %             VarAttribute{nbvar+1}.Role='scalar';
-            %         case 'V'
-            %             VarVal{nbvar+1}=F_v(XI,YI);
-            %             ListVarName{nbvar+1}='V';
-            %             VarAttribute{nbvar+1}.Role='scalar';
         case 'norm'
             if exist('XI','var')
                 U2=F.(UName{ilist})(XI,YI).*F.(UName{ilist})(XI,YI);
@@ -91,6 +94,7 @@ for ilist=1:numel(Operation)
                 ListVarName{nbvar+1}=Operation{ilist};
                 VarAttribute{nbvar+1}.Role='scalar';
             end
+    end
     end
 end
 % put an error flag to indicate NaN data

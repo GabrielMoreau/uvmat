@@ -998,6 +998,7 @@ switch FileType
            % col_vec(1)=[];%remove 'velocity' option for vector color (must be a scalar)
            set(handles.ColorScalar,'Value',1)
             set(handles.ColorScalar,'String',ColorList)
+            set(handles.Vectors,'Visible','on')
             set(handles.Coord_x,'Value',1);
            set(handles.Coord_x,'String',{'X'});
            set(handles.Coord_y,'Value',1);
@@ -1991,7 +1992,6 @@ if ishandle(handles.UVMAT_title) %remove title panel on uvmat
 end
 
 %% determine the main input file information for action
-% UvData.FileType{1}=[];%default
 if ~exist(FileName,'file')
     errormsg=['input file ' FileName ' does not exist'];
     return
@@ -2090,7 +2090,7 @@ if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamIn.FieldName,'velocity')&&
 end
 [Field{1},ParamOut,errormsg] = read_field(FileName,UvData.FileType{1},ParamIn,frame_index);
 if ~isempty(errormsg)
-    errormsg=['error in reading ' FileName ': ' errormsg];
+    errormsg=['uvmat/refresh_field/read_field: ' FileName ': ' errormsg];
     return
 end  
 if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')

@@ -586,29 +586,34 @@ if numel(SubDir)>1
 end
 set(handles.OutputSubDir,'String',SubDirOut)
 
-%% display the min and max indices for all the file series
-i_sum=sum(sum(i1_series,2),1);%sum of i1_series on the last index
-MaxIndex_i=max(find(i_sum>0))-1;% max ref index i
-MinIndex_i=min(find(i_sum>0))-1;% min ref index i
-i2_min=[];
-if ~isempty(i2_series)
-    i2_min=i2_series(1,2,2);
-end
-j1_min=[];
-if ~isempty(j1_series)
-    j1_min=j1_series(1,2,2);
-end
-j2_min=[];
-if ~isempty(j2_series)
-    j2_min=j2_series(1,2,2);
-end
-if isequal(MinIndex_i,1) &&...
-        exist (fullfile_uvmat(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},0,i2_min, j1_min,j2_min),'file')
-    MinIndex_i=0;
-end
-j_sum=sum(sum(j1_series,1),1);
-MaxIndex_j=max(find(j_sum>0))-1;
-MinIndex_j=min(find(j_sum>0))-1;
+%% display the min and max indices for the file series
+pair_max=squeeze(max(i1_series,[],1)); %max on pair index
+j_max=max(pair_max,[],1);
+%i_sum=sum(sum(i1_series,2),1);%sum of i1_series on the last index
+MaxIndex_i=max(find(j_max))-1;% max ref index i
+MinIndex_i=min(find(j_max))-1;% min ref index i
+i_max=max(pair_max,[],2);
+MaxIndex_j=max(find(i_max))-1;% max ref index i
+MinIndex_j=min(find(i_max))-1;% min ref index i
+% i2_min=[];
+% if ~isempty(i2_series)
+%     i2_min=i2_series(1,2,2);
+% end
+% j1_min=[];
+% if ~isempty(j1_series)
+%     j1_min=j1_series(1,2,2);
+% end
+% j2_min=[];
+% if ~isempty(j2_series)
+%     j2_min=j2_series(1,2,2);
+% end
+% if isequal(MinIndex_i,1) &&...
+%         exist (fullfile_uvmat(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},0,i2_min, j1_min,j2_min),'file')
+%     MinIndex_i=0;
+% end
+% j_sum=sum(sum(j1_series,1),1);
+% MaxIndex_j=max(find(j_sum>0))-1;
+% MinIndex_j=min(find(j_sum>0))-1;
 MinIndex=get(handles.MinIndex,'Data');%retrieve the min indices in the table MinIndex
 MaxIndex=get(handles.MaxIndex,'Data');%retrieve the max indices in the table MaxIndex
 MinIndex{iview,1}=MinIndex_i;
@@ -776,13 +781,18 @@ SeriesData.FileType{iview}=FileType;
 SeriesData.Time{iview}=time;
 set(handles.series,'UserData',SeriesData)
 
-%% enable j index visibility
+%% enable j index visibilitycellfun(@isempty,regexp(PairString,'^j'))
 state='off';
 check_jindex=~cellfun(@isempty,SeriesData.j1_series); %look for non empty j indices
 if isempty(find(check_jindex))
     enable_j(handles,'off') % no j index needed
 else
-    enable_j(handles,'on')
+    PairString=get(handles.PairString,'Data');
+    if isempty(find(cellfun(@isempty,regexp(PairString,'^j'))))% if all pair string begins by j (burst)
+        enable_j(handles,'off') % no j index needed
+    else
+        enable_j(handles,'on')
+    end
 end
 
 %% display the set of existing files as an image
@@ -1153,36 +1163,51 @@ num_ref_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function update_mode(handles,i1_series,i2_series,j1_series,j2_series,time)
 %------------------------------------------------------------------------    
-check_burst=0;
-if isempty(j2_series)% no pair menu to display
+% check_burst=0;
+if isempty(j2_series)% no j pair
     if isempty(i2_series)
-        set(handles.mode,'String',{''})
-    else
         set(handles.mode,'Value',1)
-        set(handles.mode,'String',{'series(Di)'})
+        set(handles.mode,'String',{''})% no pair menu to display
+    else   
+        set(handles.mode,'Value',1)
+        set(handles.mode,'String',{'series(Di)'}) % pair menu with only option Di
     end
-else
-    nbfield=size(j2_series,1);
-    nbfield2=size(j2_series,2);
-    set(handles.mode,'String',{'bursts';'series(Dj)'})
-    if nbfield2>10 || nbfield==1
-        set(handles.mode,'Value',2);%set mode to series(Dj) if more than 10 j values
-    else
+else %existence of j pairs
+    pair_max=squeeze(max(i1_series,[],1)); %max on pair index
+    j_max=max(pair_max,[],1);
+    MaxIndex_i=max(find(j_max))-1;% max ref index i
+    MinIndex_i=min(find(j_max))-1;% min ref index i
+    i_max=max(pair_max,[],2);
+    MaxIndex_j=max(find(i_max))-1;% max ref index i
+    MinIndex_j=min(find(i_max))-1;% min ref index i
+    if MaxIndex_j==MinIndex_j
         set(handles.mode,'Value',1);
-        check_burst=1;
-    end
-end
-if check_burst
-    enable_i(handles,'On')
-    enable_j(handles,'Off') %do not display j index scanning in burst mode (j is fixed by the burst choice)
-else
-    enable_i(handles,'On')
-    if isempty(j1_series)
-         enable_j(handles,'Off')
+        set(handles.mode,'String',{'bursts'})
+%         check_burst=1;
+    elseif MaxIndex_i==MinIndex_i
+        set(handles.mode,'Value',1);
+        set(handles.mode,'String',{'series(Dj)'})
     else
-        enable_j(handles,'On')
+        set(handles.mode,'String',{'bursts';'series(Dj)'})
+        if (MaxIndex_j-MinIndex_j)>10
+            set(handles.mode,'Value',2);%set mode to series(Dj) if more than 10 j values
+        else
+            set(handles.mode,'Value',1);
+%             check_burst=1;
+        end
     end
 end
+% if check_burst
+%     enable_i(handles,'On')
+%     enable_j(handles,'Off') %do not display j index scanning in burst mode (j is fixed by the burst choice)
+% else
+%     enable_i(handles,'On')
+%     if isempty(j1_series)
+%          enable_j(handles,'Off')
+%     else
+%         enable_j(handles,'On')
+%     end
+% end
 fill_ListPair(handles,i1_series,i2_series,j1_series,j2_series,time)
 ListPairs_Callback([],[],handles)
 

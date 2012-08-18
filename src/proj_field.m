@@ -908,13 +908,15 @@ end
 testangle=~isequal(PlaneAngle,[0 0 0]);% && ~test90y && ~test90x;%=1 for slanted plane 
 
 %% mesh sizes DX and DY
-DX=FieldData.Mesh;
-DY=FieldData.Mesh; %default 
 if isfield(ObjectData,'DX') && ~isempty(ObjectData.DX)
      DX=abs(ObjectData.DX);%mesh of interpolation points 
+else
+    DX=FieldData.Mesh;
 end
 if isfield(ObjectData,'DY') && ~isempty(ObjectData.DY)
      DY=abs(ObjectData.DY);%mesh of interpolation points 
+else
+    DY=FieldData.Mesh;
 end
 if  ~strcmp(ObjectData.ProjMode,'projection') && (DX==0||DY==0)
         errormsg='DX or DY missing';
@@ -927,21 +929,24 @@ testXMin=0;
 testXMax=0;
 testYMin=0;
 testYMax=0;
-XMin=FieldData.XMin;%default
-XMax=FieldData.XMax;%default
-YMin=FieldData.YMin;%default
-YMax=FieldData.YMax;%default
+
 if isfield(ObjectData,'RangeX')
         XMin=min(ObjectData.RangeX);
         XMax=max(ObjectData.RangeX);
         testXMin=XMax>XMin;
         testXMax=1;
+else
+    XMin=FieldData.XMin;%default
+XMax=FieldData.XMax;%default
 end
 if isfield(ObjectData,'RangeY')
         YMin=min(ObjectData.RangeY);
         YMax=max(ObjectData.RangeY);
         testYMin=YMax>YMin;
         testYMax=1;
+else
+    YMin=FieldData.YMin;%default
+YMax=FieldData.YMax;%default
 end
 width=0;%default width of the projection band
 if isfield(ObjectData,'RangeZ')
@@ -1158,8 +1163,8 @@ for icell=1:length(CellVarIndex)
                         coord_X=coord_X(indsel);
                         coord_Y=coord_Y(indsel);
                     end
-                    testFF=0;
-                    nbvar=numel(ProjData.ListVarName);
+%                     testFF=0;
+%                     nbvar=numel(ProjData.ListVarName);
                     if isfield(VarType,'vector_x')&&isfield(VarType,'vector_y')&&~isempty(VarType.vector_x)
                         VarName_x=FieldData.ListVarName{VarType.vector_x};
                         VarName_y=FieldData.ListVarName{VarType.vector_y};
@@ -1167,7 +1172,7 @@ for icell=1:length(CellVarIndex)
                             FieldData.(VarName_x)=FieldData.(VarName_x)(indsel);
                             FieldData.(VarName_y)=FieldData.(VarName_y)(indsel);
                         end
-                        FieldVar=cat(2,FieldData.(VarName_x),FieldData.(VarName_y));
+                        %FieldVar=cat(2,FieldData.(VarName_x),FieldData.(VarName_y));
                         if ~isfield(VarType,'CheckSub') || ~VarType.CheckSub
                             vector_x_proj=numel(ProjData.ListVarName)+1;
                             vector_y_proj=numel(ProjData.ListVarName)+2;
@@ -1178,7 +1183,13 @@ for icell=1:length(CellVarIndex)
                         if ~isempty(VarType.errorflag)
                             FieldData.(VarName_scalar)=FieldData.(VarName_scalar)(indsel);
                         end
-                        FieldVar=FieldData.(VarName_scalar);
+                       % FieldVar=FieldData.(VarName_scalar);
+                    end
+                    if ~isempty(VarType.ancillary)% do not project ancillary data with interp
+                        FieldData=rmfield(FieldData,FieldData.ListVarName{VarType.ancillary});
+                    end
+                    if ~isempty(VarType.warnflag)% do not project ancillary data with interp
+                        FieldData=rmfield(FieldData,FieldData.ListVarName{VarType.warnflag});
                     end
                     [VarVal,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,VarType.Operation,XI,YI);
                     if isfield(VarType,'CheckSub') && VarType.CheckSub && ~isempty(vector_x_proj)

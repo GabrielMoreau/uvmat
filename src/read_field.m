@@ -38,155 +38,157 @@ errormsg='';
 % VelType=ParamIn.VelType;
 % end
 A=[];
+if ischar(ParamIn.FieldName)
+    ParamIn.FieldName={ParamIn.FieldName};
+end
+            if isfield(ParamIn,'ColorVar')
+                InputField=[ParamIn.FieldName {ParamIn.ColorVar}];
+                check_colorvar=1;
+            else
+                InputField= ParamIn.FieldName;
+                check_colorvar=0;
+            end
 %% distingush different input file types
 try
     switch FileType
         case 'civdata'
-%             ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
-%                         ParamOut.ColorVar='ima_cor';
-                        if isfield(ParamIn,'ColorVar')
-                        InputField=[{ParamIn.FieldName} {ParamIn.ColorVar}];
-                        else
-                           InputField= {ParamIn.FieldName};
-                        end
-                        [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType);
-                        if ~isempty(errormsg),errormsg=['read_civdata:' errormsg];return,end
-                        ParamOut.CivStage=Field.CivStage;
-         case 'civx'
+            [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType);
+            if ~isempty(errormsg),errormsg=['read_civdata:' errormsg];return,end
+            ParamOut.CivStage=Field.CivStage;
+        case 'civx'
             ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
-                       % ParamOut.ColorVar='ima_cor';
-                       if isfield(ParamIn,'ColorVar')
-                        InputField=[{ParamIn.FieldName} {ParamIn.ColorVar}];
-                        else
-                           InputField= {ParamIn.FieldName};
-                        end
-                        [Field,ParamOut.VelType]=read_civxdata(FileName,InputField,ParamIn.VelType);
-                        if ~isempty(errormsg),errormsg=['read_civxdata:' errormsg];return,end
-                        ParamOut.CivStage=Field.CivStage;
+            [Field,ParamOut.VelType]=read_civxdata(FileName,InputField,ParamIn.VelType);
+            if ~isempty(errormsg),errormsg=['read_civxdata:' errormsg];return,end
+            ParamOut.CivStage=Field.CivStage;
         case 'netcdf'
-            r=regexp(ParamIn.FieldName,'(^vec|^norm)\((?<UName>.+),(?<VName>.+)\)$','names');
-            if isempty(r)
-                ListVar={ParamIn.FieldName};
-                input='scalar';
-            else
-                ListVar={r.UName,r.VName};
-                input='vectors';
-            end
-            if ~isempty(ParamIn.ColorVar)
-                r=regexp(ParamIn.ColorVar,'(^vec|^norm)\((?<UName>.+),(?<VName>.+)\)$','names');
+            ListVar={};
+            for ilist=1:numel(InputField)
+                r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
                 if isempty(r)
-                    ListVar=[ListVar {ParamIn.ColorVar}];
+                    ListVar=[ListVar InputField(ilist)];
+                    Role{numel(ListVar)}='scalar';
+%                     FieldRequest{numel(ListVar)}='interp_lin';%scalar field (requires interpolation for plot)
                 else
                     ListVar=[ListVar {r.UName,r.VName}];
+                    Role{numel(ListVar)}='vector_y';
+                    Role{numel(ListVar)-1}='vector_x';
+%                     switch r.Operator
+%                         case 'norm'
+%                             FieldRequest{numel(ListVar)-1}='interp_lin';%scalar field (requires interpolation for plot)
+%                             FieldRequest{numel(ListVar)}='interp_lin';
+%                         otherwise
+%                            FieldRequest{numel(ListVar)-1}='';
+%                     end
                 end
             end
-                [Field,var_detect,ichoice]=nc2struct(FileName,[ParamIn.CoordName ListVar]);
-                if strcmp(input,'vectors')
-                    Field.VarAttribute{3}.Role='vector_x';
-                    Field.VarAttribute{4}.Role='vector_y';
-                else
-                    Field.VarAttribute{3}.Role='scalar';
-                end
-%             GUIName='get_field'; %default name of the GUI get_field
-%             if isfield(ParamIn,'GUIName')
-%                 GUIName=ParamIn.GUIName;
-%             end
-%             CivStage=0;
-% %             if ~strcmp(ParamIn.FieldName,'get_field...')% if get_field is not requested, look for Civx data
-%                 FieldList=calc_field;%list of possible fields for Civx data
-%                 ParamOut.ColorVar='';%default
-%                 if ischar(ParamIn.FieldName)
-%                     FieldName=ParamIn.FieldName;
-%                 else
-%                     FieldName=ParamIn.FieldName{1};
-%                 end
-%                 field_index=strcmp(FieldName,FieldList);%look for ParamIn.FieldName in the list of possible fields for Civx data
-%                 if isempty(find(field_index,1))% ParamIn.FieldName is not in the list, check whether Civx data exist
-%                     Data=nc2struct(FileName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ','CivStage');
-%                     % case of new civdata conventions
-%                     if isequal(Data.Conventions,'uvmat/civdata')
-%                         
-%                         %case of old civx conventions
-%                     elseif ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)
-%                         ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
-%                         ParamOut.ColorVar='ima_cor';
-%                         InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
-%                         [Field,ParamOut.VelType]=read_civxdata(FileName,InputField,ParamIn.VelType);
-%                         if ~isempty(errormsg),errormsg=['read_civxdata:' errormsg];return,end
-%                         CivStage=Field.CivStage;
-%                         ParamOut.CivStage=Field.CivStage;
-%                         % not cvix file, fields will be chosen through the GUI get_field
-%                     else
-%                         ParamOut.FieldName='get_field...';
-%                         hget_field=findobj(allchild(0),'Name',GUIName);%find the get_field... GUI
-%                         if ~isempty(hget_field)
-%                             delete(hget_field)%delete  get_field for reinitialisation
-%                         end
-%                     end
-%                 else              
-%                     InputField=ParamOut.FieldName;
-%                     if ischar(InputField)
-%                         InputField={InputField};
-%                     end
-%                     if isfield(ParamIn,'ColorVar')
-%                         ParamOut.ColorVar=ParamIn.ColorVar;
-%                         InputField=[InputField {ParamOut.ColorVar}];
-%                     end
-%                     [Field,ParamOut.VelType,errormsg]=read_civxdata(FileName,InputField,ParamIn.VelType);
-%                     if ~isempty(errormsg),errormsg=['read_civxdata:' errormsg];return,end
-%                     CivStage=Field.CivStage;
-%                     ParamOut.CivStage=Field.CivStage;
-%                 end
-%                 ParamOut.FieldList=[{'image'};FieldList;{'get_field...'}];
-%             end
-%             if CivStage==0% read the field names on the interface get_field.
-%                 hget_field=findobj(allchild(0),'Name',GUIName);%find the get_field... GUI
-%                 if isempty(hget_field)% open the GUI get_field if it is not found
-%                     hget_field= get_field(FileName);%open the get_field GUI
-%                     set(hget_field,'Name',GUIName)%update the name of get_field (e.g. get_field_1)
-%                 end
-%                 hhget_field=guidata(hget_field);
-%                 %% update  the get_field GUI
-%                 set(hhget_field.inputfile,'String',FileName)
-%                 set(hhget_field.list_fig,'Value',1)
-%                 if exist('num','var')&&~isnan(num)
-%                     set(hhget_field.TimeIndexValue,'String',num2str(num))
-%                 end
-% %                 funct_list=get(hhget_field.ACTION,'UserData');
-% %                 funct_index=get(hhget_field.ACTION,'Value');
-% %                 funct=funct_list{funct_index};%select  the current action in get_field, e;g. PLOT
-% %                 Field=funct(hget_field); %%activate the current action selected in get_field, e;g.read the names of the variables to plot
-%                 [Field,errormsg]=read_get_field(hget_field);
-%                 Tabchar={''};%default
-%                 Tabcell=[];
-%                 set(hhget_field.inputfile,'String',FileName)
-%                 if isfield(Field,'ListGlobalAttribute')&& ~isempty(Field.ListGlobalAttribute)
-%                     for iline=1:length(Field.ListGlobalAttribute)
-%                         Tabcell{iline,1}=Field.ListGlobalAttribute{iline};
-%                         if isfield(Field, Field.ListGlobalAttribute{iline})
-%                             val=Field.(Field.ListGlobalAttribute{iline});
-%                             if ischar(val);
-%                                 Tabcell{iline,2}=val;
-%                             else
-%                                 Tabcell{iline,2}=num2str(val);
-%                             end
-%                         end
-%                     end
-%                     if ~isempty(Tabcell)
-%                         Tabchar=cell2tab(Tabcell,'=');
-%                         Tabchar=[{''};Tabchar];
-%                     end
-%                 end
-%                 ParamOut.CivStage=0;
-%                 ParamOut.VelType=[];
-%                 if isfield(Field,'TimeIndex')
-%                     ParamOut.TimeIndex=Field.TimeIndex;
-%                 end
-%                 if isfield(Field,'TimeValue')
-%                     ParamOut.TimeValue=Field.TimeValue;
-%                 end
-%                 ParamOut.FieldList={'get_field...'};
-
+            if check_colorvar
+                Role{numel(ListVar)}='ancillary';% scalar used for color vector (not projected)
+            end
+            [Field,var_detect,ichoice]=nc2struct(FileName,[ParamIn.CoordName ListVar]);
+            for ivar=1:numel(ListVar)
+                Field.VarAttribute{ivar+2}.Role=Role{ivar};
+%                 Field.VarAttribute{ivar+2}.FieldRequest=FieldRequest{ivar};
+            end
+            %             GUIName='get_field'; %default name of the GUI get_field
+            %             if isfield(ParamIn,'GUIName')
+            %                 GUIName=ParamIn.GUIName;
+            %             end
+            %             CivStage=0;
+            % %             if ~strcmp(ParamIn.FieldName,'get_field...')% if get_field is not requested, look for Civx data
+            %                 FieldList=calc_field;%list of possible fields for Civx data
+            %                 ParamOut.ColorVar='';%default
+            %                 if ischar(ParamIn.FieldName)
+            %                     FieldName=ParamIn.FieldName;
+            %                 else
+            %                     FieldName=ParamIn.FieldName{1};
+            %                 end
+            %                 field_index=strcmp(FieldName,FieldList);%look for ParamIn.FieldName in the list of possible fields for Civx data
+            %                 if isempty(find(field_index,1))% ParamIn.FieldName is not in the list, check whether Civx data exist
+            %                     Data=nc2struct(FileName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ','CivStage');
+            %                     % case of new civdata conventions
+            %                     if isequal(Data.Conventions,'uvmat/civdata')
+            %
+            %                         %case of old civx conventions
+            %                     elseif ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0)
+            %                         ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
+            %                         ParamOut.ColorVar='ima_cor';
+            %                         InputField=[{ParamOut.FieldName} {ParamOut.ColorVar}];
+            %                         [Field,ParamOut.VelType]=read_civxdata(FileName,InputField,ParamIn.VelType);
+            %                         if ~isempty(errormsg),errormsg=['read_civxdata:' errormsg];return,end
+            %                         CivStage=Field.CivStage;
+            %                         ParamOut.CivStage=Field.CivStage;
+            %                         % not cvix file, fields will be chosen through the GUI get_field
+            %                     else
+            %                         ParamOut.FieldName='get_field...';
+            %                         hget_field=findobj(allchild(0),'Name',GUIName);%find the get_field... GUI
+            %                         if ~isempty(hget_field)
+            %                             delete(hget_field)%delete  get_field for reinitialisation
+            %                         end
+            %                     end
+            %                 else
+            %                     InputField=ParamOut.FieldName;
+            %                     if ischar(InputField)
+            %                         InputField={InputField};
+            %                     end
+            %                     if isfield(ParamIn,'ColorVar')
+            %                         ParamOut.ColorVar=ParamIn.ColorVar;
+            %                         InputField=[InputField {ParamOut.ColorVar}];
+            %                     end
+            %                     [Field,ParamOut.VelType,errormsg]=read_civxdata(FileName,InputField,ParamIn.VelType);
+            %                     if ~isempty(errormsg),errormsg=['read_civxdata:' errormsg];return,end
+            %                     CivStage=Field.CivStage;
+            %                     ParamOut.CivStage=Field.CivStage;
+            %                 end
+            %                 ParamOut.FieldList=[{'image'};FieldList;{'get_field...'}];
+            %             end
+            %             if CivStage==0% read the field names on the interface get_field.
+            %                 hget_field=findobj(allchild(0),'Name',GUIName);%find the get_field... GUI
+            %                 if isempty(hget_field)% open the GUI get_field if it is not found
+            %                     hget_field= get_field(FileName);%open the get_field GUI
+            %                     set(hget_field,'Name',GUIName)%update the name of get_field (e.g. get_field_1)
+            %                 end
+            %                 hhget_field=guidata(hget_field);
+            %                 %% update  the get_field GUI
+            %                 set(hhget_field.inputfile,'String',FileName)
+            %                 set(hhget_field.list_fig,'Value',1)
+            %                 if exist('num','var')&&~isnan(num)
+            %                     set(hhget_field.TimeIndexValue,'String',num2str(num))
+            %                 end
+            % %                 funct_list=get(hhget_field.ACTION,'UserData');
+            % %                 funct_index=get(hhget_field.ACTION,'Value');
+            % %                 funct=funct_list{funct_index};%select  the current action in get_field, e;g. PLOT
+            % %                 Field=funct(hget_field); %%activate the current action selected in get_field, e;g.read the names of the variables to plot
+            %                 [Field,errormsg]=read_get_field(hget_field);
+            %                 Tabchar={''};%default
+            %                 Tabcell=[];
+            %                 set(hhget_field.inputfile,'String',FileName)
+            %                 if isfield(Field,'ListGlobalAttribute')&& ~isempty(Field.ListGlobalAttribute)
+            %                     for iline=1:length(Field.ListGlobalAttribute)
+            %                         Tabcell{iline,1}=Field.ListGlobalAttribute{iline};
+            %                         if isfield(Field, Field.ListGlobalAttribute{iline})
+            %                             val=Field.(Field.ListGlobalAttribute{iline});
+            %                             if ischar(val);
+            %                                 Tabcell{iline,2}=val;
+            %                             else
+            %                                 Tabcell{iline,2}=num2str(val);
+            %                             end
+            %                         end
+            %                     end
+            %                     if ~isempty(Tabcell)
+            %                         Tabchar=cell2tab(Tabcell,'=');
+            %                         Tabchar=[{''};Tabchar];
+            %                     end
+            %                 end
+            %                 ParamOut.CivStage=0;
+            %                 ParamOut.VelType=[];
+            %                 if isfield(Field,'TimeIndex')
+            %                     ParamOut.TimeIndex=Field.TimeIndex;
+            %                 end
+            %                 if isfield(Field,'TimeValue')
+            %                     ParamOut.TimeValue=Field.TimeValue;
+            %                 end
+            %                 ParamOut.FieldList={'get_field...'};
+            
         case 'video'
             if strcmp(class(ParamIn),'VideoReader')
                 A=read(ParamIn,num);

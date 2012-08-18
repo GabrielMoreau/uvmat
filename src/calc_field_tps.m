@@ -47,6 +47,7 @@ for ilist=1:length(Operation)
     OperationType=regexprep(Operation{ilist},'(.+','');
     switch OperationType
         case 'vec'
+            check_grid=1;
             DataOut.U=zeros(nb_sites,1);
             DataOut.V=zeros(nb_sites,1);
             VarAttribute{1}.Role='vector_x';
