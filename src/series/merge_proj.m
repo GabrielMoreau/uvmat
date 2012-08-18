@@ -192,7 +192,6 @@ for i_slice=1:NbSlice
         nbtime=0;
         for iview=1:nbview
             % reading input file(s)
-            filecell{iview,index}
             [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
             if ~isempty(errormsg)
                 errormsg=['merge_proj/read_field/' errormsg];
@@ -224,18 +223,19 @@ for i_slice=1:NbSlice
                         check_tps=1;
                 end
             end
-            if ~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'filter')&&~isfield(Data{iview},'Coord_tps')
-                Data{iview}=calc_tps(Data{iview});
-            end
-                 
-            % field calculation (vort, div...)    
-            if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
-                if isfield(Data{iview},'Coord_tps')
-                    Data{iview}.FieldList=Param.InputFields.FieldName;
-                else
-                    Data{iview}=calc_field(Param.InputFields.FieldName,Data{iview});%calculate field (vort..)
-                end
-            end
+                
+            %% calculate tps coeff if needed
+             check_proj_tps= ~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'filter')&&~isfield(Data{iview},'Coord_tps');
+            Data{iview}=calc_tps(Data{iview},check_proj_tps);
+              
+%             % field calculation (vort, div...)    
+%             if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
+%                 if isfield(Data{iview},'Coord_tps')
+%                     Data{iview}.FieldList=Param.InputFields.FieldName;
+%                 else
+%                     Data{iview}=calc_field(Param.InputFields.FieldName,Data{iview});%calculate field (vort..)
+%                 end
+%             end
             
             %projection on object (gridded plane)
             if Param.CheckObject
@@ -359,11 +359,10 @@ if nbview==1
     return
 end
 
-%% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
-[CellVarIndex,NbDim,VarTypeCell]=find_field_indices(Data{1});
+%% group the variables (fields of 'Data') in cells of variables with the same dimensions
+[CellVarIndex,NbDim,VarTypeCell]=find_field_cells(Data{1});
 %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
 % CellVarIndex=cells of variable index arrays
-ivar_new=0; % index of the current variable in the projected field
 for icell=1:length(CellVarIndex)
     if NbDim(icell)==1
         continue
@@ -387,7 +386,7 @@ for icell=1:length(CellVarIndex)
         for ivar=VarIndex
             VarName=MergeData.ListVarName{ivar};
             for iview=1:nbview
-                eval(['MergeData.' VarName '=[MergeData.' VarName '; Data{iview}.' VarName '];'])
+                MergeData.(VarName)=[MergeData.(VarName); Data{iview}.(VarName)];
             end
         end
     %case of fields defined on a structured  grid 
@@ -401,7 +400,7 @@ for icell=1:length(CellVarIndex)
                         testFF=1;
                     end
                 end
-                eval(['MergeData.' VarName '=MergeData.' VarName '+ Data{iview}.' VarName ';'])
+                MergeData.(VarName)=MergeData.(VarName) + Data{iview}.(VarName);
             end
         end
         if testFF
@@ -409,12 +408,12 @@ for icell=1:length(CellVarIndex)
             indgood=find(nbaver>0);
             for ivar=VarIndex
                 VarName=MergeData.ListVarName{ivar};
-                eval(['MergeData.' VarName '(indgood)=double(MergeData.' VarName '(indgood))./nbaver(indgood);'])
+                MergeData.(VarName)(indgood)=double(MergeData.(VarName)(indgood))./nbaver(indgood);
             end 
         else
             for ivar=VarIndex
                 VarName=MergeData.ListVarName{ivar};
-                eval(['MergeData.' VarName '=double(MergeData.' VarName ')./nbview;'])
+                MergeData.(VarName)=double(MergeData.(VarName))./nbview;
             end    
         end
     end
