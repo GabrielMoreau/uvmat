@@ -291,11 +291,6 @@ for i_slice=1:NbSlice
                 end
             end
             
-            % field calculation (vort, div...)
-            if strcmp(FileType{1},'civx')||strcmp(FileType{1},'civdata')
-                Data{1}=calc_field(InputFields{1}.FieldName,Data{1});%calculate field (vort..)
-            end
-            
             % field substration (for two input file series)
             if length(Data)==2
                 [Field,errormsg]=sub_field(Data{1},Data{2}); %substract the two fields
