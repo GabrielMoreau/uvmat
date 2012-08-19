@@ -277,7 +277,7 @@ for icell=1:length(CellVarIndex)
                 checkancillary=1;
             end
         end
-        if ~checkancillary% does not display variables with attribute '.Role=ancillary'
+%         if ~checkancillary% does not display variables with attribute '.Role=ancillary'
             VarName=FieldData.ListVarName{VarIndex(ivar)};
             VarValue=FieldData.(VarName);
             Data =[Data [{VarName}; num2cell(VarValue)]];
@@ -288,7 +288,7 @@ for icell=1:length(CellVarIndex)
             txt=[VarName '=' num2str(VarValue)];
             txt_cell=[txt_cell;{txt}];
             end
-        end
+%         end
     end
 end
 if strcmp(get(htext,'Type'),'uitable')

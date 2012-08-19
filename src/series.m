@@ -660,17 +660,11 @@ if strcmp(InputTable{iview,4},'*')
 end
 
 %%  read image documentation file  if found%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ext_imadoc='';
-if exist([FileBase '.xml'],'file')
-    ext_imadoc='.xml';
-elseif exist([FileBase '.civ'],'file')
-    ext_imadoc='.civ';
-end
-%read the ImaDoc file
 XmlData=[];
 NbSlice_calib={};
-if isequal(ext_imadoc,'.xml')
-        [XmlData,warntext]=imadoc2struct([FileBase '.xml']);
+XmlFileName=find_imadoc(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5});
+if ~isempty(XmlFileName)
+        [XmlData,warntext]=imadoc2struct(XmlFileName);
         if isfield(XmlData,'Heading') && isfield(XmlData.Heading,'ImageName') && ischar(XmlData.Heading.ImageName)
             [PP,FF,ext_ima_read]=fileparts(XmlData.Heading.ImageName);
         end
@@ -691,12 +685,6 @@ if isequal(ext_imadoc,'.xml')
         if ~isempty(warntext)
             msgbox_uvmat('WARNING',warntext)
         end  
-elseif isequal(ext_imadoc,'.civ')
-    [error,XmlData.Time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext([FileBase '.civ']);
-    time=XmlData.Time;
-    if error==2, warntext=['no file ' FileBase '.civ'];
-    elseif error==1, warntext='inconsistent number of fields in the .civ file';
-    end  
 end
 
 %% update time table
@@ -782,6 +770,9 @@ nbview=numel(SeriesData.i1_series);
 pair_max=cell(1,nbview);
 for iview=1:nbview
     pair_max{iview}=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
+    if strcmp(get(handles.num_first_j,'Visible'),'off')
+        pair_max{iview}=squeeze(max(pair_max{iview},[],1)); % consider only the i index
+    end
     index_min(iview)=find(pair_max{iview}>0, 1 );
     index_max(iview)=find(pair_max{iview}>0, 1, 'last' );
 end
@@ -828,6 +819,30 @@ end
 displ_time(handles)
 
 
+%% set default options in menu 'Fields'
+switch FileType
+    case {'civx','civdata'}
+        [FieldList,ColorList]=calc_field;
+        set(handles.FieldName,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
+        set(handles.FieldName,'Value',2) % set menu to 'velocity
+        set(handles.Coord_x,'Value',1);
+        set(handles.Coord_x,'String',{'X'});
+        set(handles.Coord_y,'Value',1);
+        set(handles.Coord_y,'String',{'Y'});
+    case 'netcdf'
+        set(handles_Fields,'Value',1)
+        set(handles_Fields,'String',{'get_field...'})
+        hget_field=get_field(FileName);
+        hhget_field=guidata(hget_field);
+        get_field('RUN_Callback',hhget_field.RUN,[],hhget_field);
+    otherwise
+        set(handles_Fields,'Value',1) % set menu to 'image'
+        set(handles_Fields,'String',{'image'})
+        set(handles.Coord_x,'Value',1);
+        set(handles.Coord_x,'String',{'AX'});
+        set(handles.Coord_y,'Value',1);
+        set(handles.Coord_y,'String',{'AY'});
+end
 % %% set default options in menu 'Fields'%% TODO: check VelType 
 % if ~testima
 %     testcivx=0;
@@ -1325,17 +1340,6 @@ set(handles.num_incr_j,'Visible',state)
 % set(handles.num_MaxIndex_j,'Visible',state)
 set(handles.num_ref_j,'Visible',state)
 set(handles.ref_j_text,'Visible',state)
-
-%-----------------------------------
-% function view_FieldMenu(handles,state)
-% % set(handles.FieldName,'Visible',state)
-% % set(handles.Field_text,'Visible',state)
-% set(handles.InputFields,'Visible',state)
-
-% %-----------------------------------
-% function view_FieldMenu_1(handles,state)
-% set(handles.FieldName_1,'Visible',state)
-% set(handles.Field_text_1,'Visible',state)
 
 
 %%%%%%%%%%%%%%%%%%%%
@@ -2045,299 +2049,6 @@ else
     set(handles.TransformPath,'String',''); %show the path to the senlected function
 end
 
-% %------------------------------------------------------------------------
-% % --- Executes on button press in REFRESH.
-%     function REFRESH_INDICES_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------        
-% % hObject    handle to REFRESH (see GCBO)
-% % eventdata  reserved - to be defined in a future version of MATLAB
-% % handles    structure with handles and user data (see GUIDATA)
-% set(handles.REFRESH,'BackgroundColor',[0.7 0.7 0.7])
-% InputTable=get(handles.InputTable,'Data');
-% check_lines=get(handles.REFRESH,'UserData');
-% 
-% %% check the indices and FileTypes for each series (limited to the new ones to save time)
-% for ind_list=1:length(check_lines)
-%     if  check_lines(ind_list)
-%         InputLine=InputTable(ind_list,:);
-%         detect_idem=strcmp('"',InputLine);% look for '" (repeat of previous data)
-%         detect_idem=detect_idem(detect_idem>0);
-%         if ~isempty (detect_idem)
-%             InputLine(detect_idem)=InputTable(ind_list-1,detect_idem);
-%             set(handles.InputTable,'Data',InputTable)
-%         end
-%         fileinput=fullfile_uvmat(InputLine{1},InputLine{2},InputLine{3},InputLine{5},InputLine{4},1,2,1,2);
-%         %fileinput=name_generator(fullfile(InputLine{1},InputLine{3}),1,1,InputLine{5},InputLine{4},1,2,2,InputLine{2})
-%         %update file series defined by the selected line
-%         [InputTable{ind_list,3},InputTable{(ind_list),4},errormsg]=update_indices(handles,fileinput,ind_list);
-%         if ~isempty(errormsg)
-%                 msgbox_uvmat('ERROR',errormsg)
-%                 return
-%         end
-%     end
-% end
-% set(handles.InputTable,'Data',InputTable)
-% SeriesData=get(handles.series,'UserData');
-% 
-% state_j='off';
-% state_Pairs='off';
-% state_InputFields='off';
-% val=get(handles.ListView,'Value');
-% ListViewString={''};
-% if ~isempty(SeriesData)
-% %     ListViewString={};
-%     for iview=1:size(InputTable,1)
-%         if ~isempty(SeriesData.j1_series{iview})
-%             state_j='on';
-%         end
-%         if ~isempty(SeriesData.i2_series{iview})||~isempty(SeriesData.j2_series{iview})
-%             state_Pairs='on';
-%             ListViewString{iview}=num2str(iview);
-%             if check_lines(iview)
-%                 val=iview;%select the last pair if it is a new entry
-%             end
-%         end
-%         if strcmp(SeriesData.FileType{iview},'civx')||strcmp(SeriesData.FileType{iview},'civdata')
-%             state_InputFields='on';
-%         end
-%     end
-% end
-% set(handles.ListView,'Value',val)
-% set(handles.ListView,'String',ListViewString)
-% if strcmp(state_Pairs,'on')
-%     ListView_Callback(hObject,eventdata,handles)
-% end
-% set(handles.PairString,'Visible',state_Pairs)
-% enable_j(handles,state_j)
-% set(handles.REFRESH,'BackgroundColor',[1 0 0])
-% set(handles.REFRESH,'visible','off')
-
-% -----------------------------------------------------------------------
-% --- Update min and max indices of a file series by scanning with find_file_series
-% --- which also changes the root file and NomType in case of movie. Also adjust the string representation of indices (e.g;
-% --- 1 or 001 by the function find_file_series
-% --- This function also dispaly the set of availbale files in the series
-% --- and the menus appropriate to the file type as well as timing possibly set
-% --- by an xml image documentation file
-function [RootFile,NomType,errormsg]=update_indices(handles,fileinput,iview)
-% -----------------------------------------------------------------------
-%% look for min and max indices existing in the file series and update SeriesData
-errormsg='';
-[FilePath,FileName,FileExt]=fileparts(fileinput);
-% detect the file type, get the movie object if relevant, and look for the corresponding file series:
-% the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
-if isempty(RootFile)&&isempty(i1_series)
-    errormsg='no input file in the series';
-    return
-end
-
-%% adjust the min and max indices common to all the file series
-MinIndex=get(handles.MinIndex,'Data');
-MaxIndex=get(handles.MaxIndex,'Data');
-MinIndex_i=min(i1_series(i1_series>0));
-if ~isempty(i2_series)
-    MaxIndex_i=max(i2_series(i2_series>0));
-else
-    MaxIndex_i=max(i1_series(i1_series>0));
-end
-MinIndex_j=min(j1_series(j1_series>0));
-if ~isempty(j2_series)
-    MaxIndex_j=max(j2_series(j2_series>0));
-else
-    MaxIndex_j=max(j1_series(j1_series>0));
-end
-MinIndex{iview,1}=MinIndex_i;
-MinIndex{iview,2}=MinIndex_j;
-MaxIndex{iview,1}=MaxIndex_i;
-MaxIndex{iview,2}=MaxIndex_j;
-set(handles.MinIndex,'Data',MinIndex)
-set(handles.MaxIndex,'Data',MaxIndex)
-SeriesData=get(handles.series,'UserData');
-SeriesData.i1_series{iview}=i1_series;
-SeriesData.i2_series{iview}=i2_series;
-SeriesData.j1_series{iview}=j1_series;
-SeriesData.j2_series{iview}=j2_series;
-SeriesData.FileType{iview}=FileType;
-
-%% display the set of existing files as an image
-set(handles.Waitbar,'Units','pixels')
-pos=get(handles.Waitbar,'Position');
-xima=0.5:pos(3)-0.5;% pixel positions on the image representing the existing file indices
-yima=0.5:pos(4)-0.5;
-[XIma,YIma]=meshgrid(xima,yima);
-nb_i=size(i1_series,3);
-nb_j=size(i1_series,2);
-ind_i=(0.5:nb_i-0.5)*pos(3)/nb_i;
-ind_j=(0.5:nb_j-0.5)*pos(4)/nb_j;
-[Ind_i,Ind_j]=meshgrid(ind_i,ind_j);
-CData=zeros([size(XIma) 3]);
-file_ima=double((i1_series(:,:,1)>0)');
-if numel(file_ima)>=2
-if size(file_ima,1)==1
-    CLine=interp1(ind_i,file_ima,xima,'nearest');
-    CData(:,:,2)=ones(size(yima'))*CLine;
-else
-    CData(:,:,2)=interp2(Ind_i,Ind_j,file_ima,XIma,YIma,'nearest');
-end
-set(handles.Waitbar,'CData',CData)
-end
-set(handles.Waitbar,'Units','normalized')
-
-%% enable field and veltype menus
-% testfield=isequal(get(handles.FieldName,'enable'),'on');
-% testfield_1=isequal(get(handles.FieldName_1,'enable'),'on');
-% testveltype=isequal(get(handles.VelType,'enable'),'on');
-% testveltype_1=isequal(get(handles.VelType_1,'enable'),'on');
-% testtransform=isequal(get(handles.TransformName,'Enable'),'on');
-% testnc=0;
-% testnc_1=0;
-% testcivx=0;
-% testcivx_1=0;
-% testima=0; %test for image input
-% if isequal(lower(FileExt),'.avi') %.avi file
-%     testima=1;
-% elseif ~isempty(imformats(FileExt(2:end))) 
-%     testima=1;
-% elseif isequal(FileExt,'.vol')
-%      testima=1;
-% end
-%TODO: update
-% if length(FileExtCell)==1 || length(FileExtCell)>2
-%     for iview=1:length(FileExtCell)
-%         if isequal(FileExtCell{iview},'.nc')
-%             testnc=1;
-%         end
-%         if isequal(FileTypeCell{iview},'civx')
-%             testcivx=1;
-%         end
-%     end
-% elseif length(FileExtCell)==2
-%     testnc=isequal(FileExtCell{1},'.nc');
-%     testnc_1=isequal(FileExtCell{2},'.nc');
-%     testcivx=isequal(FileTypeCell{1},'civx');
-%     testcivx_1=isequal(FileTypeCell{2},'civx');
-% end
-switch FileType
-    case {'civx','civdata'}
-    %view_FieldMenu(handles,'on')
-    menustr=get(handles.FieldName,'String');
-    if isequal(menustr,{'get_field...'})
-        set(handles.FieldName,'String',{'get_field...';'velocity';'vort';'div';'more...'})
-    end
-    set(handles.VelType,'Visible','on')
-    set(handles.FieldTransform,'Visible','on')
-    %      view_TRANSFORM(handles,'on')
-    %     TODO: second menu
-    %           view_FieldMenu_1(handles,'on')
-    %     if testcivx_1
-    %         menustr=get(handles.FieldName_1,'String');
-    %         if isequal(menustr,{'get_field...'})
-    %             set(handles.FieldName_1,'String',{'get_field...';'velocity';'vort';'div';'more...'})
-    %         end
-    %     else
-    %         set(handles.FieldName_1,'Value',1)
-    %         set(handles.FieldName_1,'String',{'get_field...'})
-    %     set(handles.VelType_1,'Visible','on')
-    %     set(handles.VelType_text_1,'Visible','on');
-    %     end
-    %     view_FieldMenu_1(handles,'off')
-    case 'netcdf'
-  %  view_FieldMenu(handles,'on')
-    set(handles.FieldName,'Value',1)
-    set(handles.FieldName,'String',{'get_field...'})
-    set(handles.FieldTransform,'Visible','off')
-    %     view_TRANSFORM(handles,'off')
-    case {'image','multimage','video'}
-%    view_FieldMenu(handles,'off')
- %   view_FieldMenu_1(handles,'off')
-    set(handles.VelType,'Visible','off')
-    set(handles.VelType_text,'Visible','off');
-end
-
-
-%TODO:update
-% if ~isequal(FileExt,'.nc') && ~isequal(FileExt,'.cdf') && ~testima
-%     msgbox_uvmat('ERROR',['invalid input file extension ' FileExt])
-%     return
-% end  
-
-%%  read image documentation file  if found%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ext_imadoc='';
-FileBase=fullfile(RootPath,RootFile);
-if isequal(FileExt,'.xml')||isequal(FileExt,'.civ')
-    ext_imadoc=FileExt;
-elseif exist([FileBase '.xml'],'file')
-    ext_imadoc='.xml';
-elseif exist([FileBase '.civ'],'file')
-    ext_imadoc='.civ';
-end
-%read the ImaDoc file
-XmlData=[];
-NbSlice_calib={};
-if isequal(ext_imadoc,'.xml')
-        [XmlData,warntext]=imadoc2struct([FileBase '.xml']);
-        if isfield(XmlData,'Heading') && isfield(XmlData.Heading,'ImageName') && ischar(XmlData.Heading.ImageName)
-            [PP,FF,ext_ima_read]=fileparts(XmlData.Heading.ImageName);
-        end
-        if isfield(XmlData,'Time')
-            time{iview}=XmlData.Time;
-        end
-        if isfield(XmlData,'Camera')
-            if isfield(XmlData.Camera,'NbSlice')&& ~isempty(XmlData.Camera.NbSlice)
-                NbSlice_calib{iview}=XmlData.Camera.NbSlice;% Nbre of slices for Zindex in phys transform
-                if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
-                    msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
-                end
-            end
-            if isfield(XmlData.Camera,'TimeUnit')&& ~isempty(XmlData.Camera.TimeUnit)
-                TimeUnit=XmlData.Camera.TimeUnit;
-            end
-        end
-        if ~isempty(warntext)
-            msgbox_uvmat('WARNING',warntext)
-        end  
-elseif isequal(ext_imadoc,'.civ')
-    [error,XmlData.Time,TimeUnit,mode,npx,npy,pxcmx,pxcmy]=read_imatext([FileBase '.civ']);
-    time{iview}=XmlData.Time;
-    if error==2, warntext=['no file ' FileBase '.civ'];
-    elseif error==1, warntext='inconsistent number of fields in the .civ file';
-    end  
-end
-
-%% update time table
-TimeTable=get(handles.TimeTable,'Data');
-TimeTable{iview,1}=time(MinIndex_i,MinIndex_j);
-TimeTable{iview,4}=time(MaxIndex_i,MaxIndex_j);
-set(handles.TimeTable,'Data',TimeTable)
-
-%% number of slices
-if isfield(XmlData,'GeometryCalib') && isfield(XmlData.GeometryCalib,'SliceCoord')
-       siz=size(XmlData.GeometryCalib.SliceCoord);
-       if siz(1)>1
-           NbSlice=siz(1);
-       else
-           NbSlice=1;
-       end
-       set(handles.num_NbSlice,'String',num2str(NbSlice))
-end
-% set(handles.mode,'Visible','off') % do not show index pairstring by default
-set(handles.PairString,'Visible','off')
-% set(handles.num_ref_i,'Visible','off')
-% set(handles.ref_i_text,'Visible','off')
-testpair=0;
-%set the menus of image pairstring and default selection for series
-%list pairstring if relevant
-% Val=get(handles.NomType,'Value');
-% synchronise_view(handles,Val)
-
-% if ~isfield(SeriesData,'j1_series')||isempty(SeriesData.j1_series{index})
-%     state_j='off'; %no need for j index
-% else
-%     state_j='on'; %case of j index
-% end
-% show index pairstring if files exist
-set(handles.series,'UserData',SeriesData)
 
 
 % --------------------------------------------------------------------
@@ -2354,3 +2065,26 @@ commandwindow; %brings the Matlab command window to the front
 
 % --- Executes on selection change in RunMode.
 function RunMode_Callback(hObject, eventdata, handles)
+
+
+% --- Executes on selection change in popupmenu14.
+function popupmenu14_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu14 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu14 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu14
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu14_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu14 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

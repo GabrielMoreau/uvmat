@@ -992,36 +992,29 @@ end
 %% set default options in menu 'Fields'
 switch FileType
     case {'civx','civdata'}
-            [FieldList,ColorList]=calc_field;
-            set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
-            set(handles_Fields,'Value',2) % set menu to 'velocity
-          %  col_vec=FieldList;
-           % col_vec(1)=[];%remove 'velocity' option for vector color (must be a scalar)
-           set(handles.ColorScalar,'Value',1)
-            set(handles.ColorScalar,'String',ColorList)
-            set(handles.Vectors,'Visible','on')
-            set(handles.Coord_x,'Value',1);
-           set(handles.Coord_x,'String',{'X'});
-           set(handles.Coord_y,'Value',1);
-           set(handles.Coord_y,'String',{'Y'});
+        [FieldList,ColorList]=calc_field;
+        set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
+        set(handles_Fields,'Value',2) % set menu to 'velocity
+        set(handles.ColorScalar,'Value',1)
+        set(handles.ColorScalar,'String',ColorList)
+        set(handles.Vectors,'Visible','on')
+        set(handles.Coord_x,'Value',1);
+        set(handles.Coord_x,'String',{'X'});
+        set(handles.Coord_y,'Value',1);
+        set(handles.Coord_y,'String',{'Y'});
     case 'netcdf'
         set(handles_Fields,'Value',1)
         set(handles_Fields,'String',{'get_field...'})
         hget_field=get_field(FileName);
         hhget_field=guidata(hget_field);
-        get_field('RUN_Callback',hhget_field.RUN,[],hhget_field); 
-%             set(handles_Fields,'Value',1) % set menu to 'get_field...
-%             set(handles_Fields,'String',{'get_field...'})
-%             col_vec={'get_field...'};
-% 
-%         set(handles.ColorScalar,'String',col_vec)
+        get_field('RUN_Callback',hhget_field.RUN,[],hhget_field);
     otherwise
         set(handles_Fields,'Value',1) % set menu to 'image'
         set(handles_Fields,'String',{'image'})
-                    set(handles.Coord_x,'Value',1);
-           set(handles.Coord_x,'String',{'AX'});
-           set(handles.Coord_y,'Value',1);
-           set(handles.Coord_y,'String',{'AY'});
+        set(handles.Coord_x,'Value',1);
+        set(handles.Coord_x,'String',{'AX'});
+        set(handles.Coord_y,'Value',1);
+        set(handles.Coord_y,'String',{'AY'});
 end
 set(handles.uvmat,'UserData',UvData)
 

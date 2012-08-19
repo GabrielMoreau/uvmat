@@ -140,7 +140,6 @@ end
 %% find the spatial dimensions and vector components 
 ListRole={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','vector_x_tps','vector_y_tps','warnflag','errorflag',...
     'ancillary','image','color','discrete','scalar','coord_tps'};% rmq vector_x_tps and vector_y_tps to be replaced by vector_x and vector_y
-% NbDim=zeros(size(CellVarIndex));%default
 
 for ilist=1:numel(ListRole)
     VarType.(ListRole{ilist})=find(strcmp(ListRole{ilist},Role));
@@ -219,6 +218,8 @@ for icell=1:length(CellVarIndex)
             elseif ~isempty(CellVarType{icell}.coord_x)
                 NbDim(icell)=1;
                 test_coord=1;
+            elseif numel(DimCell)==1
+                NbDim(icell)=0;% set of data without coordinates
             end
         end
         % look for coordinates variables
