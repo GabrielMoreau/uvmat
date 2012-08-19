@@ -206,23 +206,24 @@ UvData.Object={[]};
 %% TRANSFORM menu: builtin fcts
 transform_menu={'';'sub_field';'phys';'phys_polar'};
 UvData.OpenParam.NbBuiltin=numel(transform_menu); %number of functions
-path_list=(num2cell(blanks(UvData.OpenParam.NbBuiltin)))';%initialize a cell array of nbvar blanks
 transform_path=fullfile(path_uvmat,'transform_field');
 path_list{1}='';
-path_list(2:end)=regexprep(path_list(2:end),' ',transform_path); % set transform_path to the path_list
+for ilist=2:UvData.OpenParam.NbBuiltin
+path_list{ilist}=transform_path; % set transform_path to the path_list
+end
 
 %% load the list of previously browsed files in menus Open, Open_1 and transform_fct
  dir_perso=prefdir; % path to the directory .matlab for personal data
  profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmauvmat_perso.mat' in .matlab
  if exist(profil_perso,'file')
      h=load (profil_perso);
-     if isfield(h,'MenuFile')
+     if isfield(h,'MenuFile')% load the menu of previously opened files
          for ifile=1:min(length(h.MenuFile),5)
              eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',h.MenuFile{ifile});'])
              eval(['set(handles.MenuFile_' num2str(ifile) '_1,''Label'',h.MenuFile{ifile});'])
          end
      end
-     if isfield(h,'transform_fct') && iscell(h.transform_fct)
+     if isfield(h,'transform_fct') && iscell(h.transform_fct) % load the menu of transform fct set by user
          for ilist=1:length(h.transform_fct);
              if exist(h.transform_fct{ilist},'file')
                  [path,file]=fileparts(h.transform_fct{ilist});
@@ -232,9 +233,9 @@ path_list(2:end)=regexprep(path_list(2:end),' ',transform_path); % set transform
          end
      end
  end
-transform_menu=[transform_menu;{'more...'}];
-set(handles.transform_fct,'String',transform_menu)
-set(handles.transform_fct,'UserData',path_list)% store the list of path in UserData of ACTION
+transform_menu=[transform_menu;{'more...'}];%append the option more.. to the menu
+set(handles.transform_fct,'String',transform_menu)% display the menu of transform fcts
+set(handles.transform_fct,'UserData',path_list)% store the corresponding list of path in UserData of uicontrol transform_fct
 set(handles.path_transform,'String','')
 set(handles.path_transform,'UserData',[])
 
@@ -3603,10 +3604,12 @@ if strcmp(transform_name,'more...');
     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
     if exist(profil_perso,'file')
         nb_builtin=UvData.OpenParam.NbBuiltin;% number of 'builtin' (basic) transform fcts in uvmat
+        if nb_builtin<numel(list_path)
         for ilist=nb_builtin+1:numel(list_path)
             transform_fct{ilist-nb_builtin}=[fullfile(list_path{ilist},menu{ilist}) '.m'];
         end
         save (profil_perso,'transform_fct','-append'); %store the root name for future opening of uvmat
+        end
     end
 end
 
@@ -4682,9 +4685,6 @@ data=[]; %default
 if isfield(UvData,'CoordType')
     data.CoordType=UvData.CoordType;
 end
-% pos=get(handles.uvmat,'Position');
-% pos(1)=pos(1)+pos(3)-0.311+0.04; %0.311= width of the geometry_calib interface (units relative to the srcreen)
-% pos(2)=pos(2)-0.02;
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 set(handles.view_xml,'Backgroundcolor',[1 1 0])%indicate the reading of the current xml file by geometry_calib

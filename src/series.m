@@ -109,6 +109,12 @@ if isfield(param,'FileName')
         display_file_name(handles,param.FileName,0)
     end
 end  
+if isfield(param,'incr_i')
+    set(handles.num_incr_i,'String',num2str(param.incr_i))
+end
+if isfield(param,'incr_j')
+    set(handles.num_incr_j,'String',num2str(param.incr_j))
+end
 
 %% fields input initialisation
 if isfield(param,'list_fields')&& isfield(param,'index_fields') &&~isempty(param.list_fields) &&~isempty(param.index_fields)
@@ -131,7 +137,7 @@ for ilist=1:length(fct_menu)
 end
 
 %% TRANSFORM menu: loads the information stored in prefdir to initiate  the list of field transform functions
-menu_str={'';'phys';'px';'phys_polar'};
+menu_str={'';'sub_field';'phys';'phys_polar'};
 nb_builtin_transform=numel(menu_str); %number of functions
 [path_uvmat,name,ext]=fileparts(which('uvmat'));
 addpath(fullfile(path_uvmat,'transform_field'))
@@ -147,7 +153,7 @@ for ilist=2:length(menu_str)
 end
 rmpath(fullfile(path_uvmat,'transform_field'))
 
-%% read the list of functions stored in the personal file 'uvmat_perso.mat' in prefdir
+%% read the list of transform functions stored in the personal file 'uvmat_perso.mat' in prefdir
 if test_profil_perso
     if isfield(h,'series_fct') && iscell(h.series_fct)
          for ilist=1:length(h.series_fct)
@@ -213,15 +219,6 @@ if test_batch==0
 else
     set(handles.RunMode,'String',{'local';'background';'cluster'})
 end
-% if isfield(sparam.RunParam,'CivBin')
-%     if ~exist(sparam.RunParam.CivBin,'file')
-%         sparam.RunParam.CivBin=fullfile(path_uvmat,sparam.RunParam.CivBin);
-%     end
-% else
-%     sparam.RunParam.CivBin='';
-% end
-% display the GUI for the default actionname 'check_data_files'
-% ActionName_Callback(hObject, eventdata, handles) 
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
@@ -595,25 +592,6 @@ MinIndex_i=min(find(j_max))-1;% min ref index i
 i_max=max(pair_max,[],2);
 MaxIndex_j=max(find(i_max))-1;% max ref index i
 MinIndex_j=min(find(i_max))-1;% min ref index i
-% i2_min=[];
-% if ~isempty(i2_series)
-%     i2_min=i2_series(1,2,2);
-% end
-% j1_min=[];
-% if ~isempty(j1_series)
-%     j1_min=j1_series(1,2,2);
-% end
-% j2_min=[];
-% if ~isempty(j2_series)
-%     j2_min=j2_series(1,2,2);
-% end
-% if isequal(MinIndex_i,1) &&...
-%         exist (fullfile_uvmat(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},0,i2_min, j1_min,j2_min),'file')
-%     MinIndex_i=0;
-% end
-% j_sum=sum(sum(j1_series,1),1);
-% MaxIndex_j=max(find(j_sum>0))-1;
-% MinIndex_j=min(find(j_sum>0))-1;
 MinIndex=get(handles.MinIndex,'Data');%retrieve the min indices in the table MinIndex
 MaxIndex=get(handles.MaxIndex,'Data');%retrieve the max indices in the table MaxIndex
 MinIndex{iview,1}=MinIndex_i;
@@ -723,33 +701,33 @@ end
 
 %% update time table
 if ~isempty(time)
-TimeTable=get(handles.TimeTable,'Data');
-first_i=str2num(get(handles.num_first_i,'String'));
-last_i=str2num(get(handles.num_last_i,'String'));
-first_j=str2num(get(handles.num_first_j,'String'));
-last_j=str2num(get(handles.num_last_j,'String'));
-MinIndexTable=get(handles.MinIndex,'Data');
-MinIndex_i=MinIndexTable{iview,1};
-MinIndex_j=MinIndexTable{iview,2};
-MaxIndexTable=get(handles.MaxIndex,'Data');
-MaxIndex_i=MaxIndexTable{iview,1};
-MaxIndex_j=MaxIndexTable{iview,2};
-if isempty(MinIndex_j)
-    if MinIndex_i>0
-    TimeTable{iview,1}=time(MinIndex_i);
+    TimeTable=get(handles.TimeTable,'Data');
+    first_i=str2num(get(handles.num_first_i,'String'));
+    last_i=str2num(get(handles.num_last_i,'String'));
+    first_j=str2num(get(handles.num_first_j,'String'));
+    last_j=str2num(get(handles.num_last_j,'String'));
+    MinIndexTable=get(handles.MinIndex,'Data');
+    MinIndex_i=MinIndexTable{iview,1};
+    MinIndex_j=MinIndexTable{iview,2};
+    MaxIndexTable=get(handles.MaxIndex,'Data');
+    MaxIndex_i=MaxIndexTable{iview,1};
+    MaxIndex_j=MaxIndexTable{iview,2};
+    if isempty(MinIndex_j)
+        if MinIndex_i>0
+            TimeTable{iview,1}=time(MinIndex_i);
+        end
+        TimeTable{iview,2}=time(first_i);
+        TimeTable{iview,3}=time(last_i);
+        TimeTable{iview,4}=time(MaxIndex_i);
+    elseif ~isempty(time)
+        if MinIndex_i>0
+            TimeTable{iview,1}=time(MinIndex_i,MinIndex_j);
+        end
+        TimeTable{iview,2}=time(first_i,first_j);
+        TimeTable{iview,3}=time(last_i,last_j);
+        TimeTable{iview,4}=time(MaxIndex_i,MaxIndex_j);
     end
-    TimeTable{iview,2}=time(first_i);
-    TimeTable{iview,3}=time(last_i);
-    TimeTable{iview,4}=time(MaxIndex_i);
-elseif ~isempty(time)
-    if MinIndex_i>0
-    TimeTable{iview,1}=time(MinIndex_i,MinIndex_j);
-    end
-    TimeTable{iview,2}=time(first_i,first_j);
-    TimeTable{iview,3}=time(last_i,last_j);
-    TimeTable{iview,4}=time(MaxIndex_i,MaxIndex_j);
-end
-set(handles.TimeTable,'Data',TimeTable)
+    set(handles.TimeTable,'Data',TimeTable)
 end
 
 %% number of slices
@@ -801,9 +779,11 @@ Position=get(handles.FileStatus,'Position');
 set(handles.FileStatus,'Units','normalized')
 xI=0.5:Position(3)-0.5;
 nbview=numel(SeriesData.i1_series);
+pair_max=cell(1,nbview);
 for iview=1:nbview
-    index_min(iview)=min(find(SeriesData.i1_series{iview}(1,2:end,2:end)>0));
-    index_max(iview)=max(find(SeriesData.i1_series{iview}(1,2:end,2:end)>0));
+    pair_max{iview}=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
+    index_min(iview)=find(pair_max{iview}>0, 1 );
+    index_max(iview)=find(pair_max{iview}>0, 1, 'last' );
 end
 index_min=min(index_min);
 index_max=max(index_max);
@@ -817,7 +797,7 @@ CData=zeros(nbview*range_y,Position(3));
 for iview=1:nbview
     ind_y=1+(iview-1)*range_y:iview*range_y;
     LineData=zeros(1,range_index);
-    x_index=find(SeriesData.i1_series{iview}(1,2:end,2:end)>0)-index_min+1;
+    x_index=find(pair_max{iview}>0)-index_min+1;
     LineData(x_index)=1;
     LineData=interp1(x,LineData,xI,'nearest');
     CData(ind_y,:)=ones(size(ind_y'))*LineData;
