@@ -34,9 +34,6 @@ if ~exist('ParamIn','var')
 end
 ParamOut=ParamIn;%default
 errormsg='';
-% if isfield(ParamIn,'VelType')
-% VelType=ParamIn.VelType;
-% end
 A=[];
 if isstruct(ParamIn)
     if isfield(ParamIn,'FieldName')&& ischar(ParamIn.FieldName)
@@ -51,75 +48,74 @@ if isstruct(ParamIn)
     end
 end
 %% distingush different input file types
-try
-    switch FileType
-        case 'civdata'
-            [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType);
-            if ~isempty(errormsg),errormsg=['read_civdata:' errormsg];return,end
-            ParamOut.CivStage=Field.CivStage;
-        case 'civx'
-            ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
-            [Field,ParamOut.VelType]=read_civxdata(FileName,InputField,ParamIn.VelType);
-            if ~isempty(errormsg),errormsg=['read_civxdata:' errormsg];return,end
-            ParamOut.CivStage=Field.CivStage;
-        case 'netcdf'
-            ListVar={};
-            for ilist=1:numel(InputField)
-                r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
-                if isempty(r)
-                    ListVar=[ListVar InputField(ilist)];
-                    Role{numel(ListVar)}='scalar';
-%                     FieldRequest{numel(ListVar)}='interp_lin';%scalar field (requires interpolation for plot)
-                else
-                    ListVar=[ListVar {r.UName,r.VName}];
-                    Role{numel(ListVar)}='vector_y';
-                    Role{numel(ListVar)-1}='vector_x';
-%                    TODO; introduce that for unstructured coordinates
-%                     switch r.Operator TODO; introduce that for unstructured coordinates
-%                         case 'norm'
-%                             FieldRequest{numel(ListVar)-1}='interp_lin';%scalar field (requires interpolation for plot)
-%                             FieldRequest{numel(ListVar)}='interp_lin';
-%                         otherwise
-%                            FieldRequest{numel(ListVar)-1}='';
-%                     end
-                end
-            end
-            if check_colorvar
-                Role{numel(ListVar)}='ancillary';% scalar used for color vector (not projected)
-            end
-            [Field,var_detect,ichoice]=nc2struct(FileName,[ParamIn.Coord_x ParamIn.Coord_y ListVar]);
-            for ivar=1:numel(ListVar)
-                Field.VarAttribute{ivar+2}.Role=Role{ivar};
-%                 Field.VarAttribute{ivar+2}.FieldRequest=FieldRequest{ivar};
-            end
-            
-        case 'video'
-            if strcmp(class(ParamIn),'VideoReader')
-                A=read(ParamIn,num);
+switch FileType
+    case 'civdata'
+        [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType);
+        if ~isempty(errormsg),errormsg=['read_civdata / ' errormsg];return,end
+        ParamOut.CivStage=Field.CivStage;
+    case 'civx'
+        ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
+        [Field,ParamOut.VelType,errormsg]=read_civxdata(FileName,InputField,ParamIn.VelType);
+        if ~isempty(errormsg),errormsg=['read_civxdata / ' errormsg];return,end
+        ParamOut.CivStage=Field.CivStage;
+    case 'netcdf'
+        ListVar={};
+        for ilist=1:numel(InputField)
+            r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
+            if isempty(r)
+                ListVar=[ListVar InputField(ilist)];
+                Role{numel(ListVar)}='scalar';
+                %                     FieldRequest{numel(ListVar)}='interp_lin';%scalar field (requires interpolation for plot)
             else
-                ParamOut=VideoReader(FileName);
-                A=read(ParamOut,num);
+                ListVar=[ListVar {r.UName,r.VName}];
+                Role{numel(ListVar)}='vector_y';
+                Role{numel(ListVar)-1}='vector_x';
+                %                    TODO; introduce that for unstructured coordinates
+                %                     switch r.Operator TODO; introduce that for unstructured coordinates
+                %                         case 'norm'
+                %                             FieldRequest{numel(ListVar)-1}='interp_lin';%scalar field (requires interpolation for plot)
+                %                             FieldRequest{numel(ListVar)}='interp_lin';
+                %                         otherwise
+                %                            FieldRequest{numel(ListVar)-1}='';
+                %                     end
             end
-        case 'mmreader'
-            if strcmp(class(ParamIn),'mmreader')
-                A=read(ParamIn,num);
-            else
-                ParamOut=mmreader(FileName);
-                A=read(ParamOut,num);
-            end
-        case 'vol'
-            A=imread(FileName);
-            Npz=size(A,1)/ParamIn.Npy;
-            A=reshape(A',ParamIn.Npx,ParamIn.Npy,Npz);
-            A=permute(A,[3 2 1]);
-        case 'multimage'
-            warning 'off'
-            A=imread(FileName,num);
-        case 'image'
-            A=imread(FileName);
-    end
-catch ME
-    errormsg=[FileType ' input: ' ME.message];
+        end
+        if check_colorvar
+            Role{numel(ListVar)}='ancillary';% scalar used for color vector (not projected)
+        end
+        [Field,var_detect,ichoice]=nc2struct(FileName,[ParamIn.Coord_x ParamIn.Coord_y ListVar]);
+        for ivar=1:numel(ListVar)
+            Field.VarAttribute{ivar+2}.Role=Role{ivar};
+            %                 Field.VarAttribute{ivar+2}.FieldRequest=FieldRequest{ivar};
+        end
+        
+    case 'video'
+        if strcmp(class(ParamIn),'VideoReader')
+            A=read(ParamIn,num);
+        else
+            ParamOut=VideoReader(FileName);
+            A=read(ParamOut,num);
+        end
+    case 'mmreader'
+        if strcmp(class(ParamIn),'mmreader')
+            A=read(ParamIn,num);
+        else
+            ParamOut=mmreader(FileName);
+            A=read(ParamOut,num);
+        end
+    case 'vol'
+        A=imread(FileName);
+        Npz=size(A,1)/ParamIn.Npy;
+        A=reshape(A',ParamIn.Npx,ParamIn.Npy,Npz);
+        A=permute(A,[3 2 1]);
+    case 'multimage'
+        warning 'off'
+        A=imread(FileName,num);
+    case 'image'
+        A=imread(FileName);
+end
+if ~isempty(errormsg)
+    errormsg=[FileType ' input: ' errormsg];
     return
 end
 

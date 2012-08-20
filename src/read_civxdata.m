@@ -52,11 +52,11 @@ Field=[];
 VelTypeOut=[];
 DataTest=nc2struct(filename,'ListGlobalAttribute','Conventions','CivStage');
 if isfield(DataTest,'Txt')
-    errormsg=['nc2struct:' DataTest.Txt]; 
+    errormsg=['nc2struct / ' DataTest.Txt]; 
     return
 elseif isequal(DataTest.Conventions,'uvmat/civdata')%test for new civ format
      [Field,VelTypeOut,errormsg]=read_civdata(filename,FieldNames,VelType,DataTest.CivStage);
-      if ~isempty(errormsg),errormsg=['read_civdata:' errormsg];end
+      if ~isempty(errormsg),errormsg=['read_civdata / ' errormsg];end
      return
 end
     
@@ -76,7 +76,7 @@ VelTypeOut=VelType;%default
 [var,role,units,vel_type_out_cell]=varcivx_generator(FieldNames,VelType);%determine the names of constants and variables to read
 [Field,vardetect,ichoice]=nc2struct(filename,var);%read the variables in the netcdf file
 if isfield(Field,'Txt')
-    errormsg=['nc2struct:' Field.Txt];
+    errormsg=['nc2struct / ' Field.Txt];
     return
 end
 if vardetect(1)==0
@@ -96,7 +96,7 @@ end
 %% adjust for Djui:
 if isfield(Field,'DjUi')
     Field.ListVarName{end-3}='DjUi';
-    Field.VarDimName{end-3}=[Field.VarDimName{end-3} {'nb_coord'} {'nb-coord'}];
+    Field.VarDimName{end-3}=[Field.VarDimName{end-3} {'nb_coord'} {'nb_coord'}];
     Field.ListVarName(end-2:end)=[];
     Field.VarDimName(end-2:end)=[];
     Field.VarAttribute(end-2:end)=[];
@@ -185,8 +185,8 @@ Field.CoordUnit='pixel';
 % [var,role,units,vel_type_out]=varcivx_generator(FieldNames,vel_type) 
 %INPUT:
 % FieldNames =cell of field names to get, which can contain the strings:
-%             'ima_cor': image correlation, vec_c or vec2_C
-%             'vort','div','strain': requires velocity derivatives DUDX...
+%             'C': image correlation, vec_c or vec2_C
+%             'curl','div','strain': requires velocity derivatives DUDX...
 %             'error': error estimate (vec_E or vec2_E)
 %             
 % vel_type: character string indicating the types of velocity fields to read ('civ1','civ2'...)
@@ -198,18 +198,14 @@ function [var,role,units,vel_type_out]=varcivx_generator(FieldNames,vel_type)
 %% default input values
 if ~exist('vel_type','var'),vel_type=[];end;
 if iscell(vel_type),vel_type=vel_type{1}; end;%transform cell to string if needed
-if ~exist('FieldNames','var'),FieldNames={'ima_cor'};end;%default scalar 
+if ~exist('FieldNames','var'),FieldNames={'C'};end;%default scalar 
 if ischar(FieldNames), FieldNames={FieldNames}; end;
 
 %% select the priority order for automatic vel_type selection
 testder=0;
 for ilist=1:length(FieldNames)
-    if ~isempty(FieldNames{ilist})
-    switch FieldNames{ilist}
-        case {'vort','div','strain'}
-            testder=1;
-    end
-    end
+        testder=~isempty(regexp(FieldNames{ilist},'(^curl|^div|strain)', 'once'));%test need for derivatives
+        if testder, break;end
 end      
 if isempty(vel_type) || isequal(vel_type,'*') %undefined velocity type (civ1,civ2...)
     if testder
@@ -260,14 +256,14 @@ C2='';
 for ilist=1:length(FieldNames)
     if ~isempty(FieldNames{ilist})
     switch FieldNames{ilist}
-        case 'ima_cor' %image correlation corresponding to a vel vector
+        case 'C' %image correlation corresponding to a vel vector
             C1='vec_C';
             C2='vec2_C';
         case 'error'
             C1='vec_E';
             C2='vec2_E';
-        case {'vort','div','strain'}
-            testder=1;
+        otherwise
+          testder=~isempty(regexp(FieldNames{ilist},'(^curl|^div|strain)', 'once'));%test need for derivatives
     end
     end
 end      

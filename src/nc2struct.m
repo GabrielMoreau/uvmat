@@ -95,9 +95,8 @@ if ~isequal(hhh,'')
     [ndims,nvars,ngatts]=netcdf.inq(nc);%nbre of dimensions, variables, global attributes, in the netcdf file
     
     %%  -------- read all global attributes (constants)-----------
-    att_key={};%default
-%     iatt_g=0;
     Data.ListGlobalAttribute={};%default
+    att_key=cell(1,ngatts);%default
     for iatt=1:ngatts
         keystr= netcdf.inqAttName(nc,netcdf.getConstant('NC_GLOBAL'),iatt-1);
         valuestr = netcdf.getAtt(nc,netcdf.getConstant('NC_GLOBAL'),keystr);
@@ -116,14 +115,14 @@ if ~isequal(hhh,'')
             att_key{iatt}=keystr;
         catch ME
             att_key{iatt}=['attr_' num2str(iatt)];
-            eval(['Data.' att_key{iatt} '=[];'])
+            Data.(att_key{iatt})=[];
         end
     end
     Data.ListGlobalAttribute=att_key;
 
     %%  -------- read dimension names-----------
-    ListDimNameNetcdf={};
-    dim_value=[];
+    ListDimNameNetcdf=cell(1,ndims);
+    dim_value=zeros(1,ndims);
     for idim=1:ndims %loop on the dimensions of the netcdf file
         [ListDimNameNetcdf{idim},dim_value(idim)] = netcdf.inqDim(nc,idim-1);%get name and value of each dimension
     end
@@ -132,9 +131,9 @@ if ~isequal(hhh,'')
     end
  
     %%  -------- read names of variables -----------
-    ListVarNameNetcdf={}; %default
-    dimids={};
-    nbatt=[];
+    ListVarNameNetcdf=cell(1,nvars); %default
+    dimids=cell(1,nvars);
+    nbatt=zeros(1,nvars);
     for ncvar=1:nvars %loop on the variables of the netcdf file
         %get name, type, dimensions and attribute numbers of each variable 
         [ListVarNameNetcdf{ncvar},xtype,dimids{ncvar},nbatt(ncvar)] = netcdf.inqVar(nc,ncvar-1);
@@ -145,14 +144,13 @@ if ~isequal(hhh,'')
         Data.ListVarName=ListVarNameNetcdf;
     else   %select input variables, if requested by the input ListVarName
         ind_remove=[];
-        for ivar=1:numel(ListVarName) % check redondancy
-            if ~isempty(find(strcmp(ListVarName{ivar},ListVarName(1:ivar-1))))
-                ind_remove=[ind_remove ivar];
+        check_keep=ones(1,size(ListVarName,2));
+        for ivar=1:size(ListVarName,2) % check redondancy of variable names
+            if ~isempty(find(strcmp(ListVarName{1,ivar},ListVarName(1:ivar-1)), 1))
+                check_keep(ivar)=0;% the variable #ivar is already in the list
             end
         end
-        if ~isempty(ind_remove)
-            ListVarName(ind_remove)=[];
-        end           
+        ListVarName=ListVarName(:,logical(check_keep));          
         sizvar=size(ListVarName);
         testmulti=(sizvar(1)>1);%test for multiple choice of variable ranked by order of priority
         var_index=zeros(1,sizvar(2));%default

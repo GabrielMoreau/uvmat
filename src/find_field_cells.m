@@ -224,7 +224,6 @@ for icell=1:length(CellVarIndex)
         end
         % look for coordinates variables
         coord=zeros(1,numel(DimCell));%default
-        %     if NbDim(icell)==0 && ~isempty(VarDimName)% no unstructured coordinate found
         if  ~test_coord && ~isempty(VarDimName)
             for idim=1:numel(DimCell)   %loop on the dimensions of the variables in cell #icell
                 ind_coord=find(strcmp(DimCell{idim},VarDimName));

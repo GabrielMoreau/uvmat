@@ -2062,7 +2062,7 @@ if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamIn.FieldName,'velocity')&&
 end
 [Field{1},ParamOut,errormsg] = read_field(FileName,UvData.FileType{1},ParamIn,frame_index);
 if ~isempty(errormsg)
-    errormsg=['uvmat/refresh_field/read_field: ' FileName ': ' errormsg];
+    errormsg=['uvmat / refresh_field / read_field( ' FileName ') / ' errormsg];
     return
 end  
 if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
@@ -2395,7 +2395,7 @@ if ~isempty(errormsg)
 end
 [CellVarIndex,NbDim,VarType,errormsg]=find_field_cells(UvData.Field);% analyse  the input field structure
 if ~isempty(errormsg)
-    errormsg=['error in uvmat/refresh_field/find_field_cells: ' errormsg];% display error
+    errormsg=['uvmat /refresh_field / find_field_cells / ' errormsg];% display error
     return
 end
 [NbDim,imax]=max(NbDim);% spatial dimension of the input field
@@ -2403,7 +2403,7 @@ if isfield(UvData.Field,'NbDim')
     NbDim=UvData.Field.NbDim;% deal with plane fields containing z coordinates
 end
 
-%% get bounds and mesh (needed for mouse action and to open set_object)
+%% get bounds and mesh (needed  to propose default options for projection objects)
 if NbDim>1
     XName=''; %default
     YName='';
@@ -2411,7 +2411,6 @@ if NbDim>1
     if ~isempty(VarType{imax}.coord_x)&&~isempty(VarType{imax}.coord_y)
         XName=UvData.Field.ListVarName{VarType{imax}.coord_x};
         YName=UvData.Field.ListVarName{VarType{imax}.coord_y};
-        %nbvec=length(UvData.Field.(XName));%nbre of measurement points (e.g. vectors)
         test_x=1;%test for unstructured coordinates
         if ~isempty(VarType{imax}.coord_z)
             ZName=UvData.Field.ListVarName{VarType{imax}.coord_z};
@@ -2424,7 +2423,6 @@ if NbDim>1
         if NbDim> 1 && VarType{imax}.coord(NbDim-1)>0
             YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
         end
-        % VarIndex=CellVarIndex{imax}; % list of variable indices
         DimIndex=VarDimIndex{CellVarIndex{imax}(1)}; %list of dim indices for the variable
         nbpoints_x=DimValue(DimIndex(NbDim));
         XMax=nbpoints_x;%default
