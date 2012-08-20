@@ -62,7 +62,7 @@ if ~exist('Param','var') % case with no input parameter
         return
 end
 
-%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
+%%%%%%%%%%%% STANDARD PART  %%%%%%%%%%%%
 %% select different modes,  RUN, parameter input, BATCH
 % BATCH  case: read the xml file for batch case
 if ischar(Param)
@@ -86,18 +86,15 @@ RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
-
-% get the set of input file names (cell array filecell), and the lists of
-% input file or frame indices i1_series,i2_series,j1_series,j2_series
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-% filecell{iview,fileindex}: cell array representing the list of file names
+%%%%%%%%%%%%
+% The cell array filecell is the list of input file names, while
+% filecell{iview,fileindex}:
 %        iview: line in the table corresponding to a given file series
 %        fileindex: file index within  the file series, 
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-% set of frame indices used for movie or multimage input 
-% numbers of slices and file indices
-
+%%%%%%%%%%%%
 NbSlice=1;%default
 if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
     NbSlice=Param.IndexRange.NbSlice;
@@ -137,7 +134,7 @@ if size(time,1)>1
 end
 
 %% coordinate transform or other user defined transform
-transform_fct='';%default
+transform_fct=[];%default
 if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
     addpath(Param.FieldTransform.TransformPath)
     transform_fct=str2func(Param.FieldTransform.TransformName);
@@ -147,7 +144,7 @@ end
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE
 
-%% check the validity of  input file types
+%% check the validity of  ctinput file types
 if CheckImage{1}
     FileExtOut='.png'; % write result as .png images for image inputs
 elseif CheckNc{1}
@@ -161,12 +158,6 @@ if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
     return
 end
 NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
-% if NbSlice~=nbfield_j
-%     answer=_uvmat('INPUT_Y-N',['will not average slice by slice: for so cancel and set NbSlice= ' num2str(nbfield_j)]);
-%     if ~strcmp(answer,'Yes')
-%         return
-%     end
-% end
 if checkrun==1
     return % stop here for input checks
 end
@@ -188,28 +179,6 @@ if nbview==2
         end
     end
 end
-%%% TO UPDATE
-if isequal(InputFields{1},'get_field...')
-    hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
-    if numel(hget_field)>1
-        delete(hget_field(2:end)) % delete multiple occurerence of the GUI get_fioeld
-    elseif isempty(hget_field)
-        filename=filecell{1,1};
-      % filename=name_generator(filebase{1},i1_series{1}(1),j1_series{1}(1),FileExt{1},NomType{1},1,i2_series{1}(1),num_j2{1}(1),SubDir{1}); 
-       idetect(iview)=exist(filename,'file');
-       hget_field=get_field(filename);
-       return
-    end
-    SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
-    if isempty(SubField)
-        delete(hget_field)
-        filename=filecell{1,1};
-       %filename=name_generator(filebase{1},i1_series{1}(1),j1_series{1}(1),FileExt{1},NomType{1},1,i2_series{1}(1),j2_series{1}(1),SubDir{1});
-        hget_field=get_field(filename);
-        SubField=read_get_field(hget_field); %read the names of the variables to plot in the get_field GUI
-    end
-end
-%%%%%%%
 
 %% Initiate output fields
 %initiate the output structure as a copy of the first input one (reproduce fields)
@@ -254,16 +223,14 @@ for i_slice=1:NbSlice
         else
             stopstate='queue';
         end
-        
-        %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
         if isequal(stopstate,'queue')% enable STOP command
             Data=cell(1,nbview);%initiate the set Data
             nbtime=0;
             dt=[];
-            % loop on views (in case of multiple input series)
+            %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
             for iview=1:nbview
                 % reading input file(s)
-                [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
+                [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
                 if ~isempty(errormsg)
                     errormsg=['time_series/read_field/' errormsg];
                     display(errormsg)
@@ -279,26 +246,41 @@ for i_slice=1:NbSlice
                 end
             end
             
+            Field=Data{1}; % default input field structure
             % coordinate transform (or other user defined transform)
             if ~isempty(transform_fct)
-                if nbview==2
-                    [Data{1},Data{2}]=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
-                    if isempty(Data{2})
-                        Data(2)=[];
-                    end
-                else
-                    Data{1}=transform_fct(Data{1},XmlData{1});
+                switch nargin(transform_fct)
+                    case 4
+                        if length(Data)==2
+                            Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
+                        else
+                            Field=transform_fct(Data{1},XmlData{1});
+                        end
+                    case 3
+                        if length(Data)==2
+                            Field=transform_fct(Data{1},XmlData{1},Data{2});
+                        else
+                            Field=transform_fct(Data{1},XmlData{1});
+                        end
+                    case 2
+                        Field=transform_fct(Data{1},XmlData{1});
+                    case 1
+                        Field=transform_fct(Data{1});
                 end
             end
             
-            % field substration (for two input file series)
-            if length(Data)==2
-                [Field,errormsg]=sub_field(Data{1},Data{2}); %substract the two fields
-            else
-                Field=Data{1};
+            % calculate tps coefficients if needed
+            if isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'filter')
+                Field=calc_tps(Field,check_proj_tps);
             end
+            
+            %field projection on an object
             if Param.CheckObject
                 [Field,errormsg]=proj_field(Field,Param.ProjObject);
+                if ~isempty(errormsg)
+                    msgbox_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg])
+                    return
+                end
             end
             nbfile=nbfile+1;
             

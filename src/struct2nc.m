@@ -97,8 +97,8 @@ if testattr
         if isstruct(VarAttribute{ivar})
             attr_names=fields(VarAttribute{ivar});
             for iattr=1:length(attr_names)
-                eval(['attr_val=VarAttribute{ivar}.' attr_names{iattr} ';']);
-                if ~isempty(attr_names{iattr})&& ~isempty(attr_val)
+                attr_val=VarAttribute{ivar}.(attr_names{iattr});
+                if ~isempty(attr_names{iattr})&& ~isempty(attr_val)&&~iscell(attr_val)
                     netcdf.putAtt(nc,varid(ivar),attr_names{iattr},attr_val);
                 end
             end

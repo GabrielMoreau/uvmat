@@ -67,10 +67,11 @@ guidata(hObject, handles);
 %default initial parameters
 drawnow
 set(hObject,'Units','pixels')
+set(handles.PairString,'ColumnName',{'pairs'})
 set(handles.PairString,'ColumnEditable',logical(0))
 set(handles.PairString,'ColumnFormat',{'char'})
-set(handles.PairString,'ColumnWidth',{60})
 set(handles.PairString,'Data',{''})
+series_ResizeFcn(hObject, eventdata, handles)%resize table according to series GUI size
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%allows mouse action with right button (zoom for uicontrol display)
 dir_perso=prefdir;
 test_profil_perso=0;
@@ -91,11 +92,11 @@ if ~exist('param','var')
 end
 
 %% file name and browser initialisation
-if isfield(param,'menu_coord_str')
-    set(handles.TransformName,'String',param.menu_coord_str)
+if isfield(param,'transform_str')
+    set(handles.TransformName,'String',param.transform_str)
 end
-if isfield(param,'menu_coord_val')
-    set(handles.TransformName,'Value',param.menu_coord_val);
+if isfield(param,'transform_val')
+    set(handles.TransformName,'Value',param.transform_val);
 else
      set(handles.TransformName,'Value',1);%default
 end
@@ -120,7 +121,14 @@ end
 if isfield(param,'list_fields')&& isfield(param,'index_fields') &&~isempty(param.list_fields) &&~isempty(param.index_fields)
     set(handles.FieldName,'String',param.list_fields);% list menu fields
     set(handles.FieldName,'Value',param.index_fields);% selected string index
-%     FieldCell{1}=param.list_fields{param.index_fields};
+end
+if isfield(param,'Coord_x_str')&& isfield(param,'Coord_x_val')
+        set(handles.Coord_x,'String',param.Coord_x_str);% list menu fields
+    set(handles.Coord_x,'Value',param.Coord_x_val);% selected string index
+end
+if isfield(param,'Coord_y_str')&& isfield(param,'Coord_y_val')
+        set(handles.Coord_y,'String',param.Coord_y_str);% list menu fields
+    set(handles.Coord_y,'Value',param.Coord_y_val);% selected string index
 end
 
 %loads the information stored in prefdir to initiate  the list of ActionName functions
@@ -584,14 +592,29 @@ end
 set(handles.OutputSubDir,'String',SubDirOut)
 
 %% display the min and max indices for the file series
+if size(i1_series,2)==1
+    MinIndex_j=1;
+    MaxIndex_j=1; 
+    MinIndex_i=min(find(i1_series));
+    MaxIndex_i=max(find(i1_series));
+else
 pair_max=squeeze(max(i1_series,[],1)); %max on pair index
 j_max=max(pair_max,[],1);
 %i_sum=sum(sum(i1_series,2),1);%sum of i1_series on the last index
 MaxIndex_i=max(find(j_max))-1;% max ref index i
 MinIndex_i=min(find(j_max))-1;% min ref index i
+diff_i_max=diff(j_max);
+    if isequal (diff_i_max,diff_i_max(1)*ones(size(diff_i_max)))
+        set(handles.num_incr_i,'String',num2str(diff_i_max(1)))
+    end
 i_max=max(pair_max,[],2);
 MaxIndex_j=max(find(i_max))-1;% max ref index i
 MinIndex_j=min(find(i_max))-1;% min ref index i
+diff_j_max=diff(i_max);
+    if isequal (diff_j_max,diff_j_max(1)*ones(size(diff_j_max)))
+        set(handles.num_incr_j,'String',num2str(diff_j_max(1)))
+    end
+end
 MinIndex=get(handles.MinIndex,'Data');%retrieve the min indices in the table MinIndex
 MaxIndex=get(handles.MaxIndex,'Data');%retrieve the max indices in the table MaxIndex
 MinIndex{iview,1}=MinIndex_i;
@@ -610,11 +633,15 @@ if isempty(first_i)
     first_i=ref_i;
 elseif first_i < MinIndex_i
     first_i=MinIndex_i;
+elseif first_i >MaxIndex_i
+    first_i=MinIndex_i;
 end
 first_j=str2num(get(handles.num_first_j,'String'));
 if isempty(first_j)
     first_j=ref_j;
 elseif first_j<MinIndex_j
+    first_j=MinIndex_j;
+elseif first_j >MaxIndex_j
     first_j=MinIndex_j;
 end
 last_i=str2num(get(handles.num_last_i,'String'));
@@ -622,19 +649,23 @@ if isempty(last_i)
     last_i=ref_i;
 elseif last_i > MaxIndex_i
     last_i=MaxIndex_i;
+elseif last_i<first_i
+    last_i=first_i;
 end
 last_j=str2num(get(handles.num_first_j,'String'));
 if isempty(last_j)
     last_j=ref_j;
 elseif last_j>MaxIndex_j
     last_j=MaxIndex_j;
+elseif last_i<first_i
+    last_i=first_i;
 end
 set(handles.num_first_i,'String',num2str(first_i)); 
 set(handles.num_first_j,'String',num2str(first_j));
 set(handles.num_last_i,'String',num2str(last_i)); 
 set(handles.num_last_j,'String',num2str(last_j));
 
-%% read timing and total frame number from the current file (movie files) !! may be overrid by xml file
+%% read timing and total frame number from the current file (movie files) may be overrid by xml file
 InputTable=get(handles.InputTable,'Data');
 FileBase=fullfile(InputTable{iview,1},InputTable{iview,3});
 time=[];%default
@@ -643,7 +674,7 @@ if strcmp(InputTable{iview,4},'*')
     if ~isempty(VideoObject)
         imainfo=get(VideoObject);
         time=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames-1)/imainfo.FrameRate)';
-        set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
+       % set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
         ColorType='truecolor';
     elseif ~isempty(imformats(regexprep(InputTable{iview,5},'^.',''))) || isequal(InputTable{iview,5},'.vol')%&& isequal(NomType,'*')% multi-frame image
         if ~isempty(InputTable{iview,2})
@@ -770,7 +801,7 @@ nbview=numel(SeriesData.i1_series);
 pair_max=cell(1,nbview);
 for iview=1:nbview
     pair_max{iview}=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
-    if strcmp(get(handles.num_first_j,'Visible'),'off')
+    if (strcmp(get(handles.num_first_j,'Visible'),'off')&& size(pair_max{iview},2)~=1)
         pair_max{iview}=squeeze(max(pair_max{iview},[],1)); % consider only the i index
     end
     index_min(iview)=find(pair_max{iview}>0, 1 );
@@ -830,142 +861,35 @@ switch FileType
         set(handles.Coord_y,'Value',1);
         set(handles.Coord_y,'String',{'Y'});
     case 'netcdf'
-        set(handles_Fields,'Value',1)
-        set(handles_Fields,'String',{'get_field...'})
+        set(handles.FieldName,'Value',1)
+        set(handles.FieldName,'String',{'get_field...'})
+        if isempty(i2_series)
+            i2=[];
+        else
+            i2=i2_series(1,ref_j+1,ref_i+1);
+        end
+        if isempty(j1_series)
+            j1=[];j2=[];
+        else
+            j1=j1_series(1,ref_j+1,ref_i+1);
+            if isempty(j2_series)
+                j2=[];
+            else
+                j2=j2_series(1,ref_j+1,ref_i+1);
+            end
+        end
+        FileName=fullfile_uvmat(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1_series(1,ref_j+1,ref_i+1),i2,j1,j2);
         hget_field=get_field(FileName);
         hhget_field=guidata(hget_field);
         get_field('RUN_Callback',hhget_field.RUN,[],hhget_field);
     otherwise
-        set(handles_Fields,'Value',1) % set menu to 'image'
-        set(handles_Fields,'String',{'image'})
+        set(handles.FieldName,'Value',1) % set menu to 'image'
+        set(handles.FieldName,'String',{'image'})
         set(handles.Coord_x,'Value',1);
         set(handles.Coord_x,'String',{'AX'});
         set(handles.Coord_y,'Value',1);
         set(handles.Coord_y,'String',{'AY'});
 end
-% %% set default options in menu 'Fields'%% TODO: check VelType 
-% if ~testima
-%     testcivx=0;
-%     if isfield(UvData,'FieldsString') && isequal(UvData.FieldsString,{'get_field...'})% field menu defined as input (from get_field)
-%         set(handles_Fields,'Value',1)
-%         set(handles_Fields,'String',{'get_field...'})
-%         UvData=rmfield(UvData,'FieldsString');
-%     else
-%         Data=nc2struct(FileName,'ListGlobalAttribute','Conventions','absolut_time_T0','civ');
-%         if strcmp(Data.Conventions,'uvmat/civdata') ||( ~isempty(Data.absolut_time_T0)&& ~isequal(Data.civ,0))%if the new input is Civx
-%             FieldList=calc_field;
-%             set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
-%             set(handles_Fields,'Value',2) % set menu to 'velocity'
-%             col_vec=FieldList;
-%             col_vec(1)=[];%remove 'velocity' option for vector color (must be a scalar)
-%             testcivx=1;
-%         end
-%         if ~testcivx
-%             set(handles_Fields,'Value',1) % set menu to 'get_field...
-%             set(handles_Fields,'String',{'get_field...'})
-%             col_vec={'get_field...'};
-%         end
-%         set(handles.ColorScalar,'String',col_vec)
-%     end
-% end
-% set(handles.uvmat,'UserData',UvData)
-% 
-% %% set index navigation options and refresh plots
-% scan_option='i';%default
-% state_j='off'; %default
-% if index==2
-%     if get(handles.scan_j,'Value')
-%         scan_option='j'; %keep the scan option for the second fiel series
-%     end
-%     if strcmp(get(handles.j1,'Visible'),'on')
-%         state_j='on';
-%     end
-% end
-% if ~isempty(j1_series) 
-%         state_j='on';
-%         if isequal(nbfield,1) &&index==1
-%             scan_option='j'; %scan j index by default if nbfield=1                
-%         end 
-% end
-% if isequal(scan_option,'i')
-%      set(handles.scan_i,'Value',1)
-%      scan_i_Callback([],[], handles); 
-% else
-%      set(handles.scan_j,'Value',1)
-%      scan_j_Callback([],[], handles); 
-% end
-% set(handles.scan_j,'Visible',state_j)
-% set(handles.j1,'Visible',state_j)
-% set(handles.j2,'Visible',state_j)
-% set(handles.last_j,'Visible',state_j);
-% set(handles.frame_j,'Visible',state_j);
-% set(handles.j_text,'Visible',state_j);
-% if ~isempty(i2_series)||~isempty(j2_series)
-%     set(handles.CheckFixPair,'Visible','on')
-% elseif index==1
-%     set(handles.CheckFixPair,'Visible','off')
-% end
-% 
-% 
-% mode_Callback(hObject, eventdata, handles)
-% 
-% set(handles.REFRESH,'BackgroundColor',[0.7 0.7 0.7])
-% InputTable=get(handles.InputTable,'Data');
-% check_lines=get(handles.REFRESH,'UserData');
-% 
-% %% check the indices and FileTypes for each series (limited to the new ones to save time)
-% for ind_list=1:length(check_lines)
-%     if  check_lines(ind_list)
-%         InputLine=InputTable(ind_list,:);
-%         detect_idem=strcmp('"',InputLine);% look for '" (repeat of previous data)
-%         detect_idem=detect_idem(detect_idem>0);
-%         if ~isempty (detect_idem)
-%             InputLine(detect_idem)=InputTable(ind_list-1,detect_idem);
-%             set(handles.InputTable,'Data',InputTable)
-%         end
-%         fileinput=fullfile_uvmat(InputLine{1},InputLine{2},InputLine{3},InputLine{5},InputLine{4},1,2,1,2);
-%         %fileinput=name_generator(fullfile(InputLine{1},InputLine{3}),1,1,InputLine{5},InputLine{4},1,2,2,InputLine{2})
-%         %update file series defined by the selected line
-%         [InputTable{ind_list,3},InputTable{(ind_list),4},errormsg]=update_indices(handles,fileinput,ind_list);
-%         if ~isempty(errormsg)
-%                 msgbox_uvmat('ERROR',errormsg)
-%                 return
-%         end
-%     end
-% end
-% set(handles.InputTable,'Data',InputTable)
-% SeriesData=get(handles.series,'UserData');
-% 
-% state_j='off';
-% state_Pairs='off';
-% state_InputFields='off';
-% val=get(handles.ListView,'Value');
-% ListViewString={''};
-% if ~isempty(SeriesData)
-% %     ListViewString={};
-%     for iview=1:size(InputTable,1)
-%         if ~isempty(SeriesData.j1_series{iview})
-%             state_j='on';
-%         end
-%         if ~isempty(SeriesData.i2_series{iview})||~isempty(SeriesData.j2_series{iview})
-%             state_Pairs='on';
-%             ListViewString{iview}=num2str(iview);
-%             if check_lines(iview)
-%                 val=iview;%select the last pair if it is a new entry
-%             end
-%         end
-%         if strcmp(SeriesData.FileType{iview},'civx')||strcmp(SeriesData.FileType{iview},'civdata')
-%             state_InputFields='on';
-%         end
-%     end
-% end
-% set(handles.ListView,'Value',val)
-% set(handles.ListView,'String',ListViewString)
-% if strcmp(state_Pairs,'on')
-%     ListView_Callback(hObject,eventdata,handles)
-% end
-% set(handles.PairString,'Visible',state_Pairs)
-% enable_j(handles,state_j)
 
 %------------------------------------------------------------------------
 function num_first_i_Callback(hObject, eventdata, handles)
@@ -1058,13 +982,25 @@ set(handles.TimeTable,'Data',TimeTable)
 % [tild,index_max(iview)]=max(SeriesData.i1_series{iview}(SeriesData.i1_series{iview}>0));
 % end
 for iview=1:numel(SeriesData.i1_series)
-    index_min(iview)=min(find(SeriesData.i1_series{iview}(1,2:end,2:end)>0));
-    index_max(iview)=max(find(SeriesData.i1_series{iview}(1,2:end,2:end)>0));
+    pair_max{iview}=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
+    if (strcmp(get(handles.num_first_j,'Visible'),'off')&& size(pair_max{iview},2)~=1)
+        pair_max{iview}=squeeze(max(pair_max{iview},[],1)); % consider only the i index
+    end
+    pair_max{iview}=reshape(pair_max{iview},1,[]);
+    index_min(iview)=find(pair_max{iview}>0, 1 );
+    index_max(iview)=find(pair_max{iview}>0, 1, 'last' );
 end
 [index_min,iview_min]=min(index_min);
 [index_max,iview_max]=min(index_max);
-index_first=(ref_i(1)-1)*(size(SeriesData.i1_series{iview_min},2)-1)+ref_j(1);
-index_last=(ref_i(2)-1)*(size(SeriesData.i1_series{iview_max},2)-1)+ref_j(2);
+if size(SeriesData.i1_series{iview_min},2)==1% movie
+  index_first=ref_i(1);
+  index_last=ref_i(2);
+else
+%index_first=(ref_i(1)-1)*(size(SeriesData.i1_series{iview_min},2)-1)+ref_j(1);
+%index_last=(ref_i(2)-1)*(size(SeriesData.i1_series{iview_max},2)-1)+ref_j(2);
+index_first=(ref_i(1))*(size(SeriesData.i1_series{iview_min},2))+ref_j(1)+1;
+index_last=(ref_i(2))*(size(SeriesData.i1_series{iview_max},2))+ref_j(2)+1;
+end
 range=index_max-index_min+1;
 coeff_min=(index_first-index_min)/range;
 coeff_max=(index_last-index_min+1)/range;
@@ -1333,13 +1269,17 @@ set(handles.ref_i_text,'Visible',state)
 %-----------------------------------
 function enable_j(handles,state)
 set(handles.j_txt,'Visible',state)
-% set(handles.num_MinIndex_j,'Visible',state)
 set(handles.num_first_j,'Visible',state)
 set(handles.num_last_j,'Visible',state)
 set(handles.num_incr_j,'Visible',state)
-% set(handles.num_MaxIndex_j,'Visible',state)
 set(handles.num_ref_j,'Visible',state)
 set(handles.ref_j_text,'Visible',state)
+% if strcmp(state,'off')
+%     set(handles.MinIndex,'ColumnName',{'imax'})
+% set(handles.MinIndex,'ColumnEditable',logical(0))
+% else
+%         set(handles.MinIndex,'ColumnName',{'imax','jmax'})
+% end
 
 
 %%%%%%%%%%%%%%%%%%%%
@@ -2066,25 +2006,49 @@ commandwindow; %brings the Matlab command window to the front
 % --- Executes on selection change in RunMode.
 function RunMode_Callback(hObject, eventdata, handles)
 
-
-% --- Executes on selection change in popupmenu14.
-function popupmenu14_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu14 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu14 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu14
+% --- Executes on selection change in Coord_x.
+function Coord_x_Callback(hObject, eventdata, handles)
 
 
-% --- Executes during object creation, after setting all properties.
-function popupmenu14_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu14 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+% --- Executes on selection change in Coord_y.
+function Coord_y_Callback(hObject, eventdata, handles)
 
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+
+
+% --- Executes when series is resized.
+function series_ResizeFcn(hObject, eventdata, handles)
+%% input table
+set(handles.InputTable,'Unit','pixel')
+Pos=get(handles.InputTable,'Position');
+set(handles.InputTable,'Unit','normalized')
+ColumnWidth=round([0.5 0.14 0.14 0.14 0.08]*(Pos(3)-52));
+ColumnWidth=num2cell(ColumnWidth);
+set(handles.InputTable,'ColumnWidth',ColumnWidth)
+
+%% MinIndex and MaxIndex
+set(handles.MinIndex,'Unit','pixel')
+Pos=get(handles.MinIndex,'Position');
+set(handles.MinIndex,'Unit','normalized')
+ColumnWidth=get(handles.MinIndex,'ColumnWidth');
+if numel(ColumnWidth)==2
+    ColumnWidth=num2cell(floor([0.5 0.5]*(Pos(3)-20)));
+else
+    ColumnWidth={Pos(3)-5};
+end    
+set(handles.MinIndex,'ColumnWidth',ColumnWidth)
+set(handles.MaxIndex,'ColumnWidth',ColumnWidth)
+
+%% TimeTable
+set(handles.TimeTable,'Unit','pixel')
+Pos=get(handles.TimeTable,'Position');
+set(handles.TimeTable,'Unit','normalized')
+ColumnWidth=get(handles.TimeTable,'ColumnWidth');
+ColumnWidth=num2cell(floor([0.25 0.25 0.25 0.25]*(Pos(3)-20)));
+set(handles.TimeTable,'ColumnWidth',ColumnWidth)
+
+
+%% PairString
+set(handles.PairString,'Unit','pixel')
+Pos=get(handles.PairString,'Position');
+set(handles.PairString,'Unit','normalized')
+set(handles.PairString,'ColumnWidth',{Pos(3)-5})

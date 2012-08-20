@@ -830,104 +830,90 @@ set(hselect_field,'UserData',Field)
 
 function RUN_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
-% set(handles.RUN,'BackgroundColor',[1 1 0])% mark use of RUN action
-% test_fig=get(handles.SelectFigure,'Value');
-% 
-% % plot requested in uvmat
-% if ~test_fig
-%     inputfile=get(handles.inputfile,'String');
-%     huvmat=findobj(allchild(0),'tag','uvmat');
-%     if isempty(huvmat)
-%         input.InputFile=inputfile;
-%         input.FieldsString={'get_field...'};
-%         uvmat(input)
-%     else
-%         set(huvmat,'Visible','on')%make uvmat visible (bugs can hide it in some cases)
-%         hhuvmat=guidata(huvmat);
-%         set(hhuvmat.Fields,'Value',1)
-%         set(hhuvmat.Fields,'String',{'get_field...'})
-%         uvmat('run0_Callback',hObject,eventdata,hhuvmat); % display field in uvmat
-%     end
-%    
-% % other kind of plot
-% else  %TODO: check and update: add plot on an existing axes
-%     figcell=get(handles.list_fig,'String');
-%     index=get(handles.list_fig,'value');
-%     figstring=figcell{index};
-%     index=get(handles.ACTION,'Value');
-%     list_func=get(handles.ACTION,'UserData');
-%     h_fun=list_func{index};
-%     set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
-%     drawnow
-%     SubField=h_fun(handles.get_field);%handles.figure1 =handles of the GUI get_field
-%     if ~isempty(SubField)
-%         plot_get_field(SubField,handles)
-%     end
-%     browse_fig(handles.list_fig); %update the list of new existing figures
-% end
-% set(handles.RUN,'BackgroundColor',[1 0 0])
+hfield=[];
 huvmat=findobj(allchild(0),'tag','uvmat');
-hhuvmat=guidata(huvmat);
-FieldsMenu=get(hhuvmat.Fields,'String');
-Fields=FieldsMenu{get(hhuvmat.Fields,'Value')};
-check_first=strcmp(Fields,'get_field...'); % =1 if the first field sereis is selected, =0 else
+hseries=findobj(allchild(0),'tag','series');
+check_series=0;
 if ~isempty(huvmat)
-         get_field_GUI=read_GUI(handles.get_field);
-         if isfield(get_field_GUI,'PanelVectors')
-             set(hhuvmat.Coord_x,'value',1)
-             set(hhuvmat.Coord_y,'value',1)
-             set(hhuvmat.Coord_x,'String',{get_field_GUI.PanelVectors.coord_x_vectors})
-             set(hhuvmat.Coord_y,'String',{get_field_GUI.PanelVectors.coord_y_vectors})
-             UName=get_field_GUI.PanelVectors.vector_x;
-             VName=get_field_GUI.PanelVectors.vector_y;
-             menu_str=[{['vec(' UName ',' VName ')']};{UName};{VName};{['norm(' UName ',' VName ')']};{'get_field...'}];
-             menu_color=[{''};{UName};{VName};{['norm(' UName ',' VName ')']}];
-             if check_first
-                  set(hhuvmat.Fields,'Value',1)
-                 set(hhuvmat.Fields,'String',menu_str)
-             else %get_field has been called by Fields_1
-                  set(hhuvmat.Fields_1,'Value',1)
-                 set(hhuvmat.Fields_1,'String',menu_str)
-             end
-             ind_menu=find(strcmp(get_field_GUI.PanelVectors.vec_color,menu_color));
-             if ~isempty(ind_menu)
-             set(hhuvmat.ColorScalar,'Value',ind_menu)
-             else
-                 set(hhuvmat.ColorScalar,'Value',1)
-             end
-               set(hhuvmat.ColorScalar,'String',menu_color)
-         elseif isfield(get_field_GUI,'PanelScalar')
-             set(hhuvmat.Coord_x,'value',1)
-             set(hhuvmat.Coord_y,'value',1)
-             set(hhuvmat.Coord_x,'String',{get_field_GUI.PanelScalar.coord_x_scalar})
-             set(hhuvmat.Coord_y,'String',{get_field_GUI.PanelScalar.coord_y_scalar})
-             AName=get_field_GUI.PanelScalar.scalar;
-             if check_first
-                menu=get(hhuvmat.Fields,'String');
-             else
-                menu=get(hhuvmat.Fields_1,'String'); 
-             end
-             ind_select=find(strcmp(AName,menu));
-             if isempty(ind_select)
-                 menu=[menu(1:end-1);{AName};{'get_field...'}];
-                 ind_select=numel(menu)-1;
-             end   
-             if check_first
-                set(hhuvmat.Fields,'Value',ind_select);
-                set(hhuvmat.Fields,'String',menu);
-             else
-                set(hhuvmat.Fields_1,'Value',ind_select);
-                set(hhuvmat.Fields_1,'String',menu);
-             end
-         end
-         if ~strcmp(get(gcbf,'tag'),'uvmat')%if uvmat is not already active
-         uvmat('run0_Callback',hObject,eventdata,hhuvmat); %refresh uvmat
-         end
+    hh=guidata(huvmat);
+    FieldMenu=get(hh.FieldName,'String');
+    FieldName=FieldMenu{get(hh.FieldName,'Value')};
+    if strcmp(FieldName,'get_field...')
+        hfield=hh.FieldName; %FieldName on uvmat
+    elseif strcmp(get(hh.FieldName_1,'Visible'),'on')
+        FieldMenu=get(hh.FieldName_1,'String');
+        if ~isempty(FieldMenu)
+            FieldName=FieldMenu{get(hh.FieldName_1,'Value')};
+            if strcmp(FieldName,'get_field...')
+                hfield=hh.FieldName_1; %FieldName_1 on uvmat
+            end
+        end
+    end
+end
+if isempty(hfield) && ~isempty(hseries)
+    check_series=1;
+        hh=guidata(hseries);
+    FieldMenu=get(hh.FieldName,'String');
+    FieldName=FieldMenu{get(hh.FieldName,'Value')};
+    if strcmp(FieldName,'get_field...')
+        hfield=hh.FieldName; %FieldName on series
+    else
+       FieldMenu=get(hh.FieldName_1,'String');
+       FieldName=FieldMenu{get(hh.FieldName_1,'Value')};
+       if strcmp(FieldName,'get_field...')
+            hfield=hh.FieldName_1; %FieldName_1 on series
+       end
+    end
+end
+if ~isempty(hfield)
+    get_field_GUI=read_GUI(handles.get_field);
+    if isfield(get_field_GUI,'PanelVectors')
+        set(hh.Coord_x,'value',1)
+        set(hh.Coord_y,'value',1)
+        set(hh.Coord_x,'String',{get_field_GUI.PanelVectors.coord_x_vectors})
+        set(hh.Coord_y,'String',{get_field_GUI.PanelVectors.coord_y_vectors})
+        UName=get_field_GUI.PanelVectors.vector_x;
+        VName=get_field_GUI.PanelVectors.vector_y;
+        menu_str=[{['vec(' UName ',' VName ')']};{UName};{VName};{['norm(' UName ',' VName ')']};{'get_field...'}];
+        menu_color=[{''};{UName};{VName};{['norm(' UName ',' VName ')']}];
+        set(hfield,'Value',1)
+        set(hfield,'String',menu_str)
+        if ~check_series
+            ind_menu=find(strcmp(get_field_GUI.PanelVectors.vec_color,menu_color));
+            if ~isempty(ind_menu)
+                set(hh.ColorScalar,'Value',ind_menu)
+            else
+                set(hh.ColorScalar,'Value',1)
+            end
+            set(hh.ColorScalar,'String',menu_color)
+        end
+    elseif isfield(get_field_GUI,'PanelScalar')
+        set(hh.Coord_x,'value',1)
+        set(hh.Coord_y,'value',1)
+        set(hh.Coord_x,'String',{get_field_GUI.PanelScalar.coord_x_scalar})
+        set(hh.Coord_y,'String',{get_field_GUI.PanelScalar.coord_y_scalar})
+        AName=get_field_GUI.PanelScalar.scalar;
+        menu=get(hfield,'String');
+        ind_select=find(strcmp(AName,menu));
+        if isempty(ind_select)
+            menu=[menu(1:end-1);{AName};{'get_field...'}];
+            ind_select=numel(menu)-1;
+        end 
+        set(hfield,'Value',ind_select);
+        set(hfield,'String',menu);
+    elseif isfield(get_field_GUI,'Panel1Dplot')
+        set(hh.Coord_x,'Value',1)
+        set(hh.Coord_x,'String',{get_field_GUI.Panel1Dplot.abscissa})
+        set(hh.Coord_y,'String',{get_field_GUI.Panel1Dplot.ordinate})
+        set(hh.Coord_y,'Value',1:numel(get_field_GUI.Panel1Dplot.ordinate))
+        set(hfield,'Value',1)
+        set(hfield,'String',[{''};{'get_field...'}])
+    end
+    if  ~check_series && strcmp(get(gcbf,'tag'),'get_field')%get_field is not called by another GUI (uvmat)
+        uvmat('run0_Callback',hObject,eventdata,hh); %refresh uvmat
+    end
 end
 delete(handles.get_field)
-%         set(hhuvmat.Fields,'String',{'get_field...'})
-%         uvmat('run0_Callback',hObject,eventdata,hhuvmat); % display field in uvmat
-%     end
 
 %------------------------------------------------------------------------
 % --- Function for plotting the current subfield

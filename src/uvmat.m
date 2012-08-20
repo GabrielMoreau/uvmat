@@ -8,7 +8,7 @@
 %
 %INPUT:
 % input: input file name (if character chain), or input image matrix to
-% visualize, or Matlab structure representing  netcdf fields (with fields
+% visualize, or Matlab structure representing  netcdf fieldname (with fieldname
 % ListVarName....)
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -41,7 +41,7 @@
 %          .i1_series,.i2_series,.j1_series,.j1_series: series of i1,i2,j1,j2 indices detected in the input dir,set by  the fct find_file_series
 %          .MovieObject: current movie object
 %          .TimeUnit: unit for time
-%          .XmlData: cell array of 1 or 2 structures representing the xml files associated with the input fields (containing timing  and geometry calibration)
+%          .XmlData: cell array of 1 or 2 structures representing the xml files associated with the input fieldname (containing timing  and geometry calibration)
 %          .Field: cell array of 1 or 2 structures representing the current  input field(s)
 %          .PlotAxes: field structure representing the current field plotted  on the main axes  (used for mouse operations)
 %          .HistoAxes: idem for histogram axes
@@ -53,7 +53,7 @@
 % (second field), or by the stored file name .FileName_1, or as an input of uvmat. 
 % 2) These functions call 'uvmat/display_file_name.m' which detects the file series, and fills the file index boxes
 % 3) Then 'uvmat/update_rootinfo.m' Updates information about a new field series (indices to scan, timing, calibration from an xml file)
-% 4) Then fields are opened and visualised by the main sub-function 'uvmat/refresh_field.m'
+% 4) Then fieldname are opened and visualised by the main sub-function 'uvmat/refresh_field.m'
 % The function first reads the name of the input file(s) (one or two) from the edit boxes  of the GUI
 % It then reads the input file(s) with the function read_field.m and perform the following list of operations:
 %
@@ -65,7 +65,7 @@
 %                    |                   |
 %                 Field{1}            Field{2}               
 %                    |                   |                                  
-%                    --->transform fct<---             transform (e.g. phys.m) and combine input fields  
+%                    --->transform fct<---             transform (e.g. phys.m) and combine input fieldname  
 %                            |                                    
 %                        (calc_tps.m)               calculate tps coefficients (for filter projection or spatial derivatives).
 %                            |
@@ -76,7 +76,7 @@
 %              |                          |
 %         UvData.PlotAxes          ViewData.PlotAxes (on view_field)
 %              |                          |
-%       plot_field.m (uvmat)       plot_field.m (view_field)      plot the projected fields
+%       plot_field.m (uvmat)       plot_field.m (view_field)      plot the projected fieldname
 %
 %
 %%%%%%%%%%%%%%    SCALARS: %%%%%%%%%%%%??%%%
@@ -199,8 +199,8 @@ set(hObject,'DeleteFcn',{@closefcn})%
 % set(handles.ListObject,'String',{''})
 % set(handles.ListObject_1,'Value',1)% default: empty projection objectproj_field
 % set(handles.ListObject_1,'String',{''})
-set(handles.Fields,'Value',1)
-set(handles.Fields,'string',{''})
+set(handles.FieldName,'Value',1)
+set(handles.FieldName,'string',{''})
 UvData.Object={[]};
 
 %% TRANSFORM menu: builtin fcts
@@ -293,26 +293,6 @@ if ~isempty(inputfile)
     %%%%%%%
     testinputfield=1;
 end
-
-%% plot input field if exists
-% if testinputfield
-%     %delete drawn objects
-%     hother=findobj(handles.PlotAxes,'Tag','proj_object');%find all the proj objects
-%     for iobj=1:length(hother)
-%         delete_object(hother(iobj))
-%     end  
-%     if isempty(inputfile)
-%         errormsg=refresh_field(handles,[],[],[],[],[],[],{Field});
-%         set(handles.MenuTools,'Enable','on')
-%         set(handles.OBJECT_txt,'Visible','on')
-%         set(handles.edit_object,'Visible','on')
-% %         set(handles.ListObject_1,'Visible','on')
-%         set(handles.frame_object,'Visible','on')
-%         if ~isempty(errormsg)
-%             msgbox_uvmat('ERROR',errormsg)
-%         end
-%     end
-% end
 
 set_vec_col_bar(handles) %update the display of color code for vectors
 
@@ -529,7 +509,7 @@ update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieOb
 % --- Called by action in RootFile edit box
 function SubDir_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-%refresh the menu of input fields
+%refresh the menu of input fieldname
 Fields_Callback(hObject, eventdata, handles);
 % refresh the current field view
 run0_Callback(hObject, eventdata, handles); 
@@ -778,15 +758,15 @@ if ~exist('index','var')
 end
 if index==1
     handles_RootPath=handles.RootPath;
-    handles_Fields=handles.Fields;
+    handles_Fields=handles.FieldName;
 elseif index==2
     handles_RootPath=handles.RootPath_1;
-    handles_Fields=handles.Fields_1;
+    handles_Fields=handles.FieldName_1;
 end
 
 set(handles_RootPath,'BackgroundColor',[1 1 0])
 drawnow
-set(handles.Fields,'UserData',[])% reinialize data from uvmat opening
+set(handles.FieldName,'UserData',[])% reinialize data from uvmat opening
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
 UvData.NewSeries=1; %flag for run0: begin a new series
 UvData.FileName_1='';% name of the current second field (used to detect a  constant field during file scanning)
@@ -989,7 +969,7 @@ if ~isequal(warntext,'')
     msgbox_uvmat('WARNING',warntext);
 end
 
-%% set default options in menu 'Fields'
+%% set default options in menu 'FieldName'
 switch FileType
     case {'civx','civdata'}
         [FieldList,ColorList]=calc_field;
@@ -1425,7 +1405,7 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in runplus: make one step forward and call
-% --- run0. The step forward is along the fields series 1 or 2 depending on 
+% --- run0. The step forward is along the fieldname series 1 or 2 depending on 
 % --- the scan_i and scan_j check box (exclusive each other)
 function runplus_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -1445,7 +1425,7 @@ set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button back to 
 
 %------------------------------------------------------------------------
 % --- Executes on button press in runmin: make one step backward and call
-% --- run0. The step backward is along the fields series 1 or 2 depending on 
+% --- run0. The step backward is along the fieldname series 1 or 2 depending on 
 % --- the scan_i and scan_j check box (exclusive each other)
 function runmin_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -1782,8 +1762,8 @@ end
 %% initialisation
 set(handles.movie_pair,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-list_fields=get(handles.Fields,'String');% list menu fields
-index_fields=get(handles.Fields,'Value');% selected string index
+list_fields=get(handles.FieldName,'String');% list menu fields
+index_fields=get(handles.FieldName,'Value');% selected string index
 FieldName=list_fields{index_fields}; % selected field
 UvData=get(handles.uvmat,'UserData');
 if isequal(FieldName,'image')
@@ -1791,8 +1771,8 @@ if isequal(FieldName,'image')
     [RootPath,SubDir,RootFile,FileIndices,Ext]=read_file_boxes(handles);
     NomType=get(handles.NomType,'String');
 else
-    list_fields=get(handles.Fields_1,'String');% list menu fields
-    index_fields=get(handles.Fields_1,'Value');% selected string index
+    list_fields=get(handles.FieldName_1,'String');% list menu fields
+    index_fields=get(handles.FieldName_1,'Value');% selected string index
     FieldName=list_fields{index_fields}; % selected field
     if isequal(FieldName,'image')
         index=2;
@@ -2025,14 +2005,12 @@ end
 %% read the first input field 
 ParamIn.ColorVar='';%default variable name for vector color
 frame_index=1;%default
-% if ~isempty(FileName)
 FieldName='';%default
 VelType='';%default
-%     FileType=UvData.FileType{1};
 switch UvData.FileType{1}
     case {'civx','civdata','netcdf'};
-        list_fields=get(handles.Fields,'String');% list menu fields
-        FieldName= list_fields{get(handles.Fields,'Value')}; % selected field
+        list_fields=get(handles.FieldName,'String');% list menu fields
+        FieldName= list_fields{get(handles.FieldName,'Value')}; % selected field
         if ~strcmp(FieldName,'get_field...')
             if get(handles.FixVelType,'Value')
                 VelTypeList=get(handles.VelType,'String');
@@ -2074,9 +2052,9 @@ if isstruct (ParamIn)
     ParamIn.FieldName=FieldName;
     ParamIn.VelType=VelType;
     XNameMenu=get(handles.Coord_x,'String');
-    ParamIn.CoordName=XNameMenu{get(handles.Coord_x,'Value')};
+    ParamIn.Coord_x=XNameMenu(get(handles.Coord_x,'Value'));
     YNameMenu=get(handles.Coord_y,'String');
-    ParamIn.CoordName={ParamIn.CoordName, YNameMenu{get(handles.Coord_y,'Value')}};
+    ParamIn.Coord_y=YNameMenu(get(handles.Coord_y,'Value'));
 end
 check_tps = 0;         
 if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamIn.FieldName,'velocity')&&~strcmp(ParamIn.FieldName,'get_field...') 
@@ -2114,9 +2092,9 @@ if ~isempty(FileName_1)
     Name=FileName_1;
     switch UvData.FileType{2}
         case {'civx','civdata','netcdf'};
-            list_fields=get(handles.Fields_1,'String');% list menu fields
+            list_fields=get(handles.FieldName_1,'String');% list menu fields
             if ischar(list_fields),list_fields={list_fields};end
-            FieldName_1= list_fields{get(handles.Fields_1,'Value')}; % selected field
+            FieldName_1= list_fields{get(handles.FieldName_1,'Value')}; % selected field
             if ~strcmp(FieldName,'get_field...')
                 if get(handles.FixVelType,'Value')
                     VelTypeList=get(handles.VelType_1,'String');
@@ -2219,19 +2197,19 @@ if (strcmp(UvData.FileType{1},'civx')||strcmp(UvData.FileType{1},'civdata'))&& ~
 else
     set(handles.VelType,'Visible','off')
 end
-% display the Fields menu from the input file and pick the selected one: 
+% display the FieldName menu from the input file and pick the selected one: 
 % if isstruct(ParamOut)
 %     field_index=strcmp(ParamOut.FieldName,ParamOut.FieldList);
-%     set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
-%     set(handles.Fields,'Value',find(field_index,1))
+%     set(handles.FieldName,'String',ParamOut.FieldList); %update the field menu
+%     set(handles.FieldName,'Value',find(field_index,1))
 % end
 
 %% update the display menu for the second velocity type (second menuline)
 test_veltype_1=0;
 if isempty(FileName_1)
-%     set(handles.Fields_1,'Value',1); %update the field menu
+%     set(handles.FieldName_1,'Value',1); %update the field menu
 %     if isstruct(ParamOut)
-%     set(handles.Fields_1,'String',[{''};ParamOut.FieldList]); %update the field menu
+%     set(handles.FieldName_1,'String',[{''};ParamOut.FieldList]); %update the field menu
 %     end
 elseif ~test_keepdata_1
     if (~strcmp(UvData.FileType{2},'netcdf')&&~strcmp(UvData.FileType{2},'civdata')&&~strcmp(UvData.FileType{2},'civx'))|| isequal(FieldName_1,'get_field...')
@@ -2246,10 +2224,10 @@ elseif ~test_keepdata_1
     end
     % update the second field menu: the same quantity
     if isstruct(ParamOut_1)
-    set(handles.Fields_1,'String',[{''};ParamOut_1.FieldList]); %update the field menu
-    % display the Fields menu from the input file and pick the selected one: 
+    set(handles.FieldName_1,'String',[{''};ParamOut_1.FieldList]); %update the field menu
+    % display the FieldName menu from the input file and pick the selected one: 
     field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
-    set(handles.Fields_1,'Value',find(field_index,1)+1)  
+    set(handles.FieldName_1,'Value',find(field_index,1)+1)  
     end
     
 end
@@ -2260,8 +2238,8 @@ else
 end
 
 % field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
-% set(handles.Fields,'String',ParamOut.FieldList); %update the field menu
-% set(handles.Fields,'Value',find(field_index,1))
+% set(handles.FieldName,'String',ParamOut.FieldList); %update the field menu
+% set(handles.FieldName,'Value',find(field_index,1))
     
 %% introduce w as background image by default for a new series (only for nbdim=2)
 if ~isfield(UvData,'NewSeries')
@@ -2276,14 +2254,14 @@ if  UvData.NewSeries && isequal(get(handles.SubField,'Value'),0) && isfield(Fiel
          indices=fullfile_uvmat('','','','',NomType,num_i1,num_i2,num_j1,num_j2);
         set(handles.FileIndex_1,'String',indices)
         set(handles.FileExt_1,'String','"');
-        set(handles.Fields_1,'Visible','on');
-        set(handles.Fields_1,'Visible','on');
+        set(handles.FieldName_1,'Visible','on');
+        set(handles.FieldName_1,'Visible','on');
         set(handles.RootPath_1,'Visible','on')
         set(handles.RootFile_1,'Visible','on')
         set(handles.SubDir_1,'Visible','on');
         set(handles.FileIndex_1,'Visible','on');
         set(handles.FileExt_1,'Visible','on');
-        set(handles.Fields_1,'Visible','on');
+        set(handles.FieldName_1,'Visible','on');
         Field{1}.AName='w';
 end           
 
@@ -2363,7 +2341,7 @@ else
 end
 
 
-%% store the current open names, fields and vel types in uvmat interface 
+%% store the current open names, fieldname and vel types in uvmat interface 
 UvData.FileName_1=FileName_1;
 UvData.ParamOut_1=ParamOut_1;
 if numel(Field)==2
@@ -2588,7 +2566,7 @@ if NbDim<=1
     [PlotType,PlotParamOut]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
     write_plot_param(handles,PlotParamOut) %update the auto plot parameters
     
-%% 2D or 3D fields are generally projected
+%% 2D or 3D fieldname are generally projected
 else
     set(handles.Objects,'Visible','on')
     set(handles.ListObject_1_title,'Visible','on')
@@ -3009,7 +2987,7 @@ if get(handles.SubField,'Value')==0% if the subfield button is desactivated
     set(handles.abs_time_1,'Visible','off')
     set(handles.FileIndex_1,'Visible','off');
     set(handles.FileExt_1,'Visible','off');
-    set(handles.Fields_1,'Value',1);%set to blank state
+    set(handles.FieldName_1,'Value',1);%set to blank state
     set(handles.VelType_1,'Value',1);%set to blank state
     set(handles.num_Opacity,'String','')% desactivate opacity setting
     if ~strcmp(get(handles.VelType,'Visible'),'on')
@@ -3075,11 +3053,11 @@ if isequal(get(handles.NomType_1,'Visible'),'off') || isequal(NomType_1,'"')
     NomType_1=get(handles.NomType,'String');%read FileExt by default
 end
 %------------------------------------------------------------------------
-% --- Executes on menu selection Fields
-function Fields_Callback(hObject, eventdata, handles)
+% --- Executes on menu selection FieldName
+function FieldName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-list_fields=get(handles.Fields,'String');% list menu fields
-index_fields=get(handles.Fields,'Value');% selected string index
+list_fields=get(handles.FieldName,'String');% list menu fields
+index_fields=get(handles.FieldName,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
 if isequal(field,'get_field...')
     set(handles.FixVelType,'visible','off')
@@ -3091,13 +3069,7 @@ if isequal(field,'get_field...')
     if ~isempty(hget_field)
         delete(hget_field)
     end
-    hget_field=get_field(FileName);
-%     set(hget_field,'Name','get_field')
-%     hhget_field=guidata(hget_field);
-%     set(hhget_field.list_fig,'Value',1)
-%     set(hhget_field.list_fig,'String',{'uvmat'})
-  %  set(handles.transform_fct,'Value',1)% no transform by default
-  %  set(handles.path_transform,'String','')
+    get_field(FileName);
     return %no further action
 end
 
@@ -3150,10 +3122,10 @@ set(handles.FileIndex,'String',indices)
 % set(handles.NomType,'String',NomType)
 
 %common to Fields_1_Callback
-list_fields_1=get(handles.Fields_1,'String');% list menu fields
+list_fields_1=get(handles.FieldName_1,'String');% list menu fields
 field_1='';
 if ~isempty(list_fields_1)
-field_1= list_fields_1{get(handles.Fields_1,'Value')}; % selected string
+field_1= list_fields_1{get(handles.FieldName_1,'Value')}; % selected string
 end
 if isequal(field,'image')||isequal(field_1,'image')
     set(handles.TitleNpx,'Visible','on')% visible npx,pxcm... buttons
@@ -3171,8 +3143,8 @@ if ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
 end
 
 %---------------------------------------------------
-% --- Executes on menu selection Fields
-function Fields_1_Callback(hObject, eventdata, handles)
+% --- Executes on menu selection FieldName
+function FieldName_1_Callback(hObject, eventdata, handles)
 %-------------------------------------------------
 %% read input data
 check_new=~get(handles.SubField,'Value'); %check_new=1 if a second field was not previously entered
@@ -3184,10 +3156,10 @@ if isfield(UvData,'Field_1')
     UvData=rmfield(UvData,'Field_1');% remove the stored second field (a new one needs to be read)
 end
 UvData.FileName_1='';% desactivate the use of a constant second file
-list_fields=get(handles.Fields,'String');% list menu fields
-field= list_fields{get(handles.Fields,'Value')}; % selected string
-list_fields=get(handles.Fields_1,'String');% list menu fields
-field_1= list_fields{get(handles.Fields_1,'Value')}; % selected string for the second field
+list_fields=get(handles.FieldName,'String');% list menu fields
+field= list_fields{get(handles.FieldName,'Value')}; % selected string
+list_fields=get(handles.FieldName_1,'String');% list menu fields
+field_1= list_fields{get(handles.FieldName_1,'Value')}; % selected string for the second field
 if isempty(field_1)%||(numel(UvData.FileType)>=2 && strcmp(UvData.FileType{2},'image'))
     set(handles.SubField,'Value',0)
     SubField_Callback(hObject, eventdata, handles)
@@ -4836,53 +4808,50 @@ function MenuSeries_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 series; %first display of the GUI to fill waiting time
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
-param.FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
+Param.FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%first input file name
 if isequal(get(handles.SubField,'Value'),1)
     [RootPath_1,SubDir_1,RootFile_1,FileIndex_1,FileExt_1]=read_file_boxes_1(handles);
     FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
-    if ~isequal(FileName_1,param.FileName)
-        param.FileName_1=FileName_1;
+    if ~isequal(FileName_1,Param.FileName)
+        Param.FileName_1=FileName_1;%second input file name if relevant
     end
 end
-param.NomType=get(handles.NomType,'String');
-param.NomType_1=get(handles.NomType_1,'String');
-param.CheckFixPair=get(handles.CheckFixPair,'Value');
-huvmat=get(handles.MenuSeries,'parent');
-UvData=get(huvmat,'UserData');
+Param.NomType=get(handles.NomType,'String');
+Param.NomType_1=get(handles.NomType_1,'String');
+Param.CheckFixPair=get(handles.CheckFixPair,'Value');
+UvData=get(handles.uvmat,'UserData');
 if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'Time')
-    param.Time=UvData.XmlData{1}.Time;
+    Param.Time=UvData.XmlData{1}.Time;
 end
 if isequal(get(handles.scan_i,'Value'),1)
-    param.incr_i=str2num(get(handles.num_IndexIncrement,'String'));
+    Param.incr_i=str2num(get(handles.num_IndexIncrement,'String'));
 elseif isequal(get(handles.scan_j,'Value'),1)
-    param.incr_j=str2num(get(handles.num_IndexIncrement,'String'));
+    Param.incr_j=str2num(get(handles.num_IndexIncrement,'String'));
 end
-param.list_fields=get(handles.Fields,'String');% list menu fields
-FieldName=param.list_fields{get(handles.Fields,'Value')};
-ind_image=find(strcmp('image',param.list_fields));
-if ~isempty(ind_image) && numel(param.list_fields)>1
-param.list_fields(ind_image)=[]; %suppress  'image' option 
+
+%% transfer fields and coordinate names
+Param.list_fields=get(handles.FieldName,'String');% list menu fields
+FieldName=Param.list_fields{get(handles.FieldName,'Value')};
+ind_image=find(strcmp('image',Param.list_fields));
+if ~isempty(ind_image) && numel(Param.list_fields)>1
+    Param.list_fields(ind_image)=[]; %suppress  'image' option
 end
-param.index_fields=find(strcmp(FieldName,param.list_fields));% selected string index
-% if param.index_fields>1
-%     param.index_fields=param.index_fields-1;
-% end
-param.list_fields_1=get(handles.Fields_1,'String');% list menu fields
-if ischar(param.list_fields_1),param.list_fields_1={param.list_fields_1};end
-FieldName_1=param.list_fields_1{get(handles.Fields_1,'Value')};
-ind_image=find(strcmp('image',param.list_fields_1));
-if ~isempty(ind_image) && numel(param.list_fields_1)>1
-param.list_fields_1(ind_image)=[]; %suppress  'image' option 
+Param.index_fields=find(strcmp(FieldName,Param.list_fields));% selected string index
+Param.list_fields_1=get(handles.FieldName_1,'String');% list menu fields
+if ischar(Param.list_fields_1),Param.list_fields_1={Param.list_fields_1};end
+FieldName_1=Param.list_fields_1{get(handles.FieldName_1,'Value')};
+ind_image=find(strcmp('image',Param.list_fields_1));
+if ~isempty(ind_image) && numel(Param.list_fields_1)>1
+    Param.list_fields_1(ind_image)=[]; %suppress  'image' option
 end
-param.index_fields_1=find(strcmp(FieldName_1,param.list_fields_1));% selected string index
-%param.index_fields=find(strcmp(FieldName,param.list_fields));% selected string index
-% param.index_fields_1=get(handles.Fields_1,'Value')-1;% selected string index
-% if param.index_fields_1>1
-%     param.index_fields_1=param.index_fields_1-1;
-% end
-param.menu_coord_str=get(handles.transform_fct,'String');
-param.menu_coord_val=get(handles.transform_fct,'Value');
-series(param); %run the series interface
+Param.index_fields_1=find(strcmp(FieldName_1,Param.list_fields_1));% selected string index
+Param.transform_str=get(handles.transform_fct,'String');
+Param.transform_val=get(handles.transform_fct,'Value');
+Param.Coord_x_str=get(handles.Coord_x,'String');
+Param.Coord_x_val=get(handles.Coord_x,'Value');
+Param.Coord_y_str=get(handles.Coord_y,'String');
+Param.Coord_y_val=get(handles.Coord_y,'Value');
+series(Param); %run the series interface
 
 %------------------------------------------------------------------------
 % -- open the GUI civ.fig for PIV

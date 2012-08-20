@@ -181,7 +181,6 @@ if nbview==2
 end
 
 %% MAIN LOOP ON SLICES
-%%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 for i_slice=1:NbSlice
     index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
     nbfiles=0;
@@ -195,7 +194,8 @@ for i_slice=1:NbSlice
         else
             stopstate='queue';
         end
-        
+        if isequal(stopstate,'queue')% enable STOP command
+            
         %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
         for iview=1:nbview
             % reading input file(s)
@@ -208,87 +208,42 @@ for i_slice=1:NbSlice
                 Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
             end
         end
-        Field=[]; % initiate the current input field structure
+        else
+            errormsg='stop';
+        end
         %%%%%%%%%%%%%%%% end loop on views (input lines) %%%%%%%%%%%%%%%%
         %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
         % EDIT FROM HERE
-        
+    
         if isempty(errormsg)
-            % coordinate transform (or other user defined transform)
+            Field=Data{1}; % default input field structure
+            %% coordinate transform (or other user defined transform)
             if ~isempty(transform_fct)
-                if nbview==2
-                    [Data{1},Data{2}]=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
-                    if isempty(Data{2})
-                        Data(2)=[];
-                    end
-                else
-                    Data{1}=transform_fct(Data{1},XmlData{1});
+                switch nargin(transform_fct)
+                    case 4
+                        if length(Data)==2
+                            Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
+                        else
+                            Field=transform_fct(Data{1},XmlData{1});
+                        end
+                    case 3
+                        if length(Data)==2
+                            Field=transform_fct(Data{1},XmlData{1},Data{2});
+                        else
+                            Field=transform_fct(Data{1},XmlData{1});
+                        end
+                    case 2
+                        Field=transform_fct(Data{1},XmlData{1});
+                    case 1
+                        Field=transform_fct(Data{1});
                 end
             end
             
-            %% check whether tps is needed, then calculate tps coefficients if needed
-            check_tps=0;
-            if ischar(Param.InputFields.FieldName)
-                Param.InputFields.FieldName={Param.InputFields.FieldName};
+            %% calculate tps coefficients if needed
+            if isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'filter')
+                Field=calc_tps(Field,check_proj_tps);
             end
-            for ilist=1:numel(Param.InputFields.FieldName)
-                switch Param.InputFields.FieldName{ilist}
-                    case {'vort','div','strain'}
-                        check_tps=1;
-                end
-            end
-            if strcmp(Param.ProjObject.ProjMode,'filter')
-                check_tps=1;
-            end
-            if check_tps
-                SubDomain=1500; %default, estimated nbre of vectors in a subdomain used for tps
-                if isfield(Data{iview},'SubDomain')
-                    SubDomain=Data{iview}.SubDomain;%
-                end
-                [Data{iview}.SubRange,Data{iview}.NbSites,Data{iview}.Coord_tps,Data{iview}.U_tps,Data{iview}.V_tps,tild,U_smooth,V_smooth,W_smooth,FF] =...
-                    filter_tps([Data{iview}.X(Data{iview}.FF==0) Data{iview}.Y(Data{iview}.FF==0)],Data{iview}.U(Data{iview}.FF==0),Data{iview}.V(Data{iview}.FF==0),[],SubDomain,0);
-                nbvar=numel(Data{iview}.ListVarName);
-                Data{iview}.ListVarName=[Data{iview}.ListVarName {'SubRange','NbSites','Coord_tps','U_tps','V_tps'}];
-                Data{iview}.VarDimName=[Data{iview}.VarDimName {{'nb_coord','nb_bounds','nb_subdomain'},{'nb_subdomain'},...
-                    {'nb_tps','nb_coord','nb_subdomain'},{'nb_tps','nb_subdomain'},{'nb_tps','nb_subdomain'}}];
-                Data{iview}.VarAttribute{nbvar+3}.Role='coord_tps';
-                Data{iview}.VarAttribute{nbvar+4}.Role='vector_x';
-                Data{iview}.VarAttribute{nbvar+5}.Role='vector_y';
-                if isfield(Data{iview},'ListDimName')%cleaning
-                    Data{iview}=rmfield(Data{iview},'ListDimName');
-                end
-                if isfield(Data{iview},'DimValue')%cleaning
-                    Data{iview}=rmfield(Data{iview},'DimValue');
-                end
-            end
-                 
-            % field calculation (vort, div...)    
-            if strcmp(FileType{1},'civx')||strcmp(FileType{1},'civdata')
-                if isfield(Data{1},'Coord_tps')
-                    Data{1}.FieldList=Param.InputFields.FieldName;
-                else
-                    Data{1}=calc_field(Param.InputFields.FieldName,Data{1});%calculate field (vort..)
-                end
-            end
-         
-            % field substration (for two input file series)
-            if length(Data)==2
-                if strcmp(FileType{2},'civx')||strcmp(FileType{2},'civdata')
-                    if isfield(Data{2},'Coord_tps')
-                        Data{2}.FieldList=Param.InputFields.FieldName;
-                    else
-                        Data{2}=calc_field(Param.InputFields.FieldName,Data{2});%calculate field (vort..)
-                    end
-                end
-                [Field,errormsg]=sub_field(Data{1},Data{2}); %substract the two fields
-                if ~isempty(errormsg)
-                    msgbox_uvmat('ERROR',['error in aver_stat/sub_field:' errormsg])
-                    return
-                end
-            else
-                Field=Data{1};
-            end
-            
+
             %field projection on an object
             if Param.CheckObject
                 [Field,errormsg]=proj_field(Field,Param.ProjObject);
@@ -355,7 +310,7 @@ for i_slice=1:NbSlice
         DataOut.Time_end=time(end,i1_series{end}(end),j1_series{end}(end));
     end
     
-    %writing the result file
+    %writting the result file
     OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),i_slice,[]);
     if CheckImage{1} %case of images
         if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
@@ -380,7 +335,7 @@ end
 
 %% open the result file with uvmat (in RUN mode)
 if checkrun
-    hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
-    delete(hget_field)
+%     hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
+%     delete(hget_field)
     uvmat(OutputFile)% open the last result file with uvmat
 end
