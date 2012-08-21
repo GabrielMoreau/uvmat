@@ -834,6 +834,7 @@ hfield=[];
 huvmat=findobj(allchild(0),'tag','uvmat');
 hseries=findobj(allchild(0),'tag','series');
 check_series=0;
+% look for the status of the GUI uvmat
 if ~isempty(huvmat)
     hh=guidata(huvmat);
     FieldMenu=get(hh.FieldName,'String');
@@ -850,9 +851,10 @@ if ~isempty(huvmat)
         end
     end
 end
+% if no filed data is concerned on uvmat, look at the GUI series
 if isempty(hfield) && ~isempty(hseries)
     check_series=1;
-        hh=guidata(hseries);
+    hh=guidata(hseries);
     FieldMenu=get(hh.FieldName,'String');
     FieldName=FieldMenu{get(hh.FieldName,'Value')};
     if strcmp(FieldName,'get_field...')

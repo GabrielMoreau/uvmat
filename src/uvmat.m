@@ -207,6 +207,7 @@ UvData.Object={[]};
 transform_menu={'';'sub_field';'phys';'phys_polar'};
 UvData.OpenParam.NbBuiltin=numel(transform_menu); %number of functions
 transform_path=fullfile(path_uvmat,'transform_field');
+path_list=cell(UvData.OpenParam.NbBuiltin,1);
 path_list{1}='';
 for ilist=2:UvData.OpenParam.NbBuiltin
 path_list{ilist}=transform_path; % set transform_path to the path_list
