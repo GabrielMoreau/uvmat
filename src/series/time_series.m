@@ -131,6 +131,7 @@ if size(time,1)>1
     if diff_time>0
         displ_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)],checkrun)
     end   
+    time=time(1,:);% choose the time data from the first sequence
 end
 
 %% coordinate transform or other user defined transform
@@ -224,7 +225,7 @@ for i_slice=1:NbSlice
             stopstate='queue';
         end
         if isequal(stopstate,'queue')% enable STOP command
-            Data=cell(1,nbview);%initiate the set Data
+            Data=cell(1,nbview);%initiate the set Data;
             nbtime=0;
             dt=[];
             %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
@@ -232,14 +233,9 @@ for i_slice=1:NbSlice
                 % reading input file(s)
                 [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
                 if ~isempty(errormsg)
-                    errormsg=['time_series/read_field/' errormsg];
+                    errormsg=['time_series / read_field / ' errormsg];
                     display(errormsg)
                     break
-                end
-                timeread(iview)=0;
-                if isfield(Data{iview},'Time')
-                    timeread(iview)=Data{iview}.Time;
-                    nbtime=nbtime+1;
                 end
                 if ~isempty(NbSlice_calib)
                     Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
@@ -278,7 +274,7 @@ for i_slice=1:NbSlice
             if Param.CheckObject
                 [Field,errormsg]=proj_field(Field,Param.ProjObject);
                 if ~isempty(errormsg)
-                    msgbox_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg])
+                    msgbox_uvmat('ERROR',['time_series / proj_field / ' errormsg])
                     return
                 end
             end
@@ -288,14 +284,14 @@ for i_slice=1:NbSlice
             if nbfile==1
                 % stop program if the first field reading is in error
                 if ~isempty(errormsg)
-                    displ_uvmat('ERROR',['error in time_series/sub_field:' errormsg],checkrun)
+                    displ_uvmat('ERROR',['time_series / sub_field / ' errormsg],checkrun)
                     return
                 end
                 DataOut=Field;%default
                 DataOut.NbDim=Field.NbDim+1; %add the time dimension for plots
                 nbvar=length(Field.ListVarName);
                 if nbvar==0
-                    displ_uvmat('ERROR','no input variable selected in get_field',checkrun)
+                    displ_uvmat('ERROR','no input variable selected',checkrun)
                     return
                 end
                 testsum=2*ones(1,nbvar);%initiate flag for action on each variable
@@ -362,14 +358,14 @@ for i_slice=1:NbSlice
             end
             
             % record the time:
-            if isempty(time)% time read in ncfiles
-                if isfield(Field,'Time')
+            if isempty(time)% time not set by xml filer(s)
+                if isfield(Data{1},'Time')
                     DataOut.Time(nbfile,1)=Field.Time;
                 else
                     DataOut.Time(nbfile,1)=index;%default
                 end
             else % time from ImaDoc prevails  TODO: correct
-                DataOut.Time(nbtime,1)=i1_series{1}(index);% TODO : generalise
+                DataOut.Time(nbfile,1)=time(index);%
             end
             
             % record the number of missing input fields
@@ -418,7 +414,7 @@ for i_slice=1:NbSlice
     DataOut.Action=Param.Action;%name of the processing programme
     test_time=diff(DataOut.Time)>0;% test that the readed time is increasing (not constant)
     if ~test_time
-        DataOut.Time=[1:filecounter];
+        DataOut.Time=1:filecounter;
     end
     
     % display nbmissing
