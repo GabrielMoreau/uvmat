@@ -16,17 +16,17 @@ if strcmp(DataIn,'*')
     return
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%
-[CellVarIndex,NbDim,CellVarType,errormsg]=find_field_cells(DataIn);
+[CellInfo,NbDim,errormsg]=find_field_cells(DataIn);
 if ~isempty(errormsg)
     DataOut.Txt=errormsg;
     return
 end
 DataOut.ListVarName={};
 DataOut.VarDimName={};
-for ilist=1:numel(CellVarIndex)
-    if NbDim(ilist)==2 && numel(CellVarType{ilist}.coord)==2 % field with structured coordinates
+for ilist=1:numel(CellInfo)
+    if NbDim(ilist)==2 && numel(CellInfo{ilist}.CoordIndex)==2 % field with structured coordinates
         %process coordinates
-        CoordName=DataIn.ListVarName(CellVarType{ilist}.coord);
+        CoordName=DataIn.ListVarName(CellInfo{ilist}.CoordIndex);
         x1 = DataIn.(CoordName{2}); y1 = DataIn.(CoordName{1});
         [x y] = meshgrid(x1,y1);
         coeff(1,1) = sum(sum(x.^2)); coeff(1,2) = sum(sum(x.*y)); coeff(1,3) = sum(sum(x));
@@ -47,7 +47,7 @@ for ilist=1:numel(CellVarIndex)
             DataOut.ListGlobalAttribute={'CoordUnit'};
         end
         %process scalar
-        ivar=CellVarType{ilist}.scalar(1);
+        ivar=CellInfo{ilist}.VarIndex_scalar(1);
         VarName=DataIn.ListVarName{ivar};
         z=DataIn.(VarName);
         rhs(1) = sum(sum(x.*z)); rhs(2) = sum(sum(y.*z)); rhs(3) = sum(sum(z));
@@ -60,12 +60,10 @@ for ilist=1:numel(CellVarIndex)
         %DataOut.(VarName) = log(spec2);
         DataOut.(VarName) = spec2;
         spec_sum=sum(sum(spec2));
-        kx_mean=sum(sum(spec2.*kx))/spec_sum
-        ky_mean=sum(sum(spec2.*ky))/spec_sum
-        theta=atand(ky_mean/kx_mean)
-        lambda=2*pi/(sqrt(kx_mean*kx_mean+ky_mean*ky_mean))
-        %DataOut.ListVarName=[CoordName {VarName} {'kx'} {'ky'}];%list of variables
-        %DataOut.VarDimName=[CoordName {CoordName} {'one'} {'one'}];%list of dimensions for variables
+        kx_mean=sum(sum(spec2.*kx))/spec_sum;
+        ky_mean=sum(sum(spec2.*ky))/spec_sum;
+        theta=atand(ky_mean/kx_mean);
+        lambda=2*pi/(sqrt(kx_mean*kx_mean+ky_mean*ky_mean));
         
         DataOut.ListVarName=[CoordName {VarName}];%list of variables
         DataOut.VarDimName=[CoordName {CoordName}];%list of dimensions for variables
