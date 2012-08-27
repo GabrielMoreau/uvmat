@@ -346,10 +346,8 @@ if isempty(oldfile)||isequal(oldfile,'') %loads the previously stored file name 
          end
 end
 [FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',oldfile);
+if ~ischar(FileName),return,end %abandon if the browser is cancelled
 fileinput=[PathName FileName];%complete file name 
-if ~exist(fileinput,'file')
-    return %abandon if the browser is cancelled
-end
 
 %% display the selected field and related information
 display_file_name( handles,fileinput)
@@ -396,10 +394,8 @@ function MenuBrowse_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 RootPath=get(handles.RootPath,'String');
 [FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',RootPath);
+if ~ischar(FileName),return,end %abandon if the browser is cancelled
 fileinput_1=[PathName FileName];%complete file name 
-if ~exist(fileinput_1,'file')
-    return %abandon of the browser is cancelled
-end
 
 % refresh the current displayed field
 set(handles.SubField,'Value',1)
@@ -1285,10 +1281,8 @@ if isequal(get(handles.CheckMask,'Value'),1)
             '*.png',  '.png files '; ...
             '*.*', 'All Files (*.*)'}, ...
             'Pick a mask file *.png',FileBase);
+        if ~ischar(FileName),return,end %abandon if the browser is cancelled
         maskname=fullfile(PathName,FileName);
-        if ~exist(maskname,'file')
-            errormsg='no file browsed';
-        end
         [RootDir,SubDir,RootFile,tild,tild,tild,tild,tild,Mask.NomType]=fileparts_uvmat(maskname);
         Mask.Base=fullfile(RootDir,SubDir,RootFile);
         Mask.NbSlice=1;
@@ -2387,107 +2381,63 @@ end
 UvData.Field=calc_tps(UvData.Field,check_proj_tps);
 
 %% analyse input field
-test_x=0;
-test_z=0;% test for unstructured z coordinate
-[errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(UvData.Field);% check the input field structure
-if ~isempty(errormsg)
-    errormsg=['error in uvmat/refresh_field/check_field_structure: ' errormsg];% display error
-    return
-end
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_cells(UvData.Field);% analyse  the input field structure
+%test_x=0;
+%test_z=0;% test for unstructured z coordinate
+%[errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(UvData.Field);% check the input field structure
+% if ~isempty(errormsg)
+%     errormsg=['error in uvmat/refresh_field/check_field_structure: ' errormsg];% display error
+%     return
+% end
+[CellInfo,NbDimArray,errormsg]=find_field_cells(UvData.Field);% analyse  the input field structure
 if ~isempty(errormsg)
     errormsg=['uvmat /refresh_field / find_field_cells / ' errormsg];% display error
     return
 end
-[NbDim,imax]=max(NbDim);% spatial dimension of the input field
+
+NbDim=max(NbDimArray);% spatial dimension of the input field
+imax=find(NbDimArray==NbDim);% indices of field cells to consider
 if isfield(UvData.Field,'NbDim')
-    NbDim=UvData.Field.NbDim;% deal with plane fields containing z coordinates
+    NbDim=double(UvData.Field.NbDim);% deal with plane fields containing z coordinates
 end
+
 
 %% get bounds and mesh (needed  to propose default options for projection objects)
 if NbDim>1
-    XName=''; %default
-    YName='';
-    %unstructured coordinates
-    if ~isempty(VarType{imax}.coord_x)&&~isempty(VarType{imax}.coord_y)
-        XName=UvData.Field.ListVarName{VarType{imax}.coord_x};
-        YName=UvData.Field.ListVarName{VarType{imax}.coord_y};
-        test_x=1;%test for unstructured coordinates
-        if ~isempty(VarType{imax}.coord_z)
-            ZName=UvData.Field.ListVarName{VarType{imax}.coord_z};
-        else
-            NbDim=2;
-        end
-        %structured coordinate
-    elseif numel(VarType)>=imax && numel(VarType{imax}.coord)>=NbDim && VarType{imax}.coord(NbDim)>0
-        XName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim)};
-        if NbDim> 1 && VarType{imax}.coord(NbDim-1)>0
-            YName=UvData.Field.ListVarName{VarType{imax}.coord(NbDim-1)}; %structured coordinates
-        end
-        DimIndex=VarDimIndex{CellVarIndex{imax}(1)}; %list of dim indices for the variable
-        nbpoints_x=DimValue(DimIndex(NbDim));
-        XMax=nbpoints_x;%default
-        XMin=1;%default
-    end
-    
-    if NbDim==3
-        if ~test_x
-            ZName=UvData.Field.ListVarName{VarType{imax}.coord(1)};%structured coordinates in 3D
-        end
-        ZMax=max(UvData.Field.(ZName));
-        ZMin=min(UvData.Field.(ZName));
-        UvData.Field.ZMax=ZMax;
-        UvData.Field.ZMin=ZMin;
-        test_z=1;
-        if isequal(ZMin,ZMax)%no z dependency
-            NbDim=2;
-            test_z=0;
-        end
-    end
-    if ~isempty (XName)
-        XMax=max(max(UvData.Field.(XName)));
-        XMin=min(min(UvData.Field.(XName)));
-        UvData.Field.NbDim=NbDim;
-        UvData.Field.XMax=XMax;
-        UvData.Field.XMin=XMin;
-        if NbDim >1&& ~isempty(YName)
-            YMax=max(max(UvData.Field.(YName)));
-            YMin=min(min(UvData.Field.(YName)));
-            UvData.Field.YMax=YMax;
-            UvData.Field.YMin=YMin;
-        end
-        nbvec=length(UvData.Field.(XName));
-        if test_x %unstructured coordinates
-            if test_z
-                UvData.Field.Mesh=((XMax-XMin)*(YMax-YMin)*(ZMax-ZMin))/nbvec;% volume per vector
-                UvData.Field.Mesh=(UvData.Field.Mesh)^(1/3);
-            else
-                UvData.Field.Mesh=sqrt((XMax-XMin)*(YMax-YMin)/nbvec);%2D
-            end
-        end
-    end
-    % case of structured coordinates
-    if ~test_x
-        DX=(XMax-XMin)/(nbpoints_x-1);
-        if NbDim >1
-            nbpoints_y=DimValue(DimIndex(NbDim-1));
-            if isempty(YName)% if the y coordinate is not expressed, it is taken as the matrix index
-                DY=1;
-                UvData.Field.YMax=nbpoints_y;
-                UvData.Field.YMin=1;
-            else
-                DY=(YMax-YMin)/(nbpoints_y-1);
-            end
-        end
+    CoordMax=zeros(1,numel(imax));
+    CoordMin=zeros(1,numel(imax));
+    for ind=1:numel(imax)
+        XName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end)};
+        YName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end-1)};
+        CoordMax(ind,1)=max(max(UvData.Field.(XName)));
+        CoordMin(ind,1)=min(min(UvData.Field.(XName)));
+        CoordMax(ind,2)=max(max(UvData.Field.(YName)));
+        CoordMin(ind,2)=min(min(UvData.Field.(YName)));
+        %         test_x=1;%test for unstructured coordinates
         if NbDim==3
-            nbpoints_z=DimValue(DimIndex(1));
-            DZ=(ZMax-ZMin)/(nbpoints_z-1);
-            UvData.Field.Mesh=(DX*DY*DZ)^(1/3);
-            UvData.Field.ZMax=ZMax;
-            UvData.Field.ZMin=ZMin;
-        else
-            UvData.Field.Mesh=DX;%sqrt(DX*DY);
+            ZName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(1)};
+            CoordMax(imax(ind),3)=max(max(UvData.Field.(ZName)));
+            CoordMin(ind,3)=min(min(UvData.Field.(ZName)));
         end
+        
+        switch CellInfo{imax(ind)}.CoordType
+            
+            case 'scattered' %unstructured coordinates
+                NbPoints(ind)=CellInfo{imax(ind)}.CoordSize;% nbre of points
+                Mesh(ind)=(prod(CoordMax(ind,:)-CoordMin(ind,:))/NbPoints)^(1/NbDim); %(volume or area per point)^(1/NbDim)
+            case 'grid'%structured coordinate
+                NbPoints=CellInfo{imax(ind)}.CoordSize;% nbre of points
+                Mesh(ind)=min((CoordMax(ind,:)-CoordMin(ind,:))./NbPoints);
+                
+        end
+    end
+    UvData.Field.Mesh=min(Mesh);
+    UvData.Field.XMax=max(CoordMax(ind,1));
+    UvData.Field.XMin=min(CoordMin(ind,1));
+    UvData.Field.YMax=max(CoordMax(ind,2));
+    UvData.Field.YMin=max(CoordMin(ind,2));
+    if NbDim==3
+        UvData.Field.ZMax=max(CoordMax(ind,3));
+        UvData.Field.ZMin=max(CoordMin(ind,3));
     end
     % adjust the mesh to a value 1, 2 , 5 *10^n
     ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
@@ -2663,24 +2613,18 @@ else
             AClass=class(ObjectData.A);
             ObjectData.A=flag_mask.*double(ObjectData.A);
             ObjectData.A=feval(AClass,ObjectData.A);
-            ind_off=[];
-            if isfield(ObjectData,'ListVarName')
-                for ilist=1:length(ObjectData.ListVarName)
-                    if isequal(ObjectData.ListVarName{ilist},'Mask')||isequal(ObjectData.ListVarName{ilist},'MaskX')||isequal(ObjectData.ListVarName{ilist},'MaskY')
-                        ind_off=[ind_off ilist];
-                    end
-                end
-                ObjectData.ListVarName(ind_off)=[];
-                VarDimIndex(ind_off)=[];
-                ind_off=[];
-                for ilist=1:length(ListDimName)
-                    if isequal(ListDimName{ilist},'MaskX') || isequal(ListDimName{ilist},'MaskY')
-                        ind_off=[ind_off ilist];
-                    end
-                end
-                ListDimName(ind_off)=[];
-                DimValue(ind_off)=[];
-            end
+%             ind_off=[];
+%             if isfield(ObjectData,'ListVarName')
+%                 for ilist=1:length(ObjectData.ListVarName)
+%                     if isequal(ObjectData.ListVarName{ilist},'Mask')||isequal(ObjectData.ListVarName{ilist},'MaskX')||isequal(ObjectData.ListVarName{ilist},'MaskY')
+%                         ind_off=[ind_off ilist];
+%                     end
+%                 end
+%                 ObjectData.ListVarName(ind_off)=[];
+%                 VarDimIndex(ind_off)=[];
+%                 ind_off=[];
+%              
+%             end
         end
         if ~isempty(ObjectData)
             PlotType='none'; %default
@@ -2751,27 +2695,10 @@ end
 %------------------------------------------------------------------------
 function histo1_menu_Callback(hObject, eventdata, handles)
 %--------------------------------------------
-%plot first histo
-%huvmat=get(handles.histo1_menu,'parent');
 histo_menu=get(handles.histo1_menu,'String');
 histo_value=get(handles.histo1_menu,'Value');
 FieldName=histo_menu{histo_value};
-% update_histo(handles.HistoAxes,handles.uvmat,FieldName)
-% 
-% %------------------------------------------------------------------------
-% function histo2_menu_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% %plot second histo
-% %huvmat=get(handles.histo2_menu,'parent');
-% histo_menu=get(handles.histo2_menu,'String');
-% histo_value=get(handles.histo2_menu,'Value');
-% FieldName=histo_menu{histo_value};
-% update_histo(handles.histo_v,handles.uvmat,FieldName)
-% 
-% %------------------------------------------------------------------------
-% %read the field .Fieldname stored in UvData and plot its histogram
-% function update_histo(haxes,huvmat,FieldName)
-%------------------------------------------------------------------------
+
 UvData=get(handles.uvmat,'UserData');
 Field=UvData.Field;
 r=regexp(FieldName,'(?<var1>.*)(?<sep>,)(?<var2>.*)','names');
@@ -2844,9 +2771,6 @@ else
         else
             set(hlegend,'String',{FieldName;FieldName_2})
         end
-%         hh=get(handles.HistoAxes,'children');
-%         get(hh(1))
-%         get(hh(2))
     end
 end
 
@@ -3096,7 +3020,8 @@ if isequal(field,'image')
             '*.avi;*.AVI','.avi movie files'; ...
             '*.vol','.volume images (png)'; ...
             '*.*',  'All Files (*.*)'}, ...
-            'Pick an image',imagename);   
+            'Pick an image',imagename); 
+        if ~ischar(FileName),return,end %abandon if the browser is cancelled
         imagename=[PathName FileName];
     end
      % display the selected field and related information
@@ -3110,6 +3035,7 @@ else
             '*.nc',' netcdf files'; ...
             '*.*',  'All Files (*.*)'}, ...
             'Pick a netcdf file',FileBase);
+        if ~ischar(FileName),return,end %abandon if the browser is cancelled
         FullFileName=[PathName FileName];
         % display the selected field and related information
         display_file_name( handles,FullFileName)
@@ -3208,6 +3134,7 @@ switch field_1
                 '*.vol','.volume images (png)'; ...
                 '*.*',  'All Files (*.*)'}, ...
                 'Pick an image',imagename);
+            if ~ischar(FileName),return,end %abandon if the browser is cancelled
             imagename=[PathName FileName];
         end
         if ~ischar(imagename)% quit if the browser has  been closed
@@ -3544,10 +3471,8 @@ if strcmp(transform_name,'more...');
         '*.m',  '.m files '; ...
         '*.*', 'All Files (*.*)'}, ...
         'Pick the transform function', prev_path);
+    if ~ischar(FileName),return,end %abandon if the browser is cancelled
     path_transform_fct =fullfile(PathName,FileName);
-    if ~exist(path_transform_fct,'file')% cancel has been activated
-        return
-    end
     if isempty(regexp(FileName,'.m$'))% detect file extension .m
         msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
         return

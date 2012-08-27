@@ -4,25 +4,26 @@ SubDomain=1000; %default, estimated nbre of vectors in a subdomain used for tps
 if isfield(DataIn,'SubDomain')
     SubDomain=DataIn.SubDomain;%
 end
-[CellVarIndex,NbDimVec,VarTypeCell,errormsg]=find_field_cells(DataIn);
+%[CellVarIndex,NbDimVec,VarTypeCell,errormsg]=find_field_cells(DataIn);
+[CellInfo,NbDimArray,errormsg]=find_field_cells(DataIn);
 nbtps=0;
-for icell=1:numel(CellVarIndex);
-    VarType=VarTypeCell{icell};
-    if NbDimVec(icell)>=2 && ~isempty(VarType.coord_x)
+for icell=1:numel(CellInfo);
+    %VarType=VarTypeCell{icell};
+    if NbDimArray(icell)>=2 && strcmp(CellInfo{icell}.CoordType,'scattered')%'&& ~isempty(VarType.coord_x)
         nbtps=nbtps+1;
-        X=DataIn.(DataIn.ListVarName{VarType.coord_x});
-        Y=DataIn.(DataIn.ListVarName{VarType.coord_y});
-        if ~isempty(VarType.vector_x)&&~isempty(VarType.vector_y)
-            Attr=DataIn.VarAttribute{VarType.vector_x};
+        X=DataIn.(DataIn.ListVarName{CellInfo{icell}.CoordIndex(end)});
+        Y=DataIn.(DataIn.ListVarName{CellInfo{icell}.CoordIndex(end-1)});
+        if isfield(CellInfo{icell},'VarIndex_vector_x')&&isfield(CellInfo{icell},'VarIndex_vector_y')
+            Attr=DataIn.VarAttribute{CellInfo{icell}.VarIndex_vector_x};
             if ~isfield(Attr,'VarIndex_tps')&& (checkall || (isfield(Attr,'FieldRequest')&&strcmp(Attr.FieldRequest,'interp_tps')))               
-                U=DataIn.(DataIn.ListVarName{VarType.vector_x});
-                V=DataIn.(DataIn.ListVarName{VarType.vector_y});
+                U=DataIn.(DataIn.ListVarName{CellInfo{icell}.VarIndex_vector_x});
+                V=DataIn.(DataIn.ListVarName{CellInfo{icell}.VarIndex_vector_y});
             else
                 continue
             end
         end
-        if ~isempty(VarType.errorflag)
-            FF=DataIn.(DataIn.ListVarName{VarType.errorflag});
+        if isfield(CellInfo{icell},'VarIndex_errorflag')
+            FF=DataIn.(DataIn.ListVarName{CellInfo{icell}.VarIndex_errorflag});
             X=X(FF==0);
             Y=Y(FF==0);
             U=U(FF==0);
@@ -46,10 +47,10 @@ for icell=1:numel(CellVarIndex);
         nbvar=numel(DataIn.ListVarName);
         
         DataOut.VarAttribute{nbvar+3}.Role='coord_tps';
-        DataOut.VarAttribute{nbvar+4}=DataIn.VarAttribute{VarType.vector_x};%reproduce attributes of velocity
+        DataOut.VarAttribute{nbvar+4}=DataIn.VarAttribute{CellInfo{icell}.VarIndex_vector_x};%reproduce attributes of velocity
          DataOut.VarAttribute{nbvar+4}.Role='vector_x_tps';
-         DataIn.VarAttribute{VarType.vector_x}.VarIndex_tps=nbvar+4;% indicte the correspondance with initial data
-        DataOut.VarAttribute{nbvar+5}=DataIn.VarAttribute{VarType.vector_y};%reproduce attributes of velocity 
+         DataIn.VarAttribute{CellInfo{icell}.VarIndex_vector_x}.VarIndex_tps=nbvar+4;% indicte the correspondance with initial data
+        DataOut.VarAttribute{nbvar+5}=DataIn.VarAttribute{CellInfo{icell}.VarIndex_vector_y};%reproduce attributes of velocity 
          DataOut.VarAttribute{nbvar+5}.Role='vector_y_tps';
         if isfield(DataOut,'ListDimName')%cleaning'
             DataOut=rmfield(DataOut,'ListDimName');

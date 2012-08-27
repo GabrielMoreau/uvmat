@@ -1,3 +1,7 @@
+%'displ_uvmat': display a message using  msgbox_uvmat or on the log file in batch mode
+%--------------------------------------------------------------------------
+%  function displ_uvmat(title,display_str,Position)
+%
 function displ_uvmat(title,display_str,Position)
 if isequal(Position,0)
     display([title ': ' display_str])

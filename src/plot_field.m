@@ -109,34 +109,36 @@ end
 index_2D=[];
 index_1D=[];
 index_0D=[];
-errormsg=check_field_structure(Data);
-if ~isempty(errormsg)
-    msgbox_uvmat('ERROR',['input of plot_field/check_field_structure: ' errormsg])
-    display(['input of plot_field/check_field_structure: ' errormsg])
-    return
-end
+% errormsg=check_field_structure(Data);
+% if ~isempty(errormsg)
+%     msgbox_uvmat('ERROR',['input of plot_field/check_field_structure: ' errormsg])
+%     display(['input of plot_field/check_field_structure: ' errormsg])
+%     return
+% end
 % check the cells of fields :
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_cells(Data);
+[CellInfo,NbDimArray,errormsg]=find_field_cells(Data);
+%[CellVarIndex,NbDim,CoordType,VarRole,errormsg]=find_field_cells(Data);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['input of plot_field/find_field_cells: ' errormsg]);
     return
 end
-index_2D=find(NbDim==2);%find 2D fields
-index_3D=find(NbDim>2,1);
+
+index_3D=find(NbDimArray>2,1);
 if ~isempty(index_3D)
-    if isfield(Data,'NbDim')&& isequal(Data.NbDim,2)
-        index_2D=[index_2D index_3D];
-    else
+%     if isfield(Data,'NbDimArray')&& isequal(Data.NbDimArray,2)
+%         index_2D=[index_2D index_3D];
+%     else
         msgbox_uvmat('ERROR','volume plot not implemented yet');
         return
-    end
+%     end
 end
-index_1D=find(NbDim==1&~cellfun(@isempty,VarType));
-index_0D=find(NbDim==0);
+index_2D=find(NbDimArray==2);%find 2D fields
+index_1D=find(NbDimArray==1);
+index_0D=find(NbDimArray==0);
 %remove coordinates variables from 1D plot
 % if ~isempty(index_2D)
 %     for ivar=1:length(index_1D)
-%         if isequal(CellVarIndex{index_1D(ivar)},VarType{index_1D(ivar)}.coord)
+%         if isequal(CellVarIndex{index_1D(ivar)},VarRole{index_1D(ivar)}.coord)
 %             index_1D(ivar)=0;
 %         end
 %     end
@@ -191,12 +193,12 @@ AxeData=get(haxes,'UserData');
 
 %% 2D plots 
 if isempty(index_2D)
-    plot_plane([],[],[],haxes);%removes images or vector plots in the absence of 2D field plot
+    plot_plane([],[],haxes);%removes images or vector plots in the absence of 2D field plot
 else  %plot 2D field
-    [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),haxes,PlotParam,PosColorbar);
+    [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo(index_2D),haxes,PlotParam,PosColorbar);
     AxeData.NbDim=2;
     if testzoomaxes && isempty(errormsg)
-        [zoomaxes,PlotParamOut,tild,errormsg]=plot_plane(Data,CellVarIndex(index_2D),VarType(index_2D),zoomaxes,PlotParam,PosColorbar);
+        [zoomaxes,PlotParamOut,tild,errormsg]=plot_plane(Data,CellInfo(index_2D),zoomaxes,PlotParam,PosColorbar);
         AxeData.ZoomAxes=zoomaxes;
     end
 end
@@ -204,12 +206,12 @@ end
 %% 1D plot (usual graph y vs x)
 if isempty(index_1D)
     if ~isempty(haxes)
-        plot_profile([],[],[],haxes);%removes usual praphs y vs x in the absence of 1D field plot
+        plot_profile([],[],haxes);%removes usual praphs y vs x in the absence of 1D field plot
     end
 else %plot 1D field (usual graph y vs x)
-    Coordinates=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),haxes,PlotParam.Coordinates);%
+    Coordinates=plot_profile(Data,CellInfo(index_1D),haxes,PlotParam.Coordinates);%
     if testzoomaxes
-        [zoomaxes,Coordinates]=plot_profile(Data,CellVarIndex(index_1D),VarType(index_1D),zoomaxes,PlotParam.Coordinates);
+        [zoomaxes,Coordinates]=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParam.Coordinates);
         AxeData.ZoomAxes=zoomaxes;
     end
     if ~isempty(Coordinates)
@@ -232,7 +234,7 @@ if ~isempty(htext)
             set(htext,'String',{''})
         end
     else
-        [errormsg]=plot_text(Data,CellVarIndex(index_0D),VarType(index_0D),htext);
+        [errormsg]=plot_text(Data,CellInfo(index_0D),htext);
     end
 end
 
@@ -261,13 +263,13 @@ if ~isempty(index_2D)|| ~isempty(index_1D)
 end
 
 %-------------------------------------------------------------------
-function errormsg=plot_text(FieldData,CellVarIndex,VarTypeCell,htext)
+function errormsg=plot_text(FieldData,CellInfo,htext)
 %-------------------------------------------------------------------
 errormsg=[];
 txt_cell={};
 Data={};
-for icell=1:length(CellVarIndex)
-    VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list data.ListVarName
+for icell=1:length(CellInfo)
+    VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list data.ListVarName
     for ivar=1:length(VarIndex)
         checkancillary=0;
         if length(FieldData.VarAttribute)>=VarIndex(ivar)
@@ -302,7 +304,7 @@ end
 
 
 %-------------------------------------------------------------------
-function CoordinatesOut=plot_profile(data,CellVarIndex,VarType,haxes,Coordinates)
+function CoordinatesOut=plot_profile(data,CellInfo,haxes,Coordinates)
 %-------------------------------------------------------------------
 
 if ~exist('Coordinates','var')
@@ -340,20 +342,9 @@ ytitle='';
 test_newplot=1;
 
 %loop on input  fields
-for icell=1:length(CellVarIndex)
-    if isempty(VarType{icell})% coordiante variable
-        continue
-    end
-    VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list data.ListVarName
-    if ~isempty(VarType{icell}.coord_x)
-        coord_x_index=VarType{icell}.coord_x;
-    else
-        coord_x_index_cell=VarType{icell}.coord(1);
-        if isequal(coord_x_index_cell,0)
-             continue  % the cell has no abscissa, skip it
-        end
-        coord_x_index=coord_x_index_cell;
-    end
+for icell=1:numel(CellInfo)
+    VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list data.ListVarName
+    coord_x_index=CellInfo{icell}.CoordIndex;
     testplot=ones(size(data.ListVarName));%default test for plotted variables
     coord_x_name{icell}=data.ListVarName{coord_x_index};
     coord_x{icell}=data.(data.ListVarName{coord_x_index});%coordinate variable set as coord_x
@@ -368,11 +359,11 @@ for icell=1:length(CellVarIndex)
     XMin(icell)=min(coord_x{icell});
     XMax(icell)=max(coord_x{icell});
     testplot(coord_x_index)=0;
-    if ~isempty(VarType{icell}.ancillary')
-        testplot(VarType{icell}.ancillary)=0;
+    if isfield(CellInfo{icell},'VarIndex_ancillary')
+        testplot(CellInfo{icell}.VarIndex_ancillary)=0;
     end
-    if ~isempty(VarType{icell}.warnflag')
-        testplot(VarType{icell}.warnflag)=0;
+    if isfield(CellInfo{icell},'VarIndex_warnflag')
+        testplot(CellInfo{icell}.VarIndex_warnflag)=0;
     end
     if isfield(data,'VarAttribute')
         VarAttribute=data.VarAttribute;
@@ -384,7 +375,7 @@ for icell=1:length(CellVarIndex)
             end
         end
     end
-    if ~isempty(VarType{icell}.discrete')
+    if isfield(CellInfo{icell},'VarIndex_discrete')
         charplot_0='''+''';
     else
         charplot_0='''-''';
@@ -506,7 +497,7 @@ else
 end
 
 %-------------------------------------------------------------------
-function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellVarIndex,VarTypeCell,haxes,PlotParam,PosColorbar)
+function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo,haxes,PlotParam,PosColorbar)
 %-------------------------------------------------------------------
 
 grid(haxes, 'off')% remove grid (possibly remaining from other graphs)
@@ -537,42 +528,54 @@ XName='';
 x_units='';
 YName='';
 y_units='';
-for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the calling function)
-    VarType=VarTypeCell{icell};
-    if ~isempty(VarType.coord_tps) %do not plot directly tps data (used for projection only)
+for icell=1:numel(CellInfo) % length(CellVarIndex) =1 or 2 (from the calling function)
+%     VarRole=CellInfo{icell};
+    if strcmp(CellInfo{icell}.CoordType,'tps') %do not plot directly tps data (used for projection only)
         continue
     end
-    ivar_X=VarType.coord_x; % defines (unique) index for the variable representing unstructured x coordinate (default =[])
-    ivar_Y=VarType.coord_y; % defines (unique)index for the variable representing unstructured y coordinate (default =[])
-    ivar_U=VarType.vector_x; % defines (unique) index for the variable representing x vector component (default =[])
-    ivar_V=VarType.vector_y; % defines (unique) index for the variable representing y vector component (default =[])
-    ivar_C=[VarType.scalar VarType.image VarType.color VarType.ancillary]; %defines index (indices) for the scalar or ancillary fields
+    ivar_X=CellInfo{icell}.CoordIndex(end); % defines (unique) index for the variable representing unstructured x coordinate (default =[])
+    ivar_Y=CellInfo{icell}.CoordIndex(end-1); % defines (unique)index for the variable representing unstructured y coordinate (default =[])
+    ivar_C=[];
+    if isfield(CellInfo{icell},'VarIndex_scalar')
+        ivar_C=[ivar_C CellInfo{icell}.VarIndex_scalar];
+    end
+    if isfield(CellInfo{icell},'VarIndex_image')
+        ivar_C=[ivar_C CellInfo{icell}.VarIndex_image];
+    end
+    if isfield(CellInfo{icell},'VarIndex_color')
+        ivar_C=[ivar_C CellInfo{icell}.VarIndex_color];
+    end
+    if isfield(CellInfo{icell},'VarIndex_ancillary')
+        ivar_C=[ivar_C CellInfo{icell}.VarIndex_ancillary];
+    end
     if numel(ivar_C)>1
         errormsg= 'error in plot_field: too many scalar inputs';
         return
     end
-    ivar_F=VarType.warnflag; %defines index (unique) for warning flag variable
-    ivar_FF=VarType.errorflag; %defines index (unique) for error flag variable
-    ind_coord=find(VarType.coord);
-    if numel(ind_coord)==2
-        VarType.coord=VarType.coord(ind_coord);
+    ivar_F=[];
+    if isfield(CellInfo{icell},'VarIndex_warnflag')
+    ivar_F=CellInfo{icell}.VarIndex_warnflag; %defines index (unique) for warning flag variable
     end
-    if ~isempty(ivar_U) && ~isempty(ivar_V)% vector components detected
+    ivar_FF=[];
+    if isfield(CellInfo{icell},'VarIndex_errorflag')
+    ivar_FF=CellInfo{icell}.VarIndex_errorflag; %defines index (unique) for error flag variable
+    end
+    if isfield(CellInfo{icell},'VarIndex_vector_x')&&isfield(CellInfo{icell},'VarIndex_vector_y') % vector components detected
         if test_vec
             errormsg='error in plot_field: attempt to plot two vector fields: to get the difference project on a plane with mode interp';
             return
         else
             test_vec=1;
-            vec_U=Data.(Data.ListVarName{ivar_U}); 
-            vec_V=Data.(Data.ListVarName{ivar_V});
-            if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field with unstructured coordinates 
-                XName=Data.ListVarName{ivar_X};
-                YName=Data.ListVarName{ivar_Y};
+            vec_U=Data.(Data.ListVarName{CellInfo{icell}.VarIndex_vector_x}); 
+            vec_V=Data.(Data.ListVarName{CellInfo{icell}.VarIndex_vector_y});
+            if strcmp(CellInfo{icell}.CoordType,'scattered')%2D field with unstructured coordinates 
+                XName=Data.ListVarName{CellInfo{icell}.CoordIndex(end)};
+                YName=Data.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
                 vec_X=reshape(Data.(XName),[],1); %transform vectors in column matlab vectors
                 vec_Y=reshape(Data.(YName),[],1);
-            elseif numel(VarType.coord)==2 && ~isequal(VarType.coord,[0 0]);%coordinates defines by dimension variables
-                y=Data.(Data.ListVarName{VarType.coord(1)});
-                x=Data.(Data.ListVarName{VarType.coord(2)});
+            elseif strcmp(CellInfo{icell}.CoordType,'grid')%2D field with structured coordinates 
+                y=Data.(Data.ListVarName{CellInfo{icell}.CoordIndex(end-1)});
+                x=Data.(Data.ListVarName{CellInfo{icell}.CoordIndex(end)});
                 if numel(y)==2 % y defined by first and last values on aregular mesh
                     y=linspace(y(1),y(2),size(vec_U,1));
                 end
@@ -580,18 +583,13 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
                     x=linspace(x(1),x(2),size(vec_U,2));
                 end
                 [vec_X,vec_Y]=meshgrid(x,y);  
-            else
-                errormsg='error in plot_field: invalid coordinate definition for vector field';
-                return
             end
             if isfield(PlotParam.Vectors,'ColorScalar') && ~isempty(PlotParam.Vectors.ColorScalar)
                 [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp([],Data,PlotParam.Vectors.ColorScalar);
-%             if ~isempty(ivar_C)
-                 %vec_C=Data.(Data.ListVarName{ivar_C});
-                 if ~isempty(VarVal)
-                 vec_C=reshape(VarVal{1},1,numel(VarVal{1}));
-                 test_C=1;
-                 end
+                if ~isempty(VarVal)
+                    vec_C=reshape(VarVal{1},1,numel(VarVal{1}));
+                    test_C=1;
+                end
             end
             if ~isempty(ivar_F)%~(isfield(PlotParam.Vectors,'HideWarning')&& isequal(PlotParam.Vectors.HideWarning,1)) 
                 if test_vec 
@@ -612,9 +610,9 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
              errormsg='attempt to plot two scalar fields or images';
             return
         end
-        eval(['A=squeeze(Data.' Data.ListVarName{ivar_C} ');']) ;% scalar represented as color image
+        A=squeeze(Data.(Data.ListVarName{ivar_C}));% scalar represented as color image
         test_ima=1;
-        if ~isempty(ivar_X) && ~isempty(ivar_Y)% 2D field (with unstructured coordinates  (then ivar_X and ivar_Y not empty) 
+        if strcmp(CellInfo{icell}.CoordType,'scattered')%2D field with unstructured coordinates 
             A=reshape(A,1,[]);
             XName=Data.ListVarName{ivar_X};
             YName=Data.ListVarName{ivar_Y};
@@ -629,19 +627,18 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
                     y_units=[' (' Data.VarAttribute{ivar_Y}.units ')'];
                 end
             end        
-        elseif numel(VarType.coord)==2 %structured coordinates
-            XName=Data.ListVarName{VarType.coord(2)};
-            YName=Data.ListVarName{VarType.coord(1)};
-            eval(['AY=Data.' Data.ListVarName{VarType.coord(1)} ';']) 
-            eval(['AX=Data.' Data.ListVarName{VarType.coord(2)} ';'])
+        elseif strcmp(CellInfo{icell}.CoordType,'grid')%2D field with structured coordinates 
+            YName=Data.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
+            AY=Data.(YName); 
+            AX=Data.(Data.ListVarName{CellInfo{icell}.CoordIndex(end)});
             test_interp_X=0; %default, regularly meshed X coordinate
             test_interp_Y=0; %default, regularly meshed Y coordinate
             if isfield(Data,'VarAttribute')
-                if numel(Data.VarAttribute)>=VarType.coord(2) && isfield(Data.VarAttribute{VarType.coord(2)},'units')
-                    x_units=Data.VarAttribute{VarType.coord(2)}.units;
+                if numel(Data.VarAttribute)>=CellInfo{icell}.CoordIndex(end) && isfield(Data.VarAttribute{CellInfo{icell}.CoordIndex(end)},'units')
+                    x_units=Data.VarAttribute{CellInfo{icell}.CoordIndex(end)}.units;
                 end
-                if numel(Data.VarAttribute)>=VarType.coord(1) && isfield(Data.VarAttribute{VarType.coord(1)},'units')
-                    y_units=Data.VarAttribute{VarType.coord(1)}.units;
+                if numel(Data.VarAttribute)>=CellInfo{icell}.CoordIndex(end-1) && isfield(Data.VarAttribute{CellInfo{icell}.CoordIndex(end-1)},'units')
+                    y_units=Data.VarAttribute{CellInfo{icell}.CoordIndex(end-1)}.units;
                 end
             end  
             if numel(AY)>2
@@ -649,7 +646,7 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
                 DAY_min=min(DAY);
                 DAY_max=max(DAY);
                 if sign(DAY_min)~=sign(DAY_max);% =1 for increasing values, 0 otherwise
-                     errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarType.coord(1)} ];
+                     errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarRole.coord(1)} ];
                       return
                 end 
                 test_interp_Y=(DAY_max-DAY_min)> 0.0001*abs(DAY_max);
@@ -659,7 +656,7 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
                 DAX_min=min(DAX);
                 DAX_max=max(DAX);
                 if sign(DAX_min)~=sign(DAX_max);% =1 for increasing values, 0 otherwise
-                     errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarType.coord(2)} ];
+                     errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarRole.coord(2)} ];
                       return
                 end 
                 test_interp_X=(DAX_max-DAX_min)> 0.0001*abs(DAX_max);
@@ -686,9 +683,9 @@ for icell=1:length(CellVarIndex) % length(CellVarIndex) =1 or 2 (from the callin
             end
             AX=[AX(1) AX(end)];% keep only the lower and upper bounds for image represnetation 
             AY=[AY(1) AY(end)];
-        else
-            errormsg='error in plot_field: invalid coordinate definition ';
-            return
+%         else
+%             errormsg='error in plot_field: invalid coordinate definition ';
+%             return
         end
     end
     %define coordinates as CoordUnits, if not defined as attribute for each variable

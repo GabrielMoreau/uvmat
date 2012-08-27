@@ -98,7 +98,7 @@ for ichild=1:length(hchild)
             if isfield(FigData,tagaxes)
                 Field=FigData.(tagaxes);
                 if isfield(Field,'ListVarName')
-                    [CellVarIndex,NbDim,VarType]=find_field_cells(Field);%analyse the physical fields contained in Field
+                    [CellInfo,NbDimArray]=find_field_cells(Field);%analyse the physical fields contained in Field
                     text_displ_1='';
                     text_displ_2='';
                     text_displ_3='';
@@ -106,11 +106,11 @@ for ichild=1:length(hchild)
                     ivec=[];
                     xName='';
                     z=[];
-                    for icell=1:numel(CellVarIndex)%look for all physical fields
-                        if NbDim(icell)>=2 % select 2D field
-                            if  isfield(Field,'Mesh') && ~isempty(Field.Mesh)&& ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
-                                eval(['X=Field.' Field.ListVarName{VarType{icell}.coord_x} ';'])
-                                eval(['Y=Field.' Field.ListVarName{VarType{icell}.coord_y} ';'])
+                    for icell=1:numel(CellInfo)%look for all physical fields
+                        if NbDimArray(icell)>=2 % select 2D field
+                            if  isfield(Field,'Mesh') && ~isempty(Field.Mesh)&& strcmp(CellInfo{icell}.CoordType,'scattered')%case of unstructured data
+                                X=Field.(Field.ListVarName{CellInfo{icell}.CoordIndex(end)});
+                                Y=Field.(Field.ListVarName{CellInfo{icell}.CoordIndex(end-1)});
                                 flag_vec=(X<(xy(1,1)+Field.Mesh/3) & X>(xy(1,1)-Field.Mesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
                                     (Y<(xy(1,2)+Field.Mesh/3) & Y>(xy(1,2)-Field.Mesh/3));%f
                                 ivec=find(flag_vec,1);% search the (first) selected vector index ivec
@@ -131,13 +131,14 @@ for ichild=1:length(hchild)
                                         end
                                     end
                                     %display the field values
-                                    for ivar=1:numel(CellVarIndex{icell})
-                                        VarName=Field.ListVarName{CellVarIndex{icell}(ivar)};
-                                        eval(['VarVal=Field.' VarName '(ivec);'])
+                                    for ivar=1:numel(CellInfo{icell}.VarIndex)
+                                        VarName=Field.ListVarName{CellInfo{icell}.VarIndex(ivar)};
+                                        VarVal=Field.(VarName)(ivec);
                                         var_text=[VarName '=' num2str(VarVal,3) ','];
-                                        if isequal(ivar,VarType{icell}.coord_x)||isequal(ivar,VarType{icell}.coord_y)||isequal(ivar,VarType{icell}.coord_z)
+                                        if isequal(ivar,CellInfo{icell}.CoordIndex(end))||isequal(ivar,CellInfo{icell}.CoordIndex(end-1))||isequal(ivar,CellInfo{icell}.CoordIndex(1))
                                             text_displ_1=[text_displ_1 var_text];
-                                        elseif isequal(ivar,VarType{icell}.vector_x)||isequal(ivar,VarType{icell}.vector_y)||isequal(ivar,VarType{icell}.vector_z)
+                                        elseif (isfield(CellInfo{icell},'VarIndex_vector_x') && isequal(ivar,CellInfo{icell}.VarIndex_vector_x))||isequal(ivar,CellInfo{icell}.VarIndex_vector_y)||...
+                                                (isfield(CellInfo{icell},'VarIndex_vector_z') && isequal(ivar,CellInfo{icell}.VarIndex_vector_z))
                                             text_displ_3=[text_displ_3 var_text];
                                         else
                                             text_displ_4=[text_displ_4 var_text];
@@ -148,13 +149,13 @@ for ichild=1:length(hchild)
                                         set(hhh,'Visible','off')
                                     end
                                 end
-                            elseif numel(VarType{icell}.coord) >=2 & VarType{icell}.coord > 0 %structured coordinates
-                                yName=Field.ListVarName{VarType{icell}.coord(1)};
-                                xName=Field.ListVarName{VarType{icell}.coord(2)};
-                                 eval(['y=Field.' yName ';'])
-                                 eval(['x=Field.' xName ';'])
-                                VarName=Field.ListVarName{CellVarIndex{icell}(1)};
-                                eval(['nxy=size(Field.' VarName ');']);
+                            elseif strcmp(CellInfo{icell}.CoordType,'grid') %structured coordinates
+                                yName=Field.ListVarName{CellInfo{icell}.CoordIndex(1)};
+                                xName=Field.ListVarName{CellInfo{icell}.CoordIndex(2)};
+                                y=Field.(yName);
+                                x=Field.(xName);
+                                VarName=Field.ListVarName{CellInfo{icell}.VarIndex(1)};
+                                nxy=size(Field.(VarName));
                                 MaxAY=max(y(1),y(end)); %#ok<COLND>
                                 MinAY=min(y(1),y(end)); %#ok<COLND>
                                 if (xy(1,1)>x(1))&(xy(1,1)<x(end))&(xy(1,2)<MaxAY)&(xy(1,2)>MinAY) %#ok<COLND>
@@ -162,9 +163,9 @@ for ichild=1:length(hchild)
                                     indy0=1+round((nxy(1)-1)*(xy(1,2)-y(1))/(y(end)-y(1)));%#ok<COLND> % index y of pixel
                                     if indx0>=1 & indx0<=nxy(2) & indy0>=1 & indy0<=nxy(1)
                                         text_displ_2=['i='  num2str(indx0) ',j=' num2str(indy0) ','];
-                                        for ivar=1:numel(CellVarIndex{icell})
-                                            VarName=Field.ListVarName{CellVarIndex{icell}(ivar)};
-                                            eval(['VarVal=Field.' VarName '(indy0,indx0,:);'])
+                                        for ivar=1:numel(CellInfo{icell}.VarIndex)
+                                            VarName=Field.ListVarName{CellInfo{icell}.VarIndex(ivar)};
+                                            VarVal=Field.(VarName)(indy0,indx0,:);
                                             var_text=[VarName '=' num2str(VarVal) ','];
                                             text_displ_2=[text_displ_2 var_text];
                                         end

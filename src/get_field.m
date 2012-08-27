@@ -217,13 +217,14 @@ set(handles.coord_z_vectors,'String',[{''} Txt ])
 set(handles.scalar,'Value',1)
 
 set(handles.scalar,'String', Txt )
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_cells(Field);
+[CellInfo,NbDim,errormsg]=find_field_cells(Field);
+% [CellVarIndex,NbDim,CoordType,VarRole,errormsg]=find_field_cells(Field);
 if ~isempty(errormsg)  
-    msgbox_uvmat('ERROR',['error in get_field/Field_input/find_field_cells: ' errormsg])
+    msgbox_uvmat('ERROR',['get_field / Field_input / find_field_cells: ' errormsg])
     return
 end  
-for icell=1:numel(CellVarIndex)
-    NbDim(icell)=max(NbDim(icell),numel(CellVarIndex{icell}));
+for icell=1:numel(CellInfo)
+    NbDim(icell)=max(NbDim(icell),numel(CellInfo{icell}.VarIndex));
 end
 [maxdim,imax]=max(NbDim);
    
@@ -241,43 +242,27 @@ else
 end
 if maxdim>=2 
     set(handles.CheckPlot1D,'Value',0)
-    if ~isempty(VarType{imax}.vector_x) && ~isempty(VarType{imax}.vector_y)      
+    if isfield(CellInfo{imax},'VarIndex_vector_x') &&  isfield(CellInfo{imax},'VarIndex_vector_y') 
         set(handles.CheckVector,'Value',1)
         set(handles.CheckScalar,'Value',0)
-        set(handles.vector_x,'Value',VarType{imax}.vector_x(1))
-        set(handles.vector_y,'Value',VarType{imax}.vector_y(1))
-        if ~isempty(VarType{imax}.coord_x) && ~isempty(VarType{imax}.coord_y)
-            set(handles.coord_x_vectors,'Value',VarType{imax}.coord_x+1)
-            set(handles.coord_y_vectors,'Value',VarType{imax}.coord_y+1)
-        end
-        if ~isempty(VarType{imax}.coord) 
-            set(handles.coord_y_vectors,'Value',VarType{imax}.coord(1)+1)
-            if numel(VarType{imax}.coord)>=2
-                set(handles.coord_x_vectors,'Value',VarType{imax}.coord(2)+1)
-            end
+        set(handles.vector_x,'Value',CellInfo{imax}.VarIndex_vector_x(1))
+        set(handles.vector_y,'Value',CellInfo{imax}.VarIndex_vector_y(1))
+        if strcmp(CellInfo{imax}.CoordType,'scattered')
+            set(handles.coord_x_vectors,'Value',CellInfo{imax}.CoordIndex(end))
+            set(handles.coord_y_vectors,'Value',CellInfo{imax}.CoordIndex(end-1))
+        elseif strcmp(CellInfo{imax}.CoordType,'grid')
+            set(handles.coord_x_vectors,'Value',CellInfo{imax}.CoordIndex(end)+1)
+            set(handles.coord_y_vectors,'Value',CellInfo{imax}.CoordIndex(end-1)+1)
         end
     else
         set(handles.CheckScalar,'Value',1)
         set(handles.CheckVector,'Value',0)
-        if isfield(VarType{imax},'scalar') && length(VarType{imax}.scalar)>=1
-            set(handles.scalar,'Value',VarType{imax}.scalar(1))
-            if ~isempty(VarType{imax}.coord_x) && ~isempty(VarType{imax}.coord_y)
-                set(handles.coord_x_scalar,'Value',VarType{imax}.coord_x+1)
-                set(handles.coord_y_scalar,'Value',VarType{imax}.coord_y+1)
-            end
-            if ~isempty(VarType{imax}.coord_z) 
-                set(handles.coord_z_scalar,'Value',VarType{imax}.coord_z+1)
-            end
-            if ~isempty(VarType{imax}.coord)
-                if numel(VarType{imax}.coord)>=maxdim-2 && maxdim>=3
-                    set(handles.coord_z_scalar,'Value',VarType{imax}.coord(maxdim-2)+1)
-                end
-                if numel(VarType{imax}.coord)>=maxdim-1
-                    set(handles.coord_y_scalar,'Value',VarType{imax}.coord(maxdim-1)+1)
-                end
-                if numel(VarType{imax}.coord)>=maxdim
-                    set(handles.coord_x_scalar,'Value',VarType{imax}.coord(maxdim)+1)
-                end     
+        if isfield(CellInfo{imax},'VarIndex_scalar') 
+            set(handles.scalar,'Value',CellInfo{imax}.VarIndex_scalar(1))
+                set(handles.coord_x_scalar,'Value',CellInfo{imax}.CoordIndex(end)+1)
+                set(handles.coord_y_scalar,'Value',CellInfo{imax}.CoordIndex(end-1)+1)
+            if numel(CellInfo{imax}.CoordIndex)==3
+                set(handles.coord_z_scalar,'Value',CellInfo{imax}.CoordIndex(1)+1)
             end
         end
     end
@@ -285,8 +270,6 @@ if maxdim>=2
     CheckScalar_Callback(handles.CheckScalar, [], handles)
     CheckVector_Callback(handles.CheckVector, [], handles)
 end
-%scalar_Callback(handles.get_field, eventdata, handles)
-%vector_x_Callback(handles.get_field, eventdata, handles)
 
 %------------------------------------------------------------------------
 function ordinate_Callback(hObject, eventdata, handles)
@@ -300,20 +283,21 @@ if ~isempty(yindex)
     set(handles.variables,'Value',yindex+1)
     variables_Callback(hObject, eventdata, handles)
 end
-[CellVarIndex,NbDim,VarType,errormsg]=find_field_cells(Field);
-for icell=1:numel(CellVarIndex)
-    VarIndex=CellVarIndex{icell};
-    if ~isempty(find(VarIndex==yindex,1)) && (isempty(VarType{icell}.coord_x)||~isequal(VarType{icell}.coord_x,VarIndex))
-        cell_select=icell;
-        break
-    end
-end
-
-val=get(handles.abscissa,'Value');
-set(handles.abscissa,'Value',min(val,2));
-coord_x_index=VarType{cell_select}.coord;
-coord_x_index=coord_x_index(coord_x_index~=0);
-set(handles.abscissa,'String',[{''}; (Field.ListVarName(coord_x_index))'; (Field.ListVarName(VarIndex))'])
+[CellInfo,NbDim,errormsg]=find_field_cells(Field);
+%[CellVarIndex,NbDim,VarRole,errormsg]=find_field_cells(Field);
+% for icell=1:numel(CellInfo) TODO: adapt to new convention
+%     VarIndex=CellInfo{icell}.VarIndex;
+%     if ~isempty(find(VarIndex==yindex,1)) && (isempty(VarRole{icell}.coord_x)||~isequal(VarRole{icell}.coord_x,VarIndex))
+%         cell_select=icell;
+%         break
+%     end
+% end
+% 
+% val=get(handles.abscissa,'Value');
+% set(handles.abscissa,'Value',min(val,2));
+% coord_x_index=VarRole{cell_select}.coord;
+% coord_x_index=coord_x_index(coord_x_index~=0);
+% set(handles.abscissa,'String',[{''}; (Field.ListVarName(coord_x_index))'; (Field.ListVarName(VarIndex))'])
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in abscissa.
