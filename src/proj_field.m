@@ -183,28 +183,14 @@ for icell=1:length(CellInfo)
     end
 %     
     % select types of  variables to be projected
-   ListProject={'VarIndex_scalar','VarIndex_image','VarIndex_color','VarIndex_vector_x','VarIndex_vector_y'};
-   check_project=false(size(VarIndex));
-   for ilist=1:numel(ListProject)
-       if isfield(CellInfo{icell},ListProject{ilist})
-           check_project(CellInfo{icell}.(ListProject{ilist}))=1;
+   ListProj={'VarIndex_scalar','VarIndex_image','VarIndex_color','VarIndex_vector_x','VarIndex_vector_y'};
+      check_proj=false(size(FieldData.ListVarName));
+   for ilist=1:numel(ListProj)
+       if isfield(CellInfo{icell},ListProj{ilist})
+           check_proj(CellInfo{icell}.(ListProj{ilist}))=1;
        end
    end
-   VarIndex=VarIndex(check_project);
-     
-%     if isempty(ivar_X)
-%         test_grid=1;%test for input data on regular grid (e.g. image)coordinates      
-%     else
-%         if length(ivar_X)>1 || length(ivar_Y)>1 || length(ivar_Z)>1
-%                  errormsg='multiple coordinate input in proj_field.m';
-%                     return
-%         end
-%         if length(ivar_Y)~=1
-%                 errormsg='y coordinate not defined in proj_field.m';
-%                 return
-%         end
-%         test_grid=0;
-%     end
+   VarIndex=find(check_proj);
     ProjData.ListVarName={'Y','X','NbVal'};
     ProjData.VarDimName={'nb_points','nb_points','nb_points'};
     ProjData.VarAttribute{1}.Role='ancillary';
@@ -359,66 +345,53 @@ if isfield (FieldData,'VarAttribute')
 end
 
 %group the variables (fields of 'FieldData') in cells of variables with the same dimensions
-testfalse=0;
-ListIndex={};
-% DimVarIndex=0;%initilise list of indices for dimension variables
-idimvar=0;
 [CellInfo,NbDim,errormsg]=find_field_cells(FieldData);
-%[CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_cells(FieldData);
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_patch:' errormsg];
     return
 end
 
 %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
-dimcounter=0;
 for icell=1:length(CellInfo)
     testX=0;
     testY=0;
     test_Amat=0;
-    testfalse=0;
-    VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
-  %  VarType=VarTypeCell{icell};
-  %  DimIndices=FieldData.VarDimIndex{VarIndex(1)};%indices of the dimensions of the first variable (common to all variables in the cell)
     if NbDim(icell)~=2% proj_patch acts only on fields of space dimension 2
         continue
     end
-    %testX=~isempty(VarType.coord_x) && ~isempty(VarType.coord_y);
+    ivar_FF=[];
     testfalse=isfield(CellInfo{icell},'VarIndex_errorflag');
-    testproj(VarIndex)=zeros(size(VarIndex));%default
+    if testfalse
+        ivar_FF=CellInfo{icell}.VarIndex_errorflag;
+        FFName=FieldData.ListVarName{ivar_FF};
+        errorflag=FieldData.(FFName);
+    end
+    % select types of  variables to be projected
+    ListProj={'VarIndex_scalar','VarIndex_image','VarIndex_color','VarIndex_vector_x','VarIndex_vector_y'};
+    check_proj=false(size(FieldData.ListVarName));
+    for ilist=1:numel(ListProj)
+        if isfield(CellInfo{icell},ListProj{ilist})
+            check_proj(CellInfo{icell}.(ListProj{ilist}))=1;
+        end
+    end
+    VarIndex=find(check_proj);
+    
     ivar_X=CellInfo{icell}.CoordIndex(end);
     ivar_Y=CellInfo{icell}.CoordIndex(end-1);
     ivar_Z=[];
-    if NbDimArray(icell)==3
+    if NbDim(icell)==3
         ivar_Z=CellInfo{icell}.CoordIndex(1);
     end
-    ivar_rem=[];
-    if isfield(CellInfo{icell},'VarIndex_ancillary')
-        ivar_rem=CellInfo{icell}.VarIndex_ancillary;
-    end
-    if isfield(CellInfo{icell},'VarIndex_warnflag')
-        ivar_rem=[ivar_rem CellInfo{icell}.VarIndex_warnflag];
-    end
-    if isfield(CellInfo{icell},'VarIndex_errorflag')
-        ivar_rem=[ivar_rem CellInfo{icell}.VarIndex_errorflag];
-        ivar_FF=CellInfo{icell}.VarIndex_errorflag;
-    end
-    VarIndex([ivar_X ivar_Y ivar_Z ivar_rem])=[];% not projected variables removed frlom list
-
     if strcmp(CellInfo{icell}.CoordType,'scattered')%case of unstructured coordinates
-         eval(['nbpoint=numel(FieldData.' FieldData.ListVarName{VarIndex(1)} ');'])
-         for ivar=[VarIndex VarType.coord_x VarType.coord_y VarType.errorflag]
-               VarName=FieldData.ListVarName{ivar};
-            eval(['FieldData.' VarName '=reshape(FieldData.' VarName ',nbpoint,1);'])
-         end
-         XName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
-         YName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
-         eval(['coord_x=FieldData.' XName ';'])
-         eval(['coord_y=FieldData.' YName ';'])
-    end
-    if testfalse
-        FFName=FieldData.ListVarName{VarType.errorflag};
-        eval(['errorflag=FieldData.' FFName ';'])
+        %nbpoint=numel(FieldData.(FieldData.ListVarName{VarIndex(1)}));
+        for ivar=[VarIndex ivar_X ivar_Y ivar_FF]
+            VarName=FieldData.ListVarName{ivar};
+            FieldData.(VarName)=reshape(FieldData.(VarName),[],1);
+        end
+        XName=FieldData.ListVarName{ivar_X};
+        YName=FieldData.ListVarName{ivar_Y};
+        coord_x=FieldData.(XName);
+        coord_y=FieldData.(YName);
     end
     % image or 2D matrix
     if  strcmp(CellInfo{icell}.CoordType,'grid')%case of structured coordinates
@@ -429,21 +402,12 @@ for icell=1:length(CellInfo)
         eval(['AY=FieldData.' AYName ';'])% y coordinate
         VarName=FieldData.ListVarName{VarIndex(1)};
         DimValue=size(FieldData.(VarName));
-       if length(AX)==2
-           AX=linspace(AX(1),AX(end),DimValue(2));
-       end
-       if length(AY)==2
-           AY=linspace(AY(1),AY(end),DimValue(1));
-       end
-%         for idim=1:length(DimValue)        
-%             Coord_i_str=['Coord_' num2str(idim)];
-%             DCoord_min(idim)=1;%default
-%             Coord{idim}=[0.5 DimValue(idim)];
-%             test_direct(idim)=1;
-%         end
-%         AX=linspace(Coord{2}(1),Coord{2}(2),DimValue(2));
-%         AY=linspace(Coord{1}(1),Coord{1}(2),DimValue(1));  %TODO : 3D case 
-%         testcolor=find(numel(DimValue)==3);
+        if length(AX)==2
+            AX=linspace(AX(1),AX(end),DimValue(2));
+        end
+        if length(AY)==2
+            AY=linspace(AY(1),AY(end),DimValue(1));
+        end
         if length(DimValue)==3
             testcolor=1;
             npxy(3)=3;
@@ -458,82 +422,69 @@ for icell=1:length(CellInfo)
         Yi=reshape(Yi,npxy(1)*npxy(2),1);
         for ivar=1:length(VarIndex)
             VarName=FieldData.ListVarName{VarIndex(ivar)};
-            FieldData.(VarName)=reshape(FieldData.(VarName),npxy(1)*npxy(2),npxy(3)); % keep only non false vectors 
+            FieldData.(VarName)=reshape(FieldData.(VarName),npxy(1)*npxy(2),npxy(3)); % keep only non false vectors
         end
     end
-%select the indices in the range of action
+    %select the indices in the range of action
     testin=[];%default
     if isequal(ObjectData.Type,'rectangle')
-%            if ~isfield(ObjectData,'RangeX')|~isfield(ObjectData,'RangeY')
-%                 errormsg='rectangle half sides RangeX and RangeY needed'
-%                 return
-%            end
-       if testX
+        if strcmp(CellInfo{icell}.CoordType,'scattered')
             distX=abs(coord_x-ObjectData.Coord(1,1));
             distY=abs(coord_y-ObjectData.Coord(1,2));
             testin=distX<widthx & distY<widthy;
-       elseif test_Amat
-           distX=abs(Xi-ObjectData.Coord(1,1));
-           distY=abs(Yi-ObjectData.Coord(1,2));
-           testin=distX<widthx & distY<widthy;
-       end
+        elseif test_Amat
+            distX=abs(Xi-ObjectData.Coord(1,1));
+            distY=abs(Yi-ObjectData.Coord(1,2));
+            testin=distX<widthx & distY<widthy;
+        end
     elseif isequal(ObjectData.Type,'polygon')
         if testX
             testin=inpolygon(coord_x,coord_y,ObjectData.Coord(:,1),ObjectData.Coord(:,2));
         elseif test_Amat
-           testin=inpolygon(Xi,Yi,ObjectData.Coord(:,1),ObjectData.Coord(:,2));
-       else%calculate the scalar
-           testin=[]; %A REVOIR
-       end
+            testin=inpolygon(Xi,Yi,ObjectData.Coord(:,1),ObjectData.Coord(:,2));
+        else%calculate the scalar
+            testin=[]; %A REVOIR
+        end
     elseif isequal(ObjectData.Type,'ellipse')
-       X2Max=widthx*widthx;
-       Y2Max=(widthy)*(widthy);
-       if testX
+        X2Max=widthx*widthx;
+        Y2Max=(widthy)*(widthy);
+        if testX
             distX=(coord_x-ObjectData.Coord(1,1));
             distY=(coord_y-ObjectData.Coord(1,2));
             testin=(distX.*distX/X2Max+distY.*distY/Y2Max)<1;
-       elseif test_Amat %case of usual 2x2 matrix
-           distX=(Xi-ObjectData.Coord(1,1));
-           distY=(Yi-ObjectData.Coord(1,2));
-           testin=(distX.*distX/X2Max+distY.*distY/Y2Max)<1;
-       end
+        elseif test_Amat %case of usual 2x2 matrix
+            distX=(Xi-ObjectData.Coord(1,1));
+            distY=(Yi-ObjectData.Coord(1,2));
+            testin=(distX.*distX/X2Max+distY.*distY/Y2Max)<1;
+        end
     end
     %selected indices
     if isequal(ObjectData.ProjMode,'outside')
-            testin=~testin;
+        testin=~testin;
     end
     if testfalse
-        testin=testin & (errorflag==0); % keep only non false vectors         
+        testin=testin & (errorflag==0); % keep only non false vectors
     end
     indsel=find(testin);
     for ivar=VarIndex
-        if testproj(ivar)
-            VarName=FieldData.ListVarName{ivar};
-            ProjData.([VarName 'Mean'])=mean(double(FieldData.(VarName)(indsel,:))); % take the mean in the selected region, for each color component 
-            ProjData.([VarName 'Min'])=min(double(FieldData.(VarName)(indsel,:))); % take the min in the selected region , for each color component  
-            ProjData.([VarName 'Max'])=max(double(FieldData.(VarName)(indsel,:))); % take the max in the selected region , for each color component
-            if isequal(Mesh(ivar),0)
-                eval(['[ProjData.' VarName 'Histo,ProjData.' VarName ']=hist(double(FieldData.' VarName '(indsel,:,:)),100);']); % default histogram with 100 bins
-            else
-                eval(['ProjData.' VarName '=(ProjData.' VarName 'Min+Mesh(ivar)/2:Mesh(ivar):ProjData.' VarName 'Max);']); % list of bin values
-                eval(['ProjData.' VarName 'Histo=hist(double(FieldData.' VarName '(indsel,:)),ProjData.' VarName ');']); % histogram at predefined bin positions
-            end
-            ProjData.ListVarName=[ProjData.ListVarName {VarName} {[VarName 'Histo']} {[VarName 'Mean']} {[VarName 'Min']} {[VarName 'Max']}];
-            if test_Amat && testcolor
-                 ProjData.VarDimName=[ProjData.VarDimName  {VarName} {{VarName,'rgb'}} {'rgb'} {'rgb'} {'rgb'}];%{{'nb_point','rgb'}};
-            else
-               ProjData.VarDimName=[ProjData.VarDimName {VarName} {VarName} {'one'} {'one'} {'one'}];
-            end
-            ProjData.VarAttribute=[ProjData.VarAttribute FieldData.VarAttribute{ivar} {[]} {[]} {[]} {[]}];
+        VarName=FieldData.ListVarName{ivar};
+        ProjData.([VarName 'Mean'])=mean(double(FieldData.(VarName)(indsel,:))); % take the mean in the selected region, for each color component
+        ProjData.([VarName 'Min'])=min(double(FieldData.(VarName)(indsel,:))); % take the min in the selected region , for each color component
+        ProjData.([VarName 'Max'])=max(double(FieldData.(VarName)(indsel,:))); % take the max in the selected region , for each color component
+        if isequal(Mesh(ivar),0)
+            eval(['[ProjData.' VarName 'Histo,ProjData.' VarName ']=hist(double(FieldData.' VarName '(indsel,:,:)),100);']); % default histogram with 100 bins
+        else
+            eval(['ProjData.' VarName '=(ProjData.' VarName 'Min+Mesh(ivar)/2:Mesh(ivar):ProjData.' VarName 'Max);']); % list of bin values
+            eval(['ProjData.' VarName 'Histo=hist(double(FieldData.' VarName '(indsel,:)),ProjData.' VarName ');']); % histogram at predefined bin positions
         end
-    end 
-%     if test_Amat & testcolor
-%        %ProjData.ListDimName=[ProjData.ListDimName {'rgb'}];
-%       % ProjData.DimValue=[ProjData.DimValue 3];
-%       % ProjData.VarDimIndex={[1 2]};
-%        ProjData.VarDimName=[ProjData.VarDimName {VarName} {VarName,'rgb'}];%{{'nb_point','rgb'}};
-%        ProjData.VarDimName
-%     end
+        ProjData.ListVarName=[ProjData.ListVarName {VarName} {[VarName 'Histo']} {[VarName 'Mean']} {[VarName 'Min']} {[VarName 'Max']}];
+        if test_Amat && testcolor
+            ProjData.VarDimName=[ProjData.VarDimName  {VarName} {{VarName,'rgb'}} {'rgb'} {'rgb'} {'rgb'}];%{{'nb_point','rgb'}};
+        else
+            ProjData.VarDimName=[ProjData.VarDimName {VarName} {VarName} {'one'} {'one'} {'one'}];
+        end
+        ProjData.VarAttribute=[ProjData.VarAttribute FieldData.VarAttribute{ivar} {[]} {[]} {[]} {[]}];
+    end
 end
 
 
@@ -614,14 +565,14 @@ for icell=1:length(CellInfo)
     end
 
     % select types of  variables to be projected
-   ListProject={'VarIndex_scalar','VarIndex_image','VarIndex_color','VarIndex_vector_x','VarIndex_vector_y'};
-   check_project=false(size(FieldData.ListVarName));
-   for ilist=1:numel(ListProject)
-       if isfield(CellInfo{icell},ListProject{ilist})
-           check_project(CellInfo{icell}.(ListProject{ilist}))=1;
+   ListProj={'VarIndex_scalar','VarIndex_image','VarIndex_color','VarIndex_vector_x','VarIndex_vector_y'};
+   check_proj=false(size(FieldData.ListVarName));
+   for ilist=1:numel(ListProj)
+       if isfield(CellInfo{icell},ListProj{ilist})
+           check_proj(CellInfo{icell}.(ListProj{ilist}))=1;
        end
    end
-   VarIndex=find(check_project);
+   VarIndex=find(check_proj);
 
     %identify vector components   
     testU=isfield(CellInfo{icell},'VarIndex_vector_x') &&isfield(CellInfo{icell},'VarIndex_vector_y') ;% test for vectors

@@ -212,8 +212,8 @@ end
 hseries=findobj(allchild(0),'Name','series');%find the current series interface handle
 if ~isempty(hseries)
     hhseries=guidata(hseries);
-    set(hhseries.GetObject,'Value',0)
-    set(hhseries.GetObject,'BackgroundColor',[0 1 0])%put unactivated buttons to green
+    set(hhseries.CheckObject,'Value',0)
+    set(hhseries.CheckObject,'BackgroundColor',[0 1 0])%put unactivated buttons to green
 end
 
 

@@ -84,15 +84,18 @@ if vardetect(1)==0
      return
 end
 var_ind=find(vardetect);
-% for ilist=1:length(FieldNames)
-%         testinterp=~isempty(regexp(FieldNames{ilist},'(^curl|^div|strain|norm)', 'once'));%test need for gridded data
-%         if testinterp, break;end
-% end   
+for ilist=1:length(FieldNames)
+        testinterp=isempty(regexp(FieldNames{ilist},'(^vec|^C)', 'once'));%test need for gridded data
+        if testinterp, break;end
+end   
 for ivar=1:length(var_ind)
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
     Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
     if strcmp(role{var_ind(ivar)},'vector_x')
         Field.VarAttribute{ivar}.Operation=FieldNames;
+        if testinterp
+            Field.VarAttribute{ivar}.FieldRequest='interp_lin';
+        end
     end
 end
 VelTypeOut=VelType;
@@ -150,8 +153,6 @@ else
     Field.CivStage=0;
     Field.Dt=0;
 end
-
-
 
 %% rescale fields to pixel coordinates
 if isfield(Field,'pixcmx')

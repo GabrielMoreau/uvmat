@@ -977,10 +977,6 @@ end
 set(handles.TimeTable,'Data',TimeTable)
 
 %% set the waitbar position with respect to the min and max in the series
-% for iview=1:numel(SeriesData.i1_series)
-% [tild,index_min(iview)]=min(SeriesData.i1_series{iview}(SeriesData.i1_series{iview}>0));
-% [tild,index_max(iview)]=max(SeriesData.i1_series{iview}(SeriesData.i1_series{iview}>0));
-% end
 for iview=1:numel(SeriesData.i1_series)
     pair_max{iview}=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
     if (strcmp(get(handles.num_first_j,'Visible'),'off')&& size(pair_max{iview},2)~=1)
@@ -993,18 +989,16 @@ end
 [index_min,iview_min]=min(index_min);
 [index_max,iview_max]=min(index_max);
 if size(SeriesData.i1_series{iview_min},2)==1% movie
-  index_first=ref_i(1);
-  index_last=ref_i(2);
+    index_first=ref_i(1);
+    index_last=ref_i(2);
 else
-%index_first=(ref_i(1)-1)*(size(SeriesData.i1_series{iview_min},2)-1)+ref_j(1);
-%index_last=(ref_i(2)-1)*(size(SeriesData.i1_series{iview_max},2)-1)+ref_j(2);
-index_first=(ref_i(1))*(size(SeriesData.i1_series{iview_min},2))+ref_j(1)+1;
-index_last=(ref_i(2))*(size(SeriesData.i1_series{iview_max},2))+ref_j(2)+1;
+    index_first=(ref_i(1)-1)*(size(SeriesData.i1_series{iview_min},1))+ref_j(1)+1;
+    index_last=(ref_i(2)-1)*(size(SeriesData.i1_series{iview_max},1))+ref_j(2)+1;
 end
 range=index_max-index_min+1;
 coeff_min=(index_first-index_min)/range;
 coeff_max=(index_last-index_min+1)/range;
-Position=get(handles.Waitbar,'Position');
+Position=get(handles.Waitbar,'Position');% position of the waitbar:= [ x,y, width, height]
 Position_status=get(handles.FileStatus,'Position');
 Position(1)=coeff_min*Position_status(3)+Position_status(1);
 Position(3)=Position_status(3)*(coeff_max-coeff_min);

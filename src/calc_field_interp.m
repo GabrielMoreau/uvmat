@@ -59,50 +59,50 @@ if exist('XI','var')
 end
 for ilist=1:numel(Operation)
     if ~check_skipped(ilist)
-    nbvar=numel(ListVarName);
-    switch Operator{ilist}
-        case 'vec'
-            if exist('XI','var')
-                VarVal{nbvar+1}=F.(UName{ilist})(XI,YI);
-                VarVal{nbvar+2}=F.(VName{ilist})(XI,YI);
-            else
-                VarVal{nbvar+1}=Data.(UName{ilist});
-                VarVal{nbvar+2}=Data.(VName{ilist});
-            end
-            ListVarName{nbvar+1}=UName{ilist};
-            ListVarName{nbvar+2}=VName{ilist};
-            VarAttribute{nbvar+1}.Role='vector_x';
-            VarAttribute{nbvar+2}.Role='vector_y';
-        case 'norm'
-            if exist('XI','var')
-                U2=F.(UName{ilist})(XI,YI).*F.(UName{ilist})(XI,YI);
-                V2=F.(VName{ilist})(XI,YI).*F.(VName{ilist})(XI,YI);
-            else
-                U2=Data.(UName{ilist}).*Data.(UName{ilist});
-                V2=Data.(VName{ilist}).*Data.(VName{ilist});
-            end
-            VarVal{nbvar+1}=sqrt(U2+V2);
-            ListVarName{nbvar+1}='norm';
-            VarAttribute{nbvar+1}.Role='scalar';
-        otherwise
-            if ~isempty(Operation{ilist})
+        nbvar=numel(ListVarName);
+        switch Operator{ilist}
+            case 'vec'
                 if exist('XI','var')
-                    VarVal{nbvar+1}=F.(Operation{ilist})(XI,YI);
+                    VarVal{nbvar+1}=F.(UName{ilist})(XI,YI);
+                    VarVal{nbvar+2}=F.(VName{ilist})(XI,YI);
                 else
-                    VarVal{nbvar+1}= Data.(Operation{ilist});
+                    VarVal{nbvar+1}=Data.(UName{ilist});
+                    VarVal{nbvar+2}=Data.(VName{ilist});
                 end
-                ListVarName{nbvar+1}=Operation{ilist};
+                ListVarName{nbvar+1}=UName{ilist};
+                ListVarName{nbvar+2}=VName{ilist};
+                VarAttribute{nbvar+1}.Role='vector_x';
+                VarAttribute{nbvar+2}.Role='vector_y';
+            case 'norm'
+                if exist('XI','var')
+                    U2=F.(UName{ilist})(XI,YI).*F.(UName{ilist})(XI,YI);
+                    V2=F.(VName{ilist})(XI,YI).*F.(VName{ilist})(XI,YI);
+                else
+                    U2=Data.(UName{ilist}).*Data.(UName{ilist});
+                    V2=Data.(VName{ilist}).*Data.(VName{ilist});
+                end
+                VarVal{nbvar+1}=sqrt(U2+V2);
+                ListVarName{nbvar+1}='norm';
                 VarAttribute{nbvar+1}.Role='scalar';
-            end
-    end
+            otherwise
+                if ~isempty(Operation{ilist})
+                    if exist('XI','var')
+                        VarVal{nbvar+1}=F.(Operation{ilist})(XI,YI);
+                    else
+                        VarVal{nbvar+1}= Data.(Operation{ilist});
+                    end
+                    ListVarName{nbvar+1}=Operation{ilist};
+                    VarAttribute{nbvar+1}.Role='scalar';
+                end
+        end
     end
 end
 % put an error flag to indicate NaN data
 if exist('XI','var')
-nbvar=numel(ListVarName);
-ListVarName{nbvar+1}='FF';
-VarVal{nbvar+1}=isnan(VarVal{nbvar});
-VarAttribute{nbvar+1}.Role='errorflag';
+    nbvar=numel(ListVarName);
+    ListVarName{nbvar+1}='FF';
+    VarVal{nbvar+1}=isnan(VarVal{nbvar});
+    VarAttribute{nbvar+1}.Role='errorflag';
 end
 
 % Attr_FF.Role='errorflag';
