@@ -40,7 +40,7 @@ function [hh]=plot_object(ObjectData,ProjObject,hplot,col)
 %% default output
 hh=[];%default output
 % object representation is canceled if the field is not projected on a plane or is the same as the represented object 
-if ~isfield(ObjectData,'Type')|| isequal(ProjObject,ObjectData)|| ~strcmp(ProjObject.Type,'plane')
+if ~isfield(ObjectData,'Type')|| isequal(ProjObject,ObjectData)||~isfield(ProjObject,'Type')|| ~strcmp(ProjObject.Type,'plane')
     if ~isempty(hplot) && ishandle(hplot) && ~strcmp(get(hplot,'Type'),'axes')
         ObjectPlotData=get(hplot,'UserData');
         if isfield(ObjectPlotData,'SubObject') & ishandle(ObjectPlotData.SubObject)

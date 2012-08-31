@@ -84,6 +84,10 @@ switch FileType
             Role{numel(ListVar)}='ancillary';% scalar used for color vector (not projected)
         end
         [Field,var_detect,ichoice]=nc2struct(FileName,[ParamIn.Coord_x ParamIn.Coord_y ListVar]);
+        if isfield(Field,'Txt')
+            errormsg=Field.Txt;
+            return
+        end
         for ivar=1:numel(ListVar)
             Field.VarAttribute{ivar+2}.Role=Role{ivar};
             %                 Field.VarAttribute{ivar+2}.FieldRequest=FieldRequest{ivar};

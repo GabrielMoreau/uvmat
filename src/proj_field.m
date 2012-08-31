@@ -1250,7 +1250,7 @@ for icell=1:length(CellInfo)
                     errormsg='matrices with more than 3 dimensions not handled';
                     return
                 else
-                    if numel(find(VarType.coord))==2% the third matrix dimension does not correspond to a space coordinate
+                    if numel(CellInfo{icell}.CoordIndex)==2% the third matrix dimension does not correspond to a space coordinate
                         nbcolor=DimValue(3);
                         DimValue(3)=[]; %number of 'color' components updated
                         NbDim=2;% space dimension set to 2

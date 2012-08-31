@@ -14,6 +14,7 @@
 %                    .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
 %                  ListDimName=list of dimension (added information, not requested for field description)
 %                  DimValue= vlalues of dimensions (added information, not requested for field description)
+%         .Txt: error message
 %  var_detect: vector with same length as the cell array ListVarName, = 1 for each detected variable and 0 else.
 %            var_detect=[] in the absence of input cell array 
 %  ichoice: index of the selected line in the case of multiple choice 

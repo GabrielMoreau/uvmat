@@ -180,7 +180,7 @@ if ~(isfield(AxeData,'NbDim') && isequal(AxeData.NbDim,2))
 end
 
 %% delete the current zoom rectangle
-if isfield(AxeData,'CurrentRectZoom') && ishandle(AxeData.CurrentRectZoom)
+if isfield(AxeData,'CurrentRectZoom') && ~isempty(AxeData.CurrentRectZoom) && ishandle(AxeData.CurrentRectZoom)
     delete(AxeData.CurrentRectZoom)
     AxeData.CurrentRectZoom=[];
 end    
@@ -344,7 +344,11 @@ if  test_create && ~isempty(xy) %&& ~(isfield(AxeData,'Drawing')&& isequal(AxeDa
             end
             ObjectName=ObjectNameNew;
             set(sethandles.Name,'String',ObjectName)% display the default name in set_object
+            if isempty(ListObject)
+                ListObject={ObjectName};
+            else
             ListObject{end}=ObjectName;
+            end
             set(hhuvmat.ListObject,'String',ListObject);%complement the object list
             set(hhuvmat.ListObject_1,'String',ListObject);%complement the object list
             set(hhuvmat.ListObject,'Value',IndexObj)

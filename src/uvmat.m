@@ -4458,6 +4458,9 @@ end
 set(handles.edit_object,'Value',0); %suppress the object edit mode
 set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
 ListObject=get(handles.ListObject,'String');
+if isempty(ListObject)
+    ListObject={''};
+end
 if ~strcmp(ListObject{end},'')
     ListObject=[ListObject;{''}]; %append a blank to the list (if nort already done) to indicate the creation of a new object
     set(handles.ListObject,'String',ListObject)
