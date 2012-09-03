@@ -305,9 +305,22 @@ for icell=1:length(CellInfo)
         VarNameCell={VarName};
     end
     if numel(VarValue)<10
-        Data =[Data [VarNameCell; num2cell(VarValue)]];
+        if isempty(VarValue)
+            VarValueCell={'[]'};
+        else
+            VarValueCell=num2cell(VarValue);
+        end
+        if isempty(Data)
+            Data =[VarNameCell; VarValueCell];
+        else
+            Data =[Data [VarNameCell; VarValueCell]];
+        end
     else
+        if isempty(Data)
+            Data =[VarNameCell; num2cell(VarValue)];
+        else
         Data =[Data [VarNameCell; {['size ' num2str(size(VarValue))]}]];
+        end
     end
     if size(VarValue,1)==1
         txt=[VarName '=' num2str(VarValue)];

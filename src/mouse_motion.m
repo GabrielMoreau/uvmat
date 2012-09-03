@@ -134,7 +134,7 @@ for ichild=1:length(hchild)
                                     for ivar=1:numel(CellInfo{icell}.VarIndex)
                                         VarName=Field.ListVarName{CellInfo{icell}.VarIndex(ivar)};
                                         VarVal=Field.(VarName)(ivec);
-                                        var_text=[VarName '=' num2str(VarVal,3) ','];
+                                        var_text=[VarName '=' num2str(VarVal,4) ','];
                                         if isequal(ivar,CellInfo{icell}.CoordIndex(end))||isequal(ivar,CellInfo{icell}.CoordIndex(end-1))||isequal(ivar,CellInfo{icell}.CoordIndex(1))
                                             text_displ_1=[text_displ_1 var_text];
                                         elseif (isfield(CellInfo{icell},'VarIndex_vector_x') && isequal(ivar,CellInfo{icell}.VarIndex_vector_x))||isequal(ivar,CellInfo{icell}.VarIndex_vector_y)||...
@@ -180,7 +180,7 @@ for ichild=1:length(hchild)
                             xName='x';
                             yName='y';
                         end
-                        text_displ_1=[xName '=' num2str(xy(1,1),3) ', ' yName '=' num2str(xy(1,2),3) ','];
+                        text_displ_1=[xName '=' num2str(xy(1,1),4) ', ' yName '=' num2str(xy(1,2),4) ','];
                     end
               %display the z coordinate if defined by the projection plane
                     if isfield(Field,'PlaneCoord') 
@@ -202,7 +202,7 @@ for ichild=1:length(hchild)
                         end
                     end
                     if ~isempty(z)
-                        text_displ_1=[text_displ_1 ' z=' num2str(z,3)];
+                        text_displ_1=[text_displ_1 ' z=' num2str(z,4)];
                     end
                % case of PIV correlation display
                     if test_piv

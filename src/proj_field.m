@@ -483,7 +483,9 @@ for icell=1:length(CellInfo)
         else
             ProjData.VarDimName=[ProjData.VarDimName {VarName} {VarName} {'one'} {'one'} {'one'}];
         end
+        if isfield(FieldData,'VarAttribute')&& numel(FieldData.VarAttribute)>=ivar
         ProjData.VarAttribute=[ProjData.VarAttribute FieldData.VarAttribute{ivar} {[]} {[]} {[]} {[]}];
+        end
     end
 end
 

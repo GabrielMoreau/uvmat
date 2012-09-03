@@ -223,9 +223,9 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['get_field / Field_input / find_field_cells: ' errormsg])
     return
 end  
-for icell=1:numel(CellInfo)
-    NbDim(icell)=max(NbDim(icell),numel(CellInfo{icell}.VarIndex));
-end
+% for icell=1:numel(CellInfo)
+%     NbDim(icell)=max(NbDim(icell),numel(CellInfo{icell}.VarIndex));
+% end
 [maxdim,imax]=max(NbDim);
    
 if maxdim>=3
@@ -890,7 +890,7 @@ if ~isempty(hfield)
     elseif isfield(get_field_GUI,'Panel1Dplot')
         set(hh.Coord_x,'Value',1)
         set(hh.Coord_x,'String',{get_field_GUI.Panel1Dplot.abscissa})
-        set(hh.Coord_y,'String',{get_field_GUI.Panel1Dplot.ordinate})
+        set(hh.Coord_y,'String',get_field_GUI.Panel1Dplot.ordinate)
         set(hh.Coord_y,'Value',1:numel(get_field_GUI.Panel1Dplot.ordinate))
         set(hfield,'Value',1)
         set(hfield,'String',[{''};{'get_field...'}])
