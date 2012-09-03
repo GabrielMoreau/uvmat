@@ -83,7 +83,7 @@ switch FileType
         if check_colorvar
             Role{numel(ListVar)}='ancillary';% scalar used for color vector (not projected)
         end
-        [Field,var_detect,ichoice]=nc2struct(FileName,[ParamIn.Coord_x ParamIn.Coord_y ListVar]);
+        [Field,var_detect,ichoice]=nc2struct(FileName,[ParamIn.Coord_x (ParamIn.Coord_y)' ListVar]);
         if isfield(Field,'Txt')
             errormsg=Field.Txt;
             return
