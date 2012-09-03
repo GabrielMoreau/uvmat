@@ -292,7 +292,6 @@ if ~isempty(inputfile)
     %%%%% display the input field %%%%%%%
     display_file_name(handles,inputfile)
     %%%%%%%
-    testinputfield=1;
 end
 
 set_vec_col_bar(handles) %update the display of color code for vectors
@@ -2403,31 +2402,31 @@ end
 
 %% get bounds and mesh (needed  to propose default options for projection objects)
 if NbDim>1
-    CoordMax=zeros(1,numel(imax));
-    CoordMin=zeros(1,numel(imax));
+    CoordMax=zeros(numel(imax),NbDim);
+    CoordMin=zeros(numel(imax),NbDim);
+    Mesh=zeros(numel(imax),NbDim);
     for ind=1:numel(imax)
         XName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end)};
         YName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end-1)};
-        CoordMax(ind,1)=max(max(UvData.Field.(XName)));
-        CoordMin(ind,1)=min(min(UvData.Field.(XName)));
-        CoordMax(ind,2)=max(max(UvData.Field.(YName)));
-        CoordMin(ind,2)=min(min(UvData.Field.(YName)));
+        CoordMax(ind,NbDim)=max(max(UvData.Field.(XName)));
+        CoordMin(ind,NbDim)=min(min(UvData.Field.(XName)));
+        CoordMax(ind,NbDim-1)=max(max(UvData.Field.(YName)));
+        CoordMin(ind,NbDim-1)=min(min(UvData.Field.(YName)));
         %         test_x=1;%test for unstructured coordinates
         if NbDim==3
             ZName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(1)};
-            CoordMax(imax(ind),3)=max(max(UvData.Field.(ZName)));
-            CoordMin(ind,3)=min(min(UvData.Field.(ZName)));
+            CoordMax(imax(ind),1)=max(max(UvData.Field.(ZName)));
+            CoordMin(ind,1)=min(min(UvData.Field.(ZName)));
         end
         
         switch CellInfo{imax(ind)}.CoordType
             
             case 'scattered' %unstructured coordinates
-                NbPoints(ind)=CellInfo{imax(ind)}.CoordSize;% nbre of points
-                Mesh(ind)=(prod(CoordMax(ind,:)-CoordMin(ind,:))/NbPoints)^(1/NbDim); %(volume or area per point)^(1/NbDim)
-            case 'grid'%structured coordinate
                 NbPoints=CellInfo{imax(ind)}.CoordSize;% nbre of points
-                Mesh(ind)=min((CoordMax(ind,:)-CoordMin(ind,:))./NbPoints);
-                
+                Mesh(ind,:)=(prod(CoordMax(ind,:)-CoordMin(ind,:))/NbPoints)^(1/NbDim); %(volume or area per point)^(1/NbDim)
+            case 'grid'%structured coordinate
+                NbPoints=CellInfo{imax(ind)}.CoordSize;% nbre of points in each direction
+                Mesh(ind,:)=min((CoordMax(ind,:)-CoordMin(ind,:))./(NbPoints-1));                
         end
     end
     UvData.Field.Mesh=min(Mesh);
@@ -2524,7 +2523,7 @@ else
     %% Plot the projections on the selected  projection objects
     % main projection object (uvmat display)
     list_object=get(handles.ListObject_1,'String');
-    if isequal(list_object,{''})%refresh list of objects if the menu is empty
+    if isequal(list_object,{''})||isequal(list_object,' ')%refresh list of objects if the menu is empty
         set(handles.ListObject,'Value',1)
         set(handles.ListObject,'String',{'plane'})
         UvData.Object{1}.Type='plane';%main plotting plane

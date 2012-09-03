@@ -269,28 +269,50 @@ errormsg=[];
 txt_cell={};
 Data={};
 for icell=1:length(CellInfo)
-    VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list data.ListVarName
-    for ivar=1:length(VarIndex)
-        checkancillary=0;
-        if length(FieldData.VarAttribute)>=VarIndex(ivar)
-            VarAttribute=FieldData.VarAttribute{VarIndex(ivar)};
-            if isfield(VarAttribute,'Role')&&(strcmp(VarAttribute.Role,'ancillary')||strcmp(VarAttribute.Role,'coord_tps')...
-                    ||strcmp(VarAttribute.Role,'vector_x_tps')||strcmp(VarAttribute.Role,'vector_y_tps'))
-                checkancillary=1;
-            end
+    
+    % select types of  variables to be projected
+    ListProj={'VarIndex_scalar','VarIndex_image','VarIndex_color','VarIndex_vector_x','VarIndex_vector_y'};
+    check_proj=false(size(FieldData.ListVarName));
+    for ilist=1:numel(ListProj)
+        if isfield(CellInfo{icell},ListProj{ilist})
+            check_proj(CellInfo{icell}.(ListProj{ilist}))=1;
         end
-%         if ~checkancillary% does not display variables with attribute '.Role=ancillary'
-            VarName=FieldData.ListVarName{VarIndex(ivar)};
-            VarValue=FieldData.(VarName);
-            Data =[Data [{VarName}; num2cell(VarValue)]];
-            if size(VarValue,1)~=1
-                VarValue=VarValue';% put the different values on a line
-            end
-            if size(VarValue,1)==1
-            txt=[VarName '=' num2str(VarValue)];
-            txt_cell=[txt_cell;{txt}];
-            end
-%         end
+    end
+    VarIndex=find(check_proj);
+    %
+    %     VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list data.ListVarName
+    %     for ivar=1:length(VarIndex)
+    %         checkancillary=0;
+    %         if length(FieldData.VarAttribute)>=VarIndex(ivar)
+    %             VarAttribute=FieldData.VarAttribute{VarIndex(ivar)};
+    %             if isfield(VarAttribute,'Role')&&(strcmp(VarAttribute.Role,'ancillary')||strcmp(VarAttribute.Role,'coord_tps')...
+    %                     ||strcmp(VarAttribute.Role,'vector_x_tps')||strcmp(VarAttribute.Role,'vector_y_tps'))
+    %                 checkancillary=1;
+    %             end
+    %         end
+    %         if ~checkancillary% does not display variables with attribute '.Role=ancillary'
+    for ivar=1:length(VarIndex)
+    VarName=FieldData.ListVarName{VarIndex(ivar)};
+    VarValue=FieldData.(VarName);
+    if iscolumn(VarValue)
+        VarValue=VarValue';% put the different values on a line
+    end
+    if numel(VarValue)>1 && numel(VarValue)<10
+        for ind=1:numel(VarValue)
+            VarNameCell{1,ind}=[VarName '_' num2str(ilist)];
+        end
+    else
+        VarNameCell={VarName};
+    end
+    if numel(VarValue)<10
+        Data =[Data [VarNameCell; num2cell(VarValue)]];
+    else
+        Data =[Data [VarNameCell; {['size ' num2str(size(VarValue))]}]];
+    end
+    if size(VarValue,1)==1
+        txt=[VarName '=' num2str(VarValue)];
+        txt_cell=[txt_cell;{txt}];
+    end
     end
 end
 if strcmp(get(htext,'Type'),'uitable')

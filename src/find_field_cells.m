@@ -54,31 +54,26 @@
 %    group the variables  into 'fields' with common dimensions
 
 function [CellInfo,NbDim,errormsg]=find_field_cells(Data)
-% CellVarIndex={};
-% CellInfo={}
+
 NbDim=0;
-% CellVarType=[];
-errormsg=[];
+errormsg='';
 if ~isfield(Data,'ListVarName'), errormsg='the list of variables .ListVarName is missing';return;end
 if ~isfield(Data,'VarDimName'), errormsg='the list of dimensions .VarDimName is missing';return;end
 nbvar=numel(Data.ListVarName);%number of field variables
 if ~isequal(numel(Data.VarDimName),nbvar), errormsg='.ListVarName and .VarDimName have unequal length';return;end
-if isfield(Data,'ListDimName')&& isfield(Data,'DimValue')&&isequal(numel(Data.ListDimName),numel(Data.DimValue))
-    check_dim=1;% dimensions of data defined, data not needed for this function
-else
-    check_dim=0;
-    for ilist=1:numel(Data.ListVarName)
-        if ~isfield(Data,Data.ListVarName{ilist})
-            errormsg=['missing variable ' Data.ListVarName{ilist}];
-            return
-        end
+% check the existence of variable data
+check_var=1;
+for ilist=1:numel(Data.ListVarName)
+    if ~isfield(Data,Data.ListVarName{ilist})
+        check_var=0;% dimensions of data defined, data not needed for this function
+        break
     end
 end
-icell=0;
+if ~check_var &&  ~(isfield(Data,'ListDimName')&& isfield(Data,'DimValue')&&isequal(numel(Data.ListDimName),numel(Data.DimValue)))
+    errormsg=['missing variable or values of dimensions' Data.ListVarName{ilist}];
+    return
+end
 
-% NbDim=[];
-% VarDimIndex=[];
-% VarDimName={};
 
 %% role of variables and list of requested operations
 %ListRole={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','vector_x_tps','vector_y_tps','warnflag','errorflag',...
@@ -126,14 +121,14 @@ for icell=1:numel(ivar_coord_x)
         if ~(numel(VarIndex)==1 && numel(DimCell)>1)% a variable is associated to coordinate
             CellInfo{icell}.CoordIndex=ivar_coord_x(icell);
             % size of coordinate var
-            if check_dim
+            if check_var
+                CellInfo{icell}.CoordSize=numel(Data.(Data.ListVarName{ivar_coord_x(icell)}));
+            else
                 for idim=1:numel(DimCell)
                  check_index= strcmp(DimCell{idim},Data.ListDimName);
                  CellInfo{icell}.CoordSize(idim)=Data.DimValue(check_index);
                 end
                 CellInfo{icell}.CoordSize=prod(CellInfo{icell}.CoordSize);
-            else
-                CellInfo{icell}.CoordSize=numel(Data.(Data.ListVarName{ivar_coord_x(icell)}));
             end
             ind_y=find(strcmp('coord_y',Role(VarIndex)));
             if numel(VarIndex)==2||isempty(ind_y)% no variable, except possibly y
@@ -156,13 +151,13 @@ for icell=1:numel(ivar_coord_x)
 end
 
 %% look for tps coordinates
-ivar_remain=find(~check_select);
+ivar_remain=find(~check_select);% indices of remaining variables (not already selected)
 check_coord_tps= strcmp('coord_tps',Role(~check_select));
-ivar_tps=ivar_remain(check_coord_tps);
+ivar_tps=ivar_remain(check_coord_tps);% variable indices corresponding to tps coordinates
 for icell_tps=1:numel(ivar_tps)
-    DimCell=Data.VarDimName{ivar_tps(icell_tps)};
-    icell=numel(CellInfo)+icell_tps;
-    CellInfo{icell}.CoordIndex=ivar_tps(icell);
+    DimCell=Data.VarDimName{ivar_tps(icell_tps)};% dimension names for the current tps coordinate variable
+    icell=numel(CellInfo)+icell_tps; % new field cell index
+    CellInfo{icell}.CoordIndex=ivar_tps(icell_tps);% index of the  tps coordinate variable
     CellInfo{icell}.VarIndex_subrange_tps=[];
     CellInfo{icell}.VarIndex_nbsites_tps=[];
     if numel(DimCell)==3
@@ -181,78 +176,96 @@ for icell_tps=1:numel(ivar_tps)
     end
     CellInfo{icell}.CoordType='tps';
     CellInfo{icell}.VarIndex=find(check_cell);
-    if check_dim
+    if check_var
+        NbDim(icell)=size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),2);
+        CellInfo{icell}.CoordSize=size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),1)*size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),3);
+    else
         check_index_1= strcmp(DimCell{1},Data.ListDimName);
         check_index_2= strcmp(DimCell{2},Data.ListDimName);
         check_index_3= strcmp(DimCell{3},Data.ListDimName);
         NbDim(icell)=Data.DimValue(check_index_2);
         CellInfo{icell}.CoordSize=Data.DimValue(check_index_1)*Data.DimValue(check_index_3);
-    else
-        NbDim(icell)=size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),2);
-        CellInfo{icell}.CoordSize=size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),1)*size(Data.(Data.ListVarName{CellInfo{icell}.CoordIndex}),3);
     end
     check_select=check_select|check_cell;
 end
 
-%% look for dimension variables and corresponding gridded data
-ivar_remain=find(~check_select);
+%% look for coordinate variables and corresponding gridded data:
+% coordinate variables are variables associated with a single dimension, defining the coordinate values
+% two cases: 1)the coordiante variable represents the set of coordiante values
+%            2)the coordinate variable contains only two elements, representing the coordinate bounds for the dimension with the same name as the cordinate
+ivar_remain=find(~check_select);% indices of remaining variables, not already taken into account
+ListVarName=Data.ListVarName(~check_select);%list of remaining variables
 VarDimName=Data.VarDimName(~check_select);%dimensions of remaining variables
-check_coord= cellfun(@numel,VarDimName)==1|cellfun(@ischar,VarDimName)==1;% find variables with a single dimension
-ListCoordIndex=ivar_remain(check_coord);
-ListCoordName=Data.ListVarName(ListCoordIndex);
-ListDimName=Data.VarDimName(ListCoordIndex);
-%remove redondant values
+check_coord= cellfun(@numel,VarDimName)==1|cellfun(@ischar,VarDimName)==1;% find remaining variables with a single dimension
+ListCoordIndex=ivar_remain(check_coord);% indices of remaining variables with a single dimension
+ListCoordName=Data.ListVarName(ListCoordIndex);% corresponding names of remaining variables with a single dimension
+ListDimName=Data.VarDimName(ListCoordIndex);% dimension names of remaining variables with a single dimension
+
+%remove redondant variables -> keep only one variable per dimension
 check_keep=logical(ones(size(ListDimName)));
 for idim=1:numel(ListDimName)
-    prev_ind=strcmp(ListDimName{idim},ListDimName(1:idim-1));
+    prev_ind=strcmp(ListDimName{idim},ListDimName(1:idim-1));% check whether the dimension is already taken into account
     if ~isempty(prev_ind)
-        if strcmp(ListCoordName{idim},ListDimName{idim}) %coordinate variable
+        if strcmp(ListCoordName{idim},ListDimName{idim}) %variable with the same name as the coordinate taken in priority
             check_keep(prev_ind)=0;
         else
            check_keep(idim)=0; 
         end
     end
 end
-ListCoordIndex=ListCoordIndex(check_keep);
-ListCoordName=ListCoordName(check_keep);
-ListDimName=ListDimName(check_keep);
+ListCoordIndex=ListCoordIndex(check_keep);% list of coordinate variable indices
+ListCoordName=ListCoordName(check_keep);% list of coordinate variable names
+ListDimName=ListDimName(check_keep);% list of coordinate dimension names
 
-CoordSize=[];
+% determine dimension sizes
+CoordSize=zeros(size(ListCoordIndex));
 for ilist=1:numel(ListCoordIndex)
     if iscell(ListDimName{ilist})
         ListDimName(ilist)=ListDimName{ilist};%transform cell to string
     end
-    if check_dim% if the list of dimensions is directly defined
-        check_index= strcmp(ListDimName{ilist},Data.ListDimName);
-        DimValue=Data.DimValue(check_index);
+    if check_var% if the list of dimensions has been directly defined, no variable data available
+        CoordSize(ilist)=numel(Data.(ListCoordName{ilist}));% number of elements in the variable corresponding to the dimension #ilist
     else
-        DimValue=numel(Data.(ListCoordName{ilist}));
+        check_index= strcmp(ListDimName{ilist},Data.ListDimName);% find the  index in the list of dimensions
+        CoordSize(ilist)=Data.DimValue(check_index);% find the  corresponding dimension value
     end
-    if DimValue==2% case of uniform grid coordinate defined by lower and upper bounds only
-        ListDimName{ilist}=ListCoordName{ilist};% look for dimensions with name equal to coordinate for
-        if check_dim
-            check_index= strcmp(ListCoordName{ilist},Data.ListDimName);
-            CoordSize(ilist)=Data.DimValue(check_index);
-        else
-            CoordSize(ilist)=numel(Data.(ListCoordName{ilist}));
-        end
-    else
-        CoordSize(ilist)=DimValue;
+    if CoordSize(ilist)==2% case of uniform grid coordinate defined by lower and upper bounds only
+        ListDimName{ilist}=ListCoordName{ilist};% replace the dimension name by the coordinate variable name 
+%         if check_var
+%             check_index= strcmp(ListCoordName{ilist},Data.ListDimName);
+%             CoordSize(ilist)=Data.DimValue(check_index);
+%         else
+%             CoordSize(ilist)=numel(Data.(ListCoordName{ilist}));
+% %         end
+%     else
+%         CoordSize(ilist)=DimValue;
     end
 end
+
+% group the remaining variables in cells sharing the same coordinate variables
 NewCellInfo={};
 NewCellDimIndex={};
 NewNbDim=[];
-for ivardim=1:numel(VarDimName) % loop on the list of remaining variables
-    DimCell=VarDimName{ivardim};% dimension names of the current variable
+for ivardim=1:numel(VarDimName) % loop at the list of remaining variables
+    DimCell=VarDimName{ivardim};% dimension names of the current variable 
     if ischar(DimCell), DimCell={DimCell}; end %transform char to cell if needed
     DimIndices=[];
     for idim=1:numel(DimCell)
-        ind_dim=find(strcmp(DimCell{idim},ListDimName));%find the dim index in the list of coord dimensions
+        ind_dim=find(strcmp(DimCell{idim},ListDimName));%find the dim index in the list of coordinate variables
         if ~isempty(ind_dim)
             DimIndices=[DimIndices ind_dim]; %update the list of coord dimensions included in DimCell
+            if check_var && CoordSize(ind_dim)==2 % determine the size of the coordinate in case of coordiante variable limited to lower and upper bounds
+                if isvector(Data.(ListVarName{ivardim})) || iscolumn(Data.(ListVarName{ivardim}))
+                    if numel(Data.(ListVarName{ivardim}))>2
+                        CoordSize(ind_dim)=numel(Data.(ListVarName{ivardim}));
+                    end
+                else
+                    CoordSize(ind_dim)=size(Data.(ListVarName{ivardim}),idim);
+                end
+            end
         end
     end
+    % look for cells of variables with the same coordinate variables
     check_previous=0;
     for iprev=1:numel(NewCellInfo)
         if isequal(DimIndices,NewCellDimIndex{iprev})
@@ -261,6 +274,7 @@ for ivardim=1:numel(VarDimName) % loop on the list of remaining variables
             break
         end
     end
+    % create a new cell if no previous one contains the coordinate variables
     if ~check_previous
         nbcell=numel(NewCellInfo)+1;
         NewCellDimIndex{nbcell}=DimIndices;
