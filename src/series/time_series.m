@@ -241,7 +241,7 @@ for i_slice=1:NbSlice
                     Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
                 end
             end
-            
+            if isempty(errormsg)
             Field=Data{1}; % default input field structure
             % coordinate transform (or other user defined transform)
             if ~isempty(transform_fct)
@@ -372,6 +372,7 @@ for i_slice=1:NbSlice
             if ~isempty(errormsg)
                 nbmissing=nbmissing+1;
                 display(['index=' num2str(index) ':' errormsg])
+            end
             end
         end
     end
