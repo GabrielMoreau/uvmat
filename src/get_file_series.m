@@ -47,7 +47,7 @@ for iview=1:size(InputTable,1)
     if isempty(r)||isempty(r.mode)
         r(1).num1='';
         r(1).num2='';
-        if strcmp(Param.IndexRange.PairString{iview,1},'j=*-*')
+        if isfield (Param.IndexRange,'PairString') && strcmp(Param.IndexRange.PairString{iview,1},'j=*-*')
             r(1).mode='*-*';
         else
         r(1).mode='';

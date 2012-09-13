@@ -1551,6 +1551,10 @@ end
 CheckFixPair=get(handles.CheckFixPair,'Value')||(isempty(i2)&&isempty(j2));
 
 % the pair i1-i2 or j1-j2 is imposed (check box CheckFixPair selected)
+        i1_1=i1;
+        i2_1=i2;
+        j1_1=j1;
+        j2_1=j2;
 if CheckFixPair
     if get(handles.scan_i,'Value')==1% case of scanning along index i
         i1=i1+increment;
