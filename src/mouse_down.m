@@ -376,8 +376,8 @@ if  test_create && ~isempty(xy) %&& ~(isfield(AxeData,'Drawing')&& isequal(AxeDa
     end
 end
 
-%% create calibration points if the GUI geometry_calib is opened, if the main axes axes3 of uvmat has ben selected
-if ~test_zoom && test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'axes3') 
+%% create calibration points if the GUI geometry_calib is opened, if the main axes PlotAxes of uvmat has ben selected
+if ~test_zoom && test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'PlotAxes') 
     h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
     hh_geometry_calib=guidata(h_geometry_calib);
     h_edit_append=hh_geometry_calib.edit_append;%findobj(h_geometry_calib,'Tag','edit_append');

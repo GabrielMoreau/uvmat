@@ -1354,8 +1354,9 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
          menu_transform=get(handles.transform_fct,'String');
         choice_value=get(handles.transform_fct,'Value');
         transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
-        transform_list=get(handles.transform_fct,'UserData');
-        transform=transform_list{choice_value};
+%         transform_list=get(handles.transform_fct,'UserData');
+%         transform=transform_list{choice_value};
+        transform=get(handles.path_transform,'UserData');
         if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
             if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
                 Calib=UvData.XmlData{1}.GeometryCalib;
@@ -3557,11 +3558,11 @@ if ~isempty(list_path{ichoice})
     end
 end
 
-set(handles.CheckFixLimits,'Value',0)
-set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
 
 %% delete drawn objects if the output CooordUnit is different from the previous one
 if ~strcmp(CoordUnit,CoordUnitPrev)
+    set(handles.CheckFixLimits,'Value',0)
+set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
     hother=findobj('Tag','proj_object');%find all the proj objects
     for iobj=1:length(hother)
         delete_object(hother(iobj))

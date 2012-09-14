@@ -138,11 +138,11 @@ function closefcn(gcbo,eventdata)
 huvmat=findobj(allchild(0),'Name','uvmat');
 if ~isempty(huvmat)
     handles=guidata(huvmat);
-    hobject=findobj(handles.axes3,'tag','calib_points');
+    hobject=findobj(handles.PlotAxes,'tag','calib_points');
     if ~isempty(hobject)
         delete(hobject)
     end
-    hobject=findobj(handles.axes3,'tag','calib_marker');
+    hobject=findobj(handles.PlotAxes,'tag','calib_marker');
     if ~isempty(hobject)
         delete(hobject)
     end    
@@ -286,11 +286,11 @@ if strcmp(answer,'Yes')
     end
     
     %display image with new calibration in the currently opened uvmat interface
-    hhh=findobj(hhuvmat.axes3,'Tag','calib_marker');% delete calib points and markers
+    hhh=findobj(hhuvmat.PlotAxes,'Tag','calib_marker');% delete calib points and markers
     if ~isempty(hhh)
         delete(hhh);      
     end
-    hhh=findobj(hhuvmat.axes3,'Tag','calib_points');
+    hhh=findobj(hhuvmat.PlotAxes,'Tag','calib_points');
     if ~isempty(hhh)
         delete(hhh);
     end
@@ -997,7 +997,7 @@ if ~isempty(ObjectData.Coord)
         msgbox_uvmat('ERROR','the choice in menu_coord of uvmat must be '''', px or phys ')
     end
 end
-%axes(hhuvmat.axes3)
+
 set(0,'CurrentFigure',huvmat)
 set(huvmat,'CurrentAxes',hhuvmat.PlotAxes)
 hh=findobj('Tag','calib_points');
