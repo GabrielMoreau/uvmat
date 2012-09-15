@@ -1331,10 +1331,13 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
         end
     else
         %read mask image
-        Mask.AName='image';
-        Mask.A=imread(MaskName);
+        [Mask,tild,errormsg] = read_field(MaskName,'image');
+%         Mask.AName='image';
+%         Mask.A=imread(MaskName);
+        if ~isempty(errormsg)
+            return
+        end
         npxy=size(Mask.A);
-        test_error=0;
         if length(npxy)>2
             errormsg=[MaskName ' is not a grey scale image'];
             return
@@ -1342,9 +1345,9 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
             errormsg=[MaskName ' is not a 8 bit grey level image'];
             return
         end
-        Mask.AX=[0.5 npxy(2)-0.5];
-        Mask.AY=[npxy(1)-0.5 0.5 ];
-        Mask.CoordUnit='pixel';
+%         Mask.AX=[0.5 npxy(2)-0.5];
+%         Mask.AY=[npxy(1)-0.5 0.5 ];
+%         Mask.CoordUnit='pixel';
         if isequal(get(handles.slices,'Value'),1)
            NbSlice=str2num(get(handles.num_NbSlice,'String'));
            num_i1=str2num(get(handles.i1,'String')); 
@@ -4608,7 +4611,6 @@ if isempty(val)
     msgbox_uvmat('ERROR','polygons must be first created by Projection object/mask polygon in the menu bar');
     return
 else
-%     set(handles.ListObject,'Max',2);%allow multiple selection
     set(handles.ListObject,'Value',val);
     flag=1;
     npx=size(UvData.Field.A,2);
@@ -4633,7 +4635,20 @@ else
                         X=ObjectData.Coord(:,1);
                         Y=ObjectData.Coord(:,2);
                         if testphys
-                            [X,Y]=px_XYZ(Calib,X,Y,0);% to generalise with 3D cases
+                            pos=[X Y zeros(size(X))];
+                            if isfield(Calib,'SliceCoord') && length(Calib.SliceCoord)>=3
+                                if isfield(Calib,'SliceAngle')&&~isequal(Calib.SliceAngle,[0 0 0])
+                                    om=norm(Calib.SliceAngle);%norm of rotation angle in radians
+                                    OmAxis=Calib.SliceAngle/om; %unit vector marking the rotation axis
+                                    cos_om=cos(pi*om/180);
+                                    sin_om=sin(pi*om/180);
+                                    pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
+                                end
+                                pos(:,1)=pos(:,1)+Calib.SliceCoord(1);
+                                pos(:,2)=pos(:,2)+Calib.SliceCoord(2);
+                                pos(:,3)=pos(:,3)+Calib.SliceCoord(3);
+                            end                           
+                            [X,Y]=px_XYZ(Calib,pos(:,1),pos(:,2),pos(:,3));
                         end
                         flagobj=~inpolygon(Xi,Yi,X',Y');%=0 inside the polygon, 1 outside
                     elseif isequal(ObjectData.Type,'ellipse')
@@ -4670,7 +4685,6 @@ else
     if ~isempty(RootFile)&&(isequal(RootFile(1),'/')|| isequal(RootFile(1),'\'))
         RootFile(1)=[];
     end
-   % filebase=fullfile(RootPath,RootFile);
     list=get(handles.masklevel,'String');
     masknumber=num2str(length(list));
     maskindex=get(handles.masklevel,'Value');

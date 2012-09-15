@@ -93,7 +93,7 @@ if isequal(ObjectData.ProjMode,'none')||isequal(ObjectData.ProjMode,'mask_inside
 end
 if ~isfield(ObjectData,'Coord')||isempty(ObjectData.Coord)
     if strcmp(ObjectData.Type,'plane')
-        ObjectData.Coord=[0 0 0];%default
+        ObjectData.Coord=[0 0];%default
     else
         return
     end
@@ -947,6 +947,28 @@ end
 
 %% initiate Matlab  structure for physical field
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
+
+%% reproduce initial plane position and angle
+if isfield(FieldData,'PlaneCoord')&&length(FieldData.PlaneCoord)==3
+   if length(ProjData.ObjectCoord)==3% if the projection plane has a z coordinate
+       if ~isequal(ProjData.PlaneCoord(3),ProjData.ObjectCoord) %check the consistency with the z coordinate of the field plane (set by calibration)
+           errormsg='inconsistent z position for field and projection plane';
+           return
+       end
+   else % the z coordinate is set only by the field plane (by calibration)
+       ProjData.ObjectCoord(3)=FieldData.PlaneCoord(3);
+   end
+   if isfield(FieldData,'PlaneAngle')
+       if isfield(ProjData,'ObjectAngle')
+           if ~isequal(FieldData.PlaneAngle,ProjData.ObjectAngle) %check the consistency with the z coordinate of the field plane (set by calibration)
+           errormsg='inconsistent plane angle for field and projection plane';
+           return
+           end
+       else
+        ProjData.ObjectAngle=FieldData.PlaneAngle;
+       end
+    end
+end
 ProjData.NbDim=2;
 ProjData.ListVarName={};
 ProjData.VarDimName={};
@@ -2205,7 +2227,7 @@ end
 for iattr=1:length(ProjData.ListGlobalAttribute)
     AttrName=ProjData.ListGlobalAttribute{iattr};
     if isfield(FieldData,AttrName)
-        eval(['ProjData.' AttrName '=FieldData.' AttrName ';']);
+        ProjData.(AttrName)=FieldData.(AttrName);
     end
 end
 
@@ -2223,10 +2245,11 @@ end
 ListObject={'Type','ProjMode','RangeX','RangeY','RangeZ','Phi','Theta','Psi','Coord'};
 for ilist=1:length(ListObject)
     if isfield(ObjectData,ListObject{ilist})
-        eval(['val=ObjectData.' ListObject{ilist} ';'])
+        val=ObjectData.(ListObject{ilist});
         if ~isempty(val)
-            eval(['ProjData.Object' ListObject{ilist} '=val;']);
+            ProjData.(['Object' ListObject{ilist}])=val;
             ProjData.ListGlobalAttribute=[ProjData.ListGlobalAttribute {['Object' ListObject{ilist}]}];
         end
     end   
 end
+

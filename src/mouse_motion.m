@@ -103,6 +103,7 @@ for ichild=1:length(hchild)
                     text_displ_2='';
                     text_displ_3='';
                     text_displ_4='';
+                    text_displ_5='';
                     ivec=[];
                     xName='';
                     z=[];
@@ -139,9 +140,9 @@ for ichild=1:length(hchild)
                                             text_displ_1=[text_displ_1 var_text];
                                         elseif (isfield(CellInfo{icell},'VarIndex_vector_x') && isequal(ivar,CellInfo{icell}.VarIndex_vector_x))||isequal(ivar,CellInfo{icell}.VarIndex_vector_y)||...
                                                 (isfield(CellInfo{icell},'VarIndex_vector_z') && isequal(ivar,CellInfo{icell}.VarIndex_vector_z))
-                                            text_displ_3=[text_displ_3 var_text];
-                                        else
                                             text_displ_4=[text_displ_4 var_text];
+                                        else
+                                            text_displ_5=[text_displ_5 var_text];
                                         end
                                     end
                                 else
@@ -167,14 +168,14 @@ for ichild=1:length(hchild)
                                             VarName=Field.ListVarName{CellInfo{icell}.VarIndex(ivar)};
                                             VarVal=Field.(VarName)(indy0,indx0,:);
                                             var_text=[VarName '=' num2str(VarVal) ','];
-                                            text_displ_2=[text_displ_2 var_text];
+                                            text_displ_4=[text_displ_4 var_text];
                                         end
                                     end
                                 end
                             end
                         end
                     end
-              % display the current x,y coordinates in the absence of detected vector
+              % display the current x,y plot coordinates in the absence of detected vector
                     if isempty(ivec)
                         if isempty(xName)
                             xName='x';
@@ -182,28 +183,23 @@ for ichild=1:length(hchild)
                         end
                         text_displ_1=[xName '=' num2str(xy(1,1),4) ', ' yName '=' num2str(xy(1,2),4) ','];
                     end
-              %display the z coordinate if defined by the projection plane
-                    if isfield(Field,'PlaneCoord') 
-%                             ZIndex=Field.ZIndex;
-                        if size(Field.PlaneCoord)>=[1 3]
-                            z=Field.PlaneCoord(1,3);
-                            if isfield(Field,'PlaneAngle')&&~isequal(Field.PlaneAngle,[0 0 0])
-                                om=norm(Field.PlaneAngle);%norm of rotation angle in radians
-                                OmAxis=Field.PlaneAngle/om; %unit vector marking the rotation axis
-                                cos_om=cos(pi*om/180);
-                                sin_om=sin(pi*om/180);
-                                coeff=OmAxis(3)*(1-cos_om);
-                                norm_plane(1)=OmAxis(1)*coeff+OmAxis(2)*sin_om;
-                                norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
-                                norm_plane(3)=OmAxis(3)*coeff+cos_om;
-                                Z0=norm_plane*Field.PlaneCoord'/norm_plane(3);
-                                z=Z0-norm_plane(1)*xy(1,1)/norm_plane(3)-norm_plane(2)*xy(1,2)/norm_plane(3);
-                            end
+                    %display the z coordinate if defined by the projection plane
+                    if isfield(Field,'ObjectCoord') && length(Field.ObjectCoord)>=3
+                        pos=[xy(1,1) xy(1,2) 0];
+                        if isfield(Field,'ObjectAngle')&&~isequal(Field.ObjectAngle,[0 0 0])
+                            om=norm(Field.ObjectAngle);%norm of rotation angle in radians
+                            OmAxis=Field.ObjectAngle/om; %unit vector marking the rotation axis
+                            cos_om=cos(pi*om/180);
+                            sin_om=sin(pi*om/180);
+                            pos=[xy(1,1) xy(1,2) 0];
+                            pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
                         end
+                        pos=pos+Field.ObjectCoord;
+                        text_displ_3=[text_displ_3 'x,y,z=' num2str(pos,4)];
                     end
-                    if ~isempty(z)
-                        text_displ_1=[text_displ_1 ' z=' num2str(z,4)];
-                    end
+%                     if ~isempty(z)
+%                         text_displ_1=[text_displ_1 ' z=' num2str(z,4)];
+%                     end
                % case of PIV correlation display
                     if test_piv
                         par=read_GUI(hhciv.Civ1);
@@ -241,7 +237,7 @@ for ichild=1:length(hchild)
                         end
                         [Data,errormsg,result_conv]= civ_matlab(Param);
                         if ~isempty(errormsg)
-                            text_displ_4=errormsg;
+                            text_displ_5=errormsg;
                         else
                             rangx(1)=-(isx2-ibx2)+shiftx;
                             rangx(2)=isx2-ibx2+shiftx;
@@ -280,7 +276,12 @@ for ichild=1:length(hchild)
     end
 end
 if ~isempty(text_displ_1)
-set(handles.text_display,'String',[{text_displ_1};{text_displ_2};{text_displ_3};{text_displ_4}])
+    text_displ=[{text_displ_1};{text_displ_2};{text_displ_3};{text_displ_4};{text_displ_5}];
+    ind_blank=find(strcmp('',text_displ));
+    if ~isempty(ind_blank)
+        text_displ(ind_blank)=[];
+    end
+    set(handles.text_display,'String',text_displ)
 else
    set(handles.text_display,'String',get(handles.text_display,'UserData'))
 end

@@ -860,7 +860,7 @@ MenuPlot_Callback(hObject, eventdata, handles)
 function ListCoord_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
-hplot=findobj(huvmat,'Tag','axes3');%main plotting axis of uvmat
+hplot=findobj(huvmat,'Tag','PlotAxes');%main plotting axis of uvmat
 hhh=findobj(hplot,'Tag','calib_marker');
 Coord_cell=get(handles.ListCoord,'String');
 val=get(handles.ListCoord,'Value');
@@ -875,7 +875,7 @@ if isempty(k)%last line '.....' selected
     end
     return
 end
-%fill the edit boxex
+%fill the edit boxe
 set(handles.XObject,'String',coord_str(1:k(1)-1))
 set(handles.YObject,'String',coord_str(k(1)+3:k(2)-1))
 set(handles.ZObject,'String',coord_str(k(2)+3:k(3)-1))
