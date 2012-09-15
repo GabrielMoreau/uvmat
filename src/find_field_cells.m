@@ -255,7 +255,7 @@ for ivardim=1:numel(VarDimName) % loop at the list of remaining variables
         if ~isempty(ind_dim)
             DimIndices=[DimIndices ind_dim]; %update the list of coord dimensions included in DimCell
             if check_var && CoordSize(ind_dim)==2 % determine the size of the coordinate in case of coordiante variable limited to lower and upper bounds
-                if isvector(Data.(ListVarName{ivardim})) || iscolumn(Data.(ListVarName{ivardim}))
+                if isvector(Data.(ListVarName{ivardim})) 
                     if numel(Data.(ListVarName{ivardim}))>2
                         CoordSize(ind_dim)=numel(Data.(ListVarName{ivardim}));
                     end

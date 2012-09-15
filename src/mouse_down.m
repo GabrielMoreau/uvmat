@@ -101,7 +101,7 @@ for ichild=1:length(hchildren)
                 x_lim=get(hchild,'XLim');
                 haxes=hchild;
                 xy=get(hchild,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
-                if xy(1,1)>x_lim(1) && xy(1,1)<x_lim(2) && xy(1,2)>y_lim(1) && xy(1,2)<y_lim(2)
+%                 if xy(1,1)>x_lim(1) && xy(1,1)<x_lim(2) && xy(1,2)>y_lim(1) && xy(1,2)<y_lim(2)
                     AxeData=get(hchild,'UserData');% data attached to the axis
                     AxeData.CurrentOrigin=[xy(1,1) xy(1,2)];% The current point set by the mouse becomes the current origin
                     if test_edit_vect && ~isequal(tag_obj,'proj_object') & ~test_create
@@ -124,9 +124,9 @@ for ichild=1:length(hchildren)
                             end
                         end
                     end
-                else
-                    hchild=[];%mouse out of axes
-                end
+%                 else
+%                     hchild=[];%mouse out of axes
+%                 end
                 break
                 
             %if the mouse is over a uicontrol, duplicate the display  in an editable  zoom window
