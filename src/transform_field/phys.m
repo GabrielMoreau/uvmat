@@ -186,7 +186,7 @@ for ilist=1:numel(list_tps)
         DataOut=rmfield(DataOut,list_tps{ilist});
     end
 end
-if isfield(DataOut.VarAttribute{3},'VarIndex_tps')
+if isfield(DataOut,'VarAttribute')&&isfield(DataOut.VarAttribute{3},'VarIndex_tps')
     DataOut.VarAttribute{3}=rmfield(DataOut.VarAttribute{3},'VarIndex_tps');
 end
 
