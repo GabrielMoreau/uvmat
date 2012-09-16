@@ -1116,6 +1116,7 @@ Amat = reshape([l(1:6)' 0 0 1 ],3,3)';
 C = [l(7:8)' 1];
 
 % transform grid image into 'phys' coordinates 
+GeometryCalib.CalibrationType='linear';
 GeometryCalib.fx_fy=[1 1];
 GeometryCalib.Tx_Ty_Tz=[Amat(1,3) Amat(2,3) 1];
 GeometryCalib.R=[Amat(1,1),Amat(1,2),0;Amat(2,1),Amat(2,2),0;C(1),C(2),0];

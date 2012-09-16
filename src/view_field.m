@@ -70,7 +70,7 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action functio
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
 set(hObject,'DeleteFcn',{@closefcn})%
 set(hObject,'ResizeFcn',{@ResizeFcn,handles})%
-ViewFieldData.axes3=[];%initiates the record of the current field (will be updated by plot_field)
+ViewFieldData.PlotAxes=[];%initiates the record of the current field (will be updated by plot_field)
 set(handles.view_field,'Units','pixels')
 ViewFieldData.GUISize=get(handles.view_field,'Position');
 set(handles.view_field,'UserData',ViewFieldData);%store the initial fig size in UserData
@@ -173,7 +173,7 @@ if ~isempty(huvmat)
         ObjIndex=ObjIndex(1);%keep only the first object selected
         set(hhuvmat.ListObject,'Value',ObjIndex)
         % draw all object colors in blue (unselected) in uvmat
-        hother=[findobj(hhuvmat.axes3,'Tag','proj_object');findobj(hhuvmat.axes3,'Tag','DeformPoint')];%find all the proj object and deform point representations
+        hother=[findobj(hhuvmat.PlotAxes,'Tag','proj_object');findobj(hhuvmat.PlotAxes,'Tag','DeformPoint')];%find all the proj object and deform point representations
         for iobj=1:length(hother)
             if isequal(get(hother(iobj),'Type'),'rectangle')||isequal(get(hother(iobj),'Type'),'patch')
                 set(hother(iobj),'EdgeColor','b')
@@ -771,7 +771,7 @@ set(handles.vec_col_bar,'Cdata',A)
 function update_plot(handles)
 %-------------------------------------------------------------------
 Data=get(handles.view_field,'UserData');
-AxeData=Data.axes3;% retrieve the current plotted data
+AxeData=Data.PlotAxes;% retrieve the current plotted data
 PlotParam=read_GUI(handles.view_field);
 [PP,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
 write_plot_param(handles,PlotParamOut); %update the auto plot parameters
@@ -783,7 +783,7 @@ function MenuExportField_Callback(hObject, eventdata, handles)
 global Data_view_field
 % huvmat=findobj(allchild(0),'Name','uvmat');
 Data_view_field=get(handles.view_field,'UserData');
-Data_view_field=Data_view_field.axes3;
+Data_view_field=Data_view_field.PlotAxes;
 % Data_view_field=UvData.ProjField_2;
 evalin('base','global Data_view_field')%make CurData global in the workspace
 display(['UserData of view_field :'])
