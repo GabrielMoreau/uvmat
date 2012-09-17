@@ -75,8 +75,10 @@
 %    .Vectors.MinC = imposed minimum of the scalar field used for vector color;
 %    .Vectors.MaxC = imposed maximum of the scalar field used for vector color;
 %
-% PosColorbar: if not empty, display a colorbar for B&W images
-%               imposed position of the colorbar (ex [0.821 0.471 0.019 0.445])
+% PosColorbar: % if absent, no action on colorbar
+%              % if empty, suppress any existing colorbar
+%              % if not empty, display a colorbar for B&W images at position PosColorbar
+%                expressed in figure relative unit (ex [0.821 0.471 0.019 0.445])
 
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
@@ -98,7 +100,6 @@ function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColor
 
 %% default input and output
 if ~exist('PlotParam','var'),PlotParam=[];end;
-if ~exist('PosColorbar','var'),PosColorbar=[];end;
 PlotType='text'; %default
 PlotParamOut=PlotParam;%default
 if ~isfield(PlotParam,'Coordinates')
@@ -109,12 +110,6 @@ end
 index_2D=[];
 index_1D=[];
 index_0D=[];
-% errormsg=check_field_structure(Data);
-% if ~isempty(errormsg)
-%     msgbox_uvmat('ERROR',['input of plot_field/check_field_structure: ' errormsg])
-%     display(['input of plot_field/check_field_structure: ' errormsg])
-%     return
-% end
 % check the cells of fields :
 [CellInfo,NbDimArray,errormsg]=find_field_cells(Data);
 %[CellVarIndex,NbDim,CoordType,VarRole,errormsg]=find_field_cells(Data);
@@ -125,25 +120,12 @@ end
 
 index_3D=find(NbDimArray>2,1);
 if ~isempty(index_3D)
-%     if isfield(Data,'NbDimArray')&& isequal(Data.NbDimArray,2)
-%         index_2D=[index_2D index_3D];
-%     else
-        msgbox_uvmat('ERROR','volume plot not implemented yet');
-        return
-%     end
+    msgbox_uvmat('ERROR','volume plot not implemented yet');
+    return
 end
 index_2D=find(NbDimArray==2);%find 2D fields
 index_1D=find(NbDimArray==1);
 index_0D=find(NbDimArray==0);
-%remove coordinates variables from 1D plot
-% if ~isempty(index_2D)
-%     for ivar=1:length(index_1D)
-%         if isequal(CellVarIndex{index_1D(ivar)},VarRole{index_1D(ivar)}.coord)
-%             index_1D(ivar)=0;
-%         end
-%     end
-%     index_1D=index_1D(index_1D>0);
-% end
 
 %% test axes and figure
 testnewfig=1;%test to create a new figure (default)
@@ -193,8 +175,9 @@ AxeData=get(haxes,'UserData');
 
 %% 2D plots 
 if isempty(index_2D)
-    plot_plane([],[],haxes);%removes images or vector plots in the absence of 2D field plot
+    plot_plane([],[],haxes,[],[]);%removes images or vector plots in the absence of 2D field plot
 else  %plot 2D field
+    if ~exist('PosColorbar','var'),PosColorbar=[];end;
     [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo(index_2D),haxes,PlotParam,PosColorbar);
     AxeData.NbDim=2;
     if testzoomaxes && isempty(errormsg)
@@ -538,9 +521,9 @@ function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo,haxes,P
 grid(haxes, 'off')% remove grid (possibly remaining from other graphs)
 %default plotting parameters
 PlotType='plane';%default
-if ~exist('PlotParam','var')
-    PlotParam=[];
-end
+% if ~exist('PlotParam','var')
+%     PlotParam=[];
+% end
 
 if ~isfield(PlotParam,'Scalar')
     PlotParam.Scalar=[];
@@ -935,7 +918,7 @@ if test_ima
             set(hima,'XData',AX);
             set(hima,'YData',AY);
         end
-
+        
         % set the transparency to 0.5 if vectors are also plotted
         if isfield(PlotParam.Scalar,'Opacity')&& ~isempty(PlotParam.Scalar.Opacity)
             set(hima,'AlphaData',PlotParam.Scalar.Opacity)
@@ -951,52 +934,54 @@ if test_ima
     test_ima=1;
     
     %display the colorbar code for B/W images if Poscolorbar not empty
-    if siz==2 && exist('PosColorbar','var')&& ~isempty(PosColorbar)
-        if isempty(hcol)||~ishandle(hcol)
-            hcol=colorbar;%create new colorbar
-        end
-        if length(PosColorbar)==4
-            set(hcol,'Position',PosColorbar)
-        end
-        %YTick=0;%default
-        if MaxA>MinA
-            if CheckContour
-                colbarlim=get(hcol,'YLim');
-                scale_bar=(colbarlim(2)-colbarlim(1))/(abscontmax-abscontmin);
-                YTick=cont_pos(2:end-1);
-                YTick_scaled=colbarlim(1)+scale_bar*(YTick-abscontmin);
-                set(hcol,'YTick',YTick_scaled);
-            elseif (isfield(PlotParam.Scalar,'CheckBW') && isequal(PlotParam.Scalar.CheckBW,1))||isa(A,'uint8')|| isa(A,'uint16')%images
-                hi=get(hcol,'children');
-                if iscell(hi)%multiple images in colorbar
-                    hi=hi{1};
-                end
-                set(hi,'YData',[MinA MaxA])
-                set(hi,'CData',(1:256)')
-                set(hcol,'YLim',[MinA MaxA])
-                YTick=colbartick(MinA,MaxA);
-                set(hcol,'YTick',YTick)
-            else
-                hi=get(hcol,'children');
-                if iscell(hi)%multiple images in colorbar
-                    hi=hi{1};
-                end
-                set(hi,'YData',[MinA MaxA])
-                set(hi,'CData',(1:64)')
-                YTick=colbartick(MinA,MaxA);
-                set(hcol,'YLim',[MinA MaxA])
-                set(hcol,'YTick',YTick)
+    if ~isempty(PosColorbar)
+        if siz==2 && exist('PosColorbar','var')
+            if isempty(hcol)||~ishandle(hcol)
+                hcol=colorbar;%create new colorbar
             end
-            set(hcol,'Yticklabel',num2str(YTick'));
+            if length(PosColorbar)==4
+                set(hcol,'Position',PosColorbar)
+            end
+            %YTick=0;%default
+            if MaxA>MinA
+                if CheckContour
+                    colbarlim=get(hcol,'YLim');
+                    scale_bar=(colbarlim(2)-colbarlim(1))/(abscontmax-abscontmin);
+                    YTick=cont_pos(2:end-1);
+                    YTick_scaled=colbarlim(1)+scale_bar*(YTick-abscontmin);
+                    set(hcol,'YTick',YTick_scaled);
+                elseif (isfield(PlotParam.Scalar,'CheckBW') && isequal(PlotParam.Scalar.CheckBW,1))||isa(A,'uint8')|| isa(A,'uint16')%images
+                    hi=get(hcol,'children');
+                    if iscell(hi)%multiple images in colorbar
+                        hi=hi{1};
+                    end
+                    set(hi,'YData',[MinA MaxA])
+                    set(hi,'CData',(1:256)')
+                    set(hcol,'YLim',[MinA MaxA])
+                    YTick=colbartick(MinA,MaxA);
+                    set(hcol,'YTick',YTick)
+                else
+                    hi=get(hcol,'children');
+                    if iscell(hi)%multiple images in colorbar
+                        hi=hi{1};
+                    end
+                    set(hi,'YData',[MinA MaxA])
+                    set(hi,'CData',(1:64)')
+                    YTick=colbartick(MinA,MaxA);
+                    set(hcol,'YLim',[MinA MaxA])
+                    set(hcol,'YTick',YTick)
+                end
+                set(hcol,'Yticklabel',num2str(YTick'));
+            end
+        elseif ishandle(hcol)
+            delete(hcol); %erase existing colorbar if not needed
         end
-    elseif ishandle(hcol)
-        delete(hcol); %erase existing colorbar if not needed
     end
 else%no scalar plot
     if ~isempty(hima) && ishandle(hima)
         delete(hima)
     end
-    if ~isempty(hcol)&& ishandle(hcol)
+    if ~isempty(PosColorbar) && ~isempty(hcol)&& ishandle(hcol)
         delete(hcol)
     end
     PlotParamOut=rmfield(PlotParamOut,'Scalar');
@@ -1099,12 +1084,7 @@ else
     end
     PlotParamOut=rmfield(PlotParamOut,'Vectors');
 end
-
-%listfields={'AY','AX','A','X','Y','U','V','C','W','F','FF'};
-%listdim={'AY','AX',{'AY','AX'},'nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors','nb_vectors'};
-%Role={'coord_y','coord_x','scalar','coord_x','coord_y','vector_x','vector_y','scalar','vector_z','warnflag','errorflag'};
-%ind_select=[];
-nbvar=0;
+% nbvar=0;
 
 %store the coordinate extrema occupied by the field
 if ~isempty(Data)
@@ -1139,34 +1119,30 @@ if ~isempty(Data)
             YMax=max(vec_Y);
         end
     end
-%     PlotParamOut.RangeX=[XMin XMax]; %range of x, to be stored in the user data of the plot axes
-%     PlotParamOut.RangeY=[YMin YMax]; %range of x, to be stored in the user data of the plot axes
-%     if ~fix_lim
-        PlotParamOut.Coordinates.MinX=XMin;
-        PlotParamOut.Coordinates.MaxX=XMax;
-        PlotParamOut.Coordinates.MinY=YMin;
-        PlotParamOut.Coordinates.MaxY=YMax;
-        if XMax>XMin
-            set(haxes,'XLim',[XMin XMax]);% set x limits of frame in axes coordinates
-        end
-        if YMax>YMin
-            set(haxes,'YLim',[YMin YMax]);% set x limits of frame in axes coordinates
-        end
-%     end
+    PlotParamOut.Coordinates.MinX=XMin;
+    PlotParamOut.Coordinates.MaxX=XMax;
+    PlotParamOut.Coordinates.MinY=YMin;
+    PlotParamOut.Coordinates.MaxY=YMax;
+    if XMax>XMin
+        set(haxes,'XLim',[XMin XMax]);% set x limits of frame in axes coordinates
+    end
+    if YMax>YMin
+        set(haxes,'YLim',[YMin YMax]);% set x limits of frame in axes coordinates
+    end
     set(haxes,'YDir','normal')
     set(get(haxes,'XLabel'),'String',[XName ' (' x_units ')']);
     set(get(haxes,'YLabel'),'String',[YName ' (' y_units ')']);
     PlotParamOut.Coordinates.x_units=x_units;
     PlotParamOut.Coordinates.y_units=y_units;
 end
-        if isfield(PlotParam,'Coordinates') && isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
-            set(haxes,'DataAspectRatioMode','manual')
-            if isfield(PlotParam.Coordinates,'AspectRatio')
-                set(haxes,'DataAspectRatio',[PlotParam.Coordinates.AspectRatio 1 1])
-            end
-        else
-            set(haxes,'DataAspectRatioMode','auto')
-        end
+if isfield(PlotParam,'Coordinates') && isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
+    set(haxes,'DataAspectRatioMode','manual')
+    if isfield(PlotParam.Coordinates,'AspectRatio')
+        set(haxes,'DataAspectRatio',[PlotParam.Coordinates.AspectRatio 1 1])
+    end
+else
+    set(haxes,'DataAspectRatioMode','auto')
+end
 %-------------------------------------------------------------------
 % --- function for plotting vectors
 %INPUT:

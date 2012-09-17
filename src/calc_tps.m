@@ -1,14 +1,23 @@
+%'calc_tps': calculate the thin plate spline (tps) coefficients for interpolation
+%---------------------------------------------------------------------
+% DataOut=calc_tps(DataIn,checkall)
+%
+% OUTPUT:
+% DataOut: output field structure
+%
+% INPUT:
+% DataIn: intput field structure
+% checkall:=1 if tps is needed for all fields (a filter projection is needed), =0 otherwise 
+
 function DataOut=calc_tps(DataIn,checkall)     
 DataOut=DataIn;%default
 SubDomain=1000; %default, estimated nbre of vectors in a subdomain used for tps
 if isfield(DataIn,'SubDomain')
     SubDomain=DataIn.SubDomain;%
 end
-%[CellVarIndex,NbDimVec,VarTypeCell,errormsg]=find_field_cells(DataIn);
 [CellInfo,NbDimArray,errormsg]=find_field_cells(DataIn);
 nbtps=0;
 for icell=1:numel(CellInfo);
-    %VarType=VarTypeCell{icell};
     if NbDimArray(icell)>=2 && strcmp(CellInfo{icell}.CoordType,'scattered')%'&& ~isempty(VarType.coord_x)
         nbtps=nbtps+1;
         X=DataIn.(DataIn.ListVarName{CellInfo{icell}.CoordIndex(end)});

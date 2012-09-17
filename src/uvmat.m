@@ -177,6 +177,7 @@ path_uvmat=fileparts(which('uvmat'));
 %% set the position of colorbar and ancillary GUIs:
 set(hObject,'Units','Normalized')
 movegui(hObject,'center')
+%UvData.OpenParam.PosColorbar=[0.8450    0.0900    0.0190    0.3600];
 UvData.OpenParam.PosColorbar=[0.805 0.022 0.019 0.445];
 UvData.OpenParam.PosSetObject=[-0.05 -0.03 0.3 0.7]; %position for set_object
 UvData.OpenParam.PosGeometryCalib=[0.95 -0.03 0.28 1 ];%position for geometry_calib (TO IMPROVE)
@@ -2438,13 +2439,13 @@ if NbDim>1
         end
     end
     UvData.Field.Mesh=min(Mesh);
-    UvData.Field.XMax=max(CoordMax(ind,1));
-    UvData.Field.XMin=min(CoordMin(ind,1));
-    UvData.Field.YMax=max(CoordMax(ind,2));
-    UvData.Field.YMin=max(CoordMin(ind,2));
+    UvData.Field.XMax=max(CoordMax(ind,end));
+    UvData.Field.XMin=min(CoordMin(ind,end));
+    UvData.Field.YMax=max(CoordMax(ind,end-1));
+    UvData.Field.YMin=max(CoordMin(ind,end-1));
     if NbDim==3
-        UvData.Field.ZMax=max(CoordMax(ind,3));
-        UvData.Field.ZMin=max(CoordMin(ind,3));
+        UvData.Field.ZMax=max(CoordMax(ind,1));
+        UvData.Field.ZMin=max(CoordMin(ind,1));
     end
     % adjust the mesh to a value 1, 2 , 5 *10^n
     ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
@@ -3060,13 +3061,11 @@ if ~isempty(list_fields_1)
 field_1= list_fields_1{get(handles.FieldName_1,'Value')}; % selected string
 end
 if isequal(field,'image')||isequal(field_1,'image')
-    set(handles.TitleNpx,'Visible','on')% visible npx,pxcm... buttons
-    set(handles.TitleNpy,'Visible','on')
+    set(handles.TitleNpxy,'Visible','on')% visible npx,pxcm... buttons
     set(handles.num_Npx,'Visible','on')
     set(handles.num_Npy,'Visible','on')
 else
-    set(handles.TitleNpx,'Visible','off')% visible npx,pxcm... buttons
-    set(handles.TitleNpy,'Visible','off')
+    set(handles.TitleNpxy,'Visible','off')% visible npx,pxcm... buttons
     set(handles.num_Npx,'Visible','off')
     set(handles.num_Npy,'Visible','off')
 end
@@ -3147,8 +3146,7 @@ switch field_1
         if ~ischar(imagename)% quit if the browser has  been closed
             set(handles.SubField,'Value',0)
         else %valid browser input:  display the selected image
-            set(handles.TitleNpx,'Visible','on')% visible npx,pxcm... buttons
-            set(handles.TitleNpy,'Visible','on')
+            set(handles.TitleNpxy,'Visible','on')% visible npx,pxcm... buttons
             set(handles.num_Npx,'Visible','on')
             set(handles.num_Npy,'Visible','on')
             display_file_name(handles,imagename,2)%display the imag
@@ -3160,8 +3158,7 @@ switch field_1
             set(handles.FileExt_1,'String',get(handles.FileExt,'String'))
         end
         if ~isequal(field,'image')
-            set(handles.TitleNpx,'Visible','off')% visible npx,pxcm... buttons
-            set(handles.TitleNpy,'Visible','off')
+            set(handles.TitleNpxy,'Visible','off')% visible npx,pxcm... buttons
             set(handles.num_Npx,'Visible','off')
             set(handles.num_Npy,'Visible','off')
         end
@@ -4838,3 +4835,12 @@ function Coord_y_Callback(hObject, eventdata, handles)
 
 % --- Executes on selection change in Coord_x.
 function Coord_x_Callback(hObject, eventdata, handles)
+
+
+% --- Executes on button press in CheckColorBar.
+function CheckColorBar_Callback(hObject, eventdata, handles)
+% hObject    handle to CheckColorBar (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of CheckColorBar

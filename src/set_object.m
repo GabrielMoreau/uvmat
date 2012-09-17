@@ -486,7 +486,7 @@ if strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_o
 else
     % create tps coeff if needed for ProjMode 'filter'
     if strcmp(ObjectData.ProjMode,'filter')&&~isfield(UvData.Field,'Coord_tps')     
-        UvData.Field=calc_tps(UvData.Field);
+        UvData.Field=calc_tps(UvData.Field,1);
     end
     [ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current field of uvmat on ObjectData
     if ~isempty(errormsg)

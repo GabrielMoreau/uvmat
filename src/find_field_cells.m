@@ -158,8 +158,8 @@ for icell_tps=1:numel(ivar_tps)
     DimCell=Data.VarDimName{ivar_tps(icell_tps)};% dimension names for the current tps coordinate variable
     icell=numel(CellInfo)+icell_tps; % new field cell index
     CellInfo{icell}.CoordIndex=ivar_tps(icell_tps);% index of the  tps coordinate variable
-    CellInfo{icell}.VarIndex_subrange_tps=[];
-    CellInfo{icell}.VarIndex_nbsites_tps=[];
+    %CellInfo{icell}.VarIndex_subrange_tps=[];
+    %CellInfo{icell}.VarIndex_nbsites_tps=[];
     if numel(DimCell)==3
         VarDimName=Data.VarDimName(~check_select);
         for ivardim=1:numel(VarDimName)

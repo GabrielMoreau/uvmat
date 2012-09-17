@@ -148,7 +148,6 @@ end
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 ProjData.NbDim=0;
 [CellInfo,NbDimArray,errormsg]=find_field_cells(FieldData);
-%[CellVarIndex,NbDimCell,VarTypeCell,errormsg]=find_field_cells(FieldData);
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_points:' errormsg];
     return
@@ -159,20 +158,12 @@ for icell=1:length(CellInfo)
         continue %projection only for multidimensional fields
     end
     VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
-   % VarType=CellInfo{icell}.VarType;% structure defining the types of variables in the cell
     ivar_X=CellInfo{icell}.CoordIndex(end);
     ivar_Y=CellInfo{icell}.CoordIndex(end-1);
     ivar_Z=[];
     if NbDimArray(icell)==3
         ivar_Z=CellInfo{icell}.CoordIndex(1);
     end
-%     ivar_rem=[];
-%     if isfield(CellInfo{icell},'VarIndex_ancillary')
-%         ivar_rem=CellInfo{icell}.VarIndex_ancillary;
-%     end
-%     if isfield(CellInfo{icell},'VarIndex_warnflag')
-%         ivar_rem=[ivar_rem CellInfo{icell}.VarIndex_warnflag];
-%     end
     ivar_FF=[];
     if isfield(CellInfo{icell},'VarIndex_errorflag')
         ivar_FF=CellInfo{icell}.VarIndex_errorflag;
@@ -180,8 +171,7 @@ for icell=1:length(CellInfo)
             errormsg='multiple error flag input';
             return
         end
-    end
-%     
+    end    
     % select types of  variables to be projected
    ListProj={'VarIndex_scalar','VarIndex_image','VarIndex_color','VarIndex_vector_x','VarIndex_vector_y'};
       check_proj=false(size(FieldData.ListVarName));
@@ -549,7 +539,6 @@ if isequal(ProjMode,'projection') || isequal(ProjMode,'filter')
 end
 
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
-%[CellVarIndex,NbDim,VarTypeCell,errormsg]=find_field_cells(FieldData);
 [CellInfo,NbDim,errormsg]=find_field_cells(FieldData);
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_line:' errormsg];
@@ -560,8 +549,6 @@ end
 ProjData.ListVarName={};
 ProjData.VarDimName={};
 for icell=1:length(CellInfo)
-    %VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
-   % VarType=VarTypeCell{icell}; %types of variables
     if NbDim(icell)~=2% proj_line acts only on fields of space dimension 2, TODO: check 3D case
         continue
     end
@@ -721,8 +708,7 @@ for icell=1:length(CellInfo)
             errormsg=['no  projection available on ' ObjectData.Type 'for structured coordinates']; % 
         else
             test_Amat=1;%image or 2D matrix
-            test_interp2=0;%default
-%             if ~isempty(VarType.coord_y)  
+            test_interp2=0;%default 
             AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
             AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
             eval(['AX=FieldData.' AXName ';']);% set of x positions
@@ -984,8 +970,6 @@ testfalse=0;
 ListIndex={};
 
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
-% CellVarIndex=cells of variable index arrays
-%[CellVarIndex,NbDimVec,VarTypeCell,errormsg]=find_field_cells(FieldData);
 [CellInfo,NbDimArray,errormsg]=find_field_cells(FieldData);
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_plane:' errormsg];
@@ -1042,22 +1026,9 @@ for icell=1:length(CellInfo)
         ivar_U=CellInfo{icell}.VarIndex_vector_x;
         ivar_V=CellInfo{icell}.VarIndex_vector_y;
     end
-%     if ~isempty(VarType.vector_x_tps)&&~isempty(VarType.vector_y_tps)
-%         ivar_U=VarType.vector_x_tps;
-%         ivar_V=VarType.vector_y_tps;
-%     end
     if isfield(CellInfo{icell},'VarIndex_vector_z')
-    ivar_W=CellInfo{icell}.VarIndex_vector_z;
+        ivar_W=CellInfo{icell}.VarIndex_vector_z;
     end
-%     %type of coordinates
-%     if ~isempty(VarType.coord_x) && ~isempty(VarType.coord_y)
-%         CoordType='unstructured';
-%     elseif ~isempty(VarType.coord_tps)
-%         CoordType='tps';
-%     else
-%         CoordType='structured';
-%     end
-%     
     %dimensions
     DimCell=FieldData.VarDimName{VarIndex(1)};
     if ischar(DimCell)
@@ -1202,7 +1173,7 @@ for icell=1:length(CellInfo)
                     end
                     if isfield(CellInfo{icell},'VarIndex_scalar')
                         VarName_scalar=FieldData.ListVarName{CellInfo{icell}.VarIndex_scalar};
-                        if ~isempty(VarType.errorflag)
+                        if isfield(CellInfo{icell},'errorflag') && ~isempty(CellInfo{icell}.errorflag)
                             FieldData.(VarName_scalar)=FieldData.(VarName_scalar)(indsel);
                         end
                     end
@@ -1235,11 +1206,11 @@ for icell=1:length(CellInfo)
             %% case of tps interpolation (applies only in filter mode and for spatial derivatives)
         case 'tps'
             if strcmp(ProjMode{icell},'filter')
-                Coord=FieldData.(FieldData.ListVarName{VarType.coord_tps});
-                NbSites=FieldData.(FieldData.ListVarName{VarType.nbsites_tps});
-                SubRange=FieldData.(FieldData.ListVarName{VarType.subrange_tps});
-                if isfield(VarType,'vector_x_tps')&&isfield(VarType,'vector_y_tps')
-                    FieldVar=cat(3,FieldData.(FieldData.ListVarName{VarType.vector_x_tps}),FieldData.(FieldData.ListVarName{VarType.vector_y_tps}));
+                Coord=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex});
+                NbSites=FieldData.(FieldData.ListVarName{CellInfo{icell}.NbSite_tps});
+                SubRange=FieldData.(FieldData.ListVarName{CellInfo{icell}.SubRange_tps});
+                if isfield(CellInfo{icell},'VarIndex_vector_x_tps')&&isfield(CellInfo{icell},'VarIndex_vector_y_tps')
+                    FieldVar=cat(3,FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x_tps}),FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y_tps}));
                 end
                 coord_x_proj=XMin:DX:XMax;
                 coord_y_proj=YMin:DY:YMax;
@@ -1248,7 +1219,7 @@ for icell=1:length(CellInfo)
                 [XI,YI]=meshgrid(coord_x_proj,coord_y_proj');
                 XI=XI+ObjectData.Coord(1,1);
                 YI=YI+ObjectData.Coord(1,2);
-                [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbSites,SubRange,FieldVar,VarType.Operation,cat(3,XI,YI));   
+                [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbSites,SubRange,FieldVar,CellInfo{icell}.Operation,cat(3,XI,YI));   
                 ListFieldProj=(fieldnames(DataOut))';
                 VarDimName=cell(size(ListFieldProj));
                 for ilist=1:numel(ListFieldProj)% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
@@ -1508,13 +1479,13 @@ for icell=1:length(CellInfo)
                             eval(['ProjData.' VarName '=interp2(Coord{2},Coord{1},FieldData.' VarName ',Coord_x,Coord_y'');']) %TO TEST
                         end
                         %filter the field (image) if option 'filter' is used
-                        if test_filter
-                            Aclass=class(FieldData.A);
-                            eval(['ProjData.' VarName '=filter2(Mfilter,FieldData.' VarName ',''valid'');'])
-                            if ~isequal(Aclass,'double')
-                                eval(['ProjData.' VarName '=' Aclass '(FieldData.' VarName ');'])%revert to integer values
-                            end
-                        end
+%                         if test_filter
+%                             Aclass=class(FieldData.A);
+%                             eval(['ProjData.' VarName '=filter2(Mfilter,FieldData.' VarName ',''valid'');'])
+%                             if ~isequal(Aclass,'double')
+%                                 eval(['ProjData.' VarName '=' Aclass '(FieldData.' VarName ');'])%revert to integer values
+%                             end
+%                         end
                         eval(['vec_A=reshape(FieldData.' VarName ',[],nbcolor);'])%put the original image in line
                         %ind_in=find(flagin);
                         ind_out=find(~flagin);
@@ -1701,12 +1672,6 @@ ListIndex={};
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 %-----------------------------------------------------------------
 idimvar=0;
-% [CellVarIndex,NbDimVec,VarTypeCell,errormsg]=find_field_cells(FieldData);
-% if ~isempty(errormsg)
-%     errormsg=['error in proj_field/proj_plane:' errormsg];
-%     return
-% end
-
 % LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
 % CellVarIndex=cells of variable index arrays
 ivar_new=0; % index of the current variable in the projected field

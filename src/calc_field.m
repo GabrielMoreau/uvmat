@@ -1,5 +1,3 @@
-
-
 %'calc_field': defines fields (velocity, vort, div...) from civx data and calculate them
 %---------------------------------------------------------------------
 % [DataOut,errormsg]=calc_field(FieldList,DataIn,Coord_interp)
