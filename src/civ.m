@@ -1369,7 +1369,7 @@ for ifile=1:nbfield
             for p=1:length(batch_file_list)
                 fprintf(fid,['run ' filename_bat '\n']);
             end
-            fprintf(fid, 'exit \n END_MATLAB \n');
+            fprintf(fid, 'exit\nEND_MATLAB\n');
             fclose(fid);
             filename_bat=filename_bat2;
         end
@@ -1557,7 +1557,7 @@ switch Param.RunMode,
                                 for p=1:length(batch_file_list)
                                     fprintf(fid,['run ' batch_file_list{p} '\n']);
                                 end
-                                fprintf(fid, 'exit \n END_MATLAB \n');
+                                fprintf(fid, 'exit\nEND_MATLAB\n');
                                 fclose(fid);
                                 system(['chmod +x ' filename_superbat]);
                                 system([filename_superbat ' &']);
