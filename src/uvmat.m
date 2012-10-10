@@ -790,36 +790,30 @@ XmlData.Time=[];%default
 XmlData.GeometryCalib=[];%default
 TimeUnit='';%default
 Time=[];
-testima=0; %test for image input
+% testima=0; %test for image input
 imainfo=[];
 ColorType='falsecolor'; %default
-hhh=[];
+% hhh=[];
 UvData.MovieObject{index}=VideoObject;
 if ~isempty(VideoObject)
     imainfo=get(VideoObject);
-    testima=1;
+%     testima=1;
     TimeUnit='s';
     if isempty(j1_series); %frame index along i
         Time=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
     else
-    Time=ones(size(i1_series,1),1)*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
+        Time=ones(size(i1_series,1),1)*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
     end
-    %nbfield=imainfo.NumberOfFrames;
     set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
     ColorType='truecolor';
 elseif ~isempty(FileExt(2:end))&&(~isempty(imformats(FileExt(2:end))) || isequal(FileExt,'.vol'))%&& isequal(NomType,'*')% multi-frame image
-    testima=1;
+%     testima=1;
     if ~isequal(SubDir,'')
-        RootFile=get(handles.RootFile,'String');
         imainfo=imfinfo([fullfile(RootPath,SubDir,RootFile) FileIndices FileExt]);
     else
         imainfo=imfinfo([FileBase FileIndices FileExt]);
     end
     ColorType=imainfo.ColorType;%='truecolor' for color images
-    if length(imainfo) >1 %case of image with multiple frames
-       % nbfield=length(imainfo);
-       % nbfield_j=1;
-    end
 end
 if isfield(imainfo,'Width') && isfield(imainfo,'Height')
     if length(imainfo)>1

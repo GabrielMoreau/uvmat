@@ -44,8 +44,8 @@ if isfield(Field_1,'ListGlobalAttribute')
             AttrNameNew=[AttrNameNew '_1'];
         end
         if ~isfield(Field,AttrName) || ~isequal(Field_1.(AttrName),Field.(AttrName))
-        SubData.ListGlobalAttribute=[SubData.ListGlobalAttribute {AttrNameNew}];
-        SubData.(AttrNameNew)=Field_1.(AttrName);
+            SubData.ListGlobalAttribute=[SubData.ListGlobalAttribute {AttrNameNew}];
+            SubData.(AttrNameNew)=Field_1.(AttrName);
         end
     end
 end
@@ -148,30 +148,31 @@ end
 %append the other variables of the second field, modifying their name if needed
 
 %% substrat fields when possible
-[CellVarIndex,NbDim,CellVarType,errormsg]=find_field_cells(SubData);
+%[CellVarIndex,NbDim,CellVarType,errormsg]=find_field_cells(SubData);
+[CellInfo,NbDim,errormsg]=find_field_cells(SubData)
 ind_remove=zeros(size(SubData.ListVarName));
 ivar=[];
 ivar_1=[];
-for icell=1:numel(CellVarIndex)
-    if ~isempty(CellVarIndex{icell})
-        if isfield(CellVarType{icell},'scalar') && numel(CellVarType{icell}.scalar)==2 && SubData.VarAttribute{CellVarType{icell}.scalar(2)}.CheckSub;
-            ivar=[ivar CellVarType{icell}.scalar(1)];
-            ivar_1=[ivar_1 CellVarType{icell}.scalar(2)];
+for icell=1:numel(CellInfo)
+    if ~isempty(CellInfo{icell})
+        if isfield(CellInfo{icell},'VarIndex_scalar') && numel(CellInfo{icell}.VarIndex_scalar)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_scalar(2)}.CheckSub;
+            ivar=[ivar CellInfo{icell}.VarIndex_scalar(1)];
+            ivar_1=[ivar_1 CellInfo{icell}.VarIndex_scalar(2)];
         end
-        if isfield(CellVarType{icell},'vector_x') && numel(CellVarType{icell}.vector_x)==2 && SubData.VarAttribute{CellVarType{icell}.vector_x(2)}.CheckSub;
-            ivar=[ivar CellVarType{icell}.vector_x(1)];
-            ivar_1=[ivar_1 CellVarType{icell}.vector_x(2)];
+        if isfield(CellInfo{icell},'VarIndex_vector_x') && numel(CellInfo{icell}.VarIndex_vector_x)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_vector_x(2)}.CheckSub;
+            ivar=[ivar CellInfo{icell}.VarIndex_vector_x(1)];
+            ivar_1=[ivar_1 CellInfo{icell}.VarIndex_vector_x(2)];
         end
-        if isfield(CellVarType{icell},'vector_y') && numel(CellVarType{icell}.vector_y)==2 && SubData.VarAttribute{CellVarType{icell}.vector_y(2)}.CheckSub;
-            ivar=[ivar CellVarType{icell}.vector_y(1)];
-            ivar_1=[ivar_1 CellVarType{icell}.vector_y(2)];
+        if isfield(CellInfo{icell},'VarIndex_vector_y') && numel(CellInfo{icell}.VarIndex_vector_y)==2 && SubData.VarAttribute{CellInfo{icell}.VarIndex_vector_y(2)}.CheckSub;
+            ivar=[ivar CellInfo{icell}.VarIndex_vector_y(1)];
+            ivar_1=[ivar_1 CellInfo{icell}.VarIndex_vector_y(2)];
         end
     end
 end
 for imod=1:numel(ivar)
         VarName=SubData.ListVarName{ivar(imod)};
         VarName_1=SubData.ListVarName{ivar_1(imod)};
-        SubData.(VarName)=SubData.(VarName)-SubData.(VarName_1);
+        SubData.(VarName)=double(SubData.(VarName))-double(SubData.(VarName_1));
         ind_remove(ivar_1(imod))=1;
 end
 SubData.ListVarName(find(ind_remove))=[];

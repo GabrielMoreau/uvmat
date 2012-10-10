@@ -99,11 +99,11 @@ if isfield (Param,'Civ1')
             end
         end
     else
-        if isfield(Param.Civ1,'ImageA')%&&...    
+        if isfield(Param.Civ1,'ImageA') && ischar(Param.Civ1.ImageA) 
              Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'''','\');
             [par_civ1.ImageA,VideoObject] = read_image(Param.Civ1.ImageA,par_civ1.FileTypeA,[],par_civ1.FrameIndexA);
         end
-        if isfield(Param.Civ1,'ImageB')%&& ...
+        if isfield(Param.Civ1,'ImageB')&& ischar(Param.Civ1.ImageB)
              Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'''','\');
              if strcmp(Param.Civ1.ImageA,Param.Civ1.ImageB)% use the same movie object
                  [par_civ1.ImageB,VideoObject] = read_image(Param.Civ1.ImageB,par_civ1.FileTypeB,VideoObject,par_civ1.FrameIndexB);

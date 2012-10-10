@@ -3775,12 +3775,12 @@ if get(handles.TestCiv1,'Value')
     hview_field=view_field(Data); %view the image in the GUI view_field
     set(0,'CurrentFigure',hview_field)
     hhview_field=guihandles(hview_field);
-    set(hview_field,'CurrentAxes',hhview_field.axes3)
+    set(hview_field,'CurrentAxes',hhview_field.PlotAxes)
     ViewData=get(hview_field,'UserData');
     ViewData.CivHandle=handles.civ;% indicate the handle of the civ GUI in view_field
-    ViewData.axes3.B=imread(filecell.ima2.civ1{1});%store the second image in the UserData of the GUI view_field
-    ViewData.axes3.X=Grid.Civ1_X; %keep the set of points in memeory
-    ViewData.axes3.Y=Grid.Civ1_Y;
+    ViewData.PlotAxes.B=imread(filecell.ima2.civ1{1});%store the second image in the UserData of the GUI view_field
+    ViewData.PlotAxes.X=Grid.Civ1_X; %keep the set of points in memeory
+    ViewData.PlotAxes.Y=Grid.Civ1_Y;
     set(hview_field,'UserData',ViewData)
     corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
     if isempty(corrfig)
