@@ -349,7 +349,7 @@ for i_slice=1:NbSlice
                         DataOut.(VarName)=cat(1,DataOut.(VarName),0);% put each variable to 0 in case of input reading error
                     end
                 elseif testsum(ivar)==1% variable representing fixed coordinates
-                    eval(['VarInit=DataOut.' VarName ';']);
+                    VarInit=DataOut.(VarName);
                     if isempty(errormsg) && ~isequal(VarVal,VarInit)
                         displ_uvmat('ERROR',['time series requires constant coordinates ' VarName],checkrun)
                         return

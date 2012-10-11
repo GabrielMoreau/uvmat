@@ -79,6 +79,9 @@ else
     end
 end
 ParamOut=Param; %default output
+if ~isfield(Param,'InputFields')
+    Param.InputFields.FieldName='';
+end
 OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];
 
 %% root input file(s) and type
@@ -209,7 +212,12 @@ for i_slice=1:NbSlice
             
             %transform the input field (e.g; phys) if requested
             if ~isempty(transform_fct)
-                Data{iview}=transform_fct(Data{iview},XmlData{iview});  %transform to phys if requested
+                switch nargin(transform_fct)
+                    case {2,3,4}
+                       Data{iview}=transform_fct(Data{iview},XmlData{iview});
+                    case 1
+                        Data{iview}=transform_fct(Data{iview});
+                end
             end
             
             %% check whether tps is needed, then calculate tps coefficients if needed
@@ -310,10 +318,10 @@ for i_slice=1:NbSlice
             GeometryCal.R=[pxcmx,0,0;0,pxcmy,0;0,0,1];
             GeometryCal.Tx_Ty_Tz=[T_x T_y 1];
             ImaDoc.GeometryCalib=GeometryCal;
-            t=struct2xml(ImaDoc);
-            t=set(t,1,'name','ImaDoc');
-            save(t,[filebase_merge '.xml'])
-            display([filebase_merge '.xml saved'])
+%             t=struct2xml(ImaDoc);
+%             t=set(t,1,'name','ImaDoc');
+%             save(t,[filebase_merge '.xml'])
+%             display([filebase_merge '.xml saved'])
         else
             MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','nb_coord','nb_dim','dt','Time','civ'};
             MergeData.Conventions='uvmat';
