@@ -1824,7 +1824,7 @@ MovieObject=[];
 if numel(UvData.MovieObject)>=index
     MovieObject=UvData.MovieObject{index};
 end
-[Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileType{index},MovieObject,num_frame)
+[Field_b,ParamOut,errormsg] = read_field(imaname_1,UvData.FileType{index},MovieObject,num_frame);
 % Field_b.AX=Field_a.AX;
 % Field_b.AY=Field_a.AY;
 % % z index

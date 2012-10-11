@@ -1366,9 +1366,9 @@ for ifile=1:nbfield
                 '/etc/sysprofile \n'...
                 'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n'...
                 'addpath(''' path_civ ''');\n']);
-            for p=1:length(batch_file_list)
+%             for p=1:length(batch_file_list)
                 fprintf(fid,['run ' filename_bat '\n']);
-            end
+%             end
             fprintf(fid, 'exit\nEND_MATLAB\n');
             fclose(fid);
             filename_bat=filename_bat2;

@@ -22,7 +22,7 @@ VideoObject=[];
 [tild,tild,FileExt]=fileparts(fileinput);
 
 switch FileExt
-    case {'.civ','.log','.cmx','.cmx2','.txt','.bat'}
+    case {'.civ','.log','.cmx','.cmx2','.txt','.bat','.m','.sh'}
         FileType='txt';
     case '.fig'
         FileType='figure';
