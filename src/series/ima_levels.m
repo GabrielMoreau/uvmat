@@ -78,6 +78,7 @@ RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
+OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
 
 % get the set of input file names (cell array filecell), and the lists of
 % input file or frame indices i1_series,i2_series,j1_series,j2_series
@@ -169,7 +170,8 @@ for ifile=1:nbfield
         end
         % operation on images
         A=levels(A);
-        filename_new=fullfile_uvmat(RootPath{1},Param.OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
+        filename_new=fullfile_uvmat(RootPath{1},OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
+%         OutputFile=fullfile_uvmat(RootPath{1},OutputSubDir,RootFile{1},FileExtOut,NomType{1},i1,i2,j1,j2);
         imwrite(A,filename_new)
         display([filename_new ' written'])
     end

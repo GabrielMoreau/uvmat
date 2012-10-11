@@ -82,7 +82,6 @@ ParamOut=Param; %default output
 if ~isfield(Param,'InputFields')
     Param.InputFields.FieldName='';
 end
-OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -90,6 +89,7 @@ RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
+OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 %%%%%%%%%%%%
 % The cell array filecell is the list of input file names, while
@@ -194,7 +194,7 @@ for i_slice=1:NbSlice
         Data=cell(1,nbview);%initiate the set Data
         nbtime=0;
         for iview=1:nbview
-            % reading input file(s)
+            %% reading input file(s)
             [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
             if ~isempty(errormsg)
                 errormsg=['merge_proj/read_field/' errormsg];
@@ -210,13 +210,12 @@ for i_slice=1:NbSlice
                 Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
             end
             
-            %transform the input field (e.g; phys) if requested
+            %% transform the input field (e.g; phys) if requested
             if ~isempty(transform_fct)
-                switch nargin(transform_fct)
-                    case {2,3,4}
-                       Data{iview}=transform_fct(Data{iview},XmlData{iview});
-                    case 1
-                        Data{iview}=transform_fct(Data{iview});
+                if nargin(transform_fct)>=2
+                    Data{iview}=transform_fct(Data{iview},XmlData{iview});
+                else
+                    Data{iview}=transform_fct(Data{iview});
                 end
             end
             
@@ -235,17 +234,8 @@ for i_slice=1:NbSlice
             %% calculate tps coeff if needed
              check_proj_tps= ~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'filter')&&~isfield(Data{iview},'Coord_tps');
             Data{iview}=calc_tps(Data{iview},check_proj_tps);
-              
-%             % field calculation (vort, div...)    
-%             if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
-%                 if isfield(Data{iview},'Coord_tps')
-%                     Data{iview}.FieldList=Param.InputFields.FieldName;
-%                 else
-%                     Data{iview}=calc_field(Param.InputFields.FieldName,Data{iview});%calculate field (vort..)
-%                 end
-%             end
-            
-            %projection on object (gridded plane)
+
+            %% projection on object (gridded plane)
             if Param.CheckObject
                 [Data{iview},errormsg]=proj_field(Data{iview},Param.ProjObject);
                 if ~isempty(errormsg)
