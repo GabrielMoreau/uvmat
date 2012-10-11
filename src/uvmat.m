@@ -884,27 +884,27 @@ if isempty(nbfield)
 end
 nbfield_j=max(max(max(j2_series)));
 if isempty(nbfield_j)
-    nbfield_j=max(max(max(j2_series)));
+    nbfield_j=max(max(max(j1_series)));
 end
 if ~isempty(XmlData.Time)
     %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
     if isequal(size(XmlData.Time,1),1)
-        NomType=get(handles.NomType,'String');
+        %NomType=get(handles.NomType,'String');
         XmlData.Time=(XmlData.Time)';
     end
 end
 last_i_cell=get(handles.last_i,'String');
 if isempty(nbfield)
-    last_i_cell{1}='';
+    last_i_cell{index}='';
 else
-    last_i_cell{1}=num2str(nbfield);
+    last_i_cell{index}=num2str(nbfield);
 end
 set(handles.last_i,'String',last_i_cell)
 last_j_cell=get(handles.last_j,'String');
 if isempty(nbfield_j)
-     last_j_cell{1}='';
+     last_j_cell{index}='';
 else
-     last_j_cell{1}=num2str(nbfield_j);
+     last_j_cell{index}=num2str(nbfield_j);
 end
 set(handles.last_j,'String',last_j_cell);
 
