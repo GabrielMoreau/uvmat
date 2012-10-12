@@ -731,7 +731,7 @@ if ~isempty(time)
     MaxIndexTable=get(handles.MaxIndex,'Data');
     MaxIndex_i=MaxIndexTable{iview,1};
     MaxIndex_j=MaxIndexTable{iview,2};
-    if isempty(MinIndex_j)
+    if isempty(MinIndex_j)% only i index
         if MinIndex_i>0
             TimeTable{iview,1}=time(MinIndex_i);
         end
@@ -744,7 +744,9 @@ if ~isempty(time)
         end
         TimeTable{iview,2}=time(first_i,first_j);
         TimeTable{iview,3}=time(last_i,last_j);
+        if size(time)>=[MaxIndex_i MaxIndex_j];
         TimeTable{iview,4}=time(MaxIndex_i,MaxIndex_j);
+        end
     end
     set(handles.TimeTable,'Data',TimeTable)
 end
@@ -779,7 +781,7 @@ SeriesData.Time{iview}=time;
 set(handles.series,'UserData',SeriesData)
 
 %% enable j index visibilitycellfun(@isempty,regexp(PairString,'^j'))
-state='off';
+% state='off';
 check_jindex=~cellfun(@isempty,SeriesData.j1_series); %look for non empty j indices
 if isempty(find(check_jindex))
     enable_j(handles,'off') % no j index needed
@@ -1634,7 +1636,7 @@ eval(['h_function=@' ACTION ';']);
 try
     [fid,errormsg] =fopen([ACTION '.m']);
     InputText=textscan(fid,'%s',1,'delimiter','\n');
-    fclose(fid)
+    fclose(fid);
     set(handles.ActionName,'ToolTipString',InputText{1}{1})% put the first line of the selected function as tooltip help
 end
 if ~isequal(path_series,PathName)
@@ -1853,7 +1855,6 @@ end
 % --- Executes on button press in CheckObject.
 function CheckObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-% SeriesData=get(handles.series,'UserData');
 value=get(handles.CheckObject,'Value');
 if value
      set(handles.CheckObject,'BackgroundColor',[1 1 0])%put unactivated buttons to yellow
