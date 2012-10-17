@@ -1,6 +1,6 @@
 %'relabel_i_j': relabel an image series with two indices, and correct errors from the RDvision transfer program
 %------------------------------------------------------------------------
-% function GUI_config=relabel_i_j(Param)
+% function ParamOut=relabel_i_j(Param)
 %------------------------------------------------------------------------
 
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,11 +45,11 @@
 %    .ProjObject: %sub structure describing a projection object (read from ancillary GUI set_object)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function GUI_config=relabel_i_j(Param)
+function ParamOut=relabel_i_j(Param) %default output=relabel_i_j(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if ~exist('Param','var') % case with no input parameter 
-    GUI_config={'NbViewMax';1;...% max nbre of input file series (default='' , no limitation)
+    ParamOut={'NbViewMax';1;...% max nbre of input file series (default='' , no limitation)
         'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
         'WholeIndexRange';'on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
         'NbSlice';'off'; ...%nbre of slices ('off' by default)
@@ -181,13 +181,13 @@ if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
         msgbox_uvmat('ERROR','input must be two image series or two netcdf file series')
     return
 end
-NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
-if NbSlice~=nbfield_j
-    answer=msgbox_uvmat('INPUT_Y-N',['will not average slice by slice: for so cancel and set NbSlice= ' num2str(nbfield_j)]);
-    if ~strcmp(answer,'Yes')
-        return
-    end
-end
+% NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
+% if NbSlice~=nbfield_j
+%     answer=msgbox_uvmat('INPUT_Y-N',['will not average slice by slice: for so cancel and set NbSlice= ' num2str(nbfield_j)]);
+%     if ~strcmp(answer,'Yes')
+%         return
+%     end
+% end
 
 %% Set field names and velocity types
 % not relevant here
@@ -208,52 +208,9 @@ else
     end
 end
 
-%% read imadoc
-% RootPath=get(hseries.RootPath,'String');
-% RootFile=get(hseries.RootFile,'String');
-% if ~iscell(RootFile)
-%     msgbox_uvmat('ERROR','please enter an input image series from RDVision system')%error message for xml file reading
-%     return
-% end
-% basename=fullfile(RootPath{1},RootFile{1}); 
-% [XmlData,warntext]=imadoc2struct_special([basename '.xml']);% read the xml file appended to the present function (containing bug corrections)
-% if ~isempty(warntext)
-%     msgbox_uvmat('ERROR',warntext)%error message for xml file reading
-% end
-% nbfield1=size(XmlData.Time,1);
-% nbfield2=size(XmlData.Time,2);
-% set(hseries.first_i,'String',num2str(first_label))% display the first image in the process
-% set(hseries.last_i,'String',num2str(nbfield1*nbfield2-1+first_label))% display the last image in the process
-% set(hseries.nb_field,'String',{num2str(nbfield1*nbfield2-1+first_label)})% display the total nbre of images
-% SeriesData=get(hGUI,'UserData');
-
-
-%% stop program there when it is selected in the menu (no run action)
-% if ~exist('num_i1','var')
-%     return
-% end
-% if nbfield2>=2
-% answer=msgbox_uvmat('',[num2str(nbfield1) ' bursts containing ' num2str(nbfield2) ' images each']);%error message for directory creation
-% nomtype='_i_j';
-% else
-%     answer=msgbox_uvmat('',['image series with ' num2str(nbfield1) ' images']);%error message for directory creation
-%     nomtype='_i';
-% end
-% if ~strcmp(answer,'Yes')
-%     return
-% end
-
 %% copy and adapt the xml file
+NomTypeNew='_1_1';
 if ~isempty(XmlData{1})
-
-%     if exist([basename '.xml'],'file')
-%         try
-%             copyfile([basename '.xml'],[basename '.xml~']);% backup the xml file
-%         catch ME
-%             msgbox_uvmat('ERROR',ME.message);
-%             return
-%         end
-%         filexml=[filebase{1} '.xml']
         t=xmltree(filexml);
         
         %update information on the first image name in the series
@@ -266,8 +223,7 @@ if ~isempty(XmlData{1})
         if ~isempty(j1_series{1})
             j1=j1_series{1};
         end
-        ImageName=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},'_1_1',i1_series{1}(1),[],j);
-%         ImageName=name_generator(basename,1,1,'.png','_i_j');
+        ImageName=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},'_1_1',i1_series{1}(1),[],j1);
         [pth,ImageName]=fileparts(ImageName);
         ImageName=[ImageName '.png'];
         if isempty(uid_ImageName)
@@ -281,25 +237,25 @@ if ~isempty(XmlData{1})
         end
         
         %%%% correction RDvision %%%%
-        if isfield(XmlData,'NbDtj')
+        if isfield(XmlData{1},'NbDtj')
             uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
             uid_value=children(t,uid_NbDtj);
             if ~isempty(uid_value)
-                t=set(t,uid_value(1),'value',num2str(XmlData.NbDtj));
+                t=set(t,uid_value(1),'value',num2str(XmlData{1}.NbDtj));
             end
         end
-        if isfield(XmlData,'NbDtk')
+        if isfield(XmlData{1},'NbDtk')
             uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
             uid_value=children(t,uid_NbDtk);
             if ~isempty(uid_value)
-                t=set(t,uid_value(1),'value',num2str(XmlData.NbDtk));
+                t=set(t,uid_value(1),'value',num2str(XmlData{1}.NbDtk));
             end
         end
-        if isempty(j1_series{1}) && isfield(XmlData,'NbDti')
+        if isempty(j1_series{1}) && isfield(XmlData{1},'NbDti')
             uid_Dti=find(t,'ImaDoc/Camera/BurstTiming/Dti');
-            t=add(t,uid_Dti,'chardata',num2str(XmlData.Dti));
+            t=add(t,uid_Dti,'chardata',num2str(XmlData{1}.Dti));
             uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
-            t=add(t,uid_NbDti,'chardata',num2str(XmlData.NbDti));
+            t=add(t,uid_NbDti,'chardata',num2str(XmlData{1}.NbDti));
             uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
             uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
             t=delete(t,uid_NbDtj);
@@ -308,11 +264,11 @@ if ~isempty(XmlData{1})
             uid_Dtk=find(t,'ImaDoc/Camera/BurstTiming/Dtk');
             t=delete(t,uid_Dtj);
             t=delete(t,uid_Dtk);
+            NomTypeNew='_1';
         end
             SubDirBase=regexprep(SubDir{1},'\..*','');%take the root part of SubDir, before the first dot '.'
     filexml_new=[fullfile(RootPath{1},SubDirBase) '.xml'];
         save(t,filexml_new)
-%     end
 end
 
 %% main loop on images
@@ -329,8 +285,7 @@ for ifile=1:nbfield
         filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile));
         j1=mod(ifile-1+first_label,nbfield2)+1;
         i1=floor((ifile-1+first_label)/nbfield2)+1;
-        %         filename_new=name_generator(basename,num_i,num_j,'.png',nomtype);
-        filename_new=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},'_1_1',i1,[],j1);
+        filename_new=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomTypeNew,i1,[],j1);
         try
             movefile(filename,filename_new);
             [s,errormsg] = fileattrib(filename_new,'-w','a'); %set images to read only '-w' for all users ('a')
@@ -442,9 +397,10 @@ if strcmp(option,'*') || strcmp(option,'Camera')
                       NbDti=NbDtj;
                      Dtj=[];
                      s.Dti=Dti;
+                     s.NbDti=NbDti;
                 else
                     % NbDtj=NbDtj/numel(Dtj);%bursts
-                    s.NbDtj=NbDtj;
+                    s.NbDtj=NbDtj/numel(Dtj);%bursts;
                 end
                 %%%% %%%%
                 Dti=Dti/Frequency;%Dtj converted from frame unit to TimeUnit (e.g. 's')
@@ -455,7 +411,7 @@ if strcmp(option,'*') || strcmp(option,'Camera')
                     Time_val=[Time_val;Time_val(end)+cumsum(Dti)];%append the times defined by the intervals  Dti
                 end
                 if ~isempty(Dtj)
-                    Dtj=reshape(Dtj'*ones(1,NbDtj),1,NbDtj*numel(Dtj)); %concatene Dtj vector NbDtj times
+                    Dtj=reshape(Dtj'*ones(1,s.NbDtj),1,s.NbDtj*numel(Dtj)); %concatene Dtj vector NbDtj times
                     Dtj=[0 Dtj];
                     Time_val=Time_val*ones(1,numel(Dtj))+ones(numel(Time_val),1)*cumsum(Dtj);% produce a time matrix with Dtj
                 end
