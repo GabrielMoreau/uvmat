@@ -189,6 +189,12 @@ else
                     nb_pairs=numel(find(i1_series(ref_i+1,ref_j+1,:)~=0));
                 end
             end
+            if i1==0
+                i1=-1;% set index 0 to -1 to distinguish from the absent index (set to 0)
+            end
+            if j1==0
+                j1=-1;% set index 0 to -1 to distinguish from the absent index (set to 0)
+            end
             i1_series(ref_i+1,ref_j+1,nb_pairs+1)=i1;
             if ~isempty(i2_input)
                 i2_series(ref_i+1,ref_j+1,nb_pairs+1)=i2;

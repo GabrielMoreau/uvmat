@@ -592,31 +592,37 @@ end
 set(handles.OutputSubDir,'String',SubDirOut)
 
 %% display the min and max indices for the file series
-if size(i1_series,2)==1
+if size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0
     MinIndex_j=1;
-    MaxIndex_j=1; 
-    MinIndex_i=min(find(i1_series));
-    MaxIndex_i=max(find(i1_series));
+    MaxIndex_j=1;
+    MinIndex_i=find(i1_series(:,2,:), 1 )-1;
+    MaxIndex_i=find(i1_series(:,2,:), 1, 'last' )-1;
 else
-pair_max=squeeze(max(i1_series,[],1)); %max on pair index
-j_max=max(pair_max,[],1);
-%i_sum=sum(sum(i1_series,2),1);%sum of i1_series on the last index
-MaxIndex_i=max(find(j_max))-1;% max ref index i
-MinIndex_i=min(find(j_max))-1;% min ref index i
-diff_i_max=diff(j_max);
+    pair_max=squeeze(max(i1_series,[],1)); %max on pair index
+    j_max=max(pair_max,[],1);
+    %i_sum=sum(sum(i1_series,2),1);%sum of i1_series on the last index
+    MaxIndex_i=find(j_max, 1, 'last' )-1;% max ref index i
+    MinIndex_i=find(j_max, 1 )-1;% min ref index i
+    diff_i_max=diff(j_max);
     if isequal (diff_i_max,diff_i_max(1)*ones(size(diff_i_max)))
         set(handles.num_incr_i,'String',num2str(diff_i_max(1)))
     end
-i_max=max(pair_max,[],2);
-MaxIndex_j=max(find(i_max))-1;% max ref index i
-MinIndex_j=min(find(i_max))-1;% min ref index i
-diff_j_max=diff(i_max);
+    i_max=max(pair_max,[],2);
+    MaxIndex_j=max(find(i_max))-1;% max ref index i
+    MinIndex_j=min(find(i_max))-1;% min ref index i
+    diff_j_max=diff(i_max);
     if isequal (diff_j_max,diff_j_max(1)*ones(size(diff_j_max)))
         set(handles.num_incr_j,'String',num2str(diff_j_max(1)))
     end
 end
 MinIndex=get(handles.MinIndex,'Data');%retrieve the min indices in the table MinIndex
 MaxIndex=get(handles.MaxIndex,'Data');%retrieve the max indices in the table MaxIndex
+if isequal(MinIndex_i,-1)
+    MinIndex_i=0;
+end
+if isequal(MinIndex_j,-1)
+    MinIndex_j=0;
+end
 MinIndex{iview,1}=MinIndex_i;
 MinIndex{iview,2}=MinIndex_j;
 MaxIndex{iview,1}=MaxIndex_i;
@@ -742,10 +748,12 @@ if ~isempty(time)
         if MinIndex_i>0
             TimeTable{iview,1}=time(MinIndex_i,MinIndex_j);
         end
-        TimeTable{iview,2}=time(first_i,first_j);
-        TimeTable{iview,3}=time(last_i,last_j);
+        if size(time)>=[last_i last_j]
+            TimeTable{iview,2}=time(first_i,first_j);
+            TimeTable{iview,3}=time(last_i,last_j);
+        end
         if size(time)>=[MaxIndex_i MaxIndex_j];
-        TimeTable{iview,4}=time(MaxIndex_i,MaxIndex_j);
+            TimeTable{iview,4}=time(MaxIndex_i,MaxIndex_j);
         end
     end
     set(handles.TimeTable,'Data',TimeTable)
