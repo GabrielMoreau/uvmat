@@ -24,12 +24,12 @@ function DataOut=phys(DataIn,XmlData,DataIn_1,XmlData_1)
 %   (default='coord' if .Role='coord_x,_y..., 
 %            'D_i' if '.Role='vector_x,...',
 %              'scalar', else (thenno change except scale factor)
-%% set GUI config
+%% set GUI config if DataIn='*'
 DataOut=[];
 DataOut_1=[]; %default second  output field
 if strcmp(DataIn,'*')
     if isfield(XmlData,'GeometryCalib')&& isfield(XmlData.GeometryCalib,'CoordUnit')
-        DataOut.CoordUnit=XmlData.GeometryCalib.CoordUnit;
+        DataOut.CoordUnit=XmlData.GeometryCalib.CoordUnit;% states that the output is in unit defined by GeometryCalib, then erased all projection objects with different units
     end
     return
 end

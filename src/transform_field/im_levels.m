@@ -1,4 +1,9 @@
-function DataOut=im_levels(DataIn,Calib)
+function DataOut=im_levels(DataIn)
+%% set GUI config: no action defined
+DataOut=[];  %default  output field
+if strcmp(DataIn,'*')
+    return
+end
 %-----------------------------------------------
 %parameters
 np=30

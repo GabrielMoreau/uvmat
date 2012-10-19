@@ -1,5 +1,11 @@
-function DataOut=remove_particles(DataIn,Calib)
+function DataOut=remove_background(DataIn)
 %-----------------------------------------------
+%% set GUI config: no action defined
+DataOut=[];  %default  output field
+if strcmp(DataIn,'*')
+    return
+end
+
 %parameters
 threshold=200
 nblock_x=30;%size of image subblocks for analysis
@@ -8,7 +14,7 @@ nblock_y=30;
 DataOut=DataIn;%default
 
 %BACKGROUND LEVEL
-Atype=class(DataIn.A)
+Atype=class(DataIn.A);
 A=double(DataIn.A);
 Backg=zeros(size(A));
 Aflagmin=sparse(imregionalmin(A));%Amin=1 for local image minima
