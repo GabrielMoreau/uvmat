@@ -3471,11 +3471,11 @@ if strcmp(transform_name,'more...');
         'Pick the transform function', prev_path);
     if ~ischar(FileName),return,end %abandon if the browser is cancelled
     path_transform_fct =fullfile(PathName,FileName);
-    if isempty(regexp(FileName,'.m$'))% detect file extension .m
+    if isempty(regexp(FileName,'\.m$'))% detect file extension .m
         msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
         return
     else
-        transform_name=regexprep(FileName,'.m','');
+        transform_name=regexprep(FileName,'\.m','');
     end
     ichoice=find(strcmp(transform_name,menu),1);%look for the selected fct in the existing menu
     if isempty(ichoice)% if the item is not found, add it to the menu (before 'more...' and select it)
