@@ -317,7 +317,7 @@ abs_time1=dotciv([9:nbfield+8],2);
 dtime=dotciv(5,1)*(dotciv([9:nbfield+8],[3:end-1])+1);
 timeshift=[abs_time1 dtime];
 time=cumsum(timeshift,2);
-
+GeometryCalib.CalibrationType='rescale';
 GeometryCalib.R=[pxcmx 0 0; 0 pxcmy 0;0 0 0];
 GeometryCalib.Tx=0;
 GeometryCalib.Ty=0;
