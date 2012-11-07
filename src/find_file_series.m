@@ -63,7 +63,7 @@ if isempty(NomType)
 else
     %% possibly include the first index in the root name, if there exists a corresponding xml file
     r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
-    if ~isempty(r)
+    if ~isempty(r) %if NomType begins by a number or _1 
         fileinput_end=regexprep(fileinput,['^' RootFile],'');%remove RootFile at the beginning of fileinput
         if isempty(regexp(r.tiretnum,'^_','once'))% if a separator '_' is not  detected
             rr=regexp(fileinput_end,'^(?<i1>\d+)','names');
@@ -72,6 +72,7 @@ else
         end
         if ~isempty(rr)
             RootFile_i=[RootFile rr.i1];% new root file
+            %look for an xml file correspoonding to the new root name
             if exist(fullfile(RootPath,SubDir,[RootFile_i '.xml']),'file') || (strcmp(FileExt,'.nc') && exist(fullfile(RootPath,[RootFile_i '.xml']),'file'))
                 RootFile=RootFile_i;
                 NomTypePref=r.tiretnum;
@@ -85,6 +86,7 @@ else
     end
     %% analyse the list of existing files when relevant
     sep1='';
+    sep2='';
     i1_str='(?<i1>)';%will set i1=[];
     i1_star='';
     i2_str='(?<i2>)';%will set i2=[];
@@ -94,10 +96,12 @@ else
     j2_str='(?<j2>)';%will set j2=[];
     j2_star='';
     %Look for cases with letter indexing for the second index
-    r=regexp(NomType,'^(?<sep1>_?)(?<i1>\d+)(?<j1>[a|A])(?<j2>[b|B]?)$','names');
+    r=regexp(NomType,'^(?<sep1>_?)(?<i1>\d+)(?<sep2>_?)(?<j1>[a|A])(?<j2>[b|B]?)$','names');
     if ~isempty(r)
         sep1=r.sep1;
+        sep2=r.sep2;
         i1_str='(?<i1>\d+)';
+        i1_star='*';
         if strcmp(lower(r.j1),r.j1)% lower case index
             j1_str='(?<j1>[a-z])';
         else
@@ -132,9 +136,9 @@ else
             end
         end
     end
-    detect_string=['^' RootFile sep1 i1_str i2_str j1_str j2_str FileExt '$'];%string used in regexp to detect file indices
+    detect_string=['^' RootFile sep1 i1_str i2_str sep2 j1_str j2_str FileExt '$'];%string used in regexp to detect file indices
     %find the string used to extract the relevant files with the command dir
-    star_string=[RootFile sep1 i1_star i2_star  j1_star j2_star FileExt];
+    star_string=[RootFile sep1 i1_star i2_star sep2 j1_star j2_star FileExt];
     wd=pwd;%current working directory
     cd (FilePath)% move to the local dir to save time in the operation dir.
     dirpair=dir(star_string);% look for relevant files in the file directory
