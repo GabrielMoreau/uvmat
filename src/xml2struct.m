@@ -7,12 +7,22 @@
 %
 % INPUT:
 % filename: name of the xml file
+% varargin: optional list of strings to restrict the reading to a selection of subtrees, for instance 'GeometryCalib' (save time) 
 
-function [s,Heading]=xml2struct(filename)
+function [s,Heading]=xml2struct(filename,varargin)
 t=xmltree(filename);
 Heading=get(t,1,'name');
-ss=convert(t);
-s=convert_string(ss);
+if nargin>1
+    for isub=1:nargin-1
+        uid_sub=find(t,['/' Heading '/' varargin{isub}]);
+        tsub=branch(t,uid_sub);
+        ss=convert(tsub);
+        s.(varargin{isub})=convert_string(ss);
+    end
+else
+    ss=convert(t);
+    s=convert_string(ss);
+end
 
 
 function out=convert_string(ss)
