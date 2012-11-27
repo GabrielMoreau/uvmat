@@ -57,7 +57,7 @@ for k=1:length(Timing)
         Dtj=Timing{k}.Dtj/Frequency;%Dtj converted from frame unit to TimeUnit (e.g. 's');
     end
     NbDtj=1;
-    if isfield(Timing{k},'NbDtj')
+    if isfield(Timing{k},'NbDtj')&&~isempty(Timing{k}.NbDtj)
         NbDtj=Timing{k}.NbDtj;
     end
     Dti=[];
@@ -65,7 +65,7 @@ for k=1:length(Timing)
         Dti=Timing{k}.Dti/Frequency;%Dti converted from frame unit to TimeUnit (e.g. 's');
     end
     NbDti=1;
-    if isfield(Timing{k},'NbDti')
+    if isfield(Timing{k},'NbDti')&&~isempty(Timing{k}.NbDti)
         NbDti=Timing{k}.NbDti;
     end
     Time_val=Timing{k}.Time;%time in TimeUnit
@@ -84,7 +84,7 @@ for k=1:length(Timing)
     if isfield(Timing,'Dtk')
         Dtk=Timing{k}.Dtk;
     end
-    if isfield(Timing,'NbDtk')
+    if isfield(Timing,'NbDtk')&&~isempty(Timing{k}.NbDtk)
         NbDtk=Timing{k}.NbDtk;
     end
     if isempty(Dtk)
