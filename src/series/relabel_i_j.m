@@ -90,12 +90,7 @@ FileExt=Param.InputTable(:,5);
 % get the set of input file names (cell array filecell), and the lists of
 % input file or frame indices i1_series,i2_series,j1_series,j2_series
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-% filecell{iview,fileindex}: cell array representing the list of file names
-%        iview: line in the table corresponding to a given file series
-%        fileindex: file index within  the file series, 
-% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
-% i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-% set of frame indices used for movie or multimage input 
+ 
 % numbers of slices and file indices
 
 NbSlice=1;%default
@@ -277,6 +272,7 @@ nbfield2=size(XmlData{1}.Time,2);
 for ifile=1:nbfield
     if checkrun
         update_waitbar(hseries.Waitbar,ifile/nbfield)
+        drawnow
         stopstate=get(hseries.RUN,'BusyAction');
     else
         stopstate='queue';
@@ -384,7 +380,7 @@ if strcmp(option,'*') || strcmp(option,'Camera')
                 Frequency=get_value(subt,'/BurstTiming/FrameFrequency',1);
                 Dtj=get_value(subt,'/BurstTiming/Dtj',[]);
                 Dtj=Dtj/Frequency;%Dtj converted from frame unit to TimeUnit (e.g. 's')
-                NbDtj=get_value(subt,'/BurstTiming/NbDtj',1);
+                NbDtj=get_value(subt,'/BurstTiming/NbDtj',[]);
                 %%%% correction RDvision %%%%
 %                 NbDtj=NbDtj/numel(Dtj);
 %                 s.NbDtj=NbDtj;
@@ -400,7 +396,11 @@ if strcmp(option,'*') || strcmp(option,'Camera')
                      s.NbDti=NbDti;
                 else
                     % NbDtj=NbDtj/numel(Dtj);%bursts
+                    if ~isempty(NbDtj)
                     s.NbDtj=NbDtj/numel(Dtj);%bursts;
+                    else
+                        s.NbDtj=1;
+                    end
                 end
                 %%%% %%%%
                 Dti=Dti/Frequency;%Dtj converted from frame unit to TimeUnit (e.g. 's')
