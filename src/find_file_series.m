@@ -62,7 +62,7 @@ if isempty(NomType)
     end
 else
     %% possibly include the first index in the root name, if there exists a corresponding xml file
-    r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
+    r=regexp(NomType,'^(?<tiretnum>_|\d+)','names');%look for a number or _1 at the beginning of NomType
     if ~isempty(r) %if NomType begins by a number or _1 
         fileinput_end=regexprep(fileinput,['^' RootFile],'');%remove RootFile at the beginning of fileinput
         if isempty(regexp(r.tiretnum,'^_','once'))% if a separator '_' is not  detected
