@@ -2407,29 +2407,36 @@ end
 if NbDim>1
     CoordMax=zeros(numel(imax),NbDim);
     CoordMin=zeros(numel(imax),NbDim);
-    Mesh=zeros(numel(imax),NbDim);
+    Mesh=zeros(1,numel(imax));
     for ind=1:numel(imax)
-        XName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end)};
-        YName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end-1)};
-        CoordMax(ind,NbDim)=max(max(UvData.Field.(XName)));
-        CoordMin(ind,NbDim)=min(min(UvData.Field.(XName)));
-        CoordMax(ind,NbDim-1)=max(max(UvData.Field.(YName)));
-        CoordMin(ind,NbDim-1)=min(min(UvData.Field.(YName)));
-        %         test_x=1;%test for unstructured coordinates
-        if NbDim==3
-            ZName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(1)};
-            CoordMax(imax(ind),1)=max(max(UvData.Field.(ZName)));
-            CoordMin(ind,1)=min(min(UvData.Field.(ZName)));
+        if strcmp(CellInfo{imax(ind)}.CoordType,'tps')
+            CoordName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex};% X,Y coordinates in a single variable
+            CoordMax(ind,NbDim)=max(UvData.Field.(CoordName)(1:end-3,1,:));
+            CoordMax(ind,NbDim-1)=max(UvData.Field.(CoordName)(1:end-3,2,:));
+            CoordMin(ind,NbDim)=min(UvData.Field.(CoordName)(1:end-3,1,:));
+            CoordMin(ind,NbDim-1)=min(UvData.Field.(CoordName)(1:end-3,2,:));
+        else
+            XName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end)};
+            YName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end-1)};
+            CoordMax(ind,NbDim)=max(max(UvData.Field.(XName)));
+            CoordMin(ind,NbDim)=min(min(UvData.Field.(XName)));
+            CoordMax(ind,NbDim-1)=max(max(UvData.Field.(YName)));
+            CoordMin(ind,NbDim-1)=min(min(UvData.Field.(YName)));
+            %         test_x=1;%test for unstructured coordinates
+            if NbDim==3
+                ZName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(1)};
+                CoordMax(imax(ind),1)=max(max(UvData.Field.(ZName)));
+                CoordMin(ind,1)=min(min(UvData.Field.(ZName)));
+            end
         end
-        
         switch CellInfo{imax(ind)}.CoordType
             
-            case 'scattered' %unstructured coordinates
-                NbPoints=CellInfo{imax(ind)}.CoordSize;% nbre of points
-                Mesh(ind,:)=(prod(CoordMax(ind,:)-CoordMin(ind,:))/NbPoints)^(1/NbDim); %(volume or area per point)^(1/NbDim)
+            case {'scattered','tps'} %unstructured coordinates
+                NbPoints=CellInfo{imax(ind)}.CoordSize;% total nbre of points
+                Mesh(ind)=(prod(CoordMax(ind,:)-CoordMin(ind,:))/NbPoints)^(1/NbDim); %(volume or area per point)^(1/NbDim)
             case 'grid'%structured coordinate
                 NbPoints=CellInfo{imax(ind)}.CoordSize;% nbre of points in each direction
-                Mesh(ind,:)=min((CoordMax(ind,:)-CoordMin(ind,:))./(NbPoints-1));                
+                Mesh(ind)=min((CoordMax(ind,:)-CoordMin(ind,:))./(NbPoints-1));                
         end
     end
     UvData.Field.Mesh=min(Mesh);
