@@ -30,9 +30,9 @@ for ilist=1:length(fieldnames)
       for ilist_sub=1:length(fieldnames_sub)
           if isstruct(fieldnames_sub{ilist_sub})
                 t=struct2xml(fieldnames_sub{ilist_sub},t,uid);
-                save(t)
+%                 save(t)
           else
-              eval(['val_sub=val.' fieldnames_sub{ilist_sub} ';'])
+              val_sub=val.(fieldnames_sub{ilist_sub});
               t=add_element(t,uid,fieldnames_sub{ilist_sub},val_sub);
           end
       end

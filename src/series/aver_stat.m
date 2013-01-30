@@ -302,12 +302,14 @@ for i_slice=1:NbSlice
             end
         end
     else  % time from ImaDoc prevails if it exists
-        j1=1;%default
-        if ~isempty(j1_series{1})
-            j1=j1_series{1};
-        end
-        DataOut.Time=time(1,i1_series{1}(1),j1filexml);
-        DataOut.Time_end=time(end,i1_series{end}(end),j1_series{end}(end));
+%         j1=1;%default
+%         if ~isempty(j1_series{1})
+%             j1=j1_series{1};
+%         end
+        %DataOut.Time=time(1,i1_series{1}(1),j1);
+        %DataOut.Time_end=time(end,i1_series{end}(end),j1_series{end}(end));
+        DataOut.Time=time(1);
+        DataOut.Time_end=time(end);
     end
     
     %writting the result file

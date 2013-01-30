@@ -16,11 +16,12 @@
 
 function [s,errormsg]=imadoc2struct(ImaDoc,varargin) 
 %% default input and output
-errormsg=[];%default
-s.Heading=[];%default
-s.Time=[]; %default
-s.TimeUnit=[]; %default
-s.GeometryCalib=[];
+errormsg='';%default
+s=[];
+% s.Heading=[];%default
+% s.Time=[]; %default
+% s.TimeUnit=[]; %default
+% s.GeometryCalib=[];
 % tsai=[];%default
 
 %% opening the xml file
@@ -32,71 +33,74 @@ if strcmp(FileExt,'.civ')
 end
 
 %% case of xml files
-if nargin >1
-    [s,Heading]=xml2struct(ImaDoc,varargin);% convert the xml file in a structure s, keeping only the subtree defined in input
-else
+if nargin ==1
     [s,Heading]=xml2struct(ImaDoc);% convert the whole xml file in a structure s
+elseif nargin ==2
+    [s,Heading]=xml2struct(ImaDoc,varargin{1});% convert the xml file in a structure s, keeping only the subtree defined in input
+else %TODO: deal with more than two subtrees?
+    [s,Heading]=xml2struct(ImaDoc,varargin{1},varargin{2});% convert the xml file in a structure s, keeping only the subtree defined in input
 end
 if ~strcmp(Heading,'ImaDoc')
     errormsg='the input xml file is not ImaDoc';
     return
 end
 %% reading timing
-Timing=s.Camera.BurstTiming;
-if ~iscell(Timing)
-    Timing={Timing};
-end
-s.Time=[];
-for k=1:length(Timing)
-    Frequency=1;
-    if isfield(Timing{k},'Frequency')
-        Frequency=Timing{k}.FrameFrequency;
+if isfield(s,'Camera')
+    Timing=s.Camera.BurstTiming;
+    if ~iscell(Timing)
+        Timing={Timing};
     end
-    Dtj=[];
-    if isfield(Timing{k},'Dtj')
-        Dtj=Timing{k}.Dtj/Frequency;%Dtj converted from frame unit to TimeUnit (e.g. 's');
-    end
-    NbDtj=1;
-    if isfield(Timing{k},'NbDtj')&&~isempty(Timing{k}.NbDtj)
-        NbDtj=Timing{k}.NbDtj;
-    end
-    Dti=[];
-    if isfield(Timing{k},'Dti')
-        Dti=Timing{k}.Dti/Frequency;%Dti converted from frame unit to TimeUnit (e.g. 's');
-    end
-    NbDti=1;
-    if isfield(Timing{k},'NbDti')&&~isempty(Timing{k}.NbDti)
-        NbDti=Timing{k}.NbDti;
-    end
-    Time_val=Timing{k}.Time;%time in TimeUnit
-    if ~isempty(Dti)
-        Dti=reshape(Dti'*ones(1,NbDti),NbDti*numel(Dti),1); %concatene Dti vector NbDti times
-        Time_val=[Time_val;Time_val(end)+cumsum(Dti)];%append the times defined by the intervals  Dti
-    end
-    if ~isempty(Dtj)
-        Dtj=reshape(Dtj'*ones(1,NbDtj),1,NbDtj*numel(Dtj)); %concatene Dtj vector NbDtj times
-        Dtj=[0 Dtj];
-        Time_val=Time_val*ones(1,numel(Dtj))+ones(numel(Time_val),1)*cumsum(Dtj);% produce a time matrix with Dtj
-    end
-    % reading Dtk
-    Dtk=[];%default
-    NbDtk=1;%default
-    if isfield(Timing,'Dtk')
-        Dtk=Timing{k}.Dtk;
-    end
-    if isfield(Timing,'NbDtk')&&~isempty(Timing{k}.NbDtk)
-        NbDtk=Timing{k}.NbDtk;
-    end
-    if isempty(Dtk)
-        s.Time=[s.Time;Time_val];
-    else
-        for kblock=1:NbDtk+1
-            Time_val_k=Time_val+(kblock-1)*Dtk;
-            s.Time=[s.Time;Time_val_k];
+    s.Time=[];
+    for k=1:length(Timing)
+        Frequency=1;
+        if isfield(Timing{k},'Frequency')
+            Frequency=Timing{k}.FrameFrequency;
+        end
+        Dtj=[];
+        if isfield(Timing{k},'Dtj')
+            Dtj=Timing{k}.Dtj/Frequency;%Dtj converted from frame unit to TimeUnit (e.g. 's');
+        end
+        NbDtj=1;
+        if isfield(Timing{k},'NbDtj')&&~isempty(Timing{k}.NbDtj)
+            NbDtj=Timing{k}.NbDtj;
+        end
+        Dti=[];
+        if isfield(Timing{k},'Dti')
+            Dti=Timing{k}.Dti/Frequency;%Dti converted from frame unit to TimeUnit (e.g. 's');
+        end
+        NbDti=1;
+        if isfield(Timing{k},'NbDti')&&~isempty(Timing{k}.NbDti)
+            NbDti=Timing{k}.NbDti;
+        end
+        Time_val=Timing{k}.Time;%time in TimeUnit
+        if ~isempty(Dti)
+            Dti=reshape(Dti'*ones(1,NbDti),NbDti*numel(Dti),1); %concatene Dti vector NbDti times
+            Time_val=[Time_val;Time_val(end)+cumsum(Dti)];%append the times defined by the intervals  Dti
+        end
+        if ~isempty(Dtj)
+            Dtj=reshape(Dtj'*ones(1,NbDtj),1,NbDtj*numel(Dtj)); %concatene Dtj vector NbDtj times
+            Dtj=[0 Dtj];
+            Time_val=Time_val*ones(1,numel(Dtj))+ones(numel(Time_val),1)*cumsum(Dtj);% produce a time matrix with Dtj
+        end
+        % reading Dtk
+        Dtk=[];%default
+        NbDtk=1;%default
+        if isfield(Timing,'Dtk')
+            Dtk=Timing{k}.Dtk;
+        end
+        if isfield(Timing,'NbDtk')&&~isempty(Timing{k}.NbDtk)
+            NbDtk=Timing{k}.NbDtk;
+        end
+        if isempty(Dtk)
+            s.Time=[s.Time;Time_val];
+        else
+            for kblock=1:NbDtk+1
+                Time_val_k=Time_val+(kblock-1)*Dtk;
+                s.Time=[s.Time;Time_val_k];
+            end
         end
     end
 end
-           
 
 % try
 %     t=xmltree(ImaDoc);

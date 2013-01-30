@@ -1366,7 +1366,7 @@ set(handles.geometry_calib,'UserData',UserData)%record current file foer further
 function Heading=loadfile(handles,fileinput)
 %------------------------------------------------------------------------
 Heading=[];%default
-[s,errormsg]=imadoc2struct(fileinput,'GeometryCalib');
+[s,errormsg]=imadoc2struct(fileinput,'Heading','GeometryCalib');
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
@@ -1404,7 +1404,7 @@ if ~isempty(GeometryCalib)
         set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
         set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
     end
-    calib=reshape(GeometryCalib.PointCoord,[],1);
+    calib=reshape(GeometryCalib.SourceCalib.PointCoord,[],1);
     for ilist=1:numel(calib)
         CoordCell{ilist}=num2str(calib(ilist));
     end

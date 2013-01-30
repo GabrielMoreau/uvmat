@@ -11,13 +11,24 @@
 
 function [s,Heading]=xml2struct(filename,varargin)
 t=xmltree(filename);
-Heading=get(t,1,'name');
+iline=0;
+Heading='';
+while isempty(Heading)
+    iline=iline+1;
+    if strcmp(get(t,iline,'type'),'element')
+        Heading=get(t,iline,'name');
+    end
+end
 if nargin>1
     for isub=1:nargin-1
         uid_sub=find(t,['/' Heading '/' varargin{isub}]);
+        if isempty(uid_sub)
+            s.(varargin{isub})=[];
+        else
         tsub=branch(t,uid_sub);
         ss=convert(tsub);
         s.(varargin{isub})=convert_string(ss);
+        end
     end
 else
     ss=convert(t);
