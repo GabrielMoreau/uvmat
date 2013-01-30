@@ -4593,6 +4593,57 @@ geometry_calib(FileName,pos_cal);% call the geometry_calib interface
 set(handles.view_xml,'Backgroundcolor',[1 1 1])%indicate the end of reading of the current xml file by geometry_calib
 set(handles.MenuCalib,'checked','on')% indicate that MenuCalib is activated, test used by mouse action
 
+
+%-----------------------------------------------------------------------
+function MenuLIFCalib_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
+ListObj=UvData.Object;
+select=zeros(1,numel(ListObj));
+for iobj=1:numel(ListObj);
+    if strcmp(ListObj{iobj}.Type,'line')
+        select(iobj)=1;
+    end
+end
+val=find(select);
+if numel(val)<2
+    msgbox_uvmat('ERROR','light rays must be defined by at least two lines created by Projection object/line in the menu bar');
+    return
+else
+    set(handles.ListObject,'Value',val);
+    ObjectData=UvData.Object(val);
+    flag=1;
+    npx=size(UvData.Field.A,2);
+    npy=size(UvData.Field.A,1);
+    xi=0.5:npx-0.5;
+    yi=0.5:npy-0.5;
+    [Xi,Yi]=meshgrid(xi,yi);
+    for iobj=1:length(ObjectData)
+        flagobj=1;
+        testphys=0; %coordinates in pixels by default
+        if isfield(ObjectData,'CoordUnit') && ~isequal(ObjectData.CoordUnit,'pixel')
+            if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
+                Calib=UvData.XmlData{1}.GeometryCalib;
+                testphys=1;
+            end
+        end
+        if isfield(ObjectData{iobj},'Coord')
+            x1(iobj)=ObjectData{iobj}.Coord(1,1);
+            y1(iobj)=ObjectData{iobj}.Coord(1,2);
+            x2(iobj)=ObjectData{iobj}.Coord(2,1);
+            y2(iobj)=ObjectData{iobj}.Coord(2,2);
+        end
+    end
+end
+    %determine the ray origin
+    x1
+    y1
+    x2
+    y2
+    % update the xml file
+
+
+
 %------------------------------------------------------------------------
 function MenuMask_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -4616,7 +4667,7 @@ else
     xi=0.5:npx-0.5;
     yi=0.5:npy-0.5;
     [Xi,Yi]=meshgrid(xi,yi);
-    if isfield(UvData,'Object')
+%     if isfield(UvData,'Object')
         for iobj=1:length(UvData.Object)
             ObjectData=UvData.Object{iobj};
             if isfield(ObjectData,'ProjMode') &&(isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside'));
@@ -4675,7 +4726,7 @@ else
                 end
             end
         end
-    end 
+%     end 
     %mask name
     RootPath=get(handles.RootPath,'String');
     SubDir=get(handles.SubDir,'String');
@@ -4845,3 +4896,4 @@ function CheckColorBar_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of CheckColorBar
+
