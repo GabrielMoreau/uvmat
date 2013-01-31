@@ -39,23 +39,23 @@ end
 %parameters for polar coordinates (taken from the calibration data of the first field)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 origin_xy=[0 0];%center for the polar coordinates in the original x,y coordinates
-if isfield(Calib{1},'PolarCentre') && isnumeric(Calib{1}.PolarCentre)
-    if isequal(length(Calib{1}.PolarCentre),2);
-        origin_xy= Calib{1}.PolarCentre;
+if isfield(CalibData,'PolarCentre') && isnumeric(CalibData.PolarCentre)
+    if isequal(length(CalibData.PolarCentre),2);
+        origin_xy= CalibData.PolarCentre;
     end
 end
 radius_offset=0;%reference radius used to offset the radial coordinate r 
 angle_offset=0; %reference angle used as new origin of the polar angle (= axis Ox by default)
-if isfield(Calib{1},'PolarReferenceRadius') && isnumeric(Calib{1}.PolarReferenceRadius)
-    radius_offset=Calib{1}.PolarReferenceRadius;
+if isfield(CalibData,'PolarReferenceRadius') && isnumeric(CalibData.PolarReferenceRadius)
+    radius_offset=CalibData.PolarReferenceRadius;
 end
 if radius_offset > 0
     angle_scale=radius_offset; %the azimuth is rescale in terms of the length along the reference radius
 else
     angle_scale=180/pi; %polar angle in degrees 
 end
-if isfield(Calib{1},'PolarReferenceAngle') && isnumeric(Calib{1}.PolarReferenceAngle)
-    angle_offset=Calib{1}.PolarReferenceAngle; %offset angle (in unit of the final angle, degrees or arc length along the reference radius))
+if isfield(CalibData,'PolarReferenceAngle') && isnumeric(CalibData.PolarReferenceAngle)
+    angle_offset=CalibData.PolarReferenceAngle; %offset angle (in unit of the final angle, degrees or arc length along the reference radius))
 end
 % new x coordinate = radius-radius_offset;
 % new y coordinate = theta*angle_scale-angle_offset
@@ -79,6 +79,7 @@ if  ~isempty(Calib{1})
         ZIndex=0;
     end
 end
+
 %transform second field (if exists) to cartesian phys coordiantes
 if test_1
     DataOut_1=phys_1(Data_1,Calib{2},origin_xy,radius_offset,angle_offset,angle_scale);
@@ -182,76 +183,6 @@ if isfield(Data,'CoordUnit')%&& isequal(Data.CoordType,'px')&& ~isempty(Calib)
     end
 end
 
-
-%------------------------------------------------------------------------
-%'phys_XYZ':transforms image (px) to real world (phys) coordinates using geometric calibration parameters
-% function [Xphys,Yphys]=phys_XYZ(Calib,X,Y,Z)
-%
-%OUTPUT:
-%
-%INPUT:
-%Z: index of plane
-function [Xphys,Yphys,Zphys]=phys_XYZ(Calib,X,Y,Z)
-%------------------------------------------------------------------------
-if exist('Z','var')&& isequal(Z,round(Z))&& Z>0 && isfield(Calib,'SliceCoord')&&length(Calib.SliceCoord)>=Z
-    Zindex=Z;
-    Zphys=Calib.SliceCoord(Zindex,3);%GENERALISER AUX CAS AVEC ANGLE
-else
-    Zphys=0;
-end
-if ~exist('X','var')||~exist('Y','var')
-    Xphys=[];
-    Yphys=[];%default
-    return
-end
-%coordinate transform
-if ~isfield(Calib,'fx_fy')
-     Calib.fx_fy=[1 1];
-end
-if ~isfield(Calib,'Tx_Ty_Tz')
-     Calib.Tx_Ty_Tz=[0 0 1];
-end
-if ~isfield(Calib,'Cx_Cy')
-     Calib.Cx_Cy=[0 0];
-end
-if ~isfield(Calib,'kc')
-     Calib.kc=0;
-end
-if isfield(Calib,'R')
-    R=(Calib.R)';
-    Tx=Calib.Tx_Ty_Tz(1);
-    Ty=Calib.Tx_Ty_Tz(2);
-    Tz=Calib.Tx_Ty_Tz(3);
-    f=Calib.fx_fy(1);%dpy=1; sx=1
-    dpx=Calib.fx_fy(2)/Calib.fx_fy(1);
-    Dx=R(5)*R(7)-R(4)*R(8);
-    Dy=R(1)*R(8)-R(2)*R(7);
-    D0=f*(R(2)*R(4)-R(1)*R(5));
-    Z11=R(6)*R(8)-R(5)*R(9);
-    Z12=R(2)*R(9)-R(3)*R(8);  
-    Z21=R(4)*R(9)-R(6)*R(7);
-    Z22=R(3)*R(7)-R(1)*R(9);
-    Zx0=R(3)*R(5)-R(2)*R(6);
-    Zy0=R(1)*R(6)-R(3)*R(4);
-    A11=R(8)*Ty-R(5)*Tz+Z11*Zphys;
-    A12=R(2)*Tz-R(8)*Tx+Z12*Zphys;
-    A21=-R(7)*Ty+R(4)*Tz+Z21*Zphys;
-    A22=-R(1)*Tz+R(7)*Tx+Z22*Zphys;
-    X0=f*(R(5)*Tx-R(2)*Ty+Zx0*Zphys);
-    Y0=f*(-R(4)*Tx+R(1)*Ty+Zy0*Zphys);
-        %px to camera:
-    Xd=dpx*(X-Calib.Cx_Cy(1)); % sensor coordinates
-    Yd=(Y-Calib.Cx_Cy(2));
-    dist_fact=1+Calib.kc*(Xd.*Xd+Yd.*Yd)/(f*f); %distortion factor
-    Xu=Xd./dist_fact;%undistorted sensor coordinates
-    Yu=Yd./dist_fact;
-    denom=Dx*Xu+Dy*Yu+D0;
-    Xphys=(A11.*Xu+A12.*Yu+X0)./denom;%world coordinates
-    Yphys=(A21.*Xu+A22.*Yu+Y0)./denom;
-else
-    Xphys=-Calib.Tx_Ty_Tz(1)+X/Calib.fx_fy(1);
-    Yphys=-Calib.Tx_Ty_Tz(2)+Y/Calib.fx_fy(2);
-end
 
 %%%%%%%%%%%%%%%%%%%%
 function [A_out,Rangx,Rangy]=phys_Ima_polar(A,CalibIn,ZIndex,origin_xy,radius_offset,angle_offset,angle_scale)

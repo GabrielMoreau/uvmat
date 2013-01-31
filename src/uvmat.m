@@ -4597,11 +4597,20 @@ set(handles.MenuCalib,'checked','on')% indicate that MenuCalib is activated, tes
 %-----------------------------------------------------------------------
 function MenuLIFCalib_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
+%% read UvData properties stored on the uvmat interface 
+UvData=get(handles.uvmat,'UserData');
+if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
+    XmlData=UvData.XmlData{1};
+else
+    msgbox_uvmat('ERROR','geometric calibration needed: use Tools/geometric calibration in the menu bar');
+    return
+end
+
+%% read lines currently drawn
 ListObj=UvData.Object;
 select=zeros(1,numel(ListObj));
 for iobj=1:numel(ListObj);
-    if strcmp(ListObj{iobj}.Type,'line')
+    if isfield(ListObj{iobj},'Type') && strcmp(ListObj{iobj}.Type,'line')
         select(iobj)=1;
     end
 end
@@ -4610,38 +4619,108 @@ if numel(val)<2
     msgbox_uvmat('ERROR','light rays must be defined by at least two lines created by Projection object/line in the menu bar');
     return
 else
-    set(handles.ListObject,'Value',val);
+    set(handles.ListObject,'Value',val);% show the selected lines on the list
     ObjectData=UvData.Object(val);
-    flag=1;
-    npx=size(UvData.Field.A,2);
-    npy=size(UvData.Field.A,1);
-    xi=0.5:npx-0.5;
-    yi=0.5:npy-0.5;
-    [Xi,Yi]=meshgrid(xi,yi);
     for iobj=1:length(ObjectData)
-        flagobj=1;
-        testphys=0; %coordinates in pixels by default
-        if isfield(ObjectData,'CoordUnit') && ~isequal(ObjectData.CoordUnit,'pixel')
-            if isfield(UvData,'XmlData')&& isfield(UvData.XmlData{1},'GeometryCalib')
-                Calib=UvData.XmlData{1}.GeometryCalib;
-                testphys=1;
-            end
-        end
-        if isfield(ObjectData{iobj},'Coord')
-            x1(iobj)=ObjectData{iobj}.Coord(1,1);
-            y1(iobj)=ObjectData{iobj}.Coord(1,2);
-            x2(iobj)=ObjectData{iobj}.Coord(2,1);
-            y2(iobj)=ObjectData{iobj}.Coord(2,2);
-        end
+%         if isfield(ObjectData{iobj},'Coord')
+            xA(iobj)=ObjectData{iobj}.Coord(1,1);
+            yA(iobj)=ObjectData{iobj}.Coord(1,2);
+            xB(iobj)=ObjectData{iobj}.Coord(2,1);
+            yB(iobj)=ObjectData{iobj}.Coord(2,2);
+%         end
     end
 end
-    %determine the ray origin
-    x1
-    y1
-    x2
-    y2
-    % update the xml file
 
+%% find the origin as intersection of the two first lines (see http://www.ahristov.com/tutorial/geometry-games/intersection-lines.html )
+x1=xA(1);x2=xB(1);
+x3=xA(2);x4=xB(2);
+y1=yA(1);y2=yB(1);
+y3=yA(2);y4=yB(2);
+D = (x1-x2)*(y3-y4) -(y1-y2)*(x3-x4);
+if D==0
+    msgbox_uvmat('ERROR','the two lines are parallel');
+    return
+end
+x0=((x3-x4)*(x1*y2-y1*x2)-(x1-x2)*(x3*y4-y3*x4))/D;
+y0=((y3-y4)*(x1*y2-y1*x2)-(y1-y2)*(x3*y4-y3*x4))/D;
+XmlData.Illumination.Origin=[x0 y0];
+XmlData.PolarCentre=[x0 y0];
+
+%% display the current image in polar coordinates with origin at the  illumination source
+currentdir=pwd;  
+uvmatpath=fileparts(which('uvmat'));
+cd(fullfile(uvmatpath,'transform_field'));
+phys_polar=str2func('phys_polar');
+cd(currentdir)
+DataOut=phys_polar(UvData.Field,XmlData);
+view_field(DataOut);
+
+%% use the third line for reference luminosity
+if numel(val)==3
+    x_ref=linspace(ObjectData{3}.Coord(1,1),ObjectData{3}.Coord(2,1),10);
+    y_ref=linspace(ObjectData{3}.Coord(1,2),ObjectData{3}.Coord(2,2),10);
+    x_ref=x_ref-x0;
+    y_ref=y_ref-y0;
+    [theta_ref,r_ref] = cart2pol(x_ref,y_ref);%theta_ref  and r_ref are the polar coordinates of the points on the line
+    theta_ref=theta_ref*180/pi;
+    figure
+    plot(theta_ref,r_ref)
+    azimuth_ima=linspace(DataOut.AY(1),DataOut.AY(2),size(DataOut.A,1));%profile of x index on the transformed image
+    dist_source = interp1(theta_ref,r_ref,azimuth_ima);
+    dist_source_pixel=round(size(DataOut.A,2)*(dist_source-DataOut.AX(1))/(DataOut.AX(2)-DataOut.AX(1)));
+    line_nan= isnan(dist_source_pixel);
+    dist_source_pixel(line_nan)=1;
+    width=20; %number of pixels used for reference
+    DataOut.A=double(DataOut.A);
+    Anorm=zeros(size(DataOut.A));
+    Aval=mean(mean(DataOut.A));
+    for iline=1:size(DataOut.A,1)
+        lum(iline)=mean(DataOut.A(iline,dist_source_pixel(iline):dist_source_pixel(iline)+width));
+        Anorm(iline,:)=uint16(Aval*DataOut.A(iline,:)/lum(iline));
+    end
+    lum(line_nan)=NaN;
+    figure
+    plot(1:size(DataOut.A,1),lum)
+end
+ImaName=regexprep([get(handles.RootFile,'String') get(handles.FileIndex,'String')],'//','');
+NewImageName=fullfile(get(handles.RootPath,'String'),'polar',[ImaName get(handles.FileExt,'String')]);
+imwrite(Anorm,NewImageName,'BitDepth',16)
+
+%% record the origin in the xml file
+XmlFileName=find_imadoc(get(handles.RootPath,'String'),get(handles.SubDir,'String'),get(handles.RootFile,'String'),get(handles.FileExt,'String'));
+answer=msgbox_uvmat('INPUT_Y-N','save the illumination origin in the current xml file?');
+if strcmp(answer,'Yes')
+    t=xmltree(XmlFileName); %read the file
+    title=get(t,1,'name');
+    if ~strcmp(title,'ImaDoc')
+        msgbox_uvmat('ERROR','wrong xml file');
+        return
+    end
+    % backup the output file if it already exist, and read it
+    backupfile=XmlFileName;
+    testexist=2;
+    while testexist==2
+        backupfile=[backupfile '~'];
+        testexist=exist(backupfile,'file');
+    end
+    [success,message]=copyfile(XmlFileName,backupfile);%make backup
+    if success~=1
+        errormsg=['errror in xml file backup: ' message];
+        return
+    end
+    uid_illumination=find(t,'ImaDoc/Illumination');
+    if isempty(uid_illumination)  %if GeometryCalib does not already exists, create it
+        [t,uid_illumination]=add(t,1,'element','Illumination');
+    end
+    uid_origin=find(t,'ImaDoc/Illumination/Origin');
+    if ~isempty(uid_origin)  %if GeometryCalib does not already exists, create it
+         t=delete(t,uid_origin);
+    end
+    % save the illumination origin
+    t=struct2xml(XmlData.Illumination,t,uid_illumination); 
+    save(t,XmlFileName);
+end
+    
 
 
 %------------------------------------------------------------------------
