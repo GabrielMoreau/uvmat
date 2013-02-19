@@ -30,8 +30,6 @@ for ifield=1:numel(fields)
     else
         hh=[];
         input_data=Param.(fields{ifield});
-%                     display(fields{ifield})
-%                     display(input_data)
         check_done=0;
         if isfield(handles,fields{ifield})
             hh=handles.(fields{ifield});

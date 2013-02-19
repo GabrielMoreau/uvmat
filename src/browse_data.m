@@ -1,7 +1,7 @@
-%'update_project': function for scanning directories in a campaign 
+%'browse_data': function for scanning directories in a campaign 
 %------------------------------------------------------------------------
 % function varargout = series(varargin)
-% associated with the GUI update_project.fig
+% associated with the GUI browse_data.fig
 
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
@@ -19,16 +19,16 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function varargout = update_project(varargin)
+function varargout = browse_data(varargin)
 
-% Last Modified by GUIDE v2.5 15-Feb-2013 19:22:23
+% Last Modified by GUIDE v2.5 15-Feb-2013 19:41:48
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @update_project_OpeningFcn, ...
-                   'gui_OutputFcn',  @update_project_OutputFcn, ...
+                   'gui_OpeningFcn', @browse_data_OpeningFcn, ...
+                   'gui_OutputFcn',  @browse_data_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
 if nargin && ischar(varargin{1}) && ~isempty(regexp(varargin{1},'_Callback','once'))              
@@ -43,17 +43,14 @@ end
 % End initialization code - DO NOT EDIT
 
 %------------------------------------------------------------------------
-% --- Executes just before update_project is made visible.
-function update_project_OpeningFcn(hObject, eventdata, handles, RootXml, SubCampaignTst,GeometryCalib)
+% --- Executes just before browse_data is made visible.
+function browse_data_OpeningFcn(hObject, eventdata, handles, Campaign, GeometryCalib)
 %------------------------------------------------------------------------
-% Choose default command line output for update_project
+% Choose default command line output for browse_data
 handles.output = 'Cancel';
 
 % Update handles structure
 guidata(hObject, handles);
-testCancel=1;
-testinputstring=0;
-icontype='quest';%default question icon (text input asked)
 
 % Determine the position of the dialog - centered on the screen
 FigPos=get(0,'DefaultFigurePosition');
@@ -66,46 +63,35 @@ ScreenUnits=get(0,'Units');
 set(0,'Units','pixels');
 ScreenSize=get(0,'ScreenSize');
 set(0,'Units',ScreenUnits);
-
 FigPos(1)=1/2*(ScreenSize(3)-FigWidth);
 FigPos(2)=2/3*(ScreenSize(4)-FigHeight);
 FigPos(3:4)=[FigWidth FigHeight];
 set(hObject, 'Position', FigPos);
 set(hObject, 'Units', OldUnits);
 
-% % Show a question icon from dialogicons.mat - variables questIconData and questIconMap
-% load dialogicons.mat
-% eval(['IconData=' icontype 'IconData;'])
-% eval(['IconCMap=' icontype 'IconMap;'])
-% questIconMap(256,:) = get(handles.figure1, 'Color');
-% Img=image(IconData, 'Parent', handles.axes1);
-% set(handles.figure1, 'Colormap', IconCMap);
-% set(handles.axes1, ...
-%     'Visible', 'off', ...
-%     'YDir'   , 'reverse'       , ...
-%     'XLim'   , get(Img,'XData'), ...
-%     'YLim'   , get(Img,'YData')  ...
-%     );
 if exist('GeometryCalib','var')
     DataviewData.GeometryCalib=GeometryCalib;
     set(hObject,'UserData',DataviewData)
 end
-if exist('SubCampaignTst','var') && isequal(SubCampaignTst,'y')
-   set(handles.SubCampaignTest,'Value',1);
-end
-if exist('RootXml','var') 
-    RootDir=fileparts(RootXml);
-    [s,Heading]=xml2struct(RootXml);%read the xml file
-    if isfield(s,'SourceDir')
-        set(handles.SourceDir,'String',s.SourceDir);%display the source dir if a mirror has been opened
-        set(handles.MirrorDir,'String',RootDir);%display the opened mirror dir
-        set(handles.CreateMirror,'String','update_mirror')
-    else %a source dir has been opened
-        set(handles.SourceDir,'String',RootDir);
+if exist('Campaign','var') 
+    [CampaignPath,CampaignName]=fileparts(Campaign);
+    RootXml=fullfile(Campaign,[CampaignName '.xml']);
+    s=[];
+    if exist(RootXml,'file')
+        [s,Heading]=xml2struct(RootXml);%read the xml file
+        if isfield(s,'SourceDir')
+            set(handles.SourceDir,'String',s.SourceDir);%display the source dir if a mirror has been opened
+            set(handles.MirrorDir,'Visible','on');%  mirror dir display
+            set(handles.MirrorDir,'String',Campaign);%display the opened mirror dir
+            set(handles.CreateMirror,'String','update_mirror')
+        end
+    end
+    if isempty(s) %a source dir has been opened
+        set(handles.SourceDir,'String',Campaign);
+        set(handles.MirrorDir,'Visible','off');% no mirror dir display
         set(handles.CreateMirror,'String','create_mirror')
     end
     SourceDir_Callback([],[], handles)
- %  set(handles.clean_civ_cmx,'Visible','off')
    set(handles.edit_xml,'Visible','off')
    set(handles.HELP,'Visible','off')
    set(handles.OK,'Visible','on')
@@ -113,65 +99,70 @@ if exist('RootXml','var')
    set(handles.figure,'WindowStyle','modal')% Make% Make the GUI modal 
    set(hObject,'Visible','on')
    drawnow
-%    RootDirectory_Callback(hObject, eventdata, handles)
-   % UIWAIT makes translate_points wait for user response (see UIRESUME)
+   % UIWAIT makes GUI wait for user response (see UIRESUME)
    uiwait(handles.figure);
 end
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
-function varargout = update_project_OutputFcn(hObject, eventdata, handles)
+function varargout = browse_data_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-%delete(handles.figure)
+delete(handles.figure)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CreateMirror.
 function CreateMirror_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-CurrentDir=fileparts(get(handles.SourceDir,'String'));
-if ~exist(CurrentDir,'dir')
-    CurrentDir='';
+if strcmp(get(handles.CreateMirror,'String'),'create_mirror')
+    SourceDir=get(handles.SourceDir,'String');
+    [SourcePath,ProjectName]=fileparts(SourceDir);
+    MirrorRoot=uigetdir('','select the dir which must contain the mirror directory, then press OK'); %file browser
+    if ~ischar(MirrorRoot)
+        return
+    else
+        MirrorDir=fullfile(MirrorRoot,ProjectName);
+    end
+    if ~exist(MirrorDir,'dir')
+        mkdir(MirrorDir)
+    end
+    MirrorDoc.SourceDir=SourceDir;
+    t=struct2xml(MirrorDoc);
+    set(t,1,'name','DataTree');
+    save(t,fullfile(MirrorDir,[ProjectName '.xml']))
+    set(handles.MirrorDir,'String',MirrorDir)
+    set(handles.MirrorDir,'Visible','on')
 end
-SourceDir=uigetdir(CurrentDir,'pick up the source project directory'); %file browser
-if isequal(SourceDir,0)
-    return
-else
-set(handles.SourceDir,'String',SourceDir)
-end
+set(handles.SourceDir,'BackgroundColor',[1 1 0])
 drawnow
-[SourcePath,ProjectName]=fileparts(SourceDir);
-MirrorRoot=uigetdir(CurrentDir,'path to the mirror directory'); %file browser
-if isempty(MirrorRoot)
-    return
+ExpName={''};
+if exist(SourceDir,'dir')
+    hdir=dir(SourceDir); %list files and dirs
+    idir=0;
+    for ilist=1:length(hdir)
+        if hdir(ilist).isdir
+            dirname=hdir(ilist).name;
+            if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')
+                idir=idir+1;
+                ExpName{idir}=hdir(ilist).name;
+                mirror=fullfile(MirrorDir,ExpName{idir});
+                if ~exist(mirror,'dir')
+                   mkdir(mirror)
+                end
+            end
+            % look for the list of 'devices'
+        else
+            %warning for isolated files
+        end
+    end
+    set(handles.ListExperiments,'String',[{'*'};ExpName'])
+    set(handles.ListExperiments,'Value',1)
+    ListExperiments_Callback(hObject, eventdata, handles)
 else
-MirrorDir=fullfile(MirrorRoot,[ProjectName '.mirror']);
+    msgbox_uvmat('ERROR',['The input ' SourceDir ' is not a directory'])
 end
-if ~exist(MirrorDir,'dir')
-    mkdir(MirrorDir)
-end
-MirrorDoc.SourceDir=SourceDir;
-t=struct2xml(MirrorDoc);
-set(t,1,'name','DataTree');
-save(t,fullfile(MirrorDir,[ProjectName '.xml']))
-set(handles.MirrorDir,'String',MirrorDir)
-
-update_mirror(SourceDir,MirrorDir)
-%SourceDir_Callback(hObject, eventdata, handles)
-
-% RootDirectory_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-% --- Executes on button press in open_SubCampaign.
-function UpdateMirror_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-MirrorDir=get(handles.MirrorDir,'String');
-menu={'*.xml', ' (*.xml)';
-    '*.xml',  '.xml files '; ...
-    '*.*',  'All Files (*.*)'};
-[MirrorXml, PathName] = uigetfile( menu, 'Pick a xml file',MirrorDir);
-set(handles.MirrorDir,'String',fullfile(PathName,regexprep(Mirrorxml,'.xml$','.mirror')))
-MirrorDir_Callback(hObject, eventdata, handles)
+set(handles.SourceDir,'BackgroundColor',[1 1 1])
 
 
 %------------------------------------------------------------------------
@@ -182,13 +173,7 @@ MirrorDir=get(handles.MirrorDir,'String');
 s=xml2struct(fullfile(MirrorDir,[MirrorName '.xml']));
 set(handles.SourceDir,'String',s.SourceDir)
 SourceDir_Callback([],[], handles)
-%update_mirror(s.SourceDir, MirrorDir)
 
-
-%------------------------------------------------------------------------
-function update_mirror(SourceDir,MirrorDir)
-%------------------------------------------------------------------------
-SourceDir_Callback([],[], handles)
 
 %------------------------------------------------------------------------
 function SourceDir_Callback(hObject, eventdata, handles)
@@ -261,65 +246,41 @@ for iexp=1:numel(ListExperiments)
     end
 end
 set(handles.ListDevices,'String',ListDevices)
-%         if hdir(ilist).isdir
-%             dirname=hdir(ilist).name;
-%             if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')
-%                 idir=idir+1;
-%                 ExpName{idir}=hdir(ilist).name;
-%                 mirror=fullfile(MirrorDir,ExpName{idir});
-%                 if ~exist(mirror,'dir')
-%                    mkdir(mirror)
-%                 end
-%             end
-%             % look for the list of 'devices'
-%         else
-%             %warning for isolated files
-%         end
-%     end
-%     set(handles.ListExperiments,'String',[{'*'};ExpName'])
-%     set(handles.ListExperiments,'Value',1)
-%     ListExperiments_Callback(hObject, eventdata, handles)
-    
-    
-% set(handles.ListDevices,'Value',1)
-% set(handles.ListRecords,'Value',1)
-% set(handles.ListXml,'Value',1)
-% [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,{},{});
-% set(handles.ListRecords,'String',[{'*'};ListRecords'])
-% set(handles.ListDevices,'String',[{'*'};ListDevices'])
-% set(handles.ListXml,'String',[{'*'};ListXml'])
-% if testList
-%     DataviewData=get(handles.figure,'UserData');
-%     DataviewData.List=List;
-%     set(handles.figure,'UserData',DataviewData)
-% end
-% set(handles.CampaignDoc,'Visible','on')
-% set(handles.edit_xml,'Visible','on')
 
 %------------------------------------------------------------------------
 % --- Executes on button press in update_headings.
 function ListDevices_Callback(hObject, eventdata, handles)
-CurrentPath=get(handles.SourceDir,'String');
-ListExperiments=get(handles.ListExperiments,'String');
-list_val=get(handles.ListExperiments,'Value');
-if isequal(list_val,1)
-    ListExperiments=ListExperiments(2:end);
-else
-    ListExperiments=ListExperiments(list_val);
-end
-set(handles.ListRecords,'Value',1)
-set(handles.ListXml,'Value',1)
-ListDevices=get(handles.ListDevices,'String');
-list_val=get(handles.ListDevices,'Value');
-if isequal(list_val,1)
-    ListDevices=ListDevices(2:end);
-else
-    ListDevices=ListDevices(list_val);
-end
-[ListDevices,ListRecords,ListXml]=ListDir(CurrentPath,ListExperiments,ListDevices,{});
-set(handles.ListRecords,'String',[{'*'};ListRecords'])
-set(handles.ListXml,'String',[{'*'};ListXml'])
-
+% CurrentPath=get(handles.SourceDir,'String');
+% ListExperiments=get(handles.ListExperiments,'String');
+% list_val=get(handles.ListExperiments,'Value');
+% if isequal(list_val,1)
+%     ListExperiments=ListExperiments(2:end);
+% else
+%     ListExperiments=ListExperiments(list_val);
+% end
+% set(handles.ListRecords,'Value',1)
+% set(handles.ListXml,'Value',1)
+% ListDevices=get(handles.ListDevices,'String');
+% list_val=get(handles.ListDevices,'Value');
+% if isequal(list_val,1)
+%     ListDevices=ListDevices(2:end);
+% else
+%     ListDevices=ListDevices(list_val);
+% end
+% [ListDevices,ListRecords,ListXml]=ListDir(CurrentPath,ListExperiments,ListDevices,{});
+% set(handles.ListRecords,'String',[{'*'};ListRecords'])
+% set(handles.ListXml,'String',[{'*'};ListXml'])
+% 
+% 
+% if strcmp(get(handles.MirrorDir,'Visible'),'on')
+%     CurrentPath=get(handles.MirrorDir,'String');
+% else
+%     CurrentPath=get(handles.SourceDir,'String');
+% end
+% ListDevices=get(handles.ListDevices,'String');
+% Device=ListDevices(get(handles.ListDevices,'Value'));
+% % else
+% hdir=dir(fullfile(SourcePath,Device)); %list files and dirs
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -668,30 +629,39 @@ set(handles.ListExperiments,'Value',1)
 % --- Executes on button press in OK.
 function OK_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-CurrentPath=get(handles.SourceDir,'String');
-ListExperiments=get(handles.ListExperiments,'String');
+if strcmp(get(handles.MirrorDir,'Visible'),'on')
+    Campaign=get(handles.MirrorDir,'String');
+else
+    Campaign=get(handles.SourceDir,'String');
+end
+handles.output.Campaign=Campaign;
+Experiment=get(handles.ListExperiments,'String');
 IndicesExp=get(handles.ListExperiments,'Value');
-if ~isequal(IndicesExp,1)
-    ListExperiments=ListExperiments(IndicesExp);
+if ~isequal(IndicesExp,1)% if first element ('*') selected all the experiments are selected
+    Experiment=Experiment(IndicesExp);% use the selection of the list of experiments
 end
-ListDevices=get(handles.ListDevices,'String');
+Device=get(handles.ListDevices,'String');
 Value=get(handles.ListDevices,'Value');
-if isequal(Value,1)
-    msgbox_uvmat('ERROR','manually select in the GUI dataview the device being calibrated')
-    return
-else 
-    ListDevices=ListDevices(Value);
-end
-ListRecords=get(handles.ListRecords,'String');
-Value=get(handles.ListRecords,'Value');
-if ~isequal(Value,1)
-    ListRecords=ListRecords(Value);
-end
-[ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices,ListRecords);
+Device=Device(Value);
+handles.output.Experiment=Experiment;
+handles.output.Device=Device;
+guidata(hObject, handles);% Update handles structure
+uiresume(handles.figure);
+drawnow
+return
+
+
+% ListRecords=get(handles.ListRecords,'String');
+% Value=get(handles.ListRecords,'Value');
+% if ~isequal(Value,1)
+%     ListRecords=ListRecords(Value);
+% end
+
+%[ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices);
 ListXml=get(handles.ListXml,'String');
 Value=get(handles.ListXml,'Value');
 if isequal(Value,1)
-    msgbox_uvmat('ERROR','you need to select in the GUI dataview the xml files to edit')
+    msgbox_uvmat('ERROR','you need to select in the GUI browse_data the xml files to edit')
     return
 else
     ListXml=ListXml(Value);
@@ -766,7 +736,7 @@ set(handles.ListXml,'Value',Value)
 % ListDevices=get(handles.ListDevices,'String');
 % Value=get(handles.ListDevices,'Value');
 % if isequal(Value,1)
-%     msgbox_uvmat('ERROR','manually select in the GUI update_project the device being calibrated')
+%     msgbox_uvmat('ERROR','manually select in the GUI browse_data the device being calibrated')
 %     return
 % else 
 %     ListDevices=ListDevices(Value);
@@ -780,7 +750,7 @@ set(handles.ListXml,'Value',Value)
 % ListXml=get(handles.ListXml,'String');
 % Value=get(handles.ListXml,'Value');
 % if isequal(Value,1)
-%     msgbox_uvmat('ERROR','you need to select in the GUI update_project the xml files to edit')
+%     msgbox_uvmat('ERROR','you need to select in the GUI browse_data the xml files to edit')
 %     return
 % else
 %     ListXml=ListXml(Value);
@@ -791,9 +761,9 @@ set(handles.ListXml,'Value',Value)
 % handles.output.ListRecords=ListRecords;
 % handles.output.ListXml=ListXml;
 % handles.output.List=List;
-handles.output ='OK, Calibration replicated';
-guidata(hObject, handles);% Update handles structure
-uiresume(handles.figure);
+% handles.output ='OK, Calibration replicated';
+% guidata(hObject, handles);% Update handles structure
+% uiresume(handles.figure);
 
 % --- Executes on button press in Cancel.
 function Cancel_Callback(hObject, eventdata, handles)

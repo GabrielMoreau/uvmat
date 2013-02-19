@@ -231,14 +231,6 @@ for ilist=1:numel(ListCoordIndex)
     end
     if CoordSize(ilist)==2% case of uniform grid coordinate defined by lower and upper bounds only
         ListDimName{ilist}=ListCoordName{ilist};% replace the dimension name by the coordinate variable name 
-%         if check_var
-%             check_index= strcmp(ListCoordName{ilist},Data.ListDimName);
-%             CoordSize(ilist)=Data.DimValue(check_index);
-%         else
-%             CoordSize(ilist)=numel(Data.(ListCoordName{ilist}));
-% %         end
-%     else
-%         CoordSize(ilist)=DimValue;
     end
 end
 
@@ -287,16 +279,21 @@ for ivardim=1:numel(VarDimName) % loop at the list of remaining variables
 end
 NbDim=[NbDim NewNbDim];
 CellInfo=[CellInfo NewCellInfo];
+% 
+% %% suppress empty cells
+% check_empty=cellfun(@isempty,CellInfo);
+% CellInfo(check_empty)=[];
+% NbDim(check_empty)=[];
 
-%% suppress empty cells
-check_empty=cellfun(@isempty,CellInfo);
-%check_empty=cellfun(@isempty,CellVarIndex);
-CellInfo(check_empty)=[];
-
-% CellVarIndex(check_empty)=[];
-NbDim(check_empty)=[];
-% CoordType(check_empty)=[];
-% VarRole(check_empty)=[];
+%% suppress empty cells or cells with a single coordinate variable 
+check_remove=false(size(CellInfo));
+for icell=1:numel(check_remove)
+    if isempty(CellInfo{icell})||(numel(CellInfo{icell}.VarIndex)==1 && check_coord(icell))
+        check_remove(icell)=1;
+    end
+end
+CellInfo(check_remove)=[];
+NbDim(check_remove)=[];
 
 %% document roles of non-coordinate variables
 % ListRole={'vector_x','vector_y','vector_z','vector_x_tps','vector_y_tps','warnflag','errorflag',...

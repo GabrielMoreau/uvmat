@@ -1,4 +1,4 @@
-%'ListDir': scan the structure of the directory tree (for dataview.m)
+%'ListDir': scan the structure of the directory tree (for browse_data.m)
 %------------------------------------------------------------------------
 % function [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices_in,ListRecords_in)
 %

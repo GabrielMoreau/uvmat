@@ -333,7 +333,6 @@ end
 % search the files, recognize their type according to their name and fill the rootfile input windows
 function MenuBrowse_Callback(hObject, eventdata, handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-%oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 oldfile=fullfile(RootPath,SubDir);
 if isempty(oldfile)||isequal(oldfile,'') %loads the previously stored file name and set it as default in the file_input box
          dir_perso=prefdir;
@@ -351,6 +350,36 @@ fileinput=[PathName FileName];%complete file name
 
 %% display the selected field and related information
 display_file_name( handles,fileinput)
+
+% -----------------------------------------------------------------------
+% --- Executes on the menu Open/Browse campaign...
+% search the file inside a campaign, using the GUI view_data
+function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
+% -----------------------------------------------------------------------
+CampaignPath=fileparts(fileparts(get(handles.RootPath,'String')));
+DirFull = uigetdir(CampaignPath,'Select a Campaign dir, then press OK');
+if ~ischar(DirFull)|| ~exist(DirFull,'dir')
+    return
+end
+OutPut=browse_data(DirFull);% open the GUI browse_data to get select a campaign dir, experiment and device
+if ~isfield(OutPut,'Campaign')
+    return
+end
+DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.Device{1});
+hdir=dir(DirName); %list files and dirs
+for ilist=1:numel(hdir)
+    if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
+        FileName=hdir(ilist).name;
+        FileType=get_file_type(fullfile(DirName,FileName));
+        switch FileType
+            case {'image','multimage','civx','civdata','netcdf'}
+            break
+        end
+    end
+end
+
+%% display the selected field and related information
+display_file_name( handles,fullfile(DirName,FileName))
 
 % -----------------------------------------------------------------------
 % --- Open again the file whose name has been recorded in MenuFile_1
@@ -431,6 +460,35 @@ else
         save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5'); %store the file names for future opening of uvmat
     end
 end
+
+% --------------------------------------------------------------------
+function MenuBrowseCampaign_1_Callback(hObject, eventdata, handles)
+% -----------------------------------------------------------------------
+CampaignPath=fileparts(fileparts(get(handles.RootPath,'String')));
+DirFull = uigetdir(CampaignPath,'Select a Campaign dir, then press OK');
+if ~ischar(DirFull)|| ~exist(DirFull,'dir')
+    return
+end
+OutPut=browse_data(DirFull);% open the GUI browse_data to get select a campaign dir, experiment and device
+if ~isfield(OutPut,'Campaign')
+    return
+end
+DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.Device{1});
+hdir=dir(DirName); %list files and dirs
+for ilist=1:numel(hdir)
+    if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
+        FileName=hdir(ilist).name;
+        FileType=get_file_type(fullfile(DirName,FileName));
+        switch FileType
+            case {'image','multimage','civx','civdata','netcdf'}
+            break
+        end
+    end
+end
+
+%% display the selected field and related information
+set(handles.SubField,'Value',1)
+display_file_name( handles,fullfile(DirName,FileName),2)
 
 % -----------------------------------------------------------------------
 % --- Open again as second field the file whose name has been recorded in MenuFile_1
@@ -2622,21 +2680,9 @@ else
             AClass=class(ObjectData.A);
             ObjectData.A=flag_mask.*double(ObjectData.A);
             ObjectData.A=feval(AClass,ObjectData.A);
-%             ind_off=[];
-%             if isfield(ObjectData,'ListVarName')
-%                 for ilist=1:length(ObjectData.ListVarName)
-%                     if isequal(ObjectData.ListVarName{ilist},'Mask')||isequal(ObjectData.ListVarName{ilist},'MaskX')||isequal(ObjectData.ListVarName{ilist},'MaskY')
-%                         ind_off=[ind_off ilist];
-%                     end
-%                 end
-%                 ObjectData.ListVarName(ind_off)=[];
-%                 VarDimIndex(ind_off)=[];
-%                 ind_off=[];
-%              
-%             end
         end
         if ~isempty(ObjectData)
-            PlotType='none'; %default
+            %PlotType='none'; %default
             if imap==2 && isempty(view_field_handle)
                 view_field(ObjectData)
             else
@@ -4946,21 +4992,6 @@ else
     web(helpfile);
 end
 
-
-% --------------------------------------------------------------------
-function MenuSetProject_Callback(hObject, eventdata, handles)
-RootPath=get(handles.RootPath,'String');
-ProjectDir = uigetdir(fileparts(fileparts(RootPath)), 'select the project source directory');
-datatree_browser(ProjectDir)
-
-
-% --------------------------------------------------------------------
-function MenuBrowseProject_Callback(hObject, eventdata, handles)
-RootPath=get(handles.RootPath,'String');
-ProjectDir = uigetdir(fileparts(fileparts(RootPath)), 'select the project directory');
-datatree_browser(ProjectDir)
-
-
 % --- Executes on selection change in Coord_y.
 function Coord_y_Callback(hObject, eventdata, handles)
 
@@ -4970,9 +5001,3 @@ function Coord_x_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in CheckColorBar.
 function CheckColorBar_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckColorBar (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CheckColorBar
-

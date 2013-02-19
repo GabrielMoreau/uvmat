@@ -101,10 +101,10 @@ function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColor
 %% default input and output
 if ~exist('PlotParam','var'),PlotParam=[];end;
 PlotType='text'; %default
-PlotParamOut=PlotParam;%default
 if ~isfield(PlotParam,'Coordinates')
     PlotParam.Coordinates=[];
 end
+PlotParamOut=PlotParam;%default
 
 %% check input structure
 index_2D=[];
@@ -151,7 +151,7 @@ if testnewfig
     set(hfig,'Units','normalized')
     haxes=axes;
     set(haxes,'position',[0.13,0.2,0.775,0.73])
-    PlotParam.NextPlot='add'; %parameter for plot_profile and plot_his
+    PlotParamOut.NextPlot='add'; %parameter for plot_profile 
 else
     hfig=get(haxes,'parent');
     set(0,'CurrentFigure',hfig)% the parent of haxes becomes the current figure
@@ -159,7 +159,7 @@ else
 end
 
 %% set axes properties
-if isfield(PlotParam.Coordinates,'CheckFixLimits') && isequal(PlotParam.Coordinates.CheckFixLimits,1)  %adjust the graph limits
+if isfield(PlotParamOut.Coordinates,'CheckFixLimits') && isequal(PlotParamOut.Coordinates.CheckFixLimits,1)  %adjust the graph limits
     set(haxes,'XLimMode', 'manual')
     set(haxes,'YLimMode', 'manual')
 else
@@ -170,7 +170,7 @@ end
 %     PlotParam.Coordinates.CheckFixAspectRatio=1;% if CoordUnit is defined, the two coordiantes should be plotted with equal scale by default
 % end
 errormsg='';
-PlotParamOut.Coordinates=[]; %default output 
+%PlotParamOut.Coordinates=[]; %default output 
 AxeData=get(haxes,'UserData');
 
 %% 2D plots 
@@ -178,10 +178,10 @@ if isempty(index_2D)
     plot_plane([],[],haxes,[],[]);%removes images or vector plots in the absence of 2D field plot
 else  %plot 2D field
     if ~exist('PosColorbar','var'),PosColorbar=[];end;
-    [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo(index_2D),haxes,PlotParam,PosColorbar);
+    [tild,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo(index_2D),haxes,PlotParamOut,PosColorbar);
     AxeData.NbDim=2;
     if testzoomaxes && isempty(errormsg)
-        [zoomaxes,PlotParamOut,tild,errormsg]=plot_plane(Data,CellInfo(index_2D),zoomaxes,PlotParam,PosColorbar);
+        [zoomaxes,PlotParamOut,tild,errormsg]=plot_plane(Data,CellInfo(index_2D),zoomaxes,PlotParamOut,PosColorbar);
         AxeData.ZoomAxes=zoomaxes;
     end
 end
@@ -192,14 +192,14 @@ if isempty(index_1D)
         plot_profile([],[],haxes);%removes usual praphs y vs x in the absence of 1D field plot
     end
 else %plot 1D field (usual graph y vs x)
-    Coordinates=plot_profile(Data,CellInfo(index_1D),haxes,PlotParam.Coordinates);%
+    PlotParamOut.Coordinates=plot_profile(Data,CellInfo(index_1D),haxes,PlotParamOut.Coordinates);%
     if testzoomaxes
-        [zoomaxes,Coordinates]=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParam.Coordinates);
+        [zoomaxes,PlotParamOut.Coordinates]=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParamOut.Coordinates);
         AxeData.ZoomAxes=zoomaxes;
     end
-    if ~isempty(Coordinates)
-        PlotParamOut.Coordinates=Coordinates;
-    end
+%     if ~isempty(Coordinates)
+%         PlotParamOut.Coordinates=Coordinates;
+%     end
     PlotType='line';
 end
 
@@ -230,8 +230,8 @@ end
 if ishandle(haxes)&&( ~isempty(index_2D)|| ~isempty(index_1D))
 %     AxeData=[];
     if isfield(PlotParamOut,'MinX')
-        AxeData.RangeX=[PlotParamOut.MinX PlotParamOut.MaxX];%'[PlotParamOut.MinX PlotParamOut.MaxX];
-        AxeData.RangeY=[PlotParamOut.MinY PlotParamOut.MaxY];%[PlotParamOut.MinY PlotParamOut.MaxY]
+        AxeData.RangeX=[PlotParamOut.MinX PlotParamOut.MaxX];
+        AxeData.RangeY=[PlotParamOut.MinY PlotParamOut.MaxY];
     end
     set(haxes,'UserData',AxeData)
 end
@@ -358,7 +358,10 @@ coord_x_index=[];
 xtitle='';
 ytitle='';
 test_newplot=1;
-
+MinX=[];
+MaxX=[];
+MinY_cell=[];
+MaxY_cell=[];
 %loop on input  fields
 for icell=1:numel(CellInfo)
     VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list data.ListVarName
@@ -366,7 +369,7 @@ for icell=1:numel(CellInfo)
     testplot=ones(size(data.ListVarName));%default test for plotted variables
     coord_x_name{icell}=data.ListVarName{coord_x_index};
     coord_x{icell}=data.(data.ListVarName{coord_x_index});%coordinate variable set as coord_x
-    if isempty(find(strcmp(coord_x_name{icell},coord_x_name(1:end-1)))) %xtitle not already selected
+    if isempty(find(strcmp(coord_x_name{icell},coord_x_name(1:end-1)), 1)) %xtitle not already selected
         xtitle=[xtitle coord_x_name{icell}];
         if isfield(data,'VarAttribute')&& numel(data.VarAttribute)>=coord_x_index && isfield(data.VarAttribute{coord_x_index},'units')
             xtitle=[xtitle '(' data.VarAttribute{coord_x_index}.units '), '];
@@ -374,8 +377,8 @@ for icell=1:numel(CellInfo)
             xtitle=[xtitle ', '];
         end
     end
-    XMin(icell)=min(coord_x{icell});
-    XMax(icell)=max(coord_x{icell});
+    MinX(icell)=min(coord_x{icell});
+    MaxX(icell)=max(coord_x{icell});
     testplot(coord_x_index)=0;
     if isfield(CellInfo{icell},'VarIndex_ancillary')
         testplot(CellInfo{icell}.VarIndex_ancillary)=0;
@@ -398,11 +401,14 @@ for icell=1:numel(CellInfo)
     else
         charplot_0='''-''';
     end
-    YMin=0;
-    YMax=1;%default
+    MinY=[];
+    MaxY=[];%default
+    
+    nbplot=0;
     for ivar=1:length(VarIndex)
         if testplot(VarIndex(ivar))
             VarName=data.ListVarName{VarIndex(ivar)};
+            nbplot=nbplot+1;
             ytitle=[ytitle VarName];
             if isfield(data,'VarAttribute')&& numel(data.VarAttribute)>=VarIndex(ivar) && isfield(data.VarAttribute{VarIndex(ivar)},'units')
                 ytitle=[ytitle '(' data.VarAttribute{VarIndex(ivar)}.units '), '];
@@ -411,8 +417,8 @@ for icell=1:numel(CellInfo)
             end
             eval(['data.' VarName '=squeeze(data.' VarName ');'])
             %eval(['min(data.' VarName ')'])
-            YMin(ivar)=min(min(data.(VarName)));
-            YMax(ivar)=max(max(data.(VarName)));
+            MinY(ivar)=min(min(data.(VarName)));
+            MaxY(ivar)=max(max(data.(VarName)));
             plotstr=[plotstr 'coord_x{' num2str(icell) '},data.' VarName ',' charplot_0 ','];
             eval(['nbcomponent2=size(data.' VarName ',2);']);
             eval(['nbcomponent1=size(data.' VarName ',1);']);
@@ -428,8 +434,10 @@ for icell=1:numel(CellInfo)
             end
         end
     end
-    YMin_cell(icell)=min(YMin);
-    YMax_cell(icell)=max(YMax);
+    if ~isempty(MinY)
+    MinY_cell(icell)=min(MinY);
+    MaxY_cell(icell)=max(MaxY);
+    end
 end
 
 %% activate the plot
@@ -477,31 +485,39 @@ if test_newplot && ~isequal(plotstr,'hhh=plot(')
         title_str=[title_str data.Action.ActionName];
     end
     htitle=title(title_str);
-%     txt=ver('MATLAB');
-%     Release=txt.Release;
-%     relnumb=str2double(Release(3:4));
-%     if relnumb >= 14
     set(htitle,'Interpreter','none')% desable tex interpreter
-%     end
 end
 
 %% determine axes bounds
-%CoordinatesOut.RangeX=[min(XMin) max(XMax)];
-%CoordinatesOut.RangeY=[min(YMin_cell) max(YMax_cell)];
 fix_lim=isfield(Coordinates,'CheckFixLimits') && Coordinates.CheckFixLimits;
+check_lim=isfield(Coordinates,'MinX')&&isfield(Coordinates,'MaxX')&&isfield(Coordinates,'MinY')&&isfield(Coordinates,'MaxY');
 if fix_lim
-    if ~isfield(Coordinates,'MinX')||~isfield(Coordinates,'MaxX')||~isfield(Coordinates,'MinY')||~isfield(Coordinates,'MaxY')
-        fix_lim=0; %free limits if lits are not set,
+    if ~check_lim
+        fix_lim=0; %free limits if limits are not set,
     end 
 end
 if fix_lim
     set(haxes,'XLim',[Coordinates.MinX Coordinates.MaxX])
     set(haxes,'YLim',[Coordinates.MinY Coordinates.MaxY])
-else    
-    CoordinatesOut.MinX=min(XMin);
-    CoordinatesOut.MaxX=max(XMax);
-    CoordinatesOut.MinY=min(YMin_cell);
-    CoordinatesOut.MaxY=max(YMax_cell);
+else
+    if ~isempty(MinX)
+        if check_lim
+            CoordinatesOut.MinX=min(min(MinX),CoordinatesOut.MinX);
+            CoordinatesOut.MaxX=max(max(MaxX),CoordinatesOut.MaxX);
+        else
+            CoordinatesOut.MinX=min(MinX);
+            CoordinatesOut.MaxX=max(MaxX);
+        end
+    end
+    if ~isempty(MinY_cell)
+        if check_lim
+            CoordinatesOut.MinY=min(min(MinY_cell),CoordinatesOut.MinY);
+            CoordinatesOut.MaxY=max(max(MaxY_cell),CoordinatesOut.MaxY);
+        else
+            CoordinatesOut.MinY=min(MinY_cell);
+            CoordinatesOut.MaxY=max(MaxY_cell);
+        end
+    end
 end
 
 %% determine plot aspect ratio
@@ -790,6 +806,8 @@ if test_ima
         end;
         PlotParamOut.Scalar.MinA=MinA;
         PlotParamOut.Scalar.MaxA=MaxA;
+        PlotParamOut.Scalar.Npx=size(A,2);
+        PlotParamOut.Scalar.Npy=size(A,1);
         % case of contour plot
         if CheckContour
             if ~isempty(hima) && ishandle(hima)
@@ -1088,46 +1106,46 @@ end
 
 %store the coordinate extrema occupied by the field
 if ~isempty(Data)
-    XMin=[];
-    XMax=[];
-    YMin=[];
-    YMax=[];
+    MinX=[];
+    MaxX=[];
+    MinY=[];
+    MaxY=[];
     fix_lim=isfield(PlotParam.Coordinates,'CheckFixLimits') && PlotParam.Coordinates.CheckFixLimits;
     if fix_lim
         if isfield(PlotParam.Coordinates,'MinX')&&isfield(PlotParam.Coordinates,'MaxX')&&isfield(PlotParam.Coordinates,'MinY')&&isfield(PlotParam.Coordinates,'MaxY')
-            XMin=PlotParam.Coordinates.MinX;
-            XMax=PlotParam.Coordinates.MaxX;
-            YMin=PlotParam.Coordinates.MinY;
-            YMax=PlotParam.Coordinates.MaxY;
-        end  %else PlotParamOut.XMin =PlotParam.XMin...
+            MinX=PlotParam.Coordinates.MinX;
+            MaxX=PlotParam.Coordinates.MaxX;
+            MinY=PlotParam.Coordinates.MinY;
+            MaxY=PlotParam.Coordinates.MaxY;
+        end  %else PlotParamOut.MinX =PlotParam.MinX...
     else
         if test_ima %both background image and vectors coexist, take the wider bound
-            XMin=min(AX);
-            XMax=max(AX);
-            YMin=min(AY);
-            YMax=max(AY);
+            MinX=min(AX);
+            MaxX=max(AX);
+            MinY=min(AY);
+            MaxY=max(AY);
             if test_vec
-                XMin=min(XMin,min(vec_X));
-                XMax=max(XMax,max(vec_X));
-                YMin=min(YMin,min(vec_Y));
-                YMax=max(YMax,max(vec_Y));
+                MinX=min(MinX,min(vec_X));
+                MaxX=max(MaxX,max(vec_X));
+                MinY=min(MinY,min(vec_Y));
+                MaxY=max(MaxY,max(vec_Y));
             end
         elseif test_vec
-            XMin=min(vec_X);
-            XMax=max(vec_X);
-            YMin=min(vec_Y);
-            YMax=max(vec_Y);
+            MinX=min(vec_X);
+            MaxX=max(vec_X);
+            MinY=min(vec_Y);
+            MaxY=max(vec_Y);
         end
     end
-    PlotParamOut.Coordinates.MinX=XMin;
-    PlotParamOut.Coordinates.MaxX=XMax;
-    PlotParamOut.Coordinates.MinY=YMin;
-    PlotParamOut.Coordinates.MaxY=YMax;
-    if XMax>XMin
-        set(haxes,'XLim',[XMin XMax]);% set x limits of frame in axes coordinates
+    PlotParamOut.Coordinates.MinX=MinX;
+    PlotParamOut.Coordinates.MaxX=MaxX;
+    PlotParamOut.Coordinates.MinY=MinY;
+    PlotParamOut.Coordinates.MaxY=MaxY;
+    if MaxX>MinX
+        set(haxes,'XLim',[MinX MaxX]);% set x limits of frame in axes coordinates
     end
-    if YMax>YMin
-        set(haxes,'YLim',[YMin YMax]);% set x limits of frame in axes coordinates
+    if MaxY>MinY
+        set(haxes,'YLim',[MinY MaxY]);% set x limits of frame in axes coordinates
     end
     set(haxes,'YDir','normal')
     set(get(haxes,'XLabel'),'String',[XName ' (' x_units ')']);

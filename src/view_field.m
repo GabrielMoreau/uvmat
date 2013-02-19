@@ -82,7 +82,12 @@ if exist('Field','var')
     if isfield(PlotParamOut,'Vectors')
         set(handles.Vectors,'Visible','on')
     end
-    write_plot_param(handles,PlotParamOut);% update the display of the plotting parameters
+    errormsg=fill_GUI(PlotParamOut,handles);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',errormsg)
+        return
+    end
+    %write_plot_param(handles,PlotParamOut);% update the display of the plotting parameters
 end
 
 %put the GUI on the lower right of the sceen
@@ -774,7 +779,12 @@ Data=get(handles.view_field,'UserData');
 AxeData=Data.PlotAxes;% retrieve the current plotted data
 PlotParam=read_GUI(handles.view_field);
 [PP,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
-write_plot_param(handles,PlotParamOut); %update the auto plot parameters
+errormsg=fill_GUI(PlotParamOut,handles);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',errormsg)
+        return
+    end
+%write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %------------------------------------------------------------------------
 % --- Executes on button press in Menu/Export/field in workspace.

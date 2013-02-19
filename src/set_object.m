@@ -503,7 +503,12 @@ else
         else
             hhview_field=guidata(hview_field);
             [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%update an existing  plot in view_field
-            write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
+            errormsg=fill_GUI(PlotParam,hhview_field);
+            if ~isempty(errormsg)
+                msgbox_uvmat('ERROR',errormsg)
+                return
+            end
+       %     write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
         end
         haxes=findobj(hview_field,'tag','axes3');
         Data=get(hview_field,'UserData');

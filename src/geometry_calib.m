@@ -149,24 +149,104 @@ if ~isempty(huvmat)
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in calibrate_lin.
+% --- Executes on button press APPLY (used to launch the calibration).
 function APPLY_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %% look for the GUI uvmat and check for an image as input
 huvmat=findobj(allchild(0),'Name','uvmat');
 hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
-FileExt=get(hhuvmat.FileExt,'String');
-% check_input=0;
-% if ~isempty(FileExt)
-%     if ~isempty(imformats(FileExt(2:end))) ||strcmpi(FileExt,'.avi')
-%         check_input=1;
-%     end
-% end
-% % if ~check_input
-%     msgbox_uvmat('ERROR','open an image with uvmat to perform calibration')
-%     return
-% end
 
+RootPath='';
+if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
+    RootPath=get(hhuvmat.RootPath,'String');
+    SubDirBase=regexprep(get(hhuvmat.SubDir,'String'),'\..+$','');
+    outputfile=[fullfile(RootPath,SubDirBase) '.xml'];%xml file associated with the currently displayed image
+else
+    question={'save the calibration data and point coordinates in'};
+    def={fullfile(RootPath,'ObjectCalib.xml')};
+    options.Resize='on';
+    answer=inputdlg(question,'',1,def,options);
+    outputfile=answer{1};
+end
+[GeometryCalib,index]=calibrate(handles,hhuvmat);% apply calibration
+
+%% copy the xml file from the old location if appropriate, then update with the calibration parameters
+if ~exist(outputfile,'file') && ~isempty(SubDirBase)
+    oldxml=[fullfile(RootPath,SubDirBase,get(hhuvmat.RootFile,'String')) '.xml'];
+    if exist(oldxml,'file')
+        [success,message]=copyfile(oldxml,outputfile);%copy the old xml file to a new one with the new convention
+    end
+end
+errormsg=update_imadoc(GeometryCalib,outputfile);% introduce the calibration data in the xml file
+if ~strcmp(errormsg,'')
+    msgbox_uvmat('ERROR',errormsg);
+end
+
+%% display image with new calibration in the currently opened uvmat interface
+hhh=findobj(hhuvmat.PlotAxes,'Tag','calib_marker');% delete calib points and markers
+if ~isempty(hhh)
+    delete(hhh);
+end
+hhh=findobj(hhuvmat.PlotAxes,'Tag','calib_points');
+if ~isempty(hhh)
+    delete(hhh);
+end
+set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off'
+set(hhuvmat.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
+UserData=get(handles.geometry_calib,'UserData');
+UserData.XmlInputFile=outputfile;%save the current xml file name
+set(handles.geometry_calib,'UserData',UserData)
+uvmat('RootPath_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
+MenuPlot_Callback(hObject, eventdata, handles)
+set(handles.ListCoord,'Value',index)% indicate in the list the point with max deviation (possible mistake)
+ListCoord_Callback(hObject, eventdata, handles)
+figure(handles.geometry_calib)
+
+%------------------------------------------------------------------------
+% --- Executes on button press in REPLICATE
+function REPLICATE_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+
+%% look for the GUI uvmat and check for an image as input
+huvmat=findobj(allchild(0),'Name','uvmat');
+hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
+GeometryCalib=calibrate(handles,hhuvmat);% apply calibration
+
+%% open the GUI browse_data
+CalibData=get(handles.geometry_calib,'UserData');%read the calibration image source on the interface userdata
+if isfield(CalibData,'XmlInputFile')
+    InputDir=fileparts(fileparts(CalibData.XmlInputFile));
+end
+answer=msgbox_uvmat('INPUT_TXT','Campaign to calibrate?',InputDir); 
+if strcmp(answer,'Cancel')
+    return
+end
+OutPut=browse_data(answer);
+nbcalib=0;
+for ilist=1:numel(OutPut.Experiment)
+    SubDirBase=regexprep(OutPut.Device{1},'\..+$','');
+    XmlName=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},[SubDirBase '.xml']);
+    % copy the xml file from the old location if appropriate, then update with the calibration parameters
+    if ~exist(XmlName,'file') && ~isempty(SubDirBase)
+        oldxml=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},SubDirBase,[get(hhuvmat.RootFile,'String') '.xml']);
+        if exist(oldxml,'file')
+            [success,message]=copyfile(oldxml,XmlName);%copy the old xml file to a new one with the new convention
+        end
+    end
+    errormsg=update_imadoc(GeometryCalib,XmlName);% introduce the calibration data in the xml file
+    if ~strcmp(errormsg,'')
+        msgbox_uvmat('ERROR',errormsg);
+    else
+        display([XmlName ' updated with calibration parameters'])
+        nbcalib=nbcalib+1;
+    end
+end
+msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated for ' num2str(nbcalib) ' experiments']);
+
+%------------------------------------------------------------------------
+% --- activate calibration and store parameters in ouputfile .
+function [GeometryCalib,index]=calibrate(handles,hhuvmat)
+%------------------------------------------------------------------------
 %% read the current calibration points
 Coord_cell=get(handles.ListCoord,'String');
 Object=read_geometry_calib(Coord_cell);
@@ -219,7 +299,7 @@ set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
 set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
 
 %% store the calibration data, by default in the xml file of the currently displayed image
-UvData=get(huvmat,'UserData');
+UvData=get(hhuvmat.uvmat,'UserData');
 NbSlice_j=1;%default
 ZStart=Z_plane;
 ZEnd=Z_plane;
@@ -232,180 +312,35 @@ if isfield(UvData,'XmlData')
         volume_scan='y';
     end
 end
-RootPath='';
-% RootFile='';
-if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
-    RootPath=get(hhuvmat.RootPath,'String');
-    SubDirBase=regexprep(get(hhuvmat.SubDir,'String'),'\..+$','');
-    outputfile=[fullfile(RootPath,SubDirBase) '.xml'];%xml file associated with the currently displayed image
-else
-    SubDirBase='';
-    question={'save the calibration data and point coordinates in'};
-    def={fullfile(RootPath,'ObjectCalib.xml')};
-    options.Resize='on';
-    answer=inputdlg(question,'save average in a new file',1,def,options);
-    outputfile=answer{1};
-end
-answer=msgbox_uvmat('INPUT_Y-N',{[outputfile ' updated with calibration data'];...
+
+answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
     ['Error rms (along x,y)=' num2str(GeometryCalib.ErrorRms) ' pixels'];...
     ['Error max (along x,y)=' num2str(GeometryCalib.ErrorMax) ' pixels']});
 
-%% record the calibration parameters and display the current image of uvmat in the new phys coordinates
-if strcmp(answer,'Yes')
-    if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
-       input_key={'Z (first position)','Z (last position)','Z (water surface)', 'refractive index','NbSlice','volume scan (y/n)','tilt angle y axis','tilt angle x axis'};
-       input_val=[{num2str(ZEnd)} {num2str(ZStart)} {num2str(ZStart)} {'1.333'} num2str(NbSlice_j) {volume_scan} {'0'} {'0'}];
-        answer=inputdlg(input_key,'slice position(s)',ones(1,8), input_val,'on');
-        %answer_1=msgbox_uvmat('INPUT_TXT',' Z= ',num2str(Z_plane)); 
-        GeometryCalib.NbSlice=str2double(answer{5});
-        GeometryCalib.VolumeScan=answer{6};
-        if isempty(answer)
-            Z_plane=0; %default
-        else
-            Z_plane=linspace(str2double(answer{1}),str2double(answer{2}),GeometryCalib.NbSlice);
-        end     
-        GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-        GeometryCalib.SliceAngle(:,3)=0;
-        GeometryCalib.SliceAngle(:,2)=str2double(answer{7})*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
-        GeometryCalib.SliceAngle(:,1)=str2double(answer{8})*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
-        GeometryCalib.InterfaceCoord=[0 0 str2double(answer{3})];
-        GeometryCalib.RefractionIndex=str2double(answer{4});     
-    end
-    UserData=get(handles.geometry_calib,'UserData');
-    
-    % get the timing from the xml file using the old convention if appropriate
-    if ~exist(outputfile,'file') && ~isempty(SubDirBase)     
-        oldxml=[fullfile(RootPath,SubDirBase,get(hhuvmat.RootFile,'String')) '.xml'];
-        if exist(oldxml,'file')
-        [success,message]=copyfile(oldxml,outputfile);%copy the old xml file to a new one with the new convention
-        end
-    end   
-    errormsg=update_imadoc(GeometryCalib,outputfile);% introduce the calibration data in the xml file
-    if ~strcmp(errormsg,'')
-        msgbox_uvmat('ERROR',errormsg);
-    end
-    
-    %display image with new calibration in the currently opened uvmat interface
-    hhh=findobj(hhuvmat.PlotAxes,'Tag','calib_marker');% delete calib points and markers
-    if ~isempty(hhh)
-        delete(hhh);      
-    end
-    hhh=findobj(hhuvmat.PlotAxes,'Tag','calib_points');
-    if ~isempty(hhh)
-        delete(hhh);
-    end
-    set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off'
-    set(hhuvmat.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
-    
-    UserData.XmlInputFile=outputfile;%save the current xml file name
-    set(handles.geometry_calib,'UserData',UserData)
-    uvmat('RootPath_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
-    MenuPlot_Callback(hObject, eventdata, handles)
-    set(handles.ListCoord,'Value',index)% indicate in the list the point with max deviation (possible mistake)
-    ListCoord_Callback(hObject, eventdata, handles)
-    figure(handles.geometry_calib)
-end
-
-%------------------------------------------------------------------
-% --- Executes on button press in calibrate_lin.
-
-function REPLICATE_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-
-%% Apply calibration
-calib_cell=get(handles.calib_type,'String'); %#ok<NASGU>
-val=get(handles.calib_type,'Value'); %#ok<NASGU>
-
-%read the current calibration points
-Coord_cell=get(handles.ListCoord,'String');
-Object=read_geometry_calib(Coord_cell);
-Coord=Object.Coord;
-
-% apply the calibration, whose type is selected in  handles.calib_type
-if ~isempty(Coord)
-    calib_cell=get(handles.calib_type,'String');
-    val=get(handles.calib_type,'Value');
-    GeometryCalib=feval(['calib_' calib_cell{val}],Coord,handles);
-else
-    msgbox_uvmat('ERROR','No calibration points, abort')
-    return
-end 
-
-if ~isempty(Coord)
-    %check error
-    X=Coord(:,1);
-    Y=Coord(:,2);
-    Z=Coord(:,3);
-    x_ima=Coord(:,4);
-    y_ima=Coord(:,5);
-    [Xpoints,Ypoints]=px_XYZ(GeometryCalib,X,Y,Z);
-    GeometryCalib.ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
-    [GeometryCalib.ErrorMax(1)]=max(abs(Xpoints-x_ima));
-    GeometryCalib.ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
-    [GeometryCalib.ErrorMax(2)]=max(abs(Ypoints-y_ima));
-%     [EM,ind_dim]=max(GeometryCalib.ErrorMax);
-    %set the Z position of the reference plane used for calibration
-    Z_plane=[];
-    if isequal(max(Z),min(Z))
-        Z_plane=Z(1);
-    end
-    answer_1=msgbox_uvmat('INPUT_TXT',' Z= ',num2str(Z_plane)); 
-    Z_plane=str2double(answer_1);
-    GeometryCalib.NbSlice=1;
-    GeometryCalib.SliceCoord=[0 0 Z_plane];
-    %set the coordinate unit
-    unitlist=get(handles.CoordUnit,'String');
-    unit=unitlist{get(handles.CoordUnit,'value')};
-    GeometryCalib.CoordUnit=unit;
-    %record the points
-    GeometryCalib.SourceCalib.PointCoord=Coord;
-end
-
-%% display calibration paprameters
-display_intrinsic(GeometryCalib,handles)%display calibration intrinsic parameters
-
-% Display extrinsinc parameters (rotation and translation of camera with  respect to the phys coordiantes)
-set(handles.Tx,'String',num2str(GeometryCalib.Tx_Ty_Tz(1),4))
-set(handles.Ty,'String',num2str(GeometryCalib.Tx_Ty_Tz(2),4))
-set(handles.Tz,'String',num2str(GeometryCalib.Tx_Ty_Tz(3),4))
-set(handles.Phi,'String',num2str(GeometryCalib.omc(1),4))
-set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
-set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
-
-%% open the GUI dataview 
-h_dataview=findobj(allchild(0),'name','dataview');
-if ~isempty(h_dataview)
-    delete(h_dataview)
-end
-CalibData=get(handles.geometry_calib,'UserData');%read the calibration image source on the interface userdata
-% InputFile='';
-if isfield(CalibData,'XmlInputFile')
-    InputDir=fileparts(CalibData.XmlInputFile);
-    [InputDir,DirName]=fileparts(InputDir);
-end
-SubCampaignTest='n'; %default
-testup=0;
-if isfield(CalibData,'SubCampaign')
-    SubCampaignTest='y';
-    dir_ref=CalibData.SubCampaign;
-    testup=1;
-elseif isfield(CalibData,'Campaign')
-    dir_ref=CalibData.Campaign;
-    testup=1;
-end
-while testup
-    [InputDir,DirName]=fileparts(InputDir);
-    if strcmp(DirName,dir_ref)
-        break
-    end
-end
-InputDir=fullfile(InputDir,DirName);
-answer=msgbox_uvmat('INPUT_TXT','Campaign ?',InputDir); 
-if strcmp(answer,'Cancel')
+%% get plane position(s)
+if ~strcmp(answer,'Yes')
     return
 end
+if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
+    input_key={'Z (first position)','Z (last position)','Z (water surface)', 'refractive index','NbSlice','volume scan (y/n)','tilt angle y axis','tilt angle x axis'};
+    input_val=[{num2str(ZEnd)} {num2str(ZStart)} {num2str(ZStart)} {'1.333'} num2str(NbSlice_j) {volume_scan} {'0'} {'0'}];
+    answer=inputdlg(input_key,'slice position(s)',ones(1,8), input_val,'on');
+    GeometryCalib.NbSlice=str2double(answer{5});
+    GeometryCalib.VolumeScan=answer{6};
+    if isempty(answer)
+        Z_plane=0; %default
+    else
+        Z_plane=linspace(str2double(answer{1}),str2double(answer{2}),GeometryCalib.NbSlice);
+    end
+    GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+    GeometryCalib.SliceAngle(:,3)=0;
+    GeometryCalib.SliceAngle(:,2)=str2double(answer{7})*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
+    GeometryCalib.SliceAngle(:,1)=str2double(answer{8})*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
+    GeometryCalib.InterfaceCoord=[0 0 str2double(answer{3})];
+    GeometryCalib.RefractionIndex=str2double(answer{4});
+end
 
-dataview(answer,SubCampaignTest,GeometryCalib);
+
 
 %------------------------------------------------------------------------
 % determine the parameters for a calibration by an affine function (rescaling and offset, no rotation)
@@ -455,6 +390,7 @@ R(2,:)=R(2,:)/GeometryCalib.fx_fy(2);
 R=[R;[0 0]];
 GeometryCalib.R=[R [0;0;-epsilon]];
 GeometryCalib.omc=(180/pi)*[acos(GeometryCalib.R(1,1)) 0 0];
+
 %------------------------------------------------------------------------
 % determine the tsai parameters for a view normal to the grid plane
 % NOT USED

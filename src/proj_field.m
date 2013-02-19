@@ -886,19 +886,20 @@ end
 testangle=~isequal(PlaneAngle,[0 0 0]);% && ~test90y && ~test90x;%=1 for slanted plane 
 
 %% mesh sizes DX and DY
+DX=[];
+DY=[];%default
 if isfield(ObjectData,'DX') && ~isempty(ObjectData.DX)
      DX=abs(ObjectData.DX);%mesh of interpolation points 
-else
-    DX=FieldData.Mesh;
+% else
+%     DX=FieldData.Mesh;
 end
 if isfield(ObjectData,'DY') && ~isempty(ObjectData.DY)
      DY=abs(ObjectData.DY);%mesh of interpolation points 
-else
-    DY=FieldData.Mesh;
+% else
+%     DY=FieldData.Mesh;
 end
-if  ~strcmp(ObjectData.ProjMode,'projection') && (DX==0||DY==0)
-        errormsg='DX or DY missing';
-        display(errormsg)
+if  ~strcmp(ObjectData.ProjMode,'projection') && (isempty(DX)||isempty(DY))
+        errormsg='DX or DY not defined';
         return
 end
 
@@ -912,7 +913,7 @@ if isfield(ObjectData,'RangeX')
         XMin=min(ObjectData.RangeX);
         XMax=max(ObjectData.RangeX);
         testXMin=XMax>XMin;
-        testXMax=1;
+        testXMax=1;% range restriction along X
 else
     XMin=FieldData.XMin;%default
 XMax=FieldData.XMax;%default
@@ -959,7 +960,7 @@ ProjData.NbDim=2;
 ProjData.ListVarName={};
 ProjData.VarDimName={};
 ProjData.VarAttribute={};
-if ~isequal(DX,0)&& ~isequal(DY,0)
+if ~isempty(DX) && ~isempty(DY)
     ProjData.Mesh=sqrt(DX*DY);%define typical data mesh, useful for mouse selection in plots
 elseif isfield(FieldData,'Mesh')
     ProjData.Mesh=FieldData.Mesh;
@@ -1233,8 +1234,7 @@ for icell=1:length(CellInfo)
             end
             
             %% case of input fields defined on a structured  grid
-        case 'grid'
-            
+        case 'grid'         
             VarName=FieldData.ListVarName{VarIndex(1)};%get the first variable of the cell to get the input matrix dimensions
             DimValue=size(FieldData.(VarName));%input matrix dimensions
             DimValue(DimValue==1)=[];%remove singleton dimensions
@@ -1274,8 +1274,7 @@ for icell=1:length(CellInfo)
             ProjData.VarAttribute=[ProjData.VarAttribute {[]} {[]}];
             Coord_z=[];
             Coord_y=[];
-            Coord_x=[];
-            
+            Coord_x=[];      
             for idim=1:NbDim %loop on space dimensions
                 test_interp(idim)=0;%test for coordiate interpolation (non regular grid), =0 by default
                 ivar=CellInfo{icell}.CoordIndex(idim);% index of the variable corresponding to the current dimension
@@ -1301,11 +1300,11 @@ for icell=1:length(CellInfo)
                     test_direct(idim)=1;
                 end
             end
-            if DY==0
+            if isempty(DY)
                 DY=abs(DCoord_min(NbDim-1));
             end
             npY=1+round(abs(Coord{NbDim-1}(end)-Coord{NbDim-1}(1))/DY);%nbre of points after interpol
-            if DX==0
+            if isempty(DX)
                 DX=abs(DCoord_min(NbDim));
             end
             npX=1+round(abs(Coord{NbDim}(end)-Coord{NbDim}(1))/DX);%nbre of points after interpol
@@ -1368,9 +1367,9 @@ for icell=1:length(CellInfo)
             else
                 coord_x_proj=linspace(XMax,XMin,npX);%abscissa of the new pixels along the line
             end
-            % case with no  interpolation
+            % case with no interpolation
             if isequal(ProjMode{icell},'projection') && (~testangle || test90y || test90x)
-                if  NbDim==2 && ~testXMin && ~testXMax && ~testYMin && ~testYMax
+                if  NbDim==2 && ~testXMin && ~testXMax && ~testYMin && ~testYMax% no range restriction
                     ProjData.ListVarName=[ProjData.ListVarName FieldData.ListVarName(VarIndex)];
                     ProjData.VarDimName=[ProjData.VarDimName FieldData.VarDimName(VarIndex)];  
                     if isfield(FieldData,'VarAttribute')
@@ -1407,12 +1406,10 @@ for icell=1:length(CellInfo)
                         Xbound(1)=Coord{NbDim}(1)+DXinit*(min_indx-1);
                     end
                     min_indy=max(min_indy,1);% deals with margin (bound lower than the first index)
-                    min_indx=max(min_indx,1);
-                    
+                    min_indx=max(min_indx,1);                  
                     if test90y
                         ind_new=[3 2 1];
                         DimCell={AYProjName,AXProjName};
-                        %                     DimValue=DimValue(ind_new);
                         iz=ceil((ObjectData.Coord(1,1)-Coord{3}(1))/DX)+1;
                         for ivar=VarIndex
                             VarName=FieldData.ListVarName{ivar};
