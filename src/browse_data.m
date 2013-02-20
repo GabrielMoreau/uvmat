@@ -91,7 +91,8 @@ if exist('Campaign','var')
         set(handles.MirrorDir,'Visible','off');% no mirror dir display
         set(handles.CreateMirror,'String','create_mirror')
     end
-    SourceDir_Callback([],[], handles)
+    scan_campaign(handles,Campaign)
+%     SourceDir_Callback([],[], handles)
    set(handles.edit_xml,'Visible','off')
    set(handles.HELP,'Visible','off')
    set(handles.OK,'Visible','on')
@@ -176,15 +177,15 @@ SourceDir_Callback([],[], handles)
 
 
 %------------------------------------------------------------------------
-function SourceDir_Callback(hObject, eventdata, handles)
+function scan_campaign(handles,Campaign)
 %------------------------------------------------------------------------
-set(handles.SourceDir,'BackgroundColor',[1 1 0])
+%set(handles.SourceDir,'BackgroundColor',[1 1 0])
 drawnow
-SourceDir=get(handles.SourceDir,'String');
-MirrorDir=get(handles.MirrorDir,'String');
+%SourceDir=get(handles.SourceDir,'String');
+%MirrorDir=get(handles.MirrorDir,'String');
 ExpName={''};
-if exist(SourceDir,'dir')
-    hdir=dir(SourceDir); %list files and dirs
+if exist(Campaign,'dir')
+    hdir=dir(Campaign); %list files and dirs
     idir=0;
     for ilist=1:length(hdir)
         if hdir(ilist).isdir
@@ -192,23 +193,16 @@ if exist(SourceDir,'dir')
             if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')
                 idir=idir+1;
                 ExpName{idir}=hdir(ilist).name;
-                mirror=fullfile(MirrorDir,ExpName{idir});
-                if ~exist(mirror,'dir')
-                   mkdir(mirror)
-                end
             end
-            % look for the list of 'devices'
-        else
-            %warning for isolated files
         end
     end
     set(handles.ListExperiments,'String',[{'*'};ExpName'])
     set(handles.ListExperiments,'Value',1)
-    ListExperiments_Callback(hObject, eventdata, handles)
+    ListExperiments_Callback([],[], handles)
 else
-    msgbox_uvmat('ERROR',['The input ' SourceDir ' is not a directory'])
+    msgbox_uvmat('ERROR',['The input ' Campaign ' is not a directory'])
 end
-set(handles.SourceDir,'BackgroundColor',[1 1 1])
+%set(handles.SourceDir,'BackgroundColor',[1 1 1])
 
 
 %------------------------------------------------------------------------
@@ -232,17 +226,19 @@ for iexp=1:numel(ListExperiments)
     hdir=dir(fullfile(SourcePath,ListExperiments{iexp})); %list files and dirs
     idir=0;
     for ilist=1:length(hdir)
-         if ~isequal(hdir(ilist).name(1),'.')
-        source=fullfile(SourcePath,ListExperiments{iexp},hdir(ilist).name);
-        mirror=fullfile(MirrorPath,ListExperiments{iexp},hdir(ilist).name);
-        if ~exist(mirror)
-            system(['ln -s ' source ' ' mirror])
+        if ~isequal(hdir(ilist).name(1),'.')
+            source=fullfile(SourcePath,ListExperiments{iexp},hdir(ilist).name);
+            if ~isempty(MirrorPath)
+                mirror=fullfile(MirrorPath,ListExperiments{iexp},hdir(ilist).name);
+                if ~exist(mirror)
+                    system(['ln -s ' source ' ' mirror])
+                end
+            end
+            check_list=strcmp(hdir(ilist).name,ListDevices);
+            if isempty(find(check_list))
+                ListDevices=[ListDevices;hdir(ilist).name];
+            end
         end
-        check_list=strcmp(hdir(ilist).name,ListDevices);
-        if isempty(find(check_list))
-            ListDevices=[ListDevices;hdir(ilist).name];
-        end    
-         end
     end
 end
 set(handles.ListDevices,'String',ListDevices)

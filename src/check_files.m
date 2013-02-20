@@ -31,6 +31,8 @@ svn_info.rep_rev=[];
 svn_info.cur_rev=[];
 svn_info.status=[];
 list_fct={...
+    'browse_data';...% function for scanning directories in a project/campaign
+    'browse_data.fig';...% GUI corresponding to dataview
     'calc_field_interp';...% defines fields (velocity, vort, div...) from civx data and calculate them
     'calc_field_tps';...% defines fields (velocity, vort, div...) and calculate them
     'cell2tab';... %transform a Matlab cell in a character array suitable for display in a table
@@ -44,8 +46,6 @@ list_fct={...
     'copyfields';...% copy fields between two matlab structures
     'create_grid';...% called by the GUI geometry_calib to create a physical grid
     'create_grid.fig';...% GUI corresponding to create_grid.m
-    'datatree_browser';...% function for scanning directories in a project
-    'datatree_browser.fig';...% GUI corresponding to dataview
     'delete_object';...%delete a projection object, defined by its index in the Uvmat list or by its graphic handle
     'displ_uvmat';...
     'editxml';...%display and edit xml files using a xls schema
