@@ -44,7 +44,7 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes just before browse_data is made visible.
-function browse_data_OpeningFcn(hObject, eventdata, handles, Campaign, GeometryCalib)
+function browse_data_OpeningFcn(hObject, eventdata, handles, Campaign)
 %------------------------------------------------------------------------
 % Choose default command line output for browse_data
 handles.output = 'Cancel';
@@ -68,11 +68,11 @@ FigPos(2)=2/3*(ScreenSize(4)-FigHeight);
 FigPos(3:4)=[FigWidth FigHeight];
 set(hObject, 'Position', FigPos);
 set(hObject, 'Units', OldUnits);
-
-if exist('GeometryCalib','var')
-    DataviewData.GeometryCalib=GeometryCalib;
-    set(hObject,'UserData',DataviewData)
-end
+% 
+% if exist('GeometryCalib','var')
+%     DataviewData.GeometryCalib=GeometryCalib;
+%     set(hObject,'UserData',DataviewData)
+% end
 if exist('Campaign','var') 
     [CampaignPath,CampaignName]=fileparts(Campaign);
     RootXml=fullfile(Campaign,[CampaignName '.xml']);
@@ -116,9 +116,11 @@ delete(handles.figure)
 % --- Executes on button press in CreateMirror.
 function CreateMirror_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-if strcmp(get(handles.CreateMirror,'String'),'create_mirror')
-    SourceDir=get(handles.SourceDir,'String');
-    [SourcePath,ProjectName]=fileparts(SourceDir);
+SourceDir=get(handles.SourceDir,'String');
+[SourcePath,ProjectName]=fileparts(SourceDir);
+if strcmp(get(handles.MirrorDir,'Visible'),'on')
+    MirrorDir=get(handles.MirrorDir,'String');
+else
     MirrorRoot=uigetdir('','select the dir which must contain the mirror directory, then press OK'); %file browser
     if ~ischar(MirrorRoot)
         return
@@ -147,6 +149,7 @@ if exist(SourceDir,'dir')
             if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')
                 idir=idir+1;
                 ExpName{idir}=hdir(ilist).name;
+
                 mirror=fullfile(MirrorDir,ExpName{idir});
                 if ~exist(mirror,'dir')
                    mkdir(mirror)
@@ -209,10 +212,13 @@ end
 % --- Executes on selection change in ListExperiments.
  function ListExperiments_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-SourcePath=get(handles.SourceDir,'String');
-MirrorPath=get(handles.MirrorDir,'String');
+if strcmp(get(handles.MirrorDir,'Visible'),'on')
+    CampaignPath=get(handles.MirrorDir,'String');
+else
+    CampaignPath=get(handles.SourceDir,'String');
+end
+% MirrorPath=get(handles.MirrorDir,'String');
 ListExperiments=get(handles.ListExperiments,'String');
-ListDevices={};
 list_val=get(handles.ListExperiments,'Value');
 if isequal(list_val(1),1)
     ListExperiments=ListExperiments(2:end); %choose all experiments
@@ -222,20 +228,28 @@ else
     ListExperiments=ListExperiments(list_val);%choose selected experiments
     testList=0;
 end
+scan_experiments(handles,ListExperiments,CampaignPath)
+
+
+%------------------------------------------------------------------------
+% --- Executes on selection change in ListExperiments.
+ function scan_experiments(handles,ListExperiments,CampaignPath,MirrorPath)
+%------------------------------------------------------------------------
+ListDevices={};
 for iexp=1:numel(ListExperiments)
-    hdir=dir(fullfile(SourcePath,ListExperiments{iexp})); %list files and dirs
+    hdir=dir(fullfile(CampaignPath,ListExperiments{iexp})); %list files and dir in the experiment directory
     idir=0;
     for ilist=1:length(hdir)
         if ~isequal(hdir(ilist).name(1),'.')
-            source=fullfile(SourcePath,ListExperiments{iexp},hdir(ilist).name);
-            if ~isempty(MirrorPath)
+            DataSeries=fullfile(CampaignPath,ListExperiments{iexp},hdir(ilist).name);
+            if exist('MirrorPath','var')
                 mirror=fullfile(MirrorPath,ListExperiments{iexp},hdir(ilist).name);
-                if ~exist(mirror)
+                if ~exist(mirror)% create mirror if needed
                     system(['ln -s ' source ' ' mirror])
                 end
             end
             check_list=strcmp(hdir(ilist).name,ListDevices);
-            if isempty(find(check_list))
+            if isempty(find(check_list, 1))
                 ListDevices=[ListDevices;hdir(ilist).name];
             end
         end
