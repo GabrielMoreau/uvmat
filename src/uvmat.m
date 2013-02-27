@@ -2497,7 +2497,7 @@ if NbDim>1
                 Mesh(ind)=min((CoordMax(ind,:)-CoordMin(ind,:))./(NbPoints-1));                
         end
     end
-    UvData.Field.Mesh=min(Mesh);
+    UvData.Field.CoordMesh=min(Mesh);
     UvData.Field.XMax=max(CoordMax(ind,end));
     UvData.Field.XMin=min(CoordMin(ind,end));
     UvData.Field.YMax=max(CoordMax(ind,end-1));
@@ -2507,13 +2507,13 @@ if NbDim>1
         UvData.Field.ZMin=max(CoordMin(ind,1));
     end
     % adjust the mesh to a value 1, 2 , 5 *10^n
-    ord=10^(floor(log10(UvData.Field.Mesh)));%order of magnitude
-    if UvData.Field.Mesh/ord>=5
-        UvData.Field.Mesh=5*ord;
-    elseif UvData.Field.Mesh/ord>=2
-        UvData.Field.Mesh=2*ord;
+    ord=10^(floor(log10(UvData.Field.CoordMesh)));%order of magnitude
+    if UvData.Field.CoordMesh/ord>=5
+        UvData.Field.CoordMesh=5*ord;
+    elseif UvData.Field.CoordMesh/ord>=2
+        UvData.Field.CoordMesh=2*ord;
     else
-        UvData.Field.Mesh=ord;
+        UvData.Field.CoordMesh=ord;
     end
     % default projection plane
     if isempty(UvData.Object{1})
@@ -2534,7 +2534,7 @@ if NbDim>1
         if test_set_object% reinitiate the GUI set_object
             delete_object(1);% delete the current projection object in the list UvData.Object, delete its graphic representations and update the list displayed in handles.ListObject and 2
             UvData.Object{1}.NbDim=NbDim;%test for 3D objects
-            UvData.Object{1}.RangeZ=UvData.Field.Mesh;%main plotting plane
+            UvData.Object{1}.RangeZ=UvData.Field.CoordMesh;%main plotting plane
             UvData.Object{1}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
             UvData.Object{1}.Angle=[0 0 0];
             UvData.Object{1}.HandlesDisplay=plot(0,0,'Tag','proj_object');% A REVOIR
@@ -2688,8 +2688,8 @@ else
             else
                 [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},PosColorbar{imap});
                 write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
-                if isfield(Field,'Mesh')&&~isempty(Field.Mesh)
-                    ObjectData.Mesh=Field.Mesh; % gives an estimated mesh size (useful for mouse action on the plot)
+                if isfield(Field,'CoordMesh')&&~isempty(Field.CoordMesh)
+                    ObjectData.CoordMesh=Field.CoordMesh; % gives an estimated mesh size (useful for mouse action on the plot)
                 end
             end
         end
@@ -3362,11 +3362,11 @@ if isequal(get(handles.VOLUME,'Value'),1)
     if isfield(UvData,'CoordType')
         data.CoordType=UvData.CoordType;
     end
-    if isfield(UvData.Field,'Mesh')&~isempty(UvData.Field.Mesh)
+    if isfield(UvData.Field,'CoordMesh')&~isempty(UvData.Field.CoordMesh)
         data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
         data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
-        data.DX=UvData.Field.Mesh;
-        data.DY=UvData.Field.Mesh;
+        data.DX=UvData.Field.CoordMesh;
+        data.DY=UvData.Field.CoordMesh;
     elseif isfield(UvData.Field,'AX')&isfield(UvData.Field,'AY')& isfield(UvData.Field,'A')%only image
         np=size(UvData.Field.A);
         meshx=(UvData.Field.AX(end)-UvData.Field.AX(1))/np(2);
@@ -4526,15 +4526,15 @@ data.Name=data.Type;% default name=type
 data.Coord=[0 0]; %default
 if isfield(UvData,'Field')
     Field=UvData.Field;
-    if isfield(UvData.Field,'Mesh')&&~isempty(UvData.Field.Mesh)
+    if isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
         data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
         if strcmp(data.Type,'line')||strcmp(data.Type,'polyline')||strcmp(data.Type,'points')
-            data.RangeY=UvData.Field.Mesh;
+            data.RangeY=UvData.Field.CoordMesh;
         else
             data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
         end
-        data.DX=UvData.Field.Mesh;
-        data.DY=UvData.Field.Mesh;
+        data.DX=UvData.Field.CoordMesh;
+        data.DY=UvData.Field.CoordMesh;
     end
     if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
          data.Coord=[0 0 0]; %default

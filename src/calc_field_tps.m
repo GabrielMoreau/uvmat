@@ -1,5 +1,5 @@
 
-%'calc_field': defines fields (velocity, vort, div...) from civx data and calculate them
+%'calc_field_tps': defines fields (velocity, vort, div...) from civ data and calculate them with tps interpolation
 %---------------------------------------------------------------------
 % [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord_tps,NbSites,SubRange,FieldVar,Operation,Coord_interp)
 %

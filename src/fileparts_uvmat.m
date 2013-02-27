@@ -1,4 +1,4 @@
-%'fileparts_uvmat': Splits a file name and recognize file naming convention
+%'fileparts_uvmat': splits a file name in root and indices and recognize file naming convention
 %--------------------------------------------------------------------
 %[RootPath,SubDir,RootFile,i1,i2,j1,j2,Ext,NomType]=fileparts_uvmat(FileInput)
 %

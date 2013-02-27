@@ -1,4 +1,4 @@
-%'find_file_indices': test field structure for input in proj_field and plot_field
+%'find_field_cells': test field structure for input in proj_field and plot_field
 %    group the variables  into 'fields' with common dimensions
 %------------------------------------------------------------------------
 % function  [CellInfo,NbDim,errormsg]=find_field_cells(Data)
@@ -26,12 +26,18 @@
 %   
 % INPUT:
 % Data: structure representing fields, output of check_field_structure
+%            .ListGlobalAttributes
 %            .ListVarName: cell array listing the names (cahr strings) of the variables
 %            .VarDimName: cell array of cells containing the set of dimension names for each variable of .ListVarName
 %            .VarAttribute: cell array of structures containing the variable attributes: 
 %                     .VarAttribute{ilist}.key=value, where ilist is the variable
 %                     index, key is the name of the attribute, value its value (char string or number)
-%
+%            .Attr1, .Attr2....
+%        case of actual data:
+%            .Var1, .Var2...
+%        case of data structure, without the  data themselves
+%            .LisDimName: list of dimension names
+%            .DimValue: list of corresponding dimension values
 % HELP: 
 % to get the dimensions of arrays common to the field #icell
 %         VarIndex=CellVarIndex{icell}; % list of variable indices
@@ -103,7 +109,8 @@ end
 %% find scattered (unstructured) coordinates
 ivar_coord_x=find(strcmp('coord_x',Role));
 % VarDimCell=cell(numel(ivar_coord_x));
-check_select=zeros(1,nbvar);
+check_select=false(1,nbvar);
+check_coord=false(1,nbvar);
 CellInfo=cell(1,numel(ivar_coord_x));
 NbDim=zeros(1,numel(ivar_coord_x));
 for icell=1:numel(ivar_coord_x)
@@ -196,7 +203,8 @@ end
 ivar_remain=find(~check_select);% indices of remaining variables, not already taken into account
 ListVarName=Data.ListVarName(~check_select);%list of remaining variables
 VarDimName=Data.VarDimName(~check_select);%dimensions of remaining variables
-check_coord= cellfun(@numel,VarDimName)==1|cellfun(@ischar,VarDimName)==1;% find remaining variables with a single dimension
+check_coord_select= cellfun(@numel,VarDimName)==1|cellfun(@ischar,VarDimName)==1;% find remaining variables with a single dimension
+check_coord(~check_select)=check_coord_select;
 ListCoordIndex=ivar_remain(check_coord);% indices of remaining variables with a single dimension
 ListCoordName=Data.ListVarName(ListCoordIndex);% corresponding names of remaining variables with a single dimension
 ListDimName=Data.VarDimName(ListCoordIndex);% dimension names of remaining variables with a single dimension

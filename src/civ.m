@@ -1417,11 +1417,14 @@ switch Param.RunMode,
                     'SelectionMode','single','ListSize',[400 100],'Name','LEGI job mode');
                 switch oar_modes{S}
                     case 'oar-parexec' %oar-dispatch.pl
-                        answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
-                        ncores=str2double(answer{1});
                         if strcmp(Param.Program,'civ_matlab')
                             ncores=1;
+                            msgbox_uvmat('WARNING','Number of cores =1: select the compiled version civ_matlab.sh for multi-core processing');
+                        else
+                        answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
+                        ncores=str2double(answer{1});
                         end
+
                         extra_oar=answer{2};
                         walltime_onejob=600;%seconds
                         filename_joblist=fullfile(RootBat,'job_list.txt');

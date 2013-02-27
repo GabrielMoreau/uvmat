@@ -27,7 +27,7 @@
 %FieldData: data of the field to be projected on the projection object, with optional fields
 %    .Txt: error message, transmitted to the projection
 %    .FieldList: cell array of strings representing the fields to calculate
-%    .Mesh: typical distance between data points (used for mouse action or display), transmitted
+%    .CoordMesh: typical distance between data points (used for mouse action or display), transmitted
 %    .CoordUnit, .TimeUnit, .dt: transmitted
 % standardised description of fields, nc-formated Matlab structure with fields:
 %         .ListGlobalAttribute: cell listing the names of the global attributes
@@ -320,7 +320,7 @@ ProjData.ListVarName={};
 ProjData.VarDimName={};
 ProjData.VarAttribute={};
 
-Mesh=zeros(1,numel(FieldData.ListVarName));
+CoordMesh=zeros(1,numel(FieldData.ListVarName));
 if isfield (FieldData,'VarAttribute')
     %ProjData.VarAttribute=FieldData.VarAttribute;%list of variable attribute names
     for iattr=1:length(FieldData.VarAttribute)%initialization of variable attribute values
@@ -328,8 +328,8 @@ if isfield (FieldData,'VarAttribute')
         if isfield(FieldData.VarAttribute{iattr},'Unit')
             unit{iattr}=FieldData.VarAttribute{iattr}.Unit;
         end
-        if isfield(FieldData.VarAttribute{iattr},'Mesh')
-            Mesh(iattr)=FieldData.VarAttribute{iattr}.Mesh;
+        if isfield(FieldData.VarAttribute{iattr},'CoordMesh')
+            CoordMesh(iattr)=FieldData.VarAttribute{iattr}.CoordMesh;
         end
     end
 end
@@ -461,11 +461,11 @@ for icell=1:length(CellInfo)
         ProjData.([VarName 'Mean'])=mean(double(FieldData.(VarName)(indsel,:))); % take the mean in the selected region, for each color component
         ProjData.([VarName 'Min'])=min(double(FieldData.(VarName)(indsel,:))); % take the min in the selected region , for each color component
         ProjData.([VarName 'Max'])=max(double(FieldData.(VarName)(indsel,:))); % take the max in the selected region , for each color component
-        if isequal(Mesh(ivar),0)
-            eval(['[ProjData.' VarName 'Histo,ProjData.' VarName ']=hist(double(FieldData.' VarName '(indsel,:,:)),100);']); % default histogram with 100 bins
+        if isequal(CoordMesh(ivar),0)
+            [ProjData.([VarName 'Histo']),ProjData.(VarName)]=hist(double(FieldData.(VarName)(indsel,:,:)),100); % default histogram with 100 bins
         else
-            eval(['ProjData.' VarName '=(ProjData.' VarName 'Min+Mesh(ivar)/2:Mesh(ivar):ProjData.' VarName 'Max);']); % list of bin values
-            eval(['ProjData.' VarName 'Histo=hist(double(FieldData.' VarName '(indsel,:)),ProjData.' VarName ');']); % histogram at predefined bin positions
+            ProjData.(VarName)=ProjData.([VarName 'Min'])+CoordMesh(ivar)/2:CoordMesh(ivar):ProjData.([VarName 'Max']); % list of bin values
+            ProjData.([VarName 'Histo'])=hist(double(FieldData.(VarName)(indsel,:)),ProjData.(VarName)); % histogram at predefined bin positions
         end
         ProjData.ListVarName=[ProjData.ListVarName {VarName} {[VarName 'Histo']} {[VarName 'Mean']} {[VarName 'Min']} {[VarName 'Max']}];
         if test_Amat && testcolor
@@ -890,13 +890,13 @@ DX=[];
 DY=[];%default
 if isfield(ObjectData,'DX') && ~isempty(ObjectData.DX)
      DX=abs(ObjectData.DX);%mesh of interpolation points 
-% else
-%     DX=FieldData.Mesh;
+else
+     DX=FieldData.CoordMesh;
 end
 if isfield(ObjectData,'DY') && ~isempty(ObjectData.DY)
      DY=abs(ObjectData.DY);%mesh of interpolation points 
-% else
-%     DY=FieldData.Mesh;
+else
+     DY=FieldData.CoordMesh;
 end
 if  ~strcmp(ObjectData.ProjMode,'projection') && (isempty(DX)||isempty(DY))
         errormsg='DX or DY not defined';
@@ -961,9 +961,9 @@ ProjData.ListVarName={};
 ProjData.VarDimName={};
 ProjData.VarAttribute={};
 if ~isempty(DX) && ~isempty(DY)
-    ProjData.Mesh=sqrt(DX*DY);%define typical data mesh, useful for mouse selection in plots
-elseif isfield(FieldData,'Mesh')
-    ProjData.Mesh=FieldData.Mesh;
+    ProjData.CoordMesh=sqrt(DX*DY);%define typical data mesh, useful for mouse selection in plots
+elseif isfield(FieldData,'CoordMesh')
+    ProjData.CoordMesh=FieldData.CoordMesh;
 end
 error=0;%default
 flux=0;
@@ -1655,9 +1655,9 @@ ProjData.NbDim=3;
 ProjData.ListVarName={};
 ProjData.VarDimName={};
 if ~isequal(DX,0)&& ~isequal(DY,0)
-    ProjData.Mesh=sqrt(DX*DY);%define typical data mesh, useful for mouse selection in plots
-elseif isfield(FieldData,'Mesh')
-    ProjData.Mesh=FieldData.Mesh;
+    ProjData.CoordMesh=sqrt(DX*DY);%define typical data mesh, useful for mouse selection in plots
+elseif isfield(FieldData,'CoordMesh')
+    ProjData.CoordMesh=FieldData.CoordMesh;
 end
 
 error=0;%default

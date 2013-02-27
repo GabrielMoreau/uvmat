@@ -35,18 +35,22 @@ end
 ParamOut=ParamIn;%default
 errormsg='';
 A=[];
+InputField={};
+check_colorvar=0;
 if isstruct(ParamIn)
-    if isfield(ParamIn,'FieldName')&& ischar(ParamIn.FieldName)
-        ParamIn.FieldName={ParamIn.FieldName};
+    if isfield(ParamIn,'FieldName')
+        if ischar(ParamIn.FieldName)
+            ParamIn.FieldName={ParamIn.FieldName};
+        else
+            InputField= ParamIn.FieldName;
+        end
     end
     if isfield(ParamIn,'ColorVar')
         InputField=[ParamIn.FieldName {ParamIn.ColorVar}];
         check_colorvar=1;
-    else
-        InputField= ParamIn.FieldName;
-        check_colorvar=0;
     end
 end
+
 %% distingush different input file types
 switch FileType
     case 'civdata'

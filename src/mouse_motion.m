@@ -109,11 +109,11 @@ for ichild=1:length(hchild)
                     z=[];
                     for icell=1:numel(CellInfo)%look for all physical fields
                         if NbDimArray(icell)>=2 % select 2D field
-                            if  isfield(Field,'Mesh') && ~isempty(Field.Mesh)&& strcmp(CellInfo{icell}.CoordType,'scattered')%case of unstructured data
+                            if  isfield(Field,'CoordMesh') && ~isempty(Field.CoordMesh)&& strcmp(CellInfo{icell}.CoordType,'scattered')%case of unstructured data
                                 X=Field.(Field.ListVarName{CellInfo{icell}.CoordIndex(end)});
                                 Y=Field.(Field.ListVarName{CellInfo{icell}.CoordIndex(end-1)});
-                                flag_vec=(X<(xy(1,1)+Field.Mesh/3) & X>(xy(1,1)-Field.Mesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
-                                    (Y<(xy(1,2)+Field.Mesh/3) & Y>(xy(1,2)-Field.Mesh/3));%f
+                                flag_vec=(X<(xy(1,1)+Field.CoordMesh/3) & X>(xy(1,1)-Field.CoordMesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
+                                    (Y<(xy(1,2)+Field.CoordMesh/3) & Y>(xy(1,2)-Field.CoordMesh/3));%f
                                 ivec=find(flag_vec,1);% search the (first) selected vector index ivec
                                 hhh=findobj(CurrentAxes,'Tag','vector_marker');
                                 if ~isempty(ivec)
@@ -124,11 +124,11 @@ for ichild=1:length(hchild)
                                             set(0,'CurrentFigure',CurrentFig)
                                             set(CurrentFig,'CurrentAxes',CurrentAxes)
                                             rectangle('Curvature',[1 1],...
-                                                'Position',[X(ivec)-Field.Mesh/2 Y(ivec)-Field.Mesh/2 Field.Mesh Field.Mesh],'EdgeColor','m',...
+                                                'Position',[X(ivec)-Field.CoordMesh/2 Y(ivec)-Field.CoordMesh/2 Field.CoordMesh Field.CoordMesh],'EdgeColor','m',...
                                                 'LineStyle','-','Tag','vector_marker');
                                         else
                                             set(hhh,'Visible','on')
-                                            set(hhh,'Position',[X(ivec)-Field.Mesh/2 Y(ivec)-Field.Mesh/2 Field.Mesh Field.Mesh])
+                                            set(hhh,'Position',[X(ivec)-Field.CoordMesh/2 Y(ivec)-Field.CoordMesh/2 Field.CoordMesh Field.CoordMesh])
                                         end
                                     end
                                     %display the field values

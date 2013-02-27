@@ -1,10 +1,10 @@
-
-%'calc_field': defines fields (velocity, vort, div...) from civ data and calculate them
+%'calc_field_interp': defines fields (velocity, vort, div...) from civ data and calculate them
+% for projection with linear interpolation
 %---------------------------------------------------------------------
 % [DataOut,VarAttribute,errormsg]=calc_field_interp(Coord_tps,NbSites,SubRange,FieldVar,Operation,Coord_interp)
 %
 % OUTPUT:
-% DataOut: structure representing the output fields
+% VarVal: array giving the values of the calculated field
 %
 % INPUT:
 % Coord_tps:

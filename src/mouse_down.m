@@ -113,11 +113,11 @@ for ichild=1:length(hchildren)
                             [CellVarIndex,NbDim,VarType]=find_field_cells(Field);%analyse the physical fields contained in Field
                             for icell=1:numel(CellVarIndex)%look for all physical fields
                                 if NbDim(icell)==2 % select 2D field
-                                    if  isfield(Field,'Mesh') && ~isempty(Field.Mesh)&& ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
+                                    if  isfield(Field,'CoordMesh') && ~isempty(Field.CoordMesh)&& ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
                                         eval(['X=Field.' Field.ListVarName{VarType{icell}.coord_x} ';'])
                                         eval(['Y=Field.' Field.ListVarName{VarType{icell}.coord_y} ';'])
-                                        flag_vec=(X<(xy(1,1)+Field.Mesh/4) & X>(xy(1,1)-Field.Mesh/4)) & ...%flagx=1 for the vectors with x position selected by the mouse
-                                            (Y<(xy(1,2)+Field.Mesh/4) & Y>(xy(1,2)-Field.Mesh/4));%f
+                                        flag_vec=(X<(xy(1,1)+Field.CoordMesh/4) & X>(xy(1,1)-Field.CoordMesh/4)) & ...%flagx=1 for the vectors with x position selected by the mouse
+                                            (Y<(xy(1,2)+Field.CoordMesh/4) & Y>(xy(1,2)-Field.CoordMesh/4));%f
                                         ivec=find(flag_vec,1);% search the (first) selected vector index ivec
                                     end
                                 end

@@ -1,4 +1,4 @@
-%'civ_matlab': Matlab version of the PIV programs CivX
+%'civ_matlab': main PIV function, calleed by the GUI civ
 % --- call the sub-functions:
 %   civ: PIV function itself
 %   fix: removes false vectors after detection by various criteria

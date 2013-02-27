@@ -1,4 +1,4 @@
-%'calc_field': defines fields (velocity, vort, div...) from civx data and calculate them
+%'calc_field': defines fields (velocity, vort, div...) from civx data (old conventions) and calculate them.
 %---------------------------------------------------------------------
 % [DataOut,errormsg]=calc_field(FieldList,DataIn,Coord_interp)
 %
@@ -120,20 +120,21 @@ if ~isempty(icell_tps)
         YMax=max(YMax);
         XMin=min(XMin);
         YMin=min(YMin);
-        if ~isfield(DataIn,'Mesh')
-            DataIn.Mesh=sqrt(2*(XMax-XMin)*(YMax-YMin)/numel(DataIn.Coord_tps));
+        if ~isfield(DataIn,'CoordMesh')
+            DataIn.Coord
+            Mesh=sqrt(2*(XMax-XMin)*(YMax-YMin)/numel(DataIn.Coord_tps));
             % adjust the mesh to a value 1, 2 , 5 *10^n
-            ord=10^(floor(log10(DataIn.Mesh)));%order of magnitude
-            if DataIn.Mesh/ord>=5
-                DataIn.Mesh=5*ord;
-            elseif DataIn.Mesh/ord>=2
-                DataIn.Mesh=2*ord;
+            ord=10^(floor(log10(DataIn.CoordMesh)));%order of magnitude
+            if DataIn.CoordMesh/ord>=5
+                DataIn.CoordMesh=5*ord;
+            elseif DataIn.CoordMesh/ord>=2
+                DataIn.CoordMesh=2*ord;
             else
-                DataIn.Mesh=ord;
+                DataIn.CoordMesh=ord;
             end
         end
-        coord_x=XMin:DataIn.Mesh:XMax;% increase the recommanded mesh to  visualisation
-        coord_y=YMin:DataIn.Mesh:YMax;
+        coord_x=XMin:DataIn.CoordMesh:XMax;% increase the recommanded mesh to  visualisation
+        coord_y=YMin:DataIn.CoordMesh:YMax;
         DataOut.coord_x=[XMin XMax];
         DataOut.coord_y=[YMin YMax];
         [XI,YI]=meshgrid(coord_x,coord_y);
