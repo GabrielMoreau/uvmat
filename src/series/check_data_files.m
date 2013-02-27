@@ -1,4 +1,4 @@
-%%'check_files': check the existence, type and status of the files selected by series.fig
+%%'check_data_files': check the existence, type and status of the files selected by series.fig
 %------------------------------------------------------------------------
 % function GUI_input=check_data_files(Param)
 %

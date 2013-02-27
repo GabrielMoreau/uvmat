@@ -1,5 +1,4 @@
 %'sub_background': substract a sliding background to an image series
-% This is an example of action on a series of input images
 %------------------------------------------------------------------------
 % Method: 
     %calculate the background image by sorting the luminosity of each point

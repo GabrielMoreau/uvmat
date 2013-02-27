@@ -1,5 +1,4 @@
-%'aver_stat': calculate field average, used with series.fig
-% this function can be used as a template for applying a global operation (here averaging) on a series of input fields
+%'aver_stat': calculate field average over a time series
 %------------------------------------------------------------------------
 % function ParamOut=aver_stat(Param)
 %

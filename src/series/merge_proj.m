@@ -1,5 +1,4 @@
-%'merge_proj': project and concatene fields
-% can be used as a template for applying an operation (here projection and concatenation) on each field of an input series
+%'merge_proj': concatene several fields from series, can project them on a regular grid in phys coordinates
 %------------------------------------------------------------------------
 % function ParamOut=merge_proj(Param)
 %------------------------------------------------------------------------
