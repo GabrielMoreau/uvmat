@@ -1,4 +1,4 @@
-%'time_series': extract a time series, used with series.fig
+%'time_series': extract a time series after projection on an object (points , line..)
 % this function can be used as a template for applying a global operation on a series of input fields
 %------------------------------------------------------------------------
 % function GUI_input=time_series(Param)
