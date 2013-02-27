@@ -1,5 +1,15 @@
-function DataOut=im_filter(DataIn,Calib)
-np=20 %size ofthe filtering window
+% 'ima_filter': low-pass filtr of an image (builtin filtering parameter)
+
+%------------------------------------------------------------------------
+%%%%  Use the general syntax for transform fields with a single input %%%%
+% OUTPUT: 
+% DataOut:   output field structure 
+
+%INPUT:
+% DataIn:  first input field structure
+%------------------------------------------------------------------------
+function DataOut=ima_filter(DataIn)
+np=20 %size of the filtering window
 %definition of the cos shape matrix filter
 ix=[1/2-np/2:-1/2+np/2];%
 del=np/3;

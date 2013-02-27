@@ -1,3 +1,18 @@
+%'phys_polar': transforms image (Unit='pixel') to polar (phys) coordinates using geometric calibration parameters
+
+%------------------------------------------------------------------------
+%%%%  Use the general syntax for transform fields %%%%
+% OUTPUT: 
+% DataOut:   output field structure 
+%      .X=radius, .Y=azimuth angle, .U, .V are radial and azimuthal velocity components
+
+%INPUT:
+% DataIn:  first input field structure
+% XmlData: first input parameter structure,
+%        .GeometryCalib: substructure of the calibration parameters 
+% DataIn_1: optional second input field structure
+% XmlData_1: optional second input parameter structure
+%         .GeometryCalib: substructure of the calibration parameters 
 % transform image coordinates (px) to polar physical coordinates 
 %[DataOut,DataOut_1]=phys_polar(varargin)
 %
@@ -10,8 +25,9 @@
 % CalibData= structure containing the field .GeometryCalib with calibration parameters
 % Data_1:  second input field (not mandatory)
 % CalibData_1= calibration parameters for the second field
-
-function [DataOut,DataOut_1]=phys_polar(varargin)
+%------------------------------------------------------------------------
+function DataOut=phys_polar(DataIn,XmlData,DataIn_1,XmlData_1)
+%------------------------------------------------------------------------
 Calib{1}=[];
 if nargin==2||nargin==4
     Data=varargin{1};

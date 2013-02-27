@@ -1,15 +1,15 @@
-% 'FFT': calculate and display 2D spectrum of the input scalar
-%  GUI_input=FFT(hget_field)
-%
-% OUTPUT: 
-% GUI_input: option for display in the GUI get_field
-%
-%INPUT:
-% hget_field: handles of the GUI get_field
-%
+% 'FFT2_detrend': calculate the 2D spectrum of the input scalar after removing the linear trend
 
+%------------------------------------------------------------------------
+%%%%  Use the general syntax for transform fields with a single input %%%%
+% OUTPUT: 
+% DataOut:   output field structure 
+
+%INPUT:
+% DataIn:  first input field structure
+%------------------------------------------------------------------------
 function DataOut=FFT2_detrend(DataIn)
-%% set GUI config
+%------------------------------------------------------------------------
 DataOut=[];
 if strcmp(DataIn,'*')   
     DataOut.InputFieldType='scalar';

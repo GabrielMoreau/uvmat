@@ -1,6 +1,16 @@
-function DataOut=remove_particles(DataIn)
-%-----------------------------------------------
-%% set GUI config: no action defined
+% 'ima_remove_particles': removes particles from an image (keeping the local minimum)
+% requires the Matlab image processing toolbox
+
+%------------------------------------------------------------------------
+%%%%  Use the general syntax for transform fields with a single input %%%%
+% OUTPUT: 
+% DataOut:   output field structure 
+
+%INPUT:
+% DataIn:  first input field structure
+%------------------------------------------------------------------------
+function DataOut=ima_remove_particles(DataIn)
+%------------------------------------------------------------------------
 DataOut=[];  %default  output field
 if strcmp(DataIn,'*')
     return
@@ -14,7 +24,7 @@ nblock_y=30;
 DataOut=DataIn;%default
 
 if ~isfield(DataIn,'A')
-    DataOut.Txt='remove_particels only valid for input images';
+    DataOut.Txt='remove_particles only valid for input images';
     return
 end
 

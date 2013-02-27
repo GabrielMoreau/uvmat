@@ -1,21 +1,21 @@
-%'phys': transforms image (px) to real world (phys) coordinates using geometric calibration parameters
-% DataOut=phys(Data,CalibData) , transform one input field
-% [DataOut,DataOut_1]=phys(Data,CalibData,Data_1,CalibData_1), transform two input fields
+%'phys': transforms image (Unit='pixel') to real world (phys) coordinates using geometric calibration parameters.  It acts if the input field contains the tag 'CoordTUnit' with value 'pixel'
 
+%------------------------------------------------------------------------
+%%%%  Use the general syntax for transform fields %%%%
 % OUTPUT: 
-% DataOut:   structure representing the first field in phys coordinates
-% DataOut_1: structure representing the second  field in phys coordinates
+% DataOut:   output field structure 
 
 %INPUT:
-% Data:  structure of input data 
-%       with fields .A (image or scalar matrix), AX, AY
-%       .X,.Y,.U,.V, .DjUi
-%       .ZIndex: index of plane in multilevel case 
-%       .CoordType='phys' or 'px', The function ACTS ONLY IF .CoordType='px'
-% CalibData: structure containing calibration parameters or a subtree Calib.GeometryCalib =calibration data (tsai parameters)
-% Data_1, CalibData_1: same as Data, CalibData for the second field.
-
+% DataIn:  first input field structure
+% XmlData: first input parameter structure,
+%        .GeometryCalib: substructure of the calibration parameters 
+% DataIn_1: optional second input field structure
+% XmlData_1: optional second input parameter structure
+%         .GeometryCalib: substructure of the calibration parameters 
+%------------------------------------------------------------------------
 function DataOut=phys(DataIn,XmlData,DataIn_1,XmlData_1)
+%------------------------------------------------------------------------
+
 % A FAIRE: 1- verifier si DataIn est une 'field structure'(.ListVarName'):
 % chercher ListVarAttribute, for each field (cell of variables):
 %   .CoordType: 'phys' or 'px'   (default==phys, no transform)
@@ -24,7 +24,7 @@ function DataOut=phys(DataIn,XmlData,DataIn_1,XmlData_1)
 %   (default='coord' if .Role='coord_x,_y..., 
 %            'D_i' if '.Role='vector_x,...',
 %              'scalar', else (thenno change except scale factor)
-%% set GUI config if DataIn='*'
+
 DataOut=[];
 DataOut_1=[]; %default second  output field
 if strcmp(DataIn,'*')

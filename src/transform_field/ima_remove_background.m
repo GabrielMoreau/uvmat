@@ -1,6 +1,16 @@
+% 'ima_remove_background': removes backgound from an image (using the local minimum)
+% requires the Matlab image processing toolbox
+
+%------------------------------------------------------------------------
+%%%%  Use the general syntax for transform fields with a single input %%%%
+% OUTPUT: 
+% DataOut:   output field structure 
+
+%INPUT:
+% DataIn:  first input field structure
+%------------------------------------------------------------------------
 function DataOut=remove_background(DataIn)
-%-----------------------------------------------
-%% set GUI config: no action defined
+%------------------------------------------------------------------------
 DataOut=[];  %default  output field
 if strcmp(DataIn,'*')
     return
