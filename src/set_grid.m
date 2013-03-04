@@ -21,7 +21,7 @@
 
 function varargout = set_grid(varargin)
 
-% Last Modified by GUIDE v2.5 23-Apr-2010 15:44:47
+% Last Modified by GUIDE v2.5 01-Mar-2013 22:41:43
 
 % Begin initialization code - DO NOT PLOT
 gui_Singleton = 1;
@@ -31,9 +31,7 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_OutputFcn',  @set_grid_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
-% if nargin & isstr(varargin{1})
-%     gui_State.gui_Callback = str2func(varargin{1});
-% end
+               
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -42,7 +40,6 @@ if nargout
 else
     gui_mainfcn(gui_State, varargin{:});
 end
-% End initialization code - DO NOT PLOT
 
 %-------------------------------------------------------------------
 % --- Executes just before set_grid is made visible.
@@ -53,13 +50,13 @@ end
 %        if=0; no associated object (used for series), the button 'PLOT' is  then unvisible
 %'data': read from an existing object selected in the interface
 %      .TITLE : class of object ('POINTS','LINE',....)
-%      .DX,DY,DZ; meshes for regular grids
+%      .num_DX,num_DY,DZ; meshes for regular grids
 %      .Coord: object position coordinates
 %      .ParentButton: handle of the uicontrol object calling the interface
 % PlotHandles: set of handles of the elements contolling the plotting of the projected field:
 %  if =[] or absent, no plot (mask mode in uvmat)
 % parameters on the uvmat interface (obtained by 'get_plot_handle.m')
-function set_grid_OpeningFcn(hObject, eventdata, handles,inputfile,CoordType)
+function set_grid_OpeningFcn(hObject, eventdata, handles,InputFile,InputField)
 
 % Choose default command line output for set_grid
 handles.output = hObject;
@@ -67,24 +64,44 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
-%default
-% set(hObject,'Unit','Normalized')% set the unit normalized to the screen size
-% set(hObject,'Position',[0.7 0.1 0.25 0.5])%set the position of the set_grid interface 
+%default 
 set(hObject,'DeleteFcn',@closefcn)
-% set(handles.TITLE,'Value',1)
-%set(handles.ObjectStyle,'Value',1)
-%set(handles.ProjMode,'Value',1)
-set(handles.MenuCoord,'ListboxTop',1)
-set(handles.MenuCoord,'Value',1);
-set(handles.MenuCoord,'String',{'phys';'px'});
-if exist('inputfile','var')& ~isempty(inputfile)
-   set(handles.image_1,'String',inputfile)
-   set(handles.image_2,'String',inputfile)
+set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
+set(handles.CoordType,'ListboxTop',1)
+set(handles.CoordType,'Value',1);
+set(handles.CoordType,'String',{'phys';'px'});
+if exist('InputFile','var')
+   set(handles.ImageA,'String',InputFile)
 end
-if exist('CoordType','var')
-    if strcmp(CoordType,'px')
-        set(handles.MenuCoord,'Value',2)
+
+%% use InputField input from uvmat
+check_pixel=0;
+if exist('InputField','var')
+    if strcmp(InputField.CoordUnit,'pixel')
+        set(handles.CoordType,'Value',2)
+        set(handles.TxtWarning,'Visible','on')
+        Mesh=20;%default mesh in pixel
+        check_pixel=1;
+    else
+        set(handles.CoordType,'Value',1)
+        InputField.CoordMesh=20*InputField.CoordMesh; % about 20 pixels
+        % adjust the mesh to a value 1, 2 , 5 *10^n
+        ord=10^(floor(log10(InputField.CoordMesh)));%order of magnitude
+        if InputField.CoordMesh/ord>=5
+            Mesh=5*ord;
+        elseif InputField.CoordMesh/ord>=2
+            Mesh=2*ord;
+        else
+            Mesh=ord;
+        end
     end
+    Input.DX=Mesh;
+    Input.DY=Mesh;
+    Input.XMin=(Mesh/2)*ceil(InputField.XMin/(Mesh/2))-0.5*check_pixel;
+    Input.XMax=Input.XMin+Mesh*floor((InputField.XMax-Input.XMin)/Mesh)-0.5*check_pixel;
+    Input.YMin=(Mesh/2)*ceil(InputField.YMin/(Mesh/2))-0.5*check_pixel;
+    Input.YMax=Input.YMin+Mesh*floor((InputField.YMax-Input.YMin)/Mesh)-0.5*check_pixel;
+    errormsg=fill_GUI(Input,handles);
 end
 
 % --- Outputs from this function are returned to the command line.
@@ -92,98 +109,6 @@ function varargout = set_grid_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 varargout{2}=handles;
-
-
-%-----------------------------------------------------
-% --- Executes on button press in import.
-function import_Callback(hObject, eventdata, handles)
-%get the object file 
-oldfile='';
-huvmat=findobj('Tag','uvmat');
-if isempty(huvmat)
-    huvmat=findobj(allchild(0),'Name','series');
-end
-hchild=get(huvmat,'Children');
-hrootpath=findobj(hchild,'Tag','RootPath');
-oldfile=get(hrootpath,'String');
-if iscell(oldfile)
-    oldfile=oldfile{1};
-end
-%[FileName,PathName] = uigetfile('*.civ','Select a .civ file',oldfile)
-[FileName, PathName, filterindex] = uigetfile( ...
-       {'*.xml;*.mat', ' (*.xml,*.mat)';
-       '*.xml',  '.xml files '; ...
-        '*.mat',  '.mat matlab files '}, ...
-        'Pick a file',oldfile);
-fileinput=[PathName FileName];%complete file name 
-testblank=findstr(fileinput,' ');%look for blanks
-if ~isempty(testblank)
-    errordlg('forbidden input file name: contain blanks')
-    return
-end
-sizf=size(fileinput);
-if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
-
-%read the file
- t=xmltree(fileinput);
- s=convert(t);
-testmode=0;
-if isfield(s,'ProjMode')
-        menu=get(handles.ProjMode,'String');
-        for iline=1:length(menu)
-            if isequal(menu{iline},s.ProjMode)
-                set(handles.ProjMode,'Value',iline)
-                testmode=1;
-                break
-            end
-        end
-end
-
-ProjMode_Callback(hObject, eventdata, handles);%visualize the appropriate edit boxes
-if isfield(s,'CoordType')
-    if isequal(s.CoordType,'phys')
-        set(handles.MenuCoord,'Value',1)
-    elseif isequal(s.CoordType,'px')
-        set(handles.MenuCoord,'Value',2)
-    else
-        warndlg('unknown CoordType (px or phys) in set_grid.m')
-    end
-end
-if isfield(s,'XMax')
-    set(handles.XMax,'String',s.XMax)
-end
-if isfield(s,'XMin')
-    set(handles.XMin,'String',s.XMin)
-end
-if isfield(s,'YMax')
-    set(handles.YMax,'String',s.YMax)
-end
-if isfield(s,'YMin')
-    set(handles.YMin,'String',s.YMin)
-end
-if isfield(s,'DX')
-    set(handles.DX,'String',s.DX)
-end
-if isfield(s,'DY')
-    set(handles.DY,'String',s.DY)
-end
-if ~isfield(s,'Coord')
-    XObject='0';%default
-    YObject='0';
-elseif ischar(s.Coord)
-    line=str2num(s.Coord);
-    XObject=num2str(line(1));
-    YObject=num2str(line(2));
-else
-    for i=1:length(s.Coord)
-        line=str2num(s.Coord{i});
-        XObject{i}=num2str(line(1));
-        YObject{i}=num2str(line(2));
-    end
-end
-set(handles.XObject,'String',XObject)
-set(handles.YObject,'String',YObject)
-%METTRA A JOUR ASPECT DE L'INTERFACE (COMME set_grid_Opening
 
 %----------------------------------------------------
 % executed when closing: set the parent interface button to value 0
@@ -195,7 +120,7 @@ if ~isempty(parent_button)
     tag=get(parent_button,'Tag');
     if isequal(tag,'edit')
         set(parent_button,'BackgroundColor',[0.7 0.7 0.7]);
-    else 
+    else
         set(parent_button,'BackgroundColor',[0 1 0]);
     end
 end
@@ -203,31 +128,47 @@ end
 %-----------------------------------------------------------------------
 % --- Executes on button press in plot: PLOT the defined object and its projected field
 function plot_Callback(hObject, eventdata, handles)
-grid_pix_A=get_grid(handles);
-huvmat=uvmat(get(handles.image_1,'String'));
+[grid_pix_A,grid_pix_B,grid_phys]=get_grid(read_GUI(handles.set_grid));
+huvmat=findobj(allchild(0),'tag','uvmat');
 hhuvmat=guidata(huvmat);
-set(hhuvmat.transform_fct,'Value',1)
-uvmat('run0_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
-axes(hhuvmat.axes3);
+axes(hhuvmat.PlotAxes);
 hold on
-plot(grid_pix_A(:,1),grid_pix_A(:,2),'.')
+UvData=get(huvmat,'UserData');
+if isfield(UvData.Field, 'CoordUnit')&& strcmp(UvData.Field.CoordUnit,'pixel')
+    plot(grid_pix_A(:,1),grid_pix_A(:,2),'.')
+else
+    plot(grid_phys(:,1),grid_phys(:,2),'.')
+end
 
-% --- Executes on button press in plot_2.
-function plot_2_Callback(hObject, eventdata, handles)
-[grid_pix_A,grid_pix_B]=get_grid(handles);
-huvmat=uvmat(get(handles.image_2,'String'));
-hhuvmat=guidata(huvmat);
-set(hhuvmat.transform_fct,'Value',1)
-uvmat('run0_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
-axes(hhuvmat.axes3);
-hold on
-plot(grid_pix_B(:,1),grid_pix_B(:,2),'.')
+%% display grid in second image defiend
+if ~isempty(grid_pix_B)
+    hviewfield=view_field(get(handles.imageB,'String'));
+    hhviewfield=guidata(hviewfield);
+    axes(hhviewfield.PlotAxes);
+    hold on
+    if isfield(UvData.Field, 'CoordUnit')&& strcmp(UvData.Field.CoordUnit,'pixel')
+        plot(grid_pix_B(:,1),grid_pix_B(:,2),'.')
+    else
+        plot(grid_phys(:,1),grid_phys(:,2),'.')
+    end
+end
 
-
-
-% --- Executes on button press in MenuCoord.
-function MenuCoord_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
+% --- Executes on button press in CoordType.
+function CoordType_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+set(handles.num_XMin,'String','')
+set(handles.num_XMax,'String','')
+set(handles.num_DX,'String','')
+set(handles.num_YMin,'String','')
+set(handles.num_YMax,'String','')
+set(handles.num_DY,'String','')
+set(handles.num_Z,'String','')
+if isequal(get(handles.CoordType,'Value'),2)
+    set(handles.TxtWarning,'visible','on')
+else
+    set(handles.TxtWarning,'visible','on')
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --- Executes on button press in delete.
@@ -246,13 +187,14 @@ delete_object(IndexObj);
 
 
 % ------------------------------------------------------
-function save_Callback(hObject, eventdata, handles)
+function Save_Callback(hObject, eventdata, handles)
 % ------------------------------------------------------
-[grid_pix_A,grid_pix_B]=get_grid(handles);
+[grid_pix_A,grid_pix_B]=get_grid(read_GUI(handles.set_grid));
+
 
  %ECRIRE FICHIERS
 nbpointsA=size(grid_pix_A);
-XA=grid_pix_A(:,1);
+XA=grid_pix_A(:,1);%index=position+0.5 rounded at the nearest integer value
 YA=grid_pix_A(:,2);
 unitcolumn=32*ones(size(XA));
 Xchar=num2str(XA);
@@ -262,17 +204,15 @@ tete=['1 ' num2str(nbpointsA(1))];
 txt=[Xchar blanc Ychar];
 textgrid={tete;txt};
 textout=char(textgrid);
-imageA=get(handles.image_1,'String');
+imageA=get(handles.ImageA,'String');
 RootPath=fileparts_uvmat(imageA);
-%[Pathsub]=name2display(imageA);
 Answer = msgbox_uvmat('INPUT_TXT','grid file name (*.grid)',fullfile(RootPath,'gridA.grid'));
-% Answer = inputdlg('grid file name (*.grid)',' ',1,{fullfile(Pathsub,'gridA.grid')},'on');
 dlmwrite(Answer,textout,'');
 msgbox_uvmat('CONFIRMATION',[Answer ' written as ASCII text file']);
 if ~isempty(grid_pix_B)
     nbpointsB=size(grid_pix_B);
-    XB=grid_pix_B(:,1);
-    YB=grid_pix_B(:,2);
+    XB=round(grid_pix_B(:,1)+0.5);%index=position+0.5 rounded at the nearest integer value
+    YB=round(grid_pix_B(:,2)+0.5);
     unitcolumn=32*ones(size(XB));
     Xchar=num2str(XB);
     blanc=char(unitcolumn);
@@ -286,133 +226,129 @@ if ~isempty(grid_pix_B)
     msgbox_uvmat('CONFIRMATION',[Answer ' written as ASCII text file']);
 end
 
-%-------------------------
-function [grid_pix_A,grid_pix_B]=get_grid(handles)
-%Object=read_set_object(handles);%read the set_grid interface;
-grid_pix_B=[];%default
-DX=str2num(get(handles.DX,'String'));
-DY=str2num(get(handles.DY,'String'));
-XMin=str2num(get(handles.XMin,'String'));
-XMax=str2num(get(handles.XMax,'String'));
-YMin=str2num(get(handles.YMin,'String'));
-YMax=str2num(get(handles.YMax,'String'));
-array_realx=XMin:DX:XMax;
-array_realy=YMin:DY:YMax;
-nx_patch=length(array_realx);
-ny_patch=length(array_realy);
-[grid_realx,grid_realy]=meshgrid(array_realx,array_realy);
-grid_real(:,1)=reshape(grid_realx,nx_patch*ny_patch,1);
-grid_real(:,2)=reshape(grid_realy,nx_patch*ny_patch,1);
-grid_real(:,3)=zeros(nx_patch*ny_patch,1);
- 
-imageA=get(handles.image_1,'String');
-imageB=get(handles.image_2,'String');
-testB=1;
-if isempty(imageA) || isequal(imageA,'')
-    if isempty(imageB) || isequal(imageB,'')
-        msgbox_uvmat('ERROR','at least one image file name must be introduced')
-    else
-        imageA=imageB;
-        testB=0;
-    end
-end
-if isempty(imageB) || isequal(imageB,'') || isequal(imageA,imageB)
-    testB=0;
-end
 
-testexist=exist(imageA,'file');
-if isequal(testexist,0)
+%------------------------------------------------------------------------
+function [grid_pix_A,grid_pix_B,grid_phys]=get_grid(GUI)
+%------------------------------------------------------------------------
+grid_pix_B=[];%default
+array_x=GUI.XMin:GUI.DX:GUI.XMax;% array of x values
+array_y=GUI.YMin:GUI.DY:GUI.YMax;% array of y values
+[grid_x,grid_y]=meshgrid(array_x,array_y);% matrices of x and y values
+grid_x=reshape(grid_x,[],1); %matrix of x  values reshaped in line
+grid_y=reshape(grid_y,[],1);%matrix of y values reshaped in line
+% grid_z=zeros(nx_patch*ny_patch,1);% plane coordinates (TODO: 3D grids)
+
+%% check the input image A
+if ~exist(GUI.ImageA,'file')
     msgbox_uvmat('ERROR',['input image file' imageA 'does not exist'])
     return
 end
-%[Pathsub,RootFile,field_count,str2,str_a,str_b,FileExt,NomType,SubDir]=name2display(imageA);
-[RootPath,~,RootFile,~,~,~,~,FileExt]=fileparts_uvmat(imageA);
-form=imformats(FileExt(2:end));
-if isempty(form)% if the extension corresponds to an image format recognized by Matlab
-     msgbox_uvmat('ERROR',['error: ' imageA ' is not an image name recognized by Matlab '])
-     return
-end
-fileAxml=[fullfile(RootPath,RootFile) '.xml'];
-[XmlDataA,error]=imadoc2struct(fileAxml); 
-if isfield(XmlDataA,'GeometryCalib')
-     tsaiA=XmlDataA.GeometryCalib;
- else
-     msgbox_uvmat('WARNING','no geometric calibration available for image A')
-     tsaiA=[];
-end
-MenuCoord=get(handles.MenuCoord,'String');
-val=get(handles.MenuCoord,'Value');
-if isempty(tsaiA)||strcmp(MenuCoord{val},'px')
-    grid_imaA(:,1)=grid_real(:,1);
-    grid_imaA(:,2)=grid_real(:,2);
-else
-    [grid_imaA(:,1),grid_imaA(:,2)]=px_XYZ(tsaiA,grid_real(:,1),grid_real(:,2),0);
-end
-    A=imread(imageA);
-   siz=size(A);
-   npxA=siz(2);
-   npyA=siz(1);
-
-flagA=grid_imaA(:,1)>0 & grid_imaA(:,1)<npxA & grid_imaA(:,2)>0 & grid_imaA(:,2)<npyA; 
-
-if testB
-    testexist=exist(imageB,'file');
-    if isequal(testexist,0)
-        msgbox_uvmat('ERROR',['input image file' imageB 'does not exist'])
+[FileType,tild,VideoObject]=get_file_type(GUI.ImageA);
+switch FileType
+    case {'image','multimage','video','mmreader'}% case of input image or movie OK
+    otherwise
+        msgbox_uvmat('ERROR',['error: ' GUI.ImageA ' is not an image type recognized by Matlab '])
         return
+end
+[RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(GUI.ImageA);
+
+%% transform to pixels if the grid is defined in phys coordinates
+grid_x_imaA=grid_x;%default grid in image A coordinates
+grid_y_imaA=grid_y;
+% MenuCoord=get(handles.CoordType,'String');% type of coordinates for grid definition, phys or pixel
+if strcmp(GUI.CoordType,'phys')
+    fileAxml=fullfile(RootPath,[SubDir '.xml']);% new convention for xml name
+    if ~exist(fileAxml,'file')
+        fileAxml=[fullfile(RootPath,RootFile) '.xml'];% old convention for xml name
     end
-    %[RootPath,RootFile,field_count,str2,str_a,str_b,FileExt,NomType,SubDir]=name2display(imageB);
-    [RootPath,~,RootFile,~,~,~,~,FileExt]=fileparts_uvmat(imageB);
-    form=imformats(FileExt(2:end));
-    if isempty(form)% if the extension corresponds to an image format recognized by Matlab
-        msgbox_uvmat('ERROR',['error: ' imageB ' is not an image name recognized by Matlab '])
-        return
+    tsaiA=[];%default
+    if exist(fileAxml,'file')
+        [XmlDataA,errormsg]=imadoc2struct(fileAxml);
+        if ~isempty(errormsg)
+            msgbox_uvmat('ERROR',['error in ' fileAxml ': ' errormsg])
+            return
+        end
+        if isfield(XmlDataA,'GeometryCalib')
+            tsaiA=XmlDataA.GeometryCalib;
+        end
     end
-    fileBxml=[fullfile(RootPath,RootFile) '.xml'];
-    [XmlDataB,error]=imadoc2struct(fileBxml);
-    if isfield(XmlDataB,'GeometryCalib')
-        tsaiB=XmlDataB.GeometryCalib;
+    if isempty(tsaiA)
+        msgbox_uvmat('WARNING','no geometric calibration available for image A, phys =pixel')
     else
-        msgbox_uvmat('WARNING','no geometric calibration available for image B')
-        tsaiB=[];
+        [grid_x_imaA,grid_y_imaA]=px_XYZ(tsaiA,grid_x,grid_y,GUI.Z);
     end
-    %[error,Heading,NomType_read,ext_ima_read,time,TimeUnit,mode,NbSlice,...
-    %     npxB,npyB,tsaiB]=read_imadoc(fileBxml,0);
-    [grid_imaB(:,1),grid_imaB(:,2)]=px_XYZ(tsaiB,grid_real(:,1),grid_real(:,2),0);
-    %     if isempty(npxB)|isempty(npyB)
-    B=imread(imageB);
-    siz=size(B);
-    npxB=siz(2);
-    npyB=siz(1);
-    %     end
-    flagB=grid_imaB(:,1)>0 & grid_imaB(:,1)<npxB & grid_imaB(:,2)>0 & grid_imaB(:,2)<npyB;
-end
-if testB
-    ind_good=find(flagA==1&flagB==1);
-    XimaB=grid_imaB(ind_good,1);
-    YimaB=grid_imaB(ind_good,2);
-else
-    ind_good=find(flagA==1);
-end
-XimaA=grid_imaA(ind_good,1);
-YimaA=grid_imaA(ind_good,2);
-
-grid_real_x=grid_real(ind_good,1);
-grid_real_y=grid_real(ind_good,2);
-nx_patch_new=length(grid_real_x); 
-grid_real2(:,1)=grid_real_x;
-grid_real2(:,2)=grid_real_y;
-grid_real2(:,3)=zeros(nx_patch_new,1);
-if isempty(tsaiA)||strcmp(MenuCoord{val},'px')
-    grid_pix_A(:,1)=grid_real2(:,1);
-   grid_pix_A(:,2)= grid_real2(:,2);
-else
-    [grid_pix_A(:,1),grid_pix_A(:,2)]=px_XYZ(tsaiA,grid_real2(:,1),grid_real2(:,2));
-end
-if testB
-    [grid_pix_B(:,1),grid_pix_B(:,2)]=px_XYZ(tsaiB,grid_real2(:,1),grid_real2(:,2));
 end
 
+%% detect the grid points which are inside image A
+A=read_image(GUI.ImageA,FileType,VideoObject,1);
+npxA=size(A,2);
+npyA=size(A,1);
+flag=grid_x_imaA>=1 & grid_x_imaA<=npxA & grid_y_imaA>=1 & grid_y_imaA<=npyA;% ='true' inside the image
+
+%% detect the grid points which are inside image B if relevant (use for stereo PIV)
+if isfield(GUI,'ImageB')
+    if ~exist(imageB,'file')
+        msgbox_uvmat('ERROR',['input image file' GUI.ImageB 'does not exist'])
+        return
+    end
+    [RootPathB,SubDirB,RootFileB,tild,tild,tild,tild,FileExt]=fileparts_uvmat(GUI.ImageB);
+    fileBxml=fullfile(RootPathB,[SubDirB '.xml']);% new convention for xml name
+    if ~exist(fileBxml,'file')
+        fileBxml=[fullfile(RootPathB,RootFileB) '.xml'];% old convention for xml name
+    end
+    tsaiB=[];%default
+    if exist(fileBxml,'file')
+        [XmlDataB,errormsg]=imadoc2struct(fileBxml);
+        if ~isempty(errormsg)
+            msgbox_uvmat('ERROR',['error in ' fileAxml ': ' errormsg])
+            return
+        end
+        if isfield(XmlDataB,'GeometryCalib')
+            tsaiB=XmlDataB.GeometryCalib;
+        end
+    end
+    if isempty(tsaiB)
+        msgbox_uvmat('WARNING','no geometric calibration available for image B, phys =pixel')
+        grid_x_imaB=grid_x;
+        grid_y_imaB=grid_y;
+    else
+        [grid_x_imaB,grid_y_imaB]=px_XYZ(tsaiB,grid_x,grid_y,GUI.Z);
+    end
+    B=imread(GUI.ImageB);
+    npxB=size(B,2);
+    npyB=size(B,1);
+    flagB=grid_x_imaB>=1 & grid_x_imaB<=npxB & grid_y_imaB>=1 & grid_y_imaB<=npyB;
+    flag=flagA & flagB;
+    grid_pix_B(:,1)=round(grid_x_imaB(flag));
+    grid_pix_B(:,2)=round(grid_y_imaB(flag));
+end
+
+grid_x_imaA=grid_x_imaA(flag);
+grid_y_imaA=grid_y_imaA(flag);
+grid_pix_A=[grid_x_imaA grid_y_imaA];
+grid_x=grid_x(flag);
+grid_y=grid_y(flag);
+grid_phys=[grid_x grid_y];
+
+
+function GetImageB_Callback(hObject, eventdata, handles)
+if isequal(get(handles.GetImageB,'Value'),1)
+    set(handles.ImageB,'Visible','on')
+    [FileName, PathName, filterindex] = uigetfile( ...
+            {'*.*', 'All Files (*.*)'}, ...
+            'Pick the second image file',fileparts(fileparts(get(handles.ImageA,'String'))));
+        ImageB=fullfile(PathName,FileName);
+        [FileType,tild,VideoObject]=get_file_type(ImageB);
+    switch FileType
+        case {'image','multimage','video','mmreader'}% case of input image or movie OK
+            set(handles.ImageB,'String',ImageB)
+        otherwise
+            msgbox_uvmat('ERROR',['error: ' imageB ' is not an image type recognized by Matlab '])
+            return
+    end
+else
+    set(handles.ImageB,'Visible','off')
+end
 
 
 %------------------------------------------------------------------------
@@ -429,3 +365,10 @@ end
 
 
 
+function ImageA_Callback(hObject, eventdata, handles)
+% hObject    handle to ImageA (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of ImageA as text
+%        str2double(get(hObject,'String')) returns contents of ImageA as a double

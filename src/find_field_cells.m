@@ -19,7 +19,7 @@
 %              _vector_x,_y,_z: indices of variables giving the vector components x, y, z
 %              _warnflag: index of warnflag    
 %      .FieldRequest= 'interp_lin', 'interp_tps' indicate whether lin interpolation  or derivatives (tps) is needed to calculate the requested field
-%      .Operation = operation to be performed to finalise the field cell after projection
+%      .FieldName = operation to be performed to finalise the field cell after projection
 %      .SubCheck=0 /1 indicate that the field must be substracted (second  entry in uvmat)
 % NbDim: array with the length of CellVarIndex, giving the space dimension of each field cell
 % errormsg: error message
@@ -86,7 +86,7 @@ end
 %   'ancillary','image','color','discrete','scalar','coord_tps'};% rmq vector_x_tps and vector_y_tps to be replaced by vector_x and vector_y
 Role=num2cell(blanks(nbvar));%initialize a cell array of nbvar blanks
 FieldRequest=regexprep(Role,' ',''); % fieldRequest set to '' by default
-Operation=cell(size(Role)); % fieldRequest set to {} by default
+FieldName=cell(size(Role)); % fieldRequest set to {} by default
 CheckSub=zeros(size(Role));% =1 for fields to substract
 Role=regexprep(Role,' ','scalar'); % Role set to 'scalar' by default
 if isfield(Data,'VarAttribute')
@@ -97,8 +97,8 @@ if isfield(Data,'VarAttribute')
         if isfield(Data.VarAttribute{ivar},'FieldRequest')
             FieldRequest{ivar}=Data.VarAttribute{ivar}.FieldRequest;
         end
-        if isfield(Data.VarAttribute{ivar},'Operation')
-            Operation{ivar}=Data.VarAttribute{ivar}.Operation;
+        if isfield(Data.VarAttribute{ivar},'FieldName')
+            FieldName{ivar}=Data.VarAttribute{ivar}.FieldName;
         end
         if isfield(Data.VarAttribute{ivar},'CheckSub')
             CheckSub(ivar)=Data.VarAttribute{ivar}.CheckSub;
@@ -317,8 +317,8 @@ for icell=1:numel(CellInfo)
         if ~isempty(FieldRequest{ivar})
             CellInfo{icell}.FieldRequest=FieldRequest{ivar};
         end
-        if ~isempty(Operation{ivar})
-            CellInfo{icell}.Operation=Operation{ivar};
+        if ~isempty(FieldName{ivar})
+            CellInfo{icell}.FieldName=FieldName{ivar};
         end
         if CheckSub(ivar)==1
             CellInfo{icell}.CheckSub=1;

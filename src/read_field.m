@@ -40,7 +40,7 @@ check_colorvar=0;
 if isstruct(ParamIn)
     if isfield(ParamIn,'FieldName')
         if ischar(ParamIn.FieldName)
-            ParamIn.FieldName={ParamIn.FieldName};
+            InputField={ParamIn.FieldName};
         else
             InputField= ParamIn.FieldName;
         end

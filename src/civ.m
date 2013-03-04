@@ -3325,29 +3325,29 @@ end
 
 %------------------------------------------------------------------------
 % --- function called to look for grid files
-function [nbslice, flag_mask]=get_grid(filebase,handles)
+function [nbslice, flag_grid]=get_grid(filebase,handles)
 %------------------------------------------------------------------------
-flag_mask=0;%default
+flag_grid=0;%default
 nbslice=1;
 [Path,Name]=fileparts(filebase);
 currentdir=pwd;
 cd(Path);%move in the dir of the root name filebase
-maskfiles=dir([Name '_*grid_*.grid']);%look for mask files
+gridfiles=dir([Name '_*grid_*.grid']);%look for grid files
 cd(currentdir);%come back to the current working directory
-if ~isempty(maskfiles)
-    flag_mask=1;
-    maskname=maskfiles(1).name;% take the first mask file in the list
-    [Path2,Name,ext]=fileparts(maskname);
+if ~isempty(gridfiles)
+    flag_grid=1;
+    gridname=gridfiles(1).name;% take the first grid file in the list
+    [Path2,Name,ext]=fileparts(gridname);
     Namedouble=double(Name);
     val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
-    ind_mask=findstr('grid',Name);
-    i=ind_mask-1;
+    ind_grid=findstr('grid',Name);
+    i=ind_grid-1;
     while val(i)==0 && i>0
         i=i-1;
     end
-    nbslice=str2double(Name(i+1:ind_mask-1));
+    nbslice=str2double(Name(i+1:ind_grid-1));
     if ~isnan(nbslice) && Name(i)=='_'
-        flag_mask=1;
+        flag_grid=1;
     else
         msgbox_uvmat('ERROR',['bad grid file ' Name ext ' found in ' Path2])
         return
@@ -3414,9 +3414,9 @@ end
 function CheckGrid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 value=get(hObject,'Value');
-hparent=get(hObject,'parent');
+hparent=get(hObject,'parent');%handles of the parent panel
 hchildren=get(hparent,'children');
-handle_txtbox=findobj(hchildren,'tag','txt_Grid');
+handle_txtbox=findobj(hchildren,'tag','Grid');% look for the grid name box in the same panel
 handle_dx=findobj(hchildren,'tag','num_Dx');
 handle_dy=findobj(hchildren,'tag','num_Dy');
 handle_title_dx=findobj(hchildren,'tag','title_Dx');
@@ -3434,7 +3434,7 @@ if value
         if exist(filegrid,'file')
             filebase=filegrid;
         end
-        [FileName, PathName, filterindex] = uigetfile( ...
+        [FileName, PathName] = uigetfile( ...
             {'*.grid', ' (*.grid)';
             '*.grid',  '.grid files '; ...
             '*.*', 'All Files (*.*)'}, ...
@@ -3467,7 +3467,7 @@ PanelName=get(hparent,'tag');
 if strcmp(PanelName,'Civ1')
     hchildren=get(handles.Civ2,'children');
     handle_checkbox=findobj(hchildren,'tag','CheckGrid');
-    handle_txtbox=findobj(hchildren,'tag','txt_Grid');
+    handle_txtbox=findobj(hchildren,'tag','Grid');
     handle_dx=findobj(hchildren,'tag','num_Dx');
     handle_dy=findobj(hchildren,'tag','num_Dy');
     handle_title_dx=findobj(hchildren,'tag','title_Dx');
@@ -3481,14 +3481,6 @@ if strcmp(PanelName,'Civ1')
         set(handle_title_dy,'Visible','off');
         set(handle_txtbox,'Visible','on')
         set(handle_txtbox,'String',filegrid)
-%     else
-%         set(handle_checkbox,'Value',0);
-%         set(handles.CheckGrid,'Value',0);
-%         set(handle_dx,'Visible','on');
-%         set(handle_dy,'Visible','on');
-%          set(handle_title_dx,'Visible','on');
-%         set(handle_title_dy,'Visible','on');
-%         set(handle_txtbox,'Visible','off')
     end 
 end
 
@@ -3531,25 +3523,15 @@ if testmask
         set(handles.Mask,'String',filemask)
     set(handles.CheckMask,'Value',1)
     end
-%     switch parent_tag
-% %         case 'Fix1'
-% %             stage=2;
-%         case 'Civ2'
-%              stage=3;
-% %         case 'Fix2'
-% %             stage=4;
-%     end
-%     set(handles.Mask(stage:end),'Visible','on')
-%     set(handles.Mask(stage:end),'String',filemask)
-%     set(handles.CheckMask(stage:end),'Value',1)
 else
     set(hObject,'Value',0);
     set(handle_txtbox,'Visible','off')
 end
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in get_gridpatch1.
 function get_gridpatch1_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 filebase=get(handles.RootPath,'String');
 [FileName, PathName, filterindex] = uigetfile( ...
     {'*.grid', ' (*.grid)';

@@ -215,15 +215,18 @@ path_list{ilist}=transform_path; % set transform_path to the path_list
 end
 
 %% load the list of previously browsed files in menus Open, Open_1 and transform_fct
- dir_perso=prefdir; % path to the directory .matlab for personal data
- profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmauvmat_perso.mat' in .matlab
+ dir_perso=prefdir; % path to the directory .matlab containing the personal data of the current user
+ profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmat_perso.mat' in .matlab
  if exist(profil_perso,'file')
      h=load (profil_perso);
      if isfield(h,'MenuFile')% load the menu of previously opened files
          for ifile=1:min(length(h.MenuFile),5)
-             eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',h.MenuFile{ifile});'])
-             eval(['set(handles.MenuFile_' num2str(ifile) '_1,''Label'',h.MenuFile{ifile});'])
+             set(handles.(['MenuFile_' num2str(ifile)]),'Label',h.MenuFile{ifile});
+             set(handles.(['MenuFile_' num2str(ifile) '_1']),'Label',h.MenuFile{ifile});
          end
+     end
+     if isfield(h,'RootPath')
+         set(handles.RootPath,'UserData',h.RootPath); %store the previous campaign in the UserData of RootPath
      end
      if isfield(h,'transform_fct') && iscell(h.transform_fct) % load the menu of transform fct set by user
          for ilist=1:length(h.transform_fct);
@@ -334,15 +337,8 @@ end
 function MenuBrowse_Callback(hObject, eventdata, handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 oldfile=fullfile(RootPath,SubDir);
-if isempty(oldfile)||isequal(oldfile,'') %loads the previously stored file name and set it as default in the file_input box
-         dir_perso=prefdir;
-         profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-         if exist(profil_perso,'file')
-              h=load (profil_perso);
-             if isfield(h,'MenuFile_1')
-                  oldfile=h.MenuFile_1;
-             end
-         end
+if isempty(oldfile) %loads the previously stored file name and set it as default in the file_input box
+    oldfile=get(handles.RootPath,'UserData');
 end
 [FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',oldfile);
 if ~ischar(FileName),return,end %abandon if the browser is cancelled
@@ -356,7 +352,11 @@ display_file_name( handles,fileinput)
 % search the file inside a campaign, using the GUI view_data
 function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
 % -----------------------------------------------------------------------
-CampaignPath=fileparts(fileparts(get(handles.RootPath,'String')));
+RootPath=get(handles.RootPath,'String');
+if isempty(RootPath)
+    RootPath=get(handles.RootPath,'UserData');%use Rootpath recored from the personal file at uvmat opening
+end
+CampaignPath=fileparts(fileparts(RootPath));
 DirFull = uigetdir(CampaignPath,'Select a Campaign dir, then press OK');
 if ~ischar(DirFull)|| ~exist(DirFull,'dir')
     return
@@ -446,20 +446,20 @@ set(handles.MenuFile_2_1,'Label',MenuFile_2)
 set(handles.MenuFile_3_1,'Label',MenuFile_3)
 set(handles.MenuFile_4_1,'Label',MenuFile_4)
 set(handles.MenuFile_5_1,'Label',MenuFile_5)
-dir_perso=prefdir;
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-if exist(profil_perso,'file')
-    save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-append'); %store the file names for future opening of uvmat
-else
-    txt=ver('MATLAB');
-    Release=txt.Release;
-    relnumb=str2double(Release(3:4));
-    if relnumb >= 14
-        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-V6'); %store the file names for future opening of uvmat
-    else
-        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5'); %store the file names for future opening of uvmat
-    end
-end
+% dir_perso=prefdir;
+% profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+% if exist(profil_perso,'file')
+%     save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-append'); %store the file names for future opening of uvmat
+% else
+%     txt=ver('MATLAB');
+%     Release=txt.Release;
+%     relnumb=str2double(Release(3:4));
+%     if relnumb >= 14
+%         save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-V6'); %store the file names for future opening of uvmat
+%     else
+%         save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5'); %store the file names for future opening of uvmat
+%     end
+% end
 
 % --------------------------------------------------------------------
 function MenuBrowseCampaign_1_Callback(hObject, eventdata, handles)
@@ -786,15 +786,15 @@ if isempty(find(str_find,1))
     MenuFile=[{fileinput};MenuFile];%insert the current file if not already in the list
 end
 for ifile=1:min(length(MenuFile),5)
-    eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',MenuFile{ifile});'])
-    eval(['set(handles.MenuFile_' num2str(ifile) '_1,''Label'',MenuFile{ifile});'])
+    set(handles.(['MenuFile_' num2str(ifile)]),'Label',MenuFile{ifile});
+    set(handles.(['MenuFile_' num2str(ifile) '_1']),'Label',MenuFile{ifile});
 end
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
 if exist(profil_perso,'file')
-    save (profil_perso,'MenuFile','-append'); %store the file names for future opening of uvmat
+    save (profil_perso,'MenuFile','RootPath','-append'); %store the file names for future opening of uvmat
 else
-    save (profil_perso,'MenuFile','-V6'); %store the file names for future opening of uvmat
+    save (profil_perso,'MenuFile','RootPath','-V6'); %store the file names for future opening of uvmat
 end
 
 %% set back the mouse pointer to arrow
@@ -1410,8 +1410,6 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
          menu_transform=get(handles.transform_fct,'String');
         choice_value=get(handles.transform_fct,'Value');
         transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
-%         transform_list=get(handles.transform_fct,'UserData');
-%         transform=transform_list{choice_value};
         transform=get(handles.path_transform,'UserData');
         if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
             if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
@@ -1440,10 +1438,7 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
         else
             axes(handles.PlotAxes)
             hold on    
-            size(flagmask)
-           % MaskData.maskhandle=image(Mask.AX,Mask.AY,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*flagmask);
             MaskData.maskhandle=image(Mask.AX,Mask.AY,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*ones(size(flagmask)));
-%             set(MaskData.maskhandle,'AlphaData',0.6*flagmask)
             set(handles.CheckMask,'UserData',MaskData)
         end
     end
@@ -1931,10 +1926,6 @@ end
 % end
 
 %px to phys or other transform on field
-% menu_transform=get(handles.transform_fct,'String');
-% choice_value=get(handles.transform_fct,'Value');
-% transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
-% transform_list=get(handles.transform_fct,'UserData');
 transform=get(handles.path_transform,'UserData');
 if  ~isempty(transform)
     if isfield(UvData,'XmlData') && numel(UvData.XmlData)>=index %use geometry calib recorded from the ImaDoc xml file as first priority
@@ -2066,12 +2057,14 @@ switch UvData.FileType{1}
     case {'civx','civdata','netcdf'};
         list_fields=get(handles.FieldName,'String');% list menu fields
         FieldName= list_fields{get(handles.FieldName,'Value')}; % selected field
+        % if get_field... is selected, the GUI get_field will be used to enter fields 
         if ~strcmp(FieldName,'get_field...')
             if get(handles.FixVelType,'Value')
                 VelTypeList=get(handles.VelType,'String');
                 VelType=VelTypeList{get(handles.VelType,'Value')};
             end
         end
+        % case of input vector field, get the scalar used for vector color
         if ~isempty(regexp(FieldName,'^vec('))
             list_code=get(handles.ColorCode,'String');% list menu fields
             index_code=get(handles.ColorCode,'Value');% selected string index
@@ -2131,7 +2124,7 @@ if isfield(ParamOut,'TimeValue')
     Field{1}.Time=ParamOut.TimeValue;% case of time obtained from get_field
 end
 Field{1}.ZIndex=z_index; %used for multiplane 3D calibration
-% end
+
 
 %% choose and read a second field FileName_1 if defined
 VelType_1=[];%default
@@ -2460,6 +2453,7 @@ if isfield(UvData.Field,'NbDim')
     NbDim=double(UvData.Field.NbDim);% deal with plane fields containing z coordinates
 end
 
+%UvData.Field=get_bounds(UvData.Field);
 
 %% get bounds and mesh (needed  to propose default options for projection objects)
 if NbDim>1
@@ -3390,7 +3384,6 @@ set(handles.uvmat,'UserData',UvData)
 function edit_vect_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------
 % 
-% UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 if isequal(get(handles.edit_vect,'Value'),1)
     test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
     test_civ1=isequal(get(handles.VelType,'BackgroundColor'),[1 1 0]);
@@ -3402,11 +3395,8 @@ if isequal(get(handles.edit_vect,'Value'),1)
     set(handles.edit_object,'Value',0)
     set(handles.CheckZoom,'Value',0)
     set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
-%     set(handles.create,'Value',0)
-%     set(handles.create,'BackgroundColor',[0 1 0])
     set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
     set(gcf,'Pointer','arrow')
-%     UvData.MouseAction='edit_vect';
 else
     set(handles.record,'Visible','off')
     set(handles.edit_vect,'BackgroundColor',[0.7 0.7 0.7])
@@ -4142,7 +4132,6 @@ end
 % --- Executes on selection change in edit_object.
 function edit_object_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 hset_object=findobj(allchild(0),'Tag','set_object');
 if get(handles.edit_object,'Value')
     set(handles.edit_object,'BackgroundColor',[1,1,0])  
@@ -4902,9 +4891,10 @@ set(handles.ListObject,'Value',1)
 %prepare display of the set_grid GUI
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-CoordList=get(handles.transform_fct,'String');
-val=get(handles.transform_fct,'Value');
-set_grid(FileName,CoordList{val});% call the set_object interface
+UvData=get(handles.uvmat,'UserData');
+% CoordList=get(handles.transform_fct,'String');
+% val=get(handles.transform_fct,'Value');
+set_grid(FileName,UvData.Field);% call the set_object interface
 
 
 %------------------------------------------------------------------------

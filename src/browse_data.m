@@ -92,9 +92,6 @@ if exist('Campaign','var')
         set(handles.CreateMirror,'String','create_mirror')
     end
     scan_campaign(handles,Campaign)
-%     SourceDir_Callback([],[], handles)
-   set(handles.edit_xml,'Visible','off')
-   set(handles.HELP,'Visible','off')
    set(handles.OK,'Visible','on')
    set(handles.Cancel,'Visible','on')
    set(handles.figure,'WindowStyle','modal')% Make% Make the GUI modal 

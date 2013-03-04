@@ -115,11 +115,11 @@ for ivar=1:numel(var_ind)
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
     Field.VarAttribute{ivar}.FieldRequest=FieldRequest;
     if strcmp(role{var_ind(ivar)},'vector_x')
-        Field.VarAttribute{ivar}.Operation=FieldNames;
+        Field.VarAttribute{ivar}.FieldName=FieldNames;
         ivar_U=ivar;
     end
     if strcmp(role{var_ind(ivar)},'vector_x_tps')
-        Field.VarAttribute{ivar}.Operation=FieldNames;
+        Field.VarAttribute{ivar}.FieldName=FieldNames;
         ivar_U_tps=ivar;
     end
 %     Field.VarAttribute{ivar}.Unit=units{var_ind(ivar)};

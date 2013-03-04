@@ -860,7 +860,7 @@ end
 %-----------------------------------------------------------------
 %project on a plane 
 % AJOUTER flux,circul,error
- function  [ProjData,errormsg] = proj_plane(FieldData, ObjectData)
+function  [ProjData,errormsg] = proj_plane(FieldData, ObjectData)
 %-----------------------------------------------------------------
 
 %% rotation angles 
@@ -1184,7 +1184,7 @@ for icell=1:length(CellInfo)
                     if isfield(CellInfo{icell},'VarIndex_warnflag')% do not project ancillary data with interp
                         FieldData=rmfield(FieldData,FieldData.ListVarName{CellInfo{icell}.VarIndex_warnflag});
                     end
-                    [VarVal,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,CellInfo{icell}.Operation,XI,YI);
+                    [VarVal,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,CellInfo{icell}.FieldName,XI,YI);
                     if isfield(CellInfo{icell},'CheckSub') && CellInfo{icell}.CheckSub && ~isempty(vector_x_proj)
                         ProjData.(ProjData.ListVarName{vector_x_proj})=ProjData.(ProjData.ListVarName{vector_x_proj})-VarVal{1};
                         ProjData.(ProjData.ListVarName{vector_y_proj})=ProjData.(ProjData.ListVarName{vector_y_proj})-VarVal{2};
@@ -1220,7 +1220,7 @@ for icell=1:length(CellInfo)
                 [XI,YI]=meshgrid(coord_x_proj,coord_y_proj');
                 XI=XI+ObjectData.Coord(1,1);
                 YI=YI+ObjectData.Coord(1,2);
-                [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbSites,SubRange,FieldVar,CellInfo{icell}.Operation,cat(3,XI,YI));   
+                [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbSites,SubRange,FieldVar,CellInfo{icell}.FieldName,cat(3,XI,YI));   
                 ListFieldProj=(fieldnames(DataOut))';
                 VarDimName=cell(size(ListFieldProj));
                 for ilist=1:numel(ListFieldProj)% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
