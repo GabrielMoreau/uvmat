@@ -255,14 +255,14 @@ if isfield (Param,'Civ2')
         par_civ2.Grid(:,1)=reshape(GridX,[],1);
         par_civ2.Grid(:,2)=reshape(GridY,[],1);
     end
-    Shiftx=zeros(size(par_civ2.Grid,1));% shift expected from civ1 data
-    Shifty=zeros(size(par_civ2.Grid,1));
-    nbval=zeros(size(par_civ2.Grid,1));
+    Shiftx=zeros(size(par_civ2.Grid,1),1);% shift expected from civ1 data
+    Shifty=zeros(size(par_civ2.Grid,1),1);
+    nbval=zeros(size(par_civ2.Grid,1),1);
     if par_civ2.CheckDeformation
-        DUDX=zeros(size(par_civ2.Grid,1));
-        DUDY=zeros(size(par_civ2.Grid,1));
-        DVDX=zeros(size(par_civ2.Grid,1));
-        DVDY=zeros(size(par_civ2.Grid,1));
+        DUDX=zeros(size(par_civ2.Grid,1),1);
+        DUDY=zeros(size(par_civ2.Grid,1),1);
+        DVDX=zeros(size(par_civ2.Grid,1),1);
+        DVDY=zeros(size(par_civ2.Grid,1),1);
     end
     NbSubDomain=size(Data.Civ1_SubRange,3);
     % get the guess from patch1
