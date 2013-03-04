@@ -82,7 +82,7 @@ if ~isfield(Param,'InputFields')
     Param.InputFields.FieldName='';
 end
 
-%% root input file(s) and type
+%% root input file type
 RootPath=Param.InputTable(:,1);
 RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
@@ -220,8 +220,12 @@ for i_slice=1:NbSlice
             
             %% check whether tps is needed, then calculate tps coefficients if needed
             check_tps=0;
-            if ischar(Param.InputFields.FieldName)
-                Param.InputFields.FieldName={Param.InputFields.FieldName};
+            if isfield(Param.InputFields,'FieldName')
+                if ischar(Param.InputFields.FieldName)
+                    Param.InputFields.FieldName={Param.InputFields.FieldName};
+                end
+            else
+                Param.InputFields.FieldName={};
             end
             for ilist=1:numel(Param.InputFields.FieldName)
                 switch Param.InputFields.FieldName{ilist}
