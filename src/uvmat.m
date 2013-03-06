@@ -2463,10 +2463,10 @@ if NbDim>1
     for ind=1:numel(imax)
         if strcmp(CellInfo{imax(ind)}.CoordType,'tps')
             CoordName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex};% X,Y coordinates in a single variable
-            CoordMax(ind,NbDim)=max(UvData.Field.(CoordName)(1:end-3,1,:));
-            CoordMax(ind,NbDim-1)=max(UvData.Field.(CoordName)(1:end-3,2,:));
-            CoordMin(ind,NbDim)=min(UvData.Field.(CoordName)(1:end-3,1,:));
-            CoordMin(ind,NbDim-1)=min(UvData.Field.(CoordName)(1:end-3,2,:));
+            CoordMax(ind,NbDim)=max(max(UvData.Field.(CoordName)(1:end-3,1,:),[],1),[],3);% max of x component (2D case)
+            CoordMax(ind,NbDim-1)=max(max(UvData.Field.(CoordName)(1:end-3,2,:),[],1),[],3);% max of y component (2D case)
+            CoordMin(ind,NbDim)=min(min(UvData.Field.(CoordName)(1:end-3,1,:),[],1),[],3);
+            CoordMin(ind,NbDim-1)=min(min(UvData.Field.(CoordName)(1:end-3,2,:),[],1),[],3);% min of y component (2D case)
         else
             XName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end)};
             YName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end-1)};

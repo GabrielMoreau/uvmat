@@ -92,7 +92,7 @@ for ivar=1:length(var_ind)
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
     Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
     if strcmp(role{var_ind(ivar)},'vector_x')
-        Field.VarAttribute{ivar}.Operation=FieldNames;
+        Field.VarAttribute{ivar}.FieldName=FieldNames;
         if testinterp
             Field.VarAttribute{ivar}.FieldRequest='interp_lin';
         end
@@ -212,7 +212,7 @@ if ischar(FieldNames), FieldNames={FieldNames}; end;
 %% select the priority order for automatic vel_type selection
 testder=0;
 for ilist=1:length(FieldNames)
-        testder=~isempty(regexp(FieldNames{ilist},'(^curl|^div|strain)', 'once'));%test need for derivatives
+        testder=~isempty(regexp(FieldNames{ilist},'(^curl|^div|^strain)', 'once'));%test need for derivatives
         if testder, break;end
 end      
 if isempty(vel_type) || isequal(vel_type,'*') %undefined velocity type (civ1,civ2...)
