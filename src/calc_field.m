@@ -1,4 +1,5 @@
-%'calc_field': defines fields (velocity, vort, div...) from civx data (old conventions) and calculate them.
+%'calc_field': defines fields (velocity, vort, div...) OBSOLETE: fusionner
+%avec calc_field_interp et calc_field_tps
 %---------------------------------------------------------------------
 % [DataOut,errormsg]=calc_field(FieldList,DataIn,Coord_interp)
 %
@@ -43,8 +44,8 @@ FieldOptions={'vec(U,V)';...%image correlation corresponding to a vel vector
     'strain(U,V)';...%rate of strain
     'U';... %u velocity component
     'V';... %v velocity component
-    'w';... %w velocity component
-    'w_normal';... %w velocity component normal to the plane
+    'W';... %w velocity component
+    'W_normal';... %w velocity component normal to the plane
     'error'}; %error associated to a vector (for stereo or patch)
 ColorList={'C';...%image correlation corresponding to a vel vector
     'norm(U,V)';...%norm of the velocity

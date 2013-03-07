@@ -1,7 +1,7 @@
 %'read_civdata': reads new civ data from netcdf files
 %------------------------------------------------------------------
 %
-% function [Field,VelTypeOut]=read_civxdata(filename,FieldNames,VelType)
+% function [Field,VelTypeOut]=read_civdata(filename,FieldNames,VelType)
 %
 % OUTPUT:
 % Field: structure representing the selected field, containing
@@ -25,8 +25,6 @@
 %                    .F: warning flags
 %                    .FF: error flag, =0 for good vectors
 %                     .C: scalar associated with velocity (used for vector colors)
-%                    .DijU; matrix of spatial derivatives (DijU(1,1,:)=DUDX,
-%                        DijU(1,2,:)=DUDY, Dij(2,1,:)=DVDX, DijU(2,2,:)=DVDY
 %
 % VelTypeOut: velocity type corresponding to the selected field: ='civ1','interp1','interp2','civ2'....
 %

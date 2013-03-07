@@ -6,7 +6,6 @@
 % Field: matlab structure representing the field
 % ParamOut: structure representing parameters:
 %        .FieldName; field name
-%        .FieldList: menu of possible fields
 %        .VelType
 %        .CivStage: stage of civx processing (=0, not Civx, =1 (civ1), =2  (fix1)....     
 %        .Npx,.Npy: for images, nbre of pixels in x and y
@@ -130,13 +129,12 @@ end
 %% case of image
 if ~isempty(A)
     if isstruct(ParamOut)
-    ParamOut.FieldName='image';
-    ParamOut.FieldList={'image'};
+        ParamOut.FieldName='image';
     end
     Npz=1;%default
     npxy=size(A);
-%     Rangx=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
-%     Rangy=[npxy(1)-0.5 0.5]; %
+    %     Rangx=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
+    %     Rangy=[npxy(1)-0.5 0.5]; %
     Field.NbDim=2;%default
     Field.AName='image';
     Field.ListVarName={'AY','AX','A'}; %
@@ -146,8 +144,8 @@ if ~isempty(A)
             Field.AY=[npxy(1)-0.5 0.5];
             Field.AX=[0.5 npxy(2)-0.5]; % coordinates of the first and last pixel centers
             if isstruct(ParamOut)
-            ParamOut.Npx=npxy(2);% display image size on the interface
-            ParamOut.Npy=npxy(1);
+                ParamOut.Npx=npxy(2);% display image size on the interface
+                ParamOut.Npy=npxy(1);
             end
             Field.VarAttribute{3}.Mesh=1;
         else
@@ -158,9 +156,9 @@ if ~isempty(A)
             Field.AY=[npxy(2)-0.5 0.5];
             Field.AX=[0.5 npxy(3)-0.5]; % coordinates of the first and last pixel centers
             if isstruct(ParamOut)
-            ParamOut.Npx=npxy(3);% display image size on the interface
-            ParamOut.Npy=npxy(2);
-             end
+                ParamOut.Npx=npxy(3);% display image size on the interface
+                ParamOut.Npy=npxy(2);
+            end
             Field.VarAttribute{4}.Mesh=1;
         end
     else

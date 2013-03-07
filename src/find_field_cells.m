@@ -204,10 +204,10 @@ ivar_remain=find(~check_select);% indices of remaining variables, not already ta
 ListVarName=Data.ListVarName(~check_select);%list of remaining variables
 VarDimName=Data.VarDimName(~check_select);%dimensions of remaining variables
 check_coord_select= cellfun(@numel,VarDimName)==1|cellfun(@ischar,VarDimName)==1;% find remaining variables with a single dimension
-check_coord(~check_select)=check_coord_select;
-ListCoordIndex=ivar_remain(check_coord);% indices of remaining variables with a single dimension
-ListCoordName=Data.ListVarName(ListCoordIndex);% corresponding names of remaining variables with a single dimension
-ListDimName=Data.VarDimName(ListCoordIndex);% dimension names of remaining variables with a single dimension
+%check_coord(~check_select)=check_coord_select;
+ListCoordIndex=ivar_remain(check_coord_select);% indices of remaining variables with a single dimension
+ListCoordName=ListVarName(check_coord_select);% corresponding names of remaining variables with a single dimension
+ListDimName=VarDimName(check_coord_select);% dimension names of remaining variables with a single dimension
 
 %remove redondant variables -> keep only one variable per dimension
 check_keep=logical(ones(size(ListDimName)));
@@ -221,7 +221,7 @@ for idim=1:numel(ListDimName)
         end
     end
 end
-ListCoordIndex=ListCoordIndex(check_keep);% list of coordinate variable indices
+ListCoordIndex=ListCoordIndex(check_coord_select);% list of coordinate variable indices
 ListCoordName=ListCoordName(check_keep);% list of coordinate variable names
 ListDimName=ListDimName(check_keep);% list of coordinate dimension names
 

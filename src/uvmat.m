@@ -1024,6 +1024,10 @@ switch FileType
         [FieldList,ColorList]=calc_field;
         set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
         set(handles_Fields,'Value',2) % set menu to 'velocity
+        if index==1
+            set(handles.FieldName_1,'Value',1);
+            set(handles.FieldName_1,'String',[{''};{'image'};FieldList;{'get_field...'}]);%standard menu for civx data reproduced for the second field
+        end
         set(handles.ColorScalar,'Value',1)
         set(handles.ColorScalar,'String',ColorList)
         set(handles.Vectors,'Visible','on')
@@ -2137,7 +2141,7 @@ if ~isempty(FileName_1)
         errormsg=['second file ' FileName_1 ' does not exist'];
         return
     end
-    Name=FileName_1;
+   % Name=FileName_1;
     switch UvData.FileType{2}
         case {'civx','civdata','netcdf'};
             list_fields=get(handles.FieldName_1,'String');% list menu fields
@@ -2187,7 +2191,7 @@ if ~isempty(FileName_1)
     end
     test_keepdata_1=0;% test for keeping the previous stored data if the input files are unchanged
     if ~isequal(NomType_1,'*')&& isfield(UvData,'FileName_1')
-           test_keepdata_1= strcmp(FileName_1,UvData.FileName_1) ;%&& strcmp(FieldName_1,UvData.FieldName_1);
+           test_keepdata_1= strcmp(FileName_1,UvData.FileName_1) ;
     end
     if test_keepdata_1
         Field{2}=UvData.Field_1;% keep the stored field
@@ -2198,7 +2202,7 @@ if ~isempty(FileName_1)
         ParamIn_1.VelType=VelType_1;
         ParamIn_1.GUIName='get_field_1';
         end  
-        [Field{2},ParamOut_1,errormsg] = read_field(Name,UvData.FileType{2},ParamIn_1,frame_index_1);
+        [Field{2},ParamOut_1,errormsg] = read_field(FileName_1,UvData.FileType{2},ParamIn_1,frame_index_1);
         if ~isempty(errormsg)
             errormsg=['error in reading ' FieldName_1 ' in ' FileName_1 ': ' errormsg];
             return
@@ -2255,10 +2259,10 @@ end
 %% update the display menu for the second velocity type (second menuline)
 test_veltype_1=0;
 if isempty(FileName_1)
-%     set(handles.FieldName_1,'Value',1); %update the field menu
-%     if isstruct(ParamOut)
-%     set(handles.FieldName_1,'String',[{''};ParamOut.FieldList]); %update the field menu
-%     end
+    %     set(handles.FieldName_1,'Value',1); %update the field menu
+    %     if isstruct(ParamOut)
+    %     set(handles.FieldName_1,'String',[{''};ParamOut.FieldList]); %update the field menu
+    %     end
 elseif ~test_keepdata_1
     if (~strcmp(UvData.FileType{2},'netcdf')&&~strcmp(UvData.FileType{2},'civdata')&&~strcmp(UvData.FileType{2},'civx'))|| isequal(FieldName_1,'get_field...')
         set(handles.VelType_1,'Visible','off')
@@ -2272,17 +2276,19 @@ elseif ~test_keepdata_1
     end
     % update the second field menu: the same quantity
     if isstruct(ParamOut_1)
-    set(handles.FieldName_1,'String',[{''};ParamOut_1.FieldList]); %update the field menu
-    % display the FieldName menu from the input file and pick the selected one: 
-    field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
-    set(handles.FieldName_1,'Value',find(field_index,1)+1)  
+%        set(handles.FieldName_1,'String',[{''};ParamOut_1.FieldList]); %update the field menu
+        % display the FieldName menu from the input file and pick the selected one:
+        FieldList=get(handles.FieldName_1,'String');
+        field_index=strcmp(ParamOut_1.FieldName,FieldList);
+        if ~isempty(field_index)
+            set(handles.FieldName_1,'Value',find(field_index,1))
+        end
     end
-    
 end
 if test_veltype||test_veltype_1
-     set(handles.FixVelType,'Visible','on')
+    set(handles.FixVelType,'Visible','on')
 else
-     set(handles.FixVelType,'Visible','off')
+    set(handles.FixVelType,'Visible','off')
 end
 
 % field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
@@ -2962,6 +2968,13 @@ if get(handles.SubField,'Value')==0% if the subfield button is desactivated
     set(handles.FieldName_1,'Value',1);%set to blank state
     set(handles.VelType_1,'Value',1);%set to blank state
     set(handles.num_Opacity,'String','')% desactivate opacity setting
+    FieldList=get(handles.FieldName,'String');
+    if numel(FieldList)>1   % if a choice of fields exists
+        set(handles.FieldName_1,'Value',1)% set second field choice to blank
+        set(handles.FieldName_1,'String',[{''};FieldList])% reproduce the menu FieldName plus a blank option
+    else
+        set(handles.FieldName_1,'String',{''})% set second field choice to blank
+    end
     if ~strcmp(get(handles.VelType,'Visible'),'on')
         set(handles.VelType_1,'Visible','off')
     end
@@ -3193,10 +3206,20 @@ switch field_1
             display_file_name(handles,imagename,2)%display the imag
         end
     otherwise
-        if check_new
-            UvData.FileType{2}=UvData.FileType{1};
+        check_refresh=1;
+        if check_new% if a second field was not previously entered, we just read another field in the first input file
             set(handles.FileIndex_1,'String',get(handles.FileIndex,'String'))
             set(handles.FileExt_1,'String',get(handles.FileExt,'String'))
+            
+            UvData.FileType{2}=UvData.FileType{1};
+            UvData.XmlData{2}= UvData.XmlData{1};
+            transform=get(handles.path_transform,'UserData');
+             if (~isa(transform,'function_handle')||nargin(transform)<3)
+                set(handles.uvmat,'UserData',UvData)
+                set(handles.transform_fct,'value',2); % set transform fct to 'sub_field' if the current fct does not accept two input fields
+                transform_fct_Callback(hObject, eventdata, handles)% activate transform_fct_Callback and refresh current plot
+                 check_refresh=0;
+             end             
         end
         if ~isequal(field,'image')
             set(handles.TitleNpxy,'Visible','off')% visible npx,pxcm... buttons
@@ -3204,7 +3227,8 @@ switch field_1
             set(handles.num_Npy,'Visible','off')
         end
         set(handles.uvmat,'UserData',UvData)
-        if ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
+ 
+        if check_refresh && ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
             run0_Callback(hObject, eventdata, handles)
         end
 end
@@ -3279,10 +3303,10 @@ check_refresh=0;
 if isempty(InputFile.VelType_1)
         FileName_1='';% we plot the first input field without the second field
         set(handles.SubField,'Value',0)
-        SubField_Callback(hObject, eventdata, handles)% activate SubField_Callback and refresh current display, removing the second field
+        SubField_Callback(hObject, eventdata, handles)% activate SubField_Callback and refresh current plot, removing the second field
 elseif get(handles.SubField,'Value')% if subfield is already 'on'
      FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];% name of the second input file
-     check_refresh=1;%will refresh the current display
+     check_refresh=1;%will refresh the current plot
 else% we introduce the same file (with a different field) for the second series
      FileName_1=FileName;% we compare two fields in the same file 
      UvData.FileType{2}=UvData.FileType{1};
@@ -3290,14 +3314,15 @@ else% we introduce the same file (with a different field) for the second series
      set(handles.SubField,'Value',1)
      transform=get(handles.path_transform,'UserData');
      if (~isa(transform,'function_handle')||nargin(transform)<3)
-        set(handles.transform_fct,'value',2); % set transform to sub_field if the current fct doe not accept two input fields
-        transform_fct_Callback(hObject, eventdata, handles)% activate transform_fct_Callback and refresh current display
+        set(handles.uvmat,'UserData',UvData)
+        set(handles.transform_fct,'value',2); % set transform fct to 'sub_field' if the current fct does not accept two input fields
+        transform_fct_Callback(hObject, eventdata, handles)% activate transform_fct_Callback and refresh current plot
      else
          check_refresh=1;
      end  
 end
 
-% refresh the current display if it has not been done previously
+% refresh the current plot if it has not been done previously
 if check_refresh
     UvData.FileName_1='';% desactivate the use of a constant second file
     set(handles.uvmat,'UserData',UvData)
@@ -3320,9 +3345,11 @@ if check_refresh
     set(handles.run0,'BackgroundColor',[1 0 0])
 end
 
-%-----------------------------------------------
+
+%-----------------------------------------------------------------------
 % --- reset civ buttons
 function reset_vel_type(handles_civ0,handle1)
+%-----------------------------------------------------------------------
 for ibutton=1:length(handles_civ0)
     set(handles_civ0(ibutton),'BackgroundColor',[0.831 0.816 0.784])
     set(handles_civ0(ibutton),'Value',0)
@@ -3331,10 +3358,10 @@ if exist('handle1','var')%handles of selected button
 	set(handle1,'BackgroundColor',[1 1 0])  
 end
 
-%-------------------------------------------------------
+%-----------------------------------------------------------------------
 % --- Executes on button press in MENUVOLUME.
-%-------------------------------------------------------
 function VOLUME_Callback(hObject, eventdata, handles)
+%-----------------------------------------------------------------------
 %errordlg('command VOL not implemented yet')
 if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)

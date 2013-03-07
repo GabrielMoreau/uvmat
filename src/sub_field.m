@@ -104,7 +104,7 @@ for ilist=1:numel(Field_1.VarDimName)
     end
 end
 
-%look for coordinates common to Field in Field_1
+%% look for coordinates common to Field in Field_1
 ind_remove=zeros(size(Field_1.ListVarName));
 for ilist=1:numel(Field_1.ListVarName)
     if ischar(Field_1.VarDimName{ilist})||numel(Field_1.VarDimName{ilist})==1
@@ -120,7 +120,7 @@ for ilist=1:numel(Field_1.ListVarName)
                if ischar(NewDim)
                    NewDim={NewDim};
                end
-               Field_1.VarDimName=regexprep_r(Field_1.VarDimName,OldDim{1},NewDim{1});
+               Field_1.VarDimName=regexprep_r(Field_1.VarDimName,['^' OldDim{1} '$'],NewDim{1});
             end
         end
     end
@@ -129,7 +129,7 @@ Field_1.ListVarName(find(ind_remove))=[];%removes these redondent coordinates
 Field_1.VarDimName(find(ind_remove))=[];
 Field_1.VarAttribute(find(ind_remove))=[];
 
-%append the other variables of the second field, modifying their name if needed
+%% append the other variables of the second field, modifying their name if needed
 for ilist=1:numel(Field_1.ListVarName)
     VarName=Field_1.ListVarName{ilist};
     ind_prev=find(strcmp(VarName,Field.ListVarName));
@@ -137,6 +137,9 @@ for ilist=1:numel(Field_1.ListVarName)
         VarNameNew=VarName;
     else  % variable name exists in Field     
             VarNameNew=[VarName '_1'];   
+            if isfield(Field_1.VarAttribute{ilist},'FieldName')
+                Field_1.VarAttribute{ilist}.FieldName=regexprep_r(Field_1.VarAttribute{ilist}.FieldName,VarName,VarNameNew);
+            end
     end
         SubData.ListVarName=[SubData.ListVarName {VarNameNew}];
         SubData.VarDimName=[SubData.VarDimName Field_1.VarDimName(ilist)];
@@ -145,11 +148,9 @@ for ilist=1:numel(Field_1.ListVarName)
         SubData.VarAttribute{end}.CheckSub=1;% mark that the field needs to be substracted
 end
 
-%append the other variables of the second field, modifying their name if needed
-
 %% substrat fields when possible
 %[CellVarIndex,NbDim,CellVarType,errormsg]=find_field_cells(SubData);
-[CellInfo,NbDim,errormsg]=find_field_cells(SubData)
+[CellInfo,NbDim,errormsg]=find_field_cells(SubData);
 ind_remove=zeros(size(SubData.ListVarName));
 ivar=[];
 ivar_1=[];
@@ -178,10 +179,11 @@ end
 SubData.ListVarName(find(ind_remove))=[];
 SubData.VarDimName(find(ind_remove))=[];
 SubData.VarAttribute(find(ind_remove))=[];
+%end
 
-function OutputCell=regexprep_r(InputCell,dimname,dimname_new)
+function OutputCell=regexprep_r(InputCell,search_string,new_string)
 for icell=1:numel(InputCell)
-    OutputCell{icell}=regexprep(InputCell{icell},['^' dimname '$'],dimname_new);
+    OutputCell{icell}=regexprep(InputCell{icell},search_string,new_string);
 end
         
     
