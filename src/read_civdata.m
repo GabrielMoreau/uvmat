@@ -61,21 +61,21 @@ if ~exist('FieldNames','var')
 end
 errormsg='';
 if ischar(FieldNames), FieldNames={FieldNames}; end;
-FieldRequest='';
+ProjModeRequest='';
 for ilist=1:length(FieldNames)
     if ~isempty(FieldNames{ilist})
         switch FieldNames{ilist}
             case{'U','V','norm(U,V)'}
-                FieldRequest='interp_lin';
+                ProjModeRequest='interp_lin';
             case {'curl(U,V)','div(U,V)','strain(U,V)'}
-                FieldRequest='interp_tps';
+                ProjModeRequest='interp_tps';
         end
     end
 end
 
 %% reading data
 Data=nc2struct(filename,'ListGlobalAttribute','CivStage');
-[varlist,role,VelTypeOut]=varcivx_generator(FieldRequest,VelType,Data.CivStage);
+[varlist,role,VelTypeOut]=varcivx_generator(ProjModeRequest,VelType,Data.CivStage);
 if isempty(varlist)
     erromsg=['error in read_civdata: unknow velocity type ' VelType];
     return
@@ -108,27 +108,41 @@ switch VelTypeOut
 end
 Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'Dt','Time'}];
 ivar_U_tps=[];
+ivar_V_tps=[];
 var_ind=find(vardetect);
 for ivar=1:numel(var_ind)
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
-    Field.VarAttribute{ivar}.FieldRequest=FieldRequest;
     if strcmp(role{var_ind(ivar)},'vector_x')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
+        Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
         ivar_U=ivar;
     end
     if strcmp(role{var_ind(ivar)},'vector_x_tps')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
+        Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
         ivar_U_tps=ivar;
     end
-%     Field.VarAttribute{ivar}.Unit=units{var_ind(ivar)};
+    if strcmp(role{var_ind(ivar)},'vector_y')
+        Field.VarAttribute{ivar}.FieldName=FieldNames;
+        Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
+        ivar_V=ivar;
+    end
+    if strcmp(role{var_ind(ivar)},'vector_y_tps')
+        Field.VarAttribute{ivar}.FieldName=FieldNames;
+        Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
+        ivar_V_tps=ivar;
+    end
     Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
 end
 if ~isempty(ivar_U_tps)
     Field.VarAttribute{ivar_U}.VarIndex_tps=ivar_U_tps;
 end
+if ~isempty(ivar_V_tps)
+    Field.VarAttribute{ivar_V}.VarIndex_tps=ivar_V_tps;
+end
 
+%% update list of global attributes
 Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'NbCoord','NbDim','TimeUnit','CoordUnit'}];
-% %% update list of global attributes
 Field.NbCoord=2;
 Field.NbDim=2;
 Field.TimeUnit='s';
@@ -145,7 +159,7 @@ Field.CoordUnit='pixel';
 % vel_type: character string indicating the types of velocity fields to read ('civ1','civ2'...)
 %            if vel_type=[] or'*', a  priority choice is done, civ2 considered better than civ1 )
 
-function [var,role,vel_type_out,errormsg]=varcivx_generator(FieldRequest,vel_type,CivStage) 
+function [var,role,vel_type_out,errormsg]=varcivx_generator(ProjModeRequest,vel_type,CivStage) 
 
 %% default input values
 if ~exist('vel_type','var'),vel_type='';end;
@@ -153,9 +167,9 @@ if iscell(vel_type),vel_type=vel_type{1}; end;%transform cell to string if neede
 errormsg='';
 
 %% select the priority order for automatic vel_type selection
-if strcmp(vel_type,'civ2') && strcmp(FieldRequest,'derivatives')
+if strcmp(vel_type,'civ2') && strcmp(ProjModeRequest,'derivatives')
     vel_type='filter2';
-elseif strcmp(vel_type,'civ1') && strcmp(FieldRequest,'derivatives')
+elseif strcmp(vel_type,'civ1') && strcmp(ProjModeRequest,'derivatives')
     vel_type='filter1';
 end
 if isempty(vel_type)||strcmp(vel_type,'*')
@@ -163,7 +177,7 @@ if isempty(vel_type)||strcmp(vel_type,'*')
         case {6} %filter2 available
             vel_type='filter2';
         case {4,5}% civ2 available but not filter2
-            if strcmp(FieldRequest,'derivatives')% derivatives needed
+            if strcmp(ProjModeRequest,'derivatives')% derivatives needed
                 vel_type='filter1';
             else
                 vel_type='civ2';
@@ -202,7 +216,7 @@ switch vel_type
             'vector_y_tps','vector_z_tps','ancillary','ancillary'};
        % units={'pixel','pixel','pixel','pixel','pixel','pixel','','','','pixel','pixel','pixel','pixel','pixel',''};
 end
-if ~strcmp(FieldRequest,'interp_tps')
+if ~strcmp(ProjModeRequest,'interp_tps')
     var=var(:,1:9);%suppress tps if not needed
 end
 vel_type_out=vel_type;

@@ -6,7 +6,7 @@
 %
 %INPUT:
 % title: string indicating the type of message box:
-%          title= 'INPUT_TXT','CONFIMATION' ,'ERROR', 'WARNING', 'INPUT_Y-N', default = 'INPUT_TXT' (the title is displayed in the upper bar of the fig). 
+%          title= 'INPUT_TXT','CONFIMATION' ,'ERROR', 'WARNING', 'INPUT_Y-N','INPUT_MENU' default = 'INPUT_TXT' (the title is displayed in the upper bar of the fig). 
 %          if title='INPUT_TXT', input data is asked in an edit box
 %          if title='CONFIMATION'', 'ERROR', 'WARNING', the figure remains  opened until a button 'OK' is pressed
 %          if title='INPUT_Y-N', an answer Yes/No is requested
@@ -36,8 +36,10 @@ else
 end
 % End initialization code - DO NOT EDIT
 
+%------------------------------------------------------------------------
 % --- Executes just before msgbox_uvmat is made visible.
 function msgbox_uvmat_OpeningFcn(hObject, eventdata, handles,title,display_str,default_answer,Position)
+%------------------------------------------------------------------------
 % This function has no output args, see OutputFcn.
 
 % Choose default command line output for msgbox_uvmat
@@ -88,6 +90,9 @@ if exist('title','var')
         case 'INPUT_TXT'
             testinputstring=1;
             testCancel=1; %no cancel button
+        case 'INPUT_MENU'
+            testinputstring=2;
+            testCancel=1; %no cancel button
         otherwise
           %  testinputstring=1;
             icontype='';
@@ -97,39 +102,37 @@ end
 if exist('display_str','var')
     set(handles.text1, 'String', display_str);
 end
-% if testinputstring
-%     set(handles.edit_box, 'Visible', 'on');
-% else
-%     set(handles.text1, 'Position', [0.15 0.3 0.85 0.7]);
-% end
-if testinputstring
-    % set(handles.figure1,'Position',[40,80,20*length(default_answer),50])
+
+if testinputstring==1
     set(handles.edit_box, 'Visible', 'on');
     if ~exist('default_answer','var');
         default_answer='';
     end
     set(handles.edit_box, 'String', default_answer);
     if exist('Position','var')
-    if iscell(default_answer)
-        widthstring=max(max(cellfun('length',default_answer)),length(display_str));
-        heightstring=size(default_answer,1);%nbre of expected lines
-        set(handles.edit_box,'Max',2);
-    else
-        widthstring=max(length(default_answer),length(display_str));
-        heightstring=1;
+        if iscell(default_answer)
+            widthstring=max(max(cellfun('length',default_answer)),length(display_str));
+            heightstring=size(default_answer,1);%nbre of expected lines
+            set(handles.edit_box,'Max',2);
+        else
+            widthstring=max(length(default_answer),length(display_str));
+            heightstring=1;
+        end
+        widthstring=max(widthstring,length(title)+20);
+        boxsize=[10*widthstring 20*heightstring];%size of the display edit box
+        set(handles.edit_box,'Units','pixels')
+        set(handles.edit_box,'FontUnits','pixels')
+        set(handles.edit_box,'FontSize',12)
+        set(handles.edit_box,'Position',[5,34,boxsize(1),boxsize(2)])
+        FigPos(3)=10+boxsize(1);
+        FigPos(4)=56+boxsize(2);
+        FigPos(2)=Position(2)-FigPos(4)-25;
+        set(handles.figure1,'Position',FigPos)
     end
-    widthstring=max(widthstring,length(title)+20);
-    boxsize=[10*widthstring 20*heightstring];%size of the display edit box 
-    set(handles.edit_box,'Units','pixels')
-    set(handles.edit_box,'FontUnits','pixels')
-    set(handles.edit_box,'FontSize',12)  
-   set(handles.edit_box,'Position',[5,34,boxsize(1),boxsize(2)])
-   FigPos(3)=10+boxsize(1);
-   FigPos(4)=56+boxsize(2);
-   FigPos(2)=Position(2)-FigPos(4)-25;
-   set(handles.figure1,'Position',FigPos)
-    end
-%     set(handles.figure1,'Position',[40,40,20*length(default_answer),50])
+elseif testinputstring==2
+    set(handles.edit_box,'style','listbox')
+    set(handles.edit_box, 'Visible', 'on');
+    set(handles.edit_box,'String', default_answer)
 else
     set(handles.text1, 'Position', [0.15 0.3 0.85 0.7]);
 end
@@ -188,9 +191,10 @@ set(handles.figure1,'WindowStyle','modal')% Make% Make the GUI modal
 % UIWAIT makes msgbox_uvmat wait for user response (see UIRESUME)
 uiwait(handles.figure1);
 
-
+%------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = msgbox_uvmat_OutputFcn(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 
 % Get default command line output from handles structure
 if isfield(handles,'output')
@@ -199,29 +203,39 @@ if isfield(handles,'output')
     elseif isequal(handles.output,'No')
         varargout{1}='No';
     else
+        if strcmp(get(handles.edit_box,'Style'),'listbox')
+             varargout{1}=get(handles.edit_box,'Value');
+        else
         varargout{1}=get(handles.edit_box,'String');
-        if isempty(varargout{1}) || isequal(varargout{1},'')
+        end
+        if isempty(varargout{1}) 
             varargout{1}='Yes';
         end
     end
     % The figure can be deleted now
 end
  delete(handles.figure1);
- 
+
+%------------------------------------------------------------------------ 
 % --- Executes on button press in OK.
 function OK_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 handles.output = get(hObject,'String');
 guidata(hObject, handles);% Update handles structure
 uiresume(handles.figure1);
 
+%------------------------------------------------------------------------
 % --- Executes on button press in No.
 function No_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 handles.output='No';
 guidata(hObject, handles);
 uiresume(handles.figure1);
 
+%------------------------------------------------------------------------
 % --- Executes on button press in Cancel.
 function Cancel_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 handles.output = get(hObject,'String');
 %handles.output = 'Cancel'
 guidata(hObject, handles); % Update handles structure
@@ -229,9 +243,10 @@ guidata(hObject, handles); % Update handles structure
 % to get the updated handles structure.
 uiresume(handles.figure1);
 
-
+%------------------------------------------------------------------------
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 if isequal(get(handles.figure1, 'waitstatus'), 'waiting')
     % The GUI is still in UIWAIT, us UIRESUME
     uiresume(handles.figure1);
@@ -240,8 +255,10 @@ else
     delete(handles.figure1);
 end
 
+%------------------------------------------------------------------------
 % --- Executes on key press over figure1 with no controls selected.
 function figure1_KeyPressFcn(hObject, eventdata, handles)
+%------------------------------------------------------------------------
 % Check for "enter" or "escape"
 if isequal(get(hObject,'CurrentKey'),'escape')
     % User said no by hitting escape

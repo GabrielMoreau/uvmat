@@ -141,7 +141,7 @@ if isequal(ObjectData.ProjMode,'projection')
         errormsg='projection range around points needed';
         return
     end
-elseif  ~isequal(ObjectData.ProjMode,'interp')
+elseif  ~isequal(ObjectData.ProjMode,'interp_lin')
     errormsg=(['ProjMode option ' ObjectData.ProjMode ' not available in proj_field']);
         return
 end
@@ -222,7 +222,7 @@ for icell=1:length(CellInfo)
                else
                     Var=FieldData.(VarName)(indsel);
                     ProjData.(VarName)(ipoint,1)=mean(Var);
-                    if isequal(ObjectData.ProjMode,'interp')
+                    if isequal(ObjectData.ProjMode,'interp_lin')
                          ProjData.(VarName)(ipoint,1)=griddata_uvmat(coord_x(indsel),coord_y(indsel),Var,Xpoint(1),Xpoint(2));
                     end
                end
@@ -523,9 +523,9 @@ dlinx=diff(ObjectData.Coord(:,1));
 dliny=diff(ObjectData.Coord(:,2));
 theta=angle(dlinx+1i*dliny);%angle of each segment
 theta(siz_line(1))=theta(siz_line(1)-1);
-% determine a rectangles at +-width from the line (only used for the ProjMode='projection or 'filter')
+% determine a rectangles at +-width from the line (only used for the ProjMode='projection or 'interp_tps')
 xsup=zeros(1,siz_line(1)); xinf=zeros(1,siz_line(1)); ysup=zeros(1,siz_line(1)); yinf=zeros(1,siz_line(1));
-if isequal(ProjMode,'projection') || isequal(ProjMode,'filter')
+if isequal(ProjMode,'projection') || isequal(ProjMode,'interp_tps')
     xsup(1)=ObjectData.Coord(1,1)-width*sin(theta(1));
     xinf(1)=ObjectData.Coord(1,1)+width*sin(theta(1));
     ysup(1)=ObjectData.Coord(1,2)+width*cos(theta(1));
@@ -579,12 +579,12 @@ for icell=1:length(CellInfo)
     end   
     % check needed object properties for unstructured positions (position given by the variables with role coord_x, coord_y
     if strcmp(CellInfo{icell}.CoordType,'scattered')
-        if  ~isequal(ProjMode,'interp')
+        if  ~isequal(ProjMode,'interp_lin')
             if width==0
                 errormsg='range of the projection object is missing';
                 return      
             else
-                lambda=2/(width*width); %smoothing factor used for filter: weight exp(-2) at distance width from the line
+                lambda=2/(width*width); %smoothing factor used for interp_tps: weight exp(-2) at distance width from the line
             end
         end
         if ~isequal(ProjMode,'projection')
@@ -620,7 +620,7 @@ for icell=1:length(CellInfo)
             else
                 flagsel=ones(size(coord_x));
             end
-            if isequal(ProjMode,'projection') | isequal(ProjMode,'filter')
+            if isequal(ProjMode,'projection') || isequal(ProjMode,'interp_tps')
                 flagsel=flagsel & ((coord_y -yinf(ip))*(xinf(ip+1)-xinf(ip))>(coord_x-xinf(ip))*(yinf(ip+1)-yinf(ip))) ...
                 & ((coord_y -ysup(ip))*(xsup(ip+1)-xsup(ip))<(coord_x-xsup(ip))*(ysup(ip+1)-ysup(ip))) ...
                 & ((coord_y -yinf(ip+1))*(xsup(ip+1)-xinf(ip+1))>(coord_x-xinf(ip+1))*(ysup(ip+1)-yinf(ip+1))) ...
@@ -648,7 +648,7 @@ for icell=1:length(CellInfo)
                         ProjVar{ivar}=ProjVar{ivar}(indsort);
                      end
                 end
-            elseif isequal(ProjMode,'interp') %linear interpolation:
+            elseif isequal(ProjMode,'interp_lin') %linear interpolation:
                 npoint=floor(linelength/DX)+1;% nbre of points in the profile (interval DX)
                 Xproj=linelength/(2*npoint):linelength/npoint:linelength-linelength/(2*npoint);
                 xreg=cos(theta(ip))*Xproj+ObjectData.Coord(ip,1);
@@ -658,7 +658,7 @@ for icell=1:length(CellInfo)
                         ProjVar{ivar}=griddata_uvmat(X_sel,Y_sel,ProjVar{ivar},xreg,yreg);
                      end
                 end
-            elseif isequal(ProjMode,'filter') %filtering
+            elseif isequal(ProjMode,'interp_tps') %filtering
                 npoint=floor(linelength/DX)+1;% nbre of points in the profile (interval DX)
                 Xproj=linelength/(2*npoint):linelength/npoint:linelength-linelength/(2*npoint);
                 siz=size(X_sel);
@@ -982,15 +982,15 @@ check_grid=0;
 ProjMode=cell(size(CellInfo));
 for icell=1:numel(CellInfo)% TODO: recalculate coordinates here to get the bounds in the rotated coordinates
     ProjMode{icell}=ObjectData.ProjMode;
-    if isfield(CellInfo{icell},'FieldRequest')
-        switch CellInfo{icell}.FieldRequest
+    if isfield(CellInfo{icell},'ProjModeRequest')
+        switch CellInfo{icell}.ProjModeRequest
             case 'interp_lin'
-                ProjMode{icell}='interp';
+                ProjMode{icell}='interp_lin';
             case 'interp_tps'
-                ProjMode{icell}='filter';
+                ProjMode{icell}='interp_tps';
         end
     end
-    if strcmp(ProjMode{icell},'interp')||strcmp(ProjMode{icell},'filter')
+    if strcmp(ProjMode{icell},'interp_lin')||strcmp(ProjMode{icell},'interp_tps')
         check_grid=1;
     end
 end
@@ -1042,8 +1042,8 @@ for icell=1:length(CellInfo)
         
         %% case of input fields with unstructured coordinates
         case 'scattered'
-            if strcmp(ProjMode{icell},'filter')
-                continue %skip for filter (needs tps field cell)
+            if strcmp(ProjMode{icell},'interp_tps')
+                continue %skip for interp_tps (needs tps field cell)
             end
             coord_x=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)});% initial x coordinates 
             coord_y=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)});% initial y coordinates
@@ -1147,7 +1147,7 @@ for icell=1:length(CellInfo)
                             end
                         end
                     end
-                case 'interp'%interpolate data on a regular grid
+                case 'interp_lin'%interpolate data on a regular grid
                     coord_x_proj=XMin:DX:XMax;
                     coord_y_proj=YMin:DY:YMax;
                     [XI,YI]=meshgrid(coord_x_proj,coord_y_proj);
@@ -1204,11 +1204,11 @@ for icell=1:length(CellInfo)
                     end
             end
 
-            %% case of tps interpolation (applies only in filter mode and for spatial derivatives)
+            %% case of tps interpolation (applies only in interp_tps mode and for spatial derivatives)
         case 'tps'
-            if strcmp(ProjMode{icell},'filter')
+            if strcmp(ProjMode{icell},'interp_tps')
                 Coord=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex});
-                NbSites=FieldData.(FieldData.ListVarName{CellInfo{icell}.NbSite_tps});
+                NbCentres=FieldData.(FieldData.ListVarName{CellInfo{icell}.NbCentres_tps});
                 SubRange=FieldData.(FieldData.ListVarName{CellInfo{icell}.SubRange_tps});
                 if isfield(CellInfo{icell},'VarIndex_vector_x_tps')&&isfield(CellInfo{icell},'VarIndex_vector_y_tps')
                     FieldVar=cat(3,FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x_tps}),FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y_tps}));
@@ -1220,7 +1220,7 @@ for icell=1:length(CellInfo)
                 [XI,YI]=meshgrid(coord_x_proj,coord_y_proj');
                 XI=XI+ObjectData.Coord(1,1);
                 YI=YI+ObjectData.Coord(1,2);
-                [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbSites,SubRange,FieldVar,CellInfo{icell}.FieldName,cat(3,XI,YI));   
+                [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbCentres,SubRange,FieldVar,CellInfo{icell}.FieldName,cat(3,XI,YI));   
                 ListFieldProj=(fieldnames(DataOut))';
                 VarDimName=cell(size(ListFieldProj));
                 for ilist=1:numel(ListFieldProj)% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
@@ -1460,13 +1460,13 @@ for icell=1:length(CellInfo)
                     XIMA=reshape(round(XIMA),1,npX*npY);%indices reorganized in 'line'
                     YIMA=reshape(round(YIMA),1,npX*npY);
                     flagin=XIMA>=1 & XIMA<=DimValue(2) & YIMA >=1 & YIMA<=DimValue(1);%flagin=1 inside the original image
-                    if isequal(ProjMode{icell},'filter')
-                        npx_filter=ceil(abs(DX/DAX));
-                        npy_filter=ceil(abs(DY/DAY));
-                        Mfilter=ones(npy_filter,npx_filter)/(npx_filter*npy_filter);
-                        test_filter=1;
+                    if isequal(ProjMode{icell},'interp_tps')
+                        npx_interp_tps=ceil(abs(DX/DAX));
+                        npy_interp_tps=ceil(abs(DY/DAY));
+                        Minterp_tps=ones(npy_interp_tps,npx_interp_tps)/(npx_interp_tps*npy_interp_tps);
+                        test_interp_tps=1;
                     else
-                        test_filter=0;
+                        test_interp_tps=0;
                     end
                     eval(['ProjData.' AYName '=[coord_y_proj(1) coord_y_proj(end)];']) %record the new (projected ) y coordinates
                     eval(['ProjData.' AXName '=[coord_x_proj(1) coord_x_proj(end)];']) %record the new (projected ) x coordinates
@@ -1475,14 +1475,6 @@ for icell=1:length(CellInfo)
                         if test_interp(1) || test_interp(2)%interpolate on a regular grid
                             eval(['ProjData.' VarName '=interp2(Coord{2},Coord{1},FieldData.' VarName ',Coord_x,Coord_y'');']) %TO TEST
                         end
-                        %filter the field (image) if option 'filter' is used
-%                         if test_filter
-%                             Aclass=class(FieldData.A);
-%                             eval(['ProjData.' VarName '=filter2(Mfilter,FieldData.' VarName ',''valid'');'])
-%                             if ~isequal(Aclass,'double')
-%                                 eval(['ProjData.' VarName '=' Aclass '(FieldData.' VarName ');'])%revert to integer values
-%                             end
-%                         end
                         eval(['vec_A=reshape(FieldData.' VarName ',[],nbcolor);'])%put the original image in line
                         %ind_in=find(flagin);
                         ind_out=find(~flagin);
@@ -1524,7 +1516,7 @@ for icell=1:length(CellInfo)
                     end
                 else
                     errormsg='projection of structured coordinates on oblique plane not yet implemented';
-                    %TODO: use interp3
+                    %TODO: use interp_lin3
                     return
                 end
             end
@@ -1800,7 +1792,7 @@ for icell=1:length(CellVarIndex)
                     end
                 end
             end  
-        elseif isequal(ObjectData.ProjMode,'interp')||isequal(ObjectData.ProjMode,'filter')%interpolate data on a regular grid
+        elseif isequal(ObjectData.ProjMode,'interp_lin')||isequal(ObjectData.ProjMode,'interp_tps')%interpolate data on a regular grid
             coord_x_proj=XMin:DX:XMax;
             coord_y_proj=YMin:DY:YMax;
             coord_z_proj=ZMin:DZ:ZMax;
@@ -2073,13 +2065,13 @@ for icell=1:length(CellVarIndex)
                 XIMA=reshape(round(XIMA),1,npX*npY);%indices reorganized in 'line'
                 YIMA=reshape(round(YIMA),1,npX*npY);
                 flagin=XIMA>=1 & XIMA<=DimValue(2) & YIMA >=1 & YIMA<=DimValue(1);%flagin=1 inside the original image 
-                if isequal(ObjectData.ProjMode,'filter')
-                    npx_filter=ceil(abs(DX/DAX));
-                    npy_filter=ceil(abs(DY/DAY));
-                    Mfilter=ones(npy_filter,npx_filter)/(npx_filter*npy_filter);
-                    test_filter=1;
+                if isequal(ObjectData.ProjMode,'interp_tps')
+                    npx_interp_tps=ceil(abs(DX/DAX));
+                    npy_interp_tps=ceil(abs(DY/DAY));
+                    Minterp_tps=ones(npy_interp_tps,npx_interp_tps)/(npx_interp_tps*npy_interp_tps);
+                    test_interp_tps=1;
                 else
-                    test_filter=0;
+                    test_interp_tps=0;
                 end
                 eval(['ProjData.' AYName '=[coord_y_proj(1) coord_y_proj(end)];']) %record the new (projected ) y coordinates
                 eval(['ProjData.' AXName '=[coord_x_proj(1) coord_x_proj(end)];']) %record the new (projected ) x coordinates
@@ -2088,10 +2080,10 @@ for icell=1:length(CellVarIndex)
                     if test_interp(1) || test_interp(2)%interpolate on a regular grid        
                           eval(['ProjData.' VarName '=interp2(Coord{2},Coord{1},FieldData.' VarName ',Coord_x,Coord_y'');']) %TO TEST
                     end
-                    %filter the field (image) if option 'filter' is used
-                    if test_filter  
+                    %filter the field (image) if option 'interp_tps' is used
+                    if test_interp_tps  
                          Aclass=class(FieldData.A);
-                         ProjData.(VarName)=filter2(Mfilter,FieldData.(VarName),'valid');
+                         ProjData.(VarName)=interp_tps2(Minterp_tps,FieldData.(VarName),'valid');
                          if ~isequal(Aclass,'double')
                              ProjData.(VarName)=Aclass(FieldData.(VarName));%revert to integer values
                          end

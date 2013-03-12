@@ -248,7 +248,7 @@ end
 %-------------------------------------------------------------------
 function errormsg=plot_text(FieldData,CellInfo,htext)
 %-------------------------------------------------------------------
-errormsg=[];
+errormsg='';
 txt_cell={};
 Data={};
 for icell=1:length(CellInfo)
@@ -1044,7 +1044,9 @@ if test_vec
     end
     
     %decimate by a factor 2 in vector mesh(4 in nbre of vectors)
+    check_decimate=0;
     if isfield(PlotParam.Vectors,'CheckDecimate4') && PlotParam.Vectors.CheckDecimate4
+        check_decimate=1;
         diffy=diff(vec_Y); %difference dy=vec_Y(i+1)-vec_Y(i)
         dy_thresh=max(abs(diffy))/2; 
         ind_jump=find(abs(diffy) > dy_thresh); %indices with diff(vec_Y)> max/2, detect change of line
@@ -1054,6 +1056,19 @@ if test_vec
         end
         nb_sel=length(ind_sel);
         ind_sel=ind_sel(1:2:nb_sel);% take half the points on a line
+    elseif isfield(PlotParam.Vectors,'CheckDecimate16') && PlotParam.Vectors.CheckDecimate16
+        check_decimate=1;
+        diffy=diff(vec_Y); %difference dy=vec_Y(i+1)-vec_Y(i)
+        dy_thresh=max(abs(diffy))/2; 
+        ind_jump=find(abs(diffy) > dy_thresh); %indices with diff(vec_Y)> max/2, detect change of line
+        ind_sel=1:ind_jump(1);%select the first line
+        for i=2:4:length(ind_jump)-1
+            ind_sel=[ind_sel (ind_jump(i)+1:ind_jump(i+1))];% select the odd lines
+        end
+        nb_sel=length(ind_sel);
+        ind_sel=ind_sel(1:4:nb_sel);% take half the points on a line
+    end
+    if check_decimate
         vec_X=vec_X(ind_sel);
         vec_Y=vec_Y(ind_sel);
         vec_U=vec_U(ind_sel);

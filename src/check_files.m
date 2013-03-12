@@ -31,6 +31,7 @@ svn_info.rep_rev=[];
 svn_info.cur_rev=[];
 svn_info.status=[];
 list_fct={...
+    'xmltree';...%function for editing xml files (toolbox outside uvmat)
     'browse_data';...% function for scanning directories in a project/campaign
     'browse_data.fig';...% GUI corresponding to dataview
     'calc_field_interp';...% defines fields (velocity, vort, div...) from civx data and calculate them
@@ -100,11 +101,13 @@ list_fct={...
     'set_grid.fig';...% interface for set_grid
     'set_object.m';...%  edit a projection object
     'set_object.fig';...% interface for set_object
+    'set_subdomains';...% sort a set of points defined by scattered coordinates in subdomains, as needed for tps interpolation
     'stra2num';...% transform letters (a, b, A, B,) or numerical strings ('1','2'..) to the corresponding numbers
     'sub_field';...% combine the two input fields,
     'struct2nc';...% %write fields in netcdf files
     'struct2xml';... transform a matlab structure to a xml tree.
     'tps_coeff';...% calculate the thin plate spline (tps) coefficients
+    'tps_coeff_field';...% calculate the thin plate spline (tps) coefficients with subdomains for a field structure
     'tps_eval';... %calculate the thin plate spline (tps) interpolation at a set of points
     'tps_eval_dxy';...% calculate the derivatives of thin plate spline (tps) interpolation at a set of points (limited to the 2D case)
     'translate_points';...% associated with GUI translate_points.fig to display translation parameters

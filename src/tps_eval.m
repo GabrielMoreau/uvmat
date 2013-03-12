@@ -15,6 +15,7 @@
 %
 % related functions:
 % tps_coeff, tps_eval_dxy
+% tps_coeff_field, set_subdomains, filter_tps, calc_field
 
 function EM = tps_eval(dsites,ctrs)
 [M,s] = size(dsites); [N,s] = size(ctrs);

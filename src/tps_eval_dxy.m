@@ -14,6 +14,7 @@
 %
 % related functions:
 % tps_coeff, tps_eval
+% tps_coeff_field, set_subdomains, filter_tps, calc_field
 
   function [DMX,DMY] = tps_eval_dxy(dsites,ctrs)
   %%  matrix declarations

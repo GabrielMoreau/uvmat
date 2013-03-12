@@ -7,32 +7,35 @@
 % EM*U_tps where the matrix EM is obtained by the function tps_eval.
 % The spatial derivatives are obtained as EMDX*U_tps and EMDY*U_tps, where
 % EMDX and EMDY are obtained from the function tps_eval_dxy.
+% for big data sets, a splitting in subdomains is needed, see functions
+% set_subdomains and tps_coeff_field.
+%
 %------------------------------------------------------------------------
 % [U_smooth,U_tps]=tps_coeff(ctrs,U,Smoothing)
 %------------------------------------------------------------------------
 % OUPUT:
 % U_smooth: values of the quantity U at the N centres after smoothing
-% U_tps: tps weights of the centres
+% U_tps: tps weights of the centres and columns of the linear
 
 %INPUT:
-% ctrs: Nxs matrix  representing the postions of the N centers, sources of the tps (s=space dimension)
+% ctrs: NxNbDim matrix  representing the positions of the N centers, sources of the tps (NbDim=space dimension)
 % U: Nx1 column vector representing the values of the considered scalar measured at the centres ctrs
 % Smoothing: smoothing parameter: the result is smoother for larger Smoothing.
-
+%
+%related functions:
+% tps_eval, tps_eval_dxy
+% tps_coeff_field, set_subdomains, filter_tps, calc_field
 
 function [U_smooth,U_tps]=tps_coeff(ctrs,U,Smoothing)
 %------------------------------------------------------------------------
-%Smoothing smoothing parameter
-% X=reshape(X,[],1);
-% Y=reshape(Y,[],1);
-N=size(ctrs,1);
-% rhs = reshape(U,[],1);
-U = [U; zeros(3,1)];
-% ctrs = [X Y];% coordinates of measurement sites, radial base functions are located at the measurement sites
+
+N=size(ctrs,1);% nbre of source centres
+NbDim=size(ctrs,2);% space dimension (2 or 3)
+U = [U; zeros(NbDim+1,1)];
 EM = tps_eval(ctrs,ctrs);
 SmoothingMat=Smoothing*eye(N,N);%  Smoothing=1/(2*omega) , omega given by fasshauer;
-SmoothingMat=[SmoothingMat zeros(N,3)];
+SmoothingMat=[SmoothingMat zeros(N,NbDim+1)];
 PM=[ones(N,1) ctrs];
-IM=[EM+SmoothingMat; [PM' zeros(3,3)]];
+IM=[EM+SmoothingMat; [PM' zeros(NbDim+1,NbDim+1)]];
 U_tps=(IM\U);
 U_smooth=EM *U_tps;

@@ -248,13 +248,13 @@ set(handles.Coord,'Data',Coord)
 if isempty(get(handles.ProjMode,'UserData'))
     switch Type
         case {'points','line','polyline','plane'}
-            menu_proj={'projection';'interp';'filter';'none'};
+            menu_proj={'projection';'interp_lin';'interp_tps';'none'};
         case {'polygon','rectangle','ellipse'}
             menu_proj={'inside';'outside';'mask_inside';'mask_outside'};
         case 'volume'
-            menu_proj={'interp';'none'};
+            menu_proj={'interp_lin';'none'};
         otherwise
-            menu_proj={'projection';'interp';'filter';'none'};%default
+            menu_proj={'projection';'interp_lin';'interp_tps';'none'};%default
     end
 else
     menu_proj=get(handles.ProjMode,'UserData');
@@ -287,7 +287,7 @@ set(handles.num_Angle_3,'Visible','off')
 set(handles.num_RangeX_1,'Visible','off')
 set(handles.num_RangeX_2,'Visible','off')
 set(handles.num_RangeY_1,'Visible','off')
-if isequal(ProjMode,'interp')
+if isequal(ProjMode,'interp_lin')
     set(handles.num_RangeY_2,'Visible','off')
 else
     set(handles.num_RangeY_2,'Visible','on')
@@ -314,7 +314,7 @@ switch ObjectStyle
          set(handles.Coord,'TooltipString','Coord: table of x,y, z coordinates defining the line')
 %         set(handles.YObject,'TooltipString','YObject: set of y coordinates defining the line')
 %         set(handles.ZObject,'TooltipString','ZObject: set of z coordinates defining the line')
-        if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
+        if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
             set(handles.num_DX,'Visible','on')
             set(handles.num_DX,'TooltipString','num_DX: mesh for the interpolated field along the line')
         end       
@@ -337,14 +337,14 @@ switch ObjectStyle
             set(handles.num_Angle_1,'Visible','on')
             set(handles.num_RangeZ_2,'Visible','on')
         end
-        if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
+        if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
             set(handles.num_DX,'Visible','on')
             set(handles.num_DY,'Visible','on')
         else
             set(handles.num_DX,'Visible','off')
             set(handles.num_DY,'Visible','off')
         end
-        if  isequal(ProjMode,'interp')
+        if  isequal(ProjMode,'interp_lin')
             set(handles.num_DZ,'Visible','on')  
         end
      case {'volume'}  
@@ -359,7 +359,7 @@ switch ObjectStyle
         set(handles.num_Angle_3,'Visible','on')
         set(handles.num_RangeZ_1,'Visible','on')
         set(handles.num_RangeZ_2,'Visible','on')
-        if isequal(ProjMode,'interp')|| isequal(ProjMode,'filter')
+        if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
             set(handles.num_DX,'Visible','on')
             set(handles.num_DY,'Visible','on')
             set(handles.num_DZ,'Visible','on')
@@ -484,8 +484,8 @@ IndexObj_1=get(hhuvmat.ListObject_1,'Value');
 if strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')||strcmp(ObjectData.ProjMode,'none')
     PlotType='text';
 else
-    % create tps coeff if needed for ProjMode 'filter'
-    if strcmp(ObjectData.ProjMode,'filter')&&~isfield(UvData.Field,'Coord_tps')     
+    % create tps coeff if needed for ProjMode 'interp_tps'
+    if strcmp(ObjectData.ProjMode,'interp_tps')&&~isfield(UvData.Field,'Coord_tps')     
         UvData.Field=calc_tps(UvData.Field,1);
     end
     [ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current field of uvmat on ObjectData

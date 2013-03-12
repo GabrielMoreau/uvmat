@@ -94,7 +94,7 @@ for ivar=1:length(var_ind)
     if strcmp(role{var_ind(ivar)},'vector_x')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
         if testinterp
-            Field.VarAttribute{ivar}.FieldRequest='interp_lin';
+            Field.VarAttribute{ivar}.ProjModeRequest='interp_lin';
         end
     end
 end

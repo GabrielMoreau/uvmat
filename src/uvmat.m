@@ -67,7 +67,7 @@
 %                    |                   |                                  
 %                    --->transform fct<---             transform (e.g. phys.m) and combine input fieldname  
 %                            |                                    
-%                        (calc_tps.m)               calculate tps coefficients (for filter projection or spatial derivatives).
+%                        (tps_coeff_field.m)               calculate tps coefficients (for filter projection or spatial derivatives).
 %                            |
 %                       UvData.Field-------------->histogram
 %               _____________|____________
@@ -1021,7 +1021,8 @@ end
 %% set default options in menu 'FieldName'
 switch FileType
     case {'civx','civdata'}
-        [FieldList,ColorList]=calc_field;
+%         [FieldList,ColorList]=calc_field;
+        [FieldList,ColorList]=set_field_list('U','V','C');
         set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
         set(handles_Fields,'Value',2) % set menu to 'velocity
         if index==1
@@ -2045,7 +2046,7 @@ end
 check_proj_tps=0;
 if  (strcmp(UvData.FileType{1},'civdata')||strcmp(UvData.FileType{1},'civx'))
     for iobj=1:numel(UvData.Object)
-        if isfield(UvData.Object{iobj},'ProjMode')&& strcmp(UvData.Object{iobj}.ProjMode,'filter')
+        if isfield(UvData.Object{iobj},'ProjMode')&& strcmp(UvData.Object{iobj}.ProjMode,'interp_tps')
             check_proj_tps=1;
             break
         end
@@ -2437,7 +2438,7 @@ else
 end
 
 %% calculate tps coefficients if needed
-UvData.Field=calc_tps(UvData.Field,check_proj_tps);
+UvData.Field=tps_coeff_field(UvData.Field,check_proj_tps);
 
 %% analyse input field
 %test_x=0;
@@ -3041,24 +3042,93 @@ end
 % --- Executes on menu selection FieldName
 function FieldName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+UvData=get(handles.uvmat,'UserData');
 list_fields=get(handles.FieldName,'String');% list menu fields
 index_fields=get(handles.FieldName,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
+
+%% fill the coordinates and variables from selections in get_field
 if isequal(field,'get_field...')
+    if strcmp(get(handles.VelType,'Visible'),'on')
+        % we use the civ choice as default input
+        ParamIn.SwitchVarIndexTime='attribute';
+        ListVelType=get(handles.VelType,'String');
+        VelType=ListVelType{get(handles.VelType,'Value')};
+        switch VelType
+            case 'civ1'
+                 ParamIn.TimeVarName='Civ1_Time';
+                 ParamIn.vector_x='Civ1_U';
+                 ParamIn.vector_y='Civ1_V';
+            case 'filter1'
+                 ParamIn.TimeVarName='Civ1_Time';
+                 ParamIn.vector_x='Civ1_U_smooth';
+                 ParamIn.vector_y='Civ1_V_smooth';
+            case 'civ2'
+                 ParamIn.TimeVarName='Civ2_Time';
+                 ParamIn.vector_x='Civ2_U';
+                 ParamIn.vector_y='Civ2_V';
+            case 'filter2'
+                 ParamIn.TimeVarName='Civ2_Time';
+                 ParamIn.vector_x='Civ2_U_smooth';
+                 ParamIn.vector_y='Civ2_V_smooth';
+        end
+    end
     set(handles.FixVelType,'visible','off')
-    set(handles.VelType,'visible','off')
-    set(handles.VelType_1,'visible','off')
+    set(handles.VelType,'Visible','off')
+    set(handles.VelType_1,'Visible','off')
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
     FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-    hget_field=findobj(allchild(0),'name','get_field');
-    if ~isempty(hget_field)
-        delete(hget_field)
+%     hget_field=findobj(allchild(0),'name','get_field');
+%     if ~isempty(hget_field)
+%         delete(hget_field)
+%     end
+    GetFieldData=get_field(FileName,ParamIn);
+    FieldList={};
+    VecColorList={};
+    XName='';
+    YName='';
+    if GetFieldData.CheckVector
+        UName=GetFieldData.PanelVectors.vector_x;
+        VName=GetFieldData.PanelVectors.vector_y;
+        XName=GetFieldData.PanelVectors.coord_x_vectors;
+        YName=GetFieldData.PanelVectors.coord_y_vectors;
+        CName=GetFieldData.PanelVectors.vec_color;
+        [FieldList,VecColorList]=set_field_list(UName,VName,CName);
+%         FieldList={['vec(' UName ',' VName ')'];...
+%             ['norm(' UName ',' VName ')'];...
+%             ['curl(' UName ',' VName ')'];...
+%             ['div(' UName ',' VName ')'];...
+%             ['strain(' UName ',' VName ')']};
+%         VecColorList={['norm(' UName ',' VName ')'];...
+%             UName;...
+%             VName};...
+%             if ~isempty(CName)
+%             VecColorList=[{CName};VecColorList];
+%             end
     end
-    get_field(FileName);
+    if GetFieldData.CheckScalar
+        AName=GetFieldData.PanelScalar.scalar;
+        XName=GetFieldData.PanelScalar.coord_x_scalar;
+        YName=GetFieldData.PanelScalar.coord_y_scalar;
+        FieldList={AName};
+    end
+    if GetFieldData.CheckPlot1D
+        XName=GetFieldData.CheckPlot1D.abscissa;
+        YName=GetFieldData.CheckPlot1D.ordinate;
+    end
+    set(handles.Coord_x,'String',{XName})
+    set(handles.Coord_y,'String',{YName})
+    set(handles.FieldName,'Value',1)
+    set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
+    set(handles.ColorScalar,'Value',1)
+    set(handles.ColorScalar,'String',VecColorList);
+    UvData.FileType{1}='netcdf';
+    set(handles.uvmat,'UserData',UvData)
+    run0_Callback(hObject, eventdata, handles)
     return %no further action
 end
 
-UvData=get(handles.uvmat,'UserData');
+
 
 %read the rootfile input display
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
@@ -3106,7 +3176,6 @@ else
 end
 indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,j2);
 set(handles.FileIndex,'String',indices)
-% set(handles.NomType,'String',NomType)
 
 %common to Fields_1_Callback
 list_fields_1=get(handles.FieldName_1,'String');% list menu fields
@@ -3412,9 +3481,9 @@ function edit_vect_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------
 % 
 if isequal(get(handles.edit_vect,'Value'),1)
-    test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
-    test_civ1=isequal(get(handles.VelType,'BackgroundColor'),[1 1 0]);
-    if ~test_civ2 && ~test_civ1
+    VelTypeMenu=get(handles.VelType,'String');
+    VelType=VelTypeMenu{get(handles.VelType,'Value')};
+    if ~strcmp(VelType,'civ2') && ~strcmp(VelType,'civ1')
         msgbox_uvmat('ERROR','manual correction only possible for CIV1 or CIV2 velocity fields')
     end 
     set(handles.record,'Visible','on')
@@ -3813,6 +3882,18 @@ end
 % --- Executes on selection change in CheckDecimate4 (nb_vec/4).
 function CheckDecimate4_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+if isequal(get(handles.CheckDecimate4,'Value'),1)
+    set(handles.CheckDecimate16,'Value',0)
+end
+update_plot(handles);
+
+%------------------------------------------------------------------------
+% --- Executes on selection change in CheckDecimate16 (nb_vec/16).
+function CheckDecimate16_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+if isequal(get(handles.CheckDecimate16,'Value'),1)
+    set(handles.CheckDecimate4,'Value',0)
+end
 update_plot(handles);
 
 %------------------------------------------------------------------------
@@ -4340,11 +4421,58 @@ colorbar
 
 % --------------------------------------------------------------------
 function MenuExportAxis_Callback(hObject, eventdata, handles)
-answer=msgbox_uvmat('CONFIRMATION','select a figure/axis on which the current uvmat plot will be exported')
-if strcmp(answer,'Yes')
-hchild=get(handles.PlotAxes,'children');
-copyobj(hchild,gca);
+ListFig=findobj(allchild(0),'Type','figure');
+nb_option=0;
+menu={};
+for ilist=1:numel(ListFig)
+    FigName=get(ListFig(ilist),'name');
+    if isempty(FigName)
+        FigName=['figure ' num2str(ListFig(ilist))];
+    end
+    if ~strcmp(FigName,'uvmat')
+        ListAxes=findobj(ListFig(ilist),'Type','axes');
+        ListTags=get(ListAxes,'Tag');
+        if ~isempty(ListTags) && ~isempty(find(~strcmp('Colorbar',ListTags), 1))
+            ListAxes=ListAxes(~strcmp('Colorbar',ListTags));
+            if numel(ListAxes)==1
+                nb_option=nb_option+1;
+                menu{nb_option}=FigName ;
+                AxesHandle(nb_option)=ListAxes;
+            else
+                nb_axis=0;
+                for iaxes=1:numel(ListAxes)
+                    nb_axis=nb_axis+1;
+                    nb_option=nb_option+1;
+                    menu{nb_option}=[FigName '_' num2str(nb_axis)];
+                    AxesHandle(nb_option)=ListAxes(nb_axis);
+                end
+            end
+        end
+    end
 end
+if isempty(menu)
+    answer=msgbox_uvmat('INPUT_Y-N','no existing plotting axes available, create new figure?');
+    if strcmp(answer,'Yes')
+        hfig=figure;
+        copyobj(handles.PlotAxes,hfig);
+    else
+        return
+    end
+    map=colormap(handles.PlotAxes);
+    colormap(map);%transmit the current colormap to the zoom fig
+    colorbar
+else
+    answer=msgbox_uvmat('INPUT_MENU','select a figure/axis on which the current uvmat plot will be exported',menu);
+    if isempty(answer)
+        return
+    else
+        axes(AxesHandle(answer))
+        hold on
+        hchild=get(handles.PlotAxes,'children');
+        copyobj(hchild,gca);
+    end
+end
+
 
 %------------------------------------------------------------------------
 % --------------------------------------------------------------------
@@ -4504,7 +4632,7 @@ create_object(data,handles)
 function Menuvolume_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='volume';
-data.ProjMode='interp';%default
+data.ProjMode='interp_lin';%default
 data.ProjModeMenu={};
 % set(handles.create,'Visible','on')
 % set(handles.create,'Value',1)
@@ -5018,3 +5146,4 @@ function Coord_x_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in CheckColorBar.
 function CheckColorBar_Callback(hObject, eventdata, handles)
+

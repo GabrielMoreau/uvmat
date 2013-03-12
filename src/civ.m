@@ -23,7 +23,7 @@
 function varargout = civ(varargin)
 %TODO: search range
 
-% Last Modified by GUIDE v2.5 24-Jul-2012 13:14:00
+% Last Modified by GUIDE v2.5 09-Mar-2013 22:50:23
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -3704,10 +3704,10 @@ parent_tag=get(hparent,'Tag');
 hchildren=get(hparent,'children');
 handle_txtbox=findobj(hchildren,'tag','txt_Mask');
 if isequal(get(hObject,'Value'),0)
-    set(handles.num_SubdomainSize,'Visible','on')
+    set(handles.num_SubDomainSize,'Visible','on')
     set(handles.num_FieldSmooth,'Visible','on')
 else
-    set(handles.num_SubdomainSize,'Visible','off')
+    set(handles.num_SubDomainSize,'Visible','off')
     set(handles.num_FieldSmooth,'Visible','off')
 end
 
@@ -3716,10 +3716,10 @@ end
 % function StereoCheck_Callback(hObject, eventdata, handles)
 % %------------------------------------------------------------------------
 % if isequal(get(handles.CheckStereo,'Value'),0)
-%     set(handles.num_SubdomainSize,'Visible','on')
+%     set(handles.num_subdomainsize,'Visible','on')
 %     set(handles.num_FieldSmooth,'Visible','on')
 % else
-%     set(handles.num_SubdomainSize,'Visible','off')
+%     set(handles.num_subdomainsize,'Visible','off')
 %     set(handles.num_FieldSmooth,'Visible','off')
 % end
 

@@ -21,7 +21,7 @@
 
 function varargout = browse_data(varargin)
 
-% Last Modified by GUIDE v2.5 15-Feb-2013 19:41:48
+% Last Modified by GUIDE v2.5 07-Mar-2013 18:55:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -46,13 +46,15 @@ end
 % --- Executes just before browse_data is made visible.
 function browse_data_OpeningFcn(hObject, eventdata, handles, Campaign)
 %------------------------------------------------------------------------
-% Choose default command line output for browse_data
+
+%% Choose default command line output for browse_data
 handles.output = 'Cancel';
 
-% Update handles structure
+%% Update handles structure
 guidata(hObject, handles);
+set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with right button (zoom for uicontrol display)
 
-% Determine the position of the dialog - centered on the screen
+%% Determine the position of the dialog - centered on the screen
 FigPos=get(0,'DefaultFigurePosition');
 OldUnits = get(hObject, 'Units');
 set(hObject, 'Units', 'pixels');
@@ -94,11 +96,11 @@ if exist('Campaign','var')
     scan_campaign(handles,Campaign)
    set(handles.OK,'Visible','on')
    set(handles.Cancel,'Visible','on')
-   set(handles.figure,'WindowStyle','modal')% Make% Make the GUI modal 
+   set(handles.browse_data,'WindowStyle','modal')% Make the GUI modal 
    set(hObject,'Visible','on')
    drawnow
    % UIWAIT makes GUI wait for user response (see UIRESUME)
-   uiwait(handles.figure);
+   uiwait(handles.browse_data);
 end
 
 %------------------------------------------------------------------------
@@ -107,7 +109,7 @@ function varargout = browse_data_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-delete(handles.figure)
+delete(handles.browse_data)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CreateMirror.
@@ -311,7 +313,7 @@ if ~isequal(answer{1},'OK')
 end
 set(handles.ListExperiments,'Value',1)
 ListExperiments_Callback(hObject, eventdata, handles)%update the overview of the experiment directories
-DataviewData=get(handles.figure,'UserData');
+DataviewData=get(handles.browse_data,'UserData');
 List=DataviewData.List;
 Currentpath=get(handles.SourceDir,'String');
 [Currentpath,Campaign,DirExt]=fileparts(Currentpath);
@@ -579,7 +581,7 @@ if ~isequal(answer,'Yes')
 end
 set(handles.ListExperiments,'Value',1)
 ListExperiments_Callback(hObject, eventdata, handles)%update the overview of the experiment directories
-DataviewData=get(handles.figure,'UserData')
+DataviewData=get(handles.browse_data,'UserData')
 List=DataviewData.List;
 Currentpath=get(handles.SourceDir,'String');
 [Currentpath,Campaign,DirExt]=fileparts(Currentpath);
@@ -653,7 +655,7 @@ Device=Device(Value);
 handles.output.Experiment=Experiment;
 handles.output.Device=Device;
 guidata(hObject, handles);% Update handles structure
-uiresume(handles.figure);
+uiresume(handles.browse_data);
 drawnow
 return
 
@@ -675,7 +677,7 @@ else
 end
 
 %update all the selected xml files
-DataviewData=get(handles.figure,'UserData');
+DataviewData=get(handles.browse_data,'UserData');
 % answer=msgbox_uvmat('INPUT_Y-N',[num2str(length(Value)) ' xml files for device ' ListDevices{1} ' will be refreshed with ' ...
 %     DataviewData.GeometryCalib.CalibrationType ' calibration data'])
 % if ~isequal(answer,'Yes')
@@ -770,27 +772,27 @@ set(handles.ListXml,'Value',Value)
 % handles.output.List=List;
 % handles.output ='OK, Calibration replicated';
 % guidata(hObject, handles);% Update handles structure
-% uiresume(handles.figure);
+% uiresume(handles.browse_data);
 
 % --- Executes on button press in Cancel.
 function Cancel_Callback(hObject, eventdata, handles)
 handles.output = get(hObject,'String');
 guidata(hObject, handles); % Update handles structure
 % Use UIRESUME instead of delete because the OutputFcn needs
-uiresume(handles.figure);
+uiresume(handles.browse_data);
 
-% --- Executes when user attempts to close figure.
-function figure_CloseRequestFcn(hObject, eventdata, handles)
-if isequal(get(handles.figure, 'waitstatus'), 'waiting')
+% --- Executes when user attempts to close browse_data.
+function browse_data_CloseRequestFcn(hObject, eventdata, handles)
+if isequal(get(handles.browse_data, 'waitstatus'), 'waiting')
     % The GUI is still in UIWAIT, us UIRESUME
-    uiresume(handles.figure);
+    uiresume(handles.browse_data);
 else
     % The GUI is no longer waiting, just close it
-    delete(handles.figure);
+    delete(handles.browse_data);
 end
 
 % --- Executes on key press over figure1 with no controls selected.
-function figure_KeyPressFcn(hObject, eventdata, handles)
+function browse_data_KeyPressFcn(hObject, eventdata, handles)
 % Check for "enter" or "escape"
 if isequal(get(hObject,'CurrentKey'),'escape')
     % User said no by hitting escape
@@ -799,8 +801,8 @@ if isequal(get(hObject,'CurrentKey'),'escape')
     % Update handles structure
     guidata(hObject, handles);
     
-    uiresume(handles.figure);
+    uiresume(handles.browse_data);
 end
 if isequal(get(hObject,'CurrentKey'),'return')
-    uiresume(handles.figure);
+    uiresume(handles.browse_data);
 end 

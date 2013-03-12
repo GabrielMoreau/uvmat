@@ -1,4 +1,4 @@
-%'get_field': display variables and attributes from a Netcdf file, and RUN selected fields
+%'get_field': display variables and attributes from a Netcdf file, and OK selected fields
 %------------------------------------------------------------------------
 %function varargout = get_field(varargin)
 % associated with the GUI get_field.fig
@@ -21,10 +21,10 @@
 
 function varargout = get_field(varargin)
 
-% Last Modified by GUIDE v2.5 26-Jul-2012 09:11:23
+% Last Modified by GUIDE v2.5 10-Mar-2013 21:19:52
 
 % Begin initialization code - DO NOT EDIT
-gui_Singleton = 0;
+gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
                    'gui_OpeningFcn', @get_field_OpeningFcn, ...
@@ -44,127 +44,60 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes just before get_field is made visible.
-function get_field_OpeningFcn(hObject, eventdata, handles,filename,multiple)
+function get_field_OpeningFcn(hObject, eventdata, handles,filename,ParamIn)
 %------------------------------------------------------------------------
 global nb_builtin % nbre of functions to include by default in the menu of  functions called by RUN
 
-
-
 %% Choose default command line output for get_field
-handles.output = hObject;
+handles.output = 'Cancel';
 
 %% Update handles structure
 guidata(hObject, handles);
 set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with right button (zoom for uicontrol display)
 
-%% prepare the list of RUN fcts and set their paths
-% functions included by default in 'get_field.m
-% menu_str={'PLOT';'FFT';'filter_band'}; 
-% nb_builtin=numel(menu_str);
-% path_uvmat=fileparts(which('uvmat'));%path of the function 'uvmat'
-% addpath(fullfile(path_uvmat,'get_field'))
-% testexist=zeros(size(menu_str'));%default
-% for ilist=1:length(menu_str)
-%     if exist(menu_str{ilist},'file')
-%         fct_handle{ilist,1}=str2func(menu_str{ilist});
-%         testexist(ilist)=1;
-%     else
-%         fct_handle{ilist,1}=[];
-%         testexist(ilist)=0;
-%     end
-% end
-% rmpath(fullfile(path_uvmat,'get_field'))
-% dir_perso=prefdir;
-
-% look for functions previously used (names and paths saved in the personal file uvmat_perso.mat):
-% profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-% if exist(profil_perso,'file')
-%       h=load (profil_perso);
-%      if isfield(h,'get_field_fct') && iscell(h.get_field_fct)
-%          for ilist=1:length(h.get_field_fct)
-%             [path,file]=fileparts(h.get_field_fct{ilist});
-%             addpath(path)        
-%             if exist(file,'file')
-%                 h_func=str2func(file);
-%                 testexist=[testexist 1]; 
-%              else
-%                 h_func=[];
-%                 testexist=[testexist 0]; 
-%              end
-%              fct_handle=[fct_handle; {h_func}]; %concatene the list of paths
-%              rmpath(path)
-%              menu_str=[menu_str; {file}]; 
-%          end
-%      end
-% end
-
-% menu_str=menu_str(testexist==1);%=menu_str(testexist~=0)
-% fct_handle=fct_handle(testexist==1);
-% menu_str=[menu_str;{'more...'}];
-% set(handles.ACTION,'String',menu_str)
-% set(handles.ACTION,'UserData',fct_handle)% store the list of path in UserData of ACTION
-% set(handles.path_action,'String',fullfile(path_uvmat,'get_field'))
-% set(handles.ACTION,'Value',1)% PLOT option selected
-
-%% settings for 'slave' mode, called by uvamt, or 'master' mode
+%% settings for 'slave' mode, called by uvmat, or 'master' mode
 if exist('filename','var') && ischar(filename) %transfer input file name in slave mode
     set(handles.inputfile,'String',filename)% prefill the input file name
-    Field=nc2struct(filename,[]);% reads the  field structure, without variables
+    Field=nc2struct(filename,[]);% reads the  field structure, without the variables
     if isfield(Field,'Txt')
-        msgbox_uvmat('ERROR',Field.Txt)
+        msgbox_uvmat('ERROR',['get_field/nc2struct/' Field.Txt])
     else
         set(handles.get_field,'UserData',Field);
-        Field_input(handles,Field);
+        if ~exist('ParamIn','var')
+            ParamIn=[];
+        end
+        Field_input(handles,Field,ParamIn);
     end
 else  %master mode
     set(handles.inputfile,'String','')
 end
 
-%% load the list of previously browsed files for the upper bar menu Open
-% dir_perso=prefdir;
-% profil_perso=fullfile(dir_perso,'uvmat_perso.mat');%
-% if exist(profil_perso,'file')
-%     h=load (profil_perso);
-%     if isfield(h,'MenuFile_1')
-%         set(handles.MenuFile_1,'Label',h.MenuFile_1);
-%     end
-%     if isfield(h,'MenuFile_1')
-%         set(handles.MenuFile_2,'Label',h.MenuFile_2);
-%     end
-%     if isfield(h,'MenuFile_1')
-%         set(handles.MenuFile_3,'Label',h.MenuFile_3);
-%     end
-%     if isfield(h,'MenuFile_1')
-%         set(handles.MenuFile_4,'Label',h.MenuFile_4);
-%     end
-%     if isfield(h,'MenuFile_1')
-%         set(handles.MenuFile_5,'Label',h.MenuFile_5);
-%     end
-% end
-
 %% put the GUI on the lower right of the sceen
+set(hObject,'Unit','pixel')
 pos_view_field=get(hObject,'Position');
 ScreenSize=get(0,'ScreenSize');
 pos_view_field(1)=ScreenSize(1)+ScreenSize(3)-pos_view_field(3);
 pos_view_field(2)=ScreenSize(2);
 set(hObject,'Position',pos_view_field)
 
-%% remove already opened get_field GUI with name get_field
-if ~(exist('multiple','var') && isequal(multiple,1)) %set single occurrence
-    hget_field=findobj(allchild(0),'Name','get_field'); %hget_field(1)= new GUI
-    if length(hget_field)>1
-        delete(hget_field(2))
-    end
-else
-    set(hObject,'name','get_field_1')
-end
-
+% if ~(exist('multiple','var') && isequal(multiple,1)) %set single occurrence
+%     hget_field=findobj(allchild(0),'Name','get_field'); %hget_field(1)= new GUI
+%     if length(hget_field)>1
+%         delete(hget_field(2))
+%     end
+% else
+%     set(hObject,'name','get_field_1')
+% end
+set(handles.get_field,'WindowStyle','modal')% Make the GUI modal 
+drawnow
+ uiwait(handles.get_field);
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = get_field_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 varargout{1} = handles.output;
+delete(handles.get_field)
 
 %------------------------------------------------------------------------
 % --- Executes when a new input file name is introduced.
@@ -185,7 +118,7 @@ end
 
 %------------------------------------------------------------------------
 % --- update the display when a new field is introduced.
-function Field_input(handles,Field)
+function Field_input(handles,Field,ParamInput)
 %------------------------------------------------------------------------
 if isfield(Field,'ListDimName')&&~isempty(Field.ListDimName)
     Tabcell(:,1)=Field.ListDimName;
@@ -202,43 +135,64 @@ Txt=Field.ListVarName;
 set(handles.variables,'Value',1)
 set(handles.variables,'String',[{'*'} Txt])
 variables_Callback(handles.variables,[], handles)
+
+if exist('ParamInput','var')
+    fill_GUI(ParamInput,handles);
+    return
+else
 set(handles.abscissa,'String',[{''} Txt ])
 set(handles.ordinate,'String',Txt)
 set(handles.vector_x,'String',[Txt ])
 set(handles.vector_y,'String',[Txt ])
 set(handles.vector_z,'String',[{''} Txt ])
 set(handles.vec_color,'String',[{''} Txt ])
-set(handles.coord_x_scalar,'String',[{''} Txt ])
-set(handles.coord_y_scalar,'String',[{''} Txt ])
-set(handles.coord_x_vectors,'String',[{''} Txt ])
-set(handles.coord_y_vectors,'String',[{''} Txt ])
-set(handles.coord_z_scalar,'String',[{''} Txt ])
-set(handles.coord_z_vectors,'String',[{''} Txt ])
+% set(handles.XVarName,'String',[{''} Txt ])
+% set(handles.ZVarName,'String',[{''} Txt ])
+% set(handles.coord_x_vectors,'String',[{''} Txt ])
+% set(handles.coord_y_vectors,'String',[{''} Txt ])
+% set(handles.YVarName,'String',[{''} Txt ])
+% set(handles.TimeVarName,'String',[{''} Txt ])
 set(handles.scalar,'Value',1)
 
 set(handles.scalar,'String', Txt )
 [CellInfo,NbDim,errormsg]=find_field_cells(Field);
-% [CellVarIndex,NbDim,CoordType,VarRole,errormsg]=find_field_cells(Field);
 if ~isempty(errormsg)  
     msgbox_uvmat('ERROR',['get_field / Field_input / find_field_cells: ' errormsg])
     return
 end  
-% for icell=1:numel(CellInfo)
-%     NbDim(icell)=max(NbDim(icell),numel(CellInfo{icell}.VarIndex));
-% end
 [maxdim,imax]=max(NbDim);
-   
+
+%% set time mode
+if maxdim>=4
+    set(handles.SwitchVarIndexTime,'Value',4)
+else
+    time_index=[];
+    if isfield(Field,'ListGlobalAttribute')
+    time_index=find(~cellfun('isempty',regexp(Field.ListGlobalAttribute,'Time')));% index of the attributes containing the string 'Time'
+    end
+    if isempty(time_index)
+        set(handles.SwitchVarIndexTime,'Value',1)
+    else
+        set(handles.SwitchVarIndexTime,'Value',2)
+    end
+end
+SwitchVarIndexTime_Callback([],[], handles)
+
 if maxdim>=3
     set(handles.vector_z,'Visible','on')
     set(handles.vector_z,'String',[{''} Txt ])
-    set(handles.coord_z_vectors,'Visible','on')
-    set(handles.coord_z_vectors,'String',[{''} Txt ])
-    set(handles.coord_z_scalar,'Visible','on')
-    set(handles.coord_z_scalar,'String',[{''} Txt ])
+        set(handles.ZVarName,'Visible','on')
+    set(handles.SwitchVarIndexZ,'Visible','on')
+    set(handles.Z_title,'Visible','on')
+%     set(handles.TimeVarName,'Visible','on')
+%     set(handles.TimeVarName,'String',[{''} Txt ])
+%     set(handles.YVarName,'Visible','on')
+%     set(handles.YVarName,'String',[{''} Txt ])
 else
     set(handles.vector_z,'Visible','off')
-    set(handles.coord_z_vectors,'Visible','off')
-    set(handles.coord_z_scalar,'Visible','off')
+    set(handles.ZVarName,'Visible','off')
+    set(handles.SwitchVarIndexZ,'Visible','off')
+    set(handles.Z_title,'Visible','off')
 end
 if maxdim>=2 
     set(handles.CheckPlot1D,'Value',0)
@@ -247,29 +201,34 @@ if maxdim>=2
         set(handles.CheckScalar,'Value',0)
         set(handles.vector_x,'Value',CellInfo{imax}.VarIndex_vector_x(1))
         set(handles.vector_y,'Value',CellInfo{imax}.VarIndex_vector_y(1))
-        if strcmp(CellInfo{imax}.CoordType,'scattered')
-            set(handles.coord_x_vectors,'Value',CellInfo{imax}.CoordIndex(end))
-            set(handles.coord_y_vectors,'Value',CellInfo{imax}.CoordIndex(end-1))
-        elseif strcmp(CellInfo{imax}.CoordType,'grid')
-            set(handles.coord_x_vectors,'Value',CellInfo{imax}.CoordIndex(end)+1)
-            set(handles.coord_y_vectors,'Value',CellInfo{imax}.CoordIndex(end-1)+1)
-        end
+%         if strcmp(CellInfo{imax}.CoordType,'scattered')
+%             set(handles.coord_x_vectors,'Value',CellInfo{imax}.CoordIndex(end))
+%             set(handles.coord_y_vectors,'Value',CellInfo{imax}.CoordIndex(end-1))
+%         elseif strcmp(CellInfo{imax}.CoordType,'grid')
+%             set(handles.coord_x_vectors,'Value',CellInfo{imax}.CoordIndex(end)+1)
+%             set(handles.coord_y_vectors,'Value',CellInfo{imax}.CoordIndex(end-1)+1)
+%         end
     else
         set(handles.CheckScalar,'Value',1)
         set(handles.CheckVector,'Value',0)
-        if isfield(CellInfo{imax},'VarIndex_scalar') 
-            set(handles.scalar,'Value',CellInfo{imax}.VarIndex_scalar(1))
-                set(handles.coord_x_scalar,'Value',CellInfo{imax}.CoordIndex(end)+1)
-                set(handles.coord_y_scalar,'Value',CellInfo{imax}.CoordIndex(end-1)+1)
-            if numel(CellInfo{imax}.CoordIndex)==3
-                set(handles.coord_z_scalar,'Value',CellInfo{imax}.CoordIndex(1)+1)
-            end
-        end
+%         if isfield(CellInfo{imax},'VarIndex_scalar') 
+%             set(handles.scalar,'Value',CellInfo{imax}.VarIndex_scalar(1))
+%                 set(handles.XVarName,'Value',CellInfo{imax}.CoordIndex(end)+1)
+%                 set(handles.ZVarName,'Value',CellInfo{imax}.CoordIndex(end-1)+1)
+%             if numel(CellInfo{imax}.CoordIndex)==3
+%                 set(handles.YVarName,'Value',CellInfo{imax}.CoordIndex(1)+1)
+%             end
+%         end
     end
-    CheckPlot1D_Callback(handles.CheckPlot1D, [], handles)
-    CheckScalar_Callback(handles.CheckScalar, [], handles)
-    CheckVector_Callback(handles.CheckVector, [], handles)
+else
+    set(handles.CheckPlot1D,'Value',1)
+    set(handles.CheckScalar,'Value',0)
+    set(handles.CheckVector,'Value',0)
 end
+end
+CheckPlot1D_Callback(handles.CheckPlot1D, [], handles)
+CheckScalar_Callback(handles.CheckScalar, [], handles)
+CheckVector_Callback(handles.CheckVector, [], handles)
 
 %------------------------------------------------------------------------
 function ordinate_Callback(hObject, eventdata, handles)
@@ -323,13 +282,13 @@ function abscissa_Callback(hObject, eventdata, handles)
 %      end
 %     set(handles.variables,'Value',xindex+1)%outline  in the list of variables 
 %     variables_Callback(hObject, eventdata, handles)  %display properties of the TimeVariable (dim, attributes)
-%     if  ~test_2D &  ~test_scalar% look for possible varaibles to RUN in ordinate    
+%     if  ~test_2D &  ~test_scalar% look for possible varaibles to OK in ordinate    
 %         index=Field.VarDimIndex{xindex};%dimension indices of the TimeVariable selected for abscissa
 %         VarIndex=[];
 %         for ilist=1:length(Field.VarDimIndex)%detect 
 %             index_i=Field.VarDimIndex{ilist};
 %             if ~isempty(index_i)
-%                 if isequal(index_i(1),index(1))%if the first dimension of the TimeVariable coincide with the selected one, RUN is possible
+%                 if isequal(index_i(1),index(1))%if the first dimension of the TimeVariable coincide with the selected one, OK is possible
 %                     VarIndex=[VarIndex ilist];
 %                 end
 %             end
@@ -377,47 +336,47 @@ end
 test_coord(index)=0;%the coordinate variable must be different from the scalar
 
 string_coord=[{''};string(test_coord==1)];
-val=get(handles.coord_x_scalar,'Value');
+val=get(handles.XVarName,'Value');
 if val>numel(string_coord)
-    set(handles.coord_x_scalar,'Value',1)
+    set(handles.XVarName,'Value',1)
 end
-set(handles.coord_x_scalar,'String',string_coord);
-val=get(handles.coord_y_scalar,'Value');
+set(handles.XVarName,'String',string_coord);
+val=get(handles.ZVarName,'Value');
 if val>numel(string_coord)
-    set(handles.coord_y_scalar,'Value',1)
+    set(handles.ZVarName,'Value',1)
 end
-set(handles.coord_y_scalar,'String',string_coord);
-val=get(handles.coord_y_scalar,'Value');
+set(handles.ZVarName,'String',string_coord);
+val=get(handles.ZVarName,'Value');
 if val>numel(string_coord)
-    set(handles.coord_y_scalar,'Value',1)
+    set(handles.ZVarName,'Value',1)
 end
-set(handles.coord_z_scalar,'String',string_coord);
+set(handles.YVarName,'String',string_coord);
 
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in coord_x_scalar.
-function coord_x_scalar_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in XVarName.
+function XVarName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-index=get(handles.coord_x_scalar,'Value');
-string=get(handles.coord_x_scalar,'String');
+index=get(handles.XVarName,'Value');
+string=get(handles.XVarName,'String');
 VarName=string{index};
 update_field(hObject, eventdata, handles,VarName)
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in coord_y_scalar.
-function coord_y_scalar_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in ZVarName.
+function ZVarName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-index=get(handles.coord_y_scalar,'Value');
-string=get(handles.coord_y_scalar,'String');
+index=get(handles.ZVarName,'Value');
+string=get(handles.ZVarName,'String');
 VarName=string{index};
 update_field(hObject, eventdata, handles,VarName)
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in coord_z_scalar.
-function coord_z_scalar_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in YVarName.
+function YVarName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-index=get(handles.coord_z_scalar,'Value');
-string=get(handles.coord_z_scalar,'String');
+index=get(handles.YVarName,'Value');
+string=get(handles.YVarName,'String');
 VarName=string{index};
 update_field(hObject, eventdata, handles,VarName)
 
@@ -479,11 +438,11 @@ if val>numel(string_coord)
     set(handles.coord_y_vectors,'Value',1)
 end
 set(handles.coord_y_vectors,'String',string_coord);
-val=get(handles.coord_z_vectors,'Value');
+val=get(handles.TimeVarName,'Value');
 if val>numel(string_coord)
-    set(handles.coord_z_vectors,'Value',1)
+    set(handles.TimeVarName,'Value',1)
 end
-set(handles.coord_z_vectors,'String',string_coord);
+set(handles.TimeVarName,'String',string_coord);
 
 update_field(hObject, eventdata, handles,VarName)
 
@@ -524,11 +483,11 @@ VarName=string{index};
 update_field(hObject, eventdata, handles,VarName)
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in coord_z_scalar.
-function coord_z_vectors_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in YVarName.
+function TimeVarName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-index=get(handles.coord_z_vectors,'Value');
-string=get(handles.coord_z_vectors,'String');
+index=get(handles.TimeVarName,'Value');
+string=get(handles.TimeVarName,'String');
 VarName=string{index};
 update_field(hObject, eventdata, handles,VarName)
 
@@ -688,7 +647,7 @@ yindex=get(handles.ordinate,'Value'); %selected indices in the ordinate listbox
 list_var=ystring(yindex);
 VarIndex.y=name2index(list_var,Field.ListVarName);
 if isequal(VarIndex.A,VarIndex.y)
-    set(handles.coord_y_scalar,'Value',1)
+    set(handles.ZVarName,'Value',1)
 elseif isequal(VarIndex.u,VarIndex.y)||isequal(VarIndex.v,VarIndex.y)||isequal(VarIndex.w,VarIndex.y)
    set(handles.coord_y_vectors,'Value',1)%ordinate cannot be the same as scalar or vector components
 else
@@ -810,10 +769,18 @@ end
 set(hselect_field,'UserData',Field)
 
 %---------------------------------------------------------
-% --- Executes on button press in RUN.
+% --- Executes on button press in OK.
 
-function RUN_Callback(hObject, eventdata, handles)
+function OK_Callback(hObject, eventdata, handles)
 %---------------------------------------------------------
+
+handles.output=read_GUI(handles.get_field);
+guidata(hObject, handles);% Update handles structure
+uiresume(handles.get_field);
+drawnow
+return
+
+%%%% SKIPPED %%%%
 hfield=[];
 huvmat=findobj(allchild(0),'tag','uvmat');
 hseries=findobj(allchild(0),'tag','series');
@@ -910,7 +877,7 @@ list_fig=get(handles.list_fig,'String');
 val=get(handles.list_fig,'Value');
 if strcmp(list_fig{val},'uvmat')
     set(handles.inputfile,'Enable','off')% desactivate the input file edit box   
-    set(handles.RUN,'Visible','off')% RUN button not visible (passive mode, get_field used to define the field for uvamt)
+    set(handles.OK,'Visible','off')% RUN button not visible (passive mode, get_field used to define the field for uvamt)
     set(handles.MenuOpen,'Visible','off')
     set(handles.MenuExport,'Visible','off')
     uvmat(get(handles.inputfile,'String'))
@@ -932,10 +899,10 @@ end
 
 % %------------------------------------------------
 % % --- Executes on button press in Plot_histo.
-% %RUN global histograms
+% %OK global histograms
 % %-------------------------------------------------
 % function RUN_histo_Callback(hObject, eventdata, handles)
-% % hObject    handle to RUN (see GCBO)
+% % hObject    handle to OK (see GCBO)
 % % eventdata  reserved - to be defined in a future version of MATLAB
 % % handles    structure with handles and user data (see GUIDATA)
 % 
@@ -1671,136 +1638,198 @@ else
     set(handles.TimeDimensionMenu,'Visible','off')
     set(handles.TimeIndexValue,'Visible','off')
 end
-
-%------------------------------------------------------------------------
-% --- Executes on selection change in TimeDimensionMenu.
-function TimeDimensionMenu_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-index=get(handles.TimeDimensionMenu,'Value');
-DimList=get(handles.TimeDimensionMenu,'String');
-DimName=DimList{index};
-Field=get(handles.get_field,'UserData');
-DimIndex=find(strcmp(DimName,Field.ListDimName),1);
-ref_index=round(Field.DimValue(DimIndex)/2);   
-set(handles.TimeIndexValue,'String',num2str(ref_index))
-scalar_Callback(hObject, eventdata, handles)
-vector_x_Callback(hObject, eventdata, handles)% update menus of coordinates (remove time)
- % look for a corresponding time variable and value
- time_test=zeros(size(Field.VarDimName));
- for ilist=1:numel(Field.VarDimName)
-     if isequal(Field.VarDimName{ilist},{DimName})
-         time_test(ilist)=1;
-     end
- end
- ListVariable=Field.ListVarName(time_test==1);
- set(handles.TimeVariableMenu,'Value',1)
- if isempty(ListVariable)     
-     set(handles.TimeVariableMenu,'String',{''})
-     set(handles.TimeVarValue,'String','')
- else
-    set(handles.TimeVariableMenu,'String',ListVariable)
-    TimeVarName=ListVariable{1};
-    VarIndex=find(strcmp(TimeVarName,Field.ListVarName),1);%index in the list of variables
-    inputfile=get(handles.inputfile,'String');% read the input file
-    SubField=nc2struct(inputfile,{TimeVarName});
-    eval(['TimeValue=SubField.' TimeVarName '(ref_index);'])
-    set(handles.TimeVarValue,'Visible','on')
-    set(handles.TimeVariableMenu,'Visible','on')
-    set(handles.TimeVarValue,'String',num2str(TimeValue))
- end
-
-
+% 
+% %------------------------------------------------------------------------
+% % --- Executes on selection change in TimeDimensionMenu.
+% function TimeDimensionMenu_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% index=get(handles.TimeDimensionMenu,'Value');
+% DimList=get(handles.TimeDimensionMenu,'String');
+% DimName=DimList{index};
+% Field=get(handles.get_field,'UserData');
+% DimIndex=find(strcmp(DimName,Field.ListDimName),1);
+% ref_index=round(Field.DimValue(DimIndex)/2);   
+% set(handles.TimeIndexValue,'String',num2str(ref_index))
+% scalar_Callback(hObject, eventdata, handles)
+% vector_x_Callback(hObject, eventdata, handles)% update menus of coordinates (remove time)
+%  % look for a corresponding time variable and value
+%  time_test=zeros(size(Field.VarDimName));
+%  for ilist=1:numel(Field.VarDimName)
+%      if isequal(Field.VarDimName{ilist},{DimName})
+%          time_test(ilist)=1;
+%      end
+%  end
+%  ListVariable=Field.ListVarName(time_test==1);
+%  set(handles.TimeVariableMenu,'Value',1)
+%  if isempty(ListVariable)     
+%      set(handles.TimeVariableMenu,'String',{''})
+%      set(handles.TimeVarValue,'String','')
+%  else
+%     set(handles.TimeVariableMenu,'String',ListVariable)
+%     TimeVarName=ListVariable{1};
+%     VarIndex=find(strcmp(TimeVarName,Field.ListVarName),1);%index in the list of variables
+%     inputfile=get(handles.inputfile,'String');% read the input file
+%     SubField=nc2struct(inputfile,{TimeVarName});
+%     eval(['TimeValue=SubField.' TimeVarName '(ref_index);'])
+%     set(handles.TimeVarValue,'Visible','on')
+%     set(handles.TimeVariableMenu,'Visible','on')
+%     set(handles.TimeVarValue,'String',num2str(TimeValue))
+%  end
+% 
+% 
+% % % -----------------------------------------------------------------------
+% % % --- Executes on button press in TimeVariable.
+% % function TimeVariable_Callback(hObject, eventdata, handles)
+% % % -----------------------------------------------------------------------
+% % val=get(handles.TimeVariable,'Value');
+% % if val
+% %     Field=get(handles.get_field,'UserData');
+% %     time_test=zeros(size(Field.VarDimName));
+% %     for ilist=1:numel(Field.VarDimName)
+% %         if isequal(numel(Field.VarDimName{ilist}),1)%select variables with a single dimension
+% %             time_test(ilist)=1;
+% %         end
+% %     end
+% %     ind_test=find(time_test);
+% %     if isempty(time_test)
+% %         set(handles.TimeVariable,'Value',0)
+% %         set(handles.TimeVariableMenu,'Visible','off')
+% %         set(handles.TimeVarValue,'Visible','off')
+% %     else
+% %         set(handles.TimeVariableMenu,'Visible','on')
+% %         set(handles.TimeVarValue,'Visible','on')
+% %         if get(handles.TimeVariableMenu,'Value')>numel(ind_test)
+% %             set(handles.TimeVariableMenu,'Value',1)
+% %         end
+% %         set(handles.TimeVariableMenu,'String',Field.ListVarName(ind_test))
+% %         TimeVariableMenu_Callback(hObject, eventdata, handles)
+% %         set(handles.TimeDimension,'Value',0) %deseselect alternative option sfor time
+% %         set(handles.TimeAttribute,'Value',0)
+% %         TimeAttribute_Callback(hObject, eventdata, handles)
+% %     end
+% % else
+% %     set(handles.TimeVariableMenu,'Visible','off')
+% %     set(handles.TimeVarValue,'Visible','off')
+% % end
+% 
 % % -----------------------------------------------------------------------
-% % --- Executes on button press in TimeVariable.
-% function TimeVariable_Callback(hObject, eventdata, handles)
+% % --- Executes on selection change in TimeVariableMenu.
+% function TimeVariableMenu_Callback(hObject, eventdata, handles)
 % % -----------------------------------------------------------------------
-% val=get(handles.TimeVariable,'Value');
-% if val
-%     Field=get(handles.get_field,'UserData');
-%     time_test=zeros(size(Field.VarDimName));
-%     for ilist=1:numel(Field.VarDimName)
-%         if isequal(numel(Field.VarDimName{ilist}),1)%select variables with a single dimension
-%             time_test(ilist)=1;
-%         end
-%     end
-%     ind_test=find(time_test);
-%     if isempty(time_test)
-%         set(handles.TimeVariable,'Value',0)
-%         set(handles.TimeVariableMenu,'Visible','off')
-%         set(handles.TimeVarValue,'Visible','off')
-%     else
-%         set(handles.TimeVariableMenu,'Visible','on')
-%         set(handles.TimeVarValue,'Visible','on')
-%         if get(handles.TimeVariableMenu,'Value')>numel(ind_test)
-%             set(handles.TimeVariableMenu,'Value',1)
-%         end
-%         set(handles.TimeVariableMenu,'String',Field.ListVarName(ind_test))
-%         TimeVariableMenu_Callback(hObject, eventdata, handles)
-%         set(handles.TimeDimension,'Value',0) %deseselect alternative option sfor time
-%         set(handles.TimeAttribute,'Value',0)
-%         TimeAttribute_Callback(hObject, eventdata, handles)
-%     end
-% else
-%     set(handles.TimeVariableMenu,'Visible','off')
-%     set(handles.TimeVarValue,'Visible','off')
+% ListVar=get(handles.TimeVariableMenu,'String');
+% index=get(handles.TimeVariableMenu,'Value');
+% TimeVariable=ListVar{index};% name of the selected variable
+% if isempty(TimeVariable)% case of blank selection
+%     return
 % end
-
-% -----------------------------------------------------------------------
-% --- Executes on selection change in TimeVariableMenu.
-function TimeVariableMenu_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-ListVar=get(handles.TimeVariableMenu,'String');
-index=get(handles.TimeVariableMenu,'Value');
-TimeVariable=ListVar{index};% name of the selected variable
-if isempty(TimeVariable)% case of blank selection
-    return
-end
-Field=get(handles.get_field,'UserData'); %index of 
-VarIndex=find(strcmp(TimeVariable,Field.ListVarName),1);%index in the list of variables
-DimName=Field.VarDimName{VarIndex}; % dimension corresponding to the variable
-set(handles.TimeDimensionMenu,'Value',1)
-set(handles.TimeDimensionMenu,'String',DimName)
-inputfile=get(handles.inputfile,'String');% read the input file
-SubField=nc2struct(inputfile,{TimeVariable});
-eval(['TimeDimension=numel(SubField.' TimeVariable ');'])
-ref_index=round(TimeDimension/2);
-eval(['TimeValue=SubField.' TimeVariable '(ref_index);'])
-set(handles.TimeIndexValue,'String',num2str(ref_index))
-set(handles.TimeVarValue,'String',num2str(TimeValue))
-
-
-function TimeValue_Callback(hObject, eventdata, handles)
-%TO suppress 
-
-% -----------------------------------------------------------------------
-function TimeIndexValue_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-TimeIndex=str2double(get(handles.TimeIndexValue,'String'));
-TimeVarName=Field.ListVarName{time_index};
-set(handles.TimeVariable,'Value',1)
-set(handles.TimeName,'String',TimeVarName)
-fileinput=get(handles.inputfile,'String');
-SubField=nc2struct(fileinput,{TimeVarName});
-eval(['TimeValue=SubField.' TimeVarName '(ref_index);']);
-set(handles.TimeValue,'Visible','on')
-set(handles.TimeValue,'String',num2str(TimeValue))
-
-% -----------------------------------------------------------------------
-function SelectFigure_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-val=get(handles.SelectFigure,'Value');
-if val
-    set(handles.list_fig,'Visible','on')
-    %% look at the existing figures in the work space
-    browse_fig(handles.list_fig)
-else
-   set(handles.list_fig,'Visible','off') 
-end
-
-
-function TimeVarValue_Callback(hObject, eventdata, handles)
-
+% Field=get(handles.get_field,'UserData'); %index of 
+% VarIndex=find(strcmp(TimeVariable,Field.ListVarName),1);%index in the list of variables
+% DimName=Field.VarDimName{VarIndex}; % dimension corresponding to the variable
+% set(handles.TimeDimensionMenu,'Value',1)
+% set(handles.TimeDimensionMenu,'String',DimName)
+% inputfile=get(handles.inputfile,'String');% read the input file
+% SubField=nc2struct(inputfile,{TimeVariable});
+% eval(['TimeDimension=numel(SubField.' TimeVariable ');'])
+% ref_index=round(TimeDimension/2);
+% eval(['TimeValue=SubField.' TimeVariable '(ref_index);'])
+% set(handles.TimeIndexValue,'String',num2str(ref_index))
+% set(handles.TimeVarValue,'String',num2str(TimeValue))
 
 
 % --- Executes on button press in check_rgb.
 function check_rgb_Callback(hObject, eventdata, handles)
+
+
+% --- Executes when user attempts to close get_field.
+function get_field_CloseRequestFcn(hObject, eventdata, handles)
+if isequal(get(handles.get_field, 'waitstatus'), 'waiting')
+    % The GUI is still in UIWAIT, us UIRESUME
+    uiresume(handles.get_field);
+else
+    % The GUI is no longer waiting, just close it
+    delete(handles.get_field);
+end
+
+
+
+
+
+% --- Executes on selection change in listbox30.
+function listbox30_Callback(hObject, eventdata, handles)
+% hObject    handle to listbox30 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns listbox30 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from listbox30
+
+
+% --- Executes on selection change in SwitchVarIndexX.
+function SwitchVarIndexX_Callback(hObject, eventdata, handles)
+% hObject    handle to SwitchVarIndexX (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns SwitchVarIndexX contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from SwitchVarIndexX
+
+
+% --- Executes on selection change in SwitchVarIndexTime.
+function SwitchVarIndexTime_Callback(hObject, eventdata, handles)
+menu=get(handles.SwitchVarIndexTime,'String');
+option=menu{get(handles.SwitchVarIndexTime,'Value')};
+switch option
+    case 'file index'
+        set(handles.TimeVarName, 'Visible','off')
+    case 'attribute'
+        set(handles.TimeVarName, 'Visible','on')
+        time_index=[];
+        ListAttributes=get(handles.attributes,'String');
+        if ~isempty(ListAttributes)
+            time_index=find(~cellfun('isempty',regexp(ListAttributes,'Time')));% index of the attributes containing the string 'Time'
+        end
+        if ~isempty(time_index)
+            set(handles.TimeVarName,'Value',time_index(1))
+        else
+            set(handles.TimeVarName,'Value',1)
+        end
+        set(handles.TimeVarName, 'String',ListAttributes)
+    case 'variable'
+        ListDim=get(handles.dimensions,'String');
+        Field=get(handles.get_field,'UserData');
+        for idim=1:numel(ListDim)
+            var_count=[];
+            for ilist=1:numel(Field.VarDimName)
+                DimName=Field.VarDimName{ilist};
+                if strcmp(DimName,ListDim{idim})||strcmp(DimName,{ListDim{idim}}) %if the variable has a single dim ( 1D array)
+                    var_count=[var_count ilist];
+                end
+            end
+            if numel(var_count)==1
+                TimeVarName=[TimeVarName;Field.ListVarName{var_count}];
+            end
+        end
+        set(handles.TimeVarName, 'Visible','on')
+        List=get(handles.TimeVarName,'String');
+        option=List{get(handles.TimeVarName,'Value')};
+        ind=find(strcmp(option,get(handles.dimensions,'String')));
+        if isempty(ind)
+            set(handles.TimeVarName, 'Value',1);
+        else
+            set(handles.TimeVarName, 'Value',ind);
+        end
+        set(handles.TimeVarName, 'String',TimeVarName)
+    case 'dim index'
+        set(handles.TimeVarName, 'Visible','on')
+        List=get(handles.TimeVarName,'String');
+        option=List{get(handles.TimeVarName,'Value')};
+        ind=find(strcmp(option,get(handles.dimensions,'String')));
+        if isempty(ind)
+            set(handles.TimeVarName, 'Value',1);
+        else
+            set(handles.TimeVarName, 'Value',ind);
+        end
+        set(handles.TimeVarName, 'String',get(handles.dimensions,'String'))
+end
+
+    

@@ -1,7 +1,7 @@
 
 %'calc_field_tps': defines fields (velocity, vort, div...) from civ data and calculate them with tps interpolation
 %---------------------------------------------------------------------
-% [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord_tps,NbSites,SubRange,FieldVar,Operation,Coord_interp)
+% [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord_tps,NbSites,SubRange,FieldVar,FieldName,Coord_interp)
 %
 % OUTPUT:
 % DataOut: structure representing the output fields
@@ -11,10 +11,10 @@
 % NbSites
 % SubRange
 % FieldVar
-% Operation: cell array representing the list of operations (eg div, rot..)
+% FieldName: cell array representing the list of operations (eg div, rot..)
 % Coord_interp: coordiantes of sites on which the fields need to be calculated
 
-function [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord_tps,NbSites,SubRange,FieldVar,Operation,Coord_interp)
+function [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord_tps,NbSites,SubRange,FieldVar,FieldName,Coord_interp)
 
 %list of defined scalars to display in menus (in addition to 'ima_cor').
 % a type is associated to each scalar:
@@ -43,9 +43,9 @@ nbval=zeros(nb_sites,1);
 %% list of operations
 check_grid=0;
 check_der=0;
-for ilist=1:length(Operation)
-    OperationType=regexprep(Operation{ilist},'(.+','');
-    switch OperationType
+for ilist=1:length(FieldName)
+    FieldNameType=regexprep(FieldName{ilist},'(.+','');
+    switch FieldNameType
         case 'vec'
             check_grid=1;
             DataOut.U=zeros(nb_sites,1);
@@ -54,11 +54,11 @@ for ilist=1:length(Operation)
             VarAttribute{2}.Role='vector_y';
         case {'U','V','norm'}
             check_grid=1;
-            DataOut.(OperationType)=zeros(nb_sites,1);
+            DataOut.(FieldNameType)=zeros(nb_sites,1);
             VarAttribute{1}.Role='scalar';
         case {'curl','div','strain'}
             check_der=1;
-            DataOut.(OperationType)=zeros(nb_sites,1);
+            DataOut.(FieldNameType)=zeros(nb_sites,1);
             VarAttribute{1}.Role='scalar';
     end
 end
@@ -78,9 +78,9 @@ for isub=1:NbSubDomain
         [EMDX,EMDY] = tps_eval_dxy(Coord_interp(ind_sel,:),Coord_tps(1:nbvec_sub,:,isub));%kernels for calculating the spatial derivatives from tps 'sources'
     end
     ListVar={};
-    for ilist=1:length(Operation)
+    for ilist=1:length(FieldName)
         var_count=numel(ListVar);
-        switch Operation{ilist}
+        switch FieldName{ilist}
             case 'vec(U,V)'
                 ListVar=[ListVar {'U', 'V'}];
                 VarAttribute{var_count+1}.Role='vector_x';

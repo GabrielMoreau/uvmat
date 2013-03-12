@@ -1,5 +1,4 @@
-%'find_field_cells': test field structure for input in proj_field and plot_field
-%    group the variables  into 'fields' with common dimensions
+%'find_field_cells': analyse the field structure for input in uvmat functions, grouping the variables  into 'fields' with common coordinates
 %------------------------------------------------------------------------
 % function  [CellInfo,NbDim,errormsg]=find_field_cells(Data)
 %
@@ -8,7 +7,7 @@
 %     .CoordType:  type of coordinates for each field cell = 'scattered','grid','tps';
 %     .CoordIndex: array of the indices of the variables representing the coordinates (in the order z,y,x)
 %     .CoordSize: array of the nbre of values for each  coordinate in a grid, nbre of points in the unstructured case
-%     .NbSite_tps:
+%     .NbCentres_tps:
 %     .SubRange_tps
 %     .VarIndex: arrays of the variable indices in the field cell
 %     .VarIndex_ancillary: indices of ancillary variables
@@ -18,7 +17,7 @@
 %              _image   : B/W image, (behaves like scalar)
 %              _vector_x,_y,_z: indices of variables giving the vector components x, y, z
 %              _warnflag: index of warnflag    
-%      .FieldRequest= 'interp_lin', 'interp_tps' indicate whether lin interpolation  or derivatives (tps) is needed to calculate the requested field
+%      .ProjModeRequest= 'interp_lin', 'interp_tps' indicate whether lin interpolation  or derivatives (tps) is needed to calculate the requested field
 %      .FieldName = operation to be performed to finalise the field cell after projection
 %      .SubCheck=0 /1 indicate that the field must be substracted (second  entry in uvmat)
 % NbDim: array with the length of CellVarIndex, giving the space dimension of each field cell
@@ -60,12 +59,12 @@
 %    group the variables  into 'fields' with common dimensions
 
 function [CellInfo,NbDim,errormsg]=find_field_cells(Data)
-
+CellInfo={};
 NbDim=0;
 errormsg='';
 if ~isfield(Data,'ListVarName'), errormsg='the list of variables .ListVarName is missing';return;end
 if ~isfield(Data,'VarDimName'), errormsg='the list of dimensions .VarDimName is missing';return;end
-nbvar=numel(Data.ListVarName);%number of field variables
+nbvar=numel(Data.ListVarName);%number of variables in the field structure
 if ~isequal(numel(Data.VarDimName),nbvar), errormsg='.ListVarName and .VarDimName have unequal length';return;end
 % check the existence of variable data
 check_var=1;
@@ -85,7 +84,7 @@ end
 %ListRole={'coord_x','coord_y','coord_z','vector_x','vector_y','vector_z','vector_x_tps','vector_y_tps','warnflag','errorflag',...
 %   'ancillary','image','color','discrete','scalar','coord_tps'};% rmq vector_x_tps and vector_y_tps to be replaced by vector_x and vector_y
 Role=num2cell(blanks(nbvar));%initialize a cell array of nbvar blanks
-FieldRequest=regexprep(Role,' ',''); % fieldRequest set to '' by default
+ProjModeRequest=regexprep(Role,' ',''); % fieldRequest set to '' by default
 FieldName=cell(size(Role)); % fieldRequest set to {} by default
 CheckSub=zeros(size(Role));% =1 for fields to substract
 Role=regexprep(Role,' ','scalar'); % Role set to 'scalar' by default
@@ -94,8 +93,8 @@ if isfield(Data,'VarAttribute')
         if isfield(Data.VarAttribute{ivar},'Role')
             Role{ivar}=Data.VarAttribute{ivar}.Role;
         end
-        if isfield(Data.VarAttribute{ivar},'FieldRequest')
-            FieldRequest{ivar}=Data.VarAttribute{ivar}.FieldRequest;
+        if isfield(Data.VarAttribute{ivar},'ProjModeRequest')
+            ProjModeRequest{ivar}=Data.VarAttribute{ivar}.ProjModeRequest;
         end
         if isfield(Data.VarAttribute{ivar},'FieldName')
             FieldName{ivar}=Data.VarAttribute{ivar}.FieldName;
@@ -161,23 +160,25 @@ end
 ivar_remain=find(~check_select);% indices of remaining variables (not already selected)
 check_coord_tps= strcmp('coord_tps',Role(~check_select));
 ivar_tps=ivar_remain(check_coord_tps);% variable indices corresponding to tps coordinates
+
+% loop on the tps coordinate sets
 for icell_tps=1:numel(ivar_tps)
+    check_cell=zeros(1,nbvar);% =1 for the variables selected in the current cell
+    check_cell(ivar_tps(icell_tps))=1;% mark the coordiante variable as selected
     DimCell=Data.VarDimName{ivar_tps(icell_tps)};% dimension names for the current tps coordinate variable
     icell=numel(CellInfo)+icell_tps; % new field cell index
     CellInfo{icell}.CoordIndex=ivar_tps(icell_tps);% index of the  tps coordinate variable
-    %CellInfo{icell}.VarIndex_subrange_tps=[];
-    %CellInfo{icell}.VarIndex_nbsites_tps=[];
     if numel(DimCell)==3
         VarDimName=Data.VarDimName(~check_select);
         for ivardim=1:numel(VarDimName)
             if strcmp(VarDimName{ivardim},DimCell{3})
-                CellInfo{icell}.NbSite_tps= ivar_remain(ivardim);
-                check_cell(ivar_remain(ivardim))=1;% nbre of sites for each tps subdomain
+                CellInfo{icell}.NbCentres_tps= ivar_remain(ivardim);% nbre of sites for each tps subdomain
+                check_cell(ivar_remain(ivardim))=1;% mark the variable as selected
             elseif strcmp(VarDimName{ivardim}{1},DimCell{2}) && strcmp(VarDimName{ivardim}{3},DimCell{3})
-                CellInfo{icell}.SubRange_tps=ivar_remain(ivardim);
-                check_cell(ivar_remain(ivardim))=1;% subrange definiton for tps
-            elseif strcmp(VarDimName{ivardim}{1},DimCell{1}) && strcmp(VarDimName{ivardim}{2},DimCell{3})
-                check_cell(ivar_remain(ivardim))=1;% variable
+                CellInfo{icell}.SubRange_tps=ivar_remain(ivardim);% subrange definiton for tps
+                check_cell(ivar_remain(ivardim))=1;% mark the variable as selected
+            elseif strcmp(VarDimName{ivardim}{1},DimCell{1}) && strcmp(VarDimName{ivardim}{2},DimCell{3})% variable
+                check_cell(ivar_remain(ivardim))=1;% mark the variable as selected
             end
         end
     end
@@ -221,7 +222,7 @@ for idim=1:numel(ListDimName)
         end
     end
 end
-ListCoordIndex=ListCoordIndex(check_coord_select);% list of coordinate variable indices
+ListCoordIndex=ListCoordIndex(check_keep);% list of coordinate variable indices
 ListCoordName=ListCoordName(check_keep);% list of coordinate variable names
 ListDimName=ListDimName(check_keep);% list of coordinate dimension names
 
@@ -314,8 +315,8 @@ for icell=1:numel(CellInfo)
         else
             CellInfo{icell}.(['VarIndex_' Role{ivar}])= ivar;
         end
-        if ~isempty(FieldRequest{ivar})
-            CellInfo{icell}.FieldRequest=FieldRequest{ivar};
+        if ~isempty(ProjModeRequest{ivar})
+            CellInfo{icell}.ProjModeRequest=ProjModeRequest{ivar};
         end
         if ~isempty(FieldName{ivar})
             CellInfo{icell}.FieldName=FieldName{ivar};

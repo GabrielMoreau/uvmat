@@ -74,16 +74,16 @@ for ilist=1:numel(Field.ListVarName)
 end
 
 %% field request
-FieldRequest=cell(size(Field.ListVarName));
+ProjModeRequest=cell(size(Field.ListVarName));
 for ilist=1:numel(Field.VarAttribute)
-    if isfield(Field.VarAttribute{ilist},'FieldRequest')
-        FieldRequest{ilist}=Field.VarAttribute{ilist}.FieldRequest;
+    if isfield(Field.VarAttribute{ilist},'ProjModeRequest')
+        ProjModeRequest{ilist}=Field.VarAttribute{ilist}.ProjModeRequest;
     end
 end
-FieldRequest_1=cell(size(Field_1.ListVarName));
+ProjModeRequest_1=cell(size(Field_1.ListVarName));
 for ilist=1:numel(Field_1.VarAttribute)
-    if isfield(Field_1.VarAttribute{ilist},'FieldRequest')
-        FieldRequest_1{ilist}=Field_1.VarAttribute{ilist}.FieldRequest;
+    if isfield(Field_1.VarAttribute{ilist},'ProjModeRequest')
+        ProjModeRequest_1{ilist}=Field_1.VarAttribute{ilist}.ProjModeRequest;
     end
 end
 
@@ -114,7 +114,7 @@ for ilist=1:numel(Field_1.ListVarName)
         end
         VarVal=Field_1.(Field_1.ListVarName{ilist});
         for i1=1:numel(Field.ListVarName)
-            if (isempty(FieldRequest{i1})&&isempty(FieldRequest_1{ilist})||strcmp(FieldRequest{i1},FieldRequest_1{ilist})) && isequal(Field.(Field.ListVarName{i1}),VarVal)
+            if (isempty(ProjModeRequest{i1})&&isempty(ProjModeRequest_1{ilist})||strcmp(ProjModeRequest{i1},ProjModeRequest_1{ilist})) && isequal(Field.(Field.ListVarName{i1}),VarVal)
                ind_remove(ilist)=1;
                NewDim=Field.VarDimName{i1};
                if ischar(NewDim)
