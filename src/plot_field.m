@@ -103,6 +103,10 @@ if ~exist('PlotParam','var'),PlotParam=[];end;
 PlotType='text'; %default
 if ~isfield(PlotParam,'Coordinates')
     PlotParam.Coordinates=[];
+    if isfield(Data,'CoordUnit')
+        PlotParam.Coordinates.CheckFixAspectRatio=1;
+        PlotParam.Coordinates.AspectRatio=1; %set axes equal by default if CoordUnit is defined
+    end
 end
 PlotParamOut=PlotParam;%default
 

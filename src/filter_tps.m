@@ -45,10 +45,10 @@ rho=Siz(1)*Siz(2)*Rho/1000;%optimum rho increase as the area of the subdomain (d
 
 %% default output
 SubRange=zeros(NbCoord,2,NbSubDomain);%initialise the positions of subdomains
-NbCentres=zeros(NbSubDomain);%number of interpolated values per subdomain, =0 by default
-Coord_tps=zeros(NbVec,NbCoord,NbSubDomain);% default positions of the tps source= initial positions of the good vectors sorted by subdomain
-U_tps=zeros(NbVec,NbSubDomain);%default spline
-V_tps=zeros(NbVec,NbSubDomain);%default spline
+NbCentres=zeros(1,NbSubDomain);%number of interpolated values per subdomain, =0 by default
+%Coord_tps=zeros(NbVec,NbCoord,NbSubDomain);% default positions of the tps source= initial positions of the good vectors sorted by subdomain
+%U_tps=zeros(NbVec,NbSubDomain);%default spline
+%V_tps=zeros(NbVec,NbSubDomain);%default spline
 W_tps=[];%default (2 component case)
 U_smooth=zeros(NbVec,1); % smoothed velocity U at the initial positions
 V_smooth=zeros(NbVec,1);% smoothed velocity V at the initial positions

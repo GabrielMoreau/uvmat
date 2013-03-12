@@ -492,8 +492,8 @@ if ~isempty(XmlFileName)
             end
         end
     end
-    if isfield(XmlData,'TimeUnit')
-        TimeUnit=XmlData.TimeUnit;
+    if isfield(XmlData,'Camera') && isfield(XmlData.Camera,'TimeUnit')
+        TimeUnit=XmlData.Camera.TimeUnit;
     end
     if isfield(XmlData,'GeometryCalib')
         tsai=XmlData.GeometryCalib;
@@ -2703,15 +2703,15 @@ if isequal(mode,'series(Di)')
     first_i=str2double(get(handles.first_i,'String'));
     last_i=str2double(get(handles.last_i,'String'));
     incr_i=str2double(get(handles.incr_i,'String'));
-    num1=first_i:incr_i:last_i;
+    num_i=first_i:incr_i:last_i;
     lastfield=str2double(get(handles.nb_field,'String'));
     if ~isnan(lastfield)
-        test_find=(num1-floor(index_pair/2)*ones(size(num1))>0)& ...
-            (num1+ceil(index_pair/2)*ones(size(num1))<=lastfield);
-        num1=num1(test_find);
+        test_find=(num_i-floor(index_pair/2)*ones(size(num_i))>0)& ...
+            (num_i+ceil(index_pair/2)*ones(size(num_i))<=lastfield);
+        num_i=num_i(test_find);
     end
-    set(handles.first_i,'String',num2str(num1(1)));
-    set(handles.last_i,'String',num2str(num1(end)));
+    set(handles.first_i,'String',num2str(num_i(1)));
+    set(handles.last_i,'String',num2str(num_i(end)));
 elseif isequal(mode,'series(Dj)')
     first_j=str2double(get(handles.first_j,'String'));
     last_j=str2double(get(handles.last_j,'String'));
@@ -2721,10 +2721,10 @@ elseif isequal(mode,'series(Dj)')
     if ~isnan(lastfield2)
         test_find=(num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
             (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2);
-        num1=num_j(test_find);
+        num_j=num_j(test_find);
     end
-    set(handles.first_j,'String',num2str(num1(1)));
-    set(handles.last_j,'String',num2str(num1(end)));
+    set(handles.first_j,'String',num2str(num_j(1)));
+    set(handles.last_j,'String',num2str(num_j(end)));
 end
 
 %------------------------------------------------------------------------
@@ -2741,15 +2741,15 @@ if isequal(mode,'series(Di)')
     first_i=str2double(get(handles.first_i,'String'));
     last_i=str2double(get(handles.last_i,'String'));
     incr_i=str2double(get(handles.incr_i,'String'));
-    num1=first_i:incr_i:last_i;
+    num_i=first_i:incr_i:last_i;
     lastfield=str2double(get(handles.nb_field,'String'));
     if ~isnan(lastfield)
-        test_find=(num1-floor(index_pair/2)*ones(size(num1))>0)& ...
-            (num1+ceil(index_pair/2)*ones(size(num1))<=lastfield);
-        num1=num1(test_find);
+        test_find=(num_i-floor(index_pair/2)*ones(size(num_i))>0)& ...
+            (num_i+ceil(index_pair/2)*ones(size(num_i))<=lastfield);
+        num_i=num_i(test_find);
     end
-    set(handles.first_i,'String',num2str(num1(1)));
-    set(handles.last_i,'String',num2str(num1(end)));
+    set(handles.first_i,'String',num2str(num_i(1)));
+    set(handles.last_i,'String',num2str(num_i(end)));
 elseif isequal(mode,'series(Dj)')
     first_j=str2double(get(handles.first_j,'String'));
     last_j=str2double(get(handles.last_j,'String'));
@@ -2759,10 +2759,10 @@ elseif isequal(mode,'series(Dj)')
     if ~isnan(lastfield2)
         test_find=(num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
             (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2);
-        num1=num_j(test_find);
+        num_j=num_j(test_find);
     end
-    set(handles.first_j,'String',num2str(num1(1)));
-    set(handles.last_j,'String',num2str(num1(end)));
+    set(handles.first_j,'String',num2str(num_j(1)));
+    set(handles.last_j,'String',num2str(num_j(end)));
 end
 
 %------------------------------------------------------------------------

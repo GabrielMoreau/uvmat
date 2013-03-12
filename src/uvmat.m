@@ -1843,12 +1843,27 @@ num_i1=str2num(get(handles.i1,'String'));
 num_j1=stra2num(get(handles.j1,'String'));
 num_i2=str2num(get(handles.i2,'String'));
 num_j2=stra2num(get(handles.j2,'String'));
+imaname_1='';
 if isempty(num_j2)
-    if isempty(num_i2)   
-        msgbox_uvmat('ERROR', 'a second image index i2 or j2 is needed to show the pair as a movie')
-        set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
-         set(handles.movie_pair,'Value',0)
-        return
+    if isempty(num_i2)
+        if strcmp(get(handles.j2,'Visible'),'on') %if the j box is visible
+            imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,Ext,NomType,num_i1,[],num_j1+1);
+        end
+        if exist(imaname_1,'file')
+            num_j2=num_j1+1;
+            set(handles.j2,'String',num2str(num_j2));
+        else
+            imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,Ext,NomType,num_i1+1,[],num_j1);
+            if exist(imaname_1,'file')
+                num_i2=num_i1+1;
+                set(handles.i2,'String',num2str(num_i2));
+            else
+                msgbox_uvmat('ERROR', 'a second image index i2 or j2 is needed to show the pair as a movie')
+                set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
+                set(handles.movie_pair,'Value',0)
+                return
+            end
+        end
     else
         num_j2=num_j1;%repeat the index i1 by default
     end
@@ -3049,6 +3064,7 @@ field= list_fields{index_fields(1)}; % selected string
 
 %% fill the coordinates and variables from selections in get_field
 if isequal(field,'get_field...')
+    ParamIn=[];
     if strcmp(get(handles.VelType,'Visible'),'on')
         % we use the civ choice as default input
         ParamIn.SwitchVarIndexTime='attribute';
@@ -3059,6 +3075,7 @@ if isequal(field,'get_field...')
                  ParamIn.TimeVarName='Civ1_Time';
                  ParamIn.vector_x='Civ1_U';
                  ParamIn.vector_y='Civ1_V';
+                 ParamIn.vec_color='Civ1_C';                
             case 'filter1'
                  ParamIn.TimeVarName='Civ1_Time';
                  ParamIn.vector_x='Civ1_U_smooth';
@@ -3071,6 +3088,7 @@ if isequal(field,'get_field...')
                  ParamIn.TimeVarName='Civ2_Time';
                  ParamIn.vector_x='Civ2_U_smooth';
                  ParamIn.vector_y='Civ2_V_smooth';
+                 ParamIn.vec_color='Civ2_C';
         end
     end
     set(handles.FixVelType,'visible','off')

@@ -53,7 +53,7 @@ if isfield(s,'Camera')
     s.Time=[];
     for k=1:length(Timing)
         Frequency=1;
-        if isfield(Timing{k},'Frequency')
+        if isfield(Timing{k},'FrameFrequency')
             Frequency=Timing{k}.FrameFrequency;
         end
         Dtj=[];

@@ -164,7 +164,7 @@ ivar_tps=ivar_remain(check_coord_tps);% variable indices corresponding to tps co
 % loop on the tps coordinate sets
 for icell_tps=1:numel(ivar_tps)
     check_cell=zeros(1,nbvar);% =1 for the variables selected in the current cell
-    check_cell(ivar_tps(icell_tps))=1;% mark the coordiante variable as selected
+    check_cell(ivar_tps(icell_tps))=1;% mark the coordinate variable as selected
     DimCell=Data.VarDimName{ivar_tps(icell_tps)};% dimension names for the current tps coordinate variable
     icell=numel(CellInfo)+icell_tps; % new field cell index
     CellInfo{icell}.CoordIndex=ivar_tps(icell_tps);% index of the  tps coordinate variable
