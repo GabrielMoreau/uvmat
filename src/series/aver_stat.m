@@ -239,7 +239,7 @@ for i_slice=1:NbSlice
             end
             
             %% calculate tps coefficients if needed
-            if isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'filter')
+            if isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
                 Field=calc_tps(Field,check_proj_tps);
             end
 
