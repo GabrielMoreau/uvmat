@@ -3108,8 +3108,8 @@ if isequal(field,'get_field...')
     if GetFieldData.CheckVector
         UName=GetFieldData.PanelVectors.vector_x;
         VName=GetFieldData.PanelVectors.vector_y;
-        XName=GetFieldData.PanelVectors.coord_x_vectors;
-        YName=GetFieldData.PanelVectors.coord_y_vectors;
+        XName=GetFieldData.XVarName;
+        YName=GetFieldData.YVarName;
         CName=GetFieldData.PanelVectors.vec_color;
         [FieldList,VecColorList]=set_field_list(UName,VName,CName);
 %         FieldList={['vec(' UName ',' VName ')'];...
@@ -3126,8 +3126,8 @@ if isequal(field,'get_field...')
     end
     if GetFieldData.CheckScalar
         AName=GetFieldData.PanelScalar.scalar;
-        XName=GetFieldData.PanelScalar.coord_x_scalar;
-        YName=GetFieldData.PanelScalar.coord_y_scalar;
+        XName=GetFieldData.XVarName;
+        YName=GetFieldData.YVarName;
         FieldList={AName};
     end
     if GetFieldData.CheckPlot1D

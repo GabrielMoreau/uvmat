@@ -2186,11 +2186,14 @@ for iattr=1:length(ProjData.ListGlobalAttribute)
 end
 
 %% transfer coordinate unit
+if isfield(ProjData,'CoordUnit')
+    ProjData=rmfield(ProjData,'CoordUnit');% do not transfer by default (to avoid x/y=1 for profiles)
+end
 if isfield(FieldData,'CoordUnit')
     if isfield(ObjectData,'CoordUnit') && ~strcmp(FieldData.CoordUnit,ObjectData.CoordUnit)
         errormsg=[ObjectData.Type ' in ' ObjectData.CoordUnit ' coordinates, while field in ' FieldData.CoordUnit ];
         return
-    else
+    elseif strcmp(ObjectData.Type,'plane')|| strcmp(ObjectData.Type,'volume')
          ProjData.CoordUnit=FieldData.CoordUnit;
     end
 end

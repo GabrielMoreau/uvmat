@@ -485,17 +485,23 @@ if strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_o
     PlotType='text';
 else
     % create tps coeff if needed for ProjMode 'interp_tps'
-    if strcmp(ObjectData.ProjMode,'interp_tps')&&~isfield(UvData.Field,'Coord_tps')     
-        UvData.Field=calc_tps(UvData.Field,1);
+    if strcmp(ObjectData.ProjMode,'interp_tps')&&~isfield(UvData.Field,'Coord_tps')
+        %UvData.Field=calc_tps(UvData.Field,1);
+        [UvData.Field,errormsg]=tps_coeff_field(UvData.Field,1);
+        if ~isempty(errormsg)
+            msgbox_uvmat('ERROR', ['set_object/tps_coeff_field/' errormsg])
+            set(handles.PLOT,'enable','on')
+            return
+        end
     end
     [ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current field of uvmat on ObjectData
     if ~isempty(errormsg)
-        msgbox_uvmat('ERROR', errormsg)
+        msgbox_uvmat('ERROR', ['set_object/proj_field/' errormsg])
         set(handles.PLOT,'enable','on')
         return
-    end   
+    end
     if isequal(IndexObj_1,IndexObj) % if  the projection is in uvmat
-         PlotType=plot_field(ProjData,hhuvmat.PlotAxes,read_GUI(get(hhuvmat.PlotAxes,'parent')));%update the current uvmat plot
+        PlotType=plot_field(ProjData,hhuvmat.PlotAxes,read_GUI(get(hhuvmat.PlotAxes,'parent')));%update the current uvmat plot
     else  % if the projection is in view_field
         hview_field=findobj(allchild(0),'tag','view_field');
         if isempty(hview_field)
@@ -508,7 +514,7 @@ else
                 msgbox_uvmat('ERROR',errormsg)
                 return
             end
-       %     write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
+            %     write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
         end
         haxes=findobj(hview_field,'tag','axes3');
         Data=get(hview_field,'UserData');
@@ -522,7 +528,7 @@ else
         else
             set(hview_field,'Position',Data.GUISize)
         end
-      %  set(hhuvmat.ViewField,'Value',1)% indicate that the field projection on the current object is plotted in view_field
+        %  set(hhuvmat.ViewField,'Value',1)% indicate that the field projection on the current object is plotted in view_field
     end
 end
 

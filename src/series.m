@@ -1373,14 +1373,6 @@ function STOP_Callback(hObject, eventdata, handles)
 set(handles.RUN, 'BusyAction','cancel')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 set(handles.RUN,'enable','on')
-% set(handles.BATCH,'BackgroundColor',[1 0 0])
-% set(handles.BATCH,'enable','on')
-
-%------------------------------------------------------------------------
-% --- Executes on button press in BATCH.
-function BATCH_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------    
-
 
 % %------------------------------------------------------------------------
 % % --- Executes on button press in BIN.
@@ -1469,7 +1461,6 @@ end
 list_action=get(handles.ActionName,'String');% list menu action
 index=get(handles.ActionName,'Value');
 action= list_action{index}; % selected string
-%Series.Action=action;%name of the processing programme
 Series.hseries=handles.series; % handles to the series GUI
 path_series=which('series');
 list_path=get(handles.ActionName,'UserData');
@@ -1519,8 +1510,6 @@ if isfield(Series,'OutputSubDir')
         end
     end
     Series.OutputDirExt=regexprep(SubDirOutNew,Series.OutputSubDir,'');
- %   Series.OutputSubDir=SubDirOutNew;
- %   Series.OutputDir=fullfile(Series.InputTable{1,1},Series.OutputSubDir);%directory set for output results
     Series.OutputRootFile=Series.InputTable{1,3};% the first sorted RootFile taken for output
     set(handles.OutputDirExt,'String',Series.OutputDirExt)
     % create output directory 
@@ -2055,3 +2044,71 @@ set(handles.PairString,'Unit','pixel')
 Pos=get(handles.PairString,'Position');
 set(handles.PairString,'Unit','normalized')
 set(handles.PairString,'ColumnWidth',{Pos(3)-5})
+
+
+% --- Executes on button press in status.
+function status_Callback(hObject, eventdata, handles)
+val=get(handles.status,'Value');
+if val==0
+    set(handles.status,'BackgroundColor',[0 1 0])
+    hfig=findobj(allchild(0),'name','series_status');
+    if ~isempty(hfig)
+        delete(hfig)
+    end
+    return
+end
+set(handles.status,'BackgroundColor',[1 1 0])
+drawnow
+% listtype={'civ1','fix1','patch1','civ2','fix2','patch2'};
+% Param.CheckCiv1=get(handles.CheckCiv1,'Value');
+% Param.CheckFix1=get(handles.CheckFix1,'Value');
+% Param.CheckPatch1=get(handles.CheckPatch1,'Value');
+% Param.CheckCiv2=get(handles.CheckCiv2,'Value');
+% Param.CheckFix2=get(handles.CheckFix2,'Value');
+% Param.CheckPatch2=get(handles.CheckPatch2,'Value');
+% box_test=[Param.CheckCiv1 Param.CheckFix1 Param.CheckPatch1 Param.CheckCiv2 Param.CheckFix2 Param.CheckPatch2];
+% 
+% option_civ=find(box_test,1,'last');%last selected option (non-zero index of box_test)
+% filecell=get(handles.civ,'UserData');%retrieve the list of output files expected for PIV
+% test_new=0;
+% if ~isfield(filecell,'nc')
+%     test_new=1;
+%     [ref_i,ref_j,errormsg]=find_ref_indices(handles);
+%     if ~isempty(errormsg)
+%         msgbox_uvmat('ERROR',errormsg)
+%         return
+%     end
+%     filecell=set_civ_filenames(handles,ref_i,ref_j,box_test);%determine the output file expected from the GUI status
+% end
+% if ~isequal(box_test(4:6),[0 0 0])
+%     civ_files=filecell.nc.civ2;%case of civ2 operations
+% else
+%     civ_files=filecell.nc.civ1;
+% end
+hfig=findobj(allchild(0),'name','series_status');
+if isempty(hfig)
+    hfig=figure('DeleteFcn',@stop_status);
+    set(hfig,'MenuBar','none')% suppress the menu bar
+    set(hfig,'NumberTitle','off')%suppress the fig number in the title
+    set(hfig,'name','series_status')
+    set(hfig,'tag','series_status')
+%    set(hfig,'UserData',civ_files)
+    hlist= uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', {'open_uvmat'},'tag','list');
+    uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','msgbox','Max',2,'String','checking files...');
+    uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
+    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@close_GUI);
+    hrefresh=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@refresh_GUI);
+    BarPosition=[0.05 0.81 0.01 0.05];
+    uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
+    drawnow 
+end
+StatusData.time_ref=get(handles.RUN,'UserData');% get the time of launch
+% StatusData.option_civ=option_civ;
+set(hrefresh,'UserData',StatusData)
+Param=read_GUI(handles.series);
+RootPath=Param.InputTable{1,1};
+SubDir=Param.InputTable{1,2};
+OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
+OutputDir=fullfile(RootPath,SubDir,OutputSubDir);
+set(hlist,'UserData',OutputDir)
+%refresh_GUI(hrefresh,[])

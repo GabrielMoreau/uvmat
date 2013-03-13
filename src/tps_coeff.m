@@ -28,7 +28,7 @@
 
 function [U_smooth,U_tps]=tps_coeff(ctrs,U,Smoothing)
 %------------------------------------------------------------------------
-
+warning off
 N=size(ctrs,1);% nbre of source centres
 NbDim=size(ctrs,2);% space dimension (2 or 3)
 U = [U; zeros(NbDim+1,1)];

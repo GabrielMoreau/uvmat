@@ -405,6 +405,10 @@ else
     set(handles.PanelScalar,'Visible','off')
     set(handles.CheckScalar,'Value',0)
     set(handles.PanelVectors,'Visible','on')
+    set(handles.XVarName,'Visible','on')
+    set(handles.YVarName,'Visible','on')
+    set(handles.X_title,'Visible','on')
+    set(handles.Y_title,'Visible','on')
 end
 
 
@@ -412,6 +416,7 @@ end
 % --- Executes on selection change in scalar menu.
 function scalar_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+Field=get(handles.get_field,'UserData');
 index=get(handles.scalar,'Value');
 string=get(handles.scalar,'String');
 VarName=string{index};
@@ -419,11 +424,21 @@ update_field(hObject, eventdata, handles,VarName)
 
 %eliminate time
 TimeDimName='';%default
-if strcmp(get(handles.TimeDimensionMenu,'Visible'),'on')
-    TimeDimList=get(handles.TimeDimensionMenu,'String');
-    TimeDimIndex=get(handles.TimeDimensionMenu,'Value');
-    TimeDimName=TimeDimList{TimeDimIndex};
+SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');
+TimeVarOption=SwitchVarIndexTime{get(handles.SwitchVarIndexTime,'Value')};
+if strcmp(TimeVarOption,'variable')
+    List=get(handles.TimeVarName,'String');
+    TimeVarName=List{get(handles.TimeVarName,'Value')};
+elseif  strcmp(TimeVarOption,'dim index')
+    List=get(handles.TimeVarName,'String');
+    TimeDimName=List{get(handles.TimeVarName,'Value')};
 end
+% A completer
+% if strcmp(get(handles.TimeDimensionMenu,'Visible'),'on')
+%     TimeDimList=get(handles.TimeDimensionMenu,'String');
+%     TimeDimIndex=get(handles.TimeDimensionMenu,'Value');
+%     TimeDimName=TimeDimList{TimeDimIndex};
+% end
 
 %check possible coordinates
 Field=get(handles.get_field,'UserData');
@@ -431,8 +446,11 @@ dim_scalar=Field.VarDimName{index};%list of dimensions of the selected scalar
 test_coord=ones(size(Field.VarDimName)); %=1 when variable #ilist is eligible as coordinate
 for ilist=1:numel(Field.VarDimName)
     dimnames=Field.VarDimName{ilist}; %list of dimensions for variable #ilist
-    if isequal(dimnames,{TimeDimName})
+    if isequal(dimnames,TimeDimName)
         test_coord(ilist)=0;%mark time variables fo elimination
+    end
+    if ischar(dimnames)
+        dimnames={dimnames};
     end
     for idim=1:numel(dimnames)
         if isempty(find(strcmp(dimnames{idim},dim_scalar),1))%dimension not found in the scalar variable
