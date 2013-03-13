@@ -267,7 +267,7 @@ for i_slice=1:NbSlice
             
             % calculate tps coefficients if needed
             if isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
-                Field=calc_tps(Field,check_proj_tps);
+                Field=tps_coeff_field(Field,check_proj_tps);
             end
             
             %field projection on an object

@@ -236,7 +236,7 @@ for i_slice=1:NbSlice
                 
             %% calculate tps coeff if needed
              check_proj_tps= ~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'filter')&&~isfield(Data{iview},'Coord_tps');
-            Data{iview}=calc_tps(Data{iview},check_proj_tps);
+            Data{iview}=tps_coeff_field(Data{iview},check_proj_tps);
 
             %% projection on object (gridded plane)
             if Param.CheckObject
