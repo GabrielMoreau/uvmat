@@ -5,6 +5,12 @@ if isempty(which('mcc'))
 end
 display('compiling civ_matlab...')
 % commands to compile civ_matlab and eventually other functions
+if ~exist('bin','dir')
+    [success,errormsg]=mkdir('bin');
+    if success~=1
+        display(errormsg)
+    end
+end
 mcc -m -R -nojvm -R -nodisplay civ_matlab.m
 system('mv -f civ_matlab bin/');
 system('sed -e ''s#/civ_matlab#/bin/civ_matlab#'' run_civ_matlab.sh > civ_matlab.sh'); 

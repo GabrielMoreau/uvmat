@@ -17,10 +17,9 @@ else
     if isfield(Coordinates,'CheckFixAspectRatio')
         if Coordinates.CheckFixAspectRatio
             set(handles.CheckFixAspectRatio,'Value',1)
-            set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])
         else
             set(handles.CheckFixAspectRatio,'Value',0)
-            set(handles.CheckFixAspectRatio,'BackgroundColor',[0.7 0.7 0.7])
+ 
         end
     end
     if isfield(Coordinates,'AspectRatio')

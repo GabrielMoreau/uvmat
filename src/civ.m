@@ -526,6 +526,11 @@ end
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
 if numel(time)>=2 % if there are at least two time values to define dt
+    if size(time,1)<MaxIndex_i;
+        msgbox_uvmat('WARNING','maximum i index restricted by the timing of the xml file');
+    elseif size(time,2)<MaxIndex_j
+        msgbox_uvmat('WARNING','maximum j index restricted by the timing of the xml file');
+    end
     MaxIndex_i=min(size(time,1),MaxIndex_i);%possibly adjust the max index according to time data
     MaxIndex_j=min(size(time,2),MaxIndex_j);
     time=[zeros(size(time,1),1) time]; %insert a vertical line of zeros (to deal with zero file indices)

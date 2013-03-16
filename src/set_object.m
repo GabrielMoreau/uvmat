@@ -287,7 +287,7 @@ set(handles.num_Angle_3,'Visible','off')
 set(handles.num_RangeX_1,'Visible','off')
 set(handles.num_RangeX_2,'Visible','off')
 set(handles.num_RangeY_1,'Visible','off')
-if isequal(ProjMode,'interp_lin')
+if isequal(ProjMode,'interp_lin')|| isequal(ProjMode,'interp_tps')
     set(handles.num_RangeY_2,'Visible','off')
 else
     set(handles.num_RangeY_2,'Visible','on')

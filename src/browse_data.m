@@ -168,14 +168,14 @@ end
 set(handles.SourceDir,'BackgroundColor',[1 1 1])
 
 
-%------------------------------------------------------------------------
-function MirrorDir_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------   
-MirrorDir=get(handles.MirrorDir,'String');
-[tild,MirrorName]=fileparts(MirrorDir);
-s=xml2struct(fullfile(MirrorDir,[MirrorName '.xml']));
-set(handles.SourceDir,'String',s.SourceDir)
-SourceDir_Callback([],[], handles)
+% %------------------------------------------------------------------------
+% function MirrorDir_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------   
+% MirrorDir=get(handles.MirrorDir,'String');
+% [tild,MirrorName]=fileparts(MirrorDir);
+% s=xml2struct(fullfile(MirrorDir,[MirrorName '.xml']));
+% set(handles.SourceDir,'String',s.SourceDir)
+% SourceDir_Callback([],[], handles)
 
 
 %------------------------------------------------------------------------
@@ -211,10 +211,13 @@ end
 % --- Executes on selection change in ListExperiments.
  function ListExperiments_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+MirrorPath='';
+CampaignPath=get(handles.SourceDir,'String');
 if strcmp(get(handles.MirrorDir,'Visible'),'on')
-    CampaignPath=get(handles.MirrorDir,'String');
+%     CampaignPath=get(handles.MirrorDir,'String');
+    MirrorPath=get(handles.MirrorDir,'String');
 else
-    CampaignPath=get(handles.SourceDir,'String');
+%     CampaignPath=get(handles.SourceDir,'String');
 end
 % MirrorPath=get(handles.MirrorDir,'String');
 ListExperiments=get(handles.ListExperiments,'String');
@@ -227,7 +230,7 @@ else
     ListExperiments=ListExperiments(list_val);%choose selected experiments
     testList=0;
 end
-scan_experiments(handles,ListExperiments,CampaignPath)
+scan_experiments(handles,ListExperiments,CampaignPath,MirrorPath)
 
 
 %------------------------------------------------------------------------
@@ -241,10 +244,10 @@ for iexp=1:numel(ListExperiments)
     for ilist=1:length(hdir)
         if ~isequal(hdir(ilist).name(1),'.')
             DataSeries=fullfile(CampaignPath,ListExperiments{iexp},hdir(ilist).name);
-            if exist('MirrorPath','var')
+            if ~isempty(MirrorPath)
                 mirror=fullfile(MirrorPath,ListExperiments{iexp},hdir(ilist).name);
                 if ~exist(mirror)% create mirror if needed
-                    system(['ln -s ' source ' ' mirror])
+                    system(['ln -s ' DataSeries ' ' mirror])
                 end
             end
             check_list=strcmp(hdir(ilist).name,ListDevices);

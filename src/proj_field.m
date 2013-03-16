@@ -620,7 +620,7 @@ for icell=1:length(CellInfo)
             else
                 flagsel=ones(size(coord_x));
             end
-            if isequal(ProjMode,'projection') || isequal(ProjMode,'interp_tps')
+            if isequal(ProjMode,'projection') %|| isequal(ProjMode,'interp_tps')
                 flagsel=flagsel & ((coord_y -yinf(ip))*(xinf(ip+1)-xinf(ip))>(coord_x-xinf(ip))*(yinf(ip+1)-yinf(ip))) ...
                 & ((coord_y -ysup(ip))*(xsup(ip+1)-xsup(ip))<(coord_x-xsup(ip))*(ysup(ip+1)-ysup(ip))) ...
                 & ((coord_y -yinf(ip+1))*(xsup(ip+1)-xinf(ip+1))>(coord_x-xinf(ip+1))*(ysup(ip+1)-yinf(ip+1))) ...
@@ -632,7 +632,7 @@ for icell=1:length(CellInfo)
             nbvar=0;
             for iselect=1:numel(VarIndex)-2*testU
                 VarName=FieldData.ListVarName{VarIndex(iselect)};
-                eval(['ProjVar{iselect}=FieldData.' VarName '(indsel);']);%scalar value
+                ProjVar{iselect}=FieldData.(VarName)(indsel);%scalar value
             end   
             if testU
                 ProjVar{numel(VarIndex)-1}=cos(theta(ip))*vector_x(indsel)+sin(theta(ip))*vector_y(indsel);% longitudinal component
@@ -1184,7 +1184,9 @@ for icell=1:length(CellInfo)
                     if isfield(CellInfo{icell},'VarIndex_warnflag')% do not project ancillary data with interp
                         FieldData=rmfield(FieldData,FieldData.ListVarName{CellInfo{icell}.VarIndex_warnflag});
                     end
+                    % interpolate and calculate field on the grid
                     [VarVal,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,CellInfo{icell}.FieldName,XI,YI);
+                    
                     if isfield(CellInfo{icell},'CheckSub') && CellInfo{icell}.CheckSub && ~isempty(vector_x_proj)
                         ProjData.(ProjData.ListVarName{vector_x_proj})=ProjData.(ProjData.ListVarName{vector_x_proj})-VarVal{1};
                         ProjData.(ProjData.ListVarName{vector_y_proj})=ProjData.(ProjData.ListVarName{vector_y_proj})-VarVal{2};
@@ -1832,8 +1834,9 @@ for icell=1:length(CellVarIndex)
                     if  ~isequal(ivar_FF,0)
                         eval(['FieldData.' VarName '=FieldData.' VarName '(indsel);'])
                     end
-                    eval(['InterpFct=TriScatteredInterp(double(coord_X),double(coord_Y),double(coord_Z),double(FieldData.' VarName '))'])
-                    eval(['ProjData.' VarName '=InterpFct(X,Y,Z);'])
+                    % linear interpolation
+                    InterpFct=TriScatteredInterp(double(coord_X),double(coord_Y),double(coord_Z),double(FieldData.(VarName)));
+                    ProjData.(VarName)=InterpFct(X,Y,Z);
 %                     eval(['varline=reshape(ProjData.' VarName ',1,length(coord_y_proj)*length(coord_x_proj));'])
 %                     FFlag= isnan(varline); %detect undefined values NaN
 %                     indnan=find(FFlag);

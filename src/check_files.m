@@ -31,7 +31,6 @@ svn_info.rep_rev=[];
 svn_info.cur_rev=[];
 svn_info.status=[];
 list_fct={...
-    'xmltree';...%function for editing xml files (toolbox outside uvmat)
     'browse_data';...% function for scanning directories in a project/campaign
     'browse_data.fig';...% GUI corresponding to dataview
     'calc_field_interp';...% defines fields (velocity, vort, div...) from civx data and calculate them
@@ -84,7 +83,6 @@ list_fct={...
     'read_civxdata';...reads civx data from netcdf files
     'read_civdata';... reads new civ data from netcdf files
     'read_field';...% read the fields from files in different formats (netcdf files, images, video)
-%     'read_get_field';... read the list of selected variables from the GUI get_field (TODO: use read_GUI)
     'read_GUI';... %read a GUI and provide the data as a Matlab structure
     'read_image';...%read images or video objects
     'read_multimadoc';... %read a set of Imadoc files and compare their timing of different file series
@@ -132,6 +130,10 @@ end
 
 %% loop on the list of functions in the uvmat package
 icount=0;
+if ~exist('@xmltree','dir')
+    icount=icount+1;
+    checkmsg{icount}='ERROR installation: toolbox xmltree missing';
+end
 datnum=zeros(1,length(list_fct));
 for i=1:length(list_fct)
     dir_fct=which(list_fct{i});% path to fct

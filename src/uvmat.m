@@ -916,7 +916,7 @@ if ~isempty(XmlFileName)
         drawnow
         if isfield(XmlData, 'GeometryCalib') && ~isempty(XmlData.GeometryCalib)
             if isfield(XmlData.GeometryCalib,'VolumeScan') && isequal(XmlData.GeometryCalib.VolumeScan,'y')
-                set (handles.num_NbSlice,'String','volume')
+                set (handles.slices,'String','volume')
             end
             hgeometry_calib=findobj('tag','geometry_calib');
             if ~isempty(hgeometry_calib)
@@ -995,8 +995,9 @@ if isfield(XmlData,'GeometryCalib')
                set(handles.slices,'Value',1)
            end
            if isfield(GeometryCalib,'VolumeScan') && isequal(GeometryCalib.VolumeScan,'y')
-               set(handles.num_NbSlice,'String','volume')
+               set(handles.num_NbSlice,'Visible','off')
            else
+               set(handles.num_NbSlice,'Visible','on')
                set(handles.num_NbSlice,'String',num2str(NbSlice))
            end
            slices_Callback([],[], handles)
@@ -1125,10 +1126,10 @@ end
 function scan_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 if get(handles.scan_i,'Value')==1
-    set(handles.scan_i,'BackgroundColor',[1 1 0])
+%     set(handles.scan_i,'BackgroundColor',[1 1 0])
     set(handles.scan_j,'Value',0)
 else
-    set(handles.scan_i,'BackgroundColor',[0.831 0.816 0.784])
+%     set(handles.scan_i,'BackgroundColor',[0.831 0.816 0.784])
     set(handles.scan_j,'Value',1)
 end
 scan_j_Callback(hObject, eventdata, handles)
@@ -1138,9 +1139,9 @@ scan_j_Callback(hObject, eventdata, handles)
 function scan_j_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 if get(handles.scan_j,'Value')==1
-    set(handles.scan_j,'BackgroundColor',[1 1 0])
+%     set(handles.scan_j,'BackgroundColor',[1 1 0])
     set(handles.scan_i,'Value',0)
-    set(handles.scan_i,'BackgroundColor',[0.831 0.816 0.784])
+%     set(handles.scan_i,'BackgroundColor',[0.831 0.816 0.784])
 %     NomType=get(handles.NomType,'String');
 %     switch NomType
 %     case {'_1_1-2','#_ab','%3dab'},% pair with j index
@@ -1149,9 +1150,9 @@ if get(handles.scan_j,'Value')==1
 %         set(handles.CheckFixPair,'Visible','off')
 %     end 
 else
-    set(handles.scan_j,'BackgroundColor',[0.831 0.816 0.784])
+%     set(handles.scan_j,'BackgroundColor',[0.831 0.816 0.784])
     set(handles.scan_i,'Value',1)
-    set(handles.scan_i,'BackgroundColor',[1 1 0])
+%     set(handles.scan_i,'BackgroundColor',[1 1 0])
     set(handles.CheckFixPair,'Visible','off')
 end
 
@@ -1221,34 +1222,33 @@ end
 %------------------------------------------------------------------------
 function slices_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-if get(handles.slices,'Value')==1
-    set(handles.slices,'BackgroundColor',[1 1 0])
-    set(handles.num_NbSlice,'Visible','on')
-    set(handles.z_text,'Visible','on')
-    set(handles.z_index,'Visible','on')
-    num_NbSlice_Callback(hObject, eventdata, handles)
-else
-    set(handles.num_NbSlice,'Visible','off')
-    set(handles.slices,'BackgroundColor',[0.7 0.7 0.7])
-    set(handles.z_text,'Visible','off')
-    set(handles.z_index,'Visible','off') 
-    set(handles.masklevel,'Value',1)
-    set(handles.masklevel,'String',{'1'})
+if strcmp(get(handles.slices,'String'),'slices')
+    if get(handles.slices,'Value')==1
+        set(handles.num_NbSlice,'Visible','on')
+        set(handles.z_text,'Visible','on')
+        set(handles.z_index,'Visible','on')
+        num_NbSlice_Callback(hObject, eventdata, handles)
+    else
+        set(handles.num_NbSlice,'Visible','off')
+        set(handles.z_text,'Visible','off')
+        set(handles.z_index,'Visible','off')
+        set(handles.masklevel,'Value',1)
+        set(handles.masklevel,'String',{'1'})
+    end
 end
 
 %------------------------------------------------------------------------
 function num_NbSlice_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+mode=get(handles.slices,'String');
 nb_slice_str=get(handles.num_NbSlice,'String');
-if isequal(nb_slice_str,'volume')
-    num=stra2num(get(handles.j1,'String'));
-    last_j=get(handles.last_j,'String');
-    nbslice=str2double(last_j{1});
+if strcmp(mode,'volume')
+    z=stra2num(get(handles.j1,'String'));
 else
     num=str2double(get(handles.i1,'String'));
     nbslice=str2double(get(handles.num_NbSlice,'String'));
+    z=mod(num-1,nbslice)+1;
 end
-z=mod(num-1,nbslice)+1;
 set(handles.z_index,'String',num2str(z))
 for ilist=1:nbslice
     list_index{ilist,1}=num2str(ilist);
@@ -1321,7 +1321,7 @@ if isequal(get(handles.CheckMask,'Value'),1)
             mdetect=exist(maskname,'file');
             if mdetect
                 set(handles.num_NbSlice,'String',Name(i+1:ind_mask-1));
-                set(handles.num_NbSlice,'BackgroundColor',[1 1 0])
+                 set(handles.num_NbSlice,'BackgroundColor',[1 1 0])
                 set(handles.CheckMask,'UserData',Mask);
                 set(handles.CheckMask,'BackgroundColor',[1 1 0])
                 if nbslice > 1
@@ -2042,12 +2042,12 @@ if strcmp(get(handles.NomType_1,'Visible'),'on')
     NomType_1=get(handles.NomType_1,'String');
 end
 %update the z position index
-nbslice_str=get(handles.num_NbSlice,'String');
-if isequal(nbslice_str,'volume')%NOT USED
+mode_slice=get(handles.slices,'String');
+if strcmp(mode_slice,'volume')
     z_index=num_j1;
     set(handles.z_index,'String',num2str(z_index))
 else
-    nbslice=str2num(nbslice_str);
+    nbslice=str2num(get(handles.num_NbSlice,'String'));
     z_index=mod(num_i1-1,nbslice)+1;
     set(handles.z_index,'String',num2str(z_index))
 end
@@ -2883,10 +2883,10 @@ end
 function CheckFixAspectRatio_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 if get(handles.CheckFixAspectRatio,'Value')
-    set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])
+%     set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])
     update_plot(handles);
 else
-    set(handles.CheckFixAspectRatio,'BackgroundColor',[0.7 0.7 0.7])
+%     set(handles.CheckFixAspectRatio,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
 end
 
@@ -2894,7 +2894,7 @@ end
 function num_AspectRatio_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 set(handles.CheckFixAspectRatio,'Value',1)% select the fixed aspect ratio button
-set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])% mark in yellow
+% set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])% mark in yellow
 update_plot(handles);
 %-------------------------------------------------------------------
 
@@ -5164,4 +5164,3 @@ function Coord_x_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in CheckColorBar.
 function CheckColorBar_Callback(hObject, eventdata, handles)
-

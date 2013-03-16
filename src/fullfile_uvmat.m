@@ -119,8 +119,8 @@ end
 % else
 %     filename=fullfile(RootPath,RootFile);
 % end
-filename=[filename sep1 i1_str sep2 i2_str sep3 j1_str sep4 j2_str FileExt];
-
+filename=[filename sep1 i1_str sep2 i2_str sep3 j1_str sep4 j2_str];
+filename=[regexprep(filename,'_$','') FileExt];%suppress possible '_' at the end of the string and add the extension
 
 
 function test
