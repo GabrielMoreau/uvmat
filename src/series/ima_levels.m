@@ -160,7 +160,7 @@ for ifile=1:nbfield
         stopstate='queue';
     end
     if isequal(stopstate,'queue') % enable STOP command
-        if ~isempty(j1_series)
+        if ~isempty(j1_series)&&~isequal(j1_series,{[]})
             j1=j1_series{1}(ifile);
         end
         filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile),[],j1);
@@ -171,7 +171,6 @@ for ifile=1:nbfield
         % operation on images
         A=levels(A);
         filename_new=fullfile_uvmat(RootPath{1},OutputSubDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
-%         OutputFile=fullfile_uvmat(RootPath{1},OutputSubDir,RootFile{1},FileExtOut,NomType{1},i1,i2,j1,j2);
         imwrite(A,filename_new)
         display([filename_new ' written'])
     end
