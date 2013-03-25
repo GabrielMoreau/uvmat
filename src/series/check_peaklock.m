@@ -191,9 +191,6 @@ for index=index_slice
                 display(errormsg)
                 break
             end
-            if ~isempty(NbSlice_calib)
-                Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
-            end
         end
         if isempty(errormsg)
             Field=Data{1}; % default input field structure
@@ -208,10 +205,9 @@ for index=index_slice
                     return
                 end
             end
-            nbfile=nbfile+1;
             
             % initiate the time series at the first iteration
-            if nbfile==1
+            if index==1
                 % stop program if the first field reading is in error
                 if ~isempty(errormsg)
                     displ_uvmat('ERROR',['time_series / sub_field / ' errormsg],checkrun)
@@ -286,23 +282,7 @@ for index=index_slice
                     end
                 end
             end
-            
-            % record the time:
-            if isempty(time)% time not set by xml filer(s)
-                if isfield(Data{1},'Time')
-                    DataOut.Time(nbfile,1)=Field.Time;
-                else
-                    DataOut.Time(nbfile,1)=index;%default
-                end
-            else % time from ImaDoc prevails  TODO: correct
-                DataOut.Time(nbfile,1)=time(index);%
-            end
-            
-            % record the number of missing input fields
-            if ~isempty(errormsg)
-                nbmissing=nbmissing+1;
-                display(['index=' num2str(index) ':' errormsg])
-            end
+
         end
     end
 end

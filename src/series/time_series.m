@@ -48,35 +48,27 @@
 function ParamOut=time_series(Param) 
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
-if ~exist('Param','var') % case with no input parameter 
-    ParamOut={'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
-        'WholeIndexRange';'off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-        'NbSlice';'on'; ...%nbre of slices ('off' by default)
-        'VelType';'two';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-        'FieldName';'two';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-        'FieldTransform'; 'on';...%can use a transform function
-        'ProjObject';'on';...%can use projection object(option 'off'/'on',
-        'Mask';'off';...%can use mask option   (option 'off'/'on', 'off' by default)
-        'OutputDirExt';'.tseries';...%set the output dir extension
-               ''};
-        return
+if isstruct(Param) && isequal(Param.Action.RUN,0)
+    ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.NbSlice='on'; ...%nbre of slices ('off' by default)
+    ParamOut.VelType='two';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.FieldName='two';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    ParamOut.FieldTransform = 'on';...%can use a transform function
+    ParamOut.ProjObject='on';...%can use projection object(option 'off'/'on',
+    ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.OutputDirExt='.tseries';%set the output dir extension
+return
 end
 
 %%%%%%%%%%%% STANDARD PART  %%%%%%%%%%%%
-%% select different modes,  RUN, parameter input, BATCH
-% BATCH  case: read the xml file for batch case
+%% read input parameters from an xml file if input is a file name (batch mode)
+checkrun=1;
 if ischar(Param)
-        Param=xml2struct(Param);
-        checkrun=0;
-% RUN case: parameters introduced as the input structure Param
-else
-    hseries=guidata(Param.hseries);%handles of the GUI series
-    if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
-        checkrun=1;% will only search interactive input parameters (preparation of BATCH mode)
-    else
-        checkrun=2; % indicate the RUN option is used
-    end
+    Param=xml2struct(Param);% read Param as input file (batch case)
+    checkrun=0;
 end
+
 ParamOut=Param; %default output
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 
@@ -217,10 +209,10 @@ for i_slice=1:NbSlice
     nbmissing=0;
     
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
-    for index=index_slice       
+    for index=index_slice  
         if checkrun
-            update_waitbar(hseries.Waitbar,index/(nbfield))
-            stopstate=get(hseries.RUN,'BusyAction');
+            stopstate=get(Param.RUNHandle,'BusyAction');
+            update_waitbar(Param.WaitbarHandle,index/nbfield)
         else
             stopstate='queue';
         end

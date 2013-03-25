@@ -39,38 +39,36 @@
 %    .ProjObject: %sub structure describing a projection object (read from ancillary GUI set_object)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  
-function GUI_input=ima_levels (Param)
+function ParamOut=ima_levels (Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
-if ~exist('Param','var') % case with no input parameter 
-    GUI_input={'NbViewMax';1;...% max nbre of input file series (default='' , no limitation)
-        'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
-        'NbSlice';'off'; ...%nbre of slices ('off' by default)
-        'VelType';'off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-        'FieldName';'off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-        'FieldTransform'; 'off';...%can use a transform function
-        'ProjObject';'off';...%can use projection object(option 'off'/'on',
-        'Mask';'off';...%can use mask option   (option 'off'/'on', 'off' by default)
-        'OutputDirExt';'.lev';...%set the output dir extension
-               ''};
-        return
+if isstruct(Param) && isequal(Param.Action.RUN,0)
+    ParamOut.NbViewMax=1;% max nbre of input file series (default='' , no limitation)
+    ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
+    ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    ParamOut.FieldTransform = 'off';%can use a transform function
+    ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
+    ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.OutputDirExt='.lev';%set the output dir extension
+return
 end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-%% select different modes,  RUN, parameter input, BATCH
-% BATCH  case: read the xml file for batch case
+%% read input parameters from an xml file if input is a file name (batch mode)
+checkrun=1;
 if ischar(Param)
-    if strcmp(Param,'input?')
-        checkrun=1;% will inly search input parameters (preparation of BATCH mode)
-    else
-        Param=xml2struct(Param);
-        checkrun=0;
-    end
-% RUN case: parameters introduced as the input structure Param
-else
-    hseries=guidata(Param.hseries);%handles of the GUI series
-    checkrun=2; % indicate the RUN option is used
+    Param=xml2struct(Param);% read Param as input file (batch case)
+    checkrun=0;
 end
+
+ParamOut=Param; %default output
+if ~isfield(Param,'InputFields')
+    Param.InputFields.FieldName='';
+end
+OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -153,12 +151,12 @@ end
 %% main loop on images
 j1=[];%default
 for ifile=1:nbfield
-    if checkrun
-        update_waitbar(hseries.Waitbar,ifile/nbfield)
-        stopstate=get(hseries.RUN,'BusyAction');
-    else
-        stopstate='queue';
-    end
+          if checkrun
+                stopstate=get(Param.RUNHandle,'BusyAction');
+                update_waitbar(Param.WaitbarHandle,ifile/nbfield)
+          else
+                stopstate='queue';
+          end
     if isequal(stopstate,'queue') % enable STOP command
         if ~isempty(j1_series)&&~isequal(j1_series,{[]})
             j1=j1_series{1}(ifile);

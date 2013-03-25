@@ -48,39 +48,32 @@
 function ParamOut=merge_proj(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
-if ~exist('Param','var') % case with no input parameter 
-    ParamOut={'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
-        'WholeIndexRange';'off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-        'NbSlice';'on'; ...%nbre of slices ('off' by default)
-        'VelType';'one';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-        'FieldName';'one';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-        'FieldTransform'; 'on';...%can use a transform function
-        'ProjObject';'on';...%can use projection object(option 'off'/'on',
-        'Mask';'off';...%can use mask option   (option 'off'/'on', 'off' by default)
-        'OutputDirExt';'.mproj';...%set the output dir extension
-               ''};
-        return
+if isstruct(Param) && isequal(Param.Action.RUN,0)
+    ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.NbSlice='off'; ...%nbre of slices ('off' by default)
+    ParamOut.VelType='one';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.FieldName='one';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    ParamOut.FieldTransform = 'on';...%can use a transform function
+    ParamOut.ProjObject='on';...%can use projection object(option 'off'/'on',
+    ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.OutputDirExt='.mproj';%set the output dir extension
+return
 end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-%% select different modes,  RUN, parameter input, BATCH
-% BATCH  case: read the xml file for batch case
+%% read input parameters from an xml file if input is a file name (batch mode)
+checkrun=1;
 if ischar(Param)
-        Param=xml2struct(Param);
-        checkrun=0;
-% RUN case: parameters introduced as the input structure Param
-else
-    hseries=guidata(Param.hseries);%handles of the GUI series
-    if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
-        checkrun=1;% will only search interactive input parameters (preparation of BATCH mode)
-    else
-        checkrun=2; % indicate the RUN option is used
-    end
+    Param=xml2struct(Param);% read Param as input file (batch case)
+    checkrun=0;
 end
+
 ParamOut=Param; %default output
 if ~isfield(Param,'InputFields')
     Param.InputFields.FieldName='';
 end
+OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
 
 %% root input file type
 RootPath=Param.InputTable(:,1);
@@ -88,7 +81,6 @@ RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
-OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
 %%%%%%%%%%%%
 % The cell array filecell is the list of input file names, while

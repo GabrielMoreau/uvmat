@@ -33,21 +33,33 @@
 
 function ParamOut=check_data_files(Param)
 
-%% set the input elements needed on the GUI series when the action is selected in the menu ActionName
-if ~exist('Param','var') % case with no input parameter 
-    ParamOut={'NbViewMax';'';...% max nbre of input file series (default='' , no limitation)
-        'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
-        'NbSlice';'on'; ...%nbre of slices ('off' by default)
-        'VelType';'off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-        'FieldName';'off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-        'FieldTransform'; 'off';...%can use a transform function
-        'ProjObject';'off';...%can use projection object(option 'off'/'on',
-        'Mask';'off';...%can use mask option   (option 'off'/'on', 'off' by default)
-        'OutputDirExt';'';...%set the output dir extension
-               ''};
-        return
+% %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
+% if ~exist('Param','var') % case with no input parameter 
+%     ParamOut={'NbViewMax';'';...% max nbre of input file series (default='' , no limitation)
+%         'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
+%         'NbSlice';'on'; ...%nbre of slices ('off' by default)
+%         'VelType';'off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+%         'FieldName';'off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+%         'FieldTransform'; 'off';...%can use a transform function
+%         'ProjObject';'off';...%can use projection object(option 'off'/'on',
+%         'Mask';'off';...%can use mask option   (option 'off'/'on', 'off' by default)
+%         'OutputDirExt';'';...%set the output dir extension
+%                ''};
+%         return
+% end
+%% input preparation mode (no RUN)
+if isstruct(Param) && isequal(Param.Action.RUN,0)
+    ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.NbSlice='on'; ...%nbre of slices ('off' by default)
+    ParamOut.VelType='off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.FieldName='off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    ParamOut.FieldTransform = 'off';...%can use a transform function
+    ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
+    ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.OutputDirExt='';%set the output dir extension (blank=no output dir)
+return
 end
-
 %%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%
 %% select different modes,  RUN, parameter input, BATCH
 % BATCH  case: read the xml file for batch case
@@ -73,6 +85,9 @@ SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+if isempty(i1_series)
+    return
+end
 %%%%%%%%%%%%
 % The cell array filecell is the list of input file names, while
 % filecell{iview,fileindex}:
