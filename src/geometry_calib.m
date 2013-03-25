@@ -817,7 +817,7 @@ set(handles.YObject,'String',coord_str(k(1)+3:k(2)-1))
 set(handles.ZObject,'String',coord_str(k(2)+3:k(3)-1))
 set(handles.XImage,'String',coord_str(k(3)+3:k(4)-1))
 set(handles.YImage,'String',coord_str(k(4)+3:end))
-h_menu_coord=findobj(huvmat,'Tag','transform_fct');
+h_menu_coord=findobj(huvmat,'Tag','TransformName');
 menu=get(h_menu_coord,'String');
 choice=get(h_menu_coord,'Value');
 if iscell(menu)
@@ -913,7 +913,7 @@ huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface han
 %UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
 hhuvmat=guidata(huvmat); %handles of GUI elements in uvmat
 %hplot=findobj(huvmat,'Tag','axes3');%main plotting axis of uvmat
-h_menu_coord=findobj(huvmat,'Tag','transform_fct');
+h_menu_coord=findobj(huvmat,'Tag','TransformName');
 menu=get(h_menu_coord,'String');
 choice=get(h_menu_coord,'Value');
 if iscell(menu)

@@ -84,19 +84,18 @@ if isfield (Param,'Civ1')
         end
     end
     
-    % caluclate velocity data (y and v in indices, reverse to y component)
-    [xtable ytable utable vtable ctable F result_conv errormsg] = civ (par_civ1);
-    if ~isempty(errormsg)
-        return
-    end
     list_param=(fieldnames(Param.Civ1))';
     Civ1_param=list_param;%default
+    
     %set the values of all the global attributes in list_param
+    Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];
     for ilist=1:length(list_param)
         Civ1_param{ilist}=['Civ1_' list_param{ilist}];
         Data.(['Civ1_' list_param{ilist}])=Param.Civ1.(list_param{ilist});
     end
-    Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];% {'Civ1_Time','Civ1_Dt'}];
+    Data.CivStage=1;
+    
+    % set the list of variables
     Data.ListVarName={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_F','Civ1_C'};%  cell array containing the names of the fields to record
     Data.VarDimName={'nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1','nb_vec_1'};
     Data.VarAttribute{1}.Role='coord_x';
@@ -104,13 +103,38 @@ if isfield (Param,'Civ1')
     Data.VarAttribute{3}.Role='vector_x';
     Data.VarAttribute{4}.Role='vector_y';
     Data.VarAttribute{5}.Role='warnflag';
-    Data.Civ1_X=reshape(xtable,[],1);
-    Data.Civ1_Y=reshape(Param.Civ1.ImageHeight-ytable+1,[],1);
-    Data.Civ1_U=reshape(utable,[],1);
-    Data.Civ1_V=reshape(-vtable,[],1);
-    Data.Civ1_C=reshape(ctable,[],1);
-    Data.Civ1_F=reshape(F,[],1);
-    Data.CivStage=1;
+    
+    if 'PIV volume'
+        Data.ListVarName=[Data.ListVarName 'Civ1_Z'];
+        Data.Civ1_X=[];Data.Civ1_Y=[];Data.Civ1_Z=[];
+        Data.Civ1_U=[];Data.Civ1_V=[];Data.Civ1_C=[];Data.Civ1_F=[];
+        for ivol=1:NbSlice
+            % caluclate velocity data (y and v in indices, reverse to y component)
+            [xtable ytable utable vtable ctable F result_conv errormsg] = civ (par_civ1);
+            if ~isempty(errormsg)
+                return
+            end
+            Data.Civ1_X=[Data.Civ1_X reshape(xtable,[],1)];
+            Data.Civ1_Y=[Data.Civ1_Y reshape(Param.Civ1.ImageHeight-ytable+1,[],1)];
+            Data.Civ1_Z=[Data.Civ1_Z ivol*ones(numel(xtable),1)];% z=image index in image coordinates
+            Data.Civ1_U=[Data.Civ1_U reshape(utable,[],1)];
+            Data.Civ1_V=[Data.Civ1_V reshape(-vtable,[],1)];
+            Data.Civ1_C=[Data.Civ1_C reshape(ctable,[],1)];
+            Data.Civ1_F=[Data.Civ1_C reshape(F,[],1)];
+        end
+    else %usual PIV
+        % caluclate velocity data (y and v in indices, reverse to y component)
+        [xtable ytable utable vtable ctable F result_conv errormsg] = civ (par_civ1);
+        if ~isempty(errormsg)
+            return
+        end
+        Data.Civ1_X=reshape(xtable,[],1);
+        Data.Civ1_Y=reshape(Param.Civ1.ImageHeight-ytable+1,[],1);
+        Data.Civ1_U=reshape(utable,[],1);
+        Data.Civ1_V=reshape(-vtable,[],1);
+        Data.Civ1_C=reshape(ctable,[],1);
+        Data.Civ1_F=reshape(F,[],1);
+    end
 else
     if exist('ncfile','var')
         CivFile=ncfile;

@@ -33,7 +33,7 @@
 %                       .PosColorbar: position (1x4 vector)of the colorbar (relative to the fig uvmat)
 %                       .PosSetObject: position of set_object
 %                       .PosGeometryCalib: size of set_object
-%                       .NbBuiltin: nbre of functions always displayed in transform_fct menu
+%                       .NbBuiltin: nbre of functions always displayed in TransformName menu
 %          .Object: cell array of structures representing the current projection objects, as produced by 'set_object.m'={[]} by default
 %          .NewSeries: =0/1 flag telling whether a new field series has been opened
 %          .FileName_1: name of the current second field (used to detect a  constant field during file scanning)
@@ -214,7 +214,7 @@ for ilist=2:UvData.OpenParam.NbBuiltin
 path_list{ilist}=transform_path; % set transform_path to the path_list
 end
 
-%% load the list of previously browsed files in menus Open, Open_1 and transform_fct
+%% load the list of previously browsed files in menus Open, Open_1 and TransformName
  dir_perso=prefdir; % path to the directory .matlab containing the personal data of the current user
  profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmat_perso.mat' in .matlab
  if exist(profil_perso,'file')
@@ -239,10 +239,10 @@ end
      end
  end
 transform_menu=[transform_menu;{'more...'}];%append the option more.. to the menu
-set(handles.transform_fct,'String',transform_menu)% display the menu of transform fcts
-set(handles.transform_fct,'UserData',path_list)% store the corresponding list of path in UserData of uicontrol transform_fct
-set(handles.path_transform,'String','')
-set(handles.path_transform,'UserData',[])
+set(handles.TransformName,'String',transform_menu)% display the menu of transform fcts
+set(handles.TransformName,'UserData',path_list)% store the corresponding list of path in UserData of uicontrol transform_fct
+set(handles.TransformPath,'String','')
+set(handles.TransformPath,'UserData',[])
 
 %% case of an input argument for uvmat
 testinputfield=0;
@@ -972,7 +972,7 @@ if isfield(XmlData,'GeometryCalib')
     if isempty(GeometryCalib)
         set(handles.pxcm,'String','')
         set(handles.pycm,'String','')
-        set(handles.transform_fct,'Value',1); %  no transform by default
+        set(handles.TransformName,'Value',1); %  no transform by default
     else
         if (isfield(GeometryCalib,'R')&& ~isequal(GeometryCalib.R(2,1),0) && ~isequal(GeometryCalib.R(1,2),0)) ||...
             (isfield(GeometryCalib,'kappa1')&& ~isequal(GeometryCalib.kappa1,0))
@@ -985,7 +985,7 @@ if isfield(XmlData,'GeometryCalib')
             set(handles.pycm,'String',num2str(pixcmy))
         end
         if ~get(handles.CheckFixLimits,'Value')
-            set(handles.transform_fct,'Value',3); % phys transform by default if fixedLimits is off
+            set(handles.TransformName,'Value',3); % phys transform by default if fixedLimits is off
         end
         if isfield(GeometryCalib,'SliceCoord')            
            siz=size(GeometryCalib.SliceCoord);
@@ -1107,11 +1107,11 @@ elseif index==1
 end
 
 %% apply the effect of the transform fct and view the field  
-transform=get(handles.path_transform,'UserData');
+transform=get(handles.TransformPath,'UserData');
 if index==2 && (~isa(transform,'function_handle')||nargin(transform)<3)
-    set(handles.transform_fct,'value',2); % set transform to sub_field if the current fct doe not accept two input fields
+    set(handles.TransformName,'value',2); % set transform to sub_field if the current fct doe not accept two input fields
 end
-transform_fct_Callback([],[],handles)
+TransformName_Callback([],[],handles)
 mask_test=get(handles.CheckMask,'value');
 if mask_test
     MaskData=get(handles.CheckMask,'UserData');
@@ -1412,10 +1412,10 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
            Mask.ZIndex=mod(num_i1-1,NbSlice)+1;
         end
         %px to phys or other transform on field
-         menu_transform=get(handles.transform_fct,'String');
-        choice_value=get(handles.transform_fct,'Value');
+         menu_transform=get(handles.TransformName,'String');
+        choice_value=get(handles.TransformName,'Value');
         transform_name=menu_transform{choice_value};%name of the transform fct  given by the menu 'transform_fct'
-        transform=get(handles.path_transform,'UserData');
+        transform=get(handles.TransformPath,'UserData');
         if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
             if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
                 Calib=UvData.XmlData{1}.GeometryCalib;
@@ -1946,7 +1946,7 @@ end
 % end
 
 %px to phys or other transform on field
-transform=get(handles.path_transform,'UserData');
+transform=get(handles.TransformPath,'UserData');
 if  ~isempty(transform)
     if isfield(UvData,'XmlData') && numel(UvData.XmlData)>=index %use geometry calib recorded from the ImaDoc xml file as first priority
         if index==2
@@ -2419,7 +2419,7 @@ UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
 end
 
 %% apply coordinate transform or other user fct
-transform=get(handles.path_transform,'UserData');
+transform=get(handles.TransformPath,'UserData');
 if isempty(transform)
     UvData.Field=Field{1};
 else
@@ -2431,7 +2431,7 @@ else
             XmlData_1=UvData.XmlData{2};
         end
     end
-    transform=get(handles.path_transform,'UserData');
+    transform=get(handles.TransformPath,'UserData');
     switch nargin(transform)
         case 4
             if length(Field)==2
@@ -2998,10 +2998,10 @@ if get(handles.SubField,'Value')==0% if the subfield button is desactivated
         UvData=rmfield(UvData,'XmlData_1');
     end 
     set(handles.uvmat,'UserData',UvData);
-    transform_fct_list=get(handles.transform_fct,'String');
-    transform_fct=transform_fct_list(get(handles.transform_fct,'Value'));
+    transform_fct_list=get(handles.TransformName,'String');
+    transform_fct=transform_fct_list(get(handles.TransformName,'Value'));
     if strcmp(transform_fct,'sub_field')
-        set(handles.transform_fct,'Value',1)%suppress the sub_field transform
+        set(handles.TransformName,'Value',1)%suppress the sub_field transform
         transform_fct_Callback(hObject, eventdata, handles); 
     else
         run0_Callback(hObject, eventdata, handles)
@@ -3300,10 +3300,10 @@ switch field_1
             
             UvData.FileType{2}=UvData.FileType{1};
             UvData.XmlData{2}= UvData.XmlData{1};
-            transform=get(handles.path_transform,'UserData');
+            transform=get(handles.TransformPath,'UserData');
              if (~isa(transform,'function_handle')||nargin(transform)<3)
                 set(handles.uvmat,'UserData',UvData)
-                set(handles.transform_fct,'value',2); % set transform fct to 'sub_field' if the current fct does not accept two input fields
+                set(handles.TransformName,'value',2); % set transform fct to 'sub_field' if the current fct does not accept two input fields
                 transform_fct_Callback(hObject, eventdata, handles)% activate transform_fct_Callback and refresh current plot
                  check_refresh=0;
              end             
@@ -3399,10 +3399,10 @@ else% we introduce the same file (with a different field) for the second series
      UvData.FileType{2}=UvData.FileType{1};
      UvData.XmlData{2}= UvData.XmlData{1};
      set(handles.SubField,'Value',1)
-     transform=get(handles.path_transform,'UserData');
+     transform=get(handles.TransformPath,'UserData');
      if (~isa(transform,'function_handle')||nargin(transform)<3)
         set(handles.uvmat,'UserData',UvData)
-        set(handles.transform_fct,'value',2); % set transform fct to 'sub_field' if the current fct does not accept two input fields
+        set(handles.TransformName,'value',2); % set transform fct to 'sub_field' if the current fct does not accept two input fields
         transform_fct_Callback(hObject, eventdata, handles)% activate transform_fct_Callback and refresh current plot
      else
          check_refresh=1;
@@ -3605,18 +3605,18 @@ image(imflag);
 
 %------------------------------------------------------------------
 %-------------------------------------------------------------
-% --- Executes on selection change in transform_fct.
+% --- Executes on selection change in TransformName.
 
-function transform_fct_Callback(hObject, eventdata, handles)
+function TransformName_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------
 UvData=get(handles.uvmat,'UserData');
-menu=get(handles.transform_fct,'String');refresh
-ichoice=get(handles.transform_fct,'Value');%item number in the menu
+menu=get(handles.TransformName,'String');refresh
+ichoice=get(handles.TransformName,'Value');%item number in the menu
 transform_name=menu{ichoice};% choice of the transform fct
-list_path=get(handles.transform_fct,'UserData');
+list_path=get(handles.TransformName,'UserData');
 
 %% add a new item to the menu if the option 'more...' has been selected
-prev_path=fullfile(get(handles.path_transform,'String'));
+prev_path=fullfile(get(handles.TransformPath,'String'));
 if ~exist(prev_path,'dir')
     prev_path=fullfile(fileparts(which('uvmat')),'transform_field');
 end
@@ -3640,8 +3640,8 @@ if strcmp(transform_name,'more...');
         ichoice=numel(menu)-1;    
     end
     list_path{ichoice}=PathName;%update the list fo fct paths
-    set(handles.transform_fct,'String',menu)
-    set(handles.transform_fct,'Value',ichoice)
+    set(handles.TransformName,'String',menu)
+    set(handles.TransformName,'Value',ichoice)
     
     % save the new menu in the personal file 'uvmat_perso.mat'
     dir_perso=prefdir;%personal Matalb directory
@@ -3671,19 +3671,19 @@ else
     transform_handle=str2func(transform_name);
     cd(current_dir)
 end
-set(handles.path_transform,'String',list_path{ichoice})
-set(handles.path_transform,'UserData',transform_handle)
-set(handles.transform_fct,'UserData',list_path)
+set(handles.TransformPath,'String',list_path{ichoice})
+set(handles.TransformPath,'UserData',transform_handle)
+set(handles.TransformName,'UserData',list_path)
 
-%% update the ToolTip string of the menu transform_fct with the first line of the selected fct file
+%% update the ToolTip string of the menu TransformName with the first line of the selected fct file
 if isempty(list_path{ichoice})% case of no selected fct
-    set(handles.transform_fct,'ToolTipString','transform_fct:choose a transform function')
+    set(handles.TransformName,'ToolTipString','transform_fct:choose a transform function')
 else
     try
         [fid,errormsg] =fopen([fullfile(list_path{ichoice},transform_name) '.m']);
         InputText=textscan(fid,'%s',1,'delimiter','\n');
         fclose(fid)
-        set(handles.transform_fct,'ToolTipString',['transform_fct: ' InputText{1}{1}])% put the first line of the selected function as tooltip help
+        set(handles.TransformName,'ToolTipString',['transform_fct: ' InputText{1}{1}])% put the first line of the selected function as tooltip help
     end
 end
 
@@ -5065,8 +5065,8 @@ set(handles.ListObject,'Value',1)
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 UvData=get(handles.uvmat,'UserData');
-% CoordList=get(handles.transform_fct,'String');
-% val=get(handles.transform_fct,'Value');
+% CoordList=get(handles.TransformName,'String');
+% val=get(handles.TransformName,'Value');
 set_grid(FileName,UvData.Field);% call the set_object interface
 
 
@@ -5088,7 +5088,6 @@ set(handles.uvmat,'UserData',UvData);
 % open the GUI 'series'
 function MenuSeries_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-series; %first display of the GUI to fill waiting time
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 Param.FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%first input file name
 if isequal(get(handles.SubField,'Value'),1)
@@ -5127,8 +5126,8 @@ if ~isempty(ind_image) && numel(Param.list_fields_1)>1
     Param.list_fields_1(ind_image)=[]; %suppress  'image' option
 end
 Param.index_fields_1=find(strcmp(FieldName_1,Param.list_fields_1));% selected string index
-Param.transform_str=get(handles.transform_fct,'String');
-Param.transform_val=get(handles.transform_fct,'Value');
+TransformList=get(handles.TransformName,'String');
+Param.TransformName=TransformList{get(handles.TransformName,'Value')};
 Param.Coord_x_str=get(handles.Coord_x,'String');
 Param.Coord_x_val=get(handles.Coord_x,'Value');
 Param.Coord_y_str=get(handles.Coord_y,'String');
@@ -5164,3 +5163,13 @@ function Coord_x_Callback(hObject, eventdata, handles)
 
 % --- Executes on button press in CheckColorBar.
 function CheckColorBar_Callback(hObject, eventdata, handles)
+
+
+
+function TransformPath_Callback(hObject, eventdata, handles)
+% hObject    handle to TransformPath (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of TransformPath as text
+%        str2double(get(hObject,'String')) returns contents of TransformPath as a double

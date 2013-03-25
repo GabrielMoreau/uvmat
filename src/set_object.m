@@ -99,7 +99,7 @@ if exist('data','var')
     if isfield(data,'ProjModeMenu')
         set(handles.ProjMode,'UserData',data.ProjModeMenu)% data.ProjModeMenu as default menu (used in Type_Callback)
     end
-    errormsg=fill_GUI(data,handles);
+    errormsg=fill_GUI(data,handles.set_object);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR','bad data input in set_object')
         return
@@ -509,7 +509,7 @@ else
         else
             hhview_field=guidata(hview_field);
             [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%update an existing  plot in view_field
-            errormsg=fill_GUI(PlotParam,hhview_field);
+            errormsg=fill_GUI(PlotParam,hview_field);
             if ~isempty(errormsg)
                 msgbox_uvmat('ERROR',errormsg)
                 return

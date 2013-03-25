@@ -82,7 +82,7 @@ else
     end           
 end
 if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
-    batch_mode=sparam.BatchParam.BatchMode; %sge is currently the only implemented batch mod
+    batch_mode=sparam.BatchParam.BatchMode;
     test_command='';
     switch batch_mode
         case 'sge'
@@ -899,7 +899,8 @@ if isempty(hfig)
     hlist= uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', {'open_uvmat'},'tag','list');
     uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','msgbox','Max',2,'String','checking files...');
     uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
-    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@close_GUI);
+    %uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@close_GUI);
+    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@stop_status);
     hrefresh=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@refresh_GUI);
     BarPosition=[0.05 0.81 0.01 0.05];
     uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
@@ -1008,11 +1009,11 @@ hhciv=guidata(hciv);
 set(hhciv.status,'value',0) %reset the status uicontrol in the GUI civ
 set(hhciv.status,'BackgroundColor',[0 1 0])
 
-%------------------------------------------------------------------------   
-% launched by pressing OK on the status figure
-function close_GUI(hObject, eventdata)
-%------------------------------------------------------------------------
-    delete(gcbf)
+% %------------------------------------------------------------------------   
+% % launched by pressing OK on the status figure
+% function close_GUI(hObject, eventdata)
+% %------------------------------------------------------------------------
+%     delete(gcbf)
 
 
 %------------------------------------------------------------------------
@@ -1334,7 +1335,7 @@ for ifile=1:nbfield
         cmd=write_cmd(Param);
         write_param(Param);
               
-        % create the file used in run or batch
+        % create the command file name .m, .bat or .sh depending on the run option
         switch Param.Program
             case {'civ_matlab'}
                 filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.m');           
@@ -1757,7 +1758,7 @@ NomType_nc=nomtype2pair(NomType_ima2,mode);
 RootFile_ima2=get(handles.RootFile,'String');%root file for the second image series
 ext_ima=get(handles.ImaExt,'String'); % image extension (the same for all images)
 switch compare
-    case 'PIV'
+    case {'PIV','PIV volume'}
        RootFile_ima1=RootFile_ima2;% root name of the two image series is the same
        NomType_ima1=NomType_ima2;% the index of the first image follows the index of the second one
        RootFile_nc=RootFile_ima2;
@@ -2496,73 +2497,85 @@ function ListCompareMode_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 ListCompareMode=get(handles.ListCompareMode,'String');
 option=ListCompareMode{get(handles.ListCompareMode,'Value')};
-if ~strcmp(option,'PIV') % case 'displacement' or 'stereo PIV'
-    filebase=get(handles.RootPath,'String');
-    set(handles.sub_txt,'Visible','on')
-    set(handles.RootFile_1,'Visible','On');%mkes the second file input window visible
-    mode_store=get(handles.ListPairMode,'String');%get the present 'mode'
-    set(handles.ListCompareMode,'UserData',mode_store);%store the mode display
-    set(handles.ListPairMode,'Visible','off')
-    
-    %% open an image file with the browser
-    ind_opening=1;%default
-    browse.incr_pair=[0 0]; %default
-    oldfile=get(handles.RootPath,'String');
-    menu={'*.png;*.jpg;*.tif;*.avi;*.AVI;', ' (*.png,*.jpg ,.tif, *.avi,*.AVI)';
-        '*.png','.png image files'; ...
-        '*.jpg',' jpeg image files'; ...
-        '*.tif','.tif image files'; ...
-        '*.avi;*.AVI','.avi movie files'; ...
-        '*.*',  'All Files (*.*)'};
-    if strcmp(option,'displacement')
-        comment='Pick the reference file for displacements';
-    else
-        comment='Pick a file of the second series';
-    end
-    [FileName, PathName] = uigetfile( menu, comment,oldfile);
-    fileinput=[PathName FileName];%complete file name
-    sizf=size(fileinput);
-    if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
-    [path,name,ext]=fileparts(fileinput);
-    [path1]=fileparts(filebase);
-    if isunix
-        [status,path]=system(['readlink ' path]);
-        [status,path1]=system(['readlink ' path1]);% look for the true path in case of symbolic paths
-    end
-    if ~strcmp(path1,path)
-        msgbox_uvmat('ERROR','The second image or series must be in the same directory as the first one')
-        return
-    end
-    if strcmp(option,'displacement')
-        [tild,RootFile_1]=fileparts(name);
-    else
-        [FilePath,FileName,Ext]=fileparts(fileinput);
-% detect the file type, get the movie object if relevant, and look for the corresponding file series:
-% the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDir,RootFile_1,i1_series,i2_series,j1_series,j2_series,nom_type_1,FileType,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName Ext]);
-
-        %check image nom type 
-        if ~strcmp(nom_type_1,get(handles.NomType,'String'))
-        msgbox_uvmat('ERROR','The second image series must have the same indexing type as the first one, or use the option displacement for a fixed image')
-        return
+switch option
+    case 'PIV'
+        set(handles.RootFile_1,'Visible','Off');
+        set(handles.sub_txt,'Visible','off')
+        set(handles.RootFile_1,'String',[]);
+        mode_store=get(handles.ListCompareMode,'UserData');
+        set(handles.ListPairMode,'Visible','on')
+        set(handles.ListPairMode,'Value',1)
+        set(handles.ListPairMode,'String',mode_store)
+        set(handles.CheckStereo,'Value',0)      
+    case 'PIV volume'     
+        set(handles.RootFile_1,'Visible','Off');
+        set(handles.sub_txt,'Visible','off')
+        set(handles.RootFile_1,'String',[]);
+        mode_store=get(handles.ListCompareMode,'UserData');
+        set(handles.ListPairMode,'Visible','on')
+        set(handles.ListPairMode,'Value',1)
+        set(handles.ListPairMode,'String',{'series(Di)'})
+        set(handles.CheckStereo,'Value',0) 
+        set(handles.last_j,'String',get(handles.nb_field2,'String'))% select the whole volume scan by default
+        set(handles.incr_i,'String',num2str(2))% 
+    otherwise
+        filebase=get(handles.RootPath,'String');
+        set(handles.sub_txt,'Visible','on')
+        set(handles.RootFile_1,'Visible','On');%mkes the second file input window visible
+        mode_store=get(handles.ListPairMode,'String');%get the present 'mode'
+        set(handles.ListCompareMode,'UserData',mode_store);%store the mode display
+        set(handles.ListPairMode,'Visible','off')
+        
+        %% open an image file with the browser
+        ind_opening=1;%default
+        browse.incr_pair=[0 0]; %default
+        oldfile=get(handles.RootPath,'String');
+        menu={'*.png;*.jpg;*.tif;*.avi;*.AVI;', ' (*.png,*.jpg ,.tif, *.avi,*.AVI)';
+            '*.png','.png image files'; ...
+            '*.jpg',' jpeg image files'; ...
+            '*.tif','.tif image files'; ...
+            '*.avi;*.AVI','.avi movie files'; ...
+            '*.*',  'All Files (*.*)'};
+        if strcmp(option,'displacement')
+            comment='Pick the reference file for displacements';
+        else
+            comment='Pick a file of the second series';
         end
-    end   
-    %check image  extension 
-    if ~strcmp(ext,get(handles.ImaExt,'String'))
-        msgbox_uvmat('ERROR','The second image series must have the same extension name as the first one')
-        return
-    end 
-    set(handles.RootFile_1,'String',RootFile_1);
-else
-    set(handles.ListPairMode,'Visible','on')
-    set(handles.RootFile_1,'Visible','Off');
-    set(handles.sub_txt,'Visible','off')
-    set(handles.RootFile_1,'String',[]);
-    mode_store=get(handles.ListCompareMode,'UserData');
-    set(handles.ListPairMode,'Value',1)
-    set(handles.ListPairMode,'String',mode_store)
-    set(handles.CheckStereo,'Value',0)
-    set(handles.ListPairMode,'Value',1) % mode 'civX' selected by default
+        [FileName, PathName] = uigetfile( menu, comment,oldfile);
+        fileinput=[PathName FileName];%complete file name
+        sizf=size(fileinput);
+        if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
+        [path,name,ext]=fileparts(fileinput);
+        [path1]=fileparts(filebase);
+        if isunix
+            [status,path]=system(['readlink ' path]);
+            [status,path1]=system(['readlink ' path1]);% look for the true path in case of symbolic paths
+        end
+        if ~strcmp(path1,path)
+            msgbox_uvmat('ERROR','The second image or series must be in the same directory as the first one')
+            return
+        end
+        if strcmp(option,'displacement')
+            [tild,RootFile_1]=fileparts(name);
+        else
+            [FilePath,FileName,Ext]=fileparts(fileinput);
+            % detect the file type, get the movie object if relevant, and look for the corresponding file series:
+            % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
+            [RootPath,SubDir,RootFile_1,i1_series,i2_series,j1_series,j2_series,nom_type_1,FileType,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName Ext]);
+            
+            %check image nom type
+            if ~strcmp(nom_type_1,get(handles.NomType,'String'))
+                msgbox_uvmat('ERROR','The second image series must have the same indexing type as the first one, or use the option displacement for a fixed image')
+                return
+            end
+        end
+        %check image  extension
+        if ~strcmp(ext,get(handles.ImaExt,'String'))
+            msgbox_uvmat('ERROR','The second image series must have the same extension name as the first one')
+            return
+        end
+        set(handles.RootFile_1,'String',RootFile_1);
+        
 end
 ListPairMode_Callback(hObject, eventdata, handles)
 

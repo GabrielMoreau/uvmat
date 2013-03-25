@@ -87,3 +87,16 @@ for ichild=1:numel(hchild)
         end
     end
 end
+% read UserData if relevant
+UserData=get(handle,'UserData');
+if isstruct(UserData)
+    List=fields(UserData);
+    for ilist=1:numel(List)
+        if isstruct(UserData.(List{ilist})) 
+            heditbox=findobj(handle,'Tag',List{ilist},'Style','edit','Visible','on');
+            if isequal(numel(heditbox),1)
+                struct.(List{ilist})=UserData.(List{ilist});
+            end
+        end
+    end
+end

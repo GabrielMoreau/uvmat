@@ -1,6 +1,6 @@
 %'fill_GUI': fill a GUI with a set of parameters from a Matlab structure 
 % -----------------------------------------------------------------------
-% function errormsg=fill_GUI(Param,handles)
+% function errormsg=fill_GUI(Param,GUI_handle)
 % OUPUT:
 % errormsg: error message, ='' by default
 %
@@ -10,9 +10,11 @@
 %
 % see also the reverse function read_GUI.m
 %
-function errormsg=fill_GUI(Param,handles)
+function errormsg=fill_GUI(Param,GUI_handle)
 %------------------------------------------------------------------------
 errormsg='';
+handles=guidata(GUI_handle); 
+UserData=get(GUI_handle,'UserData');
 fields=fieldnames(Param);%list of fields in Param
 % loop on the elements of the input structure Param
 for ifield=1:numel(fields)
@@ -20,11 +22,17 @@ for ifield=1:numel(fields)
     if isstruct(Param.(fields{ifield}))% case of a sub-structure
         if isfield(handles,fields{ifield})
             set(handles.(fields{ifield}),'Visible','on')
-            children=get(handles.(fields{ifield}),'children');
-            for ichild=1:numel(children)
-                hchild.(get(children(ichild),'tag'))=children(ichild);
-            end
-            errormsg=fill_GUI(Param.(fields{ifield}),hchild);% apply the function to the substructure
+%             children=get(handles.(fields{ifield}),'children');
+%             for ichild=1:numel(children)
+%                 hchild.(get(children(ichild),'tag'))=children(ichild);
+%             end
+         %   errormsg=fill_GUI(Param.(fields{ifield}),hchild);% apply the function to the substructure
+         errormsg=fill_GUI(Param.(fields{ifield}),handles.(fields{ifield}));% apply the function to the substructure
+           % if the input sub-structure fits with a tag name of the GUI and a
+         % substructure of UserData
+        elseif isfield(UserData,fields{ifield})&& isfield(handles,fields{ifield})&&isfield(Param.(fields{ifield}),'Name')
+            UserData.(fields{ifield})=Param.(fields{ifield});
+            set(handles.(fields{ifield}),'String',Param.(fields{ifield}).Name) 
         end
     % case of an element
     else

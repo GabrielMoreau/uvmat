@@ -14,7 +14,7 @@
 
 function [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param)
 
-filecell={};
+filecell={};i1_series={};i2_series={};j1_series={};j2_series={};
 InputTable=Param.InputTable;
 first_i=Param.IndexRange.first_i;
 incr_i=Param.IndexRange.incr_i;

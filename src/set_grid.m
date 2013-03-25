@@ -101,7 +101,7 @@ if exist('InputField','var')
     Input.XMax=Input.XMin+Mesh*floor((InputField.XMax-Input.XMin)/Mesh)-0.5*check_pixel;
     Input.YMin=(Mesh/2)*ceil(InputField.YMin/(Mesh/2))-0.5*check_pixel;
     Input.YMax=Input.YMin+Mesh*floor((InputField.YMax-Input.YMin)/Mesh)-0.5*check_pixel;
-    errormsg=fill_GUI(Input,handles);
+    errormsg=fill_GUI(Input,handles.set_grid);
 end
 
 % --- Outputs from this function are returned to the command line.

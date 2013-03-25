@@ -224,7 +224,7 @@ end
 
 %% Make choices in menus from input
 if exist('ParamIn','var')&&~isempty(ParamIn)
-    fill_GUI(ParamIn,handles);
+    fill_GUI(ParamIn,handles.get_field);
 end
 CheckPlot1D_Callback(handles.CheckPlot1D, [], handles)
 CheckScalar_Callback(handles.CheckScalar, [], handles)

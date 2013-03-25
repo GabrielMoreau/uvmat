@@ -82,7 +82,7 @@ if exist('Field','var')
     if isfield(PlotParamOut,'Vectors')
         set(handles.Vectors,'Visible','on')
     end
-    errormsg=fill_GUI(PlotParamOut,handles);
+    errormsg=fill_GUI(PlotParamOut,hObject);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',errormsg)
         return
@@ -779,7 +779,7 @@ Data=get(handles.view_field,'UserData');
 AxeData=Data.PlotAxes;% retrieve the current plotted data
 PlotParam=read_GUI(handles.view_field);
 [PP,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
-errormsg=fill_GUI(PlotParamOut,handles);
+errormsg=fill_GUI(PlotParamOut,handles.view_field);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',errormsg)
         return

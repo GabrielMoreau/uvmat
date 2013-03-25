@@ -85,10 +85,10 @@ if isfield(s,'Camera')
         % reading Dtk
         Dtk=[];%default
         NbDtk=1;%default
-        if isfield(Timing,'Dtk')
+        if isfield(Timing{k},'Dtk')
             Dtk=Timing{k}.Dtk;
         end
-        if isfield(Timing,'NbDtk')&&~isempty(Timing{k}.NbDtk)
+        if isfield(Timing{k},'NbDtk')&&~isempty(Timing{k}.NbDtk)
             NbDtk=Timing{k}.NbDtk;
         end
         if isempty(Dtk)
