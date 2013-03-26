@@ -95,16 +95,24 @@ switch VelTypeOut
         if isfield(Field,'Patch1_SubDomain')
             Field.SubDomain=Field.Patch1_SubDomain;
             Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'SubDomain'}];
-        end     
+        end 
+        if isfield(Field,'Civ1_Dt')
         Field.Dt=Field.Civ1_Dt;
+        end
+        if isfield(Field,'Civ1_Time')
         Field.Time=Field.Civ1_Time;
+        end
     case{'civ2','filter2'}
         if isfield(Field,'Patch2_SubDomain')
             Field.SubDomain=Field.Patch2_SubDomain;
             Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'SubDomain'}];
         end
+        if isfield(Field,'Civ2_Dt')
         Field.Dt=Field.Civ2_Dt;
+        end
+        if isfield(Field,'Civ2_Time')
         Field.Time=Field.Civ2_Time;
+        end
 end
 Field.ListGlobalAttribute=[Field.ListGlobalAttribute {'Dt','Time'}];
 ivar_U_tps=[];

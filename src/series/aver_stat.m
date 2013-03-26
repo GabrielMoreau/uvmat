@@ -61,6 +61,7 @@ return
 end
 
 %%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%
+ParamOut=[];
 %% read input parameters from an xml file if input is a file name (batch mode)
 checkrun=1;
 if ischar(Param)

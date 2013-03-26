@@ -33,51 +33,28 @@
 
 function ParamOut=check_data_files(Param)
 
-% %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
-% if ~exist('Param','var') % case with no input parameter 
-%     ParamOut={'NbViewMax';'';...% max nbre of input file series (default='' , no limitation)
-%         'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
-%         'NbSlice';'on'; ...%nbre of slices ('off' by default)
-%         'VelType';'off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-%         'FieldName';'off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-%         'FieldTransform'; 'off';...%can use a transform function
-%         'ProjObject';'off';...%can use projection object(option 'off'/'on',
-%         'Mask';'off';...%can use mask option   (option 'off'/'on', 'off' by default)
-%         'OutputDirExt';'';...%set the output dir extension
-%                ''};
-%         return
-% end
 %% input preparation mode (no RUN)
 if isstruct(Param) && isequal(Param.Action.RUN,0)
-    ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='on'; ...%nbre of slices ('off' by default)
-    ParamOut.VelType='off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    ParamOut.FieldName='off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    ParamOut.FieldTransform = 'off';...%can use a transform function
-    ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
-    ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.NbSlice='on';%nbre of slices ('off' by default)
+    ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    ParamOut.FieldTransform = 'off';%can use a transform function
+    ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
+    ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='';%set the output dir extension (blank=no output dir)
 return
 end
 %%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%
-%% select different modes,  RUN, parameter input, BATCH
-% BATCH  case: read the xml file for batch case
+
+%% read input parameters from an xml file if input is a file name (batch mode)
+checkrun=1;
 if ischar(Param)
-        Param=xml2struct(Param);
-        checkrun=0;
-% RUN case: parameters introduced as the input structure Param
-else
-    if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
-        checkrun=1;% will only search interactive input parameters (preparation of BATCH mode)
-    else
-        checkrun=2; % indicate the RUN option is used
-    end
-    hseries=guidata(Param.hseries);%handles of the GUI series
+    Param=xml2struct(Param);% read Param as input file (batch case)
+    checkrun=0;
 end
-ParamOut=Param; %default output
-%OutputDir=[Param.OutputSubDir Param.OutputDirExt];NO OUTPUT FILE
-    
+
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
 RootFile=Param.InputTable(:,3);
@@ -125,7 +102,7 @@ for iview=1:nbview
         Tabchar{3}=[num2str(FileInfo.FramesPerSecond) ' frames/s '];
         Tabchar{4}=FileInfo.ImageType;
         Tabchar{5}=['  compression' FileInfo.VideoCompression];
-        Tabchar{6}=[ 'quality ' num2str(FileInfo.Quality)];   
+        Tabchar{6}=[ 'quality ' num2str(FileInfo.Quality)];
     else
         Tabchar={};
         %LOOP ON SLICES
@@ -134,9 +111,13 @@ for iview=1:nbview
             filefound={};
             datnum=zeros(1,nbfield_j);
             for ifile=1:nbfield_i
-                stopstate=get(hseries.RUN,'BusyAction');
+                if checkrun
+                    stopstate=get(Param.RUNHandle,'BusyAction');
+                    update_waitbar(Param.WaitbarHandle,ifile/nbfield_i)
+                else
+                    stopstate='queue';
+                end
                 if isequal(stopstate,'queue')% enable STOP command
-                    update_waitbar(hseries.Waitbar,ifile/nbfield_i)         
                     file=filecell{iview,index_slice(ifile)};
                     [Path,Name,ext]=fileparts(file);
                     detect=exist(file,'file'); % check the existence of the file
@@ -147,16 +128,16 @@ for iview=1:nbview
                         if isfield(datfile,'datenum')
                             datnum(ifile)=datfile.datenum;
                             filefound(ifile)={datfile.name};
-                        end                     
+                        end
                         lastfield='';
                         [FileType{iview},FileInfo,Object]=get_file_type(file);
                         if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
                             if isfield(FileInfo,'CivStage')
-                            liststage={'civ1','fix1','patch1','civ2','fix2','patch2'};
-                            lastfield=liststage{FileInfo.CivStage};
+                                liststage={'civ1','fix1','patch1','civ2','fix2','patch2'};
+                                lastfield=liststage{FileInfo.CivStage};
                             end
                         end
-                        lastfield=[FileType{iview} ', ' lastfield];                   
+                        lastfield=[FileType{iview} ', ' lastfield];
                     end
                     Tabchar(1,i_slice)={['slice #' num2str(i_slice)]};
                     Tabchar(ifile+1,i_slice)={[file '...' lastfield]};
@@ -167,7 +148,7 @@ for iview=1:nbview
             if NbSlice>1
                 message=['no set of ' num2str(NbSlice) ' (NbSlices) files found'];
             else
-                 message='no file found';
+                message='no file found';
             end
         else
             datnum=datnum(find(datnum));%keep the non zero values corresponding to existing files
@@ -176,9 +157,9 @@ for iview=1:nbview
             [last,indlast]=max(datnum);
             message={['oldest modification:  ' filefound{ind} ' : ' datestr(first)];...
                 ['latest modification:  ' filefound{indlast} ' : ' datestr(last)]};
-        end 
+        end
         if ~isempty(Tabchar)
-          Tabchar=reshape(Tabchar,NbSlice*(nbfield_i+1),1);
+            Tabchar=reshape(Tabchar,NbSlice*(nbfield_i+1),1);
         end
     end
     hfig=figure(iview);

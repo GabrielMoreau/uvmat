@@ -383,10 +383,10 @@ if ~test_zoom && test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'PlotAxe
     h_edit_append=hh_geometry_calib.edit_append;%findobj(h_geometry_calib,'Tag','edit_append');
     if isequal(get(h_edit_append,'Value'),1) && ~isempty(haxes)
         h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
-        coord_value=get(hhuvmat.transform_fct,'Value');% set uvmat to pixel coordinates, run it again if not
+        coord_value=get(hhuvmat.TransformName,'Value');% set uvmat to pixel coordinates, run it again if not
         if ~(isequal(coord_value,1)||isequal(coord_value,3)); %active only with no transform or px (no phys)
-            set(hhuvmat.transform_fct,'Value',1)
-            uvmat('transform_fct_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
+            set(hhuvmat.TransformName,'Value',1)
+            uvmat('TransformName_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
             set(hhuvmat.CheckFixedLimits,'Value',0)% put FixedLimits option to 'off'
             set(hhuvmat.CheckFixedLimits,'BackgroundColor',[0.7 0.7 0.7])
             return

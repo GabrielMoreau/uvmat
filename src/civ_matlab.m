@@ -104,7 +104,7 @@ if isfield (Param,'Civ1')
     Data.VarAttribute{4}.Role='vector_y';
     Data.VarAttribute{5}.Role='warnflag';
     
-    if 'PIV volume'
+    if strcmp(Param.ListCompareMode, 'PIV volume')
         Data.ListVarName=[Data.ListVarName 'Civ1_Z'];
         Data.Civ1_X=[];Data.Civ1_Y=[];Data.Civ1_Z=[];
         Data.Civ1_U=[];Data.Civ1_V=[];Data.Civ1_C=[];Data.Civ1_F=[];

@@ -185,36 +185,36 @@ if isfield(Param,'Coord_y_str')&& isfield(Param,'Coord_y_val')
 end
 
 %% Adjust the GUI according to the binaries available in PARAM.xml
-path_uvmat=fileparts(which('uvmat')); %path to civ
-addpath (path_uvmat) ; %add the path to civ, (useful in case of change of working directory after civ has been s opened in the working directory)
-errormsg=[];%default error message
-xmlfile='PARAM.xml';
-if exist(xmlfile,'file')
-    try
-        t=xmltree(xmlfile);
-        sparam=convert(t);
-    catch ME
-        errormsg={' Unable to read the file PARAM.xml defining the  binaries:';ME.message};
-    end
-else
-    errormsg=[xmlfile ' not found: path to binaries undefined'];
-end
-if ~isempty(errormsg)
-    msgbox_uvmat('WARNING',errormsg);
-end
-test_batch=0;%default: ,no batch mode available
-if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
-    test_batch=strcmp(sparam.BatchParam.BatchMode,'sge'); %sge is currently the only implemented batch mod
-end
-RUNVal=get(handles.RunMode,'Value');
-if test_batch==0
-   if RUNVal>2
-       set(handles.RunMode,'Value',1)
-   end
-   set(handles.RunMode,'String',{'local';'background'})
-else
-    set(handles.RunMode,'String',{'local';'background';'cluster'})
-end
+% path_uvmat=fileparts(which('uvmat')); %path to civ
+% addpath (path_uvmat) ; %add the path to civ, (useful in case of change of working directory after civ has been s opened in the working directory)
+% errormsg=[];%default error message
+% xmlfile='PARAM.xml';
+% if exist(xmlfile,'file')
+%     try
+%         t=xmltree(xmlfile);
+%         sparam=convert(t);
+%     catch ME
+%         errormsg={' Unable to read the file PARAM.xml defining the  binaries:';ME.message};
+%     end
+% else
+%     errormsg=[xmlfile ' not found: path to binaries undefined'];
+% end
+% if ~isempty(errormsg)
+%     msgbox_uvmat('WARNING',errormsg);
+% end
+% test_batch=0;%default: ,no batch mode available
+% if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
+%     test_batch=strcmp(sparam.BatchParam.BatchMode,'sge'); %sge is currently the only implemented batch mod
+% end
+% RUNVal=get(handles.RunMode,'Value');
+% if test_batch==0
+%    if RUNVal>2
+%        set(handles.RunMode,'Value',1)
+%    end
+%    set(handles.RunMode,'String',{'local';'background'})
+% else
+%     set(handles.RunMode,'String',{'local';'background';'cluster'})
+% end
 
 %% introduce the input file name(s) if defined from input Param
 if isfield(Param,'FileName')
@@ -1307,7 +1307,7 @@ set(0,'CurrentFigure',handles.series)
 set(handles.RUN, 'Enable','Off')
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
 drawnow
-[h_fun,Series,filexml,errormsg]=prepare_jobs(handles);
+[Series,filexml,errormsg]=prepare_jobs(handles);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
@@ -1319,11 +1319,65 @@ ActionExt=ActionExtList{get(handles.ActionExt,'Value')};% '.m' or '.sh' (compile
 ActionPath=get(handles.ActionPath,'String');
 ActionList=get(handles.ActionName,'String');
 ActionName=ActionList{get(handles.ActionName,'Value')};
+path_series=fileparts(which('series'));
 
+% create the Action fct handle if RunMode option = 'local'
+if strcmp(RunMode,'local')
+    if ~isequal(ActionPath,path_series)
+        eval(['spath=which(''' ActionName ''');']) %spath = current path of the selected function ACTION
+        if ~exist(ActionPath,'dir')
+            msgbox_uvmat('ERROR',['The prescribed function path ' ActionPath ' does not exist']);
+            return
+        end
+        if ~isequal(spath,ActionPath)
+            addpath(ActionPath)% add the prescribed path if not the current one
+        end
+    end
+    eval(['h_fun=@' ActionName ';'])%create a function handle for ACTION
+    if ~isequal(ActionPath,path_series)
+        rmpath(ActionPath)% add the prescribed path if not the current one
+    end
+end
+
+%% Get RunTime code from the file PARAM.xml (needed to run compiled functions)
+errormsg='';%default error message
+xmlfile=fullfile(path_series,'PARAM.xml');
+test_batch=0;%default: ,no batch mode available
+if ~exist(xmlfile,'file')
+    [success,message]=copyfile(fullfile(path_series,'PARAM.xml.default'),xmlfile);
+end
+RunTime='';
+if strcmp(ActionExt,'.sh')
+    if exist(xmlfile,'file')
+        s=xml2struct(xmlfile);
+        if strcmp(RunMode,'cluster') && isfield(s,'BatchParam')
+            if isfield(s.BatchParam,'RunTime')
+                RunTime=s.BatchParam.RunTime;
+            end
+            if isfield(s.BatchParam,'NbCore')
+                NbCore=s.BatchParam.NbCore;
+            end
+        elseif (strcmp(RunMode,'background')||strcmp(RunMode,'local')) && isfield(s,'RunParam')
+            if isfield(s.RunParam,'RunTime')
+                RunTime=s.RunParam.RunTime;
+            end
+            if isfield(s.RunParam,'NbCore')
+                NbCore=s.RunParam.NbCore;
+            end
+        end
+    end
+    if isempty(RunTime) && strcmp(RunMode,'cluster')
+        msgbox_uvmat('ERROR','RunTime name not found in PARAM.xml, compiled version .sh cannot run on cluster')
+        return
+    end
+    Series.RunTime=RunTime;
+end
+   
 %% set nbre of processes
-if isfield(Series,'NbSlice')&&~isempty(Series.NbSlice)
-    NbProcess=Series.NbSlice;
-else
+if ~isfield(Series,'NbSlice')
+    Series.NbSlice=[];
+end
+if isempty(Series.NbSlice)
     switch RunMode
         case {'local','background'}
          NbCore=1;% no need to split the calculation
@@ -1337,7 +1391,33 @@ else
             end
     end
     NbProcess=NbCore;% choose one process per core
+else
+    NbProcess=Series.NbSlice;% the nbre of run processes is equal to the number of slices
 end
+
+%% read index ranges
+first_i=1;
+last_i=1;
+incr_i=1;
+first_j=1;
+last_j=1;
+incr_j=1;
+if isfield(Series.IndexRange,'first_i')
+    first_i=Series.IndexRange.first_i;
+    incr_i=Series.IndexRange.incr_i;
+    last_i=Series.IndexRange.last_i;
+end
+if isfield(Series.IndexRange,'first_j')
+    first_j=Series.IndexRange.first_j;
+    last_j=Series.IndexRange.last_j;
+end
+if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
+    set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return
+else
+    BlockLength=ceil(numel(first_i:incr_i:last_i)/NbProcess);
+end
+
+%% main processing
 for iprocess=1:NbProcess% TOD0
 %     split the input files
 %     adjust Param
@@ -1345,33 +1425,48 @@ for iprocess=1:NbProcess% TOD0
 end
 switch RunMode
     case 'local'
-        switch ActionExt
-            case '.m'
-                for iprocess=1:NbProcess
-                    if ~isempty(filexml)
-                        t=struct2xml(Series);
-                        t=set(t,1,'name','Series');
-                        save(t,filexml);
-                    end
-                    Series.RUNHandle=handles.RUN;
-                    Series.WaitbarHandle=handles.Waitbar;
-                    Series=h_fun(Series);
+        Series.RUNHandle=handles.RUN;
+        Series.WaitbarHandle=handles.Waitbar;
+        for iprocess=1:NbProcess
+            if isempty(Series.NbSlice)
+                Series.IndexRange.first_i=first_i+(iprocess-1)*BlockLength;
+                Series.IndexRange.last_i=first_i+(iprocess)*BlockLength-1;
+            else
+                Series.IndexRange.first_i= first_i+iprocess-1;
+                Series.IndexRange.incr_i=incr_i*Series.NbSlice;
+            end
+            if ~isempty(filexml)
+                t=struct2xml(Series);
+                t=set(t,1,'name','Series');
+                if isequal(Series.IndexRange.last_i,Series.IndexRange.first_i)
+                    term_i=num2str(Series.IndexRange.first_i);
+                else
+                    term_i=[num2str(Series.IndexRange.first_i) '-' num2str(Series.IndexRange.last_i)];
                 end
-            case '.sh'
-                for iprocess=1:NbProcess
-                    CivmBin=fullfile(ActionPath,[ActionName '.sh']); %path to the source directory of uvmat
+                if isequal(Series.IndexRange.last_j,Series.IndexRange.first_j)
+                    term_j=num2str(Series.IndexRange.first_j);
+                else
+                    term_j=[num2str(Series.IndexRange.first_j) '-' num2str(Series.IndexRange.last_j)];
+                end
+                save(t,[filexml '_' term_i '_' term_j '.xml']);
+            end
+            switch ActionExt
+                case '.m'
+                    h_fun(Series);
+                case '.sh'
                     switch computer
-                        case {'PCWIN','PCWIN64'}
+                        case {'PCWIN','PCWIN64'} %Windows system
                             filename=regexprep(filename,'\\','\\\\');% add '\' so that '\' are left as characters
                             % TODO launch command in DOS
-                        case {'GLNX86','GLNXA64','MACI64'}
-                            cmd=['#!/bin/bash \n '...
-                                '#$ -cwd \n '...
-                                'hostname && date \n '...
-                                'umask 002 \n'...
-                                CivmBin ' ' Param.xml.RunTime ' ' regexprep(filename,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml') ' ' Param.OutputFile '.nc'];%allow writting access to created files for user group
+                        case {'GLNX86','GLNXA64','MACI64'}%Linux  system
+%                             cmd=['#!/bin/bash \n '...
+%                                 '#$ -cwd \n '...
+%                                 'hostname && date \n '...
+%                                 'umask 002 \n'...
+%                                 fullfile(ActionPath,[ActionName '.sh']) ' ' Series.RunTime ' ' filexml '_' term_i '_' term_j '.xml'];%allow writting access to created files for user group
+                             system([fullfile(ActionPath,[ActionName '.sh']) ' ' Series.RunTime ' ' filexml '_' term_i '_' term_j '.xml']);
                     end
-                end
+            end
         end
     case 'background'
         if isempty(filexml)
@@ -1383,7 +1478,6 @@ switch RunMode
             t=struct2xml(Series);
             t=set(t,1,'name','Series');
             save(t,filexml);
-            path_uvmat=fileparts(which('uvmat'));
             
             filename_bat=regexprep(filexml,'.xml$','.bat');% create executable file to run program in background
             [fid,message]=fopen(filename_bat,'w');
@@ -1400,7 +1494,7 @@ switch RunMode
                         '#!/bin/bash \n'...
                         '. /etc/sysprofile \n'...
                         'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog ''' <<END_MATLAB \n'...
-                        'addpath(''' path_uvmat '''); \n'...
+                        'addpath(''' path_series '''); \n'...
                         'addpath(''' Series.Action.ActionPath '''); \n'...
                         '' Series.Action.ActionName  '( ''' filexml '''); \n'...
                         'exit \n'...
@@ -1412,7 +1506,7 @@ switch RunMode
                     
                 case {'PCWIN','PCWIN64'}
                     text_matlabscript=['matlab -automation -logfile ' regexprep(filelog,'\\','\\\\')...
-                        ' -r "addpath(''' regexprep(path_uvmat,'\\','\\\\') ''');'...
+                        ' -r "addpath(''' regexprep(path_series,'\\','\\\\') ''');'...
                         'addpath(''' regexprep(Series.Action.ActionPath,'\\','\\\\') ''');'...
                         '' Series.Action.ActionName  '( ''' regexprep(filexml,'\\','\\\\') ''');exit"'];
                     fprintf(fid,text_matlabscript);
@@ -1576,64 +1670,33 @@ set(handles.RUN, 'Value',0)
 %------------------------------------------------------------------------
 % --- Main launch command, called by RUN and BATCH
 
-function [h_fun,Series,filexml,errormsg]=prepare_jobs(handles,run)
+function [Series,filexml,errormsg]=prepare_jobs(handles)
 %INPUT: 
 % handles: handles of graphic objects on the GUI series
 % run=0, just to display parameters for MenuExport/GUI config
 % run=1 (default) prepare the computation
 
 %------------------------------------------------------------------------
-h_fun=[];
 filexml='';
 errormsg='';
-if ~exist('run','var')
-    run=1;
-end
+
 %% Read parameters from series
 Series=read_GUI(handles.series);
 if isfield(Series,'Pairs')
     Series=rmfield(Series,'Pairs'); %info Pairs not needed for output
 end
 
-%% read index ranges
-first_i=1;
-last_i=1;
-incr_i=1;
-first_j=1;
-last_j=1;
-incr_j=1;
-if isfield(Series.IndexRange,'first_i')
-    first_i=Series.IndexRange.first_i;
-    incr_i=Series.IndexRange.incr_i;
-    last_i=Series.IndexRange.last_i;
-end
-if isfield(Series.IndexRange,'first_j')
-    first_j=Series.IndexRange.first_j;
-    incr_j=Series.IndexRange.incr_j;
-    last_j=Series.IndexRange.last_j;
-end
-
-%% read input file parameters and set menus
-menu_coord_state=get(handles.TransformName,'Visible');
-if isequal(menu_coord_state,'on')
-    menu_index=get(handles.TransformName,'Value');
-    transform_list=get(handles.TransformName,'UserData');
-    Series.FieldTransform.TransformHandle=transform_list{menu_index};% transform function handles
-end
-
-if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
-    set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
 
 %% projection object
-if isfield(Series,'CheckObject')
-    if Series.CheckObject
-        hset_object=findobj(allchild(0),'tag','set_object');
-        Series.ProjObject=read_GUI(hset_object);
-        CheckObject_Callback([], [], handles)
-    end
-else
-    Series.CheckObject=0;
-end
+% if isfield(Series,'CheckObject')
+%     if Series.CheckObject
+%         hset_object=findobj(allchild(0),'tag','set_object');
+%         Series.ProjObject=read_GUI(hset_object);
+%         CheckObject_Callback([], [], handles)
+%     end
+% else
+%     Series.CheckObject=0;
+% end
 
 %% get_field GUI
 if isfield(Series,'InputFields')&&isfield(Series.InputFields,'Field')
@@ -1643,32 +1706,28 @@ if isfield(Series,'InputFields')&&isfield(Series.InputFields,'Field')
     end
 end
 
-if ~run
-    return
-end
-
 %% defining the ActionName function handle
-list_action=get(handles.ActionName,'String');% list menu action
-index=get(handles.ActionName,'Value');
-action= list_action{index}; % selected string
-%Series.hseries=handles.series; % handles to the series GUI
-path_series=which('series');
-ActionPathList=get(handles.ActionName,'UserData');
-ActionPath=ActionPathList{index}; %path stored for the function ACTION
-if ~isequal(ActionPath,path_series)
-    eval(['spath=which(''' action ''');']) %spath = current path of the selected function ACTION
-    if ~exist(ActionPath,'dir')
-        errormsg=['The prescribed function path ' ActionPath ' does not exist'];
-        return
-    end
-    if ~isequal(spath,ActionPath)
-        addpath(ActionPath)% add the prescribed path if not the current one
-    end
-end
-eval(['h_fun=@' action ';'])%create a function handle for ACTION
-if ~isequal(ActionPath,path_series)
-        rmpath(ActionPath)% add the prescribed path if not the current one    
-end
+% list_action=get(handles.ActionName,'String');% list menu action
+% index=get(handles.ActionName,'Value');
+% action= list_action{index}; % selected string
+% %Series.hseries=handles.series; % handles to the series GUI
+% path_series=which('series');
+% ActionPathList=get(handles.ActionName,'UserData');
+% ActionPath=ActionPathList{index}; %path stored for the function ACTION
+% if ~isequal(ActionPath,path_series)
+%     eval(['spath=which(''' action ''');']) %spath = current path of the selected function ACTION
+%     if ~exist(ActionPath,'dir')
+%         errormsg=['The prescribed function path ' ActionPath ' does not exist'];
+%         return
+%     end
+%     if ~isequal(spath,ActionPath)
+%         addpath(ActionPath)% add the prescribed path if not the current one
+%     end
+% end
+% eval(['h_fun=@' action ';'])%create a function handle for ACTION
+% if ~isequal(ActionPath,path_series)
+%         rmpath(ActionPath)% add the prescribed path if not the current one    
+% end
 
 %% create the output data directory and write in it the xml file from the GUI config
 %determine the root file corresponding to the first sub dir
@@ -1711,7 +1770,7 @@ if get(handles.RUN,'value') && isfield(Series,'OutputSubDir')
             return
         end
     end
-    filexml=fullfile(OutputDir,[Series.InputTable{1,3} '.xml']);% name of the parameter xml file set in this directory
+    filexml=fullfile(OutputDir,Series.InputTable{1,3});% name of the parameter xml file set in this directory
 end
 %removes redondant information
 Series.IndexRange=rmfield(Series.IndexRange,'TimeTable');
@@ -1815,8 +1874,8 @@ if isequal(ActionName,'more...')
 end
 
 %% check the current ActionPath to the selected function
-PathName=ActionPathList{ActionIndex};%current recorded path
-set(handles.ActionPath,'String',PathName); %show the path to the senlected function
+ActionPath=ActionPathList{ActionIndex};%current recorded path
+set(handles.ActionPath,'String',ActionPath); %show the path to the senlected function
 
 %% reinitialise the waitbar
 update_waitbar(handles.Waitbar,0)
@@ -1828,8 +1887,25 @@ set(handles.ProjObject,'Visible','off');
 set(handles.CheckMask,'Visible','off')
 set(handles.Mask,'Visible','off')
 
-%% run the current action function to prepare the input GUI
-[h_fun,Series,tild,errormsg]=prepare_jobs(handles);
+%% create the function handle for Action
+path_series=which('series');
+if ~isequal(ActionPath,path_series)
+    eval(['spath=which(''' ActionName ''');']) %spath = current path of the selected function ACTION
+    if ~exist(ActionPath,'dir')
+        errormsg=['The prescribed function path ' ActionPath ' does not exist'];
+        return
+    end
+    if ~isequal(spath,ActionPath)
+        addpath(ActionPath)% add the prescribed path if not the current one
+    end
+end
+eval(['h_fun=@' ActionName ';'])%create a function handle for ACTION
+if ~isequal(ActionPath,path_series)
+        rmpath(ActionPath)% add the prescribed path if not the current one    
+end
+
+%% prepare the input param
+[Series,tild,errormsg]=prepare_jobs(handles);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
@@ -1876,6 +1952,19 @@ if isfield(ParamOut,'WholeIndexRange')&&isequal(ParamOut.WholeIndexRange,'on')
             set(handles.num_incr_j,'String','1')
         end
     end
+else
+% check index ranges
+first_i=1;last_i=1;first_j=1;last_j=1;
+if isfield(Series.IndexRange,'first_i')
+    first_i=Series.IndexRange.first_i;
+    last_i=Series.IndexRange.last_i;
+end
+if isfield(Series.IndexRange,'first_j')
+    first_j=Series.IndexRange.first_j;
+    last_j=Series.IndexRange.last_j;
+end
+if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
+    set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
 end
 
 %% NbSlice visibility
@@ -2247,7 +2336,7 @@ set(handles.TransformName,'UserData',TransformPathList);
 % --------------------------------------------------------------------
 function MenuExportConfig_Callback(hObject, eventdata, handles)
 global Series
-[tild,Series,errormsg]=prepare_jobs(handles,0);
+[tild,Series,errormsg]=prepare_jobs(handles);
 % Series=read_GUI(handles.series);
 
 evalin('base','global Series')%make CurData global in the workspace
@@ -2491,7 +2580,7 @@ ActionExt=ActionExtList{get(handles.ActionExt,'Value')};
 ActionList=get(handles.ActionName,'String');
 ActionName=ActionList{get(handles.ActionName,'Value')};
 if strcmp(ActionExt,'.sh')
-    ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionName ActionExt]);
+    ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']);
     if ~exist(ActionFullName,'file')
         answer=msgbox_uvmat('INPUT_Y-N','compiled version has not been created: compile now?');
         if strcmp(answer,'Yes')
@@ -2501,6 +2590,19 @@ if strcmp(ActionExt,'.sh')
             cd(currentdir)
         end
     end
+    currentdir=pwd;
+    cd(get(handles.ActionPath,'String'))
+    sh_file=dir([ActionName '.sh']);
+    m_file=dir([ActionName '.m']);
+    if isfield(m_file,'datenum') && m_file.datenum>sh_file.datenum
+        set(handles.ActionExt,'BackgroundColor',[1 1 0])
+        answer=msgbox_uvmat('INPUT_Y-N',[ActionName '.sh needs to be updated: recompile now?']);
+        if strcmp(answer,'Yes')
+            compile(ActionName)
+        end
+        set(handles.ActionExt,'BackgroundColor',[1 1 1])
+    end
+    cd(currentdir)
 end
 
 
