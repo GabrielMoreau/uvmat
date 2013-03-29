@@ -898,9 +898,9 @@ switch FileType
             end
         end
         FileName=fullfile_uvmat(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1_series(1,ref_j+1,ref_i+1),i2,j1,j2);
-        hget_field=get_field(FileName);
-        hhget_field=guidata(hget_field);
-        get_field('RUN_Callback',hhget_field.RUN,[],hhget_field);
+%         hget_field=get_field(FileName);
+%         hhget_field=guidata(hget_field);
+%         get_field('RUN_Callback',hhget_field.RUN,[],hhget_field);
     otherwise
         set(handles.FieldName,'Value',1) % set menu to 'image'
         set(handles.FieldName,'String',{'image'})
@@ -1302,26 +1302,41 @@ set(handles.ref_j_text,'Visible',state)
 % --- Executes on button press in RUN.
 function RUN_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+
 set(handles.RUN,'BusyAction','queue');
 set(0,'CurrentFigure',handles.series)
 set(handles.RUN, 'Enable','Off')
 set(handles.RUN,'BackgroundColor',[0.831 0.816 0.784])
 drawnow
-[Series,filexml,errormsg]=prepare_jobs(handles);
+
+%% read the input parameters and set the output dir and nomenclature
+[Series,OutputDir,errormsg]=prepare_jobs(handles);% get parameters form the GUI series
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
 end
+OutputNomType=nomtype2pair(Series.InputTable{1,4});% nomenclature for output files
+DirXml=fullfile(OutputDir,'0_XML');
+if ~exist(DirXml,'dir')
+    [tild,msg1]=mkdir(DirXml);
+    if ~strcmp(msg1,'')
+        msgbox_uvmat('ERROR',['cannot create ' DirXml ': ' msg1]);%error message for directory creation
+        return
+    end
+end
+
+%% select the Action modes
 RunModeList=get(handles.RunMode,'String');
 RunMode=RunModeList{get(handles.RunMode,'Value')};
-ActionExtList=get(handles.ActionExt,'String');
-ActionExt=ActionExtList{get(handles.ActionExt,'Value')};% '.m' or '.sh' (compiled)
-ActionPath=get(handles.ActionPath,'String');
-ActionList=get(handles.ActionName,'String');
-ActionName=ActionList{get(handles.ActionName,'Value')};
+ActionExt='.m';%default
+if isfield(Series.Action,'ActionExt')
+    ActionExt=Series.Action.ActionExt;% '.m' or '.sh' (compiled)
+end
+ActionName=Series.Action.ActionName;
+ActionPath=Series.Action.ActionPath;
 path_series=fileparts(which('series'));
 
-% create the Action fct handle if RunMode option = 'local'
+%% create the Action fct handle if RunMode option = 'local'
 if strcmp(RunMode,'local')
     if ~isequal(ActionPath,path_series)
         eval(['spath=which(''' ActionName ''');']) %spath = current path of the selected function ACTION
@@ -1372,27 +1387,30 @@ if strcmp(ActionExt,'.sh')
     end
     Series.RunTime=RunTime;
 end
-   
-%% set nbre of processes
-if ~isfield(Series,'NbSlice')
-    Series.NbSlice=[];
-end
-if isempty(Series.NbSlice)
-    switch RunMode
-        case {'local','background'}
-         NbCore=1;% no need to split the calculation
-        case 'cluster'
-            if strcmp(Series.Action.ActionExt,'.m')% case of Matlab function (uncompiled)
-                NbCore=1;% one core used only (limitation of Matlab licences)
-                msgbox_uvmat('WARNING','Number of cores =1: select the compiled version civ_matlab.sh for multi-core processing');
-            else
+
+%% set nbre of cluster cores and processes
+switch RunMode
+    case {'local','background'}
+        NbCore=1;% no need to split the calculation
+    case 'cluster_oar'
+        if strcmp(Series.Action.ActionExt,'.m')% case of Matlab function (uncompiled)
+            NbCore=1;% one core used only (limitation of Matlab licences)
+            msgbox_uvmat('WARNING','Number of cores =1: select the compiled version civ_matlab.sh for multi-core processing');
+            extra_oar='';
+        else
             answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
             NbCore=str2double(answer{1});
-            end
-    end
+            extra_oar=answer{2};
+        end
+end
+if ~isfield(Series.IndexRange,'NbSlice')
+    Series.IndexRange.NbSlice=[];
+end
+if isempty(Series.IndexRange.NbSlice)
     NbProcess=NbCore;% choose one process per core
 else
-    NbProcess=Series.NbSlice;% the nbre of run processes is equal to the number of slices
+    NbProcess=Series.IndexRange.NbSlice;% the nbre of run processes is equal to the number of slices
+    NbCore=min(NbCore,NbProcess);% at least one process per core
 end
 
 %% read index ranges
@@ -1401,7 +1419,6 @@ last_i=1;
 incr_i=1;
 first_j=1;
 last_j=1;
-incr_j=1;
 if isfield(Series.IndexRange,'first_i')
     first_i=Series.IndexRange.first_i;
     incr_i=Series.IndexRange.incr_i;
@@ -1412,239 +1429,190 @@ if isfield(Series.IndexRange,'first_j')
     last_j=Series.IndexRange.last_j;
 end
 if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
-    set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return
+        set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return
 else
     BlockLength=ceil(numel(first_i:incr_i:last_i)/NbProcess);
 end
 
-%% main processing
-for iprocess=1:NbProcess% TOD0
-%     split the input files
-%     adjust Param
-%     create xmlfile and batfile
-end
-switch RunMode
-    case 'local'
-        Series.RUNHandle=handles.RUN;
-        Series.WaitbarHandle=handles.Waitbar;
-        for iprocess=1:NbProcess
-            if isempty(Series.NbSlice)
-                Series.IndexRange.first_i=first_i+(iprocess-1)*BlockLength;
-                Series.IndexRange.last_i=first_i+(iprocess)*BlockLength-1;
-            else
-                Series.IndexRange.first_i= first_i+iprocess-1;
-                Series.IndexRange.incr_i=incr_i*Series.NbSlice;
-            end
-            if ~isempty(filexml)
-                t=struct2xml(Series);
-                t=set(t,1,'name','Series');
-                if isequal(Series.IndexRange.last_i,Series.IndexRange.first_i)
-                    term_i=num2str(Series.IndexRange.first_i);
-                else
-                    term_i=[num2str(Series.IndexRange.first_i) '-' num2str(Series.IndexRange.last_i)];
-                end
-                if isequal(Series.IndexRange.last_j,Series.IndexRange.first_j)
-                    term_j=num2str(Series.IndexRange.first_j);
-                else
-                    term_j=[num2str(Series.IndexRange.first_j) '-' num2str(Series.IndexRange.last_j)];
-                end
-                save(t,[filexml '_' term_i '_' term_j '.xml']);
-            end
-            switch ActionExt
-                case '.m'
-                    h_fun(Series);
-                case '.sh'
-                    switch computer
-                        case {'PCWIN','PCWIN64'} %Windows system
-                            filename=regexprep(filename,'\\','\\\\');% add '\' so that '\' are left as characters
-                            % TODO launch command in DOS
-                        case {'GLNX86','GLNXA64','MACI64'}%Linux  system
-%                             cmd=['#!/bin/bash \n '...
-%                                 '#$ -cwd \n '...
-%                                 'hostname && date \n '...
-%                                 'umask 002 \n'...
-%                                 fullfile(ActionPath,[ActionName '.sh']) ' ' Series.RunTime ' ' filexml '_' term_i '_' term_j '.xml'];%allow writting access to created files for user group
-                             system([fullfile(ActionPath,[ActionName '.sh']) ' ' Series.RunTime ' ' filexml '_' term_i '_' term_j '.xml']);
-                    end
-            end
-        end
-    case 'background'
-        if isempty(filexml)
-            Series=h_fun(Series);% no background in the absence of output file
+%% direct processing on the current Matlab session
+if strcmp (RunMode,'local')
+    Series.RUNHandle=handles.RUN;
+    Series.WaitbarHandle=handles.Waitbar;
+    for iprocess=1:NbProcess
+        if isempty(Series.IndexRange.NbSlice)
+            Series.IndexRange.first_i=first_i+(iprocess-1)*BlockLength;
+            Series.IndexRange.last_i=first_i+(iprocess)*BlockLength-1;
         else
-            % update the xml file after interactive input with the function
-%             Series.Specific='?';
-%             Series=h_fun(Series);
-            t=struct2xml(Series);
-            t=set(t,1,'name','Series');
-            save(t,filexml);
-            
-            filename_bat=regexprep(filexml,'.xml$','.bat');% create executable file to run program in background
-            [fid,message]=fopen(filename_bat,'w');
-            if isequal(fid,-1)
-                msgbox_uvmat('ERROR', ['creation of .bat file: ' message]);
+            Series.IndexRange.first_i= first_i+iprocess-1;
+            Series.IndexRange.incr_i=incr_i*Series.IndexRange.NbSlice;
+        end
+        t=struct2xml(Series);
+        t=set(t,1,'name','Series');
+        filexml=fullfile_uvmat(DirXml,'',Series.InputTable{1,3},'.xml',OutputNomType,...
+            Series.IndexRange.first_i,Series.IndexRange.last_i,first_j,last_j);
+        save(t,filexml);
+        switch ActionExt
+            case '.m'
+                h_fun(Series);
+            case '.sh'
+                switch computer
+                    case {'PCWIN','PCWIN64'} %Windows system
+                        filexml=regexprep(filexml,'\\','\\\\');% add '\' so that '\' are left as characters
+                        system([fullfile(ActionPath,[ActionName '.sh']) ' ' Series.RunTime ' ' filexml]);% TODO: adapt to DOS system
+                    case {'GLNX86','GLNXA64','MACI64'}%Linux  system
+                        system([fullfile(ActionPath,[ActionName '.sh']) ' ' Series.RunTime ' ' filexml]);
+                end
+        end
+    end
+elseif strcmp(get(handles.OutputDirExt,'Visible'),'off')
+    msgbox_uvmat('ERROR',['no output file for Action ' ActionName ', use run mode = local']);% a output dir is needed for background option
+    return
+else
+    %% processing on a different session of the same computer (background) or cluster, create executable files
+    batch_file_list=cell(NbProcess,1);% initiate the list of executable files
+    DirBat=fullfile(OutputDir,'0_BAT');
+    %create subdirectory for executable files
+    if ~exist(DirBat,'dir')
+        [tild,msg1]=mkdir(DirBat);
+        if ~strcmp(msg1,'')
+            msgbox_uvmat('ERROR',['cannot create ' DirBat ': ' msg1]);%error message for directory creation
+            return
+        end
+    end
+    %create subdirectory for log files
+    DirLog=fullfile(OutputDir,'0_LOG');
+    if ~exist(DirLog,'dir')
+        [tild,msg1]=mkdir(DirLog);
+        if ~strcmp(msg1,'')
+            msgbox_uvmat('ERROR',['cannot create ' DirLog ': ' msg1]);%error message for directory creation
+            return
+        end
+    end
+    for iprocess=1:NbProcess
+        if isempty(Series.IndexRange.NbSlice)% process by blocks of i index
+            Series.IndexRange.first_i=first_i+(iprocess-1)*BlockLength;
+            Series.IndexRange.last_i=first_i+(iprocess)*BlockLength-1;
+        else% process by slices of i index if NbSlice is defined, computation in a single process if NbSlice =1
+            Series.IndexRange.first_i= first_i+iprocess-1;
+            Series.IndexRange.incr_i=incr_i*Series.IndexRange.NbSlice;
+        end
+        
+        % create, fill and save the xml parameter file
+        t=struct2xml(Series);
+        t=set(t,1,'name','Series');
+        filexml=fullfile_uvmat(DirXml,'',Series.InputTable{1,3},'.xml',OutputNomType,...
+            Series.IndexRange.first_i,Series.IndexRange.last_i,first_j,last_j);
+        save(t,filexml);% save the parameter file
+        
+        %create the executable file
+        filebat=fullfile_uvmat(DirBat,'',Series.InputTable{1,3},'.bat',OutputNomType,...
+            Series.IndexRange.first_i,Series.IndexRange.last_i,first_j,last_j);
+        batch_file_list{iprocess}=filebat;
+        [fid,message]=fopen(filebat,'w');% create the executable file
+        if isequal(fid,-1)
+            msgbox_uvmat('ERROR', ['creation of .bat file: ' message]);
+            return
+        end
+        
+        % set the log file name
+        filelog=fullfile_uvmat(DirLog,'',Series.InputTable{1,3},'.log',OutputNomType,...
+            Series.IndexRange.first_i,Series.IndexRange.last_i,first_j,last_j);
+        
+        % fill and save the executable file
+        switch ActionExt
+            case '.m'% Matlab function
+                switch computer
+                    case {'GLNX86','GLNXA64','MACI64'}
+                        cmd=[...
+                            '#!/bin/bash \n'...
+                            '. /etc/sysprofile \n'...
+                            'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog ''' <<END_MATLAB \n'...
+                            'addpath(''' path_series '''); \n'...
+                            'addpath(''' Series.Action.ActionPath '''); \n'...
+                            '' Series.Action.ActionName  '( ''' filexml '''); \n'...
+                            'exit \n'...
+                            'END_MATLAB \n'];
+                        fprintf(fid,cmd);%fill the executable file with the  char string cmd
+                        fclose(fid);% close the executable file
+                        system(['chmod +x ' filebat]);% set the file to executable
+                    case {'PCWIN','PCWIN64'}
+                        text_matlabscript=['matlab -automation -logfile ' regexprep(filelog,'\\','\\\\')...
+                            ' -r "addpath(''' regexprep(path_series,'\\','\\\\') ''');'...
+                            'addpath(''' regexprep(Series.Action.ActionPath,'\\','\\\\') ''');'...
+                            '' Series.Action.ActionName  '( ''' regexprep(filexml,'\\','\\\\') ''');exit"'];
+                        fprintf(fid,text_matlabscript);%fill the executable file with the  char string cmd
+                        fclose(fid);% close the executable file
+                end
+            case '.sh' % compiled Matlab function
+                switch computer
+                    case {'GLNX86','GLNXA64','MACI64'}
+                        cmd=['#!/bin/bash \n '...
+                            '#$ -cwd \n '...
+                            'hostname && date \n '...
+                            'umask 002 \n'...
+                            fullfile(ActionPath,[ActionName '.sh']) ' ' Series.RunTime ' ' filexml];%allow writting access to created files for user group
+                        fprintf(fid,cmd);%fill the executable file with the  char string cmd
+                        fclose(fid);% close the executable file
+                        system(['chmod +x ' filebat]);% set the file to executable
+                        
+                    case {'PCWIN','PCWIN64'}    %       TODO: adapt to Windows system
+                        %                                 cmd=['matlab -automation -logfile ' regexprep(filelog,'\\','\\\\')...
+                        %                                     ' -r "addpath(''' regexprep(path_series,'\\','\\\\') ''');'...
+                        %                                     'addpath(''' regexprep(Series.Action.ActionPath,'\\','\\\\') ''');'...
+                        %                                     '' Series.Action.ActionName  '( ''' regexprep(filexml,'\\','\\\\') ''');exit"'];
+                        fprintf(fid,cmd);
+                        fclose(fid);
+                        %                               dos([filebat ' &']);
+                end
+        end
+    end
+end
+
+%% launch the executable files for background or cluster processing
+switch RunMode
+    case 'background'
+        for iprocess=1:NbProcess
+            system(batch_file_list{iprocess})% directly execute the command file for each process
+        end
+    case 'cluster_oar' % option 'oar-parexec' used
+        %create subdirectory for oar command and log files
+        DirOAR=fullfile(OutputDir,'0_OAR');
+        if ~exist(DirOAR,'dir')
+            [tild,msg1]=mkdir(DirOAR);
+            if ~strcmp(msg1,'')
+                msgbox_uvmat('ERROR',['cannot create ' DirOAR ': ' msg1]);%error message for directory creation
                 return
             end
-            %ActionPath=get(handles.ActionPath,'String');
-            filelog=regexprep(filexml,'.xml$','.log');
-       
-            switch computer
-                case {'GLNX86','GLNXA64','MACI64'}
-                    text_matlabscript=[...
-                        '#!/bin/bash \n'...
-                        '. /etc/sysprofile \n'...
-                        'matlab -nodisplay -nosplash -nojvm -logfile ''' filelog ''' <<END_MATLAB \n'...
-                        'addpath(''' path_series '''); \n'...
-                        'addpath(''' Series.Action.ActionPath '''); \n'...
-                        '' Series.Action.ActionName  '( ''' filexml '''); \n'...
-                        'exit \n'...
-                        'END_MATLAB \n'];
-                    fprintf(fid,text_matlabscript);
-                    fclose(fid);
-                    system(['chmod +x ' filename_bat]);% set the file to executable
-                    system(['. ' filename_bat ' &']);%execute fct
-                    
-                case {'PCWIN','PCWIN64'}
-                    text_matlabscript=['matlab -automation -logfile ' regexprep(filelog,'\\','\\\\')...
-                        ' -r "addpath(''' regexprep(path_series,'\\','\\\\') ''');'...
-                        'addpath(''' regexprep(Series.Action.ActionPath,'\\','\\\\') ''');'...
-                        '' Series.Action.ActionName  '( ''' regexprep(filexml,'\\','\\\\') ''');exit"'];
-                    fprintf(fid,text_matlabscript);
-                    fclose(fid);
-                    dos([filename_bat ' &']);
-            end
         end
-        update_waitbar(handles.Waitbar,1); % put the waitbar to end position to indicate launching is finished
-     case 'cluster' %NOT YET READY
-        switch batch_mode
-            case 'sge' %at the moment only psmn ENS Lyon uses it
-                for p=1:length(batch_file_list)
-                    cmd=['!qsub -q piv1,piv2,piv3 '...
-                        '-e ' regexprep(batch_file_list{p},'.bat','.errors') ' -o ' regexprep(batch_file_list{p},'.bat','.log ')...
-                        ' -v ' 'LD_LIBRARY_PATH=/home/sjoubaud/matlab_sylvain/civx/lib ' batch_file_list{p}];
-                    display(cmd);eval(cmd);
-                end
-            case 'oar'
-                max_walltime=3600*12; % 12h max
-                oar_modes={'oar-parexec','oar-dispatch','mpilauncher'};
-                text={'Batch processing on servcalcul3 LEGI';...
-                    'Please choose one of the followint modes';...
-                    '* oar-parexec : default and best choice';...
-                    '* oar-dispatch : jobs in a container of several cores';...
-                    '* mpilauncher : one single parallel mpi job using several cores';...
-                    '**********************************'...
-                    };
-                [S,v]=listdlg('PromptString',text,'ListString',oar_modes,...
-                    'SelectionMode','single','ListSize',[400 100],'Name','LEGI job mode');
-                switch oar_modes{S}
-                    case 'oar-parexec' %oar-dispatch.pl
-%                         if strcmp(Series.Action.ActionExt,'.m')% case of Matlab function (uncompiled)
-%                             ncores=1;% one core used only (limitation of Matlab licences)
-%                             msgbox_uvmat('WARNING','Number of cores =1: select the compiled version civ_matlab.sh for multi-core processing');
-%                         else
-%                         answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
-%                         ncores=str2double(answer{1});
-%                         end
-
-                        extra_oar=answer{2};
-                        walltime_onejob=600;%seconds
-                        filename_joblist=fullfile(RootBat,'job_list.txt');
-                        fid=fopen(filename_joblist,'w');
-                        for p=1:length(batch_file_list)
-                            fprintf(fid,[batch_file_list{p} '\n']);% list of exe files (TODO: create them)
-                        end
-                        fclose(fid);
-                        oar_command=['oarsub -n CIVX '...
-                            '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
-                            '-l /core=' num2str(ncores) ','...
-                            'walltime=' datestr(min(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,max_walltime/86400),13) ' '...
-                            '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
-                            '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
-                            extra_oar ' '...
-                            '"oar-parexec -s -f ' filename_joblist ' '...
-                            '-l ' filename_joblist '.log"\n'];
-                        filename_oarcommand=fullfile(RootBat,'oar_command');
-                        fid=fopen(filename_oarcommand,'w');
-                        fprintf(fid,oar_command);
-                        fclose(fid);
-                        fprintf(oar_command);% display in command line
-                        system(oar_command);
-                    case 'oar-dispatch' %oar-dispatch.pl
-                        ncores=str2double(...
-                            inputdlg('Number of cores (max 36)','oarsub parameter',1,{'6'})...
-                            );
-                        walltime_onejob=600;%seconds
-                        filename_joblist=fullfile(RootBat,'job_list.txt');
-                        fid=fopen(filename_joblist,'w');
-                        for p=1:length(batch_file_list)
-                            oar_command=['oarsub -n CIVX '...
-                                '-E ' regexprep(batch_file_list{p},'\.bat\>','.stderr') ' -O ' regexprep(batch_file_list{p},'\.bat\>','.stdout ')...
-                                '-l "/core=1,walltime=' datestr(walltime_onejob/86400,13) '"   ' batch_file_list{p}];
-                            fprintf(fid,[oar_command '\n']);
-                        end
-                        fclose(fid);
-                        oar_command=['oarsub -t container -n civx-container '...
-                            '-l /core=' num2str(ncores)...
-                            ',walltime=' datestr(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,13) ' '...
-                            '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
-                            '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
-                            '"oar-dispatch -f ' filename_joblist '"'];
-                        filename_oarcommand=fullfile(RootBat,'oar_command');
-                        fid=fopen(filename_oarcommand,'w');
-                        fprintf(fid,[oar_command '\n']);
-                        fclose(fid);
-                        display(oar_command);
-                        eval(['! . ' filename_oarcommand])
-                    case 'mpilauncher'
-                        filename_joblist=fullfile(RootBat,'job_list.txt');
-                        fid=fopen(filename_joblist,'w');
-                        
-                        for p=1:length(batch_file_list)
-                            fprintf(fid,[batch_file_list{p} '\n']);
-                        end
-                        fclose(fid)
-                        text_oarscript=[...
-                            '#!/bin/bash \n'...
-                            '#OAR -n Mylauncher \n'...
-                            '#OAR -l node=4/core=5,walltime=0:15:00 \n'...
-                            '#OAR -E ' fullfile(RootBat,'stderrfile.log') ' \n'...
-                            '#OAR -O ' fullfile(RootBat,'stdoutfile.log') ' \n'...
-                            '# ========================================================= \n'...
-                            '# This simple program launch a multinode parallel OpenMPI mpilauncher \n'...
-                            '# application for coriolis PIV post-processing. \n'...
-                            '# OAR uses oarshmost wrapper to propagate the user environement. \n'...
-                            '# This wrapper assert that the user has the same environment on all the \n'...
-                            '# allocated nodes (basic behavior needed by most MPI applications).  \n'...
-                            '# \n'...
-                            '# REQUIREMENT: \n'...
-                            '# the oarshmost wrapper should be installed in $HOME/bin directory. \n'...
-                            '# If a different location is used, change the line following the comment "Bidouille" \n'...
-                            '# ========================================================= \n'...
-                            '#   USER should only modify these 2 lines  \n'...
-                            'WORKDIR=' pwd ' \n'...
-                            'COMMANDE="mpilauncher  -f ' filename_joblist '" \n'...
-                            '# ========================================================= \n'...
-                            '# DO NOT MODIFY the FOLOWING LINES. (or be carefull) \n'...
-                            'echo "job starting on: "`hostname` \n'...
-                            'MPINODES="-host `tr [\\\\\\n] [,] <$OAR_NODEFILE |sed -e "s/,$/ /"`" \n'...
-                            'NCPUS=`cat $OAR_NODEFILE |wc -l` \n'...
-                            '#========== Bidouille ============== \n'...
-                            'export OMPI_MCA_plm_rsh_agent=oar-envsh \n'...%                     'cd $WORKDIR \n'...
-                            'CMD="mpirun -np $NCPUS -wdir $WORKDIR $MPINODES $COMMANDE" \n'...
-                            'echo "I run: $CMD"  \n'...
-                            '$CMD \n'...
-                            'echo "job ending" \n'...
-                            ];
-                        filename_oarscript=fullfile(RootBat,'oar_command');
-                        fid=fopen(filename_oarscript,'w');
-                        fprintf(fid,[text_oarscript]);
-                        fclose(fid);
-                        eval(['!chmod +x  ' filename_oarscript]);
-                        eval(['!oarsub -S ' filename_oarscript]);
-                end
+        max_walltime=3600*12; % 12h max
+        walltime_onejob=600;%seconds
+        filename_joblist=fullfile(DirOAR,'job_list.txt');%create name of the global executable file
+        fid=fopen(filename_joblist,'w');
+        for p=1:length(batch_file_list)
+            fprintf(fid,[batch_file_list{p} '\n']);% list of exe files (TODO: create them)
         end
+        fclose(fid);
+        system(['chmod +x ' filename_joblist]);% set the file to executable
+        oar_command=['oarsub -n CIVX '...
+            '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
+            '-l /core=' num2str(NbCore) ','...
+            'walltime=' datestr(min(1.05*walltime_onejob/86400*max(length(batch_file_list),NbCore)/NbCore,max_walltime/86400),13) ' '...
+            '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
+            '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
+            extra_oar ' '...
+            '"oar-parexec -s -f ' filename_joblist ' '...
+            '-l ' filename_joblist '.log"\n'];
+        filename_oarcommand=fullfile(DirOAR,'oar_command');
+        fid=fopen(filename_oarcommand,'w');
+        fprintf(fid,oar_command);
+        fclose(fid);
+        fprintf(oar_command);% display in command line
+        %system(['chmod +x ' oar_command]);% set the file to executable
+        system(oar_command);     
 end
 
+%% reset the GUI series
+update_waitbar(handles.Waitbar,1); % put the waitbar to end position to indicate launching is finished
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])
 set(handles.RUN, 'Value',0)
@@ -1670,71 +1638,30 @@ set(handles.RUN, 'Value',0)
 %------------------------------------------------------------------------
 % --- Main launch command, called by RUN and BATCH
 
-function [Series,filexml,errormsg]=prepare_jobs(handles)
+function [Series,OutputDir,errormsg]=prepare_jobs(handles)
 %INPUT: 
 % handles: handles of graphic objects on the GUI series
-% run=0, just to display parameters for MenuExport/GUI config
-% run=1 (default) prepare the computation
 
 %------------------------------------------------------------------------
-filexml='';
+OutputDir='';
 errormsg='';
 
 %% Read parameters from series
 Series=read_GUI(handles.series);
-if isfield(Series,'Pairs')
-    Series=rmfield(Series,'Pairs'); %info Pairs not needed for output
-end
-
-
-%% projection object
-% if isfield(Series,'CheckObject')
-%     if Series.CheckObject
-%         hset_object=findobj(allchild(0),'tag','set_object');
-%         Series.ProjObject=read_GUI(hset_object);
-%         CheckObject_Callback([], [], handles)
-%     end
-% else
-%     Series.CheckObject=0;
-% end
 
 %% get_field GUI
-if isfield(Series,'InputFields')&&isfield(Series.InputFields,'Field')
-    if strcmp(Series.InputFields.Field,'get_field...')
-        hget_field=findobj(allchild(0),'name','get_field');
-        Series.GetField=read_GUI(hget_field);
-    end
-end
-
-%% defining the ActionName function handle
-% list_action=get(handles.ActionName,'String');% list menu action
-% index=get(handles.ActionName,'Value');
-% action= list_action{index}; % selected string
-% %Series.hseries=handles.series; % handles to the series GUI
-% path_series=which('series');
-% ActionPathList=get(handles.ActionName,'UserData');
-% ActionPath=ActionPathList{index}; %path stored for the function ACTION
-% if ~isequal(ActionPath,path_series)
-%     eval(['spath=which(''' action ''');']) %spath = current path of the selected function ACTION
-%     if ~exist(ActionPath,'dir')
-%         errormsg=['The prescribed function path ' ActionPath ' does not exist'];
-%         return
-%     end
-%     if ~isequal(spath,ActionPath)
-%         addpath(ActionPath)% add the prescribed path if not the current one
+% if isfield(Series,'InputFields')&&isfield(Series.InputFields,'Field')
+%     if strcmp(Series.InputFields.Field,'get_field...')
+%         hget_field=findobj(allchild(0),'name','get_field');
+%         Series.GetField=read_GUI(hget_field);
 %     end
 % end
-% eval(['h_fun=@' action ';'])%create a function handle for ACTION
-% if ~isequal(ActionPath,path_series)
-%         rmpath(ActionPath)% add the prescribed path if not the current one    
-% end
 
-%% create the output data directory and write in it the xml file from the GUI config
+%% create the output data directory 
 %determine the root file corresponding to the first sub dir
 if get(handles.RUN,'value') && isfield(Series,'OutputSubDir')
     SubDirOut=[get(handles.OutputSubDir,'String') Series.OutputDirExt];
     SubDirOutNew=SubDirOut;
-    iview=1;
     SeriesData=get(handles.series,'UserData');
     if size(Series.InputTable,1)>1 && isfield(SeriesData,'AllowInputSort') && SeriesData.AllowInputSort
         [tild,iview]=sort(Series.InputTable(:,2)); %subdirectories sorted in alphabetical order
@@ -1761,22 +1688,24 @@ if get(handles.RUN,'value') && isfield(Series,'OutputSubDir')
     Series.OutputDirExt=regexprep(SubDirOutNew,Series.OutputSubDir,'');
     Series.OutputRootFile=Series.InputTable{1,3};% the first sorted RootFile taken for output
     set(handles.OutputDirExt,'String',Series.OutputDirExt)
-    % create output directory 
-    OutputDir=fullfile(Series.InputTable{1,1},[Series.OutputSubDir Series.OutputDirExt]);
-    if check_create
+    OutputDir=fullfile(Series.InputTable{1,1},[Series.OutputSubDir Series.OutputDirExt]);% full name (with path) of output directory 
+    if check_create    % create output directory if it does not exist
         [tild,msg1]=mkdir(OutputDir);
         if ~strcmp(msg1,'')
             errormsg=['cannot create ' OutputDir ': ' msg1];%error message for directory creation
             return
         end
     end
-    filexml=fullfile(OutputDir,Series.InputTable{1,3});% name of the parameter xml file set in this directory
+   % RootOut=fullfile(OutputDir,Series.InputTable{1,3});% name of the parameter xml file set in this directory
 end
-%removes redondant information
+
+%% removes unused information on Series
+if isfield(Series,'Pairs')
+    Series=rmfield(Series,'Pairs'); %info Pairs not needed for output
+end
 Series.IndexRange=rmfield(Series.IndexRange,'TimeTable');
 Series.IndexRange=rmfield(Series.IndexRange,'MinIndex');
 Series.IndexRange=rmfield(Series.IndexRange,'MaxIndex');
-%removes empty lines of InputTable
 empty_line=false(size(Series.InputTable,1),1);
 for iline=1:size(Series.InputTable,1)
     empty_line(iline)=isequal(Series.InputTable(iline,1:3),{'','',''});
@@ -2086,23 +2015,50 @@ function FieldName_Callback(hObject, eventdata, handles)
 field_str=get(handles.FieldName,'String');
 field_index=get(handles.FieldName,'Value');
 field=field_str{field_index(1)};
-if isequal(field,'get_field...')    
-     hget_field=findobj(allchild(0),'name','get_field');
-     if ~isempty(hget_field)
-         delete(hget_field)%delete opened versions of get_field
-     end
-     filecell=get_file_series(read_GUI(handles.series));
-     if exist(filecell{1,1},'file')
-        get_field(filecell{1,1})
-     end
-elseif isequal(field,'more...')
-    str=calc_field;
-    [ind_answer,v] = listdlg('PromptString','Select a file:',...
-                'SelectionMode','single',...
-                'ListString',str);
-       % edit the choice in the fields and actionname menu
-     scalar=cell2mat(str(ind_answer));
-     update_menu(handles.FieldName,scalar)
+if isequal(field,'get_field...')
+    hget_field=findobj(allchild(0),'name','get_field');
+    if ~isempty(hget_field)
+        delete(hget_field)%delete opened versions of get_field
+    end
+    Series=read_GUI(handles.series);
+    Series.InputTable=Series.InputTable(1,:);
+    filecell=get_file_series(Series);
+    if exist(filecell{1,1},'file')
+        GetFieldData=get_field(filecell{1,1});
+        FieldList={};
+        XName=GetFieldData.XVarName;
+        if GetFieldData.CheckVector
+            UName=GetFieldData.PanelVectors.vector_x;
+            VName=GetFieldData.PanelVectors.vector_y;
+            XName=GetFieldData.XVarName;
+            YName=GetFieldData.YVarName;
+            CName=GetFieldData.PanelVectors.vec_color;
+            [FieldList,VecColorList]=set_field_list(UName,VName,CName);
+        elseif GetFieldData.CheckScalar
+            AName=GetFieldData.PanelScalar.scalar;
+            XName=GetFieldData.XVarName;
+            YName=GetFieldData.YVarName;
+            FieldList={AName};
+        elseif GetFieldData.CheckPlot1D;
+            YName=GetFieldData.CheckPlot1D.ordinate;
+        end
+        set(handles.Coord_x,'String',{XName})
+        set(handles.Coord_y,'String',{YName})
+        set(handles.FieldName,'Value',1)
+        set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
+        %         set(handles.ColorScalar,'Value',1)
+        %         set(handles.ColorScalar,'String',VecColorList);
+        %         UvData.FileType{1}='netcdf';
+        %         set(handles.uvmat,'UserData',UvData)
+    end
+    % elseif isequal(field,'more...')
+    %     str=calc_field;
+    %     [ind_answer,v] = listdlg('PromptString','Select a file:',...
+    %                 'SelectionMode','single',...
+    %                 'ListString',str);
+    %        % edit the choice in the fields and actionname menu
+    %      scalar=cell2mat(str(ind_answer));
+    %      update_menu(handles.FieldName,scalar)
 end
 
 %------------------------------------------------------------------------
@@ -2123,14 +2079,14 @@ if isequal(field,'get_field...')
         hget_field=get_field(filename);
         set(hget_field,'name','get_field_1')
      end
-elseif isequal(field,'more...')
-    str=calc_field;
-    [ind_answer,v] = listdlg('PromptString','Select a file:',...
-                'SelectionMode','single',...
-                'ListString',str);
-       % edit the choice in the fields and actionname menu
-     scalar=cell2mat(str(ind_answer));
-     update_menu(handles.FieldName_1,scalar)
+% elseif isequal(field,'more...')
+%     str=calc_field;
+%     [ind_answer,v] = listdlg('PromptString','Select a file:',...
+%                 'SelectionMode','single',...
+%                 'ListString',str);
+%        % edit the choice in the fields and actionname menu
+%      scalar=cell2mat(str(ind_answer));
+%      update_menu(handles.FieldName_1,scalar)
 end   
 
 
@@ -2204,7 +2160,7 @@ function CheckObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 value=get(handles.CheckObject,'Value');
 if value
-     set(handles.CheckObject,'BackgroundColor',[1 1 0])%put unactivated buttons to yellow
+%      set(handles.CheckObject,'BackgroundColor',[1 1 0])%put unactivated buttons to yellow
      hset_object=findobj(allchild(0),'tag','set_object');%find the set_object interface handle
      if ishandle(hset_object)
          uistack(hset_object,'top')% show the GUI set_object if opened
@@ -2215,7 +2171,7 @@ if value
          if isempty(defaultname)
             defaultname={''};
          end
-        [FileName, PathName, filterindex] = uigetfile( ...
+        [FileName, PathName] = uigetfile( ...
        {'*.xml;*.mat', ' (*.xml,*.mat)';
        '*.xml',  '.xml files '; ...
         '*.mat',  '.mat matlab files '}, ...
@@ -2241,8 +2197,12 @@ if value
      set(handles.series,'UserData',SeriesData);
      set(handles.DeleteObject,'Visible','on');
      set(handles.ViewObject,'Visible','on');
+     set(handles.ProjObject,'Visible','on');
 else
-    set(handles.CheckObject,'BackgroundColor',[0.7 0.7 0.7])%put activated buttons to green
+         set(handles.DeleteObject,'Visible','off');
+     set(handles.ViewObject,'Visible','off');
+     set(handles.ProjObject,'Visible','off');
+%     set(handles.CheckObject,'BackgroundColor',[0.7 0.7 0.7])%put activated buttons to green
 end
 %set(handles.series,'UserData',SeriesData)
 
@@ -2398,10 +2358,35 @@ set(handles.PairString,'ColumnWidth',{Pos(3)-5})
 
 % --- Executes on button press in status.
 function status_Callback(hObject, eventdata, handles)
-val=get(handles.status,'Value');
 
-%% delete current display fig if selection is off
-if val==0
+if get(handles.status,'Value')
+    set(handles.status,'BackgroundColor',[1 1 0])
+    drawnow
+    StatusData.time_ref=get(handles.RUN,'UserData');% get the time of launch
+    Param=read_GUI(handles.series);
+    RootPath=Param.InputTable{1,1};
+    OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
+    OutputDir=fullfile(RootPath,OutputSubDir);
+    hfig=findobj(allchild(0),'name','series_status');
+    if isempty(hfig)
+        hfig=figure('DeleteFcn',@stop_status);
+        set(hfig,'MenuBar','none')% suppress the menu bar
+        set(hfig,'NumberTitle','off')%suppress the fig number in the title
+        set(hfig,'name','series_status')
+        set(hfig,'tag','series_status')
+        uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', @view_file,'tag','list','UserData',OutputDir);
+        uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','titlebox','Max',2,'String',OutputDir);
+        uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
+        uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@stop_status);
+        hrefresh=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@refresh_GUI);
+        set(hrefresh,'UserData',StatusData)
+        BarPosition=[0.05 0.81 0.01 0.05];
+        uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
+        drawnow
+    end
+    refresh_GUI(hrefresh,[]) 
+else
+    %% delete current display fig if selection is off
     set(handles.status,'BackgroundColor',[0 1 0])
     hfig=findobj(allchild(0),'name','series_status');
     if ~isempty(hfig)
@@ -2409,80 +2394,60 @@ if val==0
     end
     return
 end
-set(handles.status,'BackgroundColor',[1 1 0])
-drawnow
-% listtype={'civ1','fix1','patch1','civ2','fix2','patch2'};
-% Param.CheckCiv1=get(handles.CheckCiv1,'Value');
-% Param.CheckFix1=get(handles.CheckFix1,'Value');
-% Param.CheckPatch1=get(handles.CheckPatch1,'Value');
-% Param.CheckCiv2=get(handles.CheckCiv2,'Value');
-% Param.CheckFix2=get(handles.CheckFix2,'Value');
-% Param.CheckPatch2=get(handles.CheckPatch2,'Value');
-% box_test=[Param.CheckCiv1 Param.CheckFix1 Param.CheckPatch1 Param.CheckCiv2 Param.CheckFix2 Param.CheckPatch2];
-% 
-% option_civ=find(box_test,1,'last');%last selected option (non-zero index of box_test)
-% filecell=get(handles.civ,'UserData');%retrieve the list of output files expected for PIV
-% test_new=0;
-% if ~isfield(filecell,'nc')
-%     test_new=1;
-%     [ref_i,ref_j,errormsg]=find_ref_indices(handles);
-%     if ~isempty(errormsg)
-%         msgbox_uvmat('ERROR',errormsg)
-%         return
-%     end
-%     filecell=set_civ_filenames(handles,ref_i,ref_j,box_test);%determine the output file expected from the GUI status
-% end
-% if ~isequal(box_test(4:6),[0 0 0])
-%     civ_files=filecell.nc.civ2;%case of civ2 operations
-% else
-%     civ_files=filecell.nc.civ1;
-% end
-% InputTable=get(handles.InputTable,'Data');
-% OutputDir=fullfile(InputTable{1,1},[get(handles.OutputSubDir,'String') get(handles.OutputDirExt,'String')]);
-StatusData.time_ref=get(handles.RUN,'UserData');% get the time of launch
-% StatusData.option_civ=option_civ;
-Param=read_GUI(handles.series);
-RootPath=Param.InputTable{1,1};
-%SubDir=Param.InputTable{1,2};
-OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
-OutputDir=fullfile(RootPath,OutputSubDir);
-% set(hlist,'UserData',OutputDir)
-hfig=findobj(allchild(0),'name','series_status');
-if isempty(hfig)
-    hfig=figure('DeleteFcn',@stop_status);
-    set(hfig,'MenuBar','none')% suppress the menu bar
-    set(hfig,'NumberTitle','off')%suppress the fig number in the title
-    set(hfig,'name','series_status')
-    set(hfig,'tag','series_status')
-%    set(hfig,'UserData',civ_files)
-    hlist= uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', {'open_uvmat'},'tag','list','UserData',OutputDir);
-    uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','msgbox','Max',2,'String',OutputDir);
-    uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
-    %uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@close_GUI);
-    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@stop_status);
-    hrefresh=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@refresh_GUI);
-    set(hrefresh,'UserData',StatusData)
-    BarPosition=[0.05 0.81 0.01 0.05];
-    uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
-    drawnow 
+
+
+%------------------------------------------------------------------------   
+% launched by selecting a file on the list
+function view_file(hObject, eventdata)
+list=get(hObject,'String');
+index=get(hObject,'Value');
+rootroot=get(hObject,'UserData');
+selectname=list{index};
+ind_dot=regexp(selectname,'\.\.\.');
+if ~isempty(ind_dot)
+    selectname=selectname(1:ind_dot-1);
+end
+FullSelectName=fullfile(rootroot,selectname);
+if exist(FullSelectName,'dir')% a directory has been selected
+    ListFiles=dir(FullSelectName);
+    ListDisplay=cell(numel(ListFiles),1);
+    for ilist=2:numel(ListDisplay)% suppress the first line '.'
+        ListDisplay{ilist-1}=ListFiles(ilist).name;
+    end
+    set(hObject,'Value',1)
+    set(hObject,'String',ListDisplay)
+    if strcmp(selectname,'..')
+        FullSelectName=fileparts(fileparts(FullSelectName));
+    end
+    set(hObject,'UserData',FullSelectName)
+    hfig=get(hObject,'parent');
+    htitlebox=findobj(hfig,'tag','titlebox');    
+    set(htitlebox,'String',FullSelectName)
+elseif exist(FullSelectName,'file')%visualise the vel field if it exists
+    FileType=get_file_type(FullSelectName);
+    if strcmp(FileType,'txt')
+        edit(FullSelectName)
+    else
+        uvmat(FullSelectName)
+    end
+    set(gcbo,'Value',1)
 end
 
-refresh_GUI(hrefresh,[])
+
+%------------------------------------------------------------------------
+
 %------------------------------------------------------------------------   
 % launched by refreshing the status figure
 function refresh_GUI(hObject, eventdata)
 %------------------------------------------------------------------------
-% Tabchar={};
-% BarPosition=[0.05 0.81 0.01 0.05];
 hfig=get(hObject,'parent');
-hmsgbox=findobj(hfig,'tag','msgbox');
+htitlebox=findobj(hfig,'tag','titlebox');
 hlist=findobj(hfig,'tag','list');
-% StatusData=get(hObject,'UserData');
-OutputDir=get(hmsgbox,'String');
+OutputDir=get(htitlebox,'String');
 ListFiles=dir(OutputDir);
 ListDisplay=cell(numel(ListFiles),1);
-for ilist=1:numel(ListDisplay)
-    ListDisplay{ilist}=ListFiles(ilist).name;
+for ilist=2:numel(ListDisplay)
+    ListDisplay{ilist-1}=ListFiles(ilist).name;
 end
 set(hlist,'String',ListDisplay)
 % civ_files=get(hfig,'UserData');
@@ -2555,10 +2520,10 @@ set(hlist,'String',ListDisplay)
 %         ['latest modification:  ' cell2mat(filefound(indlast)) ' : ' datestr(last)]};
 % end
 % hlist=findobj(hfig,'tag','list');
-% hmsgbox=findobj(hfig,'tag','msgbox');
+% htitlebox=findobj(hfig,'tag','titlebox');
 % hwaitbar=findobj(hfig,'tag','waitbar');
 % set(hlist,'String',Tabchar)
-% set(hmsgbox,'String', message)
+% set(htitlebox,'String', message)
 % if count>0 %&& ~test_new
 %     BarPosition(3)=0.9*count/nbfiles;
 %     set(hwaitbar,'Position',BarPosition)
@@ -2596,6 +2561,7 @@ if strcmp(ActionExt,'.sh')
     m_file=dir([ActionName '.m']);
     if isfield(m_file,'datenum') && m_file.datenum>sh_file.datenum
         set(handles.ActionExt,'BackgroundColor',[1 1 0])
+        drawnow
         answer=msgbox_uvmat('INPUT_Y-N',[ActionName '.sh needs to be updated: recompile now?']);
         if strcmp(answer,'Yes')
             compile(ActionName)

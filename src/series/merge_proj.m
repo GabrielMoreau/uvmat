@@ -62,6 +62,8 @@ return
 end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
+
+
 %% read input parameters from an xml file if input is a file name (batch mode)
 checkrun=1;
 if ischar(Param)
@@ -156,10 +158,10 @@ for iview=1:nbview
     end
 end
 NomTypeOut=NomType;% output file index will indicate the first and last ref index in the series
-if checkrun==1
-    ParamOut.Specific=[];%no specific parameter
-    return %stop here for interactive input (option Param.Specific='?')
-end
+% if checkrun==1
+%     ParamOut.Specific=[];%no specific parameter
+%     return %stop here for interactive input (option Param.Specific='?')
+% end
 
 %% Set field names and velocity types
 %use Param.InputFields for all views
@@ -173,14 +175,15 @@ for i_slice=1:NbSlice
 
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
     for index=index_slice
-  
         if checkrun
-            update_waitbar(hseries.Waitbar,index/(nbfield))
-            stopstate=get(hseries.RUN,'BusyAction');
+            stopstate=get(Param.RUNHandle,'BusyAction');
+            update_waitbar(Param.WaitbarHandle,index/nbfield)
         else
             stopstate='queue';
         end
-        
+        if ~isequal(stopstate,'queue')% enable STOP command
+            return
+        end
         %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
         Data=cell(1,nbview);%initiate the set Data
         nbtime=0;

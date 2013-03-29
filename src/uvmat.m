@@ -72,7 +72,7 @@
 %                       UvData.Field-------------->histogram
 %               _____________|____________
 %              |                          |                    
-%        proj_field.m               proj_field.m       project the field on the projection objects (use calc_field.m)           
+%        proj_field.m               proj_field.m       project the field on the projection objects (use set_field_list.m)           
 %              |                          |
 %         UvData.PlotAxes          ViewData.PlotAxes (on view_field)
 %              |                          |
@@ -1040,9 +1040,10 @@ switch FileType
     case 'netcdf'
         set(handles_Fields,'Value',1)
         set(handles_Fields,'String',{'get_field...'})
-        hget_field=get_field(FileName);
-        hhget_field=guidata(hget_field);
-        get_field('RUN_Callback',hhget_field.RUN,[],hhget_field);
+        FieldName_Callback([],[], handles)
+%         hget_field=get_field(FileName);
+%         hhget_field=guidata(hget_field);
+%         get_field('RUN_Callback',hhget_field.RUN,[],hhget_field);
     otherwise
         set(handles_Fields,'Value',1) % set menu to 'image'
         set(handles_Fields,'String',{'image'})
@@ -2120,9 +2121,13 @@ if isstruct (ParamIn)
     ParamIn.FieldName=FieldName;
     ParamIn.VelType=VelType;
     XNameMenu=get(handles.Coord_x,'String');
-    ParamIn.Coord_x=XNameMenu(get(handles.Coord_x,'Value'));
+    if ~isempty(XNameMenu)
+        ParamIn.Coord_x=XNameMenu(get(handles.Coord_x,'Value'));
+    end
     YNameMenu=get(handles.Coord_y,'String');
-    ParamIn.Coord_y=YNameMenu(get(handles.Coord_y,'Value'));
+    if ~isempty(YNameMenu)
+        ParamIn.Coord_y=YNameMenu(get(handles.Coord_y,'Value'));
+    end
 end
 check_tps = 0;         
 if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamIn.FieldName,'velocity')&&~strcmp(ParamIn.FieldName,'get_field...') 
@@ -2596,7 +2601,8 @@ if NbDim<=1
     set(handles.ListObject_1_title,'Visible','off')
     set(handles.ListObject_1,'Visible','off')
     [PlotType,PlotParamOut]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
-    write_plot_param(handles,PlotParamOut) %update the auto plot parameters
+    errormsg=fill_GUI(PlotParamOut,handles.uvmat);
+    %write_plot_param(handles,PlotParamOut) %update the auto plot parameters
     
 %% 2D or 3D fieldname are generally projected
 else
@@ -2703,7 +2709,12 @@ else
                 view_field(ObjectData)
             else
                 [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},PosColorbar{imap});
-                write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
+                if imap==1
+                errormsg=fill_GUI(PlotParamOut,handles.uvmat);
+                else
+                    errormsg=fill_GUI(PlotParamOut,hview_field);
+                end
+                %write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
                 if isfield(Field,'CoordMesh')&&~isempty(Field.CoordMesh)
                     ObjectData.CoordMesh=Field.CoordMesh; % gives an estimated mesh size (useful for mouse action on the plot)
                 end
@@ -3103,8 +3114,7 @@ if isequal(field,'get_field...')
     GetFieldData=get_field(FileName,ParamIn);
     FieldList={};
     VecColorList={};
-    XName='';
-    YName='';
+    XName=GetFieldData.XVarName;
     if GetFieldData.CheckVector
         UName=GetFieldData.PanelVectors.vector_x;
         VName=GetFieldData.PanelVectors.vector_y;
@@ -3112,26 +3122,12 @@ if isequal(field,'get_field...')
         YName=GetFieldData.YVarName;
         CName=GetFieldData.PanelVectors.vec_color;
         [FieldList,VecColorList]=set_field_list(UName,VName,CName);
-%         FieldList={['vec(' UName ',' VName ')'];...
-%             ['norm(' UName ',' VName ')'];...
-%             ['curl(' UName ',' VName ')'];...
-%             ['div(' UName ',' VName ')'];...
-%             ['strain(' UName ',' VName ')']};
-%         VecColorList={['norm(' UName ',' VName ')'];...
-%             UName;...
-%             VName};...
-%             if ~isempty(CName)
-%             VecColorList=[{CName};VecColorList];
-%             end
-    end
-    if GetFieldData.CheckScalar
+    elseif GetFieldData.CheckScalar
         AName=GetFieldData.PanelScalar.scalar;
         XName=GetFieldData.XVarName;
         YName=GetFieldData.YVarName;
         FieldList={AName};
-    end
-    if GetFieldData.CheckPlot1D
-        XName=GetFieldData.CheckPlot1D.abscissa;
+    elseif GetFieldData.CheckPlot1D;
         YName=GetFieldData.CheckPlot1D.ordinate;
     end
     set(handles.Coord_x,'String',{XName})
@@ -4100,7 +4096,8 @@ UvData=get(handles.uvmat,'UserData');
 AxeData=UvData.PlotAxes;% retrieve the current plotted data
 PlotParam=read_GUI(handles.uvmat);
 [tild,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
-write_plot_param(handles,PlotParamOut); %update the auto plot parameters
+errormsg=fill_GUI(PlotParamOut,handles.uvmat);
+%write_plot_param(handles,PlotParamOut); %update the auto plot parameters
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -4182,8 +4179,9 @@ else
     Data=get(hview_field,'UserData');
     hhview_field=guidata(hview_field);
     ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
-    [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%read plotting parameters on the uvmat interfachhview_fiel
-    write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
+    [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%read plotting parameters on the uvmat interface
+    
+    %write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
     haxes=findobj(hview_field,'tag','axes3');
     pos=get(hview_field,'Position');  
     if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Coordinates)% case of no plot display (pure text table)
@@ -4377,7 +4375,8 @@ if check_view
     end
     hhview_field=guidata(hview_field);
     [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%read plotting parameters on the GUI view_field);
-    write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
+    errormsg=fill_GUI(PlotParam,hview_field);
+    %write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
     haxes=findobj(hview_field,'tag','axes3');
     pos=get(hview_field,'Position');
     if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Coordinates)% case of no plot display (pure text table)

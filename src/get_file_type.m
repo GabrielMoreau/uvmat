@@ -16,14 +16,12 @@
 % INPUT:
 % fileinput: name, including path, of the file to analyse
 function [FileType,FileInfo,VideoObject]=get_file_type(fileinput)
-FileType='';
+FileType='txt';%default, text file
 FileInfo=[];
 VideoObject=[];
 [tild,tild,FileExt]=fileparts(fileinput);
 
 switch FileExt
-    case {'.civ','.log','.cmx','.cmx2','.txt','.bat','.m','.sh'}
-        FileType='txt';
     case '.fig'
         FileType='figure';
     case '.xml'

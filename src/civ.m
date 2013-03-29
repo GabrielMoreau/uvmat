@@ -4124,6 +4124,7 @@ switch Param.Program
         end
     case {'civ_matlab','civ_matlab.sh'}
         filename=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml');
+        fileattrib(fileparts(filename),'+w +x','o g');% set writting access
         save(struct2xml(Param),filename);
 end
 

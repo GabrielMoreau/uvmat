@@ -827,7 +827,7 @@ for icell=1:length(CellInfo)
                 yreg=sin(theta(ip))*Xproj+ObjectData.Coord(ip,2)
 %                 coord_x_proj=XMin:DX:XMax;
 %                 coord_y_proj=YMin:DY:YMax;
-                DataOut=calc_field(FieldData.FieldList,FieldData,cat(3,xreg,yreg));
+                DataOut=calc_field_tps(FieldData.FieldList,FieldData,cat(3,xreg,yreg));
                 ProjData.ListVarName=[ProjData.ListVarName DataOut.ListVarName];
                 ProjData.VarDimName=[ProjData.VarDimName DataOut.VarDimName];
                 ProjData.VarAttribute=[ProjData.VarAttribute DataOut.VarAttribute];   
@@ -1493,7 +1493,7 @@ for icell=1:length(CellInfo)
                         end
                         eval(['ProjData.' VarName '=reshape(vec_B,npY,npX,nbcolor);']);
                     end
-                    ProjData.FF=reshape(~flagin,npY,npX);%false flag A FAIRE: tenir compte d'un flga antérieur
+                    ProjData.FF=reshape(~flagin,npY,npX);%false flag A FAIRE: tenir compte d'un flga antï¿½rieur
                     ProjData.ListVarName=[ProjData.ListVarName 'FF'];
                     ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
                     ProjData.VarAttribute{length(ProjData.ListVarName)}.Role='errorflag';
@@ -2107,7 +2107,7 @@ for icell=1:length(CellVarIndex)
                     end     
                     eval(['ProjData.' VarName '=reshape(vec_B,npY,npX,nbcolor);']);
                 end
-                ProjData.FF=reshape(~flagin,npY,npX);%false flag A FAIRE: tenir compte d'un flga antérieur  
+                ProjData.FF=reshape(~flagin,npY,npX);%false flag A FAIRE: tenir compte d'un flga antï¿½rieur  
                 ProjData.ListVarName=[ProjData.ListVarName 'FF'];
                 ProjData.VarDimName=[ProjData.VarDimName {DimCell}];
                 ProjData.VarAttribute{length(ProjData.ListVarName)}.Role='errorflag';

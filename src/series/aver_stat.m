@@ -88,16 +88,16 @@ FileExt=Param.InputTable(:,5);
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 %%%%%%%%%%%%
-NbSlice=1;%default
-if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
-    NbSlice=Param.IndexRange.NbSlice;
-end
+% NbSlice=1;%default
+% if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
+%     NbSlice=Param.IndexRange.NbSlice;
+% end
 nbview=numel(i1_series);%number of input file series (lines in InputTable)
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
-nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices) 
-nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
+%nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices) 
+%nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 
 %determine the file type on each line from the first input file 
 ImageTypeOptions={'image','multimage','mmreader','video'};
@@ -172,13 +172,14 @@ if nbview==2
 end
 
 %% MAIN LOOP ON SLICES
-for i_slice=1:NbSlice
-    index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
+% for i_slice=1:NbSlice
+   % index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
     nbfiles=0;
     nbmissing=0;
 
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
-    for index=index_slice
+    for index=1:nbfield
+    %for index=index_slice
           if checkrun
                 stopstate=get(Param.RUNHandle,'BusyAction');
                 update_waitbar(Param.WaitbarHandle,index/nbfield)
@@ -304,7 +305,7 @@ for i_slice=1:NbSlice
     end
     
     %writting the result file
-    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),i_slice,[]);
+    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),j1_series{1}(1),j1_series{1}(end));
     if CheckImage{1} %case of images
         if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
             DataOut.A=uint16(DataOut.A);
@@ -323,7 +324,7 @@ for i_slice=1:NbSlice
             display(errormsg)
         end
     end  % end averaging  loop
-end
+% end
 %%%%%%%%%%%%%%%% end loop on slices %%%%%%%%%%%%%%%%
 
 %% open the result file with uvmat (in RUN mode)

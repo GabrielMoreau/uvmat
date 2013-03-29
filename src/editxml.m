@@ -339,12 +339,12 @@ if xstest==0  %look for the corresponding schema in the directory PARAM_LINUX.xm
     %         if isfield(sparam,'SchemaPath')
     schemafile=[fullfile(path_uvmat,'xml_shemas',head_name) '.xsd'];
     if ~exist(schemafile,'file')
-        schemafile=fullfile(path_UVMAT,schemafile);%look for relative path definition
+        schemafile=fullfile(path_uvmat,schemafile);%look for relative path definition
     end
     if exist(schemafile,'file')
         xs=xmltree(schemafile);
     else
-        msgbox_uvmat('ERROR',['The needed xml schema  ' sparam.SchemaPath ' is not found, check the file PARAM.xml'])
+        msgbox_uvmat('WARNING','The xml schema is not found, check the file PARAM.xml')
         [FileName, PathName]=uigetfile( ...
             {'*.xsd', '(*.xsd)';
             '*.xsd',  '.xsd files '; ...
@@ -1294,7 +1294,7 @@ for iexp=1:length(List.Experiment)
 end
 return
 %%%%%%%%%%% A REVOIR
-% Copier la liste des elements selectionnés dans dataview
+% Copier la liste des elements selectionnï¿½s dans dataview
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %ANCIEN:
 heditxml=get(hObject,'parent');
