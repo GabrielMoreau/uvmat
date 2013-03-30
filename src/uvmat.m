@@ -2601,8 +2601,8 @@ if NbDim<=1
     set(handles.ListObject_1_title,'Visible','off')
     set(handles.ListObject_1,'Visible','off')
     [PlotType,PlotParamOut]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
-    errormsg=fill_GUI(PlotParamOut,handles.uvmat);
-    %write_plot_param(handles,PlotParamOut) %update the auto plot parameters
+    %errormsg=fill_GUI(PlotParamOut,handles.uvmat);
+    write_plot_param(handles,PlotParamOut) %update the auto plot parameters
     
 %% 2D or 3D fieldname are generally projected
 else
@@ -2712,7 +2712,7 @@ else
                 if imap==1
                 errormsg=fill_GUI(PlotParamOut,handles.uvmat);
                 else
-                    errormsg=fill_GUI(PlotParamOut,hview_field);
+                    errormsg=fill_GUI(PlotParamOut,view_field_handle);
                 end
                 %write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
                 if isfield(Field,'CoordMesh')&&~isempty(Field.CoordMesh)

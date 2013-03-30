@@ -872,7 +872,7 @@ displ_time(handles)
 %% set default options in menu 'Fields'
 switch FileType
     case {'civx','civdata'}
-        [FieldList,ColorList]=calc_field;
+        [FieldList,ColorList]=set_field_list('U','V','C');
         set(handles.FieldName,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
         set(handles.FieldName,'Value',2) % set menu to 'velocity
         set(handles.Coord_x,'Value',1);
@@ -2296,8 +2296,7 @@ set(handles.TransformName,'UserData',TransformPathList);
 % --------------------------------------------------------------------
 function MenuExportConfig_Callback(hObject, eventdata, handles)
 global Series
-[tild,Series,errormsg]=prepare_jobs(handles);
-% Series=read_GUI(handles.series);
+[Series,errormsg]=prepare_jobs(handles);
 
 evalin('base','global Series')%make CurData global in the workspace
 display('current series config :')

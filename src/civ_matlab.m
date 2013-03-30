@@ -4,7 +4,7 @@
 %   fix: removes false vectors after detection by various criteria
 %   filter_tps: make interpolation-smoothing 
 %------------------------------------------------------------------------
-% function [Data,errormsg,result_conv]= civ_uvmat(Param,ncfile)
+% function [Data,errormsg,result_conv]= civ_matlab(Param,ncfile)
 %
 %OUTPUT
 % Data=structure containing the PIV results and information on the processing parameters
@@ -583,89 +583,87 @@ end
 for ivec=1:nbvec
     iref=round(par_civ.Grid(ivec,1)+0.5);% xindex on the image A for the middle of the correlation box
     jref=round(par_civ.ImageHeight-par_civ.Grid(ivec,2)+0.5);% yindex on the image B for the middle of the correlation box
-    if ~(checkmask && par_civ.Mask(jref,iref)<=20) %velocity not set to zero by the black mask
-%         if jref-iby2<1 || jref+iby2>par_civ.ImageHeight|| iref-ibx2<1 || iref+ibx2>par_civ.ImageWidth||...
-%               jref+shifty(ivec)-isy2<1||jref+shifty(ivec)+isy2>par_civ.ImageHeight|| iref+shiftx(ivec)-isx2<1 || iref+shiftx(ivec)+isx2>par_civ.ImageWidth  % we are outside the image
-%             F(ivec)=3;
-%         else
-            F(ivec)=0;
-            subrange1_x=iref-ibx2:iref+ibx2;% x indices defining the first subimage
-            subrange1_y=jref-iby2:jref+iby2;% y indices defining the first subimage
-            subrange2_x=iref+shiftx(ivec)-isx2:iref+shiftx(ivec)+isx2;%x indices defining the second subimage
-            subrange2_y=jref+shifty(ivec)-isy2:jref+shifty(ivec)+isy2;%y indices defining the second subimage
-            image1_crop=MinA*ones(numel(subrange1_y),numel(subrange1_x));% default value=min of image A
-            image2_crop=MinA*ones(numel(subrange2_y),numel(subrange2_x));% default value=min of image A
-            check1_x=subrange1_x>=1 & subrange1_x<=par_civ.ImageWidth;% check which points in the subimage 1 are contained in the initial image 1
-            check1_y=subrange1_y>=1 & subrange1_y<=par_civ.ImageHeight;
-            check2_x=subrange2_x>=1 & subrange2_x<=par_civ.ImageWidth;% check which points in the subimage 2 are contained in the initial image 2
-            check2_y=subrange2_y>=1 & subrange2_y<=par_civ.ImageHeight;
-            image1_crop(check1_y,check1_x)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x));%extract a subimage (correlation box) from image A
-            image2_crop(check2_y,check2_x)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x));%extract a larger subimage (search box) from image B
-            image1_mean=mean(mean(image1_crop));
-            image2_mean=mean(mean(image2_crop));
-            %threshold on image minimum
-            if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
-                F(ivec)=3;
+    %if ~(checkmask && par_civ.Mask(jref,iref)<=20) %velocity not set to zero by the black mask
+    %         if jref-iby2<1 || jref+iby2>par_civ.ImageHeight|| iref-ibx2<1 || iref+ibx2>par_civ.ImageWidth||...
+    %               jref+shifty(ivec)-isy2<1||jref+shifty(ivec)+isy2>par_civ.ImageHeight|| iref+shiftx(ivec)-isx2<1 || iref+shiftx(ivec)+isx2>par_civ.ImageWidth  % we are outside the image
+    %             F(ivec)=3;
+    %         else
+    F(ivec)=0;
+    subrange1_x=iref-ibx2:iref+ibx2;% x indices defining the first subimage
+    subrange1_y=jref-iby2:jref+iby2;% y indices defining the first subimage
+    subrange2_x=iref+shiftx(ivec)-isx2:iref+shiftx(ivec)+isx2;%x indices defining the second subimage
+    subrange2_y=jref+shifty(ivec)-isy2:jref+shifty(ivec)+isy2;%y indices defining the second subimage
+    image1_crop=MinA*ones(numel(subrange1_y),numel(subrange1_x));% default value=min of image A
+    image2_crop=MinA*ones(numel(subrange2_y),numel(subrange2_x));% default value=min of image A
+    check1_x=subrange1_x>=1 & subrange1_x<=par_civ.ImageWidth;% check which points in the subimage 1 are contained in the initial image 1
+    check1_y=subrange1_y>=1 & subrange1_y<=par_civ.ImageHeight;
+    check2_x=subrange2_x>=1 & subrange2_x<=par_civ.ImageWidth;% check which points in the subimage 2 are contained in the initial image 2
+    check2_y=subrange2_y>=1 & subrange2_y<=par_civ.ImageHeight;
+    
+    image1_crop(check1_y,check1_x)=par_civ.ImageA(subrange1_y(check1_y),subrange1_x(check1_x));%extract a subimage (correlation box) from image A
+    image2_crop(check2_y,check2_x)=par_civ.ImageB(subrange2_y(check2_y),subrange2_x(check2_x));%extract a larger subimage (search box) from image B
+    image1_mean=mean(mean(image1_crop));
+    image2_mean=mean(mean(image2_crop));
+    %threshold on image minimum
+    if check_MinIma && (image1_mean < par_civ.MinIma || image2_mean < par_civ.MinIma)
+        F(ivec)=3;
+    end
+    %threshold on image maximum
+    if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
+        F(ivec)=3;
+    end
+    %         end
+    if F(ivec)~=3
+        image1_crop=image1_crop-image1_mean;%substract the mean
+        image2_crop=image2_crop-image2_mean;
+        if CheckDecimal
+            xi=(1:mesh:size(image1_crop,2));
+            yi=(1:mesh:size(image1_crop,1))';
+            if CheckDeformation
+                [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
+                XIant=XI-par_civ.DUDX(ivec)*XI-par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
+                YIant=YI-par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
+                image1_crop=interp2(image1_crop,XIant,YIant);
+            else
+                image1_crop=interp2(image1_crop,xi,yi);
             end
-            %threshold on image maximum
-            if check_MaxIma && (image1_mean > par_civ.MaxIma || image2_mean > par_civ.MaxIma)
-                F(ivec)=3;
-            end
-%         end      
-        if F(ivec)~=3
-            image1_crop=image1_crop-image1_mean;%substract the mean
-            image2_crop=image2_crop-image2_mean;
-            if CheckDecimal
-                xi=(1:mesh:size(image1_crop,2));
-                yi=(1:mesh:size(image1_crop,1))';
-                if CheckDeformation
-                    [XI,YI]=meshgrid(xi-ceil(size(image1_crop,2)/2),yi-ceil(size(image1_crop,1)/2));
-                    XIant=XI-par_civ.DUDX(ivec)*XI-par_civ.DUDY(ivec)*YI+ceil(size(image1_crop,2)/2);
-                    YIant=YI-par_civ.DVDX(ivec)*XI-par_civ.DVDY(ivec)*YI+ceil(size(image1_crop,1)/2);
-                    image1_crop=interp2(image1_crop,XIant,YIant);
-                else
-                    image1_crop=interp2(image1_crop,xi,yi);
+            xi=(1:mesh:size(image2_crop,2));
+            yi=(1:mesh:size(image2_crop,1))';
+            image2_crop=interp2(image2_crop,xi,yi);
+        end
+        sum_square=sum(sum(image1_crop.*image1_crop));
+        %reference: Oliver Pust, PIV: Direct Cross-Correlation
+        result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
+        corrmax= max(max(result_conv));
+        result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
+        %Find the correlation max, at 255
+        [y,x] = find(result_conv==255,1);
+        if ~isempty(y) && ~isempty(x)
+            try
+                if par_civ.CorrSmooth==1
+                    [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
+                elseif par_civ.CorrSmooth==2
+                    [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
                 end
-                xi=(1:mesh:size(image2_crop,2));
-                yi=(1:mesh:size(image2_crop,1))';
-                image2_crop=interp2(image2_crop,xi,yi);
-            end
-            sum_square=sum(sum(image1_crop.*image1_crop));
-            %reference: Oliver Pust, PIV: Direct Cross-Correlation
-            result_conv= conv2(image2_crop,flipdim(flipdim(image1_crop,2),1),'valid');
-            corrmax= max(max(result_conv));
-            result_conv=(result_conv/corrmax)*255; %normalize, peak=always 255
-            %Find the correlation max, at 255
-            [y,x] = find(result_conv==255,1);
-            if ~isempty(y) && ~isempty(x)
-                try
-                    if par_civ.CorrSmooth==1
-                        [vector,F(ivec)] = SUBPIXGAUSS (result_conv,x,y);
-                    elseif par_civ.CorrSmooth==2
-                        [vector,F(ivec)] = SUBPIX2DGAUSS (result_conv,x,y);
-                    end
-                    utable(ivec)=vector(1)*mesh+shiftx(ivec);
-                    vtable(ivec)=vector(2)*mesh+shifty(ivec);                 
-                    xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
-                    ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
-                    iref=round(xtable(ivec));% image index for the middle of the vector
-                    jref=round(ytable(ivec));
-                    if checkmask && par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100
-                        utable(ivec)=0;
-                        vtable(ivec)=0;
-                        F(ivec)=3;
-                    end
-                    ctable(ivec)=corrmax/sum_square;% correlation value
-                catch ME
+                utable(ivec)=vector(1)*mesh+shiftx(ivec);
+                vtable(ivec)=vector(2)*mesh+shifty(ivec);
+                xtable(ivec)=iref+utable(ivec)/2-0.5;% convec flow (velocity taken at the point middle from imgae 1 and 2)
+                ytable(ivec)=jref+vtable(ivec)/2-0.5;% and position of pixel 1=0.5 (convention for image coordinates=0 at the edge)
+                iref=round(xtable(ivec));% image index for the middle of the vector
+                jref=round(ytable(ivec));
+                if checkmask && par_civ.Mask(jref,iref)<200 && par_civ.Mask(jref,iref)>=100
+                    utable(ivec)=0;
+                    vtable(ivec)=0;
                     F(ivec)=3;
                 end
-            else
+                ctable(ivec)=corrmax/sum_square;% correlation value
+            catch ME
                 F(ivec)=3;
             end
+        else
+            F(ivec)=3;
         end
     end
-    
-    %Create the vector matrix x, y, u, v
 end
 result_conv=result_conv*corrmax/(255*sum_square);% keep the last correlation matrix for output
 
