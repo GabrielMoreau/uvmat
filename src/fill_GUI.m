@@ -13,7 +13,11 @@
 function errormsg=fill_GUI(Param,GUI_handle)
 %------------------------------------------------------------------------
 errormsg='';
-handles=guidata(GUI_handle); 
+%handles=guidata(GUI_handle); 
+            children=get(GUI_handle,'children');
+            for ichild=1:numel(children)
+                handles.(get(children(ichild),'tag'))=children(ichild);
+            end
 UserData=get(GUI_handle,'UserData');
 fields=fieldnames(Param);%list of fields in Param
 % loop on the elements of the input structure Param

@@ -24,7 +24,7 @@ function varargout = civ_input(varargin)
 %TODO: search range
 
 
-% Last Modified by GUIDE v2.5 30-Mar-2013 09:15:21
+% Last Modified by GUIDE v2.5 01-Apr-2013 10:00:57
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -34,21 +34,8 @@ gui_State = struct('gui_Name',       mfilename, ...
     'gui_LayoutFcn',  [] , ...
     'gui_Callback',   []);
 
-if nargin
-    if ischar(varargin{1}) && ~isempty(regexp(varargin{1},'_Callback$','once'))
+if nargin && ischar(varargin{1}) && ~isempty(regexp(varargin{1},'_Callback$','once'))
         gui_State.gui_Callback = str2func(varargin{1});
-    elseif isstruct(varargin{1}) && isequal(varargin{1}.Action.RUN,0)
-        % set the input elements needed on the GUI series when the action is selected in the menu ActionName
-        ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-            ParamOut.WholeIndexRange='off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-            ParamOut.NbSlice='off'; ...%nbre of slices ('off' by default)
-            ParamOut.VelType='two';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-            ParamOut.FieldName='two';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-            ParamOut.FieldTransform = 'off';...%can use a transform function
-            ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
-            ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
-            ParamOut.OutputDirExt='.civ';%set the output dir extension
-    end
 end
 
 if nargout
@@ -70,83 +57,39 @@ handles.output = Param;
 guidata(hObject, handles); % Update handles structure
 set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with right button (zoom for uicontrol display)
 
-%% Adjust the GUI according to the binaries available in PARAM.xml
-path_civ=fileparts(which('civ_series')); %path to civ
-addpath (path_civ) ; %add the path to civ, (useful in case of change of working directory after civ has been s opened in the working directory)
-errormsg=[];%default error message
-xmlfile=fullfile(path_civ,'PARAM.xml');
-test_batch=0;%default: ,no batch mode available
-sparam=[];
-if ~exist(xmlfile,'file')
-    [success,message]=copyfile(fullfile(path_civ,'PARAM.xml.default'),xmlfile);
-end
-if exist(xmlfile,'file')
-    try
-        t=xmltree(xmlfile);
-        sparam=convert(t);
-    catch ME
-        errormsg={' Unable to read the file PARAM.xml defining the civx binaries:';ME.message};
-         msgbox_uvmat('WARNING',errormsg);
-    end
-else
-    [s,w]=system('oarstat');
-    if ~isequal(s,0)
-        [s,w]=system('qstat');
-    end
-    if isequal(s,0)
-        test_batch=1;
-    end           
-end
-if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
-    batch_mode=sparam.BatchParam.BatchMode;
-    test_command='';
-    switch batch_mode
-        case 'sge'
-            test_command='qstat';
-        case 'oar'
-            test_command='oarstat';
-    end
-    if ~isempty(test_command)
-        [s,w]=system(test_command);
-        if isequal(s,0)
-            test_batch=1;
-        end
-    end
-end
-RUNVal=get(handles.RunMode,'Value');
-if test_batch==0
-   if RUNVal>2
-       set(handles.RunMode,'Value',1)
-   end
-   set(handles.RunMode,'String',{'local';'background'})
-else
-    set(handles.RunMode,'String',{'local';'background';'cluster'})
-end
+%% set visibility options
+        set(handles.num_MaxDiff,'Visible','on')
+        set(handles.num_MaxVel,'Visible','on')
+        set(handles.title_MaxVel,'Visible','on')
+        set(handles.title_MaxDiff,'Visible','on')
+        set(handles.num_Nx,'Visible','off')
+        set(handles.num_Ny,'Visible','off')
+        set(handles.title_Nx,'Visible','off')
+        set(handles.title_Ny,'Visible','off')
+        set(handles.num_CorrSmooth,'Style','popupmenu')
+        set(handles.num_CorrSmooth,'Value',1)
+        set(handles.num_CorrSmooth,'String',{'1';'2'})
+        set(handles.CheckThreshold,'Visible','on')
+        set(handles.CheckDeformation,'Value',0)% desactivate (work in progress)
+        set(handles.CheckDecimal,'Value',0)% desactivate (work in progress)
+        
+%% prepare the GUI with input parameters 
+% from the GUI series
 
-%% load the list of previously browsed files in the upper bar menu Open/
-dir_perso=prefdir; % path to the directory .matlab for personal data
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmauvmat_perso.mat' in .matlab
-if exist(profil_perso,'file')
-    h=load (profil_perso);
-    if isfield(h,'MenuFile')
-        for ifile=1:min(length(h.MenuFile),5)
-            eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',h.MenuFile{ifile});'])
-        end
-    end
-end
-
-%% prepare the GUI with parameters from the input file if opened from uvmat
+%from the input file
 filecell=get_file_series(Param);
-    set(handles.RootPath,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
-    errormsg=display_file_name(handles,filecell{1});
-    if ~isempty(errormsg)
-        msgbox_uvmat('ERROR',errormsg)
-    end
-    set(handles.RootPath,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
-    
-    set(handles.civ_series,'WindowStyle','modal')% Make the GUI modal 
+set(handles.RootPath,'BackgroundColor',[1 1 0])%paint RootName edit box in yellow to indicate that the file input is proceeding
+errormsg=display_file_name(handles,filecell{1});
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+end
+set(handles.RootPath,'BackgroundColor',[1 1 1])%paint RootName back to white to indicate that the file input is finished
+if isfield(Param,'ActionInput')&&isfield(Param.ActionInput,'Program')&& strcmp(Param.ActionInput.Program,'civ_series')
+    fill_GUI(Param.ActionInput,handles.civ_input)
+end
+set(handles.civ_input,'WindowStyle','modal')% Make the GUI modal
 drawnow
-uiwait(handles.civ_series);
+uiwait(handles.civ_input);
 
 %Program_Callback([],[], handles)
 
@@ -156,16 +99,16 @@ function varargout = civ_input_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % Get default command line output from handles structure
 varargout{1} = handles.output;
-delete(handles.civ_series)
+delete(handles.civ_input)
 
 % --- Executes when user attempts to close get_field.
-function civ_series_CloseRequestFcn(hObject, eventdata, handles)
+function civ_input_CloseRequestFcn(hObject, eventdata, handles)
 if isequal(get(handles.get_field, 'waitstatus'), 'waiting')
     % The GUI is still in UIWAIT, us UIRESUME
-    uiresume(handles.civ_series);
+    uiresume(handles.civ_input);
 else
     % The GUI is no longer waiting, just close it
-    delete(handles.civ_series);
+    delete(handles.civ_input);
 end
 %------------------------------------------------------------------------
 % --- Function activated by the Open/Browse... option in the upper menu bar.
@@ -342,12 +285,12 @@ errormsg='';%default empty error message
 drawnow
 
 %% enable OK, BATCH button and 'status' display
-set(handles.OK, 'Enable','On')
-set(handles.OK,'BackgroundColor',[1 0 0])%set RUN button to red color
-if isfield(handles,'status')
-    set(handles.status,'Value',0);       %suppress the 'status' display
-    status_Callback([], [], handles)
-end
+% set(handles.OK, 'Enable','On')
+% set(handles.OK,'BackgroundColor',[1 0 0])%set RUN button to red color
+% if isfield(handles,'status')
+%     set(handles.status,'Value',0);       %suppress the 'status' display
+%     status_Callback([], [], handles)
+% end
 
 %% determine nomenclature types and extension of the input files
 [RootPath,SubDir,RootFile,i1,i2,j1,j2,ExtInput,NomTypeInput]=fileparts_uvmat(fileinput);
@@ -860,9 +803,9 @@ end
 function OK_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 
-handles.output.ActionInput=read_GUI(handles.civ_series);
+handles.output.ActionInput=read_GUI(handles.civ_input);
 guidata(hObject, handles);% Update handles structure
-uiresume(handles.civ_series);
+uiresume(handles.civ_input);
 drawnow
 
 return
@@ -885,852 +828,852 @@ elseif  isfield(handles,'status') %&& ~isequal(get(handles.ListPairMode,'Value')
     status_Callback(hObject, eventdata, handles)
 end
 
-%-------------------------------------------------------------------
-% --- Executes on button press in status.
-function status_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
-val=get(handles.status,'Value');
-if val==0
-    set(handles.status,'BackgroundColor',[0 1 0])
-    hfig=findobj(allchild(0),'name','civ_status');
-    if ~isempty(hfig)
-        delete(hfig)
-    end
-    return
-end
-set(handles.status,'BackgroundColor',[1 1 0])
-drawnow
-listtype={'civ1','fix1','patch1','civ2','fix2','patch2'};
-Param.CheckCiv1=get(handles.CheckCiv1,'Value');
-Param.CheckFix1=get(handles.CheckFix1,'Value');
-Param.CheckPatch1=get(handles.CheckPatch1,'Value');
-Param.CheckCiv2=get(handles.CheckCiv2,'Value');
-Param.CheckFix2=get(handles.CheckFix2,'Value');
-Param.CheckPatch2=get(handles.CheckPatch2,'Value');
-box_test=[Param.CheckCiv1 Param.CheckFix1 Param.CheckPatch1 Param.CheckCiv2 Param.CheckFix2 Param.CheckPatch2];
-
-option_civ=find(box_test,1,'last');%last selected option (non-zero index of box_test)
-filecell=get(handles.civ_series,'UserData');%retrieve the list of output files expected for PIV
-test_new=0;
-if ~isfield(filecell,'nc')
-    test_new=1;
-    [ref_i,ref_j,errormsg]=find_ref_indices(handles);
-    if ~isempty(errormsg)
-        msgbox_uvmat('ERROR',errormsg)
-        return
-    end
-    filecell=set_civ_filenames(handles,ref_i,ref_j,box_test);%determine the output file expected from the GUI status
-end
-if ~isequal(box_test(4:6),[0 0 0])
-    civ_files=filecell.nc.civ2;%case of civ2 operations
-else
-    civ_files=filecell.nc.civ1;
-end
-[root,filename,ext]=fileparts(civ_files{1});
-[rootroot,SubDir,extdir]=fileparts(root);
-hfig=findobj(allchild(0),'name','civ_status');
-if isempty(hfig)
-    hfig=figure('DeleteFcn',@stop_status);
-    set(hfig,'MenuBar','none')% suppress the menu bar
-    set(hfig,'NumberTitle','off')%suppress the fig number in the title
-    set(hfig,'name','civ_status')
-    set(hfig,'tag','civ_status')
-    set(hfig,'UserData',civ_files)
-    hlist= uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', {'open_uvmat'},'tag','list');
-    uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','msgbox','Max',2,'String','checking files...');
-    uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
-    %uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@close_GUI);
-    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@stop_status);
-    hrefresh=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@refresh_GUI);
-    BarPosition=[0.05 0.81 0.01 0.05];
-    uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
-    drawnow 
-end
-StatusData.time_ref=get(handles.OK,'UserData');% get the time of launch
-StatusData.option_civ=option_civ;
-set(hrefresh,'UserData',StatusData)
-filepath=fileparts(civ_files{1});
-set(hlist,'UserData',fileparts(filepath))
-refresh_GUI(hrefresh,[])
-
-%------------------------------------------------------------------------   
-% launched by refreshing the status figure
-function refresh_GUI(hObject, eventdata)
-%------------------------------------------------------------------------
-Tabchar={};
-BarPosition=[0.05 0.81 0.01 0.05];
-hfig=get(hObject,'parent');
-StatusData=get(hObject,'UserData');
-civ_files=get(hfig,'UserData');
-[filepath,filename,ext]=fileparts(civ_files{1});
-[tild,SubDir,extdir]=fileparts(filepath);
-SubDir=[SubDir extdir];
-option_civ=StatusData.option_civ;
-nbfiles=numel(civ_files);
-testrecent=0;
-count=0;
-datnum=zeros(1,nbfiles);
-filefound=cell(1,nbfiles);
-for ifile=1:nbfiles
-    detect=exist(civ_files{ifile},'file'); % check the existence of the file
-    option=0;
-    if detect==0
-        option_str='not created';
-    else
-        datfile=dir(civ_files{ifile});
-        if isfield(datfile,'datenum')
-            datnum(ifile)=datfile.datenum;%only available in recent matlab versions
-            testrecent=1;
-        end
-        filefound(ifile)={datfile.name};
-        
-        % check the content  netcdf file
-        Data=nc2struct(civ_files{ifile},'ListGlobalAttribute','CivStage','patch2','fix2','civ2','patch','fix');
-        option_list={'civ1','fix1','patch1','civ2','fix2','patch2'};
-        if ~isempty(Data.CivStage)
-            option=Data.CivStage;%case of Matlab civ
-        else
-            if ~isempty(Data.patch2) && isequal(Data.patch2,1)
-                option=6;
-            elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
-                option=5;
-            elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
-                option=4;
-            elseif ~isempty(Data.patch) && isequal(Data.patch,1);
-                option=3;
-            elseif ~isempty(Data.fix) && isequal(Data.fix,1);
-                option=2;
-            else
-                option=1;
-            end
-        end
-        option_str=option_list{option};
-        if datnum(ifile)<StatusData.time_ref
-            option_str=[option_str '  --OLD--'];
-        end
-    end
-    if option >= option_civ
-        count=count+1;
-    end
-    [filepath,filename,ext]=fileparts(civ_files{ifile});
-    Tabchar{ifile,1}=[fullfile(SubDir,filename) ext  '...' option_str];
-end
-datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
-if isempty(datnum)
-    if testrecent
-        message='no civ result created yet';
-    else
-        message='';
-    end
-else
-    datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
-    [first,ind]=min(datnum);
-    [last,indlast]=max(datnum);
-    message={[num2str(count) ' file(s) done over ' num2str(nbfiles)] ;['oldest modification:  ' cell2mat(filefound(ind)) ' : ' datestr(first)];...
-        ['latest modification:  ' cell2mat(filefound(indlast)) ' : ' datestr(last)]};
-end
-hlist=findobj(hfig,'tag','list');
-hmsgbox=findobj(hfig,'tag','msgbox');
-hwaitbar=findobj(hfig,'tag','waitbar');
-set(hlist,'String',Tabchar)
-set(hmsgbox,'String', message)
-if count>0 %&& ~test_new
-    BarPosition(3)=0.9*count/nbfiles;
-    set(hwaitbar,'Position',BarPosition)
-end
-
-
-%------------------------------------------------------------------------   
-% launched by deleting the status figure
-function stop_status(hObject, eventdata)
-%------------------------------------------------------------------------
-hciv=findobj(allchild(0),'tag','civ');
-hhciv=guidata(hciv);
-set(hhciv.status,'value',0) %reset the status uicontrol in the GUI civ
-set(hhciv.status,'BackgroundColor',[0 1 0])
+% %-------------------------------------------------------------------
+% % --- Executes on button press in status.
+% function status_Callback(hObject, eventdata, handles)
+% %-------------------------------------------------------------------
+% val=get(handles.status,'Value');
+% if val==0
+%     set(handles.status,'BackgroundColor',[0 1 0])
+%     hfig=findobj(allchild(0),'name','civ_status');
+%     if ~isempty(hfig)
+%         delete(hfig)
+%     end
+%     return
+% end
+% set(handles.status,'BackgroundColor',[1 1 0])
+% drawnow
+% listtype={'civ1','fix1','patch1','civ2','fix2','patch2'};
+% Param.CheckCiv1=get(handles.CheckCiv1,'Value');
+% Param.CheckFix1=get(handles.CheckFix1,'Value');
+% Param.CheckPatch1=get(handles.CheckPatch1,'Value');
+% Param.CheckCiv2=get(handles.CheckCiv2,'Value');
+% Param.CheckFix2=get(handles.CheckFix2,'Value');
+% Param.CheckPatch2=get(handles.CheckPatch2,'Value');
+% box_test=[Param.CheckCiv1 Param.CheckFix1 Param.CheckPatch1 Param.CheckCiv2 Param.CheckFix2 Param.CheckPatch2];
+% 
+% option_civ=find(box_test,1,'last');%last selected option (non-zero index of box_test)
+% filecell=get(handles.civ_input,'UserData');%retrieve the list of output files expected for PIV
+% test_new=0;
+% if ~isfield(filecell,'nc')
+%     test_new=1;
+%     [ref_i,ref_j,errormsg]=find_ref_indices(handles);
+%     if ~isempty(errormsg)
+%         msgbox_uvmat('ERROR',errormsg)
+%         return
+%     end
+%     filecell=set_civ_filenames(handles,ref_i,ref_j,box_test);%determine the output file expected from the GUI status
+% end
+% if ~isequal(box_test(4:6),[0 0 0])
+%     civ_files=filecell.nc.civ2;%case of civ2 operations
+% else
+%     civ_files=filecell.nc.civ1;
+% end
+% [root,filename,ext]=fileparts(civ_files{1});
+% [rootroot,SubDir,extdir]=fileparts(root);
+% hfig=findobj(allchild(0),'name','civ_status');
+% if isempty(hfig)
+%     hfig=figure('DeleteFcn',@stop_status);
+%     set(hfig,'MenuBar','none')% suppress the menu bar
+%     set(hfig,'NumberTitle','off')%suppress the fig number in the title
+%     set(hfig,'name','civ_status')
+%     set(hfig,'tag','civ_status')
+%     set(hfig,'UserData',civ_files)
+%     hlist= uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', {'open_uvmat'},'tag','list');
+%     uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','msgbox','Max',2,'String','checking files...');
+%     uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
+%     %uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@close_GUI);
+%     uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@stop_status);
+%     hrefresh=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','normalized','FontSize',0.9,'Callback',@refresh_GUI);
+%     BarPosition=[0.05 0.81 0.01 0.05];
+%     uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
+%     drawnow 
+% end
+% StatusData.time_ref=get(handles.OK,'UserData');% get the time of launch
+% StatusData.option_civ=option_civ;
+% set(hrefresh,'UserData',StatusData)
+% filepath=fileparts(civ_files{1});
+% set(hlist,'UserData',fileparts(filepath))
+% refresh_GUI(hrefresh,[])
 
 % %------------------------------------------------------------------------   
-% % launched by pressing OK on the status figure
-% function close_GUI(hObject, eventdata)
+% % launched by refreshing the status figure
+% function refresh_GUI(hObject, eventdata)
 % %------------------------------------------------------------------------
-%     delete(gcbf)
+% Tabchar={};
+% BarPosition=[0.05 0.81 0.01 0.05];
+% hfig=get(hObject,'parent');
+% StatusData=get(hObject,'UserData');
+% civ_files=get(hfig,'UserData');
+% [filepath,filename,ext]=fileparts(civ_files{1});
+% [tild,SubDir,extdir]=fileparts(filepath);
+% SubDir=[SubDir extdir];
+% option_civ=StatusData.option_civ;
+% nbfiles=numel(civ_files);
+% testrecent=0;
+% count=0;
+% datnum=zeros(1,nbfiles);
+% filefound=cell(1,nbfiles);
+% for ifile=1:nbfiles
+%     detect=exist(civ_files{ifile},'file'); % check the existence of the file
+%     option=0;
+%     if detect==0
+%         option_str='not created';
+%     else
+%         datfile=dir(civ_files{ifile});
+%         if isfield(datfile,'datenum')
+%             datnum(ifile)=datfile.datenum;%only available in recent matlab versions
+%             testrecent=1;
+%         end
+%         filefound(ifile)={datfile.name};
+%         
+%         % check the content  netcdf file
+%         Data=nc2struct(civ_files{ifile},'ListGlobalAttribute','CivStage','patch2','fix2','civ2','patch','fix');
+%         option_list={'civ1','fix1','patch1','civ2','fix2','patch2'};
+%         if ~isempty(Data.CivStage)
+%             option=Data.CivStage;%case of Matlab civ
+%         else
+%             if ~isempty(Data.patch2) && isequal(Data.patch2,1)
+%                 option=6;
+%             elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
+%                 option=5;
+%             elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
+%                 option=4;
+%             elseif ~isempty(Data.patch) && isequal(Data.patch,1);
+%                 option=3;
+%             elseif ~isempty(Data.fix) && isequal(Data.fix,1);
+%                 option=2;
+%             else
+%                 option=1;
+%             end
+%         end
+%         option_str=option_list{option};
+%         if datnum(ifile)<StatusData.time_ref
+%             option_str=[option_str '  --OLD--'];
+%         end
+%     end
+%     if option >= option_civ
+%         count=count+1;
+%     end
+%     [filepath,filename,ext]=fileparts(civ_files{ifile});
+%     Tabchar{ifile,1}=[fullfile(SubDir,filename) ext  '...' option_str];
+% end
+% datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
+% if isempty(datnum)
+%     if testrecent
+%         message='no civ result created yet';
+%     else
+%         message='';
+%     end
+% else
+%     datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
+%     [first,ind]=min(datnum);
+%     [last,indlast]=max(datnum);
+%     message={[num2str(count) ' file(s) done over ' num2str(nbfiles)] ;['oldest modification:  ' cell2mat(filefound(ind)) ' : ' datestr(first)];...
+%         ['latest modification:  ' cell2mat(filefound(indlast)) ' : ' datestr(last)]};
+% end
+% hlist=findobj(hfig,'tag','list');
+% hmsgbox=findobj(hfig,'tag','msgbox');
+% hwaitbar=findobj(hfig,'tag','waitbar');
+% set(hlist,'String',Tabchar)
+% set(hmsgbox,'String', message)
+% if count>0 %&& ~test_new
+%     BarPosition(3)=0.9*count/nbfiles;
+%     set(hwaitbar,'Position',BarPosition)
+% end
+% 
+% 
+% %------------------------------------------------------------------------   
+% % launched by deleting the status figure
+% function stop_status(hObject, eventdata)
+% %------------------------------------------------------------------------
+% hciv=findobj(allchild(0),'tag','civ');
+% hhciv=guidata(hciv);
+% set(hhciv.status,'value',0) %reset the status uicontrol in the GUI civ
+% set(hhciv.status,'BackgroundColor',[0 1 0])
+% 
+% % %------------------------------------------------------------------------   
+% % % launched by pressing OK on the status figure
+% % function close_GUI(hObject, eventdata)
+% % %------------------------------------------------------------------------
+% %     delete(gcbf)
+% 
 
-
-%------------------------------------------------------------------------
-% --- Main lauch command, called by OK and BATCH
-function errormsg=launch_jobs(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-errormsg='';%default
-
-%% read the input parameters from the  GUI civ_input
-Param=read_GUI(handles.civ_series);
-
-%% check the selected list of operations:
-operations={'Civ1','Fix1','Patch1','Civ2','Fix2','Patch2'};
-box_test=[Param.CheckCiv1 Param.CheckFix1 Param.CheckPatch1 Param.CheckCiv2 Param.CheckFix2 Param.CheckPatch2];
-index_first=find(box_test==1,1);
-if isempty(index_first)
-    errormsg='no selected operation';
-    return
-end
-index_last=find(box_test==1,1,'last');
-box_used=box_test(index_first : index_last);
-[box_missing,ind_missing]=min(box_used);
-if isequal(box_missing,0); %there is a missing step in the sequence of operations
-    errormsg=['missing' cell2mat(operations(ind_missing))];
-    return
-end
-
-%% check mask if selecetd 
-%could be included in get_mask callback ?
-if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.Mask,'String');
-    if ~exist(maskname,'file')
-        get_mask_civ1_Callback(hObject, eventdata, handles);
-    end
-end
-if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.Mask,'String');
-    if ~exist(maskname,'file')
-        get_mask_fix1_Callback(hObject, eventdata, handles);
-    end
-end
-if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.Mask,'String');
-    if ~exist(maskname,'file')
-        get_mask_civ2_Callback(hObject, eventdata, handles);
-    end
-end
-if isequal(get(handles.CheckMask,'Value'),1)
-    maskname=get(handles.Mask,'String');
-    if ~exist(maskname,'file')
-        get_mask_fix2_Callback(hObject, eventdata, handles);
-    end
-end
-
-%% reinitialise status callback 
-if isfield(handles,'status')
-    set(handles.status,'Value',0);%suppress status display
-    status_Callback([], [], handles)
-end
-
-%% read the PARAM.xml file to get the binaries (and batch_mode if batch)
-path_civ=fileparts(which('civ')); %path to the source directory of uvmat
-xmlfile=fullfile(path_civ,'PARAM.xml');
-s=[];
-if exist(xmlfile,'file')% search parameter xml file in the whole matlab path
-    t=xmltree(xmlfile);
-    s=convert(t);
-end% default configuration
-if ~isfield(s,'RunParam')
-    Param.xml.Civ1Bin=fullfile('bin','civ1');
-    Param.xml.Civ2Bin=fullfile('bin','civ2');
-    Param.xml.FixBin=fullfile('bin','fix_flag');
-    Param.xml.PatchBin=fullfile('bin','patch_up');
-end
-if strcmp(Param.RunMode,'cluster') %computation dispatched on a cluster
-    if isfield(s,'BatchParam')
-        Param.xml=s.BatchParam;
-        if isfield(Param.xml,'BatchMode')
-            batch_mode=Param.xml.BatchMode;
-            if ~ismember(batch_mode,{'sge','oar'})
-                errormsg=['batch mode ' batch_mode ' not supported by UVMAT'];
-                return
-            end
-        end
-    else
-        %default configuration
-        Param.xml.Civ1Bin=fullfile('bin','civ1');
-        Param.xml.Civ2Bin=fullfile('bin','civ2');
-        Param.xml.FixBin=fullfile('bin','fix_flag');
-        Param.xml.PatchBin=fullfile('bin','patch_up');
-   %     Param.xml.CivmBin=fullfile('bin','civ_matlab');
-        Param.xml.BatchMode='oar';% TODO : allow choice for sge
-    end
-else % run
-    if isfield(s,'RunParam')
-        Param.xml=s.RunParam;
-    else %default configuration
-        Param.xml.Civ1Bin=fullfile('bin','civ1');
-        Param.xml.Civ2Bin=fullfile('bin','civ2');
-        Param.xml.FixBin=fullfile('bin','fix_flag');
-        Param.xml.PatchBin=fullfile('bin','patch_up');
-    end
-end
-%Param.xml.CivmBin=fullfile('bin','civ_matlab');
-
-%% check if the binaries exist : to move in civ_opening
-binary_list={};
-switch Param.Program
-    case 'CivX'
-        binary_list={'Civ1Bin','Civ2Bin','PatchBin','FixBin'};
-    case 'CivAll'% desactivated option
-        binary_list={'Civ'};
-%     case 'civ_matlab.sh'% compiled version of civ_matlab 
-%         binary_list={'CivmBin'};         
-end
-for bin_name=binary_list %loop on the list of binaries
-    if isfield(Param.xml,bin_name{1})% bin_name{1} =current name in the list
-        if ~isunix
-        Param.xml.(bin_name{1})=[regexprep(Param.xml.(bin_name{1}),'/','\') '.exe'];
-        end
-        if exist(Param.xml.(bin_name{1}),'file')
-            [path,name,ext]=fileparts(Param.xml.(bin_name{1}));
-            currentdir=pwd;
-            if isempty(path)
-                path=fileparts(which('civ.m'));
-            end
-            if exist(path,'dir')
-                cd(path);
-                binpath=pwd;%path of the binary
-                Param.xml.(bin_name{1})=fullfile(binpath,[name ext]);
-                cd(currentdir);
-            else
-                errormsg=['path ' path ' for binaries specified in PARAM.xml does not exist'];
-                return
-            end          
-        else  %look for the full path if the file name has been defined with a relative path in PARAM.xm
-            fullname=fullfile(path_civ,Param.xml.(bin_name{1}));
-            if exist(fullname,'file')
-                Param.xml.(bin_name{1})=fullname;
-            else
-                errormsg=['Binary ' Param.xml.(bin_name{1}) ' specified in PARAM.xml does not exist'];
-                return
-            end
-        end
-    end
-end
-if strcmp(Param.Program,'civ_matlab.sh')
-    if ~exist(fullfile(path_civ,'civ_matlab.sh'),'file')
-        errormsg=[{'no file civ_matlab.sh found'}; {'run compile_functions.m to create it by compiling civ_matlab.m'}];
-            return
-    end
-end
-
-%% set the list of files and check them
-display('checking the files...')
-[ref_i,ref_j,errormsg]=find_ref_indices(handles);
-if ~isempty(errormsg)
-    return
-end
-[filecell,i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_civ2,nom_type_nc,tild,tild,compare,errormsg]=...
-    set_civ_filenames(handles,ref_i,ref_j,box_test);
-if ~isempty(errormsg)
-    return
-end
-set(handles.civ_series,'UserData',filecell);%store for futur use of status callback
-display('files OK, processing...')
-
-%% create subfolders for log, cmx, nml, xml, bat
-RootBat=fileparts(filecell.nc.civ1{1,1});
-switch(Param.Program)
-    case {'CivX','CivAll'}
-dir_list={'0_BAT','0_CMX','0_LOG'};
-    case {'civ_matlab','civ_matlab.sh'}
-        dir_list={'0_BAT','0_XML'};
-end
-for k=1:length(dir_list)
-    if ~exist(fullfile(RootBat,dir_list{k}),'dir')
-        mkdir(fullfile(RootBat,dir_list{k}));
-    end
-end
-
-%% get information on input images or movies
-nbfield=numel(i1_civ1);
-nbslice=numel(j1_civ1);
-% if strcmp(Param.Program,'civ_matlab')
-    if Param.CheckCiv1
-        [Param.Civ1.FileTypeA,ImageInfoA_civ1,Param.Civ1.ImageA]=get_file_type(filecell.ima1.civ1{1});
-        [Param.Civ1.FileTypeB,ImageInfoB_civ1,Param.Civ1.ImageB]=get_file_type(filecell.ima2.civ1{1});
-    end
-    if Param.CheckCiv2
-        [Param.Civ2.FileTypeA,ImageInfoA_civ2,Param.Civ2.ImageA]=get_file_type(filecell.ima1.civ2{1});
-        [Param.Civ2.FileTypeB,ImageInfoB_civ2,Param.Civ2.ImageB]=get_file_type(filecell.ima2.civ2{1});
-    end
+% %------------------------------------------------------------------------
+% % --- Main lauch command, called by OK and BATCH
+% function errormsg=launch_jobs(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% errormsg='';%default
+% 
+% %% read the input parameters from the  GUI civ_input
+% Param=read_GUI(handles.civ_input);
+% 
+% %% check the selected list of operations:
+% operations={'Civ1','Fix1','Patch1','Civ2','Fix2','Patch2'};
+% box_test=[Param.CheckCiv1 Param.CheckFix1 Param.CheckPatch1 Param.CheckCiv2 Param.CheckFix2 Param.CheckPatch2];
+% index_first=find(box_test==1,1);
+% if isempty(index_first)
+%     errormsg='no selected operation';
+%     return
+% end
+% index_last=find(box_test==1,1,'last');
+% box_used=box_test(index_first : index_last);
+% [box_missing,ind_missing]=min(box_used);
+% if isequal(box_missing,0); %there is a missing step in the sequence of operations
+%     errormsg=['missing' cell2mat(operations(ind_missing))];
+%     return
+% end
+% 
+% %% check mask if selecetd 
+% %could be included in get_mask callback ?
+% if isequal(get(handles.CheckMask,'Value'),1)
+%     maskname=get(handles.Mask,'String');
+%     if ~exist(maskname,'file')
+%         get_mask_civ1_Callback(hObject, eventdata, handles);
+%     end
+% end
+% if isequal(get(handles.CheckMask,'Value'),1)
+%     maskname=get(handles.Mask,'String');
+%     if ~exist(maskname,'file')
+%         get_mask_fix1_Callback(hObject, eventdata, handles);
+%     end
+% end
+% if isequal(get(handles.CheckMask,'Value'),1)
+%     maskname=get(handles.Mask,'String');
+%     if ~exist(maskname,'file')
+%         get_mask_civ2_Callback(hObject, eventdata, handles);
+%     end
+% end
+% if isequal(get(handles.CheckMask,'Value'),1)
+%     maskname=get(handles.Mask,'String');
+%     if ~exist(maskname,'file')
+%         get_mask_fix2_Callback(hObject, eventdata, handles);
+%     end
+% end
+% 
+% %% reinitialise status callback 
+% if isfield(handles,'status')
+%     set(handles.status,'Value',0);%suppress status display
+%     status_Callback([], [], handles)
+% end
+% 
+% %% read the PARAM.xml file to get the binaries (and batch_mode if batch)
+% % path_civ=fileparts(which('civ')); %path to the source directory of uvmat
+% % xmlfile=fullfile(path_civ,'PARAM.xml');
+% % s=[];
+% % if exist(xmlfile,'file')% search parameter xml file in the whole matlab path
+% %     t=xmltree(xmlfile);
+% %     s=convert(t);
+% % end% default configuration
+% % if ~isfield(s,'RunParam')
+% %     Param.xml.Civ1Bin=fullfile('bin','civ1');
+% %     Param.xml.Civ2Bin=fullfile('bin','civ2');
+% %     Param.xml.FixBin=fullfile('bin','fix_flag');
+% %     Param.xml.PatchBin=fullfile('bin','patch_up');
+% % end
+% % if strcmp(Param.RunMode,'cluster') %computation dispatched on a cluster
+% %     if isfield(s,'BatchParam')
+% %         Param.xml=s.BatchParam;
+% %         if isfield(Param.xml,'BatchMode')
+% %             batch_mode=Param.xml.BatchMode;
+% %             if ~ismember(batch_mode,{'sge','oar'})
+% %                 errormsg=['batch mode ' batch_mode ' not supported by UVMAT'];
+% %                 return
+% %             end
+% %         end
+% %     else
+% %         %default configuration
+% %         Param.xml.Civ1Bin=fullfile('bin','civ1');
+% %         Param.xml.Civ2Bin=fullfile('bin','civ2');
+% %         Param.xml.FixBin=fullfile('bin','fix_flag');
+% %         Param.xml.PatchBin=fullfile('bin','patch_up');
+% %    %     Param.xml.CivmBin=fullfile('bin','civ_matlab');
+% %         Param.xml.BatchMode='oar';% TODO : allow choice for sge
+% %     end
+% % else % run
+% %     if isfield(s,'RunParam')
+% %         Param.xml=s.RunParam;
+% %     else %default configuration
+% %         Param.xml.Civ1Bin=fullfile('bin','civ1');
+% %         Param.xml.Civ2Bin=fullfile('bin','civ2');
+% %         Param.xml.FixBin=fullfile('bin','fix_flag');
+% %         Param.xml.PatchBin=fullfile('bin','patch_up');
+% %     end
+% % end
+% % %Param.xml.CivmBin=fullfile('bin','civ_matlab');
+% % 
+% % %% check if the binaries exist : to move in civ_opening
+% % binary_list={};
+% % switch Param.Program
+% %     case 'CivX'
+% %         binary_list={'Civ1Bin','Civ2Bin','PatchBin','FixBin'};
+% %     case 'CivAll'% desactivated option
+% %         binary_list={'Civ'};
+% % %     case 'civ_matlab.sh'% compiled version of civ_matlab 
+% % %         binary_list={'CivmBin'};         
+% % end
+% % for bin_name=binary_list %loop on the list of binaries
+% %     if isfield(Param.xml,bin_name{1})% bin_name{1} =current name in the list
+% %         if ~isunix
+% %         Param.xml.(bin_name{1})=[regexprep(Param.xml.(bin_name{1}),'/','\') '.exe'];
+% %         end
+% %         if exist(Param.xml.(bin_name{1}),'file')
+% %             [path,name,ext]=fileparts(Param.xml.(bin_name{1}));
+% %             currentdir=pwd;
+% %             if isempty(path)
+% %                 path=fileparts(which('civ.m'));
+% %             end
+% %             if exist(path,'dir')
+% %                 cd(path);
+% %                 binpath=pwd;%path of the binary
+% %                 Param.xml.(bin_name{1})=fullfile(binpath,[name ext]);
+% %                 cd(currentdir);
+% %             else
+% %                 errormsg=['path ' path ' for binaries specified in PARAM.xml does not exist'];
+% %                 return
+% %             end          
+% %         else  %look for the full path if the file name has been defined with a relative path in PARAM.xm
+% %             fullname=fullfile(path_civ,Param.xml.(bin_name{1}));
+% %             if exist(fullname,'file')
+% %                 Param.xml.(bin_name{1})=fullname;
+% %             else
+% %                 errormsg=['Binary ' Param.xml.(bin_name{1}) ' specified in PARAM.xml does not exist'];
+% %                 return
+% %             end
+% %         end
+% %     end
+% % end
+% % if strcmp(Param.Program,'civ_matlab.sh')
+% %     if ~exist(fullfile(path_civ,'civ_matlab.sh'),'file')
+% %         errormsg=[{'no file civ_matlab.sh found'}; {'run compile_functions.m to create it by compiling civ_matlab.m'}];
+% %             return
+% %     end
+% % end
+% % 
+% % %% set the list of files and check them
+% % display('checking the files...')
+% % [ref_i,ref_j,errormsg]=find_ref_indices(handles);
+% % if ~isempty(errormsg)
+% %     return
+% % end
+% % [filecell,i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_civ2,nom_type_nc,tild,tild,compare,errormsg]=...
+% %     set_civ_filenames(handles,ref_i,ref_j,box_test);
+% % if ~isempty(errormsg)
+% %     return
+% % end
+% % set(handles.civ_input,'UserData',filecell);%store for futur use of status callback
+% % display('files OK, processing...')
+% % 
+% % %% create subfolders for log, cmx, nml, xml, bat
+% % RootBat=fileparts(filecell.nc.civ1{1,1});
+% % switch(Param.Program)
+% %     case {'CivX','CivAll'}
+% % dir_list={'0_BAT','0_CMX','0_LOG'};
+% %     case {'civ_matlab','civ_matlab.sh'}
+% %         dir_list={'0_BAT','0_XML'};
+% % end
+% % for k=1:length(dir_list)
+% %     if ~exist(fullfile(RootBat,dir_list{k}),'dir')
+% %         mkdir(fullfile(RootBat,dir_list{k}));
+% %     end
+% % end
+% 
+% %% get information on input images or movies
+% nbfield=numel(i1_civ1);
+% nbslice=numel(j1_civ1);
+% % if strcmp(Param.Program,'civ_matlab')
+%     if Param.CheckCiv1
+%         [Param.Civ1.FileTypeA,ImageInfoA_civ1,Param.Civ1.ImageA]=get_file_type(filecell.ima1.civ1{1});
+%         [Param.Civ1.FileTypeB,ImageInfoB_civ1,Param.Civ1.ImageB]=get_file_type(filecell.ima2.civ1{1});
+%     end
+%     if Param.CheckCiv2
+%         [Param.Civ2.FileTypeA,ImageInfoA_civ2,Param.Civ2.ImageA]=get_file_type(filecell.ima1.civ2{1});
+%         [Param.Civ2.FileTypeB,ImageInfoB_civ2,Param.Civ2.ImageB]=get_file_type(filecell.ima2.civ2{1});
+%     end
+% % end
+% 
+% %% MAIN LOOP
+% time=get(handles.ImaDoc,'UserData'); %get the set of times
+% TimeUnit=get(handles.TimeUnit,'String');
+% checkframe=strcmp(TimeUnit,'frame');
+% batch_file_list=[];%should be renamed file_list, can be used for xml or bash files
+% NomTypeIma=get(handles.NomType,'String');
+% for ifile=1:nbfield
+%     for j=1:nbslice
+%             
+%         % define output file name
+%         if Param.CheckCiv2==1 || Param.CheckFix2==1 || Param.CheckPatch2==1
+%             Param.OutputFile=filecell.nc.civ2{ifile,j};
+%         else
+%             Param.OutputFile=filecell.nc.civ1{ifile,j};
+%         end
+%         Param.OutputFile=regexprep(Param.OutputFile,'.nc','');
+% 
+%         if Param.CheckCiv1
+%             % read image-dependent parameters          
+%             if ~checkframe% && size(time,1)>=i2_civ1(ifile) && size(time,2)>=j2_civ1(j)
+%                 Param.Civ1.Dt=(time(i2_civ1(ifile)+1,j2_civ1(j)+1)-time(i1_civ1(ifile)+1,j1_civ1(j)+1));
+%             else
+%                 Param.Civ1.Dt=1;
+%             end
+%             Param.Civ1.Time=((time(i2_civ1(ifile)+1,j2_civ1(j)+1)+time(i1_civ1(ifile)+1,j1_civ1(j)+1))/2);
+%             if strcmp(Param.Program,'CivX')
+%                 Param.Civ1.term_a=num2stra(j1_civ1(j),nom_type_nc);%UTILITE?
+%                 Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%
+%             end
+%             Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};
+%             Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
+%             Param.Civ1.ImageBitDepth=ImageInfoA_civ1.BitDepth;
+%             Param.Civ1.ImageWidth=ImageInfoA_civ1.Width;
+%             Param.Civ1.ImageHeight=ImageInfoA_civ1.Height;
+%             if strcmp(NomTypeIma,'*')
+%                 Param.Civ1.FrameIndexA=i1_civ1(ifile);
+%                 Param.Civ1.FrameIndexB=i2_civ1(ifile);
+%             else% case of movies indexed with i, the frame index is then in j
+%                 Param.Civ1.FrameIndexA=j1_civ1(j);
+%                 Param.Civ1.FrameIndexB=j2_civ1(j);
+%             end
+%             % read mask )parameters
+%             if Param.Civ1.CheckMask % the lines below should be changed with the new gui
+%                 if ~exist(Param.Civ1.Mask,'file')
+%                     maskbase=[filecell.filebase '_' Param.Civ1.Mask]; %
+%                     nbslice_mask=str2double(Param.Civ1.Mask(1:end-4)); %
+%                     i1_mask=mod(i1_civ1(ifile)-1,nbslice_mask)+1;
+%                     [RootPathMask,RootFileMask]=fileparts(maskbase);
+%                     Param.Civ1.Mask=fullfile_uvmat(RootPathMask,[],RootFileMask,'.png','_1',i1_mask);
+%                 end
+%             end
+%             % read grid parameters
+%             if Param.Civ1.CheckGrid
+%                 if numel(Param.Civ1.Grid)>=4 && isequal(Param.Civ1.Grid(end-3:end),'grid')
+%                     nbslice_grid=str2double(Param.Civ1.Grid(1:end-4)); %
+%                     if ~isnan(nbslice_grid)
+%                         i1_grid=mod(i1_civ1(ifile)-1,nbslice_grid)+1;
+%                         Param.Civ1.Grid=[filecell.filebase '_' fullfile_uvmat('','',Param.Civ1.Grid,'.grid','_1',i1_grid)];
+%                         if ~exist(Param.Civ1.GridName,'file')
+%                             errormsg='grid file absent for civ1';
+%                             return
+%                         end
+%                     elseif ~exist(Param.Civ1.Grid,'file')
+%                         errormsg='grid file absent for civ1';
+%                         return
+%                     end
+%                 end
+%             end
+%             
+%         end
+%         
+%         if Param.CheckCiv2==1
+%             Param.Civ2.ImageA=filecell.ima1.civ2{ifile,j};
+%             Param.Civ2.ImageB=filecell.ima2.civ2{ifile,j};          
+%             if ~checkframe %&& size(time,1)>=i2_civ2(ifile) && size(time,2)>=j2_civ2(j)
+%                 Param.Civ2.Dt=time(i2_civ2(ifile)+1,j2_civ2(j)+1)-time(i1_civ2(ifile)+1,j1_civ2(j)+1);
+%             else
+%                 Param.Civ2.Dt=1;
+%             end
+%             Param.Civ2.Time=(time(i2_civ2(ifile)+1,j2_civ2(j)+1)+time(i1_civ2(ifile)+1,j1_civ2(j)+1))/2;
+%             if strcmp(Param.Program,'CivX')
+%                 Param.Civ2.term_a=num2stra(j1_civ2(j),nom_type_nc);
+%                 Param.Civ2.term_b=num2stra(j2_civ2(j),nom_type_nc);
+%             end
+%             Param.Civ2.filename_nc1=filecell.nc.civ1{ifile,j};
+%             Param.Civ2.filename_nc1(end-2:end)=[]; % remove '.nc'
+%             
+%             % mask
+%             if Param.Civ2.CheckMask
+%                 if ~exist(Param.Civ2.Mask,'file')
+%                     maskbase=[filecell.filebase '_' Param.Civ2.Mask]; %
+%                     nbslice_mask=str2double(Param.Civ2.Mask(1:end-4)); %
+%                     i1_mask=mod(i1_civ2(ifile)-1,nbslice_mask)+1;
+%                     [RootPathMask,RootFileMask]=fileparts(maskbase);
+%                     Param.Civ2.Mask=fullfile_uvmat(RootPathMask,[],RootFileMask,'.png','_1',i1_mask);
+%                     %                     Param.Civ2.Mask=name_generator(maskbase,i1_mask,1,'.png','_i');
+%                 end
+%             end
+%             %grid
+%             if Param.Civ2.CheckGrid
+%                 if numel(Param.Civ2.Grid)>=4 && isequal(Param.Civ2.Grid(end-3:end),'grid')
+%                     nbslice_grid=str2double(Param.Civ2.Grid(1:end-4)); %
+%                     if ~isnan(nbslice_grid)
+%                         i1_grid=mod(i1_civ2(ifile)-1,nbslice_grid)+1;
+%                         Param.Civ2.Grid=[filecell.filebase '_' fullfile_uvmat('','',gridname,'.grid','_1',i1_grid)];
+%                         %                         Param.Civ2.Grid=[filecell.filebase '_' name_generator(gridname,i1_grid,1,'.grid','_i')];
+%                     end
+%                 end
+%             end
+% 
+%             Param.Civ2.ImageBitDepth=ImageInfoA_civ2.BitDepth;
+%             Param.Civ2.ImageWidth=ImageInfoA_civ2.Width;
+%             Param.Civ2.ImageHeight=ImageInfoA_civ2.Height;
+%             if strcmp(NomTypeIma,'*')
+%                 Param.Civ2.FrameIndexA=i1_civ2(ifile);
+%                 Param.Civ2.FrameIndexB=i2_civ2(ifile);
+%             else% case of movies indexed with i, the frame index is then in j
+%                 Param.Civ2.FrameIndexA=j1_civ2(j);
+%                 Param.Civ2.FrameIndexB=j2_civ2(j);
+%             end
+%         end
+%        
+%         % write the command and eventually the cmx, xml or nml files
+%         cmd=write_cmd(Param);
+%         write_param(Param);
+%               
+%         % create the command file name .m, .bat or .sh depending on the ok option
+%         switch Param.Program
+%             case {'civ_matlab'}
+%                 filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.m');           
+%                 [BatRoot,BatFile]=fileparts(filename_bat);
+%                  BatFile=regexprep(BatFile,'-','__');%transform name to suppress'-' (not valid for .m files)
+%                  filename_bat=[fullfile(BatRoot,BatFile) '.m'];
+%             case {'CivX','CivAll','civ_matlab.sh'}
+%                 switch computer
+%                     case {'PCWIN','PCWIN64'}
+%                         filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.bat');
+%                     case {'GLNX86','GLNXA64','MACI64'}
+%                         filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.sh');
+%                 end
+%         end
+%         
+%         % print the command in the bat file
+%         [fid,message]=fopen(filename_bat,'w');
+%         if isequal(fid,-1)
+%             errormsg=['creation of .bat file: ' message];
+%             return
+%         end
+%         fprintf(fid,cmd);
+%         fclose(fid);
+%         
+%         % special case for civ_matlab on cluster
+%         if strcmp(Param.Program,'civ_matlab') && strcmp(Param.RunMode,'cluster')
+%             filename_bat2=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.sh');
+%             [fid,message]=fopen(filename_bat2,'w');
+%             if isequal(fid,-1)
+%                 errormsg=['creation of .bat file: ' message];
+%                 return
+%             end
+%             fprintf(fid,['#!/bin/bash \n' ...
+%                 '/etc/sysprofile \n'...
+%                 'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n'...
+%                 'addpath(''' path_civ ''');\n']);
+% %             for p=1:length(batch_file_list)
+%                 fprintf(fid,['run ' filename_bat '\n']);
+% %             end
+%             fprintf(fid, 'exit\nEND_MATLAB\n');
+%             fclose(fid);
+%             filename_bat=filename_bat2;
+%         end
+%         
+%         switch computer
+%             case {'GLNX86','GLNXA64','MACI64'}
+%                 system(['chmod +x ' filename_bat]);
+%         end
+%         batch_file_list{length(batch_file_list)+1}=filename_bat; 
+%     end
+% end
+% 
+% %% start calculation
+% %computation on cluster
+% %if batch ==3
+% switch Param.RunMode,
+%     case 'cluster'
+%         switch batch_mode
+%             case 'sge' %at the moment only psmn ENS Lyon uses it
+%                 for p=1:length(batch_file_list)
+%                     %cmd=['!qsub -p ' pvalue ' -q civ_input.q -e ' flname '.errors -o ' flname '.log' ' ' batch_file_list{p}];
+%                     cmd=['!qsub -q piv1,piv2,piv3 '...
+%                         '-e ' regexprep(batch_file_list{p},'.bat','.errors') ' -o ' regexprep(batch_file_list{p},'.bat','.log ')...
+%                         ' -v ' 'LD_LIBRARY_PATH=/home/sjoubaud/matlab_sylvain/civx/lib ' batch_file_list{p}];
+%                     display(cmd);eval(cmd);
+%                 end
+%             case 'oar_old' % to remove
+%                 for p=1:length(batch_file_list)
+%                     oar_command=['!oarsub -n CIVX -q nicejob '...
+%                         '-E ' regexprep(batch_file_list{p},'.bat','.errors') ' -O ' regexprep(batch_file_list{p},'.bat','.log ')...
+%                         '-l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:60:00"   ' batch_file_list{p}];
+%                     display(oar_command);eval(oar_command);
+%                 end
+%             case 'oar'
+%                 max_walltime=3600*12; % 12h max
+%                 oar_modes={'oar-parexec','oar-dispatch','mpilauncher'};
+%                 text={'Batch processing on servcalcul3 LEGI';...
+%                     'Please choose one of the followint modes';...
+%                     '* oar-parexec : default and best choice';...
+%                     '* oar-dispatch : jobs in a container of several cores';...
+%                     '* mpilauncher : one single parallel mpi job using several cores';...
+%                     '**********************************'...
+%                     };
+%                 [S,v]=listdlg('PromptString',text,'ListString',oar_modes,...
+%                     'SelectionMode','single','ListSize',[400 100],'Name','LEGI job mode');
+%                 switch oar_modes{S}
+%                     case 'oar-parexec' %oar-dispatch.pl
+%                         if strcmp(Param.Program,'civ_matlab')
+%                             ncores=1;
+%                             msgbox_uvmat('WARNING','Number of cores =1: select the compiled version civ_matlab.sh for multi-core processing');
+%                         else
+%                         answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
+%                         ncores=str2double(answer{1});
+%                         end
+% 
+%                         extra_oar=answer{2};
+%                         walltime_onejob=600;%seconds
+%                         filename_joblist=fullfile(RootBat,'job_list.txt');
+%                         fid=fopen(filename_joblist,'w');
+%                         for p=1:length(batch_file_list)
+%                             fprintf(fid,[batch_file_list{p} '\n']);
+%                         end
+%                         fclose(fid);
+%                         oar_command=['oarsub -n CIVX '...
+%                             '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
+%                             '-l /core=' num2str(ncores) ','...
+%                             'walltime=' datestr(min(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,max_walltime/86400),13) ' '...
+%                             '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
+%                             '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
+%                             extra_oar ' '...
+%                             '"oar-parexec -s -f ' filename_joblist ' '...
+%                             '-l ' filename_joblist '.log"\n'];
+%                         filename_oarcommand=fullfile(RootBat,'oar_command');
+%                         fid=fopen(filename_oarcommand,'w');
+%                         fprintf(fid,oar_command);
+%                         fclose(fid);
+%                         fprintf(oar_command);% display in command line
+%                         system(oar_command);
+% %                         eval(['! . ' filename
+% %                             _oarcommand])
+%                     case 'oar-dispatch' %oar-dispatch.pl
+%                         ncores=str2double(...
+%                             inputdlg('Number of cores (max 36)','oarsub parameter',1,{'6'})...
+%                             );
+%                         walltime_onejob=600;%seconds
+%                         filename_joblist=fullfile(RootBat,'job_list.txt');
+%                         fid=fopen(filename_joblist,'w');
+%                         for p=1:length(batch_file_list)
+%                             oar_command=['oarsub -n CIVX '...
+%                                 '-E ' regexprep(batch_file_list{p},'\.bat\>','.stderr') ' -O ' regexprep(batch_file_list{p},'\.bat\>','.stdout ')...
+%                                 '-l "/core=1,walltime=' datestr(walltime_onejob/86400,13) '"   ' batch_file_list{p}];
+%                             fprintf(fid,[oar_command '\n']);
+%                         end
+%                         fclose(fid);
+%                         oar_command=['oarsub -t container -n civx-container '...
+%                             '-l /core=' num2str(ncores)...
+%                             ',walltime=' datestr(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,13) ' '...
+%                             '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
+%                             '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
+%                             '"oar-dispatch -f ' filename_joblist '"'];
+%                         filename_oarcommand=fullfile(RootBat,'oar_command');
+%                         fid=fopen(filename_oarcommand,'w');
+%                         fprintf(fid,[oar_command '\n']);
+%                         fclose(fid);
+%                         display(oar_command);
+%                         eval(['! . ' filename_oarcommand])
+%                     case 'mpilauncher'
+%                         filename_joblist=fullfile(RootBat,'job_list.txt');
+%                         fid=fopen(filename_joblist,'w');
+%                         
+%                         for p=1:length(batch_file_list)
+%                             fprintf(fid,[batch_file_list{p} '\n']);
+%                         end
+%                         fclose(fid)
+%                         text_oarscript=[...
+%                             '#!/bin/bash \n'...
+%                             '#OAR -n Mylauncher \n'...
+%                             '#OAR -l node=4/core=5,walltime=0:15:00 \n'...
+%                             '#OAR -E ' fullfile(RootBat,'stderrfile.log') ' \n'...
+%                             '#OAR -O ' fullfile(RootBat,'stdoutfile.log') ' \n'...
+%                             '# ========================================================= \n'...
+%                             '# This simple program launch a multinode parallel OpenMPI mpilauncher \n'...
+%                             '# application for coriolis PIV post-processing. \n'...
+%                             '# OAR uses oarshmost wrapper to propagate the user environement. \n'...
+%                             '# This wrapper assert that the user has the same environment on all the \n'...
+%                             '# allocated nodes (basic behavior needed by most MPI applications).  \n'...
+%                             '# \n'...
+%                             '# REQUIREMENT: \n'...
+%                             '# the oarshmost wrapper should be installed in $HOME/bin directory. \n'...
+%                             '# If a different location is used, change the line following the comment "Bidouille" \n'...
+%                             '# ========================================================= \n'...
+%                             '#   USER should only modify these 2 lines  \n'...
+%                             'WORKDIR=' pwd ' \n'...
+%                             'COMMANDE="mpilauncher  -f ' filename_joblist '" \n'...
+%                             '# ========================================================= \n'...
+%                             '# DO NOT MODIFY the FOLOWING LINES. (or be carefull) \n'...
+%                             'echo "job starting on: "`hostname` \n'...
+%                             'MPINODES="-host `tr [\\\\\\n] [,] <$OAR_NODEFILE |sed -e "s/,$/ /"`" \n'...
+%                             'NCPUS=`cat $OAR_NODEFILE |wc -l` \n'...
+%                             '#========== Bidouille ============== \n'...
+%                             'export OMPI_MCA_plm_rsh_agent=oar-envsh \n'...%                     'cd $WORKDIR \n'...
+%                             'CMD="mpirun -np $NCPUS -wdir $WORKDIR $MPINODES $COMMANDE" \n'...
+%                             'echo "I run: $CMD"  \n'...
+%                             '$CMD \n'...
+%                             'echo "job ending" \n'...
+%                             ];
+%                         %                 oarsub -S ./oar.sub
+%                         filename_oarscript=fullfile(RootBat,'oar_command');
+%                         fid=fopen(filename_oarscript,'w');
+%                         fprintf(fid,[text_oarscript]);
+%                         fclose(fid);
+%                         eval(['!chmod +x  ' filename_oarscript]);
+%                         eval(['!oarsub -S ' filename_oarscript]);
+%                 end
+%         end
+%     case {'background','local'}
+%         switch Param.Program
+%             case {'civ_matlab'}
+%                 switch Param.RunMode
+%                     case 'background'
+%                         switch computer
+%                             case {'PCWIN','PCWIN64'}
+%                                 filename_superbat=fullfile(RootBat,'job_list.bat');
+%                                 fid=fopen(filename_superbat,'w');
+%                                 if fid==-1
+%                                     msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+%                                     return
+%                                 end
+%                                  fprintf(fid,['matlab -automation '...
+%                                      '-r "addpath(''' regexprep(path_civ,'\\','\\\\') ''');']);
+%                                 for p=1:length(batch_file_list)
+%                                     fprintf(fid,['run ' regexprep(batch_file_list{p},'\\','\\\\') ';']);
+%                                 end
+%                                  fprintf(fid, 'exit"');
+%                                 fclose(fid);
+%                                 dos([filename_superbat ' &']);
+%                             case {'GLNX86','GLNXA64','MACI64'} 
+%                                 filename_superbat=fullfile(RootBat,'job_list.sh');
+%                                 fid=fopen(filename_superbat,'w');
+%                                 if fid==-1
+%                                     msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+%                                     return
+%                                 end
+%                                 fprintf(fid,['#!/bin/bash \n' ...
+%                                     '/etc/sysprofile \n'...
+%                                     'matlab -nodisplay -nosplash -nojvm -logfile  <<END_MATLAB \n'...
+%                                     'addpath(''' path_civ ''');\n']);
+%                                 for p=1:length(batch_file_list)
+%                                     fprintf(fid,['run ' batch_file_list{p} '\n']);
+%                                 end
+%                                 fprintf(fid, 'exit\nEND_MATLAB\n');
+%                                 fclose(fid);
+%                                 system(['chmod +x ' filename_superbat]);
+%                                 system([filename_superbat ' &']);
+%                         end
+%                     case 'local'
+%                         for p=1:length(batch_file_list)
+%                             fid=fopen(batch_file_list{p});
+%                             eval(fscanf(fid,'%s'));
+%                             fclose(fid);
+%                         end
+%                 end
+%             case {'CivX','CivAll','civ_matlab.sh'}
+%                     switch computer
+%                         case {'PCWIN','PCWIN64'}
+%                             filename_superbat=fullfile(RootBat,'job_list.bat');
+%                             fid=fopen(filename_superbat,'w');
+%                             if fid==-1
+%                                 msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+%                                 return
+%                             end
+%                             for p=1:length(batch_file_list)
+%                                 fprintf(fid,['@call "' regexprep(batch_file_list{p},'\\','\\\\') '"' '\n']);
+%                             end
+%                             fclose(fid);
+%                             system(['chmod +x ' filename_superbat]);
+%                         case {'GLNX86','GLNXA64','MACI64'}
+%                             filename_superbat=fullfile(RootBat,'job_list.bat');
+%                             fid=fopen(filename_superbat,'w');
+%                             if fid==-1
+%                                 msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
+%                                 return
+%                             end
+%                             for p=1:length(batch_file_list)
+%                                 fprintf(fid,['sh ' batch_file_list{p} '\n']);
+%                             end
+%                             fclose(fid);
+%                             system(['chmod +x ' filename_superbat]);
+%                     end
+%                 switch Param.RunMode
+%                     case 'background'
+%                         system([filename_superbat ' &']);% execute main commmand see what it does in dos ?
+%                     case 'local'
+%                         system(filename_superbat);
+%                 end
+%         end
+% end
+% 
+% 
+% %% save interface state
+% if isfield(filecell,'nc')
+%     if isfield(filecell.nc,'civ2')
+%         fileresu=filecell.nc.civ2{1,1};
+%     else
+%         fileresu=filecell.nc.civ1{1,1};
+%     end
+% end
+% [RootPath,SubDir,RootFile]=fileparts_uvmat(fileresu);
+% namedoc=fullfile(RootPath,SubDir,RootFile);
+% detect=1;
+% while detect==1
+%     namefigfull=[namedoc '.fig'];
+%     hh=dir(namefigfull);
+%     if ~isempty(hh)
+%         detect=1;
+%         namedoc=[namedoc '.0'];
+%     else
+%         detect=0;
+%     end
+% end
+% Param=rmfield(Param,'status');
+% Param=rmfield(Param,'xml');
+% t=struct2xml(Param);
+% t=set(t,1,'name','Civ');% set the head label
+% save(t,[namedoc '.civ.xml']); %save GUI  parameters as xml file
+% % saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
+% 
+% %Save info in personal profile (initiate browser next time) TODO
+% MenuFile={};
+% dir_perso=prefdir;
+% profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+% if exist(profil_perso,'file')
+%     hh=load (profil_perso);
+%       if isfield(hh,'MenuFile')
+%           MenuFile=hh.MenuFile;
+%       end
+%       if isfield(filecell.nc,'civ2')
+%           MenuFile=[filecell.nc.civ2{1,1}; MenuFile];
+%       else
+%            MenuFile=[filecell.nc.civ1{1,1}; MenuFile];
+%       end
+%       save (profil_perso,'MenuFile','-append'); %store the file names for future opening of uvmat
+% else
+%     MenuFile=filecell.ima1.civ1(1,1);
+%     save (profil_perso,'MenuFile')
 % end
 
-%% MAIN LOOP
-time=get(handles.ImaDoc,'UserData'); %get the set of times
-TimeUnit=get(handles.TimeUnit,'String');
-checkframe=strcmp(TimeUnit,'frame');
-batch_file_list=[];%should be renamed file_list, can be used for xml or bash files
-NomTypeIma=get(handles.NomType,'String');
-for ifile=1:nbfield
-    for j=1:nbslice
-            
-        % define output file name
-        if Param.CheckCiv2==1 || Param.CheckFix2==1 || Param.CheckPatch2==1
-            Param.OutputFile=filecell.nc.civ2{ifile,j};
-        else
-            Param.OutputFile=filecell.nc.civ1{ifile,j};
-        end
-        Param.OutputFile=regexprep(Param.OutputFile,'.nc','');
-
-        if Param.CheckCiv1
-            % read image-dependent parameters          
-            if ~checkframe% && size(time,1)>=i2_civ1(ifile) && size(time,2)>=j2_civ1(j)
-                Param.Civ1.Dt=(time(i2_civ1(ifile)+1,j2_civ1(j)+1)-time(i1_civ1(ifile)+1,j1_civ1(j)+1));
-            else
-                Param.Civ1.Dt=1;
-            end
-            Param.Civ1.Time=((time(i2_civ1(ifile)+1,j2_civ1(j)+1)+time(i1_civ1(ifile)+1,j1_civ1(j)+1))/2);
-            if strcmp(Param.Program,'CivX')
-                Param.Civ1.term_a=num2stra(j1_civ1(j),nom_type_nc);%UTILITE?
-                Param.Civ1.term_b=num2stra(j2_civ1(j),nom_type_nc);%
-            end
-            Param.Civ1.ImageA=filecell.ima1.civ1{ifile,j};
-            Param.Civ1.ImageB=filecell.ima2.civ1{ifile,j};
-            Param.Civ1.ImageBitDepth=ImageInfoA_civ1.BitDepth;
-            Param.Civ1.ImageWidth=ImageInfoA_civ1.Width;
-            Param.Civ1.ImageHeight=ImageInfoA_civ1.Height;
-            if strcmp(NomTypeIma,'*')
-                Param.Civ1.FrameIndexA=i1_civ1(ifile);
-                Param.Civ1.FrameIndexB=i2_civ1(ifile);
-            else% case of movies indexed with i, the frame index is then in j
-                Param.Civ1.FrameIndexA=j1_civ1(j);
-                Param.Civ1.FrameIndexB=j2_civ1(j);
-            end
-            % read mask )parameters
-            if Param.Civ1.CheckMask % the lines below should be changed with the new gui
-                if ~exist(Param.Civ1.Mask,'file')
-                    maskbase=[filecell.filebase '_' Param.Civ1.Mask]; %
-                    nbslice_mask=str2double(Param.Civ1.Mask(1:end-4)); %
-                    i1_mask=mod(i1_civ1(ifile)-1,nbslice_mask)+1;
-                    [RootPathMask,RootFileMask]=fileparts(maskbase);
-                    Param.Civ1.Mask=fullfile_uvmat(RootPathMask,[],RootFileMask,'.png','_1',i1_mask);
-                end
-            end
-            % read grid parameters
-            if Param.Civ1.CheckGrid
-                if numel(Param.Civ1.Grid)>=4 && isequal(Param.Civ1.Grid(end-3:end),'grid')
-                    nbslice_grid=str2double(Param.Civ1.Grid(1:end-4)); %
-                    if ~isnan(nbslice_grid)
-                        i1_grid=mod(i1_civ1(ifile)-1,nbslice_grid)+1;
-                        Param.Civ1.Grid=[filecell.filebase '_' fullfile_uvmat('','',Param.Civ1.Grid,'.grid','_1',i1_grid)];
-                        if ~exist(Param.Civ1.GridName,'file')
-                            errormsg='grid file absent for civ1';
-                            return
-                        end
-                    elseif ~exist(Param.Civ1.Grid,'file')
-                        errormsg='grid file absent for civ1';
-                        return
-                    end
-                end
-            end
-            
-        end
-        
-        if Param.CheckCiv2==1
-            Param.Civ2.ImageA=filecell.ima1.civ2{ifile,j};
-            Param.Civ2.ImageB=filecell.ima2.civ2{ifile,j};          
-            if ~checkframe %&& size(time,1)>=i2_civ2(ifile) && size(time,2)>=j2_civ2(j)
-                Param.Civ2.Dt=time(i2_civ2(ifile)+1,j2_civ2(j)+1)-time(i1_civ2(ifile)+1,j1_civ2(j)+1);
-            else
-                Param.Civ2.Dt=1;
-            end
-            Param.Civ2.Time=(time(i2_civ2(ifile)+1,j2_civ2(j)+1)+time(i1_civ2(ifile)+1,j1_civ2(j)+1))/2;
-            if strcmp(Param.Program,'CivX')
-                Param.Civ2.term_a=num2stra(j1_civ2(j),nom_type_nc);
-                Param.Civ2.term_b=num2stra(j2_civ2(j),nom_type_nc);
-            end
-            Param.Civ2.filename_nc1=filecell.nc.civ1{ifile,j};
-            Param.Civ2.filename_nc1(end-2:end)=[]; % remove '.nc'
-            
-            % mask
-            if Param.Civ2.CheckMask
-                if ~exist(Param.Civ2.Mask,'file')
-                    maskbase=[filecell.filebase '_' Param.Civ2.Mask]; %
-                    nbslice_mask=str2double(Param.Civ2.Mask(1:end-4)); %
-                    i1_mask=mod(i1_civ2(ifile)-1,nbslice_mask)+1;
-                    [RootPathMask,RootFileMask]=fileparts(maskbase);
-                    Param.Civ2.Mask=fullfile_uvmat(RootPathMask,[],RootFileMask,'.png','_1',i1_mask);
-                    %                     Param.Civ2.Mask=name_generator(maskbase,i1_mask,1,'.png','_i');
-                end
-            end
-            %grid
-            if Param.Civ2.CheckGrid
-                if numel(Param.Civ2.Grid)>=4 && isequal(Param.Civ2.Grid(end-3:end),'grid')
-                    nbslice_grid=str2double(Param.Civ2.Grid(1:end-4)); %
-                    if ~isnan(nbslice_grid)
-                        i1_grid=mod(i1_civ2(ifile)-1,nbslice_grid)+1;
-                        Param.Civ2.Grid=[filecell.filebase '_' fullfile_uvmat('','',gridname,'.grid','_1',i1_grid)];
-                        %                         Param.Civ2.Grid=[filecell.filebase '_' name_generator(gridname,i1_grid,1,'.grid','_i')];
-                    end
-                end
-            end
-
-            Param.Civ2.ImageBitDepth=ImageInfoA_civ2.BitDepth;
-            Param.Civ2.ImageWidth=ImageInfoA_civ2.Width;
-            Param.Civ2.ImageHeight=ImageInfoA_civ2.Height;
-            if strcmp(NomTypeIma,'*')
-                Param.Civ2.FrameIndexA=i1_civ2(ifile);
-                Param.Civ2.FrameIndexB=i2_civ2(ifile);
-            else% case of movies indexed with i, the frame index is then in j
-                Param.Civ2.FrameIndexA=j1_civ2(j);
-                Param.Civ2.FrameIndexB=j2_civ2(j);
-            end
-        end
-       
-        % write the command and eventually the cmx, xml or nml files
-        cmd=write_cmd(Param);
-        write_param(Param);
-              
-        % create the command file name .m, .bat or .sh depending on the ok option
-        switch Param.Program
-            case {'civ_matlab'}
-                filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.m');           
-                [BatRoot,BatFile]=fileparts(filename_bat);
-                 BatFile=regexprep(BatFile,'-','__');%transform name to suppress'-' (not valid for .m files)
-                 filename_bat=[fullfile(BatRoot,BatFile) '.m'];
-            case {'CivX','CivAll','civ_matlab.sh'}
-                switch computer
-                    case {'PCWIN','PCWIN64'}
-                        filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.bat');
-                    case {'GLNX86','GLNXA64','MACI64'}
-                        filename_bat=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.sh');
-                end
-        end
-        
-        % print the command in the bat file
-        [fid,message]=fopen(filename_bat,'w');
-        if isequal(fid,-1)
-            errormsg=['creation of .bat file: ' message];
-            return
-        end
-        fprintf(fid,cmd);
-        fclose(fid);
-        
-        % special case for civ_matlab on cluster
-        if strcmp(Param.Program,'civ_matlab') && strcmp(Param.RunMode,'cluster')
-            filename_bat2=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_BAT$2$3.sh');
-            [fid,message]=fopen(filename_bat2,'w');
-            if isequal(fid,-1)
-                errormsg=['creation of .bat file: ' message];
-                return
-            end
-            fprintf(fid,['#!/bin/bash \n' ...
-                '/etc/sysprofile \n'...
-                'matlab -nodisplay -nosplash -nojvm <<END_MATLAB \n'...
-                'addpath(''' path_civ ''');\n']);
-%             for p=1:length(batch_file_list)
-                fprintf(fid,['run ' filename_bat '\n']);
-%             end
-            fprintf(fid, 'exit\nEND_MATLAB\n');
-            fclose(fid);
-            filename_bat=filename_bat2;
-        end
-        
-        switch computer
-            case {'GLNX86','GLNXA64','MACI64'}
-                system(['chmod +x ' filename_bat]);
-        end
-        batch_file_list{length(batch_file_list)+1}=filename_bat; 
-    end
-end
-
-%% start calculation
-%computation on cluster
-%if batch ==3
-switch Param.RunMode,
-    case 'cluster'
-        switch batch_mode
-            case 'sge' %at the moment only psmn ENS Lyon uses it
-                for p=1:length(batch_file_list)
-                    %cmd=['!qsub -p ' pvalue ' -q civ_input.q -e ' flname '.errors -o ' flname '.log' ' ' batch_file_list{p}];
-                    cmd=['!qsub -q piv1,piv2,piv3 '...
-                        '-e ' regexprep(batch_file_list{p},'.bat','.errors') ' -o ' regexprep(batch_file_list{p},'.bat','.log ')...
-                        ' -v ' 'LD_LIBRARY_PATH=/home/sjoubaud/matlab_sylvain/civx/lib ' batch_file_list{p}];
-                    display(cmd);eval(cmd);
-                end
-            case 'oar_old' % to remove
-                for p=1:length(batch_file_list)
-                    oar_command=['!oarsub -n CIVX -q nicejob '...
-                        '-E ' regexprep(batch_file_list{p},'.bat','.errors') ' -O ' regexprep(batch_file_list{p},'.bat','.log ')...
-                        '-l "/core=1+{type = ''smalljob''}/licence=1,walltime=00:60:00"   ' batch_file_list{p}];
-                    display(oar_command);eval(oar_command);
-                end
-            case 'oar'
-                max_walltime=3600*12; % 12h max
-                oar_modes={'oar-parexec','oar-dispatch','mpilauncher'};
-                text={'Batch processing on servcalcul3 LEGI';...
-                    'Please choose one of the followint modes';...
-                    '* oar-parexec : default and best choice';...
-                    '* oar-dispatch : jobs in a container of several cores';...
-                    '* mpilauncher : one single parallel mpi job using several cores';...
-                    '**********************************'...
-                    };
-                [S,v]=listdlg('PromptString',text,'ListString',oar_modes,...
-                    'SelectionMode','single','ListSize',[400 100],'Name','LEGI job mode');
-                switch oar_modes{S}
-                    case 'oar-parexec' %oar-dispatch.pl
-                        if strcmp(Param.Program,'civ_matlab')
-                            ncores=1;
-                            msgbox_uvmat('WARNING','Number of cores =1: select the compiled version civ_matlab.sh for multi-core processing');
-                        else
-                        answer=inputdlg({'Number of cores (max 36)','extra oar options'},'oarsub parameter',1,{'12',''});
-                        ncores=str2double(answer{1});
-                        end
-
-                        extra_oar=answer{2};
-                        walltime_onejob=600;%seconds
-                        filename_joblist=fullfile(RootBat,'job_list.txt');
-                        fid=fopen(filename_joblist,'w');
-                        for p=1:length(batch_file_list)
-                            fprintf(fid,[batch_file_list{p} '\n']);
-                        end
-                        fclose(fid);
-                        oar_command=['oarsub -n CIVX '...
-                            '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
-                            '-l /core=' num2str(ncores) ','...
-                            'walltime=' datestr(min(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,max_walltime/86400),13) ' '...
-                            '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
-                            '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
-                            extra_oar ' '...
-                            '"oar-parexec -s -f ' filename_joblist ' '...
-                            '-l ' filename_joblist '.log"\n'];
-                        filename_oarcommand=fullfile(RootBat,'oar_command');
-                        fid=fopen(filename_oarcommand,'w');
-                        fprintf(fid,oar_command);
-                        fclose(fid);
-                        fprintf(oar_command);% display in command line
-                        system(oar_command);
-%                         eval(['! . ' filename
-%                             _oarcommand])
-                    case 'oar-dispatch' %oar-dispatch.pl
-                        ncores=str2double(...
-                            inputdlg('Number of cores (max 36)','oarsub parameter',1,{'6'})...
-                            );
-                        walltime_onejob=600;%seconds
-                        filename_joblist=fullfile(RootBat,'job_list.txt');
-                        fid=fopen(filename_joblist,'w');
-                        for p=1:length(batch_file_list)
-                            oar_command=['oarsub -n CIVX '...
-                                '-E ' regexprep(batch_file_list{p},'\.bat\>','.stderr') ' -O ' regexprep(batch_file_list{p},'\.bat\>','.stdout ')...
-                                '-l "/core=1,walltime=' datestr(walltime_onejob/86400,13) '"   ' batch_file_list{p}];
-                            fprintf(fid,[oar_command '\n']);
-                        end
-                        fclose(fid);
-                        oar_command=['oarsub -t container -n civx-container '...
-                            '-l /core=' num2str(ncores)...
-                            ',walltime=' datestr(1.05*walltime_onejob/86400*max(length(batch_file_list),ncores)/ncores,13) ' '...
-                            '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
-                            '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
-                            '"oar-dispatch -f ' filename_joblist '"'];
-                        filename_oarcommand=fullfile(RootBat,'oar_command');
-                        fid=fopen(filename_oarcommand,'w');
-                        fprintf(fid,[oar_command '\n']);
-                        fclose(fid);
-                        display(oar_command);
-                        eval(['! . ' filename_oarcommand])
-                    case 'mpilauncher'
-                        filename_joblist=fullfile(RootBat,'job_list.txt');
-                        fid=fopen(filename_joblist,'w');
-                        
-                        for p=1:length(batch_file_list)
-                            fprintf(fid,[batch_file_list{p} '\n']);
-                        end
-                        fclose(fid)
-                        text_oarscript=[...
-                            '#!/bin/bash \n'...
-                            '#OAR -n Mylauncher \n'...
-                            '#OAR -l node=4/core=5,walltime=0:15:00 \n'...
-                            '#OAR -E ' fullfile(RootBat,'stderrfile.log') ' \n'...
-                            '#OAR -O ' fullfile(RootBat,'stdoutfile.log') ' \n'...
-                            '# ========================================================= \n'...
-                            '# This simple program launch a multinode parallel OpenMPI mpilauncher \n'...
-                            '# application for coriolis PIV post-processing. \n'...
-                            '# OAR uses oarshmost wrapper to propagate the user environement. \n'...
-                            '# This wrapper assert that the user has the same environment on all the \n'...
-                            '# allocated nodes (basic behavior needed by most MPI applications).  \n'...
-                            '# \n'...
-                            '# REQUIREMENT: \n'...
-                            '# the oarshmost wrapper should be installed in $HOME/bin directory. \n'...
-                            '# If a different location is used, change the line following the comment "Bidouille" \n'...
-                            '# ========================================================= \n'...
-                            '#   USER should only modify these 2 lines  \n'...
-                            'WORKDIR=' pwd ' \n'...
-                            'COMMANDE="mpilauncher  -f ' filename_joblist '" \n'...
-                            '# ========================================================= \n'...
-                            '# DO NOT MODIFY the FOLOWING LINES. (or be carefull) \n'...
-                            'echo "job starting on: "`hostname` \n'...
-                            'MPINODES="-host `tr [\\\\\\n] [,] <$OAR_NODEFILE |sed -e "s/,$/ /"`" \n'...
-                            'NCPUS=`cat $OAR_NODEFILE |wc -l` \n'...
-                            '#========== Bidouille ============== \n'...
-                            'export OMPI_MCA_plm_rsh_agent=oar-envsh \n'...%                     'cd $WORKDIR \n'...
-                            'CMD="mpirun -np $NCPUS -wdir $WORKDIR $MPINODES $COMMANDE" \n'...
-                            'echo "I run: $CMD"  \n'...
-                            '$CMD \n'...
-                            'echo "job ending" \n'...
-                            ];
-                        %                 oarsub -S ./oar.sub
-                        filename_oarscript=fullfile(RootBat,'oar_command');
-                        fid=fopen(filename_oarscript,'w');
-                        fprintf(fid,[text_oarscript]);
-                        fclose(fid);
-                        eval(['!chmod +x  ' filename_oarscript]);
-                        eval(['!oarsub -S ' filename_oarscript]);
-                end
-        end
-    case {'background','local'}
-        switch Param.Program
-            case {'civ_matlab'}
-                switch Param.RunMode
-                    case 'background'
-                        switch computer
-                            case {'PCWIN','PCWIN64'}
-                                filename_superbat=fullfile(RootBat,'job_list.bat');
-                                fid=fopen(filename_superbat,'w');
-                                if fid==-1
-                                    msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
-                                    return
-                                end
-                                 fprintf(fid,['matlab -automation '...
-                                     '-r "addpath(''' regexprep(path_civ,'\\','\\\\') ''');']);
-                                for p=1:length(batch_file_list)
-                                    fprintf(fid,['run ' regexprep(batch_file_list{p},'\\','\\\\') ';']);
-                                end
-                                 fprintf(fid, 'exit"');
-                                fclose(fid);
-                                dos([filename_superbat ' &']);
-                            case {'GLNX86','GLNXA64','MACI64'} 
-                                filename_superbat=fullfile(RootBat,'job_list.sh');
-                                fid=fopen(filename_superbat,'w');
-                                if fid==-1
-                                    msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
-                                    return
-                                end
-                                fprintf(fid,['#!/bin/bash \n' ...
-                                    '/etc/sysprofile \n'...
-                                    'matlab -nodisplay -nosplash -nojvm -logfile  <<END_MATLAB \n'...
-                                    'addpath(''' path_civ ''');\n']);
-                                for p=1:length(batch_file_list)
-                                    fprintf(fid,['run ' batch_file_list{p} '\n']);
-                                end
-                                fprintf(fid, 'exit\nEND_MATLAB\n');
-                                fclose(fid);
-                                system(['chmod +x ' filename_superbat]);
-                                system([filename_superbat ' &']);
-                        end
-                    case 'local'
-                        for p=1:length(batch_file_list)
-                            fid=fopen(batch_file_list{p});
-                            eval(fscanf(fid,'%s'));
-                            fclose(fid);
-                        end
-                end
-            case {'CivX','CivAll','civ_matlab.sh'}
-                    switch computer
-                        case {'PCWIN','PCWIN64'}
-                            filename_superbat=fullfile(RootBat,'job_list.bat');
-                            fid=fopen(filename_superbat,'w');
-                            if fid==-1
-                                msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
-                                return
-                            end
-                            for p=1:length(batch_file_list)
-                                fprintf(fid,['@call "' regexprep(batch_file_list{p},'\\','\\\\') '"' '\n']);
-                            end
-                            fclose(fid);
-                            system(['chmod +x ' filename_superbat]);
-                        case {'GLNX86','GLNXA64','MACI64'}
-                            filename_superbat=fullfile(RootBat,'job_list.bat');
-                            fid=fopen(filename_superbat,'w');
-                            if fid==-1
-                                msgbox_uvmat('ERROR',['cannot create the command file ' filename_superbat])
-                                return
-                            end
-                            for p=1:length(batch_file_list)
-                                fprintf(fid,['sh ' batch_file_list{p} '\n']);
-                            end
-                            fclose(fid);
-                            system(['chmod +x ' filename_superbat]);
-                    end
-                switch Param.RunMode
-                    case 'background'
-                        system([filename_superbat ' &']);% execute main commmand see what it does in dos ?
-                    case 'local'
-                        system(filename_superbat);
-                end
-        end
-end
-
-
-%% save interface state
-if isfield(filecell,'nc')
-    if isfield(filecell.nc,'civ2')
-        fileresu=filecell.nc.civ2{1,1};
-    else
-        fileresu=filecell.nc.civ1{1,1};
-    end
-end
-[RootPath,SubDir,RootFile]=fileparts_uvmat(fileresu);
-namedoc=fullfile(RootPath,SubDir,RootFile);
-detect=1;
-while detect==1
-    namefigfull=[namedoc '.fig'];
-    hh=dir(namefigfull);
-    if ~isempty(hh)
-        detect=1;
-        namedoc=[namedoc '.0'];
-    else
-        detect=0;
-    end
-end
-Param=rmfield(Param,'status');
-Param=rmfield(Param,'xml');
-t=struct2xml(Param);
-t=set(t,1,'name','Civ');% set the head label
-save(t,[namedoc '.civ.xml']); %save GUI  parameters as xml file
-% saveas(gcbf,namefigfull);%save the interface with name namefigfull (A CHANGER EN FICHIER  .xml)
-
-%Save info in personal profile (initiate browser next time) TODO
-MenuFile={};
-dir_perso=prefdir;
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-if exist(profil_perso,'file')
-    hh=load (profil_perso);
-      if isfield(hh,'MenuFile')
-          MenuFile=hh.MenuFile;
-      end
-      if isfield(filecell.nc,'civ2')
-          MenuFile=[filecell.nc.civ2{1,1}; MenuFile];
-      else
-           MenuFile=[filecell.nc.civ1{1,1}; MenuFile];
-      end
-      save (profil_perso,'MenuFile','-append'); %store the file names for future opening of uvmat
-else
-    MenuFile=filecell.ima1.civ1(1,1);
-    save (profil_perso,'MenuFile')
-end
-
-%------------------------------------------------------------------------
-% --- determine the list of reference indices of processing file
-function [ref_i,ref_j,errormsg]=find_ref_indices(handles)
-%------------------------------------------------------------------------
-errormsg=''; %default error message
-first_i=str2double(get(handles.first_i,'String'));%first index i
-last_i=str2double(get(handles.last_i,'String'));%last index i
-incr_i=str2double(get(handles.incr_i,'String'));% increment
-if isequal(get(handles.first_j,'Visible'),'on')
-    first_j=str2double(get(handles.first_j,'String'));%first index j
-    last_j=str2double(get(handles.last_j,'String'));%last index j
-    incr_j=str2double(get(handles.incr_j,'String'));% increment
-else
-    first_j=1;
-    last_j=1;
-    incr_j=1;
-end
-ref_i=first_i:incr_i:last_i;% list of i indices (reference values for each pair)
-ref_j=first_j:incr_j:last_j;% list of j indices (reference values for each pair)
-if isnan(first_i)||isnan(first_j)
-    errormsg='first field number not defined';
-elseif isnan(last_i)||isnan(last_j)
-    errormsg='last field number not defined';
-elseif isnan(incr_i)||isnan(incr_j)
-    errormsg='increment in field number not defined';
-elseif last_i < first_i || last_j < first_j 
-    errormsg='last field number must be larger than the first one';
-end
+% %------------------------------------------------------------------------
+% % --- determine the list of reference indices of processing file
+% function [ref_i,ref_j,errormsg]=find_ref_indices(handles)
+% %------------------------------------------------------------------------
+% errormsg=''; %default error message
+% first_i=str2double(get(handles.first_i,'String'));%first index i
+% last_i=str2double(get(handles.last_i,'String'));%last index i
+% incr_i=str2double(get(handles.incr_i,'String'));% increment
+% if isequal(get(handles.first_j,'Visible'),'on')
+%     first_j=str2double(get(handles.first_j,'String'));%first index j
+%     last_j=str2double(get(handles.last_j,'String'));%last index j
+%     incr_j=str2double(get(handles.incr_j,'String'));% increment
+% else
+%     first_j=1;
+%     last_j=1;
+%     incr_j=1;
+% end
+% ref_i=first_i:incr_i:last_i;% list of i indices (reference values for each pair)
+% ref_j=first_j:incr_j:last_j;% list of j indices (reference values for each pair)
+% if isnan(first_i)||isnan(first_j)
+%     errormsg='first field number not defined';
+% elseif isnan(last_i)||isnan(last_j)
+%     errormsg='last field number not defined';
+% elseif isnan(incr_i)||isnan(incr_j)
+%     errormsg='increment in field number not defined';
+% elseif last_i < first_i || last_j < first_j 
+%     errormsg='last field number must be larger than the first one';
+% end
 
 %------------------------------------------------------------------------
 % --- determine the list of filenames and indices needed for launch_job
@@ -3820,7 +3763,7 @@ if get(handles.TestCiv1,'Value')
     hhview_field=guihandles(hview_field);
     set(hview_field,'CurrentAxes',hhview_field.PlotAxes)
     ViewData=get(hview_field,'UserData');
-    ViewData.CivHandle=handles.civ_series;% indicate the handle of the civ GUI in view_field
+    ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
     ViewData.PlotAxes.B=imread(filecell.ima2.civ1{1});%store the second image in the UserData of the GUI view_field
     ViewData.PlotAxes.X=Grid.Civ1_X; %keep the set of points in memeory
     ViewData.PlotAxes.Y=Grid.Civ1_Y;
@@ -4008,600 +3951,3 @@ end
 
 % --- Executes on button press in TestCiv2.
 function TestCiv2_Callback(hObject, eventdata, handles)
-
-function RootFile_Callback(hObject, eventdata, handles)
-
-function SubDirImages_Callback(hObject, eventdata, handles)
-
-
-
-function errormsg=write_param(Param)
-%------------------------------------------------------------------------
-%pixels per cm and matrix of the image times, read from the .civ_input file by uvmat
-%changes : filename_cmx -> filename ( no extension )
-errormsg='';
-switch Param.Program
-    case 'CivX'
-        if Param.CheckCiv1
-            filename=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_CMX$2$3.civ1.cmx');
-            if isequal(Param.Civ1.Dt,0)
-                Param.Civ1.Dt=1 ;%case of 'displacement' mode
-            end
-            Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'.png','');
-            Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'.png','');
-            [fid,errormsg]=fopen(filename,'w');
-            if isequal(fid,-1)
-                errormsg=['cmd file ' filename ' cannot be created: ' errormsg];
-                return
-            end
-            fprintf(fid,['##############   CMX file' '\n' ]);
-            fprintf(fid,   ['FirstImage ' regexprep(Param.Civ1.ImageA,'\\','\\\\') '\n' ]);% for windows compatibility
-            fprintf(fid,   ['LastImage  ' regexprep(Param.Civ1.ImageB,'\\','\\\\') '\n' ]);% for windows compatibility
-            fprintf(fid,  ['XX' '\n' ]);
-            if isfield(Param.Civ1,'Mask')
-                fprintf(fid,  ['Mask ' 'y' '\n' ]);
-                fprintf(fid,  ['MaskName ' regexprep(Param.Civ1.Mask,'\\','\\\\') '\n' ]);
-            else
-                fprintf(fid,  ['Mask ' 'n' '\n' ]);
-                fprintf(fid,  ['MaskName ' 'noFile use default' '\n' ]);
-            end
-            fprintf(fid,   ['ImageSize ' num2str(Param.Civ1.ImageWidth) ' ' num2str(Param.Civ1.ImageHeight) '\n' ]);   %VERIFIER CAS GENERAL ?
-            fprintf(fid,   ['CorrelationBoxesSize ' num2str(Param.Civ1.CorrBoxSize(1)) ' ' num2str(Param.Civ1.CorrBoxSize(2)) '\n' ]);
-            fprintf(fid,   ['SearchBoxeSize ' num2str(Param.Civ1.SearchBoxSize(1)) ' ' num2str(Param.Civ1.SearchBoxSize(2)) '\n' ]);
-            fprintf(fid,   ['RO ' num2str(Param.Civ1.CorrSmooth) '\n' ]);
-            if isfield(Param.Civ1,'Grid')
-                fprintf(fid,   ['GridSpacing ' '25' ' ' '25' '\n' ]);
-            else
-                fprintf(fid,   ['GridSpacing ' num2str(Param.Civ1.Dx) ' ' num2str(Param.Civ1.Dy) '\n' ]);
-            end
-            fprintf(fid,   ['XX 1.0' '\n' ]);
-            fprintf(fid,   ['Dt_TO ' num2str(Param.Civ1.Dt) ' ' num2str(Param.Civ1.Time) '\n' ]);
-            fprintf(fid,  ['PixCmXY ' '1' ' ' '1' '\n' ]);
-            fprintf(fid,  ['XX 1' '\n' ]);
-            fprintf(fid,   ['ShiftXY ' num2str(Param.Civ1.SearchBoxShift(1)) ' '  num2str(Param.Civ1.SearchBoxShift(2)) '\n' ]);
-            if isfield(Param.Civ1,'Grid')
-                fprintf(fid,  ['Grid ' 'y' '\n' ]);
-                fprintf(fid,   ['GridName ' regexprep(Param.Civ1.Grid,'\\','\\\\') '\n' ]);
-            else
-                fprintf(fid,  ['Grid ' 'n' '\n' ]);
-                fprintf(fid,   ['GridName ' 'noFile use default' '\n' ]);
-            end
-            fprintf(fid,   ['XX 85' '\n' ]);
-            fprintf(fid,   ['XX 1.0' '\n' ]);
-            fprintf(fid,   ['XX 1.0' '\n' ]);
-            fprintf(fid,   ['Hart 1' '\n' ]);
-            fprintf(fid,  [ 'DecimalShift 0' '\n' ]);
-            fprintf(fid,   ['Deformation 0' '\n' ]);
-            fprintf(fid,  ['CorrelationMin 0' '\n' ]);
-            fprintf(fid,   ['IntensityMin 0' '\n' ]);
-            if ~isfield(Param.Civ1,'MinIma')% Image threshold not activated
-                fprintf(fid,  ['SeuilImage n' '\n' ]);
-                fprintf(fid,   ['SeuilImageValues 0 4096' '\n' ]);%not used in principle
-            else% Image threshold  activated
-                if isempty(Param.Civ1.MaxIma)||isnan(Param.Civ1.MaxIma)
-                    Param.Civ1.MaxIma=2^Param.Civ1.ImageBitDepth;%take the max image value as upper bound by default
-                end
-                fprintf(fid,  ['SeuilImage y' '\n' ]);
-                fprintf(fid,   ['SeuilImageValues ' num2str(Param.Civ1.MinIma) ' ' num2str(Param.Civ1.MaxIma) '\n' ]);
-            end
-            fprintf(fid,   ['ImageToUse ' Param.Civ1.term_a ' ' Param.Civ1.term_b '\n' ]); % VERIFIER ?
-            fprintf(fid,   ['ImageUsedBefore null null' '\n' ]);
-            fclose(fid);
-        end
-        
-        if Param.CheckCiv2
-            filename=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_CMX$2$3.civ2.cmx');
-
-            if isequal(Param.Civ2.Dt,'0')
-                Param.Civ2.Dt='1' ;%case of 'displacement' mode
-            end
-            Param.Civ2.ImageA=regexprep(Param.Civ2.ImageA,'.png','');
-            Param.Civ2.ImageB=regexprep(Param.Civ2.ImageB,'.png','');% bug : .png appears two times ?
-            [fid,errormsg]=fopen(filename,'w');
-            if isequal(fid,-1)
-                return
-            end
-            fprintf(fid,['##############   CMX file' '\n' ]);
-            fprintf(fid,   ['FirstImage ' regexprep(Param.Civ2.ImageA,'\\','\\\\') '\n' ]);% for windows compatibility
-            fprintf(fid,   ['LastImage  ' regexprep(Param.Civ2.ImageB,'\\','\\\\') '\n' ]);% for windows compatibility
-            fprintf(fid,  ['XX' '\n' ]);
-            if isfield(Param.Civ2,'Mask')
-                fprintf(fid,  ['Mask ' 'y' '\n' ]);
-                fprintf(fid,  ['MaskName ' regexprep(Param.Civ2.Mask,'\\','\\\\') '\n' ]);
-            else
-                fprintf(fid,  ['Mask ' 'n' '\n' ]);
-                fprintf(fid,  ['MaskName ' 'noFile use default' '\n' ]);
-            end
-            % fprintf(fid, ['Mask ' Param.Civ2.MaskFlag '\n' ]);
-            % fprintf(fid, ['MaskName ' regexprep(Param.Civ2.MaskName,'\\','\\\\') '\n' ]);% for windows compatibility
-            fprintf(fid,   ['ImageSize ' num2str(Param.Civ2.ImageWidth) ' ' num2str(Param.Civ2.ImageHeight) '\n' ]);
-            % fprintf(fid, ['ImageSize ' num2str(Param.Civ2.npx) ' ' num2str(Param.Civ2.npy) '\n' ]);   %VERIFIER CAS GENERAL ?
-            fprintf(fid, ['CorrelationBoxesSize ' num2str(Param.Civ2.CorrBoxSize(1)) ' ' num2str(Param.Civ2.CorrBoxSize(2)) '\n' ]);
-            fprintf(fid, ['SearchBoxeSize ' num2str(Param.Civ2.CorrBoxSize(1)) ' ' num2str(Param.Civ2.CorrBoxSize(2)) '\n']);
-            fprintf(fid, ['RO ' num2str(Param.Civ2.CorrSmooth) '\n']);
-            if isfield(Param.Civ2,'Grid')
-                fprintf(fid,   ['GridSpacing ' '25' ' ' '25' '\n' ]);
-            else
-                fprintf(fid,   ['GridSpacing ' num2str(Param.Civ2.Dx) ' ' num2str(Param.Civ2.Dy) '\n' ]);
-            end
-            % fprintf(fid, ['GridSpacing ' num2str(Param.Civ2.Dx) ' ' num2str(Param.Civ2.Dy) '\n']);
-            fprintf(fid, ['XX 1.0' '\n' ]);
-            fprintf(fid, ['Dt_TO ' num2str(Param.Civ2.Dt) ' ' num2str(Param.Civ2.Time) '\n' ]);
-            fprintf(fid, ['PixCmXY ' '1' ' ' '1' '\n' ]);
-            fprintf(fid, ['XX 1' '\n' ]);
-            fprintf(fid, 'ShiftXY 0 0\n');
-            if isfield(Param.Civ2,'Grid')
-                fprintf(fid,  ['Grid ' 'y' '\n' ]);
-                fprintf(fid,   ['GridName ' regexprep(Param.Civ2.Grid,'\\','\\\\') '\n' ]);
-            else
-                fprintf(fid,  ['Grid ' 'n' '\n' ]);
-                fprintf(fid,   ['GridName ' 'noFile use default' '\n' ]);
-            end
-            % fprintf(fid, ['Grid ' Param.Civ2.GridFlag '\n' ]);
-            % fprintf(fid, ['GridName ' regexprep(Param.Civ2.GridName,'\\','\\\\') '\n']);
-            fprintf(fid, ['XX 85' '\n' ]);
-            fprintf(fid, ['XX 1.0' '\n' ]);
-            fprintf(fid, ['XX 1.0' '\n' ]);
-            fprintf(fid, ['Hart 1' '\n' ]);
-            fprintf(fid, ['DecimalShift ' num2str(Param.Civ2.CheckDecimal) '\n']);
-            fprintf(fid, ['Deformation ' num2str(Param.Civ2.CheckDeformation) '\n']);
-            fprintf(fid,  ['CorrelationMin 0' '\n' ]);
-            fprintf(fid,   ['IntensityMin 0' '\n' ]);
-            
-            if ~isfield(Param.Civ2,'MinIma')% Image threshold not activated
-                fprintf(fid,  ['SeuilImage n' '\n' ]);
-                fprintf(fid,   ['SeuilImageValues 0 4096' '\n' ]);%not used in principle
-            else% Image threshold  activated
-                if isempty(Param.Civ2.MaxIma)||isnan(Param.Civ2.MaxIma)
-                    Param.Civ2.MaxIma=2^Param.Civ2.ImageBitDepth;%take the max image value as upper bound by default
-                end
-                fprintf(fid,  ['SeuilImage y' '\n' ]);
-                fprintf(fid,   ['SeuilImageValues ' num2str(Param.Civ2.MinIma) ' ' num2str(Param.Civ2.MaxIma) '\n' ]);
-            end
-            fprintf(fid,   ['ImageToUse ' Param.Civ2.term_a ' ' Param.Civ2.term_b '\n' ]); % VERIFIER ?
-            fprintf(fid, ['ImageUsedBefore ' regexprep(Param.Civ2.filename_nc1,'\\','\\\\') '\n']);
-            fclose(fid);
-        end
-    case {'civ_matlab','civ_matlab.sh'}
-        filename=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml');
-        fileattrib(fileparts(filename),'+w +x','o g');% set writting access
-        save(struct2xml(Param),filename);
-end
-
-
-function cmd=write_cmd(Param)
-
-% initiate system command
-cmd=[];
-
-switch Param.Program
-    case 'CivX'
-        if isunix % check: necessaire aussi en RUN?
-            cmd=[cmd '#!/bin/bash \n'...
-                '#$ -cwd \n'...
-                'hostname && date \n'...
-                'umask 002 \n'];%allow writting access to created files for user group
-        end
-    case 'CivAll'
-        if isunix % check: necessaire aussi en RUN?
-            cmd=[cmd '#!/bin/bash \n'...
-                '#$ -cwd \n'...
-                'hostname && date \n'...
-                'umask 002 \n'];%allow writting access to created files for user group
-        end
-end
-
-filename=regexprep(Param.OutputFile,'.nc','');
-
-if Param.CheckCiv1
-    switch Param.Program
-        case 'CivX'
-            if(isunix) %unix (or Mac) system
-                cmd=[cmd 'cp -f ' regexprep(filename,'(.+)/(.+$)','$1/0_CMX/$2.civ1.cmx ') regexprep(filename,'(.+)/(.+$)','$1/$2.cmx \n')...% the cmx file gives the name to the nc file
-                    Param.xml.Civ1Bin ' -f ' regexprep(filename,'(.+)/(.+$)','$1/$2.cmx >') regexprep(filename,'(.+)/(.+$)','$1/0_LOG/$2.civ1.log \n')... % redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
-                    'rm ' regexprep(filename,'(.+)/(.+$)','$1/$2.cmx \n')];
-            else %Windows system
-                filename=regexprep(filename,'\\','\\\\');
-                cmd=['copy /Y ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_CMX\\\\$2.civ1.cmx" ') regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')...
-                    '"' regexprep(Param.xml.Civ1Bin,'\\','\\\\') '" -f ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" > ')...
-                    regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_LOG\\\\$2.civ1.log" \n')... % redirect standard output to the log file
-                    'del ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')];
-            end
-        case 'CivAll'
-            CivAllCmd=[CivAllCmd ' civ1 '];
-            str=CIV1_CMD_Unified(filecell.nc.civ1{ifile,j},'',Param.Civ1);
-            fieldnames=fields(str);
-            [CivAllxml,uid_civ1]=add(CivAllxml,1,'element','civ1');
-            for ilist=1:length(fieldnames)
-                val=eval(['str.' fieldnames{ilist}]);
-                if ischar(val)
-                    [CivAllxml,uid_t]=add(CivAllxml,uid_civ1,'element',fieldnames{ilist});
-                    [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
-                end
-            end
-    end
-end
-
-if Param.CheckFix1
-    switch Param.Program
-        case 'CivX'
-            cmd=[cmd...
-                cmd_fix(Param,'Fix1') '\n'];
-        case 'CivAll'%to abandon
-            fix1.inputFileName=filecell.nc.civ1{ifile,j} ;
-            fix1.fi1=num2str(param.fix1.flagindex1(1));
-            fix1.fi2=num2str(param.fix1.flagindex1(2));
-            fix1.fi3=num2str(param.fix1.flagindex1(3));
-            fix1.threshC=num2str(param.fix1.thresh_vecC1);
-            fix1.threshV=num2str(param.fix1.thresh_vel1);
-            fieldnames=fields(fix1);
-            [CivAllxml,uid_fix1]=add(CivAllxml,1,'element','fix1');
-            for ilist=1:length(fieldnames)
-                val=eval(['fix1.' fieldnames{ilist}]);
-                if ischar(val)
-                    [CivAllxml,uid_t]=add(CivAllxml,uid_fix1,'element',fieldnames{ilist});
-                    [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
-                end
-            end
-            CivAllCmd=[CivAllCmd ' fix1 '];
-    end
-end
-
-
-%CheckPatch1
-if Param.CheckPatch1
-    switch Param.Program
-        case 'CivX'
-            cmd=[cmd...
-                cmd_patch(Param,'Patch1') '\n'];
-        case 'CivAll'
-            patch1.inputFileName=filecell.nc.civ1{ifile,j} ;
-            patch1.nopt=subdomain_patch1;
-            patch1.maxdiff=thresh_patch1;
-            patch1.ro=rho_patch1;
-            test_grid=get(handles.get_gridpatch1,'Value');
-            if test_grid
-                patch1.gridflag='y';
-                gridname=get(handles.grid_patch1,'String');
-                if isequal(gridname(end-3:end),'grid')
-                    nbslice_grid=str2double(gridname(1:end-4)); %
-                    if ~isnan(nbslice_grid)
-                        i1_grid=mod(i1_civ1(ifile)-1,nbslice_grid)+1;
-                        patch1.gridPatch=[filecell.filebase '_' fullfile_uvmat('','',gridname,'.grid','_1',i1_grid)];
-                        %                                 patch1.gridPatch=[filecell.filebase '_' name_generator(gridname,i1_grid,1,'.grid','_i')];
-                        if ~exist(patch1.gridPatch,'file')
-                            errormsg='grid file absent for patch1';
-                            return
-                        end
-                    elseif exist(gridname,'file')
-                        patch1.gridPatch=gridname;
-                    else
-                        errormsg='grid file absent for patch1';
-                        return
-                    end
-                end
-            else
-                patch1.gridPatch='none';
-                patch1.gridflag='n';
-                patch1.m=nx_patch1;
-                patch1.n=ny_patch1;
-            end
-            patch1.convectFlow='n';
-            fieldnames=fields(patch1);
-            [CivAllxml,uid_patch1]=add(CivAllxml,1,'element','patch1');
-            for ilist=1:length(fieldnames)
-                val=eval(['patch1.' fieldnames{ilist}]);
-                if ischar(val)
-                    [CivAllxml,uid_t]=add(CivAllxml,uid_patch1,'element',fieldnames{ilist});
-                    [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
-                end
-            end
-            CivAllCmd=[CivAllCmd ' patch1 '];
-    end
-end
-
-if Param.CheckCiv2
-    switch Param.Program
-        case 'CivX'
-            if(isunix)
-                cmd=[cmd 'cp -f '  regexprep(filename,'(.+)/(.+$)','$1/0_CMX/$2.civ2.cmx ') regexprep(filename,'(.+)/(.+$)','$1/$2.cmx \n')...
-                    Param.xml.Civ2Bin ' -f ' regexprep(filename,'(.+)/(.+$)','$1/$2.cmx >') regexprep(filename,'(.+)/(.+$)','$1/0_LOG/$2.civ2.log \n')...% redirect standard output to the log file, the result file is named [filename '.nc'] by CIVx
-                    'rm ' regexprep(filename,'(.+)/(.+$)','$1/$2.cmx \n')];%rename .cmx as .checkciv2.cmx, the result file is named [filename '.nc'] by CIVx
-            else
-                filename=regexprep(Param.OutputFile,'.nc','');
-                filename=regexprep(filename,'\\','\\\\');
-                cmd=[cmd 'copy /Y ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_CMX\\\\$2.civ2.cmx" ') regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')...
-                    '"' regexprep(Param.xml.Civ2Bin,'\\','\\\\') '" -f ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" > ')...
-                     regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\0_LOG\\\\$2.civ2.log" \n')... % redirect standard output to the log file
-                    'del ' regexprep(filename,'(.+)\\\\(.+$)','"$1\\\\$2.cmx" \n')];                       
-            end
-                 
-        case 'CivAll'
-            CivAllCmd=[CivAllCmd ' civ2 '];
-            str=CIV2_CMD_Unified(filecell.nc.civ2{ifile,j},'',Param.Civ2);
-            fieldnames=fields(str);
-            [CivAllxml,uid_civ2]=add(CivAllxml,1,'element','civ2');
-            for ilist=1:length(fieldnames)
-                val=eval(['str.' fieldnames{ilist}]);
-                if ischar(val)
-                    [CivAllxml,uid_t]=add(CivAllxml,uid_civ2,'element',fieldnames{ilist});
-                    [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
-                end
-            end
-    end
-end
-
-% CheckFix2
-if Param.CheckFix2==1
-    switch Param.Program
-        case 'CivX'
-            cmd=[cmd...
-                cmd_fix(Param,'Fix2') '\n'];
-        case 'CivAll'
-            fix2.inputFileName=filecell.nc.civ2{ifile,j} ;
-            fix2.fi1=num2str(flagindex2(1));
-            fix2.fi2=num2str(flagindex2(2));
-            fix2.fi3=num2str(flagindex2(3));
-            fix2.threshC=num2str(thresh_vec2C);
-            fix2.threshV=num2str(thresh_vel2);
-            fieldnames=fields(fix2);
-            [CivAllxml,uid_fix2]=add(CivAllxml,1,'element','fix2');
-            for ilist=1:length(fieldnames)
-                val=eval(['fix2.' fieldnames{ilist}]);
-                if ischar(val)
-                    [CivAllxml,uid_t]=add(CivAllxml,uid_fix2,'element',fieldnames{ilist});
-                    [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
-                end
-            end
-            CivAllCmd=[CivAllCmd ' fix2 '];
-    end
-end
-
-%CheckPatch2
-if Param.CheckPatch2==1
-    
-    switch Param.Program
-        
-        case 'CivX'
-            cmd=[cmd...
-                cmd_patch(Param,'Patch2') '\n'];
-        case 'CivAll'
-            patch2.inputFileName=filecell.nc.civ1{ifile,j} ;
-            patch2.nopt=subdomain_patch2;
-            patch2.maxdiff=thresh_patch2;
-            patch2.ro=rho_patch2;
-            test_grid=get(handles.get_gridpatch2,'Value');
-            if test_grid
-                patch2.gridflag='y';
-                gridname=get(handles.grid_patch2,'String');
-                if isequal(gridname(end-3:end),'grid')
-                    nbslice_grid=str2double(gridname(1:end-4)); %
-                    if ~isnan(nbslice_grid)
-                        i1_grid=mod(i1_civ2(ifile)-1,nbslice_grid)+1;
-                        patch2.gridPatch=[filecell.filebase '_' fullfile_uvmat('','',gridname,'.grid','_1',i1_grid)];
-                        %                                 patch2.gridPatch=[filecell.filebase '_' name_generator(gridname,i1_grid,1,'.grid','_i')];
-                        if ~exist(patch2.gridPatch,'file')
-                            errormsg='grid file absent for patch2';
-                            return
-                        end
-                    elseif exist(gridname,'file')
-                        patch2.gridPatch=gridname;
-                    else
-                        errormsg='grid file absent for patch2';
-                        return
-                    end
-                end
-            else
-                patch2.gridPatch='none';
-                patch2.gridflag='n';
-                patch2.m=nx_patch2;
-                patch2.n=ny_patch2;
-            end
-            patch2.convectFlow='n';
-            fieldnames=fields(patch2);
-            [CivAllxml,uid_patch2]=add(CivAllxml,1,'element','patch2');
-            for ilist=1:length(fieldnames)
-                val=eval(['patch2.' fieldnames{ilist}]);
-                if ischar(val)
-                    [CivAllxml,uid_t]=add(CivAllxml,uid_patch2,'element',fieldnames{ilist});
-                    [CivAllxml,uid_t2]=add(CivAllxml,uid_t,'chardata',val);
-                end
-            end
-            CivAllCmd=[CivAllCmd ' patch2 '];
-    end
-end
-
-switch Param.Program
-    case 'CivAll'
-        save(CivAllxml,[Param.OutputFile '.xml']);
-        cmd=[cmd sparam.CivBin ' -f ' Param.OutputFile '.xml '  CivAllCmd ' >' Param.OutputFile '.log' '\n'];
-    case 'civ_matlab'
-                    switch computer
-                        case {'PCWIN','PCWIN64'}                     
-                            filename=regexprep(filename,'\\','\\\\');% add '\' so that '\' are left as characters
-                                    cmd=['civ_matlab(''' regexprep(filename,'(.+)([/\\])(.+$)','$1$20_XML\\$2$3.xml') ''','''...
-            filename '.nc'');'];
-                        case {'GLNX86','GLNXA64','MACI64'}
-                                    cmd=['civ_matlab(''' regexprep(filename,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml') ''','''...
-            filename '.nc'');'];
-                    end
-
-        
-    case 'civ_matlab.sh'
-        CivmBin=fullfile(fileparts(which('civ')),'civ_matlab.sh'); %path to the source directory of uvmat
-        switch computer
-            case {'PCWIN','PCWIN64'}
-                filename=regexprep(filename,'\\','\\\\');% add '\' so that '\' are left as characters
-                % TODO launch command in DOS
-            case {'GLNX86','GLNXA64','MACI64'}
-                cmd=['#!/bin/bash \n '...
-                    '#$ -cwd \n '...
-                    'hostname && date \n '...
-                    'umask 002 \n'...
-                    CivmBin ' ' Param.xml.RunTime ' ' regexprep(filename,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml') ' ' Param.OutputFile '.nc'];%allow writting access to created files for user group
-        end
-end    
-    
-
-function cmd=cmd_fix(Param,fixname)
-%%
-switch fixname
-    case 'Fix1'
-        fi2_value=num2str(Param.(fixname).CheckF2);
-        filename=regexprep(Param.OutputFile,'.nc','');
-    case 'Fix2'
-        fi2_value=num2str(Param.(fixname).CheckF4);%need to understand why...
-        filename=regexprep(Param.OutputFile,'.nc','');        
-end
-
-% filename=regexprep(Param.(fixname).OutFileName,'.nc','');
-MaskName_string='';%default
-MaxVel_string='';%default
-if ~isempty(Param.(fixname).MinVel)
-    MaxVel_string=[' -threshV ' num2str(Param.(fixname).MinVel)];
-end
-if isunix
-    cmd=[Param.xml.FixBin ' -f ' filename '.nc -fi1 ' num2str(Param.(fixname).CheckFmin2) ...
-        ' -fi2 ' fi2_value ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
-        ' -threshC ' num2str(Param.(fixname).MinCorr) MaxVel_string MaskName_string...
-        ' >' regexprep(filename,'(.+)/(.+$)','$1/0_LOG/$2.')  lower(fixname) '.log 2>&1'];
-else
-    cmd=['"' Param.xml.FixBin '" -f "' filename '.nc" -fi1 ' num2str(Param.(fixname).CheckFmin2)...
-        ' -fi2 ' fi2_value ' -fi3 ' num2str(Param.(fixname).CheckF3) ...
-        ' -threshC ' num2str(Param.(fixname).MinCorr) MaxVel_string MaskName_string...
-        ' > "' regexprep(filename,'(\w+)\\(\w+$)','$1\\0_LOG\\$2.') lower(fixname) '.log"'];
-    cmd=regexprep(cmd,'\\','\\\\');
-end
-
-
-function cmd=cmd_patch(Param,patchname)
-%% ------------------------------------------------------------------------
-switch patchname
-    case 'Patch1'
-        filename=regexprep(Param.OutputFile,'.nc','');
-    case 'Patch2'
-        filename=regexprep(Param.OutputFile,'.nc','');        
-end
-% filename=regexprep(Param.(patchname).OutFileName,'.nc','');
-if isunix
-    cmd=[Param.xml.PatchBin...
-        ' -f ' filename '.nc -m ' num2str(Param.(patchname).Nx)...
-        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).FieldSmooth)...
-        ' -nopt ' num2str(Param.(patchname).SubDomainSize) ...
-        '  > ' regexprep(filename,'(.+)/(.+$)','$1/0_LOG/$2.')  lower(patchname) '.log 2>&1']; % redirect standard output to the log file
-else
-    cmd=['"' Param.xml.PatchBin...
-        '" -f "' filename '.nc" -m ' num2str(Param.(patchname).Nx)...
-        ' -n ' num2str(Param.(patchname).Ny) ' -ro ' num2str(Param.(patchname).FieldSmooth)...
-        ' -nopt ' num2str(Param.(patchname).SubDomainSize)...
-        '  > "' filename '.' lower(patchname) '.log" 2>&1']; % redirect standard output to the log file
-    cmd=regexprep(cmd,'\\','\\\\');
-end
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% USELESS FUNCTIONS BELOW HERE,  TO CLEAN
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%------------------------------------------------------------------------
-% --- CheckCiv1  Unified: TO ABADON
-function xml_civ1_parameters=CIV1_CMD_Unified(filename,namelog,par)
-%------------------------------------------------------------------------
-%pixels per cm and matrix of the image times, read from the .civ_input file by uvmat
-%global CivBin%name of the executable for checkciv1 calculation
-
-civ1.image1=par.ImageA;
-civ1.image2=par.ImageB;
-civ1.imageSize_X=par.npx;
-civ1.imageSize_Y=par.npy;
-civ1.outputFileName=[filename '.nc'];
-civ1.correlationBoxesSize_X=par.ibx;
-civ1.correlationBoxesSize_Y=par.iby;
-civ1.searchBoxesSize_X=par.isx;
-civ1.searchBoxesSize_Y=par.isy;
-civ1.globalShift_X=par.shiftx;
-civ1.globalShift_Y=par.shifty;
-civ1.ro=par.rho;
-civ1.hart='y';
-if isequal(par.gridflag,'y')
-    civ1.grid=par.gridname;
-else
-    civ1.grid='n';
-    civ1.gridSpacing_X=par.dx;
-    civ1.gridSpacing_Y=par.dy;
-end
-if isequal(par.maskflag,'y')
-    civ1.mask=par.maskname;
-end
-civ1.dt=par.Dt;
-civ1.unit='pixel';
-civ1.absolut_time_T0=par.Time;
-civ1.pixcmx='1';
-civ1.pixcmy='1';
-civ1.convectFlow='n';
-
-xml_civ1_parameters=civ1;
-
-%------------------------------------------------------------------------
-% --- CheckCiv2  Unified: TO ABADON
-function civ2=CIV2_CMD_Unified(filename,namelog,par)
-%------------------------------------------------------------------------
-%pixels per cm and matrix of the image times, read from the .civ_input file by uvmat
-%global CivBin%name of the executable for checkciv1 calculation
-
-filename=regexprep(filename,'.nc','');
-
-civ2.image1=par.ImageA;
-civ2.image2=par.ImageB;
-civ2.imageSize_X=par.npx;
-civ2.imageSize_Y=par.npy;
-civ2.inputFileName=[par.filename_nc1 '.nc'];
-civ2.outputFileName=[filename '.nc'];
-civ2.correlationBoxesSize_X=par.ibx;
-civ2.correlationBoxesSize_Y=par.iby;
-civ2.ro=par.rho;
-%checkciv2.decimalShift=par.CheckDecimal;
-%checkciv2.CheckDeformation=par.CheckDeformation;
-if isequal(par.decimal,'1')
-    civ2.decimalShift='y';
-else
-    civ2.decimalShift='n';
-end
-if isequal(par.deformation,'1')
-    civ2.deformation='y';
-else
-    civ2.deformation='n';
-end
-if isequal(par.gridflag,'y')
-    civ2.grid=par.gridname;
-else
-    civ2.grid='n';
-    civ2.gridSpacing_X=par.dx;
-    civ2.gridSpacing_Y=par.dy;
-end
-civ2.gridSpacing_X='10';
-civ2.gridSpacing_Y='10';%NOTE: faut mettre gridSpacing pourque ca tourne, meme si c'est la grille qui est utilisee
-if isequal(par.maskflag,'y')
-    civ2.mask=par.maskname;
-else
-    civ2.mask='n';
-end
-civ2.dt=par.Dt;
-civ2.unit='pixel';
-civ2.absolut_time_T0=par.Time;
-civ2.pixcmx='1';
-civ2.pixcmy='1';
-civ2.convectFlow='n';
-
-
-% --- Executes on selection change in RunMode.
-function RunMode_Callback(hObject, eventdata, handles)
-
-
-function nb_field2_Callback(hObject, eventdata, handles)
-
-
-function last_j_Callback(hObject, eventdata, handles)
-
-
-function last_i_Callback(hObject, eventdata, handles)

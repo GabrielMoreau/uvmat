@@ -344,18 +344,19 @@ if xstest==0  %look for the corresponding schema in the directory PARAM_LINUX.xm
     if exist(schemafile,'file')
         xs=xmltree(schemafile);
     else
-        msgbox_uvmat('WARNING','The xml schema is not found, check the file PARAM.xml')
-        [FileName, PathName]=uigetfile( ...
-            {'*.xsd', '(*.xsd)';
-            '*.xsd',  '.xsd files '; ...
-            '*.*',  'All Files (*.*)'}, ...
-            'Pick a .xsd schema' ,schemafile); %file browser
-        if ischar(PathName) && ischar(FileName) && exist(fullfile(PathName,FileName),'file')
-            DataIn.Schema=fullfile(PathName,FileName);
-            xs=xmltree(DataIn.Schema);%open the associated schema file
-        else
+%         msgbox_uvmat('WARNING','The xml schema is not found, check the file PARAM.xml')
+%         [FileName, PathName]=uigetfile( ...
+%             {'*.xsd', '(*.xsd)';
+%             '*.xsd',  '.xsd files '; ...
+%             '*.*',  'All Files (*.*)'}, ...
+%             'Pick a .xsd schema' ,schemafile); %file browser
+%         if ischar(PathName) && ischar(FileName) && exist(fullfile(PathName,FileName),'file')
+%             DataIn.Schema=fullfile(PathName,FileName);
+%             xs=xmltree(DataIn.Schema);%open the associated schema file
+%         else
             xs=[];
-        end
+% 
+
     end
     %         end
     %     end

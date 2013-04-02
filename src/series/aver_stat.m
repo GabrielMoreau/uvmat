@@ -165,159 +165,158 @@ if nbview==2
     end
 end
 
-%% MAIN LOOP ON SLICES
 % for i_slice=1:NbSlice
-   % index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
-    nbfiles=0;
-    nbmissing=0;
+% index_slice=i_slice:NbSlice:nbfield;% select file indices of the slice
+nbfiles=0;
+nbmissing=0;
 
-    %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
-    for index=1:nbfield
-    %for index=index_slice
-          if checkrun
-                stopstate=get(Param.RUNHandle,'BusyAction');
-                update_waitbar(Param.WaitbarHandle,index/nbfield)
-          else
-                stopstate='queue';
-          end
-        if isequal(stopstate,'queue')% enable STOP command
-            
-        %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
-        for iview=1:nbview
-            % reading input file(s)
-            [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
-            if ~isempty(errormsg)
-                errormsg=['error of input reading: ' errormsg];
-                break
-            end
-            if ~isempty(NbSlice_calib)
-                Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
-            end
-        end
-        else
-            errormsg='stop';
-        end
-        %%%%%%%%%%%%%%%% end loop on views (input lines) %%%%%%%%%%%%%%%%
-        %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
-        % EDIT FROM HERE
-    
-        if isempty(errormsg)
-            Field=Data{1}; % default input field structure
-            %% coordinate transform (or other user defined transform)
-            if ~isempty(transform_fct)
-                switch nargin(transform_fct)
-                    case 4
-                        if length(Data)==2
-                            Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
-                        else
-                            Field=transform_fct(Data{1},XmlData{1});
-                        end
-                    case 3
-                        if length(Data)==2
-                            Field=transform_fct(Data{1},XmlData{1},Data{2});
-                        else
-                            Field=transform_fct(Data{1},XmlData{1});
-                        end
-                    case 2
-                        Field=transform_fct(Data{1},XmlData{1});
-                    case 1
-                        Field=transform_fct(Data{1});
-                end
-            end
-            
-            %% calculate tps coefficients if needed
-            if isfield(Param,'ProjObject')&&isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
-                Field=tps_coeff_field(Field,check_proj_tps);
-            end
+%%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
+for index=1:nbfield
+%for index=index_slice
+      if checkrun
+            stopstate=get(Param.RUNHandle,'BusyAction');
+            update_waitbar(Param.WaitbarHandle,index/nbfield)
+      else
+            stopstate='queue';
+      end
+    if isequal(stopstate,'queue')% enable STOP command
 
-            %field projection on an object
-            if Param.CheckObject
-                [Field,errormsg]=proj_field(Field,Param.ProjObject);
-                if ~isempty(errormsg)
-                    msgbox_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg])
-                    return
-                end
-            end
-            nbfiles=nbfiles+1;
-            
-            %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-            %update sum
-            if nbfiles==1 %first field
-                time_1=[];
-                if isfield(Field,'Time')
-                    time_1=Field.Time(1);
-                end
-                DataOut=Field;%default
-                for ivar=1:length(Field.ListVarName)
-                    VarName=Field.ListVarName{ivar};
-                    DataOut.(VarName)=double(DataOut.(VarName));
-                end
-            else   %current field
-                for ivar=1:length(Field.ListVarName)
-                    VarName=Field.ListVarName{ivar};
-                    sizmean=size(DataOut.(VarName));
-                    siz=size(Field.(VarName));
-                    if ~isequal(DataOut.(VarName),0)&& ~isequal(siz,sizmean)
-                        msgbox_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'])
-                        return
+    %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
+    for iview=1:nbview
+        % reading input file(s)
+        [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
+        if ~isempty(errormsg)
+            errormsg=['error of input reading: ' errormsg];
+            break
+        end
+        if ~isempty(NbSlice_calib)
+            Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
+        end
+    end
+    else
+        errormsg='stop';
+    end
+    %%%%%%%%%%%%%%%% end loop on views (input lines) %%%%%%%%%%%%%%%%
+    %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
+    % EDIT FROM HERE
+
+    if isempty(errormsg)
+        Field=Data{1}; % default input field structure
+        %% coordinate transform (or other user defined transform)
+        if ~isempty(transform_fct)
+            switch nargin(transform_fct)
+                case 4
+                    if length(Data)==2
+                        Field=transform_fct(Data{1},XmlData{1},Data{2},XmlData{2});
                     else
-                        DataOut.(VarName)=DataOut.(VarName)+ double(Field.(VarName)); % update the sum
+                        Field=transform_fct(Data{1},XmlData{1});
                     end
+                case 3
+                    if length(Data)==2
+                        Field=transform_fct(Data{1},XmlData{1},Data{2});
+                    else
+                        Field=transform_fct(Data{1},XmlData{1});
+                    end
+                case 2
+                    Field=transform_fct(Data{1},XmlData{1});
+                case 1
+                    Field=transform_fct(Data{1});
+            end
+        end
+
+        %% calculate tps coefficients if needed
+        if isfield(Param,'ProjObject')&&isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
+            Field=tps_coeff_field(Field,check_proj_tps);
+        end
+
+        %field projection on an object
+        if Param.CheckObject
+            [Field,errormsg]=proj_field(Field,Param.ProjObject);
+            if ~isempty(errormsg)
+                msgbox_uvmat('ERROR',['error in aver_stat/proj_field:' errormsg])
+                return
+            end
+        end
+        nbfiles=nbfiles+1;
+
+        %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
+        %update sum
+        if nbfiles==1 %first field
+            time_1=[];
+            if isfield(Field,'Time')
+                time_1=Field.Time(1);
+            end
+            DataOut=Field;%default
+            for ivar=1:length(Field.ListVarName)
+                VarName=Field.ListVarName{ivar};
+                DataOut.(VarName)=double(DataOut.(VarName));
+            end
+        else   %current field
+            for ivar=1:length(Field.ListVarName)
+                VarName=Field.ListVarName{ivar};
+                sizmean=size(DataOut.(VarName));
+                siz=size(Field.(VarName));
+                if ~isequal(DataOut.(VarName),0)&& ~isequal(siz,sizmean)
+                    msgbox_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'])
+                    return
+                else
+                    DataOut.(VarName)=DataOut.(VarName)+ double(Field.(VarName)); % update the sum
                 end
             end
-            %%%%%%%%%%%%   END MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-        else
-            display(errormsg)
+        end
+        %%%%%%%%%%%%   END MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
+    else
+        display(errormsg)
+    end
+end
+%%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
+
+for ivar=1:length(Field.ListVarName)
+    VarName=Field.ListVarName{ivar};
+    DataOut.(VarName)=DataOut.(VarName)/nbfiles; % normalize the mean
+end
+if nbmissing~=0
+    msgbox_uvmat('WARNING',[num2str(nbmissing) ' input files are missing or skipted'])
+end
+if isempty(time) % time is read from files
+    if isfield(Field,'Time')
+        time_end=Field.Time(1);%last time read
+        if ~isempty(time_1)
+            DataOut.Time=time_1;
+            DataOut.Time_end=time_end;
         end
     end
-    %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
-    
-    for ivar=1:length(Field.ListVarName)
-        VarName=Field.ListVarName{ivar};
-        DataOut.(VarName)=DataOut.(VarName)/nbfiles; % normalize the mean
-    end
-    if nbmissing~=0
-        msgbox_uvmat('WARNING',[num2str(nbmissing) ' input files are missing or skipted'])
-    end
-    if isempty(time) % time is read from files
-        if isfield(Field,'Time')
-            time_end=Field.Time(1);%last time read
-            if ~isempty(time_1)
-                DataOut.Time=time_1;
-                DataOut.Time_end=time_end;
-            end
-        end
-    else  % time from ImaDoc prevails if it exists
+else  % time from ImaDoc prevails if it exists
 %         j1=1;%default
 %         if ~isempty(j1_series{1})
 %             j1=j1_series{1};
 %         end
-        %DataOut.Time=time(1,i1_series{1}(1),j1);
-        %DataOut.Time_end=time(end,i1_series{end}(end),j1_series{end}(end));
-        DataOut.Time=time(1);
-        DataOut.Time_end=time(end);
+    %DataOut.Time=time(1,i1_series{1}(1),j1);
+    %DataOut.Time_end=time(end,i1_series{end}(end),j1_series{end}(end));
+    DataOut.Time=time(1);
+    DataOut.Time_end=time(end);
+end
+
+%writting the result file
+OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),j1_series{1}(1),j1_series{1}(end));
+if CheckImage{1} %case of images
+    if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
+        DataOut.A=uint16(DataOut.A);
+        imwrite(DataOut.A,OutputFile,'BitDepth',16); % case of 16 bit images
+    else
+        DataOut.A=uint8(DataOut.A);
+        imwrite(DataOut.A,OutputFile,'BitDepth',8); % case of 16 bit images
     end
-    
-    %writting the result file
-    OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),j1_series{1}(1),j1_series{1}(end));
-    if CheckImage{1} %case of images
-        if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
-            DataOut.A=uint16(DataOut.A);
-            imwrite(DataOut.A,OutputFile,'BitDepth',16); % case of 16 bit images
-        else
-            DataOut.A=uint8(DataOut.A);
-            imwrite(DataOut.A,OutputFile,'BitDepth',8); % case of 16 bit images
-        end
+    display([OutputFile ' written']);
+else %case of netcdf input file , determine global attributes
+    errormsg=struct2nc(OutputFile,DataOut); %save result file
+    if isempty(errormsg)
         display([OutputFile ' written']);
-    else %case of netcdf input file , determine global attributes
-        errormsg=struct2nc(OutputFile,DataOut); %save result file
-        if isempty(errormsg)
-            display([OutputFile ' written']);
-        else
-            msgbox_uvmat('ERROR',['error in writting result file: ' errormsg])
-            display(errormsg)
-        end
-    end  % end averaging  loop
+    else
+        msgbox_uvmat('ERROR',['error in writting result file: ' errormsg])
+        display(errormsg)
+    end
+end  % end averaging  loop
 % end
 %%%%%%%%%%%%%%%% end loop on slices %%%%%%%%%%%%%%%%
 

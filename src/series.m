@@ -69,7 +69,7 @@ guidata(hObject, handles);
 drawnow
 set(hObject,'Units','pixels')
 set(handles.PairString,'ColumnName',{'pairs'})
-set(handles.PairString,'ColumnEditable',logical(0))
+set(handles.PairString,'ColumnEditable',false)
 set(handles.PairString,'ColumnFormat',{'char'})
 set(handles.PairString,'Data',{''})
 series_ResizeFcn(hObject, eventdata, handles)%resize table according to series GUI size
@@ -83,9 +83,9 @@ end
 ActionList={'check_data_files';'aver_stat';'time_series';'merge_proj'};% WARNING: fits with nb_builtin_ACTION=4 in ActionName_callback
 [path_series,name,ext]=fileparts(which('series'));% path to the GUI series
 path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
-path_bin=fullfile(path_series,'bin');%path of the binary functions (compiled)
+%path_bin=fullfile(path_series,'bin');%path of the binary functions (compiled)
 ActionPathList=regexprep(ActionList,'^.+$',path_series_fct);% set path=path_series to each function in the list ('^.+$'=any non empty nbre of char form beginning to end of char string)
-ActionPathList=[ActionPathList regexprep(ActionList,'^.+$',path_bin)];% set path to compiled functions
+ActionPathList=[ActionPathList ActionPathList];% set path to .sh commands for compiled functions
 ActionExtList={'.m';'.sh'};% default choice of extensions (Matlab fct .m or compiled version .sh)
 RunModeList={'local';'background'};% default choice of extensions (Matlab fct .m or compiled version .sh)
 [s,w]=system('oarstat');% look for cluster system 'oar'
@@ -1365,7 +1365,7 @@ RunTime='';
 if strcmp(ActionExt,'.sh')
     if exist(xmlfile,'file')
         s=xml2struct(xmlfile);
-        if strcmp(RunMode,'cluster') && isfield(s,'BatchParam')
+        if strcmp(RunMode,'cluster_oar') && isfield(s,'BatchParam')
             if isfield(s.BatchParam,'RunTime')
                 RunTime=s.BatchParam.RunTime;
             end
@@ -1381,11 +1381,11 @@ if strcmp(ActionExt,'.sh')
             end
         end
     end
-    if isempty(RunTime) && strcmp(RunMode,'cluster')
+    if isempty(RunTime) && strcmp(RunMode,'cluster_oar')
         msgbox_uvmat('ERROR','RunTime name not found in PARAM.xml, compiled version .sh cannot run on cluster')
         return
     end
-    Series.RunTime=RunTime;
+%     Series.RunTime=RunTime;
 end
 
 %% set nbre of cluster cores and processes
@@ -1441,7 +1441,10 @@ if strcmp (RunMode,'local')
     for iprocess=1:NbProcess
         if isempty(Series.IndexRange.NbSlice)
             Series.IndexRange.first_i=first_i+(iprocess-1)*BlockLength;
-            Series.IndexRange.last_i=first_i+(iprocess)*BlockLength-1;
+            if Series.IndexRange.first_i>last_i
+                break
+            end
+            Series.IndexRange.last_i=min(first_i+(iprocess)*BlockLength-1,last_i);
         else
             Series.IndexRange.first_i= first_i+iprocess-1;
             Series.IndexRange.incr_i=incr_i*Series.IndexRange.NbSlice;
@@ -1458,9 +1461,9 @@ if strcmp (RunMode,'local')
                 switch computer
                     case {'PCWIN','PCWIN64'} %Windows system
                         filexml=regexprep(filexml,'\\','\\\\');% add '\' so that '\' are left as characters
-                        system([fullfile(ActionPath,[ActionName '.sh']) ' ' Series.RunTime ' ' filexml]);% TODO: adapt to DOS system
+                        system([fullfile(ActionPath,[ActionName '.sh']) ' ' RunTime ' ' filexml]);% TODO: adapt to DOS system
                     case {'GLNX86','GLNXA64','MACI64'}%Linux  system
-                        system([fullfile(ActionPath,[ActionName '.sh']) ' ' Series.RunTime ' ' filexml]);
+                        system([fullfile(ActionPath,[ActionName '.sh']) ' ' RunTime ' ' filexml]);
                 end
         end
     end
@@ -1491,7 +1494,11 @@ else
     for iprocess=1:NbProcess
         if isempty(Series.IndexRange.NbSlice)% process by blocks of i index
             Series.IndexRange.first_i=first_i+(iprocess-1)*BlockLength;
-            Series.IndexRange.last_i=first_i+(iprocess)*BlockLength-1;
+            if Series.IndexRange.first_i>last_i
+                NbProcess=iprocess-1;
+                break% leave the loop, we are at the end of the calculation
+            end
+            Series.IndexRange.last_i=min(last_i,first_i+(iprocess)*BlockLength-1);
         else% process by slices of i index if NbSlice is defined, computation in a single process if NbSlice =1
             Series.IndexRange.first_i= first_i+iprocess-1;
             Series.IndexRange.incr_i=incr_i*Series.IndexRange.NbSlice;
@@ -1505,8 +1512,10 @@ else
         save(t,filexml);% save the parameter file
         
         %create the executable file
-        filebat=fullfile_uvmat(DirBat,'',Series.InputTable{1,3},'.bat',OutputNomType,...
-            Series.IndexRange.first_i,Series.IndexRange.last_i,first_j,last_j);
+%         filebat=fullfile_uvmat(DirBat,'',Series.InputTable{1,3},'.bat',OutputNomType,...
+%             Series.IndexRange.first_i,Series.IndexRange.last_i,first_j,last_j);
+         filebat=fullfile_uvmat(DirBat,'',Series.InputTable{1,3},'.sh',OutputNomType,...
+           Series.IndexRange.first_i,Series.IndexRange.last_i,first_j,last_j);
         batch_file_list{iprocess}=filebat;
         [fid,message]=fopen(filebat,'w');% create the executable file
         if isequal(fid,-1)
@@ -1550,7 +1559,7 @@ else
                             '#$ -cwd \n '...
                             'hostname && date \n '...
                             'umask 002 \n'...
-                            fullfile(ActionPath,[ActionName '.sh']) ' ' Series.RunTime ' ' filexml];%allow writting access to created files for user group
+                            fullfile(ActionPath,[ActionName '.sh']) ' ' RunTime ' ' filexml];%allow writting access to created files for user group
                         fprintf(fid,cmd);%fill the executable file with the  char string cmd
                         fclose(fid);% close the executable file
                         system(['chmod +x ' filebat]);% set the file to executable
@@ -1589,7 +1598,7 @@ switch RunMode
         filename_joblist=fullfile(DirOAR,'job_list.txt');%create name of the global executable file
         fid=fopen(filename_joblist,'w');
         for p=1:length(batch_file_list)
-            fprintf(fid,[batch_file_list{p} '\n']);% list of exe files (TODO: create them)
+            fprintf(fid,[batch_file_list{p} '\n']);% list of exe files 
         end
         fclose(fid);
         system(['chmod +x ' filename_joblist]);% set the file to executable
@@ -1704,8 +1713,8 @@ if isfield(Series,'Pairs')
     Series=rmfield(Series,'Pairs'); %info Pairs not needed for output
 end
 Series.IndexRange=rmfield(Series.IndexRange,'TimeTable');
-Series.IndexRange=rmfield(Series.IndexRange,'MinIndex');
-Series.IndexRange=rmfield(Series.IndexRange,'MaxIndex');
+% Series.IndexRange=rmfield(Series.IndexRange,'MinIndex');
+% Series.IndexRange=rmfield(Series.IndexRange,'MaxIndex');
 empty_line=false(size(Series.InputTable,1),1);
 for iline=1:size(Series.InputTable,1)
     empty_line(iline)=isequal(Series.InputTable(iline,1:3),{'','',''});
@@ -1725,6 +1734,8 @@ if isequal(get(handles.RUN,'Value'),1)
         return
     end
 end
+set(handles.ActionName,'BackgroundColor',[1 1 0])
+drawnow
 
 %% get Action name and path
 nb_builtin_ACTION=4; %nbre of functions initially proposed in the menu ActionName (as defined in the Opening fct of series)
@@ -1751,43 +1762,44 @@ if isequal(ActionName,'more...')
         return
     end
     [ActionPath,ActionName,ActionExt]=fileparts(FileName);
-    % insert the choice in the menu
+    
+    % insert the choice in the menu ActionName
     ActionIndex=find(strcmp(ActionName,ActionList),1);% look for the selected function in the menu Action
     if isempty(ActionIndex)%the input string does not exist in the menu
         ActionIndex= length(ActionList);
         ActionList=[ActionList(1:end-1);{ActionName};ActionList(end)];% the selected function is appended in the menu, before the last item 'more...'
         set(handles.ActionName,'String',ActionList)
     end
-    %set(handles.ActionName,'Value',ActionIndex)
-    %list_path{ActionIndex}=PathName;
-    % remove old Action options in the menu (keeping a menu length <nb_builtin_ACTION+5)
-    if length(ActionList)>nb_builtin_ACTION+5; %nb_builtin=nbre of functions always remaining in the initial menu
-        nbremove=length(ActionList)-nb_builtin_ACTION-5;
-        ActionList(nb_builtin_ACTION+1:end-5)=[];
-        ActionPathList(nb_builtin_ACTION+1:end-4)=[];
-        ActionIndex=ActionIndex-nbremove;
-    end
-    set(handles.ActionName,'Value',ActionIndex)
-    set(handles.ActionName,'String',ActionList)
-    ActionPathList{ActionIndex}=PathName;
-    set(handles.ActionPath,'enable','inactive')% indicate that the current path is accessible (not 'off')
     
-    % record the file extension and update the paths in userdata
+    % record the file extension and extend the path list if it is a new extension
     ActionExtList=get(handles.ActionExt,'String');
     ActionExtIndex=find(strcmp(ActionExt,ActionExtList), 1);
     if isempty(ActionExtIndex)
         set(handles.ActionExt,'String',[ActionExtList;{ActionExt}])
-        set(handles.ActionExt,'Value',numel(ActionExtList)+1)
+        ActionExtIndex=numel(ActionExtList)+1;
         ActionPathNew=cell(size(ActionPathList,1),1);%new column of ActionPath
-        ActionPathNew{ActionIndex}=ActionPath;
         ActionPathList=[ActionPathList ActionPathNew];
     end
     set(handles.ActionName,'UserData',ActionPathList);
+
+    % remove old Action options in the menu (keeping a menu length <nb_builtin_ACTION+5)
+    if length(ActionList)>nb_builtin_ACTION+5; %nb_builtin=nbre of functions always remaining in the initial menu
+        nbremove=length(ActionList)-nb_builtin_ACTION-5;
+        ActionList(nb_builtin_ACTION+1:end-5)=[];
+        ActionPathList(nb_builtin_ACTION+1:end-4,:)=[];
+        ActionIndex=ActionIndex-nbremove;
+    end
     
-    %record the current menu in personal file profil_perso
+    % record action menu, choice and path
+    set(handles.ActionName,'Value',ActionIndex)
+    set(handles.ActionName,'String',ActionList)
+    set(handles.ActionExt,'Value',ActionExtIndex)
+    ActionPathList{ActionIndex,ActionExtIndex}=PathName;
+        
+    %record the user defined menu additions in personal file profil_perso
     dir_perso=prefdir;
     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-    if nb_builtin_ACTION+1<=length(ActionList)-1
+    if nb_builtin_ACTION+1<=numel(ActionList)-1
         ActionListUser=ActionList(nb_builtin_ACTION+1:numel(ActionList)-1);
         ActionPathListUser=ActionPathList(nb_builtin_ACTION+1:numel(ActionList)-1,:);
         ActionExtListUser={};
@@ -1810,11 +1822,11 @@ set(handles.ActionPath,'String',ActionPath); %show the path to the senlected fun
 update_waitbar(handles.Waitbar,0)
 
 %% default setting for the visibility of the GUI elements
-set(handles.FieldTransform,'Visible','off')
-set(handles.CheckObject,'Visible','off');
-set(handles.ProjObject,'Visible','off');
-set(handles.CheckMask,'Visible','off')
-set(handles.Mask,'Visible','off')
+% set(handles.FieldTransform,'Visible','off')
+% set(handles.CheckObject,'Visible','off');
+% set(handles.ProjObject,'Visible','off');
+% set(handles.CheckMask,'Visible','off')
+% set(handles.Mask,'Visible','off')
 
 %% create the function handle for Action
 path_series=which('series');
@@ -1833,25 +1845,21 @@ if ~isequal(ActionPath,path_series)
         rmpath(ActionPath)% add the prescribed path if not the current one    
 end
 
-%% prepare the input param
-[Series,tild,errormsg]=prepare_jobs(handles);
+%% Activate the Action fct
+[Series,tild,errormsg]=prepare_jobs(handles);% read the parameters from the GUI series
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
 end
 ParamOut=h_fun(Series);
 
-%% Put the first line of the selected Action fct as tootip help
+%% Put the first line of the selected Action fct as tooltip help
 try
     [fid,errormsg] =fopen([ActionName '.m']);
     InputText=textscan(fid,'%s',1,'delimiter','\n');
     fclose(fid);
     set(handles.ActionName,'ToolTipString',InputText{1}{1})% put the first line of the selected function as tooltip help
 end
-% if ~isequal(path_series,PathName)
-%     rmpath(PathName)
-% end
-Param_list={};
 
 %% Detect the types of input files
 SeriesData=get(handles.series,'UserData');
@@ -1997,16 +2005,29 @@ set(handles.ActionExt_title,'Visible',OutputDirVisible)
 if isfield(ParamOut,'ActionInput')
     set(handles.ActionInput,'Visible','on')
     set(handles.ActionInput_title,'Visible','on')
+    set(handles.ActionInputView,'Visible','on')
+    set(handles.ActionInputView,'Value',0)
     set(handles.ActionInput,'String',ActionName)
+    ParamOut.ActionInput.Program=ActionName; % record the program in ActionInput
     SeriesData.ActionInput=ParamOut.ActionInput;
 else
     set(handles.ActionInput,'Visible','off')
     set(handles.ActionInput_title,'Visible','off')
+    set(handles.ActionInputView,'Visible','off')
     if isfield(SeriesData,'ActionInput')
     SeriesData=rmfield(SeriesData,'ActionInput');
     end
 end   
 set(handles.series,'UserData',SeriesData)
+set(handles.ActionName,'BackgroundColor',[1 1 1])
+
+%------------------------------------------------------------------------
+% --- Executes on button press in ActionInputView.
+function ActionInputView_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+if get(handles.ActionInputView,'Value')
+ActionName_Callback(hObject, eventdata, handles)
+end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in FieldName.
@@ -2426,6 +2447,8 @@ elseif exist(FullSelectName,'file')%visualise the vel field if it exists
     FileType=get_file_type(FullSelectName);
     if strcmp(FileType,'txt')
         edit(FullSelectName)
+    elseif strcmp(FileType,'xml')
+        editxml(FullSelectName)
     else
         uvmat(FullSelectName)
     end
@@ -2605,3 +2628,5 @@ function num_NbProcess_Callback(hObject, eventdata, handles)
 function num_NbSlice_Callback(hObject, eventdata, handles)
 NbSlice=str2num(get(handles.num_NbSlice,'String'));
 set(handles.num_NbProcess,'String',num2str(NbSlice))
+
+

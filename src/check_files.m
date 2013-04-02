@@ -116,7 +116,6 @@ list_fct={...
     'uvmat.fig';...  %interface for uvmat
     'view_field.m';...% function for visualisation of projected fields'
     'view_field.fig';...%GUI for view_field
-    'write_plot_param';...%update plotting parameters after plot, TODO: change into a general function: fill_GUI
     'xml2struct';...% read an xml file as a Matlab structure, converts numeric character strings into numbers
     };
 dir_fct=which('uvmat');% path to uvmat

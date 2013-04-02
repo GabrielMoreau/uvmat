@@ -25,17 +25,19 @@ fieldnames=fields(Object);
 for ilist=1:length(fieldnames)
    val=Object.(fieldnames{ilist});
    if isstruct(val)
-      [t,uid]=add(t,root_uid,'element',fieldnames{ilist});
-      fieldnames_sub=fields(val);
-      for ilist_sub=1:length(fieldnames_sub)
-          if isstruct(fieldnames_sub{ilist_sub})
-                t=struct2xml(fieldnames_sub{ilist_sub},t,uid);
-%                 save(t)
-          else
-              val_sub=val.(fieldnames_sub{ilist_sub});
-              t=add_element(t,uid,fieldnames_sub{ilist_sub},val_sub);
-          end
-      end
+      [t,branch_uid]=add(t,root_uid,'element',fieldnames{ilist});
+       t=struct2xml(val,t,branch_uid);
+      
+%       fieldnames_sub=fields(val)
+%       for ilist_sub=1:length(fieldnames_sub)
+%           if isstruct(fieldnames_sub{ilist_sub})
+%                 t=struct2xml(fieldnames_sub{ilist_sub},t,uid);
+% %                 save(t)
+%           else
+%               val_sub=val.(fieldnames_sub{ilist_sub});
+%               t=add_element(t,uid,fieldnames_sub{ilist_sub},val_sub);
+%           end
+%       end
    else
        t=add_element(t,root_uid,fieldnames{ilist},val);
    end

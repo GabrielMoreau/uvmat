@@ -1851,8 +1851,8 @@ if isempty(num_j2)
             imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,Ext,NomType,num_i1,[],num_j1+1);
         end
         if exist(imaname_1,'file')
-            num_j2=num_j1+1;
-            set(handles.j2,'String',num2str(num_j2));
+            num_j2=num_j1+1;% look by default for the next j index as the second file
+            set(handles.j2,'String',num2stra(num_j2,NomType));
         else
             imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,Ext,NomType,num_i1+1,[],num_j1);
             if exist(imaname_1,'file')
@@ -2601,8 +2601,13 @@ if NbDim<=1
     set(handles.ListObject_1_title,'Visible','off')
     set(handles.ListObject_1,'Visible','off')
     [PlotType,PlotParamOut]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
-    %errormsg=fill_GUI(PlotParamOut,handles.uvmat);
-    write_plot_param(handles,PlotParamOut) %update the auto plot parameters
+    errormsg=fill_GUI(PlotParamOut,handles.uvmat);
+    for list={'Scalar','Vectors'}
+        if ~isfield(PlotParamOut,list{1})
+            set(handles.(list{1}),'Visible','off')
+        end
+    end
+    %write_plot_param(handles,PlotParamOut) %update the auto plot parameters
     
 %% 2D or 3D fieldname are generally projected
 else
@@ -2710,11 +2715,15 @@ else
             else
                 [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},PosColorbar{imap});
                 if imap==1
-                errormsg=fill_GUI(PlotParamOut,handles.uvmat);
+                    errormsg=fill_GUI(PlotParamOut,handles.uvmat);
                 else
                     errormsg=fill_GUI(PlotParamOut,view_field_handle);
                 end
-                %write_plot_param(plot_handles{imap},PlotParamOut) %update the auto plot parameters
+                for list={'Scalar','Vectors'}
+                    if ~isfield(PlotParamOut,list{1})
+                        set(plot_handles{imap}.(list{1}),'Visible','off')
+                    end
+                end
                 if isfield(Field,'CoordMesh')&&~isempty(Field.CoordMesh)
                     ObjectData.CoordMesh=Field.CoordMesh; % gives an estimated mesh size (useful for mouse action on the plot)
                 end
@@ -4376,6 +4385,11 @@ if check_view
     hhview_field=guidata(hview_field);
     [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%read plotting parameters on the GUI view_field);
     errormsg=fill_GUI(PlotParam,hview_field);
+                    for list={'Scalar','Vectors'}
+                    if ~isfield(PlotParamOut,list{1})
+                        set(hhview_field.(list{1}),'Visible','off')
+                    end
+                end
     %write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
     haxes=findobj(hview_field,'tag','axes3');
     pos=get(hview_field,'Position');
@@ -5172,3 +5186,108 @@ function TransformPath_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of TransformPath as text
 %        str2double(get(hObject,'String')) returns contents of TransformPath as a double
+
+
+%TODO: use to modify fill_GUI
+%'write_plot_param': update the plotting parameters on the uvmat or view_field interface after a plotting operation
+function write_plot_param(handles,PlotParam)
+%% coordinates
+if isempty(PlotParam.Coordinates)
+    set(handles.Coordinates,'Visible','off')
+    set(handles.PlotAxes,'Visible','off')
+    set(handles.text_display,'Visible','off')
+    set(handles.TableDisplay,'Visible','on')
+else
+    set(handles.Coordinates,'Visible','on')
+    set(handles.PlotAxes,'Visible','on')
+    set(handles.text_display,'Visible','on')
+    if isfield(handles,'TableDisplay')
+    set(handles.TableDisplay,'Visible','off')
+    end
+    Coordinates=PlotParam.Coordinates;
+    if isfield(Coordinates,'CheckFixAspectRatio')
+        if Coordinates.CheckFixAspectRatio
+            set(handles.CheckFixAspectRatio,'Value',1)
+        else
+            set(handles.CheckFixAspectRatio,'Value',0)
+ 
+        end
+    end
+    if isfield(Coordinates,'AspectRatio')
+        set(handles.num_AspectRatio,'String',num2str(Coordinates.AspectRatio))
+    end
+    if isfield(Coordinates,'MinX')
+        set(handles.num_MinX,'String',num2str(Coordinates.MinX,4));
+        set(handles.num_MaxX,'String',num2str(Coordinates.MaxX,4));
+        set(handles.num_MinY,'String',num2str(Coordinates.MinY,4));
+        set(handles.num_MaxY,'String',num2str(Coordinates.MaxY,4));
+    else
+        set(handles.num_MinX,'String','');
+        set(handles.num_MaxX,'String','');
+        set(handles.num_MinY,'String','');
+        set(handles.num_MaxY,'String','');
+    end
+end
+
+%% scalar or image parameters
+if isfield(PlotParam,'Scalar')
+    set(handles.Scalar,'Visible','on')
+    if isfield(PlotParam.Scalar,'MaxA')
+        set(handles.num_MaxA,'String',num2str(PlotParam.Scalar.MaxA,3));
+    end
+    if isfield(PlotParam.Scalar,'MinA')
+        set(handles.num_MinA,'String',num2str(PlotParam.Scalar.MinA,3));
+    end   
+    if isfield(PlotParam.Scalar,'IncrA')
+        set(handles.num_IncrA,'String',num2str(PlotParam.Scalar.IncrA,3))
+    end
+    set(handles.CheckBW,'Value',PlotParam.Scalar.CheckBW)
+    if isfield(PlotParam.Scalar,'Opacity')&&isfield(handles,'num_Opacity')
+        set(handles.num_Opacity,'String',num2str(PlotParam.Scalar.Opacity)) 
+    end
+else
+    set(handles.Scalar,'Visible','off')
+end
+
+%% parameter for vector field
+if isfield(PlotParam,'Vectors')
+    set(handles.Vectors,'Visible','on')
+    if isfield(PlotParam.Vectors,'VecScale')
+        set(handles.num_VecScale,'String',num2str(PlotParam.Vectors.VecScale,3))
+    end
+    if isfield(PlotParam.Vectors,'MinC')&& isfield(PlotParam.Vectors,'MaxC')
+        MinC=PlotParam.Vectors.MinC;
+        MaxC=PlotParam.Vectors.MaxC;
+        set(handles.num_MinVec,'String', num2str(MinC,3));
+        set(handles.num_MaxVec,'String',num2str(MaxC,3));
+        list=get(handles.ColorCode,'String');
+        ichoice=get(handles.ColorCode,'Value');
+        color_option=list{ichoice};
+        test3color=strcmp(color_option,'rgb')||strcmp(color_option,'bgr');
+        if test3color% need to update color thresholds
+            set(handles.num_ColCode1,'Visible','on')
+            set(handles.num_ColCode2,'Visible','on')
+            set(handles.Slider1,'Visible','on')
+            set(handles.Slider2,'Visible','on')
+            %ColCode1=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode1;
+            %ColCode2=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode2;
+%             ColCode1=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode1;
+            %ColCode2=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode2;
+            set(handles.num_ColCode1,'String',num2str(PlotParam.Vectors.ColCode1,3))
+            set(handles.num_ColCode2,'String',num2str(PlotParam.Vectors.ColCode2,3))
+            set(handles.Slider1,'Value',(PlotParam.Vectors.ColCode1-MinC)/(MaxC-MinC))
+            set(handles.Slider2,'Value',(PlotParam.Vectors.ColCode2-MinC)/(MaxC-MinC))
+        else
+            set(handles.num_ColCode1,'Visible','off')
+            set(handles.num_ColCode2,'Visible','off')
+            set(handles.Slider1,'Visible','off')
+            set(handles.Slider2,'Visible','off')
+        end
+    end
+else
+    set(handles.Vectors,'Visible','off')
+    if isfield(handles,'edit_vect')
+        set(handles.edit_vect,'Visible','off')
+        set(handles.record,'Visible','off')
+    end
+end
