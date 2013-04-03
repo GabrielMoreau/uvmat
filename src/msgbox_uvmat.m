@@ -195,7 +195,7 @@ uiwait(handles.figure1);
 % --- Outputs from this function are returned to the command line.
 function varargout = msgbox_uvmat_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-
+varargout{1}='Cancel';%deg
 % Get default command line output from handles structure
 if isfield(handles,'output')
     if isequal(handles.output,'Cancel')
@@ -213,8 +213,9 @@ if isfield(handles,'output')
         end
     end
     % The figure can be deleted now
+    delete(handles.figure1);
 end
- delete(handles.figure1);
+%  delete(handles.figure1);
 
 %------------------------------------------------------------------------ 
 % --- Executes on button press in OK.

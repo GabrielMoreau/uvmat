@@ -2,83 +2,70 @@
 %------------------------------------------------------------------------
 % function ParamOut=relabel_i_j(Param)
 %------------------------------------------------------------------------
-
+%
 %%%%%%%%%%% GENERAL TO ALL SERIES ACTION FCTS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% This function is used in four modes by the GUI series:
-%           1) config GUI: with no input argument, the function determine the suitable GUI configuration
-%           2) interactive input: the function is used to interactively introduce input parameters, and then stops
-%           3) RUN: the function itself runs, when an appropriate input  structure Param has been introduced. 
-%           4) BATCH: the function itself proceeds in BATCH mode, using an xml file 'Param' as input.
-%
-% This function is used in four modes by the GUI series:
-%           1) config GUI: with no input argument, the function determine the suitable GUI configuration
-%           2) interactive input: the function is used to interactively introduce input parameters, and then stops
-%           3) RUN: the function itself runs, when an appropriate input  structure Param has been introduced. 
-%           4) BATCH: the function itself proceeds in BATCH mode, using an xml file 'Param' as input.
-%
 %OUTPUT
-% GUI_input=list of options in the GUI series.fig needed for the function
+% ParamOut: sets options in the GUI series.fig needed for the function
 %
 %INPUT:
 % In run mode, the input parameters are given as a Matlab structure Param copied from the GUI series.
 % In batch mode, Param is the name of the corresponding xml file containing the same information
-% In the absence of input (as activated when the current Action is selected
-% in series), the function ouput GUI_input set the activation of the needed GUI elements
+% when Param.Action.RUN=0 (as activated when the current Action is selected
+% in series), the function ouput paramOut set the activation of the needed GUI elements
 %
-% Param contains the elements:(use the menu bar command 'export/GUI config' in series to see the current structure Param)
+% Param contains the elements:(use the menu bar command 'export/GUI config' in series to 
+% see the current structure Param)
 %    .InputTable: cell of input file names, (several lines for multiple input)
 %                      each line decomposed as {RootPath,SubDir,Rootfile,NomType,Extension}
 %    .OutputSubDir: name of the subdirectory for data outputs
-%    .OutputDir: directory for data outputs, including path
+%    .OutputDirExt: directory extension for data outputs
 %    .Action: .ActionName: name of the current activated function
 %             .ActionPath:   path of the current activated function
+%             .ActionExt: fct extension ('.m', Matlab fct, '.sh', compiled   Matlab fct
+%             .RUN =0 for GUI input, =1 for function activation
+%             .RunMode='local','background', 'cluster': type of function  use
+%             
 %    .IndexRange: set the file or frame indices on which the action must be performed
 %    .FieldTransform: .TransformName: name of the selected transform function
 %                     .TransformPath:   path  of the selected transform function
-%                     .TransformHandle: corresponding function handle
 %    .InputFields: sub structure describing the input fields withfields
-%              .FieldName: name of the field
+%              .FieldName: name(s) of the field
 %              .VelType: velocity type
 %              .FieldName_1: name of the second field in case of two input series
 %              .VelType_1: velocity type of the second field in case of two input series
+%              .Coord_y: name of y coordinate variable
+%              .Coord_x: name of x coordinate variable
 %    .ProjObject: %sub structure describing a projection object (read from ancillary GUI set_object)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function ParamOut=relabel_i_j(Param) %default output=relabel_i_j(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
-if ~exist('Param','var') % case with no input parameter 
-    ParamOut={'NbViewMax';1;...% max nbre of input file series (default='' , no limitation)
-        'AllowInputSort';'off';...% allow alphabetic sorting of the list of input files (options 'off'/'on', 'off' by default)
-        'WholeIndexRange';'on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-        'NbSlice';'off'; ...%nbre of slices ('off' by default)
-        'VelType';'off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-        'FieldName';'off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-        'FieldTransform'; 'off';...%can use a transform function
-        'ProjObject';'off';...%can use projection object(option 'off'/'on',
-        'Mask';'off';...%can use mask option   (option 'off'/'on', 'off' by default)
-        'OutputDirExt';'';...%set the output dir extension
-               ''};
-        return
+if isstruct(Param) && isequal(Param.Action.RUN,0)
+    ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.NbSlice='one'; ...%nbre of slices, 'one' prevents splitting in several processes, ('off' by default)
+    ParamOut.VelType='off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.FieldName='off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    ParamOut.FieldTransform = 'off';...%can use a transform function
+    ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
+    ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.OutputDirExt='';%set the output dir extension
+    if size(Param.InputTable,1)>1
+        msgbox_uvmat('WARNING', 'this function acts only on the first input file line')
+    end
+return
 end
 
-%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-%% select different modes,  RUN, parameter input, BATCH
-% BATCH  case: read the xml file for batch case
+ParamOut=[];
+%%%%%%%%%%%% STANDARD PART  %%%%%%%%%%%%
+%% read input parameters from an xml file if input is a file name (batch mode)
+checkrun=1;
 if ischar(Param)
-        Param=xml2struct(Param);
-        checkrun=0;
-% RUN case: parameters introduced as the input structure Param
-else
-    hseries=guidata(Param.hseries);%handles of the GUI series
-    if isfield(Param,'Specific')&& strcmp(Param.Specific,'?')
-        checkrun=1;% will only search interactive input parameters (preparation of BATCH mode)
-    else
-        checkrun=2; % indicate the RUN option is used
-    end
+    Param=xml2struct(Param);% read Param as input file (batch case)
+    checkrun=0;
 end
-ParamOut=Param; %default output
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -93,65 +80,49 @@ FileExt=Param.InputTable(:,5);
  
 % numbers of slices and file indices
 
-NbSlice=1;%default
-if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
-    NbSlice=Param.IndexRange.NbSlice;
-end
-nbview=numel(i1_series);%number of input file series (lines in InputTable)
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
-nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices) 
-nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 
 %determine the file type on each line from the first input file 
 ImageTypeOptions={'image','multimage','mmreader','video'};
-NcTypeOptions={'netcdf','civx','civdata'};
-for iview=1:nbview
-    if ~exist(filecell{iview,1}','file')
-        msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
-        return
-    end
-    [FileType{iview},FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
-    CheckImage{iview}=~isempty(find(strcmp(FileType{iview},ImageTypeOptions)));% =1 for images
-    CheckNc{iview}=~isempty(find(strcmp(FileType{iview},NcTypeOptions)));% =1 for netcdf files
-    if ~isempty(j1_series{iview})
-        frame_index{iview}=j1_series{iview};
-    else
-        frame_index{iview}=i1_series{iview};
-    end
+
+if ~exist(filecell{1,1}','file')
+    msgbox_uvmat('ERROR',['the first input file ' filecell{1,1} ' does not exist'])
+    return
 end
+[FileType{1},FileInfo{1},MovieObject{1}]=get_file_type(filecell{1,1});
+CheckImage=~isempty(find(strcmp(FileType{1},ImageTypeOptions)));% =1 for images
+
 
 %% calibration data and timing: read the ImaDoc files
 mode=''; %default
 timecell={};
 itime=0;
 NbSlice_calib={};
-XmlData=cell(1,nbview);%initiate the structures containing the data from the xml file (calibration and timing)
-for iview=1:nbview%Loop on views
-    SubDirBase=regexprep(SubDir{iview},'\..*','');%take the root part of SubDir, before the first dot '.'
-    filexml=[fullfile(RootPath{iview},SubDirBase) '.xml'];%new convention: xml at the level of the image folder
+
+SubDirBase=regexprep(SubDir{1},'\..*','');%take the root part of SubDir, before the first dot '.'
+filexml=[fullfile(RootPath{1},SubDirBase) '.xml'];%new convention: xml at the level of the image folder
+if ~exist(filexml,'file')
+    filexml=[fullfile(RootPath{1},SubDir{1},RootFile{1}) '.xml']; % old convention: xml inside the image folder
     if ~exist(filexml,'file')
-        filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.xml']; % old convention: xml inside the image folder
+        filexml=[fullfile(RootPath{1},SubDir{1},RootFile{1}) '.civ']; % very old convention: .civ file
         if ~exist(filexml,'file')
-            filexml=[fullfile(RootPath{iview},SubDir{iview},RootFile{iview}) '.civ']; % very old convention: .civ file
-            if ~exist(filexml,'file')
-                filexml='';
-            end
+            filexml='';
         end
     end
-    if ~isempty(filexml)
-        [XmlData{iview},error]=imadoc2struct_special(filexml);
-    end
-    if isfield(XmlData{iview},'Time')
-        itime=itime+1;
-        timecell{itime}=XmlData{iview}.Time;
-    end
-    if isfield(XmlData{iview},'GeometryCalib') && isfield(XmlData{iview}.GeometryCalib,'SliceCoord')
-        NbSlice_calib{iview}=size(XmlData{iview}.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
-        if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
-            msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
-        end
+end
+if ~isempty(filexml)
+    [XmlData,error]=imadoc2struct_special(filexml);
+end
+if isfield(XmlData,'Time')
+    itime=itime+1;
+    timecell{itime}=XmlData.Time;
+end
+if isfield(XmlData,'GeometryCalib') && isfield(XmlData.GeometryCalib,'SliceCoord')
+    NbSlice_calib{1}=size(XmlData.GeometryCalib.SliceCoord,1);%nbre of slices for Zindex in phys transform
+    if ~isequal(NbSlice_calib{1},NbSlice_calib{1})
+        msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
     end
 end
 
@@ -163,26 +134,6 @@ end
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
  % EDIT FROM HERE
 
-%% check the validity of  input file types
-if CheckImage{1}
-    FileExtOut='.png'; % write result as .png images for image inputs
-elseif CheckNc{1}
-    FileExtOut='.nc';% write result as .nc files for netcdf inputs
-else 
-    msgbox_uvmat('ERROR',['invalid file type input ' FileType{1}])
-    return
-end
-if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
-        msgbox_uvmat('ERROR','input must be two image series or two netcdf file series')
-    return
-end
-% NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
-% if NbSlice~=nbfield_j
-%     answer=msgbox_uvmat('INPUT_Y-N',['will not average slice by slice: for so cancel and set NbSlice= ' num2str(nbfield_j)]);
-%     if ~strcmp(answer,'Yes')
-%         return
-%     end
-% end
 
 %% Set field names and velocity types
 % not relevant here
@@ -193,7 +144,7 @@ end
 %% interactive input of specific parameters (for RDvision system)
 display('RDvision system')
 first_label=0; %image numbers start from 0
-if ~strcmp(NomType{1},'_000001')
+if ~CheckImage || ~strcmp(NomType{1},'_000001')
     msgbox_uvmat('WARNING','the input is not a file from RDvision: this function relabel_i_j has no action');%error message for directory creation
     return
 else
@@ -205,7 +156,7 @@ end
 
 %% copy and adapt the xml file
 NomTypeNew='_1_1';
-if ~isempty(XmlData{1})
+if ~isempty(XmlData)
         t=xmltree(filexml);
         
         %update information on the first image name in the series
@@ -232,25 +183,25 @@ if ~isempty(XmlData{1})
         end
         
         %%%% correction RDvision %%%%
-        if isfield(XmlData{1},'NbDtj')
+        if isfield(XmlData,'NbDtj')
             uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
             uid_value=children(t,uid_NbDtj);
             if ~isempty(uid_value)
-                t=set(t,uid_value(1),'value',num2str(XmlData{1}.NbDtj));
+                t=set(t,uid_value(1),'value',num2str(XmlData.NbDtj));
             end
         end
-        if isfield(XmlData{1},'NbDtk')
+        if isfield(XmlData,'NbDtk')
             uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
             uid_value=children(t,uid_NbDtk);
             if ~isempty(uid_value)
-                t=set(t,uid_value(1),'value',num2str(XmlData{1}.NbDtk));
+                t=set(t,uid_value(1),'value',num2str(XmlData.NbDtk));
             end
         end
-        if isempty(j1_series{1}) && isfield(XmlData{1},'NbDti')
+        if isempty(j1_series{1}) && isfield(XmlData,'NbDti')
             uid_Dti=find(t,'ImaDoc/Camera/BurstTiming/Dti');
-            t=add(t,uid_Dti,'chardata',num2str(XmlData{1}.Dti));
+            t=add(t,uid_Dti,'chardata',num2str(XmlData.Dti));
             uid_NbDti=find(t,'ImaDoc/Camera/BurstTiming/NbDti');
-            t=add(t,uid_NbDti,'chardata',num2str(XmlData{1}.NbDti));
+            t=add(t,uid_NbDti,'chardata',num2str(XmlData.NbDti));
             uid_NbDtj=find(t,'ImaDoc/Camera/BurstTiming/NbDtj');
             uid_NbDtk=find(t,'ImaDoc/Camera/BurstTiming/NbDtk');
             t=delete(t,uid_NbDtj);
@@ -263,37 +214,38 @@ if ~isempty(XmlData{1})
         end
             SubDirBase=regexprep(SubDir{1},'\..*','');%take the root part of SubDir, before the first dot '.'
     filexml_new=[fullfile(RootPath{1},SubDirBase) '.xml'];
-        save(t,filexml_new)
+       % save(t,filexml_new)
 end
 
 %% main loop on images
 %j1=[];%default
-nbfield2=size(XmlData{1}.Time,2);
+nbfield2=size(XmlData.Time,2)
 for ifile=1:nbfield
     if checkrun
-        update_waitbar(hseries.Waitbar,ifile/nbfield)
-        drawnow
-        stopstate=get(hseries.RUN,'BusyAction');
+        stopstate=get(Param.RUNHandle,'BusyAction');
+        update_waitbar(Param.WaitbarHandle,ifile/nbfield)
     else
         stopstate='queue';
     end
-    if isequal(stopstate,'queue') % enable STOP command
-        filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile));
-        j1=mod(ifile-1+first_label,nbfield2)+1;
-        i1=floor((ifile-1+first_label)/nbfield2)+1;
-        filename_new=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomTypeNew,i1,[],j1);
-        try
-            movefile(filename,filename_new);
-            [s,errormsg] = fileattrib(filename_new,'-w','a'); %set images to read only '-w' for all users ('a')
-            if ~s
-                msgbox_uvmat('ERROR',errormsg);
-                return
-            end
-        catch ME
-            msgbox_uvmat('ERROR',ME.message);
+    if ~isequal(stopstate,'queue')% enable STOP command
+        break
+    end
+    filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile));
+    j1=mod(ifile-1+first_label,nbfield2)+1;
+    i1=floor((ifile-1+first_label)/nbfield2)+1;
+    filename_new=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomTypeNew,i1,[],j1);
+    try
+        movefile(filename,filename_new);
+        [s,errormsg] = fileattrib(filename_new,'-w','a'); %set images to read only '-w' for all users ('a')
+        if ~s
+            msgbox_uvmat('ERROR',errormsg);
             return
         end
+    catch ME
+        msgbox_uvmat('ERROR',ME.message);
+        return
     end
+    
 end
 
 %'imadoc2struct_special': reads the xml file for image documentation 

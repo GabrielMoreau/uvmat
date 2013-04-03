@@ -432,7 +432,7 @@ end
 [FilePath,FileName,ImaExt]=fileparts(imageinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDirImages,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,MovieObject]=find_file_series(FilePath,[FileName ImaExt]);
+[RootPath,SubDirImages,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,FileInfo,MovieObject]=find_file_series(FilePath,[FileName ImaExt]);
 switch FileType
     case {'image','multimage','video','mmreader'}
     otherwise
@@ -2561,7 +2561,7 @@ switch option
             [FilePath,FileName,Ext]=fileparts(fileinput);
             % detect the file type, get the movie object if relevant, and look for the corresponding file series:
             % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-            [RootPath,SubDir,RootFile_1,i1_series,i2_series,j1_series,j2_series,nom_type_1,FileType,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName Ext]);
+            [RootPath,SubDir,RootFile_1,i1_series,i2_series,j1_series,j2_series,nom_type_1,FileType,FileInfo,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName Ext]);
             
             %check image nom type
             if ~strcmp(nom_type_1,get(handles.NomType,'String'))

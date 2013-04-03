@@ -81,6 +81,13 @@ if exist('Field','var')
     set(handles.Coordinates,'Visible','on')
     if isfield(PlotParamOut,'Vectors')
         set(handles.Vectors,'Visible','on')
+    else
+        set(handles.Vectors,'Visible','off')
+    end
+    if isfield(PlotParamOut,'Scalar')
+        set(handles.Scalar,'Visible','on')
+    else
+        set(handles.Scalar,'Visible','off')
     end
     errormsg=fill_GUI(PlotParamOut,hObject);
     if ~isempty(errormsg)

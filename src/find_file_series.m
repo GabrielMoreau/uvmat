@@ -36,7 +36,7 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput)
+function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput)
 %------------------------------------------------------------------------
 
 %% get input root name and nomenclature type
@@ -229,7 +229,7 @@ else
         NomType=regexprep(NomType,['^' NomTypePref],'');
         %% update the file type if the input file does not exist (pb of 0001)
         if isempty(FileType)
-            [FileType,tild,MovieObject]=get_file_type(fullfile(FilePath,dirpair(ifile_min).name));
+            [FileType,FileInfo,MovieObject]=get_file_type(fullfile(FilePath,dirpair(ifile_min).name));
         end
     end
 end

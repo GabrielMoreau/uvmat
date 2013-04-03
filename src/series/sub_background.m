@@ -170,13 +170,13 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         end
         nbaver_ima=nbaver*step;
     end
-    ParamOut.InputGUI.CheckVolume=strcmp(answer{1},'Yes');
-    ParamOut.InputGUI.SlidingSequenceLength=nbaver_ima;
-    ParamOut.InputGUI.BrightnessRankThreshold=str2num(answer{3});
+    ParamOut.ActionInput.CheckVolume=strcmp(answer{1},'Yes');
+    ParamOut.ActionInput.SlidingSequenceLength=nbaver_ima;
+    ParamOut.ActionInput.BrightnessRankThreshold=str2num(answer{3});
     
     % apply the image rescaling function 'level' (avoid the blinking effects of bright particles)
     answer=msgbox_uvmat('INPUT_Y-N','apply image rescaling function levels.m after sub_background');
-    ParamOut.InputGUI.CheckLevelTransform=strcmp(answer,'Yes');
+    ParamOut.ActionInput.CheckLevelTransform=strcmp(answer,'Yes');
     return
 end
 %%%%%%%%%%%%%%%%%%%%%%  STOP HERE FOR PAMETER INPUT MODE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -189,7 +189,7 @@ if ischar(Param)
 end
 
 %% Input preparation
-nbaver_ima=Param.InputGUI.SlidingSequenceLength;
+nbaver_ima=Param.ActionInput.SlidingSequenceLength;
 NbSlice=Param.IndexRange.NbSlice;
 if ~isequal(NbSlice,1)
     display(['multi-level splitting into ' num2str(NbSlice) ' slices']);
@@ -224,12 +224,12 @@ end
 
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 
-if isequal(Param.InputGUI.CheckVolume,1)
+if isequal(Param.ActionInput.CheckVolume,1)
     step=1;
 else
     step=nbfield_j;%case of bursts: the sliding background is shifted by the length of one burst
 end
-nbaver_ima=Param.InputGUI.SlidingSequenceLength;%number of images for the sliding background
+nbaver_ima=Param.ActionInput.SlidingSequenceLength;%number of images for the sliding background
 nbaver=ceil(nbaver_ima/step);%number of bursts for the sliding background
 if isequal(floor(nbaver/2),nbaver)
     nbaver=nbaver+1;%set the number of bursts to an odd number (so the middle burst is defined)
@@ -241,7 +241,7 @@ if nbaver_ima > nbfield
 end
 
 % calculate absolute brightness rank
-rank=floor(Param.InputGUI.BrightnessRankThreshold*nbaver_ima);
+rank=floor(Param.ActionInput.BrightnessRankThreshold*nbaver_ima);
 if rank==0
     rank=1;%rank selected in the sorted image series
 end
@@ -345,7 +345,7 @@ for islice=1:NbSlice
         newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
         
         %write result file
-        if Param.InputGUI.CheckLevelTransform
+        if Param.ActionInput.CheckLevelTransform
             C=levels(Acor);
             imwrite(C,newname,'BitDepth',8); % save the new image
         else
@@ -394,7 +394,7 @@ for islice=1:NbSlice
                     end
                     newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
                     %write result file
-                    if Param.InputGUI.CheckLevelTransform
+                    if Param.ActionInput.CheckLevelTransform
                         C=levels(Acor);
                         imwrite(C,newname,'BitDepth',8); % save the new image
                     else
@@ -429,7 +429,7 @@ for islice=1:NbSlice
         newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
         
         %write result file
-        if Param.InputGUI.CheckLevelTransform
+        if Param.ActionInput.CheckLevelTransform
             C=levels(Acor);
             imwrite(C,newname,'BitDepth',8); % save the new image
         else

@@ -281,7 +281,7 @@ else
     RootFileCell=InputTable(:,3);
      oldfile=fullfile(RootPathCell{1},SubDirCell{1},RootFileCell{1});
  end
-[FileName, PathName, filterindex] = uigetfile( ...
+[FileName, PathName] = uigetfile( ...
        {'*.xml;*.xls;*.png;*.tif;*.avi;*.AVI;*.nc', ' (*.xml,*.xls, *.png,*.tif, *.avi,*.nc)';
        '*.xml',  '.xml files '; ...
         '*.xls',  '.xls files '; ...
@@ -303,7 +303,7 @@ if isequal(ext,'.xml')
         if isfield(Param,'CheckObject')&& Param.CheckObject
             set_object(Param.ProjObject)
         end
-        set(handles.REFRESH,'UserData',[1:size(Param.InputTable,1)])
+        set(handles.REFRESH,'UserData',1:size(Param.InputTable,1))
         REFRESH_Callback([],[], handles)
         return
     end
@@ -455,7 +455,7 @@ for iview=view_set
         i1_series=[];
         RootPath=fileparts(RootPath); %will try the upped forldr
     else
-        [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=...
+        [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=...
             find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
     end
     if isempty(i1_series)
@@ -474,7 +474,7 @@ for iview=view_set
         [path,name,ext]=fileparts(fileinput);
         display_file_name(handles,fileinput,iview)
     else
-        update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,iview)
+        update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,FileInfo,MovieObject,iview)
     end
 end
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to grey color
@@ -513,7 +513,7 @@ drawnow
 [FilePath,FileName,FileExt]=fileparts(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
 if isempty(RootFile)&&isempty(i1_series)
     errormsg='no input file in the series';
     return
@@ -580,12 +580,12 @@ end
 set(handles.InputTable,'BackgroundColor',[1 1 1])
 
 %% initiate input file series and refresh the current field view:     
-update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,iview);
+update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,FileInfo,MovieObject,iview);
 
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
 %     calibration from an xml file
-function update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,VideoObject,iview)
+function update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,FileInfo,VideoObject,iview)
 %------------------------------------------------------------------------
 %% update the output dir
 InputTable=get(handles.InputTable,'Data');
@@ -707,6 +707,7 @@ end
 XmlData=[];
 NbSlice_calib={};
 XmlFileName=find_imadoc(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5});
+TimeUnit='';
 if ~isempty(XmlFileName)
         [XmlData,warntext]=imadoc2struct(XmlFileName);
         if isfield(XmlData,'Heading') && isfield(XmlData.Heading,'ImageName') && ischar(XmlData.Heading.ImageName)
@@ -768,10 +769,14 @@ end
 
 %% number of slices
 NbSlice=1;%default
-if isfield(XmlData,'GeometryCalib') && isfield(XmlData.GeometryCalib,'SliceCoord')
+heck_calib=0;
+if isfield(XmlData,'GeometryCalib') 
+    check_calib=1;
+    if isfield(XmlData.GeometryCalib,'SliceCoord')
     siz=size(XmlData.GeometryCalib.SliceCoord);
     if siz(1)>1
         NbSlice=siz(1);
+    end
     end
 end
 set(handles.num_NbSlice,'String',num2str(NbSlice))
@@ -792,7 +797,14 @@ SeriesData.i2_series{iview}=i2_series;
 SeriesData.j1_series{iview}=j1_series;
 SeriesData.j2_series{iview}=j2_series;
 SeriesData.FileType{iview}=FileType;
+SeriesData.FileInfo{iview}=FileInfo;
 SeriesData.Time{iview}=time;
+if ~isempty(TimeUnit)
+    SeriesData.TimeUnit=TimeUnit;
+end
+if check_calib
+SeriesData.GeometryCalib{iview}=XmlData.GeometryCalib;
+end
 set(handles.series,'UserData',SeriesData)
 
 %% enable j index visibilitycellfun(@isempty,regexp(PairString,'^j'))
@@ -1312,7 +1324,10 @@ drawnow
 %% read the input parameters and set the output dir and nomenclature
 [Series,OutputDir,errormsg]=prepare_jobs(handles);% get parameters form the GUI series
 if ~isempty(errormsg)
+    if ~strcmp(errormsg,'Cancel')
     msgbox_uvmat('ERROR',errormsg)
+    end
+    STOP_Callback([],[], handles)
     return
 end
 OutputNomType=nomtype2pair(Series.InputTable{1,4});% nomenclature for output files
@@ -1680,7 +1695,10 @@ if get(handles.RUN,'value') && isfield(Series,'OutputSubDir')
     check_create=1; %need to create the result directory by default
     while detect
         answer=msgbox_uvmat('INPUT_Y-N',['use existing ouput directory: ' fullfile(Series.InputTable{1,1},SubDirOutNew) ', possibly delete previous data']);
-        if isequal(answer,'Yes')
+        if strcmp(answer,'Cancel')
+            errormsg='Cancel';
+            return
+        elseif strcmp(answer,'Yes')
             detect=0;
             check_create=0;
         else
@@ -1848,7 +1866,9 @@ end
 %% Activate the Action fct
 [Series,tild,errormsg]=prepare_jobs(handles);% read the parameters from the GUI series
 if ~isempty(errormsg)
+    if ~strcmp(errormsg,'Cancel')
     msgbox_uvmat('ERROR',errormsg)
+    end
     return
 end
 ParamOut=h_fun(Series);
@@ -2385,6 +2405,10 @@ if get(handles.status,'Value')
     StatusData.time_ref=get(handles.RUN,'UserData');% get the time of launch
     Param=read_GUI(handles.series);
     RootPath=Param.InputTable{1,1};
+    if ~isfield(Param,'OutputSubDir')   
+        msgbox_uvmat('ERROR','no directory defined for output files')
+        return
+    end
     OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
     OutputDir=fullfile(RootPath,OutputSubDir);
     hfig=findobj(allchild(0),'name','series_status');

@@ -54,6 +54,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         Data.ProjObject='off';...%can use projection object(option 'off'/'on',
         Data.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
         Data.OutputDirExt='.civ';%set the output dir extension
+       
     return
 end
 

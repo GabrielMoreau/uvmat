@@ -541,9 +541,9 @@ if ~exist(fullfile(RootPath,SubDir),'dir')
     return
 end
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 % initiate the input file series and refresh the current field view: 
-update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,1);
+update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,FileInfo,MovieObject,1);
 
 %-----------------------------------------------------------------------
 % --- Called by action in RootPath_1 edit box
@@ -671,7 +671,7 @@ end
 [FilePath,FileName,FileExt]=fileparts(fileinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
 
 %% open the file or fill the GUI uvmat according to the detected file type
 switch FileType
@@ -2662,7 +2662,8 @@ else
         if ~isempty(view_field_handle)
             plot_handles{2}=guidata(view_field_handle);
             haxes(2)=plot_handles{2}.PlotAxes;
-            PlotParam{2}=read_GUI(handles.uvmat);%read plotting parameters on the uvmat interface
+            PlotParam{2}=read_GUI(view_field_handle);
+           % PlotParam{2}=read_GUI(handles.uvmat);%read plotting parameters on the uvmat interface
             PosColorbar{2}='*'; %TODO: deal with colorbar position on view_field
         end
     end
