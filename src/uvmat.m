@@ -543,7 +543,7 @@ end
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
 % initiate the input file series and refresh the current field view: 
-update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,FileInfo,MovieObject,1);
+update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,1);
 
 %-----------------------------------------------------------------------
 % --- Called by action in RootPath_1 edit box

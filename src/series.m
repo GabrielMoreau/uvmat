@@ -1341,8 +1341,10 @@ if ~exist(DirXml,'dir')
 end
 
 %% select the Action modes
-RunModeList=get(handles.RunMode,'String');
-RunMode=RunModeList{get(handles.RunMode,'Value')};
+RunMode='local';%default
+if isfield(Series.Action,'RunMode')
+RunMode=Series.Action.RunMode;
+end
 ActionExt='.m';%default
 if isfield(Series.Action,'ActionExt')
     ActionExt=Series.Action.ActionExt;% '.m' or '.sh' (compiled)
@@ -1455,11 +1457,11 @@ if strcmp (RunMode,'local')
     Series.WaitbarHandle=handles.Waitbar;
     for iprocess=1:NbProcess
         if isempty(Series.IndexRange.NbSlice)
-            Series.IndexRange.first_i=first_i+(iprocess-1)*BlockLength;
+            Series.IndexRange.first_i=first_i+(iprocess-1)*BlockLength*incr_i;
             if Series.IndexRange.first_i>last_i
                 break
             end
-            Series.IndexRange.last_i=min(first_i+(iprocess)*BlockLength-1,last_i);
+            Series.IndexRange.last_i=min(first_i+(iprocess)*BlockLength*incr_i-1,last_i);
         else
             Series.IndexRange.first_i= first_i+iprocess-1;
             Series.IndexRange.incr_i=incr_i*Series.IndexRange.NbSlice;
@@ -1508,12 +1510,12 @@ else
     end
     for iprocess=1:NbProcess
         if isempty(Series.IndexRange.NbSlice)% process by blocks of i index
-            Series.IndexRange.first_i=first_i+(iprocess-1)*BlockLength;
+            Series.IndexRange.first_i=first_i+(iprocess-1)*BlockLength*incr_i;
             if Series.IndexRange.first_i>last_i
                 NbProcess=iprocess-1;
                 break% leave the loop, we are at the end of the calculation
             end
-            Series.IndexRange.last_i=min(last_i,first_i+(iprocess)*BlockLength-1);
+            Series.IndexRange.last_i=min(last_i,first_i+(iprocess)*BlockLength*incr_i-1);
         else% process by slices of i index if NbSlice is defined, computation in a single process if NbSlice =1
             Series.IndexRange.first_i= first_i+iprocess-1;
             Series.IndexRange.incr_i=incr_i*Series.IndexRange.NbSlice;

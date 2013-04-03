@@ -167,14 +167,14 @@ for ifield=1:NbField
         else
             %         if ~isfield(Param.Civ1,'ImageA')
             ImageName_A=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
-            [par_civ1.ImageA,MovieObject_A] = read_image(ImageName_A,FileType_A,MovieObject_A,FrameIndex_A_Civ1);
+            [par_civ1.ImageA,MovieObject_A] = read_image(ImageName_A,FileType_A,MovieObject_A,FrameIndex_A_Civ1(ifield));
             %         elseif ischar(Param.Civ1.ImageA)
             %             Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'''','\');
             %             [par_civ1.ImageA,VideoObject] = read_image(Param.Civ1.ImageA,par_civ1.FileTypeA,MovieObject_A,par_civ1.FrameIndexA);
             %         end
             %         if ~isfield(Param.Civ1,'ImageB')
             ImageName_B=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
-            [par_civ1.ImageB,MovieObject_B] = read_image(ImageName_B,FileType_B,MovieObject_B,FrameIndex_B_Civ1);
+            [par_civ1.ImageB,MovieObject_B] = read_image(ImageName_B,FileType_B,MovieObject_B,FrameIndex_B_Civ1(ifield));
             %         elseif isfield(Param.Civ1,'ImageB')&& ischar(Param.Civ1.ImageB)
             %              Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'''','\');
             %              if strcmp(Param.Civ1.ImageA,Param.Civ1.ImageB)% use the same movie object
@@ -327,13 +327,13 @@ for ifield=1:NbField
         %         if ~isfield(Param.Civ1,'ImageA')
         ImageName_A_Civ2=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1_series_Civ2(ifield),[],j1_series_Civ2(ifield));
 
-        if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1,FrameIndex_A_Civ2)
+        if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2)
             par_civ2.ImageA=par_civ1.ImageA;
         else
             [par_civ2.ImageA,MovieObject_A] = read_image(ImageName_A,FileType_A,MovieObject_A,FrameIndex_A_Civ2);
         end
         ImageName_B_Civ2=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i2_series_Civ2(ifield),[],j2_series_Civ2(ifield));
-        if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_Civ1,FrameIndex_B_Civ2)
+        if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_Civ1(ifield),FrameIndex_B_Civ2)
             par_civ2.ImageB=par_civ1.ImageB;
         else
             [par_civ2.ImageB,MovieObject_B] = read_image(ImageName_B,FileType_B,MovieObject_B,FrameIndex_B_Civ2);
@@ -914,6 +914,8 @@ if strcmp (mode,'Di')
     if isempty(j_series)
         NomTypeNc='_1-2';
     else
+        j1_series=j_series;
+        j2_series=j_series;
         NomTypeNc='_1-2_1';
     end
 elseif strcmp (mode,'Dj')
