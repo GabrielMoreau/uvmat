@@ -769,7 +769,7 @@ end
 
 %% number of slices
 NbSlice=1;%default
-heck_calib=0;
+check_calib=0;
 if isfield(XmlData,'GeometryCalib') 
     check_calib=1;
     if isfield(XmlData.GeometryCalib,'SliceCoord')
