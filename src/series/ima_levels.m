@@ -53,6 +53,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.lev';%set the output dir extension
+    ParamOut.OutputFileMode='NbInput';%NbInput= 1 output file per input file index, NbInput_i=1 fileper input file index i,NbSlice= 1 file per slice
 return
 end
 

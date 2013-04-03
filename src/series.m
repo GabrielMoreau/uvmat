@@ -1429,6 +1429,7 @@ else
     NbProcess=Series.IndexRange.NbSlice;% the nbre of run processes is equal to the number of slices
     NbCore=min(NbCore,NbProcess);% at least one process per core
 end
+        
 
 %% read index ranges
 first_i=1;
@@ -1436,6 +1437,7 @@ last_i=1;
 incr_i=1;
 first_j=1;
 last_j=1;
+incr_j=1;
 if isfield(Series.IndexRange,'first_i')
     first_i=Series.IndexRange.first_i;
     incr_i=Series.IndexRange.incr_i;
@@ -1444,11 +1446,23 @@ end
 if isfield(Series.IndexRange,'first_j')
     first_j=Series.IndexRange.first_j;
     last_j=Series.IndexRange.last_j;
+    incr_j=Series.IndexRange.incr_j;
 end
 if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
         set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return
 else
     BlockLength=ceil(numel(first_i:incr_i:last_i)/NbProcess);
+end
+nbfield_j=numel(first_j:incr_j:last_j);
+
+%% record nbre of output files for status
+StatusData=get(handles.status,'UserData');
+StatusData.NbCore=NbCore;
+StatusData.NbProcess=NbProcess;
+if isfield(StatusData,'OutputFileMode')
+switch StatusData.OutputFileMode
+    case 'NbInput'%TODO:finish
+end
 end
 
 %% direct processing on the current Matlab session
@@ -1610,8 +1624,8 @@ switch RunMode
                 return
             end
         end
-        max_walltime=3600*12; % 12h max
-        walltime_onejob=600;%seconds
+        max_walltime=3600*12; % 12h max total calculation 
+        walltime_onejob=600;%seconds, max estimated time for asingle file index value
         filename_joblist=fullfile(DirOAR,'job_list.txt');%create name of the global executable file
         fid=fopen(filename_joblist,'w');
         for p=1:length(batch_file_list)
@@ -1622,7 +1636,7 @@ switch RunMode
         oar_command=['oarsub -n CIVX '...
             '-t idempotent --checkpoint ' num2str(walltime_onejob+60) ' '...
             '-l /core=' num2str(NbCore) ','...
-            'walltime=' datestr(min(1.05*walltime_onejob/86400*max(length(batch_file_list),NbCore)/NbCore,max_walltime/86400),13) ' '...
+            'walltime=' datestr(min(1.05*walltime_onejob/86400*max(NbProcess*BlockLength*nbfield_j,NbCore)/NbCore,max_walltime/86400),13) ' '...
             '-E ' regexprep(filename_joblist,'\.txt\>','.stderr') ' '...
             '-O ' regexprep(filename_joblist,'\.txt\>','.stdout') ' '...
             extra_oar ' '...
@@ -2023,6 +2037,12 @@ set(handles.ActionExt,'Visible',OutputDirVisible)
 set(handles.RunMode_title,'Visible',OutputDirVisible)
 set(handles.ActionExt_title,'Visible',OutputDirVisible)
 
+%% Expected nbre of output files
+if isfield(ParamOut,'OutputFileMode')
+StatusData.NbOutputFile=ParamOut.OutputFileMode;
+set(handles.status,'UserData',StatusData)
+end
+
 %% definition of an additional parameter set, determined by an ancillary GUI
 if isfield(ParamOut,'ActionInput')
     set(handles.ActionInput,'Visible','on')
@@ -2415,7 +2435,7 @@ if get(handles.status,'Value')
     OutputDir=fullfile(RootPath,OutputSubDir);
     hfig=findobj(allchild(0),'name','series_status');
     if isempty(hfig)
-        hfig=figure('DeleteFcn',@stop_status);
+        hfig=figure('DeleteFcn',@stop_status,'Position',[600 600 560 600]);
         set(hfig,'MenuBar','none')% suppress the menu bar
         set(hfig,'NumberTitle','off')%suppress the fig number in the title
         set(hfig,'name','series_status')
@@ -2491,13 +2511,43 @@ function refresh_GUI(hObject, eventdata)
 hfig=get(hObject,'parent');
 htitlebox=findobj(hfig,'tag','titlebox');
 hlist=findobj(hfig,'tag','list');
+StatusData=get(hObject,'UserData');
 OutputDir=get(htitlebox,'String');
-ListFiles=dir(OutputDir);
+if ischar(OutputDir),OutputDir={OutputDir};end
+ListFiles=dir(OutputDir{1});
 ListDisplay=cell(numel(ListFiles),1);
+testrecent=0;
+datnum=zeros(numel(ListDisplay)-1,1);
 for ilist=2:numel(ListDisplay)
     ListDisplay{ilist-1}=ListFiles(ilist).name;
+      if ~ListFiles(ilist).isdir && isfield(ListFiles(ilist),'datenum')
+            datnum(ilist)=ListFiles(ilist).datenum;%only available in recent matlab versions
+            testrecent=1;
+       end
 end
 set(hlist,'String',ListDisplay)
+
+%% Look at date of creation
+datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
+ListDisplay=ListDisplay(datnum~=0);
+if isempty(datnum)
+    if testrecent
+        message='no civ result created yet';
+    else
+        message='';
+    end
+else
+    [first,indfirst]=min(datnum);
+    [last,indlast]=max(datnum);
+    message={[num2str(numel(datnum)) ' file(s) done over ?'] ;['oldest modification:  ' ListDisplay{indfirst} ' : ' datestr(first)];...
+        ['latest modification:  ' ListDisplay{indlast} ' : ' datestr(last)]};
+end
+titlebox=findobj(hfig,'tag','titlebox');
+msg_old=get(titlebox,'String');
+set(titlebox,'String', [msg_old(1);message])
+hwaitbar=findobj(hfig,'tag','waitbar');
+%TODO: adjust waitbar
+
 % civ_files=get(hfig,'UserData');
 
 % [filepath,filename,ext]=fileparts(civ_files{1});
