@@ -1459,15 +1459,18 @@ else
 end
 nbfield_j=numel(first_j:incr_j:last_j);
 
-%% record nbre of output files for status
+%% record nbre of output files and starting time for computation for status
 StatusData=get(handles.status,'UserData');
-StatusData.NbCore=NbCore;
-StatusData.NbProcess=NbProcess;
-if isfield(StatusData,'OutputFileMode')
-switch StatusData.OutputFileMode
-    case 'NbInput'%TODO:finish
-end
-end
+    switch StatusData.OutputFileMode
+        case 'NbInput'
+            StatusData.NbOutputFile=numel(first_i,incr_i:last_i)*numel(first_j,incr_j:last_j);
+        case 'NbInput_i'
+            StatusData.NbOutputFile=numel(first_i,incr_i:last_i);
+        case 'NbSlice'    
+            StatusData.NbOutputFile=str2num(get(handles.num_NbSlice,'String'));
+    end
+StatusData.TimeStart=now;
+set(handles.status,'UserData',StatusData)
 
 %% direct processing on the current Matlab session
 if strcmp (RunMode,'local')
@@ -1616,7 +1619,7 @@ end
 switch RunMode
     case 'background'
         for iprocess=1:NbProcess
-            system(batch_file_list{iprocess})% directly execute the command file for each process
+            system([batch_file_list{iprocess} ' &'])% directly execute the command file for each process
         end
     case 'cluster_oar' % option 'oar-parexec' used
         %create subdirectory for oar command and log files
@@ -1934,10 +1937,12 @@ else
 first_i=1;last_i=1;first_j=1;last_j=1;
 if isfield(Series.IndexRange,'first_i')
     first_i=Series.IndexRange.first_i;
+    incr_i=Series.IndexRange.incr_i;
     last_i=Series.IndexRange.last_i;
 end
 if isfield(Series.IndexRange,'first_j')
     first_j=Series.IndexRange.first_j;
+     incr_j=Series.IndexRange.incr_j;
     last_j=Series.IndexRange.last_j;
 end
 if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
@@ -2043,7 +2048,7 @@ set(handles.ActionExt_title,'Visible',OutputDirVisible)
 
 %% Expected nbre of output files
 if isfield(ParamOut,'OutputFileMode')
-StatusData.NbOutputFile=ParamOut.OutputFileMode;
+StatusData.OutputFileMode=ParamOut.OutputFileMode;
 set(handles.status,'UserData',StatusData)
 end
 
@@ -2442,7 +2447,7 @@ function status_Callback(hObject, eventdata, handles)
 if get(handles.status,'Value')
     set(handles.status,'BackgroundColor',[1 1 0])
     drawnow
-    StatusData.time_ref=get(handles.RUN,'UserData');% get the time of launch
+    %StatusData.time_ref=get(handles.RUN,'UserData');% get the time of launch
     Param=read_GUI(handles.series);
     RootPath=Param.InputTable{1,1};
     if ~isfield(Param,'OutputSubDir')   
@@ -2453,7 +2458,8 @@ if get(handles.status,'Value')
     OutputDir=fullfile(RootPath,OutputSubDir);
     hfig=findobj(allchild(0),'name','series_status');
     if isempty(hfig)
-        hfig=figure('DeleteFcn',@stop_status,'Position',[600 600 560 600]);
+        ScreenSize=get(0,'ScreenSize');
+        hfig=figure('DeleteFcn',@stop_status,'Position',[ScreenSize(3)-600 ScreenSize(4)-640 560 600]);
         set(hfig,'MenuBar','none')% suppress the menu bar
         set(hfig,'NumberTitle','off')%suppress the fig number in the title
         set(hfig,'name','series_status')
@@ -2463,7 +2469,7 @@ if get(handles.status,'Value')
         uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
         uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@stop_status);
         hrefresh=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@refresh_GUI);
-        set(hrefresh,'UserData',StatusData)
+        %set(hrefresh,'UserData',StatusData)
         BarPosition=[0.05 0.81 0.01 0.05];
         uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
         drawnow
@@ -2483,6 +2489,7 @@ end
 %------------------------------------------------------------------------   
 % launched by selecting a file on the list
 function view_file(hObject, eventdata)
+%------------------------------------------------------------------------
 list=get(hObject,'String');
 index=get(hObject,'Value');
 rootroot=get(hObject,'UserData');
@@ -2520,8 +2527,6 @@ elseif exist(FullSelectName,'file')%visualise the vel field if it exists
 end
 
 
-%------------------------------------------------------------------------
-
 %------------------------------------------------------------------------   
 % launched by refreshing the status figure
 function refresh_GUI(hObject, eventdata)
@@ -2529,15 +2534,21 @@ function refresh_GUI(hObject, eventdata)
 hfig=get(hObject,'parent');
 htitlebox=findobj(hfig,'tag','titlebox');
 hlist=findobj(hfig,'tag','list');
-StatusData=get(hObject,'UserData');
+hseries=findobj(allchild(0),'tag','series');
+hstatus=findobj(hseries,'tag','status');
+StatusData=get(hstatus,'UserData');
 OutputDir=get(htitlebox,'String');
 if ischar(OutputDir),OutputDir={OutputDir};end
 ListFiles=dir(OutputDir{1});
+if numel(ListFiles)<1
+    return
+end
+ListFiles(1)=[];%removes the first line ='.'
 ListDisplay=cell(numel(ListFiles),1);
 testrecent=0;
-datnum=zeros(numel(ListDisplay)-1,1);
-for ilist=2:numel(ListDisplay)
-    ListDisplay{ilist-1}=ListFiles(ilist).name;
+datnum=zeros(numel(ListDisplay),1);
+for ilist=1:numel(ListDisplay)
+    ListDisplay{ilist}=ListFiles(ilist).name;
       if ~ListFiles(ilist).isdir && isfield(ListFiles(ilist),'datenum')
             datnum(ilist)=ListFiles(ilist).datenum;%only available in recent matlab versions
             testrecent=1;
@@ -2546,8 +2557,8 @@ end
 set(hlist,'String',ListDisplay)
 
 %% Look at date of creation
-datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
 ListDisplay=ListDisplay(datnum~=0);
+datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
 if isempty(datnum)
     if testrecent
         message='no civ result created yet';
@@ -2557,13 +2568,24 @@ if isempty(datnum)
 else
     [first,indfirst]=min(datnum);
     [last,indlast]=max(datnum);
-    message={[num2str(numel(datnum)) ' file(s) done over ?'] ;['oldest modification:  ' ListDisplay{indfirst} ' : ' datestr(first)];...
+    NbOutputFile_str='?';
+    NbOutputFile=[];
+    if isfield(StatusData,'NbOutputFile')
+        NbOutputFile=StatusData.NbOutputFile;
+        NbOutputFile_str=num2str(NbOutputFile);
+    end
+    message={[num2str(numel(datnum)) ' file(s) done over ' NbOutputFile_str] ;['oldest modification:  ' ListDisplay{indfirst} ' : ' datestr(first)];...
         ['latest modification:  ' ListDisplay{indlast} ' : ' datestr(last)]};
 end
-titlebox=findobj(hfig,'tag','titlebox');
-msg_old=get(titlebox,'String');
-set(titlebox,'String', [msg_old(1);message])
+set(htitlebox,'String', [OutputDir{1};message])
+
+%% update the waitbar
 hwaitbar=findobj(hfig,'tag','waitbar');
+if ~isempty(NbOutputFile) 
+    BarPosition=get(hwaitbar,'Position');
+    BarPosition(3)=0.9*numel(datnum)/NbOutputFile;
+    set(hwaitbar,'Position',BarPosition)
+end
 %TODO: adjust waitbar
 
 % civ_files=get(hfig,'UserData');
@@ -2640,10 +2662,7 @@ hwaitbar=findobj(hfig,'tag','waitbar');
 % hwaitbar=findobj(hfig,'tag','waitbar');
 % set(hlist,'String',Tabchar)
 % set(htitlebox,'String', message)
-% if count>0 %&& ~test_new
-%     BarPosition(3)=0.9*count/nbfiles;
-%     set(hwaitbar,'Position',BarPosition)
-% end
+% 
 %------------------------------------------------------------------------   
 % launched by deleting the status figure
 function stop_status(hObject, eventdata)
@@ -2671,20 +2690,20 @@ if strcmp(ActionExt,'.sh')
             cd(currentdir)
         end
     end
-    currentdir=pwd;
-    cd(get(handles.ActionPath,'String'))
-    sh_file=dir([ActionName '.sh']);
-    m_file=dir([ActionName '.m']);
-    if isfield(m_file,'datenum') && m_file.datenum>sh_file.datenum
+    sh_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']));
+    m_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.m']));
+    if isfield(m_file_info,'datenum') && m_file_info.datenum>sh_file_info.datenum
         set(handles.ActionExt,'BackgroundColor',[1 1 0])
         drawnow
         answer=msgbox_uvmat('INPUT_Y-N',[ActionName '.sh needs to be updated: recompile now?']);
         if strcmp(answer,'Yes')
+            currentdir=pwd;
+            cd(get(handles.ActionPath,'String'))
             compile(ActionName)
+            cd(currentdir)
         end
         set(handles.ActionExt,'BackgroundColor',[1 1 1])
     end
-    cd(currentdir)
 end
 
 

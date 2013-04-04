@@ -4,16 +4,20 @@
 %
 % OUTPUT:
 % A(npy,npx,rgb): matrix of integers (iunt8 or uint16) representing the image, with sizes npy, npx, and possibly color component rgb=1:3
-% ObjectOut: video object (=[] for images)
+% ObjectOut: video object (=[] for single images)
 %
 % INPUT:
 % FileName: input file name
+%                 other inputs needed  only for video and multi-image file:
 % FileType: input file type, as determined by the function get_file_type.m
 % VideoObject: video object (for faster reading if availlable)
 % num: frame index for movies or multimage types
 %
 function [A,ObjectOut]=read_image(FileName,FileType,VideoObject,num)
 %-----------------------------------------------------------------------
+if ~exist(FileType,'var')
+    FileType='image';
+end
 if ~exist('VideoObject','var')
     VideoObject=[];
 end

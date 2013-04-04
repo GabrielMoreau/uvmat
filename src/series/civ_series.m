@@ -191,12 +191,12 @@ for ifield=1:NbField
         list_param=(fieldnames(Param.ActionInput.Civ1))';
         Civ1_param=list_param;%default
         
-        %set the values of all the global attributes in list_param
-        Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];
+        %set the values of all the global attributes in list_param  
         for ilist=1:length(list_param)
             Civ1_param{ilist}=['Civ1_' list_param{ilist}];
             Data.(['Civ1_' list_param{ilist}])=Param.ActionInput.Civ1.(list_param{ilist});
         end
+        Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];
         Data.CivStage=1;
         
         % set the list of variables

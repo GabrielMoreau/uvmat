@@ -88,11 +88,11 @@ if isfield (Param,'Civ1')
     Civ1_param=list_param;%default
     
     %set the values of all the global attributes in list_param
-    Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];
     for ilist=1:length(list_param)
         Civ1_param{ilist}=['Civ1_' list_param{ilist}];
         Data.(['Civ1_' list_param{ilist}])=Param.Civ1.(list_param{ilist});
     end
+    Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];
     Data.CivStage=1;
     
     % set the list of variables
@@ -104,7 +104,7 @@ if isfield (Param,'Civ1')
     Data.VarAttribute{4}.Role='vector_y';
     Data.VarAttribute{5}.Role='warnflag';
     
-    if strcmp(Param.ListCompareMode, 'PIV volume')
+    if isfield(Param,'ListCompareMode') && strcmp(Param.ListCompareMode, 'PIV volume')
         Data.ListVarName=[Data.ListVarName 'Civ1_Z'];
         Data.Civ1_X=[];Data.Civ1_Y=[];Data.Civ1_Z=[];
         Data.Civ1_U=[];Data.Civ1_V=[];Data.Civ1_C=[];Data.Civ1_F=[];

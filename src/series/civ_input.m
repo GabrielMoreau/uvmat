@@ -24,7 +24,7 @@ function varargout = civ_input(varargin)
 %TODO: search range
 
 
-% Last Modified by GUIDE v2.5 04-Apr-2013 09:14:14
+% Last Modified by GUIDE v2.5 04-Apr-2013 22:08:23
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -81,6 +81,7 @@ end
 
 %% input file info
 RootPath=Param.InputTable{1,1};
+set(handles.RootPath,'String',RootPath)
 RootFile=Param.InputTable{1,3};
 SubDir=Param.InputTable{1,2};
 NomTypeInput=Param.InputTable{1,4};
@@ -115,39 +116,21 @@ switch FileType
         end
         imageinput='';
         Data=nc2struct(FileInput,'ListGlobalAttribute','Civ2_ImageA','Civ1_ImageA','Civ2_ImageB','Civ1_ImageB');
+        [PathCiv1_ImageA,Civ1_ImageA,FileExtA]=fileparts(Data.Civ1_ImageA);
+        [PathCiv1_ImageB,Civ1_ImageB,FileExtA]=fileparts(Data.Civ1_ImageB);
+        [PathCiv2_ImageA,Civ2_ImageA,FileExtA]=fileparts(Data.Civ2_ImageA);
+        [PathCiv2_ImageB,Civ2_ImageB,FileExtA]=fileparts(Data.Civ2_ImageB);
+        set(handles.Civ1_ImageA,'String',Civ1_ImageA)
+        set(handles.Civ1_ImageB,'String',Civ1_ImageB)
+        set(handles.Civ2_ImageA,'String',Civ2_ImageA)
+        set(handles.Civ2_ImageB,'String',Civ2_ImageB)
     if isfield(Data,'Txt')
         errormsg=Data.Txt;
         return
         %TODO: introduce the image in the input table of series
     end
-        %         if  ~isempty(Data.Civ2_ImageB)%get the corresponding input image in the netcdf file
-        %             imageinput=Data.Civ2_ImageB;
-        %             [tild,ImaName,ImaExt]=fileparts(Data.Civ2_ImageA);
-        %             set(handles.RootFile_1,'String',[ImaName ImaExt])
-        %         elseif ~isempty(Data.Civ1_ImageB)
-        %             imageinput=Data.Civ1_ImageB;
-        %             [tild,ImaName,ImaExt]=fileparts(Data.Civ1_ImageA);
-        %             set(handles.RootFile_1,'String',[ImaName ImaExt])
-        %         end
-        % settings for civx data,        
-        % look for the corresponding input images
-        check_letter=~isempty(regexp(NomTypeInput,'[ab|AB]$','once'));%detect pair label by letter
-        NomTypeIma=NomTypeInput;
-        if check_letter
-            NomTypeIma=NomTypeInput(1:end-1);
-        else
-            r=regexp(NomTypeIma,'.-(?<num2>\d+)$','names');
-            if ~isempty(r)
-                NomTypeIma=regexprep(NomTypeIma,['-' r.num2],'');
-            end
-            r=regexp(NomTypeIma,'.-(?<num2>\d+)','names');
-            if ~isempty(r)
-                NomTypeIma=regexprep(NomTypeIma,['-' r.num2],'');
-            end
-        end
-%         if ~exist(imageinput,'file')
-%             imageinput=fullfile_uvmat(RootPath,regexprep(SubDir,'.civ(_?)(\d*)$',''),RootFile,'.png',NomTypeIma,i1,[],j1);
-%         end
+        [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaA]=fileparts_uvmat(Data.Civ1_ImageA);
+        [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaB]=fileparts_uvmat(Data.Civ1_ImageB);
     case 'civxdata'% case of  civx data,
         NomTypeNc=NomTypeInput;
         ind_opening=FileInfo.CivStage;
@@ -406,7 +389,7 @@ function errormsg=display_file_name(handles,fileinput)
 % end
 
 %% determine nomenclature types and extension of the input files
-% [RootPath,SubDir,RootFile,i1,i2,j1,j2,ExtInput,NomTypeInput]=fileparts_uvmat(fileinput);
+% [RootPath,SubDir,Civ2_ImageB,i1,i2,j1,j2,ExtInput,NomTypeInput]=fileparts_uvmat(fileinput);
 % NomTypeNc='';%default
 
 
@@ -415,7 +398,7 @@ function errormsg=display_file_name(handles,fileinput)
 [FilePath,FileName,ImaExt]=fileparts(imageinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-%[RootPath,ImageACiv1,RootFile,i1_series,tild,j1_series,tild,NomTypeIma,FileType,MovieObject]=find_file_series(FilePath,[FileName ImaExt]);
+%[RootPath,Civ1_ImageA,Civ2_ImageB,i1_series,tild,j1_series,tild,NomTypeIma,FileType,MovieObject]=find_file_series(FilePath,[FileName ImaExt]);
 switch Param.FileType{1}
     case {'image','multimage','video','mmreader'}
     otherwise
@@ -423,15 +406,15 @@ switch Param.FileType{1}
         return
 end
 set(handles.RootPath,'String',RootPath)
-set(handles.ImageACiv1,'String',SubDirImages)
-set(handles.RootFile,'String',RootFile)
+set(handles.Civ1_ImageA,'String',SubDirImages)
+set(handles.Civ2_ImageB,'String',RootFile)
 if strcmp(ExtInput,'.nc')
     SubDirCiv=regexprep(SubDir,['^' SubDirImages],'');%suppress the root  SuddirImages;
 else
     SubDirCiv= '.civ';
 end
-set(handles.ImageBCiv1,'String',SubDirCiv)
-set(handles.ImageACiv2,'String',SubDirCiv)
+set(handles.Civ1_ImageB,'String',SubDirCiv)
+set(handles.Civ2_ImageA,'String',SubDirCiv)
 browse=get(handles.RootPath,'UserData');
 browse.incr_pair=[0 0];%default
 
@@ -510,9 +493,9 @@ ListPairMode_Callback([], [], handles)
 
 %------------------------------------------------------------------------
 % --- Executes on carriage return on the subdir checkciv1 edit window
-function ImageBCiv1_Callback(hObject, eventdata, handles)
+function Civ1_ImageB_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-SubDir=get(handles.ImageBCiv1,'String');
+SubDir=get(handles.Civ1_ImageB,'String');
 menu_str=get(handles.ListSubdirCiv1,'String');% read the list of subdirectories for update
 ichoice=find(strcmp(SubDir,menu_str),1);
 if isempty(ichoice)
@@ -522,7 +505,7 @@ else
 end
 set(handles.ListSubdirCiv1,'Value',ilist)% select the selected subdir in the menu
 if get(handles.CheckCiv1,'Value')% if Civ1 is performed
-    set(handles.ImageACiv2,'String',SubDir);% set by default civ2 directory the same as civ1 
+    set(handles.Civ2_ImageA,'String',SubDir);% set by default civ2 directory the same as civ1 
 %     set(handles.ListSubdirCiv2,'Value',ilist)
 else % if Civ1 data already exist
     errormsg=find_netcpair_civ(handles,1); %update the list of available pairs from netcdf files in the new directory
@@ -533,9 +516,9 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on carriage return on the SubDir checkciv1 edit window
-function ImageACiv2_Callback(hObject, eventdata, handles)
+function Civ2_ImageA_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-SubDir=get(handles.ImageBCiv1,'String');
+SubDir=get(handles.Civ1_ImageB,'String');
 menu_str=get(handles.ListSubdirCiv2,'String');% read the list of subdirectories for update
 ichoice=find(strcmp(SubDir,menu_str),1);
 if isempty(ichoice)
@@ -608,7 +591,7 @@ ind_selected=find(checkbox,1);
 %     end
 % end
 set(handles.PairIndices,'Visible','on')
-set(handles.ImageBCiv1,'Visible','on')
+set(handles.Civ1_ImageB,'Visible','on')
 set(handles.TitleSubdirCiv1,'Visible','on')
 if opening==0
     errormsg=find_netcpair_civ(handles,1); % select the available netcdf files
@@ -619,7 +602,7 @@ end
 if max(checkbox(4:6))% case of civ2 pair choice needed
     set(handles.TitlePairCiv2,'Visible','on')
     set(handles.TitleSubdirCiv2,'Visible','on')
-    set(handles.ImageACiv2,'Visible','on')
+    set(handles.Civ2_ImageA,'Visible','on')
     %set(handles.ListSubdirCiv2,'Visible','on')
     set(handles.ListPairCiv2,'Visible','on')
     if ~opening
@@ -630,7 +613,7 @@ if max(checkbox(4:6))% case of civ2 pair choice needed
     end
 else
     set(handles.TitleSubdirCiv2,'Visible','off')
-    set(handles.ImageACiv2,'Visible','off')
+    set(handles.Civ2_ImageA,'Visible','off')
     set(handles.ListPairCiv2,'Visible','off')
 end
 options={'Civ1','Fix1','Patch1','Civ2','Fix2','Patch2'};
@@ -1129,9 +1112,9 @@ nom_type_ima=CivInputData.NomTypeIma;
 [nom_type_nc]=nomtype2pair(nom_type_ima,mode);
 
 %% reads .nc subdirectoy and image numbers from the interface
-SubDirImages=get(handles.ImageACiv1,'String');
-subdir_civ1=[SubDirImages get(handles.ImageBCiv1,'String')];%subdirectory subdir_civ1 for the netcdf data
-subdir_civ2=[SubDirImages get(handles.ImageACiv2,'String')];%subdirectory subdir_civ2 for the netcdf data
+SubDirImages=get(handles.Civ1_ImageA,'String');
+subdir_civ1=[SubDirImages get(handles.Civ1_ImageB,'String')];%subdirectory subdir_civ1 for the netcdf data
+subdir_civ2=[SubDirImages get(handles.Civ2_ImageA,'String')];%subdirectory subdir_civ2 for the netcdf data
 ref_i=str2double(get(handles.ref_i,'String'));
 ref_j=[];
 if isequal(mode,'pair j1-j2')%|isequal(mode,'st_pair j1-j2')
@@ -1165,7 +1148,7 @@ displ_pair={''};
 select=ones(size(1:nbpair));%flag for displayed pairs =1 for display
 testpair=0;
 RootPath=get(handles.RootPath,'String');
-RootFile=get(handles.RootFile,'String');
+RootFile=get(handles.Civ2_ImageB,'String');
 if index==1 % case civ1
     if ~get(handles.CheckCiv1,'Value') %
         if ~exist(fullfile(RootPath,subdir_civ1),'dir')
@@ -1591,7 +1574,7 @@ function [nbslice, flag_mask]=get_mask(filebase,handles)
 flag_mask=0;%default
 nbslice=1;
 
-% subdir=get(handles.ImageBCiv1,'String');
+% subdir=get(handles.Civ1_ImageB,'String');
 [Path,Name]=fileparts(filebase);
 if ~isdir(Path)
     msgbox_uvmat('ERROR','no path for input files')
@@ -1687,7 +1670,7 @@ end
 %         return
 %     end    
 % end
-% set(handles.ImageBCiv1,'String',SubDir);
+% set(handles.Civ1_ImageB,'String',SubDir);
 % errormsg=find_netcpair_civ(handles,1);
 % if ~isempty(errormsg)
 %     msgbox_uvmat('ERROR',errormsg)
@@ -1708,7 +1691,7 @@ end
 %         return
 %     end
 % end
-% set(handles.ImageACiv2,'String',SubDir);
+% set(handles.Civ2_ImageA,'String',SubDir);
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckGrid.
@@ -2201,33 +2184,3 @@ function TestCiv2_Callback(hObject, eventdata, handles)
 
 
 
-function NcFileCiv2_Callback(hObject, eventdata, handles)
-% hObject    handle to NcFileCiv2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of NcFileCiv2 as text
-%        str2double(get(hObject,'String')) returns contents of NcFileCiv2 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function NcFileCiv2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to NcFileCiv2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function ImageACiv1_Callback(hObject, eventdata, handles)
-% hObject    handle to ImageACiv1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of ImageACiv1 as text
-%        str2double(get(hObject,'String')) returns contents of ImageACiv1 as a double
