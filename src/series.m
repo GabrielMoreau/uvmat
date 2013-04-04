@@ -541,22 +541,24 @@ set(handles.ListView,'Value',iview)
 set(handles.InputTable,'Data',InputTable)
 
 %% determine the selected reference field indices for pair display
-ref_i=1; %default ref_i is a reference frame index used to find existing pairs from PIV
-if ~isempty(i1)
-    ref_i=i1;
-    if ~isempty(i2)
-        ref_i=floor((ref_i+i2)/2);% reference image number corresponding to the file
-    end
+if isempty(i1)
+    i1=1;
 end
+if isempty(i2)
+    i2=i1;
+end
+ref_i=floor((i1+i2)/2);% reference image number corresponding to the file
 set(handles.num_ref_i,'String',num2str(ref_i));
-ref_j=1; %default  ref_j is a reference frame index used to find existing pairs from PIV
-if ~isempty(j1)
-    ref_j=j1;
-    if ~isempty(j2)
-        ref_j=floor((j1+j2)/2);
-    end          
+set(handles.num_ref_i,'UserData',[i1 i2])
+if isempty(j1)
+    j1=1;
 end
+if isempty(j2)
+    j2=j1;
+end
+ref_j=floor((j1+j2)/2);% reference image number corresponding to the file
 set(handles.num_ref_j,'String',num2str(ref_j)); 
+set(handles.num_ref_j,'UserData',[j1 j2])
 
 %% update the list of recent files in the menubar and save it for future opening
 MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
@@ -792,6 +794,8 @@ update_mode(handles,i1_series,i2_series,j1_series,j2_series,time)
 
 %% update the series info in 'UserData'
 SeriesData=get(handles.series,'UserData');
+SeriesData.Ref_i{iview}=get(handles.num_ref_i,'UserData');
+SeriesData.Ref_j{iview}=get(handles.num_ref_j,'UserData');
 SeriesData.i1_series{iview}=i1_series;
 SeriesData.i2_series{iview}=i2_series;
 SeriesData.j1_series{iview}=j1_series;
@@ -2366,6 +2370,20 @@ display('current series config :')
 evalin('base','Series') %display CurData in the workspace
 commandwindow; %brings the Matlab command window to the front
 
+
+% --------------------------------------------------------------------
+function MenuImportConfig_Callback(hObject, eventdata, handles)
+% --------------------------------------------------------------------
+InputTable=get(handles.InputTable,'Data');
+[FileName, PathName] = uigetfile( ...
+       {'*.xml', ' (*.xml)';
+       '*.xml',  '.xml files '; ...
+        '*.*',  'All Files (*.*)'}, ...
+        'Pick a file',InputTable{1,1});
+filexml=[PathName FileName];%complete file name 
+if isempty(filexml),return;end %abandon if no file is introduced by the browser
+Param=xml2struct(filexml);
+fill_GUI(Param,handles.series)
 
 % --- Executes on selection change in RunMode.
 function RunMode_Callback(hObject, eventdata, handles)

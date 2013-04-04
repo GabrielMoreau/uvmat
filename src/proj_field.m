@@ -890,12 +890,12 @@ DX=[];
 DY=[];%default
 if isfield(ObjectData,'DX') && ~isempty(ObjectData.DX)
      DX=abs(ObjectData.DX);%mesh of interpolation points 
-else
+elseif isfield(FieldData,'CoordMesh')
      DX=FieldData.CoordMesh;
 end
 if isfield(ObjectData,'DY') && ~isempty(ObjectData.DY)
      DY=abs(ObjectData.DY);%mesh of interpolation points 
-else
+elseif isfield(FieldData,'CoordMesh')
      DY=FieldData.CoordMesh;
 end
 if  ~strcmp(ObjectData.ProjMode,'projection') && (isempty(DX)||isempty(DY))

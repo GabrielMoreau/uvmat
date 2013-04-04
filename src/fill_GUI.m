@@ -15,6 +15,7 @@ function errormsg=fill_GUI(Param,GUI_handle)
 errormsg='';
 %handles=guidata(GUI_handle); 
             children=get(GUI_handle,'children');
+             handles=[];
             for ichild=1:numel(children)
                 handles.(get(children(ichild),'tag'))=children(ichild);
             end
