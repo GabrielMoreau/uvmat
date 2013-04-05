@@ -58,48 +58,26 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     return
 end
 
-%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-
 %% read input parameters from an xml file if input is a file name (batch mode)
 checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 end
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 
-Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
-Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
-Data.Program='civ_series';
-Data.CivStage=0;%default
-ListVarCiv1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'}; %variables to read
-ListVarFix1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF'};
-mask='';
-maskname='';%default
-check_civx=0;%default
-check_civ1=0;%default
-check_patch1=0;%default
-
-% case of input Param set by an xml file (batch mode)
-if ischar(Param)
-    Param=xml2struct(Param); %if Param is the name of an xml file, read this file as a Matlab structure
-end
-
-RootPath=Param.InputTable{1,1};
-RootFile=Param.InputTable{1,3};
-SubDir=Param.InputTable{1,2};
-NomType=Param.InputTable{1,4};
-FileExt=Param.InputTable{1,5};
-PairCiv1=Param.ActionInput.PairIndices.ListPairCiv1;
-PairCiv2='';
-if isfield(Param.ActionInput.PairIndices,'ListPairCiv2')
-    PairCiv2=Param.ActionInput.PairIndices.ListPairCiv2;
-end
-
-% option use with GUI series
+%% input files and indexing
 NbField=1;
-MovieObject_A=[];
 if isfield(Param,'InputTable')
+    RootPath=Param.InputTable{1,1};
+    RootFile=Param.InputTable{1,3};
+    SubDir=Param.InputTable{1,2};
+    NomType=Param.InputTable{1,4};
+    FileExt=Param.InputTable{1,5};
+    PairCiv1=Param.ActionInput.PairIndices.ListPairCiv1;
+    PairCiv2='';
+    if isfield(Param.ActionInput.PairIndices,'ListPairCiv2')
+        PairCiv2=Param.ActionInput.PairIndices.ListPairCiv2;
+    end
     MaxIndex=cell2mat(Param.IndexRange.MaxIndex);
     MinIndex=cell2mat(Param.IndexRange.MinIndex);
     [filecell,i_series,tild,j_series]=get_file_series(Param);
@@ -145,6 +123,26 @@ if isfield(Param,'InputTable')
         CheckImage_B=~isempty(find(strcmp(FileType,ImageTypeOptions)));% =1 for images
     end
 end
+
+
+%% Output directory
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];
+
+Data.ListGlobalAttribute={'Conventions','Program','CivStage'};
+Data.Conventions='uvmat/civdata';% states the conventions used for the description of field variables and attributes
+Data.Program='civ_series';
+Data.CivStage=0;%default
+ListVarCiv1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F'}; %variables to read
+ListVarFix1={'Civ1_X','Civ1_Y','Civ1_U','Civ1_V','Civ1_C','Civ1_F','Civ1_FF'};
+mask='';
+maskname='';%default
+check_civx=0;%default
+check_civ1=0;%default
+check_patch1=0;%default
+
+
+
+
 
 %%%%% MAIN LOOP %%%%%%
 

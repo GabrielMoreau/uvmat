@@ -55,25 +55,25 @@ function ParamOut=sub_background (Param)
 
 %% input preparation mode (no RUN)
 if isstruct(Param) && isequal(Param.Action.RUN,0)
-    ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='on';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='on'; ...%nbre of slices ('off' by default)
-    ParamOut.VelType='off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    ParamOut.FieldName='off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    ParamOut.FieldTransform = 'off';...%can use a transform function
-    ParamOut.ProjObject='off';...%can use projection object(option 'off'/'on',
-    ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='on';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.NbSlice='on'; %nbre of slices ('off' by default)
+    ParamOut.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    ParamOut.FieldTransform = 'off';%can use a transform function
+    ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
+    ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.sback';%set the output dir extension
-    
+    ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
+    filecell=get_file_series(Param);%check existence of the first input file
     %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
     
     %% root input file(s) and type
-%     RootPath=Param.InputTable(:,1);
-%     RootFile=Param.InputTable(:,3);
-%     SubDir=Param.InputTable(:,2);
-%     NomType=Param.InputTable(:,4);
-%     FileExt=Param.InputTable(:,5);
     [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
+    if ~exist(filecell{1,1},'file')
+        msgbox_uvmat('WARNING','the first input file does not exist')
+        return
+    end
     %%%%%%%%%%%%
     % The cell array filecell is the list of input file names, while
     % filecell{iview,fileindex}:

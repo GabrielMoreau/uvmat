@@ -42,16 +42,21 @@ function ParamOut=aver_stat(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
 if isstruct(Param) && isequal(Param.Action.RUN,0)
-    ParamOut.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-    ParamOut.NbSlice='on'; ...%nbre of slices ('off' by default)
-    ParamOut.VelType='two';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-    ParamOut.FieldName='two';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-    ParamOut.FieldTransform = 'on';...%can use a transform function
-    ParamOut.ProjObject='on';...%can use projection object(option 'off'/'on',
-    ParamOut.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.NbSlice='on'; %nbre of slices ('off' by default)
+    ParamOut.VelType='two';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    ParamOut.FieldName='two';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    ParamOut.FieldTransform = 'on';%can use a transform function
+    ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
+    ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.stat';%set the output dir extension
-return
+    ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
+    filecell=get_file_series(Param);%check existence of the first input file
+    if ~exist(filecell{1,1},'file')
+        msgbox_uvmat('WARNING','the first input file does not exist')
+    end
+    return
 end
 
 %%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%

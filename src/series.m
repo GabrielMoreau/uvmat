@@ -416,6 +416,7 @@ display_file_name(handles,fileinput,'append')
 function InputTable_CellEditCallback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.REFRESH,'Visible','on')
+set(handles.REFRESH_title,'Visible','on')
 iview=eventdata.Indices(1);
 view_set=get(handles.REFRESH,'UserData');
 if isempty(find(view_set==iview))
@@ -431,23 +432,13 @@ set(handles.MenuFile_insert_5,'Enable','on')
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
 
-%update the output dir
-% SubDir=sort(InputTable(:,2)); %set of subdirectories sorted in alphabetical order
-% SubDirOut=SubDir{1};
-% if numel(SubDir)>1
-%     for ilist=2:numel(SubDir)
-%         SubDirOut=[SubDirOut '-' SubDir{ilist}];
-%     end
-% end
-% set(handles.OutputSubDir,'String',SubDirOut)
-
 %------------------------------------------------------------------------
 % --- Executes on button press in REFRESH.
 function REFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 InputTable=get(handles.InputTable,'Data');
 view_set=get(handles.REFRESH,'UserData');
-set(handles.REFRESH,'BackgroundColor',[0.7 0.7 0.7])% set REFRESH  button to grey color
+set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
 drawnow
 for iview=view_set
     RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});
@@ -459,7 +450,7 @@ for iview=view_set
             find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
     end
     if isempty(i1_series)
-        [FileName, PathName, filterindex] = uigetfile( ...
+        [FileName, PathName] = uigetfile( ...
             {'*.xml;*.xls;*.png;*.tif;*.avi;*.AVI;*.nc', ' (*.xml,*.xls, *.png,*.tif, *.avi,*.nc)';
             '*.xml',  '.xml files '; ...
             '*.xls',  '.xls files '; ...
@@ -468,17 +459,20 @@ for iview=view_set
             '*.avi;*.AVI','.avi movie files'; ...
             '*.nc','.netcdf files'; ...
             '*.*',  'All Files (*.*)'}, ...
-            ['unvalid entry at line ' num2str(iview) ', pick a file'],RootPath);
+            ['unvalid entry at line ' num2str(iview) ', pick a new input file'],RootPath);
         fileinput=[PathName FileName];%complete file name
-        if isempty(fileinput),return;end %abandon if the operation has been cancelled: no input from browser
+        if isempty(fileinput) %abandon if the operation has been cancelled: no input from browser
+            set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  back to red color
+            return;
+        end 
         [path,name,ext]=fileparts(fileinput);
         display_file_name(handles,fileinput,iview)
     else
         update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,FileInfo,MovieObject,iview)
     end
 end
-set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to grey color
 set(handles.REFRESH,'Visible','off')
+set(handles.REFRESH_title,'Visible','off')
 set(handles.REFRESH,'UserData',[])
 
 %------------------------------------------------------------------------
@@ -1461,6 +1455,7 @@ nbfield_j=numel(first_j:incr_j:last_j);
 
 %% record nbre of output files and starting time for computation for status
 StatusData=get(handles.status,'UserData');
+if isfield(StatusData,'OutputFileMode')
     switch StatusData.OutputFileMode
         case 'NbInput'
             StatusData.NbOutputFile=numel(first_i,incr_i:last_i)*numel(first_j,incr_j:last_j);
@@ -1469,6 +1464,7 @@ StatusData=get(handles.status,'UserData');
         case 'NbSlice'    
             StatusData.NbOutputFile=str2num(get(handles.num_NbSlice,'String'));
     end
+end
 StatusData.TimeStart=now;
 set(handles.status,'UserData',StatusData)
 
@@ -2741,5 +2737,3 @@ function num_NbProcess_Callback(hObject, eventdata, handles)
 function num_NbSlice_Callback(hObject, eventdata, handles)
 NbSlice=str2num(get(handles.num_NbSlice,'String'));
 set(handles.num_NbProcess,'String',num2str(NbSlice))
-
-
