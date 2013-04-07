@@ -143,7 +143,8 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                     else
                         hhview_field=guidata(hview_field);
                         [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%update an existing  plot in view_field
-                        write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
+                        %write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
+                        errormsg=fill_GUI(PlotParam,hview_field);
                     end
                     ViewFieldData=get(hview_field,'UserData');
                     %                     ViewFieldData.PlotAxes=ProjData;
@@ -161,7 +162,8 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                 else
                     UvData.PlotAxes=ProjData;
                     [PlotType,PlotParam]=plot_field(ProjData,hhuvmat.PlotAxes,read_GUI(hhuvmat));%update an existing field plot
-                    write_plot_param(hhuvmat,PlotParam); %update the display of plotting parameters for the current object
+                    errormsg=fill_GUI(PlotParam,huvmat);
+                   % write_plot_param(hhuvmat,PlotParam); %update the display of plotting parameters for the current object
                 end
             end
             set(hhuvmat.ViewField,'Value',1);%
