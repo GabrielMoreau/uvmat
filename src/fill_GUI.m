@@ -72,7 +72,7 @@ for ifield=1:numel(fields)
             if ~isempty(hh(ibox))&& ~check_done
                 set(hh(ibox),'Visible','on')
                 %             input_data
-                if isfield(hh(ibox),'Style')
+                if isfield(get(hh(ibox)),'Style')
                     switch get(hh(ibox),'Style')
                         case {'checkbox','radiobutton','togglebutton'}
                             if isnumeric(input_data)
