@@ -257,61 +257,59 @@ varargout{1} = handles.output;
 %------------------------------------------------------------------------
 function MenuBrowse_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------   
-InputTable=get(handles.InputTable,'Data');
-if isempty(InputTable)
-    RootPathCell={};
-else
-    RootPathCell=InputTable(:,1);
-end
+%get the previous input file in the Input Table
 oldfile=''; %default
-if isempty(RootPathCell)||isequal(RootPathCell,{''})%loads the previously stored file name and set it as default in the file_input box
-     dir_perso=prefdir;
-     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-     if exist(profil_perso,'file')
-          h=load (profil_perso);
-         if isfield(h,'filebase')&&ischar(h.filebase)
-                 oldfile=h.filebase;
-         end
-         if isfield(h,'RootPath')&&ischar(h.RootPath) 
-                 oldfile=h.RootPath;
-         end
-     end
-else
-     SubDirCell=InputTable(:,2);
-    RootFileCell=InputTable(:,3);
-     oldfile=fullfile(RootPathCell{1},SubDirCell{1},RootFileCell{1});
- end
-[FileName, PathName] = uigetfile( ...
-       {'*.xml;*.xls;*.png;*.tif;*.avi;*.AVI;*.nc', ' (*.xml,*.xls, *.png,*.tif, *.avi,*.nc)';
-       '*.xml',  '.xml files '; ...
-        '*.xls',  '.xls files '; ...
-        '*.png','.png image files'; ...
-        '*.tif','.tif image files'; ...
-        '*.avi;*.AVI','.avi movie files'; ...
-        '*.nc','.netcdf files'; ...
-        '*.*',  'All Files (*.*)'}, ...
-        'Pick a file',oldfile);
-fileinput=[PathName FileName];%complete file name 
-if isempty(fileinput),return;end %abandon if no file is introduced by the browser
-[path,name,ext]=fileparts(fileinput);
-if isequal(ext,'.xml')
-    [Param,Heading]=xml2struct(fileinput);
-    if ~strcmp(Heading,'Series')
-        msg_box_uvmat('ERROR','xml file heading is not <Series>')
-    else
-        fill_GUI(Param,handles.series);%fill the GUI with the parameters retrieved from the xml file
-        if isfield(Param,'CheckObject')&& Param.CheckObject
-            set_object(Param.ProjObject)
+InputTable=get(handles.InputTable,'Data');
+if isequal(InputTable(:,1),[{''};{''};{''};{''}])%open the personal file for empty previous input
+    dir_perso=prefdir;
+    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+    if exist(profil_perso,'file')
+         h=load (profil_perso);
+        if isfield(h,'RootPath')&&ischar(h.RootPath)
+            oldfile=h.RootPath;
         end
-        set(handles.REFRESH,'UserData',1:size(Param.InputTable,1))
-        REFRESH_Callback([],[], handles)
-        return
     end
-elseif isequal(ext,'.xls')
-    msg_box_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
-else
+else% select the previous file as the first line of the input table
+    oldfile=fullfile(InputTable{1,1},InputTable{1,2},InputTable{1,3});
+end
+hfig=uigetfile_uvmat('file browser',fileparts(fileparts(oldfile)));
+uiwait(hfig);
+if ishandle(hfig) % stop if browser closed without selection
+    fileinput=get(hfig,'UserData');% retrieve the input file selection
+    delete(hfig)
     display_file_name(handles,fileinput,0)
 end
+% 
+% [FileName, PathName] = uigetfile( ...
+%        {'*.xml;*.xls;*.png;*.tif;*.avi;*.AVI;*.nc', ' (*.xml,*.xls, *.png,*.tif, *.avi,*.nc)';
+%        '*.xml',  '.xml files '; ...
+%         '*.xls',  '.xls files '; ...
+%         '*.png','.png image files'; ...
+%         '*.tif','.tif image files'; ...
+%         '*.avi;*.AVI','.avi movie files'; ...
+%         '*.nc','.netcdf files'; ...
+%         '*.*',  'All Files (*.*)'}, ...
+%         'Pick a file',oldfile);
+% fileinput=[PathName FileName];%complete file name 
+% [path,name,ext]=fileparts(fileinput);
+% if isequal(ext,'.xml')
+%     [Param,Heading]=xml2struct(fileinput);
+%     if ~strcmp(Heading,'Series')
+%         msg_box_uvmat('ERROR','xml file heading is not <Series>')
+%     else
+%         fill_GUI(Param,handles.series);%fill the GUI with the parameters retrieved from the xml file
+%         if isfield(Param,'CheckObject')&& Param.CheckObject
+%             set_object(Param.ProjObject)
+%         end
+%         set(handles.REFRESH,'UserData',1:size(Param.InputTable,1))
+%         REFRESH_Callback([],[], handles)
+%         return
+%     end
+% elseif isequal(ext,'.xls')
+%     msg_box_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
+% else
+%     display_file_name(handles,fileinput,0)
+% end
 
 % --------------------------------------------------------------------
 function MenuFile_1_Callback(hObject, eventdata, handles)
@@ -2005,6 +2003,11 @@ if isfield(ParamOut,'FieldTransform')
     TransformName_Callback([],[], handles)
 end
 set(handles.FieldTransform,'Visible',FieldTransformVisible)
+if isfield(ParamOut,'TransformPath')
+    set(handles.ActionExt,'UserData',ParamOut.TransformPath)
+else
+    set(handles.ActionExt,'UserData',[])
+end
 
 %% Visibility of projection object
 ProjObjectVisible='off';  %hidden by default
@@ -2226,51 +2229,55 @@ end
 % --- Executes on button press in CheckObject.
 function CheckObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+hset_object=findobj(allchild(0),'tag','set_object');%find the set_object interface handle
 value=get(handles.CheckObject,'Value');
 if value
-%      set(handles.CheckObject,'BackgroundColor',[1 1 0])%put unactivated buttons to yellow
-     hset_object=findobj(allchild(0),'tag','set_object');%find the set_object interface handle
-     if ishandle(hset_object)
-         uistack(hset_object,'top')% show the GUI set_object if opened
-     else
-         %get the object file 
-         InputTable=get(handles.InputTable,'Data');
-         defaultname=InputTable{1,1};
-         if isempty(defaultname)
-            defaultname={''};
-         end
-        [FileName, PathName] = uigetfile( ...
-       {'*.xml;*.mat', ' (*.xml,*.mat)';
-       '*.xml',  '.xml files '; ...
-        '*.mat',  '.mat matlab files '}, ...
-        'Pick an xml object file (or use uvmat to create it)',defaultname);
-        fileinput=[PathName FileName];%complete file name 
-        sizf=size(fileinput);
-        if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
-        %read the file
-        data=xml2struct(fileinput);
-        if ~isfield(data,'Type')
-             msgbox_uvmat('ERROR',[fileinput ' is not an object xml file'])
-             return
+    SeriesData=get(handles.series,'UserData');
+    if ~(isfield(SeriesData,'ProjObject')&&~isempty(SeriesData.ProjObject))
+        if ishandle(hset_object)
+            uistack(hset_object,'top')% show the GUI set_object if opened
+        else
+            %get the object file
+            InputTable=get(handles.InputTable,'Data');
+            defaultname=InputTable{1,1};
+            if isempty(defaultname)
+                defaultname={''};
+            end
+            [FileName, PathName] = uigetfile( ...
+                {'*.xml;*.mat', ' (*.xml,*.mat)';
+                '*.xml',  '.xml files '; ...
+                '*.mat',  '.mat matlab files '}, ...
+                'Pick an xml object file (or use uvmat to create it)',defaultname);
+            fileinput=[PathName FileName];%complete file name
+            sizf=size(fileinput);
+            if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
+            %read the file
+            data=xml2struct(fileinput);
+            if ~isfield(data,'Type')
+                msgbox_uvmat('ERROR',[fileinput ' is not an object xml file'])
+                return
+            end
+            if ~isfield(data,'ProjMode')
+                data.ProjMode='none';
+            end
+            hset_object=set_object(data);% call the set_object interface
         end
-        if ~isfield(data,'ProjMode')
-             data.ProjMode='none';
-        end
-        hset_object=set_object(data);% call the set_object interface
-     end 
-     ProjObject=read_GUI(hset_object);
-     set(handles.ProjObject,'String',ProjObject.Name);%display the object name
-     SeriesData=get(handles.series,'UserData');
-     SeriesData.ProjObject=ProjObject;
-     set(handles.series,'UserData',SeriesData);
-     set(handles.DeleteObject,'Visible','on');
-     set(handles.ViewObject,'Visible','on');
-     set(handles.ProjObject,'Visible','on');
+        ProjObject=read_GUI(hset_object);
+        set(handles.ProjObject,'String',ProjObject.Name);%display the object name
+        SeriesData=get(handles.series,'UserData');
+        SeriesData.ProjObject=ProjObject;
+        set(handles.series,'UserData',SeriesData);
+    end
+    set(handles.DeleteObject,'Visible','on');
+    set(handles.ViewObject,'Visible','on');
+    set(handles.ProjObject,'Visible','on');
 else
-         set(handles.DeleteObject,'Visible','off');
-     set(handles.ViewObject,'Visible','off');
-     set(handles.ProjObject,'Visible','off');
-%     set(handles.CheckObject,'BackgroundColor',[0.7 0.7 0.7])%put activated buttons to green
+    set(handles.DeleteObject,'Visible','off');
+    set(handles.ViewObject,'Visible','off');
+    if ~ishandle(hset_object)
+    set(handles.ViewObject,'Value',0);
+    end
+    set(handles.ProjObject,'Visible','off');
 end
 %set(handles.series,'UserData',SeriesData)
 
@@ -2464,13 +2471,13 @@ if get(handles.status,'Value')
         uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','titlebox','Max',2,'String',OutputDir);
         uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
         uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@stop_status);
-        hrefresh=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@refresh_GUI);
+        uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@refresh_GUI);
         %set(hrefresh,'UserData',StatusData)
         BarPosition=[0.05 0.81 0.01 0.05];
         uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
         drawnow
     end
-    refresh_GUI(hrefresh,[]) 
+    refresh_GUI(hfig) 
 else
     %% delete current display fig if selection is off
     set(handles.status,'BackgroundColor',[0 1 0])
@@ -2525,9 +2532,8 @@ end
 
 %------------------------------------------------------------------------   
 % launched by refreshing the status figure
-function refresh_GUI(hObject, eventdata)
+function refresh_GUI(hfig)
 %------------------------------------------------------------------------
-hfig=get(hObject,'parent');
 htitlebox=findobj(hfig,'tag','titlebox');
 hlist=findobj(hfig,'tag','list');
 hseries=findobj(allchild(0),'tag','series');
@@ -2555,6 +2561,7 @@ set(hlist,'String',ListDisplay)
 %% Look at date of creation
 ListDisplay=ListDisplay(datnum~=0);
 datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
+NbOutputFile=[];
 if isempty(datnum)
     if testrecent
         message='no civ result created yet';
@@ -2675,31 +2682,47 @@ ActionExtList=get(handles.ActionExt,'String');
 ActionExt=ActionExtList{get(handles.ActionExt,'Value')};
 ActionList=get(handles.ActionName,'String');
 ActionName=ActionList{get(handles.ActionName,'Value')};
+TransformPath='';
+if ~isempty(get(handles.ActionExt,'UserData'))
+    TransformPath=get(handles.ActionExt,'UserData');
+end
 if strcmp(ActionExt,'.sh')
+    set(handles.ActionExt,'BackgroundColor',[1 1 0])
     ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']);
     if ~exist(ActionFullName,'file')
         answer=msgbox_uvmat('INPUT_Y-N','compiled version has not been created: compile now?');
         if strcmp(answer,'Yes')
+            set(handles.ActionExt,'BackgroundColor',[1 1 0])
+            path_uvmat=fileparts(which('series'));
             currentdir=pwd;
-            cd(get(handles.ActionPath,'String'))
-            compile(ActionName)
+            cd(get(handles.ActionPath,'String'))% go to the directory of Action
+            %  addpath(get(handles.TransformPath,'String'))
+            addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
+           % addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
+            compile(ActionName,TransformPath)
             cd(currentdir)
         end
-    end
-    sh_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']));
-    m_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.m']));
-    if isfield(m_file_info,'datenum') && m_file_info.datenum>sh_file_info.datenum
-        set(handles.ActionExt,'BackgroundColor',[1 1 0])
-        drawnow
-        answer=msgbox_uvmat('INPUT_Y-N',[ActionName '.sh needs to be updated: recompile now?']);
-        if strcmp(answer,'Yes')
-            currentdir=pwd;
-            cd(get(handles.ActionPath,'String'))
-            compile(ActionName)
-            cd(currentdir)
+        
+    else
+        sh_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']));
+        m_file_info=dir(fullfile(get(handles.ActionPath,'String'),[ActionName '.m']));
+        if isfield(m_file_info,'datenum') && m_file_info.datenum>sh_file_info.datenum
+            set(handles.ActionExt,'BackgroundColor',[1 1 0])
+            drawnow
+            answer=msgbox_uvmat('INPUT_Y-N',[ActionName '.sh needs to be updated: recompile now?']);
+            if strcmp(answer,'Yes')
+                path_uvmat=fileparts(which('series'));
+                currentdir=pwd;
+                cd(get(handles.ActionPath,'String'))% go to the directory of Action
+                %  addpath(get(handles.TransformPath,'String'))
+                addpath(path_uvmat)% add the path to uvmat to run the fct 'compile'
+                addpath(fullfile(path_uvmat,'transform_field'))% add the path to uvmat to run the fct 'compile'
+                compile(ActionName,TransformPath)
+                cd(currentdir)
+            end
         end
-        set(handles.ActionExt,'BackgroundColor',[1 1 1])
     end
+    set(handles.ActionExt,'BackgroundColor',[1 1 1])
 end
 
 
@@ -2716,6 +2739,7 @@ if get(handles.DeleteObject,'Value')
     set(handles.CheckObject,'Value',0)
     set(handles.DeleteObject,'Visible','off')
     set(handles.ViewObject,'Visible','off')
+    set(handles.DeleteObject,'Value',0)
 end
 
 % --- Executes on button press in ViewObject.

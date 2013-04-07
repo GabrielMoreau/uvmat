@@ -340,12 +340,24 @@ oldfile=fullfile(RootPath,SubDir);
 if isempty(oldfile) %loads the previously stored file name and set it as default in the file_input box
     oldfile=get(handles.RootPath,'UserData');
 end
-[FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',oldfile);
-if ~ischar(FileName),return,end %abandon if the browser is cancelled
-fileinput=[PathName FileName];%complete file name 
+hfig=uigetfile_uvmat('file browser',fileparts(oldfile));
+uiwait(hfig);
+if ishandle(hfig) % stop if browser closed without selection
+    fileinput=get(hfig,'UserData');% retrieve the input file selection
+    delete(hfig)
+    % display the selected field and related information
+    display_file_name(handles,fileinput)
+end
+
+% 
+% 
+% 
+% [FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',oldfile);
+% if ~ischar(FileName),return,end %abandon if the browser is cancelled
+% fileinput=[PathName FileName];%complete file name 
 
 %% display the selected field and related information
-display_file_name( handles,fileinput)
+% display_file_name( handles,fileinput)
 
 % -----------------------------------------------------------------------
 % --- Executes on the menu Open/Browse campaign...
@@ -2672,6 +2684,9 @@ else
     
     for imap=1:numel(IndexObj)
         iobj=IndexObj(imap);
+        if numel(UvData.Object)<iobj
+            break
+        end
         [ObjectData,errormsg]=proj_field(UvData.Field,UvData.Object{iobj});% project field on the object
         if ~isempty(errormsg)
             return

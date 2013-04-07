@@ -192,9 +192,12 @@ cd(pathuvmat)
 list_compile=dir('*.sh');
 for ilist=1:numel(list_compile)
     mfile=regexprep(list_compile(ilist).name,'.sh$','.m');
-    datfile=dir(mfile);
-    if isfield(datfile,'datenum') && datfile.datenum>list_compile(ilist).datenum
-        checkmsg=[checkmsg;{[list_compile(ilist).name ' needs to be updated by compile_functions']}];
+    if exist(mfile,'file')
+        datfile=dir(mfile);
+        if ~isempty(datfile) && isfield(datfile,'datenum') && datfile.datenum>list_compile(ilist).datenum
+            checkmsg=[checkmsg;{[list_compile(ilist).name ' needs to be updated by compile_functions']}];
+        end
     end
 end
+cd(currentdir)
 

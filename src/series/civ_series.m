@@ -41,20 +41,23 @@ function [Data,errormsg,result_conv]= civ_series(Param,ncfile)
 errormsg='';
 path_series=fileparts(which('series'));
 addpath(fullfile(path_series,'series'))
-%% set the input elements needed on the GUI series when the action is selected in the menu ActionName
+%% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
-    Data.Program=mfilename;
-    Data.AllowInputSort='off';...% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-        Data.WholeIndexRange='off';...% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
-        Data.NbSlice='off'; ...%nbre of slices ('off' by default)
-        Data.VelType='off';...% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
-        Data.FieldName='off';...% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
-        Data.FieldTransform = 'off';...%can use a transform function
-        Data.ProjObject='off';...%can use projection object(option 'off'/'on',
-        Data.Mask='off';...%can use mask option   (option 'off'/'on', 'off' by default)
-        Data.OutputDirExt='.civ';%set the output dir extension
-       
+    Data.Program=mfilename;%gives the name of the current function
+    Data.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
+    Data.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    Data.NbSlice='off'; %nbre of slices ('off' by default)
+    Data.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
+    Data.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
+    Data.FieldTransform = 'off';%can use a transform function
+    Data.ProjObject='off';%can use projection object(option 'off'/'on',
+    Data.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
+    Data.OutputDirExt='.civ';%set the output dir extension
+    filecell=get_file_series(Param);%check existence of the first input file
+    if ~exist(filecell{1,1},'file')
+        msgbox_uvmat('WARNING','the first input file does not exist')
+    end
     return
 end
 
@@ -114,13 +117,11 @@ if isfield(Param,'InputTable')
     end
     
     NbField=numel(i1_series_Civ1);
-    ImageTypeOptions={'image','multimage','mmreader','video'};
     [FileType_A,FileInfo,MovieObject_A]=get_file_type(filecell{1,1});
     FileType_B=FileType_A;
     MovieObject_B=MovieObject_A;
     if size(filecell,1)>=2 && ~strcmp(filecell{1,1},filecell{2,1})
         [FileType_B,FileInfo,MovieObject_B]=get_file_type(filecell{2,1});
-        CheckImage_B=~isempty(find(strcmp(FileType,ImageTypeOptions)));% =1 for images
     end
 end
 
@@ -140,10 +141,25 @@ check_civx=0;%default
 check_civ1=0;%default
 check_patch1=0;%default
 
-
-
-
-
+%% get timing from the ImaDoc file or input video
+[XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
+%TODO: get time_A and time_B
+% case of movies TODO TODO TODO
+if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
+    set(handles.ListPairMode,'Value',1);
+    dt=1/get(MovieObject,'FrameRate');%time interval between successive frames
+    if strcmp(NomTypeIma,'*')
+        set(handles.ListPairMode,'String',{'series(Di)'})
+        MaxIndex_i=get(MovieObject,'NumberOfFrames');
+        time=(dt*(0:MaxIndex_i-1))';%list of image times
+    else
+        set(handles.ListPairMode,'String',[{'series(Dj)'};{'series(Di)'}])
+        MaxIndex_i=max(i1_series(i1_series>0));
+        MaxIndex_j=get(MovieObject,'NumberOfFrames');
+        time=ones(MaxIndex_i,1)*(dt*(0:MaxIndex_j-1));%list of image times
+        enable_j(handles,'on')
+    end
+    TimeUnit='s';
 %%%%% MAIN LOOP %%%%%%
 
 MovieObject_A=[];
@@ -163,36 +179,25 @@ for ifield=1:NbField
                 end
             end
         else
-            %         if ~isfield(Param.Civ1,'ImageA')
             ImageName_A=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1_series_Civ1(ifield),[],j1_series_Civ1(ifield));
             [par_civ1.ImageA,MovieObject_A] = read_image(ImageName_A,FileType_A,MovieObject_A,FrameIndex_A_Civ1(ifield));
-            %         elseif ischar(Param.Civ1.ImageA)
-            %             Param.Civ1.ImageA=regexprep(Param.Civ1.ImageA,'''','\');
-            %             [par_civ1.ImageA,VideoObject] = read_image(Param.Civ1.ImageA,par_civ1.FileTypeA,MovieObject_A,par_civ1.FrameIndexA);
-            %         end
-            %         if ~isfield(Param.Civ1,'ImageB')
             ImageName_B=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
             [par_civ1.ImageB,MovieObject_B] = read_image(ImageName_B,FileType_B,MovieObject_B,FrameIndex_B_Civ1(ifield));
-            %         elseif isfield(Param.Civ1,'ImageB')&& ischar(Param.Civ1.ImageB)
-            %              Param.Civ1.ImageB=regexprep(Param.Civ1.ImageB,'''','\');
-            %              if strcmp(Param.Civ1.ImageA,Param.Civ1.ImageB)% use the same movie object
-            %                  [par_civ1.ImageB,VideoObject] = read_image(Param.Civ1.ImageB,par_civ1.FileTypeB,VideoObject,par_civ1.FrameIndexB);
-            %              else
-            %             [par_civ1.ImageB,VideoObject] = read_image(Param.Civ1.ImageB,par_civ1.FileTypeB,par_civ1.ImageB,par_civ1.FrameIndexB);
-            %              end
-            %         end
         end
         ncfile=fullfile_uvmat(RootPath,OutputDir,RootFile,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
             j1_series_Civ1(ifield),j2_series_Civ1(ifield));
         par_civ1.ImageWidth=FileInfo.Width;
         par_civ1.ImageHeight=FileInfo.Height;
         list_param=(fieldnames(Param.ActionInput.Civ1))';
-        Civ1_param=list_param;%default
-        
-        %set the values of all the global attributes in list_param  
+        Civ1_param=regexprep(list_param,'^.+','Civ1_$0');% insert 'Civ1_' before  each string in list_param
+        Civ1_param=[{'Civ1_ImageA','Civ1_ImageB','Civ1_Time','Civ1_Dt'} Civ1_param]; %insert the names of the two input images
+        %indicate the values of all the global attributes in the output data 
+        Data.Civ1_ImageA=ImageName_A;
+        Data.Civ1_ImageB=ImageName_B;
+        Data.Civ1_Time=((time(i2_civ1(ifile)+1,j2_civ1(j)+1)+time(i1_civ1(ifile)+1,j1_civ1(j)+1))/2);
+        Data.Civ1_Dt=(time(i2_civ1(ifile)+1,j2_civ1(j)+1)-time(i1_civ1(ifile)+1,j1_civ1(j)+1));
         for ilist=1:length(list_param)
-            Civ1_param{ilist}=['Civ1_' list_param{ilist}];
-            Data.(['Civ1_' list_param{ilist}])=Param.ActionInput.Civ1.(list_param{ilist});
+            Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
         end
         Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ1_param];
         Data.CivStage=1;
@@ -390,12 +395,8 @@ for ifield=1:NbField
         end
         ibx2=ceil(par_civ2.CorrBoxSize(1)/2);
         iby2=ceil(par_civ2.CorrBoxSize(2)/2);
-        %     isx2=ibx2+4;% search ara +-4 pixels around the guess
-        %     isy2=iby2+4;
         par_civ2.SearchBoxSize(1)=2*ibx2+9;% search ara +-4 pixels around the guess
         par_civ2.SearchBoxSize(2)=2*iby2+9;
-        %par_civ2.SearchBoxSize(1)=2*isx2+1;
-        %par_civ2.SearchBoxSize(2)=2*isy2+1;
         par_civ2.SearchBoxShift=[Shiftx(nbval>=1)./nbval(nbval>=1) Shifty(nbval>=1)./nbval(nbval>=1)];
         par_civ2.Grid=[GridX(nbval>=1)-par_civ2.SearchBoxShift(:,1)/2 GridY(nbval>=1)-par_civ2.SearchBoxShift(:,2)/2];% grid taken at the extrapolated origin of the displacement vectors
         if par_civ2.CheckDeformation
@@ -408,24 +409,18 @@ for ifield=1:NbField
         [xtable ytable utable vtable ctable F] = civ (par_civ2);
 
         list_param=(fieldnames(Param.ActionInput.Civ2))';
-        list_remove={'pxcmx','pxcmy','npx','npy','gridflag','maskflag','term_a','term_b','T0'};
-        for ilist=1:length(list_remove)
-            index=strcmp(list_remove{ilist},list_param);
-            if ~isempty(find(index,1))
-                list_param(index)=[];
-            end
-        end
+        Civ2_param=regexprep(list_param,'^.+','Civ2_$0');% insert 'Civ2_' before  each string in list_param
+        Civ2_param=[{'Civ2_ImageA','Civ2_ImageB','Civ2_Time','Civ2_Dt'} Civ2_param]; %insert the names of the two input images
+        %indicate the values of all the global attributes in the output data 
+        Data.Civ2_ImageA=ImageName_A;
+        Data.Civ2_ImageB=ImageName_B;
+        Data.Civ2_Time=1;
+        Data.Civ2_Dt=1;
         for ilist=1:length(list_param)
-            Civ2_param{ilist}=['Civ2_' list_param{ilist}];
-            eval(['Data.Civ2_' list_param{ilist} '=Param.ActionInput.Civ2.' list_param{ilist} ';'])
+            Data.(Civ2_param{4+ilist})=Param.ActionInput.Civ2.(list_param{ilist});
         end
-        if isfield(Data,'Civ2_gridname') && strcmp(Data.Civ1_gridname(1:6),'noFile')
-            Data.Civ1_gridname='';
-        end
-        if isfield(Data,'Civ2_maskname') && strcmp(Data.Civ1_maskname(1:6),'noFile')
-            Data.Civ2_maskname='';
-        end
-        Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ2_param {'Civ2_Time','Civ2_Dt'}];
+        Data.ListGlobalAttribute=[Data.ListGlobalAttribute Civ2_param];
+        
         nbvar=numel(Data.ListVarName);
         Data.ListVarName=[Data.ListVarName {'Civ2_X','Civ2_Y','Civ2_U','Civ2_V','Civ2_F','Civ2_C'}];%  cell array containing the names of the fields to record
         Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2','nb_vec_2'}];

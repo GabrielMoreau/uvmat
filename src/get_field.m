@@ -366,16 +366,16 @@ end
 %[CellVarIndex,NbDim,VarRole,errormsg]=find_field_cells(Field);
 for icell=1:numel(CellInfo) 
     VarIndex=CellInfo{icell}.VarIndex;
-    if ~isempty(find(VarIndex==yindex,1)) && (isempty(VarRole{icell}.coord_x)||~isequal(VarRole{icell}.coord_x,VarIndex))
+    if ~isempty(find(VarIndex==yindex,1)) && (isempty(CellInfo{icell}.VarIndex_coord_x)||~isequal(CellInfo{icell}.VarIndex_coord_x,VarIndex))
         cell_select=icell;
         break
     end
 end
 val=get(handles.abscissa,'Value');
 set(handles.abscissa,'Value',min(val,2));
-coord_x_index=VarRole{cell_select}.coord;
+coord_x_index=CellInfo{cell_select}.VarIndex_coord_x;
 coord_x_index=coord_x_index(coord_x_index~=0);
-set(handles.XVarname,'String',[{''}; (Field.ListVarName(coord_x_index))'; (Field.ListVarName(VarIndex))'])
+set(handles.XVarName,'String',[{''}; (Field.ListVarName(coord_x_index))'; (Field.ListVarName(VarIndex))'])
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckScalar.

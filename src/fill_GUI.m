@@ -27,19 +27,19 @@ for ifield=1:numel(fields)
     if isstruct(Param.(fields{ifield}))% case of a sub-structure
         if isfield(handles,fields{ifield})
             set(handles.(fields{ifield}),'Visible','on')
-%             children=get(handles.(fields{ifield}),'children');
-%             for ichild=1:numel(children)
-%                 hchild.(get(children(ichild),'tag'))=children(ichild);
-%             end
-         %   errormsg=fill_GUI(Param.(fields{ifield}),hchild);% apply the function to the substructure
-         errormsg=fill_GUI(Param.(fields{ifield}),handles.(fields{ifield}));% apply the function to the substructure
-           % if the input sub-structure fits with a tag name of the GUI and a
-         % substructure of UserData
+            %             children=get(handles.(fields{ifield}),'children');
+            %             for ichild=1:numel(children)
+            %                 hchild.(get(children(ichild),'tag'))=children(ichild);
+            %             end
+            %   errormsg=fill_GUI(Param.(fields{ifield}),hchild);% apply the function to the substructure
+            errormsg=fill_GUI(Param.(fields{ifield}),handles.(fields{ifield}));% apply the function to the substructure
+            % if the input sub-structure fits with a tag name of the GUI and a
+            % substructure of UserData
         elseif isfield(UserData,fields{ifield})&& isfield(handles,fields{ifield})&&isfield(Param.(fields{ifield}),'Name')
             UserData.(fields{ifield})=Param.(fields{ifield});
-            set(handles.(fields{ifield}),'String',Param.(fields{ifield}).Name) 
+            set(handles.(fields{ifield}),'String',Param.(fields{ifield}).Name)
         end
-    % case of an element
+        % case of an element
     else
         hh=[];
         input_data=Param.(fields{ifield});
@@ -54,8 +54,8 @@ for ifield=1:numel(fields)
                 set(hh,'Data',input_data)
                 check_done=1;
             end
-        elseif isnumeric(input_data) 
-            if numel(input_data)>1 
+        elseif isnumeric(input_data)
+            if numel(input_data)>1
                 %deals with array displayed in multiple boxes labeled by an index
                 for ibox=1:numel(input_data)
                     if isfield(handles,['num_' fields{ifield} '_' num2str(ibox)])
@@ -63,52 +63,54 @@ for ifield=1:numel(fields)
                     end
                 end
             else % single box (usual case)
-               if isfield(handles,['num_' fields{ifield}])
-                   hh=handles.(['num_' fields{ifield}]);
-               end
+                if isfield(handles,['num_' fields{ifield}])
+                    hh=handles.(['num_' fields{ifield}]);
+                end
             end
         end
         for ibox=1:numel(hh)
-        if ~isempty(hh(ibox))&& ~check_done
-            set(hh(ibox),'Visible','on')
-%             input_data
-            switch get(hh(ibox),'Style')
-                case {'checkbox','radiobutton','togglebutton'}
-                    if isnumeric(input_data)
-                        set(hh(ibox),'Value',input_data(ibox))
+            if ~isempty(hh(ibox))&& ~check_done
+                set(hh(ibox),'Visible','on')
+                %             input_data
+                if isfield(hh(ibox),'Style')
+                    switch get(hh(ibox),'Style')
+                        case {'checkbox','radiobutton','togglebutton'}
+                            if isnumeric(input_data)
+                                set(hh(ibox),'Value',input_data(ibox))
+                            end
+                        case 'edit'
+                            input_string='';
+                            if isnumeric(input_data)
+                                if numel(input_data)>0
+                                    input_string=num2str(input_data(ibox));
+                                end
+                            else
+                                input_string=input_data;
+                            end
+                            set(hh(ibox),'String',input_string)
+                        case{'listbox','popupmenu'}
+                            if isnumeric(input_data)
+                                input_data=num2str(input_data);
+                            end
+                            menu=get(hh(ibox),'String');
+                            if ischar(input_data)
+                                input_data={input_data};
+                            end
+                            values=zeros(size(input_data));
+                            for idata=1:numel(input_data)
+                                iline=find(strcmp(input_data{idata},menu));
+                                if isempty(iline)
+                                    values(idata)=1;
+                                    menu=[input_data(idata);menu];
+                                else
+                                    values(idata)=iline(1);
+                                end
+                            end
+                            set(hh(ibox),'String',menu)
+                            set(hh(ibox),'Value',values)
                     end
-                case 'edit'
-                    input_string='';
-                    if isnumeric(input_data)
-                        if numel(input_data)>0
-                        input_string=num2str(input_data(ibox));
-                        end
-                    else
-                        input_string=input_data;
-                    end
-                    set(hh(ibox),'String',input_string)
-                case{'listbox','popupmenu'}
-                    if isnumeric(input_data)
-                        input_data=num2str(input_data);
-                    end
-                    menu=get(hh(ibox),'String');
-                    if ischar(input_data)
-                        input_data={input_data};
-                    end
-                    values=zeros(size(input_data));
-                    for idata=1:numel(input_data)
-                        iline=find(strcmp(input_data{idata},menu));
-                        if isempty(iline)
-                            values(idata)=1;
-                            menu=[input_data(idata);menu];
-                        else
-                            values(idata)=iline(1);
-                        end
-                    end
-                    set(hh(ibox),'String',menu)
-                    set(hh(ibox),'Value',values)
+                end
             end
-        end
         end
     end
 end

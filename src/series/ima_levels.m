@@ -42,7 +42,7 @@
  
 function ParamOut=ima_levels (Param)
 
-%% set the input elements needed on the GUI series when the action is selected in the menu ActionName
+%% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.NbViewMax=1;% max nbre of input file series (default , no limitation)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
@@ -57,7 +57,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.OutputFileMode='NbInput';% ='=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
     %check the type of the existence and type of the first input file:
     Param.IndexRange.last_i=Param.IndexRange.first_i;%keep only the first index in the series
+    if isfield(Param.IndexRange,'first_j')
     Param.IndexRange.last_j=Param.IndexRange.first_j;
+    end
     filecell=get_file_series(Param);
     if ~exist(filecell{1,1},'file')
         msgbox_uvmat('WARNING','the first input file does not exist')
@@ -72,6 +74,7 @@ end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 %% read input parameters from an xml file if input is a file name (batch mode)
+ParamOut=[]
 checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)

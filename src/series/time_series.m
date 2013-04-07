@@ -41,7 +41,7 @@
 
 function ParamOut=time_series(Param) 
 
-%% set the input elements needed on the GUI series when the action is selected in the menu ActionName
+%% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
@@ -49,6 +49,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.VelType='two';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='two';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
     ParamOut.FieldTransform = 'on';%can use a transform function
+    ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)
     ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.tseries';%set the output dir extension
@@ -70,7 +71,7 @@ if ischar(Param)
     checkrun=0;
 end
 
-ParamOut=Param; %default output
+ParamOut=[]; %default output
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 
 %% root input file(s) and type
@@ -88,16 +89,14 @@ FileExt=Param.InputTable(:,5);
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 %%%%%%%%%%%%
-NbSlice=1;%default
-if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
-    NbSlice=Param.IndexRange.NbSlice;
-end
+% NbSlice=1;%default
+% if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
+%     NbSlice=Param.IndexRange.NbSlice;
+% end
 nbview=numel(i1_series);%number of input file series (lines in InputTable)
-nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
+nbfield_j=size(j1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
-nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices)
-nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 
 %determine the file type on each line from the first input file
 ImageTypeOptions={'image','multimage','mmreader','video'};
@@ -152,9 +151,6 @@ if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
     return
 end
 NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
-if checkrun==1
-    return % stop here for input checks
-end
 
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
@@ -418,7 +414,7 @@ if ~isequal(nbmissing,0)
 end
 
 %name of result file
-OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),i_slice,[]);
+OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),j1_series{1}(1),j1_series{1}(end));
 errormsg=struct2nc(OutputFile,DataOut); %save result file
 if isempty(errormsg)
     display([OutputFile ' written'])
