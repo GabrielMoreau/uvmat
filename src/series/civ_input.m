@@ -88,9 +88,7 @@ NomTypeInput=Param.InputTable{1,4};
 FileExt=Param.InputTable{1,5};
 FileType=SeriesData.FileType{1};
 FileInfo=SeriesData.FileInfo{1};
-Ref_i=SeriesData.Ref_i{1};
-Ref_j=SeriesData.Ref_j{1};
-FileInput=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomTypeInput,Ref_i(1),Ref_i(2),Ref_j(1),Ref_j(2));
+FileInput=SeriesData.RefFile{1};
 
 %% case of netcdf file as input, get the processing stage and look for corresponding images
 % imageinput=fileinput;%default
@@ -225,17 +223,20 @@ pxcm_search=1;
 if isfield(SeriesData,'Time') && ~isempty(SeriesData.Time{1})
     time=SeriesData.Time{1};
     %transform .Time to a column vector if it is a line vector thenomenclature uses a single index: correct possible bug in xml
-    if isequal(MaxIndex_i,1) && ~isequal(MaxIndex_j,1)% .Time is a line vector
-        if numel(nom_type_read)>=2 && isempty(regexp(nom_type_read(2:end),'\D','once'))
-            time=time';
-            MaxIndex_i=MaxIndex_j;
-            MaxIndex_j=1;
-        end
-    end
+%     if isequal(MaxIndex_i,1) && ~isequal(MaxIndex_j,1)% .Time is a line vector
+%         if numel(nom_type_read)>=2 && isempty(regexp(nom_type_read(2:end),'\D','once'))
+%             time=time';
+%             MaxIndex_i=MaxIndex_j;
+%             MaxIndex_j=1;
+%         end
+%     end
 end
-if isfield(SeriesData,'TimeUnit')
-    TimeUnit=SeriesData.TimeUnit;
+if isfield(Param.IndexRange,'TimeUnit')&&~isempty(Param.IndexRange.TimeUnit)
+    TimeUnit=Param.IndexRange.TimeUnit;
 end
+if isfield(SeriesData,'TimeSource')
+    set(handles.ImaDoc,'String',SeriesData.TimeSource)
+end  
 if isfield(SeriesData,'GeometryCalib')
     tsai=SeriesData.GeometryCalib;
     if isfield(tsai,'fx_fy')
@@ -246,20 +247,20 @@ if isfield(SeriesData,'GeometryCalib')
     end
 end
 % timing set by video input
-if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
-    set(handles.ListPairMode,'Value',1);
-    dt=1/get(MovieObject,'FrameRate');%time interval between successive frames
-    if strcmp(NomTypeIma,'*')
-        set(handles.ListPairMode,'String',{'series(Di)'})
-        time=(dt*(0:MaxIndex_i-1))';%list of image times
-    else
-        set(handles.ListPairMode,'String',[{'series(Dj)'};{'series(Di)'}])
-        time=ones(MaxIndex_i,1)*(dt*(0:MaxIndex_j-1));%list of image times
-        enable_j(handles,'on')
-    end
-    TimeUnit='s';
-    set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box back to whiter
-end
+% if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
+%     set(handles.ListPairMode,'Value',1);
+%     dt=1/get(MovieObject,'FrameRate');%time interval between successive frames
+%     if strcmp(NomTypeIma,'*')
+%         set(handles.ListPairMode,'String',{'series(Di)'})
+%         time=(dt*(0:MaxIndex_i-1))';%list of image times
+%     else
+%         set(handles.ListPairMode,'String',[{'series(Dj)'};{'series(Di)'}])
+%         time=ones(MaxIndex_i,1)*(dt*(0:MaxIndex_j-1));%list of image times
+%         enable_j(handles,'on')
+%     end
+%     TimeUnit='s';
+%     set(handles.ImaDoc,'BackgroundColor',[1 1 1])% set display box back to whiter
+% end
 
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
@@ -273,27 +274,21 @@ if numel(time)>=2 % if there are at least two time values to define dt
     MaxIndex_j=min(size(time,2),MaxIndex_j);
 else
     set(handles.ImaDoc,'String',''); %xml file not used for timing
-    %    time=(i1_series(:,1)+0:size(i1_series,3)-1);% time=index i
-    %    time=time'*ones(1,size(i1_series,2),1); %makes a time matrix with the same time for all j indices
     TimeUnit='frame';
     time=ones(MaxIndex_j-MinIndex_j+1,1)*(MinIndex_i:MaxIndex_i);
     time=time+0.001*(MinIndex_j:MaxIndex_j)'*ones(1,MaxIndex_i-MinIndex_i+1);
 end
-time=[zeros(size(time,1),1) time]; %insert a vertical line of zeros (to deal with zero file indices)
-time=[zeros(1,size(time,2)); time]; %insert a horizontal line of zeros
+% time=[zeros(size(time,1),1) time]; %insert a vertical line of zeros (to deal with zero file indices)
+% time=[zeros(1,size(time,2)); time]; %insert a horizontal line of zeros
 CivInputData.Time=time;
 CivInputData.NomTypeIma=NomTypeIma;
 set(handles.civ_input,'UserData',CivInputData)
-%set(handles.ImaDoc,'UserData',time); %store the matrix of times
 set(handles.dt_unit,'String',['dt in m' TimeUnit]);%display dt in unit 10-3 of the time (e.g ms)
 set(handles.TimeUnit,'String',TimeUnit);
 set(handles.nb_field,'String',num2str(MaxIndex_i));
 set(handles.nb_field2,'String',num2str(MaxIndex_j));
 set(handles.CoordUnit,'String',CoordUnit)
 set(handles.SearchRange,'UserData', pxcm_search);
-
-% set(handles.ImaExt,'String',ImaExt)
-% set(handles.NomType,'String',NomTypeIma)
 
 %% set the reference indices from the input file indices
 num_ref_i=str2num(get(handles.ref_i,'String'));
@@ -864,7 +859,7 @@ else
     mode_value=get(handles.ListPairMode,'Value');
     mode=mode_list{mode_value};
 end
-displ_num=[];%default
+% displ_num=[];%default
 ref_i=str2double(get(handles.ref_i,'String'));
 % last_i=str2num(get(handles.last_i,'String'));
 CivInputData=get(handles.civ_input,'UserData');
@@ -872,8 +867,8 @@ TimeUnit=get(handles.TimeUnit,'String');
 checkframe=strcmp(TimeUnit,'frame');
 time=CivInputData.Time;
 siztime=size(CivInputData.Time);
-nbfield=siztime(2)-1;
-nbfield2=siztime(1)-1;
+nbfield=siztime(1)-1;
+nbfield2=siztime(2)-1;
 indchosen=1;  %%first pair selected by default
 %displ_num used to define the indices of the civ_input pairs
 % in mode 'pair j1-j2', j1 and j2 are the file indices, else the indices
@@ -915,10 +910,10 @@ elseif isequal(mode,'series(Dj)') %| isequal(mode,'st_series(Dj)')
     displ_num(3:4,index)=zeros(2,200);
     enable_j(handles, 'on')
 elseif isequal(mode,'series(Di)') %| isequal(mode,'st_series(Di)')
-    index=1:200;
-    displ_num(1:2,index)=zeros(2,200);
-    displ_num(3,index)=-floor(index/2);
-    displ_num(4,index)=ceil(index/2);
+%     index=1:200;
+%     displ_num(1:2,index)=zeros(2,200);
+%     displ_num(3,index)=-floor(index/2);
+%     displ_num(4,index)=ceil(index/2);
     enable_i(handles, 'on')
     if nbfield2 > 1
         enable_j(handles, 'on')
@@ -941,7 +936,7 @@ elseif isequal(mode,'displacement')%the pairs have the same indices
         enable_j(handles, 'off')
     end
 end
-set(handles.ListPairCiv1,'UserData',displ_num);
+%set(handles.ListPairCiv1,'UserData',displ_num);
 errormsg=find_netcpair_civ( handles,1);
     if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
@@ -979,36 +974,36 @@ if index_pair<=length(list_pair2)
 end
 
 %update first_i and last_i according to the chosen image pairs
-mode_list=get(handles.ListPairMode,'String');
-mode_value=get(handles.ListPairMode,'Value');
-mode=mode_list{mode_value};
-if isequal(mode,'series(Di)')
-    first_i=str2double(get(handles.first_i,'String'));
-    last_i=str2double(get(handles.last_i,'String'));
-    incr_i=str2double(get(handles.incr_i,'String'));
-    num_i=first_i:incr_i:last_i;
-    lastfield=str2double(get(handles.nb_field,'String'));
-    if ~isnan(lastfield)
-        test_find=(num_i-floor(index_pair/2)*ones(size(num_i))>0)& ...
-            (num_i+ceil(index_pair/2)*ones(size(num_i))<=lastfield);
-        num_i=num_i(test_find);
-    end
-    set(handles.first_i,'String',num2str(num_i(1)));
-    set(handles.last_i,'String',num2str(num_i(end)));
-elseif isequal(mode,'series(Dj)')
-    first_j=str2double(get(handles.first_j,'String'));
-    last_j=str2double(get(handles.last_j,'String'));
-    incr_j=str2double(get(handles.incr_j,'String'));
-    num_j=first_j:incr_j:last_j;
-    lastfield2=str2double(get(handles.nb_field2,'String'));
-    if ~isnan(lastfield2)
-        test_find=(num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
-            (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2);
-        num_j=num_j(test_find);
-    end
-    set(handles.first_j,'String',num2str(num_j(1)));
-    set(handles.last_j,'String',num2str(num_j(end)));
-end
+% mode_list=get(handles.ListPairMode,'String');
+% mode_value=get(handles.ListPairMode,'Value');
+% mode=mode_list{mode_value};
+% if isequal(mode,'series(Di)')
+%     first_i=str2double(get(handles.first_i,'String'));
+%     last_i=str2double(get(handles.last_i,'String'));
+%     incr_i=str2double(get(handles.incr_i,'String'));
+%     num_i=first_i:incr_i:last_i;
+%     lastfield=str2double(get(handles.nb_field,'String'));
+%     if ~isnan(lastfield)
+%         test_find=(num_i-floor(index_pair/2)*ones(size(num_i))>0)& ...
+%             (num_i+ceil(index_pair/2)*ones(size(num_i))<=lastfield);
+%         num_i=num_i(test_find);
+%     end
+%     set(handles.first_i,'String',num2str(num_i(1)));
+%     set(handles.last_i,'String',num2str(num_i(end)));
+% elseif isequal(mode,'series(Dj)')
+%     first_j=str2double(get(handles.first_j,'String'));
+%     last_j=str2double(get(handles.last_j,'String'));
+%     incr_j=str2double(get(handles.incr_j,'String'));
+%     num_j=first_j:incr_j:last_j;
+%     lastfield2=str2double(get(handles.nb_field2,'String'));
+%     if ~isnan(lastfield2)
+%         test_find=(num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
+%             (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2);
+%         num_j=num_j(test_find);
+%     end
+%     set(handles.first_j,'String',num2str(num_j(1)));
+%     set(handles.last_j,'String',num2str(num_j(end)));
+% end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListPairCiv2.
@@ -1113,6 +1108,7 @@ nom_type_ima=CivInputData.NomTypeIma;
 
 %% reads .nc subdirectoy and image numbers from the interface
 SubDirImages=get(handles.Civ1_ImageA,'String');
+%TODO: determine
 subdir_civ1=[SubDirImages get(handles.Civ1_ImageB,'String')];%subdirectory subdir_civ1 for the netcdf data
 subdir_civ2=[SubDirImages get(handles.Civ2_ImageA,'String')];%subdirectory subdir_civ2 for the netcdf data
 ref_i=str2double(get(handles.ref_i,'String'));
@@ -1125,30 +1121,33 @@ end
 if isempty(ref_j)
     ref_j=1;
 end
-time=get(handles.ImaDoc,'UserData');%get the set of times
+CivInputData=get(handles.civ_input,'UserData');
 TimeUnit=get(handles.TimeUnit,'String');
+time=CivInputData.Time;
 checkframe=strcmp(TimeUnit,'frame');
-displ_num=get(handles.ListPairCiv1,'UserData');
+%displ_num=get(handles.ListPairCiv1,'UserData');
 
 %% eliminate the first pairs inconsistent with the position
-if isempty(displ_num)
-    nbpair=0;
-else
-    nbpair=length(displ_num(1,:));%nbre of displayed pairs
-    if  isequal(mode,'series(Di)')  %| isequal(mode,'st_series(Di)')
-        nbpair=min(2*ref_i-1,nbpair);%limit the number of pairs with positive first index
-    elseif  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
-        nbpair=min(2*ref_j-1,nbpair);%limit the number of pairs with positive first index
-    end
-end
-nbpair=min(200,nbpair);%limit the number of displayed pairs to 200
+% if isempty(displ_num)
+%     nbpair=0;
+% else
+%     nbpair=length(displ_num(1,:));%nbre of displayed pairs
+%     if  isequal(mode,'series(Di)')  %| isequal(mode,'st_series(Di)')
+%         nbpair=min(2*ref_i-1,nbpair);%limit the number of pairs with positive first index
+%     elseif  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
+%         nbpair=min(2*ref_j-1,nbpair);%limit the number of pairs with positive first index
+%     end
+% end
+% nbpair=min(200,nbpair);%limit the number of displayed pairs to 200
 
 %% case with no Civ1 operation, netcdf files need to exist for reading
 displ_pair={''};
+nbpair=200;%default
 select=ones(size(1:nbpair));%flag for displayed pairs =1 for display
 testpair=0;
 RootPath=get(handles.RootPath,'String');
 RootFile=get(handles.Civ2_ImageB,'String');
+nbpair=200; %default
 if index==1 % case civ1
     if ~get(handles.CheckCiv1,'Value') %
         if ~exist(fullfile(RootPath,subdir_civ1),'dir')
@@ -1226,6 +1225,7 @@ end
 % displ_num(4,:)=indices i2
 % in mode 'pair j1-j2', j1 and j2 are the file indices, else the indices
 % are relative to the reference indices ref_i and ref_j respectively.
+testpair=0; %TODO: check
 if isequal(mode,'series(Di)')
     if testpair
         displ_pair{1}=['Di= ' num2str(-floor(browse.incr_pair(1)/2)) '|' num2str(ceil(browse.incr_pair(1)/2))];

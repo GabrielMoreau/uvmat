@@ -72,7 +72,7 @@ end
 ParamOut=Param; %default output
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
     
-%% root input file(s) and type
+%% root input file(s) name, type and index series
 RootPath=Param.InputTable(:,1);
 RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
@@ -87,18 +87,14 @@ FileExt=Param.InputTable(:,5);
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 %%%%%%%%%%%%
-% NbSlice=1;%default
-% if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
-%     NbSlice=Param.IndexRange.NbSlice;
-% end
 nbview=numel(i1_series);%number of input file series (lines in InputTable)
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
-%nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices) 
-%nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
+[first_i,tild,last_i,first_j,tild,last_j,errormsg]=get_index_range(Param.IndexRange);
+if ~isempty(errormsg),display(errormsg),return,end
 
-%determine the file type on each line from the first input file 
+%% determine the file type on each line from the first input file 
 ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:nbview
@@ -149,8 +145,8 @@ if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
         msgbox_uvmat('ERROR','input must be two image series or two netcdf file series')
     return
 end
-NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
-
+%NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
+NomTypeOut=nomtype2pair(NomType{1});% determine the index nomenclature type for the output file
 
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
@@ -271,7 +267,7 @@ for index=1:nbfield
         end
         %%%%%%%%%%%%   END MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
     else
-        display(errormsg)
+        disp(errormsg)
     end
 end
 %%%%%%%%%%%%%%%% end loop on field indices %%%%%%%%%%%%%%%%
@@ -302,8 +298,8 @@ else  % time from ImaDoc prevails if it exists
     DataOut.Time_end=time(end);
 end
 
-%writting the result file
-OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),j1_series{1}(1),j1_series{1}(end));
+%% writing the result file
+OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j,last_j);
 if CheckImage{1} %case of images
     if isequal(FileInfo{1}.BitDepth,16)||(numel(FileInfo)==2 &&isequal(FileInfo{2}.BitDepth,16))
         DataOut.A=uint16(DataOut.A);
@@ -312,14 +308,13 @@ if CheckImage{1} %case of images
         DataOut.A=uint8(DataOut.A);
         imwrite(DataOut.A,OutputFile,'BitDepth',8); % case of 16 bit images
     end
-    display([OutputFile ' written']);
+    disp([OutputFile ' written']);
 else %case of netcdf input file , determine global attributes
     errormsg=struct2nc(OutputFile,DataOut); %save result file
     if isempty(errormsg)
-        display([OutputFile ' written']);
+        disp([OutputFile ' written']);
     else
-        msgbox_uvmat('ERROR',['error in writting result file: ' errormsg])
-        display(errormsg)
+        disp(['error in writting result file: ' errormsg])
     end
 end  % end averaging  loop
 % end

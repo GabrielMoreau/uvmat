@@ -4,7 +4,7 @@
 %
 % OUTPUT:
 % RootFile: root file detected in fileinput, possibly modified for movies (indexing is then done on image view, not file)
-% i1_series(ref_i+1, ref_j+1,pair),i2_series,j1_series,j2_series: set of indices (i1,i2,j1,j2) sorted by ref index ref_i, ref_j, and pairindex in case of multiple pairs with the same ref
+% i1_series(pair,ref_j+1, ref_i+1),i2_series,j1_series,j2_series: set of indices (i1,i2,j1,j2) sorted by ref index ref_i, ref_j, and pairindex in case of multiple pairs with the same ref
 %  (ref_i+1 is used to deal with the image index zero sometimes used)
 % NomType: nomenclature type corrected after checking the first file (problem of 0 before the number string)
 % FileType: type of file, =
@@ -243,11 +243,12 @@ if isequal(j2_series,0), j2_series=[]; end
 %% introduce the frame index in case of movies or multimage type
 if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
     if isempty(i1_series)
-        i1_series=(1:FileInfo.NumberOfFrames)';
+        i1_series=zeros(FileInfo.NumberOfFrames+1,2);% first column =0
+        i1_series(:,2)=(0:FileInfo.NumberOfFrames)'; % second column=frame index -1
         i1_input=1;
         NomType='*';
     else
-        i1_series=i1_series(:,2)*ones(1,FileInfo.NumberOfFrames);
+        i1_series=i1_series(:,2)*ones(0,FileInfo.NumberOfFrames);
         i1_series=[i1_series(:,1) i1_series];
         j1_series=ones(size(i1_series,1),1)*(0:FileInfo.NumberOfFrames);
         %  include the first index in the root name

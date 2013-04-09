@@ -57,6 +57,11 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     filecell=get_file_series(Param);%check existence of the first input file
     if ~exist(filecell{1,1},'file')
         msgbox_uvmat('WARNING','the first input file does not exist')
+    else
+        FileType=get_file_type(filecell{1,1});
+        if isempty(find(strcmp(FileType,{'civdata','image','multimage','mmreader','video'})));% =1 for images
+            msgbox_uvmat('ERROR',['bad input file type for ' mfilename ': an image or civdata file is needed'])
+        end
     end
     return
 end
@@ -84,6 +89,10 @@ if isfield(Param,'InputTable')
     MaxIndex=cell2mat(Param.IndexRange.MaxIndex);
     MinIndex=cell2mat(Param.IndexRange.MinIndex);
     [filecell,i_series,tild,j_series]=get_file_series(Param);
+    [FileType_A,FileInfo,MovieObject_A]=get_file_type(filecell{1,1});
+    if strcmp(FileType_A,'civdata')% a civdata file has been introduced as input.
+         [FileType_A,FileInfo,MovieObject_A]=get_file_type(filecell{2,1});
+    end
     [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
         find_pair_indices(PairCiv1,i_series{1},j_series{1},MinIndex,MaxIndex);
     if ~isempty(PairCiv2)
@@ -117,7 +126,7 @@ if isfield(Param,'InputTable')
     end
     
     NbField=numel(i1_series_Civ1);
-    [FileType_A,FileInfo,MovieObject_A]=get_file_type(filecell{1,1});
+
     FileType_B=FileType_A;
     MovieObject_B=MovieObject_A;
     if size(filecell,1)>=2 && ~strcmp(filecell{1,1},filecell{2,1})
@@ -142,9 +151,50 @@ check_civ1=0;%default
 check_patch1=0;%default
 
 %% get timing from the ImaDoc file or input video
-[XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series);
+XmlFileName=find_imadoc(RootPath,SubDir,RootFile,FileExt);
+time=[];
+if ~isempty(XmlFileName)
+    XmlData=imadoc2struct(XmlFileName);
+        if isfield(XmlData,'Time')
+            time=XmlData.Time;
+            TimeSource='xml';
+        end
+        if isfield(XmlData,'Camera')
+            if isfield(XmlData.Camera,'NbSlice')&& ~isempty(XmlData.Camera.NbSlice)
+                NbSlice_calib{iview}=XmlData.Camera.NbSlice;% Nbre of slices for Zindex in phys transform
+                if ~isequal(NbSlice_calib{iview},NbSlice_calib{1})
+                    msgbox_uvmat('WARNING','inconsistent number of Z indices for the two field series');
+                end
+            end
+            if isfield(XmlData.Camera,'TimeUnit')&& ~isempty(XmlData.Camera.TimeUnit)
+                TimeUnit=XmlData.Camera.TimeUnit;
+            end
+        end
+end
+if strcmp(InputTable{iview,4},'*')
+    if ~isempty(VideoObject)
+        imainfo=get(VideoObject);
+        time=zeros(imainfo.NumberOfFrames+1,2);
+        time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
+        TimeSource='video';
+       % set(han:dles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
+        ColorType='truecolor';
+    elseif ~isempty(imformats(regexprep(InputTable{iview,5},'^.',''))) || isequal(InputTable{iview,5},'.vol')%&& isequal(NomType,'*')% multi-frame image
+        if ~isempty(InputTable{iview,2})
+            imainfo=imfinfo(fullfile(InputTable{iview,1},InputTable{iview,2},[InputTable{iview,3} InputTable{iview,5}]));
+        else
+            imainfo=imfinfo([FileBase InputTable{iview,5}]);
+        end
+        ColorType=imainfo.ColorType;%='truecolor' for color images
+        if length(imainfo) >1 %case of image with multiple frames
+            nbfield=length(imainfo);
+            nbfield_j=1;
+        end
+    end
+end
+
 %TODO: get time_A and time_B
-% case of movies TODO TODO TODO
+
 if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
     set(handles.ListPairMode,'Value',1);
     dt=1/get(MovieObject,'FrameRate');%time interval between successive frames
@@ -160,6 +210,7 @@ if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
         enable_j(handles,'on')
     end
     TimeUnit='s';
+end
 %%%%% MAIN LOOP %%%%%%
 
 MovieObject_A=[];

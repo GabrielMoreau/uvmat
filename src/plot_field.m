@@ -281,7 +281,7 @@ for icell=1:length(CellInfo)
     for ivar=1:length(VarIndex)
     VarName=FieldData.ListVarName{VarIndex(ivar)};
     VarValue=FieldData.(VarName);
-    if iscolumn(VarValue)
+    if isvector(VarValue')
         VarValue=VarValue';% put the different values on a line
     end
     if numel(VarValue)>1 && numel(VarValue)<10

@@ -74,7 +74,7 @@ end
 ParamOut=[]; %default output
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
 
-%% root input file(s) and type
+%% root input file(s) name, type and index series
 RootPath=Param.InputTable(:,1);
 RootFile=Param.InputTable(:,3);
 SubDir=Param.InputTable(:,2);
@@ -89,16 +89,14 @@ FileExt=Param.InputTable(:,5);
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 %%%%%%%%%%%%
-% NbSlice=1;%default
-% if isfield(Param.IndexRange,'NbSlice')&&~isempty(Param.IndexRange.NbSlice)
-%     NbSlice=Param.IndexRange.NbSlice;
-% end
 nbview=numel(i1_series);%number of input file series (lines in InputTable)
 nbfield_j=size(j1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
+[first_i,tild,last_i,first_j,tild,last_j,errormsg]=get_index_range(Param.IndexRange);
+if ~isempty(errormsg),display(errormsg),return,end
 
-%determine the file type on each line from the first input file
+%% determine the file type on each line from the first input file
 ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:nbview
@@ -150,7 +148,7 @@ if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
     displ_uvmat('ERROR','input must be two image series or two netcdf file series',checkrun)
     return
 end
-NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
+NomTypeOut=nomtype2pair(NomType{1});% determine the index nomenclature type for the output file
 
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
@@ -413,15 +411,14 @@ if ~isequal(nbmissing,0)
     displ_uvmat('WARNING',[num2str(nbmissing) ' files skipped: missing files or bad input, see command window display'],checkrun)
 end
 
-%name of result file
-OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(1),i1_series{1}(end),j1_series{1}(1),j1_series{1}(end));
+%% name of result file
+OutputFile=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,first_i,last_i,first_j,last_j);
 errormsg=struct2nc(OutputFile,DataOut); %save result file
 if isempty(errormsg)
     display([OutputFile ' written'])
 else
     displ_uvmat('ERROR',['error in Series/struct2nc: ' errormsg],checkrun)
 end
-
 
 %% plot the time series (the last one in case of multislices)
 if checkrun

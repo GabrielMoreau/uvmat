@@ -66,8 +66,22 @@ handles.output = hObject;
 guidata(hObject, handles);
 
 %% initial settings
-drawnow
-set(hObject,'Units','pixels')
+set(0,'Unit','points')
+ScreenSize=get(0,'ScreenSize');%size of the current screen
+Width=750;% prefered width of the GUI in points (1/72 inch)
+Height=520;
+%adjust to screen size (reduced by a min margin)
+RescaleFactor=min((ScreenSize(3)-80)/Width,(ScreenSize(4)-80)/Height);
+if RescaleFactor>1
+    %RescaleFactor=RescaleFactor/2+1/2; %reduce the rescale factor to provide an increased margin for a big screen
+    RescaleFactor=min(RescaleFactor,1);
+end
+Width=Width*RescaleFactor;
+Height=Height*RescaleFactor;
+LeftX=80*RescaleFactor;%position of the left fig side, in pixels (put to the left side, with some margin)
+LowY=round(ScreenSize(4)/2-Height/2); % put at the middle height on the screen
+set(hObject,'Units','points')
+set(hObject,'Position',[LeftX LowY Width Height])
 set(handles.PairString,'ColumnName',{'pairs'})
 set(handles.PairString,'ColumnEditable',false)
 set(handles.PairString,'ColumnFormat',{'char'})
@@ -77,16 +91,16 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'})%allows mouse action with right
 % check default input data
 if ~exist('Param','var')
     Param=[]; %default
-end
+end 
 
-%% default list of functions in the mebu ActionName
+%% list of builtin functions in the mebu ActionName
 ActionList={'check_data_files';'aver_stat';'time_series';'merge_proj'};% WARNING: fits with nb_builtin_ACTION=4 in ActionName_callback
+NbBuiltinAction=numel(ActionList);
 [path_series,name,ext]=fileparts(which('series'));% path to the GUI series
 path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
-%path_bin=fullfile(path_series,'bin');%path of the binary functions (compiled)
-ActionPathList=regexprep(ActionList,'^.+$',path_series_fct);% set path=path_series to each function in the list ('^.+$'=any non empty nbre of char form beginning to end of char string)
-ActionPathList=[ActionPathList ActionPathList];% set path to .sh commands for compiled functions
-ActionExtList={'.m';'.sh'};% default choice of extensions (Matlab fct .m or compiled version .sh)
+ActionExtList={'.m';'.sh'};% default choice of extensions (Matlab fct .m or compiled version .sh
+ActionPathList=cell(NbBuiltinAction,numel(ActionExtList));%initiate the cell matrix of Action fct paths
+ActionPathList(:)={path_series_fct}; %set the default path to series fcts to all list members
 RunModeList={'local';'background'};% default choice of extensions (Matlab fct .m or compiled version .sh)
 [s,w]=system('oarstat');% look for cluster system 'oar'
 if isequal(s,0)
@@ -98,12 +112,14 @@ if isequal(s,0)
 end
 set(handles.RunMode,'String',RunModeList)
 
-%% default list of functions in the mebu TransformName
+%% list of builtin transform functions in the mebu TransformName
 TransformList={'';'sub_field';'phys';'phys_polar'};% WARNING: must fit with the corresponding menu in uvmat and nb_builtin_transform=4 in  TransformName_callback
+NbBuiltinTransform=numel(TransformList);
 path_transform_fct=fullfile(path_series,'transform_field');
-TransformPathList=regexprep(TransformList,'^.+$',path_transform_fct);% set path=path_transform_fct to each function in the list ('^.+$'=any non empty nbre of char form beginning to end of char string)
+TransformPathList=cell(NbBuiltinTransform,1);%initiate the cell matrix of Action fct paths
+TransformPathList(:)={path_transform_fct}; %set the default path to series fcts to all list members
 
-%% load the personal file uvmat_perso.mat 
+%% get the user defined functions stored in the personal file uvmat_perso.mat 
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
 if exist(profil_perso,'file')
@@ -130,11 +146,11 @@ if exist(profil_perso,'file')
 end
 
 %% selection of the input Action fct
-ActionCheckExist=false(size(ActionList));
-for ilist=1:numel(ActionList)
+ActionCheckExist=true(size(ActionList));%initiate the check of the path to the listed action fct
+for ilist=NbBuiltinAction+1:numel(ActionList)%check  the validity of the path of the user defined Action fct
     ActionCheckExist(ilist)=exist(fullfile(ActionPathList{ilist},[ActionList{ilist} '.m']),'file');
 end
-ActionPathList=ActionPathList(ActionCheckExist,:);
+ActionPathList=ActionPathList(ActionCheckExist,:);% suppress the menu options which are not valid anymore
 ActionList=ActionList(ActionCheckExist);
 set(handles.ActionName,'String',[ActionList;{'more...'}])
 set(handles.ActionName,'UserData',ActionPathList)
@@ -151,9 +167,8 @@ set(handles.ActionExt,'Value',1)
 set(handles.ActionExt,'String',ActionExtList)
 
 %% selection of the input transform fct
-TransformCheckExist=false(size(TransformList));
-TransformCheckExist(1)=1;%the first option is blank: no transform, always allowed
-for ilist=2:numel(TransformList)
+TransformCheckExist=true(size(TransformList));
+for ilist=NbBuiltinTransform+1:numel(TransformList)
     TransformCheckExist(ilist)=exist(fullfile(TransformPathList{ilist},[TransformList{ilist} '.m']),'file');
 end
 TransformPathList=TransformPathList(TransformCheckExist);
@@ -259,8 +274,11 @@ function MenuBrowse_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------   
 %get the previous input file in the Input Table
 oldfile=''; %default
-InputTable=get(handles.InputTable,'Data');
-if isequal(InputTable(:,1),[{''};{''};{''};{''}])%open the personal file for empty previous input
+SeriesData=get(handles.series,'UserData');
+if isfield(SeriesData,'RefFile')
+    oldfile=SeriesData.RefFile{1};
+end
+if ~exist(oldfile,'file')
     dir_perso=prefdir;
     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
     if exist(profil_perso,'file')
@@ -269,15 +287,10 @@ if isequal(InputTable(:,1),[{''};{''};{''};{''}])%open the personal file for emp
             oldfile=h.RootPath;
         end
     end
-else% select the previous file as the first line of the input table
-    oldfile=fullfile(InputTable{1,1},InputTable{1,2},InputTable{1,3});
 end
-hfig=uigetfile_uvmat('file browser',fileparts(fileparts(oldfile)));
-uiwait(hfig);
-if ishandle(hfig) % stop if browser closed without selection
-    fileinput=get(hfig,'UserData');% retrieve the input file selection
-    delete(hfig)
-    display_file_name(handles,fileinput,0)
+fileinput=uigetfile_uvmat('file browser',oldfile);
+if ~isempty(fileinput)
+     display_file_name(handles,fileinput,0)
 end
 % 
 % [FileName, PathName] = uigetfile( ...
@@ -480,8 +493,8 @@ function display_file_name(handles,fileinput,iview)
 %
 % INPUT:
 % handles: handles of elements in the GUI
-% fielinput: input file name, including path
-% append =0 (refresh the Input table with the new file), ='append' append a new line in the table
+% fileinput: input file name, including path
+% iview: line index in the input table
 
 %% get the input root name, indices, file extension and nomenclature NomType
 if ~exist(fileinput,'file')
@@ -541,7 +554,7 @@ if isempty(i2)
 end
 ref_i=floor((i1+i2)/2);% reference image number corresponding to the file
 set(handles.num_ref_i,'String',num2str(ref_i));
-set(handles.num_ref_i,'UserData',[i1 i2])
+% set(handles.num_ref_i,'UserData',[i1 i2])%store the indices for future opening
 if isempty(j1)
     j1=1;
 end
@@ -550,7 +563,7 @@ if isempty(j2)
 end
 ref_j=floor((j1+j2)/2);% reference image number corresponding to the file
 set(handles.num_ref_j,'String',num2str(ref_j)); 
-set(handles.num_ref_j,'UserData',[j1 j2])
+% set(handles.num_ref_j,'UserData',[j1 j2]);%store the indices for future opening
 
 %% update the list of recent files in the menubar and save it for future opening
 MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
@@ -570,6 +583,10 @@ if exist(profil_perso,'file')
 else
     save (profil_perso,'MenuFile','-V6'); %store the file names for future opening of uvmat
 end
+% save the opened file to initiate future opening
+SeriesData=get(handles.series,'UserData');
+SeriesData.RefFile{iview}=fileinput;
+set(handles.series,'UserData',SeriesData)
 
 set(handles.InputTable,'BackgroundColor',[1 1 1])
 
@@ -594,19 +611,18 @@ set(handles.OutputSubDir,'String',SubDirOut)
 
 %% display the min and max indices for the file series
 if size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0
-    MinIndex_j=1;
+    MinIndex_j=1;% index j set to 1 by default
     MaxIndex_j=1;
     MinIndex_i=find(i1_series(:,2,:), 1 )-1;
     MaxIndex_i=find(i1_series(:,2,:), 1, 'last' )-1;
 else
     pair_max=squeeze(max(i1_series,[],1)); %max on pair index
     j_max=max(pair_max,[],1);
-    %i_sum=sum(sum(i1_series,2),1);%sum of i1_series on the last index
     MaxIndex_i=find(j_max, 1, 'last' )-1;% max ref index i
     MinIndex_i=find(j_max, 1 )-1;% min ref index i
     diff_i_max=diff(j_max);
-    if isequal (diff_i_max,diff_i_max(1)*ones(size(diff_i_max)))
-        set(handles.num_incr_i,'String',num2str(diff_i_max(1)))
+    if ~isempty(diff_i_max) && isequal (diff_i_max,diff_i_max(1)*ones(size(diff_i_max)))
+        set(handles.num_incr_i,'String',num2str(diff_i_max(1)))% detect an increment to dispaly by default
     end
     i_max=max(pair_max,[],2);
     MaxIndex_j=max(find(i_max))-1;% max ref index i
@@ -632,25 +648,28 @@ MaxIndex{iview,2}=MaxIndex_j;
 set(handles.MinIndex,'Data',MinIndex)%display the min indices in the table MinIndex
 set(handles.MaxIndex,'Data',MaxIndex)%display the max indices in the table MaxIndex
 
-%% adjust the first and last indices if requested by the bounds
-first_i=str2num(get(handles.num_first_i,'String'));
-ref_i=str2num(get(handles.num_ref_i,'String'));
-ref_j=str2num(get(handles.num_ref_j,'String'));
+%% adjust the first and last indices, only if requested by the bounds
+% i index, compare input to min index i
+first_i=str2num(get(handles.num_first_i,'String'));%retrieve previous first i
+ref_i=str2num(get(handles.num_ref_i,'String'));%index i given by the input field
 if isempty(first_i)
-    first_i=ref_i;
+    first_i=ref_i;% first_i updated by the input value
 elseif first_i < MinIndex_i
-    first_i=MinIndex_i;
+    first_i=MinIndex_i; % first_i set to the min i index (restricted by oter input lines)
 elseif first_i >MaxIndex_i
-    first_i=MinIndex_i;
+    first_i=MaxIndex_i;% first_i set to the max i index (restricted by oter input lines)
 end
+% j index,  compare input to min index j
 first_j=str2num(get(handles.num_first_j,'String'));
+ref_j=str2num(get(handles.num_ref_j,'String'));%index j given by the input field
 if isempty(first_j)
-    first_j=ref_j;
+    first_j=ref_j;% first_j updated by the input value
 elseif first_j<MinIndex_j
-    first_j=MinIndex_j;
+    first_j=MinIndex_j; % first_j set to the min j index (restricted by oter input lines)
 elseif first_j >MaxIndex_j
-    first_j=MinIndex_j;
+    first_j=MaxIndex_j; % first_j set to the max j index (restricted by oter input lines)
 end
+% i index, compare input to max index i
 last_i=str2num(get(handles.num_last_i,'String'));
 if isempty(last_i)
     last_i=ref_i;
@@ -659,13 +678,14 @@ elseif last_i > MaxIndex_i
 elseif last_i<first_i
     last_i=first_i;
 end
-last_j=str2num(get(handles.num_first_j,'String'));
+% j index, compare input to max index j
+last_j=str2num(get(handles.num_last_j,'String'));
 if isempty(last_j)
     last_j=ref_j;
 elseif last_j>MaxIndex_j
     last_j=MaxIndex_j;
-elseif last_i<first_i
-    last_i=first_i;
+elseif last_j<first_j
+    last_j=first_j;
 end
 set(handles.num_first_i,'String',num2str(first_i)); 
 set(handles.num_first_j,'String',num2str(first_j));
@@ -676,12 +696,15 @@ set(handles.num_last_j,'String',num2str(last_j));
 InputTable=get(handles.InputTable,'Data');
 FileBase=fullfile(InputTable{iview,1},InputTable{iview,3});
 time=[];%default
+TimeSource='';
 % case of movies
 if strcmp(InputTable{iview,4},'*')
     if ~isempty(VideoObject)
         imainfo=get(VideoObject);
-        time=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames-1)/imainfo.FrameRate)';
-       % set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
+        time=zeros(imainfo.NumberOfFrames+1,2);
+        time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
+        TimeSource='video';
+       % set(han:dles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
         ColorType='truecolor';
     elseif ~isempty(imformats(regexprep(InputTable{iview,5},'^.',''))) || isequal(InputTable{iview,5},'.vol')%&& isequal(NomType,'*')% multi-frame image
         if ~isempty(InputTable{iview,2})
@@ -697,7 +720,7 @@ if strcmp(InputTable{iview,4},'*')
     end
 end
 
-%%  read image documentation file  if found%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  read image documentation file  if found
 XmlData=[];
 NbSlice_calib={};
 XmlFileName=find_imadoc(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5});
@@ -709,6 +732,7 @@ if ~isempty(XmlFileName)
         end
         if isfield(XmlData,'Time')
             time=XmlData.Time;
+            TimeSource='xml';
         end
         if isfield(XmlData,'Camera')
             if isfield(XmlData.Camera,'NbSlice')&& ~isempty(XmlData.Camera.NbSlice)
@@ -741,21 +765,21 @@ if ~isempty(time)
     MaxIndex_j=MaxIndexTable{iview,2};
     if isempty(MinIndex_j)% only i index
         if MinIndex_i>0
-            TimeTable{iview,1}=time(MinIndex_i);
+            TimeTable{iview,1}=time(MinIndex_i+1);
         end
-        TimeTable{iview,2}=time(first_i);
-        TimeTable{iview,3}=time(last_i);
-        TimeTable{iview,4}=time(MaxIndex_i);
+        TimeTable{iview,2}=time(first_i+1);
+        TimeTable{iview,3}=time(last_i+1);
+        TimeTable{iview,4}=time(MaxIndex_i+1);
     elseif ~isempty(time)
         if MinIndex_i>0
             TimeTable{iview,1}=time(MinIndex_i,MinIndex_j);
         end
-        if size(time)>=[last_i last_j]
-            TimeTable{iview,2}=time(first_i,first_j);
-            TimeTable{iview,3}=time(last_i,last_j);
+        if size(time)>=[last_i+1 last_j+1]
+            TimeTable{iview,2}=time(first_i+1,first_j+1);
+            TimeTable{iview,3}=time(last_i+1,last_j+1);
         end
-        if size(time)>=[MaxIndex_i MaxIndex_j];
-            TimeTable{iview,4}=time(MaxIndex_i,MaxIndex_j);
+        if size(time)>=[MaxIndex_i+1 MaxIndex_j+1];
+            TimeTable{iview,4}=time(MaxIndex_i+1,MaxIndex_j+1);
         end
     end
     set(handles.TimeTable,'Data',TimeTable)
@@ -786,8 +810,6 @@ update_mode(handles,i1_series,i2_series,j1_series,j2_series,time)
 
 %% update the series info in 'UserData'
 SeriesData=get(handles.series,'UserData');
-SeriesData.Ref_i{iview}=get(handles.num_ref_i,'UserData');
-SeriesData.Ref_j{iview}=get(handles.num_ref_j,'UserData');
 SeriesData.i1_series{iview}=i1_series;
 SeriesData.i2_series{iview}=i2_series;
 SeriesData.j1_series{iview}=j1_series;
@@ -795,6 +817,9 @@ SeriesData.j2_series{iview}=j2_series;
 SeriesData.FileType{iview}=FileType;
 SeriesData.FileInfo{iview}=FileInfo;
 SeriesData.Time{iview}=time;
+if ~isempty(TimeSource)
+    SeriesData.TimeSource=TimeSource;
+end
 if ~isempty(TimeUnit)
     SeriesData.TimeUnit=TimeUnit;
 end
@@ -991,11 +1016,11 @@ for iview=1:size(TimeTable,1)
     TimeTable{iview,3}=[];
     if size(SeriesData.Time{iview},1)>=i2(2)&&size(SeriesData.Time{iview},1)>=j2(2)
         if isempty(ref_j)
-            time_first=(SeriesData.Time{iview}(i1(1))+SeriesData.Time{iview}(i2(1)))/2;
-            time_last=(SeriesData.Time{iview}(i1(2))+SeriesData.Time{iview}(i2(2)))/2;
+            time_first=(SeriesData.Time{iview}(i1(1)+1)+SeriesData.Time{iview}(i2(1)+1))/2;
+            time_last=(SeriesData.Time{iview}(i1(2)+1)+SeriesData.Time{iview}(i2(2))+1)/2;
         else
-            time_first=(SeriesData.Time{iview}(i1(1),j1(1))+SeriesData.Time{iview}(i2(1),j2(1)))/2;
-            time_last=(SeriesData.Time{iview}(i1(2),j1(2))+SeriesData.Time{iview}(i2(2),j2(2)))/2;
+            time_first=(SeriesData.Time{iview}(i1(1)+1,j1(1)+1)+SeriesData.Time{iview}(i2(1)+1,j2(1)+1))/2;
+            time_last=(SeriesData.Time{iview}(i1(2)+1,j1(2)+1)+SeriesData.Time{iview}(i2(2)+1,j2(2)+1))/2;
         end
         TimeTable{iview,2}=time_first; %TODO: take into account pairs
         TimeTable{iview,3}=time_last; %TODO: take into account pairs
@@ -1428,24 +1453,12 @@ end
         
 
 %% read index ranges
-first_i=1;
-last_i=1;
-incr_i=1;
-first_j=1;
-last_j=1;
-incr_j=1;
-if isfield(Series.IndexRange,'first_i')
-    first_i=Series.IndexRange.first_i;
-    incr_i=Series.IndexRange.incr_i;
-    last_i=Series.IndexRange.last_i;
-end
-if isfield(Series.IndexRange,'first_j')
-    first_j=Series.IndexRange.first_j;
-    last_j=Series.IndexRange.last_j;
-    incr_j=Series.IndexRange.incr_j;
-end
-if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
-        set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return
+[first_i,incr_i,last_i,first_j,incr_j,last_j,errormsg]=get_index_range(Series.IndexRange);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',['series/Run_Callback/get_index_range' errormsg])
+    set(handles.RUN, 'Enable','On'),
+    set(handles.RUN,'BackgroundColor',[1 0 0])
+    return
 else
     BlockLength=ceil(numel(first_i:incr_i:last_i)/NbProcess);
 end
@@ -1456,9 +1469,9 @@ StatusData=get(handles.status,'UserData');
 if isfield(StatusData,'OutputFileMode')
     switch StatusData.OutputFileMode
         case 'NbInput'
-            StatusData.NbOutputFile=numel(first_i,incr_i:last_i)*numel(first_j,incr_j:last_j);
+            StatusData.NbOutputFile=numel(first_i:incr_i:last_i)*numel(first_j:incr_j:last_j);
         case 'NbInput_i'
-            StatusData.NbOutputFile=numel(first_i,incr_i:last_i);
+            StatusData.NbOutputFile=numel(first_i:incr_i:last_i);
         case 'NbSlice'    
             StatusData.NbOutputFile=str2num(get(handles.num_NbSlice,'String'));
     end
@@ -1478,7 +1491,7 @@ if strcmp (RunMode,'local')
             end
             Series.IndexRange.last_i=min(first_i+(iprocess)*BlockLength*incr_i-1,last_i);
         else
-            Series.IndexRange.first_i= first_i+iprocess-1;
+            Series.IndexRange.first_i= first_i+incr_i*(iprocess-1);
             Series.IndexRange.incr_i=incr_i*Series.IndexRange.NbSlice;
         end
         t=struct2xml(Series);

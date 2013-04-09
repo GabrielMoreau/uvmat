@@ -3,10 +3,16 @@
 % [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series)
 %
 % OUTPUT:
-% 
+% XmlData: cell array of structure representing the contents of the xml files
+% NbSlice_calib: nbre of slices detected in the geometric calibration data
+% mtrix of times
+% errormsg: error message, ='' if reading OK
 %
 % INPUT:
-% 
+% RootPath,SubDir,RootFile,FileExt: cell arrays characterizing the input file series
+% i1_series,i2_series,j1_series,j2_series: cell arrays of file index
+% arrays, as given by the fct uvmat/get_file_series
+%
 function [XmlData,NbSlice_calib,time,errormsg]=read_multimadoc(RootPath,SubDir,RootFile,FileExt,i1_series,i2_series,j1_series,j2_series)
 errormsg='';
 nbview=numel(RootPath);

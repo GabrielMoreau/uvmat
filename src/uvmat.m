@@ -31,7 +31,6 @@
 % the menu bar of uvmat to retrieve it)
 %          .OpenParam: structure containing parameters defined when uvmat is opened
 %                       .PosColorbar: position (1x4 vector)of the colorbar (relative to the fig uvmat)
-%                       .PosSetObject: position of set_object
 %                       .PosGeometryCalib: size of set_object
 %                       .NbBuiltin: nbre of functions always displayed in TransformName menu
 %          .Object: cell array of structures representing the current projection objects, as produced by 'set_object.m'={[]} by default
@@ -174,12 +173,28 @@ guidata(hObject, handles);
 %% add the path to uvmat (useful if uvmat has been opened in the working directory and a working directory change occured)
 path_uvmat=fileparts(which('uvmat'));
 
-%% set the position of colorbar and ancillary GUIs:
-set(hObject,'Units','Normalized')
-movegui(hObject,'center')
+%% set the position of the GUI, colorbar and ancillary GUIs:
+set(hObject,'Units','pixels')%
+set(0,'Units','pixels');
+ScreenSize=get(0,'ScreenSize');%size of the current screen
+Width=1050;
+Height=700;
+%adjust to screen size (reduced by a min margin)
+RescaleFactor=min((ScreenSize(3)-80)/Width,(ScreenSize(4)-80)/Height);
+if RescaleFactor>1
+    RescaleFactor=RescaleFactor/2+1/2; %reduce the rescale factor to provide an increased margin for a big screen
+end
+Width=Width*RescaleFactor;
+Height=Height*RescaleFactor;
+LeftX=80*RescaleFactor;%position of the left fig side, in pixels (put to the left side, with some margin)
+LowY=round(ScreenSize(4)/2-Height/2); % put at the middle height on the screen
+set(hObject,'Position',[LeftX LowY Width Height])
+
+%set(hObject,'Units','Normalized')
+
 %UvData.OpenParam.PosColorbar=[0.8450    0.0900    0.0190    0.3600];
 UvData.OpenParam.PosColorbar=[0.805 0.022 0.019 0.445];
-UvData.OpenParam.PosSetObject=[-0.05 -0.03 0.3 0.7]; %position for set_object
+%UvData.OpenParam.PosSetObject=[-0.05 -0.03 0.3 0.7]; %position for set_object
 UvData.OpenParam.PosGeometryCalib=[0.95 -0.03 0.28 1 ];%position for geometry_calib (TO IMPROVE)
 % UvData.OpenParam.CalSize=[0.28 1];
 % UvData.PlotAxes=[];%initiate the record of plotted field
@@ -196,10 +211,6 @@ set(hObject,'WindowButtonUpFcn',{'mouse_up',handles})
 set(hObject,'DeleteFcn',{@closefcn})%
 
 %% initialisation
-% set(handles.ListObject,'Value',1)% default: empty projection objectproj_field
-% set(handles.ListObject,'String',{''})
-% set(handles.ListObject_1,'Value',1)% default: empty projection objectproj_field
-% set(handles.ListObject_1,'String',{''})
 set(handles.FieldName,'Value',1)
 set(handles.FieldName,'string',{''})
 UvData.Object={[]};
@@ -336,25 +347,14 @@ end
 % search the files, recognize their type according to their name and fill the rootfile input windows
 function MenuBrowse_Callback(hObject, eventdata, handles)
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-oldfile=fullfile(RootPath,SubDir);
+oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 if isempty(oldfile) %loads the previously stored file name and set it as default in the file_input box
     oldfile=get(handles.RootPath,'UserData');
 end
-hfig=uigetfile_uvmat('file browser',fileparts(oldfile));
-uiwait(hfig);
-if ishandle(hfig) % stop if browser closed without selection
-    fileinput=get(hfig,'UserData');% retrieve the input file selection
-    delete(hfig)
-    % display the selected field and related information
+fileinput=uigetfile_uvmat('select an input file:',oldfile);
+if ~isempty(fileinput)
     display_file_name(handles,fileinput)
 end
-
-% 
-% 
-% 
-% [FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',oldfile);
-% if ~ischar(FileName),return,end %abandon if the browser is cancelled
-% fileinput=[PathName FileName];%complete file name 
 
 %% display the selected field and related information
 % display_file_name( handles,fileinput)
@@ -434,44 +434,34 @@ display_file_name(handles,fileinput)
 function MenuBrowse_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 RootPath=get(handles.RootPath,'String');
-[FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',RootPath);
-if ~ischar(FileName),return,end %abandon if the browser is cancelled
-fileinput_1=[PathName FileName];%complete file name 
-
-% refresh the current displayed field
-set(handles.SubField,'Value',1)
-display_file_name(handles,fileinput_1,2)
-
-%update list of recent files in the menubar
-MenuFile_1=fileinput_1;
-MenuFile_2=get(handles.MenuFile_1,'Label');
-MenuFile_3=get(handles.MenuFile_2,'Label');
-MenuFile_4=get(handles.MenuFile_3,'Label');
-MenuFile_5=get(handles.MenuFile_4,'Label');
-set(handles.MenuFile_1,'Label',MenuFile_1)
-set(handles.MenuFile_2,'Label',MenuFile_2)
-set(handles.MenuFile_3,'Label',MenuFile_3)
-set(handles.MenuFile_4,'Label',MenuFile_4)
-set(handles.MenuFile_5,'Label',MenuFile_5)
-set(handles.MenuFile_1_1,'Label',MenuFile_1)
-set(handles.MenuFile_2_1,'Label',MenuFile_2)
-set(handles.MenuFile_3_1,'Label',MenuFile_3)
-set(handles.MenuFile_4_1,'Label',MenuFile_4)
-set(handles.MenuFile_5_1,'Label',MenuFile_5)
-% dir_perso=prefdir;
-% profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-% if exist(profil_perso,'file')
-%     save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-append'); %store the file names for future opening of uvmat
-% else
-%     txt=ver('MATLAB');
-%     Release=txt.Release;
-%     relnumb=str2double(Release(3:4));
-%     if relnumb >= 14
-%         save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-V6'); %store the file names for future opening of uvmat
-%     else
-%         save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5'); %store the file names for future opening of uvmat
-%     end
-% end
+SubDir=get(handles.SubDir,'String');
+fileinput_1=uigetfile_uvmat('select a second input file:',fullfile(RootPath,SubDir));
+if ~isempty(fileinput_1)
+    % [FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',RootPath);
+    % if ~ischar(FileName),return,end %abandon if the browser is cancelled
+    % fileinput_1=[PathName FileName];%complete file name
+    
+    % refresh the current displayed field
+    set(handles.SubField,'Value',1)
+    display_file_name(handles,fileinput_1,2)
+    
+    %update list of recent files in the menubar
+    MenuFile_1=fileinput_1;
+    MenuFile_2=get(handles.MenuFile_1,'Label');
+    MenuFile_3=get(handles.MenuFile_2,'Label');
+    MenuFile_4=get(handles.MenuFile_3,'Label');
+    MenuFile_5=get(handles.MenuFile_4,'Label');
+    set(handles.MenuFile_1,'Label',MenuFile_1)
+    set(handles.MenuFile_2,'Label',MenuFile_2)
+    set(handles.MenuFile_3,'Label',MenuFile_3)
+    set(handles.MenuFile_4,'Label',MenuFile_4)
+    set(handles.MenuFile_5,'Label',MenuFile_5)
+    set(handles.MenuFile_1_1,'Label',MenuFile_1)
+    set(handles.MenuFile_2_1,'Label',MenuFile_2)
+    set(handles.MenuFile_3_1,'Label',MenuFile_3)
+    set(handles.MenuFile_4_1,'Label',MenuFile_4)
+    set(handles.MenuFile_5_1,'Label',MenuFile_5)
+end
 
 % --------------------------------------------------------------------
 function MenuBrowseCampaign_1_Callback(hObject, eventdata, handles)
@@ -2002,7 +1992,10 @@ num_i1=stra2num(get(handles.i1,'String'));
 num_i2=stra2num(get(handles.i2,'String'));
 num_j1=stra2num(get(handles.j1,'String'));
 num_j2=stra2num(get(handles.j2,'String'));
-[tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(FileIndex_1);
+[tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(FileIndex_1);% get the indices of the second series from the string FileIndex_1
+if isempty(j1_1)% case of movies, the index is not given by file index
+    j1_1=num_j1;
+end
 
 errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,i1_1,i2_1,j1_1,j2_1);
 
@@ -2203,10 +2196,10 @@ if ~isempty(FileName_1)
                 frame_index_1=i1_1;
             end  
          case 'multimage'
-            if ~strcmp(NomType_1,'*')
-                frame_index_1=j1_1;%frame index for movies or multimage
-            else
+            if strcmp(NomType_1,'*')%frame index for movies or multimage
                 frame_index_1=i1_1;
+            else
+                frame_index_1=j1_1;
             end   
         case 'vol' %TODO: update
             if isfield(UvData.XmlData,'Npy') && isfield(UvData.XmlData,'Npx')
@@ -3508,7 +3501,7 @@ if isequal(get(handles.VOLUME,'Value'),1)
     PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
     [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface with action on haxes,
                                                       % associate the set_object interface handle to the plotting axes
-    set(hset_object,'Position',get(handles.uvmat,'Position')+UvData.OpenParam.PosSetObject)
+    %set(hset_object,'Position',get(handles.uvmat,'Position')+UvData.OpenParam.PosSetObject)
     UvData.MouseAction='create_object';
 else
     set(handles.VOLUME,'BackgroundColor',[0 1 0])
@@ -4401,11 +4394,11 @@ if check_view
     hhview_field=guidata(hview_field);
     [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%read plotting parameters on the GUI view_field);
     errormsg=fill_GUI(PlotParam,hview_field);
-                    for list={'Scalar','Vectors'}
-                    if ~isfield(PlotParamOut,list{1})
-                        set(hhview_field.(list{1}),'Visible','off')
-                    end
-                end
+    for list={'Scalar','Vectors'}
+        if ~isfield(PlotParam,list{1})
+            set(hhview_field.(list{1}),'Visible','off')
+        end
+    end
     %write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
     haxes=findobj(hview_field,'tag','axes3');
     pos=get(hview_field,'Position');
