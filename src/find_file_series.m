@@ -248,7 +248,7 @@ if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
         i1_input=1;
         NomType='*';
     else
-        i1_series=i1_series(:,2)*ones(0,FileInfo.NumberOfFrames);
+        i1_series=i1_series(:,2)*ones(1,FileInfo.NumberOfFrames);
         i1_series=[i1_series(:,1) i1_series];
         j1_series=ones(size(i1_series,1),1)*(0:FileInfo.NumberOfFrames);
         %  include the first index in the root name

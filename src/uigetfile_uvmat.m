@@ -11,16 +11,25 @@
 
 function fileinput=uigetfile_uvmat(title,InputName)
 fileinput=''; %default file selection
-if strcmp(title,'status')
-    option='status';
+if strcmp(title,'status_display')
+    option='status_display';
 else
     option='browser';
 end
-if exist(InputName,'file')||exist(InputName,'dir')
+if exist(InputName,'dir')
+    InputDir=InputName;
+      InputFileName='';
+elseif exist(InputName,'file')
     [InputDir,InputFileName,Ext]=fileparts(InputName);
-    InputFileName=[InputFileName Ext];
+    if isempty(InputFileName)% if InputName is already the root
+        InputFileName=InputDir;
+        if  ~isempty(strcmp (computer, {'PCWIN','PCWIN64'}))%case of Windows systems
+            InputDir=[InputDir '\'];% append '\' for a correct action of dir
+            InputFileName=[InputFileName '\'];
+        end
+    end
     if isdir(InputName)
-        InputFileName=['+/' InputFileName];
+        InputFileName=['+/' InputFileName Ext];
     end
 else
     InputDir=pwd;%look in the current work directory if the input file does not exist
@@ -44,7 +53,7 @@ if isempty(hfig)
     uicontrol('Style','pushbutton','Tag','refresh','Units','normalized','Position', [0.1 0.01 0.2 0.07],'Callback',@refresh_GUI,...
         'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',12);
     %set(hrefresh,'UserData',StatusData)
-    if strcmp(option,'status') %put a run advancement display
+    if strcmp(option,'status_display') %put a run advancement display
         set(hfig,'DeleteFcn',@stop_status)
         uicontrol('Style','frame','Units','normalized', 'Position',[0.05 0.81 0.01 0.05],'BackgroundColor',[1 0 0],'tag','waitbar');
         uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
@@ -58,12 +67,98 @@ if isempty(hfig)
     end
     drawnow
 end
-refresh_GUI(findobj(hfig,'Tag','refresh'),InputFileName)  
-if ~strcmp(option,'status')  
+refresh_GUI(findobj(hfig,'Tag','refresh'),InputFileName)% refresh the list of content of the current dir  
+if ~strcmp(option,'status_display')  
     uiwait(hfig)
+    fileinput=get(hfig,'UserData');% retrieve the input file selection
+    delete(hfig)
 end
-fileinput=get(hfig,'UserData');% retrieve the input file selection
-delete(hfig)
+
+
+
+%------------------------------------------------------------------------   
+% --- launched by refreshing the display figure
+function refresh_GUI(hObject,InputFileName)
+%------------------------------------------------------------------------
+if ~exist('InputFileName','var')
+    InputFileName='';
+end
+hfig=get(hObject,'parent');
+DirName=get(hfig,'UserData');
+ListFiles=list_files(DirName);% list the directory content
+hlist=findobj(hfig,'tag','list');% find the list object
+set(hlist,'String',ListFiles)
+Value=[];
+if ~isempty(InputFileName)
+    Value=find(strcmp(InputFileName,ListFiles));
+end
+if isempty(Value)
+    Value=1;
+end
+set(hlist,'Value',Value)
+
+if strcmp(get(hfig,'Tag'),'status_display')
+    
+    hseries=findobj(allchild(0),'tag','series');
+    hstatus=findobj(hseries,'tag','status_display');
+    StatusData=get(hstatus,'UserData');
+    TimeStart=0;
+    if isfield(StatusData,'TimeStart')
+        TimeStart=StatusData.TimeStart;
+    end
+    
+    
+    htitlebox=findobj(hfig,'tag','titlebox');
+    hlist=findobj(hfig,'tag','list');
+    OutputDir=get(hfig,'UserData');
+    
+    testrecent=0;
+    datnum=zeros(numel(ListDisplay),1);
+    for ilist=1:numel(ListDisplay)
+        ListDisplay{ilist}=ListFiles(ilist).name;
+        if ListFiles(ilist).isdir
+            ListDisplay{ilist}=['/' ListDisplay{ilist}];
+        elseif isfield(ListFiles(ilist),'datenum')
+            datnum(ilist)=ListFiles(ilist).datenum;%only available in recent matlab versions
+            testrecent=1;
+            if datnum(ilist)<TimeStart
+                ListDisplay{ilist}=[ListDisplay{ilist} '  --OLD--'];
+            end
+        end
+    end
+    
+    %% Look at date of creation
+    ListDisplay=ListDisplay(datnum~=0);
+    datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
+    
+    NbOutputFile=[];
+    if isempty(datnum)
+        if testrecent
+            message='no result created yet';
+        else
+            message='';
+        end
+    else
+        [first,indfirst]=min(datnum);
+        [last,indlast]=max(datnum);
+        NbOutputFile_str='?';
+        if isfield(StatusData,'NbOutputFile')
+            NbOutputFile=StatusData.NbOutputFile;
+            NbOutputFile_str=num2str(NbOutputFile);
+        end
+        message={[num2str(numel(datnum)) ' file(s) done over ' NbOutputFile_str] ;['oldest modification:  ' ListDisplay{indfirst} ' : ' datestr(first)];...
+            ['latest modification:  ' ListDisplay{indlast} ' : ' datestr(last)]};
+    end
+    set(htitlebox,'String', [DirName{1};message])
+    
+    %% update the waitbar
+    hwaitbar=findobj(hfig,'tag','waitbar');
+    if ~isempty(NbOutputFile)
+        BarPosition=get(hwaitbar,'Position');
+        BarPosition(3)=0.9*numel(datnum)/NbOutputFile;
+        set(hwaitbar,'Position',BarPosition)
+    end
+end
 
 %------------------------------------------------------------------------   
 % --- launched by selecting an item on the file list
@@ -117,12 +212,34 @@ elseif exist(FullSelectName,'file')%visualise the field if it exists
         hfig=get(hObject,'parent');
         set(hfig,'UserData',FullSelectName);
         uiresume(hfig)
-            case 'status'
+            case 'status_display'
            uvmat(FullSelectName);
         end
         set(gcbo,'Value',1)
     end
 end
+
+%-------------------------------------------------------------------------   
+% list the content of a directory
+function ListFiles=list_files(DirName)
+%-------------------------------------------------------------------------
+ListStruct=dir(DirName);% get structure of the current directory
+if numel(ListStruct)<1
+    ListFiles={};
+    return
+end
+if strcmp(ListStruct(1).name,'.')
+    ListStruct(1)=[];%removes the first line ='.'
+end
+ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+ListFiles=ListCells(1,:);%list of file names
+check_dir=cell2mat(ListCells(4,:));% check directories
+ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
+[tild,index_sort]=sort(check_dir,2,'descend');% sort 
+ListFiles=ListFiles(index_sort);% list of names sorted by alaphabetical order and dir and file 
+cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
+check_keep=cellfun('isempty', cell_remove);               
+ListFiles=[{'+/..'} ListFiles(check_keep)];
 
 %------------------------------------------------------------------------   
 % --- launched by selecting home
@@ -151,115 +268,13 @@ set(htitlebox,'String',PrevDir)
 refresh_GUI(findobj(hfig,'Tag','refresh'))
 end
 
-%------------------------------------------------------------------------
-
-%------------------------------------------------------------------------   
-% --- launched by refreshing the display figure
-function refresh_GUI(hObject,InputFileName)
-%------------------------------------------------------------------------
-if ~exist('InputFileName','var')
-    InputFileName='';
-end
-hfig=get(hObject,'parent');
-DirName=get(hfig,'UserData');
-ListFiles=list_files(DirName);% list the directory content
-hlist=findobj(hfig,'tag','list');% find the list object
-set(hlist,'String',ListFiles)
-Value=[];
-if ~isempty(InputFileName)
-    Value=find(strcmp(InputFileName,ListFiles));
-end
-if isempty(Value)
-    Value=1;
-end
-set(hlist,'Value',Value)
-return
-
-%TODO adapt to series status
-hseries=findobj(allchild(0),'tag','series');
-hstatus=findobj(hseries,'tag','status');
-StatusData=get(hstatus,'UserData');
-TimeStart=0;
-if isfield(StatusData,'TimeStart')
-    TimeStart=StatusData.TimeStart;
-end
-% testrecent=0;
-% datnum=zeros(numel(ListDisplay),1);
-% for ilist=1:numel(ListDisplay)
-%     ListDisplay{ilist}=ListFiles(ilist).name;
-%     if ListFiles(ilist).isdir
-%         ListDisplay{ilist}=['/' ListDisplay{ilist}];    
-%     elseif isfield(ListFiles(ilist),'datenum')
-%         datnum(ilist)=ListFiles(ilist).datenum;%only available in recent matlab versions
-%         testrecent=1;
-%         if datnum(ilist)<TimeStart
-%             ListDisplay{ilist}=[ListDisplay{ilist} '  --OLD--'];
-%         end
-%     end
-% end
-
-
-%% Look at date of creation
-ListDisplay=ListDisplay(datnum~=0);
-datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
-
-NbOutputFile=[];
-if isempty(datnum)
-    if testrecent
-        message='no result created yet';
-    else
-        message='';
-    end
-else
-    [first,indfirst]=min(datnum);
-    [last,indlast]=max(datnum);
-    NbOutputFile_str='?';
-    if isfield(StatusData,'NbOutputFile')
-        NbOutputFile=StatusData.NbOutputFile;
-        NbOutputFile_str=num2str(NbOutputFile);
-    end
-    message={[num2str(numel(datnum)) ' file(s) done over ' NbOutputFile_str] ;['oldest modification:  ' ListDisplay{indfirst} ' : ' datestr(first)];...
-        ['latest modification:  ' ListDisplay{indlast} ' : ' datestr(last)]};
-end
-set(htitlebox,'String', [DirName{1};message])
-
-%% update the waitbar
-hwaitbar=findobj(hfig,'tag','waitbar');
-if ~isempty(NbOutputFile) 
-    BarPosition=get(hwaitbar,'Position');
-    BarPosition(3)=0.9*numel(datnum)/NbOutputFile;
-    set(hwaitbar,'Position',BarPosition)
-end
-
-%-------------------------------------------------------------------------   
-% list the content of a directory
-function ListFiles=list_files(DirName)
-%-------------------------------------------------------------------------
-ListStruct=dir(DirName);
-if numel(ListStruct)<1
-    ListFiles={};
-    return
-end
-if strcmp(ListStruct(1).name,'.')
-    ListStruct(1)=[];%removes the first line ='.'
-end
-ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
-ListFiles=ListCells(1,:);%list of file names
-check_dir=cell2mat(ListCells(4,:));% check directories
-ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
-[tild,index_sort]=sort(check_dir,2,'descend');% sort 
-ListFiles=ListFiles(index_sort);% list of names sorted by alaphabetical order and dir and file 
-cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
-check_keep=cellfun('isempty', cell_remove);               
-ListFiles=[{'+/..'} ListFiles(check_keep)];
-
 %-------------------------------------------------------------------------   
 % launched by deleting the status figure (only used in mode series status')
 function close(option,hObject, eventdata)
 %-------------------------------------------------------------------------
-if strcmp(option,'status')
+if strcmp(option,'status_display')
     hseries=findobj(allchild(0),'tag','series');
-    hstatus=findobj(hfig,'Tag','status');
+    hstatus=findobj(hfig,'Tag','status_display');
     set(hhciv.status,'value',0) %reset the status uicontrol in the GUI civ
     set(hhciv.status,'BackgroundColor',[0 1 0])
 end

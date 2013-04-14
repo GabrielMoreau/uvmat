@@ -2472,25 +2472,27 @@ if get(handles.status,'Value')
     end
     OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
     OutputDir=fullfile(RootPath,OutputSubDir);
-    hfig=findobj(allchild(0),'name','series_status');
-    if isempty(hfig)
-        ScreenSize=get(0,'ScreenSize');
-        hfig=figure('DeleteFcn',@stop_status,'Position',[ScreenSize(3)-600 ScreenSize(4)-640 560 600]);
-        set(hfig,'MenuBar','none')% suppress the menu bar
-        set(hfig,'NumberTitle','off')%suppress the fig number in the title
-        set(hfig,'name','series_status')
-        set(hfig,'tag','series_status')
-        uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', @view_file,'tag','list','UserData',OutputDir);
-        uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','titlebox','Max',2,'String',OutputDir);
-        uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
-        uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@stop_status);
-        uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@refresh_GUI);
-        %set(hrefresh,'UserData',StatusData)
-        BarPosition=[0.05 0.81 0.01 0.05];
-        uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
-        drawnow
-    end
-    refresh_GUI(hfig) 
+    uigetfile_uvmat('status_display',OutputDir)
+    
+%     hfig=findobj(allchild(0),'name','series_status');
+%     if isempty(hfig)
+%         ScreenSize=get(0,'ScreenSize');
+%         hfig=figure('DeleteFcn',@stop_status,'Position',[ScreenSize(3)-600 ScreenSize(4)-640 560 600]);
+%         set(hfig,'MenuBar','none')% suppress the menu bar
+%         set(hfig,'NumberTitle','off')%suppress the fig number in the title
+%         set(hfig,'name','series_status')
+%         set(hfig,'tag','series_status')
+%         uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', @view_file,'tag','list','UserData',OutputDir);
+%         uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','titlebox','Max',2,'String',OutputDir);
+%         uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
+%         uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@stop_status);
+%         uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@refresh_GUI);
+%         %set(hrefresh,'UserData',StatusData)
+%         BarPosition=[0.05 0.81 0.01 0.05];
+%         uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
+%         drawnow
+%     end
+%     refresh_GUI(hfig) 
 else
     %% delete current display fig if selection is off
     set(handles.status,'BackgroundColor',[0 1 0])
