@@ -678,10 +678,9 @@ function HideFalse_Callback(hObject, eventdata, handles)
 update_plot(handles)
 
 %-------------------------------------------------------------------
-function VecScale_Callback(hObject, eventdata, handles)
+function num_VecScale_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-set(handles.FixVec,'Value',1);
-set(handles.FixVec,'BackgroundColor',[1 1 0])
+set(handles.CheckFixVectors,'Value',1);
 update_plot(handles)
 
 %-------------------------------------------------------------------

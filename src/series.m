@@ -68,8 +68,8 @@ guidata(hObject, handles);
 %% initial settings
 set(0,'Unit','points')
 ScreenSize=get(0,'ScreenSize');%size of the current screen
-Width=750;% prefered width of the GUI in points (1/72 inch)
-Height=520;
+Width=900;% prefered width of the GUI in points (1/72 inch)
+Height=624;
 %adjust to screen size (reduced by a min margin)
 RescaleFactor=min((ScreenSize(3)-80)/Width,(ScreenSize(4)-80)/Height);
 if RescaleFactor>1

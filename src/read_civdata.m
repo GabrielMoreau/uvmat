@@ -75,6 +75,10 @@ end
 
 %% reading data
 Data=nc2struct(filename,'ListGlobalAttribute','CivStage');
+if isfield(Data,'Txt')
+     erromsg=['error in read_civdata: ' Data.Txt];
+    return
+end
 [varlist,role,VelTypeOut]=varcivx_generator(ProjModeRequest,VelType,Data.CivStage);
 if isempty(varlist)
     erromsg=['error in read_civdata: unknow velocity type ' VelType];

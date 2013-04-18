@@ -49,11 +49,15 @@ if isempty(hfig)
             'String','path:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
     uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.89 0.9 0.08],'tag','titlebox','Max',2,'BackgroundColor',[1 1 1],...
         'String',InputDir,'FontUnits','points','FontSize',12,'FontWeight','bold');
-%     uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.85 0.5 0.03],'BackgroundColor',BackgroundColor,...
-%             'String','first modified:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');
-%     uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.82 0.5 0.03],'BackgroundColor',BackgroundColor,...
-%             'String','last modified:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');
-    uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.08 0.9 0.66], 'Callback', @(src,event)view_file(option,src,event),'tag','list',...
+    uicontrol('Style','pushbutton','Tag','backward','Units','normalized','Position',[0.05 0.75 0.1 0.07],...
+            'String','<--','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@backward);
+    uicontrol('Style','togglebutton','Units','normalized', 'Position', [0.75 0.75 0.2 0.04],'tag','check_date','Callback',@dates_Callback,...
+            'String','dates','FontUnits','points','FontSize',12,'FontWeight','bold');
+    uicontrol('Style','text','Units','normalized', 'Position', [0.4 0.8 0.35 0.03],'BackgroundColor',BackgroundColor,...
+            'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
+    uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.75 0.8 0.2 0.04],'tag','sort_option','Callback',@refresh_GUI,'Visible','off',...
+            'String',{'name';'date'},'FontUnits','points','FontSize',12,'FontWeight','bold');   
+    uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.08 0.9 0.66], 'Callback', @(src,event)list_Callback(option,src,event),'tag','list',...
         'FontUnits','points','FontSize',12);
     uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.005 0.2 0.07],'Callback',@(src,event)close(option,src,event),...
         'String','Close','FontWeight','bold','FontUnits','points','FontSize',12);
@@ -65,10 +69,9 @@ if isempty(hfig)
         uicontrol('Style','frame','Units','normalized', 'Position',[0.05 0.81 0.01 0.05],'BackgroundColor',[1 0 0],'tag','waitbar');
         uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
     else  %put a title and additional pushbuttons
-        uicontrol('Style','text','Units','normalized', 'Position', [0.15 0.75 0.8 0.03],'BackgroundColor',BackgroundColor,...
+        uicontrol('Style','text','Units','normalized', 'Position', [0.15 0.75 0.6 0.03],'BackgroundColor',BackgroundColor,...
             'String',title,'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
-        uicontrol('Style','pushbutton','Tag','backward','Units','normalized','Position',[0.05 0.75 0.1 0.07],...
-            'String','<--','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@backward);
+
         uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.4 0.005 0.2 0.07],...
             'String','Home','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@home_dir);
     end
@@ -94,7 +97,13 @@ end
 hfig=get(hObject,'parent');
 htitlebox=findobj(hfig,'tag','titlebox');
 DirName=get(htitlebox,'String');
-ListFiles=list_files(DirName);% list the directory content
+hsort_option=findobj(hfig,'tag','sort_option');
+sort_option='name';
+if strcmp(get(hsort_option,'Visible'),'on')&& isequal(get(hsort_option,'Value'),2)
+    sort_option='date';
+end
+hcheck_date=findobj(hfig,'tag','check_date');
+ListFiles=list_files(DirName,get(hcheck_date,'Value'),sort_option);% list the directory content
 hlist=findobj(hfig,'tag','list');% find the list object
 set(hlist,'String',ListFiles)
 Value=[];
@@ -106,21 +115,15 @@ if isempty(Value)
 end
 set(hlist,'Value',Value)
 
-if strcmp(get(hfig,'Tag'),'status_display')
-    
+if strcmp(get(hfig,'Tag'),'status_display') 
     hseries=findobj(allchild(0),'tag','series');
     hstatus=findobj(hseries,'tag','status_display');
     StatusData=get(hstatus,'UserData');
     TimeStart=0;
     if isfield(StatusData,'TimeStart')
         TimeStart=StatusData.TimeStart;
-    end
-    
-    
-
+    end 
     hlist=findobj(hfig,'tag','list');
-   % OutputDir=get(hfig,'UserData');
-    
     testrecent=0;
     datnum=zeros(numel(ListDisplay),1);
     for ilist=1:numel(ListDisplay)
@@ -171,7 +174,21 @@ end
 
 %------------------------------------------------------------------------   
 % --- launched by selecting an item on the file list
-function view_file(option,hObject,event)
+function dates_Callback(hObject,event)
+%------------------------------------------------------------------------
+hfig=get(hObject,'parent');
+hsort_option=findobj(hfig,'tag','sort_option');
+if get(hObject,'Value')
+    set(hsort_option,'Visible','on')
+    set(hsort_option,'Value',2)
+else
+    set(hsort_option,'Visible','off')
+end
+refresh_GUI(hObject,[])
+
+%------------------------------------------------------------------------   
+% --- launched by selecting an item on the file list
+function list_Callback(option,hObject,event)
 %------------------------------------------------------------------------
 list=get(hObject,'String');
 index=get(hObject,'Value');
@@ -179,29 +196,35 @@ hfig=get(hObject,'parent');%handle of the fig
 htitlebox=findobj(hfig,'tag','titlebox');  % display the new dir name  
 DirName=get(htitlebox,'String');
 SelectName=regexprep(list{index},'^\+/','');% remove the +/ used to mark dir
+ind_dot=regexp(SelectName,'\s*\.\.\.');%remove what is beyond  '...'
+if ~isempty(ind_dot)
+    SelectName=SelectName(1:ind_dot-1);
+end
 if strcmp(SelectName,'..')% the upward dir option has been selected
     FullSelectName=fileparts(DirName);
 else
-    %ind_dot=regexp(SelectName,'\.\.\.');
-    % if ~isempty(ind_dot)
-    %     SelectName=SelectName(1:ind_dot-1);
-    % end
     FullSelectName=fullfile(DirName,SelectName);
 end
 if exist(FullSelectName,'dir')% a directory has been selected
-%     ListFiles=dir(FullSelectName);
-%     ListDisplay=cell(numel(ListFiles),1);
-%     for ilist=2:numel(ListDisplay)% suppress the first line '.'
-%         ListDisplay{ilist-1}=ListFiles(ilist).name;
-%     end
-%     set(hObject,'Value',1)
-%     set(hObject,'String',ListDisplay)
-%     if strcmp(selectname,'..')
-%         FullSelectName=fileparts(fileparts(FullSelectName));
-%     end
+    %     ListFiles=dir(FullSelectName);
+    %     ListDisplay=cell(numel(ListFiles),1);
+    %     for ilist=2:numel(ListDisplay)% suppress the first line '.'
+    %         ListDisplay{ilist-1}=ListFiles(ilist).name;
+    %     end
+    %     set(hObject,'Value',1)
+    %     set(hObject,'String',ListDisplay)
+    %     if strcmp(selectname,'..')
+    %         FullSelectName=fileparts(fileparts(FullSelectName));
+    %     end
     hbackward=findobj(hfig,'Tag','backward');
     set(hbackward,'UserData',DirName); %store the current dir for future backward action
-    ListFiles=list_files(FullSelectName);
+    hsort_option=findobj(hfig,'tag','sort_option');
+    sort_option='name';%default
+    if strcmp(get(hsort_option,'Visible'),'on')&& isequal(get(hsort_option,'Value'),2)
+        sort_option='date';
+    end
+    hcheck_date=findobj(hfig,'tag','check_date');
+    ListFiles=list_files(FullSelectName,get(hcheck_date,'Value'),sort_option);% list the directory content
     set(hObject,'Value',1)
     set(hObject,'String',ListFiles)
     set(htitlebox,'String',FullSelectName)% record the new dir name
@@ -211,54 +234,66 @@ elseif exist(FullSelectName,'file')%visualise the field if it exists
         edit(FullSelectName)
     elseif strcmp(FileType,'xml')
         editxml(FullSelectName)
-            elseif strcmp(FileType,'figure')
+    elseif strcmp(FileType,'figure')
         open(FullSelectName)
     else
         %uvmat(FullSelectName);
         switch option
             case 'browser'
-        set(htitlebox,'String',FullSelectName);
-        uiresume(hfig)
+                set(htitlebox,'String',FullSelectName);
+                uiresume(hfig)
             case 'status_display'
-           uvmat(FullSelectName);
+                uvmat(FullSelectName);
         end
     end
 end
 
 %-------------------------------------------------------------------------   
 % list the content of a directory
-function [ListFiles,ListDates]=list_files(DirName)
+function ListFiles=list_files(DirName,check_date,sort_option)
 %-------------------------------------------------------------------------
 ListStruct=dir(DirName);% get structure of the current directory
 if numel(ListStruct)<1  % case of empty dir
     ListFiles={};
-    ListDates={};
     return
 end
-% if strcmp(ListStruct(1).name,'.')
-%     ListStruct(1)=[];%removes the first line ='.'
-% end
 ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
 ListFiles=ListCells(1,:);%list of file names
 check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
-ListDates=cell2mat(ListCells(5,:));%list of numerical dates
 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
-ListDates(check_dir)=0; % we set the dir dates to 0 
-[tild,index_sort]=sort(check_dir,2,'descend');% put the dir first in the list
-ListFiles=ListFiles(index_sort);% list of names sorted by alaphabetical order and dir and file 
-ListDates=ListDates(index_sort);% sort the corresponding dates
+if strcmp(sort_option,'date')
+    ListDates=cell2mat(ListCells(5,:));%list of numerical dates
+    ListDates(check_dir)=max(ListDates(~check_dir))+1000; % we set the dir in front 
+    [tild,index_sort]=sort(ListDates,2,'descend');% sort files by chronological order, recent first, put the dir first in the list
+else
+    [tild,index_sort]=sort(check_dir,2,'descend');% put the dir first in the list
+end
+ListFiles=ListFiles(index_sort);% list of names sorted by alaphabetical order and dir and file
 cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
-check_keep=cellfun('isempty', cell_remove);               
+check_keep=cellfun('isempty', cell_remove);
 ListFiles=[{'+/..'} ListFiles(check_keep)];
-ListDates=[0 ListDates(check_keep)];
+if check_date
+ListDateString=ListCells(2,:);%list of file dates
+ListDateString(check_dir)={''};
+ListDateString=ListDateString(index_sort);% sort the corresponding dates
+ListDateString=[{''} ListDateString(check_keep)];
+ListFiles=[ListFiles; ListDateString];
+ListFiles=cell2tab(ListFiles','...'); 
+end
 
 %------------------------------------------------------------------------   
 % --- launched by selecting home
 function home_dir(hObject,event)
 %------------------------------------------------------------------------
 DirName=pwd;
-ListFiles=list_files(DirName);% list the directory content
 hfig=get(hObject,'parent');
+sort_option='name';%default
+hsort_option=findobj(hfig,'tag','sort_option');
+if strcmp(get(hsort_option,'Visible'),'on')&& isequal(get(hsort_option,'Value'),2)
+    sort_option='date';
+end
+hcheck_date=findobj(hfig,'tag','check_date');
+ListFiles=list_files(DirName,get(hcheck_date,'Value'),sort_option);% list the directory content
 htitlebox=findobj(hfig,'Tag','titlebox');
 set(htitlebox,'String',DirName)% record the new dir name
 hlist=findobj(hfig,'tag','list');% find the list object
