@@ -5,7 +5,7 @@
 % OUTPUT:
 % s: structure representing ImaDoc
 %   s.Heading: information about the data hierarchical structure
-%   s.Time: matrix of times
+%   s.Time: matrix of times, note that s.Time(i+1,j+1) is the time for file indices i and j (in order to deal with index 0)
 %   s.TimeUnit
 %  s.GeometryCalib: substructure containing the parameters for geometric calibration
 % errormsg: error message
@@ -100,6 +100,8 @@ if isfield(s,'Camera')
             end
         end
     end
+    s.Time=[zeros(size(s.Time,1),1) s.Time]; %insert a vertical line of zeros (to deal with zero file indices)
+    s.Time=[zeros(1,size(s.Time,2)); s.Time]; %insert a horizontal line of zeros
 end
 
 % try

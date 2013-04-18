@@ -352,12 +352,11 @@ if isempty(oldfile) %loads the previously stored file name and set it as default
     oldfile=get(handles.RootPath,'UserData');
 end
 fileinput=uigetfile_uvmat('select an input file:',oldfile);
+
+%% display the selected field and related information
 if ~isempty(fileinput)
     display_file_name(handles,fileinput)
 end
-
-%% display the selected field and related information
-% display_file_name( handles,fileinput)
 
 % -----------------------------------------------------------------------
 % --- Executes on the menu Open/Browse campaign...
@@ -894,27 +893,26 @@ XmlFileName=find_imadoc(RootPath,SubDir,RootFile,FileExt);
 [tild,tild,DocExt]=fileparts(XmlFileName);
 warntext='';%default warning message
 NbSlice=1;%default
+ImaDoc_str='';
 set(handles.RootPath,'BackgroundColor',[1 1 1])
 if ~isempty(XmlFileName)
     set(handles.view_xml,'Visible','on')
-    set(handles.view_xml,'BackgroundColor',[1 1 0])
+    set(handles.view_xml,'BackgroundColor',[1 1 0])% paint  to yellow color to indicate reading of the xml file
     set(handles.view_xml,'String','view .xml')
     drawnow
     [XmlDataRead,warntext]=imadoc2struct(XmlFileName);
     if ~isempty(warntext)
         msgbox_uvmat('WARNING',warntext)
     end
-    if isempty(XmlDataRead)
-        set(handles.view_xml,'Visible','off')
-    else
-        set(handles.view_xml,'String',['view ' DocExt])   
+    if ~isempty(XmlDataRead)
+        ImaDoc_str=['view ' DocExt];   
         XmlData=XmlDataRead;
         if isfield(XmlData,'TimeUnit')
             if isfield(XmlData,'TimeUnit')&& ~isempty(XmlData.TimeUnit)
                 TimeUnit=XmlData.TimeUnit;
             end
         end
-        set(handles.view_xml,'BackgroundColor',[1 1 1])
+        set(handles.view_xml,'BackgroundColor',[1 1 1])% paint black to white
         drawnow
         if isfield(XmlData, 'GeometryCalib') && ~isempty(XmlData.GeometryCalib)
             if isfield(XmlData.GeometryCalib,'VolumeScan') && isequal(XmlData.GeometryCalib.VolumeScan,'y')
@@ -935,6 +933,11 @@ if ~isempty(XmlFileName)
 end
 if ~(isfield(XmlData,'Time')&& ~isempty(XmlData.Time))
     XmlData.Time=Time; %time set by video
+end
+if isempty(ImaDoc_str)
+    set(handles.view_xml,'Visible','off')
+else
+    set(handles.view_xml,'String',ImaDoc_str)
 end
 
 %% store last index in handles.lat_i and .last_j
@@ -2377,9 +2380,9 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
         num_j2=num_j1;
     end
     siz=size(UvData.XmlData{1}.Time);
-    if ~isempty(num_i1)&& ~isempty(num_i2) && num_i1>0 &&siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
-        abstime=(UvData.XmlData{1}.Time(num_i1,num_j1)+UvData.XmlData{1}.Time(num_i2,num_j2))/2;%overset the time read from files
-        dt=(UvData.XmlData{1}.Time(num_i2,num_j2)-UvData.XmlData{1}.Time(num_i1,num_j1));
+    if ~isempty(num_i1)&& ~isempty(num_i2) && num_i1>=0 &&siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
+        abstime=(UvData.XmlData{1}.Time(num_i1+1,num_j1+1)+UvData.XmlData{1}.Time(num_i2+1,num_j2+1))/2;%overset the time read from files
+        dt=(UvData.XmlData{1}.Time(num_i2+1,num_j2+1)-UvData.XmlData{1}.Time(num_i1+1,num_j1+1));
         Field{1}.Dt=dt;
         if isfield(UvData.XmlData{1},'TimeUnit')
             TimeUnit=UvData.XmlData{1}.TimeUnit;
@@ -5300,3 +5303,6 @@ else
         set(handles.record,'Visible','off')
     end
 end
+
+
+

@@ -763,19 +763,17 @@ if ~isempty(time)
     MaxIndexTable=get(handles.MaxIndex,'Data');
     MaxIndex_i=MaxIndexTable{iview,1};
     MaxIndex_j=MaxIndexTable{iview,2};
-    if isempty(MinIndex_j)% only i index
-        if MinIndex_i>0
-            TimeTable{iview,1}=time(MinIndex_i+1);
-        end
-        TimeTable{iview,2}=time(first_i+1);
-        TimeTable{iview,3}=time(last_i+1);
-        TimeTable{iview,4}=time(MaxIndex_i+1);
-    elseif ~isempty(time)
-        if MinIndex_i>0
-            TimeTable{iview,1}=time(MinIndex_i,MinIndex_j);
+%     if isempty(MinIndex_j)% only i index
+%         TimeTable{iview,1}=time(MinIndex_i+1,2);
+%         TimeTable{iview,2}=time(first_i+1,2);
+%         TimeTable{iview,3}=time(last_i+1,2);
+%         TimeTable{iview,4}=time(MaxIndex_i+1,2);
+    if ~isempty(time)
+        TimeTable{iview,1}=time(MinIndex_i+1,MinIndex_j+1);
+        if size(time)>=[first_i+1 first_j+1]
+        TimeTable{iview,2}=time(first_i+1,first_j+1);
         end
         if size(time)>=[last_i+1 last_j+1]
-            TimeTable{iview,2}=time(first_i+1,first_j+1);
             TimeTable{iview,3}=time(last_i+1,last_j+1);
         end
         if size(time)>=[MaxIndex_i+1 MaxIndex_j+1];
@@ -865,7 +863,7 @@ scale_x=Position(3)/range_index;
 x=(0.5:range_index-0.5)*Position(3)/range_index;
 % y=(0.5:nbview-0.5)*Position(4)/nbview;
 range_y=max(1,floor(Position(4)/nbview));
-CData=zeros(nbview*range_y,Position(3));
+CData=zeros(nbview*range_y,floor(Position(3)));
 for iview=1:nbview
     ind_y=1+(iview-1)*range_y:iview*range_y;
     LineData=zeros(1,range_index);

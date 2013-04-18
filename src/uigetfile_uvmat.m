@@ -44,13 +44,20 @@ if isempty(hfig)
     Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40 
     Bottom=ScreenSize(4)-Height-40; %put fig at top right
     hfig=figure('name',option,'tag',option,'MenuBar','none','NumberTitle','off','Unit','points','Position',[Left,Bottom,Width,Height],'UserData',InputDir);
-    uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', @(src,event)view_file(option,src,event),'tag','list',...
-        'FontUnits','points','FontSize',12);
-    uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','titlebox','Max',2,...
+    BackgroundColor=get(hfig,'Color');
+    uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.97 0.5 0.03],'BackgroundColor',BackgroundColor,...
+            'String','path:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
+    uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.89 0.9 0.08],'tag','titlebox','Max',2,'BackgroundColor',[1 1 1],...
         'String',InputDir,'FontUnits','points','FontSize',12,'FontWeight','bold');
-    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'Callback',@(src,event)close(option,src,event),...
+%     uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.85 0.5 0.03],'BackgroundColor',BackgroundColor,...
+%             'String','first modified:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');
+%     uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.82 0.5 0.03],'BackgroundColor',BackgroundColor,...
+%             'String','last modified:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');
+    uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.08 0.9 0.66], 'Callback', @(src,event)view_file(option,src,event),'tag','list',...
+        'FontUnits','points','FontSize',12);
+    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.005 0.2 0.07],'Callback',@(src,event)close(option,src,event),...
         'String','Close','FontWeight','bold','FontUnits','points','FontSize',12);
-    uicontrol('Style','pushbutton','Tag','refresh','Units','normalized','Position', [0.1 0.01 0.2 0.07],'Callback',@refresh_GUI,...
+    uicontrol('Style','pushbutton','Tag','refresh','Units','normalized','Position', [0.1 0.005 0.2 0.07],'Callback',@refresh_GUI,...
         'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',12);
     %set(hrefresh,'UserData',StatusData)
     if strcmp(option,'status_display') %put a run advancement display
@@ -58,11 +65,11 @@ if isempty(hfig)
         uicontrol('Style','frame','Units','normalized', 'Position',[0.05 0.81 0.01 0.05],'BackgroundColor',[1 0 0],'tag','waitbar');
         uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
     else  %put a title and additional pushbuttons
-        uicontrol('Style','text','Units','normalized', 'Position', [0.15 0.81 0.8 0.03],...
+        uicontrol('Style','text','Units','normalized', 'Position', [0.15 0.75 0.8 0.03],'BackgroundColor',BackgroundColor,...
             'String',title,'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
-        uicontrol('Style','pushbutton','Tag','backward','Units','normalized','Position',[0.05 0.8 0.1 0.07],...
+        uicontrol('Style','pushbutton','Tag','backward','Units','normalized','Position',[0.05 0.75 0.1 0.07],...
             'String','<--','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@backward);
-        uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.4 0.01 0.2 0.07],...
+        uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.4 0.005 0.2 0.07],...
             'String','Home','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@home_dir);
     end
     drawnow
@@ -70,7 +77,8 @@ end
 refresh_GUI(findobj(hfig,'Tag','refresh'),InputFileName)% refresh the list of content of the current dir  
 if ~strcmp(option,'status_display')  
     uiwait(hfig)
-    fileinput=get(hfig,'UserData');% retrieve the input file selection
+    htitlebox=findobj(hfig,'Tag','titlebox');
+    fileinput=get(htitlebox,'String');% retrieve the input file selection
     delete(hfig)
 end
 
@@ -84,7 +92,8 @@ if ~exist('InputFileName','var')
     InputFileName='';
 end
 hfig=get(hObject,'parent');
-DirName=get(hfig,'UserData');
+htitlebox=findobj(hfig,'tag','titlebox');
+DirName=get(htitlebox,'String');
 ListFiles=list_files(DirName);% list the directory content
 hlist=findobj(hfig,'tag','list');% find the list object
 set(hlist,'String',ListFiles)
@@ -108,9 +117,9 @@ if strcmp(get(hfig,'Tag'),'status_display')
     end
     
     
-    htitlebox=findobj(hfig,'tag','titlebox');
+
     hlist=findobj(hfig,'tag','list');
-    OutputDir=get(hfig,'UserData');
+   % OutputDir=get(hfig,'UserData');
     
     testrecent=0;
     datnum=zeros(numel(ListDisplay),1);
@@ -167,7 +176,8 @@ function view_file(option,hObject,event)
 list=get(hObject,'String');
 index=get(hObject,'Value');
 hfig=get(hObject,'parent');%handle of the fig
-DirName=get(hfig,'UserData');
+htitlebox=findobj(hfig,'tag','titlebox');  % display the new dir name  
+DirName=get(htitlebox,'String');
 SelectName=regexprep(list{index},'^\+/','');% remove the +/ used to mark dir
 if strcmp(SelectName,'..')% the upward dir option has been selected
     FullSelectName=fileparts(DirName);
@@ -194,9 +204,7 @@ if exist(FullSelectName,'dir')% a directory has been selected
     ListFiles=list_files(FullSelectName);
     set(hObject,'Value',1)
     set(hObject,'String',ListFiles)
-    set(hfig,'UserData',FullSelectName)% record the new dir name
-    htitlebox=findobj(hfig,'tag','titlebox');  % display the new dir name  
-    set(htitlebox,'String',FullSelectName)
+    set(htitlebox,'String',FullSelectName)% record the new dir name
 elseif exist(FullSelectName,'file')%visualise the field if it exists
     FileType=get_file_type(FullSelectName);
     if strcmp(FileType,'txt')
@@ -209,37 +217,40 @@ elseif exist(FullSelectName,'file')%visualise the field if it exists
         %uvmat(FullSelectName);
         switch option
             case 'browser'
-        hfig=get(hObject,'parent');
-        set(hfig,'UserData',FullSelectName);
+        set(htitlebox,'String',FullSelectName);
         uiresume(hfig)
             case 'status_display'
            uvmat(FullSelectName);
         end
-        set(gcbo,'Value',1)
     end
 end
 
 %-------------------------------------------------------------------------   
 % list the content of a directory
-function ListFiles=list_files(DirName)
+function [ListFiles,ListDates]=list_files(DirName)
 %-------------------------------------------------------------------------
 ListStruct=dir(DirName);% get structure of the current directory
-if numel(ListStruct)<1
+if numel(ListStruct)<1  % case of empty dir
     ListFiles={};
+    ListDates={};
     return
 end
-if strcmp(ListStruct(1).name,'.')
-    ListStruct(1)=[];%removes the first line ='.'
-end
+% if strcmp(ListStruct(1).name,'.')
+%     ListStruct(1)=[];%removes the first line ='.'
+% end
 ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
 ListFiles=ListCells(1,:);%list of file names
-check_dir=cell2mat(ListCells(4,:));% check directories
+check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+ListDates=cell2mat(ListCells(5,:));%list of numerical dates
 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
-[tild,index_sort]=sort(check_dir,2,'descend');% sort 
+ListDates(check_dir)=0; % we set the dir dates to 0 
+[tild,index_sort]=sort(check_dir,2,'descend');% put the dir first in the list
 ListFiles=ListFiles(index_sort);% list of names sorted by alaphabetical order and dir and file 
+ListDates=ListDates(index_sort);% sort the corresponding dates
 cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
 check_keep=cellfun('isempty', cell_remove);               
 ListFiles=[{'+/..'} ListFiles(check_keep)];
+ListDates=[0 ListDates(check_keep)];
 
 %------------------------------------------------------------------------   
 % --- launched by selecting home
@@ -248,10 +259,9 @@ function home_dir(hObject,event)
 DirName=pwd;
 ListFiles=list_files(DirName);% list the directory content
 hfig=get(hObject,'parent');
-    set(hfig,'UserData',DirName)% record the new dir name
-    htitlebox=findobj(hfig,'tag','titlebox');  % display the new dir name  
-    set(htitlebox,'String',DirName)
-    hlist=findobj(hfig,'tag','list');% find the list object
+htitlebox=findobj(hfig,'Tag','titlebox');
+set(htitlebox,'String',DirName)% record the new dir name
+hlist=findobj(hfig,'tag','list');% find the list object
 set(hlist,'String',ListFiles)
 %------------------------------------------------------------------------
 
@@ -262,7 +272,6 @@ function backward(hObject,event)
 PrevDir=get(hObject,'UserData');
 if ~isempty(PrevDir)
 hfig=get(hObject,'parent');
-set(hfig,'UserData',PrevDir)
 htitlebox=findobj(hfig,'tag','titlebox');  % display the new dir name
 set(htitlebox,'String',PrevDir)
 refresh_GUI(findobj(hfig,'Tag','refresh'))

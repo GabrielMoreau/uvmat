@@ -334,7 +334,7 @@ if strcmp(ExtInput,'.xml')
         set(handles.ListPairCiv2,'Value',1)
     set(handles.ListPairCiv2,'String',{''}) 
     Param=xml2struct(fileinput);  %read parameters from the xml input file
-    fill_GUI(Param,handles);%fill the GUI with the parameters retrieved from the xml file 
+    fill_GUI(Param,handles.civ);%fill the GUI with the parameters retrieved from the xml file 
     return
 end
 
@@ -533,8 +533,8 @@ if numel(time)>=2 % if there are at least two time values to define dt
     end
     MaxIndex_i=min(size(time,1),MaxIndex_i);%possibly adjust the max index according to time data
     MaxIndex_j=min(size(time,2),MaxIndex_j);
-    time=[zeros(size(time,1),1) time]; %insert a vertical line of zeros (to deal with zero file indices)
-    time=[zeros(1,size(time,2)); time]; %insert a horizontal line of zeros
+%     time=[zeros(size(time,1),1) time]; %insert a vertical line of zeros (to deal with zero file indices)
+%     time=[zeros(1,size(time,2)); time]; %insert a horizontal line of zeros
 else
     set(handles.ImaDoc,'String',''); %xml file not used for timing
     time=(i1_series(:,1)+0:size(i1_series,3)-1);% time=index i
