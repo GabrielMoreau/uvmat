@@ -1,7 +1,7 @@
 %'read_civdata': reads new civ data from netcdf files
 %------------------------------------------------------------------
 %
-% function [Field,VelTypeOut]=read_civdata(filename,FieldNames,VelType)
+% function [Field,VelTypeOut]=read_civdata(FileName,FieldNames,VelType)
 %
 % OUTPUT:
 % Field: structure representing the selected field, containing
@@ -29,7 +29,7 @@
 % VelTypeOut: velocity type corresponding to the selected field: ='civ1','interp1','interp2','civ2'....
 %
 % INPUT:
-% filename: file name (string).
+% FileName: file name (string).
 % FieldNames =cell of field names to get, which can contain the strings:
 %             'ima_cor': image correlation, vec_c or vec2_C
 %             'vort','div','strain': requires velocity derivatives DUDX...
@@ -44,7 +44,7 @@
 % 'varcivx_generator':, sets the names of vaiables to read in the netcdf file 
 % 'nc2struct': reads a netcdf file 
 
-function [Field,VelTypeOut,errormsg]=read_civdata(filename,FieldNames,VelType)
+function [Field,VelTypeOut,errormsg]=read_civdata(FileName,FieldNames,VelType)
 
 %% default input
 if ~exist('VelType','var')
@@ -59,7 +59,13 @@ end
 if ~exist('FieldNames','var') 
     FieldNames=[]; %default
 end
+Field=[];
+VelTypeOut=VelType;
 errormsg='';
+if ~exist(FileName,'file')
+    errormsg=['input file ' FileName ' does not exist'];
+    return
+end
 if ischar(FieldNames), FieldNames={FieldNames}; end;
 ProjModeRequest='';
 for ilist=1:length(FieldNames)
@@ -74,7 +80,7 @@ for ilist=1:length(FieldNames)
 end
 
 %% reading data
-Data=nc2struct(filename,'ListGlobalAttribute','CivStage');
+Data=nc2struct(FileName,'ListGlobalAttribute','CivStage');
 if isfield(Data,'Txt')
      erromsg=['error in read_civdata: ' Data.Txt];
     return
@@ -84,14 +90,14 @@ if isempty(varlist)
     erromsg=['error in read_civdata: unknow velocity type ' VelType];
     return
 else
-    [Field,vardetect]=nc2struct(filename,varlist);%read the variables in the netcdf file
+    [Field,vardetect]=nc2struct(FileName,varlist);%read the variables in the netcdf file
 end
 if isfield(Field,'Txt')
     errormsg=Field.Txt;
     return
 end
 if vardetect(1)==0
-     errormsg=[ 'requested field not available in ' filename '/' VelType ': need to run patch'];
+     errormsg=[ 'requested field not available in ' FileName '/' VelType ': need to run patch'];
      return
 end
 switch VelTypeOut

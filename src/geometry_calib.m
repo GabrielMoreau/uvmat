@@ -88,10 +88,20 @@ guidata(hObject, handles);
 set(hObject,'DeleteFcn',{@closefcn})%
 set(hObject,'WindowButtonDownFcn',{'mouse_alt_gui',handles}) % allows mouse action with right button (zoom for uicontrol display)
 
-%set the position of the interface
-if exist('pos','var')&& length(pos)>=4
-    set(hObject,'Position',pos);
-end
+%% position
+set(0,'Unit','points')
+ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
+Width=350;% fig width in points (1/72 inch)
+Height=min(0.9*ScreenSize(4),700);
+Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40 
+Bottom=ScreenSize(4)-Height-40; %put fig at top right
+set(handles.geometry_calib,'Unit','points')
+set(handles.geometry_calib,'Position',[Left Bottom Width Height])
+
+% %set the position of the interface
+% if exist('pos','var')&& length(pos)>=4
+%     set(hObject,'Position',pos);
+% end
 
 %set menu of calibration options
 set(handles.calib_type,'String',{'rescale';'linear';'3D_linear';'3D_quadr';'3D_extrinsic'})

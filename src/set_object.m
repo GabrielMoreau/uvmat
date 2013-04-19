@@ -78,6 +78,16 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
+%% position
+set(0,'Unit','points')
+ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
+Width=300;% fig width in points (1/72 inch)
+Height=min(0.8*ScreenSize(4),500);
+Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40 
+Bottom=ScreenSize(4)-Height-40; %put fig at top right
+set(handles.set_object,'Unit','points')
+set(handles.set_object,'Position',[Left Bottom Width Height])
+
 %default
 if ~exist('ZBounds','var')
     ZBounds=0; %default 
@@ -154,17 +164,17 @@ end
 % enable the PLOT (REFRESH) button by default
 %defaul settings
 set(get(handles.set_object,'children'),'enable','on')
-   set(handles.PLOT,'enable','off') 
+set(handles.PLOT,'enable','off') 
 % end
-huvmat=findobj(allchild(0),'tag','uvmat');
-UvData=get(huvmat,'UserData');
-pos_uvmat=get(huvmat,'Position');
-%position the set_object GUI with respect to uvmat
-if isfield(UvData,'SetObjectOrigin')
-    pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
-    pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
-    set(hObject,'Position',pos_set_object)
-end
+% huvmat=findobj(allchild(0),'tag','uvmat');
+% UvData=get(huvmat,'UserData');
+% pos_uvmat=get(huvmat,'Position');
+% %position the set_object GUI with respect to uvmat
+% if isfield(UvData,'SetObjectOrigin')
+%     pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
+%     pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
+%     set(hObject,'Position',pos_set_object)
+% end
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.

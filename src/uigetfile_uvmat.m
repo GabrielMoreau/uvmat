@@ -47,7 +47,7 @@ if isempty(hfig)
     BackgroundColor=get(hfig,'Color');
     uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.97 0.5 0.03],'BackgroundColor',BackgroundColor,...
             'String','path:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
-    uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.89 0.9 0.08],'tag','titlebox','Max',2,'BackgroundColor',[1 1 1],...
+    uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.89 0.9 0.08],'tag','titlebox','Max',2,'BackgroundColor',[1 1 1],'Callback',@refresh_GUI,...
         'String',InputDir,'FontUnits','points','FontSize',12,'FontWeight','bold');
     uicontrol('Style','pushbutton','Tag','backward','Units','normalized','Position',[0.05 0.75 0.1 0.07],...
             'String','<--','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@backward);
@@ -95,6 +95,9 @@ if ~exist('InputFileName','var')
     InputFileName='';
 end
 hfig=get(hObject,'parent');
+hlist=findobj(hfig,'tag','list');% find the list object
+set(hlist,'BackgroundColor',[1 1 0])
+drawnow
 htitlebox=findobj(hfig,'tag','titlebox');
 DirName=get(htitlebox,'String');
 hsort_option=findobj(hfig,'tag','sort_option');
@@ -104,7 +107,7 @@ if strcmp(get(hsort_option,'Visible'),'on')&& isequal(get(hsort_option,'Value'),
 end
 hcheck_date=findobj(hfig,'tag','check_date');
 ListFiles=list_files(DirName,get(hcheck_date,'Value'),sort_option);% list the directory content
-hlist=findobj(hfig,'tag','list');% find the list object
+
 set(hlist,'String',ListFiles)
 Value=[];
 if ~isempty(InputFileName)
@@ -114,7 +117,7 @@ if isempty(Value)
     Value=1;
 end
 set(hlist,'Value',Value)
-
+set(hlist,'BackgroundColor',[0.7 0.7 0.7])
 if strcmp(get(hfig,'Tag'),'status_display') 
     hseries=findobj(allchild(0),'tag','series');
     hstatus=findobj(hseries,'tag','status_display');
@@ -216,6 +219,8 @@ if exist(FullSelectName,'dir')% a directory has been selected
     %     if strcmp(selectname,'..')
     %         FullSelectName=fileparts(fileparts(FullSelectName));
     %     end
+    set(hObject,'BackgroundColor',[1 1 0])% paint list in yellow to indicate action
+    drawnow
     hbackward=findobj(hfig,'Tag','backward');
     set(hbackward,'UserData',DirName); %store the current dir for future backward action
     hsort_option=findobj(hfig,'tag','sort_option');
@@ -224,9 +229,11 @@ if exist(FullSelectName,'dir')% a directory has been selected
         sort_option='date';
     end
     hcheck_date=findobj(hfig,'tag','check_date');
+    
     ListFiles=list_files(FullSelectName,get(hcheck_date,'Value'),sort_option);% list the directory content
     set(hObject,'Value',1)
     set(hObject,'String',ListFiles)
+    set(hObject,'BackgroundColor',[0.7 0.7 0.7])
     set(htitlebox,'String',FullSelectName)% record the new dir name
 elseif exist(FullSelectName,'file')%visualise the field if it exists
     FileType=get_file_type(FullSelectName);
@@ -287,6 +294,9 @@ function home_dir(hObject,event)
 %------------------------------------------------------------------------
 DirName=pwd;
 hfig=get(hObject,'parent');
+hlist=findobj(hfig,'tag','list');% find the list object
+set(hlist,'BackgroundColor',[1 1 0])
+drawnow
 sort_option='name';%default
 hsort_option=findobj(hfig,'tag','sort_option');
 if strcmp(get(hsort_option,'Visible'),'on')&& isequal(get(hsort_option,'Value'),2)
@@ -296,8 +306,9 @@ hcheck_date=findobj(hfig,'tag','check_date');
 ListFiles=list_files(DirName,get(hcheck_date,'Value'),sort_option);% list the directory content
 htitlebox=findobj(hfig,'Tag','titlebox');
 set(htitlebox,'String',DirName)% record the new dir name
-hlist=findobj(hfig,'tag','list');% find the list object
+set(hlist,'Value',1)
 set(hlist,'String',ListFiles)
+set(hlist,'BackgroundColor',[0.7 0.7 0.7])
 %------------------------------------------------------------------------
 
 %------------------------------------------------------------------------   
