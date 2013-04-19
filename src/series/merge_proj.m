@@ -199,9 +199,8 @@ for index=1:NbField
         %% reading input file(s)
         [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
         if ~isempty(errormsg)
-            errormsg=['merge_proj/read_field/' errormsg];
-            display(errormsg)
-            break
+            disp(['ERROR in merge_proj/read_field/' errormsg])
+            return
         end
         timeread(iview)=0;
         if isfield(Data{iview},'Time')
@@ -238,14 +237,14 @@ for index=1:NbField
         end
 
         %% calculate tps coeff if needed
-        check_proj_tps= ~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'filter')&&~isfield(Data{iview},'Coord_tps');
+        check_proj_tps= isfield(Param,'ProjObject')&&~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'interp_tps')&&~isfield(Data{iview},'Coord_tps');
         Data{iview}=tps_coeff_field(Data{iview},check_proj_tps);
 
         %% projection on object (gridded plane)
         if Param.CheckObject
             [Data{iview},errormsg]=proj_field(Data{iview},Param.ProjObject);
             if ~isempty(errormsg)
-                displ_uvmat('ERROR',['error in merge_proge/proj_field: ' errormsg],checkrun)
+                disp(['ERROR in merge_proge/proj_field: ' errormsg])
                 return
             end
         end
@@ -255,7 +254,7 @@ for index=1:NbField
     %% merge the NbView fields
     MergeData=merge_field(Data);
     if isfield(MergeData,'Txt')
-        displ_uvmat('ERROR',MergeData.Txt,checkrun)
+        disp(MergeData.Txt);
         return
     end
 

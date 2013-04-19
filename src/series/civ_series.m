@@ -155,7 +155,7 @@ VideoObject_B=VideoObject_A;
         end
     else
            [FileType_B,FileInfo,VideoObject_B]=get_file_type(filecell{2,1});
-        if isempty(strcmp(FileType_B,{'multimage','mmreader','video'}))
+        if isempty(find(strcmp(FileType_B,{'multimage','mmreader','video'})))
             displ(['ERROR: the file line ' num2str(iview_B) ' must be an image'])
         end   
         %TODO : introduce the second file series if relevant: case %displacement
@@ -199,7 +199,7 @@ if ~isempty(XmlFileName)
             end
         end
 end
-if ~isempty(strcmp(FileType_A,{'mmreader','video'}))% case of video input
+if ~isempty(find(strcmp(FileType_A,{'mmreader','video'})))% case of video input
     time=zeros(2,FileInfo_A.NumberOfFrames+1);
     time(2,:)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate);
     TimeSource='video';
@@ -256,8 +256,8 @@ for ifield=1:NbField
         if ~isempty(j2_series_Civ1)
             j2=j2_series_Civ1(ifield);
         end
-        Data.Civ1_Time=(time(j2+1,i2+1)+time(j1+1,i1+1))/2;
-        Data.Civ1_Dt=time(j2+1,i2+1)-time(j1+1,i1+1)
+        Data.Civ1_Time=(time(i2+1,j2+1)+time(i1+1,j1+1))/2;
+        Data.Civ1_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
         for ilist=1:length(list_param)
             Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
         end
