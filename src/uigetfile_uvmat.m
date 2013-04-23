@@ -16,24 +16,25 @@ if strcmp(title,'status_display')
 else
     option='browser';
 end
-if exist(InputName,'dir')
-    InputDir=InputName;
-      InputFileName='';
-elseif exist(InputName,'file')
-    [InputDir,InputFileName,Ext]=fileparts(InputName);
-    if isempty(InputFileName)% if InputName is already the root
-        InputFileName=InputDir;
-        if  ~isempty(strcmp (computer, {'PCWIN','PCWIN64'}))%case of Windows systems
-            InputDir=[InputDir '\'];% append '\' for a correct action of dir
-            InputFileName=[InputFileName '\'];
+InputDir=pwd;%look in the current work directory if the input file does not exist
+InputFileName='';%default
+if ischar(InputName)
+    if exist(InputName,'dir')
+        InputDir=InputName;
+        InputFileName='';
+    elseif exist(InputName,'file')
+        [InputDir,InputFileName,Ext]=fileparts(InputName);
+        if isempty(InputFileName)% if InputName is already the root
+            InputFileName=InputDir;
+            if  ~isempty(strcmp (computer, {'PCWIN','PCWIN64'}))%case of Windows systems
+                InputDir=[InputDir '\'];% append '\' for a correct action of dir
+                InputFileName=[InputFileName '\'];
+            end
+        end
+        if isdir(InputName)
+            InputFileName=['+/' InputFileName Ext];
         end
     end
-    if isdir(InputName)
-        InputFileName=['+/' InputFileName Ext];
-    end
-else
-    InputDir=pwd;%look in the current work directory if the input file does not exist
-    InputFileName='';
 end
 hfig=findobj(allchild(0),'tag',option);
 if isempty(hfig)
@@ -47,7 +48,7 @@ if isempty(hfig)
     BackgroundColor=get(hfig,'Color');
     uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.97 0.5 0.03],'BackgroundColor',BackgroundColor,...
             'String','path:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
-    uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.89 0.9 0.08],'tag','titlebox','Max',2,'BackgroundColor',[1 1 1],'Callback',@refresh_GUI,...
+    uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.89 0.9 0.08],'tag','titlebox','Max',2,'BackgroundColor',[1 1 1],'Callback',@titlebox_Callback,...
         'String',InputDir,'FontUnits','points','FontSize',12,'FontWeight','bold');
     uicontrol('Style','pushbutton','Tag','backward','Units','normalized','Position',[0.05 0.75 0.1 0.07],...
             'String','<--','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@backward);
@@ -85,7 +86,11 @@ if ~strcmp(option,'status_display')
     delete(hfig)
 end
 
-
+%------------------------------------------------------------------------   
+% --- launched by refreshing the display figure
+function titlebox_Callback(hObject,event)
+refresh_GUI(hObject)
+%------------------------------------------------------------------------
 
 %------------------------------------------------------------------------   
 % --- launched by refreshing the display figure
@@ -193,6 +198,8 @@ refresh_GUI(hObject,[])
 % --- launched by selecting an item on the file list
 function list_Callback(option,hObject,event)
 %------------------------------------------------------------------------
+    set(hObject,'BackgroundColor',[1 1 0])% paint list in yellow to indicate action
+    drawnow
 list=get(hObject,'String');
 index=get(hObject,'Value');
 hfig=get(hObject,'parent');%handle of the fig
@@ -254,6 +261,7 @@ elseif exist(FullSelectName,'file')%visualise the field if it exists
         end
     end
 end
+set(hObject,'BackgroundColor',[0.7 0.7 0.7])% paint list in grey to indicate action end
 
 %-------------------------------------------------------------------------   
 % list the content of a directory

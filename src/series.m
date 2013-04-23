@@ -695,30 +695,34 @@ set(handles.num_last_j,'String',num2str(last_j));
 %% read timing and total frame number from the current file (movie files) may be overrid by xml file
 InputTable=get(handles.InputTable,'Data');
 FileBase=fullfile(InputTable{iview,1},InputTable{iview,3});
-time=[];%default
+Time=[];%default
 TimeSource='';
 % case of movies
-if strcmp(InputTable{iview,4},'*')
-    if ~isempty(VideoObject)
-        imainfo=get(VideoObject);
-        time=zeros(imainfo.NumberOfFrames+1,2);
-        time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
-        TimeSource='video';
-       % set(han:dles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
-        ColorType='truecolor';
-    elseif ~isempty(imformats(regexprep(InputTable{iview,5},'^.',''))) || isequal(InputTable{iview,5},'.vol')%&& isequal(NomType,'*')% multi-frame image
-        if ~isempty(InputTable{iview,2})
-            imainfo=imfinfo(fullfile(InputTable{iview,1},InputTable{iview,2},[InputTable{iview,3} InputTable{iview,5}]));
-        else
-            imainfo=imfinfo([FileBase InputTable{iview,5}]);
-        end
-        ColorType=imainfo.ColorType;%='truecolor' for color images
-        if length(imainfo) >1 %case of image with multiple frames
-            nbfield=length(imainfo);
-            nbfield_j=1;
-        end
+% if strcmp(InputTable{iview,4},'*')
+if ~isempty(VideoObject)
+    imainfo=get(VideoObject);
+    if isempty(j1_series); %frame index along i
+        Time=zeros(imainfo.NumberOfFrames+1,2);
+        Time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
+    else
+        Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
+    end
+    TimeSource='video';
+    % set(han:dles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
+    ColorType='truecolor';
+elseif ~isempty(imformats(regexprep(InputTable{iview,5},'^.',''))) || isequal(InputTable{iview,5},'.vol')%&& isequal(NomType,'*')% multi-frame image
+    if ~isempty(InputTable{iview,2})
+        imainfo=imfinfo(fullfile(InputTable{iview,1},InputTable{iview,2},[InputTable{iview,3} InputTable{iview,5}]));
+    else
+        imainfo=imfinfo([FileBase InputTable{iview,5}]);
+    end
+    ColorType=imainfo.ColorType;%='truecolor' for color images
+    if length(imainfo) >1 %case of image with multiple frames
+        nbfield=length(imainfo);
+        nbfield_j=1;
     end
 end
+% end
 
 %%  read image documentation file  if found
 XmlData=[];
@@ -731,7 +735,7 @@ if ~isempty(XmlFileName)
             [PP,FF,ext_ima_read]=fileparts(XmlData.Heading.ImageName);
         end
         if isfield(XmlData,'Time')
-            time=XmlData.Time;
+            Time=XmlData.Time;
             TimeSource='xml';
         end
         if isfield(XmlData,'Camera')
@@ -751,7 +755,7 @@ if ~isempty(XmlFileName)
 end
 
 %% update time table
-if ~isempty(time)
+if ~isempty(Time)
     TimeTable=get(handles.TimeTable,'Data');
     first_i=str2num(get(handles.num_first_i,'String'));
     last_i=str2num(get(handles.num_last_i,'String'));
@@ -763,21 +767,16 @@ if ~isempty(time)
     MaxIndexTable=get(handles.MaxIndex,'Data');
     MaxIndex_i=MaxIndexTable{iview,1};
     MaxIndex_j=MaxIndexTable{iview,2};
-%     if isempty(MinIndex_j)% only i index
-%         TimeTable{iview,1}=time(MinIndex_i+1,2);
-%         TimeTable{iview,2}=time(first_i+1,2);
-%         TimeTable{iview,3}=time(last_i+1,2);
-%         TimeTable{iview,4}=time(MaxIndex_i+1,2);
-    if ~isempty(time)
-        TimeTable{iview,1}=time(MinIndex_i+1,MinIndex_j+1);
-        if size(time)>=[first_i+1 first_j+1]
-        TimeTable{iview,2}=time(first_i+1,first_j+1);
+    if ~isempty(Time)
+        TimeTable{iview,1}=Time(MinIndex_i+1,MinIndex_j+1);
+        if size(Time)>=[first_i+1 first_j+1]
+        TimeTable{iview,2}=Time(first_i+1,first_j+1);
         end
-        if size(time)>=[last_i+1 last_j+1]
-            TimeTable{iview,3}=time(last_i+1,last_j+1);
+        if size(Time)>=[last_i+1 last_j+1]
+            TimeTable{iview,3}=Time(last_i+1,last_j+1);
         end
-        if size(time)>=[MaxIndex_i+1 MaxIndex_j+1];
-            TimeTable{iview,4}=time(MaxIndex_i+1,MaxIndex_j+1);
+        if size(Time)>=[MaxIndex_i+1 MaxIndex_j+1];
+            TimeTable{iview,4}=Time(MaxIndex_i+1,MaxIndex_j+1);
         end
     end
     set(handles.TimeTable,'Data',TimeTable)
@@ -804,7 +803,7 @@ ListView=get(handles.ListView,'String');
 ListView{iview}=num2str(iview);
 set(handles.ListView,'String',ListView);
 set(handles.ListView,'Value',iview)
-update_mode(handles,i1_series,i2_series,j1_series,j2_series,time)
+update_mode(handles,i1_series,i2_series,j1_series,j2_series,Time)
 
 %% update the series info in 'UserData'
 SeriesData=get(handles.series,'UserData');
@@ -814,7 +813,7 @@ SeriesData.j1_series{iview}=j1_series;
 SeriesData.j2_series{iview}=j2_series;
 SeriesData.FileType{iview}=FileType;
 SeriesData.FileInfo{iview}=FileInfo;
-SeriesData.Time{iview}=time;
+SeriesData.Time{iview}=Time;
 if ~isempty(TimeSource)
     SeriesData.TimeSource=TimeSource;
 end
@@ -1012,7 +1011,7 @@ for iview=1:size(TimeTable,1)
     end
     TimeTable{iview,2}=[];
     TimeTable{iview,3}=[];
-    if size(SeriesData.Time{iview},1)>=i2(2)&&size(SeriesData.Time{iview},1)>=j2(2)
+    if size(SeriesData.Time{iview},1)>=i2(2)+1&&size(SeriesData.Time{iview},2)>=j2(2)+1
         if isempty(ref_j)
             time_first=(SeriesData.Time{iview}(i1(1)+1)+SeriesData.Time{iview}(i2(1)+1))/2;
             time_last=(SeriesData.Time{iview}(i1(2)+1)+SeriesData.Time{iview}(i2(2))+1)/2;

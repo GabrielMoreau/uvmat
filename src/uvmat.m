@@ -849,19 +849,17 @@ XmlData.Time=[];%default
 XmlData.GeometryCalib=[];%default
 TimeUnit='';%default
 Time=[];
-% testima=0; %test for image input
 imainfo=[];
 ColorType='falsecolor'; %default
-% hhh=[];
 UvData.MovieObject{index}=VideoObject;
 if ~isempty(VideoObject)
     imainfo=get(VideoObject);
-%     testima=1;
     TimeUnit='s';
     if isempty(j1_series); %frame index along i
-        Time=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
+        Time=zeros(imainfo.NumberOfFrames+1,2);
+        Time(:,2)=(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate)';
     else
-        Time=ones(size(i1_series,1),1)*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
+        Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
     end
     set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
     ColorType='truecolor';
@@ -2029,9 +2027,6 @@ function errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1
 %------------------------------------------------------------------------
 
 %% initialisation
-abstime=[];
-abstime_1=[];
-dt=[];
 if ~exist('Field','var')
     Field={};
 end
@@ -2349,26 +2344,11 @@ if  UvData.NewSeries && isequal(get(handles.SubField,'Value'),0) && isfield(Fiel
 end           
 
 %% display time
-testimedoc=0;
+abstime=[];%default inputs
+abstime_1=[];
+dt=[];
 TimeUnit='';
-if isfield(Field{1},'Time')
-    abstime=Field{1}.Time;%time read from the netcdf input file 
-end
-if numel(Field)==2 && isfield(Field{2},'Time')
-    abstime_1=Field{2}.Time;%time read from the netcdf input file 
-end
-if isfield(Field{1},'Dt')
-    dt=Field{1}.Dt;%dt read from the netcdf input file
-    if isfield(Field{1},'TimeUnit')
-       TimeUnit=Field{1}.TimeUnit;
-    end
-elseif numel(Field)==2 && isfield(Field{2},'Dt')%dt obtained from the second field if not defined in the first
-    dt=Field{2}.Dt;%dt read from the netcdf input file
-    if isfield(Field{2},'TimeUnit')
-       TimeUnit=Field{2}.TimeUnit;
-    end
-end
-% time from xml file overset previous result
+% time from xml file or video movie
 if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
     if isempty(num_i2)||isnan(num_i2)
         num_i2=num_i1;
@@ -2380,7 +2360,7 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
         num_j2=num_j1;
     end
     siz=size(UvData.XmlData{1}.Time);
-    if ~isempty(num_i1)&& ~isempty(num_i2) && num_i1>=0 &&siz(1)>=max(num_i1,num_i2) && siz(2)>=max(num_j1,num_j2)
+    if ~isempty(num_i1)&& ~isempty(num_i2) && num_i1>=0 &&siz(1)>=max(num_i1+1,num_i2+1) && siz(2)>=max(num_j1+1,num_j2+1)
         abstime=(UvData.XmlData{1}.Time(num_i1+1,num_j1+1)+UvData.XmlData{1}.Time(num_i2+1,num_j2+1))/2;%overset the time read from files
         dt=(UvData.XmlData{1}.Time(num_i2+1,num_j2+1)-UvData.XmlData{1}.Time(num_i1+1,num_j1+1));
         Field{1}.Dt=dt;
@@ -2399,18 +2379,39 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
             j2_1=j1_1;
         end
         siz=size(UvData.XmlData{2}.Time);
-        if ~isempty(i1_1) && siz(1)>=max(i1_1,i2_1) && siz(2)>=max(j1_1,j2_1)
-            abstime_1=(UvData.XmlData{2}.Time(i1_1,j1_1)+UvData.XmlData{2}.Time(i2_1,j2_1))/2;%overset the time read from files
-            Field{2}.Dt=(UvData.XmlData{2}.Time(i2_1,j2_1)-UvData.XmlData{2}.Time(i1_1,j1_1));
+        if ~isempty(i1_1) && siz(1)>=max(i1_1+1,i2_1+1) && siz(2)>=max(j1_1+1,j2_1+1)
+            abstime_1=(UvData.XmlData{2}.Time(i1_1+1,j1_1+1)+UvData.XmlData{2}.Time(i2_1+1,j2_1+1))/2;%overset the time read from files
+            Field{2}.Dt=(UvData.XmlData{2}.Time(i2_1+1,j2_1+1)-UvData.XmlData{2}.Time(i1_1+1,j1_1+1));
         end
     end
 end
-if ~isequal(numel(abstime),1)
-    abstime=[];
+% if isfield(Field{1},'Time')
+%     abstime=Field{1}.Time;%time read from the netcdf input file 
+% end
+% if numel(Field)==2 && isfield(Field{2},'Time')
+%     abstime_1=Field{2}.Time;%time read from the netcdf input file 
+% end
+
+% look for timing in the input file if not defined in a xml file or movie
+if isempty(abstime)
+if isfield(Field{1},'Dt')
+    dt=Field{1}.Dt;%dt read from the netcdf input file
+    if isfield(Field{1},'TimeUnit')
+       TimeUnit=Field{1}.TimeUnit;
+    end
+elseif numel(Field)==2 && isfield(Field{2},'Dt')%dt obtained from the second field if not defined in the first
+    dt=Field{2}.Dt;%dt read from the netcdf input file
+    if isfield(Field{2},'TimeUnit')
+       TimeUnit=Field{2}.TimeUnit;
+    end
 end
-if ~isequal(numel(abstime_1),1)
-      abstime_1=[];
-end  
+end
+% if ~isequal(numel(abstime),1)
+%     abstime=[];
+% end
+% if ~isequal(numel(abstime_1),1)
+%       abstime_1=[];
+% end  
 set(handles.abs_time,'String',num2str(abstime,5))
 set(handles.abs_time_1,'String',num2str(abstime_1,5))
 if isempty(dt)||isequal(dt,0)
