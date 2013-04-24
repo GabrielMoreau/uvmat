@@ -198,11 +198,15 @@ refresh_GUI(hObject,[])
 % --- launched by selecting an item on the file list
 function list_Callback(option,hObject,event)
 %------------------------------------------------------------------------
-    set(hObject,'BackgroundColor',[1 1 0])% paint list in yellow to indicate action
+hfig=get(hObject,'parent');%handle of the fig
+% if ~strcmp(get(hfig,'SelectionType'),'open')
+%     return %select double click
+% end
+set(hObject,'BackgroundColor',[1 1 0])% paint list in yellow to indicate action
     drawnow
 list=get(hObject,'String');
 index=get(hObject,'Value');
-hfig=get(hObject,'parent');%handle of the fig
+
 htitlebox=findobj(hfig,'tag','titlebox');  % display the new dir name  
 DirName=get(htitlebox,'String');
 SelectName=regexprep(list{index},'^\+/','');% remove the +/ used to mark dir
