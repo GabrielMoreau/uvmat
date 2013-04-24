@@ -15,7 +15,6 @@
 %       Series.NomType{1}: nomenclature type for file in
 %
 % Method: 
-   dexing
 %       Series.NbSlice: %number of slices defined on the interface
 % global A rangx0 rangy0 minA maxA; % make current image A accessible in workspace
 % global hfig1 hfig2 scalar
@@ -77,7 +76,6 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     if ~exist(filecell{1,1},'file')
         msgbox_uvmat('WARNING','the first input file does not exist') 
     end
-    return
     % parameters specific to the function 'particle_tracking'
     %Par.Nblock=25;%size of image subblocks for analysis
     Par.Nblock=[];%no subblock for background determination
@@ -88,6 +86,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     %filter particle detection
     Par.ThreshLum=-2000;% luminosity threshold for particle detection, < 0 for black particles, >0 for white particles
     ParamOut.ActionInput=Par;
+    return
 end
 
 %%%%%%%%%%%%  STANDARD RUN PART  %%%%%%%%%%%%
@@ -124,8 +123,15 @@ nbfield=nbfield_j*nbfield_i; %total number of fields
 [first_i,tild,last_i,first_j,tild,last_j,errormsg]=get_index_range(Param.IndexRange);
 if ~isempty(errormsg),display(errormsg),return,end
 
+%% frame index for movie or multimage file input  
+if ~isempty(j1_series{1})
+    frame_index=j1_series{1};
+else
+    frame_index=i1_series{1};
+end
+
 %% check the input file type  
-[FileType,FileInfo,MovieObject]=get_file_type(filecell{1,1});
+[FileType,FileInfo,VideoObject]=get_file_type(filecell{1,1});
 ImageTypeOptions={'image','multimage','mmreader','video'};
 if isempty(find(strcmp(FileType,ImageTypeOptions)))
     disp('input file not images')
@@ -137,8 +143,8 @@ end
 
 %%%%%%%%%%%%   SPECIFIC PART (to edit) %%%%%%%%%%%%
 %filter for particle center of mass(luminosity)
-Nblock=Param.InputAction.Nblock;
-ThreshLum=Param.InputAction.ThreshLum;% luminosity threshold for particle detection, < 0 for black particles, >0 for white particles
+Nblock=Param.ActionInput.Nblock;
+ThreshLum=Param.ActionInput.ThreshLum;% luminosity threshold for particle detection, < 0 for black particles, >0 for white particles
 
 hh=ones(5,5);
 hh(1,1)=0;
@@ -205,18 +211,7 @@ end
 % if nbaver_ima > nbfield*nbfield2
 %     errordlg('number of images in a slice smaller than the proposed number of images for the sliding average')
 %     return
-% end
-A=[];
-      
 
-% [A,time,dt,rangx0,rangy0]=view_ima(handles,filename,[],1,1,1,1);
-% pxcm=str2num(get(handles.pxcm,'String')); %scales pixels per cm
-% pycm=str2num(get(handles.pycm,'String'));
-% np=size(A);
-
-%BACKGROUND LEVEL
-% Backg=zeros(size(A));
-% nburst(1)=1;
 for ifile=1:nbfield
     if checkrun
         if strcmp(get(Param.RUNHandle,'BusyAction'),'queue')
@@ -225,15 +220,18 @@ for ifile=1:nbfield
             break% leave the loop if the STOP button is activated on the GUI series
         end
     end
-    filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1_series(ifile),[],j1);
+    if ~isempty(j1_series)&&~isequal(j1_series,{[]})
+        j1=j1_series{1}(ifile);
+    end
+    filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1_series{1}(ifile),[],j1);
     A=read_image(filename,FileType,VideoObject,frame_index(ifile));
     if ndims(A)==3;%color images
-        A=sum(double(Aread),3);% take the sum of color components
+        A=sum(double(A),3);% take the sum of color components
     end
     if ThreshLum<0
         A=max(max(A))-A;%take the negative
     end
-    if TestMask
+    if CheckMask
         A=A.*Mask;
     end
     if isempty(Nblock)
@@ -250,8 +248,8 @@ for ifile=1:nbfield
         Backg=Backgi;
         A=A-imresize(Backg/nburst(1),size(A),'bilinear');% interpolate to the initial size image and substract
     end
-    Aflagmax=sparse(imregionalmax(Ap));%find local maxima
-    Plum=imfilter(Ap,hh);% sum A on 5x% domains
+    Aflagmax=sparse(imregionalmax(A));%find local maxima
+    Plum=imfilter(A,hh);% sum A on 5x% domains
     Plum=Aflagmax.*Plum;% Plum gives the particle luminosity at each particle location, 0 elsewhere
     %make statistics on particles,restricted to a subdomain Sub
     [Js,Is,lum]=find(Plum);%particle luminosity
@@ -261,7 +259,7 @@ for ifile=1:nbfield
     nbtotal=size(Is)
     nbtotal=nbtotal(1);
     %particle size
-    Parea=Aflagmax.*(Plum./Ap); %particle luminosity/max luminosity=area
+    Parea=Aflagmax.*(Plum./A); %particle luminosity/max luminosity=area
     Pdiam=sqrt(Parea);
     [Js,Is,diam]=find(Pdiam);%particle location
     
@@ -275,8 +273,8 @@ for ifile=1:nbfield
 %     image(rangxb,rangyb,nbpart);
     
     % get the particle centre of mass
-    dx=imfilter(Ap,hdX);
-    dy=imfilter(Ap,-hdY);
+    dx=imfilter(A,hdX);
+    dy=imfilter(A,-hdY);
     dx=Aflagmax.*(dx./Plum);
     dy=Aflagmax.*(dy./Plum);
     dx=dx/pxcm;
