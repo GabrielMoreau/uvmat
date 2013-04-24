@@ -77,15 +77,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         msgbox_uvmat('WARNING','the first input file does not exist') 
     end
     % parameters specific to the function 'particle_tracking'
-    %Par.Nblock=25;%size of image subblocks for analysis
-    Par.Nblock=[];%no subblock for background determination
-    % Numexp=inputdlg('Entrer le numero','numexp',1);
-    % numexp=str2num(Numexp{1})
-    % Thresh=inputdlg('Entrer le seuil de luminosite (4000)','thresh',1);
-    % thresh=str2num(Thresh{1});%threshold for detection of particle luminosity weight 
-    %filter particle detection
-    Par.ThreshLum=-2000;% luminosity threshold for particle detection, < 0 for black particles, >0 for white particles
-    ParamOut.ActionInput=Par;
+%     Par.Nblock=[];%size of image subblocks for background determination, =[]: no sublock
+%     Par.ThreshLum=-2000;% luminosity threshold for particle detection, < 0 for black particles, >0 for white particles
+%   ParamOut.ActionInput=Par;
     return
 end
 
@@ -143,9 +137,10 @@ end
 
 %%%%%%%%%%%%   SPECIFIC PART (to edit) %%%%%%%%%%%%
 %filter for particle center of mass(luminosity)
-Nblock=Param.ActionInput.Nblock;
-ThreshLum=Param.ActionInput.ThreshLum;% luminosity threshold for particle detection, < 0 for black particles, >0 for white particles
-
+%Nblock=Param.ActionInput.Nblock;
+%ThreshLum=Param.ActionInput.ThreshLum;% luminosity threshold for particle detection, < 0 for black particles, >0 for white particles
+AbsThreshold=30; %threshold below which a pixel is considered belonging to a float
+%
 hh=ones(5,5);
 hh(1,1)=0;
 hh(1,5)=0;% sum luminosity on the 5x5 domain without corners
@@ -162,27 +157,6 @@ hdY(1,1)=0;
 hdY(1,5)=0;% sum luminosity on the 5x5 domain -corners
 hdY(5,1)=0;
 hdY(5,5)=0;
-%Parameters for image plotting
-pxcm=1;
-pycm=1;%scaling
-PlotParam.AutoScal=0;
-PlotParam.MaxA=700;
-PlotParam.MinA=0;
-PlotParam.BW=1;
-PlotParam.Contours=0;
-
-%%%%%%%%%%%%%%
-% sizfiles=size(num_j1)
-% nbfield=sizfiles(1); %number of images in a burst
-% %%%%%%%%%
-% hRUN=findobj(Series.hseries,'Tag','RUN');
-% hwaitbar=findobj(Series.hseries,'Tag','waitbar');%handles of the waitbar
-% waitbarpos(1)=Series.WaitbarPos(1);%x position of the waitbar
-% waitbarpos(3)=Series.WaitbarPos(3);% width of the waitbar
-% filebase=fullfile(Series.RootPath{1},Series.RootFile{1});
-% dir_images=Series.RootPath{1};
-% nom_type=Series.NomType{1};
-% [error,Heading,nom_type_read,ext_ima_read,tt,TimeUnit,mode,NbSlice,npx,npy,Calib]=read_imadoc([filebase '.xml']);
 
 %%  mask to reduce the  working area (optional)
 CheckMask=0;
@@ -192,26 +166,8 @@ if isfield(Param,'CheckMask') && isequal(Param.CheckMask,1)
 	Mask=MaskIma>=200;%=1 for good points, 0 for bad
     CheckMask=1;
 end
-% 
-% %create dir of the new images
-% [dir_images,namebase]=fileparts(filebase);
-% [path,subdir_ima]=fileparts(dir_images)
-% curdir=pwd;
-% cd(path);
-% mkdir([subdir_ima '_b']);
-% cd(curdir);
-% filebase_b=fullfile(path,[subdir_ima '_b'],namebase);
 
-% 
-% 
-% lengthtot=siz(1)*siz(2);
-% nbfield=floor(lengthtot/(nbfield2*nbslice_i));%total number of i indexes (adjusted to an integer number of slices)
-% nbfield_slice=nbfield*nbfield2;% number of fields per slice
-% % test_plot=isequal(answer{5},'Yes'); %=1 to display background images
-% if nbaver_ima > nbfield*nbfield2
-%     errordlg('number of images in a slice smaller than the proposed number of images for the sliding average')
-%     return
-
+%%%%%% MAIN LOOP ON FRAMES %%%%%%
 for ifile=1:nbfield
     if checkrun
         if strcmp(get(Param.RUNHandle,'BusyAction'),'queue')
@@ -224,7 +180,7 @@ for ifile=1:nbfield
         j1=j1_series{1}(ifile);
     end
     filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1_series{1}(ifile),[],j1);
-    A=read_image(filename,FileType,VideoObject,frame_index(ifile));
+    A=read_image(filename,FileType,VideoObject,frame_index(ifile));% read the current frame
     if ndims(A)==3;%color images
         A=sum(double(A),3);% take the sum of color components
     end
