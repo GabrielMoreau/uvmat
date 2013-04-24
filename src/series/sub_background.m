@@ -9,7 +9,6 @@
     % luminosity, but it can be polluted by noise. 
 % Organization of image indices:
     % The program is working on a series of images, 
-    % The processing can be done over groups of nbfield2 consecutive files in slices (parameter NbSlice)
     % In the mode 'volume', nbfield2=1 (1 image at each level)and NbSlice (=nbfield_j)
     % Else nbfield2=nbfield_j =nbre of images in a burst (j index)
     
@@ -314,136 +313,136 @@ end
 % end
 
 %MAIN LOOP ON SLICES
-for islice=1:NbSlice
-    %% select the series of image indices at the level islice
-    indselect=islice:NbSlice*step:nbfield;% select file indices of the slice
-    for ifield=1:step-1
-        indselect=[indselect;indselect(end,:)+1];
+% for islice=1:NbSlice
+%% select the series of image indices
+indselect=1:step:nbfield;% select file indices of the slice
+for ifield=1:step-1
+    indselect=[indselect;indselect(end,:)+1];
+end
+
+%% read the first series of nbaver_ima images and sort by luminosity at each pixel
+for ifield = 1:nbaver_ima
+    ifile=indselect(ifield);
+    filename=filecell{1,ifile};
+    Aread=read_image(filename,FileType{1},MovieObject{1},frame_index{1}(ifile));
+    if ndims(Aread)==3;%color images
+        Aread=sum(double(Aread),3);% take the sum of color components
     end
+    Ak(:,:,ifield)=Aread;
+end
+Asort=sort(Ak,3);%sort the luminosity of images at each point
+B=Asort(:,:,rank);%background image
+display( 'first background image will be substracted')
+nbfirst=(ceil(nbaver/2))*step;
+for ifield=1:nbfirst
+    Acor=double(Ak(:,:,ifield))-double(B);%substract background to the current image
+    Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
+    ifile=indselect(ifield);
+    if ~isempty(j1_series{1})
+        j1=j1_series{1}(ifile);
+    end
+    newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
     
-    %% read the first series of nbaver_ima images and sort by luminosity at each pixel
-    for ifield = 1:nbaver_ima
-        ifile=indselect(ifield);
-        filename=filecell{1,ifile};
-        Aread=read_image(filename,FileType{1},MovieObject{1},frame_index{1}(ifile));
-        if ndims(Aread)==3;%color images
-            Aread=sum(double(Aread),3);% take the sum of color components
-        end
-        Ak(:,:,ifield)=Aread;
-    end
-    Asort=sort(Ak,3);%sort the luminosity of images at each point
-    B=Asort(:,:,rank);%background image
-    display( 'first background image will be substracted')
-    nbfirst=(ceil(nbaver/2))*step;
-    for ifield=1:nbfirst
-        Acor=double(Ak(:,:,ifield))-double(B);%substract background to the current image
-        Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
-        ifile=indselect(ifield);
-        if ~isempty(j1_series{1})
-            j1=j1_series{1}(ifile);
-        end
-        newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
-        
-        %write result file
-        if Param.ActionInput.CheckLevelTransform
-            C=levels(Acor);
-            imwrite(C,newname,'BitDepth',8); % save the new image
+    %write result file
+    if Param.ActionInput.CheckLevelTransform
+        C=levels(Acor);
+        imwrite(C,newname,'BitDepth',8); % save the new image
+    else
+        if isequal(FileInfo{1}.BitDepth,16)
+            C=uint16(Acor);
+            imwrite(C,newname,'BitDepth',16); % save the new image
         else
-            if isequal(FileInfo{1}.BitDepth,16)
-                C=uint16(Acor);
-                imwrite(C,newname,'BitDepth',16); % save the new image
-            else
-                C=uint8(Acor);
-                imwrite(C,newname,'BitDepth',8); % save the new image
-            end
+            C=uint8(Acor);
+            imwrite(C,newname,'BitDepth',8); % save the new image
         end
-        display([newname ' written'])
     end
-    
-    %% repeat the operation on a sliding series of images
-    display('sliding background image will be substracted')
-    if nbfield_i > nbaver_ima
-        for ifield = step*ceil(nbaver/2)+1:step:nbfield_i-step*floor(nbaver/2)
-            if checkrun
-                stopstate=get(Param.RUNHandle,'BusyAction');
-                update_waitbar(Param.WaitbarHandle,(ifield+(islice-1)*nbfield_i)/(nbfield_i*NbSlice))
-            else
-                stopstate='queue';
-            end
-            if isequal(stopstate,'queue')% enable STOP command
-                Ak(:,:,1:nbaver_ima-step)=Ak(:,:,1+step:nbaver_ima);% shift the current image series by one burst (step)
-                %incorporate next burst in the current image series
-                for iburst=1:step
-                    ifile=indselect(ifield+step*floor(nbaver/2)+iburst-1);
-                    filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile),[],j1_series{1}(ifile));
-                    Aread=read_image(filename,FileType{1},MovieObject{1},i1_series{1}(ifile));
-                    if ndims(Aread)==3;%color images
-                        Aread=sum(double(Aread),3);% take the sum of color components
-                    end
-                    Ak(:,:,nbaver_ima-step+iburst)=Aread;
+    display([newname ' written'])
+end
+
+%% repeat the operation on a sliding series of images
+display('sliding background image will be substracted')
+if nbfield_i > nbaver_ima
+    for ifield = step*ceil(nbaver/2)+1:step:nbfield_i-step*floor(nbaver/2)
+        if checkrun
+            stopstate=get(Param.RUNHandle,'BusyAction');
+            update_waitbar(Param.WaitbarHandle,ifield/nbfield_i)
+        else
+            stopstate='queue';
+        end
+        if isequal(stopstate,'queue')% enable STOP command
+            Ak(:,:,1:nbaver_ima-step)=Ak(:,:,1+step:nbaver_ima);% shift the current image series by one burst (step)
+            %incorporate next burst in the current image series
+            for iburst=1:step
+                ifile=indselect(ifield+step*floor(nbaver/2)+iburst-1);
+                filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile),[],j1_series{1}(ifile));
+                Aread=read_image(filename,FileType{1},MovieObject{1},i1_series{1}(ifile));
+                if ndims(Aread)==3;%color images
+                    Aread=sum(double(Aread),3);% take the sum of color components
                 end
-                Asort=sort(Ak,3);%sort the new current image series by luminosity
-                B=Asort(:,:,rank);%current background image
-                for iburst=1:step
-                    index=step*floor(nbaver/2)+iburst;
-                    Acor=double(Ak(:,:,index))-double(B);
-                    Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
-                    ifile=indselect(ifield+iburst-1);
-                    if ~isempty(j1_series{1})
-                        j1=j1_series{1}(ifile);
-                    end
-                    newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
-                    %write result file
-                    if Param.ActionInput.CheckLevelTransform
-                        C=levels(Acor);
-                        imwrite(C,newname,'BitDepth',8); % save the new image
+                Ak(:,:,nbaver_ima-step+iburst)=Aread;
+            end
+            Asort=sort(Ak,3);%sort the new current image series by luminosity
+            B=Asort(:,:,rank);%current background image
+            for iburst=1:step
+                index=step*floor(nbaver/2)+iburst;
+                Acor=double(Ak(:,:,index))-double(B);
+                Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
+                ifile=indselect(ifield+iburst-1);
+                if ~isempty(j1_series{1})
+                    j1=j1_series{1}(ifile);
+                end
+                newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
+                %write result file
+                if Param.ActionInput.CheckLevelTransform
+                    C=levels(Acor);
+                    imwrite(C,newname,'BitDepth',8); % save the new image
+                else
+                    if isequal(FileInfo{1}.BitDepth,16)
+                        C=uint16(Acor);
+                        imwrite(C,newname,'BitDepth',16); % save the new image
                     else
-                        if isequal(FileInfo{1}.BitDepth,16)
-                            C=uint16(Acor);
-                            imwrite(C,newname,'BitDepth',16); % save the new image
-                        else
-                            C=uint8(Acor);
-                            imwrite(C,newname,'BitDepth',8); % save the new image
-                        end
+                        C=uint8(Acor);
+                        imwrite(C,newname,'BitDepth',8); % save the new image
                     end
-                    display([newname ' written'])
-                    
                 end
-            else
-                return
+                display([newname ' written'])
+                
             end
-        end
-    end
-    
-    %% substract the background from the last images
-    display('last background image will be substracted')
-    ifield=nbfield_i-(step*ceil(nbaver/2))+1:nbfield_i;
-    for ifield=nbfield_i-(step*floor(nbaver/2))+1:nbfield_i
-        index=ifield-nbfield_i+step*(2*floor(nbaver/2)+1);
-        Acor=double(Ak(:,:,index))-double(B);
-        Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
-        ifile=indselect(ifield);
-        if ~isempty(j1_series{1})
-            j1=j1_series{1}(ifile);
-        end
-        newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
-        
-        %write result file
-        if Param.ActionInput.CheckLevelTransform
-            C=levels(Acor);
-            imwrite(C,newname,'BitDepth',8); % save the new image
         else
-            if isequal(FileInfo{1}.BitDepth,16)
-                C=uint16(Acor);
-                imwrite(C,newname,'BitDepth',16); % save the new image
-            else
-                C=uint8(Acor);
-                imwrite(C,newname,'BitDepth',8); % save the new image
-            end
+            return
         end
-        display([newname ' written'])
     end
 end
+
+%% substract the background from the last images
+display('last background image will be substracted')
+ifield=nbfield_i-(step*ceil(nbaver/2))+1:nbfield_i;
+for ifield=nbfield_i-(step*floor(nbaver/2))+1:nbfield_i
+    index=ifield-nbfield_i+step*(2*floor(nbaver/2)+1);
+    Acor=double(Ak(:,:,index))-double(B);
+    Acor=(Acor>0).*Acor; % put to 0 the negative elements in Acor
+    ifile=indselect(ifield);
+    if ~isempty(j1_series{1})
+        j1=j1_series{1}(ifile);
+    end
+    newname=fullfile_uvmat(RootPath{1},OutputDir,RootFile{1},FileExtOut,NomTypeOut,i1_series{1}(ifile),[],j1);
+    
+    %write result file
+    if Param.ActionInput.CheckLevelTransform
+        C=levels(Acor);
+        imwrite(C,newname,'BitDepth',8); % save the new image
+    else
+        if isequal(FileInfo{1}.BitDepth,16)
+            C=uint16(Acor);
+            imwrite(C,newname,'BitDepth',16); % save the new image
+        else
+            C=uint8(Acor);
+            imwrite(C,newname,'BitDepth',8); % save the new image
+        end
+    end
+    display([newname ' written'])
+end
+
 
 
 function C=levels(A)

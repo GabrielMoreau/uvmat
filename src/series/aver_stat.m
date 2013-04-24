@@ -68,8 +68,7 @@ if ischar(Param)
     checkrun=0;
 end
 
-
-ParamOut=Param; %default output
+%% define the directory for result file
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
     
 %% root input file(s) name, type and index series

@@ -98,11 +98,11 @@ for iview=1:nbview
     if isequal(FileType{iview},'mmreader')||isequal(FileType{iview},'video')||isequal(FileType{iview},'multimage')
         [tild,FileInfo]=get_file_type(filecell{iview,1});
         Tabchar{1}=filecell{iview,1};%info.Filename;
-        Tabchar{2}=FileInfo.FileModDate;
-        Tabchar{3}=[num2str(FileInfo.FramesPerSecond) ' frames/s '];
-        Tabchar{4}=FileInfo.ImageType;
-        Tabchar{5}=['  compression' FileInfo.VideoCompression];
-        Tabchar{6}=[ 'quality ' num2str(FileInfo.Quality)];
+        Tabchar{2}='';
+        Tabchar{3}=[num2str(FileInfo.FrameRate) ' frames/s '];
+%         Tabchar{4}='';
+%         Tabchar{5}=['  compression' FileInfo.VideoCompression];
+%         Tabchar{6}=[ 'quality ' num2str(FileInfo.Quality)];
     else
         Tabchar={};
         %LOOP ON SLICES
