@@ -81,9 +81,11 @@ end
 refresh_GUI(findobj(hfig,'Tag','refresh'),InputFileName)% refresh the list of content of the current dir  
 if ~strcmp(option,'status_display')  
     uiwait(hfig)
+    if ishandle(hfig)
     htitlebox=findobj(hfig,'Tag','titlebox');
     fileinput=get(htitlebox,'String');% retrieve the input file selection
     delete(hfig)
+    end
 end
 
 %------------------------------------------------------------------------   
