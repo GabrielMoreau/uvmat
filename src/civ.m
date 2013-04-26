@@ -511,12 +511,15 @@ if isempty(time) && (strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
     if strcmp(NomTypeIma,'*')
         set(handles.ListPairMode,'String',{'series(Di)'})
         MaxIndex_i=get(MovieObject,'NumberOfFrames');
-        time=(dt*(0:MaxIndex_i-1))';%list of image times
+        %time=(dt*(0:MaxIndex_i-1))';%list of image times
+                    time=zeros(MaxIndex_i+1,2);
+            time(:,2)=dt*(0:MaxIndex_i)';
     else
         set(handles.ListPairMode,'String',[{'series(Dj)'};{'series(Di)'}])
         MaxIndex_i=max(i1_series(i1_series>0));
         MaxIndex_j=get(MovieObject,'NumberOfFrames');
-        time=ones(MaxIndex_i,1)*(dt*(0:MaxIndex_j-1));%list of image times
+        %time=ones(MaxIndex_i,1)*(dt*(0:MaxIndex_j-1));%list of image times
+        time=[0;dt*ones(MaxIndex_j,1)]*(0:MaxIndex_j);
         enable_j(handles,'on')
     end
     TimeUnit='s';
@@ -526,19 +529,19 @@ end
 %% timing display
 %show the reference image edit box if relevant (not needed for movies or in the absence of time information
 if numel(time)>=2 % if there are at least two time values to define dt
-    if size(time,1)<MaxIndex_i;
+    if size(time,1)<MaxIndex_i+1;
         msgbox_uvmat('WARNING','maximum i index restricted by the timing of the xml file');
-    elseif size(time,2)<MaxIndex_j
+    elseif size(time,2)<MaxIndex_j+1
         msgbox_uvmat('WARNING','maximum j index restricted by the timing of the xml file');
     end
-    MaxIndex_i=min(size(time,1),MaxIndex_i);%possibly adjust the max index according to time data
-    MaxIndex_j=min(size(time,2),MaxIndex_j);
+    MaxIndex_i=min(size(time,1)-1,MaxIndex_i);%possibly adjust the max index according to time data
+    MaxIndex_j=min(size(time,2)-1,MaxIndex_j);
 %     time=[zeros(size(time,1),1) time]; %insert a vertical line of zeros (to deal with zero file indices)
 %     time=[zeros(1,size(time,2)); time]; %insert a horizontal line of zeros
 else
     set(handles.ImaDoc,'String',''); %xml file not used for timing
-    time=(i1_series(:,1)+0:size(i1_series,3)-1);% time=index i
-    time=time'*ones(1,size(i1_series,2),1); %makes a time matrix with the same time for all j indices
+    time=(i1_series(:,1)+0:size(i1_series,3));% time=index i
+    time=time'*ones(1,size(i1_series,2)+1,1); %makes a time matrix with the same time for all j indices
     TimeUnit='frame';
 end
 set(handles.ImaDoc,'UserData',time); %store the matrix of times
