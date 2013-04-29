@@ -46,7 +46,6 @@ list_fct={...
     'copyfields';...% copy fields between two matlab structures
     'create_grid';...% called by the GUI geometry_calib to create a physical grid
     'create_grid.fig';...% GUI corresponding to create_grid.m
-    'delete_object';...%delete a projection object, defined by its index in the Uvmat list or by its graphic handle
     'displ_uvmat';...
     'editxml';...%display and edit xml files using a xls schema
     'editxml.fig';...%interface for editxml

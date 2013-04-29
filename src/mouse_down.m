@@ -199,7 +199,7 @@ if CheckZoom
 end
 
 %% creation of a zoom subfig
-if get(hhcurrentfig.CheckZoomFig,'Value')
+if isfield(hhcurrentfig,'CheckZoomFig') && get(hhcurrentfig.CheckZoomFig,'Value')
     AxeData.Drawing='zoom'; %initiate drawing mode
     AxeData.CurrentObject=[];%unselect objects
     set(hchild,'UserData',AxeData);

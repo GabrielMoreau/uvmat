@@ -3469,11 +3469,11 @@ end
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 if isequal(get(handles.VOLUME,'Value'),1)
     set(handles.CheckZoom,'Value',0)
-    set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
+%     set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
     set(handles.edit_vect,'Value',0)
     edit_vect_Callback(hObject, eventdata, handles)
     set(handles.edit_object,'Value',0)
-    set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
+%     set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
 %     set(handles.cal,'Value',0)
 %     set(handles.cal,'BackgroundColor',[0 1 0])
     set(handles.edit_vect,'Value',0)
@@ -3521,8 +3521,8 @@ if isequal(get(handles.edit_vect,'Value'),1)
     set(handles.edit_vect,'BackgroundColor',[1 1 0])
     set(handles.edit_object,'Value',0)
     set(handles.CheckZoom,'Value',0)
-    set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
-    set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
+%     set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
+%     set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
     set(gcf,'Pointer','arrow')
 else
     set(handles.record,'Visible','off')
@@ -4159,7 +4159,7 @@ end
 
 %  desactivate the edit object mode
 set(handles.edit_object,'Value',0) 
-set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
+% set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListObject.
@@ -4185,7 +4185,7 @@ end
 
 %%  desactivate the edit object mode
 set(handles.edit_object,'Value',0) 
-set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
+% set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
 
 %% update the  plot on view_field if view_field is already openened
 hview_field=findobj(allchild(0),'tag','view_field');
@@ -4274,7 +4274,7 @@ function edit_object_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 hset_object=findobj(allchild(0),'Tag','set_object');
 if get(handles.edit_object,'Value')
-    set(handles.edit_object,'BackgroundColor',[1,1,0])  
+%     set(handles.edit_object,'BackgroundColor',[1,1,0])  
     %suppress the other options 
     set(handles.CheckZoom,'Value',0)
     CheckZoom_Callback(hObject, eventdata, handles)
@@ -4287,7 +4287,7 @@ if get(handles.edit_object,'Value')
     set(handles.ViewObject,'value',1)
     ViewObject_Callback(hObject, eventdata, handles)
 else % desctivate object edit mode
-    set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
+%     set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
     if ~isempty(hset_object)% open the 
         hhset_object=guidata(hset_object);
         set(hhset_object.PLOT,'enable','off'); 
@@ -4861,7 +4861,7 @@ set(handles.ListObject,'Value',IndexObj)
 hset_object=set_object(data);% call the set_object interface
 set(get(hset_object,'children'),'enable','on')% enable edit action on elements on GUI set_object
 set(handles.edit_object,'Value',0); %suppress the object edit mode
-set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
+% set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
 set(handles.delete_object,'Visible','on')
 
 
@@ -5166,7 +5166,7 @@ function MenuGrid_Callback(hObject, eventdata, handles)
 %suppress the other options if grid is chosen
 set(handles.edit_vect,'Value',0)
 edit_vect_Callback(hObject, eventdata, handles)
-set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
+% set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
 set(handles.ListObject,'Value',1)      
 
 %prepare display of the set_grid GUI

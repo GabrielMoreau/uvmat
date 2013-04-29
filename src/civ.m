@@ -1729,7 +1729,7 @@ if ~exist(RootPath,'dir')
 end
 [tild,message]=fileattrib(RootPath);
 if ~isempty(message) && ~isequal(message.UserWrite,1)
-    errormsg=['No writting access to ' RootPath];
+    errormsg=['No writing access to ' RootPath];
     return
 end
 %check result directory
@@ -2000,7 +2000,7 @@ if checkbox(1)==1;
                 if ~strcmp(msg1,'')
                     errormsg=['cannot create ' subdir_civ1_new ': ' msg1];
                     return
-                else
+                elseif isunix
                     [xx,msg2] = fileattrib(fullfile(RootPath,subdir_civ1_new),'+w','g'); %yield writing access (+w) to user group (g)
                     if ~strcmp(msg2,'')
                         errormsg=['pb of permission for ' subdir_civ1_new ': ' msg2];%error message for directory creation
@@ -2115,10 +2115,12 @@ if (checkbox(4)==1)&&...
         %create the new subdir_civ2_new
         if ~exist(fullfile(RootPath,subdir_civ2_new),'dir')
             [xx,m2]=mkdir(fullfile(RootPath,subdir_civ2_new));
+            if isunix
             [xx,msg2] = fileattrib(fullfile(RootPath,subdir_civ2_new),'+w','g'); %yield writing access (+w) to user group (g)
             if ~isequal(m2,'')
                 errormsg=['cannot create ' fullfile(RootPath,subdir_civ2_new) ': ' m2];
                 return
+            end
             end
         end
         if strcmp(compare,'stereo PIV')%check second nc series
@@ -2147,10 +2149,12 @@ if (checkbox(4)==1)&&...
             %create the new SubdirCiv1
             if ~exist(fullfile(RootPath,subdir_civ2_new),'dir')
                 [xx,m2]=mkdir(subdir_civ2_new);
+                if isunix
                  [xx,msg2] = fileattrib(fullfile(RootPath,subdir_civ2_new),'+w','g'); %yield writing access (+w) to user group (g)
                 if ~isequal(m2,'')
                     errormsg= ['cannot create ' fullfile(RootPath,subdir_civ2_new) ': ' m2];%error message for directory creation
                     return
+                end
                 end
             end
         end
@@ -4127,7 +4131,9 @@ switch Param.Program
         end
     case {'civ_matlab','civ_matlab.sh'}
         filename=regexprep(Param.OutputFile,'(.+)([/\\])(.+$)','$1$20_XML$2$3.xml');
+        if isunix
         fileattrib(fileparts(filename),'+w +x','o g');% set writting access
+        end
         save(struct2xml(Param),filename);
 end
 

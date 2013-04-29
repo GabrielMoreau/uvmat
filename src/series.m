@@ -605,20 +605,20 @@ InputTable=get(handles.InputTable,'Data');
 if size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0
     MinIndex_j=1;% index j set to 1 by default
     MaxIndex_j=1;
-    MinIndex_i=find(i1_series(:,2,:), 1 )-1;
-    MaxIndex_i=find(i1_series(:,2,:), 1, 'last' )-1;
+    MinIndex_i=find(i1_series(:,2,:), 1 )-1;% min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index) 
+    MaxIndex_i=find(i1_series(:,2,:), 1, 'last' )-1;%max ref index i detected in the series (corresponding to the last non-zero value of i1_series) 
 else
     pair_max=squeeze(max(i1_series,[],1)); %max on pair index
     j_max=max(pair_max,[],1);
-    MaxIndex_i=find(j_max, 1, 'last' )-1;% max ref index i
-    MinIndex_i=find(j_max, 1 )-1;% min ref index i
+    MinIndex_i=find(j_max, 1 )-1;% min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
+    MaxIndex_i=find(j_max, 1, 'last' )-1;% max ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index) 
     diff_i_max=diff(j_max);
     if ~isempty(diff_i_max) && isequal (diff_i_max,diff_i_max(1)*ones(size(diff_i_max)))
         set(handles.num_incr_i,'String',num2str(diff_i_max(1)))% detect an increment to dispaly by default
     end
     i_max=max(pair_max,[],2);
-    MaxIndex_j=max(find(i_max))-1;% max ref index i
-    MinIndex_j=min(find(i_max))-1;% min ref index i
+    MinIndex_j=min(find(i_max))-1;% min ref index j
+    MaxIndex_j=max(find(i_max))-1;% max ref index j
     diff_j_max=diff(i_max);
     if isequal (diff_j_max,diff_j_max(1)*ones(size(diff_j_max)))
         set(handles.num_incr_j,'String',num2str(diff_j_max(1)))
@@ -831,20 +831,20 @@ set(handles.ListView,'String',ListView);
 set(handles.ListView,'Value',iview)
 update_mode(handles,i1_series,i2_series,j1_series,j2_series,Time)
 
-%% enable j index visibilitycellfun(@isempty,regexp(PairString,'^j'))
-check_jindex=~cellfun(@isempty,SeriesData.j1_series); %look for non empty j indices
-if isempty(find(check_jindex))
-    enable_j(handles,'off') % no j index needed
-else
-    PairString=get(handles.PairString,'Data');
-    % ~cellfun(@isempty,regexp(PairString,'^j'): gives 1 when the pair string begins by 'j' (burst case)
-    % cellfun(@isempty,PairString): gives 1 when the pair string is empty
-    if isempty(find(~cellfun(@isempty,regexp(PairString,'^j'))&cellfun(@isempty,PairString)))% if all pair string begins by j (burst) or empty
-        enable_j(handles,'off') % no j index needed
-    else
-        enable_j(handles,'on')
+%% enable j index visibility
+%check_jindex=~isempty(find(~cellfun(@isempty,SeriesData.j1_series))); %look for non empty j indices
+status_j='on';%default
+if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
+    status_j='off'; % no j index needed
+elseif strcmp(get(handles.PairString,'Visible'),'on')
+        PairString=get(handles.PairString,'Data');       
+        check_burst=cellfun(@isempty,regexp(PairString,'^j'));%=0 for burst case, 1 otherwise
+ %   check_nopair=cellfun(@isempty,PairString);
+    if isempty(find(check_burst))% if all pair string begins by j (burst) 
+        status_j='off'; % no j index needed for bust case
     end
 end
+enable_j(handles,status_j) % no j index needed
 
 %% display the set of existing files as an image
 set(handles.FileStatus,'Units','pixels')
@@ -1469,8 +1469,8 @@ set(handles.status,'UserData',StatusData)
 
 %% direct processing on the current Matlab session
 if strcmp (RunMode,'local')
-    Series.RUNHandle=handles.RUN;
-    Series.WaitbarHandle=handles.Waitbar;
+%     Series.RUNHandle=handles.RUN;
+%     Series.WaitbarHandle=handles.Waitbar;
     for iprocess=1:NbProcess
         if isempty(Series.IndexRange.NbSlice)
             Series.IndexRange.first_i=first_i+(iprocess-1)*BlockLength*incr_i;

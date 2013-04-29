@@ -170,8 +170,8 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
             set(hhuvmat.MenuEdit,'Enable','on');%
         end
     else
-        test_drawing=1;%allow continuation of drawing object
-         AxeData.CurrentOrigin=[xy(1,1) xy(1,2)]; %the current point becomes the next current origin
+%         test_drawing=1;%allow continuation of drawing object
+%          AxeData.CurrentOrigin=[xy(1,1) xy(1,2)]; %the current point becomes the next current origin
     end
     UvData.ProjObject{IndexObj}=ObjectData;
     hother=findobj('Tag','deformpoint');%find all the deformpoints
