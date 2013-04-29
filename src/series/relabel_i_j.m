@@ -66,6 +66,9 @@ if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 end
+hseries=findobj(allchild(0),'Tag','series');
+RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -219,15 +222,11 @@ end
 
 %% main loop on images
 %j1=[];%default
-nbfield2=size(XmlData.Time,2)
+nbfield2=size(XmlData.Time,2);
 for ifile=1:nbfield
-    if checkrun
-        stopstate=get(Param.RUNHandle,'BusyAction');
-        update_waitbar(Param.WaitbarHandle,ifile/nbfield)
-    else
-        stopstate='queue';
-    end
-    if ~isequal(stopstate,'queue')% enable STOP command
+            update_waitbar(WaitbarHandle,ifile/nbfield)
+    if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        disp('program stopped by user')
         break
     end
     filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile));

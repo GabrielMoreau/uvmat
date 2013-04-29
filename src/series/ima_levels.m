@@ -74,12 +74,18 @@ end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 %% read input parameters from an xml file if input is a file name (batch mode)
-ParamOut=[]
+ParamOut=[];
 checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 end
+hseries=findobj(allchild(0),'Tag','series');
+RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
+
+%% subdirectory for output files
+SubdirOut=[Param.OutputSubDir Param.OutputDirExt];
 
 %% root input file names and nomenclature type (cell arrays with one element)
 RootPath=Param.InputTable(:,1);
@@ -88,8 +94,6 @@ SubDir=Param.InputTable(:,2);
 NomType=Param.InputTable(:,4);
 FileExt=Param.InputTable(:,5);
 
-%% subdirectory for output files
-SubdirOut=[Param.OutputSubDir Param.OutputDirExt];
 
 %% get the set of input file names (cell array filecell), and file indices
 [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
@@ -145,11 +149,10 @@ end
 %% main loop on images
 j1=[];%default
 for ifile=1:nbfield
-    if checkrun
-        stopstate=get(Param.RUNHandle,'BusyAction');
-        update_waitbar(Param.WaitbarHandle,ifile/nbfield)
-    else
-        stopstate='queue';
+            update_waitbar(WaitbarHandle,index/nbfield)
+    if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        disp('program stopped by user')
+        return
     end
     if ~isequal(stopstate,'queue') % enable STOP command
         break

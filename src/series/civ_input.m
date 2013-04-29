@@ -194,10 +194,10 @@ end
 %%  set the menus of image pairs and default selection for civ_input   %%%%%%%%%%%%%%%%%%%
 %check_letter=~isempty(regexp(NomTypeIma,'[ab|AB]$'));%detect pair label by letter
 %if  isequal(NomTypeNc,'_1-2')||isempty(MaxIndex_j)|| (MaxIndex_j==1)
-MaxIndex_i=Param.IndexRange.MaxIndex{1};
-MaxIndex_j=Param.IndexRange.MaxIndex{1,2};
-MinIndex_i=Param.IndexRange.MinIndex{1};
-MinIndex_j=Param.IndexRange.MinIndex{1,2};
+MaxIndex_i=Param.IndexRange.MaxIndex_i{1};
+MaxIndex_j=Param.IndexRange.MaxIndex_j{1};
+MinIndex_i=Param.IndexRange.MinIndex_i{1};
+MinIndex_j=Param.IndexRange.MinIndex_j{1};
 if ~isfield(Param.IndexRange,'first_j')
     set(handles.ListPairMode,'Value',1)
     set(handles.ListPairMode,'String',{'series(Di)'})

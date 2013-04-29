@@ -60,15 +60,18 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
 end
 
 %%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%
-ParamOut=[];
+ParamOut=[];%default output
 %% read input parameters from an xml file if input is a file name (batch mode)
 checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 end
+hseries=findobj(allchild(0),'Tag','series');
+RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
-%% define the directory for result file
+%% define the directory for result file (with path=RootPath{1})
 OutputDir=[Param.OutputSubDir Param.OutputDirExt];
     
 %% root input file(s) name, type and index series
@@ -172,15 +175,12 @@ nbmissing=0;
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:nbfield
-%for index=index_slice
-      if checkrun
-            stopstate=get(Param.RUNHandle,'BusyAction');
-            update_waitbar(Param.WaitbarHandle,index/nbfield)
-      else
-            stopstate='queue';
-      end
-    if isequal(stopstate,'queue')% enable STOP command
-
+    update_waitbar(WaitbarHandle,index/nbfield)
+    if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        disp('program stopped by user')
+        break
+    end
+    
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
     for iview=1:nbview
         % reading input file(s)
@@ -193,13 +193,10 @@ for index=1:nbfield
             Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
         end
     end
-    else
-        errormsg='stop';
-    end
     %%%%%%%%%%%%%%%% end loop on views (input lines) %%%%%%%%%%%%%%%%
     %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
     % EDIT FROM HERE
-
+    
     if isempty(errormsg)
         Field=Data{1}; % default input field structure
         %% coordinate transform (or other user defined transform)
@@ -223,12 +220,12 @@ for index=1:nbfield
                     Field=transform_fct(Data{1});
             end
         end
-
+        
         %% calculate tps coefficients if needed
         if isfield(Param,'ProjObject')&&isfield(Param.ProjObject,'ProjMode')&& strcmp(Param.ProjObject.ProjMode,'interp_tps')
             Field=tps_coeff_field(Field,check_proj_tps);
         end
-
+        
         %field projection on an object
         if Param.CheckObject
             [Field,errormsg]=proj_field(Field,Param.ProjObject);
@@ -238,7 +235,7 @@ for index=1:nbfield
             end
         end
         nbfiles=nbfiles+1;
-
+        
         %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
         %update sum
         if nbfiles==1 %first field
@@ -287,10 +284,10 @@ if isempty(time) % time is read from files
         end
     end
 else  % time from ImaDoc prevails if it exists
-%         j1=1;%default
-%         if ~isempty(j1_series{1})
-%             j1=j1_series{1};
-%         end
+    %         j1=1;%default
+    %         if ~isempty(j1_series{1})
+    %             j1=j1_series{1};
+    %         end
     %DataOut.Time=time(1,i1_series{1}(1),j1);
     %DataOut.Time_end=time(end,i1_series{end}(end),j1_series{end}(end));
     DataOut.Time=time(1);
@@ -316,8 +313,6 @@ else %case of netcdf input file , determine global attributes
         disp(['error in writting result file: ' errormsg])
     end
 end  % end averaging  loop
-% end
-%%%%%%%%%%%%%%%% end loop on slices %%%%%%%%%%%%%%%%
 
 %% open the result file with uvmat (in RUN mode)
 if checkrun

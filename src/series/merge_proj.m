@@ -63,18 +63,23 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
 end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
+ParamOut=[] %default output
 %% read input parameters from an xml file if input is a file name (batch mode)
 checkrun=1;
 if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 end
+hseries=findobj(allchild(0),'Tag','series');
+RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
-ParamOut=[] %default output
+%% define the directory for result file (with path=RootPath{1})
+OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
+
 if ~isfield(Param,'InputFields')
     Param.InputFields.FieldName='';
 end
-OutputDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
 
 %% root input file type
 RootPath=Param.InputTable(:,1);
@@ -183,13 +188,9 @@ NomTypeOut=NomType;% output file index will indicate the first and last ref inde
 
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:NbField
-    if checkrun
-        stopstate=get(Param.RUNHandle,'BusyAction');
-        update_waitbar(Param.WaitbarHandle,index/NbField)
-    else
-        stopstate='queue';
-    end
-    if ~isequal(stopstate,'queue')% enable STOP command
+        update_waitbar(WaitbarHandle,index/nbfield)
+    if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        disp('program stopped by user')
         return
     end
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%

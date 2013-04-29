@@ -72,6 +72,9 @@ if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 end
+hseries=findobj(allchild(0),'Tag','series');
+RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 %% input files and indexing
 NbField=1;
@@ -213,7 +216,11 @@ end
 
 %%%%% MAIN LOOP %%%%%%
 for ifield=1:NbField
-    
+    update_waitbar(WaitbarHandle,index/nbfield)
+    if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        disp('program stopped by user')
+        break
+    end
     %% Civ1
     if isfield (Param.ActionInput,'Civ1')
         par_civ1=Param.ActionInput.Civ1;

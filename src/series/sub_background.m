@@ -186,7 +186,9 @@ if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 end
-
+hseries=findobj(allchild(0),'Tag','series');
+RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 %% Input preparation
 nbaver_ima=Param.ActionInput.SlidingSequenceLength;
 NbSlice=Param.IndexRange.NbSlice;
@@ -363,13 +365,12 @@ end
 display('sliding background image will be substracted')
 if nbfield_i > nbaver_ima
     for ifield = step*ceil(nbaver/2)+1:step:nbfield_i-step*floor(nbaver/2)
-        if checkrun
-            stopstate=get(Param.RUNHandle,'BusyAction');
-            update_waitbar(Param.WaitbarHandle,ifield/nbfield_i)
-        else
-            stopstate='queue';
-        end
-        if isequal(stopstate,'queue')% enable STOP command
+                update_waitbar(WaitbarHandle,ifield/nbfield_i)
+    if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+        disp('program stopped by user')
+        return
+    end
+%         if isequal(stopstate,'queue')% enable STOP command
             Ak(:,:,1:nbaver_ima-step)=Ak(:,:,1+step:nbaver_ima);% shift the current image series by one burst (step)
             %incorporate next burst in the current image series
             for iburst=1:step
@@ -408,9 +409,9 @@ if nbfield_i > nbaver_ima
                 display([newname ' written'])
                 
             end
-        else
-            return
-        end
+%         else
+%             return
+%         end
     end
 end
 
