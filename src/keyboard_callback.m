@@ -2,7 +2,11 @@
 %-----------------------------------
 function keyboard_callback(hObject,eventdata,handleshaxes)
 cur_axes=get(hObject,'CurrentAxes');%current plotting axes of the figure with handle hObject
+if ~isempty(eventdata) && isnumeric(eventdata)
+    xx=eventdata; % keyboard_callback called by mouse_down
+else
 xx=double(get(hObject,'CurrentCharacter')); %get the keyboard character
+end
 switch xx
     case {29,28,30,31}    %arrows for displacement
         if ~isempty(cur_axes)

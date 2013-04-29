@@ -474,16 +474,16 @@ set(handles.Name,'String',ObjectName)% display the default name in set_object
 ListObject{IndexObj}=ObjectName;
 set(hhuvmat.ListObject,'String',ListObject);%complement the object list
 set(hhuvmat.ViewObject,'Value',1)% indicate that the currently selected objected is viewed on set_object
-check_handle=isfield(UvData.Object{IndexObj},'DisplayHandle') && isfield(UvData.Object{IndexObj}.DisplayHandle,'uvmat')...
-    && ~isempty(UvData.Object{IndexObj}.DisplayHandle.uvmat) && ishandle(UvData.Object{IndexObj}.DisplayHandle.uvmat);
+check_handle=isfield(UvData.ProjObject{IndexObj},'DisplayHandle') && isfield(UvData.ProjObject{IndexObj}.DisplayHandle,'uvmat')...
+    && ~isempty(UvData.ProjObject{IndexObj}.DisplayHandle.uvmat) && ishandle(UvData.ProjObject{IndexObj}.DisplayHandle.uvmat);
 if check_handle
-    obj_handle=UvData.Object{IndexObj}.DisplayHandle.uvmat;
+    obj_handle=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;
 end
-UvData.Object{IndexObj}=ObjectData;%record the current object properties in uvmat
+UvData.ProjObject{IndexObj}=ObjectData;%record the current object properties in uvmat
 if check_handle
-    UvData.Object{IndexObj}.DisplayHandle.uvmat=obj_handle; %preserve the object plot handle if valid
+    UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=obj_handle; %preserve the object plot handle if valid
 else
-    UvData.Object{IndexObj}.DisplayHandle.uvmat=hhuvmat.PlotAxes; %axes taken as object display handle by defualt
+    UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=hhuvmat.PlotAxes; %axes taken as object display handle by defualt
 end
 %set(hhuvmat.edit_object,'Value',1)% set the current object to edit mode
 
@@ -542,27 +542,27 @@ else
 end
 
 %% update the object plot 
-hobject=UvData.Object{IndexObj}.DisplayHandle.uvmat;
+hobject=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;
 % if we are editing the object used for projection in uvmat
 if isequal(IndexObj_1,IndexObj)
     %update the representation of the current object for projection field represented in view_field
-    for iobj=1:numel(UvData.Object)
-        UvData.Object{iobj}.DisplayHandle.uvmat=...
-            plot_object(UvData.Object{iobj},UvData.Object{IndexObj_1},UvData.Object{iobj}.DisplayHandle.uvmat,'b');
+    for iobj=1:numel(UvData.ProjObject)
+        UvData.ProjObject{iobj}.DisplayHandle.uvmat=...
+            plot_object(UvData.ProjObject{iobj},UvData.ProjObject{IndexObj_1},UvData.ProjObject{iobj}.DisplayHandle.uvmat,'b');
     end
 else %  we are editing the object used for projection field represented in view_field
     %update the representation of the current object in uvmat
-    UvData.Object{IndexObj}.DisplayHandle.uvmat=...
-             plot_object(UvData.Object{IndexObj},UvData.Object{IndexObj_1},UvData.Object{IndexObj}.DisplayHandle.uvmat,'m');
+    UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=...
+             plot_object(UvData.ProjObject{IndexObj},UvData.ProjObject{IndexObj_1},UvData.ProjObject{IndexObj}.DisplayHandle.uvmat,'m');
     %indicate the object index in the user data of the object plot (needed for further mouse editing)
-    ObjectInfo=get(UvData.Object{IndexObj}.DisplayHandle.uvmat,'UserData');
+    ObjectInfo=get(UvData.ProjObject{IndexObj}.DisplayHandle.uvmat,'UserData');
     ObjectInfo.IndexObj=IndexObj;
-    set(UvData.Object{IndexObj}.DisplayHandle.uvmat,'UserData',ObjectInfo)
+    set(UvData.ProjObject{IndexObj}.DisplayHandle.uvmat,'UserData',ObjectInfo)
     % update the representation of all objects in view_field
-    for iobj=1:numel(UvData.Object)
-        if isfield(UvData.Object{iobj}.DisplayHandle,'view_field')
-            UvData.Object{iobj}.DisplayHandle.view_field=...
-                plot_object(UvData.Object{iobj},UvData.Object{iobj},UvData.Object{iobj}.DisplayHandle.view_field,'b');
+    for iobj=1:numel(UvData.ProjObject)
+        if isfield(UvData.ProjObject{iobj}.DisplayHandle,'view_field')
+            UvData.ProjObject{iobj}.DisplayHandle.view_field=...
+                plot_object(UvData.ProjObject{iobj},UvData.ProjObject{iobj},UvData.ProjObject{iobj}.DisplayHandle.view_field,'b');
         end
     end
 end

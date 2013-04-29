@@ -22,13 +22,13 @@
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 function mouse_up(hObject,eventdata,handles)
-%MouseAction='none'; %default
-test_zoom=0;%default
+
 test_ruler=0;%default
-currentfig=hObject;
-tagfig=get(currentfig,'tag');
+hcurrentfig=hObject;
+fig_tag=get(hcurrentfig,'tag');
 currentaxes=gca; %store the current axes handle
 AxeData=get(currentaxes,'UserData');
+CurrentOrigin=[];
 if isfield(AxeData,'CurrentOrigin')
     CurrentOrigin=AxeData.CurrentOrigin;
 end
@@ -39,7 +39,7 @@ if isfield(AxeData,'ParentRect')% case of a zoom plot as current axis
     hhcurrentfig=guidata(controlGUI);
     testsubplot=1;
 else
-    hhcurrentfig=guidata(currentfig);%the current figure is a GUI (uvmat or view_field)
+    hhcurrentfig=guidata(hcurrentfig);%the current figure is a GUI (uvmat or view_field)
     testsubplot=0;
 end
 test_zoom=get(hhcurrentfig.CheckZoom,'Value');
@@ -58,7 +58,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
     PlotData=get(AxeData.CurrentObject,'UserData');%get data attached to the current projection object
     IndexObj=PlotData.IndexObj;
-    ObjectData=UvData.Object{IndexObj};
+    ObjectData=UvData.ProjObject{IndexObj};
     check_multiple=0;
     % ending translation
     if isequal(AxeData.Drawing,'translate')
@@ -78,22 +78,26 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     else
         switch ObjectData.Type
             case {'line'}
-                if isfield(AxeData,'ObjectCoord') && size(AxeData.ObjectCoord,2)==3
-                    xy(1,3)=AxeData.ObjectCoord(1,3); % z coordinate of the mouse: to generalise ...
+                if size(ObjectData.Coord,1)==1 % this is the mouse up for the first point, continue until next click
+                    check_multiple=1;
                 else
-                    xy(1,3)=0; % z coordinate set to 0 by default
+                    %ObjectData.Coord=[ObjectData.Coord ;CurrentOrigin];% append the second point of the line (the last pointed position during mouse down)
                 end
-                %                 if ~isequal(ObjectData.Coord,xy(1,:))
-                if ~isequal(ObjectData.Coord(end,1:2),xy(1,1:2))
-                    ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the second point of the line if different from the first one
-                end
-                %                 end
             case {'rectangle','ellipse','volume'}
-                XYData=AxeData.CurrentOrigin;
-                ObjectData.Coord(1,1)=(xy(1,1)+XYData(1))/2;%origin rectangle, x coordinate
-                ObjectData.Coord(1,2)=(xy(1,2)+XYData(2))/2;
-                ObjectData.RangeX=abs(xy(1,1)-XYData(1))/2;%rectangle width
-                ObjectData.RangeY=abs(xy(1,2)-XYData(2))/2;%rectangle height
+%                  if size(ObjectData.Coord,1)==1 % this is the mouse up for the first point, continue until next click
+%                     check_multiple=1;
+%                  else
+                ObjectData.Coord=(CurrentOrigin+xy(1,1:2))/2;% keep only the first point coordinate     
+                ObjectData.RangeX=abs(ObjectData.Coord(1,1)-xy(1,1));%rectangle width
+                ObjectData.RangeY=abs(ObjectData.Coord(1,2)-xy(1,2));%rectangle height    
+                if isequal(ObjectData.RangeX,0)||isequal(ObjectData.RangeY,0)
+                    check_multiple=1;% pass to next mous up if width of height=0
+                end
+%                 ObjectData.Coord(1,1)=(xy(1,1)+XYData(1))/2;%origin rectangle, x coordinate
+%                 ObjectData.Coord(1,2)=(xy(1,2)+XYData(2))/2;
+%                 ObjectData.RangeX=abs(xy(1,1)-XYData(1))/2;%rectangle width
+%                 ObjectData.RangeY=abs(xy(1,2)-XYData(2))/2;%rectangle height
+%                  end
             case 'plane' %case of 'plane'
                 DX=(xy(1,1)-ObjectData.Coord(1,1));
                 DY=(xy(1,2)-ObjectData.Coord(1,2));
@@ -105,7 +109,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                     end
                 end
             otherwise
-                check_multiple=1;
+                check_multiple=1; 
         end
     end
     
@@ -119,35 +123,28 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     end
 
     %stop drawing and plot projected field if the object manipulation is finished
-    if check_multiple==0  || isequal(get(currentfig,'SelectionType'),'alt')
+    if check_multiple==0  || isequal(get(hcurrentfig,'SelectionType'),'alt')
         AxeData.CurrentOrigin=[]; %suppress the current origin
-%         if isequal(ObjectData.Type,'line') && size(ObjectData.Coord,1)>=2
-% %             AxeData.Drawing='off';
-% %             set(currentaxes,'UserData',AxeData);
-%             
-%         end
+        hobject=UvData.ProjObject{IndexObj}.DisplayHandle.(fig_tag);
+        if ~isempty(hObject)
+         ProjObject=UvData.ProjObject{get(hhuvmat.ListObject_1,'Value')};
+        AxeData.CurrentObject=plot_object(ObjectData,ProjObject,hobject,'m');%draw the object and its handle becomes AxeData.CurrentObject
+        end
+        %%
         if  ~isempty(ObjectData)
-            %              testmask=0;
-            %              hmask=findobj(huvmat,'Tag','makemask');
-            %              if ~isempty(hmask)
-            %                 testmask=get(hmask,'Value');
-            %              end
-            
             % plot the field projected on the object
             ProjData= proj_field(UvData.Field,ObjectData);%project the current interface field on ObjectData
             if ~isempty(ProjData)
-                if strcmp(tagfig,'uvmat')% uvmat plot selected, projection plot seen in view_field
+                if strcmp(fig_tag,'uvmat')% uvmat plot selected, projection plot seen in view_field
                     hview_field=findobj(allchild(0),'tag','view_field');
                     if isempty(hview_field)
                         hview_field=view_field(ProjData); %open the view_field GUI for plot
                     else
                         hhview_field=guidata(hview_field);
                         [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%update an existing  plot in view_field
-                        %write_plot_param(hhview_field,PlotParam); %update the display of plotting parameters for the current object
                         errormsg=fill_GUI(PlotParam,hview_field);
                     end
                     ViewFieldData=get(hview_field,'UserData');
-                    %                     ViewFieldData.PlotAxes=ProjData;
                     haxes=findobj(hview_field,'tag','axes3');
                     if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Coordinates)% case of no plot display (pure text table)
                         h_TableDisplay=findobj(hview_field,'tag','TableDisplay');
@@ -163,7 +160,6 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                     UvData.PlotAxes=ProjData;
                     [PlotType,PlotParam]=plot_field(ProjData,hhuvmat.PlotAxes,read_GUI(hhuvmat));%update an existing field plot
                     errormsg=fill_GUI(PlotParam,huvmat);
-                   % write_plot_param(hhuvmat,PlotParam); %update the display of plotting parameters for the current object
                 end
             end
             set(hhuvmat.ViewField,'Value',1);%
@@ -175,16 +171,16 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
         end
     else
         test_drawing=1;%allow continuation of drawing object
-        AxeData.CurrentOrigin=[xy(1,1) xy(1,2)]; %the current point becomes the next current origin
+         AxeData.CurrentOrigin=[xy(1,1) xy(1,2)]; %the current point becomes the next current origin
     end
-    UvData.Object{IndexObj}=ObjectData;
+    UvData.ProjObject{IndexObj}=ObjectData;
     hother=findobj('Tag','deformpoint');%find all the deformpoints
     set(hother,'Color','b');%reset all the deformpoints in 'blue'
 end
 
 %% creation of a new zoom plot
-if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed
-    hparentfig=currentfig;
+if isequal(get(hcurrentfig,'SelectionType'),'normal');%if left button has been pressed
+    hparentfig=hcurrentfig;
     %open or update a new zoom figure if a rectangle has been drawn
     if ishandle(currentaxes);
         if isfield(AxeData,'CurrentRectZoom') && ~isempty(AxeData.CurrentRectZoom) && ishandle(AxeData.CurrentRectZoom)
@@ -195,12 +191,16 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
             if ~testsubplot
                 hfig2=figure;%create new figure
                 set(hfig2,'name','zoom')
-                set(hfig2,'Units','normalized')
-                set(hfig2,'Position',[0.2 0.33 0.6 0.6]);
+                set(0,'Unit','pixels')
+                set(hfig2,'Unit','pixels')
+                FigPos=get(hfig2,'Position');
+                ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
+                Left=ScreenSize(3)- FigPos(3)-40; %right edge close to the right, with margin=40 
+                Bottom=ScreenSize(4)-FigPos(4)-40; %put fig at top right
+                FigPos(1:2)=[Left Bottom];
+                set(hfig2,'Position',FigPos);
                 map=colormap(currentaxes);
                 colormap(map);%transmit the current colormap to the zoom fig
-                set(hfig2,'Position',[0.2 0.33 0.6 0.6]);
-                set(hfig2,'Unit','normalized')
                 set(hfig2,'KeyPressFcn',{@keyboard_callback,handles})%set keyboard action function
                 set(hfig2,'WindowButtonMotionFcn',{@mouse_motion,handles})%set mouse action function
                 set(hfig2,'WindowButtonDownFcn',{@mouse_down})%set mouse click action function
@@ -208,12 +208,12 @@ if isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pr
                 set(hfig2,'DeleteFcn',{@close_fig,AxeData.CurrentRectZoom,'zoom'})
                 set(hfig2,'UserData',AxeData.CurrentRectZoom)% record the parent object (zoom rectangle) in the new fig
                 AxeData.ZoomAxes=copyobj(currentaxes,hfig2); %copy the current graph axes to the zoom figure
+                hrect_zoom=findobj(AxeData.ZoomAxes,'Tag','rect_zoom');%find and delete the copy of the rect_zoom rectangle
+                delete(hrect_zoom)
                 ChildAxeData=get(AxeData.ZoomAxes,'UserData');
                 if isfield(ChildAxeData,'ParentGUI')
                     ChildAxeData=rmfield(ChildAxeData,'ParentGUI');%no parent GUI, e.g. uvmat,  for the new plot
                 end
-                %figure(hfig2)
-                %set(0,'CurrentFigure',hfig2)% the zoom figure becomes the current figure
                 set(AxeData.ZoomAxes,'Position',[0.1300    0.1100    0.7750    0.8150])% standard axes position on a figure
                 hcol=findobj(hparentfig,'Tag','Colorbar'); %look for colorbar axes
                 if ~isempty(hcol)
@@ -246,7 +246,7 @@ if test_zoom
     xlim=get(currentaxes,'XLim');
     ylim=get(currentaxes,'YLim');
     % if left mouse button has been pressed, zoom in by a factor of 2
-    if  isequal(get(currentfig,'SelectionType'),'normal');%if left button has been pressed, zoom in by a factor of 2
+    if  isequal(get(hcurrentfig,'SelectionType'),'normal');%if left button has been pressed, zoom in by a factor of 2
         PlotBoxAspectRatio=get(currentaxes,'PlotBoxAspectRatio');
         yoverx=PlotBoxAspectRatio(2)/PlotBoxAspectRatio(1);
         if yoverx <2
@@ -345,7 +345,7 @@ if test_ruler
 end
 
 %% display the data of the current object selected with the mouse right click
-if isequal(get(currentfig,'SelectionType'),'alt') && ~test_zoom && (~isfield(AxeData,'Drawing')||~isequal(AxeData.Drawing,'create'))
+if isequal(get(hcurrentfig,'SelectionType'),'alt') && ~test_zoom && (~isfield(AxeData,'Drawing')||~isequal(AxeData.Drawing,'create'))
     hother=findobj('Tag','proj_object');%find all the proj objects
     nbselect=0;
     %test the existence of selected objects:
@@ -367,8 +367,8 @@ if isequal(get(currentfig,'SelectionType'),'alt') && ~test_zoom && (~isfield(Axe
         currentobj=gco;%default
     end
 %     if ((nbselect==0) && isequal(get(currentobj,'Type'),'axes')) || isequal(currentobj,huvmat)
-%         currentfig=get(currentobj,'parent');
-%         figname=get(currentfig,'name');
+%         hcurrentfig=get(currentobj,'parent');
+%         figname=get(hcurrentfig,'name');
 %         eval(['global Data_' figname])
 %         eval(['Data_' figname '=get(currentobj,''UserData'')']);
 %         evalin('base',['global Data_' figname])%make CurData global in the workspace

@@ -114,13 +114,13 @@ switch ObjectData.Type
             YMax=max(YMax,ZMax);
         end
     case {'rectangle','ellipse','volume'}
-        if  isequal(YMax,0)
-            ylim=get(haxes,'YLim');
-            YMax=(ylim(2)-ylim(1))/100;
-        end
-        if isequal(XMax,0)
-            XMax=YMax;%default
-        end
+%         if  isequal(YMax,0)
+%             ylim=get(haxes,'YLim');
+%             YMax=(ylim(2)-ylim(1))/100;
+%         end
+%         if isequal(XMax,0)
+%             XMax=YMax;%default
+%         end
     case 'plane'
         if  isequal(XMax,0)
             xlim=get(haxes,'XLim');
@@ -273,8 +273,16 @@ if test_newobj==0;
                     set(PlotData.SubObject(ipt),'Position',[ObjectData.Coord(ipt,1)-YMax ObjectData.Coord(ipt,2)-YMax 2*YMax 2*YMax])
                end
                %complement missing points
-               if size(ObjectData.Coord,1)>length(PlotData.SubObject)
-                   for ipt=length(PlotData.SubObject)+1:size(ObjectData.Coord,1)
+                if length(PlotData.SubObject)>nbpoints% fpoints in excess on the graph
+               for ii=nbpoints+1: length(PlotData.SubObject);
+                   if ishandle(PlotData.SubObject(ii))
+                        delete(PlotData.SubObject(ii))
+                   end
+               end
+%                NbDeformPoint=nbpoints;
+           end
+               if nbpoints>length(PlotData.SubObject)
+                   for ipt=length(PlotData.SubObject)+1:nbpoints
                      PlotData.SubObject(ipt)=rectangle('Curvature',[1 1],...
                   'Position',[ObjectData.Coord(ipt,1)-YMax ObjectData.Coord(ipt,2)-YMax 2*YMax 2*YMax],'EdgeColor',col,...
                   'LineStyle',SubLineStyle,'Tag','proj_object');
@@ -283,7 +291,16 @@ if test_newobj==0;
            end
         end
         if isfield(PlotData,'DeformPoint')
-           for ipt=1:length(PlotData.DeformPoint)
+            NbDeformPoint=length(PlotData.DeformPoint);
+           if NbDeformPoint>nbpoints% fpoints in excess on the graph
+               for ii=nbpoints+1:NbDeformPoint;
+                   if ishandle(PlotData.DeformPoint(ii))
+                        delete(PlotData.DeformPoint(ii))
+                   end
+               end
+               NbDeformPoint=nbpoints;
+           end
+           for ipt=1:NbDeformPoint
                if ishandle(PlotData.DeformPoint(ipt))
                    if nbpoints>=ipt  
                         set(PlotData.DeformPoint(ipt),'XData',xline(ipt),'YData',yline(ipt));
@@ -298,7 +315,7 @@ if test_newobj==0;
                set(hplot,'UserData',PlotData)
            end
         end
-    elseif isequal(ObjectData.Type,'rectangle')||isequal(ObjectData.Type,'ellipse')
+    elseif (isequal(ObjectData.Type,'rectangle')||isequal(ObjectData.Type,'ellipse'))&&XMax>0 && YMax>0
         set(hplot,'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax])          
     end
     if test_patch 

@@ -362,24 +362,30 @@ runpm(hObject,eventdata,handles,increment)
 % end
 % set(handles.RunMovie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
 
-
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- translate coordinate to matrix index
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function [indx,indy]=pos2ind(x0,rangx0,nxy)
 indx=1+round((nxy(2)-1)*(x0-rangx0(1))/(rangx0(2)-rangx0(1)));% index x of pixel  
 indy=1+round((nxy(1)-1)*(y12-rangy0(1))/(rangy0(2)-rangy0(1)));% index y of pixel
 
-%-------------------------------------------------------------------
-% --- Executes on button press in 'zoom'.
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
+% --- Executes on button press in 'CheckZoom'.
+%------------------------------------------------------------------------
 function CheckZoom_Callback(hObject, eventdata, handles)
-if (get(handles.CheckZoom,'Value') == 1); 
-    set(handles.CheckZoom,'BackgroundColor',[1 1 0])
+
+if get(handles.CheckZoom,'Value') 
     set(handles.CheckFixLimits,'Value',1)% propose by default fixed limits for the plotting axes
-    set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
-else
-    set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckZoomFig,'Value',0)%desactivate zoom fig
+end
+
+%------------------------------------------------------------------------
+% --- Executes on button press in CheckZoomFig.
+%------------------------------------------------------------------------
+function CheckZoomFig_Callback(hObject, eventdata, handles)
+
+if get(handles.CheckZoomFig,'Value')
+    set(handles.CheckZoom,'value',0)
 end
 
 %-------------------------------------------------------------------
@@ -838,3 +844,7 @@ function num_ColCode2_Callback(hObject, eventdata, handles)
 % % hObject    handle to view_field (see GCBO)
 % % eventdata  reserved - to be defined in a future version of MATLAB
 % % handles    structure with handles and user data (see GUIDATA)
+
+
+
+

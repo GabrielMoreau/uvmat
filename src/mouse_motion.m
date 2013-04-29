@@ -34,11 +34,12 @@ else
     CurrentFig=hObject;%usual plot
 end
 hhCurrentFig=guidata(CurrentFig);%handles of the elements in the GUI containing the current figure (uvmat or view_field)
-test_zoom=get(hhCurrentFig.CheckZoom,'Value');%test for zoom activated on the current figure
+CheckZoom=get(hhCurrentFig.CheckZoom,'Value');% check for zoom on mode
+CheckZoomFig=get(hhCurrentFig.CheckZoomFig,'Value');% check for zoom sub fig creation mode
+test_zoom_draw=0;
 test_draw=0;%test for mouse drawing of object, =0 by default
 test_object=0; %test for object editing or creation 
 test_edit_object=0;% edit test for mouse shap: an arrow
-test_zoom_draw=0; % test for zoom drawing 
 test_ruler=0;%test for active ruler 
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle
 if ~isempty(huvmat)
@@ -63,212 +64,217 @@ text_displ_3='';
 text_displ_4='';
 
 AxeData=[];%default
-mouse=[];
 xy=[];%default
-
+xy_fig=get(hObject,'CurrentPoint');% current point of the current figure (gcbo)
 pointershape='arrow';% default pointer is an arrow 
 
-xy_fig=get(hObject,'CurrentPoint');% current point of the current figure (gcbo)
-hchild=get(hObject,'Children');%handles of all objects in the current figure
-
 %% loop on all the objects in the current figure, detect whether the mouse is over a plot  axes
+hchildren=get(hObject,'Children');%handles of all objects in the current figure
+check_visible=strcmp(get(hchildren,'Visible'),'on');% if visible='on', =0 otherwise
+hchildren=hchildren(check_visible); %kkep only the visible children
+PosChildren=get(hchildren,'Position');% set of object positions
+if iscell(PosChildren)% only one child
+    PosLength=cellfun('length',PosChildren);% set of vector lengths for object positions
+    hchildren=hchildren(PosLength==4);% keep only objects with position defined by a 4 element vector
+    PosChildren=cell2mat(PosChildren(PosLength==4));% convert cells to matrix of positions
+end
+if size(PosChildren,2)~=4
+    return
+end
+xy_fig_mat=ones(size(PosChildren,1),1)*xy_fig;% mouse position set to a matrix
+check_pos=xy_fig_mat >= PosChildren(:,1:2) & xy_fig_mat <= PosChildren(:,1:2)+PosChildren(:,3:4);% compare object to mouse position
+ind_object=find(check_pos(:,1) & check_pos(:,2),1);% select the index of the (first) object under the mouse
+hchild=hchildren(ind_object);% corresponding object handle
 CurrentAxes=[];
-for ichild=1:length(hchild)
-    obj_pos=get(hchild(ichild),'Position');
-    if numel(obj_pos)~=4% for some versions of matlab a uicontextmenu appears
-        continue
-    end%position of the object
-    if xy_fig(1) >=obj_pos(1) && xy_fig(2) >= obj_pos(2)&& xy_fig(1) <=obj_pos(1)+obj_pos(3) && xy_fig(2) <= obj_pos(2)+obj_pos(4);
-        htype=get(hchild(ichild),'Type');%type of the crrent child
-        %if the mouse is over an axis, look at the data
-        if strcmp(htype,'axes')
-            CurrentAxes=hchild(ichild);
-            xy=get(CurrentAxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
-            AxeData=get(CurrentAxes,'UserData');% data attached to the axis
-            if isfield(AxeData,'Drawing')&& ~isempty(AxeData.Drawing)
-                test_draw=~isequal(AxeData.Drawing,'off');%=1 if mouse drawing of object is active
-            end
-            test_zoom_draw=test_draw && isequal(AxeData.Drawing,'zoom')&& isfield(AxeData,'CurrentOrigin') && isequal(get(gcf,'SelectionType'),'normal');
-            test_object=test_draw && isfield(AxeData,'CurrentObject') && ~isempty(AxeData.CurrentObject) && ishandle(AxeData.CurrentObject);
-            if ~test_edit_object && ~test_zoom_draw && ~test_ruler
-                pointershape='crosshair';%set pointer with cross shape (default when mouse is over an axis)
-            end
-            FigData=get(CurrentFig,'UserData');
-            tagaxes=get(CurrentAxes,'tag');
-            if isfield(FigData,tagaxes)
-                Field=FigData.(tagaxes);
-                if isfield(Field,'ListVarName')
-                    [CellInfo,NbDimArray]=find_field_cells(Field);%analyse the physical fields contained in Field
-                    text_displ_1='';
-                    text_displ_2='';
-                    text_displ_3='';
-                    text_displ_4='';
-                    text_displ_5='';
-                    ivec=[];
-                    xName='';
-                    z=[];
-                    for icell=1:numel(CellInfo)%look for all physical fields
-                        if NbDimArray(icell)>=2 % select 2D field
-                            if  isfield(Field,'CoordMesh') && ~isempty(Field.CoordMesh)&& strcmp(CellInfo{icell}.CoordType,'scattered')%case of unstructured data
-                                X=Field.(Field.ListVarName{CellInfo{icell}.CoordIndex(end)});
-                                Y=Field.(Field.ListVarName{CellInfo{icell}.CoordIndex(end-1)});
-                                flag_vec=(X<(xy(1,1)+Field.CoordMesh/3) & X>(xy(1,1)-Field.CoordMesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
-                                    (Y<(xy(1,2)+Field.CoordMesh/3) & Y>(xy(1,2)-Field.CoordMesh/3));%f
-                                ivec=find(flag_vec,1);% search the (first) selected vector index ivec
-                                hhh=findobj(CurrentAxes,'Tag','vector_marker');
-                                if ~isempty(ivec)
-                                    % mark the vectors with a circle in the absence of other operations
-                                    if ~test_object && ~test_edit_object && ~test_ruler
-                                        pointershape='arrow'; %mouse indicates  the detection of a vector
-                                        if isempty(hhh)
-                                            set(0,'CurrentFigure',CurrentFig)
-                                            set(CurrentFig,'CurrentAxes',CurrentAxes)
-                                            rectangle('Curvature',[1 1],...
-                                                'Position',[X(ivec)-Field.CoordMesh/2 Y(ivec)-Field.CoordMesh/2 Field.CoordMesh Field.CoordMesh],'EdgeColor','m',...
-                                                'LineStyle','-','Tag','vector_marker');
-                                        else
-                                            set(hhh,'Visible','on')
-                                            set(hhh,'Position',[X(ivec)-Field.CoordMesh/2 Y(ivec)-Field.CoordMesh/2 Field.CoordMesh Field.CoordMesh])
-                                        end
-                                    end
-                                    %display the field values
-                                    for ivar=1:numel(CellInfo{icell}.VarIndex)
-                                        VarName=Field.ListVarName{CellInfo{icell}.VarIndex(ivar)};
-                                        VarVal=Field.(VarName)(ivec);
-                                        var_text=[VarName '=' num2str(VarVal,4) ','];
-                                        if isequal(ivar,CellInfo{icell}.CoordIndex(end))||isequal(ivar,CellInfo{icell}.CoordIndex(end-1))||isequal(ivar,CellInfo{icell}.CoordIndex(1))
-                                            text_displ_1=[text_displ_1 var_text];
-                                        elseif (isfield(CellInfo{icell},'VarIndex_vector_x') && isequal(ivar,CellInfo{icell}.VarIndex_vector_x))||isequal(ivar,CellInfo{icell}.VarIndex_vector_y)||...
-                                                (isfield(CellInfo{icell},'VarIndex_vector_z') && isequal(ivar,CellInfo{icell}.VarIndex_vector_z))
-                                            text_displ_4=[text_displ_4 var_text];
-                                        else
-                                            text_displ_5=[text_displ_5 var_text];
-                                        end
-                                    end
+
+%if the mouse is over an axis, look at the data
+if strcmp(get(hchild,'Type'),'axes')
+    CurrentAxes=hchild;
+    xy=get(CurrentAxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
+    AxeData=get(CurrentAxes,'UserData');% data attached to the axis
+    if isfield(AxeData,'Drawing')&& ~isempty(AxeData.Drawing)
+        test_draw=~isequal(AxeData.Drawing,'off');%=1 if mouse drawing of object is active
+    end
+    test_zoom_draw=test_draw && isequal(AxeData.Drawing,'zoom')&& isfield(AxeData,'CurrentOrigin') && isequal(get(gcf,'SelectionType'),'normal');
+    test_object=test_draw && isfield(AxeData,'CurrentObject') && ~isempty(AxeData.CurrentObject) && ishandle(AxeData.CurrentObject);
+    %if ~test_edit_object && ~test_zoom_draw && ~test_ruler
+    if ~test_edit_object  && ~test_ruler && ~CheckZoom
+        pointershape='crosshair';%set pointer with cross shape (default when mouse is over an axis)
+    end
+    FigData=get(CurrentFig,'UserData');
+    tagaxes=get(CurrentAxes,'tag');
+    if isfield(FigData,tagaxes)
+        Field=FigData.(tagaxes);
+        if isfield(Field,'ListVarName')
+            [CellInfo,NbDimArray]=find_field_cells(Field);%analyse the physical fields contained in Field
+            text_displ_1='';
+            text_displ_2='';
+            text_displ_3='';
+            text_displ_4='';
+            text_displ_5='';
+            ivec=[];
+            xName='';
+            z=[];
+            for icell=1:numel(CellInfo)%look for all physical fields
+                if NbDimArray(icell)>=2 % select 2D field
+                    if  isfield(Field,'CoordMesh') && ~isempty(Field.CoordMesh)&& strcmp(CellInfo{icell}.CoordType,'scattered')%case of unstructured data
+                        X=Field.(Field.ListVarName{CellInfo{icell}.CoordIndex(end)});
+                        Y=Field.(Field.ListVarName{CellInfo{icell}.CoordIndex(end-1)});
+                        flag_vec=(X<(xy(1,1)+Field.CoordMesh/3) & X>(xy(1,1)-Field.CoordMesh/3)) & ...%flagx=1 for the vectors with x position selected by the mouse
+                            (Y<(xy(1,2)+Field.CoordMesh/3) & Y>(xy(1,2)-Field.CoordMesh/3));%f
+                        ivec=find(flag_vec,1);% search the (first) selected vector index ivec
+                        hhh=findobj(CurrentAxes,'Tag','vector_marker');
+                        if ~isempty(ivec)
+                            % mark the vectors with a circle in the absence of other operations
+                            if ~test_object && ~test_edit_object && ~test_ruler && ~CheckZoomFig
+                                pointershape='arrow'; %mouse indicates  the detection of a vector
+                                if isempty(hhh)
+                                    set(0,'CurrentFigure',CurrentFig)
+                                    set(CurrentFig,'CurrentAxes',CurrentAxes)
+                                    rectangle('Curvature',[1 1],...
+                                        'Position',[X(ivec)-Field.CoordMesh/2 Y(ivec)-Field.CoordMesh/2 Field.CoordMesh Field.CoordMesh],'EdgeColor','m',...
+                                        'LineStyle','-','Tag','vector_marker');
                                 else
-                                    if ~isempty(hhh)
-                                        set(hhh,'Visible','off')
-                                    end
+                                    set(hhh,'Visible','on')
+                                    set(hhh,'Position',[X(ivec)-Field.CoordMesh/2 Y(ivec)-Field.CoordMesh/2 Field.CoordMesh Field.CoordMesh])
                                 end
-                            elseif strcmp(CellInfo{icell}.CoordType,'grid') %structured coordinates
-                                yName=Field.ListVarName{CellInfo{icell}.CoordIndex(1)};
-                                xName=Field.ListVarName{CellInfo{icell}.CoordIndex(2)};
-                                y=Field.(yName);
-                                x=Field.(xName);
-                                VarName=Field.ListVarName{CellInfo{icell}.VarIndex(1)};
-                                nxy=size(Field.(VarName));
-                                MaxAY=max(y(1),y(end)); %#ok<COLND>
-                                MinAY=min(y(1),y(end)); %#ok<COLND>
-                                if (xy(1,1)>x(1))&(xy(1,1)<x(end))&(xy(1,2)<MaxAY)&(xy(1,2)>MinAY) %#ok<COLND>
-                                    indx0=1+round((nxy(2)-1)*(xy(1,1)-x(1))/(x(end)-x(1)));%#ok<COLND> % index x of pixel
-                                    indy0=1+round((nxy(1)-1)*(xy(1,2)-y(1))/(y(end)-y(1)));%#ok<COLND> % index y of pixel
-                                    if indx0>=1 & indx0<=nxy(2) & indy0>=1 & indy0<=nxy(1)
-                                        text_displ_2=['i='  num2str(indx0) ',j=' num2str(indy0) ','];
-                                        for ivar=1:numel(CellInfo{icell}.VarIndex)
-                                            VarName=Field.ListVarName{CellInfo{icell}.VarIndex(ivar)};
-                                            VarVal=Field.(VarName)(indy0,indx0,:);
-                                            var_text=[VarName '=' num2str(VarVal) ','];
-                                            text_displ_4=[text_displ_4 var_text];
-                                        end
-                                    end
+                            end
+                            %display the field values
+                            for ivar=1:numel(CellInfo{icell}.VarIndex)
+                                VarName=Field.ListVarName{CellInfo{icell}.VarIndex(ivar)};
+                                VarVal=Field.(VarName)(ivec);
+                                var_text=[VarName '=' num2str(VarVal,4) ','];
+                                if isequal(ivar,CellInfo{icell}.CoordIndex(end))||isequal(ivar,CellInfo{icell}.CoordIndex(end-1))||isequal(ivar,CellInfo{icell}.CoordIndex(1))
+                                    text_displ_1=[text_displ_1 var_text];
+                                elseif (isfield(CellInfo{icell},'VarIndex_vector_x') && isequal(ivar,CellInfo{icell}.VarIndex_vector_x))||isequal(ivar,CellInfo{icell}.VarIndex_vector_y)||...
+                                        (isfield(CellInfo{icell},'VarIndex_vector_z') && isequal(ivar,CellInfo{icell}.VarIndex_vector_z))
+                                    text_displ_4=[text_displ_4 var_text];
+                                else
+                                    text_displ_5=[text_displ_5 var_text];
+                                end
+                            end
+                        else
+                            if ~isempty(hhh)
+                                set(hhh,'Visible','off')
+                            end
+                        end
+                    elseif strcmp(CellInfo{icell}.CoordType,'grid') %structured coordinates
+                        yName=Field.ListVarName{CellInfo{icell}.CoordIndex(1)};
+                        xName=Field.ListVarName{CellInfo{icell}.CoordIndex(2)};
+                        y=Field.(yName);
+                        x=Field.(xName);
+                        VarName=Field.ListVarName{CellInfo{icell}.VarIndex(1)};
+                        nxy=size(Field.(VarName));
+                        MaxAY=max(y(1),y(end));
+                        MinAY=min(y(1),y(end));
+                        if (xy(1,1)>x(1))&(xy(1,1)<x(end))&(xy(1,2)<MaxAY)&(xy(1,2)>MinAY)
+                            indx0=1+round((nxy(2)-1)*(xy(1,1)-x(1))/(x(end)-x(1))); % index x of pixel
+                            indy0=1+round((nxy(1)-1)*(xy(1,2)-y(1))/(y(end)-y(1))); % index y of pixel
+                            if indx0>=1 & indx0<=nxy(2) & indy0>=1 & indy0<=nxy(1)
+                                text_displ_2=['i='  num2str(indx0) ',j=' num2str(indy0) ','];
+                                for ivar=1:numel(CellInfo{icell}.VarIndex)
+                                    VarName=Field.ListVarName{CellInfo{icell}.VarIndex(ivar)};
+                                    VarVal=Field.(VarName)(indy0,indx0,:);
+                                    var_text=[VarName '=' num2str(VarVal) ','];
+                                    text_displ_4=[text_displ_4 var_text];
                                 end
                             end
                         end
                     end
-              % display the current x,y plot coordinates in the absence of detected vector
-                    if isempty(ivec)
-                        if isempty(xName)
-                            xName='x';
-                            yName='y';
-                        end
-                        text_displ_1=[xName '=' num2str(xy(1,1),4) ', ' yName '=' num2str(xy(1,2),4) ','];
-                    end
-                    %display the z coordinate if defined by the projection plane
-                    if isfield(Field,'ObjectCoord') && length(Field.ObjectCoord)>=3
-                        pos=[xy(1,1) xy(1,2) 0];
-                        if isfield(Field,'ObjectAngle')&&~isequal(Field.ObjectAngle,[0 0 0])
-                            om=norm(Field.ObjectAngle);%norm of rotation angle in radians
-                            OmAxis=Field.ObjectAngle/om; %unit vector marking the rotation axis
-                            cos_om=cos(pi*om/180);
-                            sin_om=sin(pi*om/180);
-                            pos=[xy(1,1) xy(1,2) 0];
-                            pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
-                        end
-                        pos=pos+Field.ObjectCoord;
-                        text_displ_3=[text_displ_3 'x,y,z=' num2str(pos,4)];
-                    end
-%                     if ~isempty(z)
-%                         text_displ_1=[text_displ_1 ' z=' num2str(z,4)];
-%                     end
-               % case of PIV correlation display
-                    if test_piv
-                        par=read_GUI(hhciv.Civ1);
-                        [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
-                        xround=Field.X(ind_pt);
-                        yround=Field.Y(ind_pt);
-%                         par.Grid=[xround size(Field.A,1)-yround+1];
-                        par.Grid=[xround yround];
-                        % mark the correlation box with a rectangle
-                        par.ImageA=Field.A;
-                        par.ImageB=Field.B;
-                        par.ImageHeight=size(par.ImageA,1);
-                        par.ImageWidth=size(par.ImageA,2);
-                        Param.Civ1=par;
-                        ibx2=floor((par.CorrBoxSize(1)-1)/2);
-                        iby2=floor((par.CorrBoxSize(2)-1)/2);
-                        isx2=floor((par.SearchBoxSize(1)-1)/2);
-                        isy2=floor((par.SearchBoxSize(2)-1)/2);
-                        shiftx=par.SearchBoxShift(1);
-                        shifty=par.SearchBoxShift(2);     
-                        hhh=findobj(CurrentAxes,'Tag','PIV_box_marker');
-                        hhhh=findobj(CurrentAxes,'Tag','PIV_search_marker');
-                        if isempty(hhh)
-                            set(0,'CurrentFigure',CurrentFig)
-                            set(CurrentFig,'CurrentAxes',CurrentAxes)
-                            rectangle('Curvature',[0 0],...
-                                'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2],'EdgeColor','m',...
-                                'LineStyle','-','Tag','PIV_box_marker');
-                            rectangle('Curvature',[0 0],...
-                                'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2],'EdgeColor','m',...
-                                'LineStyle','- -','Tag','PIV_search_marker');
-                        else
-                            set(hhh,'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2])
-                            set(hhhh,'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2])
-                        end
-                        [Data,errormsg,result_conv]= civ_matlab(Param);
-                        if ~isempty(errormsg)
-                            text_displ_5=errormsg;
-                        else
-                            rangx(1)=-(isx2-ibx2)+shiftx;
-                            rangx(2)=isx2-ibx2+shiftx;
-                            rangy(1)=-(isy2-iby2)-shifty;
-                            rangy(2)=(isy2-iby2)-shifty;
+                end
+            end
+            % display the current x,y plot coordinates in the absence of detected vector
+            if isempty(ivec)
+                if isempty(xName)
+                    xName='x';
+                    yName='y';
+                end
+                text_displ_1=[xName '=' num2str(xy(1,1),4) ', ' yName '=' num2str(xy(1,2),4) ','];
+            end
+            %display the z coordinate if defined by the projection plane
+            if isfield(Field,'ObjectType') && strcmp(Field.ObjectType,'plane') && isfield(Field,'ObjectCoord') && length(Field.ObjectCoord)>=3
+                pos=[xy(1,1) xy(1,2) 0];
+                if isfield(Field,'ObjectAngle')&&~isequal(Field.ObjectAngle,[0 0 0])
+                    om=norm(Field.ObjectAngle);%norm of rotation angle in radians
+                    OmAxis=Field.ObjectAngle/om; %unit vector marking the rotation axis
+                    cos_om=cos(pi*om/180);
+                    sin_om=sin(pi*om/180);
+                    pos=[xy(1,1) xy(1,2) 0];
+                    pos=cos_om*pos+sin_om*cross(OmAxis,pos)+(1-cos_om)*(OmAxis*pos')*OmAxis;
+                end
+                pos=pos+[Field.ObjectCoord 0];
+                text_displ_3=[text_displ_3 'x,y,z=' num2str(pos,4)];
+            end
+            %                     if ~isempty(z)
+            %                         text_displ_1=[text_displ_1 ' z=' num2str(z,4)];
+            %                     end
+            % case of PIV correlation display
+            if test_piv
+                par=read_GUI(hhciv.Civ1);
+                [dd,ind_pt]=min(abs(Field.X-xy(1,1))+abs(Field.Y-xy(1,2)));
+                xround=Field.X(ind_pt);
+                yround=Field.Y(ind_pt);
+                %                         par.Grid=[xround size(Field.A,1)-yround+1];
+                par.Grid=[xround yround];
+                % mark the correlation box with a rectangle
+                par.ImageA=Field.A;
+                par.ImageB=Field.B;
+                par.ImageHeight=size(par.ImageA,1);
+                par.ImageWidth=size(par.ImageA,2);
+                Param.Civ1=par;
+                ibx2=floor((par.CorrBoxSize(1)-1)/2);
+                iby2=floor((par.CorrBoxSize(2)-1)/2);
+                isx2=floor((par.SearchBoxSize(1)-1)/2);
+                isy2=floor((par.SearchBoxSize(2)-1)/2);
+                shiftx=par.SearchBoxShift(1);
+                shifty=par.SearchBoxShift(2);
+                hhh=findobj(CurrentAxes,'Tag','PIV_box_marker');
+                hhhh=findobj(CurrentAxes,'Tag','PIV_search_marker');
+                if isempty(hhh)
+                    set(0,'CurrentFigure',CurrentFig)
+                    set(CurrentFig,'CurrentAxes',CurrentAxes)
+                    rectangle('Curvature',[0 0],...
+                        'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2],'EdgeColor','m',...
+                        'LineStyle','-','Tag','PIV_box_marker');
+                    rectangle('Curvature',[0 0],...
+                        'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2],'EdgeColor','m',...
+                        'LineStyle','- -','Tag','PIV_search_marker');
+                else
+                    set(hhh,'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2])
+                    set(hhhh,'Position',[xround-isx2+shiftx yround-isy2+shifty 2*isx2 2*isy2])
+                end
+                [Data,errormsg,result_conv]= civ_matlab(Param);
+                if ~isempty(errormsg)
+                    text_displ_5=errormsg;
+                else
+                    rangx(1)=-(isx2-ibx2)+shiftx;
+                    rangx(2)=isx2-ibx2+shiftx;
+                    rangy(1)=-(isy2-iby2)-shifty;
+                    rangy(2)=(isy2-iby2)-shifty;
+                    hcorr=[];
+                    if isfield(AxeData,'CurrentCorrImage')
+                        hcorr=AxeData.CurrentCorrImage;
+                        if ~ishandle(hcorr)
                             hcorr=[];
-                            if isfield(AxeData,'CurrentCorrImage')
-                                hcorr=AxeData.CurrentCorrImage;
-                                if ~ishandle(hcorr)
-                                    hcorr=[];
-                                end
-                            end
-                            if isempty(hcorr)
-                                corrfig=findobj(allchild(0),'tag','corrfig');
-                                if ~isempty(corrfig)
-                                    set(0,'CurrentFigure',corrfig(1))         
-                                    AxeData.CurrentCorrImage=imagesc(rangx,-rangy,result_conv,[0 1]);
-                                    AxeData.CurrentVector=line([0 Data.Civ1_U],[0 Data.Civ1_V],'Tag','vector');
-                                   AxeData.TitleHandle=title(num2str(par.Grid));
-                                    colorbar
-                                    set(CurrentAxes,'UserData',AxeData)
-                                    set(get(AxeData.CurrentCorrImage,'parent'),'YDir','normal')
-                                end
-                            else
-                                set(AxeData.CurrentCorrImage,'CData',result_conv)
-                                set(AxeData.CurrentCorrImage,'XData',rangx)
-                                set(AxeData.CurrentCorrImage,'YData',-rangy)
-                                set(AxeData.CurrentVector,'XData',[0 Data.Civ1_U],'YData',[0 Data.Civ1_V])
-                                set(AxeData.TitleHandle,'String',num2str(par.Grid))
-                            end
                         end
+                    end
+                    if isempty(hcorr)
+                        corrfig=findobj(allchild(0),'tag','corrfig');
+                        if ~isempty(corrfig)
+                            set(0,'CurrentFigure',corrfig(1))
+                            AxeData.CurrentCorrImage=imagesc(rangx,-rangy,result_conv,[0 1]);
+                            AxeData.CurrentVector=line([0 Data.Civ1_U],[0 Data.Civ1_V],'Tag','vector');
+                            AxeData.TitleHandle=title(num2str(par.Grid));
+                            colorbar
+                            set(CurrentAxes,'UserData',AxeData)
+                            set(get(AxeData.CurrentCorrImage,'parent'),'YDir','normal')
+                        end
+                    else
+                        set(AxeData.CurrentCorrImage,'CData',result_conv)
+                        set(AxeData.CurrentCorrImage,'XData',rangx)
+                        set(AxeData.CurrentCorrImage,'YData',-rangy)
+                        set(AxeData.CurrentVector,'XData',[0 Data.Civ1_U],'YData',[0 Data.Civ1_V])
+                        set(AxeData.TitleHandle,'String',num2str(par.Grid))
                     end
                 end
             end
@@ -287,24 +293,23 @@ else
 end
 
 %%%%%%%%%%%%%
-%% draw a zoom rectangle if no object creation is selected
+%% draw a zoom rectangle if checkZoomFig has been selected
 if test_zoom_draw 
-   xy_rect=AxeData.CurrentOrigin;
+   xy_rect=AxeData.CurrentOrigin;% mark the previous position from mouse down
    if ~isempty(xy_rect) 
         rect(1)=min(xy(1,1),xy_rect(1));%origin rectangle, x coordinate
         rect(2)=min(xy(1,2),xy_rect(2));%origin rectangle, y coordinate
         rect(3)=abs(xy(1,1)-xy_rect(1));%rectangle width
         rect(4)=abs(xy(1,2)-xy_rect(2));%rectangle height
-        if rect(3)>0 & rect(4)>0
-            if isfield(AxeData,'CurrentRectZoom')& ishandle(AxeData.CurrentRectZoom)
+        if rect(3)>0 && rect(4)>0
+            if isfield(AxeData,'CurrentRectZoom')&& ~isempty(AxeData.CurrentRectZoom) && ishandle(AxeData.CurrentRectZoom)
                 set(AxeData.CurrentRectZoom,'Position',rect);%update the rectangle position
             else
-                AxeData.CurrentRectZoom=rectangle('Position',rect,'LineStyle',':','Tag','rect_zoom');
+                AxeData.CurrentRectZoom=rectangle('Position',rect,'Tag','rect_zoom','EdgeColor','b');
                 set(CurrentAxes,'UserData',AxeData)
             end
         end
    end
-    pointershape='arrow';
 end
 
 %%%%%%%%%%%%%%%%%
@@ -315,12 +320,11 @@ if ~isempty(huvmat) && test_object
     if ~isfield(PlotData,'IndexObj')
         return
     end
-    ObjectData=UvData.Object{PlotData.IndexObj};
-    ProjObject=[];% object (plane) whose projection is represented on the current axes
+    ObjectData=UvData.ProjObject{PlotData.IndexObj};
     if isequal(hObject,huvmat)% if the mouse ifs over the GUI uvmat
-        ProjObject=UvData.Object{get(hhuvmat.ListObject_1,'Value')};
+        ProjObject=UvData.ProjObject{get(hhuvmat.ListObject_1,'Value')};
     else
-        ProjObject=UvData.Object{get(hhuvmat.ListObject,'Value')};
+        ProjObject=UvData.ProjObject{get(hhuvmat.ListObject,'Value')};
     end
     XYData=AxeData.CurrentOrigin;
     if isequal(AxeData.Drawing,'create') && isfield(AxeData,'CurrentOrigin') && ~isempty(AxeData.CurrentOrigin)
@@ -328,10 +332,9 @@ if ~isempty(huvmat) && test_object
             ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];
             % ObjectData.Coord(end,:)=xy(1,:);
         elseif strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')||strcmp(ObjectData.Type,'volume')
-            ObjectData.Coord(1,1)=(xy(1,1)+XYData(1))/2;%origin rectangle, x coordinate
-            ObjectData.Coord(1,2)=(xy(1,2)+XYData(2))/2;
-            ObjectData.RangeX=abs(xy(1,1)-XYData(1))/2;%rectangle width
-            ObjectData.RangeY=abs(xy(1,2)-XYData(2))/2;%rectangle height
+                ObjectData.Coord=(AxeData.CurrentOrigin+xy(1,1:2))/2;% keep only the first point coordinate     
+                ObjectData.RangeX=abs(ObjectData.Coord(1,1)-xy(1,1));%rectangle width
+                ObjectData.RangeY=abs(ObjectData.Coord(1,2)-xy(1,2));%rectangle height 
         elseif isequal(ObjectData.Type,'plane') %case of 'plane'
             DX=(xy(1,1)-ObjectData.Coord(1,1));
             DY=(xy(1,2)-ObjectData.Coord(1,2));
@@ -363,7 +366,7 @@ end
 
 %% detect calibration points if the GUI geometry_calib is opened
 h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
-if ~test_zoom && ~isempty(h_geometry_calib)
+if ~CheckZoom && ~isempty(h_geometry_calib)
     pointershape='crosshair';%default for geometry_calib: ready to create new points
     hh_geometry_calib=guidata(h_geometry_calib);
     if  ~isempty(xy) && isfield(hh_geometry_calib,'ListCoord')

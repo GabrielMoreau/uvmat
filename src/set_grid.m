@@ -170,22 +170,6 @@ else
     set(handles.TxtWarning,'visible','on')
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% --- Executes on button press in delete.
-function delete_Callback(hObject, eventdata, handles)
-
-%SetData=get(gcbf,'UserData');%get the interface data
-%IndexObj=SetData.IndexObj;
-huvmat=findobj('Name','uvmat');%find the current uvmat interface handle
-UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
-if isfield(UvData,'CurrentObjectIndex')
-    IndexObj=UvData.CurrentObjectIndex;
-else
-    IndexObj=[];
-end
-delete_object(IndexObj);
-
-
 % ------------------------------------------------------
 function Save_Callback(hObject, eventdata, handles)
 % ------------------------------------------------------
