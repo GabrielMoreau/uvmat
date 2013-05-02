@@ -42,7 +42,6 @@ list_fct={...
     'civ_3D';... function associated with the interface 'civ_3D.fig' for PIV in volume (TODO: combine with civ.m)
     'civ_3D.fig';...
     'civ_matlab';...% civ programs, Matlab version (called by civ.m, option Civprogram/Matlab in the upper menu bar)
-    'close_fig';...% function  activated when a figure is closed
     'copyfields';...% copy fields between two matlab structures
     'create_grid';...% called by the GUI geometry_calib to create a physical grid
     'create_grid.fig';...% GUI corresponding to create_grid.m

@@ -53,12 +53,18 @@ if ~isfield(ObjectData,'Type')|| isequal(ProjObject,ObjectData)||~isfield(ProjOb
     end
     return 
 end
-XMin=0;%default
+XMin=0;%default range for the graph
 XMax=0;
 YMin=0;
 YMax=0;
 ZMin=0;
 ZMax=0;
+XMinRange=[];%default range set by input
+XMaxRange=[];
+YMinRange=[];
+YMaxRange=[];
+ZMinRange=[];
+ZMaxRange=[];
 
 %% determine the plotting axes (with handle 'haxes')
 test_newobj=1;
@@ -98,38 +104,28 @@ end
 if isfield(ObjectData,'RangeX') && ~isempty(ObjectData.RangeX)
     XMax=max(ObjectData.RangeX);
     XMin=min(ObjectData.RangeX);
+        XMaxRange=max(ObjectData.RangeX);
+        if numel(ObjectData.RangeX)==2
+    XMinRange=min(ObjectData.RangeX);
+        end
 end
 if isfield(ObjectData,'RangeY')&&~isempty(ObjectData.RangeY)
     YMax=max(ObjectData.RangeY);
     YMin=min(ObjectData.RangeY);
+        YMaxRange=max(ObjectData.RangeY);
+        if numel(ObjectData.RangeY)==2
+    YMinRange=min(ObjectData.RangeY);
+        end
 end
 if isfield(ObjectData,'RangeZ')&&~isempty(ObjectData.RangeZ)
     ZMax=max(ObjectData.RangeZ);
     ZMin=min(ObjectData.RangeZ);
+    ZMaxRange=max(ObjectData.RangeZ);
+    ZMinRange=min(ObjectData.RangeZ);
 end
-switch ObjectData.Type
-    case 'points'
-        if strcmp(ObjectData.ProjMode,'projection')
-            YMax=max(XMax,YMax);
-            YMax=max(YMax,ZMax);
-        end
-    case {'rectangle','ellipse','volume'}
-%         if  isequal(YMax,0)
-%             ylim=get(haxes,'YLim');
-%             YMax=(ylim(2)-ylim(1))/100;
-%         end
-%         if isequal(XMax,0)
-%             XMax=YMax;%default
-%         end
-    case 'plane'
-        if  isequal(XMax,0)
-            xlim=get(haxes,'XLim');
-            XMax=xlim(2);
-        end
-        if  isequal(YMax,0)
-            ylim=get(haxes,'YLim');
-            YMax=ylim(2);
-        end
+if strcmp(ObjectData.Type,'points') && strcmp(ObjectData.ProjMode,'projection')
+    YMax=max(XMax,YMax);
+    YMax=max(YMax,ZMax);
 end
 sizcoord=size(ObjectData.Coord);
 
@@ -146,17 +142,86 @@ if test_line
         xline=[xline; ObjectData.Coord(1,1)];%closing the line
         yline=[yline; ObjectData.Coord(1,2)];
     elseif isequal(ObjectData.Type,'plane')|| isequal(ObjectData.Type,'volume') 
+        if ~isfield(ObjectData,'Angle')
+            ObjectData.Angle=[0 0 0];
+        end
         phi=ObjectData.Angle(3)*pi/180;%angle in radians
-        Xend_x=xline(1)+XMax*cos(phi);
-        Xend_y=yline(1)+XMax*sin(phi);
-        Xbeg_x=xline(1)+XMin*cos(phi);
-        Xbeg_y=yline(1)+XMin*sin(phi);
-        Yend_x=xline(1)-YMax*sin(phi);
-        Yend_y=yline(1)+YMax*cos(phi);
-        Ybeg_x=xline(1)-YMin*sin(phi);
-        Ybeg_y=yline(1)+YMin*cos(phi);
-        xline=[Xbeg_x Xend_x NaN Ybeg_x Yend_x];
-        yline=[Xbeg_y Xend_y NaN Ybeg_y Yend_y];
+        x0=xline(1); y0=yline(1);
+        xlim=get(haxes,'XLim');
+        ylim=get(haxes,'YLim');
+        graph_scale=max(abs(xlim(2)-xlim(1)),abs(ylim(2)-ylim(1)))/2;% estimate the length of axes plots
+        XMax=graph_scale;
+        YMax=graph_scale;
+        XMin=-graph_scale;
+        YMin=-graph_scale;
+        if  ~isempty(XMaxRange)
+            XMax=XMaxRange;
+        end
+        if  ~isempty(XMinRange)
+            XMin=XMinRange;
+        end
+        if  ~isempty(YMaxRange)
+            YMax=YMaxRange;
+        end
+        if  ~isempty(YMinRange)
+            YMin=YMinRange;
+        end   
+        % axes lines
+        xline=NaN(1,13);
+        xline(1)=x0+min(0,XMin)*cos(phi); % min end of the x axes
+        yline(1)=y0+min(0,XMin)*sin(phi);
+        xline(2)=x0+XMax*cos(phi);% max end of the x axes
+        yline(2)=y0+XMax*sin(phi);
+        xline(8)=x0-min(0,YMin)*sin(phi);% min end of the y axes
+        yline(8)=y0+min(0,YMin)*cos(phi);
+        xline(9)=x0-YMax*sin(phi);% max end of the y axes
+        yline(9)=y0+YMax*cos(phi);
+
+        %arrows on x axis
+        arrow_scale=graph_scale/20;
+        xline(3)=xline(2)-arrow_scale*cos(phi-pi/8);
+        yline(3)=yline(2)-arrow_scale*sin(phi-pi/8);
+        xline(5)=xline(2);
+        yline(5)=yline(2);
+        xline(6)=xline(2)-arrow_scale*cos(phi+pi/8);
+        yline(6)=yline(2)-arrow_scale*sin(phi+pi/8);
+        
+        %arrows on y axis
+        xline(10)=xline(9)-arrow_scale*cos(phi+pi/2-pi/8);
+        yline(10)=yline(9)-arrow_scale*sin(phi+pi/2-pi/8);
+        xline(12)=xline(9);
+        yline(12)=yline(9);
+        xline(13)=xline(9)-arrow_scale*cos(phi+pi/2+pi/8);
+        yline(13)=yline(9)-arrow_scale*sin(phi+pi/2+pi/8);     
+        %xline=[Xbeg_x Xend_x NaN Ybeg_x Yend_x];
+        %yline=[Xbeg_y Xend_y NaN Ybeg_y Yend_y];
+        %  dashed lines indicating bounds
+        xsup=NaN(1,5);
+        ysup=NaN(1,5);
+        if ~isempty(XMaxRange)
+            xsup(1)=xline(2)-YMin*sin(phi);
+            ysup(1)=yline(2)+YMin*cos(phi);
+            xsup(2)=xline(2)-YMax*sin(phi);
+            ysup(2)=yline(2)+YMax*cos(phi);
+        end
+        if ~isempty(YMaxRange)
+            xsup(2)=xline(2)-YMax*sin(phi);
+            ysup(2)=yline(2)+YMax*cos(phi);
+            xsup(3)=xline(9)+XMin*cos(phi);
+            ysup(3)=yline(9)+XMin*sin(phi);
+        end    
+        if ~isempty(XMinRange)
+            xsup(3)=xline(9)+XMin*cos(phi);
+            ysup(3)=yline(9)+XMin*sin(phi);
+            xsup(4)=x0+XMin*cos(phi)-YMin*sin(phi);
+            ysup(4)=y0+XMin*sin(phi)+YMin*cos(phi);
+        end  
+        if ~isempty(YMinRange)
+           xsup(4)=x0+XMin*cos(phi)-YMin*sin(phi);
+            ysup(4)=y0+XMin*sin(phi)+YMin*cos(phi);
+            xsup(5)=xline(8)-YMin*sin(phi);
+            ysup(5)=yline(8)+YMin*cos(phi);
+        end 
     end
     SubLineStyle='none';%default
     if isfield(ObjectData,'ProjMode')
@@ -257,68 +322,74 @@ PlotData=[];%default
 %% MODIFY AN EXISTING OBJECT PLOT
 if test_newobj==0;
     hh=hplot;
-    PlotData=get(hplot,'UserData');            
+    PlotData=get(hplot,'UserData');
     if test_line
         set(hplot,'XData',xline)
         set(hplot,'YData',yline)
-    %modify subobjects
-        if isfield(PlotData,'SubObject') 
-           if length(PlotData.SubObject)==2 && ~isequal(ObjectData.Type,'points')&& ~isequal(ObjectData.Type,'plane');
+        %modify subobjects
+        if isfield(PlotData,'SubObject')
+            if isequal(ObjectData.Type,'points')
+                if ~isequal(YMax,0)
+                    for ipt=1:min(length(PlotData.SubObject),size(ObjectData.Coord,1))
+                        set(PlotData.SubObject(ipt),'Position',[ObjectData.Coord(ipt,1)-YMax ObjectData.Coord(ipt,2)-YMax 2*YMax 2*YMax])
+                    end
+                    %complement missing points
+                    if length(PlotData.SubObject)>nbpoints% fpoints in excess on the graph
+                        for ii=nbpoints+1: length(PlotData.SubObject);
+                            if ishandle(PlotData.SubObject(ii))
+                                delete(PlotData.SubObject(ii))
+                            end
+                        end
+                    end
+                    %                NbDeformPoint=nbpoints;
+                    
+                    if nbpoints>length(PlotData.SubObject)
+                        for ipt=length(PlotData.SubObject)+1:nbpoints
+                            PlotData.SubObject(ipt)=rectangle('Curvature',[1 1],...
+                                'Position',[ObjectData.Coord(ipt,1)-YMax ObjectData.Coord(ipt,2)-YMax 2*YMax 2*YMax],'EdgeColor',col,...
+                                'LineStyle',SubLineStyle,'Tag','proj_object');
+                        end
+                    end
+                end
+            elseif length(PlotData.SubObject)==2
                 set(PlotData.SubObject(1),'XData',xinf);
                 set(PlotData.SubObject(1),'YData',yinf);
                 set(PlotData.SubObject(2),'XData',xsup);
                 set(PlotData.SubObject(2),'YData',ysup);
-           elseif isequal(ObjectData.Type,'points')&& ~isequal(YMax,0)
-               for ipt=1:min(length(PlotData.SubObject),size(ObjectData.Coord,1))
-                    set(PlotData.SubObject(ipt),'Position',[ObjectData.Coord(ipt,1)-YMax ObjectData.Coord(ipt,2)-YMax 2*YMax 2*YMax])
-               end
-               %complement missing points
-                if length(PlotData.SubObject)>nbpoints% fpoints in excess on the graph
-               for ii=nbpoints+1: length(PlotData.SubObject);
-                   if ishandle(PlotData.SubObject(ii))
-                        delete(PlotData.SubObject(ii))
-                   end
-               end
-%                NbDeformPoint=nbpoints;
-           end
-               if nbpoints>length(PlotData.SubObject)
-                   for ipt=length(PlotData.SubObject)+1:nbpoints
-                     PlotData.SubObject(ipt)=rectangle('Curvature',[1 1],...
-                  'Position',[ObjectData.Coord(ipt,1)-YMax ObjectData.Coord(ipt,2)-YMax 2*YMax 2*YMax],'EdgeColor',col,...
-                  'LineStyle',SubLineStyle,'Tag','proj_object');
-                   end
-               end                                         
-           end
+            elseif length(PlotData.SubObject)==1
+                set(PlotData.SubObject(1),'XData',xsup);
+                set(PlotData.SubObject(1),'YData',ysup);
+            end
         end
         if isfield(PlotData,'DeformPoint')
             NbDeformPoint=length(PlotData.DeformPoint);
-           if NbDeformPoint>nbpoints% fpoints in excess on the graph
-               for ii=nbpoints+1:NbDeformPoint;
-                   if ishandle(PlotData.DeformPoint(ii))
+            if NbDeformPoint>nbpoints% fpoints in excess on the graph
+                for ii=nbpoints+1:NbDeformPoint;
+                    if ishandle(PlotData.DeformPoint(ii))
                         delete(PlotData.DeformPoint(ii))
-                   end
-               end
-               NbDeformPoint=nbpoints;
-           end
-           for ipt=1:NbDeformPoint
-               if ishandle(PlotData.DeformPoint(ipt))
-                   if nbpoints>=ipt  
+                    end
+                end
+                NbDeformPoint=nbpoints;
+            end
+            for ipt=1:NbDeformPoint
+                if ishandle(PlotData.DeformPoint(ipt))
+                    if nbpoints>=ipt
                         set(PlotData.DeformPoint(ipt),'XData',xline(ipt),'YData',yline(ipt));
                     end
-               end
-           end
-           if nbpoints>length(PlotData.DeformPoint)
-               for ipt=length(PlotData.DeformPoint)+1:nbpoints
+                end
+            end
+            if nbpoints>length(PlotData.DeformPoint)
+                for ipt=length(PlotData.DeformPoint)+1:nbpoints
                     PlotData.DeformPoint(ipt)=line(xline(ipt),yline(ipt),'Color',col,'LineStyle','.','Tag','DeformPoint',...
                         'SelectionHighlight','off','UserData',hplot);
-               end
-               set(hplot,'UserData',PlotData)
-           end
+                end
+                set(hplot,'UserData',PlotData)
+            end
         end
     elseif (isequal(ObjectData.Type,'rectangle')||isequal(ObjectData.Type,'ellipse'))&&XMax>0 && YMax>0
-        set(hplot,'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax])          
+        set(hplot,'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax])
     end
-    if test_patch 
+    if test_patch
         for iobj=1:length(PlotData.SubObject)
             objtype=get(PlotData.SubObject(iobj),'Type');
             if isequal(objtype,'image')
@@ -352,37 +423,37 @@ if test_newobj
     hother=findobj('Tag','DeformPoint');
     set(hother,'Color','b');
     set(hother,'Selected','off')  
-    if isequal(ObjectData.Type,'points')
-        hh=line(ObjectData.Coord(:,1),ObjectData.Coord(:,2),'Color',col,'LineStyle','.','Marker','+');
-        for ipt=1:length(xline)
-              PlotData.DeformPoint(ipt)=line(ObjectData.Coord(ipt,1),ObjectData.Coord(ipt,2),'Color',...
-                  col,'LineStyle','.','SelectionHighlight','off','UserData',hh,'Tag','DeformPoint');
-              %create circle around each point
-              if ~isequal(YMax,0)
-                 PlotData.SubObject(ipt)=rectangle('Curvature',[1 1],...
-                  'Position',[ObjectData.Coord(ipt,1)-YMax ObjectData.Coord(ipt,2)-YMax 2*YMax 2*YMax],'EdgeColor',col,...
-                  'LineStyle',SubLineStyle,'Tag','proj_object');
-              end
-        end
-    elseif  strcmp(ObjectData.Type,'line')||strcmp(ObjectData.Type,'polyline')||...        
-          strcmp(ObjectData.Type,'polygon') ||strcmp(ObjectData.Type,'plane')||strcmp(ObjectData.Type,'volume')%  (isequal(ObjectData.Type,'polygon') & ~test_patch) |isequal(ObjectData.Type,'plane')
-        hh=line(xline,yline,'Color',col);
-        if ~strcmp(ObjectData.Type,'plane') && ~strcmp(ObjectData.Type,'volume')
-            PlotData.SubObject(1)=line(xinf,yinf,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');%draw sub-lines
-            PlotData.SubObject(2)=line(xsup,ysup,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');
-            for ipt=1:sizcoord(1)
+    switch ObjectData.Type
+        case 'points'
+            hh=line(ObjectData.Coord(:,1),ObjectData.Coord(:,2),'Color',col,'LineStyle','.','Marker','+');
+            for ipt=1:length(xline)
                 PlotData.DeformPoint(ipt)=line(ObjectData.Coord(ipt,1),ObjectData.Coord(ipt,2),'Color',...
-                      col,'LineStyle','none','Marker','.','Tag','DeformPoint','SelectionHighlight','off','UserData',hh);
+                    col,'LineStyle','.','SelectionHighlight','off','UserData',hh,'Tag','DeformPoint');
+                %create circle around each point
+                if ~isequal(YMax,0)
+                    PlotData.SubObject(ipt)=rectangle('Curvature',[1 1],...
+                        'Position',[ObjectData.Coord(ipt,1)-YMax ObjectData.Coord(ipt,2)-YMax 2*YMax 2*YMax],'EdgeColor',col,...
+                        'LineStyle',SubLineStyle,'Tag','proj_object');
+                end
             end
-        end
-    
-    elseif strcmp(ObjectData.Type,'rectangle')
-        hh=rectangle('Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax],'EdgeColor',col);   
-    elseif strcmp(ObjectData.Type,'ellipse')
-        hh=rectangle('Curvature',[1 1],'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax],'EdgeColor',col);
-    else
-        msgbox_uvmat('ERROR','unknown ObjectData.Type in plot_object.m')
-        return
+        case {'line','polyline','polygon'}
+            hh=line(xline,yline,'Color',col);
+                PlotData.SubObject(1)=line(xinf,yinf,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');%draw sub-lines
+                PlotData.SubObject(2)=line(xsup,ysup,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');
+                for ipt=1:sizcoord(1)
+                    PlotData.DeformPoint(ipt)=line(ObjectData.Coord(ipt,1),ObjectData.Coord(ipt,2),'Color',...
+                        col,'LineStyle','none','Marker','.','Tag','DeformPoint','SelectionHighlight','off','UserData',hh);
+                end
+        case {'plane','volume'}
+            hh=line(xline,yline,'Color',col);
+            PlotData.SubObject(1)=line(xsup,ysup,'Color',col,'LineStyle',SubLineStyle,'Tag','proj_object');
+        case 'rectangle'
+            hh=rectangle('Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax],'LineWidth',2,'EdgeColor',col);
+        case 'ellipse'
+            hh=rectangle('Curvature',[1 1],'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax],'EdgeColor',col);
+        otherwise
+            msgbox_uvmat('ERROR','unknown ObjectData.Type in plot_object.m')
+            return
     end
     set(hh,'Tag','proj_object')
      if test_patch

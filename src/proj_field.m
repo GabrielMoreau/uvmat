@@ -2202,13 +2202,13 @@ if isfield(FieldData,'CoordUnit')
 end
 
 %% store the properties of the projection object
-ListObject={'Type','ProjMode','RangeX','RangeY','RangeZ','Phi','Theta','Psi','Coord'};
+ListObject={'Name','Type','ProjMode','angle','RangeX','RangeY','RangeZ','DX','DY','DZ','Coord'};
 for ilist=1:length(ListObject)
     if isfield(ObjectData,ListObject{ilist})
         val=ObjectData.(ListObject{ilist});
         if ~isempty(val)
-            ProjData.(['Object' ListObject{ilist}])=val;
-            ProjData.ListGlobalAttribute=[ProjData.ListGlobalAttribute {['Object' ListObject{ilist}]}];
+            ProjData.(['ProjObject' ListObject{ilist}])=val;
+            ProjData.ListGlobalAttribute=[ProjData.ListGlobalAttribute {['ProjObject' ListObject{ilist}]}];
         end
     end   
 end

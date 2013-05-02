@@ -89,6 +89,7 @@ if exist('Field','var')
     else
         set(handles.Scalar,'Visible','off')
     end
+    
     errormsg=fill_GUI(PlotParamOut,hObject);
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR',errormsg)
@@ -393,11 +394,11 @@ end
 %-------------------------------------------------------------------
 function CheckFixLimits_Callback(hObject, eventdata, handles)
 test=get(handles.CheckFixLimits,'Value');
-if test
-    set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
-else
-    set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
-end
+% if test
+%     set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
+% else
+%     set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
+% end
 update_plot(handles)
  
  %-------------------------------------------------------------------
@@ -405,10 +406,8 @@ update_plot(handles)
 function CheckFixAspectRatio_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 if get(handles.CheckFixAspectRatio,'Value')
-    set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])
     update_plot(handles);
 else
-    set(handles.CheckFixAspectRatio,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
 end
 
@@ -416,7 +415,6 @@ end
 function num_AspectRatio_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 set(handles.CheckFixAspectRatio,'Value',1)% select the fixed aspect ratio button
-set(handles.CheckFixAspectRatio,'BackgroundColor',[1 1 0])% mark in yellow
 update_plot(handles);
 
 %-------------------------------------------------------------------
@@ -599,28 +597,28 @@ set_vec_col_bar(handles)
 function num_MinX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.CheckFixLimits,'Value',1) %suppress auto mode
-set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
+% set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
 function num_MaxX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.CheckFixLimits,'Value',1) %suppress auto mode
-set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
+% set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
 function num_MinY_Callback(hObject, eventdata, handles)
 %------------------------------------------
 set(handles.CheckFixLimits,'Value',1) %suppress auto mode
-set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
+% set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
 function num_MaxY_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.CheckFixLimits,'Value',1) %suppress auto mode
-set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
+% set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %-----------------------------------------------------------------
@@ -634,21 +632,21 @@ update_plot(handles)
 function num_MaxA_Callback(hObject, eventdata, handles)
 %--------------------------------------------
 set(handles.CheckFixScalar,'Value',1) %suppress auto mode
-set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
+% set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
 update_plot(handles)
 
 %-----------------------------------------------
 function CheckFixScalar_Callback(hObject, eventdata, handles)
 %--------------------------------------------
 test=get(handles.CheckFixScalar,'Value');
-if test
-    set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
-else
-    set(handles.CheckFixScalar,'BackgroundColor',[0.7 0.7 0.7])
-    update_plot(handles);
-%     set(handles.MinA,'String',num2str(ScalOut.MinA,3))
-%     set(handles.MaxA,'String',num2str(ScalOut.MaxA,3))
-end
+% if test
+%     set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
+% else
+%     set(handles.CheckFixScalar,'BackgroundColor',[0.7 0.7 0.7])
+%     update_plot(handles);
+% %     set(handles.MinA,'String',num2str(ScalOut.MinA,3))
+% %     set(handles.MaxA,'String',num2str(ScalOut.MaxA,3))
+% end
 
 %-------------------------------------------------------------------
 function CheckBW_Callback(hObject, eventdata, handles)
@@ -698,7 +696,7 @@ if test
 else
     update_plot(handles);
     %set(handles.VecScale,'String',num2str(ScalOut.VecScale,3))
-    set(handles.FixVec,'BackgroundColor',[0.7 0.7 0.7])
+%     set(handles.FixVec,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 %-------------------------------------------------------

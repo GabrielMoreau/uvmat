@@ -11,7 +11,7 @@
 %  and/or coord_y and/or coord_z (case of unstructured coordinates), or
 %  dimension variables (case of matrices). 
 %
-% function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,htext,PosColorbar)
+% function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColorbar)
 %
 % OUPUT:
 % PlotType: type of plot: 'text','line'(curve plot),'plane':2D view,'volume'

@@ -29,15 +29,20 @@ if ~exist('handles','var')
 end
 FigData=get(hObject,'UserData');
 if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is stored in UserData, its parent is the plotting axes of the rectangle
-    CurrentFig=get(get(FigData,'parent'),'parent');
+    hCurrentFig=get(get(FigData,'parent'),'parent');
 else
-    CurrentFig=hObject;%usual plot
+    hCurrentFig=hObject;%usual plot
 end
-hhCurrentFig=guidata(CurrentFig);%handles of the elements in the GUI containing the current figure (uvmat or view_field)
+hhCurrentFig=guidata(hCurrentFig);%handles of the elements in the GUI containing the current figure (uvmat or view_field)
 CheckZoom=get(hhCurrentFig.CheckZoom,'Value');% check for zoom on mode
 CheckZoomFig=get(hhCurrentFig.CheckZoomFig,'Value');% check for zoom sub fig creation mode
-test_zoom_draw=0;
+hPlotAxes=hhCurrentFig.PlotAxes';% handles of the main plot axes
+AxeData=get(hPlotAxes,'UserData');% data attached to the axis
 test_draw=0;%test for mouse drawing of object, =0 by default
+if isfield(AxeData,'Drawing')&& ~isempty(AxeData.Drawing)
+    test_draw=~isequal(AxeData.Drawing,'off');%=1 if mouse drawing of object is active
+end
+test_zoom_draw=0;
 test_object=0; %test for object editing or creation 
 test_edit_object=0;% edit test for mouse shap: an arrow
 test_ruler=0;%test for active ruler 
@@ -63,7 +68,7 @@ text_displ_2='';
 text_displ_3='';
 text_displ_4='';
 
-AxeData=[];%default
+% AxeData=[];%default
 xy=[];%default
 xy_fig=get(hObject,'CurrentPoint');% current point of the current figure (gcbo)
 pointershape='arrow';% default pointer is an arrow 
@@ -91,17 +96,12 @@ CurrentAxes=[];
 if strcmp(get(hchild,'Type'),'axes')
     CurrentAxes=hchild;
     xy=get(CurrentAxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
-    AxeData=get(CurrentAxes,'UserData');% data attached to the axis
-    if isfield(AxeData,'Drawing')&& ~isempty(AxeData.Drawing)
-        test_draw=~isequal(AxeData.Drawing,'off');%=1 if mouse drawing of object is active
-    end
     test_zoom_draw=test_draw && isequal(AxeData.Drawing,'zoom')&& isfield(AxeData,'CurrentOrigin') && isequal(get(gcf,'SelectionType'),'normal');
     test_object=test_draw && isfield(AxeData,'CurrentObject') && ~isempty(AxeData.CurrentObject) && ishandle(AxeData.CurrentObject);
-    %if ~test_edit_object && ~test_zoom_draw && ~test_ruler
     if ~test_edit_object  && ~test_ruler && ~CheckZoom
         pointershape='crosshair';%set pointer with cross shape (default when mouse is over an axis)
     end
-    FigData=get(CurrentFig,'UserData');
+    FigData=get(hCurrentFig,'UserData');
     tagaxes=get(CurrentAxes,'tag');
     if isfield(FigData,tagaxes)
         Field=FigData.(tagaxes);
@@ -129,8 +129,8 @@ if strcmp(get(hchild,'Type'),'axes')
                             if ~test_object && ~test_edit_object && ~test_ruler && ~CheckZoomFig
                                 pointershape='arrow'; %mouse indicates  the detection of a vector
                                 if isempty(hhh)
-                                    set(0,'CurrentFigure',CurrentFig)
-                                    set(CurrentFig,'CurrentAxes',CurrentAxes)
+                                    set(0,'CurrentFigure',hCurrentFig)
+                                    set(hCurrentFig,'CurrentAxes',CurrentAxes)
                                     rectangle('Curvature',[1 1],...
                                         'Position',[X(ivec)-Field.CoordMesh/2 Y(ivec)-Field.CoordMesh/2 Field.CoordMesh Field.CoordMesh],'EdgeColor','m',...
                                         'LineStyle','-','Tag','vector_marker');
@@ -231,8 +231,8 @@ if strcmp(get(hchild,'Type'),'axes')
                 hhh=findobj(CurrentAxes,'Tag','PIV_box_marker');
                 hhhh=findobj(CurrentAxes,'Tag','PIV_search_marker');
                 if isempty(hhh)
-                    set(0,'CurrentFigure',CurrentFig)
-                    set(CurrentFig,'CurrentAxes',CurrentAxes)
+                    set(0,'CurrentFigure',hCurrentFig)
+                    set(hCurrentFig,'CurrentAxes',CurrentAxes)
                     rectangle('Curvature',[0 0],...
                         'Position',[xround-ibx2 yround-iby2 2*ibx2 2*iby2],'EdgeColor','m',...
                         'LineStyle','-','Tag','PIV_box_marker');
@@ -419,4 +419,4 @@ if test_ruler && isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'ruler')
 end
 
 %% update the mouse pointer
-set(CurrentFig,'Pointer',pointershape);
+set(hCurrentFig,'Pointer',pointershape);

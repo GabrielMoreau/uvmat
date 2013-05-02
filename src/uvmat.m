@@ -2550,6 +2550,7 @@ if NbDim>1
     if isempty(UvData.ProjObject{1})
         UvData.ProjObject{1}.Type='plane';%main plotting plane
         UvData.ProjObject{1}.ProjMode='projection';%main plotting plane
+        UvData.ProjObject{1}.Coord=[0 0 0];
         UvData.ProjObject{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
         UvData.ProjObject{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
     end
@@ -4167,24 +4168,32 @@ function ListObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 list_str=get(handles.ListObject,'String');
 IndexObj=get(handles.ListObject,'Value');%present object selection
-
-%% The object  is displayed in set_object if this GUI is already opened
 UvData=get(handles.uvmat,'UserData');
 ObjectData=UvData.ProjObject{IndexObj};
-hset_object=findobj(allchild(0),'tag','set_object');
-if ~isempty(hset_object)
     ZBounds=0; % default
     if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
         ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
         ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
     end
-    ObjectData.Name=list_str{IndexObj};
+
+%% show object features if view_object isselected
+if get(handles.ViewObject,'value')
     set_object(ObjectData,[],ZBounds);
-    set(handles.ViewField,'Value',1)% show that the selected object in ListObject is currently visualised
 end
 
-%%  desactivate the edit object mode
+%% The object  is displayed in set_object if this GUI is already opened
+% 
+% hset_object=findobj(allchild(0),'tag','set_object');
+% if ~isempty(hset_object)
+% 
+%     ObjectData.Name=list_str{IndexObj};
+%     set_object(ObjectData,[],ZBounds);
+%     set(handles.ViewField,'Value',1)% show that the selected object in ListObject is currently visualised
+% end
+
+%%  desactivate the edit object mode for security 
 set(handles.edit_object,'Value',0) 
+
 % set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
 
 %% update the  plot on view_field if view_field is already openened
@@ -4273,8 +4282,7 @@ end
 function edit_object_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 hset_object=findobj(allchild(0),'Tag','set_object');
-if get(handles.edit_object,'Value')
-%     set(handles.edit_object,'BackgroundColor',[1,1,0])  
+if get(handles.edit_object,'Value') 
     %suppress the other options 
     set(handles.CheckZoom,'Value',0)
     CheckZoom_Callback(hObject, eventdata, handles)
@@ -4282,16 +4290,14 @@ if get(handles.edit_object,'Value')
     if ishandle(hgeometry_calib)
         hhgeometry_calib=guidata(hgeometry_calib);
         set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
-        set(hhgeometry_calib.edit_append,'BackgroundColor',[0.7 0.7 0.7])
     end
     set(handles.ViewObject,'value',1)
     ViewObject_Callback(hObject, eventdata, handles)
-else % desctivate object edit mode
-%     set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
+else % desactivate object edit mode
     if ~isempty(hset_object)% open the 
-        hhset_object=guidata(hset_object);
-        set(hhset_object.PLOT,'enable','off'); 
-        set(get(hset_object,'children'),'enable','inactive')
+        set(get(hset_object,'children'),'Enable','off')
+        hSAVE=findobj(hset_object,'Tag','SAVE');
+        set(hSAVE,'Enable','on')
     end
 end
 
@@ -4316,38 +4322,16 @@ if check_view %activate set_object
         ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
         ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
     end
-%     set(handles.ListObject_1,'Value',IndexObj);%restore ListObject selection after set_object deletion
     data=UvData.ProjObject{IndexObj};
     if ~isfield(data,'Type')% default plane
         data.Type='plane';
     end
-%     if isfield(UvData,'Field')
-%         Field=UvData.Field;
-%         if isfield(UvData.Field,'Mesh')&&~isempty(UvData.Field.Mesh)
-%             data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
-%             if strcmp(data.Type,'line')||strcmp(data.Type,'polyline')
-%                 data.RangeY=UvData.Field.Mesh;
-%             else
-%                 data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
-%             end
-%             data.DX=UvData.Field.Mesh;
-%             data.DY=UvData.Field.Mesh;
-%         end
-%         if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
-%             data.Coord=[0 0 0]; %default
-%         end
-%         if isfield(Field,'CoordUnit')
-%             data.CoordUnit=Field.CoordUnit;
-%         end
-%     end
     hset_object=set_object(data,[],ZBounds);
     hhset_object=guidata(hset_object);
     if get(handles.edit_object,'Value')% edit mode
-        set(hhset_object.PLOT,'Enable','on')
-        set(get(hset_object,'children'),'enable','on')
+        set(get(hset_object,'children'),'Enable','on')
     else
-        set(hhset_object.PLOT,'Enable','off')
-        set(get(hset_object,'children'),'enable','inactive')% deactivate the GUI except SAVE
+        set(get(hset_object,'children'),'Enable','off')% deactivate the GUI except SAVE
         set(hhset_object.SAVE,'Enable','on')
     end
 else
@@ -4770,28 +4754,30 @@ if ishandle(hgeometry_calib)
     set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
 end
 set(handles.edit_object,'Value',0)  %desactivate the object edit mode
+edit_object_Callback([],[],handles)
+set(handles.ViewObject,'Value',0) % desactivate view_object (new object created)
 set(handles.CheckZoomFig,'Value',0) %desactivate zoom sub fig
 set(handles.CheckZoom,'Value',0)    %desactivate the zoom action
 if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)     %delete the initial display of uvmat if no field has been entered yet
 end
 
-%% append a new line to the list of projection objects
-ListObject=get(handles.ListObject,'String');
-if isempty(ListObject)
-    ListObject={''};
-end
-if ~strcmp(ListObject{end},'')
-    ListObject=[ListObject;{''}]; %append a blank to the list (if nort already done) to indicate the creation of a new object
-    set(handles.ListObject,'String',ListObject)
-end
-IndexObj=length(ListObject);
-set(handles.ListObject,'Value',IndexObj)
+%% append a new line to the list of projection objects A METTRE PLUS TARD
+% ListObject=get(handles.ListObject,'String');
+% if isempty(ListObject)
+%     ListObject={''};
+% end
+% if ~strcmp(ListObject{end},'')
+%     ListObject=[ListObject;{''}]; %append a blank to the list (if nort already done) to indicate the creation of a new object
+%     set(handles.ListObject,'String',ListObject)
+% end
+% IndexObj=length(ListObject);
+% set(handles.ListObject,'Value',IndexObj)
 UvData=get(handles.uvmat,'UserData');
-UvData.ProjObject{IndexObj}=[]; %create a new empty object
-UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=handles.PlotAxes; % axes for plot_object
-UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
-set(handles.uvmat,'UserData',UvData)
+% UvData.ProjObject{IndexObj}=[]; %create a new empty object
+% UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=handles.PlotAxes; % axes for plot_object
+% UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
+% set(handles.uvmat,'UserData',UvData)
 
 %% initiate the new projection object
 data.Name=data.Type;% default name=type
@@ -4861,6 +4847,7 @@ set(handles.ListObject,'Value',IndexObj)
 hset_object=set_object(data);% call the set_object interface
 set(get(hset_object,'children'),'enable','on')% enable edit action on elements on GUI set_object
 set(handles.edit_object,'Value',0); %suppress the object edit mode
+edit_object_Callback([],[],handles)
 % set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
 set(handles.delete_object,'Visible','on')
 

@@ -152,29 +152,19 @@ if exist('data','var')
             set(handles.num_RangeZ_1,'String',num2str(min(data.RangeZ),3))
         end
     end  
-    if isfield(data,'Angle') && isequal(numel(data.Angle),3)
+    if ~isfield(data,'Angle')
+        data.Angle=[0 0 0];
+    end
+%     if isfield(data,'Angle') && isequal(numel(data.Angle),3)
          set(handles.num_Angle_1,'String',num2str(data.Angle(1)))
          set(handles.num_Angle_2,'String',num2str(data.Angle(2)))
          set(handles.num_Angle_3,'String',num2str(data.Angle(3)))
-    end
+%     end
 end
-% if enable_plot
-%    set(handles.PLOT,'enable','on')
-% else
-% enable the PLOT (REFRESH) button by default
-%defaul settings
-set(get(handles.set_object,'children'),'enable','on')
-set(handles.PLOT,'enable','off') 
-% end
-% huvmat=findobj(allchild(0),'tag','uvmat');
-% UvData=get(huvmat,'UserData');
-% pos_uvmat=get(huvmat,'Position');
-% %position the set_object GUI with respect to uvmat
-% if isfield(UvData,'SetObjectOrigin')
-%     pos_set_object(1:2)=UvData.SetObjectOrigin + pos_uvmat(1:2);
-%     pos_set_object(3:4)=UvData.SetObjectSize .* pos_uvmat(3:4);
-%     set(hObject,'Position',pos_set_object)
-% end
+set(get(handles.set_object,'children'),'enable','off')
+set(handles.SAVE,'enable','on')
+% set(handles.PLOT,'enable','off') 
+
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
@@ -194,7 +184,7 @@ if ~isempty(huvmat)
 %     set(hhuvmat.ViewObject_1,'value',0)% desactivate the two view buttons
     set(hhuvmat.ViewObject,'value',0)% 
     set(hhuvmat.edit_object,'Value',0)% desactivate the edit option
-    set(hhuvmat.edit_object,'BackgroundColor',[0.7 0.7 0.7])%put unactivated buttons to gree
+%    set(hhuvmat.edit_object,'BackgroundColor',[0.7 0.7 0.7])%put unactivated buttons to gree
     % deselect the object in ListObject when view_field is closed
     if isempty(findobj(allchild(0),'Tag','view_field'))
         ObjIndex=get(hhuvmat.ListObject,'Value');
@@ -449,7 +439,25 @@ huvmat=findobj('tag','uvmat');%find the current uvmat GUI handle
 UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat 
 hhuvmat=guidata(huvmat);%handles of the objects children of the  GUI uvmat
 ListObject=get(hhuvmat.ListObject,'String');% list of objects displayed in uvmat
-IndexObj=get(hhuvmat.ListObject,'Value');% index of the selected object for display in uvmat
+
+if isequal(get(hhuvmat.edit_object,'Value'),0) %we append a new object
+    ListObject=[ListObject;{''}];
+    IndexObj=length(ListObject);
+    set(hhuvmat.ListObject,'String',ListObject)
+    set(hhuvmat.ListObject,'Value',IndexObj)
+    UvData.ProjObject{IndexObj}=[]; %create a new empty object
+    UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=hhuvmat.PlotAxes; % axes for plot_object
+    UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
+else
+    % if ~strcmp(ListObject{end},'')
+    %     ListObject=[ListObject;{''}]; %append a blank to the list (if nort already done) to indicate the creation of a new object
+    %     set(handles.ListObject,'String',ListObject)
+    % end
+    % IndexObj=length(ListObject);  
+    % set(handles.uvmat,'UserData',UvData)    
+    IndexObj=get(hhuvmat.ListObject,'Value');% index of the selected object for display in uvmat
+end
+
 %set or modify(edit mode) the nameof the currently selected object
 detectname=1;
 ObjectNameNew=ObjectName;
@@ -473,6 +481,7 @@ ObjectName=ObjectNameNew;
 set(handles.Name,'String',ObjectName)% display the default name in set_object
 ListObject{IndexObj}=ObjectName;
 set(hhuvmat.ListObject,'String',ListObject);%complement the object list
+set(hhuvmat.ListObject_1,'String',ListObject);%complement the object list
 set(hhuvmat.ViewObject,'Value',1)% indicate that the currently selected objected is viewed on set_object
 check_handle=isfield(UvData.ProjObject{IndexObj},'DisplayHandle') && isfield(UvData.ProjObject{IndexObj}.DisplayHandle,'uvmat')...
     && ~isempty(UvData.ProjObject{IndexObj}.DisplayHandle.uvmat) && ishandle(UvData.ProjObject{IndexObj}.DisplayHandle.uvmat);
@@ -571,7 +580,7 @@ set(huvmat,'UserData',UvData)
 %% update the GUI uvmat
 set(hhuvmat.MenuEditObject,'enable','on')
 set(hhuvmat.edit_object,'Value',1) % set uvmat to object edit mode to allow further object update
-set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
+%set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
 set(hhuvmat.ViewField,'Value',1)
 % set(handles.PLOT,'enable','on')
 set(handles.PLOT,'BackgroundColor',[1 0 0])

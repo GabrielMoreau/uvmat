@@ -2,13 +2,14 @@
 %-----------------------------------
 function keyboard_callback(hObject,eventdata,handleshaxes)
 cur_axes=get(hObject,'CurrentAxes');%current plotting axes of the figure with handle hObject
-if ~isempty(eventdata) && isnumeric(eventdata)
-    xx=eventdata; % keyboard_callback called by mouse_down
-else
 xx=double(get(hObject,'CurrentCharacter')); %get the keyboard character
-end
 switch xx
     case {29,28,30,31}    %arrows for displacement
+        AxeData=get(cur_axes,'UserData');
+        if isfield(AxeData,'ZoomAxes')&&ishandle(AxeData.ZoomAxes)
+           cur_axes=AxeData.ZoomAxes;% move the field of the zoom sub-plot instead of the main axes  if it exsits
+           axes(cur_axes)
+        end
         if ~isempty(cur_axes)
             xlimit=get(cur_axes,'XLim');
             ylimit=get(cur_axes,'Ylim');
@@ -32,8 +33,6 @@ switch xx
                 rect([1 2])=[xlimit(1) ylimit(1)];
                 rect([3 4])=[xlimit(2)-xlimit(1) ylimit(2)-ylimit(1)];
                 set(hparentrect,'Position',rect)
-                hfig=get(hparentrect,'parent');
-                hfig=get(hfig,'parent');
             elseif isfield(AxeData,'LimEditBox')&& isequal(AxeData.LimEditBox,1)% update display of the GUI containing the axis (uvmat or view_field)
                 hh=guidata(hfig);
                 if isfield(hh,'num_MinX')

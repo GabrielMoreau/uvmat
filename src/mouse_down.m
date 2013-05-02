@@ -27,23 +27,23 @@ function xy=mouse_down(hObject,eventdata)
 AxeData=[];%default data stored on the current axes
 FigData=get(hObject,'UserData'); %default data stored on the current object
 if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is stored in UserData, its parent is the plotting axes of the rectangle
-    hcurrentfig=get(get(FigData,'parent'),'parent');%handle of the current GUI: zoom plot
+    hCurrentGUI=get(get(FigData,'parent'),'parent');%handle of the current GUI: zoom plot
 else
-    hcurrentfig=hObject; % handle of the current GUI: usual plot
+    hCurrentGUI=hObject; % handle of the current GUI: usual plot
 end
-hhcurrentfig=guidata(hcurrentfig);% tags of the children of the current GUI
+hhCurrentGUI=guidata(hCurrentGUI);% tags of the children of the current GUI
 CheckZoom=0;
-if isfield(hhcurrentfig,'CheckZoom') && get(hhcurrentfig.CheckZoom,'Value');%test for zoom action, first priority
+if isfield(hhCurrentGUI,'CheckZoom') && get(hhCurrentGUI.CheckZoom,'Value');%test for zoom action, first priority
     CheckZoom=1;
 end
 test_piv=isfield(FigData,'CivHandle');
-set(hcurrentfig,'Units','pixels')
-GUI_pos=get(hcurrentfig,'Position');%position of the GUI series on the screen (in pixels), used to position message boxes
-set(hcurrentfig,'Units','normalized')% back to current unit for fig position
+set(hCurrentGUI,'Units','pixels')
+GUI_pos=get(hCurrentGUI,'Position');%position of the GUI series on the screen (in pixels), used to position message boxes
+set(hCurrentGUI,'Units','normalized')% back to current unit for fig position
 
 %% determine the currently selected items
 hcurrentobject=gco;% current object handle (selected by the mouse)
-fig_tag=get(hcurrentfig,'Tag');
+CurrentGUI_tag=get(hCurrentGUI,'Tag');
 obj_tag=get(gco,'Tag');%tag of the currently selected object
 xy=[];%default
 xy_fig=get(hObject,'CurrentPoint');% current point of the current figure (gcbo)
@@ -62,7 +62,7 @@ if ~isempty(huvmat)
     hset_object=findobj(allchild(0),'tag','set_object');
     if ~isempty(hset_object)
         hPLOT=findobj(hset_object,'tag','PLOT');
-        test_create=strcmp(get(hPLOT,'enable'),'on') &&~test_edit;% create new object if set_object is in mode enable and uvmat not in mode 'edit_object'
+        test_create=strcmp(get(hPLOT,'enable'),'on') &&~get(hhuvmat.edit_object,'Value');% create new object if set_object is in mode enable and uvmat not in mode 'edit_object'
     end
     test_edit_vect=get(hhuvmat.edit_vect,'Value') && ~test_create && ~(isequal(obj_tag,'proj_object')||isequal(obj_tag,'DeformPoint')) ;%test for vector editing,  priority 4
     test_cal=isequal(get(hhuvmat.MenuCalib,'checked'),'on');% test for calibration
@@ -80,8 +80,9 @@ end
 
 %% loop on all the objects in the current figure (selected by the last mouse click)
 hchildren=get(hObject,'Children');%handles of all objects in the current figure
-check_visible=strcmp(get(hchildren,'Visible'),'on');% if visible='on', =0 otherwise
-hchildren=hchildren(check_visible); %kkep only the visible children
+check_visible=strcmp(get(hchildren,'Visible'),'on')& ~strcmp(get(hchildren,'Type'),'uimenu');% if visible='on', =0 otherwise
+hchildren=hchildren(check_visible); %keep only the visible children
+set(hchildren,'Units','normalized');
 PosChildren=get(hchildren,'Position');% set of object positions
 if iscell(PosChildren)% only one child
     PosLength=cellfun('length',PosChildren);% set of vector lengths for object positions
@@ -95,23 +96,7 @@ xy_fig_mat=ones(size(PosChildren,1),1)*xy_fig;% mouse position set to a matrix
 check_pos=xy_fig_mat >= PosChildren(:,1:2) & xy_fig_mat <= PosChildren(:,1:2)+PosChildren(:,3:4);% compare object to mouse position
 ind_object=find(check_pos(:,1) & check_pos(:,2),1);% select the index of the (first) object under the mouse
 hchild=hchildren(ind_object);% corresponding object handle
-if isempty(hchild)
-%     if test_edit||test_create
-%         hPlotAxes=findobj(hcurrentfig,'Tag','PlotAxes');
-%         if ~isempty( hPlotAxes)
-%             PosPlotAxes=get(hPlotAxes,'Position');
-%             PosDiff(1)=xy_fig(1)-PosPlotAxes(1)-PosPlotAxes(3);% distance to the right axes edge
-%             PosDiff(2)=PosPlotAxes(1)-xy_fig(1);% distance to the left axes edge
-%             PosDiff(3)=xy_fig(2)-PosPlotAxes(1)-PosPlotAxes(3);% distance to the top axes edge
-%             PosDiff(4)=PosPlotAxes(2)-xy_fig(2);% distance to the low axes edge
-%             [tild,ind_sel]=max(PosDiff);
-%             list_arrow=[29 28 30 31];
-%             arrow_option=list_arrow(ind_sel);
-%             keyboard_callback(hcurrentfig,arrow_option)
-%             return
-%         end
-%     end
-else
+if ~isempty(hchild)
     htype=get(hchild,'Type');%type of object child of the current figure
     switch htype
         %if the mouse is over an axis, look at the data
@@ -128,7 +113,7 @@ else
             
             if test_edit_vect 
                 ivec=[];
-                FigData=get(hcurrentfig,'UserData');
+                FigData=get(hCurrentGUI,'UserData');
                 tagaxes=get(hchild,'tag');
                 if isfield(FigData,tagaxes)
                     Field=FigData.(tagaxes);
@@ -199,7 +184,7 @@ if CheckZoom
 end
 
 %% creation of a zoom subfig
-if isfield(hhcurrentfig,'CheckZoomFig') && get(hhcurrentfig.CheckZoomFig,'Value')
+if isfield(hhCurrentGUI,'CheckZoomFig') && get(hhCurrentGUI.CheckZoomFig,'Value')
     AxeData.Drawing='zoom'; %initiate drawing mode
     AxeData.CurrentObject=[];%unselect objects
     set(hchild,'UserData',AxeData);
@@ -211,7 +196,7 @@ if isempty(huvmat)%further options require the uvmat GUI
 end
 
 %% ruler has second priority 
-if test_ruler
+if test_ruler && ~isempty(xy)
     AxeData.RulerCoord(1,1:2)=xy(1,1:2);
     AxeData.RulerHandle=line([xy(1,1) xy(1,1)],[xy(1,2) xy(1,2)],'Color','m','Tag','ruler');
     AxeData.Drawing='ruler';
@@ -286,7 +271,7 @@ if  test_edit
             end
             IndexObj=ObjectData.IndexObj;
                     %indicate on the list of the GUI uvmat which object has been selected
-            if strcmp(get(hcurrentfig,'tag'),'uvmat') %if the uvmat graph has been selected, object projection is on the other frame view_field
+            if strcmp(get(hCurrentGUI,'tag'),'uvmat') %if the uvmat graph has been selected, object projection is on the other frame view_field
 %                 IndexObj=get(hhuvmat.ListObject,'Value');
 %                 if IndexObj>IndexObj_old(1)
 %                     IndexObj=[IndexObj_old(1) IndexObj];
@@ -330,68 +315,93 @@ if  test_edit
 end
 
 %%  create  projection  object
-if  test_create && ~isempty(xy) 
+if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt')
     % activate this option if the GUI set_object is opened
-    if ~isempty(hset_object) && ~strcmp(get(hcurrentfig,'SelectionType'),'alt')
-        sethandles=guidata(hset_object);% handles of the elements in the GUI set_object
-        ObjectData=read_GUI(hset_object); %read object parameters in the GUI set_object
-        IndexObj=length(UvData.ProjObject);
-        %initiate a new object (no data .Coord yet recorded)
-        if ~isfield(UvData.ProjObject{IndexObj},'Coord');
-            ObjectData.Coord=[];
-            ObjectNameNew=ObjectData.Name;
-            if isempty(ObjectNameNew)
-                ObjectNameNew=ObjectData.Type;
-            end
-            % add an index to the object name if the proposed name already exists
-            vers=0;% index of the name
-            ListObject=get(hhuvmat.ListObject,'String');
-            detectname=1;
-            while ~isempty(detectname)
-                detectname=find(strcmp(ObjectNameNew,ListObject),1);%test the existence of the proposed name in the list
-                if detectname% if the object name already exists
-                    indstr=regexp(ObjectNameNew,'\D');
-                    if indstr(end)<length(ObjectNameNew) %object name ends by a number
-                        vers=str2double(ObjectNameNew(indstr(end)+1:end))+1;
-                        ObjectNameNew=[ObjectNameNew(1:indstr(end)) num2str(vers)];
-                    else
-                        vers=vers+1;
-                        ObjectNameNew=[ObjectNameNew(1:indstr(end)) '_' num2str(vers)];
-                    end
+    sethandles=guidata(hset_object);% handles of the elements in the GUI set_object
+    ObjectData=read_GUI(hset_object); %read object parameters in the GUI set_object
+    IndexObj=length(UvData.ProjObject);
+    % if the currently selected object is already finished, a new object is initiated
+    if ~isfield(UvData.ProjObject{IndexObj},'CreateMode')
+        IndexObj=IndexObj+1;%start new object
+        ObjectData.Coord=[];
+        ObjectNameNew=ObjectData.Name;
+        if isempty(ObjectNameNew)
+            ObjectNameNew=ObjectData.Type;
+        end
+        % add an index to the object name if the proposed name already exists
+        vers=0;% index of the name
+        ListObject=get(hhuvmat.ListObject,'String');
+        detectname=1;
+        while ~isempty(detectname)
+            detectname=find(strcmp(ObjectNameNew,ListObject),1);%test the existence of the proposed name in the list
+            if detectname% if the object name already exists
+                indstr=regexp(ObjectNameNew,'\D');
+                if indstr(end)<length(ObjectNameNew) %object name ends by a number
+                    vers=str2double(ObjectNameNew(indstr(end)+1:end))+1;
+                    ObjectNameNew=[ObjectNameNew(1:indstr(end)) num2str(vers)];
+                else
+                    vers=vers+1;
+                    ObjectNameNew=[ObjectNameNew(1:indstr(end)) '_' num2str(vers)];
                 end
             end
-            ObjectName=ObjectNameNew;
-            set(sethandles.Name,'String',ObjectName)% display the default name in set_object
-            if isempty(ListObject)
-                ListObject={ObjectName};
-            else
-                ListObject{end}=ObjectName;
-            end
-            set(hhuvmat.ListObject,'String',ListObject);%complement the object list
-            set(hhuvmat.ListObject_1,'String',ListObject);%complement the object list
+        end
+        ObjectName=ObjectNameNew;
+        set(sethandles.Name,'String',ObjectName)% display the default name in set_object
+        ListObject=[ListObject;{ObjectName}];
+        set(hhuvmat.ListObject,'String',ListObject);%complement the object list
+        set(hhuvmat.ListObject_1,'String',ListObject);%complement the object list
+        if strcmp(CurrentGUI_tag,'uvmat')
             set(hhuvmat.ListObject,'Value',IndexObj)
-            set(hhuvmat.ViewObject,'Value',1)
+        else
+            set(hhuvmat.ListObject_1,'Value',IndexObj)
         end
-        ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordinates marked by the mouse to the object
-                                                         %TODO replace 0 by z coord for 3D       
-        hobject=UvData.ProjObject{IndexObj}.DisplayHandle.(fig_tag);
-        if isempty(hobject)
-            hobject=haxes;
-        end
-        ProjObject=UvData.ProjObject{get(hhuvmat.ListObject_1,'Value')};
-        AxeData.CurrentObject=plot_object(ObjectData,ProjObject,hobject,'m');%draw the object and its handle becomes AxeData.CurrentObject
-        UvData.ProjObject{IndexObj}=ObjectData;
-        UvData.ProjObject{IndexObj}.DisplayHandle.(fig_tag)=AxeData.CurrentObject;% attribute the current plot object handle to the Object
-        set(huvmat,'UserData',UvData)
-        PlotData=get(AxeData.CurrentObject,'UserData');
-        PlotData.IndexObj=IndexObj;
-        set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph (memory used for mouse motion)
-        AxeData.Drawing='create';% flag for mouse motion
-        %show object coordinates in the GUI set_object
-        h_set_object=findobj(allchild(0),'Tag','set_object');
-        hh_set_object=guidata(h_set_object);
-        set(hh_set_object.Coord,'Data',ObjectData.Coord);
+        UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=hhuvmat.PlotAxes; % axes for plot_object
+        UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
+        set(hhuvmat.ViewObject,'Value',1)
     end
+    ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordinates marked by the mouse to the object
+    %TODO replace 0 by z coord for 3D
+    hobject=UvData.ProjObject{IndexObj}.DisplayHandle.(CurrentGUI_tag);
+    if isempty(hobject)
+        hobject=haxes;
+    end
+    if strcmp(CurrentGUI_tag,'uvmat')
+        ProjObject=UvData.ProjObject{get(hhuvmat.ListObject_1,'Value')};
+    else
+        ProjObject=UvData.ProjObject{get(hhuvmat.ListObject,'Value')};
+    end
+    AxeData.CurrentObject=plot_object(ObjectData,ProjObject,hobject,'m');%draw the object and its handle becomes AxeData.CurrentObject
+    UvData.ProjObject{IndexObj}=ObjectData;
+    UvData.ProjObject{IndexObj}.DisplayHandle.(CurrentGUI_tag)=AxeData.CurrentObject;% attribute the current plot object handle to the Object
+    UvData.ProjObject{IndexObj}.CreateMode='on';% mark the object as in the course of creation
+    set(huvmat,'UserData',UvData)
+    PlotData=get(AxeData.CurrentObject,'UserData');
+    PlotData.IndexObj=IndexObj;
+    set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph (memory used for mouse motion)
+    AxeData.Drawing='create';% flag for mouse motion
+    
+    
+    %initiate a new object (no data .Coord yet recorded)
+    %if ~isfield(UvData.ProjObject{IndexObj},'Coord');
+    %     ObjectData.Coord=[];
+    
+    %             if isempty(ListObject)
+    %                 ListObject={ObjectName};
+    %             else
+    %                 ListObject{end}=ObjectName;
+    %             end
+    %                 UvData.ProjObject{IndexObj}=[]; %create a new empty object
+    %     UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=hhuvmat.PlotAxes; % axes for plot_object
+    %     UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
+    
+    %         PlotData=get(AxeData.CurrentObject,'UserData');
+    %         PlotData.IndexObj=IndexObj;
+    %         set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph (memory used for mouse motion)
+    %         AxeData.Drawing='create';% flag for mouse motion
+    %show object coordinates in the GUI set_object
+    h_set_object=findobj(allchild(0),'Tag','set_object');
+    hh_set_object=guidata(h_set_object);
+    set(hh_set_object.Coord,'Data',ObjectData.Coord);
 end
 
 %% create calibration points if the GUI geometry_calib is opened, if the main axes PlotAxes of uvmat has ben selected
@@ -474,10 +484,10 @@ if test_edit_vect && ~isempty(ivec)
     else
         Field.FF(ivec)=0;
     end
-    PlotParam=read_GUI(hcurrentfig);
+    PlotParam=read_GUI(hCurrentGUI);
     plot_field(Field,haxes,PlotParam);
     eval(['FigData.' tagaxes '=Field;'])%record the modified field in FigData
-    set(hcurrentfig,'UserData',FigData);
+    set(hCurrentGUI,'UserData',FigData);
 end  
 set(haxes,'UserData',AxeData);
 
