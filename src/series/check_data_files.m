@@ -44,7 +44,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.ProjObject='off';%can use projection object(option 'off'/'on',
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='';%set the output dir extension (blank=no output dir)
-return
+    return
 end
 %%%%%%%%%%%%  STANDARD PART  %%%%%%%%%%%%
 
@@ -54,6 +54,9 @@ if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 end
+hseries=findobj(allchild(0),'Tag','series');
+RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
+WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 %% root input file(s) and type
 RootPath=Param.InputTable(:,1);
@@ -69,8 +72,8 @@ end
 % The cell array filecell is the list of input file names, while
 % filecell{iview,fileindex}:
 %        iview: line in the table corresponding to a given file series
-%        fileindex: file index within  the file series, 
-% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
+%        fileindex: file index within  the file series,
+% i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 %%%%%%%%%%%%
 NbSlice=1;%default
@@ -81,10 +84,10 @@ nbview=numel(i1_series);%number of input file series (lines in InputTable)
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
-nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices) 
+nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices)
 nbfield=nbfield_i*NbSlice; %total number of fields after adjustement
 
-%determine the file type on each line from the first input file 
+%determine the file type on each line from the first input file
 ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:nbview
@@ -100,9 +103,9 @@ for iview=1:nbview
         Tabchar{1}=filecell{iview,1};%info.Filename;
         Tabchar{2}='';
         Tabchar{3}=[num2str(FileInfo.FrameRate) ' frames/s '];
-%         Tabchar{4}='';
-%         Tabchar{5}=['  compression' FileInfo.VideoCompression];
-%         Tabchar{6}=[ 'quality ' num2str(FileInfo.Quality)];
+        %         Tabchar{4}='';
+        %         Tabchar{5}=['  compression' FileInfo.VideoCompression];
+        %         Tabchar{6}=[ 'quality ' num2str(FileInfo.Quality)];
     else
         Tabchar={};
         %LOOP ON SLICES
@@ -111,37 +114,34 @@ for iview=1:nbview
             filefound={};
             datnum=zeros(1,nbfield_j);
             for ifile=1:nbfield_i
-                if checkrun
-                    stopstate=get(Param.RUNHandle,'BusyAction');
-                    update_waitbar(Param.WaitbarHandle,ifile/nbfield_i)
+                update_waitbar(WaitbarHandle,ifile/nbfield_i)
+                if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+                    disp('program stopped by user')
+                    break
+                end
+                file=filecell{iview,index_slice(ifile)};
+                [Path,Name,ext]=fileparts(file);
+                detect=exist(file,'file'); % check the existence of the file
+                if detect==0
+                    lastfield='not found';
                 else
-                    stopstate='queue';
-                end
-                if isequal(stopstate,'queue')% enable STOP command
-                    file=filecell{iview,index_slice(ifile)};
-                    [Path,Name,ext]=fileparts(file);
-                    detect=exist(file,'file'); % check the existence of the file
-                    if detect==0
-                        lastfield='not found';
-                    else
-                        datfile=dir(file);
-                        if isfield(datfile,'datenum')
-                            datnum(ifile)=datfile.datenum;
-                            filefound(ifile)={datfile.name};
-                        end
-                        lastfield='';
-                        [FileType{iview},FileInfo,Object]=get_file_type(file);
-                        if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
-                            if isfield(FileInfo,'CivStage')
-                                liststage={'civ1','fix1','patch1','civ2','fix2','patch2'};
-                                lastfield=liststage{FileInfo.CivStage};
-                            end
-                        end
-                        lastfield=[FileType{iview} ', ' lastfield];
+                    datfile=dir(file);
+                    if isfield(datfile,'datenum')
+                        datnum(ifile)=datfile.datenum;
+                        filefound(ifile)={datfile.name};
                     end
-                    Tabchar(1,i_slice)={['slice #' num2str(i_slice)]};
-                    Tabchar(ifile+1,i_slice)={[file '...' lastfield]};
+                    lastfield='';
+                    [FileType{iview},FileInfo,Object]=get_file_type(file);
+                    if strcmp(FileType{iview},'civx')||strcmp(FileType{iview},'civdata')
+                        if isfield(FileInfo,'CivStage')
+                            liststage={'civ1','fix1','patch1','civ2','fix2','patch2'};
+                            lastfield=liststage{FileInfo.CivStage};
+                        end
+                    end
+                    lastfield=[FileType{iview} ', ' lastfield];
                 end
+                Tabchar(1,i_slice)={['slice #' num2str(i_slice)]};
+                Tabchar(ifile+1,i_slice)={[file '...' lastfield]};
             end
         end
         if isempty(filefound)
