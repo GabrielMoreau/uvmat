@@ -102,7 +102,7 @@ FileExt=Param.InputTable(:,5);
 %        fileindex: file index within  the file series, 
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
-nbfield_j=size(j1_series{1},1); %nb of fields for the j index (bursts or volume slices)
+nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
 [FileType{1},FileInfo{1},VideoObject{1}]=get_file_type(filecell{1,1});% type of input file
@@ -149,13 +149,10 @@ end
 %% main loop on images
 j1=[];%default
 for ifile=1:nbfield
-            update_waitbar(WaitbarHandle,index/nbfield)
+            update_waitbar(WaitbarHandle,ifile/nbfield)
     if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
-    end
-    if ~isequal(stopstate,'queue') % enable STOP command
-        break
     end
     if ~isempty(j1_series)&&~isequal(j1_series,{[]})
         j1=j1_series{1}(ifile);
