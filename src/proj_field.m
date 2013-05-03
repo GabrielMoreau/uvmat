@@ -936,23 +936,23 @@ end
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 
 %% reproduce initial plane position and angle
-if isfield(FieldData,'PlaneCoord')&&length(FieldData.PlaneCoord)==3
-   if length(ProjData.ObjectCoord)==3% if the projection plane has a z coordinate
-       if ~isequal(ProjData.PlaneCoord(3),ProjData.ObjectCoord) %check the consistency with the z coordinate of the field plane (set by calibration)
+if isfield(FieldData,'PlaneCoord')&&length(FieldData.PlaneCoord)==3&& isfield(ProjData,'ProjObjectCoord')
+   if length(ProjData.ProjObjectCoord)==3% if the projection plane has a z coordinate
+       if ~isequal(ProjData.PlaneCoord(3),ProjData.ProjObjectCoord) %check the consistency with the z coordinate of the field plane (set by calibration)
            errormsg='inconsistent z position for field and projection plane';
            return
        end
    else % the z coordinate is set only by the field plane (by calibration)
-       ProjData.ObjectCoord(3)=FieldData.PlaneCoord(3);
+       ProjData.ProjObjectCoord(3)=FieldData.PlaneCoord(3);
    end
    if isfield(FieldData,'PlaneAngle')
-       if isfield(ProjData,'ObjectAngle')
-           if ~isequal(FieldData.PlaneAngle,ProjData.ObjectAngle) %check the consistency with the z coordinate of the field plane (set by calibration)
+       if isfield(ProjData,'ProjObjectAngle')
+           if ~isequal(FieldData.PlaneAngle,ProjData.ProjObjectAngle) %check the consistency with the z coordinate of the field plane (set by calibration)
            errormsg='inconsistent plane angle for field and projection plane';
            return
            end
        else
-        ProjData.ObjectAngle=FieldData.PlaneAngle;
+        ProjData.ProjObjectAngle=FieldData.PlaneAngle;
        end
     end
 end
