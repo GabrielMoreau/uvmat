@@ -117,17 +117,20 @@ if ~isempty(hchild)
                 tagaxes=get(hchild,'tag');
                 if isfield(FigData,tagaxes)
                     Field=FigData.(tagaxes);
-                    [CellVarIndex,NbDim,VarType]=find_field_cells(Field);%analyse the physical fields contained in Field
-                    for icell=1:numel(CellVarIndex)%look for all physical fields
+                    [CellInfo,NbDim,errormsg]=find_field_cells(Field);%analyse the physical fields contained in Field
+                    if isempty(errormsg)
+                    for icell=1:numel(CellInfo)%look for all physical fields
                         if NbDim(icell)==2 % select 2D field
-                            if  isfield(Field,'CoordMesh') && ~isempty(Field.CoordMesh)&& ~isempty(VarType{icell}.coord_x) && ~isempty(VarType{icell}.coord_y)%case of unstructured data
-                                X=Field.(Field.ListVarName{VarType{icell}.coord_x});
-                                Y=Field.(Field.ListVarName{VarType{icell}.coord_y});
+                            if  isfield(Field,'CoordMesh') && ~isempty(Field.CoordMesh)&&...
+                                    ~isempty(CellInfo{icell}.VarIndex_coord_x) && ~isempty(CellInfo{icell}.VarIndex_coord_y)%case of unstructured data
+                                X=Field.(Field.ListVarName{CellInfo{icell}.VarIndex_coord_x});
+                                Y=Field.(Field.ListVarName{CellInfo{icell}.VarIndex_coord_y});
                                 flag_vec=(X<(xy(1,1)+Field.CoordMesh/4) & X>(xy(1,1)-Field.CoordMesh/4)) & ...%flagx=1 for the vectors with x position selected by the mouse
                                     (Y<(xy(1,2)+Field.CoordMesh/4) & Y>(xy(1,2)-Field.CoordMesh/4));%f
                                 ivec=find(flag_vec,1);% search the (first) selected vector index ivec
                             end
                         end
+                    end
                     end
                 end
             end
@@ -172,15 +175,24 @@ if ~isempty(hchild)
     end
 end
 
-%% delete the current zoom rectangle
-% if isfield(AxeData,'CurrentRectZoom') && ~isempty(AxeData.CurrentRectZoom) && ishandle(AxeData.CurrentRectZoom)
-%     delete(AxeData.CurrentRectZoom)
-%     AxeData.CurrentRectZoom=[];
-% end
-
 %% zoom has first priority, stop here
 if CheckZoom 
     return
+end
+
+%% Creation of a display window zoom of text_display
+if isequal(get(hObject,'SelectionType'),'alt') && strcmp(htype,'axes') && ~test_edit && ~test_create 
+    set(0,'Unit','pixels')
+    GUISize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right   
+    Width=300;% fig width in points (1/72 inch)
+    Height=200;
+    Left=GUI_pos(1)+GUI_pos(3)-Width; %right edge close to the right, with margin=40
+    Bottom=GUI_pos(2)+GUI_pos(4)-Height; %put fig at top right
+    hfig_text=figure('Name','text_display','MenuBar','none','NumberTitle','off','Position',[Left,Bottom,Width,Height]);
+    AxeData.htext_display=uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.05 0.9 0.9],'Max',2,'BackgroundColor',[1 1 1],...
+        'FontUnits','points','FontSize',14);
+    set(hchild,'UserData',AxeData);
+    return %leave the function once a uicontrol has been selected
 end
 
 %% creation of a zoom subfig
@@ -379,25 +391,7 @@ if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt
     PlotData.IndexObj=IndexObj;
     set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph (memory used for mouse motion)
     AxeData.Drawing='create';% flag for mouse motion
-    
-    
-    %initiate a new object (no data .Coord yet recorded)
-    %if ~isfield(UvData.ProjObject{IndexObj},'Coord');
-    %     ObjectData.Coord=[];
-    
-    %             if isempty(ListObject)
-    %                 ListObject={ObjectName};
-    %             else
-    %                 ListObject{end}=ObjectName;
-    %             end
-    %                 UvData.ProjObject{IndexObj}=[]; %create a new empty object
-    %     UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=hhuvmat.PlotAxes; % axes for plot_object
-    %     UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
-    
-    %         PlotData=get(AxeData.CurrentObject,'UserData');
-    %         PlotData.IndexObj=IndexObj;
-    %         set(AxeData.CurrentObject,'UserData',PlotData); %record the object index in the graph (memory used for mouse motion)
-    %         AxeData.Drawing='create';% flag for mouse motion
+
     %show object coordinates in the GUI set_object
     h_set_object=findobj(allchild(0),'Tag','set_object');
     hh_set_object=guidata(h_set_object);
@@ -474,7 +468,7 @@ if test_edit_vect && ~isempty(ivec)
     %create the error flag FF if it does not exist
     if ~isfield(Field,'FF')
         Field.ListVarName=[Field.ListVarName 'FF'];
-        Field.VarDimName=[Field.VarDimName Field.VarDimName{VarType{icell}.coord_x}];
+        Field.VarDimName=[Field.VarDimName Field.VarDimName{CellInfo{icell}.VarIndex_coord_x}];
         nbvar=length(Field.ListVarName);
         Field.VarAttribute{nbvar}.Role='errorflag';
         Field.FF=zeros(size(Field.X));

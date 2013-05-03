@@ -2550,7 +2550,7 @@ if NbDim>1
     if isempty(UvData.ProjObject{1})
         UvData.ProjObject{1}.Type='plane';%main plotting plane
         UvData.ProjObject{1}.ProjMode='projection';%main plotting plane
-        UvData.ProjObject{1}.Coord=[0 0 0];
+       % UvData.ProjObject{1}.Coord=[0 0 0];
         UvData.ProjObject{1}.DisplayHandle.uvmat=[]; %plane not visible in uvmat
         UvData.ProjObject{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
     end
@@ -2618,7 +2618,6 @@ if NbDim<=1
             set(handles.(list{1}),'Visible','off')
         end
     end
-    %write_plot_param(handles,PlotParamOut) %update the auto plot parameters
     
 %% 2D or 3D fieldname are generally projected
 else
@@ -2944,28 +2943,29 @@ if ~isempty(message) && ~isequal(message.UserWrite,1)
      msgbox_uvmat('ERROR',['no writting access to ' FileName])
      return
 end
-test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
-test_civ1=isequal(get(handles.VelType,'BackgroundColor'),[1 1 0]);
+MenuVelType=get(handles.VelType,'String');
+test_civ2=strcmp(MenuVelType{get(handles.VelType,'Value')},'civ2');
+test_civ1=strcmp(MenuVelType{get(handles.VelType,'Value')},'civ1');
 if ~test_civ2 && ~test_civ1
     msgbox_uvmat('ERROR','manual correction only possible for CIV1 or CIV2 velocity fields')
 end 
 if test_civ2
-    nbname='nb_vectors2';
-   flagname='vec2_FixFlag';
-   attrname='fix2';
+    nbname='nb_vec_2';
+   flagname='Civ2_FF';
+   CivStage=5;
 end
 if test_civ1
-    nbname='nb_vectors';
-   flagname='vec_FixFlag';
-   attrname='fix';
+    nbname='nb_vec_1';
+   flagname='Civ1_FF';
+    CivStage=2;
 end
 %write fix flags in the netcdf file
 UvData=get(handles.uvmat,'UserData');
 hhh=which('netcdf.open');% look for built-in matlab netcdf library
-if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
+if ~isequal(hhh,'')% case of  builtin Matlab netcdf library
     nc=netcdf.open(FileName,'NC_WRITE'); 
     netcdf.reDef(nc);
-    netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),attrname,1);
+    netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'CivStage',CivStage);
     dimid = netcdf.inqDimID(nc,nbname); 
     try
         varid = netcdf.inqVarID(nc,flagname);% look for already existing fixflag variable
@@ -3727,7 +3727,7 @@ end
 %% delete drawn objects if the output CooordUnit is different from the previous one
 if ~strcmp(CoordUnit,CoordUnitPrev)
     set(handles.CheckFixLimits,'Value',0)
-set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
+% set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
     hother=findobj('Tag','proj_object');%find all the proj objects
     for iobj=1:length(hother)
         delete_object(hother(iobj))
@@ -3776,28 +3776,28 @@ end
 function num_MinX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.CheckFixLimits,'Value',1) %suppress auto mode
-set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
+% set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
 function num_MaxX_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.CheckFixLimits,'Value',1) %suppress auto mode
-set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
+% set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
 function num_MinY_Callback(hObject, eventdata, handles)
 %------------------------------------------
 set(handles.CheckFixLimits,'Value',1) %suppress auto mode
-set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
+% set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %------------------------------------------------------------------------
 function num_MaxY_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.CheckFixLimits,'Value',1) %suppress auto mode
-set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
+% set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
 update_plot(handles);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3807,7 +3807,7 @@ update_plot(handles);
 function num_MinA_Callback(hObject, eventdata, handles)
 %------------------------------------------
 set(handles.CheckFixScalar,'Value',1) %suppress auto mode
-set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
+% set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
 MinA=str2double(get(handles.num_MinA,'String'));
 MaxA=str2double(get(handles.num_MaxA,'String'));
 if MinA>MaxA% switch minA and maxA in case of error
@@ -3823,7 +3823,7 @@ update_plot(handles);
 function num_MaxA_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.CheckFixScalar,'Value',1) %suppress auto mode
-set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
+% set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
 MinA=str2double(get(handles.num_MinA,'String'));
 MaxA=str2double(get(handles.num_MaxA,'String'));
 if MinA>MaxA% switch minA and maxA in case of error
@@ -3840,9 +3840,9 @@ function CheckFixScalar_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 test=get(handles.CheckFixScalar,'Value');
 if test
-    set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
+%     set(handles.CheckFixScalar,'BackgroundColor',[1 1 0])
 else
-    set(handles.CheckFixScalar,'BackgroundColor',[0.7 0.7 0.7])
+%     set(handles.CheckFixScalar,'BackgroundColor',[0.7 0.7 0.7])
     update_plot(handles);
 end
 
@@ -3900,11 +3900,11 @@ function CheckFixVectors_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 test=get(handles.CheckFixVectors,'Value');
 if test
-    set(handles.CheckFixVectors,'BackgroundColor',[1 1 0])
+%     set(handles.CheckFixVectors,'BackgroundColor',[1 1 0])
 else
     update_plot(handles);
     %set(handles.num_VecScale,'String',num2str(ScalOut.num_VecScale,3))
-    set(handles.CheckFixVectors,'BackgroundColor',[0.7 0.7 0.7])
+%     set(handles.CheckFixVectors,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 %------------------------------------------------------------------------
@@ -4852,21 +4852,21 @@ edit_object_Callback([],[],handles)
 set(handles.delete_object,'Visible','on')
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% MenuEdit Callbacks
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%------------------------------------------------------------------------
-function MenuEditObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-set(handles.edit_object,'Value',1)
-edit_Callback(hObject, eventdata, handles)
-
-%------------------------------------------------------------------------
-function MenuEditVectors_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-set(handles.edit_vect,'Visible','on')
-set(handles.edit_vect,'Value',1)
-edit_vect_Callback(hObject, eventdata, handles)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % MenuEdit Callbacks
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %------------------------------------------------------------------------
+% function MenuEditObject_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% set(handles.edit_object,'Value',1)
+% edit_Callback(hObject, eventdata, handles)
+% 
+% %------------------------------------------------------------------------
+% function MenuEditVectors_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% set(handles.edit_vect,'Visible','on')
+% set(handles.edit_vect,'Value',1)
+% edit_vect_Callback(hObject, eventdata, handles)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MenuTools Callbacks
@@ -5045,6 +5045,10 @@ if isempty(val)
 else
     set(handles.ListObject,'Value',val);
     flag=1;
+    if ~isfield(UvData.Field,'A')
+            msgbox_uvmat('ERROR','an image needs to be opened to set the mask size');
+    return
+    end
     npx=size(UvData.Field.A,2);
     npy=size(UvData.Field.A,1);
     xi=0.5:npx-0.5;
@@ -5373,5 +5377,3 @@ else
         set(handles.record,'Visible','off')
     end
 end
-
-

@@ -171,8 +171,8 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
             set(hhuvmat.ViewField,'Value',1);%
             set(hhuvmat.edit_object,'Value',1);%           
             set(hhuvmat.edit_object,'Enable','on');%
-            set(hhuvmat.MenuEditObject,'Enable','on');%
-            set(hhuvmat.MenuEdit,'Enable','on');%
+%            set(hhuvmat.MenuEditObject,'Enable','on');%
+%            set(hhuvmat.MenuEdit,'Enable','on');%
             set(get(h_set_object,'children'),'Enable','on')
         end
         UvData.ProjObject{IndexObj}=ObjectData;
@@ -375,40 +375,6 @@ if test_ruler && ~isempty(xy)
     AxeData.Drawing='off';%exit the ruler drawing mode
 end
 
-%% display the data of the current object selected with the mouse right click
-if isequal(get(hcurrentfig,'SelectionType'),'alt') && ~CheckZoom && (~isfield(AxeData,'Drawing')||~isequal(AxeData.Drawing,'create'))
-    hother=findobj('Tag','proj_object');%find all the proj objects
-    nbselect=0;
-    %test the existence of selected objects:
-    for iproj=1:length(hother);
-        iselect=isequal(get(hother(iproj),'Selected'),'on');%reset all the proj objects in 'blue' by default
-        nbselect=nbselect+iselect;
-    end
-    hother=findobj('Tag','proj_object','Type','line');%find all the proj objects
-    set(hother,'Color','b');%reset all the proj objects in 'blue' by default
-    set(hother,'Selected','off')
-    hother=findobj('Tag','proj_object','Type','rectangle');
-    set(hother,'EdgeColor','b');
-    set(hother,'Selected','off')
-    hother=findobj('Tag','proj_object','Type','patch');
-    set(hother,'FaceColor','b');   
-    if isequal(get(gco,'Type'),'image')
-        currentobj=get(gco,'parent');%parent axes of the image
-    else 
-        currentobj=gco;%default
-    end
-%     if ((nbselect==0) && isequal(get(currentobj,'Type'),'axes')) || isequal(currentobj,huvmat)
-%         hcurrentfig=get(currentobj,'parent');
-%         figname=get(hcurrentfig,'name');
-%         eval(['global Data_' figname])
-%         eval(['Data_' figname '=get(currentobj,''UserData'')']);
-%         evalin('base',['global Data_' figname])%make CurData global in the workspace
-%         objtype=get(currentobj,'Type');
-%         display(['UserData of ' objtype ':'])
-%         evalin('base',['Data_' figname]) %display CurData in the workspace
-%         commandwindow %brings the Matlab command window to the front
-%     end
-end
 
 %% update 
 if test_drawing==0

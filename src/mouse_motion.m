@@ -38,6 +38,10 @@ CheckZoom=get(hhCurrentFig.CheckZoom,'Value');% check for zoom on mode
 CheckZoomFig=get(hhCurrentFig.CheckZoomFig,'Value');% check for zoom sub fig creation mode
 hPlotAxes=hhCurrentFig.PlotAxes';% handles of the main plot axes
 AxeData=get(hPlotAxes,'UserData');% data attached to the axis
+htext_display(1)=handles.text_display;
+if isfield(AxeData,'htext_display')&&ishandle(AxeData.htext_display)
+    htext_display(2)=AxeData.htext_display;
+end
 test_draw=0;%test for mouse drawing of object, =0 by default
 if isfield(AxeData,'Drawing')&& ~isempty(AxeData.Drawing)
     test_draw=~isequal(AxeData.Drawing,'off');%=1 if mouse drawing of object is active
@@ -287,9 +291,11 @@ if ~isempty(text_displ_1)
     if ~isempty(ind_blank)
         text_displ(ind_blank)=[];
     end
-    set(handles.text_display,'String',text_displ)
+    %set(handles.text_display,'String',text_displ)
+    set(htext_display,'String',text_displ)
 else
-   set(handles.text_display,'String',get(handles.text_display,'UserData'))
+   %set(handles.text_display,'String',get(handles.text_display,'UserData'))
+   set(htext_display,'String',get(handles.text_display,'UserData'))
 end
 
 %%%%%%%%%%%%%

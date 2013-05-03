@@ -578,7 +578,7 @@ end
 set(huvmat,'UserData',UvData)
 
 %% update the GUI uvmat
-set(hhuvmat.MenuEditObject,'enable','on')
+% set(hhuvmat.MenuEditObject,'enable','on')
 set(hhuvmat.edit_object,'Value',1) % set uvmat to object edit mode to allow further object update
 %set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
 set(hhuvmat.ViewField,'Value',1)
