@@ -43,7 +43,7 @@ function ParamOut=merge_proj(Param)
 %% set the input elements needed on the GUI series when the function is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
-    ParamOut.WholeIndexRange='on';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
     ParamOut.NbSlice='off'; %nbre of slices ('off' by default)
     ParamOut.VelType='one';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     ParamOut.FieldName='one';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
@@ -63,7 +63,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
 end
 
 %%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
-ParamOut=[] %default output
+ParamOut=[]; %default output
 %% read input parameters from an xml file if input is a file name (batch mode)
 checkrun=1;
 if ischar(Param)
@@ -133,18 +133,6 @@ if size(time,1)>1
 end
 
 %% coordinate transform or other user defined transform
-% transform_fct='';%default fct handle
-% if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
-%     if isdeployed
-%         transform_fct=Param.FieldTransform.TransformName;
-%         dd=phys([]);%activate phys for compilation
-%     else
-%         currentdir=pwd;
-%         cd(Param.FieldTransform.TransformPath)
-%         transform_fct=str2func(Param.FieldTransform.TransformName);
-%         cd (currentdir)
-%     end
-% end
 transform_fct='';%default fct handle
 if isfield(Param,'FieldTransform')&&~isempty(Param.FieldTransform.TransformName)
         currentdir=pwd;
@@ -165,16 +153,12 @@ else
     return
 end
 for iview=1:NbView
-	if ~isequal(CheckImage{iview},CheckImage{1})||~isequal(CheckNc{iview},CheckNc{1})
+    if ~isequal(CheckImage{iview},CheckImage{1})||~isequal(CheckNc{iview},CheckNc{1})
         displ_uvmat('ERROR','input set of input series: need  either netcdf either image series',checkrun)
-    return
+        return
     end
 end
 NomTypeOut=NomType;% output file index will indicate the first and last ref index in the series
-% if checkrun==1
-%     ParamOut.Specific=[];%no specific parameter
-%     return %stop here for interactive input (option Param.Specific='?')
-% end
 
 %% Set field names and velocity types
 %use Param.InputFields for all views
@@ -212,7 +196,7 @@ for index=1:NbField
             Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
         end
 
-        %% transform the input field (e.g; phys) if requested
+        %% transform the input field (e.g; phys) if requested (no transform involving two input fields)
         if ~isempty(transform_fct)
             if nargin(transform_fct)>=2
                 Data{iview}=transform_fct(Data{iview},XmlData{iview});
@@ -220,24 +204,25 @@ for index=1:NbField
                 Data{iview}=transform_fct(Data{iview});
             end
         end
-%          Data{iview}=phys(Data{iview},XmlData{iview});
-        %% check whether tps is needed, then calculate tps coefficients if needed
-        check_tps=0;
-        if isfield(Param.InputFields,'FieldName')
-            if ischar(Param.InputFields.FieldName)
-                Param.InputFields.FieldName={Param.InputFields.FieldName};
-            end
-        else
-            Param.InputFields.FieldName={};
-        end
-        for ilist=1:numel(Param.InputFields.FieldName)
-            switch Param.InputFields.FieldName{ilist}
-                case {'vort','div','strain'}
-                    check_tps=1;
-            end
-        end
 
-        %% calculate tps coeff if needed
+        %% check whether tps is needed, then calculate tps coefficients if needed
+%         check_tps=0;
+%         if isfield(Param.InputFields,'FieldName')
+%             if ischar(Param.InputFields.FieldName)
+%                 Param.InputFields.FieldName={Param.InputFields.FieldName};
+%             end
+%         else
+%             Param.InputFields.FieldName={};
+%         end
+%         for ilist=1:numel(Param.InputFields.FieldName)
+%             switch Param.InputFields.FieldName{ilist}
+%                 case {'vort','div','strain'}
+%                     check_tps=1;
+%             end
+%         end
+
+        
+         %% calculate tps coefficients if needed
         check_proj_tps= isfield(Param,'ProjObject')&&~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'interp_tps')&&~isfield(Data{iview},'Coord_tps');
         Data{iview}=tps_coeff_field(Data{iview},check_proj_tps);
 
