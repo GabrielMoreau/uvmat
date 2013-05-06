@@ -186,10 +186,12 @@ for ilist=1:numel(list_tps)
         DataOut=rmfield(DataOut,list_tps{ilist});
     end
 end
-if isfield(DataOut,'VarAttribute')&&isfield(DataOut.VarAttribute{3},'VarIndex_tps')
+if isfield(DataOut,'VarAttribute') && numel(DataOut.VarAttribute)>=3 && isfield(DataOut.VarAttribute{3},'VarIndex_tps')
     DataOut.VarAttribute{3}=rmfield(DataOut.VarAttribute{3},'VarIndex_tps');
 end
-
+if isfield(DataOut,'VarAttribute')&& numel(DataOut.VarAttribute)>=4 && isfield(DataOut.VarAttribute{4},'VarIndex_tps')
+    DataOut.VarAttribute{4}=rmfield(DataOut.VarAttribute{4},'VarIndex_tps');
+end
 if ~isempty(ind_remove)
     DataOut.ListVarName(ind_remove)=[];
     DataOut.VarDimName(ind_remove)=[];
