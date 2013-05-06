@@ -1,12 +1,13 @@
 %'update_imadoc': update an xml file with geometric calibration parameters
 %--------------------------------------------------------------------------
-%  function update_imadoc(GeometryCalib,outputfile)
+%  function update_imadoc(Struct,outputfile)
 %
 %INPUT:
-% GeometryCalib: structure containing the calibration parameters
+% Struct: structure containing the calibration parameters
 % outputfile: xml file to modify
+% StructName : Name of the field in the xml file
 %-------------------------------------------------------------
-function errormsg=update_imadoc(GeometryCalib,outputfile)
+function errormsg=update_imadoc(Struct,outputfile,StructName)
 errormsg='';
 testappend=0;
 %% backup the output file if it already exist, and read it
@@ -28,10 +29,10 @@ if exist(outputfile,'file');%=1 if the output file already exists, 0 else
     if strcmp(title,'ImaDoc')
         testappend=1;
         %if the xml file is  ImaDoc
-        uid_calib=find(t,'ImaDoc/GeometryCalib');
-        if isempty(uid_calib)  %if GeometryCalib does not already exists, create it
-            [t,uid_calib]=add(t,1,'element','GeometryCalib');
-        else %if GeometryCalib already exists, delete its content
+        uid_calib=find(t,['ImaDoc/' StructName]);
+        if isempty(uid_calib)  %if Struct does not already exists, create it
+            [t,uid_calib]=add(t,1,'element',StructName);
+        else %if Struct already exists, delete its content
             uid_child=children(t,uid_calib);
             t=delete(t,uid_child);
         end
@@ -43,30 +44,30 @@ if ~testappend
     t=xmltree;
     t=set(t,1,'name','ImaDoc');
     % in case of movie (avi file), copy timing info in the new xml file
-    [pp,outputroot]=fileparts(outputfile);
+%    [pp,outputroot]=fileparts(outputfile);
     %     imainfo=[];
-    if exist(fullfile(pp,[outputroot '.avi']),'file')
-        FileName=fullfile(pp,[outputroot '.avi']);
-        hhh=which('videoreader');
-        if isempty(hhh)%use old video function of matlab
-            imainfo=aviinfo(FileName);
-            imainfo.FrameRate=imainfo.FramesPerSecond;
-            imainfo.NumberOfFrames=imainfo.NumFrames;
-        else %use video function videoreader of matlab
-            imainfo=get(videoreader(FileName));
-        end
-        if ~isempty(imainfo)
-            [t,uid_camera]=add(t,1,'element','Camera');
-            Camera.TimeUnit='s';
-            Camera.BurstTiming.Time=0;
-            Camera.BurstTiming.Dti=1/imainfo.FrameRate;
-            Camera.BurstTiming.NbDti=imainfo.NumberOfFrames-1;
-            t=struct2xml(Camera,t,uid_camera);
-        end
-    end
-    [t,uid_calib]=add(t,1,'element','GeometryCalib');
+%     if exist(fullfile(pp,[outputroot '.avi']),'file')
+%         FileName=fullfile(pp,[outputroot '.avi']);
+%         hhh=which('videoreader');
+%         if isempty(hhh)%use old video function of matlab
+%             imainfo=aviinfo(FileName);
+%             imainfo.FrameRate=imainfo.FramesPerSecond;
+%             imainfo.NumberOfFrames=imainfo.NumFrames;
+%         else %use video function videoreader of matlab
+%             imainfo=get(videoreader(FileName));
+%         end
+%         if ~isempty(imainfo)
+%             [t,uid_camera]=add(t,1,'element','Camera');
+%             Camera.TimeUnit='s';
+%             Camera.BurstTiming.Time=0;
+%             Camera.BurstTiming.Dti=1/imainfo.FrameRate;
+%             Camera.BurstTiming.NbDti=imainfo.NumberOfFrames-1;
+%             t=struct2xml(Camera,t,uid_camera);
+%         end
+%     end
+    [t,uid_calib]=add(t,1,'element',StructName);
 end
 
 %% save the output file
-t=struct2xml(GeometryCalib,t,uid_calib); 
+t=struct2xml(Struct,t,uid_calib); 
 save(t,outputfile);

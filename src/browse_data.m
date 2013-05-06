@@ -702,7 +702,7 @@ for iexp=1:length(List.Experiment)
                             set(handles.ListXml,'Value',Value(ilistxml))
                             drawnow
                             xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,FileName);
-                            update_imadoc(DataviewData.GeometryCalib,xmlfullname)
+                            update_imadoc(DataviewData.GeometryCalib,xmlfullname,'GeometryCalib')
                             display([xmlfullname ' updated'])
                             break
                         end
@@ -719,7 +719,7 @@ for iexp=1:length(List.Experiment)
                                     set(handles.ListXml,'Value',Value(ilistxml))
                                     drawnow
                                     xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,RecordName,FileName);
-                                    update_imadoc(DataviewData.GeometryCalib,xmlfullname)
+                                    update_imadoc(DataviewData.GeometryCalib,xmlfullname,'GeometryCalib')
                                     display([xmlfullname ' updated'])
                                     break
                                 end

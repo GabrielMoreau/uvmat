@@ -934,6 +934,9 @@ end
 
 %% initiate Matlab  structure for physical field
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
+if ~isempty(errormsg)
+    return
+end
 
 %% reproduce initial plane position and angle
 if isfield(FieldData,'PlaneCoord')&&length(FieldData.PlaneCoord)==3&& isfield(ProjData,'ProjObjectCoord')
@@ -1043,7 +1046,7 @@ for icell=1:length(CellInfo)
         %% case of input fields with unstructured coordinates
         case 'scattered'
             if strcmp(ProjMode{icell},'interp_tps')
-                continue %skip for interp_tps (needs tps field cell)
+                continue %skip for next cell (needs tps field cell)
             end
             coord_x=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)});% initial x coordinates 
             coord_y=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)});% initial y coordinates

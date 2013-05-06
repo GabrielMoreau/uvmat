@@ -418,6 +418,18 @@ function PLOT_Callback(hObject, eventdata, handles)
 set(handles.PLOT,'BackgroundColor',[1 1 0])
 drawnow
 
+%% update the object in the GUI series if relevant
+if strcmp(get(handles.set_object,'Name'),'edit_object_series')
+    hseries=findobj(allchild(0),'Tag','series');
+    if ~isempty(hseries)
+        SeriesData=get(hseries,'UserData');
+    SeriesData.ProjObject=read_GUI(handles.set_object);%read the parameters defining the object in the GUI set_object
+    set(hseries,'UserData',SeriesData);
+    end
+    set(handles.PLOT,'BackgroundColor',[1 0 0])
+    return
+end
+
 %% read the object parameters in the GUI set_object
 ObjectData=read_GUI(handles.set_object);%read the parameters defining the object in the GUI set_object
 if iscell(ObjectData.Coord)%check for empty line
@@ -448,17 +460,11 @@ if isequal(get(hhuvmat.edit_object,'Value'),0) %we append a new object
     UvData.ProjObject{IndexObj}=[]; %create a new empty object
     UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=hhuvmat.PlotAxes; % axes for plot_object
     UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
-else
-    % if ~strcmp(ListObject{end},'')
-    %     ListObject=[ListObject;{''}]; %append a blank to the list (if nort already done) to indicate the creation of a new object
-    %     set(handles.ListObject,'String',ListObject)
-    % end
-    % IndexObj=length(ListObject);  
-    % set(handles.uvmat,'UserData',UvData)    
+else    
     IndexObj=get(hhuvmat.ListObject,'Value');% index of the selected object for display in uvmat
 end
 
-%set or modify(edit mode) the nameof the currently selected object
+%set or modify(edit mode) the name of the currently selected object
 detectname=1;
 ObjectNameNew=ObjectName;
 vers=0;% index of the name
@@ -494,7 +500,6 @@ if check_handle
 else
     UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=hhuvmat.PlotAxes; %axes taken as object display handle by defualt
 end
-%set(hhuvmat.edit_object,'Value',1)% set the current object to edit mode
 
 %% plot the field projected on the object
 hview_field=[];%default

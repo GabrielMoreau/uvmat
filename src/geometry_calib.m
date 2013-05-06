@@ -187,7 +187,7 @@ if ~exist(outputfile,'file') && ~isempty(SubDirBase)
         [success,message]=copyfile(oldxml,outputfile);%copy the old xml file to a new one with the new convention
     end
 end
-errormsg=update_imadoc(GeometryCalib,outputfile);% introduce the calibration data in the xml file
+errormsg=update_imadoc(GeometryCalib,outputfile,'GeometryCalib');% introduce the calibration data in the xml file
 if ~strcmp(errormsg,'')
     msgbox_uvmat('ERROR',errormsg);
 end
@@ -243,7 +243,7 @@ for ilist=1:numel(OutPut.Experiment)
             [success,message]=copyfile(oldxml,XmlName);%copy the old xml file to a new one with the new convention
         end
     end
-    errormsg=update_imadoc(GeometryCalib,XmlName);% introduce the calibration data in the xml file
+    errormsg=update_imadoc(GeometryCalib,XmlName,'GeometryCalib');% introduce the calibration data in the xml file
     if ~strcmp(errormsg,'')
         msgbox_uvmat('ERROR',errormsg);
     else
@@ -726,7 +726,7 @@ if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
         filebase=[filebase '~'];
     end
     outputfile=[filebase '.xml'];
-    errormsg=update_imadoc(GeometryCalib,outputfile);
+    errormsg=update_imadoc(GeometryCalib,outputfile,'GeometryCalib');
     if ~strcmp(errormsg,'')
         msgbox_uvmat('ERROR',errormsg);
     end

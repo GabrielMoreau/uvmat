@@ -905,7 +905,6 @@ end
 %% set length of waitbar
 displ_time(handles)
 
-
 %% set default options in menu 'Fields'
 switch FileType
     case {'civx','civdata'}
@@ -1906,6 +1905,16 @@ if ~isempty(SeriesData)
     nb_civ=numel(find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType)));
     nb_netcdf=numel(find(strcmp('netcdf',SeriesData.FileType)));
 end
+if nb_civ>=1
+    menu=set_veltype_display(SeriesData.FileInfo{1}.CivStage,SeriesData.FileType{1});
+    set(handles.VelType,'String',[{'*'};menu])
+    if nb_civ>=2
+        menu=set_veltype_display(SeriesData.FileInfo{2}.CivStage,SeriesData.FileType{2});
+        set(handles.VelType_1,'String',[{'*'};menu])
+    end
+end
+        
+    
 
 %% Check whether alphabetical sorting of input Subdir is alowed by the Action fct  (for multiples series entries)
 if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& size(Series.InputTable,1)>1
@@ -2246,13 +2255,16 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckObject.
-function CheckObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+function CheckObject_Callback(hObject, eventdata, handles)
+
 hset_object=findobj(allchild(0),'tag','set_object');%find the set_object interface handle
-value=get(handles.CheckObject,'Value');
-if value
+if get(handles.CheckObject,'Value')
     SeriesData=get(handles.series,'UserData');
-    if ~(isfield(SeriesData,'ProjObject')&&~isempty(SeriesData.ProjObject))
+    if isfield(SeriesData,'ProjObject') && ~isempty(SeriesData.ProjObject)
+        set(handles.ViewObject,'Value',1)
+        ViewObject_Callback(hObject, eventdata, handles)
+    else
         if ishandle(hset_object)
             uistack(hset_object,'top')% show the GUI set_object if opened
         else
@@ -2287,10 +2299,12 @@ if value
         SeriesData.ProjObject=ProjObject;
         set(handles.series,'UserData',SeriesData);
     end
+    set(handles.EditObject,'Visible','on');
     set(handles.DeleteObject,'Visible','on');
     set(handles.ViewObject,'Visible','on');
     set(handles.ProjObject,'Visible','on');
 else
+    set(handles.EditObject,'Visible','off');
     set(handles.DeleteObject,'Visible','off');
     set(handles.ViewObject,'Visible','off');
     if ~ishandle(hset_object)
@@ -2298,12 +2312,62 @@ else
     end
     set(handles.ProjObject,'Visible','off');
 end
-%set(handles.series,'UserData',SeriesData)
+
+%------------------------------------------------------------------------
+% --- Executes on button press in ViewObject.
+%------------------------------------------------------------------------
+function ViewObject_Callback(hObject, eventdata, handles)
+
+if get(handles.ViewObject,'Value')
+    set(handles.EditObject,'Value',0)
+	UserData=get(handles.series,'UserData');
+    hset_object=set_object(UserData.ProjObject);
+    set(hset_object,'Name','view_object_series')
+else
+    hset_object=findobj(allchild(0),'Tag','set_object');
+    if ~isempty(hset_object)
+        delete(hset_object)
+    end 
+end
+
+%------------------------------------------------------------------------
+% --- Executes on button press in EditObject.
+%------------------------------------------------------------------------
+function EditObject_Callback(hObject, eventdata, handles)
+
+if get(handles.EditObject,'Value')
+    set(handles.ViewObject,'Value',0)
+	UserData=get(handles.series,'UserData');
+    hset_object=set_object(UserData.ProjObject);
+    set(hset_object,'Name','edit_object_series')
+    set(get(hset_object,'Children'),'Enable','on')
+else
+    hset_object=findobj(allchild(0),'Tag','set_object');
+    if ~isempty(hset_object)
+        delete(hset_object)
+    end 
+end
+
+%------------------------------------------------------------------------
+% --- Executes on button press in DeleteObject.
+%------------------------------------------------------------------------
+function DeleteObject_Callback(hObject, eventdata, handles)
+
+if get(handles.DeleteObject,'Value')
+	SeriesData=get(handles.series,'UserData');
+    SeriesData.ProjObject=[];
+    set(handles.series,'UserData',SeriesData)
+    set(handles.ProjObject,'String','')
+    set(handles.CheckObject,'Value',0)
+    set(handles.DeleteObject,'Visible','off')
+    set(handles.ViewObject,'Visible','off')
+    set(handles.DeleteObject,'Value',0)
+end
 
 %--------------------------------------------------------------
 function CheckMask_Callback(hObject, eventdata, handles)
-value=get(handles.CheckMask,'Value');
-if value
+
+if get(handles.CheckMask,'Value')
     msgbox_uvmat('ERROR','not implemented yet')
 end
 %--------------------------------------------------------------
@@ -2742,33 +2806,6 @@ if strcmp(ActionExt,'.sh')
 end
 
 
-function ActionInput_Callback(hObject, eventdata, handles)
-
-
-% --- Executes on button press in DeleteObject.
-function DeleteObject_Callback(hObject, eventdata, handles)
-if get(handles.DeleteObject,'Value')
-	SeriesData=get(handles.series,'UserData');
-    SeriesData.ProjObject=[];
-    set(handles.series,'UserData',SeriesData)
-    set(handles.ProjObject,'String','')
-    set(handles.CheckObject,'Value',0)
-    set(handles.DeleteObject,'Visible','off')
-    set(handles.ViewObject,'Visible','off')
-    set(handles.DeleteObject,'Value',0)
-end
-
-% --- Executes on button press in ViewObject.
-function ViewObject_Callback(hObject, eventdata, handles)
-if get(handles.ViewObject,'Value')
-	UserData=get(handles.series,'UserData');
-    set_object(UserData.ProjObject)
-else
-    hset_object=findobj(allchild(0),'Tag','set_object');
-    if ~isempty(hset_object)
-        delete(hset_object)
-    end 
-end
 
 
 function num_NbProcess_Callback(hObject, eventdata, handles)
@@ -2777,3 +2814,41 @@ function num_NbProcess_Callback(hObject, eventdata, handles)
 function num_NbSlice_Callback(hObject, eventdata, handles)
 NbSlice=str2num(get(handles.num_NbSlice,'String'));
 set(handles.num_NbProcess,'String',num2str(NbSlice))
+
+%------------------------------------------------------------------------
+% --- set the visibility of relevant velocity type menus: 
+function menu=set_veltype_display(Civ,FileType)
+%------------------------------------------------------------------------
+if ~exist('FileType','var')
+    FileType='civx';
+end
+switch FileType
+    case 'civx'
+        menu={'civ1';'interp1';'filter1';'civ2';'interp2';'filter2'};
+        if isequal(Civ,0)
+            imax=0;
+        elseif isequal(Civ,1) || isequal(Civ,2)
+            imax=1;
+        elseif isequal(Civ,3)
+            imax=3;
+        elseif isequal(Civ,4) || isequal(Civ,5)
+            imax=4;
+        elseif isequal(Civ,6) %patch2
+            imax=6;
+        end
+    case 'civdata'
+        menu={'civ1';'filter1';'civ2';'filter2'};
+        if isequal(Civ,0)
+            imax=0;
+        elseif isequal(Civ,1) || isequal(Civ,2)
+            imax=1;
+        elseif isequal(Civ,3)
+            imax=2;
+        elseif isequal(Civ,4) || isequal(Civ,5)
+            imax=3;
+        elseif isequal(Civ,6) %patch2
+            imax=4;
+        end
+end
+menu=menu(1:imax);
+
