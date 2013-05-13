@@ -44,27 +44,27 @@ if ~testappend
     t=xmltree;
     t=set(t,1,'name','ImaDoc');
     % in case of movie (avi file), copy timing info in the new xml file
-%    [pp,outputroot]=fileparts(outputfile);
+    [pp,outputroot]=fileparts(outputfile);
     %     imainfo=[];
-%     if exist(fullfile(pp,[outputroot '.avi']),'file')
-%         FileName=fullfile(pp,[outputroot '.avi']);
-%         hhh=which('videoreader');
-%         if isempty(hhh)%use old video function of matlab
-%             imainfo=aviinfo(FileName);
-%             imainfo.FrameRate=imainfo.FramesPerSecond;
-%             imainfo.NumberOfFrames=imainfo.NumFrames;
-%         else %use video function videoreader of matlab
-%             imainfo=get(videoreader(FileName));
-%         end
-%         if ~isempty(imainfo)
-%             [t,uid_camera]=add(t,1,'element','Camera');
-%             Camera.TimeUnit='s';
-%             Camera.BurstTiming.Time=0;
-%             Camera.BurstTiming.Dti=1/imainfo.FrameRate;
-%             Camera.BurstTiming.NbDti=imainfo.NumberOfFrames-1;
-%             t=struct2xml(Camera,t,uid_camera);
-%         end
-%     end
+    if exist(fullfile(pp,[outputroot '.avi']),'file')
+        FileName=fullfile(pp,[outputroot '.avi']);
+        hhh=which('videoreader');
+        if isempty(hhh)%use old video function of matlab
+            imainfo=aviinfo(FileName);
+            imainfo.FrameRate=imainfo.FramesPerSecond;
+            imainfo.NumberOfFrames=imainfo.NumFrames;
+        else %use video function videoreader of matlab
+            imainfo=get(videoreader(FileName));
+        end
+        if ~isempty(imainfo)
+            [t,uid_camera]=add(t,1,'element','Camera');
+            Camera.TimeUnit='s';
+            Camera.BurstTiming.Time=0;
+            Camera.BurstTiming.Dti=1/imainfo.FrameRate;
+            Camera.BurstTiming.NbDti=imainfo.NumberOfFrames-1;
+            t=struct2xml(Camera,t,uid_camera);
+        end
+    end
     [t,uid_calib]=add(t,1,'element',StructName);
 end
 
