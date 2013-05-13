@@ -173,7 +173,7 @@ NomTypeOut=NomType;% output file index will indicate the first and last ref inde
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:NbField
         update_waitbar(WaitbarHandle,index/NbField)
-    if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+    if ~isempty(RUNHandle) &&ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
     end

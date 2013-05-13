@@ -366,7 +366,7 @@ display('sliding background image will be substracted')
 if nbfield_i > nbaver_ima
     for ifield = step*ceil(nbaver/2)+1:step:nbfield_i-step*floor(nbaver/2)
                 update_waitbar(WaitbarHandle,ifield/nbfield_i)
-    if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+    if ~isempty(RUNHandle) &&ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
     end

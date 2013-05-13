@@ -198,6 +198,10 @@ MaxIndex_i=Param.IndexRange.MaxIndex_i{1};
 MaxIndex_j=Param.IndexRange.MaxIndex_j{1};
 MinIndex_i=Param.IndexRange.MinIndex_i{1};
 MinIndex_j=Param.IndexRange.MinIndex_j{1};
+CivInputData.MaxIndex_i=MaxIndex_i;
+CivInputData.MaxIndex_j=MaxIndex_j;
+CivInputData.MinIndex_i=MinIndex_i;
+CivInputData.MinIndex_j=MinIndex_j;
 if ~isfield(Param.IndexRange,'first_j')
     set(handles.ListPairMode,'Value',1)
     set(handles.ListPairMode,'String',{'series(Di)'})
@@ -285,8 +289,9 @@ CivInputData.NomTypeIma=NomTypeIma;
 set(handles.civ_input,'UserData',CivInputData)
 set(handles.dt_unit,'String',['dt in m' TimeUnit]);%display dt in unit 10-3 of the time (e.g ms)
 set(handles.TimeUnit,'String',TimeUnit);
-set(handles.nb_field,'String',num2str(MaxIndex_i));
-set(handles.nb_field2,'String',num2str(MaxIndex_j));
+% set(handles.nb_field,'String',num2str(MaxIndex_i));
+% set(handles.nb_field2,'String',num2str(MaxIndex_j));
+
 set(handles.CoordUnit,'String',CoordUnit)
 set(handles.SearchRange,'UserData', pxcm_search);
 
@@ -1123,7 +1128,7 @@ if isempty(ref_j)
 end
 CivInputData=get(handles.civ_input,'UserData');
 TimeUnit=get(handles.TimeUnit,'String');
-time=CivInputData.Time;
+Time=CivInputData.Time;
 checkframe=strcmp(TimeUnit,'frame');
 %displ_num=get(handles.ListPairCiv1,'UserData');
 
@@ -1233,10 +1238,10 @@ if isequal(mode,'series(Di)')
         for ipair=1:nbpair
             if select(ipair)
                 displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2))];
-                %if ~checkframe && size(time,1)>=ref_i+1+displ_num(4,ipair) && size(time,2)>=ref_j+1+displ_num(2,ipair)&&displ_num(2,ipair)>=1 &&displ_num(1,ipair)>=1
-                 %   dt=time(ref_i+1+displ_num(4,ipair),ref_j+1+displ_num(2,ipair))-time(ref_i+1+displ_num(3,ipair),ref_j+1+displ_num(1,ipair));%time interval dt
-               if ~checkframe && size(time,1)>=ref_i+1+ceil(ipair/2) && size(time,2)>=ref_j+1&& ref_i-floor(ipair/2)>=0 && ref_j>=0
-                 dt=time(ref_i+1+ceil(ipair/2),ref_j+1)-time(ref_i+1-floor(ipair/2),ref_j+1);%time interval dtref_j+1
+                %if ~checkframe && size(Time,1)>=ref_i+1+displ_num(4,ipair) && size(Time,2)>=ref_j+1+displ_num(2,ipair)&&displ_num(2,ipair)>=1 &&displ_num(1,ipair)>=1
+                 %   dt=Time(ref_i+1+displ_num(4,ipair),ref_j+1+displ_num(2,ipair))-Time(ref_i+1+displ_num(3,ipair),ref_j+1+displ_num(1,ipair));%Time interval dt
+               if ~checkframe && size(Time,1)>=ref_i+1+ceil(ipair/2) && size(Time,2)>=ref_j+1&& ref_i-floor(ipair/2)>=0 && ref_j>=0
+                 dt=Time(ref_i+1+ceil(ipair/2),ref_j+1)-Time(ref_i+1-floor(ipair/2),ref_j+1);%Time interval dtref_j+1
                 else
                     dt=1;
                 end
@@ -1253,8 +1258,8 @@ elseif isequal(mode,'series(Dj)')
         for ipair=1:nbpair
             if select(ipair)
                 displ_pair{ipair}=['Dj= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2))];
-                if ~checkframe && size(time,1)>=ref_i+1+displ_num(4,ipair) && size(time,2)>=ref_j+1+displ_num(2,ipair)
-                    dt=time(ref_i+1+displ_num(4,ipair),ref_j+1+displ_num(2,ipair))-time(ref_i+1+displ_num(3,ipair),ref_j+1+displ_num(1,ipair));%time interval dt
+                if ~checkframe && size(Time,1)>=ref_i+1+displ_num(4,ipair) && size(Time,2)>=ref_j+1+displ_num(2,ipair)
+                    dt=Time(ref_i+1+displ_num(4,ipair),ref_j+1+displ_num(2,ipair))-Time(ref_i+1+displ_num(3,ipair),ref_j+1+displ_num(1,ipair));%Time interval dt
                     displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
                 end
             else
@@ -1263,19 +1268,23 @@ elseif isequal(mode,'series(Dj)')
         end
     end
 elseif isequal(mode,'pair j1-j2')%case of pairs
-    for ipair=1:nbpair
-        if select(ipair)
-            if ~checkframe && size(time,2)>1 
-            dt=time(ref_i+1+displ_num(4,ipair),displ_num(2,ipair)+1)-time(ref_i+1+displ_num(3,ipair),displ_num(1,ipair)+1);%time interval dt
-            else % time set by default to i index
-                dt=1;
+    MinIndex_j=CivInputData.MinIndex_j;
+    MaxIndex_j=min(CivInputData.MaxIndex_j,10);%limitate the number of pairs to 10x10
+    index_pair=0;
+    %get all the Time intervals in bursts   
+   for numod_a=MinIndex_j:MaxIndex_j-1 %nbfield2 always >=2 for 'pair j1-j2' mode
+        for numod_b=(numod_a+1):MaxIndex_j
+            index_pair=index_pair+1;
+            displ_pair{index_pair}=['j= ' num2stra(numod_a,nom_type_ima) '-' num2stra(numod_b,nom_type_ima)];
+            dt(index_pair)=numod_b-numod_a;%default dt
+            if size(Time,1)>ref_i && size(Time,2)>numod_b  % && ~checkframe
+                dt(index_pair)=Time(ref_i+1,numod_b+1)-Time(ref_i+1,numod_a+1);% Time interval dt
+                 displ_pair{index_pair}=[displ_pair{index_pair} ' :dt= ' num2str(dt(index_pair)*1000)];
             end
-            displ_pair{ipair}=['j= ' num2stra(displ_num(1,ipair),nom_type_ima) '-' num2stra(displ_num(2,ipair),nom_type_ima) ...
-                ' :dt= ' num2str(dt*1000)];
-        else
-            displ_pair{ipair}='...'; %pair not displayed in the menu
         end
     end
+    [dtsort,indsort]=sort(dt);
+    displ_pair=displ_pair(indsort);
 elseif isequal(mode,'displacement')
     displ_pair={'Di=Dj=0'};
 end

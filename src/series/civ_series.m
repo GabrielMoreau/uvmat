@@ -217,7 +217,7 @@ end
 %%%%% MAIN LOOP %%%%%%
 for ifield=1:NbField
     update_waitbar(WaitbarHandle,index/nbfield)
-    if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+    if ~isempty(RUNHandle) && ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break
     end
