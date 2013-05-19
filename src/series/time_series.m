@@ -97,8 +97,8 @@ nbview=numel(i1_series);%number of input file series (lines in InputTable)
 nbfield_j=size(j1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
-[first_i,tild,last_i,first_j,tild,last_j,errormsg]=get_index_range(Param.IndexRange);
-if ~isempty(errormsg),display(errormsg),return,end
+% [first_i,tild,last_i,first_j,tild,last_j,errormsg]=get_index_range(Param.IndexRange);
+% if ~isempty(errormsg),display(errormsg),return,end
 
 %% determine the file type on each line from the first input file
 ImageTypeOptions={'image','multimage','mmreader','video'};
@@ -152,7 +152,17 @@ if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
     displ_uvmat('ERROR','input must be two image series or two netcdf file series',checkrun)
     return
 end
+
+%% settings for the output file
 NomTypeOut=nomtype2pair(NomType{1});% determine the index nomenclature type for the output file
+first_i=i1_series{1}(1);
+last_i=i1_series{1}(end);
+if isempty(j1_series{1})% if there is no second index j
+    first_j=1;last_j=1;
+else
+    first_j=j1_series{1}(1);
+    last_j=j1_series{1}(end);
+end
 
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
@@ -209,7 +219,7 @@ nbmissing=0;
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:nbfield
             update_waitbar(WaitbarHandle,index/nbfield)
-    if ~isempty(RUNHandle) &&ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+    if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break % leave the loop if stop is ordered
     end

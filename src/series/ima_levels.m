@@ -150,7 +150,7 @@ end
 j1=[];%default
 for ifile=1:nbfield
             update_waitbar(WaitbarHandle,ifile/nbfield)
-    if ~isempty(RUNHandle) &&ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+    if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
     end

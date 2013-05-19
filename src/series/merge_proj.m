@@ -50,14 +50,14 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.FieldTransform = 'on';%can use a transform function
     ParamOut.TransformPath=fullfile(fileparts(which('uvmat')),'transform_field');% path to transform functions (needed for compilation only)
     ParamOut.ProjObject='on';%can use projection object(option 'off'/'on',
-    ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
+    ParamOut.Mask='on';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.mproj';%set the output dir extension
     ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
     filecell=get_file_series(Param);%check existence of the first input file
     if ~exist(filecell{1,1},'file')
         msgbox_uvmat('WARNING','the first input file does not exist')
     elseif isequal(size(Param.InputTable,1),1) && ~isfield(Param,'ProjObject')
-        msgbox_uvmat('WARNING','a projection object of type plane needs to be introduced for merge_proj')
+        msgbox_uvmat('WARNING','You may need a projection object of type plane for merge_proj')
     end
     return
 end

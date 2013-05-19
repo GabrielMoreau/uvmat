@@ -225,7 +225,7 @@ end
 nbfield2=size(XmlData.Time,2);
 for ifile=1:nbfield
             update_waitbar(WaitbarHandle,ifile/nbfield)
-    if ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+    if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break
     end

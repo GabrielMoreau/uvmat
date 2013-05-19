@@ -194,10 +194,14 @@ end
 %%  set the menus of image pairs and default selection for civ_input   %%%%%%%%%%%%%%%%%%%
 %check_letter=~isempty(regexp(NomTypeIma,'[ab|AB]$'));%detect pair label by letter
 %if  isequal(NomTypeNc,'_1-2')||isempty(MaxIndex_j)|| (MaxIndex_j==1)
-MaxIndex_i=Param.IndexRange.MaxIndex_i{1};
-MaxIndex_j=Param.IndexRange.MaxIndex_j{1};
-MinIndex_i=Param.IndexRange.MinIndex_i{1};
-MinIndex_j=Param.IndexRange.MinIndex_j{1};
+MaxIndex_i=Param.IndexRange.MaxIndex_i(1);
+MinIndex_i=Param.IndexRange.MinIndex_i(1);
+MaxIndex_j=1;%default
+MinIndex_j=1;
+if isfield(Param.IndexRange,'MaxIndex_j')&&isfield(Param.IndexRange,'MinIndex_j')
+MaxIndex_j=Param.IndexRange.MaxIndex_j(1);
+MinIndex_j=Param.IndexRange.MinIndex_j(1);
+end
 CivInputData.MaxIndex_i=MaxIndex_i;
 CivInputData.MaxIndex_j=MaxIndex_j;
 CivInputData.MinIndex_i=MinIndex_i;
@@ -210,7 +214,8 @@ elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
     if  MaxIndex_j <= 10
         set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
     end
-elseif ~(strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
+%elseif ~(strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
+else
     set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)';'series(Di)'})%multiple choice
     if strcmp(NomTypeNc,'_1-2_1')
         set(handles.ListPairMode,'Value',3)% advise 'series(Di)'
@@ -1130,20 +1135,6 @@ CivInputData=get(handles.civ_input,'UserData');
 TimeUnit=get(handles.TimeUnit,'String');
 Time=CivInputData.Time;
 checkframe=strcmp(TimeUnit,'frame');
-%displ_num=get(handles.ListPairCiv1,'UserData');
-
-%% eliminate the first pairs inconsistent with the position
-% if isempty(displ_num)
-%     nbpair=0;
-% else
-%     nbpair=length(displ_num(1,:));%nbre of displayed pairs
-%     if  isequal(mode,'series(Di)')  %| isequal(mode,'st_series(Di)')
-%         nbpair=min(2*ref_i-1,nbpair);%limit the number of pairs with positive first index
-%     elseif  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
-%         nbpair=min(2*ref_j-1,nbpair);%limit the number of pairs with positive first index
-%     end
-% end
-% nbpair=min(200,nbpair);%limit the number of displayed pairs to 200
 
 %% case with no Civ1 operation, netcdf files need to exist for reading
 displ_pair={''};
@@ -1223,13 +1214,6 @@ else %case civ2 alone
 end
 
 %% determine the menu display in .ListPairCiv1
-% the menu depends on the mode defined in ListPairMode_callback through the array displ_num:
-% displ_num(1,:)=indices j1
-% displ_num(2,:)=indices j2
-% displ_num(3,:)=indices i1
-% displ_num(4,:)=indices i2
-% in mode 'pair j1-j2', j1 and j2 are the file indices, else the indices
-% are relative to the reference indices ref_i and ref_j respectively.
 testpair=0; %TODO: check
 if isequal(mode,'series(Di)')
     if testpair
@@ -1238,14 +1222,15 @@ if isequal(mode,'series(Di)')
         for ipair=1:nbpair
             if select(ipair)
                 displ_pair{ipair}=['Di= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2))];
-                %if ~checkframe && size(Time,1)>=ref_i+1+displ_num(4,ipair) && size(Time,2)>=ref_j+1+displ_num(2,ipair)&&displ_num(2,ipair)>=1 &&displ_num(1,ipair)>=1
-                 %   dt=Time(ref_i+1+displ_num(4,ipair),ref_j+1+displ_num(2,ipair))-Time(ref_i+1+displ_num(3,ipair),ref_j+1+displ_num(1,ipair));%Time interval dt
-               if ~checkframe && size(Time,1)>=ref_i+1+ceil(ipair/2) && size(Time,2)>=ref_j+1&& ref_i-floor(ipair/2)>=0 && ref_j>=0
+               if ~checkframe 
+                   if size(Time,1)>=ref_i+1+ceil(ipair/2) && size(Time,2)>=ref_j+1&& ref_i-floor(ipair/2)>=0 && ref_j>=0
                  dt=Time(ref_i+1+ceil(ipair/2),ref_j+1)-Time(ref_i+1-floor(ipair/2),ref_j+1);%Time interval dtref_j+1
-                else
-                    dt=1;
-                end
                  displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
+                   end
+                else
+                    dt=ipair/1000;
+                      displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(ipair)];
+               end              
             else
                 displ_pair{ipair}='...'; %pair not displayed in the menu
             end
@@ -1258,10 +1243,15 @@ elseif isequal(mode,'series(Dj)')
         for ipair=1:nbpair
             if select(ipair)
                 displ_pair{ipair}=['Dj= ' num2str(-floor(ipair/2)) '|' num2str(ceil(ipair/2))];
-                if ~checkframe && size(Time,1)>=ref_i+1+displ_num(4,ipair) && size(Time,2)>=ref_j+1+displ_num(2,ipair)
-                    dt=Time(ref_i+1+displ_num(4,ipair),ref_j+1+displ_num(2,ipair))-Time(ref_i+1+displ_num(3,ipair),ref_j+1+displ_num(1,ipair));%Time interval dt
+               if ~checkframe 
+                   if size(Time,2)>=ref_j+1+ceil(ipair/2) && size(Time,1)>=ref_i+1 && ref_j-floor(ipair/2)>=0 && ref_i>=0
+                 dt=Time(ref_i+1,ref_j+1+ceil(ipair/2))-Time(ref_i+1,ref_j+1-floor(ipair/2));%Time interval dtref_j+1
+                  displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
+                   end
+                else
+                    dt=ipair/1000;
                     displ_pair{ipair}=[displ_pair{ipair} ' :dt= ' num2str(dt*1000)];
-                end
+               end                 
             else
                 displ_pair{ipair}='...'; %pair not displayed in the menu
             end

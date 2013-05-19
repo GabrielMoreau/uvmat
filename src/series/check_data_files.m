@@ -103,6 +103,7 @@ for iview=1:nbview
         Tabchar{1}=filecell{iview,1};%info.Filename;
         Tabchar{2}='';
         Tabchar{3}=[num2str(FileInfo.FrameRate) ' frames/s '];
+        message='';
         %         Tabchar{4}='';
         %         Tabchar{5}=['  compression' FileInfo.VideoCompression];
         %         Tabchar{6}=[ 'quality ' num2str(FileInfo.Quality)];

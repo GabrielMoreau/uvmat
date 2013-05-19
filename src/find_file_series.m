@@ -249,8 +249,9 @@ if isfield(FileInfo,'NumberOfFrames') && FileInfo.NumberOfFrames >1
         NomType='*';
     else
         i1_series=i1_series(:,2)*ones(1,FileInfo.NumberOfFrames);
-        i1_series=[i1_series(:,1) i1_series];
-        j1_series=ones(size(i1_series,1),1)*(0:FileInfo.NumberOfFrames);
+        i1_series=[zeros(size(i1_series,1),1) i1_series];
+        j1_series=ones(size(i1_series,1),1)*(1:FileInfo.NumberOfFrames);
+        j1_series=[zeros(size(i1_series,1),1) j1_series];
         %  include the first index in the root name
         r=regexp(NomType,'^(?<tiretnum>_?\d+)','names');%look for a number or _1 at the beginning of NomType
         if ~isempty(r)

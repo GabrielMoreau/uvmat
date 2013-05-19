@@ -78,8 +78,13 @@ WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
 
 %% input files and indexing
 NbField=1;
-MaxIndex=cell2mat(Param.IndexRange.MaxIndex);
-MinIndex=cell2mat(Param.IndexRange.MinIndex);
+MaxIndex_i=Param.IndexRange.MaxIndex_i;
+MinIndex_i=Param.IndexRange.MinIndex_i;
+MaxIndex_j=1;MinIndex_j=1;
+if isfield(Param.IndexRange,'MaxIndex_j')&& isfield(Param.IndexRange,'MinIndex_j')
+    MaxIndex_j=Param.IndexRange.MaxIndex_j;
+    MinIndex_j=Param.IndexRange.MinIndex_j;
+end
 if isfield(Param,'InputTable')
     [filecell,i_series,tild,j_series]=get_file_series(Param);
     if ~exist(filecell{1,1},'file')
@@ -119,17 +124,17 @@ if isfield(Param,'InputTable')
     end
     if iview_B==0
         FileType_B=FileType_A;
-VideoObject_B=VideoObject_A;
+        VideoObject_B=VideoObject_A;
         PairCiv1=Param.ActionInput.PairIndices.ListPairCiv1;
         PairCiv2='';
         if isfield(Param.ActionInput.PairIndices,'ListPairCiv2')
             PairCiv2=Param.ActionInput.PairIndices.ListPairCiv2;
         end
         [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
-            find_pair_indices(PairCiv1,i_series{1},j_series{1},MinIndex,MaxIndex);
+            find_pair_indices(PairCiv1,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
         if ~isempty(PairCiv2)
             [i1_series_Civ2,i2_series_Civ2,j1_series_Civ2,j2_series_Civ2,check_bounds_Civ2]=...
-                find_pair_indices(PairCiv2,i_series{1},j_series{1},MinIndex,MaxIndex);
+                find_pair_indices(PairCiv2,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
             check_bounds=check_bounds | check_bounds_Civ2;
         end
         i1_series_Civ1=i1_series_Civ1(~check_bounds);
@@ -157,10 +162,10 @@ VideoObject_B=VideoObject_A;
             end
         end
     else
-           [FileType_B,FileInfo,VideoObject_B]=get_file_type(filecell{2,1});
+        [FileType_B,FileInfo,VideoObject_B]=get_file_type(filecell{2,1});
         if isempty(find(strcmp(FileType_B,{'multimage','mmreader','video'})))
             displ(['ERROR: the file line ' num2str(iview_B) ' must be an image'])
-        end   
+        end
         %TODO : introduce the second file series if relevant: case %displacement
     end
 end
@@ -216,8 +221,8 @@ end
 
 %%%%% MAIN LOOP %%%%%%
 for ifield=1:NbField
-    update_waitbar(WaitbarHandle,index/nbfield)
-    if ~isempty(RUNHandle) && ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+    update_waitbar(WaitbarHandle,ifield/NbField)
+    if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break
     end
@@ -263,8 +268,8 @@ for ifield=1:NbField
         if ~isempty(j2_series_Civ1)
             j2=j2_series_Civ1(ifield);
         end
-        Data.Civ1_Time=(time(i2+1,j2+1)+time(i1+1,j1+1))/2;
-        Data.Civ1_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
+        Data.Civ1_Time=(time(j2+1,i2+1)+time(j1+1,i1+1))/2;
+        Data.Civ1_Dt=time(j2+1,i2+1)-time(j1+1,i1+1);
         for ilist=1:length(list_param)
             Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
         end
@@ -399,22 +404,22 @@ for ifield=1:NbField
         %         if ~isfield(Param.Civ1,'ImageA')
         ImageName_A_Civ2=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1_series_Civ2(ifield),[],j1_series_Civ2(ifield));
 
-        if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2)
+        if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2(ifield))
             par_civ2.ImageA=par_civ1.ImageA;
         else
-            [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ2);
+            [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ2(ifield));
         end
         ImageName_B_Civ2=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i2_series_Civ2(ifield),[],j2_series_Civ2(ifield));
         if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_Civ1(ifield),FrameIndex_B_Civ2)
             par_civ2.ImageB=par_civ1.ImageB;
         else
-            [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ2);
+            [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
         end     
         
         ncfile=fullfile_uvmat(RootPath,OutputDir,RootFile,'.nc',NomTypeNc,i1_series_Civ2(ifield),i2_series_Civ2(ifield),...
             j1_series_Civ2(ifield),j2_series_Civ2(ifield));
-        par_civ2.ImageWidth=FileInfo.Width;
-        par_civ2.ImageHeight=FileInfo.Height;
+        par_civ2.ImageWidth=FileInfo_A.Width;
+        par_civ2.ImageHeight=FileInfo_A.Height;
         
         if isfield(par_civ2,'Grid')% grid points set as input file
             if ischar(par_civ2.Grid)%read the grid file if the input is a file name
@@ -934,7 +939,7 @@ end
 %------------------------------------------------------------------------
 % --- determine the list of index pairs of processing file
 function [i1_series,i2_series,j1_series,j2_series,check_bounds,NomTypeNc]=...
-    find_pair_indices(str_civ,i_series,j_series,MinIndex,MaxIndex)
+    find_pair_indices(str_civ,i_series,j_series,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j)
 %------------------------------------------------------------------------
 i1_series=i_series;% set of first image indexes
 i2_series=i_series;
@@ -972,7 +977,7 @@ end
 if strcmp (mode,'Di')
     i1_series=i_series-ind1;% set of first image numbers
     i2_series=i_series+ind2;
-    check_bounds=i1_series<MinIndex(1,1) | i2_series>MaxIndex(1,1);
+     check_bounds=i1_series<MinIndex_i | i2_series>MaxIndex_i;
     if isempty(j_series)
         NomTypeNc='_1-2';
     else
@@ -983,7 +988,7 @@ if strcmp (mode,'Di')
 elseif strcmp (mode,'Dj')
     j1_series=j_series-ind1;
     j2_series=j_series+ind2;
-    check_bounds=j1_series<MinIndex(1,2) | j2_series>MaxIndex(1,2);
+    check_bounds=j1_series<MinIndex_j | j2_series>MaxIndex_j;
     NomTypeNc='_1_1-2';
 else  %bursts
     j1_series=ind1*ones(size(i_series));

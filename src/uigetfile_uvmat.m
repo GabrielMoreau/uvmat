@@ -66,9 +66,10 @@ if isempty(hfig)
         'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',12);
     %set(hrefresh,'UserData',StatusData)
     if strcmp(option,'status_display') %put a run advancement display
-        set(hfig,'DeleteFcn',@stop_status)
-        uicontrol('Style','frame','Units','normalized', 'Position',[0.05 0.81 0.01 0.05],'BackgroundColor',[1 0 0],'tag','waitbar');
-        uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
+        set(hfig,'DeleteFcn',@(src,event)close(option,src,event))
+              uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.85 0.9 0.04]);
+        uicontrol('Style','frame','Units','normalized', 'Position',[0.05 0.85 0.01 0.04],'BackgroundColor',[1 0 0],'tag','waitbar');
+
     else  %put a title and additional pushbuttons
         uicontrol('Style','text','Units','normalized', 'Position', [0.15 0.75 0.6 0.03],'BackgroundColor',BackgroundColor,...
             'String',title,'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
@@ -108,12 +109,38 @@ drawnow
 htitlebox=findobj(hfig,'tag','titlebox');
 DirName=get(htitlebox,'String');
 hsort_option=findobj(hfig,'tag','sort_option');
-sort_option='name';
-if strcmp(get(hsort_option,'Visible'),'on')&& isequal(get(hsort_option,'Value'),2)
-    sort_option='date';
+if strcmp(get(hfig,'Tag'),'status_display')
+    hseries=findobj(allchild(0),'tag','series');
+    hstatus=findobj(hseries,'tag','status');
+    StatusData=get(hstatus,'UserData');
+    TimeStart=0;
+    if isfield(StatusData,'TimeStart')
+        TimeStart=StatusData.TimeStart;
+    end
+    hlist=findobj(hfig,'tag','list');
+    testrecent=0;   
+    NbOutputFile=[];
+    if isfield(StatusData,'NbOutputFile')
+        NbOutputFile=StatusData.NbOutputFile;
+        NbOutputFile_str=num2str(NbOutputFile);
+    end
+    [ListFiles,NumFiles]=list_files(DirName,1,TimeStart);% list the directory content
+    
+    %% update the waitbar
+    hwaitbar=findobj(hfig,'tag','waitbar');
+    if ~isempty(NbOutputFile)
+        BarPosition=get(hwaitbar,'Position');
+        BarPosition(3)=0.9*max(0.01,NumFiles/NbOutputFile);% the bar width cannot be set to 0, set to 0.01 instead
+        set(hwaitbar,'Position',BarPosition)
+    end
+else
+    sort_option='name';
+    if strcmp(get(hsort_option,'Visible'),'on')&& isequal(get(hsort_option,'Value'),2)
+        sort_option='date';
+    end
+    hcheck_date=findobj(hfig,'tag','check_date');
+    [ListFiles,NumFiles]=list_files(DirName,get(hcheck_date,'Value'),sort_option);% list the directory content
 end
-hcheck_date=findobj(hfig,'tag','check_date');
-ListFiles=list_files(DirName,get(hcheck_date,'Value'),sort_option);% list the directory content
 
 set(hlist,'String',ListFiles)
 Value=[];
@@ -125,63 +152,6 @@ if isempty(Value)
 end
 set(hlist,'Value',Value)
 set(hlist,'BackgroundColor',[0.7 0.7 0.7])
-if strcmp(get(hfig,'Tag'),'status_display') 
-    hseries=findobj(allchild(0),'tag','series');
-    hstatus=findobj(hseries,'tag','status_display');
-    StatusData=get(hstatus,'UserData');
-    TimeStart=0;
-    if isfield(StatusData,'TimeStart')
-        TimeStart=StatusData.TimeStart;
-    end 
-    hlist=findobj(hfig,'tag','list');
-    testrecent=0;
-    datnum=zeros(numel(ListDisplay),1);
-    for ilist=1:numel(ListDisplay)
-        ListDisplay{ilist}=ListFiles(ilist).name;
-        if ListFiles(ilist).isdir
-            ListDisplay{ilist}=['/' ListDisplay{ilist}];
-        elseif isfield(ListFiles(ilist),'datenum')
-            datnum(ilist)=ListFiles(ilist).datenum;%only available in recent matlab versions
-            testrecent=1;
-            if datnum(ilist)<TimeStart
-                ListDisplay{ilist}=[ListDisplay{ilist} '  --OLD--'];
-            end
-        end
-    end
-    
-    %% Look at date of creation
-    ListDisplay=ListDisplay(datnum~=0);
-    datnum=datnum(datnum~=0);%keep the non zero values corresponding to existing files
-    
-    NbOutputFile=[];
-    if isempty(datnum)
-        if testrecent
-            message='no result created yet';
-        else
-            message='';
-        end
-    else
-        [first,indfirst]=min(datnum);
-        [last,indlast]=max(datnum);
-        NbOutputFile_str='?';
-        if isfield(StatusData,'NbOutputFile')
-            NbOutputFile=StatusData.NbOutputFile;
-            NbOutputFile_str=num2str(NbOutputFile);
-        end
-        message={[num2str(numel(datnum)) ' file(s) done over ' NbOutputFile_str] ;['oldest modification:  ' ListDisplay{indfirst} ' : ' datestr(first)];...
-            ['latest modification:  ' ListDisplay{indlast} ' : ' datestr(last)]};
-    end
-    set(htitlebox,'String', [DirName{1};message])
-    
-    %% update the waitbar
-    hwaitbar=findobj(hfig,'tag','waitbar');
-    if ~isempty(NbOutputFile)
-        BarPosition=get(hwaitbar,'Position');
-        BarPosition(3)=0.9*numel(datnum)/NbOutputFile;
-        set(hwaitbar,'Position',BarPosition)
-    end
-end
-
 %------------------------------------------------------------------------   
 % --- launched by selecting an item on the file list
 function dates_Callback(hObject,event)
@@ -271,9 +241,10 @@ set(hObject,'BackgroundColor',[0.7 0.7 0.7])% paint list in grey to indicate act
 
 %-------------------------------------------------------------------------   
 % list the content of a directory
-function ListFiles=list_files(DirName,check_date,sort_option)
+function [ListFiles,NumFiles]=list_files(DirName,check_date,sort_option)
 %-------------------------------------------------------------------------
 ListStruct=dir(DirName);% get structure of the current directory
+NumFiles=0; %default
 if numel(ListStruct)<1  % case of empty dir
     ListFiles={};
     return
@@ -282,9 +253,15 @@ ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
 ListFiles=ListCells(1,:);%list of file names
 check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
-if strcmp(sort_option,'date')
-    ListDates=cell2mat(ListCells(5,:));%list of numerical dates
-    ListDates(check_dir)=max(ListDates(~check_dir))+1000; % we set the dir in front 
+ListDates=cell2mat(ListCells(5,:));%list of numerical dates
+if isnumeric(sort_option)
+    check_old=ListDates<sort_option-1;% -1 is put to account for a 1 s delay in the record of starting time
+    NumFiles=numel(find(~check_old&~check_dir));
+end
+if ~isempty(find(~check_dir))
+ListDates(check_dir)=max(ListDates(~check_dir))+1000; % we set the dir in front
+end
+if isnumeric(sort_option)|| strcmp(sort_option,'date')
     [tild,index_sort]=sort(ListDates,2,'descend');% sort files by chronological order, recent first, put the dir first in the list
 else
     [tild,index_sort]=sort(check_dir,2,'descend');% put the dir first in the list
@@ -294,12 +271,15 @@ cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' 
 check_keep=cellfun('isempty', cell_remove);
 ListFiles=[{'+/..'} ListFiles(check_keep)];
 if check_date
-ListDateString=ListCells(2,:);%list of file dates
-ListDateString(check_dir)={''};
-ListDateString=ListDateString(index_sort);% sort the corresponding dates
-ListDateString=[{''} ListDateString(check_keep)];
-ListFiles=[ListFiles; ListDateString];
-ListFiles=cell2tab(ListFiles','...'); 
+    ListDateString=ListCells(2,:);%list of file dates
+    if isnumeric(sort_option)
+        ListDateString(check_old)={'--OLD--'};
+    end
+    ListDateString(check_dir)={''};
+    ListDateString=ListDateString(index_sort);% sort the corresponding dates
+    ListDateString=[{''} ListDateString(check_keep)];
+    ListFiles=[ListFiles; ListDateString];
+    ListFiles=cell2tab(ListFiles','...');
 end
 
 %------------------------------------------------------------------------   
@@ -342,10 +322,10 @@ end
 function close(option,hObject, eventdata)
 %-------------------------------------------------------------------------
 if strcmp(option,'status_display')
-    hseries=findobj(allchild(0),'tag','series');
-    hstatus=findobj(hfig,'Tag','status_display');
-    set(hhciv.status,'value',0) %reset the status uicontrol in the GUI civ
-    set(hhciv.status,'BackgroundColor',[0 1 0])
+    hseries=findobj(allchild(0),'Tag','series');
+    hstatus=findobj(hseries,'Tag','status');
+    set(hstatus,'value',0) %reset the status uicontrol in the GUI series
+    set(hstatus,'BackgroundColor',[0 1 0])
 end
 delete(gcbf)
 

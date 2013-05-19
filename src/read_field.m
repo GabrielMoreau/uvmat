@@ -33,6 +33,10 @@ if ~exist('ParamIn','var')
 end
 ParamOut=ParamIn;%default
 errormsg='';
+if ~exist(FileName,'file')
+    erromsg=['input file ' FileName ' does not exist'];
+    return
+end
 A=[];
 InputField={};
 check_colorvar=0;

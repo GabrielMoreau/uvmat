@@ -1464,14 +1464,13 @@ end
 % --- the scan_i and scan_j check box (exclusive each other)
 function runplus_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+
 set(handles.runplus,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-%TODO: introduce the option: increment ='*' to move to the next available view
-increment=str2num(get(handles.num_IndexIncrement,'String')); %get the field increment d
-% if isnan(increment)
-%     set(handles.num_IndexIncrement,'String','1')%default value
-%     increment=1;
-% end
+increment=str2double(get(handles.num_IndexIncrement,'String')); %get the field increment d
+if isnan(increment)% case of free increment: move to next available field index
+    increment='+'; 
+end
 errormsg=runpm(hObject,eventdata,handles,increment);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg);
@@ -1484,13 +1483,13 @@ set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button back to 
 % --- the scan_i and scan_j check box (exclusive each other)
 function runmin_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+
 set(handles.runmin,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-increment=-str2num(get(handles.num_IndexIncrement,'String')); %get the field increment d
-% if isnan(increment)
-%     set(handles.num_IndexIncrement,'String','1')%default value
-%     increment=1;
-% end
+increment=-str2double(get(handles.num_IndexIncrement,'String')); %get the field increment d
+if isnan(increment)% case of free increment: move to previous available field index
+    increment='-'; 
+end
 errormsg=runpm(hObject,eventdata,handles,increment);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg);
@@ -1501,13 +1500,13 @@ set(handles.runmin,'BackgroundColor',[1 0 0])%paint the command button back to r
 % -- Executes on button press in Movie: make a series of +> steps
 function Movie_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+
 set(handles.Movie,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-increment=str2num(get(handles.num_IndexIncrement,'String')); %get the field increment d
-% if isnan(increment)
-%     set(handles.num_IndexIncrement,'String','1')%default value
-%     increment=1;
-% end
+increment=str2double(get(handles.num_IndexIncrement,'String')); %get the field increment d
+if isnan(increment)% case of free increment: move to next available field index
+    increment='+'; 
+end
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
@@ -1534,7 +1533,10 @@ function MovieBackward_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.MovieBackward,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
-increment=-str2num(get(handles.num_IndexIncrement,'String')); %get the field increment d
+increment=-str2double(get(handles.num_IndexIncrement,'String')); %get the field increment d
+if isnan(increment)% case of free increment: move to next available field index
+    increment='-'; 
+end
 set(handles.STOP,'Visible','on')
 set(handles.speed,'Visible','on')
 set(handles.speed_txt,'Visible','on')
@@ -1606,7 +1608,7 @@ else
 end   
 
 %% increment (or decrement) the field indices and update the input filename(s)
-if isempty(increment)
+if ~isnumeric(increment)% undefined increment value
     set(handles.CheckFixPair,'Value',0)
 end
 CheckFixPair=get(handles.CheckFixPair,'Value')||(isempty(i2)&&isempty(j2));
@@ -1616,15 +1618,14 @@ CheckFixPair=get(handles.CheckFixPair,'Value')||(isempty(i2)&&isempty(j2));
         i2_1=i2;
         j1_1=j1;
         j2_1=j2;
-if CheckFixPair
+if CheckFixPair && isnumeric(increment)
     if get(handles.scan_i,'Value')==1% case of scanning along index i
         i1=i1+increment;
         i2=i2+increment;
         if sub_value
             i1_1=i1_1+increment;
             i2_1=i2_1+increment;
-        end
-        
+        end        
     else % case of scanning along index j (burst numbers)
         j1=j1+increment;
         j2=j2+increment;
@@ -1648,7 +1649,7 @@ else
             ref_j=floor((j1+j2)/2);% current reference index j
         end
     end
-    if ~isempty(increment)
+    if isnumeric(increment)
         if get(handles.scan_i,'Value')==1% case of scanning along index i
             ref_i=ref_i+increment;% increment the current reference index i
         else % case of scanning along index j (burst numbers)
@@ -1656,7 +1657,7 @@ else
         end
     else % free increment
         runaction=get(gcbo,'tag');
-        if strcmp(runaction,'runplus')||strcmp(runaction,'Movie')% if runplus or movie is activated
+        if strcmp(increment,'+')% if runplus or movie is activated
             step=1;
         else
             step=-1;
@@ -1718,7 +1719,7 @@ else
                 ref_j_1=floor((j1_1+j2_1)/2);% current reference index j
             end
         end
-        if ~isempty(increment)
+        if isnumeric(increment)
             if get(handles.scan_i,'Value')==1% case of scanning along index i
                 ref_i_1=ref_i_1+increment;% increment the current reference index i
             else % case of scanning along index j (burst numbers)

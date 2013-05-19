@@ -93,8 +93,6 @@ nbview=numel(i1_series);%number of input file series (lines in InputTable)
 nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
-[first_i,tild,last_i,first_j,tild,last_j,errormsg]=get_index_range(Param.IndexRange);
-if ~isempty(errormsg),display(errormsg),return,end
 
 %% determine the file type on each line from the first input file 
 ImageTypeOptions={'image','multimage','mmreader','video'};
@@ -139,16 +137,25 @@ if CheckImage{1}
     FileExtOut='.png'; % write result as .png images for image inputs
 elseif CheckNc{1}
     FileExtOut='.nc';% write result as .nc files for netcdf inputs
-else 
+else
     msgbox_uvmat('ERROR',['invalid file type input ' FileType{1}])
     return
 end
 if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
-        msgbox_uvmat('ERROR','input must be two image series or two netcdf file series')
+    msgbox_uvmat('ERROR','input must be two image series or two netcdf file series')
     return
 end
-%NomTypeOut='_1-2_1';% output file index will indicate the first and last ref index in the series
+
+%% settings for the output file
 NomTypeOut=nomtype2pair(NomType{1});% determine the index nomenclature type for the output file
+first_i=i1_series{1}(1);
+last_i=i1_series{1}(end);
+if isempty(j1_series{1})% if there is no second index j
+    first_j=1;last_j=1;
+else
+    first_j=j1_series{1}(1);
+    last_j=j1_series{1}(end);
+end
 
 %% Set field names and velocity types
 InputFields{1}=[];%default (case of images)
@@ -176,7 +183,7 @@ nbmissing=0;
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:nbfield
     update_waitbar(WaitbarHandle,index/nbfield)
-    if ~isempty(RUNHandle)&& ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+    if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break
     end
@@ -237,7 +244,6 @@ for index=1:nbfield
         nbfiles=nbfiles+1;
         
         %%%%%%%%%%%% MAIN RUNNING OPERATIONS  %%%%%%%%%%%%
-        %update sum
         if nbfiles==1 %first field
             time_1=[];
             if isfield(Field,'Time')
@@ -254,7 +260,7 @@ for index=1:nbfield
                 sizmean=size(DataOut.(VarName));
                 siz=size(Field.(VarName));
                 if ~isequal(DataOut.(VarName),0)&& ~isequal(siz,sizmean)
-                    msgbox_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'])
+                    displ_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'],checkrun)
                     return
                 else
                     DataOut.(VarName)=DataOut.(VarName)+ double(Field.(VarName)); % update the sum
@@ -284,12 +290,6 @@ if isempty(time) % time is read from files
         end
     end
 else  % time from ImaDoc prevails if it exists
-    %         j1=1;%default
-    %         if ~isempty(j1_series{1})
-    %             j1=j1_series{1};
-    %         end
-    %DataOut.Time=time(1,i1_series{1}(1),j1);
-    %DataOut.Time_end=time(end,i1_series{end}(end),j1_series{end}(end));
     DataOut.Time=time(1);
     DataOut.Time_end=time(end);
 end
