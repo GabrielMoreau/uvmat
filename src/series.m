@@ -2402,7 +2402,14 @@ end
 function CheckMask_Callback(hObject, eventdata, handles)
 
 if get(handles.CheckMask,'Value')
-    msgbox_uvmat('ERROR','not implemented yet')
+    InputTable=get(handles.InputTable,'Data');
+    defaultname=InputTable{1,1};
+    MaskName=uigetfile_uvmat('select a mask image file:',defaultname);
+    if ~isempty(MaskName)
+        set(handles.Mask,'String',MaskName)
+    end
+else
+    set(handles.Mask,'String','')
 end
 %--------------------------------------------------------------
 
