@@ -1283,7 +1283,7 @@ function CheckMask_Callback(hObject, eventdata, handles)
 %case of view mask selection
 if isequal(get(handles.CheckMask,'Value'),1)
      [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-     FileBase=fullfile(RootPath,RootFile);
+     FileBase=fullfile(RootPath,SubDir,RootFile);
     num_i1=stra2num(get(handles.i1,'String'));
     num_j1=stra2num(get(handles.j1,'String'));
     currentdir=pwd;  
@@ -1337,18 +1337,25 @@ if isequal(get(handles.CheckMask,'Value'),1)
     end
     errormsg=[];%default
     if mdetect==0
-        [FileName, PathName, filterindex] = uigetfile( ...
-            {'*.png', ' (*.png)';
-            '*.png',  '.png files '; ...
-            '*.*', 'All Files (*.*)'}, ...
-            'Pick a mask file *.png',FileBase);
-        if ~ischar(FileName),return,end %abandon if the browser is cancelled
-        maskname=fullfile(PathName,FileName);
+        maskname=uigetfile_uvmat('pick a mask image file:',fullfile(RootPath,SubDir));
+
+%% display the selected field and related information
+if isempty(maskname)
+    set(handles.CheckMask,'Value',0)
+    return
+end
+%         [FileName, PathName, filterindex] = uigetfile( ...
+%             {'*.png', ' (*.png)';
+%             '*.png',  '.png files '; ...
+%             '*.*', 'All Files (*.*)'}, ...
+%             'Pick a mask file *.png',FileBase);
+%         if ~ischar(FileName),return,end %abandon if the browser is cancelled
+%         maskname=fullfile(PathName,FileName);
         [RootDir,SubDir,RootFile,tild,tild,tild,tild,tild,Mask.NomType]=fileparts_uvmat(maskname);
         Mask.Base=fullfile(RootDir,SubDir,RootFile);
-        Mask.NbSlice=1;
+ %       Mask.NbSlice=1;
         set(handles.CheckMask,'UserData',Mask);
-        set(handles.CheckMask,'BackgroundColor',[1 1 0])
+%         set(handles.CheckMask,'BackgroundColor',[1 1 0])
     end
     if isempty(errormsg)
         errormsg=update_mask(handles,num_i1,num_j1);

@@ -365,27 +365,31 @@ if isempty(RootPathCell)||isequal(RootPathCell,{''})%loads the previously stored
      end
  else
      oldfile=fullfile(RootPathCell{1},RootFileCell{1});
- end
-[FileName, PathName, filterindex] = uigetfile( ...
-       {'*.xml;*.xls;*.png;*.avi;*.AVI;*.nc', ' (*.xml,*.xls, *.png, *.avi,*.nc)';
-       '*.xml',  '.xml files '; ...
-        '*.xls',  '.xls files '; ...
-        '*.png','.png image files'; ...
-        '*.avi;*.AVI','.avi movie files'; ...
-        '*.nc','.netcdf files'; ...
-        '*.*',  'All Files (*.*)'}, ...
-        'Pick a file',oldfile);
-fileinput=[PathName FileName];%complete file name 
-sizf=size(fileinput);
-if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
-[path,name,ext]=fileparts(fileinput);
-if isequal(ext,'.xml')
-    msgbox_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
-elseif isequal(ext,'.xls')
-    msgbox_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
-else
-    display_file_name(handles,fileinput,'append')
 end
+ fileinput=uigetfile_uvmat('pick a file to append in the input table',oldfile);
+if ~isempty(fileinput)
+     display_file_name(handles,fileinput,'append')
+end
+% [FileName, PathName, filterindex] = uigetfile( ...
+%        {'*.xml;*.xls;*.png;*.avi;*.AVI;*.nc', ' (*.xml,*.xls, *.png, *.avi,*.nc)';
+%        '*.xml',  '.xml files '; ...
+%         '*.xls',  '.xls files '; ...
+%         '*.png','.png image files'; ...
+%         '*.avi;*.AVI','.avi movie files'; ...
+%         '*.nc','.netcdf files'; ...
+%         '*.*',  'All Files (*.*)'}, ...
+%         'Pick a file',oldfile);
+% fileinput=[PathName FileName];%complete file name 
+% sizf=size(fileinput);
+% if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
+% [path,name,ext]=fileparts(fileinput);
+% if isequal(ext,'.xml')
+%     msgbox_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
+% elseif isequal(ext,'.xls')
+%     msgbox_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
+% else
+%     display_file_name(handles,fileinput,'append')
+% end
 
 % --------------------------------------------------------------------
 function MenuFile_insert_1_Callback(hObject, eventdata, handles)
