@@ -906,10 +906,6 @@ end
 CData=cat(3,zeros(size(CData)),CData,zeros(size(CData)));
 set(handles.FileStatus,'CData',CData);
 
-
-%% enable field and veltype menus, in accordance with the current action
-ActionName_Callback([],[], handles)
-
 %% check for pair display
 check_pairs=0;
 for iview=1:numel(SeriesData.i2_series)
@@ -924,6 +920,10 @@ else
     set(handles.Pairs,'Visible','off')
     set(handles.PairString,'Visible','off')
 end
+
+
+%% enable field and veltype menus, in accordance with the current action
+ActionName_Callback([],[], handles)
 
 %% set length of waitbar
 displ_time(handles)
@@ -2085,7 +2085,7 @@ MaskVisible='off';  %hidden by default
 if isfield(ParamOut,'Mask')
     MaskVisible=ParamOut.Mask;
 end
-set(handles.Mask,'Visible',MaskVisible)
+%set(handles.Mask,'Visible',MaskVisible)
 set(handles.CheckMask,'Visible',MaskVisible);
 
 %% definition of the directory containing the output files 
@@ -2406,6 +2406,7 @@ end
 function CheckMask_Callback(hObject, eventdata, handles)
 
 if get(handles.CheckMask,'Value')
+    set(handles.Mask,'Visible','on')
     InputTable=get(handles.InputTable,'Data');
     defaultname=InputTable{1,1};
     MaskName=uigetfile_uvmat('select a mask image file:',defaultname);
@@ -2413,6 +2414,7 @@ if get(handles.CheckMask,'Value')
         set(handles.Mask,'String',MaskName)
     end
 else
+    set(handles.Mask,'Visible','off')
     set(handles.Mask,'String','')
 end
 %--------------------------------------------------------------

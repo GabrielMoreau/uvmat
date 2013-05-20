@@ -57,18 +57,18 @@ for iview=1:NbView
             r(1).mode='';
         end
     end
-   
-    if isempty(incr_i) || isempty(incr_j) || isequal(r(1).mode,'*-*')% free pairs
+    
+    if isempty(incr_i) || isempty(incr_j) || isequal(r(1).mode,'*-*')|| isequal(r(1).mode,'*|*')% free pairs or increment
         FilePath=fullfile(InputTable{iview,1},InputTable{iview,2});
         fileinput=[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}];
         [tild,tild,tild,i1_series{iview},i2_series{iview},j1_series{iview},j2_series{iview},NomType,FileType,FileInfo,MovieObject,...
             i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput);
         i1_series{iview}=squeeze(i1_series{iview}(1,:,:)); %select first  pair index as ordered by find_file_series
+        i2_series{iview}=squeeze(i2_series{iview}(1,:,:)); %select first  pair index as ordered by find_file_series
         j1_series{iview}=squeeze(j1_series{iview}(1,:,:)); %first  pair index
         j2_series{iview}=squeeze(j2_series{iview}(1,:,:)); %second  pair index
-        %check_select=i1_series{iview}>=first_i & i1_series{iview}<=last_i;
         if isempty(incr_i)
-            if isempty(incr_j)
+            if isempty(first_j) || isempty(incr_j) % no j index or no defined increment for j
                 [ref_j,ref_i]=find(i1_series{iview});
                 ref_i=ref_i-1;
                 ref_j=ref_j-1;
@@ -82,7 +82,7 @@ for iview=1:NbView
             end
         else
             ref_i=first_i:incr_i:last_i;%default
-            if isempty(incr_j)
+            if isempty(first_j) ||isempty(incr_j)% no j index or no defined increment for j
                 [ref_j,tild]=find(i1_series{iview});
                 ref_j=ref_j-1;
                 ref_j=ref_j(ref_j>=first_j & ref_j<=last_j);
@@ -90,20 +90,33 @@ for iview=1:NbView
                 ref_j=first_j:incr_j:last_j;
             end
         end
-        i1_series{iview}=i1_series{iview}(ref_j,ref_i);
-        j1_series{iview}=j1_series{iview}(ref_j,ref_i);
-        if ~isempty(j2_series{iview})
-        j2_series{iview}=j2_series{iview}(ref_j,ref_i);
+        if isempty(ref_j)
+            i1_series{iview}=i1_series{iview}(2,ref_i+1);
+            if ~isempty(i2_series{iview})
+                i2_series{iview}=i2_series{iview}(2,ref_i+1);
+            end
+        else
+            i1_series{iview}=i1_series{iview}(ref_j+1,ref_i+1);
+            if ~isempty(i2_series{iview})
+                i2_series{iview}=i2_series{iview}(ref_j+1,ref_i+1);
+            end
+        end
+        if ~isempty(j1_series{iview})
+            j1_series{iview}=j1_series{iview}(ref_j+1,ref_i+1);
+            if ~isempty(j2_series{iview})
+                j2_series{iview}=j2_series{iview}(ref_j+1,ref_i+1);
+            end
         end
     else
         ref_i=first_i:incr_i:last_i;%default
         ref_j=first_j:incr_j:last_j;%default
-    end
-    if ~isequal(r(1).mode,'*-*')% imposed pairs or single i and/or j index
         [i1_series{iview},i2_series{iview},j1_series{iview},j2_series{iview}]=find_file_indices(ref_i,ref_j,str2num(r.num1),str2num(r.num2),r.mode);
     end
+    %     if ~isequal(r(1).mode,'*-*')% imposed pairs or single i and/or j index
+    %         [i1_series{iview},i2_series{iview},j1_series{iview},j2_series{iview}]=find_file_indices(ref_i,ref_j,str2num(r.num1),str2num(r.num2),r.mode);
+    %     end
     
-    %case of pairs (.nc files)
+    %list of files
     i2=[];j1=[];j2=[];
     for ifile=1:numel(i1_series{iview})
         i1=i1_series{iview}(ifile);
