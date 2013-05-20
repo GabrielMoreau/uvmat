@@ -163,7 +163,7 @@ NomTypeOut=NomType;% output file index will indicate the first and last ref inde
 %% Set field names and velocity types
 %use Param.InputFields for all views
 
-%% MAIN LOOP ON SLICES
+%% MAIN LOOP ON FIELDS
 %%%%%%%%%%%%% STANDARD PART (DO NOT EDIT) %%%%%%%%%%%%
 % for i_slice=1:NbSlice
 %     index_slice=i_slice:NbSlice:NbField;% select file indices of the slice
@@ -204,23 +204,6 @@ for index=1:NbField
                 Data{iview}=transform_fct(Data{iview});
             end
         end
-
-        %% check whether tps is needed, then calculate tps coefficients if needed
-%         check_tps=0;
-%         if isfield(Param.InputFields,'FieldName')
-%             if ischar(Param.InputFields.FieldName)
-%                 Param.InputFields.FieldName={Param.InputFields.FieldName};
-%             end
-%         else
-%             Param.InputFields.FieldName={};
-%         end
-%         for ilist=1:numel(Param.InputFields.FieldName)
-%             switch Param.InputFields.FieldName{ilist}
-%                 case {'vort','div','strain'}
-%                     check_tps=1;
-%             end
-%         end
-
         
          %% calculate tps coefficients if needed
         check_proj_tps= isfield(Param,'ProjObject')&&~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'interp_tps')&&~isfield(Data{iview},'Coord_tps');
@@ -233,6 +216,16 @@ for index=1:NbField
                 disp(['ERROR in merge_proge/proj_field: ' errormsg])
                 return
             end
+        end
+        
+        %% mask
+        if isfield(Param,'Mask')
+            %TODO: introduce a table of masks for multiple views
+            [MaskData{iview},tild,errormsg] = read_field(Param.Mask,'image');
+            if ~isempty(transform_fct) && nargin(transform_fct)>=2
+                    MaskData{iview}=transform_fct(MaskData,XmlData{iview});
+            end
+            [Data{iview},errormsg]=mask_proj(Data{iview},MaskData{iview});
         end
     end
     %----------END LOOP ON VIEWS----------------------
