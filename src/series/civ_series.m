@@ -207,13 +207,20 @@ if ~isempty(XmlFileName)
             end
         end
 end
-if ~isempty(find(strcmp(FileType_A,{'mmreader','video'})))% case of video input
+if isempty(time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video'})))% case of video input
     time=zeros(2,FileInfo_A.NumberOfFrames+1);
     time(2,:)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate);
     TimeSource='video';
     % set(han:dles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
     ColorType='truecolor';
 end
+if isempty(time)% time = index i +0.001 index j by default
+    time=(MinIndex_i:MaxIndex_i)'*ones(1,MaxIndex_j-MinIndex_j+1);
+    time=time+0.001*ones(MaxIndex_i-MinIndex_i+1,1)*(MinIndex_j:MaxIndex_j);
+    time=[zeros(1,MaxIndex_j-MinIndex_j+1);time];% insert a first line of zeros
+    time=[zeros(MaxIndex_i-MinIndex_i+2,1) time];% insert a first column of zeros
+end
+    
 if length(FileInfo_A) >1 %case of image with multiple frames
     nbfield=length(FileInfo_A);
     nbfield_j=1;
@@ -268,8 +275,8 @@ for ifield=1:NbField
         if ~isempty(j2_series_Civ1)
             j2=j2_series_Civ1(ifield);
         end
-        Data.Civ1_Time=(time(j2+1,i2+1)+time(j1+1,i1+1))/2;
-        Data.Civ1_Dt=time(j2+1,i2+1)-time(j1+1,i1+1);
+        Data.Civ1_Time=(time(i2+1,j2+1)+time(i1+1,j1+1))/2;
+        Data.Civ1_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
         for ilist=1:length(list_param)
             Data.(Civ1_param{4+ilist})=Param.ActionInput.Civ1.(list_param{ilist});
         end
