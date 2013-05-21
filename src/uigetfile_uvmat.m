@@ -9,7 +9,10 @@
 % title: = displayed title, 'status': display advancement of a series calculation
 % InputDir: directory to browse at first display
 
-function fileinput=uigetfile_uvmat(title,InputName)
+function fileinput=uigetfile_uvmat(title,InputName,FilterExt)
+if ~exist('FilterExt','var')
+    FilterExt='*';
+end
 fileinput=''; %default file selection
 if strcmp(title,'status_display')
     option='status_display';
@@ -58,7 +61,7 @@ if isempty(hfig)
             'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
     uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.75 0.8 0.2 0.04],'tag','sort_option','Callback',@refresh_GUI,'Visible','off',...
             'String',{'name';'date'},'FontUnits','points','FontSize',12,'FontWeight','bold');   
-    uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.08 0.9 0.66], 'Callback', @(src,event)list_Callback(option,src,event),'tag','list',...
+    uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.08 0.9 0.66], 'Callback', @(src,event)list_Callback(option,FilterExt,src,event),'tag','list',...
         'FontUnits','points','FontSize',12);
     uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.005 0.2 0.07],'Callback',@(src,event)close(option,src,event),...
         'String','Close','FontWeight','bold','FontUnits','points','FontSize',12);
@@ -79,7 +82,7 @@ if isempty(hfig)
     end
     drawnow
 end
-refresh_GUI(findobj(hfig,'Tag','refresh'),InputFileName)% refresh the list of content of the current dir  
+refresh_GUI(findobj(hfig,'Tag','refresh'),InputFileName,FilterExt)% refresh the list of content of the current dir  
 if ~strcmp(option,'status_display')  
     uiwait(hfig)
     if ishandle(hfig)
@@ -97,7 +100,7 @@ refresh_GUI(hObject)
 
 %------------------------------------------------------------------------   
 % --- launched by refreshing the display figure
-function refresh_GUI(hObject,InputFileName)
+function refresh_GUI(hObject,InputFileName,FilterExt)
 %------------------------------------------------------------------------
 if ~exist('InputFileName','var')
     InputFileName='';
@@ -124,7 +127,7 @@ if strcmp(get(hfig,'Tag'),'status_display')
         NbOutputFile=StatusData.NbOutputFile;
         NbOutputFile_str=num2str(NbOutputFile);
     end
-    [ListFiles,NumFiles]=list_files(DirName,1,TimeStart);% list the directory content
+    [ListFiles,NumFiles]=list_files(DirName,1,TimeStart,FilterExt);% list the directory content
     
     %% update the waitbar
     hwaitbar=findobj(hfig,'tag','waitbar');
@@ -139,7 +142,7 @@ else
         sort_option='date';
     end
     hcheck_date=findobj(hfig,'tag','check_date');
-    [ListFiles,NumFiles]=list_files(DirName,get(hcheck_date,'Value'),sort_option);% list the directory content
+    [ListFiles,NumFiles]=list_files(DirName,get(hcheck_date,'Value'),sort_option,FilterExt);% list the directory content
 end
 
 set(hlist,'String',ListFiles)
@@ -168,7 +171,7 @@ refresh_GUI(hObject,[])
 
 %------------------------------------------------------------------------   
 % --- launched by selecting an item on the file list
-function list_Callback(option,hObject,event)
+function list_Callback(option,filter_ext,hObject,event)
 %------------------------------------------------------------------------
 hfig=get(hObject,'parent');%handle of the fig
 % if ~strcmp(get(hfig,'SelectionType'),'open')
@@ -213,7 +216,7 @@ if exist(FullSelectName,'dir')% a directory has been selected
     end
     hcheck_date=findobj(hfig,'tag','check_date');
     
-    ListFiles=list_files(FullSelectName,get(hcheck_date,'Value'),sort_option);% list the directory content
+    ListFiles=list_files(FullSelectName,get(hcheck_date,'Value'),sort_option,filter_ext);% list the directory content
     set(hObject,'Value',1)
     set(hObject,'String',ListFiles)
     set(hObject,'BackgroundColor',[0.7 0.7 0.7])
@@ -241,7 +244,7 @@ set(hObject,'BackgroundColor',[0.7 0.7 0.7])% paint list in grey to indicate act
 
 %-------------------------------------------------------------------------   
 % list the content of a directory
-function [ListFiles,NumFiles]=list_files(DirName,check_date,sort_option)
+function [ListFiles,NumFiles]=list_files(DirName,check_date,sort_option,filter_ext)
 %-------------------------------------------------------------------------
 ListStruct=dir(DirName);% get structure of the current directory
 NumFiles=0; %default
@@ -252,6 +255,7 @@ end
 ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
 ListFiles=ListCells(1,:);%list of file names
 check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+
 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
 ListDates=cell2mat(ListCells(5,:));%list of numerical dates
 if isnumeric(sort_option)
@@ -261,6 +265,7 @@ end
 if ~isempty(find(~check_dir))
 ListDates(check_dir)=max(ListDates(~check_dir))+1000; % we set the dir in front
 end
+
 if isnumeric(sort_option)|| strcmp(sort_option,'date')
     [tild,index_sort]=sort(ListDates,2,'descend');% sort files by chronological order, recent first, put the dir first in the list
 else
@@ -269,6 +274,12 @@ end
 ListFiles=ListFiles(index_sort);% list of names sorted by alaphabetical order and dir and file
 cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
 check_keep=cellfun('isempty', cell_remove);
+if exist('filter_ext')
+    switch filter_ext
+        case 'image'
+            check_keep=check_keep & (cellfun(@isimage,ListFiles) |check_dir);
+    end
+end
 ListFiles=[{'+/..'} ListFiles(check_keep)];
 if check_date
     ListDateString=ListCells(2,:);%list of file dates
@@ -318,9 +329,10 @@ refresh_GUI(findobj(hfig,'Tag','refresh'))
 end
 
 %-------------------------------------------------------------------------   
-% launched by deleting the status figure (only used in mode series status')
-function close(option,hObject, eventdata)
+% --- launched by deleting the status figure (only used in mode series status')
 %-------------------------------------------------------------------------
+function close(option,hObject, eventdata)
+
 if strcmp(option,'status_display')
     hseries=findobj(allchild(0),'Tag','series');
     hstatus=findobj(hseries,'Tag','status');
@@ -329,3 +341,11 @@ if strcmp(option,'status_display')
 end
 delete(gcbf)
 
+%-------------------------------------------------------------------------
+% --- check whether a file is has an image name extension 
+%-------------------------------------------------------------------------
+function CheckImage=isimage(filename)
+
+[pp,name,ext]=fileparts(filename);
+ext
+CheckImage=~isempty(ext)&&~strcmp(ext,'.')&&~isempty(imformats(regexprep(ext,'^.','')));

@@ -1282,94 +1282,44 @@ function CheckMask_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %case of view mask selection
 if isequal(get(handles.CheckMask,'Value'),1)
-     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-     FileBase=fullfile(RootPath,SubDir,RootFile);
-    num_i1=stra2num(get(handles.i1,'String'));
-    num_j1=stra2num(get(handles.j1,'String'));
-    currentdir=pwd;  
-    cd(RootPath);
-    maskfiles=dir('*_*mask_*.png');%look for a mask file
-    cd(currentdir);%come back to the working directory
+    [RootPath,SubDir]=read_file_boxes(handles);
+    MaskSubDir=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
+    MaskPath=fullfile(RootPath,[MaskSubDir '.mask']);
     mdetect=0;
-    if ~isempty(maskfiles)
-        for ilist=1:length(maskfiles)
-            maskname=maskfiles(ilist).name;% take the first mask file in the list
-            [tild,tild,tild,tild,tild,tild,tild,MaskExt,Mask_NomType{ilist}]=fileparts_uvmat(maskname);
-             [tild,Name]=fileparts(maskname);
-            Namedouble=double(Name);
-            val=(48>Namedouble)|(Namedouble>57);% select the non-numerical characters
-            ind_mask=findstr('mask',Name);
-            i=ind_mask-1;
-            while val(i)==0 && i>0
-                i=i-1;
-            end
-            nbmask_str=str2num(Name(i+1:ind_mask-1));
-            if ~isempty(nbmask_str)
-                nbslice(ilist)=nbmask_str; % number of different masks (slices)
+    if exist(MaskPath,'dir')
+        ListStruct=dir(MaskPath);%look for a mask file
+        ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+        check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+        ListFiles=ListCells(1,:);%list of file names
+        ListFiles=ListFiles(~check_dir);
+        if ~isempty(ListFiles)
+            [tild,tild,MaskExt]=fileparts(ListFiles{1});
+            [tild,tild,MaskFile,i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileType]=find_file_series(MaskPath,ListFiles{1});
+            if strcmp(MaskFileType,'image') && isempty(i2_series) && isempty(j2_series)
+                mdetect=1;
             end
         end
-        if isequal(min(nbslice),max(nbslice))
-            nbslice=nbslice(1);
-        else
-            msgbox_uvmat('ERROR','several inconsistent mask sets coexist in the current image directory')
-            return
-        end
-        if ~isempty(nbslice) && Name(i)=='_'
-            Mask.Base=[FileBase Name(i:ind_mask+3)];
-            Mask.NbSlice=nbslice;
-            num_i1=mod(num_i1-1,nbslice)+1;
-            Mask.NomType=regexprep(Mask_NomType{1},'0','');%remove '0' in nom type for masks
-            [RootPath,RootFile]=fileparts(Mask.Base);
-            maskname=fullfile_uvmat(RootPath,'',RootFile,'.png',Mask.NomType,num_i1,[],num_j1);
-            %maskname=name_generator(Mask.Base,num_i1,num_j1,'.png',Mask.NomType);%
-            mdetect=exist(maskname,'file');
-            if mdetect
-                set(handles.num_NbSlice,'String',Name(i+1:ind_mask-1));
-                 set(handles.num_NbSlice,'BackgroundColor',[1 1 0])
-                set(handles.CheckMask,'UserData',Mask);
-                set(handles.CheckMask,'BackgroundColor',[1 1 0])
-                if nbslice > 1
-                    set(handles.slices,'value',1)
-                    slices_Callback(hObject, eventdata, handles)
-                end
+        if mdetect==0
+            MaskFullName=uigetfile_uvmat('pick a mask image file:',fullfile(RootPath,SubDir),'image');
+            [MaskPath,MaskName,MaskExt]=fileparts(MaskFullName);
+            [tild,tild,MaskFile,i1_series,i2_series,j1_series,j2_series,MaskNomType]=find_file_series(MaskPath,[MaskName MaskExt]);
+            if ~(isempty(i2_series) && isempty(j2_series))
+                MaskNomType='*';
             end
         end
-    end
-    errormsg=[];%default
-    if mdetect==0
-        maskname=uigetfile_uvmat('pick a mask image file:',fullfile(RootPath,SubDir));
-
-%% display the selected field and related information
-if isempty(maskname)
-    set(handles.CheckMask,'Value',0)
-    return
-end
-%         [FileName, PathName, filterindex] = uigetfile( ...
-%             {'*.png', ' (*.png)';
-%             '*.png',  '.png files '; ...
-%             '*.*', 'All Files (*.*)'}, ...
-%             'Pick a mask file *.png',FileBase);
-%         if ~ischar(FileName),return,end %abandon if the browser is cancelled
-%         maskname=fullfile(PathName,FileName);
-        [RootDir,SubDir,RootFile,tild,tild,tild,tild,tild,Mask.NomType]=fileparts_uvmat(maskname);
-        Mask.Base=fullfile(RootDir,SubDir,RootFile);
- %       Mask.NbSlice=1;
+        Mask.Path=MaskPath;
+        Mask.File=MaskFile;
+        Mask.Ext=MaskExt;
+        Mask.NomType=MaskNomType;
         set(handles.CheckMask,'UserData',Mask);
-%         set(handles.CheckMask,'BackgroundColor',[1 1 0])
     end
-    if isempty(errormsg)
-        errormsg=update_mask(handles,num_i1,num_j1);
-    end
-    if ~isempty(errormsg)
-            set(handles.CheckMask,'Value',0)
-            set(handles.CheckMask,'BackgroundColor',[0.7 0.7 0.7])
-     end
+        errormsg=update_mask(handles);
 else % desactivate mask display
     MaskData=get(handles.CheckMask,'UserData');
     if isfield(MaskData,'maskhandle') && ishandle(MaskData.maskhandle)
-          delete(MaskData.maskhandle)    
+        delete(MaskData.maskhandle)
     end
-    set(handles.CheckMask,'UserData',[])    
+    set(handles.CheckMask,'UserData',[])
     UvData=get(handles.uvmat,'UserData');
     if isfield(UvData,'MaskName')
         UvData=rmfield(UvData,'MaskName');
@@ -1379,49 +1329,43 @@ else % desactivate mask display
 end
 
 %------------------------------------------------------------------------
-function errormsg=update_mask(handles,num_i1,num_j1)
+function errormsg=update_mask(handles)
 %------------------------------------------------------------------------
 errormsg=[];%default
-MaskData=get(handles.CheckMask,'UserData');
-if isfield(MaskData,'maskhandle')&& ishandle(MaskData.maskhandle)
-    uistack(MaskData.maskhandle,'top');
+Mask=get(handles.CheckMask,'UserData');
+MaskIndex=1;
+if strcmp(get(handles.z_index,'Visible'),'on')
+    MaskIndex=str2num(get(handles.z_index,'String'));
 end
-num_i1_mask=mod(num_i1-1,MaskData.NbSlice)+1;
-[RootPath,RootFile]=fileparts(MaskData.Base);
-MaskName=fullfile_uvmat(RootPath,'',RootFile,'.png',MaskData.NomType,num_i1_mask,[],num_j1);
+if isfield(Mask,'maskhandle')&& ishandle(Mask.maskhandle)
+    uistack(Mask.maskhandle,'top');
+end
+MaskName=fullfile_uvmat(Mask.Path,'',Mask.File,Mask.Ext,Mask.NomType,MaskIndex);
 UvData=get(handles.uvmat,'UserData');
-%update mask image if the mask is new
+
+%% update mask image if the mask is new
 if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName)) 
     UvData.MaskName=MaskName; %update the recorded name on UvData
     set(handles.uvmat,'UserData',UvData);
     if ~exist(MaskName,'file')
-        if isfield(MaskData,'maskhandle')&& ishandle(MaskData.maskhandle)
-            delete(MaskData.maskhandle)    
+        if isfield(Mask,'maskhandle')&& ishandle(Mask.maskhandle)
+            delete(Mask.maskhandle)    
         end
     else
         %read mask image
-        [Mask,tild,errormsg] = read_field(MaskName,'image');
-%         Mask.AName='image';
-%         Mask.A=imread(MaskName);
+        [MaskField,tild,errormsg] = read_field(MaskName,'image');
         if ~isempty(errormsg)
             return
         end
-        npxy=size(Mask.A);
+        npxy=size(MaskField.A);
         if length(npxy)>2
             errormsg=[MaskName ' is not a grey scale image'];
             return
-        elseif ~isa(Mask.A,'uint8')
+        elseif ~isa(MaskField.A,'uint8')
             errormsg=[MaskName ' is not a 8 bit grey level image'];
             return
         end
-%         Mask.AX=[0.5 npxy(2)-0.5];
-%         Mask.AY=[npxy(1)-0.5 0.5 ];
-%         Mask.CoordUnit='pixel';
-        if isequal(get(handles.slices,'Value'),1)
-           NbSlice=str2num(get(handles.num_NbSlice,'String'));
-           num_i1=str2num(get(handles.i1,'String')); 
-           Mask.ZIndex=mod(num_i1-1,NbSlice)+1;
-        end
+        MaskField.ZIndex=MaskIndex;
         %px to phys or other transform on field
          menu_transform=get(handles.TransformName,'String');
         choice_value=get(handles.TransformName,'Value');
@@ -1430,10 +1374,10 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
         if  ~isequal(transform_name,'') && ~isequal(transform_name,'px')
             if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'GeometryCalib')%use geometry calib recorded from the ImaDoc xml file as first priority
                 Calib=UvData.XmlData{1}.GeometryCalib;
-                Mask=transform(Mask,UvData.XmlData{1});
+                MaskField=transform(MaskField,UvData.XmlData{1});
             end
         end
-        flagmask=Mask.A < 200;
+        flagmask=MaskField.A < 200;
         
         %make brown color image
         imflag(:,:,1)=0.9*flagmask;
@@ -1442,20 +1386,20 @@ if ~ (isfield(UvData,'MaskName') && isequal(UvData.MaskName,MaskName))
         
         %update mask image
         hmask=[]; %default
-        if isfield(MaskData,'maskhandle')&& ishandle(MaskData.maskhandle)
-            hmask=MaskData.maskhandle;
+        if isfield(Mask,'maskhandle')&& ishandle(Mask.maskhandle)
+            hmask=Mask.maskhandle;
         end
         if ~isempty(hmask)
             set(hmask,'CData',imflag)    
             set(hmask,'AlphaData',flagmask*0.6)
-            set(hmask,'XData',Mask.AX);
-            set(hmask,'YData',Mask.AY);
+            set(hmask,'XData',MaskField.AX);
+            set(hmask,'YData',MaskField.AY);
 %             uistack(hmask,'top')
         else
             axes(handles.PlotAxes)
             hold on    
-            MaskData.maskhandle=image(Mask.AX,Mask.AY,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*ones(size(flagmask)));
-            set(handles.CheckMask,'UserData',MaskData)
+            Mask.maskhandle=image(MaskField.AX,MaskField.AY,imflag,'Tag','mask','HitTest','off','AlphaData',0.6*ones(size(flagmask)));
+            set(handles.CheckMask,'UserData',Mask)
         end
     end
 end
@@ -2755,7 +2699,7 @@ else
     
     %% update the mask
     if isequal(get(handles.CheckMask,'Value'),1)%if the mask option is on
-        update_mask(handles,num_i1,num_i2);
+        update_mask(handles);
     end
     
     %% prepare the menus of histograms and plot them (histogram of the whole volume in 3D case)
@@ -3720,11 +3664,17 @@ if ~isempty(list_path{ichoice})
     if nargin(transform_handle)>1 && isfield(UvData,'XmlData')&&~isempty(UvData.XmlData)
         XmlData=UvData.XmlData{1};
         DataOut=feval(transform_handle,'*',XmlData);
-        if isfield(DataOut,'CoordUnit')
+        if isfield(DataOut,'CoordUnit')% set the requested coord unit (info used to possibly delete the current projection objects)
             CoordUnit=DataOut.CoordUnit;
         end
-        if isfield(DataOut,'InputFieldType')
+        if isfield(DataOut,'InputFieldType')% to be used to impose a type of input file (eg. for image transform)
             UvData.InputFieldType=DataOut.InputFieldType;
+        end
+        if isfield(DataOut,'XmlData')%  used to add transform parameters at selection of the transform fct
+            ListFields=fieldnames(DataOut.XmlData);
+            for ilist=1:numel(ListFields)
+            UvData.XmlData{1}.(ListFields{ilist})=DataOut.XmlData.(ListFields{ilist});
+            end
         end
     else
         DataOut=feval(transform_handle,'*');
