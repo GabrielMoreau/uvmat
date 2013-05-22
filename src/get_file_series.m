@@ -69,21 +69,22 @@ for iview=1:NbView
         j2_series{iview}=squeeze(j2_series{iview}(1,:,:)); %second  pair index
         if isempty(incr_i)
             if isempty(first_j) || isempty(incr_j) % no j index or no defined increment for j
-                [ref_j,ref_i]=find(i1_series{iview});
+                ref_j=find(max(i1_series{iview},[],2));
+                ref_i=find(max(i1_series{iview},[],1));
                 ref_i=ref_i-1;
                 ref_j=ref_j-1;
                 ref_i=ref_i(ref_i>=first_i & ref_i<=last_i);
                 ref_j=ref_j(ref_j>=first_j & ref_j<=last_j);
             else
                 ref_j=first_j:incr_j:last_j;
-                [tild,ref_i]=find(i1_series{iview}(:,ref_j));
+                ref_i=find(max(i1_series{iview}(:,ref_j),[],1));
                 ref_i=ref_i-1;
                 ref_i=ref_i(ref_i>=first_i & ref_i<=last_i);
             end
         else
             ref_i=first_i:incr_i:last_i;%default
             if isempty(first_j) ||isempty(incr_j)% no j index or no defined increment for j
-                [ref_j,tild]=find(i1_series{iview});
+                ref_j=find(max(i1_series{iview},[],2));
                 ref_j=ref_j-1;
                 ref_j=ref_j(ref_j>=first_j & ref_j<=last_j);
             else

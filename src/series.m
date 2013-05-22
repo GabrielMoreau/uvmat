@@ -447,14 +447,20 @@ set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red
 function REFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 InputTable=get(handles.InputTable,'Data');
-view_set=get(handles.REFRESH,'UserData');% list of lines to refresh 
+% view_set=get(handles.REFRESH,'UserData');% list of lines to refresh 
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
 drawnow
-for iview=view_set
+empty_line=false(size(InputTable,1),1);
+for iline=1:size(InputTable,1)
+    empty_line(iline)= isempty(cell2mat(InputTable(iline,1:3)));
+end
+InputTable(empty_line,:)=[];%remove empty lines
+set(handles.InputTable,'Data',InputTable)
+for iview=1:size(InputTable,1)
     RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});
     if ~exist(RootPath,'dir')
         i1_series=[];
-        RootPath=fileparts(RootPath); %will try the upped forldr
+        RootPath=fileparts(RootPath); %will try the upped forlder
     else
         [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=...
             find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
@@ -473,7 +479,7 @@ for iview=view_set
 end
 set(handles.REFRESH,'Visible','off')
 set(handles.REFRESH_title,'Visible','off')
-set(handles.REFRESH,'UserData',[])
+% set(handles.REFRESH,'UserData',[])
 
 %------------------------------------------------------------------------
 % --- Function called when a new file is opened, either by series_OpeningFcn or by the browser
@@ -863,7 +869,7 @@ elseif strcmp(get(handles.PairString,'Visible'),'on')
         PairString=get(handles.PairString,'Data');       
         check_burst=cellfun(@isempty,regexp(PairString,'^j'));%=0 for burst case, 1 otherwise
  %   check_nopair=cellfun(@isempty,PairString);
-    if isempty(find(check_burst))% if all pair string begins by j (burst) 
+    if isempty(find(check_burst, 1))% if all pair string begins by j (burst) 
         status_j='off'; % no j index needed for bust case
     end
 end
@@ -875,35 +881,46 @@ Position=get(handles.FileStatus,'Position');
 set(handles.FileStatus,'Units','normalized')
 xI=0.5:Position(3)-0.5;
 nbview=numel(SeriesData.i1_series);
-pair_max=cell(1,nbview);
+j_max=cell(1,nbview);
+MaxIndex_i=ones(1,nbview);%default
+MinIndex_i=ones(1,nbview);%default
 for iview=1:nbview
-    pair_max{iview}=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
-    if (strcmp(get(handles.num_first_j,'Visible'),'off')&& size(pair_max{iview},2)~=1)
-        pair_max{iview}=squeeze(max(pair_max{iview},[],1)); % consider only the i index
-    end
-    index_min(iview)=find(pair_max{iview}>0, 1 );
-    index_max(iview)=find(pair_max{iview}>0, 1, 'last' );
+    pair_max=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
+    j_max{iview}=max(pair_max,[],1);%max on j index
+    MaxIndex_i(iview)=max(find(j_max{iview}))-1;% max ref index i
+    MinIndex_i(iview)=min(find(j_max{iview}))-1;% min ref index i
+%     pair_max{iview}=squeezSeriesData.i1_series{iview},[],1)); %max on pair index
+%     if (strcmp(get(handles.num_first_j,'Visible'),'off')&& size(pair_max{iview},2)~=1)
+%         pair_max{iview}=squeeze(max(pair_max{iview},[],1)); % consider only the i index
+%     end
 end
-index_min=min(index_min);
-index_max=max(index_max);
-range_index=index_max-index_min+1;
-scale_y=Position(4)/nbview;
-scale_x=Position(3)/range_index;
-x=(0.5:range_index-0.5)*Position(3)/range_index;
+MinIndex_i=min(MinIndex_i);
+MaxIndex_i=max(MaxIndex_i);
+range_index=MaxIndex_i-MinIndex_i+1;
+% scale_y=Position(4)/nbview;
+% scale_x=Position(3)/range_index;
+%x=(0.5:range_index-0.5)*Position(3)/range_index;% set of abscissa representing the whole i index range
 % y=(0.5:nbview-0.5)*Position(4)/nbview;
 range_y=max(1,floor(Position(4)/nbview));
-CData=zeros(nbview*range_y,floor(Position(3)));
+npx=floor(Position(3));
+file_indices=MinIndex_i+floor(((0.5:npx-0.5)/npx)*range_index)+1;
+CData=zeros(nbview*range_y,npx);% initiate the image representing the existing files
 for iview=1:nbview
     ind_y=1+(iview-1)*range_y:iview*range_y;
-    LineData=zeros(1,range_index);
-    x_index=find(pair_max{iview}>0)-index_min+1;
-    LineData(x_index)=1;
-    if numel(x)>1
-    LineData=interp1(x,LineData,xI,'nearest');
+    LineData=zeros(size(file_indices));
+    file_select=file_indices(file_indices<=numel(j_max{iview}));
+    ind_select=find(file_indices<=numel(j_max{iview}));
+    LineData(ind_select)=j_max{iview}(file_select)~=0;
+%     LineData=zeros(1,range_index);
+%     x_index=find(j_max{iview}>0)-MinIndex_i;
+%     LineData(x_index)=1;
+%     if numel(x)>1
+%         LineData
+    %LineData=interp1(x,LineData,xI,'nearest');
     CData(ind_y,:)=ones(size(ind_y'))*LineData;
-    end
+%     end
 end
-CData=cat(3,zeros(size(CData)),CData,zeros(size(CData)));
+CData=cat(3,zeros(size(CData)),CData,zeros(size(CData)));%make color images r=0,g,b=0
 set(handles.FileStatus,'CData',CData);
 
 %% check for pair display
@@ -1796,7 +1813,7 @@ end
 Param.IndexRange=rmfield(Param.IndexRange,'TimeTable');
 empty_line=false(size(Param.InputTable,1),1);
 for iline=1:size(Param.InputTable,1)
-    empty_line(iline)=isequal(Param.InputTable(iline,1:3),{'','',''});
+    empty_line(iline)=isempty(cell2mat(Param.InputTable(iline,1:3)));
 end
 Param.InputTable(empty_line,:)=[];
 
@@ -2404,18 +2421,18 @@ end
 
 %--------------------------------------------------------------
 function CheckMask_Callback(hObject, eventdata, handles)
-
 if get(handles.CheckMask,'Value')
-    set(handles.Mask,'Visible','on')
     InputTable=get(handles.InputTable,'Data');
-    defaultname=InputTable{1,1};
-    MaskName=uigetfile_uvmat('select a mask image file:',defaultname);
-    if ~isempty(MaskName)
-        set(handles.Mask,'String',MaskName)
+    for iview=1:size(InputTable,1)
+        RootPath=InputTable{iview,1};
+        SubDir=InputTable{iview,2};
+        MaskSubDir=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
+        MaskName=fullfile(RootPath,[MaskSubDir '.mask'],'mask_1.png');
+        if ~exist(MaskName,'file')
+            msgbox_uvmat('WARNING',['mask file '  MaskName ' not found'])
+            return
+        end
     end
-else
-    set(handles.Mask,'Visible','off')
-    set(handles.Mask,'String','')
 end
 %--------------------------------------------------------------
 
