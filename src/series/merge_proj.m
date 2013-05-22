@@ -160,6 +160,19 @@ for iview=1:NbView
 end
 NomTypeOut=NomType;% output file index will indicate the first and last ref index in the series
 
+%% mask (TODO: case of multilevels)
+if Param.CheckMask
+    MaskData=cell(NbView,1);
+    MaskSubDir=regexprep(Param.InputTable{iview,2},'\..*','');%take the root part of SubDir, before the first dot '.'
+    MaskName=fullfile(Param.InputTable{iview,1},[MaskSubDir '.mask'],'mask_1.png');
+    if exist(MaskName,'file')
+        [MaskData{iview},tild,errormsg] = read_field(MaskName,'image');
+        if ~isempty(transform_fct) && nargin(transform_fct)>=2
+            MaskData{iview}=transform_fct(MaskData,XmlData{iview});
+        end
+    end
+end
+
 %% Set field names and velocity types
 %use Param.InputFields for all views
 
@@ -173,7 +186,7 @@ NomTypeOut=NomType;% output file index will indicate the first and last ref inde
     %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
 for index=1:NbField
         update_waitbar(WaitbarHandle,index/NbField)
-    if ~isempty(RUNHandle) &&ishandle(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
+    if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         return
     end
@@ -195,7 +208,7 @@ for index=1:NbField
         if ~isempty(NbSlice_calib)
             Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
         end
-
+        
         %% transform the input field (e.g; phys) if requested (no transform involving two input fields)
         if ~isempty(transform_fct)
             if nargin(transform_fct)>=2
@@ -205,10 +218,10 @@ for index=1:NbField
             end
         end
         
-         %% calculate tps coefficients if needed
+        %% calculate tps coefficients if needed
         check_proj_tps= isfield(Param,'ProjObject')&&~isempty(Param.ProjObject)&& strcmp(Param.ProjObject.ProjMode,'interp_tps')&&~isfield(Data{iview},'Coord_tps');
         Data{iview}=tps_coeff_field(Data{iview},check_proj_tps);
-
+        
         %% projection on object (gridded plane)
         if Param.CheckObject
             [Data{iview},errormsg]=proj_field(Data{iview},Param.ProjObject);
@@ -219,13 +232,8 @@ for index=1:NbField
         end
         
         %% mask
-        if isfield(Param,'Mask')
-            %TODO: introduce a table of masks for multiple views
-            [MaskData{iview},tild,errormsg] = read_field(Param.Mask,'image');
-            if ~isempty(transform_fct) && nargin(transform_fct)>=2
-                    MaskData{iview}=transform_fct(MaskData,XmlData{iview});
-            end
-            [Data{iview},errormsg]=mask_proj(Data{iview},MaskData{iview});
+        if Param.CheckMask && ~isempty(MaskData{iview})
+             [Data{iview},errormsg]=mask_proj(Data{iview},MaskData{iview});
         end
     end
     %----------END LOOP ON VIEWS----------------------

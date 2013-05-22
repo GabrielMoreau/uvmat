@@ -112,7 +112,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     FileType=get_file_type(filecell{1,1});
     CheckImage=~isempty(find(strcmp(FileType,ImageTypeOptions), 1));% =1 for images
     if ~CheckImage
-        msgbox_uvmat('ERROR',['invalid file type input: ' FileType{1} ' not an image'])
+        msgbox_uvmat('ERROR',['invalid file type input: ' FileType ' not an image'])
         return
     end
     

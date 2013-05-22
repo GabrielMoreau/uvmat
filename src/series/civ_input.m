@@ -96,8 +96,9 @@ FileInput=SeriesData.RefFile{1};
 ind_opening=0;%default
 NomTypeNc='';
 switch FileType
-         case {'image','multimage','video','mmreader'}
-          NomTypeImaA=NomTypeInput; 
+    case {'image','multimage','video','mmreader'}
+        NomTypeImaA=NomTypeInput;
+        iview_image=1;%line # for the input images
     case 'civdata'
         if ~strcmp(Param.Action.ActionName,'civ_series')
             msgbox_uvmat('ERROR','bad input data file: open an image or a nc file from civ_series')
@@ -110,38 +111,38 @@ switch FileType
             set(handles.RootFile_1,'Visible','On');
         else
             set(handles.ListCompareMode,'Value',1)
-%            set(handles.RootFile_1,'Visible','Off');
+            %            set(handles.RootFile_1,'Visible','Off');
         end
         imageinput='';
         Data=nc2struct(FileInput,'ListGlobalAttribute','Civ2_ImageA','Civ1_ImageA','Civ2_ImageB','Civ1_ImageB');
         [PathCiv1_ImageA,Civ1_ImageA,FileExtA]=fileparts(Data.Civ1_ImageA);
         [PathCiv1_ImageB,Civ1_ImageB,FileExtA]=fileparts(Data.Civ1_ImageB);
-%         set(handles.Civ1_ImageA,'String',Civ1_ImageA)
-%         set(handles.Civ1_ImageB,'String',Civ1_ImageB)
+        %         set(handles.Civ1_ImageA,'String',Civ1_ImageA)
+        %         set(handles.Civ1_ImageB,'String',Civ1_ImageB)
         if ~isempty(Data.Civ2_ImageA)
-        [PathCiv2_ImageA,Civ2_ImageA,FileExtA]=fileparts(Data.Civ2_ImageA);
-        [PathCiv2_ImageB,Civ2_ImageB,FileExtA]=fileparts(Data.Civ2_ImageB);
-%         set(handles.Civ2_ImageA,'String',Civ2_ImageA)
-%         set(handles.Civ2_ImageB,'String',Civ2_ImageB)
+            [PathCiv2_ImageA,Civ2_ImageA,FileExtA]=fileparts(Data.Civ2_ImageA);
+            [PathCiv2_ImageB,Civ2_ImageB,FileExtA]=fileparts(Data.Civ2_ImageB);
+            %         set(handles.Civ2_ImageA,'String',Civ2_ImageA)
+            %         set(handles.Civ2_ImageB,'String',Civ2_ImageB)
         end
         hhseries=guidata(gcbf);
         if size(Param.InputTable,1)==1
-        series('display_file_name',hhseries,Data.Civ1_ImageA,'append');
+            series('display_file_name',hhseries,Data.Civ1_ImageA,'append');
         end
-    if isfield(Data,'Txt')
-        errormsg=Data.Txt;
-        return
-        %TODO: introduce the image in the input table of series
-    end
+        if isfield(Data,'Txt')
+            errormsg=Data.Txt;
+            return
+            %TODO: introduce the image in the input table of series
+        end
         [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaA]=fileparts_uvmat(Data.Civ1_ImageA);
         [RootPath,SubDir,RootFile,i1,i2,j1,j2,FileExt,NomTypeImaB]=fileparts_uvmat(Data.Civ1_ImageB);
+        iview_image=2;%line # for the input images
     case 'civxdata'% case of  civx data,
         NomTypeNc=NomTypeInput;
         ind_opening=FileInfo.CivStage;
         set(handles.Program,'Value',3) %select Cix by default
         msgbox_uvmat('ERROR','old civX convention, use the GUI civ')
         return
-     
 end
 
 %% TODO: get corresponding image in nc case
@@ -192,13 +193,13 @@ end
 
 
 %%  set the menus of image pairs and default selection for civ_input   %%%%%%%%%%%%%%%%%%%
-MaxIndex_i=Param.IndexRange.MaxIndex_i(1);
-MinIndex_i=Param.IndexRange.MinIndex_i(1);
+MaxIndex_i=Param.IndexRange.MaxIndex_i(iview_image);
+MinIndex_i=Param.IndexRange.MinIndex_i(iview_image);
 MaxIndex_j=1;%default
 MinIndex_j=1;
 if isfield(Param.IndexRange,'MaxIndex_j')&&isfield(Param.IndexRange,'MinIndex_j')
-MaxIndex_j=Param.IndexRange.MaxIndex_j(1);
-MinIndex_j=Param.IndexRange.MinIndex_j(1);
+MaxIndex_j=Param.IndexRange.MaxIndex_j(iview_image);
+MinIndex_j=Param.IndexRange.MinIndex_j(iview_image);
 end
 CivInputData.MaxIndex_i=MaxIndex_i;
 CivInputData.MaxIndex_j=MaxIndex_j;
@@ -1250,6 +1251,7 @@ elseif isequal(mode,'pair j1-j2')%case of pairs
                  displ_pair{index_pair}=[displ_pair{index_pair} ' :dt= ' num2str(dt(index_pair)*1000)];
             end
         end
+        
     end
     [dtsort,indsort]=sort(dt);
     displ_pair=displ_pair(indsort);
