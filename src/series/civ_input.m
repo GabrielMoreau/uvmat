@@ -24,7 +24,7 @@ function varargout = civ_input(varargin)
 %TODO: search range
 
 
-% Last Modified by GUIDE v2.5 20-May-2013 09:55:30
+% Last Modified by GUIDE v2.5 25-May-2013 12:37:21
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
@@ -287,7 +287,7 @@ update_CivOptions(handles,ind_opening)
 
 %% list the possible index pairs, depending on the option set in ListPairMode
 ListPairMode_Callback([], [], handles)
-
+ListPairCiv1_Callback(hObject, eventdata, handles)
 % for movies don't modify except if the current ref is outside index bounds
 %if strcmp(ExtInput,'.nc')|| ~(strcmp(FileType,'mmreader')||strcmp(FileType,'VideoReader') && num_ref_i<=MaxIndex_i && num_ref_j<=MaxIndex_j)
 % if ~isempty(i1)% if i1 has been selected by the input
@@ -425,22 +425,22 @@ set(handles.ImaDoc,'String',ext_imadoc)% display the extension name for the imag
 
 %% update i and j index range if a nc file has been opened or pb withmin max image indices:
 % then set first and last to the inputfile index by default
-first_i=str2num(get(handles.first_i,'String'));
+first_i=str2num(get(handles.MinIndex_i,'String'));
 last_i=str2num(get(handles.last_i,'String'));
 if isempty(first_i) || isempty(last_i)||isempty(MinIndex_i)||isempty(MaxIndex_i)||ind_opening~=0 || isempty(first_i) || isempty(last_i)|| first_i<MinIndex_i || last_i>MaxIndex_i
     first_i=num_ref_i;
     last_i=num_ref_i;
-    set(handles.first_i,'String',num2str(first_i));
+    set(handles.MinIndex_i,'String',num2str(first_i));
     set(handles.last_i,'String',num2str(last_i));%
 end
 
 %j index range
-first_j=str2num(get(handles.first_j,'String'));
+first_j=str2num(get(handles.MinIndex_j,'String'));
 last_j=str2num(get(handles.last_j,'String'));
 if isempty(first_j) || isempty(last_j)||isempty(MinIndex_j)||isempty(MaxIndex_j)||ind_opening~=0 || first_j<MinIndex_j || last_j>MaxIndex_j
     first_j=num_ref_j;
     last_j=num_ref_j;
-    set(handles.first_j,'String',num2str(first_j));
+    set(handles.MinIndex_j,'String',num2str(first_j));
     set(handles.last_j,'String',num2str(last_j));%
 end
 if num_ref_i>last_i || num_ref_i<first_i
@@ -617,127 +617,104 @@ function OK_Callback(hObject, eventdata, handles)
 handles.output.ActionInput=read_GUI(handles.civ_input);
 guidata(hObject, handles);% Update handles structure
 uiresume(handles.civ_input);
-drawnow
 
-return
-
-
-set(handles.OK, 'Enable','Off')
-set(handles.OK,'BackgroundColor',[0.831 0.816 0.784])
-set(handles.OK,'UserData',now)% record the time of launch
-
-errormsg=launch_jobs(hObject, eventdata, handles);
-set(handles.OK, 'Enable','On')
-set(handles.OK,'BackgroundColor',[1 0 0])
-
-% display errors or start status callback to visualise results
-if ~isempty(errormsg)
-    display(errormsg)
-    msgbox_uvmat('ERROR',errormsg)
-elseif  isfield(handles,'status') %&& ~isequal(get(handles.ListPairMode,'Value'),3)
-    set(handles.status,'Value',1);%suppress status display
-    status_Callback(hObject, eventdata, handles)
-end
-
-
-
-%------------------------------------------------------------------------
-% --- determine the list of index pairs of processing file
-function [i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_civ2]=...
-    find_pair_indices(handles,ref_i,ref_j,mode)
-%------------------------------------------------------------------------
-
-list_civ1=get(handles.ListPairCiv1,'String');
-index_civ1=get(handles.ListPairCiv1,'Value');
-str_civ1=list_civ1{index_civ1};%string defining the image pairs for civ1
-if isempty(str_civ1)||isequal(str_civ1,'')
-    msgbox_uvmat('ERROR','no image pair selected for civ1')
-    return
-end
-list_civ2=get(handles.ListPairCiv2,'String');
-index_civ2=get(handles.ListPairCiv2,'Value');
-if index_civ2>length(list_civ2)
-    list_civ2=list_civ1;
-    index_civ2=index_civ1;
-end
-str_civ2=list_civ2{index_civ2};%string defining the image pairs for civ2
-
-if isequal (mode,'series(Di)')
-    lastfield=str2double(get(handles.nb_field,'String'));
-    i1_civ1=ref_i-floor(index_civ1/2)*ones(size(ref_i));% set of first image numbers
-    i2_civ1=ref_i+ceil(index_civ1/2)*ones(size(ref_i));
-    j1_civ1=ref_j;
-    j2_civ1=ref_j;
-    i1_civ2=ref_i-floor(index_civ2/2)*ones(size(ref_i));
-    i2_civ2=ref_i+ceil(index_civ2/2)*ones(size(ref_i));
-    j1_civ2=ref_j;
-    j2_civ2=ref_j;
-    
-    % adjust the first and last field number
-    lastfield=str2double(get(handles.nb_field,'String'));
-    if isnan(lastfield)
-        indsel=find((i1_civ1 >= 1)&(i1_civ2 >= 1));
-    else
-        indsel=find((i2_civ1 <= lastfield)&(i2_civ2 <= lastfield)&(i1_civ1 >= 1)&(i1_civ2 >= 1));
-    end
-    if length(indsel)>=1
-        firstind=indsel(1);
-        lastind=indsel(end);
-        set(handles.first_i,'String',num2str(ref_i(firstind)))%update the display of first and last fields
-        set(handles.last_i,'String',num2str(ref_i(lastind)))
-        ref_i=ref_i(indsel);
-        i1_civ1=i1_civ1(indsel);
-        i1_civ2=i1_civ2(indsel);
-        i2_civ1=i2_civ1(indsel);
-        i2_civ2=i2_civ2(indsel);
-    end
-elseif isequal (mode,'series(Dj)')
-    lastfield_j=str2double(get(handles.nb_field2,'String'));
-    i1_civ1=ref_i;% set of first image numbers
-    i2_civ1=ref_i;
-    j1_civ1=ref_j-floor(index_civ1/2)*ones(size(ref_j));
-    j2_civ1=ref_j+ceil(index_civ1/2)*ones(size(ref_j));
-    i1_civ2=ref_i;
-    i2_civ2=ref_i;
-    j1_civ2=ref_j-floor(index_civ2/2)*ones(size(ref_j));
-    j2_civ2=ref_j+ceil(index_civ2/2)*ones(size(ref_j));
-    % adjust the first and last field number
-    if isnan(lastfield_j)
-        indsel=find((j1_civ1 >= 1)&(j1_civ2 >= 1));
-    else
-        indsel=find((j2_civ1 <= lastfield_j)&(j2_civ2 <= lastfield_j)&(j1_civ1 >= 1)&(j1_civ2 >= 1));
-    end
-    if length(indsel)>=1
-        firstind=indsel(1);
-        lastind=indsel(end);
-        set(handles.first_j,'String',num2str(ref_j(firstind)))%update the display of first and last fields
-        set(handles.last_j,'String',num2str(ref_j(lastind)))
-        ref_j=ref_j(indsel);
-        j1_civ1=j1_civ1(indsel);
-        j2_civ1=j2_civ1(indsel);
-        j1_civ2=j1_civ2(indsel);
-        j2_civ2=j2_civ2(indsel);
-    end
-elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)
-    displ_num=get(handles.ListPairCiv1,'UserData');
-    i1_civ1=ref_i;
-    i2_civ1=ref_i;
-    j1_civ1=displ_num(1,index_civ1);
-    j2_civ1=displ_num(2,index_civ1);
-    i1_civ2=ref_i;
-    i2_civ2=ref_i;
-    j1_civ2=displ_num(1,index_civ2);
-    j2_civ2=displ_num(2,index_civ2);
-elseif isequal(mode,'displacement')
-    i1_civ1=ref_i;
-    i2_civ1=ref_i;
-    j1_civ1=ref_j;
-    j2_civ1=ref_j;
-    i1_civ2=ref_i;
-    i2_civ2=ref_i;
-    j1_civ2=ref_j;
-    j2_civ2=ref_j;
-end
+% %------------------------------------------------------------------------
+% % --- determine the list of index pairs of processing file
+% function [i1_civ1,i2_civ1,j1_civ1,j2_civ1,i1_civ2,i2_civ2,j1_civ2,j2_civ2]=...
+%     find_pair_indices(handles,ref_i,ref_j,mode)
+% %------------------------------------------------------------------------
+% 
+% list_civ1=get(handles.ListPairCiv1,'String');
+% index_civ1=get(handles.ListPairCiv1,'Value');
+% str_civ1=list_civ1{index_civ1};%string defining the image pairs for civ1
+% if isempty(str_civ1)||isequal(str_civ1,'')
+%     msgbox_uvmat('ERROR','no image pair selected for civ1')
+%     return
+% end
+% list_civ2=get(handles.ListPairCiv2,'String');
+% index_civ2=get(handles.ListPairCiv2,'Value');
+% if index_civ2>length(list_civ2)
+%     list_civ2=list_civ1;
+%     index_civ2=index_civ1;
+% end
+% str_civ2=list_civ2{index_civ2};%string defining the image pairs for civ2
+% 
+% if isequal (mode,'series(Di)')
+%     lastfield=str2double(get(handles.MaxIndex_i,'String'));
+%     i1_civ1=ref_i-floor(index_civ1/2)*ones(size(ref_i));% set of first image numbers
+%     i2_civ1=ref_i+ceil(index_civ1/2)*ones(size(ref_i));
+%     j1_civ1=ref_j;
+%     j2_civ1=ref_j;
+%     i1_civ2=ref_i-floor(index_civ2/2)*ones(size(ref_i));
+%     i2_civ2=ref_i+ceil(index_civ2/2)*ones(size(ref_i));
+%     j1_civ2=ref_j;
+%     j2_civ2=ref_j;
+%     
+%     % adjust the first and last field number
+%     lastfield=str2double(get(handles.MaxIndex_i,'String'));
+%     if isnan(lastfield)
+%         indsel=find((i1_civ1 >= 1)&(i1_civ2 >= 1));
+%     else
+%         indsel=find((i2_civ1 <= lastfield)&(i2_civ2 <= lastfield)&(i1_civ1 >= 1)&(i1_civ2 >= 1));
+%     end
+%     if length(indsel)>=1
+%         firstind=indsel(1);
+%         lastind=indsel(end);
+%         set(handles.MinIndex_i,'String',num2str(ref_i(firstind)))%update the display of first and last fields
+%         set(handles.last_i,'String',num2str(ref_i(lastind)))
+%         ref_i=ref_i(indsel);
+%         i1_civ1=i1_civ1(indsel);
+%         i1_civ2=i1_civ2(indsel);
+%         i2_civ1=i2_civ1(indsel);
+%         i2_civ2=i2_civ2(indsel);
+%     end
+% elseif isequal (mode,'series(Dj)')
+%     lastfield_j=str2double(get(handles.MaxIndex_j,'String'));
+%     i1_civ1=ref_i;% set of first image numbers
+%     i2_civ1=ref_i;
+%     j1_civ1=ref_j-floor(index_civ1/2)*ones(size(ref_j));
+%     j2_civ1=ref_j+ceil(index_civ1/2)*ones(size(ref_j));
+%     i1_civ2=ref_i;
+%     i2_civ2=ref_i;
+%     j1_civ2=ref_j-floor(index_civ2/2)*ones(size(ref_j));
+%     j2_civ2=ref_j+ceil(index_civ2/2)*ones(size(ref_j));
+%     % adjust the first and last field number
+%     if isnan(lastfield_j)
+%         indsel=find((j1_civ1 >= 1)&(j1_civ2 >= 1));
+%     else
+%         indsel=find((j2_civ1 <= lastfield_j)&(j2_civ2 <= lastfield_j)&(j1_civ1 >= 1)&(j1_civ2 >= 1));
+%     end
+%     if length(indsel)>=1
+%         firstind=indsel(1);
+%         lastind=indsel(end);
+%         set(handles.MinIndex_j,'String',num2str(ref_j(firstind)))%update the display of first and last fields
+%         set(handles.last_j,'String',num2str(ref_j(lastind)))
+%         ref_j=ref_j(indsel);
+%         j1_civ1=j1_civ1(indsel);
+%         j2_civ1=j2_civ1(indsel);
+%         j1_civ2=j1_civ2(indsel);
+%         j2_civ2=j2_civ2(indsel);
+%     end
+% elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)
+%     displ_num=get(handles.ListPairCiv1,'UserData');
+%     i1_civ1=ref_i;
+%     i2_civ1=ref_i;
+%     j1_civ1=displ_num(1,index_civ1);
+%     j2_civ1=displ_num(2,index_civ1);
+%     i1_civ2=ref_i;
+%     i2_civ2=ref_i;
+%     j1_civ2=displ_num(1,index_civ2);
+%     j2_civ2=displ_num(2,index_civ2);
+% elseif isequal(mode,'displacement')
+%     i1_civ1=ref_i;
+%     i2_civ1=ref_i;
+%     j1_civ1=ref_j;
+%     j2_civ1=ref_j;
+%     i1_civ2=ref_i;
+%     i2_civ2=ref_i;
+%     j1_civ2=ref_j;
+%     j2_civ2=ref_j;
+% end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in ListCompareMode.
@@ -745,87 +722,56 @@ function ListCompareMode_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 ListCompareMode=get(handles.ListCompareMode,'String');
 option=ListCompareMode{get(handles.ListCompareMode,'Value')};
+hseries=findobj(allchild(0),'Tag','series');
+SeriesData=get(hseries,'UserData');
+check_nc=strcmp(SeriesData.FileType{1},'.nc');
+ImageType=SeriesData.FileType(2:end);
+if check_nc
+    ImageType=SeriesData.FileType(2:end);
+else
+    ImageType=SeriesData.FileType;
+end
+hhseries=guidata(hseries);
+InputTable=get(hhseries.InputTable,'Data');
+OriginIndex='off';
+PairIndices='off';
+DoubleInputSeries='off';
 switch option
     case 'PIV'
-        set(handles.RootFile_1,'Visible','Off');
-        set(handles.sub_txt,'Visible','off')
-        set(handles.RootFile_1,'String',[]);
-        mode_store=get(handles.ListCompareMode,'UserData');
-        set(handles.ListPairMode,'Visible','on')
-        set(handles.ListPairMode,'Value',1)
-        set(handles.ListPairMode,'String',mode_store)
-        set(handles.CheckStereo,'Value',0)      
-    case 'PIV volume'     
-        set(handles.RootFile_1,'Visible','Off');
-        set(handles.sub_txt,'Visible','off')
-        set(handles.RootFile_1,'String',[]);
-        mode_store=get(handles.ListCompareMode,'UserData');
-        set(handles.ListPairMode,'Visible','on')
+        PairIndices='on';% needs to define index pairs for PIV
+        
+    case 'PIV volume'
+        PairIndices='on';% needs to define index pairs for PIV
         set(handles.ListPairMode,'Value',1)
         set(handles.ListPairMode,'String',{'series(Di)'})
-        set(handles.CheckStereo,'Value',0) 
-        set(handles.last_j,'String',get(handles.nb_field2,'String'))% select the whole volume scan by default
-        set(handles.incr_i,'String',num2str(2))% 
-    otherwise
-        filebase=get(handles.RootPath,'String');
-        set(handles.sub_txt,'Visible','on')
-        set(handles.RootFile_1,'Visible','On');%mkes the second file input window visible
-        mode_store=get(handles.ListPairMode,'String');%get the present 'mode'
-        set(handles.ListCompareMode,'UserData',mode_store);%store the mode display
-        set(handles.ListPairMode,'Visible','off')
-        
-        %% open an image file with the browser
-        ind_opening=1;%default
-        browse.incr_pair=[0 0]; %default
-        oldfile=get(handles.RootPath,'String');
-        menu={'*.png;*.jpg;*.tif;*.avi;*.AVI;', ' (*.png,*.jpg ,.tif, *.avi,*.AVI)';
-            '*.png','.png image files'; ...
-            '*.jpg',' jpeg image files'; ...
-            '*.tif','.tif image files'; ...
-            '*.avi;*.AVI','.avi movie files'; ...
-            '*.*',  'All Files (*.*)'};
-        if strcmp(option,'displacement')
-            comment='Pick the reference file for displacements';
-        else
-            comment='Pick a file of the second series';
-        end
-        [FileName, PathName] = uigetfile( menu, comment,oldfile);
-        fileinput=[PathName FileName];%complete file name
-        sizf=size(fileinput);
-        if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end %stop if fileinput not a character string
-        [path,name,ext]=fileparts(fileinput);
-        [path1]=fileparts(filebase);
-        if isunix
-            [status,path]=system(['readlink ' path]);
-            [status,path1]=system(['readlink ' path1]);% look for the true path in case of symbolic paths
-        end
-        if ~strcmp(path1,path)
-            msgbox_uvmat('ERROR','The second image or series must be in the same directory as the first one')
-            return
-        end
-        if strcmp(option,'displacement')
-            [tild,RootFile_1]=fileparts(name);
-        else
-            [FilePath,FileName,Ext]=fileparts(fileinput);
-            % detect the file type, get the movie object if relevant, and look for the corresponding file series:
-            % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-            [RootPath,SubDir,RootFile_1,i1_series,i2_series,j1_series,j2_series,nom_type_1,FileType,FileInfo,Object,i1,i2,j1,j2]=find_file_series(FilePath,[FileName Ext]);
-            
-            %check image nom type
-            if ~strcmp(nom_type_1,get(handles.NomType,'String'))
-                msgbox_uvmat('ERROR','The second image series must have the same indexing type as the first one, or use the option displacement for a fixed image')
-                return
+        ListPairMode_Callback(hObject, eventdata, handles)
+        %         set(handles.RootFile_1,'Visible','Off');
+        %         set(handles.sub_txt,'Visible','off')
+        %         set(handles.RootFile_1,'String',[]);
+        %         mode_store=get(handles.ListCompareMode,'UserData');
+        %         set(handles.ListPairMode,'Visible','on')
+        %         set(handles.ListPairMode,'Value',1)
+        %         set(handles.ListPairMode,'String',{'series(Di)'})
+        %         set(handles.CheckStereo,'Value',0)
+        %         set(handles.last_j,'String',get(handles.MaxIndex_j,'String'))% select the whole volume scan by default
+        %         set(handles.incr_i,'String',num2str(2))%
+    case 'displacement'
+        OriginIndex='on';%define a frame origin for displacement
+    case 'shift'
+        if numel(ImageType)==1
+            fileinput=uigetfile_uvmat('pick a second file series for synchronous shift',InputTable{check_nc+1});
+            if ~isempty(fileinput)
+                series( 'display_file_name',hhseries,fileinput,'append')
             end
+            
+            
         end
-        %check image  extension
-        if ~strcmp(ext,get(handles.ImaExt,'String'))
-            msgbox_uvmat('ERROR','The second image series must have the same extension name as the first one')
-            return
-        end
-        set(handles.RootFile_1,'String',RootFile_1);
-        
 end
+set(handles.num_OriginIndex,'Visible',OriginIndex)
+set(handles.OriginIndex_title,'Visible',OriginIndex)
+set(handles.PairIndices,'Visible',PairIndices)
 ListPairMode_Callback(hObject, eventdata, handles)
+        
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -934,19 +880,24 @@ errormsg=find_netcpair_civ( handles,1);
 
 function enable_i(handles, state)
 set(handles.itext,'Visible',state)
-% set(handles.first_i,'Visible',state)
+% set(handles.MinIndex_i,'Visible',state)
 % set(handles.last_i,'Visible',state)
 % set(handles.incr_i,'Visible',state)
-set(handles.nb_field,'Visible',state)
+set(handles.MaxIndex_i,'Visible',state)
 set(handles.ref_i,'Visible',state)
 
 function enable_j(handles, state)
 set(handles.jtext,'Visible',state)
-% set(handles.first_j,'Visible',state)
+% set(handles.MinIndex_j,'Visible',state)
 % set(handles.last_j,'Visible',state)
 % set(handles.incr_j,'Visible',state)
-set(handles.nb_field2,'Visible',state)
+set(handles.MinIndex_j,'Visible',state)
+set(handles.MaxIndex_j,'Visible',state)
 set(handles.ref_j,'Visible',state)
+%hseries=findobj(allchild(0),'Tag','series');
+%hhseries=guidata(hseries);
+%series('enable_j',hhseries,state); %file input with xml reading  in uvmat, show the image in phys coordinates
+
 
 
 %------------------------------------------------------------------------
@@ -955,42 +906,53 @@ function ListPairCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %reproduce by default the chosen pair in the checkciv2 menu
 list_pair=get(handles.ListPairCiv1,'String');%get the menu of image pairs
-index_pair=get(handles.ListPairCiv1,'Value');
-displ_num=get(handles.ListPairCiv1,'UserData');
-list_pair2=get(handles.ListPairCiv2,'String');%get the menu of image pairs
-if index_pair<=length(list_pair2)
-    set(handles.ListPairCiv2,'Value',index_pair);
-end
+PairString=list_pair{get(handles.ListPairCiv1,'Value')};
 
-%update first_i and last_i according to the chosen image pairs
+[ind1,ind2]=...
+    find_pair_indices(PairString);
+hseries=findobj(allchild(0),'Tag','series');
+%SeriesData=get(hseries,'UserData');
+hhseries=guidata(hseries);
+set(hhseries.num_first_j,'String',num2str(ind1));
+set(hhseries.num_last_j,'String',num2str(ind2));
+set(hhseries.num_incr_j,'String',num2str(ind2-ind1));
+
+% displ_num=get(handles.ListPairCiv1,'UserData');
+% list_pair2=get(handles.ListPairCiv2,'String');%get the menu of image pairs
+% if index_pair<=length(list_pair2)
+%     set(handles.ListPairCiv2,'Value',index_pair);
+% end
+
+
+%update MinIndex_i and last_i according to the chosen image pairs
 % mode_list=get(handles.ListPairMode,'String');
 % mode_value=get(handles.ListPairMode,'Value');
 % mode=mode_list{mode_value};
 % if isequal(mode,'series(Di)')
-%     first_i=str2double(get(handles.first_i,'String'));
+%     MinIndex_i=str2double(get(handles.MinIndex_i,'String'));
 %     last_i=str2double(get(handles.last_i,'String'));
 %     incr_i=str2double(get(handles.incr_i,'String'));
-%     num_i=first_i:incr_i:last_i;
-%     lastfield=str2double(get(handles.nb_field,'String'));
+%     num_i=MinIndex_i:incr_i:last_i;
+%     lastfield=str2double(get(handles.MaxIndex_i,'String'));
 %     if ~isnan(lastfield)
 %         test_find=(num_i-floor(index_pair/2)*ones(size(num_i))>0)& ...
 %             (num_i+ceil(index_pair/2)*ones(size(num_i))<=lastfield);
 %         num_i=num_i(test_find);
 %     end
-%     set(handles.first_i,'String',num2str(num_i(1)));
+%     set(handles.MinIndex_i,'String',num2str(num_i(1)));
 %     set(handles.last_i,'String',num2str(num_i(end)));
 % elseif isequal(mode,'series(Dj)')
-%     first_j=str2double(get(handles.first_j,'String'));
+%     MinIndex_j=str2double(get(handles.MinIndex_j,'String'));
 %     last_j=str2double(get(handles.last_j,'String'));
 %     incr_j=str2double(get(handles.incr_j,'String'));
-%     num_j=first_j:incr_j:last_j;
-%     lastfield2=str2double(get(handles.nb_field2,'String'));
+%     num_j=MinIndex_j:incr_j:last_j;
+%     lastfield2=str2double(get(handles.MaxIndex_j,'String'));
 %     if ~isnan(lastfield2)
 %         test_find=(num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
 %             (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2);
 %         num_j=num_j(test_find);
 %     end
-%     set(handles.first_j,'String',num2str(num_j(1)));
+%     set(handles.MinIndex_j,'String',num2str(num_j(1)));
 %     set(handles.last_j,'String',num2str(num_j(end)));
 % end
 
@@ -1000,35 +962,35 @@ function ListPairCiv2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 index_pair=get(handles.ListPairCiv2,'Value');%get the selected position index in the menu
 
-%update first_i and last_i according to the chosen image pairs
+%update MinIndex_i and last_i according to the chosen image pairs
 mode_list=get(handles.ListPairMode,'String');
 mode_value=get(handles.ListPairMode,'Value');
 mode=mode_list{mode_value};
 if isequal(mode,'series(Di)')
-    first_i=str2double(get(handles.first_i,'String'));
+    first_i=str2double(get(handles.MinIndex_i,'String'));
     last_i=str2double(get(handles.last_i,'String'));
     incr_i=str2double(get(handles.incr_i,'String'));
     num_i=first_i:incr_i:last_i;
-    lastfield=str2double(get(handles.nb_field,'String'));
+    lastfield=str2double(get(handles.MaxIndex_i,'String'));
     if ~isnan(lastfield)
         test_find=(num_i-floor(index_pair/2)*ones(size(num_i))>0)& ...
             (num_i+ceil(index_pair/2)*ones(size(num_i))<=lastfield);
         num_i=num_i(test_find);
     end
-    set(handles.first_i,'String',num2str(num_i(1)));
+    set(handles.MinIndex_i,'String',num2str(num_i(1)));
     set(handles.last_i,'String',num2str(num_i(end)));
 elseif isequal(mode,'series(Dj)')
-    first_j=str2double(get(handles.first_j,'String'));
+    first_j=str2double(get(handles.MinIndex_j,'String'));
     last_j=str2double(get(handles.last_j,'String'));
     incr_j=str2double(get(handles.incr_j,'String'));
     num_j=first_j:incr_j:last_j;
-    lastfield2=str2double(get(handles.nb_field2,'String'));
+    lastfield2=str2double(get(handles.MaxIndex_j,'String'));
     if ~isnan(lastfield2)
         test_find=(num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
             (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2);
         num_j=num_j(test_find);
     end
-    set(handles.first_j,'String',num2str(num_j(1)));
+    set(handles.MinIndex_j,'String',num2str(num_j(1)));
     set(handles.last_j,'String',num2str(num_j(end)));
 end
 
@@ -1066,7 +1028,7 @@ end
 
 %------------------------------------------------------------------------
 % determine the menu for checkciv1 pairs depending on existing netcdf file at the middle of
-% the field series set by first_i, incr, last_i
+% the field series set by MinIndex_i, incr, last_i
 % index=1: look for pairs for civ1
 % index=2: look for pairs for civ2
 function errormsg=find_netcpair_civ(handles,index)
@@ -1304,16 +1266,16 @@ set(gcf,'Pointer','arrow')
 % Callbacks in the uipanel Reference Indices
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
-function first_i_Callback(hObject, eventdata, handles)
+function MinIndex_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-first_i=str2double(get(handles.first_i,'String'));
+first_i=str2double(get(handles.MinIndex_i,'String'));
 set(handles.ref_i,'String', num2str(first_i))% reference index for pair dt = first index
 ref_i_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in case of non constant dt)
 
 %------------------------------------------------------------------------
-function first_j_Callback(hObject, eventdata, handles)
+function MinIndex_j_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-first_j=str2num(get(handles.first_j,'String'));
+first_j=str2num(get(handles.MinIndex_j,'String'));
 set(handles.ref_j,'String', num2str(first_j))% reference index for pair dt = first index
 ref_j_Callback(hObject, eventdata, handles)%refresh dispaly of dt for pairs (in case of non constant dt)
 
@@ -2139,7 +2101,7 @@ if get(handles.TestPatch1,'Value')
         SmoothingParam(irho)=Param.Patch1.FieldSmooth;
         Data.Civ1_U_Diff=Data.Civ1_U_Diff(Data.Civ1_FF==0);
         Data.Civ1_V_Diff=Data.Civ1_V_Diff(Data.Civ1_FF==0);
-        DiffVel(irho)=sqrt(mean(Data.Civ1_U_Diff.*Data.Civ1_U_Diff+Data.Civ1_V_Diff.*Data.Civ1_V_Diff))
+        DiffVel(irho)=sqrt(mean(Data.Civ1_U_Diff.*Data.Civ1_U_Diff+Data.Civ1_V_Diff.*Data.Civ1_V_Diff));
         NbSites(irho,:)=Data.Civ1_NbSites*numel(Data.Civ1_NbSites)/numel(Data.Civ1_U_Diff);
         Param.Patch1.SmoothingParam=2*Param.Patch1.FieldSmooth;
     end
@@ -2160,3 +2122,87 @@ end
 
 % --- Executes on button press in TestCiv2.
 function TestCiv2_Callback(hObject, eventdata, handles)
+
+
+
+function num_OriginIndex_Callback(hObject, eventdata, handles)
+% hObject    handle to num_OriginIndex (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of num_OriginIndex as text
+%        str2double(get(hObject,'String')) returns contents of num_OriginIndex as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function num_OriginIndex_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to num_OriginIndex (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+%------------------------------------------------------------------------
+% --- determine the list of index pairs of processing file
+function [ind1,ind2]=...
+    find_pair_indices(str_civ,i_series,j_series,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j)
+%------------------------------------------------------------------------
+% i1_series=i_series;% set of first image indexes
+% i2_series=i_series;
+% j1_series=ones(size(i_series));% set of first image numbers
+% j2_series=ones(size(i_series));
+% check_bounds=false(size(i_series));
+ind1='';
+ind2='';
+r=regexp(str_civ,'^\D(?<ind>[i|j])=( -| )(?<num1>\d+)\|(?<num2>\d+)','names');
+if ~isempty(r)
+    mode=['D' r.ind];
+    ind1=stra2num(r.num1);
+    ind2=stra2num(r.num2);
+else
+    mode='burst';
+    r=regexp(str_civ,'^j= (?<num1>[a-z])-(?<num2>[a-z])','names');
+    if ~isempty(r)
+        NomTypeNc='_1ab';
+    else
+        r=regexp(str_civ,'^j= (?<num1>[A-Z])-(?<num2>[A-Z])','names');
+        if ~isempty(r)
+            NomTypeNc='_1AB';
+        else
+            r=regexp(str_civ,'^j= (?<num1>\d+)-(?<num2>\d+)','names');
+            if ~isempty(r)
+                NomTypeNc='_1_1-2';
+            end            
+        end
+    end
+    if isempty(r)
+        display('wrong pair mode input option')
+    else
+    ind1=stra2num(r.num1);
+    ind2=stra2num(r.num2);
+    end
+end
+% if strcmp (mode,'Di')
+%     i1_series=i_series-ind1;% set of first image numbers
+%     i2_series=i_series+ind2;
+%      check_bounds=i1_series<MinIndex_i | i2_series>MaxIndex_i;
+%     if isempty(j_series)
+%         NomTypeNc='_1-2';
+%     else
+%         j1_series=j_series;
+%         j2_series=j_series;
+%         NomTypeNc='_1-2_1';
+%     end
+% elseif strcmp (mode,'Dj')
+%     j1_series=j_series-ind1;
+%     j2_series=j_series+ind2;
+%     check_bounds=j1_series<MinIndex_j | j2_series>MaxIndex_j;
+%     NomTypeNc='_1_1-2';
+% else  %bursts
+%     j1_series=ind1*ones(size(i_series));
+%     j2_series=ind2*ones(size(i_series));
+% end

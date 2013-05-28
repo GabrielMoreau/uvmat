@@ -54,6 +54,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     Data.ProjObject='off';%can use projection object(option 'off'/'on',
     Data.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     Data.OutputDirExt='.civ';%set the output dir extension
+    Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
     filecell=get_file_series(Param);%check existence of the first input file
     if ~exist(filecell{1,1},'file')
         msgbox_uvmat('WARNING','the first input file does not exist')
@@ -88,7 +89,7 @@ end
 if isfield(Param,'InputTable')
     [filecell,i_series,tild,j_series]=get_file_series(Param);
     if ~exist(filecell{1,1},'file')
-        displ('ERROR: the first input file does not exist')
+        displ_uvmat('ERROR',' the first input file does not exist')
         return
     else
         FileType=get_file_type(filecell{1,1});
@@ -1001,38 +1002,6 @@ else  %bursts
     j1_series=ind1*ones(size(i_series));
     j2_series=ind2*ones(size(i_series));
 end
-
-%     if length(indsel)>=1
-%         firstind=indsel(1);
-%         lastind=indsel(end);
-%         set(handles.first_j,'String',num2str(ref_j(firstind)))%update the display of first and last fields
-%         set(handles.last_j,'String',num2str(ref_j(lastind)))
-%         ref_j=ref_j(indsel);
-%         j1_civ1=j1_civ1(indsel);
-%         j2_civ1=j2_civ1(indsel);
-%         j1_civ2=j1_civ2(indsel);
-%         j2_civ2=j2_civ2(indsel);
-%     end
-% elseif isequal(mode,'pair j1-j2') %case of bursts (png_old or png_2D)
-%     displ_num=get(handles.ListPairCiv1,'UserData');
-%     i1_civ1=ref_i;
-%     i2_civ1=ref_i;
-%     j1_civ1=displ_num(1,index_civ1);
-%     j2_civ1=displ_num(2,index_civ1);
-%     i1_civ2=ref_i;
-%     i2_civ2=ref_i;
-%     j1_civ2=displ_num(1,index_civ2);
-%     j2_civ2=displ_num(2,index_civ2);
-% elseif isequal(mode,'displacement')
-%     i1_civ1=ref_i;
-%     i2_civ1=ref_i;
-%     j1_civ1=ref_j;
-%     j2_civ1=ref_j;
-%     i1_civ2=ref_i;
-%     i2_civ2=ref_i;
-%     j1_civ2=ref_j;
-%     j2_civ2=ref_j;
-% end
 
 
 

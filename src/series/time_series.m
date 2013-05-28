@@ -349,7 +349,7 @@ for index=1:nbfield
             elseif testsum(ivar)==1% variable representing fixed coordinates
                 VarInit=DataOut.(VarName);
                 if isempty(errormsg) && ~isequal(VarVal,VarInit)
-                    displ_uvmat('ERROR',['time series requires constant coordinates ' VarName],checkrun)
+                    displ_uvmat('ERROR',['time series requires constant coordinates ' VarName ': use projection mode interp'],checkrun)
                     return
                 end
             end
@@ -413,7 +413,7 @@ DataOut.VarDimName=[{'Time'} DataOut.VarDimName];
 DataOut.Action=Param.Action;%name of the processing programme
 test_time=diff(DataOut.Time)>0;% test that the readed time is increasing (not constant)
 if ~test_time
-    DataOut.Time=1:filecounter;
+    DataOut.Time=1:nbfield;
 end
 
 % display nbmissing
