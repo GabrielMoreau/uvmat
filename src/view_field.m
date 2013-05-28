@@ -100,6 +100,7 @@ end
 
 %put the GUI on the lower right of the sceen
 pos_view_field=get(hObject,'Position');
+set(0,'Unit','pixel')
 ScreenSize=get(0,'ScreenSize');
 pos_view_field(1)=ScreenSize(1)+ScreenSize(3)-pos_view_field(3);
 pos_view_field(2)=ScreenSize(2);
@@ -117,9 +118,9 @@ set(handles.view_field,'UserData',Data)
 
 %% reset position of text_display or TableDisplay
 if strcmp(get(handles.TableDisplay,'Visible'),'off')
-    pos_1=get(handles.text_display,'Position');
-    pos_1(1)=size_fig(3)-pos_1(3);
-    pos_1(2)=size_fig(4)-pos_1(4);
+    pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
+    pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
+    pos_1(2)=size_fig(4)-pos_1(4);             % set text display to the top of the fig
     set(handles.text_display,'Position',pos_1)
     % reset position of TableDisplay
 else
@@ -129,19 +130,25 @@ else
     set(handles.TableDisplay,'Position',pos_1)
 end
 
+%% reset position of CheckHold
+pos_CheckHold=get(handles.CheckHold,'Position');% [lower x lower y width height] for CheckHold
+pos_CheckHold(1)=size_fig(3)-pos_CheckHold(3);       % set 'CheckHold' to the right of the fig
+pos_CheckHold(2)=pos_1(2)-pos_CheckHold(4);          % set 'CheckHold' to the lower edge of text display
+set(handles.CheckHold,'Position',pos_CheckHold)
+
 %% reset position of Coordinates
-pos_2=get(handles.Coordinates,'Position');
-pos_2(1)=size_fig(3)-pos_1(3);
-pos_2(2)=pos_1(2)-pos_2(4);
+pos_2=get(handles.Coordinates,'Position');% [lower x lower y width height] for frame 'Coordinates'
+pos_2(1)=size_fig(3)-pos_2(3);       % set 'Coordinates' to the right of the fig
+pos_2(2)=pos_CheckHold(2)-pos_2(4);          % set 'Coordinates' to the lower edge of text display, allowing a margin for CheckHold
 set(handles.Coordinates,'Position',pos_2)
 
 %% reset position of  Scalar
-pos_3=get(handles.Scalar,'Position');
-pos_3(1)=size_fig(3)-pos_3(3);
+pos_3=get(handles.Scalar,'Position'); % [lower x lower y width height] for frame 'Scalar'
+pos_3(1)=size_fig(3)-pos_3(3);         % set 'Scalar' to the right of the fig
 if strcmp(get(handles.Scalar,'visible'),'on')
-    pos_3(2)=pos_2(2)-pos_3(4);
+    pos_3(2)=pos_2(2)-pos_3(4); % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
 else
-    pos_3(2)=pos_2(2);
+    pos_3(2)=pos_2(2);% set 'Scalar' to the lower edge of frame 'text display' if  unvisible
 end
 set(handles.Scalar,'Position',pos_3)
 
@@ -832,17 +839,4 @@ function ColorScalar_Callback(hObject, eventdata, handles)
 
 
 function num_ColCode2_Callback(hObject, eventdata, handles)
-
-
-
-% 
-% 
-% % --- Executes when view_field is resized.
-% function view_field_ResizeFcn(hObject, eventdata, handles)
-% % hObject    handle to view_field (see GCBO)
-% % eventdata  reserved - to be defined in a future version of MATLAB
-% % handles    structure with handles and user data (see GUIDATA)
-
-
-
 

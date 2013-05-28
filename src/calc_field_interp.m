@@ -16,6 +16,7 @@
 
 function [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp(Coord,Data,FieldName,XI,YI)
 
+%% initialization
 VarVal={};
 ListVarName={};
 VarAttribute={};
@@ -24,6 +25,8 @@ InputVarList={};
 if ischar(FieldName),FieldName={FieldName};end
 check_skipped=zeros(size(FieldName));% default, =1 to mark the variables which can be calculated
 Operator=cell(size(FieldName));
+
+%% analyse the list of input fields: needed variables and requested operations
 for ilist=1:numel(FieldName)
     Operator{ilist}='';%default empty operator (vec, norm,...)
     r=regexp(FieldName{ilist},'(?<Operator>(^vec|^norm|^curl|^div|^strain))\((?<UName>.+),(?<VName>.+)\)$','names');% analyse the field name
@@ -65,12 +68,15 @@ for ilist=1:numel(FieldName)
         end
     end
 end
-%create interpolator for linear interpolation
+
+%% create interpolator for each variable to interpolate
 if exist('XI','var')
     for ilist=1:numel(InputVarList)
         F.(InputVarList{ilist})=TriScatteredInterp(Coord,Data.(InputVarList{ilist}),'linear');
     end
 end
+
+%% perform the linear interpolation for the requested variables
 for ilist=1:numel(FieldName)
     if ~check_skipped(ilist)
         nbvar=numel(ListVarName);
@@ -119,16 +125,14 @@ for ilist=1:numel(FieldName)
         end
     end
 end
-% put an error flag to indicate NaN data
+
+%% put an error flag to indicate NaN data
 if exist('XI','var')&&~isempty(VarVal)
     nbvar=numel(ListVarName);
     ListVarName{nbvar+1}='FF';
     VarVal{nbvar+1}=isnan(VarVal{nbvar});
     VarAttribute{nbvar+1}.Role='errorflag';
 end
-
-% Attr_FF.Role='errorflag';
-% VarAttribute=[VarAttribute {Attr_FF}];
 
 
 

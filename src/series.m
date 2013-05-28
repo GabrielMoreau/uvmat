@@ -1072,33 +1072,44 @@ end
 set(handles.TimeTable,'Data',TimeTable)
 
 %% set the waitbar position with respect to the min and max in the series
-for iview=1:numel(SeriesData.i1_series)
-    pair_max{iview}=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
-    if (strcmp(get(handles.num_first_j,'Visible'),'off')&& size(pair_max{iview},2)~=1)
-        pair_max{iview}=squeeze(max(pair_max{iview},[],1)); % consider only the i index
-    end
-    pair_max{iview}=reshape(pair_max{iview},1,[]);
-    index_min(iview)=find(pair_max{iview}>0, 1 );
-    index_max(iview)=find(pair_max{iview}>0, 1, 'last' );
-end
-[index_min,iview_min]=min(index_min);
-[index_max,iview_max]=min(index_max);
-if size(SeriesData.i1_series{iview_min},2)==1% movie
-    index_first=ref_i(1);
-    index_last=ref_i(2);
-else
-    index_first=(ref_i(1)-1)*(size(SeriesData.i1_series{iview_min},1))+ref_j(1)+1;
-    index_last=(ref_i(2)-1)*(size(SeriesData.i1_series{iview_max},1))+ref_j(2)+1;
-end
-range=index_max-index_min+1;
-coeff_min=(index_first-index_min)/range;
-coeff_max=(index_last-index_min+1)/range;
+MinIndex_i=min(get(handles.MinIndex_i,'Data'));
+MaxIndex_i=max(get(handles.MaxIndex_i,'Data'));
+pos_first=(ref_i(1)-MinIndex_i)/(MaxIndex_i-MinIndex_i+1);
+pos_last=(ref_i(2)-MinIndex_i+1)/(MaxIndex_i-MinIndex_i+1);
 Position=get(handles.Waitbar,'Position');% position of the waitbar:= [ x,y, width, height]
 Position_status=get(handles.FileStatus,'Position');
-Position(1)=coeff_min*Position_status(3)+Position_status(1);
-Position(3)=Position_status(3)*(coeff_max-coeff_min);
+Position(1)=Position_status(1)+Position_status(3)*pos_first;
+Position(3)=Position_status(3)*(pos_last-pos_first);
 set(handles.Waitbar,'Position',Position)
 update_waitbar(handles.Waitbar,0)
+
+% for iview=1:numel(SeriesData.i1_series)
+%     pair_max{iview}=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
+%     if (strcmp(get(handles.num_first_j,'Visible'),'off')&& size(pair_max{iview},2)~=1)
+%         pair_max{iview}=squeeze(max(pair_max{iview},[],1)); % consider only the i index
+%     end
+%     pair_max{iview}=reshape(pair_max{iview},1,[]);
+%     index_min(iview)=find(pair_max{iview}>0, 1 );
+%     index_max(iview)=find(pair_max{iview}>0, 1, 'last' );
+% end
+% [index_min,iview_min]=min(index_min);
+% [index_max,iview_max]=min(index_max);
+% if size(SeriesData.i1_series{iview_min},2)==1% movie
+%     index_first=ref_i(1);
+%     index_last=ref_i(2);
+% else
+%     index_first=(ref_i(1)-1)*(size(SeriesData.i1_series{iview_min},1))+ref_j(1)+1;
+%     index_last=(ref_i(2)-1)*(size(SeriesData.i1_series{iview_max},1))+ref_j(2)+1;
+% end
+% range=index_max-index_min+1;
+% coeff_min=(index_first-index_min)/range;
+% coeff_max=(index_last-index_min+1)/range;
+% Position=get(handles.Waitbar,'Position');% position of the waitbar:= [ x,y, width, height]
+% Position_status=get(handles.FileStatus,'Position');
+% Position(1)=coeff_min*Position_status(3)+Position_status(1);
+% Position(3)=Position_status(3)*(coeff_max-coeff_min);
+% set(handles.Waitbar,'Position',Position)
+% update_waitbar(handles.Waitbar,0)
 
 %------------------------------------------------------------------------
 % --- Executes when selected cell(s) is changed in PairString.
@@ -1369,6 +1380,8 @@ set(handles.RUN,'BusyAction','queue');% activation of STOP button will set BusyA
 set(handles.RUN, 'Enable','Off')% avoid further RUN action until the current one is finished
 set(handles.RUN,'BackgroundColor',[1 1 0])%show activation of RUN by yellow color
 drawnow
+set(handles.status,'Value',0)% desable status display if relevant
+status_Callback(hObject, eventdata, handles)
 
 %% read the data on the GUI series
 Param=read_GUI_series(handles);%displayed parameters
@@ -1831,6 +1844,10 @@ if isequal(get(handles.RUN,'Value'),1)
     end
 end
 set(handles.ActionName,'BackgroundColor',[1 1 0])
+huigetfile=findobj(allchild(0),'tag','status_display')
+if ~isempty(huigetfile)
+    delete(huigetfile)
+end
 drawnow
 
 %% get Action name and path
@@ -2597,30 +2614,10 @@ if get(handles.status,'Value')
     OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
     OutputDir=fullfile(RootPath,OutputSubDir);
     uigetfile_uvmat('status_display',OutputDir)
-    
-%     hfig=findobj(allchild(0),'name','series_status');
-%     if isempty(hfig)
-%         ScreenSize=get(0,'ScreenSize');
-%         hfig=figure('DeleteFcn',@stop_status,'Position',[ScreenSize(3)-600 ScreenSize(4)-640 560 600]);
-%         set(hfig,'MenuBar','none')% suppress the menu bar
-%         set(hfig,'NumberTitle','off')%suppress the fig number in the title
-%         set(hfig,'name','series_status')
-%         set(hfig,'tag','series_status')
-%         uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.09 0.9 0.71], 'Callback', @view_file,'tag','list','UserData',OutputDir);
-%         uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.87 0.9 0.1],'tag','titlebox','Max',2,'String',OutputDir);
-%         uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.81 0.9 0.05]);
-%         uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.01 0.2 0.07],'String','Close','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@stop_status);
-%         uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.1 0.01 0.2 0.07],'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',11,'Callback',@refresh_GUI);
-%         %set(hrefresh,'UserData',StatusData)
-%         BarPosition=[0.05 0.81 0.01 0.05];
-%         uicontrol('Style','frame','Units','normalized', 'Position',BarPosition ,'BackgroundColor',[1 0 0],'tag','waitbar');
-%         drawnow
-%     end
-%     refresh_GUI(hfig) 
 else
     %% delete current display fig if selection is off
     set(handles.status,'BackgroundColor',[0 1 0])
-    hfig=findobj(allchild(0),'name','series_status');
+    hfig=findobj(allchild(0),'name','status_display');
     if ~isempty(hfig)
         delete(hfig)
     end

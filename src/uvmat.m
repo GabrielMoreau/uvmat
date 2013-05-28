@@ -193,7 +193,7 @@ set(hObject,'Position',[LeftX LowY Width Height])
 %set(hObject,'Units','Normalized')
 
 %UvData.OpenParam.PosColorbar=[0.8450    0.0900    0.0190    0.3600];
-UvData.OpenParam.PosColorbar=[0.805 0.022 0.019 0.445];
+UvData.OpenParam.PosColorbar=[0.80 0.02 0.018 0.445];
 %UvData.OpenParam.PosSetObject=[-0.05 -0.03 0.3 0.7]; %position for set_object
 UvData.OpenParam.PosGeometryCalib=[0.95 -0.03 0.28 1 ];%position for geometry_calib (TO IMPROVE)
 % UvData.OpenParam.CalSize=[0.28 1];
@@ -209,6 +209,7 @@ set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles})%set mouse action f
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
 set(hObject,'DeleteFcn',{@closefcn})%
+set(hObject,'ResizeFcn',{@ResizeFcn,handles})%
 
 %% initialisation
 set(handles.FieldName,'Value',1)
@@ -333,6 +334,88 @@ if ~isempty(hh)
     hhh=findobj(hh,'tag','PLOT');
     set(hhh,'enable','off')
 end
+
+%------------------------------------------------------------------------
+%--- activated when resizing the GUI view_field
+ function ResizeFcn(gcbo,eventdata,handles)
+%------------------------------------------------------------------------     
+set(handles.uvmat,'Units','pixels')
+size_fig=get(handles.uvmat,'Position');
+ColumnWidth=max(150,0.18*size_fig(3));
+ColumnWidth=min(ColumnWidth,250); % width of the right side display column, between 150 and 250, depending on the fig width
+% Data=get(handles.uvmat,'UserData');
+% Data.GUISize=size_fig;
+% set(handles.uvmat,'UserData',Data)
+
+
+%% position of panel InputFile
+%set(handles.InputFile,'Units','pixels')
+pos_InputFile=get(handles.InputFile,'Position');% [lower x lower y width height] for text_display
+pos_InputFile(1)=0;
+pos_InputFile(2)=size_fig(4)-pos_InputFile(4);             % set frame InputFile to the top of the fig
+pos_InputFile(3)=size_fig(3);
+
+set(handles.InputFile,'Position',pos_InputFile);% [lower x lower y width height] for text_display
+
+%% reset position of text_display or TableDisplay
+if strcmp(get(handles.TableDisplay,'Visible'),'off')
+    pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
+        pos_1(3)=1.2*ColumnWidth;
+    pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
+    pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);             % set text display to the top of the fig
+    set(handles.text_display,'Position',pos_1)
+    % reset position of TableDisplay
+else
+    pos_1=get(handles.TableDisplay,'Position');
+    pos_1(3)=1.2*ColumnWidth;
+    pos_1(1)=size_fig(3)-pos_1(3);
+    pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);
+    set(handles.TableDisplay,'Position',pos_1)
+end
+
+%% reset position of CheckHold
+% pos_CheckHold=get(handles.CheckHold,'Position');% [lower x lower y width height] for CheckHold
+% pos_CheckHold(1)=size_fig(3)-pos_CheckHold(3);       % set 'CheckHold' to the right of the fig
+% pos_CheckHold(2)=pos_1(2)-pos_CheckHold(4);          % set 'CheckHold' to the lower edge of text display
+% set(handles.CheckHold,'Position',pos_CheckHold)
+
+%% reset position of Coordinates
+pos_2=get(handles.Coordinates,'Position');% [lower x lower y width height] for frame 'Coordinates'
+pos_2(3)=ColumnWidth;
+pos_2(1)=size_fig(3)-pos_2(3);       % set 'Coordinates' to the right of the fig
+pos_2(2)=pos_1(2)-pos_2(4);          % set 'Coordinates' to the lower edge of text display, allowing a margin for CheckHold
+set(handles.Coordinates,'Position',pos_2)
+
+%% reset position of  Scalar
+pos_3=get(handles.Scalar,'Position'); % [lower x lower y width height] for frame 'Scalar'
+pos_3(3)=ColumnWidth;
+pos_3(1)=size_fig(3)-pos_3(3);         % set 'Scalar' to the right of the fig
+if strcmp(get(handles.Scalar,'Visible'),'on')
+    pos_3(2)=pos_2(2)-pos_3(4); % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
+else
+    pos_3(2)=pos_2(2);% set 'Scalar' to the lower edge of frame 'text display' if  unvisible
+end
+set(handles.Scalar,'Position',pos_3)
+
+%% reset position of  Vectors
+set(handles.Vectors,'Units','pixels')
+pos_4=get(handles.Vectors,'Position');
+pos_4(3)=ColumnWidth;
+pos_4(1)=size_fig(3)-pos_4(3);
+if strcmp(get(handles.Vectors,'visible'),'on')
+    pos_4(2)=pos_3(2)-pos_4(4);
+else
+    pos_4(2)=pos_3(2);
+end
+set(handles.Vectors,'Position',pos_4)
+
+%% reset position and scale of axis
+pos(1)=0.2*size_fig(3)+35;
+pos(2)=35;
+pos(3)=0.77*size_fig(3)-1.2*ColumnWidth;
+pos(4)=size_fig(4)-60;
+set(handles.PlotAxes,'Position',pos)
+
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -1102,7 +1185,7 @@ set(handles.scan_j,'Visible',state_j)
 set(handles.j1,'Visible',state_j)
 set(handles.j2,'Visible',state_j)
 set(handles.last_j,'Visible',state_j);
-set(handles.frame_j,'Visible',state_j);
+%set(handles.frame_j,'Visible',state_j);
 set(handles.j_text,'Visible',state_j);
 if ~isempty(i2_series)||~isempty(j2_series)
     set(handles.CheckFixPair,'Visible','on')
@@ -2748,6 +2831,7 @@ else
         histo1_menu_Callback(handles.histo1_menu, [], handles)% plot first histogram
     end
 end
+ResizeFcn(handles.uvmat,[],handles)
 
 %------------------------------------------------------------------------
 function histo1_menu_Callback(hObject, eventdata, handles)
@@ -2983,7 +3067,10 @@ if get(handles.SubField,'Value')==0% if the subfield button is desactivated
     transform_fct=transform_fct_list(get(handles.TransformName,'Value'));
     if strcmp(transform_fct,'sub_field')
         set(handles.TransformName,'Value',1)%suppress the sub_field transform
-        transform_fct_Callback(hObject, eventdata, handles); 
+        T
+        
+        
+        ransformName_Callback(hObject, eventdata, handles); 
     else
         run0_Callback(hObject, eventdata, handles)
     end  
@@ -4174,7 +4261,7 @@ else
         drawnow% needed to change position before the next command
         set(hview_field,'UserData',Data);% restore the previously stored GUI position after GUI resizing
     else
-        set(hview_field,'Position',Data.GUISize)% return to the previously stored GUI position and size
+%         set(hview_field,'Position',Data.GUISize)% return to the previously stored GUI position and size
     end
 end
 
@@ -4348,7 +4435,7 @@ if check_view
         set(hview_field,'Position',[pos(1)+pos(3)-pos_table(3) pos(2)+pos(4)-pos_table(4) pos_table(3) pos_table(4)])
     else
         Data=get(hview_field,'UserData');
-        set(hview_field,'Position',Data.GUISize)% restore the size of view_field for plots
+%         set(hview_field,'Position',Data.GUISize)% restore the size of view_field for plots
     end
 else
     hview_field=findobj(allchild(0),'tag','view_field');

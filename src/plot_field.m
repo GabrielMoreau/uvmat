@@ -196,14 +196,15 @@ if isempty(index_1D)
         plot_profile([],[],haxes);%removes usual praphs y vs x in the absence of 1D field plot
     end
 else %plot 1D field (usual graph y vs x)
-    PlotParamOut.Coordinates=plot_profile(Data,CellInfo(index_1D),haxes,PlotParamOut.Coordinates);%
+    CheckHold=0;
+    if isfield(PlotParam,'CheckHold') 
+        CheckHold= PlotParam.CheckHold;
+    end       
+    PlotParamOut.Coordinates=plot_profile(Data,CellInfo(index_1D),haxes,PlotParamOut.Coordinates,CheckHold);%
     if testzoomaxes
-        [zoomaxes,PlotParamOut.Coordinates]=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParamOut.Coordinates);
+        [zoomaxes,PlotParamOut.Coordinates]=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParamOut.Coordinates,CheckHold);
         AxeData.ZoomAxes=zoomaxes;
     end
-%     if ~isempty(Coordinates)
-%         PlotParamOut.Coordinates=Coordinates;
-%     end
     PlotType='line';
 end
 
@@ -326,15 +327,18 @@ end
 
 
 %-------------------------------------------------------------------
-function CoordinatesOut=plot_profile(data,CellInfo,haxes,Coordinates)
+function CoordinatesOut=plot_profile(data,CellInfo,haxes,Coordinates,CheckHold)
 %-------------------------------------------------------------------
 
+%% initialization
 if ~exist('Coordinates','var')
     Coordinates=[];
 end
 CoordinatesOut=Coordinates; %default
 hfig=get(haxes,'parent');
-%suppress existing plot isf empty data
+legend_str={};
+
+%% suppress existing plot if empty data
 if isempty(data)
     hplot=findobj(haxes,'tag','plot_line');
     if ~isempty(hplot)
@@ -347,21 +351,24 @@ if isempty(data)
     return
 end
 
+%% set the colors of the successive plots (designed to produce rgb for the three components of color images)
 ColorOrder=[1 0 0;0 0.5 0;0 0 1;0 0.75 0.75;0.75 0 0.75;0.75 0.75 0;0.25 0.25 0.25];
 set(haxes,'ColorOrder',ColorOrder)
-if isfield(Coordinates,'NextPlot')
-    set(haxes,'NextPlot',Coordinates.NextPlot)
+% if isfield(Coordinates,'NextPlot')
+%     set(haxes,'NextPlot',Coordinates.NextPlot)
+% end
+if CheckHold
+     set(haxes,'NextPlot','add')
+else
+    set(haxes,'NextPlot','replace')
 end
-% adjust the size of the plot to include the whole field,
-
-legend_str={};
 
 %% prepare the string for plot command
 plotstr='hhh=plot(';
-coord_x_index=[];
+% coord_x_index=[];
 xtitle='';
 ytitle='';
-test_newplot=1;
+test_newplot=~CheckHold;
 MinX=[];
 MaxX=[];
 MinY_cell=[];
@@ -420,7 +427,6 @@ for icell=1:numel(CellInfo)
                 ytitle=[ytitle ', '];
             end
             eval(['data.' VarName '=squeeze(data.' VarName ');'])
-            %eval(['min(data.' VarName ')'])
             MinY(ivar)=min(min(data.(VarName)));
             MaxY(ivar)=max(max(data.(VarName)));
             plotstr=[plotstr 'coord_x{' num2str(icell) '},data.' VarName ',' charplot_0 ','];
@@ -445,7 +451,7 @@ for icell=1:numel(CellInfo)
 end
 
 %% activate the plot
-if test_newplot && ~isequal(plotstr,'hhh=plot(')  
+if  ~isequal(plotstr,'hhh=plot(')  
     set(hfig,'CurrentAxes',haxes)
     tag=get(haxes,'tag');    
     %%%

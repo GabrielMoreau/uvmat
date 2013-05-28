@@ -21,7 +21,7 @@
 
 function varargout = get_field(varargin)
 
-% Last Modified by GUIDE v2.5 05-May-2013 23:54:32
+% Last Modified by GUIDE v2.5 28-May-2013 01:55:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -185,10 +185,10 @@ elseif ~isempty(find(check_time, 1))
 else
     option=1;
 end
-set(handles.SwitchVarIndexTime,'String',ListSwitchVarIndexTime)
-set(handles.SwitchVarIndexTime,'Value',option)
+%set(handles.SwitchVarIndexTime,'String',ListSwitchVarIndexTime)
+%set(handles.SwitchVarIndexTime,'Value',option)
 set(handles.get_field,'UserData',Field);% record the finput field structure
-SwitchVarIndexTime_Callback([],[], handles)
+%SwitchVarIndexTime_Callback([],[], handles)
 
 %% set z coordinate menu if relevant
 if Field.MaxDim>=3
@@ -200,35 +200,31 @@ if Field.MaxDim>=3
 else
     set(handles.vector_z,'Visible','off')
     set(handles.ZVarName,'Visible','off')
-    set(handles.SwitchVarIndexZ,'Visible','off')
+%    set(handles.SwitchVarIndexZ,'Visible','off')
     set(handles.Z_title,'Visible','off')
 end
 
 %% set vector menu (priority) if detected or scalar menu for space dim >=2, or usual (x,y) plot for 1D fields
 if Field.MaxDim>=2 % case of 2D (or 3D) fields
-    set(handles.CheckPlot1D,'Value',0)
     if isfield(CellInfo{imax},'VarIndex_vector_x') &&  isfield(CellInfo{imax},'VarIndex_vector_y') 
         set(handles.CheckVector,'Value',1)
         set(handles.CheckScalar,'Value',0)
         set(handles.vector_x,'Value',CellInfo{imax}.VarIndex_vector_x(1))
         set(handles.vector_y,'Value',CellInfo{imax}.VarIndex_vector_y(1))
+        set(handles.FieldOption,'Value',3)
     else
-        set(handles.CheckScalar,'Value',1)
-        set(handles.CheckVector,'Value',0)
+        set(handles.FieldOption,'Value',2)
     end
 else % case of 1D fields
-    set(handles.CheckPlot1D,'Value',1)
-    set(handles.CheckScalar,'Value',0)
-    set(handles.CheckVector,'Value',0)
+    set(handles.FieldOption,'Value',1)
 end
+
 
 %% Make choices in menus from input
 if exist('ParamIn','var')&&~isempty(ParamIn)
     fill_GUI(ParamIn,handles.get_field);
 end
-CheckPlot1D_Callback(handles.CheckPlot1D, [], handles)
-CheckScalar_Callback(handles.CheckScalar, [], handles)
-CheckVector_Callback(handles.CheckVector, [], handles)
+FieldOption_Callback([],[],handles)
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
@@ -334,21 +330,7 @@ val=get(handles.CheckPlot1D,'Value');
 if isequal(val,0)
     set(handles.Panel1Dplot,'Visible','off')
 else
-    set(handles.Panel1Dplot,'Visible','on')
-    set(handles.PanelScalar,'Visible','off')
-    set(handles.CheckScalar,'Value',0)
-    set(handles.PanelVectors,'Visible','off')
-    set(handles.CheckVector,'Value',0)
-    set(handles.XVarName,'Visible','on')
-    set(handles.SwitchVarIndexX,'Visible','on')
-    set(handles.X_title,'Visible','on')
-    set(handles.YVarName,'Visible','off')
-    set(handles.SwitchVarIndexY,'Visible','off')
-    set(handles.Y_title,'Visible','off')
-    set(handles.ZVarName,'Visible','off')
-    set(handles.SwitchVarIndexZ,'Visible','off')
-    set(handles.Z_title,'Visible','off')
-    ordinate_Callback(hObject, eventdata, handles)
+   
 end
 
 %------------------------------------------------------------------------
@@ -385,11 +367,7 @@ val=get(handles.CheckScalar,'Value');
 if isequal(val,0)
     set(handles.PanelScalar,'Visible','off')
 else
-    set(handles.Panel1Dplot,'Visible','off')
-    set(handles.CheckPlot1D,'Value',0)
-    set(handles.PanelScalar,'Visible','on')
-    set(handles.PanelVectors,'Visible','off')
-    set(handles.CheckVector,'Value',0)
+    
 end
 
 %------------------------------------------------------------------------
@@ -400,15 +378,7 @@ val=get(handles.CheckVector,'Value');
 if isequal(val,0)
     set(handles.PanelVectors,'Visible','off')
 else
-    set(handles.Panel1Dplot,'Visible','off')
-    set(handles.CheckPlot1D,'Value',0)
-    set(handles.PanelScalar,'Visible','off')
-    set(handles.CheckScalar,'Value',0)
-    set(handles.PanelVectors,'Visible','on')
-    set(handles.XVarName,'Visible','on')
-    set(handles.YVarName,'Visible','on')
-    set(handles.X_title,'Visible','on')
-    set(handles.Y_title,'Visible','on')
+    
 end
 
 
@@ -424,8 +394,8 @@ update_field(hObject, eventdata, handles,VarName)
 
 %eliminate time
 TimeDimName='';%default
-SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');
-TimeVarOption=SwitchVarIndexTime{get(handles.SwitchVarIndexTime,'Value')};
+% SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');
+% TimeVarOption=SwitchVarIndexTime{get(handles.SwitchVarIndexTime,'Value')};
 if strcmp(TimeVarOption,'variable')
     List=get(handles.TimeVarName,'String');
     TimeVarName=List{get(handles.TimeVarName,'Value')};
@@ -1414,17 +1384,6 @@ end
 
 
 
-
-% --- Executes on selection change in listbox30.
-function listbox30_Callback(hObject, eventdata, handles)
-% hObject    handle to listbox30 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns listbox30 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from listbox30
-
-
 % --- Executes on selection change in SwitchVarIndexX.
 function SwitchVarIndexX_Callback(hObject, eventdata, handles)
 % hObject    handle to SwitchVarIndexX (see GCBO)
@@ -1487,20 +1446,123 @@ switch option
         set(handles.TimeVarName, 'String',TimeVarName)
 end
 
-
-% --- Executes on button press in CheckScalar.
-function checkbox22_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckScalar (see GCBO)
+% --- Executes on selection change in FieldOption.
+function FieldOption_Callback(hObject, eventdata, handles)
+FieldList=get(handles.FieldOption,'String');
+FieldOption=FieldList{get(handles.FieldOption,'Value')};
+switch FieldOption
+    case '1D plot'
+         set(handles.Panel1Dplot,'Visible','on')
+         pos=get(handles.Panel1Dplot,'Position');
+         pos(1)=2;
+         pos_coord=get(handles.Coordinates,'Position');
+         pos(2)=pos_coord(2)-pos(4)-2;
+         set(handles.Panel1Dplot,'Position',pos)
+    set(handles.PanelScalar,'Visible','off')
+    set(handles.PanelVectors,'Visible','off')
+    set(handles.YVarName,'Visible','off')
+%    set(handles.SwitchVarIndexY,'Visible','off')
+    set(handles.Y_title,'Visible','off')
+    set(handles.ZVarName,'Visible','off')
+ %   set(handles.SwitchVarIndexZ,'Visible','off')
+    set(handles.Z_title,'Visible','off')
+%    ordinate_Callback(hObject, eventdata, handles)
+%         set(handles.get_field,'Units','pixels')
+% size_fig=get(handles.get_field,'Position');
+% Data=get(handles.view_field,'UserData');
+% Data.GUISize=size_fig;
+% set(handles.view_field,'UserData',Data)
+% 
+% %% reset position of text_display or TableDisplay
+% if strcmp(get(handles.TableDisplay,'Visible'),'off')
+%     pos_1=get(handles.text_display,'Position');
+%     pos_1(1)=size_fig(3)-pos_1(3);
+%     pos_1(2)=size_fig(4)-pos_1(4);
+%     set(handles.text_display,'Position',pos_1)
+%     % reset position of TableDisplay
+% else
+%     pos_1=get(handles.TableDisplay,'Position');
+%     pos_1(1)=size_fig(3)-pos_1(3);
+%     pos_1(2)=size_fig(4)-pos_1(4);
+%     set(handles.TableDisplay,'Position',pos_1)
+% end
+% 
+% %% reset position of Coordinates
+% pos_2=get(handles.Coordinates,'Position');
+% pos_2(1)=size_fig(3)-pos_1(3);
+% pos_2(2)=pos_1(2)-pos_2(4);
+% set(handles.Coordinates,'Position',pos_2)
+    case 'scalar'
+        set(handles.Panel1Dplot,'Visible','off')
+    set(handles.PanelScalar,'Visible','on')
+    set(handles.PanelVectors,'Visible','off')
+         pos=get(handles.PanelScalar,'Position');
+         pos(1)=2;
+         pos_coord=get(handles.Coordinates,'Position');
+         pos(2)=pos_coord(2)-pos(4)-2;
+         set(handles.PanelScalar,'Position',pos)
+    set(handles.YVarName,'Visible','on')
+    set(handles.Y_title,'Visible','on')
+    case 'vectors'
+        set(handles.Panel1Dplot,'Visible','off')
+    set(handles.PanelScalar,'Visible','off')
+    set(handles.PanelVectors,'Visible','on')
+    pos=get(handles.PanelVectors,'Position');
+         pos(1)=2;
+         pos_coord=get(handles.Coordinates,'Position');
+         pos(2)=pos_coord(2)-pos(4)-2;
+         set(handles.PanelVectors,'Position',pos)
+    set(handles.YVarName,'Visible','on')
+    set(handles.Y_title,'Visible','on')
+end
+% hObject    handle to FieldOption (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of CheckScalar
+% Hints: contents = get(hObject,'String') returns FieldOption contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from FieldOption
 
 
-% --- Executes on button press in checkbox23.
-function checkbox23_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox23 (see GCBO)
+% --- Executes on button press in CheckDimensionX.
+function CheckDimensionX_Callback(hObject, eventdata, handles)
+% hObject    handle to CheckDimensionX (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox23
+% Hint: get(hObject,'Value') returns toggle state of CheckDimensionX
+
+
+% --- Executes on button press in checkbox25.
+function checkbox25_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox25 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox25
+
+
+% --- Executes on button press in checkbox26.
+function checkbox26_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox26 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox26
+
+
+% --- Executes on button press in checkbox27.
+function checkbox27_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox27 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox27
+
+
+% --- Executes on button press in checkbox29.
+function checkbox29_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox29 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox29

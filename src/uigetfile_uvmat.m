@@ -127,7 +127,7 @@ if strcmp(get(hfig,'Tag'),'status_display')
         NbOutputFile=StatusData.NbOutputFile;
         NbOutputFile_str=num2str(NbOutputFile);
     end
-    [ListFiles,NumFiles]=list_files(DirName,1,TimeStart,FilterExt);% list the directory content
+    [ListFiles,NumFiles]=list_files(DirName,1,TimeStart);% list the directory content
     
     %% update the waitbar
     hwaitbar=findobj(hfig,'tag','waitbar');
