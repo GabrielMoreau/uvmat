@@ -21,7 +21,7 @@
 
 function varargout = get_field(varargin)
 
-% Last Modified by GUIDE v2.5 28-May-2013 01:55:25
+% Last Modified by GUIDE v2.5 02-Jun-2013 14:00:39
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -74,6 +74,7 @@ end
 %% put the GUI on the lower right of the sceen
 set(hObject,'Unit','pixel')
 pos_view_field=get(hObject,'Position');
+set(0,'Unit','pixels')
 ScreenSize=get(0,'ScreenSize');
 pos_view_field(1)=ScreenSize(1)+ScreenSize(3)-pos_view_field(3);
 pos_view_field(2)=ScreenSize(2);
@@ -105,24 +106,18 @@ Txt=Field.ListVarName;
 set(handles.variables,'Value',1)
 set(handles.variables,'String',[{'*'} Txt])
 variables_Callback(handles.variables,[], handles)
-
-% set(handles.abscissa,'String',[{''} Txt ])
 set(handles.ordinate,'String',Txt)
-set(handles.vector_x,'String',[Txt ])
-set(handles.vector_y,'String',[Txt ])
+set(handles.vector_x,'String',Txt)
+set(handles.vector_y,'String',Txt )
 set(handles.vector_z,'String',[{''} Txt ])
 set(handles.vec_color,'String',[{''} Txt ])
-set(handles.XVarName,'String',[{''} Txt ])
-set(handles.YVarName,'String',[{''} Txt ])
-set(handles.ZVarName,'String',[{''} Txt ])
-% set(handles.coord_x_vectors,'String',[{''} Txt ])
-% set(handles.coord_y_vectors,'String',[{''} Txt ])
-% set(handles.YVarName,'String',[{''} Txt ])
-% set(handles.TimeVarName,'String',[{''} Txt ])
+set(handles.XVarName,'String',Txt )
+set(handles.YVarName,'String',Txt )
+set(handles.ZVarName,'String',Txt )
 set(handles.scalar,'Value',1)
 set(handles.scalar,'String', Txt )
 
-%% ananlyse the input field cells
+%% analyse the input field cells
 [CellInfo,NbDim,errormsg]=find_field_cells(Field);
 if ~isempty(errormsg)  
     msgbox_uvmat('ERROR',['get_field / Field_input / find_field_cells: ' errormsg])
@@ -161,34 +156,34 @@ Field.SingleDimName=Field.VarDimName(find(check_dim));% corresponding list of di
 Field.MaxDim=max(Field.NbDim);
 
 %% set time mode
-ListSwitchVarIndexTime={'file index'};
+ListSwitchVarIndexTime={'file index'};% default setting: the time is the file index
 % look at global attributes with numerical values
 check_numvalue=false;
 check_time=false;
-    for ilist=1:numel(Field.ListGlobalAttribute)
-        Value=Field.(Field.ListGlobalAttribute{ilist});
-        check_numvalue(ilist)=isnumeric(Value);
-        check_time(ilist)=~isempty(find(regexp(Field.ListGlobalAttribute{ilist},'Time'),1));
-    end  
+for ilist=1:numel(Field.ListGlobalAttribute)
+    Value=Field.(Field.ListGlobalAttribute{ilist});
+    check_numvalue(ilist)=isnumeric(Value);
+    check_time(ilist)=~isempty(find(regexp(Field.ListGlobalAttribute{ilist},'Time'),1));
+end
 Field.ListNumAttributes=Field.ListGlobalAttribute(check_numvalue);% select the attributes with float numerical value
 if ~isempty(Field.ListNumAttributes)
-ListSwitchVarIndexTime=[ListSwitchVarIndexTime; {'attribute'}];
+    ListSwitchVarIndexTime=[ListSwitchVarIndexTime; {'attribute'}];% the time can be chosen as a global attribute
 end
 nboption=numel(ListSwitchVarIndexTime);
 if Field.MaxDim>=2
-    ListSwitchVarIndexTime=[ListSwitchVarIndexTime;{'variable'};{'dim index'}];
+    ListSwitchVarIndexTime=[ListSwitchVarIndexTime;{'variable'};{'dim index'}];% the time can be chosen as a dim index
 end
-if Field.MaxDim>=4
-        option=nboption+1;
+if Field.MaxDim>=4% for dim >=4, one dim is proposed as time 
+    option=nboption+1;
 elseif ~isempty(find(check_time, 1))
     option=2;
 else
     option=1;
 end
-%set(handles.SwitchVarIndexTime,'String',ListSwitchVarIndexTime)
-%set(handles.SwitchVarIndexTime,'Value',option)
+set(handles.SwitchVarIndexTime,'String',ListSwitchVarIndexTime)
+set(handles.SwitchVarIndexTime,'Value',option)
 set(handles.get_field,'UserData',Field);% record the finput field structure
-%SwitchVarIndexTime_Callback([],[], handles)
+SwitchVarIndexTime_Callback([],[], handles)
 
 %% set z coordinate menu if relevant
 if Field.MaxDim>=3
@@ -206,9 +201,12 @@ end
 
 %% set vector menu (priority) if detected or scalar menu for space dim >=2, or usual (x,y) plot for 1D fields
 if Field.MaxDim>=2 % case of 2D (or 3D) fields
+    if isfield(CellInfo{imax},'VarIndex_coord_x')&&  isfield(CellInfo{imax},'VarIndex_coord_y') 
+        set(handles.XVarName,'Value',CellInfo{imax}.VarIndex_coord_x(1))
+        set(handles.YVarName,'Value',CellInfo{imax}.VarIndex_coord_y(1))
+    end
     if isfield(CellInfo{imax},'VarIndex_vector_x') &&  isfield(CellInfo{imax},'VarIndex_vector_y') 
-        set(handles.CheckVector,'Value',1)
-        set(handles.CheckScalar,'Value',0)
+        set(handles.FieldOption,'Value',3)% set vector selection option
         set(handles.vector_x,'Value',CellInfo{imax}.VarIndex_vector_x(1))
         set(handles.vector_y,'Value',CellInfo{imax}.VarIndex_vector_y(1))
         set(handles.FieldOption,'Value',3)
@@ -353,11 +351,12 @@ for icell=1:numel(CellInfo)
         break
     end
 end
-val=get(handles.abscissa,'Value');
-set(handles.abscissa,'Value',min(val,2));
+%val=get(handles.abscissa,'Value');
+%set(handles.abscissa,'Value',min(val,2));
 coord_x_index=CellInfo{cell_select}.VarIndex_coord_x;
 coord_x_index=coord_x_index(coord_x_index~=0);
-set(handles.XVarName,'String',[{''}; (Field.ListVarName(coord_x_index))'; (Field.ListVarName(VarIndex))'])
+%set(handles.XVarName,'String',[{''}; (Field.ListVarName(coord_x_index))'; (Field.ListVarName(VarIndex))'])
+set(handles.XVarName,'String',[(Field.ListVarName(coord_x_index))'; (Field.ListVarName(VarIndex))'])
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckScalar.
@@ -394,14 +393,14 @@ update_field(hObject, eventdata, handles,VarName)
 
 %eliminate time
 TimeDimName='';%default
+
 % SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');
 % TimeVarOption=SwitchVarIndexTime{get(handles.SwitchVarIndexTime,'Value')};
-if strcmp(TimeVarOption,'variable')
-    List=get(handles.TimeVarName,'String');
+List=get(handles.TimeVarName,'String');
+if get(handles.CheckDimensionTime)
+         TimeDimName=List{get(handles.TimeVarName,'Value')};
+elseif ~get(handles.CheckAttributeTime) 
     TimeVarName=List{get(handles.TimeVarName,'Value')};
-elseif  strcmp(TimeVarOption,'dim index')
-    List=get(handles.TimeVarName,'String');
-    TimeDimName=List{get(handles.TimeVarName,'Value')};
 end
 % A completer
 % if strcmp(get(handles.TimeDimensionMenu,'Visible'),'on')
@@ -1037,152 +1036,6 @@ elseif iscell(cell_str)
     end
 end
 
-% --------------------------------------------------------------------
-function MenuOpen_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuOpen (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function MenuExport_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuExport (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function MenuBrowse_Callback(hObject, eventdata, handles)
-
-oldfile=get(handles.inputfile,'String');
-testrootfile=0;
-testsubdir=0;
-if isempty(oldfile)|isequal(oldfile,'') %loads the previously stored file name and set it as default in the file_input box
-        oldfile=''; 
-        dir_perso=prefdir;
-         profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-         if exist(profil_perso,'file')
-              h=load (profil_perso);
-             if isfield(h,'RootPath')
-                  RootPath=h.RootPath;
-             end
-             if isfield(h,'SubDir')
-                  SubDir=h.SubDir;
-                  if ~isempty(SubDir)
-                    testsubdir=1;
-                  end
-             end
-             if isfield(h,'RootFile')
-                  RootFile=h.RootFile;
-                  if ~isempty(RootFile)
-                    testrootfile=1;
-                  end
-             end
-         end
-end
-if testrootfile
-    if ~testsubdir
-        oldfile=fullfile(RootPath,RootFile);
-    else
-        oldfile=fullfile(RootPath,SubDir,RootFile);
-    end
-end
-[FileName, PathName] = uigetfile( ...
-       {'*.nc', ' *.nc';...
-       '*.cdf', ' *.cdf';...
-        '*.*',  'All Files (*.*)'}, ...
-        'Pick a file',oldfile);
-
-%global inputfile
-fileinput=[PathName FileName];%complete file name 
-sizf=size(fileinput);
-if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
-set(handles.inputfile,'String',fileinput)
-inputfile_Callback(hObject, eventdata, handles)
-
-%update list of recent files in the menubar
-MenuFile_1=fileinput;
-MenuFile_2=get(handles.MenuFile_1,'Label');
-MenuFile_3=get(handles.MenuFile_2,'Label');
-MenuFile_4=get(handles.MenuFile_3,'Label');
-MenuFile_5=get(handles.MenuFile_4,'Label');
-set(handles.MenuFile_1,'Label',MenuFile_1)
-set(handles.MenuFile_2,'Label',MenuFile_2)
-set(handles.MenuFile_3,'Label',MenuFile_3)
-set(handles.MenuFile_4,'Label',MenuFile_4)
-set(handles.MenuFile_5,'Label',MenuFile_5)
-dir_perso=prefdir;
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-display(profil_perso)
-if exist(profil_perso,'file')
-    save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-append'); %store the file names for future opening of uvmat
-else
-    txt=ver('MATLAB');
-    Release=txt.Release;
-    relnumb=str2double(Release(3:4));
-    if relnumb >= 14
-        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5','-V6'); %store the file names for future opening of uvmat
-    else
-        save (profil_perso,'MenuFile_1','MenuFile_2','MenuFile_3','MenuFile_4', 'MenuFile_5'); %store the file names for future opening of uvmat
-    end
-end
-
-% --------------------------------------------------------------------
-function MenuFile_1_Callback(hObject, eventdata, handles)
-fileinput=get(handles.MenuFile_1,'Label');
-set(handles.inputfile,'String',fileinput)
-inputfile_Callback(hObject, eventdata, handles)
-
-% --------------------------------------------------------------------
-function MenuFile_2_Callback(hObject, eventdata, handles)
-fileinput=get(handles.MenuFile_2,'Label');
-set(handles.inputfile,'String',fileinput)
-inputfile_Callback(hObject, eventdata, handles)
-
-% -----------------------------------------------------------------------
-function MenuFile_3_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput=get(handles.MenuFile_3,'Label');
-set(handles.inputfile,'String',fileinput)
-inputfile_Callback(hObject, eventdata, handles)
-
-% -----------------------------------------------------------------------
-function MenuFile_4_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput=get(handles.MenuFile_4,'Label');
-set(handles.inputfile,'String',fileinput)
-inputfile_Callback(hObject, eventdata, handles)
-
-% -----------------------------------------------------------------------
-function MenuFile_5_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput=get(handles.MenuFile_5,'Label');
-set(handles.inputfile,'String',fileinput)
-inputfile_Callback(hObject, eventdata, handles)
-
-%------------------------------------------------------------------------
-function MenuExportField_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-global Data_get_field
-% huvmat=findobj(allchild(0),'Name','uvmat');
-inputfile=get(handles.inputfile,'String');
-Data_get_field=nc2struct(inputfile);
-% Data_view_field=UvData.ProjField_2;
-evalin('base','global Data_get_field')%make CurData global in the workspace
-display(['content of ' inputfile ':'])
-evalin('base','Data_get_field') %display CurData in the workspace
-commandwindow;
-
-%------------------------------------------------------------------------
-function MenuHelp_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-path_to_uvmat=which ('uvmat');% check the path of uvmat
-pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'UVMAT_DOC','uvmat_doc.html');
-if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the directory UVMAT/UVMAT_DOC')
-else
-web([helpfile '#get_field'])    
-end
 
 % -----------------------------------------------------------------------
 function TimeName_Callback(hObject, eventdata, handles)
@@ -1383,19 +1236,16 @@ end
 
 
 
-
+%------------------------------------------------------------------------
 % --- Executes on selection change in SwitchVarIndexX.
+%------------------------------------------------------------------------
 function SwitchVarIndexX_Callback(hObject, eventdata, handles)
-% hObject    handle to SwitchVarIndexX (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns SwitchVarIndexX contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from SwitchVarIndexX
-
-
+%------------------------------------------------------------------------
 % --- Executes on selection change in SwitchVarIndexTime.
+%------------------------------------------------------------------------
 function SwitchVarIndexTime_Callback(hObject, eventdata, handles)
+
 menu=get(handles.SwitchVarIndexTime,'String');
 option=menu{get(handles.SwitchVarIndexTime,'Value')};
 Field=get(handles.get_field,'UserData');
@@ -1452,117 +1302,40 @@ FieldList=get(handles.FieldOption,'String');
 FieldOption=FieldList{get(handles.FieldOption,'Value')};
 switch FieldOption
     case '1D plot'
-         set(handles.Panel1Dplot,'Visible','on')
-         pos=get(handles.Panel1Dplot,'Position');
-         pos(1)=2;
-         pos_coord=get(handles.Coordinates,'Position');
-         pos(2)=pos_coord(2)-pos(4)-2;
-         set(handles.Panel1Dplot,'Position',pos)
-    set(handles.PanelScalar,'Visible','off')
-    set(handles.PanelVectors,'Visible','off')
-    set(handles.YVarName,'Visible','off')
-%    set(handles.SwitchVarIndexY,'Visible','off')
-    set(handles.Y_title,'Visible','off')
-    set(handles.ZVarName,'Visible','off')
- %   set(handles.SwitchVarIndexZ,'Visible','off')
-    set(handles.Z_title,'Visible','off')
-%    ordinate_Callback(hObject, eventdata, handles)
-%         set(handles.get_field,'Units','pixels')
-% size_fig=get(handles.get_field,'Position');
-% Data=get(handles.view_field,'UserData');
-% Data.GUISize=size_fig;
-% set(handles.view_field,'UserData',Data)
-% 
-% %% reset position of text_display or TableDisplay
-% if strcmp(get(handles.TableDisplay,'Visible'),'off')
-%     pos_1=get(handles.text_display,'Position');
-%     pos_1(1)=size_fig(3)-pos_1(3);
-%     pos_1(2)=size_fig(4)-pos_1(4);
-%     set(handles.text_display,'Position',pos_1)
-%     % reset position of TableDisplay
-% else
-%     pos_1=get(handles.TableDisplay,'Position');
-%     pos_1(1)=size_fig(3)-pos_1(3);
-%     pos_1(2)=size_fig(4)-pos_1(4);
-%     set(handles.TableDisplay,'Position',pos_1)
-% end
-% 
-% %% reset position of Coordinates
-% pos_2=get(handles.Coordinates,'Position');
-% pos_2(1)=size_fig(3)-pos_1(3);
-% pos_2(2)=pos_1(2)-pos_2(4);
-% set(handles.Coordinates,'Position',pos_2)
+        set(handles.Panel1Dplot,'Visible','on')
+        pos=get(handles.Panel1Dplot,'Position');
+        pos(1)=2;
+        pos_coord=get(handles.Coordinates,'Position');
+        pos(2)=pos_coord(2)-pos(4)-2;
+        set(handles.Panel1Dplot,'Position',pos)
+        set(handles.PanelScalar,'Visible','off')
+        set(handles.PanelVectors,'Visible','off')
+        set(handles.YVarName,'Visible','off')
+        %    set(handles.SwitchVarIndexY,'Visible','off')
+        set(handles.Y_title,'Visible','off')
+        set(handles.ZVarName,'Visible','off')
+        %   set(handles.SwitchVarIndexZ,'Visible','off')
+        set(handles.Z_title,'Visible','off')
     case 'scalar'
         set(handles.Panel1Dplot,'Visible','off')
-    set(handles.PanelScalar,'Visible','on')
-    set(handles.PanelVectors,'Visible','off')
-         pos=get(handles.PanelScalar,'Position');
-         pos(1)=2;
-         pos_coord=get(handles.Coordinates,'Position');
-         pos(2)=pos_coord(2)-pos(4)-2;
-         set(handles.PanelScalar,'Position',pos)
-    set(handles.YVarName,'Visible','on')
-    set(handles.Y_title,'Visible','on')
+        set(handles.PanelScalar,'Visible','on')
+        set(handles.PanelVectors,'Visible','off')
+        pos=get(handles.PanelScalar,'Position');
+        pos(1)=2;
+        pos_coord=get(handles.Coordinates,'Position');
+        pos(2)=pos_coord(2)-pos(4)-2;
+        set(handles.PanelScalar,'Position',pos)
+        set(handles.YVarName,'Visible','on')
+        set(handles.Y_title,'Visible','on')
     case 'vectors'
         set(handles.Panel1Dplot,'Visible','off')
-    set(handles.PanelScalar,'Visible','off')
-    set(handles.PanelVectors,'Visible','on')
-    pos=get(handles.PanelVectors,'Position');
-         pos(1)=2;
-         pos_coord=get(handles.Coordinates,'Position');
-         pos(2)=pos_coord(2)-pos(4)-2;
-         set(handles.PanelVectors,'Position',pos)
-    set(handles.YVarName,'Visible','on')
-    set(handles.Y_title,'Visible','on')
+        set(handles.PanelScalar,'Visible','off')
+        set(handles.PanelVectors,'Visible','on')
+        pos=get(handles.PanelVectors,'Position');
+        pos(1)=2;
+        pos_coord=get(handles.Coordinates,'Position');
+        pos(2)=pos_coord(2)-pos(4)-2;
+        set(handles.PanelVectors,'Position',pos)
+        set(handles.YVarName,'Visible','on')
+        set(handles.Y_title,'Visible','on')
 end
-% hObject    handle to FieldOption (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = get(hObject,'String') returns FieldOption contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from FieldOption
-
-
-% --- Executes on button press in CheckDimensionX.
-function CheckDimensionX_Callback(hObject, eventdata, handles)
-% hObject    handle to CheckDimensionX (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of CheckDimensionX
-
-
-% --- Executes on button press in checkbox25.
-function checkbox25_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox25 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox25
-
-
-% --- Executes on button press in checkbox26.
-function checkbox26_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox26 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox26
-
-
-% --- Executes on button press in checkbox27.
-function checkbox27_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox27 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox27
-
-
-% --- Executes on button press in checkbox29.
-function checkbox29_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox29 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of checkbox29

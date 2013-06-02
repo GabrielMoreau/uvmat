@@ -1,6 +1,6 @@
-%'mask_proj': projects the field on a projection object
+%'mask_proj': restrict input fields to a mask region, set to 0 outside 
 %--------------------------------------------------------------------------
-%  function [ProjData,errormsg]=proj_field(FieldData,ObjectData)
+%  function [ProjData,errormsg]=mask_proj(FieldData,MaskData)
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.

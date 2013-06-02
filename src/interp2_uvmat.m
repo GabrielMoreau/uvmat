@@ -1,11 +1,18 @@
+%'interp2_uvmat': linearly interpolate an image or scalar defined on a regular grid 
+%--------------------------------------------------------------------
+%OUTPUT:
+% A_out: matrix of interpolated values at positions (XIMA,YIMA)
+%
+%INPUT:
 % A matrix (npy,npx) to interpolate
 %XIMA: matrix of non-integer x index values (npY,npX)
 %YIMA: matrix of non-integer y index values (npY,npX), (with the same size as XIMA)
+
 function A_out=interp2_uvmat(A,XIMA,YIMA)
 npx=size(A,2);
 npy=size(A,1);
 npX=size(XIMA,2);
-npY=size(XIMA,1)
+npY=size(XIMA,1);
 XIMA=reshape(XIMA,1,npX*npY)+0.5;%indices corresponding to XIMA, reshaped in a matlab vector
 YIMA=reshape(YIMA,1,npX*npY)+0.5;%indices corresponding to XIMA, reshaped in a matlab vector
 X_delta=XIMA-floor(XIMA);%distance to the closest integer value

@@ -31,45 +31,50 @@ svn_info.rep_rev=[];
 svn_info.cur_rev=[];
 svn_info.status=[];
 list_fct={...
+    'activate';...% emulate the mouse selection of a GUI element, for demo
     'browse_data';...% function for scanning directories in a project/campaign
     'browse_data.fig';...% GUI corresponding to dataview
     'calc_field_interp';...% defines fields (velocity, vort, div...) from civx data and calculate them
     'calc_field_tps';...% defines fields (velocity, vort, div...) and calculate them
     'cell2tab';... %transform a Matlab cell in a character array suitable for display in a table
     'check_files';...
-    'civ';...   %function associated with the interface 'civ.fig' for PIV and spline interpolation
+    'civ';...   %function associated with the interface 'civ.fig' for PIV and spline interpolation (to be replaced by civ_series)
     'civ.fig';...
-    'civ_3D';... function associated with the interface 'civ_3D.fig' for PIV in volume (TODO: combine with civ.m)
+    'civ_3D';... % function associated with the interface 'civ_3D.fig' for PIV in volume (TODO: combine with civ.m)
     'civ_3D.fig';...
     'civ_matlab';...% civ programs, Matlab version (called by civ.m, option Civprogram/Matlab in the upper menu bar)
+    'compile';...% compile a Matlab function, create a binary in a subdirectory /bin
     'copyfields';...% copy fields between two matlab structures
     'create_grid';...% called by the GUI geometry_calib to create a physical grid
     'create_grid.fig';...% GUI corresponding to create_grid.m
-    'displ_uvmat';...
-    'editxml';...%display and edit xml files using a xls schema
-    'editxml.fig';...%interface for editxml
+    'displ_uvmat';...% display a message using  msgbox_uvmat or on the log file in batch mode
+    'editxml';...% display and edit xml files using a xls schema
+    'editxml.fig';...% interface for editxml
     'fileparts_uvmat';...% extracts the root name,field indexes and nomenclature type from an input filename
     'fill_GUI';...%  fill a GUI with a set of parameters from a Matlab structure 
     'filter_tps';...% find the thin plate spline coefficients for interpolation-smoothing
     'find_field_cells';...% group the variables of a 'field object' into 'field cells' and specify their structure
-    'find_file_series';...%check the content of an input file and find the corresponding file series
+    'find_file_series';...% check the content of an input file and find the corresponding file series
     'find_imadoc';...% find the ImaDoc xml file associated with a given input file
-    'fullfile_uvmat';...%creates a file name from a root name and indices.
-    'geometry_calib';...%performs geometric calibration from a set of reference points
-    'geometry_calib.fig';...%interface for geometry_calib
+    'fullfile_uvmat';...% creates a file name from a root name and indices.
+    'geometry_calib';...% performs geometric calibration from a set of reference points
+    'geometry_calib.fig';...% interface for geometry_calib
     'get_field';...% choose and plot a field from a Netcdf file
     'get_field.fig';...%interface for get_field
     'get_file_series';...% determine the list of file names and file indices for functions called by 'series'.
     'get_file_type';...% determine info about a file (image, multimage, civdata,...) .
     'hist_update';...%  update of a current global histogram by inclusion of a new field
     'imadoc2struct';...%convert the image documentation file ImaDoc into a Matlab structure
+    'interp2_uvmat';...% linearly interpolate an image or scalar defined on a regular grid
     'keyboard_callback';... % function activated when a key is pressed on the keyboard
-    'ListDir';... scan the structure of the directory tree (for dataview.m)
+    'ListDir';... % scan the structure of the directory tree (for editxml.m)
+    'mask_proj';...% restrict input fields to a mask region, set to 0 outside 
     'mouse_down';% function activated when the mouse button is pressed on a figure (callback for 'WindowButtonDownFcn')
     'mouse_motion';...% permanently called by mouse motion over a figure (callback for 'WindowButtonMotionFcn')
     'mouse_up';... % function to be activated when the mouse button is released (callback for 'WindowButtonUpFcn')
-    'msgbox_uvmat';... associated with GUI msgbox_uvmat.fig to display message boxes, for error, warning or input calls
+    'msgbox_uvmat';... % associated with GUI msgbox_uvmat.fig to display message boxes, for error, warning or input calls
     'msgbox_uvmat.fig';...
+    'nomtype2pair';... creates nomenclature for index pairs knowing the image nomenclature, used by series fct
     'nc2struct';...% transform a netcdf file in a corresponding matlab structure
     'num2stra';...% transform number to the corresponding character string depending on the nomenclature
     'open_uvmat';...% open with uvmat the  field selected in the list of 'civ/status' or 'series/check_data_files'
@@ -81,6 +86,7 @@ list_fct={...
     'read_civxdata';...reads civx data from netcdf files
     'read_civdata';... reads new civ data from netcdf files
     'read_field';...% read the fields from files in different formats (netcdf files, images, video)
+    'read_geometry_calib';... read data on the GUI geometry_calib
     'read_GUI';... %read a GUI and provide the data as a Matlab structure
     'read_image';...%read images or video objects
     'read_multimadoc';... %read a set of Imadoc files and compare their timing of different file series
@@ -108,6 +114,7 @@ list_fct={...
     'tps_eval_dxy';...% calculate the derivatives of thin plate spline (tps) interpolation at a set of points (limited to the 2D case)
     'translate_points';...% associated with GUI translate_points.fig to display translation parameters
     'translate_points.fig';...
+    'uigetfile_uvmat';... browser, and display of directories, faster than the Matlab fct uigetfile
     'update_imadoc';...  %update the ImaDoc xml file
     'update_waitbar';... update the waitbar display, used for ACTION functions in the GUI 'series'
     'uvmat';...% master function for file scanning and visualisation of 2D fields

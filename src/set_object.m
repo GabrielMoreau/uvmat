@@ -697,13 +697,14 @@ PLOT_Callback(hObject, eventdata, handles)
 % --- Executes on button press in HELP.
 function HELP_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-path_to_uvmat=which ('uvmat');% check the path of uvmat
-pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
-if ~isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
-    addpath (fullfile(pathelp,'uvmat_doc'))
-    web([helpfile '#set_object']) 
-end
+web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp#a6-Projectionobjects:')
+% path_to_uvmat=which ('uvmat');% check the path of uvmat
+% pathelp=fileparts(path_to_uvmat);
+% helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
+% if ~isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
+%     addpath (fullfile(pathelp,'uvmat_doc'))
+%     web([helpfile '#set_object']) 
+% end
 %------------------------------------------------------------------------
 
 function Name_Callback(hObject, eventdata, handles)

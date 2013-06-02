@@ -189,19 +189,18 @@ Height=Height*RescaleFactor;
 LeftX=80*RescaleFactor;%position of the left fig side, in pixels (put to the left side, with some margin)
 LowY=round(ScreenSize(4)/2-Height/2); % put at the middle height on the screen
 set(hObject,'Position',[LeftX LowY Width Height])
-
-%set(hObject,'Units','Normalized')
-
-%UvData.OpenParam.PosColorbar=[0.8450    0.0900    0.0190    0.3600];
 UvData.OpenParam.PosColorbar=[0.80 0.02 0.018 0.445];
-%UvData.OpenParam.PosSetObject=[-0.05 -0.03 0.3 0.7]; %position for set_object
 UvData.OpenParam.PosGeometryCalib=[0.95 -0.03 0.28 1 ];%position for geometry_calib (TO IMPROVE)
-% UvData.OpenParam.CalSize=[0.28 1];
-% UvData.PlotAxes=[];%initiate the record of plotted field
-% UvData.axes2=[];
-% UvData.axes1=[];
 AxeData.LimEditBox=1; %initialise AxeData
 set(handles.PlotAxes,'UserData',AxeData)
+% position of table Coord_y
+set(handles.Coord_y,'Unit','pixel')
+Pos=get(handles.Coord_y,'Position');
+set(handles.Coord_y,'Unit','normalized')
+set(handles.Coord_y,'ColumnWidth',{Pos(3)})
+set(handles.Coord_y,'ColumnFormat',{'char'})
+set(handles.Coord_y,'ColumnEditable',false)
+set(handles.Coord_y,'ColumnName',{''})
 
 %% set functions for the mouse and keyboard
 set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
@@ -343,22 +342,18 @@ set(handles.uvmat,'Units','pixels')
 size_fig=get(handles.uvmat,'Position');
 ColumnWidth=max(150,0.18*size_fig(3));
 ColumnWidth=min(ColumnWidth,250); % width of the right side display column, between 150 and 250, depending on the fig width
-% Data=get(handles.uvmat,'UserData');
-% Data.GUISize=size_fig;
-% set(handles.uvmat,'UserData',Data)
-
 
 %% position of panel InputFile
-%set(handles.InputFile,'Units','pixels')
+set(handles.InputFile,'Units','pixels')
 pos_InputFile=get(handles.InputFile,'Position');% [lower x lower y width height] for text_display
 pos_InputFile(1)=0;
 pos_InputFile(2)=size_fig(4)-pos_InputFile(4);             % set frame InputFile to the top of the fig
 pos_InputFile(3)=size_fig(3);
-
 set(handles.InputFile,'Position',pos_InputFile);% [lower x lower y width height] for text_display
 
 %% reset position of text_display or TableDisplay
 if strcmp(get(handles.TableDisplay,'Visible'),'off')
+    set(handles.text_display,'Units','pixels')
     pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
         pos_1(3)=1.2*ColumnWidth;
     pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
@@ -366,6 +361,7 @@ if strcmp(get(handles.TableDisplay,'Visible'),'off')
     set(handles.text_display,'Position',pos_1)
     % reset position of TableDisplay
 else
+    set(handles.TableDisplay,'Units','pixels')
     pos_1=get(handles.TableDisplay,'Position');
     pos_1(3)=1.2*ColumnWidth;
     pos_1(1)=size_fig(3)-pos_1(3);
@@ -380,6 +376,7 @@ end
 % set(handles.CheckHold,'Position',pos_CheckHold)
 
 %% reset position of Coordinates
+set(handles.Coordinates,'Units','pixels')
 pos_2=get(handles.Coordinates,'Position');% [lower x lower y width height] for frame 'Coordinates'
 pos_2(3)=ColumnWidth;
 pos_2(1)=size_fig(3)-pos_2(3);       % set 'Coordinates' to the right of the fig
@@ -387,6 +384,7 @@ pos_2(2)=pos_1(2)-pos_2(4);          % set 'Coordinates' to the lower edge of te
 set(handles.Coordinates,'Position',pos_2)
 
 %% reset position of  Scalar
+set(handles.Scalar,'Units','pixels')
 pos_3=get(handles.Scalar,'Position'); % [lower x lower y width height] for frame 'Scalar'
 pos_3(3)=ColumnWidth;
 pos_3(1)=size_fig(3)-pos_3(3);         % set 'Scalar' to the right of the fig
@@ -414,6 +412,7 @@ pos(1)=0.2*size_fig(3)+35;
 pos(2)=35;
 pos(3)=0.77*size_fig(3)-1.2*ColumnWidth;
 pos(4)=size_fig(4)-60;
+set(handles.PlotAxes,'Units','pixels')
 set(handles.PlotAxes,'Position',pos)
 
 
@@ -1093,7 +1092,7 @@ end
 
 %% update the data attached to the uvmat interface
 if ~isempty(TimeUnit)
-    set(handles.time_txt,'String',['time (' TimeUnit ')'])
+    set(handles.time_var,'String',['time (' TimeUnit ')'])
 end
 UvData.TimeUnit=TimeUnit;
 UvData.XmlData{index}=XmlData;
@@ -1108,7 +1107,6 @@ end
 %% set default options in menu 'FieldName'
 switch FileType
     case {'civx','civdata'}
-%         [FieldList,ColorList]=calc_field;
         [FieldList,ColorList]=set_field_list('U','V','C');
         set(handles_Fields,'String',[{'image'};FieldList;{'get_field...'}]);%standard menu for civx data
         set(handles_Fields,'Value',2) % set menu to 'velocity
@@ -1120,23 +1118,19 @@ switch FileType
         set(handles.ColorScalar,'String',ColorList)
         set(handles.Vectors,'Visible','on')
         set(handles.Coord_x,'Value',1);
-        set(handles.Coord_x,'String',{'X'});
-        set(handles.Coord_y,'Value',1);
-        set(handles.Coord_y,'String',{'Y'});
+        set(handles.Coord_x,'String','X');
+%         set(handles.Coord_y,'Value',1);
+        set(handles.Coord_y,'Data',{'Y'});
     case 'netcdf'
         set(handles_Fields,'Value',1)
         set(handles_Fields,'String',{'get_field...'})
         FieldName_Callback([],[], handles)
-%         hget_field=get_field(FileName);
-%         hhget_field=guidata(hget_field);
-%         get_field('RUN_Callback',hhget_field.RUN,[],hhget_field);
     otherwise
         set(handles_Fields,'Value',1) % set menu to 'image'
         set(handles_Fields,'String',{'image'})
         set(handles.Coord_x,'Value',1);
-        set(handles.Coord_x,'String',{'AX'});
-        set(handles.Coord_y,'Value',1);
-        set(handles.Coord_y,'String',{'AY'});
+        set(handles.Coord_x,'String','AX');
+    set(handles.Coord_y,'Data',{'AY'});
 end
 set(handles.uvmat,'UserData',UvData)
 
@@ -2117,7 +2111,6 @@ switch UvData.FileType{1}
     case {'civx','civdata','netcdf'};
         list_fields=get(handles.FieldName,'String');% list menu fields
         FieldName= list_fields{get(handles.FieldName,'Value')}; % selected field
-        % if get_field... is selected, the GUI get_field will be used to enter fields 
         if ~strcmp(FieldName,'get_field...')
             if get(handles.FixVelType,'Value')
                 VelTypeList=get(handles.VelType,'String');
@@ -2163,10 +2156,11 @@ if isstruct (ParamIn)
     if ~isempty(XNameMenu)
         ParamIn.Coord_x=XNameMenu(get(handles.Coord_x,'Value'));
     end
-    YNameMenu=get(handles.Coord_y,'String');
-    if ~isempty(YNameMenu)
-        ParamIn.Coord_y=YNameMenu(get(handles.Coord_y,'Value'));
-    end
+   % YNameMenu=get(handles.Coord_y,'String');
+    ParamIn.Coord_y=get(handles.Coord_y,'Data');
+%     if ~isempty(YNameMenu)
+%         ParamIn.Coord_y=YNameMenu(get(handles.Coord_y,'Value'));
+%     end
 end
 check_tps = 0;         
 if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamIn.FieldName,'velocity')&&~strcmp(ParamIn.FieldName,'get_field...') 
@@ -2270,7 +2264,6 @@ if ~isempty(FileName_1)
         if isstruct(ParamOut_1)&&~strcmp(ParamOut_1.FieldName,'get_field...')&& (strcmp(UvData.FileType{2},'civdata')||strcmp(UvData.FileType{2},'civx'))...
                 &&~strcmp(ParamOut_1.FieldName,'velocity') && ~strcmp(ParamOut_1.FieldName,'get_field...')
             if ~check_proj_tps
-             %   Field{2}=calc_field([{ParamOut_1.FieldName} {ParamOut_1.ColorVar}],Field{2});
             end
         end
     end
@@ -2288,7 +2281,6 @@ end
 
 %% update the display menu for the first velocity type (first menuline)
 test_veltype=0;
-% if ~isequal(FileType,'netcdf')|| isequal(FieldName,'get_field...')
 if (strcmp(UvData.FileType{1},'civx')||strcmp(UvData.FileType{1},'civdata'))&& ~strcmp(FieldName,'get_field...')
     test_veltype=1;
     set(handles.VelType,'Visible','on')
@@ -3164,27 +3156,24 @@ if isequal(field,'get_field...')
     set(handles.VelType_1,'Visible','off')
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
     FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-%     hget_field=findobj(allchild(0),'name','get_field');
-%     if ~isempty(hget_field)
-%         delete(hget_field)
-%     end
     GetFieldData=get_field(FileName,ParamIn);
     FieldList={};
     VecColorList={};
-    XName=GetFieldData.XVarName;
-    if GetFieldData.CheckVector
+    XName=GetFieldData.Coordinates.XVarName;
+    switch GetFieldData.FieldOption
+        case 'vectors'
         UName=GetFieldData.PanelVectors.vector_x;
         VName=GetFieldData.PanelVectors.vector_y;
-        XName=GetFieldData.XVarName;
-        YName=GetFieldData.YVarName;
+        XName=GetFieldData.Coordinates.XVarName;
+        YName=GetFieldData.Coordinates.YVarName;
         CName=GetFieldData.PanelVectors.vec_color;
         [FieldList,VecColorList]=set_field_list(UName,VName,CName);
-    elseif GetFieldData.CheckScalar
+        case 'scalar'
         AName=GetFieldData.PanelScalar.scalar;
-        XName=GetFieldData.XVarName;
-        YName=GetFieldData.YVarName;
+        XName=GetFieldData.Coordinates.XVarName;
+        YName=GetFieldData.Coordinates.YVarName;
         FieldList={AName};
-    elseif GetFieldData.CheckPlot1D;
+        case '1D plot'
         YName=GetFieldData.CheckPlot1D.ordinate;
     end
     set(handles.Coord_x,'String',{XName})
@@ -5274,8 +5263,9 @@ TransformList=get(handles.TransformName,'String');
 Param.TransformName=TransformList{get(handles.TransformName,'Value')};
 Param.Coord_x_str=get(handles.Coord_x,'String');
 Param.Coord_x_val=get(handles.Coord_x,'Value');
-Param.Coord_y_str=get(handles.Coord_y,'String');
-Param.Coord_y_val=get(handles.Coord_y,'Value');
+%Param.Coord_y_str=get(handles.Coord_y,'String');
+Param.Coord_y_str=get(handles.Coord_y,'Data');
+%Param.Coord_y_val=get(handles.Coord_y,'Value');
 series(Param); %run the series interface
 
 %------------------------------------------------------------------------
@@ -5289,14 +5279,16 @@ civ(FileName);% interface de civ(not in the uvmat file)
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
-path_to_uvmat=which ('uvmat');% check the path of uvmat
-pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
-if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
-else
-    addpath (fullfile(pathelp,'uvmat_doc'))
-    web(helpfile);
-end
+web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp')
+
+% path_to_uvmat=which ('uvmat');% check the path of uvmat
+% pathelp=fileparts(path_to_uvmat);
+% helpfile=fullfile(pathelp,'uvmat_doc','uvmat_doc.html');
+% if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the sub-directory /uvmat_doc of the UVMAT package')
+% else
+%     addpath (fullfile(pathelp,'uvmat_doc'))
+%     web(helpfile);
+% end
 
 % --- Executes on selection change in Coord_y.
 function Coord_y_Callback(hObject, eventdata, handles)
@@ -5421,4 +5413,27 @@ else
         set(handles.edit_vect,'Visible','off')
         set(handles.record,'Visible','off')
     end
+end
+
+
+
+function time_var_1_Callback(hObject, eventdata, handles)
+% hObject    handle to time_var_1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of time_var_1 as text
+%        str2double(get(hObject,'String')) returns contents of time_var_1 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function time_var_1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to time_var_1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
 end

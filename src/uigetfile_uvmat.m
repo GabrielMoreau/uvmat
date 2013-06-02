@@ -1,4 +1,4 @@
-%'uigetfile_uvmat': browser faster than the Matlab fct uigetfile 
+%'uigetfile_uvmat': browser, and display of directories, faster than the Matlab fct uigetfile 
 %------------------------------------------------------------------------
 % hfig=uigetfile_uvmat(OutputDir,option)
 %

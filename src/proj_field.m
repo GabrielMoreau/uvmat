@@ -537,6 +537,12 @@ if isequal(ProjMode,'projection') || isequal(ProjMode,'interp_tps')
         yinf(ip)=ObjectData.Coord(ip,2)-width*cos((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
     end
 end
+% 
+% 
+%     x = a \ \cosh \mu \ \cos \nu
+% 
+%     y = a \ \sinh \mu \ \sin \nu 
+
 
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 [CellInfo,NbDim,errormsg]=find_field_cells(FieldData);

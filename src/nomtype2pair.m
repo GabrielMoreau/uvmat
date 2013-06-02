@@ -1,4 +1,4 @@
-%'nomtype2pair': creates nomencalture for index pairs knowing the image nomenclature, used by series fct
+%'nomtype2pair': creates nomenclature for index pairs knowing the image nomenclature, used by series fct
 %---------------------------------------------------------------------
 % NomTypeOut=nomtype2pair(NomTypeIn)
 %---------------------------------------------------------------------           
