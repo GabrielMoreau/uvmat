@@ -94,11 +94,9 @@ FileExt=Param.InputTable(:,5);
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 %%%%%%%%%%%%
 nbview=numel(i1_series);%number of input file series (lines in InputTable)
-nbfield_j=size(j1_series{1},1); %nb of fields for the j index (bursts or volume slices)
+nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
 nbfield_i=size(i1_series{1},2); %nb of fields for the i index
 nbfield=nbfield_j*nbfield_i; %total number of fields
-% [first_i,tild,last_i,first_j,tild,last_j,errormsg]=get_index_range(Param.IndexRange);
-% if ~isempty(errormsg),display(errormsg),return,end
 
 %% determine the file type on each line from the first input file
 ImageTypeOptions={'image','multimage','mmreader','video'};

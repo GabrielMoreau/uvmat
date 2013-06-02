@@ -1,9 +1,12 @@
-
-%'civ_input': function associated with the interface 'civ_input.fig' for PIV, spline interpolation and stereo PIV (patch)
+%'civ_input': function associated with the GUI 'civ_input.fig' to set the input parameters for civ_series
 %------------------------------------------------------------------------
-%  provides an interface for the software menucivx
-% function varargout = civ_input(varargin)
-% provides an interface for the software menucivx
+% function ParamOut = civ_input(Param)
+%
+% OUPUT:
+% ParamOut: Matlab structure containing the parameters set by the GUI civ_input
+%
+% INPUT:
+% Param: Matlab structure containing the input parameters set by the GUI
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2011, LEGI / CNRS-UJF-INPG, sommeria@legi.grenoble-inp.fr
@@ -21,11 +24,7 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 function varargout = civ_input(varargin)
-%TODO: search range
 
-
-% Last Modified by GUIDE v2.5 25-May-2013 12:37:21
-% Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
     'gui_Singleton',  gui_Singleton, ...
