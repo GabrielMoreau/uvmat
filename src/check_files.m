@@ -77,7 +77,6 @@ list_fct={...
     'nomtype2pair';... creates nomenclature for index pairs knowing the image nomenclature, used by series fct
     'nc2struct';...% transform a netcdf file in a corresponding matlab structure
     'num2stra';...% transform number to the corresponding character string depending on the nomenclature
-    'open_uvmat';...% open with uvmat the  field selected in the list of 'civ/status' or 'series/check_data_files'
     'phys_XYZ';...% transform coordiantes from pixels to phys
     'px_XYZ';...% transform coordiantes from phys to pixels
     'plot_field';...%displays a vector field and/or scalar or images

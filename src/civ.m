@@ -4562,15 +4562,38 @@ civ2.pixcmx='1';
 civ2.pixcmy='1';
 civ2.convectFlow='n';
 
+% 'open_uvmat': open with uvmat the  field selected in the list of 'civ/status' 
+%------------------------------------------------------------------------
+%function open_uvmat(hObject, eventdata)
+%
+% INPUT: 
+% hObject: handle of uicontrol object containing the list 
+% eventdata: not used
+function open_uvmat(hObject, eventdata)
+%------------------------------------------------------------------------
+list=get(hObject,'String');
+index=get(hObject,'Value');
+rootroot=get(hObject,'UserData');
+filename=list{index};
+ind_dot=strfind(filename,'...');
+if ~isempty(ind_dot)
+    filename=filename(1:ind_dot-1);
+end
+filename=fullfile(rootroot,filename);
+if exist(filename,'file')%visualise the vel field if it exists
+    uvmat(filename)
+    set(gcbo,'Value',1)
+end
 
-% --- Executes on selection change in RunMode.
-function RunMode_Callback(hObject, eventdata, handles)
-
-
-function nb_field2_Callback(hObject, eventdata, handles)
-
-
-function last_j_Callback(hObject, eventdata, handles)
-
-
-function last_i_Callback(hObject, eventdata, handles)
+% 
+% % --- Executes on selection change in RunMode.
+% function RunMode_Callback(hObject, eventdata, handles)
+% 
+% 
+% function nb_field2_Callback(hObject, eventdata, handles)
+% 
+% 
+% function last_j_Callback(hObject, eventdata, handles)
+% 
+% 
+% function last_i_Callback(hObject, eventdata, handles)

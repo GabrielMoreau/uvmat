@@ -72,34 +72,40 @@ switch FileType
             if isempty(r)
                 ListVar=[ListVar InputField(ilist)];
                 Role{numel(ListVar)}='scalar';
-                %                     FieldRequest{numel(ListVar)}='interp_lin';%scalar field (requires interpolation for plot)
+                ProjModeRequest{numel(ListVar)}='interp_lin';%scalar field (requires interpolation for plot)
             else
                 ListVar=[ListVar {r.UName,r.VName}];
                 Role{numel(ListVar)}='vector_y';
                 Role{numel(ListVar)-1}='vector_x';
-                %                    TODO; introduce that for unstructured coordinates
-                %                     switch r.Operator TODO; introduce that for unstructured coordinates
-                %                         case 'norm'
-                %                             FieldRequest{numel(ListVar)-1}='interp_lin';%scalar field (requires interpolation for plot)
-                %                             FieldRequest{numel(ListVar)}='interp_lin';
-                %                         otherwise
-                %                            FieldRequest{numel(ListVar)-1}='';
-                %                     end
+                            switch r.Operator
+                                case 'norm'
+                                    ProjModeRequest{numel(ListVar)-1}='interp_lin';%scalar field (requires interpolation for plot)
+                                    ProjModeRequest{numel(ListVar)}='interp_lin';
+                                otherwise
+                                   ProjModeRequest{numel(ListVar)-1}='';
+                                   ProjModeRequest{numel(ListVar)}='';
+                            end
             end
         end
         if check_colorvar
             Role{numel(ListVar)}='ancillary';% scalar used for color vector (not projected)
         end
+        if isfield(ParamIn,'TimeDimName')% case of reading of a single time index in a multidimensional array
+            [Field,var_detect,ichoice]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,num,[ParamIn.Coord_x (ParamIn.Coord_y) ListVar]);
+        else
         [Field,var_detect,ichoice]=nc2struct(FileName,[ParamIn.Coord_x (ParamIn.Coord_y) ListVar]);
+        end
         if isfield(Field,'Txt')
             errormsg=Field.Txt;
             return
         end
         for ivar=1:numel(ListVar)
             Field.VarAttribute{ivar+2}.Role=Role{ivar};
-            %                 Field.VarAttribute{ivar+2}.FieldRequest=FieldRequest{ivar};
-        end
-        
+            if isfield(ParamIn,'FieldName')
+                Field.VarAttribute{ivar+2}.FieldName=ParamIn.FieldName;
+            end
+            Field.VarAttribute{ivar+2}.ProjModeRequest=ProjModeRequest{ivar};
+        end        
     case 'video'
         if strcmp(class(ParamIn),'VideoReader')
             A=read(ParamIn,num);

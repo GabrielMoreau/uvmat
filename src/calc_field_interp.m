@@ -31,10 +31,13 @@ for ilist=1:numel(FieldName)
     Operator{ilist}='';%default empty operator (vec, norm,...)
     r=regexp(FieldName{ilist},'(?<Operator>(^vec|^norm|^curl|^div|^strain))\((?<UName>.+),(?<VName>.+)\)$','names');% analyse the field name
     if isempty(r) % the field name is a variable itself
-        if ~isfield(Data,FieldName{ilist})
+        ivar=strcmp(FieldName{ilist},Data.ListVarName);
+        if isempty(ivar)
             check_skipped(ilist)=1; %variable not found
         else
-            if isempty(find(strcmp(FieldName{ilist},InputVarList), 1));
+            if isfield(Data.VarAttribute{ivar},'Role')&&strcmp(Data.VarAttribute{ivar}.Role,'ancillary')
+                check_skipped(ilist)=1; % ancillary variable, not found interpolated      
+            elseif isempty(find(strcmp(FieldName{ilist},InputVarList), 1));
                 InputVarList=[InputVarList FieldName{ilist}];% the variable is added to the list of input variables if it is not already in the list
             end
         end

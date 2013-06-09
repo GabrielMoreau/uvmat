@@ -246,10 +246,12 @@ set(handles.Coord,'Data',Coord)
 %% set the projection menu and the corresponding options
 if isempty(get(handles.ProjMode,'UserData'))
     switch Type
-        case {'points','line','polyline','plane'}
+        case {'points','line','plane'}
             menu_proj={'projection';'interp_lin';'interp_tps';'none'};
+        case 'polyline'
+            menu_proj={'interp_lin';'interp_tps';'none'};
         case {'polygon','rectangle','ellipse'}
-            menu_proj={'inside';'outside';'mask_inside';'mask_outside'};
+            menu_proj={'inside';'outside';'mask_inside';'mask_outside';'interp_lin';'interp_tps';'none'};
         case 'volume'
             menu_proj={'interp_lin';'none'};
         otherwise

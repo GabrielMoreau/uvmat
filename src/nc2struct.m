@@ -22,14 +22,19 @@
 %INPUT:
 %  nc:  name of a netcdf file (char string) or netcdf object   
 %  additional arguments:
-%       -no additional arguments: all the variables of the netcdf fiel are read.
+%       -no additional arguments: all the variables of the netcdf file are read.
 %       -a cell array, ListVarName, made of  char strings {'VarName1', 'VarName2',...} ) 
-%         if ListVarName=[] or {}, no variables is read (only global attributes)
+%         if ListVarName=[] or {}, no variable value is read (only global attributes and list of variables and dimensions)
 %         if ListVarName is absent, or = '*', ALL the variables of the netcdf file are read. 
 %         if ListVarName is a cell array with n lines, the set of variables will be sought by order of priority
 %                  in the list, while output names will be set by the first line
 %        - the string 'ListGlobalAttribute' followed by a list of attribute  names: reads only these attributes (fast reading)
-% 
+%        - the string 'TimeVarName', a string (the variable considered as
+%        time), an integer (the selected time index), the cell of other
+%        input variables limited to the input time index (considered as the last index of arrays)
+%        - the string 'TimeDimName', a string (the dimension considered as time), an integer (the selected time index), the cell of other
+%        input variables limited to the input time index (considered as the last index of arrays)
+
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -90,9 +95,21 @@ if ~isequal(hhh,'')
         netcdf.close(nc)
        return
     end
+    
+    %% time variable or dimension
+    input_index=1;
+    if isequal(varargin{1},'TimeVarName')
+        TimeVarName=varargin{2};
+        TimeVarIndex=varargin{3};
+        input_index=4;
+    elseif isequal(varargin{1},'TimeDimName')
+        TimeDimName=varargin{2};
+        TimeVarIndex=varargin{3};
+        input_index=4;
+    end
 
     %% full reading: get the nbre of dimensions, variables, global attributes
-    ListVarName=varargin{1}; 
+    ListVarName=varargin{input_index}; 
     [ndims,nvars,ngatts]=netcdf.inq(nc);%nbre of dimensions, variables, global attributes, in the netcdf file
     
     %%  -------- read all global attributes (constants)-----------
@@ -129,6 +146,17 @@ if ~isequal(hhh,'')
     end
     if ~isempty(ListDimNameNetcdf) 
         flag_used=zeros(1,ndims);%initialize the flag indicating the selected dimensions in the list (0=unused)
+    end
+    if isequal(varargin{1},'TimeDimName')% time dimension introduced
+        TimeDimIndex=find(strcmp(varargin{2},ListDimNameNetcdf));
+        if isempty(TimeDimIndex)
+            Data.Txt=['requested time dimension ' varargin{2} ' not found'];
+            return
+        end
+        if dim_value(TimeDimIndex)<varargin{3}
+            Data.Txt=['requested time index ' num2str(varargin{3}) ' exceeds matrix dimension'];
+            return
+        end
     end
  
     %%  -------- read names of variables -----------
@@ -179,6 +207,7 @@ if ~isequal(hhh,'')
     end
      
   %% get the dimensions and attributes associated to  variables
+  var_dim=cell(size(var_index));% initiate list of dimensions for variables
     for ivar=1:length(var_index)
         var_dim{ivar}=dimids{var_index(ivar)}+1; %netcdf dimension indices used by the variable #ivar
         Data.VarDimName{ivar}=ListDimNameNetcdf(var_dim{ivar});
@@ -207,6 +236,7 @@ if ~isequal(hhh,'')
             end
         end
     end
+    
 
     %% select the dimensions used for the set of input variables
     if ~isempty(var_index)      
@@ -220,7 +250,17 @@ if ~isequal(hhh,'')
         for ivar=1:length(var_index)
             VarName=Data.ListVarName{ivar};
             VarName=regexprep(VarName,'-',''); %suppress '-' if it exists in the netcdf variable name
-            eval(['Data.' VarName '=double(netcdf.getVar(nc,var_index(ivar)-1));'])%read the variable data
+            CheckSub=0;
+            if input_index==4% if a dimension is selected as time
+                if var_dim{ivar}(end)==TimeDimIndex% if the last dim of the variable is the time
+                    slice_length=prod(var_dim{ivar}(1:end-1));
+                    Data.(VarName)=double(netcdf.getVar(nc,var_index(ivar)-1),TimeIndex*slice_length,slice_length); %read the variable data
+                    CheckSub=1;
+                end
+            end
+            if ~CheckSub
+                Data.(VarName)=double(netcdf.getVar(nc,var_index(ivar)-1)); %read the whole variable data
+            end
         end
     end
     

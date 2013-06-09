@@ -190,9 +190,11 @@ for icell_tps=1:numel(ivar_tps)
     else
         check_index_1= strcmp(DimCell{1},Data.ListDimName);
         check_index_2= strcmp(DimCell{2},Data.ListDimName);
-        check_index_3= strcmp(DimCell{3},Data.ListDimName);
         NbDim(icell)=Data.DimValue(check_index_2);
+        if numel(DimCell)>=3
+        check_index_3= strcmp(DimCell{3},Data.ListDimName);  
         CellInfo{icell}.CoordSize=Data.DimValue(check_index_1)*Data.DimValue(check_index_3);
+        end
     end
     check_select=check_select|check_cell;
 end

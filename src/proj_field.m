@@ -83,12 +83,12 @@ function [ProjData,errormsg]=proj_field(FieldData,ObjectData)
 errormsg='';%default
 ProjData=[];
 
-%% in the absence of object Type or projection mode, or object coordinaes, the output is empty
+%% check input projection object: type, projection mode and Coord:
 if ~isfield(ObjectData,'Type')||~isfield(ObjectData,'ProjMode')
     return
 end
-% case of no projection (object is used only as graph display)
-if isequal(ObjectData.ProjMode,'none')||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside')
+ListProjMode={'projection','interp_lin','interp_tps'};%list of effective projection modes
+if isempty(strcmp(ObjectData.ProjMode,ListProjMode))
     return
 end
 if ~isfield(ObjectData,'Coord')||isempty(ObjectData.Coord)
@@ -102,9 +102,9 @@ end
 %% apply projection depending on the object type
 switch ObjectData.Type
     case 'points'
-    [ProjData,errormsg]=proj_points(FieldData,ObjectData);
+        [ProjData,errormsg]=proj_points(FieldData,ObjectData);
     case {'line','polyline'}
-     [ProjData,errormsg] = proj_line(FieldData,ObjectData);
+        [ProjData,errormsg] = proj_line(FieldData,ObjectData);
     case {'polygon','rectangle','ellipse'}
         if isequal(ObjectData.ProjMode,'inside')||isequal(ObjectData.ProjMode,'outside')
             [ProjData,errormsg] = proj_patch(FieldData,ObjectData);
@@ -112,7 +112,7 @@ switch ObjectData.Type
             [ProjData,errormsg] = proj_line(FieldData,ObjectData);
         end
     case 'plane'
-            [ProjData,errormsg] = proj_plane(FieldData,ObjectData);
+        [ProjData,errormsg] = proj_plane(FieldData,ObjectData);
     case 'volume'
         [ProjData,errormsg] = proj_volume(FieldData,ObjectData);
 end
@@ -343,8 +343,8 @@ end
 
 %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
 for icell=1:length(CellInfo)
-    testX=0;
-    testY=0;
+    CoordType=CellInfo{icell}.CoordType;
+%     testY=0;
     test_Amat=0;
     if NbDim(icell)~=2% proj_patch acts only on fields of space dimension 2
         continue
@@ -428,9 +428,9 @@ for icell=1:length(CellInfo)
             testin=distX<widthx & distY<widthy;
         end
     elseif isequal(ObjectData.Type,'polygon')
-        if testX
+        if strcmp(CoordType,'scattered')
             testin=inpolygon(coord_x,coord_y,ObjectData.Coord(:,1),ObjectData.Coord(:,2));
-        elseif test_Amat
+        elseif strcmp(CoordType,'grid')
             testin=inpolygon(Xi,Yi,ObjectData.Coord(:,1),ObjectData.Coord(:,2));
         else%calculate the scalar
             testin=[]; %A REVOIR
@@ -438,11 +438,11 @@ for icell=1:length(CellInfo)
     elseif isequal(ObjectData.Type,'ellipse')
         X2Max=widthx*widthx;
         Y2Max=(widthy)*(widthy);
-        if testX
+        if strcmp(CoordType,'scattered')
             distX=(coord_x-ObjectData.Coord(1,1));
             distY=(coord_y-ObjectData.Coord(1,2));
             testin=(distX.*distX/X2Max+distY.*distY/Y2Max)<1;
-        elseif test_Amat %case of usual 2x2 matrix
+        elseif strcmp(CoordType,'grid') %case of usual 2x2 matrix
             distX=(Xi-ObjectData.Coord(1,1));
             distY=(Yi-ObjectData.Coord(1,2));
             testin=(distX.*distX/X2Max+distY.*distY/Y2Max)<1;
@@ -494,54 +494,106 @@ if ~isempty(errormsg)
 end
 ProjData.NbDim=1;
 %initialisation of the input parameters and defaultoutput
-ProjMode=ObjectData.ProjMode; 
+ProjMode=ObjectData.ProjMode; %rmq: ProjMode always defined from input={'projection','interp_lin','interp_tps'}
 % ProjAngle=90; %90 degrees projection by default
-
-width=0;%default width of the projection band
-if isfield(ObjectData,'Range')&&size(ObjectData.Range,2)>=2
-    width=abs(ObjectData.Range(1,2));
-end
+width=0;
 if isfield(ObjectData,'RangeY')
-    width=max(ObjectData.RangeY);
+    width=max(ObjectData.RangeY);%Rangey needed bfor mode 'projection'
 end
-
 % default output
-errormsg=[];%default
+errormsg='';%default
 Xline=[];
 flux=0;
 circul=0;
 liny=ObjectData.Coord(:,2);
-siz_line=size(ObjectData.Coord);
-if siz_line(1)<2
-    return% line needs at least 2 points to be defined
-end
+NbPoints=size(ObjectData.Coord,1);
 testfalse=0;
 ListIndex={};
 
-%% angles of the polyline and boundaries of action
-dlinx=diff(ObjectData.Coord(:,1));
-dliny=diff(ObjectData.Coord(:,2));
-theta=angle(dlinx+1i*dliny);%angle of each segment
-theta(siz_line(1))=theta(siz_line(1)-1);
+
+%% projection line: object types selected from  proj_field='line','polyline','polygon','rectangle','ellipse':
+LineCoord=ObjectData.Coord;
+switch ObjectData.Type
+    case 'ellipse'
+        LineLength=2*pi*ObjectData.RangeX*ObjectData.RangeY;
+        NbSegment=0;
+    case 'rectangle'
+        LineCoord([1 4],1)=ObjectData.Coord(1,1)-ObjectData.RangeX;
+        LineCoord([1 2],2)=ObjectData.Coord(1,2)-ObjectData.RangeY;
+        LineCoord([2 3],1)=ObjectData.Coord(1,1)+ObjectData.RangeX;
+        LineCoord([4 1],2)=ObjectData.Coord(1,2)+ObjectData.RangeY;
+    case 'polygon'
+        LineCoord(NbPoints+1)=LineCoord(1);
+end
+if ~strcmp(ObjectData.Type,'ellipse')
+    if ~strcmp(ObjectData.Type,'rectangle') && NbPoints<2
+        return% line needs at least 2 points to be defined
+    end
+    dlinx=diff(LineCoord(:,1));
+    dliny=diff(LineCoord(:,2));
+    [theta,dlength]=cart2pol(dlinx,dliny);%angle and length of each segment
+    LineLength=sum(dlength);
+    NbSegment=numel(LineLength);
+end
+CheckClosedLine=~isempty(find(strcmp(ObjectData.Type,{'rectangle','ellipse','polygon'})));
+
+%     x = a \ \cosh \mu \ \cos \nu
+%
+%     y = a \ \sinh \mu \ \sin \nu
+
+%% angles of the polyline and boundaries of action for mode 'projection'
+
 % determine a rectangles at +-width from the line (only used for the ProjMode='projection or 'interp_tps')
-xsup=zeros(1,siz_line(1)); xinf=zeros(1,siz_line(1)); ysup=zeros(1,siz_line(1)); yinf=zeros(1,siz_line(1));
-if isequal(ProjMode,'projection') || isequal(ProjMode,'interp_tps')
-    xsup(1)=ObjectData.Coord(1,1)-width*sin(theta(1));
-    xinf(1)=ObjectData.Coord(1,1)+width*sin(theta(1));
-    ysup(1)=ObjectData.Coord(1,2)+width*cos(theta(1));
-    yinf(1)=ObjectData.Coord(1,2)-width*cos(theta(1));
-    for ip=2:siz_line(1)
-        xsup(ip)=ObjectData.Coord(ip,1)-width*sin((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
-        xinf(ip)=ObjectData.Coord(ip,1)+width*sin((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
-        ysup(ip)=ObjectData.Coord(ip,2)+width*cos((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
-        yinf(ip)=ObjectData.Coord(ip,2)-width*cos((theta(ip)+theta(ip-1))/2)/cos((theta(ip-1)-theta(ip))/2);
+xsup=zeros(1,NbPoints); xinf=zeros(1,NbPoints); ysup=zeros(1,NbPoints); yinf=zeros(1,NbPoints);
+if isequal(ProjMode,'projection')
+    if strcmp(ObjectData.Type,'line')
+        xsup=ObjectData.Coord(:,1)-width*sin(theta);
+        xinf=ObjectData.Coord(:,1)+width*sin(theta);
+        ysup=ObjectData.Coord(:,2)+width*cos(theta);
+        yinf=ObjectData.Coord(:,2)-width*cos(theta);
+    else
+        errormsg='mode projection only available for simple line, use interpolation otherwise';
+        return
+    end
+else % need to define the set of interpolation points
+    if isfield(ObjectData,'DX') && ~isempty(ObjectData.DX)
+        DX=abs(ObjectData.DX);%mesh of interpolation points along the line
+        if CheckClosedLine
+            NbPoint=ceil(LineLength/DX);
+            DX=LineLength/NbPoint;%adjust DX to get an integer nbre of intervals in a closed line
+            DX_end=DX/2;
+        else
+            DX_end=(LineLength-DX*floor(LineLength/DX))/2;%margin from the first point and first interpolation point
+        end
+        XI=[];
+        YI=[];
+        ThetaI=[];
+        dlengthI=[];
+        if strcmp(ObjectData.Type,'ellipse')
+            phi=(DX_end:DX:LineLength)*2*pi/LineLength;
+            XI=ObjectData.RangeX*cos(phi);
+            YI=ObjectData.RangeY*sin(phi);
+            dphi=2*pi*DX/LineLength;
+            [ThetaI,dlengthI]=cart2pol(-ObjectData.RangeX*sin(phi)*dphi,ObjectData.RangeY*cos(phi)*dphi);
+        else
+            for isegment=1:NbSegment
+                costheta=cos(theta(isegment));
+                sintheta=sin(theta(isegment));
+                XIsegment=(LineCoord(isegment,1)+DX_end*costheta:DX*costheta:LineCoord(isegment+1,1));
+                YIsegment=(LineCoord(isegment,2)+DX_end*sintheta:DX*sintheta:LineCoord(isegment+1,2));
+                XI=[XI XIsegment];
+                YI=[YI YIsegment];
+                ThetaI=[ThetaI theta(isegment)*ones(1,numel(XIsegment))];
+                dlengthI=[dlengthI DX*ones(1,numel(XIsegment))];
+                DX_end=DX_end+DX-(dlength(isegment)-DX*(numel(XIsegment)-1));
+            end
+        end
+        Xproj=cumsum(dlengthI);
+    else
+        errormsg='mesh DX needed for interpolation';
+        return
     end
 end
-% 
-% 
-%     x = a \ \cosh \mu \ \cos \nu
-% 
-%     y = a \ \sinh \mu \ \sin \nu 
 
 
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
@@ -550,353 +602,237 @@ if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_line:' errormsg];
     return
 end
+CellInfo=CellInfo(NbDim==2); %keep only the 2D cells
+%%%%%% TODO: treat 1D fields: project as identity so that P o P=P for projection operation
 
-%% loop on variable cells with the same space dimension
+%% loop on variable cells with the same space dimension 2
 ProjData.ListVarName={};
 ProjData.VarDimName={};
 for icell=1:length(CellInfo)
-    if NbDim(icell)~=2% proj_line acts only on fields of space dimension 2, TODO: check 3D case
-        continue
+    % list of variable types to be projected
+    ListProj={'VarIndex_scalar','VarIndex_image','VarIndex_color','VarIndex_vector_x','VarIndex_vector_y'};
+    check_proj=false(size(FieldData.ListVarName));
+    for ilist=1:numel(ListProj)
+        if isfield(CellInfo{icell},ListProj{ilist})
+            check_proj(CellInfo{icell}.(ListProj{ilist}))=1;
+        end
     end
-
-    % select types of  variables to be projected
-   ListProj={'VarIndex_scalar','VarIndex_image','VarIndex_color','VarIndex_vector_x','VarIndex_vector_y'};
-   check_proj=false(size(FieldData.ListVarName));
-   for ilist=1:numel(ListProj)
-       if isfield(CellInfo{icell},ListProj{ilist})
-           check_proj(CellInfo{icell}.(ListProj{ilist}))=1;
-       end
-   end
-   VarIndex=find(check_proj);
-
-    %% identify vector components   
+    VarIndex=find(check_proj);% indices of the variables to be projected
+    
+    %% identify vector components
     testU=isfield(CellInfo{icell},'VarIndex_vector_x') &&isfield(CellInfo{icell},'VarIndex_vector_y') ;% test for vectors
     if testU
         UName=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x};
         VName=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y};
         vector_x=FieldData.(UName);
         vector_y=FieldData.(VName);
-    end  
+    end
     %identify error flag
-    testfalse=isfield(CellInfo{icell},'VarIndex_errorflag');% test for error flag
-    if testfalse
+    errorflag=0; %default, no error flag
+    if isfield(CellInfo{icell},'VarIndex_errorflag');% test for error flag
         FFName=FieldData.ListVarName{CellInfo{icell}.VarIndex_errorflag};
         errorflag=FieldData.(FFName);
-    end   
-    
-    %% check needed object properties for unstructured positions (position given by the variables with role coord_x, coord_y
-    if strcmp(CellInfo{icell}.CoordType,'scattered')
-        if  strcmp(ProjMode,'projection') 
-            if width==0
-                errormsg='range of the projection object is missing';
-                return  
-            end
-%             else
-%                 lambda=2/(width*width); %smoothing factor used for interp_tps: weight exp(-2) at distance width from the line
-%             end
-        else
-            if isfield(ObjectData,'DX') && ~isempty(ObjectData.DX)
-                DX=abs(ObjectData.DX);%mesh of interpolation points along the line
-            else
-                errormsg='DX missing';
-                return
-            end
-        end
-        XName= FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
-        YName= FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
-        coord_x=FieldData.(XName);    
-        coord_y=FieldData.(YName);
-    end   
-    
-    %% initiate projection
-    for ivar=1:length(VarIndex)
-        ProjLine{ivar}=[];
     end
-    XLine=[];
-    linelengthtot=0;
-
-%         circul=0;
-%         flux=0;
-  %%%%%%%  % A FAIRE CALCULER MEAN DES QUANTITES    %%%%%%
-   %case of unstructured coordinates
-   if strcmp(CellInfo{icell}.CoordType,'scattered')
-       for ip=1:siz_line(1)-1     %Loop on the segments of the polyline
-           linelength=sqrt(dlinx(ip)*dlinx(ip)+dliny(ip)*dliny(ip));
-           %select the vector indices in the range of action
-           if testfalse
-               flagsel=(errorflag==0); % keep only non false vectors
-           else
-               flagsel=ones(size(coord_x));
-           end
-           if isequal(ProjMode,'projection') %|| isequal(ProjMode,'interp_tps')
-               flagsel=flagsel & ((coord_y -yinf(ip))*(xinf(ip+1)-xinf(ip))>(coord_x-xinf(ip))*(yinf(ip+1)-yinf(ip))) ...
-                   & ((coord_y -ysup(ip))*(xsup(ip+1)-xsup(ip))<(coord_x-xsup(ip))*(ysup(ip+1)-ysup(ip))) ...
-                   & ((coord_y -yinf(ip+1))*(xsup(ip+1)-xinf(ip+1))>(coord_x-xinf(ip+1))*(ysup(ip+1)-yinf(ip+1))) ...
-                   & ((coord_y -yinf(ip))*(xsup(ip)-xinf(ip))<(coord_x-xinf(ip))*(ysup(ip)-yinf(ip)));
-           end
-           indsel=find(flagsel);%indsel =indices of good vectors
-           X_sel=coord_x(indsel);
-           Y_sel=coord_y(indsel);
-           nbvar=0;
-           for iselect=1:numel(VarIndex)-2*testU
-               VarName=FieldData.ListVarName{VarIndex(iselect)};
-               ProjVar{iselect}=FieldData.(VarName)(indsel);%scalar value
-           end
-           if testU
-               ProjVar{numel(VarIndex)-1}=cos(theta(ip))*vector_x(indsel)+sin(theta(ip))*vector_y(indsel);% longitudinal component
-               ProjVar{numel(VarIndex)}=-sin(theta(ip))*vector_x(indsel)+cos(theta(ip))*vector_y(indsel);%transverse component
-           end
-           if isequal(ProjMode,'projection')
-               sintheta=sin(theta(ip));
-               costheta=cos(theta(ip));
-               Xproj=(X_sel-ObjectData.Coord(ip,1))*costheta + (Y_sel-ObjectData.Coord(ip,2))*sintheta; %projection on the line
-               [Xproj,indsort]=sort(Xproj);
-               for ivar=1:numel(ProjVar)
-                   if ~isempty(ProjVar{ivar})
-                       ProjVar{ivar}=ProjVar{ivar}(indsort);
-                   end
-               end
-           elseif isequal(ProjMode,'interp_lin')||isequal(ProjMode,'interp_tps') %filtering %linear interpolation:
-               npoint=floor(linelength/DX)+1;% nbre of points in the profile (interval DX)
-               Xproj=linelength/(2*npoint):linelength/npoint:linelength-linelength/(2*npoint);
-               xreg=cos(theta(ip))*Xproj+ObjectData.Coord(ip,1);
-               yreg=sin(theta(ip))*Xproj+ObjectData.Coord(ip,2);
-               if isfield(CellInfo{icell},'VarIndex_vector_x')&&isfield(CellInfo{icell},'VarIndex_vector_y')
-                   VarName_x=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x};
-                   VarName_y=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y};
-                   if isfield(CellInfo{icell},'VarIndex_errorflag')
-                       FieldData.(VarName_x)=FieldData.(VarName_x)(indsel);
-                       FieldData.(VarName_y)=FieldData.(VarName_y)(indsel);
-                   end
-                   if ~isfield(CellInfo{icell},'CheckSub') || ~CellInfo{icell}.CheckSub
-                       vector_x_proj=numel(ProjData.ListVarName)+1;
-                       vector_y_proj=numel(ProjData.ListVarName)+2;
-                   end
-               end
-               if isfield(CellInfo{icell},'VarIndex_scalar')
-                   VarName_scalar=FieldData.ListVarName{CellInfo{icell}.VarIndex_scalar};
-                   if isfield(CellInfo{icell},'errorflag') && ~isempty(CellInfo{icell}.errorflag)
-                       FieldData.(VarName_scalar)=FieldData.(VarName_scalar)(indsel);
-                   end
-               end
-               if isfield(CellInfo{icell},'VarIndex_ancillary')% do not project ancillary data with interp
-                   FieldData=rmfield(FieldData,FieldData.ListVarName{CellInfo{icell}.VarIndex_ancillary});
-               end
-               if isfield(CellInfo{icell},'VarIndex_warnflag')% do not project ancillary data with interp
-                   FieldData=rmfield(FieldData,FieldData.ListVarName{CellInfo{icell}.VarIndex_warnflag});
-               end
-               if isfield(CellInfo{icell},'VarIndex_errorflag')% do not project ancillary data with interp
-                   FieldData=rmfield(FieldData,FieldData.ListVarName{CellInfo{icell}.VarIndex_errorflag});
-               end
-               if isequal(ProjMode,'interp_lin')
-               [ProjVar,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([X_sel Y_sel],FieldData,CellInfo{icell}.FieldName,xreg',yreg');
-               else
-                  [ProjVar,ListFieldProj,VarAttribute,errormsg]=calc_field_tps([X_sel Y_sel],FieldData,CellInfo{icell}.FieldName,xreg',yreg');
-               end
-               ivar_vector_x=[];
-               ivar_vector_y=[];
-               for ivar=1:numel(VarAttribute)
-                   if isfield(VarAttribute{ivar},'Role')
-                       if strcmp(VarAttribute{ivar}.Role,'vector_x')
-                       ivar_vector_x=ivar;
-                       elseif strcmp(VarAttribute{ivar}.Role,'vector_y')
-                   ivar_vector_y=ivar;
-                       end
-                   end
-               end
-               if ~isempty(ivar_vector_x)&&~isempty(ivar_vector_y)
-                                  ProjVar{ivar_vector_x}=cos(theta(ip))*ProjVar{ivar_vector_x}+sin(theta(ip))*ProjVar{ivar_vector_y};% longitudinal component
-               ProjVar{ivar_vector_y}=-sin(theta(ip))*ProjVar{ivar_vector_x}+cos(theta(ip))*ProjVar{ivar_vector_y};%transverse component
-               end
-           elseif isequal(ProjMode,'interp_tps') %filtering
-               %   TODO 
-               %                 npoint=floor(linelength/DX)+1;% nbre of points in the profile (interval DX)
-               %                 Xproj=linelength/(2*npoint):linelength/npoint:linelength-linelength/(2*npoint);
-               %                 siz=size(X_sel);
-               %                 xregij=cos(theta(ip))*ones(siz(1),1)*Xproj+ObjectData.Coord(ip,1);
-               %                 yregij=sin(theta(ip))*ones(siz(1),1)*Xproj+ObjectData.Coord(ip,2);
-               %                 xij=X_sel*ones(1,npoint);
-               %                 yij=Y_sel*ones(1,npoint);
-               %                 Aij=exp(-lambda*((xij-xregij).*(xij-xregij)+(yij-yregij).*(yij-yregij)));
-               %                 norm=Aij'*ones(siz(1),1);
-               %                 for ivar=1:numel(ProjVar)
-               %                      if ~isempty(ProjVar{ivar})
-               %                         ProjVar{ivar}=Aij'*ProjVar{ivar}./norm;
-               %
-               %                      end
-               %                 end
-           end
-           %prolongate the total record
-           for ivar=1:numel(ProjVar)
-               if ~isempty(ProjVar{ivar})
-                   if numel(ProjLine)>=ivar
-                       ProjLine{ivar}=[ProjLine{ivar}; ProjVar{ivar}];
-                   else
-                       ProjLine{ivar}=ProjVar{ivar};
-                   end
-               end
-           end
-           XLine=[XLine ;(Xproj+linelengthtot)];%along line abscissa
-           linelengthtot=linelengthtot+linelength;
-           %     circul=circul+(sum(U_sel))*linelength/npoint;
-           %     flux=flux+(sum(V_sel))*linelength/npoint;
-       end
-       ProjData.X=XLine';
-       ProjData.ListVarName=[ProjData.ListVarName {XName}];
-       ProjData.VarDimName=[ProjData.VarDimName {XName}];
-       ProjData.VarAttribute{1}.long_name='abscissa along line';
-       for iselect=1:numel(VarIndex)
-           VarName=FieldData.ListVarName{VarIndex(iselect)};
-           eval(['ProjData.' VarName '=ProjLine{iselect};'])
-           ProjData.ListVarName=[ProjData.ListVarName {VarName}];
-           ProjData.VarDimName=[ProjData.VarDimName {XName}];
-           ProjData.VarAttribute{iselect}=FieldData.VarAttribute{VarIndex(iselect)};
-           if strcmp(ProjMode,'projection')
-               ProjData.VarAttribute{iselect}.Role='discrete';
-           else
-               ProjData.VarAttribute{iselect}.Role='continuous';
-           end
-       end
-       
-       %case of structured coordinates
-   elseif strcmp(CellInfo{icell}.CoordType,'grid')
-       if ~isequal(ObjectData.Type,'line')% exclude polyline
-           errormsg=['no  projection available on ' ObjectData.Type 'for structured coordinates']; %
-       else
-           test_Amat=1;%image or 2D matrix
-           test_interp2=0;%default
-           AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
-           AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
-           eval(['AX=FieldData.' AXName ';']);% set of x positions
-           eval(['AY=FieldData.' AYName ';']);% set of y positions
-           AName=FieldData.ListVarName{VarIndex(1)};
-           eval(['A=FieldData.' AName ';']);% scalar
-           npxy=size(A);
-           npx=npxy(2);
-           npy=npxy(1);
-           if numel(AX)==2
-               DX=(AX(2)-AX(1))/(npx-1);
-           else
-               DX_vec=diff(AX);
-               DX=max(DX_vec);
-               DX_min=min(DX_vec);
-               if (DX-DX_min)>0.0001*abs(DX)
-                   test_interp2=1;
-                   DX=DX_min;
-               end
-           end
-           if numel(AY)==2
-               DY=(AY(2)-AY(1))/(npy-1);
-           else
-               DY_vec=diff(AY);
-               DY=max(DY_vec);
-               DY_min=min(DY_vec);
-               if (DY-DY_min)>0.0001*abs(DY)
-                   test_interp2=1;
-                   DY=DY_min;
-               end
-           end
-           AXI=linspace(AX(1),AX(end), npx);%set of  x  positions for the interpolated input data
-           AYI=linspace(AY(1),AY(end), npy);%set of  x  positions for the interpolated input data
-           if isfield(ObjectData,'DX')
-               DXY_line=ObjectData.DX;%mesh on the projection line
-           else
-               DXY_line=sqrt(abs(DX*DY));% mesh on the projection line
-           end
-           dlinx=ObjectData.Coord(2,1)-ObjectData.Coord(1,1);
-           dliny=ObjectData.Coord(2,2)-ObjectData.Coord(1,2);
-           linelength=sqrt(dlinx*dlinx+dliny*dliny);
-           theta=angle(dlinx+i*dliny);%angle of the line
-           if isfield(FieldData,'RangeX')
-               XMin=min(FieldData.RangeX);%shift of the origin on the line
-           else
-               XMin=0;
-           end
-           eval(['ProjData.' AXName '=linspace(XMin,XMin+linelength,linelength/DXY_line+1);'])%abscissa of the new pixels along the line
-           y=linspace(-width,width,2*width/DXY_line+1);%ordintes of the new pixels (coordinate across the line)
-           eval(['npX=length(ProjData.' AXName ');'])
-           npY=length(y); %TODO: utiliser proj_grid
-           eval(['[X,Y]=meshgrid(ProjData.' AXName ',y);'])%grid in the line coordinates
-           XIMA=ObjectData.Coord(1,1)+(X-XMin)*cos(theta)-Y*sin(theta);
-           YIMA=ObjectData.Coord(1,2)+(X-XMin)*sin(theta)+Y*cos(theta);
-           XIMA=(XIMA-AX(1))/DX+1;%  index of the original image along x
-           YIMA=(YIMA-AY(1))/DY+1;% index of the original image along y
-           XIMA=reshape(round(XIMA),1,npX*npY);%indices reorganized in 'line'
-           YIMA=reshape(round(YIMA),1,npX*npY);
-           flagin=XIMA>=1 & XIMA<=npx & YIMA >=1 & YIMA<=npy;%flagin=1 inside the original image
-           ind_in=find(flagin);
-           ind_out=find(~flagin);
-           ICOMB=(XIMA-1)*npy+YIMA;
-           ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
-           nbcolor=1; %color images
-           if numel(npxy)==2
-               nbcolor=1;
-           elseif length(npxy)==3
-               nbcolor=npxy(3);
-           else
-               errormsg='multicomponent field not projected';
-               display(errormsg)
-               return
-           end
-           nbvar=length(ProjData.ListVarName);% number of var from previous cells
-           ProjData.ListVarName=[ProjData.ListVarName {AXName}];
-           ProjData.VarDimName=[ProjData.VarDimName {AXName}];
-           for ivar=VarIndex
-               %VarName{ivar}=FieldData.ListVarName{ivar};
-               if test_interp2% interpolate on new grid
-                   FieldData.(FieldData.ListVarName{ivar})=interp2(FieldData.(AXName),FieldData.(AYName),FieldData.(FieldData.ListVarName{ivar}),AXI,AYI);%TO TEST
-               end
-               vec_A=reshape(squeeze(FieldData.(FieldData.ListVarName{ivar})),npx*npy,nbcolor); %put the original image in colum
-               if nbcolor==1
-                   vec_B(ind_in)=vec_A(ICOMB);
-                   vec_B(ind_out)=zeros(size(ind_out));
-                   A_out=reshape(vec_B,npY,npX);
-                   ProjData.(FieldData.ListVarName{ivar}) =sum(A_out,1)/npY;
-               elseif nbcolor==3
-                   vec_B(ind_in,1:3)=vec_A(ICOMB,:);
-                   vec_B(ind_out,1)=zeros(size(ind_out));
-                   vec_B(ind_out,2)=zeros(size(ind_out));
-                   vec_B(ind_out,3)=zeros(size(ind_out));
-                   A_out=reshape(vec_B,npY,npX,nbcolor);
-                   ProjData.(FieldData.ListVarName{ivar})=squeeze(sum(A_out,1)/npY);
-               end
-               ProjData.ListVarName=[ProjData.ListVarName FieldData.ListVarName{ivar}];
-               ProjData.VarDimName=[ProjData.VarDimName {AXName}];%to generalize with the initial name of the x coordinate
-               ProjData.VarAttribute{ivar}.Role='continuous';% for plot with continuous line
-           end
-           if testU
-               vector_x =ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x});
-               vector_y =ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y});
-               ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x}) =cos(theta)*vector_x+sin(theta)*vector_y;
-               ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y}) =-sin(theta)*vector_x+cos(theta)*vector_y;
-           end
-           ProjData.VarAttribute{nbvar+1}.long_name='abscissa along line';
-           if nbcolor==3
-               ProjData.VarDimName{end}={AXName,'rgb'};
-           end
-       end
-   elseif strcmp(CellInfo{icell}.CoordType,'tps')
-       if isfield(ObjectData,'DX')&~isempty(ObjectData.DX)
-           DX=abs(ObjectData.DX);%mesh of interpolation points along the line
-           Xproj=linelength/(2*npoint):linelength/npoint:linelength-linelength/(2*npoint);
-           xreg=cos(theta(ip))*Xproj+ObjectData.Coord(ip,1)
-           yreg=sin(theta(ip))*Xproj+ObjectData.Coord(ip,2)
-           %                 coord_x_proj=XMin:DX:XMax;
-           %                 coord_y_proj=YMin:DY:YMax;
-           DataOut=calc_field_tps(FieldData.FieldList,FieldData,cat(3,xreg,yreg));
-           ProjData.ListVarName=[ProjData.ListVarName DataOut.ListVarName];
-           ProjData.VarDimName=[ProjData.VarDimName DataOut.VarDimName];
-           ProjData.VarAttribute=[ProjData.VarAttribute DataOut.VarAttribute];
-           DataOut.ListVarName(1)=[];
-           DataOut.VarDimName(1)=[];
-           DataOut.VarAttribute(1)=[];
-           for ilist=2:length(DataOut.ListVarName)% reshape data, excluding coordinates (ilist=1-2), TODO: rationalise
-               VarName=DataOut.ListVarName{ilist};
-               ProjData.(VarName)=DataOut.(VarName);
-           end
-           ProjData.coord_x=Xproj;
-       end
-   end
+    VarName=FieldData.ListVarName(VarIndex);% cell array of the names of variables to pje
+    %% check needed object properties for unstructured positions (position given by the variables with role coord_x, coord_y
+    
+    %         circul=0;
+    %         flux=0;
+    %%%%%%%  % A FAIRE CALCULER MEAN DES QUANTITES    %%%%%%
+    switch CellInfo{icell}.CoordType
+        %case of unstructured coordinates
+        case 'scattered'
+            XName= FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
+            YName= FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
+            coord_x=FieldData.(XName);
+            coord_y=FieldData.(YName);
+            if isequal(ProjMode,'projection')
+                if width==0
+                    errormsg='range of the projection object is missing';
+                    return
+                end
+                % select the (non false) input data located in the band of projection
+                flagsel=(errorflag==0) & ((coord_y -yinf(1))*(xinf(2)-xinf(1))>(coord_x-xinf(1))*(yinf(2)-yinf(1))) ...
+                    & ((coord_y -ysup(1))*(xsup(2)-xsup(1))<(coord_x-xsup(1))*(ysup(2)-ysup(1))) ...
+                    & ((coord_y -yinf(2))*(xsup(2)-xinf(2))>(coord_x-xinf(2))*(ysup(2)-yinf(2))) ...
+                    & ((coord_y -yinf(1))*(xsup(1)-xinf(1))<(coord_x-xinf(1))*(ysup(1)-yinf(1)));
+                coord_x=coord_x(flagsel);
+                coord_y=coord_y(flagsel);
+                costheta=cos(theta);
+                sintheta=sin(theta);
+                Xproj=(coord_x-ObjectData.Coord(1,1))*costheta + (coord_y-ObjectData.Coord(1,2))*sintheta; %projection on the line
+                [Xproj,indsort]=sort(Xproj);% sort points by increasing absissa along the projection line
+                for ivar=1:numel(VarIndex)
+                    ProjData.(VarName{ivar})=FieldData.(VarName{ivar})(flagsel);% restrict vrtibles to the projection band
+                    ProjData.(VarName{ivar})=ProjData.(VarName{ivar})(indsort);% sort by absissa
+                end
+                % project the velocity components if vectors are projected
+                if testU
+                    vector_x=ProjData.(UName);
+                    ProjData.(UName)=costheta*vector_x+sintheta*ProjData.(VName);% longitudinal component
+                    ProjData.(VName)=-sintheta*vector_x+costheta*ProjData.(VName);%transverse component
+                end
+            elseif isequal(ProjMode,'interp_lin')  %filtering %linear interpolation:
+                [ProjVar,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([coord_x coord_y],FieldData,CellInfo{icell}.FieldName,XI,YI);
+                ProjData.X=Xproj;
+                ProjData.ListVarName=[ProjData.ListVarName {XName}];
+                ProjData.VarDimName=[ProjData.VarDimName {XName}];
+                nbvar=numel(ProjData.ListVarName);
+                ProjData.VarAttribute{nbvar}.long_name='abscissa along line';
+                ProjData.ListVarName=[ProjData.ListVarName ListFieldProj];
+                ProjData.VarAttribute=[ProjData.VarAttribute VarAttribute];
+                for ivar=1:numel(VarAttribute)
+                    ProjData.VarDimName=[ProjData.VarDimName {XName}];
+                    ProjData.VarAttribute{ivar+nbvar}.Role='continuous';% will promote plots of the profiles with continuous lines
+                    ProjData.(ListFieldProj{ivar})=ProjVar{ivar};
+                end
+            end
+        case 'tps'%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            if strcmp(ProjMode,'interp_tps')
+                Coord=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex});
+                NbCentres=FieldData.(FieldData.ListVarName{CellInfo{icell}.NbCentres_tps});
+                SubRange=FieldData.(FieldData.ListVarName{CellInfo{icell}.SubRange_tps});
+                if isfield(CellInfo{icell},'VarIndex_vector_x_tps')&&isfield(CellInfo{icell},'VarIndex_vector_y_tps')
+                    FieldVar=cat(3,FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x_tps}),FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y_tps}));
+                end
+                %                 coord_x_proj=XMin:DX:XMax;
+                %                 coord_y_proj=YMin:DY:YMax;
+                %                 np_x=numel(coord_x_proj);
+                %                 np_y=numel(coord_y_proj);
+                [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbCentres,SubRange,FieldVar,CellInfo{icell}.FieldName,cat(3,XI,YI));
+                ProjData.X=Xproj;
+                ProjData.ListVarName=[ProjData.ListVarName {XName}];
+                ProjData.VarDimName=[ProjData.VarDimName {XName}];
+                nbvar=numel(ProjData.ListVarName);
+                ProjData.VarAttribute{nbvar}.long_name='abscissa along line';
+                ProjVarName=(fieldnames(DataOut))';
+                ProjData.ListVarName=[ProjData.ListVarName ProjVarName];
+                ProjData.VarAttribute=[ProjData.VarAttribute VarAttribute];
+                for ivar=1:numel(VarAttribute)
+                    ProjData.VarDimName=[ProjData.VarDimName {XName}];
+                    ProjData.VarAttribute{ivar+nbvar}.Role='continuous';% will promote plots of the profiles with continuous lines
+                    ProjData.(ProjVarName{ivar})=DataOut.(ProjVarName{ivar});
+                end
+            end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+        case 'grid'   %case of structured coordinates
+            if ~isequal(ObjectData.Type,'line')% exclude polyline
+                errormsg=['no  projection available on ' ObjectData.Type 'for structured coordinates']; %
+            else
+                test_Amat=1;%image or 2D matrix
+                test_interp2=0;%default
+                AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
+                AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
+                eval(['AX=FieldData.' AXName ';']);% set of x positions
+                eval(['AY=FieldData.' AYName ';']);% set of y positions
+                AName=FieldData.ListVarName{VarIndex(1)};
+                eval(['A=FieldData.' AName ';']);% scalar
+                npxy=size(A);
+                npx=npxy(2);
+                npy=npxy(1);
+                if numel(AX)==2
+                    DX=(AX(2)-AX(1))/(npx-1);
+                else
+                    DX_vec=diff(AX);
+                    DX=max(DX_vec);
+                    DX_min=min(DX_vec);
+                    if (DX-DX_min)>0.0001*abs(DX)
+                        test_interp2=1;
+                        DX=DX_min;
+                    end
+                end
+                if numel(AY)==2
+                    DY=(AY(2)-AY(1))/(npy-1);
+                else
+                    DY_vec=diff(AY);
+                    DY=max(DY_vec);
+                    DY_min=min(DY_vec);
+                    if (DY-DY_min)>0.0001*abs(DY)
+                        test_interp2=1;
+                        DY=DY_min;
+                    end
+                end
+                AXI=linspace(AX(1),AX(end), npx);%set of  x  positions for the interpolated input data
+                AYI=linspace(AY(1),AY(end), npy);%set of  x  positions for the interpolated input data
+                if isfield(ObjectData,'DX')
+                    DXY_line=ObjectData.DX;%mesh on the projection line
+                else
+                    DXY_line=sqrt(abs(DX*DY));% mesh on the projection line
+                end
+                dlinx=ObjectData.Coord(2,1)-ObjectData.Coord(1,1);
+                dliny=ObjectData.Coord(2,2)-ObjectData.Coord(1,2);
+                linelength=sqrt(dlinx*dlinx+dliny*dliny);
+                theta=angle(dlinx+i*dliny);%angle of the line
+                if isfield(FieldData,'RangeX')
+                    XMin=min(FieldData.RangeX);%shift of the origin on the line
+                else
+                    XMin=0;
+                end
+                eval(['ProjData.' AXName '=linspace(XMin,XMin+linelength,linelength/DXY_line+1);'])%abscissa of the new pixels along the line
+                y=linspace(-width,width,2*width/DXY_line+1);%ordintes of the new pixels (coordinate across the line)
+                eval(['npX=length(ProjData.' AXName ');'])
+                npY=length(y); %TODO: utiliser proj_grid
+                eval(['[X,Y]=meshgrid(ProjData.' AXName ',y);'])%grid in the line coordinates
+                XIMA=ObjectData.Coord(1,1)+(X-XMin)*cos(theta)-Y*sin(theta);
+                YIMA=ObjectData.Coord(1,2)+(X-XMin)*sin(theta)+Y*cos(theta);
+                XIMA=(XIMA-AX(1))/DX+1;%  index of the original image along x
+                YIMA=(YIMA-AY(1))/DY+1;% index of the original image along y
+                XIMA=reshape(round(XIMA),1,npX*npY);%indices reorganized in 'line'
+                YIMA=reshape(round(YIMA),1,npX*npY);
+                flagin=XIMA>=1 & XIMA<=npx & YIMA >=1 & YIMA<=npy;%flagin=1 inside the original image
+                ind_in=find(flagin);
+                ind_out=find(~flagin);
+                ICOMB=(XIMA-1)*npy+YIMA;
+                ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
+                nbcolor=1; %color images
+                if numel(npxy)==2
+                    nbcolor=1;
+                elseif length(npxy)==3
+                    nbcolor=npxy(3);
+                else
+                    errormsg='multicomponent field not projected';
+                    display(errormsg)
+                    return
+                end
+                nbvar=length(ProjData.ListVarName);% number of var from previous cells
+                ProjData.ListVarName=[ProjData.ListVarName {AXName}];
+                ProjData.VarDimName=[ProjData.VarDimName {AXName}];
+                for ivar=VarIndex
+                    %VarName{ivar}=FieldData.ListVarName{ivar};
+                    if test_interp2% interpolate on new grid
+                        FieldData.(FieldData.ListVarName{ivar})=interp2(FieldData.(AXName),FieldData.(AYName),FieldData.(FieldData.ListVarName{ivar}),AXI,AYI);%TO TEST
+                    end
+                    vec_A=reshape(squeeze(FieldData.(FieldData.ListVarName{ivar})),npx*npy,nbcolor); %put the original image in colum
+                    if nbcolor==1
+                        vec_B(ind_in)=vec_A(ICOMB);
+                        vec_B(ind_out)=zeros(size(ind_out));
+                        A_out=reshape(vec_B,npY,npX);
+                        ProjData.(FieldData.ListVarName{ivar}) =sum(A_out,1)/npY;
+                    elseif nbcolor==3
+                        vec_B(ind_in,1:3)=vec_A(ICOMB,:);
+                        vec_B(ind_out,1)=zeros(size(ind_out));
+                        vec_B(ind_out,2)=zeros(size(ind_out));
+                        vec_B(ind_out,3)=zeros(size(ind_out));
+                        A_out=reshape(vec_B,npY,npX,nbcolor);
+                        ProjData.(FieldData.ListVarName{ivar})=squeeze(sum(A_out,1)/npY);
+                    end
+                    ProjData.ListVarName=[ProjData.ListVarName FieldData.ListVarName{ivar}];
+                    ProjData.VarDimName=[ProjData.VarDimName {AXName}];%to generalize with the initial name of the x coordinate
+                    ProjData.VarAttribute{ivar}.Role='continuous';% for plot with continuous line
+                end
+                if testU
+                    vector_x =ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x});
+                    vector_y =ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y});
+                    ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x}) =cos(theta)*vector_x+sin(theta)*vector_y;
+                    ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y}) =-sin(theta)*vector_x+cos(theta)*vector_y;
+                end
+                ProjData.VarAttribute{nbvar+1}.long_name='abscissa along line';
+                if nbcolor==3
+                    ProjData.VarDimName{end}={AXName,'rgb'};
+                end
+            end
+    end
 end
 
 % %shotarter case for horizontal or vertical line (A FAIRE 

@@ -1,13 +1,19 @@
 %'uigetfile_uvmat': browser, and display of directories, faster than the Matlab fct uigetfile 
 %------------------------------------------------------------------------
-% hfig=uigetfile_uvmat(OutputDir,option)
+% fileinput=uigetfile_uvmat(title,InputName,FilterExt)
 %
 % OUTPUT:
 % fileinput: detected file name, including path
 %
 % INPUT:
-% title: = displayed title, 'status': display advancement of a series calculation
-% InputDir: directory to browse at first display
+% title: = displayed title, 
+%        if title='status_display': display advancement of a series calculation, 
+%        else uigetfile_uvmat used as browser.
+% InputName: initial file or directory selection for the browser
+% FilterExt: string to filter the file display:
+%          '*' (default) all files displayed
+%          'image': any image or movie
+%          '.ext': display only files with extension '.ext'
 
 function fileinput=uigetfile_uvmat(title,InputName,FilterExt)
 if ~exist('FilterExt','var')
@@ -104,6 +110,9 @@ function refresh_GUI(hObject,InputFileName,FilterExt)
 %------------------------------------------------------------------------
 if ~exist('InputFileName','var')
     InputFileName='';
+end
+if ~exist('FilterExt','var')
+    FilterExt='*';
 end
 hfig=get(hObject,'parent');
 hlist=findobj(hfig,'tag','list');% find the list object
@@ -221,23 +230,22 @@ if exist(FullSelectName,'dir')% a directory has been selected
     set(hObject,'String',ListFiles)
     set(hObject,'BackgroundColor',[0.7 0.7 0.7])
     set(htitlebox,'String',FullSelectName)% record the new dir name
-elseif exist(FullSelectName,'file')%visualise the field if it exists
-    FileType=get_file_type(FullSelectName);
-    if strcmp(FileType,'txt')
-        edit(FullSelectName)
-    elseif strcmp(FileType,'xml')
-        editxml(FullSelectName)
-    elseif strcmp(FileType,'figure')
-        open(FullSelectName)
-    else
-        %uvmat(FullSelectName);
-        switch option
-            case 'browser'
-                set(htitlebox,'String',FullSelectName);
-                uiresume(hfig)
-            case 'status_display'
+elseif exist(FullSelectName,'file')%visualise the field if it exists  
+    switch option
+        case 'browser'
+            set(htitlebox,'String',FullSelectName);
+            uiresume(hfig)
+        case 'status_display'
+            FileType=get_file_type(FullSelectName);
+            if strcmp(FileType,'txt')
+                edit(FullSelectName)
+            elseif strcmp(FileType,'xml')
+                editxml(FullSelectName)
+            elseif strcmp(FileType,'figure')
+                open(FullSelectName)
+            else
                 uvmat(FullSelectName);
-        end
+            end
     end
 end
 set(hObject,'BackgroundColor',[0.7 0.7 0.7])% paint list in grey to indicate action end
@@ -255,8 +263,19 @@ end
 ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
 ListFiles=ListCells(1,:);%list of file names
 check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
-
 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
+if exist('filter_ext','var') && ~strcmp(filter_ext,'*')
+    if strcmp(filter_ext,'image')
+        check_keep=cellfun(@isimage,ListFiles) ;
+    elseif strcmp(filter_ext(1),'.')
+        ind_ext=regexp(ListFiles,[filter_ext '$']);%look for the input file extension
+        check_keep=~cellfun('isempty',ind_ext);
+    end
+    check_keep=check_keep|check_dir;
+    ListFiles=ListFiles(check_keep);
+    ListCells=ListCells(:,check_keep);
+    check_dir=check_dir(check_keep);
+end
 ListDates=cell2mat(ListCells(5,:));%list of numerical dates
 if isnumeric(sort_option)
     check_old=ListDates<sort_option-1;% -1 is put to account for a 1 s delay in the record of starting time
@@ -274,12 +293,6 @@ end
 ListFiles=ListFiles(index_sort);% list of names sorted by alaphabetical order and dir and file
 cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
 check_keep=cellfun('isempty', cell_remove);
-if exist('filter_ext')
-    switch filter_ext
-        case 'image'
-            check_keep=check_keep & (cellfun(@isimage,ListFiles) |check_dir);
-    end
-end
 ListFiles=[{'+/..'} ListFiles(check_keep)];
 if check_date
     ListDateString=ListCells(2,:);%list of file dates
@@ -347,5 +360,4 @@ delete(gcbf)
 function CheckImage=isimage(filename)
 
 [pp,name,ext]=fileparts(filename);
-ext
 CheckImage=~isempty(ext)&&~strcmp(ext,'.')&&~isempty(imformats(regexprep(ext,'^.','')));

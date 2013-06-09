@@ -517,10 +517,8 @@ function MenuBrowse_1_Callback(hObject, eventdata, handles)
 RootPath=get(handles.RootPath,'String');
 SubDir=get(handles.SubDir,'String');
 fileinput_1=uigetfile_uvmat('select a second input file:',fullfile(RootPath,SubDir));
+
 if ~isempty(fileinput_1)
-    % [FileName, PathName] = uigetfile({'*.*','All Files(*.*)'},'Pick a file',RootPath);
-    % if ~ischar(FileName),return,end %abandon if the browser is cancelled
-    % fileinput_1=[PathName FileName];%complete file name
     
     % refresh the current displayed field
     set(handles.SubField,'Value',1)
@@ -719,6 +717,22 @@ if ~exist(fileinput,'file')
     return
 end
 
+%% detect root name, nomenclature and indices in the input file name:
+[FilePath,FileName,FileExt]=fileparts(fileinput);
+% detect the file type, get the movie object if relevant, and look for the corresponding file series:
+% the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
+if strcmp(FileType,'txt')
+    edit(fileinput)
+    return
+elseif strcmp(FileType,'xml')
+    editxml(fileinput)
+     return
+elseif strcmp(FileType,'figure')
+    open(fileinput)
+     return
+end
+
 %% set the mouse pointer to 'watch'
 set(handles.uvmat,'Pointer','watch')
 set(handles.RootPath,'BackgroundColor',[1 1 0])
@@ -749,12 +763,6 @@ elseif index==2
     set(handles.FileExt_1,'Visible','on');
     set(handles.NomType_1,'Visible','on');
 end
-
-%% detect root name, nomenclature and indices in the input file name:
-[FilePath,FileName,FileExt]=fileparts(fileinput);
-% detect the file type, get the movie object if relevant, and look for the corresponding file series:
-% the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
 
 %% open the file or fill the GUI uvmat according to the detected file type
 switch FileType
@@ -944,6 +952,11 @@ if ~isempty(VideoObject)
         Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
     end
     set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
+    if index==1
+    set(handles.TimeName,'video')
+    else
+        set(handles.TimeName_1,'video')
+    end
     ColorType='truecolor';
 elseif ~isempty(FileExt(2:end))&&(~isempty(imformats(FileExt(2:end))) || isequal(FileExt,'.vol'))%&& isequal(NomType,'*')% multi-frame image
 %     testima=1;
@@ -1011,7 +1024,13 @@ if ~isempty(XmlFileName)
         end
     end
 end
-if ~(isfield(XmlData,'Time')&& ~isempty(XmlData.Time))
+if (isfield(XmlData,'Time')&& ~isempty(XmlData.Time))
+    if index==1
+    set(handles.TimeName,'xml')
+    else
+       set(handles.TimeName_1,'xml') 
+    end
+else
     XmlData.Time=Time; %time set by video
 end
 if isempty(ImaDoc_str)
@@ -1020,7 +1039,7 @@ else
     set(handles.view_xml,'String',ImaDoc_str)
 end
 
-%% store last index in handles.lat_i and .last_j
+%% store last index in handles.MaxIndex_i and .MaxIndex_j
 nbfield=max(max(max(i2_series)));
 if isempty(nbfield)
     nbfield=max(max(max(i1_series)));
@@ -1032,24 +1051,23 @@ end
 if ~isempty(XmlData.Time)
     %transform .Time to a column vector if it is a line vector the nomenclature uses a single index
     if isequal(size(XmlData.Time,1),1)
-        %NomType=get(handles.NomType,'String');
         XmlData.Time=(XmlData.Time)';
     end
 end
-last_i_cell=get(handles.last_i,'String');
+last_i_cell=get(handles.MaxIndex_i,'String');
 if isempty(nbfield)
     last_i_cell{index}='';
 else
     last_i_cell{index}=num2str(nbfield);
 end
-set(handles.last_i,'String',last_i_cell)
-last_j_cell=get(handles.last_j,'String');
+set(handles.MaxIndex_i,'String',last_i_cell)
+last_j_cell=get(handles.MaxIndex_j,'String');
 if isempty(nbfield_j)
      last_j_cell{index}='';
 else
      last_j_cell{index}=num2str(nbfield_j);
 end
-set(handles.last_j,'String',last_j_cell);
+set(handles.MaxIndex_j,'String',last_j_cell);
 
 %% store geometric calibration in UvData
 if isfield(XmlData,'GeometryCalib')
@@ -1092,12 +1110,11 @@ end
 
 %% update the data attached to the uvmat interface
 if ~isempty(TimeUnit)
-    set(handles.time_var,'String',['time (' TimeUnit ')'])
+    set(handles.TimeName,'String',['time (' TimeUnit ')'])
 end
 UvData.TimeUnit=TimeUnit;
 UvData.XmlData{index}=XmlData;
 UvData.NewSeries=1;
-% UvData.MovieObject=MovieObject;
 
 %display warning message
 if ~isequal(warntext,'')
@@ -1178,7 +1195,7 @@ end
 set(handles.scan_j,'Visible',state_j)
 set(handles.j1,'Visible',state_j)
 set(handles.j2,'Visible',state_j)
-set(handles.last_j,'Visible',state_j);
+set(handles.MaxIndex_j,'Visible',state_j);
 %set(handles.frame_j,'Visible',state_j);
 set(handles.j_text,'Visible',state_j);
 if ~isempty(i2_series)||~isempty(j2_series)
@@ -1376,21 +1393,24 @@ if isequal(get(handles.CheckMask,'Value'),1)
                 mdetect=1;
             end
         end
-        if mdetect==0
-            MaskFullName=uigetfile_uvmat('pick a mask image file:',fullfile(RootPath,SubDir),'image');
-            [MaskPath,MaskName,MaskExt]=fileparts(MaskFullName);
-            [tild,tild,MaskFile,i1_series,i2_series,j1_series,j2_series,MaskNomType]=find_file_series(MaskPath,[MaskName MaskExt]);
-            if ~(isempty(i2_series) && isempty(j2_series))
-                MaskNomType='*';
-            end
-        end
-        Mask.Path=MaskPath;
-        Mask.File=MaskFile;
-        Mask.Ext=MaskExt;
-        Mask.NomType=MaskNomType;
-        set(handles.CheckMask,'UserData',Mask);
     end
-        errormsg=update_mask(handles);
+    if mdetect==0
+        MaskFullName=uigetfile_uvmat('pick a mask image file:',fullfile(RootPath,SubDir),'image');
+        if isempty(MaskFullName)
+            set(handles.CheckMask,'Value',0)
+        end
+        [MaskPath,MaskName,MaskExt]=fileparts(MaskFullName);
+        [tild,tild,MaskFile,i1_series,i2_series,j1_series,j2_series,MaskNomType]=find_file_series(MaskPath,[MaskName MaskExt]);
+        if ~(isempty(i2_series) && isempty(j2_series))
+            MaskNomType='*';
+        end
+    end
+    Mask.Path=MaskPath;
+    Mask.File=MaskFile;
+    Mask.Ext=MaskExt;
+    Mask.NomType=MaskNomType;
+    set(handles.CheckMask,'UserData',Mask);
+    errormsg=update_mask(handles);
 else % desactivate mask display
     MaskData=get(handles.CheckMask,'UserData');
     if isfield(MaskData,'maskhandle') && ishandle(MaskData.maskhandle)
@@ -2152,15 +2172,8 @@ end
 if isstruct (ParamIn)
     ParamIn.FieldName=FieldName;
     ParamIn.VelType=VelType;
-    XNameMenu=get(handles.Coord_x,'String');
-    if ~isempty(XNameMenu)
-        ParamIn.Coord_x=XNameMenu(get(handles.Coord_x,'Value'));
-    end
-   % YNameMenu=get(handles.Coord_y,'String');
+    ParamIn.Coord_x=get(handles.Coord_x,'String');
     ParamIn.Coord_y=get(handles.Coord_y,'Data');
-%     if ~isempty(YNameMenu)
-%         ParamIn.Coord_y=YNameMenu(get(handles.Coord_y,'Value'));
-%     end
 end
 check_tps = 0;         
 if strcmp(UvData.FileType{1},'civdata')&&~strcmp(ParamIn.FieldName,'velocity')&&~strcmp(ParamIn.FieldName,'get_field...') 
@@ -2175,12 +2188,13 @@ if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
     set(handles.num_Npx,'String',num2str(ParamOut.Npx));% display image size on the interface
     set(handles.num_Npy,'String',num2str(ParamOut.Npy));
 end
-if isfield(ParamOut,'TimeIndex')% case of time obtained from get_field
-    set(handles.i1,'String',num2str(ParamOut.TimeIndex))
-end
-if isfield(ParamOut,'TimeValue')
-    Field{1}.Time=ParamOut.TimeValue;% case of time obtained from get_field
-end
+% 
+% if isfield(ParamOut,'TimeIndex')% case of time obtained from get_field
+%     set(handles.i1,'String',num2str(ParamOut.TimeIndex))
+% end
+% if isfield(ParamOut,'TimeValue')
+%     Field{1}.Time=ParamOut.TimeValue;% case of time obtained from get_field
+% end
 Field{1}.ZIndex=z_index; %used for multiplane 3D calibration
 
 
@@ -2195,7 +2209,6 @@ if ~isempty(FileName_1)
         errormsg=['second file ' FileName_1 ' does not exist'];
         return
     end
-   % Name=FileName_1;
     switch UvData.FileType{2}
         case {'civx','civdata','netcdf'};
             list_fields=get(handles.FieldName_1,'String');% list menu fields
@@ -2373,7 +2386,6 @@ end
 
 %% display time
 abstime=[];%default inputs
-abstime_1=[];
 dt=[];
 TimeUnit='';
 % time from xml file or video movie
@@ -2389,6 +2401,7 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
     end
     siz=size(UvData.XmlData{1}.Time);
     if ~isempty(num_i1)&& ~isempty(num_i2) && num_i1>=0 &&siz(1)>=max(num_i1+1,num_i2+1) && siz(2)>=max(num_j1+1,num_j2+1)
+        set(handles.TimeName,'xml')% indicate that time is from xml
         abstime=(UvData.XmlData{1}.Time(num_i1+1,num_j1+1)+UvData.XmlData{1}.Time(num_i2+1,num_j2+1))/2;%overset the time read from files
         dt=(UvData.XmlData{1}.Time(num_i2+1,num_j2+1)-UvData.XmlData{1}.Time(num_i1+1,num_j1+1));
         Field{1}.Dt=dt;
@@ -2422,17 +2435,21 @@ end
 
 % look for timing in the input file if not defined in a xml file or movie
 if isempty(abstime)
-if isfield(Field{1},'Dt')
-    dt=Field{1}.Dt;%dt read from the netcdf input file
-    if isfield(Field{1},'TimeUnit')
-       TimeUnit=Field{1}.TimeUnit;
+    TimeName=get(handles.TimeName,'String');
+    if ~isempty(regexp(TimeName,'^att:'))||~isempty(regexp(TimeName,'^dim:'))||~isempty(regexp(TimeName,'^var:'))
+        abstime=Field{1}.(TimeName(5:end));%the time is an attribute or variale selected by get_file
     end
-elseif numel(Field)==2 && isfield(Field{2},'Dt')%dt obtained from the second field if not defined in the first
-    dt=Field{2}.Dt;%dt read from the netcdf input file
-    if isfield(Field{2},'TimeUnit')
-       TimeUnit=Field{2}.TimeUnit;
+    if isfield(Field{1},'Dt')
+        dt=Field{1}.Dt;%dt read from the netcdf input file
+        if isfield(Field{1},'TimeUnit')
+            TimeUnit=Field{1}.TimeUnit;
+        end
+    elseif numel(Field)==2 && isfield(Field{2},'Dt')%dt obtained from the second field if not defined in the first
+        dt=Field{2}.Dt;%dt read from the netcdf input file
+        if isfield(Field{2},'TimeUnit')
+            TimeUnit=Field{2}.TimeUnit;
+        end
     end
-end
 end
 % if ~isequal(numel(abstime),1)
 %     abstime=[];
@@ -2440,8 +2457,12 @@ end
 % if ~isequal(numel(abstime_1),1)
 %       abstime_1=[];
 % end  
-set(handles.abs_time,'String',num2str(abstime,5))
-set(handles.abs_time_1,'String',num2str(abstime_1,5))
+abstime_1=[];
+TimeName_1=get(handles.TimeName_1,'String');
+if ~isempty(regexp(TimeName_1,'^att:')) ||~isempty(regexp(TimeName_1,'^dim:'))||~isempty(regexp(TimeName_1,'^var:'))
+        abstime_1=Field{2}.(TimeName_1(5:end));%the time is an attribute or variale selected by get_file
+end
+set(handles.TimeValue_1,'String',num2str(abstime_1,5))
 if isempty(dt)||isequal(dt,0)
     set(handles.Dt_txt,'String','')
 else
@@ -2498,13 +2519,6 @@ end
 UvData.Field=tps_coeff_field(UvData.Field,check_proj_tps);
 
 %% analyse input field
-%test_x=0;
-%test_z=0;% test for unstructured z coordinate
-%[errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(UvData.Field);% check the input field structure
-% if ~isempty(errormsg)
-%     errormsg=['error in uvmat/refresh_field/check_field_structure: ' errormsg];% display error
-%     return
-% end
 [CellInfo,NbDimArray,errormsg]=find_field_cells(UvData.Field);% analyse  the input field structure
 if ~isempty(errormsg)
     errormsg=['uvmat /refresh_field / find_field_cells / ' errormsg];% display error
@@ -2516,8 +2530,6 @@ imax=find(NbDimArray==NbDim);% indices of field cells to consider
 if isfield(UvData.Field,'NbDim')
     NbDim=double(UvData.Field.NbDim);% deal with plane fields containing z coordinates
 end
-
-%UvData.Field=get_bounds(UvData.Field);
 
 %% get bounds and mesh (needed  to propose default options for projection objects)
 if NbDim>1
@@ -3035,7 +3047,7 @@ if get(handles.SubField,'Value')==0% if the subfield button is desactivated
     set(handles.RootFile_1,'Visible','off')
     set(handles.SubDir_1,'Visible','off');
     set(handles.NomType_1,'Visible','off');
-    set(handles.abs_time_1,'Visible','off')
+    set(handles.TimeValue_1,'Visible','off')
     set(handles.FileIndex_1,'Visible','off');
     set(handles.FileExt_1,'Visible','off');
     set(handles.FieldName_1,'Value',1);%set to blank state
@@ -3117,149 +3129,162 @@ end
 % --- Executes on menu selection FieldName
 function FieldName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+
+%% read data from uvmat
 UvData=get(handles.uvmat,'UserData');
 list_fields=get(handles.FieldName,'String');% list menu fields
 index_fields=get(handles.FieldName,'Value');% selected string index
 field= list_fields{index_fields(1)}; % selected string
-
-%% fill the coordinates and variables from selections in get_field
-if isequal(field,'get_field...')
-    ParamIn=[];
-    if strcmp(get(handles.VelType,'Visible'),'on')
-        % we use the civ choice as default input
-        ParamIn.SwitchVarIndexTime='attribute';
-        ListVelType=get(handles.VelType,'String');
-        VelType=ListVelType{get(handles.VelType,'Value')};
-        switch VelType
-            case 'civ1'
-                 ParamIn.TimeVarName='Civ1_Time';
-                 ParamIn.vector_x='Civ1_U';
-                 ParamIn.vector_y='Civ1_V';
-                 ParamIn.vec_color='Civ1_C';                
-            case 'filter1'
-                 ParamIn.TimeVarName='Civ1_Time';
-                 ParamIn.vector_x='Civ1_U_smooth';
-                 ParamIn.vector_y='Civ1_V_smooth';
-            case 'civ2'
-                 ParamIn.TimeVarName='Civ2_Time';
-                 ParamIn.vector_x='Civ2_U';
-                 ParamIn.vector_y='Civ2_V';
-            case 'filter2'
-                 ParamIn.TimeVarName='Civ2_Time';
-                 ParamIn.vector_x='Civ2_U_smooth';
-                 ParamIn.vector_y='Civ2_V_smooth';
-                 ParamIn.vec_color='Civ2_C';
-        end
-    end
-    set(handles.FixVelType,'visible','off')
-    set(handles.VelType,'Visible','off')
-    set(handles.VelType_1,'Visible','off')
-    [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-    FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
-    GetFieldData=get_field(FileName,ParamIn);
-    FieldList={};
-    VecColorList={};
-    XName=GetFieldData.Coordinates.XVarName;
-    switch GetFieldData.FieldOption
-        case 'vectors'
-        UName=GetFieldData.PanelVectors.vector_x;
-        VName=GetFieldData.PanelVectors.vector_y;
-        XName=GetFieldData.Coordinates.XVarName;
-        YName=GetFieldData.Coordinates.YVarName;
-        CName=GetFieldData.PanelVectors.vec_color;
-        [FieldList,VecColorList]=set_field_list(UName,VName,CName);
-        case 'scalar'
-        AName=GetFieldData.PanelScalar.scalar;
-        XName=GetFieldData.Coordinates.XVarName;
-        YName=GetFieldData.Coordinates.YVarName;
-        FieldList={AName};
-        case '1D plot'
-        YName=GetFieldData.CheckPlot1D.ordinate;
-    end
-    set(handles.Coord_x,'String',{XName})
-    set(handles.Coord_y,'String',{YName})
-    set(handles.FieldName,'Value',1)
-    set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
-    set(handles.ColorScalar,'Value',1)
-    set(handles.ColorScalar,'String',VecColorList);
-    UvData.FileType{1}='netcdf';
-    set(handles.uvmat,'UserData',UvData)
-    run0_Callback(hObject, eventdata, handles)
-    return %no further action
-end
-
-
-
-%read the rootfile input display
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 [tild,tild,tild,i1,i2,j1,j2,tild,NomType]=fileparts_uvmat(['xxx' get(handles.FileIndex,'String') FileExt]);
-if isequal(field,'image')
-    if  isfield(UvData.Field,'Civ2_ImageA')%get the corresponding input image in the netcdf file
-        imagename=UvData.Field.Civ2_ImageA;
-    elseif isfield(UvData.Field,'Civ1_ImageA')%
-        imagename=UvData.Field.Civ1_ImageA;
-    else
-        SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-        imagename=fullfile_uvmat(RootPath,SubDirBase,RootFile,'.png',NomType,i1,[],j1,[]);
-    end
-    if ~exist(imagename,'file')
-        [FileName,PathName] = uigetfile( ...
-            {'*.png;*.jpg;*.tif;*.avi;*.AVI;*.vol', ' (*.png, .tif, *.avi,*.vol)';
-            '*.jpg',' jpeg image files'; ...
-            '*.png','.png image files'; ...
-            '*.tif','.tif image files'; ...
-            '*.avi;*.AVI','.avi movie files'; ...
-            '*.vol','.volume images (png)'; ...
-            '*.*',  'All Files (*.*)'}, ...
-            'Pick an image',imagename); 
-        if ~ischar(FileName),return,end %abandon if the browser is cancelled
-        imagename=[PathName FileName];
-    end
-     % display the selected field and related information
-    display_file_name(handles,imagename)%display the image
-    return
-else
-    ext=get(handles.FileExt,'String');
-    if ~isequal(ext,'.nc') %find the new NomType if the previous display was not already a netcdf file
-        [FileName,PathName] = uigetfile( ...
-            {'*.nc', ' (*.nc)';
-            '*.nc',' netcdf files'; ...
-            '*.*',  'All Files (*.*)'}, ...
-            'Pick a netcdf file',FileBase);
-        if ~ischar(FileName),return,end %abandon if the browser is cancelled
-        FullFileName=[PathName FileName];
-        % display the selected field and related information
-        display_file_name( handles,FullFileName)
-        return
-    end
-end
-indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,j2);
-set(handles.FileIndex,'String',indices)
 
-%common to Fields_1_Callback
-list_fields_1=get(handles.FieldName_1,'String');% list menu fields
-field_1='';
-if ~isempty(list_fields_1)
-field_1= list_fields_1{get(handles.FieldName_1,'Value')}; % selected string
+switch field 
+    
+    case 'get_field...'
+    %% fill the coordinates and variables from selections in get_field
+        ParamIn=[];
+        % in case of civ data, we use the civ choice as default input for the GUI get_field
+        if strcmp(get(handles.VelType,'Visible'),'on')
+            ParamIn.SwitchVarIndexTime='attribute';
+            ListVelType=get(handles.VelType,'String');
+            VelType=ListVelType{get(handles.VelType,'Value')};
+            switch VelType
+                case 'civ1'
+                    ParamIn.TimeVarName='Civ1_Time';
+                    ParamIn.vector_x='Civ1_U';
+                    ParamIn.vector_y='Civ1_V';
+                    ParamIn.vec_color='Civ1_C';
+                case 'filter1'
+                    ParamIn.TimeVarName='Civ1_Time';
+                    ParamIn.vector_x='Civ1_U_smooth';
+                    ParamIn.vector_y='Civ1_V_smooth';
+                case 'civ2'
+                    ParamIn.TimeVarName='Civ2_Time';
+                    ParamIn.vector_x='Civ2_U';
+                    ParamIn.vector_y='Civ2_V';
+                case 'filter2'
+                    ParamIn.TimeVarName='Civ2_Time';
+                    ParamIn.vector_x='Civ2_U_smooth';
+                    ParamIn.vector_y='Civ2_V_smooth';
+                    ParamIn.vec_color='Civ2_C';
+            end
+        end
+        
+        % VelType menu desactivated
+        set(handles.FixVelType,'visible','off')
+        set(handles.VelType,'Visible','off')
+        set(handles.VelType_1,'Visible','off')
+        
+        %read selection from get_field
+        [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+        FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+        GetFieldData=get_field(FileName,ParamIn);% inport field names from the GUI get_field
+        FieldList={};
+        VecColorList={};
+        XName=GetFieldData.Coordinates.Coord_x;
+        switch GetFieldData.FieldOption
+            case 'vectors'
+                UName=GetFieldData.PanelVectors.vector_x;
+                VName=GetFieldData.PanelVectors.vector_y;
+                XName=GetFieldData.Coordinates.Coord_x;
+                YName={GetFieldData.Coordinates.Coord_y};
+                CName=GetFieldData.PanelVectors.vec_color;
+                [FieldList,VecColorList]=set_field_list(UName,VName,CName);
+            case 'scalar'
+                AName=GetFieldData.PanelScalar.scalar;
+                XName=GetFieldData.Coordinates.Coord_x;
+                YName={GetFieldData.Coordinates.Coord_y};
+                FieldList={AName};
+            case '1D plot'
+                YName=GetFieldData.PanelOrdinate.ordinate;
+                XName=GetFieldData.Coordinates.Coord_x;
+        end
+        TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
+        if strcmp(TimeNameStr,'file index')
+            set(handles.TimeName,'String','');
+        else
+            set(handles.TimeName,'String',[TimeNameStr(1:3) ':' GetFieldData.Time.TimeName]);
+        end
+        if strcmp(TimeNameStr,'variable')||strcmp(TimeNameStr,'dim index')% we scan a variable index, not a file index
+            set(handles.NomType,'String','*')
+            set(handles.RootFile,FileName)
+        end
+        %     set(handles.TimeValue,'String' SwitchVarIndexTime
+        set(handles.Coord_x,'String',XName)
+        if ischar(YName)
+            YName={YName};
+        end
+        set(handles.Coord_y,'Data',YName)
+        set(handles.FieldName,'Value',1)
+        set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
+        set(handles.ColorScalar,'Value',1)
+        set(handles.ColorScalar,'String',VecColorList);
+        UvData.FileType{1}='netcdf';
+        set(handles.uvmat,'UserData',UvData)
+        run0_Callback(hObject, eventdata, handles)
+        
+    case 'image'
+    %% look for image corresponding to civ data
+        if  isfield(UvData.Field,'Civ2_ImageA')%get the corresponding input image in the netcdf file
+            imagename=UvData.Field.Civ2_ImageA;
+        elseif isfield(UvData.Field,'Civ1_ImageA')%
+            imagename=UvData.Field.Civ1_ImageA;
+        else
+            SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
+            imagename=fullfile_uvmat(RootPath,SubDirBase,RootFile,'.png',NomType,i1,[],j1,[]);
+        end
+        if ~exist(imagename,'file')
+            imagename=uigetfile_uvmat('Pick an image file',imagename,'image');
+            if isempty(imagename)
+                return
+            end
+        end
+        % display the selected field and related information
+        display_file_name(handles,imagename)%display the image
+%     otherwise
+%         ext=get(handles.FileExt,'String');
+%         if ~isequal(ext,'.nc') %find the new NomType if the previous display was not already a netcdf file
+%             [FileName,PathName] = uigetfile( ...
+%                 {'*.nc', ' (*.nc)';
+%                 '*.nc',' netcdf files'; ...
+%                 '*.*',  'All Files (*.*)'}, ...
+%                 'Pick a netcdf file',FileBase);
+%             if ~ischar(FileName),return,end %abandon if the browser is cancelled
+%             FullFileName=[PathName FileName];
+%             % display the selected field and related information
+%             display_file_name( handles,FullFileName)
+%             return
+%         end
 end
-if isequal(field,'image')||isequal(field_1,'image')
-    set(handles.TitleNpxy,'Visible','on')% visible npx,pxcm... buttons
-    set(handles.num_Npx,'Visible','on')
-    set(handles.num_Npy,'Visible','on')
-else
-    set(handles.TitleNpxy,'Visible','off')% visible npx,pxcm... buttons
-    set(handles.num_Npx,'Visible','off')
-    set(handles.num_Npy,'Visible','off')
-end
-if ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
-    run0_Callback(hObject, eventdata, handles)
-end
+% indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,j2);
+% set(handles.FileIndex,'String',indices)
+% 
+% %common to Fields_1_Callback
+% list_fields_1=get(handles.FieldName_1,'String');% list menu fields
+% field_1='';
+% if ~isempty(list_fields_1)
+%     field_1= list_fields_1{get(handles.FieldName_1,'Value')}; % selected string
+% end
+% if isequal(field,'image')||isequal(field_1,'image')
+%     set(handles.TitleNpxy,'Visible','on')% visible npx,pxcm... buttons
+%     set(handles.num_Npx,'Visible','on')
+%     set(handles.num_Npy,'Visible','on')
+% else
+%     set(handles.TitleNpxy,'Visible','off')% visible npx,pxcm... buttons
+%     set(handles.num_Npx,'Visible','off')
+%     set(handles.num_Npy,'Visible','off')
+% end
+% if ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
+%     run0_Callback(hObject, eventdata, handles)
+% end
 
 %----------------------------------------------------------------
 % --- Executes on menu selection FieldName
 function FieldName_1_Callback(hObject, eventdata, handles)
 %-------------------------------------------------
+
+%%%%%% TODO: modify like FieldName_Callback
 %% read input data
 check_new=~get(handles.SubField,'Value'); %check_new=1 if a second field was not previously entered
 UvData=get(handles.uvmat,'UserData');
@@ -3663,38 +3688,42 @@ if ~exist(prev_path,'dir')
     prev_path=fullfile(fileparts(which('uvmat')),'transform_field');
 end
 if strcmp(transform_name,'more...');
-    [FileName, PathName] = uigetfile( ...
-        {'*.m', ' (*.m)';
-        '*.m',  '.m files '; ...
-        '*.*', 'All Files (*.*)'}, ...
-        'Pick the transform function', prev_path);
-    if ~ischar(FileName),return,end %abandon if the browser is cancelled
-    path_transform_fct =fullfile(PathName,FileName);
-    if isempty(regexp(FileName,'\.m$'))% detect file extension .m
-        msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
-        return
-    else
-        transform_name=regexprep(FileName,'\.m','');
-    end
-    ichoice=find(strcmp(transform_name,menu),1);%look for the selected fct in the existing menu
-    if isempty(ichoice)% if the item is not found, add it to the menu (before 'more...' and select it)
-        menu=[menu(1:end-1);{transform_name};{'more...'}];
-        ichoice=numel(menu)-1;    
-    end
-    list_path{ichoice}=PathName;%update the list fo fct paths
-    set(handles.TransformName,'String',menu)
-    set(handles.TransformName,'Value',ichoice)
-    
-    % save the new menu in the personal file 'uvmat_perso.mat'
-    dir_perso=prefdir;%personal Matalb directory
-    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-    if exist(profil_perso,'file')
-        nb_builtin=UvData.OpenParam.NbBuiltin;% number of 'builtin' (basic) transform fcts in uvmat
-        if nb_builtin<numel(list_path)
-        for ilist=nb_builtin+1:numel(list_path)
-            transform_fct{ilist-nb_builtin}=[fullfile(list_path{ilist},menu{ilist}) '.m'];
+    transform_fct=uigetfile_uvmat('Pick the transform function',prev_path,'.m');
+    %     [FileName, PathName] = uigetfile( ...
+    %         {'*.m', ' (*.m)';
+    %         '*.m',  '.m files '; ...
+    %         '*.*', 'All Files (*.*)'}, ...
+    %         'Pick the transform function', prev_path);
+    %     if ~ischar(FileName),return,end %abandon if the browser is cancelled
+    %     path_transform_fct =fullfile(PathName,FileName);
+    if ~isempty(transform_fct)
+        [PathName,transform_name]=fileparts(transform_fct);
+        %     if isempty(regexp(FileName,'\.m$'))% detect file extension .m
+        %         msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
+        %         return
+        %     else
+        %         transform_name=regexprep(FileName,'\.m','');
+        %     end
+        ichoice=find(strcmp(transform_name,menu),1);%look for the selected fct in the existing menu
+        if isempty(ichoice)% if the item is not found, add it to the menu (before 'more...' and select it)
+            menu=[menu(1:end-1);{transform_name};{'more...'}];
+            ichoice=numel(menu)-1;
         end
-        save (profil_perso,'transform_fct','-append'); %store the root name for future opening of uvmat
+        list_path{ichoice}=PathName;%update the list fo fct paths
+        set(handles.TransformName,'String',menu)
+        set(handles.TransformName,'Value',ichoice)
+        
+        % save the new menu in the personal file 'uvmat_perso.mat'
+        dir_perso=prefdir;%personal Matalb directory
+        profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+        if exist(profil_perso,'file')
+            nb_builtin=UvData.OpenParam.NbBuiltin;% number of 'builtin' (basic) transform fcts in uvmat
+            if nb_builtin<numel(list_path)
+                for ilist=nb_builtin+1:numel(list_path)
+                    transform_fct{ilist-nb_builtin}=[fullfile(list_path{ilist},menu{ilist}) '.m'];
+                end
+                save (profil_perso,'transform_fct','-append'); %store the root name for future opening of uvmat
+            end
         end
     end
 end
@@ -4459,64 +4488,38 @@ huvmat=findobj('tag','uvmat');%handles of the uvmat interface
 UvData=get(huvmat,'UserData');
 hlist_object=findobj(huvmat,'Tag','ListObject');%handles of the object list in the uvmat interface
 list_str=get(hlist_object,'String');%objet list
-% if isequal(floor(hObject),hObject) %case of an index
-    if  ~isempty(UvData) && isfield(UvData, 'ProjObject') && length(UvData.ProjObject)>=IndexObj 
-        if isfield(UvData.ProjObject{IndexObj},'DisplayHandle') && isfield(UvData.ProjObject{IndexObj}.DisplayHandle,'uvmat')
-            hdisplay=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;
+if  ~isempty(UvData) && isfield(UvData, 'ProjObject') && length(UvData.ProjObject)>=IndexObj
+    if isfield(UvData.ProjObject{IndexObj},'DisplayHandle') && isfield(UvData.ProjObject{IndexObj}.DisplayHandle,'uvmat')
+        hdisplay=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;
+        for iview=1:length(hdisplay)
+            if ishandle(hdisplay(iview)) && ~isequal(hdisplay(iview),0)
+                ObjectData=get(hdisplay(iview),'UserData');
+                if isfield(ObjectData,'SubObject') & ishandle(ObjectData.SubObject)
+                    delete(ObjectData.SubObject);
+                end
+                if isfield(ObjectData,'DeformPoint') & ishandle(ObjectData.DeformPoint)
+                    delete(ObjectData.DeformPoint);
+                end
+                delete(hdisplay(iview))
+            end
+            ishandle(hdisplay(iview))
+        end
+        for iobj=IndexObj+1:length(UvData.ProjObject)
+            hdisplay=UvData.ProjObject{iobj}.DisplayHandle.uvmat;
             for iview=1:length(hdisplay)
                 if ishandle(hdisplay(iview)) && ~isequal(hdisplay(iview),0)
-                    ObjectData=get(hdisplay(iview),'UserData');
-                    if isfield(ObjectData,'SubObject') & ishandle(ObjectData.SubObject)
-                        delete(ObjectData.SubObject);
-                    end
-                    if isfield(ObjectData,'DeformPoint') & ishandle(ObjectData.DeformPoint)
-                        delete(ObjectData.DeformPoint);
-                    end
-                    delete(hdisplay(iview))
-                end
-                ishandle(hdisplay(iview))
-            end
-            for iobj=IndexObj+1:length(UvData.ProjObject)
-                hdisplay=UvData.ProjObject{iobj}.DisplayHandle.uvmat;
-                for iview=1:length(hdisplay)
-                    if ishandle(hdisplay(iview)) && ~isequal(hdisplay(iview),0)
-                        PlotData=get(hdisplay(iview),'UserData');
-                        PlotData.IndexObj=iobj-1;
-                        set(hdisplay(iview),'UserData',PlotData);
-                    end
+                    PlotData=get(hdisplay(iview),'UserData');
+                    PlotData.IndexObj=iobj-1;
+                    set(hdisplay(iview),'UserData',PlotData);
                 end
             end
-        end
-        UvData.ProjObject(IndexObj)=[];  
-        if ~isempty(list_str)
-            list_str(IndexObj)=[];
         end
     end
-% elseif ishandle(hObject)%object handle
-%     userdata=get(hObject,'UserData');
-%     if ishandle(userdata)%the selected line depends on a parent line
-%         hdisplay=userdata;% the parent object becomes the current one
-%     else
-%         hdisplay=hObject;% the selected object becomes the current one
-%     end
-%     PlotData=get(hdisplay,'UserData');
-%     if isfield(PlotData,'SubObject') & ishandle(PlotData.SubObject)
-%             delete(PlotData.SubObject);
-%     end
-%     if isfield(PlotData,'DeformPoint') & ishandle(PlotData.DeformPoint)
-%            delete(PlotData.DeformPoint);
-%     end
-%     delete(hdisplay);
-%     if isfield(PlotData,'IndexObj')
-%         IndexObj=PlotData.IndexObj;
-%         if  isequal(round(IndexObj),IndexObj) & IndexObj>=1 & length(list_str) > IndexObj
-%             if isfield(UvData,'ProjObject')& length(UvData.ProjObject) > IndexObj
-%                UvData.ProjObject(IndexObj)=[];
-%             end
-%             list_str(IndexObj)=[];
-%         end
-%     end
-% end
+    UvData.ProjObject(IndexObj)=[];
+    if ~isempty(list_str)
+        list_str(IndexObj)=[];
+    end
+end
 set(huvmat,'UserData',UvData);
 set(hlist_object,'String',list_str)
 set(hlist_object,'Value',length(list_str))
@@ -4676,14 +4679,14 @@ htitle=get(newaxes,'Title');
 xlim=get(newaxes,'XLim');
 ylim=get(newaxes,'YLim');
 set(htitle,'Position',[xlim(2)+0.07*(xlim(2)-xlim(1)) ylim(2)-0.05*(ylim(2)-ylim(1)) 0])
-time_str=get(handles.abs_time,'String');
+time_str=get(handles.TimeValue,'String');
 set(htitle,'String',['t=' time_str])
 set(handles.speed,'Value',1)
 for i=1:imax
     if get(handles.speed,'Value')~=0 && isequal(get(handles.MenuExportMovie,'BusyAction'),'queue') % enable STOP command
             runpm(hObject,eventdata,handles,increment)% run plus 
             drawnow
-            time_str=get(handles.abs_time,'String');
+            time_str=get(handles.TimeValue,'String');
             if ishandle(htitle)
              set(htitle,'String',['t=' time_str])
             end
@@ -4796,24 +4799,8 @@ if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)     %delete the initial display of uvmat if no field has been entered yet
 end
 
-%% append a new line to the list of projection objects A METTRE PLUS TARD
-% ListObject=get(handles.ListObject,'String');
-% if isempty(ListObject)
-%     ListObject={''};
-% end
-% if ~strcmp(ListObject{end},'')
-%     ListObject=[ListObject;{''}]; %append a blank to the list (if nort already done) to indicate the creation of a new object
-%     set(handles.ListObject,'String',ListObject)
-% end
-% IndexObj=length(ListObject);
-% set(handles.ListObject,'Value',IndexObj)
-UvData=get(handles.uvmat,'UserData');
-% UvData.ProjObject{IndexObj}=[]; %create a new empty object
-% UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=handles.PlotAxes; % axes for plot_object
-% UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
-% set(handles.uvmat,'UserData',UvData)
-
 %% initiate the new projection object
+UvData=get(handles.uvmat,'UserData');
 data.Name=data.Type;% default name=type
 data.Coord=[0 0]; %default
 if isfield(UvData,'Field')
@@ -4842,9 +4829,7 @@ end
 hset_object=set_object(data,handles);% call the GUI set_object 
 hchild=get(hset_object,'children');
 set(hchild,'enable','on')
-
-
-set(handles.delete_object,'Visible','on')
+set(handles.delete_object,'Visible','on')% make the object delete button visible
 
 %------------------------------------------------------------------------
 function MenuBrowseObject_Callback(hObject, eventdata, handles)
@@ -5392,10 +5377,6 @@ if isfield(PlotParam,'Vectors')
             set(handles.num_ColCode2,'Visible','on')
             set(handles.Slider1,'Visible','on')
             set(handles.Slider2,'Visible','on')
-            %ColCode1=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode1;
-            %ColCode2=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode2;
-%             ColCode1=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode1;
-            %ColCode2=MinC+(MaxC-MinC)*PlotParam.Vectors.ColCode2;
             set(handles.num_ColCode1,'String',num2str(PlotParam.Vectors.ColCode1,3))
             set(handles.num_ColCode2,'String',num2str(PlotParam.Vectors.ColCode2,3))
             set(handles.Slider1,'Value',(PlotParam.Vectors.ColCode1-MinC)/(MaxC-MinC))
@@ -5416,24 +5397,3 @@ else
 end
 
 
-
-function time_var_1_Callback(hObject, eventdata, handles)
-% hObject    handle to time_var_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of time_var_1 as text
-%        str2double(get(hObject,'String')) returns contents of time_var_1 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function time_var_1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to time_var_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end

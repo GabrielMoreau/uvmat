@@ -499,6 +499,26 @@ if ~exist(fileinput,'file')
     return
 end
 
+%% detect root name, nomenclature and indices in the input file name:
+[FilePath,FileName,FileExt]=fileparts(fileinput);
+% detect the file type, get the movie object if relevant, and look for the corresponding file series:
+% the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
+if isempty(RootFile)&&isempty(i1_series)
+    errormsg='no input file in the series';
+    return
+end
+if strcmp(FileType,'txt')
+    edit(fileinput)
+    return
+elseif strcmp(FileType,'xml')
+    editxml(fileinput)
+     return
+elseif strcmp(FileType,'figure')
+    open(fileinput)
+     return
+end
+
 %% enable other menus and uicontrols
 set(handles.MenuOpen_insert,'Enable','on')
 set(handles.MenuFile_insert_1,'Enable','on')
@@ -511,15 +531,7 @@ set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red
 set(handles.InputTable,'BackgroundColor',[1 1 0]) % set RootPath edit box  to yellow
 drawnow
 
-%% detect root name, nomenclature and indices in the input file name:
-[FilePath,FileName,FileExt]=fileparts(fileinput);
-% detect the file type, get the movie object if relevant, and look for the corresponding file series:
-% the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
-if isempty(RootFile)&&isempty(i1_series)
-    errormsg='no input file in the series';
-    return
-end
+
 
 %% fill the list of file series
 InputTable=get(handles.InputTable,'Data');
@@ -1844,7 +1856,7 @@ if isequal(get(handles.RUN,'Value'),1)
     end
 end
 set(handles.ActionName,'BackgroundColor',[1 1 0])
-huigetfile=findobj(allchild(0),'tag','status_display')
+huigetfile=findobj(allchild(0),'tag','status_display');
 if ~isempty(huigetfile)
     delete(huigetfile)
 end
@@ -2597,8 +2609,9 @@ Pos=get(handles.PairString,'Position');
 set(handles.PairString,'Unit','normalized')
 set(handles.PairString,'ColumnWidth',{Pos(3)-5})
 
-
+%------------------------------------------------------------------------
 % --- Executes on button press in status.
+%------------------------------------------------------------------------
 function status_Callback(hObject, eventdata, handles)
 
 if get(handles.status,'Value')
@@ -2627,8 +2640,9 @@ end
 
 %------------------------------------------------------------------------   
 % launched by selecting a file on the list
-function view_file(hObject, eventdata)
 %------------------------------------------------------------------------
+function view_file(hObject, eventdata)
+
 list=get(hObject,'String');
 index=get(hObject,'Value');
 rootroot=get(hObject,'UserData');
@@ -2668,8 +2682,9 @@ end
 
 %------------------------------------------------------------------------   
 % launched by refreshing the status figure
-function refresh_GUI(hfig)
 %------------------------------------------------------------------------
+function refresh_GUI(hfig)
+
 htitlebox=findobj(hfig,'tag','titlebox');
 hlist=findobj(hfig,'tag','list');
 hseries=findobj(allchild(0),'tag','series');
