@@ -130,15 +130,18 @@ end
 sizcoord=size(ObjectData.Coord);
 
 %% determine the coordinates xline, yline,xsup,xinf, yinf,ysup determining the new object plot
-test_line= isequal(ObjectData.Type,'points')|isequal(ObjectData.Type,'line')|isequal(ObjectData.Type,'polyline')|...
-    isequal(ObjectData.Type,'polygon')| isequal(ObjectData.Type,'plane')| isequal(ObjectData.Type,'volume');
+test_line= isequal(ObjectData.Type,'points')||isequal(ObjectData.Type,'line')||isequal(ObjectData.Type,'line_x')||isequal(ObjectData.Type,'line_y')||...
+    isequal(ObjectData.Type,'polyline')||isequal(ObjectData.Type,'polygon')|| isequal(ObjectData.Type,'plane')|| isequal(ObjectData.Type,'volume');
 test_patch=isequal(ObjectData.ProjMode,'inside')||isequal(ObjectData.ProjMode,'outside')||isequal(ObjectData.Type,'volume')...
     ||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside');
 if test_line
     xline=ObjectData.Coord(:,1);
     yline=ObjectData.Coord(:,2);
     nbpoints=numel(xline);
-    if isequal(ObjectData.Type,'polygon')
+    if isequal(ObjectData.Type,'line_x')
+        xline=[xline; ObjectData.RangeX(2)];%creating the line
+        yline=[yline; ObjectData.RangeY(2)];%creating the line
+    elseif isequal(ObjectData.Type,'polygon')
         xline=[xline; ObjectData.Coord(1,1)];%closing the line
         yline=[yline; ObjectData.Coord(1,2)];
     elseif isequal(ObjectData.Type,'plane')|| isequal(ObjectData.Type,'volume') 

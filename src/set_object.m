@@ -181,10 +181,8 @@ function closefcn(gcbo,eventdata)
 huvmat=findobj(allchild(0),'Tag','uvmat');%find the current uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
-%     set(hhuvmat.ViewObject_1,'value',0)% desactivate the two view buttons
-    set(hhuvmat.ViewObject,'value',0)% 
-    set(hhuvmat.edit_object,'Value',0)% desactivate the edit option
-%    set(hhuvmat.edit_object,'BackgroundColor',[0.7 0.7 0.7])%put unactivated buttons to gree
+    set(hhuvmat.CheckViewObject,'value',0)% 
+    set(hhuvmat.CheckEditObject,'Value',0)% desactivate the edit option
     % deselect the object in ListObject when view_field is closed
     if isempty(findobj(allchild(0),'Tag','view_field'))
         ObjIndex=get(hhuvmat.ListObject,'Value');
@@ -454,7 +452,7 @@ UvData=get(huvmat,'UserData');%Data associated to the GUI uvmat
 hhuvmat=guidata(huvmat);%handles of the objects children of the  GUI uvmat
 ListObject=get(hhuvmat.ListObject,'String');% list of objects displayed in uvmat
 
-if isequal(get(hhuvmat.edit_object,'Value'),0) %we append a new object
+if isequal(get(hhuvmat.CheckEditObject,'Value'),0) %we append a new object
     ListObject=[ListObject;{''}];
     IndexObj=length(ListObject);
     set(hhuvmat.ListObject,'String',ListObject)
@@ -490,7 +488,7 @@ set(handles.Name,'String',ObjectName)% display the default name in set_object
 ListObject{IndexObj}=ObjectName;
 set(hhuvmat.ListObject,'String',ListObject);%complement the object list
 set(hhuvmat.ListObject_1,'String',ListObject);%complement the object list
-set(hhuvmat.ViewObject,'Value',1)% indicate that the currently selected objected is viewed on set_object
+set(hhuvmat.CheckViewObject,'Value',1)% indicate that the currently selected objected is viewed on set_object
 check_handle=isfield(UvData.ProjObject{IndexObj},'DisplayHandle') && isfield(UvData.ProjObject{IndexObj}.DisplayHandle,'uvmat')...
     && ~isempty(UvData.ProjObject{IndexObj}.DisplayHandle.uvmat) && ishandle(UvData.ProjObject{IndexObj}.DisplayHandle.uvmat);
 if check_handle
@@ -553,7 +551,6 @@ else
         else
             set(hview_field,'Position',Data.GUISize)
         end
-        %  set(hhuvmat.ViewField,'Value',1)% indicate that the field projection on the current object is plotted in view_field
     end
 end
 
@@ -585,11 +582,8 @@ end
 set(huvmat,'UserData',UvData)
 
 %% update the GUI uvmat
-% set(hhuvmat.MenuEditObject,'enable','on')
-set(hhuvmat.edit_object,'Value',1) % set uvmat to object edit mode to allow further object update
-%set(hhuvmat.edit_object,'BackgroundColor',[1 1 0]);% paint the edit text in yellow
-set(hhuvmat.ViewField,'Value',1)
-% set(handles.PLOT,'enable','on')
+set(hhuvmat.CheckEditObject,'Value',1) % set uvmat to object edit mode to allow further object update
+set(hhuvmat.CheckViewField,'Value',1)
 set(handles.PLOT,'BackgroundColor',[1 0 0])
 %------------------------------------------------------------------------
 % --- Executes on button press in MenuCoord.

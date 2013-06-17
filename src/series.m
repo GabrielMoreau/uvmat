@@ -1762,7 +1762,12 @@ switch RunMode
     case 'cluster_oar' % option 'oar-parexec' used
         %create subdirectory for oar command and log files
         DirOAR=fullfile(OutputDir,'0_OAR');
-        if ~exist(DirOAR,'dir')
+        if exist(DirOAR,'dir')% delete the content of the dir 0_OAR to allow new input
+            curdir=pwd;
+            cd(DirOAR)
+            delete('*')
+            cd(curdir)
+        else
             [tild,msg1]=mkdir(DirOAR);
             if ~strcmp(msg1,'')
                 msgbox_uvmat('ERROR',['cannot create ' DirOAR ': ' msg1]);%error message for directory creation

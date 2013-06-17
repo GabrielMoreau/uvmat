@@ -168,11 +168,9 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                     errormsg=fill_GUI(PlotParam,huvmat);
                 end
             end
-            set(hhuvmat.ViewField,'Value',1);%
-            set(hhuvmat.edit_object,'Value',1);%           
-            set(hhuvmat.edit_object,'Enable','on');%
-%            set(hhuvmat.MenuEditObject,'Enable','on');%
-%            set(hhuvmat.MenuEdit,'Enable','on');%
+            set(hhuvmat.CheckViewField,'Value',1);%
+            set(hhuvmat.CheckEditObject,'Value',1);%           
+            set(hhuvmat.CheckEditObject,'Enable','on');%
             set(get(h_set_object,'children'),'Enable','on')
         end
         UvData.ProjObject{IndexObj}=ObjectData;

@@ -90,7 +90,7 @@
 % If the scalar exists in an input open (image or scalar stored under its
 % name in a netcdf open), it is directly read at the level of Field{1}or Field{2}.
 % Else only its name AName is recorded in Field{i}, and its field is then calculated 
-%by the fuction calc_scal after the coordinate transform or after projection on an edit_object
+%by the fuction calc_scal after the coordinate transform or after projection on an CheckEditObject
      
 % Properties attached to plotting figures (standard Matlab properties):
 %    'CurrentAxes'= gca or get(gcf,'CurrentAxes');
@@ -110,9 +110,9 @@
 %                     = translate: translate an existing object
 %                    = calibration: move a calibration point
 %                    = CheckZoom: isolate a subregion for CheckZoom in=1 if an object is being currently drawn, 0 else (set to 0 by releasing mouse button)
-%            .CurrentOrigin: Origin of a curently drawn edit_object
+%            .CurrentOrigin: Origin of a curently drawn CheckEditObject
 %            .CurrentLine: currently drawn menuline (A REVOIR)
-%            .CurrentObject: handle of the currently drawn edit_object
+%            .CurrentObject: handle of the currently drawn CheckEditObject
 %            .CurrentRectZoom: current rectangle used for CheckZoom
 
 % Properties attached to projection objects (create, menuline, menuplane...):
@@ -722,6 +722,7 @@ end
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
+
 if strcmp(FileType,'txt')
     edit(fileinput)
     return
@@ -953,9 +954,9 @@ if ~isempty(VideoObject)
     end
     set(handles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
     if index==1
-    set(handles.TimeName,'video')
+    set(handles.TimeName,'String','video')
     else
-        set(handles.TimeName_1,'video')
+        set(handles.TimeName_1,'String','video')
     end
     ColorType='truecolor';
 elseif ~isempty(FileExt(2:end))&&(~isempty(imformats(FileExt(2:end))) || isequal(FileExt,'.vol'))%&& isequal(NomType,'*')% multi-frame image
@@ -1026,9 +1027,9 @@ if ~isempty(XmlFileName)
 end
 if (isfield(XmlData,'Time')&& ~isempty(XmlData.Time))
     if index==1
-    set(handles.TimeName,'xml')
+    set(handles.TimeName,'String','xml')
     else
-       set(handles.TimeName_1,'xml') 
+       set(handles.TimeName_1,'String','xml') 
     end
 else
     XmlData.Time=Time; %time set by video
@@ -2401,7 +2402,7 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
     end
     siz=size(UvData.XmlData{1}.Time);
     if ~isempty(num_i1)&& ~isempty(num_i2) && num_i1>=0 &&siz(1)>=max(num_i1+1,num_i2+1) && siz(2)>=max(num_j1+1,num_j2+1)
-        set(handles.TimeName,'xml')% indicate that time is from xml
+        set(handles.TimeName,'String','xml')% indicate that time is from xml
         abstime=(UvData.XmlData{1}.Time(num_i1+1,num_j1+1)+UvData.XmlData{1}.Time(num_i2+1,num_j2+1))/2;%overset the time read from files
         dt=(UvData.XmlData{1}.Time(num_i2+1,num_j2+1)-UvData.XmlData{1}.Time(num_i1+1,num_j1+1));
         Field{1}.Dt=dt;
@@ -2614,8 +2615,8 @@ if NbDim>1
             set_object(UvData.ProjObject{1},handles,ZBounds);
             set(handles.ListObject,'Value',1);
             set(handles.ListObject,'String',{'1-PLANE'});
-            set(handles.edit_object,'Value',1)% put the plane in edit mode to enable the z cursor
-            edit_object_Callback([],[], handles)
+            set(handles.CheckEditObject,'Value',1)% put the plane in edit mode to enable the z cursor
+            CheckEditObject_Callback([],[], handles)
         end
         %multilevel case (single menuplane in a 3D space)
     elseif isfield(UvData,'Z')
@@ -3526,8 +3527,8 @@ if isequal(get(handles.VOLUME,'Value'),1)
 %     set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
     set(handles.edit_vect,'Value',0)
     edit_vect_Callback(hObject, eventdata, handles)
-    set(handles.edit_object,'Value',0)
-%     set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckEditObject,'Value',0)
+%     set(handles.CheckEditObject,'BackgroundColor',[0.7 0.7 0.7])
 %     set(handles.cal,'Value',0)
 %     set(handles.cal,'BackgroundColor',[0 1 0])
     set(handles.edit_vect,'Value',0)
@@ -3573,10 +3574,10 @@ if isequal(get(handles.edit_vect,'Value'),1)
     end 
     set(handles.record,'Visible','on')
     set(handles.edit_vect,'BackgroundColor',[1 1 0])
-    set(handles.edit_object,'Value',0)
+    set(handles.CheckEditObject,'Value',0)
     set(handles.CheckZoom,'Value',0)
 %     set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
-%     set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
+%     set(handles.CheckEditObject,'BackgroundColor',[0.7 0.7 0.7])
     set(gcf,'Pointer','arrow')
 else
     set(handles.record,'Visible','off')
@@ -3811,12 +3812,12 @@ if ~strcmp(CoordUnit,CoordUnitPrev)
     set(handles.ListObject,'String',{''})
     set(handles.ListObject_1,'Value',1)
     set(handles.ListObject_1,'String',{''})
-    set(handles.ViewObject,'value',0)
-    ViewObject_Callback(hObject, eventdata, handles)
-    set(handles.ViewField,'value',0)
-    ViewField_Callback(hObject, eventdata, handles)
-    set(handles.edit_object,'Value',0)
-    edit_object_Callback(hObject, eventdata, handles)
+    set(handles.CheckViewObject,'value',0)
+    CheckViewObject_Callback(hObject, eventdata, handles)
+    set(handles.CheckViewField,'value',0)
+    CheckViewField_Callback(hObject, eventdata, handles)
+    set(handles.CheckEditObject,'Value',0)
+    CheckEditObject_Callback(hObject, eventdata, handles)
     UvData.ProjObject={[]};
 end
 set(handles.uvmat,'UserData',UvData)
@@ -4210,7 +4211,7 @@ end
 set(handles.uvmat,'UserData',UvData)
 
 %% display the object parameters if the GUI set_object is already opened
-if ~get(handles.ViewObject,'Value')
+if ~get(handles.CheckViewObject,'Value')
     ZBounds=0; % default
     if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
         ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
@@ -4218,12 +4219,12 @@ if ~get(handles.ViewObject,'Value')
     end
     ObjectData.Name=list_str{get(handles.ListObject_1,'Value')};
     set_object(ObjectData,[],ZBounds);
-    set(handles.ViewObject,'Value',1)% show that the selected object in ListObject_1 is currently visualised
+    set(handles.CheckViewObject,'Value',1)% show that the selected object in ListObject_1 is currently visualised
 end
 
 %  desactivate the edit object mode
-set(handles.edit_object,'Value',0) 
-% set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
+set(handles.CheckEditObject,'Value',0) 
+% set(handles.CheckEditObject,'BackgroundColor',[0.7,0.7,0.7]) 
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListObject.
@@ -4240,7 +4241,7 @@ ObjectData=UvData.ProjObject{IndexObj};
     end
 
 %% show object features if view_object isselected
-if get(handles.ViewObject,'value')
+if get(handles.CheckViewObject,'value')
     set_object(ObjectData,[],ZBounds);
 end
 
@@ -4251,13 +4252,13 @@ end
 % 
 %     ObjectData.Name=list_str{IndexObj};
 %     set_object(ObjectData,[],ZBounds);
-%     set(handles.ViewField,'Value',1)% show that the selected object in ListObject is currently visualised
+%     set(handles.CheckViewField,'Value',1)% show that the selected object in ListObject is currently visualised
 % end
 
 %%  desactivate the edit object mode for security 
-set(handles.edit_object,'Value',0) 
+set(handles.CheckEditObject,'Value',0) 
 
-% set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7]) 
+% set(handles.CheckEditObject,'BackgroundColor',[0.7,0.7,0.7]) 
 
 %% update the  plot on view_field if view_field is already openened
 hview_field=findobj(allchild(0),'tag','view_field');
@@ -4341,11 +4342,11 @@ if ishandle(DisplayHandle)
 end
 
 %-------------------------------------------------------------------
-% --- Executes on selection change in edit_object.
-function edit_object_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in CheckEditObject.
+function CheckEditObject_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 hset_object=findobj(allchild(0),'Tag','set_object');
-if get(handles.edit_object,'Value') 
+if get(handles.CheckEditObject,'Value') 
     %suppress the other options 
     set(handles.CheckZoom,'Value',0)
     CheckZoom_Callback(hObject, eventdata, handles)
@@ -4354,8 +4355,8 @@ if get(handles.edit_object,'Value')
         hhgeometry_calib=guidata(hgeometry_calib);
         set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
     end
-    set(handles.ViewObject,'value',1)
-    ViewObject_Callback(hObject, eventdata, handles)
+    set(handles.CheckViewObject,'value',1)
+    CheckViewObject_Callback(hObject, eventdata, handles)
 else % desactivate object edit mode
     if ~isempty(hset_object)% open the 
         set(get(hset_object,'children'),'Enable','off')
@@ -4366,10 +4367,10 @@ end
 
 
 %------------------------------------------------------------------------
-% --- Executes on button press in ViewObject.
-function ViewObject_Callback(hObject, eventdata, handles)
+% --- Executes on button press in CheckViewObject.
+function CheckViewObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-check_view=get(handles.ViewObject,'Value');
+check_view=get(handles.CheckViewObject,'Value');
 
 if check_view %activate set_object    
     IndexObj=get(handles.ListObject,'Value');
@@ -4391,7 +4392,7 @@ if check_view %activate set_object
     end
     hset_object=set_object(data,[],ZBounds);
     hhset_object=guidata(hset_object);
-    if get(handles.edit_object,'Value')% edit mode
+    if get(handles.CheckEditObject,'Value')% edit mode
         set(get(hset_object,'children'),'Enable','on')
     else
         set(get(hset_object,'children'),'Enable','off')% deactivate the GUI except SAVE
@@ -4406,10 +4407,10 @@ end
   
 
 %------------------------------------------------------------------------
-% --- Executes on button press in ViewField.
-function ViewField_Callback(hObject, eventdata, handles)
+% --- Executes on button press in CheckViewField.
+function CheckViewField_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-check_view=get(handles.ViewField,'Value');
+check_view=get(handles.CheckViewField,'Value');
 
 if check_view
     IndexObj=get(handles.ListObject,'Value');
@@ -4464,9 +4465,9 @@ end
 
 
 %------------------------------------------------------------------------
-% --- Executes on button press in delete_object.
+% --- Executes on button press in DeleteObject.
 %------------------------------------------------------------------------
-function delete_object_Callback(hObject, eventdata, handles)
+function DeleteObject_Callback(hObject, eventdata, handles)
 
 IndexObj=get(handles.ListObject,'Value');%projection object selected for view_field
 IndexObj_1=get(handles.ListObject_1,'Value');%projection object selected for uvmat plot
@@ -4474,9 +4475,9 @@ if IndexObj>1 && ~isequal(IndexObj,IndexObj_1) % do not delete the object used f
     delete_object(IndexObj)
 end
 
-%'delete_object': delete a projection object, defined by its index in the Uvmat list or by its graphic handle
+%'DeleteObject': delete a projection object, defined by its index in the Uvmat list or by its graphic handle
 %------------------------------------------------------------------------
-% function delete_object(hObject)
+% function DeleteObject(hObject)
 %
 % INPUT:
 % hObject: object index (if integer) or handle of the graphic object. If
@@ -4713,9 +4714,33 @@ data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
 
 % -----------------------------------------------------------------------
+% --- Callback of the Menu command line
+%------------------------------------------------------------------------
 function Menuline_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 data.Type='line';
+data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
+% -----------------------------------------------------------------------
+% --- Callback of the Menu command line_x
+%------------------------------------------------------------------------
+function Menuline_x_Callback(hObject, eventdata, handles)
+    msgbox_uvmat('ERROR','option not yet implemented, use line')
+    return
+data.Type='line_x';
+data.ProjMode='projection';%default
+data.ProjModeMenu={};% do not restrict ProjMode menus
+create_object(data,handles)
+
+% -----------------------------------------------------------------------
+% --- Callback of the Menu command line_y
+% -----------------------------------------------------------------------
+function Menuline_y_Callback(hObject, eventdata, handles)
+    msgbox_uvmat('ERROR','option not yet implemented, use line')
+    return
+data.Type='line_y';
 data.ProjMode='projection';%default
 data.ProjModeMenu={};% do not restrict ProjMode menus
 create_object(data,handles)
@@ -4790,9 +4815,9 @@ if ishandle(hgeometry_calib)
     hhgeometry_calib=guidata(hgeometry_calib);
     set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
 end
-set(handles.edit_object,'Value',0)  %desactivate the object edit mode
-edit_object_Callback([],[],handles)
-set(handles.ViewObject,'Value',0) % desactivate view_object (new object created)
+set(handles.CheckEditObject,'Value',0)  %desactivate the object edit mode
+CheckEditObject_Callback([],[],handles)
+set(handles.CheckViewObject,'Value',0) % desactivate view_object (new object created)
 set(handles.CheckZoomFig,'Value',0) %desactivate zoom sub fig
 set(handles.CheckZoom,'Value',0)    %desactivate the zoom action
 if ishandle(handles.UVMAT_title)
@@ -4807,17 +4832,25 @@ if isfield(UvData,'Field')
     Field=UvData.Field;
     if isfield(UvData.Field,'CoordMesh')&&~isempty(UvData.Field.CoordMesh)
         data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
-        if strcmp(data.Type,'line')||strcmp(data.Type,'polyline')||strcmp(data.Type,'points')
-            data.RangeY=UvData.Field.CoordMesh;
-        else
-            data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
+        switch data.Type
+            case {'line','polyline','points'}
+                data.RangeY=UvData.Field.CoordMesh;
+            case 'line_x'
+                data.RangeX=[UvData.Field.XMin UvData.Field.XMax];
+                data.RangeY=UvData.Field.CoordMesh;
+                data.Coord=[0 (UvData.Field.YMin +UvData.Field.YMax)/2];% put line at the middle of the y axis
+            case 'line_y'
+                data.RangeY=UvData.Field.CoordMesh;
+                data.Coord=[(UvData.Field.XMin +UvData.Field.XMax)/2 0];% put line at the middle of the x axis
+            case {'rectangle','ellipse'}
+                data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
+                data.RangeX=UvData.Field.CoordMesh;
+                data.RangeY=UvData.Field.CoordMesh;
+            otherwise
+                data.RangeY=[UvData.Field.YMin UvData.Field.YMax];
         end
         data.DX=UvData.Field.CoordMesh;
         data.DY=UvData.Field.CoordMesh;
-        if strcmp(data.Type,'rectangle')||strcmp(data.Type,'ellipse')
-            data.RangeX=UvData.Field.CoordMesh;
-            data.RangeY=UvData.Field.CoordMesh;
-        end
     end
     if isfield(Field,'NbDim')&& isequal(Field.NbDim,3)
          data.Coord=[0 0 0]; %default
@@ -4829,7 +4862,7 @@ end
 hset_object=set_object(data,handles);% call the GUI set_object 
 hchild=get(hset_object,'children');
 set(hchild,'enable','on')
-set(handles.delete_object,'Visible','on')% make the object delete button visible
+set(handles.DeleteObject,'Visible','on')% make the object delete button visible
 
 %------------------------------------------------------------------------
 function MenuBrowseObject_Callback(hObject, eventdata, handles)
@@ -4865,10 +4898,10 @@ set(handles.uvmat,'UserData',UvData)
 set(handles.ListObject,'Value',IndexObj)
 hset_object=set_object(data);% call the set_object interface
 set(get(hset_object,'children'),'enable','on')% enable edit action on elements on GUI set_object
-set(handles.edit_object,'Value',0); %suppress the object edit mode
-edit_object_Callback([],[],handles)
-% set(handles.edit_object,'BackgroundColor',[0.7,0.7,0.7])  
-set(handles.delete_object,'Visible','on')
+set(handles.CheckEditObject,'Value',0); %suppress the object edit mode
+CheckEditObject_Callback([],[],handles)
+% set(handles.CheckEditObject,'BackgroundColor',[0.7,0.7,0.7])  
+set(handles.DeleteObject,'Visible','on')
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -4877,7 +4910,7 @@ set(handles.delete_object,'Visible','on')
 % %------------------------------------------------------------------------
 % function MenuEditObject_Callback(hObject, eventdata, handles)
 % %------------------------------------------------------------------------
-% set(handles.edit_object,'Value',1)
+% set(handles.CheckEditObject,'Value',1)
 % edit_Callback(hObject, eventdata, handles)
 % 
 % %------------------------------------------------------------------------
@@ -5176,7 +5209,7 @@ function MenuGrid_Callback(hObject, eventdata, handles)
 %suppress the other options if grid is chosen
 set(handles.edit_vect,'Value',0)
 edit_vect_Callback(hObject, eventdata, handles)
-% set(handles.edit_object,'BackgroundColor',[0.7 0.7 0.7])
+% set(handles.CheckEditObject,'BackgroundColor',[0.7 0.7 0.7])
 set(handles.ListObject,'Value',1)      
 
 %prepare display of the set_grid GUI
@@ -5255,11 +5288,17 @@ series(Param); %run the series interface
 
 %------------------------------------------------------------------------
 % -- open the GUI civ.fig for PIV
-function MenuPIV_Callback(hObject, eventdata, handles)
+function MenuCIVx_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
  [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
  FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 civ(FileName);% interface de civ(not in the uvmat file)
+
+
+% --------------------------------------------------------------------
+function MenuPIV_Callback(hObject, eventdata, handles)
+MenuSeries_Callback(hObject, eventdata, handles)
+
 
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)

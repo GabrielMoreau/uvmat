@@ -621,12 +621,12 @@ for icell=1:length(CellInfo)
     
     %% identify vector components
     testU=isfield(CellInfo{icell},'VarIndex_vector_x') &&isfield(CellInfo{icell},'VarIndex_vector_y') ;% test for vectors
-    if testU
-        UName=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x};
-        VName=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y};
-        vector_x=FieldData.(UName);
-        vector_y=FieldData.(VName);
-    end
+%     if testU
+%         UName=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x};
+%         VName=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y};
+%         vector_x=FieldData.(UName);
+%         vector_y=FieldData.(VName);
+%     end
     %identify error flag
     errorflag=0; %default, no error flag
     if isfield(CellInfo{icell},'VarIndex_errorflag');% test for error flag
@@ -634,6 +634,8 @@ for icell=1:length(CellInfo)
         errorflag=FieldData.(FFName);
     end
     VarName=FieldData.ListVarName(VarIndex);% cell array of the names of variables to pje
+    ivar_U=[];
+    ivar_V=[];
     %% check needed object properties for unstructured positions (position given by the variables with role coord_x, coord_y
     
     %         circul=0;
@@ -646,6 +648,10 @@ for icell=1:length(CellInfo)
             YName= FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
             coord_x=FieldData.(XName);
             coord_y=FieldData.(YName);
+            ProjData.ListVarName=[ProjData.ListVarName {XName}];
+            ProjData.VarDimName=[ProjData.VarDimName {XName}];
+            nbvar=numel(ProjData.ListVarName);
+            ProjData.VarAttribute{nbvar}.long_name='abscissa along line';
             if isequal(ProjMode,'projection')
                 if width==0
                     errormsg='range of the projection object is missing';
@@ -662,27 +668,36 @@ for icell=1:length(CellInfo)
                 sintheta=sin(theta);
                 Xproj=(coord_x-ObjectData.Coord(1,1))*costheta + (coord_y-ObjectData.Coord(1,2))*sintheta; %projection on the line
                 [Xproj,indsort]=sort(Xproj);% sort points by increasing absissa along the projection line
+                ProjData.(XName)=Xproj;
                 for ivar=1:numel(VarIndex)
                     ProjData.(VarName{ivar})=FieldData.(VarName{ivar})(flagsel);% restrict vrtibles to the projection band
                     ProjData.(VarName{ivar})=ProjData.(VarName{ivar})(indsort);% sort by absissa
-                end
-                % project the velocity components if vectors are projected
-                if testU
-                    vector_x=ProjData.(UName);
-                    ProjData.(UName)=costheta*vector_x+sintheta*ProjData.(VName);% longitudinal component
-                    ProjData.(VName)=-sintheta*vector_x+costheta*ProjData.(VName);%transverse component
+                    ProjData.ListVarName=[ProjData.ListVarName VarName{ivar}];
+                    ProjData.VarDimName=[ProjData.VarDimName {XName}];
+                    ProjData.VarAttribute{nbvar+ivar}=FieldData.VarAttribute{VarIndex(ivar)};%reproduce var attribute
+                    if isfield(ProjData.VarAttribute{nbvar+ivar},'Role')
+                        if  strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_x');
+                            ivar_U=ivar;
+                        elseif strcmp(ProjData.VarAttribute{nbvar+ivar}.Role,'vector_y');
+                            ivar_V=ivar;
+                        end
+                    end
+                    ProjData.VarAttribute{ivar+nbvar}.Role='discrete';% will promote plots of the profiles with continuous lines
                 end
             elseif isequal(ProjMode,'interp_lin')  %filtering %linear interpolation:
                 [ProjVar,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([coord_x coord_y],FieldData,CellInfo{icell}.FieldName,XI,YI);
                 ProjData.X=Xproj;
-                ProjData.ListVarName=[ProjData.ListVarName {XName}];
-                ProjData.VarDimName=[ProjData.VarDimName {XName}];
-                nbvar=numel(ProjData.ListVarName);
-                ProjData.VarAttribute{nbvar}.long_name='abscissa along line';
                 ProjData.ListVarName=[ProjData.ListVarName ListFieldProj];
                 ProjData.VarAttribute=[ProjData.VarAttribute VarAttribute];
                 for ivar=1:numel(VarAttribute)
                     ProjData.VarDimName=[ProjData.VarDimName {XName}];
+                    if isfield(VarAttribute{ivar},'Role')
+                        if  strcmp(VarAttribute{ivar}.Role,'vector_x');
+                            ivar_U=ivar;
+                        elseif strcmp(VarAttribute{ivar}.Role,'vector_y');
+                            ivar_V=ivar;
+                        end
+                    end
                     ProjData.VarAttribute{ivar+nbvar}.Role='continuous';% will promote plots of the profiles with continuous lines
                     ProjData.(ListFieldProj{ivar})=ProjVar{ivar};
                 end
@@ -695,14 +710,10 @@ for icell=1:length(CellInfo)
                 if isfield(CellInfo{icell},'VarIndex_vector_x_tps')&&isfield(CellInfo{icell},'VarIndex_vector_y_tps')
                     FieldVar=cat(3,FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x_tps}),FieldData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y_tps}));
                 end
-                %                 coord_x_proj=XMin:DX:XMax;
-                %                 coord_y_proj=YMin:DY:YMax;
-                %                 np_x=numel(coord_x_proj);
-                %                 np_y=numel(coord_y_proj);
                 [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord,NbCentres,SubRange,FieldVar,CellInfo{icell}.FieldName,cat(3,XI,YI));
                 ProjData.X=Xproj;
-                ProjData.ListVarName=[ProjData.ListVarName {XName}];
-                ProjData.VarDimName=[ProjData.VarDimName {XName}];
+%                 ProjData.ListVarName=[ProjData.ListVarName {XName}];
+%                 ProjData.VarDimName=[ProjData.VarDimName {XName}];
                 nbvar=numel(ProjData.ListVarName);
                 ProjData.VarAttribute{nbvar}.long_name='abscissa along line';
                 ProjVarName=(fieldnames(DataOut))';
@@ -710,6 +721,13 @@ for icell=1:length(CellInfo)
                 ProjData.VarAttribute=[ProjData.VarAttribute VarAttribute];
                 for ivar=1:numel(VarAttribute)
                     ProjData.VarDimName=[ProjData.VarDimName {XName}];
+                    if isfield(VarAttribute{ivar},'Role')
+                        if  strcmp(VarAttribute{ivar}.Role,'vector_x');
+                            ivar_U=ivar;
+                        elseif strcmp(VarAttribute{ivar}.Role,'vector_y');
+                            ivar_V=ivar;
+                        end
+                    end
                     ProjData.VarAttribute{ivar+nbvar}.Role='continuous';% will promote plots of the profiles with continuous lines
                     ProjData.(ProjVarName{ivar})=DataOut.(ProjVarName{ivar});
                 end
@@ -821,18 +839,17 @@ for icell=1:length(CellInfo)
                     ProjData.VarDimName=[ProjData.VarDimName {AXName}];%to generalize with the initial name of the x coordinate
                     ProjData.VarAttribute{ivar}.Role='continuous';% for plot with continuous line
                 end
-                if testU
-                    vector_x =ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x});
-                    vector_y =ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y});
-                    ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x}) =cos(theta)*vector_x+sin(theta)*vector_y;
-                    ProjData.(FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y}) =-sin(theta)*vector_x+cos(theta)*vector_y;
-                end
-                ProjData.VarAttribute{nbvar+1}.long_name='abscissa along line';
                 if nbcolor==3
                     ProjData.VarDimName{end}={AXName,'rgb'};
                 end
             end
+    end 
+    if ~isempty(ivar_U) && ~isempty(ivar_V)
+        vector_x =ProjData.(ProjData.ListVarName{nbvar+ivar_U});
+         ProjData.(ProjData.ListVarName{nbvar+ivar_U}) =cos(theta)*vector_x+sin(theta)*ProjData.(ProjData.ListVarName{nbvar+ivar_V});
+          ProjData.(ProjData.ListVarName{nbvar+ivar_V}) =-sin(theta)*vector_x+cos(theta)*ProjData.(ProjData.ListVarName{nbvar+ivar_V});
     end
+        
 end
 
 % %shotarter case for horizontal or vertical line (A FAIRE 
@@ -1151,34 +1168,38 @@ for icell=1:length(CellInfo)
                         indsel=find(FieldData.(VarName_FF)==0);
                         coord_X=coord_X(indsel);
                         coord_Y=coord_Y(indsel);
+                        for ivar=1:numel(CellInfo{icell}.VarIndex)
+                            VarName=FieldData.ListVarName{CellInfo{icell}.VarIndex(ivar)};
+                            FieldData.(VarName)=FieldData.(VarName)(indsel);
+                        end
                     end
 %                     testFF=0;
-%                     nbvar=numel(ProjData.ListVarName);
-                    if isfield(CellInfo{icell},'VarIndex_vector_x')&&isfield(CellInfo{icell},'VarIndex_vector_y')
-                        VarName_x=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x};
-                        VarName_y=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y};
-                        if isfield(CellInfo{icell},'VarIndex_errorflag')
-                            FieldData.(VarName_x)=FieldData.(VarName_x)(indsel);
-                            FieldData.(VarName_y)=FieldData.(VarName_y)(indsel);
-                        end
-                        %FieldVar=cat(2,FieldData.(VarName_x),FieldData.(VarName_y));
-                        if ~isfield(CellInfo{icell},'CheckSub') || ~CellInfo{icell}.CheckSub
-                            vector_x_proj=numel(ProjData.ListVarName)+1;
-                            vector_y_proj=numel(ProjData.ListVarName)+2;
-                        end
-                    end
-                    if isfield(CellInfo{icell},'VarIndex_scalar')
-                        VarName_scalar=FieldData.ListVarName{CellInfo{icell}.VarIndex_scalar};
-                        if isfield(CellInfo{icell},'errorflag') && ~isempty(CellInfo{icell}.errorflag)
-                            FieldData.(VarName_scalar)=FieldData.(VarName_scalar)(indsel);
-                        end
-                    end
-                    if isfield(CellInfo{icell},'VarIndex_ancillary')% do not project ancillary data with interp
-                        FieldData=rmfield(FieldData,FieldData.ListVarName{CellInfo{icell}.VarIndex_ancillary});
-                    end
-                    if isfield(CellInfo{icell},'VarIndex_warnflag')% do not project ancillary data with interp
-                        FieldData=rmfield(FieldData,FieldData.ListVarName{CellInfo{icell}.VarIndex_warnflag});
-                    end
+%                     nbvar=numel(ProjData.ListVarName);                            
+%                     if isfield(CellInfo{icell},'VarIndex_vector_x')&&isfield(CellInfo{icell},'VarIndex_vector_y')
+%                         VarName_x=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x};
+%                         VarName_y=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y};
+%                         if isfield(CellInfo{icell},'VarIndex_errorflag')
+%                             FieldData.(VarName_x)=FieldData.(VarName_x)(indsel);
+%                             FieldData.(VarName_y)=FieldData.(VarName_y)(indsel);
+%                         end
+%                         %FieldVar=cat(2,FieldData.(VarName_x),FieldData.(VarName_y));
+%                         if ~isfield(CellInfo{icell},'CheckSub') || ~CellInfo{icell}.CheckSub
+%                             vector_x_proj=numel(ProjData.ListVarName)+1;
+%                             vector_y_proj=numel(ProjData.ListVarName)+2;
+%                         end
+%                     end
+%                     if isfield(CellInfo{icell},'VarIndex_scalar')
+%                         VarName_scalar=FieldData.ListVarName{CellInfo{icell}.VarIndex_scalar};
+%                         if isfield(CellInfo{icell},'errorflag') && ~isempty(CellInfo{icell}.errorflag)
+%                             FieldData.(VarName_scalar)=FieldData.(VarName_scalar)(indsel);
+%                         end
+%                     end
+%                     if isfield(CellInfo{icell},'VarIndex_ancillary')% do not project ancillary data with interp
+%                         FieldData=rmfield(FieldData,FieldData.ListVarName{CellInfo{icell}.VarIndex_ancillary});
+%                     end
+%                     if isfield(CellInfo{icell},'VarIndex_warnflag')% do not project ancillary data with interp
+%                         FieldData=rmfield(FieldData,FieldData.ListVarName{CellInfo{icell}.VarIndex_warnflag});
+%                     end
                     % interpolate and calculate field on the grid
                     [VarVal,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,CellInfo{icell}.FieldName,XI,YI);
                     

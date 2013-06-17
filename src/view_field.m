@@ -185,7 +185,7 @@ function closefcn(gcbo,eventdata)
 huvmat=findobj(allchild(0),'Tag','uvmat');%find the current uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);
-    set(hhuvmat.ViewField,'Value',0)
+    set(hhuvmat.CheckViewField,'Value',0)
     %set(hhuvmat.edit_object,'BackgroundColor',[0.7 0.7 0.7])%put unactivated buttons to gree
     % deselect the object in ListObject when view_field is closed
     if isempty(findobj(allchild(0),'Tag','set_object'))

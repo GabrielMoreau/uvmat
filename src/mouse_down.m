@@ -58,11 +58,11 @@ if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);%handles of elements in uvmat
     UvData=get(huvmat,'UserData');
     test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
-    test_edit=get(hhuvmat.edit_object,'Value')&& (isequal(obj_tag,'proj_object')||isequal(obj_tag,'DeformPoint'));%test for object editing, third priority
+    test_edit=get(hhuvmat.CheckEditObject,'Value')&& (isequal(obj_tag,'proj_object')||isequal(obj_tag,'DeformPoint'));%test for object editing, third priority
     hset_object=findobj(allchild(0),'tag','set_object');
     if ~isempty(hset_object)
         hPLOT=findobj(hset_object,'tag','PLOT');
-        test_create=strcmp(get(hPLOT,'enable'),'on') &&~get(hhuvmat.edit_object,'Value');% create new object if set_object is in mode enable and uvmat not in mode 'edit_object'
+        test_create=strcmp(get(hPLOT,'enable'),'on') &&~get(hhuvmat.CheckEditObject,'Value');% create new object if set_object is in mode enable and uvmat not in mode 'EditObject'
     end
     test_edit_vect=get(hhuvmat.edit_vect,'Value') && ~test_create && ~(isequal(obj_tag,'proj_object')||isequal(obj_tag,'DeformPoint')) ;%test for vector editing,  priority 4
     test_cal=isequal(get(hhuvmat.MenuCalib,'checked'),'on');% test for calibration
@@ -369,7 +369,7 @@ if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt
         end
         UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=hhuvmat.PlotAxes; % axes for plot_object
         UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
-        set(hhuvmat.ViewObject,'Value',1)
+        set(hhuvmat.CheckViewObject,'Value',1)
     end
     ObjectData.Coord=[ObjectData.Coord ;xy(1,1:2)];% append the coordinates marked by the mouse to the object
     %TODO replace 0 by z coord for 3D

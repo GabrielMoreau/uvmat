@@ -53,7 +53,7 @@ test_ruler=0;%test for active ruler
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);%handles of the elements in uvma
-    test_edit_object=get(hhuvmat.edit_object,'Value');
+    test_edit_object=get(hhuvmat.CheckEditObject,'Value');
     test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');
 end
 test_piv=0;
