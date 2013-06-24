@@ -1,13 +1,13 @@
 %'filter_tps': find the thin plate spline coefficients for interpolation-smoothing
 %------------------------------------------------------------------------
-% [SubRange,NbCentres,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomain,Rho,Threshold)
+% [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomain,Rho,Threshold)
 %
 % OUTPUT:
 % SubRange(NbCoord,NbSubdomain,2): range (min, max) of the coordiantes x and y respectively, for each subdomain
-% NbCentres(NbSubdomain): number of source points for each subdomain
+% NbCentre(NbSubdomain): number of source points for each subdomain
 % FF: false flags
 % U_smooth, V_smooth: filtered velocity components at the positions of the initial data
-% Coord_tps(NbCentres,NbCoord,NbSubdomain): positions of the tps centres
+% Coord_tps(NbCentre,NbCoord,NbSubdomain): positions of the tps centres
 % U_tps,V_tps: weight of the tps for each subdomain
 % to get the interpolated field values, use the function calc_field.m
 %
@@ -18,7 +18,7 @@
 % Threshold: max diff accepted between smoothed and initial data 
 % Subdomain: estimated number of data points in each subdomain
 
-function [SubRange,NbCentres,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomain,Rho,Threshold)
+function [SubRange,NbCentre,Coord_tps,U_tps,V_tps,W_tps,U_smooth,V_smooth,W_smooth,FF] =filter_tps(Coord,U,V,W,SubDomain,Rho,Threshold)
 
 %% adjust subdomain decomposition
 warning off
@@ -45,10 +45,7 @@ rho=Siz(1)*Siz(2)*Rho/1000;%optimum rho increase as the area of the subdomain (d
 
 %% default output
 SubRange=zeros(NbCoord,2,NbSubDomain);%initialise the positions of subdomains
-NbCentres=zeros(1,NbSubDomain);%number of interpolated values per subdomain, =0 by default
-%Coord_tps=zeros(NbVec,NbCoord,NbSubDomain);% default positions of the tps source= initial positions of the good vectors sorted by subdomain
-%U_tps=zeros(NbVec,NbSubDomain);%default spline
-%V_tps=zeros(NbVec,NbSubDomain);%default spline
+NbCentre=zeros(1,NbSubDomain);%number of interpolated values per subdomain, =0 by default
 W_tps=[];%default (2 component case)
 U_smooth=zeros(NbVec,1); % smoothed velocity U at the initial positions
 V_smooth=zeros(NbVec,1);% smoothed velocity V at the initial positions
@@ -92,10 +89,10 @@ for isub=1:NbSubDomain
             if isequal(numel(ind_ind_sel),numel(ind_sel))
                 U_smooth(ind_sel)=U_smooth(ind_sel)+U_smooth_sub;
                 V_smooth(ind_sel)=V_smooth(ind_sel)+V_smooth_sub;
-                NbCentres(isub)=numel(ind_sel);
-                Coord_tps(1:NbCentres(isub),:,isub)=Coord(ind_sel,:);
-                U_tps(1:NbCentres(isub)+3,isub)=U_tps_sub;
-                V_tps(1:NbCentres(isub)+3,isub)=V_tps_sub;
+                NbCentre(isub)=numel(ind_sel);
+                Coord_tps(1:NbCentre(isub),:,isub)=Coord(ind_sel,:);
+                U_tps(1:NbCentre(isub)+3,isub)=U_tps_sub;
+                V_tps(1:NbCentre(isub)+3,isub)=V_tps_sub;
                 nb_select(ind_sel)=nb_select(ind_sel)+1;
                 display('good')
                 break
@@ -109,10 +106,10 @@ for isub=1:NbSubDomain
                 [V_smooth_sub,V_tps_sub]=tps_coeff(Coord(ind_sel(ind_ind_sel),:),V(ind_sel(ind_ind_sel)),rho);
                 U_smooth(ind_sel(ind_ind_sel))=U_smooth(ind_sel(ind_ind_sel))+U_smooth_sub;
                 V_smooth(ind_sel(ind_ind_sel))=V_smooth(ind_sel(ind_ind_sel))+V_smooth_sub;
-                NbCentres(isub)=numel(ind_ind_sel);
-                Coord_tps(1:NbCentres(isub),:,isub)=Coord(ind_sel(ind_ind_sel),:);
-                U_tps(1:NbCentres(isub)+3,isub)=U_tps_sub;
-                V_tps(1:NbCentres(isub)+3,isub)=V_tps_sub;
+                NbCentre(isub)=numel(ind_ind_sel);
+                Coord_tps(1:NbCentre(isub),:,isub)=Coord(ind_sel(ind_ind_sel),:);
+                U_tps(1:NbCentre(isub)+3,isub)=U_tps_sub;
+                V_tps(1:NbCentre(isub)+3,isub)=V_tps_sub;
                 nb_select(ind_sel(ind_ind_sel))=nb_select(ind_sel(ind_ind_sel))+1;
                 display('good2')
                 break

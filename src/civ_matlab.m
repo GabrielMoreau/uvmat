@@ -192,8 +192,8 @@ if isfield (Param,'Patch1')
     Data.Patch1_MaxDiff=Param.Patch1.MaxDiff;
     Data.Patch1_SubDomainSize=Param.Patch1.SubDomainSize;
     nbvar=length(Data.ListVarName);
-    Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbCentres','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
-    Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bounds','nb_subdomain_1'},'nb_subdomain_1',...
+    Data.ListVarName=[Data.ListVarName {'Civ1_U_smooth','Civ1_V_smooth','Civ1_SubRange','Civ1_NbCentre','Civ1_Coord_tps','Civ1_U_tps','Civ1_V_tps'}];
+    Data.VarDimName=[Data.VarDimName {'nb_vec_1','nb_vec_1',{'nb_coord','nb_bound','nb_subdomain_1'},'nb_subdomain_1',...
         {'nb_tps_1','nb_coord','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'},{'nb_tps_1','nb_subdomain_1'}}];
     Data.VarAttribute{nbvar+1}.Role='vector_x';
     Data.VarAttribute{nbvar+2}.Role='vector_y';
@@ -207,7 +207,7 @@ if isfield (Param,'Patch1')
     else
         ind_good=1:numel(Data.Civ1_X);
     end
-    [Data.Civ1_SubRange,Data.Civ1_NbCentres,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
+    [Data.Civ1_SubRange,Data.Civ1_NbCentre,Data.Civ1_Coord_tps,Data.Civ1_U_tps,Data.Civ1_V_tps,tild,Ures, Vres,tild,FFres]=...
         filter_tps([Data.Civ1_X(ind_good) Data.Civ1_Y(ind_good)],Data.Civ1_U(ind_good),Data.Civ1_V(ind_good),[],Data.Patch1_SubDomainSize,Data.Patch1_FieldSmooth,Data.Patch1_MaxDiff);
     Data.Civ1_U_smooth(ind_good)=Ures;
     Data.Civ1_V_smooth(ind_good)=Vres;
@@ -291,7 +291,7 @@ if isfield (Param,'Civ2')
     NbSubDomain=size(Data.Civ1_SubRange,3);
     % get the guess from patch1
     for isub=1:NbSubDomain
-        nbvec_sub=Data.Civ1_NbCentres(isub);
+        nbvec_sub=Data.Civ1_NbCentre(isub);
         ind_sel=find(GridX>=Data.Civ1_SubRange(1,1,isub) & GridX<=Data.Civ1_SubRange(1,2,isub) & GridY>=Data.Civ1_SubRange(2,1,isub) & GridY<=Data.Civ1_SubRange(2,2,isub));
         epoints = [GridX(ind_sel) GridY(ind_sel)];% coordinates of interpolation sites
         ctrs=Data.Civ1_Coord_tps(1:nbvec_sub,:,isub) ;%(=initial points) ctrs
@@ -400,8 +400,8 @@ if isfield (Param,'Patch2')
     Data.Patch2_MaxDiff=Param.Patch2.MaxDiff;
     Data.Patch2_SubDomainSize=Param.Patch2.SubDomainSize;
     nbvar=length(Data.ListVarName);
-    Data.ListVarName=[Data.ListVarName {'Civ2_U_smooth','Civ2_V_smooth','Civ2_SubRange','Civ2_NbCentres','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
-    Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2',{'nb_coord','nb_bounds','nb_subdomain_2'},{'nb_subdomain_2'},...
+    Data.ListVarName=[Data.ListVarName {'Civ2_U_smooth','Civ2_V_smooth','Civ2_SubRange','Civ2_NbCentre','Civ2_Coord_tps','Civ2_U_tps','Civ2_V_tps'}];
+    Data.VarDimName=[Data.VarDimName {'nb_vec_2','nb_vec_2',{'nb_coord','nb_bound','nb_subdomain_2'},{'nb_subdomain_2'},...
         {'nb_tps_2','nb_coord','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'},{'nb_tps_2','nb_subdomain_2'}}];
     
     Data.VarAttribute{nbvar+1}.Role='vector_x';
@@ -416,7 +416,7 @@ if isfield (Param,'Patch2')
     else
         ind_good=1:numel(Data.Civ2_X);
     end
-    [Data.Civ2_SubRange,Data.Civ2_NbCentres,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures, Vres,tild,FFres]=...
+    [Data.Civ2_SubRange,Data.Civ2_NbCentre,Data.Civ2_Coord_tps,Data.Civ2_U_tps,Data.Civ2_V_tps,tild,Ures, Vres,tild,FFres]=...
         filter_tps([Data.Civ2_X(ind_good) Data.Civ2_Y(ind_good)],Data.Civ2_U(ind_good),Data.Civ2_V(ind_good),[],Data.Patch2_SubDomainSize,Data.Patch2_FieldSmooth,Data.Patch2_MaxDiff);
     Data.Civ2_U_smooth(ind_good)=Ures;
     Data.Civ2_V_smooth(ind_good)=Vres;

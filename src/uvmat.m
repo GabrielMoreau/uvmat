@@ -48,7 +48,7 @@
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   DATA FLOW  (for run0_Callback) %%%%%%%%%%%%%%%%%%%%:
 %
 %
-% 1) Input filenames are determined by MenuBrowse (first field), MenuBrowse_1
+% 1) Input filenames are determined by MenuBrowse (first field), MenuBrowseCampaign
 % (second field), or by the stored file name .FileName_1, or as an input of uvmat. 
 % 2) These functions call 'uvmat/display_file_name.m' which detects the file series, and fills the file index boxes
 % 3) Then 'uvmat/update_rootinfo.m' Updates information about a new field series (indices to scan, timing, calibration from an xml file)
@@ -228,12 +228,16 @@ end
 %% load the list of previously browsed files in menus Open, Open_1 and TransformName
  dir_perso=prefdir; % path to the directory .matlab containing the personal data of the current user
  profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmat_perso.mat' in .matlab
- if exist(profil_perso,'file')
-     h=load (profil_perso);
-     if isfield(h,'MenuFile')% load the menu of previously opened files
+ if exist(profil_perso,'file')% if the file exists
+     h=load (profil_perso); % open the personal file
+     if isfield(h,'MenuFile')% load the saved menu of previously opened files
          for ifile=1:min(length(h.MenuFile),5)
              set(handles.(['MenuFile_' num2str(ifile)]),'Label',h.MenuFile{ifile});
-             set(handles.(['MenuFile_' num2str(ifile) '_1']),'Label',h.MenuFile{ifile});
+         end
+     end
+     if isfield(h,'MenuCampaign')% load the saved menu of previously opened campaigns
+         for ifile=1:min(length(h.MenuCampaign),5)
+             set(handles.(['MenuCampaign_' num2str(ifile)]),'Label',h.MenuCampaign{ifile});
          end
      end
      if isfield(h,'RootPath')
@@ -433,7 +437,7 @@ oldfile=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 if isempty(oldfile) %loads the previously stored file name and set it as default in the file_input box
     oldfile=get(handles.RootPath,'UserData');
 end
-fileinput=uigetfile_uvmat('select an input file:',oldfile);
+fileinput=uigetfile_uvmat('pick an input file',oldfile);
 
 %% display the selected field and related information
 if ~isempty(fileinput)
@@ -441,120 +445,117 @@ if ~isempty(fileinput)
 end
 
 % -----------------------------------------------------------------------
-% --- Executes on the menu Open/Browse campaign...
-% search the file inside a campaign, using the GUI view_data
-function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
+% --- Open again the file whose name has been recorded in MenuFile_1
+function MenuFile_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+fileinput=get(hObject,'Label');
+display_file_name( handles,fileinput)
+% 
+% % -----------------------------------------------------------------------
+% % --- Open again the file whose name has been recorded in MenuFile_2
+% function MenuFile_2_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% fileinput=get(handles.MenuFile_2,'Label');
+% display_file_name(handles,fileinput)
+% 
+% % -----------------------------------------------------------------------
+% % --- Open again the file whose name has been recorded in MenuFile_3
+% function MenuFile_3_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% fileinput=get(handles.MenuFile_3,'Label');
+% display_file_name(handles,fileinput)
+% 
+% % -----------------------------------------------------------------------
+% % --- Open again the file whose name has been recorded in MenuFile_4
+% function MenuFile_4_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% fileinput=get(handles.MenuFile_4,'Label');
+% display_file_name(handles,fileinput)
+% 
+% % -----------------------------------------------------------------------
+% % --- Open again the file whose name has been recorded in MenuFile_5
+% function MenuFile_5_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% fileinput=get(handles.MenuFile_5,'Label');
+% display_file_name(handles,fileinput)
+
+
 % -----------------------------------------------------------------------
+% --- Executes on the menu Open/Browse campaign...
+% --- search the file inside a campaign, using the GUI browse_data
+% -----------------------------------------------------------------------
+function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
+set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
+drawnow
 RootPath=get(handles.RootPath,'String');
 if isempty(RootPath)
     RootPath=get(handles.RootPath,'UserData');%use Rootpath recored from the personal file at uvmat opening
 end
 CampaignPath=fileparts(fileparts(RootPath));
-DirFull = uigetdir(CampaignPath,'Select a Campaign dir, then press OK');
-if ~ischar(DirFull)|| ~exist(DirFull,'dir')
+DirFull=uigetfile_uvmat('define this path as the Campaign folder:',CampaignPath,'uigetdir');
+%DirFull = uigetdir(CampaignPath,'Select a Campaign dir, then press OK');
+if isempty(DirFull)
     return
 end
 OutPut=browse_data(DirFull);% open the GUI browse_data to get select a campaign dir, experiment and device
 if ~isfield(OutPut,'Campaign')
     return
 end
-DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.Device{1});
-hdir=dir(DirName); %list files and dirs
-for ilist=1:numel(hdir)
-    if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
-        FileName=hdir(ilist).name;
+DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
+ListStruct=dir(DirName); %list files and the dir DataSeries
+% select the first appropriate file in the dir
+FileName='';
+for ilist=1:numel(ListStruct)
+    if ~isequal(ListStruct(ilist).isdir,1)%look for files, not dir
+        FileName=ListStruct(ilist).name;
         FileType=get_file_type(fullfile(DirName,FileName));
         switch FileType
             case {'image','multimage','civx','civdata','netcdf'}
-            break
+                break
         end
+    end
+end
+if isempty(FileName)
+    msgbox_uvmat('ERROR',['no appropriate input file in the DataSeries folder ' fullfile(DirName)])
+    return
+end
+
+%% update the list of campaigns in the menubar
+MenuCampaign=[{get(handles.MenuCampaign_1,'Label')};{get(handles.MenuCampaign_2,'Label')};...
+    {get(handles.MenuCampaign_3,'Label')};{get(handles.MenuCampaign_4,'Label')};{get(handles.MenuCampaign_5,'Label')}];
+check_dir=isempty(find(strcmp(DirFull,MenuCampaign)));
+if check_dir %insert the new campaign in the list if it is not found
+    MenuCampaign(end)=[]; %suppress the last item
+    MenuCampaign=[{DirFull};MenuCampaign];%insert the new campaign
+    for ilist=1:numel(MenuCampaign)
+        set(handles.(['MenuCampaign_' num2str(ilist)]),'Label',MenuCampaign{ilist})
+    end
+    % save the list for future opening:
+    dir_perso=prefdir;
+    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+    if exist(profil_perso,'file')
+        save (profil_perso,'MenuCampaign','RootPath','-append'); %store the file names for future opening of uvmat
+    else
+        save (profil_perso,'MenuCampaign','RootPath','-V6'); %store the file names for future opening of uvmat
     end
 end
 
 %% display the selected field and related information
 display_file_name( handles,fullfile(DirName,FileName))
 
-% -----------------------------------------------------------------------
-% --- Open again the file whose name has been recorded in MenuFile_1
-function MenuFile_1_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-fileinput=get(handles.MenuFile_1,'Label');
-display_file_name( handles,fileinput)
+set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
 % -----------------------------------------------------------------------
-% --- Open again the file whose name has been recorded in MenuFile_2
-function MenuFile_2_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-fileinput=get(handles.MenuFile_2,'Label');
-display_file_name(handles,fileinput)
-
+% --- Open again as second field the file whose name has been recorded in MenuFile_1
 % -----------------------------------------------------------------------
-% --- Open again the file whose name has been recorded in MenuFile_3
-function MenuFile_3_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-fileinput=get(handles.MenuFile_3,'Label');
-display_file_name(handles,fileinput)
+function MenuCampaign_Callback(hObject, eventdata, handles)
 
-% -----------------------------------------------------------------------
-% --- Open again the file whose name has been recorded in MenuFile_4
-function MenuFile_4_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-fileinput=get(handles.MenuFile_4,'Label');
-display_file_name(handles,fileinput)
-
-% -----------------------------------------------------------------------
-% --- Open again the file whose name has been recorded in MenuFile_5
-function MenuFile_5_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-fileinput=get(handles.MenuFile_5,'Label');
-display_file_name(handles,fileinput)
-
-%------------------------------------------------------------------------
-% --- Executes on the menu Open/Browse_1 for the second input field,
-%     search the files, recognize their type according to their name and fill the rootfile input windows
-function MenuBrowse_1_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-RootPath=get(handles.RootPath,'String');
-SubDir=get(handles.SubDir,'String');
-fileinput_1=uigetfile_uvmat('select a second input file:',fullfile(RootPath,SubDir));
-
-if ~isempty(fileinput_1)
-    
-    % refresh the current displayed field
-    set(handles.SubField,'Value',1)
-    display_file_name(handles,fileinput_1,2)
-    
-    %update list of recent files in the menubar
-    MenuFile_1=fileinput_1;
-    MenuFile_2=get(handles.MenuFile_1,'Label');
-    MenuFile_3=get(handles.MenuFile_2,'Label');
-    MenuFile_4=get(handles.MenuFile_3,'Label');
-    MenuFile_5=get(handles.MenuFile_4,'Label');
-    set(handles.MenuFile_1,'Label',MenuFile_1)
-    set(handles.MenuFile_2,'Label',MenuFile_2)
-    set(handles.MenuFile_3,'Label',MenuFile_3)
-    set(handles.MenuFile_4,'Label',MenuFile_4)
-    set(handles.MenuFile_5,'Label',MenuFile_5)
-    set(handles.MenuFile_1_1,'Label',MenuFile_1)
-    set(handles.MenuFile_2_1,'Label',MenuFile_2)
-    set(handles.MenuFile_3_1,'Label',MenuFile_3)
-    set(handles.MenuFile_4_1,'Label',MenuFile_4)
-    set(handles.MenuFile_5_1,'Label',MenuFile_5)
-end
-
-% --------------------------------------------------------------------
-function MenuBrowseCampaign_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-CampaignPath=fileparts(fileparts(get(handles.RootPath,'String')));
-DirFull = uigetdir(CampaignPath,'Select a Campaign dir, then press OK');
-if ~ischar(DirFull)|| ~exist(DirFull,'dir')
-    return
-end
-OutPut=browse_data(DirFull);% open the GUI browse_data to get select a campaign dir, experiment and device
+set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
+OutPut=browse_data(get(hObject,'Label'));% open the GUI browse_data to get select a campaign dir, experiment and device
 if ~isfield(OutPut,'Campaign')
     return
 end
-DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.Device{1});
+DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
 hdir=dir(DirName); %list files and dirs
 for ilist=1:numel(hdir)
     if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
@@ -566,50 +567,8 @@ for ilist=1:numel(hdir)
         end
     end
 end
-
-%% display the selected field and related information
-set(handles.SubField,'Value',1)
-display_file_name( handles,fullfile(DirName,FileName),2)
-
-% -----------------------------------------------------------------------
-% --- Open again as second field the file whose name has been recorded in MenuFile_1
-function MenuFile_1_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput_1=get(handles.MenuFile_1_1,'Label');
-set(handles.SubField,'Value',1)
-display_file_name(handles,fileinput_1,2)
-
-% -----------------------------------------------------------------------
-% --- Open again as second field the file whose name has been recorded in MenuFile_2
-function MenuFile_2_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput_1=get(handles.MenuFile_2_1,'Label');
-set(handles.SubField,'Value',1)
-display_file_name(handles,fileinput_1,2)
-
-% -----------------------------------------------------------------------
-% --- Open again as second field the file whose name has been recorded in MenuFile_3
-function MenuFile_3_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput_1=get(handles.MenuFile_3_1,'Label');
-set(handles.SubField,'Value',1)
-display_file_name(handles,fileinput_1,2)
-
-% -----------------------------------------------------------------------
-% --- Open again as second field the file whose name has been recorded in MenuFile_4
-function MenuFile_4_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput_1=get(handles.MenuFile_4_1,'Label');
-set(handles.SubField,'Value',1)
-display_file_name(handles,fileinput_1,2)
-
-% -----------------------------------------------------------------------
-% --- Open again as second field the file whose name has been recorded in MenuFile_5
-function MenuFile_5_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-fileinput_1=get(handles.MenuFile_5_1,'Label');
-set(handles.SubField,'Value',1)
-display_file_name(handles,fileinput_1,2)
+display_file_name(handles,fullfile(DirName,FileName))
+set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
 %------------------------------------------------------------------------
 % --- Called by action in RootPath edit box
@@ -854,12 +813,12 @@ switch FileType
         end
         
         %enable other menus
-        set(handles.MenuOpen_1,'Enable','on')
-        set(handles.MenuFile_1_1,'Enable','on')
-        set(handles.MenuFile_2_1,'Enable','on')
-        set(handles.MenuFile_3_1,'Enable','on')
-        set(handles.MenuFile_4_1,'Enable','on')
-        set(handles.MenuFile_5_1,'Enable','on')
+        set(handles.MenuOpenCampaign,'Enable','on')
+%         set(handles.MenuCampaign_1,'Enable','on')
+%         set(handles.MenuCampaign_2,'Enable','on')
+%         set(handles.MenuCampaign_3,'Enable','on')
+%         set(handles.MenuCampaign_4,'Enable','on')
+%         set(handles.MenuCampaign_5,'Enable','on')
         set(handles.MenuExport,'Enable','on')
         set(handles.MenuExportFigure,'Enable','on')
         set(handles.MenuExportMovie,'Enable','on')
@@ -879,7 +838,7 @@ if isempty(find(str_find,1))
 end
 for ifile=1:min(length(MenuFile),5)
     set(handles.(['MenuFile_' num2str(ifile)]),'Label',MenuFile{ifile});
-    set(handles.(['MenuFile_' num2str(ifile) '_1']),'Label',MenuFile{ifile});
+    %set(handles.(['MenuFile_' num2str(ifile) '_1']),'Label',MenuFile{ifile});
 end
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
@@ -2569,10 +2528,10 @@ if NbDim>1
         end
     end
     UvData.Field.CoordMesh=min(Mesh);
-    UvData.Field.XMax=max(CoordMax(ind,end));
-    UvData.Field.XMin=min(CoordMin(ind,end));
-    UvData.Field.YMax=max(CoordMax(ind,end-1));
-    UvData.Field.YMin=max(CoordMin(ind,end-1));
+    UvData.Field.XMax=max(CoordMax(:,end));
+    UvData.Field.XMin=min(CoordMin(:,end));
+    UvData.Field.YMax=max(CoordMax(:,end-1));
+    UvData.Field.YMin=min(CoordMin(:,end-1));
     if NbDim==3
         UvData.Field.ZMax=max(CoordMax(ind,1));
         UvData.Field.ZMin=max(CoordMin(ind,1));
@@ -3072,15 +3031,35 @@ if get(handles.SubField,'Value')==0% if the subfield button is desactivated
     transform_fct=transform_fct_list(get(handles.TransformName,'Value'));
     if strcmp(transform_fct,'sub_field')
         set(handles.TransformName,'Value',1)%suppress the sub_field transform
-        T
-        
-        
-        ransformName_Callback(hObject, eventdata, handles); 
+        TransformName_Callback(hObject, eventdata, handles); 
     else
         run0_Callback(hObject, eventdata, handles)
     end  
 else
-    MenuBrowse_1_Callback(hObject, eventdata, handles)
+    %RootPath=get(handles.RootPath,'String');
+    %SubDir=get(handles.SubDir,'String');
+    fileinput_1=uigetfile_uvmat('select a second input file:',get(handles.RootPath,'String'));
+    if isempty(fileinput_1)
+        set(handles.SubField,'Value',0)
+    else
+        
+        % refresh the current displayed field
+        set(handles.SubField,'Value',1)
+        display_file_name(handles,fileinput_1,2)
+        
+        %update list of recent files in the menubar
+        MenuFile_1=fileinput_1;
+        MenuFile_2=get(handles.MenuFile_1,'Label');
+        MenuFile_3=get(handles.MenuFile_2,'Label');
+        MenuFile_4=get(handles.MenuFile_3,'Label');
+        MenuFile_5=get(handles.MenuFile_4,'Label');
+        set(handles.MenuFile_1,'Label',MenuFile_1)
+        set(handles.MenuFile_2,'Label',MenuFile_2)
+        set(handles.MenuFile_3,'Label',MenuFile_3)
+        set(handles.MenuFile_4,'Label',MenuFile_4)
+        set(handles.MenuFile_5,'Label',MenuFile_5)
+    end
+    %     MenuBrowse_1_Callback(hObject, eventdata, handles)
 end
 
 %------------------------------------------------------------------------
@@ -3243,7 +3222,7 @@ switch field
         end
         % display the selected field and related information
         display_file_name(handles,imagename)%display the image
-%     otherwise
+     otherwise
 %         ext=get(handles.FileExt,'String');
 %         if ~isequal(ext,'.nc') %find the new NomType if the previous display was not already a netcdf file
 %             [FileName,PathName] = uigetfile( ...
@@ -3253,32 +3232,9 @@ switch field
 %                 'Pick a netcdf file',FileBase);
 %             if ~ischar(FileName),return,end %abandon if the browser is cancelled
 %             FullFileName=[PathName FileName];
-%             % display the selected field and related information
-%             display_file_name( handles,FullFileName)
-%             return
-%         end
+            % display the selected field and related information
+             run0_Callback(hObject, eventdata, handles)
 end
-% indices=fullfile_uvmat('','','','',NomType,i1,i2,j1,j2);
-% set(handles.FileIndex,'String',indices)
-% 
-% %common to Fields_1_Callback
-% list_fields_1=get(handles.FieldName_1,'String');% list menu fields
-% field_1='';
-% if ~isempty(list_fields_1)
-%     field_1= list_fields_1{get(handles.FieldName_1,'Value')}; % selected string
-% end
-% if isequal(field,'image')||isequal(field_1,'image')
-%     set(handles.TitleNpxy,'Visible','on')% visible npx,pxcm... buttons
-%     set(handles.num_Npx,'Visible','on')
-%     set(handles.num_Npy,'Visible','on')
-% else
-%     set(handles.TitleNpxy,'Visible','off')% visible npx,pxcm... buttons
-%     set(handles.num_Npx,'Visible','off')
-%     set(handles.num_Npy,'Visible','off')
-% end
-% if ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
-%     run0_Callback(hObject, eventdata, handles)
-% end
 
 %----------------------------------------------------------------
 % --- Executes on menu selection FieldName
@@ -5239,6 +5195,25 @@ set(handles.uvmat,'UserData',UvData);
 % open the GUI 'series'
 function MenuSeries_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+Param=read_param(handles);
+series(Param); %run the series interface
+
+% --------------------------------------------------------------------
+function MenuPIV_Callback(hObject, eventdata, handles)
+    Param=read_param(handles);
+    Param.ActionName='civ_series';
+series(Param)
+
+%------------------------------------------------------------------------
+% -- open the GUI civ.fig for PIV
+function MenuCIVx_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------
+ [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+ FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
+civ(FileName);% interface de civ(not in the uvmat file)
+
+function Param=read_param(handles)
+    
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 Param.FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%first input file name
 if isequal(get(handles.SubField,'Value'),1)
@@ -5281,24 +5256,7 @@ TransformList=get(handles.TransformName,'String');
 Param.TransformName=TransformList{get(handles.TransformName,'Value')};
 Param.Coord_x_str=get(handles.Coord_x,'String');
 Param.Coord_x_val=get(handles.Coord_x,'Value');
-%Param.Coord_y_str=get(handles.Coord_y,'String');
 Param.Coord_y_str=get(handles.Coord_y,'Data');
-%Param.Coord_y_val=get(handles.Coord_y,'Value');
-series(Param); %run the series interface
-
-%------------------------------------------------------------------------
-% -- open the GUI civ.fig for PIV
-function MenuCIVx_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
- [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
- FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-civ(FileName);% interface de civ(not in the uvmat file)
-
-
-% --------------------------------------------------------------------
-function MenuPIV_Callback(hObject, eventdata, handles)
-MenuSeries_Callback(hObject, eventdata, handles)
-
 
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
@@ -5434,5 +5392,3 @@ else
         set(handles.record,'Visible','off')
     end
 end
-
-

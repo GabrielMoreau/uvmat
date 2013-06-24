@@ -152,7 +152,13 @@ if exist(profil_perso,'file')
     %get the list of previous input files in the upper bar menu Open
     if isfield(h,'MenuFile')
         for ifile=1:min(length(h.MenuFile),5)
-            eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',h.MenuFile{ifile});'])
+            set(handles.(['MenuFile_' num2str(ifile)]),'Label',h.MenuFile{ifile});
+        end
+    end
+    %get the list of previous camapigns in the upper bar menu Open campaign
+    if isfield(h,'MenuCampaign')
+        for ifile=1:min(length(h.MenuCampaign),5)
+            set(handles.(['MenuCampaign_' num2str(ifile)]),'Label',h.MenuCampaign{ifile});
         end
     end
     %get the menu of actions
@@ -224,38 +230,6 @@ if isfield(Param,'Coord_y_str')&& isfield(Param,'Coord_y_val')
     set(handles.Coord_y,'Value',Param.Coord_y_val);% selected string index
 end
 
-%% Adjust the GUI according to the binaries available in PARAM.xml
-% path_uvmat=fileparts(which('uvmat')); %path to civ
-% addpath (path_uvmat) ; %add the path to civ, (useful in case of change of working directory after civ has been s opened in the working directory)
-% errormsg=[];%default error message
-% xmlfile='PARAM.xml';
-% if exist(xmlfile,'file')
-%     try
-%         t=xmltree(xmlfile);
-%         sparam=convert(t);
-%     catch ME
-%         errormsg={' Unable to read the file PARAM.xml defining the  binaries:';ME.message};
-%     end
-% else
-%     errormsg=[xmlfile ' not found: path to binaries undefined'];
-% end
-% if ~isempty(errormsg)
-%     msgbox_uvmat('WARNING',errormsg);
-% end
-% test_batch=0;%default: ,no batch mode available
-% if isfield(sparam,'BatchParam') && isfield(sparam.BatchParam,'BatchMode')
-%     test_batch=strcmp(sparam.BatchParam.BatchMode,'sge'); %sge is currently the only implemented batch mod
-% end
-% RUNVal=get(handles.RunMode,'Value');
-% if test_batch==0
-%    if RUNVal>2
-%        set(handles.RunMode,'Value',1)
-%    end
-%    set(handles.RunMode,'String',{'local';'background'})
-% else
-%     set(handles.RunMode,'String',{'local';'background';'cluster'})
-% end
-
 %% introduce the input file name(s) if defined from input Param
 if isfield(Param,'FileName')
     InputTable={'','','','',''}; % refresh the file input table
@@ -295,131 +269,154 @@ varargout{1} = handles.output;
 % browser 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
+% --- fct activated by the browser under 'Open'
+%------------------------------------------------------------------------  
 function MenuBrowse_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------   
-%get the previous input file in the Input Table
+
+%% look for the previously opened file 'oldfile'
 oldfile=''; %default
-SeriesData=get(handles.series,'UserData');
-if isfield(SeriesData,'RefFile')
-    oldfile=SeriesData.RefFile{1};
+if get(handles.CheckAppend,'Value')
+    % case 'checkappend': new series appended to the input table
+    InputTable=get(handles.InputTable,'Data');
+    RootPathCell=InputTable(:,1);
+    SubDirCell=InputTable(:,3);
+    oldfile=''; %default
+    if ~(isempty(RootPathCell) || isequal(RootPathCell,{''}))%loads the previously stored file name and set it as default in the file_input box
+        oldfile=fullfile(RootPathCell{1},SubDirCell{1});
+    end
+else
+    % case refresh the input table by a new series
+    SeriesData=get(handles.series,'UserData');
+    if isfield(SeriesData,'RefFile')
+        oldfile=SeriesData.RefFile{1};
+    end
 end
-if ~exist(oldfile,'file')
-    dir_perso=prefdir;
-    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-    if exist(profil_perso,'file')
-         h=load (profil_perso);
-        if isfield(h,'RootPath')&&ischar(h.RootPath)
-            oldfile=h.RootPath;
+
+%% use a file name stored in prefdir
+dir_perso=prefdir;
+profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+if exist(profil_perso,'file')
+    h=load (profil_perso);
+    if isfield(h,'RootPath') && ischar(h.RootPath)
+        oldfile=h.RootPath;
+    end
+end
+
+%% launch the browser
+fileinput=uigetfile_uvmat('pick a file to append in the input table',oldfile);
+if ~isempty(fileinput)
+    if get(handles.CheckAppend,'Value')
+        display_file_name(handles,fileinput,'append')
+    else
+        display_file_name(handles,fileinput,'one')
+    end
+end
+
+%------------------------------------------------------------------------
+% --- fct activated by selecting a previous file under the menu Open
+%------------------------------------------------------------------------
+function MenuFile_Callback(hObject, eventdata, handles)
+
+fileinput=get(hObject,'Label');
+if get(handles.CheckAppend,'Value')
+    display_file_name(handles,fileinput,'append')
+else
+    display_file_name(handles,fileinput,'one')
+end
+
+%------------------------------------------------------------------------
+% --- fct activated by the browser under 'Open campaign'
+%------------------------------------------------------------------------ 
+function MenuBrowseCampaign_Callback(hObject, eventdata, handles)
+
+set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
+drawnow
+InputTable=get(handles.InputTable,'Data');
+RootPath=InputTable{1,1};
+CampaignPath=fileparts(fileparts(RootPath));
+DirFull=uigetfile_uvmat('define this path as the Campaign folder:',CampaignPath,'uigetdir');
+if ~ischar(DirFull)|| ~exist(DirFull,'dir')
+    return
+end
+OutPut=browse_data(DirFull);% open the GUI browse_data to get select a campaign dir, experiment and device
+if ~isfield(OutPut,'Campaign')
+    return
+end
+DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
+ListStruct=dir(DirName); %list files and the dir DataSeries
+% select the first appropriate file in the dir
+FileName='';
+for ilist=1:numel(ListStruct)
+    if ~isequal(ListStruct(ilist).isdir,1)%look for files, not dir
+        FileName=ListStruct(ilist).name;
+        FileType=get_file_type(fullfile(DirName,FileName));
+        switch FileType
+            case {'image','multimage','civx','civdata','netcdf'}
+                break
         end
     end
 end
-fileinput=uigetfile_uvmat('pick a file to refresh the input table',oldfile);
-if ~isempty(fileinput)
-     display_file_name(handles,fileinput,'one')
+if isempty(FileName)
+    msgbox_uvmat('ERROR',['no appropriate input file in the DataSeries folder ' fullfile(DirName)])
+    return
 end
 
-
-% --------------------------------------------------------------------
-function MenuFile_1_Callback(hObject, eventdata, handles)
-fileinput=get(handles.MenuFile_1,'Label');
-display_file_name(handles,fileinput,'one')
-
-% --------------------------------------------------------------------
-function MenuFile_2_Callback(hObject, eventdata, handles)
-fileinput=get(handles.MenuFile_2,'Label');
-display_file_name(handles,fileinput,'one')
-
-% --------------------------------------------------------------------
-function MenuFile_3_Callback(hObject, eventdata, handles)
-fileinput=get(handles.MenuFile_3,'Label');
-display_file_name( handles,fileinput,'one')
-
-% --------------------------------------------------------------------
-function MenuFile_4_Callback(hObject, eventdata, handles)
-fileinput=get(handles.MenuFile_4,'Label');
-display_file_name(handles,fileinput,'one')
-
-% --------------------------------------------------------------------
-function MenuFile_5_Callback(hObject, eventdata, handles)
-fileinput=get(handles.MenuFile_5,'Label');
-display_file_name(handles,fileinput,'one')
-
-% --------------------------------------------------------------------
-function MenuBrowse_insert_Callback(hObject, eventdata, handles)
-InputTable=get(handles.InputTable,'Data');
-RootPathCell=InputTable(:,1);
-SubDirCell=InputTable(:,3);
-RootFileCell=InputTable(:,2);
-oldfile=''; %default
-if isempty(RootPathCell)||isequal(RootPathCell,{''})%loads the previously stored file name and set it as default in the file_input box
-     dir_perso=prefdir;
-     profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-     if exist(profil_perso,'file')
-          h=load (profil_perso);
-         if isfield(h,'filebase')&ischar(h.filebase)
-                 oldfile=h.filebase;
-         end
-         if isfield(h,'RootPath')&ischar(h.RootPath) 
-                 oldfile=h.RootPath;
-         end
-     end
- else
-     oldfile=fullfile(RootPathCell{1},RootFileCell{1});
+%% update the list of campaigns in the menubar
+MenuCampaign=[{get(handles.MenuCampaign_1,'Label')};{get(handles.MenuCampaign_2,'Label')};...
+    {get(handles.MenuCampaign_3,'Label')};{get(handles.MenuCampaign_4,'Label')};{get(handles.MenuCampaign_5,'Label')}];
+check_dir=isempty(find(strcmp(DirFull,MenuCampaign)));
+if check_dir %insert the new campaign in the list if it is not found
+    MenuCampaign(end)=[]; %suppress the last item
+    MenuCampaign=[{DirFull};MenuCampaign];%insert the new campaign
+    for ilist=1:numel(MenuCampaign)
+        set(handles.(['MenuCampaign_' num2str(ilist)]),'Label',MenuCampaign{ilist})
+    end
+    % save the list for future opening:
+    dir_perso=prefdir;
+    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+    if exist(profil_perso,'file')
+        save (profil_perso,'MenuCampaign','RootPath','-append'); %store the file names for future opening of uvmat
+    else
+        save (profil_perso,'MenuCampaign','RootPath','-V6'); %store the file names for future opening of uvmat
+    end
 end
- fileinput=uigetfile_uvmat('pick a file to append in the input table',oldfile);
-if ~isempty(fileinput)
-     display_file_name(handles,fileinput,'append')
+
+%% display the selected field and related information
+if get(handles.CheckAppend,'Value')
+    display_file_name(handles,fullfile(DirName,FileName),'append')
+else
+    display_file_name(handles,fullfile(DirName,FileName),'one')
 end
-% [FileName, PathName, filterindex] = uigetfile( ...
-%        {'*.xml;*.xls;*.png;*.avi;*.AVI;*.nc', ' (*.xml,*.xls, *.png, *.avi,*.nc)';
-%        '*.xml',  '.xml files '; ...
-%         '*.xls',  '.xls files '; ...
-%         '*.png','.png image files'; ...
-%         '*.avi;*.AVI','.avi movie files'; ...
-%         '*.nc','.netcdf files'; ...
-%         '*.*',  'All Files (*.*)'}, ...
-%         'Pick a file',oldfile);
-% fileinput=[PathName FileName];%complete file name 
-% sizf=size(fileinput);
-% if (~ischar(fileinput)|~isequal(sizf(1),1)),return;end
-% [path,name,ext]=fileparts(fileinput);
-% if isequal(ext,'.xml')
-%     msgbox_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
-% elseif isequal(ext,'.xls')
-%     msgbox_uvmat('ERROR','input file type not implemented')%A Faire: ouvrir le fichier pour naviguer
-% else
-%     display_file_name(handles,fileinput,'append')
-% end
+set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
 % --------------------------------------------------------------------
-function MenuFile_insert_1_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------    
-fileinput=get(handles.MenuFile_insert_1,'Label');
-display_file_name(handles,fileinput,'append')
+function MenuCampaign_Callback(hObject, eventdata, handles)
+% -------------------------------------------------------------------- 
+set(handles.MenuOpenCampaign,'ForegroundColor',[1 1 0])
+OutPut=browse_data(get(hObject,'Label'));% open the GUI browse_data to get select a campaign dir, experiment and device
+if ~isfield(OutPut,'Campaign')
+    return
+end
+DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
+hdir=dir(DirName); %list files and dirs
+for ilist=1:numel(hdir)
+    if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
+        FileName=hdir(ilist).name;
+        FileType=get_file_type(fullfile(DirName,FileName));
+        switch FileType
+            case {'image','multimage','civx','civdata','netcdf'}
+            break
+        end
+    end
+end
+if get(handles.CheckAppend,'Value')
+    display_file_name(handles,fullfile(DirName,FileName),'append')
+else
+    display_file_name(handles,fullfile(DirName,FileName),'one')
+end
+set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
-% --------------------------------------------------------------------
-function MenuFile_insert_2_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------    
-fileinput=get(handles.MenuFile_insert_2,'Label');
-display_file_name(handles,fileinput,'append')
 
-% --------------------------------------------------------------------
-function MenuFile_insert_3_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------   
-fileinput=get(handles.MenuFile_insert_3,'Label');
-display_file_name( handles,fileinput,'append')
-
-% --------------------------------------------------------------------
-function MenuFile_insert_4_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------    
-fileinput=get(handles.MenuFile_insert_4,'Label');
-display_file_name( handles,fileinput,'append')
-
-% --------------------------------------------------------------------
-function MenuFile_insert_5_Callback(hObject, eventdata, handles)
-% --------------------------------------------------------------------    
-fileinput=get(handles.MenuFile_insert_5,'Label');
-display_file_name(handles,fileinput,'append')
 
 %------------------------------------------------------------------------
 % --- Executes when entered data in editable cell(s) in InputTable.
@@ -433,12 +430,12 @@ if isempty(find(view_set==iview))
     set(handles.REFRESH,'UserData',[view_set iview])
 end
 %% enable other menus and uicontrols
-set(handles.MenuOpen_insert,'Enable','on')
-set(handles.MenuFile_insert_1,'Enable','on')
-set(handles.MenuFile_insert_2,'Enable','on')
-set(handles.MenuFile_insert_3,'Enable','on')
-set(handles.MenuFile_insert_4,'Enable','on')
-set(handles.MenuFile_insert_5,'Enable','on')
+set(handles.MenuOpenCampaign,'Enable','on')
+set(handles.MenuCampaign_1,'Enable','on')
+set(handles.MenuCampaign_2,'Enable','on')
+set(handles.MenuCampaign_3,'Enable','on')
+set(handles.MenuCampaign_4,'Enable','on')
+set(handles.MenuCampaign_5,'Enable','on')
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
 
@@ -491,7 +488,7 @@ function display_file_name(handles,fileinput,iview)
 % fileinput: input file name, including path
 % iview: line index in the input table
 %       or 'one': refresh the list
-%       'append': add a new line to the list
+%       'checkappend': add a new line to the list
 
 %% get the input root name, indices, file extension and nomenclature NomType
 if ~exist(fileinput,'file')
@@ -520,12 +517,12 @@ elseif strcmp(FileType,'figure')
 end
 
 %% enable other menus and uicontrols
-set(handles.MenuOpen_insert,'Enable','on')
-set(handles.MenuFile_insert_1,'Enable','on')
-set(handles.MenuFile_insert_2,'Enable','on')
-set(handles.MenuFile_insert_3,'Enable','on')
-set(handles.MenuFile_insert_4,'Enable','on')
-set(handles.MenuFile_insert_5,'Enable','on')
+set(handles.MenuOpenCampaign,'Enable','on')
+set(handles.MenuCampaign_1,'Enable','on')
+set(handles.MenuCampaign_2,'Enable','on')
+set(handles.MenuCampaign_3,'Enable','on')
+set(handles.MenuCampaign_4,'Enable','on')
+set(handles.MenuCampaign_5,'Enable','on')
 set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
 set(handles.InputTable,'BackgroundColor',[1 1 0]) % set RootPath edit box  to yellow
@@ -594,7 +591,6 @@ if isempty(find(str_find,1))
 end
 for ifile=1:min(length(MenuFile),5)
     eval(['set(handles.MenuFile_' num2str(ifile) ',''Label'',MenuFile{ifile});'])
-    eval(['set(handles.MenuFile_insert_' num2str(ifile) ',''Label'',MenuFile{ifile});'])
 end
 dir_perso=prefdir;
 profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
@@ -730,14 +726,14 @@ set(handles.num_last_j,'String',num2str(last_j));
 
 %% number of slices set by default
 NbSlice=1;%default
-% read  value set by the first series for the append mode (iwiew >1)
+% read  value set by the first series for the checkappend mode (iwiew >1)
 if iview>1 && strcmp(get(handles.num_NbSlice,'Visible'),'on')
     NbSlice=str2num(get(handles.num_NbSlice,'String'));
 end
 
 %% default time unit
 TimeUnit='';
-% read  value set by the first series for the append mode (iwiew >1)
+% read  value set by the first series for the checkappend mode (iwiew >1)
 if iview>1 
     TimeUnit=get(handles.TimeUnit,'String');
 end

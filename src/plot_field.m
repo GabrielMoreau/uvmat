@@ -352,8 +352,8 @@ if isempty(data)
 end
 
 %% set the colors of the successive plots (designed to produce rgb for the three components of color images)
-ColorOrder=[1 0 0;0 0.5 0;0 0 1;0 0.75 0.75;0.75 0 0.75;0.75 0.75 0;0.25 0.25 0.25];
-set(haxes,'ColorOrder',ColorOrder)
+ColorOrder=[1 0 0;0 1 0;0 0 1;0 0.75 0.75;0.75 0 0.75;0.75 0.75 0;0.25 0.25 0.25];
+set(hfig,'DefaultAxesColorOrder',ColorOrder)
 % if isfield(Coordinates,'NextPlot')
 %     set(haxes,'NextPlot',Coordinates.NextPlot)
 % end
@@ -458,7 +458,8 @@ if  ~isequal(plotstr,'hhh=plot(')
     plotstr=[plotstr '''tag'',''plot_line'');'];   
     eval(plotstr)                  %execute plot (instruction  plotstr)
     %%%
-    set(haxes,'tag',tag)
+    set(haxes,'tag',tag)% restitute the axes tag (removed by the command plot)
+    set(haxes,'ColorOrder',ColorOrder)% restitute the plot color order (to get red green blue for histograms or cuts of color images)
     grid(haxes, 'on')
     hxlabel=xlabel(xtitle(1:end-2));% xlabel (removes ', ' at the end)
     set(hxlabel,'Interpreter','none')% desable tex interpreter

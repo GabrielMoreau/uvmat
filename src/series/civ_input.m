@@ -55,8 +55,9 @@ function civ_input_OpeningFcn(hObject, eventdata, handles, Param)
 handles.output = Param;
 guidata(hObject, handles); % Update handles structure
 set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with right button (zoom for uicontrol display)
-SeriesData.ParentHandle=gcbf;
-SeriesData=get(gcbf,'UserData');
+hseries=findobj(allchild(0),'Tag','series');
+SeriesData.ParentHandle=hseries;
+SeriesData=get(hseries,'UserData');
 % relevant data in gcbf:.FileType,.FileInfo,.Time,.TimeUnit,.GeometryCalib{1};
 
 %% set visibility options: case civ_matlab
@@ -1943,6 +1944,7 @@ end
 %     set(handles.num_subdomainsize,'Visible','on')
 %     set(handles.num_FieldSmooth,'Visible','on')
 % else
+
 %     set(handles.num_subdomainsize,'Visible','off')
 %     set(handles.num_FieldSmooth,'Visible','off')
 % end
@@ -1954,17 +1956,28 @@ function TestCiv1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 drawnow
 if get(handles.TestCiv1,'Value')
-    set(handles.TestCiv1,'BackgroundColor',[0.7 0.7 0.7])% paint TestCiv1 button to grey to confirm civ launch
+    set(handles.TestCiv1,'BackgroundColor',[1 1 0])% paint TestCiv1 button to yellow to confirm civ launch
     ref_i=str2double(get(handles.ref_i,'String'));% read reference i index
     if strcmp(get(handles.ref_j,'Visible'),'on')
         ref_j=str2double(get(handles.ref_j,'String'));% read reference j index if relevant
     else
         ref_j=1;%default j index
     end
-    [filecell,i1,i2]=set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);% get the corresponding file name and indices
+   % [filecell,i1,i2]=set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);% get the corresponding file name and indices
     Data.ListVarName={'ny','nx','A'};
     Data.VarDimName= {'ny','nx',{'ny','nx'}};
-
+    hseries=findobj(allchild(0),'Tag','series');
+    hhseries=guidata(hseries);
+    InputTable=get(hhseries.InputTable,'Data');
+    ind_A=1;
+    if strcmp(InputTable{1,5},'.nc');
+        ind_A=2;
+    end
+    [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
+            find_pair_indices(PairCiv1,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
+ 
+    ImageName_A=fullfile_uvmat(InputTable{ind_A,1},InputTable{ind_A,2},InputTable{ind_A,3},InputTable{ind_A,5},InputTable{ind_A,4},...
+        ref_i,[],ref_j);
     Data.A=imread(filecell.ima1.civ1{1}); % read the first image
     if ndims(Data.A)==3 %case of color image
         Data.VarDimName= {'ny','nx',{'ny','nx','rgb'}};

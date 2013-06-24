@@ -1,18 +1,18 @@
 %'set_subdomains': sort a set of points defined by scattered coordinates in subdomains, as needed for tps interpolation
 %------------------------------------------------------------------------
-% [SubRange,NbSites,IndSelSubDomain] =set_subdomains(Coord,SubDomainNbPoint)
+% [SubRange,NbCentre,IndSelSubDomain] =set_subdomains(Coord,SubDomainNbPoint)
 %
 % OUTPUT:
 % SubRange(NbCoord,NbSubdomain,2): range (min, max) of the coordinates x and y respectively, for each subdomain
-% NbSites(NbSubdomain): number of source points for each subdomain
+% NbCentre(NbSubdomain): number of source points for each subdomain
 % IndSelSubDomain(SubDomainNbPointMax,NbSubdomain): set of indices of the input point array
-% selected in each subdomain, =0 beyond NbSites points
+% selected in each subdomain, =0 beyond NbCentre points
 %
 % INPUT:
 % coord=[X Y]: matrix whose first column is the x coordinates of the input data points, the second column the y coordinates
 % SubdomainNbPoint: estimated number of data points whished for each subdomain
 
-function [SubRange,NbSites,IndSelSubDomain] =set_subdomains(Coord,SubDomainNbPoint)
+function [SubRange,NbCentre,IndSelSubDomain] =set_subdomains(Coord,SubDomainNbPoint)
 
 %% adjust subdomain decomposition
 NbVec=size(Coord,1);
@@ -35,7 +35,7 @@ CentreX=reshape(CentreX,1,[]);% X positions of subdomain centres
 
 %% default output
 SubRange=zeros(NbCoord,2,NbSubDomain);%initialise the positions of subdomains
-NbSites=zeros(NbSubDomain);%number of interpolated values per subdomain, =0 by default
+NbCentre=zeros(1,NbSubDomain);%number of interpolated values per subdomain, =0 by default
 %Coord_tps=zeros(NbVec,NbCoord,NbSubDomain);% default positions of the tps source= initial positions of the good vectors sorted by subdomain
 check_empty=zeros(1,NbSubDomain);
 
@@ -60,8 +60,8 @@ for isub=1:NbSubDomain
             break
         end
     end
-    NbSites(isub)=numel(IndSel);
-    IndSelSubDomain(:,isub)=IndSel;
+    NbCentre(isub)=numel(IndSel);
+    IndSelSubDomain(1:numel(IndSel),isub)=IndSel;
 end
 
 
@@ -69,7 +69,7 @@ end
 ind_empty=find(check_empty);
 if ~isempty(ind_empty)
     SubRange(:,:,ind_empty)=[];
-    NbSites(ind_empty)=[];
+    NbCentre(ind_empty)=[];
     IndSelSubDomain(:,ind_empty)=[];
 end
 

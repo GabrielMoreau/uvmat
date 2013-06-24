@@ -14,6 +14,7 @@
 %          '*' (default) all files displayed
 %          'image': any image or movie
 %          '.ext': display only files with extension '.ext'
+%          'uigetdir'; browser used to select a directory (like the matlab browser 'uigetdir')
 
 function fileinput=uigetfile_uvmat(title,InputName,FilterExt)
 if ~exist('FilterExt','var')
@@ -51,58 +52,116 @@ if isempty(hfig)
     ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
     Width=350;% fig width in points (1/72 inch)
     Height=min(0.8*ScreenSize(4),500);
-    Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40 
+    Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
     Bottom=ScreenSize(4)-Height-40; %put fig at top right
     hfig=figure('name',option,'tag',option,'MenuBar','none','NumberTitle','off','Unit','points','Position',[Left,Bottom,Width,Height],'UserData',InputDir);
     BackgroundColor=get(hfig,'Color');
-    uicontrol('Style','text','Units','normalized', 'Position', [0.05 0.97 0.5 0.03],'BackgroundColor',BackgroundColor,...
-            'String','path:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
-    uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.89 0.9 0.08],'tag','titlebox','Max',2,'BackgroundColor',[1 1 1],'Callback',@titlebox_Callback,...
-        'String',InputDir,'FontUnits','points','FontSize',12,'FontWeight','bold');
-    uicontrol('Style','pushbutton','Tag','backward','Units','normalized','Position',[0.05 0.75 0.1 0.07],...
-            'String','<--','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@backward);
-    uicontrol('Style','togglebutton','Units','normalized', 'Position', [0.75 0.75 0.2 0.04],'tag','check_date','Callback',@dates_Callback,...
-            'String','dates','FontUnits','points','FontSize',12,'FontWeight','bold');
-    uicontrol('Style','text','Units','normalized', 'Position', [0.4 0.8 0.35 0.03],'BackgroundColor',BackgroundColor,...
-            'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
-    uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.75 0.8 0.2 0.04],'tag','sort_option','Callback',@refresh_GUI,'Visible','off',...
-            'String',{'name';'date'},'FontUnits','points','FontSize',12,'FontWeight','bold');   
-    uicontrol('Style','listbox','Units','normalized', 'Position',[0.05 0.08 0.9 0.66], 'Callback', @(src,event)list_Callback(option,FilterExt,src,event),'tag','list',...
-        'FontUnits','points','FontSize',12);
-    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.7 0.005 0.2 0.07],'Callback',@(src,event)close(option,src,event),...
+    path_title=uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.97 0.9 0.03],'BackgroundColor',BackgroundColor,'Tag','Path_title',...
+        'String','path:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
+    htitlebox=uicontrol('Style','edit','Units','normalized', 'Position', [0.02 0.89 0.96 0.08],'tag','titlebox','Max',2,'BackgroundColor',[1 1 1],'Callback',@titlebox_Callback,...
+        'String',InputDir,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''titlebox'':current path');
+    uicontrol('Style','pushbutton','Tag','backward','Units','normalized','Position',[0.02 0.77 0.1 0.05],...
+        'String','<--','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@backward,'TooltipString','move backward');
+    home_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.35 0.005 0.3 0.07],...
+        'String','Work dir','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@home_dir,'TooltipString','reach the current Matlab working directory');
+    
+    uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.75 0.75 0.23 0.04],'tag','sort_option','Callback',@refresh_GUI,'Visible','off',...
+        'String',{'sort name';'sort date'},'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''sort_option'': sort the files by names or dates');
+    uicontrol('Style','listbox','Units','normalized', 'Position',[0.02 0.08 0.96 0.66], 'Callback', @(src,event)list_Callback(option,FilterExt,src,event),'tag','list',...
+        'FontUnits','points','FontSize',12,'TooltipString','''list'':current list of directories, marked by +/, and files');
+    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.78 0.005 0.2 0.07],'Callback',@(src,event)close(option,src,event),...
         'String','Close','FontWeight','bold','FontUnits','points','FontSize',12);
-    uicontrol('Style','pushbutton','Tag','refresh','Units','normalized','Position', [0.1 0.005 0.2 0.07],'Callback',@refresh_GUI,...
+    uicontrol('Style','pushbutton','Tag','refresh','Units','normalized','Position', [0.02 0.005 0.2 0.07],'Callback',@refresh_GUI,...
         'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',12);
+    OK_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.75 0.81 0.23 0.07],'BackgroundColor',[0 1 0],...
+        'String','OK','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@(src,event)OK_Callback(option,FilterExt,src,event));
     %set(hrefresh,'UserData',StatusData)
     if strcmp(option,'status_display') %put a run advancement display
         set(hfig,'DeleteFcn',@(src,event)close(option,src,event))
-              uicontrol('Style','frame','Units','normalized', 'Position', [0.05 0.85 0.9 0.04]);
-        uicontrol('Style','frame','Units','normalized', 'Position',[0.05 0.85 0.01 0.04],'BackgroundColor',[1 0 0],'tag','waitbar');
-
+        uicontrol('Style','frame','Units','normalized', 'Position', [0.02 0.85 0.9 0.04]);
+        uicontrol('Style','frame','Units','normalized', 'Position',[0.02 0.85 0.01 0.04],'BackgroundColor',[1 0 0],'tag','waitbar');
+        %             uicontrol('Style','text','Units','normalized', 'Position', [0.4 0.8 0.35 0.03],'BackgroundColor',BackgroundColor,...
+        %             'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
+        delete(home_button)
+        set(OK_button,'String','OPEN')
+    elseif strcmp(FilterExt,'uigetdir') %pick a  directory
+        set(path_title,'String',title); %show the input title for path (directory)
     else  %put a title and additional pushbuttons
-        uicontrol('Style','text','Units','normalized', 'Position', [0.15 0.75 0.6 0.03],'BackgroundColor',BackgroundColor,...
+        uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.74 0.6 0.03],'BackgroundColor',BackgroundColor,...
             'String',title,'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
-
-        uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.4 0.005 0.2 0.07],...
-            'String','Home','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@home_dir);
+        uicontrol('Style','togglebutton','Units','normalized', 'Position', [0.75 0.78 0.23 0.04],'tag','check_date','Callback',@dates_Callback,...
+            'String','show dates','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''check_date'':press button to display dates');
+%         uicontrol('Style','text','Units','normalized', 'Position', [0.37 0.8 0.35 0.03],'BackgroundColor',BackgroundColor,...
+%             'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
+        
     end
     drawnow
 end
-refresh_GUI(findobj(hfig,'Tag','refresh'),InputFileName,FilterExt)% refresh the list of content of the current dir  
-if ~strcmp(option,'status_display')  
+refresh_GUI(findobj(hfig,'Tag','refresh'),InputFileName,FilterExt)% refresh the list of content of the current dir
+if ~strcmp(option,'status_display')
     uiwait(hfig)
     if ishandle(hfig)
-    htitlebox=findobj(hfig,'Tag','titlebox');
-    fileinput=get(htitlebox,'String');% retrieve the input file selection
-    delete(hfig)
+        htitlebox=findobj(hfig,'Tag','titlebox');
+        fileinput=get(htitlebox,'String');% retrieve the input file selection
+        delete(hfig)
     end
 end
 
 %------------------------------------------------------------------------   
 % --- launched by refreshing the display figure
+%------------------------------------------------------------------------
 function titlebox_Callback(hObject,event)
 refresh_GUI(hObject)
+
+%------------------------------------------------------------------------   
+% --- launched by selecting OK (relevant for FilterExt='uigetdir')
 %------------------------------------------------------------------------
+function OK_Callback(option,filter_ext,hObject,event)
+hfig=get(hObject,'parent');%handle of the fig
+% if ~strcmp(get(hfig,'SelectionType'),'open')
+%     return %select double click
+% end
+%set(hObject,'BackgroundColor',[1 1 0])% paint list in yellow to indicate action
+%     drawnow
+htitlebox=findobj(hfig,'tag','titlebox');  % display the current dir name  
+DirName=get(htitlebox,'String');
+
+if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
+    hlist=findobj(hfig,'Tag','list');
+    list=get(hlist,'String');
+    index=get(hlist,'Value');
+    SelectName=regexprep(list{index},'^\+/','');% remove the +/ used to mark dir
+    ind_dot=regexp(SelectName,'\s*\.\.\.');%remove what is beyond  '...'
+    if ~isempty(ind_dot)
+        SelectName=SelectName(1:ind_dot-1);
+    end
+    % if strcmp(SelectName,'..')% the upward dir option has been selected
+    %     FullSelectName=fileparts(DirName);
+    % else
+    FullSelectName=fullfile(DirName,SelectName);
+    % end
+    if exist(FullSelectName,'file')
+        switch option
+            case 'browser'
+                set(htitlebox,'String',FullSelectName);
+                uiresume(hfig)
+            case 'status_display'
+                FileType=get_file_type(FullSelectName);
+                if strcmp(FileType,'txt')
+                    edit(FullSelectName)
+                elseif strcmp(FileType,'xml')
+                    editxml(FullSelectName)
+                elseif strcmp(FileType,'figure')
+                    open(FullSelectName)
+                else
+                    uvmat(FullSelectName);
+                end
+        end
+    end
+end
+%set(hObject,'BackgroundColor',[0.7 0.7 0.7])% paint list in grey to indicate action end
+
+uiresume(get(hObject,'parent'))
 
 %------------------------------------------------------------------------   
 % --- launched by refreshing the display figure
@@ -112,6 +171,9 @@ if ~exist('InputFileName','var')
     InputFileName='';
 end
 if ~exist('FilterExt','var')
+    FilterExt='*';
+end
+if strcmp(FilterExt,'uigetdir')
     FilterExt='*';
 end
 hfig=get(hObject,'parent');
@@ -164,10 +226,12 @@ if isempty(Value)
 end
 set(hlist,'Value',Value)
 set(hlist,'BackgroundColor',[0.7 0.7 0.7])
+
 %------------------------------------------------------------------------   
 % --- launched by selecting an item on the file list
-function dates_Callback(hObject,event)
 %------------------------------------------------------------------------
+function dates_Callback(hObject,event)
+
 hfig=get(hObject,'parent');
 hsort_option=findobj(hfig,'tag','sort_option');
 if get(hObject,'Value')
@@ -177,6 +241,7 @@ else
     set(hsort_option,'Visible','off')
 end
 refresh_GUI(hObject,[])
+
 
 %------------------------------------------------------------------------   
 % --- launched by selecting an item on the file list
@@ -204,16 +269,6 @@ else
     FullSelectName=fullfile(DirName,SelectName);
 end
 if exist(FullSelectName,'dir')% a directory has been selected
-    %     ListFiles=dir(FullSelectName);
-    %     ListDisplay=cell(numel(ListFiles),1);
-    %     for ilist=2:numel(ListDisplay)% suppress the first line '.'
-    %         ListDisplay{ilist-1}=ListFiles(ilist).name;
-    %     end
-    %     set(hObject,'Value',1)
-    %     set(hObject,'String',ListDisplay)
-    %     if strcmp(selectname,'..')
-    %         FullSelectName=fileparts(fileparts(FullSelectName));
-    %     end
     set(hObject,'BackgroundColor',[1 1 0])% paint list in yellow to indicate action
     drawnow
     hbackward=findobj(hfig,'Tag','backward');
@@ -230,23 +285,6 @@ if exist(FullSelectName,'dir')% a directory has been selected
     set(hObject,'String',ListFiles)
     set(hObject,'BackgroundColor',[0.7 0.7 0.7])
     set(htitlebox,'String',FullSelectName)% record the new dir name
-elseif exist(FullSelectName,'file')%visualise the field if it exists  
-    switch option
-        case 'browser'
-            set(htitlebox,'String',FullSelectName);
-            uiresume(hfig)
-        case 'status_display'
-            FileType=get_file_type(FullSelectName);
-            if strcmp(FileType,'txt')
-                edit(FullSelectName)
-            elseif strcmp(FileType,'xml')
-                editxml(FullSelectName)
-            elseif strcmp(FileType,'figure')
-                open(FullSelectName)
-            else
-                uvmat(FullSelectName);
-            end
-    end
 end
 set(hObject,'BackgroundColor',[0.7 0.7 0.7])% paint list in grey to indicate action end
 
@@ -264,7 +302,7 @@ ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
 ListFiles=ListCells(1,:);%list of file names
 check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
 ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
-if exist('filter_ext','var') && ~strcmp(filter_ext,'*')
+if exist('filter_ext','var') && ~strcmp(filter_ext,'*') &&~strcmp(filter_ext,'uigetdir')
     if strcmp(filter_ext,'image')
         check_keep=cellfun(@isimage,ListFiles) ;
     elseif strcmp(filter_ext(1),'.')
@@ -276,6 +314,8 @@ if exist('filter_ext','var') && ~strcmp(filter_ext,'*')
     ListCells=ListCells(:,check_keep);
     check_dir=check_dir(check_keep);
 end
+check_emptydate=cellfun('isempty',ListCells(5,:));% = 1 if datenum undefined 
+ListCells(5,find(check_emptydate))={0}; %set to 0 the empty dates
 ListDates=cell2mat(ListCells(5,:));%list of numerical dates
 if isnumeric(sort_option)
     check_old=ListDates<sort_option-1;% -1 is put to account for a 1 s delay in the record of starting time

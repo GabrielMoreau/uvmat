@@ -1,9 +1,12 @@
-%'tps_coeff_field': calculate the thin plate spline (tps) coefficients with subdomains for a field structure
+%'tps_coeff_field': calculate the thin plate spline (tps) coefficients within subdomains for a field structure
 %---------------------------------------------------------------------
 % DataOut=tps_coeff_field(DataIn,checkall) 
 %
 % OUTPUT:
-% DataOut: output field structure
+% DataOut: output field structure, reproducing the input field structure DataIn and adding the fields:
+%         .Coord_tps
+%         .[VarName '_tps'] for each eligible input variable VarName (scalar ofr vector components)
+% errormsg: error message, = '' by default
 %
 % INPUT:
 % DataIn: intput field structure
@@ -71,7 +74,7 @@ for icell=1:numel(CellInfo);
                 term=['_' num2str(nbtps-1)];
             end
             ListNewVar=cell(1,numel(VarIndexInterp)+3);
-            ListNewVar(1:3)={['SubRange' term],['NbCentres' term],['Coord_tps' term]};
+            ListNewVar(1:3)={['SubRange' term],['NbCentre' term],['Coord_tps' term]};
             for ilist=1:numel(VarIndexInterp)
                 ListNewVar{ilist+3}=[ListVarInterp{ilist} '_tps' term];
             end
@@ -81,12 +84,14 @@ for icell=1:numel(CellInfo);
             DataOut.VarDimName=[DataIn.VarDimName {{'nb_coord','nb_bounds',['nb_subdomain' term]}} {['nb_subdomain' term]} ...
                 {{['nb_tps' term],'nb_coord',['nb_subdomain' term]}}];
             DataOut.VarAttribute{nbvar+3}.Role='coord_tps';
-            [SubRange,NbCentres,IndSelSubDomain] =set_subdomains([X Y],SubDomainNbPoint);% create subdomains for tps
+            [SubRange,NbCentre,IndSelSubDomain] =set_subdomains([X Y],SubDomainNbPoint);% create subdomains for tps
             for isub=1:size(SubRange,3)
-                ind_sel=IndSelSubDomain(1:NbCentres(isub),isub);% array indices selected for the subdomain
-                Coord_tps=[X(ind_sel) Y(ind_sel)];
-                fill=zeros(NbCoord+1,NbCoord,size(SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
-                Coord_tps=cat(1,Coord_tps,fill);
+                ind_sel=IndSelSubDomain(1:NbCentre(isub),isub);% array indices selected for the subdomain
+                DataOut.(['Coord_tps' term])(1:NbCentre(isub),1:2,isub)=[X(ind_sel) Y(ind_sel)];
+                DataOut.(['Coord_tps' term])(NbCentre(isub)+1:NbCentre(isub)+3,1:2,isub)=0;%matrix of zeros to complement the matrix Coord_tps (conveninent for file storage)
+                %fill=zeros(NbCoord+1,NbCoord,size(SubRange,3)); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
+%                 fill=zeros(NbCoord+1,NbCoord+1,NbCoord); %matrix of zeros to complement the matrix Data.Civ1_Coord_tps (conveninent for file storage)
+%                 Coord_tps=cat(1,Coord_tps,fill);
             end         
             for ivar=1:numel(VarIndexInterp)
                 DataOut.VarDimName{nbvar+3+ivar}={['nb_tps' term],['nb_subdomain' term]};
@@ -105,12 +110,13 @@ for icell=1:numel(CellInfo);
                 DataOut=rmfield(DataOut,'DimValue');
             end
             DataOut.(['SubRange' term])=SubRange;
-            DataOut.(['NbCentres' term])=NbCentres;
-            DataOut.(['Coord_tps' term])=Coord_tps;
+            DataOut.(['NbCentre' term])=NbCentre;
+%             DataOut.(['Coord_tps' term])=Coord_tps;
             for ilist=1:numel(VarIndexInterp)
+%                 Var_tps=zeros(size(IndSelSubDomain)+[NbCoord+1 0]);%default spline
                 for isub=1:size(SubRange,3)
-                    Var_tps=zeros(size(IndSelSubDomain)+[NbCoord+1 0]);%default spline
-                    [tild,Var_tps(:,isub)]=tps_coeff([X(ind_sel) Y(ind_sel)],DataIn.(ListVarInterp{ilist}),0);%calculate the tps coeff in the subdomain
+                    ind_sel=IndSelSubDomain(1:NbCentre(isub),isub);% array indices selected for the subdomain
+                    [tild,Var_tps(1:NbCentre(isub)+NbCoord+1,isub)]=tps_coeff([X(ind_sel) Y(ind_sel)],DataIn.(ListVarInterp{ilist})(ind_sel),0);%calculate the tps coeff in the subdomain
                 end
                 DataOut.(ListNewVar{ilist+3})=Var_tps;
             end

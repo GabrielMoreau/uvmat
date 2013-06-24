@@ -1,20 +1,25 @@
 
 %'calc_field_tps': defines fields (velocity, vort, div...) from civ data and calculate them with tps interpolation
 %---------------------------------------------------------------------
-% [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord_tps,NbSites,SubRange,FieldVar,FieldName,Coord_interp)
+% [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord_tps,NbCentre,SubRange,FieldVar,FieldName,Coord_interp)
 %
 % OUTPUT:
 % DataOut: structure representing the output fields
 %
 % INPUT:
-% Coord_tps:
-% NbSites
-% SubRange
-% FieldVar
-% FieldName: cell array representing the list of operations (eg div, rot..)
-% Coord_interp: coordiantes of sites on which the fields need to be calculated
+% Coord_tps: coordinates of the centres, of dimensions [nb_point,nb_coord,nb_subdomain], where 
+%            nb_point is the max number of data point in a subdomain,
+%            nb_coord the space dimension, 
+%            nb_subdomain the nbre of subdomains used for tps
+% NbCentre: nbre of tps centres for each subdomain, of dimension nb_subdomain
+% SubRange: coordinate range for each subdomain, of dimensions [nb_coord,2,nb_subdomain]
+% FieldVar: cell array of list of variables needed to calculate the requested fields
+% FieldName: cell array representing the list of operations (eg div(U,V), rot(U,V))
+% Coord_interp: coordinates of sites on which the fields need to be calculated of dimensions 
+%            [nb_site,nb_coord] for an array of interpolation sites
+%            [nb_site_y,nb_site_x,nb_coord] for interpolation on a plane grid of size [nb_site_y,nb_site_x]
 
-function [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord_tps,NbSites,SubRange,FieldVar,FieldName,Coord_interp)
+function [DataOut,VarAttribute,errormsg]=calc_field_tps(Coord_tps,NbCentre,SubRange,FieldVar,FieldName,Coord_interp)
 
 %list of defined scalars to display in menus (in addition to 'ima_cor').
 % a type is associated to each scalar:
@@ -67,7 +72,7 @@ VarAttribute=[VarAttribute {Attr_FF}];
 
 %% loop on subdomains
 for isub=1:NbSubDomain
-    nbvec_sub=NbSites(isub);
+    nbvec_sub=NbCentre(isub);
     check_range=(Coord_interp >=ones(nb_sites,1)*SubRange(:,1,isub)' & Coord_interp<=ones(nb_sites,1)*SubRange(:,2,isub)');
     ind_sel=find(sum(check_range,2)==nb_coord);
     nbval(ind_sel)=nbval(ind_sel)+1;% records the number of values for eacn interpolation point (in case of subdomain overlap)

@@ -1052,8 +1052,8 @@ for icell=1:length(CellInfo)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     switch CellInfo{icell}.CoordType
         
-        %% case of input fields with unstructured coordinates
         case 'scattered'
+        %% case of input fields with unstructured coordinates (applies for projMode ='projection' or 'interp_lin')
             if strcmp(ProjMode{icell},'interp_tps')
                 continue %skip for next cell (needs tps field cell)
             end
@@ -1072,14 +1072,13 @@ for icell=1:length(CellInfo)
             end
             
             % selection of the vectors in the projection range (3D case)
-            if check3D&&  width > 0
+            if check3D &&  width > 0
                 %components of the unitiy vector normal to the projection plane
                 fieldZ=norm_plane(1)*coord_x + norm_plane(2)*coord_y+ norm_plane(3)*coord_z;% distance to the plane
                 indcut=find(abs(fieldZ) <= width);
                 for ivar=VarIndex
                     VarName=FieldData.ListVarName{ivar};
-                    eval(['FieldData.' VarName '=FieldData.' VarName '(indcut);'])
-                    % A VOIR : CAS DE VAR STRUCTUREE MAIS PAS GRILLE REGULIERE : INTERPOLER SUR GRILLE REGULIERE
+                    FieldData.(VarName)=FieldData.(VarName)(indcut);
                 end
                 coord_x=coord_x(indcut);
                 coord_y=coord_y(indcut);
@@ -1137,7 +1136,7 @@ for icell=1:length(CellInfo)
                 end
             end
             
-            % different cases of projection
+            % two cases of projection
             switch ProjMode{icell}
                 case 'projection'  
                     nbvar=numel(ProjData.ListVarName);
@@ -1173,33 +1172,6 @@ for icell=1:length(CellInfo)
                             FieldData.(VarName)=FieldData.(VarName)(indsel);
                         end
                     end
-%                     testFF=0;
-%                     nbvar=numel(ProjData.ListVarName);                            
-%                     if isfield(CellInfo{icell},'VarIndex_vector_x')&&isfield(CellInfo{icell},'VarIndex_vector_y')
-%                         VarName_x=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_x};
-%                         VarName_y=FieldData.ListVarName{CellInfo{icell}.VarIndex_vector_y};
-%                         if isfield(CellInfo{icell},'VarIndex_errorflag')
-%                             FieldData.(VarName_x)=FieldData.(VarName_x)(indsel);
-%                             FieldData.(VarName_y)=FieldData.(VarName_y)(indsel);
-%                         end
-%                         %FieldVar=cat(2,FieldData.(VarName_x),FieldData.(VarName_y));
-%                         if ~isfield(CellInfo{icell},'CheckSub') || ~CellInfo{icell}.CheckSub
-%                             vector_x_proj=numel(ProjData.ListVarName)+1;
-%                             vector_y_proj=numel(ProjData.ListVarName)+2;
-%                         end
-%                     end
-%                     if isfield(CellInfo{icell},'VarIndex_scalar')
-%                         VarName_scalar=FieldData.ListVarName{CellInfo{icell}.VarIndex_scalar};
-%                         if isfield(CellInfo{icell},'errorflag') && ~isempty(CellInfo{icell}.errorflag)
-%                             FieldData.(VarName_scalar)=FieldData.(VarName_scalar)(indsel);
-%                         end
-%                     end
-%                     if isfield(CellInfo{icell},'VarIndex_ancillary')% do not project ancillary data with interp
-%                         FieldData=rmfield(FieldData,FieldData.ListVarName{CellInfo{icell}.VarIndex_ancillary});
-%                     end
-%                     if isfield(CellInfo{icell},'VarIndex_warnflag')% do not project ancillary data with interp
-%                         FieldData=rmfield(FieldData,FieldData.ListVarName{CellInfo{icell}.VarIndex_warnflag});
-%                     end
                     % interpolate and calculate field on the grid
                     [VarVal,ListFieldProj,VarAttribute,errormsg]=calc_field_interp([coord_X coord_Y],FieldData,CellInfo{icell}.FieldName,XI,YI);
                     
@@ -1222,8 +1194,8 @@ for icell=1:length(CellInfo)
                     end
             end
 
-            %% case of tps interpolation (applies only in interp_tps mode and for spatial derivatives)
         case 'tps'
+        %% case of tps data (applies only in interp_tps mode)
             if strcmp(ProjMode{icell},'interp_tps')
                 Coord=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex});
                 NbCentres=FieldData.(FieldData.ListVarName{CellInfo{icell}.NbCentres_tps});

@@ -120,8 +120,9 @@ SourceDir=get(handles.SourceDir,'String');
 if strcmp(get(handles.MirrorDir,'Visible'),'on')
     MirrorDir=get(handles.MirrorDir,'String');
 else
-    MirrorRoot=uigetdir('','select the dir which must contain the mirror directory, then press OK'); %file browser
-    if ~ischar(MirrorRoot)
+    MirrorRoot=uigetfile_uvmat('select the folder which must contain the mirror directory:',SourcePath,'uigetdir');
+%     MirrorRoot=uigetdir('','select the dir which must contain the mirror directory, then press OK'); %file browser
+    if isempty(MirrorRoot)
         return
     else
         MirrorDir=fullfile(MirrorRoot,ProjectName);
@@ -147,12 +148,11 @@ if exist(SourceDir,'dir')
             dirname=hdir(ilist).name;
             if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')
                 idir=idir+1;
-                ExpName{idir}=hdir(ilist).name;
-
-                mirror=fullfile(MirrorDir,ExpName{idir});
+                mirror=fullfile(MirrorDir,hdir(ilist).name);
                 if ~exist(mirror,'dir')
                    mkdir(mirror)
                 end
+                ExpName{idir}=['+/' hdir(ilist).name];
             end
             % look for the list of 'devices'
         else
@@ -185,20 +185,17 @@ function scan_campaign(handles,Campaign)
 drawnow
 %SourceDir=get(handles.SourceDir,'String');
 %MirrorDir=get(handles.MirrorDir,'String');
-ExpName={''};
+% ExpName={''};
 if exist(Campaign,'dir')
-    hdir=dir(Campaign); %list files and dirs
-    idir=0;
-    for ilist=1:length(hdir)
-        if hdir(ilist).isdir
-            dirname=hdir(ilist).name;
-            if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')
-                idir=idir+1;
-                ExpName{idir}=hdir(ilist).name;
-            end
-        end
-    end
-    set(handles.ListExperiments,'String',[{'*'};ExpName'])
+    ListStruct=dir(Campaign); %list files and dirs
+    ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+    ListFiles=ListCells(1,:);%list of dir and file  names
+    check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+    ListFiles(check_dir)=regexprep(ListFiles(check_dir),'^.+','+/$0');% put '+/' in front of dir name display
+    cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
+    check_keep=cellfun('isempty', cell_remove);
+    ListFiles=sort((ListFiles(check_keep))');
+    set(handles.ListExperiments,'String',[{'*'};ListFiles])
     set(handles.ListExperiments,'Value',1)
     ListExperiments_Callback([],[], handles)
 else
@@ -209,108 +206,66 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListExperiments.
- function ListExperiments_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+ function ListExperiments_Callback(hObject, eventdata, handles)
+
 MirrorPath='';
 CampaignPath=get(handles.SourceDir,'String');
 if strcmp(get(handles.MirrorDir,'Visible'),'on')
-%     CampaignPath=get(handles.MirrorDir,'String');
     MirrorPath=get(handles.MirrorDir,'String');
-else
-%     CampaignPath=get(handles.SourceDir,'String');
 end
-% MirrorPath=get(handles.MirrorDir,'String');
 ListExperiments=get(handles.ListExperiments,'String');
 list_val=get(handles.ListExperiments,'Value');
 if isequal(list_val(1),1)
     ListExperiments=ListExperiments(2:end); %choose all experiments
-    testList=1;
     set(handles.ListExperiments,'Value',1)
 else
     ListExperiments=ListExperiments(list_val);%choose selected experiments
-    testList=0;
 end
 scan_experiments(handles,ListExperiments,CampaignPath,MirrorPath)
 
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListExperiments.
- function scan_experiments(handles,ListExperiments,CampaignPath,MirrorPath)
 %------------------------------------------------------------------------
+ function scan_experiments(handles,ListExperiments,CampaignPath,MirrorPath)
+
 ListDevices={};
 for iexp=1:numel(ListExperiments)
-    hdir=dir(fullfile(CampaignPath,ListExperiments{iexp})); %list files and dir in the experiment directory
-    idir=0;
-    for ilist=1:length(hdir)
-        if ~isequal(hdir(ilist).name(1),'.')
-            DataSeries=fullfile(CampaignPath,ListExperiments{iexp},hdir(ilist).name);
-            if ~isempty(MirrorPath)
-                mirror=fullfile(MirrorPath,ListExperiments{iexp},hdir(ilist).name);
-                if ~exist(mirror)% create mirror if needed
-                    system(['ln -s ' DataSeries ' ' mirror])
+    if strcmp(ListExperiments{iexp}(1),'+')% if the item is a directory
+        ListExperiments{iexp}(1)=[];
+        ListStruct=dir(fullfile(CampaignPath,ListExperiments{iexp})); %list files and dir in the experiment directory
+        ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+        ListFiles=ListCells(1,:);%list of dir and file  names
+        cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
+        check_keep=cellfun('isempty', cell_remove);
+        check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+        for ilist=1:numel(ListFiles)
+            if check_keep(ilist)
+                DataSeries=fullfile(CampaignPath,ListExperiments{iexp},ListFiles{ilist});
+                if ~isempty(MirrorPath)
+                    mirror=fullfile(MirrorPath,ListExperiments{iexp},ListFiles{ilist});
+                    if ~exist(mirror)% create mirror if needed
+                        system(['ln -s ' DataSeries ' ' mirror])
+                    end
                 end
-            end
-            check_list=strcmp(hdir(ilist).name,ListDevices);
-            if isempty(find(check_list, 1))
-                ListDevices=[ListDevices;hdir(ilist).name];
+                if isempty(find(strcmp(ListFiles{ilist},ListDevices), 1))% if the item is not already in ListDevices
+                    if check_dir(ilist)
+                        ListFiles{ilist}=['+/' ListFiles{ilist}];%mark dir by '+' in the list
+                    end
+                    ListDevices=[ListDevices;ListFiles{ilist}]; %append the item to the list
+                end
             end
         end
     end
 end
-set(handles.ListDevices,'String',ListDevices)
-
-%------------------------------------------------------------------------
-% --- Executes on button press in update_headings.
-function ListDevices_Callback(hObject, eventdata, handles)
-% CurrentPath=get(handles.SourceDir,'String');
-% ListExperiments=get(handles.ListExperiments,'String');
-% list_val=get(handles.ListExperiments,'Value');
-% if isequal(list_val,1)
-%     ListExperiments=ListExperiments(2:end);
-% else
-%     ListExperiments=ListExperiments(list_val);
-% end
-% set(handles.ListRecords,'Value',1)
-% set(handles.ListXml,'Value',1)
-% ListDevices=get(handles.ListDevices,'String');
-% list_val=get(handles.ListDevices,'Value');
-% if isequal(list_val,1)
-%     ListDevices=ListDevices(2:end);
-% else
-%     ListDevices=ListDevices(list_val);
-% end
-% [ListDevices,ListRecords,ListXml]=ListDir(CurrentPath,ListExperiments,ListDevices,{});
-% set(handles.ListRecords,'String',[{'*'};ListRecords'])
-% set(handles.ListXml,'String',[{'*'};ListXml'])
-% 
-% 
-% if strcmp(get(handles.MirrorDir,'Visible'),'on')
-%     CurrentPath=get(handles.MirrorDir,'String');
-% else
-%     CurrentPath=get(handles.SourceDir,'String');
-% end
-% ListDevices=get(handles.ListDevices,'String');
-% Device=ListDevices(get(handles.ListDevices,'Value'));
-% % else
-% hdir=dir(fullfile(SourcePath,Device)); %list files and dirs
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-%------------------------------------------------------------------------
-% --- Executes on selection change in ListRecords.
-function ListRecords_Callback(hObject, eventdata, handles)
-Value=get(handles.ListRecords,'Value');
-if isequal(Value(1),1)
-    set(handles.ListRecords,'Value',1);
-end
+set(handles.ListDevices,'String',sort(ListDevices))
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CampaignDoc.
 function CampaignDoc_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------   
-answer=msgbox_uvmat('INPUT_Y-N','This function will update the global xml rpresentation of the data set and the Heading of each xml file')
+answer=msgbox_uvmat('INPUT_Y-N','This function will update the global xml rpresentation of the data set and the Heading of each xml file');
 if ~isequal(answer{1},'OK')
     return
 end
@@ -350,7 +305,7 @@ for iexp=1:length(List.Experiment)
                     FileName=List.Experiment{iexp}.Device{idevice}.xmlfile{ixml};
                     [Title,test]=check_heading(Currentpath,Campaign,ExpName,DeviceName,[],FileName,SubCampaignTest);
                     if test
-                        [List.Experiment{iexp}.Device{idevice}.xmlfile{ixml} ' , Heading updated']
+                        disp([List.Experiment{iexp}.Device{idevice}.xmlfile{ixml} ' , Heading updated'])
                     end
                     if isequal(Title,'ImaDoc')
                         [t,uid_xml]=add(t,uid_device,'element','ImaDoc');
@@ -368,7 +323,7 @@ for iexp=1:length(List.Experiment)
                             FileName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile{ixml};
                             [Title,test]=check_heading(Currentpath,Campaign,ExpName,DeviceName,RecordName,FileName,SubCampaignTest);
                             if test
-                                [FileName ' , Heading updated']
+                                disp([FileName ' , Heading updated'])
                             end
                             [t,uid_xml]=add(t,uid_record,'element','ImaDoc');
                             t = attributes(t,'add',uid_xml,'source','file');
@@ -425,7 +380,7 @@ for iexp=1:length(List.Experiment)
             DeviceName=List.Experiment{iexp}.Device{idevice}.name;
             if isfield(List.Experiment{iexp}.Device{idevice},'xmlfile')
                 for ixml=1:length(List.Experiment{iexp}.Device{idevice}.xmlfile)
-                    FileName=List.Experiment{iexp}.Device{idevice}.xmlfile{ixml}
+                    FileName=List.Experiment{iexp}.Device{idevice}.xmlfile{ixml};
                     if isequal(FileName,XmlName)
                         editxml(fullfile(CurrentPath,ExpName,DeviceName,FileName));
                         return
@@ -555,92 +510,10 @@ if test_mod && uidheading
 end
 
 %------------------------------------------------------------------------
-% --- Executes on button press in HELP.
-function HELP_Callback(hObject, eventdata, handles)
-path_to_uvmat=which ('uvmat')% check the path of uvmat
-pathelp=fileparts(path_to_uvmat);
-helpfile=fullfile(pathelp,'UVMAT_DOC','uvmat_doc.html');
-if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the directory UVMAT/UVMAT_DOC')
-else
-web([helpfile '#dataview'])    
-end
-
-
-
-% --- Executes on selection change in ListXml.
-function ListXml_Callback(hObject, eventdata, handles)
-Value=get(handles.ListXml,'Value');
-if isequal(Value(1),1)
-    set(handles.ListXml,'Value',1);
-end
-
-
-% --- Executes on button press in clean_civ_cmx.
-function clean_civ_cmx_Callback(hObject, eventdata, handles)
-message='this function will delete all files with extensions .log, .bat, .cmx,.cmx2,.errors in the input directory(ies)';
-answer=msgbox_uvmat('INPUT_Y-N',message);
-if ~isequal(answer,'Yes')
-    return
-end
-set(handles.ListExperiments,'Value',1)
-ListExperiments_Callback(hObject, eventdata, handles)%update the overview of the experiment directories
-DataviewData=get(handles.browse_data,'UserData')
-List=DataviewData.List;
-Currentpath=get(handles.SourceDir,'String');
-[Currentpath,Campaign,DirExt]=fileparts(Currentpath);
-Campaign=[Campaign DirExt];
-SubCampaignTest=get(handles.SubCampaignTest,'Value');
-nbdelete_tot=0;
-for iexp=1:length(List.Experiment)
-    set(handles.ListExperiments,'Value',iexp+1)
-    drawnow
-    test_mod=0;
-    ExpName=List.Experiment{iexp}.name;  
-    nbdelete=0;
-    if isfield(List.Experiment{iexp},'Device')
-        for idevice=1:length(List.Experiment{iexp}.Device)
-            DeviceName=List.Experiment{iexp}.Device{idevice}.name;     
-            if isfield(List.Experiment{iexp}.Device{idevice},'xmlfile')
-                currentdir=fullfile(Currentpath,Campaign,ExpName,DeviceName);
-                hdir=dir(currentdir); %list files and dirs
-                idir=0;
-                for ilist=1:length(hdir)
-                    if hdir(ilist).isdir
-                        dirname=hdir(ilist).name;
-                        if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')
-                            CivDir=fullfile(currentdir,dirname)
-                            hCivDir=dir(CivDir);
-                            for ilist=1:length(hCivDir)
-                                FileName=hCivDir(ilist).name;
-                                [dd,ff,Ext]=fileparts(FileName);
-                                if isequal(Ext,'.log')||isequal(Ext,'.bat')||isequal(Ext,'.cmx')||isequal(Ext,'.cmx2')|| isequal(Ext,'.errors')
-                                    delete(fullfile(CivDir,FileName))
-                                    nbdelete=nbdelete+1;
-                                end
-                            end
-                        end
-                    end
-                end
-             elseif isfield(List.Experiment{iexp}.Device{idevice},'Record')
-                for irecord=1:length(List.Experiment{iexp}.Device{idevice}.Record)
-                    RecordName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.name;
-                    if isfield(List.Experiment{iexp}.Device{idevice}.Record{irecord},'xmlfile')
-                        'look at subdirectories'
-                    end
-                end
-            end
-        end
-    end
-    display([num2str(nbdelete) ' files deleted'])
-    nbdelete_tot=nbdelete_tot+nbdelete;
-end
-msgbox_uvmat('CONFIRMATION',['END: ' num2str(nbdelete_tot) ' files deleted by clean_civ_cmx'])
-set(handles.ListExperiments,'Value',1)
-
-
 % --- Executes on button press in OK.
-function OK_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+function OK_Callback(hObject, eventdata, handles)
+
 if strcmp(get(handles.MirrorDir,'Visible'),'on')
     Campaign=get(handles.MirrorDir,'String');
 else
@@ -652,140 +525,43 @@ IndicesExp=get(handles.ListExperiments,'Value');
 if ~isequal(IndicesExp,1)% if first element ('*') selected all the experiments are selected
     Experiment=Experiment(IndicesExp);% use the selection of the list of experiments
 end
+Experiment=regexprep(Experiment,'^\+/','');% remove the +/ used to mark dir
 Device=get(handles.ListDevices,'String');
 Value=get(handles.ListDevices,'Value');
 Device=Device(Value);
+Device=regexprep(Device,'^\+/','');% remove the +/ used to mark dir
 handles.output.Experiment=Experiment;
-handles.output.Device=Device;
+handles.output.DataSeries=Device;
 guidata(hObject, handles);% Update handles structure
 uiresume(handles.browse_data);
 drawnow
-return
 
-
-% ListRecords=get(handles.ListRecords,'String');
-% Value=get(handles.ListRecords,'Value');
-% if ~isequal(Value,1)
-%     ListRecords=ListRecords(Value);
-% end
-
-%[ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices);
-ListXml=get(handles.ListXml,'String');
-Value=get(handles.ListXml,'Value');
-if isequal(Value,1)
-    msgbox_uvmat('ERROR','you need to select in the GUI browse_data the xml files to edit')
-    return
+%------------------------------------------------------------------------
+% --- Executes on button press in HELP.
+function HELP_Callback(hObject, eventdata, handles)
+path_to_uvmat=which ('uvmat');% check the path of uvmat
+pathelp=fileparts(path_to_uvmat);
+helpfile=fullfile(pathelp,'UVMAT_DOC','uvmat_doc.html');
+if isempty(dir(helpfile)), msgbox_uvmat('ERROR','Please put the help file uvmat_doc.html in the directory UVMAT/UVMAT_DOC')
 else
-    ListXml=ListXml(Value);
+web([helpfile '#dataview'])    
 end
 
-%update all the selected xml files
-DataviewData=get(handles.browse_data,'UserData');
-% answer=msgbox_uvmat('INPUT_Y-N',[num2str(length(Value)) ' xml files for device ' ListDevices{1} ' will be refreshed with ' ...
-%     DataviewData.GeometryCalib.CalibrationType ' calibration data'])
-% if ~isequal(answer,'Yes')
-%     return
-% end
-%List.Experiment{1}.Device{1}
-%List.Experiment{2}.Device{1}
-for iexp=1:length(List.Experiment)
-    ExpName=List.Experiment{iexp}.name;
-    set(handles.ListExperiments,'Value',IndicesExp(iexp));
-    if isfield(List.Experiment{iexp},'Device')
-        for idevice=1:length(List.Experiment{iexp}.Device)
-            DeviceName=List.Experiment{iexp}.Device{idevice}.name;      
-            if isfield(List.Experiment{iexp}.Device{idevice},'xmlfile')
-                for ixml=1:length(List.Experiment{iexp}.Device{idevice}.xmlfile)
-                    FileName=List.Experiment{iexp}.Device{idevice}.xmlfile{ixml};
-                    for ilistxml=1:length(ListXml)
-                        if isequal(FileName,ListXml{ilistxml})
-                            set(handles.ListXml,'Value',Value(ilistxml))
-                            drawnow
-                            xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,FileName);
-                            update_imadoc(DataviewData.GeometryCalib,xmlfullname,'GeometryCalib')
-                            display([xmlfullname ' updated'])
-                            break
-                        end
-                    end
-                end
-             elseif isfield(List.Experiment{iexp}.Device{idevice},'Record')
-                for irecord=1:length(List.Experiment{iexp}.Device{idevice}.Record)
-                    RecordName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.name;
-                    if isfield(List.Experiment{iexp}.Device{idevice}.Record{irecord},'xmlfile')
-                        for ixml=1:length(List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile)
-                            FileName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile{ixml};
-                            for ilistxml=1:length(ListXml)
-                                if isequal(FileName,ListXml{ilistxml})
-                                    set(handles.ListXml,'Value',Value(ilistxml))
-                                    drawnow
-                                    xmlfullname=fullfile(CurrentPath,ExpName,DeviceName,RecordName,FileName);
-                                    update_imadoc(DataviewData.GeometryCalib,xmlfullname,'GeometryCalib')
-                                    display([xmlfullname ' updated'])
-                                    break
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-set(handles.ListXml,'Value',Value)   
-%     
-%     
-%     
-%     
-%     
-%     
-%     
-% CurrentPath=get(handles.SourceDir,'String');%= get(hObject,'String');
-% ListExperiments=get(handles.ListExperiments,'String');
-% Value=get(handles.ListExperiments,'Value');
-% if ~isequal(Value,1)
-%     ListExperiments=ListExperiments(Value);
-% end
-% ListDevices=get(handles.ListDevices,'String');
-% Value=get(handles.ListDevices,'Value');
-% if isequal(Value,1)
-%     msgbox_uvmat('ERROR','manually select in the GUI browse_data the device being calibrated')
-%     return
-% else 
-%     ListDevices=ListDevices(Value);
-% end
-% ListRecords=get(handles.ListRecords,'String');
-% Value=get(handles.ListRecords,'Value');
-% if ~isequal(Value,1)
-%     ListRecords=ListRecords(Value);
-% end
-% [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices,ListRecords);
-% ListXml=get(handles.ListXml,'String');
-% Value=get(handles.ListXml,'Value');
-% if isequal(Value,1)
-%     msgbox_uvmat('ERROR','you need to select in the GUI browse_data the xml files to edit')
-%     return
-% else
-%     ListXml=ListXml(Value);
-% end
-% handles.output.CurrentPath=CurrentPath;
-% handles.output.ListExperiments=ListExperiments;
-% handles.output.ListDevices=ListDevices;
-% handles.output.ListRecords=ListRecords;
-% handles.output.ListXml=ListXml;
-% handles.output.List=List;
-% handles.output ='OK, Calibration replicated';
-% guidata(hObject, handles);% Update handles structure
-% uiresume(handles.browse_data);
-
+%------------------------------------------------------------------------
 % --- Executes on button press in Cancel.
+%------------------------------------------------------------------------
 function Cancel_Callback(hObject, eventdata, handles)
+    
 handles.output = get(hObject,'String');
 guidata(hObject, handles); % Update handles structure
 % Use UIRESUME instead of delete because the OutputFcn needs
 uiresume(handles.browse_data);
 
+%------------------------------------------------------------------------
 % --- Executes when user attempts to close browse_data.
+%------------------------------------------------------------------------
 function browse_data_CloseRequestFcn(hObject, eventdata, handles)
+    
 if isequal(get(handles.browse_data, 'waitstatus'), 'waiting')
     % The GUI is still in UIWAIT, us UIRESUME
     uiresume(handles.browse_data);
@@ -794,8 +570,11 @@ else
     delete(handles.browse_data);
 end
 
+%------------------------------------------------------------------------
 % --- Executes on key press over figure1 with no controls selected.
+%------------------------------------------------------------------------
 function browse_data_KeyPressFcn(hObject, eventdata, handles)
+    
 % Check for "enter" or "escape"
 if isequal(get(hObject,'CurrentKey'),'escape')
     % User said no by hitting escape
