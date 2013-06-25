@@ -903,18 +903,21 @@ if test_ima
     % display usual image
     if ~CheckContour
         % interpolate field to increase resolution of image display
-        test_interp=1;
-        if max(np) <= 64
-            npxy=8*np;% increase the resolution 8 times
-        elseif max(np) <= 128
-            npxy=4*np;% increase the resolution 4 times
-        elseif max(np) <= 256
-            npxy=2*np;% increase the resolution 2 times
-        else
-            npxy=np;
-            test_interp=0; % no interpolation done
+        test_interp=0;
+        if size(B,3)==1 % scalar of B/W image
+            test_interp=1;
+            if max(np) <= 64
+                npxy=8*np;% increase the resolution 8 times
+            elseif max(np) <= 128
+                npxy=4*np;% increase the resolution 4 times
+            elseif max(np) <= 256
+                npxy=2*np;% increase the resolution 2 times
+            else
+                npxy=np;
+                test_interp=0; % no interpolation done
+            end
         end
-        if test_interp==1%if we interpolate
+        if test_interp%if we interpolate
             x=linspace(AX(1),AX(2),np(2));
             y=linspace(AY(1),AY(2),np(1));
             [X,Y]=meshgrid(x,y);
