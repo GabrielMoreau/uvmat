@@ -1,4 +1,5 @@
-%'interp2_uvmat': linearly interpolate an image or scalar defined on a regular grid 
+%'interp2_uvmat': linearly interpolate an image or scalar defined on a
+%regular grid        USE Matlab interp2 instead
 %--------------------------------------------------------------------
 %OUTPUT:
 % A_out: matrix of interpolated values at positions (XIMA,YIMA)

@@ -62,19 +62,19 @@ if isempty(hfig)
         'String',InputDir,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''titlebox'':current path');
     uicontrol('Style','pushbutton','Tag','backward','Units','normalized','Position',[0.02 0.77 0.1 0.05],...
         'String','<--','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@backward,'TooltipString','move backward');
-    home_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.35 0.005 0.3 0.07],...
-        'String','Work dir','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@home_dir,'TooltipString','reach the current Matlab working directory');
-    
-    uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.75 0.75 0.23 0.04],'tag','sort_option','Callback',@refresh_GUI,'Visible','off',...
+    home_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.14 0.77 0.2 0.05],...
+        'String','Work dir','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@home_dir,'TooltipString','reach the current Matlab working directory'); 
+    uicontrol('Style','pushbutton','Tag','refresh','Units','normalized','Position', [0.36 0.77 0.2 0.05],'Callback',@refresh_GUI,...
+        'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',12);
+    uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.75 0.74 0.23 0.05],'tag','sort_option','Callback',@refresh_GUI,'Visible','off',...
         'String',{'sort name';'sort date'},'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''sort_option'': sort the files by names or dates');
     uicontrol('Style','listbox','Units','normalized', 'Position',[0.02 0.08 0.96 0.66], 'Callback', @(src,event)list_Callback(option,FilterExt,src,event),'tag','list',...
         'FontUnits','points','FontSize',12,'TooltipString','''list'':current list of directories, marked by +/, and files');
-    uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.78 0.005 0.2 0.07],'Callback',@(src,event)close(option,src,event),...
-        'String','Close','FontWeight','bold','FontUnits','points','FontSize',12);
-    uicontrol('Style','pushbutton','Tag','refresh','Units','normalized','Position', [0.02 0.005 0.2 0.07],'Callback',@refresh_GUI,...
-        'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',12);
-    OK_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.75 0.81 0.23 0.07],'BackgroundColor',[0 1 0],...
+    
+    OK_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.58 0.005 0.2 0.07],'BackgroundColor',[0 1 0],...
         'String','OK','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@(src,event)OK_Callback(option,FilterExt,src,event));
+    close_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.78 0.005 0.2 0.07],'Callback',@(src,event)close(option,src,event),...
+        'FontWeight','bold','FontUnits','points','FontSize',12);
     %set(hrefresh,'UserData',StatusData)
     if strcmp(option,'status_display') %put a run advancement display
         set(hfig,'DeleteFcn',@(src,event)close(option,src,event))
@@ -83,9 +83,12 @@ if isempty(hfig)
         %             uicontrol('Style','text','Units','normalized', 'Position', [0.4 0.8 0.35 0.03],'BackgroundColor',BackgroundColor,...
         %             'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
         delete(home_button)
-        set(OK_button,'String','OPEN')
+        set(OK_button,'String','Open')
+        set(close_button,'String','Close')
     elseif strcmp(FilterExt,'uigetdir') %pick a  directory
         set(path_title,'String',title); %show the input title for path (directory)
+        set(OK_button,'String','Select')
+        set(close_button,'String','Cancel')
     else  %put a title and additional pushbuttons
         uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.74 0.6 0.03],'BackgroundColor',BackgroundColor,...
             'String',title,'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
@@ -93,7 +96,8 @@ if isempty(hfig)
             'String','show dates','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''check_date'':press button to display dates');
 %         uicontrol('Style','text','Units','normalized', 'Position', [0.37 0.8 0.35 0.03],'BackgroundColor',BackgroundColor,...
 %             'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
-        
+         set(OK_button,'String','Open')
+         set(close_button,'String','Cancel')    
     end
     drawnow
 end
