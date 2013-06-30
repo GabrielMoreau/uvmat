@@ -2417,6 +2417,7 @@ end
 % if ~isequal(numel(abstime_1),1)
 %       abstime_1=[];
 % end  
+set(handles.TimeValue,'String',num2str(abstime))
 abstime_1=[];
 TimeName_1=get(handles.TimeName_1,'String');
 if ~isempty(regexp(TimeName_1,'^att:')) ||~isempty(regexp(TimeName_1,'^dim:'))||~isempty(regexp(TimeName_1,'^var:'))
@@ -2479,72 +2480,74 @@ end
 UvData.Field=tps_coeff_field(UvData.Field,check_proj_tps);
 
 %% analyse input field
-[CellInfo,NbDimArray,errormsg]=find_field_cells(UvData.Field);% analyse  the input field structure
-if ~isempty(errormsg)
-    errormsg=['uvmat /refresh_field / find_field_cells / ' errormsg];% display error
-    return
-end
-
-NbDim=max(NbDimArray);% spatial dimension of the input field
-imax=find(NbDimArray==NbDim);% indices of field cells to consider
-if isfield(UvData.Field,'NbDim')
-    NbDim=double(UvData.Field.NbDim);% deal with plane fields containing z coordinates
-end
-
-%% get bounds and mesh (needed  to propose default options for projection objects)
-if NbDim>1
-    CoordMax=zeros(numel(imax),NbDim);
-    CoordMin=zeros(numel(imax),NbDim);
-    Mesh=zeros(1,numel(imax));
-    for ind=1:numel(imax)
-        if strcmp(CellInfo{imax(ind)}.CoordType,'tps')
-            CoordName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex};% X,Y coordinates in a single variable
-            CoordMax(ind,NbDim)=max(max(UvData.Field.(CoordName)(1:end-3,1,:),[],1),[],3);% max of x component (2D case)
-            CoordMax(ind,NbDim-1)=max(max(UvData.Field.(CoordName)(1:end-3,2,:),[],1),[],3);% max of y component (2D case)
-            CoordMin(ind,NbDim)=min(min(UvData.Field.(CoordName)(1:end-3,1,:),[],1),[],3);
-            CoordMin(ind,NbDim-1)=min(min(UvData.Field.(CoordName)(1:end-3,2,:),[],1),[],3);% min of y component (2D case)
-        else
-            XName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end)};
-            YName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end-1)};
-            CoordMax(ind,NbDim)=max(max(UvData.Field.(XName)));
-            CoordMin(ind,NbDim)=min(min(UvData.Field.(XName)));
-            CoordMax(ind,NbDim-1)=max(max(UvData.Field.(YName)));
-            CoordMin(ind,NbDim-1)=min(min(UvData.Field.(YName)));
-            %         test_x=1;%test for unstructured coordinates
-            if NbDim==3
-                ZName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(1)};
-                CoordMax(imax(ind),1)=max(max(UvData.Field.(ZName)));
-                CoordMin(ind,1)=min(min(UvData.Field.(ZName)));
-            end
-        end
-        switch CellInfo{imax(ind)}.CoordType
-            
-            case {'scattered','tps'} %unstructured coordinates
-                NbPoints=CellInfo{imax(ind)}.CoordSize;% total nbre of points
-                Mesh(ind)=(prod(CoordMax(ind,:)-CoordMin(ind,:))/NbPoints)^(1/NbDim); %(volume or area per point)^(1/NbDim)
-            case 'grid'%structured coordinate
-                NbPoints=CellInfo{imax(ind)}.CoordSize;% nbre of points in each direction
-                Mesh(ind)=min((CoordMax(ind,:)-CoordMin(ind,:))./(NbPoints-1));                
-        end
-    end
-    UvData.Field.CoordMesh=min(Mesh);
-    UvData.Field.XMax=max(CoordMax(:,end));
-    UvData.Field.XMin=min(CoordMin(:,end));
-    UvData.Field.YMax=max(CoordMax(:,end-1));
-    UvData.Field.YMin=min(CoordMin(:,end-1));
-    if NbDim==3
-        UvData.Field.ZMax=max(CoordMax(ind,1));
-        UvData.Field.ZMin=max(CoordMin(ind,1));
-    end
-    % adjust the mesh to a value 1, 2 , 5 *10^n
-    ord=10^(floor(log10(UvData.Field.CoordMesh)));%order of magnitude
-    if UvData.Field.CoordMesh/ord>=5
-        UvData.Field.CoordMesh=5*ord;
-    elseif UvData.Field.CoordMesh/ord>=2
-        UvData.Field.CoordMesh=2*ord;
-    else
-        UvData.Field.CoordMesh=ord;
-    end
+% [CellInfo,NbDimArray,errormsg]=find_field_cells(UvData.Field);% analyse  the input field structure
+% if ~isempty(errormsg)
+%     errormsg=['uvmat /refresh_field / find_field_cells / ' errormsg];% display error
+%     return
+% end
+% 
+% NbDim=max(NbDimArray);% spatial dimension of the input field
+% imax=find(NbDimArray==NbDim);% indices of field cells to consider
+% if isfield(UvData.Field,'NbDim')
+%     NbDim=double(UvData.Field.NbDim);% deal with plane fields containing z coordinates
+% end
+% 
+% %% get bounds and mesh (needed  to propose default options for projection objects)
+% if NbDim>1
+%     CoordMax=zeros(numel(imax),NbDim);
+%     CoordMin=zeros(numel(imax),NbDim);
+%     Mesh=zeros(1,numel(imax));
+%     for ind=1:numel(imax)
+%         if strcmp(CellInfo{imax(ind)}.CoordType,'tps')
+%             CoordName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex};% X,Y coordinates in a single variable
+%             CoordMax(ind,NbDim)=max(max(UvData.Field.(CoordName)(1:end-3,1,:),[],1),[],3);% max of x component (2D case)
+%             CoordMax(ind,NbDim-1)=max(max(UvData.Field.(CoordName)(1:end-3,2,:),[],1),[],3);% max of y component (2D case)
+%             CoordMin(ind,NbDim)=min(min(UvData.Field.(CoordName)(1:end-3,1,:),[],1),[],3);
+%             CoordMin(ind,NbDim-1)=min(min(UvData.Field.(CoordName)(1:end-3,2,:),[],1),[],3);% min of y component (2D case)
+%         else
+%             XName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end)};
+%             YName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end-1)};
+%             CoordMax(ind,NbDim)=max(max(UvData.Field.(XName)));
+%             CoordMin(ind,NbDim)=min(min(UvData.Field.(XName)));
+%             CoordMax(ind,NbDim-1)=max(max(UvData.Field.(YName)));
+%             CoordMin(ind,NbDim-1)=min(min(UvData.Field.(YName)));
+%             %         test_x=1;%test for unstructured coordinates
+%             if NbDim==3
+%                 ZName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(1)};
+%                 CoordMax(imax(ind),1)=max(max(UvData.Field.(ZName)));
+%                 CoordMin(ind,1)=min(min(UvData.Field.(ZName)));
+%             end
+%         end
+%         switch CellInfo{imax(ind)}.CoordType
+%             
+%             case {'scattered','tps'} %unstructured coordinates
+%                 NbPoints=CellInfo{imax(ind)}.CoordSize;% total nbre of points
+%                 Mesh(ind)=(prod(CoordMax(ind,:)-CoordMin(ind,:))/NbPoints)^(1/NbDim); %(volume or area per point)^(1/NbDim)
+%             case 'grid'%structured coordinate
+%                 NbPoints=CellInfo{imax(ind)}.CoordSize;% nbre of points in each direction
+%                 Mesh(ind)=min((CoordMax(ind,:)-CoordMin(ind,:))./(NbPoints-1));                
+%         end
+%     end
+%     UvData.Field.CoordMesh=min(Mesh);
+%     UvData.Field.XMax=max(CoordMax(:,end));
+%     UvData.Field.XMin=min(CoordMin(:,end));
+%     UvData.Field.YMax=max(CoordMax(:,end-1));
+%     UvData.Field.YMin=min(CoordMin(:,end-1));
+%     if NbDim==3
+%         UvData.Field.ZMax=max(CoordMax(ind,1));
+%         UvData.Field.ZMin=max(CoordMin(ind,1));
+%     end
+%     % adjust the mesh to a value 1, 2 , 5 *10^n
+%     ord=10^(floor(log10(UvData.Field.CoordMesh)));%order of magnitude
+%     if UvData.Field.CoordMesh/ord>=5
+%         UvData.Field.CoordMesh=5*ord;
+%     elseif UvData.Field.CoordMesh/ord>=2
+%         UvData.Field.CoordMesh=2*ord;
+%     else
+%         UvData.Field.CoordMesh=ord;
+%     end
+if UvData.Field.NbDim>1
+    UvData.Field=find_field_bounds(UvData.Field);
     % default projection plane
     if isempty(UvData.ProjObject{1})
         UvData.ProjObject{1}.Type='plane';%main plotting plane
@@ -2554,7 +2557,7 @@ if NbDim>1
         UvData.ProjObject{1}.DisplayHandle.view_field=[]; %plane not visible in uvmat
     end
     %% 3D case (menuvolume)
-    if NbDim==3% && UvData.NewSeries
+    if UvData.Field.NbDim==3% && UvData.NewSeries
         test_set_object=1;
         hset_object=findobj(allchild(0),'tag','set_object');% look for the set_object GUI
         ZBounds(1)=UvData.Field.ZMin; %minimum for the Z slider
@@ -2606,7 +2609,7 @@ set(handles.uvmat,'UserData',UvData)
 % end
 
 %% usual 1D (x,y) plots
-if NbDim<=1
+if UvData.Field.NbDim<=1
     set(handles.Objects,'Visible','off')
     set(handles.ListObject_1_title,'Visible','off')
     set(handles.ListObject_1,'Visible','off')
@@ -2726,6 +2729,7 @@ else
             if imap==2 && isempty(view_field_handle)
                 view_field(ObjectData)
             else
+              %  ObjectData.VarAttribute{5}.Role='scalar';TODO    CORRECT
                 [PlotType,PlotParamOut]=plot_field(ObjectData,haxes(imap),PlotParam{imap},PosColorbar{imap});
                 if imap==1
                     errormsg=fill_GUI(PlotParamOut,handles.uvmat);
@@ -3154,7 +3158,7 @@ switch field
         % VelType menu desactivated
         set(handles.FixVelType,'visible','off')
         set(handles.VelType,'Visible','off')
-        set(handles.VelType_1,'Visible','off')
+        %set(handles.VelType_1,'Visible','off')
         
         %read selection from get_field
         [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
@@ -3162,24 +3166,27 @@ switch field
         GetFieldData=get_field(FileName,ParamIn);% inport field names from the GUI get_field
         FieldList={};
         VecColorList={};
-        XName=GetFieldData.Coordinates.Coord_x;
         switch GetFieldData.FieldOption
             case 'vectors'
                 UName=GetFieldData.PanelVectors.vector_x;
                 VName=GetFieldData.PanelVectors.vector_y;
-                XName=GetFieldData.Coordinates.Coord_x;
                 YName={GetFieldData.Coordinates.Coord_y};
                 CName=GetFieldData.PanelVectors.vec_color;
                 [FieldList,VecColorList]=set_field_list(UName,VName,CName);
             case 'scalar'
                 AName=GetFieldData.PanelScalar.scalar;
-                XName=GetFieldData.Coordinates.Coord_x;
                 YName={GetFieldData.Coordinates.Coord_y};
                 FieldList={AName};
             case '1D plot'
                 YName=GetFieldData.PanelOrdinate.ordinate;
-                XName=GetFieldData.Coordinates.Coord_x;
+            case 'civdata...'%return to civdata from get_field
+               % [FieldList,VecColorList]=set_field_list('U','V','C');
+                set(handles.FieldName,'Value',2)
+                set(handles.FixVelType,'visible','on')
+                set(handles.VelType,'Visible','on')
         end
+        if ~strcmp(GetFieldData.FieldOption,'civdata...')
+            XName=GetFieldData.Coordinates.Coord_x;
         TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
         if strcmp(TimeNameStr,'file index')
             set(handles.TimeName,'String','');
@@ -3202,6 +3209,7 @@ switch field
         set(handles.ColorScalar,'String',VecColorList);
         UvData.FileType{1}='netcdf';
         set(handles.uvmat,'UserData',UvData)
+        end
         run0_Callback(hObject, eventdata, handles)
         
     case 'image'
@@ -4075,7 +4083,7 @@ end
 % --- Executes on selection change in num_MaxVec.
 function num_MinVec_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-max_vec_Callback(hObject, eventdata, handles)
+num_MaxVec_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in num_MaxVec.
@@ -5201,8 +5209,14 @@ series(Param); %run the series interface
 % --------------------------------------------------------------------
 function MenuPIV_Callback(hObject, eventdata, handles)
     Param=read_param(handles);
-    Param.ActionName='civ_series';
-series(Param)
+%     Param.ActionName='civ_series';
+hseries=series(Param);
+hhseries=guidata(hseries);
+ActionMenu=get(hhseries.ActionName,'String');
+index_action=find(strcmp('civ_series',ActionMenu));
+set(hhseries.ActionName,'Value',index_action);
+series('ActionName_Callback',hObject,eventdata,hhseries); %file input with xml reading  in uvmat, show the image in phys coordinates
+
 
 %------------------------------------------------------------------------
 % -- open the GUI civ.fig for PIV

@@ -139,6 +139,11 @@ set(handles.scalar,'Value',1)% fill the menu of y vector components
 set(handles.scalar,'String',Field.ListVarName)% fill the menu of y vector components
 set(handles.ordinate,'Value',1)% fill the menu of y vector components
 set(handles.ordinate,'String',Field.ListVarName)% fill the menu of y vector components
+if isfield(Field,'Conventions')&& strcmp(Field.Conventions,'uvmat/civdata')
+        set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors';'civdata...'})
+else
+     set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors'})
+end
 if Field.MaxDim>=2 % case of 2D (or 3D) fields
     if isfield(CellInfo{imax},'VarIndex_vector_x') &&  isfield(CellInfo{imax},'VarIndex_vector_y')
         set(handles.FieldOption,'Value',3)% set vector selection option
@@ -148,6 +153,7 @@ if Field.MaxDim>=2 % case of 2D (or 3D) fields
     else
         set(handles.FieldOption,'Value',2)
     end
+
 else % case of 1D fields
     set(handles.FieldOption,'Value',1)
 end
@@ -337,6 +343,7 @@ FieldList=get(handles.FieldOption,'String');
 FieldOption=FieldList{get(handles.FieldOption,'Value')};
 switch FieldOption
     case '1D plot'
+        set(handles.Coordinates,'Visible','on')
         set(handles.PanelOrdinate,'Visible','on')
         pos=get(handles.PanelOrdinate,'Position');
         pos(1)=2;
@@ -351,6 +358,7 @@ switch FieldOption
         set(handles.Z_title,'Visible','off')
         ordinate_Callback(hObject, eventdata, handles)
     case 'scalar'
+        set(handles.Coordinates,'Visible','on')
         set(handles.PanelOrdinate,'Visible','off')
         set(handles.PanelScalar,'Visible','on')
         set(handles.PanelVectors,'Visible','off')
@@ -363,6 +371,7 @@ switch FieldOption
         set(handles.Y_title,'Visible','on')
         scalar_Callback(hObject, eventdata, handles)
     case 'vectors'
+        set(handles.Coordinates,'Visible','on')
         set(handles.PanelOrdinate,'Visible','off')
         set(handles.PanelScalar,'Visible','off')
         set(handles.PanelVectors,'Visible','on')
@@ -374,6 +383,11 @@ switch FieldOption
         set(handles.Coord_y,'Visible','on')
         set(handles.Y_title,'Visible','on')      
         vector_Callback(handles)
+    case 'civdata...'
+        set(handles.PanelOrdinate,'Visible','off')
+        set(handles.PanelScalar,'Visible','off')
+        set(handles.PanelVectors,'Visible','off')
+        set(handles.Coordinates,'Visible','off')
 end
 
 %------------------------------------------------------------------------

@@ -53,6 +53,7 @@ list_fct={...
     'fileparts_uvmat';...% extracts the root name,field indexes and nomenclature type from an input filename
     'fill_GUI';...%  fill a GUI with a set of parameters from a Matlab structure 
     'filter_tps';...% find the thin plate spline coefficients for interpolation-smoothing
+    'find_field_bounds': % find the boounds and typical meshs of coordinates
     'find_field_cells';...% group the variables of a 'field object' into 'field cells' and specify their structure
     'find_file_series';...% check the content of an input file and find the corresponding file series
     'find_imadoc';...% find the ImaDoc xml file associated with a given input file

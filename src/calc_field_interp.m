@@ -1,5 +1,4 @@
-%'calc_field_interp': defines fields (velocity, vort, div...) from civ data and calculate them
-% for projection with linear interpolation
+%'calc_field_interp': calculate fields (velocity, vort, div...) using linear interpolation if requested
 %---------------------------------------------------------------------
 % [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp(Coord,Data,FieldName,XI,YI)
 %
@@ -9,11 +8,12 @@
 % VarAttribute: corresponding list of variable attributes, each term #ilist is of the form VarAttribute{ilist}.tag=value
 %
 % INPUT:
-% Coord(nbpoints,2): matrix of x,y coordinates of theinput data points
+% Coord(nbpoints,2): matrix of x,y coordinates of the input data points
 % Data: inputfield structure
 % FieldName: string representing the field to calculate, or cell array of fields (as displayed in uvmat/FieldName)
-% XI, YI: set of x and y coordiantes where the fields need to be linearly interpolated
-
+% XI, YI: set of x and y coordinates where the fields need to be linearly interpolated, 
+%        if XI, YI are missing, there is no interpolation (case of colors in vector plots)
+%
 function [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp(Coord,Data,FieldName,XI,YI)
 
 %% initialization
@@ -24,6 +24,7 @@ errormsg='';
 InputVarList={};
 if ischar(FieldName),FieldName={FieldName};end
 check_skipped=zeros(size(FieldName));% default, =1 to mark the variables which can be calculated
+check_interp=ones(size(FieldName));% default, =1 to mark the variables which can be interpolated (not ancillary)
 Operator=cell(size(FieldName));
 
 %% analyse the list of input fields: needed variables and requested operations
@@ -34,13 +35,12 @@ for ilist=1:numel(FieldName)
         ivar=find(strcmp(FieldName{ilist},Data.ListVarName));
         if isempty(ivar)
             check_skipped(ilist)=1; %variable not found
-        else
+        elseif isempty(find(strcmp(FieldName{ilist},InputVarList), 1));
             if isfield(Data.VarAttribute{ivar},'Role') &&...
                 (strcmp(Data.VarAttribute{ivar}.Role,'ancillary')||strcmp(Data.VarAttribute{ivar}.Role,'warnflag')||strcmp(Data.VarAttribute{ivar}.Role,'errorflag'))
-                check_skipped(ilist)=1; % ancillary variable, not interpolated      
-            elseif isempty(find(strcmp(FieldName{ilist},InputVarList), 1));
-                InputVarList=[InputVarList FieldName{ilist}];% the variable is added to the list of input variables if it is not already in the list
+                check_interp(ilist)=0; % ancillary variable, not interpolated     
             end
+            InputVarList=[InputVarList FieldName{ilist}];% the variable is added to the list of input variables if it is not already in the list
         end
     else
         if ~isfield(Data,r.UName)||~isfield(Data,r.VName)%needed input variable not found
@@ -87,8 +87,10 @@ for ilist=1:numel(FieldName)
         switch Operator{ilist}
             case 'vec'
                 if exist('XI','var')
+                    if check_interp
                     VarVal{nbvar+1}=F.(UName{ilist})(XI,YI);
                     VarVal{nbvar+2}=F.(VName{ilist})(XI,YI);
+                    end
                 else
                     VarVal{nbvar+1}=Data.(UName{ilist});
                     VarVal{nbvar+2}=Data.(VName{ilist});
@@ -99,8 +101,10 @@ for ilist=1:numel(FieldName)
                 VarAttribute{nbvar+2}.Role='vector_y';
             case 'norm'
                 if exist('XI','var')
+                    if check_interp
                     U2=F.(UName{ilist})(XI,YI).*F.(UName{ilist})(XI,YI);
                     V2=F.(VName{ilist})(XI,YI).*F.(VName{ilist})(XI,YI);
+                    end
                 else
                     U2=Data.(UName{ilist}).*Data.(UName{ilist});
                     V2=Data.(VName{ilist}).*Data.(VName{ilist});
@@ -110,7 +114,9 @@ for ilist=1:numel(FieldName)
                 VarAttribute{nbvar+1}.Role='scalar';
             case {'curl','div','strain'}
                 if exist('XI','var')
+                    if check_interp
                     VarVal{nbvar+1}=F.(UName{ilist})(XI,YI);
+                    end
                 else
                     VarVal{nbvar+1}=Data.(UName{ilist});
                 end
@@ -119,7 +125,9 @@ for ilist=1:numel(FieldName)
             otherwise
                 if ~isempty(FieldName{ilist})
                     if exist('XI','var')
+                        if check_interp
                         VarVal{nbvar+1}=F.(FieldName{ilist})(XI,YI);
+                        end
                     else
                         VarVal{nbvar+1}= Data.(FieldName{ilist});
                     end

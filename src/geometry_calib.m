@@ -49,7 +49,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 29-Jul-2012 08:46:09
+% Last Modified by GUIDE v2.5 29-Jun-2013 23:52:36
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -207,7 +207,7 @@ UserData=get(handles.geometry_calib,'UserData');
 UserData.XmlInputFile=outputfile;%save the current xml file name
 set(handles.geometry_calib,'UserData',UserData)
 uvmat('RootPath_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
-MenuPlot_Callback(hObject, eventdata, handles)
+PLOT_Callback(hObject, eventdata, handles)
 set(handles.ListCoord,'Value',index)% indicate in the list the point with max deviation (possible mistake)
 ListCoord_Callback(hObject, eventdata, handles)
 figure(handles.geometry_calib)
@@ -747,7 +747,8 @@ function CLEAR_PTS_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 set(handles.ListCoord,'Value',1)% refresh the display of coordinates
 set(handles.ListCoord,'String',{'......'})
-MenuPlot_Callback(hObject, eventdata, handles)
+PLOT_Callback(hObject, eventdata, handles)
+
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CLEAR.
@@ -799,7 +800,7 @@ set(handles.ListCoord,'String',Tabchar)
 
 %update the plot 
 ListCoord_Callback(hObject, eventdata, handles)
-MenuPlot_Callback(hObject, eventdata, handles)
+PLOT_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListCoord.
@@ -916,47 +917,6 @@ Data.AY=AxeData.AY;
 Data.CoordType='px';
 plot_field(Data)
 
-%------------------------------------------------------------------------
-function MenuPlot_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
-%UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
-hhuvmat=guidata(huvmat); %handles of GUI elements in uvmat
-%hplot=findobj(huvmat,'Tag','axes3');%main plotting axis of uvmat
-h_menu_coord=findobj(huvmat,'Tag','TransformName');
-menu=get(h_menu_coord,'String');
-choice=get(h_menu_coord,'Value');
-if iscell(menu)
-    option=menu{choice};
-else
-    option='px'; %default
-end
-Coord_cell=get(handles.ListCoord,'String');
-ObjectData=read_geometry_calib(Coord_cell);
-%ObjectData=read_geometry_calib(handles);%read the interface input parameters defining the object
-if ~isempty(ObjectData.Coord)
-    if isequal(option,'phys')
-        ObjectData.Coord=ObjectData.Coord(:,1:3);
-    elseif isequal(option,'px')||isequal(option,'')
-        ObjectData.Coord=ObjectData.Coord(:,4:5);
-    else
-        msgbox_uvmat('ERROR','the choice in menu_coord of uvmat must be '''', px or phys ')
-    end
-end
-
-set(0,'CurrentFigure',huvmat)
-set(huvmat,'CurrentAxes',hhuvmat.PlotAxes)
-hh=findobj('Tag','calib_points');
-if  ~isempty(ObjectData.Coord) && isempty(hh)
-    hh=line(ObjectData.Coord(:,1),ObjectData.Coord(:,2),'Color','m','Tag','calib_points','LineStyle','.','Marker','+');
-elseif isempty(ObjectData.Coord)%empty list of points, suppress the plot
-    delete(hh)
-else
-    set(hh,'XData',ObjectData.Coord(:,1))
-    set(hh,'YData',ObjectData.Coord(:,2))
-end
-pause(.1)
-figure(handles.geometry_calib)
 
 % --------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
@@ -968,6 +928,33 @@ else
    addpath (fullfile(pathelp,'uvmat_doc'))
    web([helpfile '#geometry_calib'])
 end
+
+% --------------------------------------------------------------------
+function MenuSetScale_Callback(hObject, eventdata, handles)
+% hObject    handle to MenuSetScale (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+ answer=msgbox_uvmat('INPUT_TXT','scale pixel/cm?','')
+ %create test points
+ huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
+UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
+Xima=0.8*[UvData.Field.XMin UvData.Field.XMax UvData.Field.XMax UvData.Field.XMin]';
+Yima=0.8*[UvData.Field.YMin UvData.Field.YMax UvData.Field.YMax UvData.Field.YMin]';
+x=Xima/str2num(answer);
+y=Yima/str2num(answer);
+for j=1:4
+    for i=1:5
+          Coord{j,1}=num2str(x);%
+          Coord{j,2}=num2str(y);%
+          Coord{j,3}='0';%
+          Coord{j,4}=num2str(Xima);%
+          Coord{j,5}=num2str(Yima);%
+    end
+end
+
+Tabchar=cell2tab(Coord,' | ');
+Tabchar=[Tabchar ;{'......'}];
+set(handles.ListCoord,'String',Tabchar)
 
 %------------------------------------------------------------------------
 function MenuCreateGrid_Callback(hObject, eventdata, handles)
@@ -1139,7 +1126,7 @@ Tabchar=cell2tab(Coord(end:-1:1,:),' | ');
 Tabchar=[Tabchar ;{'......'}];
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
-MenuPlot_Callback(hObject, eventdata, handles)
+PLOT_Callback(hObject, eventdata, handles)
 
 %-----------------------------------------------------------------------
 function MenuTranslatePoints_Callback(hObject, eventdata, handles)
@@ -1232,7 +1219,7 @@ Tabchar=cell2tab(CoordCell,' | ');%transform cells into table ready for display
 Tabchar=[Tabchar;{'......'}];
 set(handles.ListCoord,'Value',1)
 set(handles.ListCoord,'String',Tabchar)
-MenuPlot_Callback(handles.geometry_calib, [], handles)
+PLOT_Callback(handles.geometry_calib, [], handles)
 
 % -----------------------------------------------------------------------
 function MenuImportIntrinsic_Callback(hObject, eventdata, handles)
@@ -1279,7 +1266,7 @@ if ismember(xx,[8 127])%backspace or delete
         set(handles.ListCoord,'Value',min(val)) 
         set(handles.ListCoord,'String',Coord_cell)         
         ListCoord_Callback(hObject, eventdata, handles) 
-        MenuPlot_Callback(hObject,eventdata,handles)
+        PLOT_Callback(hObject,eventdata,handles)
      end
 end
 
@@ -1356,7 +1343,7 @@ if ~isempty(GeometryCalib)
     end
     CoordCell=reshape(CoordCell,[],5);
     Tabchar=cell2tab(CoordCell,' | ');%transform cells into table ready for display
-    MenuPlot_Callback(handles.geometry_calib, [], handles)
+    PLOT_Callback(handles.geometry_calib, [], handles)
 end
 set(handles.calib_type,'Value',val_cal)
 Tabchar=[Tabchar;{'......'}];
@@ -1404,3 +1391,50 @@ function geometry_calib_CloseRequestFcn(hObject, eventdata, handles)
 
 % Hint: delete(hObject) closes the figure
 delete(hObject);
+
+%------------------------------------------------------------------------
+% --- Executes on button press in PLOT.
+%------------------------------------------------------------------------
+function PLOT_Callback(hObject, eventdata, handles)
+
+huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
+%UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
+hhuvmat=guidata(huvmat); %handles of GUI elements in uvmat
+%hplot=findobj(huvmat,'Tag','axes3');%main plotting axis of uvmat
+h_menu_coord=findobj(huvmat,'Tag','TransformName');
+menu=get(h_menu_coord,'String');
+choice=get(h_menu_coord,'Value');
+if iscell(menu)
+    option=menu{choice};
+else
+    option='px'; %default
+end
+Coord_cell=get(handles.ListCoord,'String');
+ObjectData=read_geometry_calib(Coord_cell);
+%ObjectData=read_geometry_calib(handles);%read the interface input parameters defining the object
+if ~isempty(ObjectData.Coord)
+    if isequal(option,'phys')
+        ObjectData.Coord=ObjectData.Coord(:,1:3);
+    elseif isequal(option,'px')||isequal(option,'')
+        ObjectData.Coord=ObjectData.Coord(:,4:5);
+    else
+        msgbox_uvmat('ERROR','the choice in menu_coord of uvmat must be '''', px or phys ')
+    end
+end
+
+set(0,'CurrentFigure',huvmat)
+set(huvmat,'CurrentAxes',hhuvmat.PlotAxes)
+hh=findobj('Tag','calib_points');
+if  ~isempty(ObjectData.Coord) && isempty(hh)
+    hh=line(ObjectData.Coord(:,1),ObjectData.Coord(:,2),'Color','m','Tag','calib_points','LineStyle','.','Marker','+');
+elseif isempty(ObjectData.Coord)%empty list of points, suppress the plot
+    delete(hh)
+else
+    set(hh,'XData',ObjectData.Coord(:,1))
+    set(hh,'YData',ObjectData.Coord(:,2))
+end
+pause(.1)
+figure(handles.geometry_calib)
+
+
+ 

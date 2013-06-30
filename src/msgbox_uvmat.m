@@ -1,5 +1,6 @@
 %'msgbox_uvmat': associated with GUI msgbox_uvmat.fig to display message boxes, for error, warning or input calls
-% msgbox_uvmat(title,display)
+%
+% answer=msgbox_uvmat(title,display,default_answer,Position)
 %
 % OUTPUT:
 % answer  (text string)= 'yes', 'No', 'cancel', or the text string introduced as input

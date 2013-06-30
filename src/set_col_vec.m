@@ -52,8 +52,8 @@ if check_multicolors
         minC=min(vec_C);
         maxC=max(vec_C);
     end
-    colcode_out.MinC=minC;
-    colcode_out.MaxC=maxC;
+    colcode_out.MinVec=minC;
+    colcode_out.MaxVec=maxC;
     if strcmp(colcode.ColorCode,'rgb')|| strcmp(colcode.ColorCode,'bgr')% 3 color representation
         if  isfield(colcode,'ColCode1')
             colcode_out.ColCode1=colcode.ColCode1;

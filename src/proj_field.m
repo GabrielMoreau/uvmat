@@ -892,7 +892,7 @@ if isfield(ObjectData,'Angle')&& isequal(size(ObjectData.Angle),[1 3])&& ~isequa
     norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
     norm_plane(3)=OmAxis(3)*coeff+cos_om;
 end
-testangle=~isequal(PlaneAngle,[0 0 0]);% && ~test90y && ~test90x;%=1 for slanted plane
+testangle=~isequal(PlaneAngle,[0 0 0])||~isequal(ObjectData.Coord(1:2),[0 0 ]) ;% && ~test90y && ~test90x;%=1 for slanted plane
 
 %% mesh sizes DX and DY
 DX=[];
@@ -983,36 +983,20 @@ ListIndex={};
 
 %% group the variables (fields of 'FieldData') in cells of variables with the same dimensions
 [CellInfo,NbDimArray,errormsg]=find_field_cells(FieldData);
+
 if ~isempty(errormsg)
     errormsg=['error in proj_field/proj_plane:' errormsg];
     return
 end
+check_grid=zeros(size(CellInfo));% =1 if a grid is needed , =0 otherwise, for each field cell
 
-%% projection modes
-check_grid=0;
 ProjMode=cell(size(CellInfo));
-for icell=1:numel(CellInfo)% TODO: recalculate coordinates here to get the bounds in the rotated coordinates
-    ProjMode{icell}=ObjectData.ProjMode;
-    if isfield(CellInfo{icell},'ProjModeRequest')
-        switch CellInfo{icell}.ProjModeRequest
-            case 'interp_lin'
-                ProjMode{icell}='interp_lin';
-            case 'interp_tps'
-                ProjMode{icell}='interp_tps';
-        end
-    end
-    if strcmp(ProjMode{icell},'interp_lin')||strcmp(ProjMode{icell},'interp_tps')
-        check_grid=1;
-    end
+for icell=1:numel(CellInfo)
+    ProjMode{icell}=ObjectData.ProjMode;% projection mode of the plane object
 end
-
-%% define the new coordinates in case of interpolation on a grid
-if check_grid
-    AYName='coord_y';
-    AXName='coord_x';
-    ProjData.ListVarName={'coord_y','coord_x'};
-    ProjData.VarDimName={'coord_y','coord_x'};
-    ProjData.VarAttribute={[],[]};
+    icell_grid=[];% field cell index which defines the grid
+if ~strcmp(ObjectData.ProjMode,'projection')
+    %% define the new coordinates in case of interpolation on a imposed grid
     if ~testYMin
         errormsg='min Y value not defined for the projection grid';return
     end
@@ -1025,17 +1009,172 @@ if check_grid
     if ~testXMax
         errormsg='max X value not defined for the projection grid';return
     end
-    ProjData.coord_y=[YMin YMax];%note that if projection is done on a grid, the Min and Max along each direction must have been defined
-    ProjData.coord_x=[XMin XMax];
-    coord_x_proj=XMin:DX:XMax;
-    coord_y_proj=YMin:DY:YMax;
-    [X,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
-    XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(3))-YI*sin(PlaneAngle(3));%corresponding coordinates in the original system
-    YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(3))+YI*cos(PlaneAngle(3));
-end
+else
+    %% case of a grid requested by the input field
 
+    for icell=1:numel(CellInfo)% TODO: recalculate coordinates here to get the bounds in the rotated coordinates
+        if isfield(CellInfo{icell},'ProjModeRequest')
+            switch CellInfo{icell}.ProjModeRequest
+                case 'interp_lin'
+                    ProjMode{icell}='interp_lin';
+                case 'interp_tps'
+                    ProjMode{icell}='interp_tps';
+            end
+        end
+        if strcmp(ProjMode{icell},'interp_lin')||strcmp(ProjMode{icell},'interp_tps')
+            check_grid(icell)=1;
+        end
+        if strcmp(CellInfo{icell}.CoordType,'grid')&&NbDimArray(icell)>=2
+            if ~testangle && isempty(icell_grid)% if the input gridded data is not modified, choose the first one in case of multiple gridded field cells
+                icell_grid=icell;
+                ProjMode{icell}='projection';
+            end
+            check_grid(icell)=1;
+        end
+    end
+    if ~isempty(find(check_grid))% if a grid is requested by the input field
+        if isempty(icell_grid)%  if the grid is not given by cell #icell_grid
+            if ~isfield(FieldData,'XMax')
+                FieldData=find_field_bounds(FieldData);
+%             CellIndex=find(check_grid);
+%             for igrid=1:numel(CellIndex)
+%                 icell=CellIndex(igrid);% TODO: recalculate coordinates here to get the bounds in the rotated coordinates
+%                 NbDim=NbDimArray(icell);
+%                 for idim=1:NbDim %loop on space dimensions
+%                     ivar=CellInfo{icell}.CoordIndex(idim);% index of the variable corresponding to the current dimension
+%                     Coord{idim}=FieldData.(FieldData.ListVarName{ivar});% coord values for the input field
+%                     if ~isequal(ivar,0)%  a variable corresponds to the dimension #idim
+%                         
+%                         
+%                         
+%                     else
+%                                                     Coord_i_str=['Coord_' num2str(idim)];
+%                             DCoord_min(idim)=1;%default
+%                             Coord{idim}=[0.5 DimValue(idim)-0.5];
+%                             test_direct(idim)=1;
+%                     end
+%                 % default bounds, case of gridded data
+%                 if strcmp(CellInfo{icell}.CoordType,'grid')
+%                     % find default mesh
+%                     for idim=1:NbDim %loop on space dimensions
+%                         test_interp(idim)=0;%test for coordiate interpolation (non regular grid), =0 by default
+%                         ivar=CellInfo{icell}.CoordIndex(idim);% index of the variable corresponding to the current dimension
+%                         DimValue=size(FieldData.(FieldData.ListVarName{ivar}));
+%                         if ~isequal(ivar,0)%  a variable corresponds to the dimension #idim
+%                             Coord{idim}=FieldData.(FieldData.ListVarName{ivar});% coord values for the input field
+%                             if numel(Coord{idim})==2 %input array defined on a regular grid
+%                                 DCoord_min(idim)=(Coord{idim}(2)-Coord{idim}(1))/DimValue(idim);
+%                                 Coord{idim}=linspace(Coord{idim}(1),Coord{idim}(2),DimValue(idim));
+%                             else
+%                                 DCoord=diff(Coord{idim});%array of coordinate derivatives for the input field
+%                                 DCoord_min(idim)=min(DCoord);
+%                                 DCoord_max=max(DCoord);
+%                                 if abs(DCoord_max-DCoord_min(idim))>abs(DCoord_max/1000)
+%                                     msgbox_uvmat('ERROR',['non monotonic dimension variable # ' num2str(idim)  ' in proj_field.m'])
+%                                     return
+%                                 end
+%                                 test_interp(idim)=(DCoord_max-DCoord_min(idim))> 0.0001*abs(DCoord_max);% test grid regularity
+%                             end
+%                             test_direct(idim)=(DCoord_min(idim)>0);
+%                         else  % no variable associated with the  dimension #idim, the coordinate value is set equal to the matrix index by default
+% %                             Coord_i_str=['Coord_' num2str(idim)];
+% %                             DCoord_min(idim)=1;%default
+% %                             Coord{idim}=[0.5 DimValue(idim)-0.5];
+% %                             test_direct(idim)=1;
+%                         end
+%                     end
+%                     if isempty(DY)
+%                         DY=abs(DCoord_min(NbDim-1));
+%                     end
+%                     npY=1+round(abs(Coord{NbDim-1}(end)-Coord{NbDim-1}(1))/DY);%nbre of points after interpol
+%                     if isempty(DX)
+%                         DX=abs(DCoord_min(NbDim));
+%                     end
+%                     npX=1+round(abs(Coord{NbDim}(end)-Coord{NbDim}(1))/DX);%nbre of points after interpol
+%                     for idim=1:NbDim
+%                         if test_interp(idim)
+%                             DimValue(idim)=1+round(abs(Coord{idim}(end)-Coord{idim}(1))/abs(DCoord_min(idim)));%nbre of points after possible interpolation on a regular gri
+%                         end
+%                     end
+%                     Coord_y=linspace(Coord{NbDim-1}(1),Coord{NbDim-1}(end),npY);
+%                     test_direct_y=test_direct(NbDim-1);
+%                     Coord_x=linspace(Coord{NbDim}(1),Coord{NbDim}(end),npX);
+%                     test_direct_x=test_direct(NbDim);
+%                     DAX=DCoord_min(NbDim);
+%                     DAY=DCoord_min(NbDim-1);
+%                     minAX=min(Coord_x);
+%                     maxAX=max(Coord_x);
+%                     minAY=min(Coord_y);
+%                     maxAY=max(Coord_y);
+%                     xcorner=[minAX maxAX minAX maxAX]-ObjectData.Coord(1,1);% image corners in the new coordiantes
+%                     ycorner=[maxAY maxAY minAY minAY]-ObjectData.Coord(1,2);
+%                     xcor_new=xcorner*cos_om+ycorner*sin_om;%coord new frame
+%                     ycor_new=-xcorner*sin_om+ycorner*cos_om;
+%                     if ~testXMax
+%                         XMax(igrid)=max(xcor_new);
+%                     end
+%                     if ~testXMin
+%                         XMin(igrid)=min(xcor_new);
+%                     end
+%                     if ~testYMax
+%                         YMax(igrid)=max(ycor_new);
+%                     end
+%                     if ~testYMin
+%                         YMin(igrid)=min(ycor_new);
+%                     end
+%                     DX(igrid)=(maxAX-minAX)/(DimValue(NbDim)-1);
+%                     DY(igrid)=(maxAY-minAY)/(DimValue(NbDim-1)-1);
+%                     if NbDim==3
+%                         DZ(igrid)=(Coord{1}(end)-Coord{1}(1))/(DimValue(1)-1);
+%                         if ~test_direct(1)
+%                             DZ=-DZ;
+%                         end
+%                         Coord_z=linspace(Coord{1}(1),Coord{1}(end),DimValue(1));
+%                         test_direct_z=test_direct(1);
+%                     end
+%                 else
+%                     
+%                 end
+%                 YMax=max(YMax);
+%                 YMin=min(YMin);
+%                 XMax=max(XMax);
+%                 XMin=min(XMin);
+            end
+        end
+    end
+end
+if ~isempty(find(check_grid))||~strcmp(ObjectData.ProjMode,'projection')%no existing gridded data used
+    if isempty(icell_grid)||~strcmp(ObjectData.ProjMode,'projection')%no existing gridded data used
+        AYName='coord_y';
+        AXName='coord_x';
+        if ~strcmp(ObjectData.ProjMode,'projection')
+            ProjData.coord_y=[ObjectData.RangeY(1) ObjectData.RangeY(2)];%note that if projection is done on a grid, the Min and Max along each direction must have been defined
+        ProjData.coord_x=[ObjectData.RangeX(1) ObjectData.RangeX(2)];
+        coord_x_proj=ObjectData.RangeX(1):ObjectData.DX:ObjectData.RangeX(2);
+        coord_y_proj=ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2);
+        else
+        ProjData.coord_y=[FieldData.YMin FieldData.YMax];%note that if projection is done on a grid, the Min and Max along each direction must have been defined
+        ProjData.coord_x=[FieldData.XMin FieldData.XMax];
+        coord_x_proj=FieldData.XMin:FieldData.CoordMesh:FieldData.XMax;
+        coord_y_proj=FieldData.YMin:FieldData.CoordMesh:FieldData.YMax;
+        end
+        [X,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
+        XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(3))-YI*sin(PlaneAngle(3));%corresponding coordinates in the original system
+        YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(3))+YI*cos(PlaneAngle(3));
+    else% we use the existing grid from field cell #icell_grid
+        NbDim=NbDimArray(icell_grid);
+        AYName=FieldData.ListVarName{CellInfo{icell_grid}.CoordIndex(NbDim-1)};%name of input x coordinate (name preserved on projection)
+        AXName=FieldData.ListVarName{CellInfo{icell_grid}.CoordIndex(NbDim)};%name of input y coordinate (name preserved on projection)
+        ProjData.(AYName)=FieldData.(AYName); % new (projected ) y coordinates
+        ProjData.(AXName)=FieldData.(AXName); % new (projected ) y coordinates
+    end
+            ProjData.ListVarName={AYName,AXName};
+        ProjData.VarDimName={AYName,AXName};
+        ProjData.VarAttribute={[],[]};
+end
+    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
+% LOOP ON FIELD CELLS, PROJECT VARIABLES
 % CellVarIndex=cells of variable index arrays
 %ivar_new=0; % index of the current variable in the projected field
 % icoord=0;
@@ -1049,17 +1188,17 @@ for icell=1:length(CellInfo)
         continue % only cells represnting 2D or 3D fields are involved
     end
     VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
-%     ivar_U=[];ivar_V=[];ivar_W=[];
-%     if isfield(CellInfo{icell},'VarIndex_vector_x_tps')&&isfield(CellInfo{icell},'VarIndex_vector_y_tps')
-%         ivar_U=CellInfo{icell}.VarIndex_vector_x_tps;
-%         ivar_V=CellInfo{icell}.VarIndex_vector_y_tps;
-%     elseif isfield(CellInfo{icell},'VarIndex_vector_x')&&isfield(CellInfo{icell},'VarIndex_vector_y')
-%         ivar_U=CellInfo{icell}.VarIndex_vector_x;
-%         ivar_V=CellInfo{icell}.VarIndex_vector_y;
-%     end
-%     if isfield(CellInfo{icell},'VarIndex_vector_z')
-%         ivar_W=CellInfo{icell}.VarIndex_vector_z;
-%     end
+    %     ivar_U=[];ivar_V=[];ivar_W=[];
+    %     if isfield(CellInfo{icell},'VarIndex_vector_x_tps')&&isfield(CellInfo{icell},'VarIndex_vector_y_tps')
+    %         ivar_U=CellInfo{icell}.VarIndex_vector_x_tps;
+    %         ivar_V=CellInfo{icell}.VarIndex_vector_y_tps;
+    %     elseif isfield(CellInfo{icell},'VarIndex_vector_x')&&isfield(CellInfo{icell},'VarIndex_vector_y')
+    %         ivar_U=CellInfo{icell}.VarIndex_vector_x;
+    %         ivar_V=CellInfo{icell}.VarIndex_vector_y;
+    %     end
+    %     if isfield(CellInfo{icell},'VarIndex_vector_z')
+    %         ivar_W=CellInfo{icell}.VarIndex_vector_z;
+    %     end
     %dimensions
     DimCell=FieldData.VarDimName{VarIndex(1)};
     if ischar(DimCell)
@@ -1251,99 +1390,49 @@ for icell=1:length(CellInfo)
             Coord_y=[];
             Coord_x=[];
             
-            % find default mesh
-            for idim=1:NbDim %loop on space dimensions
-                test_interp(idim)=0;%test for coordiate interpolation (non regular grid), =0 by default
-                ivar=CellInfo{icell}.CoordIndex(idim);% index of the variable corresponding to the current dimension
-                if ~isequal(ivar,0)%  a variable corresponds to the dimension #idim
-                    Coord{idim}=FieldData.(FieldData.ListVarName{ivar});% coord values for the input field
-                    if numel(Coord{idim})==2 %input array defined on a regular grid
-                        DCoord_min(idim)=(Coord{idim}(2)-Coord{idim}(1))/DimValue(idim);
-                        Coord{idim}=linspace(Coord{idim}(1),Coord{idim}(2),DimValue(idim));
-                    else
-                        DCoord=diff(Coord{idim});%array of coordinate derivatives for the input field
-                        DCoord_min(idim)=min(DCoord);
-                        DCoord_max=max(DCoord);
-                        if abs(DCoord_max-DCoord_min(idim))>abs(DCoord_max/1000)
-                            msgbox_uvmat('ERROR',['non monotonic dimension variable # ' num2str(idim)  ' in proj_field.m'])
-                            return
-                        end
-                        test_interp(idim)=(DCoord_max-DCoord_min(idim))> 0.0001*abs(DCoord_max);% test grid regularity
-                    end
-                    test_direct(idim)=(DCoord_min(idim)>0);
-                else  % no variable associated with the  dimension #idim, the coordinate value is set equal to the matrix index by default
-                    Coord_i_str=['Coord_' num2str(idim)];
-                    DCoord_min(idim)=1;%default
-                    Coord{idim}=[0.5 DimValue(idim)-0.5];
-                    test_direct(idim)=1;
-                end
-            end
-            if isempty(DY)
-                DY=abs(DCoord_min(NbDim-1));
-            end
-            npY=1+round(abs(Coord{NbDim-1}(end)-Coord{NbDim-1}(1))/DY);%nbre of points after interpol
-            if isempty(DX)
-                DX=abs(DCoord_min(NbDim));
-            end
-            npX=1+round(abs(Coord{NbDim}(end)-Coord{NbDim}(1))/DX);%nbre of points after interpol
-            for idim=1:NbDim
-                if test_interp(idim)
-                    DimValue(idim)=1+round(abs(Coord{idim}(end)-Coord{idim}(1))/abs(DCoord_min(idim)));%nbre of points after possible interpolation on a regular gri
-                end
-            end
-            Coord_y=linspace(Coord{NbDim-1}(1),Coord{NbDim-1}(end),npY);
-            test_direct_y=test_direct(NbDim-1);
-            Coord_x=linspace(Coord{NbDim}(1),Coord{NbDim}(end),npX);
-            test_direct_x=test_direct(NbDim);
-            DAX=DCoord_min(NbDim);
-            DAY=DCoord_min(NbDim-1);
             
-            % default bounds
-            minAX=min(Coord_x);
-            maxAX=max(Coord_x);
-            minAY=min(Coord_y);
-            maxAY=max(Coord_y);
-            xcorner=[minAX maxAX minAX maxAX]-ObjectData.Coord(1,1);% image corners in the new coordiantes
-            ycorner=[maxAY maxAY minAY minAY]-ObjectData.Coord(1,2);
-            xcor_new=xcorner*cos_om+ycorner*sin_om;%coord new frame
-            ycor_new=-xcorner*sin_om+ycorner*cos_om;
-            if ~testXMax
-                XMax=max(xcor_new);
-            end
-            if ~testXMin
-                XMin=min(xcor_new);
-            end
-            if ~testYMax
-                YMax=max(ycor_new);
-            end
-            if ~testYMin
-                YMin=min(ycor_new);
-            end
-            DXinit=(maxAX-minAX)/(DimValue(NbDim)-1);
-            DYinit=(maxAY-minAY)/(DimValue(NbDim-1)-1);
-            if DX==0
-                DX=DXinit;
-            end
-            if DY==0
-                DY=DYinit;
-            end
-            if NbDim==3
-                DZ=(Coord{1}(end)-Coord{1}(1))/(DimValue(1)-1);
-                if ~test_direct(1)
-                    DZ=-DZ;
-                end
-                Coord_z=linspace(Coord{1}(1),Coord{1}(end),DimValue(1));
-                test_direct_z=test_direct(1);
-            end
+            
+            %             % default bounds
+            %             minAX=min(Coord_x);
+            %             maxAX=max(Coord_x);
+            %             minAY=min(Coord_y);
+            %             maxAY=max(Coord_y);
+            %             xcorner=[minAX maxAX minAX maxAX]-ObjectData.Coord(1,1);% image corners in the new coordiantes
+            %             ycorner=[maxAY maxAY minAY minAY]-ObjectData.Coord(1,2);
+            %             xcor_new=xcorner*cos_om+ycorner*sin_om;%coord new frame
+            %             ycor_new=-xcorner*sin_om+ycorner*cos_om;
+            %             if ~testXMax
+            %                 XMax=max(xcor_new);
+            %             end
+            %             if ~testXMin
+            %                 XMin=min(xcor_new);
+            %             end
+            %             if ~testYMax
+            %                 YMax=max(ycor_new);
+            %             end
+            %             if ~testYMin
+            %                 YMin=min(ycor_new);
+            %             end
+            %             DXinit=(maxAX-minAX)/(DimValue(NbDim)-1);
+            %             DYinit=(maxAY-minAY)/(DimValue(NbDim-1)-1);
+            %             if DX==0
+            %                 DX=DXinit;
+            %             end
+            %             if DY==0
+            %                 DY=DYinit;
+            %             end
+            %             if NbDim==3
+            %                 DZ=(Coord{1}(end)-Coord{1}(1))/(DimValue(1)-1);
+            %                 if ~test_direct(1)
+            %                     DZ=-DZ;
+            %                 end
+            %                 Coord_z=linspace(Coord{1}(1),Coord{1}(end),DimValue(1));
+            %                 test_direct_z=test_direct(1);
+            %             end
             %define new coordiantes if not already done by the definition of a projection grid
             if ~check_grid
-                AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(NbDim-1)};%name of input x coordinate (name preserved on projection)
-                AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(NbDim)};%name of input y coordinate (name preserved on projection)
-                ListVarName=[ListVarName {AYName} {AXName}];% update the list of projected variables
-                VarDimName=[VarDimName {AYName} {AXName}];% update the corresponding list of dimensions
-                VarAttribute=[VarAttribute {[]} {[]}];% update the list of attributes
-                ProjData.(AYName)=[YMin YMax]; % new (projected ) y coordinates
-                ProjData.(AXName)=[XMin XMax]; % new (projected ) y coordinates
+                
+                
             end
             
             if testangle
@@ -1369,6 +1458,7 @@ for icell=1:length(CellInfo)
                     if isfield(FieldData,'VarAttribute')
                         VarAttribute=[VarAttribute FieldData.VarAttribute(VarIndex)];
                     end
+                    
                     ProjData.(AYName)=FieldData.(AYName);
                     ProjData.(AXName)=FieldData.(AXName);
                     for ivar=VarIndex
@@ -1539,10 +1629,10 @@ for icell=1:length(CellInfo)
                     eval(['ProjData.' VName '=ProjData.' VName '+ ProjData.' WName '*sin(Theta);'])%
                     eval(['ProjData.' WName '=NormVec_X*ProjData.' UName '+ NormVec_Y*ProjData.' VName '+ NormVec_Z* ProjData.' WName ';']);
                 end
-%                 if ~isequal(Psi,0)
-%                     eval(['ProjData.' UName '=cos(Psi)* ProjData.' UName '- sin(Psi)*ProjData.' VName ';']);
-%                     eval(['ProjData.' VName '=sin(Psi)* ProjData.' UName '+ cos(Psi)*ProjData.' VName ';']);
-%                 end
+                %                 if ~isequal(Psi,0)
+                %                     eval(['ProjData.' UName '=cos(Psi)* ProjData.' UName '- sin(Psi)*ProjData.' VName ';']);
+                %                     eval(['ProjData.' VName '=sin(Psi)* ProjData.' UName '+ cos(Psi)*ProjData.' VName ';']);
+                %                 end
             end
         end
     end
@@ -1551,7 +1641,7 @@ end
 % SubData.ListVarName={};
 % SubData.VarDimName={};
 % SubData.VarAttribute={};
-% check_remove=zeros(size(ProjData.ListVarName)); 
+% check_remove=zeros(size(ProjData.ListVarName));
 % for iproj=1:numel(ProjData.VarAttribute)
 %     if isfield(ProjData.VarAttribute{iproj},'CheckSub')&&isequal(ProjData.VarAttribute{iproj}.CheckSub,1)
 %         VarName=ProjData.ListVarName{iproj};
@@ -1559,7 +1649,7 @@ end
 %         SubData.VarDimName=[SubData.VarDimName ProjData.VarDimName{iproj}];
 %         SubData.VarAttribute=[SubData.VarAttribute ProjData.VarAttribute{iproj}];
 %         SubData.(VarName)=ProjData.(VarName);
-%         check_remove(iproj)=1;        
+%         check_remove(iproj)=1;
 %     end
 % end
 % if ~isempty(find(check_remove))
@@ -1568,11 +1658,12 @@ end
 %     ProjData.VarDimName(ind_remove)=[];
 %     ProjData.VarAttribute(ind_remove)=[];
 %     ProjData=sub_field(ProjData,[],SubData);
-% end   
+% end
 
 %-----------------------------------------------------------------
-%projection in a volume 
- function  [ProjData,errormsg] = proj_volume(FieldData, ObjectData)
+%projection in a volume
+function  [ProjData,errormsg] = proj_volume(FieldData, ObjectData)
+
 %-----------------------------------------------------------------
 ProjData=FieldData;%default output
 
@@ -1583,8 +1674,8 @@ if isempty(ObjectData.Coord)
     ObjectData.Coord(1,3)=0;
 end
 
-%% rotation angles 
-VolumeAngle=[0 0 0]; 
+%% rotation angles
+VolumeAngle=[0 0 0];
 norm_plane=[0 0 1];
 if isfield(ObjectData,'Angle')&& isequal(size(ObjectData.Angle),[1 3])&& ~isequal(ObjectData.Angle,[0 0 0])
     PlaneAngle=ObjectData.Angle;

@@ -48,9 +48,10 @@ if isstruct(ParamIn)
             InputField= ParamIn.FieldName;
         end
     end
+    check_colorvar=zeros(size(InputField));
     if isfield(ParamIn,'ColorVar')
         InputField=[ParamIn.FieldName {ParamIn.ColorVar}];
-        check_colorvar=1;
+        check_colorvar(numel(InputField))=1;
     end
 end
 
@@ -69,26 +70,27 @@ switch FileType
         ListVar={};
         for ilist=1:numel(InputField)
             r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
-            if isempty(r)
+            if isempty(r)%  no operator used
                 ListVar=[ListVar InputField(ilist)];
+                if check_colorvar(ilist)
+                                    Role{numel(ListVar)}='ancillary';% not projected with interpolation
+                ProjModeRequest{numel(ListVar)}='';
+                else
                 Role{numel(ListVar)}='scalar';
                 ProjModeRequest{numel(ListVar)}='interp_lin';%scalar field (requires interpolation for plot)
-            else
+                end
+            else  % an operator 'vec' or 'norm' is used
                 ListVar=[ListVar {r.UName,r.VName}];
                 Role{numel(ListVar)}='vector_y';
                 Role{numel(ListVar)-1}='vector_x';
-                            switch r.Operator
-                                case 'norm'
+                      if ~check_colorvar(ilist) && strcmp(r.Operator,'norm')
                                     ProjModeRequest{numel(ListVar)-1}='interp_lin';%scalar field (requires interpolation for plot)
                                     ProjModeRequest{numel(ListVar)}='interp_lin';
-                                otherwise
+                      else
                                    ProjModeRequest{numel(ListVar)-1}='';
                                    ProjModeRequest{numel(ListVar)}='';
                             end
             end
-        end
-        if check_colorvar
-            Role{numel(ListVar)}='ancillary';% scalar used for color vector (not projected)
         end
         if isfield(ParamIn,'TimeDimName')% case of reading of a single time index in a multidimensional array
             [Field,var_detect,ichoice]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,num,[ParamIn.Coord_x (ParamIn.Coord_y) ListVar]);

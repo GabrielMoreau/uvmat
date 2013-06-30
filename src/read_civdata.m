@@ -72,7 +72,9 @@ for ilist=1:length(FieldNames)
     if ~isempty(FieldNames{ilist})
         switch FieldNames{ilist}
             case{'U','V','norm(U,V)'}
+                if ~strcmp(FieldNames{1},'vec(U,V)')% if the scalar is not used as color of vectors
                 ProjModeRequest='interp_lin';
+                end
             case {'curl(U,V)','div(U,V)','strain(U,V)'}
                 ProjModeRequest='interp_tps';
         end

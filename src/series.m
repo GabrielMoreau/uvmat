@@ -119,7 +119,7 @@ if ~exist('Param','var')
 end 
 
 %% list of builtin functions in the mebu ActionName
-ActionList={'check_data_files';'aver_stat';'time_series';'merge_proj'};% WARNING: fits with nb_builtin_ACTION=4 in ActionName_callback
+ActionList={'check_data_files';'aver_stat';'time_series';'civ_series';'merge_proj'};% WARNING: fits with nb_builtin_ACTION=4 in ActionName_callback
 NbBuiltinAction=numel(ActionList);
 [path_series,name,ext]=fileparts(which('series'));% path to the GUI series
 path_series_fct=fullfile(path_series,'series');%path of the functions in subdirectroy 'series'
