@@ -205,7 +205,7 @@ CivInputData.MaxIndex_i=MaxIndex_i;
 CivInputData.MaxIndex_j=MaxIndex_j;
 CivInputData.MinIndex_i=MinIndex_i;
 CivInputData.MinIndex_j=MinIndex_j;
-if ~isfield(Param.IndexRange,'first_j')
+if ~isfield(Param.IndexRange,'first_j')||isequal(MaxIndex_j,MinIndex_j)% no possibility of j pairs
     set(handles.ListPairMode,'Value',1)
     set(handles.ListPairMode,'String',{'series(Di)'})
 elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
@@ -1082,77 +1082,7 @@ displ_pair={''};
 nbpair=200;%default
 select=ones(size(1:nbpair));%flag for displayed pairs =1 for display
 testpair=0;
-% RootPath=get(handles.RootPath,'String');
-% RootFile=get(handles.Civ2_ImageB,'String');
 nbpair=200; %default
-% if index==1 % case civ1
-%     if ~get(handles.CheckCiv1,'Value') %
-%         if ~exist(fullfile(RootPath,subdir_civ1),'dir')
-%             errormsg=['no civ1 file available: subdirectory ' subdir_civ1 ' does not exist'];
-%             set(handles.ListPairCiv1,'String',{});
-%             return
-%         end
-%         for ipair=1:nbpair
-%             filename=fullfile_uvmat(RootPath,subdir_civ1,RootFile,'.nc',nom_type_nc,...
-%                 ref_i+displ_num(3,ipair),ref_i+displ_num(4,ipair),ref_j+displ_num(1,ipair),ref_j+displ_num(2,ipair));
-%             select(ipair)=exist(filename,'file')==2;% put flag to 0 if the file does not exist
-%         end
-%         % case of no displayed pair
-%         if isequal(select,zeros(size(1:nbpair)))
-%             if isfield(browse,'incr_pair') && ~isequal(browse.incr_pair,[0 0])
-%                 num_i1=ref_i-floor(browse.incr_pair(1)/2);
-%                 num_i2=ref_i+ceil(browse.incr_pair(1)/2);
-%                 num_j1=ref_j-floor(browse.incr_pair(2)/2);
-%                 num_j2=ref_j+ceil(browse.incr_pair(2)/2);
-%                 filename=fullfile_uvmat(RootPath,subdir_civ1,RootFile,'.nc',nom_type_nc,num_i1,num_i2,num_j1,num_j2);
-%                 select(1)=exist(filename,'file')==2;
-%                 testpair=1;
-%             else
-% %                 if  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
-% %                     errormsg=['no civ1 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ1];
-% %                 else
-%                     errormsg=['no civ1 file available for the selected reference indices (i,j)= ' num2str(ref_i) ', ' num2str(ref_j) ' and subdirectory ' subdir_civ1];
-% %                 end
-%                 set(handles.ListPairCiv1,'String',{''});
-%                 %COMPLETER CAS STEREO
-%                 return
-%             end
-%         end
-%     end
-% else %case civ2 alone
-%     if ~get(handles.CheckCiv2,'Value') && ~get(handles.CheckCiv1,'Value') && ~get(handles.CheckFix1,'Value') && ~get(handles.CheckPatch1,'Value')
-%         if ~exist(fullfile(RootPath,subdir_civ2),'dir')
-%             msgbox_uvmat('ERROR',['no civ2 file available: subdirectory ' subdir_civ2 ' does not exist'])
-%             set(handles.ListPairCiv2,'Value',1);
-%             set(handles.ListPairCiv2,'String',{''});
-%             return
-%         end
-%         for ipair=1:nbpair
-%             filename=fullfile_uvmat(RootPath,subdir_civ1,RootFile,'.nc',nom_type_nc,...
-%                 ref_i+displ_num(3,ipair),ref_i+displ_num(4,ipair),ref_j+displ_num(1,ipair),ref_j+displ_num(2,ipair));
-%             select(ipair)=exist(filename,'file')==2;
-%         end
-%         if  isequal(select,zeros(size(1:nbpair)))
-%             if isfield(browse,'incr_pair')
-%                 num_i1=ref_i-floor(browse.incr_pair(1)/2);
-%                 num_i2=ref_i+floor((browse.incr_pair(1)+1)/2);
-%                 num_j1=ref_j-floor(browse.incr_pair(2)/2);
-%                 num_j2=ref_j+floor((browse.incr_pair(2)+1)/2);
-%                 filename=fullfile_uvmat(RootPath,subdir_civ2,RootFile,'.nc',nom_type_nc,num_i1,num_i2,num_j1,num_j2);
-%                 select(1)=exist(filename,'file')==2;
-%             else
-%                 if  isequal(mode,'series(Dj)')% | isequal(mode,'st_series(Dj)')
-%                     errormsg=['no civ2 file available for the selected reference index j=' num2str(ref_j) ' and subdirectory ' subdir_civ2];
-%                 else
-%                     errormsg=['no civ2 file available for the selected reference index i=' num2str(ref_i) ' and subdirectory ' subdir_civ2];
-%                 end
-%                 set(handles.ListPairCiv2,'Value',1);
-%                 set(handles.ListPairCiv2,'String',{''});
-%                 return
-%             end
-%         end
-%     end
-% end
 
 %% determine the menu display in .ListPairCiv1
 testpair=0; %TODO: check

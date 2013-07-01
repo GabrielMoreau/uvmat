@@ -137,12 +137,8 @@ end
 %%%%%%%%%%%% END STANDARD PART  %%%%%%%%%%%%
 % EDIT FROM HERE
 
-%% check the validity of  ctinput file types
-if CheckImage{1}
-    FileExtOut='.png'; % write result as .png images for image inputs
-elseif CheckNc{1}
-    FileExtOut='.nc';% write result as .nc files for netcdf inputs
-else
+%% check the validity of  the input file types
+if ~CheckImage{1}&&~CheckNc{1}
     displ_uvmat('ERROR',['invalid file type input ' FileType{1}],checkrun)
     return
 end
@@ -152,6 +148,7 @@ if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
 end
 
 %% settings for the output file
+FileExtOut='.nc';% write result as .nc files for netcdf inputs
 NomTypeOut=nomtype2pair(NomType{1});% determine the index nomenclature type for the output file
 first_i=i1_series{1}(1);
 last_i=i1_series{1}(end);
