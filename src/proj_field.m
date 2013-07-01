@@ -87,8 +87,8 @@ ProjData=[];
 if ~isfield(ObjectData,'Type')||~isfield(ObjectData,'ProjMode')
     return
 end
-ListProjMode={'projection','interp_lin','interp_tps'};%list of effective projection modes
-if isempty(strcmp(ObjectData.ProjMode,ListProjMode))
+ListProjMode={'projection','interp_lin','interp_tps','inside','outside'};%list of effective projection modes
+if isempty(find(strcmp(ObjectData.ProjMode,ListProjMode), 1))% no projection in case 
     return
 end
 if ~isfield(ObjectData,'Coord')||isempty(ObjectData.Coord)

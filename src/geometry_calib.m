@@ -938,20 +938,16 @@ function MenuSetScale_Callback(hObject, eventdata, handles)
  %create test points
  huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
-Xima=0.8*[UvData.Field.XMin UvData.Field.XMax UvData.Field.XMax UvData.Field.XMin]';
-Yima=0.8*[UvData.Field.YMin UvData.Field.YMax UvData.Field.YMax UvData.Field.YMin]';
+npy=size(UvData.Field.A,1);
+npx=size(UvData.Field.A,2);
+Xima=[0.25*npx 0.75*npx 0.75*npx 0.25*npx]';
+Yima=[0.25*npy 0.25*npy 0.75*npy 0.75*npy]';
 x=Xima/str2num(answer);
 y=Yima/str2num(answer);
-for j=1:4
-    for i=1:5
-          Coord{j,1}=num2str(x);%
-          Coord{j,2}=num2str(y);%
-          Coord{j,3}='0';%
-          Coord{j,4}=num2str(Xima);%
-          Coord{j,5}=num2str(Yima);%
-    end
-end
-
+Coord={num2str(x(1)) num2str(y(1)) '0' num2str(Xima(1)) num2str(Yima(1));...
+    num2str(x(2)) num2str(y(2)) '0' num2str(Xima(2)) num2str(Yima(2));...
+    num2str(x(3)) num2str(y(3)) '0' num2str(Xima(3)) num2str(Yima(3));...
+    num2str(x(4)) num2str(y(4)) '0' num2str(Xima(4)) num2str(Yima(4))};
 Tabchar=cell2tab(Coord,' | ');
 Tabchar=[Tabchar ;{'......'}];
 set(handles.ListCoord,'String',Tabchar)
@@ -1210,7 +1206,7 @@ end
 [s,errormsg]=imadoc2struct(fileinput,'GeometryCalib');
 GeometryCalib=s.GeometryCalib;
 %GeometryCalib=load_calib(hObject, eventdata, handles)
-calib=reshape(GeometryCalib.PointCoord,[],1);
+calib=reshape(GeometryCalib.SourceCalib.PointCoord,[],1);
 for ilist=1:numel(calib)
     CoordCell{ilist}=num2str(calib(ilist));
 end

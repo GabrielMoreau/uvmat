@@ -130,7 +130,7 @@ end
 sizcoord=size(ObjectData.Coord);
 
 %% determine the coordinates xline, yline,xsup,xinf, yinf,ysup determining the new object plot
-test_line= isequal(ObjectData.Type,'points')||isequal(ObjectData.Type,'line')||isequal(ObjectData.Type,'line_x')||isequal(ObjectData.Type,'line_y')||...
+test_line= isequal(ObjectData.Type,'points')||isequal(ObjectData.Type,'line')||...
     isequal(ObjectData.Type,'polyline')||isequal(ObjectData.Type,'polygon')|| isequal(ObjectData.Type,'plane')|| isequal(ObjectData.Type,'volume');
 test_patch=isequal(ObjectData.ProjMode,'inside')||isequal(ObjectData.ProjMode,'outside')||isequal(ObjectData.Type,'volume')...
     ||isequal(ObjectData.ProjMode,'mask_inside')||isequal(ObjectData.ProjMode,'mask_outside');
@@ -394,11 +394,24 @@ if test_newobj==0;
     end
     if test_patch
         for iobj=1:length(PlotData.SubObject)
-            objtype=get(PlotData.SubObject(iobj),'Type');
-            if isequal(objtype,'image')
-                set(PlotData.SubObject(iobj),'CData',imflag,'AlphaData',(flag)*0.2)
-                set(PlotData.SubObject(iobj),'XData',[xlim(1)+dx/2 xlim(2)-dx/2])
-                set(PlotData.SubObject(iobj),'YData',[ylim(1)+dy/2 ylim(2)-dy/2])
+            if ~ishandle(PlotData.SubObject(iobj))
+                hold on
+                hhh=image([xlim(1)+dx/2 xlim(2)-dx/2],[ylim(1)+dy/2 ylim(2)-dy/2],imflag,'Tag','proj_object','HitTest','off');
+                set(hhh,'AlphaData',(flag)*0.2)% set partial transparency to the filling color
+                PlotData.SubObject(iobj)=hhh;
+            else
+                objtype=get(PlotData.SubObject(iobj),'Type');
+                if isequal(objtype,'image')
+                    set(PlotData.SubObject(iobj),'CData',imflag,'AlphaData',(flag)*0.2)
+                    set(PlotData.SubObject(iobj),'XData',[xlim(1)+dx/2 xlim(2)-dx/2])
+                    set(PlotData.SubObject(iobj),'YData',[ylim(1)+dy/2 ylim(2)-dy/2])
+                end
+            end
+        end      
+    else% no patch image requested, erase existing ones
+        for iobj=1:length(PlotData.SubObject)
+            if ishandle(PlotData.SubObject(iobj)) && strcmp(get(PlotData.SubObject(iobj),'Type'),'image')
+                delete(PlotData.SubObject(iobj))
             end
         end
     end
