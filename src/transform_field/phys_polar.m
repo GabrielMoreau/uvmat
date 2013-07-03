@@ -22,20 +22,18 @@
 %
 %INPUT:
 % Data:  structure of input data (like UvData)
-% CalibData= structure containing the field .GeometryCalib with calibration parameters
+% XmlData= structure containing the field .GeometryCalib with calibration parameters
 % Data_1:  second input field (not mandatory)
-% CalibData_1= calibration parameters for the second field
+% XmlData_1= calibration parameters for the second field
 %------------------------------------------------------------------------
 function DataOut=phys_polar(DataIn,XmlData,DataIn_1,XmlData_1)
 %------------------------------------------------------------------------
 Calib{1}=[];
 if nargin==2||nargin==4
-    Data=varargin{1};
-    DataOut=Data;%default
+    DataOut=DataIn;%default
     DataOut_1=[];%default
-    CalibData=varargin{2};
-    if isfield(CalibData,'GeometryCalib')
-        Calib{1}=CalibData.GeometryCalib;
+    if isfield(XmlData,'GeometryCalib')
+        Calib{1}=XmlData.GeometryCalib;
     end
     Calib{2}=Calib{1};
 else
@@ -44,34 +42,32 @@ end
 test_1=0;
 if nargin==4% case of two input fields
     test_1=1;
-    Data_1=varargin{3};
-    DataOut_1=Data_1;%default
-    CalibData_1=varargin{4};
-    if isfield(CalibData_1,'GeometryCalib')
-        Calib{2}=CalibData_1.GeometryCalib;
+    DataOut_1=DataIn_1;%default
+    if isfield(XmlData_1,'GeometryCalib')
+        Calib{2}=XmlData_1.GeometryCalib;
     end
 end
 
 %parameters for polar coordinates (taken from the calibration data of the first field)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 origin_xy=[0 0];%center for the polar coordinates in the original x,y coordinates
-if isfield(CalibData,'PolarCentre') && isnumeric(CalibData.PolarCentre)
-    if isequal(length(CalibData.PolarCentre),2);
-        origin_xy= CalibData.PolarCentre;
+if isfield(XmlData,'PolarCentre') && isnumeric(XmlData.PolarCentre)
+    if isequal(length(XmlData.PolarCentre),2);
+        origin_xy= XmlData.PolarCentre;
     end
 end
 radius_offset=0;%reference radius used to offset the radial coordinate r 
 angle_offset=0; %reference angle used as new origin of the polar angle (= axis Ox by default)
-if isfield(CalibData,'PolarReferenceRadius') && isnumeric(CalibData.PolarReferenceRadius)
-    radius_offset=CalibData.PolarReferenceRadius;
+if isfield(XmlData,'PolarReferenceRadius') && isnumeric(XmlData.PolarReferenceRadius)
+    radius_offset=XmlData.PolarReferenceRadius;
 end
 if radius_offset > 0
     angle_scale=radius_offset; %the azimuth is rescale in terms of the length along the reference radius
 else
     angle_scale=180/pi; %polar angle in degrees 
 end
-if isfield(CalibData,'PolarReferenceAngle') && isnumeric(CalibData.PolarReferenceAngle)
-    angle_offset=CalibData.PolarReferenceAngle; %offset angle (in unit of the final angle, degrees or arc length along the reference radius))
+if isfield(XmlData,'PolarReferenceAngle') && isnumeric(XmlData.PolarReferenceAngle)
+    angle_offset=XmlData.PolarReferenceAngle; %offset angle (in unit of the final angle, degrees or arc length along the reference radius))
 end
 % new x coordinate = radius-radius_offset;
 % new y coordinate = theta*angle_scale-angle_offset
