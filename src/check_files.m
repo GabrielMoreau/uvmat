@@ -86,7 +86,6 @@ list_fct={...
     'read_civxdata';...reads civx data from netcdf files
     'read_civdata';... reads new civ data from netcdf files
     'read_field';...% read the fields from files in different formats (netcdf files, images, video)
-    'read_geometry_calib';... read data on the GUI geometry_calib
     'read_GUI';... %read a GUI and provide the data as a Matlab structure
     'read_image';...%read images or video objects
     'read_multimadoc';... %read a set of Imadoc files and compare their timing of different file series
