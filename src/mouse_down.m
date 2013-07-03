@@ -399,65 +399,61 @@ if  test_create && ~isempty(xy) && ~strcmp(get(hCurrentGUI,'SelectionType'),'alt
 end
 
 %% create calibration points if the GUI geometry_calib is opened, if the main axes PlotAxes of uvmat has ben selected
-if  test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'PlotAxes') 
+if  test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'PlotAxes')
     h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
     hh_geometry_calib=guidata(h_geometry_calib);
     h_edit_append=hh_geometry_calib.edit_append;%findobj(h_geometry_calib,'Tag','edit_append');
     if isequal(get(h_edit_append,'Value'),1) && ~isempty(haxes)
-        h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
-        coord_value=get(hhuvmat.TransformName,'Value');% set uvmat to pixel coordinates, run it again if not
-        if ~(isequal(coord_value,1)||isequal(coord_value,3)); %active only with no transform or px (no phys)
+        if ~isequal(get(hhuvmat.TransformName,'Value'),1); %active only with no transform (px coordinates)
             set(hhuvmat.TransformName,'Value',1)
             uvmat('TransformName_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat
-            set(hhuvmat.CheckFixedLimits,'Value',0)% put FixedLimits option to 'off'
-            set(hhuvmat.CheckFixedLimits,'BackgroundColor',[0.7 0.7 0.7])
+            set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' (to sse the whole field)
             return
         end
-        Coord=get(h_ListCoord,'String');
-        data=read_geometry_calib(Coord);%transform char cell to numbers
+        h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
+        Coord=get(h_ListCoord,'Data');
+        %data=read_geometry_calib(Coord);%transform char cell to numbers
         xlim=get(haxes,'XLim');
         ind_range_x=abs((xlim(2)-xlim(1))/50);
         ylim=get(haxes,'YLim');
         ind_range_y=abs((ylim(2)-ylim(1))/50);
         ind_range=sqrt(ind_range_x*ind_range_y);
         test_newpoint=1;
-        if size(data.Coord,2)>=5 %if calibration points already exist
-            XCoord=(data.Coord(:,4));
-            YCoord=(data.Coord(:,5));
-            index_point=find((XCoord<xy(1,1)+ind_range) & (XCoord>xy(1,1)-ind_range) & ...%flagx=1 for the vectors with x position selected by the mouse
-                          (YCoord<xy(1,2)+ind_range) & (YCoord>xy(1,2)-ind_range),1);%find the first calibration point in the neighborhood of the mouse
-            test_newpoint=isempty(index_point);%test for no existing calibration point near the mouse position
+        %if size(data.Coord,2)>=5 %if calibration points already exist
+        if ~isempty(Coord)
+        XCoord=(Coord(:,4));
+        YCoord=(Coord(:,5));
+        index_point=find((XCoord<xy(1,1)+ind_range) & (XCoord>xy(1,1)-ind_range) & ...%flagx=1 for the vectors with x position selected by the mouse
+            (YCoord<xy(1,2)+ind_range) & (YCoord>xy(1,2)-ind_range),1);%find the first calibration point in the neighborhood of the mouse
+        test_newpoint=isempty(index_point);%test for no existing calibration point near the mouse position
         end
-        val=get(h_ListCoord,'Value');
+        %end
+        %val=find(Data.Coord(:,6));
+        
         %create a new calib point if we are not close to an existing one
-        if test_newpoint                 
-             strline=[ '    |    '  '    |    '  '    |    ' num2str(xy(1,1),4) '    |    ' num2str(xy(1,2),4)];
-           
-             if length(Coord)>=val
-                 Coord(val+1:length(Coord)+1)=Coord(val:length(Coord));% push the list forward beyond the current point
-             end
-             Coord{val}=strline;
-             set(h_ListCoord,'String',Coord)
-             data=read_geometry_calib(Coord);%transform char cell to numbers
-             XCoord=data.Coord(:,4);
-             YCoord=data.Coord(:,5);
+        hh=findobj('Tag','calib_points');%look for handle of calibration points
+        if test_newpoint
+            Coord=[Coord;[0 0 0 xy(1,1) xy(1,2) 0]];
+            set(h_ListCoord,'Data',Coord)
         end
-        hh=findobj('Tag','calib_points');%look for handle of calibration points           
         if isempty(hh)
-            hh=line(XCoord,YCoord,'Color','m','Tag','calib_points','LineStyle','.','Marker','+');
+            hh=line(Coord(:,4),Coord(:,5),'Color','m','Tag','calib_points','LineStyle','.','Marker','+');
         else
-            set(hh,'XData',XCoord)
-            set(hh,'YData',YCoord)
+            set(hh,'XData',Coord(:,4))
+            set(hh,'YData',Coord(:,5))
         end
-        set(hh,'UserData',val)% flag the points to edit mode
+         if test_newpoint
+             set(hh,'UserData',size(Coord,1))% flag the points to edit mode
+         else
+             set(hh,'UserData',index_point)% mark the selected point index for future mouse motion
+         end
         hhh=findobj('Tag','calib_marker');%look for handle of point marker (circle)
         if ~isempty(hhh)
             set(hhh,'Position',[xy(1,1)-ind_range/2 xy(1,2)-ind_range/2 ind_range ind_range])
         else
             rectangle('Curvature',[1 1],...
-                  'Position',[xy(1,1)-ind_range/2 xy(1,2)-ind_range/2 ind_range ind_range],'EdgeColor','m',...
-                  'LineStyle','-','Tag','calib_marker');
-           % line([xy(1,1) xy(1,1)],[xy(1,2) xy(1,2)],'Color','m','Tag','calib_marker','LineStyle','.','Marker','o','MarkerSize',ind_range);
+                'Position',[xy(1,1)-ind_range/2 xy(1,2)-ind_range/2 ind_range ind_range],'EdgeColor','m',...
+                'LineStyle','-','Tag','calib_marker');
         end
         AxeData.Drawing='calibration';
     end

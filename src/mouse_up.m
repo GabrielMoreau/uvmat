@@ -338,22 +338,23 @@ if ~CheckZoom && isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'calibrat
             index_point=get(hh,'UserData');
             set(hh,'UserData',[])%remove edit mode
             h_ListCoord=hh_geometry_calib.ListCoord; %handles of the coordinate list
-            Coord=get(h_ListCoord,'String');
-            data=read_geometry_calib(Coord);
+            Coord=get(h_ListCoord,'Data');
+           % data=read_geometry_calib(Coord);
             %         val=get(h_ListCoord,'Value');
           %  xy=get(hcurrentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
-            data.Coord(index_point,4)=xy(1,1);
-            data.Coord(index_point,5)=xy(1,2);
-            for ipoint=1:size(data.Coord,1)
-                for jcoord=1:5
-                    Coord_cell{ipoint,jcoord}=num2str(data.Coord(ipoint,jcoord),4);%display coordiantes with 4 digits
-                end
-            end
-            Tabchar=cell2tab(Coord_cell,' | ');
-            Tabchar=[Tabchar ;{'......'}];
-            set(h_ListCoord,'String',Tabchar)
-            set(hh,'XData',data.Coord(:,4))
-            set(hh,'YData',data.Coord(:,5))
+            Coord(index_point,4)=xy(1,1);
+            Coord(index_point,5)=xy(1,2);
+            set(h_ListCoord,'Data',Coord)
+%             for ipoint=1:size(Coord,1)
+%                 for jcoord=1:5
+%                     Coord_cell{ipoint,jcoord}=num2str(data.Coord(ipoint,jcoord),4);%display coordiantes with 4 digits
+%                 end
+%             end
+%             Tabchar=cell2tab(Coord_cell,' | ');
+%             Tabchar=[Tabchar ;{'......'}];
+%             set(h_ListCoord,'String',Tabchar)
+            set(hh,'XData',Coord(:,4))
+            set(hh,'YData',Coord(:,5))
         end
     end
 end

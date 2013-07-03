@@ -2546,6 +2546,9 @@ UvData.Field=tps_coeff_field(UvData.Field,check_proj_tps);
 %     else
 %         UvData.Field.CoordMesh=ord;
 %     end
+if ~isfield(UvData.Field,'NbDim')
+    UvData.Field.NbDim=1;
+end
 if UvData.Field.NbDim>1
     UvData.Field=find_field_bounds(UvData.Field);
     % default projection plane
@@ -4905,11 +4908,11 @@ end
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
 set(handles.view_xml,'Backgroundcolor',[1 1 0])%indicate the reading of the current xml file by geometry_calib
-pos_uvmat=get(handles.uvmat,'Position');
-pos_cal(1)=pos_uvmat(1)+UvData.OpenParam.PosGeometryCalib(1)*pos_uvmat(3);
-pos_cal(2)=pos_uvmat(2)+UvData.OpenParam.PosGeometryCalib(2)*pos_uvmat(4);
-pos_cal(3:4)=UvData.OpenParam.PosGeometryCalib(3:4).* pos_uvmat(3:4);
-geometry_calib(FileName,pos_cal);% call the geometry_calib interface	
+% pos_uvmat=get(handles.uvmat,'Position');
+% pos_cal(1)=pos_uvmat(1)+UvData.OpenParam.PosGeometryCalib(1)*pos_uvmat(3);
+% pos_cal(2)=pos_uvmat(2)+UvData.OpenParam.PosGeometryCalib(2)*pos_uvmat(4);
+% pos_cal(3:4)=UvData.OpenParam.PosGeometryCalib(3:4).* pos_uvmat(3:4);
+geometry_calib(FileName);% call the geometry_calib interface	
 set(handles.view_xml,'Backgroundcolor',[1 1 1])%indicate the end of reading of the current xml file by geometry_calib
 set(handles.MenuCalib,'checked','on')% indicate that MenuCalib is activated, test used by mouse action
 

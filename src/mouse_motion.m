@@ -377,9 +377,10 @@ if ~CheckZoom && ~isempty(h_geometry_calib)
     hh_geometry_calib=guidata(h_geometry_calib);
     if  ~isempty(xy) && isfield(hh_geometry_calib,'ListCoord')
         h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
-        Coord=get(h_ListCoord,'String');
-        data=read_geometry_calib(Coord);%transform char cell to numbers
-        if size(data.Coord,2)>=5
+        data.Coord=get(h_ListCoord,'Data');
+%         data.Coord(:,6)=[];
+       % data=read_geometry_calib(Coord);%transform char cell to numbers
+        if isnumeric(data.Coord)&&~isempty(data.Coord)
             XCoord=(data.Coord(:,4));
             YCoord=(data.Coord(:,5));
             xy=get(CurrentAxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
@@ -396,6 +397,7 @@ if ~CheckZoom && ~isempty(h_geometry_calib)
                 end
                 hh=findobj('Tag','calib_points');%look for handle of calibration points
                if ~isempty(hh) && ~isempty(get(hh,'UserData')) && get(hh_geometry_calib.edit_append,'Value') 
+                   %set(hh,'UserData',index_point)
                     index_point=get(hh,'UserData');
                     XCoord(index_point)=xy(1,1);
                     YCoord(index_point)=xy(1,2);
@@ -403,10 +405,18 @@ if ~CheckZoom && ~isempty(h_geometry_calib)
                     set(hh,'YData',YCoord)
                end
                 if ~isempty(index_point)
-                    set(h_ListCoord,'Value',index_point)%mrk the point on the GUI geometry_calib
+                    Data=get(h_ListCoord,'Data');
+                    Data(:,6)=zeros(size(Data,1),1);
+                    Data(index_point,6)=1;%mrk the point on the GUI geometry_calib
+                    set(h_ListCoord,'Data',Data);
+                   % set(h_ListCoord,'Value',index_point)%mrk the point on the GUI geometry_calib
                     hhh=findobj('Tag','calib_marker');%look for handle of point marker (circle)
                     if ~isempty(hhh)
                         set(hhh,'Position',[XCoord(index_point)-ind_range/2 YCoord(index_point)-ind_range/2 ind_range ind_range])
+                    else
+                                    rectangle('Curvature',[1 1],...
+                'Position',[xy(1,1)-ind_range/2 xy(1,2)-ind_range/2 ind_range ind_range],'EdgeColor','m',...
+                'LineStyle','-','Tag','calib_marker');
                     end
                 end
             end

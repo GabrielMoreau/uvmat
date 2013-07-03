@@ -79,13 +79,13 @@ handles.output = hObject;
 guidata(hObject, handles);
 
 %% position
-set(0,'Unit','points')
+set(0,'Unit','pixels')
 ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
-Width=300;% fig width in points (1/72 inch)
-Height=min(0.8*ScreenSize(4),500);
+Width=300;% fig width in pixels 
+Height=600;
 Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40 
 Bottom=ScreenSize(4)-Height-40; %put fig at top right
-set(handles.set_object,'Unit','points')
+set(handles.set_object,'Unit','pixels')
 set(handles.set_object,'Position',[Left Bottom Width Height])
 
 %default
