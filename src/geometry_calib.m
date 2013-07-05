@@ -49,7 +49,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 03-Jul-2013 09:23:35
+% Last Modified by GUIDE v2.5 05-Jul-2013 08:29:07
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -479,14 +479,14 @@ path_uvmat=which('uvmat');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
-coord_files=get(handles.coord_files,'String');
+coord_files=get(handles.ListCoordFiles,'String');
 if ischar(coord_files)
     coord_files={coord_files};
 end
 if isempty(coord_files{1}) || isequal(coord_files,{''})
     coord_files={};
 end
-%retrieve the calibration points stored in the files listed in the popup list coord_files
+%retrieve the calibration points stored in the files listed in the popup list ListCoordFiles
 x_1=Coord(:,4:5)';%px coordinates of the ref points
 nx=str2num(get(hhuvmat.num_Npx,'String'));
 ny=str2num(get(hhuvmat.num_Npy,'String'));
@@ -550,7 +550,7 @@ path_UVMAT=fileparts(path_uvmat); %path to UVMAT
 huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
 % check_cond=0;
-coord_files=get(handles.coord_files,'String');
+coord_files=get(handles.ListCoordFiles,'String');
 if ischar(coord_files)
     coord_files={coord_files};
 end
@@ -558,7 +558,7 @@ if isempty(coord_files{1}) || isequal(coord_files,{''})
     coord_files={};
 end
 
-%retrieve the calibration points stored in the files listed in the popup list coord_files
+%retrieve the calibration points stored in the files listed in the popup list ListCoordFiles
 x_1=Coord(:,4:5)';%px coordinates of the ref points
 nx=str2num(get(hhuvmat.num_Npx,'String'));
 ny=str2num(get(hhuvmat.num_Npy,'String'));
@@ -736,13 +736,13 @@ if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
     if ~strcmp(errormsg,'')
         msgbox_uvmat('ERROR',errormsg);
     end
-    listfile=get(handles.coord_files,'string');
+    listfile=get(handles.ListCoordFiles,'string');
     if isequal(listfile,{''})
         listfile={outputfile};
     else
         listfile=[listfile;{outputfile}];%update the list of coord files
     end
-    set(handles.coord_files,'string',listfile);
+    set(handles.ListCoordFiles,'string',listfile);
 end
 % set(handles.ListCoord,'Value',1)% refresh the display of coordinates
 set(handles.ListCoord,'Data',[])
@@ -761,8 +761,8 @@ PLOT_Callback(hObject, eventdata, handles)
 % --- Executes on button press in CLEAR.
 function CLEAR_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.coord_files,'Value',1)
-set(handles.coord_files,'String',{''})
+set(handles.ListCoordFiles,'Value',1)
+set(handles.ListCoordFiles,'String',{''})
 
 %------------------------------------------------------------------------
 function XObject_Callback(hObject, eventdata, handles)
@@ -810,12 +810,12 @@ ListCoord_Callback(hObject, eventdata, handles)
 PLOT_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in edit_append.
-function edit_append_Callback(hObject, eventdata, handles)
+% --- Executes on selection change in CheckEnableMouse.
+function CheckEnableMouse_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-choice=get(handles.edit_append,'Value');
+choice=get(handles.CheckEnableMouse,'Value');
 if choice
-    set(handles.edit_append,'BackgroundColor',[1 1 0])
+    set(handles.CheckEnableMouse,'BackgroundColor',[1 1 0])
     huvmat=findobj(allchild(0),'tag','uvmat');
     if ishandle(huvmat)
         hhuvmat=guidata(huvmat);
@@ -825,7 +825,7 @@ if choice
         end
     end
 else
-    set(handles.edit_append,'BackgroundColor',[0.7 0.7 0.7]) 
+    set(handles.CheckEnableMouse,'BackgroundColor',[0.7 0.7 0.7]) 
 end
     
 function NEW_Callback(hObject, eventdata, handles)
@@ -917,43 +917,29 @@ end
 set(handles.geometry_calib,'UserData',CalibData)
 
 %grid in phys space
-Coord=get(handles.ListCoord,'String');
-val=get(handles.ListCoord,'Value');
-data=read_geometry_calib(Coord);
-%nbpoints=size(data.Coord,1); %nbre of calibration points
-data.Coord(val:val+size(T,1)-1,1:3)=T(end:-1:1,:);%update the existing list of phys coordinates from the GUI create_grid
-% for i=1:nbpoints
-%    for j=1:5
-%           Coord{i,j}=num2str(data.Coord(i,j),4);%display coordiantes with 4 digits
-%    end
-% end
-%update the phys coordinates starting from the selected point (down in the
-Coord(end,:)=[]; %remove last string '.....'
-for i=1:size(data.Coord,1)
-    for j=1:5
-          Coord{i,j}=num2str(data.Coord(i,j),4);%display coordiantes with 4 digits
-    end
-end
+Coord=get(handles.ListCoord,'Data');
+Coord(1:size(T,1),1:3)=T;%update the existing list of phys coordinates from the GUI create_grid
 
-%size(data.Coord,1)
-Tabchar=cell2tab(Coord,' | ');
-Tabchar=[Tabchar ;{'......'}];
-set(handles.ListCoord,'String',Tabchar)
+% for i=1:size(data.Coord,1)
+%     for j=1:5
+%           Coord{i,j}=num2str(data.Coord(i,j),4);%display coordiantes with 4 digits
+%     end
+% end
+set(handles.ListCoord,'Data',Coord)
 
 % -----------------------------------------------------------------------
 % --- automatic grid dectection from local maxima of the images 
 function MenuDetectGrid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %% read the four last point coordinates in pixels
-Coord_cell=get(handles.ListCoord,'String');%read list of coordinates on geometry_calib
-data=read_geometry_calib(Coord_cell);
-nbpoints=size(data.Coord,1); %nbre of calibration points
+Coord=get(handles.ListCoord,'Data');%read list of coordinates on geometry_calib
+nbpoints=size(Coord,1); %nbre of calibration points
 if nbpoints~=4
     msgbox_uvmat('ERROR','four points must have be selected by the mouse to delimitate the phys grid area; the Ox axis will be defined by the two first points')
     return
 end
-corners_X=(data.Coord(end:-1:end-3,4)); %pixel absissa of the four corners
-corners_Y=(data.Coord(end:-1:end-3,5)); 
+corners_X=(Coord(end:-1:end-3,4)); %pixel absissa of the four corners
+corners_Y=(Coord(end:-1:end-3,5)); 
 
 %reorder the last two points (the two first in the list) if needed
 angles=angle((corners_X-corners_X(1))+1i*(corners_Y-corners_Y(1)));
@@ -1063,17 +1049,19 @@ for ipoint=1:nbpoints
 end
 Tmod=T(:,(1:2))+Delta;
 [Xpx,Ypx]=px_XYZ(GeometryCalib,Tmod(:,1),Tmod(:,2));
-for ipoint=1:nbpoints
-     Coord{ipoint,1}=num2str(T(ipoint,1),4);%display coordiantes with 4 digits
-     Coord{ipoint,2}=num2str(T(ipoint,2),4);%display coordiantes with 4 digits
-     Coord{ipoint,3}=num2str(T(ipoint,3),4);%display coordiantes with 4 digits;
-     Coord{ipoint,4}=num2str(Xpx(ipoint),4);%display coordiantes with 4 digits
-     Coord{ipoint,5}=num2str(Ypx(ipoint),4);%display coordiantes with 4 digits
-end
-Tabchar=cell2tab(Coord(end:-1:1,:),' | ');
-Tabchar=[Tabchar ;{'......'}];
-set(handles.ListCoord,'Value',1)
-set(handles.ListCoord,'String',Tabchar)
+% for ipoint=1:nbpoints
+%      Coord{ipoint,1}=num2str(T(ipoint,1),4);%display coordiantes with 4 digits
+%      Coord{ipoint,2}=num2str(T(ipoint,2),4);%display coordiantes with 4 digits
+%      Coord{ipoint,3}=num2str(T(ipoint,3),4);%display coordiantes with 4 digits;
+%      Coord{ipoint,4}=num2str(Xpx(ipoint),4);%display coordiantes with 4 digits
+%      Coord{ipoint,5}=num2str(Ypx(ipoint),4);%display coordiantes with 4 digits
+% end
+Coord=[T Xpx Ypx zeros(size(T,1),1)];
+set(handles.ListCoord,'Data',Coord)
+% Tabchar=cell2tab(Coord(end:-1:1,:),' | ');
+% Tabchar=[Tabchar ;{'......'}];
+% set(handles.ListCoord,'Value',1)
+% set(handles.ListCoord,'String',Tabchar)
 PLOT_Callback(hObject, eventdata, handles)
 
 %-----------------------------------------------------------------------
@@ -1196,13 +1184,13 @@ end
 function MenuGridFile_Callback(hObject, eventdata, handles)
 % -----------------------------------------------------------------------
 inputfile=browse_xml(hObject, eventdata, handles);
-listfile=get(handles.coord_files,'string');
+listfile=get(handles.ListCoordFiles,'string');
 if isequal(listfile,{''})
     listfile={inputfile};
 else
     listfile=[listfile;{inputfile}];%update the list of coord files
 end
-set(handles.coord_files,'string',listfile);
+set(handles.ListCoordFiles,'string',listfile);
 
 %------------------------------------------------------------------------
 % --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
@@ -1307,11 +1295,11 @@ set(handles.calib_type,'Value',val_cal)
 % set(handles.ListCoord,'Value',1)
 
 if isempty(CoordCell)% allow mouse action by default in the absence of input points
-    set(handles.edit_append,'Value',1)
-    set(handles.edit_append,'BackgroundColor',[1 1 0])
+    set(handles.CheckEnableMouse,'Value',1)
+    set(handles.CheckEnableMouse,'BackgroundColor',[1 1 0])
 else % does not allow mouse action by default in the presence of input points
-    set(handles.edit_append,'Value',0)
-    set(handles.edit_append,'BackgroundColor',[0.7 0.7 0.7])
+    set(handles.CheckEnableMouse,'Value',0)
+    set(handles.CheckEnableMouse,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 %------------------------------------------------------------------------
@@ -1477,3 +1465,10 @@ if isempty(hhh)
 else
     set(hhh,'Position',[XCoord-ind_range/2 YCoord-ind_range/2 ind_range ind_range])
 end
+
+
+% --- Executes on button press in Copy.
+function Copy_Callback(hObject, eventdata, handles)
+% hObject    handle to Copy (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)

@@ -73,7 +73,7 @@ if ~isempty(huvmat)
             set(hhuvmat.MenuCalib,'checked','off');% test for calibration off
         else
             hh_calib=guidata(h_calib);
-            test_cal=get(hh_calib.edit_append,'Value');
+            test_cal=get(hh_calib.CheckEnableMouse,'Value');
         end
     end
 end
@@ -402,8 +402,8 @@ end
 if  test_cal && ~isempty(haxes) && strcmp(get(haxes,'tag'),'PlotAxes')
     h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
     hh_geometry_calib=guidata(h_geometry_calib);
-    h_edit_append=hh_geometry_calib.edit_append;%findobj(h_geometry_calib,'Tag','edit_append');
-    if isequal(get(h_edit_append,'Value'),1) && ~isempty(haxes)
+    h_CheckEnableMouse=hh_geometry_calib.CheckEnableMouse;
+    if isequal(get(h_CheckEnableMouse,'Value'),1) && ~isempty(haxes)
         if ~isequal(get(hhuvmat.TransformName,'Value'),1); %active only with no transform (px coordinates)
             set(hhuvmat.TransformName,'Value',1)
             uvmat('TransformName_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat

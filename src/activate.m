@@ -70,9 +70,11 @@ else
         set(0,'PointerLocation',CurrentPointerLoc+0.1*ipos*(NewPointerLoc-CurrentPointerLoc))
         pause(0.2)
     end
-    if strcmp(get(hObject,'Style'),'axes')
+    if strcmp(get(hObject,'Type'),'axes')
         mouse_down(hFig,[])
+        pause(2)
         mouse_up(hFig,[])
+        drawnow
     else
     BackgroundColor=get(hObject,'BackgroundColor');
     set(hObject,'BackgroundColor',[1 1 0])% mark activation of the object

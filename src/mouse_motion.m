@@ -396,7 +396,7 @@ if ~CheckZoom && ~isempty(h_geometry_calib)
                     pointershape='arrow';% default pointer is an arrow 
                 end
                 hh=findobj('Tag','calib_points');%look for handle of calibration points
-               if ~isempty(hh) && ~isempty(get(hh,'UserData')) && get(hh_geometry_calib.edit_append,'Value') 
+               if ~isempty(hh) && ~isempty(get(hh,'UserData')) && get(hh_geometry_calib.CheckEnableMouse,'Value') 
                    %set(hh,'UserData',index_point)
                     index_point=get(hh,'UserData');
                     XCoord(index_point)=xy(1,1);

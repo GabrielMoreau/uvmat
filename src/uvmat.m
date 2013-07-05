@@ -4320,7 +4320,7 @@ if get(handles.CheckEditObject,'Value')
     hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
     if ishandle(hgeometry_calib)
         hhgeometry_calib=guidata(hgeometry_calib);
-        set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
+        set(hhgeometry_calib.CheckEnableMouse,'Value',0)% desactivate mouse action in geometry_calib
     end
     set(handles.CheckViewObject,'value',1)
     CheckViewObject_Callback(hObject, eventdata, handles)
@@ -4780,7 +4780,7 @@ function create_object(data,handles)
 hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');% search the GUI geometric calibration 
 if ishandle(hgeometry_calib)
     hhgeometry_calib=guidata(hgeometry_calib);
-    set(hhgeometry_calib.edit_append,'Value',0)% desactivate mouse action in geometry_calib
+    set(hhgeometry_calib.CheckEnableMouse,'Value',0)% desactivate mouse action in geometry_calib
 end
 set(handles.CheckEditObject,'Value',0)  %desactivate the object edit mode
 CheckEditObject_Callback([],[],handles)

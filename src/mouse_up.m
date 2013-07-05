@@ -332,7 +332,7 @@ if ~CheckZoom && isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'calibrat
     h_geometry_calib=findobj(allchild(0),'tag','geometry_calib'); %find the geomterty_calib GUI
     if ~isempty(h_geometry_calib)
         hh_geometry_calib=guidata(h_geometry_calib);
-        edit_test=get(hh_geometry_calib.edit_append,'Value');
+        edit_test=get(hh_geometry_calib.CheckEnableMouse,'Value');
         hh=findobj(hcurrentaxes,'tag','calib_points');%look for handle of calibration points
         if ~isempty(hh) && edit_test
             index_point=get(hh,'UserData');

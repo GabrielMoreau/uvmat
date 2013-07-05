@@ -3,7 +3,7 @@
 %%%% Demo 1%%%%
 % brigtness
 huvmat=findobj(allchild(0),'Tag','uvmat');
-figure(huvmat)
+uistack(huvmat,'top')
 activate('uvmat','Scalar','num_MaxA',[],100)
 activate('uvmat','Scalar','CheckFixScalar',[],0)
 activate('uvmat','Coordinates','CheckZoom',[],1)
