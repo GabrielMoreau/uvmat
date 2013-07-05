@@ -86,7 +86,7 @@ RootFile=Param.InputTable{1,3};
 SubDir=Param.InputTable{1,2};
 NomTypeInput=Param.InputTable{1,4};
 FileExt=Param.InputTable{1,5};
-FileType=SeriesData.FileType{1};
+FileType=SeriesData.FileType{1};%type of the first input file series
 FileInfo=SeriesData.FileInfo{1};
 FileInput=SeriesData.RefFile{1};
 
@@ -117,17 +117,13 @@ switch FileType
         Data=nc2struct(FileInput,'ListGlobalAttribute','Civ2_ImageA','Civ1_ImageA','Civ2_ImageB','Civ1_ImageB');
         [PathCiv1_ImageA,Civ1_ImageA,FileExtA]=fileparts(Data.Civ1_ImageA);
         [PathCiv1_ImageB,Civ1_ImageB,FileExtA]=fileparts(Data.Civ1_ImageB);
-        %         set(handles.Civ1_ImageA,'String',Civ1_ImageA)
-        %         set(handles.Civ1_ImageB,'String',Civ1_ImageB)
         if ~isempty(Data.Civ2_ImageA)
             [PathCiv2_ImageA,Civ2_ImageA,FileExtA]=fileparts(Data.Civ2_ImageA);
             [PathCiv2_ImageB,Civ2_ImageB,FileExtA]=fileparts(Data.Civ2_ImageB);
-            %         set(handles.Civ2_ImageA,'String',Civ2_ImageA)
-            %         set(handles.Civ2_ImageB,'String',Civ2_ImageB)
         end
         hhseries=guidata(gcbf);
         if size(Param.InputTable,1)==1
-            series('display_file_name',hhseries,Data.Civ1_ImageA,'append');
+            series('display_file_name',hhseries,Data.Civ1_ImageA,'append');%append the image series to the input list
         end
         if isfield(Data,'Txt')
             errormsg=Data.Txt;
@@ -143,6 +139,10 @@ switch FileType
         set(handles.Program,'Value',3) %select Cix by default
         msgbox_uvmat('ERROR','old civX convention, use the GUI civ')
         return
+end
+if numel(SeriesData.FileType)>=2 && strcmp(SeriesData.FileType{end-1},'image') &&   strcmp(SeriesData.FileType{end},'image')
+    set(handles.ListCompareMode,'Value',3)% we compare two image series term to term ('shift')
+    set(handles.PairIndices,'Visible','off')
 end
 
 %% TODO: get corresponding image in nc case
@@ -187,9 +187,6 @@ else
         set(handles.(ListOptions{index}),'value',0)
     end
 end
-%list_operation={'CheckCiv1','CheckFix1','CheckPatch1','CheckCiv2','CheckFix2','CheckPatch2'};
-
-%set(handles.(ListOptions{min(ind_opening+1,6)}),'value',1)
 
 
 %%  set the menus of image pairs and default selection for civ_input   %%%%%%%%%%%%%%%%%%%
