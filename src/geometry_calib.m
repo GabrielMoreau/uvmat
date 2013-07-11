@@ -1376,17 +1376,18 @@ else
     set(hh,'XData',Coord_plot(:,1))
     set(hh,'YData',Coord_plot(:,2))
 end
+pause(.1)
+figure(handles.geometry_calib)
 
-% get data on the matlab work space
+%------------------------------------------------------------------------ 
+% --- Executes on button press in Copy.
+%------------------------------------------------------------------------
+function Copy_Callback(hObject, eventdata, handles)
 
 evalin('base','global Coord')%make CurData global in the workspace
 display('coordinates of calibration points (phys,px,marker) :')
 evalin('base','Coord') %display CurData in the workspace
 commandwindow; %brings the Matlab command window to the front
-pause(.1)
-figure(handles.geometry_calib)
-
- 
 
 
 % --- Executes when selected cell(s) is changed in ListCoord.
@@ -1467,8 +1468,5 @@ else
 end
 
 
-% --- Executes on button press in Copy.
-function Copy_Callback(hObject, eventdata, handles)
-% hObject    handle to Copy (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+
+

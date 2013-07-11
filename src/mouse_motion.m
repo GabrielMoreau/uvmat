@@ -50,11 +50,13 @@ test_zoom_draw=0;
 test_object=0; %test for object editing or creation 
 test_edit_object=0;% edit test for mouse shap: an arrow
 test_ruler=0;%test for active ruler 
+test_transform=0;
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);%handles of the elements in uvma
     test_edit_object=get(hhuvmat.CheckEditObject,'Value');
     test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');
+    test_transform=~isequal(get(hhuvmat.TransformName,'Value'),1)
 end
 test_piv=0;
 if isfield(FigData,'CivHandle')
@@ -378,11 +380,14 @@ if ~CheckZoom && ~isempty(h_geometry_calib)
     if  ~isempty(xy) && isfield(hh_geometry_calib,'ListCoord')
         h_ListCoord=hh_geometry_calib.ListCoord; %findobj(h_geometry_calib,'Tag','ListCoord');
         data.Coord=get(h_ListCoord,'Data');
-%         data.Coord(:,6)=[];
-       % data=read_geometry_calib(Coord);%transform char cell to numbers
         if isnumeric(data.Coord)&&~isempty(data.Coord)
+            if test_transform
+                            XCoord=(data.Coord(:,1));
+            YCoord=(data.Coord(:,2));
+            else
             XCoord=(data.Coord(:,4));
             YCoord=(data.Coord(:,5));
+            end
             xy=get(CurrentAxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
             if ~isempty(xy)
                 xlim=get(CurrentAxes,'XLim');
@@ -396,7 +401,7 @@ if ~CheckZoom && ~isempty(h_geometry_calib)
                     pointershape='arrow';% default pointer is an arrow 
                 end
                 hh=findobj('Tag','calib_points');%look for handle of calibration points
-               if ~isempty(hh) && ~isempty(get(hh,'UserData')) && get(hh_geometry_calib.CheckEnableMouse,'Value') 
+               if ~isempty(hh) && ~isempty(get(hh,'UserData')) %&& get(hh_geometry_calib.CheckEnableMouse,'Value') 
                    %set(hh,'UserData',index_point)
                     index_point=get(hh,'UserData');
                     XCoord(index_point)=xy(1,1);
