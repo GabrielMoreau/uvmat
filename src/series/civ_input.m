@@ -60,7 +60,7 @@ SeriesData.ParentHandle=hseries;
 SeriesData=get(hseries,'UserData');
 % relevant data in gcbf:.FileType,.FileInfo,.Time,.TimeUnit,.GeometryCalib{1};
 
-%% set visibility options: case civ_matlab
+%% set visibility options: 
 if strcmp(Param.Action.ActionName,'civ_series')
         set(handles.Program,'String','civ_series')
         set(handles.num_MaxDiff,'Visible','on')
@@ -154,7 +154,7 @@ set(handles.ListPairCiv1,'Value',1)
 set(handles.ListPairCiv1,'String',{''})
 set(handles.ListPairCiv2,'Value',1)
 set(handles.ListPairCiv2,'String',{''}) 
-fill_GUI(Param,hObject);%fill the GUI with the parameters retrieved from the input Param
+fill_GUI(Param.ActionInput,hObject);%fill the GUI with the parameters retrieved from the input Param
 
         
 %% prepare the GUI with input parameters 
@@ -1576,7 +1576,14 @@ handle_title_dy=findobj(hchildren,'tag','title_Dy');
 testgrid=0;
 filegrid='';
 if value
-    filebase=get(handles.RootPath,'String');
+        hseries=findobj(allchild(0),'Tag','series');
+    hhseries=guidata(hseries);
+    InputTable=get(hhseries.InputTable,'Data');
+     ind_A=1;% line index of the (first) image series
+    if strcmp(InputTable{1,5},'.nc');
+        ind_A=2;
+    end
+    filebase=InputTable{ind_A,1};
     [nbslice, flag_grid]=get_grid(filebase,handles);% look for a grid with appropriate name 
     if isequal(flag_grid,1)
         filegrid=[num2str(nbslice) 'grid'];
@@ -1586,16 +1593,12 @@ if value
         if exist(filegrid,'file')
             filebase=filegrid;
         end
-        [FileName, PathName] = uigetfile( ...
-            {'*.grid', ' (*.grid)';
-            '*.grid',  '.grid files '; ...
-            '*.*', 'All Files (*.*)'}, ...
-            'Pick a file',filebase);
-        filegrid=fullfile(PathName,FileName);
+       filegrid = uigetfile_uvmat('pick a grid file .grid:',filebase,'.grid'); 
         set(hObject,'UserData',filegrid);%store for future use
-        if ~(isempty(FileName)||isempty(PathName)||isequal(FileName,0)||~exist(filegrid,'file'))
+        if ~isempty(filegrid)
             testgrid=1;
-        end
+        end 
+        set(hObject,'UserData',filegrid);%store for future use
     end
 end
 if testgrid
@@ -1645,10 +1648,17 @@ hparent=get(hObject,'parent');
 parent_tag=get(hparent,'Tag');
 hchildren=get(hparent,'children');
 handle_txtbox=findobj(hchildren,'tag','Mask');% look for the mask name box in the same panel
+
 testmask=0;
 if value
-    filebase=get(handles.RootPath,'String');
-    [nbslice, flag_mask]=get_mask(filebase,handles);% look for a mask with appropriate name 
+    hseries=findobj(allchild(0),'Tag','series');
+    hhseries=guidata(hseries);
+    InputTable=get(hhseries.InputTable,'Data');
+     ind_A=1;% line index of the (first) image series
+    if strcmp(InputTable{1,5},'.nc');
+        ind_A=2;
+    end
+    [nbslice, flag_mask]=get_mask(InputTable{ind_A,1},handles);% look for a mask with appropriate name 
     if isequal(flag_mask,1)
         filemask=[num2str(nbslice) 'mask'];
         testmask=1;
@@ -1657,14 +1667,9 @@ if value
         if exist(filemask,'file')
             filebase=filemask;
         end
-        [FileName, PathName] = uigetfile( ...
-            {'*.png', ' (*.png)';
-            '*.png',  '.png files '; ...
-            '*.*', 'All Files (*.*)'}, ...
-            'Pick a mask file *.png',filebase);
-        filemask=fullfile(PathName,FileName);
+        filemask= uigetfile_uvmat('pick a mask image file:',InputTable{ind_A,1},'image'); 
         set(hObject,'UserData',filemask);%store for future use
-        if ~(isempty(FileName)||isempty(PathName)||isequal(FileName,0)||~exist(filemask,'file'))
+        if ~isempty(filemask)
             testmask=1;
         end
     end
