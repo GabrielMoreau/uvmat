@@ -46,9 +46,9 @@ switch info.class
             out.(names{k})=convert_string(ss.(names{k}));
         end
     case 'char'   
-        out=str2num(ss);
+        out=str2double(ss);
         %if isempty(regexp(ss,'^(-*\d+\.*\d*\ *)+$'))% if the string does not contain a set of numbers (with possible sign and decimal) separated by blanks
-        if isempty(out)
+        if isnan(out)
             sep_ind=regexp(ss,'\s&\s');% check for separator ' & ' which indicates column separation in tables
             if ~isempty(sep_ind)
                 sep_ind=[-2 sep_ind length(ss)+1];
@@ -58,8 +58,6 @@ switch info.class
             else
                 out=ss; %reproduce the input string
             end
-%         else
-%             out=str2num(ss);
         end
     case 'cell'
         out=[];%default
