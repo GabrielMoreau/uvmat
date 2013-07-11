@@ -2562,15 +2562,29 @@ commandwindow; %brings the Matlab command window to the front
 function MenuImportConfig_Callback(hObject, eventdata, handles)
 
 InputTable=get(handles.InputTable,'Data');
-[FileName, PathName] = uigetfile( ...
-       {'*.xml', ' (*.xml)';
-       '*.xml',  '.xml files '; ...
-        '*.*',  'All Files (*.*)'}, ...
-        'Pick a file',InputTable{1,1});
-filexml=[PathName FileName];%complete file name 
-if isempty(filexml),return;end %abandon if no file is introduced by the browser
-Param=xml2struct(filexml);
-fill_GUI(Param,handles.series)
+filexml=uigetfile_uvmat('pick a xml parameter file',InputTable{1,1},'.xml');
+% [FileName, PathName] = uigetfile( ...
+%        {'*.xml', ' (*.xml)';
+%        '*.xml',  '.xml files '; ...
+%         '*.*',  'All Files (*.*)'}, ...
+%         'Pick a file',InputTable{1,1});
+% filexml=[PathName FileName];%complete file name 
+if ~isempty(filexml)%abandon if no file is introduced by the browser
+    Param=xml2struct(filexml);
+    fill_GUI(Param,handles.series)
+    if isfield(Param,'ActionInput')
+            set(handles.ActionInput,'Visible','on')
+    set(handles.ActionInput_title,'Visible','on')
+    set(handles.ActionInputView,'Visible','on')
+    set(handles.ActionInputView,'Value',0)
+    %set(handles.ActionInput,'String',ActionName)
+%    ParamOut.ActionInput.Program=ActionName; % record the program in ActionInput
+    SeriesData=get(handles.series,'UserData');
+    SeriesData.ActionInput=Param.ActionInput;
+    set(handles.series,'UserData',SeriesData)
+    end
+    ActionName_Callback([],[],handles)
+end
 
 %------------------------------------------------------------------------
 % --- Executes when the GUI series is resized.

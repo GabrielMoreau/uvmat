@@ -29,64 +29,69 @@ switch FileExt
     case '.xls'
         FileType='xls';
     otherwise
-        if ~isempty(FileExt) && ~isempty(imformats(regexprep(FileExt,'^.','')))
-            try
-                imainfo=imfinfo(fileinput);
-                if length(imainfo) >1 %case of image with multiple frames
-                    FileType='multimage';
-                    FileInfo=imainfo(1);%take info from the first frame
-                    FileInfo.NumberOfFrames=length(imainfo);
-                else
-                    FileType='image';
-                    FileInfo=imainfo;
-                    FileInfo.NumberOfFrames=1;
-                end
-            end
-        else
-            error_nc=0;
-            try
-                Data=nc2struct(fileinput,'ListGlobalAttribute','absolut_time_T0','Conventions',...
-                    'CivStage','patch2','fix2','civ2','patch','fix');
-                if isfield(Data,'Txt') && ~isempty(Data.Txt)
-                    error_nc=1;
-                else
-                    if ~isempty(Data.absolut_time_T0')
-                        FileType='civx'; % test for civx velocity fields
-                        if ~isempty(Data.patch2) && isequal(Data.patch2,1)
-                            FileInfo.CivStage=6;
-                        elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
-                            FileInfo.CivStage=5;
-                        elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
-                            FileInfo.CivStage=4;
-                        elseif ~isempty(Data.patch) && isequal(Data.patch,1);
-                            FileInfo.CivStage=3;
-                        elseif ~isempty(Data.fix) && isequal(Data.fix,1);
-                            FileInfo.CivStage=2;
-                        elseif ~isempty(Data.absolut_time_T0) && ~isempty(Data.hart)
-                            FileInfo.CivStage=1;
+        if ~isempty(FileExt)% exclude empty extension
+            FileExt=regexprep(FileExt,'^.','');% eliminate the dot of the extension
+            if ~isempty(FileExt)
+                if ~isempty(imformats(FileExt))%case of images
+                    try
+                        imainfo=imfinfo(fileinput);
+                        if length(imainfo) >1 %case of image with multiple frames
+                            FileType='multimage';
+                            FileInfo=imainfo(1);%take info from the first frame
+                            FileInfo.NumberOfFrames=length(imainfo);
+                        else
+                            FileType='image';
+                            FileInfo=imainfo;
+                            FileInfo.NumberOfFrames=1;
                         end
-                    elseif strcmp(Data.Conventions,'uvmat/civdata')
-                        FileType='civdata'; % test for civx velocity fields
-                        FileInfo.CivStage=Data.CivStage;
-                    else
-                        FileType='netcdf';
                     end
-                end
-            catch ME
-                error_nc=1;
-            end
-            if error_nc
-                try
-                    if exist('VideoReader.m','file')%recent version of Matlab
-                        VideoObject=VideoReader(fileinput);
-                        FileInfo=get(VideoObject);
-                        FileType='video';
-                    elseif exist('mmreader.m','file')% Matlab 2009a
-                        VideoObject=mmreader(fileinput);
-                        FileInfo=get(VideoObject);
-                        FileType='mmreader';
-                    end  
-                    FileInfo.BitDepth=FileInfo.BitsPerPixel/3;
+                else
+                    error_nc=0;
+                    try
+                        Data=nc2struct(fileinput,'ListGlobalAttribute','absolut_time_T0','Conventions',...
+                            'CivStage','patch2','fix2','civ2','patch','fix');
+                        if isfield(Data,'Txt') && ~isempty(Data.Txt)
+                            error_nc=1;
+                        else
+                            if ~isempty(Data.absolut_time_T0')
+                                FileType='civx'; % test for civx velocity fields
+                                if ~isempty(Data.patch2) && isequal(Data.patch2,1)
+                                    FileInfo.CivStage=6;
+                                elseif ~isempty(Data.fix2) && isequal(Data.fix2,1)
+                                    FileInfo.CivStage=5;
+                                elseif ~isempty(Data.civ2) && isequal(Data.civ2,1);
+                                    FileInfo.CivStage=4;
+                                elseif ~isempty(Data.patch) && isequal(Data.patch,1);
+                                    FileInfo.CivStage=3;
+                                elseif ~isempty(Data.fix) && isequal(Data.fix,1);
+                                    FileInfo.CivStage=2;
+                                elseif ~isempty(Data.absolut_time_T0) && ~isempty(Data.hart)
+                                    FileInfo.CivStage=1;
+                                end
+                            elseif strcmp(Data.Conventions,'uvmat/civdata')
+                                FileType='civdata'; % test for civx velocity fields
+                                FileInfo.CivStage=Data.CivStage;
+                            else
+                                FileType='netcdf';
+                            end
+                        end
+                    catch ME
+                        error_nc=1;
+                    end
+                    if error_nc
+                        try
+                            if exist('VideoReader.m','file')%recent version of Matlab
+                                VideoObject=VideoReader(fileinput);
+                                FileInfo=get(VideoObject);
+                                FileType='video';
+                            elseif exist('mmreader.m','file')% Matlab 2009a
+                                VideoObject=mmreader(fileinput);
+                                FileInfo=get(VideoObject);
+                                FileType='mmreader';
+                            end
+                            FileInfo.BitDepth=FileInfo.BitsPerPixel/3;
+                        end
+                    end
                 end
             end
         end

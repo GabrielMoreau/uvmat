@@ -122,11 +122,6 @@ refresh_GUI(hObject)
 %------------------------------------------------------------------------
 function OK_Callback(option,filter_ext,hObject,event)
 hfig=get(hObject,'parent');%handle of the fig
-% if ~strcmp(get(hfig,'SelectionType'),'open')
-%     return %select double click
-% end
-%set(hObject,'BackgroundColor',[1 1 0])% paint list in yellow to indicate action
-%     drawnow
 htitlebox=findobj(hfig,'tag','titlebox');  % display the current dir name  
 DirName=get(htitlebox,'String');
 
@@ -134,16 +129,16 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
     hlist=findobj(hfig,'Tag','list');
     list=get(hlist,'String');
     index=get(hlist,'Value');
-    SelectName=regexprep(list{index},'^\+/','');% remove the +/ used to mark dir
+    if ~isempty(regexp(list{index},'^\+/'))
+        return % quit if a dir has been opened
+    end
+    %SelectName=regexprep(list{index},'^\+/','');% remove the +/ used to mark dir
+    SelectName=list{index};
     ind_dot=regexp(SelectName,'\s*\.\.\.');%remove what is beyond  '...'
     if ~isempty(ind_dot)
         SelectName=SelectName(1:ind_dot-1);
     end
-    % if strcmp(SelectName,'..')% the upward dir option has been selected
-    %     FullSelectName=fileparts(DirName);
-    % else
     FullSelectName=fullfile(DirName,SelectName);
-    % end
     if exist(FullSelectName,'file')
         switch option
             case 'browser'
@@ -163,7 +158,6 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
         end
     end
 end
-%set(hObject,'BackgroundColor',[0.7 0.7 0.7])% paint list in grey to indicate action end
 
 uiresume(get(hObject,'parent'))
 
@@ -252,9 +246,6 @@ refresh_GUI(hObject,[])
 function list_Callback(option,filter_ext,hObject,event)
 %------------------------------------------------------------------------
 hfig=get(hObject,'parent');%handle of the fig
-% if ~strcmp(get(hfig,'SelectionType'),'open')
-%     return %select double click
-% end
 set(hObject,'BackgroundColor',[1 1 0])% paint list in yellow to indicate action
     drawnow
 list=get(hObject,'String');

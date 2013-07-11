@@ -6,19 +6,22 @@
 %
 % INPUT:
 % Param: matlab structure containing the information to display in the GUI
-% handles: Matlab structure containing the handles of the GUI elements
+% GUI_handle: handle of the GUI to be filled 
 %
 % see also the reverse function read_GUI.m
 %
 function errormsg=fill_GUI(Param,GUI_handle)
 %------------------------------------------------------------------------
 errormsg='';
-%handles=guidata(GUI_handle); 
-            children=get(GUI_handle,'children');
-             handles=[];
-            for ichild=1:numel(children)
-                handles.(get(children(ichild),'tag'))=children(ichild);
-            end
+if ~isstruct(Param)
+    errormsg='first input parmaeter of fill_GUI must be a structure';
+    return
+end
+children=get(GUI_handle,'children');
+handles=[];
+for ichild=1:numel(children)
+    handles.(get(children(ichild),'tag'))=children(ichild);
+end
 UserData=get(GUI_handle,'UserData');
 fields=fieldnames(Param);%list of fields in Param
 % loop on the elements of the input structure Param
@@ -27,14 +30,7 @@ for ifield=1:numel(fields)
     if isstruct(Param.(fields{ifield}))% case of a sub-structure
         if isfield(handles,fields{ifield})
             set(handles.(fields{ifield}),'Visible','on')
-            %             children=get(handles.(fields{ifield}),'children');
-            %             for ichild=1:numel(children)
-            %                 hchild.(get(children(ichild),'tag'))=children(ichild);
-            %             end
-            %   errormsg=fill_GUI(Param.(fields{ifield}),hchild);% apply the function to the substructure
             errormsg=fill_GUI(Param.(fields{ifield}),handles.(fields{ifield}));% apply the function to the substructure
-            % if the input sub-structure fits with a tag name of the GUI and a
-            % substructure of UserData
         elseif isfield(UserData,fields{ifield})&& isfield(handles,fields{ifield})&&isfield(Param.(fields{ifield}),'Name')
             UserData.(fields{ifield})=Param.(fields{ifield});
             set(handles.(fields{ifield}),'String',Param.(fields{ifield}).Name)
@@ -114,4 +110,3 @@ for ifield=1:numel(fields)
         end
     end
 end
- 
