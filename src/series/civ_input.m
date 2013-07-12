@@ -154,8 +154,9 @@ set(handles.ListPairCiv1,'Value',1)
 set(handles.ListPairCiv1,'String',{''})
 set(handles.ListPairCiv2,'Value',1)
 set(handles.ListPairCiv2,'String',{''}) 
+if isfield(Param,'ActionInput')
 fill_GUI(Param.ActionInput,hObject);%fill the GUI with the parameters retrieved from the input Param
-
+end
         
 %% prepare the GUI with input parameters 
 set(handles.ListCompareMode,'Visible','on')
