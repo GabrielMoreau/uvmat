@@ -74,7 +74,6 @@ Height=624;% prefered height of the GUI in points (1/72 inch)
 %adjust to screen size (reduced by a min margin)
 RescaleFactor=min((ScreenSize(3)-80)/Width,(ScreenSize(4)-80)/Height);
 if RescaleFactor>1
-    %RescaleFactor=RescaleFactor/2+1/2; %reduce the rescale factor to provide an increased margin for a big screen
     RescaleFactor=min(RescaleFactor,1);
 end
 Width=Width*RescaleFactor;
@@ -88,24 +87,34 @@ set(hObject,'Position',[LeftX LowY Width Height])% position and size of the GUI 
 set(handles.MinIndex_i,'ColumnFormat',{'numeric'})
 set(handles.MinIndex_i,'ColumnEditable',false)
 set(handles.MinIndex_i,'ColumnName',{'i min'})
+set(handles.MinIndex_i,'Data',[])% initiate Data to double (not cell)
 
 % settings of table MinIndex_j
 set(handles.MinIndex_j,'ColumnFormat',{'numeric'})
 set(handles.MinIndex_j,'ColumnEditable',false)
 set(handles.MinIndex_j,'ColumnName',{'j min'})
+set(handles.MinIndex_j,'Data',[])% initiate Data to double (not cell)
 
 % settings of table MaxIndex_i
 set(handles.MaxIndex_i,'ColumnFormat',{'numeric'})
 set(handles.MaxIndex_i,'ColumnEditable',false)
 set(handles.MaxIndex_i,'ColumnName',{'i max'})
+set(handles.MaxIndex_i,'Data',[])% initiate Data to double (not cell)
 
 % settings of table MaxIndex_j
 set(handles.MaxIndex_j,'ColumnFormat',{'numeric'})
 set(handles.MaxIndex_j,'ColumnEditable',false)
 set(handles.MaxIndex_j,'ColumnName',{'j max'})
+set(handles.MaxIndex_j,'Data',[])% initiate Data to double (not cell)
 
 % settings of table PairString
 set(handles.PairString,'ColumnName',{'pairs'})
+set(handles.PairString,'ColumnEditable',false)
+set(handles.PairString,'ColumnFormat',{'char'})
+set(handles.PairString,'Data',{''})
+
+% settings of table MaskTable
+set(handles.MaskTable,'ColumnName',{'mask name'})
 set(handles.PairString,'ColumnEditable',false)
 set(handles.PairString,'ColumnFormat',{'char'})
 set(handles.PairString,'Data',{''})
@@ -153,6 +162,7 @@ if exist(profil_perso,'file')
     if isfield(h,'MenuFile')
         for ifile=1:min(length(h.MenuFile),5)
             set(handles.(['MenuFile_' num2str(ifile)]),'Label',h.MenuFile{ifile});
+            set(handles.(['MenuFile_' num2str(ifile+5)]),'Label',h.MenuFile{ifile});
         end
     end
     %get the list of previous camapigns in the upper bar menu Open campaign
@@ -305,11 +315,43 @@ end
 %% launch the browser
 fileinput=uigetfile_uvmat('pick a file to append in the input table',oldfile);
 if ~isempty(fileinput)
-    if get(handles.CheckAppend,'Value')
-        display_file_name(handles,fileinput,'append')
-    else
+%     if get(handles.CheckAppend,'Value')
+%         display_file_name(handles,fileinput,'append')
+%     else
         display_file_name(handles,fileinput,'one')
+%     end
+end
+
+% --------------------------------------------------------------------
+function MenuBrowseAppend_Callback(hObject, eventdata, handles)
+
+%% look for the previously opened file 'oldfile'
+InputTable=get(handles.InputTable,'Data');
+RootPathCell=InputTable(:,1);
+if isempty(RootPathCell{1})% no input file in the table
+     MenuBrowse_Callback(hObject, eventdata, handles)%refresh the input table, not append
+     return
+end
+SubDirCell=InputTable(:,2);
+% oldfile=''; %default
+% if ~(isempty(RootPathCell) || isequal(RootPathCell,{''}))%loads the previously stored file name and set it as default in the file_input box
+    oldfile=fullfile(RootPathCell{1},SubDirCell{1});
+% end
+
+%% use a file name stored in prefdir
+dir_perso=prefdir;
+profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+if exist(profil_perso,'file')
+    h=load (profil_perso);
+    if isfield(h,'RootPath') && ischar(h.RootPath)
+        oldfile=h.RootPath;
     end
+end
+
+%% launch the browser
+fileinput=uigetfile_uvmat('pick a file to append in the input table',oldfile);
+if ~isempty(fileinput)
+        display_file_name(handles,fileinput,'append')
 end
 
 %------------------------------------------------------------------------
@@ -317,11 +359,18 @@ end
 %------------------------------------------------------------------------
 function MenuFile_Callback(hObject, eventdata, handles)
 
-fileinput=get(hObject,'Label');
-if get(handles.CheckAppend,'Value')
-    display_file_name(handles,fileinput,'append')
+display_file_name(handles,get(hObject,'Label'),'one')
+
+%------------------------------------------------------------------------
+% --- fct activated by selecting a previous file under the menu Open/append
+%------------------------------------------------------------------------
+function MenuFile_append_Callback(hObject, eventdata, handles)
+
+InputTable=get(handles.InputTable,'Data');
+if isempty(InputTable{1,1})% no input file in the table
+    display_file_name(handles,get(hObject,'Label'),'one') %refresh the input table, not append
 else
-    display_file_name(handles,fileinput,'one')
+    display_file_name(handles,get(hObject,'Label'),'append')% append the selected file to the current list of InputTable
 end
 
 %------------------------------------------------------------------------
@@ -423,7 +472,7 @@ set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 function InputTable_CellEditCallback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.REFRESH,'Visible','on')
-set(handles.REFRESH_title,'Visible','on')
+% set(handles.REFRESH_title,'Visible','on')
 iview=eventdata.Indices(1);
 view_set=get(handles.REFRESH,'UserData');
 if isempty(find(view_set==iview))
@@ -488,7 +537,7 @@ function display_file_name(handles,fileinput,iview)
 % fileinput: input file name, including path
 % iview: line index in the input table
 %       or 'one': refresh the list
-%       'checkappend': add a new line to the list
+%         'append': add a new line to the input table
 
 %% get the input root name, indices, file extension and nomenclature NomType
 if ~exist(fileinput,'file')
@@ -580,7 +629,6 @@ if isempty(j2)
 end
 ref_j=floor((j1+j2)/2);% reference image number corresponding to the file
 set(handles.num_ref_j,'String',num2str(ref_j)); 
-% set(handles.num_ref_j,'UserData',[j1 j2]);%store the indices for future opening
 
 %% update the list of recent files in the menubar and save it for future opening
 MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
@@ -628,20 +676,10 @@ if size(i1_series,2)==2 && min(min(i1_series(:,1,:)))==0
 else
     ref_i=squeeze(max(i1_series(1,:,:),[],2));% select ref_j index for each ref_i
     ref_j=squeeze(max(j1_series(1,:,:),[],3));% select ref_i index for each ref_j
-%     [ref_j,ref_i]=find(squeeze(i1_series(1,:,:)));
-%     [ref_j,ref_i]=find(squeeze(i1_series(1,:,:)))
      MinIndex_i=min(find(ref_i))-1;
      MaxIndex_i=max(find(ref_i))-1;
-%         MinIndex_j=min(ref_j)-1;
      MaxIndex_j=max(find(ref_j))-1;
-%     MinIndex_j=min(find(j1_series_j))-1;
-%     MaxIndex_j=max(find(j1_series_j))-1;
-%     MaxIndex_i=max(i1_series_i)-1;
-%     MinIndex_j=min(i1_series_j)-1;
-%     MaxIndex_j=max(i1_series_j)-1;
-%     MaxIndex_i=max(ref_i)-1;
      MinIndex_j=min(find(ref_j))-1;
-%     MaxIndex_j=max(ref_j)-1;
     diff_j_max=diff(ref_j);
     diff_i_max=diff(ref_i);
     
@@ -667,18 +705,18 @@ end
 if isequal(MinIndex_j,-1)
     MinIndex_j=0;
 end
-MinIndex_i_cell=get(handles.MinIndex_i,'Data');%retrieve the min indices in the table MinIndex
-MinIndex_j_cell=get(handles.MinIndex_j,'Data');%retrieve the min indices in the table MinIndex
-MaxIndex_i_cell=get(handles.MaxIndex_i,'Data');%retrieve the min indices in the table MinIndex
-MaxIndex_j_cell=get(handles.MaxIndex_j,'Data');%retrieve the min indices in the table MinIndex
-MinIndex_i_cell(iview,1)=MinIndex_i;
-MinIndex_j_cell(iview,1)=MinIndex_j;
-MaxIndex_i_cell(iview,1)=MaxIndex_i;
-MaxIndex_j_cell(iview,1)=MaxIndex_j;
-set(handles.MinIndex_i,'Data',MinIndex_i_cell)%display the min indices in the table MinIndex
-set(handles.MinIndex_j,'Data',MinIndex_j_cell)%display the max indices in the table MaxIndex
-set(handles.MaxIndex_i,'Data',MaxIndex_i_cell)%display the min indices in the table MinIndex
-set(handles.MaxIndex_j,'Data',MaxIndex_j_cell)%display the max indices in the table MaxIndex
+MinIndex_i_table=get(handles.MinIndex_i,'Data');%retrieve the min indices in the table MinIndex
+MinIndex_j_table=get(handles.MinIndex_j,'Data');%retrieve the min indices in the table MinIndex
+MaxIndex_i_table=get(handles.MaxIndex_i,'Data');%retrieve the min indices in the table MinIndex
+MaxIndex_j_table=get(handles.MaxIndex_j,'Data');%retrieve the min indices in the table MinIndex
+MinIndex_i_table(iview,1)=MinIndex_i;
+MinIndex_j_table(iview,1)=MinIndex_j;
+MaxIndex_i_table(iview,1)=MaxIndex_i;
+MaxIndex_j_table(iview,1)=MaxIndex_j;
+set(handles.MinIndex_i,'Data',MinIndex_i_table)%display the min indices in the table MinIndex
+set(handles.MinIndex_j,'Data',MinIndex_j_table)%display the max indices in the table MaxIndex
+set(handles.MaxIndex_i,'Data',MaxIndex_i_table)%display the min indices in the table MinIndex
+set(handles.MaxIndex_j,'Data',MaxIndex_j_table)%display the max indices in the table MaxIndex
 
 %% adjust the first and last indices for the selected series, only if requested by the bounds
 % i index, compare input to min index i
@@ -786,10 +824,8 @@ end
 
 %% read timing and total frame number from the current file (movie files) if not already set by the xml file (prioritary)
 InputTable=get(handles.InputTable,'Data');
-% FileBase=fullfile(InputTable{iview,1},InputTable{iview,3});
 
 % case of movies
-% if strcmp(InputTable{iview,4},'*')
 if isempty(Time)
     if ~isempty(VideoObject)
         imainfo=get(VideoObject);
@@ -800,33 +836,12 @@ if isempty(Time)
             Time=[0;ones(size(i1_series,3)-1,1)]*(0:1/imainfo.FrameRate:(imainfo.NumberOfFrames)/imainfo.FrameRate);
         end
         TimeSource='video';
-        % set(han:dles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
-        %     ColorType='truecolor';
-%     elseif ~isempty(imformats(regexprep(InputTable{iview,5},'^.',''))) || isequal(InputTable{iview,5},'.vol')%&& isequal(NomType,'*')% multi-frame image
-%         if ~isempty(InputTable{iview,2})
-%             imainfo=imfinfo(fullfile(InputTable{iview,1},InputTable{iview,2},[InputTable{iview,3} InputTable{iview,5}]));
-%         else
-%             imainfo=imfinfo([FileBase InputTable{iview,5}]);
-%         end
-%         %     ColorType=imainfo.ColorType;%='truecolor' for color images
-% %         if length(imainfo) >1 %case of image with multiple frames
-% %             nbfield=length(imainfo);
-% %             nbfield_j=1;
-% %         end
     end
 end
 
 %% update time table
 if ~isempty(Time)
     TimeTable=get(handles.TimeTable,'Data');
-    %     first_i=str2num(get(handles.num_first_i,'String'));
-    %     last_i=str2num(get(handles.num_last_i,'String'));
-    %     first_j=str2num(get(handles.num_first_j,'String'));
-    %     last_j=str2num(get(handles.num_last_j,'String'));
-    %     MinIndex_i=get(handles.MinIndex_i,'Data');
-    %     MinIndex_j=get(handles.MinIndex_j,'Data');
-    %     MaxIndex_i=get(handles.MaxIndex_i,'Data');
-    %     MaxIndex_j=get(handles.MaxIndex_j,'Data');
     TimeTable{iview,1}=Time(MinIndex_i+1,MinIndex_j+1);
     if size(Time)>=[first_i+1 first_j+1]
         TimeTable{iview,2}=Time(first_i+1,first_j+1);
@@ -839,7 +854,6 @@ if ~isempty(Time)
     end
     set(handles.TimeTable,'Data',TimeTable)
 end
-   
 
 %% update the series info in 'UserData'
 SeriesData=get(handles.series,'UserData');
@@ -1985,21 +1999,20 @@ end
 
 %% Detect the types of input files
 SeriesData=get(handles.series,'UserData');
-nb_civ=0;nb_netcdf=0;
+iview_civ=[];nb_netcdf=0;
 if ~isempty(SeriesData)
-    nb_civ=numel(find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType)));
+    iview_civ=find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
     nb_netcdf=numel(find(strcmp('netcdf',SeriesData.FileType)));
 end
-if nb_civ>=1
-    menu=set_veltype_display(SeriesData.FileInfo{1}.CivStage,SeriesData.FileType{1});
+%menu={''};
+if numel(iview_civ)>=1
+    menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileType{iview_civ(1)});
     set(handles.VelType,'String',[{'*'};menu])
-    if nb_civ>=2
-        menu=set_veltype_display(SeriesData.FileInfo{2}.CivStage,SeriesData.FileType{2});
+    if numel(iview_civ)>=2
+        menu=set_veltype_display(SeriesData.FileInfo{iview_civ(2)}.CivStage,SeriesData.FileType{iview_civ(2)});
         set(handles.VelType_1,'String',[{'*'};menu])
     end
-end
-        
-    
+end       
 
 %% Check whether alphabetical sorting of input Subdir is alowed by the Action fct  (for multiples series entries)
 if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& size(Param.InputTable,1)>1
@@ -2064,13 +2077,13 @@ VelType_1Visible='off';
 InputFieldsVisible='off';%visibility of the frame Fields
 if isfield(ParamOut,'VelType')
     if strcmp( ParamOut.VelType,'one')||strcmp( ParamOut.VelType,'two')
-        if nb_civ>=1
+        if numel(iview_civ)>=1
             VelTypeVisible='on';
             InputFieldsVisible='on';
         end
     end
     if strcmp( ParamOut.VelType,'two')
-        if nb_civ>=2
+        if numel(iview_civ)>=2
             VelType_1Visible='on';
         end
     end
@@ -2085,13 +2098,13 @@ FieldNameVisible='off';  %hidden by default
 FieldName_1Visible='off';  %hidden by default
 if isfield(ParamOut,'FieldName')
     if strcmp( ParamOut.FieldName,'one')||strcmp( ParamOut.FieldName,'two')
-        if (nb_civ+nb_netcdf)>=1
+        if (numel(iview_civ)+nb_netcdf)>=1
             InputFieldsVisible='on';
             FieldNameVisible='on';
         end
     end
     if strcmp( ParamOut.FieldName,'two')
-        if (nb_civ+nb_netcdf)>=1
+        if (numel(iview_civ)+nb_netcdf)>=1
             FieldName_1Visible='on';
         end
     end
@@ -2359,14 +2372,15 @@ if get(handles.CheckObject,'Value')
             if isempty(defaultname)
                 defaultname={''};
             end
-            [FileName, PathName] = uigetfile( ...
-                {'*.xml;*.mat', ' (*.xml,*.mat)';
-                '*.xml',  '.xml files '; ...
-                '*.mat',  '.mat matlab files '}, ...
-                'Pick an xml object file (or use uvmat to create it)',defaultname);
-            fileinput=[PathName FileName];%complete file name
-            sizf=size(fileinput);
-            if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
+            fileinput=uigetfile_uvmat('pick a xml object file (or use uvmat to create it)',defaultname,'.xml');
+%             [FileName, PathName] = uigetfile( ...
+%                 {'*.xml;*.mat', ' (*.xml,*.mat)';
+%                 '*.xml',  '.xml files '; ...
+%                 '*.mat',  '.mat matlab files '}, ...
+%                 'Pick an xml object file (or use uvmat to create it)',defaultname);
+%             fileinput=[PathName FileName];%complete file name
+%             sizf=size(fileinput);
+            if isempty(fileinput),return;end
             %read the file
             data=xml2struct(fileinput);
             if ~isfield(data,'Type')
@@ -2403,17 +2417,21 @@ end
 %------------------------------------------------------------------------
 function ViewObject_Callback(hObject, eventdata, handles)
 
-if get(handles.ViewObject,'Value')
-    set(handles.EditObject,'Value',0)
+% if get(handles.ViewObject,'Value')
+   % set(handles.EditObject,'Value',0)
 	UserData=get(handles.series,'UserData');
-    hset_object=set_object(UserData.ProjObject);
-    set(hset_object,'Name','view_object_series')
-else
     hset_object=findobj(allchild(0),'Tag','set_object');
     if ~isempty(hset_object)
-        delete(hset_object)
-    end 
-end
+        delete(hset_object)% refresh set_object if already opened
+    end
+    hset_object=set_object(UserData.ProjObject);
+    set(hset_object,'Name','view_object_series')
+% else
+%     hset_object=findobj(allchild(0),'Tag','set_object');
+%     if ~isempty(hset_object)
+%         delete(hset_object)
+%     end 
+% end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in EditObject.
@@ -2427,9 +2445,9 @@ if get(handles.EditObject,'Value')
     set(hset_object,'Name','edit_object_series')
     set(get(hset_object,'Children'),'Enable','on')
 else
-    hset_object=findobj(allchild(0),'Tag','set_object');
+    hset_object=findobj(allchild(0),'Tag','set_object'); 
     if ~isempty(hset_object)
-        delete(hset_object)
+        set(get(hset_object,'Children'),'Enable','off')
     end 
 end
 
@@ -2438,46 +2456,95 @@ end
 %------------------------------------------------------------------------
 function DeleteObject_Callback(hObject, eventdata, handles)
 
-if get(handles.DeleteObject,'Value')
+% if get(handles.DeleteObject,'Value')
 	SeriesData=get(handles.series,'UserData');
     SeriesData.ProjObject=[];
     set(handles.series,'UserData',SeriesData)
     set(handles.ProjObject,'String','')
     set(handles.CheckObject,'Value',0)
-    set(handles.DeleteObject,'Visible','off')
     set(handles.ViewObject,'Visible','off')
-    set(handles.DeleteObject,'Value',0)
-end
+    set(handles.EditObject,'Visible','off')
+    hset_object=findobj(allchild(0),'Tag','set_object');
+    if ~isempty(hset_object)
+        delete(hset_object)
+    end
+    set(handles.DeleteObject,'Visible','off')
+%     set(handles.DeleteObject,'Value',0)
+% end
 
-%--------------------------------------------------------------
+%------------------------------------------------------------------------
+% --- Executed when CheckMask is activated
+%------------------------------------------------------------------------
 function CheckMask_Callback(hObject, eventdata, handles)
+
 if get(handles.CheckMask,'Value')
+    MaskData=get(handles.MaskTable,'Data');
     InputTable=get(handles.InputTable,'Data');
-    for iview=1:size(InputTable,1)
+    nbview=size(InputTable,1);
+    %     MaskTable=cell(nbview,1);
+    for iview=1:nbview
         RootPath=InputTable{iview,1};
-        SubDir=InputTable{iview,2};
-        MaskSubDir=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-        MaskName=fullfile(RootPath,[MaskSubDir '.mask'],'mask_1.png');
-        if ~exist(MaskName,'file')
-            msgbox_uvmat('WARNING',['mask file '  MaskName ' not found'])
-            return
+        if ~isempty(RootPath)
+            if isempty(MaskData{iview})
+                SubDir=InputTable{iview,2};
+                MaskSubDir=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
+                MaskName=fullfile(RootPath,[MaskSubDir '.mask'],'mask_1.png');
+                if ~exist(MaskName,'file')
+                    MaskName=uigetfile_uvmat('select a mask file:',RootPath,'image');
+                end
+                MaskTable{iview,1}=MaskName ;
+                ListMask{iview,1}=num2str(iview);
+            end
         end
     end
+    nbview=size(MaskTable,1);
+    set(handles.MaskTable,'Data',MaskTable)
+    %     set(handles.MaskTable,'ColumnFormat',{MaskTable'})
+    set(handles.MaskTable,'Visible','on')
+    set(handles.MaskBrowse,'Visible','on')
+    set(handles.ListMask,'Visible','on')
+    set(handles.ListMask,'String',ListMask)
+    set(handles.ListMask,'Value',numel(ListMask))
+else
+    set(handles.MaskTable,'Visible','off')
+    set(handles.MaskBrowse,'Visible','off')
+    set(handles.ListMask,'Visible','off')
 end
-%--------------------------------------------------------------
+
+%------------------------------------------------------------------------
+% --- Executes on button press in MaskBrowse.
+%------------------------------------------------------------------------
+function MaskBrowse_Callback(hObject, eventdata, handles)
+InputTable=get(handles.InputTable,'Data');
+iview=get(handles.ListMask,'Value');
+%     MaskTable=cell(nbview,1);
+
+RootPath=InputTable{iview,1};
+%         if ~isempty(RootPath)
+%         SubDir=InputTable{iview,2};
+%         MaskSubDir=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
+%         MaskName=fullfile(RootPath,[MaskSubDir '.mask'],'mask_1.png');
+%         if ~exist(MaskName,'file')
+MaskName=uigetfile_uvmat('select a mask file:',RootPath,'image');
+%         end
+if ~isempty(MaskName)
+    MaskTable=get(handles.MaskTable,'Data');
+MaskTable{iview,1}=MaskName ;
+%         end
+set(handles.MaskTable,'Data',MaskTable)
+end
+   % set(handles.MaskTable,'ColumnFormat',{MaskTable'})
+
+%------------------------------------------------------------------------
+% --- Executes when selected cell(s) is changed in MaskTable.
+%------------------------------------------------------------------------
+function MaskTable_CellSelectionCallback(hObject, eventdata, handles)
+
+if numel(eventdata.Indices)>=1
+set(handles.ListMask,'Value',eventdata.Indices(1))
+end
 
 %-------------------------------------------------------------------
-%'uv_ncbrowser': interactively calls the netcdf file browser 'get_field.m'
-function ncbrowser_uvmat(hObject, eventdata)
-%-------------------------------------------------------------------
-     bla=get(gcbo,'String');
-     ind=get(gcbo,'Value');
-     filename=cell2mat(bla(ind));
-      blank=find(filename==' ');
-      filename=filename(1:blank-1);
-     get_field(filename)
-
-% ------------------------------------------------------------------
 function MenuHelp_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 path_to_uvmat=which ('uvmat');% check the path of uvmat
@@ -2623,6 +2690,12 @@ set(handles.PairString,'Unit','pixel')
 Pos=get(handles.PairString,'Position');
 set(handles.PairString,'Unit','normalized')
 set(handles.PairString,'ColumnWidth',{Pos(3)-5})
+
+%% MaskTable
+set(handles.MaskTable,'Unit','pixel')
+Pos=get(handles.MaskTable,'Position');
+set(handles.MaskTable,'Unit','normalized')
+set(handles.MaskTable,'ColumnWidth',{Pos(3)-5})
 
 %------------------------------------------------------------------------
 % --- Executes on button press in status.

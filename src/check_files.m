@@ -47,7 +47,7 @@ list_fct={...
     'copyfields';...% copy fields between two matlab structures
     'create_grid';...% called by the GUI geometry_calib to create a physical grid
     'create_grid.fig';...% GUI corresponding to create_grid.m
-    'displ_uvmat';...% display a message using  msgbox_uvmat or on the log file in batch mode
+    'disp_uvmat';...% display a message using  msgbox_uvmat or on the log file in batch mode
     'editxml';...% display and edit xml files using a xls schema
     'editxml.fig';...% interface for editxml
     'fileparts_uvmat';...% extracts the root name,field indexes and nomenclature type from an input filename

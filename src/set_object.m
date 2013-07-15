@@ -210,7 +210,7 @@ end
 hseries=findobj(allchild(0),'Name','series');%find the current series interface handle
 if ~isempty(hseries)
     hhseries=guidata(hseries);
-    set(hhseries.ViewObject,'Value',0)
+    set(hhseries.EditObject,'Value',0)
 end
 
 
@@ -617,10 +617,8 @@ function num_RangeX_2_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function SAVE_Callback(hObject, eventdata, handles)
 % ------------------------------------------------------
-%Object=read_set_object(handles);
 Object=read_GUI(handles.set_object);
 huvmat=findobj('Tag','uvmat');
-% UvData=get(huvmat,'UserData');
 if isempty(huvmat)
     huvmat=findobj(allchild(0),'Name','series');
 end
@@ -635,27 +633,30 @@ else
     end
 end
 title={'object name'};
-dir_save=uigetdir(RootPath);
-ObjectName=get(handles.Name,'String');
-if ~isempty(ObjectName)&&~strcmp(ObjectName,'')
-    def={fullfile(dir_save,[ObjectName '.xml'])};
-else
-    def={fullfile(dir_save,[Object.Style '.xml'])};
+dir_save=uigetfile_uvmat('select the folder for the new xml object file:',RootPath,'uigetdir');
+if ~isempty(dir_save)
+    % dir_save=uigetdir(RootPath);
+    ObjectName=get(handles.Name,'String');
+    if ~isempty(ObjectName)&&~strcmp(ObjectName,'')
+        def={fullfile(dir_save,[ObjectName '.xml'])};
+    else
+        def={fullfile(dir_save,[Object.Style '.xml'])};
+    end
+    displ_txt='save object as an .xml file';%default display
+    menu=get(handles.ProjMode,'String');
+    value=get(handles.ProjMode,'Value');
+    ProjMode=menu{value};
+    if strcmp(ProjMode,'mask_inside')||strcmp(ProjMode,'mask_outside')
+        displ_txt='save mask contour as an .xml file: to create a mask image, use save_mask on the GUI uvmat (lower right)';
+    end
+    answer=msgbox_uvmat('INPUT_TXT','save object as an .xml file',def);
+    if ~isempty(answer)
+        t=struct2xml(Object);
+        t=set(t,1,'name','ProjObject');
+        save(t,answer{1})
+    end
+    msgbox_uvmat('CONFIRMATION',[answer{1}  ' saved'])
 end
-displ_txt='save object as an .xml file';%default display
-menu=get(handles.ProjMode,'String');
-value=get(handles.ProjMode,'Value');
-ProjMode=menu{value};
-if strcmp(ProjMode,'mask_inside')||strcmp(ProjMode,'mask_outside')
-    displ_txt='save mask contour as an .xml file: to create a mask image, use save_mask on the GUI uvmat (lower right)';
-end
-answer=msgbox_uvmat('INPUT_TXT','save object as an .xml file',def);
-if ~isempty(answer)
-    t=struct2xml(Object);
-    t=set(t,1,'name','ProjObject');
-    save(t,answer{1})
-end
-msgbox_uvmat('CONFIRMATION',[answer{1}  ' saved'])
 
 %------------------------------------------------------------------------
 % --- Executes on slider movement.

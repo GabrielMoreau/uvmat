@@ -11,6 +11,7 @@
 % Field
 
 function FieldOut=find_field_bounds(Field)
+
 FieldOut=Field;%default
 %% analyse input field
 [CellInfo,NbDimArray,errormsg]=find_field_cells(Field);% analyse  the input field structure
@@ -24,6 +25,8 @@ imax=find(NbDimArray==NbDim);% indices of field cells to consider
 if isfield(Field,'NbDim')
     NbDim=double(Field.NbDim);% deal with plane fields containing z coordinates
 end
+FieldOut.NbDim=NbDim;
+if  NbDim<=1; return; end% stop here for 1D fields
 
 %% get bounds and mesh (needed  to propose default options for projection objects)
 % if NbDim>1

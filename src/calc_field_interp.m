@@ -87,7 +87,7 @@ for ilist=1:numel(FieldName)
         switch Operator{ilist}
             case 'vec'
                 if exist('XI','var')
-                    if check_interp
+                    if check_interp(ilist)
                     VarVal{nbvar+1}=F.(UName{ilist})(XI,YI);
                     VarVal{nbvar+2}=F.(VName{ilist})(XI,YI);
                     end
@@ -101,7 +101,7 @@ for ilist=1:numel(FieldName)
                 VarAttribute{nbvar+2}.Role='vector_y';
             case 'norm'
                 if exist('XI','var')
-                    if check_interp
+                    if check_interp(ilist)
                     U2=F.(UName{ilist})(XI,YI).*F.(UName{ilist})(XI,YI);
                     V2=F.(VName{ilist})(XI,YI).*F.(VName{ilist})(XI,YI);
                     end
@@ -114,7 +114,7 @@ for ilist=1:numel(FieldName)
                 VarAttribute{nbvar+1}.Role='scalar';
             case {'curl','div','strain'}
                 if exist('XI','var')
-                    if check_interp
+                    if check_interp(ilist)
                     VarVal{nbvar+1}=F.(UName{ilist})(XI,YI);
                     end
                 else
@@ -125,7 +125,7 @@ for ilist=1:numel(FieldName)
             otherwise
                 if ~isempty(FieldName{ilist})
                     if exist('XI','var')
-                        if check_interp
+                        if check_interp(ilist)
                         VarVal{nbvar+1}=F.(FieldName{ilist})(XI,YI);
                         end
                     else
@@ -140,7 +140,7 @@ end
 
 %% put an error flag to indicate NaN data
 if exist('XI','var')&&~isempty(VarVal)
-    nbvar=numel(ListVarName);
+    nbvar=numel(VarVal);
     ListVarName{nbvar+1}='FF';
     VarVal{nbvar+1}=isnan(VarVal{nbvar});
     VarAttribute{nbvar+1}.Role='errorflag';

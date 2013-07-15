@@ -19,6 +19,8 @@
 %INPUT
 % RootPath: path to the directory to be scanned
 % fileinput: name (without path) of the input file sample 
+% checkxml: =1(default) take into account xml file existence to possibly include indexes in RootFile
+%           =0: do not take into account xml file existence
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright  2011, LEGI / CNRS-UJF-INPG, joel.sommeria@legi.grenoble-inp.fr
@@ -36,7 +38,7 @@
 %     GNU General Public License (file UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput)
+function [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1_input,i2_input,j1_input,j2_input]=find_file_series(FilePath,fileinput,checkxml)
 %------------------------------------------------------------------------
 
 %% get input root name and nomenclature type
@@ -61,27 +63,29 @@ if isempty(NomType)
         RootFile='';
     end
 else
-    %% possibly include the first index in the root name, if there exists a corresponding xml file
-    r=regexp(NomType,'^(?<tiretnum>_|\d+)','names');%look for a number or _1 at the beginning of NomType
-    if ~isempty(r) %if NomType begins by a number or _1 
-        fileinput_end=regexprep(fileinput,['^' RootFile],'');%remove RootFile at the beginning of fileinput
-        if isempty(regexp(r.tiretnum,'^_','once'))% if a separator '_' is not  detected
-            rr=regexp(fileinput_end,'^(?<i1>\d+)','names');
-        else% if a separator '_' is  detected
-            rr=regexp(fileinput_end,'^(?<i1>_\d+)','names');
-        end
-        if ~isempty(rr)
-            RootFile_i=[RootFile rr.i1];% new root file
-            %look for an xml file correspoonding to the new root name
-            if exist(fullfile(RootPath,SubDir,[RootFile_i '.xml']),'file') || (strcmp(FileExt,'.nc') && exist(fullfile(RootPath,[RootFile_i '.xml']),'file'))
-                RootFile=RootFile_i;
-                NomTypePref=r.tiretnum;
-                NomType=regexprep(NomType,['^'  NomTypePref],'');
-                i1_input=j1_input;
-                i2_input=j2_input;
-                j1_input=[];
-                j2_input=[];
-            end       
+    %% if checkxml=1, possibly include the first index in the root name, if there exists a corresponding xml file 
+    if ~exist('checkxml','var')||checkxml
+        r=regexp(NomType,'^(?<tiretnum>_|\d+)','names');%look for a number or _1 at the beginning of NomType
+        if ~isempty(r) %if NomType begins by a number or _1
+            fileinput_end=regexprep(fileinput,['^' RootFile],'');%remove RootFile at the beginning of fileinput
+            if isempty(regexp(r.tiretnum,'^_','once'))% if a separator '_' is not  detected
+                rr=regexp(fileinput_end,'^(?<i1>\d+)','names');
+            else% if a separator '_' is  detected
+                rr=regexp(fileinput_end,'^(?<i1>_\d+)','names');
+            end
+            if ~isempty(rr)
+                RootFile_i=[RootFile rr.i1];% new root file
+                %look for an xml file correspoonding to the new root name
+                if exist(fullfile(RootPath,SubDir,[RootFile_i '.xml']),'file') || (strcmp(FileExt,'.nc') && exist(fullfile(RootPath,[RootFile_i '.xml']),'file'))
+                    RootFile=RootFile_i;
+                    NomTypePref=r.tiretnum;
+                    NomType=regexprep(NomType,['^'  NomTypePref],'');
+                    i1_input=j1_input;
+                    i2_input=j2_input;
+                    j1_input=[];
+                    j2_input=[];
+                end
+            end
         end
     end
     %% analyse the list of existing files when relevant

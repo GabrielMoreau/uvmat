@@ -69,8 +69,8 @@ for icell=1:numel(CellInfo)
                 YMask=MaskData.AY(end):-DY:MaskData.AY(1);
                 [XMask,YMask]=meshgrid(XMask,YMask);
                 Mask = interp2(XMask,YMask,MaskData.A,XArray,YArray','nearest');
-                figure(1)
-                image(MaskData.A)
+%                 figure(1)
+%                 image(MaskData.A)
                 Mask=Mask>200;
                 if ~isfield(FieldData,'FF')
                     FieldData.FF=zeros(size(FieldData.(XName)));

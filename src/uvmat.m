@@ -984,7 +984,7 @@ if ~isempty(XmlFileName)
         end
     end
 end
-if (isfield(XmlData,'Time')&& ~isempty(XmlData.Time))
+if (strcmp(FileType,'civdata')||strcmp(FileType,'civx')) && ((isfield(XmlData,'Time')&& ~isempty(XmlData.Time)))
     if index==1
     set(handles.TimeName,'String','xml')
     else
@@ -1181,36 +1181,25 @@ end
 
 %------------------------------------------------------------------------
 % --- switch file index scanning options scan_i and scan_j in an exclusive way
-function scan_i_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+function scan_i_Callback(hObject, eventdata, handles)
+
 if get(handles.scan_i,'Value')==1
-%     set(handles.scan_i,'BackgroundColor',[1 1 0])
     set(handles.scan_j,'Value',0)
 else
-%     set(handles.scan_i,'BackgroundColor',[0.831 0.816 0.784])
     set(handles.scan_j,'Value',1)
 end
 scan_j_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- switch file index scanning options scan_i and scan_j in an exclusive way
-function scan_j_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+function scan_j_Callback(hObject, eventdata, handles)
+
 if get(handles.scan_j,'Value')==1
-%     set(handles.scan_j,'BackgroundColor',[1 1 0])
     set(handles.scan_i,'Value',0)
-%     set(handles.scan_i,'BackgroundColor',[0.831 0.816 0.784])
-%     NomType=get(handles.NomType,'String');
-%     switch NomType
-%     case {'_1_1-2','#_ab','%3dab'},% pair with j index
-%         set(handles.CheckFixPair,'Visible','on')% option fixed pair on/off made visible (choice of avaible pair with buttons + and - if ='off')
-%     otherwise
-%         set(handles.CheckFixPair,'Visible','off')
-%     end 
 else
-%     set(handles.scan_j,'BackgroundColor',[0.831 0.816 0.784])
     set(handles.scan_i,'Value',1)
-%     set(handles.scan_i,'BackgroundColor',[1 1 0])
     set(handles.CheckFixPair,'Visible','off')
 end
 
@@ -1344,23 +1333,23 @@ if isequal(get(handles.CheckMask,'Value'),1)
         ListStruct=dir(MaskPath);%look for a mask file
         ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
         check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
-        ListFiles=ListCells(1,:);%list of file names
-        ListFiles=ListFiles(~check_dir);
+        ListFiles=ListCells(1,:);%list of file and dri names
+        ListFiles=ListFiles(~check_dir);%list of file names (excluding dir)
         if ~isempty(ListFiles)
             [tild,tild,MaskExt]=fileparts(ListFiles{1});
-            [tild,tild,MaskFile,i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileType]=find_file_series(MaskPath,ListFiles{1});
+            [tild,tild,MaskFile,i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileType]=find_file_series(MaskPath,ListFiles{1},0);
             if strcmp(MaskFileType,'image') && isempty(i2_series) && isempty(j2_series)
                 mdetect=1;
             end
         end
     end
     if mdetect==0
-        MaskFullName=uigetfile_uvmat('pick a mask image file:',fullfile(RootPath,SubDir),'image');
+        MaskFullName=uigetfile_uvmat('pick a mask image file:',RootPath,'image');
         if isempty(MaskFullName)
             set(handles.CheckMask,'Value',0)
         end
         [MaskPath,MaskName,MaskExt]=fileparts(MaskFullName);
-        [tild,tild,MaskFile,i1_series,i2_series,j1_series,j2_series,MaskNomType]=find_file_series(MaskPath,[MaskName MaskExt]);
+        [tild,tild,MaskFile,i1_series,i2_series,j1_series,j2_series,MaskNomType]=find_file_series(MaskPath,[MaskName MaskExt],0);
         if ~(isempty(i2_series) && isempty(j2_series))
             MaskNomType='*';
         end
@@ -2148,15 +2137,7 @@ if isfield(ParamOut,'Npx')&& isfield(ParamOut,'Npy')
     set(handles.num_Npx,'String',num2str(ParamOut.Npx));% display image size on the interface
     set(handles.num_Npy,'String',num2str(ParamOut.Npy));
 end
-% 
-% if isfield(ParamOut,'TimeIndex')% case of time obtained from get_field
-%     set(handles.i1,'String',num2str(ParamOut.TimeIndex))
-% end
-% if isfield(ParamOut,'TimeValue')
-%     Field{1}.Time=ParamOut.TimeValue;% case of time obtained from get_field
-% end
 Field{1}.ZIndex=z_index; %used for multiplane 3D calibration
-
 
 %% choose and read a second field FileName_1 if defined
 VelType_1=[];%default
@@ -2274,12 +2255,6 @@ if (strcmp(UvData.FileType{1},'civx')||strcmp(UvData.FileType{1},'civdata'))&& ~
 else
     set(handles.VelType,'Visible','off')
 end
-% display the FieldName menu from the input file and pick the selected one: 
-% if isstruct(ParamOut)
-%     field_index=strcmp(ParamOut.FieldName,ParamOut.FieldList);
-%     set(handles.FieldName,'String',ParamOut.FieldList); %update the field menu
-%     set(handles.FieldName,'Value',find(field_index,1))
-% end
 
 %% update the display menu for the second velocity type (second menuline)
 test_veltype_1=0;
@@ -2301,7 +2276,6 @@ elseif ~test_keepdata_1
     end
     % update the second field menu: the same quantity
     if isstruct(ParamOut_1)
-%        set(handles.FieldName_1,'String',[{''};ParamOut_1.FieldList]); %update the field menu
         % display the FieldName menu from the input file and pick the selected one:
         FieldList=get(handles.FieldName_1,'String');
         field_index=strcmp(ParamOut_1.FieldName,FieldList);
@@ -2315,10 +2289,6 @@ if test_veltype||test_veltype_1
 else
     set(handles.FixVelType,'Visible','off')
 end
-
-% field_index=strcmp(ParamOut_1.FieldName,ParamOut_1.FieldList);
-% set(handles.FieldName,'String',ParamOut.FieldList); %update the field menu
-% set(handles.FieldName,'Value',find(field_index,1))
     
 %% introduce w as background image by default for a new series (only for nbdim=2)
 if ~isfield(UvData,'NewSeries')
@@ -2386,14 +2356,8 @@ if isfield(UvData,'XmlData') && isfield(UvData.XmlData{1},'Time')
         end
     end
 end
-% if isfield(Field{1},'Time')
-%     abstime=Field{1}.Time;%time read from the netcdf input file 
-% end
-% if numel(Field)==2 && isfield(Field{2},'Time')
-%     abstime_1=Field{2}.Time;%time read from the netcdf input file 
-% end
 
-% look for timing in the input file if not defined in a xml file or movie
+%% look for timing in the input file if not defined in a xml file or movie
 if isempty(abstime)
     TimeName=get(handles.TimeName,'String');
     if ~isempty(regexp(TimeName,'^att:'))||~isempty(regexp(TimeName,'^dim:'))||~isempty(regexp(TimeName,'^var:'))
@@ -2410,13 +2374,7 @@ if isempty(abstime)
             TimeUnit=Field{2}.TimeUnit;
         end
     end
-end
-% if ~isequal(numel(abstime),1)
-%     abstime=[];
-% end
-% if ~isequal(numel(abstime_1),1)
-%       abstime_1=[];
-% end  
+end 
 set(handles.TimeValue,'String',num2str(abstime))
 abstime_1=[];
 TimeName_1=get(handles.TimeName_1,'String');
@@ -2433,7 +2391,6 @@ else
         set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' TimeUnit] )
     end
 end
-
 
 %% store the current open names, fieldname and vel types in uvmat interface 
 UvData.FileName_1=FileName_1;
@@ -2479,78 +2436,10 @@ end
 %% calculate tps coefficients if needed
 UvData.Field=tps_coeff_field(UvData.Field,check_proj_tps);
 
-%% analyse input field
-% [CellInfo,NbDimArray,errormsg]=find_field_cells(UvData.Field);% analyse  the input field structure
-% if ~isempty(errormsg)
-%     errormsg=['uvmat /refresh_field / find_field_cells / ' errormsg];% display error
-%     return
-% end
-% 
-% NbDim=max(NbDimArray);% spatial dimension of the input field
-% imax=find(NbDimArray==NbDim);% indices of field cells to consider
-% if isfield(UvData.Field,'NbDim')
-%     NbDim=double(UvData.Field.NbDim);% deal with plane fields containing z coordinates
-% end
-% 
-% %% get bounds and mesh (needed  to propose default options for projection objects)
-% if NbDim>1
-%     CoordMax=zeros(numel(imax),NbDim);
-%     CoordMin=zeros(numel(imax),NbDim);
-%     Mesh=zeros(1,numel(imax));
-%     for ind=1:numel(imax)
-%         if strcmp(CellInfo{imax(ind)}.CoordType,'tps')
-%             CoordName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex};% X,Y coordinates in a single variable
-%             CoordMax(ind,NbDim)=max(max(UvData.Field.(CoordName)(1:end-3,1,:),[],1),[],3);% max of x component (2D case)
-%             CoordMax(ind,NbDim-1)=max(max(UvData.Field.(CoordName)(1:end-3,2,:),[],1),[],3);% max of y component (2D case)
-%             CoordMin(ind,NbDim)=min(min(UvData.Field.(CoordName)(1:end-3,1,:),[],1),[],3);
-%             CoordMin(ind,NbDim-1)=min(min(UvData.Field.(CoordName)(1:end-3,2,:),[],1),[],3);% min of y component (2D case)
-%         else
-%             XName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end)};
-%             YName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(end-1)};
-%             CoordMax(ind,NbDim)=max(max(UvData.Field.(XName)));
-%             CoordMin(ind,NbDim)=min(min(UvData.Field.(XName)));
-%             CoordMax(ind,NbDim-1)=max(max(UvData.Field.(YName)));
-%             CoordMin(ind,NbDim-1)=min(min(UvData.Field.(YName)));
-%             %         test_x=1;%test for unstructured coordinates
-%             if NbDim==3
-%                 ZName=UvData.Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(1)};
-%                 CoordMax(imax(ind),1)=max(max(UvData.Field.(ZName)));
-%                 CoordMin(ind,1)=min(min(UvData.Field.(ZName)));
-%             end
-%         end
-%         switch CellInfo{imax(ind)}.CoordType
-%             
-%             case {'scattered','tps'} %unstructured coordinates
-%                 NbPoints=CellInfo{imax(ind)}.CoordSize;% total nbre of points
-%                 Mesh(ind)=(prod(CoordMax(ind,:)-CoordMin(ind,:))/NbPoints)^(1/NbDim); %(volume or area per point)^(1/NbDim)
-%             case 'grid'%structured coordinate
-%                 NbPoints=CellInfo{imax(ind)}.CoordSize;% nbre of points in each direction
-%                 Mesh(ind)=min((CoordMax(ind,:)-CoordMin(ind,:))./(NbPoints-1));                
-%         end
-%     end
-%     UvData.Field.CoordMesh=min(Mesh);
-%     UvData.Field.XMax=max(CoordMax(:,end));
-%     UvData.Field.XMin=min(CoordMin(:,end));
-%     UvData.Field.YMax=max(CoordMax(:,end-1));
-%     UvData.Field.YMin=min(CoordMin(:,end-1));
-%     if NbDim==3
-%         UvData.Field.ZMax=max(CoordMax(ind,1));
-%         UvData.Field.ZMin=max(CoordMin(ind,1));
-%     end
-%     % adjust the mesh to a value 1, 2 , 5 *10^n
-%     ord=10^(floor(log10(UvData.Field.CoordMesh)));%order of magnitude
-%     if UvData.Field.CoordMesh/ord>=5
-%         UvData.Field.CoordMesh=5*ord;
-%     elseif UvData.Field.CoordMesh/ord>=2
-%         UvData.Field.CoordMesh=2*ord;
-%     else
-%         UvData.Field.CoordMesh=ord;
-%     end
-if ~isfield(UvData.Field,'NbDim')
-    UvData.Field.NbDim=1;
-end
+%% get bounds and dimensions of the input field
+UvData.Field=find_field_bounds(UvData.Field);
+
 if UvData.Field.NbDim>1
-    UvData.Field=find_field_bounds(UvData.Field);
     % default projection plane
     if isempty(UvData.ProjObject{1})
         UvData.ProjObject{1}.Type='plane';%main plotting plane
@@ -4835,41 +4724,40 @@ set(handles.DeleteObject,'Visible','on')% make the object delete button visible
 function MenuBrowseObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %get the object file 
-[FileName, PathName, filterindex] = uigetfile( ...
-       {'*.xml;*.mat', ' (*.xml,*.mat)';
-       '*.xml',  '.xml files '; ...
-        '*.mat',  '.mat matlab files '}, ...
-        'Pick an xml Object file',get(handles.RootPath,'String'));
-fileinput=[PathName FileName];%complete file name 
-sizf=size(fileinput);
-if (~ischar(fileinput)||~isequal(sizf(1),1)),return;end
+fileinput=uigetfile_uvmat('pick an xml object file:',get(handles.RootPath,'String'),'.xml');
 
-%read the file
-[data,heading]=xml2struct(fileinput);
-if ~strcmp(heading,'ProjObject')
-    msgbox_uvmat('WARNING','The xml file does not have the heading ProjObject for projection objects')
+if ~isempty(fileinput)
+    %read the file
+    [data,heading]=xml2struct(fileinput);
+    if ~strcmp(heading,'ProjObject')
+        msgbox_uvmat('WARNING','The xml file does not have the heading ProjObject for projection objects')
+    end
+   % [tild,data.Name]=fileparts(fileinput);% object name set as file name
+    ListObject=get(handles.ListObject,'String');
+    
+%     if ~strcmp(ListObject{end},'')
+%         ListObject=[ListObject;{''}]; %append a blank to the list (if not already done) to indicate the creation of a new object
+%         set(handles.ListObject,'String',ListObject)
+%     end
+ListObject=[ListObject;{data.Name}];
+    IndexObj=length(ListObject);  
+    UvData=get(handles.uvmat,'UserData');
+    UvData.ProjObject{IndexObj}=[]; %create a new empty object
+    UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=[]; %no plot handle before plot_field operation
+    UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
+    set(handles.uvmat,'UserData',UvData)
+%     set(handles.ListObject,'String',ListObject)
+%     set(handles.ListObject,'Value',IndexObj)
+    set(handles.CheckViewObject,'Value',1)
+    set(handles.CheckViewField,'Value',1)
+    hset_object=set_object(data);% call the set_object interface
+    hhset_object=guidata(hset_object);
+    set_object('PLOT_Callback',hObject,eventdata,hhset_object);% plot projection
+    %set(get(hset_object,'children'),'enable','on')% enable edit action on elements on GUI set_object
+    set(handles.CheckEditObject,'Value',0); %suppress the object edit mode
+    CheckEditObject_Callback([],[],handles)
+    set(handles.DeleteObject,'Visible','on')
 end
-[tild,data.Name]=fileparts(FileName);% object name set as file name
-ListObject=get(handles.ListObject,'String');
-if ~strcmp(ListObject{end},'')
-    ListObject=[ListObject;{''}]; %append a blank to the list (if not already done) to indicate the creation of a new object
-    set(handles.ListObject,'String',ListObject)
-end
-IndexObj=length(ListObject);
-
-UvData=get(handles.uvmat,'UserData');
-UvData.ProjObject{IndexObj}=[]; %create a new empty object
-UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=[]; %no plot handle before plot_field operation
-UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
-set(handles.uvmat,'UserData',UvData)
-set(handles.ListObject,'Value',IndexObj)
-hset_object=set_object(data);% call the set_object interface
-set(get(hset_object,'children'),'enable','on')% enable edit action on elements on GUI set_object
-set(handles.CheckEditObject,'Value',0); %suppress the object edit mode
-CheckEditObject_Callback([],[],handles)
-% set(handles.CheckEditObject,'BackgroundColor',[0.7,0.7,0.7])  
-set(handles.DeleteObject,'Visible','on')
-
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % MenuEdit Callbacks
