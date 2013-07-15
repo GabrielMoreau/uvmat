@@ -103,7 +103,7 @@ ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:nbview
     if ~exist(filecell{iview,1}','file')
-        displ_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
+        disp_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
         return
     end
     [FileType{iview},FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
@@ -121,7 +121,7 @@ end
 if size(time,1)>1
     diff_time=max(max(diff(time)));
     if diff_time>0
-        displ_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)],checkrun)
+        disp_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)],checkrun)
     end
     time=time(1,:);% choose the time data from the first sequence
 end
@@ -139,11 +139,11 @@ end
 
 %% check the validity of  the input file types
 if ~CheckImage{1}&&~CheckNc{1}
-    displ_uvmat('ERROR',['invalid file type input ' FileType{1}],checkrun)
+    disp_uvmat('ERROR',['invalid file type input ' FileType{1}],checkrun)
     return
 end
 if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
-    displ_uvmat('ERROR','input must be two image series or two netcdf file series',checkrun)
+    disp_uvmat('ERROR','input must be two image series or two netcdf file series',checkrun)
     return
 end
 
@@ -181,7 +181,7 @@ end
 %initiate the output structure as a copy of the first input one (reproduce fields)
 [DataOut,tild,errormsg] = read_field(filecell{1,1},FileType{1},InputFields{1},1);
 if ~isempty(errormsg)
-    displ_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg],checkrun)
+    disp_uvmat('ERROR',['error reading ' filecell{1,1} ': ' errormsg],checkrun)
     return
 end
 time_1=[];
@@ -277,14 +277,14 @@ for index=1:nbfield
         if nbfile==1
             % stop program if the first field reading is in error
             if ~isempty(errormsg)
-                displ_uvmat('ERROR',['time_series / sub_field / ' errormsg],checkrun)
+                disp_uvmat('ERROR',['time_series / sub_field / ' errormsg],checkrun)
                 return
             end
             DataOut=Field;%default
             DataOut.NbDim=Field.NbDim+1; %add the time dimension for plots
             nbvar=length(Field.ListVarName);
             if nbvar==0
-                displ_uvmat('ERROR','no input variable selected',checkrun)
+                disp_uvmat('ERROR','no input variable selected',checkrun)
                 return
             end
             testsum=2*ones(1,nbvar);%initiate flag for action on each variable
@@ -293,7 +293,7 @@ for index=1:nbfield
                     if length(Field.VarAttribute)>=ivar && isfield(Field.VarAttribute{ivar},'Role')
                         var_role=Field.VarAttribute{ivar}.Role;%'role' of the variable
                         if isequal(var_role,'errorflag')
-                            displ_uvmat('ERROR','do not handle error flags in time series',checkrun)
+                            disp_uvmat('ERROR','do not handle error flags in time series',checkrun)
                             return
                         end
                         if isequal(var_role,'warnflag')
@@ -331,7 +331,7 @@ for index=1:nbfield
                 if isempty(errormsg)
                     if isequal(Param.ProjObject.ProjMode,'inside')% take the average in the domain for 'inside' mode
                         if isempty(VarVal)
-                            displ_uvmat('ERROR',['empty result at frame index ' num2str(i1_series{iview}(index))],checkrun)
+                            disp_uvmat('ERROR',['empty result at frame index ' num2str(i1_series{iview}(index))],checkrun)
                             return
                         end
                         VarVal=mean(VarVal,1);
@@ -344,7 +344,7 @@ for index=1:nbfield
             elseif testsum(ivar)==1% variable representing fixed coordinates
                 VarInit=DataOut.(VarName);
                 if isempty(errormsg) && ~isequal(VarVal,VarInit)
-                    displ_uvmat('ERROR',['time series requires constant coordinates ' VarName ': use projection mode interp'],checkrun)
+                    disp_uvmat('ERROR',['time series requires constant coordinates ' VarName ': use projection mode interp'],checkrun)
                     return
                 end
             end
@@ -413,7 +413,7 @@ end
 
 % display nbmissing
 if ~isequal(nbmissing,0)
-    displ_uvmat('WARNING',[num2str(nbmissing) ' files skipped: missing files or bad input, see command window display'],checkrun)
+    disp_uvmat('WARNING',[num2str(nbmissing) ' files skipped: missing files or bad input, see command window display'],checkrun)
 end
 
 %% name of result file
@@ -422,7 +422,7 @@ errormsg=struct2nc(OutputFile,DataOut); %save result file
 if isempty(errormsg)
     display([OutputFile ' written'])
 else
-    displ_uvmat('ERROR',['error in Series/struct2nc: ' errormsg],checkrun)
+    disp_uvmat('ERROR',['error in Series/struct2nc: ' errormsg],checkrun)
 end
 
 %% plot the time series (the last one in case of multislices)

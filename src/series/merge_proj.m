@@ -110,7 +110,7 @@ ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
 for iview=1:NbView
     if ~exist(filecell{iview,1}','file')
-        displ_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
+        disp_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'],checkrun)
         return
     end
     [FileType{iview},FileInfo{iview},MovieObject{iview}]=get_file_type(filecell{iview,1});
@@ -128,7 +128,7 @@ end
 if size(time,1)>1
     diff_time=max(max(diff(time)));
     if diff_time>0 
-        displ_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)],checkrun)
+        disp_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)],checkrun)
     end   
 end
 
@@ -149,26 +149,28 @@ if CheckImage{1}
 elseif CheckNc{1}
     FileExtOut='.nc';% write result as .nc files for netcdf inputs
 else
-    displ_uvmat('ERROR',['invalid file type input ' FileType{1}],checkrun)
+    disp_uvmat('ERROR',['invalid file type input ' FileType{1}],checkrun)
     return
 end
 for iview=1:NbView
     if ~isequal(CheckImage{iview},CheckImage{1})||~isequal(CheckNc{iview},CheckNc{1})
-        displ_uvmat('ERROR','input set of input series: need  either netcdf either image series',checkrun)
+        disp_uvmat('ERROR','input set of input series: need  either netcdf either image series',checkrun)
         return
     end
 end
 NomTypeOut=NomType;% output file index will indicate the first and last ref index in the series
 
 %% mask (TODO: case of multilevels)
+MaskData=cell(NbView,1);
 if Param.CheckMask
-    MaskData=cell(NbView,1);
-    MaskSubDir=regexprep(Param.InputTable{iview,2},'\..*','');%take the root part of SubDir, before the first dot '.'
-    MaskName=fullfile(Param.InputTable{iview,1},[MaskSubDir '.mask'],'mask_1.png');
-    if exist(MaskName,'file')
-        [MaskData{iview},tild,errormsg] = read_field(MaskName,'image');
+    for iview=1:numel(Param.MaskTable)
+%     MaskData=cell(NbView,1);
+%     MaskSubDir=regexprep(Param.InputTable{iview,2},'\..*','');%take the root part of SubDir, before the first dot '.'
+%     MaskName=fullfile(Param.InputTable{iview,1},[MaskSubDir '.mask'],'mask_1.png');
+%     if exist(MaskName,'file')
+        [MaskData{iview},tild,errormsg] = read_field(Param.MaskTable{iview},'image');
         if ~isempty(transform_fct) && nargin(transform_fct)>=2
-            MaskData{iview}=transform_fct(MaskData,XmlData{iview});
+            MaskData{iview}=transform_fct(MaskData{iview},XmlData{iview});
         end
     end
 end
@@ -300,10 +302,6 @@ for index=1:NbField
         GeometryCal.R=[pxcmx,0,0;0,pxcmy,0;0,0,1];
         GeometryCal.Tx_Ty_Tz=[T_x T_y 1];
         ImaDoc.GeometryCalib=GeometryCal;
-        %             t=struct2xml(ImaDoc);
-        %             t=set(t,1,'name','ImaDoc');
-        %             save(t,[filebase_merge '.xml'])
-        %             display([filebase_merge '.xml saved'])
     else
         MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','nb_coord','nb_dim','dt','Time','civ'};
         MergeData.Conventions='uvmat';
@@ -350,29 +348,30 @@ if NbView==1
 end
 
 %% group the variables (fields of 'Data') in cells of variables with the same dimensions
-[CellVarIndex,NbDim,VarTypeCell]=find_field_cells(Data{1});
+[CellInfo,NbDim,errormsg]=find_field_cells(Data{1});
 %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
 % CellVarIndex=cells of variable index arrays
-for icell=1:length(CellVarIndex)
+for icell=1:length(CellInfo)
     if NbDim(icell)==1
-        continue
+        continue% skip field cells which are of dim 1
     end
-    VarIndex=CellVarIndex{icell};%  indices of the selected variables in the list FieldData.ListVarName
-    VarType=VarTypeCell{icell};
-    ivar_X=VarType.coord_x;
-    ivar_Y=VarType.coord_y;
-    ivar_FF=VarType.errorflag;
+    VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
+%     VarType=VarTypeCell{icell};
+    ivar_X=CellInfo{icell}.CoordIndex(1);
+    ivar_Y=CellInfo{icell}.CoordIndex(2);
+%     ivar_Y=VarType.coord_y;
+    ivar_FF=CellInfo{icell}.VarIndex_errorflag;
     if isempty(ivar_X)
         test_grid=1;%test for input data on regular grid (e.g. image)coordinates
     else
         if length(ivar_Y)~=1
-                displ_uvmat('ERROR','y coordinate missing in proj_field.m',checkrun)
+                disp_uvmat('ERROR','y coordinate missing in proj_field.m',checkrun)
                 return
         end
         test_grid=0;
     end
     %case of input fields with unstructured coordinates
-    if ~test_grid
+    if isequal(CellInfo{icell}.CoordType,'scattered')
         for ivar=VarIndex
             VarName=MergeData.ListVarName{ivar};
             for iview=1:NbView

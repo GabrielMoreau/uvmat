@@ -250,6 +250,7 @@ for index=1:nbfield
                 time_1=Field.Time(1);
             end
             DataOut=Field;%default
+            DataOut.Conventions='uvmat'; %suppress Conventions='uvmat/civdata' for civ input files
             for ivar=1:length(Field.ListVarName)
                 VarName=Field.ListVarName{ivar};
                 DataOut.(VarName)=double(DataOut.(VarName));
@@ -260,7 +261,7 @@ for index=1:nbfield
                 sizmean=size(DataOut.(VarName));
                 siz=size(Field.(VarName));
                 if ~isequal(DataOut.(VarName),0)&& ~isequal(siz,sizmean)
-                    displ_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'],checkrun)
+                    disp_uvmat('ERROR',['unequal size of input field ' VarName ', need to project  on a grid'],checkrun)
                     return
                 else
                     DataOut.(VarName)=DataOut.(VarName)+ double(Field.(VarName)); % update the sum
@@ -316,7 +317,5 @@ end  % end averaging  loop
 
 %% open the result file with uvmat (in RUN mode)
 if checkrun
-%     hget_field=findobj(allchild(0),'name','get_field');%find the get_field... GUI
-%     delete(hget_field)
     uvmat(OutputFile)% open the last result file with uvmat
 end

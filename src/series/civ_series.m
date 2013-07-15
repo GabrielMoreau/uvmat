@@ -44,6 +44,9 @@ addpath(fullfile(path_series,'series'))
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
 if isstruct(Param) && isequal(Param.Action.RUN,0)
     Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
+    if isempty(Data)
+        Data=Param;% if  civ_input has been cancelled, keep previous parameters
+    end
     Data.Program=mfilename;%gives the name of the current function
     Data.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     Data.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
@@ -73,6 +76,10 @@ if ischar(Param)
     Param=xml2struct(Param);% read Param as input file (batch case)
     checkrun=0;
 end
+if ~isfield(Param,'ActionInput')
+     disp_uvmat('ERROR','no parameter set for PIV',checkrun)
+        return
+end
 hseries=findobj(allchild(0),'Tag','series');
 RUNHandle=findobj(hseries,'Tag','RUN');%handle of RUN button in GUI series
 WaitbarHandle=findobj(hseries,'Tag','Waitbar');%handle of waitbar in GUI series
@@ -89,7 +96,7 @@ end
 if isfield(Param,'InputTable')
     [filecell,i_series,tild,j_series]=get_file_series(Param);
     if ~exist(filecell{1,1},'file')
-        displ_uvmat('ERROR',' the first input file does not exist')
+        disp_uvmat('ERROR',' the first input file does not exist',checkrun)
         return
     else
         FileType=get_file_type(filecell{1,1});
@@ -179,7 +186,7 @@ if isfield(Param,'InputTable')
     else
         [FileType_B,FileInfo,VideoObject_B]=get_file_type(filecell{2,1});
         if ~ismember(FileType_B,{'image','multimage','mmreader','video'})
-            displ_uvmat('ERROR',['the file line ' num2str(iview_B) ' must be an image'])
+            disp_uvmat('ERROR',['the file line ' num2str(iview_B) ' must be an image'],checkrun)
         end
         i1_series_Civ1=i_series{1};i1_series_Civ2=i_series{1};
         i2_series_Civ1=i_series{1};i2_series_Civ2=i_series{1};
@@ -452,21 +459,21 @@ for ifield=1:NbField
         par_civ2.ImageA=[];
         par_civ2.ImageB=[];
         %         if ~isfield(Param.Civ1,'ImageA')
-        ImageName_A_Civ2=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1_series_Civ2(ifield),[],j1_series_Civ2(ifield));
+        ImageName_A_Civ2=fullfile_uvmat(RootPath_A,SubDir_A,RootFile_A,FileExt_A,NomType_A,i1_series_Civ2(ifield),[],j1_series_Civ2(ifield));
 
         if strcmp(ImageName_A_Civ2,ImageName_A) && isequal(FrameIndex_A_Civ1(ifield),FrameIndex_A_Civ2(ifield))
             par_civ2.ImageA=par_civ1.ImageA;
         else
             [par_civ2.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ2(ifield));
         end
-        ImageName_B_Civ2=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i2_series_Civ2(ifield),[],j2_series_Civ2(ifield));
+        ImageName_B_Civ2=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ2(ifield),[],j2_series_Civ2(ifield));
         if strcmp(ImageName_B_Civ2,ImageName_B) && isequal(FrameIndex_B_Civ1(ifield),FrameIndex_B_Civ2)
             par_civ2.ImageB=par_civ1.ImageB;
         else
             [par_civ2.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ2(ifield));
         end     
         
-        ncfile=fullfile_uvmat(RootPath,OutputDir,RootFile,'.nc',NomTypeNc,i1_series_Civ2(ifield),i2_series_Civ2(ifield),...
+        ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ2(ifield),i2_series_Civ2(ifield),...
             j1_series_Civ2(ifield),j2_series_Civ2(ifield));
         par_civ2.ImageWidth=FileInfo_A.Width;
         par_civ2.ImageHeight=FileInfo_A.Height;
@@ -995,14 +1002,13 @@ i1_series=i_series;% set of first image indexes
 i2_series=i_series;
 j1_series=ones(size(i_series));% set of first image numbers
 j2_series=ones(size(i_series));
-check_bounds=false(size(i_series));
 r=regexp(str_civ,'^\D(?<ind>[i|j])=( -| )(?<num1>\d+)\|(?<num2>\d+)','names');
 if ~isempty(r)
     mode=['D' r.ind];
     ind1=str2num(r.num1);
     ind2=str2num(r.num2);
 else
-    mode='burst';
+    mode='j1-j2';
     r=regexp(str_civ,'^j= (?<num1>[a-z])-(?<num2>[a-z])','names');
     if ~isempty(r)
         NomTypeNc='_1ab';
@@ -1041,8 +1047,11 @@ elseif strcmp (mode,'Dj')
     check_bounds=j1_series<MinIndex_j | j2_series>MaxIndex_j;
     NomTypeNc='_1_1-2';
 else  %bursts
-    j1_series=ind1*ones(size(i_series));
-    j2_series=ind2*ones(size(i_series));
+    i1_series=i_series(1,:);% do not sweep the j index
+    i2_series=i_series(1,:);
+    j1_series=ind1*ones(1,size(i_series,2));% j index is fixed by pair choice
+    j2_series=ind2*ones(1,size(i_series,2));
+    check_bounds=zeros(size(i1_series));% no limitations due to min-max indices
 end
 
 

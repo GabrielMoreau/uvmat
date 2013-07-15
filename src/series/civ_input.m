@@ -154,9 +154,6 @@ set(handles.ListPairCiv1,'Value',1)
 set(handles.ListPairCiv1,'String',{''})
 set(handles.ListPairCiv2,'Value',1)
 set(handles.ListPairCiv2,'String',{''}) 
-if isfield(Param,'ActionInput')
-fill_GUI(Param.ActionInput,hObject);%fill the GUI with the parameters retrieved from the input Param
-end
         
 %% prepare the GUI with input parameters 
 set(handles.ListCompareMode,'Visible','on')
@@ -228,14 +225,6 @@ CoordUnit='';%default
 pxcm_search=1;
 if isfield(SeriesData,'Time') && ~isempty(SeriesData.Time{1})
     time=SeriesData.Time{1};
-    %transform .Time to a column vector if it is a line vector thenomenclature uses a single index: correct possible bug in xml
-%     if isequal(MaxIndex_i,1) && ~isequal(MaxIndex_j,1)% .Time is a line vector
-%         if numel(nom_type_read)>=2 && isempty(regexp(nom_type_read(2:end),'\D','once'))
-%             time=time';
-%             MaxIndex_i=MaxIndex_j;
-%             MaxIndex_j=1;
-%         end
-%     end
 end
 if isfield(Param.IndexRange,'TimeUnit')&&~isempty(Param.IndexRange.TimeUnit)
     TimeUnit=Param.IndexRange.TimeUnit;
@@ -286,32 +275,12 @@ update_CivOptions(handles,ind_opening)
 %% list the possible index pairs, depending on the option set in ListPairMode
 ListPairMode_Callback([], [], handles)
 ListPairCiv1_Callback(hObject, eventdata, handles)
-% for movies don't modify except if the current ref is outside index bounds
-%if strcmp(ExtInput,'.nc')|| ~(strcmp(FileType,'mmreader')||strcmp(FileType,'VideoReader') && num_ref_i<=MaxIndex_i && num_ref_j<=MaxIndex_j)
-% if ~isempty(i1)% if i1 has been selected by the input
-%     num_ref_i=i1;%default ref index
-%     if ~isempty(i2)
-%         num_ref_i=floor((num_ref_i+i2)/2);
-%     end
-%     if ~isempty(j1)
-%         num_ref_j=j1;
-%         if ~isempty(j2)
-%             num_ref_j=floor((num_ref_j+j2)/2);
-%         end
-%     end
-% end
-% if num_ref_i>MaxIndex_i||num_ref_i<MinIndex_i
-%     num_ref_i=round((MinIndex_i+MaxIndex_i)/2);
-% end
-% if ~isempty(num_ref_j)&&~isempty(MaxIndex_j)&& ~isempty(MinIndex_j)
-%     if (num_ref_j>MaxIndex_j||num_ref_j<MinIndex_j)
-%         num_ref_j=round((MinIndex_j+MaxIndex_j)/2);
-%     end
-% end
-% if isempty(num_ref_j)
-%     num_ref_j=1;
-% end
-% 
+
+%% introduce the stored parameters if relevant
+if isfield(Param,'ActionInput')
+fill_GUI(Param.ActionInput,hObject);%fill the GUI with the parameters retrieved from the input Param
+end
+
 %% set the GUI to modal: wait for OK to close
 set(handles.civ_input,'WindowStyle','modal')% Make the GUI modal
 drawnow
@@ -326,8 +295,11 @@ uiwait(handles.civ_input);
 function varargout = civ_input_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % Get default command line output from handles structure
-varargout{1} = handles.output;
-delete(handles.civ_input)
+varargout{1}=[];% default output when civ_input is canceled (no 'OK')
+if ~isempty(handles)
+    varargout{1} = handles.output;
+    delete(handles.civ_input)
+end
 
 % --- Executes when user attempts to close get_field.
 function civ_input_CloseRequestFcn(hObject, eventdata, handles)
@@ -909,50 +881,12 @@ PairString=list_pair{get(handles.ListPairCiv1,'Value')};
 [ind1,ind2]=...
     find_pair_indices(PairString);
 hseries=findobj(allchild(0),'Tag','series');
-%SeriesData=get(hseries,'UserData');
 hhseries=guidata(hseries);
 set(hhseries.num_first_j,'String',num2str(ind1));
 set(hhseries.num_last_j,'String',num2str(ind2));
 set(hhseries.num_incr_j,'String',num2str(ind2-ind1));
+set(handles.ListPairCiv2,'Value',get(handles.ListPairCiv1,'Value'))%civ2 selection the same as civ& by default
 
-% displ_num=get(handles.ListPairCiv1,'UserData');
-% list_pair2=get(handles.ListPairCiv2,'String');%get the menu of image pairs
-% if index_pair<=length(list_pair2)
-%     set(handles.ListPairCiv2,'Value',index_pair);
-% end
-
-
-%update MinIndex_i and last_i according to the chosen image pairs
-% mode_list=get(handles.ListPairMode,'String');
-% mode_value=get(handles.ListPairMode,'Value');
-% mode=mode_list{mode_value};
-% if isequal(mode,'series(Di)')
-%     MinIndex_i=str2double(get(handles.MinIndex_i,'String'));
-%     last_i=str2double(get(handles.last_i,'String'));
-%     incr_i=str2double(get(handles.incr_i,'String'));
-%     num_i=MinIndex_i:incr_i:last_i;
-%     lastfield=str2double(get(handles.MaxIndex_i,'String'));
-%     if ~isnan(lastfield)
-%         test_find=(num_i-floor(index_pair/2)*ones(size(num_i))>0)& ...
-%             (num_i+ceil(index_pair/2)*ones(size(num_i))<=lastfield);
-%         num_i=num_i(test_find);
-%     end
-%     set(handles.MinIndex_i,'String',num2str(num_i(1)));
-%     set(handles.last_i,'String',num2str(num_i(end)));
-% elseif isequal(mode,'series(Dj)')
-%     MinIndex_j=str2double(get(handles.MinIndex_j,'String'));
-%     last_j=str2double(get(handles.last_j,'String'));
-%     incr_j=str2double(get(handles.incr_j,'String'));
-%     num_j=MinIndex_j:incr_j:last_j;
-%     lastfield2=str2double(get(handles.MaxIndex_j,'String'));
-%     if ~isnan(lastfield2)
-%         test_find=(num_j-floor(index_pair/2)*ones(size(num_j))>0)& ...
-%             (num_j+ceil(index_pair/2)*ones(size(num_j))<=lastfield2);
-%         num_j=num_j(test_find);
-%     end
-%     set(handles.MinIndex_j,'String',num2str(num_j(1)));
-%     set(handles.last_j,'String',num2str(num_j(end)));
-% end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ListPairCiv2.
