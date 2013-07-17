@@ -1137,8 +1137,10 @@ update_waitbar(handles.Waitbar,0)
 % --- Executes when selected cell(s) is changed in PairString.
 function PairString_CellSelectionCallback(hObject, eventdata, handles)
 %------------------------------------------------------------------------    
+if numel(eventdata.Indices)>=1
 set(handles.ListView,'Value',eventdata.Indices(1))% detect the selected raw index
 ListView_Callback ([],[],handles) % update the list of available pairs
+end
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------

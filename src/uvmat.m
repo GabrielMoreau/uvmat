@@ -3327,7 +3327,7 @@ else% we introduce the same file (with a different field) for the second series
      if (~isa(transform,'function_handle')||nargin(transform)<3)
         set(handles.uvmat,'UserData',UvData)
         set(handles.TransformName,'value',2); % set transform fct to 'sub_field' if the current fct does not accept two input fields
-        transform_fct_Callback(hObject, eventdata, handles)% activate transform_fct_Callback and refresh current plot
+        TransformName_Callback(hObject, eventdata, handles)% activate transform_fct_Callback and refresh current plot
      else
          check_refresh=1;
      end  

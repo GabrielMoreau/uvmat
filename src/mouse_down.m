@@ -59,7 +59,7 @@ if ~isempty(huvmat)
     UvData=get(huvmat,'UserData');
     test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
     test_edit=get(hhuvmat.CheckEditObject,'Value')&& (isequal(obj_tag,'proj_object')||isequal(obj_tag,'DeformPoint'));%test for object editing, third priority
-    hset_object=findobj(allchild(0),'tag','set_object');
+    hset_object=findobj(allchild(0),'Name','set_object');
     if ~isempty(hset_object)
         hPLOT=findobj(hset_object,'tag','PLOT');
         test_create=strcmp(get(hPLOT,'enable'),'on') &&~get(hhuvmat.CheckEditObject,'Value');% create new object if set_object is in mode enable and uvmat not in mode 'EditObject'
@@ -181,7 +181,7 @@ if CheckZoom
 end
 
 %% Creation of a display window zoom of text_display
-if isequal(get(hObject,'SelectionType'),'alt') && strcmp(htype,'axes') && ~test_edit && ~test_create 
+if strcmp(get(hObject,'SelectionType'),'alt') && strcmp(htype,'axes') && ~test_edit && ~test_create 
     set(0,'Unit','pixels')
     GUISize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right   
     Width=300;% fig width in points (1/72 inch)

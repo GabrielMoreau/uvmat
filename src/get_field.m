@@ -86,6 +86,9 @@ for ilist=1:NbVar
     end
     %Field.NbDim(ilist)=numel(Field.VarDimNameNonSingleton{ilist});%nbre of array dimensions after elimination of singletons
 end
+if ~isfield(Field,'VarAttribute')
+    Field.VarAttribute={};
+end
 if numel(Field.VarAttribute)<NbVar% complement VarAttribute by blanjs if neded
     Field.VarAttribute(numel(Field.VarAttribute)+1:NbVar)=cell(1,NbVar-numel(Field.VarAttribute));
 end
