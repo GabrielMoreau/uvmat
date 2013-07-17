@@ -128,7 +128,7 @@ end
 if size(time,1)>1
     diff_time=max(max(diff(time)));
     if diff_time>0 
-        disp_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time)],checkrun)
+        disp_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time) ': time of first series chosen in result'],checkrun)
     end   
 end
 
@@ -340,72 +340,61 @@ if isempty(Data)||~iscell(Data)
     MergeData=[];
     return
 end
-MergeData=Data{1};%default
 error=0;
 NbView=length(Data);
 if NbView==1
     return
 end
+MergeData=Data{1};% merged field= first field by default, reproduces the glabal attributes of the first field
 
 %% group the variables (fields of 'Data') in cells of variables with the same dimensions
 [CellInfo,NbDim,errormsg]=find_field_cells(Data{1});
+
 %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
-% CellVarIndex=cells of variable index arrays
 for icell=1:length(CellInfo)
-    if NbDim(icell)==1
-        continue% skip field cells which are of dim 1
-    end
-    VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list FieldData.ListVarName
-%     VarType=VarTypeCell{icell};
-    ivar_X=CellInfo{icell}.CoordIndex(1);
-    ivar_Y=CellInfo{icell}.CoordIndex(2);
-%     ivar_Y=VarType.coord_y;
-    ivar_FF=CellInfo{icell}.VarIndex_errorflag;
-    if isempty(ivar_X)
-        test_grid=1;%test for input data on regular grid (e.g. image)coordinates
-    else
-        if length(ivar_Y)~=1
-                disp_uvmat('ERROR','y coordinate missing in proj_field.m',checkrun)
-                return
-        end
-        test_grid=0;
-    end
-    %case of input fields with unstructured coordinates
-    if isequal(CellInfo{icell}.CoordType,'scattered')
-        for ivar=VarIndex
-            VarName=MergeData.ListVarName{ivar};
-            for iview=1:NbView
-                MergeData.(VarName)=[MergeData.(VarName); Data{iview}.(VarName)];
-            end
-        end
-    %case of fields defined on a structured  grid 
-    else  
-        testFF=0;
-        for iview=2:NbView
-            for ivar=VarIndex
-                VarName=MergeData.ListVarName{ivar};
-                if isfield(MergeData,'VarAttribute')
-                    if length(MergeData.VarAttribute)>=ivar && isfield(MergeData.VarAttribute{ivar},'Role') && isequal(MergeData.VarAttribute{ivar}.Role,'errorflag')
-                        testFF=1;
+    if NbDim(icell)~=1 % skip field cells which are of dim 1
+        switch CellInfo{icell}.CoordType
+            case 'scattered'  %case of input fields with unstructured coordinates: just concacene data
+                for ivar=CellInfo{icell}.VarIndex %  indices of the selected variables in the list FieldData.ListVarName
+                    VarName=Data{1}.ListVarName{ivar};
+                    %MergeData=Data{1};% merged field= first field by default, reproduces the glabal attributes of the first field
+                    for iview=2:NbView
+                        MergeData.(VarName)=[MergeData.(VarName); Data{iview}.(VarName)];
                     end
                 end
-                MergeData.(VarName)=MergeData.(VarName) + Data{iview}.(VarName);
-            end
+            case 'grid'        %case of fields defined on a structured  grid
+                FFName='';
+                if ~isempty(CellInfo{icell}.VarIndex_errorflag)
+                    FFName=Data{1}.ListVarName{CellInfo{icell}.VarIndex_errorflag};% name of errorflag variable
+                end
+                % select good data on each view
+                for ivar=CellInfo{icell}.VarIndex  %  indices of the selected variables in the list FieldData.ListVarName
+                    VarName=Data{1}.ListVarName{ivar};
+                    for iview=1:NbView
+                        if isempty(FFName)
+                            check_bad=isnan(Data{iview}.(VarName));%=0 for NaN data values, 1 else
+                        else
+                            check_bad=isnan(Data{iview}.(VarName)) | Data{iview}.(FFName)~=0;%=0 for NaN or error flagged data values, 1 else
+                        end
+                        Data{iview}.(VarName)(check_bad)=0; %set to zero NaN or masked data
+                        if iview==1
+                            MergeData.(VarName)=Data{1}.(VarName);% correct the field of MergeData
+                            NbAver=~check_bad;% initiate NbAver: the nbre of good data for each point
+                        else
+                            MergeData.(VarName)=MergeData.(VarName) + Data{iview}.(VarName);%add data
+                            NbAver=NbAver + ~check_bad;% add 1 for good data, 0 else
+                        end
+                    end
+                    MergeData.(VarName)(NbAver~=0)=MergeData.(VarName)(NbAver~=0)./NbAver(NbAver~=0);% take average of defined data at each point
+                end
         end
-        if testFF
-            nbaver=NbView-MergeData.FF;
-            indgood=find(nbaver>0);
-            for ivar=VarIndex
-                VarName=MergeData.ListVarName{ivar};
-                MergeData.(VarName)(indgood)=double(MergeData.(VarName)(indgood))./nbaver(indgood);
-            end 
-        else
-            for ivar=VarIndex
-                VarName=MergeData.ListVarName{ivar};
-                MergeData.(VarName)=double(MergeData.(VarName))./NbView;
-            end    
+        if isempty(FFName)
+            FFName='FF';
         end
+        MergeData.(FFName)(NbAver~=0)=0;% flag to 1 undefined summed data
+        MergeData.(FFName)(NbAver==0)=1;% flag to 1 undefined summed data
     end
 end
+
 
     
