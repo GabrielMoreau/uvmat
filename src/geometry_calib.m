@@ -49,7 +49,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 05-Jul-2013 08:29:07
+% Last Modified by GUIDE v2.5 31-Jul-2013 23:03:18
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -122,7 +122,6 @@ if exist('inputfile','var')&& ~isempty(inputfile)
         end
     end
     set(handles.ListCoord,'Data',[])
-   % set(handles.ListCoord,'Data',{[] [] [] [] [] []})
     if exist(inputfile,'file')
         Heading=loadfile(handles,inputfile);% load data from the xml file
         if isfield(Heading,'Campaign')&& ischar(Heading.Campaign)
@@ -214,7 +213,6 @@ Data=get(handles.ListCoord,'Data');
 Data(:,6)=zeros(size(Data,1),1);
 Data(index,6)=1;% indicate in the list the point with max deviation (possible mistake)
 set(handles.ListCoord,'Data',Data)% indicate in the list the point with max deviation (possible mistake)
-%ListCoord_Callback(hObject, eventdata, handles)
 figure(handles.geometry_calib)
 
 %------------------------------------------------------------------------
@@ -263,8 +261,6 @@ msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated for ' num2str(nbcalib) ' exp
 function [GeometryCalib,index]=calibrate(handles,hhuvmat)
 %------------------------------------------------------------------------
 %% read the current calibration points
-%Coord_cell=get(handles.ListCoord,'Data');
-%Object=read_geometry_calib(Coord_cell);
 Coord=get(handles.ListCoord,'Data');
 Coord(:,6)=[];
 % apply the calibration, whose type is selected in  handles.calib_type
@@ -700,15 +696,15 @@ ErrorRms(1)=sqrt(mean((Xpoints-x_ima).*(Xpoints-x_ima)));
 ErrorRms(2)=sqrt(mean((Ypoints-y_ima).*(Ypoints-y_ima)));
 ErrorRms=mean(ErrorRms);
 
-%------------------------------------------------------------------------
-function XImage_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-update_list(hObject, eventdata,handles)
-
-%------------------------------------------------------------------------
-function YImage_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-update_list(hObject, eventdata,handles)
+% %------------------------------------------------------------------------
+% function XImage_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% update_list(hObject, eventdata,handles)
+% 
+% %------------------------------------------------------------------------
+% function YImage_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% update_list(hObject, eventdata,handles)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in STORE.
@@ -744,18 +740,14 @@ if ~isempty(hhuvmat.RootPath)&& ~isempty(hhuvmat.RootFile)
     end
     set(handles.ListCoordFiles,'string',listfile);
 end
-% set(handles.ListCoord,'Value',1)% refresh the display of coordinates
 set(handles.ListCoord,'Data',[])
 
 % --------------------------------------------------------------------
 % --- Executes on button press in CLEAR_PTS: clear the list of calibration points
 function CLEAR_PTS_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
-% set(handles.ListCoord,'Value',1)% refresh the display of coordinates
-% set(handles.ListCoord,'String',{'......'})
 set(handles.ListCoord,'Data',[])
 PLOT_Callback(hObject, eventdata, handles)
-
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CLEAR.
@@ -764,50 +756,50 @@ function CLEAR_Callback(hObject, eventdata, handles)
 set(handles.ListCoordFiles,'Value',1)
 set(handles.ListCoordFiles,'String',{''})
 
-%------------------------------------------------------------------------
-function XObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-update_list(hObject, eventdata,handles)
-
-%------------------------------------------------------------------------
-function YObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-update_list(hObject, eventdata,handles)
-
-%------------------------------------------------------------------------
-function ZObject_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-update_list(hObject, eventdata,handles)
-
-%------------------------------------------------------------------------
-function update_list(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-newval(4)=str2double(get(handles.XImage,'String'));
-newval(5)=str2double(get(handles.YImage,'String'));
-newval(1)=str2double(get(handles.XObject,'String'));
-newval(2)=str2double(get(handles.YObject,'String'));
-newval(3)=str2double(get(handles.ZObject,'String'));
-if isnan(newval(3)) 
-    newval(3)=0;%put z to 0 by default
-end
-Coord=get(handles.ListCoord,'String');
-Coord(end)=[]; %remove last string '.....'
-val=get(handles.ListCoord,'Value');
-data=read_geometry_calib(Coord);
-data.Coord(val,:)=newval;
-for i=1:size(data.Coord,1)
-    for j=1:5
-          Coord_cell{i,j}=num2str(data.Coord(i,j),4);%display coordiantes with 4 digits
-    end
-end
-
-Tabchar=cell2tab(Coord_cell,' | ');
-Tabchar=[Tabchar ;{'......'}];
-set(handles.ListCoord,'String',Tabchar)
-
-%update the plot 
-ListCoord_Callback(hObject, eventdata, handles)
-PLOT_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% function XObject_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% update_list(hObject, eventdata,handles)
+% 
+% %------------------------------------------------------------------------
+% function YObject_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% update_list(hObject, eventdata,handles)
+% 
+% %------------------------------------------------------------------------
+% function ZObject_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% update_list(hObject, eventdata,handles)
+% 
+% %------------------------------------------------------------------------
+% function update_list(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% newval(4)=str2double(get(handles.XImage,'String'));
+% newval(5)=str2double(get(handles.YImage,'String'));
+% newval(1)=str2double(get(handles.XObject,'String'));
+% newval(2)=str2double(get(handles.YObject,'String'));
+% newval(3)=str2double(get(handles.ZObject,'String'));
+% if isnan(newval(3)) 
+%     newval(3)=0;%put z to 0 by default
+% end
+% Coord=get(handles.ListCoord,'String');
+% Coord(end)=[]; %remove last string '.....'
+% val=get(handles.ListCoord,'Value');
+% data=read_geometry_calib(Coord);
+% data.Coord(val,:)=newval;
+% for i=1:size(data.Coord,1)
+%     for j=1:5
+%           Coord_cell{i,j}=num2str(data.Coord(i,j),4);%display coordiantes with 4 digits
+%     end
+% end
+% 
+% Tabchar=cell2tab(Coord_cell,' | ');
+% Tabchar=[Tabchar ;{'......'}];
+% set(handles.ListCoord,'String',Tabchar)
+% 
+% %update the plot 
+% ListCoord_Callback(hObject, eventdata, handles)
+% PLOT_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in CheckEnableMouse.
@@ -828,41 +820,41 @@ else
     set(handles.CheckEnableMouse,'BackgroundColor',[0.7 0.7 0.7]) 
 end
     
-function NEW_Callback(hObject, eventdata, handles)
-%A METTRE SOUS UN BOUTON
-huvmat=findobj(allchild(0),'Name','uvmat');
-hchild=get(huvmat,'children');
-hcoord=findobj(hchild,'Tag','menu_coord');
-coordtype=get(hcoord,'Value');
-haxes=findobj(hchild,'Tag','axes3');
-AxeData=get(haxes,'UserData');
-if ~isequal(hcoord,2)
-    set(hcoord,'Value',2)
-    huvmat=uvmat(AxeData);
-    'relancer uvmat';
-end
-if ~isfield(AxeData,'ZoomAxes')
-    msgbox_uvmat('ERROR','first draw a window around a grid marker')
-    return
-end 
-XLim=get(AxeData.ZoomAxes,'XLim');
-YLim=get(AxeData.ZoomAxes,'YLim');
-np=size(AxeData.A);
-ind_sub_x=round(XLim);
-ind_sub_y=np(1)-round(YLim);
-Mfiltre=AxeData.A(ind_sub_y(2):ind_sub_y(1) ,ind_sub_x,:);
-Mfiltre_norm=double(Mfiltre);
-Mfiltre_norm=Mfiltre_norm/sum(sum(Mfiltre_norm));
-Mfiltre_norm=100*(Mfiltre_norm-mean(mean(Mfiltre_norm)));
-Atype=class(AxeData.A);
-Data.NbDim=2;
-Data.A=filter2(Mfiltre_norm,double(AxeData.A)); 
-Data.A=feval(Atype,Data.A);
-Data.AName='image';
-Data.AX=AxeData.AX;
-Data.AY=AxeData.AY;
-Data.CoordType='px';
-plot_field(Data)
+% function NEW_Callback(hObject, eventdata, handles)
+% %A METTRE SOUS UN BOUTON
+% huvmat=findobj(allchild(0),'Name','uvmat');
+% hchild=get(huvmat,'children');
+% hcoord=findobj(hchild,'Tag','menu_coord');
+% coordtype=get(hcoord,'Value');
+% haxes=findobj(hchild,'Tag','axes3');
+% AxeData=get(haxes,'UserData');
+% if ~isequal(hcoord,2)
+%     set(hcoord,'Value',2)
+%     huvmat=uvmat(AxeData);
+%     'relancer uvmat';
+% end
+% if ~isfield(AxeData,'ZoomAxes')
+%     msgbox_uvmat('ERROR','first draw a window around a grid marker')
+%     return
+% end 
+% XLim=get(AxeData.ZoomAxes,'XLim');
+% YLim=get(AxeData.ZoomAxes,'YLim');
+% np=size(AxeData.A);
+% ind_sub_x=round(XLim);
+% ind_sub_y=np(1)-round(YLim);
+% Mfiltre=AxeData.A(ind_sub_y(2):ind_sub_y(1) ,ind_sub_x,:);
+% Mfiltre_norm=double(Mfiltre);
+% Mfiltre_norm=Mfiltre_norm/sum(sum(Mfiltre_norm));
+% Mfiltre_norm=100*(Mfiltre_norm-mean(mean(Mfiltre_norm)));
+% Atype=class(AxeData.A);
+% Data.NbDim=2;
+% Data.A=filter2(Mfiltre_norm,double(AxeData.A)); 
+% Data.A=feval(Atype,Data.A);
+% Data.AName='image';
+% Data.AX=AxeData.AX;
+% Data.AY=AxeData.AY;
+% Data.CoordType='px';
+% plot_field(Data)
 
 
 % --------------------------------------------------------------------
@@ -893,21 +885,10 @@ x=Xima/str2num(answer);
 y=Yima/str2num(answer);
 Coord=[x y zeros(4,1) Xima Yima zeros(4,1)];
 set(handles.ListCoord,'Data',Coord)
-% Tabchar=cell2tab(Coord,' | ');
-% Tabchar=[Tabchar ;{'......'}];
-% set(handles.ListCoord,'String',Tabchar)
-% Coord={num2str(x(1)) num2str(y(1)) '0' num2str(Xima(1)) num2str(Yima(1));...
-%     num2str(x(2)) num2str(y(2)) '0' num2str(Xima(2)) num2str(Yima(2));...
-%     num2str(x(3)) num2str(y(3)) '0' num2str(Xima(3)) num2str(Yima(3));...
-%     num2str(x(4)) num2str(y(4)) '0' num2str(Xima(4)) num2str(Yima(4))};
-% Tabchar=cell2tab(Coord,' | ');
-% Tabchar=[Tabchar ;{'......'}];
-% set(handles.ListCoord,'String',Tabchar)
 
 %------------------------------------------------------------------------
 function MenuCreateGrid_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-%hcalib=get(handles.calib_type,'parent');%handles of the GUI geometry_calib
 CalibData=get(handles.geometry_calib,'UserData');
 Tinput=[];%default
 if isfield(CalibData,'grid')
@@ -919,12 +900,6 @@ set(handles.geometry_calib,'UserData',CalibData)
 %grid in phys space
 Coord=get(handles.ListCoord,'Data');
 Coord(1:size(T,1),1:3)=T;%update the existing list of phys coordinates from the GUI create_grid
-
-% for i=1:size(data.Coord,1)
-%     for j=1:5
-%           Coord{i,j}=num2str(data.Coord(i,j),4);%display coordiantes with 4 digits
-%     end
-% end
 set(handles.ListCoord,'Data',Coord)
 
 % -----------------------------------------------------------------------
@@ -1058,10 +1033,6 @@ Tmod=T(:,(1:2))+Delta;
 % end
 Coord=[T Xpx Ypx zeros(size(T,1),1)];
 set(handles.ListCoord,'Data',Coord)
-% Tabchar=cell2tab(Coord(end:-1:1,:),' | ');
-% Tabchar=[Tabchar ;{'......'}];
-% set(handles.ListCoord,'Value',1)
-% set(handles.ListCoord,'String',Tabchar)
 PLOT_Callback(hObject, eventdata, handles)
 
 %-----------------------------------------------------------------------
@@ -1077,22 +1048,11 @@ T=translate_points(Tinput);%display translate_points GUI and get shift parameter
 CalibData.translate=T;
 set(handles.geometry_calib,'UserData',CalibData)
 %translation
-Coord_cell=get(handles.ListCoord,'String');
-data=read_geometry_calib(Coord_cell);
-data.Coord(:,1)=T(1)+data.Coord(:,1);
-data.Coord(:,2)=T(2)+data.Coord(:,2);
-data.Coord(:,3)=T(3)+data.Coord(:,3);
-data.Coord(:,[4 5])=data.Coord(:,[4 5]);
-for i=1:size(data.Coord,1)
-    for j=1:5
-          Coord{i,j}=num2str(data.Coord(i,j),4);%phys x,y,z
-   end
-end
-Tabchar=cell2tab(Coord,' | ');
-Tabchar=[Tabchar; {'.....'}];
-%set(handles.ListCoord,'Value',1)
-set(handles.ListCoord,'String',Tabchar)
-
+Coord=get(handles.ListCoord,'Data');
+Coord(:,1)=T(1)+Coord(:,1);
+Coord(:,2)=T(2)+Coord(:,2);
+Coord(:,3)=T(3)+Coord(:,3);
+set(handles.ListCoord,'Data',Coord);
 
 % --------------------------------------------------------------------
 function MenuRotatePoints_Callback(hObject, eventdata, handles)
@@ -1116,26 +1076,16 @@ end
 if numel(T)>=3
     O_y=T(3);%default
 end
-Coord_cell=get(handles.ListCoord,'String');
-data=read_geometry_calib(Coord_cell);
+Coord=get(handles.ListCoord,'Data');
 r1=cos(pi*Phi/180);
 r2=-sin(pi*Phi/180);
 r3=sin(pi*Phi/180);
 r4=cos(pi*Phi/180);
-x=data.Coord(:,1)-O_x;
-y=data.Coord(:,2)-O_y;
-data.Coord(:,1)=r1*x+r2*y;
-data.Coord(:,2)=r3*x+r4*y;
-% data.Coord(:,[4 5])=data.Coord(:,[4 5]);
-for i=1:size(data.Coord,1)
-    for j=1:5
-          Coord{i,j}=num2str(data.Coord(i,j),4);%phys x,y,z
-   end
-end
-Tabchar=cell2tab(Coord,' | ');
-Tabchar=[Tabchar;{'......'}];
-set(handles.ListCoord,'Value',1)
-set(handles.ListCoord,'String',Tabchar)
+x=Coord(:,1)-O_x;
+y=Coord(:,2)-O_y;
+Coord(:,1)=r1*x+r2*y;
+Coord(:,2)=r3*x+r4*y;
+set(handles.ListCoord,'Data',Coord)
 
 % --------------------------------------------------------------------
 function MenuImportPoints_Callback(hObject, eventdata, handles)
@@ -1145,18 +1095,8 @@ if isempty(fileinput)
 end
 [s,errormsg]=imadoc2struct(fileinput,'GeometryCalib');
 GeometryCalib=s.GeometryCalib;
-%GeometryCalib=load_calib(hObject, eventdata, handles)
-% calib=reshape(GeometryCalib.SourceCalib.PointCoord,[],1);
-% for ilist=1:numel(calib)
-%     CoordCell{ilist}=num2str(calib(ilist));
-% end
-% CoordCell=reshape(CoordCell,[],5);
-% Tabchar=cell2tab(CoordCell,' | ');%transform cells into table ready for display
-% Tabchar=[Tabchar;{'......'}];
-% set(handles.ListCoord,'Value',1)
-% set(handles.ListCoord,'String',Tabchar)
 Coord=GeometryCalib.SourceCalib.PointCoord;
-Coord=[Coord zeros(size(Coord,1),1)]
+Coord=[Coord zeros(size(Coord,1),1)];
 set(handles.ListCoord,'Data',Coord)
 PLOT_Callback(handles.geometry_calib, [], handles)
 
@@ -1184,7 +1124,7 @@ end
 function MenuGridFile_Callback(hObject, eventdata, handles)
 % -----------------------------------------------------------------------
 inputfile=browse_xml(hObject, eventdata, handles);
-listfile=get(handles.ListCoordFiles,'string');
+listfile=get(handles.ListCoordFiles,'String');
 if isequal(listfile,{''})
     listfile={inputfile};
 else
@@ -1291,8 +1231,6 @@ if ~isempty(GeometryCalib)
     PLOT_Callback(handles.geometry_calib, [], handles)
 end
 set(handles.calib_type,'Value',val_cal)
-% Tabchar=[Tabchar;{'......'}];
-% set(handles.ListCoord,'Value',1)
 
 if isempty(CoordCell)% allow mouse action by default in the absence of input points
     set(handles.CheckEnableMouse,'Value',1)
@@ -1340,7 +1278,6 @@ delete(hObject);
 % --- Executes on button press in PLOT.
 %------------------------------------------------------------------------
 function PLOT_Callback(hObject, eventdata, handles)
-global Coord
 huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
 hhuvmat=guidata(huvmat); %handles of GUI elements in uvmat
 h_menu_coord=findobj(huvmat,'Tag','TransformName');
@@ -1351,10 +1288,7 @@ if iscell(menu)
 else
     option='px'; %default
 end
-%ObjectData=read_geometry_calib(Coord_cell);
-%ObjectData=read_geometry_calib(handles);%read the interface input parameters defining the object
 Coord=get(handles.ListCoord,'Data');
-% Coord(:,6)=[];
 if ~isempty(Coord)
     if isequal(option,'phys')
         Coord_plot=Coord(:,1:3);
@@ -1383,8 +1317,9 @@ figure(handles.geometry_calib)
 % --- Executes on button press in Copy.
 %------------------------------------------------------------------------
 function Copy_Callback(hObject, eventdata, handles)
-
+global Coord
 evalin('base','global Coord')%make CurData global in the workspace
+Coord=get(handles.ListCoord,'Data');
 display('coordinates of calibration points (phys,px,marker) :')
 evalin('base','Coord') %display CurData in the workspace
 commandwindow; %brings the Matlab command window to the front
@@ -1397,20 +1332,9 @@ iline=eventdata.Indices(1);% selected line number
 Data=get(handles.ListCoord,'Data');
 Data(:,6)=zeros(size(Data,1),1);
 Data(iline,6)=1;% mark the selected line
-% if size(Data,1)<iline+numel(Input)
-%     Data=[Data ; zeros(iline+numel(Input)-size(Data,1),6)];% append zeros to fit the new column
-% end
-% Data(iline:iline+numel(Input)-1,eventdata.Indices(2))=Input';
 set(handles.ListCoord,'Data',Data)
 update_calib_marker(Data(iline,:))
-end
-
-% if length(eventdata.Modifier) == 1 && strcmp(eventdata.Modifier{:},'control') && ...
-% eventdata.Key == 'v'
-%     import = importdata('-pastespecial');
-%    %data treatment and checking
-%     set(handles.uitable1,'Data',import);
-% end 
+end 
 
 % --- Executes when entered data in editable cell(s) in ListCoord.
 function ListCoord_CellEditCallback(hObject, eventdata, handles)
@@ -1466,7 +1390,3 @@ if isempty(hhh)
 else
     set(hhh,'Position',[XCoord-ind_range/2 YCoord-ind_range/2 ind_range ind_range])
 end
-
-
-
-

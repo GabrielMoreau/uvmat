@@ -17,10 +17,12 @@ if ~isstruct(Param)
     errormsg='first input parmaeter of fill_GUI must be a structure';
     return
 end
-children=get(GUI_handle,'children');
+children=get(GUI_handle,'children');%handles of the children of the input GUI with handle 'GUI_handle'
 handles=[];
 for ichild=1:numel(children)
+    if ~isempty(get(children(ichild),'tag'))
     handles.(get(children(ichild),'tag'))=children(ichild);
+    end
 end
 UserData=get(GUI_handle,'UserData');
 fields=fieldnames(Param);%list of fields in Param

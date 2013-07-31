@@ -226,33 +226,33 @@ path_list{ilist}=transform_path; % set transform_path to the path_list
 end
 
 %% load the list of previously browsed files in menus Open, Open_1 and TransformName
- dir_perso=prefdir; % path to the directory .matlab containing the personal data of the current user
- profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmat_perso.mat' in .matlab
- if exist(profil_perso,'file')% if the file exists
-     h=load (profil_perso); % open the personal file
-     if isfield(h,'MenuFile')% load the saved menu of previously opened files
-         for ifile=1:min(length(h.MenuFile),5)
-             set(handles.(['MenuFile_' num2str(ifile)]),'Label',h.MenuFile{ifile});
-         end
-     end
-     if isfield(h,'MenuCampaign')% load the saved menu of previously opened campaigns
-         for ifile=1:min(length(h.MenuCampaign),5)
-             set(handles.(['MenuCampaign_' num2str(ifile)]),'Label',h.MenuCampaign{ifile});
-         end
-     end
-     if isfield(h,'RootPath')
-         set(handles.RootPath,'UserData',h.RootPath); %store the previous campaign in the UserData of RootPath
-     end
-     if isfield(h,'transform_fct') && iscell(h.transform_fct) % load the menu of transform fct set by user
-         for ilist=1:length(h.transform_fct);
-             if exist(h.transform_fct{ilist},'file')
-                 [path,file]=fileparts(h.transform_fct{ilist});
-                 transform_menu=[transform_menu; {file}];
-                 path_list=[path_list; {path}];
-             end
-         end
-     end
- end
+dir_perso=prefdir; % path to the directory .matlab containing the personal data of the current user
+profil_perso=fullfile(dir_perso,'uvmat_perso.mat');% personal data file uvmat_perso.mat' in .matlab
+if exist(profil_perso,'file')% if the file exists
+    h=load (profil_perso); % open the personal file
+    if isfield(h,'MenuFile')% load the saved menu of previously opened files
+        for ifile=1:min(length(h.MenuFile),5)
+            set(handles.(['MenuFile_' num2str(ifile)]),'Label',h.MenuFile{ifile});
+        end
+    end
+    if isfield(h,'MenuCampaign')% load the saved menu of previously opened campaigns
+        for ifile=1:min(length(h.MenuCampaign),5)
+            set(handles.(['MenuCampaign_' num2str(ifile)]),'Label',h.MenuCampaign{ifile});
+        end
+    end
+    if isfield(h,'RootPath')
+        set(handles.RootPath,'UserData',h.RootPath); %store the previous campaign in the UserData of RootPath
+    end
+    if isfield(h,'transform_fct') && iscell(h.transform_fct) % load the menu of transform fct set by user
+        for ilist=1:length(h.transform_fct);
+            if exist(h.transform_fct{ilist},'file')
+                [path,file]=fileparts(h.transform_fct{ilist});
+                transform_menu=[transform_menu; {file}];
+                path_list=[path_list; {path}];
+            end
+        end
+    end
+end
 transform_menu=[transform_menu;{'more...'}];%append the option more.. to the menu
 set(handles.TransformName,'String',transform_menu)% display the menu of transform fcts
 set(handles.TransformName,'UserData',path_list)% store the corresponding list of path in UserData of uicontrol transform_fct
@@ -3534,7 +3534,7 @@ image(imflag);
 function TransformName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 UvData=get(handles.uvmat,'UserData');
-menu=get(handles.TransformName,'String');refresh
+menu=get(handles.TransformName,'String');%refresh
 ichoice=get(handles.TransformName,'Value');%item number in the menu
 transform_name=menu{ichoice};% choice of the transform fct
 list_path=get(handles.TransformName,'UserData');
@@ -3545,22 +3545,9 @@ if ~exist(prev_path,'dir')
     prev_path=fullfile(fileparts(which('uvmat')),'transform_field');
 end
 if strcmp(transform_name,'more...');
-    transform_fct=uigetfile_uvmat('Pick the transform function',prev_path,'.m');
-    %     [FileName, PathName] = uigetfile( ...
-    %         {'*.m', ' (*.m)';
-    %         '*.m',  '.m files '; ...
-    %         '*.*', 'All Files (*.*)'}, ...
-    %         'Pick the transform function', prev_path);
-    %     if ~ischar(FileName),return,end %abandon if the browser is cancelled
-    %     path_transform_fct =fullfile(PathName,FileName);
-    if ~isempty(transform_fct)
-        [PathName,transform_name]=fileparts(transform_fct);
-        %     if isempty(regexp(FileName,'\.m$'))% detect file extension .m
-        %         msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
-        %         return
-        %     else
-        %         transform_name=regexprep(FileName,'\.m','');
-        %     end
+    transform_fct_chosen=uigetfile_uvmat('Pick the transform function',prev_path,'.m');
+    if ~isempty(transform_fct_chosen)
+        [PathName,transform_name]=fileparts(transform_fct_chosen);
         ichoice=find(strcmp(transform_name,menu),1);%look for the selected fct in the existing menu
         if isempty(ichoice)% if the item is not found, add it to the menu (before 'more...' and select it)
             menu=[menu(1:end-1);{transform_name};{'more...'}];
@@ -3586,7 +3573,6 @@ if strcmp(transform_name,'more...');
 end
 
 %% create the function handle of the selected fct
-
 if isempty(list_path{ichoice})% case of no selected fct
     transform_handle=[];
 else
