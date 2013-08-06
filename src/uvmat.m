@@ -190,7 +190,7 @@ LeftX=80*RescaleFactor;%position of the left fig side, in pixels (put to the lef
 LowY=round(ScreenSize(4)/2-Height/2); % put at the middle height on the screen
 set(hObject,'Position',[LeftX LowY Width Height])
 UvData.OpenParam.PosColorbar=[0.80 0.02 0.018 0.445];
-UvData.OpenParam.PosGeometryCalib=[0.95 -0.03 0.28 1 ];%position for geometry_calib (TO IMPROVE)
+% UvData.OpenParam.PosGeometryCalib=[0.95 -0.03 0.28 1 ];%position for geometry_calib 
 AxeData.LimEditBox=1; %initialise AxeData
 set(handles.PlotAxes,'UserData',AxeData)
 % position of table Coord_y
@@ -557,6 +557,7 @@ if ~isfield(OutPut,'Campaign')
 end
 DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
 hdir=dir(DirName); %list files and dirs
+FileName='';
 for ilist=1:numel(hdir)
     if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
         FileName=hdir(ilist).name;
@@ -567,7 +568,11 @@ for ilist=1:numel(hdir)
         end
     end
 end
+if isempty(FileName)
+    msgbox_uvmat('ERROR','no valid input file in the selected directory')
+else
 display_file_name(handles,fullfile(DirName,FileName))
+end
 set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
 %------------------------------------------------------------------------

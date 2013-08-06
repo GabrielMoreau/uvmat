@@ -1011,7 +1011,6 @@ if ~strcmp(ObjectData.ProjMode,'projection')
     end
 else
     %% case of a grid requested by the input field
-
     for icell=1:numel(CellInfo)% TODO: recalculate coordinates here to get the bounds in the rotated coordinates
         if isfield(CellInfo{icell},'ProjModeRequest')
             switch CellInfo{icell}.ProjModeRequest
@@ -1544,22 +1543,37 @@ for icell=1:length(CellInfo)
                     else
                         test_interp_tps=0;
                     end
-                    %                     ProjData.coord_y=[YMin YMax];%note that if projection is done on a grid, the Min and Max along each direction must have been defined
-                    %                     ProjData.coord_x=[XMin XMax];
                     coord_x_proj=XMin:DX:XMax;
                     coord_y_proj=YMin:DY:YMax;
                     [X,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
                     XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(3))-YI*sin(PlaneAngle(3));%corresponding coordinates in the original system
                     YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(3))+YI*cos(PlaneAngle(3));
-                    [X,Y]=meshgrid(Coord{2},Coord{1});%initial coordiantes
+                    Coord{1}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});
+                    Coord{2}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)});
+                    if numel(Coord{1})==2% x coordiante defiend by its bounds, get the whole set
+                        Coord{1}=linspace(Coord{1}(1),Coord{1}(2),CellInfo{icell}.CoordSize(1));
+                    end
+                    if numel(Coord{2})==2% y coordiante defiend by its bounds, get the whole set
+                        Coord{2}=linspace(Coord{2}(1),Coord{2}(2),CellInfo{icell}.CoordSize(2));
+                    end
+                    [X,Y]=meshgrid(Coord{2},Coord{1});%initial coordinates
+                    %name of error flag variable
+                    FFName='FF';%default name (if not already used)
+                    if isfield(ProjData,'FF')
+                        ind=1;
+                        while isfield(ProjData,['FF_' num2str(ind)])
+                            ind=ind+1;
+                        end
+                        FFName=['FF_' num2str(ind)];% append an index to the name of error flag, FF_1,FF_2...
+                    end 
+                    % project all variables in the cell
                     for ivar=VarIndex
                         VarName=FieldData.ListVarName{ivar};
-                        %                         if test_interp(1) || test_interp(2)%interpolate on a regular grid
                         if size(FieldData.(VarName),3)==1
                             ProjData.(VarName)=interp2(X,Y,double(FieldData.(VarName)),XI,YI,'*linear');
                         else
                             ProjData.(VarName)=interp2(X,Y,double(FieldData.(VarName)(:,:,1)),XI,YI,'*linear');
-                            for icolor=2:size(FieldData.(VarName),3)
+                            for icolor=2:size(FieldData.(VarName),3)% project 'color' components
                                 ProjData.(VarName)=cat(3,ProjData.(VarName),interp2(X,Y,double(FieldData.(VarName)(:,:,icolor)),XI,YI,'*linear')); %TO TEST
                             end
                         end
@@ -1569,7 +1583,13 @@ for icell=1:length(CellInfo)
                         if isfield(FieldData,'VarAttribute')&&length(FieldData.VarAttribute)>=ivar
                             VarAttribute{length(ListVarName)+nbcoord}=FieldData.VarAttribute{ivar};
                         end;
+                        ProjData.(FFName)=isnan(ProjData.(VarName));%detact NaN (points outside the interpolation range)
+                        ProjData.(VarName)(ProjData.(FFName))=0; %set to 0 the NaN data
                     end
+                    %update list of variables with error flag
+                    ListVarName=[ListVarName FFName];
+                    VarDimName=[VarDimName {DimCell}];
+                    VarAttribute{numel(ListVarName)}.Role='errorflag';
                 elseif ~testangle
                     % unstructured z coordinate
                     test_sup=(Coord{1}>=ObjectData.Coord(1,3));

@@ -34,10 +34,25 @@ DX=(MaskData.AX(2)-MaskData.AX(1))/(Npx-1);
 DY=(MaskData.AY(2)-MaskData.AY(1))/(Npy-1);
 for icell=1:numel(CellInfo)
     if NbDimArray(icell)==2
+        XName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)};
+        YName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)};
+        if isfield(CellInfo{icell},'VarIndex_errorflag')
+            FFName=FieldData.ListVarName{CellInfo{icell}.VarIndex_errorflag};
+        else
+            FFName='FF';%default error (mask) flag name (if not already used)
+            if isfield(FieldData,'FF')
+                ind=1;
+                while isfield(FieldData,['FF_' num2str(ind)])
+                    ind=ind+1;
+                end
+                FFName=['FF_' num2str(ind)];% append an index to the name of error flag, FF_1,FF_2...
+            end
+            ProjData.ListVarName=[FieldData.ListVarName {FFName}];
+            ProjData.VarDimName=[FieldData.VarDimName FieldData.VarDimName(CellInfo{icell}.CoordIndex(1))];
+            ProjData.VarAttribute{numel(FieldData.VarDimName)}.Role='errorflag';
+        end
         switch CellInfo{icell}.CoordType;
-            case  'scattered'
-                XName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)};
-                YName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)};
+            case  'scattered'               
                 mask_ind_i=round(0.5+(FieldData.(XName)-MaskData.AX(1))/DX);%nbpoint terms
                 mask_ind_j=round(0.5+(FieldData.(YName)-MaskData.AY(1))/DY);%nbpoint terms
                 checkin=mask_ind_j+Npy*(mask_ind_i-1);%array  of mask indices for the nbpoints
@@ -45,20 +60,15 @@ for icell=1:numel(CellInfo)
                 checkfalse=true(size(FieldData.(XName)));
                 MaskData.A=reshape(MaskData.A,1,[]);
                 checkfalse(MaskData.A(checkin)>200)=0;
-                if ~isfield(FieldData,'FF')
-                    FieldData.FF=zeros(size(FieldData.(XName)));
-                    FieldData.ListVarName=[FieldData.ListVarName {'FF'}];
-                    FieldData.VarDimName=[FieldData.VarDimName FieldData.VarDimName(CellInfo{icell}.CoordIndex(1))];
-                    FieldData.VarAttribute{numel(FieldData.VarDimName)}.Role='errorflag';
-                end
                 for ivar=1:numel(CellInfo{icell}.VarIndex)
                     VarName=FieldData.ListVarName{CellInfo{icell}.VarIndex(ivar)};
-                    FieldData.(VarName)(checkfalse)=0;
-                    FieldData.FF(checkfalse)=1;
+                    ProjData.(VarName)(checkfalse)=0;
                 end
+                if ~isfield(CellInfo{icell},'VarIndex_errorflag')% an error flag already exists in the current cell
+                    ProjData.(FFName)=zeros(size(ProjData.(VarName)));
+                end
+                ProjData.(FFName)(checkfalse)=1;
             case  'grid'
-                XName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)};
-                YName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)};
                 Var1Name=FieldData.ListVarName{CellInfo{icell}.VarIndex(1)};
                 [Npy_field,Npx_field]=size(FieldData.(Var1Name));
                 DX_field=(FieldData.(XName)(end)-FieldData.(XName)(1))/(Npx_field-1);
@@ -69,22 +79,20 @@ for icell=1:numel(CellInfo)
                 YMask=MaskData.AY(end):-DY:MaskData.AY(1);
                 [XMask,YMask]=meshgrid(XMask,YMask);
                 Mask = interp2(XMask,YMask,MaskData.A,XArray,YArray','nearest');
-%                 figure(1)
-%                 image(MaskData.A)
-                Mask=Mask>200;
-                if ~isfield(FieldData,'FF')
-                    FieldData.FF=zeros(size(FieldData.(XName)));
-                    FieldData.ListVarName=[FieldData.ListVarName {'FF'}];
-                    FieldData.VarDimName=[FieldData.VarDimName FieldData.VarDimName(CellInfo{icell}.CoordIndex(1))];
-                    FieldData.VarAttribute{numel(FieldData.VarDimName)}.Role='errorflag';
-                end
+                Mask=Mask>200;                
                 for ivar=1:numel(CellInfo{icell}.VarIndex)
                     VarName=FieldData.ListVarName{CellInfo{icell}.VarIndex(ivar)};
-                    FieldData.(VarName)=FieldData.(VarName).*Mask;
-                    FieldData.FF=~Mask;
+                    if ~strcmp(VarName,FFName)
+                        ProjData.(VarName)=FieldData.(VarName).*Mask;
+                    end
+                end
+                if isfield(CellInfo{icell},'VarIndex_errorflag')% an error flag already exists in the current cell
+                    ProjData.(FFName)=FieldData.(FFName) | ~Mask;
+                else
+                    ProjData.(FFName)= ~Mask;
                 end
         end
     end
 end
-        
+
 

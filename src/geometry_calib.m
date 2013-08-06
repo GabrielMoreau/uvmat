@@ -59,8 +59,12 @@ gui_State = struct('gui_Name',       mfilename, ...
                    'gui_OutputFcn',  @geometry_calib_OutputFcn, ...
                    'gui_LayoutFcn',  [] , ...
                    'gui_Callback',   []);
-if nargin && ischar(varargin{1}) %&& ~isempty(regexp(varargin{1},'_Callback','once'))
+if nargin
+   [pp,ff]=fileparts(which(varargin{1})); % name of the input file
+   if strcmp(ff,mfilename)% if we are activating a sub-function of geometry_calib
+   % ~isempty(regexp(varargin{1},'_Callback','once'))
     gui_State.gui_Callback = str2func(varargin{1});
+   end
 end
 
 if nargout
@@ -91,18 +95,29 @@ set(hObject,'DeleteFcn',{@closefcn})%
 %% position
 set(0,'Unit','pixels')
 ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
-FigSize=get(handles.geometry_calib,'Position');
-
-Width=FigSize(3);% fig width in points (1/72 inch)
-Height=FigSize(4);
-Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40 
-Bottom=ScreenSize(4)-Height-40; %put fig at top right
-set(handles.geometry_calib,'Position',[Left Bottom Width Height])
-
-% %set the position of the interface
-% if exist('pos','var')&& length(pos)>=4
-%     set(hObject,'Position',pos);
-% end
+Left=ScreenSize(3)- 460; %right edge close to the right, with margin=40 (GUI width=420 px)
+if ScreenSize(4)>880
+    Height=840;%default height of the GUI
+    Bottom=ScreenSize(4)-Height-40; %put fig at top right
+else
+    Height=ScreenSize(4)-40;
+    Bottom=0; % GUI lies o the screen bottom
+end
+set(handles.calib_type,'Position',[1 Height-30 194 30])%  rank 1
+set(handles.APPLY,'Position',[197 Height-30 110 30])%  rank 1
+set(handles.REPLICATE,'Position',[309 Height-30 110 30])%  rank 1
+set(handles.Intrinsic,'Position',[1 Height-30-2-92 418 92])%  rank 2
+set(handles.Extrinsic,'Position',[1 Height-30-4-92-75 418 75])%  rank 3
+set(handles.PointLists,'Position',[1 Height-30-6-92-75-117 418 117]) %  rank 4
+set(handles.CheckEnableMouse,'Position',[3 Height-30-8-92-75-117-30 203 30])%  rank 5
+set(handles.PLOT,'Position',[3 Height-384 120 30])%  rank 6
+set(handles.Copy,'Position',[151 Height-384 120 30])%  rank 6
+set(handles.CLEAR_PTS,'Position',[297 Height-384 120 30])%  rank 6
+set(handles.phys_title,'Position',[38 Height-416 125 20])%  rank 7
+set(handles.CoordUnit,'Position',[151 Height-416 120 30])%  rank 7
+set(handles.px_title,'Position',[272 Height-416 125 20])%  rank 7
+set(handles.ListCoord,'Position',[1 20 418 Height-436])% rank 8
+set(handles.geometry_calib,'Position',[Left Bottom 420 Height])
 
 %set menu of calibration options
 set(handles.calib_type,'String',{'rescale';'linear';'3D_linear';'3D_quadr';'3D_extrinsic'})
@@ -149,6 +164,7 @@ function closefcn(gcbo,eventdata)
 huvmat=findobj(allchild(0),'Name','uvmat');
 if ~isempty(huvmat)
     handles=guidata(huvmat);
+    set(handles.MenuCalib,'Checked','off')
     hobject=findobj(handles.PlotAxes,'tag','calib_points');
     if ~isempty(hobject)
         delete(hobject)

@@ -242,7 +242,8 @@ end
 
 %% introduce the input file name(s) if defined from input Param
 if isfield(Param,'FileName')
-    InputTable={'','','','',''}; % refresh the file input table
+    %InputTable={'','','','',''}; % refresh the file input table
+    InputTable={}
     set(handles.InputTable,'Data',InputTable)
     if isfield(Param,'FileName_1')
         display_file_name(handles,Param.FileName,'one')%refresh the input table
@@ -583,12 +584,13 @@ drawnow
 InputTable=get(handles.InputTable,'Data');
 SeriesData=get(handles.series,'UserData');
 if strcmp(iview,'append') % display the input data as a new line in the table
-    iview=size(InputTable,1);% the next line in InputTable becomes the current line
-    InputTable(iview+1,:)={'','','','',''};
+    iview=size(InputTable,1)+1;% the next line in InputTable becomes the current line
+    %InputTable(iview+1,:)={'','','','',''};
     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
 elseif strcmp(iview,'one') % refresh the list of  input  file series
     iview=1; %the first line in InputTable becomes the current line
-    InputTable=[{'','','','',''};{'','','','',''}];
+    InputTable={'','','','',''};
+    %InputTable=[{'','','','',''};{'','','','',''}];
     InputTable(iview,:)=[{RootPath},{SubDir},{RootFile},{NomType},{FileExt}];
     set(handles.TimeTable,'Data',[{[]},{[]},{[]},{[]}])
     set(handles.MinIndex_i,'Data',[])
@@ -606,7 +608,8 @@ elseif strcmp(iview,'one') % refresh the list of  input  file series
     SeriesData.FileInfo={};
     SeriesData.Time={};
 end
-nbview=size(InputTable,1)-1;% rmq: the last line is set blank to allow manual addition of a line
+%nbview=size(InputTable,1)-1;% rmq: the last line is set blank to allow manual addition of a line
+nbview=size(InputTable,1);
 set(handles.ListView,'String',mat2cell((1:nbview)',ones(nbview,1)))
 set(handles.ListView,'Value',iview)
 set(handles.InputTable,'Data',InputTable)
@@ -2155,7 +2158,7 @@ OutputDirVisible='off';
 if isfield(ParamOut,'OutputDirExt')&&~isempty(ParamOut.OutputDirExt)
     set(handles.OutputDirExt,'String',ParamOut.OutputDirExt)
     OutputDirVisible='on';
-    SubDir=InputTable(1:end-1,2); %set of subdirectories sorted in alphabetical order
+    SubDir=InputTable(1:end,2); %set of subdirectories sorted in alphabetical order
     SubDirOut=SubDir{1};
     if numel(SubDir)>1
         for ilist=2:numel(SubDir)
@@ -2484,7 +2487,10 @@ if get(handles.CheckMask,'Value')
     InputTable=get(handles.InputTable,'Data');
     nbview=size(InputTable,1);
     %     MaskTable=cell(nbview,1);
+    MaskTable=cell(nbview,1);%default
+    ListMask=cell(nbview,1);%default
     for iview=1:nbview
+        ListMask{iview,1}=num2str(iview);
         RootPath=InputTable{iview,1};
         if ~isempty(RootPath)
             if isempty(MaskData{iview})
@@ -2499,14 +2505,14 @@ if get(handles.CheckMask,'Value')
             end
         end
     end
-    nbview=size(MaskTable,1);
+    %nbview=size(MaskTable,1);
     set(handles.MaskTable,'Data',MaskTable)
     %     set(handles.MaskTable,'ColumnFormat',{MaskTable'})
     set(handles.MaskTable,'Visible','on')
     set(handles.MaskBrowse,'Visible','on')
     set(handles.ListMask,'Visible','on')
     set(handles.ListMask,'String',ListMask)
-    set(handles.ListMask,'Value',numel(ListMask))
+    set(handles.ListMask,'Value',1)
 else
     set(handles.MaskTable,'Visible','off')
     set(handles.MaskBrowse,'Visible','off')

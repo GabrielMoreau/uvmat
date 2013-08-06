@@ -92,6 +92,7 @@ end
 if numel(Field.VarAttribute)<NbVar% complement VarAttribute by blanjs if neded
     Field.VarAttribute(numel(Field.VarAttribute)+1:NbVar)=cell(1,NbVar-numel(Field.VarAttribute));
 end
+% Field.Display = list of variables and corresponding properties obtained after removal of singletons
 Field.Display.ListVarName=Field.ListVarName(~Field.Check0D);
 Field.Display.VarAttribute=Field.VarAttribute(~Field.Check0D);
 Field.Display.VarDimName=Field.Display.VarDimName(~Field.Check0D);
@@ -136,16 +137,16 @@ SwitchVarIndexTime_Callback([], [], handles)
 %% set vector menu (priority) if detected or scalar menu for space dim >=2, or usual (x,y) plot for 1D fields
 set(handles.vector_x,'String',Field.Display.ListVarName)% fill the menu of x vector components
 set(handles.vector_y,'String',Field.Display.ListVarName)% fill the menu of y vector components
-set(handles.vector_z,'String',[{''} Field.ListVarName])% fill the menu of y vector components
-set(handles.vec_color,'String',[{''} Field.ListVarName])% fill the menu of y vector components
+set(handles.vector_z,'String',[{''} Field.Display.ListVarName])% fill the menu of y vector components
+set(handles.vec_color,'String',[{''} Field.Display.ListVarName])% fill the menu of y vector components
 set(handles.scalar,'Value',1)% fill the menu of y vector components
-set(handles.scalar,'String',Field.ListVarName)% fill the menu of y vector components
+set(handles.scalar,'String',Field.Display.ListVarName)% fill the menu of y vector components
 set(handles.ordinate,'Value',1)% fill the menu of y vector components
-set(handles.ordinate,'String',Field.ListVarName)% fill the menu of y vector components
+set(handles.ordinate,'String',Field.Display.ListVarName)% fill the menu of y vector components
 if isfield(Field,'Conventions')&& strcmp(Field.Conventions,'uvmat/civdata')
-        set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors';'civdata...'})
+    set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors';'civdata...'})
 else
-     set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors'})
+    set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors'})
 end
 if Field.MaxDim>=2 % case of 2D (or 3D) fields
     if isfield(CellInfo{imax},'VarIndex_vector_x') &&  isfield(CellInfo{imax},'VarIndex_vector_y')
@@ -156,7 +157,6 @@ if Field.MaxDim>=2 % case of 2D (or 3D) fields
     else
         set(handles.FieldOption,'Value',2)
     end
-
 else % case of 1D fields
     set(handles.FieldOption,'Value',1)
 end
@@ -181,12 +181,23 @@ FieldOption_Callback(handles.variables,[], handles)% list the global attributes
 %         set(handles.Coord_y,'Value',CellInfo{imax}.VarIndex_coord_y(1))
 %     end
 
-%% Make choices in menus from input
-% if exist('ParamIn','var')&&~isempty(ParamIn)
-%     fill_GUI(ParamIn,handles.get_field);
-% end
-%FieldOption_Callback([],[],handles)
-
+%% Make choices of coordinates from input
+if isfield(CellInfo{imax},'CoordIndex')
+    CoordIndex=CellInfo{imax}.CoordIndex;
+    if numel(CoordIndex)==2
+        YName=Field.ListVarName{CoordIndex(1)};
+        XName=Field.ListVarName{CoordIndex(2)};
+        ListCoord=get(handles.Coord_x,'String');
+        XIndex=find(strcmp(XName,ListCoord));
+        if ~isempty(XIndex)
+            set(handles.Coord_x,'Value',XIndex)
+        end
+        YIndex=find(strcmp(YName,ListCoord));
+        if ~isempty(YIndex)
+            set(handles.Coord_y,'Value',YIndex)
+        end
+    end
+end
 
 %% put the GUI on the lower right of the sceen
 set(hObject,'Unit','pixel')
@@ -217,14 +228,11 @@ else
     set(handles.Z_title,'Visible','off')
 end
 
-
-
-%------------------------------------------------------------------------
-
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
-function varargout = get_field_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+function varargout = get_field_OutputFcn(hObject, eventdata, handles)
+
 varargout{1} = handles.output;
 delete(handles.get_field)
 
@@ -241,7 +249,7 @@ else
     delete(handles.get_field);
 end
 
-%---------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in OK.
 %------------------------------------------------------------------------
 function OK_Callback(hObject, eventdata, handles)
@@ -253,8 +261,9 @@ drawnow
 
 % -----------------------------------------------------------------------
 % --- Activated by selection in the list of variables
+% ----------------------------------------------------------------------
 function variables_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
+
 Tabchar={''};%default
 Tabcell=[];
 hselect_field=get(handles.variables,'parent');
@@ -262,11 +271,11 @@ Field=get(handles.get_field,'UserData');
 index=get(handles.variables,'Value');%index in the list 'variables'
 
 %% list global TimeAttribute names and values if index=1 (blank TimeVariable display) is selected
-if isequal(index,1) 
+if isequal(index,1)
     set(handles.attributes_txt,'String','global attributes')
     if isfield(Field,'ListGlobalAttribute') && ~isempty(Field.ListGlobalAttribute)
         for iline=1:length(Field.ListGlobalAttribute)
-            Tabcell{iline,1}=Field.ListGlobalAttribute{iline};   
+            Tabcell{iline,1}=Field.ListGlobalAttribute{iline};
             if isfield(Field, Field.ListGlobalAttribute{iline})
                 val=Field.(Field.ListGlobalAttribute{iline});
                 if ischar(val);% attribute value is char string
@@ -278,32 +287,32 @@ if isequal(index,1)
         end
         Tabchar=cell2tab(Tabcell,'=');
     end
-%% list Attribute names and values associated to the Variable # index-1   
+    %% list Attribute names and values associated to the Variable # index-1
 else
     list_var=get(handles.variables,'String');
     var_select=list_var{index};
     set(handles.attributes_txt,'String', ['attributes of ' var_select])
     if isfield(Field,'VarAttribute')&& length(Field.VarAttribute)>=index-1
-%         nbline=0;
+        %         nbline=0;
         VarAttr=Field.VarAttribute{index-1};
         if isstruct(VarAttr)
             attr_list=fieldnames(VarAttr);
             for iline=1:length(attr_list)
                 Tabcell{iline,1}=attr_list{iline};
-                eval(['val=VarAttr.' attr_list{iline} ';']) 
+                eval(['val=VarAttr.' attr_list{iline} ';'])
                 if ischar(val);
                     Tabcell{iline,2}=val;
                 else
-                     Tabcell{iline,2}=num2str(val);
+                    Tabcell{iline,2}=num2str(val);
                 end
             end
         end
     end
-
+    
 end
 if ~isempty(Tabcell)
     Tabchar=cell2tab(Tabcell,'=');
-%     Tabchar=[{''};Tabchar];
+    %     Tabchar=[{''};Tabchar];
 end
 set(handles.attributes,'Value',1);% select the first item
 set(handles.attributes,'String',Tabchar);
@@ -318,10 +327,10 @@ if isfield(Field,'ListDimName')
         DimCell=Field.VarDimName{index-1};
         if ischar(DimCell)
             DimCell={DimCell};
-        end   
+        end
         dim_indices=[];
         for idim=1:length(DimCell)
-            dim_index=strcmp(DimCell{idim},Field.ListDimName);%vector with size of Field.ListDimName, =0 
+            dim_index=strcmp(DimCell{idim},Field.ListDimName);%vector with size of Field.ListDimName, =0
             dim_index=find(dim_index,1);
             dim_indices=[dim_indices dim_index];
         end
@@ -334,17 +343,19 @@ if isfield(Field,'ListDimName')
     Tabchar=cell2tab(Tabdim,' = ');
     Tabchar=[{''} ;Tabchar];
     set(handles.dimensions,'Value',1)
-    set(handles.dimensions,'String',Tabchar)  
-end  
+    set(handles.dimensions,'String',Tabchar)
+end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in FieldOption.
 %------------------------------------------------------------------------
 function FieldOption_Callback(hObject, eventdata, handles)
 
+Field=get(handles.get_field,'UserData');
 FieldList=get(handles.FieldOption,'String');
 FieldOption=FieldList{get(handles.FieldOption,'Value')};
 switch FieldOption
+    
     case '1D plot'
         set(handles.Coordinates,'Visible','on')
         set(handles.PanelOrdinate,'Visible','on')
@@ -360,6 +371,7 @@ switch FieldOption
         set(handles.Coord_z,'Visible','off')
         set(handles.Z_title,'Visible','off')
         ordinate_Callback(hObject, eventdata, handles)
+        
     case 'scalar'
         set(handles.Coordinates,'Visible','on')
         set(handles.PanelOrdinate,'Visible','off')
@@ -372,7 +384,28 @@ switch FieldOption
         set(handles.PanelScalar,'Position',pos)
         set(handles.Coord_y,'Visible','on')
         set(handles.Y_title,'Visible','on')
+        %default scalar selection
+        test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
+        for ilist=1:numel(Field.Display.VarDimName)
+            if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ilist && isfield(Field.Display.VarAttribute{ilist},'Role')
+                Role=Field.Display.VarAttribute{ilist}.Role;
+                if strcmp(Role,'coord_x')||strcmp(Role,'coord_y')
+                    test_coord(ilist)=1;
+                end
+            end
+            dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
+            if numel(dimnames)==1 && strcmp(dimnames{1},Field.Display.ListVarName{ilist})%dimension variable
+                test_coord(ilist)=1;
+            end
+        end
+        scalar_index=find(~test_coord,1);%get the first variable not a coordiante
+        if isempty(scalar_index)
+            set(handles.scalar,'Value',1)
+        else
+            set(handles.scalar,'Value',scalar_index)
+        end       
         scalar_Callback(hObject, eventdata, handles)
+        
     case 'vectors'
         set(handles.Coordinates,'Visible','on')
         set(handles.PanelOrdinate,'Visible','off')
@@ -384,8 +417,31 @@ switch FieldOption
         pos(2)=pos_coord(2)-pos(4)-2;
         set(handles.PanelVectors,'Position',pos)
         set(handles.Coord_y,'Visible','on')
-        set(handles.Y_title,'Visible','on')      
+        set(handles.Y_title,'Visible','on')
+        %default vector selection
+        test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
+        for ilist=1:numel(Field.Display.VarDimName)
+            if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ilist && isfield(Field.Display.VarAttribute{ilist},'Role')
+                Role=Field.Display.VarAttribute{ilist}.Role;
+                if strcmp(Role,'coord_x')||strcmp(Role,'coord_y')
+                    test_coord(ilist)=1;
+                end
+            end
+            dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
+            if numel(dimnames)==1 && strcmp(dimnames{1},Field.Display.ListVarName{ilist})%dimension variable
+                test_coord(ilist)=1;
+            end
+        end
+        vector_index=find(~test_coord,2);%get the first variable not a coordiante
+        if isempty(vector_index)
+            set(handles.vector_x,'Value',1)
+            set(handles.vector_y,'Value',2)
+        else
+            set(handles.vector_x,'Value',vector_index(1))
+            set(handles.vector_y,'Value',vector_index(2))
+        end       
         vector_Callback(handles)
+        
     case 'civdata...'
         set(handles.PanelOrdinate,'Visible','off')
         set(handles.PanelScalar,'Visible','off')
@@ -482,9 +538,7 @@ ScalarName=scalar_menu{scalar_index};
 %% set list of possible coordinates
 test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
 test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
-ListCoord={''};
 dim_var=Field.Display.VarDimName{scalar_index};%list of dimensions of the selected variable
-
 for ilist=1:numel(Field.Display.VarDimName)
     dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
     if isequal(dimnames,dim_var)
@@ -493,7 +547,7 @@ for ilist=1:numel(Field.Display.VarDimName)
         test_coord(ilist)=1;
     end
 end
-var_component=find(test_component);% list of variable indices elligible as unstructured coordiantes
+var_component=find(test_component);% list of variable indices elligible as unstructured coordinates
 var_coord=find(test_coord);% % list of variable indices elligible as structured coordinates
 ListCoord=Field.Display.ListVarName([var_component var_coord]);
 
@@ -501,30 +555,36 @@ ListCoord=Field.Display.ListVarName([var_component var_coord]);
 if numel(find(test_coord))>3
     set(handles.SwitchVarIndexTime,'Value',3)% the last dim must be considered as time
 end
-if numel(var_component)<2
-    if numel(test_coord)<2
-        ListCoord={''};
-    else
-        set(handles.Coord_x,'Value',2)
-        set(handles.Coord_y,'Value',1)
-    end
-else
-    coord_val=[1 2];
-    for ilist=1:numel(var_component)
-        ivar=var_component(ilist);
-        if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ivar && isfield(Field.Display.VarAttribute{ivar},'Role')
-            Role=Field.Display.VarAttribute{ivar}.Role;
-            if strcmp(Role,'coord_x')
-                coord_val(1)=ilist;
-            elseif strcmp(Role,'coord_y')
-                coord_val(2)=ilist;
-            end
+% if numel(var_component)<2
+%     if numel(test_coord)<2
+%         ListCoord={''};
+%     else
+%         set(handles.Coord_x,'Value',2)
+%         set(handles.Coord_y,'Value',1)
+%     end
+% else
+coord_val=[0 0];
+% look for labelled unstructured coordinates
+for ilist=1:numel(var_component)
+    ivar=var_component(ilist);
+    if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ivar && isfield(Field.Display.VarAttribute{ivar},'Role')
+        Role=Field.Display.VarAttribute{ivar}.Role;
+        if strcmp(Role,'coord_x')
+            coord_val(1)=ilist;
+        elseif strcmp(Role,'coord_y')
+            coord_val(2)=ilist;
         end
     end
-    set(handles.Coord_x,'Value',coord_val(1))
-    set(handles.Coord_y,'Value',coord_val(2))
 end
-
+if numel(find(coord_val))<2
+    if numel(var_coord)>=2
+        coord_val=[numel(var_component)+2 numel(var_component)+1];
+    else
+        coord_val=[1 2];
+    end
+end
+set(handles.Coord_x,'Value',coord_val(1))
+set(handles.Coord_y,'Value',coord_val(2))
 set(handles.Coord_y,'String',ListCoord)
 set(handles.Coord_x,'String',ListCoord)
 
@@ -558,8 +618,9 @@ function check_rgb_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in vector_x.
-function vector_x_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+function vector_x_Callback(hObject, eventdata, handles)
+
 vector_x_menu=get(handles.vector_x,'String');
 vector_x_index=get(handles.vector_x,'Value');
 vector_x=vector_x_menu{vector_x_index};
@@ -616,6 +677,7 @@ if ~isequal(dim_var,Field.Display.VarDimName{vector_y_index})
 elseif vec_color_index~=1 && ~isequal(dim_var,Field.Display.VarDimName{vec_color_index})
     check_consistent=0;
 end
+% the two vector components have consistent dimensions
 if check_consistent
     for ilist=1:numel(Field.Display.VarDimName)
         dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
@@ -641,7 +703,7 @@ if check_consistent
             set(handles.Coord_y,'Value',1)
         end
     else
-        coord_val=[1 2];
+        coord_val=[0 0];
         for ilist=1:numel(var_component)
             ivar=var_component(ilist);
             if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ivar && isfield(Field.Display.VarAttribute{ivar},'Role')
@@ -652,6 +714,12 @@ if check_consistent
                     coord_val(2)=ilist;
                 end
             end
+        end
+        if isempty(coord_val)
+            coord_val=var_coord;% case of dimension coordinates
+        end
+        if numel(find(coord_val))<2
+            coord_val=[numel(var_component)+2 numel(var_component)+1];
         end
         set(handles.Coord_x,'Value',coord_val(1))
         set(handles.Coord_y,'Value',coord_val(2))
@@ -690,8 +758,9 @@ function SwitchVarIndexX_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in Coord_x.
-function Coord_x_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+function Coord_x_Callback(hObject, eventdata, handles)
+
 index=get(handles.Coord_x,'Value');
 string=get(handles.Coord_x,'String');
 VarName=string{index};
@@ -699,8 +768,9 @@ update_field(handles,VarName)
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in Coord_y.
-function Coord_y_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+function Coord_y_Callback(hObject, eventdata, handles)
+
 index=get(handles.Coord_y,'Value');
 string=get(handles.Coord_y,'String');
 VarName=string{index};
@@ -708,8 +778,9 @@ update_field(handles,VarName)
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in Coord_z.
-function Coord_z_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+function Coord_z_Callback(hObject, eventdata, handles)
+
 index=get(handles.Coord_z,'Value');
 string=get(handles.Coord_z,'String');
 VarName=string{index};
@@ -719,6 +790,7 @@ update_field(handles,VarName)
 % --- Executes on selection change in SwitchVarIndexTime.
 %------------------------------------------------------------------------
 function SwitchVarIndexTime_Callback(hObject, eventdata, handles)
+
 Field=get(handles.get_field,'UserData');
 menu=get(handles.SwitchVarIndexTime,'String');
 option=menu{get(handles.SwitchVarIndexTime,'Value')};
@@ -780,9 +852,11 @@ if ~isempty(index)
     variables_Callback(handles.variables, [], handles)
 end
 
-%-------------------------------------------------
-% give index numbers of the strings str in the list ListvarName
+%------------------------------------------------------------------------
+% --- give index numbers of the strings str in the list ListvarName
+% -----------------------------------------------------------------------
 function VarIndex_y=name2index(cell_str,ListVarName)
+
 VarIndex_y=[];
 if ischar(cell_str)
     for ivar=1:length(ListVarName)
