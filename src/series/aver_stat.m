@@ -89,15 +89,15 @@ FileExt=Param.InputTable(:,5);
 % i1_series(iview,ref_j,ref_i)... are the corresponding arrays of indices i1,i2,j1,j2, depending on the input line iview and the two reference indices ref_i,ref_j 
 % i1_series(iview,fileindex) expresses the same indices as a 1D array in file indices
 %%%%%%%%%%%%
-nbview=numel(i1_series);%number of input file series (lines in InputTable)
-nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
-nbfield_i=size(i1_series{1},2); %nb of fields for the i index
-nbfield=nbfield_j*nbfield_i; %total number of fields
+NbView=numel(i1_series);%number of input file series (lines in InputTable)
+NbField_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
+NbField_i=size(i1_series{1},2); %nb of fields for the i index
+NbField=NbField_j*NbField_i; %total number of fields
 
 %% determine the file type on each line from the first input file 
 ImageTypeOptions={'image','multimage','mmreader','video'};
 NcTypeOptions={'netcdf','civx','civdata'};
-for iview=1:nbview
+for iview=1:NbView
     if ~exist(filecell{iview,1}','file')
         msgbox_uvmat('ERROR',['the first input file ' filecell{iview,1} ' does not exist'])
         return
@@ -141,7 +141,7 @@ else
     msgbox_uvmat('ERROR',['invalid file type input ' FileType{1}])
     return
 end
-if nbview==2 && ~isequal(CheckImage{1},CheckImage{2})
+if NbView==2 && ~isequal(CheckImage{1},CheckImage{2})
     msgbox_uvmat('ERROR','input must be two image series or two netcdf file series')
     return
 end
@@ -162,7 +162,7 @@ InputFields{1}=[];%default (case of images)
 if isfield(Param,'InputFields')
     InputFields{1}=Param.InputFields;
 end
-if nbview==2
+if NbView==2
     InputFields{2}=[];%default (case of images)
     if isfield(Param,'InputFields')
         InputFields{2}=Param.InputFields{1};%default
@@ -181,15 +181,15 @@ nbfiles=0;
 nbmissing=0;
 
 %%%%%%%%%%%%%%%% loop on field indices %%%%%%%%%%%%%%%%
-for index=1:nbfield
-    update_waitbar(WaitbarHandle,index/nbfield)
+for index=1:NbField
+    update_waitbar(WaitbarHandle,index/NbField)
     if ~isempty(RUNHandle)&& ~strcmp(get(RUNHandle,'BusyAction'),'queue')
         disp('program stopped by user')
         break
     end
     
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
-    for iview=1:nbview
+    for iview=1:NbView
         % reading input file(s)
         [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},InputFields{iview},frame_index{iview}(index));
         if ~isempty(errormsg)
