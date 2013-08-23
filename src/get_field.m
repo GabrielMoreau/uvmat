@@ -1,7 +1,19 @@
 %'get_field': display variables and attributes from a Netcdf file, and OK selected fields
 %------------------------------------------------------------------------
-%function varargout = get_field(varargin)
+% GetFieldData=get_field(FileName,ParamIn)
 % associated with the GUI get_field.fig
+%
+% OUPUT:
+% GetFieldData: structure containing the information on the selected
+%      fields, obtained by applying the fct red_GUI to the GUI get_field
+%   .FieldOption='vectors': variables are used for vector plot
+%                  'scalar': variables are used for scalar plot, 
+%                  '1Dplot': variables are used for usual x-y plot,
+%                  'civdata...': go back to automatic reading of civ data
+%   .PanelVectors: sub-structure variables used as vector components
+%   .PanelScalar:
+% INPUT:
+% FileName: name (including path) of the netcdf file to open
 %
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 %  Copyright Joel Sommeria, 2008, LEGI / CNRS-UJF-INPG, sommeria@coriolis-legi.org.
@@ -41,7 +53,7 @@ else
     gui_mainfcn(gui_State, varargin{:});
 end
 % End initialization code - DO NOT EDIT
-
+      
 %------------------------------------------------------------------------
 % --- Executes just before get_field is made visible.
 %------------------------------------------------------------------------
@@ -53,17 +65,21 @@ guidata(hObject, handles);
 set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with right button (zoom for uicontrol display)
 
 %% enter input data
-set(handles.inputfile,'String',filename)% fill the input file name
-Field=nc2struct(filename,[]);% reads the  field structure, without the variables
+if ischar(filename)% input file name
+    set(handles.inputfile,'String',filename)% fill the input file name
+    Field=nc2struct(filename,[]);% reads the  field structure, without the variables
+else
+    'bad input to get_field'
+end
+if ~exist('ParamIn','var')
+    ParamIn=[];
+end
 if isfield(Field,'Txt')
-    msgbox_uvmat('ERROR',['get_field/nc2struct/' Field.Txt])% display error message for input fiel reading
+    msgbox_uvmat('ERROR',['get_field/nc2struct/' Field.Txt])% display error message for input file reading
     return
 end
 if ~isfield(Field,'ListVarName')
     return
-end
-if ~exist('ParamIn','var')
-    ParamIn=[];
 end
 
 %% look at singletons and variables with a single dimension
@@ -110,23 +126,28 @@ end
 %% set time mode
 ListSwitchVarIndexTime={'file index'};% default setting: the time is the file index
 % look at global attributes with numerical values
-check_numvalue=false;
-check_time=false;
+check_numvalue=false(1,numel(Field.ListGlobalAttribute));
 for ilist=1:numel(Field.ListGlobalAttribute)
     Value=Field.(Field.ListGlobalAttribute{ilist});
     check_numvalue(ilist)=isnumeric(Value);
-    check_time(ilist)=~isempty(find(regexp(Field.ListGlobalAttribute{ilist},'Time'),1));
 end
 Field.Display.ListGlobalAttribute=Field.ListGlobalAttribute(check_numvalue);% select the attributes with float numerical value
 if ~isempty(Field.Display.ListGlobalAttribute)
     ListSwitchVarIndexTime=[ListSwitchVarIndexTime; {'attribute'}];% the time can be chosen as a global attribute
 end
-nboption=numel(ListSwitchVarIndexTime);
 if Field.MaxDim>=2
     ListSwitchVarIndexTime=[ListSwitchVarIndexTime;{'variable'};{'dim index'}];% the time can be chosen as a dim index
 end
-if ~isempty(find(check_time, 1))
+
+%% select the Time attribute from input
+if isfield(ParamIn,'TimeAttrName')
+    time_index=find(strcmp(ParamIn.TimeAttrName,Field.Display.ListGlobalAttribute),1);
+else
+    time_index=find(~cellfun('isempty',regexp(Field.Display.ListGlobalAttribute,'Time')),1);
+end
+if ~isempty(time_index)
     set(handles.SwitchVarIndexTime,'Value',2);
+    set(handles.TimeName,'UserData',time_index)
 else
     set(handles.SwitchVarIndexTime,'Value',1);
 end
@@ -149,13 +170,25 @@ else
     set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors'})
 end
 if Field.MaxDim>=2 % case of 2D (or 3D) fields
-    if isfield(CellInfo{imax},'VarIndex_vector_x') &&  isfield(CellInfo{imax},'VarIndex_vector_y')
+    check_vec_input=0;
+    if isfield(ParamIn,'vector_x')&& isfield(ParamIn,'vector_y')
+        ichoice_x=find(strcmp(ParamIn.vector_x,Field.Display.ListVarName),1);
+        ichoice_y=find(strcmp(ParamIn.vector_y,Field.Display.ListVarName),1);
+        if ~isempty(ichoice_x)&&~isempty(ichoice_y)
+            set(handles.vector_x,'UserData',ichoice_x)
+            set(handles.vector_y,'UserData',ichoice_y)
+            check_vec_input=1;
+        end
+    end
+    if ~check_vec_input && isfield(CellInfo{imax},'VarIndex_vector_x') &&  isfield(CellInfo{imax},'VarIndex_vector_y')
+        set(handles.vector_x,'UserData',CellInfo{imax}.VarIndex_vector_x(1))
+        set(handles.vector_y,'UserData',CellInfo{imax}.VarIndex_vector_y(1))
+        check_vec_input=1;
+    end
+    if check_vec_input
         set(handles.FieldOption,'Value',3)% set vector selection option
-        set(handles.vector_x,'Value',CellInfo{imax}.VarIndex_vector_x(1))
-        set(handles.vector_y,'Value',CellInfo{imax}.VarIndex_vector_y(1))
-        set(handles.FieldOption,'Value',3)
     else
-        set(handles.FieldOption,'Value',2)
+        set(handles.FieldOption,'Value',2)% set scalar selection option
     end
 else % case of 1D fields
     set(handles.FieldOption,'Value',1)
@@ -176,10 +209,6 @@ variables_Callback(handles.variables,[], handles)% list the global attributes
 
 %% fill menus for coordinates and time
 FieldOption_Callback(handles.variables,[], handles)% list the global attributes
-%     if isfield(CellInfo{imax},'VarIndex_coord_x')&&  isfield(CellInfo{imax},'VarIndex_coord_y')
-%         set(handles.Coord_x,'Value',CellInfo{imax}.VarIndex_coord_x(1))
-%         set(handles.Coord_y,'Value',CellInfo{imax}.VarIndex_coord_y(1))
-%     end
 
 %% Make choices of coordinates from input
 if isfield(CellInfo{imax},'CoordIndex')
@@ -213,8 +242,6 @@ uiwait(handles.get_field);
 
 return
 
-SwitchVarIndexTime_Callback([],[], handles)
-
 %% set z coordinate menu if relevant
 if Field.MaxDim>=3
     set(handles.vector_z,'Visible','on')
@@ -226,6 +253,11 @@ else
     set(handles.vector_z,'Visible','off')
     set(handles.Coord_z,'Visible','off')
     set(handles.Z_title,'Visible','off')
+end
+
+%% make selections according to ParamIn
+if isfield(ParamIn,'vector_x') && isfield(ParamIn,'vector_y')
+    
 end
 
 %------------------------------------------------------------------------
@@ -299,7 +331,7 @@ else
             attr_list=fieldnames(VarAttr);
             for iline=1:length(attr_list)
                 Tabcell{iline,1}=attr_list{iline};
-                eval(['val=VarAttr.' attr_list{iline} ';'])
+                val=VarAttr.(attr_list{iline}) ;
                 if ischar(val);
                     Tabcell{iline,2}=val;
                 else
@@ -405,12 +437,12 @@ switch FieldOption
             set(handles.scalar,'Value',scalar_index)
         end       
         scalar_Callback(hObject, eventdata, handles)
-        
+             
     case 'vectors'
+        set(handles.PanelVectors,'Visible','on')
         set(handles.Coordinates,'Visible','on')
         set(handles.PanelOrdinate,'Visible','off')
         set(handles.PanelScalar,'Visible','off')
-        set(handles.PanelVectors,'Visible','on')
         pos=get(handles.PanelVectors,'Position');
         pos(1)=2;
         pos_coord=get(handles.Coordinates,'Position');
@@ -419,27 +451,34 @@ switch FieldOption
         set(handles.Coord_y,'Visible','on')
         set(handles.Y_title,'Visible','on')
         %default vector selection
-        test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
-        for ilist=1:numel(Field.Display.VarDimName)
-            if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ilist && isfield(Field.Display.VarAttribute{ilist},'Role')
-                Role=Field.Display.VarAttribute{ilist}.Role;
-                if strcmp(Role,'coord_x')||strcmp(Role,'coord_y')
+        vector_x_value=get(handles.vector_x,'UserData');
+        vector_y_value=get(handles.vector_y,'UserData');
+        if ~isempty(vector_x_value)&&~isempty(vector_y_value)
+            set(handles.vector_x,'Value',vector_x_value)
+            set(handles.vector_y,'Value',vector_y_value)
+        else
+            test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordinate
+            for ilist=1:numel(Field.Display.VarDimName)
+                if isfield(Field.Display,'VarAttribute') && numel(Field.Display.VarAttribute)>=ilist && isfield(Field.Display.VarAttribute{ilist},'Role')
+                    Role=Field.Display.VarAttribute{ilist}.Role;
+                    if strcmp(Role,'coord_x')||strcmp(Role,'coord_y')
+                        test_coord(ilist)=1;
+                    end
+                end
+                dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
+                if numel(dimnames)==1 && strcmp(dimnames{1},Field.Display.ListVarName{ilist})%dimension variable
                     test_coord(ilist)=1;
                 end
             end
-            dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
-            if numel(dimnames)==1 && strcmp(dimnames{1},Field.Display.ListVarName{ilist})%dimension variable
-                test_coord(ilist)=1;
+            vector_index=find(~test_coord,2);%get the two first variables not a coordinate
+            if isempty(vector_index)
+                set(handles.vector_x,'Value',1)
+                set(handles.vector_y,'Value',2)
+            else
+                set(handles.vector_x,'Value',vector_index(1))
+                set(handles.vector_y,'Value',vector_index(2))
             end
         end
-        vector_index=find(~test_coord,2);%get the first variable not a coordiante
-        if isempty(vector_index)
-            set(handles.vector_x,'Value',1)
-            set(handles.vector_y,'Value',2)
-        else
-            set(handles.vector_x,'Value',vector_index(1))
-            set(handles.vector_y,'Value',vector_index(2))
-        end       
         vector_Callback(handles)
         
     case 'civdata...'
@@ -524,7 +563,7 @@ switch TimeOption
         set(handles.TimeName,'String',ListTime)
 end  
 update_field(handles,YName)
-
+         
 %------------------------------------------------------------------------
 % --- Executes on selection change in scalar menu.
 %------------------------------------------------------------------------
@@ -800,22 +839,24 @@ switch option
         set(handles.TimeName, 'Visible','off')% the time is taken as the file index
     case 'attribute'
         set(handles.TimeName, 'Visible','on')% timeName menu represents the available attributes
-        time_index=[];
-        PreviousList=get(handles.TimeName, 'String');
-        index=[];
-        if ~isempty(PreviousList)
-            PreviousAttr=PreviousList{get(handles.TimeName, 'Value')};
-            index=find(strcmp(PreviousAttr,Field.Display.ListGlobalAttributes));
+        time_index=get(handles.TimeName,'UserData');    %select the input data
+        if isempty(time_index)
+            PreviousList=get(handles.TimeName, 'String');
+            if ~isempty(PreviousList)
+                PreviousAttr=PreviousList{get(handles.TimeName, 'Value')};
+                index=find(strcmp(PreviousAttr,Field.Display.ListGlobalAttributes),1);
+            end
         end
-        if isempty(index)
-            time_index=find(~cellfun('isempty',regexp(Field.Display.ListGlobalAttribute,'Time')));% index of the attributes containing the string 'Time'
-        end
+        if isempty(time_index)
+            time_index=find(~cellfun('isempty',regexp(Field.Display.ListGlobalAttribute,'Time')),1);% index of the attributes containing the string 'Time'
+        end      
         if ~isempty(time_index)
-            set(handles.TimeName,'Value',time_index(1))
+            set(handles.TimeName,'Value',time_index)
         else
             set(handles.TimeName,'Value',1)
         end
         set(handles.TimeName, 'String',Field.Display.ListGlobalAttribute)
+
     case 'variable'% TimeName menu represents the available variables
         set(handles.TimeName, 'Visible','on')
         TimeVarName=Field.Display.SingleVarName;% slist of variables with a single dimension (candidate for time)

@@ -106,15 +106,16 @@ if isfield(Data,'VarAttribute')
 end
 
 %% find scattered (unstructured) coordinates
-ivar_coord_x=find(strcmp('coord_x',Role));
-% VarDimCell=cell(numel(ivar_coord_x));
+ivar_coord_x=find(strcmp('coord_x',Role));%find variables with Role='coord_x'
 check_select=false(1,nbvar);
 check_coord=false(1,nbvar);
 CellInfo=cell(1,numel(ivar_coord_x));
 NbDim=zeros(1,numel(ivar_coord_x));
+% loop on unstructured coordinate x -> different field cells
 for icell=1:numel(ivar_coord_x)
-    DimCell=Data.VarDimName{ivar_coord_x(icell)};
-    if ischar(DimCell),DimCell={DimCell};end
+    DimCell=Data.VarDimName{ivar_coord_x(icell)};% cell of dimension names for ivar_coord_x(icell)
+    if ischar(DimCell),DimCell={DimCell};end % transform char to cell for a single dimension
+    % look for variables sharing dimension(s) with ivar_coord_x(icell)
     check_cell=zeros(numel(DimCell),nbvar);
     for idim=1:numel(DimCell)
         for ivar=1:nbvar
@@ -122,7 +123,7 @@ for icell=1:numel(ivar_coord_x)
         end
     end
     check_cell=sum(check_cell,1)==numel(DimCell);%logical array=1 for variables belonging to the current cell
-    VarIndex=find(check_cell);
+    VarIndex=find(check_cell);% list of detected variable indices
     if ~(numel(VarIndex)==1 && numel(DimCell)==1)% exclude case of isolated coord_x variable (treated later)
         if ~(numel(VarIndex)==1 && numel(DimCell)>1)% a variable is associated to coordinate
             CellInfo{icell}.CoordIndex=ivar_coord_x(icell);
@@ -131,8 +132,8 @@ for icell=1:numel(ivar_coord_x)
                 CellInfo{icell}.CoordSize=numel(Data.(Data.ListVarName{ivar_coord_x(icell)}));
             else
                 for idim=1:numel(DimCell)
-                 check_index= strcmp(DimCell{idim},Data.ListDimName);
-                 CellInfo{icell}.CoordSize(idim)=Data.DimValue(check_index);
+                    check_index= strcmp(DimCell{idim},Data.ListDimName);
+                    CellInfo{icell}.CoordSize(idim)=Data.DimValue(check_index);
                 end
                 CellInfo{icell}.CoordSize=prod(CellInfo{icell}.CoordSize);
             end
@@ -290,11 +291,6 @@ for ivardim=1:numel(VarDimName) % loop at the list of remaining variables
 end
 NbDim=[NbDim NewNbDim];
 CellInfo=[CellInfo NewCellInfo];
-% 
-% %% suppress empty cells
-% check_empty=cellfun(@isempty,CellInfo);
-% CellInfo(check_empty)=[];
-% NbDim(check_empty)=[];
 
 %% suppress empty cells or cells with a single coordinate variable 
 check_remove=false(size(CellInfo));
@@ -307,8 +303,6 @@ CellInfo(check_remove)=[];
 NbDim(check_remove)=[];
 
 %% document roles of non-coordinate variables
-% ListRole={'vector_x','vector_y','vector_z','vector_x_tps','vector_y_tps','warnflag','errorflag',...
-%    'ancillary','image','color','discrete','scalar'};% except coord,coord_x,_y,_z,Coord_tps already taken, into account
 for icell=1:numel(CellInfo)
     VarIndex=CellInfo{icell}.VarIndex;
     for ivar=VarIndex

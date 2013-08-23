@@ -132,27 +132,28 @@ ivar_V_tps=[];
 var_ind=find(vardetect);
 for ivar=1:numel(var_ind)
     Field.VarAttribute{ivar}.Role=role{var_ind(ivar)};
+    Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
+    Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
     if strcmp(role{var_ind(ivar)},'vector_x')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
-        Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
+%         Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
         ivar_U=ivar;
     end
     if strcmp(role{var_ind(ivar)},'vector_x_tps')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
-        Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
+%         Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
         ivar_U_tps=ivar;
     end
     if strcmp(role{var_ind(ivar)},'vector_y')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
-        Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
+%         Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
         ivar_V=ivar;
     end
     if strcmp(role{var_ind(ivar)},'vector_y_tps')
         Field.VarAttribute{ivar}.FieldName=FieldNames;
-        Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
+%         Field.VarAttribute{ivar}.ProjModeRequest=ProjModeRequest;
         ivar_V_tps=ivar;
     end
-    Field.VarAttribute{ivar}.Mesh=0.1;%typical mesh for histograms O.1 pixel
 end
 if ~isempty(ivar_U_tps)
     Field.VarAttribute{ivar_U}.VarIndex_tps=ivar_U_tps;

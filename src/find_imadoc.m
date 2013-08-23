@@ -14,7 +14,7 @@ XmlFileName=fullfile(RootPath,[SubDir '.xml']);
 if ~exist (XmlFileName,'file')
     dotchar=regexp(SubDir,'\.');
     for idot=1:numel(dotchar)
-        XmlFileName=fullfile(RootPath,[SubDir(1:dotchar(end-idot+1)) '.xml']);
+        XmlFileName=fullfile(RootPath,[SubDir(1:dotchar(end-idot+1)-1) '.xml']);
         if exist(XmlFileName,'file')
             SubDirBase=fullfile(RootPath,SubDir(1:dotchar(end-idot+1)));
             break

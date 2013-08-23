@@ -46,7 +46,7 @@ if ~strcmp(FilePath,'') && ~exist(FilePath,'dir')
     errormsg=['directory ' FilePath ' needs to be created'];
     return
 end
-%  [Data,errormsg]=check_field_structure(Data);%check the validity of the input field structure
+%check the validity of the input field structure
 [errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(Data);
 if ~isempty(errormsg)
     errormsg=['error in struct2nc:invalid input structure_' errormsg];
@@ -138,11 +138,13 @@ netcdf.close(nc)
 
 %'check_field_structure': check the validity of the field struture representation consistant with the netcdf format
 %------------------------------------------------------------------------
-% function [DataOut,errormsg]=check_field_structure(Data)
+% [errormsg,ListDimName,DimValue,VarDimIndex]=check_field_structure(Data)
 %
 % OUTPUT:
-% DataOut: structure reproducing the input structure Data (TODO: suppress this output)
 % errormsg: error message which is not empty when the input structure does not have the right form
+% ListDimName: list of dimension names (cell array of cahr strings)
+% DimValue: list of dimension values (numerical array with the same dimension as ListDimName)
+% VarDimIndex: cell array of dimension index (in the list ListDimName) for each element of Data.ListVarName
 %
 % INPUT:
 % Data:   structure containing 
@@ -178,13 +180,11 @@ else
     errormsg='input field does not contain the  cell array of dimension names .VarDimName';
     return
 end
-% if isfield(Data,'DimValue')
-%     Data=rmfield(Data,'DimValue');
-% end
 nbdim=0;
 ListDimName={};
 
 %% main loop on the list of variables
+VarDimIndex=cell(1,nbfield);
 for ivar=1:nbfield
     VarName=Data.ListVarName{ivar};
     if ~isfield(Data,VarName)
@@ -197,8 +197,7 @@ for ivar=1:nbfield
         DimCell={DimCell};%case of a single dimension name, defined by a string
     elseif ~iscell(DimCell)
         errormsg=['wrong format for .VarDimName{' num2str(ivar) ' (must be the cell of dimension names of the variable ' VarName];
-        return
-        
+        return       
     end
     nbcoord=numel(sizvar);%nbre of coordinates for variable named VarName
     testrange=0;
@@ -208,10 +207,8 @@ for ivar=1:nbfield
     elseif numel(DimCell)==1% one dimension declared
         if nbcoord==2
             if sizvar(1)==1
-                nbcoord=1;
                 sizvar(1)=sizvar(2);
             elseif sizvar(2)==1
-                nbcoord=1;
             else
                 errormsg=['1 dimension declared in .VarDimName{' num2str(ivar) '} inconsistent with the nbre of dimensions =2 of the variable ' VarName];
                 return
@@ -226,14 +223,12 @@ for ivar=1:nbfield
     else
         if numel(DimCell)>nbcoord
             sizvar(nbcoord+1:numel(DimCell))=1;% case of singleton dimensions (not seen by the function size)
-           % DimCell=DimCell(end-nbcoord+1:end)%first singleton diemensions omitted,
         elseif nbcoord > numel(DimCell)
             errormsg=['nbre of declared dimensions in .VarDimName{' num2str(ivar) '} smaller than the nbre of dimensions =' num2str(nbcoord) ' of the variable ' VarName];
             return
         end
     end
     DimIndex=[];
-    %for idim=1:nbcoord
     for idim=1:numel(DimCell) %loop on the coordinates of variable #ivar
         DimName=DimCell{idim};
         iprev=find(strcmp(DimName,ListDimName),1);%look for dimension name DimName in the current list
@@ -260,4 +255,3 @@ for ivar=1:nbfield
     end
     VarDimIndex{ivar}=DimIndex;
 end
-DataOut=Data;

@@ -96,27 +96,27 @@ set(hObject,'DeleteFcn',{@closefcn})%
 set(0,'Unit','pixels')
 ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
 Left=ScreenSize(3)- 460; %right edge close to the right, with margin=40 (GUI width=420 px)
-if ScreenSize(4)>880
+if ScreenSize(4)>920
     Height=840;%default height of the GUI
     Bottom=ScreenSize(4)-Height-40; %put fig at top right
 else
-    Height=ScreenSize(4)-40;
-    Bottom=0; % GUI lies o the screen bottom
+    Height=ScreenSize(4)-80;
+    Bottom=40; % GUI lies o the screen bottom (with margin =40)
 end
-set(handles.calib_type,'Position',[1 Height-30 194 30])%  rank 1
-set(handles.APPLY,'Position',[197 Height-30 110 30])%  rank 1
-set(handles.REPLICATE,'Position',[309 Height-30 110 30])%  rank 1
-set(handles.Intrinsic,'Position',[1 Height-30-2-92 418 92])%  rank 2
-set(handles.Extrinsic,'Position',[1 Height-30-4-92-75 418 75])%  rank 3
-set(handles.PointLists,'Position',[1 Height-30-6-92-75-117 418 117]) %  rank 4
-set(handles.CheckEnableMouse,'Position',[3 Height-30-8-92-75-117-30 203 30])%  rank 5
-set(handles.PLOT,'Position',[3 Height-384 120 30])%  rank 6
-set(handles.Copy,'Position',[151 Height-384 120 30])%  rank 6
-set(handles.CLEAR_PTS,'Position',[297 Height-384 120 30])%  rank 6
-set(handles.phys_title,'Position',[38 Height-416 125 20])%  rank 7
-set(handles.CoordUnit,'Position',[151 Height-416 120 30])%  rank 7
-set(handles.px_title,'Position',[272 Height-416 125 20])%  rank 7
-set(handles.ListCoord,'Position',[1 20 418 Height-436])% rank 8
+set(handles.calib_type,'Position',[1 Height-40 194 30])%  rank 1
+set(handles.APPLY,'Position',[197 Height-40 110 30])%  rank 1
+set(handles.REPLICATE,'Position',[309 Height-40 110 30])%  rank 1
+set(handles.Intrinsic,'Position',[1 Height-40-2-92 418 92])%  rank 2
+set(handles.Extrinsic,'Position',[1 Height-40-4-92-75 418 75])%  rank 3
+set(handles.PointLists,'Position',[1 Height-40-6-92-75-117 418 117]) %  rank 4
+set(handles.CheckEnableMouse,'Position',[3 Height-40-8-92-75-117-30 203 30])%  rank 5
+set(handles.PLOT,'Position',[3 Height-394 120 30])%  rank 6
+set(handles.Copy,'Position',[151 Height-394 120 30])%  rank 6
+set(handles.CLEAR_PTS,'Position',[297 Height-394 120 30])%  rank 6
+set(handles.phys_title,'Position',[38 Height-426 125 20])%  rank 7
+set(handles.CoordUnit,'Position',[151 Height-426 120 30])%  rank 7
+set(handles.px_title,'Position',[272 Height-426 125 20])%  rank 7
+set(handles.ListCoord,'Position',[1 20 418 Height-446])% rank 8
 set(handles.geometry_calib,'Position',[Left Bottom 420 Height])
 
 %set menu of calibration options
@@ -1148,29 +1148,6 @@ else
 end
 set(handles.ListCoordFiles,'string',listfile);
 
-%------------------------------------------------------------------------
-% --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
-function key_press_fcn(hObject,eventdata,handles)
-%------------------------------------------------------------------------
-xx=double(get(handles.geometry_calib,'CurrentCharacter')); %get the keyboard character
-%if ismember(xx,[8 127])%backspace or delete
-if ismember(xx,[30 31 8 127])
-    Coord=get(handles.ListCoord,'Data');
-    ind=find(Coord(:,6));
-    Coord(:,6)=zeros(size(Coord,1),1);% desactivate the current line mark
-    switch xx
-        case 30 % arrow upward
-            Coord(ind-1,6)=1;
-        case 31% arrow downward
-            Coord(ind+1,6)=1;
-        case {8 127}% remove line
-            Coord(ind,:)=[];
-    end
-    set(handles.ListCoord,'Data',Coord);
-    PLOT_Callback(hObject,eventdata,handles)
-end
-
-
 
 %------------------------------------------------------------------------
 function fileinput=browse_xml(hObject, eventdata, handles)
@@ -1239,9 +1216,11 @@ if ~isempty(GeometryCalib)
         set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
         set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
     end
+    if isfield(GeometryCalib,'SourceCalib')
     calib=GeometryCalib.SourceCalib.PointCoord;
     Coord=[calib zeros(size(calib,1),1)];
     set(handles.ListCoord,'Data',Coord)
+    end
 %     CoordCell=reshape(CoordCell,[],5);
 %     Tabchar=cell2tab(CoordCell,' | ');%transform cells into table ready for display
     PLOT_Callback(handles.geometry_calib, [], handles)
@@ -1283,12 +1262,8 @@ set(handles.kc,'String',num2str(kc,'%1.4f'))
 
 % --- Executes when user attempts to close geometry_calib.
 function geometry_calib_CloseRequestFcn(hObject, eventdata, handles)
-% hObject    handle to geometry_calib (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: delete(hObject) closes the figure
-delete(hObject);
+delete(hObject); % closes the figure
 
 %------------------------------------------------------------------------
 % --- Executes on button press in PLOT.
@@ -1330,7 +1305,7 @@ pause(.1)
 figure(handles.geometry_calib)
 
 %------------------------------------------------------------------------ 
-% --- Executes on button press in Copy.
+% --- Executes on button press in Copy: display Coord on the Matlab work space
 %------------------------------------------------------------------------
 function Copy_Callback(hObject, eventdata, handles)
 global Coord
@@ -1340,19 +1315,23 @@ display('coordinates of calibration points (phys,px,marker) :')
 evalin('base','Coord') %display CurData in the workspace
 commandwindow; %brings the Matlab command window to the front
 
-
+%------------------------------------------------------------------------ 
 % --- Executes when selected cell(s) is changed in ListCoord.
+%------------------------------------------------------------------------ 
 function ListCoord_CellSelectionCallback(hObject, eventdata, handles)
-if ~isempty(eventdata.Indices)
-iline=eventdata.Indices(1);% selected line number
-Data=get(handles.ListCoord,'Data');
-Data(:,6)=zeros(size(Data,1),1);
-Data(iline,6)=1;% mark the selected line
-set(handles.ListCoord,'Data',Data)
-update_calib_marker(Data(iline,:))
-end 
 
+if ~isempty(eventdata.Indices)
+    iline=eventdata.Indices(1);% selected line number
+    Data=get(handles.ListCoord,'Data');
+    Data(:,6)=zeros(size(Data,1),1);
+    Data(iline,6)=1;% mark the selected line
+    set(handles.ListCoord,'Data',Data)
+    update_calib_marker(Data(iline,:))
+end
+
+%------------------------------------------------------------------------ 
 % --- Executes when entered data in editable cell(s) in ListCoord.
+%------------------------------------------------------------------------ 
 function ListCoord_CellEditCallback(hObject, eventdata, handles)
 
 Input=str2num(eventdata.EditData);%pasted input
@@ -1365,6 +1344,34 @@ Coord(iline:iline+numel(Input)-1,eventdata.Indices(2))=Input';
 set(handles.ListCoord,'Data',Coord)
 PLOT_Callback(hObject, eventdata, handles)
 
+%------------------------------------------------------------------------
+% --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
+%------------------------------------------------------------------------
+function key_press_fcn(hObject,eventdata,handles)
+
+xx=double(get(handles.geometry_calib,'CurrentCharacter')); %get the keyboard character
+%if ismember(xx,[8 127])%backspace or delete
+if ismember(xx,[30 31 8 127])% arrow upward, downward, backspace or delete
+    Coord=get(handles.ListCoord,'Data');
+    ind=find(Coord(:,6));
+    Coord(:,6)=zeros(size(Coord,1),1);% desactivate the current line mark
+    switch xx
+        case 30 % arrow upward
+            Coord(ind-1,6)=1;
+        case 31% arrow downward
+            Coord(ind+1,6)=1;
+        case {8 127}% remove line
+            Coord(ind,:)=[];
+    end
+    set(handles.ListCoord,'Data',Coord);
+    PLOT_Callback(hObject,eventdata,handles)
+end
+
+
+
+%------------------------------------------------------------------------
+% --- update the plot of calibration points
+%------------------------------------------------------------------------ 
 function update_calib_marker(Coord)
 %% update the plot on uvmat
 huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle

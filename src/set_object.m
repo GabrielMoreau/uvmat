@@ -92,7 +92,7 @@ set(handles.set_object,'Position',[Left Bottom Width Height])
 if ~exist('ZBounds','var')
     ZBounds=0; %default 
 end
-set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function (allow action on uvmat when set_object is in front)
+set(handles.Coord,'KeyPressFcn',{@key_press_fcn,handles})%set keyboard action function (allow action on uvmat when set_object is in front)
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'DeleteFcn',{@closefcn})
 
@@ -721,19 +721,42 @@ Type=ListType{get(handles.Type,'Value')};
 switch Type
     % add lines if multi line input needed
     case{'points','polyline','polygon'}
+        Input=str2num(eventdata.EditData);%pasted input
         Coord=get(handles.Coord,'Data');
-        if ~isnan(Coord(end,1))
-            if isequal(size(Coord,2),3)
-                %Coord=[Coord;{[]} {[]} {[]}];%add a line for edition (3D case)
-                Coord=[Coord;NaN NaN NaN]; %add a line for edition (3D case)
-            else
-                Coord=[Coord;NaN NaN]; %add a line for edition (2D case)
-            end
-            set(handles.Coord,'Data',Coord)
+        iline=eventdata.Indices(1);% selected line number
+        if size(Coord,1)<iline+numel(Input)
+            Coord=[Coord ; zeros(iline+numel(Input)-size(Coord,1),size(Coord,2))];% append zeros to fit the new column
         end
+        Coord(iline:iline+numel(Input)-1,eventdata.Indices(2))=Input';
+        set(handles.Coord,'Data',Coord)
 end
 
+% --- Executes when selected cell(s) is changed in ListCoord.
+function Coord_CellSelectionCallback(hObject, eventdata, handles)
 
+if ~isempty(eventdata.Indices)
+    iline=eventdata.Indices(1);% selected line number
+    set(handles.Coord,'UserData',iline)
+end
+
+%------------------------------------------------------------------------
+% --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
+%------------------------------------------------------------------------
+function key_press_fcn(hObject,eventdata,handles)
+
+xx=double(get(handles.set_object,'CurrentCharacter')); %get the keyboard character
+if ismember(xx,[8 127 31])%backspace or delete, or downward
+    Coord=get(handles.Coord,'Data');
+    iline=get(handles.Coord,'UserData');
+            if isequal(xx, 31)
+                if isequal(iline,size(Coord,1))% arrow downward
+                Coord=[Coord;zeros(1,size(Coord,2))];
+                end
+            else
+    Coord(iline,:)=[];% suppress the current line 
+            end
+    set(handles.Coord,'Data',Coord);
+end
 
 function num_Angle_3_Callback(hObject, eventdata, handles)
 % hObject    handle to num_Angle_3 (see GCBO)

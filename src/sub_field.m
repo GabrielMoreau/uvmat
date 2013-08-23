@@ -25,6 +25,7 @@ if nargin<3
     SubData=Field;
     return
 end
+
 %% global attributes
 SubData.ListGlobalAttribute={};%default
 %transfer global attributes of Field
@@ -106,26 +107,26 @@ end
 
 %% look for coordinates common to Field in Field_1
 ind_remove=zeros(size(Field_1.ListVarName));
+% loop on the variables of the second field Field_1
 for ilist=1:numel(Field_1.ListVarName)
-    if ischar(Field_1.VarDimName{ilist})||numel(Field_1.VarDimName{ilist})==1
-        OldDim=Field_1.VarDimName{ilist};
-        if ischar(OldDim)
-            OldDim=Field_1.VarDimName(ilist);
-        end
-        VarVal=Field_1.(Field_1.ListVarName{ilist});
+    % case of variable with a single dimension
+    OldDimName=Field_1.VarDimName{ilist};
+    if ischar(OldDimName), OldDimName={OldDimName}; end% transform char string to cell if relevant
+    if numel(OldDimName)==1
+        OldDim=Field_1.(Field_1.ListVarName{ilist});% get variable
+        %look for the existence of the variable OldDim in the first field Field
         for i1=1:numel(Field.ListVarName)
-            if (isempty(ProjModeRequest{i1})&&isempty(ProjModeRequest_1{ilist})||strcmp(ProjModeRequest{i1},ProjModeRequest_1{ilist})) && isequal(Field.(Field.ListVarName{i1}),VarVal)
+            if  isequal(Field.(Field.ListVarName{i1}),OldDim) &&...
+                   ((isempty(ProjModeRequest{i1}) && isempty(ProjModeRequest_1{ilist}))  || strcmp(ProjModeRequest{i1},ProjModeRequest_1{ilist}))                
                ind_remove(ilist)=1;
-               NewDim=Field.VarDimName{i1};
-               if ischar(NewDim)
-                   NewDim={NewDim};
-               end
-               Field_1.VarDimName=regexprep_r(Field_1.VarDimName,['^' OldDim{1} '$'],NewDim{1});
+               NewDimName=Field.VarDimName{i1};
+               if ischar(NewDimName), NewDimName={NewDimName}; end %transform char chain to cell if needed
+               Field_1.VarDimName=regexprep_r(Field_1.VarDimName,['^' OldDimName{1} '$'],NewDimName{1});% change the var name of Field_1 to the corresponding var name of Field
             end
         end
     end
 end
-Field_1.ListVarName(find(ind_remove))=[];%removes these redondent coordinates
+Field_1.ListVarName(find(ind_remove))=[];%removes the redondent coordinate
 Field_1.VarDimName(find(ind_remove))=[];
 Field_1.VarAttribute(find(ind_remove))=[];
 
@@ -149,7 +150,6 @@ for ilist=1:numel(Field_1.ListVarName)
 end
 
 %% substrat fields when possible
-%[CellVarIndex,NbDim,CellVarType,errormsg]=find_field_cells(SubData);
 [CellInfo,NbDim,errormsg]=find_field_cells(SubData);
 ind_remove=zeros(size(SubData.ListVarName));
 ivar=[];
@@ -179,9 +179,10 @@ end
 SubData.ListVarName(find(ind_remove))=[];
 SubData.VarDimName(find(ind_remove))=[];
 SubData.VarAttribute(find(ind_remove))=[];
-%end
+'end'
 
 function OutputCell=regexprep_r(InputCell,search_string,new_string)
+OutputCell=InputCell;%default
 for icell=1:numel(InputCell)
     OutputCell{icell}=regexprep(InputCell{icell},search_string,new_string);
 end

@@ -544,26 +544,22 @@ end
 %-------------------------------------------------------------------
 function [haxes,PlotParamOut,PlotType,errormsg]=plot_plane(Data,CellInfo,haxes,PlotParam,PosColorbar)
 %-------------------------------------------------------------------
-
+PlotType='plane';
 grid(haxes, 'off')% remove grid (possibly remaining from other graphs)
-%default plotting parameters
-PlotType='plane';%default
-% if ~exist('PlotParam','var')
-%     PlotParam=[];
-% end
 
+%default plotting parameters
 if ~isfield(PlotParam,'Scalar')
     PlotParam.Scalar=[];
 end
 if ~isfield(PlotParam,'Vectors')
     PlotParam.Vectors=[];
 end
-
 PlotParamOut=PlotParam;%default
-hfig=get(haxes,'parent');
+errormsg='';%default
+
+hfig=get(haxes,'parent');%handle of the figure containing the plot axes
 hcol=findobj(hfig,'Tag','Colorbar'); %look for colorbar axes
 hima=findobj(haxes,'Tag','ima');% search existing image in the current axes
-errormsg='';%default
 test_ima=0; %default: test for image or map plot
 test_vec=0; %default: test for vector plots
 test_black=0;
@@ -573,8 +569,9 @@ XName='';
 x_units='';
 YName='';
 y_units='';
-for icell=1:numel(CellInfo) % length(CellVarIndex) =1 or 2 (from the calling function)
-%     VarRole=CellInfo{icell};
+
+% loop on the input field cells
+for icell=1:numel(CellInfo) 
     if strcmp(CellInfo{icell}.CoordType,'tps') %do not plot directly tps data (used for projection only)
         continue
     end
@@ -599,26 +596,26 @@ for icell=1:numel(CellInfo) % length(CellVarIndex) =1 or 2 (from the calling fun
     end
     ivar_F=[];
     if isfield(CellInfo{icell},'VarIndex_warnflag')
-    ivar_F=CellInfo{icell}.VarIndex_warnflag; %defines index (unique) for warning flag variable
+        ivar_F=CellInfo{icell}.VarIndex_warnflag; %defines index (unique) for warning flag variable
     end
-    ivar_FF=[];
-    if isfield(CellInfo{icell},'VarIndex_errorflag')
-    ivar_FF=CellInfo{icell}.VarIndex_errorflag; %defines index (unique) for error flag variable
-    end
+    ivar_FF_vec=[];
     if isfield(CellInfo{icell},'VarIndex_vector_x')&&isfield(CellInfo{icell},'VarIndex_vector_y') % vector components detected
-        if test_vec
+        if test_vec% a vector field has been already detected
             errormsg='error in plot_field: attempt to plot two vector fields: to get the difference project on a plane with mode interp';
             return
         else
             test_vec=1;
-            vec_U=Data.(Data.ListVarName{CellInfo{icell}.VarIndex_vector_x}); 
+            if isfield(CellInfo{icell},'VarIndex_errorflag')
+                ivar_FF_vec=CellInfo{icell}.VarIndex_errorflag; %defines index (unique) for error flag variable
+            end
+            vec_U=Data.(Data.ListVarName{CellInfo{icell}.VarIndex_vector_x});
             vec_V=Data.(Data.ListVarName{CellInfo{icell}.VarIndex_vector_y});
-            if strcmp(CellInfo{icell}.CoordType,'scattered')%2D field with unstructured coordinates 
+            if strcmp(CellInfo{icell}.CoordType,'scattered')%2D field with unstructured coordinates
                 XName=Data.ListVarName{CellInfo{icell}.CoordIndex(end)};
                 YName=Data.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
                 vec_X=reshape(Data.(XName),[],1); %transform vectors in column matlab vectors
                 vec_Y=reshape(Data.(YName),[],1);
-            elseif strcmp(CellInfo{icell}.CoordType,'grid')%2D field with structured coordinates 
+            elseif strcmp(CellInfo{icell}.CoordType,'grid')%2D field with structured coordinates
                 y=Data.(Data.ListVarName{CellInfo{icell}.CoordIndex(end-1)});
                 x=Data.(Data.ListVarName{CellInfo{icell}.CoordIndex(end)});
                 if numel(y)==2 % y defined by first and last values on aregular mesh
@@ -627,7 +624,7 @@ for icell=1:numel(CellInfo) % length(CellVarIndex) =1 or 2 (from the calling fun
                 if numel(x)==2 % y defined by first and last values on aregular mesh
                     x=linspace(x(1),x(2),size(vec_U,2));
                 end
-                [vec_X,vec_Y]=meshgrid(x,y);  
+                [vec_X,vec_Y]=meshgrid(x,y);
             end
             if isfield(PlotParam.Vectors,'ColorScalar') && ~isempty(PlotParam.Vectors.ColorScalar)
                 [VarVal,ListVarName,VarAttribute,errormsg]=calc_field_interp([],Data,PlotParam.Vectors.ColorScalar);
@@ -636,34 +633,34 @@ for icell=1:numel(CellInfo) % length(CellVarIndex) =1 or 2 (from the calling fun
                     test_C=1;
                 end
             end
-            if ~isempty(ivar_F)%~(isfield(PlotParam.Vectors,'HideWarning')&& isequal(PlotParam.Vectors.HideWarning,1)) 
-                if test_vec 
+            if ~isempty(ivar_F)%~(isfield(PlotParam.Vectors,'HideWarning')&& isequal(PlotParam.Vectors.HideWarning,1))
+%                 if test_vec
                     vec_F=Data.(Data.ListVarName{ivar_F}); % warning flags for  dubious vectors
-                    if  ~(isfield(PlotParam.Vectors,'CheckHideWarning') && isequal(PlotParam.Vectors.CheckHideWarning,1)) 
+                    if  ~(isfield(PlotParam.Vectors,'CheckHideWarning') && isequal(PlotParam.Vectors.CheckHideWarning,1))
                         test_black=1;
                     end
-                end
+%                 end
             end
-            if ~isempty(ivar_FF) %&& ~test_false
-                if test_vec% TODO: deal with FF for structured coordinates
-                    vec_FF=Data.(Data.ListVarName{ivar_FF}); % flags for false vectors
-                end
+            if ~isempty(ivar_FF_vec) %&& ~test_false
+%                 if test_vec% TODO: deal with FF for structured coordinates
+                    vec_FF=Data.(Data.ListVarName{ivar_FF_vec}); % flags for false vectors
+%                 end
             end
         end
     elseif ~isempty(ivar_C) %scalar or image
         if test_ima
-             errormsg='attempt to plot two scalar fields or images';
+            errormsg='attempt to plot two scalar fields or images';
             return
         end
         A=squeeze(Data.(Data.ListVarName{ivar_C}));% scalar represented as color image
         test_ima=1;
-        if strcmp(CellInfo{icell}.CoordType,'scattered')%2D field with unstructured coordinates 
+        if strcmp(CellInfo{icell}.CoordType,'scattered')%2D field with unstructured coordinates
             A=reshape(A,1,[]);
             XName=Data.ListVarName{ivar_X};
             YName=Data.ListVarName{ivar_Y};
-            eval(['AX=reshape(Data.' XName ',1,[]);']) 
+            eval(['AX=reshape(Data.' XName ',1,[]);'])
             eval(['AY=reshape(Data.' YName ',1,[]);'])
-            [A,AX,AY]=proj_grid(AX',AY',A',[],[],'np>256');  % interpolate on a grid  
+            [A,AX,AY]=proj_grid(AX',AY',A',[],[],'np>256');  % interpolate on a grid
             if isfield(Data,'VarAttribute')
                 if numel(Data.VarAttribute)>=ivar_X && isfield(Data.VarAttribute{ivar_X},'units')
                     x_units=[' (' Data.VarAttribute{ivar_X}.units ')'];
@@ -671,10 +668,10 @@ for icell=1:numel(CellInfo) % length(CellVarIndex) =1 or 2 (from the calling fun
                 if numel(Data.VarAttribute)>=ivar_Y && isfield(Data.VarAttribute{ivar_Y},'units')
                     y_units=[' (' Data.VarAttribute{ivar_Y}.units ')'];
                 end
-            end        
-        elseif strcmp(CellInfo{icell}.CoordType,'grid')%2D field with structured coordinates 
+            end
+        elseif strcmp(CellInfo{icell}.CoordType,'grid')%2D field with structured coordinates
             YName=Data.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
-            AY=Data.(YName); 
+            AY=Data.(YName);
             AX=Data.(Data.ListVarName{CellInfo{icell}.CoordIndex(end)});
             test_interp_X=0; %default, regularly meshed X coordinate
             test_interp_Y=0; %default, regularly meshed Y coordinate
@@ -685,15 +682,15 @@ for icell=1:numel(CellInfo) % length(CellVarIndex) =1 or 2 (from the calling fun
                 if numel(Data.VarAttribute)>=CellInfo{icell}.CoordIndex(end-1) && isfield(Data.VarAttribute{CellInfo{icell}.CoordIndex(end-1)},'units')
                     y_units=Data.VarAttribute{CellInfo{icell}.CoordIndex(end-1)}.units;
                 end
-            end  
+            end
             if numel(AY)>2
                 DAY=diff(AY);
                 DAY_min=min(DAY);
                 DAY_max=max(DAY);
                 if sign(DAY_min)~=sign(DAY_max);% =1 for increasing values, 0 otherwise
-                     errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarRole.coord(1)} ];
-                      return
-                end 
+                    errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarRole.coord(1)} ];
+                    return
+                end
                 test_interp_Y=(DAY_max-DAY_min)> 0.0001*abs(DAY_max);
             end
             if numel(AX)>2
@@ -701,36 +698,33 @@ for icell=1:numel(CellInfo) % length(CellVarIndex) =1 or 2 (from the calling fun
                 DAX_min=min(DAX);
                 DAX_max=max(DAX);
                 if sign(DAX_min)~=sign(DAX_max);% =1 for increasing values, 0 otherwise
-                     errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarRole.coord(2)} ];
-                      return
-                end 
+                    errormsg=['errror in plot_field.m: non monotonic dimension variable ' Data.ListVarName{VarRole.coord(2)} ];
+                    return
+                end
                 test_interp_X=(DAX_max-DAX_min)> 0.0001*abs(DAX_max);
-            end  
-            if test_interp_Y          
+            end
+            if test_interp_Y
                 npxy(1)=max([256 floor((AY(end)-AY(1))/DAY_min) floor((AY(end)-AY(1))/DAY_max)]);
                 yI=linspace(AY(1),AY(end),npxy(1));
                 if ~test_interp_X
-                    xI=linspace(AX(1),AX(end),size(A,2));%default 
+                    xI=linspace(AX(1),AX(end),size(A,2));%default
                     AX=xI;
                 end
             end
-            if test_interp_X  
+            if test_interp_X
                 npxy(2)=max([256 floor((AX(end)-AX(1))/DAX_min) floor((AX(end)-AX(1))/DAX_max)]);
-                xI=linspace(AX(1),AX(end),npxy(2));   
+                xI=linspace(AX(1),AX(end),npxy(2));
                 if ~test_interp_Y
-                   yI=linspace(AY(1),AY(end),size(A,1)); 
-                   AY=yI;
+                    yI=linspace(AY(1),AY(end),size(A,1));
+                    AY=yI;
                 end
             end
-            if test_interp_X || test_interp_Y               
+            if test_interp_X || test_interp_Y
                 [AX2D,AY2D]=meshgrid(AX,AY);
                 A=interp2(AX2D,AY2D,double(A),xI,yI');
             end
-            AX=[AX(1) AX(end)];% keep only the lower and upper bounds for image represnetation 
+            AX=[AX(1) AX(end)];% keep only the lower and upper bounds for image represnetation
             AY=[AY(1) AY(end)];
-%         else
-%             errormsg='error in plot_field: invalid coordinate definition ';
-%             return
         end
     end
     %define coordinates as CoordUnits, if not defined as attribute for each variable
@@ -741,9 +735,8 @@ for icell=1:numel(CellInfo) % length(CellVarIndex) =1 or 2 (from the calling fun
         if isempty(y_units)
             y_units=Data.CoordUnit;
         end
-    end
-        
-end 
+    end   
+end
 
 %%   image or scalar plot %%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1091,7 +1084,7 @@ if test_vec
         if ~isempty(ivar_F)
            vec_F=vec_F(ind_sel);
         end
-        if ~isempty(ivar_FF)
+        if ~isempty(ivar_FF_vec)
            vec_FF=vec_FF(ind_sel);
         end
     end
@@ -1105,15 +1098,14 @@ if test_vec
     if test_black 
        nbcolor=nbcolor+1;
        colorlist(nbcolor,:)=[0 0 0]; %add black to the list of colors
-       if ~isempty(ivar_FF)
-          %  ind_flag=find(vec_F~=1 & vec_F~=0 & vec_FF==0);  %flag warning but not false
+       if ~isempty(ivar_FF_vec)
             col_vec(vec_F~=1 & vec_F~=0 & vec_FF==0)=nbcolor;
        else
             col_vec(vec_F~=1 & vec_F~=0)=nbcolor;
        end
     end
     nbcolor=nbcolor+1;
-    if ~isempty(ivar_FF)
+    if ~isempty(ivar_FF_vec)
         if isfield(PlotParam.Vectors,'CheckHideFalse') && PlotParam.Vectors.CheckHideFalse==1
             colorlist(nbcolor,:)=[NaN NaN NaN];% no plot of false vectors
         else
