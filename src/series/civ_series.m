@@ -545,8 +545,23 @@ for ifield=1:NbField
         %indicate the values of all the global attributes in the output data 
         Data.Civ2_ImageA=ImageName_A;
         Data.Civ2_ImageB=ImageName_B;
-        Data.Civ2_Time=1;
-        Data.Civ2_Dt=1;
+        i1=i1_series_Civ2(ifield);
+        i2=i1;
+        if ~isempty(i2_series_Civ2)
+            i2=i2_series_Civ2(ifield);
+        end
+        j1=1;
+        if ~isempty(j1_series_Civ2)
+            j1=j1_series_Civ2(ifield);
+        end
+        j2=j1;
+        if ~isempty(j2_series_Civ1)
+            j2=j2_series_Civ2(ifield);
+        end
+        Data.Civ2_Time=(time(i2+1,j2+1)+time(i1+1,j1+1))/2;
+        Data.Civ2_Dt=time(i2+1,j2+1)-time(i1+1,j1+1);
+%         Data.Civ2_Time=1;
+%         Data.Civ2_Dt=1;
         for ilist=1:length(list_param)
             Data.(Civ2_param{4+ilist})=Param.ActionInput.Civ2.(list_param{ilist});
         end

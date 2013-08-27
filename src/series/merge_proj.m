@@ -128,9 +128,13 @@ end
 if size(time,1)>1
     diff_time=max(max(diff(time)));
     if diff_time>0 
-        disp_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time) ': time of first series chosen in result'],checkrun)
+        disp_uvmat('WARNING',['times of series differ by (max) ' num2str(diff_time) ': the mean time is chosen in result'],checkrun)
     end   
 end
+if ~isempty(errormsg)
+    disp_uvmat('WARNING',erromsg,checkrun)
+end
+time=mean(time,1); %averaged time taken for the merged field
 
 %% coordinate transform or other user defined transform
 transform_fct='';%default fct handle
@@ -173,6 +177,9 @@ end
 %% mask (TODO: case of multilevels)
 MaskData=cell(NbView,1);
 if Param.CheckMask
+    if ischar(Param.MaskTable)% case of a single mask (char chain)
+        Param.MaskTable={Param.MaskTable};
+    end
     for iview=1:numel(Param.MaskTable)
         if exist(Param.MaskTable{iview},'file')
             [MaskData{iview},tild,errormsg] = read_field(Param.MaskTable{iview},'image');
@@ -203,7 +210,7 @@ for index=1:NbField
     
     %%%%%%%%%%%%%%%% loop on views (input lines) %%%%%%%%%%%%%%%%
     Data=cell(1,NbView);%initiate the set Data
-    nbtime=0;
+    timeread=zeros(1,NbView);
     for iview=1:NbView
         %% reading input file(s)
         [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
@@ -211,10 +218,9 @@ for index=1:NbField
             disp(['ERROR in merge_proj/read_field/' errormsg])
             return
         end
-        timeread(iview)=0;
-        if isfield(Data{iview},'Time')
+        % get the time defined in the current file if not already defined from the xml file
+        if ~isempty(time) && isfield(Data{iview},'Time')
             timeread(iview)=Data{iview}.Time;
-            nbtime=nbtime+1;
         end
         if ~isempty(NbSlice_calib)
             Data{iview}.ZIndex=mod(i1_series{iview}(index)-1,NbSlice_calib{iview})+1;%Zindex for phys transform
@@ -257,10 +263,13 @@ for index=1:NbField
     end
 
     %% time of the merged field: take the average of the different views
-    if ~isempty(time)% time defined from ImaDoc
-        timeread=time(:,index);
+    if ~isempty(time)
+        timeread=time(index);   
+    elseif ~isempty(find(timeread))% time defined from ImaDoc
+        timeread=mean(timeread(timeread~=0));% take average over times form the files (when defined)
+    else
+        timeread=index;% take time=file index 
     end
-    timeread=mean(timeread);
 
     %% generating the name of the merged field
     i1=i1_series{1}(index);
@@ -319,7 +328,7 @@ for index=1:NbField
         end
         
     else
-        MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','nb_coord','nb_dim','dt','Time','civ'};
+        MergeData.ListGlobalAttribute={'Conventions','Project','InputFile_1','InputFile_end','nb_coord','nb_dim'};
         MergeData.Conventions='uvmat';
         MergeData.nb_coord=2;
         MergeData.nb_dim=2;
@@ -332,12 +341,14 @@ for index=1:NbField
                 dt=[];%dt not the same for all fields
             end
         end
-        if isempty(dt)
-            MergeData.ListGlobalAttribute(6)=[];
-        else
+        if ~isempty(timeread)
+            MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'Time'}];
+            MergeData.Time=timeread;
+        end
+        if ~isempty(dt)
+            MergeData.ListGlobalAttribute=[MergeData.ListGlobalAttribute {'dt'}];
             MergeData.dt=dt;
         end
-        MergeData.Time=timeread;
         error=struct2nc(OutputFile,MergeData);%save result file
         if isempty(error)
             display(['output file ' OutputFile ' written'])
@@ -380,7 +391,7 @@ for icell=1:length(CellInfo)
                 end
             case 'grid'        %case of fields defined on a structured  grid
                 FFName='';
-                if ~isempty(CellInfo{icell}.VarIndex_errorflag)
+                if isfield(CellInfo{icell},'VarIndex_errorflag') && ~isempty(CellInfo{icell}.VarIndex_errorflag)
                     FFName=Data{1}.ListVarName{CellInfo{icell}.VarIndex_errorflag};% name of errorflag variable
                 end
                 % select good data on each view
