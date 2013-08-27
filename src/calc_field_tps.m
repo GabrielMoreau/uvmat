@@ -5,6 +5,8 @@
 %
 % OUTPUT:
 % DataOut: structure representing the output fields
+% VarAttribute: cell array of structures coontaining the variable attributes 
+% errormsg: error msg , = '' by default
 %
 % INPUT:
 % Coord_tps: coordinates of the centres, of dimensions [nb_point,nb_coord,nb_subdomain], where 
@@ -13,7 +15,10 @@
 %            nb_subdomain the nbre of subdomains used for tps
 % NbCentre: nbre of tps centres for each subdomain, of dimension nb_subdomain
 % SubRange: coordinate range for each subdomain, of dimensions [nb_coord,2,nb_subdomain]
-% FieldVar: cell array of list of variables needed to calculate the requested fields
+% FieldVar: array representing the input fields as tps weights with dimension (nbvec_sub+3,NbSubDomain,nb_dim)
+%              nbvec_sub= max nbre of vectors in a subdomain  
+%             NbSubDomain =nbre of subdomains
+%             nb_dim: nbre of dimensions for vector components (x-> 1, y->2)
 % FieldName: cell array representing the list of operations (eg div(U,V), rot(U,V))
 % Coord_interp: coordinates of sites on which the fields need to be calculated of dimensions 
 %            [nb_site,nb_coord] for an array of interpolation sites
@@ -48,27 +53,42 @@ nbval=zeros(nb_sites,1);
 %% list of operations
 check_grid=0;
 check_der=0;
+check_vec=0;
+check_remove=false(size(FieldName));
+VarAttribute={};
 for ilist=1:length(FieldName)
-    FieldNameType=regexprep(FieldName{ilist},'(.+','');
+    FieldNameType=regexprep(FieldName{ilist},'(.+','');% detect the char string before the parenthesis
+    VarAttributeNew={};
     switch FieldNameType
         case 'vec'
             check_grid=1;
             DataOut.U=zeros(nb_sites,1);
             DataOut.V=zeros(nb_sites,1);
-            VarAttribute{1}.Role='vector_x';
-            VarAttribute{2}.Role='vector_y';
-        case {'U','V','norm'}
+            VarAttributeNew{1}.Role='vector_x';
+            VarAttributeNew{2}.Role='vector_y';
+            check_vec=1;
+        case {'U','V'}
+            if check_vec% no new data needed 
+                check_remove(ilist)=1;
+            else
             check_grid=1;
             DataOut.(FieldNameType)=zeros(nb_sites,1);
-            VarAttribute{1}.Role='scalar';
+            VarAttributeNew{1}.Role='scalar';
+            end
+        case 'norm'
+            check_grid=1;
+            DataOut.(FieldNameType)=zeros(nb_sites,1);
+            VarAttributeNew{1}.Role='scalar';
         case {'curl','div','strain'}
             check_der=1;
             DataOut.(FieldNameType)=zeros(nb_sites,1);
-            VarAttribute{1}.Role='scalar';
+            VarAttributeNew{1}.Role='scalar';
     end
+    VarAttribute=[VarAttribute VarAttributeNew];
 end
 Attr_FF.Role='errorflag';
 VarAttribute=[VarAttribute {Attr_FF}];
+FieldName(check_remove)=[];
 
 %% loop on subdomains
 for isub=1:NbSubDomain
@@ -82,41 +102,41 @@ for isub=1:NbSubDomain
     if check_der
         [EMDX,EMDY] = tps_eval_dxy(Coord_interp(ind_sel,:),Coord_tps(1:nbvec_sub,:,isub));%kernels for calculating the spatial derivatives from tps 'sources'
     end
-    ListVar={};
+%     ListVar={};
     for ilist=1:length(FieldName)
-        var_count=numel(ListVar);
+%         var_count=numel(ListVar);
         switch FieldName{ilist}
             case 'vec(U,V)'
-                ListVar=[ListVar {'U', 'V'}];
-                VarAttribute{var_count+1}.Role='vector_x';
-                VarAttribute{var_count+2}.Role='vector_y';
+%                 ListVar=[ListVar {'U', 'V'}];
+%                 VarAttribute{var_count+1}.Role='vector_x';
+%                 VarAttribute{var_count+2}.Role='vector_y';
                 DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,1);
                 DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,2);
             case 'U'
-                ListVar=[ListVar {'U'}];
-                VarAttribute{var_count+1}.Role='scalar';
+%                 ListVar=[ListVar {'U'}];
+%                 VarAttribute{var_count+1}.Role='scalar';
                 DataOut.U(ind_sel)=DataOut.U(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,1);
             case 'V'
-                ListVar=[ListVar {'V'}];
-                VarAttribute{var_count+1}.Role='scalar';
+%                 ListVar=[ListVar {'V'}];
+%                 VarAttribute{var_count+1}.Role='scalar';
                 DataOut.V(ind_sel)=DataOut.V(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,2);
             case 'norm(U,V)'
-                ListVar=[ListVar {'norm'}];
-                VarAttribute{var_count+1}.Role='scalar';
+%                 ListVar=[ListVar {'norm'}];
+%                 VarAttribute{var_count+1}.Role='scalar';
                 U=DataOut.U(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,1);
                 V=DataOut.V(ind_sel)+EM *FieldVar(1:nbvec_sub+3,isub,2);
                 DataOut.norm(ind_sel)=sqrt(U.*U+V.*V);
             case 'curl(U,V)'
-                ListVar=[ListVar {'curl'}];
-                VarAttribute{var_count+1}.Role='scalar';
+%                 ListVar=[ListVar {'curl'}];
+%                 VarAttribute{var_count+1}.Role='scalar';
                 DataOut.curl(ind_sel)=DataOut.curl(ind_sel)-EMDY *FieldVar(1:nbvec_sub+3,isub,1)+EMDX *FieldVar(1:nbvec_sub+3,isub,2);
             case 'div(U,V)'
-                ListVar=[ListVar {'div'}];
-                VarAttribute{var_count+1}.Role='scalar';
+%                 ListVar=[ListVar {'div'}];
+%                 VarAttribute{var_count+1}.Role='scalar';
                 DataOut.div(ind_sel)=DataOut.div(ind_sel)+EMDX*FieldVar(1:nbvec_sub+3,isub,1)+EMDY *FieldVar(1:nbvec_sub+3,isub,2);
             case 'strain(U,V)'
-                ListVar=[ListVar {'strain'}];
-                VarAttribute{var_count+1}.Role='scalar';
+%                 ListVar=[ListVar {'strain'}];
+%                 VarAttribute{var_count+1}.Role='scalar';
                 DataOut.strain(ind_sel)=DataOut.strain(ind_sel)+EMDY*FieldVar(1:nbvec_sub+3,isub,1)+EMDX *FieldVar(1:nbvec_sub+3,isub,2);
         end
     end

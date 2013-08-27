@@ -121,6 +121,7 @@ set(handles.PairString,'Data',{''})
 
 series_ResizeFcn(hObject, eventdata, handles)%resize table according to series GUI size
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%allows mouse action with right button (zoom for uicontrol display)
+set(handles.InputTable,'KeyPressFcn',{@key_press_fcn,handles})%set keyboard action function (allow action on uvmat when set_object is in front)
 
 % check default input data
 if ~exist('Param','var')
@@ -490,6 +491,26 @@ set(handles.RUN, 'Enable','On')
 set(handles.RUN,'BackgroundColor',[1 0 0])% set RUN button to red 
 
 %------------------------------------------------------------------------
+% --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
+%------------------------------------------------------------------------
+function key_press_fcn(hObject,eventdata,handles)
+
+xx=double(get(handles.series,'CurrentCharacter')); %get the keyboard character
+if ismember(xx,[8 127 31])%backspace or delete, or downward
+    InputTable=get(handles.InputTable,'Data');
+    iline=get(handles.InputTable,'UserData');
+            if isequal(xx, 31)
+                if isequal(iline,size(InputTable,1))% arrow downward
+                InputTable=[InputTable;cell(1,size(InputTable,2))];
+                end
+            else
+    InputTable(iline,:)=[];% suppress the current line 
+            end
+    set(handles.InputTable,'Data',InputTable);
+end
+
+
+%------------------------------------------------------------------------
 % --- Executes on button press in REFRESH.
 function REFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -507,7 +528,7 @@ for iview=1:size(InputTable,1)
     RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});
     if ~exist(RootPath,'dir')
         i1_series=[];
-        RootPath=fileparts(RootPath); %will try the upped forlder
+        RootPath=fileparts(RootPath); %will try the upped folder
     else
         [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=...
             find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
@@ -525,8 +546,7 @@ for iview=1:size(InputTable,1)
     end
 end
 set(handles.REFRESH,'Visible','off')
-set(handles.REFRESH_title,'Visible','off')
-% set(handles.REFRESH,'UserData',[])
+%set(handles.REFRESH_title,'Visible','off')
 
 %------------------------------------------------------------------------
 % --- Function called when a new file is opened, either by series_OpeningFcn or by the browser
@@ -1446,7 +1466,7 @@ if isfield(Param,'OutputSubDir')
     if check_create    % create output directory if it does not exist
         [tild,msg1]=mkdir(OutputDir);
         if ~strcmp(msg1,'')
-            errormsg=['cannot create ' OutputDir ': ' msg1];%error message for directory creation
+            msgbox_uvmat('ERROR',['cannot create ' OutputDir ': ' msg1]);%error message for directory creation
             return
         end
     end
@@ -1830,18 +1850,6 @@ set(handles.RUN,'BackgroundColor',[1 0 0])
 set(handles.RUN,'enable','on')
 set(handles.RUN, 'Value',0)
 
-% %------------------------------------------------------------------------
-% % --- Executes on button press in BIN.
-% function BIN_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-%     cmd=['#!/bin/bash \n '...
-%         '#$ -cwd \n '...
-%         'hostname && date \n '...
-%         'umask 002 \n'...
-%         Param.xml.CivmBin ' ' Param.xml.RunTime ' ' filename_xml ' ' OutputFile '.nc'];
-%     
-%------------------------------------------------------------------------
-% --- Main launch command, called by RUN and BATCH
 
 %------------------------------------------------------------------------
 % --- read parameters from the GUI series
@@ -2422,21 +2430,14 @@ end
 %------------------------------------------------------------------------
 function ViewObject_Callback(hObject, eventdata, handles)
 
-% if get(handles.ViewObject,'Value')
-   % set(handles.EditObject,'Value',0)
-	UserData=get(handles.series,'UserData');
-    hset_object=findobj(allchild(0),'Tag','set_object');
-    if ~isempty(hset_object)
-        delete(hset_object)% refresh set_object if already opened
-    end
-    hset_object=set_object(UserData.ProjObject);
-    set(hset_object,'Name','view_object_series')
-% else
-%     hset_object=findobj(allchild(0),'Tag','set_object');
-%     if ~isempty(hset_object)
-%         delete(hset_object)
-%     end 
-% end
+UserData=get(handles.series,'UserData');
+hset_object=findobj(allchild(0),'Tag','set_object');
+if ~isempty(hset_object)
+    delete(hset_object)% refresh set_object if already opened
+end
+hset_object=set_object(UserData.ProjObject);
+set(hset_object,'Name','view_object_series')
+
 
 %------------------------------------------------------------------------
 % --- Executes on button press in EditObject.
@@ -2483,21 +2484,45 @@ function DeleteObject_Callback(hObject, eventdata, handles)
 function CheckMask_Callback(hObject, eventdata, handles)
 
 if get(handles.CheckMask,'Value')
-    MaskData=get(handles.MaskTable,'Data');
     InputTable=get(handles.InputTable,'Data');
     nbview=size(InputTable,1);
-    %     MaskTable=cell(nbview,1);
     MaskTable=cell(nbview,1);%default
     ListMask=cell(nbview,1);%default
+    MaskData=get(handles.MaskTable,'Data');
+    MaskData(size(MaskData,1):nbview,1)=cell(size(MaskData,1):nbview,1);%complement if undefined lines
     for iview=1:nbview
         ListMask{iview,1}=num2str(iview);
         RootPath=InputTable{iview,1};
         if ~isempty(RootPath)
             if isempty(MaskData{iview})
                 SubDir=InputTable{iview,2};
-                MaskSubDir=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-                MaskName=fullfile(RootPath,[MaskSubDir '.mask'],'mask_1.png');
-                if ~exist(MaskName,'file')
+                MaskPath=fullfile(RootPath,[regexprep(SubDir,'\..*','') '.mask']);%take the root part of SubDir, before the first dot '.'
+                if exist(MaskPath,'dir')
+                    ListStruct=dir(MaskPath);%look for a mask file
+                    ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+                    check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+                    ListFiles=ListCells(1,:);%list of file and dri names
+                    ListFiles=ListFiles(~check_dir);%list of file names (excluding dir)
+                    mdetect=0;
+                    if ~isempty(ListFiles)
+                        for ifile=1:numel(ListFiles)
+                            [tild,tild,MaskFile{ifile},i1_series,i2_series,j1_series,j2_series,MaskNomType,MaskFileType]=find_file_series(MaskPath,ListFiles{ifile},0);
+                            if strcmp(MaskFileType,'image') && isempty(i2_series) && isempty(j2_series)
+                                mdetect=1;
+                                MaskName=ListFiles{ifile};
+                            end
+                            if ~strcmp(MaskFile{ifile},MaskFile{1})
+                                mdetect=0;% cancel detection test in case of multiple masks, use the brower for selection
+                                break
+                            end
+                        end
+                    end
+                    if mdetect==1
+                        MaskName=fullfile(MaskPath,'mask_1.png');
+                    else
+                        MaskName=uigetfile_uvmat('select a mask file:',MaskPath,'image');
+                    end
+                else
                     MaskName=uigetfile_uvmat('select a mask file:',RootPath,'image');
                 end
                 MaskTable{iview,1}=MaskName ;
@@ -2505,9 +2530,7 @@ if get(handles.CheckMask,'Value')
             end
         end
     end
-    %nbview=size(MaskTable,1);
     set(handles.MaskTable,'Data',MaskTable)
-    %     set(handles.MaskTable,'ColumnFormat',{MaskTable'})
     set(handles.MaskTable,'Visible','on')
     set(handles.MaskBrowse,'Visible','on')
     set(handles.ListMask,'Visible','on')
@@ -2523,25 +2546,16 @@ end
 % --- Executes on button press in MaskBrowse.
 %------------------------------------------------------------------------
 function MaskBrowse_Callback(hObject, eventdata, handles)
+
 InputTable=get(handles.InputTable,'Data');
 iview=get(handles.ListMask,'Value');
-%     MaskTable=cell(nbview,1);
-
 RootPath=InputTable{iview,1};
-%         if ~isempty(RootPath)
-%         SubDir=InputTable{iview,2};
-%         MaskSubDir=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-%         MaskName=fullfile(RootPath,[MaskSubDir '.mask'],'mask_1.png');
-%         if ~exist(MaskName,'file')
 MaskName=uigetfile_uvmat('select a mask file:',RootPath,'image');
-%         end
 if ~isempty(MaskName)
     MaskTable=get(handles.MaskTable,'Data');
-MaskTable{iview,1}=MaskName ;
-%         end
-set(handles.MaskTable,'Data',MaskTable)
+    MaskTable{iview,1}=MaskName ;
+    set(handles.MaskTable,'Data',MaskTable)
 end
-   % set(handles.MaskTable,'ColumnFormat',{MaskTable'})
 
 %------------------------------------------------------------------------
 % --- Executes when selected cell(s) is changed in MaskTable.
@@ -2638,26 +2652,22 @@ function MenuImportConfig_Callback(hObject, eventdata, handles)
 
 InputTable=get(handles.InputTable,'Data');
 filexml=uigetfile_uvmat('pick a xml parameter file',InputTable{1,1},'.xml');
-% [FileName, PathName] = uigetfile( ...
-%        {'*.xml', ' (*.xml)';
-%        '*.xml',  '.xml files '; ...
-%         '*.*',  'All Files (*.*)'}, ...
-%         'Pick a file',InputTable{1,1});
-% filexml=[PathName FileName];%complete file name 
 if ~isempty(filexml)%abandon if no file is introduced by the browser
     Param=xml2struct(filexml);
     fill_GUI(Param,handles.series)
-    if isfield(Param,'ActionInput')
-            set(handles.ActionInput,'Visible','on')
-    set(handles.ActionInput_title,'Visible','on')
-    set(handles.ActionInputView,'Visible','on')
-    set(handles.ActionInputView,'Value',0)
-    %set(handles.ActionInput,'String',ActionName)
-%    ParamOut.ActionInput.Program=ActionName; % record the program in ActionInput
+    REFRESH_Callback([],[],handles)% refresh data relative to the input files
     SeriesData=get(handles.series,'UserData');
-    SeriesData.ActionInput=Param.ActionInput;
-    set(handles.series,'UserData',SeriesData)
+    if isfield(Param,'ActionInput')
+        set(handles.ActionInput,'Visible','on')
+        set(handles.ActionInput_title,'Visible','on')
+        set(handles.ActionInputView,'Visible','on')
+        set(handles.ActionInputView,'Value',0)
+        SeriesData.ActionInput=Param.ActionInput;
     end
+    if isfield(Param,'ProjObject')
+        SeriesData.ProjObject=Param.ProjObject;
+    end
+    set(handles.series,'UserData',SeriesData)
     ActionName_Callback([],[],handles)
 end
 

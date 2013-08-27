@@ -726,7 +726,7 @@ if check_consistent
             test_coord(ilist)=1;
         end
     end
-    var_component=find(test_component);% list of variable indices elligible as unstructured coordiantes
+    var_component=find(test_component);% list of variable indices elligible as unstructured coordinates
     var_coord=find(test_coord);% % list of variable indices elligible as structured coordinates
     ListCoord=Field.Display.ListVarName([var_component var_coord]);
     
@@ -754,11 +754,12 @@ if check_consistent
                 end
             end
         end
-        if isempty(coord_val)
+        if isempty(find(coord_val))
             coord_val=var_coord;% case of dimension coordinates
         end
         if numel(find(coord_val))<2
-            coord_val=[numel(var_component)+2 numel(var_component)+1];
+            %coord_val=[numel(var_component)+2 numel(var_component)+1];
+            coord_val=[1 2];
         end
         set(handles.Coord_x,'Value',coord_val(1))
         set(handles.Coord_y,'Value',coord_val(2))

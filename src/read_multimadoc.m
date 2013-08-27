@@ -6,6 +6,7 @@
 % XmlData(iview): cell array of structures representing the contents of the xml files, iview =index of the input file series
 % NbSlice_calib: nbre of slices detected in the geometric calibration data
 % Time(iview,i,j): matrix of times, iview =index of the series, i,j=file indices within the series
+%                if the time is not consistent in all series, the time from the first series is chosen
 % warnmsg: warning message, ='' if  OK
 %
 % INPUT:
@@ -58,21 +59,20 @@ if nbview>1
 end
 
 function time=get_time(timeimadoc,i1_series,i2_series,j1_series,j2_series)
-if isempty(i2_series)||size(timeimadoc,1) < i2_series(end) ||( ~isempty(j2_series) && size(timeimadoc,2) < j2_series(end))% time array absent or too short in ImaDoc xml file'
-    time=[];
-else
-    timevect=timeimadoc';
-    if ~isempty(j1_series)
-        vect_index=reshape(j1_series+(i1_series-1)*size(timevect,1),1,[]);
-        time=timevect(vect_index);
-        if ~isempty(j2_series)
-            vect_index=reshape(j2_series+(i1_series-1)*size(timevect,1),1,[]);
-            time=(time+timevect(vect_index))/2;
-        end
-    else
-        time=timevect(i1_series);
-        if ~isempty(i2_series)
-            time=(time+timevect(i2_series))/2;
-        end
-    end
-end
+ time=[];
+ if ~ (isempty(i2_series)||size(timeimadoc,1) < i2_series(end) ||( ~isempty(j2_series) && size(timeimadoc,2) < j2_series(end)))% time array absent or too short in ImaDoc xml file'
+     if isempty(j1_series)
+         j1_series=1;
+     end
+     time=timeimadoc(i1_series+1,j1_series+1);
+     if ~isempty(j2_series)
+         time=[time timeimadoc(i1_series+1,j2_series+1)];
+     end
+     if ~isempty(i2_series)
+         time=[time timeimadoc(i2_series+1,j1_series+1)];
+         if ~isempty(j2_series)
+             time=[time timeimadoc(i2_series+1,j2_series+1)];
+         end
+     end
+ time=mean(time);
+ end

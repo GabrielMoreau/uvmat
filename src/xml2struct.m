@@ -47,19 +47,18 @@ switch info.class
         end
     case 'char' 
         out=ss; %reproduce the input string
-        if ~strcmp(ss,'image')% bug with Matlab str2num('image')-> child face
+        % try to convert to number if the char does not correspond to a function (otherwise str2num calls this function as it uses 'eval')
+        if ~isempty(regexp(ss,'^(-*\d+\.*\d*\ *)+$')) || ~isempty(regexp(ss,'\d+e(-|+)\d+')) % if the string corresponds to a set of numbers (with possible sign and decimal, or scientific notation) separated by blanks
             out=str2num(ss);
-            %if isempty(regexp(ss,'^(-*\d+\.*\d*\ *)+$'))% if the string does not contain a set of numbers (with possible sign and decimal) separated by blanks
-            if isempty(out)
-                sep_ind=regexp(ss,'\s&\s');% check for separator ' & ' which indicates column separation in tables
-                if ~isempty(sep_ind)
-                    sep_ind=[-2 sep_ind length(ss)+1];
-                    for icolumn=1:length(sep_ind)-1
-                        out{1,icolumn}=ss(sep_ind(icolumn)+3:sep_ind(icolumn+1)-1);
-                    end
-                else
-                    out=ss; %reproduce the input string
+        else
+            sep_ind=regexp(ss,'\s&\s');% check for separator ' & ' which indicates column separation in tables
+            if ~isempty(sep_ind)
+                sep_ind=[-2 sep_ind length(ss)+1];
+                for icolumn=1:length(sep_ind)-1
+                    out{1,icolumn}=ss(sep_ind(icolumn)+3:sep_ind(icolumn+1)-1);
                 end
+            else
+                out=ss; %reproduce the input string
             end
         end
     case 'cell'

@@ -175,7 +175,7 @@ for icell_tps=1:numel(ivar_tps)
             if strcmp(VarDimName{ivardim},DimCell{3})
                 CellInfo{icell}.NbCentres_tps= ivar_remain(ivardim);% nbre of sites for each tps subdomain
                 check_cell(ivar_remain(ivardim))=1;% mark the variable as selected
-            elseif strcmp(VarDimName{ivardim}{1},DimCell{2}) && strcmp(VarDimName{ivardim}{3},DimCell{3})
+            elseif strcmp(VarDimName{ivardim}{1},DimCell{2}) && numel(VarDimName{ivardim})>=3 && strcmp(VarDimName{ivardim}{3},DimCell{3})
                 CellInfo{icell}.SubRange_tps=ivar_remain(ivardim);% subrange definiton for tps
                 check_cell(ivar_remain(ivardim))=1;% mark the variable as selected
             elseif strcmp(VarDimName{ivardim}{1},DimCell{1}) && strcmp(VarDimName{ivardim}{2},DimCell{3})% variable
@@ -246,7 +246,7 @@ for ilist=1:numel(ListCoordIndex)
     end
 end
 
-% group the remaining variables in cells sharing the same coordinate variables
+%% group the remaining variables in cells sharing the same coordinate variables
 NewCellInfo={};
 NewCellDimIndex={};
 NewNbDim=[];

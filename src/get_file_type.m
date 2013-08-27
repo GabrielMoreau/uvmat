@@ -16,9 +16,15 @@
 % INPUT:
 % fileinput: name, including path, of the file to analyse
 function [FileType,FileInfo,VideoObject]=get_file_type(fileinput)
-FileType='txt';%default, text file
+
 FileInfo=[];
 VideoObject=[];
+if exist(fileinput,'file')
+    FileType='txt';%default, text file
+else
+    FileType='';
+    return
+end
 [tild,tild,FileExt]=fileparts(fileinput);
 
 switch FileExt

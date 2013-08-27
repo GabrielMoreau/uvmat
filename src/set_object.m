@@ -269,6 +269,8 @@ ProjMode_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in ProjMode.
+%------------------------------------------------------------------------
+
 function ProjMode_Callback(hObject, eventdata, handles)
 menu=get(handles.ProjMode,'String');
 value=get(handles.ProjMode,'Value');
@@ -304,12 +306,12 @@ set(handles.num_DZ,'Visible','off')
 
 switch ObjectStyle
     case 'points'
-        set(handles.num_RangeY_2,'TooltipString','num_YMax: range of projection around each point') 
+        set(handles.num_RangeY_2,'TooltipString','num_RangeY_2: range of projection around each point') 
 %         set(handles.XObject,'TooltipString','XObject: set of x coordinates of the points')
 %         set(handles.YObject,'TooltipString','YObject: set of y coordinates of the points')
 %         set(handles.ZObject,'TooltipString','ZObject: set of z coordinates of the points')
     case {'line','polyline','polygon'}
-        set(handles.num_RangeY_2,'TooltipString','num_YMax: range of projection around the line')
+        set(handles.num_RangeY_2,'TooltipString','num_RangeY_2: range of projection around the line')
          set(handles.Coord,'TooltipString','Coord: table of x,y, z coordinates defining the line')
 %         set(handles.YObject,'TooltipString','YObject: set of y coordinates defining the line')
 %         set(handles.ZObject,'TooltipString','ZObject: set of z coordinates defining the line')
@@ -318,8 +320,8 @@ switch ObjectStyle
             set(handles.num_DX,'TooltipString','num_DX: mesh for the interpolated field along the line')
         end       
     case {'rectangle','ellipse'}
-        set(handles.num_RangeX_2,'TooltipString',['num_XMax: half length of the ' ObjectStyle])
-        set(handles.num_RangeY_2,'TooltipString',['num_YMax: half width of the ' ObjectStyle])
+        set(handles.num_RangeX_2,'TooltipString',['num_RangeX_2: half length of the ' ObjectStyle])
+        set(handles.num_RangeY_2,'TooltipString',['num_RangeY_2: half width of the ' ObjectStyle])
 %         set(handles.XObject,'TooltipString',['XObject:  x coordinate of the ' Type ' centre'])
 %         set(handles.YObject,'TooltipString',['YObject:  y coordinate of the ' Type ' centre'])
     case {'plane'}  
@@ -635,27 +637,27 @@ end
 title={'object name'};
 dir_save=uigetfile_uvmat('select the folder for the new xml object file:',RootPath,'uigetdir');
 if ~isempty(dir_save)
-    % dir_save=uigetdir(RootPath);
     ObjectName=get(handles.Name,'String');
     if ~isempty(ObjectName)&&~strcmp(ObjectName,'')
-        def={fullfile(dir_save,[ObjectName '.xml'])};
+        def=[ObjectName '.xml'];
     else
-        def={fullfile(dir_save,[Object.Style '.xml'])};
+        def=[Object.Style '.xml'];
     end
-    displ_txt='save object as an .xml file';%default display
+    displ_txt={'save object as an .xml file in';dir_save};%default display
     menu=get(handles.ProjMode,'String');
     value=get(handles.ProjMode,'Value');
     ProjMode=menu{value};
     if strcmp(ProjMode,'mask_inside')||strcmp(ProjMode,'mask_outside')
-        displ_txt='save mask contour as an .xml file: to create a mask image, use save_mask on the GUI uvmat (lower right)';
+        displ_txt={'save mask contour as an .xml file:'; 'to create a mask image, use save_mask on the GUI uvmat (lower right)'};
     end
-    answer=msgbox_uvmat('INPUT_TXT','save object as an .xml file',def);
-    if ~isempty(answer)
+    answer=msgbox_uvmat('INPUT_TXT',displ_txt,def);
+    if iscell(answer)
+        FullName=fullfile(dir_save,answer{1});
         t=struct2xml(Object);
         t=set(t,1,'name','ProjObject');
-        save(t,answer{1})
+        save(t,FullName)
+        msgbox_uvmat('CONFIRMATION',[FullName  ' saved'])
     end
-    msgbox_uvmat('CONFIRMATION',[answer{1}  ' saved'])
 end
 
 %------------------------------------------------------------------------

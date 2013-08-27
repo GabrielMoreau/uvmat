@@ -49,17 +49,20 @@ for ilist=1:numel(FieldName)
             Operator{ilist}=r.Operator;
             switch r.Operator
                 case 'curl'% case of CivX data format
+                    if ~isfield(Data,'DjUi'), errormsg='field DjUi needed to get curl through linear interp: use ProjMode=interp_tps'; return; end
                     UName{ilist}='vort';
                     Data.vort=Data.DjUi(:,1,2)-Data.DjUi(:,2,1);
                 case 'div'
+                    if ~isfield(Data,'DjUi'), errormsg='field DjUi needed to get div through linear interp: use ProjMode=interp_tps'; return; end
                     UName{ilist}='div';
                     Data.div=Data.DjUi(:,1,1)+Data.DjUi(:,2,2);
                 case 'strain'
+                    if ~isfield(Data,'DjUi'), errormsg='field DjUi needed to get strain through linear interp: use ProjMode=interp_tps'; return; end
                     UName{ilist}='strain';
                     Data.strain=Data.DjUi(:,1,2)+Data.DjUi(:,2,1);
             end
             InputVarList=[InputVarList UName{ilist}]; %the variable is added to the list if it is not already in the list
-        else
+        else % case  'norm' for instance
             UName{ilist}=r.UName;
             VName{ilist}=r.VName;
             if isempty(find(strcmp(r.UName,InputVarList)));

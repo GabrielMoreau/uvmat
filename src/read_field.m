@@ -68,6 +68,8 @@ switch FileType
         ParamOut.CivStage=Field.CivStage;
     case 'netcdf'
         ListVar={};
+        Role={};
+        ProjModeRequest={};
         for ilist=1:numel(InputField)
             r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
             if isempty(r)%  no operator used
@@ -80,15 +82,22 @@ switch FileType
                     ProjModeRequest{numel(ListVar)}='interp_lin';%scalar field (requires interpolation for plot)
                 end
             else  % an operator 'vec' or 'norm' is used
-                ListVar=[ListVar {r.UName,r.VName}];
-                Role{numel(ListVar)}='vector_y';
-                Role{numel(ListVar)-1}='vector_x';
                 if ~check_colorvar(ilist) && strcmp(r.Operator,'norm')
-                    ProjModeRequest{numel(ListVar)-1}='interp_lin';%scalar field (requires interpolation for plot)
-                    ProjModeRequest{numel(ListVar)}='interp_lin';
+                    ProjModeRequestVar='interp_lin';%scalar field (requires interpolation for plot)
                 else
-                    ProjModeRequest{numel(ListVar)-1}='';
-                    ProjModeRequest{numel(ListVar)}='';
+                    ProjModeRequestVar='';
+                end
+                ind_var_U=find(strcmp(r.UName,ListVar));%check previous listing of variable r.UName
+                ind_var_V=find(strcmp(r.VName,ListVar));%check previous listing of variable r.VName
+                if isempty(ind_var_U)
+                    ListVar=[ListVar r.UName]; % append the variable in the list if not previously listed
+                    Role=[Role {'vector_x'}];
+                    ProjModeRequest=[ProjModeRequest {ProjModeRequestVar}];
+                end
+                if isempty(ind_var_V)
+                    ListVar=[ListVar r.VName];% append the variable in the list if not previously listed
+                    Role=[Role {'vector_y'}];
+                    ProjModeRequest=[ProjModeRequest {ProjModeRequestVar}];
                 end
             end
         end
@@ -101,6 +110,13 @@ switch FileType
             errormsg=Field.Txt;
             return
         end
+        for ilist=3:numel(Field.VarDimName)
+            if isequal(Field.VarDimName{1},Field.VarDimName{ilist})
+                Field.VarAttribute{1}.Role='coord_x';%unstructured coordinates
+                Field.VarAttribute{2}.Role='coord_y';
+                break
+            end
+        end
         for ivar=1:numel(ListVar)
             Field.VarAttribute{ivar+2}.Role=Role{ivar};
             if isfield(ParamIn,'FieldName')
@@ -108,6 +124,7 @@ switch FileType
             end
             Field.VarAttribute{ivar+2}.ProjModeRequest=ProjModeRequest{ivar};
         end
+
     case 'video'
         if strcmp(class(ParamIn),'VideoReader')
             A=read(ParamIn,num);
