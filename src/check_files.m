@@ -133,7 +133,7 @@ end
 
 %% loop on the list of functions in the uvmat package
 icount=0;
-if ~exist('@xmltree','dir')
+if ~exist(fullfile(pathuvmat,'@xmltree'),'dir')
     icount=icount+1;
     checkmsg{icount}='ERROR installation: toolbox xmltree missing';
 end
