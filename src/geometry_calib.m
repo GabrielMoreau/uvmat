@@ -1319,7 +1319,6 @@ commandwindow; %brings the Matlab command window to the front
 % --- Executes when selected cell(s) is changed in ListCoord.
 %------------------------------------------------------------------------ 
 function ListCoord_CellSelectionCallback(hObject, eventdata, handles)
-
 if ~isempty(eventdata.Indices)
     iline=eventdata.Indices(1);% selected line number
     Data=get(handles.ListCoord,'Data');
@@ -1349,22 +1348,22 @@ PLOT_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function key_press_fcn(hObject,eventdata,handles)
 
-xx=double(get(handles.geometry_calib,'CurrentCharacter')); %get the keyboard character
+xx=double(get(handles.geometry_calib,'CurrentCharacter'));%get the keyboard character
 %if ismember(xx,[8 127])%backspace or delete
-if ismember(xx,[30 31 8 127])% arrow upward, downward, backspace or delete
+if ismember(xx,[30 31 127])% arrow upward, downward, or delete
     Coord=get(handles.ListCoord,'Data');
-    ind=find(Coord(:,6));
+    ind=find(Coord(:,6));%find the marker '+' for line selection
     Coord(:,6)=zeros(size(Coord,1),1);% desactivate the current line mark
     switch xx
         case 30 % arrow upward
             Coord(ind-1,6)=1;
         case 31% arrow downward
             Coord(ind+1,6)=1;
-        case {8 127}% remove line
+        case 127% remove line
             Coord(ind,:)=[];
+            PLOT_Callback(hObject,eventdata,handles)
     end
     set(handles.ListCoord,'Data',Coord);
-    PLOT_Callback(hObject,eventdata,handles)
 end
 
 

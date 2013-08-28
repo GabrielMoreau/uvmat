@@ -61,7 +61,7 @@ if ~isempty(huvmat)
     test_edit=get(hhuvmat.CheckEditObject,'Value')&& (isequal(obj_tag,'proj_object')||isequal(obj_tag,'DeformPoint'));%test for object editing, third priority
     hset_object=findobj(allchild(0),'Name','set_object');
     if ~isempty(hset_object)
-        hPLOT=findobj(hset_object,'tag','PLOT');
+        hPLOT=findobj(hset_object,'tag','REFRESH');
         test_create=strcmp(get(hPLOT,'enable'),'on') &&~get(hhuvmat.CheckEditObject,'Value');% create new object if set_object is in mode enable and uvmat not in mode 'EditObject'
     end
     test_edit_vect=get(hhuvmat.edit_vect,'Value') && ~test_create && ~(isequal(obj_tag,'proj_object')||isequal(obj_tag,'DeformPoint')) ;%test for vector editing,  priority 4
@@ -284,23 +284,12 @@ if  test_edit
             IndexObj=ObjectData.IndexObj;
                     %indicate on the list of the GUI uvmat which object has been selected
             if strcmp(get(hCurrentGUI,'tag'),'uvmat') %if the uvmat graph has been selected, object projection is on the other frame view_field
-%                 IndexObj=get(hhuvmat.ListObject,'Value');
-%                 if IndexObj>IndexObj_old(1)
-%                     IndexObj=[IndexObj_old(1) IndexObj];
-%                 else
-%                     IndexObj=[1 IndexObj];
-%                 end
                 set(hhuvmat.ListObject,'Value',IndexObj);
-%                 set(hhuvmat.ListObject,'UserData',IndexObj);
             else
                 set(hhuvmat.ListObject_1,'Value',IndexObj);
                 list_str=get(hhuvmat.ListObject_1,'String');
                 UvData.ProjObject{IndexObj}.Name=list_str{IndexObj};
             end
-%             h_set_object=findobj(allchild(0),'Tag','set_object');
-%             if ~isempty(h_set_object)
-%                 delete(h_set_object)
-%             end
             set_object(UvData.ProjObject{IndexObj})
             axes(hchild);%set back the current axes haxes
             testdeform=0;

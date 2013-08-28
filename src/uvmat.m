@@ -4714,13 +4714,13 @@ set(hchild,'enable','on')
 set(handles.DeleteObject,'Visible','on')% make the object delete button visible
 if check_plot
     hhset_object=guidata(hset_object);
-    set_object('PLOT_Callback',1,[],hhset_object);% call the GUI set_object 
+    set_object('REFRESH_Callback',1,[],hhset_object);% call the GUI set_object 
 end
 
 %------------------------------------------------------------------------
 function MenuBrowseObject_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-%get the object file 
+%get the object file
 fileinput=uigetfile_uvmat('pick an xml object file:',get(handles.RootPath,'String'),'.xml');
 if ~isempty(fileinput)
     %read the file
@@ -4728,48 +4728,23 @@ if ~isempty(fileinput)
     if ~strcmp(heading,'ProjObject')
         msgbox_uvmat('WARNING','The xml file does not have the heading ProjObject for projection objects')
     end
-   % [tild,data.Name]=fileparts(fileinput);% object name set as file name
     ListObject=get(handles.ListObject,'String');
-    
-%     if ~strcmp(ListObject{end},'')
-%         ListObject=[ListObject;{''}]; %append a blank to the list (if not already done) to indicate the creation of a new object
-%         set(handles.ListObject,'String',ListObject)
-%     end
-ListObject=[ListObject;{data.Name}];
-    IndexObj=length(ListObject);  
+    ListObject=[ListObject;{data.Name}];
+    IndexObj=length(ListObject);
     UvData=get(handles.uvmat,'UserData');
     UvData.ProjObject{IndexObj}=[]; %create a new empty object
     UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=[]; %no plot handle before plot_field operation
     UvData.ProjObject{IndexObj}.DisplayHandle.view_field=[]; %no plot handle before plot_field operation
     set(handles.uvmat,'UserData',UvData)
-%     set(handles.ListObject,'String',ListObject)
-%     set(handles.ListObject,'Value',IndexObj)
     set(handles.CheckViewObject,'Value',1)
     set(handles.CheckViewField,'Value',1)
     hset_object=set_object(data);% call the set_object interface
     hhset_object=guidata(hset_object);
-    set_object('PLOT_Callback',hObject,eventdata,hhset_object);% plot projection
-    %set(get(hset_object,'children'),'enable','on')% enable edit action on elements on GUI set_object
+    set_object('REFRESH_Callback',hObject,eventdata,hhset_object);% plot projection
     set(handles.CheckEditObject,'Value',0); %suppress the object edit mode
     CheckEditObject_Callback([],[],handles)
     set(handles.DeleteObject,'Visible','on')
 end
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % MenuEdit Callbacks
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %------------------------------------------------------------------------
-% function MenuEditObject_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% set(handles.CheckEditObject,'Value',1)
-% edit_Callback(hObject, eventdata, handles)
-% 
-% %------------------------------------------------------------------------
-% function MenuEditVectors_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% set(handles.edit_vect,'Visible','on')
-% set(handles.edit_vect,'Value',1)
-% edit_vect_Callback(hObject, eventdata, handles)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MenuTools Callbacks

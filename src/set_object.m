@@ -35,9 +35,9 @@
 
 function varargout = set_object(varargin)
 
-% Last Modified by GUIDE v2.5 26-Jan-2012 22:00:47
+% Last Modified by GUIDE v2.5 28-Aug-2013 20:41:02
 
-% Begin initialization code - DO NOT PLOT
+% Begin initialization code - DO NOT REFRESH
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
@@ -54,7 +54,7 @@ if nargout
 else
     gui_mainfcn(gui_State, varargin{:});
 end
-% End initialization code - DO NOT PLOT
+% End initialization code - DO NOT REFRESH
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
 % --- Executes just before set_object is made visible.
@@ -62,14 +62,14 @@ end
 % handles: handles of the set_object interface elements
 %'IndexObj': NON USED ANYMORE (To suppress) index of the object (on the UvData list) that set_object will modify
 %        if =[] or absent: index still undefined (create mode in uvmat)
-%        if=0; no associated object (used for series), the button 'PLOT' is  then unvisible
+%        if=0; no associated object (used for series), the button 'REFRESH' is  then unvisible
 %'data': read from an existing object selected in the interface
 %      .Name : class of object ('POINTS','LINE',....)
 %      .num_DX,num_DY,num_DZ; meshes for regular grids
 %      .Coord: object position coordinates
 %      .ParentButton: handle of the uicontrol object calling the interface
 % PlotHandles: set of handles of the elements contolling the plotting of the projected field:
-%  if =[] or absent, no plot (mask mode in uvmat)
+%  if =[] or absent, no refresh (mask mode in uvmat)
 % parameters on the uvmat interface (obtained by 'get_plot_handle.m')
 function set_object_OpeningFcn(hObject, eventdata, handles, data, PlotHandles,ZBounds)
 %-------------------------------------------------------------------
@@ -163,7 +163,7 @@ if exist('data','var')
 end
 set(get(handles.set_object,'children'),'enable','off')
 set(handles.SAVE,'enable','on')
-% set(handles.PLOT,'enable','off') 
+% set(handles.REFRESH,'enable','off') 
 
 
 %------------------------------------------------------------------------
@@ -414,10 +414,11 @@ function num_DZ_Callback(hObject, eventdata, handles)
 
 
 %------------------------------------------------------------------------
-% --- Executes on button press in PLOT: refresh the current object , plot the object and its projected field
-function PLOT_Callback(hObject, eventdata, handles)
+% --- Executes on button press in REFRESH: refresh the current object , refresh the object and its projected field
+%------------------------------------------------------------------------
+function REFRESH_Callback(hObject, eventdata, handles)
 
-set(handles.PLOT,'BackgroundColor',[1 1 0])
+set(handles.REFRESH,'BackgroundColor',[1 1 0])
 drawnow
 
 %% update the object in the GUI series if relevant
@@ -428,7 +429,7 @@ if strcmp(get(handles.set_object,'Name'),'edit_object_series')
     SeriesData.ProjObject=read_GUI(handles.set_object);%read the parameters defining the object in the GUI set_object
     set(hseries,'UserData',SeriesData);
     end
-    set(handles.PLOT,'BackgroundColor',[1 0 0])
+    set(handles.REFRESH,'BackgroundColor',[1 0 0])
     return
 end
 
@@ -503,7 +504,7 @@ else
     UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=hhuvmat.PlotAxes; %axes taken as object display handle by defualt
 end
 
-%% plot the field projected on the object
+%% refresh the field projected on the object
 hview_field=[];%default
 IndexObj_1=get(hhuvmat.ListObject_1,'Value');
 if strcmp(ObjectData.ProjMode,'mask_inside')||strcmp(ObjectData.ProjMode,'mask_outside')||strcmp(ObjectData.ProjMode,'none')
@@ -515,14 +516,14 @@ else
         [UvData.Field,errormsg]=tps_coeff_field(UvData.Field,1);
         if ~isempty(errormsg)
             msgbox_uvmat('ERROR', ['set_object/tps_coeff_field/' errormsg])
-            set(handles.PLOT,'enable','on')
+            set(handles.REFRESH,'enable','on')
             return
         end
     end
     [ProjData,errormsg]= proj_field(UvData.Field,ObjectData);%project the current field of uvmat on ObjectData
     if ~isempty(errormsg)
         msgbox_uvmat('ERROR', ['set_object/proj_field/' errormsg])
-        set(handles.PLOT,'enable','on')
+        set(handles.REFRESH,'enable','on')
         return
     end
     if isequal(IndexObj_1,IndexObj) % if  the projection is in uvmat
@@ -556,7 +557,7 @@ else
     end
 end
 
-%% update the object plot 
+%% update the object refresh 
 hobject=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;
 % if we are editing the object used for projection in uvmat
 if isequal(IndexObj_1,IndexObj)
@@ -569,7 +570,7 @@ else %  we are editing the object used for projection field represented in view_
     %update the representation of the current object in uvmat
     UvData.ProjObject{IndexObj}.DisplayHandle.uvmat=...
              plot_object(UvData.ProjObject{IndexObj},UvData.ProjObject{IndexObj_1},UvData.ProjObject{IndexObj}.DisplayHandle.uvmat,'m');
-    %indicate the object index in the user data of the object plot (needed for further mouse editing)
+    %indicate the object index in the user data of the object refresh (needed for further mouse editing)
     ObjectInfo=get(UvData.ProjObject{IndexObj}.DisplayHandle.uvmat,'UserData');
     ObjectInfo.IndexObj=IndexObj;
     set(UvData.ProjObject{IndexObj}.DisplayHandle.uvmat,'UserData',ObjectInfo)
@@ -586,7 +587,7 @@ set(huvmat,'UserData',UvData)
 %% update the GUI uvmat
 set(hhuvmat.CheckEditObject,'Value',1) % set uvmat to object edit mode to allow further object update
 set(hhuvmat.CheckViewField,'Value',1)
-set(handles.PLOT,'BackgroundColor',[1 0 0])
+set(handles.REFRESH,'BackgroundColor',[1 0 0])
 %------------------------------------------------------------------------
 % --- Executes on button press in MenuCoord.
 function MenuCoord_Callback(hObject, eventdata, handles)
@@ -690,7 +691,7 @@ else
 end
 
 % update graph
-PLOT_Callback(hObject, eventdata, handles)
+REFRESH_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in HELP.
@@ -718,27 +719,28 @@ function Name_Callback(hObject, eventdata, handles)
 % --- Executes when entered data in editable cell(s) in Coord.
 function Coord_CellEditCallback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-ListType=get(handles.Type,'String');
-Type=ListType{get(handles.Type,'Value')};
-switch Type
-    % add lines if multi line input needed
-    case{'points','polyline','polygon'}
-        Input=str2num(eventdata.EditData);%pasted input
-        Coord=get(handles.Coord,'Data');
-        iline=eventdata.Indices(1);% selected line number
-        if size(Coord,1)<iline+numel(Input)
-            Coord=[Coord ; zeros(iline+numel(Input)-size(Coord,1),size(Coord,2))];% append zeros to fit the new column
-        end
-        Coord(iline:iline+numel(Input)-1,eventdata.Indices(2))=Input';
-        set(handles.Coord,'Data',Coord)
-end
-
+% ListType=get(handles.Type,'String');
+% Type=ListType{get(handles.Type,'Value')};
+% switch Type
+%     % add lines if multi line input needed
+%     case{'points','polyline','polygon'}
+%         Input=str2num(eventdata.EditData);%pasted input
+%         Coord=get(handles.Coord,'Data');
+%         iline=eventdata.Indices(1);% selected line number
+%         if size(Coord,1)<iline+numel(Input)
+%             Coord=[Coord ; zeros(iline+numel(Input)-size(Coord,1),size(Coord,2))];% append zeros to fit the new column
+%         end
+%         Coord(iline:iline+numel(Input)-1,eventdata.Indices(2))=Input';
+%         set(handles.Coord,'Data',Coord)
+% end
+%------------------------------------------------------------------------
 % --- Executes when selected cell(s) is changed in ListCoord.
+%------------------------------------------------------------------------
 function Coord_CellSelectionCallback(hObject, eventdata, handles)
 
 if ~isempty(eventdata.Indices)
     iline=eventdata.Indices(1);% selected line number
-    set(handles.Coord,'UserData',iline)
+    set(handles.Coord,'UserData',iline)% used possibly for line deletion or table extension, using key_press_fcn
 end
 
 %------------------------------------------------------------------------
@@ -747,7 +749,7 @@ end
 function key_press_fcn(hObject,eventdata,handles)
 
 xx=double(get(handles.set_object,'CurrentCharacter')); %get the keyboard character
-if ismember(xx,[8 127 31])%backspace or delete, or downward
+if ismember(xx,[127 31])% delete, or downward
     Coord=get(handles.Coord,'Data');
     iline=get(handles.Coord,'UserData');
             if isequal(xx, 31)

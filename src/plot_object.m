@@ -409,10 +409,12 @@ if test_newobj==0;
             end
         end      
     else% no patch image requested, erase existing ones
+        if isfield(PlotData,'SubObject')
         for iobj=1:length(PlotData.SubObject)
             if ishandle(PlotData.SubObject(iobj)) && strcmp(get(PlotData.SubObject(iobj),'Type'),'image')
                 delete(PlotData.SubObject(iobj))
             end
+        end
         end
     end
 end
@@ -466,7 +468,7 @@ if test_newobj
         case 'rectangle'
             hh=rectangle('Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax],'LineWidth',2,'EdgeColor',col);
         case 'ellipse'
-            hh=rectangle('Curvature',[1 1],'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax],'EdgeColor',col);
+            hh=rectangle('Curvature',[1 1],'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax],'EdgeColor',col,'LineWidth',2);
         otherwise
             msgbox_uvmat('ERROR','unknown ObjectData.Type in plot_object.m')
             return
