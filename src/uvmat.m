@@ -203,7 +203,7 @@ set(handles.Coord_y,'ColumnEditable',false)
 set(handles.Coord_y,'ColumnName',{''})
 
 %% set functions for the mouse and keyboard
-set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
+set(hObject,'WindowKeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
 set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles})%set mouse action functio
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
@@ -1768,9 +1768,7 @@ if sub_value
 else
     errormsg=refresh_field(handles,filename,filename_1,i1,i2,j1,j2);
 end
-
-%% refresh plots
-% errormsg=refresh_field(handles,filename,filename_1,i1,i2,j1,j2,i1_1,i2_1,j1_1,j2_1);
+set(handles.run0,'BackgroundColor',[1 0 0])
 
 %% update the index counters if the index move is successfull
 if isempty(errormsg) 
@@ -1821,6 +1819,7 @@ if ~get(handles.movie_pair,'value')
     return
 else
     set(handles.movie_pair,'BusyAction','queue')
+    set(handles.run0,'BackgroundColor',[1 0 0])
 end
 
 %% initialisation
@@ -1986,10 +1985,9 @@ else
     set(handles.j1,'BackgroundColor',[1 1 1])
     set(handles.j2,'BackgroundColor',[1 1 1])
     set(handles.FileIndex,'BackgroundColor',[1 1 1])
-    set(handles.FileIndex_1,'BackgroundColor',[1 1 1])   
+    set(handles.FileIndex_1,'BackgroundColor',[1 1 1])  
+    set(handles.run0,'BackgroundColor',[1 0 0])
 end    
-set(handles.run0,'BackgroundColor',[1 0 0])
-
 
 %------------------------------------------------------------------------
 % --- read the input files and refresh all the plots, including projection.
@@ -2701,6 +2699,7 @@ else
     end
 end
 ResizeFcn(handles.uvmat,[],handles)
+%set(handles.uvmat,'CurrentAxes',handles.PlotAxes)% make the main axis current (usefull for key board callback)
 
 %------------------------------------------------------------------------
 function histo1_menu_Callback(hObject, eventdata, handles)
@@ -4020,7 +4019,10 @@ AxeData=UvData.PlotAxes;% retrieve the current plotted data
 PlotParam=read_GUI(handles.uvmat);
 [tild,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
 errormsg=fill_GUI(PlotParamOut,handles.uvmat);
-%write_plot_param(handles,PlotParamOut); %update the auto plot parameters
+RUNColor=get(handles.run0,'BackgroundColor');% 
+if isequal(RUNColor,[1 0 1])% suppress magenta color (indicate that plot is  updated)
+    set(handles.run0,'BackgroundColor',[1 0 0]);
+end
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -4333,17 +4335,16 @@ hlist_object=findobj(huvmat,'Tag','ListObject');%handles of the object list in t
 list_str=get(hlist_object,'String');%objet list
 if  ~isempty(UvData) && isfield(UvData, 'ProjObject') && length(UvData.ProjObject)>=IndexObj
     if isfield(UvData.ProjObject{IndexObj},'DisplayHandle') && isfield(UvData.ProjObject{IndexObj}.DisplayHandle,'uvmat')
-        hdisplay=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;
+        hdisplay=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;%handle of the object graphic representation in uvmat
         for iview=1:length(hdisplay)
             if ishandle(hdisplay(iview)) && ~isequal(hdisplay(iview),0)
                 ObjectData=get(hdisplay(iview),'UserData');
                 if isfield(ObjectData,'SubObject') & ishandle(ObjectData.SubObject)
-                    delete(ObjectData.SubObject);
+                    delete(ObjectData.SubObject);% delete the graphic 'sub-objects (e.g. projection bounds)
                 end
-                if isfield(ObjectData,'DeformPoint') & ishandle(ObjectData.DeformPoint)
-                    delete(ObjectData.DeformPoint);
-                end
-                delete(hdisplay(iview))
+                check_suppress= isfield(ObjectData,'DeformPoint') & ishandle(ObjectData.DeformPoint)
+                delete(ObjectData.DeformPoint(check_suppress));% delete the graphic deformation points 
+                delete(hdisplay(iview))% delete the main graphic representation of the object
             end
             ishandle(hdisplay(iview))
         end

@@ -48,7 +48,7 @@ if isfield(AxeData,'Drawing')&& ~isempty(AxeData.Drawing)
 end
 test_zoom_draw=0;
 test_object=0; %test for object editing or creation 
-test_edit_object=0;% edit test for mouse shap: an arrow
+test_edit_object=0;% edit test for mouse shape: an arrow
 test_ruler=0;%test for active ruler 
 test_transform=0;
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle
@@ -356,14 +356,14 @@ if ~isempty(huvmat) && test_object
         end
         plot_object(ObjectData,ProjObject,AxeData.CurrentObject,'m');
         pointershape='crosshair';
-    elseif  isequal(AxeData.Drawing,'translate')
+    elseif test_edit_object && isequal(AxeData.Drawing,'translate')
         DX=xy(1,1)-XYData(1);%translation from initial position
         DY=xy(1,2)-XYData(2);
         ObjectData.Coord(:,1)=ObjectData.Coord(:,1)+DX;
         ObjectData.Coord(:,2)=ObjectData.Coord(:,2)+DY;
         plot_object(ObjectData,ProjObject,AxeData.CurrentObject,'m');
         pointershape='fleur';
-    elseif  isequal(AxeData.Drawing,'deform')
+    elseif test_edit_object && isequal(AxeData.Drawing,'deform')
         ind_move=AxeData.CurrentIndex;
         ObjectData.Coord(ind_move,1)=xy(1,1);
         ObjectData.Coord(ind_move,2)=xy(1,2);

@@ -393,6 +393,7 @@ if test_newobj==0;
         set(hplot,'Position',[ObjectData.Coord(1,1)-XMax ObjectData.Coord(1,2)-YMax 2*XMax 2*YMax])
     end
     if test_patch
+        if isfield(PlotData,'SubObject')
         for iobj=1:length(PlotData.SubObject)
             if ~ishandle(PlotData.SubObject(iobj))
                 hold on
@@ -407,7 +408,8 @@ if test_newobj==0;
                     set(PlotData.SubObject(iobj),'YData',[ylim(1)+dy/2 ylim(2)-dy/2])
                 end
             end
-        end      
+        end 
+        end
     else% no patch image requested, erase existing ones
         if isfield(PlotData,'SubObject')
         for iobj=1:length(PlotData.SubObject)

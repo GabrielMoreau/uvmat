@@ -35,7 +35,7 @@
 
 function varargout = set_object(varargin)
 
-% Last Modified by GUIDE v2.5 28-Aug-2013 20:41:02
+% Last Modified by GUIDE v2.5 02-Sep-2013 11:39:56
 
 % Begin initialization code - DO NOT REFRESH
 gui_Singleton = 1;
@@ -92,7 +92,6 @@ set(handles.set_object,'Position',[Left Bottom Width Height])
 if ~exist('ZBounds','var')
     ZBounds=0; %default 
 end
-set(handles.Coord,'KeyPressFcn',{@key_press_fcn,handles})%set keyboard action function (allow action on uvmat when set_object is in front)
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'DeleteFcn',{@closefcn})
 
@@ -115,7 +114,7 @@ if exist('data','var')
         return
     end
     Type_Callback(hObject, eventdata, handles)% update the GUI set_object depending on the object type   
-
+    set(handles.REFRESH,'BackgroundColor',[1 0 0])
     if isfield(data,'RangeZ') && length(ZBounds) >= 2
         set(handles.num_RangeZ_2,'String',num2str(max(data.RangeZ),3))
         DZ=max(data.RangeZ);%slider step
@@ -218,7 +217,7 @@ end
 % --- Executes on selection change in Type.
 function Type_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-%style_prev=get(handles.Type,'UserData');%previous object style
+
 ListType=get(handles.Type,'String');
 Type=ListType{get(handles.Type,'Value')};
 % make correspondance between different object styles
@@ -270,8 +269,9 @@ ProjMode_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % --- Executes on selection change in ProjMode.
 %------------------------------------------------------------------------
-
 function ProjMode_Callback(hObject, eventdata, handles)
+
+set(handles.REFRESH,'BackgroundColor',[1 0 1])
 menu=get(handles.ProjMode,'String');
 value=get(handles.ProjMode,'Value');
 ProjMode=menu{value};
@@ -418,7 +418,7 @@ function num_DZ_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function REFRESH_Callback(hObject, eventdata, handles)
 
-set(handles.REFRESH,'BackgroundColor',[1 1 0])
+set(handles.REFRESH,'BackgroundColor',[1 1 0])% indicate activation of REFRESH
 drawnow
 
 %% update the object in the GUI series if relevant
@@ -587,7 +587,11 @@ set(huvmat,'UserData',UvData)
 %% update the GUI uvmat
 set(hhuvmat.CheckEditObject,'Value',1) % set uvmat to object edit mode to allow further object update
 set(hhuvmat.CheckViewField,'Value',1)
+
 set(handles.REFRESH,'BackgroundColor',[1 0 0])
+%set(handles.Coord,'BackgroundColor',[1 1 1])
+set(handles.num_RangeY_2,'BackgroundColor',[1 1 1])
+
 %------------------------------------------------------------------------
 % --- Executes on button press in MenuCoord.
 function MenuCoord_Callback(hObject, eventdata, handles)
@@ -616,6 +620,7 @@ function num_RangeX_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 
 function num_RangeX_2_Callback(hObject, eventdata, handles)
+
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
 function SAVE_Callback(hObject, eventdata, handles)
@@ -719,6 +724,7 @@ function Name_Callback(hObject, eventdata, handles)
 % --- Executes when entered data in editable cell(s) in Coord.
 function Coord_CellEditCallback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+%set(handles.Coord,'BackgroundColor',[1 1 0])
 % ListType=get(handles.Type,'String');
 % Type=ListType{get(handles.Type,'Value')};
 % switch Type
@@ -743,11 +749,21 @@ if ~isempty(eventdata.Indices)
     set(handles.Coord,'UserData',iline)% used possibly for line deletion or table extension, using key_press_fcn
 end
 
-%------------------------------------------------------------------------
-% --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
-%------------------------------------------------------------------------
-function key_press_fcn(hObject,eventdata,handles)
 
+function num_Angle_3_Callback(hObject, eventdata, handles)
+
+%------------------------------------------------------------------------
+% --- Executes on key press with selection of a uicontrol
+%------------------------------------------------------------------------
+function KeyPressFcn(hObject, eventdata, handles)
+set(handles.REFRESH,'BackgroundColor',[1 0 1])% se REFRESH to magenta color, indicates that refresh needs to be done
+
+%------------------------------------------------------------------------
+% --- Executes on key press with focus on Coord and none of its controls.
+%------------------------------------------------------------------------
+function Coord_KeyPressFcn(hObject, eventdata, handles)
+
+set(handles.REFRESH,'BackgroundColor',[1 0 1])
 xx=double(get(handles.set_object,'CurrentCharacter')); %get the keyboard character
 if ismember(xx,[127 31])% delete, or downward
     Coord=get(handles.Coord,'Data');
@@ -762,10 +778,5 @@ if ismember(xx,[127 31])% delete, or downward
     set(handles.Coord,'Data',Coord);
 end
 
-function num_Angle_3_Callback(hObject, eventdata, handles)
-% hObject    handle to num_Angle_3 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of num_Angle_3 as text
-%        str2double(get(hObject,'String')) returns contents of num_Angle_3 as a double
+

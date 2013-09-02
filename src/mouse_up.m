@@ -50,6 +50,9 @@ if ~isempty(huvmat)
    test_ruler=~CheckZoom && isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority
 end
 test_drawing=0;%default, =1 to allow drawing by further mouse action
+if ~(isfield(AxeData,'Enable')&& strcmp(AxeData.Enable,'on'))
+    return
+end
 xy=get(gca,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
 
 
@@ -73,13 +76,13 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
         DY=xy(1,2)-XYData(2);
         ObjectData.Coord(:,1)=ObjectData.Coord(:,1)+DX;
         ObjectData.Coord(:,2)=ObjectData.Coord(:,2)+DY;
-        
+        set(hh_set_object.Coord,'Data',ObjectData.Coord);
         %ending object deformation
     elseif isequal(AxeData.Drawing,'deform')
         ind_move=AxeData.CurrentIndex;
         ObjectData.Coord(ind_move,1)=xy(1,1);
         ObjectData.Coord(ind_move,2)=xy(1,2);
-        
+        set(hh_set_object.Coord,'Data',ObjectData.Coord);
         %creating object
     else
         switch ObjectData.Type
@@ -159,7 +162,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                         set(hview_field,'Position',[pos(1)+pos(3)-pos_table(3) pos(2)+pos(4)-pos_table(4) pos_table(3) pos_table(4)])
                         drawnow
                         set(hview_field,'UserData',ViewFieldData);% restore the previously stored GUI position after GUI resizing
-                    else
+                    elseif isfield(ViewFieldData,'GUISize')
                         set(hview_field,'Position',ViewFieldData.GUISize)
                     end
                 else

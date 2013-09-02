@@ -3,6 +3,7 @@
 function keyboard_callback(hObject,eventdata,handleshaxes)
 cur_axes=get(hObject,'CurrentAxes');%current plotting axes of the figure with handle hObject
 xx=double(get(hObject,'CurrentCharacter')); %get the keyboard character
+if ~isempty(xx)
 switch xx
     case {29,28,30,31}    %arrows for displacement
         AxeData=get(cur_axes,'UserData');
@@ -43,23 +44,25 @@ switch xx
                 end
             end
         end
-    case {8, 127} %if the delete or suppr key is pressed, delete the current object 
-        currentobject=gco;
-        huvmat=findobj(allchild(0),'tag','uvmat');
-        hlist_object=findobj(huvmat,'Tag','list_object_1');
-        ObjIndex=get(hlist_object,'Value');
-        if ObjIndex>1 
-            delete_object(ObjIndex)
-        end
-        if ishandle(currentobject)
-            tag=get(currentobject,'Tag');%tag of the current selected object
-            if isequal(tag,'proj_object')
-                delete_object(currentobject)
-            end
-        end
+%     case {8, 127} %if the delete or suppr key is pressed, delete the current object 
+%         currentobject=gco;
+%         huvmat=findobj(allchild(0),'tag','uvmat');
+%         hlist_object=findobj(huvmat,'Tag','list_object_1');
+%         ObjIndex=get(hlist_object,'Value');
+%         if ObjIndex>1 
+%             delete_object(ObjIndex)
+%         end
+%         if ishandle(currentobject)
+%             tag=get(currentobject,'Tag');%tag of the current selected object
+%             if isequal(tag,'proj_object')
+%                 delete_object(currentobject)
+%             end
+%         end
     case 112%  key 'p'
         uvmat('runplus_Callback',hObject,eventdata,handleshaxes)
     case 109%  key 'm'
         uvmat('runmin_Callback',hObject,eventdata,handleshaxes)
+    otherwise
+        set(handleshaxes.run0,'BackgroundColor',[1 0 1])%indicat that Run must be activated (todo: rplace by REFRESH)
 end
-
+end

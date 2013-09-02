@@ -64,7 +64,7 @@ handles.output = handles.view_field;
 guidata(hObject, handles);
 
 %functions for the mouse and keyboard
-set(hObject,'KeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
+set(hObject,'WindowKeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
 set(hObject,'WindowButtonMotionFcn',{'mouse_motion',handles})%set mouse action functio
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action function
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 

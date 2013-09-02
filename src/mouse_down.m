@@ -58,7 +58,7 @@ if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);%handles of elements in uvmat
     UvData=get(huvmat,'UserData');
     test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');%test for ruler  action, second priority;
-    test_edit=get(hhuvmat.CheckEditObject,'Value')&& (isequal(obj_tag,'proj_object')||isequal(obj_tag,'DeformPoint'));%test for object editing, third priority
+    test_edit=get(hhuvmat.CheckEditObject,'Value');%&& (isequal(obj_tag,'proj_object')||isequal(obj_tag,'DeformPoint'));%test for object editing, third priority
     hset_object=findobj(allchild(0),'Name','set_object');
     if ~isempty(hset_object)
         hPLOT=findobj(hset_object,'tag','REFRESH');
@@ -96,6 +96,7 @@ xy_fig_mat=ones(size(PosChildren,1),1)*xy_fig;% mouse position set to a matrix
 check_pos=xy_fig_mat >= PosChildren(:,1:2) & xy_fig_mat <= PosChildren(:,1:2)+PosChildren(:,3:4);% compare object to mouse position
 ind_object=find(check_pos(:,1) & check_pos(:,2),1);% select the index of the (first) object under the mouse
 hchild=hchildren(ind_object);% corresponding object handle
+htype='';
 if ~isempty(hchild)
     htype=get(hchild,'Type');%type of object child of the current figure
     switch htype
@@ -104,11 +105,7 @@ if ~isempty(hchild)
             haxes=hchild;
             xy=get(hchild,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
             AxeData=get(hchild,'UserData');% data attached to the axis
-%             if isfield(AxeData,'ObjectCoord') && size(AxeData.ProjObjectCoord,2)==3
-%                 xy(1,3)=AxeData.ProjObjectCoord(1,3); % z coordinate of the mouse: to generalise ...
-%             else
-%                 xy(1,3)=0; % z coordinate set to 0 by default
-%             end
+            AxeData.Enable='on';% unable current axes for mouse up action
             AxeData.CurrentOrigin=xy(1,1:2);% The current point set by the mouse becomes the current origin
             
             if test_edit_vect 
@@ -134,8 +131,7 @@ if ~isempty(hchild)
                     end
                 end
             end
-            %break% leave the loop once an axes has been selected
-            
+            set(hchild,'UserData',AxeData)
             %if the mouse is over a uicontrol, with right mouse button activated, duplicate the display in an editable  zoom window
         case 'uicontrol'
             if isequal(get(hObject,'SelectionType'),'alt') %% && ~isequal(get(hchild,'tag'),'frame_object')
@@ -152,8 +148,7 @@ if ~isempty(hchild)
                 panel_pos=PosChildren(ind_object,:);%position of the panel
                 hhchildren=get(hchild,'Children');%handles of all objects in the selected panel
                 check_visible=strcmp(get(hhchildren,'Visible'),'on');%=1 if visible='on', =0 otherwise
-                hhchildren=hhchildren(check_visible); %keep only the visible children
-                
+                hhchildren=hhchildren(check_visible); %keep only the visible children               
                 PosChildren=get(hhchildren,'Position');
                 PosLength=cellfun('length',PosChildren);
                 hhchildren=hhchildren(PosLength==4);% keep only object with position defined by a 4 element vector
@@ -170,11 +165,18 @@ if ~isempty(hchild)
                         msgbox_uvmat(['uicontrol: ' get(hhchild,'Tag')],display_str,get(hhchild,'String'),msg_pos);
                     end
                 end
-            end
-            %   return %leave the function once a uicontrol has been selected
+            end            
     end
 end
-
+    if ~strcmp(htype,'axes')
+        currentaxes=get(hObject,'CurrentAxes');
+        if ~isempty(currentaxes)
+        AxeData=get(currentaxes,'UserData');% data attached to the axis
+        AxeData.Enable='off';% desactivate current axes for mouse up action
+        set(currentaxes,'UserData',AxeData);
+        end
+    end
+    
 %% zoom has first priority, stop here
 if CheckZoom 
     return
@@ -235,6 +237,7 @@ end
 
 %% selection of an existing projection object (third priority)
 if  test_edit 
+    testdeform=0;
     if ~(isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'create'))
         userdata=get(hcurrentobject,'UserData');
         if ishandle(userdata)%the selected line depends on a parent line
@@ -292,7 +295,6 @@ if  test_edit
             end
             set_object(UvData.ProjObject{IndexObj})
             axes(hchild);%set back the current axes haxes
-            testdeform=0;
             set(gcbo,'Pointer','circle'); 
             AxeData.Drawing='deform';
             if isequal(obj_tag,'DeformPoint')       
@@ -306,11 +308,27 @@ if  test_edit
                    end
                end
             end
-            if testdeform==0
+%             if testdeform==0
+%                 AxeData.Drawing='translate';
+%                 set(AxeData.CurrentObject,'Selected','on')
+%                 set(gcbo,'Pointer','fleur');
+%             end
+        else
+            if strcmp(get(hCurrentGUI,'tag'),'uvmat') %if the uvmat graph has been selected, object projection is on the other frame view_field
+               IndexObj=get(hhuvmat.ListObject,'Value');
+               AxeData.CurrentObject=UvData.ProjObject{IndexObj}.DisplayHandle.uvmat;
+            else
+                IndexObj=get(hhuvmat.ListObject_1,'Value');
+                AxeData.CurrentObject=UvData.ProjObject{IndexObj}.DisplayHandle.view_field;
+            end   
+            ObjectData=get(AxeData.CurrentObject,'UserData');
+            ObjectData.IndexObj=IndexObj;
+            set(AxeData.CurrentObject,'UserData',ObjectData)
+        end
+        if testdeform==0
                 AxeData.Drawing='translate';
                 set(AxeData.CurrentObject,'Selected','on')
                 set(gcbo,'Pointer','fleur');
-            end
         end
     end
 end

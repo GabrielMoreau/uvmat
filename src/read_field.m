@@ -70,10 +70,15 @@ switch FileType
         ListVar={};
         Role={};
         ProjModeRequest={};
+        checkU=0;
+        checkV=0;
         for ilist=1:numel(InputField)
             r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
+            Operator='';
             if isempty(r)%  no operator used
-                ListVar=[ListVar InputField(ilist)];
+                if isempty(find(strcmp(InputField{ilist},ListVar)))
+                ListVar=[ListVar InputField(ilist)];%append the variable name if not already in the list
+                end
                 if check_colorvar(ilist)
                     Role{numel(ListVar)}='ancillary';% not projected with interpolation
                     ProjModeRequest{numel(ListVar)}='';
@@ -82,6 +87,7 @@ switch FileType
                     ProjModeRequest{numel(ListVar)}='interp_lin';%scalar field (requires interpolation for plot)
                 end
             else  % an operator 'vec' or 'norm' is used
+                Operator=r.Operator;
                 if ~check_colorvar(ilist) && strcmp(r.Operator,'norm')
                     ProjModeRequestVar='interp_lin';%scalar field (requires interpolation for plot)
                 else
@@ -93,11 +99,15 @@ switch FileType
                     ListVar=[ListVar r.UName]; % append the variable in the list if not previously listed
                     Role=[Role {'vector_x'}];
                     ProjModeRequest=[ProjModeRequest {ProjModeRequestVar}];
+                else
+                    checkU=1;
                 end
                 if isempty(ind_var_V)
                     ListVar=[ListVar r.VName];% append the variable in the list if not previously listed
                     Role=[Role {'vector_y'}];
                     ProjModeRequest=[ProjModeRequest {ProjModeRequestVar}];
+                else
+                    checkV=1;
                 end
             end
         end
@@ -124,7 +134,31 @@ switch FileType
             end
             Field.VarAttribute{ivar+2}.ProjModeRequest=ProjModeRequest{ivar};
         end
-
+        if strcmp(Operator,'norm')
+             NormName='norm';
+            if ~isempty(strcmp(ListVar,'norm'))
+                NormName='norm_1';
+            end
+            Field.ListVarName=[Field.ListVarName {NormName}];
+            ilist=numel(Field.ListVarName);
+            Field.VarDimName{ilist}=Field.VarDimName{ind_var_U};
+            Field.VarDimName{ilist}.Role='scalar';
+            Field.(NormName)=Field.(r.UName).*Field.(r.UName)+Field.(r.VName).*Field.(r.VName);
+            Field.(NormName)=sqrt(Field.(NormName));
+            if ~checkU && ~checkV
+                Field.ListVarName([ind_var_U ind_var_V])=[];
+                Field.VarDimName([ind_var_U ind_var_V])=[];
+                Field.VarAttribute([ind_var_U ind_var_V])=[];
+            elseif ~checkU
+                Field.ListVarName(ind_var_U)=[];
+                Field.VarDimName(ind_var_U)=[];
+                Field.VarAttribute(ind_var_U )=[];
+            elseif ~checkV
+                                Field.ListVarName(ind_var_V)=[];
+                Field.VarDimName(ind_var_V)=[];
+                Field.VarAttribute(ind_var_V )=[];
+            end
+        end
     case 'video'
         if strcmp(class(ParamIn),'VideoReader')
             A=read(ParamIn,num);
