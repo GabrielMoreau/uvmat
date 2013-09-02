@@ -2699,7 +2699,6 @@ else
     end
 end
 ResizeFcn(handles.uvmat,[],handles)
-%set(handles.uvmat,'CurrentAxes',handles.PlotAxes)% make the main axis current (usefull for key board callback)
 
 %------------------------------------------------------------------------
 function histo1_menu_Callback(hObject, eventdata, handles)
@@ -2729,6 +2728,8 @@ if isfield(Field,'FF') && ~isempty(Field.FF) && isequal(size(Field.FF),size(Fiel
             FieldHisto(:,:,2)=Field.(FieldName_2)(indsel);
         end
     end
+elseif ~isempty(FieldName_2)
+    FieldHisto(:,:,2)=Field.(FieldName_2);
 end
 if isempty(Field)
     msgbox_uvmat('ERROR',['empty field ' FieldName])
@@ -4198,6 +4199,7 @@ if get(handles.CheckEditObject,'Value')
     if ishandle(hgeometry_calib)
         hhgeometry_calib=guidata(hgeometry_calib);
         set(hhgeometry_calib.CheckEnableMouse,'Value',0)% desactivate mouse action in geometry_calib
+        set(hhgeometry_calib.CheckEnableMouse,'BackgroundColor',[0.7 0.7 0.7])
     end
     set(handles.CheckViewObject,'value',1)
     CheckViewObject_Callback(hObject, eventdata, handles)
@@ -4655,6 +4657,7 @@ hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');% search the GUI geo
 if ishandle(hgeometry_calib)
     hhgeometry_calib=guidata(hgeometry_calib);
     set(hhgeometry_calib.CheckEnableMouse,'Value',0)% desactivate mouse action in geometry_calib
+    set(hhgeometry_calib.CheckEnableMouse,'BackgroundColor',[0.7 0.7 0.7])
 end
 set(handles.CheckEditObject,'Value',0)  %desactivate the object edit mode
 CheckEditObject_Callback([],[],handles)

@@ -25,6 +25,7 @@
 function mouse_motion(hObject,eventdata,handles)
 
 if ~exist('handles','var')
+    set(hCurrentFig,'Pointer','arrow');
     return
 end
 FigData=get(hObject,'UserData');
@@ -62,6 +63,7 @@ test_piv=0;
 if isfield(FigData,'CivHandle')
     if ~ishandle(FigData.CivHandle)
         delete(hObject)
+        set(hCurrentFig,'Pointer','arrow');
         return
     end
     hhciv=guidata(FigData.CivHandle);
@@ -90,6 +92,7 @@ if iscell(PosChildren)% only one child
     PosChildren=cell2mat(PosChildren(PosLength==4));% convert cells to matrix of positions
 end
 if size(PosChildren,2)~=4
+    set(hCurrentFig,'Pointer','arrow');
     return
 end
 xy_fig_mat=ones(size(PosChildren,1),1)*xy_fig;% mouse position set to a matrix
@@ -99,7 +102,8 @@ hchild=hchildren(ind_object);% corresponding object handle
 CurrentAxes=[];
 
 %if the mouse is over an axis, look at the data
-if strcmp(get(hchild,'Type'),'axes')
+htype=get(hchild,'Type');
+if strcmp(htype,'axes')
     CurrentAxes=hchild;
     xy=get(CurrentAxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
     test_zoom_draw=test_draw && isequal(AxeData.Drawing,'zoom')&& isfield(AxeData,'CurrentOrigin') && isequal(get(gcf,'SelectionType'),'normal');
@@ -322,10 +326,11 @@ end
 
 %%%%%%%%%%%%%%%%%
 %% create or modify an object
-if ~isempty(huvmat) && test_object
+if strcmp(htype,'axes') && ~isempty(huvmat) && test_object
     UvData=get(huvmat,'UserData');
     PlotData=get(AxeData.CurrentObject,'UserData');
     if ~isfield(PlotData,'IndexObj')
+        set(hCurrentFig,'Pointer','arrow');
         return
     end
     ObjectData=UvData.ProjObject{PlotData.IndexObj};
@@ -374,7 +379,7 @@ end
 
 %% detect calibration points if the GUI geometry_calib is opened
 h_geometry_calib=findobj(allchild(0),'Name','geometry_calib'); %find the geomterty_calib GUI
-if ~CheckZoom && ~isempty(h_geometry_calib)
+if strcmp(htype,'axes') && ~CheckZoom && ~isempty(h_geometry_calib)
     pointershape='crosshair';%default for geometry_calib: ready to create new points
     hh_geometry_calib=guidata(h_geometry_calib);
     if  ~isempty(xy) && isfield(hh_geometry_calib,'ListCoord')
@@ -414,7 +419,6 @@ if ~CheckZoom && ~isempty(h_geometry_calib)
                     Data(:,6)=zeros(size(Data,1),1);
                     Data(index_point,6)=1;%mrk the point on the GUI geometry_calib
                     set(h_ListCoord,'Data',Data);
-                   % set(h_ListCoord,'Value',index_point)%mrk the point on the GUI geometry_calib
                     hhh=findobj('Tag','calib_marker');%look for handle of point marker (circle)
                     if ~isempty(hhh)
                         set(hhh,'Position',[XCoord(index_point)-ind_range/2 YCoord(index_point)-ind_range/2 ind_range ind_range])

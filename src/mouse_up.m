@@ -24,7 +24,11 @@
 function mouse_up(hObject,eventdata,handles)
 
 test_ruler=0;%default
-AxeData=get(gca,'UserData');
+hcurrentaxes=get(hObject,'CurrentAxes');
+if isempty(hcurrentaxes)
+    return % no axes in the current figure
+end
+AxeData=get(hcurrentaxes,'UserData');
 if isfield(AxeData,'ParentAxes')% case of a zoom plot as current axis
     hcurrentaxes=AxeData.ParentAxes;
     AxeData=get(hcurrentaxes,'UserData');
@@ -32,7 +36,6 @@ if isfield(AxeData,'ParentAxes')% case of a zoom plot as current axis
     testsubplot=1;% mouse selection is on a zoom subplot
 else
     hcurrentfig=hObject;
-    hcurrentaxes=gca; %store the current axes handle
     testsubplot=0;
 end
 CurrentOrigin=[];
@@ -53,13 +56,12 @@ test_drawing=0;%default, =1 to allow drawing by further mouse action
 if ~(isfield(AxeData,'Enable')&& strcmp(AxeData.Enable,'on'))
     return
 end
-xy=get(gca,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
+xy=get(hcurrentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
 
 
 %% proceed with the creation or editing (translation/deformation) of an object
 if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'off') && isfield(AxeData,'CurrentObject')...
         && ~isempty(AxeData.CurrentObject) && ishandle(AxeData.CurrentObject)
-    %     xy=get(currentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
     PlotData=get(AxeData.CurrentObject,'UserData');%get data attached to the current projection object
     IndexObj=PlotData.IndexObj;
     ObjectData=UvData.ProjObject{IndexObj};
@@ -246,8 +248,6 @@ if CheckZoomFig && isequal(get(hcurrentfig,'SelectionType'),'normal')&&...%if le
             ChildAxeData.Drawing='off';
             ChildAxeData.ParentAxes=hcurrentaxes;
             ChildAxeData.ParentRect=AxeData.CurrentRectZoom;%set the rectangle drawing as a 'parent' associated to the new axe
-            %PosRect=CurrentOrigin;
-           % xy=get(hcurrentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
             if xy(1,1)>CurrentOrigin(1)
             set(AxeData.ZoomAxes,'Xlim',[CurrentOrigin(1) xy(1,1)])
             else
@@ -342,20 +342,9 @@ if ~CheckZoom && isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'calibrat
             set(hh,'UserData',[])%remove edit mode
             h_ListCoord=hh_geometry_calib.ListCoord; %handles of the coordinate list
             Coord=get(h_ListCoord,'Data');
-           % data=read_geometry_calib(Coord);
-            %         val=get(h_ListCoord,'Value');
-          %  xy=get(hcurrentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
             Coord(index_point,4)=xy(1,1);
             Coord(index_point,5)=xy(1,2);
             set(h_ListCoord,'Data',Coord)
-%             for ipoint=1:size(Coord,1)
-%                 for jcoord=1:5
-%                     Coord_cell{ipoint,jcoord}=num2str(data.Coord(ipoint,jcoord),4);%display coordiantes with 4 digits
-%                 end
-%             end
-%             Tabchar=cell2tab(Coord_cell,' | ');
-%             Tabchar=[Tabchar ;{'......'}];
-%             set(h_ListCoord,'String',Tabchar)
             set(hh,'XData',Coord(:,4))
             set(hh,'YData',Coord(:,5))
         end

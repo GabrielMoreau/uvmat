@@ -49,7 +49,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 31-Jul-2013 23:03:18
+% Last Modified by GUIDE v2.5 02-Sep-2013 16:47:27
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -146,9 +146,6 @@ if exist('inputfile','var')&& ~isempty(inputfile)
     set(hObject,'UserData',struct)
 end
 
-set(handles.ListCoord,'KeyPressFcn',{@key_press_fcn,handles})%set keyboard action function
-
-
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
 function varargout = geometry_calib_OutputFcn(~, eventdata, handles)
@@ -180,6 +177,7 @@ end
 function APPLY_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 %% look for the GUI uvmat and check for an image as input
+set(handles.APPLY,'BackgroundColor',[1 1 0])
 huvmat=findobj(allchild(0),'Name','uvmat');
 hhuvmat=guidata(huvmat);%handles of elements in the GUI uvmat
 
@@ -197,39 +195,45 @@ else
 end
 [GeometryCalib,index]=calibrate(handles,hhuvmat);% apply calibration
 
-%% copy the xml file from the old location if appropriate, then update with the calibration parameters
-if ~exist(outputfile,'file') && ~isempty(SubDirBase)
-    oldxml=[fullfile(RootPath,SubDirBase,get(hhuvmat.RootFile,'String')) '.xml'];
-    if exist(oldxml,'file')
-        [success,message]=copyfile(oldxml,outputfile);%copy the old xml file to a new one with the new convention
+if isempty(GeometryCalib) % if calibration cancelled
+    set(handles.APPLY,'BackgroundColor',[1 0 1])
+else   % if calibration confirmed
+    
+    %% copy the xml file from the old location if appropriate, then update with the calibration parameters
+    if ~exist(outputfile,'file') && ~isempty(SubDirBase)
+        oldxml=[fullfile(RootPath,SubDirBase,get(hhuvmat.RootFile,'String')) '.xml'];
+        if exist(oldxml,'file')
+            [success,message]=copyfile(oldxml,outputfile);%copy the old xml file to a new one with the new convention
+        end
     end
+    errormsg=update_imadoc(GeometryCalib,outputfile,'GeometryCalib');% introduce the calibration data in the xml file
+    if ~strcmp(errormsg,'')
+        msgbox_uvmat('ERROR',errormsg);
+    end
+    
+    %% display image with new calibration in the currently opened uvmat interface
+    hhh=findobj(hhuvmat.PlotAxes,'Tag','calib_marker');% delete calib points and markers
+    if ~isempty(hhh)
+        delete(hhh);
+    end
+    hhh=findobj(hhuvmat.PlotAxes,'Tag','calib_points');
+    if ~isempty(hhh)
+        delete(hhh);
+    end
+    set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off'
+    set(hhuvmat.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
+    UserData=get(handles.geometry_calib,'UserData');
+    UserData.XmlInputFile=outputfile;%save the current xml file name
+    set(handles.geometry_calib,'UserData',UserData)
+    uvmat('RootPath_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
+    PLOT_Callback(hObject, eventdata, handles)
+    Data=get(handles.ListCoord,'Data');
+    Data(:,6)=zeros(size(Data,1),1);
+    Data(index,6)=1;% indicate in the list the point with max deviation (possible mistake)
+    set(handles.ListCoord,'Data',Data)% indicate in the list the point with max deviation (possible mistake)
+    figure(handles.geometry_calib)
+    set(handles.APPLY,'BackgroundColor',[1 0 0])
 end
-errormsg=update_imadoc(GeometryCalib,outputfile,'GeometryCalib');% introduce the calibration data in the xml file
-if ~strcmp(errormsg,'')
-    msgbox_uvmat('ERROR',errormsg);
-end
-
-%% display image with new calibration in the currently opened uvmat interface
-hhh=findobj(hhuvmat.PlotAxes,'Tag','calib_marker');% delete calib points and markers
-if ~isempty(hhh)
-    delete(hhh);
-end
-hhh=findobj(hhuvmat.PlotAxes,'Tag','calib_points');
-if ~isempty(hhh)
-    delete(hhh);
-end
-set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off'
-set(hhuvmat.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
-UserData=get(handles.geometry_calib,'UserData');
-UserData.XmlInputFile=outputfile;%save the current xml file name
-set(handles.geometry_calib,'UserData',UserData)
-uvmat('RootPath_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
-PLOT_Callback(hObject, eventdata, handles)
-Data=get(handles.ListCoord,'Data');
-Data(:,6)=zeros(size(Data,1),1);
-Data(index,6)=1;% indicate in the list the point with max deviation (possible mistake)
-set(handles.ListCoord,'Data',Data)% indicate in the list the point with max deviation (possible mistake)
-figure(handles.geometry_calib)
 
 %------------------------------------------------------------------------
 % --- Executes on button press in REPLICATE
@@ -347,6 +351,8 @@ answer=msgbox_uvmat('INPUT_Y-N',{'store calibration data';...
 
 %% get plane position(s)
 if ~strcmp(answer,'Yes')
+    GeometryCalib=[];
+    index=1;
     return
 end
 if strcmp(calib_cell{val}(1:2),'3D')%set the plane position for 3D (projection) calibration
@@ -772,51 +778,6 @@ function CLEAR_Callback(hObject, eventdata, handles)
 set(handles.ListCoordFiles,'Value',1)
 set(handles.ListCoordFiles,'String',{''})
 
-% %------------------------------------------------------------------------
-% function XObject_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% update_list(hObject, eventdata,handles)
-% 
-% %------------------------------------------------------------------------
-% function YObject_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% update_list(hObject, eventdata,handles)
-% 
-% %------------------------------------------------------------------------
-% function ZObject_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% update_list(hObject, eventdata,handles)
-% 
-% %------------------------------------------------------------------------
-% function update_list(hObject, eventdata, handles)
-% %------------------------------------------------------------------------
-% newval(4)=str2double(get(handles.XImage,'String'));
-% newval(5)=str2double(get(handles.YImage,'String'));
-% newval(1)=str2double(get(handles.XObject,'String'));
-% newval(2)=str2double(get(handles.YObject,'String'));
-% newval(3)=str2double(get(handles.ZObject,'String'));
-% if isnan(newval(3)) 
-%     newval(3)=0;%put z to 0 by default
-% end
-% Coord=get(handles.ListCoord,'String');
-% Coord(end)=[]; %remove last string '.....'
-% val=get(handles.ListCoord,'Value');
-% data=read_geometry_calib(Coord);
-% data.Coord(val,:)=newval;
-% for i=1:size(data.Coord,1)
-%     for j=1:5
-%           Coord_cell{i,j}=num2str(data.Coord(i,j),4);%display coordiantes with 4 digits
-%     end
-% end
-% 
-% Tabchar=cell2tab(Coord_cell,' | ');
-% Tabchar=[Tabchar ;{'......'}];
-% set(handles.ListCoord,'String',Tabchar)
-% 
-% %update the plot 
-% ListCoord_Callback(hObject, eventdata, handles)
-% PLOT_Callback(hObject, eventdata, handles)
-
 %------------------------------------------------------------------------
 % --- Executes on selection change in CheckEnableMouse.
 function CheckEnableMouse_Callback(hObject, eventdata, handles)
@@ -835,42 +796,6 @@ if choice
 else
     set(handles.CheckEnableMouse,'BackgroundColor',[0.7 0.7 0.7]) 
 end
-    
-% function NEW_Callback(hObject, eventdata, handles)
-% %A METTRE SOUS UN BOUTON
-% huvmat=findobj(allchild(0),'Name','uvmat');
-% hchild=get(huvmat,'children');
-% hcoord=findobj(hchild,'Tag','menu_coord');
-% coordtype=get(hcoord,'Value');
-% haxes=findobj(hchild,'Tag','axes3');
-% AxeData=get(haxes,'UserData');
-% if ~isequal(hcoord,2)
-%     set(hcoord,'Value',2)
-%     huvmat=uvmat(AxeData);
-%     'relancer uvmat';
-% end
-% if ~isfield(AxeData,'ZoomAxes')
-%     msgbox_uvmat('ERROR','first draw a window around a grid marker')
-%     return
-% end 
-% XLim=get(AxeData.ZoomAxes,'XLim');
-% YLim=get(AxeData.ZoomAxes,'YLim');
-% np=size(AxeData.A);
-% ind_sub_x=round(XLim);
-% ind_sub_y=np(1)-round(YLim);
-% Mfiltre=AxeData.A(ind_sub_y(2):ind_sub_y(1) ,ind_sub_x,:);
-% Mfiltre_norm=double(Mfiltre);
-% Mfiltre_norm=Mfiltre_norm/sum(sum(Mfiltre_norm));
-% Mfiltre_norm=100*(Mfiltre_norm-mean(mean(Mfiltre_norm)));
-% Atype=class(AxeData.A);
-% Data.NbDim=2;
-% Data.A=filter2(Mfiltre_norm,double(AxeData.A)); 
-% Data.A=feval(Atype,Data.A);
-% Data.AName='image';
-% Data.AX=AxeData.AX;
-% Data.AY=AxeData.AY;
-% Data.CoordType='px';
-% plot_field(Data)
 
 
 % --------------------------------------------------------------------
@@ -886,10 +811,8 @@ end
 
 % --------------------------------------------------------------------
 function MenuSetScale_Callback(hObject, eventdata, handles)
-% hObject    handle to MenuSetScale (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
- answer=msgbox_uvmat('INPUT_TXT','scale pixel/cm?','')
+
+ answer=msgbox_uvmat('INPUT_TXT','scale pixel/cm?','');
  %create test points
  huvmat=findobj(allchild(0),'Name','uvmat');%find the current uvmat interface handle
 UvData=get(huvmat,'UserData');%Data associated to the current uvmat interface
@@ -901,6 +824,7 @@ x=Xima/str2num(answer);
 y=Yima/str2num(answer);
 Coord=[x y zeros(4,1) Xima Yima zeros(4,1)];
 set(handles.ListCoord,'Data',Coord)
+set(handles.APPLY,'BackgroundColor',[1 0 1])
 
 %------------------------------------------------------------------------
 function MenuCreateGrid_Callback(hObject, eventdata, handles)
@@ -917,6 +841,7 @@ set(handles.geometry_calib,'UserData',CalibData)
 Coord=get(handles.ListCoord,'Data');
 Coord(1:size(T,1),1:3)=T;%update the existing list of phys coordinates from the GUI create_grid
 set(handles.ListCoord,'Data',Coord)
+set(handles.APPLY,'BackgroundColor',[1 0 1])
 
 % -----------------------------------------------------------------------
 % --- automatic grid dectection from local maxima of the images 
@@ -951,8 +876,6 @@ if isfield(CalibData,'grid')
 end
 [T,CalibData.grid,white_test]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
 set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
-
-
 
 %% read the current image, displayed in the GUI uvmat
 huvmat=findobj(allchild(0),'Name','uvmat');
@@ -1050,6 +973,7 @@ Tmod=T(:,(1:2))+Delta;
 Coord=[T Xpx Ypx zeros(size(T,1),1)];
 set(handles.ListCoord,'Data',Coord)
 PLOT_Callback(hObject, eventdata, handles)
+set(handles.APPLY,'BackgroundColor',[1 0 1])
 
 %-----------------------------------------------------------------------
 function MenuTranslatePoints_Callback(hObject, eventdata, handles)
@@ -1069,6 +993,7 @@ Coord(:,1)=T(1)+Coord(:,1);
 Coord(:,2)=T(2)+Coord(:,2);
 Coord(:,3)=T(3)+Coord(:,3);
 set(handles.ListCoord,'Data',Coord);
+set(handles.APPLY,'BackgroundColor',[1 0 1])
 
 % --------------------------------------------------------------------
 function MenuRotatePoints_Callback(hObject, eventdata, handles)
@@ -1102,6 +1027,7 @@ y=Coord(:,2)-O_y;
 Coord(:,1)=r1*x+r2*y;
 Coord(:,2)=r3*x+r4*y;
 set(handles.ListCoord,'Data',Coord)
+set(handles.APPLY,'BackgroundColor',[1 0 1])
 
 % --------------------------------------------------------------------
 function MenuImportPoints_Callback(hObject, eventdata, handles)
@@ -1115,6 +1041,7 @@ Coord=GeometryCalib.SourceCalib.PointCoord;
 Coord=[Coord zeros(size(Coord,1),1)];
 set(handles.ListCoord,'Data',Coord)
 PLOT_Callback(handles.geometry_calib, [], handles)
+set(handles.APPLY,'BackgroundColor',[1 0 1])
 
 % -----------------------------------------------------------------------
 function MenuImportIntrinsic_Callback(hObject, eventdata, handles)
@@ -1186,7 +1113,7 @@ end
 if ~isempty(s.Heading)
     Heading=s.Heading;
 end
-    
+
 GeometryCalib=s.GeometryCalib;
 fx=1;fy=1;Cx=0;Cy=0;kc=0; %default
 CoordCell={};
@@ -1195,13 +1122,13 @@ val_cal=1;%default
 if ~isempty(GeometryCalib)
     % choose the calibration option
     if isfield(GeometryCalib,'CalibrationType')
-       calib_list=get(handles.calib_type,'String');
-       for ilist=1:numel(calib_list)
-           if strcmp(calib_list{ilist},GeometryCalib.CalibrationType)
-               val_cal=ilist;
-               break
-           end
-       end
+        calib_list=get(handles.calib_type,'String');
+        for ilist=1:numel(calib_list)
+            if strcmp(calib_list{ilist},GeometryCalib.CalibrationType)
+                val_cal=ilist;
+                break
+            end
+        end
     end
     display_intrinsic(GeometryCalib,handles)%intrinsic param
     %extrinsic param
@@ -1217,13 +1144,12 @@ if ~isempty(GeometryCalib)
         set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
     end
     if isfield(GeometryCalib,'SourceCalib')
-    calib=GeometryCalib.SourceCalib.PointCoord;
-    Coord=[calib zeros(size(calib,1),1)];
-    set(handles.ListCoord,'Data',Coord)
+        calib=GeometryCalib.SourceCalib.PointCoord;
+        Coord=[calib zeros(size(calib,1),1)];
+        set(handles.ListCoord,'Data',Coord)
     end
-%     CoordCell=reshape(CoordCell,[],5);
-%     Tabchar=cell2tab(CoordCell,' | ');%transform cells into table ready for display
     PLOT_Callback(handles.geometry_calib, [], handles)
+    set(handles.APPLY,'BackgroundColor',[1 0 1])
 end
 set(handles.calib_type,'Value',val_cal)
 
@@ -1346,10 +1272,8 @@ PLOT_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 % --- 'key_press_fcn:' function activated when a key is pressed on the keyboard
 %------------------------------------------------------------------------
-function key_press_fcn(hObject,eventdata,handles)
-
+function ListCoord_KeyPressFcn(hObject, eventdata, handles)
 xx=double(get(handles.geometry_calib,'CurrentCharacter'));%get the keyboard character
-%if ismember(xx,[8 127])%backspace or delete
 if ismember(xx,[30 31 127])% arrow upward, downward, or delete
     Coord=get(handles.ListCoord,'Data');
     ind=find(Coord(:,6));%find the marker '+' for line selection
@@ -1362,10 +1286,13 @@ if ismember(xx,[30 31 127])% arrow upward, downward, or delete
         case 127% remove line
             Coord(ind,:)=[];
             PLOT_Callback(hObject,eventdata,handles)
+            set(handles.APPLY,'BackgroundColor',[1 0 1])
+        otherwise
     end
     set(handles.ListCoord,'Data',Coord);
+else
+    set(handles.APPLY,'BackgroundColor',[1 0 1])
 end
-
 
 
 %------------------------------------------------------------------------

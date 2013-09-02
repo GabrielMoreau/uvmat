@@ -2944,3 +2944,8 @@ switch FileType
         end
 end
 menu=menu(1:imax);
+
+
+% --- Executes on mouse motion over figure - except title and menu.
+function series_WindowButtonMotionFcn(hObject, eventdata, handles)
+set(hObject,'Pointer','arrow');
