@@ -926,23 +926,26 @@ if ~isempty(XmlFileName)
     end
     if ~isempty(XmlDataRead)
         ImaDoc_str=['view ' DocExt];  % DocExt= '.xml' or .civ (obsolete case)
-        XmlData=XmlDataRead;
-        if isfield(XmlData,'TimeUnit')
-            if isfield(XmlData,'TimeUnit')&& ~isempty(XmlData.TimeUnit)
-                TimeUnit=XmlData.TimeUnit;
+        %XmlData=XmlDataRead;     
+            if isfield(XmlDataRead,'TimeUnit')&& ~isempty(XmlDataRead.TimeUnit)
+                TimeUnit=XmlDataRead.TimeUnit;
             end
-        end
-        set(handles.view_xml,'BackgroundColor',[1 1 1])% paint black to white
+                    if isfield(XmlDataRead,'Time')&& ~isempty(XmlDataRead.Time)
+                XmlData.Time=XmlDataRead.TimeUnit;
+            end
+        set(handles.view_xml,'BackgroundColor',[1 1 1])% paint back to white
         drawnow
-        if isfield(XmlData, 'GeometryCalib') && ~isempty(XmlData.GeometryCalib)
+        if isfield(XmlDataRead, 'GeometryCalib') && ~isempty(XmlDataRead.GeometryCalib)
+            XmlData.GeometryCalib=XmlDataRead.GeometryCalib;
             if isfield(XmlData.GeometryCalib,'VolumeScan') && isequal(XmlData.GeometryCalib.VolumeScan,'y')
                 set (handles.slices,'String','volume')
             end
+            % check whether the GUI geometry_calib is opened 
             hgeometry_calib=findobj('tag','geometry_calib');
-            if ~isempty(hgeometry_calib)
+            if ~isempty(hgeometry_calib) % check whether the display of the GUI geometry_calib is consistent with the current calib param
                 GUserData=get(hgeometry_calib,'UserData');
                 if ~(isfield(GUserData,'XmlInputFile') && strcmp(GUserData.XmlInputFile,XmlFileName))
-                    answer=msgbox_uvmat('INPUT_Y-N','replace the display of geometry_calib with the new input data?');
+                    answer=msgbox_uvmat('INPUT_Y-N','refresh the display of the GUI geometry_calib with the new input data?');
                     if strcmp(answer,'Yes')
                         geometry_calib(XmlFileName);%diplay the new calibration points and parameters in geometry_calib
                     end
@@ -1575,7 +1578,6 @@ InputFile.RootFile=regexprep(InputFile.RootFile,'^[\\/]|[\\/]$','');%suppress po
 InputFile.SubDir=regexprep(InputFile.SubDir,'^[\\/]|[\\/]$','');%suppress possible / or \ separator at the beginning or the end of the string
 FileExt=InputFile.FileExt;
 NomType=InputFile.NomType;
-%NomType=get(handles.NomType,'String');
 % i1=str2num(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
 % i2=[];%default
 % if strcmp(get(handles.i2,'Visible'),'on')
@@ -1590,14 +1592,23 @@ NomType=InputFile.NomType;
 %     j2=stra2num(get(handles.j2,'String'));
 % end
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(InputFile.FileIndex);% check back the indices used
-
+if isempty(i1)
+    i1=str2num(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
+elseif isempty(j1) && strcmp(get(handles.j1,'Visible'),'on')
+    j1=str2num(get(handles.j1,'String'));%case of indexed movie
+end
 sub_value= get(handles.SubField,'Value');
-if sub_value % a second input file has been entered 
-     [InputFile.RootPath_1,InputFile.SubDir_1,InputFile.RootFile_1,InputFile.FileIndex_1,InputFile.FileExt_1,InputFile.NomType_1]=read_file_boxes_1(handles);   
+if sub_value % a second input file has been entered
+    [InputFile.RootPath_1,InputFile.SubDir_1,InputFile.RootFile_1,InputFile.FileIndex_1,InputFile.FileExt_1,InputFile.NomType_1]=read_file_boxes_1(handles);
     [tild,tild,tild,i1_1,i2_1,j1_1,j2_1]=fileparts_uvmat(InputFile.FileIndex_1);% the indices for the second series taken from FileIndex_1
+    if isempty(i1_1)
+        i1_1=str2num(get(handles.i1,'String'));%read the field indices (for movie, it is not given by the file name)
+    elseif isempty(j1_1) && strcmp(get(handles.j1,'Visible'),'on')
+        j1_1=str2num(get(handles.j1,'String'));%case of indexed movie
+    end
 else
     filename_1=[];
-end   
+end
 
 %% increment (or decrement) the field indices and update the input filename(s)
 if ~isnumeric(increment)% undefined increment value
@@ -2075,10 +2086,10 @@ switch UvData.FileType{1}
         end
     case {'video','mmreader'}
         ParamIn=UvData.MovieObject{1};      
-        if ~strcmp(NomType,'*')
-            frame_index=num_j1;%frame index for movies or multimage
+        if strcmp(NomType,'*')
+            frame_index=num_i1;%frame index from a single movies or multimage
         else
-            frame_index=num_i1;
+            frame_index=num_j1;% frame index from a set of indexed movies
         end
     case 'multimage'
         if ~strcmp(NomType,'*')
