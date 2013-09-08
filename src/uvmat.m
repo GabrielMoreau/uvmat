@@ -1904,7 +1904,8 @@ if ~exist(imaname_1,'file')
 end
 
 %% display time interval for the image pair
-if isfield(UvData,'XmlData')&&isfield(UvData.XmlData{1},'Time')
+if isfield(UvData,'XmlData')&&isfield(UvData.XmlData{1},'Time')...
+        && size(UvData.XmlData{1}.Time,1)>=num_i2+1 && size(UvData.XmlData{1}.Time,2)>=num_j2+1
     dt=(UvData.XmlData{1}.Time(num_i2+1,num_j2+1)-UvData.XmlData{1}.Time(num_i1+1,num_j1+1));
     if  isfield(UvData,'TimeUnit')
         set(handles.Dt_txt,'String',['Dt=' num2str(1000*dt,3) '  m' UvData.TimeUnit] )

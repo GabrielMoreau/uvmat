@@ -248,6 +248,7 @@ for icell=1:length(CellInfo)
                 Coord{idim}=FieldData.(FieldData.ListVarName{ivar}); % position for the first index
                 if numel(Coord{idim})==2
                     DCoord_min(idim)= (Coord{idim}(2)-Coord{idim}(1))/(npxy(idim)-1);
+                    test_direct(idim)=DCoord_min(idim)>0;% =1 for increasing values, 0 otherwise
                 else
                     DCoord=diff(Coord{idim});
                     DCoord_min(idim)=min(DCoord);
@@ -923,13 +924,13 @@ testYMax=0;
 if isfield(ObjectData,'RangeX')
     XMin=min(ObjectData.RangeX);
     XMax=max(ObjectData.RangeX);
-    testXMin=XMax>XMin;
+    testXMin=XMax>XMin;%=1 if XMin defined (i.e. RangeY has tow distinct elements)
     testXMax=1;% range restriction along X
 end
 if isfield(ObjectData,'RangeY')
     YMin=min(ObjectData.RangeY);
     YMax=max(ObjectData.RangeY);
-    testYMin=YMax>YMin;
+    testYMin=YMax>YMin;%=1 if YMin defined (i.e. RangeY has tow distinct elements)
     testYMax=1;
 end
 width=0;%default width of the projection band
@@ -1040,20 +1041,20 @@ if ~isempty(find(check_grid))||~strcmp(ObjectData.ProjMode,'projection')%no exis
     if isempty(icell_grid)||~strcmp(ObjectData.ProjMode,'projection')%no existing gridded data used
         AYName='coord_y';
         AXName='coord_x';
-        if ~strcmp(ObjectData.ProjMode,'projection')
-            ProjData.coord_y=[ObjectData.RangeY(1) ObjectData.RangeY(2)];%note that if projection is done on a grid, the Min and Max along each direction must have been defined
-        ProjData.coord_x=[ObjectData.RangeX(1) ObjectData.RangeX(2)];
-        coord_x_proj=ObjectData.RangeX(1):ObjectData.DX:ObjectData.RangeX(2);
-        coord_y_proj=ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2);
+        if strcmp(ObjectData.ProjMode,'projection')
+            ProjData.coord_y=[FieldData.YMin FieldData.YMax];%note that if projection is done on a grid, the Min and Max along each direction must have been defined
+            ProjData.coord_x=[FieldData.XMin FieldData.XMax];
+            coord_x_proj=FieldData.XMin:FieldData.CoordMesh:FieldData.XMax;
+            coord_y_proj=FieldData.YMin:FieldData.CoordMesh:FieldData.YMax;
         else
-        ProjData.coord_y=[FieldData.YMin FieldData.YMax];%note that if projection is done on a grid, the Min and Max along each direction must have been defined
-        ProjData.coord_x=[FieldData.XMin FieldData.XMax];
-        coord_x_proj=FieldData.XMin:FieldData.CoordMesh:FieldData.XMax;
-        coord_y_proj=FieldData.YMin:FieldData.CoordMesh:FieldData.YMax;
+            ProjData.coord_y=[ObjectData.RangeY(1) ObjectData.RangeY(2)];%note that if projection is done on a grid, the Min and Max along each direction must have been defined
+            ProjData.coord_x=[ObjectData.RangeX(1) ObjectData.RangeX(2)];
+            coord_x_proj=ObjectData.RangeX(1):ObjectData.DX:ObjectData.RangeX(2);
+            coord_y_proj=ObjectData.RangeY(1):ObjectData.DY:ObjectData.RangeY(2);
         end
-        [X,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
-        XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(3))-YI*sin(PlaneAngle(3));%corresponding coordinates in the original system
-        YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(3))+YI*cos(PlaneAngle(3));
+        [XI,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
+%         XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(3))-YI*sin(PlaneAngle(3));%corresponding coordinates in the original system
+%         YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(3))+YI*cos(PlaneAngle(3));
     else% we use the existing grid from field cell #icell_grid
         NbDim=NbDimArray(icell_grid);
         AYName=FieldData.ListVarName{CellInfo{icell_grid}.CoordIndex(NbDim-1)};%name of input x coordinate (name preserved on projection)
@@ -1061,9 +1062,9 @@ if ~isempty(find(check_grid))||~strcmp(ObjectData.ProjMode,'projection')%no exis
         ProjData.(AYName)=FieldData.(AYName); % new (projected ) y coordinates
         ProjData.(AXName)=FieldData.(AXName); % new (projected ) y coordinates
     end
-            ProjData.ListVarName={AYName,AXName};
-        ProjData.VarDimName={AYName,AXName};
-        ProjData.VarAttribute={[],[]};
+    ProjData.ListVarName={AYName,AXName};
+    ProjData.VarDimName={AYName,AXName};
+    ProjData.VarAttribute={[],[]};
 end
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1275,7 +1276,7 @@ for icell=1:length(CellInfo)
             if testangle
                 ProjMode{icell}='interp_lin'; %request linear interpolation for projection on a tilted plane
             end
-
+            
             if isequal(ProjMode{icell},'projection')% && (~testangle || test90y || test90x)
                 if  NbDim==2 && ~testXMin && ~testXMax && ~testYMin && ~testYMax% no range restriction
                     ListVarName=[ListVarName FieldData.ListVarName(VarIndex)];
@@ -1283,7 +1284,6 @@ for icell=1:length(CellInfo)
                     if isfield(FieldData,'VarAttribute')
                         VarAttribute=[VarAttribute FieldData.VarAttribute(VarIndex)];
                     end
-                    
                     ProjData.(AYName)=FieldData.(AYName);
                     ProjData.(AXName)=FieldData.(AXName);
                     for ivar=VarIndex
@@ -1291,31 +1291,42 @@ for icell=1:length(CellInfo)
                         ProjData.(VarName)=FieldData.(VarName);% no change by projection
                     end
                 else
-                    indY=NbDim-1;
-                    if test_direct(indY)
-                        min_indy=ceil((YMin-Coord{indY}(1))/DYinit)+1;
-                        max_indy=floor((YMax-Coord{indY}(1))/DYinit)+1;
-                        Ybound(1)=Coord{indY}(1)+DYinit*(min_indy-1);
-                        Ybound(2)=Coord{indY}(1)+DYinit*(max_indy-1);
-                    else
-                        min_indy=ceil((Coord{indY}(1)-YMax)/DYinit)+1;
-                        max_indy=floor((Coord{indY}(1)-YMin)/DYinit)+1;
-                        Ybound(2)=Coord{indY}(1)-DYinit*(max_indy-1);
-                        Ybound(1)=Coord{indY}(1)-DYinit*(min_indy-1);
+                    Coord{1}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});
+                    Coord{2}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)});
+                    if numel(Coord{NbDim-1})==2
+                        DY=(Coord{NbDim-1}(2)-Coord{NbDim-1}(1))/(DimValue(1)-1);
                     end
-                    if test_direct(NbDim)==1
-                        min_indx=ceil((XMin-Coord{NbDim}(1))/DXinit)+1;
-                        max_indx=floor((XMax-Coord{NbDim}(1))/DXinit)+1;
-                        Xbound(1)=Coord{NbDim}(1)+DXinit*(min_indx-1);
-                        Xbound(2)=Coord{NbDim}(1)+DXinit*(max_indx-1);
-                    else
-                        min_indx=ceil((Coord{NbDim}(1)-XMax)/DXinit)+1;
-                        max_indx=floor((Coord{NbDim}(1)-XMin)/DXinit)+1;
-                        Xbound(2)=Coord{NbDim}(1)+DXinit*(max_indx-1);
-                        Xbound(1)=Coord{NbDim}(1)+DXinit*(min_indx-1);
+                    if numel(Coord{NbDim})==2
+                        DX=(Coord{NbDim}(2)-Coord{NbDim}(1))/(DimValue(2)-1);
                     end
-                    min_indy=max(min_indy,1);% deals with margin (bound lower than the first index)
-                    min_indx=max(min_indx,1);
+                    if testYMin%test_direct(indY)
+                        YIndexMin=(YMin-Coord{NbDim-1}(1))/DY+1;% matrix index corresponding to the min y value for the new field
+                        YIndexMax=(YMax-Coord{NbDim-1}(1))/DY+1;% matrix index corresponding to the max y value for the new field
+                    else
+                        YIndexMin=(Coord{NbDim-1}(1)-YMax)/DY+1;
+                        YIndexMax=(Coord{NbDim-1}(1)-YMin)/DY+1;
+                        Ybound(2)=Coord{NbDim-1}(1)-DY*(YIndexMax-1);
+                        Ybound(1)=Coord{NbDim-1}(1)-DY*(YIndexMin-1);
+                    end
+                    if testXMin%test_direct(NbDim)==1
+                        XIndexMin=(XMin-Coord{NbDim}(1))/DX+1;% matrix index corresponding to the min x value for the new field
+                        XIndexMax=(XMax-Coord{NbDim}(1))/DX+1;% matrix index corresponding to the max x value for the new field
+                        Xbound(1)=Coord{NbDim}(1)+DX*(XIndexMin-1);%  x value corresponding to XIndexMin
+                        Xbound(2)=Coord{NbDim}(1)+DX*(XIndexMax-1);%  x value corresponding to XIndexMax
+                    else
+                        XIndexMin=(Coord{NbDim}(1)-XMax)/DX+1;
+                        XIndexMax=(Coord{NbDim}(1)-XMin)/DX+1;
+                        Xbound(2)=Coord{NbDim}(1)+DX*(XIndexMax-1);
+                        Xbound(1)=Coord{NbDim}(1)+DX*(XIndexMin-1);
+                    end
+                    YIndexRange(1)=ceil(min(YIndexMin,YIndexMax));%first y index to select from the previous field
+                    YIndexRange(1)=max(YIndexRange(1),1);% avoid bound lower than the first index
+                    YIndexRange(2)=floor(max(YIndexMin,YIndexMax));%last y index to select from the previous field
+                    YIndexRange(2)=min(YIndexRange(2),DimValue(NbDim-1));% limit to the last available index
+                    XIndexRange(1)=ceil(min(XIndexMin,XIndexMax));%first x index to select from the previous field
+                    XIndexRange(1)=max(XIndexRange(1),1);% avoid bound lower than the first index
+                    XIndexRange(2)=floor(max(XIndexMin,XIndexMax));%last x index to select from the previous field
+                    XIndexRange(2)=min(XIndexRange(2),DimValue(NbDim));% limit to the last available index
                     if test90y
                         ind_new=[3 2 1];
                         DimCell={AYProjName,AXProjName};
@@ -1328,8 +1339,8 @@ for icell=1:length(CellInfo)
                             eval(['ProjData.' VarName '=permute(FieldData.' VarName ',ind_new);'])% permute x and z indices for 90 degree rotation
                             eval(['ProjData.' VarName '=squeeze(ProjData.' VarName '(iz,:,:));'])% select the z index iz
                         end
-                        eval(['ProjData.' AYName '=[Ybound(1) Ybound(2)];']) %record the new (projected ) y coordinates
-                        eval(['ProjData.' AXName '=[Coord{1}(end),Coord{1}(1)];']) %record the new (projected ) x coordinates
+                        ProjData.(AYName)=[Ybound(1) Ybound(2)]; %record the new (projected ) y coordinates
+                        ProjData.(AXName)=[Coord{1}(end),Coord{1}(1)]; %record the new (projected ) x coordinates
                     else
                         if NbDim==3
                             DimCell(1)=[]; %suppress z variable
@@ -1340,8 +1351,6 @@ for icell=1:length(CellInfo)
                                 iz=ceil((Coord{1}(1)-ObjectData.Coord(1,3))/DZ)+1;
                             end
                         end
-                        max_indy=min(max_indy,DimValue(1));%introduce bounds in y and x indices
-                        max_indx=min(max_indx,DimValue(2));
                         for ivar=VarIndex% loop on non coordinate variables
                             VarName=FieldData.ListVarName{ivar};
                             ListVarName=[ListVarName VarName];
@@ -1350,13 +1359,13 @@ for icell=1:length(CellInfo)
                                 VarAttribute{length(ListVarName)}=FieldData.VarAttribute{ivar};
                             end
                             if NbDim==3
-                                eval(['ProjData.' VarName '=squeeze(FieldData.' VarName '(iz,min_indy:max_indy,min_indx:max_indx));']);
+                                ProjData.(VarName)=squeeze(FieldData.(VarName)(iz,YIndexRange(1):YIndexRange(end),XIndexRange(1):XIndexRange(end)));
                             else
-                                eval(['ProjData.' VarName '=FieldData.' VarName '(min_indy:max_indy,min_indx:max_indx,:);']);
+                                ProjData.(VarName)=FieldData.(VarName)(YIndexRange(1):YIndexRange(end),XIndexRange(1):XIndexRange(end),:);
                             end
                         end
-                        eval(['ProjData.' AYName '=[Ybound(1) Ybound(2)];']) %record the new (projected ) y coordinates
-                        eval(['ProjData.' AXName '=[Xbound(1) Xbound(2)];']) %record the new (projected ) x coordinates
+                        ProjData.(AYName)=Coord{NbDim-1}(1)+DY*(YIndexRange-1); %record the new (projected ) y coordinates
+                        ProjData.(AXName)=Coord{NbDim}(1)+DX*(XIndexRange-1); %record the new (projected ) x coordinates
                     end
                 end
             else       % case with interpolation
@@ -1369,13 +1378,31 @@ for icell=1:length(CellInfo)
                     else
                         test_interp_tps=0;
                     end
-                    coord_x_proj=XMin:DX:XMax;
-                    coord_y_proj=YMin:DY:YMax;
+                    Coord{1}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});
+                    Coord{2}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)});
+                    xcorner=[min(Coord{NbDim}) max(Coord{NbDim}) max(Coord{NbDim}) min(Coord{NbDim})]-ObjectData.Coord(1,1);% corner absissa of the original grid with respect to the new origin
+                    ycorner=[min(Coord{NbDim-1}) min(Coord{NbDim-1}) max(Coord{NbDim-1}) max(Coord{NbDim-1})]-ObjectData.Coord(1,2);% corner ordinates of the original grid
+                    xcor_new=xcorner*cos(PlaneAngle(3))+ycorner*sin(PlaneAngle(3));%coordinates of the corners in new frame
+                    ycor_new=-xcorner*sin(PlaneAngle(3))+ycorner*cos(PlaneAngle(3));
+                    if testXMin
+                        xcor_new=max(xcor_new,XMin);
+                    end
+                    if testXMax
+                        xcor_new=min(xcor_new,XMax);
+                    end
+                    if testYMin
+                        ycor_new=max(ycor_new,YMin);
+                    end
+                    if testYMax
+                        ycor_new=min(ycor_new,YMax);
+                    end
+                    coord_x_proj=min(xcor_new):DX:max(xcor_new);
+                    coord_y_proj=min(ycor_new):DY:max(ycor_new);
+                    ProjData.(AYName)=[coord_y_proj(1) coord_y_proj(end)]; %record the new (projected ) y coordinates
+                    ProjData.(AXName)=[coord_x_proj(1) coord_x_proj(end)]; %record the new (projected ) x coordinates
                     [X,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates
                     XI=ObjectData.Coord(1,1)+(X)*cos(PlaneAngle(3))-YI*sin(PlaneAngle(3));%corresponding coordinates in the original system
                     YI=ObjectData.Coord(1,2)+(X)*sin(PlaneAngle(3))+YI*cos(PlaneAngle(3));
-                    Coord{1}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});
-                    Coord{2}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)});
                     if numel(Coord{1})==2% x coordiante defiend by its bounds, get the whole set
                         Coord{1}=linspace(Coord{1}(1),Coord{1}(2),CellInfo{icell}.CoordSize(1));
                     end
@@ -1391,7 +1418,7 @@ for icell=1:length(CellInfo)
                             ind=ind+1;
                         end
                         FFName=['FF_' num2str(ind)];% append an index to the name of error flag, FF_1,FF_2...
-                    end 
+                    end
                     % project all variables in the cell
                     for ivar=VarIndex
                         VarName=FieldData.ListVarName{ivar};
@@ -1946,9 +1973,9 @@ for icell=1:length(CellVarIndex)
                 indY=NbDim-1;
                 if test_direct(indY)
                     min_indy=ceil((YMin-Coord{indY}(1))/DYinit)+1;
-                    max_indy=floor((YMax-Coord{indY}(1))/DYinit)+1;
+                    YIndexFirst=floor((YMax-Coord{indY}(1))/DYinit)+1;
                     Ybound(1)=Coord{indY}(1)+DYinit*(min_indy-1);
-                    Ybound(2)=Coord{indY}(1)+DYinit*(max_indy-1);
+                    Ybound(2)=Coord{indY}(1)+DYinit*(YIndexFirst-1);
                 else
                     min_indy=ceil((Coord{indY}(1)-YMax)/DYinit)+1;
                     max_indy=floor((Coord{indY}(1)-YMin)/DYinit)+1;

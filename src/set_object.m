@@ -757,6 +757,12 @@ function num_Angle_3_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 function KeyPressFcn(hObject, eventdata, handles)
 set(handles.REFRESH,'BackgroundColor',[1 0 1])% se REFRESH to magenta color, indicates that refresh needs to be done
+if strcmp(get(hObject,'Tag'),'num_Angle_3')
+    set(handles.num_RangeX_1,'String','')
+    set(handles.num_RangeX_2,'String','')
+        set(handles.num_RangeY_1,'String','')
+    set(handles.num_RangeY_2,'String','')
+end
 
 %------------------------------------------------------------------------
 % --- Executes on key press with focus on Coord and none of its controls.
