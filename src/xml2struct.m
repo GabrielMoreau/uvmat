@@ -1,38 +1,40 @@
 % 'xml2struct': read an xml file as a Matlab structure, converts numeric character strings into numbers 
 %-----------------------------------------------------------------------
-% function s=xml2struct(filename)
+% function [s,RootTag,errormsg]=xml2struct(filename,varargin)
 %
 % OUTPUT:
 % s= Matlab structure corresponding to the input xml file
+% RootTag= name of the root tag in the xml file
+% errormsg: errormessage, ='' by default
 %
 % INPUT:
 % filename: name of the xml file
-% varargin: optional list of strings to restrict the reading to a selection of subtrees, for instance 'GeometryCalib' (save time) 
+% varargin: optional list of strings to restrict the reading to a selection of subtrees, for instance 'GeometryCalib' (save reading time) 
 
-function [s,Heading,errormsg]=xml2struct(filename,varargin)
+function [s,RootTag,errormsg]=xml2struct(filename,varargin)
 s=[];
-Heading='';
+RootTag='';
 errormsg='';
 try
-t=xmltree(filename);
+    t=xmltree(filename);
 catch ME
     errormsg=ME.message;
-    if regexp(ME.message,'xml_findstr')
-        errormsg=[errormsg ': xmltree not correctly installed, download from www.artefact.tk/software/matlab/xml'];
+    if regexp(ME.message,'Undefined function')
+        errormsg=[errormsg ': package xmltree not correctly installed, reload it from www.artefact.tk/software/matlab/xml'];
     end
     return
 end
 iline=0;
 
-while isempty(Heading)
+while isempty(RootTag)
     iline=iline+1;
     if strcmp(get(t,iline,'type'),'element')
-        Heading=get(t,iline,'name');
+        RootTag=get(t,iline,'name');
     end
 end
 if nargin>1
     for isub=1:nargin-1
-        uid_sub=find(t,['/' Heading '/' varargin{isub}]);
+        uid_sub=find(t,['/' RootTag '/' varargin{isub}]);
         if isempty(uid_sub)
             s.(varargin{isub})=[];
         else

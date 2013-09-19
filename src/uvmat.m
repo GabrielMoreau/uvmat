@@ -921,12 +921,8 @@ if ~isempty(XmlFileName)
     set(handles.view_xml,'String','view .xml')
     drawnow
     [XmlDataRead,warntext]=imadoc2struct(XmlFileName);
-    if ~isempty(warntext)
-        msgbox_uvmat('WARNING',warntext)
-    end
     if ~isempty(XmlDataRead)
-        ImaDoc_str=['view ' DocExt];  % DocExt= '.xml' or .civ (obsolete case)
-        %XmlData=XmlDataRead;     
+        ImaDoc_str=['view ' DocExt];  % DocExt= '.xml' or .civ (obsolete case)    
             if isfield(XmlDataRead,'TimeUnit')&& ~isempty(XmlDataRead.TimeUnit)
                 TimeUnit=XmlDataRead.TimeUnit;
             end
@@ -1049,7 +1045,7 @@ end
 %% update the data attached to the uvmat interface
 if ~isempty(TimeUnit)
     if index==2 && isfield(UvData,'TimeUnit') && ~strcmp(UvData.TimeUnit,TimeUnit)
-        msgbox_uvmat('WARNING',['time unit for second file series ' TimeUnit ' inconsistent with first series'])
+        warntext=['time unit for second file series ' TimeUnit ' inconsistent with first series'];
     else
         UvData.TimeUnit=TimeUnit;
     end
@@ -1058,7 +1054,7 @@ UvData.XmlData{index}=XmlData;
 UvData.NewSeries=1;
 
 %display warning message
-if ~isequal(warntext,'')
+if ~isempty(warntext)
     msgbox_uvmat('WARNING',warntext);
 end
 
