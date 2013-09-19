@@ -9,10 +9,21 @@
 % filename: name of the xml file
 % varargin: optional list of strings to restrict the reading to a selection of subtrees, for instance 'GeometryCalib' (save time) 
 
-function [s,Heading]=xml2struct(filename,varargin)
-t=xmltree(filename);
-iline=0;
+function [s,Heading,errormsg]=xml2struct(filename,varargin)
+s=[];
 Heading='';
+errormsg='';
+try
+t=xmltree(filename);
+catch ME
+    errormsg=ME.message;
+    if regexp(ME.message,'xml_findstr')
+        errormsg=[errormsg ': xmltree not correctly installed, download from www.artefact.tk/software/matlab/xml'];
+    end
+    return
+end
+iline=0;
+
 while isempty(Heading)
     iline=iline+1;
     if strcmp(get(t,iline,'type'),'element')

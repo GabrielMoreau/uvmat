@@ -34,14 +34,18 @@ end
 
 %% case of xml files
 if nargin ==1
-    [s,Heading]=xml2struct(ImaDoc);% convert the whole xml file in a structure s
+    [s,Heading,errormsg]=xml2struct(ImaDoc);% convert the whole xml file in a structure s
 elseif nargin ==2
-    [s,Heading]=xml2struct(ImaDoc,varargin{1});% convert the xml file in a structure s, keeping only the subtree defined in input
+    [s,Heading,errormsg]=xml2struct(ImaDoc,varargin{1});% convert the xml file in a structure s, keeping only the subtree defined in input
 else %TODO: deal with more than two subtrees?
-    [s,Heading]=xml2struct(ImaDoc,varargin{1},varargin{2});% convert the xml file in a structure s, keeping only the subtree defined in input
+    [s,Heading,errormsg]=xml2struct(ImaDoc,varargin{1},varargin{2});% convert the xml file in a structure s, keeping only the subtree defined in input
+end
+if ~isempty(errormsg)
+    errormsg=['imadoc2struct/xml2struct/' errormsg];
+    return
 end
 if ~strcmp(Heading,'ImaDoc')
-    errormsg='the input xml file is not ImaDoc';
+    errormsg='imadoc2struct/the input xml file is not ImaDoc';
     return
 end
 %% reading timing
