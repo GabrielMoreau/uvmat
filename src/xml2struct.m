@@ -19,7 +19,7 @@ try
     t=xmltree(filename);
 catch ME
     errormsg=ME.message;
-    if regexp(ME.message,'Undefined function')
+    if ~isempty(regexp(ME.message,'Undefined function'))||~isempty(regexp(ME.message,'Missing'))
         errormsg=[errormsg ': package xmltree not correctly installed, reload it from www.artefact.tk/software/matlab/xml'];
     end
     return

@@ -41,7 +41,7 @@ else %TODO: deal with more than two subtrees?
     [s,Heading,errormsg]=xml2struct(ImaDoc,varargin{1},varargin{2});% convert the xml file in a structure s, keeping only the subtree defined in input
 end
 if ~isempty(errormsg)
-    errormsg=['imadoc2struct/xml2struct/' errormsg];
+    errormsg=['error in reading ImaDoc xml file: ' errormsg];
     return
 end
 if ~strcmp(Heading,'ImaDoc')
