@@ -695,7 +695,11 @@ drawnow
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
 
 if strcmp(FileType,'txt')
-    edit(fileinput)
+    try
+        edit(fileinput)
+    catch ME
+        msgbox_uvmat('ERROR','invalid intput file')
+    end
     return
 elseif strcmp(FileType,'xml')
     editxml(fileinput)
@@ -921,14 +925,18 @@ if ~isempty(XmlFileName)
     set(handles.view_xml,'String','view .xml')
     drawnow
     [XmlDataRead,warntext]=imadoc2struct(XmlFileName);
+    if ~isempty(warntext)
+        msgbox_uvmat('WARNING',warntext)
+    end
     if ~isempty(XmlDataRead)
-        ImaDoc_str=['view ' DocExt];  % DocExt= '.xml' or .civ (obsolete case)    
-            if isfield(XmlDataRead,'TimeUnit')&& ~isempty(XmlDataRead.TimeUnit)
-                TimeUnit=XmlDataRead.TimeUnit;
-            end
-                    if isfield(XmlDataRead,'Time')&& ~isempty(XmlDataRead.Time)
-                XmlData.Time=XmlDataRead.TimeUnit;
-            end
+        ImaDoc_str=['view ' DocExt];  % DocExt= '.xml' or .civ (obsolete case)
+        %XmlData=XmlDataRead;
+        if isfield(XmlDataRead,'TimeUnit')&& ~isempty(XmlDataRead.TimeUnit)
+            TimeUnit=XmlDataRead.TimeUnit;
+        end
+        if isfield(XmlDataRead,'Time')&& ~isempty(XmlDataRead.Time)
+            XmlData.Time=XmlDataRead.Time;
+        end
         set(handles.view_xml,'BackgroundColor',[1 1 1])% paint back to white
         drawnow
         if isfield(XmlDataRead, 'GeometryCalib') && ~isempty(XmlDataRead.GeometryCalib)
@@ -936,7 +944,7 @@ if ~isempty(XmlFileName)
             if isfield(XmlData.GeometryCalib,'VolumeScan') && isequal(XmlData.GeometryCalib.VolumeScan,'y')
                 set (handles.slices,'String','volume')
             end
-            % check whether the GUI geometry_calib is opened 
+            % check whether the GUI geometry_calib is opened
             hgeometry_calib=findobj('tag','geometry_calib');
             if ~isempty(hgeometry_calib) % check whether the display of the GUI geometry_calib is consistent with the current calib param
                 GUserData=get(hgeometry_calib,'UserData');
@@ -1045,7 +1053,7 @@ end
 %% update the data attached to the uvmat interface
 if ~isempty(TimeUnit)
     if index==2 && isfield(UvData,'TimeUnit') && ~strcmp(UvData.TimeUnit,TimeUnit)
-        warntext=['time unit for second file series ' TimeUnit ' inconsistent with first series'];
+        msgbox_uvmat('WARNING',['time unit for second file series ' TimeUnit ' inconsistent with first series'])
     else
         UvData.TimeUnit=TimeUnit;
     end
@@ -1054,7 +1062,7 @@ UvData.XmlData{index}=XmlData;
 UvData.NewSeries=1;
 
 %display warning message
-if ~isempty(warntext)
+if ~isequal(warntext,'')
     msgbox_uvmat('WARNING',warntext);
 end
 
@@ -3774,12 +3782,17 @@ update_plot(handles);
 function ListContour_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
 val=get(handles.ListContour,'Value');
-if val==2
+if val==2% option 'contours'
     set(handles.interval_txt,'Visible','on')
     set(handles.num_IncrA,'Visible','on')
-else
+    set(handles.num_IncrA,'String','')% refresh contour interval
+%     set(handles.opacity_txt,'Visible','off')
+%     set(handles.num_Opacity,'Visible','off')
+else % option 'image'
     set(handles.interval_txt,'Visible','off')
     set(handles.num_IncrA,'Visible','off')
+%     set(handles.opacity_txt,'Visible','on')
+%     set(handles.num_Opacity,'Visible','on')
 end
 update_plot(handles);
 
@@ -3812,13 +3825,8 @@ update_plot(handles);
 %-------------------------------------------------------------------
 function CheckFixVectors_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-test=get(handles.CheckFixVectors,'Value');
-if test
-%     set(handles.CheckFixVectors,'BackgroundColor',[1 1 0])
-else
+if ~get(handles.CheckFixVectors,'Value')
     update_plot(handles);
-    %set(handles.num_VecScale,'String',num2str(ScalOut.num_VecScale,3))
-%     set(handles.CheckFixVectors,'BackgroundColor',[0.7 0.7 0.7])
 end
 
 %------------------------------------------------------------------------
@@ -4023,15 +4031,22 @@ set(handles.VecColBar,'Cdata',A)
 %-------------------------------------------------------------------
 function update_plot(handles)
 %-------------------------------------------------------------------
+set(handles.run0,'BackgroundColor',[1 1 0]);% indicate plot activity by yellow color
+drawnow
 UvData=get(handles.uvmat,'UserData');
 AxeData=UvData.PlotAxes;% retrieve the current plotted data
 PlotParam=read_GUI(handles.uvmat);
 [tild,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
 errormsg=fill_GUI(PlotParamOut,handles.uvmat);
-RUNColor=get(handles.run0,'BackgroundColor');% 
-if isequal(RUNColor,[1 0 1])% suppress magenta color (indicate that plot is  updated)
-    set(handles.run0,'BackgroundColor',[1 0 0]);
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+    return
 end
+% RUNColor=get(handles.run0,'BackgroundColor');% 
+% if isequal(RUNColor,[1 0 1])% suppress magenta color (indicate that plot is  updated)
+%     set(handles.run0,'BackgroundColor',[1 0 0]);
+% end
+set(handles.run0,'BackgroundColor',[1 0 0]);
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------

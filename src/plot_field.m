@@ -737,16 +737,11 @@ for icell=1:numel(CellInfo)
         end
     end   
 end
+PlotParamOut=PlotParam; % output plot parameters equal to input by default
 
 %%   image or scalar plot %%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if isfield(PlotParam.Scalar,'ListContour')
-    CheckContour=strcmp(PlotParam.Scalar.ListContour,'contours');
-else
-    CheckContour=0; %default
-end
-PlotParamOut=PlotParam; %default
 if test_ima
+    
     % distinguish B/W and color images
     np=size(A);%size of image
     siz=numel(np);
@@ -772,93 +767,116 @@ if test_ima
         BW=(siz==2) && (isa(A,'uint8')|| isa(A,'uint16'));% non color images represented in gray scale by default
         PlotParamOut.Scalar.CheckBW=BW;
     end
+    
+            % determine the plot option 'image' or 'contours' 
+    if isfield(PlotParam.Scalar,'ListContour')
+        CheckContour=strcmp(PlotParam.Scalar.ListContour,'contours');% =1 for contour plot option
+    else
+        CheckContour=0; %default
+    end
+    
     %case of grey level images or contour plot
     if siz==2
         if ~isfield(PlotParam.Scalar,'CheckFixScalar')
-            PlotParam.Scalar.CheckFixScalar=0;%default
+            PlotParam.Scalar.CheckFixScalar=0;% free scalar threshold value scale (from min to max) by default
         end
         if ~isfield(PlotParam.Scalar,'MinA')
-            PlotParam.Scalar.MinA=[];%default
+            PlotParam.Scalar.MinA=[];%no min scalar threshold value set
         end
         if ~isfield(PlotParam.Scalar,'MaxA')
-            PlotParam.Scalar.MaxA=[];%default
+            PlotParam.Scalar.MaxA=[];%no max scalar threshold value set 
         end
-        Aline=[];
-        if ~PlotParam.Scalar.CheckFixScalar ||isempty(PlotParam.Scalar.MinA)||~isa(PlotParam.Scalar.MinA,'double')  %correct if there is no numerical data in edit box
-            Aline=reshape(A,1,[]);
-            Aline=Aline(~isnan(A));
-            if isempty(Aline)
+        
+        % determine the min scalar value 
+        if PlotParam.Scalar.CheckFixScalar && ~isempty(PlotParam.Scalar.MinA) && isnumeric(PlotParam.Scalar.MinA)  
+            MinA=double(PlotParam.Scalar.MinA); % min value set as input
+        else
+            MinA=double(nanmin(nanmin(A))); % min value set as min of non NaN scalar values
+        end
+        
+        % error if the input scalar is NaN everywhere
+        if isnan(MinA)
                 errormsg='NaN input scalar or image in plot_field';
                 return
-            end
-            MinA=double(min(Aline));
+        end
+        
+        % determine the max scalar value 
+        if PlotParam.Scalar.CheckFixScalar && ~isempty(PlotParam.Scalar.MaxA) && isnumeric(PlotParam.Scalar.MaxA)  
+            MaxA=double(PlotParam.Scalar.MaxA); % max value set as input
         else
-            MinA=PlotParam.Scalar.MinA;
-        end;
-        if ~PlotParam.Scalar.CheckFixScalar||isempty(PlotParam.Scalar.MaxA)||~isa(PlotParam.Scalar.MaxA,'double') %correct if there is no numerical data in edit box
-            if isempty(Aline)
-                Aline=reshape(A,1,[]);
-                Aline=Aline(~isnan(A));
-                if isempty(Aline)
-                    errormsg='NaN input scalar or image in plot_field';
-                    return
-                end
-            end
-            MaxA=double(max(Aline));
-        else
-            MaxA=PlotParam.Scalar.MaxA;
-        end;
+            MaxA=double(nanmax(nanmax(A))); % max value set as min of non NaN scalar values
+        end 
+        
         PlotParamOut.Scalar.MinA=MinA;
         PlotParamOut.Scalar.MaxA=MaxA;
         PlotParamOut.Scalar.Npx=size(A,2);
         PlotParamOut.Scalar.Npy=size(A,1);
+        
         % case of contour plot
         if CheckContour
             if ~isempty(hima) && ishandle(hima)
-                delete(hima)
+                delete(hima) % delete existing image
             end
+            
+            % set the contour values
             if ~isfield(PlotParam.Scalar,'IncrA')
-                PlotParam.Scalar.IncrA=NaN;
+                PlotParam.Scalar.IncrA=[];% automatic contour interval 
             end
-            if isempty(PlotParam.Scalar.IncrA)|| isnan(PlotParam.Scalar.IncrA)% | PlotParam.Scalar.AutoScal==0
+            if ~isempty(PlotParam.Scalar.IncrA) && isnumeric(PlotParam.Scalar.IncrA)
+                interval=PlotParam.Scalar.IncrA;
+            else % automatic contour interval
                 cont=colbartick(MinA,MaxA);
-                intercont=cont(2)-cont(1);%default
-                PlotParamOut.Scalar.IncrA=intercont;
-            else
-                intercont=PlotParam.Scalar.IncrA;
+                interval=cont(2)-cont(1);%default
+                PlotParamOut.Scalar.IncrA=interval;% set the interval as output for display on the GUI
             end
-            B=A;
-            abscontmin=intercont*floor(MinA/intercont);
-            abscontmax=intercont*ceil(MaxA/intercont);
-            contmin=intercont*floor(min(min(B))/intercont);
-            contmax=intercont*ceil(max(max(B))/intercont);
-            cont_pos_plus=0:intercont:contmax;
-            cont_pos_min=double(contmin):intercont:-intercont;
-            cont_pos=[cont_pos_min cont_pos_plus];
+            %B=A;
+            abscontmin=interval*floor(MinA/interval);
+            abscontmax=interval*ceil(MaxA/interval);
+            contmin=interval*floor(min(min(A))/interval);
+            contmax=interval*ceil(max(max(A))/interval);
+            cont_pos_plus=0:interval:contmax;% zero and positive contour values (plotted as solid lines)
+            cont_pos_min=double(contmin):interval:-interval;% negative contour values (plotted as dashed lines)
+            cont_pos=[cont_pos_min cont_pos_plus];% set of all contour values
+            
             sizpx=(AX(end)-AX(1))/(np(2)-1);
             sizpy=(AY(1)-AY(end))/(np(1)-1);
             x_cont=AX(1):sizpx:AX(end); % pixel x coordinates for image display
             y_cont=AY(1):-sizpy:AY(end); % pixel x coordinates for image display
-            % axes(haxes)% set the input axes handle as current axis
-            txt=ver('MATLAB');
-            Release=txt.Release;
-            relnumb=str2double(Release(3:4));
-            if relnumb >= 14
-                vec=linspace(0,1,(abscontmax-abscontmin)/intercont);%define a greyscale colormap with steps intercont
+            
+            %axes(haxes)% set the input axes handle as current axis
+
+           % colormap(map);
+           tag_axes=get(haxes,'Tag');% axes tag
+           Opacity=1;
+           if isfield(PlotParam.Scalar,'Opacity')&&~isempty(PlotParam.Scalar.Opacity)
+               Opacity=PlotParam.Scalar.Opacity;
+           end
+           % fill the space between contours if opacity is undefined or =1
+           if isequal(Opacity,1)
+               [var,hcontour]=contour(haxes,x_cont,y_cont,A,cont_pos);% determine all contours
+               set(hcontour,'Fill','on')% fill the space between contours 
+               set(hcontour,'LineStyle','none')
+               hold on
+           end
+           [var_p,hcontour_p]=contour(haxes,x_cont,y_cont,A,cont_pos_plus,'k-');% draw the contours for positive values as solid lines
+           hold on
+           [var_m,hcontour_m]=contour(haxes,x_cont,y_cont,A,cont_pos_min,'--');% draw the contours for negative values as dashed lines
+           if isequal(Opacity,1)
+               set(hcontour_m,'LineColor',[1 1 1])% draw negative contours in white (better visibility in dark background)
+           end
+           set(haxes,'Tag',tag_axes);% restore axes tag (removed by the matlab fct contour !)
+           hold off
+           
+            %determine the color scale and map
+            caxis([abscontmin abscontmax])
+            if BW
+                vec=linspace(0,1,(abscontmax-abscontmin)/interval);%define a greyscale colormap with steps interval
                 map=[vec' vec' vec'];
                 colormap(map);
-                [var,hcontour]=contour(x_cont,y_cont,B,cont_pos);
-                set(hcontour,'Fill','on')
-                set(hcontour,'LineStyle','none')
-                hold on
+            else
+                colormap('default'); % default matlab colormap ('jet')
             end
-            [var_p,hcontour_p]=contour(x_cont,y_cont,B,cont_pos_plus,'k-');
-            hold on
-            [var_m,hcontour_m]=contour(x_cont,y_cont,B,cont_pos_min,':');
-            set(hcontour_m,'LineColor',[1 1 1])
-            hold off
-            caxis([abscontmin abscontmax])
-            colormap(map);
+            
             if isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
                 set(haxes,'DataAspectRatioMode','manual')
                 if isfield(PlotParam.Coordinates,'AspectRatio')
@@ -867,27 +885,25 @@ if test_ima
                     set(haxes,'DataAspectRatio',[1 1 1])
                 end
             end
-        end
-        
+        else      
         % set  colormap for  image display
-        if ~CheckContour
             % rescale the grey levels with min and max, put a grey scale colorbar
-            B=A;
+%             B=A;
             if BW
                 vec=linspace(0,1,255);%define a linear greyscale colormap
                 map=[vec' vec' vec'];
                 colormap(map);  %grey scale color map
             else
-                colormap('default'); % standard faulse colors for div, vort , scalar fields
+                colormap('default'); % standard false colors for div, vort , scalar fields
             end
         end
         
         % case of color images
     else
         if BW
-            B=uint16(sum(A,3));
+            A=uint16(sum(A,3));
         else
-            B=uint8(A);
+            A=uint8(A);
         end
         MinA=0;
         MaxA=255;
@@ -897,7 +913,7 @@ if test_ima
     if ~CheckContour
         % interpolate field to increase resolution of image display
         test_interp=0;
-        if size(B,3)==1 % scalar of B/W image
+        if size(A,3)==1 % scalar of B/W image
             test_interp=1;
             if max(np) <= 64
                 npxy=8*np;% increase the resolution 8 times
@@ -916,15 +932,15 @@ if test_ima
             [X,Y]=meshgrid(x,y);
             xi=linspace(AX(1),AX(2),npxy(2));
             yi=linspace(AY(1),AY(2),npxy(1));
-            B = interp2(X,Y,double(B),xi,yi');
+            A = interp2(X,Y,double(A),xi,yi');
         end
         % create new image if there  no image handle is found
         if isempty(hima)
             tag=get(haxes,'Tag');
             if MinA<MaxA
-                hima=imagesc(AX,AY,B,[MinA MaxA]);
+                hima=imagesc(AX,AY,A,[MinA MaxA]);
             else % to deal with uniform field
-                hima=imagesc(AX,AY,B,[MaxA-1 MaxA]);
+                hima=imagesc(AX,AY,A,[MaxA-1 MaxA]);
             end
             % the function imagesc reset the axes 'DataAspectRatioMode'='auto', change if .CheckFixAspectRatio is
             % requested:
@@ -934,7 +950,7 @@ if test_ima
             uistack(hima, 'bottom')
             % update an existing image
         else
-            set(hima,'CData',B);
+            set(hima,'CData',A);
             if MinA<MaxA
                 set(haxes,'CLim',[MinA MaxA])
             else
