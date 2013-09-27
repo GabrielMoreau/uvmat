@@ -1015,19 +1015,23 @@ set(handles.MaxIndex_j,'String',last_j_cell);
 if isfield(XmlData,'GeometryCalib')
     GeometryCalib=XmlData.GeometryCalib;
     if isempty(GeometryCalib)
-        set(handles.pxcm,'String','')
-        set(handles.pycm,'String','')
+        set(handles.pxcmx,'String','')
+        set(handles.pxcmy,'String','')
+        set(handles.pxcmx,'Visible','off')
+        set(handles.pxcmy,'Visible','off')
         set(handles.TransformName,'Value',1); %  no transform by default
     else
+        set(handles.pxcmx,'Visible','on')
+        set(handles.pxcmy,'Visible','on')
         if (isfield(GeometryCalib,'R')&& ~isequal(GeometryCalib.R(2,1),0) && ~isequal(GeometryCalib.R(1,2),0)) ||...
             (isfield(GeometryCalib,'kappa1')&& ~isequal(GeometryCalib.kappa1,0))
-            set(handles.pxcm,'String','var')
-            set(handles.pycm,'String','var')
+            set(handles.pxcmx,'String','var')
+            set(handles.pxcmy,'String','var')
         elseif isfield(GeometryCalib,'fx_fy')
             pixcmx=GeometryCalib.fx_fy(1);%*GeometryCalib.R(1,1)*GeometryCalib.sx/(GeometryCalib.Tz*GeometryCalib.dpx);
             pixcmy=GeometryCalib.fx_fy(2);%*GeometryCalib.R(2,2)/(GeometryCalib.Tz*GeometryCalib.dpy);
-            set(handles.pxcm,'String',num2str(pixcmx))
-            set(handles.pycm,'String',num2str(pixcmy))
+            set(handles.pxcmx,'String',num2str(pixcmx))
+            set(handles.pxcmy,'String',num2str(pixcmy))
         end
         if ~get(handles.CheckFixLimits,'Value')
             set(handles.TransformName,'Value',3); % phys transform by default if fixedLimits is off
@@ -2524,8 +2528,8 @@ set(handles.uvmat,'UserData',UvData)
 %% usual 1D (x,y) plots
 if UvData.Field.NbDim<=1
     set(handles.Objects,'Visible','off')
-    set(handles.ListObject_1_title,'Visible','off')
-    set(handles.ListObject_1,'Visible','off')
+%     set(handles.ListObject_1_title,'Visible','off')
+%     set(handles.ListObject_1,'Visible','off')
     [PlotType,PlotParamOut]=plot_field(UvData.Field,handles.PlotAxes,read_GUI(handles.uvmat));
     errormsg=fill_GUI(PlotParamOut,handles.uvmat);
     for list={'Scalar','Vectors'}
@@ -2537,8 +2541,8 @@ if UvData.Field.NbDim<=1
 %% 2D or 3D fieldname are generally projected
 else
     set(handles.Objects,'Visible','on')
-    set(handles.ListObject_1_title,'Visible','on')
-    set(handles.ListObject_1,'Visible','on')
+%     set(handles.ListObject_1_title,'Visible','on')
+%     set(handles.ListObject_1,'Visible','on')
     
     %% Plot the projections on the selected  projection objects
     % main projection object (uvmat display)
@@ -3554,6 +3558,14 @@ menu=get(handles.TransformName,'String');%refresh
 ichoice=get(handles.TransformName,'Value');%item number in the menu
 transform_name=menu{ichoice};% choice of the transform fct
 list_path=get(handles.TransformName,'UserData');
+
+%% handles uicontrol visibility
+if isempty(transform_name)
+    set(handles.TransformPath,'Visible','off')
+else
+    set(handles.TransformPath,'Visible','on')
+end
+
 
 %% add a new item to the menu if the option 'more...' has been selected
 prev_path=fullfile(get(handles.TransformPath,'String'));
@@ -4743,6 +4755,10 @@ if check_plot
     hhset_object=guidata(hset_object);
     set_object('REFRESH_Callback',1,[],hhset_object);% call the GUI set_object 
 end
+set(handles.CheckViewField,'Visible','on')
+set(handles.DeleteObject,'Visible','on')
+set(handles.ListObject_1,'Visible','on')
+set(handles.ListObject_1_title,'Visible','on')
 
 %------------------------------------------------------------------------
 function MenuBrowseObject_Callback(hObject, eventdata, handles)
