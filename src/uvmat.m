@@ -355,8 +355,8 @@ pos_InputFile(2)=size_fig(4)-pos_InputFile(4);             % set frame InputFile
 pos_InputFile(3)=size_fig(3);
 set(handles.InputFile,'Position',pos_InputFile);% [lower x lower y width height] for text_display
 
-%% reset position of text_display or TableDisplay
-if strcmp(get(handles.TableDisplay,'Visible'),'off')
+%% reset position of text_display and TableDisplay
+% if strcmp(get(handles.TableDisplay,'Visible'),'off')
     set(handles.text_display,'Units','pixels')
     pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
         pos_1(3)=1.2*ColumnWidth;
@@ -364,14 +364,20 @@ if strcmp(get(handles.TableDisplay,'Visible'),'off')
     pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);             % set text display to the top of the fig
     set(handles.text_display,'Position',pos_1)
     % reset position of TableDisplay
-else
-    set(handles.TableDisplay,'Units','pixels')
-    pos_1=get(handles.TableDisplay,'Position');
-    pos_1(3)=1.2*ColumnWidth;
-    pos_1(1)=size_fig(3)-pos_1(3);
-    pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);
+% else
+%     set(handles.TableDisplay,'Units','pixels')
+%     pos_1=get(handles.TableDisplay,'Position');
+%     pos_1(3)=1.2*ColumnWidth;
+%     pos_1(1)=size_fig(3)-pos_1(3);
+%     pos_1(2)=size_fig(4)-pos_InputFile(4)-pos_1(4);
     set(handles.TableDisplay,'Position',pos_1)
-end
+    % reset position of CheckTable
+    set(handles.CheckTable,'Unit','pixels')
+pos_CheckTable=get(handles.CheckTable,'Position');% [lower x lower y width height] for CheckHold
+pos_CheckTable(1)=pos_1(1)-pos_CheckTable(3);       % set 'CheckHold' to the right of the fig
+pos_CheckTable(2)=pos_InputFile(2)-pos_CheckTable(4);          % set 'CheckHold' to the lower edge of text display
+set(handles.CheckTable,'Position',pos_CheckTable)
+% end
 
 %% reset position of CheckHold
 % pos_CheckHold=get(handles.CheckHold,'Position');% [lower x lower y width height] for CheckHold
@@ -2845,11 +2851,11 @@ end
 function CheckFixAspectRatio_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 
-if get(handles.CheckFixAspectRatio,'Value')
+% if get(handles.CheckFixAspectRatio,'Value')
     update_plot(handles);
-else
-    update_plot(handles);
-end
+% else
+%     update_plot(handles);
+% end
 
 %------------------------------------------------------------------------
 function num_AspectRatio_Callback(hObject, eventdata, handles)
@@ -4043,7 +4049,7 @@ set(handles.VecColBar,'Cdata',A)
 %-------------------------------------------------------------------
 function update_plot(handles)
 %-------------------------------------------------------------------
-set(handles.run0,'BackgroundColor',[1 1 0]);% indicate plot activity by yellow color
+set(handles.run0,'BackgroundColor',[1 1 0]);% display plot activity by yellow color
 drawnow
 UvData=get(handles.uvmat,'UserData');
 AxeData=UvData.PlotAxes;% retrieve the current plotted data
@@ -4054,10 +4060,6 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
 end
-% RUNColor=get(handles.run0,'BackgroundColor');% 
-% if isequal(RUNColor,[1 0 1])% suppress magenta color (indicate that plot is  updated)
-%     set(handles.run0,'BackgroundColor',[1 0 0]);
-% end
 set(handles.run0,'BackgroundColor',[1 0 0]);
 
 %------------------------------------------------------------------------
@@ -4376,10 +4378,10 @@ if  ~isempty(UvData) && isfield(UvData, 'ProjObject') && length(UvData.ProjObjec
         for iview=1:length(hdisplay)
             if ishandle(hdisplay(iview)) && ~isequal(hdisplay(iview),0)
                 ObjectData=get(hdisplay(iview),'UserData');
-                if isfield(ObjectData,'SubObject') & ishandle(ObjectData.SubObject)
+                if isfield(ObjectData,'SubObject') && ishandle(ObjectData.SubObject)
                     delete(ObjectData.SubObject);% delete the graphic 'sub-objects (e.g. projection bounds)
                 end
-                check_suppress= isfield(ObjectData,'DeformPoint') & ishandle(ObjectData.DeformPoint)
+                check_suppress= isfield(ObjectData,'DeformPoint') && ishandle(ObjectData.DeformPoint);
                 delete(ObjectData.DeformPoint(check_suppress));% delete the graphic deformation points 
                 delete(hdisplay(iview))% delete the main graphic representation of the object
             end
@@ -5310,4 +5312,13 @@ else
         set(handles.edit_vect,'Visible','off')
         set(handles.record,'Visible','off')
     end
+end
+
+
+% --- Executes on button press in CheckTable.
+function CheckTable_Callback(hObject, eventdata, handles)
+if get(handles.CheckTable,'Value')
+    set(handles.TableDisplay,'Visible','on')
+else
+    set(handles.TableDisplay,'Visible','off')
 end

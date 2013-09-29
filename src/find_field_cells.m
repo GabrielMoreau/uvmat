@@ -208,6 +208,7 @@ ivar_remain=find(~check_select);% indices of remaining variables, not already ta
 ListVarName=Data.ListVarName(~check_select);%list of remaining variables
 VarDimName=Data.VarDimName(~check_select);%dimensions of remaining variables
 check_coord_select= cellfun(@numel,VarDimName)==1|cellfun(@ischar,VarDimName)==1;% find remaining variables with a single dimension
+check_coord_select=check_coord_select & ~strcmp('ancillary',Role(~check_select));% do not select ancillary variables as coordinates
 %check_coord(~check_select)=check_coord_select;
 ListCoordIndex=ivar_remain(check_coord_select);% indices of remaining variables with a single dimension
 ListCoordName=ListVarName(check_coord_select);% corresponding names of remaining variables with a single dimension

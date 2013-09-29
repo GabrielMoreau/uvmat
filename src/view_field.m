@@ -116,19 +116,23 @@ Data=get(handles.view_field,'UserData');
 Data.GUISize=size_fig;
 set(handles.view_field,'UserData',Data)
 
-%% reset position of text_display or TableDisplay
-if strcmp(get(handles.TableDisplay,'Visible'),'off')
+%% reset position of text_display and TableDisplay
+% reset position of text_display
     pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
     pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
     pos_1(2)=size_fig(4)-pos_1(4);             % set text display to the top of the fig
     set(handles.text_display,'Position',pos_1)
     % reset position of TableDisplay
-else
-    pos_1=get(handles.TableDisplay,'Position');
-    pos_1(1)=size_fig(3)-pos_1(3);
-    pos_1(2)=size_fig(4)-pos_1(4);
+%     pos_1=get(handles.TableDisplay,'Position');
+%     pos_1(1)=size_fig(3)-pos_1(3);
+%     pos_1(2)=size_fig(4)-pos_1(4);
     set(handles.TableDisplay,'Position',pos_1)
-end
+% end
+% reset position of CheckTable
+pos_CheckTable=get(handles.CheckTable,'Position');% [lower x lower y width height] for CheckHold
+pos_CheckTable(1)=pos_1(1)-pos_CheckTable(3);       % set 'CheckHold' to the right of the fig
+pos_CheckTable(2)=size_fig(4)-pos_CheckTable(4);          % set 'CheckHold' to the lower edge of text display
+set(handles.CheckTable,'Position',pos_CheckTable)
 
 %% reset position of CheckHold
 pos_CheckHold=get(handles.CheckHold,'Position');% [lower x lower y width height] for CheckHold
@@ -840,3 +844,13 @@ function ColorScalar_Callback(hObject, eventdata, handles)
 
 function num_ColCode2_Callback(hObject, eventdata, handles)
 
+
+
+% --- Executes on button press in CheckTable.
+function CheckTable_Callback(hObject, eventdata, handles)
+if get(handles.CheckTable,'Value')
+    set(handles.TableDisplay,'Visible','on')
+else
+    set(handles.TableDisplay,'Visible','off')
+end
+    

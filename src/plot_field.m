@@ -111,12 +111,8 @@ end
 PlotParamOut=PlotParam;%default
 
 %% check input structure
-index_2D=[];
-index_1D=[];
-index_0D=[];
 % check the cells of fields :
 [CellInfo,NbDimArray,errormsg]=find_field_cells(Data);
-%[CellVarIndex,NbDim,CoordType,VarRole,errormsg]=find_field_cells(Data);
 if ~isempty(errormsg)
     msgbox_uvmat('ERROR',['input of plot_field/find_field_cells: ' errormsg]);
     return
@@ -170,11 +166,7 @@ else
     set(haxes,'XLimMode', 'auto')
     set(haxes,'YLimMode', 'auto')
 end
-% if ~isfield(PlotParam.Coordinates,'CheckFixAspectRatio')&& isfield(Data,'CoordUnit')
-%     PlotParam.Coordinates.CheckFixAspectRatio=1;% if CoordUnit is defined, the two coordiantes should be plotted with equal scale by default
-% end
 errormsg='';
-%PlotParamOut.Coordinates=[]; %default output 
 AxeData=get(haxes,'UserData');
 
 %% 2D plots 
@@ -209,20 +201,39 @@ else %plot 1D field (usual graph y vs x)
 end
 
 %% text display
-if isempty(index_2D) && isempty(index_1D)%text display alone
-    htext=findobj(hfig,'Tag','TableDisplay');
-else  %text display added to plot
-    htext=findobj(hfig,'Tag','text_display');
-end
-if ~isempty(htext)
+
+htext=findobj(hfig,'Tag','TableDisplay');
+hchecktable=findobj(hfig,'Tag','CheckTable');
+% if isempty(index_2D) && isempty(index_1D)%text display alone
+%     htext=findobj(hfig,'Tag','TableDisplay');
+% else  %text display added to plot
+%     %htext=findobj(hfig,'Tag','text_display');
+% end
+if ~isempty(htext)&&~isempty(hchecktable)
     if isempty(index_0D)
-        if strcmp(get(htext,'Type'),'uitable')
-            set(htext,'Data',{})
-        else
-            set(htext,'String',{''})
-        end
+        set(htext,'Data',{})
+        set(htext,'visible','off')
+        set(hchecktable,'visible','off')
+        set(hchecktable,'Value',0)
     else
-        [errormsg]=plot_text(Data,CellInfo(index_0D),htext);
+        errormsg=plot_text(Data,CellInfo(index_0D),htext);
+        set(htext,'visible','on')
+        set(hchecktable,'visible','on')
+        set(hchecktable,'Value',1)
+    end
+    set(hfig,'Unit','pixels');
+    set(htext,'Unit','pixels')
+    PosFig=get(hfig,'Position');
+    % case of no plot with view_field: only text display
+    if strcmp(get(hfig,'Tag'),'view_field')
+        if isempty(index_1D) && isempty(index_2D)% case of no plot: only text display
+            set(haxes,'Visible','off')          
+            PosTable=get(htext,'Position');
+            set(hfig,'Position',[PosFig(1) PosFig(2)  PosTable(3) PosTable(4)])
+        else
+            set(haxes,'Visible','on')
+            set(hfig,'Position',[PosFig(1) PosFig(2)  877 677])%default size for view_field
+        end
     end
 end
 
@@ -251,11 +262,14 @@ if ~isempty(index_2D)|| ~isempty(index_1D)
 end
 
 %-------------------------------------------------------------------
+% --- plot 0D fields: display data values without plot
+%------------------------------------------------------------------
 function errormsg=plot_text(FieldData,CellInfo,htext)
-%-------------------------------------------------------------------
+
 errormsg='';
 txt_cell={};
 Data={};
+VarIndex=[];
 for icell=1:length(CellInfo)
     
     % select types of  variables to be projected
@@ -266,69 +280,72 @@ for icell=1:length(CellInfo)
             check_proj(CellInfo{icell}.(ListProj{ilist}))=1;
         end
     end
-    VarIndex=find(check_proj);
-    %
-    %     VarIndex=CellInfo{icell}.VarIndex;%  indices of the selected variables in the list data.ListVarName
-    %     for ivar=1:length(VarIndex)
-    %         checkancillary=0;
-    %         if length(FieldData.VarAttribute)>=VarIndex(ivar)
-    %             VarAttribute=FieldData.VarAttribute{VarIndex(ivar)};
-    %             if isfield(VarAttribute,'Role')&&(strcmp(VarAttribute.Role,'ancillary')||strcmp(VarAttribute.Role,'coord_tps')...
-    %                     ||strcmp(VarAttribute.Role,'vector_x_tps')||strcmp(VarAttribute.Role,'vector_y_tps'))
-    %                 checkancillary=1;
-    %             end
-    %         end
-    %         if ~checkancillary% does not display variables with attribute '.Role=ancillary'
-    for ivar=1:length(VarIndex)
-    VarName=FieldData.ListVarName{VarIndex(ivar)};
-    VarValue=FieldData.(VarName);
-    if isvector(VarValue')
-        VarValue=VarValue';% put the different values on a line
-    end
-    if numel(VarValue)>1 && numel(VarValue)<10
-        for ind=1:numel(VarValue)
-            VarNameCell{1,ind}=[VarName '_' num2str(ilist)];
-        end
-    else
-        VarNameCell={VarName};
-    end
-    if numel(VarValue)<10
-        if isempty(VarValue)
-            VarValueCell={'[]'};
-        else
-            VarValueCell=num2cell(VarValue);
-        end
-        if isempty(Data)
-            Data =[VarNameCell; VarValueCell];
-        else
-            Data =[Data [VarNameCell; VarValueCell]];
-        end
-    else
-        if isempty(Data)
-            Data =[VarNameCell; num2cell(VarValue)];
-        else
-        Data =[Data [VarNameCell; {['size ' num2str(size(VarValue))]}]];
-        end
-    end
-    if size(VarValue,1)==1
-        txt=[VarName '=' num2str(VarValue)];
-        txt_cell=[txt_cell;{txt}];
-    end
-    end
-end
-if strcmp(get(htext,'Type'),'uitable')
-    get(htext,'ColumnName')
-    set(htext,'ColumnName',Data(1,:))
-    set(htext,'Data',Data(2:end,:))
-else
-    set(htext,'String',txt_cell)
-    set(htext,'UserData',txt_cell)% for storage during mouse display
+    VarIndex=[VarIndex find(check_proj)];
 end
 
+% data need to be displayed in a table
+if strcmp(get(htext,'Type'),'uitable')% display data in a table
+    VarNameCell=cell(1,numel(VarIndex));% prepare list of variable names to display (titles of columns)
+    VarLength=zeros(1,numel(VarIndex));  % default number of values for each variable
+    for ivar=1:numel(VarIndex)
+        VarNameCell{ivar}=FieldData.ListVarName{VarIndex(ivar)};
+        VarLength(ivar)=numel(FieldData.(VarNameCell{ivar}));
+    end
+    set(htext,'ColumnName',VarNameCell)
+    Data=cell(max(VarLength),numel(VarIndex));% prepare the table of data display
+    
+    for ivar=1:numel(VarIndex)
+        VarValue=FieldData.(VarNameCell{ivar});
+        VarValue=reshape(VarValue,[],1);% reshape values array in a column
+        Data(1:numel(VarValue),ivar)=num2cell(VarValue);
+    end
+    set(htext,'Data',Data)
+end
+%         if numel(VarValue)>1 && numel(VarValue)<10 % case of a variable with several values 
+%             for ind=1:numel(VarValue)
+%                 VarNameCell{1,ind}=[VarName '_' num2str(ind)];% indicate each value by an index
+%             end
+%         else
+%             VarNameCell={VarName};
+%         end
+%         if numel(VarValue)<10
+%             if isempty(VarValue)
+%                 VarValueCell={'[]'};
+%             else
+%                 VarValueCell=num2cell(VarValue);
+%             end
+%             if isempty(Data)
+%                 Data =[VarNameCell VarValueCell];
+%             else
+%                 Data =[Data [VarNameCell VarValueCell]];
+%             end
+%         else
+%             if isempty(Data)
+%                 Data =[VarNameCell; num2cell(VarValue)];
+%             else
+%                 Data =[Data [VarNameCell; {['size ' num2str(size(VarValue))]}]];
+%             end
+%         end
+%         if size(VarValue,1)==1
+%             txt=[VarName '=' num2str(VarValue)];
+%             txt_cell=[txt_cell;{txt}];
+%         end
+%     end
+% end
+% if strcmp(get(htext,'Type'),'uitable')% display data in a table
+% 
+%  
+%     set(htext,'Data',Data(2:end,:))
+% else  % display in a text edit box
+%     set(htext,'String',txt_cell)
+%     set(htext,'UserData',txt_cell)% for temporary storage when the edit box is used for mouse display
+% end
 
+
+%-------------------------------------------------------------------
+% --- plot 1D fields (usual x,y plots)
 %-------------------------------------------------------------------
 function CoordinatesOut=plot_profile(data,CellInfo,haxes,Coordinates,CheckHold)
-%-------------------------------------------------------------------
 
 %% initialization
 if ~exist('Coordinates','var')
@@ -358,7 +375,7 @@ set(hfig,'DefaultAxesColorOrder',ColorOrder)
 %     set(haxes,'NextPlot',Coordinates.NextPlot)
 % end
 if CheckHold
-     set(haxes,'NextPlot','add')
+    set(haxes,'NextPlot','add')
 else
     set(haxes,'NextPlot','replace')
 end
@@ -445,8 +462,8 @@ for icell=1:numel(CellInfo)
         end
     end
     if ~isempty(MinY)
-    MinY_cell(icell)=min(MinY);
-    MaxY_cell(icell)=max(MaxY);
+        MinY_cell(icell)=min(MinY);
+        MaxY_cell(icell)=max(MaxY);
     end
 end
 

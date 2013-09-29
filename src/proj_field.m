@@ -305,13 +305,13 @@ function  [ProjData,errormsg]=proj_patch(FieldData,ObjectData)%%
 %-------------------------------------------------------------------
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
 
-objectfield=fieldnames(ObjectData);
+%objectfield=fieldnames(ObjectData);
 widthx=0;
 widthy=0;
-if isfield(ObjectData,'RangeX')&~isempty(ObjectData.RangeX)
+if isfield(ObjectData,'RangeX') && ~isempty(ObjectData.RangeX)
     widthx=max(ObjectData.RangeX);
 end
-if isfield(ObjectData,'RangeY')&~isempty(ObjectData.RangeY)
+if isfield(ObjectData,'RangeY') && ~isempty(ObjectData.RangeY)
     widthy=max(ObjectData.RangeY);
 end
 
@@ -323,9 +323,7 @@ ProjData.VarAttribute={};
 
 CoordMesh=zeros(1,numel(FieldData.ListVarName));
 if isfield (FieldData,'VarAttribute')
-    %ProjData.VarAttribute=FieldData.VarAttribute;%list of variable attribute names
     for iattr=1:length(FieldData.VarAttribute)%initialization of variable attribute values
-%         ProjData.VarAttribute{iattr}={};
         if isfield(FieldData.VarAttribute{iattr},'Unit')
             unit{iattr}=FieldData.VarAttribute{iattr}.Unit;
         end
@@ -373,48 +371,47 @@ for icell=1:length(CellInfo)
     if NbDim(icell)==3
         ivar_Z=CellInfo{icell}.CoordIndex(1);
     end
-    if strcmp(CellInfo{icell}.CoordType,'scattered')%case of unstructured coordinates
-        %nbpoint=numel(FieldData.(FieldData.ListVarName{VarIndex(1)}));
-        for ivar=[VarIndex ivar_X ivar_Y ivar_FF]
-            VarName=FieldData.ListVarName{ivar};
-            FieldData.(VarName)=reshape(FieldData.(VarName),[],1);
-        end
-        XName=FieldData.ListVarName{ivar_X};
-        YName=FieldData.ListVarName{ivar_Y};
-        coord_x=FieldData.(XName);
-        coord_y=FieldData.(YName);
-    end
-    % image or 2D matrix
-    if  strcmp(CellInfo{icell}.CoordType,'grid')%case of structured coordinates
-        test_Amat=1;% test for image or 2D matrix
-        AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
-        AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
-        eval(['AX=FieldData.' AXName ';'])% x coordinate
-        eval(['AY=FieldData.' AYName ';'])% y coordinate
-        VarName=FieldData.ListVarName{VarIndex(1)};
-        DimValue=size(FieldData.(VarName));
-        if length(AX)==2
-            AX=linspace(AX(1),AX(end),DimValue(2));
-        end
-        if length(AY)==2
-            AY=linspace(AY(1),AY(end),DimValue(1));
-        end
-        if length(DimValue)==3
-            testcolor=1;
-            npxy(3)=3;
-        else
-            testcolor=0;
-            npxy(3)=1;
-        end
-        [Xi,Yi]=meshgrid(AX,AY);
-        npxy(1)=length(AY);
-        npxy(2)=length(AX);
-        Xi=reshape(Xi,npxy(1)*npxy(2),1);
-        Yi=reshape(Yi,npxy(1)*npxy(2),1);
-        for ivar=1:length(VarIndex)
-            VarName=FieldData.ListVarName{VarIndex(ivar)};
-            FieldData.(VarName)=reshape(FieldData.(VarName),npxy(1)*npxy(2),npxy(3)); % keep only non false vectors
-        end
+    switch CellInfo{icell}.CoordType
+        case 'scattered' %case of unstructured coordinates
+            for ivar=[VarIndex ivar_X ivar_Y ivar_FF]
+                VarName=FieldData.ListVarName{ivar};
+                FieldData.(VarName)=reshape(FieldData.(VarName),[],1);
+            end
+            XName=FieldData.ListVarName{ivar_X};
+            YName=FieldData.ListVarName{ivar_Y};
+            coord_x=FieldData.(XName);
+            coord_y=FieldData.(YName);
+            % image or 2D matrix
+        case 'grid' %case of structured coordinates
+            test_Amat=1;% test for image or 2D matrix
+            AYName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end-1)};
+            AXName=FieldData.ListVarName{CellInfo{icell}.CoordIndex(end)};
+            AX=FieldData.(AXName);% x coordinate
+            AY=FieldData.(AYName);% y coordinate
+            VarName=FieldData.ListVarName{VarIndex(1)};
+            DimValue=size(FieldData.(VarName));
+            if length(AX)==2
+                AX=linspace(AX(1),AX(end),DimValue(2));
+            end
+            if length(AY)==2
+                AY=linspace(AY(1),AY(end),DimValue(1));
+            end
+            if length(DimValue)==3
+                testcolor=1;
+                npxy(3)=3;
+            else
+                testcolor=0;
+                npxy(3)=1;
+            end
+            [Xi,Yi]=meshgrid(AX,AY);
+            npxy(1)=length(AY);
+            npxy(2)=length(AX);
+            Xi=reshape(Xi,npxy(1)*npxy(2),1);
+            Yi=reshape(Yi,npxy(1)*npxy(2),1);
+            for ivar=1:length(VarIndex)
+                VarName=FieldData.ListVarName{VarIndex(ivar)};
+                FieldData.(VarName)=reshape(FieldData.(VarName),npxy(1)*npxy(2),npxy(3)); % keep only non false vectors
+            end
     end
     %select the indices in the range of action
     testin=[];%default
@@ -475,7 +472,7 @@ for icell=1:length(CellInfo)
             ProjData.VarDimName=[ProjData.VarDimName {VarName} {VarName} {'one'} {'one'} {'one'}];
         end
         if isfield(FieldData,'VarAttribute')&& numel(FieldData.VarAttribute)>=ivar
-        ProjData.VarAttribute=[ProjData.VarAttribute FieldData.VarAttribute{ivar} {[]} {[]} {[]} {[]}];
+            ProjData.VarAttribute=[ProjData.VarAttribute FieldData.VarAttribute{ivar} {[]} {[]} {[]} {[]}];
         end
     end
 end
