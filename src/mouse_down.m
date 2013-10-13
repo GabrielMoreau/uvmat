@@ -53,6 +53,7 @@ haxes=[];
 test_ruler=0;
 test_edit=0;
 test_create=0;
+test_edit_vect=0;
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle which controls the option of  mouse action
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);%handles of elements in uvmat
