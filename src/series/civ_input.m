@@ -1733,10 +1733,10 @@ if isequal(get(handles.get_ref_fix2,'Value'),1)
     %[Path,File,field_count,str2,str_a,str_b,ref.ext,ref.nom_type,ref.subdir]=name2display(fileinput);
     [Path,ref.subdir,File,ref.num1,ref.num2,ref.num_a,ref.num_b,ref.ext,ref.nom_type]=fileparts_uvmat(fileinput);
     ref.filebase=fullfile(Path,File);
-%     ref.num_a=stra2num(str_a);
-%     ref.num_b=stra2num(str_b);
-%     ref.num1=str2num(field_count);
-%     ref.num2=str2num(str2);
+    %     ref.num_a=stra2num(str_a);
+    %     ref.num_b=stra2num(str_b);
+    %     ref.num1=str2num(field_count);
+    %     ref.num2=str2num(str2);
     browse=[];%initialisation
     if ~isequal(ref.ext,'.nc')
         msgbox_uvmat('ERROR','the reference file must be in netcdf format (*.nc)')
@@ -1830,7 +1830,7 @@ if get(handles.TestCiv1,'Value')
     else
         ref_j=1;%default j index
     end
-   % [filecell,i1,i2]=set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);% get the corresponding file name and indices
+    % [filecell,i1,i2]=set_civ_filenames(handles,ref_i,ref_j,[1 0 0 0 0 0]);% get the corresponding file name and indices
     Data.ListVarName={'ny','nx','A'};
     Data.VarDimName= {'ny','nx',{'ny','nx'}};
     hseries=findobj(allchild(0),'Tag','series');
@@ -1840,34 +1840,56 @@ if get(handles.TestCiv1,'Value')
     if strcmp(InputTable{1,5},'.nc');
         ind_A=2;
     end
-    [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
-            find_pair_indices(PairCiv1,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
- 
+    list_pair=get(handles.ListPairCiv1,'String');%get the menu of image pairs
+    PairString=list_pair{get(handles.ListPairCiv1,'Value')};
+    %    [i1_series_Civ1,i2_series_Civ1,j1_series_Civ1,j2_series_Civ1,check_bounds,NomTypeNc]=...
+    %       find_pair_indices(PairCiv1,i_series{1},j_series{1},MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j);
+    [ind1,ind2,mode]=find_pair_indices(PairString,ref_i,ref_j)%,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j)
+    switch mode
+        case 'Di'
+            i1=ref_i+ind1;
+            i2=ref_i+ind2;
+                        j1=ref_j;
+            j2=ref_j;
+        case 'Dj'
+                           i1=ref_i;
+            i2=ref_i;
+                        j1=ref_j+ind1;
+            j2=ref_j+ind2; 
+        case 'burst'
+
+                           i1=ref_i;
+            i2=ref_i;
+                        j1=ind1;
+            j2=ind2; 
+    end
     ImageName_A=fullfile_uvmat(InputTable{ind_A,1},InputTable{ind_A,2},InputTable{ind_A,3},InputTable{ind_A,5},InputTable{ind_A,4},...
-        ref_i,[],ref_j);
-    Data.A=imread(filecell.ima1.civ1{1}); % read the first image
+        i1,[],j1);
+        ImageName_B=fullfile_uvmat(InputTable{ind_A,1},InputTable{ind_A,2},InputTable{ind_A,3},InputTable{ind_A,5},InputTable{ind_A,4},...
+        i2,[],j2);
+    Data.A=imread(ImageName_A); % read the first image
     if ndims(Data.A)==3 %case of color image
         Data.VarDimName= {'ny','nx',{'ny','nx','rgb'}};
     end
     Data.ny=[size(Data.A,1) 1];
     Data.nx=[1 size(Data.A,2)];
-    Data.CoordUnit='pixel';% used to set equal scaling for x and y in image dispaly
+    Data.CoordUnit='pixel';% used to set equal scaling for x and y in image dispa=ly
     par_civ1=read_GUI(handles.Civ1);
-    par_civ1.FileTypeA=get_file_type(filecell.ima1.civ1{1});
+    par_civ1.FileTypeA=get_file_type(ImageName_A);
     par_civ1.ImageWidth=size(Data.A,2);
     par_civ1.ImageHeight=size(Data.A,1);
     par_civ1.Mask='all';% will provide only the grid set for PIV, no image correlation
     par_civ1.FrameIndexA=num2str(i1);
     par_civ1.FrameIndexB=num2str(i2);
     Param.Civ1=par_civ1;
-    Grid=civ_matlab(Param);% get the grid of x, y positions set for PIV 
+    Grid=civ_matlab(Param);% get the grid of x, y positions set for PIV
     hview_field=view_field(Data); %view the image in the GUI view_field
     set(0,'CurrentFigure',hview_field)
     hhview_field=guihandles(hview_field);
     set(hview_field,'CurrentAxes',hhview_field.PlotAxes)
     ViewData=get(hview_field,'UserData');
     ViewData.CivHandle=handles.civ_input;% indicate the handle of the civ GUI in view_field
-    ViewData.PlotAxes.B=imread(filecell.ima2.civ1{1});%store the second image in the UserData of the GUI view_field
+    ViewData.PlotAxes.B=imread(ImageName_B);%store the second image in the UserData of the GUI view_field
     ViewData.PlotAxes.X=Grid.Civ1_X; %keep the set of points in memeory
     ViewData.PlotAxes.Y=Grid.Civ1_Y;
     set(hview_field,'UserData',ViewData)
@@ -1877,17 +1899,18 @@ if get(handles.TestCiv1,'Value')
         set(corrfig,'tag','corrfig')
         set(corrfig,'name','image correlation')
         set(corrfig,'DeleteFcn',{@closeview_field})%
-    end
-    set(handles.TestCiv1,'BackgroundColor',[1 0 0])
-else
-    set(handles.TestCiv1,'BackgroundColor',[1 0 0])% paint button to red
-    corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
-    if ~isempty(corrfig)
-        delete(corrfig)
-    end
-    hview_field=findobj(allchild(0),'tag','view_field');% look for view_field    
-    if ~isempty(hview_field)
-        delete(hview_field)
+        % end
+        set(handles.TestCiv1,'BackgroundColor',[1 0 0])
+    else
+        set(handles.TestCiv1,'BackgroundColor',[1 0 0])% paint button to red
+        corrfig=findobj(allchild(0),'tag','corrfig');% look for a current figure for image correlation display
+        if ~isempty(corrfig)
+            delete(corrfig)
+        end
+        hview_field=findobj(allchild(0),'tag','view_field');% look for view_field
+        if ~isempty(hview_field)
+            delete(hview_field)
+        end
     end
 end
 
@@ -2027,7 +2050,7 @@ end
 
 %------------------------------------------------------------------------
 % --- determine the list of index pairs of processing file
-function [ind1,ind2]=...
+function [ind1,ind2,mode]=...
     find_pair_indices(str_civ,i_series,j_series,MinIndex_i,MaxIndex_i,MinIndex_j,MaxIndex_j)
 %------------------------------------------------------------------------
 % i1_series=i_series;% set of first image indexes
