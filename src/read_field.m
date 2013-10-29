@@ -19,6 +19,7 @@
 %     .VelType: char string giving the type of velocity data ('civ1', 'filter1', 'civ2'...)
 %     .ColorVar: variable used for vector color
 %     .Npx, .Npy: nbre of pixels along x and y (used for .vol input files)
+%     .TimeDimName: name of the dimension considered as 'time', selected index value then set by input 'num'   
 % num: frame number for movies
 %
 % see also read_image.m,read_civxdata.m,read_civdata.m,

@@ -12,8 +12,9 @@
 %                    .ListVarName: list of variable names to select (cell array of  char strings {'VarName1', 'VarName2',...} ) 
 %                    .VarDimName: list of dimension names for each element of .ListVarName (cell array of string cells)                         
 %                    .Var1, .Var2....: variables (Matlab arrays) with names listed in .ListVarName
-%                  ListDimName=list of dimension (added information, not requested for field description)
-%                  DimValue= vlalues of dimensions (added information, not requested for field description)
+%                  .ListDimName=list of dimension (added information, not requested for field description)
+%                  .DimValue= vlalues of dimensions (added information, not requested for field description)
+%                  .VarType= integers giving the type of variable as coded by netcdf= 2 for char, =4 for single,=( for double
 %         .Txt: error message
 %  var_detect: vector with same length as the cell array ListVarName, = 1 for each detected variable and 0 else.
 %            var_detect=[] in the absence of input cell array 
@@ -165,7 +166,7 @@ if ~isequal(hhh,'')
     nbatt=zeros(1,nvars);
     for ncvar=1:nvars %loop on the variables of the netcdf file
         %get name, type, dimensions and attribute numbers of each variable 
-        [ListVarNameNetcdf{ncvar},xtype,dimids{ncvar},nbatt(ncvar)] = netcdf.inqVar(nc,ncvar-1);
+        [ListVarNameNetcdf{ncvar},xtype(ncvar),dimids{ncvar},nbatt(ncvar)] = netcdf.inqVar(nc,ncvar-1);
     end  
     testmulti=0;
     if isequal(ListVarName,'*')||isempty(ListVarName)
@@ -220,19 +221,14 @@ if ~isequal(hhh,'')
                 attname(1)=[];
             end
             try
-            if ischar(valuestr)
-               % valuestr=regexprep(valuestr,{'\\','\/','\.','\-',' '},{'_','_','_','_','_'});%remove  '\','.' or '-' if exists
-                eval(['Data.VarAttribute{ivar}.' attname '=''' valuestr ''';'])
-            elseif isempty(valuestr)
-                eval(['Data.VarAttribute{ivar}.' attname '=[];'])
-            elseif isnumeric(valuestr)
-                eval(['Data.VarAttribute{ivar}.' attname '=valuestr;'])
+             if isempty(valuestr)
+                Data.VarAttribute{ivar}.(attname)=valuestr;
             end
             catch ME
                 display(attname)
                 display(valuestr)
                 display(ME.message)         
-                eval(['Data.VarAttribute{ivar}.atrr_' num2str(iatt) '=''not read'';'])
+                Data.VarAttribute{ivar}.(['atrr_' num2str(iatt)])='not read';
             end
         end
     end
@@ -254,15 +250,19 @@ if ~isequal(hhh,'')
             if input_index==4% if a dimension is selected as time
                 if var_dim{ivar}(end)==TimeDimIndex% if the last dim of the variable is the time
                     slice_length=prod(var_dim{ivar}(1:end-1));
-                    Data.(VarName)=double(netcdf.getVar(nc,var_index(ivar)-1),TimeIndex*slice_length,slice_length); %read the variable data
+                    Data.(VarName)=double(netcdf.getVar(nc,var_index(ivar)-1,TimeIndex*slice_length,slice_length)); %read the variable data
                     CheckSub=1;
                 end
             end
             if ~CheckSub
-                Data.(VarName)=double(netcdf.getVar(nc,var_index(ivar)-1)); %read the whole variable data
+                Data.(VarName)=netcdf.getVar(nc,var_index(ivar)-1); %read the whole variable data
+                if xtype(var_index(ivar))==5
+                Data.(VarName)=double(Data.(VarName)); %transform to double for single pecision
+                end
             end
         end
     end
+    Data.VarType=xtype(var_index);
     
     %%  -------- close fle-----------
     if testfile==1

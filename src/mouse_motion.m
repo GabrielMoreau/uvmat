@@ -417,7 +417,7 @@ if strcmp(htype,'axes') && ~CheckZoom && ~isempty(h_geometry_calib)
                 if ~isempty(index_point)
                     Data=get(h_ListCoord,'Data');
                     Data(:,6)=zeros(size(Data,1),1);
-                    Data(index_point,6)=1;%mrk the point on the GUI geometry_calib
+                    Data(index_point,6)=-1;%mrk the point on the GUI geometry_calib
                     set(h_ListCoord,'Data',Data);
                     hhh=findobj('Tag','calib_marker');%look for handle of point marker (circle)
                     if ~isempty(hhh)

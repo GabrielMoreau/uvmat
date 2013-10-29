@@ -33,7 +33,7 @@
 
 function varargout = get_field(varargin)
 
-% Last Modified by GUIDE v2.5 09-Jun-2013 11:15:54
+% Last Modified by GUIDE v2.5 23-Oct-2013 23:44:17
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -96,7 +96,7 @@ for ilist=1:NbVar
         dim_index=strcmp(Field.VarDimName{ilist}{idim},Field.ListDimName);%index in the list of dimensions
         check_singleton(idim)=isequal(Field.DimValue(dim_index),1);%check_singleton=1 for singleton
     end
-    Field.Check0D(ilist)=(isequal(check_singleton,ones(1,NbDim)));% =1 if the variable reduces to a single value
+    Field.Check0D(ilist)=(isequal(check_singleton,ones(1,NbDim)))||(~isequal(Field.VarType(ilist),4)&&~isequal(Field.VarType(ilist),5));% =1 if the variable reduces to a single value
     if ~Field.Check0D(ilist)
     Field.Display.VarDimName{ilist}=Field.VarDimName{ilist}(~check_singleton);% eliminate singletons in the list of variable dimensions
     end
@@ -136,14 +136,14 @@ if ~isempty(Field.Display.ListGlobalAttribute)
     ListSwitchVarIndexTime=[ListSwitchVarIndexTime; {'attribute'}];% the time can be chosen as a global attribute
 end
 if Field.MaxDim>=2
-    ListSwitchVarIndexTime=[ListSwitchVarIndexTime;{'variable'};{'dim index'}];% the time can be chosen as a dim index
+    ListSwitchVarIndexTime=[ListSwitchVarIndexTime;{'variable'};{'matrix index'}];% the time can be chosen as a dim index
 end
 
 %% select the Time attribute from input
 if isfield(ParamIn,'TimeAttrName')
     time_index=find(strcmp(ParamIn.TimeAttrName,Field.Display.ListGlobalAttribute),1);
 else
-    time_index=find(~cellfun('isempty',regexp(Field.Display.ListGlobalAttribute,'Time')),1);
+    time_index=find(~cellfun('isempty',regexp(Field.Display.ListGlobalAttribute,'Time')),1);% look for global attribute containing name 'Time'
 end
 if ~isempty(time_index)
     set(handles.SwitchVarIndexTime,'Value',2);
@@ -516,7 +516,13 @@ ListCoord=Field.Display.ListVarName([var_component var_coord]);
 
 %% set default coord selection
 if numel(find(test_coord))>3
+     SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');
+    if numel(SwitchVarIndexTime)<3
+        SwitchVarIndexTime=[SwitchVarIndexTime;'matrix_index'];
+        set(handles.SwitchVarIndexTime,'String',SwitchVarIndexTime)
+    end
     set(handles.SwitchVarIndexTime,'Value',3)% the last dim must be considered as time
+    SwitchVarIndexTime_Callback([], [], handles)
 end
 if numel(var_component)<2
     if numel(test_coord)<2
@@ -553,7 +559,7 @@ switch TimeOption
         end
         set(handles.TimeName,'Value',1)
         set(handles.TimeName,'String',ListTime)
-    case 'dim index'
+    case 'matrix index'
         if numel(find(test_coord))<3
             ListTime={''};
         else
@@ -578,12 +584,17 @@ ScalarName=scalar_menu{scalar_index};
 test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
 test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
 dim_var=Field.Display.VarDimName{scalar_index};%list of dimensions of the selected variable
-for ilist=1:numel(Field.Display.VarDimName)
-    dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
-    if isequal(dimnames,dim_var)
-        test_component(ilist)=1;
-    elseif numel(dimnames)==1 && ~isempty(find(strcmp(dimnames{1},dim_var)))%variable ilist is a 1D array which can be coordinate variable
-        test_coord(ilist)=1;
+CheckDimensionX=get(handles.CheckDimensionX,'Value');
+CheckDimensionY=get(handles.CheckDimensionY,'Value');
+if ~CheckDimensionX  || ~CheckDimensionY
+    %look for coordinate variables among the other variables
+    for ilist=1:numel(Field.Display.VarDimName)
+        dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
+        if isequal(dimnames,dim_var)
+            test_component(ilist)=1;% the listed variable has the same dimension as the selected scalar-> possibly chosen as unstructured coordinate
+        elseif numel(dimnames)==1 && ~isempty(find(strcmp(dimnames{1},dim_var), 1))%variable ilist is a 1D array which can be coordinate variable
+            test_coord(ilist)=1;
+        end
     end
 end
 var_component=find(test_component);% list of variable indices elligible as unstructured coordinates
@@ -592,7 +603,13 @@ ListCoord=Field.Display.ListVarName([var_component var_coord]);
 
 %% set default coord selection
 if numel(find(test_coord))>3
+    SwitchVarIndexTime=get(handles.SwitchVarIndexTime,'String');
+    if numel(SwitchVarIndexTime)<3
+        SwitchVarIndexTime=[SwitchVarIndexTime;'matrix_index'];
+        set(handles.SwitchVarIndexTime,'String',SwitchVarIndexTime)
+    end
     set(handles.SwitchVarIndexTime,'Value',3)% the last dim must be considered as time
+    SwitchVarIndexTime_Callback([], [], handles)
 end
 % if numel(var_component)<2
 %     if numel(test_coord)<2
@@ -622,11 +639,20 @@ if numel(find(coord_val))<2
         coord_val=[1 2];
     end
 end
-set(handles.Coord_x,'Value',coord_val(1))
-set(handles.Coord_y,'Value',coord_val(2))
-set(handles.Coord_y,'String',ListCoord)
-set(handles.Coord_x,'String',ListCoord)
-
+if  CheckDimensionX
+    set(handles.Coord_x,'Value',2)
+    set(handles.Coord_x,'String',dim_var')
+else
+    set(handles.Coord_x,'Value',coord_val(1))
+    set(handles.Coord_x,'String',ListCoord)
+end
+if  CheckDimensionY
+    set(handles.Coord_y,'Value',1)
+    set(handles.Coord_y,'String',dim_var')
+else
+    set(handles.Coord_y,'Value',coord_val(2))
+    set(handles.Coord_y,'String',ListCoord)
+end
 
 %% set list of time coordinates
 menu=get(handles.SwitchVarIndexTime,'String');
@@ -870,18 +896,10 @@ switch option
             set(handles.TimeName, 'Value',ind);
         end
         set(handles.TimeName, 'String',TimeVarName)
-    case 'dim index'% TimeName menu represents the available dimensions
-        set(handles.TimeName, 'Visible','on')
-        TimeVarName=Field.Display.SingleDimName;
-        List=get(handles.TimeName,'String');
-        option=List{get(handles.TimeName,'Value')};
-        ind=find(strcmp(option,TimeVarName));
-        if isempty(ind)
-            set(handles.TimeName, 'Value',1);
-        else
-            set(handles.TimeName, 'Value',ind);
-        end
-        set(handles.TimeName, 'String',TimeVarName)
+    case 'matrix_index'% TimeName menu represents the available dimensions
+        set(handles.TimeName, 'Visible','on')     
+        set(handles.TimeName, 'Value',1);
+        set(handles.TimeName, 'String',Field.Display.ListDimName)
 end
 
 %-----------------------------------------------------------------------
@@ -919,3 +937,32 @@ elseif iscell(cell_str)
         end
     end
 end
+
+% --- Executes on button press in CheckDimensionY.
+function CheckDimensionX_Callback(hObject, eventdata, handles)
+FieldList=get(handles.FieldOption,'String');
+FieldOption=FieldList{get(handles.FieldOption,'Value')};
+switch FieldOption
+    case '1D plot'
+        
+    case 'scalar'
+       scalar_Callback(hObject, eventdata, handles)
+    case 'vectors'
+end
+
+% --- Executes on button press in CheckDimensionY.
+function CheckDimensionY_Callback(hObject, eventdata, handles)
+FieldList=get(handles.FieldOption,'String');
+FieldOption=FieldList{get(handles.FieldOption,'Value')};
+switch FieldOption
+    case '1D plot'
+        
+    case 'scalar'
+       scalar_Callback(hObject, eventdata, handles)
+    case 'vectors'
+end
+% hObject    handle to CheckDimensionY (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of CheckDimensionY

@@ -49,7 +49,7 @@ function varargout = geometry_calib(varargin)
 
 % Edit the above text to modify the response to help geometry_calib
 
-% Last Modified by GUIDE v2.5 02-Sep-2013 16:47:27
+% Last Modified by GUIDE v2.5 29-Oct-2013 06:46:10
 
 % Begin initialization code - DO NOT edit
 gui_Singleton = 1;
@@ -113,6 +113,7 @@ set(handles.CheckEnableMouse,'Position',[3 Height-40-8-92-75-117-30 203 30])%  r
 set(handles.PLOT,'Position',[3 Height-394 120 30])%  rank 6
 set(handles.Copy,'Position',[151 Height-394 120 30])%  rank 6
 set(handles.CLEAR_PTS,'Position',[297 Height-394 120 30])%  rank 6
+set(handles.ClearLine,'Position',[297 Height-364 120 30])%  rank 6
 set(handles.phys_title,'Position',[38 Height-426 125 20])%  rank 7
 set(handles.CoordUnit,'Position',[151 Height-426 120 30])%  rank 7
 set(handles.px_title,'Position',[272 Height-426 125 20])%  rank 7
@@ -229,7 +230,7 @@ else   % if calibration confirmed
     PLOT_Callback(hObject, eventdata, handles)
     Data=get(handles.ListCoord,'Data');
     Data(:,6)=zeros(size(Data,1),1);
-    Data(index,6)=1;% indicate in the list the point with max deviation (possible mistake)
+    Data(index,6)=-1;% indicate in the list the point with max deviation (possible mistake)
     set(handles.ListCoord,'Data',Data)% indicate in the list the point with max deviation (possible mistake)
     figure(handles.geometry_calib)
     set(handles.APPLY,'BackgroundColor',[1 0 0])
@@ -880,12 +881,12 @@ set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters 
 %% read the current image, displayed in the GUI uvmat
 huvmat=findobj(allchild(0),'Name','uvmat');
 UvData=get(huvmat,'UserData');
-A=UvData.Field.A;
+A=UvData.Field.A;%currently displayed image
 npxy=size(A);
 X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the phys coordinates (cm)
 Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner ordinates in the phys coordinates (cm)
 
-%calculate transform matrices for plane projection
+%calculate transform matrices for plane projection: rectangle assumed to be viewed in perspective
 % reference: http://alumni.media.mit.edu/~cwren/interpolator/ by Christopher R. Wren
 B = [ X Y ones(size(X)) zeros(4,3)        -X.*corners_X -Y.*corners_X ...
       zeros(4,3)        X Y ones(size(X)) -X.*corners_Y -Y.*corners_Y ];
@@ -897,7 +898,7 @@ Amat = reshape([l(1:6)' 0 0 1 ],3,3)';
 C = [l(7:8)' 1];
 
 % transform grid image into 'phys' coordinates 
-GeometryCalib.CalibrationType='linear';
+GeometryCalib.CalibrationType='3D_linear';
 GeometryCalib.fx_fy=[1 1];
 GeometryCalib.Tx_Ty_Tz=[Amat(1,3) Amat(2,3) 1];
 GeometryCalib.R=[Amat(1,1),Amat(1,2),0;Amat(2,1),Amat(2,2),0;C(1),C(2),0];
@@ -917,7 +918,7 @@ Data.CoordUnit='pixel';
 Calib.GeometryCalib=GeometryCalib;
 DataOut=phys(Data,Calib);
 rmpath(fullfile(path_UVMAT,'transform_field'))
-Amod=DataOut.A;
+Amod=DataOut.A;% current imgage expressed in 'phys' coord
 Rangx=DataOut.AX;
 Rangy=DataOut.AY;
 if white_test
@@ -935,6 +936,7 @@ Dy=(Rangy(2)-Rangy(1))/(npxy(1)-1); %y mesh in real space
 ind_range_x=ceil(abs(GeometryCalib.R(1,1)*CalibData.grid.Dx/3));% range of search of image ma around each point obtained by linear interpolation from the marked points
 ind_range_y=ceil(abs(GeometryCalib.R(2,2)*CalibData.grid.Dy/3));% range of search of image ma around each point obtained by linear interpolation from the marked points
 nbpoints=size(T,1);
+%lokk for image maxima around each expected pgrid point
 for ipoint=1:nbpoints
     i0=1+round((T(ipoint,1)-Rangx(1))/Dx);%round(Xpx(ipoint));
     j0=1+round((T(ipoint,2)-Rangy(1))/Dy);%round(Xpx(ipoint));
@@ -961,15 +963,9 @@ for ipoint=1:nbpoints
     Delta(ipoint,1)=(x_shift+ind_x_max+i0min-i0-1)*Dx;%shift from the initial guess
     Delta(ipoint,2)=(y_shift+ind_y_max+j0min-j0-1)*Dy;
 end
-Tmod=T(:,(1:2))+Delta;
-[Xpx,Ypx]=px_XYZ(GeometryCalib,Tmod(:,1),Tmod(:,2));
-% for ipoint=1:nbpoints
-%      Coord{ipoint,1}=num2str(T(ipoint,1),4);%display coordiantes with 4 digits
-%      Coord{ipoint,2}=num2str(T(ipoint,2),4);%display coordiantes with 4 digits
-%      Coord{ipoint,3}=num2str(T(ipoint,3),4);%display coordiantes with 4 digits;
-%      Coord{ipoint,4}=num2str(Xpx(ipoint),4);%display coordiantes with 4 digits
-%      Coord{ipoint,5}=num2str(Ypx(ipoint),4);%display coordiantes with 4 digits
-% end
+Tmod=T(:,(1:2))+Delta;% 'phys' coordinates of the detected points 
+Tmod(:,2)=flipdim(Tmod(:,2),1);% inverse the order of y coordinates
+[Xpx,Ypx]=px_XYZ(GeometryCalib,Tmod(:,1),Tmod(:,2));% image coordinates of the detected points
 Coord=[T Xpx Ypx zeros(size(T,1),1)];
 set(handles.ListCoord,'Data',Coord)
 PLOT_Callback(hObject, eventdata, handles)
@@ -1249,7 +1245,7 @@ if ~isempty(eventdata.Indices)
     iline=eventdata.Indices(1);% selected line number
     Data=get(handles.ListCoord,'Data');
     Data(:,6)=zeros(size(Data,1),1);
-    Data(iline,6)=1;% mark the selected line
+    Data(iline,6)=-1;% mark the selected line
     set(handles.ListCoord,'Data',Data)
     update_calib_marker(Data(iline,:))
 end
@@ -1338,4 +1334,24 @@ if isempty(hhh)
               'LineStyle','-','Tag','calib_marker');
 else
     set(hhh,'Position',[XCoord-ind_range/2 YCoord-ind_range/2 ind_range ind_range])
+end
+
+%------------------------------------------------------------------------
+% --- Executes on button press in ClearLine: remove the selected line in the table Coord
+%------------------------------------------------------------------------
+function ClearLine_Callback(hObject, eventdata, handles)
+
+Coord=get(handles.ListCoord,'Data');
+ind=find(Coord(:,6));%find the marker '-' for line selection
+if isempty(ind)
+    msgbox_uvmat('WARNING','no line suppressed, select a line in the table')
+else
+    answer=msgbox_uvmat('INPUT_Y-N',['suppress line ' num2str(ind) '?']);
+    if isequal(answer,'Yes')
+Coord(:,6)=zeros(size(Coord,1),1);% desactivate the current line mark
+Coord(ind,:)=[];
+PLOT_Callback(hObject,eventdata,handles)
+set(handles.APPLY,'BackgroundColor',[1 0 1])
+set(handles.ListCoord,'Data',Coord);
+    end
 end

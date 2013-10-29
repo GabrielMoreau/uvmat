@@ -2351,8 +2351,10 @@ end
 if isempty(abstime)
     if strcmp(TimeName,'civdata')||strcmp(TimeName,'civx')
         abstime=Field{1}.Time;
-    elseif ~isempty(regexp(TimeName,'^att:'))||~isempty(regexp(TimeName,'^dim:'))||~isempty(regexp(TimeName,'^var:'))
+    elseif ~isempty(regexp(TimeName,'^att:'))||~isempty(regexp(TimeName,'^var:'))
         abstime=Field{1}.(TimeName(5:end));%the time is an attribute or variale selected by get_file
+    elseif ~isempty(regexp(TimeName,'^dim:'))
+        abstime=str2num(get(handles.i1,'String'));
     end
     if isfield(Field{1},'Dt')
         dt=Field{1}.Dt;%dt read from the netcdf input file
@@ -3126,16 +3128,24 @@ switch field
         if ~strcmp(GetFieldData.FieldOption,'civdata...')
             XName=GetFieldData.Coordinates.Coord_x;
             TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
-            if strcmp(TimeNameStr,'file index')
-                set(handles.TimeName,'String','');
-            else
-                set(handles.TimeName,'String',[TimeNameStr(1:3) ':' GetFieldData.Time.TimeName]);
+            switch TimeNameStr
+                case 'file index'
+                    set(handles.TimeName,'String','');
+                case 'attribute'
+                    set(handles.TimeName,'String',['att:' GetFieldData.Time.TimeName]);
+                case 'variable'
+                    set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
+                    set(handles.NomType,'String','*')
+                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                    set(handles.FileIndex,'String','')
+                    ParamIn.TimeVarName=GetFieldData.Time.TimeName;
+                case 'matrix_index'
+                    set(handles.TimeName,'String',['dim:' GetFieldData.Time.TimeName]);
+                    set(handles.NomType,'String','*')
+                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                    set(handles.FileIndex,'String','')
+                    ParamIn.TimeDimName=GetFieldData.Time.TimeName;
             end
-            if strcmp(TimeNameStr,'variable')||strcmp(TimeNameStr,'dim index')% we scan a variable index, not a file index
-                set(handles.NomType,'String','*')
-                set(handles.RootFile,FileName)
-            end
-            %     set(handles.TimeValue,'String' SwitchVarIndexTime
             set(handles.Coord_x,'String',XName)
             if ischar(YName)
                 YName={YName};
