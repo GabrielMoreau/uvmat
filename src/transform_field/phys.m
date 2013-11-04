@@ -225,9 +225,9 @@ xcorner=[];
 ycorner=[];
 npx=[];
 npy=[];
-dx=ones(1,length(A));
-dy=ones(1,length(A));
-for icell=1:length(A)
+dx=ones(1,numel(A));
+dy=ones(1,numel(A));
+for icell=1:numel(A)
     siz=size(A{icell});
     npx=[npx siz(2)];
     npy=[npy siz(1)];
@@ -250,8 +250,8 @@ npY=1+round((Rangy(1)-Rangy(2))/min(dy));
 x=linspace(Rangx(1),Rangx(2),npX);
 y=linspace(Rangy(1),Rangy(2),npY);
 [X,Y]=meshgrid(x,y);%grid in physical coordiantes
-vec_B=[];
-A_out={};
+%vec_B=[];
+A_out=cell(1,numel(A));
 for icell=1:length(A) 
     Calib=CalibIn{icell};
     % rescaling of the image coordinates without change of the image array
@@ -274,35 +274,47 @@ for icell=1:length(A)
                 end
            end
         end
-        [XIMA,YIMA]=px_XYZ(CalibIn{icell},X,Y,zphys);% image coordinates for each point in the real space grid
-        XIMA=reshape(round(XIMA),1,npX*npY);%indices reorganized in 'line'
-        YIMA=reshape(round(YIMA),1,npX*npY);
-        flagin=XIMA>=1 & XIMA<=npx(icell) & YIMA >=1 & YIMA<=npy(icell);%flagin=1 inside the original image
-        testuint8=isa(A{icell},'uint8');
-        testuint16=isa(A{icell},'uint16');
-        if numel(siz)==2 %(B/W images)
-            vec_A=reshape(A{icell},1,npx(icell)*npy(icell));%put the original image in line
-            %ind_in=find(flagin);
-            ind_out=find(~flagin);
-            ICOMB=((XIMA-1)*npy(icell)+(npy(icell)+1-YIMA));
-            ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
-            %vec_B(ind_in)=vec_A(ICOMB);
-            vec_B(flagin)=vec_A(ICOMB);
-            vec_B(~flagin)=zeros(size(ind_out));
-%             vec_B(ind_out)=zeros(size(ind_out));
-            A_out{icell}=reshape(vec_B,npY,npX);%new image in real coordinates
-        elseif numel(siz)==3     
-            for icolor=1:siz(3)
-                vec_A=reshape(A{icell}(:,:,icolor),1,npx*npy);%put the original image in line
-               % ind_in=find(flagin);
-                ind_out=find(~flagin);
-                ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
-                ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
-                vec_B(flagin)=vec_A(ICOMB);
-                vec_B(~flagin)=zeros(size(ind_out));
-                A_out{icell}(:,:,icolor)=reshape(vec_B,npy,npx);%new image in real coordinates
-            end
-        end
+        xima=[0.5:npx-0.5];%image coordiantes of corners
+        yima=npy-0.5:-1:0.5;
+        [XIMA_init,YIMA_init]=meshgrid(xima,yima);%grid of initial image in px coordiantes
+        [XIMA,YIMA]=px_XYZ(CalibIn{icell},X,Y,zphys);% image coordinates for each point in the real
+        %[XPHYS_init,YPHYS_init]=phys_XYZ(Calib,XIMA_init,YIMA_init,ZIndex);
+                 testuint8=isa(A{icell},'uint8');
+         testuint16=isa(A{icell},'uint16');
+        if ndims(A{icell})==2 %(B/W images)
+        A_out{icell}=interp2(XIMA_init,YIMA_init,double(A{icell}),XIMA,YIMA);
+%         [Rangx]=phys_XYZ(Calib,Rangx,[0.5 0.5],ZIndex);%case of translations without rotation and quadratic deformation
+%         [XIMA_init,YIMA_init]=px_XYZ(CalibIn{icell},X,Y,zphys);% image coordinates for each point in the real space grid
+%         
+%         XIMA=reshape(round(XIMA),1,npX*npY);%indices reorganized in 'line'
+%         YIMA=reshape(round(YIMA),1,npX*npY);
+%         flagin=XIMA>=1 & XIMA<=npx(icell) & YIMA >=1 & YIMA<=npy(icell);%flagin=1 inside the original image
+
+%         if numel(siz)==2 %(B/W images)
+%             vec_A=reshape(A{icell},1,npx(icell)*npy(icell));%put the original image in line
+%             %ind_in=find(flagin);
+%             ind_out=find(~flagin);
+%             ICOMB=((XIMA-1)*npy(icell)+(npy(icell)+1-YIMA));
+%             ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
+%             %vec_B(ind_in)=vec_A(ICOMB);
+%             vec_B(flagin)=vec_A(ICOMB);
+%             vec_B(~flagin)=zeros(size(ind_out));
+% %             vec_B(ind_out)=zeros(size(ind_out));
+%             A_out{icell}=reshape(vec_B,npY,npX);%new image in real coordinates
+         elseif ndims(A{icell})==3     
+             for icolor=1:size(A{icell},3)
+                 A{icell}=double(A{icell});
+                 A_out{icell}(:,:,icolor)=interp2(XIMA_init,YIMA_init,A{icell}(:,:,icolor),XIMA,YIMA);
+%                 vec_A=reshape(A{icell}(:,:,icolor),1,npx*npy);%put the original image in line
+%                % ind_in=find(flagin);
+%                 ind_out=find(~flagin);
+%                 ICOMB=((XIMA-1)*npy+(npy+1-YIMA));
+%                 ICOMB=ICOMB(flagin);%index corresponding to XIMA and YIMA in the aligned original image vec_A
+%                 vec_B(flagin)=vec_A(ICOMB);
+%                 vec_B(~flagin)=zeros(size(ind_out));
+%                 A_out{icell}(:,:,icolor)=reshape(vec_B,npy,npx);%new image in real coordinates
+             end
+         end
         if testuint8
             A_out{icell}=uint8(A_out{icell});
         end
