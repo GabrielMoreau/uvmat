@@ -2589,21 +2589,19 @@ TransformPathList=get(handles.TransformName,'UserData');
 nb_builtin_transform=4;
 % ff=functions(list_transform{end});
 if isequal(TransformName,'more...'); 
-%     coord_fct='';
-%     prompt = {'Enter the name of the transform function'};
-%     dlg_title = 'user defined transform';
-%     num_lines= 1;
-    [FileName, PathName] = uigetfile( ...
-       {'*.m', ' (*.m)';
-        '*.m',  '.m files '; ...
-        '*.*', 'All Files (*.*)'}, ...
-        'Pick a transform function',get(handles.TransformPath,'String'));
-    if isequal(FileName,0)
+%     [FileName, PathName] = uigetfile( ...
+%        {'*.m', ' (*.m)';
+%         '*.m',  '.m files '; ...
+%         '*.*', 'All Files (*.*)'}, ...
+%         'Pick a transform function',get(handles.TransformPath,'String'));
+    
+    FileName=uigetfile_uvmat('Pick a transform function',get(handles.TransformPath,'String'),'.m');
+    if isempty(FileName)
         return     %browser closed without choice
     end
-    if isequal(PathName(end),'/')||isequal(PathName(end),'\')
-        PathName(end)=[];
-    end
+%     if isequal(PathName(end),'/')||isequal(PathName(end),'\')
+%         PathName(end)=[];
+%     end
     [TransformPath,TransformName,TransformExt]=fileparts(FileName);% removes extension .m
     if ~strcmp(TransformExt,'.m')
         msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
@@ -2625,6 +2623,8 @@ if isequal(TransformName,'more...');
            TransformListUser{ilist-nb_builtin_transform}=TransformList{ilist};
            TransformPathListUser{ilist-nb_builtin_transform}=TransformPathList{ilist};
        end 
+       TransformPathListUser=TransformPathListUser';
+       TransformListUser=TransformListUser';
        save (profil_perso,'TransformPathListUser','TransformListUser','-append'); %store the root name for future opening of uvmat
    end 
 end

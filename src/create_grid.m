@@ -109,6 +109,15 @@ if exist('input_grid','var') && ~isempty(input_grid)
    if isfield(input_grid,'z')
         set(handles.z,'String',num2str(input_grid.z));
    end  
+   if isfield(input_grid,'CheckWhite')
+       if input_grid.CheckWhite
+        set(handles.white,'Value',1)
+        set(handles.black,'Value',0)
+       else
+          set(handles.white,'Value',0) 
+          set(handles.black,'Value',1)
+       end
+   end
 end
 
 set(handles.figure1,'WindowStyle','modal')% Make% Make the GUI modal 
@@ -140,7 +149,7 @@ if ~isequal(handles.output,'Cancel')
     zarray=T.z_0*ones(size(yarray));
     varargout{1}=[xarray yarray zarray];
     varargout{2}=T;
-    varargout{3}=get(handles.white,'Value')
+    varargout{3}=get(handles.white,'Value');
 end
 
 % The figure can be deleted now

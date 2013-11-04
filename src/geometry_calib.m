@@ -539,17 +539,12 @@ n_ima=numel(coord_files)+1;
 est_dist=[0;0;0;0;0];
 est_aspect_ratio=0;
 est_fc=[1;1];
-%fc=[25;25]/0.012;
 center_optim=0;
-run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));
+run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));% apply fct 'toolbox_calib/go_calib_optim'
 GeometryCalib.CalibrationType='3D_linear';
 GeometryCalib.fx_fy=fc';
-%GeometryCalib.focal=fc(2);
-%GeometryCalib.dpx_dpy=[1 1];
 GeometryCalib.Cx_Cy=cc';
-%GeometryCalib.sx=fc(1)/fc(2);
 GeometryCalib.kc=kc(1);
-%GeometryCalib.kappa1=-kc(1)/fc(2)^2;
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
 GeometryCalib.Tx_Ty_Tz=Tc_1';
 GeometryCalib.R=Rc_1;
@@ -610,21 +605,19 @@ end
 n_ima=numel(coord_files)+1;
 est_dist=[1;0;0;0;0];
 est_aspect_ratio=1;
-%est_fc=[0;0];
-%fc=[25;25]/0.012;
 center_optim=0;
-run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));
+run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));% apply fct 'toolbox_calib/go_calib_optim'
 
 GeometryCalib.CalibrationType='3D_quadr';
 GeometryCalib.fx_fy=fc';
-%GeometryCalib.focal=fc(2);
-%GeometryCalib.dpx_dpy=[1 1];
 GeometryCalib.Cx_Cy=cc';
-%GeometryCalib.sx=fc(1)/fc(2);
 GeometryCalib.kc=kc(1);
-%GeometryCalib.kappa1=-kc(1)/fc(2)^2;
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
 GeometryCalib.Tx_Ty_Tz=Tc_1';
+if ~exist('Rc_1','var')
+    msgbox_uvmat('ERROR',['calibration function ' fullfile('toolbox_calib','go_calib_optim') ' did not converge: use multiple views or option 3D_extrinsic']) 
+    return
+end
 GeometryCalib.R=Rc_1;
 GeometryCalib.R(2,1:3)=-GeometryCalib.R(2,1:3);%inversion of the y image coordinate
 GeometryCalib.Tx_Ty_Tz(2)=-GeometryCalib.Tx_Ty_Tz(2);%inversion of the y image coordinate
@@ -655,12 +648,8 @@ GeometryCalib.kc=str2num(get(handles.kc,'String'));
 fct_path=fullfile(path_UVMAT,'toolbox_calib');
 addpath(fct_path)
 GeometryCalib.Cx_Cy(2)=ny-GeometryCalib.Cx_Cy(2);%reverse Cx_Cy(2) for calibration (inversion of px ordinate)
-% [omc1,Tc1,Rc1,H,x,ex,JJ] = compute_extrinsic(x_1,X_1,...
-%     [Calib.f Calib.f*Calib.sx]',...
-%     [Calib.Cx Calib.Cy]',...
-%     [-Calib.kappa1*Calib.f^2 0 0 0 0]);
 [omc,Tc1,Rc1,H,x,ex,JJ] = compute_extrinsic(x_1,X_1,...
-    (GeometryCalib.fx_fy)',GeometryCalib.Cx_Cy',[GeometryCalib.kc 0 0 0 0]);
+   (GeometryCalib.fx_fy)',GeometryCalib.Cx_Cy',[GeometryCalib.kc 0 0 0 0]);
 rmpath(fct_path);
 GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
 GeometryCalib.Tx_Ty_Tz=Tc1';
@@ -875,7 +864,7 @@ grid_input=[];%default
 if isfield(CalibData,'grid')
     grid_input=CalibData.grid;%retrieve the previously used grid
 end
-[T,CalibData.grid,white_test]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
+[T,CalibData.grid,CalibData.grid.CheckWhite]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
 set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
 
 %% read the current image, displayed in the GUI uvmat
@@ -921,14 +910,11 @@ rmpath(fullfile(path_UVMAT,'transform_field'))
 Amod=DataOut.A;% current imgage expressed in 'phys' coord
 Rangx=DataOut.AX;
 Rangy=DataOut.AY;
-if white_test
+if CalibData.CheckWhite
     Amod=double(Amod);%case of white grid markers: will look for image maxima
 else
     Amod=-double(Amod);%case of black grid markers: will look for image minima
 end
-% figure(12) %display corrected image
-% Amax=max(max(Amod));
-% image(Rangx,Rangy,uint8(255*Amod/Amax))
 
 %% detection of local image extrema in each direction
 Dx=(Rangx(2)-Rangx(1))/(npxy(2)-1); %x mesh in real space
@@ -945,23 +931,36 @@ for ipoint=1:nbpoints
     i0min=max(i0-ind_range_x,1);
     i0max=min(i0+ind_range_x,size(Amod,2));
     Asub=Amod(j0min:j0max,i0min:i0max);
-    x_profile=sum(Asub,1);
-    y_profile=sum(Asub,2);
-    [Amax,ind_x_max]=max(x_profile);
-    [Amax,ind_y_max]=max(y_profile);
+  
+
+   
+    x_profile=sum(Asub,1);%profile of subimage summed over y
+    y_profile=sum(Asub,2);%profile of subimage summed over x
+    %%%%
+%     if ipoint==5
+%                 figure(10)
+%   imagesc(Asub)
+%     figure(11)
+%     plot(x_profile,'r')
+%     hold on
+%     plot(y_profile,'b')
+%     end
+    %%%%
+    [tild,ind_x_max]=max(x_profile);
+    [tild,ind_y_max]=max(y_profile);
     %sub-pixel improvement using moments
     x_shift=0;
     y_shift=0;
     if ind_x_max+2<=numel(x_profile) && ind_x_max-2>=1
-        Atop=x_profile(ind_x_max-2:ind_x_max+2);
+        Atop=x_profile(ind_x_max-2:ind_x_max+2);% extract x profile around the max
         x_shift=sum(Atop.*[-2 -1 0 1 2])/sum(Atop);
     end
     if ind_y_max+2<=numel(y_profile) && ind_y_max-2>=1
-        Atop=y_profile(ind_y_max-2:ind_y_max+2);
+        Atop=y_profile(ind_y_max-2:ind_y_max+2);% extract y profile around the max
         y_shift=sum(Atop.*[-2 -1 0 1 2]')/sum(Atop);
     end
-    Delta(ipoint,1)=(x_shift+ind_x_max+i0min-i0-1)*Dx;%shift from the initial guess
-    Delta(ipoint,2)=(y_shift+ind_y_max+j0min-j0-1)*Dy;
+    Delta(ipoint,1)=(i0min+ind_x_max-1+x_shift-i0)*Dx;%shift from the initial guess
+    Delta(ipoint,2)=(j0min+ind_y_max-1+y_shift-j0)*Dy;
 end
 Tmod=T(:,(1:2))+Delta;% 'phys' coordinates of the detected points 
 Tmod(:,2)=flipdim(Tmod(:,2),1);% inverse the order of y coordinates
@@ -1032,7 +1031,15 @@ if isempty(fileinput)
     return
 end
 [s,errormsg]=imadoc2struct(fileinput,'GeometryCalib');
+if ~isfield(s,'GeometryCalib')
+    msgbox_uvmat('ERROR','invalid input file: no geometry_calib data')
+    return
+end
 GeometryCalib=s.GeometryCalib;
+if ~(isfield(GeometryCalib,'SourceCalib')&&isfield(GeometryCalib.SourceCalib,'PointCoord'))
+        msgbox_uvmat('ERROR','invalid input file: no calibration points')
+    return
+end
 Coord=GeometryCalib.SourceCalib.PointCoord;
 Coord=[Coord zeros(size(Coord,1),1)];
 set(handles.ListCoord,'Data',Coord)
