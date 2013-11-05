@@ -910,7 +910,7 @@ rmpath(fullfile(path_UVMAT,'transform_field'))
 Amod=DataOut.A;% current imgage expressed in 'phys' coord
 Rangx=DataOut.AX;
 Rangy=DataOut.AY;
-if CalibData.CheckWhite
+if CalibData.grid.CheckWhite
     Amod=double(Amod);%case of white grid markers: will look for image maxima
 else
     Amod=-double(Amod);%case of black grid markers: will look for image minima

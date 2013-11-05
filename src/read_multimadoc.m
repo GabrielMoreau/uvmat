@@ -74,5 +74,6 @@ function time=get_time(timeimadoc,i1_series,i2_series,j1_series,j2_series)
              time=[time timeimadoc(i2_series+1,j2_series+1)];
          end
      end
- time=mean(time);
+    time=mean(time,2);
+     time=time';
  end
