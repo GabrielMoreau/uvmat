@@ -847,6 +847,10 @@ end
 corners_X=(Coord(end:-1:end-3,4)); %pixel absissa of the four corners
 corners_Y=(Coord(end:-1:end-3,5)); 
 
+%%%%%%
+%   corners_X=1000*[1.5415  1.7557 1.7539 1.5415]';
+%   corners_Y=1000*[1.1515 1.1509 1.3645  1.3639]';
+
 %reorder the last two points (the two first in the list) if needed
 angles=angle((corners_X-corners_X(1))+1i*(corners_Y-corners_Y(1)));
 if abs(angles(4)-angles(2))>abs(angles(3)-angles(2))
@@ -858,7 +862,7 @@ if abs(angles(4)-angles(2))>abs(angles(3)-angles(2))
       corners_Y(3)=Y_end;
 end
 
-%% initiate the grid
+%% initiate the grid in phys coordinates
 CalibData=get(handles.geometry_calib,'UserData');%get information stored on the GUI geometry_calib
 grid_input=[];%default
 if isfield(CalibData,'grid')
@@ -866,16 +870,16 @@ if isfield(CalibData,'grid')
 end
 [T,CalibData.grid,CalibData.grid.CheckWhite]=create_grid(grid_input,'detect_grid');%display the GUI create_grid, read the set of phys coordinates T
 set(handles.geometry_calib,'UserData',CalibData)%store the phys grid parameters for later use
+X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the phys coordinates (cm)
+Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner ordinates in the phys coordinates (cm)
 
 %% read the current image, displayed in the GUI uvmat
 huvmat=findobj(allchild(0),'Name','uvmat');
 UvData=get(huvmat,'UserData');
 A=UvData.Field.A;%currently displayed image
 npxy=size(A);
-X=[CalibData.grid.x_0 CalibData.grid.x_1 CalibData.grid.x_0 CalibData.grid.x_1]';%corner absissa in the phys coordinates (cm)
-Y=[CalibData.grid.y_0 CalibData.grid.y_0 CalibData.grid.y_1 CalibData.grid.y_1]';%corner ordinates in the phys coordinates (cm)
 
-%calculate transform matrices for plane projection: rectangle assumed to be viewed in perspective
+%% calculate transform matrices for plane projection: rectangle assumed to be viewed in perspective
 % reference: http://alumni.media.mit.edu/~cwren/interpolator/ by Christopher R. Wren
 B = [ X Y ones(size(X)) zeros(4,3)        -X.*corners_X -Y.*corners_X ...
       zeros(4,3)        X Y ones(size(X)) -X.*corners_Y -Y.*corners_Y ];
@@ -886,7 +890,7 @@ l = (B' * B)\B' * D;
 Amat = reshape([l(1:6)' 0 0 1 ],3,3)';
 C = [l(7:8)' 1];
 
-% transform grid image into 'phys' coordinates 
+%% transform grid image into 'phys' coordinates 
 GeometryCalib.CalibrationType='3D_linear';
 GeometryCalib.fx_fy=[1 1];
 GeometryCalib.Tx_Ty_Tz=[Amat(1,3) Amat(2,3) 1];
@@ -907,9 +911,9 @@ Data.CoordUnit='pixel';
 Calib.GeometryCalib=GeometryCalib;
 DataOut=phys(Data,Calib);
 rmpath(fullfile(path_UVMAT,'transform_field'))
-Amod=DataOut.A;% current imgage expressed in 'phys' coord
-Rangx=DataOut.AX;
-Rangy=DataOut.AY;
+Amod=DataOut.A;% current image expressed in 'phys' coord
+Rangx=DataOut.AX;% x coordinates of first and last pixel centres in phys 
+Rangy=DataOut.AY;% y coordinates of first and last pixel centres in phys 
 if CalibData.grid.CheckWhite
     Amod=double(Amod);%case of white grid markers: will look for image maxima
 else
@@ -922,32 +926,21 @@ Dy=(Rangy(2)-Rangy(1))/(npxy(1)-1); %y mesh in real space
 ind_range_x=ceil(abs(GeometryCalib.R(1,1)*CalibData.grid.Dx/3));% range of search of image ma around each point obtained by linear interpolation from the marked points
 ind_range_y=ceil(abs(GeometryCalib.R(2,2)*CalibData.grid.Dy/3));% range of search of image ma around each point obtained by linear interpolation from the marked points
 nbpoints=size(T,1);
-%lokk for image maxima around each expected pgrid point
+TIndex=ones(size(T));% image indices corresponding to point coordinates
+%look for image maxima around each expected grid point
 for ipoint=1:nbpoints
-    i0=1+round((T(ipoint,1)-Rangx(1))/Dx);%round(Xpx(ipoint));
-    j0=1+round((T(ipoint,2)-Rangy(1))/Dy);%round(Xpx(ipoint));
-    j0min=max(j0-ind_range_y,1);
-    j0max=min(j0+ind_range_y,size(Amod,1));
-    i0min=max(i0-ind_range_x,1);
-    i0max=min(i0+ind_range_x,size(Amod,2));
-    Asub=Amod(j0min:j0max,i0min:i0max);
-  
-
-   
+    i0=1+round((T(ipoint,1)-Rangx(1))/Dx);% x index of the expected point in the phys image Amod
+    j0=1+round((T(ipoint,2)-Rangy(1))/Dy);% y index of the expected point in the phys image Amod
+    j0min=max(j0-ind_range_y,1);% min y index selected for the subimage (cut at the edge to avoid index <1)
+    j0max=min(j0+ind_range_y,size(Amod,1));% max y index selected for the subimage (cut at the edge to avoid index > size)
+    i0min=max(i0-ind_range_x,1);% min x index selected for the subimage (cut at the edge to avoid index <1)
+    i0max=min(i0+ind_range_x,size(Amod,2));% max x index selected for the subimage (cut at the edge to avoid index > size)
+    Asub=Amod(j0min:j0max,i0min:i0max); %subimage used to find brigthness extremum
     x_profile=sum(Asub,1);%profile of subimage summed over y
     y_profile=sum(Asub,2);%profile of subimage summed over x
-    %%%%
-%     if ipoint==5
-%                 figure(10)
-%   imagesc(Asub)
-%     figure(11)
-%     plot(x_profile,'r')
-%     hold on
-%     plot(y_profile,'b')
-%     end
-    %%%%
-    [tild,ind_x_max]=max(x_profile);
-    [tild,ind_y_max]=max(y_profile);
+
+    [tild,ind_x_max]=max(x_profile);% index of max for the x profile
+    [tild,ind_y_max]=max(y_profile);% index of max for the y profile
     %sub-pixel improvement using moments
     x_shift=0;
     y_shift=0;
@@ -959,16 +952,35 @@ for ipoint=1:nbpoints
         Atop=y_profile(ind_y_max-2:ind_y_max+2);% extract y profile around the max
         y_shift=sum(Atop.*[-2 -1 0 1 2]')/sum(Atop);
     end
-    Delta(ipoint,1)=(i0min+ind_x_max-1+x_shift-i0)*Dx;%shift from the initial guess
-    Delta(ipoint,2)=(j0min+ind_y_max-1+y_shift-j0)*Dy;
+        %%%%
+%     if ipoint==9
+%                 figure(11)
+%   imagesc(Asub)
+%     figure(12)
+%     plot(x_profile,'r')
+%     hold on
+%     plot(y_profile,'b')
+%     grid on
+%     end
+    %%%%
+    TIndex(ipoint,1)=(i0min+ind_x_max-1+x_shift);% x position of the maximum (in index of Amod)
+    TIndex(ipoint,2)=(j0min+ind_y_max-1+y_shift);% y position of the maximum (in index of Amod)
 end
-Tmod=T(:,(1:2))+Delta;% 'phys' coordinates of the detected points 
-Tmod(:,2)=flipdim(Tmod(:,2),1);% inverse the order of y coordinates
+Tmod(:,1)=(TIndex(:,1)-1)*Dx+Rangx(1);
+Tmod(:,2)=(TIndex(:,2)-1)*Dy+Rangy(1);
+%Tmod=T(:,(1:2))+Delta;% 'phys' coordinates of the detected points 
 [Xpx,Ypx]=px_XYZ(GeometryCalib,Tmod(:,1),Tmod(:,2));% image coordinates of the detected points
 Coord=[T Xpx Ypx zeros(size(T,1),1)];
 set(handles.ListCoord,'Data',Coord)
 PLOT_Callback(hObject, eventdata, handles)
 set(handles.APPLY,'BackgroundColor',[1 0 1])
+
+% figure(10)
+% hold off
+% imagesc(Rangx,Rangy,Amod)
+% hold on
+% plot(Tmod(:,1),Tmod(:,2),'+')
+
 
 %-----------------------------------------------------------------------
 function MenuTranslatePoints_Callback(hObject, eventdata, handles)
