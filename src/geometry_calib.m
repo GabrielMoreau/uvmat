@@ -844,8 +844,10 @@ if nbpoints~=4
     msgbox_uvmat('ERROR','four points must have be selected by the mouse to delimitate the phys grid area; the Ox axis will be defined by the two first points')
     return
 end
-corners_X=(Coord(end:-1:end-3,4)); %pixel absissa of the four corners
-corners_Y=(Coord(end:-1:end-3,5)); 
+% corners_X=(Coord(end:-1:end-3,4)); %pixel absissa of the four corners
+% corners_Y=(Coord(end:-1:end-3,5)); 
+corners_X=(Coord(:,4)); %pixel absissa of the four corners
+corners_Y=(Coord(:,5));
 
 %%%%%%
 %   corners_X=1000*[1.5415  1.7557 1.7539 1.5415]';
@@ -975,11 +977,11 @@ set(handles.ListCoord,'Data',Coord)
 PLOT_Callback(hObject, eventdata, handles)
 set(handles.APPLY,'BackgroundColor',[1 0 1])
 
-% figure(10)
-% hold off
-% imagesc(Rangx,Rangy,Amod)
-% hold on
-% plot(Tmod(:,1),Tmod(:,2),'+')
+figure(10)
+hold off
+imagesc(Amod)
+hold on
+plot(Tmod(:,1),Tmod(:,2),'+')
 
 
 %-----------------------------------------------------------------------
