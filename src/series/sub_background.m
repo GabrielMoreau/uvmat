@@ -217,7 +217,7 @@ end
 %% prealocate memory for the sliding background
 try
     Afirst=read_image(filecell{1,1},FileType{1},MovieObject{1},frame_index{1}(1));
-    [npy,npx]=size(Afirst);
+    [npy,npx,nbcolor]=size(Afirst);% the argument nbcolor is important to get npx right for color images
     if strcmp(class(Afirst),'uint8') % case of 8bit images
         Ak=zeros(npy,npx,nbaver_ima,'uint8'); %prealocate memory
         Asort=zeros(npy,npx,nbaver_ima,'uint8'); %prealocate memory
