@@ -2824,10 +2824,11 @@ indy=1+round((nxy(1)-1)*(y12-rangy0(1))/(rangy0(2)-rangy0(1)));% index y of pixe
 %------------------------------------------------------------------------
 function CheckZoom_Callback(hObject, eventdata, handles)
 
-if get(handles.CheckZoom,'Value') 
-    set(handles.CheckFixLimits,'Value',1)% propose by default fixed limits for the plotting axes
-    set(handles.CheckZoomFig,'Value',0)%desactivate zoom fig
-end
+    if get(handles.CheckZoom,'Value')
+        set(handles.CheckFixLimits,'Value',1)% propose by default fixed limits for the plotting axes
+        set(handles.CheckZoomFig,'Value',0)%desactivate zoom fig
+    end
+
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckZoomFig.

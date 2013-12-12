@@ -108,8 +108,16 @@ if strcmp(htype,'axes')
     xy=get(CurrentAxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
     test_zoom_draw=test_draw && isequal(AxeData.Drawing,'zoom')&& isfield(AxeData,'CurrentOrigin') && isequal(get(gcf,'SelectionType'),'normal');
     test_object=test_draw && isfield(AxeData,'CurrentObject') && ~isempty(AxeData.CurrentObject) && ishandle(AxeData.CurrentObject);
-    if ~test_edit_object  && ~test_ruler && ~CheckZoom
-        pointershape='crosshair';%set pointer with cross shape (default when mouse is over an axis)
+    if ~test_edit_object  && ~test_ruler 
+        if CheckZoom
+           pointershape='zoom';
+        elseif CheckZoomFig
+            pointershape='zoomfig';
+        elseif test_draw
+            pointershape='crosshair';%set pointer with cross shape (default when mouse is over an axis)
+        else
+        pointershape='fullcross';%set pointer with cross shape (default when mouse is over an axis)
+        end
     end
     FigData=get(hCurrentFig,'UserData');
     tagaxes=get(CurrentAxes,'tag');
@@ -444,4 +452,28 @@ if test_ruler && isfield(AxeData,'Drawing') && isequal(AxeData.Drawing,'ruler')
 end
 
 %% update the mouse pointer
+if strcmp(pointershape,'zoom')||strcmp(pointershape,'zoomfig')
+    CData=set_pointershape(pointershape);
+    set(hCurrentFig,'Pointer','custom','PointerShapeCData',CData,'PointerShapeHotSpot',[9 9])
+else
 set(hCurrentFig,'Pointer',pointershape);
+end
+
+function CData=set_pointershape(pointershape)
+        CData=ones(16,16);
+        [ind_x,ind_y]=meshgrid([1:16],[1:16]);
+        if strcmp(pointershape,'zoom')
+        radius=(ind_x-9).*(ind_x-9)+(ind_y-8.5).*(ind_y-9);
+        CData(radius<25 & radius>16)=2; %make white circle
+        CData(radius<16 | radius>40)=NaN; %make the centre transparent
+        CData(16,16)=1; CData(15,16)=2;
+        CData(15,15)=1; CData(14,15)=2;
+        CData(14,14)=1; CData(13,14)=2;
+        CData(13,13)=1; CData(12,13)=2;
+        elseif strcmp(pointershape,'zoomfig')
+            CData(:,1:3)=2;
+            CData(:,14:16)=2;
+                        CData(1:3,:)=2;
+            CData(14:16,:)=2;
+            CData(CData==1)=NaN;
+        end

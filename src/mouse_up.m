@@ -38,6 +38,8 @@ else
     hcurrentfig=hObject;
     testsubplot=0;
 end
+%set(get(hcurrentfig,'CurrentObject'),'Selected','off')
+
 CurrentOrigin=[];
 if isfield(AxeData,'CurrentOrigin')
     CurrentOrigin=AxeData.CurrentOrigin;
@@ -56,12 +58,14 @@ test_drawing=0;%default, =1 to allow drawing by further mouse action
 if ~(isfield(AxeData,'Enable')&& strcmp(AxeData.Enable,'on'))
     return
 end
+
 xy=get(hcurrentaxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
 
 
 %% proceed with the creation or editing (translation/deformation) of an object
 if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'off') && isfield(AxeData,'CurrentObject')...
         && ~isempty(AxeData.CurrentObject) && ishandle(AxeData.CurrentObject)
+    set(AxeData.CurrentObject,'Selected','off')
     PlotData=get(AxeData.CurrentObject,'UserData');%get data attached to the current projection object
     IndexObj=PlotData.IndexObj;
     ObjectData=UvData.ProjObject{IndexObj};

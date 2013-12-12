@@ -977,11 +977,11 @@ set(handles.ListCoord,'Data',Coord)
 PLOT_Callback(hObject, eventdata, handles)
 set(handles.APPLY,'BackgroundColor',[1 0 1])
 
-figure(10)
-hold off
-imagesc(Amod)
-hold on
-plot(Tmod(:,1),Tmod(:,2),'+')
+% figure(10)
+% hold off
+% imagesc(Amod)
+% hold on
+% plot(Tmod(:,1),Tmod(:,2),'+')
 
 
 %-----------------------------------------------------------------------
@@ -1237,7 +1237,7 @@ set(0,'CurrentFigure',huvmat)
 set(huvmat,'CurrentAxes',hhuvmat.PlotAxes)
 hh=findobj('Tag','calib_points');
 if  ~isempty(Coord) && isempty(hh)
-    hh=line(Coord_plot(:,1),Coord_plot(:,2),'Color','m','Tag','calib_points','LineStyle','.','Marker','+');
+    hh=line(Coord_plot(:,1),Coord_plot(:,2),'Color','m','Tag','calib_points','LineStyle','.','Marker','+','MarkerSize',10);
 elseif isempty(Coord)%empty list of points, suppress the plot
     delete(hh)
 else
