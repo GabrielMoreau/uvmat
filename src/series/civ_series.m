@@ -350,6 +350,7 @@ for ifield=1:NbField
                 % caluclate velocity data (y and v in indices, reverse to y component)
                 [xtable ytable utable vtable ctable F result_conv errormsg] = civ (par_civ1);
                 if ~isempty(errormsg)
+                     disp_uvmat('ERROR',errormsg,checkrun)
                     return
                 end
                 Data.Civ1_X=[Data.Civ1_X reshape(xtable,[],1)];
@@ -364,6 +365,7 @@ for ifield=1:NbField
             % caluclate velocity data (y and v in indices, reverse to y component)
             [xtable ytable utable vtable ctable F result_conv errormsg] = civ (par_civ1);
             if ~isempty(errormsg)
+                disp_uvmat('ERROR',errormsg,checkrun)
                 return
             end
             Data.Civ1_X=reshape(xtable,[],1);
@@ -382,6 +384,7 @@ for ifield=1:NbField
         Data=nc2struct(CivFile,'ListGlobalAttribute','absolut_time_T0'); %look for the constant 'absolut_time_T0' to detect old civx data format
         if isfield(Data,'Txt')
             errormsg=Data.Txt;
+            disp_uvmat('ERROR',errormsg,checkrun)
             return
         end
         if ~isempty(Data.absolut_time_T0')%read civx file
@@ -422,6 +425,7 @@ for ifield=1:NbField
     if isfield (Param.ActionInput,'Patch1')
         if check_civx
             errormsg='Civ Matlab input needed for patch';
+            disp_uvmat('ERROR',errormsg,checkrun)
             return
         end
         
