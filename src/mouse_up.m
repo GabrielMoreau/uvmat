@@ -95,24 +95,14 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
             case {'line'}
                 if size(ObjectData.Coord,1)==1 % this is the mouse up for the first point, continue until next click
                     check_multiple=1;
-                else
-                    %ObjectData.Coord=[ObjectData.Coord ;CurrentOrigin];% append the second point of the line (the last pointed position during mouse down)
                 end
             case {'rectangle','ellipse','volume'}
-                %                  if size(ObjectData.Coord,1)==1 % this is the mouse up for the first point, continue until next click
-                %                     check_multiple=1;
-                %                  else
                 ObjectData.Coord=(CurrentOrigin+xy(1,1:2))/2;% keep only the first point coordinate
                 ObjectData.RangeX=abs(ObjectData.Coord(1,1)-xy(1,1));%rectangle width
                 ObjectData.RangeY=abs(ObjectData.Coord(1,2)-xy(1,2));%rectangle height
                 if isequal(ObjectData.RangeX,0)||isequal(ObjectData.RangeY,0)
                     check_multiple=1;% pass to next mous up if width of height=0
                 end
-                %                 ObjectData.Coord(1,1)=(xy(1,1)+XYData(1))/2;%origin rectangle, x coordinate
-                %                 ObjectData.Coord(1,2)=(xy(1,2)+XYData(2))/2;
-                %                 ObjectData.RangeX=abs(xy(1,1)-XYData(1))/2;%rectangle width
-                %                 ObjectData.RangeY=abs(xy(1,2)-XYData(2))/2;%rectangle height
-                %                  end
             case 'plane' %case of 'plane'
                 DX=(xy(1,1)-ObjectData.Coord(1,1));
                 DY=(xy(1,2)-ObjectData.Coord(1,2));
@@ -129,9 +119,6 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     end
     
     %show object coordinates in the GUI set_object
-    %     h_set_object=findobj(allchild(0),'Tag','set_object');
-    %     hh_set_object=guidata(h_set_object);
-    %     set(hh_set_object.Coord,'Data',ObjectData.Coord);
     if strcmp(ObjectData.Type,'rectangle')||strcmp(ObjectData.Type,'ellipse')
         set(hh_set_object.num_RangeX_2,'String',num2str(ObjectData.RangeX,4));
         set(hh_set_object.num_RangeY_2,'String',num2str(ObjectData.RangeY,4));
@@ -178,7 +165,8 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
                 end
             end
             set(hhuvmat.CheckViewField,'Value',1);%
-            set(hhuvmat.CheckEditObject,'Value',1);%           
+            set(hhuvmat.CheckEditObject,'Value',1);%   
+            set(hhuvmat.MenuObject,'checked','off'); %desactivate object creation mode
             set(hhuvmat.CheckEditObject,'Enable','on');%
             set(get(h_set_object,'children'),'Enable','on')
         end

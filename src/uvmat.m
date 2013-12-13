@@ -1952,7 +1952,11 @@ if  ~isempty(transform)
         if index==2
         Field_a=transform(Field_a,UvData.XmlData{index});%the first field has been stored without transform
         end
+        if nargin(transform)>=2
         Field_b=transform(Field_b,UvData.XmlData{index});
+        else
+          Field_b=transform(Field_b);
+        end
     end
 end
 
@@ -4241,6 +4245,7 @@ function CheckEditObject_Callback(hObject, eventdata, handles)
 hset_object=findobj(allchild(0),'Tag','set_object');
 if get(handles.CheckEditObject,'Value') 
     %suppress the other options 
+    set(handles.MenuObject,'checked','off')
     set(handles.CheckZoom,'Value',0)
     CheckZoom_Callback(hObject, eventdata, handles)
     hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');
@@ -4389,12 +4394,13 @@ if  ~isempty(UvData) && isfield(UvData, 'ProjObject') && length(UvData.ProjObjec
         for iview=1:length(hdisplay)
             if ishandle(hdisplay(iview)) && ~isequal(hdisplay(iview),0)
                 ObjectData=get(hdisplay(iview),'UserData');
-                if isfield(ObjectData,'SubObject') && ishandle(ObjectData.SubObject)
-                    delete(ObjectData.SubObject);% delete the graphic 'sub-objects (e.g. projection bounds)
+                if isfield(ObjectData,'SubObject') && ~isempty(ObjectData.SubObject)
+                    delete(ObjectData.SubObject(ishandle(ObjectData.SubObject)));% delete the graphic 'sub-objects (e.g. projection bounds)
                 end
-                check_suppress= isfield(ObjectData,'DeformPoint') && ishandle(ObjectData.DeformPoint);
-                delete(ObjectData.DeformPoint(check_suppress));% delete the graphic deformation points 
-                delete(hdisplay(iview))% delete the main graphic representation of the object
+                if isfield(ObjectData,'DeformPoint')&& ~isempty(ObjectData.DeformPoint)
+                    delete(ObjectData.DeformPoint(ishandle(ObjectData.DeformPoint)));% delete the graphic deformation points
+                    delete(hdisplay(iview))% delete the main graphic representation of the object
+                end
             end
             ishandle(hdisplay(iview))
         end
@@ -4712,6 +4718,7 @@ CheckEditObject_Callback([],[],handles)
 set(handles.CheckViewObject,'Value',0) % desactivate view_object (new object created)
 set(handles.CheckZoomFig,'Value',0) %desactivate zoom sub fig
 set(handles.CheckZoom,'Value',0)    %desactivate the zoom action
+set(handles.MenuObject,'checked','on')% indicate object creation for mouse pointer display
 if ishandle(handles.UVMAT_title)
     delete(handles.UVMAT_title)     %delete the initial display of uvmat if no field has been entered yet
 end

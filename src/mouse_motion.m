@@ -49,12 +49,14 @@ if isfield(AxeData,'Drawing')&& ~isempty(AxeData.Drawing)
 end
 test_zoom_draw=0;
 test_object=0; %test for object editing or creation 
+test_create_object=0;
 test_edit_object=0;% edit test for mouse shape: an arrow
 test_ruler=0;%test for active ruler 
 test_transform=0;
 huvmat=findobj(allchild(0),'tag','uvmat');%find the uvmat interface handle
 if ~isempty(huvmat)
     hhuvmat=guidata(huvmat);%handles of the elements in uvma
+    test_create_object=strcmp(get(hhuvmat.MenuObject,'checked'),'on');
     test_edit_object=get(hhuvmat.CheckEditObject,'Value');
     test_ruler=isequal(get(hhuvmat.MenuRuler,'checked'),'on');
     test_transform=~isequal(get(hhuvmat.TransformName,'Value'),1);
@@ -108,15 +110,17 @@ if strcmp(htype,'axes')
     xy=get(CurrentAxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
     test_zoom_draw=test_draw && isequal(AxeData.Drawing,'zoom')&& isfield(AxeData,'CurrentOrigin') && isequal(get(gcf,'SelectionType'),'normal');
     test_object=test_draw && isfield(AxeData,'CurrentObject') && ~isempty(AxeData.CurrentObject) && ishandle(AxeData.CurrentObject);
-    if ~test_edit_object  && ~test_ruler 
+    if CheckZoom
+           pointershape='zoom';
+    elseif CheckZoomFig
+            pointershape='zoomfig';
+    elseif ~test_edit_object  && ~test_ruler 
         if CheckZoom
            pointershape='zoom';
-        elseif CheckZoomFig
-            pointershape='zoomfig';
-        elseif test_draw
-            pointershape='crosshair';%set pointer with cross shape (default when mouse is over an axis)
+        elseif test_draw|| test_create_object
+            pointershape='crosshair';%set pointer with cross shape 
         else
-        pointershape='fullcross';%set pointer with cross shape (default when mouse is over an axis)
+        pointershape='fullcross';%set pointer with large cross (default when mouse is over an axis)
         end
     end
     FigData=get(hCurrentFig,'UserData');

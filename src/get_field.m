@@ -96,7 +96,7 @@ for ilist=1:NbVar
         dim_index=strcmp(Field.VarDimName{ilist}{idim},Field.ListDimName);%index in the list of dimensions
         check_singleton(idim)=isequal(Field.DimValue(dim_index),1);%check_singleton=1 for singleton
     end
-    Field.Check0D(ilist)=(isequal(check_singleton,ones(1,NbDim)))||(~isequal(Field.VarType(ilist),4)&&~isequal(Field.VarType(ilist),5));% =1 if the variable reduces to a single value
+    Field.Check0D(ilist)=(isequal(check_singleton,ones(1,NbDim)))||(~isequal(Field.VarType(ilist),4)&&~isequal(Field.VarType(ilist),5)&&~isequal(Field.VarType(ilist),6));% =1 if the variable reduces to a single value
     if ~Field.Check0D(ilist)
     Field.Display.VarDimName{ilist}=Field.VarDimName{ilist}(~check_singleton);% eliminate singletons in the list of variable dimensions
     end
@@ -494,7 +494,11 @@ function ordinate_Callback(hObject, eventdata, handles)
 Field=get(handles.get_field,'UserData');
 y_index=get(handles.ordinate,'Value');
 y_menu=get(handles.ordinate,'String');
+if isempty(y_menu)
+    return
+else
 YName=y_menu{y_index};
+end
 
 %% set list of possible coordinates
 test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
