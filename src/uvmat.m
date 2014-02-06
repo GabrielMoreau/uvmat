@@ -444,12 +444,17 @@ if isempty(oldfile) %loads the previously stored file name and set it as default
     oldfile=get(handles.RootPath,'UserData');
 end
 fileinput=uigetfile_uvmat('pick an input file',oldfile);
+hh=dir(fileinput);
+if numel(hh)>1
+    msgbox_uvmat('ERROR','invalid input, probably a broken link');
+else
 
 %% display the selected field and related information
 if ~isempty(fileinput)
     set(handles.SubField,'Value',0)
     desable_subfield(handles)
     display_file_name(handles,fileinput)
+end
 end
 
 % -----------------------------------------------------------------------
