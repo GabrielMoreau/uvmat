@@ -1423,7 +1423,6 @@ function RUN_Callback(hObject, eventdata, handles)
 
 %% settings of the button RUN
 set(handles.RUN,'BusyAction','queue');% activation of STOP button will set BusyAction to 'cancel'
-%set(0,'CurrentFigure',handles.series); % display the GUI series
 set(handles.RUN, 'Enable','Off')% avoid further RUN action until the current one is finished
 set(handles.RUN,'BackgroundColor',[1 1 0])%show activation of RUN by yellow color
 drawnow
@@ -1874,6 +1873,7 @@ Param.InputTable(empty_line,:)=[];
 % --- Executes on selection change in ActionName.
 function ActionName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+
 %% stop any ongoing series processing
 if isequal(get(handles.RUN,'Value'),1)
     answer= msgbox_uvmat('INPUT_Y-N','stop current Action process?');
@@ -2186,8 +2186,8 @@ set(handles.ActionExt_title,'Visible',OutputDirVisible)
 
 %% Expected nbre of output files
 if isfield(ParamOut,'OutputFileMode')
-StatusData.OutputFileMode=ParamOut.OutputFileMode;
-set(handles.status,'UserData',StatusData)
+    StatusData.OutputFileMode=ParamOut.OutputFileMode;
+    set(handles.status,'UserData',StatusData)
 end
 
 %% definition of an additional parameter set, determined by an ancillary GUI
@@ -2215,7 +2215,7 @@ set(handles.ActionName,'BackgroundColor',[1 1 1])
 function ActionInputView_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 if get(handles.ActionInputView,'Value')
-ActionName_Callback(hObject, eventdata, handles)
+    ActionName_Callback(hObject, eventdata, handles)
 end
 
 %------------------------------------------------------------------------
@@ -2651,24 +2651,34 @@ commandwindow; %brings the Matlab command window to the front
 function MenuImportConfig_Callback(hObject, eventdata, handles)
 
 InputTable=get(handles.InputTable,'Data');
-filexml=uigetfile_uvmat('pick a xml parameter file',InputTable{1,1},'.xml');
+filexml=uigetfile_uvmat('pick a xml parameter file',InputTable{1,1},'.xml');% get the xml file containing processing parameters
 if ~isempty(filexml)%abandon if no file is introduced by the browser
     Param=xml2struct(filexml);
-    fill_GUI(Param,handles.series)
+    % stop current Action if button RUN has been activated
+    if isequal(get(handles.RUN,'Value'),1)
+        answer= msgbox_uvmat('INPUT_Y-N','stop current Action process?');
+        if strcmp(answer,'Yes')
+            STOP_Callback(hObject, eventdata, handles)
+        else
+            return
+        end
+    end
+    Param.Action.RUN=0; %deactivate the RUN button
+    fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
     REFRESH_Callback([],[],handles)% refresh data relative to the input files
     SeriesData=get(handles.series,'UserData');
-    if isfield(Param,'ActionInput')
+    if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
         set(handles.ActionInput,'Visible','on')
         set(handles.ActionInput_title,'Visible','on')
         set(handles.ActionInputView,'Visible','on')
         set(handles.ActionInputView,'Value',0)
         SeriesData.ActionInput=Param.ActionInput;
     end
-    if isfield(Param,'ProjObject')
+    if isfield(Param,'ProjObject') %introduce projection object if relevant
         SeriesData.ProjObject=Param.ProjObject;
     end
     set(handles.series,'UserData',SeriesData)
-    ActionName_Callback([],[],handles)
+    %ActionName_Callback([],[],handles)
 end
 
 %------------------------------------------------------------------------
@@ -2723,7 +2733,6 @@ function status_Callback(hObject, eventdata, handles)
 if get(handles.status,'Value')
     set(handles.status,'BackgroundColor',[1 1 0])
     drawnow
-    %StatusData.time_ref=get(handles.RUN,'UserData');% get the time of launch
     Param=read_GUI(handles.series);
     RootPath=Param.InputTable{1,1};
     if ~isfield(Param,'OutputSubDir')   

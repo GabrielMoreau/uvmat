@@ -159,33 +159,33 @@ date_str=datestr(max(datnum));
 
 %% check svn status
 [status,result]=system('svn --help');
-if status==0
+if status==0 % if a svn line command is available
     svn_info.rep_rev=0;svn_info.cur_rev=0;
-    [tild,result]=system(['svn info ' dir_fct]);
-    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');
+    [tild,result]=system(['svn info ' dir_fct]); %get info fromn the svn server
+    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');%detect 'révision' or 'Revision' in the text
     if ~isempty(t)
-        svn_info.cur_rev=str2double(t.rev);
+        svn_info.cur_rev=str2double(t.rev); %version nbre of the current package
     end
     [tild,result]=system(['svn info -r ''HEAD'' '  pathuvmat]);
     t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');
     if ~isempty(t)
-        svn_info.rep_rev=str2double(t.rev);
+        svn_info.rep_rev=str2double(t.rev); % version nbre available on the svn repository
     end
     [tild,result]=system(['svn status '  pathuvmat]);
     svn_info.status=result;
-    checkmsg =[checkmsg {['SVN revision : ' num2str(svn_info.cur_rev)]}];
-    if svn_info.rep_rev>svn_info.cur_rev
+    checkmsg =[checkmsg {['SVN revision : ' num2str(svn_info.cur_rev)]}];%display version nbre of the current uvmat package
+    if svn_info.rep_rev>svn_info.cur_rev %if the repository has a more advanced version than the uvmat package, warning msge
         checkmsg =[checkmsg ...
             {['Repository now at revision ' num2str(svn_info.rep_rev) '. Please type svn update in uvmat folder']}];
     end
-    modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');
+    modifications=regexp(svn_info.status,'M\s[^(\n|\>)]+','match');% detect the files modified compared to the repository
     if ~isempty(modifications)
         for ilist=1:numel(modifications)
             [tild,FileName,FileExt]=fileparts(modifications{ilist});
             checkmsg=[checkmsg {[FileName FileExt ' modified']}];
         end
     end
-else
+else % no svn line command available
     checkmsg=[checkmsg {'SVN not available'}];
 end
 checkmsg=checkmsg';

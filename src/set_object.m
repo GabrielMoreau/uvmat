@@ -35,7 +35,7 @@
 
 function varargout = set_object(varargin)
 
-% Last Modified by GUIDE v2.5 02-Sep-2013 11:39:56
+% Last Modified by GUIDE v2.5 11-Feb-2014 20:08:17
 
 % Begin initialization code - DO NOT REFRESH
 gui_Singleton = 1;
@@ -81,8 +81,9 @@ guidata(hObject, handles);
 %% position
 set(0,'Unit','pixels')
 ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
-Width=300;% fig width in pixels 
-Height=600;
+PosGUI=get(handles.set_object,'Position');% fig width in pixels 
+Width=PosGUI(3);%width of the gui set_object in pixels
+Height=PosGUI(4);
 Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40 
 Bottom=ScreenSize(4)-Height-40; %put fig at top right
 set(handles.set_object,'Unit','pixels')
@@ -649,16 +650,16 @@ if ~isempty(dir_save)
     else
         def=[Object.Style '.xml'];
     end
-    displ_txt={'save object as an .xml file in';dir_save};%default display
+    displ_txt={['save object in' dir_save]; 'with file name (.xml):'};%default display
     menu=get(handles.ProjMode,'String');
     value=get(handles.ProjMode,'Value');
     ProjMode=menu{value};
     if strcmp(ProjMode,'mask_inside')||strcmp(ProjMode,'mask_outside')
-        displ_txt={'save mask contour as an .xml file:'; 'to create a mask image, use save_mask on the GUI uvmat (lower right)'};
+        displ_txt={displ_txt; '(to create a mask image, use save_mask on the GUI uvmat upper menu)'};
     end
     answer=msgbox_uvmat('INPUT_TXT',displ_txt,def);
-    if iscell(answer)
-        FullName=fullfile(dir_save,answer{1});
+    if ischar(answer)
+        FullName=fullfile(dir_save,answer);
         t=struct2xml(Object);
         t=set(t,1,'name','ProjObject');
         save(t,FullName)
@@ -783,6 +784,3 @@ if ismember(xx,[127 31])% delete, or downward
             end
     set(handles.Coord,'Data',Coord);
 end
-
-
-
