@@ -1018,7 +1018,8 @@ switch FileType
                 j2=j2_series(1,ref_j+1,ref_i+1);
             end
         end
-        FileName=fullfile_uvmat(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1_series(1,ref_j+1,ref_i+1),i2,j1,j2);
+                FieldName_Callback([], [], handles)
+       % FileName=fullfile_uvmat(InputTable{iview,1},InputTable{iview,2},InputTable{iview,3},InputTable{iview,5},InputTable{iview,4},i1_series(1,ref_j+1,ref_i+1),i2,j1,j2);
 %         hget_field=get_field(FileName);
 %         hhget_field=guidata(hget_field);
 %         get_field('RUN_Callback',hhget_field.RUN,[],hhget_field);
@@ -1468,6 +1469,11 @@ if isfield(Param,'OutputSubDir')
             msgbox_uvmat('ERROR',['cannot create ' OutputDir ': ' msg1]);%error message for directory creation
             return
         end
+        [success,msg] = fileattrib(OutputDir,'+w','g','s');% allow writing access for the group of users, recursively in the folder  
+        if success==0
+            msgbox_uvmat('WARNING',{['unable to set group write access to ' OutputDir ':']; msg1});%error message for directory creation
+            return
+        end
     end
     OutputNomType=nomtype2pair(Param.InputTable{1,4});% nomenclature for output files
     DirXml=fullfile(OutputDir,'0_XML');
@@ -1475,6 +1481,11 @@ if isfield(Param,'OutputSubDir')
         [tild,msg1]=mkdir(DirXml);
         if ~strcmp(msg1,'')
             msgbox_uvmat('ERROR',['cannot create ' DirXml ': ' msg1]);%error message for directory creation
+            return
+        end
+                [success,msg] = fileattrib(DirXml,'+w','g','s');% allow writing access for the group of users, recursively in the folder  
+        if success==0
+            msgbox_uvmat('WARNING',{['unable to set group write access to ' DirXml ':']; msg1});%error message for directory creation
             return
         end
     end
@@ -2233,42 +2244,60 @@ if isequal(field,'get_field...')
     Param=read_GUI(handles.series);
     Param.InputTable=Param.InputTable(1,:);
     filecell=get_file_series(Param);
+    
     if exist(filecell{1,1},'file')
         GetFieldData=get_field(filecell{1,1});
         FieldList={};
-        XName=GetFieldData.XVarName;
-        if GetFieldData.CheckVector
-            UName=GetFieldData.PanelVectors.vector_x;
-            VName=GetFieldData.PanelVectors.vector_y;
-            XName=GetFieldData.XVarName;
-            YName=GetFieldData.YVarName;
-            CName=GetFieldData.PanelVectors.vec_color;
-            [FieldList,VecColorList]=set_field_list(UName,VName,CName);
-        elseif GetFieldData.CheckScalar
-            AName=GetFieldData.PanelScalar.scalar;
-            XName=GetFieldData.XVarName;
-            YName=GetFieldData.YVarName;
-            FieldList={AName};
-        elseif GetFieldData.CheckPlot1D;
-            YName=GetFieldData.CheckPlot1D.ordinate;
+        switch GetFieldData.FieldOption
+            case 'vectors'
+                UName=GetFieldData.PanelVectors.vector_x;
+                VName=GetFieldData.PanelVectors.vector_y;
+                YName={GetFieldData.Coordinates.Coord_y};
+                CName=GetFieldData.PanelVectors.vec_color;
+                FieldList={['vec(' UName ',' VName ')'];...
+                    ['norm(' UName ',' VName ')'];...
+                    UName;VName};
+                VecColorList={['norm(' UName ',' VName ')'];...
+                    UName;VName};
+                if ~isempty(CName)
+                    VecColorList=[{CName};VecColorList];
+                end
+            case 'scalar'
+                AName=GetFieldData.PanelScalar.scalar;
+                YName={GetFieldData.Coordinates.Coord_y};
+                FieldList={AName};
+            case '1D plot'
+                YName=GetFieldData.PanelOrdinate.ordinate;
+%             case 'civdata...'%reinitiate input, return to automatic civ data reading
+%                 display_file_name(handles,FileName,1)
         end
-        set(handles.Coord_x,'String',{XName})
-        set(handles.Coord_y,'String',{YName})
-        set(handles.FieldName,'Value',1)
-        set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
-        %         set(handles.ColorScalar,'Value',1)
-        %         set(handles.ColorScalar,'String',VecColorList);
-        %         UvData.FileType{1}='netcdf';
-        %         set(handles.uvmat,'UserData',UvData)
+        if ~strcmp(GetFieldData.FieldOption,'civdata...')
+            XName=GetFieldData.Coordinates.Coord_x;
+            TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
+            switch TimeNameStr
+                case 'file index'
+                    set(handles.TimeName,'String','');
+                case 'attribute'
+                    set(handles.TimeName,'String',['att:' GetFieldData.Time.TimeName]);
+                case 'variable'
+                    set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
+                    set(handles.NomType,'String','*')
+                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                    set(handles.FileIndex,'String','')
+                    ParamIn.TimeVarName=GetFieldData.Time.TimeName;
+                case 'matrix_index'
+                    set(handles.TimeName,'String',['dim:' GetFieldData.Time.TimeName]);
+                    set(handles.NomType,'String','*')
+                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                    set(handles.FileIndex,'String','')
+                    ParamIn.TimeDimName=GetFieldData.Time.TimeName;
+            end
+            set(handles.Coord_x,'String',{XName})
+            set(handles.Coord_y,'String',YName)
+            set(handles.FieldName,'Value',1)
+            set(handles.FieldName,'String',[FieldList; {'get_field...'}]);
+        end
     end
-    % elseif isequal(field,'more...')
-    %     str=calc_field;
-    %     [ind_answer,v] = listdlg('PromptString','Select a file:',...
-    %                 'SelectionMode','single',...
-    %                 'ListString',str);
-    %        % edit the choice in the fields and actionname menu
-    %      scalar=cell2mat(str(ind_answer));
-    %      update_menu(handles.FieldName,scalar)
 end
 
 %------------------------------------------------------------------------
@@ -2958,3 +2987,26 @@ menu=menu(1:imax);
 % --- Executes on mouse motion over figure - except title and menu.
 function series_WindowButtonMotionFcn(hObject, eventdata, handles)
 set(hObject,'Pointer','arrow');
+
+
+
+function TimeName_Callback(hObject, eventdata, handles)
+% hObject    handle to TimeName (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of TimeName as text
+%        str2double(get(hObject,'String')) returns contents of TimeName as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function TimeName_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to TimeName (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
