@@ -88,7 +88,7 @@ NomTypeInput=Param.InputTable{1,4};
 FileExt=Param.InputTable{1,5};
 FileType=SeriesData.FileType{1};%type of the first input file series
 FileInfo=SeriesData.FileInfo{1};
-FileInput=SeriesData.RefFile{1};
+
 
 %% case of netcdf file as input, get the processing stage and look for corresponding images
 % imageinput=fileinput;%default
@@ -114,6 +114,7 @@ switch FileType
             %            set(handles.RootFile_1,'Visible','Off');
         end
         imageinput='';
+        FileInput=SeriesData.RefFile{1};
         Data=nc2struct(FileInput,'ListGlobalAttribute','Civ2_ImageA','Civ1_ImageA','Civ2_ImageB','Civ1_ImageB');
         [PathCiv1_ImageA,Civ1_ImageA,FileExtA]=fileparts(Data.Civ1_ImageA);
         [PathCiv1_ImageB,Civ1_ImageB,FileExtA]=fileparts(Data.Civ1_ImageB);
@@ -121,7 +122,7 @@ switch FileType
             [PathCiv2_ImageA,Civ2_ImageA,FileExtA]=fileparts(Data.Civ2_ImageA);
             [PathCiv2_ImageB,Civ2_ImageB,FileExtA]=fileparts(Data.Civ2_ImageB);
         end
-        hhseries=guidata(gcbf);
+        hhseries=guidata(hseries);
         if size(Param.InputTable,1)==1
             series('display_file_name',hhseries,Data.Civ1_ImageA,'append');%append the image series to the input list
         end

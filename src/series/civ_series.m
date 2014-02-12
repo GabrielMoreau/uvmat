@@ -278,7 +278,16 @@ for ifield=1:NbField
         disp('program stopped by user')
         break
     end
+    if strcmp(Param.ActionInput.ListCompareMode,'PIV')
+        ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
+            j1_series_Civ1(ifield),j2_series_Civ1(ifield));
+    else
+        ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
+            j1_series_Civ1(ifield),j2_series_Civ1(ifield));
+    end
+
     %% Civ1
+    % if Civ1 computation is requested
     if isfield (Param.ActionInput,'Civ1')
         par_civ1=Param.ActionInput.Civ1;
         if isfield(par_civ1,'reverse_pair')% A REVOIR
@@ -296,13 +305,6 @@ for ifield=1:NbField
             [par_civ1.ImageA,VideoObject_A] = read_image(ImageName_A,FileType_A,VideoObject_A,FrameIndex_A_Civ1(ifield));
             ImageName_B=fullfile_uvmat(RootPath_B,SubDir_B,RootFile_B,FileExt_B,NomType_B,i2_series_Civ1(ifield),[],j2_series_Civ1(ifield));
             [par_civ1.ImageB,VideoObject_B] = read_image(ImageName_B,FileType_B,VideoObject_B,FrameIndex_B_Civ1(ifield));
-        end
-        if strcmp(Param.ActionInput.ListCompareMode,'PIV')
-        ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i1_series_Civ1(ifield),i2_series_Civ1(ifield),...
-            j1_series_Civ1(ifield),j2_series_Civ1(ifield));
-        else
-                   ncfile=fullfile_uvmat(RootPath_A,OutputDir,RootFile_A,'.nc',NomTypeNc,i2_series_Civ1(ifield),[],...
-            j1_series_Civ1(ifield),j2_series_Civ1(ifield));
         end
         par_civ1.ImageWidth=FileInfo_A.Width;
         par_civ1.ImageHeight=FileInfo_A.Height;
@@ -375,7 +377,7 @@ for ifield=1:NbField
             Data.Civ1_C=reshape(ctable,[],1);
             Data.Civ1_F=reshape(F,[],1);
         end
-    else
+    else% we use existing Civ1 data
         if exist('ncfile','var')
             CivFile=ncfile;
         elseif isfield(Param.Patch1,'CivFile')
