@@ -1369,7 +1369,7 @@ if isequal(get(handles.CheckMask,'Value'),1)
         end
     end
     Mask.Path=MaskPath;
-    Mask.File=MaskFile;
+    Mask.File=MaskFile{1};
     Mask.Ext=MaskExt;
     Mask.NomType=MaskNomType;
     set(handles.CheckMask,'UserData',Mask);
