@@ -209,6 +209,7 @@ set(hObject,'WindowButtonDownFcn',{'mouse_down'})%set mouse click action functio
 set(hObject,'WindowButtonUpFcn',{'mouse_up',handles}) 
 set(hObject,'DeleteFcn',{@closefcn})%
 set(hObject,'ResizeFcn',{@ResizeFcn,handles})%
+% set(handles.RootPath,'ButtonDownFcn',{'@mouse_down_control'})%set mouse click action function
 
 %% initialisation
 set(handles.FieldName,'Value',1)
@@ -318,24 +319,33 @@ set_vec_col_bar(handles) %update the display of color code for vectors
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command menuline.
 function varargout = uvmat_OutputFcn(hObject, eventdata, handles)
+%------------------------------------------------------------------------    
 varargout{1} = handles.output;% the only output argument is the handle to the GUI figure
 
 %------------------------------------------------------------------------
 % --- executed when closing uvmat: delete or desactivate the associated figures if exist
 function closefcn(gcbo,eventdata)
 %------------------------------------------------------------------------
+% delete GUI 'view_field' if detected
 hh=findobj(allchild(0),'tag','view_field');
 if ~isempty(hh)
     delete(hh)
 end
+% delete GUI 'geometry_calib' if detected
 hh=findobj(allchild(0),'tag','geometry_calib');
 if ~isempty(hh)
     delete(hh)
 end
+% desable set_object editing action if detected
 hh=findobj(allchild(0),'tag','set_object');
 if ~isempty(hh)
     hhh=findobj(hh,'tag','PLOT');
     set(hhh,'enable','off')
+end
+%delete the bowser if detected
+hh=findobj(allchild(0),'tag','browser');
+if ~isempty(hh)
+    delete(hh)
 end
 
 %------------------------------------------------------------------------
@@ -449,12 +459,12 @@ if numel(hh)>1
     msgbox_uvmat('ERROR','invalid input, probably a broken link');
 else
 
-%% display the selected field and related information
-if ~isempty(fileinput)
-    set(handles.SubField,'Value',0)
-    desable_subfield(handles)
-    display_file_name(handles,fileinput)
-end
+    %% display the selected field and related information
+    if ~isempty(fileinput)
+        set(handles.SubField,'Value',0)
+        desable_subfield(handles)
+        display_file_name(handles,fileinput)
+    end
 end
 
 % -----------------------------------------------------------------------
@@ -563,57 +573,6 @@ end
 set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
 %------------------------------------------------------------------------
-% --- Called by action in RootPath edit box
-function RootPath_Callback(hObject,eventdata,handles)
-%------------------------------------------------------------------------
-% read the current input file name:
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
-if ~exist(fullfile(RootPath,SubDir),'dir')
-    msgbox_uvmat('ERROR',['directory ' fullfile(RootPath,SubDir) ' does not exist'])
-    return
-end
-% detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
-% initiate the input file series and refresh the current field view: 
-update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,1);
-
-%-----------------------------------------------------------------------
-% --- Called by action in RootPath_1 edit box
-function RootPath_1_Callback(hObject,eventdata,handles)
-% -----------------------------------------------------------------------
-% update_rootinfo_1(hObject,eventdata,handles)
-[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
-if ~exist(fullfile(RootPath,SubDir),'dir')
-    msgbox_uvmat('ERROR',['directory ' fullfile(RootPath,SubDir) ' does not exist'])
-    return
-end
-% detect the file type, get the movie object if relevant, and look for the corresponding file series:
-[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
-% initiate the input file series and refresh the current field view: 
-update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,2);
-
-%------------------------------------------------------------------------
-% --- Called by action in RootFile edit box
-function SubDir_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-%refresh the menu of input fieldname
-FieldName_Callback(hObject, eventdata, handles);
-% refresh the current field view
-run0_Callback(hObject, eventdata, handles); 
-
-%------------------------------------------------------------------------
-% --- Called by action in RootFile edit box
-function RootFile_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-RootPath_Callback(hObject,eventdata,handles)
-
-%-----------------------------------------------------------------------
-% --- Called by action in RootFile_1 edit box
-function RootFile_1_Callback(hObject, eventdata, handles)
-% -----------------------------------------------------------------------
-RootPath_1_Callback(hObject,eventdata,handles)
-
-%------------------------------------------------------------------------
 % --- Called by action in FileIndex edit box
 function FileIndex_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -623,14 +582,6 @@ set(handles.i2,'String',num2str(i2));
 set(handles.j1,'String',num2str(j1));
 set(handles.j2,'String',num2str(j2));
 
-% refresh the current field view
-run0_Callback(hObject, eventdata, handles)
-
-%------------------------------------------------------------------------
-% --- Called by action in FileIndex_1 edit box
-function FileIndex_1_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-run0_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Called by action in NomType edit box
@@ -657,6 +608,40 @@ FileIndex=fullfile_uvmat('','','','',get(handles.NomType_1,'String'),i1,i2,j1,j2
 set(handles.FileIndex_1,'String',FileIndex)
 % refresh the current settings and refresh the field view
 RootPath_1_Callback(hObject,eventdata,handles)
+
+%------------------------------------------------------------------------
+% --- Executes on button press in REFRESH.
+function REFRESH_Callback(hObject, eventdata, handles)
+%------------------------------------------------------------------------   
+set(handles.REFRESH,'BackgroundColor',[1 1 0])% set button color to yellow to indicate that refresh is under action
+% read the current input file name:
+[RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
+% if ~exist(fullfile(RootPath,SubDir),'dir')
+%     msgbox_uvmat('ERROR',['directory ' fullfile(RootPath,SubDir) ' does not exist'])
+%     return
+% end
+% detect the file type, get the movie object if relevant, and look for the corresponding file series:
+[RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+% initiate the input file series and refresh the current field view: 
+errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,1);
+% refresh the second series if selected
+if get(handles.SubField,'Value')
+    [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
+    if ~exist(fullfile(RootPath,SubDir),'dir')
+        msgbox_uvmat('ERROR',['directory ' fullfile(RootPath,SubDir) ' does not exist'])
+        return
+    end
+    % detect the file type, get the movie object if relevant, and look for the corresponding file series:
+    [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
+    % initiate the input file series and refresh the current field view:
+    errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,2);
+end
+
+if isempty(errormsg)
+set(handles.REFRESH,'BackgroundColor',[1 0 0])% set button color to red to indicate that refresh has been updated
+else
+    set(handles.REFRESH,'BackgroundColor',[1 0 1])% keep button color magenta, input not succesfull
+end
 
 %------------------------------------------------------------------------ 
 % --- Fills the edit boxes RootPath, RootFile,NomType...from an input file name 'fileinput'
@@ -695,7 +680,7 @@ elseif index==2
     set(handles.TimeName_1,'Visible','on')
     set(handles.TimeValue_1,'Visible','on')
 end
-set(handles_RootPath,'BackgroundColor',[1 1 0])% paint edit box to yellow to visualise root file input
+set(handles.REFRESH,'BackgroundColor',[1 1 0])% paint REFRESH button to yellow to visualise root file input
 set(handles.uvmat,'Pointer','watch') % set the mouse pointer to 'watch'
 drawnow
 
@@ -839,16 +824,16 @@ else
     save (profil_perso,'MenuFile','RootPath','-V6'); %store the file names for future opening of uvmat
 end
 
-set(handles_RootPath,'BackgroundColor',[1 1 1])% paint back edit box to white to visualise end of root file input
+set(handles.REFRESH,'BackgroundColor',[1 0 0])% paint back button to red to indicate update is finished
 set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 
 
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
 %     calibration from an xml file, then refresh current plots
-
-function update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,VideoObject,index)
+function errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,VideoObject,index)
 %------------------------------------------------------------------------
+errormsg=''; %default error msg
 %% define the relevant handles depending on the index (1=first file series, 2= second file series)
 if ~exist('index','var')
     index=1;
@@ -877,7 +862,8 @@ end
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 FileBase=fullfile(RootPath,RootFile);
 if ~exist(FileName,'file')
-   msgbox_uvmat('ERROR',['input file ' FileName ' not found']);
+    errormsg=['input file ' FileName ' not found'];
+   msgbox_uvmat('ERROR',errormsg);   
     return
 end
 
@@ -929,7 +915,7 @@ XmlFileName=find_imadoc(RootPath,SubDir,RootFile,FileExt);
 warntext='';%default warning message
 NbSlice=1;%default
 ImaDoc_str='';
-set(handles.RootPath,'BackgroundColor',[1 1 1])
+set(handles.REFRESH,'BackgroundColor',[1 1 0])
 if ~isempty(XmlFileName)
     set(handles.view_xml,'Visible','on')
     set(handles.view_xml,'BackgroundColor',[1 1 0])% paint  to yellow color to indicate reading of the xml file
@@ -1369,7 +1355,11 @@ if isequal(get(handles.CheckMask,'Value'),1)
         end
     end
     Mask.Path=MaskPath;
-    Mask.File=MaskFile{1};
+    if isempty(MaskFile)
+        Mask.File='';
+    else
+        Mask.File=MaskFile{1};
+    end
     Mask.Ext=MaskExt;
     Mask.NomType=MaskNomType;
     set(handles.CheckMask,'UserData',Mask);
@@ -1979,7 +1969,7 @@ set(handles.speed_txt,'Visible','on')
 set(handles.i2,'BackgroundColor',[1 1 1])% mark the edit box in white to indicate its use as input
 set(handles.j2,'BackgroundColor',[1 1 1])% mark the edit box in white to indicate its use as input
 set(handles.FileIndex,'BackgroundColor',[1 1 1])% mark the edit box in white to indicate its use as input
-while get(handles.speed,'Value')~=0 && isequal(get(handles.movie_pair,'BusyAction'),'queue')%isequal(get(handles.run0,'BusyAction'),'queue'); % enable STOP command
+while get(handles.speed,'Value')~=0 && isequal(get(handles.movie_pair,'BusyAction'),'queue') % enable STOP command
     % read and plot the series of images in non erase mode
     set(hima,'CData',Field_b.A); 
     pause(1.02-get(handles.speed,'Value'));% wait for next image
@@ -4840,13 +4830,9 @@ if isfield(UvData,'CoordType')
 end
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];
-set(handles.view_xml,'Backgroundcolor',[1 1 0])%indicate the reading of the current xml file by geometry_calib
-% pos_uvmat=get(handles.uvmat,'Position');
-% pos_cal(1)=pos_uvmat(1)+UvData.OpenParam.PosGeometryCalib(1)*pos_uvmat(3);
-% pos_cal(2)=pos_uvmat(2)+UvData.OpenParam.PosGeometryCalib(2)*pos_uvmat(4);
-% pos_cal(3:4)=UvData.OpenParam.PosGeometryCalib(3:4).* pos_uvmat(3:4);
+set(handles.view_xml,'BackgroundColor',[1 1 0])%indicate the reading of the current xml file by geometry_calib
 geometry_calib(FileName);% call the geometry_calib interface	
-set(handles.view_xml,'Backgroundcolor',[1 1 1])%indicate the end of reading of the current xml file by geometry_calib
+set(handles.view_xml,'BackgroundColor',[1 1 1])%indicate the end of reading of the current xml file by geometry_calib
 set(handles.MenuCalib,'checked','on')% indicate that MenuCalib is activated, test used by mouse action
 
 
@@ -4878,12 +4864,10 @@ else
     set(handles.ListObject,'Value',val);% show the selected lines on the list
     ObjectData=UvData.ProjObject(val);
     for iobj=1:length(ObjectData)
-%         if isfield(ObjectData{iobj},'Coord')
             xA(iobj)=ObjectData{iobj}.Coord(1,1);
             yA(iobj)=ObjectData{iobj}.Coord(1,2);
             xB(iobj)=ObjectData{iobj}.Coord(2,1);
             yB(iobj)=ObjectData{iobj}.Coord(2,2);
-%         end
     end
 end
 
@@ -5064,7 +5048,6 @@ else
                 end
             end
         end
-%     end 
     %mask name
     RootPath=get(handles.RootPath,'String');
     SubDir=get(handles.SubDir,'String');
@@ -5075,7 +5058,6 @@ else
     list=get(handles.masklevel,'String');
     masknumber=num2str(length(list));
     maskindex=get(handles.masklevel,'Value');
-   % mask_name=fullfile_uvmat(RootPath,'',[RootFile '_' masknumber 'mask'],'.png','_1',maskindex);
     mask_name=fullfile_uvmat(RootPath,[SubDir '.mask'],'mask','.png','_1',maskindex);
     imflag=uint8(255*(0.392+0.608*flag));% =100 for flag=0 (vectors not computed when 20<imflag<200)
     imflag=flipdim(imflag,1);
@@ -5109,7 +5091,6 @@ function MenuGrid_Callback(hObject, eventdata, handles)
 %suppress the other options if grid is chosen
 set(handles.edit_vect,'Value',0)
 edit_vect_Callback(hObject, eventdata, handles)
-% set(handles.CheckEditObject,'BackgroundColor',[0.7 0.7 0.7])
 set(handles.ListObject,'Value',1)      
 
 %prepare display of the set_grid GUI

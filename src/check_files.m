@@ -162,16 +162,16 @@ date_str=datestr(max(datnum));
 if status==0 % if a svn line command is available
     svn_info.rep_rev=0;svn_info.cur_rev=0;
     [tild,result]=system(['svn info ' dir_fct]); %get info fromn the svn server
-    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');%detect 'révision' or 'Revision' in the text
+    t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');%detect 'rï¿½vision' or 'Revision' in the text
     if ~isempty(t)
         svn_info.cur_rev=str2double(t.rev); %version nbre of the current package
     end
-    [tild,result]=system(['svn info -r ''HEAD'' '  pathuvmat ' &']);
+    [tild,result]=system(['svn info -r ''HEAD'' '  pathuvmat]);
     t=regexp(result,'R.vision\s*:\s*(?<rev>\d+)','names');
     if ~isempty(t)
         svn_info.rep_rev=str2double(t.rev); % version nbre available on the svn repository
     end
-    [tild,result]=system(['svn status '  pathuvmat ' &']);% '&' prevents the program to stop when the system asks password
+    [tild,result]=system(['svn status '  pathuvmat]);% '&' prevents the program to stop when the system asks password
     svn_info.status=result;
     checkmsg =[checkmsg {['SVN revision : ' num2str(svn_info.cur_rev)]}];%display version nbre of the current uvmat package
     if svn_info.rep_rev>svn_info.cur_rev %if the repository has a more advanced version than the uvmat package, warning msge

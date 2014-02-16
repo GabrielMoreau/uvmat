@@ -102,16 +102,15 @@ switch FileType
     case 'civdata'
         if ~strcmp(Param.Action.ActionName,'civ_series')
             msgbox_uvmat('ERROR','bad input data file: open an image or a nc file from civ_series')
-            return
+            %return
         end
         NomTypeNc=NomTypeInput;
         ind_opening=FileInfo.CivStage;
         if isempty(regexp(NomTypeInput,'[ab|AB|-]', 'once'))
             set(handles.ListCompareMode,'Value',2) %mode displacement advised if the nomencalture does not involve index pairs
-            set(handles.RootFile_1,'Visible','On');
+%             set(handles.RootFile_1,'Visible','On');
         else
             set(handles.ListCompareMode,'Value',1)
-            %            set(handles.RootFile_1,'Visible','Off');
         end
         imageinput='';
         FileInput=SeriesData.RefFile{1};

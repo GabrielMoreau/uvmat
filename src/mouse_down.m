@@ -149,7 +149,7 @@ if ~isempty(hchild)
                 panel_pos=PosChildren(ind_object,:);%position of the panel
                 hhchildren=get(hchild,'Children');%handles of all objects in the selected panel
                 check_visible=strcmp(get(hhchildren,'Visible'),'on');%=1 if visible='on', =0 otherwise
-                hhchildren=hhchildren(check_visible); %keep only the visible children               
+                hhchildren=hhchildren(check_visible); %keep only the visible children
                 PosChildren=get(hhchildren,'Position');
                 PosLength=cellfun('length',PosChildren);
                 hhchildren=hhchildren(PosLength==4);% keep only object with position defined by a 4 element vector
@@ -164,9 +164,11 @@ if ~isempty(hchild)
                         msg_pos=GUI_pos(1:2)+panel_pos(1:2).*GUI_pos(3:4)+PosChildren(ind_object,1:2).*panel_pos(3:4).*GUI_pos(3:4);
                         display_str=get(hhchild,'TooltipString');
                         msgbox_uvmat(['uicontrol: ' get(hhchild,'Tag')],display_str,get(hhchild,'String'),msg_pos);
+                    else
+                        set(hObject,'CurrentObject',hhchild)
                     end
                 end
-            end            
+            end
     end
 end
     if ~strcmp(htype,'axes')
@@ -186,12 +188,12 @@ end
 %% Creation of a display window zoom of text_display
 if strcmp(get(hObject,'SelectionType'),'alt') && strcmp(htype,'axes') && ~test_edit && ~test_create 
     set(0,'Unit','pixels')
-    GUISize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right   
+    %GUISize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right   
     Width=300;% fig width in points (1/72 inch)
     Height=200;
     Left=GUI_pos(1)+GUI_pos(3)-Width; %right edge close to the right, with margin=40
     Bottom=GUI_pos(2)+GUI_pos(4)-Height; %put fig at top right
-    hfig_text=figure('Name','text_display','MenuBar','none','NumberTitle','off','Position',[Left,Bottom,Width,Height]);
+   % hfig_text=figure('Name','text_display','MenuBar','none','NumberTitle','off','Position',[Left,Bottom,Width,Height]);
     AxeData.htext_display=uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.05 0.9 0.9],'Max',2,'BackgroundColor',[1 1 1],...
         'FontUnits','points','FontSize',14);
     set(hchild,'UserData',AxeData);

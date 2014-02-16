@@ -122,6 +122,7 @@ set(handles.PairString,'Data',{''})
 series_ResizeFcn(hObject, eventdata, handles)%resize table according to series GUI size
 set(hObject,'WindowButtonDownFcn',{'mouse_down'})%allows mouse action with right button (zoom for uicontrol display)
 set(handles.InputTable,'KeyPressFcn',{@key_press_fcn,handles})%set keyboard action function (allow action on uvmat when set_object is in front)
+set(hObject,'DeleteFcn',{@closefcn})%
 
 % check default input data
 if ~exist('Param','var')
@@ -265,12 +266,29 @@ end
 % --- Outputs from this function are returned to the command line.
 function varargout = series_OutputFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------ 
-% varargout  cell array for returning output args (see VARARGOUT);
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% Get default command line output from handles structure
 varargout{1} = handles.output;
+
+%------------------------------------------------------------------------
+% --- executed when closing uvmat: delete or desactivate the associated figures if exist
+function closefcn(gcbo,eventdata)
+%------------------------------------------------------------------------
+
+% delete set_object_series if detected
+hh=findobj(allchild(0),'name','view_object_series');
+if ~isempty(hh)
+    delete(hh)
+end
+hh=findobj(allchild(0),'name','edit_object_series');
+if ~isempty(hh)
+    delete(hh)
+end
+
+%delete the bowser if detected
+hh=findobj(allchild(0),'tag','browser');
+if ~isempty(hh)
+    delete(hh)
+end
+
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -473,7 +491,7 @@ set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 % --- Executes when entered data in editable cell(s) in InputTable.
 function InputTable_CellEditCallback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.REFRESH,'Visible','on')
+set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 % set(handles.REFRESH_title,'Visible','on')
 iview=eventdata.Indices(1);
 view_set=get(handles.REFRESH,'UserData');
@@ -515,7 +533,6 @@ end
 function REFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 InputTable=get(handles.InputTable,'Data');
-% view_set=get(handles.REFRESH,'UserData');% list of lines to refresh 
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
 drawnow
 empty_line=false(size(InputTable,1),1);
@@ -545,8 +562,7 @@ for iview=1:size(InputTable,1)
        update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,FileInfo,MovieObject,iview)
     end
 end
-set(handles.REFRESH,'Visible','off')
-%set(handles.REFRESH_title,'Visible','off')
+set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (indicate activation finished)
 
 %------------------------------------------------------------------------
 % --- Function called when a new file is opened, either by series_OpeningFcn or by the browser
@@ -2162,7 +2178,7 @@ end
 set(handles.ProjObject,'Visible',ProjObjectVisible)
 set(handles.DeleteObject,'Visible',ProjObjectVisible)
 set(handles.ViewObject,'Visible',ProjObjectVisible)
-
+set(handles.EditObject,'Visible',ProjObjectVisible)
 
 %% Visibility of mask input
 MaskVisible='off';  %hidden by default
@@ -2395,9 +2411,8 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in CheckObject.
-%------------------------------------------------------------------------
 function CheckObject_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 hset_object=findobj(allchild(0),'tag','set_object');%find the set_object interface handle
 if get(handles.CheckObject,'Value')
     SeriesData=get(handles.series,'UserData');
@@ -2415,18 +2430,15 @@ if get(handles.CheckObject,'Value')
                 defaultname={''};
             end
             fileinput=uigetfile_uvmat('pick a xml object file (or use uvmat to create it)',defaultname,'.xml');
-%             [FileName, PathName] = uigetfile( ...
-%                 {'*.xml;*.mat', ' (*.xml,*.mat)';
-%                 '*.xml',  '.xml files '; ...
-%                 '*.mat',  '.mat matlab files '}, ...
-%                 'Pick an xml object file (or use uvmat to create it)',defaultname);
-%             fileinput=[PathName FileName];%complete file name
-%             sizf=size(fileinput);
-            if isempty(fileinput),return;end
+            if isempty(fileinput)% exit if no object file is selected
+                set(handles.CheckObject,'Value',0)
+                return
+            end
             %read the file
             data=xml2struct(fileinput);
             if ~isfield(data,'Type')
                 msgbox_uvmat('ERROR',[fileinput ' is not an object xml file'])
+                set(handles.CheckObject,'Value',0)
                 return
             end
             if ~isfield(data,'ProjMode')
@@ -2449,7 +2461,7 @@ else
     set(handles.DeleteObject,'Visible','off');
     set(handles.ViewObject,'Visible','off');
     if ~ishandle(hset_object)
-    set(handles.ViewObject,'Value',0);
+        set(handles.ViewObject,'Value',0);
     end
     set(handles.ProjObject,'Visible','off');
 end
@@ -2470,9 +2482,8 @@ set(hset_object,'Name','view_object_series')
 
 %------------------------------------------------------------------------
 % --- Executes on button press in EditObject.
-%------------------------------------------------------------------------
 function EditObject_Callback(hObject, eventdata, handles)
-
+%------------------------------------------------------------------------
 if get(handles.EditObject,'Value')
     set(handles.ViewObject,'Value',0)
 	UserData=get(handles.series,'UserData');
@@ -2488,24 +2499,21 @@ end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in DeleteObject.
-%------------------------------------------------------------------------
 function DeleteObject_Callback(hObject, eventdata, handles)
-
-% if get(handles.DeleteObject,'Value')
-	SeriesData=get(handles.series,'UserData');
-    SeriesData.ProjObject=[];
-    set(handles.series,'UserData',SeriesData)
-    set(handles.ProjObject,'String','')
-    set(handles.CheckObject,'Value',0)
-    set(handles.ViewObject,'Visible','off')
-    set(handles.EditObject,'Visible','off')
-    hset_object=findobj(allchild(0),'Tag','set_object');
-    if ~isempty(hset_object)
-        delete(hset_object)
-    end
-    set(handles.DeleteObject,'Visible','off')
-%     set(handles.DeleteObject,'Value',0)
-% end
+%------------------------------------------------------------------------
+SeriesData=get(handles.series,'UserData');
+SeriesData.ProjObject=[];
+set(handles.series,'UserData',SeriesData)
+set(handles.ProjObject,'String','')
+set(handles.ProjObject,'Visible','off')
+set(handles.CheckObject,'Value',0)
+set(handles.ViewObject,'Visible','off')
+set(handles.EditObject,'Visible','off')
+hset_object=findobj(allchild(0),'Tag','set_object');
+if ~isempty(hset_object)
+    delete(hset_object)
+end
+set(handles.DeleteObject,'Visible','off')
 
 %------------------------------------------------------------------------
 % --- Executed when CheckMask is activated
@@ -2675,15 +2683,17 @@ evalin('base','Param') %display CurData in the workspace
 commandwindow; %brings the Matlab command window to the front
 
 %------------------------------------------------------------------------
-% --- fct activated by the upper bar menu InportConfig
+% --- fct activated by the upper bar menu InportConfig: import
+%     menu settings from an xml file (stored in /0_XML for each run)
 %------------------------------------------------------------------------
 function MenuImportConfig_Callback(hObject, eventdata, handles)
 
 InputTable=get(handles.InputTable,'Data');
 filexml=uigetfile_uvmat('pick a xml parameter file',InputTable{1,1},'.xml');% get the xml file containing processing parameters
-if ~isempty(filexml)%abandon if no file is introduced by the browser
-    Param=xml2struct(filexml);
-    % stop current Action if button RUN has been activated
+%proceed only if a file has been introduced by the browser
+if ~isempty(filexml)
+    Param=xml2struct(filexml);% read the input xml file as a Matlab structure
+    % ask to stop current Action if button RUN is in action (another process is already running)
     if isequal(get(handles.RUN,'Value'),1)
         answer= msgbox_uvmat('INPUT_Y-N','stop current Action process?');
         if strcmp(answer,'Yes')
@@ -2692,9 +2702,23 @@ if ~isempty(filexml)%abandon if no file is introduced by the browser
             return
         end
     end
-    Param.Action.RUN=0; %deactivate the RUN button
+    Param.Action.RUN=0; %desactivate the input RUN=1
     fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
-    REFRESH_Callback([],[],handles)% refresh data relative to the input files
+    if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
+        set(handles.ProjObject,'String',Param.ProjObject.Name)
+        set(handles.ViewObject,'Visible','on')
+        set(handles.EditObject,'Visible','on')
+        set(handles.DeleteObject,'Visible','on')
+    else     
+        set(handles.ProjObject,'String','')
+        set(handles.ProjObject,'Visible','off')
+        set(handles.ViewObject,'Visible','off')
+        set(handles.EditObject,'Visible','off')
+        set(handles.DeleteObject,'Visible','off')     
+    end     
+%     set(handles.REFRESH,'Visible','on')
+    set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
+  %  REFRESH_Callback([],[],handles)% refresh data relative to the input files
     SeriesData=get(handles.series,'UserData');
     if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
         set(handles.ActionInput,'Visible','on')
@@ -2707,7 +2731,6 @@ if ~isempty(filexml)%abandon if no file is introduced by the browser
         SeriesData.ProjObject=Param.ProjObject;
     end
     set(handles.series,'UserData',SeriesData)
-    %ActionName_Callback([],[],handles)
 end
 
 %------------------------------------------------------------------------
@@ -2987,26 +3010,3 @@ menu=menu(1:imax);
 % --- Executes on mouse motion over figure - except title and menu.
 function series_WindowButtonMotionFcn(hObject, eventdata, handles)
 set(hObject,'Pointer','arrow');
-
-
-
-function TimeName_Callback(hObject, eventdata, handles)
-% hObject    handle to TimeName (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of TimeName as text
-%        str2double(get(hObject,'String')) returns contents of TimeName as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function TimeName_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to TimeName (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end

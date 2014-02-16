@@ -24,7 +24,7 @@ for ichild=1:numel(children)
     handles.(get(children(ichild),'tag'))=children(ichild);
     end
 end
-UserData=get(GUI_handle,'UserData');
+UserData=get(GUI_handle,'UserData');% additional information stored in 'UserData' of the GUI
 fields=fieldnames(Param);%list of fields in Param
 
 %--------------------------------------------------------------------------------------
@@ -32,13 +32,14 @@ fields=fieldnames(Param);%list of fields in Param
 %--------------------------------------------------------------------------------------
 for ifield=1:numel(fields)
     if isstruct(Param.(fields{ifield}))% case of a sub-structure
-    %% case of a sub-structure --> fill a panel
+    %% case of a sub-structure 
+        % if a panel in the GUI has the tag fields{ifield}, fill it with the sub-structure content
         if isfield(handles,fields{ifield})
             set(handles.(fields{ifield}),'Visible','on')
             errormsg=fill_GUI(Param.(fields{ifield}),handles.(fields{ifield}));% recursively apply the function to the substructure
-        elseif isfield(UserData,fields{ifield})&& isfield(handles,fields{ifield})&&isfield(Param.(fields{ifield}),'Name')
-            UserData.(fields{ifield})=Param.(fields{ifield});
-            set(handles.(fields{ifield}),'String',Param.(fields{ifield}).Name)
+%         elseif isfield(UserData,fields{ifield}) && isfield(handles,fields{ifield}) && isfield(Param.(fields{ifield}),'Name')
+%             UserData.(fields{ifield})=Param.(fields{ifield});
+%             set(handles.(fields{ifield}),'String',Param.(fields{ifield}).Name)
         end
     else
     %% case of an element
