@@ -242,7 +242,7 @@ if isfield(Param,'Coord_y_str')&& isfield(Param,'Coord_y_val')
 end
 
 %% introduce the input file name(s) if defined from input Param
-if isfield(Param,'FileName')
+if isfield(Param,'FileName')&&~isempty(Param.FileName)
     %InputTable={'','','','',''}; % refresh the file input table
     InputTable={}
     set(handles.InputTable,'Data',InputTable)

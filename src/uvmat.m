@@ -1869,7 +1869,7 @@ else
     FieldName=list_fields{index_fields}; % selected field
     if isequal(FieldName,'image')
         index=2;
-        [RootPath,tild,RootFile,FileIndex_1,Ext,NomType]=read_file_boxes_1(handles);
+        [RootPath,SubDir,RootFile,FileIndex_1,Ext,NomType]=read_file_boxes_1(handles);% get info from the second input line
     else
         msgbox_uvmat('ERROR','an image or movie must be first introduced as input')
         set(handles.movie_pair,'BackgroundColor',[1 0 0])%paint the command button in red
@@ -1908,6 +1908,12 @@ if isempty(num_j2)
 end
 if isempty(num_i2)
     num_i2=num_i1;%repeat the index i1 by default
+end
+if isempty(num_j1)
+    num_j1=1;
+end
+if isempty(num_j2)
+    num_j2=num_j1;%repeat the index i1 by default
 end
 imaname_1=fullfile_uvmat(RootPath,SubDir,RootFile,Ext,NomType,num_i2,[],num_j2);
 if strcmp(NomType,'*')
