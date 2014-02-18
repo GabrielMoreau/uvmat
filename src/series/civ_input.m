@@ -86,8 +86,13 @@ RootFile=Param.InputTable{1,3};
 SubDir=Param.InputTable{1,2};
 NomTypeInput=Param.InputTable{1,4};
 FileExt=Param.InputTable{1,5};
-FileType=SeriesData.FileType{1};%type of the first input file series
-FileInfo=SeriesData.FileInfo{1};
+if isfield(SeriesData,'FileType')&&isfield(SeriesData,'FileInfo')
+    FileType=SeriesData.FileType{1};%type of the first input file series
+    FileInfo=SeriesData.FileInfo{1};
+else
+    msgbox_uvmat('ERROR','please refresh the input file series')
+    return
+end
 
 
 %% case of netcdf file as input, get the processing stage and look for corresponding images
@@ -332,21 +337,6 @@ end
 % --- general function activated for an input file series
 function errormsg=display_file_name(handles,fileinput)
 %------------------------------------------------------------------------
-
-
-%% enable OK, BATCH button and 'status' display
-% set(handles.OK, 'Enable','On')
-% set(handles.OK,'BackgroundColor',[1 0 0])%set RUN button to red color
-% if isfield(handles,'status')
-%     set(handles.status,'Value',0);       %suppress the 'status' display
-%     status_Callback([], [], handles)
-% end
-
-%% determine nomenclature types and extension of the input files
-% [RootPath,SubDir,Civ2_ImageB,i1,i2,j1,j2,ExtInput,NomTypeInput]=fileparts_uvmat(fileinput);
-% NomTypeNc='';%default
-
-
 
 %% scan the image file series
 [FilePath,FileName,ImaExt]=fileparts(imageinput);

@@ -92,10 +92,15 @@ UserData=get(handle,'UserData');
 if isstruct(UserData)
     List=fields(UserData);
     for ilist=1:numel(List)
-        if isstruct(UserData.(List{ilist})) 
+        if isstruct(UserData.(List{ilist}))% look for edit box with the tag UserData.(List{ilist})
             heditbox=findobj(handle,'Tag',List{ilist},'Style','edit','Visible','on');
             if isequal(numel(heditbox),1)
                 struct.(List{ilist})=UserData.(List{ilist});
+            else% look for pushbutton with the tag UserData.(List{ilist})
+                hpushbutton=findobj(handle,'Tag',List{ilist},'Style','pushbutton','Visible','on');
+                if isequal(numel(hpushbutton),1)
+                    struct.(List{ilist})=UserData.(List{ilist});
+                end
             end
         end
     end

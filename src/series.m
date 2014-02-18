@@ -2054,7 +2054,7 @@ if numel(iview_civ)>=1
     end
 end       
 
-%% Check whether alphabetical sorting of input Subdir is alowed by the Action fct  (for multiples series entries)
+%% Check whether alphabetical sorting of input Subdir is allowed by the Action fct  (for multiples series entries)
 if isfield(ParamOut,'AllowInputSort')&&isequal(ParamOut.AllowInputSort,'on')&& size(Param.InputTable,1)>1
     [tild,iview]=sort(InputTable(:,2)); %subdirectories sorted in alphabetical order
     set(handles.InputTable,'Data',InputTable(iview,:));
@@ -2191,13 +2191,21 @@ set(handles.CheckMask,'Visible',MaskVisible);
 %% definition of the directory containing the output files 
 OutputDirVisible='off';
 if isfield(ParamOut,'OutputDirExt')&&~isempty(ParamOut.OutputDirExt)
+    OutputSubDirMode='all';%default
+    if isfield(ParamOut,'OutputSubDirMode')
+        OutputSubDirMode=ParamOut.OutputSubDirMode;
+    end
     set(handles.OutputDirExt,'String',ParamOut.OutputDirExt)
     OutputDirVisible='on';
     SubDir=InputTable(1:end,2); %set of subdirectories sorted in alphabetical order
-    SubDirOut=SubDir{1};
-    if numel(SubDir)>1
-        for ilist=2:numel(SubDir)
-            SubDirOut=[SubDirOut '-' SubDir{ilist}];
+    if strcmp(OutputSubDirMode,'last')
+        SubDirOut=SubDir{end};
+    else
+        SubDirOut=SubDir{1};
+        if ~strcmp(OutputSubDirMode,'first')  && numel(SubDir)>1
+            for ilist=2:numel(SubDir)
+                SubDirOut=[SubDirOut '-' SubDir{ilist}];
+            end
         end
     end
     set(handles.OutputSubDir,'String',SubDirOut)
@@ -2219,17 +2227,17 @@ end
 
 %% definition of an additional parameter set, determined by an ancillary GUI
 if isfield(ParamOut,'ActionInput')
+%     set(handles.ActionInput,'Visible','on')
+%     set(handles.ActionInput_title,'Visible','on')
     set(handles.ActionInput,'Visible','on')
-    set(handles.ActionInput_title,'Visible','on')
-    set(handles.ActionInputView,'Visible','on')
-    set(handles.ActionInputView,'Value',0)
-    set(handles.ActionInput,'String',ActionName)
+ %   set(handles.ActionInput,'Value',0)
+%     set(handles.ActionInput,'String',ActionName)
     ParamOut.ActionInput.Program=ActionName; % record the program in ActionInput
     SeriesData.ActionInput=ParamOut.ActionInput;
 else
+%     set(handles.ActionInput,'Visible','off')
+%     set(handles.ActionInput_title,'Visible','off')
     set(handles.ActionInput,'Visible','off')
-    set(handles.ActionInput_title,'Visible','off')
-    set(handles.ActionInputView,'Visible','off')
     if isfield(SeriesData,'ActionInput')
     SeriesData=rmfield(SeriesData,'ActionInput');
     end
@@ -2238,10 +2246,10 @@ set(handles.series,'UserData',SeriesData)
 set(handles.ActionName,'BackgroundColor',[1 1 1])
 
 %------------------------------------------------------------------------
-% --- Executes on button press in ActionInputView.
-function ActionInputView_Callback(hObject, eventdata, handles)
+% --- Executes on button press in ActionInput.
+function ActionInput_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-if get(handles.ActionInputView,'Value')
+if get(handles.ActionInput,'Value')
     ActionName_Callback(hObject, eventdata, handles)
 end
 
@@ -2704,6 +2712,18 @@ if ~isempty(filexml)
     end
     Param.Action.RUN=0; %desactivate the input RUN=1
     fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
+    SeriesData=get(handles.series,'UserData');
+    if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
+%         set(handles.ActionInput,'Visible','on')
+%         set(handles.ActionInput_title,'Visible','on')
+        set(handles.ActionInput,'Visible','on')
+        set(handles.ActionInput,'Value',0)
+        SeriesData.ActionInput=Param.ActionInput;
+    end
+    if isfield(Param,'ProjObject') %introduce projection object if relevant
+        SeriesData.ProjObject=Param.ProjObject;
+    end
+    set(handles.series,'UserData',SeriesData)
     if isfield(Param,'CheckObject') && isequal(Param.CheckObject,1)
         set(handles.ProjObject,'String',Param.ProjObject.Name)
         set(handles.ViewObject,'Visible','on')
@@ -2719,18 +2739,6 @@ if ~isempty(filexml)
 %     set(handles.REFRESH,'Visible','on')
     set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
   %  REFRESH_Callback([],[],handles)% refresh data relative to the input files
-    SeriesData=get(handles.series,'UserData');
-    if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
-        set(handles.ActionInput,'Visible','on')
-        set(handles.ActionInput_title,'Visible','on')
-        set(handles.ActionInputView,'Visible','on')
-        set(handles.ActionInputView,'Value',0)
-        SeriesData.ActionInput=Param.ActionInput;
-    end
-    if isfield(Param,'ProjObject') %introduce projection object if relevant
-        SeriesData.ProjObject=Param.ProjObject;
-    end
-    set(handles.series,'UserData',SeriesData)
 end
 
 %------------------------------------------------------------------------

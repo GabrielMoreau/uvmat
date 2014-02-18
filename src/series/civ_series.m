@@ -57,6 +57,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     Data.ProjObject='off';%can use projection object(option 'off'/'on',
     Data.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     Data.OutputDirExt='.civ';%set the output dir extension
+    Data.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
     filecell=get_file_series(Param);%check existence of the first input file
     if ~exist(filecell{1,1},'file')
