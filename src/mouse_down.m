@@ -139,7 +139,23 @@ if ~isempty(hchild)
                 obj_pos=PosChildren(ind_object,:);
                 msg_pos(1:2)=GUI_pos(1:2)+obj_pos(1:2).*GUI_pos(3:4);
                 display_str=get(hchild,'TooltipString');
-                msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],display_str,get(hchild,'String'),msg_pos);
+                output=msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],display_str,get(hchild,'String'),msg_pos);
+                %update the parent edit box and indicat that refresh is needed with the new input
+                if strcmp(get(hchild,'Style'),'edit')&&strcmp(get(hchild,'Enable'),'on')
+                    set(hchild,'String',output)
+                    if strcmp(get(get(hchild,'parent'),'tag'),'InputFile')
+                                hhREFRESH=hhCurrentGUI.InputFileREFRESH;
+                            else
+                                hhREFRESH=hhCurrentGUI.REFRESH;
+                            end
+                    switch get(hchild,'tag')% tag of the current edit box
+                        case {'RootPath', 'SubDir','RootFile','FileExt','RootPath_1', 'SubDir_1','RootFile_1','FileExt_1'}
+                            set(hhREFRESH,'BackgroundColor',[1 0 1])%indicat that REFRESH must be activated (intyroduce the whole series)
+                        case 'num_IndexIncrement'% no action
+                        otherwise
+                            set(hhREFRESH,'BackgroundColor',[1 0 1])%indicat that run0 must be activated
+                    end
+                end
                 return %leave the function once a uicontrol has been selected
             end
             
@@ -163,7 +179,23 @@ if ~isempty(hchild)
                     if strcmp(get(hhchild,'Type'),'uicontrol')
                         msg_pos=GUI_pos(1:2)+panel_pos(1:2).*GUI_pos(3:4)+PosChildren(ind_object,1:2).*panel_pos(3:4).*GUI_pos(3:4);
                         display_str=get(hhchild,'TooltipString');
-                        msgbox_uvmat(['uicontrol: ' get(hhchild,'Tag')],display_str,get(hhchild,'String'),msg_pos);
+                        output=msgbox_uvmat(['uicontrol: ' get(hhchild,'Tag')],display_str,get(hhchild,'String'),msg_pos);
+                        %update the parent edit box and indicat that refresh is needed with the new input
+                        if strcmp(get(hhchild,'Style'),'edit')&&strcmp(get(hhchild,'Enable'),'on')
+                            set(hhchild,'String',output)
+                            if strcmp(get(get(hhchild,'parent'),'tag'),'InputFile')
+                                hhREFRESH=hhCurrentGUI.InputFileREFRESH;
+                            else
+                                hhREFRESH=hhCurrentGUI.REFRESH;
+                            end
+                            switch get(hhchild,'tag')% tag of the current edit box
+                                case {'RootPath', 'SubDir','RootFile','FileExt','RootPath_1', 'SubDir_1','RootFile_1','FileExt_1'}
+                                    set(hhREFRESH,'BackgroundColor',[1 0 1])%indicat that REFRESH must be activated (intyroduce the whole series)
+                                case 'num_IndexIncrement'% no action
+                                otherwise
+                                    set(hhREFRESH,'BackgroundColor',[1 0 1])%indicat that run0 must be activated
+                            end
+                        end
                     else
                         set(hObject,'CurrentObject',hhchild)
                     end

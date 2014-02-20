@@ -51,9 +51,10 @@ if ~isempty(xx)
         otherwise
             switch get(gco,'tag')% tag of the current edit box
                 case {'RootPath', 'SubDir','RootFile','FileExt','RootPath_1', 'SubDir_1','RootFile_1','FileExt_1'}
-                    set(handleshaxes.REFRESH,'BackgroundColor',[1 0 1])%indicat that REFRESH must be activated (intyroduce the whole series)
+                    set(handleshaxes.InputFileREFRESH,'BackgroundColor',[1 0 1])%indicat that REFRESH must be activated (intyroduce the whole series)
+                case 'num_IndexIncrement'% no action
                 otherwise
-                    set(handleshaxes.run0,'BackgroundColor',[1 0 1])%indicat that run0 must be activated
+                    set(handleshaxes.REFRESH,'BackgroundColor',[1 0 1])%indicat that run0 must be activated
             end
     end
 end

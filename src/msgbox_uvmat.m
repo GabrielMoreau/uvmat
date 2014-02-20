@@ -61,7 +61,7 @@ set(handles.No,'FontSize',15)
 set(handles.Cancel,'Units','pixels')
 set(handles.Cancel,'Position',[300 2 60 30])
 set(handles.Cancel,'FontSize',15)
-
+%set(hObject,'WindowKeyPressFcn',{'@keyboard_callback',handles})%set keyboard action function
 
 % Update handles structure
 guidata(hObject, handles);
@@ -205,17 +205,21 @@ if isfield(handles,'output')
         varargout{1}='No';
     else
         if strcmp(get(handles.edit_box,'Style'),'listbox')
-             varargout{1}=get(handles.edit_box,'Value');
+            varargout{1}=get(handles.edit_box,'Value');
         else
-        varargout{1}=get(handles.edit_box,'String');
+            varargout{1}=get(handles.edit_box,'String');
         end
-        if isempty(varargout{1}) 
+        if isempty(varargout{1})
             varargout{1}='Yes';
         end
+    end
+    if strcmp(get(handles.edit_box, 'Visible'), 'on')
+        varargout{2}=get(handles.edit_box,'String');
     end
     % The figure can be deleted now
     delete(handles.figure1);
 end
+
 %  delete(handles.figure1);
 
 %------------------------------------------------------------------------ 
@@ -275,7 +279,11 @@ if isequal(get(hObject,'CurrentKey'),'return')
     uiresume(handles.figure1);
 end    
 
-
+%'keyboard_callback:' function activated when a key is pressed on the keyboard
+%-----------------------------------
+function keyboard_callback(hObject,eventdata,handleshaxes)
+cur_axes=get(hObject,'CurrentAxes');%current plotting axes of the figure with handle hObject
+xx=double(get(hObject,'CurrentCharacter')) %get the keyboard character
 
 
 

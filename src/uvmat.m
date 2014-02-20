@@ -45,7 +45,7 @@
 %          .PlotAxes: field structure representing the current field plotted  on the main axes  (used for mouse operations)
 %          .HistoAxes: idem for histogram axes
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   DATA FLOW  (for run0_Callback) %%%%%%%%%%%%%%%%%%%%:
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   DATA FLOW  (for REFRESH_Callback) %%%%%%%%%%%%%%%%%%%%:
 %
 %
 % 1) Input filenames are determined by MenuBrowse (first field), MenuBrowseCampaign
@@ -434,6 +434,7 @@ pos(3)=0.77*size_fig(3)-1.2*ColumnWidth;
 pos(4)=size_fig(4)-60;
 set(handles.PlotAxes,'Units','pixels')
 set(handles.PlotAxes,'Position',pos)
+set(handles.PlotAxes,'Units','normalized')
 
 
 %------------------------------------------------------------------------
@@ -593,7 +594,7 @@ j1=str2num(get(handles.j1,'String'));
 j2=str2num(get(handles.j2,'String'));
 FileIndex=fullfile_uvmat('','','','',get(handles.NomType,'String'),i1,i2,j1,j2);
 set(handles.FileIndex,'String',FileIndex)
-% refresh the current settings and refresh the field view
+% inputfilerefresh the current settings and inputfilerefresh the field view
 RootPath_Callback(hObject,eventdata,handles)
 
 %------------------------------------------------------------------------
@@ -606,14 +607,14 @@ j1=str2num(get(handles.j1,'String'));
 j2=str2num(get(handles.j2,'String'));
 FileIndex=fullfile_uvmat('','','','',get(handles.NomType_1,'String'),i1,i2,j1,j2);
 set(handles.FileIndex_1,'String',FileIndex)
-% refresh the current settings and refresh the field view
+% inputfilerefresh the current settings and inputfilerefresh the field view
 RootPath_1_Callback(hObject,eventdata,handles)
 
 %------------------------------------------------------------------------
-% --- Executes on button press in REFRESH.
-function REFRESH_Callback(hObject, eventdata, handles)
+% --- Executes on button press in InputFileREFRESH.
+function InputFileREFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------   
-set(handles.REFRESH,'BackgroundColor',[1 1 0])% set button color to yellow to indicate that refresh is under action
+set(handles.InputFileREFRESH,'BackgroundColor',[1 1 0])% set button color to yellow to indicate that refresh is under action
 % read the current input file name:
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 % if ~exist(fullfile(RootPath,SubDir),'dir')
@@ -622,9 +623,9 @@ set(handles.REFRESH,'BackgroundColor',[1 1 0])% set button color to yellow to in
 % end
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
-% initiate the input file series and refresh the current field view: 
+% initiate the input file series and inputfilerefresh the current field view: 
 errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,1);
-% refresh the second series if selected
+% inputfilerefresh the second series if selected
 if get(handles.SubField,'Value')
     [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
     if ~exist(fullfile(RootPath,SubDir),'dir')
@@ -633,14 +634,14 @@ if get(handles.SubField,'Value')
     end
     % detect the file type, get the movie object if relevant, and look for the corresponding file series:
     [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,MovieObject]=find_file_series(fullfile(RootPath,SubDir),[RootFile FileIndices FileExt]);
-    % initiate the input file series and refresh the current field view:
+    % initiate the input file series and inputfilerefresh the current field view:
     errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,2);
 end
 
 if isempty(errormsg)
-set(handles.REFRESH,'BackgroundColor',[1 0 0])% set button color to red to indicate that refresh has been updated
+set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])% set button color to red to indicate that refresh has been updated
 else
-    set(handles.REFRESH,'BackgroundColor',[1 0 1])% keep button color magenta, input not succesfull
+    set(handles.InputFileREFRESH,'BackgroundColor',[1 0 1])% keep button color magenta, input not succesfull
 end
 
 %------------------------------------------------------------------------ 
@@ -680,7 +681,7 @@ elseif index==2
     set(handles.TimeName_1,'Visible','on')
     set(handles.TimeValue_1,'Visible','on')
 end
-set(handles.REFRESH,'BackgroundColor',[1 1 0])% paint REFRESH button to yellow to visualise root file input
+set(handles.InputFileREFRESH,'BackgroundColor',[1 1 0])% paint REFRESH button to yellow to visualise root file input
 set(handles.uvmat,'Pointer','watch') % set the mouse pointer to 'watch'
 drawnow
 
@@ -800,7 +801,7 @@ switch FileType
         set(handles.MenuExportMovie,'Enable','on')
         set(handles.MenuTools,'Enable','on')
 
-        % initiate input file series and refresh the current field view:     
+        % initiate input file series and inputfilerefresh the current field view:     
         update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,MovieObject,index);
 
 end
@@ -824,13 +825,13 @@ else
     save (profil_perso,'MenuFile','RootPath','-V6'); %store the file names for future opening of uvmat
 end
 
-set(handles.REFRESH,'BackgroundColor',[1 0 0])% paint back button to red to indicate update is finished
+set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])% paint back button to red to indicate update is finished
 set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 
 
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
-%     calibration from an xml file, then refresh current plots
+%     calibration from an xml file, then inputfilerefresh current plots
 function errormsg=update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,VideoObject,index)
 %------------------------------------------------------------------------
 errormsg=''; %default error msg
@@ -846,7 +847,7 @@ end
 
 set(handles.FieldName,'UserData',[])% reinialize data from uvmat opening
 UvData=get(handles.uvmat,'UserData');%huvmat=handles of the uvmat interface
-UvData.NewSeries=1; %flag for run0: begin a new series
+UvData.NewSeries=1; %flag for REFRESH: begin a new series
 UvData.FileName_1='';% name of the current second field (used to detect a  constant field during file scanning)
 UvData.FileType{index}=FileType;
 UvData.i1_series{index}=i1_series;
@@ -915,7 +916,7 @@ XmlFileName=find_imadoc(RootPath,SubDir,RootFile,FileExt);
 warntext='';%default warning message
 NbSlice=1;%default
 ImaDoc_str='';
-set(handles.REFRESH,'BackgroundColor',[1 1 0])
+set(handles.InputFileREFRESH,'BackgroundColor',[1 1 0])
 if ~isempty(XmlFileName)
     set(handles.view_xml,'Visible','on')
     set(handles.view_xml,'BackgroundColor',[1 1 0])% paint  to yellow color to indicate reading of the xml file
@@ -1087,7 +1088,11 @@ switch FileType
     case 'netcdf'
         set(handles_Fields,'Value',1)
         set(handles_Fields,'String',{'get_field...'})
-        FieldName_Callback([],[], handles)
+        if index==1
+            FieldName_Callback([],[], handles)
+        else
+            FieldName_1_Callback([],[], handles)
+        end
     otherwise
         set(handles_Fields,'Value',1) % set menu to 'image'
         set(handles_Fields,'String',{'image'})
@@ -1097,7 +1102,7 @@ switch FileType
 end
 set(handles.uvmat,'UserData',UvData)
 
-%% set index navigation options and refresh plots
+%% set index navigation options and inputfilerefresh plots
 scan_option='i';%default
 state_j='off'; %default
 if index==2
@@ -1456,12 +1461,12 @@ end
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
-% III - MAIN REFRESH FUNCTIONS : 'FRAME PLOT'
+% III - MAIN InputFileREFRESH FUNCTIONS : 'FRAME PLOT'
 %------------------------------------------------------------------------
 
 %------------------------------------------------------------------------
 % --- Executes on button press in runplus: make one step forward and call
-% --- run0. The step forward is along the fieldname series 1 or 2 depending on 
+% --- InputFileREFRESH. The step forward is along the fieldname series 1 or 2 depending on 
 % --- the scan_i and scan_j check box (exclusive each other)
 function runplus_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -1480,7 +1485,7 @@ set(handles.runplus,'BackgroundColor',[1 0 0])%paint the command button back to 
 
 %------------------------------------------------------------------------
 % --- Executes on button press in runmin: make one step backward and call
-% --- run0. The step backward is along the fieldname series 1 or 2 depending on 
+% --- InputFileREFRESH. The step backward is along the fieldname series 1 or 2 depending on 
 % --- the scan_i and scan_j check box (exclusive each other)
 function runmin_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
@@ -1781,14 +1786,14 @@ else
 end
 filename=fullfile_uvmat(InputFile.RootPath,InputFile.SubDir,InputFile.RootFile,FileExt,NomType,i1,i2,j1,j2);
 
-%% refresh plots
+%% inputfilerefresh plots
 if sub_value
     filename_1=fullfile_uvmat(InputFile.RootPath_1,InputFile.SubDir_1,InputFile.RootFile_1,InputFile.FileExt_1,InputFile.NomType_1,i1_1,i2_1,j1_1,j2_1);
     errormsg=refresh_field(handles,filename,filename_1,i1,i2,j1,j2,i1_1,i2_1,j1_1,j2_1);
 else
     errormsg=refresh_field(handles,filename,filename_1,i1,i2,j1,j2);
 end
-set(handles.run0,'BackgroundColor',[1 0 0])
+set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])
 
 %% update the index counters if the index move is successfull
 if isempty(errormsg) 
@@ -1839,7 +1844,7 @@ if ~get(handles.movie_pair,'value')
     return
 else
     set(handles.movie_pair,'BusyAction','queue')
-    set(handles.run0,'BackgroundColor',[1 0 0])
+    set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])
 end
 
 %% initialisation
@@ -1981,10 +1986,10 @@ set(handles.movie_pair,'Value',0)
 set(handles.Dt_txt,'String','')
 
 %------------------------------------------------------------------------
-% --- Executes on button press in run0.
-function run0_Callback(hObject, eventdata, handles)
+% --- Executes on button press in InputFileREFRESH.
+function REFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.run0,'BackgroundColor',[1 1 0])%paint the command button in yellow
+set(handles.REFRESH,'BackgroundColor',[1 1 0])%paint the command button in yellow
 drawnow
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(FileIndex);% check back the indices used
@@ -2017,11 +2022,11 @@ else
     set(handles.j2,'BackgroundColor',[1 1 1])
     set(handles.FileIndex,'BackgroundColor',[1 1 1])
     set(handles.FileIndex_1,'BackgroundColor',[1 1 1])  
-    set(handles.run0,'BackgroundColor',[1 0 0])
+    set(handles.REFRESH,'BackgroundColor',[1 0 0])
 end    
 
 %------------------------------------------------------------------------
-% --- read the input files and refresh all the plots, including projection.
+% --- read the input files and inputfilerefresh all the plots, including projection.
 % OUTPUT: 
 %  errormsg: error message char string  =[] by default
 % INPUT:
@@ -2062,7 +2067,7 @@ else
     z_index=mod(num_i1-1,nbslice)+1;
     set(handles.z_index,'String',num2str(z_index))
 end
-% refresh menu for save_mask if relevant
+% inputfilerefresh menu for save_mask if relevant
 masknumber=get(handles.masklevel,'String');
 if length(masknumber)>=z_index
     set(handles.masklevel,'Value',z_index)
@@ -2216,7 +2221,8 @@ if ~isempty(FileName_1)
         if isempty(ParamIn_1) || isstruct(ParamIn_1)
         ParamIn_1.FieldName=FieldName_1;
         ParamIn_1.VelType=VelType_1;
-        %ParamIn_1.GUIName='get_field_1';
+        ParamIn_1.Coord_x=get(handles.Coord_x,'String');
+        ParamIn_1.Coord_y=get(handles.Coord_y,'Data');
         end  
         [Field{2},ParamOut_1,errormsg] = read_field(FileName_1,UvData.FileType{2},ParamIn_1,frame_index_1);
         if ~isempty(errormsg)
@@ -2272,15 +2278,16 @@ if isempty(FileName_1)
     %     set(handles.FieldName_1,'String',[{''};ParamOut.FieldList]); %update the field menu
     %     end
 elseif ~test_keepdata_1
-    if (~strcmp(UvData.FileType{2},'netcdf')&&~strcmp(UvData.FileType{2},'civdata')&&~strcmp(UvData.FileType{2},'civx'))|| isequal(FieldName_1,'get_field...')
-        set(handles.VelType_1,'Visible','off')
-    else
+    if (strcmp(UvData.FileType{2},'civx')||strcmp(UvData.FileType{2},'civdata'))&& ~strcmp(FieldName_1,'get_field...')
+%     if (~strcmp(UvData.FileType{2},'netcdf')&&~strcmp(UvData.FileType{2},'civdata')&&~strcmp(UvData.FileType{2},'civx'))|| isequal(FieldName_1,'get_field...')
         test_veltype_1=1;
         set(handles.VelType_1,'Visible','on')
         menu=set_veltype_display(ParamOut_1.CivStage,UvData.FileType{2});
         index_menu=strcmp(ParamOut_1.VelType,menu);
         set(handles.VelType_1,'Value',1+find(index_menu,1))
         set(handles.VelType_1,'String',[{''};menu])
+    else
+         set(handles.VelType_1,'Visible','off')
     end
     % update the second field menu: the same quantity
     if isstruct(ParamOut_1)
@@ -2435,7 +2442,7 @@ set(handles.Time_title,'String',Time_title)
 UvData.FileName_1=FileName_1;
 UvData.ParamOut_1=ParamOut_1;
 if numel(Field)==2
-UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
+    UvData.Field_1=Field{2}; %store the second field for possible use at next RUN
 end
 
 %% apply coordinate transform or other user fct
@@ -2945,7 +2952,7 @@ if get(handles.SubField,'Value')==0% if the subfield button is desactivated
         set(handles.TransformName,'Value',1)%suppress the sub_field transform
         TransformName_Callback(hObject, eventdata, handles); 
     else
-        run0_Callback(hObject, eventdata, handles)
+        REFRESH_Callback(hObject, eventdata, handles)
     end  
 else
     fileinput_1=uigetfile_uvmat('select a second input file:',get(handles.RootPath,'String'));
@@ -3163,7 +3170,7 @@ switch field
             set(handles.ColorScalar,'String',VecColorList);
             UvData.FileType{1}='netcdf';
             set(handles.uvmat,'UserData',UvData)
-            run0_Callback(hObject, eventdata, handles)
+            REFRESH_Callback(hObject, eventdata, handles)
         end
        
     case 'image'
@@ -3185,7 +3192,7 @@ switch field
         % display the selected field and related information
         display_file_name(handles,imagename)%display the image
     otherwise
-        run0_Callback(hObject, eventdata, handles)
+        REFRESH_Callback(hObject, eventdata, handles)
 end
 
 %----------------------------------------------------------------
@@ -3222,21 +3229,118 @@ FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
 switch field_1
     case 'get_field...'
-        set_veltype_display(0) % no veltype display
-        hget_field=findobj(allchild(0),'name','get_field_1');
-        if ~isempty(hget_field)
-            delete(hget_field)
+         %% fill the coordinates and variables from selections in get_field
+        ParamIn=[];
+        % in case of civ data, we use the civ choice as default input for the GUI get_field
+        if strcmp(get(handles.VelType_1,'Visible'),'on')
+            ParamIn.SwitchVarIndexTime='attribute';
+            ListVelType=get(handles.VelType_1,'String');
+            VelType=ListVelType{get(handles.VelType_1,'Value')};
+            switch VelType
+                case 'civ1'
+                    ParamIn.TimeAttrName='Civ1_Time';
+                    ParamIn.vector_x='Civ1_U';
+                    ParamIn.vector_y='Civ1_V';
+                    ParamIn.vec_color='Civ1_C';
+                case 'filter1'
+                    ParamIn.TimeAttrName='Civ1_Time';
+                    ParamIn.vector_x='Civ1_U_smooth';
+                    ParamIn.vector_y='Civ1_V_smooth';
+                case 'civ2'
+                    ParamIn.TimeAttrName='Civ2_Time';
+                    ParamIn.vector_x='Civ2_U';
+                    ParamIn.vector_y='Civ2_V';
+                case 'filter2'
+                    ParamIn.TimeAttrName='Civ2_Time';
+                    ParamIn.vector_x='Civ2_U_smooth';
+                    ParamIn.vector_y='Civ2_V_smooth';
+                    ParamIn.vec_color='Civ2_C';
+            end
         end
-        hget_field=get_field(FileName_1);
-        set(hget_field,'name','get_field_1')
-        hhget_field=guidata(hget_field);
-        set(hhget_field.list_fig,'Value',1)
-        set(hhget_field.list_fig,'String',{'uvmat'})
-        if check_new
-            UvData.FileType{2}=UvData.FileType{1};
-            set(handles.FileIndex_1,'String',get(handles.FileIndex,'String'))
-              set(handles.uvmat,'UserData',UvData)
+        
+        % VelType menu desactivated
+        set(handles.FixVelType,'visible','off')
+        set(handles.VelType,'Visible','off')
+        
+        %read selection from get_field
+        [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes_1(handles);
+        FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
+        GetFieldData=get_field(FileName,ParamIn);% inport field names from the GUI get_field
+        FieldList={};
+        VecColorList={};
+        switch GetFieldData.FieldOption
+            case 'vectors'
+                UName=GetFieldData.PanelVectors.vector_x;
+                VName=GetFieldData.PanelVectors.vector_y;
+                YName={GetFieldData.Coordinates.Coord_y};
+                CName=GetFieldData.PanelVectors.vec_color;
+                FieldList={['vec(' UName ',' VName ')'];...
+                    ['norm(' UName ',' VName ')'];...
+                    UName;VName};
+                VecColorList={['norm(' UName ',' VName ')'];...
+                    UName;VName};
+                if ~isempty(CName)
+                    VecColorList=[{CName};VecColorList];
+                end
+            case 'scalar'
+                AName=GetFieldData.PanelScalar.scalar;
+                YName={GetFieldData.Coordinates.Coord_y};
+                FieldList={AName};
+            case '1D plot'
+                YName=GetFieldData.PanelOrdinate.ordinate;
+            case 'civdata...'%reinitiate input, return to automatic civ data reading
+                display_file_name(handles,FileName,1)
         end
+        if ~strcmp(GetFieldData.FieldOption,'civdata...')
+            XName=GetFieldData.Coordinates.Coord_x;
+            TimeNameStr=GetFieldData.Time.SwitchVarIndexTime;
+            switch TimeNameStr
+                case 'file index'
+                    set(handles.TimeName_1,'String','');
+                case 'attribute'
+                    set(handles.TimeName_1,'String',['att:' GetFieldData.Time.TimeName]);
+                case 'variable'
+                    set(handles.TimeName_1,'String',['var:' GetFieldData.Time.TimeName])
+                    set(handles.NomType_1,'String','*')
+                    set(handles.RootFile_1,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                    set(handles.FileIndex_1,'String','')
+                    ParamIn.TimeVarName=GetFieldData.Time.TimeName;
+                case 'matrix_index'
+                    set(handles.TimeName_1,'String',['dim:' GetFieldData.Time.TimeName]);
+                    set(handles.NomType_1,'String','*')
+                    set(handles.RootFile_1,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                    set(handles.FileIndex_1,'String','')
+                    ParamIn.TimeDimName_1=GetFieldData.Time.TimeName;
+            end
+            set(handles.Coord_x,'String',XName)
+            if ischar(YName)
+                YName={YName};
+            end
+            set(handles.Coord_y,'Data',YName)
+            set(handles.FieldName_1,'Value',1)
+            set(handles.FieldName_1,'String',[FieldList; {'get_field...'}]);
+            set(handles.ColorScalar,'Value',1)
+            set(handles.ColorScalar,'String',VecColorList);
+            UvData.FileType{2}='netcdf';
+            set(handles.uvmat,'UserData',UvData)
+            REFRESH_Callback(hObject, eventdata, handles)
+        end
+          
+%         set_veltype_display(0) % no veltype display
+%         hget_field=findobj(allchild(0),'name','get_field_1');
+%         if ~isempty(hget_field)
+%             delete(hget_field)
+%         end
+%         hget_field=get_field(FileName_1);
+%         set(hget_field,'name','get_field_1')
+%         hhget_field=guidata(hget_field);
+%         set(hhget_field.list_fig,'Value',1)
+%         set(hhget_field.list_fig,'String',{'uvmat'})
+%         if check_new
+%             UvData.FileType{2}=UvData.FileType{1};
+%             set(handles.FileIndex_1,'String',get(handles.FileIndex,'String'))
+%               set(handles.uvmat,'UserData',UvData)
+%         end
     case 'image'
         %% look for image corresponding to civ data
         imagename='';
@@ -3282,7 +3386,7 @@ switch field_1
         set(handles.uvmat,'UserData',UvData)
  
         if check_refresh && ~(isfield(UvData,'NewSeries')&&isequal(UvData.NewSeries,1))
-            run0_Callback(hObject, eventdata, handles)
+            REFRESH_Callback(hObject, eventdata, handles)
         end
 end
 
@@ -3327,9 +3431,9 @@ menu=menu(1:imax);
 % --- Executes on button press in FixVelType.
 function FixVelType_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-% refresh the current plot if the fixed  veltype is unselected
+% inputfilerefresh the current plot if the fixed  veltype is unselected
 if ~get(handles.FixVelType,'Value')
-    run0_Callback(hObject, eventdata, handles)
+    REFRESH_Callback(hObject, eventdata, handles)
 end
 
 %------------------------------------------------------------------------
@@ -3337,7 +3441,7 @@ end
 function VelType_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.FixVelType,'Value',1)
-run0_Callback(hObject, eventdata, handles)
+REFRESH_Callback(hObject, eventdata, handles)
 
 %------------------------------------------------------------------------
 % --- Executes on choice selection in VelType_1.
@@ -3345,7 +3449,7 @@ function VelType_1_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 set(handles.FixVelType,'Value',1)% the velocity type is now imposed by the GUI (not automatic)
 UvData=get(handles.uvmat,'UserData');
-set(handles.run0,'BackgroundColor',[1 1 0])%paint run0 button in yellow to indicate its activation
+set(handles.InputFileREFRESH,'BackgroundColor',[1 1 0])%paint REFRESH button in yellow to indicate its activation
 drawnow   
 InputFile=read_GUI(handles.InputFile);% read the input file parameters
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
@@ -3375,7 +3479,7 @@ else% we introduce the same file (with a different field) for the second series
      end  
 end
 
-% refresh the current plot if it has not been done previously
+% inputfilerefresh the current plot if it has not been done previously
 if check_refresh
     UvData.FileName_1='';% desactivate the use of a constant second file
     set(handles.uvmat,'UserData',UvData)
@@ -3395,7 +3499,7 @@ if check_refresh
         set(handles.FileIndex,'BackgroundColor',[1 1 1])
         set(handles.FileIndex_1,'BackgroundColor',[1 1 1])
     end
-    set(handles.run0,'BackgroundColor',[1 0 0])
+    set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])
 end
 
 
@@ -3714,12 +3818,12 @@ if ~strcmp(CoordUnit,CoordUnitPrev)
 end
 set(handles.uvmat,'UserData',UvData)
 
-%% refresh the current plot
+%% inputfilerefresh the current plot
 if isempty(list_path{ichoice}) || nargin(transform_handle)<3
     set(handles.SubField,'Value',0)
     SubField_Callback(hObject, eventdata, handles)
 else
-    run0_Callback(hObject, eventdata, handles)
+    REFRESH_Callback(hObject, eventdata, handles)
 end
 
 %------------------------------------------------
@@ -3944,7 +4048,7 @@ set(handles.ColorCode,'Value',ichoice)% set color code in the menu
 
 update_color_code_boxes(handles);
 %replot the current graph
-run0_Callback(hObject, eventdata, handles)
+REFRESH_Callback(hObject, eventdata, handles)
 
 %----------------------------------------------------------------
 % -- Executes on slider movement to set the color code
@@ -4065,7 +4169,7 @@ set(handles.VecColBar,'Cdata',A)
 %-------------------------------------------------------------------
 function update_plot(handles)
 %-------------------------------------------------------------------
-set(handles.run0,'BackgroundColor',[1 1 0]);% display plot activity by yellow color
+set(handles.REFRESH,'BackgroundColor',[1 1 0]);% display plot activity by yellow color
 drawnow
 UvData=get(handles.uvmat,'UserData');
 AxeData=UvData.PlotAxes;% retrieve the current plotted data
@@ -4076,7 +4180,7 @@ if ~isempty(errormsg)
     msgbox_uvmat('ERROR',errormsg)
     return
 end
-set(handles.run0,'BackgroundColor',[1 0 0]);
+set(handles.REFRESH,'BackgroundColor',[1 0 0]);
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -4455,12 +4559,14 @@ commandwindow; %brings the Matlab command window to the front
 % --- Executes on button press in Menu/Export/extract figure.
 function MenuExportFigure_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-% huvmat=get(handles.MenuExport,'parent');
 hfig=figure;
 copyobj(handles.PlotAxes,hfig);
+h=findobj(handles.PlotAxes,'tag','ima'); %look for image in the plot
+if ~isempty(h)
 map=colormap(handles.PlotAxes);
 colormap(map);%transmit the current colormap to the zoom fig
 colorbar
+end
 
 % --------------------------------------------------------------------
 function MenuExportAxis_Callback(hObject, eventdata, handles)
@@ -4522,7 +4628,7 @@ end
 function MenuExportMovie_Callback(hObject, eventdata, handles)
 % --------------------------------------------------------------------
 set(handles.MenuExportMovie,'BusyAction','queue')% activate the button
-huvmat=get(handles.run0,'parent');
+huvmat=get(handles.InputFileREFRESH,'parent');
 UvData=get(huvmat,'UserData');
 %[xx,xx,FileBase]=read_file_boxes(handles);
 [RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);

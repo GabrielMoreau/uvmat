@@ -182,6 +182,7 @@ SubData.VarAttribute(find(ind_remove))=[];
 'end'
 
 function OutputCell=regexprep_r(InputCell,search_string,new_string)
+if ischar(InputCell); InputCell={InputCell}; end
 OutputCell=InputCell;%default
 for icell=1:numel(InputCell)
     OutputCell{icell}=regexprep(InputCell{icell},search_string,new_string);
