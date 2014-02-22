@@ -473,10 +473,19 @@ end
 function MenuFile_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 fileinput=get(hObject,'Label');
-    set(handles.SubField,'Value',0)
-    desable_subfield(handles)
-display_file_name( handles,fileinput)
-
+set(handles.SubField,'Value',0)
+desable_subfield(handles)
+errormsg=display_file_name( handles,fileinput);
+if ~isempty(errormsg)
+    set(hObject,'Label','')
+    MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
+        {get(handles.MenuFile_3,'Label')};{get(handles.MenuFile_4,'Label')};{get(handles.MenuFile_5,'Label')}];
+    str_find=strcmp(get(hObject,'Label'),MenuFile);
+    MenuFile(str_find)=[];% suppress the input file to the list
+    for ifile=1:numel(MenuFile)
+        set(handles.(['MenuFile_' num2str(ifile)]),'Label',MenuFile{ifile});
+    end
+end
 
 % -----------------------------------------------------------------------
 % --- Executes on the menu Open/Browse campaign...
@@ -615,6 +624,8 @@ RootPath_1_Callback(hObject,eventdata,handles)
 function InputFileREFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------   
 set(handles.InputFileREFRESH,'BackgroundColor',[1 1 0])% set button color to yellow to indicate that refresh is under action
+set(handles.uvmat,'Pointer','watch') % set the mouse pointer to 'watch'
+drawnow
 % read the current input file name:
 [RootPath,SubDir,RootFile,FileIndices,FileExt]=read_file_boxes(handles);
 % if ~exist(fullfile(RootPath,SubDir),'dir')
@@ -639,18 +650,21 @@ if get(handles.SubField,'Value')
 end
 
 if isempty(errormsg)
-set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])% set button color to red to indicate that refresh has been updated
+% set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])% set button color to red to indicate that refresh has been updated
 else
     set(handles.InputFileREFRESH,'BackgroundColor',[1 0 1])% keep button color magenta, input not succesfull
 end
+set(handles.uvmat,'Pointer','arrow')% set back the mouse pointer to arrow
 
 %------------------------------------------------------------------------ 
 % --- Fills the edit boxes RootPath, RootFile,NomType...from an input file name 'fileinput'
-function display_file_name(handles,fileinput,index)
+function errormsg=display_file_name(handles,fileinput,index)
 %------------------------------------------------------------------------
 %% look for the input file existence
+errormsg='';%default
 if ~exist(fileinput,'file')
-    msgbox_uvmat('ERROR',['input file ' fileinput  ' does not exist'])
+    errormsg=['input file ' fileinput  ' does not exist'];
+    msgbox_uvmat('ERROR',errormsg)
     return
 end
 
@@ -916,7 +930,6 @@ XmlFileName=find_imadoc(RootPath,SubDir,RootFile,FileExt);
 warntext='';%default warning message
 NbSlice=1;%default
 ImaDoc_str='';
-set(handles.InputFileREFRESH,'BackgroundColor',[1 1 0])
 if ~isempty(XmlFileName)
     set(handles.view_xml,'Visible','on')
     set(handles.view_xml,'BackgroundColor',[1 1 0])% paint  to yellow color to indicate reading of the xml file
@@ -1147,7 +1160,6 @@ set(handles.scan_j,'Visible',state_j)
 set(handles.j1,'Visible',state_j)
 set(handles.j2,'Visible',state_j)
 set(handles.MaxIndex_j,'Visible',state_j);
-%set(handles.frame_j,'Visible',state_j);
 set(handles.j_text,'Visible',state_j);
 if ~isempty(i2_series)||~isempty(j2_series)
     set(handles.CheckFixPair,'Visible','on')
@@ -1160,7 +1172,8 @@ transform=get(handles.TransformPath,'UserData');
 if index==2 && (~isa(transform,'function_handle')||nargin(transform)<3)
     set(handles.TransformName,'value',2); % set transform to sub_field if the current fct doe not accept two input fields
 end
-TransformName_Callback([],[],handles)
+set(handles.InputFileREFRESH,'BackgroundColor',[1 0 0])% set button color to red to indicate that refresh has been updated
+TransformName_Callback([],[],handles)% callback for the selection of transform function, then refresh the current plot
 mask_test=get(handles.CheckMask,'value');
 if mask_test
     MaskData=get(handles.CheckMask,'UserData');
@@ -2015,6 +2028,7 @@ errormsg=refresh_field(handles,filename,filename_1,num_i1,num_i2,num_j1,num_j2,i
 
 if ~isempty(errormsg)
       msgbox_uvmat('ERROR',errormsg);
+      set(handles.InputFileREFRESH,'BackgroundColor',[1 0 1])% keep button color magenta, input not succesfull
 else
     set(handles.i1,'BackgroundColor',[1 1 1])
     set(handles.i2,'BackgroundColor',[1 1 1])
@@ -2022,7 +2036,7 @@ else
     set(handles.j2,'BackgroundColor',[1 1 1])
     set(handles.FileIndex,'BackgroundColor',[1 1 1])
     set(handles.FileIndex_1,'BackgroundColor',[1 1 1])  
-    set(handles.REFRESH,'BackgroundColor',[1 0 0])
+    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set button color to red, update successfull
 end    
 
 %------------------------------------------------------------------------
@@ -2039,6 +2053,9 @@ function errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1
 %------------------------------------------------------------------------
 
 %% initialisation
+pointer=get(handles.uvmat,'Pointer');
+set(handles.uvmat,'Pointer','watch')
+drawnow
 if ~exist('Field','var')
     Field={};
 end
@@ -2739,6 +2756,7 @@ else
     end
 end
 ResizeFcn(handles.uvmat,[],handles)
+set(handles.uvmat,'Pointer',pointer)
 
 %------------------------------------------------------------------------
 function histo1_menu_Callback(hObject, eventdata, handles)
@@ -3578,8 +3596,6 @@ if isequal(get(handles.edit_vect,'Value'),1)
     set(handles.edit_vect,'BackgroundColor',[1 1 0])
     set(handles.CheckEditObject,'Value',0)
     set(handles.CheckZoom,'Value',0)
-%     set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
-%     set(handles.CheckEditObject,'BackgroundColor',[0.7 0.7 0.7])
     set(gcf,'Pointer','arrow')
 else
     set(handles.record,'Visible','off')
@@ -3679,6 +3695,8 @@ image(imflag);
 
 function TransformName_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.TransformName,'backgroundColor',[1 1 0])% indicate activation  of the menu
+drawnow
 UvData=get(handles.uvmat,'UserData');
 menu=get(handles.TransformName,'String');%refresh
 ichoice=get(handles.TransformName,'Value');%item number in the menu
@@ -3750,7 +3768,7 @@ else
     try
         [fid,errormsg] =fopen([fullfile(list_path{ichoice},transform_name) '.m']);
         InputText=textscan(fid,'%s',1,'delimiter','\n');
-        fclose(fid)
+        fclose(fid);
         set(handles.TransformName,'ToolTipString',['transform_fct: ' InputText{1}{1}])% put the first line of the selected function as tooltip help
     end
 end
@@ -3817,6 +3835,8 @@ if ~strcmp(CoordUnit,CoordUnitPrev)
     UvData.ProjObject={[]};
 end
 set(handles.uvmat,'UserData',UvData)
+set(handles.TransformName,'backgroundColor',[1 1 1])% indicate desactivation  of the menu
+drawnow
 
 %% inputfilerefresh the current plot
 if isempty(list_path{ichoice}) || nargin(transform_handle)<3

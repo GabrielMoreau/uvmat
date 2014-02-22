@@ -36,7 +36,7 @@
 
 function filename=fullfile_uvmat(RootPath,SubDir,RootFile,FileExt,NomType,i1,i2,j1,j2)
     
-%% display help and test function in the absence of input arument
+%% display help and test function in the absence of input argument
 if ~exist('RootPath','var')
     help fullfile_uvmat;
     test;
@@ -114,11 +114,7 @@ if ~isempty(r)
         end
     end
 end
-% if ~isempty(i2_str)||~isempty(j2_str)
-    filename=fullfile(RootPath,SubDir,RootFile);
-% else
-%     filename=fullfile(RootPath,RootFile);
-% end
+filename=fullfile(RootPath,SubDir,RootFile);
 filename=[filename sep1 i1_str sep2 i2_str sep3 j1_str sep4 j2_str];
 filename=[regexprep(filename,'_$','') FileExt];%suppress possible '_' at the end of the string and add the extension
 

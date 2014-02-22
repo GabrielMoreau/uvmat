@@ -24,15 +24,18 @@
 
 function mouse_motion(hObject,eventdata,handles)
 
-if ~exist('handles','var')
-    set(hCurrentFig,'Pointer','arrow');
-    return
-end
+% if ~exist('handles','var')
+%     set(hCurrentFig,'Pointer','arrow');
+%     return
+% end
 FigData=get(hObject,'UserData');
 if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is stored in UserData, its parent is the plotting axes of the rectangle
     hCurrentFig=get(get(FigData,'parent'),'parent');
 else
     hCurrentFig=hObject;%usual plot
+end
+if strcmp(get(hCurrentFig,'Pointer'),'watch')
+    return % no action if a calculation is running
 end
 hhCurrentFig=guidata(hCurrentFig);%handles of the elements in the GUI containing the current figure (uvmat or view_field)
 CheckZoom=get(hhCurrentFig.CheckZoom,'Value');% check for zoom on mode

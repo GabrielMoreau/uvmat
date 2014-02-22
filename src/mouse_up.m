@@ -126,6 +126,8 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
     
     %% stop drawing and plot the projected field if the object manipulation is finished
     if check_multiple==0  || isequal(get(hcurrentfig,'SelectionType'),'alt')
+        pointer=get(hcurrentfig,'Pointer');%memorize the current pointer shape
+        set(hcurrentfig,'Pointer','watch')% set the pointer shape to watch to prevent further mouse action
         AxeData.CurrentOrigin=[]; %suppress the current origin
         hobject=UvData.ProjObject{IndexObj}.DisplayHandle.(FigTag);
         if ~isempty(hObject)
@@ -174,6 +176,7 @@ if ~isempty(huvmat) && isfield(AxeData,'Drawing') && ~isequal(AxeData.Drawing,'o
         if isfield(UvData.ProjObject{IndexObj},'CreateMode')
             UvData.ProjObject{IndexObj}=rmfield(UvData.ProjObject{IndexObj},'CreateMode');%remove createMode to mark the object as finished
         end
+        set(hcurrentfig,'Pointer',pointer)% % revert the pointer shape to allow further mouse action
     else
         test_drawing=1;%allow continuation of drawing object
         AxeData.CurrentOrigin=[xy(1,1) xy(1,2)]; %the current point becomes the next current origin

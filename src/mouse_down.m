@@ -31,6 +31,9 @@ if ishandle(FigData)% case of a zoom plot, the handle of the parent rectangle is
 else
     hCurrentGUI=hObject; % handle of the current GUI: usual plot
 end
+if strcmp(get(hCurrentGUI,'Pointer'),'watch')
+    return % no action if a calculation is running
+end
 hhCurrentGUI=guidata(hCurrentGUI);% tags of the children of the current GUI
 CheckZoom=0;
 if isfield(hhCurrentGUI,'CheckZoom') && get(hhCurrentGUI.CheckZoom,'Value');%test for zoom action, first priority

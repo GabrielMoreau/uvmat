@@ -121,6 +121,7 @@ refresh_GUI(hObject)
 % --- launched by selecting OK (relevant for FilterExt='uigetdir')
 %------------------------------------------------------------------------
 function OK_Callback(option,filter_ext,hObject,event)
+set(hObject,'backgroundColor',[1 1 0])% indicate button activation
 hfig=get(hObject,'parent');%handle of the fig
 htitlebox=findobj(hfig,'tag','titlebox');  % display the current dir name  
 DirName=get(htitlebox,'String');
@@ -158,7 +159,7 @@ if ~strcmp(filter_ext,'uigetdir')% a file is expected as output, not a dir
         end
     end
 end
-
+set(hObject,'backgroundColor',[0 1 0])% indicate end button activation
 uiresume(get(hObject,'parent'))
 
 %------------------------------------------------------------------------   

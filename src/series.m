@@ -302,44 +302,24 @@ end
 % --- fct activated by the browser under 'Open'
 %------------------------------------------------------------------------  
 function MenuBrowse_Callback(hObject, eventdata, handles)
-
 %% look for the previously opened file 'oldfile'
-oldfile=''; %default
-if get(handles.CheckAppend,'Value')
-    % case 'checkappend': new series appended to the input table
-    InputTable=get(handles.InputTable,'Data');
-    RootPathCell=InputTable(:,1);
-    SubDirCell=InputTable(:,3);
-    oldfile=''; %default
-    if ~(isempty(RootPathCell) || isequal(RootPathCell,{''}))%loads the previously stored file name and set it as default in the file_input box
-        oldfile=fullfile(RootPathCell{1},SubDirCell{1});
-    end
-else
-    % case refresh the input table by a new series
-    SeriesData=get(handles.series,'UserData');
-    if isfield(SeriesData,'RefFile')
-        oldfile=SeriesData.RefFile{1};
+InputTable=get(handles.InputTable,'Data');
+oldfile=InputTable{1,1};
+if isempty(oldfile)
+    % use a file name stored in prefdir
+    dir_perso=prefdir;
+    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+    if exist(profil_perso,'file')
+        h=load (profil_perso);
+        if isfield(h,'RootPath') && ischar(h.RootPath)
+            oldfile=h.RootPath;
+        end
     end
 end
-
-%% use a file name stored in prefdir
-dir_perso=prefdir;
-profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
-if exist(profil_perso,'file')
-    h=load (profil_perso);
-    if isfield(h,'RootPath') && ischar(h.RootPath)
-        oldfile=h.RootPath;
-    end
-end
-
 %% launch the browser
 fileinput=uigetfile_uvmat('pick a file to append in the input table',oldfile);
 if ~isempty(fileinput)
-%     if get(handles.CheckAppend,'Value')
-%         display_file_name(handles,fileinput,'append')
-%     else
-        display_file_name(handles,fileinput,'one')
-%     end
+      display_file_name(handles,fileinput,'one')
 end
 
 % --------------------------------------------------------------------
@@ -353,10 +333,7 @@ if isempty(RootPathCell{1})% no input file in the table
      return
 end
 SubDirCell=InputTable(:,2);
-% oldfile=''; %default
-% if ~(isempty(RootPathCell) || isequal(RootPathCell,{''}))%loads the previously stored file name and set it as default in the file_input box
-    oldfile=fullfile(RootPathCell{1},SubDirCell{1});
-% end
+oldfile=fullfile(RootPathCell{1},SubDirCell{1});
 
 %% use a file name stored in prefdir
 dir_perso=prefdir;
@@ -379,7 +356,17 @@ end
 %------------------------------------------------------------------------
 function MenuFile_Callback(hObject, eventdata, handles)
 
-display_file_name(handles,get(hObject,'Label'),'one')
+errormsg=display_file_name(handles,get(hObject,'Label'),'one');
+if ~isempty(errormsg)
+    set(hObject,'Label','')
+    MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
+        {get(handles.MenuFile_3,'Label')};{get(handles.MenuFile_4,'Label')};{get(handles.MenuFile_5,'Label')}];
+    str_find=strcmp(get(hObject,'Label'),MenuFile);
+    MenuFile(str_find)=[];% suppress the input file to the list
+    for ifile=1:numel(MenuFile)
+        set(handles.(['MenuFile_' num2str(ifile)]),'Label',MenuFile{ifile});
+    end
+end
 
 %------------------------------------------------------------------------
 % --- fct activated by selecting a previous file under the menu Open/append
@@ -545,11 +532,12 @@ for iview=1:size(InputTable,1)
     RootPath=fullfile(InputTable{iview,1},InputTable{iview,2});
     if ~exist(RootPath,'dir')
         i1_series=[];
-        RootPath=fileparts(RootPath); %will try the upped folder
-    else
+        RootPath=fileparts(RootPath); %will try the upper folder
+    else %scan the input folder
         [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,tild,FileType,FileInfo,MovieObject]=...
             find_file_series(fullfile(InputTable{iview,1},InputTable{iview,2}),[InputTable{iview,3} InputTable{iview,4} InputTable{iview,5}]);
     end
+    % if no file is found, open a browser
     if isempty(i1_series)
         fileinput=uigetfile_uvmat(['wrong input at line ' num2str(iview) ':pick a new input file'],RootPath);
         if isempty(fileinput)
@@ -566,7 +554,7 @@ set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color
 
 %------------------------------------------------------------------------
 % --- Function called when a new file is opened, either by series_OpeningFcn or by the browser
-function display_file_name(handles,fileinput,iview)
+function errormsg=display_file_name(handles,fileinput,iview)
 %------------------------------------------------------------------------  
 %
 % INPUT:
@@ -575,10 +563,14 @@ function display_file_name(handles,fileinput,iview)
 % iview: line index in the input table
 %       or 'one': refresh the list
 %         'append': add a new line to the input table
-
+set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
+drawnow
+errormsg='';%default
 %% get the input root name, indices, file extension and nomenclature NomType
 if ~exist(fileinput,'file')
-    msgbox_uvmat('ERROR',['input file ' fileinput  ' does not exist'])
+    errormsg=['input file ' fileinput  ' does not exist'];
+    msgbox_uvmat('ERROR',errormsg)
+    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
     return
 end
 
@@ -589,16 +581,21 @@ end
 [RootPath,SubDir,RootFile,i1_series,i2_series,j1_series,j2_series,NomType,FileType,FileInfo,MovieObject,i1,i2,j1,j2]=find_file_series(FilePath,[FileName FileExt]);
 if isempty(RootFile)&&isempty(i1_series)
     errormsg='no input file in the series';
+    msgbox_uvmat('ERROR',errormsg)
+    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
     return
 end
 if strcmp(FileType,'txt')
     edit(fileinput)
+    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
     return
 elseif strcmp(FileType,'xml')
     editxml(fileinput)
+    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
      return
 elseif strcmp(FileType,'figure')
     open(fileinput)
+    set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
      return
 end
 
@@ -669,6 +666,27 @@ end
 ref_j=floor((j1+j2)/2);% reference image number corresponding to the file
 set(handles.num_ref_j,'String',num2str(ref_j)); 
 
+%% update first and last indices if they do not exist
+Param=read_GUI(handles.series);
+first_j=[];
+if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
+last_j=[];
+if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
+[i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,Param.IndexRange.PairString);
+FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+    Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+if ~exist(FirstFileName,'file')
+    set(handles.num_first_i,'String',num2str(ref_i))
+    set(handles.num_first_j,'String',num2str(ref_j))
+end
+[i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,last_j,Param.IndexRange.PairString);
+LastFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+    Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+if ~exist(LastFileName,'file')
+    set(handles.num_last_i,'String',num2str(ref_i))
+    set(handles.num_last_j,'String',num2str(ref_j))
+end
+
 %% update the list of recent files in the menubar and save it for future opening
 MenuFile=[{get(handles.MenuFile_1,'Label')};{get(handles.MenuFile_2,'Label')};...
     {get(handles.MenuFile_3,'Label')};{get(handles.MenuFile_4,'Label')};{get(handles.MenuFile_5,'Label')}];
@@ -698,6 +716,7 @@ set(handles.InputTable,'BackgroundColor',[1 1 1])
 
 %% initiate input file series and refresh the current field view:     
 update_rootinfo(handles,i1_series,i2_series,j1_series,j2_series,FileType,FileInfo,MovieObject,iview);
+set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (end of activation)
 
 %------------------------------------------------------------------------
 % --- Update information about a new field series (indices to scan, timing,
@@ -721,19 +740,9 @@ else
      MinIndex_j=min(find(ref_j))-1;
     diff_j_max=diff(ref_j);
     diff_i_max=diff(ref_i);
-    
-%     pair_max=squeeze(max(i1_series,[],1)); %max on pair index
-%     j_max=max(pair_max,[],1);
-%     MinIndex_i=find(j_max, 1 )-1;% min ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index)
-%     MaxIndex_i=find(j_max, 1, 'last' )-1;% max ref index i detected in the series (corresponding to the first non-zero value of i1_series, except for zero index) 
-%     diff_i_max=diff(j_max);
     if ~isempty(diff_i_max) && isequal (diff_i_max,diff_i_max(1)*ones(size(diff_i_max)))
         set(handles.num_incr_i,'String',num2str(diff_i_max(1)))% detect an increment to dispaly by default
     end
-%     i_max=max(pair_max,[],2);
-%     MinIndex_j=min(find(i_max))-1;% min ref index j
-%     MaxIndex_j=max(find(i_max))-1;% max ref index j
-%     diff_j_max=diff(i_max);
     if isequal (diff_j_max,diff_j_max(1)*ones(size(diff_j_max)))
         set(handles.num_incr_j,'String',num2str(diff_j_max(1)))
     end
@@ -972,14 +981,7 @@ for iview=1:nbview
     file_select=file_indices(file_indices<=numel(j_max{iview}));
     ind_select=find(file_indices<=numel(j_max{iview}));
     LineData(ind_select)=j_max{iview}(file_select)~=0;
-%     LineData=zeros(1,range_index);
-%     x_index=find(j_max{iview}>0)-MinIndex_i;
-%     LineData(x_index)=1;
-%     if numel(x)>1
-%         LineData
-    %LineData=interp1(x,LineData,xI,'nearest');
     CData(ind_y,:)=ones(size(ind_y'))*LineData;
-%     end
 end
 CData=cat(3,zeros(size(CData)),CData,zeros(size(CData)));%make color images r=0,g,b=0
 set(handles.FileStatus,'CData',CData);
@@ -1087,45 +1089,32 @@ displ_time(handles);
 function displ_time(handles)
 %------------------------------------------------------------------------
 SeriesData=get(handles.series,'UserData');%
-ref_i=[str2num(get(handles.num_first_i,'String')) str2num(get(handles.num_last_i,'String'))];
-ref_j=[str2num(get(handles.num_first_j,'String')) str2num(get(handles.num_last_j,'String'))];
+PairString=get(handles.PairString,'Data');
+ref_i_1=str2num(get(handles.num_first_i,'String'));%first reference index
+ref_i_2=str2num(get(handles.num_last_i,'String'));%last reference index
+ref_j_1=[];ref_j_2=[];
+if strcmp(get(handles.num_first_j,'Visible'),'on')
+ref_j_1=str2num(get(handles.num_first_j,'String'));
+ref_j_2=str2num(get(handles.num_last_j,'String'));
+end
+[i1_1,i2_1,j1_1,j2_1] = get_file_index(ref_i_1,ref_j_1,PairString);
+[i1_2,i2_2,j1_2,j2_2] = get_file_index(ref_i_2,ref_j_2,PairString);
 TimeTable=get(handles.TimeTable,'Data');
-Pairs=get(handles.PairString,'Data');
+
+%Pairs=get(handles.PairString,'Data');
 for iview=1:size(TimeTable,1)
     if size(SeriesData.Time,1)<iview
         break
     end
-    i1=ref_i;
-    j1=ref_j;
-    i2=ref_i;
-    j2=ref_j;
-    % case of pairs
-    if ~isempty(Pairs{iview,1})
-        r=regexp(Pairs{iview,1},'(?<mode>(Di=)|(Dj=)) -*(?<num1>\d+)\|(?<num2>\d+)','names');
-        if isempty(r)
-            r=regexp(Pairs{iview,1},'(?<num1>\d+)(?<mode>-)(?<num2>\d+)','names');
-        end
-        switch r.mode
-            case 'Di='  %  case 'series(Di)')
-                i1=ref_i-str2num(r.num1);
-                i2=ref_i+str2num(r.num2);
-            case 'Dj='  %  case 'series(Dj)'
-                j1=ref_j-str2num(r.num1);
-                j2=ref_j+str2num(r.num2);
-            case '-'  % case 'bursts'
-                j1=str2num(r.num1)*ones(size(ref_i));
-                j2=str2num(r.num2)*ones(size(ref_i));
-        end
-    end
     TimeTable{iview,2}=[];
     TimeTable{iview,3}=[];
-    if size(SeriesData.Time{iview},1)>=i2(2)+1&&size(SeriesData.Time{iview},2)>=j2(2)+1
-        if isempty(ref_j)
-            time_first=(SeriesData.Time{iview}(i1(1)+1)+SeriesData.Time{iview}(i2(1)+1))/2;
-            time_last=(SeriesData.Time{iview}(i1(2)+1)+SeriesData.Time{iview}(i2(2))+1)/2;
+    if size(SeriesData.Time{iview},1)>=i2_2+1 && (isempty(ref_j_1)||size(SeriesData.Time{iview},2)>=j2_2+1)
+        if isempty(ref_j_1)
+            time_first=(SeriesData.Time{iview}(i1_1+1,2)+SeriesData.Time{iview}(i2_1+1,2))/2;
+            time_last=(SeriesData.Time{iview}(i1_2+1,2)+SeriesData.Time{iview}(i2_2+1,2))/2;
         else
-            time_first=(SeriesData.Time{iview}(i1(1)+1,j1(1)+1)+SeriesData.Time{iview}(i2(1)+1,j2(1)+1))/2;
-            time_last=(SeriesData.Time{iview}(i1(2)+1,j1(2)+1)+SeriesData.Time{iview}(i2(2)+1,j2(2)+1))/2;
+            time_first=(SeriesData.Time{iview}(i1_1+1,j1_1+1)+SeriesData.Time{iview}(i2_1+1,j2_1+1))/2;
+            time_last=(SeriesData.Time{iview}(i1_2+1,j1_2+1)+SeriesData.Time{iview}(i2_2+1,j2_1+1))/2;
         end
         TimeTable{iview,2}=time_first; %TODO: take into account pairs
         TimeTable{iview,3}=time_last; %TODO: take into account pairs
@@ -1136,42 +1125,14 @@ set(handles.TimeTable,'Data',TimeTable)
 %% set the waitbar position with respect to the min and max in the series
 MinIndex_i=min(get(handles.MinIndex_i,'Data'));
 MaxIndex_i=max(get(handles.MaxIndex_i,'Data'));
-pos_first=(ref_i(1)-MinIndex_i)/(MaxIndex_i-MinIndex_i+1);
-pos_last=(ref_i(2)-MinIndex_i+1)/(MaxIndex_i-MinIndex_i+1);
+pos_first=(ref_i_1-MinIndex_i)/(MaxIndex_i-MinIndex_i+1);
+pos_last=(ref_i_2-MinIndex_i+1)/(MaxIndex_i-MinIndex_i+1);
 Position=get(handles.Waitbar,'Position');% position of the waitbar:= [ x,y, width, height]
 Position_status=get(handles.FileStatus,'Position');
 Position(1)=Position_status(1)+Position_status(3)*pos_first;
 Position(3)=Position_status(3)*(pos_last-pos_first);
 set(handles.Waitbar,'Position',Position)
 update_waitbar(handles.Waitbar,0)
-
-% for iview=1:numel(SeriesData.i1_series)
-%     pair_max{iview}=squeeze(max(SeriesData.i1_series{iview},[],1)); %max on pair index
-%     if (strcmp(get(handles.num_first_j,'Visible'),'off')&& size(pair_max{iview},2)~=1)
-%         pair_max{iview}=squeeze(max(pair_max{iview},[],1)); % consider only the i index
-%     end
-%     pair_max{iview}=reshape(pair_max{iview},1,[]);
-%     index_min(iview)=find(pair_max{iview}>0, 1 );
-%     index_max(iview)=find(pair_max{iview}>0, 1, 'last' );
-% end
-% [index_min,iview_min]=min(index_min);
-% [index_max,iview_max]=min(index_max);
-% if size(SeriesData.i1_series{iview_min},2)==1% movie
-%     index_first=ref_i(1);
-%     index_last=ref_i(2);
-% else
-%     index_first=(ref_i(1)-1)*(size(SeriesData.i1_series{iview_min},1))+ref_j(1)+1;
-%     index_last=(ref_i(2)-1)*(size(SeriesData.i1_series{iview_max},1))+ref_j(2)+1;
-% end
-% range=index_max-index_min+1;
-% coeff_min=(index_first-index_min)/range;
-% coeff_max=(index_last-index_min+1)/range;
-% Position=get(handles.Waitbar,'Position');% position of the waitbar:= [ x,y, width, height]
-% Position_status=get(handles.FileStatus,'Position');
-% Position(1)=coeff_min*Position_status(3)+Position_status(1);
-% Position(3)=Position_status(3)*(coeff_max-coeff_min);
-% set(handles.Waitbar,'Position',Position)
-% update_waitbar(handles.Waitbar,0)
 
 %------------------------------------------------------------------------
 % --- Executes when selected cell(s) is changed in PairString.
@@ -2027,7 +1988,7 @@ end
 
 %% Activate the Action fct
 Param=read_GUI_series(handles);% read the parameters from the GUI series
-ParamOut=h_fun(Param);
+ParamOut=h_fun(Param);%run the selected Action function to get the relevant input
 
 %% Put the first line of the selected Action fct as tooltip help
 try
@@ -2040,7 +2001,7 @@ end
 %% Detect the types of input files
 SeriesData=get(handles.series,'UserData');
 iview_civ=[];nb_netcdf=0;
-if ~isempty(SeriesData)
+if ~isempty(SeriesData)&&isfield(SeriesData,'FileType')
     iview_civ=find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
     nb_netcdf=numel(find(strcmp('netcdf',SeriesData.FileType)));
 end
@@ -2116,7 +2077,7 @@ VelTypeVisible='off';  %hidden by default
 VelType_1Visible='off';
 InputFieldsVisible='off';%visibility of the frame Fields
 if isfield(ParamOut,'VelType')
-    if strcmp( ParamOut.VelType,'one')||strcmp( ParamOut.VelType,'two')
+    if strcmp( ParamOut.VelType,'on')||strcmp(ParamOut.VelType,'one')||strcmp( ParamOut.VelType,'two')
         if numel(iview_civ)>=1
             VelTypeVisible='on';
             InputFieldsVisible='on';
@@ -2137,7 +2098,7 @@ set(handles.VelType_text_1,'Visible',VelType_1Visible);
 FieldNameVisible='off';  %hidden by default
 FieldName_1Visible='off';  %hidden by default
 if isfield(ParamOut,'FieldName')
-    if strcmp( ParamOut.FieldName,'one')||strcmp( ParamOut.FieldName,'two')
+    if strcmp( ParamOut.FieldName,'on') || strcmp(ParamOut.FieldName,'one')||strcmp( ParamOut.FieldName,'two')
         if (numel(iview_civ)+nb_netcdf)>=1
             InputFieldsVisible='on';
             FieldNameVisible='on';
@@ -2249,9 +2210,9 @@ set(handles.ActionName,'BackgroundColor',[1 1 1])
 % --- Executes on button press in ActionInput.
 function ActionInput_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-if get(handles.ActionInput,'Value')
-    ActionName_Callback(hObject, eventdata, handles)
-end
+% if get(handles.ActionInput,'Value')
+ActionName_Callback(hObject, eventdata, handles)
+% end
 
 %------------------------------------------------------------------------
 % --- Executes on selection change in FieldName.
@@ -2306,7 +2267,7 @@ if isequal(field,'get_field...')
                 case 'variable'
                     set(handles.TimeName,'String',['var:' GetFieldData.Time.TimeName])
                     set(handles.NomType,'String','*')
-                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])
+                    set(handles.RootFile,'String',[get(handles.RootFile,'String') get(handles.FileIndex,'String')])% A VERIFIER !!!!!!
                     set(handles.FileIndex,'String','')
                     ParamIn.TimeVarName=GetFieldData.Time.TimeName;
                 case 'matrix_index'
@@ -2695,9 +2656,25 @@ commandwindow; %brings the Matlab command window to the front
 %     menu settings from an xml file (stored in /0_XML for each run)
 %------------------------------------------------------------------------
 function MenuImportConfig_Callback(hObject, eventdata, handles)
-
+% SeriesData=get(handles.series,'UserData');
+% if isfield(SeriesData,'RefFile')
+%     oldfile=SeriesData.RefFile{1};
+% end
+%% use a strating file name for browserr
 InputTable=get(handles.InputTable,'Data');
-filexml=uigetfile_uvmat('pick a xml parameter file',InputTable{1,1},'.xml');% get the xml file containing processing parameters
+oldfile=InputTable{1,1};
+if isempty(oldfile)
+    % use a file name stored in prefdir
+    dir_perso=prefdir;
+    profil_perso=fullfile(dir_perso,'uvmat_perso.mat');
+    if exist(profil_perso,'file')
+        h=load (profil_perso);
+        if isfield(h,'RootPath') && ischar(h.RootPath)
+            oldfile=h.RootPath;
+        end
+    end
+end
+filexml=uigetfile_uvmat('pick a xml parameter file',oldfile,'.xml');% get the xml file containing processing parameters
 %proceed only if a file has been introduced by the browser
 if ~isempty(filexml)
     Param=xml2struct(filexml);% read the input xml file as a Matlab structure
@@ -2714,8 +2691,6 @@ if ~isempty(filexml)
     fill_GUI(Param,handles.series)% fill the elements of the GUI series with the input parameters
     SeriesData=get(handles.series,'UserData');
     if isfield(Param,'ActionInput')%  introduce  parameters specific to an Action fct, for instance PIV parameters
-%         set(handles.ActionInput,'Visible','on')
-%         set(handles.ActionInput_title,'Visible','on')
         set(handles.ActionInput,'Visible','on')
         set(handles.ActionInput,'Value',0)
         SeriesData.ActionInput=Param.ActionInput;
@@ -2736,9 +2711,7 @@ if ~isempty(filexml)
         set(handles.EditObject,'Visible','off')
         set(handles.DeleteObject,'Visible','off')     
     end     
-%     set(handles.REFRESH,'Visible','on')
     set(handles.REFRESH,'BackgroundColor',[1 0 1]); %paint REFRESH button in magenta to indicate that it should be activated
-  %  REFRESH_Callback([],[],handles)% refresh data relative to the input files
 end
 
 %------------------------------------------------------------------------
@@ -2801,7 +2774,12 @@ if get(handles.status,'Value')
     end
     OutputSubDir=[Param.OutputSubDir Param.OutputDirExt];% subdirectory for output files
     OutputDir=fullfile(RootPath,OutputSubDir);
-    uigetfile_uvmat('status_display',OutputDir)
+    if exist(OutputDir,'dir')
+        uigetfile_uvmat('status_display',OutputDir)
+    else
+        msgbox_uvmat('ERROR','output folder not created yet: calculation did not start')
+        set(handles.status,'BackgroundColor',[0 1 0])
+    end
 else
     %% delete current display fig if selection is off
     set(handles.status,'BackgroundColor',[0 1 0])
