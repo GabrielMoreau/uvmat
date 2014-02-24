@@ -41,7 +41,7 @@
 function ParamOut=aver_stat(Param)
 
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName
-if isstruct(Param) && isequal(Param.Action.RUN,0)
+if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN
     ParamOut.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     ParamOut.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
     ParamOut.NbSlice='on'; %nbre of slices ('off' by default)
@@ -52,9 +52,25 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.Mask='off';%can use mask option   (option 'off'/'on', 'off' by default)
     ParamOut.OutputDirExt='.stat';%set the output dir extension
     ParamOut.OutputFileMode='NbSlice';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
-    filecell=get_file_series(Param);%check existence of the first input file
-    if ~exist(filecell{1,1},'file')
-        msgbox_uvmat('WARNING','the first input file does not exist')
+    % check the existence of the first file in the series
+    first_j=[];
+    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
+    last_j=[];
+    if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
+    PairString='';
+    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
+    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
+    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+    if ~exist(FirstFileName,'file')
+        msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
+    else
+        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,last_j,PairString);
+        LastFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+        if ~exist(FirstFileName,'file')
+             msgbox_uvmat('WARNING',['the last input file ' LastFileName ' does not exist'])
+        end
     end
     return
 end

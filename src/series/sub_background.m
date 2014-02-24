@@ -66,15 +66,30 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     ParamOut.OutputFileMode='NbInput';% '=NbInput': 1 output file per input file index, '=NbInput_i': 1 file per input file index i, '=NbSlice': 1 file per slice
     
     %% root input file(s) and type
-    [filecell,i1_series,i2_series,j1_series,j2_series]=get_file_series(Param);
-    if ~exist(filecell{1,1},'file')
-        msgbox_uvmat('WARNING','the first input file does not exist')
-        return
+    % check the existence of the first file in the series
+        first_j=[];
+    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
+    last_j=[];
+    if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
+    PairString='';
+    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
+    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
+    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+    if ~exist(FirstFileName,'file')
+        msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
+    else
+        [i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,last_j,PairString);
+        LastFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+        if ~exist(FirstFileName,'file')
+             msgbox_uvmat('WARNING',['the last input file ' LastFileName ' does not exist'])
+        end
     end
-    
+
     %% check the validity of  input file types
     ImageTypeOptions={'image','multimage','mmreader','video'};%allowed input file types(images)
-    FileType=get_file_type(filecell{1,1});
+    FileType=get_file_type(FirstFileName);
     CheckImage=~isempty(find(strcmp(FileType,ImageTypeOptions), 1));% =1 for images
     if ~CheckImage
         msgbox_uvmat('ERROR',['invalid file type input: ' FileType ' not an image'])
@@ -87,7 +102,7 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
         NbSlice=Param.IndexRange.NbSlice;
     end
     %nbview=numel(i1_series);%number of input file series (lines in InputTable)
-    nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)
+    nbfield_j=size(i1_series{1},1); %nb of fields for the j index (bursts or volume slices)%A CORRIGER !!!!!!!
     nbfield_i=size(i1_series{1},2); %nb of fields for the i index
     nbfield=nbfield_j*nbfield_i; %total number of fields
     nbfield_i=floor(nbfield/NbSlice);%total number of  indexes in a slice (adjusted to an integer number of slices)

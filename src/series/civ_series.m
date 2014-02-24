@@ -42,7 +42,7 @@ errormsg='';
 path_series=fileparts(which('series'));
 addpath(fullfile(path_series,'series'))
 %% set the input elements needed on the GUI series when the action is selected in the menu ActionName or InputTable refreshed
-if isstruct(Param) && isequal(Param.Action.RUN,0)
+if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the GUI series but not RUN 
     Data=civ_input(Param);% introduce the civ parameters using the GUI civ_input
     if isempty(Data)
         Data=Param;% if  civ_input has been cancelled, keep previous parameters
@@ -59,11 +59,20 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
     Data.OutputDirExt='.civ';%set the output dir extension
     Data.OutputSubDirMode='last'; %select the last subDir in the input table as root of the output subdir name (option 'all'/'first'/'last', 'all' by default)
     Data.OutputFileMode='NbInput_i';% one output file expected per value of i index (used for waitbar)
-    filecell=get_file_series(Param);%check existence of the first input file
-    if ~exist(filecell{1,1},'file')
-        msgbox_uvmat('WARNING','the first input file does not exist')
+        % check the existence of the first file in the series
+    first_j=[];
+    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
+    last_j=[];
+    if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
+    PairString='';
+    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
+    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
+    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+    if ~exist(FirstFileName,'file')
+        msgbox_uvmat('WARNING',['the first input file ' FirstFileName ' does not exist'])
     else
-        FileType=get_file_type(filecell{1,1});
+        FileType=get_file_type(FirstFileName);
         if isempty(find(strcmp(FileType,{'civdata','image','multimage','mmreader','video'})));% =1 for images
             msgbox_uvmat('ERROR',['bad input file type for ' mfilename ': an image or civdata file is needed'])
         end

@@ -56,7 +56,8 @@ handles.output = Param;
 guidata(hObject, handles); % Update handles structure
 set(hObject,'WindowButtonDownFcn',{'mouse_down'}) % allows mouse action with right button (zoom for uicontrol display)
 hseries=findobj(allchild(0),'Tag','series');
-SeriesData.ParentHandle=hseries;
+hhseries=guidata(hseries);
+%SeriesData.ParentHandle=hseries;
 SeriesData=get(hseries,'UserData');
 % relevant data in gcbf:.FileType,.FileInfo,.Time,.TimeUnit,.GeometryCalib{1};
 
@@ -86,12 +87,15 @@ RootFile=Param.InputTable{1,3};
 SubDir=Param.InputTable{1,2};
 NomTypeInput=Param.InputTable{1,4};
 FileExt=Param.InputTable{1,5};
+FileType='image';%fdefault
+FileInfo=[];
 if isfield(SeriesData,'FileType')&&isfield(SeriesData,'FileInfo')
     FileType=SeriesData.FileType{1};%type of the first input file series
     FileInfo=SeriesData.FileInfo{1};
 else
-    msgbox_uvmat('ERROR','please refresh the input file series')
-    return
+    set(hhseries.REFRESH,'BackgroundColor',[1 0 1])
+%     msgbox_uvmat('ERROR','please refresh the input file series')
+%     return
 end
 
 
@@ -126,7 +130,6 @@ switch FileType
             [PathCiv2_ImageA,Civ2_ImageA,FileExtA]=fileparts(Data.Civ2_ImageA);
             [PathCiv2_ImageB,Civ2_ImageB,FileExtA]=fileparts(Data.Civ2_ImageB);
         end
-        hhseries=guidata(hseries);
         if size(Param.InputTable,1)==1
             series('display_file_name',hhseries,Data.Civ1_ImageA,'append');%append the image series to the input list
         end
@@ -145,7 +148,7 @@ switch FileType
         msgbox_uvmat('ERROR','old civX convention, use the GUI civ')
         return
 end
-if numel(SeriesData.FileType)>=2 && strcmp(SeriesData.FileType{end-1},'image') &&   strcmp(SeriesData.FileType{end},'image')
+if isfield(SeriesData,'FileType') && numel(SeriesData.FileType)>=2 && strcmp(SeriesData.FileType{end-1},'image') &&   strcmp(SeriesData.FileType{end},'image')
     set(handles.ListCompareMode,'Value',3)% we compare two image series term to term ('shift')
     set(handles.PairIndices,'Visible','off')
 end
@@ -197,7 +200,8 @@ MaxIndex_i=Param.IndexRange.MaxIndex_i(iview_image);
 MinIndex_i=Param.IndexRange.MinIndex_i(iview_image);
 MaxIndex_j=1;%default
 MinIndex_j=1;
-if isfield(Param.IndexRange,'MaxIndex_j')&&isfield(Param.IndexRange,'MinIndex_j')
+if isfield(Param.IndexRange,'MaxIndex_j')&&isfield(Param.IndexRange,'MinIndex_j')...
+     && numel(Param.IndexRange.MaxIndex_j')>=iview_image &&numel(Param.IndexRange.MinIndex_j')>=iview_image  
 MaxIndex_j=Param.IndexRange.MaxIndex_j(iview_image);
 MinIndex_j=Param.IndexRange.MinIndex_j(iview_image);
 end
@@ -213,7 +217,6 @@ elseif  MaxIndex_i==1 && MaxIndex_j>1% simple series in j
     if  MaxIndex_j <= 10
         set(handles.ListPairMode,'Value',1)% advice 'pair j1-j2' except in MaxIndex_j is large
     end
-%elseif ~(strcmp(FileType,'video') || strcmp(FileType,'mmreader'))
 else
     set(handles.ListPairMode,'String',{'pair j1-j2';'series(Dj)';'series(Di)'})%multiple choice
     if strcmp(NomTypeNc,'_1-2_1')
@@ -283,7 +286,23 @@ ListPairCiv1_Callback(hObject, eventdata, handles)
 
 %% introduce the stored parameters if relevant
 if isfield(Param,'ActionInput')
-fill_GUI(Param.ActionInput,hObject);%fill the GUI with the parameters retrieved from the input Param
+    fill_GUI(Param.ActionInput,hObject);%fill the GUI with the parameters retrieved from the input Param
+    hcheckgrid=findobj(handles.civ_input,'Tag','CheckGrid');
+    for ilist=1:numel(hcheckgrid)
+        if get(hcheckgrid(ilist),'Value')
+            hparent=get(hcheckgrid(ilist),'parent');%handles of the parent panel
+            hchildren=get(hparent,'children');
+            handle_txtbox=findobj(hchildren,'tag','Grid');% look for the grid name box in the same panel
+            handle_dx=findobj(hchildren,'tag','num_Dx');
+            handle_dy=findobj(hchildren,'tag','num_Dy');
+            handle_title_dx=findobj(hchildren,'tag','title_Dx');
+            handle_title_dy=findobj(hchildren,'tag','title_Dy');
+            set(handle_dx,'Visible','off');
+            set(handle_dy,'Visible','off');
+            set(handle_title_dy,'Visible','off');
+            set(handle_title_dx,'Visible','off');
+        end
+    end
 end
 
 %% set the GUI to modal: wait for OK to close
@@ -342,7 +361,6 @@ function errormsg=display_file_name(handles,fileinput)
 [FilePath,FileName,ImaExt]=fileparts(imageinput);
 % detect the file type, get the movie object if relevant, and look for the corresponding file series:
 % the root name and indices may be corrected by including the first index i1 if a corresponding xml file exists
-%[RootPath,Civ1_ImageA,Civ2_ImageB,i1_series,tild,j1_series,tild,NomTypeIma,FileType,MovieObject]=find_file_series(FilePath,[FileName ImaExt]);
 switch Param.FileType{1}
     case {'image','multimage','video','mmreader'}
     otherwise
