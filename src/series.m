@@ -520,6 +520,7 @@ end
 function REFRESH_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
 InputTable=get(handles.InputTable,'Data');
+set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
 set(handles.REFRESH,'BackgroundColor',[1 1 0])% set REFRESH  button to yellow color (indicate activation)
 drawnow
 empty_line=false(size(InputTable,1),1);
@@ -551,6 +552,7 @@ for iview=1:size(InputTable,1)
     end
 end
 set(handles.REFRESH,'BackgroundColor',[1 0 0])% set REFRESH  button to red color (indicate activation finished)
+set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch'
 
 %------------------------------------------------------------------------
 % --- Function called when a new file is opened, either by series_OpeningFcn or by the browser
@@ -672,14 +674,16 @@ first_j=[];
 if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
 last_j=[];
 if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
-[i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,Param.IndexRange.PairString);
+PairString='';
+if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
+[i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
 FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
     Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
 if ~exist(FirstFileName,'file')
     set(handles.num_first_i,'String',num2str(ref_i))
     set(handles.num_first_j,'String',num2str(ref_j))
 end
-[i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,last_j,Param.IndexRange.PairString);
+[i1,i2,j1,j2] = get_file_index(Param.IndexRange.last_i,last_j,PairString);
 LastFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
     Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
 if ~exist(LastFileName,'file')
@@ -2908,6 +2912,7 @@ if ~isempty(get(handles.ActionExt,'UserData'))
     TransformPath=get(handles.ActionExt,'UserData');
 end
 if strcmp(ActionExt,'.sh')
+    set(handles.series,'Pointer','watch') % set the mouse pointer to 'watch'
     set(handles.ActionExt,'BackgroundColor',[1 1 0])
     ActionFullName=fullfile(get(handles.ActionPath,'String'),[ActionName '.sh']);
     if ~exist(ActionFullName,'file')
@@ -2943,6 +2948,7 @@ if strcmp(ActionExt,'.sh')
         end
     end
     set(handles.ActionExt,'BackgroundColor',[1 1 1])
+     set(handles.series,'Pointer','arrow') % set the mouse pointer to 'watch
 end
 
 
