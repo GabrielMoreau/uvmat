@@ -4583,9 +4583,9 @@ hfig=figure;
 copyobj(handles.PlotAxes,hfig);
 h=findobj(handles.PlotAxes,'tag','ima'); %look for image in the plot
 if ~isempty(h)
-map=colormap(handles.PlotAxes);
-colormap(map);%transmit the current colormap to the zoom fig
-colorbar
+    map=colormap(handles.PlotAxes);
+    colormap(map);%transmit the current colormap to the zoom fig
+    colorbar
 end
 
 % --------------------------------------------------------------------

@@ -118,16 +118,12 @@ set(handles.view_field,'UserData',Data)
 
 %% reset position of text_display and TableDisplay
 % reset position of text_display
-    pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
-    pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
-    pos_1(2)=size_fig(4)-pos_1(4);             % set text display to the top of the fig
-    set(handles.text_display,'Position',pos_1)
-    % reset position of TableDisplay
-%     pos_1=get(handles.TableDisplay,'Position');
-%     pos_1(1)=size_fig(3)-pos_1(3);
-%     pos_1(2)=size_fig(4)-pos_1(4);
-    set(handles.TableDisplay,'Position',pos_1)
-% end
+pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
+pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
+pos_1(2)=size_fig(4)-pos_1(4);             % set text display to the top of the fig
+set(handles.text_display,'Position',pos_1)
+% reset position of TableDisplay
+set(handles.TableDisplay,'Position',pos_1)
 % reset position of CheckTable
 pos_CheckTable=get(handles.CheckTable,'Position');% [lower x lower y width height] for CheckHold
 pos_CheckTable(1)=pos_1(1)-pos_CheckTable(3);       % set 'CheckHold' to the right of the fig
@@ -167,12 +163,14 @@ end
 set(handles.Vectors,'Position',pos_4)
 
 %% reset position and scale of axis
+set(handles.PlotAxes,'Units','pixels')
 bord=[50 40 30 60]; %bordure left,inf, right,sup
 pos(1)=bord(1);
 pos(2)=bord(2);
 pos(3)=max(1,pos_1(1)-pos(1)-bord(3));
 pos(4)=max(1,size_fig(4)-bord(4));
 set(handles.PlotAxes,'Position',pos)
+set(handles.PlotAxes,'Units','normalized')
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -316,13 +314,68 @@ end
 %-------------------------------------------------------------------
 function MenuExportFigure_Callback(hObject, eventdata, handles)
 %-------------------------------------------------------------------
-huvmat=get(handles.MenuExport,'parent');
-UvData=get(huvmat,'UserData');
 hfig=figure;
-newaxes=copyobj(handles.PlotAxes,hfig);
-map=colormap(handles.PlotAxes);
-colormap(map);%transmit the current colormap to the zoom fig
-colorbar
+copyobj(handles.PlotAxes,hfig);
+if ~isempty(h)
+    h=findobj(handles.PlotAxes,'tag','ima'); %look for image in the plot
+    map=colormap(handles.PlotAxes);
+    colormap(map);%transmit the current colormap to the zoom fig
+    colorbar
+end
+
+% --------------------------------------------------------------------
+function MenuExportAxis_Callback(hObject, eventdata, handles)
+ListFig=findobj(allchild(0),'Type','figure');
+nb_option=0;
+menu={};
+for ilist=1:numel(ListFig)
+    FigName=get(ListFig(ilist),'name');
+    if isempty(FigName)
+        FigName=['figure ' num2str(ListFig(ilist))];
+    end
+    if ~strcmp(FigName,'uvmat')
+        ListAxes=findobj(ListFig(ilist),'Type','axes');
+        ListTags=get(ListAxes,'Tag');
+        if ~isempty(ListTags) && ~isempty(find(~strcmp('Colorbar',ListTags), 1))
+            ListAxes=ListAxes(~strcmp('Colorbar',ListTags));
+            if numel(ListAxes)==1
+                nb_option=nb_option+1;
+                menu{nb_option}=FigName ;
+                AxesHandle(nb_option)=ListAxes;
+            else
+                nb_axis=0;
+                for iaxes=1:numel(ListAxes)
+                    nb_axis=nb_axis+1;
+                    nb_option=nb_option+1;
+                    menu{nb_option}=[FigName '_' num2str(nb_axis)];
+                    AxesHandle(nb_option)=ListAxes(nb_axis);
+                end
+            end
+        end
+    end
+end
+if isempty(menu)
+    answer=msgbox_uvmat('INPUT_Y-N','no existing plotting axes available, create new figure?');
+    if strcmp(answer,'Yes')
+        hfig=figure;
+        copyobj(handles.PlotAxes,hfig);
+    else
+        return
+    end
+    map=colormap(handles.PlotAxes);
+    colormap(map);%transmit the current colormap to the zoom fig
+    colorbar
+else
+    answer=msgbox_uvmat('INPUT_MENU','select a figure/axis on which the current uvmat plot will be exported',menu);
+    if isempty(answer)
+        return
+    else
+        axes(AxesHandle(answer))
+        hold on
+        hchild=get(handles.PlotAxes,'children');
+        copyobj(hchild,gca);
+    end
+end
 
 %-------------------------------------------------------------------
 %-------------------------------------------------------------------
