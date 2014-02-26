@@ -2060,22 +2060,17 @@ else  % check index ranges
             set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
 end
 
-%% hide j index if useful (for civ in burst mode)
-if isfield(ParamOut,'Hide_j_index')&&isequal(ParamOut.Hide_j_index,'on')
-    status_j='off';% no j index visible
+%% desable j index if if set by the civ_input GUI
+if isfield(ParamOut,'Desable_j_index')&&isequal(ParamOut.Desable_j_index,'on')
+    set(handles.num_first_j,'Enable','off')
+    set(handles.num_last_j,'Enable','off')
+    set(handles.num_incr_j,'Enable','off')
+    set(handles.num_incr_j,'String','')
 else
-    status_j='on';%default
-    if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
-        status_j='off'; % no j index needed
-    elseif strcmp(get(handles.PairString,'Visible'),'on')
-        PairString=get(handles.PairString,'Data');
-        check_burst=cellfun(@isempty,regexp(PairString,'^j'));%=0 for burst case, 1 otherwise
-        if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
-            status_j='off'; % no j index needed for bust case
-        end
-    end
+   set(handles.num_first_j,'Enable','on')
+    set(handles.num_last_j,'Enable','on')
+    set(handles.num_incr_j,'Enable','on')
 end
-enable_j(handles,status_j) % no j index needed
 
 %% NbSlice visibility
 NbSliceVisible='off';%default
