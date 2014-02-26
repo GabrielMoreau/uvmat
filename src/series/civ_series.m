@@ -50,6 +50,9 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)% function activated from the G
     Data.Program=mfilename;%gives the name of the current function
     Data.AllowInputSort='off';% allow alphabetic sorting of the list of input file SubDir (options 'off'/'on', 'off' by default)
     Data.WholeIndexRange='off';% prescribes the file index ranges from min to max (options 'off'/'on', 'off' by default)
+    if strcmp(Data.ActionInput.PairIndices.ListPairMode,'pair j1-j2')
+        Data.Desable_j_index='on';% hide the j index in series (set by the pair choice in civ_input)
+    end
     Data.NbSlice='off'; %nbre of slices ('off' by default)
     Data.VelType='off';% menu for selecting the velocity type (options 'off'/'one'/'two',  'off' by default)
     Data.FieldName='off';% menu for selecting the field (s) in the input file(options 'off'/'one'/'two', 'off' by default)
