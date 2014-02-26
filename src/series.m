@@ -244,8 +244,7 @@ end
 
 %% introduce the input file name(s) if defined from input Param
 if isfield(Param,'FileName')&&~isempty(Param.FileName)
-    %InputTable={'','','','',''}; % refresh the file input table
-    InputTable={}
+    InputTable={};
     set(handles.InputTable,'Data',InputTable)
     if isfield(Param,'FileName_1')
         display_file_name(handles,Param.FileName,'one')%refresh the input table
@@ -317,9 +316,14 @@ if isempty(oldfile)
     end
 end
 %% launch the browser
-fileinput=uigetfile_uvmat('pick a file to append in the input table',oldfile);
-if ~isempty(fileinput)
-      display_file_name(handles,fileinput,'one')
+fileinput=uigetfile_uvmat('pick an input file in the series',oldfile);
+hh=dir(fileinput);
+if numel(hh)>1
+    msgbox_uvmat('ERROR','invalid input, probably a broken link');
+else
+    if ~isempty(fileinput)
+        display_file_name(handles,fileinput,'one')
+    end
 end
 
 % --------------------------------------------------------------------
@@ -347,8 +351,13 @@ end
 
 %% launch the browser
 fileinput=uigetfile_uvmat('pick a file to append in the input table',oldfile);
-if ~isempty(fileinput)
+hh=dir(fileinput);
+if numel(hh)>1
+    msgbox_uvmat('ERROR','invalid input, probably a broken link');
+else
+    if ~isempty(fileinput)
         display_file_name(handles,fileinput,'append')
+    end
 end
 
 %------------------------------------------------------------------------
@@ -935,15 +944,13 @@ set(handles.ListView,'Value',iview)
 update_mode(handles,i1_series,i2_series,j1_series,j2_series,Time)
 
 %% enable j index visibility
-%check_jindex=~isempty(find(~cellfun(@isempty,SeriesData.j1_series))); %look for non empty j indices
 status_j='on';%default
 if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
     status_j='off'; % no j index needed
 elseif strcmp(get(handles.PairString,'Visible'),'on')
-        PairString=get(handles.PairString,'Data');       
-        check_burst=cellfun(@isempty,regexp(PairString,'^j'));%=0 for burst case, 1 otherwise
- %   check_nopair=cellfun(@isempty,PairString);
-    if isempty(find(check_burst, 1))% if all pair string begins by j (burst) 
+    PairString=get(handles.PairString,'Data');
+    check_burst=cellfun(@isempty,regexp(PairString,'^j'));%=0 for burst case, 1 otherwise
+    if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
         status_j='off'; % no j index needed for bust case
     end
 end
@@ -953,7 +960,7 @@ enable_j(handles,status_j) % no j index needed
 set(handles.FileStatus,'Units','pixels')
 Position=get(handles.FileStatus,'Position');
 set(handles.FileStatus,'Units','normalized')
-xI=0.5:Position(3)-0.5;
+%xI=0.5:Position(3)-0.5;
 nbview=numel(SeriesData.i1_series);
 j_max=cell(1,nbview);
 MaxIndex_i=ones(1,nbview);%default
@@ -963,10 +970,6 @@ for iview=1:nbview
     j_max{iview}=max(pair_max,[],1);%max on j index
     MaxIndex_i(iview)=max(find(j_max{iview}))-1;% max ref index i
     MinIndex_i(iview)=min(find(j_max{iview}))-1;% min ref index i
-%     pair_max{iview}=squeezSeriesData.i1_series{iview},[],1)); %max on pair index
-%     if (strcmp(get(handles.num_first_j,'Visible'),'off')&& size(pair_max{iview},2)~=1)
-%         pair_max{iview}=squeeze(max(pair_max{iview},[],1)); % consider only the i index
-%     end
 end
 MinIndex_i=min(MinIndex_i);
 MaxIndex_i=max(MaxIndex_i);
@@ -1966,13 +1969,6 @@ set(handles.ActionPath,'String',ActionPath); %show the path to the senlected fun
 %% reinitialise the waitbar
 update_waitbar(handles.Waitbar,0)
 
-%% default setting for the visibility of the GUI elements
-% set(handles.FieldTransform,'Visible','off')
-% set(handles.CheckObject,'Visible','off');
-% set(handles.ProjObject,'Visible','off');
-% set(handles.CheckMask,'Visible','off')
-% set(handles.Mask,'Visible','off')
-
 %% create the function handle for Action
 path_series=which('series');
 if ~isequal(ActionPath,path_series)
@@ -2009,7 +2005,6 @@ if ~isempty(SeriesData)&&isfield(SeriesData,'FileType')
     iview_civ=find(strcmp('civx',SeriesData.FileType)|strcmp('civdata',SeriesData.FileType));
     nb_netcdf=numel(find(strcmp('netcdf',SeriesData.FileType)));
 end
-%menu={''};
 if numel(iview_civ)>=1
     menu=set_veltype_display(SeriesData.FileInfo{iview_civ(1)}.CivStage,SeriesData.FileType{iview_civ(1)});
     set(handles.VelType,'String',[{'*'};menu])
@@ -2064,6 +2059,23 @@ else  % check index ranges
     if last_i < first_i || last_j < first_j , msgbox_uvmat('ERROR','last field number must be larger than the first one'),...
             set(handles.RUN, 'Enable','On'), set(handles.RUN,'BackgroundColor',[1 0 0]),return,end;
 end
+
+%% hide j index if useful (for civ in burst mode)
+if isfield(ParamOut,'Hide_j_index')&&isequal(ParamOut.Hide_j_index,'on')
+    status_j='off';% no j index visible
+else
+    status_j='on';%default
+    if isempty(find(~cellfun(@isempty,SeriesData.j1_series), 1)); % case of empty j indices
+        status_j='off'; % no j index needed
+    elseif strcmp(get(handles.PairString,'Visible'),'on')
+        PairString=get(handles.PairString,'Data');
+        check_burst=cellfun(@isempty,regexp(PairString,'^j'));%=0 for burst case, 1 otherwise
+        if isempty(find(check_burst, 1))% if all pair string begins by j (burst)
+            status_j='off'; % no j index needed for bust case
+        end
+    end
+end
+enable_j(handles,status_j) % no j index needed
 
 %% NbSlice visibility
 NbSliceVisible='off';%default
