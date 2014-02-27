@@ -37,7 +37,7 @@
 %     GNU General Public License (open UVMAT/COPYING.txt) for more details.
 %AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-function [Data,errormsg,result_conv]= civ_series(Param,ncfile)
+function [Data,errormsg,result_conv]= civ_series(Param)
 errormsg='';
 path_series=fileparts(which('series'));
 addpath(fullfile(path_series,'series'))

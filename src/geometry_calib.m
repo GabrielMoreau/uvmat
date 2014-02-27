@@ -282,17 +282,21 @@ msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated for ' num2str(nbcalib) ' exp
 function [GeometryCalib,index]=calibrate(handles,hhuvmat)
 %------------------------------------------------------------------------
 %% read the current calibration points
+index=[];
 Coord=get(handles.ListCoord,'Data');
 Coord(:,6)=[];
 % apply the calibration, whose type is selected in  handles.calib_type
+GeometryCalib=[];
 if ~isempty(Coord)
     calib_cell=get(handles.calib_type,'String');
     val=get(handles.calib_type,'Value');
     GeometryCalib=feval(['calib_' calib_cell{val}],Coord,handles);
 else
     msgbox_uvmat('ERROR','No calibration points, abort')
-    return
 end 
+if isempty(GeometryCalib)
+    return
+end
 Z_plane=[];
 if ~isempty(Coord)
     %check error
@@ -541,19 +545,24 @@ est_aspect_ratio=0;
 est_fc=[1;1];
 center_optim=0;
 run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));% apply fct 'toolbox_calib/go_calib_optim'
-GeometryCalib.CalibrationType='3D_linear';
-GeometryCalib.fx_fy=fc';
-GeometryCalib.Cx_Cy=cc';
-GeometryCalib.kc=kc(1);
-GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
-GeometryCalib.Tx_Ty_Tz=Tc_1';
-GeometryCalib.R=Rc_1;
-GeometryCalib.R(2,1:3)=-GeometryCalib.R(2,1:3);%inversion of the y image coordinate
-GeometryCalib.Tx_Ty_Tz(2)=-GeometryCalib.Tx_Ty_Tz(2);%inversion of the y image coordinate
-GeometryCalib.Cx_Cy(2)=ny-GeometryCalib.Cx_Cy(2);%inversion of the y image coordinate
-GeometryCalib.omc=(180/pi)*omc_1;%angles in degrees
-GeometryCalib.ErrorRMS=[];
-GeometryCalib.ErrorMax=[];
+if exist('Rc_1','var')
+    GeometryCalib.CalibrationType='3D_linear';
+    GeometryCalib.fx_fy=fc';
+    GeometryCalib.Cx_Cy=cc';
+    GeometryCalib.kc=kc(1);
+    GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
+    GeometryCalib.Tx_Ty_Tz=Tc_1';
+    GeometryCalib.R=Rc_1;
+    GeometryCalib.R(2,1:3)=-GeometryCalib.R(2,1:3);%inversion of the y image coordinate
+    GeometryCalib.Tx_Ty_Tz(2)=-GeometryCalib.Tx_Ty_Tz(2);%inversion of the y image coordinate
+    GeometryCalib.Cx_Cy(2)=ny-GeometryCalib.Cx_Cy(2);%inversion of the y image coordinate
+    GeometryCalib.omc=(180/pi)*omc_1;%angles in degrees
+    GeometryCalib.ErrorRMS=[];
+    GeometryCalib.ErrorMax=[];
+else
+    msgbox_uvmat('ERROR',['calibration function ' fullfile('toolbox_calib','go_calib_optim') ' did not converge: use multiple views or option 3D_extrinsic'])
+    GeometryCalib=[];
+end
 
 %------------------------------------------------------------------------
 function GeometryCalib=calib_3D_quadr(Coord,handles)
@@ -608,31 +617,31 @@ est_aspect_ratio=1;
 center_optim=0;
 run(fullfile(path_UVMAT,'toolbox_calib','go_calib_optim'));% apply fct 'toolbox_calib/go_calib_optim'
 
-GeometryCalib.CalibrationType='3D_quadr';
-GeometryCalib.fx_fy=fc';
-GeometryCalib.Cx_Cy=cc';
-GeometryCalib.kc=kc(1);
-GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
-GeometryCalib.Tx_Ty_Tz=Tc_1';
-if ~exist('Rc_1','var')
-    msgbox_uvmat('ERROR',['calibration function ' fullfile('toolbox_calib','go_calib_optim') ' did not converge: use multiple views or option 3D_extrinsic']) 
-    return
+if exist('Rc_1','var')
+    GeometryCalib.CalibrationType='3D_quadr';
+    GeometryCalib.fx_fy=fc';
+    GeometryCalib.Cx_Cy=cc';
+    GeometryCalib.kc=kc(1);
+    GeometryCalib.CoordUnit=[];% default value, to be updated by the calling function
+    GeometryCalib.Tx_Ty_Tz=Tc_1';
+    GeometryCalib.R=Rc_1;
+    GeometryCalib.R(2,1:3)=-GeometryCalib.R(2,1:3);%inversion of the y image coordinate
+    GeometryCalib.Tx_Ty_Tz(2)=-GeometryCalib.Tx_Ty_Tz(2);%inversion of the y image coordinate
+    GeometryCalib.Cx_Cy(2)=ny-GeometryCalib.Cx_Cy(2);%inversion of the y image coordinate
+    GeometryCalib.omc=(180/pi)*omc_1;%angles in degrees
+    GeometryCalib.ErrorRMS=[];
+    GeometryCalib.ErrorMax=[];
+else
+    msgbox_uvmat('ERROR',['calibration function ' fullfile('toolbox_calib','go_calib_optim') ' did not converge: use multiple views or option 3D_extrinsic'])
+    GeometryCalib=[];
 end
-GeometryCalib.R=Rc_1;
-GeometryCalib.R(2,1:3)=-GeometryCalib.R(2,1:3);%inversion of the y image coordinate
-GeometryCalib.Tx_Ty_Tz(2)=-GeometryCalib.Tx_Ty_Tz(2);%inversion of the y image coordinate
-GeometryCalib.Cx_Cy(2)=ny-GeometryCalib.Cx_Cy(2);%inversion of the y image coordinate
-GeometryCalib.omc=(180/pi)*omc_1;%angles in degrees
-GeometryCalib.ErrorRMS=[];
-GeometryCalib.ErrorMax=[];
-
 
 %------------------------------------------------------------------------
 function GeometryCalib=calib_3D_extrinsic(Coord,handles)
 %------------------------------------------------------------------
 path_uvmat=which('geometry_calib');% check the path detected for source file uvmat
 path_UVMAT=fileparts(path_uvmat); %path to UVMAT
-x_1=double(Coord(:,4:5)');%image coordiantes
+x_1=double(Coord(:,4:5)');%image coordinates
 X_1=double(Coord(:,1:3)');% phys coordinates
 huvmat=findobj(allchild(0),'Tag','uvmat');
 hhuvmat=guidata(huvmat);
@@ -640,6 +649,25 @@ ny=str2double(get(hhuvmat.num_Npy,'String'));
 x_1(2,:)=ny-x_1(2,:);%reverse the y image coordinates
 n_ima=1;
 GeometryCalib.CalibrationType='3D_extrinsic';
+fx=str2num(get(handles.fx,'String'));
+fy=str2num(get(handles.fy,'String'));
+Cx=str2num(get(handles.Cx,'String'));
+Cy=str2num(get(handles.Cy,'String'));
+errormsg='';
+if isempty(fx)
+    errormsg='focal length fx needs to be introduced';
+elseif isempty(fy)
+    errormsg='focal length fy needs to be introduced';
+elseif isempty(Cx)
+    errormsg='shift Cx to image centre needs to be introduced';
+elseif isempty(Cy)
+    errormsg='shift Cy to image centre needs to be introduced';
+end
+if ~isempty(errormsg)
+    GeometryCalib=[];
+    msgbox_uvmat('ERROR',errormsg)
+    return
+end
 GeometryCalib.fx_fy(1)=str2num(get(handles.fx,'String'));
 GeometryCalib.fx_fy(2)=str2num(get(handles.fy,'String'));
 GeometryCalib.Cx_Cy(1)=str2num(get(handles.Cx,'String'));
@@ -659,9 +687,6 @@ GeometryCalib.R(2,1:3)=-GeometryCalib.R(2,1:3);%inversion of the y image coordin
 GeometryCalib.Tx_Ty_Tz(2)=-GeometryCalib.Tx_Ty_Tz(2);%inversion of the y image coordinate
 GeometryCalib.Cx_Cy(2)=ny-GeometryCalib.Cx_Cy(2);%inversion of the y image coordinate
 GeometryCalib.omc=(180/pi)*omc';
-%GeometryCalib.R(3,1:3)=-GeometryCalib.R(3,1:3);%inversion for z upward
-
-
 
 %------------------------------------------------------------------------
 %function GeometryCalib=calib_tsai_heikkila(Coord)
@@ -1160,7 +1185,7 @@ if ~isempty(GeometryCalib)
         set(handles.Theta,'String',num2str(GeometryCalib.omc(2),4))
         set(handles.Psi,'String',num2str(GeometryCalib.omc(3),4))
     end
-    if isfield(GeometryCalib,'SourceCalib')
+    if isfield(GeometryCalib,'SourceCalib')&& isfield(GeometryCalib.SourceCalib,'PointCoord')
         calib=GeometryCalib.SourceCalib.PointCoord;
         Coord=[calib zeros(size(calib,1),1)];
         set(handles.ListCoord,'Data',Coord)
