@@ -49,12 +49,18 @@ if ~isempty(xx)
         case 109%  key 'm'
             uvmat('runmin_Callback',hObject,eventdata,handleshaxes)
         otherwise
+            if ischar(get(gco,'Tag'))
             switch get(gco,'tag')% tag of the current edit box
                 case {'RootPath', 'SubDir','RootFile','FileExt','RootPath_1', 'SubDir_1','RootFile_1','FileExt_1'}
-                    set(handleshaxes.InputFileREFRESH,'BackgroundColor',[1 0 1])%indicat that REFRESH must be activated (intyroduce the whole series)
+                    set(handleshaxes.InputFileREFRESH,'BackgroundColor',[1 0 1])%indicat that REFRESH must be activated (introduce the whole series)
                 case 'num_IndexIncrement'% no action
                 otherwise
+                    if isfield(handleshaxes,'REFRESH')
                     set(handleshaxes.REFRESH,'BackgroundColor',[1 0 1])%indicat that run0 must be activated
+                    elseif strcmp(get(gco,'Type'),'uicontrol')
+                       set(gco,'BackgroundColor',[1 0 1])%indicate that the edition  must be validated by carriage return
+                    end
+            end
             end
     end
 end

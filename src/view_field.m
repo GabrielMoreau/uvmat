@@ -118,6 +118,7 @@ set(handles.view_field,'UserData',Data)
 
 %% reset position of text_display and TableDisplay
 % reset position of text_display
+set(handles.text_display,'Units','pixels');
 pos_1=get(handles.text_display,'Position');% [lower x lower y width height] for text_display
 pos_1(1)=size_fig(3)-pos_1(3);             % set text display to the right of the fig
 pos_1(2)=size_fig(4)-pos_1(4);             % set text display to the top of the fig
@@ -400,33 +401,6 @@ function runmin_Callback(hObject, eventdata, handles)
 increment=-str2num(get(handles.increment_scan,'String')); %get the field increment d
 runpm(hObject,eventdata,handles,increment)
 
-% %-------------------------------------------------------------------
-% %Executes on button press in runmin: make one step backward and call
-% %run0. The step backward is along the fields series 1 or 2 depending on 
-% %the scan_i and scan_j check box (exclusive each other)
-% %-------------------------------------------------------------------
-% function RunMovie_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------
-% set(handles.RunMovie,'BackgroundColor',[1 1 0])%paint the command button in yellow
-% drawnow
-% increment=str2num(get(handles.increment_scan,'String')); %get the field increment d
-% set(handles.STOP,'Visible','on')
-% set(handles.speed,'Visible','on')
-% set(handles.speed_txt,'Visible','on')
-% set(handles.RunMovie,'BusyAction','queue')
-% testavi=0;
-% UvData=get(handles.view_field,'UserData');
-% 
-% while get(handles.speed,'Value')~=0 & isequal(get(handles.RunMovie,'BusyAction'),'queue') % enable STOP command
-%         runpm(hObject,eventdata,handles,increment)
-%         pause(1.02-get(handles.speed,'Value'))% wait for next image
-% end
-% if isfield(UvData,'aviobj') && ~isempty( UvData.aviobj),
-%     UvData.aviobj=close(UvData.aviobj);
-%    set(handles.view_field,'UserData',UvData);
-% end
-% set(handles.RunMovie,'BackgroundColor',[1 0 0])%paint the command buttonback to red
-
 %------------------------------------------------------------------------
 % --- translate coordinate to matrix index
 %------------------------------------------------------------------------
@@ -448,97 +422,32 @@ end
 % --- Executes on button press in CheckZoomFig.
 %------------------------------------------------------------------------
 function CheckZoomFig_Callback(hObject, eventdata, handles)
-
 if get(handles.CheckZoomFig,'Value')
     set(handles.CheckZoom,'value',0)
 end
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in 'FixLimits'.
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function CheckFixLimits_Callback(hObject, eventdata, handles)
 test=get(handles.CheckFixLimits,'Value');
-% if test
-%     set(handles.CheckFixLimits,'BackgroundColor',[1 1 0])
-% else
-%     set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
-% end
 update_plot(handles)
  
- %-------------------------------------------------------------------
+%------------------------------------------------------------------------
 % --- Executes on button press in CheckFixAspectRatio.
+%------------------------------------------------------------------------
 function CheckFixAspectRatio_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
 if get(handles.CheckFixAspectRatio,'Value')
     update_plot(handles);
 else
     update_plot(handles);
 end
 
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 function num_AspectRatio_Callback(hObject, eventdata, handles)
-%-------------------------------------------------------------------
+%------------------------------------------------------------------------
 set(handles.CheckFixAspectRatio,'Value',1)% select the fixed aspect ratio button
 update_plot(handles);
-
-%-------------------------------------------------------------------
-
-% %-------------------------------------------------------------------
-% %----Executes on button press in 'record': records the current flags of manual correction.
-% %-------------------------------------------------------------------
-% function record_Callback(hObject, eventdata, handles)
-% % [filebase,num_i1,num_j1,num_i2,num_j2,Ext,NomType,SubDir]=read_input_file(handles);
-% filename=read_file_boxes(handles);
-% AxeData=get(gca,'UserData');
-% [erread,message]=fileattrib(filename);
-% if ~isempty(message) && ~isequal(message.UserWrite,1)
-%      msgbox_view_field('ERROR',['no writting access to ' filename])
-%      return
-% end
-% test_civ2=isequal(get(handles.civ2,'BackgroundColor'),[1 1 0]);
-% test_civ1=isequal(get(handles.civ1,'BackgroundColor'),[1 1 0]);
-% if ~test_civ2 && ~test_civ1
-%     msgbox_view_field('ERROR','manual correction only possible for CIV1 or CIV2 velocity fields')
-% end 
-% if test_civ2
-%     nbname='nb_vectors2';
-%    flagname='vec2_FixFlag';
-%    attrname='fix2';
-% end
-% if test_civ1
-%     nbname='nb_vectors';
-%    flagname='vec_FixFlag';
-%    attrname='fix';
-% end
-% %write fix flags in the netcdf file
-% hhh=which('netcdf.open');% look for built-in matlab netcdf library
-% if ~isequal(hhh,'')% case of new builtin Matlab netcdf library
-%     nc=netcdf.open(filename,'NC_WRITE'); 
-%     netcdf.reDef(nc)
-%     netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),attrname,1)
-%     dimid = netcdf.inqDimID(nc,nbname); 
-%     try
-%         varid = netcdf.inqVarID(nc,flagname);% look for already existing fixflag variable
-%     catch
-%         varid=netcdf.defVar(nc,flagname,'double',dimid);%create fixflag variable if it does not exist
-%     end
-%     netcdf.endDef(nc)
-%     netcdf.putVar(nc,varid,AxeData.FF);
-%     netcdf.close(nc)  
-% else %old netcdf library
-%     netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
-% end
-% 
-% function netcdf_toolbox(filename,AxeData,attrname,nbname,flagname)
-% nc=netcdf(filename,'write'); %open netcdf file
-% result=redef(nc);
-% eval(['nc.' attrname '=1;']);
-% theDim=nc(nbname) ;% get the number of velocity vectors
-% nb_vectors=size(theDim);
-% var_FixFlag=ncvar(flagname,nc);% var_FixFlag will be written as the netcdf variable vec_FixFlag
-% var_FixFlag(1:nb_vectors)=AxeData.FF;% 
-% fin=close(nc);
-
 
 %-------------------------------------------------------------------
 %-------------------------------------------------------------------
@@ -854,11 +763,12 @@ AxeData=Data.PlotAxes;% retrieve the current plotted data
 PlotParam=read_GUI(handles.view_field);
 [PP,PlotParamOut]= plot_field(AxeData,handles.PlotAxes,PlotParam);
 errormsg=fill_GUI(PlotParamOut,handles.view_field);
-    if ~isempty(errormsg)
-        msgbox_uvmat('ERROR',errormsg)
-        return
-    end
-%write_plot_param(handles,PlotParamOut); %update the auto plot parameters
+if ~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+    return
+end
+hedit=findobj(handles.view_field,'Style','edit');
+set(hedit,'BackgroundColor',[1 1 1])
 
 %------------------------------------------------------------------------
 % --- Executes on button press in Menu/Export/field in workspace.

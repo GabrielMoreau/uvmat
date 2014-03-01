@@ -2054,6 +2054,10 @@ function errormsg=refresh_field(handles,FileName,FileName_1,num_i1,num_i2,num_j1
 
 %% initialisation
 pointer=get(handles.uvmat,'Pointer');
+if strcmp(pointer,'watch')% reinitialise the mouse if stuck to 'watch'
+    set(handles.CheckZoom,'Value',0)
+    pointer='arrow';
+end
 set(handles.uvmat,'Pointer','watch')
 drawnow
 if ~exist('Field','var')
@@ -3132,7 +3136,7 @@ switch field
         FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
         GetFieldData=get_field(FileName,ParamIn);% inport field names from the GUI get_field
         FieldList={};
-        VecColorList={};
+        VecColorList={''};
         switch GetFieldData.FieldOption
             case 'vectors'
                 UName=GetFieldData.PanelVectors.vector_x;

@@ -61,7 +61,7 @@ set(handles.No,'FontSize',15)
 set(handles.Cancel,'Units','pixels')
 set(handles.Cancel,'Position',[300 2 60 30])
 set(handles.Cancel,'FontSize',15)
-%set(hObject,'WindowKeyPressFcn',{'@keyboard_callback',handles})%set keyboard action function
+% set(hObject,'WindowKeyPressFcn',{'keyboard_callback',handles})%set keyboard action function
 
 % Update handles structure
 guidata(hObject, handles);
@@ -279,11 +279,6 @@ if isequal(get(hObject,'CurrentKey'),'return')
     uiresume(handles.figure1);
 end    
 
-%'keyboard_callback:' function activated when a key is pressed on the keyboard
-%-----------------------------------
-function keyboard_callback(hObject,eventdata,handleshaxes)
-cur_axes=get(hObject,'CurrentAxes');%current plotting axes of the figure with handle hObject
-xx=double(get(hObject,'CurrentCharacter')) %get the keyboard character
 
 
 
