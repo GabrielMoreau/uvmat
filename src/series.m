@@ -2604,21 +2604,11 @@ TransformIndex=get(handles.TransformName,'Value');
 TransformName=TransformList{TransformIndex};
 TransformPathList=get(handles.TransformName,'UserData');
 nb_builtin_transform=4;
-% ff=functions(list_transform{end});
-if isequal(TransformName,'more...'); 
-%     [FileName, PathName] = uigetfile( ...
-%        {'*.m', ' (*.m)';
-%         '*.m',  '.m files '; ...
-%         '*.*', 'All Files (*.*)'}, ...
-%         'Pick a transform function',get(handles.TransformPath,'String'));
-    
+if isequal(TransformName,'more...');     
     FileName=uigetfile_uvmat('Pick a transform function',get(handles.TransformPath,'String'),'.m');
     if isempty(FileName)
         return     %browser closed without choice
     end
-%     if isequal(PathName(end),'/')||isequal(PathName(end),'\')
-%         PathName(end)=[];
-%     end
     [TransformPath,TransformName,TransformExt]=fileparts(FileName);% removes extension .m
     if ~strcmp(TransformExt,'.m')
         msgbox_uvmat('ERROR','a Matlab function .m must be introduced');
@@ -2631,6 +2621,9 @@ if isequal(TransformName,'more...');
         TransformList=[TransformList(1:end-1);{TransformName};TransformList(end)];% the selected function is appended in the menu, before the last item 'more...'
         set(handles.TransformName,'String',TransformList)
         TransformPathList=[TransformPathList;{TransformPath}];
+    else% the input function already exist, we update its path (possibly new)
+        TransformPathList{TransformIndex}=TransformPath;% 
+        set(handles.TransformName,'Value',TransformIndex)
     end
    % save the new menu in the personal file 'uvmat_perso.mat' 
    dir_perso=prefdir;%personal Matalb directory
