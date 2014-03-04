@@ -3707,13 +3707,12 @@ ichoice=get(handles.TransformName,'Value');%item number in the menu
 transform_name=menu{ichoice};% choice of the transform fct
 list_path=get(handles.TransformName,'UserData');
 
-%% handles uicontrol visibility
+%% handles  visibility of the path to the transform function
 if isempty(transform_name)
     set(handles.TransformPath,'Visible','off')
 else
     set(handles.TransformPath,'Visible','on')
 end
-
 
 %% add a new item to the menu if the option 'more...' has been selected
 prev_path=fullfile(get(handles.TransformPath,'String'));
@@ -3786,22 +3785,23 @@ if isfield(UvData,'Field')&&isfield(UvData.Field,'CoordUnit')
 end
 if ~isempty(list_path{ichoice}) 
     if nargin(transform_handle)>1 && isfield(UvData,'XmlData')&&~isempty(UvData.XmlData)
-        XmlData=UvData.XmlData{1};
-        DataOut=feval(transform_handle,'*',XmlData);
+        %XmlData=UvData.XmlData{1};
+        DataOut=feval(transform_handle,'*',UvData.XmlData{1});
         if isfield(DataOut,'CoordUnit')% set the requested coord unit (info used to possibly delete the current projection objects)
             CoordUnit=DataOut.CoordUnit;
         end
         if isfield(DataOut,'InputFieldType')% to be used to impose a type of input file (eg. for image transform)
             UvData.InputFieldType=DataOut.InputFieldType;
         end
-        if isfield(DataOut,'XmlData')%  used to add transform parameters at selection of the transform fct
-            ListFields=fieldnames(DataOut.XmlData);
-            for ilist=1:numel(ListFields)
-            UvData.XmlData{1}.(ListFields{ilist})=DataOut.XmlData.(ListFields{ilist});
-            end
+        if isfield(DataOut,'TransformInput')%  used to add transform parameters at selection of the transform fct
+            UvData.XmlData{1}.TransformInput=DataOut.TransformInput;
+%             ListFields=fieldnames(DataOut.XmlData);
+%             for ilist=1:numel(ListFields)
+%             UvData.XmlData{1}.(ListFields{ilist})=DataOut.XmlData.(ListFields{ilist});
+%             end
         end
-    else
-        DataOut=feval(transform_handle,'*');
+%     else
+%         DataOut=feval(transform_handle,'*');
     end
 end
 
@@ -4259,6 +4259,9 @@ function ListObject_Callback(hObject, eventdata, handles)
 list_str=get(handles.ListObject,'String');
 IndexObj=get(handles.ListObject,'Value');%present object selection
 UvData=get(handles.uvmat,'UserData');
+if numel(UvData.ProjObject)<IndexObj
+    return
+end
 ObjectData=UvData.ProjObject{IndexObj};
     ZBounds=0; % default
     if isfield(UvData.Field,'ZMin') && isfield(UvData.Field,'ZMax')
@@ -4545,10 +4548,11 @@ if  ~isempty(UvData) && isfield(UvData, 'ProjObject') && length(UvData.ProjObjec
         end
     end
     UvData.ProjObject(IndexObj)=[];
+end
     if ~isempty(list_str)
         list_str(IndexObj)=[];
     end
-end
+% end
 set(huvmat,'UserData',UvData);
 set(hlist_object,'String',list_str)
 set(hlist_object,'Value',length(list_str))

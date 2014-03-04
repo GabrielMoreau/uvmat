@@ -405,65 +405,67 @@ for icell=1:numel(CellInfo)
             xtitle=[xtitle ', '];
         end
     end
-    MinX(icell)=min(coord_x{icell});
-    MaxX(icell)=max(coord_x{icell});
-    testplot(coord_x_index)=0;
-    if isfield(CellInfo{icell},'VarIndex_ancillary')
-        testplot(CellInfo{icell}.VarIndex_ancillary)=0;
-    end
-    if isfield(CellInfo{icell},'VarIndex_warnflag')
-        testplot(CellInfo{icell}.VarIndex_warnflag)=0;
-    end
-    if isfield(data,'VarAttribute')
-        VarAttribute=data.VarAttribute;
+    if ~isempty(coord_x{icell})
+        MinX(icell)=min(coord_x{icell});
+        MaxX(icell)=max(coord_x{icell});
+        testplot(coord_x_index)=0;
+        if isfield(CellInfo{icell},'VarIndex_ancillary')
+            testplot(CellInfo{icell}.VarIndex_ancillary)=0;
+        end
+        if isfield(CellInfo{icell},'VarIndex_warnflag')
+            testplot(CellInfo{icell}.VarIndex_warnflag)=0;
+        end
+        if isfield(data,'VarAttribute')
+            VarAttribute=data.VarAttribute;
+            for ivar=1:length(VarIndex)
+                if length(VarAttribute)>=VarIndex(ivar) && isfield(VarAttribute{VarIndex(ivar)},'long_name')
+                    plotname{VarIndex(ivar)}=VarAttribute{VarIndex(ivar)}.long_name;
+                else
+                    plotname{VarIndex(ivar)}=data.ListVarName{VarIndex(ivar)};%name for display in plot A METTRE
+                end
+            end
+        end
+        if isfield(CellInfo{icell},'VarIndex_discrete')
+            charplot_0='''+''';
+        else
+            charplot_0='''-''';
+        end
+        MinY=[];
+        MaxY=[];%default
+        
+        nbplot=0;
         for ivar=1:length(VarIndex)
-            if length(VarAttribute)>=VarIndex(ivar) && isfield(VarAttribute{VarIndex(ivar)},'long_name')
-                plotname{VarIndex(ivar)}=VarAttribute{VarIndex(ivar)}.long_name;
-            else
-                plotname{VarIndex(ivar)}=data.ListVarName{VarIndex(ivar)};%name for display in plot A METTRE
+            if testplot(VarIndex(ivar))
+                VarName=data.ListVarName{VarIndex(ivar)};
+                nbplot=nbplot+1;
+                ytitle=[ytitle VarName];
+                if isfield(data,'VarAttribute')&& numel(data.VarAttribute)>=VarIndex(ivar) && isfield(data.VarAttribute{VarIndex(ivar)},'units')
+                    ytitle=[ytitle '(' data.VarAttribute{VarIndex(ivar)}.units '), '];
+                else
+                    ytitle=[ytitle ', '];
+                end
+                eval(['data.' VarName '=squeeze(data.' VarName ');'])
+                MinY(ivar)=min(min(data.(VarName)));
+                MaxY(ivar)=max(max(data.(VarName)));
+                plotstr=[plotstr 'coord_x{' num2str(icell) '},data.' VarName ',' charplot_0 ','];
+                eval(['nbcomponent2=size(data.' VarName ',2);']);
+                eval(['nbcomponent1=size(data.' VarName ',1);']);
+                if numel(coord_x{icell})==2
+                    coord_x{icell}=linspace(coord_x{icell}(1),coord_x{icell}(2),nbcomponent1);
+                end
+                if nbcomponent1==1|| nbcomponent2==1
+                    legend_str=[legend_str {VarName}]; %variable with one component
+                else  %variable with severals  components
+                    for ic=1:min(nbcomponent1,nbcomponent2)
+                        legend_str=[legend_str [VarName '_' num2str(ic)]]; %variable with severals  components
+                    end                                                   % labeled by their index (e.g. color component)
+                end
             end
         end
-    end
-    if isfield(CellInfo{icell},'VarIndex_discrete')
-        charplot_0='''+''';
-    else
-        charplot_0='''-''';
-    end
-    MinY=[];
-    MaxY=[];%default
-    
-    nbplot=0;
-    for ivar=1:length(VarIndex)
-        if testplot(VarIndex(ivar))
-            VarName=data.ListVarName{VarIndex(ivar)};
-            nbplot=nbplot+1;
-            ytitle=[ytitle VarName];
-            if isfield(data,'VarAttribute')&& numel(data.VarAttribute)>=VarIndex(ivar) && isfield(data.VarAttribute{VarIndex(ivar)},'units')
-                ytitle=[ytitle '(' data.VarAttribute{VarIndex(ivar)}.units '), '];
-            else
-                ytitle=[ytitle ', '];
-            end
-            eval(['data.' VarName '=squeeze(data.' VarName ');'])
-            MinY(ivar)=min(min(data.(VarName)));
-            MaxY(ivar)=max(max(data.(VarName)));
-            plotstr=[plotstr 'coord_x{' num2str(icell) '},data.' VarName ',' charplot_0 ','];
-            eval(['nbcomponent2=size(data.' VarName ',2);']);
-            eval(['nbcomponent1=size(data.' VarName ',1);']);
-            if numel(coord_x{icell})==2
-                coord_x{icell}=linspace(coord_x{icell}(1),coord_x{icell}(2),nbcomponent1);
-            end
-            if nbcomponent1==1|| nbcomponent2==1
-                legend_str=[legend_str {VarName}]; %variable with one component
-            else  %variable with severals  components
-                for ic=1:min(nbcomponent1,nbcomponent2)
-                    legend_str=[legend_str [VarName '_' num2str(ic)]]; %variable with severals  components
-                end                                                   % labeled by their index (e.g. color component)
-            end
+        if ~isempty(MinY)
+            MinY_cell(icell)=min(MinY);
+            MaxY_cell(icell)=max(MaxY);
         end
-    end
-    if ~isempty(MinY)
-        MinY_cell(icell)=min(MinY);
-        MaxY_cell(icell)=max(MaxY);
     end
 end
 

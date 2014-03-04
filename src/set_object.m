@@ -577,7 +577,7 @@ else %  we are editing the object used for projection field represented in view_
     set(UvData.ProjObject{IndexObj}.DisplayHandle.uvmat,'UserData',ObjectInfo)
     % update the representation of all objects in view_field
     for iobj=1:numel(UvData.ProjObject)
-        if isfield(UvData.ProjObject{iobj}.DisplayHandle,'view_field')
+        if isfield(UvData.ProjObject{iobj},'DisplayHandle') && isfield(UvData.ProjObject{iobj}.DisplayHandle,'view_field')
             UvData.ProjObject{iobj}.DisplayHandle.view_field=...
                 plot_object(UvData.ProjObject{iobj},UvData.ProjObject{iobj},UvData.ProjObject{iobj}.DisplayHandle.view_field,'b');
         end
