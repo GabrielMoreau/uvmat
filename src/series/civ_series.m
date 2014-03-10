@@ -913,29 +913,28 @@ function [vector,F] = SUBPIXGAUSS (result_conv,x,y)
 vector=[0 0]; %default
 F=0;
 [npy,npx]=size(result_conv);
-
-% if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) && (y >= 1)
-    %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion � Israel Institute of Technology
-    %http://urapiv.wordpress.com
-    peaky = y;
-    if y <= npy-1 && y >= 1
-        f0 = log(result_conv(y,x));
-        f1 = real(log(result_conv(y-1,x)));
-        f2 = real(log(result_conv(y+1,x)));
-        peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
-    else
-        F=-2; % warning flag for vector truncated by the limited search box
-    end
-    peakx=x;
-    if x <= npx-1 && x >= 1
-        f0 = log(result_conv(y,x));
-        f1 = real(log(result_conv(y,x-1)));
-        f2 = real(log(result_conv(y,x+1)));
-        peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
-    else
-        F=-2; % warning flag for vector truncated by the limited search box
-    end
-    vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
+result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1 (to avoid divergence in the log)
+%the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion � Israel Institute of Technology
+%http://urapiv.wordpress.com
+peaky = y;
+if y <= npy-1 && y >= 1
+    f0 = log(result_conv(y,x));
+    f1 = log(result_conv(y-1,x));
+    f2 = log(result_conv(y+1,x));
+    peaky = peaky+ (f1-f2)/(2*f1-4*f0+2*f2);
+else
+    F=-2; % warning flag for vector truncated by the limited search box
+end
+peakx=x;
+if x <= npx-1 && x >= 1
+    f0 = log(result_conv(y,x));
+    f1 = log(result_conv(y,x-1));
+    f2 = log(result_conv(y,x+1));
+    peakx = peakx+ (f1-f2)/(2*f1-4*f0+2*f2);
+else
+    F=-2; % warning flag for vector truncated by the limited search box
+end
+vector=[peakx-floor(npx/2)-1 peaky-floor(npy/2)-1];
 
 %------------------------------------------------------------------------
 % --- Find the maximum of the correlation function after interpolation
@@ -945,6 +944,7 @@ vector=[0 0]; %default
 F=-2;
 peaky=y;
 peakx=x;
+result_conv(result_conv<1)=1; %set to 1 correlation values smaller than 1 (to avoid divergence in the log)
 [npy,npx]=size(result_conv);
 if (x <= npx-1) && (y <= npy-1) && (x >= 1) && (y >= 1)
     F=0;
