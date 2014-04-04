@@ -259,7 +259,7 @@ end
 if isfield(Param,'incr_j')
     set(handles.num_incr_j,'String',num2str(Param.incr_j))
 end
-
+set(handles.REFRESH,'BackgroundColor',[1 0 1])% set REFRESH button to magenta color to indicate that input refresh is needed
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.

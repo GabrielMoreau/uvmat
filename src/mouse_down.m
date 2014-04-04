@@ -144,7 +144,7 @@ if ~isempty(hchild)
                 display_str=get(hchild,'TooltipString');
                 output=msgbox_uvmat(['uicontrol: ' get(hchild,'Tag')],display_str,get(hchild,'String'),msg_pos);
                 %update the parent edit box and indicat that refresh is needed with the new input
-                if strcmp(get(hchild,'Style'),'edit')&&strcmp(get(hchild,'Enable'),'on')
+                if ~strcmp(output,'Cancel') && strcmp(get(hchild,'Style'),'edit')&&strcmp(get(hchild,'Enable'),'on')
                     set(hchild,'String',output)
                     if strcmp(get(get(hchild,'parent'),'tag'),'InputFile')
                                 hhREFRESH=hhCurrentGUI.InputFileREFRESH;
@@ -184,7 +184,7 @@ if ~isempty(hchild)
                         display_str=get(hhchild,'TooltipString');
                         output=msgbox_uvmat(['uicontrol: ' get(hhchild,'Tag')],display_str,get(hhchild,'String'),msg_pos);
                         %update the parent edit box and indicat that refresh is needed with the new input
-                        if strcmp(get(hhchild,'Style'),'edit')&&strcmp(get(hhchild,'Enable'),'on')
+                        if ~strcmp(output,'Cancel') && strcmp(get(hhchild,'Style'),'edit')&&strcmp(get(hhchild,'Enable'),'on')
                             set(hhchild,'String',output)
                             if strcmp(get(get(hhchild,'parent'),'tag'),'InputFile')
                                 hhREFRESH=hhCurrentGUI.InputFileREFRESH;
@@ -228,7 +228,7 @@ if strcmp(get(hObject,'SelectionType'),'alt') && strcmp(htype,'axes') && ~test_e
     Height=200;
     Left=GUI_pos(1)+GUI_pos(3)-Width; %right edge close to the right, with margin=40
     Bottom=GUI_pos(2)+GUI_pos(4)-Height; %put fig at top right
-   % hfig_text=figure('Name','text_display','MenuBar','none','NumberTitle','off','Position',[Left,Bottom,Width,Height]);
+    hfig_text=figure('Name','text_display','MenuBar','none','NumberTitle','off','Position',[Left,Bottom,Width,Height]);
     AxeData.htext_display=uicontrol('Style','edit','Units','normalized', 'Position', [0.05 0.05 0.9 0.9],'Max',2,'BackgroundColor',[1 1 1],...
         'FontUnits','points','FontSize',14);
     set(hchild,'UserData',AxeData);

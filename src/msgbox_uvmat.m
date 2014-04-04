@@ -1,3 +1,4 @@
+
 %'msgbox_uvmat': associated with GUI msgbox_uvmat.fig to display message boxes, for error, warning or input calls
 %
 % answer=msgbox_uvmat(title,display,default_answer,Position)
@@ -110,7 +111,7 @@ if testinputstring==1
         default_answer='';
     end
     set(handles.edit_box, 'String', default_answer);
-    if exist('Position','var')
+    if exist('Position','var')&&numel(Position)>=2
         if iscell(default_answer)
             widthstring=max(max(cellfun('length',default_answer)),length(display_str));
             heightstring=size(default_answer,1);%nbre of expected lines
@@ -137,23 +138,6 @@ elseif testinputstring==2
 else
     set(handles.text1, 'Position', [0.15 0.3 0.85 0.7]);
 end
-% Determine the position of the dialog - centered on the screen
-% FigPos=get(0,'DefaultFigurePosition');
-% OldUnits = get(hObject, 'Units');
-% set(hObject, 'Units', 'pixels');
-% OldPos = get(hObject,'Position');
-% FigWidth = OldPos(3);
-% FigHeight = OldPos(4);
-% ScreenUnits=get(0,'Units');
-% set(0,'Units','pixels');
-% ScreenSize=get(0,'ScreenSize');
-% set(0,'Units',ScreenUnits);
-% 
-% FigPos(1)=1/2*(ScreenSize(3)-FigWidth);
-% FigPos(2)=2/3*(ScreenSize(4)-FigHeight);
-% FigPos(3:4)=[FigWidth FigHeight];
-% set(hObject, 'Position', FigPos);
-% set(hObject, 'Units', OldUnits);
 
 % Show a question icon from dialogicons.mat - variables questIconData and questIconMap
 if isequal(icontype,'')
@@ -253,13 +237,21 @@ uiresume(handles.figure1);
 % --- Executes when user attempts to close figure1.
 function figure1_CloseRequestFcn(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-if isequal(get(handles.figure1, 'waitstatus'), 'waiting')
-    % The GUI is still in UIWAIT, us UIRESUME
-    uiresume(handles.figure1);
-else
+% Cancel_Callback(hObject, eventdata, handles)
+% if isequal(get(handles.figure1, 'waitstatus'), 'waiting')
+%     % The GUI is still in UIWAIT, us UIRESUME
+%     uiresume(handles.figure1);
+% else
     % The GUI is no longer waiting, just close it
-    delete(handles.figure1);
-end
+%     delete(handles.figure1);
+% end
+% handles.output = get(hObject,'String');
+% %handles.output = 'Cancel'
+% guidata(hObject, handles); % Update handles structure
+% Use UIRESUME instead of delete because the OutputFcn needs
+% to get the updated handles structure.
+% uiresume(handles.figure1);
+
 
 %------------------------------------------------------------------------
 % --- Executes on key press over figure1 with no controls selected.

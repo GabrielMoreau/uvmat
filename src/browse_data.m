@@ -21,7 +21,7 @@
 
 function varargout = browse_data(varargin)
 
-% Last Modified by GUIDE v2.5 07-Mar-2013 18:55:00
+% Last Modified by GUIDE v2.5 11-Mar-2014 22:09:37
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -70,12 +70,7 @@ FigPos(2)=2/3*(ScreenSize(4)-FigHeight);
 FigPos(3:4)=[FigWidth FigHeight];
 set(hObject, 'Position', FigPos);
 set(hObject, 'Units', OldUnits);
-% 
-% if exist('GeometryCalib','var')
-%     DataviewData.GeometryCalib=GeometryCalib;
-%     set(hObject,'UserData',DataviewData)
-% end
-if exist('Campaign','var') 
+if exist('Campaign','var')
     [CampaignPath,CampaignName]=fileparts(Campaign);
     RootXml=fullfile(Campaign,[CampaignName '.xml']);
     s=[];
@@ -93,14 +88,18 @@ if exist('Campaign','var')
         set(handles.MirrorDir,'Visible','off');% no mirror dir display
         set(handles.CreateMirror,'String','create_mirror')
     end
-    scan_campaign(handles,Campaign)
-   set(handles.OK,'Visible','on')
-   set(handles.Cancel,'Visible','on')
-   set(handles.browse_data,'WindowStyle','modal')% Make the GUI modal 
-   set(hObject,'Visible','on')
-   drawnow
-   % UIWAIT makes GUI wait for user response (see UIRESUME)
-   uiwait(handles.browse_data);
+    errormsg=scan_campaign(handles,Campaign);
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',errormsg)
+        return
+    end
+    set(handles.OK,'Visible','on')
+    set(handles.Cancel,'Visible','on')
+    set(handles.browse_data,'WindowStyle','modal')% Make the GUI modal
+    set(hObject,'Visible','on')
+    drawnow
+    % UIWAIT makes GUI wait for user response (see UIRESUME)
+    uiwait(handles.browse_data);
 end
 
 %------------------------------------------------------------------------
@@ -115,13 +114,14 @@ delete(handles.browse_data)
 % --- Executes on button press in CreateMirror.
 function CreateMirror_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
+set(handles.SourceDir,'BackgroundColor',[1 1 0])% indicate action of button by yellow color
+drawnow
 SourceDir=get(handles.SourceDir,'String');
 [SourcePath,ProjectName]=fileparts(SourceDir);
 if strcmp(get(handles.MirrorDir,'Visible'),'on')
-    MirrorDir=get(handles.MirrorDir,'String');
-else
+    MirrorDir=get(handles.MirrorDir,'String');% name of the mirror folder
+else% create the mirror folder if it does not exist
     MirrorRoot=uigetfile_uvmat('select the folder which must contain the mirror directory:',SourcePath,'uigetdir');
-%     MirrorRoot=uigetdir('','select the dir which must contain the mirror directory, then press OK'); %file browser
     if isempty(MirrorRoot)
         return
     else
@@ -137,22 +137,22 @@ else
     set(handles.MirrorDir,'String',MirrorDir)
     set(handles.MirrorDir,'Visible','on')
 end
-set(handles.SourceDir,'BackgroundColor',[1 1 0])
-drawnow
 ExpName={''};
+
+%% update the mirror from the source dir
 if exist(SourceDir,'dir')
     hdir=dir(SourceDir); %list files and dirs
     idir=0;
     for ilist=1:length(hdir)
-        if hdir(ilist).isdir
-            dirname=hdir(ilist).name;
-            if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')
+        if hdir(ilist).isdir% scan all subfolders
+            dirname=hdir(ilist).name;%
+            if ~isequal(dirname(1),'.')&&~isequal(dirname(1),'0')%skip subfolder beginning by '0'
                 idir=idir+1;
-                mirror=fullfile(MirrorDir,hdir(ilist).name);
+                mirror=fullfile(MirrorDir,hdir(ilist).name);% corresponding name in the mirror
                 if ~exist(mirror,'dir')
-                   mkdir(mirror)
+                   mkdir(mirror)% create the mirror folder if it does not exist
                 end
-                ExpName{idir}=['+/' hdir(ilist).name];
+                ExpName{idir}=['+/' hdir(ilist).name];% insert '+/' in the list to show that it is a folder
             end
             % look for the list of 'devices'
         else
@@ -161,33 +161,29 @@ if exist(SourceDir,'dir')
     end
     set(handles.ListExperiments,'String',[{'*'};ExpName'])
     set(handles.ListExperiments,'Value',1)
-    ListExperiments_Callback(hObject, eventdata, handles)
+     update_experiments(handles,[{'*'};ExpName'],SourceDir,MirrorDir)
+   % ListExperiments_Callback(hObject, eventdata, handles) % list the content of the experiment
 else
     msgbox_uvmat('ERROR',['The input ' SourceDir ' is not a directory'])
 end
 set(handles.SourceDir,'BackgroundColor',[1 1 1])
 
 
-% %------------------------------------------------------------------------
-% function MirrorDir_Callback(hObject, eventdata, handles)
-% %------------------------------------------------------------------------   
-% MirrorDir=get(handles.MirrorDir,'String');
-% [tild,MirrorName]=fileparts(MirrorDir);
-% s=xml2struct(fullfile(MirrorDir,[MirrorName '.xml']));
-% set(handles.SourceDir,'String',s.SourceDir)
-% SourceDir_Callback([],[], handles)
-
-
 %------------------------------------------------------------------------
-function scan_campaign(handles,Campaign)
+function errormsg=scan_campaign(handles,Campaign)
 %------------------------------------------------------------------------
 %set(handles.SourceDir,'BackgroundColor',[1 1 0])
-drawnow
+%drawnow
 %SourceDir=get(handles.SourceDir,'String');
 %MirrorDir=get(handles.MirrorDir,'String');
 % ExpName={''};
+errormsg='';
 if exist(Campaign,'dir')
     ListStruct=dir(Campaign); %list files and dirs
+    if numel(ListStruct)>1000% A campaign folder must contain maily a list of 'experiment' sub-folders
+        errormsg=[Campaign ' contains too many items (>1000) to be a Campaign folder'];
+        return
+    end
     ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
     ListFiles=ListCells(1,:);%list of dir and file  names
     check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
@@ -217,43 +213,102 @@ end
 ListExperiments=get(handles.ListExperiments,'String');
 list_val=get(handles.ListExperiments,'Value');
 if isequal(list_val(1),1)
-    ListExperiments=ListExperiments(2:end); %choose all experiments
+    ListExperiments=ListExperiments(2:end); %choose all experiments if the first line '*' is selected
     set(handles.ListExperiments,'Value',1)
 else
     ListExperiments=ListExperiments(list_val);%choose selected experiments
 end
-scan_experiments(handles,ListExperiments,CampaignPath,MirrorPath)
-
+list_dataseries(handles,ListExperiments,MirrorPath)
 
 %------------------------------------------------------------------------
-% --- Executes on selection change in ListExperiments.
+% --- List the DataSeries when a set of experiments is selected
 %------------------------------------------------------------------------
- function scan_experiments(handles,ListExperiments,CampaignPath,MirrorPath)
+ function list_dataseries(handles,ListExperiments,MirrorPath)
 
 ListDevices={};
 for iexp=1:numel(ListExperiments)
     if strcmp(ListExperiments{iexp}(1),'+')% if the item is a directory
         ListExperiments{iexp}(1)=[];
-        ListStruct=dir(fullfile(CampaignPath,ListExperiments{iexp})); %list files and dir in the experiment directory
-        ListCells=struct2cell(ListStruct);% transform dir struct to a cell arrray
+        ListStruct=dir(fullfile(MirrorPath,ListExperiments{iexp})); %list files and dir in the source experiment directory
+        ListCells=struct2cell(ListStruct);%transform dir struct to a cell arrray
         ListFiles=ListCells(1,:);%list of dir and file  names
         cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
         check_keep=cellfun('isempty', cell_remove);
         check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
         for ilist=1:numel(ListFiles)
-            if check_keep(ilist)
-                DataSeries=fullfile(CampaignPath,ListExperiments{iexp},ListFiles{ilist});
-                if ~isempty(MirrorPath)
-                    mirror=fullfile(MirrorPath,ListExperiments{iexp},ListFiles{ilist});
-                    if ~exist(mirror)% create mirror if needed
-                        system(['ln -s ' DataSeries ' ' mirror])
+            if check_keep(ilist)% loop on eligible DataSeries folders
+                mirror=fullfile(MirrorPath,ListExperiments{iexp},ListFiles{ilist});%source folder
+                if ~exist(mirror,'file') && ~exist(mirror,'dir')% if the name is a broken link
+                    delete(mirror)% delete broken link
+                else %update the list of dataSeries
+                    [tild,msg]=fileattrib(mirror);
+                    if ~strcmp(msg.Name,mirror)% if it is a link
+                        ListFiles{ilist}=['~' ListFiles{ilist}];%mark link by '@' in the list
                     end
-                end
-                if isempty(find(strcmp(ListFiles{ilist},ListDevices), 1))% if the item is not already in ListDevices
                     if check_dir(ilist)
                         ListFiles{ilist}=['+/' ListFiles{ilist}];%mark dir by '+' in the list
                     end
-                    ListDevices=[ListDevices;ListFiles{ilist}]; %append the item to the list
+                    if isempty(find(strcmp(ListFiles{ilist},ListDevices), 1))% if the item is not already in ListDevices
+                        ListDevices=[ListDevices;ListFiles{ilist}]; %append the item to the list
+                    end                   
+                end
+            end
+        end
+    end
+end
+set(handles.ListDevices,'String',sort(ListDevices))
+
+%------------------------------------------------------------------------
+% --- Executes when the mirror is created or updated
+%------------------------------------------------------------------------
+ function update_experiments(handles,ListExperiments,CampaignPath,MirrorPath)
+
+ListDevices={};
+for iexp=1:numel(ListExperiments)
+    if strcmp(ListExperiments{iexp}(1),'+')% if the item is a directory
+        ListExperiments{iexp}(1)=[];
+        ListStruct=dir(fullfile(CampaignPath,ListExperiments{iexp})); %list files and dir in the source experiment directory
+        ListCells=struct2cell(ListStruct);%transform dir struct to a cell arrray
+        ListFiles=ListCells(1,:);%list of dir and file  names
+        cell_remove=regexp(ListFiles,'^(-|\.|\+/\.)');% detect strings beginning by '-' ,'.' or '+/.'(dir beginning by . )
+        check_keep=cellfun('isempty', cell_remove);
+        check_dir=cell2mat(ListCells(4,:));% =1 for directories, =0 for files
+        for ilist=1:numel(ListFiles)
+            if check_keep(ilist)% loop on eligible DataSeries folders
+                DataSeries=fullfile(CampaignPath,ListExperiments{iexp},ListFiles{ilist});%source folder
+                if ~isempty(MirrorPath)
+                    mirror=fullfile(MirrorPath,ListExperiments{iexp},ListFiles{ilist});
+                    if exist(mirror,'dir')||exist(mirror,'file')
+                        [tild,msg]=fileattrib(mirror);
+                        if strcmp(msg.Name,mirror)%if the mirror name already exists as a local file or dir
+                            if msg.directory% case of a f
+                                answer=msgbox_uvmat('INPUT_Y-N',['replace local folder ' msg.Name ' by a link to the source dir']);
+                                if strcmp(answer,'Yes')
+                                    [ss,msg]=rmdir(mirror);
+                                    if ss==1
+                                        system(['ln -s ' DataSeries ' ' mirror]); % create the link to the source folder
+                                    else
+                                        msgbox_uvmat('ERROR',['enable to delete local folder: ' msg]);
+                                    end
+                                end
+                            else
+                                answer=msgbox_uvmat('INPUT_Y-N',['replace local file ' msg.Name ' by a link to the source file']);
+                                if strcmp(answer,'Yes')
+                                    delete(mirror);
+                                    system(['ln -s ' DataSeries ' ' mirror]); % create the link to the source folder
+                                    
+                                end
+                            end
+                        else% create mirror to the data series if needed
+                            system(['ln -s ' DataSeries ' ' mirror]); % create the link to the source folder
+                        end
+                    end
+                    if isempty(find(strcmp(ListFiles{ilist},ListDevices), 1))% if the item is not already in ListDevices
+                        if check_dir(ilist)
+                            ListFiles{ilist}=['+/' ListFiles{ilist}];%mark dir by '+' in the list
+                        end
+                        ListDevices=[ListDevices;ListFiles{ilist}]; %append the item to the list
+                    end
                 end
             end
         end
@@ -342,172 +397,172 @@ outputfile=fullfile(outputdir,[dirname '.xml']);
 %campaigndoc(t);
 save(t,outputfile)
 
-%------------------------------------------------------------------------
-% --- Executes on button press in CampaignDoc.
-function edit_xml_Callback(hObject, eventdata, handles)
-%------------------------------------------------------------------------
-CurrentPath=get(handles.SourceDir,'String');
-%[CurrentPath,Name,Ext]=fileparts(CurrentDir);
-ListExperiments=get(handles.ListExperiments,'String');
-Value=get(handles.ListExperiments,'Value');
-if ~isequal(Value,1)
-    ListExperiments=ListExperiments(Value);
-end
-ListDevices=get(handles.ListDevices,'String');
-Value=get(handles.ListDevices,'Value');
-if ~isequal(Value,1)
-    ListDevices=ListDevices(Value);
-end
-ListRecords=get(handles.ListRecords,'String');
-Value=get(handles.ListRecords,'Value');
-if ~isequal(Value,1)
-    ListRecords=ListRecords(Value);
-end
-[ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices,ListRecords);
-ListXml=get(handles.ListXml,'String');
-Value=get(handles.ListXml,'Value');
-set(handles.ListXml,'Value',Value(1));
-if isequal(Value(1),1)
-    msgbox_uvmat('ERROR','an xml file needs to be selected')
-   return
-else
-    XmlName=ListXml{Value(1)};
-end
-for iexp=1:length(List.Experiment)
-    ExpName=List.Experiment{iexp}.name;
-    if isfield(List.Experiment{iexp},'Device')
-        for idevice=1:length(List.Experiment{iexp}.Device)
-            DeviceName=List.Experiment{iexp}.Device{idevice}.name;
-            if isfield(List.Experiment{iexp}.Device{idevice},'xmlfile')
-                for ixml=1:length(List.Experiment{iexp}.Device{idevice}.xmlfile)
-                    FileName=List.Experiment{iexp}.Device{idevice}.xmlfile{ixml};
-                    if isequal(FileName,XmlName)
-                        editxml(fullfile(CurrentPath,ExpName,DeviceName,FileName));
-                        return
-                    end
-                end
-             elseif isfield(List.Experiment{iexp}.Device{idevice},'Record')
-                for irecord=1:length(List.Experiment{iexp}.Device{idevice}.Record)
-                    RecordName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.name;
-                    if isfield(List.Experiment{iexp}.Device{idevice}.Record{irecord},'xmlfile')
-                        for ixml=1:length(List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile)
-                            FileName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile{ixml};
-                            if isequal(FileName,XmlName)
-                                editxml(fullfile(CurrentPath,ExpName,DeviceName,RecordName,FileName));
-                                return
-                            end                          
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% CurrentPath/Campaign: root directory 
-function  [Title,test_mod]=check_heading(Currentpath,Campaign,Experiment,Device,Record,xmlname,testSubCampaign)
-
- %Shema for Heading:
-%  Campaign             
-%  (SubCampaign)
-% Experiment
-%  Device
-%  (Record)
-%  ImageName
-%  DateExp
-%                 old: %Project: suppressed ( changed to Campaign)
-                       %Exp: suppressed (changed to experiment)
-                       %ImaNames: changed to ImageName
-if exist('Record','var') && ~isempty(Record)
-    xmlfullname=fullfile(Currentpath,Campaign,Experiment,Device,Record,xmlname);  
-    testrecord=1;
-else
-    xmlfullname=fullfile(Currentpath,Campaign,Experiment,Device,xmlname); 
-    testrecord=0;
-end
-if ~exist('testSubCampaign','var')
-    testSubCampaign=0;
-end
-if testSubCampaign
-   SubCampaign=Campaign;
-   [Currentpath,Campaign,DirExt]=fileparts(Currentpath);
-   Campaign=[Campaign DirExt];
-end
-test_mod=0; %test for the modification of the xml file
-t_device=xmltree(xmlfullname);
-Title=get(t_device,1,'name');
-uid_child=children(t_device,1);
-Heading_old=[];
-uidheading=0;
-for ilist=1:length(uid_child)
-    name=get(t_device,uid_child(ilist),'name');
-    if isequal(name,'Heading')
-        uidheading=uid_child(ilist);
-    end
-end
-if uidheading
-    subt=branch(t_device,uidheading);
-    Heading_old=convert(subt);
-else
-   return % do not edit xml files without element 'Heading'
-end
-if ~(isfield(Heading_old,'Campaign')&& isequal(Heading_old.Campaign,Campaign))
-    test_mod=1;
-end
-Heading.Campaign=Campaign;
-if testSubCampaign
-    if ~(isfield(Heading_old,'SubCampaign')&& isequal(Heading_old.SubCampaign,SubCampaign))
-        test_mod=1;
-    end
-    Heading.SubCampaign=SubCampaign;
-end
-if ~(isfield(Heading_old,'Experiment')&& isequal(Heading_old.Experiment,Experiment))
-    test_mod=1;
-end
-Heading.Experiment=Experiment;
-if ~(isfield(Heading_old,'Device')&& isequal(Heading_old.Device,Device))
-    test_mod=1;
-end
-Heading.Device=Device;
-if testrecord
-    if ~(isfield(Heading_old,'Record')&& isequal(Heading_old.Record,Record))
-        test_mod=1;
-    end
-    Heading.Record=Record;
-end
-if isfield(Heading_old,'ImaNames')
-    test_mod=1;
-    if  ~isempty(Heading_old.ImaNames)
-        Heading.ImageName=Heading_old.ImaNames;
-    end
-end
-if isfield(Heading_old,'ImageName')&& ~isempty(Heading_old.ImageName)
-    Heading.ImageName=Heading_old.ImageName;
-end
-if isfield(Heading_old,'DateExp')&& ~isempty(Heading_old.DateExp)
-    Heading.DateExp=Heading_old.DateExp;
-end
-if test_mod && uidheading
-     uid_child=children(t_device,uidheading);
-     t_device=delete(t_device,uid_child);
-    t_device=struct2xml(Heading,t_device,uidheading);
-    backupfile=xmlfullname;
-    testexist=2;
-    while testexist==2
-       backupfile=[backupfile '~'];
-       testexist=exist(backupfile,'file');
-    end
-    [success,message]=copyfile(xmlfullname,backupfile);%make backup
-    if isequal(success,1)
-        delete(xmlfullname)
-    else
-        return
-    end
-    save(t_device,xmlfullname)
-end
+% %------------------------------------------------------------------------
+% % --- Executes on button press in CampaignDoc.
+% function edit_xml_Callback(hObject, eventdata, handles)
+% %------------------------------------------------------------------------
+% CurrentPath=get(handles.SourceDir,'String');
+% %[CurrentPath,Name,Ext]=fileparts(CurrentDir);
+% ListExperiments=get(handles.ListExperiments,'String');
+% Value=get(handles.ListExperiments,'Value');
+% if ~isequal(Value,1)
+%     ListExperiments=ListExperiments(Value);
+% end
+% ListDevices=get(handles.ListDevices,'String');
+% Value=get(handles.ListDevices,'Value');
+% if ~isequal(Value,1)
+%     ListDevices=ListDevices(Value);
+% end
+% ListRecords=get(handles.ListRecords,'String');
+% Value=get(handles.ListRecords,'Value');
+% if ~isequal(Value,1)
+%     ListRecords=ListRecords(Value);
+% end
+% [ListDevices,ListRecords,ListXml,List]=ListDir(CurrentPath,ListExperiments,ListDevices,ListRecords);
+% ListXml=get(handles.ListXml,'String');
+% Value=get(handles.ListXml,'Value');
+% set(handles.ListXml,'Value',Value(1));
+% if isequal(Value(1),1)
+%     msgbox_uvmat('ERROR','an xml file needs to be selected')
+%    return
+% else
+%     XmlName=ListXml{Value(1)};
+% end
+% for iexp=1:length(List.Experiment)
+%     ExpName=List.Experiment{iexp}.name;
+%     if isfield(List.Experiment{iexp},'Device')
+%         for idevice=1:length(List.Experiment{iexp}.Device)
+%             DeviceName=List.Experiment{iexp}.Device{idevice}.name;
+%             if isfield(List.Experiment{iexp}.Device{idevice},'xmlfile')
+%                 for ixml=1:length(List.Experiment{iexp}.Device{idevice}.xmlfile)
+%                     FileName=List.Experiment{iexp}.Device{idevice}.xmlfile{ixml};
+%                     if isequal(FileName,XmlName)
+%                         editxml(fullfile(CurrentPath,ExpName,DeviceName,FileName));
+%                         return
+%                     end
+%                 end
+%              elseif isfield(List.Experiment{iexp}.Device{idevice},'Record')
+%                 for irecord=1:length(List.Experiment{iexp}.Device{idevice}.Record)
+%                     RecordName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.name;
+%                     if isfield(List.Experiment{iexp}.Device{idevice}.Record{irecord},'xmlfile')
+%                         for ixml=1:length(List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile)
+%                             FileName=List.Experiment{iexp}.Device{idevice}.Record{irecord}.xmlfile{ixml};
+%                             if isequal(FileName,XmlName)
+%                                 editxml(fullfile(CurrentPath,ExpName,DeviceName,RecordName,FileName));
+%                                 return
+%                             end                          
+%                         end
+%                     end
+%                 end
+%             end
+%         end
+%     end
+% end
+% 
+% 
+% 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % CurrentPath/Campaign: root directory 
+% function  [Title,test_mod]=check_heading(Currentpath,Campaign,Experiment,Device,Record,xmlname,testSubCampaign)
+% 
+%  %Shema for Heading:
+% %  Campaign             
+% %  (SubCampaign)
+% % Experiment
+% %  Device
+% %  (Record)
+% %  ImageName
+% %  DateExp
+% %                 old: %Project: suppressed ( changed to Campaign)
+%                        %Exp: suppressed (changed to experiment)
+%                        %ImaNames: changed to ImageName
+% if exist('Record','var') && ~isempty(Record)
+%     xmlfullname=fullfile(Currentpath,Campaign,Experiment,Device,Record,xmlname);  
+%     testrecord=1;
+% else
+%     xmlfullname=fullfile(Currentpath,Campaign,Experiment,Device,xmlname); 
+%     testrecord=0;
+% end
+% if ~exist('testSubCampaign','var')
+%     testSubCampaign=0;
+% end
+% if testSubCampaign
+%    SubCampaign=Campaign;
+%    [Currentpath,Campaign,DirExt]=fileparts(Currentpath);
+%    Campaign=[Campaign DirExt];
+% end
+% test_mod=0; %test for the modification of the xml file
+% t_device=xmltree(xmlfullname);
+% Title=get(t_device,1,'name');
+% uid_child=children(t_device,1);
+% Heading_old=[];
+% uidheading=0;
+% for ilist=1:length(uid_child)
+%     name=get(t_device,uid_child(ilist),'name');
+%     if isequal(name,'Heading')
+%         uidheading=uid_child(ilist);
+%     end
+% end
+% if uidheading
+%     subt=branch(t_device,uidheading);
+%     Heading_old=convert(subt);
+% else
+%    return % do not edit xml files without element 'Heading'
+% end
+% if ~(isfield(Heading_old,'Campaign')&& isequal(Heading_old.Campaign,Campaign))
+%     test_mod=1;
+% end
+% Heading.Campaign=Campaign;
+% if testSubCampaign
+%     if ~(isfield(Heading_old,'SubCampaign')&& isequal(Heading_old.SubCampaign,SubCampaign))
+%         test_mod=1;
+%     end
+%     Heading.SubCampaign=SubCampaign;
+% end
+% if ~(isfield(Heading_old,'Experiment')&& isequal(Heading_old.Experiment,Experiment))
+%     test_mod=1;
+% end
+% Heading.Experiment=Experiment;
+% if ~(isfield(Heading_old,'Device')&& isequal(Heading_old.Device,Device))
+%     test_mod=1;
+% end
+% Heading.Device=Device;
+% if testrecord
+%     if ~(isfield(Heading_old,'Record')&& isequal(Heading_old.Record,Record))
+%         test_mod=1;
+%     end
+%     Heading.Record=Record;
+% end
+% if isfield(Heading_old,'ImaNames')
+%     test_mod=1;
+%     if  ~isempty(Heading_old.ImaNames)
+%         Heading.ImageName=Heading_old.ImaNames;
+%     end
+% end
+% if isfield(Heading_old,'ImageName')&& ~isempty(Heading_old.ImageName)
+%     Heading.ImageName=Heading_old.ImageName;
+% end
+% if isfield(Heading_old,'DateExp')&& ~isempty(Heading_old.DateExp)
+%     Heading.DateExp=Heading_old.DateExp;
+% end
+% if test_mod && uidheading
+%      uid_child=children(t_device,uidheading);
+%      t_device=delete(t_device,uid_child);
+%     t_device=struct2xml(Heading,t_device,uidheading);
+%     backupfile=xmlfullname;
+%     testexist=2;
+%     while testexist==2
+%        backupfile=[backupfile '~'];
+%        testexist=exist(backupfile,'file');
+%     end
+%     [success,message]=copyfile(xmlfullname,backupfile);%make backup
+%     if isequal(success,1)
+%         delete(xmlfullname)
+%     else
+%         return
+%     end
+%     save(t_device,xmlfullname)
+% end
 
 %------------------------------------------------------------------------
 % --- Executes on button press in OK.
@@ -561,9 +616,10 @@ uiresume(handles.browse_data);
 % --- Executes when user attempts to close browse_data.
 %------------------------------------------------------------------------
 function browse_data_CloseRequestFcn(hObject, eventdata, handles)
-    
 if isequal(get(handles.browse_data, 'waitstatus'), 'waiting')
     % The GUI is still in UIWAIT, us UIRESUME
+    handles.output = get(hObject,'String');
+    guidata(hObject, handles); % Update handles structure
     uiresume(handles.browse_data);
 else
     % The GUI is no longer waiting, just close it
@@ -588,3 +644,7 @@ end
 if isequal(get(hObject,'CurrentKey'),'return')
     uiresume(handles.browse_data);
 end 
+
+
+% --- Executes during object deletion, before destroying properties.
+function browse_data_DeleteFcn(hObject, eventdata, handles)
