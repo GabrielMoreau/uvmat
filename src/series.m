@@ -1787,6 +1787,7 @@ switch RunMode
     case 'background'
         for iprocess=1:NbProcess
             system([batch_file_list{iprocess} ' &'])% directly execute the command file for each process
+            msgbox_uvmat('CONFIRMATION',[ActionName 'launched in background: press STATUS to see results'])
         end
     case 'cluster_oar' % option 'oar-parexec' used
         %create subdirectory for oar command and log files
@@ -1826,8 +1827,8 @@ switch RunMode
         fprintf(fid,oar_command);
         fclose(fid);
         fprintf(oar_command);% display in command line
-        %system(['chmod +x ' oar_command]);% set the file to executable
-        system(oar_command);     
+        system(oar_command);  
+        msgbox_uvmat('CONFIRMATION',[ActionName ' launched in cluster: press STATUS to see results'])
 end
 
 %% reset the GUI series
@@ -2425,6 +2426,7 @@ if get(handles.CheckObject,'Value')
                 data.ProjMode='none';
             end
             hset_object=set_object(data);% call the set_object interface
+            set(hset_object,'Name','set_object_series')% name to distinguish from set_object used with uvmat
         end
         ProjObject=read_GUI(hset_object);
         set(handles.ProjObject,'String',ProjObject.Name);%display the object name
@@ -2489,7 +2491,7 @@ set(handles.ProjObject,'Visible','off')
 set(handles.CheckObject,'Value',0)
 set(handles.ViewObject,'Visible','off')
 set(handles.EditObject,'Visible','off')
-hset_object=findobj(allchild(0),'Tag','set_object');
+hset_object=findobj(allchild(0),'name','set_object_series');
 if ~isempty(hset_object)
     delete(hset_object)
 end

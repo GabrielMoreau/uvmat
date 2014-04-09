@@ -337,7 +337,7 @@ if ~isempty(hh)
     delete(hh)
 end
 % desable set_object editing action if detected
-hh=findobj(allchild(0),'tag','set_object');
+hh=findobj(allchild(0),'name','set_object');
 if ~isempty(hh)
     hhh=findobj(hh,'tag','PLOT');
     set(hhh,'enable','off')
@@ -1375,6 +1375,8 @@ if isequal(get(handles.CheckMask,'Value'),1)
     Mask.Path=MaskPath;
     if isempty(MaskFile)
         Mask.File='';
+    elseif ischar(MaskFile)
+        Mask.File=MaskFile;
     else
         Mask.File=MaskFile{1};
     end
@@ -2533,6 +2535,7 @@ if UvData.Field.NbDim>1
             UvData.ProjObject{1}.Name='1-PLANE';
             UvData.ProjObject{1}.enable_plot=1;
             set_object(UvData.ProjObject{1},handles,ZBounds);
+            set(hset_object,'name','set_object');% rename if set_object already used with series
             set(handles.ListObject,'Value',1);
             set(handles.ListObject,'String',{'1-PLANE'});
             set(handles.CheckEditObject,'Value',1)% put the plane in edit mode to enable the z cursor
@@ -3579,7 +3582,7 @@ if isequal(get(handles.VOLUME,'Value'),1)
     PlotHandles=get_plot_handles(handles);%get the handles of the interface elements setting the plotting parameters
     [hset_object,UvData.sethandles]=set_object(data,PlotHandles);% call the set_object interface with action on haxes,
                                                       % associate the set_object interface handle to the plotting axes
-    %set(hset_object,'Position',get(handles.uvmat,'Position')+UvData.OpenParam.PosSetObject)
+    set(hset_object,'name','set_object')
     UvData.MouseAction='create_object';
 else
     set(handles.VOLUME,'BackgroundColor',[0 1 0])
@@ -4244,7 +4247,8 @@ if ~get(handles.CheckViewObject,'Value')
         ZBounds(2)=UvData.Field.ZMax;%maximum for the Z slider
     end
     ObjectData.Name=list_str{get(handles.ListObject_1,'Value')};
-    set_object(ObjectData,[],ZBounds);
+    hset_object=set_object(ObjectData,[],ZBounds);
+    set(hset_object,'name','set_object')
     set(handles.CheckViewObject,'Value',1)% show that the selected object in ListObject_1 is currently visualised
 end
 
@@ -4271,23 +4275,12 @@ ObjectData=UvData.ProjObject{IndexObj};
 
 %% show object features if view_object isselected
 if get(handles.CheckViewObject,'value')
-    set_object(ObjectData,[],ZBounds);
+    hset_object=set_object(ObjectData,[],ZBounds);
+    set(hset_object,'name','set_object')
 end
-
-%% The object  is displayed in set_object if this GUI is already opened
-% 
-% hset_object=findobj(allchild(0),'tag','set_object');
-% if ~isempty(hset_object)
-% 
-%     ObjectData.Name=list_str{IndexObj};
-%     set_object(ObjectData,[],ZBounds);
-%     set(handles.CheckViewField,'Value',1)% show that the selected object in ListObject is currently visualised
-% end
 
 %%  desactivate the edit object mode for security 
 set(handles.CheckEditObject,'Value',0) 
-
-% set(handles.CheckEditObject,'BackgroundColor',[0.7,0.7,0.7]) 
 
 %% update the  plot on view_field if view_field is already openened
 hview_field=findobj(allchild(0),'tag','view_field');
@@ -4422,6 +4415,7 @@ if check_view %activate set_object
         data.Type='plane';
     end
     hset_object=set_object(data,[],ZBounds);
+    set(hset_object,'name','set_object')
     hhset_object=guidata(hset_object);
     if get(handles.CheckEditObject,'Value')% edit mode
         set(get(hset_object,'children'),'Enable','on')

@@ -146,6 +146,9 @@ elseif  ~isequal(ObjectData.ProjMode,'interp_lin')
         return
 end
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
+if ~isempty(errormsg)
+    return
+end
 ProjData.NbDim=0;
 [CellInfo,NbDimArray,errormsg]=find_field_cells(FieldData);
 if ~isempty(errormsg)
@@ -304,7 +307,9 @@ end
 function  [ProjData,errormsg]=proj_patch(FieldData,ObjectData)%%
 %-------------------------------------------------------------------
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
-
+if ~isempty(errormsg)
+    return
+end
 %objectfield=fieldnames(ObjectData);
 widthx=0;
 widthy=0;
@@ -1607,6 +1612,10 @@ end
 
 %% initiate Matlab  structure for physical field
 [ProjData,errormsg]=proj_heading(FieldData,ObjectData);
+if ~isempty(errormsg)
+    return
+end
+
 ProjData.NbDim=3;
 ProjData.ListVarName={};
 ProjData.VarDimName={};

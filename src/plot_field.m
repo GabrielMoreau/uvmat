@@ -810,7 +810,7 @@ if test_ima
         if PlotParam.Scalar.CheckFixScalar && ~isempty(PlotParam.Scalar.MinA) && isnumeric(PlotParam.Scalar.MinA)  
             MinA=double(PlotParam.Scalar.MinA); % min value set as input
         else
-            MinA=double(nanmin(nanmin(A))); % min value set as min of non NaN scalar values
+            MinA=double(min(min(A))); % min value set as min of non NaN scalar values
         end
         
         % error if the input scalar is NaN everywhere
@@ -823,7 +823,7 @@ if test_ima
         if PlotParam.Scalar.CheckFixScalar && ~isempty(PlotParam.Scalar.MaxA) && isnumeric(PlotParam.Scalar.MaxA)  
             MaxA=double(PlotParam.Scalar.MaxA); % max value set as input
         else
-            MaxA=double(nanmax(nanmax(A))); % max value set as min of non NaN scalar values
+            MaxA=double(max(max(A))); % max value set as min of non NaN scalar values
         end 
         
         PlotParamOut.Scalar.MinA=MinA;
