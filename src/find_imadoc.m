@@ -35,6 +35,6 @@ if ~exist(XmlFileName,'file')
         end
     end
 end
-if ~exist(XmlFileName,'file')
+if exist(XmlFileName,'file')~=2
     XmlFileName='';
 end
