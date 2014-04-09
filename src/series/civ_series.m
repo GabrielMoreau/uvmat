@@ -266,10 +266,9 @@ if ~isempty(XmlFileName)
         end
 end
 if isempty(time) && ~isempty(find(strcmp(FileType_A,{'mmreader','video'})))% case of video input
-    time=zeros(2,FileInfo_A.NumberOfFrames+1);
-    time(2,:)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate);
+    time=zeros(FileInfo_A.NumberOfFrames+1,2);
+    time(:,2)=(0:1/FileInfo_A.FrameRate:(FileInfo_A.NumberOfFrames)/FileInfo_A.FrameRate)';
     TimeSource='video';
-    % set(han:dles.Dt_txt,'String',['Dt=' num2str(1000/imainfo.FrameRate) 'ms']);%display the elementary time interval in millisec
     ColorType='truecolor';
 end
 if isempty(time)% time = index i +0.001 index j by default

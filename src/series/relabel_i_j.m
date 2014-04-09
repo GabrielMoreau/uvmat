@@ -115,6 +115,7 @@ if ~exist(filexml,'file')
         end
     end
 end
+XmlData=[];
 if ~isempty(filexml)
     [XmlData,error]=imadoc2struct_special(filexml);
 end
@@ -217,12 +218,15 @@ if ~isempty(XmlData)
         end
             SubDirBase=regexprep(SubDir{1},'\..*','');%take the root part of SubDir, before the first dot '.'
     filexml_new=[fullfile(RootPath{1},SubDirBase) '.xml'];
-       % save(t,filexml_new)
+        save(t,filexml_new)
 end
 
 %% main loop on images
 %j1=[];%default
+nbfield2=1;
+if isfield(XmlData,'Time')
 nbfield2=size(XmlData.Time,2);
+end
 for ifile=1:nbfield
             update_waitbar(WaitbarHandle,ifile/nbfield)
     if ~isempty(RUNHandle) && ~strcmp(get(RUNHandle,'BusyAction'),'queue')
@@ -230,7 +234,10 @@ for ifile=1:nbfield
         break
     end
     filename=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomType{1},i1_series{1}(ifile));
+    j1=[];
+    if ~isequal(nbfield2,1)
     j1=mod(ifile-1+first_label,nbfield2)+1;
+    end
     i1=floor((ifile-1+first_label)/nbfield2)+1;
     filename_new=fullfile_uvmat(RootPath{1},SubDir{1},RootFile{1},FileExt{1},NomTypeNew,i1,[],j1);
     try
