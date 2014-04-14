@@ -5008,6 +5008,74 @@ if isfield(UvData,'XmlData')
         volume_scan='y';
     end
 end	
+
+
+% hfig=findobj(allchild(0),'tag','set_slices');
+% if isempty(hfig)
+%     set(0,'Unit','points')
+%     ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
+%     Width=350;% fig width in points (1/72 inch)
+%     Height=min(0.8*ScreenSize(4),500);
+%     Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
+%     Bottom=ScreenSize(4)-Height-40; %put fig at top right
+%     hfig=figure('name','set_slices','tag','set_slices','MenuBar','none','NumberTitle','off','Unit','points','Position',[Left,Bottom,Width,Height]);
+%     BackgroundColor=get(hfig,'Color');
+%     path_title=uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.97 0.9 0.03],'BackgroundColor',BackgroundColor,'Tag','Path_title',...
+%         'String','path:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
+%     htitlebox=uicontrol('Style','edit','Units','normalized', 'Position', [0.02 0.89 0.96 0.08],'tag','titlebox','Max',2,'BackgroundColor',[1 1 1],'Callback',@titlebox_Callback,...
+%         'String',InputDir,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''titlebox'':current path');
+%     uicontrol('Style','pushbutton','Tag','backward','Units','normalized','Position',[0.02 0.77 0.1 0.05],...
+%         'String','<--','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@backward,'TooltipString','move backward');
+%     home_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.14 0.77 0.2 0.05],...
+%         'String','Work dir','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@home_dir,'TooltipString','reach the current Matlab working directory'); 
+%     uicontrol('Style','pushbutton','Tag','refresh','Units','normalized','Position', [0.36 0.77 0.2 0.05],'Callback',@refresh_GUI,...
+%         'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',12);
+%     uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.75 0.74 0.23 0.05],'tag','sort_option','Callback',@refresh_GUI,'Visible','off',...
+%         'String',{'sort name';'sort date'},'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''sort_option'': sort the files by names or dates');
+%     uicontrol('Style','listbox','Units','normalized', 'Position',[0.02 0.08 0.96 0.66], 'Callback', @(src,event)list_Callback(option,FilterExt,src,event),'tag','list',...
+%         'FontUnits','points','FontSize',12,'TooltipString','''list'':current list of directories, marked by +/, and files');
+%     
+%     OK_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.58 0.005 0.2 0.07],'BackgroundColor',[0 1 0],...
+%         'String','OK','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@(src,event)OK_Callback(option,FilterExt,src,event));
+%     close_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.78 0.005 0.2 0.07],'Callback',@(src,event)close(option,src,event),...
+%         'FontWeight','bold','FontUnits','points','FontSize',12);
+%     %set(hrefresh,'UserData',StatusData)
+%     if strcmp(option,'status_display') %put a run advancement display
+%         set(hfig,'DeleteFcn',@(src,event)close(option,src,event))
+%         uicontrol('Style','frame','Units','normalized', 'Position', [0.02 0.85 0.9 0.04]);
+%         uicontrol('Style','frame','Units','normalized', 'Position',[0.02 0.85 0.01 0.04],'BackgroundColor',[1 0 0],'tag','waitbar');
+%         %             uicontrol('Style','text','Units','normalized', 'Position', [0.4 0.8 0.35 0.03],'BackgroundColor',BackgroundColor,...
+%         %             'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
+%         delete(home_button)
+%         set(OK_button,'String','Open')
+%         set(close_button,'String','Close')
+%     elseif strcmp(FilterExt,'uigetdir') %pick a  directory
+%         set(path_title,'String',title); %show the input title for path (directory)
+%         set(OK_button,'String','Select')
+%         set(close_button,'String','Cancel')
+%     else  %put a title and additional pushbuttons
+%         uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.74 0.6 0.03],'BackgroundColor',BackgroundColor,...
+%             'String',title,'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
+%         uicontrol('Style','togglebutton','Units','normalized', 'Position', [0.75 0.78 0.23 0.04],'tag','check_date','Callback',@dates_Callback,...
+%             'String','show dates','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''check_date'':press button to display dates');
+% %         uicontrol('Style','text','Units','normalized', 'Position', [0.37 0.8 0.35 0.03],'BackgroundColor',BackgroundColor,...
+% %             'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
+%          set(OK_button,'String','Open')
+%          set(close_button,'String','Cancel')    
+%     end
+%     drawnow
+% end
+% refresh_GUI(findobj(hfig,'Tag','refresh'),InputFileName,FilterExt)% refresh the list of content of the current dir
+% if ~strcmp(option,'status_display')
+%     uiwait(hfig)
+%     if ishandle(hfig)
+%         htitlebox=findobj(hfig,'Tag','titlebox');
+%         fileinput=get(htitlebox,'String');% retrieve the input file selection
+%         delete(hfig)
+%     end
+% end
+
+
 input_key={'Z (first position)','Z (last position)','Z (water surface)', 'refractive index','NbSlice','volume scan (y/n)','tilt angle y axis','tilt angle x axis'};
 input_val=[{num2str(ZEnd)} {num2str(ZStart)} {num2str(ZStart)} {'1.333'} num2str(NbSlice_j) {volume_scan} {'0'} {'0'}];
 answer=inputdlg(input_key,'slice position(s)',ones(1,8), input_val,'on');
@@ -5019,9 +5087,14 @@ else
     Z_plane=linspace(str2double(answer{1}),str2double(answer{2}),GeometryCalib.NbSlice);
 end
 GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-GeometryCalib.SliceAngle(:,3)=0;
-GeometryCalib.SliceAngle(:,2)=str2double(answer{7})*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
+if str2double(answer{7})==0 && str2double(answer{8})==0
+    GeometryCalib.SliceAngle=[0 0 0];
+else
+GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
 GeometryCalib.SliceAngle(:,1)=str2double(answer{8})*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
+GeometryCalib.SliceAngle(:,2)=str2double(answer{7})*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
+GeometryCalib.SliceAngle(:,3)=0;
+end
 GeometryCalib.InterfaceCoord=[0 0 str2double(answer{3})];
 GeometryCalib.RefractionIndex=str2double(answer{4});
 
