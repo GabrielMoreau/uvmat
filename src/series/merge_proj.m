@@ -56,8 +56,6 @@ if isstruct(Param) && isequal(Param.Action.RUN,0)
       %check the input files
     first_j=[];
     if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
-    last_j=[];
-    if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
     PairString='';
     if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
     [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
@@ -130,6 +128,10 @@ for iview=1:NbView
     else
         frame_index{iview}=i1_series{iview};
     end
+end
+if NbView >1 && max(cell2mat(CheckImage))>0 && ~isfield(Param,'ProjObject')
+    disp_uvmat('ERROR','projection on a common grid is needed to concatene images: use a Projection Object of type ''plane'' with ProjMode=''interp_lin''',checkrun)
+    return
 end
 
 %% calibration data and timing: read the ImaDoc files
@@ -224,7 +226,7 @@ for index=1:NbField
         %% reading input file(s)
         [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
         if ~isempty(errormsg)
-            disp(['ERROR in merge_proj/read_field/' errormsg])
+            disp_uvmat(['ERROR in merge_proj/read_field/' errormsg],checkrun)
             return
         end
         % get the time defined in the current file if not already defined from the xml file
@@ -252,7 +254,7 @@ for index=1:NbField
         if Param.CheckObject
             [Data{iview},errormsg]=proj_field(Data{iview},Param.ProjObject);
             if ~isempty(errormsg)
-                disp(['ERROR in merge_proge/proj_field: ' errormsg])
+                disp_uvmat(['ERROR in merge_proge/proj_field: ' errormsg],checkrun)
                 return
             end
         end
@@ -265,9 +267,9 @@ for index=1:NbField
     %%%%%%%%%%%%%%%% END LOOP ON VIEWS %%%%%%%%%%%%%%%%
 
     %% merge the NbView fields
-    MergeData=merge_field(Data);
-    if isfield(MergeData,'Txt')
-        disp(MergeData.Txt);
+    [MergeData,errormsg]=merge_field(Data);
+    if ~isempty(errormsg)
+        disp_uvmat('ERROR',errormsg,checkrun);
         return
     end
 
@@ -360,9 +362,9 @@ for index=1:NbField
         end
         error=struct2nc(OutputFile,MergeData);%save result file
         if isempty(error)
-            display(['output file ' OutputFile ' written'])
+            disp(['output file ' OutputFile ' written'])
         else
-            display(error)
+            disp(error)
         end
     end
 end
@@ -370,13 +372,13 @@ end
 
 %'merge_field': concatene fields
 %------------------------------------------------------------------------
-function MergeData=merge_field(Data)
+function [MergeData,errormsg]=merge_field(Data)
 %% default output
 if isempty(Data)||~iscell(Data)
     MergeData=[];
     return
 end
-error=0;
+errormsg='';
 MergeData=Data{1};% merged field= first field by default, reproduces the glabal attributes of the first field
 NbView=length(Data);
 if NbView==1
@@ -385,6 +387,9 @@ end
 
 %% group the variables (fields of 'Data') in cells of variables with the same dimensions
 [CellInfo,NbDim,errormsg]=find_field_cells(Data{1});
+if ~isempty(errormsg)
+    return
+end
 
 %LOOP ON GROUPS OF VARIABLES SHARING THE SAME DIMENSIONS
 for icell=1:length(CellInfo)
@@ -416,7 +421,10 @@ for icell=1:length(CellInfo)
                         if iview==1
                             MergeData.(VarName)=Data{1}.(VarName);% correct the field of MergeData
                             NbAver=~check_bad;% initiate NbAver: the nbre of good data for each point
-                        else
+                        elseif size(Data{iview}.(VarName))~=size(MergeData.(VarName))
+                            errormsg='sizes of the input matrices do not agree, need to interpolate on a common grid using a projection object';
+                            return
+                        else                     
                             MergeData.(VarName)=MergeData.(VarName) + Data{iview}.(VarName);%add data
                             NbAver=NbAver + ~check_bad;% add 1 for good data, 0 else
                         end
