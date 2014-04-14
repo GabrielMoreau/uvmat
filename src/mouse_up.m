@@ -348,7 +348,7 @@ end
 
 %% finalising ruler
 if test_ruler && ~isempty(xy)
-    set(hhuvmat.MenuRuler,'checked','off')%desable the ruler option in uvmat
+    %set(hhuvmat.MenuRuler,'checked','off')%desable the ruler option in uvmat
     xy=get(hcurrentaxes,'CurrentPoint');% get the current mouse coordinates
     RulerCoord=[AxeData.RulerCoord ;xy(1,1:2)];% append the recorded ruler origin to the current mouse coordinates
     RulerCoord=diff(RulerCoord,1);% coordiante difference between segment end and beginning

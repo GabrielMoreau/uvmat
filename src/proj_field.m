@@ -919,21 +919,21 @@ if  ~strcmp(ObjectData.ProjMode,'projection') && (isempty(DX)||isempty(DY))
 end
 
 %% extrema along each axis
-testXMin=0;
-testXMax=0;
-testYMin=0;
-testYMax=0;
-if isfield(ObjectData,'RangeX')
+testXMin=0;% test if min of X coordinates defined on the projection object, =0 by default
+testXMax=0;% test if max of X coordinates defined on the projection object, =0 by default
+testYMin=0;% test if min of Y coordinates defined on the projection object, =0 by default
+testYMax=0;% test if max of Y coordinates defined on the projection object, =0 by default
+if isfield(ObjectData,'RangeX') % rangeX defined by the projection object
     XMin=min(ObjectData.RangeX);
     XMax=max(ObjectData.RangeX);
-    testXMin=XMax>XMin;%=1 if XMin defined (i.e. RangeY has tow distinct elements)
-    testXMax=1;% range restriction along X
+    testXMin=XMax>XMin;%=1 if XMin defined (i.e. RangeY has two distinct elements)
+    testXMax=1;% max of X coordinates defined on the projection object
 end
-if isfield(ObjectData,'RangeY')
+if isfield(ObjectData,'RangeY') % rangeY defined by the projection object
     YMin=min(ObjectData.RangeY);
     YMax=max(ObjectData.RangeY);
     testYMin=YMax>YMin;%=1 if YMin defined (i.e. RangeY has tow distinct elements)
-    testYMax=1;
+    testYMax=1;% max of Y coordinates defined on the projection object
 end
 width=0;%default width of the projection band
 if isfield(ObjectData,'RangeZ')
@@ -1370,7 +1370,7 @@ for icell=1:length(CellInfo)
                         ProjData.(AXName)=Coord{NbDim}(1)+DX*(XIndexRange-1); %record the new (projected ) x coordinates
                     end
                 end
-            else       % case with interpolation
+            else       % case with interpolation on a grid
                 if NbDim==2 %2D case
                     if isequal(ProjMode{icell},'interp_tps')
                         npx_interp_tps=ceil(abs(DX/DAX));
@@ -1382,24 +1382,26 @@ for icell=1:length(CellInfo)
                     end
                     Coord{1}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});
                     Coord{2}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)});
-                    xcorner=[min(Coord{NbDim}) max(Coord{NbDim}) max(Coord{NbDim}) min(Coord{NbDim})]-ObjectData.Coord(1,1);% corner absissa of the original grid with respect to the new origin
-                    ycorner=[min(Coord{NbDim-1}) min(Coord{NbDim-1}) max(Coord{NbDim-1}) max(Coord{NbDim-1})]-ObjectData.Coord(1,2);% corner ordinates of the original grid
-                    xcor_new=xcorner*cos(PlaneAngle(3))+ycorner*sin(PlaneAngle(3));%coordinates of the corners in new frame
-                    ycor_new=-xcorner*sin(PlaneAngle(3))+ycorner*cos(PlaneAngle(3));
-                    if testXMin
-                        xcor_new=max(xcor_new,XMin);
+                    if ~(testXMin && testYMin)% % if the range of the projected coordinates is not fully defined by the projection object, find the extrema of the projected field
+                        xcorner=[min(Coord{NbDim}) max(Coord{NbDim}) max(Coord{NbDim}) min(Coord{NbDim})]-ObjectData.Coord(1,1);% corner absissa of the original grid with respect to the new origin
+                        ycorner=[min(Coord{NbDim-1}) min(Coord{NbDim-1}) max(Coord{NbDim-1}) max(Coord{NbDim-1})]-ObjectData.Coord(1,2);% corner ordinates of the original grid
+                        xcor_new=xcorner*cos(PlaneAngle(3))+ycorner*sin(PlaneAngle(3));%coordinates of the corners in new frame
+                        ycor_new=-xcorner*sin(PlaneAngle(3))+ycorner*cos(PlaneAngle(3));
+                        if ~testXMin
+                            XMin=min(xcor_new);
+                        end
+                        if ~testXMax
+                            XMax=max(xcor_new);
+                        end
+                        if ~testYMin
+                            YMin=min(ycor_new);
+                        end
+                        if ~testYMax
+                            YMax=max(ycor_new);
+                        end
                     end
-                    if testXMax
-                        xcor_new=min(xcor_new,XMax);
-                    end
-                    if testYMin
-                        ycor_new=max(ycor_new,YMin);
-                    end
-                    if testYMax
-                        ycor_new=min(ycor_new,YMax);
-                    end
-                    coord_x_proj=min(xcor_new):DX:max(xcor_new);
-                    coord_y_proj=min(ycor_new):DY:max(ycor_new);
+                    coord_x_proj=XMin:DX:XMax;
+                    coord_y_proj=YMin:DY:YMax;
                     ProjData.(AYName)=[coord_y_proj(1) coord_y_proj(end)]; %record the new (projected ) y coordinates
                     ProjData.(AXName)=[coord_x_proj(1) coord_x_proj(end)]; %record the new (projected ) x coordinates
                     [X,YI]=meshgrid(coord_x_proj,coord_y_proj);%grid in the new coordinates

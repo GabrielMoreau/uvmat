@@ -21,8 +21,6 @@ if ~exist (XmlFileName,'file')
         end
     end   
 end
-% SubDirBase=regexprep(SubDir,'\..*','');%take the root part of SubDir, before the first dot '.'
-% XmlFileName=[fullfile(RootPath,SubDirBase) '.xml'];%new convention: xml at the level of the image folder
 if ~exist(XmlFileName,'file')
     XmlFileName=[fullfile(RootPath,SubDirBase,RootFile) '.xml']; % old convention: xml inside the image folder, case of images or new civ files
     if ~exist(XmlFileName,'file')

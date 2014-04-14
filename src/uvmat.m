@@ -3810,9 +3810,8 @@ end
 
 
 %% delete drawn objects if the output CooordUnit is different from the previous one
-if ~strcmp(CoordUnit,CoordUnitPrev)
+if  ~strcmp(CoordUnit,CoordUnitPrev)
     set(handles.CheckFixLimits,'Value',0)
-% set(handles.CheckFixLimits,'BackgroundColor',[0.7 0.7 0.7])
     hother=findobj('Tag','proj_object');%find all the proj objects
     for iobj=1:length(hother)
         delete_object(hother(iobj))
@@ -4543,10 +4542,9 @@ if  ~isempty(UvData) && isfield(UvData, 'ProjObject') && length(UvData.ProjObjec
     end
     UvData.ProjObject(IndexObj)=[];
 end
-    if ~isempty(list_str)
-        list_str(IndexObj)=[];
-    end
-% end
+if numel(list_str)>=IndexObj
+    list_str(IndexObj)=[];
+end
 set(huvmat,'UserData',UvData);
 set(hlist_object,'String',list_str)
 set(hlist_object,'Value',length(list_str))
@@ -4836,6 +4834,7 @@ create_object(data,handles)
 function create_object(data,handles)
 %------------------------------------------------------------------------
 %% desactivate concurrent tools
+set(handles.MenuRuler,'checked','off')%desactivate ruler
 hgeometry_calib=findobj(allchild(0),'tag','geometry_calib');% search the GUI geometric calibration 
 if ishandle(hgeometry_calib)
     hhgeometry_calib=guidata(hgeometry_calib);
@@ -4944,14 +4943,20 @@ end
 %------------------------------------------------------------------------
 function MenuCalib_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-
+%% suppress the second field if exists
+if get(handles.SubField,'Value')
+    set(handles.SubField,'Value',0)
+    SubField_Callback(hObject, eventdata, handles)
+end
 UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
 
-%suppress competing options 
+%% suppress competing tools
+set(handles.MenuRuler,'checked','off')%desactivate ruler
 set(handles.CheckZoom,'Value',0)
 set(handles.CheckZoom,'BackgroundColor',[0.7 0.7 0.7])
-set(handles.ListObject,'Value',1)      
-% initiate display of GUI geometry_calib
+set(handles.ListObject,'Value',1) 
+
+%% initiate display of the GUI geometry_calib
 data=[]; %default
 if isfield(UvData,'CoordType')
     data.CoordType=UvData.CoordType;
@@ -4963,6 +4968,76 @@ geometry_calib(FileName);% call the geometry_calib interface
 set(handles.view_xml,'BackgroundColor',[1 1 1])%indicate the end of reading of the current xml file by geometry_calib
 set(handles.MenuCalib,'checked','on')% indicate that MenuCalib is activated, test used by mouse action
 
+
+% --------------------------------------------------------------------
+% --- set the slice plane ro the set of slice planes when volume scan is used
+function MenuSetSlice_Callback(hObject, eventdata, handles)
+% --------------------------------------------------------------------
+%% suppress the second input field if exists
+if get(handles.SubField,'Value')
+    set(handles.SubField,'Value',0)
+    SubField_Callback(hObject, eventdata, handles)
+end
+
+UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat interface 
+check=0;
+if isfield(UvData,'XmlData')&&isfield(UvData.XmlData{1},'GeometryCalib')&& isfield(UvData.XmlData{1}.GeometryCalib,'SliceCoord')
+    GeometryCalib=UvData.XmlData{1}.GeometryCalib;
+    SliceCoord=GeometryCalib.SliceCoord;
+else
+    msgbox_uvmat('ERROR','3D geometric calibration needed before defining slices')
+    return
+end    
+NbSlice_j=1;%default
+Z=SliceCoord(:,3);
+% index=index(ind_dim);
+%set the Z position of the reference plane used for calibration
+if isequal(max(Z),min(Z))%Z constant
+    Z_plane=Z(1);
+    GeometryCalib.NbSlice=1;
+    GeometryCalib.SliceCoord=[0 0 Z_plane];
+end
+ZStart=SliceCoord(1,3);% first Z coordinate present in the calibration file
+ZEnd=SliceCoord(end,3);% last Z coordinate present in the calibration file
+volume_scan='n';
+if isfield(UvData,'XmlData')
+    if isfield(UvData.XmlData{1},'TranslationMotor')
+        NbSlice_j=UvData.XmlData.TranslationMotor.Nbslice;
+        ZStart=UvData.XmlData.TranslationMotor.ZStart/10;
+        ZEnd=UvData.XmlData.TranslationMotor.ZEnd/10;
+        volume_scan='y';
+    end
+end	
+input_key={'Z (first position)','Z (last position)','Z (water surface)', 'refractive index','NbSlice','volume scan (y/n)','tilt angle y axis','tilt angle x axis'};
+input_val=[{num2str(ZEnd)} {num2str(ZStart)} {num2str(ZStart)} {'1.333'} num2str(NbSlice_j) {volume_scan} {'0'} {'0'}];
+answer=inputdlg(input_key,'slice position(s)',ones(1,8), input_val,'on');
+GeometryCalib.NbSlice=str2double(answer{5});
+GeometryCalib.VolumeScan=answer{6};
+if isempty(answer)
+    Z_plane=0; %default
+else
+    Z_plane=linspace(str2double(answer{1}),str2double(answer{2}),GeometryCalib.NbSlice);
+end
+GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+GeometryCalib.SliceAngle(:,3)=0;
+GeometryCalib.SliceAngle(:,2)=str2double(answer{7})*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
+GeometryCalib.SliceAngle(:,1)=str2double(answer{8})*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
+GeometryCalib.InterfaceCoord=[0 0 str2double(answer{3})];
+GeometryCalib.RefractionIndex=str2double(answer{4});
+
+%% store the result in the xml file used for calibration
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the xml file for calibration
+[RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
+XmlFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);
+errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
+if ~strcmp(errormsg,'')
+    msgbox_uvmat('ERROR',errormsg);
+end
+
+%% display image with new calibration in the currently opened uvmat interface
+set(handles.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
+InputFileREFRESH_Callback(hObject,eventdata,handles); %file input with xml reading  in uvmat, show the image in phys coordinates
 
 %-----------------------------------------------------------------------
 function MenuLIFCalib_Callback(hObject, eventdata, handles)
@@ -5233,12 +5308,16 @@ set_grid(FileName,UvData.Field);% call the set_object interface
 %------------------------------------------------------------------------
 function MenuRuler_Callback(hObject, eventdata, handles)
 %------------------------------------------------------------------------
-set(handles.CheckZoom,'Value',0)
-CheckZoom_Callback(handles.uvmat, [], handles)
-set(handles.MenuRuler,'checked','on')
-UvData=get(handles.uvmat,'UserData');
-UvData.MouseAction='ruler';
-set(handles.uvmat,'UserData',UvData);
+if strcmp(get(handles.MenuRuler,'checked'),'on')
+    set(handles.MenuRuler,'checked','off')%desactivate if activated
+else
+    set(handles.MenuRuler,'checked','on')%activate if selected
+    set(handles.CheckZoom,'Value',0)
+    CheckZoom_Callback(handles.uvmat, [], handles)
+    UvData=get(handles.uvmat,'UserData');
+    UvData.MouseAction='ruler';
+    set(handles.uvmat,'UserData',UvData);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MenuRun Callbacks
@@ -5452,8 +5531,9 @@ else
     end
 end
 
-
+% --------------------------------------------------------------------
 % --- Executes on button press in CheckTable.
+% --------------------------------------------------------------------
 function CheckTable_Callback(hObject, eventdata, handles)
 if get(handles.CheckTable,'Value')
     set(handles.TableDisplay,'Visible','on')

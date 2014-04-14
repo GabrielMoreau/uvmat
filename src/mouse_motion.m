@@ -402,45 +402,47 @@ if strcmp(htype,'axes') && ~CheckZoom && ~isempty(h_geometry_calib)
         data.Coord=get(h_ListCoord,'Data');
         if isnumeric(data.Coord)&&~isempty(data.Coord)
             if test_transform
-                            XCoord=(data.Coord(:,1));
-            YCoord=(data.Coord(:,2));
+                XCoord=(data.Coord(:,1));
+                YCoord=(data.Coord(:,2));
             else
-            XCoord=(data.Coord(:,4));
-            YCoord=(data.Coord(:,5));
+                XCoord=(data.Coord(:,4));
+                YCoord=(data.Coord(:,5));
             end
             xy=get(CurrentAxes,'CurrentPoint');%xy(1,1),xy(1,2): current x,y positions in axes coordinates
             if ~isempty(xy)
                 xlim=get(CurrentAxes,'XLim');
-                ind_range_x=abs((xlim(2)-xlim(1))/50);
+%                 ind_range_x=abs((xlim(2)-xlim(1))/50);
                 ylim=get(CurrentAxes,'YLim');
-                ind_range_y=abs((ylim(2)-ylim(1))/50);
-                ind_range=sqrt(ind_range_x*ind_range_y);
-                index_point=find((XCoord<xy(1,1)+ind_range) & (XCoord>xy(1,1)-ind_range) & ...%flagx=1 for the vectors with x position selected by the mouse
-                              (YCoord<xy(1,2)+ind_range) & (YCoord>xy(1,2)-ind_range),1);%find the first calibration point in the neighborhood of the mouse
+                ind_range=max(abs(xlim(2)-xlim(1)),abs(ylim(end)-ylim(1)))/25;%defines the size of the circle marker
+%                 ind_range_y=abs((ylim(2)-ylim(1))/50);
+%                 ind_range=sqrt(ind_range_x*ind_range_y);
+                index_point=find((XCoord<xy(1,1)+ind_range/2) & (XCoord>xy(1,1)-ind_range/2) & ...%flagx=1 for the vectors with x position selected by the mouse
+                    (YCoord<xy(1,2)+ind_range/2) & (YCoord>xy(1,2)-ind_range/2),1);%find the first calibration point in the neighborhood of the mouse
                 if ~isempty(index_point)
-                    pointershape='arrow';% default pointer is an arrow 
+                    pointershape='arrow';% default pointer is an arrow
                 end
                 hh=findobj('Tag','calib_points');%look for handle of calibration points
-               if ~isempty(hh) && ~isempty(get(hh,'UserData')) %&& get(hh_geometry_calib.CheckEnableMouse,'Value') 
-                   %set(hh,'UserData',index_point)
+                if ~isempty(hh) && ~isempty(get(hh,'UserData')) %&& get(hh_geometry_calib.CheckEnableMouse,'Value')
+                    %set(hh,'UserData',index_point)
                     index_point=get(hh,'UserData');
                     XCoord(index_point)=xy(1,1);
                     YCoord(index_point)=xy(1,2);
                     set(hh,'XData',XCoord)
                     set(hh,'YData',YCoord)
-               end
+                end
                 if ~isempty(index_point)
-                    Data=get(h_ListCoord,'Data');
-                    Data(:,6)=zeros(size(Data,1),1);
-                    Data(index_point,6)=-1;%mrk the point on the GUI geometry_calib
-                    set(h_ListCoord,'Data',Data);
+                    set(hh_geometry_calib.CoordLine,'String',num2str(index_point))
+                   % Data=get(h_ListCoord,'Data');
+%                     Data(:,6)=zeros(size(Data,1),1);
+%                     Data(index_point,6)=-1;%mrk the point on the GUI geometry_calib
+%                     set(h_ListCoord,'Data',Data);
                     hhh=findobj('Tag','calib_marker');%look for handle of point marker (circle)
                     if ~isempty(hhh)
                         set(hhh,'Position',[XCoord(index_point)-ind_range/2 YCoord(index_point)-ind_range/2 ind_range ind_range])
                     else
-                                    rectangle('Curvature',[1 1],...
-                'Position',[xy(1,1)-ind_range/2 xy(1,2)-ind_range/2 ind_range ind_range],'EdgeColor','m',...
-                'LineStyle','-','Tag','calib_marker');
+                        rectangle('Curvature',[1 1],...
+                            'Position',[XCoord(index_point)-ind_range/2 YCoord(index_point)-ind_range/2 ind_range ind_range],'EdgeColor','m',...
+                            'LineStyle','-','Tag','calib_marker');
                     end
                 end
             end
