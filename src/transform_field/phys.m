@@ -274,13 +274,13 @@ for icell=1:length(A)
                 end
            end
         end
-        xima=[0.5:npx-0.5];%image coordiantes of corners
+        xima=0.5:npx-0.5;%image coordinates of corners
         yima=npy-0.5:-1:0.5;
-        [XIMA_init,YIMA_init]=meshgrid(xima,yima);%grid of initial image in px coordiantes
+        [XIMA_init,YIMA_init]=meshgrid(xima,yima);%grid of initial image in px coordinates
         [XIMA,YIMA]=px_XYZ(CalibIn{icell},X,Y,zphys);% image coordinates for each point in the real
         %[XPHYS_init,YPHYS_init]=phys_XYZ(Calib,XIMA_init,YIMA_init,ZIndex);
-                 testuint8=isa(A{icell},'uint8');
-         testuint16=isa(A{icell},'uint16');
+        testuint8=isa(A{icell},'uint8');
+        testuint16=isa(A{icell},'uint16');
         if ndims(A{icell})==2 %(B/W images)
         A_out{icell}=interp2(XIMA_init,YIMA_init,double(A{icell}),XIMA,YIMA);
 %         [Rangx]=phys_XYZ(Calib,Rangx,[0.5 0.5],ZIndex);%case of translations without rotation and quadratic deformation
