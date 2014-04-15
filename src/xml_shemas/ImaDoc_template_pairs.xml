@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<ImaDoc>
+<Camera >
+    <TimeUnit>s</TimeUnit>
+    <BurstTiming>
+      <FrameFrequency unit="1/TimeUnit">10000</FrameFrequency>
+      <Dtj unit="frame">0.1</Dtj> <!--intervals inside the burst, here one interval (2 images a b in a burst)-->
+      <Time unit="TimeUnit" >0</Time> <!--time of the first image -->
+      <Dti unit="frame">2</Dti><!--interval between bursts-->
+      <NbDti>99</NbDti> <!--Nbe d'intervals Dti (nre of bursts-1)-->
+    </BurstTiming>
+</Camera>
+</ImaDoc>
