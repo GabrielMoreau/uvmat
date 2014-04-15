@@ -71,7 +71,7 @@ FigPos(3:4)=[FigWidth FigHeight];
 set(hObject, 'Position', FigPos);
 set(hObject, 'Units', OldUnits);
 if exist('Campaign','var')
-    [CampaignPath,CampaignName]=fileparts(Campaign);
+    [tild,CampaignName]=fileparts(Campaign);
     RootXml=fullfile(Campaign,[CampaignName '.xml']);
     s=[];
     if exist(RootXml,'file')
@@ -124,18 +124,29 @@ else% create the mirror folder if it does not exist
     MirrorRoot=uigetfile_uvmat('select the folder which must contain the mirror directory:',SourcePath,'uigetdir');
     if isempty(MirrorRoot)
         return
+    elseif strcmp(MirrorRoot,SourcePath)
+        msgbox_uvmat('ERROR','The mirror folder must be different from the source')
+        return
     else
         MirrorDir=fullfile(MirrorRoot,ProjectName);
     end
-    if ~exist(MirrorDir,'dir')
-        mkdir(MirrorDir)
+    if exist(MirrorDir,'dir')
+        msgbox_uvmat('ERROR',['The folder ' MirrorDir ' chosen as new mirror campaign already exists']) 
+        return
+    else
+        [s,errormsg]=mkdir(MirrorDir)% create the mirror dir
+        if s~=1
+            msgbox_uvmat('ERROR',['error in creating ' MirrorDir ': ' errormsg]) 
+            return
+        end
     end
     MirrorDoc.SourceDir=SourceDir;
     t=struct2xml(MirrorDoc);
     set(t,1,'name','DataTree');
-    save(t,fullfile(MirrorDir,[ProjectName '.xml']))
+    save(t,fullfile(MirrorDir,[ProjectName '.xml']))% create an xml file in the mirror folder to indicate its source folder
     set(handles.MirrorDir,'String',MirrorDir)
     set(handles.MirrorDir,'Visible','on')
+    set(handles.CreateMirror,'String','update_mirror')
 end
 ExpName={''};
 
@@ -205,10 +216,10 @@ end
 %------------------------------------------------------------------------
  function ListExperiments_Callback(hObject, eventdata, handles)
 
-MirrorPath='';
-CampaignPath=get(handles.SourceDir,'String');
 if strcmp(get(handles.MirrorDir,'Visible'),'on')
     MirrorPath=get(handles.MirrorDir,'String');
+else
+    MirrorPath=get(handles.SourceDir,'String');
 end
 ListExperiments=get(handles.ListExperiments,'String');
 list_val=get(handles.ListExperiments,'Value');
@@ -228,7 +239,7 @@ list_dataseries(handles,ListExperiments,MirrorPath)
 ListDevices={};
 for iexp=1:numel(ListExperiments)
     if strcmp(ListExperiments{iexp}(1),'+')% if the item is a directory
-        ListExperiments{iexp}(1)=[];
+        ListExperiments{iexp}(1)=[];%remove the first char '+' used to mark folders
         ListStruct=dir(fullfile(MirrorPath,ListExperiments{iexp})); %list files and dir in the source experiment directory
         ListCells=struct2cell(ListStruct);%transform dir struct to a cell arrray
         ListFiles=ListCells(1,:);%list of dir and file  names
@@ -278,10 +289,10 @@ for iexp=1:numel(ListExperiments)
                 DataSeries=fullfile(CampaignPath,ListExperiments{iexp},ListFiles{ilist});%source folder
                 if ~isempty(MirrorPath)
                     mirror=fullfile(MirrorPath,ListExperiments{iexp},ListFiles{ilist});
-                    if exist(mirror,'dir')||exist(mirror,'file')
+                    if exist(mirror,'file')% if mirror already exists as a file or folder
                         [tild,msg]=fileattrib(mirror);
                         if strcmp(msg.Name,mirror)%if the mirror name already exists as a local file or dir
-                            if msg.directory% case of a f
+                            if msg.directory% case of a folder
                                 answer=msgbox_uvmat('INPUT_Y-N',['replace local folder ' msg.Name ' by a link to the source dir']);
                                 if strcmp(answer,'Yes')
                                     [ss,msg]=rmdir(mirror);
@@ -291,17 +302,16 @@ for iexp=1:numel(ListExperiments)
                                         msgbox_uvmat('ERROR',['enable to delete local folder: ' msg]);
                                     end
                                 end
-                            else
+                            else % case of an existing mirror file
                                 answer=msgbox_uvmat('INPUT_Y-N',['replace local file ' msg.Name ' by a link to the source file']);
                                 if strcmp(answer,'Yes')
                                     delete(mirror);
-                                    system(['ln -s ' DataSeries ' ' mirror]); % create the link to the source folder
-                                    
+                                    system(['ln -s ' DataSeries ' ' mirror]); % create the link to the source folder                                  
                                 end
                             end
-                        else% create mirror to the data series if needed
-                            system(['ln -s ' DataSeries ' ' mirror]); % create the link to the source folder
                         end
+                    else% create mirror to the data series if needed
+                        system(['ln -s ' DataSeries ' ' mirror]); % create the link to the source folder                     
                     end
                     if isempty(find(strcmp(ListFiles{ilist},ListDevices), 1))% if the item is not already in ListDevices
                         if check_dir(ilist)
@@ -585,6 +595,7 @@ Device=get(handles.ListDevices,'String');
 Value=get(handles.ListDevices,'Value');
 Device=Device(Value);
 Device=regexprep(Device,'^\+/','');% remove the +/ used to mark dir
+Device=regexprep(Device,'^~','');% remove the ~ used to mark symbolic link
 handles.output.Experiment=Experiment;
 handles.output.DataSeries=Device;
 guidata(hObject, handles);% Update handles structure
