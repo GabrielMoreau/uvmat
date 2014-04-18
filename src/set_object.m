@@ -660,7 +660,7 @@ if ~isempty(dir_save)
     value=get(handles.ProjMode,'Value');
     ProjMode=menu{value};
     if strcmp(ProjMode,'mask_inside')||strcmp(ProjMode,'mask_outside')
-        displ_txt={displ_txt; '(to create a mask image, use save_mask on the GUI uvmat upper menu)'};
+        displ_txt=[displ_txt; '(note: to create a mask image, use ''Tools/make mask'' on the upper bar menu of uvmat)'];
     end
     answer=msgbox_uvmat('INPUT_TXT',displ_txt,def);
     if ischar(answer)

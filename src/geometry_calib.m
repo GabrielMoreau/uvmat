@@ -141,7 +141,7 @@ if exist('inputfile','var')&& ~isempty(inputfile)
 %     end
     set(handles.ListCoord,'Data',[])
     if exist(struct.XmlInputFile,'file')
-        Heading=loadfile(handles,struct.XmlInputFile);% load data from the xml file
+        Heading=loadfile(handles,struct.XmlInputFile);% load data from the xml file and fill the GUI
         if isfield(Heading,'Campaign')&& ischar(Heading.Campaign)
             struct.Campaign=Heading.Campaign;
         end
@@ -215,17 +215,23 @@ else   % if calibration confirmed
     end
     
     %% display image with new calibration in the currently opened uvmat interface
-    set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
-    UserData=get(handles.geometry_calib,'UserData');
-    UserData.XmlInputFile=outputfile;%save the current xml file name
-    set(handles.geometry_calib,'UserData',UserData)
-    uvmat('InputFileREFRESH_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
-    PLOT_Callback(hObject, eventdata, handles)
-    set(handles.CoordLine,'string',num2str(index))
-    Coord=get(handles.ListCoord,'Data');
-    update_calib_marker(Coord(index,:)); %indicate the point with max deviations from phys coord to calibration
-    figure(handles.geometry_calib)% put the GUI geometry_calib in front
-    set(handles.APPLY,'BackgroundColor',[1 0 0]) % set APPLY button to red color 
+    FieldList=get(hhuvmat.FieldName,'String');
+    val=get(hhuvmat.FieldName,'Value');
+    if strcmp(FieldList{val},'image')
+        set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
+        UserData=get(handles.geometry_calib,'UserData');
+        UserData.XmlInputFile=outputfile;%save the current xml file name
+        set(handles.geometry_calib,'UserData',UserData)
+        uvmat('InputFileREFRESH_Callback',hObject,eventdata,hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
+        PLOT_Callback(hObject, eventdata, handles)
+        set(handles.CoordLine,'string',num2str(index))
+        Coord=get(handles.ListCoord,'Data');
+        update_calib_marker(Coord(index,:)); %indicate the point with max deviations from phys coord to calibration
+        figure(handles.geometry_calib)% put the GUI geometry_calib in front
+        set(handles.APPLY,'BackgroundColor',[1 0 0]) % set APPLY button to red color
+    else
+        msgbox_uvmat('WARNING','open the image to see the effect of the new calibration')
+    end
 end
 
 %------------------------------------------------------------------------
@@ -250,7 +256,7 @@ end
 OutPut=browse_data(answer);
 nbcalib=0;
 for ilist=1:numel(OutPut.Experiment)
-    SubDirBase=regexprep(OutPut.Device{1},'\..+$','');
+    SubDirBase=regexprep(OutPut.DataSeries{1},'\..+$','');
     XmlName=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},[SubDirBase '.xml']);
     % copy the xml file from the old location if appropriate, then update with the calibration parameters
     if ~exist(XmlName,'file') && ~isempty(SubDirBase)
@@ -273,6 +279,7 @@ msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated for ' num2str(nbcalib) ' exp
 % --- activate calibration and store parameters in ouputfile .
 function [GeometryCalib,index]=calibrate(handles,hhuvmat)
 %------------------------------------------------------------------------
+set(handles.CheckEnableMouse,'Value',0)% desactivate mouse (to avoid spurious creation of new points)
 %% read the current calibration points
 index=[];
 Coord=get(handles.ListCoord,'Data');

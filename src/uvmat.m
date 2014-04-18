@@ -508,24 +508,32 @@ OutPut=browse_data(DirFull);% open the GUI browse_data to get select a campaign 
 if ~isfield(OutPut,'Campaign')
     return
 end
-DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
-ListStruct=dir(DirName); %list files and the dir DataSeries
-% select the first appropriate file in the dir
-FileName='';
-for ilist=1:numel(ListStruct)
-    if ~isequal(ListStruct(ilist).isdir,1)%look for files, not dir
-        FileName=ListStruct(ilist).name;
-        FileType=get_file_type(fullfile(DirName,FileName));
-        switch FileType
-            case {'image','multimage','civx','civdata','netcdf'}
-                break
-        end
-    end
-end
-if isempty(FileName)
-    msgbox_uvmat('ERROR',['no appropriate input file in the DataSeries folder ' fullfile(DirName)])
+fileinput=uigetfile_uvmat('pick an input file',fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1}));
+hh=dir(fileinput);
+if numel(hh)>1
+    msgbox_uvmat('ERROR','invalid input, probably a broken link');
     return
 end
+
+% 
+% DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
+% ListStruct=dir(DirName); %list files and the dir DataSeries
+% % select the first appropriate file in the dir
+% FileName='';
+% for ilist=1:numel(ListStruct)
+%     if ~isequal(ListStruct(ilist).isdir,1)%look for files, not dir
+%         FileName=ListStruct(ilist).name;
+%         FileType=get_file_type(fullfile(DirName,FileName));
+%         switch FileType
+%             case {'image','multimage','civx','civdata','netcdf'}
+%                 break
+%         end
+%     end
+% end
+% if isempty(FileName)
+%     msgbox_uvmat('ERROR',['no appropriate input file in the DataSeries folder ' fullfile(DirName)])
+%     return
+% end
 
 %% update the list of campaigns in the menubar
 MenuCampaign=[{get(handles.MenuCampaign_1,'Label')};{get(handles.MenuCampaign_2,'Label')};...
@@ -548,8 +556,8 @@ if check_dir %insert the new campaign in the list if it is not found
 end
 
 %% display the selected field and related information
-display_file_name( handles,fullfile(DirName,FileName))
-
+%display_file_name( handles,fullfile(DirName,FileName))
+display_file_name( handles,fileinput)
 set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
 % -----------------------------------------------------------------------
@@ -563,23 +571,30 @@ if ~isfield(OutPut,'Campaign')
     return
 end
 DirName=fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1});
-hdir=dir(DirName); %list files and dirs
-FileName='';
-for ilist=1:numel(hdir)
-    if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
-        FileName=hdir(ilist).name;
-        FileType=get_file_type(fullfile(DirName,FileName));
-        switch FileType
-            case {'image','multimage','civx','civdata','netcdf'}
-            break
-        end
-    end
+fileinput=uigetfile_uvmat('pick an input file',fullfile(OutPut.Campaign,OutPut.Experiment{1},OutPut.DataSeries{1}));
+hh=dir(fileinput);
+if numel(hh)>1
+    msgbox_uvmat('ERROR','invalid input, probably a broken link');
+    return
 end
-if isempty(FileName)
-    msgbox_uvmat('ERROR','no valid input file in the selected directory')
-else
-display_file_name(handles,fullfile(DirName,FileName))
-end
+% 
+% hdir=dir(DirName); %list files and dirs
+% FileName='';
+% for ilist=1:numel(hdir)
+%     if ~isequal(hdir(ilist).isdir,1)%look for files, not dir
+%         FileName=hdir(ilist).name;
+%         FileType=get_file_type(fullfile(DirName,FileName));
+%         switch FileType
+%             case {'image','multimage','civx','civdata','netcdf'}
+%             break
+%         end
+%     end
+% end
+% if isempty(FileName)
+%     msgbox_uvmat('ERROR','no valid input file in the selected directory')
+% else
+display_file_name(handles,fileinput)
+% end
 set(handles.MenuOpenCampaign,'ForegroundColor',[0 0 0])
 
 %------------------------------------------------------------------------
@@ -952,7 +967,7 @@ if ~isempty(XmlFileName)
         drawnow
         if isfield(XmlDataRead, 'GeometryCalib') && ~isempty(XmlDataRead.GeometryCalib)
             XmlData.GeometryCalib=XmlDataRead.GeometryCalib;
-            if isfield(XmlData.GeometryCalib,'VolumeScan') && isequal(XmlData.GeometryCalib.VolumeScan,'y')
+            if isfield(XmlData.GeometryCalib,'CheckVolumeScan') && isequal(XmlData.GeometryCalib.CheckVolumeScan,1)
                 set (handles.slices,'String','volume')
             end
             % check whether the GUI geometry_calib is opened
@@ -1054,7 +1069,7 @@ if isfield(XmlData,'GeometryCalib')
                set(handles.slices,'Visible','on')
                set(handles.slices,'Value',1)
            end
-           if isfield(GeometryCalib,'VolumeScan') && isequal(GeometryCalib.VolumeScan,'y')
+           if isfield(GeometryCalib,'CheckVolumeScan') && isequal(GeometryCalib.CheckVolumeScan,1)
                set(handles.num_NbSlice,'Visible','off')
            else
                set(handles.num_NbSlice,'Visible','on')
@@ -4983,134 +4998,197 @@ UvData=get(handles.uvmat,'UserData');%read UvData properties stored on the uvmat
 check=0;
 if isfield(UvData,'XmlData')&&isfield(UvData.XmlData{1},'GeometryCalib')&& isfield(UvData.XmlData{1}.GeometryCalib,'SliceCoord')
     GeometryCalib=UvData.XmlData{1}.GeometryCalib;
-    SliceCoord=GeometryCalib.SliceCoord;
 else
     msgbox_uvmat('ERROR','3D geometric calibration needed before defining slices')
     return
 end    
-NbSlice_j=1;%default
-Z=SliceCoord(:,3);
-% index=index(ind_dim);
-%set the Z position of the reference plane used for calibration
-if isequal(max(Z),min(Z))%Z constant
-    Z_plane=Z(1);
-    GeometryCalib.NbSlice=1;
-    GeometryCalib.SliceCoord=[0 0 Z_plane];
+SliceCoord=GeometryCalib.SliceCoord;
+InterfaceCoord=min(SliceCoord(:,3));
+if isfield(GeometryCalib,'InterfaceCoord')
+    InterfaceCoord=GeometryCalib.InterfaceCoord(1,3);
 end
-ZStart=SliceCoord(1,3);% first Z coordinate present in the calibration file
-ZEnd=SliceCoord(end,3);% last Z coordinate present in the calibration file
-volume_scan='n';
-if isfield(UvData,'XmlData')
-    if isfield(UvData.XmlData{1},'TranslationMotor')
-        NbSlice_j=UvData.XmlData.TranslationMotor.Nbslice;
-        ZStart=UvData.XmlData.TranslationMotor.ZStart/10;
-        ZEnd=UvData.XmlData.TranslationMotor.ZEnd/10;
-        volume_scan='y';
-    end
+NbSlice=size(SliceCoord,1);
+CheckVolumeScan=0;
+if isfield(GeometryCalib,'CheckVolumeScan')
+    CheckVolumeScan=GeometryCalib.CheckVolumeScan;
 end	
-
-
-% hfig=findobj(allchild(0),'tag','set_slices');
-% if isempty(hfig)
-%     set(0,'Unit','points')
-%     ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
-%     Width=350;% fig width in points (1/72 inch)
-%     Height=min(0.8*ScreenSize(4),500);
-%     Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
-%     Bottom=ScreenSize(4)-Height-40; %put fig at top right
-%     hfig=figure('name','set_slices','tag','set_slices','MenuBar','none','NumberTitle','off','Unit','points','Position',[Left,Bottom,Width,Height]);
-%     BackgroundColor=get(hfig,'Color');
-%     path_title=uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.97 0.9 0.03],'BackgroundColor',BackgroundColor,'Tag','Path_title',...
-%         'String','path:','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
-%     htitlebox=uicontrol('Style','edit','Units','normalized', 'Position', [0.02 0.89 0.96 0.08],'tag','titlebox','Max',2,'BackgroundColor',[1 1 1],'Callback',@titlebox_Callback,...
-%         'String',InputDir,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''titlebox'':current path');
-%     uicontrol('Style','pushbutton','Tag','backward','Units','normalized','Position',[0.02 0.77 0.1 0.05],...
-%         'String','<--','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@backward,'TooltipString','move backward');
-%     home_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.14 0.77 0.2 0.05],...
-%         'String','Work dir','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@home_dir,'TooltipString','reach the current Matlab working directory'); 
-%     uicontrol('Style','pushbutton','Tag','refresh','Units','normalized','Position', [0.36 0.77 0.2 0.05],'Callback',@refresh_GUI,...
-%         'String','Refresh','FontWeight','bold','FontUnits','points','FontSize',12);
-%     uicontrol('Style','popupmenu','Units','normalized', 'Position', [0.75 0.74 0.23 0.05],'tag','sort_option','Callback',@refresh_GUI,'Visible','off',...
-%         'String',{'sort name';'sort date'},'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''sort_option'': sort the files by names or dates');
-%     uicontrol('Style','listbox','Units','normalized', 'Position',[0.02 0.08 0.96 0.66], 'Callback', @(src,event)list_Callback(option,FilterExt,src,event),'tag','list',...
-%         'FontUnits','points','FontSize',12,'TooltipString','''list'':current list of directories, marked by +/, and files');
-%     
-%     OK_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.58 0.005 0.2 0.07],'BackgroundColor',[0 1 0],...
-%         'String','OK','FontWeight','bold','FontUnits','points','FontSize',12,'Callback',@(src,event)OK_Callback(option,FilterExt,src,event));
-%     close_button=uicontrol('Style','pushbutton','Units','normalized', 'Position', [0.78 0.005 0.2 0.07],'Callback',@(src,event)close(option,src,event),...
-%         'FontWeight','bold','FontUnits','points','FontSize',12);
-%     %set(hrefresh,'UserData',StatusData)
-%     if strcmp(option,'status_display') %put a run advancement display
-%         set(hfig,'DeleteFcn',@(src,event)close(option,src,event))
-%         uicontrol('Style','frame','Units','normalized', 'Position', [0.02 0.85 0.9 0.04]);
-%         uicontrol('Style','frame','Units','normalized', 'Position',[0.02 0.85 0.01 0.04],'BackgroundColor',[1 0 0],'tag','waitbar');
-%         %             uicontrol('Style','text','Units','normalized', 'Position', [0.4 0.8 0.35 0.03],'BackgroundColor',BackgroundColor,...
-%         %             'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
-%         delete(home_button)
-%         set(OK_button,'String','Open')
-%         set(close_button,'String','Close')
-%     elseif strcmp(FilterExt,'uigetdir') %pick a  directory
-%         set(path_title,'String',title); %show the input title for path (directory)
-%         set(OK_button,'String','Select')
-%         set(close_button,'String','Cancel')
-%     else  %put a title and additional pushbuttons
-%         uicontrol('Style','text','Units','normalized', 'Position', [0.02 0.74 0.6 0.03],'BackgroundColor',BackgroundColor,...
-%             'String',title,'FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','left');
-%         uicontrol('Style','togglebutton','Units','normalized', 'Position', [0.75 0.78 0.23 0.04],'tag','check_date','Callback',@dates_Callback,...
-%             'String','show dates','FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''check_date'':press button to display dates');
-% %         uicontrol('Style','text','Units','normalized', 'Position', [0.37 0.8 0.35 0.03],'BackgroundColor',BackgroundColor,...
-% %             'String','sort: ','FontUnits','points','FontSize',12,'FontWeight','bold','HorizontalAlignment','right');
-%          set(OK_button,'String','Open')
-%          set(close_button,'String','Cancel')    
-%     end
-%     drawnow
-% end
-% refresh_GUI(findobj(hfig,'Tag','refresh'),InputFileName,FilterExt)% refresh the list of content of the current dir
-% if ~strcmp(option,'status_display')
-%     uiwait(hfig)
-%     if ishandle(hfig)
-%         htitlebox=findobj(hfig,'Tag','titlebox');
-%         fileinput=get(htitlebox,'String');% retrieve the input file selection
-%         delete(hfig)
-%     end
-% end
-
-
-input_key={'Z (first position)','Z (last position)','Z (water surface)', 'refractive index','NbSlice','volume scan (y/n)','tilt angle y axis','tilt angle x axis'};
-input_val=[{num2str(ZEnd)} {num2str(ZStart)} {num2str(ZStart)} {'1.333'} num2str(NbSlice_j) {volume_scan} {'0'} {'0'}];
-answer=inputdlg(input_key,'slice position(s)',ones(1,8), input_val,'on');
-GeometryCalib.NbSlice=str2double(answer{5});
-GeometryCalib.VolumeScan=answer{6};
-if isempty(answer)
-    Z_plane=0; %default
-else
-    Z_plane=linspace(str2double(answer{1}),str2double(answer{2}),GeometryCalib.NbSlice);
+RefractionIndex=1.33;
+if isfield(GeometryCalib,'RefractionIndex')
+    RefractionIndex=GeometryCalib.RefractionIndex;
+end	
+SliceAngle=[0 0 0];
+if isfield(GeometryCalib,'SliceAngle')
+    SliceAngle=GeometryCalib.SliceAngle;
 end
-GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
-if str2double(answer{7})==0 && str2double(answer{8})==0
-    GeometryCalib.SliceAngle=[0 0 0];
-else
-GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
-GeometryCalib.SliceAngle(:,1)=str2double(answer{8})*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
-GeometryCalib.SliceAngle(:,2)=str2double(answer{7})*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
-GeometryCalib.SliceAngle(:,3)=0;
-end
-GeometryCalib.InterfaceCoord=[0 0 str2double(answer{3})];
-GeometryCalib.RefractionIndex=str2double(answer{4});
 
-%% store the result in the xml file used for calibration
-[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(handles);
+%% create the GUI set_slice
+set(0,'Unit','points')
+ScreenSize=get(0,'ScreenSize');% get the size of the screen, to put the fig on the upper right
+Width=350;% fig width in points (1/72 inch)
+Height=min(0.8*ScreenSize(4),300);
+Left=ScreenSize(3)- Width-40; %right edge close to the right, with margin=40
+Bottom=ScreenSize(4)-Height-40; %put fig at top right
+hfig=findobj(allchild(0),'Tag','set_slice');
+if ~isempty(hfig),delete(hfig), end; %delete existing version of the GUI 
+hfig=figure('name','set_slices','tag','set_slice','MenuBar','none','NumberTitle','off','Unit','points','Position',[Left,Bottom,Width,Height],'UserData',GeometryCalib);
+BackgroundColor=get(hfig,'Color');
+hh=0.14; % box height (relative)
+ii=0.01; % gap between uicontrols
+
+ww=(1-5*ii)/4; % box width (relative)
+% first raw of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [2*ii+ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+    'String','first','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [3*ii+2*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+    'String','last','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [4*ii+3*ww 0.95-ii-0.25*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+    'String','surface','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+%  raw 2 of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-2*ii-0.75*hh ww hh/2],'BackgroundColor',BackgroundColor,...
+    'String','Z','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-2*ii-hh ww hh],'tag','num_Z_1','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceCoord(1,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_1'': z position of first slice');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-2*ii-hh ww hh],'tag','num_Z_2','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceCoord(end,3)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_Z_2'': z position of last slice');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-2*ii-hh ww hh],'tag','num_H','BackgroundColor',[1 1 1],...
+    'String',num2str(InterfaceCoord),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_H'': z position of the water surface (=Z_1 in air)');%edit box
+%  raw 3 of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [2*ii+ww 0.95-3*ii-1.75*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Refraction_title',...
+    'String','refraction index','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-3*ii-2*hh ww hh],'tag','num_RefractionIndex','BackgroundColor',[1 1 1],...
+    'String',num2str(RefractionIndex),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_RefractionIndex'': refraction index of water');
+%  raw 4 of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-4*ii-3.25*hh ww hh],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
+    'String','NbSlice','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [2*ii+ww 0.95-4*ii-3*hh ww hh],'tag','num_NbSlice','BackgroundColor',[1 1 1],...
+    'String',num2str(NbSlice),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_NbSlice'':number of slices');%edit box
+uicontrol('Style','checkbox','Units','normalized', 'Position', [3*ii+2*ww 0.95-4*ii-3*hh 2*ww hh],'tag','CheckVolumeScan','BackgroundColor',BackgroundColor,...
+    'String','volume scan','Value',CheckVolumeScan,'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''CheckVolumeScan'':=1 for volume scan (z varies with j index)');
+%  raw 5 of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [2*ii+2*ww 0.95-5*ii-4.2*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_1',...
+    'String','x axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+uicontrol('Style','text','Units','normalized', 'Position', [3*ii+3*ww 0.95-5*ii-4.2*hh ww hh/2],'BackgroundColor',BackgroundColor,'Tag','Angle_title_2',...
+    'String','y axis','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','center');%title
+%  raw 6 of the GUI
+uicontrol('Style','text','Units','normalized', 'Position', [ii 0.95-5*ii-4.75*hh 2*ww hh/2],'BackgroundColor',BackgroundColor,'Tag','NbSlice_title',...
+    'String','tilt angle','FontUnits','points','FontSize',12,'FontWeight','bold','ForegroundColor','blue','HorizontalAlignment','right');%title
+uicontrol('Style','edit','Units','normalized', 'Position', [3*ii+2*ww 0.95-5*ii-5*hh ww hh],'tag','num_SliceAngle_1','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceAngle(1)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1'':slice angle of inclination around the x axis');%edit box
+uicontrol('Style','edit','Units','normalized', 'Position', [4*ii+3*ww 0.95-5*ii-5*hh ww hh],'tag','num_SliceAngle_2','BackgroundColor',[1 1 1],...
+    'String',num2str(SliceAngle(2)),'FontUnits','points','FontSize',12,'FontWeight','bold','TooltipString','''num_SliceAngle_1'':slice angle of inclination around the y axis');%edit box
+%  raw 7 of the GUI: pushbuttons
+wwp=(1-4*ii)/3; %width of the push buttons
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [ii ii wwp hh],'BackgroundColor',[1 0 0],'String','APPLY','Callback',@(hObject,eventdata)set_slice_APPLY_Callback(hObject,eventdata),...
+    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''APPLY'': apply the output to the current field series in uvmat');
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [2*ii+wwp ii wwp hh],'BackgroundColor',[1 0 0],'String','REPLICATE','Callback',@(hObject,eventdata)set_slice_REPLICATE_Callback(hObject,eventdata),...
+    'FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''REPLICATE'': replicate the output for a series of experiments');
+uicontrol('Style','pushbutton','Units','normalized', 'Position', [3*ii+2*wwp ii wwp hh],'Callback',@(hObject,eventdata)set_slice_Cancel_Callback(hObject,eventdata),...
+    'String','Cancel','FontWeight','bold','FontUnits','points','FontSize',12,'TooltipString','''Cancel'': quit GUI without action');
+drawnow
+
+%------------------------------------------------------------------------
+% function called by pressing APPLY in the GUI  set_slices
+function set_slice_APPLY_Callback(hObject,eventdata)
+%------------------------------------------------------------------------    
+
+%% get the uvmat GUI data and read the current xml file
+huvmat=findobj(allchild(0),'Tag','uvmat');
+hhuvmat=guidata(huvmat);
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
 FileName=[fullfile(RootPath,SubDir,RootFile) FileIndex FileExt];%name of the xml file for calibration
 [RootPath,SubDir,RootFile,tild,tild,tild,tild,FileExt]=fileparts_uvmat(FileName);
 XmlFile=find_imadoc(RootPath,SubDir,RootFile,FileExt);
+[s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
+if~isempty(errormsg)
+    msgbox_uvmat('ERROR',errormsg)
+    return
+end
+GeometryCalib=s.GeometryCalib;
+
+%% read the content of the GUI set_slice
+SliceData=read_GUI(get(hObject,'parent'));
+GeometryCalib.NbSlice=SliceData.NbSlice;
+GeometryCalib.CheckVolumeScan=SliceData.CheckVolumeScan;
+Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
+GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
+GeometryCalib.SliceAngle(:,1)=SliceData.SliceAngle(1)*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
+GeometryCalib.SliceAngle(:,2)=SliceData.SliceAngle(2)*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
+GeometryCalib.SliceAngle(:,3)=0;
+GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
+GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+
+%% store the result in the xml file used for calibration
 errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
-if ~strcmp(errormsg,'')
+if strcmp(errormsg,'')
+    msgbox_uvmat('CONFIRMATION',['slice positions saved in ' XmlFile]);
+else
     msgbox_uvmat('ERROR',errormsg);
 end
 
 %% display image with new calibration in the currently opened uvmat interface
-set(handles.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
-InputFileREFRESH_Callback(hObject,eventdata,handles); %file input with xml reading  in uvmat, show the image in phys coordinates
+set(hhuvmat.CheckFixLimits,'Value',0)% put FixedLimits option to 'off' to plot the whole image
+uvmat('InputFileREFRESH_Callback',huvmat,[],hhuvmat); %file input with xml reading  in uvmat, show the image in phys coordinates
+
+%------------------------------------------------------------------------
+% function called by pressing REPLICATE in the GUI  set_slices
+function set_slice_REPLICATE_Callback(hObject,eventdata)
+%------------------------------------------------------------------------ 
+
+%% read the GUI set_slice
+SliceData=read_GUI(get(hObject,'parent'));
+
+%% get info on the GUI uvmat
+huvmat=findobj(allchild(0),'Tag','uvmat');
+hhuvmat=guidata(huvmat);
+[RootPath,SubDir,RootFile,FileIndex,FileExt]=read_file_boxes(hhuvmat);
+
+%% open the GUI browse_data
+answer=msgbox_uvmat('INPUT_TXT','Campaign to calibrate with slice position?',fileparts(RootPath)); 
+if strcmp(answer,'Cancel')
+    return
+end
+OutPut=browse_data(answer);
+nbcalib=0;
+for ilist=1:numel(OutPut.Experiment)
+    SubDirBase=regexprep(OutPut.DataSeries{1},'\..+$','');
+    XmlFile=fullfile(OutPut.Campaign,OutPut.Experiment{ilist},[SubDirBase '.xml']);
+    
+    % read the current xml file
+    [s,errormsg]=imadoc2struct(XmlFile,'GeometryCalib');
+    if ~isempty(errormsg)
+        msgbox_uvmat('ERROR',['error in reading ' XmlFile ': ' errormsg])
+        return
+    end
+    GeometryCalib=s.GeometryCalib;
+    GeometryCalib.NbSlice=SliceData.NbSlice;
+    GeometryCalib.VolumeScan=SliceData.CheckVolumeScan;
+    Z_plane=linspace(SliceData.Z(1),SliceData.Z(2),SliceData.NbSlice);
+    GeometryCalib.SliceCoord=Z_plane'*[0 0 1];
+    GeometryCalib.SliceAngle=zeros(GeometryCalib.NbSlice,3);
+    GeometryCalib.SliceAngle(:,1)=SliceData.SliceAngle(1)*ones(GeometryCalib.NbSlice,1);%rotation around x axis (to generalise)
+    GeometryCalib.SliceAngle(:,2)=SliceData.SliceAngle(2)*ones(GeometryCalib.NbSlice,1);%rotation around y axis (to generalise)
+    GeometryCalib.SliceAngle(:,3)=0;
+    GeometryCalib.InterfaceCoord=[0 0 SliceData.H];
+    GeometryCalib.RefractionIndex=SliceData.RefractionIndex;
+    
+    % update the current xml file
+    errormsg=update_imadoc(GeometryCalib,XmlFile,'GeometryCalib');% introduce the calibration data in the xml file
+    if ~strcmp(errormsg,'')
+        msgbox_uvmat('ERROR',errormsg);
+    else
+        display([XmlFile ' updated with slice positions'])
+        nbcalib=nbcalib+1;
+    end
+end
+msgbox_uvmat('CONFIMATION',[SubDirBase ' calibrated with slice positions for ' num2str(nbcalib) ' experiments']);
+
+%------------------------------------------------------------------------
+% function called by pressing Cancel in the GUI  set_slices
+function set_slice_Cancel_Callback(hObject,eventdata)
+%------------------------------------------------------------------------
+hfig=get(hObject,'parent');
+delete(hfig)
 
 %-----------------------------------------------------------------------
 function MenuLIFCalib_Callback(hObject, eventdata, handles)

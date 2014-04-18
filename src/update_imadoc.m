@@ -70,4 +70,8 @@ end
 
 %% save the output file
 t=struct2xml(Struct,t,uid_calib); 
+try
 save(t,outputfile);
+catch ME
+    errormsg=['error in update_imadoc' ME.message];
+end
