@@ -68,6 +68,7 @@ set(handles.Cancel,'FontSize',15)
 guidata(hObject, handles);
 testNo=0;
 testCancel=0;
+testOK=1;
 testinputstring=0;
 icontype='quest';%default question icon (text input asked)
 if exist('title','var')
@@ -95,6 +96,9 @@ if exist('title','var')
         case 'INPUT_MENU'
             testinputstring=2;
             testCancel=1; %no cancel button
+        case 'INFO'
+            icontype='';
+            testOK=0;
         otherwise
           %  testinputstring=1;
             icontype='';
@@ -171,10 +175,15 @@ else
 end   
 set(handles.figure1,'Units','normalized')
 set(handles.edit_box,'Units','normalized')
-
+if testOK
 set(handles.figure1,'WindowStyle','modal')% Make% Make the GUI modal 
+set(handles.OK,'Visible','on')
 % UIWAIT makes msgbox_uvmat wait for user response (see UIRESUME)
 uiwait(handles.figure1);
+else
+   set(handles.OK,'Visible','off') 
+end
+
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
@@ -201,7 +210,11 @@ if isfield(handles,'output')
         varargout{2}=get(handles.edit_box,'String');
     end
     % The figure can be deleted now
+    if strcmp(get(handles.OK,'Visible'),'on')
     delete(handles.figure1);
+    else %case of INFO display (non modal)
+        varargout{1}=hObject;
+    end
 end
 
 %  delete(handles.figure1);

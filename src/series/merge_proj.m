@@ -226,7 +226,7 @@ for index=1:NbField
         %% reading input file(s)
         [Data{iview},tild,errormsg] = read_field(filecell{iview,index},FileType{iview},Param.InputFields,frame_index{iview}(index));
         if ~isempty(errormsg)
-            disp_uvmat(['ERROR in merge_proj/read_field/' errormsg],checkrun)
+            disp_uvmat('ERROR',['ERROR in merge_proj/read_field/' errormsg],checkrun)
             return
         end
         % get the time defined in the current file if not already defined from the xml file
@@ -254,7 +254,7 @@ for index=1:NbField
         if Param.CheckObject
             [Data{iview},errormsg]=proj_field(Data{iview},Param.ProjObject);
             if ~isempty(errormsg)
-                disp_uvmat(['ERROR in merge_proge/proj_field: ' errormsg],checkrun)
+                disp_uvmat('ERROR',['ERROR in merge_proge/proj_field: ' errormsg],checkrun)
                 return
             end
         end
