@@ -256,10 +256,10 @@ for ivardim=1:numel(VarDimName) % loop at the list of remaining variables
     if ischar(DimCell), DimCell={DimCell}; end %transform char to cell if needed
     DimIndices=[];
     for idim=1:numel(DimCell)
-        ind_dim=find(strcmp(DimCell{idim},ListDimName));%find the dim index in the list of coordinate variables
+        ind_dim=find(strcmp(DimCell{idim},ListDimName));%find the dim index in the list of dimensions ListDimName
         if ~isempty(ind_dim)
-            DimIndices=[DimIndices ind_dim]; %update the list of coord dimensions included in DimCell
-            if check_var && CoordSize(ind_dim)==2 % determine the size of the coordinate in case of coordiante variable limited to lower and upper bounds
+            DimIndices=[DimIndices ind_dim]; %update the list of dim indices included in DimCell
+            if check_var && CoordSize(ind_dim)==2 % determine the size of the coordinate in case of coordinate definition limited to lower and upper bounds
                 if isvector(Data.(ListVarName{ivardim})) 
                     if numel(Data.(ListVarName{ivardim}))>2
                         CoordSize(ind_dim)=numel(Data.(ListVarName{ivardim}));
@@ -286,7 +286,7 @@ for ivardim=1:numel(VarDimName) % loop at the list of remaining variables
         NewCellInfo{nbcell}.VarIndex=ivar_remain(ivardim);% create a new field cell with the current variable index
         NewNbDim(nbcell)=numel(DimIndices);
         NewCellInfo{nbcell}.CoordType='grid';
-        NewCellInfo{nbcell}.CoordSize=CoordSize;
+        NewCellInfo{nbcell}.CoordSize=CoordSize(DimIndices);
         NewCellInfo{nbcell}.CoordIndex=ListCoordIndex(DimIndices);
     end
 end

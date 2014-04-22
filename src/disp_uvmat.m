@@ -9,9 +9,10 @@
 %  checkrun: =1: run mode, use of msgbox_uvmat window
 %  checkrun: =0: batch mode: text display on log file
 
-function disp_uvmat(title,display_str,checkrun)
+function hh=disp_uvmat(title,display_str,checkrun)
+hh=[];
 if checkrun
-    msgbox_uvmat(title,display_str,'')
+    hh=msgbox_uvmat(title,display_str,'');
 else
     disp([title ': ' display_str])
 end

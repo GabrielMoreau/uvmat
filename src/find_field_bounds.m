@@ -50,7 +50,7 @@ for ind=1:numel(imax)
         %         test_x=1;%test for unstructured coordinates
         if NbDim==3
             ZName=Field.ListVarName{CellInfo{imax(ind)}.CoordIndex(1)};
-            CoordMax(imax(ind),1)=max(max(Field.(ZName)));
+            CoordMax(ind,1)=max(max(Field.(ZName)));
             CoordMin(ind,1)=min(min(Field.(ZName)));
         end
     end
@@ -71,7 +71,7 @@ FieldOut.YMax=max(CoordMax(:,end-1));
 FieldOut.YMin=min(CoordMin(:,end-1));
 if NbDim==3
     FieldOut.ZMax=max(CoordMax(ind,1));
-    FieldOut.ZMin=max(CoordMin(ind,1));
+    FieldOut.ZMin=min(CoordMin(ind,1));
 end
 % adjust the mesh to a value 1, 2 , 5 *10^n
 ord=10^(floor(log10(Mesh)));%order of magnitude

@@ -35,7 +35,7 @@ end
 ParamOut=ParamIn;%default
 errormsg='';
 if ~exist(FileName,'file')
-    erromsg=['input file ' FileName ' does not exist'];
+    errormsg=['input file ' FileName ' does not exist'];
     return
 end
 A=[];
@@ -91,7 +91,6 @@ switch FileType
                     ProjModeRequest{numel(ListVar)}='interp_lin';%scalar field (requires interpolation for plot)
                 end
             else  % an operator 'vec' or 'norm' is used
-                %Operator=r.Operator;
                 if ~check_colorvar(ilist) && strcmp(r.Operator,'norm')
                     ProjModeRequestVar='interp_lin';%scalar field (requires interpolation for plot)
                 else
@@ -120,12 +119,13 @@ switch FileType
             end
         end
         if isfield(ParamIn,'TimeDimName')% case of reading of a single time index in a multidimensional array
-            [Field,var_detect,ichoice]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,num,[ParamIn.Coord_x (ParamIn.Coord_y) ListVar]);
+            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,num,[ParamIn.Coord_x (ParamIn.Coord_y) ListVar]);
+        elseif isfield(ParamIn,'TimeVarName')% case of reading of a single time  in a multidimensional array
+            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeVarName',ParamIn.TimeVarName,num,[ParamIn.Coord_x (ParamIn.Coord_y) ListVar]);
         else
-            [Field,var_detect,ichoice]=nc2struct(FileName,[ParamIn.Coord_x (ParamIn.Coord_y) ListVar]);
+            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,[ParamIn.Coord_x (ParamIn.Coord_y) (ParamIn.Coord_z) ListVar]);
         end
-        if isfield(Field,'Txt')
-            errormsg=Field.Txt;
+        if ~isempty(errormsg)
             return
         end
         for ilist=3:numel(Field.VarDimName)

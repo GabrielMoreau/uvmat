@@ -10,7 +10,7 @@ if isempty(which('mcc'))
     msgbox_uvmat('ERROR','no Matlab compiler toolbox mcc installed')
     return
 else
-    hh=msgbox_uvmat('INFO',['compilation of ' FctName ' in progress...']);
+    hh=msgbox_uvmat('WAITING...',['compilation of ' FctName ' in progress...']);
 end
 disp(['compiling ' FctName ' ...'])
 % commands to compile civ_matlab and eventually other functions

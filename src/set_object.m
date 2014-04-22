@@ -700,6 +700,9 @@ else
     norm_plane(2)=OmAxis(2)*coeff-OmAxis(1)*sin_om;
     norm_plane(3)=OmAxis(3)*coeff+cos_om;
 end
+Coord=get(handles.Coord,'Data');
+Coord(3)=Z_value;
+set(handles.Coord,'Data',Coord)
 
 % update graph
 REFRESH_Callback(hObject, eventdata, handles)

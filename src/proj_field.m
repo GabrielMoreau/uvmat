@@ -1295,32 +1295,53 @@ for icell=1:length(CellInfo)
                 else
                     Coord{1}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(1)});
                     Coord{2}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(2)});
+                    if NbDim==3
+                        Coord{3}=FieldData.(FieldData.ListVarName{CellInfo{icell}.CoordIndex(3)});
+                    end
                     if numel(Coord{NbDim-1})==2
                         DY=(Coord{NbDim-1}(2)-Coord{NbDim-1}(1))/(DimValue(1)-1);
                     end
                     if numel(Coord{NbDim})==2
                         DX=(Coord{NbDim}(2)-Coord{NbDim}(1))/(DimValue(2)-1);
                     end
-                    if testYMin%test_direct(indY)
-                        YIndexMin=(YMin-Coord{NbDim-1}(1))/DY+1;% matrix index corresponding to the min y value for the new field
-                        YIndexMax=(YMax-Coord{NbDim-1}(1))/DY+1;% matrix index corresponding to the max y value for the new field
+                    if testYMax
+                         YIndexMax=(YMax-Coord{NbDim-1}(1))/DY+1;% matrix index corresponding to the max y value for the new field
+                        if testYMin%test_direct(indY)
+                            YIndexMin=(YMin-Coord{NbDim-1}(1))/DY+1;% matrix index corresponding to the min x value for the new field
+                        else
+                            YIndexMin=1;
+                        end          
                     else
-                        YIndexMin=(Coord{NbDim-1}(1)-YMax)/DY+1;
-                        YIndexMax=(Coord{NbDim-1}(1)-YMin)/DY+1;
-                        Ybound(2)=Coord{NbDim-1}(1)-DY*(YIndexMax-1);
-                        Ybound(1)=Coord{NbDim-1}(1)-DY*(YIndexMin-1);
+                        YIndexMax=Coord{NbDim-1}(end)/DY;
+                        YIndexMin=1;
                     end
-                    if testXMin%test_direct(NbDim)==1
-                        XIndexMin=(XMin-Coord{NbDim}(1))/DX+1;% matrix index corresponding to the min x value for the new field
-                        XIndexMax=(XMax-Coord{NbDim}(1))/DX+1;% matrix index corresponding to the max x value for the new field
-                        Xbound(1)=Coord{NbDim}(1)+DX*(XIndexMin-1);%  x value corresponding to XIndexMin
-                        Xbound(2)=Coord{NbDim}(1)+DX*(XIndexMax-1);%  x value corresponding to XIndexMax
+                    if testXMax
+                         XIndexMax=(XMax-Coord{NbDim}(1))/DY+1;% matrix index corresponding to the max y value for the new field
+                        if testYMin%test_direct(indY)
+                            XIndexMin=(XMin-Coord{NbDim}(1))/DX+1;% matrix index corresponding to the min x value for the new field
+                        else
+                            XIndexMin=1;
+                        end          
                     else
-                        XIndexMin=(Coord{NbDim}(1)-XMax)/DX+1;
-                        XIndexMax=(Coord{NbDim}(1)-XMin)/DX+1;
-                        Xbound(2)=Coord{NbDim}(1)+DX*(XIndexMax-1);
-                        Xbound(1)=Coord{NbDim}(1)+DX*(XIndexMin-1);
+                        XIndexMax=Coord{NbDim}(end)/DX;
+                        XIndexMin=1;
                     end
+%                         YIndexMin=(Coord{NbDim-1}(1)-YMax)/DY+1;
+% %                         YIndexMax=(Coord{NbDim-1}(1)-YMin)/DY+1;
+%                         Ybound(2)=Coord{NbDim-1}(1)-DY*(YIndexMax-1);
+%                         Ybound(1)=Coord{NbDim-1}(1)-DY*(YIndexMin-1);
+%                     end
+%                     if testXMin%test_direct(NbDim)==1
+%                         XIndexMin=(XMin-Coord{NbDim}(1))/DX+1;% matrix index corresponding to the min x value for the new field
+%                         XIndexMax=(XMax-Coord{NbDim}(1))/DX+1;% matrix index corresponding to the max x value for the new field
+%                         Xbound(1)=Coord{NbDim}(1)+DX*(XIndexMin-1);%  x value corresponding to XIndexMin
+%                         Xbound(2)=Coord{NbDim}(1)+DX*(XIndexMax-1);%  x value corresponding to XIndexMax
+%                     else
+%                         XIndexMin=(Coord{NbDim}(1)-XMax)/DX+1;
+%                         XIndexMax=(Coord{NbDim}(1)-XMin)/DX+1;
+%                         Xbound(2)=Coord{NbDim}(1)+DX*(XIndexMax-1);
+%                         Xbound(1)=Coord{NbDim}(1)+DX*(XIndexMin-1);
+%                     end
                     YIndexRange(1)=ceil(min(YIndexMin,YIndexMax));%first y index to select from the previous field
                     YIndexRange(1)=max(YIndexRange(1),1);% avoid bound lower than the first index
                     YIndexRange(2)=floor(max(YIndexMin,YIndexMax));%last y index to select from the previous field
@@ -1345,8 +1366,10 @@ for icell=1:length(CellInfo)
                         ProjData.(AXName)=[Coord{1}(end),Coord{1}(1)]; %record the new (projected ) x coordinates
                     else
                         if NbDim==3
+                            DZ=(Coord{1}(end)-Coord{1}(1))/(numel(Coord{1})-1);
                             DimCell(1)=[]; %suppress z variable
                             DimValue(1)=[];
+                            test_direct=1;%TOdo; GENERALIZE, SEE CASE OF points
                             if test_direct(1)
                                 iz=ceil((ObjectData.Coord(1,3)-Coord{1}(1))/DZ)+1;
                             else

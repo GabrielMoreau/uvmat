@@ -5,14 +5,17 @@
 %
 % OUTPUT:
 % answer  (text string)= 'yes', 'No', 'cancel', or the text string introduced as input
+% for title='WAITING...', the output is the handle of the figure, to allow deletion by the calling program.
 %
 %INPUT:
 % title: string indicating the type of message box:
-%          title= 'INPUT_TXT','CONFIMATION' ,'ERROR', 'WARNING', 'INPUT_Y-N','INPUT_MENU' default = 'INPUT_TXT' (the title is displayed in the upper bar of the fig). 
+%          title= 'INPUT_TXT','INPUT_Y-N','INPUT_MENU','ERROR', 'WARNING','CONFIMATION','WAITING...',default = 'INPUT_TXT' (the title is displayed in the upper bar of the fig). 
 %          if title='INPUT_TXT', input data is asked in an edit box
-%          if title='CONFIMATION'', 'ERROR', 'WARNING', the figure remains  opened until a button 'OK' is pressed
+%          if title='CONFIMATION'', 'ERROR', 'WARNING','RULER' the figure remains  opened until a button 'OK' is pressed
+%             title='RULER' is used for display of length and angle from the ruler tool. 
 %          if title='INPUT_Y-N', an answer Yes/No is requested
-% display, displayed text
+%          if title='WAITING...' the figure remains open until the program deletes it
+% display: displayed text
 % default_answer: default answer in the edit box (only used with title='INPUT_TXT')
 
 function varargout = msgbox_uvmat(varargin)
@@ -87,7 +90,7 @@ if exist('title','var')
             icontype='quest';
             testCancel=1; %no cancel button
             testNo=1; % button No activated
-        case {'RULER'}
+        case 'RULER'
             icontype='';
             testinputstring=1;
         case 'INPUT_TXT'
@@ -96,7 +99,7 @@ if exist('title','var')
         case 'INPUT_MENU'
             testinputstring=2;
             testCancel=1; %no cancel button
-        case 'INFO'
+        case 'WAITING...'
             icontype='';
             testOK=0;
         otherwise
@@ -212,7 +215,7 @@ if isfield(handles,'output')
     % The figure can be deleted now
     if strcmp(get(handles.OK,'Visible'),'on')
     delete(handles.figure1);
-    else %case of INFO display (non modal)
+    else %case of WAITING... display (non modal)
         varargout{1}=hObject;
     end
 end

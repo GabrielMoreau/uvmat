@@ -37,9 +37,6 @@ for ifield=1:numel(fields)
         if isfield(handles,fields{ifield})
             set(handles.(fields{ifield}),'Visible','on')
             errormsg=fill_GUI(Param.(fields{ifield}),handles.(fields{ifield}));% recursively apply the function to the substructure
-%         elseif isfield(UserData,fields{ifield}) && isfield(handles,fields{ifield}) && isfield(Param.(fields{ifield}),'Name')
-%             UserData.(fields{ifield})=Param.(fields{ifield});
-%             set(handles.(fields{ifield}),'String',Param.(fields{ifield}).Name)
         end
     else
     %% case of an element
@@ -86,7 +83,7 @@ for ifield=1:numel(fields)
                             input_string='';
                             if isnumeric(input_data)
                                 if numel(input_data)>0
-                                    input_string=num2str(input_data(ibox));
+                                    input_string=num2str(input_data(ibox),4);
                                 end
                             else
                                 input_string=input_data;
@@ -94,7 +91,7 @@ for ifield=1:numel(fields)
                             set(hh(ibox),'String',input_string)
                         case{'listbox','popupmenu'}
                             if isnumeric(input_data)
-                                input_data=num2str(input_data);
+                                input_data=num2str(input_data,4);
                             end
                             menu=get(hh(ibox),'String');
                             if ischar(input_data)

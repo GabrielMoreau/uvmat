@@ -33,7 +33,7 @@
 
 function varargout = get_field(varargin)
 
-% Last Modified by GUIDE v2.5 23-Oct-2013 23:44:17
+% Last Modified by GUIDE v2.5 21-Apr-2014 15:03:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -85,13 +85,13 @@ end
 %% look at singletons and variables with a single dimension
 Field.Display=Field;
 Field.Check0D=zeros(size(Field.ListVarName));% =1 for arrays with a single value
-NbVar=numel(Field.VarDimName);
+NbVar=numel(Field.VarDimName);%nbre of variables in the input data
 for ilist=1:NbVar
     if ischar(Field.VarDimName{ilist})
         Field.VarDimName{ilist}={Field.VarDimName{ilist}}; %transform string into cell
     end
     NbDim=numel(Field.VarDimName{ilist});
-    check_singleton=false(1,NbDim);
+    check_singleton=false(1,NbDim);%  check singleton, false by default
     for idim=1:NbDim
         dim_index=strcmp(Field.VarDimName{ilist}{idim},Field.ListDimName);%index in the list of dimensions
         check_singleton(idim)=isequal(Field.DimValue(dim_index),1);%check_singleton=1 for singleton
@@ -100,7 +100,6 @@ for ilist=1:NbVar
     if ~Field.Check0D(ilist)
     Field.Display.VarDimName{ilist}=Field.VarDimName{ilist}(~check_singleton);% eliminate singletons in the list of variable dimensions
     end
-    %Field.NbDim(ilist)=numel(Field.VarDimNameNonSingleton{ilist});%nbre of array dimensions after elimination of singletons
 end
 if ~isfield(Field,'VarAttribute')
     Field.VarAttribute={};
@@ -108,12 +107,13 @@ end
 if numel(Field.VarAttribute)<NbVar% complement VarAttribute by blanjs if neded
     Field.VarAttribute(numel(Field.VarAttribute)+1:NbVar)=cell(1,NbVar-numel(Field.VarAttribute));
 end
-% Field.Display = list of variables and corresponding properties obtained after removal of singletons
-Field.Display.ListVarName=Field.ListVarName(~Field.Check0D);
+% Field.Display = list of variables and corresponding properties obtained after removal of variables with a single value and singleton dimensions
+Field.Display.ListVarName=Field.ListVarName(~Field.Check0D); %list of variables available for plots, after eliminating variables with a single value
 Field.Display.VarAttribute=Field.VarAttribute(~Field.Check0D);
 Field.Display.VarDimName=Field.Display.VarDimName(~Field.Check0D);
-Field.Display.DimValue=Field.DimValue(Field.DimValue~=1);
-Field.Display.ListDimName=Field.ListDimName(Field.DimValue~=1);
+Field.Display.ListDimName=Field.ListDimName(Field.DimValue~=1);% list of non singleton dimension names
+Field.Display.DimValue=Field.DimValue(Field.DimValue~=1);% corresponding list of non singleton dimension values
+
 
 %% analyse the input field cells
 [CellInfo,NbDim,errormsg]=find_field_cells(Field.Display);
@@ -158,14 +158,14 @@ SwitchVarIndexTime_Callback([], [], handles)
 %% set vector menu (priority) if detected or scalar menu for space dim >=2, or usual (x,y) plot for 1D fields
 set(handles.vector_x,'String',Field.Display.ListVarName)% fill the menu of x vector components
 set(handles.vector_y,'String',Field.Display.ListVarName)% fill the menu of y vector components
-set(handles.vector_z,'String',[{''} Field.Display.ListVarName])% fill the menu of y vector components
+set(handles.vector_z,'String',Field.Display.ListVarName)% fill the menu of y vector components
 set(handles.vec_color,'String',[{''} Field.Display.ListVarName])% fill the menu of y vector components
 set(handles.scalar,'Value',1)% fill the menu of y vector components
-set(handles.scalar,'String',Field.Display.ListVarName)% fill the menu of y vector components
+set(handles.scalar,'String',Field.Display.ListVarName)% fill the menu for scalar
 set(handles.ordinate,'Value',1)% fill the menu of y vector components
-set(handles.ordinate,'String',Field.Display.ListVarName)% fill the menu of y vector components
+set(handles.ordinate,'String',Field.Display.ListVarName)% fill the menu of y coordinate for 1D plots
 if isfield(Field,'Conventions')&& strcmp(Field.Conventions,'uvmat/civdata')
-    set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors';'civdata...'})
+    set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors';'civdata...'})% provides the possibility to come back to civdata
 else
     set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors'})
 end
@@ -237,28 +237,16 @@ pos_view_field(1)=ScreenSize(1)+ScreenSize(3)-pos_view_field(3);
 pos_view_field(2)=ScreenSize(2);
 set(hObject,'Position',pos_view_field)
 set(handles.get_field,'WindowStyle','modal')% Make the GUI modal
-drawnow
-uiwait(handles.get_field);
-
-return
 
 %% set z coordinate menu if relevant
 if Field.MaxDim>=3
-    set(handles.vector_z,'Visible','on')
-    set(handles.vector_z,'String',Field.ListVarName(~Field.Check0D))
-    set(handles.Coord_z,'Visible','on')
-    set(handles.SwitchVarIndexZ,'Visible','on')
-    set(handles.Z_title,'Visible','on')
+    set(handles.Check3D,'Value',1)
 else
-    set(handles.vector_z,'Visible','off')
-    set(handles.Coord_z,'Visible','off')
-    set(handles.Z_title,'Visible','off')
+    set(handles.Check3D,'Value',0)
 end
-
-%% make selections according to ParamIn
-if isfield(ParamIn,'vector_x') && isfield(ParamIn,'vector_y')
-    
-end
+Check3D_Callback(hObject, eventdata, handles)
+drawnow
+uiwait(handles.get_field);
 
 %------------------------------------------------------------------------
 % --- Outputs from this function are returned to the command line.
@@ -430,7 +418,7 @@ switch FieldOption
                 test_coord(ilist)=1;
             end
         end
-        scalar_index=find(~test_coord,1);%get the first variable not a coordiante
+        scalar_index=find(~test_coord,1);%get the first variable not a coordinate
         if isempty(scalar_index)
             set(handles.scalar,'Value',1)
         else
@@ -588,9 +576,7 @@ ScalarName=scalar_menu{scalar_index};
 test_component=zeros(size(Field.Display.VarDimName));%=1 when variable #ilist is eligible as unstructured coordinate
 test_coord=zeros(size(Field.Display.VarDimName)); %=1 when variable #ilist is eligible as structured coordiante
 dim_var=Field.Display.VarDimName{scalar_index};%list of dimensions of the selected variable
-CheckDimensionX=get(handles.CheckDimensionX,'Value');
-CheckDimensionY=get(handles.CheckDimensionY,'Value');
-if ~CheckDimensionX  || ~CheckDimensionY
+if ~get(handles.CheckDimensionX,'Value')  || ~get(handles.CheckDimensionY,'Value')
     %look for coordinate variables among the other variables
     for ilist=1:numel(Field.Display.VarDimName)
         dimnames=Field.Display.VarDimName{ilist}; %list of dimensions for variable #ilist
@@ -615,14 +601,7 @@ if numel(find(test_coord))>3
     set(handles.SwitchVarIndexTime,'Value',3)% the last dim must be considered as time
     SwitchVarIndexTime_Callback([], [], handles)
 end
-% if numel(var_component)<2
-%     if numel(test_coord)<2
-%         ListCoord={''};
-%     else
-%         set(handles.Coord_x,'Value',2)
-%         set(handles.Coord_y,'Value',1)
-%     end
-% else
+
 coord_val=[0 0];
 % look for labelled unstructured coordinates
 for ilist=1:numel(var_component)
@@ -643,19 +622,26 @@ if numel(find(coord_val))<2
         coord_val=[1 2];
     end
 end
-if  CheckDimensionX
+if  get(handles.CheckDimensionX,'Value')
     set(handles.Coord_x,'Value',2)
     set(handles.Coord_x,'String',dim_var')
 else
     set(handles.Coord_x,'Value',coord_val(1))
     set(handles.Coord_x,'String',ListCoord)
 end
-if  CheckDimensionY
+if  get(handles.CheckDimensionY,'Value')
     set(handles.Coord_y,'Value',1)
     set(handles.Coord_y,'String',dim_var')
 else
     set(handles.Coord_y,'Value',coord_val(2))
     set(handles.Coord_y,'String',ListCoord)
+end
+if  get(handles.CheckDimensionZ,'Value')
+    set(handles.Coord_z,'Value',1)
+    set(handles.Coord_z,'String',dim_var')
+else
+    set(handles.Coord_z,'Value',coord_val(2))
+    set(handles.Coord_z,'String',ListCoord)
 end
 
 %% set list of time coordinates
@@ -859,6 +845,7 @@ update_field(handles,VarName)
 %------------------------------------------------------------------------
 % --- Executes on selection change in SwitchVarIndexTime.
 %------------------------------------------------------------------------
+
 function SwitchVarIndexTime_Callback(hObject, eventdata, handles)
 
 Field=get(handles.get_field,'UserData');
@@ -890,17 +877,23 @@ switch option
 
     case 'variable'% TimeName menu represents the available variables
         set(handles.TimeName, 'Visible','on')
-        TimeVarName=Field.Display.SingleVarName;% slist of variables with a single dimension (candidate for time)
-        List=get(handles.TimeName,'String');
-        option=List{get(handles.TimeName,'Value')};
-        ind=find(strcmp(option,TimeVarName));
-        if isempty(ind)
-            set(handles.TimeName, 'Value',1);
+        VarNbDim=cellfun('length',Field.Display.VarDimName); % check the nbre of dimensions of each input variable
+        TimeVarName=Field.Display.ListVarName(VarNbDim==1);% list of variables with a single dimension (candidate for time)
+        List=get(handles.TimeName,'String');% list of names on the menu for time
+        if isempty(List)
+            ind=1;
         else
-            set(handles.TimeName, 'Value',ind);
+            option=List{get(handles.TimeName,'Value')};% previous selected option
+            ind=find(strcmp(option,TimeVarName)); %check whether the previous selection is available in the newlist
+            if isempty(ind)
+                ind=1;
+            end
         end
-        set(handles.TimeName, 'String',TimeVarName)
-    case 'matrix_index'% TimeName menu represents the available dimensions
+        if ~isempty(TimeVarName)
+            set(handles.TimeName, 'Value',ind);% select first value in the menu if the option is not found
+            set(handles.TimeName, 'String',TimeVarName)% update the menu for time name
+        end
+    case 'matrix index'% TimeName menu represents the available dimensions
         set(handles.TimeName, 'Visible','on')     
         set(handles.TimeName, 'Value',1);
         set(handles.TimeName, 'String',Field.Display.ListDimName)
@@ -965,8 +958,42 @@ switch FieldOption
        scalar_Callback(hObject, eventdata, handles)
     case 'vectors'
 end
-% hObject    handle to CheckDimensionY (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of CheckDimensionY
+
+% --- Executes on button press in CheckDimensionZ.
+function CheckDimensionZ_Callback(hObject, eventdata, handles)
+FieldList=get(handles.FieldOption,'String');
+FieldOption=FieldList{get(handles.FieldOption,'Value')};
+switch FieldOption
+    case '1D plot'
+        
+    case 'scalar'
+       scalar_Callback(hObject, eventdata, handles)
+    case 'vectors'
+end
+
+% --- Executes on selection change in TimeName.
+function TimeName_Callback(hObject, eventdata, handles)
+index=get(handles.SwitchVarIndexTime,'Value');
+if index==3 ; % TimeName is used to chose a variable
+    index=get(handles.TimeName,'Value');
+    string=get(handles.TimeName,'String');
+    VarName=string{index};
+end
+update_field(handles,VarName)
+
+
+% --- Executes on button press in Check3D.
+function Check3D_Callback(hObject, eventdata, handles)
+if get(handles.Check3D,'Value')
+    status='on';
+else
+    status='off';
+end
+set(handles.Coord_z,'Visible',status)
+set(handles.CheckDimensionZ,'Visible',status)
+set(handles.Z_title,'Visible',status)
+set(handles.vector_z,'Visible',status)
+set(handles.W_title,'Visible',status)   
+
+
