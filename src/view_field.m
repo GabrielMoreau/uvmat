@@ -78,7 +78,7 @@ AxeData.LimEditBox=1; %initialise AxeData, the parent figure sets plot parameter
 set(handles.PlotAxes,'UserData',AxeData)
 if exist('Field','var')
     [PlotType,PlotParamOut]= plot_field(Field,handles.PlotAxes);%,PlotParam,KeepLim,PosColorbar)
-    set(handles.Coordinates,'Visible','on')
+    set(handles.Axes,'Visible','on')
     if isfield(PlotParamOut,'Vectors')
         set(handles.Vectors,'Visible','on')
     else
@@ -137,11 +137,11 @@ pos_CheckHold(1)=size_fig(3)-pos_CheckHold(3);       % set 'CheckHold' to the ri
 pos_CheckHold(2)=pos_1(2)-pos_CheckHold(4);          % set 'CheckHold' to the lower edge of text display
 set(handles.CheckHold,'Position',pos_CheckHold)
 
-%% reset position of Coordinates
-pos_2=get(handles.Coordinates,'Position');% [lower x lower y width height] for frame 'Coordinates'
+%% reset position of Axes
+pos_2=get(handles.Axes,'Position');% [lower x lower y width height] for frame 'Coordinates'
 pos_2(1)=size_fig(3)-pos_2(3);       % set 'Coordinates' to the right of the fig
 pos_2(2)=pos_CheckHold(2)-pos_2(4);          % set 'Coordinates' to the lower edge of text display, allowing a margin for CheckHold
-set(handles.Coordinates,'Position',pos_2)
+set(handles.Axes,'Position',pos_2)
 
 %% reset position of  Scalar
 pos_3=get(handles.Scalar,'Position'); % [lower x lower y width height] for frame 'Scalar'

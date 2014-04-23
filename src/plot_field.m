@@ -44,10 +44,10 @@
 %
 %   PlotParam: structure containing the parameters for plotting, as read on the uvmat or view_field GUI (by function 'read_GUI.m').
 %      Contains three substructures:
-%     .Coordinates: coordinate parameters:
+%     .Axes: coordinate parameters:
 %           .CheckFixLimits:=0 (default) adjust axes limit to the X,Y data, =1: preserves the previous axes limits
-%     .Coordinates.CheckFixAspectRatio: =0 (default):automatic adjustment of the graph, keep 1 to 1 aspect ratio for x and y scales. 
-%     .Coordinates.AspectRatio: imposed aspect ratio y/x of axis unit plots
+%     .Axes.CheckFixAspectRatio: =0 (default):automatic adjustment of the graph, keep 1 to 1 aspect ratio for x and y scales. 
+%     .Axes.AspectRatio: imposed aspect ratio y/x of axis unit plots
 %            --scalars--
 %    .Scalar.MaxA: upper bound (saturation color) for the scalar representation, max(field) by default
 %    .Scalar.MinA: lower bound (saturation) for the scalar representation, min(field) by default
@@ -102,10 +102,10 @@ function [PlotType,PlotParamOut,haxes]= plot_field(Data,haxes,PlotParam,PosColor
 if ~exist('PlotParam','var'),PlotParam=[];end;
 PlotType='text'; %default
 if ~isfield(PlotParam,'Coordinates')
-    PlotParam.Coordinates=[];
+    PlotParam.Axes=[];
     if isfield(Data,'CoordUnit')
-        PlotParam.Coordinates.CheckFixAspectRatio=1;
-        PlotParam.Coordinates.AspectRatio=1; %set axes equal by default if CoordUnit is defined
+        PlotParam.Axes.CheckFixAspectRatio=1;
+        PlotParam.Axes.AspectRatio=1; %set axes equal by default if CoordUnit is defined
     end
 end
 PlotParamOut=PlotParam;%default
@@ -159,7 +159,7 @@ else
 end
 
 %% set axes properties
-if isfield(PlotParamOut.Coordinates,'CheckFixLimits') && isequal(PlotParamOut.Coordinates.CheckFixLimits,1)  %adjust the graph limits
+if isfield(PlotParamOut.Axes,'CheckFixLimits') && isequal(PlotParamOut.Axes.CheckFixLimits,1)  %adjust the graph limits
     set(haxes,'XLimMode', 'manual')
     set(haxes,'YLimMode', 'manual')
 else
@@ -192,9 +192,9 @@ else %plot 1D field (usual graph y vs x)
     if isfield(PlotParam,'CheckHold') 
         CheckHold= PlotParam.CheckHold;
     end       
-    PlotParamOut.Coordinates=plot_profile(Data,CellInfo(index_1D),haxes,PlotParamOut.Coordinates,CheckHold);%
+    PlotParamOut.Axes=plot_profile(Data,CellInfo(index_1D),haxes,PlotParamOut.Axes,CheckHold);%
     if testzoomaxes
-        [zoomaxes,PlotParamOut.Coordinates]=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParamOut.Coordinates,CheckHold);
+        [zoomaxes,PlotParamOut.Axes]=plot_profile(Data,CellInfo(index_1D),zoomaxes,PlotParamOut.Axes,CheckHold);
         AxeData.ZoomAxes=zoomaxes;
     end
     PlotType='line';
@@ -896,10 +896,10 @@ if test_ima
                 colormap('default'); % default matlab colormap ('jet')
             end
             
-            if isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
+            if isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
                 set(haxes,'DataAspectRatioMode','manual')
-                if isfield(PlotParam.Coordinates,'AspectRatio')
-                    set(haxes,'DataAspectRatio',[PlotParam.Coordinates.AspectRatio 1 1])
+                if isfield(PlotParam.Axes,'AspectRatio')
+                    set(haxes,'DataAspectRatio',[PlotParam.Axes.AspectRatio 1 1])
                 else
                     set(haxes,'DataAspectRatio',[1 1 1])
                 end
@@ -1166,13 +1166,13 @@ if ~isempty(Data)
     MaxX=[];
     MinY=[];
     MaxY=[];
-    fix_lim=isfield(PlotParam.Coordinates,'CheckFixLimits') && PlotParam.Coordinates.CheckFixLimits;
+    fix_lim=isfield(PlotParam.Axes,'CheckFixLimits') && PlotParam.Axes.CheckFixLimits;
     if fix_lim
-        if isfield(PlotParam.Coordinates,'MinX')&&isfield(PlotParam.Coordinates,'MaxX')&&isfield(PlotParam.Coordinates,'MinY')&&isfield(PlotParam.Coordinates,'MaxY')
-            MinX=PlotParam.Coordinates.MinX;
-            MaxX=PlotParam.Coordinates.MaxX;
-            MinY=PlotParam.Coordinates.MinY;
-            MaxY=PlotParam.Coordinates.MaxY;
+        if isfield(PlotParam.Axes,'MinX')&&isfield(PlotParam.Axes,'MaxX')&&isfield(PlotParam.Axes,'MinY')&&isfield(PlotParam.Axes,'MaxY')
+            MinX=PlotParam.Axes.MinX;
+            MaxX=PlotParam.Axes.MaxX;
+            MinY=PlotParam.Axes.MinY;
+            MaxY=PlotParam.Axes.MaxY;
         end  %else PlotParamOut.MinX =PlotParam.MinX...
     else
         if test_ima %both background image and vectors coexist, take the wider bound
@@ -1193,10 +1193,10 @@ if ~isempty(Data)
             MaxY=max(vec_Y);
         end
     end
-    PlotParamOut.Coordinates.MinX=MinX;
-    PlotParamOut.Coordinates.MaxX=MaxX;
-    PlotParamOut.Coordinates.MinY=MinY;
-    PlotParamOut.Coordinates.MaxY=MaxY;
+    PlotParamOut.Axes.MinX=MinX;
+    PlotParamOut.Axes.MaxX=MaxX;
+    PlotParamOut.Axes.MinY=MinY;
+    PlotParamOut.Axes.MaxY=MaxY;
     if MaxX>MinX
         set(haxes,'XLim',[MinX MaxX]);% set x limits of frame in axes coordinates
     end
@@ -1206,13 +1206,13 @@ if ~isempty(Data)
     set(haxes,'YDir','normal')
     set(get(haxes,'XLabel'),'String',[XName ' (' x_units ')']);
     set(get(haxes,'YLabel'),'String',[YName ' (' y_units ')']);
-    PlotParamOut.Coordinates.x_units=x_units;
-    PlotParamOut.Coordinates.y_units=y_units;
+    PlotParamOut.Axes.x_units=x_units;
+    PlotParamOut.Axes.y_units=y_units;
 end
-if isfield(PlotParam,'Coordinates') && isfield(PlotParam.Coordinates,'CheckFixAspectRatio') && isequal(PlotParam.Coordinates.CheckFixAspectRatio,1)
+if isfield(PlotParam,'Coordinates') && isfield(PlotParam.Axes,'CheckFixAspectRatio') && isequal(PlotParam.Axes.CheckFixAspectRatio,1)
     set(haxes,'DataAspectRatioMode','manual')
-    if isfield(PlotParam.Coordinates,'AspectRatio')
-        set(haxes,'DataAspectRatio',[PlotParam.Coordinates.AspectRatio 1 1])
+    if isfield(PlotParam.Axes,'AspectRatio')
+        set(haxes,'DataAspectRatio',[PlotParam.Axes.AspectRatio 1 1])
     end
 else
     set(haxes,'DataAspectRatioMode','auto')

@@ -182,10 +182,8 @@ if ~isequal(hhh,'')
             end
         end
         ListVarName=ListVarName(:,logical(check_keep));
-        sizvar=size(ListVarName);
-        var_index=zeros(1,sizvar(2));%default
-        if sizvar(1)>1 %multiple choice of variable ranked by order of priority
-            for iline=1:sizvar(1)
+        if size(ListVarName,1)>1 %multiple choice of variable ranked by order of priority
+            for iline=1:size(ListVarName,1)
                 search_index=find(strcmp(ListVarName{iline,1},ListVarNameNetcdf),1);%look for the first variable name in the list of netcdf variables
                 if ~isempty(search_index)
                     break % go to the next line
@@ -205,6 +203,7 @@ if ~isequal(hhh,'')
             TimeDimIndex=dimids{TimeVarIndex}(1)+1;
             ListVarName=[ListVarName {TimeVarName}];
         end
+        var_index=zeros(1,size(ListVarName,2));%default list of variable indices
         for ivar=1:size(ListVarName,2)
             search_index=find(strcmp(ListVarName{iline,ivar},ListVarNameNetcdf),1);%look for the variable name in the list of netcdf file
             if ~isempty(search_index)

@@ -158,18 +158,26 @@ SwitchVarIndexTime_Callback([], [], handles)
 %% set vector menu (priority) if detected or scalar menu for space dim >=2, or usual (x,y) plot for 1D fields
 set(handles.vector_x,'String',Field.Display.ListVarName)% fill the menu of x vector components
 set(handles.vector_y,'String',Field.Display.ListVarName)% fill the menu of y vector components
-set(handles.vector_z,'String',Field.Display.ListVarName)% fill the menu of y vector components
+set(handles.vector_z,'String',[{''} Field.Display.ListVarName])% fill the menu of y vector components
 set(handles.vec_color,'String',[{''} Field.Display.ListVarName])% fill the menu of y vector components
 set(handles.scalar,'Value',1)% fill the menu of y vector components
 set(handles.scalar,'String',Field.Display.ListVarName)% fill the menu for scalar
 set(handles.ordinate,'Value',1)% fill the menu of y vector components
 set(handles.ordinate,'String',Field.Display.ListVarName)% fill the menu of y coordinate for 1D plots
-if isfield(Field,'Conventions')&& strcmp(Field.Conventions,'uvmat/civdata')
+checkseries=0;
+if isfield(ParamIn,'SeriesInput') && ParamIn.SeriesInput
+    set(handles.FieldOption,'value',1)
+    set(handles.FieldOption,'String',{'scalar'})% case of call by series, only scalar
+    checkseries=1;
+    set(handles.scalar,'Max',2)
+elseif isfield(Field,'Conventions')&& strcmp(Field.Conventions,'uvmat/civdata')
     set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors';'civdata...'})% provides the possibility to come back to civdata
+    set(handles.scalar,'Max',1)
 else
     set(handles.FieldOption,'String',{'1D plot';'scalar';'vectors'})
+    set(handles.scalar,'Max',1)
 end
-if Field.MaxDim>=2 % case of 2D (or 3D) fields
+if Field.MaxDim>=2 && ~checkseries% case of 2D (or 3D) fields
     check_vec_input=0;
     if isfield(ParamIn,'vector_x')&& isfield(ParamIn,'vector_y')
         ichoice_x=find(strcmp(ParamIn.vector_x,Field.Display.ListVarName),1);
@@ -203,9 +211,6 @@ if isfield(Field,'ListDimName')&&~isempty(Field.ListDimName)
     Tabchar=cell2tab(Tabcell,' = ');
     set(handles.dimensions,'String',Tabchar)
 end
-set(handles.variables,'Value',1)
-set(handles.variables,'String',[{'*'} Field.ListVarName])
-variables_Callback(handles.variables,[], handles)% list the global attributes
 
 %% fill menus for coordinates and time
 FieldOption_Callback(handles.variables,[], handles)% list the global attributes
@@ -245,6 +250,9 @@ else
     set(handles.Check3D,'Value',0)
 end
 Check3D_Callback(hObject, eventdata, handles)
+set(handles.variables,'Value',1)
+set(handles.variables,'String',[{'*'} Field.ListVarName])
+variables_Callback(handles.variables,[], handles)% list the global attributes
 drawnow
 uiwait(handles.get_field);
 
@@ -310,6 +318,9 @@ if isequal(index,1)
     %% list Attribute names and values associated to the Variable # index-1
 else
     list_var=get(handles.variables,'String');
+    if index>numel(list_var)
+        return
+    end
     var_select=list_var{index};
     set(handles.attributes_txt,'String', ['attributes of ' var_select])
     if isfield(Field,'VarAttribute')&& length(Field.VarAttribute)>=index-1
@@ -328,7 +339,6 @@ else
             end
         end
     end
-    
 end
 if ~isempty(Tabcell)
     Tabchar=cell2tab(Tabcell,'=');

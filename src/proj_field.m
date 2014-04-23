@@ -1359,8 +1359,8 @@ for icell=1:length(CellInfo)
                             ListVarName=[ListVarName VarName];
                             VarDimName=[VarDimName {DimCell}];
                             VarAttribute{length(ListVarName)}=FieldData.VarAttribute{ivar}; %reproduce the variable attributes
-                            eval(['ProjData.' VarName '=permute(FieldData.' VarName ',ind_new);'])% permute x and z indices for 90 degree rotation
-                            eval(['ProjData.' VarName '=squeeze(ProjData.' VarName '(iz,:,:));'])% select the z index iz
+                            ProjData.(VarName)=permute(FieldData.(VarName),ind_new);% permute x and z indices for 90 degree rotation
+                            ProjData.(VarName)=squeeze(ProjData.(VarName)(iz,:,:));% select the z index iz
                         end
                         ProjData.(AYName)=[Ybound(1) Ybound(2)]; %record the new (projected ) y coordinates
                         ProjData.(AXName)=[Coord{1}(end),Coord{1}(1)]; %record the new (projected ) x coordinates
@@ -1389,8 +1389,16 @@ for icell=1:length(CellInfo)
                                 ProjData.(VarName)=FieldData.(VarName)(YIndexRange(1):YIndexRange(end),XIndexRange(1):XIndexRange(end),:);
                             end
                         end
-                        ProjData.(AYName)=Coord{NbDim-1}(1)+DY*(YIndexRange-1); %record the new (projected ) y coordinates
-                        ProjData.(AXName)=Coord{NbDim}(1)+DX*(XIndexRange-1); %record the new (projected ) x coordinates
+                        if testXMax
+                         ProjData.(AXName)=Coord{NbDim}(1)+DX*(XIndexRange-1); %record the new (projected ) x coordinates
+                        else
+                          ProjData.(AXName)=FieldData.(AXName);
+                        end
+                        if testYMax
+                            ProjData.(AYName)=Coord{NbDim-1}(1)+DY*(YIndexRange-1); %record the new (projected ) x coordinates
+                        else
+                          ProjData.(AYName)=FieldData.(AYName);
+                        end                            
                     end
                 end
             else       % case with interpolation on a grid

@@ -82,10 +82,10 @@
 % scalars are displayed either as an image or countour plot, either as a color of
 % velocity vectors. The scalar values in the first case is represented by
 % UvData.Field.A, and by UvData.Field.C in the second case. The corresponding set of X
-% and Y coordinates are represented by UvData.Field.AX and UvData.Field.AY, and .X and
+% and Y axes are represented by UvData.Field.AX and UvData.Field.AY, and .X and
 % .Y for C (the same as velocity vectors). If A is a nxxny matrix (scalar
 % on a regtular grid), then .AX andf.AY contains only two elements, represneting the
-% coordinates of the four image corners. The scalar name is represented by
+% axes of the four image corners. The scalar name is represented by
 % the strings .AName and/or .CName.
 % If the scalar exists in an input open (image or scalar stored under its
 % name in a netcdf open), it is directly read at the level of Field{1}or Field{2}.
@@ -94,7 +94,7 @@
      
 % Properties attached to plotting figures (standard Matlab properties):
 %    'CurrentAxes'= gca or get(gcf,'CurrentAxes');
-%    'CurrentPoint'=get(gcf,'CurrentPoint'): figure coordinates of the point over which the mouse is positioned
+%    'CurrentPoint'=get(gcf,'CurrentPoint'): figure axes of the point over which the mouse is positioned
 %    'CurrentCharacter'=get(gcf,'CurrentCharacter'): last character typed  over the figure where the mouse is positioned
 %    'WindowButtonMotionFcn': function permanently called by mouse motion over the figure
 %    'KeyPressFcn': function called by pressing a key on the key board 
@@ -102,7 +102,7 @@
 %    'WindowButtonUpFcn': function called by releasing  the mouse pressure over the  figure
 
 % Properties attached to plotting axes:
-%    'CurrentPoint'=get(gca,'CurrentPoint'); (standard Matlab) same as for the figure, but position in plot coordinates.
+%    'CurrentPoint'=get(gca,'CurrentPoint'); (standard Matlab) same as for the figure, but position in plot axes.
 %     AxeData:=get(gca,'UserData');
 %     AxeData.Drawing  = create: create a new object 
 %                       = deform: modify an existing object by moving its defining create
@@ -119,7 +119,7 @@
 %    'Tag'='proj_object': for all projection objects
 %    ObjectData.Type=...: style of projection object:
 %              .ProjMode
-%              .Coord: defines the position of the object
+%              .Coordinates: defines the position of the object
 %              .XMin,YMin....
 %              .XMax,YMax....
 %              .DX,DY,DZ
@@ -190,7 +190,6 @@ LeftX=80*RescaleFactor;%position of the left fig side, in pixels (put to the lef
 LowY=round(ScreenSize(4)/2-Height/2); % put at the middle height on the screen
 set(hObject,'Position',[LeftX LowY Width Height])
 UvData.OpenParam.PosColorbar=[0.80 0.02 0.018 0.445];
-% UvData.OpenParam.PosGeometryCalib=[0.95 -0.03 0.28 1 ];%position for geometry_calib 
 AxeData.LimEditBox=1; %initialise AxeData
 set(handles.PlotAxes,'UserData',AxeData)
 % position of table Coord_y
@@ -395,7 +394,7 @@ set(handles.CheckTable,'Position',pos_CheckTable)
 % pos_CheckHold(2)=pos_1(2)-pos_CheckHold(4);          % set 'CheckHold' to the lower edge of text display
 % set(handles.CheckHold,'Position',pos_CheckHold)
 
-%% reset position of Coordinates
+%% reset position of Coordinates panel
 set(handles.Coordinates,'Units','pixels')
 pos_2=get(handles.Coordinates,'Position');% [lower x lower y width height] for frame 'Coordinates'
 pos_2(3)=ColumnWidth;
@@ -403,29 +402,37 @@ pos_2(1)=size_fig(3)-pos_2(3);       % set 'Coordinates' to the right of the fig
 pos_2(2)=pos_1(2)-pos_2(4);          % set 'Coordinates' to the lower edge of text display, allowing a margin for CheckHold
 set(handles.Coordinates,'Position',pos_2)
 
+%% reset position of Axes panel
+set(handles.Axes,'Units','pixels')
+pos_3=get(handles.Axes,'Position');% [lower x lower y width height] for frame 'Coordinates'
+pos_3(3)=ColumnWidth;
+pos_3(1)=size_fig(3)-pos_3(3);       % set 'Coordinates' to the right of the fig
+pos_3(2)=pos_2(2)-pos_3(4);          % set 'Coordinates' to the lower edge of text display, allowing a margin for CheckHold
+set(handles.Axes,'Position',pos_3)
+
 %% reset position of  Scalar
 set(handles.Scalar,'Units','pixels')
-pos_3=get(handles.Scalar,'Position'); % [lower x lower y width height] for frame 'Scalar'
-pos_3(3)=ColumnWidth;
-pos_3(1)=size_fig(3)-pos_3(3);         % set 'Scalar' to the right of the fig
+pos_4=get(handles.Scalar,'Position'); % [lower x lower y width height] for frame 'Scalar'
+pos_4(3)=ColumnWidth;
+pos_4(1)=size_fig(3)-pos_4(3);         % set 'Scalar' to the right of the fig
 if strcmp(get(handles.Scalar,'Visible'),'on')
-    pos_3(2)=pos_2(2)-pos_3(4); % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
+    pos_4(2)=pos_3(2)-pos_4(4); % set 'Scalar' to the lower edge of frame 'Coordinates' if visible
 else
-    pos_3(2)=pos_2(2);% set 'Scalar' to the lower edge of frame 'text display' if  unvisible
+    pos_4(2)=pos_3(2);% set 'Scalar' to the lower edge of frame 'text display' if  unvisible
 end
-set(handles.Scalar,'Position',pos_3)
+set(handles.Scalar,'Position',pos_4)
 
 %% reset position of  Vectors
 set(handles.Vectors,'Units','pixels')
-pos_4=get(handles.Vectors,'Position');
-pos_4(3)=ColumnWidth;
-pos_4(1)=size_fig(3)-pos_4(3);
+pos_5=get(handles.Vectors,'Position');
+pos_5(3)=ColumnWidth;
+pos_5(1)=size_fig(3)-pos_5(3);
 if strcmp(get(handles.Vectors,'visible'),'on')
-    pos_4(2)=pos_3(2)-pos_4(4);
+    pos_5(2)=pos_4(2)-pos_5(4);
 else
-    pos_4(2)=pos_3(2);
+    pos_5(2)=pos_4(2);
 end
-set(handles.Vectors,'Position',pos_4)
+set(handles.Vectors,'Position',pos_5)
 
 %% reset position and scale of axis
 pos(1)=0.2*size_fig(3)+35;
@@ -2625,11 +2632,14 @@ else
         if numel(UvData.ProjObject)<iobj
             break
         end
-        if UvData.Field.NbDim==3% TO GENERALISE
+        if UvData.Field.NbDim==3
             UvData.ProjObject{iobj}.NbDim=3;%test for 3D objects
+            if ~isfield(UvData.ProjObject{iobj},'RangeZ')
             UvData.ProjObject{iobj}.RangeZ=UvData.Field.CoordMesh;%main plotting plane
-            UvData.ProjObject{iobj}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
-            UvData.ProjObject{iobj}.Angle=[0 0 0];
+            end
+            if ~(isfield(UvData.ProjObject{iobj},'Coord') && UvData.ProjObject{iobj}.Coord(1,3)<UvData.Field.ZMax && UvData.ProjObject{iobj}.Coord(1,3)>UvData.Field.ZMin)
+                 UvData.ProjObject{iobj}.Coord(1,3)=(UvData.Field.ZMin+UvData.Field.ZMax)/2;%section at a middle plane chosen
+            end          
         end
         [ObjectData,errormsg]=proj_field(UvData.Field,UvData.ProjObject{iobj});% project field on the object
         if ~isempty(errormsg)
@@ -2638,8 +2648,8 @@ else
         if testnewseries
             PlotParam{imap}.Scalar.CheckBW=[]; %B/W option depends on the input field (image or scalar)
             if isfield(ObjectData,'CoordUnit')
-                PlotParam{imap}.Coordinates.CheckFixAspectRatio=1;% set x and y scaling equal if CoordUnit is defined (common unit for x and y)
-                PlotParam{imap}.Coordinates.AspectRatio=1; %set aspect ratio to 1
+                PlotParam{imap}.Axes.CheckFixAspectRatio=1;% set x and y scaling equal if CoordUnit is defined (common unit for x and y)
+                PlotParam{imap}.Axes.AspectRatio=1; %set aspect ratio to 1
             end
         end
         %use of mask (TODO: check)
@@ -2705,7 +2715,7 @@ else
     % nb_histo=1;
     Ustring='';
     Vstring='';
-    % suppress coordinates from the histogram menu
+    % suppress axes from the histogram menu
     for ivar=1:numel(menu_histo)%l loop on field variables:
         if isfield(UvData.Field,'VarAttribute') && numel(UvData.Field.VarAttribute)>=ivar && isfield(UvData.Field.VarAttribute{ivar},'Role')
             Role=UvData.Field.VarAttribute{ivar}.Role;
@@ -2747,6 +2757,7 @@ else
 end
 
 if UvData.Field.NbDim==3
+    set(handles.CheckEditObject,'Value',1)
     CheckEditObject_Callback(handles.uvmat, [], handles)
 end   
 ResizeFcn(handles.uvmat,[],handles)
@@ -2808,8 +2819,8 @@ if isempty(Field)
     msgbox_uvmat('ERROR',['empty field ' FieldName])
 else
     nxy=size(FieldHisto);
-    Amin=double(min(min(min(FieldHisto))));%min of field value
-    Amax=double(max(max(max(FieldHisto))));%max of field value
+    Amin=double(min(min(min(min(FieldHisto)))));%min of field value
+    Amax=double(max(max(max(max(FieldHisto)))));%max of field value
     if isequal(Amin,Amax)
         cla(handles.HistoAxes)
     else
@@ -3109,7 +3120,7 @@ FileName=[fullfile(RootPath,SubDir,RootFile) FileIndices FileExt];
 
 switch field  
     case 'get_field...'
-        %% fill the coordinates and variables from selections in get_field
+        %% fill the axes and variables from selections in get_field
         ParamIn=[];
         % in case of civ data, we use the civ choice as default input for the GUI get_field
         if strcmp(get(handles.VelType,'Visible'),'on')
@@ -3273,7 +3284,7 @@ FileName_1=[fullfile(RootPath_1,SubDir_1,RootFile_1) FileIndex_1 FileExt_1];
 [tild,tild,tild,i1,i2,j1,j2]=fileparts_uvmat(get(handles.FileIndex,'String'));
 switch field_1
     case 'get_field...'
-         %% fill the coordinates and variables from selections in get_field
+         %% fill the axes and variables from selections in get_field
         ParamIn=[];
         % in case of civ data, we use the civ choice as default input for the GUI get_field
         if strcmp(get(handles.VelType_1,'Visible'),'on')
@@ -3866,7 +3877,7 @@ end
 %CALLBACKS FOR PLOTTING PARAMETERS
 %-------------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Plot coordinates
+% Plot axes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------
 function num_MinX_Callback(hObject, eventdata, handles)
@@ -4302,7 +4313,7 @@ else
     [PlotType,PlotParam]=plot_field(ProjData,hhview_field.PlotAxes,read_GUI(hview_field));%read plotting parameters on the uvmat interface
     haxes=findobj(hview_field,'tag','axes3');
     pos=get(hview_field,'Position');  
-    if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Coordinates)% case of no plot display (pure text table)
+    if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Axes)% case of no plot display (pure text table)
         h_TableDisplay=findobj(hview_field,'tag','TableDisplay');
         pos_table=get(h_TableDisplay,'Position');
         set(hview_field,'Position',[pos(1)+pos(3)-pos_table(3) pos(2)+pos(4)-pos_table(4) pos_table(3) pos_table(4)])
@@ -4479,7 +4490,7 @@ if check_view
     end
     haxes=findobj(hview_field,'tag','axes3');
     pos=get(hview_field,'Position');
-    if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Coordinates)% case of no plot display (pure text table)
+    if strcmp(get(haxes,'Visible'),'off')%sempty(PlotParam.Axes)% case of no plot display (pure text table)
         h_TableDisplay=findobj(hview_field,'tag','TableDisplay');
         pos_table=get(h_TableDisplay,'Position');
         set(hview_field,'Position',[pos(1)+pos(3)-pos_table(3) pos(2)+pos(4)-pos_table(4) pos_table(3) pos_table(4)])
@@ -5231,7 +5242,7 @@ y0=((y3-y4)*(x1*y2-y1*x2)-(y1-y2)*(x3*y4-y3*x4))/D;
 XmlData.Illumination.Origin=[x0 y0];
 XmlData.PolarCentre=[x0 y0];
 
-%% display the current image in polar coordinates with origin at the  illumination source
+%% display the current image in polar axes with origin at the  illumination source
 currentdir=pwd;  
 uvmatpath=fileparts(which('uvmat'));
 cd(fullfile(uvmatpath,'transform_field'));
@@ -5557,20 +5568,20 @@ web('http://servforge.legi.grenoble-inp.fr/projects/soft-uvmat/wiki/UvmatHelp')
 %TODO: use to modify fill_GUI
 %'write_plot_param': update the plotting parameters on the uvmat or view_field interface after a plotting operation
 function write_plot_param(handles,PlotParam)
-%% coordinates
-if isempty(PlotParam.Coordinates)
-    set(handles.Coordinates,'Visible','off')
+%% axes
+if isempty(PlotParam.Axes)
+    set(handles.Axes,'Visible','off')
     set(handles.PlotAxes,'Visible','off')
     set(handles.text_display,'Visible','off')
     set(handles.TableDisplay,'Visible','on')
 else
-    set(handles.Coordinates,'Visible','on')
+    set(handles.Axes,'Visible','on')
     set(handles.PlotAxes,'Visible','on')
     set(handles.text_display,'Visible','on')
     if isfield(handles,'TableDisplay')
     set(handles.TableDisplay,'Visible','off')
     end
-    Coordinates=PlotParam.Coordinates;
+    Coordinates=PlotParam.Axes;
     if isfield(Coordinates,'CheckFixAspectRatio')
         if Coordinates.CheckFixAspectRatio
             set(handles.CheckFixAspectRatio,'Value',1)
@@ -5665,24 +5676,11 @@ else
 end
 
 
-
-function Coord_z_Callback(hObject, eventdata, handles)
-% hObject    handle to Coord_z (see GCBO)
+% --- Executes on selection change in SwitchCoordIndex.
+function SwitchCoordIndex_Callback(hObject, eventdata, handles)
+% hObject    handle to SwitchCoordIndex (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of Coord_z as text
-%        str2double(get(hObject,'String')) returns contents of Coord_z as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function Coord_z_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to Coord_z (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
+% Hints: contents = cellstr(get(hObject,'String')) returns SwitchCoordIndex contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from SwitchCoordIndex

@@ -2240,10 +2240,21 @@ if isequal(field,'get_field...')
     end
     Param=read_GUI(handles.series);
     Param.InputTable=Param.InputTable(1,:);
-    filecell=get_file_series(Param);
-    
-    if exist(filecell{1,1},'file')
-        GetFieldData=get_field(filecell{1,1});
+     % check the existence of the first file in the series
+    first_j=[];
+    if isfield(Param.IndexRange,'first_j'); first_j=Param.IndexRange.first_j; end
+    last_j=[];
+    if isfield(Param.IndexRange,'last_j'); last_j=Param.IndexRange.last_j; end
+    PairString='';
+    if isfield(Param.IndexRange,'PairString'); PairString=Param.IndexRange.PairString; end
+    [i1,i2,j1,j2] = get_file_index(Param.IndexRange.first_i,first_j,PairString);
+    FirstFileName=fullfile_uvmat(Param.InputTable{1,1},Param.InputTable{1,2},Param.InputTable{1,3},...
+        Param.InputTable{1,5},Param.InputTable{1,4},i1,i2,j1,j2);
+%     filecell=get_file_series(Param);
+%     
+    if exist(FirstFileName,'file')
+        ParamIn.SeriesInput=1;
+        GetFieldData=get_field(FirstFileName,ParamIn);
         FieldList={};
         switch GetFieldData.FieldOption
             case 'vectors'
@@ -2260,9 +2271,11 @@ if isequal(field,'get_field...')
                     VecColorList=[{CName};VecColorList];
                 end
             case 'scalar'
-                AName=GetFieldData.PanelScalar.scalar;
+                FieldList=GetFieldData.PanelScalar.scalar;
                 YName={GetFieldData.Coordinates.Coord_y};
-                FieldList={AName};
+                if ischar(FieldList)
+                FieldList={FieldList};
+                end
             case '1D plot'
                 YName=GetFieldData.PanelOrdinate.ordinate;
 %             case 'civdata...'%reinitiate input, return to automatic civ data reading

@@ -25,6 +25,7 @@
 % see also read_image.m,read_civxdata.m,read_civdata.m,
 
 function [Field,ParamOut,errormsg] = read_field(FileName,FileType,ParamIn,num)
+%% default output and check input
 Field=[];
 if ~exist('num','var')
     num=1;
@@ -58,16 +59,16 @@ end
 
 %% distingush different input file types
 switch FileType
-    case 'civdata'
+    case 'civdata'% new format for civ results
         [Field,ParamOut.VelType,errormsg]=read_civdata(FileName,InputField,ParamIn.VelType);
         if ~isempty(errormsg),errormsg=['read_civdata / ' errormsg];return,end
         ParamOut.CivStage=Field.CivStage;
-    case 'civx'
+    case 'civx'% old (obsolete) format for civ results
         ParamOut.FieldName='velocity';%Civx data found, set .FieldName='velocity' by default
         [Field,ParamOut.VelType,errormsg]=read_civxdata(FileName,InputField,ParamIn.VelType);
         if ~isempty(errormsg),errormsg=['read_civxdata / ' errormsg];return,end
         ParamOut.CivStage=Field.CivStage;
-    case 'netcdf'
+    case 'netcdf'% general netcdf file (not recognized as civ)
         ListVar={};
         Role={};
         ProjModeRequest={};
@@ -76,6 +77,7 @@ switch FileType
         checkU=0;
         checkV=0;
         for ilist=1:numel(InputField)
+            % look for input variables to read
             r=regexp(InputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
             if isempty(r)%  no operator used
                 if isempty(find(strcmp(InputField{ilist},ListVar)))
@@ -118,20 +120,29 @@ switch FileType
                 end
             end
         end
+        if ~isfield(ParamIn,'Coord_z')
+            ParamIn.Coord_z=[];
+        end
+        NbCoord=~isempty(ParamIn.Coord_x)+~isempty(ParamIn.Coord_y)+~isempty(ParamIn.Coord_z);
         if isfield(ParamIn,'TimeDimName')% case of reading of a single time index in a multidimensional array
-            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,num,[ParamIn.Coord_x (ParamIn.Coord_y) ListVar]);
+            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeDimName',ParamIn.TimeDimName,num,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVar]);
         elseif isfield(ParamIn,'TimeVarName')% case of reading of a single time  in a multidimensional array
-            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeVarName',ParamIn.TimeVarName,num,[ParamIn.Coord_x (ParamIn.Coord_y) ListVar]);
+            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,'TimeVarName',ParamIn.TimeVarName,num,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVar]);
+            NbCoord=NbCoord+1;% adds time coordinate
         else
-            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,[ParamIn.Coord_x (ParamIn.Coord_y) (ParamIn.Coord_z) ListVar]);
+            [Field,var_detect,ichoice,errormsg]=nc2struct(FileName,[ParamIn.Coord_x ParamIn.Coord_y ParamIn.Coord_z ListVar]);
         end
         if ~isempty(errormsg)
             return
         end
-        for ilist=3:numel(Field.VarDimName)
-            if isequal(Field.VarDimName{1},Field.VarDimName{ilist})
+        %scan all the variables beyond the two first ones, ParamIn.Coord_x and ParamIn.Coord_y.
+        for ilist=NbCoord+1:numel(Field.VarDimName)
+            if isequal(Field.VarDimName{1},Field.VarDimName{ilist}) % if a variable has the same dimension as the coordinate, it denotes a field with unstructured coordinates
                 Field.VarAttribute{1}.Role='coord_x';%unstructured coordinates
                 Field.VarAttribute{2}.Role='coord_y';
+                if NbCoord>=3
+                    Field.VarAttribute{3}.Role='coord_z';
+                end
                 break
             end
         end
@@ -139,10 +150,10 @@ switch FileType
         UName='';
         VName='';
         for ilist=1:numel(ListVar)
-            Field.VarAttribute{ilist+2}.Role=Role{ilist};
-            Field.VarAttribute{ilist+2}.ProjModeRequest=ProjModeRequest{ilist};
+            Field.VarAttribute{ilist+NbCoord}.Role=Role{ilist};
+            Field.VarAttribute{ilist+NbCoord}.ProjModeRequest=ProjModeRequest{ilist};
             if isfield(ParamIn,'FieldName')
-                Field.VarAttribute{ilist+2}.FieldName=ListInputField{ilist};
+                Field.VarAttribute{ilist+NbCoord}.FieldName=ListInputField{ilist};
             end
             r=regexp(ListInputField{ilist},'(?<Operator>(^vec|^norm))\((?<UName>.+),(?<VName>.+)\)$','names');
             if ~isempty(r)&& strcmp(r.Operator,'norm')
